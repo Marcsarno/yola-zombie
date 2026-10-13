@@ -61,6 +61,25 @@ def sample_hands(arm, act, f0, f1):
         out.append({'f': f, 'r': conv(r), 'l': conv(l), 'hips': conv(hp)})
     return out
 
+# Bat socket in the right hand bone's frame, measured on the Mixamo X Bot reference (bat_idle).
+BAT_SOCKET = (0.972, 0, -0.233)
+
+def sample_bat(arm, act, f0, f1, socket=BAT_SOCKET):
+    """Per-frame grips, bat direction (right-hand socket) and hips, character frame (x left, y up,
+    z forward), model units. This is clipdata's bat path format: {f, r, l, d, hips}."""
+    sc = bpy.context.scene
+    set_action(arm, act)
+    sock = mathutils.Vector(socket).normalized()
+    conv = lambda v: [v.x, v.z, -v.y]
+    pb = lambda n: arm.pose.bones['mixamorig:' + n]
+    grip = lambda s: (pb(s + 'Hand').head + pb(s + 'HandMiddle1').head) * 0.5
+    out = []
+    for f in range(f0, f1 + 1):
+        sc.frame_set(f)
+        d = pb('RightHand').matrix.to_quaternion() @ sock
+        out.append({'f': f, 'r': conv(grip('Right')), 'l': conv(grip('Left')), 'd': conv(d), 'hips': conv(pb('Hips').head)})
+    return out
+
 def push_tracks(arm, names):
     ad = arm.animation_data
     for t in list(ad.nla_tracks): ad.nla_tracks.remove(t)

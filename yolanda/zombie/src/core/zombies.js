@@ -5,7 +5,10 @@ import { approachAngle, angleDiff } from './world.js';
 let nextId = 1;
 const _flow = { x: 0, z: 0 };
 
-export const ZS = { EMERGE: 'emerge', CHASE: 'chase', WINDUP: 'windup', STRIKE: 'strike', RECOVER: 'recover', STAGGER: 'stagger', DYING: 'dying', DEAD: 'dead' };
+export const ZS = { EMERGE: 'emerge', CHASE: 'chase', WINDUP: 'windup', STRIKE: 'strike', RECOVER: 'recover', STAGGER: 'stagger', KNOCKDOWN: 'knockdown', GETUP: 'getup', DYING: 'dying', DEAD: 'dead' };
+// Knocked flat by the bat: fall (thrown back, rolls onto the stomach), then get up. The get-up clip
+// starts turned ~155 degrees from where the fall ends, so the facing turns with it.
+export const KNOCKDOWN_FALL = 1.3, KNOCKDOWN_GETUP = 2.0, GETUP_YAW = -2.705;
 
 export class Zombie {
   constructor(x, z, yaw, opts) {
@@ -28,15 +31,19 @@ export class Zombie {
 
   set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
   get alive() { return this.state !== ZS.DYING && this.state !== ZS.DEAD; }
+  get down() { return this.state === ZS.KNOCKDOWN || this.state === ZS.GETUP; }
 
   // Incoming hit: direction (unit) and strength in m/s.
   takeHit(dmg, dirX, dirZ, impulse, kind, sim) {
     if (!this.alive) return;
+    const wasDown = this.down;
     this.hp -= dmg;
-    this.kx += dirX * impulse; this.kz += dirZ * impulse;
+    const push = wasDown ? 0.3 : 1; // a body on the floor barely slides
+    this.kx += dirX * impulse * push; this.kz += dirZ * impulse * push;
     this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse; this.hitSeq++; this.hitKind = kind;
     this.hitFlash = 1;
     if (this.hp <= 0) {
+      this.downDeath = this.state === ZS.KNOCKDOWN; // already lying: no death fall
       this.set(ZS.DYING, 0.75);
       this.solid = false;
       this.deathYaw = Math.atan2(dirX, dirZ); // fall along the hit
@@ -44,8 +51,16 @@ export class Zombie {
       sim.emit({ type: 'zombieDeath', id: this.id, kind, x: this.x, z: this.z });
       return;
     }
+    if (wasDown) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
+    if (kind === 'bat' && sim.rand() < sim.T.batKnockdown) {
+      this.set(ZS.KNOCKDOWN, KNOCKDOWN_FALL);
+      this.solid = false;
+      this.yaw = Math.atan2(-dirX, -dirZ); // face the blow, thrown onto the back
+      sim.emit({ type: 'zombieKnockdown', id: this.id });
+      return;
+    }
     // Any hit interrupts a windup (rewarding a timely shot); heavier hits stagger longer.
-    const dur = kind === 'bat' ? 0.75 : 0.26;
+    const dur = kind === 'bat' ? 0.95 : 0.26;
     if (this.state !== ZS.STAGGER || dur > this.stateDur - this.t) this.set(ZS.STAGGER, dur);
     this.attackCd = Math.max(this.attackCd, kind === 'bat' ? 0.9 : 0.35);
     sim.emit({ type: 'zombieHit', id: this.id, kind });
@@ -108,6 +123,15 @@ export class Zombie {
       case ZS.STAGGER:
         turnRate = 0;
         if (this.t >= this.stateDur) this.set(ZS.CHASE);
+        break;
+      case ZS.KNOCKDOWN:
+        turnRate = 0;
+        if (this.t >= this.stateDur) { this.set(ZS.GETUP, KNOCKDOWN_GETUP); this.yaw += GETUP_YAW; }
+        break;
+      case ZS.GETUP:
+        turnRate = 0;
+        if (this.t >= this.stateDur * 0.6) this.solid = true; // up on its feet again
+        if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.attackCd = Math.max(this.attackCd, 0.5); }
         break;
       case ZS.DYING:
         turnRate = 0;

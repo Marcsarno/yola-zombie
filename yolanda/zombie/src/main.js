@@ -258,7 +258,12 @@ function handleEvents() {
         break;
       }
       case 'swing': sim.stats.swings++; audio.play('swing'); break;
-      case 'batHit': audio.play('batHit'); fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed ? 0.45 : 0.35); break;
+      case 'batHit':
+        audio.play('batHit'); fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed ? 0.55 : 0.45);
+        // camera kicks along the blow (the follow spring brings it back)
+        if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
+        break;
+      case 'zombieKnockdown': audio.play('knockdown'); break;
       case 'batMiss': audio.play('batMiss'); break;
       case 'batClank': audio.play('clank'); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;
       case 'hitPause': hitPauseT = Math.max(hitPauseT, e.dur); break;

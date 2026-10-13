@@ -13,7 +13,7 @@ const TUNE_SPEC = [
     ['pistolRecoil', 'Recoil', 0, 2, 0.1, '×'], ['pistolKnockback', 'Pistol impact', 0, 5, 0.1, 'm/s'], ['aimAssist', 'Aim assist', 0, 1, 0.05, ''],
     ['reloadTime', 'Reload time', 0.4, 2.5, 0.05, 's'], ['swapTime', 'Swap time', 0.1, 0.8, 0.02, 's'],
     ['batDamage', 'Bat damage', 20, 150, 1, ''], ['batKnockback', 'Bat impact', 1, 10, 0.1, 'm/s'], ['batSpeed', 'Bat swing speed', 0.6, 1.6, 0.05, '×'],
-    ['hitPause', 'Heavy-hit pause', 0, 0.12, 0.005, 's'], ['shake', 'Camera shake', 0, 2, 0.1, '×'],
+    ['batKnockdown', 'Bat knockdown chance', 0, 1, 0.05, ''], ['hitPause', 'Heavy-hit pause', 0, 0.16, 0.005, 's'], ['shake', 'Camera shake', 0, 2, 0.1, '×'],
   ]],
   ['Enemies', [
     ['zombieSpeed', 'Approach speed', 0.5, 3.5, 0.05, 'm/s'], ['zombieHp', 'Zombie health', 30, 300, 5, ''], ['zombieDamage', 'Zombie damage', 0, 40, 1, ''],

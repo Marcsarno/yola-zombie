@@ -18,7 +18,8 @@ export const TUNING_DEFAULTS = {
   batDamage: 70,
   batKnockback: 5.2, // m/s impulse
   batSpeed: 1.0, // swing time scale (higher = faster)
-  hitPause: 0.05, // s freeze on heavy hits (0 = off)
+  batKnockdown: 0.5, // chance a non-lethal bat hit knocks the zombie flat
+  hitPause: 0.085, // s freeze on bat hits (kills hold 1.4x longer; 0 = off)
   shake: 1.0,
   zombieSpeed: 1.0, // m/s approach
   zombieHp: 100,

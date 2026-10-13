@@ -429,20 +429,36 @@ export class YolaView extends ClipBody {
 }
 
 // ----------------------------------------------------------------------------------------------
+const SHARED_CLIPS = new WeakMap(); // gltf -> processed clips, shared by all views of a zombie type
+const ONE_SHOTS = ['attack', 'hit_flinch', 'hit_stumble', 'death_back', 'death_forward', 'death_headshot_knees', 'death_chest_back',
+  'react_large_front', 'react_large_back', 'react_large_left', 'react_large_right', 'knockdown', 'standup_stomach'];
+// Death clips: [clip, start frame, frame the body is on the floor]. Played so the fall takes ~1.1-1.4 s.
+const DEATHS = {
+  back: [['death_back', 7, 53], ['death_chest_back', 20, 66]],
+  forward: [['death_forward', 10, 67], ['death_headshot_knees', 18, 70]],
+};
+
 export class ZombieView extends ClipBody {
   constructor(scene, gltf, height, speeds) {
     const model = skClone(gltf.scene);
     const mats = [];
     model.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); mats.push(o.material); } });
-    const rest = hipsRest(gltf.scene);
-    const clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
-    for (const c of clips) if (c.name === 'walk' || c.name === 'idle') loopClip(c);
+    // clips are processed once per zombie type and shared by every view (mixers can share clips;
+    // cloning them per spawn copied megabytes of keyframes and stalled frames)
+    let clips = SHARED_CLIPS.get(gltf);
+    if (!clips) {
+      const rest = hipsRest(gltf.scene);
+      clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
+      for (const c of clips) if (c.name === 'walk' || c.name === 'idle') loopClip(c);
+      SHARED_CLIPS.set(gltf, clips);
+    }
     super(scene, model, height, clips);
     this.mats = mats;
     this.nativeWalk = (speeds?.speed || 0.17) * height;
     for (const n of ['walk', 'idle']) { this.act(n).play(); this.act(n).setEffectiveWeight(0); }
-    for (const n of ['attack', 'hit_flinch', 'hit_stumble', 'death_back', 'death_forward']) {
-      const a = this.act(n); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true;
+    for (const n of ONE_SHOTS) {
+      const a = this.act(n); if (!a) continue;
+      a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true;
     }
     this.react = new Spring2(70, 9);
     this.oneShot = null; this.lastSeq = 0; this.lastState = ''; this.id = -1;
@@ -457,11 +473,19 @@ export class ZombieView extends ClipBody {
   }
   hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); }
 
-  playOnce(name, from = 0, rate = 1) {
-    if (this.oneShot && this.oneShot !== this.act(name)) this.oneShot.fadeOut(0.08);
+  playOnce(name, from = 0, rate = 1, fade = 0.08) {
+    if (this.oneShot && this.oneShot !== this.act(name)) { if (fade > 0) this.oneShot.fadeOut(fade); else { this.oneShot.stop(); this.oneShot.setEffectiveWeight(0); } }
     const a = this.act(name);
-    a.reset(); a.time = from; a.timeScale = rate; a.setEffectiveWeight(1); a.fadeIn(0.08); a.play();
+    a.reset(); a.time = from; a.timeScale = rate; a.setEffectiveWeight(1); if (fade > 0) a.fadeIn(fade); a.play();
     this.oneShot = a;
+  }
+
+  // Big directional reaction: the clip that throws the body away from the blow.
+  reactClip(z) {
+    const sn = Math.sin(z.yaw), cs = Math.cos(z.yaw);
+    const fwd = z.hitDirX * sn + z.hitDirZ * cs, left = z.hitDirX * cs - z.hitDirZ * sn;
+    if (Math.abs(fwd) >= Math.abs(left)) return fwd < 0 ? 'react_large_front' : 'react_large_back';
+    return left < 0 ? 'react_large_left' : 'react_large_right';
   }
 
   update(dt, z, x, zz) {
@@ -472,13 +496,27 @@ export class ZombieView extends ClipBody {
     if (z.state !== this.lastState) {
       const S = z.state;
       if (S === 'windup') this.playOnce('attack', 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
-      else if (S === 'stagger') this.playOnce(z.hitKind === 'bat' ? 'hit_stumble' : 'hit_flinch', z.hitKind === 'bat' ? 0.1 : 0.15, z.hitKind === 'bat' ? 1.3 : 1.6);
-      else if (S === 'dying') {
-        // fall along the blow: face against the hit and fall back, or with it and fall forward
-        const along = Math.cos(angleDiff(z.yaw, z.deathYaw));
-        const back = along < 0;
-        this.deathYaw = back ? z.deathYaw + Math.PI : z.deathYaw;
-        this.playOnce(back ? 'death_back' : 'death_forward', back ? 0.25 : 0.35, 1.25);
+      else if (S === 'stagger') {
+        if (z.hitKind === 'bat') {
+          const n = this.reactClip(z), len = this.act(n).getClip().duration;
+          this.playOnce(n, 2 / 30, (len - 2 / 30) / Math.max(0.3, z.stateDur));
+        } else this.playOnce('hit_flinch', 0.15, 1.6);
+      } else if (S === 'knockdown') {
+        this.deathYaw = null;
+        this.playOnce('knockdown', 1 / 30, 59 / 30 / z.stateDur, 0.05); // thrown back, rolls onto the stomach
+      } else if (S === 'getup') {
+        // the get-up starts from the same lying pose (turned to match the sim's new facing): hard cut
+        this.playOnce('standup_stomach', 20 / 30, 161 / 30 / z.stateDur, 0);
+      } else if (S === 'dying') {
+        if (z.downDeath) { this.deathYaw = null; } // killed on the floor: stay down
+        else {
+          // fall along the blow: face against the hit and fall back, or with it and fall forward
+          const along = Math.cos(angleDiff(z.yaw, z.deathYaw));
+          const back = along < 0;
+          this.deathYaw = back ? z.deathYaw + Math.PI : z.deathYaw;
+          const [n, f0, f1] = DEATHS[back ? 'back' : 'forward'][z.hitKind === 'pistol' ? z.id % 2 : 0];
+          this.playOnce(n, f0 / 30, (f1 - f0) / 30 / 1.25);
+        }
       } else if ((S === 'chase' || S === 'emerge') && this.oneShot && this.lastState !== 'strike' && this.lastState !== 'windup') { this.oneShot.fadeOut(0.2); this.oneShot = null; }
       else if (S === 'chase' && this.oneShot) { this.oneShot.fadeOut(0.25); this.oneShot = null; }
       this.lastState = S;
@@ -507,8 +545,8 @@ export class ZombieView extends ClipBody {
     }
     this.react.step(dt);
     if (!dying && Math.abs(this.react.x) + Math.abs(this.react.z) > 1e-3) this.rotateEulerC('Spine1', this.react.z * 0.7, 0, -this.react.x * 0.6);
-    const fl = z.hitFlash;
-    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.5, fl * 0.45, fl * 0.38);
+    const fl = z.hitFlash * z.hitFlash; // sharp: a bright first frame, gone within ~0.1 s
+    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4, fl * 0.33, fl * 0.27);
     // corpse sinks away after a while
     if (z.state === 'dead' && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
     this.blob.visible = z.state !== 'dead' || z.corpseT < 4.5;

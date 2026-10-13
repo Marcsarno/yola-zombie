@@ -24,16 +24,17 @@ export function muzzleLocal(out = {}) {
 }
 
 // ---- bat swing: sampled from the bat_swing clip ----
-// The clip (Mixamo "Baseball Hit - Single") sweeps the bat around the batter's right side, as a batter
-// stands sideways to the target. During the swing Yola turns yawOffset into it, so the sweep finishes
-// square on the aim. The sampled path is rotated by the same offset, keeping the hit test and the
-// rendered bat identical.
+// The clip (Mixamo "Baseball Hit - Single", leveled in Blender so the bat sweeps flat at waist-chest
+// height instead of dipping to a pitched ball at the knees) sweeps the bat around the batter's right
+// side, as a batter stands sideways to the target. During the swing Yola turns yawOffset into it, so
+// the sweep finishes square on the aim. The sampled path is rotated by the same offset, keeping the
+// hit test and the rendered bat identical.
 export const BAT_SWING = {
   clipStartFrame: 24, // clip frame at swing time 0 (end of the stance, start of the load)
-  clipEndFrame: 38, // after this the batter lets go of the bat; we blend back to the ready stance
+  clipEndFrame: 40, // end of the two-handed follow-through (the batter lets go after this); blend back to ready
   rate: 1.5, // clip frames advance this many times faster than real time
   fps: 30,
-  yawOffset: (25 * Math.PI) / 180,
+  yawOffset: (40 * Math.PI) / 180,
   duration: 0.62,
   activeStart: 0.155,
   activeEnd: 0.31,

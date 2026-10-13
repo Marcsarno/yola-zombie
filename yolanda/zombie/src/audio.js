@@ -58,11 +58,17 @@ export class CombatAudio {
       case 'reloadDone':
         this.noise(t, 0.05, { f: 3200, q: 5, gain: 0.25 }); this.noise(t + 0.08, 0.06, { f: 1800, q: 3, gain: 0.3 });
         break;
-      case 'swing': this.noise(t, 0.2, { type: 'bandpass', f: 500, f2: 1600, q: 1.4, gain: 0.22, attack: 0.05 }); break;
+      // whoosh builds through the load and peaks where the bat is fastest (~0.2 s after the press)
+      case 'swing': this.noise(t + 0.04, 0.26, { type: 'bandpass', f: 380, f2: 1900, q: 1.6, gain: 0.26, attack: 0.16 }); break;
       case 'batHit':
-        this.tone(t, 0.16, 110, { f2: 50, gain: 0.7, type: 'sine' });
-        this.noise(t, 0.09, { type: 'lowpass', f: 1400, f2: 300, gain: 0.6 });
-        this.tone(t, 0.05, 420, { gain: 0.12, type: 'triangle' });
+        this.noise(t, 0.025, { type: 'bandpass', f: 1500, q: 2.5, gain: 0.55 }); // wooden crack
+        this.tone(t, 0.22, 95, { f2: 38, gain: 0.85, type: 'sine' }); // body thump
+        this.noise(t, 0.12, { type: 'lowpass', f: 1200, f2: 220, gain: 0.65 });
+        this.tone(t, 0.06, 330, { gain: 0.14, type: 'triangle', f2: 200 });
+        break;
+      case 'knockdown': // body slams the floor as the fall lands
+        this.noise(t + 0.55, 0.16, { type: 'lowpass', f: 420, gain: 0.55 });
+        this.tone(t + 0.55, 0.18, 70, { f2: 40, gain: 0.45 });
         break;
       case 'batMiss': this.noise(t, 0.12, { type: 'highpass', f: 2200, gain: 0.07, attack: 0.02 }); break;
       case 'clank':

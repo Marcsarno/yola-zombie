@@ -122,7 +122,7 @@ export class Sim {
   meleeAssist(p) {
     let best = null, bestA = 0.87;
     for (const z of this.zombies) {
-      if (!z.alive) continue;
+      if (!z.alive || z.down) continue;
       const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
       if (d > 1.45 || d < 0.2) continue;
       const a = Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz)));
@@ -173,7 +173,7 @@ export class Sim {
         this.stats.batHits++;
         z.takeHit(T.batDamage, dx, dz, T.batKnockback, 'bat', this);
         this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive });
-        if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause });
+        if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.4) });
       }
       px = tipX; pz = tipZ;
     }

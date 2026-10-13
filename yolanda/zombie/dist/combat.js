@@ -44838,12 +44838,12 @@ void main() {
   var BAT_SWING = {
     clipStartFrame: 24,
     // clip frame at swing time 0 (end of the stance, start of the load)
-    clipEndFrame: 38,
-    // after this the batter lets go of the bat; we blend back to the ready stance
+    clipEndFrame: 40,
+    // end of the two-handed follow-through (the batter lets go after this); blend back to ready
     rate: 1.5,
     // clip frames advance this many times faster than real time
     fps: 30,
-    yawOffset: 25 * Math.PI / 180,
+    yawOffset: 40 * Math.PI / 180,
     duration: 0.62,
     activeStart: 0.155,
     activeEnd: 0.31,
@@ -45133,7 +45133,10 @@ void main() {
   // src/core/zombies.js
   var nextId = 1;
   var _flow = { x: 0, z: 0 };
-  var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", DYING: "dying", DEAD: "dead" };
+  var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", KNOCKDOWN: "knockdown", GETUP: "getup", DYING: "dying", DEAD: "dead" };
+  var KNOCKDOWN_FALL = 1.3;
+  var KNOCKDOWN_GETUP = 2;
+  var GETUP_YAW = -2.705;
   var Zombie = class {
     constructor(x, z, yaw, opts) {
       this.id = nextId++;
@@ -45174,12 +45177,17 @@ void main() {
     get alive() {
       return this.state !== ZS.DYING && this.state !== ZS.DEAD;
     }
+    get down() {
+      return this.state === ZS.KNOCKDOWN || this.state === ZS.GETUP;
+    }
     // Incoming hit: direction (unit) and strength in m/s.
     takeHit(dmg, dirX, dirZ, impulse, kind, sim2) {
       if (!this.alive) return;
+      const wasDown = this.down;
       this.hp -= dmg;
-      this.kx += dirX * impulse;
-      this.kz += dirZ * impulse;
+      const push = wasDown ? 0.3 : 1;
+      this.kx += dirX * impulse * push;
+      this.kz += dirZ * impulse * push;
       this.hitDirX = dirX;
       this.hitDirZ = dirZ;
       this.hitStrength = impulse;
@@ -45187,6 +45195,7 @@ void main() {
       this.hitKind = kind;
       this.hitFlash = 1;
       if (this.hp <= 0) {
+        this.downDeath = this.state === ZS.KNOCKDOWN;
         this.set(ZS.DYING, 0.75);
         this.solid = false;
         this.deathYaw = Math.atan2(dirX, dirZ);
@@ -45194,7 +45203,18 @@ void main() {
         sim2.emit({ type: "zombieDeath", id: this.id, kind, x: this.x, z: this.z });
         return;
       }
-      const dur = kind === "bat" ? 0.75 : 0.26;
+      if (wasDown) {
+        sim2.emit({ type: "zombieHit", id: this.id, kind });
+        return;
+      }
+      if (kind === "bat" && sim2.rand() < sim2.T.batKnockdown) {
+        this.set(ZS.KNOCKDOWN, KNOCKDOWN_FALL);
+        this.solid = false;
+        this.yaw = Math.atan2(-dirX, -dirZ);
+        sim2.emit({ type: "zombieKnockdown", id: this.id });
+        return;
+      }
+      const dur = kind === "bat" ? 0.95 : 0.26;
       if (this.state !== ZS.STAGGER || dur > this.stateDur - this.t) this.set(ZS.STAGGER, dur);
       this.attackCd = Math.max(this.attackCd, kind === "bat" ? 0.9 : 0.35);
       sim2.emit({ type: "zombieHit", id: this.id, kind });
@@ -45276,6 +45296,21 @@ void main() {
         case ZS.STAGGER:
           turnRate = 0;
           if (this.t >= this.stateDur) this.set(ZS.CHASE);
+          break;
+        case ZS.KNOCKDOWN:
+          turnRate = 0;
+          if (this.t >= this.stateDur) {
+            this.set(ZS.GETUP, KNOCKDOWN_GETUP);
+            this.yaw += GETUP_YAW;
+          }
+          break;
+        case ZS.GETUP:
+          turnRate = 0;
+          if (this.t >= this.stateDur * 0.6) this.solid = true;
+          if (this.t >= this.stateDur) {
+            this.set(ZS.CHASE);
+            this.attackCd = Math.max(this.attackCd, 0.5);
+          }
           break;
         case ZS.DYING:
           turnRate = 0;
@@ -45575,7 +45610,7 @@ void main() {
     meleeAssist(p) {
       let best = null, bestA = 0.87;
       for (const z of this.zombies) {
-        if (!z.alive) continue;
+        if (!z.alive || z.down) continue;
         const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
         if (d > 1.45 || d < 0.2) continue;
         const a = Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz)));
@@ -45640,7 +45675,7 @@ void main() {
           this.stats.batHits++;
           z.takeHit(T.batDamage, dx, dz, T.batKnockback, "bat", this);
           this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive });
-          if (T.hitPause > 0) this.emit({ type: "hitPause", dur: T.hitPause });
+          if (T.hitPause > 0) this.emit({ type: "hitPause", dur: T.hitPause * (z.alive ? 1 : 1.4) });
         }
         px2 = tipX;
         pz2 = tipZ;
@@ -45681,8 +45716,10 @@ void main() {
     // m/s impulse
     batSpeed: 1,
     // swing time scale (higher = faster)
-    hitPause: 0.05,
-    // s freeze on heavy hits (0 = off)
+    batKnockdown: 0.5,
+    // chance a non-lethal bat hit knocks the zombie flat
+    hitPause: 0.085,
+    // s freeze on bat hits (kills hold 1.4x longer; 0 = off)
     shake: 1,
     zombieSpeed: 1,
     // m/s approach
@@ -46778,6 +46815,26 @@ void main() {
       this.mixer.update(dt);
     }
   };
+  var SHARED_CLIPS = /* @__PURE__ */ new WeakMap();
+  var ONE_SHOTS = [
+    "attack",
+    "hit_flinch",
+    "hit_stumble",
+    "death_back",
+    "death_forward",
+    "death_headshot_knees",
+    "death_chest_back",
+    "react_large_front",
+    "react_large_back",
+    "react_large_left",
+    "react_large_right",
+    "knockdown",
+    "standup_stomach"
+  ];
+  var DEATHS = {
+    back: [["death_back", 7, 53], ["death_chest_back", 20, 66]],
+    forward: [["death_forward", 10, 67], ["death_headshot_knees", 18, 70]]
+  };
   var ZombieView = class extends ClipBody {
     constructor(scene2, gltf, height, speeds) {
       const model = clone(gltf.scene);
@@ -46788,9 +46845,13 @@ void main() {
           mats.push(o.material);
         }
       });
-      const rest = hipsRest(gltf.scene);
-      const clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
-      for (const c of clips) if (c.name === "walk" || c.name === "idle") loopClip(c);
+      let clips = SHARED_CLIPS.get(gltf);
+      if (!clips) {
+        const rest = hipsRest(gltf.scene);
+        clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
+        for (const c of clips) if (c.name === "walk" || c.name === "idle") loopClip(c);
+        SHARED_CLIPS.set(gltf, clips);
+      }
       super(scene2, model, height, clips);
       this.mats = mats;
       this.nativeWalk = (speeds?.speed || 0.17) * height;
@@ -46798,8 +46859,9 @@ void main() {
         this.act(n).play();
         this.act(n).setEffectiveWeight(0);
       }
-      for (const n of ["attack", "hit_flinch", "hit_stumble", "death_back", "death_forward"]) {
+      for (const n of ONE_SHOTS) {
         const a = this.act(n);
+        if (!a) continue;
         a.setLoop(LoopOnce);
         a.clampWhenFinished = true;
       }
@@ -46833,16 +46895,29 @@ void main() {
       this.id = -1;
       this.mixer.stopAllAction();
     }
-    playOnce(name, from = 0, rate = 1) {
-      if (this.oneShot && this.oneShot !== this.act(name)) this.oneShot.fadeOut(0.08);
+    playOnce(name, from = 0, rate = 1, fade = 0.08) {
+      if (this.oneShot && this.oneShot !== this.act(name)) {
+        if (fade > 0) this.oneShot.fadeOut(fade);
+        else {
+          this.oneShot.stop();
+          this.oneShot.setEffectiveWeight(0);
+        }
+      }
       const a = this.act(name);
       a.reset();
       a.time = from;
       a.timeScale = rate;
       a.setEffectiveWeight(1);
-      a.fadeIn(0.08);
+      if (fade > 0) a.fadeIn(fade);
       a.play();
       this.oneShot = a;
+    }
+    // Big directional reaction: the clip that throws the body away from the blow.
+    reactClip(z) {
+      const sn = Math.sin(z.yaw), cs = Math.cos(z.yaw);
+      const fwd = z.hitDirX * sn + z.hitDirZ * cs, left = z.hitDirX * cs - z.hitDirZ * sn;
+      if (Math.abs(fwd) >= Math.abs(left)) return fwd < 0 ? "react_large_front" : "react_large_back";
+      return left < 0 ? "react_large_left" : "react_large_right";
     }
     update(dt, z, x, zz) {
       this.outer.position.x = x;
@@ -46852,12 +46927,26 @@ void main() {
       if (z.state !== this.lastState) {
         const S = z.state;
         if (S === "windup") this.playOnce("attack", 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
-        else if (S === "stagger") this.playOnce(z.hitKind === "bat" ? "hit_stumble" : "hit_flinch", z.hitKind === "bat" ? 0.1 : 0.15, z.hitKind === "bat" ? 1.3 : 1.6);
-        else if (S === "dying") {
-          const along = Math.cos(angleDiff2(z.yaw, z.deathYaw));
-          const back = along < 0;
-          this.deathYaw = back ? z.deathYaw + Math.PI : z.deathYaw;
-          this.playOnce(back ? "death_back" : "death_forward", back ? 0.25 : 0.35, 1.25);
+        else if (S === "stagger") {
+          if (z.hitKind === "bat") {
+            const n = this.reactClip(z), len = this.act(n).getClip().duration;
+            this.playOnce(n, 2 / 30, (len - 2 / 30) / Math.max(0.3, z.stateDur));
+          } else this.playOnce("hit_flinch", 0.15, 1.6);
+        } else if (S === "knockdown") {
+          this.deathYaw = null;
+          this.playOnce("knockdown", 1 / 30, 59 / 30 / z.stateDur, 0.05);
+        } else if (S === "getup") {
+          this.playOnce("standup_stomach", 20 / 30, 161 / 30 / z.stateDur, 0);
+        } else if (S === "dying") {
+          if (z.downDeath) {
+            this.deathYaw = null;
+          } else {
+            const along = Math.cos(angleDiff2(z.yaw, z.deathYaw));
+            const back = along < 0;
+            this.deathYaw = back ? z.deathYaw + Math.PI : z.deathYaw;
+            const [n, f0, f1] = DEATHS[back ? "back" : "forward"][z.hitKind === "pistol" ? z.id % 2 : 0];
+            this.playOnce(n, f0 / 30, (f1 - f0) / 30 / 1.25);
+          }
         } else if ((S === "chase" || S === "emerge") && this.oneShot && this.lastState !== "strike" && this.lastState !== "windup") {
           this.oneShot.fadeOut(0.2);
           this.oneShot = null;
@@ -46886,8 +46975,8 @@ void main() {
       }
       this.react.step(dt);
       if (!dying && Math.abs(this.react.x) + Math.abs(this.react.z) > 1e-3) this.rotateEulerC("Spine1", this.react.z * 0.7, 0, -this.react.x * 0.6);
-      const fl = z.hitFlash;
-      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.5, fl * 0.45, fl * 0.38);
+      const fl = z.hitFlash * z.hitFlash;
+      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4, fl * 0.33, fl * 0.27);
       if (z.state === "dead" && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
       this.blob.visible = z.state !== "dead" || z.corpseT < 4.5;
     }
@@ -47225,13 +47314,19 @@ void main() {
           this.noise(t, 0.05, { f: 3200, q: 5, gain: 0.25 });
           this.noise(t + 0.08, 0.06, { f: 1800, q: 3, gain: 0.3 });
           break;
+        // whoosh builds through the load and peaks where the bat is fastest (~0.2 s after the press)
         case "swing":
-          this.noise(t, 0.2, { type: "bandpass", f: 500, f2: 1600, q: 1.4, gain: 0.22, attack: 0.05 });
+          this.noise(t + 0.04, 0.26, { type: "bandpass", f: 380, f2: 1900, q: 1.6, gain: 0.26, attack: 0.16 });
           break;
         case "batHit":
-          this.tone(t, 0.16, 110, { f2: 50, gain: 0.7, type: "sine" });
-          this.noise(t, 0.09, { type: "lowpass", f: 1400, f2: 300, gain: 0.6 });
-          this.tone(t, 0.05, 420, { gain: 0.12, type: "triangle" });
+          this.noise(t, 0.025, { type: "bandpass", f: 1500, q: 2.5, gain: 0.55 });
+          this.tone(t, 0.22, 95, { f2: 38, gain: 0.85, type: "sine" });
+          this.noise(t, 0.12, { type: "lowpass", f: 1200, f2: 220, gain: 0.65 });
+          this.tone(t, 0.06, 330, { gain: 0.14, type: "triangle", f2: 200 });
+          break;
+        case "knockdown":
+          this.noise(t + 0.55, 0.16, { type: "lowpass", f: 420, gain: 0.55 });
+          this.tone(t + 0.55, 0.18, 70, { f2: 40, gain: 0.45 });
           break;
         case "batMiss":
           this.noise(t, 0.12, { type: "highpass", f: 2200, gain: 0.07, attack: 0.02 });
@@ -47488,7 +47583,8 @@ void main() {
       ["batDamage", "Bat damage", 20, 150, 1, ""],
       ["batKnockback", "Bat impact", 1, 10, 0.1, "m/s"],
       ["batSpeed", "Bat swing speed", 0.6, 1.6, 0.05, "\xD7"],
-      ["hitPause", "Heavy-hit pause", 0, 0.12, 5e-3, "s"],
+      ["batKnockdown", "Bat knockdown chance", 0, 1, 0.05, ""],
+      ["hitPause", "Heavy-hit pause", 0, 0.16, 5e-3, "s"],
       ["shake", "Camera shake", 0, 2, 0.1, "\xD7"]
     ]],
     ["Enemies", [
@@ -47999,7 +48095,15 @@ void main() {
         case "batHit":
           audio.play("batHit");
           fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true);
-          shake(e.killed ? 0.45 : 0.35);
+          shake(e.killed ? 0.55 : 0.45);
+          if (shakeOn) {
+            const k = (e.killed ? 2.2 : 1.7) * tuning.shake;
+            camState.vx += e.dirX * k;
+            camState.vz += e.dirZ * k;
+          }
+          break;
+        case "zombieKnockdown":
+          audio.play("knockdown");
           break;
         case "batMiss":
           audio.play("batMiss");
