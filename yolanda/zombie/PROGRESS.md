@@ -29,9 +29,14 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   Weapon transform, muzzle and hands come from one aim frame (character space) shared with the sim.
 - `src/ui/*`: sticks (pointer-id capture), HUD, tuning panel.
 
-## Interim assets (labelled)
-Until Tripo meshes exist, Yola and the zombie use recoloured `assets/models/people/*` meshes, which are on
-the master skeleton. They are rejected visuals used only to develop combat; not the milestone look.
+## Characters and animation
+- Yola, scrubs zombie, patient zombie: the user's Tripo models (mixamorig skeleton), decimated to 15k / 9k / 9k tris, 1K textures.
+- Clips: Mixamo (free, user's Adobe login) - pistol locomotion pack, baseball hit (bat), zombie set. Raw FBX in assets/mixamo/.
+- blender/retarget.py: world-space retarget with rest-pose alignment. blender/export_chars.py: GLB export + clip measurements.
+- Reference check: Mixamo X Bot (assets/mixamo/reference) played beside Yola in Blender; weapon sockets calibrated on it.
+- clipdata.json: bat path (socket direction per frame), hips rest, heights. glTF clip time = Blender frame / 30.
 
 ## Log
 - 2026-10-13: baseline inspected, git baseline, server, Blender MCP connected, Tripo CLI logged in (0 credits).
+- 2026-10-13: combat core + HUD built. Rejected stand-in models dropped. User's Tripo Yola + 2 zombies with Mixamo clips in game.
+  Bat fixed via X Bot reference socket; sim/render bat agree within 3 cm. Decimated for phones. See CHECKLIST.md.
