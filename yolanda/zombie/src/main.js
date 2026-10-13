@@ -401,6 +401,31 @@ function footSlide(mx, mz, ax = 0, az = -0.3, n = 120) {
   }
   return out;
 }
-window.game = { tick, shot, sheet, footSlide, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, THREE, camera, renderer, scene };
+// Test hook: drive input fn(frame) with Yola pinned and report foot pops: the frame-to-frame
+// acceleration of the feet (m/s^2; normal leg swing peaks ~300-400, a pop shows as 1000+).
+function footPops(fn, frames) {
+  restart('calm');
+  for (const z of sim.zombies) { z.x = 50; z.z = 50; z.solid = false; }
+  const p = sim.player, V = THREE.Vector3, L = new V(), R = new V(), rows = [];
+  let i = 0;
+  window.game.scriptInput = () => Object.assign({ moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0 }, fn(i));
+  for (i = 0; i < frames; i++) {
+    p.x = p.px = 0.4; p.z = p.pz = 0;
+    tick(1, 1 / 60, false);
+    const o = yola.outer.position;
+    yola.worldPos('LeftFoot', L); yola.worldPos('RightFoot', R);
+    rows.push([L.x - o.x, L.y, L.z - o.z, R.x - o.x, R.y, R.z - o.z]);
+  }
+  window.game.scriptInput = null;
+  const acc = [];
+  for (let k = 25; k < rows.length; k++) {
+    const a = rows[k - 2], b = rows[k - 1], c = rows[k];
+    const f = (o) => Math.hypot(c[o] - 2 * b[o] + a[o], c[o + 1] - 2 * b[o + 1] + a[o + 1], c[o + 2] - 2 * b[o + 2] + a[o + 2]) * 3600;
+    acc.push([Math.max(f(0), f(3)), k]);
+  }
+  const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
+  return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
+}
+window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

@@ -172,7 +172,7 @@ export class YolaView extends ClipBody {
 
   reset(x, z, yaw) {
     this.yaw = yaw; this.deathT = -1; this.outer.quaternion.identity();
-    this.backMode = false; this.backBlend = 0; this.hipYaw = 0; this.sv.x = this.sv.z = 0;
+    this.backMode = false; this.backBlend = 0; this.hipYaw = 0; this.sv.x = this.sv.z = 0; this.spS = 0; this.lw = null;
     for (const n of ['death_fall', 'death_defeat']) { this.act(n).stop(); }
   }
 
@@ -217,16 +217,21 @@ export class YolaView extends ClipBody {
   // direction (torso counter-turned in update) - blending a back-run with a pelvis-turned strafe makes
   // the legs swing against each other. The switch between halves has hysteresis and a short crossfade.
   locoWeights(s, dt) {
-    const k = Math.min(1, dt * 14); // smoothed velocity picks the blend; raw speed drives the stride
+    // smoothed speed and smoothed direction pick the blend (smoothed separately, so a quick reversal
+    // does not dip to idle while the velocity vector passes through zero); raw speed drives the stride
+    const k = Math.min(1, dt * 14), sp = Math.hypot(s.vx, s.vz);
     this.sv.x += (s.vx - this.sv.x) * k; this.sv.z += (s.vz - this.sv.z) * k;
-    const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
-    const vF = this.sv.x * sn + this.sv.z * cs, vL = this.sv.x * cs - this.sv.z * sn; // forward, left
-    const spS = Math.hypot(vF, vL), sp = Math.hypot(s.vx, s.vz);
+    this.spS = (this.spS || 0) + (sp - (this.spS || 0)) * Math.min(1, dt * (sp > (this.spS || 0) ? 10 : 16));
+    const svl = Math.hypot(this.sv.x, this.sv.z);
+    if (svl > 0.05) { this.dirX = this.sv.x / svl; this.dirZ = this.sv.z / svl; }
+    else if (sp > 0.05) { this.dirX = s.vx / sp; this.dirZ = s.vz / sp; }
+    const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw), dx = this.dirX || 0, dz = this.dirZ || 1;
+    const spS = this.spS, vF = (dx * sn + dz * cs) * spS, vL = (dx * cs - dz * sn) * spS; // forward, left
     const w = { pistol_idle: 0 };
     for (const n in LOCO) w[n] = 0;
     const move = clamp(spS / 0.35, 0, 1);
     w.pistol_idle = 1 - move;
-    this.hipYaw = 0;
+    let hipYaw = 0;
     if (move > 0) {
       const th = Math.atan2(vL, vF), ath = Math.abs(th);
       if (!this.backMode && ath > 1.95) this.backMode = true; // ~112 deg
@@ -247,18 +252,27 @@ export class YolaView extends ClipBody {
       }
       if (mb > 0) {
         put('b', move * mb);
-        this.hipYaw = angleDiff(Math.PI, th) * mb; // turn the back clip's travel onto the actual travel
+        hipYaw = angleDiff(Math.PI, th) * mb; // turn the back clip's travel onto the actual travel
       }
-      let ws = 0, stride = 0;
-      for (const n in LOCO) if (w[n] > 0) { ws += w[n]; stride += w[n] * this.gait[n].stride; }
-      this.phase = (this.phase + (sp * dt) / (stride / ws)) % 1;
     }
+    // rate-limit every weight (a full swap takes >= 0.12 s) and the hip turn, so direction flips
+    // (e.g. strafing right -> left) crossfade instead of snapping
+    const lw = (this.lw ||= {}), maxW = dt / 0.12;
+    let ws = 0, stride = 0;
+    for (const n in w) {
+      lw[n] = (lw[n] ?? w[n]) + clamp(w[n] - (lw[n] ?? w[n]), -maxW, maxW);
+      if (LOCO[n] && lw[n] > 0) { ws += lw[n]; stride += lw[n] * this.gait[n].stride; }
+    }
+    const tot = Object.values(lw).reduce((a, b) => a + b, 0) || 1;
+    for (const n in lw) lw[n] /= tot;
+    this.hipYaw = (this.hipYaw || 0) + clamp(hipYaw - (this.hipYaw || 0), -dt * 9, dt * 9);
+    if (ws > 1e-3) this.phase = (this.phase + (sp * dt) / (stride / ws)) % 1;
     for (const n in LOCO) {
-      if (!w[n]) continue;
+      if (!lw[n]) continue;
       const g = this.gait[n], t = ((this.phase + g.lead) % 1) * g.dur;
       this.act(n).time = t; this.act(n + '_lower').time = t;
     }
-    return w;
+    return lw;
   }
 
   update(dt, s) {

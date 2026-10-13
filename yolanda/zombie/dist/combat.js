@@ -46486,6 +46486,8 @@ void main() {
       this.backBlend = 0;
       this.hipYaw = 0;
       this.sv.x = this.sv.z = 0;
+      this.spS = 0;
+      this.lw = null;
       for (const n of ["death_fall", "death_defeat"]) {
         this.act(n).stop();
       }
@@ -46543,17 +46545,25 @@ void main() {
     // direction (torso counter-turned in update) - blending a back-run with a pelvis-turned strafe makes
     // the legs swing against each other. The switch between halves has hysteresis and a short crossfade.
     locoWeights(s, dt) {
-      const k = Math.min(1, dt * 14);
+      const k = Math.min(1, dt * 14), sp = Math.hypot(s.vx, s.vz);
       this.sv.x += (s.vx - this.sv.x) * k;
       this.sv.z += (s.vz - this.sv.z) * k;
-      const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
-      const vF = this.sv.x * sn + this.sv.z * cs, vL = this.sv.x * cs - this.sv.z * sn;
-      const spS = Math.hypot(vF, vL), sp = Math.hypot(s.vx, s.vz);
+      this.spS = (this.spS || 0) + (sp - (this.spS || 0)) * Math.min(1, dt * (sp > (this.spS || 0) ? 10 : 16));
+      const svl = Math.hypot(this.sv.x, this.sv.z);
+      if (svl > 0.05) {
+        this.dirX = this.sv.x / svl;
+        this.dirZ = this.sv.z / svl;
+      } else if (sp > 0.05) {
+        this.dirX = s.vx / sp;
+        this.dirZ = s.vz / sp;
+      }
+      const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw), dx = this.dirX || 0, dz = this.dirZ || 1;
+      const spS = this.spS, vF = (dx * sn + dz * cs) * spS, vL = (dx * cs - dz * sn) * spS;
       const w = { pistol_idle: 0 };
       for (const n in LOCO) w[n] = 0;
       const move = clamp3(spS / 0.35, 0, 1);
       w.pistol_idle = 1 - move;
-      this.hipYaw = 0;
+      let hipYaw = 0;
       if (move > 0) {
         const th = Math.atan2(vL, vF), ath = Math.abs(th);
         if (!this.backMode && ath > 1.95) this.backMode = true;
@@ -46575,22 +46585,29 @@ void main() {
         }
         if (mb > 0) {
           put("b", move * mb);
-          this.hipYaw = angleDiff2(Math.PI, th) * mb;
+          hipYaw = angleDiff2(Math.PI, th) * mb;
         }
-        let ws = 0, stride = 0;
-        for (const n in LOCO) if (w[n] > 0) {
-          ws += w[n];
-          stride += w[n] * this.gait[n].stride;
-        }
-        this.phase = (this.phase + sp * dt / (stride / ws)) % 1;
       }
+      const lw = this.lw || (this.lw = {}), maxW = dt / 0.12;
+      let ws = 0, stride = 0;
+      for (const n in w) {
+        lw[n] = (lw[n] ?? w[n]) + clamp3(w[n] - (lw[n] ?? w[n]), -maxW, maxW);
+        if (LOCO[n] && lw[n] > 0) {
+          ws += lw[n];
+          stride += lw[n] * this.gait[n].stride;
+        }
+      }
+      const tot = Object.values(lw).reduce((a, b) => a + b, 0) || 1;
+      for (const n in lw) lw[n] /= tot;
+      this.hipYaw = (this.hipYaw || 0) + clamp3(hipYaw - (this.hipYaw || 0), -dt * 9, dt * 9);
+      if (ws > 1e-3) this.phase = (this.phase + sp * dt / (stride / ws)) % 1;
       for (const n in LOCO) {
-        if (!w[n]) continue;
+        if (!lw[n]) continue;
         const g = this.gait[n], t = (this.phase + g.lead) % 1 * g.dur;
         this.act(n).time = t;
         this.act(n + "_lower").time = t;
       }
-      return w;
+      return lw;
     }
     update(dt, s) {
       this.outer.position.set(s.x, 0, s.z);
@@ -48171,7 +48188,36 @@ void main() {
     }
     return out;
   }
-  window.game = { tick, shot, sheet, footSlide, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) {
+  function footPops(fn, frames) {
+    restart("calm");
+    for (const z of sim.zombies) {
+      z.x = 50;
+      z.z = 50;
+      z.solid = false;
+    }
+    const p = sim.player, V = Vector3, L = new V(), R = new V(), rows = [];
+    let i = 0;
+    window.game.scriptInput = () => Object.assign({ moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0 }, fn(i));
+    for (i = 0; i < frames; i++) {
+      p.x = p.px = 0.4;
+      p.z = p.pz = 0;
+      tick(1, 1 / 60, false);
+      const o = yola.outer.position;
+      yola.worldPos("LeftFoot", L);
+      yola.worldPos("RightFoot", R);
+      rows.push([L.x - o.x, L.y, L.z - o.z, R.x - o.x, R.y, R.z - o.z]);
+    }
+    window.game.scriptInput = null;
+    const acc2 = [];
+    for (let k = 25; k < rows.length; k++) {
+      const a = rows[k - 2], b = rows[k - 1], c = rows[k];
+      const f = (o) => Math.hypot(c[o] - 2 * b[o] + a[o], c[o + 1] - 2 * b[o + 1] + a[o + 1], c[o + 2] - 2 * b[o + 2] + a[o + 2]) * 3600;
+      acc2.push([Math.max(f(0), f(3)), k]);
+    }
+    const s = acc2.map((a) => a[0]).sort((a, b) => a - b), worst = acc2.sort((a, b) => b[0] - a[0])[0];
+    return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
+  }
+  window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) {
     camOverride = o;
   }, resume() {
     manualTicks = false;
