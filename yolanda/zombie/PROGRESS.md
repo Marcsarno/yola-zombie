@@ -40,3 +40,8 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
 - 2026-10-13: combat core + HUD built. Rejected stand-in models dropped. User's Tripo Yola + 2 zombies with Mixamo clips in game.
   Bat fixed via X Bot reference socket; sim/render bat agree within 3 cm. Decimated for phones. See CHECKLIST.md.
 - 2026-10-13: phone test by user: runs smooth, zombie walk OK. Next: fix jittery legs when strafing with the pistol (render/clipchars.js locoWeights).
+- 2026-10-13 (round 2): strafe jitter fixed (loop hitch at clip start, phase-synced gait, running strafes with the
+  pistol torso, mirrored walking strafe, back-half hip turn, rate-limited blends). Reload clip. Bat swing leveled
+  + follow-through, knockdown/get-up, directional reactions, stronger impact. 23 new Mixamo clips in assets/mixamo.
+  Next (agreed): zombie physics - custom ragdoll, body-to-body knockback, hit-location reactions; then dismemberment.
+  Later: hold-to-combo melee (3 hits, continues only on contact).
