@@ -5,3 +5,6 @@ __pycache__/
 .env
 .tripo/
 
+yolanda/zombie/shots/
+*.blend1
+yolanda/zombie/dist/*.map

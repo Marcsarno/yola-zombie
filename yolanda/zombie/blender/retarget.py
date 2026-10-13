@@ -1,0 +1,103 @@
+# Retarget Mixamo clips (FBX, "without skin") onto Tripo characters that use mixamorig bone names.
+# Rest poses differ (Mixamo X Bot T-pose vs Tripo A-pose), so rotations are transferred as
+# "world-space change from rest" per bone, and the hips translation is scaled by leg height.
+# Usage inside Blender:  exec(open(path).read()); retarget_fbx(fbx_path, target_armature, action_name)
+import bpy, mathutils
+
+def _win_override():
+    win = bpy.context.window_manager.windows[0]
+    area = next(a for a in win.screen.areas if a.type == 'VIEW_3D')
+    return dict(window=win, area=area, region=area.regions[-1])
+
+def _order(arm):
+    out = []
+    def walk(b):
+        out.append(b)
+        for c in b.children: walk(c)
+    for b in arm.data.bones:
+        if b.parent is None: walk(b)
+    return out
+
+def retarget(src, tgt, name, frame_range=None, hips='mixamorig:Hips'):
+    sc = bpy.context.scene
+    S = src.matrix_world.to_quaternion(); T = tgt.matrix_world.to_quaternion()
+    Tinv = T.inverted()
+    # leg-length scale for the hips translation (world units)
+    def hip_h(a):
+        b = a.data.bones[hips]
+        return (a.matrix_world @ b.head_local).z - min((a.matrix_world @ x.head_local).z for x in a.data.bones)
+    k = hip_h(tgt) / hip_h(src)
+    bones = [b for b in _order(tgt) if b.name in src.data.bones]
+    rest_t = {b.name: b.matrix_local.copy() for b in tgt.data.bones}
+    rest_s = {b.name: src.data.bones[b.name].matrix_local.copy() for b in bones}
+    # per-bone constant: world-space rest offset
+    # A aligns the target's rest bone direction with the source's (A-pose -> T-pose) so the source's
+    # change from ITS rest pose lands on a target bone that starts from the same direction.
+    off = {}
+    for b in bones:
+        sb = src.data.bones[b.name]
+        Rs = S @ rest_s[b.name].to_quaternion()
+        Rt = T @ rest_t[b.name].to_quaternion()
+        dt = (T @ (b.tail_local - b.head_local)).normalized()
+        ds = (S @ (sb.tail_local - sb.head_local)).normalized()
+        A = dt.rotation_difference(ds)
+        off[b.name] = Rs.inverted() @ A @ Rt
+    act = bpy.data.actions.new(name)
+    if not tgt.animation_data: tgt.animation_data_create()
+    tgt.animation_data.action = act
+    for pb in tgt.pose.bones: pb.rotation_mode = 'QUATERNION'
+    sact = src.animation_data.action
+    f0, f1 = frame_range or (int(sact.frame_range[0]), int(sact.frame_range[1]))
+    src_hips_rest = src.matrix_world @ rest_s[hips].translation
+    for f in range(f0, f1 + 1):
+        sc.frame_set(f)
+        P = {}
+        for b in bones:
+            spb = src.pose.bones[b.name]
+            Ws = S @ spb.matrix.to_quaternion() # source posed world rotation
+            Wt = Ws @ off[b.name]                  # target posed world rotation
+            Rarm = Tinv @ Wt                       # in target armature space
+            if b.parent and b.parent.name in P:
+                Pp = P[b.parent.name]
+                head = Pp @ (rest_t[b.parent.name].inverted() @ rest_t[b.name]).translation
+            elif b.parent:
+                head = rest_t[b.name].translation  # parent not retargeted: keep rest
+            else:
+                head = rest_t[b.name].translation
+            if b.name == hips:
+                dw = (src.matrix_world @ spb.matrix.translation) - src_hips_rest
+                head = rest_t[b.name].translation + (tgt.matrix_world.inverted().to_3x3() @ (dw * k))
+            M = mathutils.Matrix.Translation(head) @ Rarm.to_matrix().to_4x4()
+            P[b.name] = M
+            # local basis: L = (Rest_p^-1 Rest_b)^-1 Pp^-1 P_b
+            if b.parent and b.parent.name in P:
+                rel = rest_t[b.parent.name].inverted() @ rest_t[b.name]
+                L = rel.inverted() @ P[b.parent.name].inverted() @ M
+            else:
+                L = rest_t[b.name].inverted() @ M
+            tpb = tgt.pose.bones[b.name]
+            loc, rot, _ = L.decompose()
+            tpb.rotation_quaternion = rot
+            tpb.keyframe_insert('rotation_quaternion', frame=f - f0 + 1)
+            if b.name == hips:
+                tpb.location = loc
+                tpb.keyframe_insert('location', frame=f - f0 + 1)
+    return act
+
+def import_fbx_armature(path):
+    before = set(bpy.data.objects); acts = set(bpy.data.actions)
+    with bpy.context.temp_override(**_win_override()):
+        bpy.ops.import_scene.fbx(filepath=path, automatic_bone_orientation=False)
+    new = [o for o in bpy.data.objects if o not in before]
+    arm = next(o for o in new if o.type == 'ARMATURE')
+    return arm, new, [a for a in bpy.data.actions if a not in acts]
+
+def retarget_fbx(path, tgt, name):
+    arm, new, acts = import_fbx_armature(path)
+    try:
+        act = retarget(arm, tgt, name)
+    finally:
+        for o in new: bpy.data.objects.remove(o, do_unlink=True)
+        for a in acts: bpy.data.actions.remove(a)
+    act.use_fake_user = True
+    return act

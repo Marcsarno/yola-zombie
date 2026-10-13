@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#27323a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Ward Combat Test</title>
+<style>
+  :root {
+    --ink: #f6f1e6; --ink2: #c9d6d3; --panel: rgba(30, 42, 48, 0.86); --teal: #2fb1b4; --amber: #ffb347; --red: #e26d5a;
+    --sab: env(safe-area-inset-bottom, 0px); --sat: env(safe-area-inset-top, 0px); --sar: env(safe-area-inset-right, 0px); --sal: env(safe-area-inset-left, 0px);
+  }
+  html, body { margin: 0; height: 100%; background: #27323a; overflow: hidden; overscroll-behavior: none; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    font: 500 15px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #touch { position: fixed; inset: 0; z-index: 1; touch-action: none; }
+  #hud { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+  #hud button, #hud input, #hud select, #hud label { pointer-events: auto; }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+
+  .top { position: absolute; top: calc(10px + var(--sat)); left: calc(12px + var(--sal)); right: calc(12px + var(--sar)); display: flex; align-items: center; gap: 10px; }
+  #hp { flex: 0 1 150px; height: 14px; border-radius: 8px; background: rgba(20, 28, 32, 0.6); padding: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+  #hpFill { height: 100%; width: 100%; border-radius: 6px; background: linear-gradient(#7fe0c8, #33b39a); transition: width .15s; }
+  #hp.low #hpFill { background: linear-gradient(#ff9b86, #e05a45); }
+  #wave { flex: 1; text-align: center; font-weight: 650; letter-spacing: .02em; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  .iconbtn { width: 40px; height: 40px; border-radius: 12px; background: var(--panel); display: grid; place-items: center; font-size: 15px; }
+  #muteTop.off { opacity: .55; }
+
+  #banner { position: absolute; top: 18%; left: 0; right: 0; text-align: center; opacity: 0; transform: translateY(-6px); transition: opacity .25s, transform .25s; }
+  #banner.show { opacity: 1; transform: none; }
+  #bannerTitle { font-size: 26px; font-weight: 750; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
+  #bannerSub { color: var(--ink2); font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+
+  /* weapon swap: big, above the right thumb zone, clear of the browser's bottom bar */
+  #swapBtn { position: absolute; right: calc(14px + var(--sar)); bottom: calc(31vh + var(--sab)); width: 86px; height: 86px; border-radius: 50%;
+    background: var(--panel); box-shadow: 0 3px 10px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.12); touch-action: none; }
+  #swapBtn svg.w { position: absolute; transition: all .12s; }
+  #swapBtn .big { width: 46px; height: 46px; left: 20px; top: 13px; }
+  #swapBtn .small { width: 22px; height: 22px; right: 7px; bottom: 7px; opacity: .55; }
+  #swapBtn[data-weapon="pistol"] .i-bat.big, #swapBtn[data-weapon="pistol"] .i-pistol.small,
+  #swapBtn[data-weapon="bat"] .i-pistol.big, #swapBtn[data-weapon="bat"] .i-bat.small { display: none; }
+  #swapBtn.pending { box-shadow: 0 0 0 3px var(--amber), 0 3px 10px rgba(0,0,0,.35); }
+  #swapBtn.pending .small { opacity: 1; transform: scale(1.25); }
+  #swapBtn.pressed { transform: scale(.94); }
+  #ammo { position: absolute; left: 0; right: 0; bottom: 9px; font-size: 13px; font-weight: 700; color: var(--ink2); }
+  #swapBtn .arrows { position: absolute; left: 8px; bottom: 8px; width: 18px; height: 18px; opacity: .7; }
+  #ringSvg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  #ring { fill: none; stroke: var(--amber); stroke-width: 4; stroke-dasharray: 176; stroke-dashoffset: 176; transition: opacity .15s; }
+
+  .stick { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; background: rgba(255,255,255,.08);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.22); opacity: 0; transition: opacity .1s; pointer-events: none; }
+  .stick.on { opacity: 1; }
+  .stick .knob { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.4); transform: translate(-50%,-50%); }
+  .stick.aim .knob { background: rgba(255,200,120,.55); }
+
+  #hint { position: absolute; bottom: calc(14px + var(--sab)); left: 0; right: 0; text-align: center; font-size: 13px; color: var(--ink2); text-shadow: 0 1px 3px rgba(0,0,0,.6); transition: opacity .6s; padding: 0 20px; }
+  #hint.gone { opacity: 0; }
+  #vignette { position: absolute; inset: 0; box-shadow: inset 0 0 90px 30px rgba(226,80,60,.0); }
+  #vignette.hit { animation: hit .45s ease-out; }
+  @keyframes hit { 0% { box-shadow: inset 0 0 90px 40px rgba(226,80,60,.55); } 100% { box-shadow: inset 0 0 90px 30px rgba(226,80,60,0); } }
+
+  .sheet { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(18,26,30,.55); pointer-events: auto; padding: 16px; }
+  .sheet.show { display: flex; }
+  .card { background: var(--panel); border-radius: 18px; padding: 18px; width: min(360px, 100%); max-height: calc(100% - 32px); overflow: auto; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .card h2 { margin: 0 0 10px; font-size: 20px; }
+  .btn { display: block; width: 100%; padding: 13px; margin: 8px 0; border-radius: 12px; background: rgba(255,255,255,.1); font-weight: 650; }
+  .btn.primary { background: var(--teal); color: #08282a; }
+  .row { display: flex; gap: 8px; } .row .btn { flex: 1; padding: 11px 4px; }
+  .muted { color: var(--ink2); font-size: 13px; }
+  .opt { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+  select { background: rgba(255,255,255,.12); color: var(--ink); border: 0; border-radius: 8px; padding: 6px; font: inherit; }
+  input[type=range] { accent-color: var(--teal); }
+  #death .card, #clear .card { text-align: center; }
+  #restartDeath { font-size: 18px; padding: 16px; }
+  #tuning .card { width: min(420px, 100%); }
+  .tune-row { display: grid; grid-template-columns: 1fr 120px 70px; gap: 8px; align-items: center; font-size: 13px; padding: 3px 0; }
+  .tune-row b { font-weight: 600; text-align: right; color: var(--ink2); font-size: 12px; }
+  #tuneBody h3 { margin: 12px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--amber); }
+  #perfOut { white-space: pre-wrap; font: 11px/1.3 ui-monospace, monospace; color: var(--ink2); max-height: 160px; overflow: auto; }
+  #loading { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #27323a; }
+  #loadTrack { width: 180px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+  #loadBar { height: 100%; width: 0; background: var(--teal); }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="touch"></div>
+<div id="hud">
+  <div id="vignette"></div>
+  <div class="top">
+    <div id="hp"><div id="hpFill"></div></div>
+    <div id="wave"></div>
+    <button id="muteTop" class="iconbtn" aria-label="Mute">♪</button>
+    <button id="pauseBtn" class="iconbtn" aria-label="Pause">❚❚</button>
+  </div>
+  <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+  <button id="swapBtn" data-weapon="pistol" aria-label="Swap weapon">
+    <svg id="ringSvg" viewBox="0 0 64 64"><circle id="ring" cx="32" cy="32" r="28"/></svg>
+    <svg class="w i-pistol big" viewBox="0 0 48 48"><path fill="#f3eee2" d="M7 15h31l3 3v5H22l-3 2-3 13H9l3-14-5-3z"/><rect x="33" y="12" width="3" height="3" fill="#f3eee2"/></svg>
+    <svg class="w i-bat big" viewBox="0 0 48 48"><path fill="#e9c58f" d="M41 5c2 2 2 5 0 7L17 33l-3-3L36 6c1.5-1.5 3.5-2 5-1z"/><path fill="#9fb0c4" d="M17 33l-3-3-5 5 3 3z"/><circle cx="9.5" cy="38.5" r="3" fill="#9fb0c4"/></svg>
+    <svg class="w i-pistol small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M7 15h31l3 3v5H22l-3 2-3 13H9l3-14-5-3z"/></svg>
+    <svg class="w i-bat small" viewBox="0 0 48 48"><path fill="#e9c58f" d="M41 5c2 2 2 5 0 7L17 33l-3-3L36 6c1.5-1.5 3.5-2 5-1z"/><path fill="#9fb0c4" d="M17 33l-3-3-5 5 3 3z"/></svg>
+    <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
+    <div id="ammo"></div>
+  </button>
+  <div id="hint">Left thumb: move · Right thumb: aim, hold to attack · Swap button: pistol ⇄ bat<br>Desktop: WASD, mouse (hold to attack), Space to swap</div>
+
+  <div id="menu" class="sheet"><div class="card">
+    <h2>Paused</h2>
+    <button id="resumeBtn" class="btn primary">Resume</button>
+    <button class="btn" data-act="restart">Restart encounter</button>
+    <div class="row"><button class="btn" data-act="mode" data-v="encounter">Encounter</button><button class="btn" data-act="mode" data-v="calm">Practice</button></div>
+    <button id="tuneBtn" class="btn">Tuning…</button>
+    <div class="opt"><span>Volume</span><input id="volume" type="range" min="0" max="1" step="0.05"></div>
+    <button id="muteBtn" class="btn">Sound: on</button>
+    <div class="opt"><span>Quality</span><select id="qualitySel"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+    <label class="opt"><span>Gore particles</span><input id="goreChk" type="checkbox"></label>
+    <label class="opt"><span>Camera shake</span><input id="shakeChk" type="checkbox"></label>
+    <label class="opt"><span>Debug overlay</span><input id="debugChk" type="checkbox"></label>
+    <div class="muted">Benchmark (zombie count)</div>
+    <div class="row"><button class="btn" data-act="bench" data-v="5">5</button><button class="btn" data-act="bench" data-v="10">10</button><button class="btn" data-act="bench" data-v="20">20</button><button class="btn" data-act="bench" data-v="30">30</button></div>
+    <button id="perfBtn" class="btn">Show performance</button>
+    <div id="perfOut"></div>
+  </div></div>
+
+  <div id="tuning" class="sheet"><div class="card">
+    <h2>Tuning</h2>
+    <div class="muted">Changes apply live and are remembered on this device.</div>
+    <div id="tuneBody"></div>
+    <div class="row"><button id="tuneReset" class="btn">Reset</button><button id="tuneCopy" class="btn">Copy values</button></div>
+    <button id="tuneClose" class="btn primary">Back</button>
+  </div></div>
+
+  <div id="death" class="sheet"><div class="card">
+    <h2>Yola is down</h2>
+    <div id="deathStats" class="muted"></div>
+    <button id="restartDeath" class="btn primary">Restart</button>
+  </div></div>
+
+  <div id="clear" class="sheet"><div class="card">
+    <h2>Ward cleared</h2>
+    <div id="clearStats" class="muted"></div>
+    <button id="restartClear" class="btn primary">Play again</button>
+    <button class="btn" data-act="mode" data-v="calm">Practice</button>
+  </div></div>
+</div>
+<div id="loading"><div id="loadText">Loading the ward…</div><div id="loadTrack"><div id="loadBar"></div></div></div>
+<script src="dist/combat.js"></script>
+</body>
+</html>

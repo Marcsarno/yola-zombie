@@ -1,0 +1,167 @@
+// Zombie behaviour: emerge -> chase (flow field + separation) -> telegraphed attack -> recover.
+// Hits put them in stagger with collision-aware knockback that navigation does not override.
+import { approachAngle, angleDiff } from './world.js';
+
+let nextId = 1;
+const _flow = { x: 0, z: 0 };
+
+export const ZS = { EMERGE: 'emerge', CHASE: 'chase', WINDUP: 'windup', STRIKE: 'strike', RECOVER: 'recover', STAGGER: 'stagger', DYING: 'dying', DEAD: 'dead' };
+
+export class Zombie {
+  constructor(x, z, yaw, opts) {
+    this.id = nextId++;
+    this.x = x; this.z = z; this.yaw = yaw; this.r = 0.32;
+    this.vx = 0; this.vz = 0; // locomotion velocity
+    this.kx = 0; this.kz = 0; // knockback velocity (decays, never overwritten by navigation)
+    this.hp = opts.hp; this.maxHp = opts.hp;
+    this.speedMul = opts.speedMul ?? 1;
+    this.passive = !!opts.passive; // practice dummies never attack
+    this.state = ZS.EMERGE; this.t = 0; this.stateDur = 0.75;
+    this.attackCd = 0.4;
+    this.solid = true;
+    this.hitFlash = 0; this.hitDirX = 0; this.hitDirZ = 0; this.hitStrength = 0; this.hitSeq = 0; this.hitKind = '';
+    this.deathYaw = 0; this.deathSpeed = 0;
+    this.corpseT = 0;
+    this.phase = opts.phase ?? 0;
+    this.struck = false;
+  }
+
+  set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
+  get alive() { return this.state !== ZS.DYING && this.state !== ZS.DEAD; }
+
+  // Incoming hit: direction (unit) and strength in m/s.
+  takeHit(dmg, dirX, dirZ, impulse, kind, sim) {
+    if (!this.alive) return;
+    this.hp -= dmg;
+    this.kx += dirX * impulse; this.kz += dirZ * impulse;
+    this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse; this.hitSeq++; this.hitKind = kind;
+    this.hitFlash = 1;
+    if (this.hp <= 0) {
+      this.set(ZS.DYING, 0.75);
+      this.solid = false;
+      this.deathYaw = Math.atan2(dirX, dirZ); // fall along the hit
+      this.deathSpeed = impulse;
+      sim.emit({ type: 'zombieDeath', id: this.id, kind, x: this.x, z: this.z });
+      return;
+    }
+    // Any hit interrupts a windup (rewarding a timely shot); heavier hits stagger longer.
+    const dur = kind === 'bat' ? 0.75 : 0.26;
+    if (this.state !== ZS.STAGGER || dur > this.stateDur - this.t) this.set(ZS.STAGGER, dur);
+    this.attackCd = Math.max(this.attackCd, kind === 'bat' ? 0.9 : 0.35);
+    sim.emit({ type: 'zombieHit', id: this.id, kind });
+  }
+
+  update(dt, sim) {
+    const T = sim.T, p = sim.player, world = sim.world;
+    this.t += dt;
+    this.hitFlash = Math.max(0, this.hitFlash - dt * 6);
+    if (this.attackCd > 0) this.attackCd -= dt;
+    const dx = p.x - this.x, dz = p.z - this.z, dist = Math.hypot(dx, dz);
+    let wantX = 0, wantZ = 0, speed = 0, turnRate = 5;
+
+    switch (this.state) {
+      case ZS.EMERGE:
+        // walk in through the doorway (same motion the renderer shows)
+        if (this.emergeTo) {
+          const ex = this.emergeTo.x - this.x, ez = this.emergeTo.z - this.z, el = Math.hypot(ex, ez);
+          const sp = Math.min(el / Math.max(0.05, this.stateDur - this.t), 1.6);
+          if (el > 0.02) { this.vx = (ex / el) * sp; this.vz = (ez / el) * sp; } else { this.vx = this.vz = 0; }
+        }
+        if (this.t >= this.stateDur) this.set(ZS.CHASE);
+        break;
+      case ZS.CHASE: {
+        if (p.dead) { speed = 0; break; }
+        const los = dist < 7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
+        if (los) { wantX = dx / (dist || 1); wantZ = dz / (dist || 1); }
+        else { world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; }
+        speed = T.zombieSpeed * this.speedMul;
+        if (dist < 1.25) speed *= 0.5; // close in carefully, no jitter at contact
+        if (!this.passive && dist < 1.0 && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 &&
+            world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          this.set(ZS.WINDUP, 0.52);
+          sim.emit({ type: 'zombieWindup', id: this.id });
+        }
+        break;
+      }
+      case ZS.WINDUP:
+        turnRate = 2.5; wantX = dx; wantZ = dz; // keep tracking slowly: stepping aside works
+        if (this.t >= this.stateDur) { this.set(ZS.STRIKE, 0.14); this.struck = false; }
+        break;
+      case ZS.STRIKE:
+        turnRate = 0;
+        if (!this.struck) {
+          this.struck = true;
+          const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
+          const along = dx * fx + dz * fz;
+          const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
+          const hit = !p.dead && dist < 1.12 && along > 0 && ang < 0.95 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
+          if (hit) p.hurt(T.zombieDamage, this.x, this.z, sim);
+          sim.emit({ type: hit ? 'zombieStrikeHit' : 'zombieStrikeMiss', id: this.id });
+        }
+        this.vx = Math.sin(this.yaw) * 0.9; this.vz = Math.cos(this.yaw) * 0.9; // lunge
+        if (this.t >= this.stateDur) this.set(ZS.RECOVER, 0.55);
+        break;
+      case ZS.RECOVER:
+        turnRate = 2;
+        if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.attackCd = 0.35; }
+        break;
+      case ZS.STAGGER:
+        turnRate = 0;
+        if (this.t >= this.stateDur) this.set(ZS.CHASE);
+        break;
+      case ZS.DYING:
+        turnRate = 0;
+        if (this.t >= this.stateDur) { this.set(ZS.DEAD); this.corpseT = 0; }
+        break;
+      case ZS.DEAD:
+        this.corpseT += dt;
+        break;
+    }
+
+    // facing
+    if (turnRate > 0 && (wantX || wantZ)) this.yaw = approachAngle(this.yaw, Math.atan2(wantX, wantZ), turnRate * dt);
+
+    // locomotion velocity (only in states that walk)
+    if (this.state === ZS.CHASE) {
+      // walk mostly where we face: turning zombies slow down instead of sliding sideways
+      const face = Math.max(0, Math.cos(angleDiff(this.yaw, Math.atan2(wantX, wantZ))));
+      const s = speed * (0.35 + 0.65 * face);
+      const tx = Math.sin(this.yaw) * s, tz = Math.cos(this.yaw) * s;
+      const k = Math.min(1, dt * 6);
+      this.vx += (tx - this.vx) * k; this.vz += (tz - this.vz) * k;
+    } else if (this.state !== ZS.STRIKE && this.state !== ZS.EMERGE) {
+      const k = Math.min(1, dt * 10);
+      this.vx -= this.vx * k; this.vz -= this.vz * k;
+    }
+
+    // integrate: locomotion + knockback (knockback decays with friction; dying bodies slide less far)
+    const fr = Math.exp(-dt * (this.state === ZS.DYING ? 5 : 7));
+    this.x += (this.vx + this.kx) * dt; this.z += (this.vz + this.kz) * dt;
+    this.kx *= fr; this.kz *= fr;
+    if (this.state !== ZS.DEAD) {
+      const bx = this.x, bz = this.z;
+      if (world.resolveCircle(this, this.r) && (this.kx || this.kz)) {
+        // knocked into furniture: lose the velocity component into the obstacle
+        const nx = this.x - bx, nz = this.z - bz, nl = Math.hypot(nx, nz);
+        if (nl > 1e-5) { const ux = nx / nl, uz = nz / nl, into = this.kx * ux + this.kz * uz; if (into < 0) { this.kx -= into * ux; this.kz -= into * uz; } }
+      }
+    }
+  }
+}
+
+// Pairwise separation so a crowd spreads instead of stacking. O(n^2) is fine for <= 40.
+export function separate(zs, player) {
+  for (let i = 0; i < zs.length; i++) {
+    const a = zs[i]; if (!a.solid) continue;
+    for (let j = i + 1; j < zs.length; j++) {
+      const b = zs[j]; if (!b.solid) continue;
+      const dx = b.x - a.x, dz = b.z - a.z, rr = a.r + b.r, d2 = dx * dx + dz * dz;
+      if (d2 >= rr * rr || d2 < 1e-8) continue;
+      const d = Math.sqrt(d2), push = (rr - d) * 0.5, ux = dx / d, uz = dz / d;
+      a.x -= ux * push; a.z -= uz * push; b.x += ux * push; b.z += uz * push;
+    }
+    // zombies do not walk through the player
+    const dx = a.x - player.x, dz = a.z - player.z, rr = a.r + player.r, d2 = dx * dx + dz * dz;
+    if (!player.dead && d2 < rr * rr && d2 > 1e-8) { const d = Math.sqrt(d2), push = (rr - d) * 0.6; a.x += (dx / d) * push; a.z += (dz / d) * push; }
+  }
+}

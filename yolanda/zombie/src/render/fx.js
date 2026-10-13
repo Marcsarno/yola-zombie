@@ -1,0 +1,165 @@
+// Small, pooled, bounded effects. Everything here is optional dressing: combat must read without it.
+import * as THREE from 'three';
+
+function starTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 30);
+  gr.addColorStop(0, 'rgba(255,250,220,1)'); gr.addColorStop(0.25, 'rgba(255,214,120,0.9)'); gr.addColorStop(1, 'rgba(255,160,40,0)');
+  g.fillStyle = gr; g.beginPath();
+  for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2, r = i % 2 ? 11 : 31; g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); }
+  g.closePath(); g.fill();
+  return new THREE.CanvasTexture(c);
+}
+function dotTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 15);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(c);
+}
+
+const MAX_P = 160;
+
+export class FX {
+  constructor(scene) {
+    this.scene = scene;
+    this.gore = true;
+    // muzzle flash
+    this.flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    this.flash.scale.setScalar(0.42); this.flash.visible = false; scene.add(this.flash);
+    this.flashT = 0;
+    this.flashLight = new THREE.PointLight(0xffc070, 0, 4, 2); scene.add(this.flashLight);
+    // tracers (pool of thin quads)
+    this.tracers = [];
+    const trMat = new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending });
+    for (let i = 0; i < 6; i++) {
+      const g = new THREE.PlaneGeometry(1, 0.035); g.translate(0.5, 0, 0); g.rotateX(-Math.PI / 2);
+      const m = new THREE.Mesh(g, trMat.clone()); m.visible = false; scene.add(m); this.tracers.push({ m, t: 0 });
+    }
+    // particles: one Points cloud, fixed capacity
+    this.pGeo = new THREE.BufferGeometry();
+    this.pPos = new Float32Array(MAX_P * 3); this.pCol = new Float32Array(MAX_P * 3);
+    this.pGeo.setAttribute('position', new THREE.BufferAttribute(this.pPos, 3));
+    this.pGeo.setAttribute('color', new THREE.BufferAttribute(this.pCol, 3));
+    this.points = new THREE.Points(this.pGeo, new THREE.PointsMaterial({ size: 0.09, map: dotTexture(), vertexColors: true, transparent: true, depthWrite: false }));
+    this.points.frustumCulled = false; scene.add(this.points);
+    this.parts = []; for (let i = 0; i < MAX_P; i++) this.parts.push({ life: 0 });
+    this.pNext = 0;
+    // impact rings
+    this.rings = [];
+    for (let i = 0; i < 6; i++) {
+      const m = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.26, 28), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+      m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); this.rings.push({ m, t: 1 });
+    }
+    // bat trail ribbon
+    this.trailN = 14;
+    this.trailGeo = new THREE.BufferGeometry();
+    this.trailPos = new Float32Array(this.trailN * 2 * 3);
+    this.trailAlpha = new Float32Array(this.trailN * 2);
+    this.trailGeo.setAttribute('position', new THREE.BufferAttribute(this.trailPos, 3));
+    const idx = []; for (let i = 0; i < this.trailN - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    this.trailGeo.setIndex(idx);
+    this.trail = new THREE.Mesh(this.trailGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false }));
+    this.trail.frustumCulled = false; this.trail.visible = false; scene.add(this.trail);
+    this.trailPts = [];
+    // aim marker: restrained chevron + arc on the floor
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0.14); shape.lineTo(0.085, -0.02); shape.lineTo(0.035, -0.02); shape.lineTo(0, 0.06); shape.lineTo(-0.035, -0.02); shape.lineTo(-0.085, -0.02); shape.closePath();
+    const chev = new THREE.ShapeGeometry(shape); chev.rotateX(-Math.PI / 2); chev.rotateY(Math.PI);
+    this.aimMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false });
+    this.aim = new THREE.Group();
+    const c1 = new THREE.Mesh(chev, this.aimMat); c1.position.z = 1.05; c1.scale.setScalar(1.4);
+    this.aim.add(c1);
+    const arcGeo = new THREE.RingGeometry(0.72, 0.76, 32, 1, -0.45, 0.9); arcGeo.rotateX(-Math.PI / 2); arcGeo.rotateY(-Math.PI / 2);
+    this.aim.add(new THREE.Mesh(arcGeo, this.aimMat));
+    this.aim.position.y = 0.02; this.aim.renderOrder = 2; scene.add(this.aim);
+  }
+
+  muzzle(pos) {
+    this.flash.position.copy(pos); this.flash.visible = true; this.flashT = 0.055;
+    this.flash.material.rotation = Math.random() * Math.PI;
+    this.flashLight.position.copy(pos); this.flashLight.intensity = 6;
+  }
+
+  tracer(ox, oy, oz, ex, ez) {
+    const t = this.tracers.find((q) => q.t <= 0) || this.tracers[0];
+    const dx = ex - ox, dz = ez - oz, l = Math.hypot(dx, dz);
+    t.m.position.set(ox, oy, oz); t.m.scale.set(l, 1, 1); t.m.rotation.y = Math.atan2(-dz, dx); t.m.visible = true; t.t = 0.07;
+    t.m.material.opacity = 0.5;
+  }
+
+  burst(x, y, z, n, color, speed, up = 1, life = 0.45, dirX = 0, dirZ = 0) {
+    const c = new THREE.Color(color);
+    for (let i = 0; i < n; i++) {
+      const p = this.parts[this.pNext]; this.pNext = (this.pNext + 1) % MAX_P;
+      const a = Math.random() * Math.PI * 2, s = speed * (0.4 + Math.random() * 0.6);
+      p.x = x; p.y = y; p.z = z;
+      p.vx = Math.cos(a) * s * 0.6 + dirX * s; p.vz = Math.sin(a) * s * 0.6 + dirZ * s; p.vy = (0.5 + Math.random()) * up;
+      p.life = p.max = life * (0.6 + Math.random() * 0.5); p.r = c.r; p.g = c.g; p.b = c.b;
+    }
+  }
+
+  impactZombie(x, z, dirX, dirZ, heavy) {
+    if (this.gore) this.burst(x, 1.1, z, heavy ? 12 : 6, 0x6d3a3a, heavy ? 3.2 : 2.2, 1.2, 0.5, dirX, dirZ);
+    this.burst(x, 1.15, z, heavy ? 6 : 3, 0xfff0d0, 1.5, 0.6, 0.18, dirX, dirZ);
+    if (heavy) this.ring(x, z, 0xffffff);
+  }
+  impactWall(x, z, nx, nz) {
+    this.burst(x + (nx || 0) * 0.05, 1.3, z + (nz || 0) * 0.05, 7, 0xe8e0cc, 1.6, 1.0, 0.35, nx || 0, nz || 0);
+    this.burst(x, 1.3, z, 3, 0xffd890, 2.4, 0.8, 0.12, nx || 0, nz || 0);
+  }
+  ring(x, z, color) {
+    const r = this.rings.find((q) => q.t >= 1) || this.rings[0];
+    r.m.position.set(x, 0.03, z); r.m.material.color.set(color); r.t = 0; r.m.visible = true;
+  }
+
+  trailPush(hands, tip, active) {
+    this.trailPts.unshift({ a: hands.clone(), b: tip.clone(), t: 0, active });
+    if (this.trailPts.length > this.trailN) this.trailPts.length = this.trailN;
+  }
+  trailClear() { this.trailPts.length = 0; this.trail.visible = false; }
+
+  setAim(x, z, yaw, visible, strength) {
+    this.aim.visible = visible;
+    this.aim.position.x = x; this.aim.position.z = z; this.aim.rotation.y = yaw;
+    this.aimMat.opacity = 0.35 + 0.45 * strength;
+  }
+
+  update(dt) {
+    if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.flash.visible = false; }
+    this.flashLight.intensity = Math.max(0, this.flashLight.intensity - dt * 120);
+    for (const t of this.tracers) if (t.t > 0) { t.t -= dt; t.m.material.opacity = Math.max(0, t.t / 0.07) * 0.5; if (t.t <= 0) t.m.visible = false; }
+    for (const r of this.rings) if (r.t < 1) { r.t += dt / 0.28; const s = 0.6 + r.t * 1.6; r.m.scale.set(s, s, s); r.m.material.opacity = (1 - r.t) * 0.7; if (r.t >= 1) r.m.visible = false; }
+    // particles
+    let k = 0;
+    for (let i = 0; i < MAX_P; i++) {
+      const p = this.parts[i];
+      if (p.life > 0) {
+        p.life -= dt; p.vy -= 9 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+        if (p.y < 0.02) { p.y = 0.02; p.vx *= 0.5; p.vz *= 0.5; p.vy = 0; }
+        const f = Math.max(0, p.life / p.max);
+        this.pPos[k * 3] = p.x; this.pPos[k * 3 + 1] = p.y; this.pPos[k * 3 + 2] = p.z;
+        this.pCol[k * 3] = p.r * f + (1 - f) * 0.9; this.pCol[k * 3 + 1] = p.g * f + (1 - f) * 0.9; this.pCol[k * 3 + 2] = p.b * f + (1 - f) * 0.88;
+        k++;
+      }
+    }
+    this.pGeo.setDrawRange(0, k);
+    this.pGeo.attributes.position.needsUpdate = true; this.pGeo.attributes.color.needsUpdate = true;
+    // bat trail
+    for (const q of this.trailPts) q.t += dt;
+    while (this.trailPts.length && this.trailPts[this.trailPts.length - 1].t > 0.12) this.trailPts.pop();
+    const n = this.trailPts.length;
+    this.trail.visible = n > 1;
+    if (n > 1) {
+      for (let i = 0; i < this.trailN; i++) {
+        const q = this.trailPts[Math.min(i, n - 1)];
+        // ribbon covers the outer half of the bat only
+        const ax = q.a.x + (q.b.x - q.a.x) * 0.45, ay = q.a.y + (q.b.y - q.a.y) * 0.45, az = q.a.z + (q.b.z - q.a.z) * 0.45;
+        this.trailPos.set([ax, ay, az, q.b.x, q.b.y, q.b.z], i * 6);
+      }
+      this.trailGeo.attributes.position.needsUpdate = true;
+      this.trailGeo.computeBoundingSphere();
+    }
+  }
+}
