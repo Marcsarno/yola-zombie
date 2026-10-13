@@ -23,10 +23,9 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
 - `src/core/*`: engine-agnostic combat (no Three.js imports). Fixed 60 Hz simulation, deterministic per seed.
   Reusable in another Three.js survival game: world colliders + nav, twin-stick input state, player
   controller + action state machine, weapons (shared bat arc), hit resolution, zombie AI, encounter director.
-- `src/render/*`: Three.js presentation. Procedural animation on the 20-bone master skeleton
-  (root hips spine chest neck head clavicle/upper_arm/forearm/hand.L/R thigh/shin/foot.L/R).
-  Feet are placed by a gait generator + two-bone IK (no skating); hands IK to weapon grips.
-  Weapon transform, muzzle and hands come from one aim frame (character space) shared with the sim.
+- `src/render/clipchars.js`: clip-driven characters (mixamorig). Locomotion clips blended by local
+  velocity and played at the rate that matches travel; swing clip time driven by the simulation;
+  small additive corrections (aim alignment, recoil, flinch) in character space; weapon sockets.
 - `src/ui/*`: sticks (pointer-id capture), HUD, tuning panel.
 
 ## Characters and animation
