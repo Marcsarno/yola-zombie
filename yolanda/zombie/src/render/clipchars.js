@@ -10,7 +10,7 @@ import { BAT_SWING } from '../core/weapons.js';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3();
-const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion();
+const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _q4 = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
 const LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
 
@@ -25,6 +25,20 @@ function stripRoot(clip, rest) {
     const v = t.values, x0 = rest ? rest.x : v[0], z0 = rest ? rest.z : v[2];
     for (let i = 0; i < v.length; i += 3) { v[i] = x0; v[i + 2] = z0; }
   }
+  return clip;
+}
+// Exported clips start at Blender frame 1 = 1/30 s, so a looping clip played from 0 holds its first
+// pose for a frame every cycle (a hitch at each loop). Shift looping clips to start at 0.
+// (One-shot clips keep their frame-based timing: glTF time = Blender frame / 30.)
+function loopClip(clip) {
+  const t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
+  const done = new Set(); // the glTF loader shares one times array between tracks of a sampler
+  if (t0 > 0) for (const t of clip.tracks) {
+    if (done.has(t.times)) continue;
+    done.add(t.times);
+    for (let i = 0; i < t.times.length; i++) t.times[i] -= t0;
+  }
+  clip.resetDuration();
   return clip;
 }
 function hipsRest(root) {
@@ -92,15 +106,26 @@ class ClipBody {
 }
 
 // ----------------------------------------------------------------------------------------------
+// Locomotion clips: travel direction in character space (x = left, z = forward) and gait family.
+const LOCO = {
+  pistol_walk: { dir: [0, 1] }, pistol_run: { dir: [0, 1] },
+  pistol_walk_back: { dir: [0, -1] }, pistol_run_back: { dir: [0, -1] },
+  pistol_strafe_left: { dir: [1, 0] }, pistol_strafe_run_left: { dir: [1, 0] },
+  pistol_strafe_right: { dir: [-1, 0] }, pistol_strafe_run_right: { dir: [-1, 0] },
+};
+// walk and run clip for each travel direction key (f, b, l = left, r = right)
+const GAIT = { f: ['pistol_walk', 'pistol_run'], b: ['pistol_walk_back', 'pistol_run_back'], l: ['pistol_strafe_left', 'pistol_strafe_run_left'], r: ['pistol_strafe_right', 'pistol_strafe_run_right'] };
+
 export class YolaView extends ClipBody {
-  constructor(scene, gltf, speeds, clipdata) {
+  constructor(scene, gltf, clipdata) {
     const H = 1.62;
     const clips = [];
     const rest = hipsRest(gltf.scene);
     const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
     const batCalib = byName.bat_idle.clone(); batCalib.name = 'bat_calib';
     clips.push(batCalib);
-    const loco = ['pistol_idle', 'pistol_walk', 'pistol_run', 'pistol_walk_back', 'pistol_run_back', 'pistol_strafe_left', 'pistol_strafe_right'];
+    const loco = ['pistol_idle', ...Object.keys(LOCO)];
+    for (const n of [...loco, 'bat_idle']) loopClip(byName[n]);
     for (const n of loco) {
       clips.push(byName[n]); // full body (pistol held)
       clips.push(subClip(byName[n], (b) => LOWER.test(b), n + '_lower')); // legs only (bat held)
@@ -109,11 +134,11 @@ export class YolaView extends ClipBody {
     clips.push(byName.bat_swing, byName.death_fall, byName.death_defeat, byName.pistol_hit);
     super(scene, gltf.scene, H, clips);
     this.H = H;
-    // native travel speeds (m/s) of each locomotion clip, measured in Blender
-    const sc = H / 1.0;
-    this.native = {};
-    for (const n of loco) this.native[n] = speeds[n] ? speeds[n].speed * sc : 1;
     for (const n of loco) for (const suf of ['', '_lower']) { const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
+    this.gait = this.measureGaits();
+    // moving clips are driven from one shared gait phase (see locoWeights), not by the mixer clock
+    for (const n in LOCO) for (const suf of ['', '_lower']) this.act(n + suf).timeScale = 0;
+    this.phase = 0; this.sv = { x: 0, z: 0 };
     this.act('bat_idle_upper').play(); this.act('bat_idle_upper').setEffectiveWeight(0);
     const sw = this.act('bat_swing'); sw.play(); sw.setEffectiveWeight(0); sw.timeScale = 0;
     this.pistol = makePistol(1); this.bat = makeBat(BAT_SWING.fullLength);
@@ -147,41 +172,94 @@ export class YolaView extends ClipBody {
 
   reset(x, z, yaw) {
     this.yaw = yaw; this.deathT = -1; this.outer.quaternion.identity();
+    this.backMode = false; this.backBlend = 0; this.hipYaw = 0; this.sv.x = this.sv.z = 0;
     for (const n of ['death_fall', 'death_defeat']) { this.act(n).stop(); }
   }
 
-  locoWeights(s) {
-    // velocity in the aim frame
-    const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
-    const vF = s.vx * sn + s.vz * cs, vL = s.vx * cs - s.vz * sn; // forward, left
-    const sp = Math.hypot(vF, vL);
-    const w = { pistol_idle: 0, pistol_walk: 0, pistol_run: 0, pistol_walk_back: 0, pistol_run_back: 0, pistol_strafe_left: 0, pistol_strafe_right: 0 };
-    const move = clamp(sp / 0.35, 0, 1);
-    w.pistol_idle = 1 - move;
-    if (move > 0) {
-      const th = Math.atan2(vL, vF); // 0 forward, +pi/2 left
-      const dirs = [[0, 'f'], [Math.PI / 2, 'l'], [Math.PI, 'b'], [-Math.PI / 2, 'r'], [-Math.PI, 'b']];
-      const run = clamp((sp - 2.0) / 0.8, 0, 1);
-      const put = (key, k) => {
-        if (key === 'f') { w.pistol_walk += k * (1 - run); w.pistol_run += k * run; }
-        else if (key === 'b') { w.pistol_walk_back += k * (1 - run); w.pistol_run_back += k * run; }
-        else if (key === 'l') w.pistol_strafe_left += k;
-        else w.pistol_strafe_right += k;
-      };
-      for (let i = 0; i < dirs.length - 1; i++) {
-        const [a0, k0] = dirs[i], [a1, k1] = dirs[i + 1];
-        const lo = Math.min(a0, a1), hi = Math.max(a0, a1);
-        if (th >= lo && th <= hi) {
-          const u = (th - a0) / (a1 - a0);
-          put(k0, (1 - u) * move); put(k1, u * move); break;
+  // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
+  // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
+  measureGaits() {
+    const out = {}, L = new THREE.Vector3(), LT = new THREE.Vector3(), R = new THREE.Vector3(), RT = new THREE.Vector3();
+    const all = Object.values(this.actions);
+    this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
+    for (const n in LOCO) {
+      for (const a of all) a.setEffectiveWeight(0);
+      const a = this.act(n); a.setEffectiveWeight(1); a.timeScale = 0;
+      const D = a.getClip().duration, N = 90, [dx, dz] = LOCO[n].dir, rows = [];
+      for (let i = 0; i < N; i++) {
+        a.time = (D * i) / N; this.mixer.update(0); this.outer.updateMatrixWorld(true);
+        this.worldPos('LeftFoot', L); this.worldPos('LeftToeBase', LT); this.worldPos('RightFoot', R); this.worldPos('RightToeBase', RT);
+        rows.push({ L: L.x * dx + L.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L.y, LT.y), ry: Math.min(R.y, RT.y) });
+      }
+      const vel = [];
+      for (const [p, y] of [['L', 'ly'], ['R', 'ry']]) {
+        const minY = Math.min(...rows.map((r) => r[y]));
+        for (let i = 0; i < N; i++) {
+          const j = (i + 1) % N;
+          if (rows[i][y] < minY + 0.02 && rows[j][y] < minY + 0.02) vel.push(-(rows[j][p] - rows[i][p]) / (D / N));
         }
       }
+      vel.sort((p, q) => p - q);
+      const speed = vel.length ? vel[vel.length >> 1] : 1;
+      let lead = 0, best = -1e9;
+      rows.forEach((r, i) => { if (r.L > best) { best = r.L; lead = i / N; } });
+      out[n] = { speed, dur: D, stride: speed * D, lead };
     }
-    // play each clip at the rate that matches actual travel speed
-    for (const n in w) if (n !== 'pistol_idle' && w[n] > 0) this.rate(n, clamp(sp / this.native[n], 0.55, 1.9));
+    for (const a of all) a.setEffectiveWeight(0);
+    return out;
+  }
+
+  // Blend weights for the locomotion clips from velocity in the aim frame. All moving clips share one
+  // gait phase (left-foot lead aligned), advanced by distance travelled / blended stride, so blended
+  // clips never put the feet in different places and the planted foot stays planted.
+  // Front half: forward and side clips are blended (the running strafes turn the pelvis toward travel,
+  // like the forward run). Back half: the back clips play with the hips turned toward the travel
+  // direction (torso counter-turned in update) - blending a back-run with a pelvis-turned strafe makes
+  // the legs swing against each other. The switch between halves has hysteresis and a short crossfade.
+  locoWeights(s, dt) {
+    const k = Math.min(1, dt * 14); // smoothed velocity picks the blend; raw speed drives the stride
+    this.sv.x += (s.vx - this.sv.x) * k; this.sv.z += (s.vz - this.sv.z) * k;
+    const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
+    const vF = this.sv.x * sn + this.sv.z * cs, vL = this.sv.x * cs - this.sv.z * sn; // forward, left
+    const spS = Math.hypot(vF, vL), sp = Math.hypot(s.vx, s.vz);
+    const w = { pistol_idle: 0 };
+    for (const n in LOCO) w[n] = 0;
+    const move = clamp(spS / 0.35, 0, 1);
+    w.pistol_idle = 1 - move;
+    this.hipYaw = 0;
+    if (move > 0) {
+      const th = Math.atan2(vL, vF), ath = Math.abs(th);
+      if (!this.backMode && ath > 1.95) this.backMode = true; // ~112 deg
+      else if (this.backMode && ath < 1.2) this.backMode = false; // ~69 deg
+      this.backBlend = clamp((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
+      const mb = smooth(this.backBlend);
+      const put = (key, kk) => {
+        const [walk, run] = GAIT[key], g0 = this.gait[walk], g1 = this.gait[run];
+        const r = smooth(clamp((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
+        w[walk] += kk * (1 - r); w[run] += kk * r;
+      };
+      if (mb < 1) {
+        // front half: clamp travel to the front arc and blend forward <-> side
+        const tf = clamp(th, -Math.PI / 2, Math.PI / 2);
+        const [a0, k0, a1, k1] = tf >= 0 ? [0, 'f', Math.PI / 2, 'l'] : [0, 'f', -Math.PI / 2, 'r'];
+        const u = smooth((tf - a0) / (a1 - a0));
+        put(k0, (1 - u) * move * (1 - mb)); put(k1, u * move * (1 - mb));
+      }
+      if (mb > 0) {
+        put('b', move * mb);
+        this.hipYaw = angleDiff(Math.PI, th) * mb; // turn the back clip's travel onto the actual travel
+      }
+      let ws = 0, stride = 0;
+      for (const n in LOCO) if (w[n] > 0) { ws += w[n]; stride += w[n] * this.gait[n].stride; }
+      this.phase = (this.phase + (sp * dt) / (stride / ws)) % 1;
+    }
+    for (const n in LOCO) {
+      if (!w[n]) continue;
+      const g = this.gait[n], t = ((this.phase + g.lead) % 1) * g.dur;
+      this.act(n).time = t; this.act(n + '_lower').time = t;
+    }
     return w;
   }
-  rate(n, r) { this.act(n).timeScale = r; this.act(n + '_lower').timeScale = r; }
 
   update(dt, s) {
     this.outer.position.set(s.x, 0, s.z);
@@ -190,7 +268,7 @@ export class YolaView extends ClipBody {
     this.yaw = s.aimYaw;
     this.container.rotation.y = this.yaw;
 
-    const w = this.locoWeights(s);
+    const w = this.locoWeights(s, dt);
     // upper body: pistol vs bat, cross-faded through the swap
     const wantBat = s.equipped === 'bat' ? 1 : 0;
     this.upperBlend += clamp(wantBat - this.upperBlend, -dt / Math.max(0.05, s.swapDur * 0.6), dt / Math.max(0.05, s.swapDur * 0.6));
@@ -221,6 +299,12 @@ export class YolaView extends ClipBody {
     this.container.updateMatrixWorld(true);
 
     // ---- corrections after the mixer ----
+    // back-half locomotion: legs turned toward travel, torso turned back onto the aim
+    const hy = this.hipYaw * (1 - sW);
+    if (Math.abs(hy) > 1e-3) {
+      _q4.setFromAxisAngle(UP, hy); this.rotateC('Hips', _q4);
+      _q4.setFromAxisAngle(UP, -hy); this.rotateC('Spine', _q4);
+    }
     if (s.hurtT < this.prevHurt) { const l = this.toLocal(s.hurtDirX, s.hurtDirZ); this.flinch.kick(l.x * 3.5, l.z * 3.5); }
     this.prevHurt = s.hurtT;
     this.flinch.step(dt);
@@ -301,6 +385,7 @@ export class ZombieView extends ClipBody {
     model.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); mats.push(o.material); } });
     const rest = hipsRest(gltf.scene);
     const clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
+    for (const c of clips) if (c.name === 'walk' || c.name === 'idle') loopClip(c);
     super(scene, model, height, clips);
     this.mats = mats;
     this.nativeWalk = (speeds?.speed || 0.17) * height;

@@ -71,11 +71,7 @@ const perf = { frames: [], spikes: 0, t0: performance.now() };
 
 // ---------- loading ----------
 // Characters: Tripo meshes (mixamorig skeleton) with Mixamo/Tripo clips, exported by blender/export_chars.py.
-// Clip travel speeds (model units/s) measured in Blender from each clip's root motion.
-const CLIP_SPEEDS = {
-  pistol_walk: { speed: 1.193 }, pistol_run: { speed: 1.41 }, pistol_walk_back: { speed: 0.656 }, pistol_run_back: { speed: 1.542 },
-  pistol_strafe_left: { speed: 1.006 }, pistol_strafe_right: { speed: 1.129 },
-};
+// (Yola's locomotion speeds are measured from foot plants at load, see YolaView.measureGaits.)
 const ZOMBIE_TYPES = [
   { file: 'assets/zombie-scrubs.glb', height: 1.78, walk: { speed: 0.168 } },
   { file: 'assets/zombie-patient.glb', height: 1.68, walk: { speed: 0.174 } },
@@ -92,7 +88,7 @@ async function load() {
   const [yg, zgs, clipdata] = await Promise.all([yolaP, zomP, dataP]);
   hud.loading(0.95);
   setBatPath(clipdata.bat_swing, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-  yola = new YolaView(scene, yg, CLIP_SPEEDS, clipdata);
+  yola = new YolaView(scene, yg, clipdata);
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;
   restart();
@@ -377,6 +373,34 @@ async function sheet(names, out, cols = 3, w = 320) {
   await fetch('/__shot/' + out + '.png', { method: 'POST', body: b });
   return out;
 }
-window.game = { tick, shot, sheet, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, THREE, camera, renderer, scene };
+// Test hook: hold a stick input with Yola pinned in open floor and measure planted-foot slide (m/s,
+// median per foot; ~0.1-0.3 is clean, >1 reads as skating). Directions are screen-relative.
+function footSlide(mx, mz, ax = 0, az = -0.3, n = 120) {
+  restart('calm');
+  for (const z of sim.zombies) { z.x = 50; z.z = 50; z.solid = false; }
+  const p = sim.player, V = THREE.Vector3, L = new V(), R = new V(), LT = new V(), RT = new V(), rows = [];
+  window.game.scriptInput = () => ({ moveX: mx, moveZ: mz, aimX: ax, aimZ: az, swapPresses: 0 });
+  for (let i = 0; i < n + 40; i++) {
+    p.x = p.px = 0.4; p.z = p.pz = 0;
+    tick(1, 1 / 60, false);
+    if (i < 40) continue;
+    const o = yola.outer.position;
+    yola.worldPos('LeftFoot', L); yola.worldPos('RightFoot', R); yola.worldPos('LeftToeBase', LT); yola.worldPos('RightToeBase', RT);
+    rows.push({ L: [L.x - o.x, Math.min(L.y, LT.y), L.z - o.z], R: [R.x - o.x, Math.min(R.y, RT.y), R.z - o.z], vx: p.vx, vz: p.vz });
+  }
+  window.game.scriptInput = null;
+  const out = { speed: +Math.hypot(p.vx, p.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
+  for (const f of ['L', 'R']) {
+    const minY = Math.min(...rows.map((r) => r[f][1])), s = [];
+    for (let i = 1; i < rows.length; i++) {
+      const a = rows[i - 1][f], b = rows[i][f];
+      if (a[1] < minY + 0.02 && b[1] < minY + 0.02) s.push(Math.hypot(b[0] - a[0] + rows[i].vx / 60, b[2] - a[2] + rows[i].vz / 60) * 60);
+    }
+    s.sort((a, b) => a - b);
+    out[f] = +s[s.length >> 1].toFixed(2);
+  }
+  return out;
+}
+window.game = { tick, shot, sheet, footSlide, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

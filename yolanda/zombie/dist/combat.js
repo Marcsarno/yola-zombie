@@ -46261,6 +46261,7 @@ void main() {
   var _q = new Quaternion();
   var _q2 = new Quaternion();
   var _q3 = new Quaternion();
+  var _q4 = new Quaternion();
   var UP = new Vector3(0, 1, 0);
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
   function angleDiff2(a, b) {
@@ -46278,6 +46279,17 @@ void main() {
         v[i + 2] = z0;
       }
     }
+    return clip;
+  }
+  function loopClip(clip) {
+    const t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
+    const done = /* @__PURE__ */ new Set();
+    if (t0 > 0) for (const t of clip.tracks) {
+      if (done.has(t.times)) continue;
+      done.add(t.times);
+      for (let i = 0; i < t.times.length; i++) t.times[i] -= t0;
+    }
+    clip.resetDuration();
     return clip;
   }
   function hipsRest(root) {
@@ -46386,8 +46398,19 @@ void main() {
       return this.bones[n].getWorldPosition(out);
     }
   };
+  var LOCO = {
+    pistol_walk: { dir: [0, 1] },
+    pistol_run: { dir: [0, 1] },
+    pistol_walk_back: { dir: [0, -1] },
+    pistol_run_back: { dir: [0, -1] },
+    pistol_strafe_left: { dir: [1, 0] },
+    pistol_strafe_run_left: { dir: [1, 0] },
+    pistol_strafe_right: { dir: [-1, 0] },
+    pistol_strafe_run_right: { dir: [-1, 0] }
+  };
+  var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
-    constructor(scene2, gltf, speeds, clipdata) {
+    constructor(scene2, gltf, clipdata) {
       const H = 1.62;
       const clips = [];
       const rest = hipsRest(gltf.scene);
@@ -46395,7 +46418,8 @@ void main() {
       const batCalib = byName.bat_idle.clone();
       batCalib.name = "bat_calib";
       clips.push(batCalib);
-      const loco = ["pistol_idle", "pistol_walk", "pistol_run", "pistol_walk_back", "pistol_run_back", "pistol_strafe_left", "pistol_strafe_right"];
+      const loco = ["pistol_idle", ...Object.keys(LOCO)];
+      for (const n of [...loco, "bat_idle"]) loopClip(byName[n]);
       for (const n of loco) {
         clips.push(byName[n]);
         clips.push(subClip(byName[n], (b) => LOWER.test(b), n + "_lower"));
@@ -46404,14 +46428,15 @@ void main() {
       clips.push(byName.bat_swing, byName.death_fall, byName.death_defeat, byName.pistol_hit);
       super(scene2, gltf.scene, H, clips);
       this.H = H;
-      const sc = H / 1;
-      this.native = {};
-      for (const n of loco) this.native[n] = speeds[n] ? speeds[n].speed * sc : 1;
       for (const n of loco) for (const suf of ["", "_lower"]) {
         const a = this.act(n + suf);
         a.play();
         a.setEffectiveWeight(0);
       }
+      this.gait = this.measureGaits();
+      for (const n in LOCO) for (const suf of ["", "_lower"]) this.act(n + suf).timeScale = 0;
+      this.phase = 0;
+      this.sv = { x: 0, z: 0 };
       this.act("bat_idle_upper").play();
       this.act("bat_idle_upper").setEffectiveWeight(0);
       const sw = this.act("bat_swing");
@@ -46457,48 +46482,115 @@ void main() {
       this.yaw = yaw;
       this.deathT = -1;
       this.outer.quaternion.identity();
+      this.backMode = false;
+      this.backBlend = 0;
+      this.hipYaw = 0;
+      this.sv.x = this.sv.z = 0;
       for (const n of ["death_fall", "death_defeat"]) {
         this.act(n).stop();
       }
     }
-    locoWeights(s) {
-      const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
-      const vF = s.vx * sn + s.vz * cs, vL = s.vx * cs - s.vz * sn;
-      const sp = Math.hypot(vF, vL);
-      const w = { pistol_idle: 0, pistol_walk: 0, pistol_run: 0, pistol_walk_back: 0, pistol_run_back: 0, pistol_strafe_left: 0, pistol_strafe_right: 0 };
-      const move = clamp3(sp / 0.35, 0, 1);
-      w.pistol_idle = 1 - move;
-      if (move > 0) {
-        const th = Math.atan2(vL, vF);
-        const dirs = [[0, "f"], [Math.PI / 2, "l"], [Math.PI, "b"], [-Math.PI / 2, "r"], [-Math.PI, "b"]];
-        const run = clamp3((sp - 2) / 0.8, 0, 1);
-        const put = (key, k) => {
-          if (key === "f") {
-            w.pistol_walk += k * (1 - run);
-            w.pistol_run += k * run;
-          } else if (key === "b") {
-            w.pistol_walk_back += k * (1 - run);
-            w.pistol_run_back += k * run;
-          } else if (key === "l") w.pistol_strafe_left += k;
-          else w.pistol_strafe_right += k;
-        };
-        for (let i = 0; i < dirs.length - 1; i++) {
-          const [a0, k0] = dirs[i], [a1, k1] = dirs[i + 1];
-          const lo = Math.min(a0, a1), hi = Math.max(a0, a1);
-          if (th >= lo && th <= hi) {
-            const u = (th - a0) / (a1 - a0);
-            put(k0, (1 - u) * move);
-            put(k1, u * move);
-            break;
+    // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
+    // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
+    measureGaits() {
+      const out = {}, L = new Vector3(), LT = new Vector3(), R = new Vector3(), RT = new Vector3();
+      const all = Object.values(this.actions);
+      this.container.rotation.y = 0;
+      this.outer.position.set(0, 0, 0);
+      for (const n in LOCO) {
+        for (const a2 of all) a2.setEffectiveWeight(0);
+        const a = this.act(n);
+        a.setEffectiveWeight(1);
+        a.timeScale = 0;
+        const D = a.getClip().duration, N = 90, [dx, dz] = LOCO[n].dir, rows = [];
+        for (let i = 0; i < N; i++) {
+          a.time = D * i / N;
+          this.mixer.update(0);
+          this.outer.updateMatrixWorld(true);
+          this.worldPos("LeftFoot", L);
+          this.worldPos("LeftToeBase", LT);
+          this.worldPos("RightFoot", R);
+          this.worldPos("RightToeBase", RT);
+          rows.push({ L: L.x * dx + L.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L.y, LT.y), ry: Math.min(R.y, RT.y) });
+        }
+        const vel = [];
+        for (const [p, y] of [["L", "ly"], ["R", "ry"]]) {
+          const minY = Math.min(...rows.map((r) => r[y]));
+          for (let i = 0; i < N; i++) {
+            const j = (i + 1) % N;
+            if (rows[i][y] < minY + 0.02 && rows[j][y] < minY + 0.02) vel.push(-(rows[j][p] - rows[i][p]) / (D / N));
           }
         }
+        vel.sort((p, q) => p - q);
+        const speed = vel.length ? vel[vel.length >> 1] : 1;
+        let lead = 0, best = -1e9;
+        rows.forEach((r, i) => {
+          if (r.L > best) {
+            best = r.L;
+            lead = i / N;
+          }
+        });
+        out[n] = { speed, dur: D, stride: speed * D, lead };
       }
-      for (const n in w) if (n !== "pistol_idle" && w[n] > 0) this.rate(n, clamp3(sp / this.native[n], 0.55, 1.9));
-      return w;
+      for (const a of all) a.setEffectiveWeight(0);
+      return out;
     }
-    rate(n, r) {
-      this.act(n).timeScale = r;
-      this.act(n + "_lower").timeScale = r;
+    // Blend weights for the locomotion clips from velocity in the aim frame. All moving clips share one
+    // gait phase (left-foot lead aligned), advanced by distance travelled / blended stride, so blended
+    // clips never put the feet in different places and the planted foot stays planted.
+    // Front half: forward and side clips are blended (the running strafes turn the pelvis toward travel,
+    // like the forward run). Back half: the back clips play with the hips turned toward the travel
+    // direction (torso counter-turned in update) - blending a back-run with a pelvis-turned strafe makes
+    // the legs swing against each other. The switch between halves has hysteresis and a short crossfade.
+    locoWeights(s, dt) {
+      const k = Math.min(1, dt * 14);
+      this.sv.x += (s.vx - this.sv.x) * k;
+      this.sv.z += (s.vz - this.sv.z) * k;
+      const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
+      const vF = this.sv.x * sn + this.sv.z * cs, vL = this.sv.x * cs - this.sv.z * sn;
+      const spS = Math.hypot(vF, vL), sp = Math.hypot(s.vx, s.vz);
+      const w = { pistol_idle: 0 };
+      for (const n in LOCO) w[n] = 0;
+      const move = clamp3(spS / 0.35, 0, 1);
+      w.pistol_idle = 1 - move;
+      this.hipYaw = 0;
+      if (move > 0) {
+        const th = Math.atan2(vL, vF), ath = Math.abs(th);
+        if (!this.backMode && ath > 1.95) this.backMode = true;
+        else if (this.backMode && ath < 1.2) this.backMode = false;
+        this.backBlend = clamp3((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
+        const mb = smooth(this.backBlend);
+        const put = (key, kk) => {
+          const [walk, run] = GAIT[key], g0 = this.gait[walk], g1 = this.gait[run];
+          const r = smooth(clamp3((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
+          w[walk] += kk * (1 - r);
+          w[run] += kk * r;
+        };
+        if (mb < 1) {
+          const tf = clamp3(th, -Math.PI / 2, Math.PI / 2);
+          const [a0, k0, a1, k1] = tf >= 0 ? [0, "f", Math.PI / 2, "l"] : [0, "f", -Math.PI / 2, "r"];
+          const u = smooth((tf - a0) / (a1 - a0));
+          put(k0, (1 - u) * move * (1 - mb));
+          put(k1, u * move * (1 - mb));
+        }
+        if (mb > 0) {
+          put("b", move * mb);
+          this.hipYaw = angleDiff2(Math.PI, th) * mb;
+        }
+        let ws = 0, stride = 0;
+        for (const n in LOCO) if (w[n] > 0) {
+          ws += w[n];
+          stride += w[n] * this.gait[n].stride;
+        }
+        this.phase = (this.phase + sp * dt / (stride / ws)) % 1;
+      }
+      for (const n in LOCO) {
+        if (!w[n]) continue;
+        const g = this.gait[n], t = (this.phase + g.lead) % 1 * g.dur;
+        this.act(n).time = t;
+        this.act(n + "_lower").time = t;
+      }
+      return w;
     }
     update(dt, s) {
       this.outer.position.set(s.x, 0, s.z);
@@ -46509,7 +46601,7 @@ void main() {
       }
       this.yaw = s.aimYaw;
       this.container.rotation.y = this.yaw;
-      const w = this.locoWeights(s);
+      const w = this.locoWeights(s, dt);
       const wantBat = s.equipped === "bat" ? 1 : 0;
       this.upperBlend += clamp3(wantBat - this.upperBlend, -dt / Math.max(0.05, s.swapDur * 0.6), dt / Math.max(0.05, s.swapDur * 0.6));
       const ub = smooth(this.upperBlend);
@@ -46533,6 +46625,13 @@ void main() {
       this.act("bat_idle_upper").setEffectiveWeight(ub * (1 - sW));
       this.mixer.update(dt);
       this.container.updateMatrixWorld(true);
+      const hy = this.hipYaw * (1 - sW);
+      if (Math.abs(hy) > 1e-3) {
+        _q4.setFromAxisAngle(UP, hy);
+        this.rotateC("Hips", _q4);
+        _q4.setFromAxisAngle(UP, -hy);
+        this.rotateC("Spine", _q4);
+      }
       if (s.hurtT < this.prevHurt) {
         const l = this.toLocal(s.hurtDirX, s.hurtDirZ);
         this.flinch.kick(l.x * 3.5, l.z * 3.5);
@@ -46628,6 +46727,7 @@ void main() {
       });
       const rest = hipsRest(gltf.scene);
       const clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
+      for (const c of clips) if (c.name === "walk" || c.name === "idle") loopClip(c);
       super(scene2, model, height, clips);
       this.mats = mats;
       this.nativeWalk = (speeds?.speed || 0.17) * height;
@@ -47577,14 +47677,6 @@ void main() {
   var playerScreen = null;
   var camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new Vector2() };
   var perf = { frames: [], spikes: 0, t0: performance.now() };
-  var CLIP_SPEEDS = {
-    pistol_walk: { speed: 1.193 },
-    pistol_run: { speed: 1.41 },
-    pistol_walk_back: { speed: 0.656 },
-    pistol_run_back: { speed: 1.542 },
-    pistol_strafe_left: { speed: 1.006 },
-    pistol_strafe_right: { speed: 1.129 }
-  };
   var ZOMBIE_TYPES = [
     { file: "assets/zombie-scrubs.glb", height: 1.78, walk: { speed: 0.168 } },
     { file: "assets/zombie-patient.glb", height: 1.68, walk: { speed: 0.174 } }
@@ -47601,7 +47693,7 @@ void main() {
     const [yg, zgs, clipdata] = await Promise.all([yolaP, zomP, dataP]);
     hud.loading(0.95);
     setBatPath(clipdata.bat_swing, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-    yola = new YolaView(scene, yg, CLIP_SPEEDS, clipdata);
+    yola = new YolaView(scene, yg, clipdata);
     ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[i]);
     renderer.shadowMap.needsUpdate = true;
     restart();
@@ -48045,7 +48137,41 @@ void main() {
     await fetch("/__shot/" + out + ".png", { method: "POST", body: b });
     return out;
   }
-  window.game = { tick, shot, sheet, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) {
+  function footSlide(mx, mz, ax = 0, az = -0.3, n = 120) {
+    restart("calm");
+    for (const z of sim.zombies) {
+      z.x = 50;
+      z.z = 50;
+      z.solid = false;
+    }
+    const p = sim.player, V = Vector3, L = new V(), R = new V(), LT = new V(), RT = new V(), rows = [];
+    window.game.scriptInput = () => ({ moveX: mx, moveZ: mz, aimX: ax, aimZ: az, swapPresses: 0 });
+    for (let i = 0; i < n + 40; i++) {
+      p.x = p.px = 0.4;
+      p.z = p.pz = 0;
+      tick(1, 1 / 60, false);
+      if (i < 40) continue;
+      const o = yola.outer.position;
+      yola.worldPos("LeftFoot", L);
+      yola.worldPos("RightFoot", R);
+      yola.worldPos("LeftToeBase", LT);
+      yola.worldPos("RightToeBase", RT);
+      rows.push({ L: [L.x - o.x, Math.min(L.y, LT.y), L.z - o.z], R: [R.x - o.x, Math.min(R.y, RT.y), R.z - o.z], vx: p.vx, vz: p.vz });
+    }
+    window.game.scriptInput = null;
+    const out = { speed: +Math.hypot(p.vx, p.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
+    for (const f of ["L", "R"]) {
+      const minY = Math.min(...rows.map((r) => r[f][1])), s = [];
+      for (let i = 1; i < rows.length; i++) {
+        const a = rows[i - 1][f], b = rows[i][f];
+        if (a[1] < minY + 0.02 && b[1] < minY + 0.02) s.push(Math.hypot(b[0] - a[0] + rows[i].vx / 60, b[2] - a[2] + rows[i].vz / 60) * 60);
+      }
+      s.sort((a, b) => a - b);
+      out[f] = +s[s.length >> 1].toFixed(2);
+    }
+    return out;
+  }
+  window.game = { tick, shot, sheet, footSlide, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) {
     camOverride = o;
   }, resume() {
     manualTicks = false;
