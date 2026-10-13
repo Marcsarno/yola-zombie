@@ -1,0 +1,140 @@
+[
+  {
+    "runtime_primitives": 15,
+    "texture_pixel_dimensions": [],
+    "file": "transport_T1_wheelchair.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.3962583541870117,
+        -0.5849999785423279,
+        1.4168525019897515e-08
+      ],
+      "max": [
+        0.3962583541870117,
+        0.3999999761581421,
+        1.0290000438690186
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.7925167083740234,
+      0.98499995470047,
+      1.0290000297004935
+    ],
+    "triangles": 4384,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "dark",
+      "metal",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 7,
+    "named_anchors": [
+      "anchor_attendant_hand_left",
+      "anchor_attendant_hand_right",
+      "anchor_attendant_standing",
+      "anchor_feet_left",
+      "anchor_feet_right",
+      "anchor_patient_hand_left",
+      "anchor_patient_hand_right",
+      "anchor_seat"
+    ]
+  },
+  {
+    "runtime_primitives": 24,
+    "texture_pixel_dimensions": [],
+    "file": "transport_T2_wheelchair.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.37752631306648254,
+        -0.47699999809265137,
+        1.4901161193847656e-08
+      ],
+      "max": [
+        0.37752631306648254,
+        0.4350000023841858,
+        0.9700000286102295
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.7550526261329651,
+      0.9120000004768372,
+      0.9700000137090683
+    ],
+    "triangles": 5016,
+    "degenerate_triangles": 0,
+    "materials": [
+      "WC_Frame_Cream",
+      "WC_Handles_Footplates_Blue",
+      "WC_Hardware_Graphite",
+      "WC_Tire_Charcoal",
+      "WC_Upholstery_Teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 11,
+    "named_anchors": [
+      "ANCHOR_Character_Origin",
+      "ANCHOR_Foot_Contact_L",
+      "ANCHOR_Foot_Contact_R",
+      "ANCHOR_Patient_Hand_L",
+      "ANCHOR_Patient_Hand_R",
+      "ANCHOR_Push_Grip_L",
+      "ANCHOR_Push_Grip_R",
+      "ANCHOR_Pusher_Origin",
+      "ANCHOR_Seat_Pelvis"
+    ]
+  },
+  {
+    "runtime_primitives": 21,
+    "texture_pixel_dimensions": [],
+    "file": "transport_T3_wheelchair.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.3799999952316284,
+        -0.5999999046325684,
+        -6.717940426170799e-09
+      ],
+      "max": [
+        0.3799999952316284,
+        0.47999998927116394,
+        1.2225000858306885
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.7599999904632568,
+      1.0799998939037323,
+      1.222500092548629
+    ],
+    "triangles": 4360,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "cushion",
+      "dark",
+      "metal",
+      "orange",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 7,
+    "named_anchors": [
+      "anchor_attendant_hand_left.001",
+      "anchor_attendant_hand_right.001",
+      "anchor_attendant_standing.001",
+      "anchor_feet_left.001",
+      "anchor_feet_right.001",
+      "anchor_patient_hand_left.001",
+      "anchor_patient_hand_right.001",
+      "anchor_seat.001"
+    ]
+  }
+]

@@ -1,0 +1,761 @@
+[
+  {
+    "runtime_primitives": 4,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_door.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.5450000166893005,
+        -0.11999999731779099,
+        0.0
+      ],
+      "max": [
+        0.5450000166893005,
+        0.06499999761581421,
+        2.1750001907348633
+      ]
+    },
+    "dimensions_xyz_m": [
+      1.090000033378601,
+      0.1849999949336052,
+      2.1750001907348633
+    ],
+    "triangles": 708,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "lightblue",
+      "metal",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_door_interact"
+    ]
+  },
+  {
+    "runtime_primitives": 2,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_floor_planter.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.2721233367919922,
+        -0.2991342842578888,
+        -1.4901161193847656e-08
+      ],
+      "max": [
+        0.27352315187454224,
+        0.2969730496406555,
+        0.9308831691741943
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.5456464886665344,
+      0.5961073338985443,
+      0.9308831840753555
+    ],
+    "triangles": 340,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "green"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 4,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_health_poster.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.33000001311302185,
+        -0.05000000074505806,
+        -0.4099999666213989
+      ],
+      "max": [
+        0.33000001311302185,
+        0.027500003576278687,
+        0.4100000262260437
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.6600000262260437,
+      0.07750000432133675,
+      0.8199999928474426
+    ],
+    "triangles": 776,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "teal",
+      "wood"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_shell.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -2.5950000286102295,
+        -2.5099997520446777,
+        -0.1399998664855957
+      ],
+      "max": [
+        2.5950000286102295,
+        2.5950000286102295,
+        2.5
+      ]
+    },
+    "dimensions_xyz_m": [
+      5.190000057220459,
+      5.104999780654907,
+      2.6399998664855957
+    ],
+    "triangles": 1080,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "dark",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_entry",
+      "anchor_exit",
+      "anchor_main_aisle"
+    ]
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_waiting_chair_cushion.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.24650000035762787,
+        -0.23199999332427979,
+        0.0
+      ],
+      "max": [
+        0.24650000035762787,
+        0.23199999332427979,
+        0.9900000095367432
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.49300000071525574,
+      0.46399998664855957,
+      0.9900000095367432
+    ],
+    "triangles": 584,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cushion",
+      "dark",
+      "metal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_back.003",
+      "anchor_feet.003",
+      "anchor_seat.003"
+    ]
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_waiting_chair_green.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.24650000035762787,
+        -0.23199999332427979,
+        0.0
+      ],
+      "max": [
+        0.24650000035762787,
+        0.23199999332427979,
+        0.9900000095367432
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.49300000071525574,
+      0.46399998664855957,
+      0.9900000095367432
+    ],
+    "triangles": 584,
+    "degenerate_triangles": 0,
+    "materials": [
+      "dark",
+      "green",
+      "metal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_back.001",
+      "anchor_feet.001",
+      "anchor_seat.001"
+    ]
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_waiting_chair_orange.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.24650000035762787,
+        -0.23199999332427979,
+        0.0
+      ],
+      "max": [
+        0.24650000035762787,
+        0.23199999332427979,
+        0.9900000095367432
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.49300000071525574,
+      0.46399998664855957,
+      0.9900000095367432
+    ],
+    "triangles": 584,
+    "degenerate_triangles": 0,
+    "materials": [
+      "dark",
+      "metal",
+      "orange"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_back.002",
+      "anchor_feet.002",
+      "anchor_seat.002"
+    ]
+  },
+  {
+    "runtime_primitives": 2,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T1_wayfinding.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.44999998807907104,
+        -0.04399999976158142,
+        -0.20999999344348907
+      ],
+      "max": [
+        0.44999998807907104,
+        0.02500000223517418,
+        0.20999999344348907
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.8999999761581421,
+      0.0690000019967556,
+      0.41999998688697815
+    ],
+    "triangles": 648,
+    "degenerate_triangles": 0,
+    "materials": [
+      "white",
+      "wood"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 4,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T2_door.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.5450000166893005,
+        -0.11999999731779099,
+        0.0
+      ],
+      "max": [
+        0.5450000166893005,
+        0.06499999761581421,
+        2.1750001907348633
+      ]
+    },
+    "dimensions_xyz_m": [
+      1.090000033378601,
+      0.1849999949336052,
+      2.1750001907348633
+    ],
+    "triangles": 708,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "lightblue",
+      "metal",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_door_interact.001"
+    ]
+  },
+  {
+    "runtime_primitives": 2,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T2_floor_planter.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.2721233367919922,
+        -0.2991342842578888,
+        -1.4901161193847656e-08
+      ],
+      "max": [
+        0.27352315187454224,
+        0.2969730496406555,
+        0.9308831691741943
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.5456464886665344,
+      0.5961073338985443,
+      0.9308831840753555
+    ],
+    "triangles": 340,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "green"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T2_health_poster.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.33000001311302185,
+        -0.05000000074505806,
+        -0.4099999666213989
+      ],
+      "max": [
+        0.33000001311302185,
+        0.027500003576278687,
+        0.4100000262260437
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.6600000262260437,
+      0.07750000432133675,
+      0.8199999928474426
+    ],
+    "triangles": 776,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 4,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T2_shell.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -2.5950000286102295,
+        -2.5099997520446777,
+        -0.1399998664855957
+      ],
+      "max": [
+        2.5950000286102295,
+        2.5950000286102295,
+        2.5
+      ]
+    },
+    "dimensions_xyz_m": [
+      5.190000057220459,
+      5.104999780654907,
+      2.6399998664855957
+    ],
+    "triangles": 1680,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "dark",
+      "lightblue",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_entry.001",
+      "anchor_exit.001",
+      "anchor_main_aisle.001"
+    ]
+  },
+  {
+    "runtime_primitives": 1,
+    "texture_pixel_dimensions": [
+      [
+        1024,
+        1024
+      ]
+    ],
+    "file": "lobby_T2_waiting_chair_original.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.3320000171661377,
+        -0.29600000381469727,
+        0.0
+      ],
+      "max": [
+        0.3319999873638153,
+        0.32832467555999756,
+        0.9238400459289551
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.664000004529953,
+      0.6243246793746948,
+      0.9238400459289551
+    ],
+    "triangles": 3156,
+    "degenerate_triangles": 0,
+    "materials": [
+      "CRNA_Shared_Matte_Atlas.001"
+    ],
+    "textures": 1,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "Seat_Anchor"
+    ]
+  },
+  {
+    "runtime_primitives": 2,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T2_wayfinding.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.44999998807907104,
+        -0.04399999976158142,
+        -0.20999999344348907
+      ],
+      "max": [
+        0.44999998807907104,
+        0.02500000223517418,
+        0.20999999344348907
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.8999999761581421,
+      0.0690000019967556,
+      0.41999998688697815
+    ],
+    "triangles": 648,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "white"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T3_check_in_kiosk.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.19499999284744263,
+        -0.18000000715255737,
+        0.0
+      ],
+      "max": [
+        0.19499999284744263,
+        0.18000000715255737,
+        1.4600000381469727
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.38999998569488525,
+      0.36000001430511475,
+      1.4600000381469727
+    ],
+    "triangles": 368,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "screen"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_hands.004",
+      "anchor_user"
+    ]
+  },
+  {
+    "runtime_primitives": 4,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T3_door.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.5450000166893005,
+        -0.11999999731779099,
+        0.0
+      ],
+      "max": [
+        0.5450000166893005,
+        0.06499999761581421,
+        2.1750001907348633
+      ]
+    },
+    "dimensions_xyz_m": [
+      1.090000033378601,
+      0.1849999949336052,
+      2.1750001907348633
+    ],
+    "triangles": 708,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "lightblue",
+      "metal",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_door_interact.002"
+    ]
+  },
+  {
+    "runtime_primitives": 2,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T3_floor_planter.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.32251647114753723,
+        -0.3545294404029846,
+        -1.1175870895385742e-07
+      ],
+      "max": [
+        0.3241755962371826,
+        0.3519681692123413,
+        1.1032689809799194
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.6466920673847198,
+      0.7064976096153259,
+      1.1032690927386284
+    ],
+    "triangles": 340,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "green"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T3_health_poster.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.33000001311302185,
+        -0.05000000074505806,
+        -0.4099999666213989
+      ],
+      "max": [
+        0.33000001311302185,
+        0.027500003576278687,
+        0.4100000262260437
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.6600000262260437,
+      0.07750000432133675,
+      0.8199999928474426
+    ],
+    "triangles": 776,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  },
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T3_sculpted_bench.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.8999999761581421,
+        -0.33500000834465027,
+        0.019999980926513672
+      ],
+      "max": [
+        0.8999999761581421,
+        0.33500000834465027,
+        1.0299999713897705
+      ]
+    },
+    "dimensions_xyz_m": [
+      1.7999999523162842,
+      0.6700000166893005,
+      1.0099999904632568
+    ],
+    "triangles": 1056,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "cushion",
+      "wood"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_feet.007",
+      "anchor_seat_-1",
+      "anchor_seat_0",
+      "anchor_seat_1"
+    ]
+  },
+  {
+    "runtime_primitives": 6,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T3_shell.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -3.3949999809265137,
+        -2.509999990463257,
+        -0.1399998664855957
+      ],
+      "max": [
+        3.3949999809265137,
+        2.5950000286102295,
+        2.509999990463257
+      ]
+    },
+    "dimensions_xyz_m": [
+      6.789999961853027,
+      5.105000019073486,
+      2.6499998569488525
+    ],
+    "triangles": 2700,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "dark",
+      "lightblue",
+      "white",
+      "wood"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_entry.002",
+      "anchor_exit.002",
+      "anchor_main_aisle.002"
+    ]
+  },
+  {
+    "runtime_primitives": 2,
+    "texture_pixel_dimensions": [],
+    "file": "lobby_T3_wayfinding.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.44999998807907104,
+        -0.04399999976158142,
+        -0.20999999344348907
+      ],
+      "max": [
+        0.44999998807907104,
+        0.02500000223517418,
+        0.20999999344348907
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.8999999761581421,
+      0.0690000019967556,
+      0.41999998688697815
+    ],
+    "triangles": 648,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "white"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": []
+  }
+]

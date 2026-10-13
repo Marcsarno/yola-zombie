@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "tests": [
+    {
+      "asset": "13_advanced_cubicle.glb",
+      "hinge": "13_advanced_cubicle__door_hinge",
+      "source_axis": "Z",
+      "gltf_axis": "Y",
+      "moving_meshes": 1,
+      "static_meshes_unchanged": true,
+      "motion_test_pass": true
+    },
+    {
+      "asset": "13_advanced_toilet.glb",
+      "hinge": "13_advanced_toilet__lid_hinge",
+      "source_axis": "X",
+      "gltf_axis": "X",
+      "moving_meshes": 1,
+      "static_meshes_unchanged": true,
+      "motion_test_pass": true
+    },
+    {
+      "asset": "13_standard_cubicle.glb",
+      "hinge": "13_standard_cubicle__door_hinge",
+      "source_axis": "Z",
+      "gltf_axis": "Y",
+      "moving_meshes": 1,
+      "static_meshes_unchanged": true,
+      "motion_test_pass": true
+    },
+    {
+      "asset": "13_standard_toilet.glb",
+      "hinge": "13_standard_toilet__lid_hinge",
+      "source_axis": "X",
+      "gltf_axis": "X",
+      "moving_meshes": 1,
+      "static_meshes_unchanged": true,
+      "motion_test_pass": true
+    },
+    {
+      "asset": "13_starter_cubicle.glb",
+      "hinge": "13_starter_cubicle__door_hinge",
+      "source_axis": "Z",
+      "gltf_axis": "Y",
+      "moving_meshes": 1,
+      "static_meshes_unchanged": true,
+      "motion_test_pass": true
+    }
+  ]
+}

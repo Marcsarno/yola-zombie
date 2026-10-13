@@ -1,0 +1,621 @@
+{
+  "units": "meters",
+  "gltf_axis": "Y up",
+  "pivot": "ground center",
+  "textures": "Per-asset measured in each entry; new assets use flat shared PBR colors, two reused Standards retain embedded 1024px atlas.",
+  "source": "Original kit meshes reused for Standard SedaPrep and ThermaNest; all other modules newly built. No original overwritten.",
+  "assets": [
+    {
+      "name": "BedsideCabinet_advanced",
+      "dimensions_m_blender_xyz": [
+        0.52,
+        0.50227,
+        0.812
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.52,
+        0.812,
+        0.50227
+      ],
+      "bounds_min_blender": [
+        -0.25999999046325684,
+        -0.26726585626602173,
+        -9.179391691205296e-10
+      ],
+      "bounds_max_blender": [
+        0.25999999046325684,
+        0.23499999940395355,
+        0.8119999766349792
+      ],
+      "triangles": 1040,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "steel",
+        "white"
+      ],
+      "material_count": 5,
+      "textures": 0,
+      "file_bytes": 67308,
+      "anchors": [
+        "ANCHOR_ground.019",
+        "ANCHOR_drawer_grip.013",
+        "ANCHOR_drawer_grip.014",
+        "ANCHOR_drawer_grip.015",
+        "ANCHOR_work_surface.006"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "f0d27c98471218807b6c322edbfbf4780071617bf70b6642bc8196453e4f9784",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 7,
+      "gltf_primitive_count": 10,
+      "estimated_draw_calls": 10,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "BedsideCabinet_standard",
+      "dimensions_m_blender_xyz": [
+        0.52,
+        0.50227,
+        0.812
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.52,
+        0.812,
+        0.50227
+      ],
+      "bounds_min_blender": [
+        -0.25999999046325684,
+        -0.26726585626602173,
+        -9.179391691205296e-10
+      ],
+      "bounds_max_blender": [
+        0.25999999046325684,
+        0.23499999940395355,
+        0.8119999766349792
+      ],
+      "triangles": 1040,
+      "materials": [
+        "dark",
+        "ivory",
+        "steel",
+        "teal",
+        "white"
+      ],
+      "material_count": 5,
+      "textures": 0,
+      "file_bytes": 67312,
+      "anchors": [
+        "ANCHOR_ground.011",
+        "ANCHOR_drawer_grip.003",
+        "ANCHOR_drawer_grip.004",
+        "ANCHOR_drawer_grip.005",
+        "ANCHOR_work_surface.003"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "5908fddfbe22ec62341b09f65601d053511bcf25d1045cd20ee2295442a6926a",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 7,
+      "gltf_primitive_count": 10,
+      "estimated_draw_calls": 10,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "BedsideCabinet_starter",
+      "dimensions_m_blender_xyz": [
+        0.52,
+        0.50227,
+        0.812
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.52,
+        0.812,
+        0.50227
+      ],
+      "bounds_min_blender": [
+        -0.25999999046325684,
+        -0.26726585626602173,
+        -9.179391691205296e-10
+      ],
+      "bounds_max_blender": [
+        0.25999999046325684,
+        0.23499999940395355,
+        0.8119999766349792
+      ],
+      "triangles": 1040,
+      "materials": [
+        "dark",
+        "ivory",
+        "steel",
+        "white"
+      ],
+      "material_count": 4,
+      "textures": 0,
+      "file_bytes": 67104,
+      "anchors": [
+        "ANCHOR_ground.003",
+        "ANCHOR_drawer_grip",
+        "ANCHOR_drawer_grip.001",
+        "ANCHOR_drawer_grip.002",
+        "ANCHOR_work_surface"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "6553a298eed7a4dcd4af12efdaa1861ff73e76caa9212b0ac5a47e11f0f2481c",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 7,
+      "gltf_primitive_count": 10,
+      "estimated_draw_calls": 10,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "PrivacyCurtain_advanced",
+      "dimensions_m_blender_xyz": [
+        0.14,
+        1.94,
+        2.003
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.14,
+        2.003,
+        1.94
+      ],
+      "bounds_min_blender": [
+        -0.07000000029802322,
+        -0.9699999690055847,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.07000000029802322,
+        0.9699999690055847,
+        2.003000020980835
+      ],
+      "triangles": 544,
+      "materials": [
+        "blue",
+        "ivory",
+        "steel"
+      ],
+      "material_count": 3,
+      "textures": 0,
+      "file_bytes": 34396,
+      "anchors": [
+        "ANCHOR_ground.018",
+        "ANCHOR_curtain_pull.002"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "e7b227fff3011384ce2683a2446de2cb525558b7b7556a2338ba924a38ebe103",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 3,
+      "gltf_primitive_count": 3,
+      "estimated_draw_calls": 3,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "PrivacyCurtain_standard",
+      "dimensions_m_blender_xyz": [
+        0.14,
+        1.84,
+        1.973
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.14,
+        1.973,
+        1.84
+      ],
+      "bounds_min_blender": [
+        -0.07000000029802322,
+        -0.9200000166893005,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.07000000029802322,
+        0.9200000166893005,
+        1.973000168800354
+      ],
+      "triangles": 544,
+      "materials": [
+        "ivory",
+        "lightblue",
+        "steel"
+      ],
+      "material_count": 3,
+      "textures": 0,
+      "file_bytes": 34404,
+      "anchors": [
+        "ANCHOR_ground.010",
+        "ANCHOR_curtain_pull.001"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "99fae6439926c3d9d7dfa99cdcc5bec75c9975d8faac3db82c4a66bf22238214",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 3,
+      "gltf_primitive_count": 3,
+      "estimated_draw_calls": 3,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "PrivacyCurtain_starter",
+      "dimensions_m_blender_xyz": [
+        0.4456,
+        1.196,
+        1.773
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.4456,
+        1.773,
+        1.196
+      ],
+      "bounds_min_blender": [
+        -0.22279755771160126,
+        -0.5979999899864197,
+        -5.463923757886846e-10
+      ],
+      "bounds_max_blender": [
+        0.22279755771160126,
+        0.5979999899864197,
+        1.7730000019073486
+      ],
+      "triangles": 672,
+      "materials": [
+        "dark",
+        "linen",
+        "steel"
+      ],
+      "material_count": 3,
+      "textures": 0,
+      "file_bytes": 42148,
+      "anchors": [
+        "ANCHOR_ground.002",
+        "ANCHOR_curtain_pull"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "6ae57292cba3920544b3c00ed657801715683ec08bc0dd2ce876435a7df4a9da",
+      "reimport_ground_z": -0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 3,
+      "gltf_primitive_count": 3,
+      "estimated_draw_calls": 3,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "RecoveryBed_advanced",
+      "dimensions_m_blender_xyz": [
+        1.1,
+        2.108,
+        0.895
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.1,
+        0.895,
+        2.108
+      ],
+      "bounds_min_blender": [
+        -0.550000011920929,
+        -1.0540000200271606,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.550000011920929,
+        1.0540000200271606,
+        0.8949999809265137
+      ],
+      "triangles": 956,
+      "materials": [
+        "blue",
+        "ivory",
+        "white"
+      ],
+      "material_count": 3,
+      "textures": 0,
+      "file_bytes": 57000,
+      "anchors": [
+        "ANCHOR_ground.016",
+        "ANCHOR_patient.002",
+        "ANCHOR_bedside_work.002",
+        "ANCHOR_transport_grip.002"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "d6f70cc07339ef0b81d230e4c29948159a17298f72fe1c60671f26fc079c61fa",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 3,
+      "gltf_primitive_count": 3,
+      "estimated_draw_calls": 3,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "RecoveryBed_standard",
+      "dimensions_m_blender_xyz": [
+        1.1,
+        2.108,
+        0.87
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.1,
+        0.87,
+        2.108
+      ],
+      "bounds_min_blender": [
+        -0.550000011920929,
+        -1.0540000200271606,
+        -9.179391691205296e-10
+      ],
+      "bounds_max_blender": [
+        0.550000011920929,
+        1.0540000200271606,
+        0.8700000047683716
+      ],
+      "triangles": 1280,
+      "materials": [
+        "dark",
+        "ivory",
+        "steel",
+        "teal",
+        "white"
+      ],
+      "material_count": 5,
+      "textures": 0,
+      "file_bytes": 79664,
+      "anchors": [
+        "ANCHOR_ground.008",
+        "ANCHOR_patient.001",
+        "ANCHOR_bedside_work.001",
+        "ANCHOR_transport_grip.001"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "603df5727b16d46fa891f0e352668a6cfb9302aff8d2fb683178942e028353e9",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 5,
+      "gltf_primitive_count": 5,
+      "estimated_draw_calls": 5,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "RecoveryBed_starter",
+      "dimensions_m_blender_xyz": [
+        1.02375,
+        2.02755,
+        0.81
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.02375,
+        0.81,
+        2.02755
+      ],
+      "bounds_min_blender": [
+        -0.5118743181228638,
+        -1.013776421546936,
+        -9.179391691205296e-10
+      ],
+      "bounds_max_blender": [
+        0.5118743181228638,
+        1.013776421546936,
+        0.8100000619888306
+      ],
+      "triangles": 1448,
+      "materials": [
+        "dark",
+        "linen",
+        "steel",
+        "white"
+      ],
+      "material_count": 4,
+      "textures": 0,
+      "file_bytes": 88248,
+      "anchors": [
+        "ANCHOR_ground",
+        "ANCHOR_patient",
+        "ANCHOR_bedside_work",
+        "ANCHOR_transport_grip"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "b2260d65bb78c00981ea3b6a8f202bcd955ae4dcdbba79c3934daa1b9ef6bfde",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 4,
+      "gltf_primitive_count": 4,
+      "estimated_draw_calls": 4,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "RecoveryHeadwall_advanced",
+      "dimensions_m_blender_xyz": [
+        2.26,
+        0.56,
+        2.145
+      ],
+      "dimensions_m_gltf_xyz": [
+        2.26,
+        2.145,
+        0.56
+      ],
+      "bounds_min_blender": [
+        -1.1299999952316284,
+        -0.4399999976158142,
+        0.0
+      ],
+      "bounds_max_blender": [
+        1.1299999952316284,
+        0.11999999731779099,
+        2.1449999809265137
+      ],
+      "triangles": 1424,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "screen",
+        "white",
+        "yellow"
+      ],
+      "material_count": 6,
+      "textures": 0,
+      "file_bytes": 87672,
+      "anchors": [
+        "ANCHOR_ground.017",
+        "ANCHOR_service_panel.002",
+        "ANCHOR_wall_mount.002"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "006306f51900b24cde1a158878186d2a1a32f5d566a9efb647137e0be332aa31",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 6,
+      "gltf_primitive_count": 6,
+      "estimated_draw_calls": 6,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "RecoveryHeadwall_standard",
+      "dimensions_m_blender_xyz": [
+        1.85,
+        0.32,
+        1.92
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.85,
+        1.92,
+        0.32
+      ],
+      "bounds_min_blender": [
+        -0.925000011920929,
+        -0.24500000476837158,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.925000011920929,
+        0.07500000298023224,
+        1.9199999570846558
+      ],
+      "triangles": 924,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "screen",
+        "teal",
+        "white",
+        "yellow"
+      ],
+      "material_count": 7,
+      "textures": 0,
+      "file_bytes": 62536,
+      "anchors": [
+        "ANCHOR_ground.009",
+        "ANCHOR_service_panel.001",
+        "ANCHOR_wall_mount.001"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "888b632638f9d8c134f1f13e0639b32298d875b5091e62906317c0ff649bd7c2",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 7,
+      "gltf_primitive_count": 7,
+      "estimated_draw_calls": 7,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    },
+    {
+      "name": "RecoveryHeadwall_starter",
+      "dimensions_m_blender_xyz": [
+        1.6,
+        0.32,
+        1.92
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.6,
+        1.92,
+        0.32
+      ],
+      "bounds_min_blender": [
+        -0.800000011920929,
+        -0.24500000476837158,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.800000011920929,
+        0.07500000298023224,
+        1.9199999570846558
+      ],
+      "triangles": 772,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "screen",
+        "white",
+        "yellow"
+      ],
+      "material_count": 6,
+      "textures": 0,
+      "file_bytes": 53700,
+      "anchors": [
+        "ANCHOR_ground.001",
+        "ANCHOR_service_panel",
+        "ANCHOR_wall_mount"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "texture_sizes": [],
+      "sha256": "3ea79c6368f32a6eb46789e3b250a5fee04e78b26e5ad997ea97c87ba683c2ca",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet.",
+      "gltf_mesh_count": 6,
+      "gltf_primitive_count": 6,
+      "estimated_draw_calls": 6,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components."
+    }
+  ]
+}

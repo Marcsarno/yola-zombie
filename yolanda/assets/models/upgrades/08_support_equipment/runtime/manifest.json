@@ -1,0 +1,594 @@
+{
+  "sheet": "08_support_equipment",
+  "units": "meters",
+  "glb_up_axis": "+Y",
+  "front": "+Z in glTF; -Y in Blender",
+  "ground_pivot": true,
+  "textures": 1,
+  "assets": [
+    {
+      "asset": "iv_stand_starter",
+      "triangles_source": 1412,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.3127049505710602,
+          -0.32831695675849915,
+          -1.2018782413747431e-08
+        ],
+        "max": [
+          0.37000003457069397,
+          0.31931695342063904,
+          1.9910000562667847
+        ]
+      },
+      "dimensions_m": [
+        0.6827049851417542,
+        0.6476339101791382,
+        1.991000068285567
+      ],
+      "materials": [
+        "blue",
+        "cream",
+        "glass",
+        "metal",
+        "rubber",
+        "teal",
+        "white"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_bag_attach",
+        "ANCHOR_interact"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.6827049851417542,
+          0.6476339101791382
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.6827049851417542,
+        0.6476339101791382,
+        1.991000068285567
+      ],
+      "reimport_triangles": 1412,
+      "verified_scale": true,
+      "reimport_material_count": 7,
+      "reimport_verified": true,
+      "runtime_bytes": 92284,
+      "sha256": "852b23040022bd2ee22c457b3f72fcc7c4e34cb9b64dcb16ce1694ffd0d7a0b1",
+      "gltf_material_count": 7,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 7,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 7,
+      "gltf_primitives": 7,
+      "estimated_draw_calls": 7
+    },
+    {
+      "asset": "iv_stand_standard",
+      "triangles_source": 4484,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.36601269245147705,
+          -0.3171975612640381,
+          0.0
+        ],
+        "max": [
+          0.3660127520561218,
+          0.3790000081062317,
+          2.0310001373291016
+        ]
+      },
+      "dimensions_m": [
+        0.7320254445075989,
+        0.6961975693702698,
+        2.0310001373291016
+      ],
+      "materials": [
+        "CRNA_Shared_Matte_Atlas"
+      ],
+      "textures": 1,
+      "reuse_provenance": "07_iv_stand.glb",
+      "anchors": [
+        "07_IV_Stand",
+        "ANCHOR_interact.001"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.7320254445075989,
+          0.6961975693702698
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.7320254445075989,
+        0.6961975693702698,
+        2.0310001373291016
+      ],
+      "reimport_triangles": 4484,
+      "verified_scale": true,
+      "reimport_material_count": 1,
+      "reimport_verified": true,
+      "runtime_bytes": 147644,
+      "sha256": "f1a9c99e1d6d107d45a94cb104304720cef5d32d38cb643f4852db1737f1e642",
+      "gltf_material_count": 1,
+      "gltf_texture_count": 1,
+      "gltf_mesh_nodes": 1,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 1,
+      "gltf_primitives": 1,
+      "estimated_draw_calls": 1
+    },
+    {
+      "asset": "iv_stand_advanced",
+      "triangles_source": 1700,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.8042426109313965,
+          -0.30000001192092896,
+          -1.2018780637390591e-08
+        ],
+        "max": [
+          0.333999902009964,
+          0.30000001192092896,
+          1.965000033378601
+        ]
+      },
+      "dimensions_m": [
+        1.1382425129413605,
+        0.6000000238418579,
+        1.9650000453973817
+      ],
+      "materials": [
+        "blue",
+        "cream",
+        "glass",
+        "metal",
+        "rubber",
+        "screen",
+        "teal",
+        "white"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_bag_attach.001",
+        "ANCHOR_interact.002"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          1.1382425129413605,
+          0.6000000238418579
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        1.1382425129413605,
+        0.6000000238418579,
+        1.9650000453973817
+      ],
+      "reimport_triangles": 1700,
+      "verified_scale": true,
+      "reimport_material_count": 8,
+      "reimport_verified": true,
+      "runtime_bytes": 117696,
+      "sha256": "67dd4da8d099bcac239b9c5d61f31b5c01868cfe9c9e494b205488b0f7a24caf",
+      "gltf_material_count": 8,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 8,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 8,
+      "gltf_primitives": 8,
+      "estimated_draw_calls": 8
+    },
+    {
+      "asset": "supply_cart_starter",
+      "triangles_source": 2492,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.39000001549720764,
+          -0.2630000412464142,
+          -1.2018782413747431e-08
+        ],
+        "max": [
+          0.3899999260902405,
+          0.2539999485015869,
+          1.0080000162124634
+        ]
+      },
+      "dimensions_m": [
+        0.7799999415874481,
+        0.5169999897480011,
+        1.0080000282312458
+      ],
+      "materials": [
+        "beige",
+        "metal",
+        "rubber",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_interact.003"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.7799999415874481,
+          0.5169999897480011
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.7799999415874481,
+        0.5169999897480011,
+        1.0080000282312458
+      ],
+      "reimport_triangles": 2492,
+      "verified_scale": true,
+      "reimport_material_count": 4,
+      "reimport_verified": true,
+      "runtime_bytes": 168428,
+      "sha256": "916d31390ff6af42b9896be5e0b5a91965d1b7b7047d1977816a077cf523a5ff",
+      "gltf_material_count": 4,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 4,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 4,
+      "gltf_primitives": 4,
+      "estimated_draw_calls": 4
+    },
+    {
+      "asset": "supply_cart_standard",
+      "triangles_source": 5492,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.3774999976158142,
+          -0.3434999883174896,
+          0.0
+        ],
+        "max": [
+          0.5003966093063354,
+          0.3030000329017639,
+          1.2097450494766235
+        ]
+      },
+      "dimensions_m": [
+        0.8778966069221497,
+        0.6465000212192535,
+        1.2097450494766235
+      ],
+      "materials": [
+        "CRNA_Shared_Matte_Atlas.001"
+      ],
+      "textures": 1,
+      "reuse_provenance": "09_supply_cart.glb",
+      "anchors": [
+        "09_Supply_Cart",
+        "ANCHOR_interact.004"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.8778966069221497,
+          0.6465000212192535
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.8778966069221497,
+        0.6465000212192535,
+        1.2097450494766235
+      ],
+      "reimport_triangles": 5492,
+      "verified_scale": true,
+      "reimport_material_count": 1,
+      "reimport_verified": true,
+      "runtime_bytes": 155204,
+      "sha256": "0c1f42d2ffa731dcbb1816f7e8e2484118472156bbe254c1e34c47a478fe7188",
+      "gltf_material_count": 1,
+      "gltf_texture_count": 1,
+      "gltf_mesh_nodes": 1,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 1,
+      "gltf_primitives": 1,
+      "estimated_draw_calls": 1
+    },
+    {
+      "asset": "supply_cart_advanced",
+      "triangles_source": 2256,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.36500000953674316,
+          -0.382500022649765,
+          -1.2018780637390591e-08
+        ],
+        "max": [
+          0.36500000953674316,
+          0.30000001192092896,
+          1.6000001430511475
+        ]
+      },
+      "dimensions_m": [
+        0.7300000190734863,
+        0.682500034570694,
+        1.600000155069928
+      ],
+      "materials": [
+        "cream",
+        "glass",
+        "metal",
+        "rubber",
+        "teal",
+        "white"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_door_hinge",
+        "ANCHOR_interact.005"
+      ],
+      "moving_parts": [
+        "MOVING_door_handle",
+        "MOVING_drawer"
+      ],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.7300000190734863,
+          0.682500034570694
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.7300000190734863,
+        0.682500034570694,
+        1.600000155069928
+      ],
+      "reimport_triangles": 2256,
+      "verified_scale": true,
+      "reimport_material_count": 6,
+      "reimport_verified": true,
+      "runtime_bytes": 157892,
+      "sha256": "927c69328547d4478c6f92493a1e88b99b40b16677cd0eca1f9794ee976ca24c",
+      "gltf_material_count": 6,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 8,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 8,
+      "gltf_primitives": 8,
+      "estimated_draw_calls": 8
+    },
+    {
+      "asset": "workstation_starter",
+      "triangles_source": 1108,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.4749999940395355,
+          -0.32499998807907104,
+          0.0
+        ],
+        "max": [
+          0.4749999940395355,
+          0.32499998807907104,
+          1.3650000095367432
+        ]
+      },
+      "dimensions_m": [
+        0.949999988079071,
+        0.6499999761581421,
+        1.3650000095367432
+      ],
+      "materials": [
+        "beige",
+        "metal",
+        "rubber",
+        "screen",
+        "white"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_operator",
+        "ANCHOR_screen"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.949999988079071,
+          0.6499999761581421
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.949999988079071,
+        0.6499999761581421,
+        1.3650000095367432
+      ],
+      "reimport_triangles": 1108,
+      "verified_scale": true,
+      "reimport_material_count": 5,
+      "reimport_verified": true,
+      "runtime_bytes": 79384,
+      "sha256": "2b6c4713ef3794bec963936c8b6fd655fb6719205eca1024d777d741b039d1af",
+      "gltf_material_count": 5,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 5,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 5,
+      "gltf_primitives": 5,
+      "estimated_draw_calls": 5
+    },
+    {
+      "asset": "workstation_standard",
+      "triangles_source": 2192,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.41499999165534973,
+          -0.3100000023841858,
+          0.0
+        ],
+        "max": [
+          0.41499999165534973,
+          0.3100000023841858,
+          1.4649999141693115
+        ]
+      },
+      "dimensions_m": [
+        0.8299999833106995,
+        0.6200000047683716,
+        1.4649999141693115
+      ],
+      "materials": [
+        "cream",
+        "metal",
+        "rubber",
+        "screen",
+        "teal",
+        "white"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_operator.001",
+        "ANCHOR_screen.001"
+      ],
+      "moving_parts": [
+        "MOVING_drawer.001",
+        "MOVING_drawer.002",
+        "MOVING_drawer.003"
+      ],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.8299999833106995,
+          0.6200000047683716
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.8299999833106995,
+        0.6200000047683716,
+        1.4649999141693115
+      ],
+      "reimport_triangles": 2192,
+      "verified_scale": true,
+      "reimport_material_count": 6,
+      "reimport_verified": true,
+      "runtime_bytes": 154284,
+      "sha256": "609b60b15f334241e683a1af4f25faddb192acdd9fa70c3a82d14c3f1374a4cd",
+      "gltf_material_count": 6,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 9,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 9,
+      "gltf_primitives": 9,
+      "estimated_draw_calls": 9
+    },
+    {
+      "asset": "workstation_advanced",
+      "triangles_source": 1688,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.3499999940395355,
+          -0.3400000035762787,
+          0.0
+        ],
+        "max": [
+          0.3499999940395355,
+          0.3400000035762787,
+          1.4749999046325684
+        ]
+      },
+      "dimensions_m": [
+        0.699999988079071,
+        0.6800000071525574,
+        1.4749999046325684
+      ],
+      "materials": [
+        "blue",
+        "cream",
+        "rubber",
+        "screen",
+        "teal",
+        "white"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_operator.002",
+        "ANCHOR_screen.002"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.699999988079071,
+          0.6800000071525574
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.699999988079071,
+        0.6800000071525574,
+        1.4749999046325684
+      ],
+      "reimport_triangles": 1688,
+      "verified_scale": true,
+      "reimport_material_count": 6,
+      "reimport_verified": true,
+      "runtime_bytes": 125008,
+      "sha256": "54a7d89d529dc8e6a2adde22d23f92fd2f7a4942dfdd4fb1020d8993c657bb2c",
+      "gltf_material_count": 6,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 6,
+      "suggested_collision_not_included": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 6,
+      "gltf_primitives": 6,
+      "estimated_draw_calls": 6
+    }
+  ],
+  "validation": "All files reimported into a clean Blender scene; dimensions and material count checked; actual imported meshes rendered.",
+  "total_triangles": 22824
+}

@@ -1,0 +1,254 @@
+[
+  {
+    "runtime_primitives": 3,
+    "texture_pixel_dimensions": [],
+    "file": "reception_T1_chair.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.24650000035762787,
+        -0.23199999332427979,
+        0.0
+      ],
+      "max": [
+        0.24650000035762787,
+        0.23199999332427979,
+        0.9900000095367432
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.49300000071525574,
+      0.46399998664855957,
+      0.9900000095367432
+    ],
+    "triangles": 584,
+    "degenerate_triangles": 0,
+    "materials": [
+      "dark",
+      "metal",
+      "teal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_back",
+      "anchor_feet",
+      "anchor_seat"
+    ]
+  },
+  {
+    "runtime_primitives": 9,
+    "texture_pixel_dimensions": [],
+    "file": "reception_T1_desk.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.824999988079071,
+        -0.375,
+        0.0
+      ],
+      "max": [
+        0.824999988079071,
+        0.375,
+        1.244999885559082
+      ]
+    },
+    "dimensions_xyz_m": [
+      1.649999976158142,
+      0.75,
+      1.244999885559082
+    ],
+    "triangles": 3772,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cream",
+      "dark",
+      "gold",
+      "green",
+      "lightblue",
+      "metal",
+      "screen",
+      "white",
+      "wood"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_hands",
+      "anchor_operator_feet",
+      "anchor_operator_seat",
+      "anchor_patient_interaction"
+    ]
+  },
+  {
+    "runtime_primitives": 9,
+    "texture_pixel_dimensions": [],
+    "file": "reception_T2_chair.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.3149999976158142,
+        -0.3112958073616028,
+        1.038113150997333e-09
+      ],
+      "max": [
+        0.3149999976158142,
+        0.3112958073616028,
+        0.9900000095367432
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.6299999952316284,
+      0.6225916147232056,
+      0.99000000849863
+    ],
+    "triangles": 870,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cushion",
+      "dark",
+      "metal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 6,
+    "named_anchors": [
+      "anchor_back.001",
+      "anchor_feet.001",
+      "anchor_seat.001"
+    ]
+  },
+  {
+    "runtime_primitives": 7,
+    "texture_pixel_dimensions": [
+      [
+        1024,
+        1024
+      ]
+    ],
+    "file": "reception_T2_desk.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -1.100000023841858,
+        -0.4500000774860382,
+        0.0
+      ],
+      "max": [
+        1.100000023841858,
+        0.4500000774860382,
+        1.4447715282440186
+      ]
+    },
+    "dimensions_xyz_m": [
+      2.200000047683716,
+      0.9000001549720764,
+      1.4447715282440186
+    ],
+    "triangles": 3900,
+    "degenerate_triangles": 0,
+    "materials": [
+      "CRNA_Shared_Matte_Atlas",
+      "cream",
+      "dark",
+      "green",
+      "lightblue",
+      "metal",
+      "screen"
+    ],
+    "textures": 1,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_hands.001",
+      "anchor_operator_feet.001",
+      "anchor_operator_seat.001",
+      "anchor_patient_interaction.001"
+    ]
+  },
+  {
+    "runtime_primitives": 8,
+    "texture_pixel_dimensions": [],
+    "file": "reception_T3_chair.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -0.3149999976158142,
+        -0.3112958073616028,
+        1.038113150997333e-09
+      ],
+      "max": [
+        0.3149999976158142,
+        0.3112958073616028,
+        0.9900000095367432
+      ]
+    },
+    "dimensions_xyz_m": [
+      0.6299999952316284,
+      0.6225916147232056,
+      0.99000000849863
+    ],
+    "triangles": 870,
+    "degenerate_triangles": 0,
+    "materials": [
+      "cushion",
+      "dark",
+      "metal"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 6,
+    "named_anchors": [
+      "anchor_back.002",
+      "anchor_feet.002",
+      "anchor_seat.002"
+    ]
+  },
+  {
+    "runtime_primitives": 8,
+    "texture_pixel_dimensions": [],
+    "file": "reception_T3_desk.glb",
+    "reimport_success": true,
+    "bounds_blender_xyz_m": {
+      "min": [
+        -1.070000171661377,
+        -0.24000003933906555,
+        -2.086162567138672e-07
+      ],
+      "max": [
+        1.0699999332427979,
+        0.5800000429153442,
+        1.3275493383407593
+      ]
+    },
+    "dimensions_xyz_m": [
+      2.140000104904175,
+      0.8200000822544098,
+      1.327549546957016
+    ],
+    "triangles": 3640,
+    "degenerate_triangles": 0,
+    "materials": [
+      "blue",
+      "cream",
+      "dark",
+      "green",
+      "lightblue",
+      "metal",
+      "screen",
+      "white"
+    ],
+    "textures": 0,
+    "finite_bounds": true,
+    "mesh_parts": 1,
+    "named_anchors": [
+      "anchor_hands.002",
+      "anchor_operator_feet.002",
+      "anchor_operator_seat.002",
+      "anchor_patient_interaction.002"
+    ]
+  }
+]

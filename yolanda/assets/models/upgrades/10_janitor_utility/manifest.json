@@ -1,0 +1,633 @@
+{
+  "sheet": "JANITOR UTILITY",
+  "units": "meters",
+  "export_axes": "glTF Y-up; source Blender Z-up; object front Blender -Y maps to glTF +Z",
+  "geometry": "Opaque vertex-color geometry; zero image textures. One joined static mesh per prop, with one paint material and optional metal/light materials. Independent hinge meshes where listed. Per-asset provenance records retained standard geometry. No collision meshes or animation clips.",
+  "individual_asset_count": 8,
+  "assets": [
+    {
+      "triangles": 1440,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.4124999940395355,
+          -0.25600001215934753,
+          0.0
+        ],
+        "max": [
+          0.41249996423721313,
+          0.2549999952316284,
+          1.8200000524520874
+        ]
+      },
+      "dimensions_m": [
+        0.8249999582767487,
+        0.511000007390976,
+        1.8200000524520874
+      ],
+      "moving_nodes": [],
+      "file": "starter/10_starter_rack.glb",
+      "name": "10_starter_rack",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.800000011920929,
+        0.5699999928474426,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.4124999940395355,
+          0.0,
+          -0.2549999952316284
+        ],
+        "max": [
+          0.41249996423721313,
+          1.8200000524520874,
+          0.25600001215934753
+        ]
+      },
+      "dimensions_m_blender": [
+        0.8249999582767487,
+        0.511000007390976,
+        1.8200000524520874
+      ],
+      "dimensions_m_gltf": [
+        0.8249999582767487,
+        1.8200000524520874,
+        0.511000007390976
+      ],
+      "bytes": 181372,
+      "sha256": "ebd70cb2d81afcbd9f790264bc4467dd16679f673fd32b9ddcf2c209b468a35a",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1180,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.4350000023841858,
+          -0.3100000023841858,
+          0.0
+        ],
+        "max": [
+          0.4350000023841858,
+          0.3199999928474426,
+          1.1649999618530273
+        ]
+      },
+      "dimensions_m": [
+        0.8700000047683716,
+        0.6299999952316284,
+        1.1649999618530273
+      ],
+      "moving_nodes": [],
+      "file": "starter/10_starter_steel_sink.glb",
+      "name": "10_starter_steel_sink",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6000000238418579,
+        0.4699999988079071,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.4350000023841858,
+          0.0,
+          -0.3199999928474426
+        ],
+        "max": [
+          0.4350000023841858,
+          1.1649999618530273,
+          0.3100000023841858
+        ]
+      },
+      "dimensions_m_blender": [
+        0.8700000047683716,
+        0.6299999952316284,
+        1.1649999618530273
+      ],
+      "dimensions_m_gltf": [
+        0.8700000047683716,
+        1.1649999618530273,
+        0.6299999952316284
+      ],
+      "bytes": 92360,
+      "sha256": "bac3c24eb7d01b8f0c87bfa5b48ec53bff3c1ff7f094e20a3d6defa0e37379cc",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1924,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3130374550819397,
+          -0.2680000066757202,
+          0.009999974630773067
+        ],
+        "max": [
+          0.3130375146865845,
+          0.27400001883506775,
+          1.556746244430542
+        ]
+      },
+      "dimensions_m": [
+        0.6260749697685242,
+        0.542000025510788,
+        1.546746269799769
+      ],
+      "moving_nodes": [],
+      "file": "starter/10_starter_mop_bucket.glb",
+      "name": "10_starter_mop_bucket",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.6600000262260437,
+        -0.6000000238418579,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3130374550819397,
+          0.009999974630773067,
+          -0.27400001883506775
+        ],
+        "max": [
+          0.3130375146865845,
+          1.556746244430542,
+          0.2680000066757202
+        ]
+      },
+      "dimensions_m_blender": [
+        0.6260749697685242,
+        0.542000025510788,
+        1.546746269799769
+      ],
+      "dimensions_m_gltf": [
+        0.6260749697685242,
+        1.546746269799769,
+        0.542000025510788
+      ],
+      "bytes": 189292,
+      "sha256": "2a5f0b6a7da3750e7e0121e54bcdfdc351db667328353d2e18a8eefa906eae13",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 2544,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3857637345790863,
+          -0.5099999904632568,
+          0.009999972768127918
+        ],
+        "max": [
+          0.3500000536441803,
+          0.5744797587394714,
+          1.6800001859664917
+        ]
+      },
+      "dimensions_m": [
+        0.7357637882232666,
+        1.0844797492027283,
+        1.6700002131983638
+      ],
+      "moving_nodes": [],
+      "file": "standard/10_standard_cleaning_cart.glb",
+      "name": "10_standard_cleaning_cart",
+      "tier": "standard",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.7900000214576721,
+        -0.3400000035762787,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3857637345790863,
+          0.009999972768127918,
+          -0.5744797587394714
+        ],
+        "max": [
+          0.3500000536441803,
+          1.6800001859664917,
+          0.5099999904632568
+        ]
+      },
+      "dimensions_m_blender": [
+        0.7357637882232666,
+        1.0844797492027283,
+        1.6700002131983638
+      ],
+      "dimensions_m_gltf": [
+        0.7357637882232666,
+        1.6700002131983638,
+        1.0844797492027283
+      ],
+      "bytes": 256340,
+      "sha256": "c33a29e9992bf4d2238be13f7c3e923026340b683e7083c7f9eeefe395d7e405",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1172,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.5299999713897705,
+          -0.3619999885559082,
+          0.0
+        ],
+        "max": [
+          0.5299999713897705,
+          0.33500000834465027,
+          1.3174999952316284
+        ]
+      },
+      "dimensions_m": [
+        1.059999942779541,
+        0.6969999969005585,
+        1.3174999952316284
+      ],
+      "moving_nodes": [],
+      "file": "standard/10_standard_utility_sink.glb",
+      "name": "10_standard_utility_sink",
+      "tier": "standard",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6499999761581421,
+        0.4300000071525574,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.5299999713897705,
+          0.0,
+          -0.33500000834465027
+        ],
+        "max": [
+          0.5299999713897705,
+          1.3174999952316284,
+          0.3619999885559082
+        ]
+      },
+      "dimensions_m_blender": [
+        1.059999942779541,
+        0.6969999969005585,
+        1.3174999952316284
+      ],
+      "dimensions_m_gltf": [
+        1.059999942779541,
+        1.3174999952316284,
+        0.6969999969005585
+      ],
+      "bytes": 132520,
+      "sha256": "0805baf2bdccd91fd4b1519c78d48f6c64d1847fc9da5d616963b17310931bc1",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1008,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.5425000190734863,
+          -0.1550000011920929,
+          0.0
+        ],
+        "max": [
+          0.5425000190734863,
+          0.1550000011920929,
+          0.9824999570846558
+        ]
+      },
+      "dimensions_m": [
+        1.0850000381469727,
+        0.3100000023841858,
+        0.9824999570846558
+      ],
+      "moving_nodes": [],
+      "file": "standard/10_standard_wall_shelf.glb",
+      "name": "10_standard_wall_shelf",
+      "tier": "standard",
+      "pivot": "wall-bottom-center",
+      "anchors_blender_m": {
+        "wall_bottom": [
+          0,
+          0.155,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6299999952316284,
+        0.6800000071525574,
+        1.2400000095367432
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.5425000190734863,
+          0.0,
+          -0.1550000011920929
+        ],
+        "max": [
+          0.5425000190734863,
+          0.9824999570846558,
+          0.1550000011920929
+        ]
+      },
+      "dimensions_m_blender": [
+        1.0850000381469727,
+        0.3100000023841858,
+        0.9824999570846558
+      ],
+      "dimensions_m_gltf": [
+        1.0850000381469727,
+        0.9824999570846558,
+        0.3100000023841858
+      ],
+      "bytes": 107908,
+      "sha256": "f8f010151bda7bdc7dab00555442710ba256ea969058be4a1587303dde6ca694",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 2296,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.9599999785423279,
+          -0.5069999694824219,
+          0.0
+        ],
+        "max": [
+          0.9900000095367432,
+          0.3999999761581421,
+          2.259999990463257
+        ]
+      },
+      "dimensions_m": [
+        1.949999988079071,
+        0.906999945640564,
+        2.259999990463257
+      ],
+      "moving_nodes": [],
+      "file": "advanced/10_advanced_integrated_station.glb",
+      "name": "10_advanced_integrated_station",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.20000000298023224,
+        0.41999998688697815,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 3,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.9599999785423279,
+          0.0,
+          -0.3999999761581421
+        ],
+        "max": [
+          0.9900000095367432,
+          2.259999990463257,
+          0.5069999694824219
+        ]
+      },
+      "dimensions_m_blender": [
+        1.949999988079071,
+        0.906999945640564,
+        2.259999990463257
+      ],
+      "dimensions_m_gltf": [
+        1.949999988079071,
+        2.259999990463257,
+        0.906999945640564
+      ],
+      "bytes": 262628,
+      "sha256": "254d5e35d89c020e896a3c7eb4572c11697d2e821a4c26371c139f0639b03a67",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 3144,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.43060001730918884,
+          -0.8869738578796387,
+          0.01900923252105713
+        ],
+        "max": [
+          0.43060001730918884,
+          0.6324999928474426,
+          1.208299160003662
+        ]
+      },
+      "dimensions_m": [
+        0.8612000346183777,
+        1.5194738507270813,
+        1.189289927482605
+      ],
+      "moving_nodes": [],
+      "file": "advanced/10_advanced_floor_scrubber.glb",
+      "name": "10_advanced_floor_scrubber",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.5899999737739563,
+        -0.5899999737739563,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 3,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.43060001730918884,
+          0.01900923252105713,
+          -0.6324999928474426
+        ],
+        "max": [
+          0.43060001730918884,
+          1.208299160003662,
+          0.8869738578796387
+        ]
+      },
+      "dimensions_m_blender": [
+        0.8612000346183777,
+        1.5194738507270813,
+        1.189289927482605
+      ],
+      "dimensions_m_gltf": [
+        0.8612000346183777,
+        1.189289927482605,
+        1.5194738507270813
+      ],
+      "bytes": 261880,
+      "sha256": "64e9ed59f8b827013734fb490178ae643e1144e1d703dfd418ad5efbce550584",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    }
+  ],
+  "assembly_note": "Tier assemblies preserve listed room placements with origin floor-center. Props individually export at declared local pivot. Presentation plinth, labels, cameras and lighting are not in runtime GLBs.",
+  "placement_suggestions": {
+    "janitor": "Place service fixtures against north wall. Keep 0.9 m access in front and 1.2 m mobile-cart turn clearance.",
+    "lounge": "Lockers and counter to rear; allow 0.9 m approach. Seat front is local -Y. Rotate chairs toward table.",
+    "restroom": "Sink and mirror share wall plane. Mirrors use bottom-center mounting pivot. Cubicle door shown open; keep its swing clear. Suggested gameplay clearances are not accessibility certification."
+  },
+  "validation": "Every exported GLB reimported into an empty Blender scene. Finite vertices, zero-area triangles, materials, image count, triangle counts, local bounds and SHA256 verified. Assemblies also reimported."
+}

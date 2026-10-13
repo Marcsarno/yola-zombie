@@ -1,0 +1,87 @@
+{
+ "grid": 8,
+ "cells": {
+  "PAL_Skin_WarmPeach": 0,
+  "PAL_Shirt_Sage": 1,
+  "PAL_Trousers_Navy": 2,
+  "PAL_Shoes_Cream": 3,
+  "PAL_Sole_WarmGray": 4,
+  "PAL_Hair_Silver": 5,
+  "PAL_Lip_Warm": 6,
+  "PAL_Eye_White": 7,
+  "PAL_Mouth": 8,
+  "PAL_Iris_Hazel": 9,
+  "PAL_Pupil": 10,
+  "PAL_Eye_Glint": 11,
+  "PAL_Hair_Shadow": 12
+ },
+ "colors": {
+  "PAL_Skin_WarmPeach": [
+   0.63,
+   0.325,
+   0.155
+  ],
+  "PAL_Shirt_Sage": [
+   0.6376,
+   0.3663,
+   0.1022
+  ],
+  "PAL_Trousers_Navy": [
+   0.0382,
+   0.0666,
+   0.117
+  ],
+  "PAL_Shoes_Cream": [
+   0.83,
+   0.81,
+   0.745
+  ],
+  "PAL_Sole_WarmGray": [
+   0.64,
+   0.65,
+   0.63
+  ],
+  "PAL_Hair_Silver": [
+   0.4508,
+   0.4621,
+   0.4397
+  ],
+  "PAL_Lip_Warm": [
+   0.59,
+   0.239,
+   0.12
+  ],
+  "PAL_Eye_White": [
+   0.93,
+   0.88,
+   0.75
+  ],
+  "PAL_Mouth": [
+   0.24,
+   0.082,
+   0.034
+  ],
+  "PAL_Iris_Hazel": [
+   0.095,
+   0.044,
+   0.019
+  ],
+  "PAL_Pupil": [
+   0.008,
+   0.005,
+   0.004
+  ],
+  "PAL_Eye_Glint": [
+   1.0,
+   0.99,
+   0.93
+  ],
+  "PAL_Hair_Shadow": [
+   0.4508,
+   0.4621,
+   0.4397
+  ]
+ },
+ "tris": 7223,
+ "source": "patient-silver.glb"
+}

@@ -1,0 +1,947 @@
+{
+  "sheet": "09_assessment_furniture",
+  "units": "meters",
+  "glb_up_axis": "+Y",
+  "front": "+Z in glTF; -Y in Blender",
+  "ground_pivot": true,
+  "textures": 0,
+  "assets": [
+    {
+      "asset": "examination_couch_starter",
+      "triangles_source": 764,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.375,
+          -0.949999988079071,
+          0.0
+        ],
+        "max": [
+          0.375,
+          0.949999988079071,
+          1.1096010208129883
+        ]
+      },
+      "dimensions_m": [
+        0.75,
+        1.899999976158142,
+        1.1096010208129883
+      ],
+      "materials": [
+        "beige",
+        "metal",
+        "rubber"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_patient",
+        "ANCHOR_backrest_hinge",
+        "ANCHOR_clinician"
+      ],
+      "moving_parts": [
+        "MOVING_backrest"
+      ],
+      "collision": {
+        "type": "compound_boxes",
+        "footprint_xz_gltf_m": [
+          0.75,
+          1.899999976158142
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.75,
+        1.899999976158142,
+        1.1096010208129883
+      ],
+      "reimport_triangles": 764,
+      "verified_scale": true,
+      "reimport_material_count": 3,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 4,
+      "runtime_bytes": 52224,
+      "sha256": "1c0ca9749f0725d338b9d1d31c014a4dfda9c6bbb92b047c9e92e3bd76d4dff3",
+      "gltf_material_count": 3,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 4,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 4,
+      "estimated_draw_calls": 4
+    },
+    {
+      "asset": "examination_couch_standard",
+      "triangles_source": 908,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.4000000059604645,
+          -0.9875125885009766,
+          0.0
+        ],
+        "max": [
+          0.4000000059604645,
+          0.8500000238418579,
+          1.6094717979431152
+        ]
+      },
+      "dimensions_m": [
+        0.800000011920929,
+        1.8375126123428345,
+        1.6094717979431152
+      ],
+      "materials": [
+        "blue",
+        "cream",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_patient.001",
+        "ANCHOR_backrest_hinge.001",
+        "ANCHOR_clinician.001"
+      ],
+      "moving_parts": [
+        "MOVING_legrest",
+        "MOVING_backrest.001"
+      ],
+      "collision": {
+        "type": "compound_boxes",
+        "footprint_xz_gltf_m": [
+          0.800000011920929,
+          1.8375126123428345
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.800000011920929,
+        1.8375126123428345,
+        1.6094717979431152
+      ],
+      "reimport_triangles": 908,
+      "verified_scale": true,
+      "reimport_material_count": 4,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 6,
+      "runtime_bytes": 68360,
+      "sha256": "f86539bb9e890452290d07093f26f45ee435626d9af3c2756afaf99021b1e23c",
+      "gltf_material_count": 4,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 6,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 6,
+      "estimated_draw_calls": 6
+    },
+    {
+      "asset": "examination_couch_advanced",
+      "triangles_source": 2008,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.49000000953674316,
+          -0.9875125885009766,
+          0.0
+        ],
+        "max": [
+          0.49000000953674316,
+          0.8500000238418579,
+          1.6094717979431152
+        ]
+      },
+      "dimensions_m": [
+        0.9800000190734863,
+        1.8375126123428345,
+        1.6094717979431152
+      ],
+      "materials": [
+        "blue",
+        "cream",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_patient.002",
+        "ANCHOR_backrest_hinge.002",
+        "ANCHOR_clinician.002"
+      ],
+      "moving_parts": [
+        "MOVING_legrest.001",
+        "MOVING_backrest.002"
+      ],
+      "collision": {
+        "type": "compound_boxes",
+        "footprint_xz_gltf_m": [
+          0.9800000190734863,
+          1.8375126123428345
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.9800000190734863,
+        1.8375126123428345,
+        1.6094717979431152
+      ],
+      "reimport_triangles": 2008,
+      "verified_scale": true,
+      "reimport_material_count": 3,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 5,
+      "runtime_bytes": 148720,
+      "sha256": "094e36b4631d12d8ad75b8adf3f703f6c2946470976dfc790bec6b9be3aeee04",
+      "gltf_material_count": 3,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 5,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 5,
+      "estimated_draw_calls": 5
+    },
+    {
+      "asset": "consultation_desk_starter",
+      "triangles_source": 284,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.75,
+          -0.3499999940395355,
+          0.009999990463256836
+        ],
+        "max": [
+          0.75,
+          0.3499999940395355,
+          0.8125
+        ]
+      },
+      "dimensions_m": [
+        1.5,
+        0.699999988079071,
+        0.8025000095367432
+      ],
+      "materials": [
+        "beige",
+        "metal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_operator",
+        "ANCHOR_visitor"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "compound_boxes",
+        "footprint_xz_gltf_m": [
+          1.5,
+          0.699999988079071
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        1.5,
+        0.699999988079071,
+        0.8025000095367432
+      ],
+      "reimport_triangles": 284,
+      "verified_scale": true,
+      "reimport_material_count": 2,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 2,
+      "runtime_bytes": 20392,
+      "sha256": "2709d3887e65294062f1afb63ee904a1f00c4347552a30f556ae17b7c7f001c4",
+      "gltf_material_count": 2,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 2,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 2,
+      "estimated_draw_calls": 2
+    },
+    {
+      "asset": "consultation_desk_standard",
+      "triangles_source": 1080,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.75,
+          -0.375,
+          0.0
+        ],
+        "max": [
+          0.75,
+          0.3499999940395355,
+          0.8125
+        ]
+      },
+      "dimensions_m": [
+        1.5,
+        0.7249999940395355,
+        0.8125
+      ],
+      "materials": [
+        "cream",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_operator.001",
+        "ANCHOR_visitor.001"
+      ],
+      "moving_parts": [
+        "MOVING_drawer",
+        "MOVING_drawer.001",
+        "MOVING_drawer.002"
+      ],
+      "collision": {
+        "type": "compound_boxes",
+        "footprint_xz_gltf_m": [
+          1.5,
+          0.7249999940395355
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        1.5,
+        0.7249999940395355,
+        0.8125
+      ],
+      "reimport_triangles": 1080,
+      "verified_scale": true,
+      "reimport_material_count": 2,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 4,
+      "runtime_bytes": 78312,
+      "sha256": "cd4778412793111e7b30a5e7a8f2356718ab5f6c830ddd139627307f4582edfa",
+      "gltf_material_count": 2,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 4,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 4,
+      "estimated_draw_calls": 4
+    },
+    {
+      "asset": "consultation_desk_advanced",
+      "triangles_source": 708,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -1.1799999475479126,
+          -1.1754376888275146,
+          0.0
+        ],
+        "max": [
+          1.0971362590789795,
+          1.1754376888275146,
+          1.1949999332427979
+        ]
+      },
+      "dimensions_m": [
+        2.277136206626892,
+        2.3508753776550293,
+        1.1949999332427979
+      ],
+      "materials": [
+        "cream",
+        "screen",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_workstation",
+        "ANCHOR_operator.002",
+        "ANCHOR_visitor.002"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "compound_boxes",
+        "footprint_xz_gltf_m": [
+          2.277136206626892,
+          2.3508753776550293
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        2.277136206626892,
+        2.3508753776550293,
+        1.1949999332427979
+      ],
+      "reimport_triangles": 708,
+      "verified_scale": true,
+      "reimport_material_count": 3,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 3,
+      "runtime_bytes": 44780,
+      "sha256": "cfcd3772d51685e7c85a73effac08b457cea1dc4c39df92a70e0da8b338c5331",
+      "gltf_material_count": 3,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 3,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 3,
+      "estimated_draw_calls": 3
+    },
+    {
+      "asset": "visitor_chair_starter",
+      "triangles_source": 416,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.23194418847560883,
+          -0.21994684636592865,
+          0.01824997179210186
+        ],
+        "max": [
+          0.23194415867328644,
+          0.21994687616825104,
+          0.949999988079071
+        ]
+      },
+      "dimensions_m": [
+        0.46388834714889526,
+        0.4398937225341797,
+        0.9317500162869692
+      ],
+      "materials": [
+        "metal",
+        "rubber"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_seat"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.46388834714889526,
+          0.4398937225341797
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.46388834714889526,
+        0.4398937225341797,
+        0.9317500162869692
+      ],
+      "reimport_triangles": 416,
+      "verified_scale": true,
+      "reimport_material_count": 2,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 2,
+      "runtime_bytes": 29672,
+      "sha256": "3ac71b470c306065021ccc6570ab63cce1ac8055b69861fc36c5fcb06da4dadd",
+      "gltf_material_count": 2,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 2,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 2,
+      "estimated_draw_calls": 2
+    },
+    {
+      "asset": "visitor_chair_standard",
+      "triangles_source": 568,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.23499999940395355,
+          -0.22499999403953552,
+          0.0
+        ],
+        "max": [
+          0.23499999940395355,
+          0.25,
+          0.9850000143051147
+        ]
+      },
+      "dimensions_m": [
+        0.4699999988079071,
+        0.4749999940395355,
+        0.9850000143051147
+      ],
+      "materials": [
+        "cream",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_seat.001"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.4699999988079071,
+          0.4749999940395355
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.4699999988079071,
+        0.4749999940395355,
+        0.9850000143051147
+      ],
+      "reimport_triangles": 568,
+      "verified_scale": true,
+      "reimport_material_count": 2,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 2,
+      "runtime_bytes": 38224,
+      "sha256": "1fc472ec0c9fd5de3f70898cf05914e5ed6c76140675438058ccb409379aee2f",
+      "gltf_material_count": 2,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 2,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 2,
+      "estimated_draw_calls": 2
+    },
+    {
+      "asset": "visitor_chair_advanced",
+      "triangles_source": 784,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.3100000023841858,
+          -0.3100000023841858,
+          0.025000035762786865
+        ],
+        "max": [
+          0.3100000023841858,
+          0.3100000023841858,
+          1.0
+        ]
+      },
+      "dimensions_m": [
+        0.6200000047683716,
+        0.6200000047683716,
+        0.9749999642372131
+      ],
+      "materials": [
+        "cream",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_seat.002"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.6200000047683716,
+          0.6200000047683716
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.6200000047683716,
+        0.6200000047683716,
+        0.9749999642372131
+      ],
+      "reimport_triangles": 784,
+      "verified_scale": true,
+      "reimport_material_count": 3,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 3,
+      "runtime_bytes": 57056,
+      "sha256": "e1cf673d2f1796d00e1e7bbdea8e15e33afb272ce5a9cd0328d14f4a7c8bb859",
+      "gltf_material_count": 3,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 3,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 3,
+      "estimated_draw_calls": 3
+    },
+    {
+      "asset": "clinician_chair_starter",
+      "triangles_source": 1228,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.2965247929096222,
+          -0.3092958629131317,
+          0.0
+        ],
+        "max": [
+          0.3500000238418579,
+          0.3002958297729492,
+          0.949999988079071
+        ]
+      },
+      "dimensions_m": [
+        0.6465248167514801,
+        0.6095916926860809,
+        0.949999988079071
+      ],
+      "materials": [
+        "metal",
+        "rubber",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_seat.003"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.6465248167514801,
+          0.6095916926860809
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.6465248167514801,
+        0.6095916926860809,
+        0.949999988079071
+      ],
+      "reimport_triangles": 1228,
+      "verified_scale": true,
+      "reimport_material_count": 3,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 3,
+      "runtime_bytes": 78708,
+      "sha256": "9803bad5d4e28069f48fa008c6d99d0dd0c5ead0f0c6e155898b9489130e6695",
+      "gltf_material_count": 3,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 3,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 3,
+      "estimated_draw_calls": 3
+    },
+    {
+      "asset": "clinician_chair_standard",
+      "triangles_source": 1140,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.29652464389801025,
+          -0.3092958629131317,
+          -1.2018782413747431e-08
+        ],
+        "max": [
+          0.3500000238418579,
+          0.3002958297729492,
+          0.9850000143051147
+        ]
+      },
+      "dimensions_m": [
+        0.6465246677398682,
+        0.6095916926860809,
+        0.9850000263238972
+      ],
+      "materials": [
+        "metal",
+        "rubber",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_seat.004"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.6465246677398682,
+          0.6095916926860809
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.6465246677398682,
+        0.6095916926860809,
+        0.9850000263238972
+      ],
+      "reimport_triangles": 1140,
+      "verified_scale": true,
+      "reimport_material_count": 3,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 3,
+      "runtime_bytes": 73204,
+      "sha256": "32444a18de197de386249698a6d1d155447aaf53d8a3d8ff01a691ad178ca07d",
+      "gltf_material_count": 3,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 3,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 3,
+      "estimated_draw_calls": 3
+    },
+    {
+      "asset": "clinician_chair_advanced",
+      "triangles_source": 784,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.3100000023841858,
+          -0.3100000023841858,
+          0.025000035762786865
+        ],
+        "max": [
+          0.3100000023841858,
+          0.3100000023841858,
+          1.0
+        ]
+      },
+      "dimensions_m": [
+        0.6200000047683716,
+        0.6200000047683716,
+        0.9749999642372131
+      ],
+      "materials": [
+        "cream",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_seat.005"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.6200000047683716,
+          0.6200000047683716
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.6200000047683716,
+        0.6200000047683716,
+        0.9749999642372131
+      ],
+      "reimport_triangles": 784,
+      "verified_scale": true,
+      "reimport_material_count": 3,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 3,
+      "runtime_bytes": 57060,
+      "sha256": "ffdb57f36ee16c18fb520a5cf3b67bdae8ae1b00b0c37adddced76167365fa5c",
+      "gltf_material_count": 3,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 3,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 3,
+      "estimated_draw_calls": 3
+    },
+    {
+      "asset": "prep_storage_starter",
+      "triangles_source": 1952,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.39000001549720764,
+          -0.2630000412464142,
+          -1.2018782413747431e-08
+        ],
+        "max": [
+          0.3899999260902405,
+          0.2539999485015869,
+          1.0080000162124634
+        ]
+      },
+      "dimensions_m": [
+        0.7799999415874481,
+        0.5169999897480011,
+        1.0080000282312458
+      ],
+      "materials": [
+        "beige",
+        "metal",
+        "rubber",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_interact",
+        "ANCHOR_worktop",
+        "ANCHOR_interact.001"
+      ],
+      "moving_parts": [],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          0.7799999415874481,
+          0.5169999897480011
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        0.7799999415874481,
+        0.5169999897480011,
+        1.0080000282312458
+      ],
+      "reimport_triangles": 1952,
+      "verified_scale": true,
+      "reimport_material_count": 4,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 4,
+      "runtime_bytes": 130768,
+      "sha256": "ccccbb7d521c3e13b52e87dd795a1566efa92c51208dec6ebc2b81d3250d3bb9",
+      "gltf_material_count": 4,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 4,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 4,
+      "estimated_draw_calls": 4
+    },
+    {
+      "asset": "prep_storage_standard",
+      "triangles_source": 1296,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.7549999952316284,
+          -0.3460000157356262,
+          0.0
+        ],
+        "max": [
+          0.7549999952316284,
+          0.3100000023841858,
+          1.09499990940094
+        ]
+      },
+      "dimensions_m": [
+        1.5099999904632568,
+        0.656000018119812,
+        1.09499990940094
+      ],
+      "materials": [
+        "cream",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_worktop.001",
+        "ANCHOR_interact.002"
+      ],
+      "moving_parts": [
+        "MOVING_door",
+        "MOVING_door.001",
+        "MOVING_door.002",
+        "MOVING_door.003"
+      ],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          1.5099999904632568,
+          0.656000018119812
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        1.5099999904632568,
+        0.656000018119812,
+        1.09499990940094
+      ],
+      "reimport_triangles": 1296,
+      "verified_scale": true,
+      "reimport_material_count": 2,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 6,
+      "runtime_bytes": 94396,
+      "sha256": "e5d83124a49603591e03cd61a7225842183cd4f8b139dad4c40715868326fd49",
+      "gltf_material_count": 2,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 6,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 6,
+      "estimated_draw_calls": 6
+    },
+    {
+      "asset": "prep_storage_advanced",
+      "triangles_source": 1836,
+      "bounds_blender_z_up_m": {
+        "min": [
+          -0.8349999189376831,
+          -0.39000001549720764,
+          -2.9802322387695312e-08
+        ],
+        "max": [
+          0.9900000095367432,
+          0.32499998807907104,
+          2.0
+        ]
+      },
+      "dimensions_m": [
+        1.8249999284744263,
+        0.7150000035762787,
+        2.0000000298023224
+      ],
+      "materials": [
+        "cream",
+        "teal"
+      ],
+      "textures": 0,
+      "reuse_provenance": null,
+      "anchors": [
+        "ANCHOR_worktop.002",
+        "ANCHOR_interact.003"
+      ],
+      "moving_parts": [
+        "MOVING_door.004",
+        "MOVING_door.005",
+        "MOVING_door.006",
+        "MOVING_door.007",
+        "MOVING_drawer.003",
+        "MOVING_drawer.004",
+        "MOVING_drawer.005"
+      ],
+      "collision": {
+        "type": "box",
+        "footprint_xz_gltf_m": [
+          1.8249999284744263,
+          0.7150000035762787
+        ],
+        "front_interaction_clearance_m": 0.8
+      },
+      "reimport_dimensions_m": [
+        1.8249999284744263,
+        0.7150000035762787,
+        2.0000000298023224
+      ],
+      "reimport_triangles": 1836,
+      "verified_scale": true,
+      "reimport_material_count": 2,
+      "reimport_verified": true,
+      "texture_pixel_dimensions": [],
+      "optimization": "Static geometry consolidated by material; MOVING meshes and named anchors preserved.",
+      "optimized_mesh_nodes": 8,
+      "runtime_bytes": 132588,
+      "sha256": "af1c2f6209290810c8454bca169ca5f997f12f49b1ff79a255ea2b4fd0751813",
+      "gltf_material_count": 2,
+      "gltf_texture_count": 0,
+      "gltf_mesh_nodes": 8,
+      "suggested_collision_not_included": true,
+      "gltf_primitives": 8,
+      "estimated_draw_calls": 8
+    }
+  ],
+  "validation": "All files reimported into a clean Blender scene; dimensions and material count checked; actual imported meshes rendered.",
+  "total_triangles": 15756
+}

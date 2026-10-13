@@ -1,0 +1,90 @@
+{
+  "status": "PASS",
+  "tested": "Clean factory scene GLB reimport, true transformed vertex bounds, materials, textures, triangles, finite vertices, floor contact.",
+  "results": [
+    {
+      "file": "05_recovery_bay/runtime/BedsideCabinet_advanced.glb",
+      "errors": [],
+      "triangles": 1040,
+      "textures": 0,
+      "dimension_delta_m": 4.174132347101178e-06
+    },
+    {
+      "file": "05_recovery_bay/runtime/BedsideCabinet_standard.glb",
+      "errors": [],
+      "triangles": 1040,
+      "textures": 0,
+      "dimension_delta_m": 4.174132347101178e-06
+    },
+    {
+      "file": "05_recovery_bay/runtime/BedsideCabinet_starter.glb",
+      "errors": [],
+      "triangles": 1040,
+      "textures": 0,
+      "dimension_delta_m": 4.174132347101178e-06
+    },
+    {
+      "file": "05_recovery_bay/runtime/PrivacyCurtain_advanced.glb",
+      "errors": [],
+      "triangles": 544,
+      "textures": 0,
+      "dimension_delta_m": 2.5939941394881316e-07
+    },
+    {
+      "file": "05_recovery_bay/runtime/PrivacyCurtain_standard.glb",
+      "errors": [],
+      "triangles": 544,
+      "textures": 0,
+      "dimension_delta_m": 1.6880035391686476e-07
+    },
+    {
+      "file": "05_recovery_bay/runtime/PrivacyCurtain_starter.glb",
+      "errors": [],
+      "triangles": 672,
+      "textures": 0,
+      "dimension_delta_m": 4.884576797481444e-06
+    },
+    {
+      "file": "05_recovery_bay/runtime/RecoveryBed_advanced.glb",
+      "errors": [],
+      "triangles": 956,
+      "textures": 0,
+      "dimension_delta_m": 4.005432119313923e-08
+    },
+    {
+      "file": "05_recovery_bay/runtime/RecoveryBed_standard.glb",
+      "errors": [],
+      "triangles": 1280,
+      "textures": 0,
+      "dimension_delta_m": 4.005432119313923e-08
+    },
+    {
+      "file": "05_recovery_bay/runtime/RecoveryBed_starter.glb",
+      "errors": [],
+      "triangles": 1448,
+      "textures": 0,
+      "dimension_delta_m": 2.843093871884861e-06
+    },
+    {
+      "file": "05_recovery_bay/runtime/RecoveryHeadwall_advanced.glb",
+      "errors": [],
+      "triangles": 1424,
+      "textures": 0,
+      "dimension_delta_m": 1.907348634588857e-08
+    },
+    {
+      "file": "05_recovery_bay/runtime/RecoveryHeadwall_standard.glb",
+      "errors": [],
+      "triangles": 924,
+      "textures": 0,
+      "dimension_delta_m": 4.2915344167226976e-08
+    },
+    {
+      "file": "05_recovery_bay/runtime/RecoveryHeadwall_starter.glb",
+      "errors": [],
+      "triangles": 772,
+      "textures": 0,
+      "dimension_delta_m": 4.2915344167226976e-08
+    }
+  ]
+}

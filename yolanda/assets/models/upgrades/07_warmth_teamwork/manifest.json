@@ -1,0 +1,388 @@
+{
+  "units": "meters",
+  "gltf_axis": "Y up",
+  "pivot": "ground center",
+  "textures": "Per-asset measured in each entry; new assets use flat shared PBR colors, two reused Standards retain embedded 1024px atlas.",
+  "source": "Original kit meshes reused for Standard SedaPrep and ThermaNest; all other modules newly built. No original overwritten.",
+  "assets": [
+    {
+      "name": "TeamDesk_advanced",
+      "dimensions_m_blender_xyz": [
+        1.5,
+        0.72,
+        1.505
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.5,
+        1.505,
+        0.72
+      ],
+      "bounds_min_blender": [
+        -0.7400000095367432,
+        -0.3400000035762787,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.7400000095367432,
+        0.320000022649765,
+        1.5049999952316284
+      ],
+      "triangles": 2224,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "lightblue",
+        "linen",
+        "screen",
+        "steel",
+        "teal",
+        "white"
+      ],
+      "material_count": 9,
+      "textures": 0,
+      "file_bytes": 143512,
+      "anchors": [
+        "ANCHOR_ground.023",
+        "ANCHOR_drawer_grip.024",
+        "ANCHOR_keyboard.002",
+        "ANCHOR_operator.011",
+        "ANCHOR_phone.002"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "gltf_mesh_count": 10,
+      "gltf_primitive_count": 11,
+      "estimated_draw_calls": 11,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components.",
+      "texture_sizes": [],
+      "sha256": "952129a9ff8037d9db556b41d5e28760eb766907df954ac2048f8a228e0f510c",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet."
+    },
+    {
+      "name": "TeamDesk_standard",
+      "dimensions_m_blender_xyz": [
+        1.13,
+        0.66,
+        1.147
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.13,
+        1.147,
+        0.66
+      ],
+      "bounds_min_blender": [
+        -0.5649999976158142,
+        -0.3400000035762787,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.5649999976158142,
+        0.320000022649765,
+        1.1469999551773071
+      ],
+      "triangles": 1660,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "lightblue",
+        "linen",
+        "screen",
+        "steel",
+        "teal",
+        "white"
+      ],
+      "material_count": 9,
+      "textures": 0,
+      "file_bytes": 110748,
+      "anchors": [
+        "ANCHOR_ground.015",
+        "ANCHOR_drawer_grip.012",
+        "ANCHOR_keyboard.001",
+        "ANCHOR_operator.007",
+        "ANCHOR_phone.001"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "gltf_mesh_count": 10,
+      "gltf_primitive_count": 11,
+      "estimated_draw_calls": 11,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components.",
+      "texture_sizes": [],
+      "sha256": "6bdd0b4d051e32e8304bc3e4968f32c70b0f39c8f990f013c1afc1e49a3c1c27",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet."
+    },
+    {
+      "name": "TeamDesk_starter",
+      "dimensions_m_blender_xyz": [
+        1.13,
+        0.66,
+        1.147
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.13,
+        1.147,
+        0.66
+      ],
+      "bounds_min_blender": [
+        -0.5649999976158142,
+        -0.3400000035762787,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.5649999976158142,
+        0.320000022649765,
+        1.1469999551773071
+      ],
+      "triangles": 1120,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "lightblue",
+        "linen",
+        "screen",
+        "steel",
+        "white"
+      ],
+      "material_count": 8,
+      "textures": 0,
+      "file_bytes": 74996,
+      "anchors": [
+        "ANCHOR_ground.007",
+        "ANCHOR_keyboard",
+        "ANCHOR_operator.003",
+        "ANCHOR_phone"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "gltf_mesh_count": 8,
+      "gltf_primitive_count": 8,
+      "estimated_draw_calls": 8,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components.",
+      "texture_sizes": [],
+      "sha256": "dd4fc1b3f139dd01d0ba6a38ead3f3e1b3e6fc47be56221af9d1cb16cef7201a",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet."
+    },
+    {
+      "name": "TeamStool_starter",
+      "dimensions_m_blender_xyz": [
+        0.34,
+        0.34,
+        0.495
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.34,
+        0.495,
+        0.34
+      ],
+      "bounds_min_blender": [
+        -0.17000000178813934,
+        -0.17000000178813934,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.17000000178813934,
+        0.17000000178813934,
+        0.4950000047683716
+      ],
+      "triangles": 412,
+      "materials": [
+        "dark",
+        "steel",
+        "wood"
+      ],
+      "material_count": 3,
+      "textures": 0,
+      "file_bytes": 27852,
+      "anchors": [
+        "ANCHOR_ground.024",
+        "ANCHOR_seat"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "gltf_mesh_count": 3,
+      "gltf_primitive_count": 3,
+      "estimated_draw_calls": 3,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components.",
+      "texture_sizes": [],
+      "sha256": "69a73accae5415d5c57897489f17f5de1800204eddb615cadecc0c85f13d56e7",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet."
+    },
+    {
+      "name": "ThermaNest_advanced",
+      "dimensions_m_blender_xyz": [
+        1.142,
+        0.623,
+        1.54
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.142,
+        1.54,
+        0.623
+      ],
+      "bounds_min_blender": [
+        -0.5709999799728394,
+        -0.34299999475479126,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.5709999799728394,
+        0.2800000011920929,
+        1.5399999618530273
+      ],
+      "triangles": 1828,
+      "materials": [
+        "blue",
+        "ivory",
+        "lightblue",
+        "steel",
+        "white"
+      ],
+      "material_count": 5,
+      "textures": 0,
+      "file_bytes": 125416,
+      "anchors": [
+        "ANCHOR_ground.022",
+        "ANCHOR_blanket_pickup.002",
+        "ANCHOR_door_hinge.002",
+        "ANCHOR_blanket_pickup.003",
+        "ANCHOR_door_hinge.003",
+        "ANCHOR_drawer_grip.022",
+        "ANCHOR_drawer_grip.023",
+        "ANCHOR_operator.010"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "gltf_mesh_count": 9,
+      "gltf_primitive_count": 13,
+      "estimated_draw_calls": 13,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components.",
+      "texture_sizes": [],
+      "sha256": "8b3526c139f99c1ef0e17525491af612092fe21b85b84af1285e3e4c23ee7e79",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet."
+    },
+    {
+      "name": "ThermaNest_standard",
+      "dimensions_m_blender_xyz": [
+        0.81263,
+        0.69139,
+        1.26035
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.81263,
+        1.26035,
+        0.69139
+      ],
+      "bounds_min_blender": [
+        -0.40631499886512756,
+        -0.3456955552101135,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.40631502866744995,
+        0.3456955552101135,
+        1.260349988937378
+      ],
+      "triangles": 3782,
+      "materials": [
+        "CRNA_Gameplay_Atlas_PBR.001",
+        "CRNA_Readable_Glass_Alpha.001"
+      ],
+      "material_count": 2,
+      "textures": 1,
+      "file_bytes": 257660,
+      "anchors": [
+        "14_ThermaNest",
+        "ANCHOR_ground.014",
+        "ANCHOR_operator.006",
+        "ANCHOR_work_surface.009"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "gltf_mesh_count": 2,
+      "gltf_primitive_count": 2,
+      "estimated_draw_calls": 2,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components.",
+      "texture_sizes": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "sha256": "aaa6bb95c7cd864cf1b4637afee93fbc510c240c73ef24843c799445e98fe8fc",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "Adapted copy of existing 14_ThermaNest.glb; originals untouched; uniform scale .91; geometry decimated for mobile budget."
+    },
+    {
+      "name": "ThermaNest_starter",
+      "dimensions_m_blender_xyz": [
+        0.78,
+        0.627,
+        1.025
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.78,
+        1.025,
+        0.627
+      ],
+      "bounds_min_blender": [
+        -0.38999998569488525,
+        -0.34299999475479126,
+        0.0
+      ],
+      "bounds_max_blender": [
+        0.38999998569488525,
+        0.2840000092983246,
+        1.024999976158142
+      ],
+      "triangles": 1016,
+      "materials": [
+        "blue",
+        "dark",
+        "ivory",
+        "steel",
+        "white"
+      ],
+      "material_count": 5,
+      "textures": 0,
+      "file_bytes": 67976,
+      "anchors": [
+        "ANCHOR_ground.006",
+        "ANCHOR_blanket_pickup",
+        "ANCHOR_door_hinge",
+        "ANCHOR_operator.002"
+      ],
+      "collision_suggestion": "Use simple box/compound-box collider around solid body; do not collide anchors. Curtain fabric can be trigger-only.",
+      "interaction_suggestion": "Use named ANCHOR nodes for editor placements; no behavior or clinical simulation is supplied.",
+      "gltf_mesh_count": 6,
+      "gltf_primitive_count": 7,
+      "estimated_draw_calls": 7,
+      "runtime_organization": "Static geometry consolidated by material. Drawer fronts with nearby pulls and cabinet doors retained as named separate mesh nodes; work anchors retained. Editable source scene keeps fine-grained components.",
+      "texture_sizes": [],
+      "sha256": "21c37545811ee576c0ecbf1f1dc380045a9f54d79715d4412c3bc7d53b5186d5",
+      "reimport_ground_z": 0.0,
+      "reimport_status": "PASS",
+      "reimport_errors": [],
+      "source": "New modular geometry based on approved v2 sheet."
+    }
+  ]
+}

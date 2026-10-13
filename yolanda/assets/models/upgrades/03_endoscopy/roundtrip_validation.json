@@ -1,0 +1,104 @@
+[
+  {
+    "id": "endoscopy_tower_starter",
+    "max_dimension_error_m": 1.1800722621302384e-07,
+    "dimensions_roundtrip_m": [
+      1.0353487730026245,
+      0.6000000238418579,
+      1.315000057220459
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 37,
+    "mesh_nodes_after": 1,
+    "primitive_count": 7,
+    "triangle_count": 2684,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "endoscopy_tower_standard",
+    "max_dimension_error_m": 2.9802322387695312e-08,
+    "dimensions_roundtrip_m": [
+      0.7408487200737,
+      0.5999999940395355,
+      1.6449999958276749
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 37,
+    "mesh_nodes_after": 1,
+    "primitive_count": 5,
+    "triangle_count": 2876,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "endoscopy_tower_advanced",
+    "max_dimension_error_m": 1.2020633377574086e-09,
+    "dimensions_roundtrip_m": [
+      1.1153487265110016,
+      0.6000000238418579,
+      1.6400001049041748
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 42,
+    "mesh_nodes_after": 1,
+    "primitive_count": 5,
+    "triangle_count": 3264,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "procedure_stretcher_starter",
+    "max_dimension_error_m": 5.960464477539063e-08,
+    "dimensions_roundtrip_m": [
+      0.8560000061988831,
+      1.6550000309944153,
+      1.2405615001916885
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 30,
+    "mesh_nodes_after": 4,
+    "primitive_count": 6,
+    "triangle_count": 1736,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "procedure_stretcher_standard",
+    "max_dimension_error_m": 5.960464477539063e-08,
+    "dimensions_roundtrip_m": [
+      0.9010000228881836,
+      1.6550000309944153,
+      1.2405615001916885
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 33,
+    "mesh_nodes_after": 4,
+    "primitive_count": 9,
+    "triangle_count": 2492,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "procedure_stretcher_advanced",
+    "max_dimension_error_m": 5.960464477539063e-08,
+    "dimensions_roundtrip_m": [
+      0.9010000228881836,
+      1.6550000309944153,
+      1.2405615001916885
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 32,
+    "mesh_nodes_after": 4,
+    "primitive_count": 8,
+    "triangle_count": 2320,
+    "stage_geometry_present": false
+  }
+]

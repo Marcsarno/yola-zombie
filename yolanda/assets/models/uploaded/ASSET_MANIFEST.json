@@ -1,0 +1,680 @@
+{
+  "origin": "User uploads",
+  "assets": [
+    {
+      "id": "medical-01",
+      "name": "Anesthesia workstation",
+      "group": "Core equipment",
+      "sources": [
+        "CRNA_Core_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-01.glb",
+      "mount": "floor",
+      "placement": "work",
+      "note": "",
+      "sha256": "cbab0990acf5ed07a0007b0880786b7f2941b5fa91b20475bac88c2cbabd7c07",
+      "bytes": 272068,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Core_Equipment/core/exports/01_Anesthesia_Workstation.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 7736,
+      "expectedDimensions": [
+        1.487999975681305,
+        1.8925000429153442,
+        0.7199999690055847
+      ]
+    },
+    {
+      "id": "medical-02",
+      "name": "Patient monitor",
+      "group": "Core equipment",
+      "sources": [
+        "CRNA_Core_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-02.glb",
+      "mount": "tabletop",
+      "placement": null,
+      "note": "",
+      "sha256": "00980907b90596c56c90d60f071f20320e432890cc88df546fb1a9d2eb238316",
+      "bytes": 95396,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Core_Equipment/core/exports/02_Patient_Monitor.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 2370,
+      "expectedDimensions": [
+        0.5554999709129333,
+        0.5913749933242798,
+        0.2655000016093254
+      ]
+    },
+    {
+      "id": "medical-03",
+      "name": "Breathing circuit + reservoir bag",
+      "group": "Core equipment",
+      "sources": [
+        "CRNA_Core_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-03.glb",
+      "mount": "tabletop",
+      "placement": null,
+      "note": "",
+      "sha256": "07e1822170ffecd52958f348ff712f81230cd0bdfa0feb1e97c88cfac5d99b84",
+      "bytes": 87264,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Core_Equipment/core/exports/03_Breathing_Circuit_Reservoir_Bag.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 2772,
+      "expectedDimensions": [
+        1.0365707576274872,
+        0.10800000609595317,
+        0.9883542060852051
+      ]
+    },
+    {
+      "id": "medical-04",
+      "name": "Medical gas cylinder",
+      "group": "Core equipment",
+      "sources": [
+        "CRNA_Core_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-04.glb",
+      "mount": "floor",
+      "placement": "gas",
+      "note": "",
+      "sha256": "52d60d053c41edddeb3bc2b929c25f893f18301273ea3a3cb52fcc74f171f543",
+      "bytes": 124056,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Core_Equipment/core/exports/04_Medical_Gas_Cylinder.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 3246,
+      "expectedDimensions": [
+        0.38999998569488525,
+        1.1455000676214695,
+        0.4299999922513962
+      ]
+    },
+    {
+      "id": "medical-05",
+      "name": "Procedure stretcher",
+      "group": "Core equipment",
+      "sources": [
+        "CRNA_Core_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-05.glb",
+      "mount": "floor",
+      "placement": "patient",
+      "note": "",
+      "sha256": "3278023ddb4516ac34791e5543526ae0edb13efcde2354ae390ebac1b2fdcf89",
+      "bytes": 238368,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Core_Equipment/core/exports/05_Procedure_Stretcher.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 6304,
+      "expectedDimensions": [
+        0.9120000898838043,
+        1.2483477592468262,
+        2.101037383079529
+      ]
+    },
+    {
+      "id": "medical-06",
+      "name": "Operating table",
+      "group": "Core equipment",
+      "sources": [
+        "CRNA_Core_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-06.glb",
+      "mount": "floor",
+      "placement": "table",
+      "note": "",
+      "sha256": "94eb31945ae8b72f578acc91e547d01cb0e41765014c36c501c3ae3265812025",
+      "bytes": 154716,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Core_Equipment/core/exports/06_Operating_Table.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 3780,
+      "expectedDimensions": [
+        1.1729942560195923,
+        1.1201316118240356,
+        2.059137225151062
+      ]
+    },
+    {
+      "id": "medical-07",
+      "name": "IV stand",
+      "group": "Support equipment",
+      "sources": [
+        "CRNA_Support_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-07.glb",
+      "mount": "floor",
+      "placement": "iv",
+      "note": "",
+      "sha256": "505cee2af782f924e98bad1fd49ab5824d5ac905bc117b20d35e097445303039",
+      "bytes": 147388,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Support_Equipment/support/glb/07_iv_stand.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 4484,
+      "expectedDimensions": [
+        0.7320254445075989,
+        2.0310001373291016,
+        0.6961975693702698
+      ]
+    },
+    {
+      "id": "medical-08",
+      "name": "Surgical lights",
+      "group": "Support equipment",
+      "sources": [
+        "CRNA_Support_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-08.glb",
+      "mount": "ceiling",
+      "placement": null,
+      "note": "",
+      "sha256": "38a102920b8a178033d6df6ecc4ef64699637f944ff1d84c4b5aec63761b25ac",
+      "bytes": 259076,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Support_Equipment/support/glb/08_surgical_lights.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 7168,
+      "expectedDimensions": [
+        2.011808395385742,
+        0.981763482093811,
+        0.5556653290987015
+      ]
+    },
+    {
+      "id": "medical-09",
+      "name": "Supply cart",
+      "group": "Support equipment",
+      "sources": [
+        "CRNA_Support_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-09.glb",
+      "mount": "floor",
+      "placement": "supply",
+      "note": "",
+      "sha256": "331fd2d6f9631d6b3d829840d3162fc0dfdad99e4eb8ceb74753ea0fa3a2d011",
+      "bytes": 156172,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Support_Equipment/support/glb/09_supply_cart.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 5492,
+      "expectedDimensions": [
+        0.8778966069221497,
+        1.2097450494766235,
+        0.6465000212192535
+      ]
+    },
+    {
+      "id": "medical-10",
+      "name": "Charting workstation",
+      "group": "Support equipment",
+      "sources": [
+        "CRNA_Support_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-10.glb",
+      "mount": "floor",
+      "placement": "chart",
+      "note": "",
+      "sha256": "b32e40616f8b0bb93f4cd5cc70ba1f00499fde11f4918629e3b5a917f5151718",
+      "bytes": 183528,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Support_Equipment/support/glb/10_charting_workstation.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 6488,
+      "expectedDimensions": [
+        1.4600000381469727,
+        1.3244999647140503,
+        1.183175653219223
+      ]
+    },
+    {
+      "id": "medical-11",
+      "name": "SedaPrep",
+      "group": "Gameplay stations",
+      "sources": [
+        "CRNA_Gameplay_Stations.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-11.glb",
+      "mount": "floor",
+      "placement": "seda",
+      "note": "",
+      "sha256": "6b71eb7a4f553afcd7b4d6b7fee1a10e6f05826a4c054e4524088c60e3814d77",
+      "bytes": 491788,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Gameplay_Stations/gameplay/glb/11_SedaPrep.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 8214,
+      "expectedDimensions": [
+        1.5679999589920044,
+        1.404911756515503,
+        0.8299999535083771
+      ]
+    },
+    {
+      "id": "medical-12",
+      "name": "ScopeAir / VitaDock",
+      "group": "Gameplay stations",
+      "sources": [
+        "CRNA_Gameplay_Stations.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-12.glb",
+      "mount": "floor",
+      "placement": "scope",
+      "note": "",
+      "sha256": "3b1e16a4f4998bf66e78c67af7324639cb76cb2d51818727decd48355b31a132",
+      "bytes": 287072,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Gameplay_Stations/gameplay/glb/12_ScopeAir_VitaDock.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 4542,
+      "expectedDimensions": [
+        0.9780863523483276,
+        1.6727312803268433,
+        0.6000000238418579
+      ]
+    },
+    {
+      "id": "medical-13",
+      "name": "AirReady",
+      "group": "Gameplay stations",
+      "sources": [
+        "CRNA_Gameplay_Stations.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-13.glb",
+      "mount": "floor",
+      "placement": "air",
+      "note": "",
+      "sha256": "86151890afe05fce731e1aaabc3cc6d6261124e8bb3498f1cbe441dc103d36a8",
+      "bytes": 408392,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Gameplay_Stations/gameplay/glb/13_AirReady.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 6446,
+      "expectedDimensions": [
+        1.2799999713897705,
+        1.6551353931427002,
+        0.7899999618530273
+      ]
+    },
+    {
+      "id": "medical-14",
+      "name": "ThermaNest",
+      "group": "Gameplay stations",
+      "sources": [
+        "CRNA_Gameplay_Stations.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-14.glb",
+      "mount": "floor",
+      "placement": "warm",
+      "note": "",
+      "sha256": "8ccdb7ea25998e8eee20d9c7f1b2888cca8f6ee1933486078a307d7756639143",
+      "bytes": 257712,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Gameplay_Stations/gameplay/glb/14_ThermaNest.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 4398,
+      "expectedDimensions": [
+        0.8930000066757202,
+        1.3849999904632568,
+        0.7597704231739044
+      ]
+    },
+    {
+      "id": "medical-15",
+      "name": "Prep counter + supply drawers",
+      "group": "Support equipment",
+      "sources": [
+        "CRNA_Support_Equipment.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-15.glb",
+      "mount": "floor",
+      "placement": "prep",
+      "note": "",
+      "sha256": "8971d81f9da1ad54fa9255e6a7cc2f7d2fd90d7c9ee508cd1861fc278414ee5e",
+      "bytes": 107696,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Support_Equipment/support/glb/15_prep_counter.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 3920,
+      "expectedDimensions": [
+        1.5149999856948853,
+        1.063999891281128,
+        0.6869999468326569
+      ]
+    },
+    {
+      "id": "medical-16",
+      "name": "Team",
+      "group": "Gameplay stations",
+      "sources": [
+        "CRNA_Gameplay_Stations.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-16.glb",
+      "mount": "wall",
+      "placement": null,
+      "note": "",
+      "sha256": "f83d3a9f3a7308c31e2cbbdd92497939176076991e7b33ca142ba71c4ca48891",
+      "bytes": 94592,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Gameplay_Stations/gameplay/glb/16_Team.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 1326,
+      "expectedDimensions": [
+        0.8009999990463257,
+        0.9800000190734863,
+        0.2409999966621399
+      ]
+    },
+    {
+      "id": "medical-17",
+      "name": "PACU",
+      "group": "Gameplay stations",
+      "sources": [
+        "CRNA_Gameplay_Stations.zip",
+        "CRNA_All_17_Runtime_Library.zip"
+      ],
+      "url": "/models/uploaded/medical-17.glb",
+      "mount": "floor",
+      "placement": "pacu",
+      "note": "",
+      "sha256": "8d990e514c967f8615d4e970f2512696c90e74544227103e61b1c6596be8d110",
+      "bytes": 201100,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "CRNA_Gameplay_Stations/gameplay/glb/17_PACU.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y",
+      "triangles": 3356,
+      "expectedDimensions": [
+        0.7499872446060181,
+        1.7879999876022339,
+        0.597000002861023
+      ]
+    },
+    {
+      "id": "floor-tile",
+      "name": "Floor tile",
+      "group": "Construction kit",
+      "sources": [
+        "Universal_Hospital_Construction_Kit.zip"
+      ],
+      "url": "/models/uploaded/floor-tile.glb",
+      "mount": "grid",
+      "placement": null,
+      "note": "Integrated at authored metre scale: 2.5 m modules, 1.25 m subdivisions, grouped two-edge double doors. Equipment remains unscaled.",
+      "sha256": "0d882ad6aff406438ba8e36999f7b5f217aa882da911a0c5498005512dae052b",
+      "bytes": 3720,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Universal_Hospital_Kit/exports/01_Floor_Tile.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "straight-wall",
+      "name": "Straight wall",
+      "group": "Construction kit",
+      "sources": [
+        "Universal_Hospital_Construction_Kit.zip"
+      ],
+      "url": "/models/uploaded/straight-wall.glb",
+      "mount": "grid",
+      "placement": null,
+      "note": "Integrated at authored metre scale: 2.5 m modules, 1.25 m subdivisions, grouped two-edge double doors. Equipment remains unscaled.",
+      "sha256": "81fd285218e11e5f81490265950bab5f3c0254e0cc9c94e74c25fd09df17348b",
+      "bytes": 4904,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Universal_Hospital_Kit/exports/02_Straight_Wall.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "double-doorway",
+      "name": "Double doorway",
+      "group": "Construction kit",
+      "sources": [
+        "Universal_Hospital_Construction_Kit.zip"
+      ],
+      "url": "/models/uploaded/double-doorway.glb",
+      "mount": "grid",
+      "placement": null,
+      "note": "Integrated at authored metre scale: 2.5 m modules, 1.25 m subdivisions, grouped two-edge double doors. Equipment remains unscaled.",
+      "sha256": "0a0d58f65b45b86a197c28547f48c1526224496045f533109d9bd28dba7ca709",
+      "bytes": 36040,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Universal_Hospital_Kit/exports/03_Double_Doorway.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "reception",
+      "name": "Reception counter",
+      "group": "Reception kit",
+      "sources": [
+        "Hospital_Reception_Starter_Kit.zip"
+      ],
+      "url": "/models/uploaded/reception.glb",
+      "mount": "floor",
+      "placement": "reception",
+      "note": "",
+      "sha256": "8181098a0c61a1bc93e2e4db6fe2563e59fe5af4d3802d2f31e75181191d5f47",
+      "bytes": 68428,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Hospital_Reception_Starter_Kit/exports/01_Reception_Counter.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "waiting-chair",
+      "name": "Waiting chair",
+      "group": "Reception kit",
+      "sources": [
+        "Hospital_Reception_Starter_Kit.zip"
+      ],
+      "url": "/models/uploaded/waiting-chair.glb",
+      "mount": "floor",
+      "placement": "waiting",
+      "note": "",
+      "sha256": "f807e219ae9e3336f85b73954f9451430929596c1d6035dbe597cce0d81b869d",
+      "bytes": 110856,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Hospital_Reception_Starter_Kit/exports/02_Waiting_Chair.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "reception-equipped",
+      "name": "Reception counter \u00b7 equipped variant",
+      "group": "Reception kit",
+      "sources": [
+        "Hospital_Reception_Starter_Kit.zip"
+      ],
+      "url": "/models/uploaded/reception-equipped.glb",
+      "mount": "floor",
+      "placement": "reception-equipped",
+      "note": "",
+      "sha256": "e26400d956f220709640e45237b2751fe2f51f5e1ff5c1868ad136bbc7d2424e",
+      "bytes": 136376,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Hospital_Reception_Starter_Kit/optional/01_Reception_Counter_Equipped_Reused_Computer.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "staff-chair",
+      "name": "Staff chair \u00b7 reused reference",
+      "group": "Reception kit",
+      "sources": [
+        "Hospital_Reception_Starter_Kit.zip"
+      ],
+      "url": "/models/uploaded/staff-chair.glb",
+      "mount": "floor",
+      "placement": "staff-chair",
+      "note": "",
+      "sha256": "9b414a0f13dfc53ff912cb5c419594d2f77598d1580aea5caf9fc89c0fad6c7d",
+      "bytes": 79412,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Hospital_Reception_Starter_Kit/reference/REUSED_Staff_Chair.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "reception-computer",
+      "name": "Reception computer \u00b7 reused reference",
+      "group": "Reception kit",
+      "sources": [
+        "Hospital_Reception_Starter_Kit.zip"
+      ],
+      "url": "/models/uploaded/reception-computer.glb",
+      "mount": "tabletop",
+      "placement": null,
+      "note": "",
+      "sha256": "28920e29119f92db168f322a1ae1767a3ef692b3c1396cc7560ecc3d35bf5aef",
+      "bytes": 81120,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Hospital_Reception_Starter_Kit/reference/REUSED_Computer_Reception_Placement.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    },
+    {
+      "id": "endoscopy-tower",
+      "name": "Endoscopy tower",
+      "group": "Endoscopy tower",
+      "sources": [
+        "Endoscopy_Tower.glb",
+        "Endoscopy_Tower_Asset.zip"
+      ],
+      "url": "/models/uploaded/endoscopy-tower.glb",
+      "mount": "floor",
+      "placement": "endoscopy",
+      "note": "",
+      "sha256": "fbcb3ceeb047e1b5fdee24ffb17b38f027ee781c6d9421a1988386e5f655d83e",
+      "bytes": 314296,
+      "license": "User-supplied project asset; no independent third-party license assertion",
+      "creator": "Not independently identified in upload",
+      "sourceFile": "Endoscopy_Tower_Asset/exports/Endoscopy_Tower.glb",
+      "format": "GLB",
+      "units": "metres",
+      "front": "+Z",
+      "up": "+Y"
+    }
+  ],
+  "duplicates": [
+    "Combined 17-asset library repeats core/support/gameplay exports.",
+    "Reception combined library repeats two base reception props.",
+    "Reception reference charting workstation is byte-identical to medical-10.",
+    "Endoscopy_Tower.glb is byte-identical to the tower ZIP export."
+  ],
+  "excludedFromRuntime": [
+    "Editable Blender files, authoring scripts, QA reports, supplied preview JPGs; retained locally in assets/imports."
+  ]
+}

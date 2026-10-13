@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "tested": "Clean factory scene GLB reimport, true transformed vertex bounds, materials, textures, triangles, finite vertices, floor contact.",
+  "results": [
+    {
+      "file": "06_prep_airway/runtime/AirReady_advanced.glb",
+      "errors": [],
+      "triangles": 3436,
+      "textures": 0,
+      "dimension_delta_m": 5.6131749914811735e-08
+    },
+    {
+      "file": "06_prep_airway/runtime/AirReady_standard.glb",
+      "errors": [],
+      "triangles": 2108,
+      "textures": 0,
+      "dimension_delta_m": 2.288818357065736e-08
+    },
+    {
+      "file": "06_prep_airway/runtime/AirReady_starter.glb",
+      "errors": [],
+      "triangles": 2028,
+      "textures": 0,
+      "dimension_delta_m": 2.622604367008563e-08
+    },
+    {
+      "file": "06_prep_airway/runtime/SedaPrep_advanced.glb",
+      "errors": [],
+      "triangles": 2460,
+      "textures": 0,
+      "dimension_delta_m": 2.7521520395978882e-08
+    },
+    {
+      "file": "06_prep_airway/runtime/SedaPrep_standard.glb",
+      "errors": [],
+      "triangles": 3777,
+      "textures": 1,
+      "dimension_delta_m": 3.591575622463594e-06
+    },
+    {
+      "file": "06_prep_airway/runtime/SedaPrep_starter.glb",
+      "errors": [],
+      "triangles": 1836,
+      "textures": 0,
+      "dimension_delta_m": 2.622604367008563e-08
+    }
+  ]
+}

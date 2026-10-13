@@ -1,0 +1,1472 @@
+{
+  "sheet": "STAFF LOUNGE",
+  "units": "meters",
+  "export_axes": "glTF Y-up; source Blender Z-up; object front Blender -Y maps to glTF +Z",
+  "geometry": "Opaque vertex-color geometry; zero image textures. One joined static mesh per prop, with one paint material and optional metal/light materials. Independent hinge meshes where listed. Per-asset provenance records retained standard geometry. No collision meshes or animation clips.",
+  "individual_asset_count": 19,
+  "assets": [
+    {
+      "triangles": 1200,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.46000000834465027,
+          -0.3019999861717224,
+          0.0
+        ],
+        "max": [
+          0.46000000834465027,
+          0.23499999940395355,
+          1.7799999713897705
+        ]
+      },
+      "dimensions_m": [
+        0.9200000166893005,
+        0.536999985575676,
+        1.7799999713897705
+      ],
+      "moving_nodes": [],
+      "file": "starter/11_starter_lockers.glb",
+      "name": "11_starter_lockers",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.800000011920929,
+        0.6899999976158142,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.46000000834465027,
+          0.0,
+          -0.23499999940395355
+        ],
+        "max": [
+          0.46000000834465027,
+          1.7799999713897705,
+          0.3019999861717224
+        ]
+      },
+      "dimensions_m_blender": [
+        0.9200000166893005,
+        0.536999985575676,
+        1.7799999713897705
+      ],
+      "dimensions_m_gltf": [
+        0.9200000166893005,
+        1.7799999713897705,
+        0.536999985575676
+      ],
+      "bytes": 155384,
+      "sha256": "6993b7c9f0735f7f3359d602e2e1371da3a306818fecaedd77cc5266f89f19a2",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 324,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3499999940395355,
+          -0.2849999964237213,
+          0.0
+        ],
+        "max": [
+          0.3500000238418579,
+          0.2849999666213989,
+          0.8825000524520874
+        ]
+      },
+      "dimensions_m": [
+        0.7000000178813934,
+        0.5699999630451202,
+        0.8825000524520874
+      ],
+      "moving_nodes": [],
+      "file": "starter/11_starter_coffee_counter.glb",
+      "name": "11_starter_coffee_counter",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6899999976158142,
+        0.6299999952316284,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3499999940395355,
+          0.0,
+          -0.2849999666213989
+        ],
+        "max": [
+          0.3500000238418579,
+          0.8825000524520874,
+          0.2849999964237213
+        ]
+      },
+      "dimensions_m_blender": [
+        0.7000000178813934,
+        0.5699999630451202,
+        0.8825000524520874
+      ],
+      "dimensions_m_gltf": [
+        0.7000000178813934,
+        0.8825000524520874,
+        0.5699999630451202
+      ],
+      "bytes": 27264,
+      "sha256": "1097c82f01c3d096204a8bede3797c087908712923681cad3bc6292dfa3ecf2c",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 780,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.1550000011920929,
+          -0.23499998450279236,
+          0.0
+        ],
+        "max": [
+          0.1550000011920929,
+          0.1550000011920929,
+          0.5449999570846558
+        ]
+      },
+      "dimensions_m": [
+        0.3100000023841858,
+        0.38999998569488525,
+        0.5449999570846558
+      ],
+      "moving_nodes": [],
+      "file": "starter/11_starter_coffee_machine.glb",
+      "name": "11_starter_coffee_machine",
+      "tier": "starter",
+      "pivot": "countertop-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6800000071525574,
+        0.5600000023841858,
+        0.8870000243186951
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 3,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.1550000011920929,
+          0.0,
+          -0.1550000011920929
+        ],
+        "max": [
+          0.1550000011920929,
+          0.5449999570846558,
+          0.23499998450279236
+        ]
+      },
+      "dimensions_m_blender": [
+        0.3100000023841858,
+        0.38999998569488525,
+        0.5449999570846558
+      ],
+      "dimensions_m_gltf": [
+        0.3100000023841858,
+        0.5449999570846558,
+        0.38999998569488525
+      ],
+      "bytes": 92616,
+      "sha256": "a33371954eadc72c2b6ad65bed654ceb647c6b59de689e50da05ab6ee8c7693c",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 384,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.4749999940395355,
+          -0.4000000059604645,
+          -0.002890646457672119
+        ],
+        "max": [
+          0.4749999940395355,
+          0.4000000059604645,
+          0.7899999618530273
+        ]
+      },
+      "dimensions_m": [
+        0.949999988079071,
+        0.800000011920929,
+        0.7928906083106995
+      ],
+      "moving_nodes": [],
+      "file": "starter/11_starter_table.glb",
+      "name": "11_starter_table",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.0,
+        -0.47999998927116394,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.4749999940395355,
+          -0.002890646457672119,
+          -0.4000000059604645
+        ],
+        "max": [
+          0.4749999940395355,
+          0.7899999618530273,
+          0.4000000059604645
+        ]
+      },
+      "dimensions_m_blender": [
+        0.949999988079071,
+        0.800000011920929,
+        0.7928906083106995
+      ],
+      "dimensions_m_gltf": [
+        0.949999988079071,
+        0.7928906083106995,
+        0.800000011920929
+      ],
+      "bytes": 32380,
+      "sha256": "22b572b368b1016ee79a85ed22631dc504adfa275d4ce3ea688e3e75ba28bde9",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 528,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.24800002574920654,
+          -0.2459879219532013,
+          0.017849713563919067
+        ],
+        "max": [
+          0.24800002574920654,
+          0.2632805109024048,
+          0.9299999475479126
+        ]
+      },
+      "dimensions_m": [
+        0.4960000514984131,
+        0.5092684328556061,
+        0.9121502339839935
+      ],
+      "moving_nodes": [],
+      "file": "starter/11_starter_chair_left.glb",
+      "name": "11_starter_chair_left",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.8100000023841858,
+        -0.5199999809265137,
+        0.0
+      ],
+      "rotation_degrees_z": 90.00000250447816,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.24800002574920654,
+          0.017849713563919067,
+          -0.2632805109024048
+        ],
+        "max": [
+          0.24800002574920654,
+          0.9299999475479126,
+          0.2459879219532013
+        ]
+      },
+      "dimensions_m_blender": [
+        0.4960000514984131,
+        0.5092684328556061,
+        0.9121502339839935
+      ],
+      "dimensions_m_gltf": [
+        0.4960000514984131,
+        0.9121502339839935,
+        0.5092684328556061
+      ],
+      "bytes": 45360,
+      "sha256": "805ff2c6c4d9b9c8476ca97a07e592d721f7285e3aae538f79a555097c45a880",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 528,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.24800002574920654,
+          -0.2459879219532013,
+          0.017849713563919067
+        ],
+        "max": [
+          0.24800002574920654,
+          0.2632805109024048,
+          0.9299999475479126
+        ]
+      },
+      "dimensions_m": [
+        0.4960000514984131,
+        0.5092684328556061,
+        0.9121502339839935
+      ],
+      "moving_nodes": [],
+      "file": "starter/11_starter_chair_right.glb",
+      "name": "11_starter_chair_right",
+      "tier": "starter",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.8299999833106995,
+        -0.5699999928474426,
+        0.0
+      ],
+      "rotation_degrees_z": -90.00000250447816,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.24800002574920654,
+          0.017849713563919067,
+          -0.2632805109024048
+        ],
+        "max": [
+          0.24800002574920654,
+          0.9299999475479126,
+          0.2459879219532013
+        ]
+      },
+      "dimensions_m_blender": [
+        0.4960000514984131,
+        0.5092684328556061,
+        0.9121502339839935
+      ],
+      "dimensions_m_gltf": [
+        0.4960000514984131,
+        0.9121502339839935,
+        0.5092684328556061
+      ],
+      "bytes": 45364,
+      "sha256": "06d1b65ca5f5c02dc4a66cfa4c7b2ed176f05aab5a6e1ce801180a2019e3bc52",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 3104,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.699999988079071,
+          -0.3019999861717224,
+          0.0
+        ],
+        "max": [
+          0.699999988079071,
+          0.23499999940395355,
+          1.9500000476837158
+        ]
+      },
+      "dimensions_m": [
+        1.399999976158142,
+        0.536999985575676,
+        1.9500000476837158
+      ],
+      "moving_nodes": [],
+      "file": "standard/11_standard_lockers.glb",
+      "name": "11_standard_lockers",
+      "tier": "standard",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.800000011920929,
+        0.6899999976158142,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.699999988079071,
+          0.0,
+          -0.23499999940395355
+        ],
+        "max": [
+          0.699999988079071,
+          1.9500000476837158,
+          0.3019999861717224
+        ]
+      },
+      "dimensions_m_blender": [
+        1.399999976158142,
+        0.536999985575676,
+        1.9500000476837158
+      ],
+      "dimensions_m_gltf": [
+        1.399999976158142,
+        1.9500000476837158,
+        0.536999985575676
+      ],
+      "bytes": 390716,
+      "sha256": "1dd053a90ac844d824c9305379dff372da35280f31e9ba36231c52fd08c7c519",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 732,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.6650000214576721,
+          -0.3669999837875366,
+          0.0
+        ],
+        "max": [
+          0.6650000214576721,
+          0.33000001311302185,
+          0.9650000333786011
+        ]
+      },
+      "dimensions_m": [
+        1.3300000429153442,
+        0.6969999969005585,
+        0.9650000333786011
+      ],
+      "moving_nodes": [],
+      "file": "standard/11_standard_coffee_counter.glb",
+      "name": "11_standard_coffee_counter",
+      "tier": "standard",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6899999976158142,
+        0.6299999952316284,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.6650000214576721,
+          0.0,
+          -0.33000001311302185
+        ],
+        "max": [
+          0.6650000214576721,
+          0.9650000333786011,
+          0.3669999837875366
+        ]
+      },
+      "dimensions_m_blender": [
+        1.3300000429153442,
+        0.6969999969005585,
+        0.9650000333786011
+      ],
+      "dimensions_m_gltf": [
+        1.3300000429153442,
+        0.9650000333786011,
+        0.6969999969005585
+      ],
+      "bytes": 86488,
+      "sha256": "e1c7035eea57bc3ac4ac25da8845f99cb7285a834c1d10aedf6a286c0488e987",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 780,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.1550000011920929,
+          -0.23499998450279236,
+          0.0
+        ],
+        "max": [
+          0.1550000011920929,
+          0.1550000011920929,
+          0.5449999570846558
+        ]
+      },
+      "dimensions_m": [
+        0.3100000023841858,
+        0.38999998569488525,
+        0.5449999570846558
+      ],
+      "moving_nodes": [],
+      "file": "standard/11_standard_coffee_machine.glb",
+      "name": "11_standard_coffee_machine",
+      "tier": "standard",
+      "pivot": "countertop-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6800000071525574,
+        0.5600000023841858,
+        0.972000002861023
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 3,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.1550000011920929,
+          0.0,
+          -0.1550000011920929
+        ],
+        "max": [
+          0.1550000011920929,
+          0.5449999570846558,
+          0.23499998450279236
+        ]
+      },
+      "dimensions_m_blender": [
+        0.3100000023841858,
+        0.38999998569488525,
+        0.5449999570846558
+      ],
+      "dimensions_m_gltf": [
+        0.3100000023841858,
+        0.5449999570846558,
+        0.38999998569488525
+      ],
+      "bytes": 92616,
+      "sha256": "a26cf48eff441ef54e25137dbc4082e82f54cc471921bebaaa1b746230a3fb20",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 308,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.4749999940395355,
+          -0.4300000071525574,
+          0.0
+        ],
+        "max": [
+          0.4749999940395355,
+          0.4300000071525574,
+          0.8199999928474426
+        ]
+      },
+      "dimensions_m": [
+        0.949999988079071,
+        0.8600000143051147,
+        0.8199999928474426
+      ],
+      "moving_nodes": [],
+      "file": "standard/11_standard_table.glb",
+      "name": "11_standard_table",
+      "tier": "standard",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.0,
+        -0.47999998927116394,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.4749999940395355,
+          0.0,
+          -0.4300000071525574
+        ],
+        "max": [
+          0.4749999940395355,
+          0.8199999928474426,
+          0.4300000071525574
+        ]
+      },
+      "dimensions_m_blender": [
+        0.949999988079071,
+        0.8600000143051147,
+        0.8199999928474426
+      ],
+      "dimensions_m_gltf": [
+        0.949999988079071,
+        0.8199999928474426,
+        0.8600000143051147
+      ],
+      "bytes": 30500,
+      "sha256": "04864ab77d9394286e092a3dd62b258a87cd86fd290cc20ff22e678739b520ac",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 3276,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3320000171661377,
+          -0.29600000381469727,
+          0.0
+        ],
+        "max": [
+          0.3319999873638153,
+          0.32832467555999756,
+          0.9238400459289551
+        ]
+      },
+      "dimensions_m": [
+        0.664000004529953,
+        0.6243246793746948,
+        0.9238400459289551
+      ],
+      "moving_nodes": [],
+      "file": "standard/11_standard_chair_left.glb",
+      "name": "11_standard_chair_left",
+      "tier": "standard",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.8100000023841858,
+        -0.5199999809265137,
+        0.0
+      ],
+      "rotation_degrees_z": 90.00000250447816,
+      "provenance": "Staff_Lounge_Runtime/Staff_Lounge_Kit/exports/Lounge_Break_Chair.glb",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3320000171661377,
+          0.0,
+          -0.32832467555999756
+        ],
+        "max": [
+          0.3319999873638153,
+          0.9238400459289551,
+          0.29600000381469727
+        ]
+      },
+      "dimensions_m_blender": [
+        0.664000004529953,
+        0.6243246793746948,
+        0.9238400459289551
+      ],
+      "dimensions_m_gltf": [
+        0.664000004529953,
+        0.9238400459289551,
+        0.6243246793746948
+      ],
+      "bytes": 106272,
+      "sha256": "8482c860fc3fa535dc47e0f61f6d26f21f6f91ab32acc7d43b8213df0e5cac05",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 3276,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3320000171661377,
+          -0.29600000381469727,
+          0.0
+        ],
+        "max": [
+          0.3319999873638153,
+          0.32832467555999756,
+          0.9238400459289551
+        ]
+      },
+      "dimensions_m": [
+        0.664000004529953,
+        0.6243246793746948,
+        0.9238400459289551
+      ],
+      "moving_nodes": [],
+      "file": "standard/11_standard_chair_right.glb",
+      "name": "11_standard_chair_right",
+      "tier": "standard",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.8299999833106995,
+        -0.5699999928474426,
+        0.0
+      ],
+      "rotation_degrees_z": -90.00000250447816,
+      "provenance": "Staff_Lounge_Runtime/Staff_Lounge_Kit/exports/Lounge_Break_Chair.glb",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3320000171661377,
+          0.0,
+          -0.32832467555999756
+        ],
+        "max": [
+          0.3319999873638153,
+          0.9238400459289551,
+          0.29600000381469727
+        ]
+      },
+      "dimensions_m_blender": [
+        0.664000004529953,
+        0.6243246793746948,
+        0.9238400459289551
+      ],
+      "dimensions_m_gltf": [
+        0.664000004529953,
+        0.9238400459289551,
+        0.6243246793746948
+      ],
+      "bytes": 106272,
+      "sha256": "2a1512451645b9cece5e02cda7cc842a3c59ad6f2769a7eaf60030933136b00b",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 2168,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.8500000238418579,
+          -0.3019999861717224,
+          0.0
+        ],
+        "max": [
+          0.8500000238418579,
+          0.23499999940395355,
+          2.0
+        ]
+      },
+      "dimensions_m": [
+        1.7000000476837158,
+        0.536999985575676,
+        2.0
+      ],
+      "moving_nodes": [],
+      "file": "advanced/11_advanced_lockers.glb",
+      "name": "11_advanced_lockers",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.800000011920929,
+        0.6899999976158142,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.8500000238418579,
+          0.0,
+          -0.23499999940395355
+        ],
+        "max": [
+          0.8500000238418579,
+          2.0,
+          0.3019999861717224
+        ]
+      },
+      "dimensions_m_blender": [
+        1.7000000476837158,
+        0.536999985575676,
+        2.0
+      ],
+      "dimensions_m_gltf": [
+        1.7000000476837158,
+        2.0,
+        0.536999985575676
+      ],
+      "bytes": 272132,
+      "sha256": "b85b5c6d1b80a0c52db8bba99152603e0ed6ad94c17cbdd313f1847061cf5814",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1336,
+      "materials": 2,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.7099999785423279,
+          -0.3669999837875366,
+          0.0
+        ],
+        "max": [
+          0.7099999785423279,
+          0.4000000059604645,
+          2.0450000762939453
+        ]
+      },
+      "dimensions_m": [
+        1.4199999570846558,
+        0.7669999897480011,
+        2.0450000762939453
+      ],
+      "moving_nodes": [],
+      "file": "advanced/11_advanced_coffee_counter.glb",
+      "name": "11_advanced_coffee_counter",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6899999976158142,
+        0.6299999952316284,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.7099999785423279,
+          0.0,
+          -0.4000000059604645
+        ],
+        "max": [
+          0.7099999785423279,
+          2.0450000762939453,
+          0.3669999837875366
+        ]
+      },
+      "dimensions_m_blender": [
+        1.4199999570846558,
+        0.7669999897480011,
+        2.0450000762939453
+      ],
+      "dimensions_m_gltf": [
+        1.4199999570846558,
+        2.0450000762939453,
+        0.7669999897480011
+      ],
+      "bytes": 168316,
+      "sha256": "5950890bf7fa971e94d361bcc63fc49f8f1ec6751f771f2175579dcf9a53cae1",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1140,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3230000138282776,
+          -0.23499998450279236,
+          0.0
+        ],
+        "max": [
+          0.3230000138282776,
+          0.1550000011920929,
+          0.5449999570846558
+        ]
+      },
+      "dimensions_m": [
+        0.6460000276565552,
+        0.38999998569488525,
+        0.5449999570846558
+      ],
+      "moving_nodes": [],
+      "file": "advanced/11_advanced_coffee_machine.glb",
+      "name": "11_advanced_coffee_machine",
+      "tier": "advanced",
+      "pivot": "countertop-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6800000071525574,
+        0.5600000023841858,
+        0.972000002861023
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 3,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3230000138282776,
+          0.0,
+          -0.1550000011920929
+        ],
+        "max": [
+          0.3230000138282776,
+          0.5449999570846558,
+          0.23499998450279236
+        ]
+      },
+      "dimensions_m_blender": [
+        0.6460000276565552,
+        0.38999998569488525,
+        0.5449999570846558
+      ],
+      "dimensions_m_gltf": [
+        0.6460000276565552,
+        0.5449999570846558,
+        0.38999998569488525
+      ],
+      "bytes": 112204,
+      "sha256": "b1bb8f66ffb6dde048fcb1501379bc128160548c2b4dcbbcfe1d770e70795aac",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 3816,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -1.1086671352386475,
+          0.22060298919677734,
+          0.07999999821186066
+        ],
+        "max": [
+          1.1086671352386475,
+          1.190000057220459,
+          0.9800000190734863
+        ]
+      },
+      "dimensions_m": [
+        2.217334270477295,
+        0.9693970680236816,
+        0.9000000208616257
+      ],
+      "moving_nodes": [],
+      "file": "advanced/11_advanced_curved_banquette.glb",
+      "name": "11_advanced_curved_banquette",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.30000001192092896,
+        -0.8500000238418579,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -1.1086671352386475,
+          0.07999999821186066,
+          -1.190000057220459
+        ],
+        "max": [
+          1.1086671352386475,
+          0.9800000190734863,
+          -0.22060298919677734
+        ]
+      },
+      "dimensions_m_blender": [
+        2.217334270477295,
+        0.9693970680236816,
+        0.9000000208616257
+      ],
+      "dimensions_m_gltf": [
+        2.217334270477295,
+        0.9000000208616257,
+        0.9693970680236816
+      ],
+      "bytes": 334192,
+      "sha256": "14b2d354e86429804262ecf7f91db231be76acaf15e9c5bcaf4903253a3e2a58",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 372,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.49000000953674316,
+          -0.49000000953674316,
+          0.0
+        ],
+        "max": [
+          0.49000000953674316,
+          0.49000000953674316,
+          0.6899999976158142
+        ]
+      },
+      "dimensions_m": [
+        0.9800000190734863,
+        0.9800000190734863,
+        0.6899999976158142
+      ],
+      "moving_nodes": [],
+      "file": "advanced/11_advanced_round_table.glb",
+      "name": "11_advanced_round_table",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -0.30000001192092896,
+        -0.9100000262260437,
+        0.0
+      ],
+      "rotation_degrees_z": 0.0,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.49000000953674316,
+          0.0,
+          -0.49000000953674316
+        ],
+        "max": [
+          0.49000000953674316,
+          0.6899999976158142,
+          0.49000000953674316
+        ]
+      },
+      "dimensions_m_blender": [
+        0.9800000190734863,
+        0.9800000190734863,
+        0.6899999976158142
+      ],
+      "dimensions_m_gltf": [
+        0.9800000190734863,
+        0.6899999976158142,
+        0.9800000190734863
+      ],
+      "bytes": 20960,
+      "sha256": "490980b4c20ede97ba57caf14f77ce6cd4970f1411f10dae24ebc19ea409b5ee",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1012,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3700001835823059,
+          -0.3600001037120819,
+          0.0
+        ],
+        "max": [
+          0.37000003457069397,
+          0.36000001430511475,
+          0.9449999928474426
+        ]
+      },
+      "dimensions_m": [
+        0.7400002181529999,
+        0.7200001180171967,
+        0.9449999928474426
+      ],
+      "moving_nodes": [],
+      "file": "advanced/11_advanced_lounge_chair_right.glb",
+      "name": "11_advanced_lounge_chair_right",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        0.6800000071525574,
+        -1.0800000429153442,
+        0.0
+      ],
+      "rotation_degrees_z": -99.69465689917837,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3700001835823059,
+          0.0,
+          -0.36000001430511475
+        ],
+        "max": [
+          0.37000003457069397,
+          0.9449999928474426,
+          0.3600001037120819
+        ]
+      },
+      "dimensions_m_blender": [
+        0.7400002181529999,
+        0.7200001180171967,
+        0.9449999928474426
+      ],
+      "dimensions_m_gltf": [
+        0.7400002181529999,
+        0.9449999928474426,
+        0.7200001180171967
+      ],
+      "bytes": 94164,
+      "sha256": "43e2abcb702a437bb4f6350c5d96947cbc02bed7583e3cf7dac64743ab58b1f5",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "triangles": 1012,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3700001835823059,
+          -0.3600001037120819,
+          0.0
+        ],
+        "max": [
+          0.37000003457069397,
+          0.36000001430511475,
+          0.9449999928474426
+        ]
+      },
+      "dimensions_m": [
+        0.7400002181529999,
+        0.7200001180171967,
+        0.9449999928474426
+      ],
+      "moving_nodes": [],
+      "file": "advanced/11_advanced_lounge_chair_left.glb",
+      "name": "11_advanced_lounge_chair_left",
+      "tier": "advanced",
+      "pivot": "floor-center",
+      "anchors_blender_m": {
+        "floor": [
+          0,
+          0,
+          0
+        ]
+      },
+      "placement_m": [
+        -1.2300000190734863,
+        -1.0399999618530273,
+        0.0
+      ],
+      "rotation_degrees_z": 97.97578515303131,
+      "provenance": "New geometry based on approved concept sheet",
+      "mesh_nodes": 1,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_gltf": {
+        "min": [
+          -0.3700001835823059,
+          0.0,
+          -0.36000001430511475
+        ],
+        "max": [
+          0.37000003457069397,
+          0.9449999928474426,
+          0.3600001037120819
+        ]
+      },
+      "dimensions_m_blender": [
+        0.7400002181529999,
+        0.7200001180171967,
+        0.9449999928474426
+      ],
+      "dimensions_m_gltf": [
+        0.7400002181529999,
+        0.9449999928474426,
+        0.7200001180171967
+      ],
+      "bytes": 94164,
+      "sha256": "b568229a5bf101c76fc43169c8b2910f432fd639174e90307ac6dedb073ab9e2",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    }
+  ],
+  "assembly_note": "Tier assemblies preserve listed room placements with origin floor-center. Props individually export at declared local pivot. Presentation plinth, labels, cameras and lighting are not in runtime GLBs.",
+  "placement_suggestions": {
+    "janitor": "Place service fixtures against north wall. Keep 0.9 m access in front and 1.2 m mobile-cart turn clearance.",
+    "lounge": "Lockers and counter to rear; allow 0.9 m approach. Seat front is local -Y. Rotate chairs toward table.",
+    "restroom": "Sink and mirror share wall plane. Mirrors use bottom-center mounting pivot. Cubicle door shown open; keep its swing clear. Suggested gameplay clearances are not accessibility certification."
+  },
+  "validation": "Every exported GLB reimported into an empty Blender scene. Finite vertices, zero-area triangles, materials, image count, triangle counts, local bounds and SHA256 verified. Assemblies also reimported."
+}

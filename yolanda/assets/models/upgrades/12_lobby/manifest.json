@@ -1,0 +1,2113 @@
+{
+  "sheet": "12",
+  "units": "meters",
+  "assets": [
+    {
+      "name": "lobby_T1_shell",
+      "dimensions_xyz_m": [
+        5.190000057220459,
+        5.104999780654907,
+        2.6399998664855957
+      ],
+      "triangles": 1080,
+      "materials": [
+        "cream",
+        "dark",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_entry": [
+          0.0,
+          -2.5,
+          0.0
+        ],
+        "anchor_exit": [
+          1.25,
+          2.5,
+          0.0
+        ],
+        "anchor_main_aisle": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "root_origin": "floor surface center; meters",
+      "clearance": "Floor-surface origin; slab extends 0.14 m below. Entry mat is 1.5 m wide; reserve unobstructed central circulation.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        5.190000057220459,
+        2.6399998664855957,
+        5.104999780654907
+      ],
+      "sha256": "a11d7c57f792c4fa58abae19d7745605e6f676ab548f6f988229cb1e828f8a49"
+    },
+    {
+      "name": "lobby_T1_door",
+      "dimensions_xyz_m": [
+        1.090000033378601,
+        0.1849999949336052,
+        2.1750001907348633
+      ],
+      "triangles": 708,
+      "materials": [
+        "cream",
+        "lightblue",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_door_interact": [
+          0.35,
+          -0.6,
+          0.0
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Door leaf 0.94 m wide. Keep approach and any authored door swing clear; no door animation included.",
+      "runtime_primitives": 4,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        1.090000033378601,
+        2.1750001907348633,
+        0.1849999949336052
+      ],
+      "sha256": "a60665ed435465986ed9c87024aa806a081957eb4f77318001f0db7db42e15e2"
+    },
+    {
+      "name": "lobby_T1_wayfinding",
+      "dimensions_xyz_m": [
+        0.8999999761581421,
+        0.0690000019967556,
+        0.41999998688697815
+      ],
+      "triangles": 648,
+      "materials": [
+        "white",
+        "wood"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "mounting center; meters",
+      "clearance": "Wall-mounted at provided placement. Pivot is panel center, not floor.",
+      "runtime_primitives": 2,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.8999999761581421,
+        0.41999998688697815,
+        0.0690000019967556
+      ],
+      "sha256": "fb5a237784c6415803d012e2c0310ebb1a415092ec5f543e22eeb09fcdfe2084"
+    },
+    {
+      "name": "lobby_T1_health_poster",
+      "dimensions_xyz_m": [
+        0.6600000262260437,
+        0.07750000432133675,
+        0.8199999928474426
+      ],
+      "triangles": 776,
+      "materials": [
+        "blue",
+        "cream",
+        "teal",
+        "wood"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "mounting center; meters",
+      "clearance": "Wall-mounted at provided placement. Pivot is panel center, not floor.",
+      "runtime_primitives": 4,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.6600000262260437,
+        0.8199999928474426,
+        0.07750000432133675
+      ],
+      "sha256": "63d8687baf734394cfbbb809fb9f53f583379aeea8fd221d01b893f794580b21"
+    },
+    {
+      "name": "lobby_T1_waiting_chair_green",
+      "dimensions_xyz_m": [
+        0.49300000071525574,
+        0.46399998664855957,
+        0.9900000095367432
+      ],
+      "triangles": 584,
+      "materials": [
+        "dark",
+        "green",
+        "metal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_back.001": [
+          0.0,
+          0.13,
+          0.7
+        ],
+        "anchor_feet.001": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_seat.001": [
+          0.0,
+          0.0,
+          0.505
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Keep at least 0.60 m free in front for seated legs and getting up.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.49300000071525574,
+        0.9900000095367432,
+        0.46399998664855957
+      ],
+      "sha256": "073b38223b88421ca988f2cb86a9868d7ac73f8f3ff498c4637f7716f39a86c4"
+    },
+    {
+      "name": "lobby_T1_waiting_chair_orange",
+      "dimensions_xyz_m": [
+        0.49300000071525574,
+        0.46399998664855957,
+        0.9900000095367432
+      ],
+      "triangles": 584,
+      "materials": [
+        "dark",
+        "metal",
+        "orange"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_back.002": [
+          0.0,
+          0.13,
+          0.7
+        ],
+        "anchor_feet.002": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_seat.002": [
+          0.0,
+          0.0,
+          0.505
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Keep at least 0.60 m free in front for seated legs and getting up.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.49300000071525574,
+        0.9900000095367432,
+        0.46399998664855957
+      ],
+      "sha256": "60d9e2a71b348c32d1bec4222c541c5f0a12075e51ad6c52067f721c674da2e7"
+    },
+    {
+      "name": "lobby_T1_waiting_chair_cushion",
+      "dimensions_xyz_m": [
+        0.49300000071525574,
+        0.46399998664855957,
+        0.9900000095367432
+      ],
+      "triangles": 584,
+      "materials": [
+        "cushion",
+        "dark",
+        "metal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_back.003": [
+          0.0,
+          0.13,
+          0.7
+        ],
+        "anchor_feet.003": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_seat.003": [
+          0.0,
+          0.0,
+          0.505
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Keep at least 0.60 m free in front for seated legs and getting up.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.49300000071525574,
+        0.9900000095367432,
+        0.46399998664855957
+      ],
+      "sha256": "974e65e253ade70d63c91f33eebfbfad17d9d8a3174a3b927b21d3e9912758b7"
+    },
+    {
+      "name": "lobby_T1_floor_planter",
+      "dimensions_xyz_m": [
+        0.5456464886665344,
+        0.5961073338985443,
+        0.9308831840753555
+      ],
+      "triangles": 340,
+      "materials": [
+        "cream",
+        "green"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "ground; meters",
+      "clearance": "Keep foliage outside walking route; allow 0.15 m beyond pot footprint.",
+      "runtime_primitives": 2,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.5456464886665344,
+        0.9308831840753555,
+        0.5961073338985443
+      ],
+      "sha256": "b0a3bd892f6b72fb945f0cc36968fdfcf3baff5caacce92dec603b6865577a72"
+    },
+    {
+      "name": "lobby_T2_shell",
+      "dimensions_xyz_m": [
+        5.190000057220459,
+        5.104999780654907,
+        2.6399998664855957
+      ],
+      "triangles": 1680,
+      "materials": [
+        "cream",
+        "dark",
+        "lightblue",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_entry.001": [
+          0.0,
+          -2.5,
+          0.0
+        ],
+        "anchor_exit.001": [
+          1.25,
+          2.5,
+          0.0
+        ],
+        "anchor_main_aisle.001": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "root_origin": "floor surface center; meters",
+      "clearance": "Floor-surface origin; slab extends 0.14 m below. Entry mat is 1.5 m wide; reserve unobstructed central circulation.",
+      "runtime_primitives": 4,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        5.190000057220459,
+        2.6399998664855957,
+        5.104999780654907
+      ],
+      "sha256": "fed5816377b3c7c3906c05a012f3175939790ba3c0c5612d3102dfece569eaec"
+    },
+    {
+      "name": "lobby_T2_door",
+      "dimensions_xyz_m": [
+        1.090000033378601,
+        0.1849999949336052,
+        2.1750001907348633
+      ],
+      "triangles": 708,
+      "materials": [
+        "cream",
+        "lightblue",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_door_interact.001": [
+          0.35,
+          -0.6,
+          0.0
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Door leaf 0.94 m wide. Keep approach and any authored door swing clear; no door animation included.",
+      "runtime_primitives": 4,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        1.090000033378601,
+        2.1750001907348633,
+        0.1849999949336052
+      ],
+      "sha256": "722333e4ac20828ecc66f1f699c5dafa43cfde0a643d1e6bb371ce7a61d09976"
+    },
+    {
+      "name": "lobby_T2_wayfinding",
+      "dimensions_xyz_m": [
+        0.8999999761581421,
+        0.0690000019967556,
+        0.41999998688697815
+      ],
+      "triangles": 648,
+      "materials": [
+        "blue",
+        "white"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "mounting center; meters",
+      "clearance": "Wall-mounted at provided placement. Pivot is panel center, not floor.",
+      "runtime_primitives": 2,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.8999999761581421,
+        0.41999998688697815,
+        0.0690000019967556
+      ],
+      "sha256": "614c0f41733f4f56a14f0145c79b50e913932fa3c0352e4961ef4706dd157517"
+    },
+    {
+      "name": "lobby_T2_health_poster",
+      "dimensions_xyz_m": [
+        0.6600000262260437,
+        0.07750000432133675,
+        0.8199999928474426
+      ],
+      "triangles": 776,
+      "materials": [
+        "blue",
+        "cream",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "mounting center; meters",
+      "clearance": "Wall-mounted at provided placement. Pivot is panel center, not floor.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.6600000262260437,
+        0.8199999928474426,
+        0.07750000432133675
+      ],
+      "sha256": "ff8222a4a0da09c001f7b4113341667256d8965fc15368ec1c2604db453bd625"
+    },
+    {
+      "name": "lobby_T2_waiting_chair_original",
+      "dimensions_xyz_m": [
+        0.664000004529953,
+        0.6243246793746948,
+        0.9238400459289551
+      ],
+      "triangles": 3156,
+      "materials": [
+        "CRNA_Shared_Matte_Atlas.001"
+      ],
+      "textures": 1,
+      "anchors_blender_xyz": {
+        "02_Waiting_Chair": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "Chair_Approach": [
+          0.0,
+          -0.75,
+          0.0
+        ],
+        "Seat_Anchor": [
+          0.0,
+          -0.04,
+          0.47
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Keep at least 0.60 m free in front for seated legs and getting up.",
+      "runtime_primitives": 1,
+      "texture_pixel_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "dimensions_gltf_xyz_m": [
+        0.664000004529953,
+        0.9238400459289551,
+        0.6243246793746948
+      ],
+      "sha256": "fd8e1e244e1ed3cb46f338fe12805ccd30e877fd698c0f5ce1b48bf543f5a4d6"
+    },
+    {
+      "name": "lobby_T2_floor_planter",
+      "dimensions_xyz_m": [
+        0.5456464886665344,
+        0.5961073338985443,
+        0.9308831840753555
+      ],
+      "triangles": 340,
+      "materials": [
+        "cream",
+        "green"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "ground; meters",
+      "clearance": "Keep foliage outside walking route; allow 0.15 m beyond pot footprint.",
+      "runtime_primitives": 2,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.5456464886665344,
+        0.9308831840753555,
+        0.5961073338985443
+      ],
+      "sha256": "c176f6da5b66e227130754de7d81973c7a2b1694c83e7f5cb0d7e6ae9cc79728"
+    },
+    {
+      "name": "lobby_T3_shell",
+      "dimensions_xyz_m": [
+        6.789999961853027,
+        5.105000019073486,
+        2.6499998569488525
+      ],
+      "triangles": 2700,
+      "materials": [
+        "blue",
+        "cream",
+        "dark",
+        "lightblue",
+        "white",
+        "wood"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_entry.002": [
+          0.0,
+          -2.5,
+          0.0
+        ],
+        "anchor_exit.002": [
+          0.0,
+          2.5,
+          0.0
+        ],
+        "anchor_main_aisle.002": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "root_origin": "floor surface center; meters",
+      "clearance": "Floor-surface origin; slab extends 0.14 m below. Entry mat is 1.5 m wide; reserve unobstructed central circulation.",
+      "runtime_primitives": 6,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        6.789999961853027,
+        2.6499998569488525,
+        5.105000019073486
+      ],
+      "sha256": "7001298e46c3d81f791a19a2568dde99893562d3b7e253cfac2fafcee4f9683b"
+    },
+    {
+      "name": "lobby_T3_door",
+      "dimensions_xyz_m": [
+        1.090000033378601,
+        0.1849999949336052,
+        2.1750001907348633
+      ],
+      "triangles": 708,
+      "materials": [
+        "cream",
+        "lightblue",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_door_interact.002": [
+          0.35,
+          -0.6,
+          0.0
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Door leaf 0.94 m wide. Keep approach and any authored door swing clear; no door animation included.",
+      "runtime_primitives": 4,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        1.090000033378601,
+        2.1750001907348633,
+        0.1849999949336052
+      ],
+      "sha256": "d61486ca1483ed15cc2b9fd368b3e44aa968304818bbbeb2ba391606e30b24ff"
+    },
+    {
+      "name": "lobby_T3_wayfinding",
+      "dimensions_xyz_m": [
+        0.8999999761581421,
+        0.0690000019967556,
+        0.41999998688697815
+      ],
+      "triangles": 648,
+      "materials": [
+        "blue",
+        "white"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "mounting center; meters",
+      "clearance": "Wall-mounted at provided placement. Pivot is panel center, not floor.",
+      "runtime_primitives": 2,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.8999999761581421,
+        0.41999998688697815,
+        0.0690000019967556
+      ],
+      "sha256": "c58b4c48e716d4a18d30d7d46c996c9c70418f5b7e03dcc5066566305491328e"
+    },
+    {
+      "name": "lobby_T3_health_poster",
+      "dimensions_xyz_m": [
+        0.6600000262260437,
+        0.07750000432133675,
+        0.8199999928474426
+      ],
+      "triangles": 776,
+      "materials": [
+        "blue",
+        "cream",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "mounting center; meters",
+      "clearance": "Wall-mounted at provided placement. Pivot is panel center, not floor.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.6600000262260437,
+        0.8199999928474426,
+        0.07750000432133675
+      ],
+      "sha256": "73d773fbb8d9ac7a8f2eb44e4707b3c37883426220930c55b7a2e211bdd237c9"
+    },
+    {
+      "name": "lobby_T3_sculpted_bench",
+      "dimensions_xyz_m": [
+        1.7999999523162842,
+        0.6700000166893005,
+        1.0099999904632568
+      ],
+      "triangles": 1056,
+      "materials": [
+        "cream",
+        "cushion",
+        "wood"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_feet.007": [
+          0.0,
+          -0.38,
+          0.02
+        ],
+        "anchor_seat_-1": [
+          -0.48,
+          -0.02,
+          0.54
+        ],
+        "anchor_seat_0": [
+          0.0,
+          -0.02,
+          0.54
+        ],
+        "anchor_seat_1": [
+          0.48,
+          -0.02,
+          0.54
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Keep at least 0.60 m free in front for seated legs and getting up.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        1.7999999523162842,
+        1.0099999904632568,
+        0.6700000166893005
+      ],
+      "sha256": "208fe7db177d10ad302849df21741f8ee0c9548e40a0c61b798cddc05a2395f1"
+    },
+    {
+      "name": "lobby_T3_check_in_kiosk",
+      "dimensions_xyz_m": [
+        0.38999998569488525,
+        0.36000001430511475,
+        1.4600000381469727
+      ],
+      "triangles": 368,
+      "materials": [
+        "blue",
+        "cream",
+        "screen"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_hands.004": [
+          0.0,
+          -0.3,
+          1.1
+        ],
+        "anchor_user": [
+          0.0,
+          -0.65,
+          0.0
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Reserve 0.80 m approach in front; screen and hand anchors supplied.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.38999998569488525,
+        1.4600000381469727,
+        0.36000001430511475
+      ],
+      "sha256": "90e3b29c0b9ad36aca0635c926ce43da72a03d6028f6711f752a8999793269b1"
+    },
+    {
+      "name": "lobby_T3_floor_planter",
+      "dimensions_xyz_m": [
+        0.6466920673847198,
+        0.7064976096153259,
+        1.1032690927386284
+      ],
+      "triangles": 340,
+      "materials": [
+        "cream",
+        "green"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {},
+      "root_origin": "ground; meters",
+      "clearance": "Keep foliage outside walking route; allow 0.15 m beyond pot footprint.",
+      "runtime_primitives": 2,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.6466920673847198,
+        1.1032690927386284,
+        0.7064976096153259
+      ],
+      "sha256": "1166de8848767de1d8efd4a4649a484ceaba2224a68f0388563d1f19ecee5c00"
+    }
+  ],
+  "reception_dependency": "Sheet 01 desk and staff chair GLBs instantiated unchanged; source .blend embeds editable instances. Do not count these as new reception assets.",
+  "clearances": "Main entry clear 1.5m. Planter and waiting furniture placed outside central circulation. Placement recommendations only; not a building/accessibility certification.",
+  "rig_status": "1.65m fit assumptions, unverified in target game. No runtime behavior.",
+  "central_aisle_advanced_m": 1.36,
+  "placements_blender_display_world": [
+    {
+      "asset": "lobby_T1_shell",
+      "position_xyz_m": [
+        -7,
+        0,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T1_door",
+      "position_xyz_m": [
+        -5.75,
+        2.5,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T1_wayfinding",
+      "position_xyz_m": [
+        -8.2,
+        2.4,
+        1.9
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T1_health_poster",
+      "position_xyz_m": [
+        -9.4,
+        0.3,
+        1.75
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "REUSED_reception_T1_desk",
+      "position_xyz_m": [
+        -7.5,
+        1.3,
+        0
+      ],
+      "rotation_z_radians": 3.141592653589793
+    },
+    {
+      "asset": "REUSED_reception_T1_chair",
+      "position_xyz_m": [
+        -7.5,
+        1.95,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T1_waiting_chair_green",
+      "position_xyz_m": [
+        -8.879999999999999,
+        -1.4,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "lobby_T1_waiting_chair_orange",
+      "position_xyz_m": [
+        -8.879999999999999,
+        -0.7299999999999999,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "lobby_T1_waiting_chair_cushion",
+      "position_xyz_m": [
+        -8.879999999999999,
+        -0.05999999999999983,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "lobby_T1_floor_planter",
+      "position_xyz_m": [
+        -4.94,
+        1.68,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T2_shell",
+      "position_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T2_door",
+      "position_xyz_m": [
+        1.25,
+        2.5,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T2_wayfinding",
+      "position_xyz_m": [
+        -1.2,
+        2.4,
+        1.9
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T2_health_poster",
+      "position_xyz_m": [
+        -2.4,
+        0.3,
+        1.75
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "REUSED_reception_T2_desk",
+      "position_xyz_m": [
+        -0.5,
+        1.3,
+        0
+      ],
+      "rotation_z_radians": 3.141592653589793
+    },
+    {
+      "asset": "REUSED_reception_T2_chair",
+      "position_xyz_m": [
+        -0.5,
+        1.95,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T2_waiting_chair_original",
+      "position_xyz_m": [
+        -1.85,
+        -1.35,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "lobby_T2_waiting_chair_B",
+      "position_xyz_m": [
+        -1.85,
+        -0.68,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "lobby_T2_waiting_chair_C",
+      "position_xyz_m": [
+        -1.85,
+        -0.01,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "lobby_T2_floor_planter",
+      "position_xyz_m": [
+        2.06,
+        1.68,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_shell",
+      "position_xyz_m": [
+        7,
+        0,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_door",
+      "position_xyz_m": [
+        7,
+        2.5,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_wayfinding",
+      "position_xyz_m": [
+        5.8,
+        2.4,
+        1.9
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_health_poster",
+      "position_xyz_m": [
+        3.8000000000000003,
+        0.3,
+        1.75
+      ],
+      "rotation_z_radians": 1.5707963267948966
+    },
+    {
+      "asset": "lobby_T3_wayfinding_B",
+      "position_xyz_m": [
+        8.2,
+        2.4,
+        1.9
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "REUSED_reception_T3_desk",
+      "position_xyz_m": [
+        5.25,
+        1.3,
+        0
+      ],
+      "rotation_z_radians": 3.141592653589793
+    },
+    {
+      "asset": "REUSED_reception_T3_chair",
+      "position_xyz_m": [
+        5.25,
+        1.95,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "REUSED_reception_T3_desk_B",
+      "position_xyz_m": [
+        8.75,
+        1.3,
+        0
+      ],
+      "rotation_z_radians": 3.141592653589793
+    },
+    {
+      "asset": "REUSED_reception_T3_chair_B",
+      "position_xyz_m": [
+        8.75,
+        1.95,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_sculpted_bench",
+      "position_xyz_m": [
+        5.15,
+        -1.6,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_sculpted_bench_B",
+      "position_xyz_m": [
+        8.85,
+        -1.6,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_check_in_kiosk",
+      "position_xyz_m": [
+        4.6,
+        0.45,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_floor_planter",
+      "position_xyz_m": [
+        9.860000000000001,
+        1.68,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_floor_planter_B",
+      "position_xyz_m": [
+        4.140000000000001,
+        -0.95,
+        0
+      ],
+      "rotation_z_radians": 0
+    },
+    {
+      "asset": "lobby_T3_floor_planter_C",
+      "position_xyz_m": [
+        9.860000000000001,
+        -0.95,
+        0
+      ],
+      "rotation_z_radians": 0
+    }
+  ],
+  "layout_coordinate_contract": {
+    "authoritative_layout": "room_layouts[].instances uses room-local glTF axes. Load asset_uri and apply the supplied position, quaternion and unit scale to a new parent instance root. Do not add the Blender display origin.",
+    "units": "meters",
+    "gltf_axes": {
+      "up": "+Y",
+      "room_entry_side": "+Z",
+      "room_rear_wall_side": "-Z",
+      "right": "+X"
+    },
+    "blender_to_gltf": "(x,y,z) -> (x,z,-y); positive Blender Z yaw becomes positive glTF Y yaw. Quaternion order is x,y,z,w.",
+    "room_origin": "floor surface at room center; each tier is independent at [0,0,0].",
+    "display_offsets": "The editable .blend displays tiers side-by-side at Blender X = -7, 0, +7 m. These offsets are presentation only and have been removed from room-local placements.",
+    "asset_uri_base": "URI paths resolve relative to the extracted 12_lobby/manifest.json directory. Extract 01_reception_Runtime.zip and 12_lobby_Runtime.zip into the same parent directory, leaving their top-level 01_reception/ and 12_lobby/ folders intact.",
+    "source_bundle_note": "Source .blend already contains editable asset instances. Source ZIP paths include runtime subfolders; the URI mapping targets the extracted Runtime ZIP layout, not the Source ZIP layout."
+  },
+  "room_layouts": [
+    {
+      "tier": 1,
+      "room_id": "lobby_T1",
+      "floor_center_room_local_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "room_dimensions_width_depth_m": [
+        5,
+        5
+      ],
+      "source_blend_display_origin_xyz_m": [
+        -7,
+        0,
+        0
+      ],
+      "instances": [
+        {
+          "instance_id": "lobby_T1_shell",
+          "asset_uri": "./lobby_T1_shell.glb",
+          "asset_sha256": "a11d7c57f792c4fa58abae19d7745605e6f676ab548f6f988229cb1e828f8a49",
+          "position_gltf_xyz_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T1_door",
+          "asset_uri": "./lobby_T1_door.glb",
+          "asset_sha256": "a60665ed435465986ed9c87024aa806a081957eb4f77318001f0db7db42e15e2",
+          "position_gltf_xyz_m": [
+            1.25,
+            0.0,
+            -2.5
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            1.25,
+            2.5,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T1_wayfinding",
+          "asset_uri": "./lobby_T1_wayfinding.glb",
+          "asset_sha256": "fb5a237784c6415803d012e2c0310ebb1a415092ec5f543e22eeb09fcdfe2084",
+          "position_gltf_xyz_m": [
+            -1.2,
+            1.9,
+            -2.4
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.2,
+            2.4,
+            1.9
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T1_health_poster",
+          "asset_uri": "./lobby_T1_health_poster.glb",
+          "asset_sha256": "63d8687baf734394cfbbb809fb9f53f583379aeea8fd221d01b893f794580b21",
+          "position_gltf_xyz_m": [
+            -2.4,
+            1.75,
+            -0.3
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -2.4,
+            0.3,
+            1.75
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "REUSED_reception_T1_desk",
+          "asset_uri": "../01_reception/reception_T1_desk.glb",
+          "asset_sha256": "1c2b510b8986ba2d112c0f40dc2392b3803e022a4fe205560908db8903add487",
+          "position_gltf_xyz_m": [
+            -0.5,
+            0.0,
+            -1.3
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -0.5,
+            1.3,
+            0.0
+          ],
+          "rotation_blender_z_radians": 3.141592653589793
+        },
+        {
+          "instance_id": "REUSED_reception_T1_chair",
+          "asset_uri": "../01_reception/reception_T1_chair.glb",
+          "asset_sha256": "2ad153bf548eaba16498b93a37c3e4f2f0e70cb7af0f9fb8cbf4afad87d62580",
+          "position_gltf_xyz_m": [
+            -0.5,
+            0.0,
+            -1.95
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -0.5,
+            1.95,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T1_waiting_chair_green",
+          "asset_uri": "./lobby_T1_waiting_chair_green.glb",
+          "asset_sha256": "073b38223b88421ca988f2cb86a9868d7ac73f8f3ff498c4637f7716f39a86c4",
+          "position_gltf_xyz_m": [
+            -1.88,
+            0.0,
+            1.4
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.88,
+            -1.4,
+            0.0
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "lobby_T1_waiting_chair_orange",
+          "asset_uri": "./lobby_T1_waiting_chair_orange.glb",
+          "asset_sha256": "60d9e2a71b348c32d1bec4222c541c5f0a12075e51ad6c52067f721c674da2e7",
+          "position_gltf_xyz_m": [
+            -1.88,
+            0.0,
+            0.73
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.88,
+            -0.73,
+            0.0
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "lobby_T1_waiting_chair_cushion",
+          "asset_uri": "./lobby_T1_waiting_chair_cushion.glb",
+          "asset_sha256": "974e65e253ade70d63c91f33eebfbfad17d9d8a3174a3b927b21d3e9912758b7",
+          "position_gltf_xyz_m": [
+            -1.88,
+            0.0,
+            0.06
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.88,
+            -0.06,
+            0.0
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "lobby_T1_floor_planter",
+          "asset_uri": "./lobby_T1_floor_planter.glb",
+          "asset_sha256": "b0a3bd892f6b72fb945f0cc36968fdfcf3baff5caacce92dec603b6865577a72",
+          "position_gltf_xyz_m": [
+            2.06,
+            0.0,
+            -1.68
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            2.06,
+            1.68,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        }
+      ]
+    },
+    {
+      "tier": 2,
+      "room_id": "lobby_T2",
+      "floor_center_room_local_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "room_dimensions_width_depth_m": [
+        5,
+        5
+      ],
+      "source_blend_display_origin_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "instances": [
+        {
+          "instance_id": "lobby_T2_shell",
+          "asset_uri": "./lobby_T2_shell.glb",
+          "asset_sha256": "fed5816377b3c7c3906c05a012f3175939790ba3c0c5612d3102dfece569eaec",
+          "position_gltf_xyz_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T2_door",
+          "asset_uri": "./lobby_T2_door.glb",
+          "asset_sha256": "722333e4ac20828ecc66f1f699c5dafa43cfde0a643d1e6bb371ce7a61d09976",
+          "position_gltf_xyz_m": [
+            1.25,
+            0.0,
+            -2.5
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            1.25,
+            2.5,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T2_wayfinding",
+          "asset_uri": "./lobby_T2_wayfinding.glb",
+          "asset_sha256": "614c0f41733f4f56a14f0145c79b50e913932fa3c0352e4961ef4706dd157517",
+          "position_gltf_xyz_m": [
+            -1.2,
+            1.9,
+            -2.4
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.2,
+            2.4,
+            1.9
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T2_health_poster",
+          "asset_uri": "./lobby_T2_health_poster.glb",
+          "asset_sha256": "ff8222a4a0da09c001f7b4113341667256d8965fc15368ec1c2604db453bd625",
+          "position_gltf_xyz_m": [
+            -2.4,
+            1.75,
+            -0.3
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -2.4,
+            0.3,
+            1.75
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "REUSED_reception_T2_desk",
+          "asset_uri": "../01_reception/reception_T2_desk.glb",
+          "asset_sha256": "19e10c72eff8f4791fe3aa91a0c106608b37b503f8693ed3969da5eebb621332",
+          "position_gltf_xyz_m": [
+            -0.5,
+            0.0,
+            -1.3
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -0.5,
+            1.3,
+            0.0
+          ],
+          "rotation_blender_z_radians": 3.141592653589793
+        },
+        {
+          "instance_id": "REUSED_reception_T2_chair",
+          "asset_uri": "../01_reception/reception_T2_chair.glb",
+          "asset_sha256": "195f25a39e0a0c301095d87b500f409b157418dfe0bcdcbcdb5bdf4544dacca0",
+          "position_gltf_xyz_m": [
+            -0.5,
+            0.0,
+            -1.95
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -0.5,
+            1.95,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T2_waiting_chair_original",
+          "asset_uri": "./lobby_T2_waiting_chair_original.glb",
+          "asset_sha256": "fd8e1e244e1ed3cb46f338fe12805ccd30e877fd698c0f5ce1b48bf543f5a4d6",
+          "position_gltf_xyz_m": [
+            -1.85,
+            0.0,
+            1.35
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.85,
+            -1.35,
+            0.0
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "lobby_T2_waiting_chair_B",
+          "asset_uri": "./lobby_T2_waiting_chair_original.glb",
+          "asset_sha256": "fd8e1e244e1ed3cb46f338fe12805ccd30e877fd698c0f5ce1b48bf543f5a4d6",
+          "position_gltf_xyz_m": [
+            -1.85,
+            0.0,
+            0.68
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.85,
+            -0.68,
+            0.0
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "lobby_T2_waiting_chair_C",
+          "asset_uri": "./lobby_T2_waiting_chair_original.glb",
+          "asset_sha256": "fd8e1e244e1ed3cb46f338fe12805ccd30e877fd698c0f5ce1b48bf543f5a4d6",
+          "position_gltf_xyz_m": [
+            -1.85,
+            0.0,
+            0.01
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.85,
+            -0.01,
+            0.0
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "lobby_T2_floor_planter",
+          "asset_uri": "./lobby_T2_floor_planter.glb",
+          "asset_sha256": "c176f6da5b66e227130754de7d81973c7a2b1694c83e7f5cb0d7e6ae9cc79728",
+          "position_gltf_xyz_m": [
+            2.06,
+            0.0,
+            -1.68
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            2.06,
+            1.68,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        }
+      ]
+    },
+    {
+      "tier": 3,
+      "room_id": "lobby_T3",
+      "floor_center_room_local_gltf_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "room_dimensions_width_depth_m": [
+        6.6,
+        5
+      ],
+      "source_blend_display_origin_xyz_m": [
+        7,
+        0,
+        0
+      ],
+      "instances": [
+        {
+          "instance_id": "lobby_T3_shell",
+          "asset_uri": "./lobby_T3_shell.glb",
+          "asset_sha256": "7001298e46c3d81f791a19a2568dde99893562d3b7e253cfac2fafcee4f9683b",
+          "position_gltf_xyz_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_door",
+          "asset_uri": "./lobby_T3_door.glb",
+          "asset_sha256": "d61486ca1483ed15cc2b9fd368b3e44aa968304818bbbeb2ba391606e30b24ff",
+          "position_gltf_xyz_m": [
+            0.0,
+            0.0,
+            -2.5
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            0.0,
+            2.5,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_wayfinding",
+          "asset_uri": "./lobby_T3_wayfinding.glb",
+          "asset_sha256": "c58b4c48e716d4a18d30d7d46c996c9c70418f5b7e03dcc5066566305491328e",
+          "position_gltf_xyz_m": [
+            -1.2,
+            1.9,
+            -2.4
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.2,
+            2.4,
+            1.9
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_health_poster",
+          "asset_uri": "./lobby_T3_health_poster.glb",
+          "asset_sha256": "73d773fbb8d9ac7a8f2eb44e4707b3c37883426220930c55b7a2e211bdd237c9",
+          "position_gltf_xyz_m": [
+            -3.2,
+            1.75,
+            -0.3
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.707106781,
+            0.0,
+            0.707106781
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -3.2,
+            0.3,
+            1.75
+          ],
+          "rotation_blender_z_radians": 1.5707963267948966
+        },
+        {
+          "instance_id": "lobby_T3_wayfinding_B",
+          "asset_uri": "./lobby_T3_wayfinding.glb",
+          "asset_sha256": "c58b4c48e716d4a18d30d7d46c996c9c70418f5b7e03dcc5066566305491328e",
+          "position_gltf_xyz_m": [
+            1.2,
+            1.9,
+            -2.4
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            1.2,
+            2.4,
+            1.9
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "REUSED_reception_T3_desk",
+          "asset_uri": "../01_reception/reception_T3_desk.glb",
+          "asset_sha256": "ab68d8a17951fb10cad0231a2f917423396ec8ef2b79faaa06e4ac0b9d9c9cfa",
+          "position_gltf_xyz_m": [
+            -1.75,
+            0.0,
+            -1.3
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.75,
+            1.3,
+            0.0
+          ],
+          "rotation_blender_z_radians": 3.141592653589793
+        },
+        {
+          "instance_id": "REUSED_reception_T3_chair",
+          "asset_uri": "../01_reception/reception_T3_chair.glb",
+          "asset_sha256": "f4b8ab4c66bebadef33f233d4c48f1daae59b21571e68c2fca3ccf5863595dde",
+          "position_gltf_xyz_m": [
+            -1.75,
+            0.0,
+            -1.95
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.75,
+            1.95,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "REUSED_reception_T3_desk_B",
+          "asset_uri": "../01_reception/reception_T3_desk.glb",
+          "asset_sha256": "ab68d8a17951fb10cad0231a2f917423396ec8ef2b79faaa06e4ac0b9d9c9cfa",
+          "position_gltf_xyz_m": [
+            1.75,
+            0.0,
+            -1.3
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            1.75,
+            1.3,
+            0.0
+          ],
+          "rotation_blender_z_radians": 3.141592653589793
+        },
+        {
+          "instance_id": "REUSED_reception_T3_chair_B",
+          "asset_uri": "../01_reception/reception_T3_chair.glb",
+          "asset_sha256": "f4b8ab4c66bebadef33f233d4c48f1daae59b21571e68c2fca3ccf5863595dde",
+          "position_gltf_xyz_m": [
+            1.75,
+            0.0,
+            -1.95
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            1.75,
+            1.95,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_sculpted_bench",
+          "asset_uri": "./lobby_T3_sculpted_bench.glb",
+          "asset_sha256": "208fe7db177d10ad302849df21741f8ee0c9548e40a0c61b798cddc05a2395f1",
+          "position_gltf_xyz_m": [
+            -1.85,
+            0.0,
+            1.6
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -1.85,
+            -1.6,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_sculpted_bench_B",
+          "asset_uri": "./lobby_T3_sculpted_bench.glb",
+          "asset_sha256": "208fe7db177d10ad302849df21741f8ee0c9548e40a0c61b798cddc05a2395f1",
+          "position_gltf_xyz_m": [
+            1.85,
+            0.0,
+            1.6
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            1.85,
+            -1.6,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_check_in_kiosk",
+          "asset_uri": "./lobby_T3_check_in_kiosk.glb",
+          "asset_sha256": "90e3b29c0b9ad36aca0635c926ce43da72a03d6028f6711f752a8999793269b1",
+          "position_gltf_xyz_m": [
+            -2.4,
+            0.0,
+            -0.45
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -2.4,
+            0.45,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_floor_planter",
+          "asset_uri": "./lobby_T3_floor_planter.glb",
+          "asset_sha256": "1166de8848767de1d8efd4a4649a484ceaba2224a68f0388563d1f19ecee5c00",
+          "position_gltf_xyz_m": [
+            2.86,
+            0.0,
+            -1.68
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            2.86,
+            1.68,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_floor_planter_B",
+          "asset_uri": "./lobby_T3_floor_planter.glb",
+          "asset_sha256": "1166de8848767de1d8efd4a4649a484ceaba2224a68f0388563d1f19ecee5c00",
+          "position_gltf_xyz_m": [
+            -2.86,
+            0.0,
+            0.95
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            -2.86,
+            -0.95,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        },
+        {
+          "instance_id": "lobby_T3_floor_planter_C",
+          "asset_uri": "./lobby_T3_floor_planter.glb",
+          "asset_sha256": "1166de8848767de1d8efd4a4649a484ceaba2224a68f0388563d1f19ecee5c00",
+          "position_gltf_xyz_m": [
+            2.86,
+            0.0,
+            0.95
+          ],
+          "rotation_gltf_quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "scale_xyz": [
+            1,
+            1,
+            1
+          ],
+          "position_blender_room_xyz_m": [
+            2.86,
+            -0.95,
+            0.0
+          ],
+          "rotation_blender_z_radians": 0
+        }
+      ]
+    }
+  ],
+  "instance_asset_uri_map": {
+    "lobby_T1_shell": "./lobby_T1_shell.glb",
+    "lobby_T1_door": "./lobby_T1_door.glb",
+    "lobby_T1_wayfinding": "./lobby_T1_wayfinding.glb",
+    "lobby_T1_health_poster": "./lobby_T1_health_poster.glb",
+    "REUSED_reception_T1_desk": "../01_reception/reception_T1_desk.glb",
+    "REUSED_reception_T1_chair": "../01_reception/reception_T1_chair.glb",
+    "lobby_T1_waiting_chair_green": "./lobby_T1_waiting_chair_green.glb",
+    "lobby_T1_waiting_chair_orange": "./lobby_T1_waiting_chair_orange.glb",
+    "lobby_T1_waiting_chair_cushion": "./lobby_T1_waiting_chair_cushion.glb",
+    "lobby_T1_floor_planter": "./lobby_T1_floor_planter.glb",
+    "lobby_T2_shell": "./lobby_T2_shell.glb",
+    "lobby_T2_door": "./lobby_T2_door.glb",
+    "lobby_T2_wayfinding": "./lobby_T2_wayfinding.glb",
+    "lobby_T2_health_poster": "./lobby_T2_health_poster.glb",
+    "REUSED_reception_T2_desk": "../01_reception/reception_T2_desk.glb",
+    "REUSED_reception_T2_chair": "../01_reception/reception_T2_chair.glb",
+    "lobby_T2_waiting_chair_original": "./lobby_T2_waiting_chair_original.glb",
+    "lobby_T2_waiting_chair_B": "./lobby_T2_waiting_chair_original.glb",
+    "lobby_T2_waiting_chair_C": "./lobby_T2_waiting_chair_original.glb",
+    "lobby_T2_floor_planter": "./lobby_T2_floor_planter.glb",
+    "lobby_T3_shell": "./lobby_T3_shell.glb",
+    "lobby_T3_door": "./lobby_T3_door.glb",
+    "lobby_T3_wayfinding": "./lobby_T3_wayfinding.glb",
+    "lobby_T3_health_poster": "./lobby_T3_health_poster.glb",
+    "lobby_T3_wayfinding_B": "./lobby_T3_wayfinding.glb",
+    "REUSED_reception_T3_desk": "../01_reception/reception_T3_desk.glb",
+    "REUSED_reception_T3_chair": "../01_reception/reception_T3_chair.glb",
+    "REUSED_reception_T3_desk_B": "../01_reception/reception_T3_desk.glb",
+    "REUSED_reception_T3_chair_B": "../01_reception/reception_T3_chair.glb",
+    "lobby_T3_sculpted_bench": "./lobby_T3_sculpted_bench.glb",
+    "lobby_T3_sculpted_bench_B": "./lobby_T3_sculpted_bench.glb",
+    "lobby_T3_check_in_kiosk": "./lobby_T3_check_in_kiosk.glb",
+    "lobby_T3_floor_planter": "./lobby_T3_floor_planter.glb",
+    "lobby_T3_floor_planter_B": "./lobby_T3_floor_planter.glb",
+    "lobby_T3_floor_planter_C": "./lobby_T3_floor_planter.glb"
+  },
+  "runtime_dependencies": [
+    {
+      "package": "01_reception_Runtime.zip",
+      "required_files": [
+        "../01_reception/reception_T1_desk.glb",
+        "../01_reception/reception_T1_chair.glb",
+        "../01_reception/reception_T2_desk.glb",
+        "../01_reception/reception_T2_chair.glb",
+        "../01_reception/reception_T3_desk.glb",
+        "../01_reception/reception_T3_chair.glb"
+      ],
+      "reuse": "Exact sheet 01 GLBs, loaded as instances; no separate reception geometry build."
+    }
+  ]
+}

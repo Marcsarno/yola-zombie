@@ -1,0 +1,1 @@
+/* Code is embedded in the standalone bundle. */

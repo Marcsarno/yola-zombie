@@ -1,0 +1,321 @@
+{
+  "sheet": "14",
+  "assets": [
+    {
+      "name": "transport_T1_wheelchair",
+      "dimensions_xyz_m": [
+        0.7925167083740234,
+        0.98499995470047,
+        1.0290000297004935
+      ],
+      "triangles": 4384,
+      "materials": [
+        "blue",
+        "cream",
+        "dark",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_attendant_hand_left": [
+          -0.255,
+          0.35,
+          1.0
+        ],
+        "anchor_attendant_hand_right": [
+          0.255,
+          0.35,
+          1.0
+        ],
+        "anchor_attendant_standing": [
+          0.0,
+          0.77,
+          0.0
+        ],
+        "anchor_feet_left": [
+          -0.12,
+          -0.46,
+          0.22
+        ],
+        "anchor_feet_right": [
+          0.12,
+          -0.46,
+          0.22
+        ],
+        "anchor_patient_hand_left": [
+          -0.28,
+          -0.09,
+          0.715
+        ],
+        "anchor_patient_hand_right": [
+          0.28,
+          -0.09,
+          0.715
+        ],
+        "anchor_seat": [
+          0.0,
+          -0.02,
+          0.505
+        ],
+        "left_front_caster_rotation_pivot": [
+          -0.2618,
+          -0.35,
+          0.085
+        ],
+        "left_rear_wheel_rotation_pivot": [
+          -0.34,
+          0.11,
+          0.29
+        ],
+        "right_front_caster_rotation_pivot": [
+          0.2618,
+          -0.35,
+          0.085
+        ],
+        "right_rear_wheel_rotation_pivot": [
+          0.34,
+          0.11,
+          0.29
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Reserve 1.0m clear width and 1.5m attendant envelope length; prototype placement guidance. Verify actual rig and game collision.",
+      "runtime_primitives": 15,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.7925167083740234,
+        1.0290000297004935,
+        0.98499995470047
+      ],
+      "sha256": "96b0085f124b7fe695a5cf60df50bd98b3c98bbb25e7eb311ffb33344ec42270"
+    },
+    {
+      "name": "transport_T2_wheelchair",
+      "dimensions_xyz_m": [
+        0.7550526261329651,
+        0.9120000004768372,
+        0.9700000137090683
+      ],
+      "triangles": 5016,
+      "materials": [
+        "WC_Frame_Cream",
+        "WC_Handles_Footplates_Blue",
+        "WC_Hardware_Graphite",
+        "WC_Tire_Charcoal",
+        "WC_Upholstery_Teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "Wheelchair_Root": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ANCHOR_Character_Origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ANCHOR_Foot_Contact_L": [
+          0.1365,
+          -0.332,
+          0.2138
+        ],
+        "ANCHOR_Foot_Contact_R": [
+          -0.1365,
+          -0.332,
+          0.2138
+        ],
+        "ANCHOR_Patient_Hand_L": [
+          0.272,
+          -0.21,
+          0.715
+        ],
+        "ANCHOR_Patient_Hand_R": [
+          -0.272,
+          -0.21,
+          0.715
+        ],
+        "ANCHOR_Push_Grip_L": [
+          0.25,
+          0.355,
+          0.945
+        ],
+        "ANCHOR_Push_Grip_R": [
+          -0.25,
+          0.355,
+          0.945
+        ],
+        "ANCHOR_Pusher_Origin": [
+          0.0,
+          0.68,
+          0.0
+        ],
+        "ANCHOR_Seat_Pelvis": [
+          0.0,
+          0.0,
+          0.59
+        ],
+        "Caster_Swivel_L": [
+          0.25,
+          -0.245,
+          0.185
+        ],
+        "Caster_Wheel_Roll_L": [
+          0.0,
+          -0.02,
+          -0.11
+        ],
+        "Caster_Swivel_R": [
+          -0.25,
+          -0.245,
+          0.185
+        ],
+        "Caster_Wheel_Roll_R": [
+          0.0,
+          -0.02,
+          -0.11
+        ],
+        "Footrest_Swing_L": [
+          0.25,
+          -0.195,
+          0.4
+        ],
+        "Footplate_Fold_L": [
+          -0.015,
+          -0.137,
+          -0.2012
+        ],
+        "Footrest_Swing_R": [
+          -0.25,
+          -0.195,
+          0.4
+        ],
+        "Footplate_Fold_R": [
+          0.015,
+          -0.137,
+          -0.2012
+        ],
+        "Rear_Wheel_Roll_L": [
+          0.327,
+          0.075,
+          0.3
+        ],
+        "Rear_Wheel_Roll_R": [
+          -0.327,
+          0.075,
+          0.3
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Reserve 1.0m clear width and 1.5m attendant envelope length; prototype placement guidance. Verify actual rig and game collision.",
+      "runtime_primitives": 24,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.7550526261329651,
+        0.9700000137090683,
+        0.9120000004768372
+      ],
+      "sha256": "2b79e28e853cf88f57076985632023e4db2970e441ada995a76b7d144220cc8e"
+    },
+    {
+      "name": "transport_T3_wheelchair",
+      "dimensions_xyz_m": [
+        0.7599999904632568,
+        1.0799998939037323,
+        1.222500092548629
+      ],
+      "triangles": 4360,
+      "materials": [
+        "blue",
+        "cream",
+        "cushion",
+        "dark",
+        "metal",
+        "orange",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_attendant_hand_left.001": [
+          -0.31,
+          0.35,
+          1.12
+        ],
+        "anchor_attendant_hand_right.001": [
+          0.31,
+          0.35,
+          1.12
+        ],
+        "anchor_attendant_standing.001": [
+          0.0,
+          0.77,
+          0.0
+        ],
+        "anchor_feet_left.001": [
+          -0.12,
+          -0.46,
+          0.23
+        ],
+        "anchor_feet_right.001": [
+          0.12,
+          -0.46,
+          0.23
+        ],
+        "anchor_patient_hand_left.001": [
+          -0.28,
+          -0.09,
+          0.845
+        ],
+        "anchor_patient_hand_right.001": [
+          0.28,
+          -0.09,
+          0.845
+        ],
+        "anchor_seat.001": [
+          0.0,
+          -0.02,
+          0.61
+        ],
+        "left_drive_wheel_rotation_pivot": [
+          -0.31,
+          0.16,
+          0.2
+        ],
+        "left_front_caster_rotation_pivot.001": [
+          -0.31,
+          -0.36,
+          0.1
+        ],
+        "right_drive_wheel_rotation_pivot": [
+          0.31,
+          0.16,
+          0.2
+        ],
+        "right_front_caster_rotation_pivot.001": [
+          0.31,
+          -0.36,
+          0.1
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Reserve 1.0m clear width and 1.5m attendant envelope length; prototype placement guidance. Verify actual rig and game collision.",
+      "runtime_primitives": 21,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.7599999904632568,
+        1.222500092548629,
+        1.0799998939037323
+      ],
+      "sha256": "6df4bdbe9f1100c9709dff457d6719cee033333a7997f5441097abaa4f89b4c2"
+    }
+  ],
+  "units": "meters",
+  "glb_up": "Y",
+  "rig_status": "T2 preserves original supplied wheelchair and reference poses for patient_unisex_v1 (1.6488m). T1/T3 are new concepts with fit anchors; no full game rig fit or animation validation claimed. T3 powered drive and attendant controls are visual only.",
+  "wheel_pivots": "T1/T3 named rotation pivots at wheel centers. Spin axis Blender local X; exported local X unchanged. No wheel animation authored.",
+  "textures": 0,
+  "standard_reuse": "Cleaned derived runtime from original: near-zero-area triangles removed only. Original GLB preserved untouched in source. Bounds, named component pivots, materials and existing reference poses retained.",
+  "qa_note": "New tiers have generic fit proxies only; no new game-rig validation."
+}

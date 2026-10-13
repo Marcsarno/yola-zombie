@@ -1,0 +1,598 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "file": "10_starter_rack.glb",
+      "triangles": 1440,
+      "mesh_nodes": 1,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.4124999940395355,
+          -0.25600001215934753,
+          0.0
+        ],
+        "max": [
+          0.41249996423721313,
+          0.2549999952316284,
+          1.8200000524520874
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.4124999940395355,
+          0.0,
+          -0.2549999952316284
+        ],
+        "max": [
+          0.41249996423721313,
+          1.8200000524520874,
+          0.25600001215934753
+        ]
+      },
+      "dimensions_m_blender": [
+        0.8249999582767487,
+        0.511000007390976,
+        1.8200000524520874
+      ],
+      "dimensions_m_gltf": [
+        0.8249999582767487,
+        1.8200000524520874,
+        0.511000007390976
+      ],
+      "bytes": 181372,
+      "sha256": "ebd70cb2d81afcbd9f790264bc4467dd16679f673fd32b9ddcf2c209b468a35a",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_starter_steel_sink.glb",
+      "triangles": 1180,
+      "mesh_nodes": 1,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.4350000023841858,
+          -0.3100000023841858,
+          0.0
+        ],
+        "max": [
+          0.4350000023841858,
+          0.3199999928474426,
+          1.1649999618530273
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.4350000023841858,
+          0.0,
+          -0.3199999928474426
+        ],
+        "max": [
+          0.4350000023841858,
+          1.1649999618530273,
+          0.3100000023841858
+        ]
+      },
+      "dimensions_m_blender": [
+        0.8700000047683716,
+        0.6299999952316284,
+        1.1649999618530273
+      ],
+      "dimensions_m_gltf": [
+        0.8700000047683716,
+        1.1649999618530273,
+        0.6299999952316284
+      ],
+      "bytes": 92360,
+      "sha256": "bac3c24eb7d01b8f0c87bfa5b48ec53bff3c1ff7f094e20a3d6defa0e37379cc",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_starter_mop_bucket.glb",
+      "triangles": 1924,
+      "mesh_nodes": 1,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3130374550819397,
+          -0.2680000066757202,
+          0.009999974630773067
+        ],
+        "max": [
+          0.3130375146865845,
+          0.27400001883506775,
+          1.556746244430542
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.3130374550819397,
+          0.009999974630773067,
+          -0.27400001883506775
+        ],
+        "max": [
+          0.3130375146865845,
+          1.556746244430542,
+          0.2680000066757202
+        ]
+      },
+      "dimensions_m_blender": [
+        0.6260749697685242,
+        0.542000025510788,
+        1.546746269799769
+      ],
+      "dimensions_m_gltf": [
+        0.6260749697685242,
+        1.546746269799769,
+        0.542000025510788
+      ],
+      "bytes": 189292,
+      "sha256": "2a5f0b6a7da3750e7e0121e54bcdfdc351db667328353d2e18a8eefa906eae13",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_standard_cleaning_cart.glb",
+      "triangles": 2544,
+      "mesh_nodes": 1,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.3857637345790863,
+          -0.5099999904632568,
+          0.009999972768127918
+        ],
+        "max": [
+          0.3500000536441803,
+          0.5744797587394714,
+          1.6800001859664917
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.3857637345790863,
+          0.009999972768127918,
+          -0.5744797587394714
+        ],
+        "max": [
+          0.3500000536441803,
+          1.6800001859664917,
+          0.5099999904632568
+        ]
+      },
+      "dimensions_m_blender": [
+        0.7357637882232666,
+        1.0844797492027283,
+        1.6700002131983638
+      ],
+      "dimensions_m_gltf": [
+        0.7357637882232666,
+        1.6700002131983638,
+        1.0844797492027283
+      ],
+      "bytes": 256340,
+      "sha256": "c33a29e9992bf4d2238be13f7c3e923026340b683e7083c7f9eeefe395d7e405",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_standard_utility_sink.glb",
+      "triangles": 1172,
+      "mesh_nodes": 1,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 2,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.5299999713897705,
+          -0.3619999885559082,
+          0.0
+        ],
+        "max": [
+          0.5299999713897705,
+          0.33500000834465027,
+          1.3174999952316284
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.5299999713897705,
+          0.0,
+          -0.33500000834465027
+        ],
+        "max": [
+          0.5299999713897705,
+          1.3174999952316284,
+          0.3619999885559082
+        ]
+      },
+      "dimensions_m_blender": [
+        1.059999942779541,
+        0.6969999969005585,
+        1.3174999952316284
+      ],
+      "dimensions_m_gltf": [
+        1.059999942779541,
+        1.3174999952316284,
+        0.6969999969005585
+      ],
+      "bytes": 132520,
+      "sha256": "0805baf2bdccd91fd4b1519c78d48f6c64d1847fc9da5d616963b17310931bc1",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_standard_wall_shelf.glb",
+      "triangles": 1008,
+      "mesh_nodes": 1,
+      "materials": 1,
+      "material_names": [
+        "Mobile_paint"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 1,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.5425000190734863,
+          -0.1550000011920929,
+          0.0
+        ],
+        "max": [
+          0.5425000190734863,
+          0.1550000011920929,
+          0.9824999570846558
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.5425000190734863,
+          0.0,
+          -0.1550000011920929
+        ],
+        "max": [
+          0.5425000190734863,
+          0.9824999570846558,
+          0.1550000011920929
+        ]
+      },
+      "dimensions_m_blender": [
+        1.0850000381469727,
+        0.3100000023841858,
+        0.9824999570846558
+      ],
+      "dimensions_m_gltf": [
+        1.0850000381469727,
+        0.9824999570846558,
+        0.3100000023841858
+      ],
+      "bytes": 107908,
+      "sha256": "f8f010151bda7bdc7dab00555442710ba256ea969058be4a1587303dde6ca694",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_advanced_integrated_station.glb",
+      "triangles": 2296,
+      "mesh_nodes": 1,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 3,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.9599999785423279,
+          -0.5069999694824219,
+          0.0
+        ],
+        "max": [
+          0.9900000095367432,
+          0.3999999761581421,
+          2.259999990463257
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.9599999785423279,
+          0.0,
+          -0.3999999761581421
+        ],
+        "max": [
+          0.9900000095367432,
+          2.259999990463257,
+          0.5069999694824219
+        ]
+      },
+      "dimensions_m_blender": [
+        1.949999988079071,
+        0.906999945640564,
+        2.259999990463257
+      ],
+      "dimensions_m_gltf": [
+        1.949999988079071,
+        2.259999990463257,
+        0.906999945640564
+      ],
+      "bytes": 262628,
+      "sha256": "254d5e35d89c020e896a3c7eb4572c11697d2e821a4c26371c139f0639b03a67",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_advanced_floor_scrubber.glb",
+      "triangles": 3144,
+      "mesh_nodes": 1,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 3,
+      "vertex_color_layers": 1,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -0.43060001730918884,
+          -0.8869738578796387,
+          0.01900923252105713
+        ],
+        "max": [
+          0.43060001730918884,
+          0.6324999928474426,
+          1.208299160003662
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -0.43060001730918884,
+          0.01900923252105713,
+          -0.6324999928474426
+        ],
+        "max": [
+          0.43060001730918884,
+          1.208299160003662,
+          0.8869738578796387
+        ]
+      },
+      "dimensions_m_blender": [
+        0.8612000346183777,
+        1.5194738507270813,
+        1.189289927482605
+      ],
+      "dimensions_m_gltf": [
+        0.8612000346183777,
+        1.189289927482605,
+        1.5194738507270813
+      ],
+      "bytes": 261880,
+      "sha256": "64e9ed59f8b827013734fb490178ae643e1144e1d703dfd418ad5efbce550584",
+      "import_pass": true,
+      "triangle_count_matches_source": true
+    },
+    {
+      "file": "10_janitor_advanced_assembly.glb",
+      "triangles": 5440,
+      "mesh_nodes": 2,
+      "materials": 3,
+      "material_names": [
+        "Mobile_glow",
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 6,
+      "vertex_color_layers": 2,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -1.0205999612808228,
+          -1.4769737720489502,
+          0.0
+        ],
+        "max": [
+          1.190000057220459,
+          0.8199999332427979,
+          2.259999990463257
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -1.0205999612808228,
+          0.0,
+          -0.8199999332427979
+        ],
+        "max": [
+          1.190000057220459,
+          2.259999990463257,
+          1.4769737720489502
+        ]
+      },
+      "dimensions_m_blender": [
+        2.2106000185012817,
+        2.296973705291748,
+        2.259999990463257
+      ],
+      "dimensions_m_gltf": [
+        2.2106000185012817,
+        2.259999990463257,
+        2.296973705291748
+      ],
+      "bytes": 523988,
+      "sha256": "8a84780dbac3f9069718be84d9ed83b80bbe946097d47c2f002b5e7940ad82a9",
+      "import_pass": true
+    },
+    {
+      "file": "10_janitor_standard_assembly.glb",
+      "triangles": 4724,
+      "mesh_nodes": 3,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 5,
+      "vertex_color_layers": 3,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -1.175763726234436,
+          -0.8500000238418579,
+          0.0
+        ],
+        "max": [
+          1.1799999475479126,
+          0.8350000381469727,
+          2.2224998474121094
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -1.175763726234436,
+          0.0,
+          -0.8350000381469727
+        ],
+        "max": [
+          1.1799999475479126,
+          2.2224998474121094,
+          0.8500000238418579
+        ]
+      },
+      "dimensions_m_blender": [
+        2.3557636737823486,
+        1.6850000619888306,
+        2.2224998474121094
+      ],
+      "dimensions_m_gltf": [
+        2.3557636737823486,
+        2.2224998474121094,
+        1.6850000619888306
+      ],
+      "bytes": 496112,
+      "sha256": "cb5d09a86c4fed1d500f39e9385f40b2062014f2de123c63b79066c8903ec561",
+      "import_pass": true
+    },
+    {
+      "file": "10_janitor_starter_assembly.glb",
+      "triangles": 4544,
+      "mesh_nodes": 3,
+      "materials": 2,
+      "material_names": [
+        "Mobile_paint",
+        "Mobile_steel"
+      ],
+      "textures": 0,
+      "images": 0,
+      "texture_pixel_dimensions": [],
+      "gltf_primitives": 6,
+      "vertex_color_layers": 3,
+      "zero_area_triangles": 0,
+      "bounds_m_blender": {
+        "min": [
+          -1.212499976158142,
+          -0.8680000305175781,
+          0.0
+        ],
+        "max": [
+          1.0350000858306885,
+          0.824999988079071,
+          1.8200000524520874
+        ]
+      },
+      "bounds_m_gltf": {
+        "min": [
+          -1.212499976158142,
+          0.0,
+          -0.824999988079071
+        ],
+        "max": [
+          1.0350000858306885,
+          1.8200000524520874,
+          0.8680000305175781
+        ]
+      },
+      "dimensions_m_blender": [
+        2.2475000619888306,
+        1.6930000185966492,
+        1.8200000524520874
+      ],
+      "dimensions_m_gltf": [
+        2.2475000619888306,
+        1.8200000524520874,
+        1.6930000185966492
+      ],
+      "bytes": 462232,
+      "sha256": "10e961908badb43aaf60c424765154ac581e1d166ccb2f30966716e45fc82050",
+      "import_pass": true
+    }
+  ]
+}

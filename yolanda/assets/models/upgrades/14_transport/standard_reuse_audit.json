@@ -1,0 +1,12 @@
+{
+  "original_sha256": "295bdd8fdd247ec5a0f56813c92a48d23e0a948c7624272ae4cefc6bbe9019ab",
+  "derived_sha256": "2b79e28e853cf88f57076985632023e4db2970e441ada995a76b7d144220cc8e",
+  "same_node_names": true,
+  "missing_nodes": [],
+  "max_node_world_matrix_delta": 1.7881393432617188e-07,
+  "max_vertex_bounds_delta_m": 5.021219706691227e-08,
+  "same_material_names": true,
+  "max_base_color_delta": 0.0,
+  "fit_pose_file_unchanged": true,
+  "cleanup": "48 triangles with local area below 1e-9 removed; no visible-surface edits intended."
+}

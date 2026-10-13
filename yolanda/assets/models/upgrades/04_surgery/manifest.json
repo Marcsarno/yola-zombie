@@ -1,0 +1,476 @@
+{
+  "sheet": "04_surgery",
+  "units": "meters",
+  "gltf_axis": "Y-up (Blender Z-up converted)",
+  "front_gltf": "+Z",
+  "validation": "Optimized GLBs independently reimported in empty scenes. Dimensions <1mm error; materials, anchor counts and pivot counts matched. No display stage exported.",
+  "assets": [
+    {
+      "id": "operating_table_starter",
+      "triangles": 2516,
+      "materials": [
+        "Green",
+        "Metal",
+        "Rubber"
+      ],
+      "material_count": 3,
+      "textures": [],
+      "dimensions_m_blender_xyz": [
+        0.8600000143051147,
+        1.649999976158142,
+        0.9450000412762165
+      ],
+      "bounds_min": [
+        -0.4300000071525574,
+        -0.8999999761581421,
+        0.010000001639127731
+      ],
+      "bounds_max": [
+        0.4300000071525574,
+        0.75,
+        0.9550000429153442
+      ],
+      "origin": "ground center",
+      "anchors_blender_xyz": {
+        "ANCHOR_accessory_left": [
+          -0.36000001430511475,
+          0.0,
+          0.8199999928474426
+        ],
+        "ANCHOR_accessory_right": [
+          0.36000001430511475,
+          0.0,
+          0.8199999928474426
+        ],
+        "ANCHOR_height_control": [
+          0.4000000059604645,
+          -0.10000000149011612,
+          0.5199999809265137
+        ],
+        "ANCHOR_patient_position": [
+          0.0,
+          0.0,
+          0.9700000286102295
+        ]
+      },
+      "movable_pivots_blender_xyz": {
+        "PIVOT_table_section_0": [
+          0.0,
+          -0.8999999761581421,
+          0.8399999737739563
+        ],
+        "PIVOT_table_section_1": [
+          0.0,
+          -0.29499998688697815,
+          0.8399999737739563
+        ],
+        "PIVOT_table_section_2": [
+          0.0,
+          0.3499999940395355,
+          0.8399999737739563
+        ]
+      },
+      "collision_proposal": {
+        "type": "box",
+        "center_xy": [
+          0.0,
+          -0.07499998807907104
+        ],
+        "footprint_xy_m": [
+          0.7310000121593475,
+          1.4024999797344206
+        ],
+        "note": "Proposal only; excludes cables and articulated clearance. Gameplay collision not embedded."
+      },
+      "gltf_mesh_nodes": 4,
+      "gltf_mesh_primitives": 8,
+      "draw_call_estimate": 8,
+      "optimization": "Static submeshes consolidated by transform parent; material primitives retained; moving groups and anchors preserved.",
+      "triangle_budget_note": "Within 1\u20134k target."
+    },
+    {
+      "id": "operating_table_standard",
+      "triangles": 2164,
+      "materials": [
+        "Blue",
+        "Cream",
+        "Metal",
+        "Teal"
+      ],
+      "material_count": 4,
+      "textures": [],
+      "dimensions_m_blender_xyz": [
+        0.7750000357627869,
+        1.649999976158142,
+        0.9350000470876694
+      ],
+      "bounds_min": [
+        -0.38750001788139343,
+        -0.8999999761581421,
+        0.019999995827674866
+      ],
+      "bounds_max": [
+        0.38750001788139343,
+        0.75,
+        0.9550000429153442
+      ],
+      "origin": "ground center",
+      "anchors_blender_xyz": {
+        "ANCHOR_accessory_left.001": [
+          -0.36000001430511475,
+          0.0,
+          0.8199999928474426
+        ],
+        "ANCHOR_accessory_right.001": [
+          0.36000001430511475,
+          0.0,
+          0.8199999928474426
+        ],
+        "ANCHOR_height_control.001": [
+          0.4000000059604645,
+          -0.10000000149011612,
+          0.5199999809265137
+        ],
+        "ANCHOR_patient_position.001": [
+          0.0,
+          0.0,
+          0.9700000286102295
+        ]
+      },
+      "movable_pivots_blender_xyz": {
+        "PIVOT_table_section_0.001": [
+          0.0,
+          -0.8999999761581421,
+          0.8399999737739563
+        ],
+        "PIVOT_table_section_1.001": [
+          0.0,
+          -0.29499998688697815,
+          0.8399999737739563
+        ],
+        "PIVOT_table_section_2.001": [
+          0.0,
+          0.3499999940395355,
+          0.8399999737739563
+        ]
+      },
+      "collision_proposal": {
+        "type": "box",
+        "center_xy": [
+          0.0,
+          -0.07499998807907104
+        ],
+        "footprint_xy_m": [
+          0.6587500303983688,
+          1.4024999797344206
+        ],
+        "note": "Proposal only; excludes cables and articulated clearance. Gameplay collision not embedded."
+      },
+      "gltf_mesh_nodes": 4,
+      "gltf_mesh_primitives": 9,
+      "draw_call_estimate": 9,
+      "optimization": "Static submeshes consolidated by transform parent; material primitives retained; moving groups and anchors preserved.",
+      "triangle_budget_note": "Within 1\u20134k target."
+    },
+    {
+      "id": "operating_table_advanced",
+      "triangles": 2044,
+      "materials": [
+        "Blue",
+        "Cream",
+        "Metal",
+        "Screen"
+      ],
+      "material_count": 4,
+      "textures": [],
+      "dimensions_m_blender_xyz": [
+        0.7750000357627869,
+        1.649999976158142,
+        0.9450000450015068
+      ],
+      "bounds_min": [
+        -0.38750001788139343,
+        -0.8999999761581421,
+        0.009999997913837433
+      ],
+      "bounds_max": [
+        0.38750001788139343,
+        0.75,
+        0.9550000429153442
+      ],
+      "origin": "ground center",
+      "anchors_blender_xyz": {
+        "ANCHOR_accessory_left.002": [
+          -0.36000001430511475,
+          0.0,
+          0.8199999928474426
+        ],
+        "ANCHOR_accessory_right.002": [
+          0.36000001430511475,
+          0.0,
+          0.8199999928474426
+        ],
+        "ANCHOR_height_control.002": [
+          0.4000000059604645,
+          -0.10000000149011612,
+          0.5199999809265137
+        ],
+        "ANCHOR_patient_position.002": [
+          0.0,
+          0.0,
+          0.9700000286102295
+        ]
+      },
+      "movable_pivots_blender_xyz": {
+        "PIVOT_table_section_0.002": [
+          0.0,
+          -0.8999999761581421,
+          0.8399999737739563
+        ],
+        "PIVOT_table_section_1.002": [
+          0.0,
+          -0.29499998688697815,
+          0.8399999737739563
+        ],
+        "PIVOT_table_section_2.002": [
+          0.0,
+          0.3499999940395355,
+          0.8399999737739563
+        ]
+      },
+      "collision_proposal": {
+        "type": "box",
+        "center_xy": [
+          0.0,
+          -0.07499998807907104
+        ],
+        "footprint_xy_m": [
+          0.6587500303983688,
+          1.4024999797344206
+        ],
+        "note": "Proposal only; excludes cables and articulated clearance. Gameplay collision not embedded."
+      },
+      "gltf_mesh_nodes": 4,
+      "gltf_mesh_primitives": 10,
+      "draw_call_estimate": 10,
+      "optimization": "Static submeshes consolidated by transform parent; material primitives retained; moving groups and anchors preserved.",
+      "triangle_budget_note": "Within 1\u20134k target."
+    },
+    {
+      "id": "surgical_light_starter",
+      "triangles": 1560,
+      "materials": [
+        "Cream",
+        "Lamp",
+        "Metal",
+        "Rubber"
+      ],
+      "material_count": 4,
+      "textures": [],
+      "dimensions_m_blender_xyz": [
+        1.106295257806778,
+        0.6996550559997559,
+        1.6727331888775394
+      ],
+      "bounds_min": [
+        -0.2862952649593353,
+        -0.34982752799987793,
+        -1.2020632267351061e-09
+      ],
+      "bounds_max": [
+        0.8199999928474426,
+        0.34982752799987793,
+        1.672733187675476
+      ],
+      "origin": "ground center",
+      "anchors_blender_xyz": {
+        "ANCHOR_mounting_origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ANCHOR_sterile_handle_0.57": [
+          0.5699999928474426,
+          -0.28999999165534973,
+          1.2400000095367432
+        ]
+      },
+      "movable_pivots_blender_xyz": {
+        "PIVOT_lamp_head_tilt": [
+          0.5699999928474426,
+          -0.03999999910593033,
+          1.2400000095367432
+        ]
+      },
+      "collision_proposal": {
+        "type": "box",
+        "center_xy": [
+          0.26685236394405365,
+          0.0
+        ],
+        "footprint_xy_m": [
+          0.9403509691357612,
+          0.5947067975997925
+        ],
+        "note": "Proposal only; excludes cables and articulated clearance. Gameplay collision not embedded."
+      },
+      "gltf_mesh_nodes": 2,
+      "gltf_mesh_primitives": 6,
+      "draw_call_estimate": 6,
+      "optimization": "Static submeshes consolidated by transform parent; material primitives retained; moving groups and anchors preserved.",
+      "triangle_budget_note": "Within 1\u20134k target."
+    },
+    {
+      "id": "surgical_light_standard",
+      "triangles": 828,
+      "materials": [
+        "Blue",
+        "Cream",
+        "Lamp",
+        "Teal"
+      ],
+      "material_count": 4,
+      "textures": [],
+      "dimensions_m_blender_xyz": [
+        0.9100000262260437,
+        0.8500000834465027,
+        1.1600000858306885
+      ],
+      "bounds_min": [
+        -0.18000000715255737,
+        -0.6700000762939453,
+        -1.1600000858306885
+      ],
+      "bounds_max": [
+        0.7300000190734863,
+        0.18000000715255737,
+        0.0
+      ],
+      "origin": "ceiling mounting point",
+      "anchors_blender_xyz": {
+        "ANCHOR_mounting_origin.001": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ANCHOR_sterile_handle_0.48": [
+          0.47999998927116394,
+          -0.6800000667572021,
+          -0.9100000262260437
+        ]
+      },
+      "movable_pivots_blender_xyz": {
+        "PIVOT_ceiling_swing_1": [
+          0.0,
+          0.0,
+          -0.3799999952316284
+        ],
+        "PIVOT_lamp_head_tilt.001": [
+          0.47999998927116394,
+          -0.43000006675720215,
+          -0.9100000262260437
+        ]
+      },
+      "collision_proposal": {
+        "type": "none_ceiling_mounted",
+        "center_xy": [
+          0.2750000059604645,
+          -0.24500000476837158
+        ],
+        "footprint_xy_m": [
+          0.7735000222921371,
+          0.7225000202655792
+        ],
+        "note": "Proposal only; excludes cables and articulated clearance. Gameplay collision not embedded."
+      },
+      "gltf_mesh_nodes": 3,
+      "gltf_mesh_primitives": 8,
+      "draw_call_estimate": 8,
+      "optimization": "Static submeshes consolidated by transform parent; material primitives retained; moving groups and anchors preserved.",
+      "triangle_budget_note": "Within 1\u20134k target."
+    },
+    {
+      "id": "surgical_light_advanced",
+      "triangles": 1148,
+      "materials": [
+        "Blue",
+        "Cream",
+        "Lamp"
+      ],
+      "material_count": 3,
+      "textures": [],
+      "dimensions_m_blender_xyz": [
+        1.5704331398010254,
+        0.8500000834465027,
+        1.1246718168258667
+      ],
+      "bounds_min": [
+        -0.7852165699005127,
+        -0.6700000762939453,
+        -1.1246718168258667
+      ],
+      "bounds_max": [
+        0.7852165699005127,
+        0.18000000715255737,
+        0.0
+      ],
+      "origin": "ceiling mounting point",
+      "anchors_blender_xyz": {
+        "ANCHOR_mounting_origin.002": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ANCHOR_sterile_handle_-0.48": [
+          -0.48000001907348633,
+          -0.6800000667572021,
+          -0.9100000262260437
+        ],
+        "ANCHOR_sterile_handle_0.001": [
+          0.48000001907348633,
+          -0.6800000667572021,
+          -0.9100000262260437
+        ]
+      },
+      "movable_pivots_blender_xyz": {
+        "PIVOT_ceiling_swing_-1": [
+          0.0,
+          0.0,
+          -0.3799999952316284
+        ],
+        "PIVOT_lamp_head_tilt.002": [
+          -0.48000001907348633,
+          -0.43000006675720215,
+          -0.9100000262260437
+        ],
+        "PIVOT_ceiling_swing_1.001": [
+          0.0,
+          0.0,
+          -0.3799999952316284
+        ],
+        "PIVOT_lamp_head_tilt.003": [
+          0.48000001907348633,
+          -0.43000006675720215,
+          -0.9100000262260437
+        ]
+      },
+      "collision_proposal": {
+        "type": "none_ceiling_mounted",
+        "center_xy": [
+          0.0,
+          -0.24500000476837158
+        ],
+        "footprint_xy_m": [
+          1.3348681688308714,
+          0.7225000202655792
+        ],
+        "note": "Proposal only; excludes cables and articulated clearance. Gameplay collision not embedded."
+      },
+      "gltf_mesh_nodes": 5,
+      "gltf_mesh_primitives": 12,
+      "draw_call_estimate": 12,
+      "optimization": "Static submeshes consolidated by transform parent; material primitives retained; moving groups and anchors preserved.",
+      "triangle_budget_note": "Within 1\u20134k target."
+    }
+  ]
+}

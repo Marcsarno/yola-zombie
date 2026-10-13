@@ -1,0 +1,104 @@
+[
+  {
+    "id": "anesthesia_workstation_starter",
+    "max_dimension_error_m": 5.960464477539063e-08,
+    "dimensions_roundtrip_m": [
+      1.1020000278949738,
+      0.6599999964237213,
+      1.4549999237060547
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 60,
+    "mesh_nodes_after": 1,
+    "primitive_count": 11,
+    "triangle_count": 3940,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "anesthesia_workstation_standard",
+    "max_dimension_error_m": 5.8402581437633216e-08,
+    "dimensions_roundtrip_m": [
+      1.101999968290329,
+      0.699999988079071,
+      1.550000011920929
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 65,
+    "mesh_nodes_after": 1,
+    "primitive_count": 11,
+    "triangle_count": 4672,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "anesthesia_workstation_advanced",
+    "max_dimension_error_m": 5.8402581437633216e-08,
+    "dimensions_roundtrip_m": [
+      1.101999968290329,
+      0.7150000035762787,
+      1.5699999928474426
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 64,
+    "mesh_nodes_after": 1,
+    "primitive_count": 11,
+    "triangle_count": 4488,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "patient_monitor_starter",
+    "max_dimension_error_m": 2.9802322387695312e-08,
+    "dimensions_roundtrip_m": [
+      0.6237953007221222,
+      0.7096550464630127,
+      1.459999918937683
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 41,
+    "mesh_nodes_after": 2,
+    "primitive_count": 13,
+    "triangle_count": 2592,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "patient_monitor_standard",
+    "max_dimension_error_m": 2.9802322387695312e-08,
+    "dimensions_roundtrip_m": [
+      0.6237953007221222,
+      0.7096550464630127,
+      1.459999918937683
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 43,
+    "mesh_nodes_after": 2,
+    "primitive_count": 16,
+    "triangle_count": 2808,
+    "stage_geometry_present": false
+  },
+  {
+    "id": "patient_monitor_advanced",
+    "max_dimension_error_m": 2.9802322387695312e-08,
+    "dimensions_roundtrip_m": [
+      0.5999999642372131,
+      0.550000011920929,
+      1.4599999338388443
+    ],
+    "materials_match": true,
+    "anchors_match": true,
+    "pivots_match": true,
+    "mesh_nodes_before": 36,
+    "mesh_nodes_after": 2,
+    "primitive_count": 14,
+    "triangle_count": 2612,
+    "stage_geometry_present": false
+  }
+]

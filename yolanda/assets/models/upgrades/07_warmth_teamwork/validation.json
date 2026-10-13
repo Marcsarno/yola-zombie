@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "tested": "Clean factory scene GLB reimport, true transformed vertex bounds, materials, textures, triangles, finite vertices, floor contact.",
+  "results": [
+    {
+      "file": "07_warmth_teamwork/runtime/TeamDesk_advanced.glb",
+      "errors": [],
+      "triangles": 2224,
+      "textures": 0,
+      "dimension_delta_m": 2.8610229518832853e-08
+    },
+    {
+      "file": "07_warmth_teamwork/runtime/TeamDesk_standard.glb",
+      "errors": [],
+      "triangles": 1660,
+      "textures": 0,
+      "dimension_delta_m": 5.4836273299940785e-08
+    },
+    {
+      "file": "07_warmth_teamwork/runtime/TeamDesk_starter.glb",
+      "errors": [],
+      "triangles": 1120,
+      "textures": 0,
+      "dimension_delta_m": 4.4822692890633675e-08
+    },
+    {
+      "file": "07_warmth_teamwork/runtime/TeamStool_starter.glb",
+      "errors": [],
+      "triangles": 412,
+      "textures": 0,
+      "dimension_delta_m": 4.768371586472142e-09
+    },
+    {
+      "file": "07_warmth_teamwork/runtime/ThermaNest_advanced.glb",
+      "errors": [],
+      "triangles": 1828,
+      "textures": 0,
+      "dimension_delta_m": 4.005432119313923e-08
+    },
+    {
+      "file": "07_warmth_teamwork/runtime/ThermaNest_standard.glb",
+      "errors": [],
+      "triangles": 3782,
+      "textures": 1,
+      "dimension_delta_m": 1.1104202271017272e-06
+    },
+    {
+      "file": "07_warmth_teamwork/runtime/ThermaNest_starter.glb",
+      "errors": [],
+      "triangles": 1016,
+      "textures": 0,
+      "dimension_delta_m": 9.536743172944284e-08
+    }
+  ]
+}

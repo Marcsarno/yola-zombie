@@ -1,0 +1,337 @@
+{
+  "sheet": "01",
+  "units": "meters",
+  "glb_up": "Y",
+  "assets": [
+    {
+      "name": "reception_T1_desk",
+      "dimensions_xyz_m": [
+        1.649999976158142,
+        0.75,
+        1.244999885559082
+      ],
+      "triangles": 3772,
+      "materials": [
+        "cream",
+        "dark",
+        "gold",
+        "green",
+        "lightblue",
+        "metal",
+        "screen",
+        "white",
+        "wood"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_hands": [
+          0.0,
+          -0.19,
+          0.85
+        ],
+        "anchor_operator_feet": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_operator_seat": [
+          0.0,
+          -0.62,
+          0.49
+        ],
+        "anchor_patient_interaction": [
+          0.0,
+          1.15,
+          0.0
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Allow 0.90 m operator access behind desk, 1.20 m approach at visitor side; placement guidance, not accessibility certification.",
+      "runtime_primitives": 9,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        1.649999976158142,
+        1.244999885559082,
+        0.75
+      ],
+      "sha256": "1c2b510b8986ba2d112c0f40dc2392b3803e022a4fe205560908db8903add487"
+    },
+    {
+      "name": "reception_T1_chair",
+      "dimensions_xyz_m": [
+        0.49300000071525574,
+        0.46399998664855957,
+        0.9900000095367432
+      ],
+      "triangles": 584,
+      "materials": [
+        "dark",
+        "metal",
+        "teal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_back": [
+          0.0,
+          0.13,
+          0.7
+        ],
+        "anchor_feet": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_seat": [
+          0.0,
+          0.0,
+          0.505
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Allow 0.90 m operator access behind desk, 1.20 m approach at visitor side; placement guidance, not accessibility certification.",
+      "runtime_primitives": 3,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.49300000071525574,
+        0.9900000095367432,
+        0.46399998664855957
+      ],
+      "sha256": "2ad153bf548eaba16498b93a37c3e4f2f0e70cb7af0f9fb8cbf4afad87d62580"
+    },
+    {
+      "name": "reception_T2_desk",
+      "dimensions_xyz_m": [
+        2.200000047683716,
+        0.9000001549720764,
+        1.4447715282440186
+      ],
+      "triangles": 3900,
+      "materials": [
+        "CRNA_Shared_Matte_Atlas",
+        "cream",
+        "dark",
+        "green",
+        "lightblue",
+        "metal",
+        "screen"
+      ],
+      "textures": 1,
+      "anchors_blender_xyz": {
+        "01_Reception_Counter": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "Computer_Placement": [
+          0.0,
+          -0.125,
+          0.75
+        ],
+        "Customer_Interaction": [
+          0.0,
+          -0.94,
+          0.0
+        ],
+        "Knee_Clearance_Center": [
+          0.0,
+          0.085,
+          0.35
+        ],
+        "Reception_Surface": [
+          0.0,
+          -0.335,
+          1.1
+        ],
+        "Staff_Approach": [
+          0.0,
+          1.4,
+          0.0
+        ],
+        "Staff_Interaction": [
+          0.0,
+          0.73,
+          0.0
+        ],
+        "Worktop_Surface": [
+          0.0,
+          0.0575,
+          0.75
+        ],
+        "anchor_hands.001": [
+          0.0,
+          -0.28,
+          0.81
+        ],
+        "anchor_operator_feet.001": [
+          0.0,
+          -0.38,
+          0.02
+        ],
+        "anchor_operator_seat.001": [
+          0.0,
+          -0.68,
+          0.49
+        ],
+        "anchor_patient_interaction.001": [
+          0.0,
+          1.1,
+          0.0
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Allow 0.90 m operator access behind desk, 1.20 m approach at visitor side; placement guidance, not accessibility certification.",
+      "runtime_primitives": 7,
+      "texture_pixel_dimensions": [
+        [
+          1024,
+          1024
+        ]
+      ],
+      "dimensions_gltf_xyz_m": [
+        2.200000047683716,
+        1.4447715282440186,
+        0.9000001549720764
+      ],
+      "sha256": "19e10c72eff8f4791fe3aa91a0c106608b37b503f8693ed3969da5eebb621332"
+    },
+    {
+      "name": "reception_T2_chair",
+      "dimensions_xyz_m": [
+        0.6299999952316284,
+        0.6225916147232056,
+        0.99000000849863
+      ],
+      "triangles": 870,
+      "materials": [
+        "blue",
+        "cushion",
+        "dark",
+        "metal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_back.001": [
+          0.0,
+          0.13,
+          0.7
+        ],
+        "anchor_feet.001": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_seat.001": [
+          0.0,
+          0.0,
+          0.505
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Allow 0.90 m operator access behind desk, 1.20 m approach at visitor side; placement guidance, not accessibility certification.",
+      "runtime_primitives": 9,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.6299999952316284,
+        0.99000000849863,
+        0.6225916147232056
+      ],
+      "sha256": "195f25a39e0a0c301095d87b500f409b157418dfe0bcdcbcdb5bdf4544dacca0"
+    },
+    {
+      "name": "reception_T3_desk",
+      "dimensions_xyz_m": [
+        2.140000104904175,
+        0.8200000822544098,
+        1.327549546957016
+      ],
+      "triangles": 3640,
+      "materials": [
+        "blue",
+        "cream",
+        "dark",
+        "green",
+        "lightblue",
+        "metal",
+        "screen",
+        "white"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_hands.002": [
+          0.0,
+          -0.19,
+          0.85
+        ],
+        "anchor_operator_feet.002": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_operator_seat.002": [
+          0.0,
+          -0.62,
+          0.49
+        ],
+        "anchor_patient_interaction.002": [
+          0.0,
+          1.15,
+          0.0
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Allow 0.90 m operator access behind desk, 1.20 m approach at visitor side; placement guidance, not accessibility certification.",
+      "runtime_primitives": 8,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        2.140000104904175,
+        1.327549546957016,
+        0.8200000822544098
+      ],
+      "sha256": "ab68d8a17951fb10cad0231a2f917423396ec8ef2b79faaa06e4ac0b9d9c9cfa"
+    },
+    {
+      "name": "reception_T3_chair",
+      "dimensions_xyz_m": [
+        0.6299999952316284,
+        0.6225916147232056,
+        0.99000000849863
+      ],
+      "triangles": 870,
+      "materials": [
+        "cushion",
+        "dark",
+        "metal"
+      ],
+      "textures": 0,
+      "anchors_blender_xyz": {
+        "anchor_back.002": [
+          0.0,
+          0.13,
+          0.7
+        ],
+        "anchor_feet.002": [
+          0.0,
+          -0.32,
+          0.02
+        ],
+        "anchor_seat.002": [
+          0.0,
+          0.0,
+          0.505
+        ]
+      },
+      "root_origin": "ground; meters",
+      "clearance": "Allow 0.90 m operator access behind desk, 1.20 m approach at visitor side; placement guidance, not accessibility certification.",
+      "runtime_primitives": 8,
+      "texture_pixel_dimensions": [],
+      "dimensions_gltf_xyz_m": [
+        0.6299999952316284,
+        0.99000000849863,
+        0.6225916147232056
+      ],
+      "sha256": "f4b8ab4c66bebadef33f233d4c48f1daae59b21571e68c2fca3ccf5863595dde"
+    }
+  ],
+  "rig_status": "Generic 1.65m scale assumptions and seat/feet/hand anchors only. Actual game character rig has not been verified. No animation or upgrade behavior implemented.",
+  "materials": "Shared named solid-color materials; original standard counter retains one embedded shared atlas. UI is geometry only."
+}

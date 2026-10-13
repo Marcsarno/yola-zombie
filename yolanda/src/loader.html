@@ -1,0 +1,33 @@
+<script>
+(async()=>{
+ const splash=document.getElementById('offline-loading');
+ try {
+  if(!globalThis.DecompressionStream)throw Error('Please open this file in a current Chrome, Edge, Firefox or Safari browser.');
+  const packed=document.getElementById('offline-assets'),base=atob(packed.textContent.trim());
+  const bytes=Uint8Array.from(base,c=>c.charCodeAt(0));packed.remove();
+  const records=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
+  const blobs=new Map();
+  const canonical=value=>{try{return new URL(String(value),location.href).pathname;}catch{return String(value);}};
+  const asset=value=>{if(!value||/^(data:|blob:)/.test(value))return value;const key=canonical(value),r=records[key];if(!r)return value;if(!blobs.has(key)){const b=atob(r.data);blobs.set(key,URL.createObjectURL(new Blob([Uint8Array.from(b,c=>c.charCodeAt(0))],{type:r.type})));delete r.data;}return blobs.get(key);};
+  const nativeFetch=globalThis.fetch.bind(globalThis);
+  globalThis.fetch=(input,init)=>{const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;const mapped=asset(url);return nativeFetch(mapped===url?input:mapped,init);};
+  // Vite loads only the current mode's CSS; retain that behavior instead of mixing all mode styles.
+  for(const [proto,name] of [[HTMLImageElement.prototype,'src'],[HTMLLinkElement.prototype,'href'],[HTMLSourceElement.prototype,'src'],[HTMLAnchorElement.prototype,'href']]){
+   const original=Object.getOwnPropertyDescriptor(proto,name);if(!original?.set)continue;
+   Object.defineProperty(proto,name,{...original,set(value){original.set.call(this,value==='/'&&this instanceof HTMLAnchorElement?location.pathname:asset(value));}});
+  }
+  const setAttribute=Element.prototype.setAttribute;
+  Element.prototype.setAttribute=function(name,value){if((name==='src'||name==='href')&&this.matches('img,link,source,a'))value=value==='/'&&this.tagName==='A'?location.pathname:asset(value);return setAttribute.call(this,name,value);};
+  const markup=value=>String(value).replace(/\b(src|href)=(['"])(\/[^'"\s]*)\2/g,(all,name,q,url)=>name+'='+q+(url==='/'?location.pathname:asset(url))+q);
+  const inner=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+  Object.defineProperty(Element.prototype,'innerHTML',{...inner,set(value){inner.set.call(this,markup(value));}});
+  const insert=Element.prototype.insertAdjacentHTML;Element.prototype.insertAdjacentHTML=function(where,value){return insert.call(this,where,markup(value));};
+  for(const el of document.querySelectorAll('link[href]'))el.href=asset(el.getAttribute('href'));
+  const credits=()=>{const menu=document.querySelector('#build-menu .menu-card');if(menu&&!document.getElementById('offline-credits-link')){const a=document.createElement('a');a.id='offline-credits-link';a.href=asset('/ATTRIBUTIONS.md');a.download='Yolanda-asset-credits.txt';a.textContent='Offline asset credits';menu.append(a);}};new MutationObserver(credits).observe(document.body,{subtree:true,childList:true});
+  window.yolandaOffline={assetCount:Object.keys(records).length,version:1};
+  splash.remove();
+  const script=document.createElement('script');script.textContent=document.getElementById('offline-code').textContent;document.getElementById('offline-code').remove();document.body.appendChild(script);
+ }catch(error){splash.textContent='Could not open the offline game: '+error.message;console.error(error);}
+})();</script>
+</body>
+</html>
