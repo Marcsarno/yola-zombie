@@ -46263,6 +46263,7 @@ void main() {
   var _q3 = new Quaternion();
   var _q4 = new Quaternion();
   var UP = new Vector3(0, 1, 0);
+  var _e = new Euler();
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
   function angleDiff2(a, b) {
     let d = (b - a) % (Math.PI * 2);
@@ -46425,6 +46426,7 @@ void main() {
         clips.push(subClip(byName[n], (b) => LOWER.test(b), n + "_lower"));
       }
       clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), "bat_idle_upper"));
+      clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), "pistol_reload_upper"));
       clips.push(byName.bat_swing, byName.death_fall, byName.death_defeat, byName.pistol_hit);
       super(scene2, gltf.scene, H, clips);
       this.H = H;
@@ -46439,6 +46441,11 @@ void main() {
       this.sv = { x: 0, z: 0 };
       this.act("bat_idle_upper").play();
       this.act("bat_idle_upper").setEffectiveWeight(0);
+      const rl = this.act("pistol_reload_upper");
+      rl.play();
+      rl.setEffectiveWeight(0);
+      rl.timeScale = 0;
+      this.reloadFrames = Math.round(byName.pistol_reload.duration * 30);
       const sw = this.act("bat_swing");
       sw.play();
       sw.setEffectiveWeight(0);
@@ -46455,6 +46462,35 @@ void main() {
       this.batTip = new Vector3();
       this.weights = {};
       this.calibrateBatSocket(clipdata);
+      this.calibratePistolSocket();
+    }
+    // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
+    // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the
+    // hands leave the aim (reload).
+    calibratePistolSocket() {
+      for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
+      const id = this.act("pistol_idle");
+      id.time = 0;
+      id.setEffectiveWeight(1);
+      this.container.rotation.y = 0;
+      this.outer.position.set(0, 0, 0);
+      this.mixer.update(0);
+      this.outer.updateMatrixWorld(true);
+      this.aimQuat(_q);
+      this.bones.RightHand.getWorldQuaternion(_q2);
+      this.pistolSocket = _q2.invert().multiply(_q).clone();
+      id.setEffectiveWeight(0);
+    }
+    // pistol orientation from the arms: barrel along shoulders -> hands, slide upright (no roll)
+    aimQuat(out) {
+      this.grip("Right", _v);
+      this.grip("Left", _v22);
+      this.bones.RightArm.getWorldPosition(_v32);
+      this.bones.LeftArm.getWorldPosition(_v4);
+      const mid = _v32.add(_v4).multiplyScalar(0.5);
+      const dir = _v4.copy(_v).add(_v22).multiplyScalar(0.5).sub(mid).normalize();
+      const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp3(dir.y, -1, 1));
+      return out.setFromEuler(_e.set(pitch, yawOnly, 0, "YXZ"));
     }
     // Weapon socket on the right hand: the bat direction measured on the Mixamo reference skeleton
     // (clipdata.bat_idle[0].d, character space) expressed in this hand bone's own frame.
@@ -46635,9 +46671,17 @@ void main() {
       this.container.rotation.y = this.yaw + turn;
       const sW = swingW;
       sw.setEffectiveWeight(sW);
+      let rW = 0;
+      if (s.action === "reload" && s.equipped === "pistol") {
+        const u = clamp3(s.actionT / s.reloadDur, 0, 1), rl = this.act("pistol_reload_upper");
+        rl.time = (1 + u * (this.reloadFrames - 1)) / 30;
+        rW = smooth(clamp3(s.actionT / 0.08, 0, 1)) * smooth(clamp3((1 - u) / 0.12, 0, 1));
+      }
+      this.reloadW = rW;
+      this.act("pistol_reload_upper").setEffectiveWeight(rW * (1 - ub) * (1 - sW));
       for (const n in w) {
-        this.act(n).setEffectiveWeight(w[n] * (1 - ub) * (1 - sW));
-        this.act(n + "_lower").setEffectiveWeight(w[n] * ub * (1 - sW));
+        this.act(n).setEffectiveWeight(w[n] * (1 - ub) * (1 - rW) * (1 - sW));
+        this.act(n + "_lower").setEffectiveWeight(w[n] * (ub + (1 - ub) * rW) * (1 - sW));
       }
       this.act("bat_idle_upper").setEffectiveWeight(ub * (1 - sW));
       this.mixer.update(dt);
@@ -46670,17 +46714,19 @@ void main() {
       return out.add(_v4).multiplyScalar(0.5);
     }
     // Turn the chest so the gun points exactly along the simulation's aim, then add recoil.
+    // During a reload the hands leave the aim, so the last aiming correction is held instead.
     aimPistol(s, ub) {
-      const k = 1 - ub;
+      const k = 1 - ub, rW = this.reloadW || 0;
       this.grip("Right", _v);
       this.grip("Left", _v22);
       this.bones.RightArm.getWorldPosition(_v32);
       this.bones.LeftArm.getWorldPosition(_v4);
       const hx = (_v.x + _v22.x) / 2 - (_v32.x + _v4.x) / 2, hz = (_v.z + _v22.z) / 2 - (_v32.z + _v4.z) / 2;
-      const err = angleDiff2(Math.atan2(hx, hz), s.aimYaw);
+      const live = clamp3(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+      if (rW === 0) this.aimErr = live;
+      const err = live * (1 - rW) + (this.aimErr || 0) * rW;
       const kick = s.recoil * s.recoil * s.recoilScale;
-      const reload = s.action === "reload" ? Math.sin(Math.PI * clamp3(s.actionT / s.reloadDur, 0, 1)) : 0;
-      this.rotateEulerC("Spine2", (-0.09 * kick + 0.35 * reload) * k, clamp3(err, -0.6, 0.6) * k, 0);
+      this.rotateEulerC("Spine2", -0.09 * kick * k, err * k, 0);
       if (kick > 0.01) {
         this.rotateEulerC("RightArm", -0.25 * kick * k, 0, 0);
         this.rotateEulerC("LeftArm", -0.25 * kick * k, 0, 0);
@@ -46690,21 +46736,21 @@ void main() {
       const showBat = ub > 0.5;
       this.pistol.visible = !showBat;
       this.bat.visible = showBat;
-      this.grip("Right", _v);
-      this.grip("Left", _v22);
       if (!showBat) {
-        this.bones.RightArm.getWorldPosition(_v32);
-        this.bones.LeftArm.getWorldPosition(_v4);
-        const mid = _v32.add(_v4).multiplyScalar(0.5);
-        const dir = _v4.copy(_v).add(_v22).multiplyScalar(0.5).sub(mid).normalize();
+        this.aimQuat(_q);
+        const rW = this.reloadW || 0;
+        if (rW > 0 && this.pistolSocket) {
+          this.bones.RightHand.getWorldQuaternion(_q2);
+          _q.slerp(_q2.multiply(this.pistolSocket), rW);
+        }
+        this.grip("Right", _v);
         this.pistol.position.copy(_v);
-        _q.setFromUnitVectors(new Vector3(0, 0, 1), dir);
         this.pistol.quaternion.copy(_q);
-        const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp3(dir.y, -1, 1));
-        this.pistol.rotation.set(pitch, yawOnly, 0, "YXZ");
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else {
+        this.grip("Right", _v);
+        this.grip("Left", _v22);
         let dir;
         if (this.batSocket) {
           this.bones.RightHand.getWorldQuaternion(_q);

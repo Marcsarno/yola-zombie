@@ -12,6 +12,7 @@ const smooth = (u) => u * u * (3 - 2 * u);
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _q4 = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
+const _e = new THREE.Euler();
 const LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
 
 function angleDiff(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; else if (d < -Math.PI) d += Math.PI * 2; return d; }
@@ -131,6 +132,7 @@ export class YolaView extends ClipBody {
       clips.push(subClip(byName[n], (b) => LOWER.test(b), n + '_lower')); // legs only (bat held)
     }
     clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), 'bat_idle_upper'));
+    clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), 'pistol_reload_upper'));
     clips.push(byName.bat_swing, byName.death_fall, byName.death_defeat, byName.pistol_hit);
     super(scene, gltf.scene, H, clips);
     this.H = H;
@@ -140,6 +142,8 @@ export class YolaView extends ClipBody {
     for (const n in LOCO) for (const suf of ['', '_lower']) this.act(n + suf).timeScale = 0;
     this.phase = 0; this.sv = { x: 0, z: 0 };
     this.act('bat_idle_upper').play(); this.act('bat_idle_upper').setEffectiveWeight(0);
+    const rl = this.act('pistol_reload_upper'); rl.play(); rl.setEffectiveWeight(0); rl.timeScale = 0;
+    this.reloadFrames = Math.round(byName.pistol_reload.duration * 30); // Blender frames 1..N
     const sw = this.act('bat_swing'); sw.play(); sw.setEffectiveWeight(0); sw.timeScale = 0;
     this.pistol = makePistol(1); this.bat = makeBat(BAT_SWING.fullLength);
     scene.add(this.pistol, this.bat);
@@ -150,6 +154,30 @@ export class YolaView extends ClipBody {
     this.batTip = new THREE.Vector3();
     this.weights = {};
     this.calibrateBatSocket(clipdata);
+    this.calibratePistolSocket();
+  }
+
+  // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
+  // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the
+  // hands leave the aim (reload).
+  calibratePistolSocket() {
+    for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
+    const id = this.act('pistol_idle'); id.time = 0; id.setEffectiveWeight(1);
+    this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
+    this.mixer.update(0); this.outer.updateMatrixWorld(true);
+    this.aimQuat(_q);
+    this.bones.RightHand.getWorldQuaternion(_q2);
+    this.pistolSocket = _q2.invert().multiply(_q).clone();
+    id.setEffectiveWeight(0);
+  }
+  // pistol orientation from the arms: barrel along shoulders -> hands, slide upright (no roll)
+  aimQuat(out) {
+    this.grip('Right', _v); this.grip('Left', _v2);
+    this.bones.RightArm.getWorldPosition(_v3); this.bones.LeftArm.getWorldPosition(_v4);
+    const mid = _v3.add(_v4).multiplyScalar(0.5);
+    const dir = _v4.copy(_v).add(_v2).multiplyScalar(0.5).sub(mid).normalize();
+    const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp(dir.y, -1, 1));
+    return out.setFromEuler(_e.set(pitch, yawOnly, 0, 'YXZ'));
   }
 
   // Weapon socket on the right hand: the bat direction measured on the Mixamo reference skeleton
@@ -303,9 +331,18 @@ export class YolaView extends ClipBody {
     this.container.rotation.y = this.yaw + turn;
     const sW = swingW;
     sw.setEffectiveWeight(sW);
+    // reload: upper-body clip driven by the simulation's reload time, legs keep the locomotion
+    let rW = 0;
+    if (s.action === 'reload' && s.equipped === 'pistol') {
+      const u = clamp(s.actionT / s.reloadDur, 0, 1), rl = this.act('pistol_reload_upper');
+      rl.time = (1 + u * (this.reloadFrames - 1)) / 30;
+      rW = smooth(clamp(s.actionT / 0.08, 0, 1)) * smooth(clamp((1 - u) / 0.12, 0, 1));
+    }
+    this.reloadW = rW;
+    this.act('pistol_reload_upper').setEffectiveWeight(rW * (1 - ub) * (1 - sW));
     for (const n in w) {
-      this.act(n).setEffectiveWeight(w[n] * (1 - ub) * (1 - sW));
-      this.act(n + '_lower').setEffectiveWeight(w[n] * ub * (1 - sW));
+      this.act(n).setEffectiveWeight(w[n] * (1 - ub) * (1 - rW) * (1 - sW));
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (ub + (1 - ub) * rW) * (1 - sW));
     }
     this.act('bat_idle_upper').setEffectiveWeight(ub * (1 - sW));
     this.mixer.update(dt);
@@ -338,37 +375,37 @@ export class YolaView extends ClipBody {
   }
 
   // Turn the chest so the gun points exactly along the simulation's aim, then add recoil.
+  // During a reload the hands leave the aim, so the last aiming correction is held instead.
   aimPistol(s, ub) {
-    const k = 1 - ub;
+    const k = 1 - ub, rW = this.reloadW || 0;
     this.grip('Right', _v); this.grip('Left', _v2);
     this.bones.RightArm.getWorldPosition(_v3); this.bones.LeftArm.getWorldPosition(_v4);
     const hx = (_v.x + _v2.x) / 2 - (_v3.x + _v4.x) / 2, hz = (_v.z + _v2.z) / 2 - (_v3.z + _v4.z) / 2;
-    const err = angleDiff(Math.atan2(hx, hz), s.aimYaw);
+    const live = clamp(angleDiff(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+    if (rW === 0) this.aimErr = live;
+    const err = live * (1 - rW) + (this.aimErr || 0) * rW;
     const kick = s.recoil * s.recoil * s.recoilScale;
-    const reload = s.action === 'reload' ? Math.sin(Math.PI * clamp(s.actionT / s.reloadDur, 0, 1)) : 0;
-    this.rotateEulerC('Spine2', (-0.09 * kick + 0.35 * reload) * k, clamp(err, -0.6, 0.6) * k, 0);
+    this.rotateEulerC('Spine2', -0.09 * kick * k, err * k, 0);
     if (kick > 0.01) { this.rotateEulerC('RightArm', -0.25 * kick * k, 0, 0); this.rotateEulerC('LeftArm', -0.25 * kick * k, 0, 0); }
   }
 
   placeWeapons(s, ub) {
     const showBat = ub > 0.5;
     this.pistol.visible = !showBat; this.bat.visible = showBat;
-    this.grip('Right', _v); this.grip('Left', _v2);
     if (!showBat) {
-      // pistol: grip in the right hand, barrel along the arms' line toward the target
-      this.bones.RightArm.getWorldPosition(_v3); this.bones.LeftArm.getWorldPosition(_v4);
-      const mid = _v3.add(_v4).multiplyScalar(0.5);
-      const dir = _v4.copy(_v).add(_v2).multiplyScalar(0.5).sub(mid).normalize();
+      // pistol: barrel along the arms' line toward the target; during a reload it follows the
+      // right hand through the socket calibrated in the aiming pose
+      this.aimQuat(_q);
+      const rW = this.reloadW || 0;
+      if (rW > 0 && this.pistolSocket) { this.bones.RightHand.getWorldQuaternion(_q2); _q.slerp(_q2.multiply(this.pistolSocket), rW); }
+      this.grip('Right', _v);
       this.pistol.position.copy(_v);
-      _q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
       this.pistol.quaternion.copy(_q);
-      // keep the slide upright (no roll)
-      const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp(dir.y, -1, 1));
-      this.pistol.rotation.set(pitch, yawOnly, 0, 'YXZ');
       this.pistol.updateMatrixWorld(true);
       this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
     } else {
       // bat: direction from the right-hand socket (as on the reference skeleton), origin between the hands
+      this.grip('Right', _v); this.grip('Left', _v2);
       let dir;
       if (this.batSocket) { this.bones.RightHand.getWorldQuaternion(_q); dir = _v3.copy(this.batSocket).applyQuaternion(_q).normalize(); }
       else dir = _v3.copy(_v).sub(_v2).normalize();
