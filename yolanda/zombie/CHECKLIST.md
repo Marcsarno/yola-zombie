@@ -23,11 +23,12 @@ Evidence images are in `zombie/shots/` (regenerate with the `game.*` test hooks 
 | 16 | Tuning panel | Pause -> Tuning | all brief parameters exposed | PASS |
 | 17 | Sound: shot, reload, swing, hit, miss, reactions, death; mute/volume | `audio.js` | synthesised placeholders | PARTIAL (functional, not final quality) |
 | 18 | Performance 5/10/20/30 | desktop, hidden browser pane, 585x1266 @1.5 DPR, CPU+GPU-finish time per frame | 5: 1.1 ms, 10: 1.7, 20: 2.2, 30: 2.9 avg (p95 <= 7.2) ; 30 zombies = 296k tris after decimation | PARTIAL (no phone measured) |
-| 19 | Phone test | your phone on the same Wi-Fi | - | OPEN (you) |
+| 19 | Phone test | user's phone, http://10.0.0.131:5173/zombie/combat.html | 2026-10-13: user reports it runs smooth; zombie walk looks OK | PASS (feel review ongoing) |
 | 20 | Hospital presentation (dense rooms like concept) | - | the hall is still too open/sparse | OPEN |
 | 21 | Modular dismemberment | deferred until the benchmark is approved | - | OPEN (by design) |
 
 ## Known defects (worst first)
+0. USER-REPORTED: Yola's legs jitter while strafing with the pistol (likely strafe/forward/back clip blend weights flipping or clip phases fighting). Fix first next round.
 1. The ward layout is a big open hall; the concept art has denser, furnished rooms. Needs a layout pass.
 2. Pistol has no reload clip (procedural tilt only); hurt reaction for Yola is a procedural flinch, not a clip.
 3. Mixamo zombie walk is slow; it is played ~3x to reach 1 m/s. Watch for a hurried look; a faster zombie walk clip may be needed.
