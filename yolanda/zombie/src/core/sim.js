@@ -3,7 +3,7 @@ import { World, rng, rayCircle, segPointDist2, angleDiff } from './world.js';
 import { LAYOUT, buildWorld } from './layout.js';
 import { Player, meleeWorldSegment } from './player.js';
 import { Zombie, ZS, separate, bump } from './zombies.js';
-import { AXE_ATTACKS, AXE_GEOM, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
+import { AXE_GEOM, FISTS, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
 
 export const STEP = 1 / 60;
@@ -190,7 +190,7 @@ export class Sim {
   // ---------------- axe: swept between simulation steps ----------------
   resolveMelee(p, t0, t1, act) {
     if (t1 <= t0) return;
-    const SUB = 4, T = this.T, A = AXE_ATTACKS[act.combo];
+    const SUB = 4, T = this.T, A = p.attacks[act.combo], G = A.geom || AXE_GEOM, fist = p.equipped === FISTS;
     let prev = meleeWorldSegment(p, A, t0, _a);
     let px = prev.tx, pz = prev.tz;
     for (let s = 1; s <= SUB; s++) {
@@ -204,7 +204,7 @@ export class Sim {
         tipX = p.x + (seg.tx - p.x) * wall.t; tipZ = p.z + (seg.tz - p.z) * wall.t;
         if (!act.clanked) { act.clanked = true; act.activeEnd = t; this.emit({ type: 'batClank', x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz }); }
       }
-      const f = AXE_GEOM.hitFrom / AXE_GEOM.length;
+      const f = G.hitFrom / G.length;
       const ax = seg.hx + (tipX - seg.hx) * f, az = seg.hz + (tipZ - seg.hz) * f;
       const ay = seg.hy + (seg.ty - seg.hy) * f;
       // sweep: test the damaging section at this substep AND the arc chord the tip travelled.
@@ -213,8 +213,8 @@ export class Sim {
       for (const z of this.zombies) {
         if (!z.alive || act.hitSet.has(z.id)) continue;
         if (z.down && !chop) continue; // only the chop comes down far enough to hit a body on the floor
-        const rr = z.down ? 0.5 : BAT_BODY_R; // the visible torso (a lying body is longer)
-        const minY = z.down ? 0.05 : chop ? 0.3 : BAT_MIN_HIT_Y;
+        const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G.radius : 0); // the visible torso (a lying body is longer)
+        const minY = z.down ? 0.05 : chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y;
         const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
         const y1 = ay + (seg.ty - ay) * h1.t;
         const d1 = y1 >= minY ? h1.d2 : 1e9;
@@ -230,13 +230,21 @@ export class Sim {
         // the chop drives straight down: less sideways throw
         if (A.style === 'chop') { dx = dx * 0.5 + rx * 0.5; dz = dz * 0.5 + rz * 0.5; const l2 = Math.hypot(dx, dz) || 1; dx /= l2; dz /= l2; }
         // the blade cuts: a killing blow can take the head; otherwise an arm (or, low, a leg) can come off
+        if (fist) { // unarmed: no blade, no severing; a light stagger (the kick can knock them flat)
+          const dmgF = T.fistDamage * A.dmg;
+          act.hitSet.add(z.id); act.hits++; this.stats.batHits++;
+          z.takeHit(dmgF, dx, dz, T.fistKnockback * A.knock, 'fist', this, 'torso', A.style);
+          this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
+          if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * 0.6 * (z.alive ? 1 : 1.4) });
+          continue;
+        }
         const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
         const side = this.rand() < 0.5 ? '_L' : '_R';
         const part = lethal && r < sv.head ? 'Head'
           : r < (lethal ? sv.head : 0) + sv.arm ? 'Forearm' + side
           : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? 'LowerLeg' + side : 'torso';
         if (part !== 'torso' && !z.severed.has(part)) z.limbHp[part] = 0; // the blade goes through
-        const last = act.combo === AXE_ATTACKS.length - 1, holding = !last && p.attackHeld;
+        const last = act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
         z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), 'axe', this, part, holding ? 'combo' : A.style);
         this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
         if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.4) * (A.style === 'chop' ? 1.4 : 1) });

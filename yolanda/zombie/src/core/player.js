@@ -1,7 +1,7 @@
 // Player: one authoritative movement controller + one weapon action state machine.
 // Yaw convention: forward = (sin yaw, cos yaw) on (x, z).
 import { clamp, angleDiff, approachAngle, segPointDist2, rayCircle } from './world.js';
-import { PISTOL, SHOTGUN, AXE, WEAPON_ORDER, AXE_ATTACKS, meleeSegment, muzzleLocal } from './weapons.js';
+import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, attacksOf, meleeSegment, muzzleLocal } from './weapons.js';
 
 const AIM_DEADZONE = 0.18;
 const FIRE_ALIGN = 0.38; // rad: the shot waits until the upper body faces within this of the stick
@@ -15,6 +15,7 @@ export class Player {
     this.aimTarget = this.aimYaw;
     this.aiming = false; this.attackHeld = false;
     this.hp = 100; this.maxHp = 100; this.dead = false; this.invuln = 0; this.hurtT = 9;
+    this.owned = [...WEAPON_ORDER]; // weapons she carries (the swap button cycles through these)
     this.equipped = PISTOL; this.desired = PISTOL;
     this.mags = { [PISTOL]: tuning.magSize, [SHOTGUN]: tuning.shotgunMag };
     this.action = { type: 'ready', t: 0 };
@@ -30,9 +31,17 @@ export class Player {
   // A swap press steps the weapon we want along pistol -> shotgun -> axe. Presses before the swap
   // starts keep stepping (two quick presses go two weapons along); the swap goes straight there.
   requestSwap() {
-    if (this.dead) return;
-    this.desired = WEAPON_ORDER[(WEAPON_ORDER.indexOf(this.desired) + 1) % WEAPON_ORDER.length];
+    if (this.dead || this.owned.length < 2) return;
+    const i = this.owned.indexOf(this.desired);
+    this.desired = this.owned[(i + 1) % this.owned.length];
   }
+
+  // Start (or restart) carrying exactly these weapons, the first one in hand
+  setLoadout(list, equip = list[0]) {
+    this.owned = [...list]; this.equipped = this.desired = equip;
+    this.setAction('ready'); this.attackHeld = false;
+  }
+  get attacks() { return attacksOf(this.equipped); }
 
   cancelAttacks() {
     const a = this.action.type;
@@ -90,8 +99,8 @@ export class Player {
     this.x += this.vx * dt; this.z += this.vz * dt;
     // lunge: a combo attack steps in toward its target during the windup
     const act = this.action;
-    if (act.type === 'swing' && act.lunge > 0 && act.st < AXE_ATTACKS[act.combo].activeStart) {
-      const v = (act.lunge / AXE_ATTACKS[act.combo].activeStart) * T.axeSpeed * dt;
+    if (act.type === 'swing' && act.lunge > 0 && act.st < this.attacks[act.combo].activeStart) {
+      const v = (act.lunge / this.attacks[act.combo].activeStart) * T.axeSpeed * dt;
       this.x += Math.sin(this.aimYaw) * v; this.z += Math.cos(this.aimYaw) * v;
     }
     // soft-collide with live zombies, then hard-collide with the world
@@ -119,14 +128,14 @@ export class Player {
         if (a.t >= (this.equipped === SHOTGUN ? T.shotgunInterval : T.pistolInterval)) this.setAction('ready');
         break;
       case 'swing': {
-        const A = AXE_ATTACKS[a.combo];
+        const A = this.attacks[a.combo];
         const prevT = a.st, st = (a.st = a.t * T.axeSpeed);
         if (st > A.activeStart && prevT < a.activeEnd) sim.resolveMelee(this, Math.max(prevT, A.activeStart), Math.min(st, a.activeEnd), a);
         if (prevT < a.activeEnd && st >= a.activeEnd && !a.hits && !a.clanked) sim.emit({ type: 'batMiss' });
         // combo: once the opening attack connects, the rest of the combo follows while the attack is
         // held (or pressed again during the attack)
         if (a.hits > 0) a.unlocked = true;
-        if (a.combo < AXE_ATTACKS.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
+        if (a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
           this.startSwing(sim, a.combo + 1, true);
           break;
         }
@@ -168,10 +177,10 @@ export class Player {
 
   startSwing(sim, combo, unlocked = false) {
     this.swingId++;
-    const A = AXE_ATTACKS[combo];
+    const A = this.attacks[combo];
     // turn toward a zombie in reach (combo follow-ups look further, and the chop finds bodies on the floor)
-    const tgt = sim.meleeAssist?.(this, combo > 0 ? 2.1 : 1.45, A.style === 'chop');
-    const lunge = tgt ? clamp(Math.hypot(tgt.x - this.x, tgt.z - this.z) - 1.05, 0, combo > 0 ? 0.75 : 0.35) : 0;
+    const tgt = sim.meleeAssist?.(this, A.assist ?? (combo > 0 ? 2.1 : 1.45), A.style === 'chop');
+    const lunge = tgt ? clamp(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, combo > 0 ? 0.75 : 0.35) : 0;
     this.setAction('swing', { st: 0, combo, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked });
     this.attackPressT = 9;
     sim.emit({ type: 'swing', combo });
@@ -182,7 +191,7 @@ export class Player {
     switch (a.type) {
       case 'ready': case 'reload': return true; // a reload is abandoned (ammo unchanged) by a swap
       case 'shot': return a.t >= (this.equipped === SHOTGUN ? 0.3 : Math.min(0.1, this.T.pistolInterval * 0.5));
-      case 'swing': return a.st >= AXE_ATTACKS[a.combo].swapPoint;
+      case 'swing': return a.st >= this.attacks[a.combo].swapPoint;
       default: return false;
     }
   }

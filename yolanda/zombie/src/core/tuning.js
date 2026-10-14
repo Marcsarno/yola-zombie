@@ -24,6 +24,8 @@ export const TUNING_DEFAULTS = {
   axeKnockback: 5.0, // m/s impulse
   axeSpeed: 1.0, // attack time scale (higher = faster)
   axeKnockdown: 0.45, // chance a non-lethal axe hit knocks the zombie flat (the chop: more)
+  fistDamage: 18, // jab; the cross and kick hit harder (weapons.js FIST_ATTACKS)
+  fistKnockback: 4.0, // m/s impulse (x the attack's knock factor)
   hitPause: 0.085, // s freeze on axe hits (kills hold 1.4x longer; 0 = off)
   shake: 1.0,
   zombieSpeed: 1.0, // m/s approach

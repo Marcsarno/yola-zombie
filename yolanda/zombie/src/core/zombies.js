@@ -82,13 +82,14 @@ export class Zombie {
     if (wasDown) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
     // knocked flat: the axe (the chop most of all), or a close shotgun blast that lifts them off their feet
     const T = sim.T;
-    const kd = melee ? (style === 'combo' ? 0 : style === 'chop' ? Math.max(0.75, T.axeKnockdown) : style === 'heavy' ? Math.min(1, T.axeKnockdown + 0.25) : T.axeKnockdown)
+    const fist = kind === 'fist';
+    const kd = fist ? (style === 'kick' ? 0.55 : 0) : melee ? (style === 'combo' ? 0 : style === 'chop' ? Math.max(0.75, T.axeKnockdown) : style === 'heavy' ? Math.min(1, T.axeKnockdown + 0.25) : T.axeKnockdown)
       : kind === 'shotgun' ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
     if (this.toCrawl || (!this.crawling && kd > 0 && sim.rand() < kd)) { this.knockDown(dirX, dirZ, sim); return; }
     // Any hit interrupts a windup (rewarding a timely shot); heavier hits stagger longer.
-    const dur = melee ? 0.95 : kind === 'shotgun' ? Math.min(0.85, 0.3 + impulse * 0.1) : 0.26;
+    const dur = fist ? (style === 'kick' ? 0.8 : 0.5) : melee ? 0.95 : kind === 'shotgun' ? Math.min(0.85, 0.3 + impulse * 0.1) : 0.26;
     if (this.state !== ZS.STAGGER || dur > this.stateDur - this.t) this.set(ZS.STAGGER, dur);
-    this.attackCd = Math.max(this.attackCd, melee || kind === 'shotgun' ? 0.9 : 0.35);
+    this.attackCd = Math.max(this.attackCd, melee || kind === 'shotgun' ? 0.9 : fist ? 0.7 : 0.35);
     sim.emit({ type: 'zombieHit', id: this.id, kind });
   }
 

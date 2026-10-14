@@ -67,6 +67,10 @@ export class CombatAudio {
         this.tone(t, 0.2, 120, { f2: 45, gain: 0.8 * k });
         this.noise(t + 0.01, 0.18, { type: 'lowpass', f: 1000, f2: 200, gain: 0.6 * k, attack: 0.008 });
         break;
+      case 'fistHit': // a flat meaty thump, no crack
+        this.tone(t, 0.14, 120, { f2: 55, gain: 0.7 * k, type: 'sine' });
+        this.noise(t, 0.09, { type: 'lowpass', f: 900, f2: 200, gain: 0.5 * k });
+        this.noise(t, 0.02, { type: 'bandpass', f: 1800, q: 2, gain: 0.2 * k }); break;
       case 'bump': this.noise(t, 0.12, { type: 'lowpass', f: 500, gain: 0.35 * k }); this.tone(t, 0.1, 85, { f2: 50, gain: 0.25 * k }); break;
       case 'empty': this.tone(t, 0.03, 1800, { gain: 0.12, type: 'square' }); break;
       case 'reload':

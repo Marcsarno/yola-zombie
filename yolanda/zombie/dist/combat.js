@@ -44829,7 +44829,8 @@ void main() {
   var PISTOL = "pistol";
   var SHOTGUN = "shotgun";
   var AXE = "axe";
-  var WEAPON_ORDER = [PISTOL, SHOTGUN, AXE];
+  var FISTS = "fists";
+  var WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, FISTS];
   var isMelee = (kind) => kind === AXE || kind === "bat";
   var PISTOL_HOLD = {
     grip: { x: -0.066, y: 1.16, z: 0.43 },
@@ -44933,6 +44934,79 @@ void main() {
       sever: { head: 0.6, arm: 0.35 }
     }
   ];
+  var FIST_GEOM = { length: 0.12, hitFrom: 0, radius: 0.12 };
+  var FIST_ATTACKS = [
+    {
+      name: "jab",
+      clip: "t_box_01",
+      path: "t_box_01",
+      limb: "l",
+      f0: 8,
+      f1: 38,
+      rate: 1.4,
+      fps: 30,
+      yawOffset: 5.7 * deg,
+      duration: 0.66,
+      activeStart: 0.14,
+      activeEnd: 0.33,
+      chainFrom: 0.36,
+      swapPoint: 0.42,
+      geom: FIST_GEOM,
+      stand: 0.7,
+      assist: 1.5,
+      dmg: 1,
+      knock: 0.3,
+      style: "jab",
+      sever: {}
+    },
+    {
+      name: "cross",
+      clip: "t_box_02",
+      path: "t_box_02",
+      limb: "r",
+      f0: 44,
+      f1: 62,
+      rate: 1.4,
+      fps: 30,
+      yawOffset: 4.9 * deg,
+      duration: 0.5,
+      activeStart: 0.17,
+      activeEnd: 0.32,
+      chainFrom: 0.34,
+      swapPoint: 0.4,
+      geom: FIST_GEOM,
+      stand: 0.7,
+      assist: 1.7,
+      dmg: 1.3,
+      knock: 0.45,
+      style: "cross",
+      sever: {}
+    },
+    {
+      name: "kick",
+      clip: "t_kick_02",
+      path: "t_kick_02",
+      limb: "rf",
+      f0: 14,
+      f1: 40,
+      rate: 1.2,
+      fps: 30,
+      yawOffset: 30 * deg,
+      duration: 0.74,
+      activeStart: 0.3,
+      activeEnd: 0.56,
+      chainFrom: 9,
+      swapPoint: 0.6,
+      geom: { length: 0.15, hitFrom: 0, radius: 0.15 },
+      stand: 0.95,
+      assist: 1.9,
+      dmg: 2.2,
+      knock: 1,
+      style: "kick",
+      sever: {}
+    }
+  ];
+  var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : AXE_ATTACKS;
   var AXE_GEOM = {
     length: 0.74,
     // hands (midpoint of the grip) to the blade, metres
@@ -44943,7 +45017,7 @@ void main() {
   var BAT_SWING = AXE_ATTACKS[0];
   var rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
   function setMeleePaths(clipdata, scale, hipsRest2) {
-    for (const A of AXE_ATTACKS) {
+    for (const A of [...AXE_ATTACKS, ...FIST_ATTACKS]) {
       const samples = clipdata[A.path];
       A.PATH = [];
       if (!samples) continue;
@@ -44952,6 +45026,12 @@ void main() {
         if (t < -1e-3 || s.f > A.f1) continue;
         const ox = s.hips && hipsRest2 ? s.hips[0] - hipsRest2[0] : 0, oz = s.hips && hipsRest2 ? s.hips[2] - hipsRest2[2] : 0;
         const pin = (v) => [v[0] - ox, v[1], v[2] - oz];
+        if (A.limb) {
+          const p = rotY(pin(s[A.limb]).map((v) => v * scale), A.yawOffset), h = rotY(pin(s.hips).map((v) => v * scale), A.yawOffset);
+          const d2 = [p[0] - h[0], 0, p[2] - h[2]], dl2 = Math.hypot(d2[0], d2[2]) || 1;
+          A.PATH.push({ t, mx: p[0], my: p[1], mz: p[2], dx: d2[0] / dl2, dy: 0, dz: d2[2] / dl2 });
+          continue;
+        }
         const r = rotY(pin(s.r).map((v) => v * scale), A.yawOffset), l = rotY(pin(s.l).map((v) => v * scale), A.yawOffset);
         const d = s.d ? rotY(s.d, A.yawOffset) : [r[0] - l[0], r[1] - l[1], r[2] - l[2]];
         const dl = Math.hypot(d[0], d[1], d[2]) || 1;
@@ -44989,9 +45069,10 @@ void main() {
   }
   function meleeSegment(A, t, out = {}) {
     meleePose(A, t, out);
-    out.tx = out.hx + out.dx * AXE_GEOM.length;
-    out.ty = out.hy + out.dy * AXE_GEOM.length;
-    out.tz = out.hz + out.dz * AXE_GEOM.length;
+    const L = (A.geom || AXE_GEOM).length;
+    out.tx = out.hx + out.dx * L;
+    out.ty = out.hy + out.dy * L;
+    out.tz = out.hz + out.dz * L;
     return out;
   }
 
@@ -45017,6 +45098,7 @@ void main() {
       this.dead = false;
       this.invuln = 0;
       this.hurtT = 9;
+      this.owned = [...WEAPON_ORDER];
       this.equipped = PISTOL;
       this.desired = PISTOL;
       this.mags = { [PISTOL]: tuning2.magSize, [SHOTGUN]: tuning2.shotgunMag };
@@ -45038,8 +45120,19 @@ void main() {
     // A swap press steps the weapon we want along pistol -> shotgun -> axe. Presses before the swap
     // starts keep stepping (two quick presses go two weapons along); the swap goes straight there.
     requestSwap() {
-      if (this.dead) return;
-      this.desired = WEAPON_ORDER[(WEAPON_ORDER.indexOf(this.desired) + 1) % WEAPON_ORDER.length];
+      if (this.dead || this.owned.length < 2) return;
+      const i = this.owned.indexOf(this.desired);
+      this.desired = this.owned[(i + 1) % this.owned.length];
+    }
+    // Start (or restart) carrying exactly these weapons, the first one in hand
+    setLoadout(list, equip = list[0]) {
+      this.owned = [...list];
+      this.equipped = this.desired = equip;
+      this.setAction("ready");
+      this.attackHeld = false;
+    }
+    get attacks() {
+      return attacksOf(this.equipped);
     }
     cancelAttacks() {
       const a = this.action.type;
@@ -45097,8 +45190,8 @@ void main() {
       this.x += this.vx * dt;
       this.z += this.vz * dt;
       const act = this.action;
-      if (act.type === "swing" && act.lunge > 0 && act.st < AXE_ATTACKS[act.combo].activeStart) {
-        const v = act.lunge / AXE_ATTACKS[act.combo].activeStart * T.axeSpeed * dt;
+      if (act.type === "swing" && act.lunge > 0 && act.st < this.attacks[act.combo].activeStart) {
+        const v = act.lunge / this.attacks[act.combo].activeStart * T.axeSpeed * dt;
         this.x += Math.sin(this.aimYaw) * v;
         this.z += Math.cos(this.aimYaw) * v;
       }
@@ -45128,12 +45221,12 @@ void main() {
           if (a.t >= (this.equipped === SHOTGUN ? T.shotgunInterval : T.pistolInterval)) this.setAction("ready");
           break;
         case "swing": {
-          const A = AXE_ATTACKS[a.combo];
+          const A = this.attacks[a.combo];
           const prevT = a.st, st = a.st = a.t * T.axeSpeed;
           if (st > A.activeStart && prevT < a.activeEnd) sim2.resolveMelee(this, Math.max(prevT, A.activeStart), Math.min(st, a.activeEnd), a);
           if (prevT < a.activeEnd && st >= a.activeEnd && !a.hits && !a.clanked) sim2.emit({ type: "batMiss" });
           if (a.hits > 0) a.unlocked = true;
-          if (a.combo < AXE_ATTACKS.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
+          if (a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
             this.startSwing(sim2, a.combo + 1, true);
             break;
           }
@@ -45190,9 +45283,9 @@ void main() {
     }
     startSwing(sim2, combo2, unlocked = false) {
       this.swingId++;
-      const A = AXE_ATTACKS[combo2];
-      const tgt = sim2.meleeAssist?.(this, combo2 > 0 ? 2.1 : 1.45, A.style === "chop");
-      const lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - 1.05, 0, combo2 > 0 ? 0.75 : 0.35) : 0;
+      const A = this.attacks[combo2];
+      const tgt = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
+      const lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, combo2 > 0 ? 0.75 : 0.35) : 0;
       this.setAction("swing", { st: 0, combo: combo2, hitSet: /* @__PURE__ */ new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked });
       this.attackPressT = 9;
       sim2.emit({ type: "swing", combo: combo2 });
@@ -45207,7 +45300,7 @@ void main() {
         case "shot":
           return a.t >= (this.equipped === SHOTGUN ? 0.3 : Math.min(0.1, this.T.pistolInterval * 0.5));
         case "swing":
-          return a.st >= AXE_ATTACKS[a.combo].swapPoint;
+          return a.st >= this.attacks[a.combo].swapPoint;
         default:
           return false;
       }
@@ -45368,14 +45461,15 @@ void main() {
         return;
       }
       const T = sim2.T;
-      const kd = melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T.axeKnockdown) : style === "heavy" ? Math.min(1, T.axeKnockdown + 0.25) : T.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
+      const fist = kind === "fist";
+      const kd = fist ? style === "kick" ? 0.55 : 0 : melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T.axeKnockdown) : style === "heavy" ? Math.min(1, T.axeKnockdown + 0.25) : T.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
       if (this.toCrawl || !this.crawling && kd > 0 && sim2.rand() < kd) {
         this.knockDown(dirX, dirZ, sim2);
         return;
       }
-      const dur = melee ? 0.95 : kind === "shotgun" ? Math.min(0.85, 0.3 + impulse * 0.1) : 0.26;
+      const dur = fist ? style === "kick" ? 0.8 : 0.5 : melee ? 0.95 : kind === "shotgun" ? Math.min(0.85, 0.3 + impulse * 0.1) : 0.26;
       if (this.state !== ZS.STAGGER || dur > this.stateDur - this.t) this.set(ZS.STAGGER, dur);
-      this.attackCd = Math.max(this.attackCd, melee || kind === "shotgun" ? 0.9 : 0.35);
+      this.attackCd = Math.max(this.attackCd, melee || kind === "shotgun" ? 0.9 : fist ? 0.7 : 0.35);
       sim2.emit({ type: "zombieHit", id: this.id, kind });
     }
     knockDown(dirX, dirZ, sim2) {
@@ -45900,7 +45994,7 @@ void main() {
     // ---------------- axe: swept between simulation steps ----------------
     resolveMelee(p, t0, t1, act) {
       if (t1 <= t0) return;
-      const SUB = 4, T = this.T, A = AXE_ATTACKS[act.combo];
+      const SUB = 4, T = this.T, A = p.attacks[act.combo], G2 = A.geom || AXE_GEOM, fist = p.equipped === FISTS;
       let prev = meleeWorldSegment(p, A, t0, _a);
       let px2 = prev.tx, pz2 = prev.tz;
       for (let s = 1; s <= SUB; s++) {
@@ -45918,15 +46012,15 @@ void main() {
             this.emit({ type: "batClank", x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz });
           }
         }
-        const f = AXE_GEOM.hitFrom / AXE_GEOM.length;
+        const f = G2.hitFrom / G2.length;
         const ax = seg.hx + (tipX - seg.hx) * f, az = seg.hz + (tipZ - seg.hz) * f;
         const ay = seg.hy + (seg.ty - seg.hy) * f;
         const chop = A.style === "chop";
         for (const z of this.zombies) {
           if (!z.alive || act.hitSet.has(z.id)) continue;
           if (z.down && !chop) continue;
-          const rr = z.down ? 0.5 : BAT_BODY_R;
-          const minY = z.down ? 0.05 : chop ? 0.3 : BAT_MIN_HIT_Y;
+          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G2.radius : 0);
+          const minY = z.down ? 0.05 : chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y;
           const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
           const y1 = ay + (seg.ty - ay) * h1.t;
           const d1 = y1 >= minY ? h1.d2 : 1e9;
@@ -45955,11 +46049,21 @@ void main() {
             dx /= l2;
             dz /= l2;
           }
+          if (fist) {
+            const dmgF = T.fistDamage * A.dmg;
+            act.hitSet.add(z.id);
+            act.hits++;
+            this.stats.batHits++;
+            z.takeHit(dmgF, dx, dz, T.fistKnockback * A.knock, "fist", this, "torso", A.style);
+            this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
+            if (T.hitPause > 0) this.emit({ type: "hitPause", dur: T.hitPause * 0.6 * (z.alive ? 1 : 1.4) });
+            continue;
+          }
           const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
           const side = this.rand() < 0.5 ? "_L" : "_R";
           const part = lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
           if (part !== "torso" && !z.severed.has(part)) z.limbHp[part] = 0;
-          const last2 = act.combo === AXE_ATTACKS.length - 1, holding = !last2 && p.attackHeld;
+          const last2 = act.combo === p.attacks.length - 1, holding = !last2 && p.attackHeld;
           z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), "axe", this, part, holding ? "combo" : A.style);
           this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
           if (T.hitPause > 0) this.emit({ type: "hitPause", dur: T.hitPause * (z.alive ? 1 : 1.4) * (A.style === "chop" ? 1.4 : 1) });
@@ -46014,6 +46118,10 @@ void main() {
     // attack time scale (higher = faster)
     axeKnockdown: 0.45,
     // chance a non-lethal axe hit knocks the zombie flat (the chop: more)
+    fistDamage: 18,
+    // jab; the cross and kick hit harder (weapons.js FIST_ATTACKS)
+    fistKnockback: 4,
+    // m/s impulse (x the attack's knock factor)
     hitPause: 0.085,
     // s freeze on axe hits (kills hold 1.4x longer; 0 = off)
     shake: 1,
@@ -46953,7 +47061,8 @@ void main() {
       clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), "pistol_reload_upper"));
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_hold_upper"));
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_reload_upper"));
-      const melee = [...new Set(AXE_ATTACKS.map((A) => A.clip))];
+      clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), "fists_idle_upper"));
+      const melee = [...new Set([...AXE_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
       super(scene2, gltf.scene, H2, clips);
       this.H = H2;
@@ -46969,6 +47078,11 @@ void main() {
       this.sv = { x: 0, z: 0 };
       this.act("bat_idle_upper").play();
       this.act("bat_idle_upper").setEffectiveWeight(0);
+      {
+        const fi = this.act("fists_idle_upper");
+        fi.play();
+        fi.setEffectiveWeight(0);
+      }
       const rl = this.act("pistol_reload_upper");
       rl.play();
       rl.setEffectiveWeight(0);
@@ -47002,7 +47116,7 @@ void main() {
       scene2.add(this.shell);
       this.melee = prepAxe(weapons.axe);
       scene2.add(this.pistol, this.shotgun, this.melee);
-      this.up = { pistol: 1, shotgun: 0, axe: 0 };
+      this.up = { pistol: 1, shotgun: 0, axe: 0, fists: 0 };
       this.flinch = new Spring2(120, 13);
       this.prevHurt = 99;
       this.deathT = -1;
@@ -47271,10 +47385,10 @@ void main() {
       const w = this.locoWeights(s, dt);
       const rate = dt / Math.max(0.05, s.swapDur * 0.6);
       for (const k2 in this.up) this.up[k2] += clamp4((s.equipped === k2 ? 1 : 0) - this.up[k2], -rate, rate);
-      const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), un = uP0 + uS0 + uA0 || 1;
-      const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un;
+      const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
+      const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un;
       let sW = 0, turn = 0;
-      const A = s.action === "swing" ? AXE_ATTACKS[s.combo] : null;
+      const A = s.action === "swing" ? attacksOf(s.equipped)[s.combo] : null;
       if (A) {
         const t = s.swingT, tEnd = (A.f1 - A.f0) / (A.fps * A.rate), act = this.act(A.clip);
         if (this.swingId !== s.swingId) {
@@ -47337,9 +47451,10 @@ void main() {
       hold.setEffectiveWeight((1 - rS) * uS * k);
       hold.time = HOLD_T + (this.holdJit ^= 1) * 1e-6;
       this.act("bat_idle_upper").setEffectiveWeight(uA * k);
+      this.act("fists_idle_upper").setEffectiveWeight(uF * k);
       for (const n in w) {
         this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
-        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uP * rP) * k);
+        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uF + uP * rP) * k);
       }
       for (const [b, q] of this.restQ) b.quaternion.copy(q);
       this.mixer.update(dt);
@@ -47360,7 +47475,7 @@ void main() {
       this.flinch.step(dt);
       const f = this.flinch;
       if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC("Spine1", f.z * 0.6, 0, -f.x * 0.5);
-      this.weaponShown = uA > 0.5 ? "axe" : uS > 0.5 ? "shotgun" : "pistol";
+      this.weaponShown = uF > 0.5 ? "fists" : uA > 0.5 ? "axe" : uS > 0.5 ? "shotgun" : "pistol";
       if (this.weaponShown === "pistol") this.aimPistol(s, 1 - uP);
       else if (this.weaponShown === "shotgun") this.aimShotgun(s, 1 - uS);
       this.placeWeapons(s, dt);
@@ -48367,6 +48482,11 @@ void main() {
           this.tone(t, 0.2, 120, { f2: 45, gain: 0.8 * k });
           this.noise(t + 0.01, 0.18, { type: "lowpass", f: 1e3, f2: 200, gain: 0.6 * k, attack: 8e-3 });
           break;
+        case "fistHit":
+          this.tone(t, 0.14, 120, { f2: 55, gain: 0.7 * k, type: "sine" });
+          this.noise(t, 0.09, { type: "lowpass", f: 900, f2: 200, gain: 0.5 * k });
+          this.noise(t, 0.02, { type: "bandpass", f: 1800, q: 2, gain: 0.2 * k });
+          break;
         case "bump":
           this.noise(t, 0.12, { type: "lowpass", f: 500, gain: 0.35 * k });
           this.tone(t, 0.1, 85, { f2: 50, gain: 0.25 * k });
@@ -48634,7 +48754,7 @@ void main() {
   };
 
   // src/ui/hud.js
-  var nextWeapon = (w) => WEAPON_ORDER[(WEAPON_ORDER.indexOf(w) + 1) % WEAPON_ORDER.length];
+  var nextWeapon = (w, owned = WEAPON_ORDER) => owned[(owned.indexOf(w) + 1) % owned.length];
   var $ = (id) => document.getElementById(id);
   var TUNE_SPEC = [
     ["Movement", [
@@ -48825,7 +48945,8 @@ void main() {
       const b = $("swapBtn");
       b.dataset.weapon = p.equipped;
       b.classList.toggle("pending", p.desired !== p.equipped);
-      b.dataset.next = p.desired === p.equipped ? nextWeapon(p.equipped) : p.desired;
+      b.dataset.next = p.desired === p.equipped ? nextWeapon(p.equipped, p.owned) : p.desired;
+      b.classList.toggle("solo", p.owned.length < 2);
       $("ammo").textContent = p.equipped in p.mags ? p.action.type === "reload" ? "\u2026" : p.ammo : "";
       const ring = $("ring");
       let prog = 0;
@@ -49411,7 +49532,7 @@ void main() {
     await g.sheet(names, "sheet_" + tag, 4, 300);
     return zs.map((z) => ({ id: z.id, state: z.state, hp: Math.round(z.hp), severed: [...z.severed], moved: +Math.hypot(z.x - 0.3, z.z - (2.4 - dist2)).toFixed(2) }));
   }
-  async function combo(g, tag, hp = 400, every = 5, n = 16, camYaw = -60) {
+  async function combo(g, tag, hp = 400, every = 5, n = 16, camYaw = -60, weapon = "axe") {
     g.restart("calm");
     await settle();
     const sim2 = g.sim, p = sim2.player;
@@ -49419,7 +49540,7 @@ void main() {
     p.x = p.px = 0.3;
     p.z = p.pz = 2.4;
     p.aimYaw = p.aimTarget = Math.PI;
-    p.equipped = p.desired = "axe";
+    p.equipped = p.desired = weapon;
     const z = sim2.spawnZombie("NW", { x: 0.3, z: 1.35, yaw: 0 });
     z.set("chase");
     z.passive = true;
@@ -49745,7 +49866,7 @@ void main() {
       reloadDur: p.reloadTime(),
       swapDur: tuning.swapTime
     });
-    if (a.type === "swing" && a.st > AXE_ATTACKS[a.combo].activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
+    if (a.type === "swing" && p.equipped === "axe" && a.st > p.attacks[a.combo].activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
       fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v6), true);
     }
     fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? p.attackHeld ? 1 : 0.5 : 0.2);
@@ -49827,11 +49948,11 @@ void main() {
         }
         case "swing":
           sim.stats.swings++;
-          audio.play("swing", e.combo === 2 ? 1.3 : 1);
+          audio.play("swing", p.equipped === "fists" ? 0.55 : e.combo === 2 ? 1.3 : 1);
           break;
         case "batHit": {
           const chop = e.style === "chop";
-          audio.play("axeHit", chop ? 1.3 : 1);
+          audio.play(e.fist ? "fistHit" : "axeHit", chop || e.style === "kick" ? 1.3 : 1);
           fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true);
           shake(e.killed || chop ? 0.6 : 0.45);
           if (shakeOn) {
@@ -49959,7 +50080,7 @@ void main() {
     }
     dbgCircle.position.set(p.x, 0.05, p.z);
     if (p.action.type === "swing") {
-      const s = meleeSegment(AXE_ATTACKS[p.action.combo], p.action.st, _seg2), sy = Math.sin(p.aimYaw), cy = Math.cos(p.aimYaw);
+      const s = meleeSegment(p.attacks[p.action.combo], p.action.st, _seg2), sy = Math.sin(p.aimYaw), cy = Math.cos(p.aimYaw);
       const w = (x, y, z) => new Vector3(p.x + x * cy + z * sy, y, p.z - x * sy + z * cy);
       dbgBat.geometry.setFromPoints([w(s.hx, s.hy, s.hz), w(s.tx, s.ty, s.tz)]);
       dbgBat.visible = true;
@@ -50119,7 +50240,7 @@ void main() {
     const s = acc2.map((a) => a[0]).sort((a, b) => a - b), worst = acc2.sort((a, b) => b[0] - a[0])[0];
     return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
   }
-  window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st, combo2 = 0) => meleeWorldSegment(sim.player, AXE_ATTACKS[combo2], st, {}), cam(o) {
+  window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st, combo2 = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo2], st, {}), cam(o) {
     camOverride = o;
   }, resume() {
     manualTicks = false;

@@ -1,7 +1,7 @@
 // HUD + menus. Only buttons take pointer events; everything else lets touches reach the sticks.
 import { TUNING_DEFAULTS } from '../core/tuning.js';
 import { WEAPON_ORDER } from '../core/weapons.js';
-const nextWeapon = (w) => WEAPON_ORDER[(WEAPON_ORDER.indexOf(w) + 1) % WEAPON_ORDER.length];
+const nextWeapon = (w, owned = WEAPON_ORDER) => owned[(owned.indexOf(w) + 1) % owned.length];
 
 const $ = (id) => document.getElementById(id);
 
@@ -115,7 +115,8 @@ export class Hud {
     const b = $('swapBtn');
     b.dataset.weapon = p.equipped;
     b.classList.toggle('pending', p.desired !== p.equipped);
-    b.dataset.next = p.desired === p.equipped ? nextWeapon(p.equipped) : p.desired;
+    b.dataset.next = p.desired === p.equipped ? nextWeapon(p.equipped, p.owned) : p.desired;
+    b.classList.toggle('solo', p.owned.length < 2); // nothing to swap to
     $('ammo').textContent = p.equipped in p.mags ? (p.action.type === 'reload' ? '…' : p.ammo) : '';
     const ring = $('ring');
     let prog = 0;

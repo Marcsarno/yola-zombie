@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { makePistol, prepPumpShort, prepShell, prepAxe } from './weaponModels.js';
 import { ikArm as solveArm } from './ik.js';
-import { AXE_ATTACKS, SHOTGUN_SPEC, isMelee } from '../core/weapons.js';
+import { AXE_ATTACKS, FIST_ATTACKS, attacksOf, SHOTGUN_SPEC, isMelee } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -142,7 +142,8 @@ export class YolaView extends ClipBody {
     // itself is the reload (blender: sg_reload)
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_hold_upper'));
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_reload_upper'));
-    const melee = [...new Set(AXE_ATTACKS.map((A) => A.clip))];
+    clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), 'fists_idle_upper')); // unarmed: Yola's own idle on the upper body
+    const melee = [...new Set([...AXE_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
     clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
     super(scene, gltf.scene, H, clips);
     this.H = H;
@@ -156,6 +157,7 @@ export class YolaView extends ClipBody {
     for (const n in LOCO) for (const suf of ['', '_lower']) this.act(n + suf).timeScale = 0;
     this.phase = 0; this.sv = { x: 0, z: 0 };
     this.act('bat_idle_upper').play(); this.act('bat_idle_upper').setEffectiveWeight(0);
+    { const fi = this.act('fists_idle_upper'); fi.play(); fi.setEffectiveWeight(0); }
     const rl = this.act('pistol_reload_upper'); rl.play(); rl.setEffectiveWeight(0); rl.timeScale = 0;
     this.reloadFrames = Math.round(byName.pistol_reload.duration * 30); // Blender frames 1..N
     for (const n of melee) { const sw = this.act(n); sw.play(); sw.setEffectiveWeight(0); sw.timeScale = 0; }
@@ -174,7 +176,7 @@ export class YolaView extends ClipBody {
     this.shell = prepShell(weapons.shell); this.shell.visible = false; scene.add(this.shell);
     this.melee = prepAxe(weapons.axe);
     scene.add(this.pistol, this.shotgun, this.melee);
-    this.up = { pistol: 1, shotgun: 0, axe: 0 }; // upper-body hold weights, cross-faded through swaps
+    this.up = { pistol: 1, shotgun: 0, axe: 0, fists: 0 }; // upper-body hold weights, cross-faded through swaps
     this.flinch = new Spring2(120, 13);
     this.prevHurt = 99; this.deathT = -1; this.yaw = Math.PI;
     this.muzzleWorld = new THREE.Vector3();
@@ -393,11 +395,11 @@ export class YolaView extends ClipBody {
     // upper body: pistol / shotgun / axe holds, cross-faded through the swap
     const rate = dt / Math.max(0.05, s.swapDur * 0.6);
     for (const k in this.up) this.up[k] += clamp((s.equipped === k ? 1 : 0) - this.up[k], -rate, rate);
-    const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), un = uP0 + uS0 + uA0 || 1;
-    const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un;
+    const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
+    const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un;
     // axe attacks: full-body clips driven by the simulation's attack time (exact sync with the hit test)
     let sW = 0, turn = 0;
-    const A = s.action === 'swing' ? AXE_ATTACKS[s.combo] : null;
+    const A = s.action === 'swing' ? attacksOf(s.equipped)[s.combo] : null;
     if (A) {
       const t = s.swingT, tEnd = (A.f1 - A.f0) / (A.fps * A.rate), act = this.act(A.clip);
       if (this.swingId !== s.swingId) {
@@ -446,9 +448,10 @@ export class YolaView extends ClipBody {
     const hold = this.act('shotgun_hold_upper'); hold.setEffectiveWeight((1 - rS) * uS * k);
     hold.time = HOLD_T + ((this.holdJit ^= 1) * 1e-6); // a static time is only applied every other update, so it alternates
     this.act('bat_idle_upper').setEffectiveWeight(uA * k);
+    this.act('fists_idle_upper').setEffectiveWeight(uF * k);
     for (const n in w) {
       this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
-      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP) * k);
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uF + uP * rP) * k);
     }
     for (const [b, q] of this.restQ) b.quaternion.copy(q);
     this.mixer.update(dt);
@@ -467,7 +470,7 @@ export class YolaView extends ClipBody {
     this.flinch.step(dt);
     const f = this.flinch;
     if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC('Spine1', f.z * 0.6, 0, -f.x * 0.5);
-    this.weaponShown = uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
+    this.weaponShown = uF > 0.5 ? 'fists' : uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.placeWeapons(s, dt);

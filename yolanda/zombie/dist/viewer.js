@@ -37306,6 +37306,78 @@ void main() {
       sever: { head: 0.6, arm: 0.35 }
     }
   ];
+  var FIST_GEOM = { length: 0.12, hitFrom: 0, radius: 0.12 };
+  var FIST_ATTACKS = [
+    {
+      name: "jab",
+      clip: "t_box_01",
+      path: "t_box_01",
+      limb: "l",
+      f0: 8,
+      f1: 38,
+      rate: 1.4,
+      fps: 30,
+      yawOffset: 5.7 * deg,
+      duration: 0.66,
+      activeStart: 0.14,
+      activeEnd: 0.33,
+      chainFrom: 0.36,
+      swapPoint: 0.42,
+      geom: FIST_GEOM,
+      stand: 0.7,
+      assist: 1.5,
+      dmg: 1,
+      knock: 0.3,
+      style: "jab",
+      sever: {}
+    },
+    {
+      name: "cross",
+      clip: "t_box_02",
+      path: "t_box_02",
+      limb: "r",
+      f0: 44,
+      f1: 62,
+      rate: 1.4,
+      fps: 30,
+      yawOffset: 4.9 * deg,
+      duration: 0.5,
+      activeStart: 0.17,
+      activeEnd: 0.32,
+      chainFrom: 0.34,
+      swapPoint: 0.4,
+      geom: FIST_GEOM,
+      stand: 0.7,
+      assist: 1.7,
+      dmg: 1.3,
+      knock: 0.45,
+      style: "cross",
+      sever: {}
+    },
+    {
+      name: "kick",
+      clip: "t_kick_02",
+      path: "t_kick_02",
+      limb: "rf",
+      f0: 14,
+      f1: 40,
+      rate: 1.2,
+      fps: 30,
+      yawOffset: 30 * deg,
+      duration: 0.74,
+      activeStart: 0.3,
+      activeEnd: 0.56,
+      chainFrom: 9,
+      swapPoint: 0.6,
+      geom: { length: 0.15, hitFrom: 0, radius: 0.15 },
+      stand: 0.95,
+      assist: 1.9,
+      dmg: 2.2,
+      knock: 1,
+      style: "kick",
+      sever: {}
+    }
+  ];
   var BAT_SWING = AXE_ATTACKS[0];
 
   // src/viewer.js

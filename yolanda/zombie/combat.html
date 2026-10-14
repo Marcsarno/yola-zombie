@@ -40,8 +40,9 @@
   #swapBtn .big { width: 46px; height: 46px; left: 20px; top: 13px; }
   #swapBtn .small { width: 22px; height: 22px; right: 7px; bottom: 7px; opacity: .55; }
   #swapBtn svg.w { display: none; }
-  #swapBtn[data-weapon="pistol"] .i-pistol.big, #swapBtn[data-weapon="shotgun"] .i-shotgun.big, #swapBtn[data-weapon="axe"] .i-axe.big,
-  #swapBtn[data-next="pistol"] .i-pistol.small, #swapBtn[data-next="shotgun"] .i-shotgun.small, #swapBtn[data-next="axe"] .i-axe.small { display: block; }
+  #swapBtn[data-weapon="pistol"] .i-pistol.big, #swapBtn[data-weapon="shotgun"] .i-shotgun.big, #swapBtn[data-weapon="axe"] .i-axe.big, #swapBtn[data-weapon="fists"] .i-fists.big,
+  #swapBtn[data-next="pistol"] .i-pistol.small, #swapBtn[data-next="shotgun"] .i-shotgun.small, #swapBtn[data-next="axe"] .i-axe.small, #swapBtn[data-next="fists"] .i-fists.small { display: block; }
+  #swapBtn.solo { display: none; }
   #swapBtn.pending { box-shadow: 0 0 0 3px var(--amber), 0 3px 10px rgba(0,0,0,.35); }
   #swapBtn.pending .small { opacity: 1; transform: scale(1.25); }
   #swapBtn.pressed { transform: scale(.94); }
@@ -105,6 +106,8 @@
     <svg class="w i-pistol small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M7 15h31l3 3v5H22l-3 2-3 13H9l3-14-5-3z"/></svg>
     <svg class="w i-shotgun small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M2 20h33v-2h11v5H25l-2 3h-6l-3 3-9 5-3-4 7-4z"/><rect x="26" y="24" width="10" height="3" rx="1" fill="#7fc8c0"/></svg>
     <svg class="w i-axe small" viewBox="0 0 48 48"><path fill="#c9483f" d="M8 40l23-31 3 2L11 42z"/><path fill="#dfe5ea" d="M27 6c4-2 10-1 14 3l-4 7c-2-3-6-4-9-3z"/><path fill="#3a3f45" d="M8 40l3 2-2 3-3-2z"/></svg>
+    <svg class="w i-fists big" viewBox="0 0 48 48"><path fill="#f3eee2" d="M10 20c0-4 3-6 7-6h13c5 0 8 3 8 8v6c0 5-4 9-9 9H19c-5 0-9-4-9-9z"/><path fill="none" stroke="#27323a" stroke-width="1.6" d="M18 15v9M25 14v10M32 15v9M10 28h26"/></svg>
+    <svg class="w i-fists small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M10 20c0-4 3-6 7-6h13c5 0 8 3 8 8v6c0 5-4 9-9 9H19c-5 0-9-4-9-9z"/><path fill="none" stroke="#27323a" stroke-width="1.6" d="M18 15v9M25 14v10M32 15v9M10 28h26"/></svg>
     <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
     <div id="ammo"></div>
   </button>

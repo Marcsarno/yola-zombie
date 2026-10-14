@@ -111,11 +111,11 @@ export async function blast(g, tag, dist = 2, n = 3, hp = 100, frames = [0, 4, 8
 
 // Axe combo: attack held on one zombie in reach (hp high so the whole combo lands, or low to see the
 // finisher kill). Frames from the side every few ticks; reports each attack and whether it connected.
-export async function combo(g, tag, hp = 400, every = 5, n = 16, camYaw = -60) {
+export async function combo(g, tag, hp = 400, every = 5, n = 16, camYaw = -60, weapon = 'axe') {
   g.restart('calm'); await settle();
   const sim = g.sim, p = sim.player;
   sim.zombies.length = 0;
-  p.x = p.px = 0.3; p.z = p.pz = 2.4; p.aimYaw = p.aimTarget = Math.PI; p.equipped = p.desired = 'axe';
+  p.x = p.px = 0.3; p.z = p.pz = 2.4; p.aimYaw = p.aimTarget = Math.PI; p.equipped = p.desired = weapon;
   const z = sim.spawnZombie('NW', { x: 0.3, z: 1.35, yaw: 0 }); z.set('chase'); z.passive = true; z.hp = hp;
   g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
   g.tick(30, 1 / 60, false);
