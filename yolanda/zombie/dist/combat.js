@@ -45069,10 +45069,10 @@ void main() {
   }
   function meleeSegment(A, t, out = {}) {
     meleePose(A, t, out);
-    const L = (A.geom || AXE_GEOM).length;
-    out.tx = out.hx + out.dx * L;
-    out.ty = out.hy + out.dy * L;
-    out.tz = out.hz + out.dz * L;
+    const L2 = (A.geom || AXE_GEOM).length;
+    out.tx = out.hx + out.dx * L2;
+    out.ty = out.hy + out.dy * L2;
+    out.tz = out.hz + out.dz * L2;
     return out;
   }
 
@@ -45907,23 +45907,23 @@ void main() {
     // a push along the average pellet direction, and each pellet's body part (several limbs can go).
     fireShotgun(p) {
       this.stats.shots++;
-      const S = SHOTGUN_SPEC, T = this.T, m = p.muzzleWorld(_m);
+      const S2 = SHOTGUN_SPEC, T = this.T, m = p.muzzleWorld(_m);
       p.vx -= Math.sin(p.aimYaw) * 1.1;
       p.vz -= Math.cos(p.aimYaw) * 1.1;
       const block = this.world.raycast(p.x, p.z, m.x, m.z, BULLET_MIN_H);
       const yaw0 = p.aimYaw, pellets = [], hits = /* @__PURE__ */ new Map();
-      for (let i = 0; i < S.pellets; i++) {
-        const u = (i + 0.5) / S.pellets * 2 - 1;
-        const yaw = yaw0 + (u * 0.85 + (this.rand() - 0.5) * 0.3) * S.spread;
+      for (let i = 0; i < S2.pellets; i++) {
+        const u = (i + 0.5) / S2.pellets * 2 - 1;
+        const yaw = yaw0 + (u * 0.85 + (this.rand() - 0.5) * 0.3) * S2.spread;
         const dx = Math.sin(yaw), dz = Math.cos(yaw);
         if (block) {
           pellets.push({ ex: p.x + (m.x - p.x) * block.t, ez: p.z + (m.z - p.z) * block.t, hit: "wall", nx: block.nx, nz: block.nz });
           continue;
         }
-        const r = this.traceBullet(m.x, m.z, yaw, S.range);
+        const r = this.traceBullet(m.x, m.z, yaw, S2.range);
         const ex = m.x + dx * r.t, ez = m.z + dz * r.t;
         if (r.zombie) {
-          const fall = r.t <= S.falloffFrom ? 1 : Math.max(0.33, 1 - (r.t - S.falloffFrom) / (S.range - S.falloffFrom) * 0.67);
+          const fall = r.t <= S2.falloffFrom ? 1 : Math.max(0.33, 1 - (r.t - S2.falloffFrom) / (S2.range - S2.falloffFrom) * 0.67);
           let h = hits.get(r.zombie);
           if (!h) hits.set(r.zombie, h = { dmg: 0, px: 0, pz: 0, parts: [] });
           h.dmg += T.shotgunDamage * fall;
@@ -45937,7 +45937,7 @@ void main() {
       for (const [z, h] of hits) {
         this.stats.shotHits++;
         const pl = Math.hypot(h.px, h.pz) || 1;
-        z.takeHit(h.dmg, h.px / pl, h.pz / pl, T.shotgunKnockback * pl / S.pellets, SHOTGUN, this, h.parts);
+        z.takeHit(h.dmg, h.px / pl, h.pz / pl, T.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts);
         if (!z.alive) killed.push(z.id);
       }
       this.emit({ type: "shotgun", ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed });
@@ -47259,7 +47259,7 @@ void main() {
     // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
     // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
     measureGaits() {
-      const out = {}, L = new Vector3(), LT = new Vector3(), R = new Vector3(), RT = new Vector3();
+      const out = {}, L2 = new Vector3(), LT = new Vector3(), R = new Vector3(), RT = new Vector3();
       const all = Object.values(this.actions);
       this.container.rotation.y = 0;
       this.outer.position.set(0, 0, 0);
@@ -47273,11 +47273,11 @@ void main() {
           a.time = D * i / N;
           this.mixer.update(0);
           this.outer.updateMatrixWorld(true);
-          this.worldPos("LeftFoot", L);
+          this.worldPos("LeftFoot", L2);
           this.worldPos("LeftToeBase", LT);
           this.worldPos("RightFoot", R);
           this.worldPos("RightToeBase", RT);
-          rows.push({ L: L.x * dx + L.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L.y, LT.y), ry: Math.min(R.y, RT.y) });
+          rows.push({ L: L2.x * dx + L2.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L2.y, LT.y), ry: Math.min(R.y, RT.y) });
         }
         const vel = [];
         for (const [p, y] of [["L", "ly"], ["R", "ry"]]) {
@@ -47485,8 +47485,8 @@ void main() {
     // e.g. the rifle stance ~130 degrees; the turn onto the aim is done by the aim correction). Blended
     // by the layer's weight. (Hips' parent is static, so local hip rotations compare directly.)
     rebaseUpper() {
-      const H2 = this.bones.Hips, S = this.bones.Spine;
-      if (!H2 || !S) return;
+      const H2 = this.bones.Hips, S2 = this.bones.Spine;
+      if (!H2 || !S2) return;
       const inv = _q22.copy(H2.quaternion).invert();
       for (const n in this.upperHips) {
         const a = this.act(n), w = a.getEffectiveWeight();
@@ -47498,9 +47498,9 @@ void main() {
         _q32.premultiply(_q4);
         _q4.copy(inv).multiply(_q32);
         _q3.identity().slerp(_q4, Math.min(1, w));
-        S.quaternion.premultiply(_q3);
+        S2.quaternion.premultiply(_q3);
       }
-      S.updateMatrixWorld(true);
+      S2.updateMatrixWorld(true);
     }
     toLocal(x, z) {
       const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw);
@@ -47578,15 +47578,15 @@ void main() {
       G2.localToWorld(_v23);
       const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
       if (wHold > 0) this.ikArm("Left", U.gripL.getWorldPosition(_v32), wHold);
-      const S = this.shell;
-      S.visible = shellOn;
+      const S2 = this.shell;
+      S2.visible = shellOn;
       if (shellOn) {
         this.bones.LeftHand.getWorldQuaternion(_q3);
         _q22.setFromEuler(_e.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, "XYZ"));
         _q3.multiply(_q22);
-        S.quaternion.copy(_q3);
+        S2.quaternion.copy(_q3);
         this.grip("Left", _v4);
-        S.position.copy(_v4).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q3));
+        S2.position.copy(_v4).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q3));
       }
     }
     placeWeapons(s, dt) {
@@ -47637,9 +47637,9 @@ void main() {
           this.bones.RightHand.getWorldQuaternion(_q3);
           dir.applyQuaternion(_q3).normalize();
         } else dir = _v32.copy(_v4).sub(_v23).normalize();
-        const M2 = this.melee;
-        M2.position.copy(_v4).add(_v23).multiplyScalar(0.5);
-        const tip = _v43.copy(M2.position).addScaledVector(dir, 0.7);
+        const M3 = this.melee;
+        M3.position.copy(_v4).add(_v23).multiplyScalar(0.5);
+        const tip = _v43.copy(M3.position).addScaledVector(dir, 0.7);
         const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new Vector3();
         this.prevTip.copy(tip);
         const fwd = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
@@ -47654,8 +47654,8 @@ void main() {
           this.bladeQ.copy(target);
           this.bladeInit = true;
         } else this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
-        M2.quaternion.copy(this.bladeQ);
-        M2.updateMatrixWorld(true);
+        M3.quaternion.copy(this.bladeQ);
+        M3.updateMatrixWorld(true);
       }
     }
     die(dt, s) {
@@ -47976,19 +47976,19 @@ void main() {
         return;
       }
       if (z.state !== this.lastState) {
-        const S = z.state;
-        if (S === "windup") this.playOnce("attack", 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
-        else if (S === "stagger") {
+        const S2 = z.state;
+        if (S2 === "windup") this.playOnce("attack", 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
+        else if (S2 === "stagger") {
           if (isMelee(z.hitKind) || z.hitKind === "shotgun" || z.hitKind === "bump") {
             const n = this.reactClip(z), len = this.act(n).getClip().duration;
             this.playOnce(n, 2 / 30, (len - 2 / 30) / Math.max(0.3, z.stateDur));
           } else this.playOnce("hit_flinch", 0.15, 1.6);
-        } else if (S === "knockdown") {
+        } else if (S2 === "knockdown") {
           this.deathYaw = null;
           this.playOnce("knockdown", 1 / 30, 59 / 30 / z.stateDur, 0.05);
-        } else if (S === "getup") {
+        } else if (S2 === "getup") {
           this.playOnce("standup_stomach", 20 / 30, 161 / 30 / z.stateDur, 0);
-        } else if (S === "dying") {
+        } else if (S2 === "dying") {
           if (z.downDeath) {
             this.deathYaw = null;
           } else {
@@ -47998,14 +47998,14 @@ void main() {
             const [n, f0, f1] = DEATHS[back ? "back" : "forward"][z.hitKind === "pistol" ? z.id % 2 : 0];
             this.playOnce(n, f0 / 30, (f1 - f0) / 30 / 1.25);
           }
-        } else if ((S === "chase" || S === "emerge") && this.oneShot && this.lastState !== "strike" && this.lastState !== "windup") {
+        } else if ((S2 === "chase" || S2 === "emerge") && this.oneShot && this.lastState !== "strike" && this.lastState !== "windup") {
           this.oneShot.fadeOut(0.2);
           this.oneShot = null;
-        } else if (S === "chase" && this.oneShot) {
+        } else if (S2 === "chase" && this.oneShot) {
           this.oneShot.fadeOut(0.25);
           this.oneShot = null;
         }
-        this.lastState = S;
+        this.lastState = S2;
       }
       if (this.deathYaw != null) this.container.rotation.y += angleDiff2(this.container.rotation.y, this.deathYaw) * Math.min(1, dt * 14);
       else this.container.rotation.y = z.yaw;
@@ -49024,12 +49024,12 @@ void main() {
       const P = {}, part = (n) => desc.parts[desc.idx[n]];
       const pt = (key, pos, r, m) => P[key] = this._particle(body, pos, r, m);
       const pel = part("pelvis"), ch = part("chest");
-      const S = pel.r / 0.075 / 1;
+      const S2 = pel.r / 0.075 / 1;
       pt("hips", pel.a, pel.r * 0.9, 6);
       pt("spine1", pel.b, pel.r, 6);
       const tl = part("thighL"), tr = part("thighR");
-      pt("hipL", tl ? tl.a : pel.a.clone().addScaledVector(pel.ref, 0.5 * 0.1 * S), pel.r * 0.6, 3);
-      pt("hipR", tr ? tr.a : pel.a.clone().addScaledVector(pel.ref, -0.5 * 0.1 * S), pel.r * 0.6, 3);
+      pt("hipL", tl ? tl.a : pel.a.clone().addScaledVector(pel.ref, 0.5 * 0.1 * S2), pel.r * 0.6, 3);
+      pt("hipR", tr ? tr.a : pel.a.clone().addScaledVector(pel.ref, -0.5 * 0.1 * S2), pel.r * 0.6, 3);
       const rig = (keys) => {
         for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) this._link(body, P[keys[i]], P[keys[j]]);
       };
@@ -49051,9 +49051,9 @@ void main() {
         if (!U) return;
         pt(mid, U.b, U.r, U.mass);
         this._link(body, P[a], P[mid]);
-        const L = part(lo);
-        if (L) {
-          pt(end, L.b, L.r, L.mass);
+        const L2 = part(lo);
+        if (L2) {
+          pt(end, L2.b, L2.r, L2.mass);
           this._link(body, P[mid], P[end]);
           this._link(body, P[a], P[end], 0.45, Infinity);
         }
@@ -49172,8 +49172,8 @@ void main() {
           const axis = _a3.subVectors(B.x, A.x).normalize();
           const name = body.kind === "ragdoll" ? body.desc.parts[i].name : "";
           if (name === "pelvis" || name === "chest") {
-            const [L, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
-            frameQuat(axis, _b3.subVectors(L.x, R.x), body.q[i]);
+            const [L2, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
+            frameQuat(axis, _b3.subVectors(L2.x, R.x), body.q[i]);
           } else {
             _q5.setFromUnitVectors(body.prevAxis[i], axis);
             body.q[i].premultiply(_q5).normalize();
@@ -49563,6 +49563,1412 @@ void main() {
     return { log: log.join(" "), zombie: { state: z.state, hp: Math.round(z.hp), severed: [...z.severed] }, stats: sim2.stats };
   }
 
+  // src/opening/actors.js
+  var blobTex = null;
+  function blobMaterial() {
+    if (!blobTex) {
+      const c = document.createElement("canvas");
+      c.width = c.height = 64;
+      const g = c.getContext("2d");
+      const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+      gr.addColorStop(0, "rgba(20,30,34,.5)");
+      gr.addColorStop(1, "rgba(20,30,34,0)");
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+      blobTex = new CanvasTexture(c);
+    }
+    return new MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false });
+  }
+  var clamp5 = (v, a, b) => Math.min(b, Math.max(a, v));
+  var angDiff = (a, b) => {
+    let d = (b - a) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2;
+    if (d < -Math.PI) d += Math.PI * 2;
+    return d;
+  };
+  var Actor = class {
+    // gltf: loaded glTF; opts.height: metres (scales the model); opts.walkSpeed: m/s the walk clip is tuned for
+    constructor(gltf, { height = 0, walkSpeed = 1.15, name = "actor", walkClip = "Walk_InPlace", idleClip = "Idle" } = {}) {
+      this.name = name;
+      this.root = new Group();
+      this.root.name = name;
+      this.model = clone(gltf.scene);
+      this.root.add(this.model);
+      this.model.traverse((o) => {
+        if (o.isMesh) {
+          o.frustumCulled = false;
+          o.castShadow = false;
+          o.receiveShadow = false;
+        }
+      });
+      this.blob = new Mesh(new PlaneGeometry(0.9, 0.9), blobMaterial());
+      this.blob.rotation.x = -Math.PI / 2;
+      this.blob.position.y = 0.012;
+      this.blob.renderOrder = 1;
+      this.root.add(this.blob);
+      if (height) {
+        this.root.updateMatrixWorld(true);
+        const box = new Box3().setFromObject(this.model);
+        const k = height / (box.max.y - box.min.y);
+        this.model.scale.multiplyScalar(k);
+        this.model.position.y -= box.min.y * k;
+      }
+      this.mixer = new AnimationMixer(this.model);
+      this.actions = {};
+      for (const c of gltf.animations) this.actions[c.name] = this.mixer.clipAction(c);
+      this.bones = {};
+      this.model.traverse((o) => {
+        if (o.isBone) this.bones[o.name] = o;
+      });
+      this.cur = null;
+      this.curName = "";
+      this.walkSpeed = walkSpeed;
+      this.walkClip = walkClip;
+      this.idleClip = idleClip;
+      this.yaw = 0;
+      this.targetYaw = null;
+      this.path = [];
+      this.speed = 0;
+      this.moving = false;
+      this.onArrive = null;
+      this.timeScale = 1;
+      this.seated = false;
+    }
+    place(x, z, yaw = this.yaw) {
+      this.root.position.set(x, 0, z);
+      this.yaw = yaw;
+      this.root.rotation.y = yaw;
+      return this;
+    }
+    get x() {
+      return this.root.position.x;
+    }
+    get z() {
+      return this.root.position.z;
+    }
+    play(name, { fade = 0.25, once = false, rate = 1, from = 0 } = {}) {
+      const a = this.actions[name];
+      if (!a) return null;
+      if (this.cur === a && !once) return a;
+      a.reset();
+      a.enabled = true;
+      a.setEffectiveWeight(1);
+      a.timeScale = rate;
+      a.setLoop(once ? LoopOnce : LoopRepeat, Infinity);
+      a.clampWhenFinished = once;
+      if (from) a.time = from;
+      if (this.cur && this.cur !== a) a.crossFadeFrom(this.cur, fade, false);
+      a.play();
+      this.cur = a;
+      this.curName = name;
+      return a;
+    }
+    duration(name) {
+      return this.actions[name]?.getClip().duration ?? 0;
+    }
+    // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle
+    walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null } = {}) {
+      this.path = points.map((p) => ({ x: p[0], z: p[1] }));
+      this.speed = speed;
+      this.endYaw = endYaw;
+      this.onArrive = onArrive;
+      this.moving = this.path.length > 0;
+      this.seated = false;
+      if (this.moving) this.play(this.walkClip, { rate: speed / this.walkSpeed });
+    }
+    stop() {
+      this.path = [];
+      this.moving = false;
+    }
+    update(dt) {
+      const d = dt * this.timeScale;
+      if (this.moving && this.path.length) {
+        const t = this.path[0], dx = t.x - this.x, dz = t.z - this.z, L2 = Math.hypot(dx, dz), step = this.speed * d;
+        if (L2 <= step + 1e-4) {
+          this.root.position.x = t.x;
+          this.root.position.z = t.z;
+          this.path.shift();
+          if (!this.path.length) {
+            this.moving = false;
+            if (this.endYaw != null) this.targetYaw = this.endYaw;
+            this.play(this.idleClip);
+            const cb = this.onArrive;
+            this.onArrive = null;
+            cb?.();
+          }
+        } else {
+          this.root.position.x += dx / L2 * step;
+          this.root.position.z += dz / L2 * step;
+          this.targetYaw = Math.atan2(dx, dz);
+        }
+      }
+      if (this.targetYaw != null) {
+        const e = angDiff(this.yaw, this.targetYaw);
+        this.yaw += clamp5(e, -d * 7, d * 7);
+        if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
+      }
+      this.root.rotation.y = this.yaw;
+      this.mixer.update(d);
+    }
+    // Sit on a chair whose seat centre is (cx, cz) with the character facing yaw. The visitor rigs' SitDown clip
+    // expects the seat 0.45 m behind the standing origin (the source Blender contract), so stand 0.45 m in front.
+    sitAt(cx, cz, yaw, { instant = false, behind = 0.45 } = {}) {
+      this.stop();
+      this.place(cx + Math.sin(yaw) * behind, cz + Math.cos(yaw) * behind, yaw);
+      this.targetYaw = null;
+      this.seated = true;
+      if (instant) {
+        this.play("SeatedIdle", { fade: 0 });
+        return;
+      }
+      const a = this.play("SitDown", { once: true, fade: 0.1 });
+      if (a) {
+        const done = (e) => {
+          if (e.action === a) {
+            this.mixer.removeEventListener("finished", done);
+            if (this.seated) this.play("SeatedIdle", { fade: 0.15 });
+          }
+        };
+        this.mixer.addEventListener("finished", done);
+      }
+    }
+    standUp({ walkTo = null } = {}) {
+      this.seated = false;
+      const a = this.play("StandUp", { once: true, fade: 0.1 });
+      if (a) {
+        const done = (e) => {
+          if (e.action === a) {
+            this.mixer.removeEventListener("finished", done);
+            this.play(this.idleClip, { fade: 0.15 });
+            if (walkTo) this.walk(walkTo.points, walkTo.opts);
+          }
+        };
+        this.mixer.addEventListener("finished", done);
+      }
+    }
+    setVisible(v) {
+      this.root.visible = v;
+    }
+  };
+  var _v6 = new Vector3();
+  var _q7 = new Quaternion();
+  var _q23 = new Quaternion();
+  var _id3 = new Quaternion();
+  var OriginalYola = class extends Actor {
+    constructor(gltf, opts = {}) {
+      super(gltf, { walkClip: "walk", idleClip: "idle", ...opts });
+      this.waveT = -1;
+      this.rest = {};
+      this.pose = null;
+      this.keyed = /* @__PURE__ */ new Set();
+      for (const c of gltf.animations) for (const tr of c.tracks) this.keyed.add(tr.name.split(".")[0]);
+      for (const n of ["upperarm_r", "forearm_r", "upperarm_l", "forearm_l", "head", "torso", "thigh_l", "thigh_r", "shin_l", "shin_r"]) if (this.bones[n]) this.rest[n] = this.bones[n].quaternion.clone();
+      this.root.updateMatrixWorld(true);
+      const B = this.bones, pos = (b) => b.getWorldPosition(new Vector3());
+      this.armDir = {};
+      for (const [n, c] of [["upperarm_r", "forearm_r"], ["upperarm_l", "forearm_l"]]) {
+        if (!B[n] || !B[c]) continue;
+        const dir = pos(B[c]).sub(pos(B[n])).normalize();
+        this.armDir[n] = dir.clone().applyQuaternion(B[n].getWorldQuaternion(new Quaternion()).invert());
+        this.armDir[c] = dir.clone().applyQuaternion(B[c].getWorldQuaternion(new Quaternion()).invert());
+      }
+    }
+    startWave() {
+      this.waveT = 0;
+    }
+    update(dt) {
+      super.update(dt);
+      if (this.waveT >= 0) this.waveT += dt * this.timeScale;
+      this.applyProcedural();
+    }
+    // rotate the bone (in world space) so that its length axis points along 'target', by weight w
+    aim(name, target, w) {
+      const b = this.bones[name];
+      if (!b || w <= 1e-4) return;
+      b.updateWorldMatrix(true, false);
+      b.getWorldQuaternion(_q7);
+      const cur = _v6.copy(this.armDir[name]).applyQuaternion(_q7);
+      const rot = _q23.setFromUnitVectors(cur, target);
+      rot.premultiply(_id3.identity());
+      const part = new Quaternion().identity().slerp(rot, w);
+      const world = part.multiply(_q7.clone());
+      b.parent.getWorldQuaternion(_q23);
+      b.quaternion.copy(_q23.invert().multiply(world));
+      b.updateMatrixWorld(true);
+    }
+    // rotate a bone about a world axis
+    rotW(name, axis, angle) {
+      const b = this.bones[name];
+      if (!b || !angle) return;
+      b.updateWorldMatrix(true, false);
+      b.getWorldQuaternion(_q7);
+      const world = _id3.setFromAxisAngle(axis, angle).multiply(_q7.clone());
+      b.parent.getWorldQuaternion(_q23);
+      b.quaternion.copy(_q23.invert().multiply(world));
+      b.updateMatrixWorld(true);
+    }
+    applyProcedural() {
+      const t = this.waveT, B = this.bones, R = this.rest;
+      for (const n of ["head", "upperarm_r", "forearm_r"]) if (R[n]) B[n].quaternion.copy(R[n]);
+      for (const n in R) if (!this.keyed.has(n)) B[n].quaternion.copy(R[n]);
+      const rot = (n, x, y, z) => {
+        const b = B[n];
+        if (!b) return;
+        if (!this.keyed.has(n)) b.quaternion.copy(R[n]);
+        b.quaternion.multiply(_q7.setFromEuler(new Euler(x, y, z, "XYZ")));
+      };
+      if (this.seated && this.pose === "sit") {
+        rot("thigh_l", -1.45, 0, 0);
+        rot("thigh_r", -1.45, 0, 0);
+        rot("shin_l", 1.45, 0, 0);
+        rot("shin_r", 1.45, 0, 0);
+      }
+      if (t < 0) return;
+      this.root.updateMatrixWorld(true);
+      const ease2 = (u) => {
+        u = Math.min(1, Math.max(0, u));
+        return u * u * (3 - 2 * u);
+      };
+      const lift = t < 0.5 ? ease2(t / 0.5) * 0.35 : 0.35 + ease2((t - 0.5) / 0.5) * 0.65;
+      const up = lift * (1 - ease2((t - 3.9) / 0.8));
+      const wig = Math.sin(t * 16) * ease2((t - 0.9) / 0.3) * (1 - ease2((t - 3.7) / 0.5));
+      const U = new Vector3(0, 1, 0);
+      const right = _v6.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
+      right.y = 0;
+      right.normalize();
+      const R3 = right.clone(), F3 = new Vector3().crossVectors(U, R3).normalize();
+      const du = R3.clone().multiplyScalar(0.78).add(U.clone().multiplyScalar(0.42)).add(F3.clone().multiplyScalar(0.22)).normalize();
+      this.aim("upperarm_r", du, up);
+      const df = U.clone().add(R3.clone().multiplyScalar(0.1 + wig * 0.85)).add(F3.clone().multiplyScalar(0.3)).normalize();
+      this.aim("forearm_r", df, up);
+      const shy = ease2((t - 0.9) / 0.5) * (1 - ease2((t - 3.9) / 0.6));
+      this.rotW("head", F3, -0.13 * shy);
+    }
+  };
+
+  // src/opening/stage.js
+  var CLINIC = { x: 60, z: 0 };
+  var M2 = "../assets/models/";
+  var PAL2 = { wall: 16051420, band: 8109496, cap: 16775402, floorA: "#f2e6cc", floorB: "#cfe6dc", grout: "#e1d4b8", glass: 13626092, frame: 9421252 };
+  function checkerTexture() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 256;
+    const g = c.getContext("2d"), s = 128;
+    for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+      g.fillStyle = (i + j) % 2 ? PAL2.floorB : PAL2.floorA;
+      g.fillRect(i * s, j * s, s, s);
+    }
+    g.strokeStyle = PAL2.grout;
+    g.lineWidth = 3;
+    for (let i = 0; i <= 2; i++) {
+      g.beginPath();
+      g.moveTo(i * s, 0);
+      g.lineTo(i * s, 256);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(0, i * s);
+      g.lineTo(256, i * s);
+      g.stroke();
+    }
+    const t = new CanvasTexture(c);
+    t.wrapS = t.wrapT = RepeatWrapping;
+    t.colorSpace = SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  }
+  var ClinicStage = class {
+    constructor(scene2, loader2) {
+      this.scene = scene2;
+      this.loader = loader2;
+      this.root = new Group();
+      this.root.position.set(CLINIC.x, 0, CLINIC.z);
+      this.root.visible = false;
+      scene2.add(this.root);
+      this.cache = /* @__PURE__ */ new Map();
+      this.tiers = [];
+      this.tier = "starter";
+      this.actors = {};
+      this.anchors = {};
+    }
+    gltf(url) {
+      if (!this.cache.has(url)) this.cache.set(url, this.loader.loadAsync(url));
+      return this.cache.get(url);
+    }
+    // place a static prop: centred on x/z, standing on the floor, rotated about Y (degrees); fit scales to a target height
+    async prop(url, { x = 0, z = 0, y = 0, rot = 0, s = 1, h = 0, parent = this.root, name = "" } = {}) {
+      const g = await this.gltf(url);
+      const obj = g.scene.clone(true);
+      obj.rotation.y = rot * Math.PI / 180;
+      const holder = new Group();
+      holder.add(obj);
+      holder.updateMatrixWorld(true);
+      let box = new Box3().setFromObject(obj);
+      let k = s;
+      if (h) k = h / (box.max.y - box.min.y);
+      if (k !== 1) {
+        obj.scale.multiplyScalar(k);
+        holder.updateMatrixWorld(true);
+        box = new Box3().setFromObject(obj);
+      }
+      const c = box.getCenter(new Vector3());
+      obj.position.x -= c.x;
+      obj.position.z -= c.z;
+      obj.position.y -= box.min.y;
+      holder.position.set(x, y, z);
+      holder.name = name;
+      obj.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      parent.add(holder);
+      return holder;
+    }
+    box(w, h, d, x, y, z, color, { r = 0.04, shadow = true, rough = 0.8 } = {}) {
+      const m = new Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.2, d / 2.2, h / 2.2)), new MeshStandardMaterial({ color, roughness: rough }));
+      m.position.set(x, y, z);
+      m.castShadow = shadow;
+      m.receiveShadow = true;
+      this.root.add(m);
+      return m;
+    }
+    wall(x0, x1, z0, z1, h, style = "full") {
+      const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      if (style === "glass") {
+        this.box(w, 0.7, d + 0.04, cx, 0.35, cz, PAL2.wall);
+        const gm = new Mesh(new BoxGeometry(w - 0.06, h - 0.78, 0.03), new MeshStandardMaterial({ color: PAL2.glass, roughness: 0.1, transparent: true, opacity: 0.24, depthWrite: false }));
+        gm.position.set(cx, 0.72 + (h - 0.78) / 2, cz);
+        this.root.add(gm);
+        this.box(w + 0.02, 0.07, Math.max(d, 0.1), cx, h, cz, PAL2.frame, { shadow: false });
+        return;
+      }
+      this.box(w, h, d, cx, h / 2, cz, PAL2.wall, { r: 0.05 });
+      const bh = Math.min(0.34, h * 0.35);
+      this.box(w + 0.02, bh, d + 0.02, cx, bh / 2 + 0.05, cz, PAL2.band, { r: 0.02, shadow: false });
+      this.box(w + 0.04, 0.05, d + 0.04, cx, h, cz, PAL2.cap, { r: 0.02, shadow: false });
+    }
+    sign(id, x, y, z, w, ry = 0) {
+      if (!this.signTex) this.signTex = new TextureLoader();
+      const t = this.signTex.load(`assets/opening/signs/${id}.png`);
+      t.colorSpace = SRGBColorSpace;
+      t.anisotropy = 4;
+      const m = new Mesh(new PlaneGeometry(w, w * 0.3), new MeshBasicMaterial({ map: t }));
+      m.position.set(x, y, z);
+      m.rotation.y = ry;
+      this.root.add(m);
+      this.signs[id] = m;
+      return m;
+    }
+    async build() {
+      const W = 9.2, Zn = -6, Zs = 5;
+      const tex = checkerTexture();
+      tex.repeat.set((W * 2 + 1) / 1.2, (Zs - Zn + 1) / 1.2);
+      const floor = new Mesh(new PlaneGeometry(W * 2 + 1, Zs - Zn + 1), new MeshStandardMaterial({ map: tex, roughness: 0.5 }));
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(0, 0, (Zn + Zs) / 2);
+      floor.receiveShadow = true;
+      this.root.add(floor);
+      const out = new Mesh(new PlaneGeometry(90, 90), new MeshBasicMaterial({ color: 13624287 }));
+      out.rotation.x = -Math.PI / 2;
+      out.position.set(0, -0.03, 0);
+      this.root.add(out);
+      const rug = new Mesh(new CircleGeometry(1.7, 40), new MeshStandardMaterial({ color: 15317156, roughness: 0.95 }));
+      rug.rotation.x = -Math.PI / 2;
+      rug.position.set(-5.2, 6e-3, 1.4);
+      rug.receiveShadow = true;
+      this.root.add(rug);
+      const inlay = new Mesh(new PlaneGeometry(2 * W, 0.3), new MeshStandardMaterial({ color: 10474700 }));
+      inlay.rotation.x = -Math.PI / 2;
+      inlay.position.set(0, 5e-3, -3.5);
+      this.root.add(inlay);
+      this.wall(-W, W, Zn - 0.3, Zn, 4, "full");
+      this.wall(-W - 0.3, -W, Zn - 0.3, -0.2, 4, "full");
+      this.wall(-W - 0.3, -W, 2, Zs, 4, "full");
+      this.wall(-W, W, Zs, Zs + 0.3, 0.95, "low");
+      this.wall(W, W + 0.3, Zn - 0.3, Zs + 0.3, 0.95, "low");
+      this.wall(0.2, 0.45, Zn, -1, 2.3, "glass");
+      this.wall(0.2, 0.45, 0.6, Zs, 2.3, "glass");
+      const R = "reception/";
+      const tasks = [];
+      tasks.push(this.prop(M2 + "upgrades/01_reception/reception_T1_desk.glb", { x: -5.2, z: -4.7, rot: 0, name: "desk" }));
+      tasks.push(this.prop(M2 + "upgrades/01_reception/reception_T1_chair.glb", { x: -5.2, z: -5.55, rot: 0 }));
+      tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: -7.6, z: 3.5, rot: 20, name: "wchair1" }));
+      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: -6.5, z: 3.7, rot: 0, name: "wchair2" }));
+      tasks.push(this.prop(M2 + "furnishings/Lounge_Break_Chair.glb", { x: -5.4, z: 3.7, rot: -15, name: "wchair3" }));
+      tasks.push(this.prop(M2 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.2, z: -5.3 }));
+      tasks.push(this.prop(M2 + "decor/Reception_Water_Cooler.glb", { x: -2.2, z: -5.4 }));
+      tasks.push(this.prop(M2 + "decor/Reception_Round_Side_Table.glb", { x: -3.2, z: 3.6 }));
+      tasks.push(this.prop(M2 + "decor/Reception_Magazine_Rack.glb", { x: -1.2, z: 3.7, rot: 0 }));
+      tasks.push(this.prop(M2 + "decor/Reception_Poster_Heart.glb", { x: -2.6, y: 1.35, z: -5.88 }));
+      tasks.push(this.prop(M2 + "decor/Reception_Wall_Sanitizer.glb", { x: -0.9, y: 1.2, z: -5.88 }));
+      tasks.push(this.prop(M2 + "entrance/Entrance_Double_Doorway.glb", { x: -9.05, z: 0.9, rot: 90, name: "door" }));
+      this.signs = {};
+      this.sign("reception", -5.2, 2.15, -5.94, 1.9);
+      this.sign("assessment", 0.34, 2.05, -0.2, 1.25, Math.PI / 2);
+      const U = M2 + "upgrades/";
+      const slot = (key, files, opts) => {
+        const s = { key, files, opts, holder: null };
+        this.tiers.push(s);
+        return s;
+      };
+      const slots = [
+        slot("workstation", { starter: U + "02_anesthesia_monitoring/anesthesia_workstation_starter.glb", standard: U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", advanced: U + "02_anesthesia_monitoring/anesthesia_workstation_advanced.glb" }, { x: 6.9, z: -5.2, rot: 0 }),
+        slot("monitor", { starter: U + "02_anesthesia_monitoring/patient_monitor_starter.glb", standard: U + "02_anesthesia_monitoring/patient_monitor_standard.glb", advanced: U + "02_anesthesia_monitoring/patient_monitor_advanced.glb" }, { x: 4.6, z: -5.3, rot: 0 }),
+        slot("table", { starter: U + "04_surgery/operating_table_starter.glb", standard: U + "04_surgery/operating_table_standard.glb", advanced: U + "04_surgery/operating_table_advanced.glb" }, { x: 5.6, z: -2.4, rot: 90 })
+      ];
+      for (const s of slots) for (const tier of ["starter", "standard", "advanced"]) tasks.push(this.prop(s.files[tier], { ...s.opts, name: s.key + "_" + tier }).then((h) => {
+        s.layers || (s.layers = {});
+        s.layers[tier] = h;
+        this.fadeable(h);
+        h.visible = tier === "starter";
+        this.setOpacity(h, 1);
+      }));
+      tasks.push(this.prop(M2 + "upgrades/07_warmth_teamwork/TeamDesk_starter.glb", { x: 2.7, z: 2.6, rot: 0, name: "assessDesk" }));
+      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: 2.7, z: 1.55, rot: 0, name: "chairYola" }));
+      tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: 2.7, z: 3.65, rot: 180, name: "chairPatient" }));
+      tasks.push(this.prop(M2 + "utility/Utility_Supply_Shelf.glb", { x: 8.3, z: 1.4, rot: 270 }));
+      tasks.push(this.prop(M2 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 1.2, z: -5.2 }));
+      tasks.push(this.prop(M2 + "decor2/Clinical_Art_Heart.glb", { x: 2.2, y: 1.5, z: -5.88 }));
+      await Promise.all(tasks);
+      this.anchors.chairPatient = { x: 2.7, z: 3.65, yaw: Math.PI };
+      this.anchors.chairYola = { x: 2.7, z: 1.55, yaw: 0 };
+    }
+    // equipment tiers crossfade in place (same footprint, never stacked solid): materials are cloned per layer so
+    // fading one tier never touches another
+    fadeable(h) {
+      h.traverse((o) => {
+        if (o.isMesh) {
+          o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
+          for (const m of [].concat(o.material)) m.transparent = true;
+        }
+      });
+    }
+    setOpacity(h, a) {
+      h.traverse((o) => {
+        if (o.isMesh) for (const m of [].concat(o.material)) m.opacity = a;
+      });
+    }
+    setTier(tier, fade = 1) {
+      const prev = this.tier;
+      this.tier = tier;
+      for (const s of this.tiers) {
+        if (!s.layers) continue;
+        const from = s.layers[prev], to = s.layers[tier];
+        if (from === to) continue;
+        s.fx = { from, to, t: 0, dur: Math.max(1e-3, fade) };
+        to.visible = true;
+        this.setOpacity(to, 0);
+      }
+    }
+    tickTiers(dt) {
+      for (const s of this.tiers) {
+        const f = s.fx;
+        if (!f) continue;
+        f.t = Math.min(f.dur, f.t + dt);
+        const u = f.t / f.dur, e = u * u * (3 - 2 * u);
+        this.setOpacity(f.to, e);
+        this.setOpacity(f.from, 1 - e);
+        if (u >= 1) {
+          f.from.visible = false;
+          this.setOpacity(f.to, 1);
+          s.fx = null;
+        }
+      }
+    }
+    // ---- cast ----
+    async buildCast() {
+      const load2 = (f) => this.loader.loadAsync(f);
+      const [yolaOld, bb, sec, pat5, patOld, staff] = await Promise.all([
+        load2(M2 + "blender/yola.glb"),
+        load2("assets/opening/Baseball_Visitor.glb"),
+        load2("assets/opening/Security_Visitor.glb"),
+        load2(M2 + "people/patient-05.glb"),
+        load2(M2 + "people/patient-older.glb"),
+        load2(M2 + "people/staff-teal.glb")
+      ]);
+      const batStatic = await load2("assets/opening/Baseball_Bat_Static.glb");
+      this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
+      const A = this.actors;
+      A.yola = new OriginalYola(yolaOld, { height: 1.62, name: "yolaOld", walkSpeed: 1 });
+      A.baseball = new Actor(bb, { name: "baseball" });
+      A.security = new Actor(sec, { name: "security" });
+      A.waiting1 = new Actor(pat5, { name: "waiting1" });
+      A.waiting2 = new Actor(patOld, { name: "waiting2" });
+      A.staff = new Actor(staff, { name: "staff" });
+      for (const a of Object.values(A)) {
+        this.root.add(a.root);
+        a.root.visible = false;
+      }
+      A.baseball.bat = A.baseball.model.getObjectByName("Baseball_Bat");
+      A.baseball.bat0 = A.baseball.bat ? A.baseball.bat.visible : false;
+      this.batStatic = batStatic.scene;
+      this.batStatic.visible = false;
+      this.root.add(this.batStatic);
+      this.batStatic.traverse((o) => {
+        if (o.isMesh) o.castShadow = true;
+      });
+    }
+    setActive(v) {
+      this.root.visible = v;
+    }
+    update(dt) {
+      for (const a of Object.values(this.actors)) if (a.root.visible) a.update(dt);
+      this.tickTiers(dt);
+    }
+    // clinic-local -> world
+    toWorld(x, z) {
+      return new Vector3(x + CLINIC.x, 0, z + CLINIC.z);
+    }
+  };
+
+  // src/opening/content.js
+  var NARRATION = {
+    welcome: "Welcome to Yola\u2019s Medical Center! Every great medical center starts somewhere\u2014and yours is ready for its very first patients.",
+    essentials: "You\u2019ll begin with the essentials. Prepare your patients, plan your schedule, and put Yola\u2019s anesthesia expertise to work.",
+    upgrades: "As your reputation grows, so will your budget! Invest in better equipment, faster preparation, and room for more patients.",
+    yola: "And the person making it all happen? Yola! Expert care. Excellent judgment. An enthusiastic approach to waving.",
+    firstCase: "Your first patient has arrived. Complete your first case to earn $250 toward your next upgrade!"
+  };
+  var UPGRADE_PREVIEW = {
+    heading: "Future upgrades",
+    tiers: [
+      { name: "Standard kit", label: "Preparation speed +15%" },
+      { name: "Advanced kit", label: "Patient capacity +1" }
+    ]
+  };
+  var OBJECTIVES = {
+    chart: "Review the patient\u2019s chart.",
+    room1: "Get out of the operating room.",
+    bat: "Pick up the baseball bat.",
+    reception: "Head for the Waiting Area and Reception."
+  };
+  var CARD_STATUS = "DEVELOPER PLACEHOLDER \xB7 not clinically reviewed";
+
+  // src/opening/ui.js
+  var CSS = `
+#op { position: fixed; inset: 0; z-index: 20; pointer-events: none; font: 500 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; display: none; }
+#op.on { display: block; }
+#op * { box-sizing: border-box; }
+#op .fade { position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity .5s ease; }
+#op .bars::before, #op .bars::after { content: ''; position: absolute; left: 0; right: 0; height: 0; background: #000; transition: height .8s ease; z-index: 3; }
+#op .bars::before { top: 0; } #op .bars::after { bottom: 0; }
+#op.letter .bars::before, #op.letter .bars::after { height: 9vh; }
+#op .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(255,0,0,0) 45%, rgba(190,10,10,.55) 100%); opacity: 0; mix-blend-mode: normal; }
+#op .dark { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,.0) 30%, rgba(0,0,0,.8) 100%); opacity: 0; }
+#op .title { position: absolute; left: 14px; top: calc(14px + env(safe-area-inset-top, 0px)); text-align: left; opacity: 0; transform: translateY(-6px); transition: opacity .9s ease, transform .9s ease; max-width: calc(100% - 200px); }
+#op .title.show { opacity: 1; transform: none; }
+#op .title h1 { margin: 0; font-size: 19px; line-height: 1.1; letter-spacing: .01em; color: #fff8ea; background: #2f9fa0; padding: 7px 12px 6px; border-radius: 12px 12px 12px 4px; font-weight: 850; box-shadow: 0 3px 0 #23787a, 0 6px 14px rgba(20,60,60,.3); display: inline-block; }
+#op .title p { margin: 5px 0 0 4px; color: #1f5558; font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
+#op .sub { position: absolute; left: 16px; right: 16px; bottom: calc(14vh + env(safe-area-inset-bottom, 0px)); text-align: center; opacity: 0; transition: opacity .35s ease; }
+#op .sub.show { opacity: 1; }
+#op .sub span { display: inline-block; max-width: 520px; background: rgba(20, 34, 40, .78); padding: 10px 16px; border-radius: 14px; font-size: clamp(15px, 4.2vw, 19px); font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.5); backdrop-filter: blur(3px); }
+#op .sub.alarm span { background: rgba(110, 14, 14, .85); }
+#op .obj { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 14px; right: 70px; opacity: 0; transform: translateY(-8px); transition: all .5s ease; }
+#op .obj.show { opacity: 1; transform: none; }
+#op .obj div { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 248, 234, .94); color: #20474a; padding: 8px 14px; border-radius: 12px; font-weight: 750; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+#op .obj div::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #e07a5f; box-shadow: 0 0 0 4px rgba(224,122,95,.3); }
+#op .reward { position: absolute; top: calc(58px + env(safe-area-inset-top, 0px)); left: 14px; opacity: 0; transition: opacity .5s; }
+#op .reward.show { opacity: 1; }
+#op .reward div { background: rgba(32, 71, 74, .9); padding: 5px 12px; border-radius: 10px; font-weight: 700; font-size: 13px; }
+#op .chip { position: absolute; top: calc(64px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -6px); opacity: 0; transition: all .45s ease; }
+#op .chip.show { opacity: 1; transform: translate(-50%, 0); }
+#op .chip div { background: #e07a5f; color: #fff; font-weight: 850; letter-spacing: .05em; text-transform: uppercase; font-size: 13px; padding: 7px 16px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,.25); white-space: nowrap; }
+#op .tag { position: absolute; transform: translate(-50%, -100%); background: rgba(255, 248, 234, .96); color: #20474a; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 13.5px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.28); opacity: 0; transition: opacity .35s ease, margin-top .35s ease; margin-top: 8px; text-align: center; }
+#op .tag small { display: block; font-weight: 700; color: #e07a5f; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; }
+#op .tag.show { opacity: 1; margin-top: 0; }
+#op .ctl { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; display: flex; gap: 8px; pointer-events: auto; }
+#op .ctl button { height: 38px; min-width: 38px; padding: 0 12px; border-radius: 12px; background: rgba(30,42,48,.78); color: #fff; font-weight: 700; border: 0; font-size: 13px; }
+#op .ctl button.off { opacity: .55; }
+#op .card { position: absolute; left: 50%; bottom: 8vh; transform: translate(-50%, 14px); width: min(92vw, 460px); background: #fff8ea; color: #20474a; border-radius: 18px; padding: 14px 14px 10px; box-shadow: 0 14px 40px rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
+#op .card.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#op .card .st { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: #c9483f; display: inline-block; border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
+#op .card h3 { margin: 0 0 10px; font-size: 16px; line-height: 1.3; }
+#op .card button { display: block; width: 100%; text-align: left; margin: 0 0 7px; padding: 12px 14px; border-radius: 12px; border: 2px solid #bfe0dc; background: #fff; color: #20474a; font: 650 15px/1.3 system-ui, sans-serif; min-height: 46px; }
+#op .card button:active, #op .card button.pick { background: #d6f0ec; border-color: #2f9fa0; }
+#op .card .note { font-size: 11.5px; color: #6b8a8a; margin-top: 4px; }
+#op .card .ok { font-weight: 750; color: #2a8f92; padding: 6px 2px; }
+#op canvas.ecg { position: absolute; left: 6%; right: 6%; top: 22%; width: 88%; height: 90px; opacity: 0; transition: opacity .4s; }
+#op canvas.ecg.show { opacity: 1; }
+#op .gate { position: absolute; inset: 0; background: linear-gradient(#cfeae6, #f5e6c8); display: none; pointer-events: auto; z-index: 9; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+#op .gate.show { display: flex; }
+#op .gate h1 { margin: 0 0 4px; font-size: clamp(34px, 10vw, 64px); line-height: 1.02; color: #2a8f92; font-weight: 900; text-shadow: 0 3px 0 #fff8ea; }
+#op .gate p { color: #20474a; font-weight: 650; margin: 6px 0 22px; }
+#op .gate button { font: 800 18px/1 system-ui, sans-serif; padding: 16px 34px; border-radius: 16px; border: 0; background: #e07a5f; color: #fff; box-shadow: 0 5px 0 #b95a42, 0 10px 24px rgba(0,0,0,.25); }
+#op .gate .small { font-size: 12px; opacity: .7; margin-top: 18px; }
+#op .gate .bar { width: min(60vw, 260px); height: 8px; border-radius: 6px; background: rgba(32,71,74,.2); margin: 14px 0 0; overflow: hidden; }
+#op .gate .bar i { display: block; height: 100%; width: 0; background: #2f9fa0; transition: width .3s; }
+`;
+  var OpeningUI = class {
+    constructor() {
+      const st = document.createElement("style");
+      st.textContent = CSS;
+      document.head.appendChild(st);
+      const el = this.el = document.createElement("div");
+      el.id = "op";
+      el.innerHTML = `
+      <div class="fade"></div><div class="bars"></div><div class="vig"></div><div class="dark"></div>
+      <canvas class="ecg" width="600" height="120"></canvas>
+      <div class="title"><h1></h1><p></p></div>
+      <div class="chip"><div></div></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
+      <div class="sub"><span></span></div>
+      <div class="card" role="dialog" aria-live="polite"></div>
+      <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip \u25B8\u25B8</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">\u266A</button></div>
+      <div class="gate"><h1>Yola\u2019s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading\u2026</button><div class="bar"><i></i></div><div class="small"></div></div>`;
+      document.body.appendChild(el);
+      const q = (s) => el.querySelector(s);
+      this.fade = q(".fade");
+      this.vig = q(".vig");
+      this.dark = q(".dark");
+      this.ecg = q("canvas.ecg");
+      this.titleEl = q(".title");
+      this.subEl = q(".sub");
+      this.objEl = q(".obj");
+      this.rewardEl = q(".reward");
+      this.chipEl = q(".chip");
+      this.cardEl = q(".card");
+      this.gate = q(".gate");
+      this.skipB = q(".skipB");
+      this.flashB = q(".flashB");
+      this.muteB = q(".muteB");
+      this.goB = q(".go");
+      this.bar = q(".bar i");
+      this.gateSmall = q(".gate .small");
+      this.tags = /* @__PURE__ */ new Map();
+      this.cardResolve = null;
+    }
+    show(v) {
+      this.el.classList.toggle("on", v);
+    }
+    letter(v) {
+      this.el.classList.toggle("letter", v);
+    }
+    setFade(o, ms = 500) {
+      this.fade.style.transition = `opacity ${ms}ms ease`;
+      this.fade.style.opacity = o;
+    }
+    setFadeColor(c) {
+      this.fade.style.background = c;
+    }
+    chip(text) {
+      this.chipEl.querySelector("div").textContent = text || "";
+      this.chipEl.classList.toggle("show", !!text);
+    }
+    setVignette(o) {
+      this.vig.style.opacity = o;
+    }
+    setDark(o) {
+      this.dark.style.opacity = o;
+    }
+    title(h, p) {
+      this.titleEl.querySelector("h1").textContent = h || "";
+      this.titleEl.querySelector("p").textContent = p || "";
+      this.titleEl.classList.toggle("show", !!h);
+    }
+    subtitle(text, { alarm = false } = {}) {
+      this.subEl.classList.toggle("alarm", alarm);
+      if (!text) {
+        this.subEl.classList.remove("show");
+        return;
+      }
+      this.subEl.querySelector("span").textContent = text;
+      this.subEl.classList.add("show");
+    }
+    objective(text) {
+      this.objEl.querySelector("div").textContent = text || "";
+      this.objEl.classList.toggle("show", !!text);
+    }
+    reward(text) {
+      this.rewardEl.querySelector("div").textContent = text || "";
+      this.rewardEl.classList.toggle("show", !!text);
+    }
+    // a label that follows a world point; screen position updated by place()
+    tag(id, html, sub) {
+      let t = this.tags.get(id);
+      if (!t) {
+        t = document.createElement("div");
+        t.className = "tag";
+        this.el.appendChild(t);
+        this.tags.set(id, t);
+      }
+      if (html == null) {
+        t.classList.remove("show");
+        return null;
+      }
+      t.innerHTML = (sub ? `<small>${sub}</small>` : "") + html;
+      t.classList.add("show");
+      return t;
+    }
+    placeTag(id, x, y) {
+      const t = this.tags.get(id);
+      if (t) {
+        t.style.left = x + "px";
+        t.style.top = y + "px";
+      }
+    }
+    clearTags() {
+      for (const t of this.tags.values()) t.classList.remove("show");
+    }
+    // Developer-only placeholder card; resolves with the chosen option id. Never marks an answer right or wrong.
+    askCard(card, confirm) {
+      const el = this.cardEl;
+      el.innerHTML = `<span class="st">${CARD_STATUS}</span><h3></h3><div class="opts"></div><div class="note">Placeholder content: no clinical meaning. Any choice continues the story.</div>`;
+      el.querySelector("h3").textContent = card.prompt;
+      const box = el.querySelector(".opts");
+      return new Promise((resolve) => {
+        this.cardResolve = resolve;
+        for (const o of card.options) {
+          const b = document.createElement("button");
+          b.textContent = o.text;
+          b.dataset.id = o.id;
+          b.addEventListener("click", () => {
+            if (!this.cardResolve) return;
+            this.cardResolve = null;
+            b.classList.add("pick");
+            box.innerHTML = `<div class="ok">${confirm}</div>`;
+            setTimeout(() => {
+              el.classList.remove("show");
+              resolve(o.id);
+            }, 650);
+          });
+          box.appendChild(b);
+        }
+        requestAnimationFrame(() => el.classList.add("show"));
+      });
+    }
+    closeCard() {
+      this.cardEl.classList.remove("show");
+      this.cardResolve = null;
+    }
+    // flatline: a heart trace that flattens
+    drawEcg(t, flat) {
+      const c = this.ecg, g = c.getContext("2d"), W = c.width, H2 = c.height;
+      g.clearRect(0, 0, W, H2);
+      g.fillStyle = "rgba(8,24,20,.55)";
+      g.fillRect(0, 0, W, H2);
+      g.strokeStyle = flat ? "#ff6a5a" : "#59f0a0";
+      g.lineWidth = 3;
+      g.lineJoin = "round";
+      g.beginPath();
+      for (let x = 0; x <= W; x += 3) {
+        const u = (x / W * 3 - t * 0.9) % 1, p = (u % 1 + 1) % 1;
+        let y = 0;
+        if (!flat) {
+          if (p > 0.1 && p < 0.14) y = -10;
+          else if (p > 0.18 && p < 0.2) y = 9;
+          else if (p > 0.2 && p < 0.235) y = -46;
+          else if (p > 0.235 && p < 0.27) y = 14;
+          else if (p > 0.4 && p < 0.5) y = -8 * Math.sin((p - 0.4) / 0.1 * Math.PI);
+        }
+        const yy = H2 / 2 + y + (flat ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
+        x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
+      }
+      g.stroke();
+    }
+    showEcg(v) {
+      this.ecg.classList.toggle("show", v);
+    }
+  };
+
+  // src/opening/opaudio.js
+  var mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  var BARS = [
+    { chord: [48, 52, 55], bass: 36, mel: [[0, 72, 0.5], [0.5, 76, 0.5], [1, 79, 0.5], [1.5, 76, 0.5], [2, 84, 1], [3, 79, 1]] },
+    { chord: [45, 48, 52], bass: 33, mel: [[0, 76, 0.5], [0.5, 79, 0.5], [1, 81, 0.5], [1.5, 79, 0.5], [2, 76, 1], [3, 72, 1]] },
+    { chord: [41, 45, 48], bass: 29, mel: [[0, 77, 0.5], [0.5, 81, 0.5], [1, 84, 0.5], [1.5, 81, 0.5], [2, 79, 1], [3, 77, 1]] },
+    { chord: [43, 47, 50], bass: 31, mel: [[0, 79, 0.5], [0.5, 83, 0.5], [1, 86, 1], [2, 83, 0.5], [2.5, 79, 0.5], [3, 74, 1]] }
+  ];
+  var OpeningAudio = class {
+    constructor(audio2) {
+      this.audio = audio2;
+      this.musicOn = false;
+      this.nextBeat = 0;
+      this.beatIdx = 0;
+      this.timer = null;
+      this.bpm = 118;
+      this.musicGain = null;
+      this.ambGain = null;
+      this.paused = false;
+      this.voice = { ok: typeof speechSynthesis !== "undefined", v: null };
+      this.spoken = null;
+    }
+    get ctx() {
+      return this.audio.ctx;
+    }
+    get ready() {
+      return !!(this.audio.ctx && this.audio.master);
+    }
+    // call from a user gesture
+    unlock() {
+      this.audio.init();
+      if (this.voice.ok) {
+        try {
+          speechSynthesis.getVoices();
+          this.pickVoice();
+          speechSynthesis.onvoiceschanged = () => this.pickVoice();
+        } catch {
+          this.voice.ok = false;
+        }
+      }
+    }
+    pickVoice() {
+      try {
+        const vs = speechSynthesis.getVoices().filter((v) => /^en/i.test(v.lang));
+        this.voice.v = vs.find((v) => /natural|aria|jenny|samantha|google us english|zira/i.test(v.name)) || vs[0] || null;
+      } catch {
+      }
+    }
+    // Read a line in about `seconds`; never blocks anything (subtitles carry the line regardless)
+    say(text, seconds = 8) {
+      this.stopVoice();
+      if (!this.voice.ok || this.audio.muted) return false;
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        const words = text.split(/\s+/).length;
+        u.rate = Math.min(1.5, Math.max(0.75, words / (2.6 * seconds * 0.92)));
+        u.pitch = 1.12;
+        u.volume = Math.min(1, this.audio.volume + 0.2);
+        if (this.voice.v) u.voice = this.voice.v;
+        this.spoken = u;
+        speechSynthesis.speak(u);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    stopVoice() {
+      try {
+        if (this.voice.ok) speechSynthesis.cancel();
+      } catch {
+      }
+      this.spoken = null;
+    }
+    pauseVoice(p) {
+      try {
+        if (this.voice.ok) p ? speechSynthesis.pause() : speechSynthesis.resume();
+      } catch {
+      }
+    }
+    // ---- music ----
+    startMusic(vol = 0.5) {
+      if (!this.ready || this.musicOn) return;
+      const c = this.ctx;
+      this.musicGain = c.createGain();
+      this.musicGain.gain.value = 0;
+      this.musicGain.connect(this.audio.master);
+      this.musicGain.gain.linearRampToValueAtTime(vol * 0.5, c.currentTime + 1.5);
+      this.musicOn = true;
+      this.nextBeat = c.currentTime + 0.1;
+      this.beatIdx = 0;
+      this.timer = setInterval(() => this.schedule(), 90);
+      this.startAmbience();
+    }
+    setMusicLevel(v, secs = 1) {
+      if (this.musicGain) this.musicGain.gain.linearRampToValueAtTime(v * 0.5, this.ctx.currentTime + secs);
+    }
+    stopMusic(secs = 0.8) {
+      if (!this.musicOn) return;
+      this.musicOn = false;
+      clearInterval(this.timer);
+      const g = this.musicGain, c = this.ctx;
+      if (g) {
+        g.gain.cancelScheduledValues(c.currentTime);
+        g.gain.setValueAtTime(g.gain.value, c.currentTime);
+        g.gain.linearRampToValueAtTime(0, c.currentTime + secs);
+        setTimeout(() => g.disconnect(), secs * 1e3 + 100);
+      }
+    }
+    schedule() {
+      if (!this.ready || !this.musicOn || this.paused) return;
+      const c = this.ctx, spb = 60 / this.bpm;
+      while (this.nextBeat < c.currentTime + 0.35) {
+        const bar = BARS[Math.floor(this.beatIdx / 4) % BARS.length], beat = this.beatIdx % 4, t = this.nextBeat;
+        if (beat === 0 || beat === 2) this.note(t, mtof(bar.bass), spb * 0.9, "triangle", 0.5);
+        if (beat === 1 || beat === 3) for (const m of bar.chord) this.note(t, mtof(m + 12), spb * 0.35, "square", 0.07);
+        this.hat(t, 0.05);
+        this.hat(t + spb / 2, 0.025);
+        if (beat === 0 || beat === 2) this.kick(t);
+        for (const [b, m, l] of bar.mel) if (Math.floor(b) === beat) this.note(t + b % 1 * spb, mtof(m), l * spb * 0.85, "square", 0.13, true);
+        this.nextBeat += spb;
+        this.beatIdx++;
+      }
+    }
+    note(t, f, dur, type, gain, vibrato = false) {
+      const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t);
+      if (vibrato) {
+        const lfo = c.createOscillator(), lg = c.createGain();
+        lfo.frequency.value = 5.5;
+        lg.gain.value = f * 4e-3;
+        lfo.connect(lg);
+        lg.connect(o.frequency);
+        lfo.start(t);
+        lfo.stop(t + dur + 0.05);
+      }
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(gain, t + 8e-3);
+      g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
+      o.connect(g);
+      g.connect(this.musicGain);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    }
+    hat(t, gain) {
+      const c = this.ctx, src = c.createBufferSource();
+      src.buffer = this.audio.noiseBuf;
+      const f = c.createBiquadFilter();
+      f.type = "highpass";
+      f.frequency.value = 6500;
+      const g = c.createGain();
+      g.gain.setValueAtTime(gain, t);
+      g.gain.exponentialRampToValueAtTime(1e-4, t + 0.04);
+      src.connect(f);
+      f.connect(g);
+      g.connect(this.musicGain);
+      src.start(t, Math.random() * 0.3);
+      src.stop(t + 0.05);
+    }
+    kick(t) {
+      const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+      o.frequency.setValueAtTime(140, t);
+      o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+      g.gain.setValueAtTime(0.35, t);
+      g.gain.exponentialRampToValueAtTime(1e-4, t + 0.14);
+      o.connect(g);
+      g.connect(this.musicGain);
+      o.start(t);
+      o.stop(t + 0.16);
+    }
+    // ---- room tone: a soft HVAC wash, very quiet ----
+    startAmbience() {
+      if (this.ambGain || !this.ready) return;
+      const c = this.ctx, src = c.createBufferSource();
+      src.buffer = this.audio.noiseBuf;
+      src.loop = true;
+      const f = c.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.value = 420;
+      this.ambGain = c.createGain();
+      this.ambGain.gain.value = 0;
+      this.ambGain.gain.linearRampToValueAtTime(0.05, c.currentTime + 2);
+      src.connect(f);
+      f.connect(this.ambGain);
+      this.ambGain.connect(this.audio.master);
+      src.start();
+      this.ambSrc = src;
+    }
+    stopAmbience() {
+      if (!this.ambGain) return;
+      const c = this.ctx;
+      this.ambGain.gain.linearRampToValueAtTime(0, c.currentTime + 0.5);
+      const s = this.ambSrc;
+      setTimeout(() => {
+        try {
+          s.stop();
+        } catch {
+        }
+      }, 700);
+      this.ambGain = null;
+    }
+    // ---- one-shots ----
+    chime(step = 0) {
+      if (!this.audio.ok) return;
+      const c = this.ctx, t = c.currentTime + 0.01, base = [784, 988][step % 2];
+      this.audio.tone(t, 0.55, base, { type: "sine", gain: 0.2 });
+      this.audio.tone(t + 0.11, 0.7, base * 1.5, { type: "triangle", gain: 0.13 });
+      this.audio.tone(t, 0.3, base * 3, { type: "sine", gain: 0.04 });
+    }
+    confirm() {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 0.01;
+      this.audio.tone(t, 0.18, 660, { type: "triangle", gain: 0.14 });
+      this.audio.tone(t + 0.1, 0.3, 880, { type: "triangle", gain: 0.14 });
+    }
+    suspend(v) {
+      this.paused = v;
+      try {
+        if (this.ctx) v ? this.ctx.suspend() : this.ctx.resume();
+      } catch {
+      }
+      this.pauseVoice(v);
+      if (!v && this.ctx && this.musicOn) this.nextBeat = this.ctx.currentTime + 0.1;
+    }
+    dispose() {
+      this.stopMusic(0.2);
+      this.stopAmbience();
+      this.stopVoice();
+    }
+  };
+
+  // src/opening/opening.js
+  var clamp6 = (v, a, b) => Math.min(b, Math.max(a, v));
+  var ease = (u) => {
+    u = clamp6(u, 0, 1);
+    return u * u * (3 - 2 * u);
+  };
+  var lerp2 = (a, b, u) => a + (b - a) * u;
+  var L = (x, y, z) => new Vector3(x + CLINIC.x, y, z + CLINIC.z);
+  var S = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x: x + CLINIC.x, y, z: z + CLINIC.z, pitch, yaw, width, fov: fov2 });
+  var SHOTS = [
+    // 0:00-0:12 above the reception entrance, gliding in toward the desk
+    { t0: 0, t1: 11.6, a: S(-8, 0.8, 1.2, 66, 14, 8.4), b: S(-5.3, 0.9, -3.9, 49, 28, 8.4) },
+    // 0:12-0:25 the treatment room: doorway and starter equipment in one composition, a slow push
+    { t0: 12, t1: 25, a: S(4, 0.7, -1.9, 50, 30, 8.6), b: S(4.4, 0.8, -2.2, 49, 30, 7.6) },
+    // 0:25-0:40 hold (the faintest drift so it breathes)
+    { t0: 25, t1: 40, a: S(4.4, 0.8, -2.2, 49, 30, 7.6), b: S(4.45, 0.8, -2.25, 49, 30, 7.5) },
+    // 0:40-0:50 reframe on original Yola: whole upper body and the waving hand
+    { t0: 40, t1: 41.4, a: S(4.45, 0.8, -2.25, 49, 30, 7.5), b: S(6, 1.2, -3.9, 30, 16, 3) },
+    { t0: 41.4, t1: 49.6, a: S(6, 1.2, -3.9, 30, 16, 3), b: S(6, 1.22, -3.9, 30, 16, 2.8) },
+    // 0:50-1:00 back to the familiar simulation-height reception view: the entrance, the aisle and the desk
+    { t0: 50, t1: 59.5, a: S(-6.6, 0.6, 0.9, 52, 30, 7.4), b: S(-6.5, 0.6, 0.85, 52, 30, 7) }
+  ];
+  var LINES = {
+    welcome: { t: 0.5, end: 11.8, text: NARRATION.welcome },
+    essentials: { t: 12.4, end: 24.8, text: NARRATION.essentials },
+    upgrades: { t: 25.3, end: 39.6, text: NARRATION.upgrades },
+    yola: { t: 40.4, end: 49.6, text: NARRATION.yola },
+    firstCase: { t: 50.5, end: 59.9, text: NARRATION.firstCase }
+  };
+  var Opening = class {
+    constructor(ctx) {
+      Object.assign(this, ctx);
+      this.stage = new ClinicStage(this.scene, this.loader);
+      this.ui = new OpeningUI();
+      this.sound = new OpeningAudio(this.audio);
+      this.active = false;
+      this.started = false;
+      this.state = "PRELOAD";
+      this.sub = "";
+      this.t = 0;
+      this.END = 60;
+      this.timeScale = 1;
+      this.paused = false;
+      this.silent = false;
+      this.rig = { ...SHOTS[0].a };
+      this.cues = [];
+      this.cueIdx = 0;
+      this.cueLog = [];
+      this.fadeColor = "#fff6e6";
+      this.reducedFlash = false;
+      addEventListener("visibilitychange", () => this.setPaused(document.hidden));
+      addEventListener("blur", () => this.setPaused(true));
+      addEventListener("focus", () => {
+        if (!document.hidden) this.setPaused(false);
+      });
+      this.buildCues();
+    }
+    // ------------------------------------------------------------------ load
+    async preload(onProgress) {
+      this.state = "PRELOAD";
+      await this.stage.build();
+      onProgress?.(0.6);
+      await this.stage.buildCast();
+      onProgress?.(0.9);
+      this.stage.setActive(true);
+      this.setupScene();
+      this.resetTour();
+      this.setCamera();
+      try {
+        this.renderer.compile(this.scene, this.camera);
+      } catch {
+      }
+      this.warm();
+      onProgress?.(1);
+    }
+    // Render every distinct view once (the gate screen covers it), so the timed scene never hitches on first
+    // draw: each shot, each equipment tier, each actor.
+    warm() {
+      const st = this.stage;
+      for (const a of Object.values(st.actors)) a.setVisible(true);
+      for (const s of st.tiers) for (const h of Object.values(s.layers || {})) h.visible = true;
+      for (const sh of SHOTS) {
+        this.rig = { ...sh.b };
+        this.setCamera();
+        this.renderer.render(this.scene, this.camera);
+      }
+      this.renderer.shadowMap.needsUpdate = true;
+      this.resetTour();
+    }
+    setupScene() {
+      const A = this.arena;
+      this.saved = { bg: this.scene.background?.clone?.(), sun: A.sun?.position.clone(), tgt: A.sun?.target.position.clone() };
+      if (A.sun) {
+        A.sun.target.position.set(CLINIC.x + 0.5, 0, CLINIC.z - 0.5);
+        A.sun.position.set(CLINIC.x + 0.5 - 6, 14, CLINIC.z - 0.5 + 7);
+        A.sun.target.updateMatrixWorld(true);
+      }
+      this.scene.background = new Color(13624287);
+      for (const l of A.lights) l.visible = false;
+      document.getElementById("hud")?.style.setProperty("display", "none");
+      document.getElementById("touch")?.style.setProperty("pointer-events", "none");
+      this.renderer.shadowMap.needsUpdate = true;
+    }
+    // ------------------------------------------------------------------ the cue list
+    buildCues() {
+      const c = this.cues, at = (t, name, fn) => c.push({ t, name, fn });
+      const say = (k) => {
+        const l = LINES[k];
+        at(l.t, "say:" + k, () => {
+          this.setSub(l.text);
+          this.voice(l.text, l.end - l.t - 0.4);
+        });
+        at(l.end, "sub-off:" + k, () => this.setSub(""));
+      };
+      const st = this.stage, A = st.actors;
+      at(0, "music", () => this.music());
+      at(0.2, "title", () => this.ui.title("Yola\u2019s Medical Center", "Starter clinic"));
+      say("welcome");
+      at(10.2, "title-off", () => this.ui.title(""));
+      at(11.55, "dip-1", () => this.dip(0.45, 0.45));
+      at(12, "cut-treatment", () => {
+        this.showRoom("treatment");
+      });
+      say("essentials");
+      at(24.9, "label-heading", () => this.ui.chip(UPGRADE_PREVIEW.heading));
+      at(25, "tier-standard", () => {
+        st.setTier("standard", 1);
+        this.chime(0);
+        this.tierLabel(UPGRADE_PREVIEW.tiers[0].label, UPGRADE_PREVIEW.tiers[0].name);
+      });
+      say("upgrades");
+      at(32, "tier-advanced", () => {
+        st.setTier("advanced", 1);
+        this.chime(1);
+        this.tierLabel(UPGRADE_PREVIEW.tiers[1].label, UPGRADE_PREVIEW.tiers[1].name);
+      });
+      at(39, "tier-restore", () => {
+        st.setTier("starter", 0.85);
+        this.tierLabel(null);
+        this.ui.chip("");
+      });
+      say("yola");
+      at(42.2, "wave", () => {
+        A.yola.startWave();
+      });
+      at(47.1, "wave-end", () => {
+        A.yola.waveT = -1;
+        A.yola.play("idle", { fade: 0.4 });
+      });
+      at(49.55, "dip-3", () => this.dip(0.45, 0.45));
+      at(50, "cut-reception", () => {
+        this.showRoom("arrival");
+      });
+      say("firstCase");
+      at(50.9, "objective", () => {
+        this.ui.objective(OBJECTIVES.chart);
+        this.ui.reward("First case reward: $250");
+      });
+      at(60, "hold", () => {
+        this.state = "CHECK_IN";
+        this.substate = "ARRIVAL_HOLD";
+        this.hold = true;
+      });
+      c.sort((a, b) => a.t - b.t);
+    }
+    fire(cue) {
+      this.cueLog.push([+this.t.toFixed(2), cue.name]);
+      cue.fn();
+    }
+    // ------------------------------------------------------------------ staging
+    resetTour() {
+      const st = this.stage, A = st.actors;
+      this.t = 0;
+      this.cueIdx = 0;
+      this.hold = false;
+      this.substate = "";
+      this.state = this.started ? "TOUR" : "PRELOAD";
+      this.cueLog.length = 0;
+      this.sub = "";
+      st.tier = "starter";
+      for (const s of st.tiers) {
+        s.fx = null;
+        for (const [k, h] of Object.entries(s.layers || {})) {
+          h.visible = k === "starter";
+          st.setOpacity(h, 1);
+        }
+      }
+      for (const a of Object.values(A)) {
+        a.stop();
+        a.timeScale = 1;
+        a.setVisible(false);
+        a.seated = false;
+      }
+      A.staff.setVisible(true);
+      A.staff.sitAt(-5.2, -5.5, 0, { instant: true });
+      A.yola.waveT = -1;
+      A.yola.pose = null;
+      A.yola.place(6, -3.9, 0.5);
+      A.yola.play("idle", { fade: 0 });
+      const bb = A.baseball, sg = A.security;
+      bb.place(-7.7, 0.75, Math.PI / 2);
+      bb.play("Idle", { fade: 0 });
+      if (bb.bat) bb.bat.visible = true;
+      sg.place(-8.55, 1.55, Math.PI / 2);
+      sg.play("Idle", { fade: 0 });
+      st.batStatic.visible = false;
+      this.ui.title("");
+      this.ui.objective("");
+      this.ui.reward("");
+      this.ui.chip("");
+      this.ui.clearTags();
+      this.ui.subtitle("");
+      this.ui.setFade(0, 0);
+      this.ui.setDark(0);
+      this.rig = { ...SHOTS[0].a };
+    }
+    showRoom(which) {
+      const A = this.stage.actors;
+      if (which === "treatment") {
+        A.staff.setVisible(false);
+        A.yola.setVisible(true);
+        A.yola.play("idle", { fade: 0 });
+      }
+      if (which === "arrival") {
+        A.yola.setVisible(false);
+        A.staff.setVisible(true);
+        A.baseball.setVisible(true);
+        A.security.setVisible(true);
+      }
+    }
+    // ------------------------------------------------------------------ camera
+    shotAt(t) {
+      let cur = null;
+      for (const s of SHOTS) if (t >= s.t0) cur = s;
+      if (!cur) cur = SHOTS[0];
+      const u = ease((t - cur.t0) / (cur.t1 - cur.t0));
+      const o = {};
+      for (const k of Object.keys(cur.a)) o[k] = lerp2(cur.a[k], cur.b[k], u);
+      return o;
+    }
+    setCamera() {
+      const r = this.rig, c = this.camera;
+      const p = MathUtils.degToRad(r.pitch), y = MathUtils.degToRad(r.yaw);
+      const fx2 = -Math.sin(y), fz = -Math.cos(y);
+      c.fov = r.fov;
+      c.updateProjectionMatrix();
+      const hf = 2 * Math.atan(Math.tan(MathUtils.degToRad(r.fov) / 2) * c.aspect);
+      const dist2 = clamp6(r.width / (2 * Math.tan(hf / 2)), 2.5, 80);
+      c.position.set(r.x - fx2 * Math.cos(p) * dist2, r.y + Math.sin(p) * dist2, r.z - fz * Math.cos(p) * dist2);
+      c.lookAt(r.x, r.y, r.z);
+    }
+    // ------------------------------------------------------------------ helpers (audio is skipped in seek mode)
+    setSub(text) {
+      this.sub = text;
+      this.ui.subtitle(text);
+    }
+    voice(text, secs) {
+      if (!this.silent) this.sound.say(text, secs);
+    }
+    music() {
+      if (!this.silent) this.sound.startMusic(0.5);
+    }
+    chime(step) {
+      if (!this.silent) this.sound.chime(step);
+    }
+    dip(inS, outS) {
+      if (this.silent) return;
+      const k = this.reducedFlash ? 1.6 : 1;
+      this.ui.setFadeColor(this.fadeColor);
+      this.ui.setFade(1, inS * 1e3 * k);
+      setTimeout(() => this.ui.setFade(0, outS * 1e3 * k), (inS * k + 0.12) * 1e3);
+    }
+    tierLabel(text, name) {
+      if (!text) {
+        this.ui.tag("tier", null);
+        return;
+      }
+      this.ui.tag("tier", text, name);
+    }
+    // ------------------------------------------------------------------ run
+    begin() {
+      this.active = true;
+      this.ui.show(true);
+      this.setCamera();
+      this.ui.gate.classList.add("show");
+      this.ui.goB.disabled = false;
+      this.ui.goB.textContent = "Start";
+      this.ui.bar.style.width = "100%";
+      this.ui.goB.onclick = () => {
+        this.sound.unlock();
+        this.start();
+      };
+      this.ui.skipB.onclick = () => this.skip();
+      this.ui.muteB.onclick = () => {
+        const m = !this.audio.muted;
+        this.audio.setMuted(m);
+        this.ui.muteB.classList.toggle("off", m);
+        if (m) this.sound.stopVoice();
+      };
+      this.ui.flashB.onclick = () => {
+        this.reducedFlash = !this.reducedFlash;
+        this.ui.flashB.classList.toggle("off", !this.reducedFlash);
+      };
+      this.ui.flashB.classList.toggle("off", !this.reducedFlash);
+      if (this.params.get("auto") === "1") this.start();
+    }
+    start() {
+      if (this.started) return;
+      this.started = true;
+      this.state = "TOUR";
+      this.ui.gate.classList.remove("show");
+      this.resetTour();
+    }
+    setPaused(p) {
+      if (!this.started || this.paused === p) return;
+      this.paused = p;
+      this.sound.suspend(p);
+    }
+    skip() {
+      if (!this.started) return;
+      this.seek(this.END);
+    }
+    // dev/test: jump to time t by replaying the cue list silently from the start
+    seek(t) {
+      const wasSilent = this.silent;
+      this.silent = true;
+      this.sound.stopVoice();
+      this.resetTour();
+      this.started = true;
+      this.state = "TOUR";
+      this.ui.gate.classList.remove("show");
+      while (this.t < t - 1e-6) this.step(Math.min(1 / 20, t - this.t));
+      this.silent = wasSilent;
+      this.ui.setFade(0, 0);
+    }
+    update(dt) {
+      if (!this.active) return;
+      if (this.started && !this.paused) this.step(dt);
+      else this.stage.update(0);
+      this.setCamera();
+    }
+    step(dt) {
+      if (this.hold && this.t >= this.END) {
+        this.stage.update(dt);
+        this.tagsFollow();
+        return;
+      }
+      const d = dt * this.timeScale;
+      this.t = Math.min(this.END + 1e-3, this.t + d);
+      while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
+      this.stage.update(d);
+      if (this.stage.tiers.some((s) => s.fx)) this.renderer.shadowMap.needsUpdate = true;
+      this.rig = this.shotAt(this.t);
+      this.tagsFollow();
+    }
+    tagsFollow() {
+      const t = this.ui.tags.get("tier");
+      if (t && t.classList.contains("show")) {
+        const p = L(5.6, 1.9, -2.4).project(this.camera);
+        this.ui.placeTag("tier", (p.x * 0.5 + 0.5) * innerWidth, (-p.y * 0.5 + 0.5) * innerHeight);
+      }
+    }
+    // test hook: the checkpoint report
+    report() {
+      return { state: this.state, substate: this.substate, t: +this.t.toFixed(2), tier: this.stage.tier, sub: this.sub, cues: this.cueLog.slice(-8) };
+    }
+  };
+
   // src/main.js
   var params = new URLSearchParams(location.search);
   var store = {
@@ -49687,7 +51093,15 @@ void main() {
     renderer.shadowMap.needsUpdate = true;
     restart();
     hud.loading(1);
+    if (params.has("intro") || params.has("reveal") || params.has("room1")) await startOpening();
     requestAnimationFrame(frame);
+  }
+  var opening = null;
+  async function startOpening() {
+    opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning });
+    window.opening = opening;
+    await opening.preload((k) => hud.loading(0.95 + 0.05 * k));
+    opening.begin();
   }
   function newZombieView(type) {
     const t = ZOMBIE_TYPES[type];
@@ -49790,7 +51204,7 @@ void main() {
   var dbgCircle = new Mesh(new RingGeometry(0.3, 0.33, 24), new MeshBasicMaterial({ color: 65450, side: DoubleSide }));
   dbgCircle.rotation.x = -Math.PI / 2;
   var dbgBat = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), new LineBasicMaterial({ color: 16776960 }));
-  var _v6 = new Vector3();
+  var _v7 = new Vector3();
   var _seg2 = {};
   var groanT = 2;
   function frame(now) {
@@ -49808,6 +51222,11 @@ void main() {
   }
   function runFrame(dt, doRender = true) {
     perfSample(dt);
+    if (opening?.active) {
+      opening.update(dt);
+      if (doRender) renderer.render(scene, camera);
+      return;
+    }
     const p = sim.player;
     let simDt = dt;
     if (paused) simDt = 0;
@@ -49867,7 +51286,7 @@ void main() {
       swapDur: tuning.swapTime
     });
     if (a.type === "swing" && p.equipped === "axe" && a.st > p.attacks[a.combo].activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
-      fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v6), true);
+      fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v7), true);
     }
     fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? p.attackHeld ? 1 : 0.5 : 0.2);
     stepPhysics(animDt);
@@ -49900,8 +51319,8 @@ void main() {
     fx.update(animDt);
     if (camOverride) applyCamOverride();
     else updateCamera(dt, ix, iz, iyaw, p);
-    _v6.set(ix, 1, iz).project(camera);
-    playerScreen = { x: (_v6.x * 0.5 + 0.5) * innerWidth, y: (-_v6.y * 0.5 + 0.5) * innerHeight };
+    _v7.set(ix, 1, iz).project(camera);
+    playerScreen = { x: (_v7.x * 0.5 + 0.5) * innerWidth, y: (-_v7.y * 0.5 + 0.5) * innerHeight };
     if (debugOn) updateDebug(p);
     hud.update(sim, dt);
     if (doRender) renderer.render(scene, camera);
@@ -50184,7 +51603,7 @@ void main() {
       z.z = 50;
       z.solid = false;
     }
-    const p = sim.player, V = Vector3, L = new V(), R = new V(), LT = new V(), RT = new V(), rows = [];
+    const p = sim.player, V = Vector3, L2 = new V(), R = new V(), LT = new V(), RT = new V(), rows = [];
     window.game.scriptInput = () => ({ moveX: mx, moveZ: mz, aimX: ax, aimZ: az, swapPresses: 0 });
     for (let i = 0; i < n + 40; i++) {
       p.x = p.px = 0.4;
@@ -50192,11 +51611,11 @@ void main() {
       tick(1, 1 / 60, false);
       if (i < 40) continue;
       const o = yola.outer.position;
-      yola.worldPos("LeftFoot", L);
+      yola.worldPos("LeftFoot", L2);
       yola.worldPos("RightFoot", R);
       yola.worldPos("LeftToeBase", LT);
       yola.worldPos("RightToeBase", RT);
-      rows.push({ L: [L.x - o.x, Math.min(L.y, LT.y), L.z - o.z], R: [R.x - o.x, Math.min(R.y, RT.y), R.z - o.z], vx: p.vx, vz: p.vz });
+      rows.push({ L: [L2.x - o.x, Math.min(L2.y, LT.y), L2.z - o.z], R: [R.x - o.x, Math.min(R.y, RT.y), R.z - o.z], vx: p.vx, vz: p.vz });
     }
     window.game.scriptInput = null;
     const out = { speed: +Math.hypot(p.vx, p.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
@@ -50218,7 +51637,7 @@ void main() {
       z.z = 50;
       z.solid = false;
     }
-    const p = sim.player, V = Vector3, L = new V(), R = new V(), rows = [];
+    const p = sim.player, V = Vector3, L2 = new V(), R = new V(), rows = [];
     let i = 0;
     window.game.scriptInput = () => Object.assign({ moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0 }, fn(i));
     for (i = 0; i < frames; i++) {
@@ -50226,9 +51645,9 @@ void main() {
       p.z = p.pz = 0;
       tick(1, 1 / 60, false);
       const o = yola.outer.position;
-      yola.worldPos("LeftFoot", L);
+      yola.worldPos("LeftFoot", L2);
       yola.worldPos("RightFoot", R);
-      rows.push([L.x - o.x, L.y, L.z - o.z, R.x - o.x, R.y, R.z - o.z]);
+      rows.push([L2.x - o.x, L2.y, L2.z - o.z, R.x - o.x, R.y, R.z - o.z]);
     }
     window.game.scriptInput = null;
     const acc2 = [];

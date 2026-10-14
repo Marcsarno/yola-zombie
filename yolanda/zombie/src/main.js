@@ -16,6 +16,7 @@ import { meleeWorldSegment } from './core/player.js';
 import { CustomPhysics } from './render/physics/custom.js';
 import { RapierPhysics } from './render/physics/rapier.js';
 import * as physlab from './physlab.js';
+import { Opening } from './opening/opening.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -118,7 +119,15 @@ async function load() {
   renderer.shadowMap.needsUpdate = true;
   restart();
   hud.loading(1);
+  if (params.has('intro') || params.has('reveal') || params.has('room1')) await startOpening();
   requestAnimationFrame(frame);
+}
+let opening = null;
+async function startOpening() {
+  opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning });
+  window.opening = opening;
+  await opening.preload((k) => hud.loading(0.95 + 0.05 * k));
+  opening.begin();
 }
 function newZombieView(type) {
   const t = ZOMBIE_TYPES[type];
@@ -205,6 +214,7 @@ function tick(n = 1, dt = 1 / 60, render = true) {
 }
 function runFrame(dt, doRender = true) {
   perfSample(dt);
+  if (opening?.active) { opening.update(dt); if (doRender) renderer.render(scene, camera); return; }
   const p = sim.player;
   let simDt = dt;
   if (paused) simDt = 0;
