@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { ClinicStage, CLINIC } from './stage.js';
 import { OpeningUI } from './ui.js';
 import { OpeningAudio } from './opaudio.js';
-import { NARRATION, UPGRADE_PREVIEW, OBJECTIVES } from './content.js';
+import { NARRATION, UPGRADE_PREVIEW, OBJECTIVES, DIALOGUE, CARDS, EMERGENCY_LINES } from './content.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const ease = (u) => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
@@ -51,6 +51,8 @@ export class Opening {
     this.rig = { ...SHOTS[0].a };
     this.cues = []; this.cueIdx = 0;
     this.cueLog = [];
+    this.co = null; this.wait = null; this.timers = []; this.marks = {}; this.runLabel = null; this.frozen = false; this.mode = 'cues'; this.camAnim = null; this.fx = null;
+    this.answers = {};
     this.fadeColor = '#fff6e6';
     this.reducedFlash = false;
     addEventListener('visibilitychange', () => this.setPaused(document.hidden));
@@ -130,7 +132,7 @@ export class Opening {
     say('firstCase');
     at(50.9, 'objective', () => { this.ui.objective(OBJECTIVES.chart); this.ui.reward('First case reward: $250'); });
     // 1:00 hold
-    at(60.0, 'hold', () => { this.state = 'CHECK_IN'; this.substate = 'ARRIVAL_HOLD'; this.hold = true; });
+    at(60.0, 'act2', () => { this.mode = 'co'; this.co = this.act2(); });
     c.sort((a, b) => a.t - b.t);
   }
 
@@ -139,7 +141,9 @@ export class Opening {
   // ------------------------------------------------------------------ staging
   resetTour() {
     const st = this.stage, A = st.actors;
-    this.t = 0; this.cueIdx = 0; this.hold = false; this.substate = ''; this.state = this.started ? 'TOUR' : 'PRELOAD';
+    this.t = 0; this.cueIdx = 0; this.substate = ''; this.state = this.started ? 'TOUR' : 'PRELOAD';
+    this.co = null; this.wait = null; this.timers.length = 0; this.marks = {}; this.frozen = false; this.mode = 'cues'; this.camAnim = null; this.fx = null; this.answers = {};
+    this.ui.closeCard(); this.ui.letter(false);
     this.cueLog.length = 0; this.sub = '';
     st.tier = 'starter';
     for (const s of st.tiers) { s.fx = null; for (const [k, h] of Object.entries(s.layers || {})) { h.visible = k === 'starter'; st.setOpacity(h, 1); } }
@@ -153,6 +157,8 @@ export class Opening {
     bb.place(-7.7, 0.75, Math.PI / 2); bb.play('Idle', { fade: 0 }); if (bb.bat) bb.bat.visible = true; // bat in its supplied standing pose
     sg.place(-8.55, 1.55, Math.PI / 2); sg.play('Idle', { fade: 0 });
     st.batStatic.visible = false;
+    for (const a of [A.staff, A.baseball, A.security]) { a.sitState = 'stand'; a.seat = null; }
+    A.yola.sitW = 0; A.yola.sitTarget = 0; A.yola.sitState = 'stand'; A.yola.seat = null; A.yola.model.position.y = A.yola.baseY;
     this.ui.title(''); this.ui.objective(''); this.ui.reward(''); this.ui.chip(''); this.ui.clearTags(); this.ui.subtitle('');
     this.ui.setFade(0, 0); this.ui.setDark(0);
     this.rig = { ...SHOTS[0].a };
@@ -190,15 +196,162 @@ export class Opening {
   voice(text, secs) { if (!this.silent) this.sound.say(text, secs); }
   music() { if (!this.silent) this.sound.startMusic(0.5); }
   chime(step) { if (!this.silent) this.sound.chime(step); }
-  dip(inS, outS) { // a soft dip through cream; reduced-flash keeps it gentle (longer, never white)
+  dip(inS, outS) { // a soft dip through cream, driven by the story clock; reduced-flash keeps it gentler and slower
     if (this.silent) return;
     const k = this.reducedFlash ? 1.6 : 1;
-    this.ui.setFadeColor(this.fadeColor); this.ui.setFade(1, inS * 1000 * k);
-    setTimeout(() => this.ui.setFade(0, outS * 1000 * k), (inS * k + 0.12) * 1000);
+    this.ui.setFadeColor(this.fadeColor); this.ui.fade.style.transition = 'none';
+    this.fx = { t: 0, inS: inS * k, hold: 0.12, outS: outS * k };
+  }
+  tickFx(d) {
+    const f = this.fx; if (!f) return;
+    f.t += d;
+    const a = f.t < f.inS ? ease(f.t / f.inS) : f.t < f.inS + f.hold ? 1 : 1 - ease((f.t - f.inS - f.hold) / f.outS);
+    this.ui.fade.style.opacity = this.reducedFlash ? a * 0.85 : a;
+    if (f.t >= f.inS + f.hold + f.outS) { this.ui.fade.style.opacity = 0; this.fx = null; }
   }
   tierLabel(text, name) { // preview-only label near the table
     if (!text) { this.ui.tag('tier', null); return; }
     this.ui.tag('tier', text, name);
+  }
+
+  // ------------------------------------------------------------------ story helpers
+  later(sec, fn) { this.timers.push({ sec, fn }); }
+  tickTimers(d) { for (let i = this.timers.length - 1; i >= 0; i--) { const t = this.timers[i]; t.sec -= d; if (t.sec <= 0) { this.timers.splice(i, 1); t.fn(); } } }
+  // a spoken line: subtitle (with the speaker) for secs, and the temporary voice if there is one
+  speak(d, secs, pitch = 1.1) {
+    this.sub = d.text; this.ui.subtitle(d.text, { who: d.who });
+    if (!this.silent) this.sound.say(d.text, secs, pitch);
+    const key = d.text; this.later(secs, () => { if (this.sub === key) { this.sub = ''; this.ui.subtitle(''); } });
+  }
+  mark(name) { this.marks[name] = +this.t.toFixed(2); this.cueLog.push([this.marks[name], 'mark:' + name]); if (this.runLabel === name) this.frozen = true; }
+  // camera: glide to a shot; follow = { actor, dx, dz } keeps its target on that actor
+  camTo(shot, secs = 1.2, follow = null) { this.camAnim = { from: { ...this.rig }, to: { ...shot }, t: 0, dur: Math.max(0.001, secs), follow }; }
+  tickCamera(d) {
+    const a = this.camAnim; if (!a) return;
+    a.t += d; const u = ease(a.t / a.dur), o = {};
+    for (const k of Object.keys(a.to)) o[k] = lerp(a.from[k], a.to[k], u);
+    if (a.follow) {
+      const tx = a.follow.actor.x + CLINIC.x + (a.follow.dx || 0), tz = a.follow.actor.z + CLINIC.z + (a.follow.dz || 0);
+      o.x = lerp(a.from.x, tx, u); o.z = lerp(a.from.z, tz, u);
+      if (u >= 1) { const sm = Math.min(1, d * 5); o.x = this.rig.x + (tx - this.rig.x) * sm; o.z = this.rig.z + (tz - this.rig.z) * sm; }
+    }
+    this.rig = o;
+  }
+  // coroutine runner: act functions yield seconds (wait) or a predicate (wait until true)
+  runCo(d) {
+    let left = d, guard = 0;
+    while (this.co && guard++ < 64 && !this.frozen) {
+      const w = this.wait;
+      if (w) {
+        if (w.sec !== undefined) { w.sec -= left; left = 0; if (w.sec > 0) return; }
+        else if (!w.fn()) return;
+        this.wait = null;
+      }
+      const r = this.co.next();
+      if (r.done) { this.co = null; return; }
+      const v = r.value;
+      this.wait = typeof v === 'number' ? { sec: v } : typeof v === 'function' ? { fn: v } : null;
+    }
+  }
+  // wait predicates
+  arrived(...actors) { return () => actors.every((a) => !a.busy); }
+  seated(a) { return () => a.settled; }
+  upright(a) { return () => a.upright; }
+
+  // ================================================================== ACT 2: check-in, walk route, seated assessment
+  *act2() {
+    const st = this.stage, A = st.actors, an = st.anchors, bb = A.baseball, sg = A.security, rc = A.staff, yo = A.yola;
+    const bat = bb.bat;
+    this.state = 'CHECK_IN'; this.substate = 'ARRIVAL_HOLD'; this.mark('arrival-hold');
+    // Yola was prepared off camera: seated in the staff chair behind the assessment desk (a controlled procedural seat:
+    // the original rig has no seating clip), working through the chart
+    yo.setVisible(true); yo.place(an.chairYola.x, an.chairYola.z, an.chairYola.yaw); yo.sitW = 1; yo.sitTarget = 1; yo.pose = 'sit'; yo.seated = true; yo.sitState = 'seated'; yo.sitSeatTop = an.chairYola.seatTop;
+    yo.model.position.y = yo.baseY - (yo.pelvisY0 - (an.chairYola.seatTop + 0.04)); yo.play('chart', { fade: 0 });
+    this.camTo(S(-6.3, 0.6, 0.8, 52, 30, 7.0), 0.01);
+    // 1. arrival hold: the narrator line, then a cut to the receptionist's computer; the skinned bat is stowed during the cut
+    this.speak(DIALOGUE.star, 8.0, 1.1);
+    yield 2.4;
+    this.dip(0.35, 0.35); yield 0.4;
+    if (bat) bat.visible = false; // runtime logic: the bat cannot stay attached for walking or sitting
+    this.camTo(S(-5.2, 1.05, -4.9, 30, 22, 3.3), 0.01); rc.turnTo(0.3);
+    yield 3.0;
+    this.dip(0.35, 0.35); yield 0.4;
+    rc.turnTo(-0.3);
+    this.camTo(S(-6.0, 0.5, 0.0, 52, 30, 9.4), 0.01);
+    yield 1.9;
+    // 2. walk to check-in: entrance -> public aisle -> queue anchor; the guard follows a body length behind, to the side
+    this.substate = 'WALK'; this.mark('walk-start');
+    bb.walk([[-6.4, 0.9], [-5.2, -1.0], [an.queue.x, an.queue.z]], { endYaw: Math.PI });
+    yield 1.0;
+    sg.walk([[-7.0, 1.5], [-5.6, -0.2], [-4.8, -1.4], [an.guardQueue.x, an.guardQueue.z]], { endYaw: Math.PI });
+    yield this.arrived(bb, sg);
+    this.mark('queue');
+    // 3. visible check-in: the receptionist acknowledges, glances at the computer, looks back; the visitors wait three seconds
+    this.camTo(S(-5.3, 0.9, -3.5, 50, 26, 5.4), 1.2);
+    yield 0.7; // she acknowledges them (already turned toward the queue)
+    rc.turnTo(0.3); yield 1.9; // turns to the computer for a brief check
+    rc.turnTo(-0.3); yield 0.9; this.mark('checkin'); // and looks back
+    this.speak(DIALOGUE.welcome, 4.8, 1.3);
+    yield 0.3; if (!this.silent) this.sound.confirm();
+    yield 4.8;
+    // 4. assessment entry: the athlete leads, the guard follows to the doorway then goes to a waiting chair
+    this.substate = 'ASSESSMENT_ENTRY';
+    this.speak(DIALOGUE.takeChair, 3.0, 1.3);
+    bb.walk([[-3.4, -1.7], [-1.0, -0.2], [an.doorway.x, an.doorway.z], [1.5, 0.6], [1.6, 3.4], [an.chairPatient.x, an.chairPatient.z - 0.45]], { endYaw: Math.PI });
+    this.camTo(S(-3.5, 0.7, -1.6, 46, 28, 8.0), 1.5, { actor: bb, dx: 0.8, dz: 0.5 });
+    yield 1.4;
+    sg.walk([[-4.2, -1.6], [-1.4, -0.2]]);
+    yield this.arrived(sg);
+    this.mark('guard-at-door');
+    sg.walk([[-2.8, 0.4], [-4.6, 1.9], [an.guardChair.x, an.guardChair.z - 0.45 - 0.5], [an.guardChair.x, an.guardChair.z - 0.45]], { endYaw: Math.PI });
+    yield this.arrived(bb);
+    this.mark('athlete-at-chair-anchor');
+    // 5. seat, then ask: turn to face Yola, align, SitDown, SeatedIdle
+    this.state = 'SEATED_ASSESSMENT'; this.substate = 'SEATING';
+    this.camTo(S(2.7, 0.9, 2.65, 32, 78, 4.3), 1.6);
+    yield this.arrived(bb);
+    bb.sitAt(an.chairPatient.x, an.chairPatient.z, an.chairPatient.yaw);
+    yield this.arrived(sg);
+    sg.sitAt(an.guardChair.x, an.guardChair.z, an.guardChair.yaw);
+    yield this.seated(bb);
+    yield 0.9; this.mark('both-seated');
+    this.speak(DIALOGUE.review, 3.0, 1.4);
+    yield 3.4;
+    // the first (development placeholder) card: only now, and it waits for the player indefinitely
+    this.substate = 'CARD_OPEN';
+    const card = CARDS[0];
+    this.mark('card-open');
+    const ans = yield* this.askCard(card);
+    this.answers[card.id] = ans; this.mark('card-answered');
+    // 6. departure: Yola stands first and steps clear, the athlete stands, Yola leads, the athlete follows; the guard stays seated
+    this.substate = 'DEPARTURE';
+    this.speak(DIALOGUE.toOR, 3.0, 1.4);
+    yield 0.6;
+    yo.riseUp(); yield this.upright(yo); yo.play('idle', { fade: 0.3 });
+    yo.walk([[1.7, 1.3]]); yield this.arrived(yo);
+    bb.standUp(); yield this.upright(bb);
+    this.camTo(S(0.4, 0.9, 0.9, 46, 30, 7.4), 1.4, { actor: yo, dx: 0.4, dz: 0.2 });
+    yo.walk([[1.3, 0.5], [an.doorway.x, an.doorway.z], [-1.0, -1.5], [an.orDoor.x, an.orDoor.z + 0.4]], { endYaw: Math.PI });
+    yield 1.3;
+    bb.walk([[1.6, 3.4], [1.4, 0.8], [an.doorway.x, an.doorway.z], [-1.0, -0.9], [an.orDoor.x + 0.1, an.orDoor.z + 1.7]], { endYaw: Math.PI });
+    yield this.arrived(yo, bb);
+    this.camTo(S(-1.4, 1.0, -3.6, 40, 30, 5.6), 1.2);
+    yield 1.0;
+    this.substate = 'OR_ENTRANCE_HOLD'; this.mark('or-entrance');
+    yield* this.act3();
+  }
+
+  *act3() { /* Prompt 3: the operating room case */ }
+
+  // a development card: opens the UI, waits for the choice and for the feedback to be dismissed (no timer).
+  // In a silent (seek/skip) run it answers itself with the first option unless the run is stopping here.
+  *askCard(card) {
+    if (this.silent && this.runLabel !== 'card-open') return card.options[0].id;
+    this.cardDone = null;
+    this.ui.askCard(card).then((id) => { this.cardDone = id; });
+    yield () => this.cardDone !== null;
+    const id = this.cardDone; this.cardDone = null; this.ui.closeCard();
+    return id;
   }
 
   // ------------------------------------------------------------------ run
@@ -225,20 +378,27 @@ export class Opening {
     if (!this.started || this.paused === p) return;
     this.paused = p; this.sound.suspend(p);
   }
-  skip() { // Prompt 1 skip: straight to the arrival hold (the later prompts extend it to the Room 1 snapshot)
+  skip() { // replay silently to the end of the implemented story (later prompts extend this to the Room 1 snapshot)
     if (!this.started) return;
-    this.seek(this.END);
+    this.runTo('or-entrance', { stopAtLabel: false });
   }
-  // dev/test: jump to time t by replaying the cue list silently from the start
+  // dev/test: jump to time t by replaying the story silently from the start
   seek(t) {
-    const wasSilent = this.silent; this.silent = true;
-    this.sound.stopVoice();
-    this.resetTour(); this.started = true; this.state = 'TOUR';
-    this.ui.gate.classList.remove('show');
+    this.beginSilent();
     while (this.t < t - 1e-6) this.step(Math.min(1 / 20, t - this.t));
-    this.silent = wasSilent;
-    this.ui.setFade(0, 0);
+    this.endSilent();
   }
+  // dev/test: replay silently until the named marker is reached (stopAtLabel keeps the scene frozen there, e.g. an open card)
+  runTo(label, { stopAtLabel = true, maxSec = 400 } = {}) {
+    this.beginSilent(); this.runLabel = stopAtLabel ? label : null;
+    let guard = 0;
+    while (!(label in this.marks) && this.t < maxSec && guard++ < 40000) this.step(1 / 20);
+    const keep = stopAtLabel; this.endSilent(keep);
+    if (keep && label === 'card-open') this.ui.askCard(CARDS[0]);
+    return this.marks[label];
+  }
+  beginSilent() { this.silent = true; this.sound.stopVoice(); this.resetTour(); this.started = true; this.state = 'TOUR'; this.ui.gate.classList.remove('show'); }
+  endSilent(keepFrozen = false) { this.silent = false; this.runLabel = null; if (!keepFrozen) this.frozen = false; this.ui.fade.style.opacity = 0; this.fx = null; this.ui.setFade(0, 0); }
 
   update(dt) {
     if (!this.active) return;
@@ -247,13 +407,17 @@ export class Opening {
     this.setCamera();
   }
   step(dt) {
-    if (this.hold && this.t >= this.END) { this.stage.update(dt); this.tagsFollow(); return; } // the hold keeps idling
+    if (this.frozen) { this.stage.update(dt); this.tickCamera(dt); this.tickFx(dt); this.tagsFollow(); return; }
     const d = dt * this.timeScale;
-    this.t = Math.min(this.END + 0.001, this.t + d);
-    while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
+    this.t += d;
+    this.tickTimers(d);
+    if (this.mode === 'cues') {
+      while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
+    } else this.runCo(d);
     this.stage.update(d);
     if (this.stage.tiers.some((s) => s.fx)) this.renderer.shadowMap.needsUpdate = true; // equipment fades change the shadows
-    this.rig = this.shotAt(this.t);
+    if (this.mode === 'cues' && !this.camAnim) this.rig = this.shotAt(this.t); else this.tickCamera(d);
+    this.tickFx(d);
     this.tagsFollow();
   }
   tagsFollow() {

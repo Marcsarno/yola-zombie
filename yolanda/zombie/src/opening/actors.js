@@ -35,7 +35,7 @@ export class Actor {
     this.walkSpeed = walkSpeed; this.walkClip = walkClip; this.idleClip = idleClip;
     this.yaw = 0; this.targetYaw = null; this.path = []; this.speed = 0; this.moving = false; this.onArrive = null;
     this.timeScale = 1;
-    this.seated = false;
+    this.seated = false; this.sitState = 'stand'; this.seat = null; // 'stand' | 'sitting' | 'seated' | 'rising'
   }
 
   place(x, z, yaw = this.yaw) { this.root.position.set(x, 0, z); this.yaw = yaw; this.root.rotation.y = yaw; return this; }
@@ -81,30 +81,39 @@ export class Actor {
       if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
     }
     this.root.rotation.y = this.yaw;
+    if (this.seat && (this.sitState === 'sitting' || this.sitState === 'seated')) { this.root.position.x = this.seat.x + Math.sin(this.yaw) * this.seat.behind; this.root.position.z = this.seat.z + Math.cos(this.yaw) * this.seat.behind; }
     this.mixer.update(d);
   }
+  get busy() { return this.moving || this.targetYaw != null; }
+  turnTo(yaw) { this.targetYaw = yaw; }
 
   // Sit on a chair whose seat centre is (cx, cz) with the character facing yaw. The visitor rigs' SitDown clip
   // expects the seat 0.45 m behind the standing origin (the source Blender contract), so stand 0.45 m in front.
+  // The origin is placed by the caller's route (the sit anchor); this only plays the clip (instant = already seated).
   sitAt(cx, cz, yaw, { instant = false, behind = 0.45 } = {}) {
-    this.stop();
-    this.place(cx + Math.sin(yaw) * behind, cz + Math.cos(yaw) * behind, yaw); this.targetYaw = null;
+    this.stop(); this.targetYaw = null;
+    this.seat = { x: cx, z: cz, behind }; this.yaw = yaw;
+    this.root.position.set(cx + Math.sin(yaw) * behind, 0, cz + Math.cos(yaw) * behind);
     this.seated = true;
-    if (instant) { this.play('SeatedIdle', { fade: 0 }); return; }
+    if (instant) { this.sitState = 'seated'; this.play('SeatedIdle', { fade: 0 }); return; }
+    this.sitState = 'sitting';
     const a = this.play('SitDown', { once: true, fade: 0.1 });
     if (a) {
-      const done = (e) => { if (e.action === a) { this.mixer.removeEventListener('finished', done); if (this.seated) this.play('SeatedIdle', { fade: 0.15 }); } };
+      const done = (e) => { if (e.action === a) { this.mixer.removeEventListener('finished', done); if (this.seated) { this.sitState = 'seated'; this.play('SeatedIdle', { fade: 0.15 }); } } };
       this.mixer.addEventListener('finished', done);
     }
   }
-  standUp({ walkTo = null } = {}) {
-    this.seated = false;
+  standUp() {
+    if (this.sitState === 'stand' || this.sitState === 'rising') return;
+    this.seated = false; this.sitState = 'rising';
     const a = this.play('StandUp', { once: true, fade: 0.1 });
     if (a) {
-      const done = (e) => { if (e.action === a) { this.mixer.removeEventListener('finished', done); this.play(this.idleClip, { fade: 0.15 }); if (walkTo) this.walk(walkTo.points, walkTo.opts); } };
+      const done = (e) => { if (e.action === a) { this.mixer.removeEventListener('finished', done); this.sitState = 'stand'; this.seat = null; this.play(this.idleClip, { fade: 0.15 }); } };
       this.mixer.addEventListener('finished', done);
     }
   }
+  get settled() { return this.sitState === 'seated'; }
+  get upright() { return this.sitState === 'stand'; }
   setVisible(v) { this.root.visible = v; }
 }
 
@@ -123,19 +132,29 @@ export class OriginalYola extends Actor {
     this.root.updateMatrixWorld(true);
     const B = this.bones, pos = (b) => b.getWorldPosition(new THREE.Vector3());
     this.armDir = {};
-    for (const [n, c] of [['upperarm_r', 'forearm_r'], ['upperarm_l', 'forearm_l']]) {
+    for (const [n, c] of [['upperarm_r', 'forearm_r'], ['upperarm_l', 'forearm_l'], ['thigh_l', 'shin_l'], ['thigh_r', 'shin_r']]) {
       if (!B[n] || !B[c]) continue;
       const dir = pos(B[c]).sub(pos(B[n])).normalize();
       this.armDir[n] = dir.clone().applyQuaternion(B[n].getWorldQuaternion(new THREE.Quaternion()).invert());
       this.armDir[c] = dir.clone().applyQuaternion(B[c].getWorldQuaternion(new THREE.Quaternion()).invert());
     }
+    // sitting (the rig has no seated clip): a controlled procedural pose. Measures at rest, relative to the floor.
+    this.pelvisY0 = B.pelvis.getWorldPosition(new THREE.Vector3()).y - this.root.position.y;
+    this.baseY = this.model.position.y; this.sitW = 0; this.sitTarget = 0; this.sitSeatTop = 0.5; this.sitDrop = 0;
   }
   startWave() { this.waveT = 0; }
   update(dt) {
     super.update(dt);
     if (this.waveT >= 0) this.waveT += dt * this.timeScale;
+    const sd = (dt * this.timeScale) / 0.7;
+    this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
     this.applyProcedural();
   }
+  // sit on a seat of the given top height (m): lowers the pelvis onto it and folds the legs. The caller places root.
+  sitDown(seatTop) { this.sitSeatTop = seatTop; this.sitTarget = 1; this.pose = 'sit'; this.seated = true; this.sitState = 'sitting'; }
+  riseUp() { this.sitTarget = 0; this.seated = false; this.sitState = 'rising'; }
+  get settled() { return this.sitTarget === 1 && this.sitW >= 1; }
+  get upright() { return this.sitTarget === 0 && this.sitW <= 0; }
   // rotate the bone (in world space) so that its length axis points along 'target', by weight w
   aim(name, target, w) {
     const b = this.bones[name]; if (!b || w <= 1e-4) return;
@@ -157,6 +176,22 @@ export class OriginalYola extends Actor {
     const world = _id.setFromAxisAngle(axis, angle).multiply(_q.clone());
     b.parent.getWorldQuaternion(_q2); b.quaternion.copy(_q2.invert().multiply(world)); b.updateMatrixWorld(true);
   }
+  applySit() {
+    const w = this.sitW, B = this.bones, R = this.rest;
+    // the legs are re-posed absolutely from rest while sitting (and once on the way out), never accumulated
+    if (w > 1e-3 || this._wasSit) for (const n of ['thigh_l', 'thigh_r', 'shin_l', 'shin_r']) if (R[n]) B[n].quaternion.copy(R[n]);
+    this._wasSit = w > 1e-3;
+    if (w <= 1e-3) { this.model.position.y = this.baseY; this.sitDrop = 0; if (this.sitState === 'rising' && this.sitTarget === 0) { this.sitState = 'stand'; this.seated = false; this.pose = null; } return; }
+    if (this.sitTarget === 1 && this.sitW >= 1) this.sitState = 'seated';
+    this.root.updateMatrixWorld(true);
+    const U = new THREE.Vector3(0, 1, 0), yawF = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+    // pelvis onto the seat (4 cm above its top), legs: thighs forward and down, shins nearly straight down
+    const drop = (this.pelvisY0 - (this.sitSeatTop + 0.04)) * w; this.sitDrop = drop;
+    const th = yawF.clone().multiplyScalar(0.82).add(U.clone().multiplyScalar(-0.57)).normalize();
+    const sh = U.clone().multiplyScalar(-0.96).add(yawF.clone().multiplyScalar(0.18)).normalize();
+    for (const side of ['l', 'r']) { this.aim('thigh_' + side, th, w); this.aim('shin_' + side, sh, w); }
+    this.model.position.y = this.baseY - drop; this.model.updateMatrixWorld(true);
+  }
   applyProcedural() {
     const t = this.waveT, B = this.bones, R = this.rest;
     // bones this procedure touches start from their rest pose each frame (the idle clip barely moves them, and a
@@ -164,7 +199,7 @@ export class OriginalYola extends Actor {
     for (const n of ['head', 'upperarm_r', 'forearm_r']) if (R[n]) B[n].quaternion.copy(R[n]);
     for (const n in R) if (!this.keyed.has(n)) B[n].quaternion.copy(R[n]);
     const rot = (n, x, y, z) => { const b = B[n]; if (!b) return; if (!this.keyed.has(n)) b.quaternion.copy(R[n]); b.quaternion.multiply(_q.setFromEuler(new THREE.Euler(x, y, z, 'XYZ'))); };
-    if (this.seated && this.pose === 'sit') { rot('thigh_l', -1.45, 0, 0); rot('thigh_r', -1.45, 0, 0); rot('shin_l', 1.45, 0, 0); rot('shin_r', 1.45, 0, 0); }
+    this.applySit();
     if (t < 0) return;
     this.root.updateMatrixWorld(true);
     const ease = (u) => { u = Math.min(1, Math.max(0, u)); return u * u * (3 - 2 * u); };

@@ -105,11 +105,14 @@ export class ClinicStage {
     const tasks = [];
     tasks.push(this.prop(M + 'upgrades/01_reception/reception_T1_desk.glb', { x: -5.2, z: -4.7, rot: 0, name: 'desk' }));
     tasks.push(this.prop(M + 'upgrades/01_reception/reception_T1_chair.glb', { x: -5.2, z: -5.55, rot: 0 }));
-    tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: -7.6, z: 3.5, rot: 20, name: 'wchair1' }));
-    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: -6.5, z: 3.7, rot: 0, name: 'wchair2' }));
-    tasks.push(this.prop(M + 'furnishings/Lounge_Break_Chair.glb', { x: -5.4, z: 3.7, rot: -15, name: 'wchair3' }));
+    // waiting chairs (mismatched, as a starter lobby): they face north into the room so someone can sit and look at the aisle
+    tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: -7.3, z: 3.4, rot: 180, name: 'wchair1' }));
+    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: -6.2, z: 3.45, rot: 180, name: 'wchair2' }));
+    tasks.push(this.prop(M + 'furnishings/Lounge_Break_Chair.glb', { x: -5.0, z: 3.4, rot: 180, name: 'wchair3' }));
     tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: -8.2, z: -5.3 }));
-    tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: -2.2, z: -5.4 }));
+    tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: -3.4, z: -5.4 }));
+    // the operating-room door in the north wall, with its 2D sign
+    tasks.push(this.prop(M + 'entrance/Entrance_Double_Doorway.glb', { x: -1.4, z: -5.9, rot: 0, name: 'orDoor' }));
     tasks.push(this.prop(M + 'decor/Reception_Round_Side_Table.glb', { x: -3.2, z: 3.6 }));
     tasks.push(this.prop(M + 'decor/Reception_Magazine_Rack.glb', { x: -1.2, z: 3.7, rot: 0 }));
     tasks.push(this.prop(M + 'decor/Reception_Poster_Heart.glb', { x: -2.6, y: 1.35, z: -5.88 }));
@@ -119,6 +122,7 @@ export class ClinicStage {
     this.signs = {};
     this.sign('reception', -5.2, 2.15, -5.94, 1.9);
     this.sign('assessment', 0.34, 2.05, -0.2, 1.25, Math.PI / 2); // over the treatment-room doorway, readable from the reception side
+    this.sign('operating_room', -1.4, 2.7, -5.93, 1.7);
 
     // ---- treatment room (x > 0.45): equipment slots that can swap tier (starter / standard / advanced)
     const U = M + 'upgrades/';
@@ -130,15 +134,22 @@ export class ClinicStage {
     ];
     for (const s of slots) for (const tier of ['starter', 'standard', 'advanced']) tasks.push(this.prop(s.files[tier], { ...s.opts, name: s.key + '_' + tier }).then((h) => { s.layers ||= {}; s.layers[tier] = h; this.fadeable(h); h.visible = tier === 'starter'; this.setOpacity(h, 1); }));
     tasks.push(this.prop(M + 'upgrades/07_warmth_teamwork/TeamDesk_starter.glb', { x: 2.7, z: 2.6, rot: 0, name: 'assessDesk' }));
-    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: 2.7, z: 1.55, rot: 0, name: 'chairYola' })); // north side, faces south
-    tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: 2.7, z: 3.65, rot: 180, name: 'chairPatient' })); // south side, faces north
+    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: 2.7, z: 1.5, rot: 0, name: 'chairYola' })); // north side, faces south
+    tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: 2.7, z: 3.85, rot: 180, name: 'chairPatient' })); // south side, faces north
     tasks.push(this.prop(M + 'utility/Utility_Supply_Shelf.glb', { x: 8.3, z: 1.4, rot: 270 }));
     tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: 1.2, z: -5.2 }));
     tasks.push(this.prop(M + 'decor2/Clinical_Art_Heart.glb', { x: 2.2, y: 1.5, z: -5.88 }));
     await Promise.all(tasks);
     // seat anchors for the sitting characters (seat centre on the floor plane, facing yaw)
-    this.anchors.chairPatient = { x: 2.7, z: 3.65, yaw: Math.PI }; // faces north (-z)
-    this.anchors.chairYola = { x: 2.7, z: 1.55, yaw: 0 }; // faces south (+z)
+    Object.assign(this.anchors, {
+      queue: { x: -5.9, z: -3.55 }, guardQueue: { x: -4.6, z: -2.7 }, // public side of the reception desk (athlete, guard behind-right)
+      doorway: { x: 0.33, z: -0.2 }, // the assessment doorway
+      chairPatient: { x: 2.7, z: 3.85, yaw: Math.PI, seatTop: 0.47 }, // faces north (-z); the 0.47 m seat the rigs expect
+      chairYola: { x: 2.7, z: 1.5, yaw: 0, seatTop: 0.51 }, // faces south (+z)
+      guardChair: { x: -5.0, z: 3.4, yaw: Math.PI, seatTop: 0.47 }, // a waiting chair near reception
+      receptionChair: { x: -5.2, z: -5.5, yaw: 0, seatTop: 0.5 },
+      orDoor: { x: -1.4, z: -5.0 },
+    });
   }
 
   // equipment tiers crossfade in place (same footprint, never stacked solid): materials are cloned per layer so

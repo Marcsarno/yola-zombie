@@ -49633,6 +49633,8 @@ void main() {
       this.onArrive = null;
       this.timeScale = 1;
       this.seated = false;
+      this.sitState = "stand";
+      this.seat = null;
     }
     place(x, z, yaw = this.yaw) {
       this.root.position.set(x, 0, z);
@@ -49708,43 +49710,70 @@ void main() {
         if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
       }
       this.root.rotation.y = this.yaw;
+      if (this.seat && (this.sitState === "sitting" || this.sitState === "seated")) {
+        this.root.position.x = this.seat.x + Math.sin(this.yaw) * this.seat.behind;
+        this.root.position.z = this.seat.z + Math.cos(this.yaw) * this.seat.behind;
+      }
       this.mixer.update(d);
+    }
+    get busy() {
+      return this.moving || this.targetYaw != null;
+    }
+    turnTo(yaw) {
+      this.targetYaw = yaw;
     }
     // Sit on a chair whose seat centre is (cx, cz) with the character facing yaw. The visitor rigs' SitDown clip
     // expects the seat 0.45 m behind the standing origin (the source Blender contract), so stand 0.45 m in front.
+    // The origin is placed by the caller's route (the sit anchor); this only plays the clip (instant = already seated).
     sitAt(cx, cz, yaw, { instant = false, behind = 0.45 } = {}) {
       this.stop();
-      this.place(cx + Math.sin(yaw) * behind, cz + Math.cos(yaw) * behind, yaw);
       this.targetYaw = null;
+      this.seat = { x: cx, z: cz, behind };
+      this.yaw = yaw;
+      this.root.position.set(cx + Math.sin(yaw) * behind, 0, cz + Math.cos(yaw) * behind);
       this.seated = true;
       if (instant) {
+        this.sitState = "seated";
         this.play("SeatedIdle", { fade: 0 });
         return;
       }
+      this.sitState = "sitting";
       const a = this.play("SitDown", { once: true, fade: 0.1 });
       if (a) {
         const done = (e) => {
           if (e.action === a) {
             this.mixer.removeEventListener("finished", done);
-            if (this.seated) this.play("SeatedIdle", { fade: 0.15 });
+            if (this.seated) {
+              this.sitState = "seated";
+              this.play("SeatedIdle", { fade: 0.15 });
+            }
           }
         };
         this.mixer.addEventListener("finished", done);
       }
     }
-    standUp({ walkTo = null } = {}) {
+    standUp() {
+      if (this.sitState === "stand" || this.sitState === "rising") return;
       this.seated = false;
+      this.sitState = "rising";
       const a = this.play("StandUp", { once: true, fade: 0.1 });
       if (a) {
         const done = (e) => {
           if (e.action === a) {
             this.mixer.removeEventListener("finished", done);
+            this.sitState = "stand";
+            this.seat = null;
             this.play(this.idleClip, { fade: 0.15 });
-            if (walkTo) this.walk(walkTo.points, walkTo.opts);
           }
         };
         this.mixer.addEventListener("finished", done);
       }
+    }
+    get settled() {
+      return this.sitState === "seated";
+    }
+    get upright() {
+      return this.sitState === "stand";
     }
     setVisible(v) {
       this.root.visible = v;
@@ -49766,12 +49795,18 @@ void main() {
       this.root.updateMatrixWorld(true);
       const B = this.bones, pos = (b) => b.getWorldPosition(new Vector3());
       this.armDir = {};
-      for (const [n, c] of [["upperarm_r", "forearm_r"], ["upperarm_l", "forearm_l"]]) {
+      for (const [n, c] of [["upperarm_r", "forearm_r"], ["upperarm_l", "forearm_l"], ["thigh_l", "shin_l"], ["thigh_r", "shin_r"]]) {
         if (!B[n] || !B[c]) continue;
         const dir = pos(B[c]).sub(pos(B[n])).normalize();
         this.armDir[n] = dir.clone().applyQuaternion(B[n].getWorldQuaternion(new Quaternion()).invert());
         this.armDir[c] = dir.clone().applyQuaternion(B[c].getWorldQuaternion(new Quaternion()).invert());
       }
+      this.pelvisY0 = B.pelvis.getWorldPosition(new Vector3()).y - this.root.position.y;
+      this.baseY = this.model.position.y;
+      this.sitW = 0;
+      this.sitTarget = 0;
+      this.sitSeatTop = 0.5;
+      this.sitDrop = 0;
     }
     startWave() {
       this.waveT = 0;
@@ -49779,7 +49814,28 @@ void main() {
     update(dt) {
       super.update(dt);
       if (this.waveT >= 0) this.waveT += dt * this.timeScale;
+      const sd = dt * this.timeScale / 0.7;
+      this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
       this.applyProcedural();
+    }
+    // sit on a seat of the given top height (m): lowers the pelvis onto it and folds the legs. The caller places root.
+    sitDown(seatTop) {
+      this.sitSeatTop = seatTop;
+      this.sitTarget = 1;
+      this.pose = "sit";
+      this.seated = true;
+      this.sitState = "sitting";
+    }
+    riseUp() {
+      this.sitTarget = 0;
+      this.seated = false;
+      this.sitState = "rising";
+    }
+    get settled() {
+      return this.sitTarget === 1 && this.sitW >= 1;
+    }
+    get upright() {
+      return this.sitTarget === 0 && this.sitW <= 0;
     }
     // rotate the bone (in world space) so that its length axis points along 'target', by weight w
     aim(name, target, w) {
@@ -49807,6 +49863,36 @@ void main() {
       b.quaternion.copy(_q23.invert().multiply(world));
       b.updateMatrixWorld(true);
     }
+    applySit() {
+      const w = this.sitW, B = this.bones, R = this.rest;
+      if (w > 1e-3 || this._wasSit) {
+        for (const n of ["thigh_l", "thigh_r", "shin_l", "shin_r"]) if (R[n]) B[n].quaternion.copy(R[n]);
+      }
+      this._wasSit = w > 1e-3;
+      if (w <= 1e-3) {
+        this.model.position.y = this.baseY;
+        this.sitDrop = 0;
+        if (this.sitState === "rising" && this.sitTarget === 0) {
+          this.sitState = "stand";
+          this.seated = false;
+          this.pose = null;
+        }
+        return;
+      }
+      if (this.sitTarget === 1 && this.sitW >= 1) this.sitState = "seated";
+      this.root.updateMatrixWorld(true);
+      const U = new Vector3(0, 1, 0), yawF = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+      const drop = (this.pelvisY0 - (this.sitSeatTop + 0.04)) * w;
+      this.sitDrop = drop;
+      const th = yawF.clone().multiplyScalar(0.82).add(U.clone().multiplyScalar(-0.57)).normalize();
+      const sh = U.clone().multiplyScalar(-0.96).add(yawF.clone().multiplyScalar(0.18)).normalize();
+      for (const side of ["l", "r"]) {
+        this.aim("thigh_" + side, th, w);
+        this.aim("shin_" + side, sh, w);
+      }
+      this.model.position.y = this.baseY - drop;
+      this.model.updateMatrixWorld(true);
+    }
     applyProcedural() {
       const t = this.waveT, B = this.bones, R = this.rest;
       for (const n of ["head", "upperarm_r", "forearm_r"]) if (R[n]) B[n].quaternion.copy(R[n]);
@@ -49817,12 +49903,7 @@ void main() {
         if (!this.keyed.has(n)) b.quaternion.copy(R[n]);
         b.quaternion.multiply(_q7.setFromEuler(new Euler(x, y, z, "XYZ")));
       };
-      if (this.seated && this.pose === "sit") {
-        rot("thigh_l", -1.45, 0, 0);
-        rot("thigh_r", -1.45, 0, 0);
-        rot("shin_l", 1.45, 0, 0);
-        rot("shin_r", 1.45, 0, 0);
-      }
+      this.applySit();
       if (t < 0) return;
       this.root.updateMatrixWorld(true);
       const ease2 = (u) => {
@@ -49993,11 +50074,12 @@ void main() {
       const tasks = [];
       tasks.push(this.prop(M2 + "upgrades/01_reception/reception_T1_desk.glb", { x: -5.2, z: -4.7, rot: 0, name: "desk" }));
       tasks.push(this.prop(M2 + "upgrades/01_reception/reception_T1_chair.glb", { x: -5.2, z: -5.55, rot: 0 }));
-      tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: -7.6, z: 3.5, rot: 20, name: "wchair1" }));
-      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: -6.5, z: 3.7, rot: 0, name: "wchair2" }));
-      tasks.push(this.prop(M2 + "furnishings/Lounge_Break_Chair.glb", { x: -5.4, z: 3.7, rot: -15, name: "wchair3" }));
+      tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: -7.3, z: 3.4, rot: 180, name: "wchair1" }));
+      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: -6.2, z: 3.45, rot: 180, name: "wchair2" }));
+      tasks.push(this.prop(M2 + "furnishings/Lounge_Break_Chair.glb", { x: -5, z: 3.4, rot: 180, name: "wchair3" }));
       tasks.push(this.prop(M2 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.2, z: -5.3 }));
-      tasks.push(this.prop(M2 + "decor/Reception_Water_Cooler.glb", { x: -2.2, z: -5.4 }));
+      tasks.push(this.prop(M2 + "decor/Reception_Water_Cooler.glb", { x: -3.4, z: -5.4 }));
+      tasks.push(this.prop(M2 + "entrance/Entrance_Double_Doorway.glb", { x: -1.4, z: -5.9, rot: 0, name: "orDoor" }));
       tasks.push(this.prop(M2 + "decor/Reception_Round_Side_Table.glb", { x: -3.2, z: 3.6 }));
       tasks.push(this.prop(M2 + "decor/Reception_Magazine_Rack.glb", { x: -1.2, z: 3.7, rot: 0 }));
       tasks.push(this.prop(M2 + "decor/Reception_Poster_Heart.glb", { x: -2.6, y: 1.35, z: -5.88 }));
@@ -50006,6 +50088,7 @@ void main() {
       this.signs = {};
       this.sign("reception", -5.2, 2.15, -5.94, 1.9);
       this.sign("assessment", 0.34, 2.05, -0.2, 1.25, Math.PI / 2);
+      this.sign("operating_room", -1.4, 2.7, -5.93, 1.7);
       const U = M2 + "upgrades/";
       const slot = (key, files, opts) => {
         const s = { key, files, opts, holder: null };
@@ -50025,14 +50108,27 @@ void main() {
         this.setOpacity(h, 1);
       }));
       tasks.push(this.prop(M2 + "upgrades/07_warmth_teamwork/TeamDesk_starter.glb", { x: 2.7, z: 2.6, rot: 0, name: "assessDesk" }));
-      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: 2.7, z: 1.55, rot: 0, name: "chairYola" }));
-      tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: 2.7, z: 3.65, rot: 180, name: "chairPatient" }));
+      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: 2.7, z: 1.5, rot: 0, name: "chairYola" }));
+      tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: 2.7, z: 3.85, rot: 180, name: "chairPatient" }));
       tasks.push(this.prop(M2 + "utility/Utility_Supply_Shelf.glb", { x: 8.3, z: 1.4, rot: 270 }));
       tasks.push(this.prop(M2 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 1.2, z: -5.2 }));
       tasks.push(this.prop(M2 + "decor2/Clinical_Art_Heart.glb", { x: 2.2, y: 1.5, z: -5.88 }));
       await Promise.all(tasks);
-      this.anchors.chairPatient = { x: 2.7, z: 3.65, yaw: Math.PI };
-      this.anchors.chairYola = { x: 2.7, z: 1.55, yaw: 0 };
+      Object.assign(this.anchors, {
+        queue: { x: -5.9, z: -3.55 },
+        guardQueue: { x: -4.6, z: -2.7 },
+        // public side of the reception desk (athlete, guard behind-right)
+        doorway: { x: 0.33, z: -0.2 },
+        // the assessment doorway
+        chairPatient: { x: 2.7, z: 3.85, yaw: Math.PI, seatTop: 0.47 },
+        // faces north (-z); the 0.47 m seat the rigs expect
+        chairYola: { x: 2.7, z: 1.5, yaw: 0, seatTop: 0.51 },
+        // faces south (+z)
+        guardChair: { x: -5, z: 3.4, yaw: Math.PI, seatTop: 0.47 },
+        // a waiting chair near reception
+        receptionChair: { x: -5.2, z: -5.5, yaw: 0, seatTop: 0.5 },
+        orDoor: { x: -1.4, z: -5 }
+      });
     }
     // equipment tiers crossfade in place (same footprint, never stacked solid): materials are cloned per layer so
     // fading one tier never touches another
@@ -50143,7 +50239,27 @@ void main() {
     bat: "Pick up the baseball bat.",
     reception: "Head for the Waiting Area and Reception."
   };
-  var CARD_STATUS = "DEVELOPER PLACEHOLDER \xB7 not clinically reviewed";
+  var DIALOGUE = {
+    star: { who: "Narrator", text: "At Yola\u2019s Medical Center, every patient gets star treatment. Sometimes, the patient actually is a star." },
+    welcome: { who: "Receptionist", text: "Welcome. Yola is ready for you. We\u2019ll keep your belongings by the operating room." },
+    takeChair: { who: "Receptionist", text: "Please take the chair opposite Yola." },
+    review: { who: "Yola", text: "Let\u2019s review your chart before we begin." },
+    toOR: { who: "Yola", text: "We\u2019re ready to move to the operating room." },
+    settle: { who: "Yola", text: "We\u2019ll get you settled, then check the setup." },
+    equipment: { who: "Yola", text: "First, let\u2019s check the equipment." },
+    monitor: { who: "Yola", text: "Now check the monitor." },
+    somethingWrong: { who: "Staff", text: "Something\u2019s wrong. His condition is changing." },
+    stillMoving: { who: "Staff", text: "But how is he still moving?" },
+    getYola: { who: "Staff", text: "Get Yola\u2026 Get Yola now!" }
+  };
+  var CARD_STATUS = "DEVELOPMENT PLACEHOLDER \u2014 clinical content pending review.";
+  var CARD_FEEDBACK = (label) => `Test feedback: ${label} selected. This only tests the card interface; it is not a clinical answer.`;
+  var OPTS = [{ id: "a", text: "Option A" }, { id: "b", text: "Option B" }, { id: "c", text: "Option C" }];
+  var CARDS = [
+    { id: "assess-1", where: "assessment", status: "placeholder", prompt: "Test question: choose any option to try this card.", options: OPTS },
+    { id: "or-1", where: "workstation", status: "placeholder", prompt: "Test question (equipment check): choose any option to try this card.", options: OPTS },
+    { id: "or-2", where: "monitor", status: "placeholder", prompt: "Test question (monitor check): choose any option to try this card.", options: OPTS }
+  ];
 
   // src/opening/ui.js
   var CSS = `
@@ -50163,12 +50279,13 @@ void main() {
 #op .sub { position: absolute; left: 16px; right: 16px; bottom: calc(14vh + env(safe-area-inset-bottom, 0px)); text-align: center; opacity: 0; transition: opacity .35s ease; }
 #op .sub.show { opacity: 1; }
 #op .sub span { display: inline-block; max-width: 520px; background: rgba(20, 34, 40, .78); padding: 10px 16px; border-radius: 14px; font-size: clamp(15px, 4.2vw, 19px); font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.5); backdrop-filter: blur(3px); }
+#op .sub b { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #9fe0d8; margin-bottom: 2px; font-weight: 800; }
 #op .sub.alarm span { background: rgba(110, 14, 14, .85); }
-#op .obj { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 14px; right: 70px; opacity: 0; transform: translateY(-8px); transition: all .5s ease; }
+#op .obj { position: absolute; top: calc(62px + env(safe-area-inset-top, 0px)); left: 14px; right: 14px; opacity: 0; transform: translateY(-8px); transition: all .5s ease; }
 #op .obj.show { opacity: 1; transform: none; }
 #op .obj div { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 248, 234, .94); color: #20474a; padding: 8px 14px; border-radius: 12px; font-weight: 750; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
 #op .obj div::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #e07a5f; box-shadow: 0 0 0 4px rgba(224,122,95,.3); }
-#op .reward { position: absolute; top: calc(58px + env(safe-area-inset-top, 0px)); left: 14px; opacity: 0; transition: opacity .5s; }
+#op .reward { position: absolute; top: calc(108px + env(safe-area-inset-top, 0px)); left: 14px; opacity: 0; transition: opacity .5s; }
 #op .reward.show { opacity: 1; }
 #op .reward div { background: rgba(32, 71, 74, .9); padding: 5px 12px; border-radius: 10px; font-weight: 700; font-size: 13px; }
 #op .chip { position: absolute; top: calc(64px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -6px); opacity: 0; transition: all .45s ease; }
@@ -50182,10 +50299,11 @@ void main() {
 #op .ctl button.off { opacity: .55; }
 #op .card { position: absolute; left: 50%; bottom: 8vh; transform: translate(-50%, 14px); width: min(92vw, 460px); background: #fff8ea; color: #20474a; border-radius: 18px; padding: 14px 14px 10px; box-shadow: 0 14px 40px rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
 #op .card.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-#op .card .st { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: #c9483f; display: inline-block; border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
+#op .card .st { font-size: 11px; font-weight: 800; letter-spacing: .02em; color: #fff; background: #c9483f; display: inline-block; border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
 #op .card h3 { margin: 0 0 10px; font-size: 16px; line-height: 1.3; }
 #op .card button { display: block; width: 100%; text-align: left; margin: 0 0 7px; padding: 12px 14px; border-radius: 12px; border: 2px solid #bfe0dc; background: #fff; color: #20474a; font: 650 15px/1.3 system-ui, sans-serif; min-height: 46px; }
 #op .card button:active, #op .card button.pick { background: #d6f0ec; border-color: #2f9fa0; }
+#op .card button.cont { background: #2f9fa0; color: #fff; border-color: #2f9fa0; text-align: center; margin-top: 8px; }
 #op .card .note { font-size: 11.5px; color: #6b8a8a; margin-top: 4px; }
 #op .card .ok { font-weight: 750; color: #2a8f92; padding: 6px 2px; }
 #op canvas.ecg { position: absolute; left: 6%; right: 6%; top: 22%; width: 88%; height: 90px; opacity: 0; transition: opacity .4s; }
@@ -50265,13 +50383,20 @@ void main() {
       this.titleEl.querySelector("p").textContent = p || "";
       this.titleEl.classList.toggle("show", !!h);
     }
-    subtitle(text, { alarm = false } = {}) {
+    subtitle(text, { alarm = false, who = "" } = {}) {
       this.subEl.classList.toggle("alarm", alarm);
       if (!text) {
         this.subEl.classList.remove("show");
         return;
       }
-      this.subEl.querySelector("span").textContent = text;
+      const sp = this.subEl.querySelector("span");
+      sp.textContent = "";
+      if (who) {
+        const b = document.createElement("b");
+        b.textContent = who;
+        sp.appendChild(b);
+      }
+      sp.appendChild(document.createTextNode(text));
       this.subEl.classList.add("show");
     }
     objective(text) {
@@ -50309,32 +50434,50 @@ void main() {
     clearTags() {
       for (const t of this.tags.values()) t.classList.remove("show");
     }
-    // Developer-only placeholder card; resolves with the chosen option id. Never marks an answer right or wrong.
-    askCard(card, confirm) {
+    // Development placeholder card: shows the status label, the options, then explicit test feedback with a Continue
+    // button. Resolves with the chosen option id only after Continue is tapped (no timer, no auto-selection).
+    // Never marks an answer right or wrong.
+    askCard(card, { where = "" } = {}) {
       const el = this.cardEl;
-      el.innerHTML = `<span class="st">${CARD_STATUS}</span><h3></h3><div class="opts"></div><div class="note">Placeholder content: no clinical meaning. Any choice continues the story.</div>`;
+      el.innerHTML = `<span class="st"></span><h3></h3><div class="opts"></div><div class="note">Placeholder content: no clinical meaning. Every option continues the story.</div>`;
+      el.querySelector(".st").textContent = CARD_STATUS;
       el.querySelector("h3").textContent = card.prompt;
       const box = el.querySelector(".opts");
       return new Promise((resolve) => {
+        let chosen = null;
         this.cardResolve = resolve;
         for (const o of card.options) {
           const b = document.createElement("button");
           b.textContent = o.text;
           b.dataset.id = o.id;
           b.addEventListener("click", () => {
-            if (!this.cardResolve) return;
-            this.cardResolve = null;
+            if (chosen) return;
+            chosen = o;
             b.classList.add("pick");
-            box.innerHTML = `<div class="ok">${confirm}</div>`;
-            setTimeout(() => {
+            box.innerHTML = "";
+            const ok = document.createElement("div");
+            ok.className = "ok";
+            ok.textContent = CARD_FEEDBACK(o.text);
+            box.appendChild(ok);
+            const cont = document.createElement("button");
+            cont.className = "cont";
+            cont.textContent = "Continue";
+            cont.addEventListener("click", () => {
+              if (!this.cardResolve) return;
+              const r = this.cardResolve;
+              this.cardResolve = null;
               el.classList.remove("show");
-              resolve(o.id);
-            }, 650);
+              r(chosen.id);
+            });
+            box.appendChild(cont);
           });
           box.appendChild(b);
         }
         requestAnimationFrame(() => el.classList.add("show"));
       });
+    }
+    get cardOpen() {
+      return this.cardEl.classList.contains("show");
     }
     closeCard() {
       this.cardEl.classList.remove("show");
@@ -50649,6 +50792,16 @@ void main() {
       this.cues = [];
       this.cueIdx = 0;
       this.cueLog = [];
+      this.co = null;
+      this.wait = null;
+      this.timers = [];
+      this.marks = {};
+      this.runLabel = null;
+      this.frozen = false;
+      this.mode = "cues";
+      this.camAnim = null;
+      this.fx = null;
+      this.answers = {};
       this.fadeColor = "#fff6e6";
       this.reducedFlash = false;
       addEventListener("visibilitychange", () => this.setPaused(document.hidden));
@@ -50759,10 +50912,9 @@ void main() {
         this.ui.objective(OBJECTIVES.chart);
         this.ui.reward("First case reward: $250");
       });
-      at(60, "hold", () => {
-        this.state = "CHECK_IN";
-        this.substate = "ARRIVAL_HOLD";
-        this.hold = true;
+      at(60, "act2", () => {
+        this.mode = "co";
+        this.co = this.act2();
       });
       c.sort((a, b) => a.t - b.t);
     }
@@ -50775,9 +50927,19 @@ void main() {
       const st = this.stage, A = st.actors;
       this.t = 0;
       this.cueIdx = 0;
-      this.hold = false;
       this.substate = "";
       this.state = this.started ? "TOUR" : "PRELOAD";
+      this.co = null;
+      this.wait = null;
+      this.timers.length = 0;
+      this.marks = {};
+      this.frozen = false;
+      this.mode = "cues";
+      this.camAnim = null;
+      this.fx = null;
+      this.answers = {};
+      this.ui.closeCard();
+      this.ui.letter(false);
       this.cueLog.length = 0;
       this.sub = "";
       st.tier = "starter";
@@ -50807,6 +50969,15 @@ void main() {
       sg.place(-8.55, 1.55, Math.PI / 2);
       sg.play("Idle", { fade: 0 });
       st.batStatic.visible = false;
+      for (const a of [A.staff, A.baseball, A.security]) {
+        a.sitState = "stand";
+        a.seat = null;
+      }
+      A.yola.sitW = 0;
+      A.yola.sitTarget = 0;
+      A.yola.sitState = "stand";
+      A.yola.seat = null;
+      A.yola.model.position.y = A.yola.baseY;
       this.ui.title("");
       this.ui.objective("");
       this.ui.reward("");
@@ -50870,8 +51041,19 @@ void main() {
       if (this.silent) return;
       const k = this.reducedFlash ? 1.6 : 1;
       this.ui.setFadeColor(this.fadeColor);
-      this.ui.setFade(1, inS * 1e3 * k);
-      setTimeout(() => this.ui.setFade(0, outS * 1e3 * k), (inS * k + 0.12) * 1e3);
+      this.ui.fade.style.transition = "none";
+      this.fx = { t: 0, inS: inS * k, hold: 0.12, outS: outS * k };
+    }
+    tickFx(d) {
+      const f = this.fx;
+      if (!f) return;
+      f.t += d;
+      const a = f.t < f.inS ? ease(f.t / f.inS) : f.t < f.inS + f.hold ? 1 : 1 - ease((f.t - f.inS - f.hold) / f.outS);
+      this.ui.fade.style.opacity = this.reducedFlash ? a * 0.85 : a;
+      if (f.t >= f.inS + f.hold + f.outS) {
+        this.ui.fade.style.opacity = 0;
+        this.fx = null;
+      }
     }
     tierLabel(text, name) {
       if (!text) {
@@ -50879,6 +51061,207 @@ void main() {
         return;
       }
       this.ui.tag("tier", text, name);
+    }
+    // ------------------------------------------------------------------ story helpers
+    later(sec, fn) {
+      this.timers.push({ sec, fn });
+    }
+    tickTimers(d) {
+      for (let i = this.timers.length - 1; i >= 0; i--) {
+        const t = this.timers[i];
+        t.sec -= d;
+        if (t.sec <= 0) {
+          this.timers.splice(i, 1);
+          t.fn();
+        }
+      }
+    }
+    // a spoken line: subtitle (with the speaker) for secs, and the temporary voice if there is one
+    speak(d, secs, pitch = 1.1) {
+      this.sub = d.text;
+      this.ui.subtitle(d.text, { who: d.who });
+      if (!this.silent) this.sound.say(d.text, secs, pitch);
+      const key = d.text;
+      this.later(secs, () => {
+        if (this.sub === key) {
+          this.sub = "";
+          this.ui.subtitle("");
+        }
+      });
+    }
+    mark(name) {
+      this.marks[name] = +this.t.toFixed(2);
+      this.cueLog.push([this.marks[name], "mark:" + name]);
+      if (this.runLabel === name) this.frozen = true;
+    }
+    // camera: glide to a shot; follow = { actor, dx, dz } keeps its target on that actor
+    camTo(shot2, secs = 1.2, follow = null) {
+      this.camAnim = { from: { ...this.rig }, to: { ...shot2 }, t: 0, dur: Math.max(1e-3, secs), follow };
+    }
+    tickCamera(d) {
+      const a = this.camAnim;
+      if (!a) return;
+      a.t += d;
+      const u = ease(a.t / a.dur), o = {};
+      for (const k of Object.keys(a.to)) o[k] = lerp2(a.from[k], a.to[k], u);
+      if (a.follow) {
+        const tx = a.follow.actor.x + CLINIC.x + (a.follow.dx || 0), tz = a.follow.actor.z + CLINIC.z + (a.follow.dz || 0);
+        o.x = lerp2(a.from.x, tx, u);
+        o.z = lerp2(a.from.z, tz, u);
+        if (u >= 1) {
+          const sm = Math.min(1, d * 5);
+          o.x = this.rig.x + (tx - this.rig.x) * sm;
+          o.z = this.rig.z + (tz - this.rig.z) * sm;
+        }
+      }
+      this.rig = o;
+    }
+    // coroutine runner: act functions yield seconds (wait) or a predicate (wait until true)
+    runCo(d) {
+      let left = d, guard = 0;
+      while (this.co && guard++ < 64 && !this.frozen) {
+        const w = this.wait;
+        if (w) {
+          if (w.sec !== void 0) {
+            w.sec -= left;
+            left = 0;
+            if (w.sec > 0) return;
+          } else if (!w.fn()) return;
+          this.wait = null;
+        }
+        const r = this.co.next();
+        if (r.done) {
+          this.co = null;
+          return;
+        }
+        const v = r.value;
+        this.wait = typeof v === "number" ? { sec: v } : typeof v === "function" ? { fn: v } : null;
+      }
+    }
+    // wait predicates
+    arrived(...actors) {
+      return () => actors.every((a) => !a.busy);
+    }
+    seated(a) {
+      return () => a.settled;
+    }
+    upright(a) {
+      return () => a.upright;
+    }
+    // ================================================================== ACT 2: check-in, walk route, seated assessment
+    *act2() {
+      const st = this.stage, A = st.actors, an = st.anchors, bb = A.baseball, sg = A.security, rc = A.staff, yo = A.yola;
+      const bat = bb.bat;
+      this.state = "CHECK_IN";
+      this.substate = "ARRIVAL_HOLD";
+      this.mark("arrival-hold");
+      yo.setVisible(true);
+      yo.place(an.chairYola.x, an.chairYola.z, an.chairYola.yaw);
+      yo.sitW = 1;
+      yo.sitTarget = 1;
+      yo.pose = "sit";
+      yo.seated = true;
+      yo.sitState = "seated";
+      yo.sitSeatTop = an.chairYola.seatTop;
+      yo.model.position.y = yo.baseY - (yo.pelvisY0 - (an.chairYola.seatTop + 0.04));
+      yo.play("chart", { fade: 0 });
+      this.camTo(S(-6.3, 0.6, 0.8, 52, 30, 7), 0.01);
+      this.speak(DIALOGUE.star, 8, 1.1);
+      yield 2.4;
+      this.dip(0.35, 0.35);
+      yield 0.4;
+      if (bat) bat.visible = false;
+      this.camTo(S(-5.2, 1.05, -4.9, 30, 22, 3.3), 0.01);
+      rc.turnTo(0.3);
+      yield 3;
+      this.dip(0.35, 0.35);
+      yield 0.4;
+      rc.turnTo(-0.3);
+      this.camTo(S(-6, 0.5, 0, 52, 30, 9.4), 0.01);
+      yield 1.9;
+      this.substate = "WALK";
+      this.mark("walk-start");
+      bb.walk([[-6.4, 0.9], [-5.2, -1], [an.queue.x, an.queue.z]], { endYaw: Math.PI });
+      yield 1;
+      sg.walk([[-7, 1.5], [-5.6, -0.2], [-4.8, -1.4], [an.guardQueue.x, an.guardQueue.z]], { endYaw: Math.PI });
+      yield this.arrived(bb, sg);
+      this.mark("queue");
+      this.camTo(S(-5.3, 0.9, -3.5, 50, 26, 5.4), 1.2);
+      yield 0.7;
+      rc.turnTo(0.3);
+      yield 1.9;
+      rc.turnTo(-0.3);
+      yield 0.9;
+      this.mark("checkin");
+      this.speak(DIALOGUE.welcome, 4.8, 1.3);
+      yield 0.3;
+      if (!this.silent) this.sound.confirm();
+      yield 4.8;
+      this.substate = "ASSESSMENT_ENTRY";
+      this.speak(DIALOGUE.takeChair, 3, 1.3);
+      bb.walk([[-3.4, -1.7], [-1, -0.2], [an.doorway.x, an.doorway.z], [1.5, 0.6], [1.6, 3.4], [an.chairPatient.x, an.chairPatient.z - 0.45]], { endYaw: Math.PI });
+      this.camTo(S(-3.5, 0.7, -1.6, 46, 28, 8), 1.5, { actor: bb, dx: 0.8, dz: 0.5 });
+      yield 1.4;
+      sg.walk([[-4.2, -1.6], [-1.4, -0.2]]);
+      yield this.arrived(sg);
+      this.mark("guard-at-door");
+      sg.walk([[-2.8, 0.4], [-4.6, 1.9], [an.guardChair.x, an.guardChair.z - 0.45 - 0.5], [an.guardChair.x, an.guardChair.z - 0.45]], { endYaw: Math.PI });
+      yield this.arrived(bb);
+      this.mark("athlete-at-chair-anchor");
+      this.state = "SEATED_ASSESSMENT";
+      this.substate = "SEATING";
+      this.camTo(S(2.7, 0.9, 2.65, 32, 78, 4.3), 1.6);
+      yield this.arrived(bb);
+      bb.sitAt(an.chairPatient.x, an.chairPatient.z, an.chairPatient.yaw);
+      yield this.arrived(sg);
+      sg.sitAt(an.guardChair.x, an.guardChair.z, an.guardChair.yaw);
+      yield this.seated(bb);
+      yield 0.9;
+      this.mark("both-seated");
+      this.speak(DIALOGUE.review, 3, 1.4);
+      yield 3.4;
+      this.substate = "CARD_OPEN";
+      const card = CARDS[0];
+      this.mark("card-open");
+      const ans = yield* this.askCard(card);
+      this.answers[card.id] = ans;
+      this.mark("card-answered");
+      this.substate = "DEPARTURE";
+      this.speak(DIALOGUE.toOR, 3, 1.4);
+      yield 0.6;
+      yo.riseUp();
+      yield this.upright(yo);
+      yo.play("idle", { fade: 0.3 });
+      yo.walk([[1.7, 1.3]]);
+      yield this.arrived(yo);
+      bb.standUp();
+      yield this.upright(bb);
+      this.camTo(S(0.4, 0.9, 0.9, 46, 30, 7.4), 1.4, { actor: yo, dx: 0.4, dz: 0.2 });
+      yo.walk([[1.3, 0.5], [an.doorway.x, an.doorway.z], [-1, -1.5], [an.orDoor.x, an.orDoor.z + 0.4]], { endYaw: Math.PI });
+      yield 1.3;
+      bb.walk([[1.6, 3.4], [1.4, 0.8], [an.doorway.x, an.doorway.z], [-1, -0.9], [an.orDoor.x + 0.1, an.orDoor.z + 1.7]], { endYaw: Math.PI });
+      yield this.arrived(yo, bb);
+      this.camTo(S(-1.4, 1, -3.6, 40, 30, 5.6), 1.2);
+      yield 1;
+      this.substate = "OR_ENTRANCE_HOLD";
+      this.mark("or-entrance");
+      yield* this.act3();
+    }
+    *act3() {
+    }
+    // a development card: opens the UI, waits for the choice and for the feedback to be dismissed (no timer).
+    // In a silent (seek/skip) run it answers itself with the first option unless the run is stopping here.
+    *askCard(card) {
+      if (this.silent && this.runLabel !== "card-open") return card.options[0].id;
+      this.cardDone = null;
+      this.ui.askCard(card).then((id2) => {
+        this.cardDone = id2;
+      });
+      yield () => this.cardDone !== null;
+      const id = this.cardDone;
+      this.cardDone = null;
+      this.ui.closeCard();
+      return id;
     }
     // ------------------------------------------------------------------ run
     begin() {
@@ -50921,19 +51304,39 @@ void main() {
     }
     skip() {
       if (!this.started) return;
-      this.seek(this.END);
+      this.runTo("or-entrance", { stopAtLabel: false });
     }
-    // dev/test: jump to time t by replaying the cue list silently from the start
+    // dev/test: jump to time t by replaying the story silently from the start
     seek(t) {
-      const wasSilent = this.silent;
+      this.beginSilent();
+      while (this.t < t - 1e-6) this.step(Math.min(1 / 20, t - this.t));
+      this.endSilent();
+    }
+    // dev/test: replay silently until the named marker is reached (stopAtLabel keeps the scene frozen there, e.g. an open card)
+    runTo(label, { stopAtLabel = true, maxSec = 400 } = {}) {
+      this.beginSilent();
+      this.runLabel = stopAtLabel ? label : null;
+      let guard = 0;
+      while (!(label in this.marks) && this.t < maxSec && guard++ < 4e4) this.step(1 / 20);
+      const keep = stopAtLabel;
+      this.endSilent(keep);
+      if (keep && label === "card-open") this.ui.askCard(CARDS[0]);
+      return this.marks[label];
+    }
+    beginSilent() {
       this.silent = true;
       this.sound.stopVoice();
       this.resetTour();
       this.started = true;
       this.state = "TOUR";
       this.ui.gate.classList.remove("show");
-      while (this.t < t - 1e-6) this.step(Math.min(1 / 20, t - this.t));
-      this.silent = wasSilent;
+    }
+    endSilent(keepFrozen = false) {
+      this.silent = false;
+      this.runLabel = null;
+      if (!keepFrozen) this.frozen = false;
+      this.ui.fade.style.opacity = 0;
+      this.fx = null;
       this.ui.setFade(0, 0);
     }
     update(dt) {
@@ -50943,17 +51346,24 @@ void main() {
       this.setCamera();
     }
     step(dt) {
-      if (this.hold && this.t >= this.END) {
+      if (this.frozen) {
         this.stage.update(dt);
+        this.tickCamera(dt);
+        this.tickFx(dt);
         this.tagsFollow();
         return;
       }
       const d = dt * this.timeScale;
-      this.t = Math.min(this.END + 1e-3, this.t + d);
-      while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
+      this.t += d;
+      this.tickTimers(d);
+      if (this.mode === "cues") {
+        while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
+      } else this.runCo(d);
       this.stage.update(d);
       if (this.stage.tiers.some((s) => s.fx)) this.renderer.shadowMap.needsUpdate = true;
-      this.rig = this.shotAt(this.t);
+      if (this.mode === "cues" && !this.camAnim) this.rig = this.shotAt(this.t);
+      else this.tickCamera(d);
+      this.tickFx(d);
       this.tagsFollow();
     }
     tagsFollow() {

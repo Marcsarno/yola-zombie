@@ -1,6 +1,6 @@
 // Overlay UI for the opening: title card, subtitles, objective chip, tier labels, assessment cards, flatline ECG,
 // red alarm vignette, fade/letterbox, and the small always-available controls (skip, mute, reduced flash).
-import { CARD_STATUS } from './content.js';
+import { CARD_STATUS, CARD_FEEDBACK } from './content.js';
 
 const CSS = `
 #op { position: fixed; inset: 0; z-index: 20; pointer-events: none; font: 500 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; display: none; }
@@ -19,12 +19,13 @@ const CSS = `
 #op .sub { position: absolute; left: 16px; right: 16px; bottom: calc(14vh + env(safe-area-inset-bottom, 0px)); text-align: center; opacity: 0; transition: opacity .35s ease; }
 #op .sub.show { opacity: 1; }
 #op .sub span { display: inline-block; max-width: 520px; background: rgba(20, 34, 40, .78); padding: 10px 16px; border-radius: 14px; font-size: clamp(15px, 4.2vw, 19px); font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.5); backdrop-filter: blur(3px); }
+#op .sub b { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #9fe0d8; margin-bottom: 2px; font-weight: 800; }
 #op .sub.alarm span { background: rgba(110, 14, 14, .85); }
-#op .obj { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 14px; right: 70px; opacity: 0; transform: translateY(-8px); transition: all .5s ease; }
+#op .obj { position: absolute; top: calc(62px + env(safe-area-inset-top, 0px)); left: 14px; right: 14px; opacity: 0; transform: translateY(-8px); transition: all .5s ease; }
 #op .obj.show { opacity: 1; transform: none; }
 #op .obj div { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 248, 234, .94); color: #20474a; padding: 8px 14px; border-radius: 12px; font-weight: 750; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
 #op .obj div::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #e07a5f; box-shadow: 0 0 0 4px rgba(224,122,95,.3); }
-#op .reward { position: absolute; top: calc(58px + env(safe-area-inset-top, 0px)); left: 14px; opacity: 0; transition: opacity .5s; }
+#op .reward { position: absolute; top: calc(108px + env(safe-area-inset-top, 0px)); left: 14px; opacity: 0; transition: opacity .5s; }
 #op .reward.show { opacity: 1; }
 #op .reward div { background: rgba(32, 71, 74, .9); padding: 5px 12px; border-radius: 10px; font-weight: 700; font-size: 13px; }
 #op .chip { position: absolute; top: calc(64px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -6px); opacity: 0; transition: all .45s ease; }
@@ -38,10 +39,11 @@ const CSS = `
 #op .ctl button.off { opacity: .55; }
 #op .card { position: absolute; left: 50%; bottom: 8vh; transform: translate(-50%, 14px); width: min(92vw, 460px); background: #fff8ea; color: #20474a; border-radius: 18px; padding: 14px 14px 10px; box-shadow: 0 14px 40px rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
 #op .card.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-#op .card .st { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: #c9483f; display: inline-block; border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
+#op .card .st { font-size: 11px; font-weight: 800; letter-spacing: .02em; color: #fff; background: #c9483f; display: inline-block; border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
 #op .card h3 { margin: 0 0 10px; font-size: 16px; line-height: 1.3; }
 #op .card button { display: block; width: 100%; text-align: left; margin: 0 0 7px; padding: 12px 14px; border-radius: 12px; border: 2px solid #bfe0dc; background: #fff; color: #20474a; font: 650 15px/1.3 system-ui, sans-serif; min-height: 46px; }
 #op .card button:active, #op .card button.pick { background: #d6f0ec; border-color: #2f9fa0; }
+#op .card button.cont { background: #2f9fa0; color: #fff; border-color: #2f9fa0; text-align: center; margin-top: 8px; }
 #op .card .note { font-size: 11.5px; color: #6b8a8a; margin-top: 4px; }
 #op .card .ok { font-weight: 750; color: #2a8f92; padding: 6px 2px; }
 #op canvas.ecg { position: absolute; left: 6%; right: 6%; top: 22%; width: 88%; height: 90px; opacity: 0; transition: opacity .4s; }
@@ -85,10 +87,12 @@ export class OpeningUI {
   setVignette(o) { this.vig.style.opacity = o; }
   setDark(o) { this.dark.style.opacity = o; }
   title(h, p) { this.titleEl.querySelector('h1').textContent = h || ''; this.titleEl.querySelector('p').textContent = p || ''; this.titleEl.classList.toggle('show', !!h); }
-  subtitle(text, { alarm = false } = {}) {
+  subtitle(text, { alarm = false, who = '' } = {}) {
     this.subEl.classList.toggle('alarm', alarm);
     if (!text) { this.subEl.classList.remove('show'); return; }
-    this.subEl.querySelector('span').textContent = text; this.subEl.classList.add('show');
+    const sp = this.subEl.querySelector('span'); sp.textContent = '';
+    if (who) { const b = document.createElement('b'); b.textContent = who; sp.appendChild(b); }
+    sp.appendChild(document.createTextNode(text)); this.subEl.classList.add('show');
   }
   objective(text) { this.objEl.querySelector('div').textContent = text || ''; this.objEl.classList.toggle('show', !!text); }
   reward(text) { this.rewardEl.querySelector('div').textContent = text || ''; this.rewardEl.classList.toggle('show', !!text); }
@@ -103,27 +107,35 @@ export class OpeningUI {
   placeTag(id, x, y) { const t = this.tags.get(id); if (t) { t.style.left = x + 'px'; t.style.top = y + 'px'; } }
   clearTags() { for (const t of this.tags.values()) t.classList.remove('show'); }
 
-  // Developer-only placeholder card; resolves with the chosen option id. Never marks an answer right or wrong.
-  askCard(card, confirm) {
+  // Development placeholder card: shows the status label, the options, then explicit test feedback with a Continue
+  // button. Resolves with the chosen option id only after Continue is tapped (no timer, no auto-selection).
+  // Never marks an answer right or wrong.
+  askCard(card, { where = '' } = {}) {
     const el = this.cardEl;
-    el.innerHTML = `<span class="st">${CARD_STATUS}</span><h3></h3><div class="opts"></div><div class="note">Placeholder content: no clinical meaning. Any choice continues the story.</div>`;
+    el.innerHTML = `<span class="st"></span><h3></h3><div class="opts"></div><div class="note">Placeholder content: no clinical meaning. Every option continues the story.</div>`;
+    el.querySelector('.st').textContent = CARD_STATUS;
     el.querySelector('h3').textContent = card.prompt;
     const box = el.querySelector('.opts');
     return new Promise((resolve) => {
+      let chosen = null;
       this.cardResolve = resolve;
       for (const o of card.options) {
         const b = document.createElement('button'); b.textContent = o.text; b.dataset.id = o.id;
         b.addEventListener('click', () => {
-          if (!this.cardResolve) return; // repeated taps: the first one wins
-          this.cardResolve = null; b.classList.add('pick');
-          box.innerHTML = `<div class="ok">${confirm}</div>`;
-          setTimeout(() => { el.classList.remove('show'); resolve(o.id); }, 650);
+          if (chosen) return; // repeated taps: the first one wins
+          chosen = o; b.classList.add('pick');
+          box.innerHTML = '';
+          const ok = document.createElement('div'); ok.className = 'ok'; ok.textContent = CARD_FEEDBACK(o.text); box.appendChild(ok);
+          const cont = document.createElement('button'); cont.className = 'cont'; cont.textContent = 'Continue';
+          cont.addEventListener('click', () => { if (!this.cardResolve) return; const r = this.cardResolve; this.cardResolve = null; el.classList.remove('show'); r(chosen.id); });
+          box.appendChild(cont);
         });
         box.appendChild(b);
       }
       requestAnimationFrame(() => el.classList.add('show'));
     });
   }
+  get cardOpen() { return this.cardEl.classList.contains('show'); }
   closeCard() { this.cardEl.classList.remove('show'); this.cardResolve = null; }
 
   // flatline: a heart trace that flattens
