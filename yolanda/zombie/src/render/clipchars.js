@@ -12,6 +12,7 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3();
+const _ik = new THREE.Vector3(), _ikg = new THREE.Vector3(), _ikh = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _q4 = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
 const _e = new THREE.Euler();
@@ -228,7 +229,12 @@ export class YolaView extends ClipBody {
   }
 
   // Two-bone arm IK (render/ik.js): the hand reaches the world-space target, weight w
-  ikArm(side, target, w) { solveArm(this.bones[side + 'Arm'], this.bones[side + 'ForeArm'], this.bones[side + 'Hand'], target, w); }
+  // `target` is where the palm grip point (wrist/knuckle midpoint) should land, so the wrist aims short of it.
+  ikArm(side, target, w) {
+    const hand = this.bones[side + 'Hand'], t = _ik.copy(target);
+    this.grip(side, _ikg); hand.getWorldPosition(_ikh); t.sub(_ikg.sub(_ikh));
+    solveArm(this.bones[side + 'Arm'], this.bones[side + 'ForeArm'], hand, t, w);
+  }
 
   // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
   // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the

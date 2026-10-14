@@ -37322,7 +37322,7 @@ void main() {
     nurse: { label: "Zombie nurse", file: "assets/zombie-nurse-mod.glb", height: 1.78, ref: "zombie_" },
     patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" }
   };
-  var REF_ALIAS = { pistol_reload: "reload_walk" };
+  var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var GUNS = { none: "no weapon", old: "pump shotgun (old, too long)", short: "short pump (new)" };
   var GUN_FILES = { old: "assets/weapons/pump_shotgun.glb", short: "assets/weapons/pump_short.glb" };
   var canvas = $("view");
@@ -37603,7 +37603,13 @@ void main() {
     U.pump.position.x = U.pumpX - pumpSlide(f);
     g.updateMatrixWorld(true);
     if (!$("ik").checked) return;
-    const B = main.bones, ik = (t, w) => ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, t, w);
+    const B = main.bones, ik = (t, w) => {
+      const tt = t.clone();
+      main.grip("Left", _m2);
+      B.LeftHand.getWorldPosition(_v3);
+      tt.sub(_m2.sub(_v3));
+      ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, tt, w);
+    };
     main.grip("Left", _m13);
     const shellOn = f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from;
     let wPort = 0;

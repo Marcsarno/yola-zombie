@@ -46778,6 +46778,9 @@ void main() {
   var _v23 = new Vector3();
   var _v32 = new Vector3();
   var _v43 = new Vector3();
+  var _ik = new Vector3();
+  var _ikg = new Vector3();
+  var _ikh = new Vector3();
   var _q3 = new Quaternion();
   var _q22 = new Quaternion();
   var _q32 = new Quaternion();
@@ -47067,8 +47070,13 @@ void main() {
       return out.setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
     }
     // Two-bone arm IK (render/ik.js): the hand reaches the world-space target, weight w
+    // `target` is where the palm grip point (wrist/knuckle midpoint) should land, so the wrist aims short of it.
     ikArm(side, target, w) {
-      ikArm(this.bones[side + "Arm"], this.bones[side + "ForeArm"], this.bones[side + "Hand"], target, w);
+      const hand = this.bones[side + "Hand"], t = _ik.copy(target);
+      this.grip(side, _ikg);
+      hand.getWorldPosition(_ikh);
+      t.sub(_ikg.sub(_ikh));
+      ikArm(this.bones[side + "Arm"], this.bones[side + "ForeArm"], hand, t, w);
     }
     // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
     // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the

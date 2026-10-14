@@ -21,7 +21,7 @@ const CHARS = {
   patient: { label: 'Zombie patient', file: 'assets/zombie-patient-mod.glb', height: 1.78, ref: 'zombie_' },
 };
 // clips whose Mixamo source file is named differently
-const REF_ALIAS = { pistol_reload: 'reload_walk' };
+const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand' };
 const GUNS = { none: 'no weapon', old: 'pump shotgun (old, too long)', short: 'short pump (new)' };
 const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb' };
 
@@ -212,7 +212,11 @@ function leftHand(f) {
   const U = g.userData; if (!U.pump) return;
   U.pump.position.x = U.pumpX - pumpSlide(f); g.updateMatrixWorld(true);
   if (!$('ik').checked) return;
-  const B = main.bones, ik = (t, w) => ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, t, w);
+  // the palm grip point (not the wrist) is what lands on the target
+  const B = main.bones, ik = (t, w) => {
+    const tt = t.clone(); main.grip('Left', _m2); B.LeftHand.getWorldPosition(_v3); tt.sub(_m2.sub(_v3));
+    ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, tt, w);
+  };
   main.grip('Left', _m1);
   // the shell goes up into the loading port from below
   const shellOn = f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from;
