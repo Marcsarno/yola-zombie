@@ -52,3 +52,14 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   Patient gown weights fixed (forearm/hand influences removed from torso).
   Open: severed forearm once baked stretched (~4 m), not reproduced; small gown flap on raised arm.
   Next: more game feel / play polish in the test room, then Level 1 (map supplied in chat, 8 rooms).
+- 2026-10-14 (round 4): weapons pistol -> shotgun -> axe (swap button cycles). Shotgun: 9 pellets, falloff,
+  multi-limb severs, close blasts lift/throw ragdolls and knock down, knocked bodies bowl into others;
+  pump racks (left hand IK on the pump). Axe combo (hold attack): baseball swing -> great-sword low slash
+  (takes legs) -> Yola's own Tripo chop finisher; unlocks once the first hit lands; lunges to target;
+  chop hits bodies on the floor. Per-weapon zombie reactions/ragdoll launch. Fixed: Yola bending over
+  with the shotgun (corrections accumulated on un-keyed bones; bones now reset to rest each frame),
+  stretched severed limbs (bake from current pose). Lab: game.lab.blast / combo.
+  Yola's Tripo clip library (punch, kick, dive/roll, chop, hits, deaths) found in
+  Downloads/nurse+character+3d+model.glb (it is Yola). Retarget with NLA tracks removed.
+  OPEN: shotgun hold pose (low ready; short arms don't always reach the pump - last test left hand
+  0.7 m off), user wants: knee-slide shotgun move, kicks/punches, dodge roll, more Tripo deaths/hits.
