@@ -1,9 +1,9 @@
 // Fixed-step combat simulation. No rendering, no DOM: feed it input, read state + events.
 import { World, rng, rayCircle, segPointDist2, angleDiff } from './world.js';
 import { LAYOUT, buildWorld } from './layout.js';
-import { Player, batWorldSegment } from './player.js';
-import { Zombie, ZS, separate } from './zombies.js';
-import { BAT_SWING, PISTOL } from './weapons.js';
+import { Player, meleeWorldSegment } from './player.js';
+import { Zombie, ZS, separate, bump } from './zombies.js';
+import { AXE_ATTACKS, AXE_GEOM, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
 
 export const STEP = 1 / 60;
@@ -42,6 +42,7 @@ export class Sim {
     this.flowT -= dt;
     if (this.flowT <= 0) { this.world.updateFlow(p.x, p.z); this.flowT = 0.2; }
     for (const z of this.zombies) z.update(dt, this);
+    bump(this.zombies, this);
     separate(this.zombies, p);
     this.director.update(dt);
     // remove old corpses (renderer fades them first)
@@ -104,23 +105,61 @@ export class Sim {
     }
   }
 
+  // ---------------- shotgun ----------------
+  // Nine pellets across a cone. Each pellet is its own ray (the spread can catch several zombies);
+  // damage and push fall off with distance. Every zombie takes one combined hit: the summed damage,
+  // a push along the average pellet direction, and each pellet's body part (several limbs can go).
+  fireShotgun(p) {
+    this.stats.shots++;
+    const S = SHOTGUN_SPEC, T = this.T, m = p.muzzleWorld(_m);
+    p.vx -= Math.sin(p.aimYaw) * 1.1; p.vz -= Math.cos(p.aimYaw) * 1.1; // the kick rocks Yola back a step
+    const block = this.world.raycast(p.x, p.z, m.x, m.z, BULLET_MIN_H);
+    const yaw0 = p.aimYaw, pellets = [], hits = new Map();
+    for (let i = 0; i < S.pellets; i++) {
+      const u = ((i + 0.5) / S.pellets) * 2 - 1; // spread evenly across the cone, with jitter
+      const yaw = yaw0 + (u * 0.85 + (this.rand() - 0.5) * 0.3) * S.spread;
+      const dx = Math.sin(yaw), dz = Math.cos(yaw);
+      if (block) { pellets.push({ ex: p.x + (m.x - p.x) * block.t, ez: p.z + (m.z - p.z) * block.t, hit: 'wall', nx: block.nx, nz: block.nz }); continue; }
+      const r = this.traceBullet(m.x, m.z, yaw, S.range);
+      const ex = m.x + dx * r.t, ez = m.z + dz * r.t;
+      if (r.zombie) {
+        const fall = r.t <= S.falloffFrom ? 1 : Math.max(0.33, 1 - ((r.t - S.falloffFrom) / (S.range - S.falloffFrom)) * 0.67);
+        let h = hits.get(r.zombie);
+        if (!h) hits.set(r.zombie, (h = { dmg: 0, px: 0, pz: 0, parts: [] }));
+        h.dmg += T.shotgunDamage * fall; h.px += dx * fall; h.pz += dz * fall;
+        h.parts.push([this.bulletPart(r.zombie, m.x, m.z, dx, dz, true), T.shotgunDamage * fall]);
+        pellets.push({ ex, ez, hit: 'zombie', id: r.zombie.id });
+      } else pellets.push({ ex, ez, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz });
+    }
+    const killed = [];
+    for (const [z, h] of hits) {
+      this.stats.shotHits++;
+      const pl = Math.hypot(h.px, h.pz) || 1;
+      z.takeHit(h.dmg, h.px / pl, h.pz / pl, (T.shotgunKnockback * pl) / S.pellets, SHOTGUN, this, h.parts);
+      if (!z.alive) killed.push(z.id);
+    }
+    this.emit({ type: 'shotgun', ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed });
+    if (hits.size && this.T.hitPause > 0) this.emit({ type: 'hitPause', dur: this.T.hitPause * (killed.length ? 0.8 : 0.5) });
+  }
+
   // Which part a bullet hits, from where it passes the body: wide of centre takes the arm on that side;
   // through the middle mostly the torso, sometimes the head or a leg.
-  bulletPart(z, ox, oz, dx, dz) {
+  bulletPart(z, ox, oz, dx, dz, pellet = false) {
     const rx = z.x - ox, rz = z.z - oz, along = rx * dx + rz * dz;
     const qx = ox + dx * along - z.x, qz = oz + dz * along - z.z; // closest ray point, relative to the body
     const side = qx * Math.cos(z.yaw) - qz * Math.sin(z.yaw); // + = the zombie's left
     const r = this.rand();
     if (Math.hypot(qx, qz) > 0.17) return r < 0.75 ? (side > 0 ? 'Forearm_L' : 'Forearm_R') : 'torso';
-    if (r < 0.12) return 'Head';
-    if (r < 0.26) return this.rand() < 0.5 ? 'LowerLeg_L' : 'LowerLeg_R';
+    // pellets spread up and down as well: more of them find the head and the legs
+    if (r < (pellet ? 0.16 : 0.12)) return 'Head';
+    if (r < (pellet ? 0.4 : 0.26)) return this.rand() < 0.5 ? 'LowerLeg_L' : 'LowerLeg_R';
     return 'torso';
   }
 
-  traceBullet(ox, oz, yaw) {
+  traceBullet(ox, oz, yaw, range = BULLET_RANGE) {
     const dx = Math.sin(yaw), dz = Math.cos(yaw);
-    const w = this.world.raycast(ox, oz, ox + dx * BULLET_RANGE, oz + dz * BULLET_RANGE, BULLET_MIN_H);
-    let t = w ? w.t * BULLET_RANGE : BULLET_RANGE, zombie = null;
+    const w = this.world.raycast(ox, oz, ox + dx * range, oz + dz * range, BULLET_MIN_H);
+    let t = w ? w.t * range : range, zombie = null;
     for (const z of this.zombies) {
       if (!z.alive) continue;
       const h = rayCircle(ox, oz, dx, dz, t, z.x, z.z, ZR_HIT);
@@ -132,31 +171,32 @@ export class Sim {
   // Gentle melee assist: at swing start, turn up to ~20 degrees toward a zombie that is within reach,
   // roughly in front (50 degrees) and not behind a wall. The turn is real (the body rotates), so the
   // bat still has to meet the body for a hit.
-  meleeAssist(p) {
+  meleeAssist(p, reach = 1.45, downToo = false) {
     let best = null, bestA = 0.87;
     for (const z of this.zombies) {
-      if (!z.alive || z.down) continue;
+      if (!z.alive || (z.down && !downToo)) continue;
       const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
-      if (d > 1.45 || d < 0.2) continue;
+      if (d > reach || d < 0.2) continue;
       const a = Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz)));
       if (a < bestA && this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.9)) { best = z; bestA = a; }
     }
-    if (!best) return;
+    if (!best) return null;
     const want = angleDiff(p.aimYaw, Math.atan2(best.x - p.x, best.z - p.z));
     const turn = Math.max(-0.35, Math.min(0.35, want));
     p.aimYaw += turn; p.aimTarget = p.aimYaw;
+    return best;
   }
 
-  // ---------------- bat: swept between simulation steps ----------------
-  resolveBat(p, t0, t1, act) {
+  // ---------------- axe: swept between simulation steps ----------------
+  resolveMelee(p, t0, t1, act) {
     if (t1 <= t0) return;
-    const SUB = 4, T = this.T;
-    let prev = batWorldSegment(p, t0, _a);
+    const SUB = 4, T = this.T, A = AXE_ATTACKS[act.combo];
+    let prev = meleeWorldSegment(p, A, t0, _a);
     let px = prev.tx, pz = prev.tz;
     for (let s = 1; s <= SUB; s++) {
       const t = t0 + ((t1 - t0) * s) / SUB;
       if (t > act.activeEnd) break;
-      const seg = batWorldSegment(p, t, _b);
+      const seg = meleeWorldSegment(p, A, t, _b);
       // bat into a wall: clank, end the damaging window
       const wall = this.world.raycast(p.x, p.z, seg.tx, seg.tz, 0.9);
       let tipX = seg.tx, tipZ = seg.tz;
@@ -164,18 +204,21 @@ export class Sim {
         tipX = p.x + (seg.tx - p.x) * wall.t; tipZ = p.z + (seg.tz - p.z) * wall.t;
         if (!act.clanked) { act.clanked = true; act.activeEnd = t; this.emit({ type: 'batClank', x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz }); }
       }
-      const f = BAT_SWING.hitFrom / BAT_SWING.length;
+      const f = AXE_GEOM.hitFrom / AXE_GEOM.length;
       const ax = seg.hx + (tipX - seg.hx) * f, az = seg.hz + (tipZ - seg.hz) * f;
       const ay = seg.hy + (seg.ty - seg.hy) * f;
       // sweep: test the damaging section at this substep AND the arc chord the tip travelled.
       // Only a bat at body height counts: the swing's low dip past the knees does not land a blow.
+      const chop = A.style === 'chop';
       for (const z of this.zombies) {
         if (!z.alive || act.hitSet.has(z.id)) continue;
-        const rr = BAT_BODY_R; // the visible torso, not the (wider) crowd-collision circle
+        if (z.down && !chop) continue; // only the chop comes down far enough to hit a body on the floor
+        const rr = z.down ? 0.5 : BAT_BODY_R; // the visible torso (a lying body is longer)
+        const minY = z.down ? 0.05 : chop ? 0.3 : BAT_MIN_HIT_Y;
         const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
         const y1 = ay + (seg.ty - ay) * h1.t;
-        const d1 = y1 >= BAT_MIN_HIT_Y ? h1.d2 : 1e9;
-        const d2 = seg.ty >= BAT_MIN_HIT_Y ? segPointDist2(px, pz, tipX, tipZ, z.x, z.z).d2 : 1e9;
+        const d1 = y1 >= minY ? h1.d2 : 1e9;
+        const d2 = seg.ty >= minY ? segPointDist2(px, pz, tipX, tipZ, z.x, z.z).d2 : 1e9;
         if (Math.min(d1, d2) > rr * rr) continue;
         if (!this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.9)) continue; // walls block strikes
         // direction: mostly the bat's travel, partly away from Yola
@@ -184,17 +227,23 @@ export class Sim {
         let dx = vx * 0.6 + rx * 0.4, dz = vz * 0.6 + rz * 0.4; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
         act.hitSet.add(z.id); act.hits++;
         this.stats.batHits++;
-        // a killing blow can take the head; otherwise sometimes an arm comes off
-        const lethal = z.hp <= T.batDamage, r = this.rand();
-        const part = lethal ? (r < 0.35 ? 'Head' : 'torso') : r < 0.2 ? (this.rand() < 0.5 ? 'Forearm_L' : 'Forearm_R') : 'torso';
-        if (part === 'Head') z.limbHp.Head = 0; // the bat finishes it outright
-        z.takeHit(T.batDamage, dx, dz, T.batKnockback, 'bat', this, part);
-        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive });
-        if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.4) });
+        // the chop drives straight down: less sideways throw
+        if (A.style === 'chop') { dx = dx * 0.5 + rx * 0.5; dz = dz * 0.5 + rz * 0.5; const l2 = Math.hypot(dx, dz) || 1; dx /= l2; dz /= l2; }
+        // the blade cuts: a killing blow can take the head; otherwise an arm (or, low, a leg) can come off
+        const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
+        const side = this.rand() < 0.5 ? '_L' : '_R';
+        const part = lethal && r < sv.head ? 'Head'
+          : r < (lethal ? sv.head : 0) + sv.arm ? 'Forearm' + side
+          : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? 'LowerLeg' + side : 'torso';
+        if (part !== 'torso' && !z.severed.has(part)) z.limbHp[part] = 0; // the blade goes through
+        const last = act.combo === AXE_ATTACKS.length - 1, holding = !last && p.attackHeld;
+        z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), 'axe', this, part, holding ? 'combo' : A.style);
+        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
+        if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.4) * (A.style === 'chop' ? 1.4 : 1) });
       }
       px = tipX; pz = tipZ;
     }
   }
 }
 
-export { ZS, PISTOL };
+export { ZS, PISTOL, SHOTGUN };

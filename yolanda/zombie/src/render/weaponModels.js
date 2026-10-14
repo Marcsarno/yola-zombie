@@ -45,3 +45,25 @@ export function makeBat(length = 0.84) {
   g.userData.handOffset = 0.045 * s; // each hand this far either side of the origin along the bat
   return g;
 }
+
+// Supplied weapon GLBs (assets/weapons, Hospital Weapons Core / Found Tools packs). Both have their origin
+// at the right-hand grip (GameGrip_R).
+// Pump shotgun: barrel along +X, +Y up; the pump slides along X and carries the left-hand grip.
+export function prepShotgun(gltf) {
+  const g = gltf.scene, find = (n) => g.getObjectByName(n);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+  const pump = find('Shotgun_Pump'), gripL = find('GameGrip_L');
+  if (gripL && pump && gripL.parent !== pump) pump.attach(gripL); // the left hand rides the pump
+  g.userData = { pump, pumpX: pump.position.x, gripL, muzzle: find('Muzzle') };
+  return g;
+}
+// Fire axe: handle along +Y from the right-hand grip, blade toward -X. Wrapped so the handle runs along
+// +Z with the origin at the hands (6 cm up the grip) and the blade still toward local -X.
+export function prepAxe(gltf) {
+  const inner = gltf.scene, g = new THREE.Group();
+  inner.rotation.x = Math.PI / 2; inner.position.z = -0.06;
+  inner.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+  g.add(inner);
+  g.userData.tip = inner.getObjectByName('ImpactPoint');
+  return g;
+}

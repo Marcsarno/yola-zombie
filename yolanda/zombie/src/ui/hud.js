@@ -1,5 +1,7 @@
 // HUD + menus. Only buttons take pointer events; everything else lets touches reach the sticks.
 import { TUNING_DEFAULTS } from '../core/tuning.js';
+import { WEAPON_ORDER } from '../core/weapons.js';
+const nextWeapon = (w) => WEAPON_ORDER[(WEAPON_ORDER.indexOf(w) + 1) % WEAPON_ORDER.length];
 
 const $ = (id) => document.getElementById(id);
 
@@ -12,8 +14,10 @@ const TUNE_SPEC = [
     ['attackThreshold', 'Attack threshold', 0.2, 0.9, 0.05, ''], ['pistolInterval', 'Pistol cadence', 0.1, 0.6, 0.01, 's'], ['pistolDamage', 'Pistol damage', 10, 100, 1, ''],
     ['pistolRecoil', 'Recoil', 0, 2, 0.1, '×'], ['pistolKnockback', 'Pistol impact', 0, 5, 0.1, 'm/s'], ['aimAssist', 'Aim assist', 0, 1, 0.05, ''],
     ['reloadTime', 'Reload time', 0.4, 2.5, 0.05, 's'], ['swapTime', 'Swap time', 0.1, 0.8, 0.02, 's'],
-    ['batDamage', 'Bat damage', 20, 150, 1, ''], ['batKnockback', 'Bat impact', 1, 10, 0.1, 'm/s'], ['batSpeed', 'Bat swing speed', 0.6, 1.6, 0.05, '×'],
-    ['batKnockdown', 'Bat knockdown chance', 0, 1, 0.05, ''], ['hitPause', 'Heavy-hit pause', 0, 0.16, 0.005, 's'], ['shake', 'Camera shake', 0, 2, 0.1, '×'],
+    ['shotgunDamage', 'Shotgun pellet damage', 4, 40, 1, ''], ['shotgunKnockback', 'Shotgun impact', 2, 16, 0.5, 'm/s'], ['shotgunInterval', 'Shotgun cadence', 0.4, 1.4, 0.05, 's'],
+    ['shotgunReload', 'Shotgun reload', 0.8, 3, 0.05, 's'],
+    ['axeDamage', 'Axe damage', 20, 150, 1, ''], ['axeKnockback', 'Axe impact', 1, 10, 0.1, 'm/s'], ['axeSpeed', 'Axe speed', 0.6, 1.6, 0.05, '×'],
+    ['axeKnockdown', 'Axe knockdown chance', 0, 1, 0.05, ''], ['hitPause', 'Heavy-hit pause', 0, 0.16, 0.005, 's'], ['shake', 'Camera shake', 0, 2, 0.1, '×'],
   ]],
   ['Enemies', [
     ['zombieSpeed', 'Approach speed', 0.5, 3.5, 0.05, 'm/s'], ['zombieHp', 'Zombie health', 30, 300, 5, ''], ['zombieDamage', 'Zombie damage', 0, 40, 1, ''],
@@ -99,7 +103,7 @@ export class Hud {
   cleared(sim) { $('clearStats').textContent = this.stats(sim) + ` · ${sim.time.toFixed(0)} s`; setTimeout(() => $('clear').classList.add('show'), 900); }
   stats(sim) {
     const s = sim.stats, acc = s.shots ? Math.round((100 * s.shotHits) / s.shots) : 0;
-    return `${s.kills} down · pistol ${acc}% · bat ${s.batHits}/${s.swings}`;
+    return `${s.kills} down · guns ${acc}% · axe ${s.batHits}/${s.swings}`;
   }
 
   update(sim, dt) {
@@ -111,10 +115,11 @@ export class Hud {
     const b = $('swapBtn');
     b.dataset.weapon = p.equipped;
     b.classList.toggle('pending', p.desired !== p.equipped);
-    $('ammo').textContent = p.equipped === 'pistol' ? (p.action.type === 'reload' ? '…' : p.ammo) : '';
+    b.dataset.next = p.desired === p.equipped ? nextWeapon(p.equipped) : p.desired;
+    $('ammo').textContent = p.equipped in p.mags ? (p.action.type === 'reload' ? '…' : p.ammo) : '';
     const ring = $('ring');
     let prog = 0;
-    if (p.action.type === 'reload') prog = p.action.t / this.T.reloadTime;
+    if (p.action.type === 'reload') prog = p.action.t / p.reloadTime();
     else if (p.action.type === 'swap') prog = p.action.t / this.T.swapTime;
     ring.style.strokeDashoffset = String(176 * (1 - Math.min(1, prog)));
     ring.style.opacity = prog > 0 ? 1 : 0;

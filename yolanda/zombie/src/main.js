@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
-import { setBatPath, BAT_SWING, batSegment } from './core/weapons.js';
+import { setMeleePaths, AXE_ATTACKS, meleeSegment } from './core/weapons.js';
 import { LAYOUT } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
@@ -12,7 +12,7 @@ import { CombatAudio } from './audio.js';
 import { Input } from './ui/input.js';
 import { Hud } from './ui/hud.js';
 import { angleDiff } from './core/world.js';
-import { batWorldSegment } from './core/player.js';
+import { meleeWorldSegment } from './core/player.js';
 import { CustomPhysics } from './render/physics/custom.js';
 import { RapierPhysics } from './render/physics/rapier.js';
 import * as physlab from './physlab.js';
@@ -108,11 +108,12 @@ async function load() {
   const yolaP = loader.loadAsync('assets/yola.glb');
   const zomP = Promise.all(ZOMBIE_TYPES.map((t) => loader.loadAsync(t.file)));
   const dataP = fetch('assets/clipdata.json').then((r) => r.json());
+  const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_shotgun.glb'), loader.loadAsync('assets/weapons/fire_axe.glb')]);
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-  const [yg, zgs, clipdata] = await Promise.all([yolaP, zomP, dataP]);
+  const [yg, zgs, clipdata, [sgG, axeG]] = await Promise.all([yolaP, zomP, dataP, wpnP]);
   hud.loading(0.95);
-  setBatPath(clipdata.bat_swing, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-  yola = new YolaView(scene, yg, clipdata);
+  setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
+  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG });
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;
   restart();
@@ -199,6 +200,7 @@ let manualTicks = false;
 // Test hook: advance n frames of dt seconds (works while the tab is hidden). Renders the last frame.
 function tick(n = 1, dt = 1 / 60, render = true) {
   manualTicks = true;
+  if (paused) setPaused(false); // a hidden test tab auto-pauses
   for (let i = 0; i < n; i++) runFrame(dt, render && i === n - 1);
 }
 function runFrame(dt, doRender = true) {
@@ -231,13 +233,13 @@ function runFrame(dt, doRender = true) {
   const a = p.action;
   yola.update(animDt, {
     x: ix, z: iz, vx: p.vx, vz: p.vz, aimYaw: iyaw, equipped: p.equipped, action: a.type, actionT: a.t,
-    swingT: a.type === 'swing' ? a.st : 0, recoil: p.recoil, recoilScale: tuning.pistolRecoil,
+    swingT: a.type === 'swing' ? a.st : 0, combo: a.combo || 0, swingId: a.id, recoil: p.recoil, recoilScale: tuning.pistolRecoil,
     dead: p.dead, deathDir: p.deathDir || 0, hurtT: p.hurtT, hurtDirX: p.hurtDirX || 0, hurtDirZ: p.hurtDirZ || 0,
-    reloadDur: tuning.reloadTime, swapDur: tuning.swapTime,
+    reloadDur: p.reloadTime(), swapDur: tuning.swapTime,
   });
-  // bat trail during the damaging part of the swing
-  if (a.type === 'swing' && a.st > BAT_SWING.activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
-    fx.trailPush(yola.bat.position, yola.bat.userData.tip.getWorldPosition(_v), true);
+  // axe trail during the damaging part of the attack
+  if (a.type === 'swing' && a.st > AXE_ATTACKS[a.combo].activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
+    fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v), true);
   }
   fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? (p.attackHeld ? 1 : 0.5) : 0.2);
 
@@ -286,19 +288,39 @@ function handleEvents() {
         shake(0.12);
         break;
       }
-      case 'swing': sim.stats.swings++; audio.play('swing'); break;
-      case 'batHit':
-        audio.play('batHit'); fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed ? 0.55 : 0.45);
-        // camera kicks along the blow (the follow spring brings it back)
-        if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
+      case 'shotgun': {
+        audio.play('shotgun');
+        const mw = yola.muzzleWorld;
+        fx.muzzle(mw, 1.8);
+        let flesh = 0;
+        for (const pl of e.pellets) {
+          fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6);
+          if (pl.hit === 'zombie') { if (flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); }
+          else if (pl.hit === 'wall' && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
+        }
+        if (flesh) audio.play('bulletHit', 1.3);
+        shake(e.hits ? 0.5 : 0.35);
+        // the camera kicks back against the shot
+        if (shakeOn) { const k = 1.2 * tuning.shake; camState.vx -= Math.sin(e.yaw) * k; camState.vz -= Math.cos(e.yaw) * k; }
+        setTimeout(() => audio.play('pump'), 240);
         break;
+      }
+      case 'swing': sim.stats.swings++; audio.play('swing', e.combo === 2 ? 1.3 : 1); break;
+      case 'batHit': {
+        const chop = e.style === 'chop';
+        audio.play('axeHit', chop ? 1.3 : 1); fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed || chop ? 0.6 : 0.45);
+        // camera kicks along the blow (the follow spring brings it back); the chop kicks down-screen
+        if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
+        break;
+      }
+      case 'zombieBump': audio.play('bump', Math.min(1.2, e.speed / 3)); break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
       case 'sever': audio.play('sever'); shake(0.15); break;
       case 'batMiss': audio.play('batMiss'); break;
       case 'batClank': audio.play('clank'); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;
       case 'hitPause': hitPauseT = Math.max(hitPauseT, e.dur); break;
-      case 'reloadStart': audio.play('reload'); hud.flash('reload'); break;
-      case 'reloadDone': audio.play('reloadDone'); break;
+      case 'reloadStart': audio.play(e.weapon === 'shotgun' ? 'shellsStart' : 'reload'); hud.flash('reload'); break;
+      case 'reloadDone': audio.play(e.weapon === 'shotgun' ? 'pump' : 'reloadDone'); break;
       case 'swapStart': audio.play('swap'); break;
       case 'zombieWindup': if (dist(e.id) < 8) audio.play('windup'); break;
       case 'playerHurt': audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;
@@ -350,7 +372,7 @@ function updateDebug(p) {
   if (!debugGroup.children.length || debugGroup.userData.sim !== sim) { buildDebug(); debugGroup.userData.sim = sim; debugGroup.add(dbgCircle, dbgBat); }
   dbgCircle.position.set(p.x, 0.05, p.z);
   if (p.action.type === 'swing') {
-    const s = batSegment(p.action.st, _seg), sy = Math.sin(p.aimYaw), cy = Math.cos(p.aimYaw);
+    const s = meleeSegment(AXE_ATTACKS[p.action.combo], p.action.st, _seg), sy = Math.sin(p.aimYaw), cy = Math.cos(p.aimYaw);
     const w = (x, y, z) => new THREE.Vector3(p.x + x * cy + z * sy, y, p.z - x * sy + z * cy);
     dbgBat.geometry.setFromPoints([w(s.hx, s.hy, s.hz), w(s.tx, s.ty, s.tz)]);
     dbgBat.visible = true;
@@ -464,6 +486,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, AXE_ATTACKS[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

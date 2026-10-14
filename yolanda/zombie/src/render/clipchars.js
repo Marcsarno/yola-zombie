@@ -4,8 +4,8 @@
 // hit flinch) are applied after the mixer in character ("container") space.
 import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { makePistol, makeBat } from './weaponModels.js';
-import { BAT_SWING } from '../core/weapons.js';
+import { makePistol, prepShotgun, prepAxe } from './weaponModels.js';
+import { AXE_ATTACKS, SHOTGUN_SPEC, isMelee } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -119,7 +119,7 @@ const LOCO = {
 const GAIT = { f: ['pistol_walk', 'pistol_run'], b: ['pistol_walk_back', 'pistol_run_back'], l: ['pistol_strafe_left', 'pistol_strafe_run_left'], r: ['pistol_strafe_right', 'pistol_strafe_run_right'] };
 
 export class YolaView extends ClipBody {
-  constructor(scene, gltf, clipdata) {
+  constructor(scene, gltf, clipdata, weapons) {
     const H = 1.62;
     const clips = [];
     const rest = hipsRest(gltf.scene);
@@ -134,9 +134,17 @@ export class YolaView extends ClipBody {
     }
     clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), 'bat_idle_upper'));
     clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), 'pistol_reload_upper'));
-    clips.push(byName.bat_swing, byName.death_fall, byName.death_defeat, byName.pistol_hit);
+    // shotgun: held as the rifle reload starts (frame 1), and that clip is the reload
+    clips.push(subClip(byName.reload_rifle_stand, (b) => !LOWER.test(b), 'shotgun_hold_upper'));
+    clips.push(subClip(byName.reload_rifle_stand, (b) => !LOWER.test(b), 'shotgun_reload_upper'));
+    const melee = [...new Set(AXE_ATTACKS.map((A) => A.clip))];
+    clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
     super(scene, gltf.scene, H, clips);
     this.H = H;
+    // rest rotations: every frame starts from these, so the corrections applied after the mixer (aim,
+    // hip turn, IK) never pile up on bones that the current clips do not key (constant tracks are
+    // dropped at export, e.g. a spine bone the shotgun hold never moves)
+    this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
     for (const n of loco) for (const suf of ['', '_lower']) { const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
     this.gait = this.measureGaits();
     // moving clips are driven from one shared gait phase (see locoWeights), not by the mixer clock
@@ -145,10 +153,22 @@ export class YolaView extends ClipBody {
     this.act('bat_idle_upper').play(); this.act('bat_idle_upper').setEffectiveWeight(0);
     const rl = this.act('pistol_reload_upper'); rl.play(); rl.setEffectiveWeight(0); rl.timeScale = 0;
     this.reloadFrames = Math.round(byName.pistol_reload.duration * 30); // Blender frames 1..N
-    const sw = this.act('bat_swing'); sw.play(); sw.setEffectiveWeight(0); sw.timeScale = 0;
-    this.pistol = makePistol(1); this.bat = makeBat(BAT_SWING.fullLength);
-    scene.add(this.pistol, this.bat);
-    this.upperBlend = 0; // 0 = pistol arms, 1 = bat arms
+    for (const n of melee) { const sw = this.act(n); sw.play(); sw.setEffectiveWeight(0); sw.timeScale = 0; }
+    this.meleeClips = melee;
+    for (const n of ['shotgun_hold_upper', 'shotgun_reload_upper']) { const a = this.act(n); a.play(); a.setEffectiveWeight(0); a.timeScale = 0; a.time = 1 / 30; }
+    this.shotgunReloadFrames = Math.round(byName.reload_rifle_stand.duration * 30);
+    // upper-body layers ride on the legs' hips; each keeps the hip rotation of its own source clip so
+    // the torso is not tipped by a running lean or a turned strafe pelvis (see rebaseUpper)
+    const hipsTrack = (c) => c.tracks.find((t) => /Hips.quaternion$/.test(t.name));
+    this.upperHips = {};
+    for (const [n, src] of [['shotgun_hold_upper', 'reload_rifle_stand'], ['shotgun_reload_upper', 'reload_rifle_stand'], ['pistol_reload_upper', 'pistol_reload']]) {
+      const t = hipsTrack(byName[src]); if (t) this.upperHips[n] = t.createInterpolant(new Float32Array(4));
+    }
+    this.pistol = makePistol(1);
+    this.shotgun = prepShotgun(weapons.shotgun);
+    this.melee = prepAxe(weapons.axe);
+    scene.add(this.pistol, this.shotgun, this.melee);
+    this.up = { pistol: 1, shotgun: 0, axe: 0 }; // upper-body hold weights, cross-faded through swaps
     this.flinch = new Spring2(120, 13);
     this.prevHurt = 99; this.deathT = -1; this.yaw = Math.PI;
     this.muzzleWorld = new THREE.Vector3();
@@ -156,6 +176,59 @@ export class YolaView extends ClipBody {
     this.weights = {};
     this.calibrateBatSocket(clipdata);
     this.calibratePistolSocket();
+    this.calibrateShotgunSocket();
+    this.bladeQ = new THREE.Quaternion(); this.prevTip = new THREE.Vector3(); this.bladeInit = false;
+  }
+
+  // Shotgun socket on the right hand: in the hold pose the barrel runs from the right hand to the left
+  // (which cups the pump), kept level side to side. The left hand is put on the pump by IK each frame.
+  calibrateShotgunSocket() {
+    for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
+    const h = this.act('shotgun_hold_upper'), id = this.act('pistol_idle_lower');
+    h.time = 1 / 30; h.setEffectiveWeight(1); id.time = 0; id.setEffectiveWeight(1);
+    this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
+    this.mixer.update(0); this.outer.updateMatrixWorld(true);
+    this.grip('Right', _v); this.grip('Left', _v2);
+    const barrel = _v2.clone().sub(_v).normalize();
+    this.shotgunQ(barrel, _q);
+    this.bones.RightHand.getWorldQuaternion(_q2);
+    this.shotgunSocket = _q2.invert().multiply(_q).clone();
+    this.shotgunHoldSpan = _v2.distanceTo(_v);
+    h.setEffectiveWeight(0); id.setEffectiveWeight(0);
+  }
+  // gun frame: local +X along the barrel, +Y up (no roll)
+  shotgunQ(barrel, out) {
+    const x = _v3.copy(barrel).normalize();
+    const z = _v4.crossVectors(x, UP).normalize(), y = new THREE.Vector3().crossVectors(z, x);
+    return out.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+  }
+
+  // Two-bone IK (shoulder - elbow - hand) in world space: the hand reaches target (weight w), the
+  // elbow bends in its current plane, the hand keeps its world orientation.
+  ikArm(side, target, w) {
+    if (w <= 1e-3) return;
+    const up = this.bones[side + 'Arm'], lo = this.bones[side + 'ForeArm'], hand = this.bones[side + 'Hand'];
+    const a = up.getWorldPosition(new THREE.Vector3()), b = lo.getWorldPosition(new THREE.Vector3()), c = hand.getWorldPosition(new THREE.Vector3());
+    const t = c.clone().lerp(target, w);
+    const handQ = hand.getWorldQuaternion(new THREE.Quaternion());
+    const lab = b.distanceTo(a), lcb = c.distanceTo(b), lat = clamp(t.distanceTo(a), 0.01, lab + lcb - 1e-3);
+    const ac = c.clone().sub(a).normalize(), ab = b.clone().sub(a).normalize(), ba = a.clone().sub(b).normalize(), bc = c.clone().sub(b).normalize(), at = t.clone().sub(a).normalize();
+    const acos = (x) => Math.acos(clamp(x, -1, 1));
+    const ac_ab0 = acos(ac.dot(ab)), ba_bc0 = acos(ba.dot(bc)), ac_at0 = acos(ac.dot(at));
+    const ac_ab1 = acos((lcb * lcb - lab * lab - lat * lat) / (-2 * lab * lat)), ba_bc1 = acos((lat * lat - lab * lab - lcb * lcb) / (-2 * lab * lcb));
+    let ax0 = new THREE.Vector3().crossVectors(ac, ab);
+    if (ax0.lengthSq() < 1e-8) ax0.set(0, 1, 0); ax0.normalize();
+    const ax1 = new THREE.Vector3().crossVectors(ac, at);
+    const worldRot = (bone, R) => { // bone world rotation R * W
+      const W = bone.getWorldQuaternion(new THREE.Quaternion()), P = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+      bone.quaternion.copy(P.invert().multiply(R).multiply(W)); bone.updateMatrixWorld(true);
+    };
+    worldRot(lo, new THREE.Quaternion().setFromAxisAngle(ax0, ba_bc1 - ba_bc0));
+    const r = new THREE.Quaternion().setFromAxisAngle(ax0, ac_ab1 - ac_ab0);
+    if (ax1.lengthSq() > 1e-10) r.premultiply(new THREE.Quaternion().setFromAxisAngle(ax1.normalize(), ac_at0));
+    worldRot(up, r);
+    const P = hand.parent.getWorldQuaternion(new THREE.Quaternion());
+    hand.quaternion.copy(P.invert().multiply(handQ)); hand.updateMatrixWorld(true);
   }
 
   // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
@@ -312,45 +385,70 @@ export class YolaView extends ClipBody {
     this.container.rotation.y = this.yaw;
 
     const w = this.locoWeights(s, dt);
-    // upper body: pistol vs bat, cross-faded through the swap
-    const wantBat = s.equipped === 'bat' ? 1 : 0;
-    this.upperBlend += clamp(wantBat - this.upperBlend, -dt / Math.max(0.05, s.swapDur * 0.6), dt / Math.max(0.05, s.swapDur * 0.6));
-    const ub = smooth(this.upperBlend);
-    const swinging = s.action === 'swing';
-    // swing: full-body clip driven by simulation time (exact sync with the hit test)
-    const sw = this.act('bat_swing');
-    let swingW = 0;
-    let turn = 0;
-    if (swinging) {
-      const B = BAT_SWING, t = s.swingT, tEnd = (B.clipEndFrame - B.clipStartFrame) / (B.fps * B.rate);
-      // clip frame follows the simulation's swing time exactly; it holds at the last two-handed frame
-      sw.time = (B.clipStartFrame + Math.min(t, tEnd) * B.fps * B.rate) / B.fps; // glTF time = blender frame / fps
-      swingW = clamp(t / 0.05, 0, 1) * (t <= tEnd ? 1 : smooth(clamp(1 - (t - tEnd) / (B.duration - tEnd), 0, 1)));
-      // step into the swing: turn so the sweep lands on the aim, then turn back during recovery
-      turn = B.yawOffset * smooth(clamp(t / 0.1, 0, 1)) * (t <= tEnd ? 1 : smooth(clamp(1 - (t - tEnd) / (B.duration - tEnd), 0, 1)));
+    // upper body: pistol / shotgun / axe holds, cross-faded through the swap
+    const rate = dt / Math.max(0.05, s.swapDur * 0.6);
+    for (const k in this.up) this.up[k] += clamp((s.equipped === k ? 1 : 0) - this.up[k], -rate, rate);
+    const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), un = uP0 + uS0 + uA0 || 1;
+    const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un;
+    // axe attacks: full-body clips driven by the simulation's attack time (exact sync with the hit test)
+    let sW = 0, turn = 0;
+    const A = s.action === 'swing' ? AXE_ATTACKS[s.combo] : null;
+    if (A) {
+      const t = s.swingT, tEnd = (A.f1 - A.f0) / (A.fps * A.rate), act = this.act(A.clip);
+      if (this.swingId !== s.swingId) {
+        // next attack of the combo: the previous clip fades out under the new one
+        if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; }
+        this.swingId = s.swingId; this.swingAct = act;
+      }
+      act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps; // glTF time = blender frame / fps
+      const ramp = clamp(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
+      const out = t <= tEnd ? 1 : smooth(clamp(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
+      sW = ramp * out;
+      // step into the attack: turn so it lands on the aim, then turn back during recovery
+      turn = A.yawOffset * smooth(clamp(t / 0.1, 0, 1)) * out;
+      if (this.prevSwing) {
+        const pw = this.prevSwingW * (1 - ramp);
+        this.prevSwing.setEffectiveWeight(pw);
+        if (pw <= 1e-3) { this.prevSwing.setEffectiveWeight(0); this.prevSwing = null; }
+      }
+      // the turn carries over from the previous attack instead of snapping
+      if (this.prevTurn != null && t < 0.1) turn = this.prevTurn + (turn - this.prevTurn) * smooth(t / 0.1);
+      else this.prevTurn = null;
+    } else {
+      this.swingAct = null; this.swingId = -1;
+      if (this.prevSwing) { this.prevSwing.setEffectiveWeight(0); this.prevSwing = null; }
     }
+    this.swingW = sW;
+    if (A && s.swingT >= 0.1) this.lastTurn = turn;
+    if (A && this.prevTurn == null && s.swingT < 0.02 && s.combo > 0) this.prevTurn = this.lastTurn || 0;
+    for (const n of this.meleeClips) { const a = this.act(n); if (a !== this.swingAct && a !== this.prevSwing) a.setEffectiveWeight(0); }
+    if (A) this.swingAct.setEffectiveWeight(sW);
     this.container.rotation.y = this.yaw + turn;
-    const sW = swingW;
-    sw.setEffectiveWeight(sW);
-    // reload: upper-body clip driven by the simulation's reload time, legs keep the locomotion
+    // reloads: upper-body clips driven by the simulation's reload time, legs keep the locomotion
     let rW = 0;
-    if (s.action === 'reload' && s.equipped === 'pistol') {
-      const u = clamp(s.actionT / s.reloadDur, 0, 1), rl = this.act('pistol_reload_upper');
-      rl.time = (1 + u * (this.reloadFrames - 1)) / 30;
+    if (s.action === 'reload') {
+      const sg = s.equipped === 'shotgun', u = clamp(s.actionT / s.reloadDur, 0, 1);
+      const rl = this.act(sg ? 'shotgun_reload_upper' : 'pistol_reload_upper');
+      rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30;
       rW = smooth(clamp(s.actionT / 0.08, 0, 1)) * smooth(clamp((1 - u) / 0.12, 0, 1));
     }
     this.reloadW = rW;
-    this.act('pistol_reload_upper').setEffectiveWeight(rW * (1 - ub) * (1 - sW));
+    const rP = s.equipped === 'pistol' ? rW : 0, rS = s.equipped === 'shotgun' ? rW : 0;
+    const k = 1 - sW;
+    this.act('pistol_reload_upper').setEffectiveWeight(rP * uP * k);
+    this.act('shotgun_reload_upper').setEffectiveWeight(rS * uS * k);
+    this.act('shotgun_hold_upper').setEffectiveWeight((1 - rS) * uS * k);
+    this.act('bat_idle_upper').setEffectiveWeight(uA * k);
     for (const n in w) {
-      this.act(n).setEffectiveWeight(w[n] * (1 - ub) * (1 - rW) * (1 - sW));
-      this.act(n + '_lower').setEffectiveWeight(w[n] * (ub + (1 - ub) * rW) * (1 - sW));
+      this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP) * k);
     }
-    this.act('bat_idle_upper').setEffectiveWeight(ub * (1 - sW));
+    for (const [b, q] of this.restQ) b.quaternion.copy(q);
     this.mixer.update(dt);
-    // keep the synced swing frame exact after the mixer advanced it
     this.container.updateMatrixWorld(true);
 
     // ---- corrections after the mixer ----
+    this.rebaseUpper();
     // back-half locomotion: legs turned toward travel, torso turned back onto the aim
     const hy = this.hipYaw * (1 - sW);
     if (Math.abs(hy) > 1e-3) {
@@ -362,8 +460,32 @@ export class YolaView extends ClipBody {
     this.flinch.step(dt);
     const f = this.flinch;
     if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC('Spine1', f.z * 0.6, 0, -f.x * 0.5);
-    if (!ub || ub < 1) this.aimPistol(s, ub);
-    this.placeWeapons(s, ub);
+    this.weaponShown = uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
+    if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
+    else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
+    this.placeWeapons(s, dt);
+  }
+
+  // Spine re-based onto each upper-body layer's own hip TILT: S' = inv(Hnow) * Hclip' * S, where Hclip'
+  // is the source clip's hip rotation turned to the current hips' heading (the source clips stand turned,
+  // e.g. the rifle stance ~130 degrees; the turn onto the aim is done by the aim correction). Blended
+  // by the layer's weight. (Hips' parent is static, so local hip rotations compare directly.)
+  rebaseUpper() {
+    const H = this.bones.Hips, S = this.bones.Spine; if (!H || !S) return;
+    const inv = _q2.copy(H.quaternion).invert();
+    for (const n in this.upperHips) {
+      const a = this.act(n), w = a.getEffectiveWeight();
+      if (w < 1e-3) continue;
+      const v = this.upperHips[n].evaluate(a.time);
+      _q3.set(v[0], v[1], v[2], v[3]);
+      const fc = _v.set(0, 0, 1).applyQuaternion(_q3), fn = _v2.set(0, 0, 1).applyQuaternion(H.quaternion);
+      _q4.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
+      _q3.premultiply(_q4); // same heading as the hips now
+      _q4.copy(inv).multiply(_q3); // inv(Hnow) * Hclip'
+      _q.identity().slerp(_q4, Math.min(1, w));
+      S.quaternion.premultiply(_q);
+    }
+    S.updateMatrixWorld(true);
   }
 
   toLocal(x, z) { const sn = Math.sin(this.yaw), cs = Math.cos(this.yaw); return { x: x * cs - z * sn, z: x * sn + z * cs }; }
@@ -390,10 +512,43 @@ export class YolaView extends ClipBody {
     if (kick > 0.01) { this.rotateEulerC('RightArm', -0.25 * kick * k, 0, 0); this.rotateEulerC('LeftArm', -0.25 * kick * k, 0, 0); }
   }
 
-  placeWeapons(s, ub) {
-    const showBat = ub > 0.5;
-    this.pistol.visible = !showBat; this.bat.visible = showBat;
-    if (!showBat) {
+  // Shotgun barrel direction in character (container) space, from the right-hand socket.
+  shotgunBarrel(out) {
+    this.container.getWorldQuaternion(_q3).invert();
+    this.bones.RightHand.getWorldQuaternion(_q).multiply(this.shotgunSocket);
+    return out.set(1, 0, 0).applyQuaternion(_q).applyQuaternion(_q3);
+  }
+  // Shotgun: the hold pose rides on whatever the legs' clip does with the hips (the running strafes turn
+  // the pelvis toward travel), so (1) turn the chest back onto the aim, spread over the three spine
+  // bones, then (2) level the barrel about its own sideways axis. During a reload the last yaw is held
+  // and the levelling fades out. Then the kick: chest and arms thrown up and back.
+  aimShotgun(s, ub) {
+    const k = 1 - ub, rW = this.reloadW || 0;
+    let b = this.shotgunBarrel(_v);
+    const live = clamp(angleDiff(Math.atan2(b.x, b.z), 0), -2.2, 2.2); // character forward is +Z
+    if (rW === 0) this.sgYaw = live;
+    const ey = (live * (1 - rW) + (this.sgYaw || 0) * rW) * k;
+    if (Math.abs(ey) > 1e-4) for (const n of ['Spine', 'Spine1', 'Spine2']) { _q4.setFromAxisAngle(UP, ey / 3); this.rotateC(n, _q4); }
+    b = this.shotgunBarrel(_v);
+    const flat = _v2.set(b.x, 0, b.z);
+    if (flat.lengthSq() > 1e-6) {
+      flat.normalize(); flat.y = -0.06; flat.normalize(); // a touch below level
+      _q4.setFromUnitVectors(b.normalize(), flat);
+      _q4.slerp(_q.identity(), 1 - k * (1 - rW));
+      this.rotateC('Spine2', _q4.clone());
+    }
+    const kick = s.recoil * s.recoil * s.recoilScale;
+    if (kick > 0.01) {
+      this.rotateEulerC('Spine1', -0.1 * kick * k, 0, 0);
+      this.rotateEulerC('Spine2', -0.14 * kick * k, 0, 0);
+      this.rotateEulerC('RightArm', -0.22 * kick * k, 0, 0); this.rotateEulerC('LeftArm', -0.22 * kick * k, 0, 0);
+    }
+  }
+
+  placeWeapons(s, dt) {
+    const shown = this.weaponShown;
+    this.pistol.visible = shown === 'pistol'; this.shotgun.visible = shown === 'shotgun'; this.melee.visible = shown === 'axe';
+    if (shown === 'pistol') {
       // pistol: barrel along the arms' line toward the target; during a reload it follows the
       // right hand through the socket calibrated in the aiming pose
       this.aimQuat(_q);
@@ -404,25 +559,52 @@ export class YolaView extends ClipBody {
       this.pistol.quaternion.copy(_q);
       this.pistol.updateMatrixWorld(true);
       this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
+    } else if (shown === 'shotgun') {
+      // shotgun: rides the right hand; the pump racks after each shot and the left hand follows it
+      const G = this.shotgun, U = G.userData;
+      this.bones.RightHand.getWorldQuaternion(_q).multiply(this.shotgunSocket);
+      this.grip('Right', _v);
+      G.position.copy(_v); G.quaternion.copy(_q);
+      let pump = 0;
+      if (s.action === 'shot') { const u = (s.actionT - SHOTGUN_SPEC.pumpStart) / (SHOTGUN_SPEC.pumpEnd - SHOTGUN_SPEC.pumpStart); if (u > 0 && u < 1) pump = Math.sin(Math.PI * u); }
+      U.pump.position.x = U.pumpX - 0.065 * pump;
+      G.updateMatrixWorld(true);
+      U.muzzle.getWorldPosition(this.muzzleWorld);
+      this.ikArm('Left', U.gripL.getWorldPosition(_v2), 1 - (this.reloadW || 0));
     } else {
-      // bat: direction from the right-hand socket (as on the reference skeleton), origin between the hands
+      // axe: handle direction from the right-hand socket (as on the reference skeleton), grip between
+      // the hands; the blade turns to lead the motion (edge first), resting toward the front
       this.grip('Right', _v); this.grip('Left', _v2);
       let dir;
       if (this.batSocket) { this.bones.RightHand.getWorldQuaternion(_q); dir = _v3.copy(this.batSocket).applyQuaternion(_q).normalize(); }
       else dir = _v3.copy(_v).sub(_v2).normalize();
-      this.bat.position.copy(_v).add(_v2).multiplyScalar(0.5);
-      this.bat.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
-      this.bat.updateMatrixWorld(true);
-      this.bat.userData.tip.getWorldPosition(this.batTip);
+      const M = this.melee;
+      M.position.copy(_v).add(_v2).multiplyScalar(0.5);
+      const tip = _v4.copy(M.position).addScaledVector(dir, 0.7);
+      const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new THREE.Vector3();
+      this.prevTip.copy(tip);
+      const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+      const sp = vel.length();
+      const want = vel.multiplyScalar(clamp((sp - 1) / 3, 0, 1)).addScaledVector(fwd, 0.8);
+      want.addScaledVector(dir, -want.dot(dir));
+      if (want.lengthSq() < 1e-6) want.set(1, 0, 0).addScaledVector(dir, -dir.x);
+      want.normalize();
+      const x = want.clone().negate(), y = new THREE.Vector3().crossVectors(dir, x); // local -X is the blade
+      const target = _q2.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, dir));
+      if (!this.bladeInit) { this.bladeQ.copy(target); this.bladeInit = true; }
+      else this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
+      M.quaternion.copy(this.bladeQ);
+      M.updateMatrixWorld(true);
     }
   }
+
 
   die(dt, s) {
     if (this.deathT < 0) {
       this.deathT = 0;
       for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
       const d = this.act('death_fall'); d.reset(); d.setLoop(THREE.LoopOnce); d.clampWhenFinished = true; d.setEffectiveWeight(1); d.play();
-      this.pistol.visible = this.bat.visible = false;
+      this.pistol.visible = this.shotgun.visible = this.melee.visible = false;
     }
     this.deathT += dt;
     this.mixer.update(dt);
@@ -513,6 +695,9 @@ export class ZombieView extends ClipBody {
     const obj = new THREE.Group();
     const bake = (src) => src && src.traverse((o) => {
       if (!o.isSkinnedMesh) return;
+      // bone matrices are only refreshed when the renderer draws the mesh: a view that has not been
+      // drawn in this pose yet (just spawned, or reused from the pool) would bake a stretched piece
+      o.skeleton.update();
       const sg = o.geometry, n = sg.attributes.position.count, pos = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) {
         o.getVertexPosition(i, _bv); _bv.applyMatrix4(o.matrixWorld).sub(c).applyQuaternion(qi);
@@ -532,7 +717,9 @@ export class ZombieView extends ClipBody {
     mod.visible = false; if (g.stump) g.stump.visible = true;
     // thrown along the blow, up and spinning
     const dir = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
-    const vel = dir.clone().multiplyScalar(z.hitKind === 'bat' ? 4.5 : 2.6).add(new THREE.Vector3(z.vx * 0.5, 2.2 + Math.random() * 1.2, z.vz * 0.5));
+    const sg = z.hitKind === 'shotgun';
+    const vel = dir.clone().multiplyScalar(isMelee(z.hitKind) ? 4.5 : sg ? 3.5 + z.hitStrength * 0.4 : 2.6)
+      .add(new THREE.Vector3(z.vx * 0.5, (sg ? 3 : 2.2) + Math.random() * 1.2, z.vz * 0.5));
     const r = rad * (this.height / 1.7);
     const piece = { obj, t: 0, id: P && P.ready ? P.addPiece(a, b, r, vel, q0) : 0, P: P && P.ready ? P : null, vel, r, states: [] };
     ZombieView.pieces.push(piece);
@@ -597,12 +784,22 @@ export class ZombieView extends ClipBody {
     const missing = new Set([...this.severed].map((s) => SEVER_PART[s]));
     const desc = describeRagdoll(this.bones, this.height, missing);
     const dir = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
-    const bat = z.hitKind === 'bat', s = bat ? 4.2 : 2.4;
-    const hitPart = bat ? 'chest' : z.lastHitPart === 'head' ? 'head' : 'chest';
+    // each weapon throws the body its own way:
+    //  pistol: a slump along the shot (the head snaps back on a head shot)
+    //  shotgun: lifted off the feet and thrown back, harder the closer the blast
+    //  axe swing / heavy: thrown sideways along the blade; chop: driven down into a heap
+    const kind = z.hitKind, style = z.hitStyle, melee = isMelee(kind), sg = kind === 'shotgun';
+    const s = sg ? 1.2 + z.hitStrength * 0.55 : melee ? (style === 'chop' ? 1.4 : style === 'heavy' ? 5.2 : 4.2) : 2.0;
+    const lift = sg ? 0.4 + z.hitStrength * 0.22 : melee && style === 'chop' ? -2.6 : 0;
+    const hitPart = !melee && !sg && z.lastHitPart === 'Head' ? 'head' : 'chest';
     const base = new THREE.Vector3(z.kx * 0.35, 0.2, z.kz * 0.35);
     const vels = desc.parts.map((p) => {
-      const k = p.name === hitPart ? 1 : p.name === 'chest' || p.name === 'head' ? 0.6 : p.name === 'pelvis' ? 0.3 : 0.25;
-      return base.clone().addScaledVector(dir, s * k);
+      const core = p.name === 'chest' || p.name === 'head';
+      const k = p.name === hitPart ? 1 : core ? 0.6 : p.name === 'pelvis' ? (sg ? 0.7 : 0.3) : sg ? 0.45 : 0.25;
+      const v = base.clone().addScaledVector(dir, s * k);
+      if (lift > 0) v.y += lift * (core || p.name === 'pelvis' ? 1 : 0.6);
+      else if (lift < 0 && core) v.y += lift;
+      return v;
     });
     const id = P.addRagdoll(desc, vels);
     this.rag = { id, P, driver: new RagdollDriver(this.bones, desc), states: [], frozen: false };
@@ -642,7 +839,7 @@ export class ZombieView extends ClipBody {
       const S = z.state;
       if (S === 'windup') this.playOnce('attack', 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
       else if (S === 'stagger') {
-        if (z.hitKind === 'bat') {
+        if (isMelee(z.hitKind) || z.hitKind === 'shotgun' || z.hitKind === 'bump') {
           const n = this.reactClip(z), len = this.act(n).getClip().duration;
           this.playOnce(n, 2 / 30, (len - 2 / 30) / Math.max(0.3, z.stateDur));
         } else this.playOnce('hit_flinch', 0.15, 1.6);
@@ -688,7 +885,7 @@ export class ZombieView extends ClipBody {
       this.lastSeq = z.hitSeq;
       const sn = Math.sin(this.container.rotation.y), cs = Math.cos(this.container.rotation.y);
       const lx = z.hitDirX * cs - z.hitDirZ * sn, lz = z.hitDirX * sn + z.hitDirZ * cs;
-      const k = (z.hitKind === 'bat' ? 0.5 : 0.35) * Math.min(5, z.hitStrength);
+      const k = (isMelee(z.hitKind) ? 0.5 : z.hitKind === 'shotgun' ? 0.4 : 0.35) * Math.min(5, z.hitStrength);
       this.react.kick(lx * k, lz * k);
     }
     this.react.step(dt);

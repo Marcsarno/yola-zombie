@@ -15,11 +15,16 @@ export const TUNING_DEFAULTS = {
   magSize: 12,
   reloadTime: 1.05,
   swapTime: 0.3,
-  batDamage: 70,
-  batKnockback: 5.2, // m/s impulse
-  batSpeed: 1.0, // swing time scale (higher = faster)
-  batKnockdown: 0.5, // chance a non-lethal bat hit knocks the zombie flat
-  hitPause: 0.085, // s freeze on bat hits (kills hold 1.4x longer; 0 = off)
+  shotgunDamage: 16, // per pellet (9 pellets), full power inside ~2 m, falling off to a third at 11 m
+  shotgunKnockback: 9, // m/s push when every pellet lands at close range
+  shotgunInterval: 0.85, // s between shots (the pump)
+  shotgunMag: 6,
+  shotgunReload: 1.9,
+  axeDamage: 62, // first attack; the combo's later attacks hit harder (weapons.js AXE_ATTACKS)
+  axeKnockback: 5.0, // m/s impulse
+  axeSpeed: 1.0, // attack time scale (higher = faster)
+  axeKnockdown: 0.45, // chance a non-lethal axe hit knocks the zombie flat (the chop: more)
+  hitPause: 0.085, // s freeze on axe hits (kills hold 1.4x longer; 0 = off)
   shake: 1.0,
   zombieSpeed: 1.0, // m/s approach
   zombieHp: 100,

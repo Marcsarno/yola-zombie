@@ -14,7 +14,7 @@ export async function kill(g, tag, kind = 'pistol', frames = [0, 6, 12, 20, 30, 
   g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
   g.tick(30, 1 / 60, false);
   z.hp = 1;
-  z.takeHit(kind === 'bat' ? 70 : 34, 0, -1, kind === 'bat' ? 5.2 : 1.6, kind, sim);
+  z.takeHit(kind === 'axe' ? 70 : 34, 0, -1, kind === 'axe' ? 5.2 : 1.6, kind, sim);
   const names = []; let f = 0;
   for (const at of frames) {
     g.tick(Math.max(1, at - f), 1 / 60, false); f = at; quiet(sim, [z]);
@@ -61,7 +61,7 @@ export async function pile(g, tag, n = 30, seed = 7) {
   }
   g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
   g.tick(20, 1 / 60, false);
-  for (const z of zs) { z.hp = 1; const a = rnd() * 6.28; z.takeHit(70, Math.sin(a), Math.cos(a), 2 + rnd() * 4, rnd() < 0.5 ? 'bat' : 'pistol', sim); }
+  for (const z of zs) { z.hp = 1; const a = rnd() * 6.28; z.takeHit(70, Math.sin(a), Math.cos(a), 2 + rnd() * 4, rnd() < 0.5 ? 'axe' : 'pistol', sim); }
   const P = g.physics; P.stats.ms = 0; P.stats.steps = 0;
   const frameMs = [], names = []; let worstStep = 0;
   for (let i = 0; i < 240; i++) {
@@ -78,4 +78,58 @@ export async function pile(g, tag, n = 30, seed = 7) {
     physMsPerStep: +(P.stats.ms / P.stats.steps).toFixed(3), worstStepMs: +worstStep.toFixed(2),
     frameAvgMs: +(frameMs.reduce((a, b) => a + b, 0) / frameMs.length).toFixed(2), frameP95: +frameMs[Math.floor(frameMs.length * 0.95)].toFixed(2),
   };
+}
+
+// Shotgun blast into a small group at a given distance (m): the front zombie takes most of the pellets,
+// the spread catches the others. Frames from the side; reports who died, what was severed, who fell.
+export async function blast(g, tag, dist = 2, n = 3, hp = 100, frames = [0, 4, 8, 14, 22, 34, 50, 80]) {
+  g.restart('calm'); await settle();
+  const sim = g.sim, p = sim.player;
+  sim.zombies.length = 0;
+  p.x = p.px = 0.3; p.z = p.pz = 2.4; p.aimYaw = p.aimTarget = Math.PI; p.equipped = p.desired = 'shotgun';
+  const zs = [];
+  for (let i = 0; i < n; i++) {
+    const z = sim.spawnZombie('NW', { x: 0.3 + (i === 0 ? 0 : (i % 2 ? -0.75 : 0.75)), z: 2.4 - dist - (i === 0 ? 0 : 0.7), yaw: 0 });
+    z.set('chase'); z.passive = true; z.hp = hp; zs.push(z);
+  }
+  const yaw0 = 0; for (const z of zs) z.yaw = yaw0;
+  g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
+  g.tick(30, 1 / 60, false);
+  g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -1, swapPresses: 0 });
+  g.tick(1, 1 / 60, false);
+  g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
+  const names = []; let f = 0;
+  for (const at of frames) {
+    g.tick(Math.max(1, at - f), 1 / 60, false); f = at;
+    g.cam({ target: zs[0].id, yaw: 90, pitch: 16, dist: 4.4, h: 0.6 });
+    names.push(await g.shot(`${tag}_${at}`));
+  }
+  g.scriptInput = null; g.cam(null);
+  await g.sheet(names, 'sheet_' + tag, 4, 300);
+  return zs.map((z) => ({ id: z.id, state: z.state, hp: Math.round(z.hp), severed: [...z.severed], moved: +Math.hypot(z.x - 0.3, z.z - (2.4 - dist)).toFixed(2) }));
+}
+
+// Axe combo: attack held on one zombie in reach (hp high so the whole combo lands, or low to see the
+// finisher kill). Frames from the side every few ticks; reports each attack and whether it connected.
+export async function combo(g, tag, hp = 400, every = 5, n = 16, camYaw = -60) {
+  g.restart('calm'); await settle();
+  const sim = g.sim, p = sim.player;
+  sim.zombies.length = 0;
+  p.x = p.px = 0.3; p.z = p.pz = 2.4; p.aimYaw = p.aimTarget = Math.PI; p.equipped = p.desired = 'axe';
+  const z = sim.spawnZombie('NW', { x: 0.3, z: 1.35, yaw: 0 }); z.set('chase'); z.passive = true; z.hp = hp;
+  g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
+  g.tick(30, 1 / 60, false);
+  const log = [], names = [];
+  const off = sim.events.length;
+  g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -1, swapPresses: 0 });
+  for (let i = 0; i < n; i++) {
+    g.tick(every, 1 / 60, false);
+    const a = p.action;
+    log.push(a.type === 'swing' ? `${a.combo}:${a.st.toFixed(2)}${a.hits ? '*' : ''}` : a.type);
+    g.cam({ target: 'yola', yaw: camYaw, pitch: 14, dist: 3.4, h: 0.9 });
+    names.push(await g.shot(`${tag}_${i}`));
+  }
+  g.scriptInput = null; g.cam(null);
+  await g.sheet(names, 'sheet_' + tag, 4, 300);
+  return { log: log.join(' '), zombie: { state: z.state, hp: Math.round(z.hp), severed: [...z.severed] }, stats: sim.stats };
 }

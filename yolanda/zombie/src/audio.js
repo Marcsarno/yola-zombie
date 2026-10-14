@@ -51,6 +51,23 @@ export class CombatAudio {
         this.tone(t, 0.09, 150, { f2: 55, gain: 0.5 * k, type: 'triangle' });
         this.noise(t + 0.02, 0.18, { type: 'bandpass', f: 900, q: 0.7, gain: 0.08 }); // room tail
         break;
+      case 'shotgun': // a deep boom with a long room tail
+        this.noise(t, 0.22, { type: 'lowpass', f: 3800, f2: 300, gain: 0.8 });
+        this.tone(t, 0.2, 110, { f2: 38, gain: 0.85, type: 'triangle' });
+        this.tone(t, 0.12, 60, { f2: 30, gain: 0.6 });
+        this.noise(t + 0.03, 0.5, { type: 'bandpass', f: 700, q: 0.6, gain: 0.12, attack: 0.02 });
+        break;
+      case 'pump': // rack back, then forward
+        this.noise(t, 0.06, { type: 'bandpass', f: 1300, q: 3, gain: 0.3 }); this.tone(t, 0.04, 420, { gain: 0.07, type: 'square' });
+        this.noise(t + 0.17, 0.06, { type: 'bandpass', f: 1700, q: 4, gain: 0.35 }); this.tone(t + 0.17, 0.03, 560, { gain: 0.08, type: 'square' });
+        break;
+      case 'shellsStart': [0, 0.3, 0.6].forEach((d) => this.noise(t + d, 0.05, { type: 'bandpass', f: 2600, q: 5, gain: 0.2 })); break;
+      case 'axeHit': // the blade bites: a dull thunk and a wet crunch
+        this.noise(t, 0.03, { type: 'bandpass', f: 2200, q: 2, gain: 0.35 * k });
+        this.tone(t, 0.2, 120, { f2: 45, gain: 0.8 * k });
+        this.noise(t + 0.01, 0.18, { type: 'lowpass', f: 1000, f2: 200, gain: 0.6 * k, attack: 0.008 });
+        break;
+      case 'bump': this.noise(t, 0.12, { type: 'lowpass', f: 500, gain: 0.35 * k }); this.tone(t, 0.1, 85, { f2: 50, gain: 0.25 * k }); break;
       case 'empty': this.tone(t, 0.03, 1800, { gain: 0.12, type: 'square' }); break;
       case 'reload':
         this.noise(t, 0.05, { f: 2400, q: 4, gain: 0.25 }); this.tone(t, 0.04, 700, { gain: 0.08, type: 'square' });
@@ -59,7 +76,7 @@ export class CombatAudio {
         this.noise(t, 0.05, { f: 3200, q: 5, gain: 0.25 }); this.noise(t + 0.08, 0.06, { f: 1800, q: 3, gain: 0.3 });
         break;
       // whoosh builds through the load and peaks where the bat is fastest (~0.2 s after the press)
-      case 'swing': this.noise(t + 0.04, 0.26, { type: 'bandpass', f: 380, f2: 1900, q: 1.6, gain: 0.26, attack: 0.16 }); break;
+      case 'swing': this.noise(t + 0.04, 0.26, { type: 'bandpass', f: 380 / k, f2: 1900 / k, q: 1.6, gain: 0.26 * k, attack: 0.16 }); break;
       case 'batHit':
         this.noise(t, 0.025, { type: 'bandpass', f: 1500, q: 2.5, gain: 0.55 }); // wooden crack
         this.tone(t, 0.22, 95, { f2: 38, gain: 0.85, type: 'sine' }); // body thump

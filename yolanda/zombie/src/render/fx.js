@@ -44,7 +44,7 @@ export class FX {
     // tracers (pool of thin quads)
     this.tracers = [];
     const trMat = new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending });
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 16; i++) { // a shotgun blast uses nine at once
       const g = new THREE.PlaneGeometry(1, 0.035); g.translate(0.5, 0, 0); g.rotateX(-Math.PI / 2);
       const m = new THREE.Mesh(g, trMat.clone()); m.visible = false; scene.add(m); this.tracers.push({ m, t: 0 });
     }
@@ -115,17 +115,19 @@ export class FX {
     q.m.visible = true;
   }
 
-  muzzle(pos) {
-    this.flash.position.copy(pos); this.flash.visible = true; this.flashT = 0.055;
+  muzzle(pos, k = 1) {
+    this.flash.position.copy(pos); this.flash.visible = true; this.flashT = 0.055 * Math.sqrt(k);
+    this.flash.scale.setScalar(0.42 * k);
     this.flash.material.rotation = Math.random() * Math.PI;
-    this.flashLight.position.copy(pos); this.flashLight.intensity = 6;
+    this.flashLight.position.copy(pos); this.flashLight.intensity = 6 * k;
+    if (k > 1.2) this.burst(pos.x, pos.y, pos.z, 6, 0xb8b4ac, 0.9, 0.4, 0.5); // smoke
   }
 
-  tracer(ox, oy, oz, ex, ez) {
+  tracer(ox, oy, oz, ex, ez, op = 0.5) {
     const t = this.tracers.find((q) => q.t <= 0) || this.tracers[0];
     const dx = ex - ox, dz = ez - oz, l = Math.hypot(dx, dz);
     t.m.position.set(ox, oy, oz); t.m.scale.set(l, 1, 1); t.m.rotation.y = Math.atan2(-dz, dx); t.m.visible = true; t.t = 0.07;
-    t.m.material.opacity = 0.5;
+    t.m.material.opacity = op;
   }
 
   burst(x, y, z, n, color, speed, up = 1, life = 0.45, dirX = 0, dirZ = 0) {

@@ -1,76 +1,88 @@
 // Weapon definitions and the shared motion that both the simulation and the renderer use.
 // Character space: +Z forward, +X the character's LEFT, +Y up. Origin between the feet.
 // Hold and swing data are measured from Yola's actual animation clips (assets/clipdata.json), so the
-// simulated muzzle and bat are where the rendered ones are.
+// simulated muzzle and axe are where the rendered ones are.
 
 export const PISTOL = 'pistol';
-export const BAT = 'bat';
+export const SHOTGUN = 'shotgun';
+export const AXE = 'axe';
+export const WEAPON_ORDER = [PISTOL, SHOTGUN, AXE]; // the swap button cycles through these
+export const isGun = (w) => w === PISTOL || w === SHOTGUN;
+export const isMelee = (kind) => kind === AXE || kind === 'bat';
 
 export const PISTOL_HOLD = {
   grip: { x: -0.066, y: 1.16, z: 0.43 }, // right-hand grip (measured from pistol_idle, metres)
   muzzleForward: 0.17, // muzzle ahead of the grip along the barrel
   muzzleUp: 0.06,
 };
-
-export function pistolGripLocal(out = {}) {
-  out.x = PISTOL_HOLD.grip.x; out.y = PISTOL_HOLD.grip.y; out.z = PISTOL_HOLD.grip.z;
-  return out;
-}
-export function muzzleLocal(out = {}) {
-  pistolGripLocal(out);
-  out.y += PISTOL_HOLD.muzzleUp;
-  out.z += PISTOL_HOLD.muzzleForward;
-  return out;
-}
-
-// ---- bat swing: sampled from the bat_swing clip ----
-// The clip (Mixamo "Baseball Hit - Single", leveled in Blender so the bat sweeps flat at waist-chest
-// height instead of dipping to a pitched ball at the knees) sweeps the bat around the batter's right
-// side, as a batter stands sideways to the target. During the swing Yola turns yawOffset into it, so
-// the sweep finishes square on the aim. The sampled path is rotated by the same offset, keeping the
-// hit test and the rendered bat identical.
-export const BAT_SWING = {
-  clipStartFrame: 24, // clip frame at swing time 0 (end of the stance, start of the load)
-  clipEndFrame: 40, // end of the two-handed follow-through (the batter lets go after this); blend back to ready
-  rate: 1.5, // clip frames advance this many times faster than real time
-  fps: 30,
-  yawOffset: (40 * Math.PI) / 180,
-  duration: 0.62,
-  activeStart: 0.155,
-  activeEnd: 0.31,
-  length: 0.71, // hands (midpoint of the grip) to the tip, metres
-  fullLength: 0.84,
-  hitFrom: 0.24,
-  radius: 0.09,
-  swapPointRecover: 0.48,
+// Pump shotgun held at the shoulder (measured in game from the rendered muzzle, aim pose).
+export const SHOTGUN_HOLD = { muzzle: { x: -0.21, y: 1.055, z: 1.026 } };
+export const SHOTGUN_SPEC = {
+  pellets: 9,
+  spread: 0.15, // rad, half-angle of the cone
+  range: 11, // m; damage and push fall off with distance
+  falloffFrom: 2.2, // full power inside this distance
+  pumpStart: 0.24, pumpEnd: 0.62, // s after the shot: the pump racks back and forward
 };
-let PATH = null; // [{t, mx,my,mz, dx,dy,dz}] in metres, character space
+
+export function muzzleLocal(weapon, out = {}) {
+  if (weapon === SHOTGUN) { Object.assign(out, SHOTGUN_HOLD.muzzle); return out; }
+  out.x = PISTOL_HOLD.grip.x; out.y = PISTOL_HOLD.grip.y + PISTOL_HOLD.muzzleUp; out.z = PISTOL_HOLD.grip.z + PISTOL_HOLD.muzzleForward;
+  return out;
+}
+
+// ---- axe: a three-attack combo, each attack sampled from its clip ----
+// Every attack: the clip frames that are played (clip time = frame / fps, advanced rate x real time),
+// the turn into the attack (yawOffset: the clip strikes off to one side, Yola turns so it lands on the
+// aim), the damaging window and when the next attack of the combo may start (chainFrom). The combo
+// continues only while the attack is held (or pressed again) AND the current attack connected.
+// style: how the zombie reacts - swing (thrown sideways), heavy (thrown hard), chop (driven down).
+const deg = Math.PI / 180;
+export const AXE_ATTACKS = [
+  { // 1: the leveled baseball swing, right to left at chest height
+    name: 'swing', clip: 'bat_swing', path: 'bat_swing', f0: 24, f1: 40, rate: 1.5, fps: 30, yawOffset: 40 * deg,
+    duration: 0.62, activeStart: 0.155, activeEnd: 0.31, chainFrom: 0.33, swapPoint: 0.48,
+    dmg: 1, knock: 1, style: 'swing', sever: { head: 0.35, arm: 0.25 },
+  },
+  { // last: the finisher, an overhead chop (Mixamo heavy weapon swing: raise over the head, slam down, lean in)
+    name: 'chop', clip: 'heavy_swing', path: 'heavy_swing', f0: 58, f1: 96, rate: 2.0, fps: 30, yawOffset: 0,
+    duration: 0.85, activeStart: 0.3, activeEnd: 0.47, chainFrom: 9, swapPoint: 0.66,
+    dmg: 1.6, knock: 0.8, style: 'chop', sever: { head: 0.6, arm: 0.35 },
+  },
+];
+export const AXE_GEOM = {
+  length: 0.74, // hands (midpoint of the grip) to the blade, metres
+  hitFrom: 0.3, // only the outer part of the axe lands a blow
+  radius: 0.09,
+};
+// legacy name (physics lab, debug)
+export const BAT_SWING = AXE_ATTACKS[0];
 
 const rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
-// samples: clipdata.bat_swing ([{f, r:[x,y,z], l:[x,y,z]}] in model units); scale: model units -> metres
+// samples: clipdata[path] ([{f, r:[x,y,z], l:[x,y,z], d, hips}] in model units); scale: model units -> metres
 // hipsRest: the renderer pins the hips' horizontal position, so the clip's hip drift is removed here too.
-export function setBatPath(samples, scale, hipsRest) {
-  const S = BAT_SWING;
-  PATH = [];
-  for (const s of samples) {
-    const t = (s.f - S.clipStartFrame) / (S.fps * S.rate);
-    if (t < -0.001 || s.f > S.clipEndFrame) continue;
-    const ox = s.hips && hipsRest ? s.hips[0] - hipsRest[0] : 0, oz = s.hips && hipsRest ? s.hips[2] - hipsRest[2] : 0;
-    const pin = (v) => [v[0] - ox, v[1], v[2] - oz];
-    const r = rotY(pin(s.r).map((v) => v * scale), S.yawOffset), l = rotY(pin(s.l).map((v) => v * scale), S.yawOffset);
-    // bat direction: from the right-hand socket calibrated on the Mixamo reference skeleton (s.d);
-    // older data falls back to the line between the hands
-    const d = s.d ? rotY(s.d, S.yawOffset) : [r[0] - l[0], r[1] - l[1], r[2] - l[2]];
-    let dx = d[0], dy = d[1], dz = d[2];
-    const dl = Math.hypot(dx, dy, dz) || 1;
-    PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: dx / dl, dy: dy / dl, dz: dz / dl });
+export function setMeleePaths(clipdata, scale, hipsRest) {
+  for (const A of AXE_ATTACKS) {
+    const samples = clipdata[A.path];
+    A.PATH = [];
+    if (!samples) continue;
+    for (const s of samples) {
+      const t = (s.f - A.f0) / (A.fps * A.rate);
+      if (t < -0.001 || s.f > A.f1) continue;
+      const ox = s.hips && hipsRest ? s.hips[0] - hipsRest[0] : 0, oz = s.hips && hipsRest ? s.hips[2] - hipsRest[2] : 0;
+      const pin = (v) => [v[0] - ox, v[1], v[2] - oz];
+      const r = rotY(pin(s.r).map((v) => v * scale), A.yawOffset), l = rotY(pin(s.l).map((v) => v * scale), A.yawOffset);
+      const d = s.d ? rotY(s.d, A.yawOffset) : [r[0] - l[0], r[1] - l[1], r[2] - l[2]];
+      const dl = Math.hypot(d[0], d[1], d[2]) || 1;
+      A.PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: d[0] / dl, dy: d[1] / dl, dz: d[2] / dl });
+    }
   }
 }
 
-// Pose of the bat at swing time t: hands midpoint (hx,hy,hz) and unit direction toward the tip (dx,dy,dz).
-export function batPose(t, out = {}) {
-  if (!PATH || !PATH.length) { out.hx = -0.2; out.hy = 1.1; out.hz = 0.2; out.dx = 0; out.dy = 0.7; out.dz = -0.7; return out; }
-  const P = PATH;
+// Pose of the axe at attack time t: hands midpoint (hx,hy,hz) and unit direction toward the head (dx,dy,dz).
+export function meleePose(A, t, out = {}) {
+  const P = A.PATH;
+  if (!P || !P.length) { out.hx = -0.2; out.hy = 1.1; out.hz = 0.2; out.dx = 0; out.dy = 0.7; out.dz = -0.7; return out; }
   if (t <= P[0].t) { Object.assign(out, { hx: P[0].mx, hy: P[0].my, hz: P[0].mz, dx: P[0].dx, dy: P[0].dy, dz: P[0].dz }); return out; }
   let i = 0;
   while (i < P.length - 2 && t > P[i + 1].t) i++;
@@ -82,11 +94,11 @@ export function batPose(t, out = {}) {
   return out;
 }
 
-// Bat segment (hands -> tip) in character space at swing time t.
-export function batSegment(t, out = {}) {
-  batPose(t, out);
-  out.tx = out.hx + out.dx * BAT_SWING.length;
-  out.ty = out.hy + out.dy * BAT_SWING.length;
-  out.tz = out.hz + out.dz * BAT_SWING.length;
+// Axe segment (hands -> head) in character space at attack time t.
+export function meleeSegment(A, t, out = {}) {
+  meleePose(A, t, out);
+  out.tx = out.hx + out.dx * AXE_GEOM.length;
+  out.ty = out.hy + out.dy * AXE_GEOM.length;
+  out.tz = out.hz + out.dz * AXE_GEOM.length;
   return out;
 }

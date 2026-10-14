@@ -39,8 +39,9 @@
   #swapBtn svg.w { position: absolute; transition: all .12s; }
   #swapBtn .big { width: 46px; height: 46px; left: 20px; top: 13px; }
   #swapBtn .small { width: 22px; height: 22px; right: 7px; bottom: 7px; opacity: .55; }
-  #swapBtn[data-weapon="pistol"] .i-bat.big, #swapBtn[data-weapon="pistol"] .i-pistol.small,
-  #swapBtn[data-weapon="bat"] .i-pistol.big, #swapBtn[data-weapon="bat"] .i-bat.small { display: none; }
+  #swapBtn svg.w { display: none; }
+  #swapBtn[data-weapon="pistol"] .i-pistol.big, #swapBtn[data-weapon="shotgun"] .i-shotgun.big, #swapBtn[data-weapon="axe"] .i-axe.big,
+  #swapBtn[data-next="pistol"] .i-pistol.small, #swapBtn[data-next="shotgun"] .i-shotgun.small, #swapBtn[data-next="axe"] .i-axe.small { display: block; }
   #swapBtn.pending { box-shadow: 0 0 0 3px var(--amber), 0 3px 10px rgba(0,0,0,.35); }
   #swapBtn.pending .small { opacity: 1; transform: scale(1.25); }
   #swapBtn.pressed { transform: scale(.94); }
@@ -96,16 +97,18 @@
     <button id="pauseBtn" class="iconbtn" aria-label="Pause">❚❚</button>
   </div>
   <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
-  <button id="swapBtn" data-weapon="pistol" aria-label="Swap weapon">
+  <button id="swapBtn" data-weapon="pistol" data-next="shotgun" aria-label="Swap weapon">
     <svg id="ringSvg" viewBox="0 0 64 64"><circle id="ring" cx="32" cy="32" r="28"/></svg>
-    <svg class="w i-pistol big" viewBox="0 0 48 48"><path fill="#f3eee2" d="M7 15h31l3 3v5H22l-3 2-3 13H9l3-14-5-3z"/><rect x="33" y="12" width="3" height="3" fill="#f3eee2"/></svg>
-    <svg class="w i-bat big" viewBox="0 0 48 48"><path fill="#e9c58f" d="M41 5c2 2 2 5 0 7L17 33l-3-3L36 6c1.5-1.5 3.5-2 5-1z"/><path fill="#9fb0c4" d="M17 33l-3-3-5 5 3 3z"/><circle cx="9.5" cy="38.5" r="3" fill="#9fb0c4"/></svg>
+    <svg class="w i-pistol big" viewBox="0 0 48 48"><path fill="#f3eee2" d="M7 15h31l3 3v5H22l-3 2-3 13H9l3-14-5-3z"/></svg>
+    <svg class="w i-shotgun big" viewBox="0 0 48 48"><path fill="#f3eee2" d="M2 20h33v-2h11v5H25l-2 3h-6l-3 3-9 5-3-4 7-4z"/><rect x="26" y="24" width="10" height="3" rx="1" fill="#7fc8c0"/></svg>
+    <svg class="w i-axe big" viewBox="0 0 48 48"><path fill="#c9483f" d="M8 40l23-31 3 2L11 42z"/><path fill="#dfe5ea" d="M27 6c4-2 10-1 14 3l-4 7c-2-3-6-4-9-3z"/><path fill="#3a3f45" d="M8 40l3 2-2 3-3-2z"/></svg>
     <svg class="w i-pistol small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M7 15h31l3 3v5H22l-3 2-3 13H9l3-14-5-3z"/></svg>
-    <svg class="w i-bat small" viewBox="0 0 48 48"><path fill="#e9c58f" d="M41 5c2 2 2 5 0 7L17 33l-3-3L36 6c1.5-1.5 3.5-2 5-1z"/><path fill="#9fb0c4" d="M17 33l-3-3-5 5 3 3z"/></svg>
+    <svg class="w i-shotgun small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M2 20h33v-2h11v5H25l-2 3h-6l-3 3-9 5-3-4 7-4z"/><rect x="26" y="24" width="10" height="3" rx="1" fill="#7fc8c0"/></svg>
+    <svg class="w i-axe small" viewBox="0 0 48 48"><path fill="#c9483f" d="M8 40l23-31 3 2L11 42z"/><path fill="#dfe5ea" d="M27 6c4-2 10-1 14 3l-4 7c-2-3-6-4-9-3z"/><path fill="#3a3f45" d="M8 40l3 2-2 3-3-2z"/></svg>
     <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
     <div id="ammo"></div>
   </button>
-  <div id="hint">Left thumb: move · Right thumb: aim, hold to attack · Swap button: pistol ⇄ bat<br>Desktop: WASD, mouse (hold to attack), Space to swap</div>
+  <div id="hint">Left thumb: move · Right thumb: aim, hold to attack · Swap button: pistol → shotgun → axe · hold the axe on a hit for a 3-hit combo<br>Desktop: WASD, mouse (hold to attack), Space to swap</div>
 
   <div id="menu" class="sheet"><div class="card">
     <h2>Paused</h2>
