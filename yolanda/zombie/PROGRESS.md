@@ -45,3 +45,10 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   + follow-through, knockdown/get-up, directional reactions, stronger impact. 23 new Mixamo clips in assets/mixamo.
   Next (agreed): zombie physics - custom ragdoll, body-to-body knockback, hit-location reactions; then dismemberment.
   Later: hold-to-combo melee (3 hits, continues only on contact).
+- 2026-10-13 (round 3): modular nurse/patient (seams welded, ~8.8k tris, own gore kit `blender/gore_kit.py`),
+  Outbreak hospital furniture in the test room, camera lowered/turned (Zombieville USA 3D look; fixed, never
+  turns; tunable), ragdolls + dismemberment + blood. Physics bake-off (`game.lab.*`): custom 0.86 ms/step vs
+  Rapier 1.3-1.5 ms at 30 ragdolls; USER CHOSE CUSTOM (Rapier kept behind ?physics=rapier).
+  Patient gown weights fixed (forearm/hand influences removed from torso).
+  Open: severed forearm once baked stretched (~4 m), not reproduced; small gown flap on raised arm.
+  Next: more game feel / play polish in the test room, then Level 1 (map supplied in chat, 8 rooms).
