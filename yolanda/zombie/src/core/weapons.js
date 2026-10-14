@@ -15,14 +15,20 @@ export const PISTOL_HOLD = {
   muzzleForward: 0.17, // muzzle ahead of the grip along the barrel
   muzzleUp: 0.06,
 };
-// Pump shotgun held at the shoulder (measured in game from the rendered muzzle, aim pose).
-export const SHOTGUN_HOLD = { muzzle: { x: -0.21, y: 1.055, z: 1.026 } };
+// Short pump shotgun at the low ready (measured in game from the rendered muzzle, hold pose).
+export const SHOTGUN_HOLD = { muzzle: { x: -0.206, y: 1.196, z: 0.854 } };
 export const SHOTGUN_SPEC = {
   pellets: 9,
   spread: 0.15, // rad, half-angle of the cone
   range: 11, // m; damage and push fall off with distance
   falloffFrom: 2.2, // full power inside this distance
   pumpStart: 0.24, pumpEnd: 0.62, // s after the shot: the pump racks back and forward
+  pumpStroke: 0.07, // m the forend slides back
+  // reload (sg_reload clip frames): the pump racks when the left hand is back on it
+  rackFrom: 80, rackTo: 96,
+  // the shell she carries to the loading port: shown between these frames, held in the left hand (offset in
+  // metres and rotation in degrees, in the hand's frame; set with the rig lab, viewer.html)
+  shell: { from: 30, to: 56, x: 0.0478, y: 0, z: 0, rx: 32.07, ry: 66.49, rz: -47.36, portDown: 0.05 },
 };
 
 export function muzzleLocal(weapon, out = {}) {

@@ -108,12 +108,12 @@ async function load() {
   const yolaP = loader.loadAsync('assets/yola.glb');
   const zomP = Promise.all(ZOMBIE_TYPES.map((t) => loader.loadAsync(t.file)));
   const dataP = fetch('assets/clipdata.json').then((r) => r.json());
-  const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_shotgun.glb'), loader.loadAsync('assets/weapons/fire_axe.glb')]);
+  const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shell.glb')]);
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-  const [yg, zgs, clipdata, [sgG, axeG]] = await Promise.all([yolaP, zomP, dataP, wpnP]);
+  const [yg, zgs, clipdata, [sgG, axeG, shellG]] = await Promise.all([yolaP, zomP, dataP, wpnP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG });
+  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;
   restart();

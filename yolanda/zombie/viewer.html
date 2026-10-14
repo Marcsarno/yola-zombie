@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rig Lab</title>
+<style>
+  :root { --bg:#1d262b; --panel:#26323a; --ink:#eef2f0; --dim:#9db0ad; --teal:#2fb1b4; --amber:#ffb347; --line:#3a4a52; }
+  * { box-sizing: border-box; } [hidden] { display:none !important; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:500 12px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif; overflow:hidden; }
+  #view { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  .panel { position:fixed; background:rgba(38,50,58,.92); border:1px solid var(--line); border-radius:12px; padding:10px 12px; backdrop-filter: blur(6px); }
+  #top { top:6px; left:6px; right:6px; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; padding:6px 8px; }
+  #bottom { left:6px; right:6px; bottom:6px; padding:6px 8px; }
+  #side { top:auto; bottom:92px; right:6px; width:236px; max-height:60vh; overflow:auto; display:none; }
+  #side.open { display:block; }
+  button, select { font:inherit; color:var(--ink); background:#33434c; border:1px solid var(--line); border-radius:7px; padding:3px 8px; cursor:pointer; }
+  button:hover { background:#3d505a; } button.on { background:var(--teal); border-color:var(--teal); color:#06201f; font-weight:700; }
+  select { max-width: 190px; }
+  .grp { display:flex; gap:4px; align-items:center; }
+  .lbl { color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-right:4px; }
+  #scrub { width:100%; accent-color:var(--amber); }
+  #transport { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+  #frameInfo { font-variant-numeric: tabular-nums; min-width:170px; }
+  #readout { color:var(--dim); font-variant-numeric: tabular-nums; white-space:pre; font-size:12px; }
+  .row { display:grid; grid-template-columns: 62px 1fr 46px; gap:6px; align-items:center; margin:3px 0; }
+  .row input { width:100%; accent-color:var(--teal); } .row span { text-align:right; color:var(--dim); font-size:11px; }
+  h4 { margin:8px 0 4px; font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  #note { color:var(--amber); font-size:12px; }
+  label.chk { display:flex; gap:6px; align-items:center; }
+  textarea { width:100%; height:92px; background:#1a2328; color:#cfe; border:1px solid var(--line); border-radius:8px; font:11px/1.3 ui-monospace,Consolas,monospace; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="top" class="panel">
+  <div class="grp"><span class="lbl">Character</span><span id="chars"></span></div>
+  <div class="grp"><span class="lbl">Clip</span><select id="clip"></select></div>
+  <div class="grp"><span class="lbl">Reference</span><select id="refclip"></select></div>
+  <div class="grp"><span class="lbl">Layout</span><button id="lay">side by side</button></div>
+  <div class="grp"><span class="lbl">Camera</span>
+    <button data-cam="face">Face</button><button data-cam="front">Front</button><button data-cam="side">Side (her right)</button><button data-cam="back">Back</button><button data-cam="top">Top</button><button data-cam="three">3/4</button></div>
+  <div class="grp"><button id="toggleSide">Fit panel</button><button id="hideUI">Hide UI (H)</button></div>
+  <div id="note"></div>
+</div>
+<div id="side" class="panel">
+  <label class="chk"><input type="checkbox" id="bones"> bones</label>
+  <label class="chk"><input type="checkbox" id="marks" checked> hand points + span</label>
+  <label class="chk"><input type="checkbox" id="match" checked> reference scaled to same height</label>
+  <label class="chk"><input type="checkbox" id="inplace" checked> in place (strip root motion)</label>
+  <h4>Weapon</h4>
+  <div class="grp"><select id="gun"></select></div>
+  <label class="chk"><input type="checkbox" id="gunref" checked> same gun on the reference</label>
+  <label class="chk"><input type="checkbox" id="ik" checked> left hand follows pump / loads shell</label>
+  <div id="fit"></div>
+  <div class="grp" style="margin-top:6px"><button id="fitHere">Fit axis to this frame</button><button id="fitReset">Reset</button><button id="alignShell">Align shell to port</button></div>
+  <h4>Shell in the left hand</h4>
+  <div id="fit2"></div>
+  <h4>Fit values</h4>
+  <textarea id="fitOut" readonly></textarea>
+  <h4>Readout</h4>
+  <div id="readout"></div>
+</div>
+<div id="bottom" class="panel">
+  <div id="transport" style="margin-bottom:3px">
+    <button id="prev10">-10</button><button id="prev">&#9664; 1</button><button id="play" class="on">Pause</button><button id="next">1 &#9654;</button><button id="next10">+10</button>
+    <span id="frameInfo"></span>
+    <span class="lbl">Speed</span><select id="speed"><option value="0.1">0.1x</option><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option></select>
+    <label class="chk"><input type="checkbox" id="loop" checked> loop</label>
+    <span style="color:var(--dim)">space = play/pause, &larr; &rarr; = step, shift = 10 frames</span>
+  </div>
+  <input id="scrub" type="range" min="1" max="100" step="1" value="1">
+</div>
+<script src="dist/viewer.js"></script>
+</body>
+</html>

@@ -44838,7 +44838,7 @@ void main() {
     // muzzle ahead of the grip along the barrel
     muzzleUp: 0.06
   };
-  var SHOTGUN_HOLD = { muzzle: { x: -0.21, y: 1.055, z: 1.026 } };
+  var SHOTGUN_HOLD = { muzzle: { x: -0.206, y: 1.196, z: 0.854 } };
   var SHOTGUN_SPEC = {
     pellets: 9,
     spread: 0.15,
@@ -44848,8 +44848,16 @@ void main() {
     falloffFrom: 2.2,
     // full power inside this distance
     pumpStart: 0.24,
-    pumpEnd: 0.62
+    pumpEnd: 0.62,
     // s after the shot: the pump racks back and forward
+    pumpStroke: 0.07,
+    // m the forend slides back
+    // reload (sg_reload clip frames): the pump racks when the left hand is back on it
+    rackFrom: 80,
+    rackTo: 96,
+    // the shell she carries to the loading port: shown between these frames, held in the left hand (offset in
+    // metres and rotation in degrees, in the hand's frame; set with the rig lab, viewer.html)
+    shell: { from: 30, to: 56, x: 0.0478, y: 0, z: 0, rx: 32.07, ry: 66.49, rz: -47.36, portDown: 0.05 }
   };
   function muzzleLocal(weapon, out = {}) {
     if (weapon === SHOTGUN) {
@@ -46549,19 +46557,6 @@ void main() {
     });
     return g;
   }
-  function prepShotgun(gltf) {
-    const g = gltf.scene, find = (n) => g.getObjectByName(n);
-    g.traverse((o) => {
-      if (o.isMesh) {
-        o.castShadow = false;
-        o.frustumCulled = false;
-      }
-    });
-    const pump = find("Shotgun_Pump"), gripL = find("GameGrip_L");
-    if (gripL && pump && gripL.parent !== pump) pump.attach(gripL);
-    g.userData = { pump, pumpX: pump.position.x, gripL, muzzle: find("Muzzle") };
-    return g;
-  }
   function prepAxe(gltf) {
     const inner = gltf.scene, g = new Group();
     inner.rotation.x = Math.PI / 2;
@@ -46575,6 +46570,68 @@ void main() {
     g.add(inner);
     g.userData.tip = inner.getObjectByName("ImpactPoint");
     return g;
+  }
+  function prepPumpShort(gltf) {
+    const g = gltf.scene, find = (n) => g.getObjectByName(n);
+    g.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = false;
+        o.frustumCulled = false;
+      }
+    });
+    const pump = find("Pump");
+    g.userData = { pump, pumpX: pump.position.x, gripL: find("GameGrip_L"), muzzle: find("Muzzle"), port: find("LoadPort") };
+    return g;
+  }
+  function prepShell(gltf) {
+    const g = gltf.scene;
+    g.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = false;
+        o.frustumCulled = false;
+      }
+    });
+    return g;
+  }
+
+  // src/render/ik.js
+  var clamp3 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var acos = (x) => Math.acos(clamp3(x, -1, 1));
+  var _a2 = new Vector3();
+  var _b2 = new Vector3();
+  var _c = new Vector3();
+  var _t = new Vector3();
+  var _hq = new Quaternion();
+  var _w = new Quaternion();
+  var _p = new Quaternion();
+  function worldRot(bone, R) {
+    bone.getWorldQuaternion(_w);
+    bone.parent.getWorldQuaternion(_p);
+    bone.quaternion.copy(_p.invert().multiply(R).multiply(_w));
+    bone.updateMatrixWorld(true);
+  }
+  function ikArm(up, lo, hand, target, w) {
+    if (w <= 1e-3) return;
+    up.updateMatrixWorld(true);
+    const a = up.getWorldPosition(_a2).clone(), b = lo.getWorldPosition(_b2).clone(), c = hand.getWorldPosition(_c).clone();
+    const t = _t.copy(c).lerp(target, w).clone();
+    hand.getWorldQuaternion(_hq);
+    const handQ = _hq.clone();
+    const lab = b.distanceTo(a), lcb = c.distanceTo(b), lat = clamp3(t.distanceTo(a), 0.01, lab + lcb - 1e-3);
+    const ac = c.clone().sub(a).normalize(), ab = b.clone().sub(a).normalize(), ba = a.clone().sub(b).normalize(), bc = c.clone().sub(b).normalize(), at = t.clone().sub(a).normalize();
+    const ac_ab0 = acos(ac.dot(ab)), ba_bc0 = acos(ba.dot(bc)), ac_at0 = acos(ac.dot(at));
+    const ac_ab1 = acos((lcb * lcb - lab * lab - lat * lat) / (-2 * lab * lat)), ba_bc1 = acos((lat * lat - lab * lab - lcb * lcb) / (-2 * lab * lcb));
+    const ax0 = new Vector3().crossVectors(ac, ab);
+    if (ax0.lengthSq() < 1e-8) ax0.set(0, 1, 0);
+    ax0.normalize();
+    const ax1 = new Vector3().crossVectors(ac, at);
+    worldRot(lo, new Quaternion().setFromAxisAngle(ax0, ba_bc1 - ba_bc0));
+    const r = new Quaternion().setFromAxisAngle(ax0, ac_ab1 - ac_ab0);
+    if (ax1.lengthSq() > 1e-10) r.premultiply(new Quaternion().setFromAxisAngle(ax1.normalize(), ac_at0));
+    worldRot(up, r);
+    hand.parent.getWorldQuaternion(_p);
+    hand.quaternion.copy(_p.invert().multiply(handQ));
+    hand.updateMatrixWorld(true);
   }
 
   // src/render/physics/ragdoll.js
@@ -46715,7 +46772,7 @@ void main() {
   };
 
   // src/render/clipchars.js
-  var clamp3 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
   var smooth = (u) => u * u * (3 - 2 * u);
   var _v4 = new Vector3();
   var _v23 = new Vector3();
@@ -46728,6 +46785,7 @@ void main() {
   var UP = new Vector3(0, 1, 0);
   var _e = new Euler();
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
+  var HOLD_T = 1 / 30 + 2e-4;
   function angleDiff2(a, b) {
     let d = (b - a) % (Math.PI * 2);
     if (d > Math.PI) d -= Math.PI * 2;
@@ -46890,8 +46948,8 @@ void main() {
       }
       clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), "bat_idle_upper"));
       clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), "pistol_reload_upper"));
-      clips.push(subClip(byName.reload_rifle_stand, (b) => !LOWER.test(b), "shotgun_hold_upper"));
-      clips.push(subClip(byName.reload_rifle_stand, (b) => !LOWER.test(b), "shotgun_reload_upper"));
+      clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_hold_upper"));
+      clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_reload_upper"));
       const melee = [...new Set(AXE_ATTACKS.map((A) => A.clip))];
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
       super(scene2, gltf.scene, H2, clips);
@@ -46925,17 +46983,20 @@ void main() {
         a.play();
         a.setEffectiveWeight(0);
         a.timeScale = 0;
-        a.time = 1 / 30;
+        a.time = HOLD_T;
       }
-      this.shotgunReloadFrames = Math.round(byName.reload_rifle_stand.duration * 30);
+      this.shotgunReloadFrames = Math.round(byName.sg_reload.duration * 30);
       const hipsTrack = (c) => c.tracks.find((t) => /Hips.quaternion$/.test(t.name));
       this.upperHips = {};
-      for (const [n, src] of [["shotgun_reload_upper", "reload_rifle_stand"], ["pistol_reload_upper", "pistol_reload"]]) {
+      for (const [n, src] of [["shotgun_reload_upper", "sg_reload"], ["shotgun_hold_upper", "sg_reload"], ["pistol_reload_upper", "pistol_reload"]]) {
         const t = hipsTrack(byName[src]);
         if (t) this.upperHips[n] = t.createInterpolant(new Float32Array(4));
       }
       this.pistol = makePistol(1);
-      this.shotgun = prepShotgun(weapons.shotgun);
+      this.shotgun = prepPumpShort(weapons.shotgun);
+      this.shell = prepShell(weapons.shell);
+      this.shell.visible = false;
+      scene2.add(this.shell);
       this.melee = prepAxe(weapons.axe);
       scene2.add(this.pistol, this.shotgun, this.melee);
       this.up = { pistol: 1, shotgun: 0, axe: 0 };
@@ -46981,7 +47042,7 @@ void main() {
     calibrateShotgunSocket() {
       for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
       const h = this.act("shotgun_hold_upper"), id = this.act("pistol_idle_lower");
-      h.time = 1 / 30;
+      h.time = HOLD_T;
       h.setEffectiveWeight(1);
       id.time = 0;
       id.setEffectiveWeight(1);
@@ -47005,35 +47066,9 @@ void main() {
       const z = _v43.crossVectors(x, UP).normalize(), y = new Vector3().crossVectors(z, x);
       return out.setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
     }
-    // Two-bone IK (shoulder - elbow - hand) in world space: the hand reaches target (weight w), the
-    // elbow bends in its current plane, the hand keeps its world orientation.
+    // Two-bone arm IK (render/ik.js): the hand reaches the world-space target, weight w
     ikArm(side, target, w) {
-      if (w <= 1e-3) return;
-      const up = this.bones[side + "Arm"], lo = this.bones[side + "ForeArm"], hand = this.bones[side + "Hand"];
-      const a = up.getWorldPosition(new Vector3()), b = lo.getWorldPosition(new Vector3()), c = hand.getWorldPosition(new Vector3());
-      const t = c.clone().lerp(target, w);
-      const handQ = hand.getWorldQuaternion(new Quaternion());
-      const lab = b.distanceTo(a), lcb = c.distanceTo(b), lat = clamp3(t.distanceTo(a), 0.01, lab + lcb - 1e-3);
-      const ac = c.clone().sub(a).normalize(), ab = b.clone().sub(a).normalize(), ba = a.clone().sub(b).normalize(), bc = c.clone().sub(b).normalize(), at = t.clone().sub(a).normalize();
-      const acos = (x) => Math.acos(clamp3(x, -1, 1));
-      const ac_ab0 = acos(ac.dot(ab)), ba_bc0 = acos(ba.dot(bc)), ac_at0 = acos(ac.dot(at));
-      const ac_ab1 = acos((lcb * lcb - lab * lab - lat * lat) / (-2 * lab * lat)), ba_bc1 = acos((lat * lat - lab * lab - lcb * lcb) / (-2 * lab * lcb));
-      let ax0 = new Vector3().crossVectors(ac, ab);
-      if (ax0.lengthSq() < 1e-8) ax0.set(0, 1, 0);
-      ax0.normalize();
-      const ax1 = new Vector3().crossVectors(ac, at);
-      const worldRot = (bone, R) => {
-        const W = bone.getWorldQuaternion(new Quaternion()), P2 = bone.parent.getWorldQuaternion(new Quaternion());
-        bone.quaternion.copy(P2.invert().multiply(R).multiply(W));
-        bone.updateMatrixWorld(true);
-      };
-      worldRot(lo, new Quaternion().setFromAxisAngle(ax0, ba_bc1 - ba_bc0));
-      const r = new Quaternion().setFromAxisAngle(ax0, ac_ab1 - ac_ab0);
-      if (ax1.lengthSq() > 1e-10) r.premultiply(new Quaternion().setFromAxisAngle(ax1.normalize(), ac_at0));
-      worldRot(up, r);
-      const P = hand.parent.getWorldQuaternion(new Quaternion());
-      hand.quaternion.copy(P.invert().multiply(handQ));
-      hand.updateMatrixWorld(true);
+      ikArm(this.bones[side + "Arm"], this.bones[side + "ForeArm"], this.bones[side + "Hand"], target, w);
     }
     // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
     // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the
@@ -47060,7 +47095,7 @@ void main() {
       this.bones.LeftArm.getWorldPosition(_v43);
       const mid = _v32.add(_v43).multiplyScalar(0.5);
       const dir = _v43.copy(_v4).add(_v23).multiplyScalar(0.5).sub(mid).normalize();
-      const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp3(dir.y, -1, 1));
+      const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp4(dir.y, -1, 1));
       return out.setFromEuler(_e.set(pitch, yawOnly, 0, "YXZ"));
     }
     // Weapon socket on the right hand: the bat direction measured on the Mixamo reference skeleton
@@ -47168,23 +47203,23 @@ void main() {
       const spS = this.spS, vF = (dx * sn + dz * cs) * spS, vL = (dx * cs - dz * sn) * spS;
       const w = { pistol_idle: 0 };
       for (const n in LOCO) w[n] = 0;
-      const move = clamp3(spS / 0.35, 0, 1);
+      const move = clamp4(spS / 0.35, 0, 1);
       w.pistol_idle = 1 - move;
       let hipYaw = 0;
       if (move > 0) {
         const th = Math.atan2(vL, vF), ath = Math.abs(th);
         if (!this.backMode && ath > 1.95) this.backMode = true;
         else if (this.backMode && ath < 1.2) this.backMode = false;
-        this.backBlend = clamp3((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
+        this.backBlend = clamp4((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
         const mb = smooth(this.backBlend);
         const put = (key, kk) => {
           const [walk, run] = GAIT[key], g0 = this.gait[walk], g1 = this.gait[run];
-          const r = smooth(clamp3((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
+          const r = smooth(clamp4((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
           w[walk] += kk * (1 - r);
           w[run] += kk * r;
         };
         if (mb < 1) {
-          const tf = clamp3(th, -Math.PI / 2, Math.PI / 2);
+          const tf = clamp4(th, -Math.PI / 2, Math.PI / 2);
           const [a0, k0, a1, k1] = tf >= 0 ? [0, "f", Math.PI / 2, "l"] : [0, "f", -Math.PI / 2, "r"];
           const u = smooth((tf - a0) / (a1 - a0));
           put(k0, (1 - u) * move * (1 - mb));
@@ -47198,7 +47233,7 @@ void main() {
       const lw = this.lw || (this.lw = {}), maxW = dt / 0.12;
       let ws = 0, stride = 0;
       for (const n in w) {
-        lw[n] = (lw[n] ?? w[n]) + clamp3(w[n] - (lw[n] ?? w[n]), -maxW, maxW);
+        lw[n] = (lw[n] ?? w[n]) + clamp4(w[n] - (lw[n] ?? w[n]), -maxW, maxW);
         if (LOCO[n] && lw[n] > 0) {
           ws += lw[n];
           stride += lw[n] * this.gait[n].stride;
@@ -47206,7 +47241,7 @@ void main() {
       }
       const tot = Object.values(lw).reduce((a, b) => a + b, 0) || 1;
       for (const n in lw) lw[n] /= tot;
-      this.hipYaw = (this.hipYaw || 0) + clamp3(hipYaw - (this.hipYaw || 0), -dt * 9, dt * 9);
+      this.hipYaw = (this.hipYaw || 0) + clamp4(hipYaw - (this.hipYaw || 0), -dt * 9, dt * 9);
       if (ws > 1e-3) this.phase = (this.phase + sp * dt / (stride / ws)) % 1;
       for (const n in LOCO) {
         if (!lw[n]) continue;
@@ -47227,7 +47262,7 @@ void main() {
       this.container.rotation.y = this.yaw;
       const w = this.locoWeights(s, dt);
       const rate = dt / Math.max(0.05, s.swapDur * 0.6);
-      for (const k2 in this.up) this.up[k2] += clamp3((s.equipped === k2 ? 1 : 0) - this.up[k2], -rate, rate);
+      for (const k2 in this.up) this.up[k2] += clamp4((s.equipped === k2 ? 1 : 0) - this.up[k2], -rate, rate);
       const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), un = uP0 + uS0 + uA0 || 1;
       const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un;
       let sW = 0, turn = 0;
@@ -47245,10 +47280,10 @@ void main() {
           this.swingName = A.name;
         }
         act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps;
-        const ramp = clamp3(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
-        const out = t <= tEnd ? 1 : smooth(clamp3(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
+        const ramp = clamp4(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
+        const out = t <= tEnd ? 1 : smooth(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
         sW = ramp * out;
-        turn = A.yawOffset * smooth(clamp3(t / 0.1, 0, 1)) * out;
+        turn = A.yawOffset * smooth(clamp4(t / 0.1, 0, 1)) * out;
         if (this.prevSwing) {
           const pw = this.prevSwingW * (1 - ramp);
           this.prevSwing.setEffectiveWeight(pw);
@@ -47277,18 +47312,22 @@ void main() {
       if (A) this.swingAct.setEffectiveWeight(sW);
       this.container.rotation.y = this.yaw + turn;
       let rW = 0;
+      this.reloadFrame = -1;
       if (s.action === "reload") {
-        const sg = s.equipped === "shotgun", u = clamp3(s.actionT / s.reloadDur, 0, 1);
+        const sg = s.equipped === "shotgun", u = clamp4(s.actionT / s.reloadDur, 0, 1);
         const rl = this.act(sg ? "shotgun_reload_upper" : "pistol_reload_upper");
         rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30;
-        rW = smooth(clamp3(s.actionT / 0.08, 0, 1)) * smooth(clamp3((1 - u) / 0.12, 0, 1));
+        if (sg) this.reloadFrame = rl.time * 30;
+        rW = smooth(clamp4(s.actionT / 0.08, 0, 1)) * smooth(clamp4((1 - u) / 0.12, 0, 1));
       }
       this.reloadW = rW;
       const rP = s.equipped === "pistol" ? rW : 0, rS = s.equipped === "shotgun" ? rW : 0;
       const k = 1 - sW;
       this.act("pistol_reload_upper").setEffectiveWeight(rP * uP * k);
       this.act("shotgun_reload_upper").setEffectiveWeight(rS * uS * k);
-      this.act("shotgun_hold_upper").setEffectiveWeight((1 - rS) * uS * k);
+      const hold = this.act("shotgun_hold_upper");
+      hold.setEffectiveWeight((1 - rS) * uS * k);
+      hold.time = HOLD_T + (this.holdJit ^= 1) * 1e-6;
       this.act("bat_idle_upper").setEffectiveWeight(uA * k);
       for (const n in w) {
         this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
@@ -47358,7 +47397,7 @@ void main() {
       this.bones.RightArm.getWorldPosition(_v32);
       this.bones.LeftArm.getWorldPosition(_v43);
       const hx = (_v4.x + _v23.x) / 2 - (_v32.x + _v43.x) / 2, hz = (_v4.z + _v23.z) / 2 - (_v32.z + _v43.z) / 2;
-      const live = clamp3(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+      const live = clamp4(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
       if (rW === 0) this.aimErr = live;
       const err = live * (1 - rW) + (this.aimErr || 0) * rW;
       const kick = s.recoil * s.recoil * s.recoilScale;
@@ -47374,29 +47413,18 @@ void main() {
       this.bones.RightHand.getWorldQuaternion(_q3).multiply(this.shotgunSocket);
       return out.set(1, 0, 0).applyQuaternion(_q3).applyQuaternion(_q32);
     }
-    // Shotgun: the hold pose rides on whatever the legs' clip does with the hips (the running strafes turn
-    // the pelvis toward travel), so (1) turn the chest back onto the aim, spread over the three spine
-    // bones, then (2) bring the barrel near level by turning the right arm at the shoulder. During a reload the last yaw is held
-    // and the levelling fades out. Then the kick: chest and arms thrown up and back.
+    // Shotgun: the hold is baked in Blender so the barrel points along the pelvis' heading (blender: sg_reload);
+    // what is left here is the small error when the running strafes turn the pelvis toward travel, turned out
+    // over the spine (held through a reload), and the kick: chest and arms thrown up and back.
     aimShotgun(s, ub) {
       const k = 1 - ub, rW = this.reloadW || 0;
-      let b = this.shotgunBarrel(_v4);
-      const live = clamp3(angleDiff2(Math.atan2(b.x, b.z), 0), -2.2, 2.2);
+      const b = this.shotgunBarrel(_v4);
+      const live = clamp4(angleDiff2(Math.atan2(b.x, b.z), 0), -0.8, 0.8);
       if (rW === 0) this.sgYaw = live;
       const ey = (live * (1 - rW) + (this.sgYaw || 0) * rW) * k;
       if (Math.abs(ey) > 1e-4) for (const n of ["Spine", "Spine1", "Spine2"]) {
         _q4.setFromAxisAngle(UP, ey / 3);
         this.rotateC(n, _q4);
-      }
-      b = this.shotgunBarrel(_v4);
-      const flat = _v23.set(b.x, 0, b.z);
-      if (flat.lengthSq() > 1e-6) {
-        flat.normalize();
-        flat.y = -0.36;
-        flat.normalize();
-        _q4.setFromUnitVectors(b.normalize(), flat);
-        _q4.slerp(_q3.identity(), 1 - k * (1 - rW));
-        this.rotateC("RightArm", _q4.clone());
       }
       const kick = s.recoil * s.recoil * s.recoilScale;
       if (kick > 0.01) {
@@ -47406,11 +47434,44 @@ void main() {
         this.rotateEulerC("LeftArm", -0.22 * kick * k, 0, 0);
       }
     }
+    // Left hand on the shotgun: reaches the shell's loading port while it carries a shell, otherwise stays on
+    // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
+    // reach to the belt and back is left alone.
+    shotgunLeftHand(rf, G2) {
+      const U = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth(clamp4(u, 0, 1));
+      const shellOn = rf >= SH.from && rf <= SH.to;
+      this.grip("Left", _v4);
+      let wPort = 0;
+      if (shellOn) {
+        _v32.copy(U.port.position).add(_v43.set(0, -SH.portDown, 0));
+        G2.localToWorld(_v32);
+        wPort = smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
+        if (wPort > 0) {
+          this.ikArm("Left", _v32, wPort);
+          this.grip("Left", _v4);
+        }
+      }
+      _v23.set(U.pumpX, U.pump.position.y, U.pump.position.z);
+      G2.localToWorld(_v23);
+      const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
+      if (wHold > 0) this.ikArm("Left", U.gripL.getWorldPosition(_v32), wHold);
+      const S = this.shell;
+      S.visible = shellOn;
+      if (shellOn) {
+        this.bones.LeftHand.getWorldQuaternion(_q3);
+        _q22.setFromEuler(_e.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, "XYZ"));
+        _q3.multiply(_q22);
+        S.quaternion.copy(_q3);
+        this.grip("Left", _v4);
+        S.position.copy(_v4).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q3));
+      }
+    }
     placeWeapons(s, dt) {
       const shown = this.weaponShown;
       this.pistol.visible = shown === "pistol";
       this.shotgun.visible = shown === "shotgun";
       this.melee.visible = shown === "axe";
+      this.shell.visible = false;
       if (shown === "pistol") {
         this.aimQuat(_q3);
         const rW = this.reloadW || 0;
@@ -47424,20 +47485,22 @@ void main() {
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
-        const G2 = this.shotgun, U = G2.userData;
+        const G2 = this.shotgun, U = G2.userData, SP = SHOTGUN_SPEC;
         this.bones.RightHand.getWorldQuaternion(_q3).multiply(this.shotgunSocket);
         this.grip("Right", _v4);
         G2.position.copy(_v4);
         G2.quaternion.copy(_q3);
-        let pump = 0;
+        let slide = 0;
         if (s.action === "shot") {
-          const u = (s.actionT - SHOTGUN_SPEC.pumpStart) / (SHOTGUN_SPEC.pumpEnd - SHOTGUN_SPEC.pumpStart);
-          if (u > 0 && u < 1) pump = Math.sin(Math.PI * u);
+          const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
+          if (u > 0 && u < 1) slide = Math.sin(Math.PI * u);
         }
-        U.pump.position.x = U.pumpX - 0.065 * pump;
+        const rf = this.reloadFrame;
+        if (rf >= SP.rackFrom && rf <= SP.rackTo) slide = Math.max(slide, Math.sin(Math.PI * (rf - SP.rackFrom) / (SP.rackTo - SP.rackFrom)));
+        U.pump.position.x = U.pumpX - SP.pumpStroke * slide;
         G2.updateMatrixWorld(true);
         U.muzzle.getWorldPosition(this.muzzleWorld);
-        this.ikArm("Left", U.gripL.getWorldPosition(_v23), 1 - (this.reloadW || 0));
+        this.shotgunLeftHand(rf, G2);
       } else {
         this.grip("Right", _v4);
         this.grip("Left", _v23);
@@ -47458,7 +47521,7 @@ void main() {
         this.prevTip.copy(tip);
         const fwd = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
         const sp = vel.length();
-        const want = vel.multiplyScalar(clamp3((sp - 1) / 3, 0, 1)).addScaledVector(fwd, 0.8);
+        const want = vel.multiplyScalar(clamp4((sp - 1) / 3, 0, 1)).addScaledVector(fwd, 0.8);
         want.addScaledVector(dir, -want.dot(dir));
         if (want.lengthSq() < 1e-6) want.set(1, 0, 0).addScaledVector(dir, -dir.x);
         want.normalize();
@@ -47482,7 +47545,7 @@ void main() {
         d.clampWhenFinished = true;
         d.setEffectiveWeight(1);
         d.play();
-        this.pistol.visible = this.shotgun.visible = this.melee.visible = false;
+        this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
       }
       this.deathT += dt;
       this.mixer.update(dt);
@@ -47567,10 +47630,10 @@ void main() {
       this.modules = {};
       this.gore = {};
       model.traverse((o) => {
-        var _a3, _b3;
+        var _a4, _b4;
         for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
         const m = GORE_NAME.exec(o.name);
-        if (m) ((_a3 = this.gore)[_b3 = m[1]] || (_a3[_b3] = {}))[m[2].toLowerCase()] = o;
+        if (m) ((_a4 = this.gore)[_b4 = m[1]] || (_a4[_b4] = {}))[m[2].toLowerCase()] = o;
       });
       this.modular = Object.keys(this.modules).length === 5;
       this.severed = /* @__PURE__ */ new Set();
@@ -47824,16 +47887,16 @@ void main() {
       if (this.deathYaw != null) this.container.rotation.y += angleDiff2(this.container.rotation.y, this.deathYaw) * Math.min(1, dt * 14);
       else this.container.rotation.y = z.yaw;
       const sp = Math.hypot(z.vx, z.vz);
-      const move = clamp3(sp / 0.25, 0, 1);
+      const move = clamp4(sp / 0.25, 0, 1);
       const one = this.oneShot ? this.oneShot.getEffectiveWeight() : 0;
       const crawl = z.crawling && this.hasCrawl ? 1 : 0;
       this.act("walk").setEffectiveWeight(move * (1 - one) * (1 - crawl));
       this.act("idle").setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
-      this.act("walk").timeScale = clamp3(sp / this.nativeWalk, 0.5, 3.2);
+      this.act("walk").timeScale = clamp4(sp / this.nativeWalk, 0.5, 3.2);
       if (this.hasCrawl) {
         const c = this.act("crawl");
         c.setEffectiveWeight(crawl * (1 - one));
-        c.timeScale = clamp3(sp / (0.22 * this.height), 0.45, 2.5);
+        c.timeScale = clamp4(sp / (0.22 * this.height), 0.45, 2.5);
       }
       this.mixer.update(dt);
       this.container.updateMatrixWorld(true);
@@ -48784,8 +48847,8 @@ void main() {
   var FRICTION = 0.55;
   var BOUNCE = 0.15;
   var CELL = 0.3;
-  var _a2 = new Vector3();
-  var _b2 = new Vector3();
+  var _a3 = new Vector3();
+  var _b3 = new Vector3();
   var _q5 = new Quaternion();
   var Particle = class {
     constructor(p, r, invMass) {
@@ -48954,13 +49017,13 @@ void main() {
           if (body.sleep >= 1.5) continue;
           for (const c of body.cons) {
             const A = c.A, B = c.B;
-            _a2.subVectors(B.x, A.x);
-            const d = _a2.length() || 1e-6;
+            _a3.subVectors(B.x, A.x);
+            const d = _a3.length() || 1e-6;
             let target = d < c.lo ? c.lo : d > c.hi ? c.hi : d;
             if (target === d) continue;
             const k = (d - target) / (d * (A.w + B.w));
-            A.x.addScaledVector(_a2, k * A.w);
-            B.x.addScaledVector(_a2, -k * B.w);
+            A.x.addScaledVector(_a3, k * A.w);
+            B.x.addScaledVector(_a3, -k * B.w);
           }
         }
         if (it % 2 === 0) this._contacts(pts, grid);
@@ -48977,11 +49040,11 @@ void main() {
         for (const p of body.pts) maxV = Math.max(maxV, p.x.distanceTo(p.p) / dt);
         body.sleep = maxV < 0.08 ? body.sleep + dt : 0;
         body.ends.forEach(([A, B], i) => {
-          const axis = _a2.subVectors(B.x, A.x).normalize();
+          const axis = _a3.subVectors(B.x, A.x).normalize();
           const name = body.kind === "ragdoll" ? body.desc.parts[i].name : "";
           if (name === "pelvis" || name === "chest") {
             const [L, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
-            frameQuat(axis, _b2.subVectors(L.x, R.x), body.q[i]);
+            frameQuat(axis, _b3.subVectors(L.x, R.x), body.q[i]);
           } else {
             _q5.setFromUnitVectors(body.prevAxis[i], axis);
             body.q[i].premultiply(_q5).normalize();
@@ -49000,12 +49063,12 @@ void main() {
           if (!c) continue;
           for (const q of c) {
             if (q === p || q.body.id < p.body.id || q.body === p.body && (q.i <= p.i || p.body.adj.has(p.i * 64 + q.i))) continue;
-            _a2.subVectors(q.x, p.x);
-            const d2 = _a2.lengthSq(), rr = p.r + q.r;
+            _a3.subVectors(q.x, p.x);
+            const d2 = _a3.lengthSq(), rr = p.r + q.r;
             if (d2 >= rr * rr || d2 < 1e-10) continue;
             const d = Math.sqrt(d2), k = (rr - d) / (d * (p.w + q.w));
-            p.x.addScaledVector(_a2, -k * p.w);
-            q.x.addScaledVector(_a2, k * q.w);
+            p.x.addScaledVector(_a3, -k * p.w);
+            q.x.addScaledVector(_a3, k * q.w);
           }
         }
       }
@@ -49485,12 +49548,12 @@ void main() {
     const yolaP = loader.loadAsync("assets/yola.glb");
     const zomP = Promise.all(ZOMBIE_TYPES.map((t) => loader.loadAsync(t.file)));
     const dataP = fetch("assets/clipdata.json").then((r) => r.json());
-    const wpnP = Promise.all([loader.loadAsync("assets/weapons/pump_shotgun.glb"), loader.loadAsync("assets/weapons/fire_axe.glb")]);
+    const wpnP = Promise.all([loader.loadAsync("assets/weapons/pump_short.glb"), loader.loadAsync("assets/weapons/fire_axe.glb"), loader.loadAsync("assets/weapons/shell.glb")]);
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-    const [yg, zgs, clipdata, [sgG, axeG]] = await Promise.all([yolaP, zomP, dataP, wpnP]);
+    const [yg, zgs, clipdata, [sgG, axeG, shellG]] = await Promise.all([yolaP, zomP, dataP, wpnP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG });
+    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
     ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[i]);
     renderer.shadowMap.needsUpdate = true;
     restart();

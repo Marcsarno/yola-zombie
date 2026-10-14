@@ -67,3 +67,20 @@ export function prepAxe(gltf) {
   g.userData.tip = inner.getObjectByName('ImpactPoint');
   return g;
 }
+
+// Short pump shotgun (assets/weapons/pump_short.glb, blender/make_pump.py): origin at the right-hand grip, barrel
+// along +X, +Y up. 'Pump' (the forend) slides along X and carries the left-hand hold point (GameGrip_L);
+// 'LoadPort' is the loading slot under the receiver, where the shell goes in.
+export function prepPumpShort(gltf) {
+  const g = gltf.scene, find = (n) => g.getObjectByName(n);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+  const pump = find('Pump');
+  g.userData = { pump, pumpX: pump.position.x, gripL: find('GameGrip_L'), muzzle: find('Muzzle'), port: find('LoadPort') };
+  return g;
+}
+// 12-gauge shell (assets/weapons/shell.glb): axis along +X, brass head toward -X, origin at the centre.
+export function prepShell(gltf) {
+  const g = gltf.scene;
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+  return g;
+}
