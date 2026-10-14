@@ -8,3 +8,6 @@ __pycache__/
 yolanda/zombie/shots/
 *.blend1
 yolanda/zombie/dist/*.map
+
+# raw supplied asset packs (kept in Downloads zips; processed outputs are tracked)
+yolanda/zombie/assets/source/

@@ -1,0 +1,172 @@
+{
+ "NURSE_MOD:Head": {
+  "c": [
+   0.0015,
+   0.0143,
+   0.7985
+  ],
+  "n": [
+   0.001,
+   -0.468,
+   0.884
+  ],
+  "r": 0.039,
+  "rmax": 0.0529,
+  "prox": "mixamorig:Neck",
+  "dist": "mixamorig:Head",
+  "npts": 56
+ },
+ "NURSE_MOD:Forearm_L": {
+  "c": [
+   0.1586,
+   0.0363,
+   0.6183
+  ],
+  "n": [
+   0.358,
+   -0.368,
+   -0.858
+  ],
+  "r": 0.0242,
+  "rmax": 0.0297,
+  "prox": "mixamorig:LeftArm",
+  "dist": "mixamorig:LeftForeArm",
+  "npts": 45
+ },
+ "NURSE_MOD:Forearm_R": {
+  "c": [
+   -0.1586,
+   0.0363,
+   0.62
+  ],
+  "n": [
+   -0.38,
+   -0.347,
+   -0.858
+  ],
+  "r": 0.0241,
+  "rmax": 0.0292,
+  "prox": "mixamorig:RightArm",
+  "dist": "mixamorig:RightForeArm",
+  "npts": 49
+ },
+ "NURSE_MOD:LowerLeg_L": {
+  "c": [
+   0.081,
+   0.036,
+   0.2806
+  ],
+  "n": [
+   0.089,
+   0.161,
+   -0.983
+  ],
+  "r": 0.046,
+  "rmax": 0.0532,
+  "prox": "mixamorig:LeftUpLeg",
+  "dist": "mixamorig:LeftLeg",
+  "npts": 49
+ },
+ "NURSE_MOD:LowerLeg_R": {
+  "c": [
+   -0.0809,
+   0.038,
+   0.2813
+  ],
+  "n": [
+   -0.089,
+   0.161,
+   -0.983
+  ],
+  "r": 0.0465,
+  "rmax": 0.0527,
+  "prox": "mixamorig:RightUpLeg",
+  "dist": "mixamorig:RightLeg",
+  "npts": 52
+ },
+ "PATIENT_MOD:Head": {
+  "c": [
+   -0.0017,
+   -0.0365,
+   0.825
+  ],
+  "n": [
+   0.002,
+   -0.001,
+   1.0
+  ],
+  "r": 0.0538,
+  "rmax": 0.0948,
+  "prox": "mixamorig:Neck",
+  "dist": "mixamorig:Head",
+  "npts": 155
+ },
+ "PATIENT_MOD:Forearm_L": {
+  "c": [
+   0.1724,
+   0.0551,
+   0.6282
+  ],
+  "n": [
+   0.398,
+   -0.244,
+   -0.884
+  ],
+  "r": 0.0265,
+  "rmax": 0.0326,
+  "prox": "mixamorig:LeftArm",
+  "dist": "mixamorig:LeftForeArm",
+  "npts": 50
+ },
+ "PATIENT_MOD:Forearm_R": {
+  "c": [
+   -0.1718,
+   0.0549,
+   0.6298
+  ],
+  "n": [
+   -0.421,
+   -0.241,
+   -0.874
+  ],
+  "r": 0.0267,
+  "rmax": 0.0316,
+  "prox": "mixamorig:RightArm",
+  "dist": "mixamorig:RightForeArm",
+  "npts": 54
+ },
+ "PATIENT_MOD:LowerLeg_L": {
+  "c": [
+   0.0873,
+   0.0247,
+   0.2753
+  ],
+  "n": [
+   -0.0,
+   0.0,
+   -1.0
+  ],
+  "r": 0.0344,
+  "rmax": 0.0443,
+  "prox": "mixamorig:LeftUpLeg",
+  "dist": "mixamorig:LeftLeg",
+  "npts": 51
+ },
+ "PATIENT_MOD:LowerLeg_R": {
+  "c": [
+   -0.0879,
+   0.025,
+   0.2753
+  ],
+  "n": [
+   0.0,
+   0.0,
+   -1.0
+  ],
+  "r": 0.0346,
+  "rmax": 0.044,
+  "prox": "mixamorig:RightUpLeg",
+  "dist": "mixamorig:RightLeg",
+  "npts": 53
+ }
+}
