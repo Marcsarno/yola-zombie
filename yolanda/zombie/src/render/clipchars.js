@@ -134,7 +134,8 @@ export class YolaView extends ClipBody {
     }
     clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), 'bat_idle_upper'));
     clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), 'pistol_reload_upper'));
-    // shotgun: held as the rifle reload starts (frame 1), and that clip is the reload
+    // shotgun: held low-ready as the rifle reload starts (frame 1; the rifle aiming idle does not fit
+    // Yola's shorter arms), and that clip is the reload
     clips.push(subClip(byName.reload_rifle_stand, (b) => !LOWER.test(b), 'shotgun_hold_upper'));
     clips.push(subClip(byName.reload_rifle_stand, (b) => !LOWER.test(b), 'shotgun_reload_upper'));
     const melee = [...new Set(AXE_ATTACKS.map((A) => A.clip))];
@@ -161,7 +162,7 @@ export class YolaView extends ClipBody {
     // the torso is not tipped by a running lean or a turned strafe pelvis (see rebaseUpper)
     const hipsTrack = (c) => c.tracks.find((t) => /Hips.quaternion$/.test(t.name));
     this.upperHips = {};
-    for (const [n, src] of [['shotgun_hold_upper', 'reload_rifle_stand'], ['shotgun_reload_upper', 'reload_rifle_stand'], ['pistol_reload_upper', 'pistol_reload']]) {
+    for (const [n, src] of [['shotgun_reload_upper', 'reload_rifle_stand'], ['pistol_reload_upper', 'pistol_reload']]) {
       const t = hipsTrack(byName[src]); if (t) this.upperHips[n] = t.createInterpolant(new Float32Array(4));
     }
     this.pistol = makePistol(1);
@@ -177,7 +178,26 @@ export class YolaView extends ClipBody {
     this.calibrateBatSocket(clipdata);
     this.calibratePistolSocket();
     this.calibrateShotgunSocket();
+    this.calibrateMeleeSockets(clipdata);
     this.bladeQ = new THREE.Quaternion(); this.prevTip = new THREE.Vector3(); this.bladeInit = false;
+  }
+
+  // Axe socket for each attack: the handle direction sampled in Blender (clipdata[path].d at the attack's
+  // first frame, character space; each clip family grips differently) expressed in this hand's frame.
+  calibrateMeleeSockets(clipdata) {
+    this.meleeSocket = {};
+    for (const A of AXE_ATTACKS) {
+      const smp = clipdata?.[A.path]?.find((q) => q.f === A.f0);
+      if (!smp?.d) continue;
+      for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
+      const act = this.act(A.clip); act.time = A.f0 / 30; act.setEffectiveWeight(1);
+      this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
+      this.mixer.update(0); this.container.updateMatrixWorld(true);
+      this.container.getWorldQuaternion(_q2); this.bones.RightHand.getWorldQuaternion(_q3);
+      const handC = _q2.invert().multiply(_q3);
+      this.meleeSocket[A.name] = new THREE.Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
+      act.setEffectiveWeight(0);
+    }
   }
 
   // Shotgun socket on the right hand: in the hold pose the barrel runs from the right hand to the left
@@ -397,8 +417,8 @@ export class YolaView extends ClipBody {
       const t = s.swingT, tEnd = (A.f1 - A.f0) / (A.fps * A.rate), act = this.act(A.clip);
       if (this.swingId !== s.swingId) {
         // next attack of the combo: the previous clip fades out under the new one
-        if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; }
-        this.swingId = s.swingId; this.swingAct = act;
+        if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; }
+        this.swingId = s.swingId; this.swingAct = act; this.swingName = A.name;
       }
       act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps; // glTF time = blender frame / fps
       const ramp = clamp(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
@@ -520,7 +540,7 @@ export class YolaView extends ClipBody {
   }
   // Shotgun: the hold pose rides on whatever the legs' clip does with the hips (the running strafes turn
   // the pelvis toward travel), so (1) turn the chest back onto the aim, spread over the three spine
-  // bones, then (2) level the barrel about its own sideways axis. During a reload the last yaw is held
+  // bones, then (2) bring the barrel near level by turning the right arm at the shoulder. During a reload the last yaw is held
   // and the levelling fades out. Then the kick: chest and arms thrown up and back.
   aimShotgun(s, ub) {
     const k = 1 - ub, rW = this.reloadW || 0;
@@ -532,10 +552,12 @@ export class YolaView extends ClipBody {
     b = this.shotgunBarrel(_v);
     const flat = _v2.set(b.x, 0, b.z);
     if (flat.lengthSq() > 1e-6) {
-      flat.normalize(); flat.y = -0.06; flat.normalize(); // a touch below level
+      flat.normalize(); flat.y = -0.36; flat.normalize(); // ~20 degrees below level: a low ready
+      // raised from the right shoulder (the gun rides that hand; the left hand follows by IK), so the
+      // torso stays upright instead of leaning back to lift the barrel
       _q4.setFromUnitVectors(b.normalize(), flat);
       _q4.slerp(_q.identity(), 1 - k * (1 - rW));
-      this.rotateC('Spine2', _q4.clone());
+      this.rotateC('RightArm', _q4.clone());
     }
     const kick = s.recoil * s.recoil * s.recoilScale;
     if (kick > 0.01) {
@@ -575,9 +597,16 @@ export class YolaView extends ClipBody {
       // axe: handle direction from the right-hand socket (as on the reference skeleton), grip between
       // the hands; the blade turns to lead the motion (edge first), resting toward the front
       this.grip('Right', _v); this.grip('Left', _v2);
+      // socket: the idle grip, blended with the current (and fading) attack's grip
       let dir;
-      if (this.batSocket) { this.bones.RightHand.getWorldQuaternion(_q); dir = _v3.copy(this.batSocket).applyQuaternion(_q).normalize(); }
-      else dir = _v3.copy(_v).sub(_v2).normalize();
+      if (this.batSocket) {
+        const wA = this.swingAct ? this.swingW : 0, wP = this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0, wI = Math.max(0, 1 - wA - wP);
+        const ms = this.meleeSocket || {};
+        dir = _v3.copy(this.batSocket).multiplyScalar(wI);
+        if (wA) dir.addScaledVector(ms[this.swingName] || this.batSocket, wA);
+        if (wP) dir.addScaledVector(ms[this.prevSwingName] || this.batSocket, wP);
+        this.bones.RightHand.getWorldQuaternion(_q); dir.applyQuaternion(_q).normalize();
+      } else dir = _v3.copy(_v).sub(_v2).normalize();
       const M = this.melee;
       M.position.copy(_v).add(_v2).multiplyScalar(0.5);
       const tip = _v4.copy(M.position).addScaledVector(dir, 0.7);

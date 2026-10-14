@@ -44,9 +44,15 @@ export const AXE_ATTACKS = [
     duration: 0.62, activeStart: 0.155, activeEnd: 0.31, chainFrom: 0.33, swapPoint: 0.48,
     dmg: 1, knock: 1, style: 'swing', sever: { head: 0.35, arm: 0.25 },
   },
-  { // last: the finisher, an overhead chop (Mixamo heavy weapon swing: raise over the head, slam down, lean in)
-    name: 'chop', clip: 'heavy_swing', path: 'heavy_swing', f0: 58, f1: 96, rate: 2.0, fps: 30, yawOffset: 0,
-    duration: 0.85, activeStart: 0.3, activeEnd: 0.47, chainFrom: 9, swapPoint: 0.66,
+  { // 2: the backhand - a low two-handed slash back from left to right (Mixamo great sword low slash);
+    // it sweeps at the knees as much as the waist, so legs come off
+    name: 'slash', clip: 'gs_low_slash', path: 'gs_low_slash', f0: 10, f1: 34, rate: 1.5, fps: 30, yawOffset: 0,
+    duration: 0.72, activeStart: 0.27, activeEnd: 0.47, chainFrom: 0.5, swapPoint: 0.55,
+    dmg: 1.1, knock: 1.15, style: 'heavy', sever: { head: 0.15, arm: 0.25, leg: 0.35 },
+  },
+  { // 3: the finisher - Yola's own overhead chop (Tripo): axe behind the head, straight up, slammed down
+    name: 'chop', clip: 't_chop', path: 't_chop', f0: 44, f1: 74, rate: 1.3, fps: 30, yawOffset: 0,
+    duration: 0.95, activeStart: 0.36, activeEnd: 0.6, chainFrom: 9, swapPoint: 0.75,
     dmg: 1.6, knock: 0.8, style: 'chop', sever: { head: 0.6, arm: 0.35 },
   },
 ];
