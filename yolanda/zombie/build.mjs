@@ -1,15 +1,16 @@
 // Bundle the combat benchmark: node build.mjs [--watch]
+// dist/combat.js: the game. dist/rapier.js: the Rapier physics library, loaded only when selected.
 import * as esbuild from 'esbuild';
 
-const opts = {
-  entryPoints: ['src/main.js'],
+const base = {
   bundle: true,
   format: 'iife',
   target: ['es2020', 'safari15'],
-  outfile: 'dist/combat.js',
   sourcemap: true,
   minify: process.argv.includes('--min'),
   logLevel: 'info',
 };
-if (process.argv.includes('--watch')) (await esbuild.context(opts)).watch();
-else await esbuild.build(opts);
+const game = { ...base, entryPoints: ['src/main.js'], outfile: 'dist/combat.js' };
+const rapier = { ...base, entryPoints: ['src/rapier-entry.js'], outfile: 'dist/rapier.js', sourcemap: false, minify: true };
+if (process.argv.includes('--watch')) (await esbuild.context(game)).watch();
+else await Promise.all([esbuild.build(game), esbuild.build(rapier)]);

@@ -19,7 +19,18 @@ function dotTexture() {
   return new THREE.CanvasTexture(c);
 }
 
-const MAX_P = 160;
+const MAX_P = 320;
+const MAX_POOLS = 32;
+
+function splatTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(255,255,255,1)';
+  const blob = (x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); };
+  blob(64, 64, 34);
+  for (let i = 0; i < 14; i++) { const a = Math.random() * Math.PI * 2, d = 26 + Math.random() * 28; blob(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, 4 + Math.random() * 10); }
+  return new THREE.CanvasTexture(c);
+}
 
 export class FX {
   constructor(scene) {
@@ -74,6 +85,34 @@ export class FX {
     const arcGeo = new THREE.RingGeometry(0.72, 0.76, 32, 1, -0.45, 0.9); arcGeo.rotateX(-Math.PI / 2); arcGeo.rotateY(-Math.PI / 2);
     this.aim.add(new THREE.Mesh(arcGeo, this.aimMat));
     this.aim.position.y = 0.02; this.aim.renderOrder = 2; scene.add(this.aim);
+    // blood pools: pooled floor decals that spread, then fade after a while
+    const splat = splatTexture();
+    this.pools = [];
+    for (let i = 0; i < MAX_POOLS; i++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: splat, color: 0x4a0606, transparent: true, opacity: 0, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2; m.visible = false; m.renderOrder = 1; scene.add(m);
+      this.pools.push({ m, t: 99, size: 1 });
+    }
+    this.poolNext = 0;
+  }
+
+  // Blood: dark particles thrown along (dx, dy, dz) and a pool spreading on the floor.
+  bloodSpray(x, y, z, dx, dy, dz, n = 22, speed = 3.0) {
+    if (!this.gore) return;
+    for (let i = 0; i < n; i++) {
+      const p = this.parts[this.pNext]; this.pNext = (this.pNext + 1) % MAX_P;
+      const s = speed * (0.35 + Math.random() * 0.75);
+      p.x = x; p.y = y; p.z = z;
+      p.vx = dx * s + (Math.random() - 0.5) * 1.4; p.vy = dy * s + Math.random() * 1.2; p.vz = dz * s + (Math.random() - 0.5) * 1.4;
+      p.life = p.max = 0.5 + Math.random() * 0.5; p.r = 0.42; p.g = 0.02; p.b = 0.02; p.dark = true;
+    }
+  }
+  bloodPool(x, z, size = 0.8) {
+    if (!this.gore) return;
+    const q = this.pools[this.poolNext]; this.poolNext = (this.poolNext + 1) % MAX_POOLS;
+    q.t = 0; q.size = size * (0.8 + Math.random() * 0.4);
+    q.m.position.set(x, 0.015 + this.poolNext * 0.0004, z); q.m.rotation.z = Math.random() * Math.PI * 2;
+    q.m.visible = true;
   }
 
   muzzle(pos) {
@@ -96,7 +135,7 @@ export class FX {
       const a = Math.random() * Math.PI * 2, s = speed * (0.4 + Math.random() * 0.6);
       p.x = x; p.y = y; p.z = z;
       p.vx = Math.cos(a) * s * 0.6 + dirX * s; p.vz = Math.sin(a) * s * 0.6 + dirZ * s; p.vy = (0.5 + Math.random()) * up;
-      p.life = p.max = life * (0.6 + Math.random() * 0.5); p.r = c.r; p.g = c.g; p.b = c.b;
+      p.life = p.max = life * (0.6 + Math.random() * 0.5); p.r = c.r; p.g = c.g; p.b = c.b; p.dark = false;
     }
   }
 
@@ -138,13 +177,21 @@ export class FX {
       if (p.life > 0) {
         p.life -= dt; p.vy -= 9 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
         if (p.y < 0.02) { p.y = 0.02; p.vx *= 0.5; p.vz *= 0.5; p.vy = 0; }
-        const f = Math.max(0, p.life / p.max);
+        const f = Math.max(0, p.life / p.max), to = p.dark ? 0.12 : 0.9; // blood darkens, dust pales
         this.pPos[k * 3] = p.x; this.pPos[k * 3 + 1] = p.y; this.pPos[k * 3 + 2] = p.z;
-        this.pCol[k * 3] = p.r * f + (1 - f) * 0.9; this.pCol[k * 3 + 1] = p.g * f + (1 - f) * 0.9; this.pCol[k * 3 + 2] = p.b * f + (1 - f) * 0.88;
+        this.pCol[k * 3] = p.r * f + (1 - f) * to; this.pCol[k * 3 + 1] = p.g * f + (1 - f) * to * (p.dark ? 0.1 : 1); this.pCol[k * 3 + 2] = p.b * f + (1 - f) * to * (p.dark ? 0.1 : 0.98);
         k++;
       }
     }
     this.pGeo.setDrawRange(0, k);
+    for (const q of this.pools) {
+      if (q.t > 40) continue;
+      q.t += dt;
+      const grow = Math.min(1, q.t / 0.9), s = q.size * (0.35 + 0.65 * (1 - (1 - grow) * (1 - grow)));
+      q.m.scale.set(s, s, 1);
+      q.m.material.opacity = 0.85 * (q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6));
+      if (q.t > 31) { q.m.visible = false; q.t = 99; }
+    }
     this.pGeo.attributes.position.needsUpdate = true; this.pGeo.attributes.color.needsUpdate = true;
     // bat trail
     for (const q of this.trailPts) q.t += dt;

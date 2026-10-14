@@ -1,9 +1,11 @@
 (() => {
   var __defProp = Object.defineProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __export = (target, all) => {
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
   };
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // node_modules/three/build/three.module.js
   var three_module_exports = {};
@@ -11795,15 +11797,15 @@
         tan2[b].add(tdir);
         tan2[c].add(tdir);
       }
-      let groups = this.groups;
-      if (groups.length === 0) {
-        groups = [{
+      let groups2 = this.groups;
+      if (groups2.length === 0) {
+        groups2 = [{
           start: 0,
           count: index.count
         }];
       }
-      for (let i = 0, il = groups.length; i < il; ++i) {
-        const group = groups[i];
+      for (let i = 0, il = groups2.length; i < il; ++i) {
+        const group = groups2[i];
         const start = group.start;
         const count = group.count;
         for (let j = start, jl = start + count; j < jl; j += 3) {
@@ -11827,8 +11829,8 @@
         const w = test < 0 ? -1 : 1;
         tangentAttribute.setXYZW(v, tmp2.x, tmp2.y, tmp2.z, w);
       }
-      for (let i = 0, il = groups.length; i < il; ++i) {
-        const group = groups[i];
+      for (let i = 0, il = groups2.length; i < il; ++i) {
+        const group = groups2[i];
         const start = group.start;
         const count = group.count;
         for (let j = start, jl = start + count; j < jl; j += 3) {
@@ -11959,9 +11961,9 @@
         geometry2.morphAttributes[name] = morphArray;
       }
       geometry2.morphTargetsRelative = this.morphTargetsRelative;
-      const groups = this.groups;
-      for (let i = 0, l = groups.length; i < l; i++) {
-        const group = groups[i];
+      const groups2 = this.groups;
+      for (let i = 0, l = groups2.length; i < l; i++) {
+        const group = groups2[i];
         geometry2.addGroup(group.start, group.count, group.materialIndex);
       }
       return geometry2;
@@ -12021,9 +12023,9 @@
         data.data.morphAttributes = morphAttributes;
         data.data.morphTargetsRelative = this.morphTargetsRelative;
       }
-      const groups = this.groups;
-      if (groups.length > 0) {
-        data.data.groups = JSON.parse(JSON.stringify(groups));
+      const groups2 = this.groups;
+      if (groups2.length > 0) {
+        data.data.groups = JSON.parse(JSON.stringify(groups2));
       }
       const boundingSphere = this.boundingSphere;
       if (boundingSphere !== null) {
@@ -12073,9 +12075,9 @@
         this.morphAttributes[name] = array;
       }
       this.morphTargetsRelative = source.morphTargetsRelative;
-      const groups = source.groups;
-      for (let i = 0, l = groups.length; i < l; i++) {
-        const group = groups[i];
+      const groups2 = source.groups;
+      for (let i = 0, l = groups2.length; i < l; i++) {
+        const group = groups2[i];
         this.addGroup(group.start, group.count, group.materialIndex);
       }
       const boundingBox = source.boundingBox;
@@ -12230,12 +12232,12 @@
       const uv = geometry.attributes.uv;
       const uv1 = geometry.attributes.uv1;
       const normal = geometry.attributes.normal;
-      const groups = geometry.groups;
+      const groups2 = geometry.groups;
       const drawRange = geometry.drawRange;
       if (index !== null) {
         if (Array.isArray(material)) {
-          for (let i = 0, il = groups.length; i < il; i++) {
-            const group = groups[i];
+          for (let i = 0, il = groups2.length; i < il; i++) {
+            const group = groups2[i];
             const groupMaterial = material[group.materialIndex];
             const start = Math.max(group.start, drawRange.start);
             const end = Math.min(index.count, Math.min(group.start + group.count, drawRange.start + drawRange.count));
@@ -12267,8 +12269,8 @@
         }
       } else if (position !== void 0) {
         if (Array.isArray(material)) {
-          for (let i = 0, il = groups.length; i < il; i++) {
-            const group = groups[i];
+          for (let i = 0, il = groups2.length; i < il; i++) {
+            const group = groups2[i];
             const groupMaterial = material[group.materialIndex];
             const start = Math.max(group.start, drawRange.start);
             const end = Math.min(position.count, Math.min(group.start + group.count, drawRange.start + drawRange.count));
@@ -21437,12 +21439,12 @@
         if (geometry.index !== null) {
           const position = geometry.attributes.position;
           const indices = geometry.index;
-          let groups = geometry.groups;
-          if (groups.length === 0) {
-            groups = [{ start: 0, count: indices.count, materialIndex: 0 }];
+          let groups2 = geometry.groups;
+          if (groups2.length === 0) {
+            groups2 = [{ start: 0, count: indices.count, materialIndex: 0 }];
           }
-          for (let o = 0, ol = groups.length; o < ol; ++o) {
-            const group = groups[o];
+          for (let o = 0, ol = groups2.length; o < ol; ++o) {
+            const group = groups2[o];
             const groupStart = group.start;
             const groupCount = group.count;
             for (let i = groupStart, l = groupStart + groupCount; i < l; i += 3) {
@@ -25727,10 +25729,10 @@
       if (morphTargetsRelative) {
         geometry.morphTargetsRelative = true;
       }
-      const groups = json.data.groups || json.data.drawcalls || json.data.offsets;
-      if (groups !== void 0) {
-        for (let i = 0, n = groups.length; i !== n; ++i) {
-          const group = groups[i];
+      const groups2 = json.data.groups || json.data.drawcalls || json.data.offsets;
+      if (groups2 !== void 0) {
+        for (let i = 0, n = groups2.length; i !== n; ++i) {
+          const group = groups2[i];
           geometry.addGroup(group.start, group.count, group.materialIndex);
         }
       }
@@ -37140,9 +37142,9 @@
           const geometry = objects.update(object);
           const material = object.material;
           if (Array.isArray(material)) {
-            const groups = geometry.groups;
-            for (let k = 0, kl = groups.length; k < kl; k++) {
-              const group = groups[k];
+            const groups2 = geometry.groups;
+            for (let k = 0, kl = groups2.length; k < kl; k++) {
+              const group = groups2[k];
               const groupMaterial = material[group.materialIndex];
               if (groupMaterial && groupMaterial.visible) {
                 const depthMaterial = getDepthMaterial(object, groupMaterial, light, type);
@@ -41063,9 +41065,9 @@ void main() {
                 _vector4.applyMatrix4(object.matrixWorld).applyMatrix4(_projScreenMatrix2);
               }
               if (Array.isArray(material)) {
-                const groups = geometry.groups;
-                for (let i = 0, l = groups.length; i < l; i++) {
-                  const group = groups[i];
+                const groups2 = geometry.groups;
+                for (let i = 0, l = groups2.length; i < l; i++) {
+                  const group = groups2[i];
                   const groupMaterial = material[group.materialIndex];
                   if (groupMaterial && groupMaterial.visible) {
                     currentRenderList.push(object, geometry, groupMaterial, groupOrder, _vector4.z, group);
@@ -41470,9 +41472,9 @@ void main() {
         p_uniforms.setValue(_gl, "normalMatrix", object.normalMatrix);
         p_uniforms.setValue(_gl, "modelMatrix", object.matrixWorld);
         if (material.isShaderMaterial || material.isRawShaderMaterial) {
-          const groups = material.uniformsGroups;
-          for (let i = 0, l = groups.length; i < l; i++) {
-            const group = groups[i];
+          const groups2 = material.uniformsGroups;
+          for (let i = 0, l = groups2.length; i < l; i++) {
+            const group = groups2[i];
             uniformsGroups.update(group, program);
             uniformsGroups.bind(group, program);
           }
@@ -45177,6 +45179,21 @@ void main() {
       this.corpseT = 0;
       this.phase = opts.phase ?? 0;
       this.struck = false;
+      this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
+      this.severed = /* @__PURE__ */ new Set();
+      this.crawling = false;
+      this.lastHitPart = "torso";
+      this.toCrawl = false;
+    }
+    get armsLost() {
+      return (this.severed.has("Forearm_L") ? 1 : 0) + (this.severed.has("Forearm_R") ? 1 : 0);
+    }
+    sever(part, dirX, dirZ, sim2) {
+      if (this.severed.has(part)) return;
+      this.severed.add(part);
+      sim2.emit({ type: "sever", id: this.id, part, dirX, dirZ, x: this.x, z: this.z });
+      if (part === "Head") this.hp = 0;
+      else if (part.startsWith("LowerLeg") && !this.crawling) this.crawling = this.toCrawl = true;
     }
     set(state, dur = 0) {
       this.state = state;
@@ -45189,11 +45206,17 @@ void main() {
     get down() {
       return this.state === ZS.KNOCKDOWN || this.state === ZS.GETUP;
     }
-    // Incoming hit: direction (unit) and strength in m/s.
-    takeHit(dmg, dirX, dirZ, impulse, kind, sim2) {
+    // Incoming hit: direction (unit) and strength in m/s; part: 'torso' or a severable limb.
+    takeHit(dmg, dirX, dirZ, impulse, kind, sim2, part = "torso") {
       if (!this.alive) return;
       const wasDown = this.down;
-      this.hp -= dmg;
+      if (part !== "torso" && this.severed.has(part)) part = "torso";
+      this.lastHitPart = part;
+      if (part !== "torso") {
+        this.limbHp[part] -= dmg * (kind === "bat" ? 1.2 : 1);
+        if (this.limbHp[part] <= 0) this.sever(part, dirX, dirZ, sim2);
+      }
+      this.hp -= part.startsWith("Forearm") ? dmg * 0.6 : dmg;
       const push = wasDown ? 0.3 : 1;
       this.kx += dirX * impulse * push;
       this.kz += dirZ * impulse * push;
@@ -45216,7 +45239,7 @@ void main() {
         sim2.emit({ type: "zombieHit", id: this.id, kind });
         return;
       }
-      if (kind === "bat" && sim2.rand() < sim2.T.batKnockdown) {
+      if (this.toCrawl || kind === "bat" && !this.crawling && sim2.rand() < sim2.T.batKnockdown) {
         this.set(ZS.KNOCKDOWN, KNOCKDOWN_FALL);
         this.solid = false;
         this.yaw = Math.atan2(-dirX, -dirZ);
@@ -45263,7 +45286,7 @@ void main() {
             wantX = _flow.x;
             wantZ = _flow.z;
           }
-          speed = T.zombieSpeed * this.speedMul;
+          speed = T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1);
           if (dist2 < 1.25) speed *= 0.5;
           if (!this.passive && dist2 < 1 && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             this.set(ZS.WINDUP, 0.52);
@@ -45288,7 +45311,7 @@ void main() {
             const along = dx * fx2 + dz * fz;
             const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
             const hit = !p.dead && dist2 < 1.12 && along > 0 && ang < 0.95 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
-            if (hit) p.hurt(T.zombieDamage, this.x, this.z, sim2);
+            if (hit) p.hurt(T.zombieDamage * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2);
             sim2.emit({ type: hit ? "zombieStrikeHit" : "zombieStrikeMiss", id: this.id });
           }
           this.vx = Math.sin(this.yaw) * 0.9;
@@ -45309,12 +45332,23 @@ void main() {
         case ZS.KNOCKDOWN:
           turnRate = 0;
           if (this.t >= this.stateDur) {
-            this.set(ZS.GETUP, KNOCKDOWN_GETUP);
             this.yaw += GETUP_YAW;
+            if (this.toCrawl) {
+              this.toCrawl = false;
+              this.set(ZS.CHASE);
+              this.solid = true;
+              this.attackCd = Math.max(this.attackCd, 0.6);
+            } else this.set(ZS.GETUP, KNOCKDOWN_GETUP);
           }
           break;
         case ZS.GETUP:
           turnRate = 0;
+          if (this.toCrawl) {
+            this.toCrawl = false;
+            this.set(ZS.CHASE);
+            this.solid = true;
+            break;
+          }
           if (this.t >= this.stateDur * 0.6) this.solid = true;
           if (this.t >= this.stateDur) {
             this.set(ZS.CHASE);
@@ -45593,11 +45627,23 @@ void main() {
       const dx = Math.sin(yaw), dz = Math.cos(yaw);
       if (r.zombie) {
         this.stats.shotHits++;
-        r.zombie.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback, "pistol", this);
+        r.zombie.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback, "pistol", this, this.bulletPart(r.zombie, m.x, m.z, dx, dz));
         this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: "zombie", id: r.zombie.id, yaw, killed: !r.zombie.alive });
       } else {
         this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz, yaw });
       }
+    }
+    // Which part a bullet hits, from where it passes the body: wide of centre takes the arm on that side;
+    // through the middle mostly the torso, sometimes the head or a leg.
+    bulletPart(z, ox, oz, dx, dz) {
+      const rx = z.x - ox, rz = z.z - oz, along = rx * dx + rz * dz;
+      const qx = ox + dx * along - z.x, qz = oz + dz * along - z.z;
+      const side = qx * Math.cos(z.yaw) - qz * Math.sin(z.yaw);
+      const r = this.rand();
+      if (Math.hypot(qx, qz) > 0.17) return r < 0.75 ? side > 0 ? "Forearm_L" : "Forearm_R" : "torso";
+      if (r < 0.12) return "Head";
+      if (r < 0.26) return this.rand() < 0.5 ? "LowerLeg_L" : "LowerLeg_R";
+      return "torso";
     }
     traceBullet(ox, oz, yaw) {
       const dx = Math.sin(yaw), dz = Math.cos(yaw);
@@ -45682,7 +45728,10 @@ void main() {
           act.hitSet.add(z.id);
           act.hits++;
           this.stats.batHits++;
-          z.takeHit(T.batDamage, dx, dz, T.batKnockback, "bat", this);
+          const lethal = z.hp <= T.batDamage, r = this.rand();
+          const part = lethal ? r < 0.35 ? "Head" : "torso" : r < 0.2 ? this.rand() < 0.5 ? "Forearm_L" : "Forearm_R" : "torso";
+          if (part === "Head") z.limbHp.Head = 0;
+          z.takeHit(T.batDamage, dx, dz, T.batKnockback, "bat", this, part);
           this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive });
           if (T.hitPause > 0) this.emit({ type: "hitPause", dur: T.hitPause * (z.alive ? 1 : 1.4) });
         }
@@ -46303,16 +46352,153 @@ void main() {
     return g;
   }
 
+  // src/render/physics/ragdoll.js
+  var _v = new Vector3();
+  var _v22 = new Vector3();
+  var _q = new Quaternion();
+  var _q2 = new Quaternion();
+  var _m2 = new Matrix4();
+  var PARTS = [
+    ["pelvis", "Hips", "Hips", "Spine1", 0.075, 12, null],
+    ["chest", "Spine2", "Spine1", "Neck", 0.085, 14, "pelvis"],
+    ["head", "Head", "Head", "HEAD_TOP", 0.065, 5, "chest"],
+    ["upperArmL", "LeftArm", "LeftArm", "LeftForeArm", 0.03, 2.2, "chest"],
+    ["foreArmL", "LeftForeArm", "LeftForeArm", "LEFT_HAND_END", 0.027, 1.6, "upperArmL"],
+    ["upperArmR", "RightArm", "RightArm", "RightForeArm", 0.03, 2.2, "chest"],
+    ["foreArmR", "RightForeArm", "RightForeArm", "RIGHT_HAND_END", 0.027, 1.6, "upperArmR"],
+    ["thighL", "LeftUpLeg", "LeftUpLeg", "LeftLeg", 0.045, 7, "pelvis"],
+    ["shinL", "LeftLeg", "LeftLeg", "LEFT_FOOT_END", 0.035, 4, "thighL"],
+    ["thighR", "RightUpLeg", "RightUpLeg", "RightLeg", 0.045, 7, "pelvis"],
+    ["shinR", "RightLeg", "RightLeg", "RIGHT_FOOT_END", 0.035, 4, "thighR"]
+  ];
+  var SEVER_PART = { Head: "head", Forearm_L: "foreArmL", Forearm_R: "foreArmR", LowerLeg_L: "shinL", LowerLeg_R: "shinR" };
+  var HINGES = { foreArmL: 1, foreArmR: 1, shinL: 1, shinR: 1 };
+  function wpos(bones, name, out) {
+    const ext = (a, b, k) => {
+      bones[a].getWorldPosition(out);
+      bones[b].getWorldPosition(_v22);
+      return out.lerp(_v22, 1 + k);
+    };
+    switch (name) {
+      case "HEAD_TOP":
+        return bones.HeadTop_End ? bones.HeadTop_End.getWorldPosition(out) : headTop(bones, out);
+      case "LEFT_HAND_END":
+        return ext("LeftForeArm", "LeftHand", 0.45);
+      case "RIGHT_HAND_END":
+        return ext("RightForeArm", "RightHand", 0.45);
+      case "LEFT_FOOT_END":
+        return ext("LeftLeg", "LeftFoot", 0.08);
+      case "RIGHT_FOOT_END":
+        return ext("RightLeg", "RightFoot", 0.08);
+      default:
+        return bones[name].getWorldPosition(out);
+    }
+  }
+  function headTop(bones, out) {
+    bones.Neck.getWorldPosition(_v22);
+    bones.Head.getWorldPosition(out);
+    const d = out.clone().sub(_v22);
+    return out.add(d.multiplyScalar(1.6));
+  }
+  function frameQuat(dir, ref, out) {
+    const y = _v.copy(dir).normalize();
+    let x = _v22.copy(ref).addScaledVector(y, -ref.dot(y));
+    if (x.lengthSq() < 1e-8) x.set(1, 0, 0).addScaledVector(y, -y.x);
+    x.normalize();
+    const z = new Vector3().crossVectors(x, y);
+    _m2.makeBasis(x, y, z);
+    return out.setFromRotationMatrix(_m2);
+  }
+  function describeRagdoll(bones, height, missing = /* @__PURE__ */ new Set()) {
+    const parts = [], idx = {};
+    const skip = /* @__PURE__ */ new Set();
+    for (const p of PARTS) if (missing.has(p[0]) || skip.has(p[6])) skip.add(p[0]);
+    bones.Hips.updateWorldMatrix(true, true);
+    for (const [name, bone, from, to, rad, mass, parent] of PARTS) {
+      if (skip.has(name)) continue;
+      const a = wpos(bones, from, new Vector3()), b = wpos(bones, to, new Vector3());
+      const bq = bones[bone].getWorldQuaternion(new Quaternion());
+      let ref = new Vector3(1, 0, 0).applyQuaternion(bq);
+      if (name === "pelvis" || name === "chest") {
+        const l = wpos(bones, name === "pelvis" ? "LeftUpLeg" : "LeftArm", new Vector3());
+        const r = wpos(bones, name === "pelvis" ? "RightUpLeg" : "RightArm", new Vector3());
+        ref = l.sub(r);
+      }
+      const q0 = frameQuat(b.clone().sub(a), ref, new Quaternion());
+      idx[name] = parts.length;
+      parts.push({ name, bone, a, b, r: rad * height, mass, parent, q0, ref, boneQ0: bq, hinge: !!HINGES[name] });
+    }
+    const joints = [];
+    for (const p of parts) {
+      if (!p.parent || idx[p.parent] === void 0) continue;
+      const par = parts[idx[p.parent]];
+      let axis = null;
+      if (p.hinge) {
+        const u = par.b.clone().sub(par.a).normalize(), w = p.b.clone().sub(p.a).normalize();
+        axis = new Vector3().crossVectors(u, w);
+        if (axis.lengthSq() < 1e-4) axis.set(1, 0, 0).applyQuaternion(par.boneQ0);
+        axis.normalize();
+      }
+      joints.push({ parent: idx[p.parent], child: idx[p.name], at: p.a.clone(), type: p.hinge ? "hinge" : "ball", axis });
+    }
+    return { parts, joints, idx };
+  }
+  var ORDER = ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head", "LeftShoulder", "LeftArm", "LeftForeArm", "RightShoulder", "RightArm", "RightForeArm", "LeftUpLeg", "LeftLeg", "RightUpLeg", "RightLeg"];
+  var RagdollDriver = class {
+    constructor(bones, desc) {
+      this.bones = bones;
+      this.desc = desc;
+      this.off = desc.parts.map((p) => p.q0.clone().invert().multiply(p.boneQ0));
+      const pel = desc.parts[desc.idx.pelvis];
+      const hp = bones.Hips.getWorldPosition(new Vector3());
+      this.hipsLocal = hp.sub(pel.a.clone().add(pel.b).multiplyScalar(0.5)).applyQuaternion(pel.q0.clone().invert());
+      this.byBone = {};
+      desc.parts.forEach((p, i) => this.byBone[p.bone] = i);
+      this.want = {};
+    }
+    // states: [{pos, quat}] per part (same order as desc.parts)
+    apply(states) {
+      const B = this.bones, W = this.want;
+      for (const k in W) delete W[k];
+      this.desc.parts.forEach((p, i) => {
+        W[p.bone] = states[i].quat.clone().multiply(this.off[i]);
+      });
+      const pel = W.Hips, ch = W.Spine2;
+      if (pel && ch) {
+        W.Spine = pel.clone().slerp(ch, 0.33);
+        W.Spine1 = pel.clone().slerp(ch, 0.66);
+      }
+      if (ch && W.Head) W.Neck = ch.clone().slerp(W.Head, 0.5);
+      const ps = states[this.desc.idx.pelvis];
+      const hipW = this.hipsLocal.clone().applyQuaternion(ps.quat).add(ps.pos);
+      for (const name of ORDER) {
+        const b = B[name];
+        if (!b) continue;
+        const parent = b.parent;
+        if (name === "Hips") {
+          parent.updateWorldMatrix(true, false);
+          b.position.copy(parent.worldToLocal(hipW.clone()));
+        }
+        if (W[name]) {
+          parent.getWorldQuaternion(_q);
+          b.quaternion.copy(_q.invert().multiply(W[name]));
+        }
+        b.updateWorldMatrix(false, false);
+      }
+      B.Hips.updateWorldMatrix(false, true);
+    }
+  };
+
   // src/render/clipchars.js
   var clamp3 = (v, a, b) => v < a ? a : v > b ? b : v;
   var smooth = (u) => u * u * (3 - 2 * u);
-  var _v = new Vector3();
-  var _v22 = new Vector3();
-  var _v32 = new Vector3();
   var _v4 = new Vector3();
-  var _q = new Quaternion();
-  var _q2 = new Quaternion();
+  var _v23 = new Vector3();
+  var _v32 = new Vector3();
+  var _v43 = new Vector3();
   var _q3 = new Quaternion();
+  var _q22 = new Quaternion();
+  var _q32 = new Quaternion();
   var _q4 = new Quaternion();
   var UP = new Vector3(0, 1, 0);
   var _e = new Euler();
@@ -46436,16 +46622,16 @@ void main() {
     rotateC(n, D) {
       const b = this.bones[n];
       if (!b) return;
-      this.container.getWorldQuaternion(_q2);
-      b.getWorldQuaternion(_q3);
-      const W = _q2.invert().multiply(_q3);
-      _q.copy(W).invert().multiply(D).multiply(W);
-      b.quaternion.multiply(_q);
+      this.container.getWorldQuaternion(_q22);
+      b.getWorldQuaternion(_q32);
+      const W = _q22.invert().multiply(_q32);
+      _q3.copy(W).invert().multiply(D).multiply(W);
+      b.quaternion.multiply(_q3);
       b.updateMatrixWorld(true);
     }
     rotateEulerC(n, x, y, z) {
-      _q.setFromEuler(new Euler(x, y, z, "YXZ"));
-      this.rotateC(n, _q.clone());
+      _q3.setFromEuler(new Euler(x, y, z, "YXZ"));
+      this.rotateC(n, _q3.clone());
     }
     worldPos(n, out) {
       return this.bones[n].getWorldPosition(out);
@@ -46528,19 +46714,19 @@ void main() {
       this.outer.position.set(0, 0, 0);
       this.mixer.update(0);
       this.outer.updateMatrixWorld(true);
-      this.aimQuat(_q);
-      this.bones.RightHand.getWorldQuaternion(_q2);
-      this.pistolSocket = _q2.invert().multiply(_q).clone();
+      this.aimQuat(_q3);
+      this.bones.RightHand.getWorldQuaternion(_q22);
+      this.pistolSocket = _q22.invert().multiply(_q3).clone();
       id.setEffectiveWeight(0);
     }
     // pistol orientation from the arms: barrel along shoulders -> hands, slide upright (no roll)
     aimQuat(out) {
-      this.grip("Right", _v);
-      this.grip("Left", _v22);
+      this.grip("Right", _v4);
+      this.grip("Left", _v23);
       this.bones.RightArm.getWorldPosition(_v32);
-      this.bones.LeftArm.getWorldPosition(_v4);
-      const mid = _v32.add(_v4).multiplyScalar(0.5);
-      const dir = _v4.copy(_v).add(_v22).multiplyScalar(0.5).sub(mid).normalize();
+      this.bones.LeftArm.getWorldPosition(_v43);
+      const mid = _v32.add(_v43).multiplyScalar(0.5);
+      const dir = _v43.copy(_v4).add(_v23).multiplyScalar(0.5).sub(mid).normalize();
       const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp3(dir.y, -1, 1));
       return out.setFromEuler(_e.set(pitch, yawOnly, 0, "YXZ"));
     }
@@ -46559,9 +46745,9 @@ void main() {
       this.container.rotation.y = 0;
       this.mixer.update(0);
       this.container.updateMatrixWorld(true);
-      this.container.getWorldQuaternion(_q2);
-      this.bones.RightHand.getWorldQuaternion(_q3);
-      const handC = _q2.invert().multiply(_q3);
+      this.container.getWorldQuaternion(_q22);
+      this.bones.RightHand.getWorldQuaternion(_q32);
+      const handC = _q22.invert().multiply(_q32);
       this.batSocket = new Vector3(...s0.d).applyQuaternion(handC.invert()).normalize();
       cal.stop();
       cal.setEffectiveWeight(0);
@@ -46762,18 +46948,18 @@ void main() {
     }
     grip(side, out) {
       this.bones[side + "Hand"].getWorldPosition(out);
-      this.bones[side + "HandMiddle1"].getWorldPosition(_v4);
-      return out.add(_v4).multiplyScalar(0.5);
+      this.bones[side + "HandMiddle1"].getWorldPosition(_v43);
+      return out.add(_v43).multiplyScalar(0.5);
     }
     // Turn the chest so the gun points exactly along the simulation's aim, then add recoil.
     // During a reload the hands leave the aim, so the last aiming correction is held instead.
     aimPistol(s, ub) {
       const k = 1 - ub, rW = this.reloadW || 0;
-      this.grip("Right", _v);
-      this.grip("Left", _v22);
+      this.grip("Right", _v4);
+      this.grip("Left", _v23);
       this.bones.RightArm.getWorldPosition(_v32);
-      this.bones.LeftArm.getWorldPosition(_v4);
-      const hx = (_v.x + _v22.x) / 2 - (_v32.x + _v4.x) / 2, hz = (_v.z + _v22.z) / 2 - (_v32.z + _v4.z) / 2;
+      this.bones.LeftArm.getWorldPosition(_v43);
+      const hx = (_v4.x + _v23.x) / 2 - (_v32.x + _v43.x) / 2, hz = (_v4.z + _v23.z) / 2 - (_v32.z + _v43.z) / 2;
       const live = clamp3(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
       if (rW === 0) this.aimErr = live;
       const err = live * (1 - rW) + (this.aimErr || 0) * rW;
@@ -46789,26 +46975,26 @@ void main() {
       this.pistol.visible = !showBat;
       this.bat.visible = showBat;
       if (!showBat) {
-        this.aimQuat(_q);
+        this.aimQuat(_q3);
         const rW = this.reloadW || 0;
         if (rW > 0 && this.pistolSocket) {
-          this.bones.RightHand.getWorldQuaternion(_q2);
-          _q.slerp(_q2.multiply(this.pistolSocket), rW);
+          this.bones.RightHand.getWorldQuaternion(_q22);
+          _q3.slerp(_q22.multiply(this.pistolSocket), rW);
         }
-        this.grip("Right", _v);
-        this.pistol.position.copy(_v);
-        this.pistol.quaternion.copy(_q);
+        this.grip("Right", _v4);
+        this.pistol.position.copy(_v4);
+        this.pistol.quaternion.copy(_q3);
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else {
-        this.grip("Right", _v);
-        this.grip("Left", _v22);
+        this.grip("Right", _v4);
+        this.grip("Left", _v23);
         let dir;
         if (this.batSocket) {
-          this.bones.RightHand.getWorldQuaternion(_q);
-          dir = _v32.copy(this.batSocket).applyQuaternion(_q).normalize();
-        } else dir = _v32.copy(_v).sub(_v22).normalize();
-        this.bat.position.copy(_v).add(_v22).multiplyScalar(0.5);
+          this.bones.RightHand.getWorldQuaternion(_q3);
+          dir = _v32.copy(this.batSocket).applyQuaternion(_q3).normalize();
+        } else dir = _v32.copy(_v4).sub(_v23).normalize();
+        this.bat.position.copy(_v4).add(_v23).multiplyScalar(0.5);
         this.bat.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), dir);
         this.bat.updateMatrixWorld(true);
         this.bat.userData.tip.getWorldPosition(this.batTip);
@@ -46850,7 +47036,26 @@ void main() {
     back: [["death_back", 7, 53], ["death_chest_back", 20, 66]],
     forward: [["death_forward", 10, 67], ["death_headshot_knees", 18, 70]]
   };
-  var ZombieView = class extends ClipBody {
+  var MODULE_NAMES = {
+    Head: /^(Nurse_Head|Patient_Head)$/,
+    Forearm_L: /^(Nurse_Forearm_L|Patient_LeftForearm)$/,
+    Forearm_R: /^(Nurse_Forearm_R|Patient_RightForearm)$/,
+    LowerLeg_L: /^(Nurse_LowerLeg_L|Patient_LeftLowerLeg)$/,
+    LowerLeg_R: /^(Nurse_LowerLeg_R|Patient_RightLowerLeg)$/
+  };
+  var GORE_NAME = /^GORE_(Head|Forearm_L|Forearm_R|LowerLeg_L|LowerLeg_R)_(Stump|Detached)/;
+  var STUMP_BONE = { Head: "Neck", Forearm_L: "LeftForeArm", Forearm_R: "RightForeArm", LowerLeg_L: "LeftLeg", LowerLeg_R: "RightLeg" };
+  var PIECE_ENDS = {
+    Head: ["Head", "HeadTop_End", 0, 0.1],
+    Forearm_L: ["LeftForeArm", "LeftHand", 0.45, 0.045],
+    Forearm_R: ["RightForeArm", "RightHand", 0.45, 0.045],
+    LowerLeg_L: ["LeftLeg", "LeftFoot", 0.1, 0.06],
+    LowerLeg_R: ["RightLeg", "RightFoot", 0.1, 0.06]
+  };
+  var MAX_PIECES = 40;
+  var _bv = new Vector3();
+  var _bq = new Quaternion();
+  var _ZombieView = class _ZombieView extends ClipBody {
     constructor(scene2, gltf, height, speeds) {
       const model = clone(gltf.scene);
       const mats = [];
@@ -46864,9 +47069,10 @@ void main() {
       if (!clips) {
         const rest = hipsRest(gltf.scene);
         clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
-        for (const c of clips) if (c.name === "walk" || c.name === "idle") loopClip(c);
+        for (const c of clips) if (c.name === "walk" || c.name === "idle" || c.name === "crawl") loopClip(c);
         SHARED_CLIPS.set(gltf, clips);
       }
+      _ZombieView.scene = scene2;
       super(scene2, model, height, clips);
       this.mats = mats;
       this.nativeWalk = (speeds?.speed || 0.17) * height;
@@ -46885,6 +47091,123 @@ void main() {
       this.lastSeq = 0;
       this.lastState = "";
       this.id = -1;
+      this.height = height;
+      this.modules = {};
+      this.gore = {};
+      model.traverse((o) => {
+        var _a3, _b3;
+        for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
+        const m = GORE_NAME.exec(o.name);
+        if (m) ((_a3 = this.gore)[_b3 = m[1]] || (_a3[_b3] = {}))[m[2].toLowerCase()] = o;
+      });
+      this.modular = Object.keys(this.modules).length === 5;
+      this.severed = /* @__PURE__ */ new Set();
+      this.rag = null;
+      this.bleed = {};
+      this.hasCrawl = !!this.act("crawl");
+      if (this.hasCrawl) {
+        this.act("crawl").play();
+        this.act("crawl").setEffectiveWeight(0);
+      }
+    }
+    // ---- dismemberment ----
+    sever(part, z) {
+      this.severed.add(part);
+      this.container.updateMatrixWorld(true);
+      const P = _ZombieView.physics, fx2 = _ZombieView.fx;
+      const mod = this.modules[part], g = this.gore[part] || {};
+      const [fromB, toB, ext, rad] = PIECE_ENDS[part];
+      const a = this.bones[fromB].getWorldPosition(new Vector3());
+      const b = this.bones[toB].getWorldPosition(new Vector3());
+      b.add(b.clone().sub(a).multiplyScalar(ext));
+      const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(this.bones[fromB].getWorldQuaternion(_bq)), new Quaternion());
+      const c = a.clone().add(b).multiplyScalar(0.5), qi = q0.clone().invert();
+      const obj = new Group();
+      const bake = (src) => src && src.traverse((o) => {
+        if (!o.isSkinnedMesh) return;
+        const sg = o.geometry, n = sg.attributes.position.count, pos = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++) {
+          o.getVertexPosition(i, _bv);
+          _bv.applyMatrix4(o.matrixWorld).sub(c).applyQuaternion(qi);
+          pos[i * 3] = _bv.x;
+          pos[i * 3 + 1] = _bv.y;
+          pos[i * 3 + 2] = _bv.z;
+        }
+        const geo = new BufferGeometry();
+        geo.setAttribute("position", new BufferAttribute(pos, 3));
+        for (const k of ["uv", "color"]) if (sg.attributes[k]) geo.setAttribute(k, sg.attributes[k]);
+        if (sg.index) geo.setIndex(sg.index);
+        geo.computeVertexNormals();
+        const mat2 = o.material.clone();
+        if (mat2.emissive) mat2.emissive.setRGB(0, 0, 0);
+        obj.add(new Mesh(geo, mat2));
+      });
+      bake(mod);
+      bake(g.detached);
+      obj.position.copy(c);
+      obj.quaternion.copy(q0);
+      _ZombieView.scene.add(obj);
+      mod.visible = false;
+      if (g.stump) g.stump.visible = true;
+      const dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
+      const vel = dir.clone().multiplyScalar(z.hitKind === "bat" ? 4.5 : 2.6).add(new Vector3(z.vx * 0.5, 2.2 + Math.random() * 1.2, z.vz * 0.5));
+      const r = rad * (this.height / 1.7);
+      const piece = { obj, t: 0, id: P && P.ready ? P.addPiece(a, b, r, vel, q0) : 0, P: P && P.ready ? P : null, vel, r, states: [] };
+      _ZombieView.pieces.push(piece);
+      if (_ZombieView.pieces.length > MAX_PIECES) _ZombieView.dropPiece(_ZombieView.pieces[0]);
+      const s = this.bones[STUMP_BONE[part]].getWorldPosition(new Vector3());
+      if (fx2) {
+        fx2.bloodSpray(s.x, s.y, s.z, dir.x * 0.8, 0.5, dir.z * 0.8, part === "Head" ? 30 : 20, 3.2);
+        fx2.bloodPool(s.x + dir.x * 0.4, s.z + dir.z * 0.4, part === "Head" ? 1 : 0.7);
+      }
+      this.bleed[part] = 2.5;
+    }
+    bleeding(dt) {
+      const fx2 = _ZombieView.fx;
+      if (!fx2) return;
+      for (const part in this.bleed) {
+        if ((this.bleed[part] -= dt) <= 0) {
+          delete this.bleed[part];
+          continue;
+        }
+        if (Math.random() < dt * 18) {
+          const s = this.bones[STUMP_BONE[part]].getWorldPosition(_bv);
+          fx2.bloodSpray(s.x, s.y, s.z, 0, part === "Head" ? 0.6 : -0.1, 0, 1, 0.8);
+        }
+      }
+    }
+    static updatePieces(dt) {
+      for (const pc of [..._ZombieView.pieces]) {
+        pc.t += dt;
+        if (pc.P) {
+          const st = pc.P.read(pc.id, pc.states);
+          if (st) {
+            pc.obj.position.copy(st[0].pos);
+            pc.obj.quaternion.copy(st[0].quat);
+          }
+        } else if (pc.obj.position.y > pc.r) {
+          pc.vel.y -= 9.81 * dt;
+          pc.obj.position.addScaledVector(pc.vel, dt);
+          if (pc.obj.position.y < pc.r) pc.obj.position.y = pc.r;
+        }
+        if (pc.t > 14) pc.obj.position.y -= dt * 0.25;
+        if (pc.t > 16) _ZombieView.dropPiece(pc);
+      }
+    }
+    static dropPiece(pc) {
+      const i = _ZombieView.pieces.indexOf(pc);
+      if (i >= 0) _ZombieView.pieces.splice(i, 1);
+      if (pc.P) pc.P.remove(pc.id);
+      pc.obj.removeFromParent();
+      pc.obj.traverse((o) => {
+        if (o.isMesh) {
+          o.geometry.dispose();
+          o.material.dispose();
+        }
+      });
+    }
+    static clearPieces() {
+      for (const pc of [..._ZombieView.pieces]) _ZombieView.dropPiece(pc);
     }
     bind(z) {
       this.id = z.id;
@@ -46894,6 +47217,13 @@ void main() {
       this.outer.position.y = 0;
       this.oneShot = null;
       this.deathYaw = null;
+      this.endRagdoll();
+      this.severed.clear();
+      for (const m of Object.values(this.modules)) m.visible = true;
+      for (const g of Object.values(this.gore)) {
+        if (g.stump) g.stump.visible = false;
+        if (g.detached) g.detached.visible = false;
+      }
       for (const a of Object.values(this.actions)) {
         a.stop();
         a.setEffectiveWeight(0);
@@ -46902,13 +47232,41 @@ void main() {
         this.act(n).play();
         this.act(n).time = Math.random() * this.act(n).getClip().duration;
       }
+      if (this.hasCrawl) this.act("crawl").play();
       this.react.x = this.react.z = this.react.vx = this.react.vz = 0;
+      this.bleed = {};
     }
     hide() {
       this.outer.visible = false;
       this.blob.visible = false;
       this.id = -1;
       this.mixer.stopAllAction();
+      this.endRagdoll();
+    }
+    // ---- ragdoll: from the current animated pose, carrying the blow's momentum ----
+    startRagdoll(z) {
+      const P = _ZombieView.physics;
+      if (!P || !P.ready) return false;
+      this.container.updateMatrixWorld(true);
+      const missing = new Set([...this.severed].map((s2) => SEVER_PART[s2]));
+      const desc = describeRagdoll(this.bones, this.height, missing);
+      const dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
+      const bat = z.hitKind === "bat", s = bat ? 4.2 : 2.4;
+      const hitPart = bat ? "chest" : z.lastHitPart === "head" ? "head" : "chest";
+      const base = new Vector3(z.kx * 0.35, 0.2, z.kz * 0.35);
+      const vels = desc.parts.map((p) => {
+        const k = p.name === hitPart ? 1 : p.name === "chest" || p.name === "head" ? 0.6 : p.name === "pelvis" ? 0.3 : 0.25;
+        return base.clone().addScaledVector(dir, s * k);
+      });
+      const id = P.addRagdoll(desc, vels);
+      this.rag = { id, P, driver: new RagdollDriver(this.bones, desc), states: [], frozen: false };
+      this.mixer.stopAllAction();
+      this.oneShot = null;
+      return true;
+    }
+    endRagdoll() {
+      if (this.rag && !this.rag.frozen) this.rag.P.remove(this.rag.id);
+      this.rag = null;
     }
     playOnce(name, from = 0, rate = 1, fade = 0.08) {
       if (this.oneShot && this.oneShot !== this.act(name)) {
@@ -46935,10 +47293,22 @@ void main() {
       return left < 0 ? "react_large_left" : "react_large_right";
     }
     update(dt, z, x, zz) {
+      if (this.rag) {
+        this.updateRagdoll(z);
+        return;
+      }
+      if (this.modular && z.severed.size !== this.severed.size) {
+        for (const part of z.severed) if (!this.severed.has(part)) this.sever(part, z);
+      }
       this.outer.position.x = x;
       this.outer.position.z = zz;
       this.blob.position.set(x, 0.012, zz);
       const dying = z.state === "dying" || z.state === "dead";
+      if (z.state === "dying" && this.lastState !== "dying" && this.startRagdoll(z)) {
+        this.lastState = "dying";
+        this.updateRagdoll(z);
+        return;
+      }
       if (z.state !== this.lastState) {
         const S = z.state;
         if (S === "windup") this.playOnce("attack", 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
@@ -46976,11 +47346,18 @@ void main() {
       const sp = Math.hypot(z.vx, z.vz);
       const move = clamp3(sp / 0.25, 0, 1);
       const one = this.oneShot ? this.oneShot.getEffectiveWeight() : 0;
-      this.act("walk").setEffectiveWeight(move * (1 - one));
-      this.act("idle").setEffectiveWeight((1 - move) * (1 - one));
+      const crawl = z.crawling && this.hasCrawl ? 1 : 0;
+      this.act("walk").setEffectiveWeight(move * (1 - one) * (1 - crawl));
+      this.act("idle").setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
       this.act("walk").timeScale = clamp3(sp / this.nativeWalk, 0.5, 3.2);
+      if (this.hasCrawl) {
+        const c = this.act("crawl");
+        c.setEffectiveWeight(crawl * (1 - one));
+        c.timeScale = clamp3(sp / (0.22 * this.height), 0.45, 2.5);
+      }
       this.mixer.update(dt);
       this.container.updateMatrixWorld(true);
+      this.bleeding(dt);
       if (z.hitSeq !== this.lastSeq) {
         this.lastSeq = z.hitSeq;
         const sn = Math.sin(this.container.rotation.y), cs = Math.cos(this.container.rotation.y);
@@ -46995,7 +47372,35 @@ void main() {
       if (z.state === "dead" && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
       this.blob.visible = z.state !== "dead" || z.corpseT < 4.5;
     }
+    // Ragdolled: the skeleton follows the physics parts. The body leaves the physics world once the
+    // corpse starts sinking (the last pose is kept and sinks with the model).
+    updateRagdoll(z, dt = 1 / 60) {
+      const R = this.rag;
+      this.bleeding(dt);
+      if (!R.frozen) {
+        const st = R.P.read(R.id, R.states);
+        if (st) R.driver.apply(st);
+        if (z.state === "dead" && z.corpseT > 4.5) {
+          R.P.remove(R.id);
+          R.frozen = true;
+        }
+        const pel = st && st[0];
+        if (pel) this.blob.position.set(pel.pos.x, 0.012, pel.pos.z);
+      }
+      const fl = z.hitFlash * z.hitFlash;
+      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4, fl * 0.33, fl * 0.27);
+      if (z.state === "dead" && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
+      this.blob.visible = z.state !== "dead" || z.corpseT < 4.5;
+    }
   };
+  __publicField(_ZombieView, "physics", null);
+  // shared physics backend (custom / Rapier); null = death clips only
+  __publicField(_ZombieView, "fx", null);
+  // blood effects
+  __publicField(_ZombieView, "scene", null);
+  // severed pieces live in the scene, independent of the (pooled) views
+  __publicField(_ZombieView, "pieces", []);
+  var ZombieView = _ZombieView;
 
   // src/render/fx.js
   function starTexture() {
@@ -47026,7 +47431,25 @@ void main() {
     g.fillRect(0, 0, 32, 32);
     return new CanvasTexture(c);
   }
-  var MAX_P = 160;
+  var MAX_P = 320;
+  var MAX_POOLS = 32;
+  function splatTexture() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const g = c.getContext("2d");
+    g.fillStyle = "rgba(255,255,255,1)";
+    const blob = (x, y, r) => {
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2);
+      g.fill();
+    };
+    blob(64, 64, 34);
+    for (let i = 0; i < 14; i++) {
+      const a = Math.random() * Math.PI * 2, d = 26 + Math.random() * 28;
+      blob(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, 4 + Math.random() * 10);
+    }
+    return new CanvasTexture(c);
+  }
   var FX = class {
     constructor(scene2) {
       this.scene = scene2;
@@ -47108,6 +47531,47 @@ void main() {
       this.aim.position.y = 0.02;
       this.aim.renderOrder = 2;
       scene2.add(this.aim);
+      const splat = splatTexture();
+      this.pools = [];
+      for (let i = 0; i < MAX_POOLS; i++) {
+        const m = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: splat, color: 4851206, transparent: true, opacity: 0, depthWrite: false }));
+        m.rotation.x = -Math.PI / 2;
+        m.visible = false;
+        m.renderOrder = 1;
+        scene2.add(m);
+        this.pools.push({ m, t: 99, size: 1 });
+      }
+      this.poolNext = 0;
+    }
+    // Blood: dark particles thrown along (dx, dy, dz) and a pool spreading on the floor.
+    bloodSpray(x, y, z, dx, dy, dz, n = 22, speed = 3) {
+      if (!this.gore) return;
+      for (let i = 0; i < n; i++) {
+        const p = this.parts[this.pNext];
+        this.pNext = (this.pNext + 1) % MAX_P;
+        const s = speed * (0.35 + Math.random() * 0.75);
+        p.x = x;
+        p.y = y;
+        p.z = z;
+        p.vx = dx * s + (Math.random() - 0.5) * 1.4;
+        p.vy = dy * s + Math.random() * 1.2;
+        p.vz = dz * s + (Math.random() - 0.5) * 1.4;
+        p.life = p.max = 0.5 + Math.random() * 0.5;
+        p.r = 0.42;
+        p.g = 0.02;
+        p.b = 0.02;
+        p.dark = true;
+      }
+    }
+    bloodPool(x, z, size = 0.8) {
+      if (!this.gore) return;
+      const q = this.pools[this.poolNext];
+      this.poolNext = (this.poolNext + 1) % MAX_POOLS;
+      q.t = 0;
+      q.size = size * (0.8 + Math.random() * 0.4);
+      q.m.position.set(x, 0.015 + this.poolNext * 4e-4, z);
+      q.m.rotation.z = Math.random() * Math.PI * 2;
+      q.m.visible = true;
     }
     muzzle(pos) {
       this.flash.position.copy(pos);
@@ -47143,6 +47607,7 @@ void main() {
         p.r = c.r;
         p.g = c.g;
         p.b = c.b;
+        p.dark = false;
       }
     }
     impactZombie(x, z, dirX, dirZ, heavy) {
@@ -47209,17 +47674,28 @@ void main() {
             p.vz *= 0.5;
             p.vy = 0;
           }
-          const f = Math.max(0, p.life / p.max);
+          const f = Math.max(0, p.life / p.max), to = p.dark ? 0.12 : 0.9;
           this.pPos[k * 3] = p.x;
           this.pPos[k * 3 + 1] = p.y;
           this.pPos[k * 3 + 2] = p.z;
-          this.pCol[k * 3] = p.r * f + (1 - f) * 0.9;
-          this.pCol[k * 3 + 1] = p.g * f + (1 - f) * 0.9;
-          this.pCol[k * 3 + 2] = p.b * f + (1 - f) * 0.88;
+          this.pCol[k * 3] = p.r * f + (1 - f) * to;
+          this.pCol[k * 3 + 1] = p.g * f + (1 - f) * to * (p.dark ? 0.1 : 1);
+          this.pCol[k * 3 + 2] = p.b * f + (1 - f) * to * (p.dark ? 0.1 : 0.98);
           k++;
         }
       }
       this.pGeo.setDrawRange(0, k);
+      for (const q of this.pools) {
+        if (q.t > 40) continue;
+        q.t += dt;
+        const grow = Math.min(1, q.t / 0.9), s = q.size * (0.35 + 0.65 * (1 - (1 - grow) * (1 - grow)));
+        q.m.scale.set(s, s, 1);
+        q.m.material.opacity = 0.85 * (q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6));
+        if (q.t > 31) {
+          q.m.visible = false;
+          q.t = 99;
+        }
+      }
       this.pGeo.attributes.position.needsUpdate = true;
       this.pGeo.attributes.color.needsUpdate = true;
       for (const q of this.trailPts) q.t += dt;
@@ -47338,6 +47814,11 @@ void main() {
           this.tone(t, 0.22, 95, { f2: 38, gain: 0.85, type: "sine" });
           this.noise(t, 0.12, { type: "lowpass", f: 1200, f2: 220, gain: 0.65 });
           this.tone(t, 0.06, 330, { gain: 0.14, type: "triangle", f2: 200 });
+          break;
+        case "sever":
+          this.noise(t, 0.03, { type: "bandpass", f: 2400, q: 3, gain: 0.45 });
+          this.noise(t + 0.02, 0.22, { type: "lowpass", f: 900, f2: 250, gain: 0.5, attack: 0.01 });
+          this.tone(t, 0.12, 140, { f2: 60, gain: 0.3 });
           break;
         case "knockdown":
           this.noise(t + 0.55, 0.16, { type: "lowpass", f: 420, gain: 0.55 });
@@ -47784,6 +48265,533 @@ void main() {
     }
   };
 
+  // src/render/physics/custom.js
+  var G = -9.81;
+  var ITER = 6;
+  var DAMP = 0.996;
+  var FRICTION = 0.55;
+  var BOUNCE = 0.15;
+  var CELL = 0.3;
+  var _a2 = new Vector3();
+  var _b2 = new Vector3();
+  var _q5 = new Quaternion();
+  var Particle = class {
+    constructor(p, r, invMass) {
+      this.x = p.clone();
+      this.p = p.clone();
+      this.r = r;
+      this.w = invMass;
+      this.body = null;
+      this.i = 0;
+      this.ground = false;
+    }
+  };
+  var CustomPhysics = class {
+    constructor() {
+      this.name = "custom";
+      this.syncInit = true;
+      this.bodies = /* @__PURE__ */ new Map();
+      this.nextId = 1;
+      this.boxes = [];
+      this.particles = [];
+      this.stats = { steps: 0, ms: 0 };
+    }
+    async init(world) {
+      this.bodies.clear();
+      this.particles = [];
+      this.boxes = world.boxes.filter((b) => b.kind !== "doorSeal").map((b) => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: b.h }));
+    }
+    _particle(body, pos, r, mass) {
+      const pt = new Particle(pos, r, 1 / mass);
+      pt.body = body;
+      pt.i = body.pts.length;
+      body.pts.push(pt);
+      return pt;
+    }
+    _link(body, A, B, min = 0, max = null) {
+      const d = A.x.distanceTo(B.x);
+      body.cons.push({ A, B, lo: min ? d * min : d, hi: max === null ? d : max === Infinity ? Infinity : d * max });
+      body.adj.add(A.i * 64 + B.i);
+      body.adj.add(B.i * 64 + A.i);
+    }
+    // desc from describeRagdoll; vels: per part THREE.Vector3 (m/s)
+    addRagdoll(desc, vels) {
+      const id = this.nextId++, body = { id, kind: "ragdoll", pts: [], cons: [], adj: /* @__PURE__ */ new Set(), desc, q: [], prevAxis: [], sleep: 0 };
+      const P = {}, part = (n) => desc.parts[desc.idx[n]];
+      const pt = (key, pos, r, m) => P[key] = this._particle(body, pos, r, m);
+      const pel = part("pelvis"), ch = part("chest");
+      const S = pel.r / 0.075 / 1;
+      pt("hips", pel.a, pel.r * 0.9, 6);
+      pt("spine1", pel.b, pel.r, 6);
+      const tl = part("thighL"), tr = part("thighR");
+      pt("hipL", tl ? tl.a : pel.a.clone().addScaledVector(pel.ref, 0.5 * 0.1 * S), pel.r * 0.6, 3);
+      pt("hipR", tr ? tr.a : pel.a.clone().addScaledVector(pel.ref, -0.5 * 0.1 * S), pel.r * 0.6, 3);
+      const rig = (keys) => {
+        for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) this._link(body, P[keys[i]], P[keys[j]]);
+      };
+      rig(["hips", "spine1", "hipL", "hipR"]);
+      pt("neck", ch.b, ch.r * 0.7, 4);
+      const ul = part("upperArmL"), ur = part("upperArmR");
+      pt("shL", ul ? ul.a : ch.b.clone(), ch.r * 0.55, 2);
+      pt("shR", ur ? ur.a : ch.b.clone(), ch.r * 0.55, 2);
+      rig(["spine1", "neck", "shL", "shR"]);
+      const hd = part("head");
+      if (hd) {
+        pt("head", hd.a, hd.r * 0.8, 2);
+        pt("top", hd.b, hd.r, 2);
+        rig(["neck", "head", "top"]);
+        this._link(body, P.top, P.spine1, 0.85, Infinity);
+      }
+      const limb = (up, lo, a, mid, end) => {
+        const U = part(up);
+        if (!U) return;
+        pt(mid, U.b, U.r, U.mass);
+        this._link(body, P[a], P[mid]);
+        const L = part(lo);
+        if (L) {
+          pt(end, L.b, L.r, L.mass);
+          this._link(body, P[mid], P[end]);
+          this._link(body, P[a], P[end], 0.45, Infinity);
+        }
+      };
+      limb("upperArmL", "foreArmL", "shL", "elL", "haL");
+      limb("upperArmR", "foreArmR", "shR", "elR", "haR");
+      limb("thighL", "shinL", "hipL", "knL", "ftL");
+      limb("thighR", "shinR", "hipR", "knR", "ftR");
+      for (const k of ["knL", "knR"]) if (P[k]) this._link(body, P[k], P.spine1, 0.8, Infinity);
+      for (const k of ["elL", "elR"]) if (P[k]) this._link(body, P[k], P.hips, 0.6, Infinity);
+      const ends = {
+        pelvis: ["hips", "spine1"],
+        chest: ["spine1", "neck"],
+        head: ["head", "top"],
+        upperArmL: ["shL", "elL"],
+        foreArmL: ["elL", "haL"],
+        upperArmR: ["shR", "elR"],
+        foreArmR: ["elR", "haR"],
+        thighL: ["hipL", "knL"],
+        shinL: ["knL", "ftL"],
+        thighR: ["hipR", "knR"],
+        shinR: ["knR", "ftR"]
+      };
+      body.ends = desc.parts.map((p) => ends[p.name].map((k) => P[k]));
+      body.side = { pelvis: [P.hipL, P.hipR], chest: [P.shL, P.shR] };
+      body.q = desc.parts.map((p) => p.q0.clone());
+      body.prevAxis = body.ends.map(([A, B]) => B.x.clone().sub(A.x).normalize());
+      desc.parts.forEach((p, i) => {
+        for (const e of body.ends[i]) e.p.copy(e.x).addScaledVector(vels[i], -1 / 60);
+      });
+      this.bodies.set(id, body);
+      this.particles.push(...body.pts);
+      return id;
+    }
+    // A severed piece: capsule from a to b.
+    addPiece(a, b, r, vel, q0) {
+      const id = this.nextId++, body = { id, kind: "piece", pts: [], cons: [], adj: /* @__PURE__ */ new Set(), sleep: 0 };
+      const A = this._particle(body, a, r, 1), B = this._particle(body, b, r, 1);
+      this._link(body, A, B);
+      const spin = new Vector3(Math.random() - 0.5, 0.5, Math.random() - 0.5).multiplyScalar(1.6);
+      A.p.copy(A.x).addScaledVector(vel.clone().sub(spin), -1 / 60);
+      B.p.copy(B.x).addScaledVector(vel.clone().add(spin), -1 / 60);
+      body.ends = [[A, B]];
+      body.q = [q0.clone()];
+      body.prevAxis = [b.clone().sub(a).normalize()];
+      this.bodies.set(id, body);
+      this.particles.push(...body.pts);
+      return id;
+    }
+    // impulse (kg m/s) to the part's particles
+    impulse(id, partIndex, imp) {
+      const body = this.bodies.get(id);
+      if (!body) return;
+      body.sleep = 0;
+      for (const e of body.ends[partIndex] || body.ends[0]) e.p.addScaledVector(imp, -e.w / 60);
+    }
+    remove(id) {
+      const body = this.bodies.get(id);
+      if (!body) return;
+      this.bodies.delete(id);
+      const set = new Set(body.pts);
+      this.particles = this.particles.filter((p) => !set.has(p));
+    }
+    step(dt) {
+      const t0 = performance.now();
+      const pts = this._active || (this._active = []);
+      pts.length = 0;
+      for (const body of this.bodies.values()) if (body.sleep < 1.5) for (const p of body.pts) pts.push(p);
+      for (const p of pts) {
+        const vx = (p.x.x - p.p.x) * DAMP, vy = (p.x.y - p.p.y) * DAMP, vz = (p.x.z - p.p.z) * DAMP;
+        p.p.copy(p.x);
+        p.x.x += vx;
+        p.x.y += vy + G * dt * dt;
+        p.x.z += vz;
+        const c = p.cand || (p.cand = []);
+        c.length = 0;
+        const m = p.r + 0.25;
+        for (const b of this.boxes) if (p.x.x > b.minX - m && p.x.x < b.maxX + m && p.x.z > b.minZ - m && p.x.z < b.maxZ + m && p.x.y - m < b.h) c.push(b);
+      }
+      const grid = this._grid || (this._grid = /* @__PURE__ */ new Map());
+      for (const c of grid.values()) c.length = 0;
+      for (const p of pts) {
+        const k = Math.floor(p.x.x / CELL) * 73856093 ^ Math.floor(p.x.z / CELL) * 19349663;
+        let c = grid.get(k);
+        if (!c) grid.set(k, c = []);
+        c.push(p);
+      }
+      for (let it = 0; it < ITER; it++) {
+        for (const body of this.bodies.values()) {
+          if (body.sleep >= 1.5) continue;
+          for (const c of body.cons) {
+            const A = c.A, B = c.B;
+            _a2.subVectors(B.x, A.x);
+            const d = _a2.length() || 1e-6;
+            let target = d < c.lo ? c.lo : d > c.hi ? c.hi : d;
+            if (target === d) continue;
+            const k = (d - target) / (d * (A.w + B.w));
+            A.x.addScaledVector(_a2, k * A.w);
+            B.x.addScaledVector(_a2, -k * B.w);
+          }
+        }
+        if (it % 2 === 0) this._contacts(pts, grid);
+        for (const p of pts) this._collide(p);
+      }
+      for (const p of pts) {
+        if (!p.ground) continue;
+        p.p.x = p.x.x - (p.x.x - p.p.x) * (1 - FRICTION);
+        p.p.z = p.x.z - (p.x.z - p.p.z) * (1 - FRICTION);
+      }
+      for (const body of this.bodies.values()) {
+        if (body.sleep >= 1.5) continue;
+        let maxV = 0;
+        for (const p of body.pts) maxV = Math.max(maxV, p.x.distanceTo(p.p) / dt);
+        body.sleep = maxV < 0.08 ? body.sleep + dt : 0;
+        body.ends.forEach(([A, B], i) => {
+          const axis = _a2.subVectors(B.x, A.x).normalize();
+          const name = body.kind === "ragdoll" ? body.desc.parts[i].name : "";
+          if (name === "pelvis" || name === "chest") {
+            const [L, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
+            frameQuat(axis, _b2.subVectors(L.x, R.x), body.q[i]);
+          } else {
+            _q5.setFromUnitVectors(body.prevAxis[i], axis);
+            body.q[i].premultiply(_q5).normalize();
+          }
+          body.prevAxis[i].copy(axis);
+        });
+      }
+      this.stats.steps++;
+      this.stats.ms += performance.now() - t0;
+    }
+    _contacts(pts, grid) {
+      for (const p of pts) {
+        const cx = Math.floor(p.x.x / CELL), cz = Math.floor(p.x.z / CELL);
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          const c = grid.get((cx + dx) * 73856093 ^ (cz + dz) * 19349663);
+          if (!c) continue;
+          for (const q of c) {
+            if (q === p || q.body.id < p.body.id || q.body === p.body && (q.i <= p.i || p.body.adj.has(p.i * 64 + q.i))) continue;
+            _a2.subVectors(q.x, p.x);
+            const d2 = _a2.lengthSq(), rr = p.r + q.r;
+            if (d2 >= rr * rr || d2 < 1e-10) continue;
+            const d = Math.sqrt(d2), k = (rr - d) / (d * (p.w + q.w));
+            p.x.addScaledVector(_a2, -k * p.w);
+            q.x.addScaledVector(_a2, k * q.w);
+          }
+        }
+      }
+    }
+    _collide(p) {
+      p.ground = false;
+      if (p.x.y < p.r) {
+        p.x.y = p.r;
+        p.ground = true;
+        if (p.p.y < p.x.y) p.p.y = p.x.y + (p.x.y - p.p.y) * BOUNCE;
+      }
+      for (const b of p.cand) {
+        if (p.x.y - p.r > b.h) continue;
+        const cx = Math.max(b.minX, Math.min(p.x.x, b.maxX)), cz = Math.max(b.minZ, Math.min(p.x.z, b.maxZ)), cy = Math.min(p.x.y, b.h);
+        const dx = p.x.x - cx, dy = p.x.y - cy, dz = p.x.z - cz, d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 >= p.r * p.r) continue;
+        if (d2 > 1e-10) {
+          const d = Math.sqrt(d2), k = (p.r - d) / d;
+          p.x.x += dx * k;
+          p.x.y += dy * k;
+          p.x.z += dz * k;
+          if (dy > 0 && dy * dy > dx * dx + dz * dz) p.ground = true;
+        } else {
+          const m = [p.x.x - b.minX, b.maxX - p.x.x, p.x.z - b.minZ, b.maxZ - p.x.z, b.h - p.x.y];
+          const i = m.indexOf(Math.min(...m));
+          if (i === 0) p.x.x = b.minX - p.r;
+          else if (i === 1) p.x.x = b.maxX + p.r;
+          else if (i === 2) p.x.z = b.minZ - p.r;
+          else if (i === 3) p.x.z = b.maxZ + p.r;
+          else {
+            p.x.y = b.h + p.r;
+            p.ground = true;
+          }
+        }
+      }
+    }
+    // [{pos, quat}] per part
+    read(id, out = []) {
+      const body = this.bodies.get(id);
+      if (!body) return null;
+      body.ends.forEach(([A, B], i) => {
+        const s = out[i] || (out[i] = { pos: new Vector3(), quat: new Quaternion() });
+        s.pos.addVectors(A.x, B.x).multiplyScalar(0.5);
+        s.quat.copy(body.q[i]);
+      });
+      return out;
+    }
+    sleeping(id) {
+      const b = this.bodies.get(id);
+      return !b || b.sleep >= 1.5;
+    }
+    count() {
+      return this.bodies.size;
+    }
+  };
+
+  // src/render/physics/rapier.js
+  var RAPIER = null;
+  async function loadRapier() {
+    if (RAPIER) return RAPIER;
+    if (!window.RAPIER_LIB) {
+      await new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "dist/rapier.js";
+        s.onload = res;
+        s.onerror = () => rej(new Error("rapier bundle failed to load"));
+        document.head.appendChild(s);
+      });
+    }
+    RAPIER = window.RAPIER_LIB;
+    await RAPIER.init();
+    return RAPIER;
+  }
+  var _q6 = new Quaternion();
+  var _v5 = new Vector3();
+  var GROUP_WORLD = 1;
+  var GROUP_BODY = 2;
+  var groups = (member, filter) => member << 16 | filter;
+  var RapierPhysics = class {
+    constructor() {
+      this.name = "rapier";
+      this.bodies = /* @__PURE__ */ new Map();
+      this.nextId = 1;
+      this.stats = { steps: 0, ms: 0 };
+    }
+    async init(world) {
+      const R = await loadRapier();
+      if (this.world) this.world.free();
+      this.world = new R.World({ x: 0, y: -9.81, z: 0 });
+      this.world.timestep = 1 / 60;
+      this.world.numSolverIterations = 4;
+      this.bodies.clear();
+      const fix = (desc) => this.world.createCollider(desc.setFriction(0.8).setCollisionGroups(groups(GROUP_WORLD, GROUP_BODY)));
+      fix(R.ColliderDesc.cuboid(60, 0.5, 60).setTranslation(0, -0.5, 0));
+      for (const b of world.boxes) {
+        if (b.kind === "doorSeal") continue;
+        const hx = (b.maxX - b.minX) / 2, hz = (b.maxZ - b.minZ) / 2, hy = Math.max(0.02, b.h / 2);
+        fix(R.ColliderDesc.cuboid(hx, hy, hz).setTranslation((b.minX + b.maxX) / 2, hy, (b.minZ + b.maxZ) / 2));
+      }
+    }
+    _capsuleBody(a, b, r, mass, q0, vel) {
+      const R = RAPIER, mid = a.clone().add(b).multiplyScalar(0.5), half = Math.max(0.01, a.distanceTo(b) / 2 - r * 0.5);
+      const body = this.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(mid.x, mid.y, mid.z).setLinvel(vel.x, vel.y, vel.z).setLinearDamping(0.15).setAngularDamping(0.9).setCcdEnabled(false));
+      const col = R.ColliderDesc.capsule(half, r).setRotation({ x: q0.x, y: q0.y, z: q0.z, w: q0.w }).setMass(mass).setFriction(0.7).setRestitution(0.05).setCollisionGroups(groups(GROUP_BODY, GROUP_WORLD | GROUP_BODY));
+      this.world.createCollider(col, body);
+      return body;
+    }
+    addRagdoll(desc, vels) {
+      const R = RAPIER, id = this.nextId++;
+      const rb = desc.parts.map((p, i) => this._capsuleBody(p.a, p.b, p.r, p.mass, p.q0, vels[i]));
+      const joints = [];
+      for (const j of desc.joints) {
+        const P = rb[j.parent], C = rb[j.child];
+        const pp = P.translation(), cp = C.translation();
+        const a1 = { x: j.at.x - pp.x, y: j.at.y - pp.y, z: j.at.z - pp.z }, a2 = { x: j.at.x - cp.x, y: j.at.y - cp.y, z: j.at.z - cp.z };
+        let jd;
+        if (j.type === "hinge") {
+          jd = R.JointData.revolute(a1, a2, { x: j.axis.x, y: j.axis.y, z: j.axis.z });
+          const par = desc.parts[j.parent], ch = desc.parts[j.child];
+          const bent = Math.acos(MathUtils.clamp(par.b.clone().sub(par.a).normalize().dot(ch.b.clone().sub(ch.a).normalize()), -1, 1));
+          jd.limitsEnabled = true;
+          jd.limits = [-bent + 0.05, 2.4 - bent];
+        } else jd = R.JointData.spherical(a1, a2);
+        const joint = this.world.createImpulseJoint(jd, P, C, true);
+        joint.setContactsEnabled(false);
+        joints.push(joint);
+      }
+      this.bodies.set(id, { id, kind: "ragdoll", rb, joints, q0: desc.parts.map((p) => p.q0.clone()) });
+      return id;
+    }
+    addPiece(a, b, r, vel, q0) {
+      const id = this.nextId++;
+      const body = this._capsuleBody(a, b, r, 1.5, q0, vel);
+      body.setAngvel({ x: (Math.random() - 0.5) * 12, y: (Math.random() - 0.5) * 6, z: (Math.random() - 0.5) * 12 }, true);
+      this.bodies.set(id, { id, kind: "piece", rb: [body], joints: [], q0: [q0.clone()] });
+      return id;
+    }
+    impulse(id, partIndex, imp) {
+      const b = this.bodies.get(id);
+      if (!b) return;
+      (b.rb[partIndex] || b.rb[0]).applyImpulse({ x: imp.x, y: imp.y, z: imp.z }, true);
+    }
+    remove(id) {
+      const b = this.bodies.get(id);
+      if (!b) return;
+      for (const j of b.joints) this.world.removeImpulseJoint(j, true);
+      for (const r of b.rb) this.world.removeRigidBody(r);
+      this.bodies.delete(id);
+    }
+    step() {
+      const t0 = performance.now();
+      this.world.step();
+      this.stats.steps++;
+      this.stats.ms += performance.now() - t0;
+    }
+    read(id, out = []) {
+      const b = this.bodies.get(id);
+      if (!b) return null;
+      b.rb.forEach((r, i) => {
+        const s = out[i] || (out[i] = { pos: new Vector3(), quat: new Quaternion() });
+        const t = r.translation(), q = r.rotation();
+        s.pos.set(t.x, t.y, t.z);
+        s.quat.set(q.x, q.y, q.z, q.w).multiply(b.q0[i]);
+      });
+      return out;
+    }
+    sleeping(id) {
+      const b = this.bodies.get(id);
+      return !b || b.rb.every((r) => r.isSleeping());
+    }
+    count() {
+      return this.bodies.size;
+    }
+  };
+
+  // src/physlab.js
+  var settle = () => new Promise((r) => setTimeout(r, 50));
+  function quiet(sim2, keep) {
+    for (const o of sim2.zombies) if (!keep.includes(o)) {
+      o.x = 40;
+      o.z = 40;
+    }
+  }
+  async function kill(g, tag, kind = "pistol", frames = [0, 6, 12, 20, 30, 45, 70, 110]) {
+    g.restart("calm");
+    await settle();
+    const sim2 = g.sim, p = sim2.player;
+    sim2.zombies.length = 0;
+    p.x = p.px = 0.3;
+    p.z = p.pz = 1.8;
+    p.aimYaw = p.aimTarget = Math.PI;
+    const z = sim2.spawnZombie("NW", { x: 0.3, z: -1.6, yaw: 0 });
+    z.set("chase");
+    z.passive = true;
+    g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
+    g.tick(30, 1 / 60, false);
+    z.hp = 1;
+    z.takeHit(kind === "bat" ? 70 : 34, 0, -1, kind === "bat" ? 5.2 : 1.6, kind, sim2);
+    const names = [];
+    let f = 0;
+    for (const at of frames) {
+      g.tick(Math.max(1, at - f), 1 / 60, false);
+      f = at;
+      quiet(sim2, [z]);
+      g.cam({ target: z.id, yaw: -90, pitch: 15, dist: 3.2, h: 0.5 });
+      names.push(await g.shot(`${tag}_${at}`));
+    }
+    g.scriptInput = null;
+    g.cam(null);
+    await g.sheet(names, "sheet_" + tag, 4, 300);
+    return { backend: g.physics?.name || "off", msPerStep: g.perfReport().physicsMsPerStep };
+  }
+  async function sever(g, tag, parts = ["Forearm_R"], kill2 = false, frames = [0, 4, 10, 18, 30, 50, 90]) {
+    g.restart("calm");
+    await settle();
+    const sim2 = g.sim, p = sim2.player;
+    sim2.zombies.length = 0;
+    p.x = p.px = 0.3;
+    p.z = p.pz = 1.8;
+    p.aimYaw = p.aimTarget = Math.PI;
+    const z = sim2.spawnZombie("NW", { x: 0.3, z: -1.6, yaw: 0 });
+    z.set("chase");
+    z.passive = true;
+    g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
+    g.tick(30, 1 / 60, false);
+    for (const part of parts) {
+      z.limbHp[part] = 1;
+      z.takeHit(kill2 ? 999 : 5, 0, -1, 1.6, "pistol", sim2, part);
+    }
+    const names = [];
+    let f = 0;
+    for (const at of frames) {
+      g.tick(Math.max(1, at - f), 1 / 60, false);
+      f = at;
+      quiet(sim2, [z]);
+      g.cam({ target: z.id, yaw: 40, pitch: 20, dist: 2.8, h: 0.75 });
+      names.push(await g.shot(`${tag}_${at}`));
+    }
+    g.scriptInput = null;
+    g.cam(null);
+    await g.sheet(names, "sheet_" + tag, 4, 300);
+    return { severed: [...z.severed], state: z.state, crawling: z.crawling, pieces: g.pieces?.length };
+  }
+  async function pile(g, tag, n = 30, seed = 7) {
+    let s = seed;
+    const rnd = () => (s = s * 16807 % 2147483647) / 2147483647;
+    g.restart("calm");
+    await settle();
+    const sim2 = g.sim, p = sim2.player;
+    sim2.zombies.length = 0;
+    p.x = p.px = 0.3;
+    p.z = p.pz = 4;
+    p.aimYaw = p.aimTarget = Math.PI;
+    const zs = [];
+    for (let i = 0; i < n; i++) {
+      const x = -2.4 + i % 6 * 0.95 + (rnd() - 0.5) * 0.2, z = -3 + Math.floor(i / 6) * 0.9;
+      const zz = sim2.spawnZombie("NW", { x, z, yaw: rnd() * 6.28 });
+      zz.set("chase");
+      zz.passive = true;
+      zs.push(zz);
+    }
+    g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -0.3, swapPresses: 0 });
+    g.tick(20, 1 / 60, false);
+    for (const z of zs) {
+      z.hp = 1;
+      const a = rnd() * 6.28;
+      z.takeHit(70, Math.sin(a), Math.cos(a), 2 + rnd() * 4, rnd() < 0.5 ? "bat" : "pistol", sim2);
+    }
+    const P = g.physics;
+    P.stats.ms = 0;
+    P.stats.steps = 0;
+    const frameMs = [], names = [];
+    let worstStep = 0;
+    for (let i = 0; i < 240; i++) {
+      const s0 = P.stats.ms, a = performance.now();
+      g.tick(1, 1 / 60, i % 60 === 59);
+      g.renderer.getContext().finish();
+      frameMs.push(performance.now() - a);
+      worstStep = Math.max(worstStep, P.stats.ms - s0);
+      if ([10, 30, 60, 200].includes(i)) {
+        g.cam({ target: "yola", yaw: 180, pitch: 40, dist: 7.5, h: 0.3 });
+        names.push(await g.shot(`${tag}_${i}`));
+        g.cam(null);
+      }
+    }
+    g.scriptInput = null;
+    await g.sheet(names, "sheet_" + tag, 4, 300);
+    frameMs.sort((a, b) => a - b);
+    return {
+      backend: P.name,
+      ragdolls: [...g.zviews.values()].filter((v) => v.rag).length,
+      physMsPerStep: +(P.stats.ms / P.stats.steps).toFixed(3),
+      worstStepMs: +worstStep.toFixed(2),
+      frameAvgMs: +(frameMs.reduce((a, b) => a + b, 0) / frameMs.length).toFixed(2),
+      frameP95: +frameMs[Math.floor(frameMs.length * 0.95)].toFixed(2)
+    };
+  }
+
   // src/main.js
   var params = new URLSearchParams(location.search);
   var store = {
@@ -47842,6 +48850,35 @@ void main() {
   var unlockAudio = () => audio.init();
   addEventListener("pointerdown", unlockAudio, { capture: true });
   addEventListener("keydown", unlockAudio, { capture: true });
+  var physMode = params.get("physics") || store.get("physics", "custom");
+  var physics = physMode === "off" ? null : physMode === "rapier" ? new RapierPhysics() : new CustomPhysics();
+  ZombieView.physics = physics;
+  ZombieView.fx = fx;
+  var physAcc = 0;
+  function resetPhysics() {
+    if (!physics) return;
+    physics.ready = false;
+    physAcc = 0;
+    const p = physics.init(sim.world);
+    if (physics.syncInit) physics.ready = true;
+    else p.then(() => {
+      physics.ready = true;
+    }).catch((e) => {
+      console.error(e);
+      hud.error?.("Physics failed: " + e.message);
+    });
+  }
+  function stepPhysics(dt) {
+    if (!physics?.ready || dt <= 0) return;
+    physAcc += dt;
+    let n = 0;
+    while (physAcc >= STEP && n < 4) {
+      physics.step(STEP);
+      physAcc -= STEP;
+      n++;
+    }
+    if (n === 4) physAcc = 0;
+  }
   var arena;
   var yola;
   var sim;
@@ -47857,8 +48894,9 @@ void main() {
   var camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new Vector2() };
   var perf = { frames: [], spikes: 0, t0: performance.now() };
   var ZOMBIE_TYPES = [
-    { file: "assets/zombie-scrubs.glb", height: 1.78, walk: { speed: 0.168 } },
-    { file: "assets/zombie-patient.glb", height: 1.68, walk: { speed: 0.174 } }
+    { file: "assets/zombie-nurse-mod.glb", height: 1.78, walk: { speed: 0.168 } },
+    // modular: severable head, forearms, lower legs
+    { file: "assets/zombie-patient-mod.glb", height: 1.68, walk: { speed: 0.174 } }
   ];
   var YOLA_HEIGHT = 1.62;
   var loader = new GLTFLoader();
@@ -47895,6 +48933,8 @@ void main() {
       zpool[v.type].push(v);
     }
     zviews.clear();
+    ZombieView.clearPieces();
+    resetPhysics();
     const p = sim.player;
     p.px = p.x;
     p.pz = p.z;
@@ -47978,7 +49018,7 @@ void main() {
   var dbgCircle = new Mesh(new RingGeometry(0.3, 0.33, 24), new MeshBasicMaterial({ color: 65450, side: DoubleSide }));
   dbgCircle.rotation.x = -Math.PI / 2;
   var dbgBat = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), new LineBasicMaterial({ color: 16776960 }));
-  var _v5 = new Vector3();
+  var _v6 = new Vector3();
   var _seg2 = {};
   var groanT = 2;
   function frame(now) {
@@ -48052,9 +49092,11 @@ void main() {
       swapDur: tuning.swapTime
     });
     if (a.type === "swing" && a.st > BAT_SWING.activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
-      fx.trailPush(yola.bat.position, yola.bat.userData.tip.getWorldPosition(_v5), true);
+      fx.trailPush(yola.bat.position, yola.bat.userData.tip.getWorldPosition(_v6), true);
     }
     fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? p.attackHeld ? 1 : 0.5 : 0.2);
+    stepPhysics(animDt);
+    ZombieView.updatePieces(animDt);
     const seen = /* @__PURE__ */ new Set();
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
@@ -48083,8 +49125,8 @@ void main() {
     fx.update(animDt);
     if (camOverride) applyCamOverride();
     else updateCamera(dt, ix, iz, iyaw, p);
-    _v5.set(ix, 1, iz).project(camera);
-    playerScreen = { x: (_v5.x * 0.5 + 0.5) * innerWidth, y: (-_v5.y * 0.5 + 0.5) * innerHeight };
+    _v6.set(ix, 1, iz).project(camera);
+    playerScreen = { x: (_v6.x * 0.5 + 0.5) * innerWidth, y: (-_v6.y * 0.5 + 0.5) * innerHeight };
     if (debugOn) updateDebug(p);
     hud.update(sim, dt);
     if (doRender) renderer.render(scene, camera);
@@ -48124,6 +49166,10 @@ void main() {
           break;
         case "zombieKnockdown":
           audio.play("knockdown");
+          break;
+        case "sever":
+          audio.play("sever");
+          shake(0.15);
           break;
         case "batMiss":
           audio.play("batMiss");
@@ -48272,6 +49318,9 @@ void main() {
       quality: resolvedQuality(),
       calls: renderer.info.render.calls,
       tris: renderer.info.render.triangles,
+      physics: physics ? physics.name : "off",
+      physicsMsPerStep: physics?.stats.steps ? +(physics.stats.ms / physics.stats.steps).toFixed(3) : 0,
+      physicsBodies: physics?.count() || 0,
       ua: navigator.userAgent
     };
   }
@@ -48400,6 +49449,10 @@ void main() {
   }, set sim(v) {
   }, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() {
     return yola;
+  }, get physics() {
+    return physics;
+  }, zviews, lab: { kill: (...a) => kill(window.game, ...a), pile: (...a) => pile(window.game, ...a), sever: (...a) => sever(window.game, ...a) }, get pieces() {
+    return ZombieView.pieces;
   }, THREE: three_module_exports, camera, renderer, scene };
   hud.perfReport = perfReport;
   load().catch((e) => {

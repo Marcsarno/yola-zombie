@@ -13,6 +13,9 @@ import { Input } from './ui/input.js';
 import { Hud } from './ui/hud.js';
 import { angleDiff } from './core/world.js';
 import { batWorldSegment } from './core/player.js';
+import { CustomPhysics } from './render/physics/custom.js';
+import { RapierPhysics } from './render/physics/rapier.js';
+import * as physlab from './physlab.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -62,6 +65,27 @@ const unlockAudio = () => audio.init();
 addEventListener('pointerdown', unlockAudio, { capture: true });
 addEventListener('keydown', unlockAudio, { capture: true });
 
+// ---------- physics (ragdolls, severed pieces): ?physics=custom | rapier | off ----------
+const physMode = params.get('physics') || store.get('physics', 'custom');
+const physics = physMode === 'off' ? null : physMode === 'rapier' ? new RapierPhysics() : new CustomPhysics();
+ZombieView.physics = physics;
+ZombieView.fx = fx;
+let physAcc = 0;
+function resetPhysics() {
+  if (!physics) return;
+  physics.ready = false; physAcc = 0;
+  const p = physics.init(sim.world);
+  if (physics.syncInit) physics.ready = true; // the custom backend sets up synchronously
+  else p.then(() => { physics.ready = true; }).catch((e) => { console.error(e); hud.error?.('Physics failed: ' + e.message); });
+}
+function stepPhysics(dt) {
+  if (!physics?.ready || dt <= 0) return;
+  physAcc += dt;
+  let n = 0;
+  while (physAcc >= STEP && n < 4) { physics.step(STEP); physAcc -= STEP; n++; }
+  if (n === 4) physAcc = 0; // never spiral after a stall
+}
+
 let arena, yola, sim;
 const zviews = new Map(); const zpool = [[], []];
 let mode = params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
@@ -73,8 +97,8 @@ const perf = { frames: [], spikes: 0, t0: performance.now() };
 // Characters: Tripo meshes (mixamorig skeleton) with Mixamo/Tripo clips, exported by blender/export_chars.py.
 // (Yola's locomotion speeds are measured from foot plants at load, see YolaView.measureGaits.)
 const ZOMBIE_TYPES = [
-  { file: 'assets/zombie-scrubs.glb', height: 1.78, walk: { speed: 0.168 } },
-  { file: 'assets/zombie-patient.glb', height: 1.68, walk: { speed: 0.174 } },
+  { file: 'assets/zombie-nurse-mod.glb', height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
+  { file: 'assets/zombie-patient-mod.glb', height: 1.68, walk: { speed: 0.174 } },
 ];
 const YOLA_HEIGHT = 1.62;
 const loader = new GLTFLoader();
@@ -109,6 +133,8 @@ function restart(newMode = mode, n = benchN) {
   window.game.sim = sim;
   for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); }
   zviews.clear();
+  ZombieView.clearPieces();
+  resetPhysics();
   const p = sim.player;
   p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;
   yola.reset(p.x, p.z, p.aimYaw);
@@ -215,6 +241,8 @@ function runFrame(dt, doRender = true) {
   }
   fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? (p.attackHeld ? 1 : 0.5) : 0.2);
 
+  stepPhysics(animDt);
+  ZombieView.updatePieces(animDt);
   // ---- zombies (pooled views) ----
   const seen = new Set();
   for (const z of sim.zombies) {
@@ -265,6 +293,7 @@ function handleEvents() {
         if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
         break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
+      case 'sever': audio.play('sever'); shake(0.15); break;
       case 'batMiss': audio.play('batMiss'); break;
       case 'batClank': audio.play('clank'); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;
       case 'hitPause': hitPauseT = Math.max(hitPauseT, e.dur); break;
@@ -347,7 +376,7 @@ function perfReport() {
   return {
     fps: +(1000 / avg).toFixed(1), avgMs: +avg.toFixed(2), p95Ms: +f[Math.floor(f.length * 0.95)].toFixed(2), maxMs: +f[f.length - 1].toFixed(2),
     spikesOver34ms: perf.spikes, zombies: sim.aliveCount(), dpr: +renderer.getPixelRatio().toFixed(2), renderScale,
-    res: `${renderer.domElement.width}x${renderer.domElement.height}`, quality: resolvedQuality(), calls: renderer.info.render.calls, tris: renderer.info.render.triangles,
+    res: `${renderer.domElement.width}x${renderer.domElement.height}`, quality: resolvedQuality(), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, physics: physics ? physics.name : 'off', physicsMsPerStep: physics?.stats.steps ? +(physics.stats.ms / physics.stats.steps).toFixed(3) : 0, physicsBodies: physics?.count() || 0,
     ua: navigator.userAgent,
   };
 }
@@ -435,6 +464,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, THREE, camera, renderer, scene };
+window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st) => batWorldSegment(sim.player, st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

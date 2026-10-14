@@ -97,11 +97,24 @@ export class Sim {
     const dx = Math.sin(yaw), dz = Math.cos(yaw);
     if (r.zombie) {
       this.stats.shotHits++;
-      r.zombie.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback, 'pistol', this);
+      r.zombie.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback, 'pistol', this, this.bulletPart(r.zombie, m.x, m.z, dx, dz));
       this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'zombie', id: r.zombie.id, yaw, killed: !r.zombie.alive });
     } else {
       this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz, yaw });
     }
+  }
+
+  // Which part a bullet hits, from where it passes the body: wide of centre takes the arm on that side;
+  // through the middle mostly the torso, sometimes the head or a leg.
+  bulletPart(z, ox, oz, dx, dz) {
+    const rx = z.x - ox, rz = z.z - oz, along = rx * dx + rz * dz;
+    const qx = ox + dx * along - z.x, qz = oz + dz * along - z.z; // closest ray point, relative to the body
+    const side = qx * Math.cos(z.yaw) - qz * Math.sin(z.yaw); // + = the zombie's left
+    const r = this.rand();
+    if (Math.hypot(qx, qz) > 0.17) return r < 0.75 ? (side > 0 ? 'Forearm_L' : 'Forearm_R') : 'torso';
+    if (r < 0.12) return 'Head';
+    if (r < 0.26) return this.rand() < 0.5 ? 'LowerLeg_L' : 'LowerLeg_R';
+    return 'torso';
   }
 
   traceBullet(ox, oz, yaw) {
@@ -171,7 +184,11 @@ export class Sim {
         let dx = vx * 0.6 + rx * 0.4, dz = vz * 0.6 + rz * 0.4; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
         act.hitSet.add(z.id); act.hits++;
         this.stats.batHits++;
-        z.takeHit(T.batDamage, dx, dz, T.batKnockback, 'bat', this);
+        // a killing blow can take the head; otherwise sometimes an arm comes off
+        const lethal = z.hp <= T.batDamage, r = this.rand();
+        const part = lethal ? (r < 0.35 ? 'Head' : 'torso') : r < 0.2 ? (this.rand() < 0.5 ? 'Forearm_L' : 'Forearm_R') : 'torso';
+        if (part === 'Head') z.limbHp.Head = 0; // the bat finishes it outright
+        z.takeHit(T.batDamage, dx, dz, T.batKnockback, 'bat', this, part);
         this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive });
         if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.4) });
       }

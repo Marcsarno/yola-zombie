@@ -66,6 +66,11 @@ export class CombatAudio {
         this.noise(t, 0.12, { type: 'lowpass', f: 1200, f2: 220, gain: 0.65 });
         this.tone(t, 0.06, 330, { gain: 0.14, type: 'triangle', f2: 200 });
         break;
+      case 'sever': // wet crunch: snap, then a short splatter
+        this.noise(t, 0.03, { type: 'bandpass', f: 2400, q: 3, gain: 0.45 });
+        this.noise(t + 0.02, 0.22, { type: 'lowpass', f: 900, f2: 250, gain: 0.5, attack: 0.01 });
+        this.tone(t, 0.12, 140, { f2: 60, gain: 0.3 });
+        break;
       case 'knockdown': // body slams the floor as the fall lands
         this.noise(t + 0.55, 0.16, { type: 'lowpass', f: 420, gain: 0.55 });
         this.tone(t + 0.55, 0.18, 70, { f2: 40, gain: 0.45 });

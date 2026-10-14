@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { makePistol, makeBat } from './weaponModels.js';
 import { BAT_SWING } from '../core/weapons.js';
+import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
@@ -438,7 +439,26 @@ const DEATHS = {
   forward: [['death_forward', 10, 67], ['death_headshot_knees', 18, 70]],
 };
 
+// Modular zombie pieces (nurse / patient naming) and gore pieces (GORE_<piece>_Stump / _Detached).
+const MODULE_NAMES = {
+  Head: /^(Nurse_Head|Patient_Head)$/, Forearm_L: /^(Nurse_Forearm_L|Patient_LeftForearm)$/, Forearm_R: /^(Nurse_Forearm_R|Patient_RightForearm)$/,
+  LowerLeg_L: /^(Nurse_LowerLeg_L|Patient_LeftLowerLeg)$/, LowerLeg_R: /^(Nurse_LowerLeg_R|Patient_RightLowerLeg)$/,
+};
+const GORE_NAME = /^GORE_(Head|Forearm_L|Forearm_R|LowerLeg_L|LowerLeg_R)_(Stump|Detached)/;
+// bone the stump sits on (bleeds from), and the severed piece's two ends [from, to, extend] and radius (m at 1.7 m)
+const STUMP_BONE = { Head: 'Neck', Forearm_L: 'LeftForeArm', Forearm_R: 'RightForeArm', LowerLeg_L: 'LeftLeg', LowerLeg_R: 'RightLeg' };
+const PIECE_ENDS = {
+  Head: ['Head', 'HeadTop_End', 0, 0.1], Forearm_L: ['LeftForeArm', 'LeftHand', 0.45, 0.045], Forearm_R: ['RightForeArm', 'RightHand', 0.45, 0.045],
+  LowerLeg_L: ['LeftLeg', 'LeftFoot', 0.1, 0.06], LowerLeg_R: ['RightLeg', 'RightFoot', 0.1, 0.06],
+};
+const MAX_PIECES = 40;
+const _bv = new THREE.Vector3(), _bq = new THREE.Quaternion();
+
 export class ZombieView extends ClipBody {
+  static physics = null; // shared physics backend (custom / Rapier); null = death clips only
+  static fx = null;      // blood effects
+  static scene = null;   // severed pieces live in the scene, independent of the (pooled) views
+  static pieces = [];
   constructor(scene, gltf, height, speeds) {
     const model = skClone(gltf.scene);
     const mats = [];
@@ -449,9 +469,10 @@ export class ZombieView extends ClipBody {
     if (!clips) {
       const rest = hipsRest(gltf.scene);
       clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
-      for (const c of clips) if (c.name === 'walk' || c.name === 'idle') loopClip(c);
+      for (const c of clips) if (c.name === 'walk' || c.name === 'idle' || c.name === 'crawl') loopClip(c);
       SHARED_CLIPS.set(gltf, clips);
     }
+    ZombieView.scene = scene;
     super(scene, model, height, clips);
     this.mats = mats;
     this.nativeWalk = (speeds?.speed || 0.17) * height;
@@ -462,16 +483,136 @@ export class ZombieView extends ClipBody {
     }
     this.react = new Spring2(70, 9);
     this.oneShot = null; this.lastSeq = 0; this.lastState = ''; this.id = -1;
+    this.height = height;
+    // modular pieces (empty for the older single-mesh zombies)
+    this.modules = {}; this.gore = {};
+    model.traverse((o) => {
+      for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
+      const m = GORE_NAME.exec(o.name);
+      if (m) (this.gore[m[1]] ||= {})[m[2].toLowerCase()] = o;
+    });
+    this.modular = Object.keys(this.modules).length === 5;
+    this.severed = new Set(); this.rag = null; this.bleed = {};
+    this.hasCrawl = !!this.act('crawl');
+    if (this.hasCrawl) { this.act('crawl').play(); this.act('crawl').setEffectiveWeight(0); }
   }
+
+  // ---- dismemberment ----
+  sever(part, z) {
+    this.severed.add(part);
+    this.container.updateMatrixWorld(true);
+    const P = ZombieView.physics, fx = ZombieView.fx;
+    const mod = this.modules[part], g = this.gore[part] || {};
+    // the loose piece: the module and its wound cap baked in their current pose
+    const [fromB, toB, ext, rad] = PIECE_ENDS[part];
+    const a = this.bones[fromB].getWorldPosition(new THREE.Vector3());
+    const b = this.bones[toB].getWorldPosition(new THREE.Vector3());
+    b.add(b.clone().sub(a).multiplyScalar(ext));
+    const q0 = frameQuat(b.clone().sub(a), new THREE.Vector3(1, 0, 0).applyQuaternion(this.bones[fromB].getWorldQuaternion(_bq)), new THREE.Quaternion());
+    const c = a.clone().add(b).multiplyScalar(0.5), qi = q0.clone().invert();
+    const obj = new THREE.Group();
+    const bake = (src) => src && src.traverse((o) => {
+      if (!o.isSkinnedMesh) return;
+      const sg = o.geometry, n = sg.attributes.position.count, pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        o.getVertexPosition(i, _bv); _bv.applyMatrix4(o.matrixWorld).sub(c).applyQuaternion(qi);
+        pos[i * 3] = _bv.x; pos[i * 3 + 1] = _bv.y; pos[i * 3 + 2] = _bv.z;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      for (const k of ['uv', 'color']) if (sg.attributes[k]) geo.setAttribute(k, sg.attributes[k]);
+      if (sg.index) geo.setIndex(sg.index);
+      geo.computeVertexNormals();
+      const mat = o.material.clone(); if (mat.emissive) mat.emissive.setRGB(0, 0, 0);
+      obj.add(new THREE.Mesh(geo, mat));
+    });
+    bake(mod); bake(g.detached);
+    obj.position.copy(c); obj.quaternion.copy(q0);
+    ZombieView.scene.add(obj);
+    mod.visible = false; if (g.stump) g.stump.visible = true;
+    // thrown along the blow, up and spinning
+    const dir = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
+    const vel = dir.clone().multiplyScalar(z.hitKind === 'bat' ? 4.5 : 2.6).add(new THREE.Vector3(z.vx * 0.5, 2.2 + Math.random() * 1.2, z.vz * 0.5));
+    const r = rad * (this.height / 1.7);
+    const piece = { obj, t: 0, id: P && P.ready ? P.addPiece(a, b, r, vel, q0) : 0, P: P && P.ready ? P : null, vel, r, states: [] };
+    ZombieView.pieces.push(piece);
+    if (ZombieView.pieces.length > MAX_PIECES) ZombieView.dropPiece(ZombieView.pieces[0]);
+    // blood: spray from the stump along the blow, a pool below, then dripping for a while
+    const s = this.bones[STUMP_BONE[part]].getWorldPosition(new THREE.Vector3());
+    if (fx) { fx.bloodSpray(s.x, s.y, s.z, dir.x * 0.8, 0.5, dir.z * 0.8, part === 'Head' ? 30 : 20, 3.2); fx.bloodPool(s.x + dir.x * 0.4, s.z + dir.z * 0.4, part === 'Head' ? 1.0 : 0.7); }
+    this.bleed[part] = 2.5;
+  }
+  bleeding(dt) {
+    const fx = ZombieView.fx; if (!fx) return;
+    for (const part in this.bleed) {
+      if ((this.bleed[part] -= dt) <= 0) { delete this.bleed[part]; continue; }
+      if (Math.random() < dt * 18) {
+        const s = this.bones[STUMP_BONE[part]].getWorldPosition(_bv);
+        fx.bloodSpray(s.x, s.y, s.z, 0, part === 'Head' ? 0.6 : -0.1, 0, 1, 0.8);
+      }
+    }
+  }
+  static updatePieces(dt) {
+    for (const pc of [...ZombieView.pieces]) {
+      pc.t += dt;
+      if (pc.P) {
+        const st = pc.P.read(pc.id, pc.states);
+        if (st) { pc.obj.position.copy(st[0].pos); pc.obj.quaternion.copy(st[0].quat); }
+      } else if (pc.obj.position.y > pc.r) { // no physics: simple fall
+        pc.vel.y -= 9.81 * dt; pc.obj.position.addScaledVector(pc.vel, dt);
+        if (pc.obj.position.y < pc.r) pc.obj.position.y = pc.r;
+      }
+      if (pc.t > 14) pc.obj.position.y -= dt * 0.25; // sink away
+      if (pc.t > 16) ZombieView.dropPiece(pc);
+    }
+  }
+  static dropPiece(pc) {
+    const i = ZombieView.pieces.indexOf(pc); if (i >= 0) ZombieView.pieces.splice(i, 1);
+    if (pc.P) pc.P.remove(pc.id);
+    pc.obj.removeFromParent();
+    pc.obj.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+  }
+  static clearPieces() { for (const pc of [...ZombieView.pieces]) ZombieView.dropPiece(pc); }
 
   bind(z) {
     this.id = z.id; this.lastSeq = z.hitSeq; this.lastState = ''; this.outer.visible = this.blob.visible = true;
     this.outer.position.y = 0; this.oneShot = null; this.deathYaw = null;
+    this.endRagdoll();
+    this.severed.clear();
+    for (const m of Object.values(this.modules)) m.visible = true;
+    for (const g of Object.values(this.gore)) { if (g.stump) g.stump.visible = false; if (g.detached) g.detached.visible = false; }
     for (const a of Object.values(this.actions)) { a.stop(); a.setEffectiveWeight(0); }
     for (const n of ['walk', 'idle']) { this.act(n).play(); this.act(n).time = Math.random() * this.act(n).getClip().duration; }
+    if (this.hasCrawl) this.act('crawl').play();
     this.react.x = this.react.z = this.react.vx = this.react.vz = 0;
+    this.bleed = {};
   }
-  hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); }
+  hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); this.endRagdoll(); }
+
+  // ---- ragdoll: from the current animated pose, carrying the blow's momentum ----
+  startRagdoll(z) {
+    const P = ZombieView.physics;
+    if (!P || !P.ready) return false;
+    this.container.updateMatrixWorld(true);
+    const missing = new Set([...this.severed].map((s) => SEVER_PART[s]));
+    const desc = describeRagdoll(this.bones, this.height, missing);
+    const dir = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
+    const bat = z.hitKind === 'bat', s = bat ? 4.2 : 2.4;
+    const hitPart = bat ? 'chest' : z.lastHitPart === 'head' ? 'head' : 'chest';
+    const base = new THREE.Vector3(z.kx * 0.35, 0.2, z.kz * 0.35);
+    const vels = desc.parts.map((p) => {
+      const k = p.name === hitPart ? 1 : p.name === 'chest' || p.name === 'head' ? 0.6 : p.name === 'pelvis' ? 0.3 : 0.25;
+      return base.clone().addScaledVector(dir, s * k);
+    });
+    const id = P.addRagdoll(desc, vels);
+    this.rag = { id, P, driver: new RagdollDriver(this.bones, desc), states: [], frozen: false };
+    this.mixer.stopAllAction(); this.oneShot = null;
+    return true;
+  }
+  endRagdoll() {
+    if (this.rag && !this.rag.frozen) this.rag.P.remove(this.rag.id);
+    this.rag = null;
+  }
 
   playOnce(name, from = 0, rate = 1, fade = 0.08) {
     if (this.oneShot && this.oneShot !== this.act(name)) { if (fade > 0) this.oneShot.fadeOut(fade); else { this.oneShot.stop(); this.oneShot.setEffectiveWeight(0); } }
@@ -489,9 +630,13 @@ export class ZombieView extends ClipBody {
   }
 
   update(dt, z, x, zz) {
+    if (this.rag) { this.updateRagdoll(z); return; }
+    // limbs the simulation took off this step: cut them from the pose that is on screen now
+    if (this.modular && z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part)) this.sever(part, z);
     this.outer.position.x = x; this.outer.position.z = zz;
     this.blob.position.set(x, 0.012, zz);
     const dying = z.state === 'dying' || z.state === 'dead';
+    if (z.state === 'dying' && this.lastState !== 'dying' && this.startRagdoll(z)) { this.lastState = 'dying'; this.updateRagdoll(z); return; }
     // state transitions -> clips (attack timed so the swipe lands at the end of the windup)
     if (z.state !== this.lastState) {
       const S = z.state;
@@ -529,11 +674,14 @@ export class ZombieView extends ClipBody {
     const sp = Math.hypot(z.vx, z.vz);
     const move = clamp(sp / 0.25, 0, 1);
     const one = this.oneShot ? this.oneShot.getEffectiveWeight() : 0;
-    this.act('walk').setEffectiveWeight(move * (1 - one));
-    this.act('idle').setEffectiveWeight((1 - move) * (1 - one));
+    const crawl = z.crawling && this.hasCrawl ? 1 : 0; // legless: drags itself along
+    this.act('walk').setEffectiveWeight(move * (1 - one) * (1 - crawl));
+    this.act('idle').setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
     this.act('walk').timeScale = clamp(sp / this.nativeWalk, 0.5, 3.2);
+    if (this.hasCrawl) { const c = this.act('crawl'); c.setEffectiveWeight(crawl * (1 - one)); c.timeScale = clamp(sp / (0.22 * this.height), 0.45, 2.5); }
     this.mixer.update(dt);
     this.container.updateMatrixWorld(true);
+    this.bleeding(dt);
 
     // small directional jolt on every hit (the clip gives the body reaction; this gives direction)
     if (z.hitSeq !== this.lastSeq) {
@@ -548,6 +696,24 @@ export class ZombieView extends ClipBody {
     const fl = z.hitFlash * z.hitFlash; // sharp: a bright first frame, gone within ~0.1 s
     for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4, fl * 0.33, fl * 0.27);
     // corpse sinks away after a while
+    if (z.state === 'dead' && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
+    this.blob.visible = z.state !== 'dead' || z.corpseT < 4.5;
+  }
+
+  // Ragdolled: the skeleton follows the physics parts. The body leaves the physics world once the
+  // corpse starts sinking (the last pose is kept and sinks with the model).
+  updateRagdoll(z, dt = 1 / 60) {
+    const R = this.rag;
+    this.bleeding(dt);
+    if (!R.frozen) {
+      const st = R.P.read(R.id, R.states);
+      if (st) R.driver.apply(st);
+      if (z.state === 'dead' && z.corpseT > 4.5) { R.P.remove(R.id); R.frozen = true; }
+      const pel = st && st[0];
+      if (pel) this.blob.position.set(pel.pos.x, 0.012, pel.pos.z);
+    }
+    const fl = z.hitFlash * z.hitFlash;
+    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4, fl * 0.33, fl * 0.27);
     if (z.state === 'dead' && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
     this.blob.visible = z.state !== 'dead' || z.corpseT < 4.5;
   }

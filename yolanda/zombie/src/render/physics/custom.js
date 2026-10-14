@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { frameQuat } from './ragdoll.js';
 
-const G = -9.81, ITER = 8, DAMP = 0.996, FRICTION = 0.55, BOUNCE = 0.15, CELL = 0.3;
+const G = -9.81, ITER = 6, DAMP = 0.996, FRICTION = 0.55, BOUNCE = 0.15, CELL = 0.3;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _q = new THREE.Quaternion();
 
 class Particle {
@@ -15,8 +15,9 @@ class Particle {
 }
 
 export class CustomPhysics {
-  constructor() { this.name = 'custom'; this.bodies = new Map(); this.nextId = 1; this.boxes = []; this.particles = []; this.stats = { steps: 0, ms: 0 }; }
+  constructor() { this.name = 'custom'; this.syncInit = true; this.bodies = new Map(); this.nextId = 1; this.boxes = []; this.particles = []; this.stats = { steps: 0, ms: 0 }; }
   async init(world) {
+    this.bodies.clear(); this.particles = [];
     this.boxes = world.boxes.filter((b) => b.kind !== 'doorSeal').map((b) => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: b.h }));
   }
 
@@ -101,15 +102,21 @@ export class CustomPhysics {
 
   step(dt) {
     const t0 = performance.now();
-    const pts = this.particles.filter((p) => p.body.sleep < 1.5);
+    const pts = (this._active ||= []); pts.length = 0;
+    for (const body of this.bodies.values()) if (body.sleep < 1.5) for (const p of body.pts) pts.push(p);
     // integrate
     for (const p of pts) {
       const vx = (p.x.x - p.p.x) * DAMP, vy = (p.x.y - p.p.y) * DAMP, vz = (p.x.z - p.p.z) * DAMP;
       p.p.copy(p.x);
       p.x.x += vx; p.x.y += vy + G * dt * dt; p.x.z += vz;
+      // broadphase: the few boxes this particle can touch during this step
+      const c = (p.cand ||= []); c.length = 0;
+      const m = p.r + 0.25;
+      for (const b of this.boxes) if (p.x.x > b.minX - m && p.x.x < b.maxX + m && p.x.z > b.minZ - m && p.x.z < b.maxZ + m && p.x.y - m < b.h) c.push(b);
     }
     // spatial hash for particle-particle contacts (different bodies, or non-linked within a body)
-    const grid = new Map();
+    const grid = (this._grid ||= new Map());
+    for (const c of grid.values()) c.length = 0;
     for (const p of pts) {
       const k = Math.floor(p.x.x / CELL) * 73856093 ^ Math.floor(p.x.z / CELL) * 19349663;
       let c = grid.get(k); if (!c) grid.set(k, (c = [])); c.push(p);
@@ -180,7 +187,7 @@ export class CustomPhysics {
       p.x.y = p.r; p.ground = true;
       if (p.p.y < p.x.y) p.p.y = p.x.y + (p.x.y - p.p.y) * BOUNCE;
     }
-    for (const b of this.boxes) {
+    for (const b of p.cand) {
       if (p.x.y - p.r > b.h) continue;
       const cx = Math.max(b.minX, Math.min(p.x.x, b.maxX)), cz = Math.max(b.minZ, Math.min(p.x.z, b.maxZ)), cy = Math.min(p.x.y, b.h);
       const dx = p.x.x - cx, dy = p.x.y - cy, dz = p.x.z - cz, d2 = dx * dx + dy * dy + dz * dz;

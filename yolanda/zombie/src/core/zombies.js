@@ -27,17 +27,35 @@ export class Zombie {
     this.corpseT = 0;
     this.phase = opts.phase ?? 0;
     this.struck = false;
+    // dismemberment: limb health; a limb at 0 comes off at the elbow / knee / neck
+    this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
+    this.severed = new Set(); this.crawling = false; this.lastHitPart = 'torso'; this.toCrawl = false;
+  }
+  get armsLost() { return (this.severed.has('Forearm_L') ? 1 : 0) + (this.severed.has('Forearm_R') ? 1 : 0); }
+
+  sever(part, dirX, dirZ, sim) {
+    if (this.severed.has(part)) return;
+    this.severed.add(part);
+    sim.emit({ type: 'sever', id: this.id, part, dirX, dirZ, x: this.x, z: this.z });
+    if (part === 'Head') this.hp = 0;
+    else if (part.startsWith('LowerLeg') && !this.crawling) this.crawling = this.toCrawl = true; // falls, then crawls
   }
 
   set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
   get alive() { return this.state !== ZS.DYING && this.state !== ZS.DEAD; }
   get down() { return this.state === ZS.KNOCKDOWN || this.state === ZS.GETUP; }
 
-  // Incoming hit: direction (unit) and strength in m/s.
-  takeHit(dmg, dirX, dirZ, impulse, kind, sim) {
+  // Incoming hit: direction (unit) and strength in m/s; part: 'torso' or a severable limb.
+  takeHit(dmg, dirX, dirZ, impulse, kind, sim, part = 'torso') {
     if (!this.alive) return;
     const wasDown = this.down;
-    this.hp -= dmg;
+    if (part !== 'torso' && this.severed.has(part)) part = 'torso';
+    this.lastHitPart = part;
+    if (part !== 'torso') {
+      this.limbHp[part] -= dmg * (kind === 'bat' ? 1.2 : 1);
+      if (this.limbHp[part] <= 0) this.sever(part, dirX, dirZ, sim);
+    }
+    this.hp -= part.startsWith('Forearm') ? dmg * 0.6 : dmg; // arm hits are less deadly
     const push = wasDown ? 0.3 : 1; // a body on the floor barely slides
     this.kx += dirX * impulse * push; this.kz += dirZ * impulse * push;
     this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse; this.hitSeq++; this.hitKind = kind;
@@ -52,7 +70,7 @@ export class Zombie {
       return;
     }
     if (wasDown) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
-    if (kind === 'bat' && sim.rand() < sim.T.batKnockdown) {
+    if (this.toCrawl || (kind === 'bat' && !this.crawling && sim.rand() < sim.T.batKnockdown)) {
       this.set(ZS.KNOCKDOWN, KNOCKDOWN_FALL);
       this.solid = false;
       this.yaw = Math.atan2(-dirX, -dirZ); // face the blow, thrown onto the back
@@ -89,7 +107,7 @@ export class Zombie {
         const los = dist < 7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
         if (los) { wantX = dx / (dist || 1); wantZ = dz / (dist || 1); }
         else { world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; }
-        speed = T.zombieSpeed * this.speedMul;
+        speed = T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1);
         if (dist < 1.25) speed *= 0.5; // close in carefully, no jitter at contact
         if (!this.passive && dist < 1.0 && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 &&
             world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
@@ -110,7 +128,8 @@ export class Zombie {
           const along = dx * fx + dz * fz;
           const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
           const hit = !p.dead && dist < 1.12 && along > 0 && ang < 0.95 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
-          if (hit) p.hurt(T.zombieDamage, this.x, this.z, sim);
+          // losing arms leaves a weaker claw (both gone: a bite); crawlers hit low and weaker
+          if (hit) p.hurt(T.zombieDamage * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim);
           sim.emit({ type: hit ? 'zombieStrikeHit' : 'zombieStrikeMiss', id: this.id });
         }
         this.vx = Math.sin(this.yaw) * 0.9; this.vz = Math.cos(this.yaw) * 0.9; // lunge
@@ -126,10 +145,15 @@ export class Zombie {
         break;
       case ZS.KNOCKDOWN:
         turnRate = 0;
-        if (this.t >= this.stateDur) { this.set(ZS.GETUP, KNOCKDOWN_GETUP); this.yaw += GETUP_YAW; }
+        if (this.t >= this.stateDur) {
+          this.yaw += GETUP_YAW; // lying on the stomach: turn with the pose
+          if (this.toCrawl) { this.toCrawl = false; this.set(ZS.CHASE); this.solid = true; this.attackCd = Math.max(this.attackCd, 0.6); }
+          else this.set(ZS.GETUP, KNOCKDOWN_GETUP);
+        }
         break;
       case ZS.GETUP:
         turnRate = 0;
+        if (this.toCrawl) { this.toCrawl = false; this.set(ZS.CHASE); this.solid = true; break; } // lost a leg while getting up
         if (this.t >= this.stateDur * 0.6) this.solid = true; // up on its feet again
         if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.attackCd = Math.max(this.attackCd, 0.5); }
         break;
