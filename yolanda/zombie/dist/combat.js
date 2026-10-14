@@ -44746,6 +44746,7 @@ void main() {
 
   // src/core/layout.js
   var M = "assets/models/";
+  var H = "zombie/assets/hospital/";
   var LAYOUT = {
     bounds: { minX: -7.6, maxX: 7.6, minZ: -11.6, maxZ: 11.6 },
     playerStart: { x: 0.4, z: 2.2, yaw: Math.PI },
@@ -44775,26 +44776,34 @@ void main() {
     ],
     props: [
       // operating room (north)
-      { m: M + "upgrades/04_surgery/operating_table_standard.glb", x: 0, z: -8.2, rot: 90, fp: [1.7, 0.8], h: 0.95 },
-      { m: M + "upgrades/02_anesthesia_monitoring/anesthesia_workstation_standard.glb", x: -2.3, z: -10.35, rot: 0, fp: [0.9, 0.7], h: 1.6 },
-      { m: M + "upgrades/02_anesthesia_monitoring/patient_monitor_standard.glb", x: 2.2, z: -10.45, rot: 0, fp: [0.6, 0.5], h: 1.6 },
-      { m: M + "upgrades/08_support_equipment/runtime/supply_cart_standard.glb", x: -5.9, z: -7.4, rot: 90, fp: [0.65, 0.88], h: 1.2 },
-      { m: M + "upgrades/08_support_equipment/runtime/iv_stand_standard.glb", x: 1.6, z: -9, rot: 0, fp: [0.4, 0.4], h: 1.9, noCollide: true },
-      { m: M + "upgrades/08_support_equipment/runtime/supply_cart_standard.glb", x: 6.1, z: -7, rot: 270, fp: [0.65, 0.88], h: 1.2 },
-      // central hall: nurse station island (circle around it), stretcher, plants
-      { m: M + "upgrades/01_reception/reception_T2_desk.glb", x: 2.9, z: -0.6, rot: 0, fp: [2.5, 1], h: 1.1, fit: true },
-      { m: M + "upgrades/03_endoscopy/procedure_stretcher_standard.glb", x: -3.4, z: -1.6, rot: 0, fp: [0.9, 2.1], h: 0.95, fit: true },
+      { m: H + "operating_table.glb", x: 0, z: -8.2, rot: 90, fp: [1.65, 0.78], h: 0.94 },
+      { m: H + "anesthesia_workstation.glb", x: -2.3, z: -10.4, rot: 0, fp: [1.1, 0.7], h: 1.55 },
+      { m: H + "patient_monitor.glb", x: 2.2, z: -10.45, rot: 0, fp: [0.62, 0.71], h: 1.49 },
+      { m: H + "supply_cart.glb", x: -5.9, z: -7.4, rot: 90, fp: [1.1, 1.16], h: 1.23 },
+      { m: H + "iv_stand.glb", x: 1.6, z: -9, rot: 0, fp: [0.4, 0.4], h: 1.9, noCollide: true },
+      { m: H + "supply_cart.glb", x: 6.1, z: -7, rot: 270, fp: [1.1, 1.16], h: 1.23 },
+      { m: H + "biohazard_bin.glb", x: -6.55, z: -10.5, rot: 0, fp: [0.39, 0.39], h: 0.69 },
+      // central hall: nurse station island (circle around it), stretcher, wheelchair, waiting chairs, plants
+      { m: H + "reception_desk.glb", x: 2.9, z: -0.6, rot: 0, fp: [2.2, 0.9], h: 1.1 },
+      // counter top: shots pass over the screens
+      { m: H + "procedure_stretcher.glb", x: -3.4, z: -1.6, rot: 0, fp: [0.9, 1.65], h: 0.95 },
+      { m: H + "wheelchair.glb", x: -1.2, z: -3.3, rot: 90, fp: [0.91, 0.76], h: 0.97 },
+      { m: H + "waiting_chair_section.glb", x: -6.45, z: -2.2, rot: 90, fp: [0.97, 2.69], h: 0.99 },
+      { m: H + "wet_floor_sign.glb", x: 1.3, z: 3.9, rot: 0, fp: [0.48, 0.66], h: 0.64 },
       { m: M + "upgrades/12_lobby/lobby_T2_floor_planter.glb", x: -6.5, z: -4.3, rot: 0, fp: [0.6, 0.6], h: 1.2, fit: true },
       { m: M + "upgrades/12_lobby/lobby_T2_floor_planter.glb", x: 6.5, z: -1.8, rot: 0, fp: [0.6, 0.6], h: 1.2, fit: true },
       // lounge (south, calm start area)
       { m: M + "furnishings/Lounge_Sofa_2.glb", x: -4.6, z: 9.9, rot: 180, fp: [2.05, 0.65], h: 0.9 },
-      { m: M + "furnishings/Lounge_Break_Table.glb", x: -4.6, z: 7.9, rot: 0, fp: [1, 0.7], h: 0.75, fit: true },
+      { m: H + "break_table.glb", x: -4.6, z: 7.9, rot: 0, fp: [0.95, 0.86], h: 0.85 },
+      { m: H + "break_chair.glb", x: -3.45, z: 7.9, rot: 270, fp: [0.62, 0.72], h: 0.92 },
       { m: M + "furnishings/Lounge_Locker_Bank_3.glb", x: -6.65, z: 5.6, rot: 90, fp: [0.6, 1.45], h: 1.85 },
-      { m: M + "upgrades/11_staff_lounge/standard/11_standard_coffee_counter.glb", x: -1.2, z: 10.55, rot: 180, fp: [1.4, 0.6], h: 0.95, fit: true },
+      { m: H + "coffee_counter.glb", x: -1.2, z: 10.5, rot: 180, fp: [1.33, 0.81], h: 1 },
+      { m: H + "lidded_waste_bin.glb", x: -2.4, z: 10.6, rot: 0, fp: [0.36, 0.4], h: 0.58 },
       // recovery bays (east)
-      { m: M + "upgrades/05_recovery_bay/RecoveryBed_standard.glb", x: 5.6, z: 5, rot: 90, fp: [2.11, 1.1], h: 0.9 },
-      { m: M + "upgrades/05_recovery_bay/RecoveryBed_standard.glb", x: 5.6, z: 8.6, rot: 90, fp: [2.11, 1.1], h: 0.9 },
-      { m: M + "upgrades/05_recovery_bay/BedsideCabinet_standard.glb", x: 6.55, z: 6.8, rot: 270, fp: [0.5, 0.5], h: 0.85, fit: true }
+      { m: H + "recovery_bed.glb", x: 5.6, z: 5, rot: 90, fp: [2.11, 1.25], h: 0.87 },
+      { m: H + "recovery_bed.glb", x: 5.6, z: 8.6, rot: 90, fp: [2.11, 1.25], h: 0.87 },
+      { m: H + "bedside_cabinet.glb", x: 6.55, z: 6.8, rot: 270, fp: [0.63, 0.52], h: 0.81 },
+      { m: H + "privacy_screen.glb", x: 4.3, z: 6.8, rot: 0, fp: [0.14, 1.84], h: 1.97 }
     ]
   };
   function buildWorld(World2) {
@@ -46449,7 +46458,7 @@ void main() {
   var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
     constructor(scene2, gltf, clipdata) {
-      const H = 1.62;
+      const H2 = 1.62;
       const clips = [];
       const rest = hipsRest(gltf.scene);
       const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
@@ -46465,8 +46474,8 @@ void main() {
       clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), "bat_idle_upper"));
       clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), "pistol_reload_upper"));
       clips.push(byName.bat_swing, byName.death_fall, byName.death_defeat, byName.pistol_hit);
-      super(scene2, gltf.scene, H, clips);
-      this.H = H;
+      super(scene2, gltf.scene, H2, clips);
+      this.H = H2;
       for (const n of loco) for (const suf of ["", "_lower"]) {
         const a = this.act(n + suf);
         a.play();
