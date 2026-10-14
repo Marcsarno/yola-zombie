@@ -93,3 +93,12 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   - HUD weapon icon for the shotgun is still the old pump shape; shotgun mag is back to pump numbers (6, 0.85 s).
   - blender/characters.blend was saved with the live work (actions sg_reload, t_*, gs_low_slash, rifle_aim_idle; a few imported
     helper objects are still in the scene: Armature (Tripo import), Armature.001/.002 (Mixamo rifle refs), Gun/Shell).
+- 2026-10-14 (round 6, branch `opening-reveal`): opening/reveal vertical slice, built in four prompts.
+  * Prompt 1 DONE: `?intro=1` (add `&auto=1` to skip the start gate) plays the 60 s hospital tour in the combat engine:
+    src/opening/{opening,stage,actors,ui,opaudio,content}.js. Clinic set built from the hospital game's own models far from
+    the combat wing (clinic origin x=60); OR/combat wing is untouched. Starter->middle->advanced->starter crossfade at
+    0:25/0:32/~0:39, preview labels, original Yola's awkward wave (authored in code: the original Yola rig has NO wave clip),
+    arrival hold at 1:00 (state CHECK_IN / ARRIVAL_HOLD). Dev: `opening.seek(t)`, `opening.skip()`, `opening.report()`.
+  * Also this round: unarmed fists (jab/cross/kick from Yola's Tripo clips; loadouts via Player.setLoadout), left-hand IK
+    palm fix, greet_01/greet_04 baked into yola.glb (greet_01 is the improved Yola's smooth wave candidate).
+  * Next: Prompt 2 (check-in, seated assessment, dev placeholder card), 3 (OR choices, flatline), 4 (reveal, Room 1).
