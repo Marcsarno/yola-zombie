@@ -6,7 +6,7 @@
 const M = 'assets/models/';
 const H = 'zombie/assets/hospital/'; // Outbreak hospital runtime set (metres, true scale)
 export const LAYOUT = {
-  bounds: { minX: -7.6, maxX: 7.6, minZ: -11.6, maxZ: 11.6 },
+  bounds: { minX: -7.6, maxX: 7.6, minZ: -18.0, maxZ: 11.6 },
   playerStart: { x: 0.4, z: 2.2, yaw: Math.PI },
   // walls: [minX, maxX, minZ, maxZ, h, style]; style 'full' (back walls), 'low' (camera-side cutaway), 'glass'
   walls: [
@@ -18,11 +18,13 @@ export const LAYOUT = {
     [7, 7.3, -11, -4.0, 0.95, 'low'], [7, 7.3, -2.4, 11.3, 0.95, 'low'],
     // south wall (camera side): low cutaway
     [-7.3, 7.3, 11, 11.3, 0.95, 'low'],
+    // Supply Hall (north of the OR, through the NW doorway): shelves, the patient-belongings table, a dead end
+    [-7.3, -1.1, -17.8, -17.5, 2.7, 'full'], [-7.3, -7.0, -17.5, -11.0, 2.7, 'full'], [-1.4, -1.1, -17.5, -11.3, 0.95, 'low'],
     // OR glass partitions with a 4.4 m central opening
     [-7, -2.2, -5.15, -4.95, 1.5, 'glass'], [2.2, 7, -5.15, -4.95, 1.5, 'glass'],
   ],
   doors: [
-    { id: 'NW', x: -4.4, z: -11.15, axis: 'x', width: 1.6, spawn: { x: -4.4, z: -10.3 }, yaw: 0 },
+    { id: 'NW', x: -4.4, z: -11.15, axis: 'x', width: 1.6, spawn: { x: -4.4, z: -10.3 }, yaw: 0, open: true }, // opens into the Supply Hall
     { id: 'NE', x: 4.2, z: -11.15, axis: 'x', width: 1.6, spawn: { x: 4.2, z: -10.3 }, yaw: 0 },
     { id: 'W', x: -7.15, z: 1.8, axis: 'z', width: 1.6, spawn: { x: -6.35, z: 1.8 }, yaw: Math.PI / 2 },
     { id: 'E', x: 7.15, z: -3.2, axis: 'z', width: 1.6, spawn: { x: 6.35, z: -3.2 }, yaw: -Math.PI / 2 },
@@ -36,6 +38,13 @@ export const LAYOUT = {
     { m: H + 'iv_stand.glb', x: 1.6, z: -9.0, rot: 0, fp: [0.4, 0.4], h: 1.9, noCollide: true },
     { m: H + 'supply_cart.glb', x: 6.1, z: -7.0, rot: 270, fp: [1.1, 1.16], h: 1.23 },
     { m: H + 'biohazard_bin.glb', x: -6.55, z: -10.5, rot: 0, fp: [0.39, 0.39], h: 0.69 },
+    // Supply Hall: shelving along the walls, a cart, and the patient-belongings table (bat and cap rest here)
+    { m: M + 'utility/Utility_Supply_Shelf.glb', x: -6.55, z: -15.2, rot: 90, fp: [0.5, 1.8], h: 1.9, fit: true },
+    { m: M + 'utility/Utility_Supply_Shelf.glb', x: -4.2, z: -17.2, rot: 0, fp: [1.8, 0.5], h: 1.9, fit: true },
+    { m: M + 'utility/Utility_Supply_Shelf.glb', x: -6.55, z: -12.6, rot: 90, fp: [0.5, 1.8], h: 1.9, fit: true },
+    { m: H + 'supply_cart.glb', x: -2.2, z: -16.4, rot: 180, fp: [1.1, 1.16], h: 1.23 },
+    { m: M + 'furnishings/Lounge_Break_Table.glb', x: -4.3, z: -14.2, rot: 0, fp: [0.9, 0.9], h: 0.8, name: 'belongings' },
+    { m: H + 'lidded_waste_bin.glb', x: -2.0, z: -12.3, rot: 0, fp: [0.36, 0.4], h: 0.58 },
     // central hall: nurse station island (circle around it), stretcher, wheelchair, waiting chairs, plants
     { m: H + 'reception_desk.glb', x: 2.9, z: -0.6, rot: 0, fp: [2.2, 0.9], h: 1.1 }, // counter top: shots pass over the screens
     { m: H + 'procedure_stretcher.glb', x: -3.4, z: -1.6, rot: 0, fp: [0.9, 1.65], h: 0.95 },
@@ -68,6 +77,7 @@ export function buildWorld(World) {
   }
   // seal the doorways so nothing walks out (zombies enter from just inside them)
   for (const d of LAYOUT.doors) {
+    if (d.open) continue; // a doorway that leads somewhere real
     if (d.axis === 'x') w.addBox(d.x - d.width / 2, d.x + d.width / 2, d.z - 0.45, d.z - 0.15, 2.7, 'doorSeal');
     else if (d.x < 0) w.addBox(d.x - 0.45, d.x - 0.15, d.z - d.width / 2, d.z + d.width / 2, 2.7, 'doorSeal');
     else w.addBox(d.x + 0.15, d.x + 0.45, d.z - d.width / 2, d.z + d.width / 2, 2.7, 'doorSeal');

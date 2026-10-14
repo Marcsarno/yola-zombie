@@ -178,9 +178,10 @@ export class ClinicStage {
   // ---- cast ----
   async buildCast() {
     const load = (f) => this.loader.loadAsync(f);
-    const [yolaOld, bb, sec, pat5, patOld, staff] = await Promise.all([
+    const [yolaOld, bb, sec, pat5, patOld, staff, staffB, staffC] = await Promise.all([
       load(M + 'blender/yola.glb'), load('assets/opening/Baseball_Visitor.glb'), load('assets/opening/Security_Visitor.glb'),
       load(M + 'people/patient-05.glb'), load(M + 'people/patient-older.glb'), load(M + 'people/staff-teal.glb'),
+      load(M + 'people/staff-blue.glb'), load(M + 'people/staff-coral.glb'),
     ]);
     const batStatic = await load('assets/opening/Baseball_Bat_Static.glb');
     this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
@@ -191,14 +192,30 @@ export class ClinicStage {
     A.waiting1 = new Actor(pat5, { name: 'waiting1' });
     A.waiting2 = new Actor(patOld, { name: 'waiting2' });
     A.staff = new Actor(staff, { name: 'staff' });
+    A.teamA = new Actor(staffB, { name: 'teamA' }); // the OR team (existing staff rigs)
+    A.teamB = new Actor(staffC, { name: 'teamB' });
     for (const a of Object.values(A)) { this.root.add(a.root); a.root.visible = false; }
     // the skinned bat and holster pistol stay in the visitors' rigs; the static bat is for belongings
     A.baseball.bat = A.baseball.model.getObjectByName('Baseball_Bat');
     A.baseball.bat0 = A.baseball.bat ? A.baseball.bat.visible : false;
     this.batStatic = batStatic.scene; this.batStatic.visible = false; this.root.add(this.batStatic);
     this.batStatic.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    // the cap, as a static prop: the same geometry and materials as the worn cap, in its bind pose
+    const capSkin = A.baseball.model.getObjectByName('Baseball_Cap');
+    this.cap = null; A.baseball.capSkin = capSkin;
+    if (capSkin) {
+      const parts = []; capSkin.traverse((o) => { if (o.isMesh) parts.push(o); });
+      const g = new THREE.Group(), box = new THREE.Box3();
+      for (const p of parts) { p.geometry.computeBoundingBox(); box.union(p.geometry.boundingBox); g.add(new THREE.Mesh(p.geometry, p.material)); }
+      const c = box.getCenter(new THREE.Vector3());
+      for (const m of g.children) m.position.set(-c.x, -box.min.y, -c.z);
+      g.visible = false; this.cap = g;
+    }
   }
 
+  // move an actor's root between the clinic group and the world (the OR lives in the world scene)
+  actorToWorld(a, x, z, yaw) { this.scene.add(a.root); a.root.position.set(x, 0, z); if (yaw != null) { a.yaw = yaw; a.root.rotation.y = yaw; } }
+  toClinic(a) { this.root.add(a.root); }
   setActive(v) { this.root.visible = v; }
   update(dt) {
     for (const a of Object.values(this.actors)) if (a.root.visible) a.update(dt);

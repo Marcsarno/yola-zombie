@@ -51,6 +51,10 @@ export class Arena {
     const band = (x0, x1, z0, z1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), bandMat); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0.004, (z0 + z1) / 2); m.receiveShadow = true; this.group.add(m); };
     band(-6.6, 6.6, -4.6, -4.35); band(-6.6, 6.6, 3.9, 4.15);
     // dark surround outside the walls (hides the void, costs nothing)
+    // the Supply Hall floor (north of the OR)
+    const sTex = floorTexture(); sTex.repeat.set(6.2 / 1.2, 6.8 / 1.2);
+    const sFloor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 6.8), new THREE.MeshStandardMaterial({ map: sTex, roughness: 0.55, metalness: 0 }));
+    sFloor.rotation.x = -Math.PI / 2; sFloor.position.set(-4.2, 0.001, -14.4); sFloor.receiveShadow = true; this.group.add(sFloor);
     const out = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshBasicMaterial({ color: 0x27323a }));
     out.rotation.x = -Math.PI / 2; out.position.y = -0.02; this.group.add(out);
   }
@@ -94,11 +98,14 @@ export class Arena {
     this.doorLamps = [];
     for (const d of LAYOUT.doors) {
       const g = new THREE.Group();
+      const open = !!d.open;
       g.position.set(d.x, 0, d.z);
-      // dark interior beyond the threshold
-      const hole = new THREE.Mesh(new THREE.PlaneGeometry(d.width, 2.3), darkMat);
-      hole.position.set(0, 1.15, -0.2); g.add(hole);
-      const floorDark = new THREE.Mesh(new THREE.PlaneGeometry(d.width, 0.6), darkMat); floorDark.rotation.x = -Math.PI / 2; floorDark.position.set(0, 0.006, -0.35); g.add(floorDark);
+      // dark interior beyond the threshold (an open doorway shows the room behind it instead)
+      if (!open) {
+        const hole = new THREE.Mesh(new THREE.PlaneGeometry(d.width, 2.3), darkMat);
+        hole.position.set(0, 1.15, -0.2); g.add(hole);
+        const floorDark = new THREE.Mesh(new THREE.PlaneGeometry(d.width, 0.6), darkMat); floorDark.rotation.x = -Math.PI / 2; floorDark.position.set(0, 0.006, -0.35); g.add(floorDark);
+      }
       // frame
       for (const sx of [-1, 1]) { const p = new THREE.Mesh(new RoundedBoxGeometry(0.1, 2.35, 0.36, 2, 0.03), frameMat); p.position.set((sx * (d.width + 0.1)) / 2, 1.175, 0); g.add(p); }
       const head = new THREE.Mesh(new RoundedBoxGeometry(d.width + 0.3, 0.14, 0.36, 2, 0.03), frameMat); head.position.set(0, 2.38, 0); g.add(head);
@@ -120,7 +127,7 @@ export class Arena {
     const s = this.scene;
     // soft image-based fill so matte sculpted materials read with gentle shading in every direction
     if (renderer) { const pm = new THREE.PMREMGenerator(renderer); s.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; s.environmentIntensity = 0.32; pm.dispose(); }
-    const hemi = new THREE.HemisphereLight(0xfff4e3, 0x7c9a96, 0.85); s.add(hemi);
+    const hemi = new THREE.HemisphereLight(0xfff4e3, 0x7c9a96, 0.85); s.add(hemi); this.hemi = hemi;
     const sun = new THREE.DirectionalLight(0xfff1dc, 1.45);
     sun.position.set(-6, 14, 7); sun.target.position.set(0, 0, 0);
     s.add(sun, sun.target);

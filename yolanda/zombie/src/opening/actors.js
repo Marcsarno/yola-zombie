@@ -36,6 +36,7 @@ export class Actor {
     this.yaw = 0; this.targetYaw = null; this.path = []; this.speed = 0; this.moving = false; this.onArrive = null;
     this.timeScale = 1;
     this.seated = false; this.sitState = 'stand'; this.seat = null; // 'stand' | 'sitting' | 'seated' | 'rising'
+    this.adj = {}; this._undo = []; this.lying = null;
   }
 
   place(x, z, yaw = this.yaw) { this.root.position.set(x, 0, z); this.yaw = yaw; this.root.rotation.y = yaw; return this; }
@@ -65,6 +66,7 @@ export class Actor {
 
   update(dt) {
     const d = dt * this.timeScale;
+    for (const u of this._undo) u.bone.quaternion.copy(u.base); this._undo.length = 0; // undo last frame's adjustments before the mixer writes
     if (this.moving && this.path.length) {
       const t = this.path[0], dx = t.x - this.x, dz = t.z - this.z, L = Math.hypot(dx, dz), step = this.speed * d;
       if (L <= step + 1e-4) {
@@ -80,10 +82,20 @@ export class Actor {
       this.yaw += clamp(e, -d * 7, d * 7);
       if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
     }
-    this.root.rotation.y = this.yaw;
+    if (this.lying) this.root.rotation.set(-Math.PI / 2, this.yaw, 0, 'YXZ'); else this.root.rotation.y = this.yaw;
     if (this.seat && (this.sitState === 'sitting' || this.sitState === 'seated')) { this.root.position.x = this.seat.x + Math.sin(this.yaw) * this.seat.behind; this.root.position.z = this.seat.z + Math.cos(this.yaw) * this.seat.behind; }
     this.mixer.update(d);
+    // additive pose adjustments (each is {bone, x, y, z} euler radians): applied on top of the clip's pose, undone next frame
+    for (const k in this.adj) { const a = this.adj[k], b = this.bones[a.bone]; if (!b || !(a.w > 0)) continue; this._undo.push({ bone: b, base: b.quaternion.clone() }); b.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(a.x * a.w, a.y * a.w, a.z * a.w, 'XYZ'))); }
   }
+  adjust(key, bone, x, y, z, w = 1) { this.adj[key] = { bone, x, y, z, w }; }
+  // lie supine on a surface: feet at (x, y, z), the body's long axis (head direction) along yawHead (0 = +z)
+  lie(x, y, z, yawHead) {
+    this.stop(); this.lying = { x, y, z, yawHead };
+    this.root.rotation.order = 'YXZ'; this.root.position.set(x, y, z); this.yaw = yawHead; this.root.rotation.set(-Math.PI / 2, yawHead, 0, 'YXZ');
+    if (this.blob) this.blob.visible = false;
+  }
+  unlie() { this.lying = null; this.root.rotation.set(0, this.yaw, 0, 'XYZ'); this.root.rotation.order = 'XYZ'; if (this.blob) this.blob.visible = true; }
   get busy() { return this.moving || this.targetYaw != null; }
   turnTo(yaw) { this.targetYaw = yaw; }
 

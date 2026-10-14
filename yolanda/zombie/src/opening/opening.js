@@ -18,6 +18,7 @@ const L = (x, y, z) => new THREE.Vector3(x + CLINIC.x, y, z + CLINIC.z); // clin
 // ---- camera shots: simulation-style rig (target, pitch, yaw, floor width across the screen) ----
 // Each shot moves from `a` to `b` between t0 and t1 (eased) and holds b afterwards, until the next shot starts.
 const S = (x, y, z, pitch, yaw, width, fov = 34) => ({ x: x + CLINIC.x, y, z: z + CLINIC.z, pitch, yaw, width, fov });
+const W = (x, y, z, pitch, yaw, width, fov = 34) => ({ x, y, z, pitch, yaw, width, fov }); // world-space shot (the operating room)
 const SHOTS = [
   // 0:00-0:12 above the reception entrance, gliding in toward the desk
   { t0: 0, t1: 11.6, a: S(-8.0, 0.8, 1.2, 66, 14, 8.4), b: S(-5.3, 0.9, -3.9, 49, 28, 8.4) },
@@ -96,6 +97,9 @@ export class Opening {
       A.sun.target.updateMatrixWorld(true);
     }
     this.scene.background = new THREE.Color(0xcfe3df);
+    // the combat wing's props carry dried-blood decals (the Blood_* materials): hidden for the innocent opening
+    this.blood = []; A.group.traverse((o) => { if (o.isMesh && /^Blood_/i.test((o.material?.name) || '')) this.blood.push(o); });
+    this.setBlood(false);
     for (const l of A.lights) l.visible = false; // the amber doorway lights belong to the combat wing
     document.getElementById('hud')?.style.setProperty('display', 'none');
     document.getElementById('touch')?.style.setProperty('pointer-events', 'none');
@@ -147,7 +151,10 @@ export class Opening {
     this.cueLog.length = 0; this.sub = '';
     st.tier = 'starter';
     for (const s of st.tiers) { s.fx = null; for (const [k, h] of Object.entries(s.layers || {})) { h.visible = k === 'starter'; st.setOpacity(h, 1); } }
-    for (const a of Object.values(A)) { a.stop(); a.timeScale = 1; a.setVisible(false); a.seated = false; }
+    this.leaveOR(); this.alarmFx = null; this.ecg = null; this.tweens = []; this.tagPoints = null; this.urgencyTimer = 0; this.sound.alarmOff(); this.sound.flatlineOff(0.05);
+    for (const a of Object.values(A)) { if (a.lying) a.unlie(); if (a.root.parent !== st.root) st.toClinic(a); a.adj = {}; a.stop(); a.timeScale = 1; a.setVisible(false); a.seated = false; }
+    if (A.baseball.capSkin) A.baseball.capSkin.visible = true;
+    this.ui.showEcg(false); this.ui.setVignette(0); this.ui.status(''); this.ui.urgency(null);
     // the receptionist sits at the desk (seat contract: the rig stands 0.45 m in front of the chair)
     A.staff.setVisible(true); A.staff.sitAt(-5.2, -5.5, 0, { instant: true });
     A.yola.waveT = -1; A.yola.pose = null;
@@ -231,7 +238,8 @@ export class Opening {
     a.t += d; const u = ease(a.t / a.dur), o = {};
     for (const k of Object.keys(a.to)) o[k] = lerp(a.from[k], a.to[k], u);
     if (a.follow) {
-      const tx = a.follow.actor.x + CLINIC.x + (a.follow.dx || 0), tz = a.follow.actor.z + CLINIC.z + (a.follow.dz || 0);
+      const fo = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.x, foz = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.z;
+      const tx = a.follow.actor.x + fo + (a.follow.dx || 0), tz = a.follow.actor.z + foz + (a.follow.dz || 0);
       o.x = lerp(a.from.x, tx, u); o.z = lerp(a.from.z, tz, u);
       if (u >= 1) { const sm = Math.min(1, d * 5); o.x = this.rig.x + (tx - this.rig.x) * sm; o.z = this.rig.z + (tz - this.rig.z) * sm; }
     }
@@ -257,6 +265,44 @@ export class Opening {
   arrived(...actors) { return () => actors.every((a) => !a.busy); }
   seated(a) { return () => a.settled; }
   upright(a) { return () => a.upright; }
+
+  setBlood(v) { for (const m of this.blood || []) m.visible = v; }
+  // ---- the operating room (the real combat wing) as a story set ----
+  setSun(x, z) { const A = this.arena; if (!A.sun) return; A.sun.target.position.set(x, 0, z); A.sun.position.set(x - 6, 14, z + 7); A.sun.target.updateMatrixWorld(true); this.renderer.shadowMap.needsUpdate = true; }
+  enterOR() {
+    const st = this.stage, A = this.arena;
+    st.setActive(false);
+    this.setSun(0, -7.5);
+    this.scene.background = this.saved.bg || new THREE.Color(0x27323a);
+    this.inOR = true;
+    // the patient-belongings spot in the Supply Hall: the stowed bat and the cap, together; it stays for gameplay
+    if (!this.belongings) {
+      const g = new THREE.Group(); g.name = 'belongings';
+      st.batStatic.visible = true; st.batStatic.parent?.remove(st.batStatic);
+      const bat = st.batStatic; bat.rotation.set(0, 0.12, -Math.PI / 2); bat.position.set(-4.72, 0.86, -14.42); g.add(bat); // resting on the table top
+      if (st.cap) { st.cap.visible = true; st.cap.position.set(-4.0, 0.84, -14.0); st.cap.rotation.y = 0.6; g.add(st.cap); }
+      this.scene.add(g); this.belongings = g;
+    }
+    this.belongings.visible = true; st.batStatic.visible = true; if (st.cap) st.cap.visible = true;
+    if (!this.redLight) { this.redLight = new THREE.PointLight(0xff2a2a, 0, 14, 1.5); this.redLight.position.set(0, 3.0, -7.0); this.scene.add(this.redLight); }
+    if (!this.lightBase) this.lightBase = { hemi: A.hemi?.intensity ?? 0.85, sun: A.sun?.intensity ?? 1.45, env: this.scene.environmentIntensity ?? 0.32 };
+  }
+  leaveOR() {
+    if (!this.inOR) return;
+    this.inOR = false;
+    if (this.belongings) this.belongings.visible = false;
+    if (this.redLight) this.redLight.intensity = 0;
+    this.stage.setActive(true); this.setSun(CLINIC.x + 0.5, CLINIC.z - 0.5); this.scene.background = new THREE.Color(0xcfe3df);
+  }
+  // alarm look: slow red pulses (amp 0..1) that never blackout and never exceed ~1 Hz; reduced flash softens them
+  setAlarm(amp, hz = 0.8) { this.alarmFx = amp > 0 ? { amp, hz, t: 0 } : null; if (!amp) { if (this.redLight) this.redLight.intensity = 0; this.ui.setVignette(0); } }
+  tickAlarm(d) {
+    const a = this.alarmFx; if (!a) return;
+    a.t += d; const p = 0.5 + 0.5 * Math.sin(a.t * Math.PI * 2 * a.hz - Math.PI / 2), k = this.reducedFlash ? 0.45 : 1;
+    if (this.redLight) this.redLight.intensity = a.amp * k * (3 + 11 * p);
+    this.ui.setVignette(a.amp * k * (0.15 + 0.45 * p));
+  }
+  tickEcg(d) { const e = this.ecg; if (!e) return; e.t += d; this.ui.drawEcg(e.t, e.flat); }
 
   // ================================================================== ACT 2: check-in, walk route, seated assessment
   *act2() {
@@ -341,7 +387,131 @@ export class Opening {
     yield* this.act3();
   }
 
-  *act3() { /* Prompt 3: the operating room case */ }
+  // ================================================================== ACT 3: OR choices, apparent success, impossible movement
+  *act3() {
+    const st = this.stage, A = st.actors, bb = A.baseball, yo = A.yola, ta = A.teamA, tb = A.teamB;
+    this.state = 'OR_CHOICES'; this.substate = 'ENTER';
+    // 1. enter and prepare: Yola leads through the OR doorway; the athlete follows after she clears it
+    this.speak(DIALOGUE.settle, 3.0, 1.4);
+    this.dip(0.4, 0.4); yield 0.45;
+    this.enterOR();
+    for (const a of [yo, bb, ta, tb]) a.setVisible(true);
+    st.actorToWorld(ta, 0.6, -9.2, 0); ta.play('Idle', { fade: 0 }); // the team is already at the table
+    st.actorToWorld(tb, 1.75, -8.2, -Math.PI / 2); tb.play('Idle', { fade: 0 });
+    st.actorToWorld(yo, 0.3, -4.1, Math.PI); st.actorToWorld(bb, 0.35, -2.4, Math.PI); bb.play('Idle', { fade: 0 }); yo.play('walk', { fade: 0 });
+    A.staff.setVisible(false); A.security.setVisible(false);
+    this.camTo(W(0, 0.9, -6.4, 50, 35, 8.0), 0.01);
+    yo.walk([[0.2, -5.6], [-0.9, -7.0], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
+    this.mark('or-enter');
+    yield 1.5;
+    bb.walk([[0.35, -5.5], [0.0, -6.6], [0.0, -7.35]], { endYaw: Math.PI });
+    yield this.arrived(yo, bb);
+    this.mark('or-standing');
+    yield 0.6;
+    // the athlete is moved onto the table behind a cut to the anesthesia equipment (three seconds); the cap comes off
+    this.dip(0.35, 0.35); yield 0.4;
+    this.camTo(W(-2.3, 1.15, -10.0, 28, 30, 3.6), 0.01);
+    if (bb.capSkin) bb.capSkin.visible = false;
+    bb.play('Idle', { fade: 0 }); bb.lie(0.9, 1.07, -8.2, Math.PI / 2); // supine, head to the west end (the anesthesia side), arms at his sides
+    yo.place(-1.3, -8.2, Math.PI / 2); yo.play('idle', { fade: 0 });
+    yield 3.0;
+    // continuity insert: the belongings spot in the Supply Hall (the bat and the cap together)
+    this.dip(0.3, 0.3); yield 0.35;
+    this.camTo(W(-4.3, 0.8, -14.3, 56, 30, 3.0), 0.01);
+    this.mark('belongings');
+    yield 2.0;
+    this.dip(0.3, 0.3); yield 0.35;
+    // back to the OR wide shot: the athlete supported on the table, Yola attending at his head, the team around the table
+    this.camTo(W(0, 0.95, -8.2, 52, 35, 7.6), 0.01);
+    this.mark('or-wide');
+    yield 1.8;
+
+    // 2. first OR choice, player-paced
+    this.substate = 'CHOICE_1';
+    this.speak(DIALOGUE.equipment, 3.0, 1.4);
+    this.camTo(W(-2.0, 1.0, -9.8, 38, 35, 5.4), 1.6);
+    yield 1.8;
+    this.camTo(W(-1.0, 0.9, -8.8, 50, 33, 5.8), 1.2);
+    yield 1.4;
+    this.ui.tag('equip', 'Check the equipment', 'Anesthesia workstation'); this.pointAt('equip', -2.3, 1.8, -10.4);
+    this.mark('or-card-1');
+    const a1 = yield* this.askCard(CARDS[1]);
+    this.answers[CARDS[1].id] = a1; this.ui.tag('equip', null);
+    if (!this.silent) this.sound.chime(0);
+    yield 0.6;
+    // 3. second OR choice and apparent success
+    this.substate = 'CHOICE_2';
+    this.speak(DIALOGUE.monitor, 3.0, 1.4);
+    this.camTo(W(1.2, 0.95, -9.2, 46, 35, 5.8), 1.6);
+    yield 1.8;
+    this.ui.tag('monitor', 'Check the monitor', 'Patient monitor'); this.pointAt('monitor', 2.2, 1.9, -10.45);
+    this.mark('or-card-2');
+    const a2 = yield* this.askCard(CARDS[2]);
+    this.answers[CARDS[2].id] = a2; this.ui.tag('monitor', null);
+    if (!this.silent) this.sound.confirm();
+    this.state = 'APPARENT_SUCCESS'; this.substate = 'SETUP_COMPLETE';
+    this.ui.status(EMERGENCY_LINES.stable);
+    this.camTo(W(0, 0.95, -8.2, 52, 35, 7.0), 1.6);
+    this.mark('setup-complete');
+    yield 4.0; // let the success land (the earlier case reward stays pending)
+
+    // 4. something changes: slow red pulses, beeps, the music fades
+    this.state = 'EMERGENCY_TOPDOWN'; this.substate = 'ALERT';
+    this.ui.status(EMERGENCY_LINES.alert, true); this.ui.urgency(1);
+    this.setAlarm(1, 0.8);
+    if (!this.silent) { this.sound.setMusicLevel(0, 1.8); this.sound.alarmOn(0.75); }
+    this.speak(DIALOGUE.somethingWrong, 3.2, 1.0);
+    this.mark('alert');
+    yo.walk([[-1.7, -9.2], [-2.0, -9.7]], { endYaw: Math.PI * 0.85 }); // she steps from the patient to the nearby workstation; the team stays
+    let u = 1; this.urgencyTimer = 6; // a cosmetic bar only: nothing is lost when it empties
+    yield 3.4;
+    // 5. flatline, motion, and the call
+    this.state = 'FLATLINE_MOVEMENT'; this.substate = 'FLATLINE';
+    this.camTo(W(0.45, 1.0, -8.3, 48, 35, 3.9), 2.2); // eases toward the patient and the team; Yola's workstation drops out of the frame
+    this.ecg = { t: 0, flat: true }; this.ui.showEcg(true);
+    if (!this.silent) { this.sound.alarmOff(); this.sound.flatlineOn(); }
+    this.ui.status('No heartbeat', true); this.ui.urgency(null);
+    this.mark('flatline');
+    yield 2.0;
+    // one small, achievable movement: his head turns a little and a hand lifts
+    this.substate = 'MOTION';
+    bb.adjust('head', 'head', 0, 0.55, 0, 0); bb.adjust('hand', 'forearm.R', 0, 0, -0.45, 0);
+    this.tween(1.4, (k) => { bb.adj.head.w = ease(k); bb.adj.hand.w = ease(k); });
+    this.mark('motion');
+    yield 1.6;
+    ta.turnTo(Math.PI); tb.turnTo(Math.PI / 2);
+    this.speak(DIALOGUE.stillMoving, 2.6, 1.0);
+    this.recoil(tb, -0.28, 0.4); yield 2.8;
+    // the tone falls away; a short quiet pause
+    if (!this.silent) this.sound.flatlineOff(0.6);
+    this.ui.status('', false);
+    this.mark('quiet'); yield 1.6;
+    // a brief scream; the staff recoil (modestly, away from the table)
+    this.substate = 'SCREAM';
+    if (!this.silent) this.sound.scream();
+    this.recoil(ta, 0.45, 0.5); this.recoil(tb, 0.3, 0.5);
+    this.mark('scream'); yield 1.3;
+    this.speak(DIALOGUE.getYola, 3.0, 1.0);
+    this.substate = 'GET_YOLA_LINE';
+    this.mark('get-yola');
+    yield 3.2; // line and subtitle finish
+    this.substate = 'GET_YOLA_HOLD'; this.mark('get-yola-done');
+    yield* this.act4();
+  }
+
+  // gentle value animation on the story clock: fn(k) for k 0..1 over secs
+  tween(secs, fn) { const o = { t: 0 }; fn(0); const tick = (d) => { o.t += d; const k = Math.min(1, o.t / secs); fn(k); return k >= 1; }; (this.tweens ||= []).push(tick); }
+  tickTweens(d) { if (!this.tweens) return; this.tweens = this.tweens.filter((t) => !t(d)); }
+  // a world-anchored tag
+  pointAt(id, x, y, z) { this.tagPoints ||= {}; this.tagPoints[id] = new THREE.Vector3(x, y, z); }
+  // a modest step back/away from the table (staff recoil): slide the actor along its facing axis while walking backwards
+  recoil(a, dist, secs) {
+    const dx = -Math.sin(a.yaw) * dist, dz = -Math.cos(a.yaw) * dist, x0 = a.root.position.x, z0 = a.root.position.z;
+    this.tween(secs, (k) => { const e = ease(k); a.root.position.x = x0 + dx * e; a.root.position.z = z0 + dz * e; });
+  }
+
+  *act4() { /* Prompt 4: the reveal and the handoff */ }
+
 
   // a development card: opens the UI, waits for the choice and for the feedback to be dismissed (no timer).
   // In a silent (seek/skip) run it answers itself with the first option unless the run is stopping here.
@@ -417,10 +587,12 @@ export class Opening {
     this.stage.update(d);
     if (this.stage.tiers.some((s) => s.fx)) this.renderer.shadowMap.needsUpdate = true; // equipment fades change the shadows
     if (this.mode === 'cues' && !this.camAnim) this.rig = this.shotAt(this.t); else this.tickCamera(d);
-    this.tickFx(d);
+    this.tickFx(d); this.tickAlarm(d); this.tickEcg(d); this.tickTweens(d);
+    if (this.urgencyTimer > 0) { this.urgencyTimer -= d; this.ui.urgency(Math.max(0, this.urgencyTimer / 6)); }
     this.tagsFollow();
   }
   tagsFollow() {
+    if (this.tagPoints) for (const id in this.tagPoints) { const t = this.ui.tags.get(id); if (t && t.classList.contains('show')) { const p = this.tagPoints[id].clone().project(this.camera); this.ui.placeTag(id, (p.x * 0.5 + 0.5) * innerWidth, (-p.y * 0.5 + 0.5) * innerHeight); } }
     const t = this.ui.tags.get('tier');
     if (t && t.classList.contains('show')) {
       const p = L(5.6, 1.9, -2.4).project(this.camera);

@@ -36,14 +36,14 @@ export class OpeningAudio {
     } catch { /* no voices */ }
   }
   // Read a line in about `seconds`; never blocks anything (subtitles carry the line regardless)
-  say(text, seconds = 8) {
+  say(text, seconds = 8, pitch = 1.12) {
     this.stopVoice();
     if (!this.voice.ok || this.audio.muted) return false;
     try {
       const u = new SpeechSynthesisUtterance(text);
       const words = text.split(/\s+/).length;
       u.rate = Math.min(1.5, Math.max(0.75, words / (2.6 * seconds * 0.92)));
-      u.pitch = 1.12; u.volume = Math.min(1, this.audio.volume + 0.2);
+      u.pitch = pitch; u.volume = Math.min(1, this.audio.volume + 0.2);
       if (this.voice.v) u.voice = this.voice.v;
       this.spoken = u; speechSynthesis.speak(u);
       return true;
@@ -124,11 +124,36 @@ export class OpeningAudio {
   }
   confirm() { if (!this.audio.ok) return; const t = this.ctx.currentTime + 0.01; this.audio.tone(t, 0.18, 660, { type: 'triangle', gain: 0.14 }); this.audio.tone(t + 0.1, 0.3, 880, { type: 'triangle', gain: 0.14 }); }
 
+  // ---- emergency: warning beeps, a sustained monitor tone, a scream, and the reveal cue ----
+  beep(f = 880, dur = 0.14, gain = 0.1) { if (!this.audio.ok) return; const t = this.ctx.currentTime + 0.005; this.audio.tone(t, dur, f, { type: 'square', gain, attack: 0.004 }); }
+  alarmOn(period = 0.7) { this.alarmOff(); if (!this.ready) return; this.alarmTimer = setInterval(() => { if (!this.paused) { this.beep(988, 0.12, 0.09); setTimeout(() => this.beep(784, 0.12, 0.08), 150); } }, period * 1000); }
+  alarmOff() { clearInterval(this.alarmTimer); this.alarmTimer = null; }
+  flatlineOn(gain = 0.07) {
+    this.flatlineOff(); if (!this.ready || this.audio.muted) return;
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.value = 1000; g.gain.value = 0; g.gain.linearRampToValueAtTime(gain, c.currentTime + 0.06);
+    o.connect(g); g.connect(this.audio.master); o.start(); this.flat = { o, g };
+  }
+  flatlineOff(secs = 0.5) { const f = this.flat; if (!f) return; this.flat = null; const c = this.ctx; f.g.gain.cancelScheduledValues(c.currentTime); f.g.gain.setValueAtTime(f.g.gain.value, c.currentTime); f.g.gain.linearRampToValueAtTime(0, c.currentTime + secs); setTimeout(() => { try { f.o.stop(); } catch { /* ignore */ } }, secs * 1000 + 50); }
+  scream() { // a brief, thin shriek: a pitch glide with a breathy noise layer (no recorded voice exists)
+    if (!this.audio.ok) return;
+    const t = this.ctx.currentTime + 0.01;
+    this.audio.tone(t, 0.9, 520, { type: 'sawtooth', gain: 0.1, f2: 1500, attack: 0.05 });
+    this.audio.tone(t + 0.05, 0.8, 780, { type: 'triangle', gain: 0.07, f2: 2100, attack: 0.05 });
+    this.audio.noise(t, 0.9, { type: 'bandpass', f: 1800, q: 2, f2: 3200, gain: 0.08, attack: 0.04 });
+  }
+  revealCue() { // restrained: a low swell and one soft bell
+    if (!this.audio.ok) return;
+    const t = this.ctx.currentTime + 0.01;
+    this.audio.tone(t, 2.6, 55, { type: 'sine', gain: 0.22, f2: 82, attack: 1.0 });
+    this.audio.tone(t + 1.2, 2.2, 440, { type: 'sine', gain: 0.07, attack: 0.02 });
+    this.audio.tone(t + 1.2, 2.0, 880, { type: 'triangle', gain: 0.04, attack: 0.02 });
+  }
   suspend(v) { // background / foreground
     this.paused = v;
     try { if (this.ctx) v ? this.ctx.suspend() : this.ctx.resume(); } catch { /* ignore */ }
     this.pauseVoice(v);
     if (!v && this.ctx && this.musicOn) this.nextBeat = this.ctx.currentTime + 0.1;
   }
-  dispose() { this.stopMusic(0.2); this.stopAmbience(); this.stopVoice(); }
+  dispose() { this.stopMusic(0.2); this.stopAmbience(); this.stopVoice(); this.alarmOff(); this.flatlineOff(0.1); }
 }

@@ -31,6 +31,13 @@ const CSS = `
 #op .chip { position: absolute; top: calc(64px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -6px); opacity: 0; transition: all .45s ease; }
 #op .chip.show { opacity: 1; transform: translate(-50%, 0); }
 #op .chip div { background: #e07a5f; color: #fff; font-weight: 850; letter-spacing: .05em; text-transform: uppercase; font-size: 13px; padding: 7px 16px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,.25); white-space: nowrap; }
+#op .status { position: absolute; top: calc(104px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -6px); opacity: 0; transition: all .45s ease; }
+#op .status.show { opacity: 1; transform: translate(-50%, 0); }
+#op .status div { background: #2f9fa0; color: #fff; font-weight: 850; letter-spacing: .04em; font-size: 15px; padding: 9px 20px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.3); white-space: nowrap; }
+#op .status.alert div { background: #c9483f; }
+#op .urgency { position: absolute; top: calc(150px + env(safe-area-inset-top, 0px)); left: 50%; width: min(60vw, 260px); height: 8px; transform: translateX(-50%); border-radius: 6px; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .4s; overflow: hidden; }
+#op .urgency.show { opacity: 1; }
+#op .urgency i { display: block; height: 100%; width: 100%; background: #ff8a7a; }
 #op .tag { position: absolute; transform: translate(-50%, -100%); background: rgba(255, 248, 234, .96); color: #20474a; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 13.5px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.28); opacity: 0; transition: opacity .35s ease, margin-top .35s ease; margin-top: 8px; text-align: center; }
 #op .tag small { display: block; font-weight: 700; color: #e07a5f; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; }
 #op .tag.show { opacity: 1; margin-top: 0; }
@@ -66,7 +73,7 @@ export class OpeningUI {
       <div class="fade"></div><div class="bars"></div><div class="vig"></div><div class="dark"></div>
       <canvas class="ecg" width="600" height="120"></canvas>
       <div class="title"><h1></h1><p></p></div>
-      <div class="chip"><div></div></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
+      <div class="chip"><div></div></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
       <div class="sub"><span></span></div>
       <div class="card" role="dialog" aria-live="polite"></div>
       <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
@@ -74,7 +81,7 @@ export class OpeningUI {
     document.body.appendChild(el);
     const q = (s) => el.querySelector(s);
     this.fade = q('.fade'); this.vig = q('.vig'); this.dark = q('.dark'); this.ecg = q('canvas.ecg'); this.titleEl = q('.title');
-    this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.cardEl = q('.card'); this.gate = q('.gate');
+    this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.statusEl = q('.status'); this.urgEl = q('.urgency'); this.cardEl = q('.card'); this.gate = q('.gate');
     this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
     this.tags = new Map();
     this.cardResolve = null;
@@ -84,6 +91,8 @@ export class OpeningUI {
   setFade(o, ms = 500) { this.fade.style.transition = `opacity ${ms}ms ease`; this.fade.style.opacity = o; }
   setFadeColor(c) { this.fade.style.background = c; }
   chip(text) { this.chipEl.querySelector('div').textContent = text || ''; this.chipEl.classList.toggle('show', !!text); }
+  status(text, alert = false) { this.statusEl.querySelector('div').textContent = text || ''; this.statusEl.classList.toggle('show', !!text); this.statusEl.classList.toggle('alert', alert); }
+  urgency(p) { this.urgEl.classList.toggle('show', p != null); if (p != null) this.urgEl.querySelector('i').style.width = Math.max(0, Math.min(1, p)) * 100 + '%'; } // cosmetic only
   setVignette(o) { this.vig.style.opacity = o; }
   setDark(o) { this.dark.style.opacity = o; }
   title(h, p) { this.titleEl.querySelector('h1').textContent = h || ''; this.titleEl.querySelector('p').textContent = p || ''; this.titleEl.classList.toggle('show', !!h); }
