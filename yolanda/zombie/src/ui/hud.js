@@ -18,7 +18,8 @@ const TUNE_SPEC = [
   ['Enemies', [
     ['zombieSpeed', 'Approach speed', 0.5, 3.5, 0.05, 'm/s'], ['zombieHp', 'Zombie health', 30, 300, 5, ''], ['zombieDamage', 'Zombie damage', 0, 40, 1, ''],
   ]],
-  ['Camera', [['lookAhead', 'Look-ahead', 0, 3, 0.1, 'm']]],
+  ['Camera', [['lookAhead', 'Look-ahead', 0, 3, 0.1, 'm'], ['camPitch', 'Camera angle (down)', 30, 75, 1, '°'],
+    ['camYaw', 'Camera turn', -45, 45, 1, '°'], ['camWidth', 'Camera width', 3.5, 9, 0.1, 'm']]],
 ];
 
 export class Hud {

@@ -45734,8 +45734,14 @@ void main() {
     // m/s approach
     zombieHp: 100,
     zombieDamage: 12,
-    lookAhead: 1.3
+    lookAhead: 1.3,
     // camera look-ahead toward aim (m)
+    camPitch: 42,
+    // degrees down from horizontal (Zombieville USA 3D-like diorama view)
+    camYaw: 35,
+    // degrees the view is turned (positive: camera to the right, looking up-left)
+    camWidth: 7.2
+    // metres of floor across a portrait screen at the player
   };
   function makeTuning(saved) {
     return Object.assign({}, TUNING_DEFAULTS, saved || {});
@@ -47601,7 +47607,12 @@ void main() {
       ["zombieHp", "Zombie health", 30, 300, 5, ""],
       ["zombieDamage", "Zombie damage", 0, 40, 1, ""]
     ]],
-    ["Camera", [["lookAhead", "Look-ahead", 0, 3, 0.1, "m"]]]
+    ["Camera", [
+      ["lookAhead", "Look-ahead", 0, 3, 0.1, "m"],
+      ["camPitch", "Camera angle (down)", 30, 75, 1, "\xB0"],
+      ["camYaw", "Camera turn", -45, 45, 1, "\xB0"],
+      ["camWidth", "Camera width", 3.5, 9, 0.1, "m"]
+    ]]
   ];
   var Hud = class {
     constructor({ tuning: tuning2, audio: audio2, store: store2, onAction }) {
@@ -47994,7 +48005,7 @@ void main() {
     }
     acc += simDt;
     if (acc > STEP * 8) acc = STEP * 8;
-    let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(0);
+    let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(MathUtils.degToRad(tuning.camYaw));
     let steps = 0;
     while (acc >= STEP) {
       p.px = p.x;
@@ -48185,23 +48196,26 @@ void main() {
   function updateCamera(dt, px2, pz2, yaw, p) {
     const aspect2 = camera.aspect;
     const vfov = MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect2);
-    const want = aspect2 < 1 ? 5.2 : 9;
-    const D = MathUtils.clamp(want / (2 * Math.tan(hfov / 2)), 9, 22);
+    const want = aspect2 < 1 ? tuning.camWidth : tuning.camWidth * 1.7;
+    const D = MathUtils.clamp(want / (2 * Math.tan(hfov / 2)), 4, 22);
+    const cy = MathUtils.degToRad(tuning.camYaw), fx2 = -Math.sin(cy), fz = -Math.cos(cy);
     const la = (p.aiming ? 1 : 0.45) * tuning.lookAhead * (p.dead ? 0 : 1);
     camState.look.x += (Math.sin(yaw) * la - camState.look.x) * Math.min(1, dt * 3);
     camState.look.y += (Math.cos(yaw) * la - camState.look.y) * Math.min(1, dt * 3);
-    let tx = px2 + camState.look.x, tz = pz2 + camState.look.y - (aspect2 < 1 ? 1.4 : 0.6);
-    const halfW = D * Math.tan(hfov / 2);
-    const lim = Math.max(0, 7.4 - halfW + 0.8);
-    tx = MathUtils.clamp(tx, -lim, lim);
+    const up = aspect2 < 1 ? 1.4 : 0.6;
+    let tx = px2 + camState.look.x + fx2 * up, tz = pz2 + camState.look.y + fz * up;
+    if (Math.abs(tuning.camYaw) < 1) {
+      const lim = Math.max(0, 7.4 - D * Math.tan(hfov / 2) + 0.8);
+      tx = MathUtils.clamp(tx, -lim, lim);
+    } else tx = MathUtils.clamp(tx, -6.2, 6.2);
     tz = MathUtils.clamp(tz, -9.2, aspect2 < 1 ? 6.6 : 7.6);
     const w = 7, k = w * w, c = 2 * w;
     camState.vx += (k * (tx - camState.x) - c * camState.vx) * dt;
     camState.vz += (k * (tz - camState.z) - c * camState.vz) * dt;
     camState.x += camState.vx * dt;
     camState.z += camState.vz * dt;
-    const pitch = MathUtils.degToRad(57);
-    camera.position.set(camState.x, Math.sin(pitch) * D, camState.z + Math.cos(pitch) * D);
+    const pitch = MathUtils.degToRad(tuning.camPitch);
+    camera.position.set(camState.x - fx2 * Math.cos(pitch) * D, Math.sin(pitch) * D, camState.z - fz * Math.cos(pitch) * D);
     camera.lookAt(camState.x, 0.6, camState.z);
     camState.trauma = Math.max(0, camState.trauma - dt * 2.2);
     const s = camState.trauma * camState.trauma * 0.18;

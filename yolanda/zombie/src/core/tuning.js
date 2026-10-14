@@ -25,6 +25,9 @@ export const TUNING_DEFAULTS = {
   zombieHp: 100,
   zombieDamage: 12,
   lookAhead: 1.3, // camera look-ahead toward aim (m)
+  camPitch: 42, // degrees down from horizontal (Zombieville USA 3D-like diorama view)
+  camYaw: 35, // degrees the view is turned (positive: camera to the right, looking up-left)
+  camWidth: 7.2, // metres of floor across a portrait screen at the player
 };
 
 export function makeTuning(saved) {

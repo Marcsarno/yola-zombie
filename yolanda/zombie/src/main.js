@@ -184,7 +184,8 @@ function runFrame(dt, doRender = true) {
   // fixed-step simulation (input sampled once per frame; a swap press is delivered exactly once)
   acc += simDt;
   if (acc > STEP * 8) acc = STEP * 8; // never spiral after a stall
-  let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(0);
+  // stick directions are screen directions: rotate them by the camera's turn
+  let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(THREE.MathUtils.degToRad(tuning.camYaw));
   let steps = 0;
   while (acc >= STEP) {
     p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;
@@ -288,24 +289,27 @@ function shake(k) { if (shakeOn) camState.trauma = Math.min(1, camState.trauma +
 function updateCamera(dt, px, pz, yaw, p) {
   const aspect = camera.aspect;
   const vfov = THREE.MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
-  const want = aspect < 1 ? 5.2 : 9; // metres of floor visible across at the player
-  const D = THREE.MathUtils.clamp(want / (2 * Math.tan(hfov / 2)), 9, 22);
-  // modest look-ahead toward the aim; no camera rotation ever
+  const want = aspect < 1 ? tuning.camWidth : tuning.camWidth * 1.7; // metres of floor visible across at the player
+  const D = THREE.MathUtils.clamp(want / (2 * Math.tan(hfov / 2)), 4, 22);
+  const cy = THREE.MathUtils.degToRad(tuning.camYaw), fx = -Math.sin(cy), fz = -Math.cos(cy); // screen-up on the floor
+  // modest look-ahead toward the aim; the camera never turns during play
   const la = (p.aiming ? 1 : 0.45) * tuning.lookAhead * (p.dead ? 0 : 1);
   camState.look.x += (Math.sin(yaw) * la - camState.look.x) * Math.min(1, dt * 3);
   camState.look.y += (Math.cos(yaw) * la - camState.look.y) * Math.min(1, dt * 3);
   // keep Yola in the lower-middle of a portrait screen (most threats arrive from up-screen)
-  let tx = px + camState.look.x, tz = pz + camState.look.y - (aspect < 1 ? 1.4 : 0.6);
-  const halfW = D * Math.tan(hfov / 2);
-  const lim = Math.max(0, 7.4 - halfW + 0.8);
-  tx = THREE.MathUtils.clamp(tx, -lim, lim);
+  const up = aspect < 1 ? 1.4 : 0.6;
+  let tx = px + camState.look.x + fx * up, tz = pz + camState.look.y + fz * up;
+  if (Math.abs(tuning.camYaw) < 1) { // straight-on: stop at the side walls
+    const lim = Math.max(0, 7.4 - D * Math.tan(hfov / 2) + 0.8);
+    tx = THREE.MathUtils.clamp(tx, -lim, lim);
+  } else tx = THREE.MathUtils.clamp(tx, -6.2, 6.2);
   tz = THREE.MathUtils.clamp(tz, -9.2, aspect < 1 ? 6.6 : 7.6);
   // critically damped follow
   const w = 7, k = w * w, c = 2 * w;
   camState.vx += (k * (tx - camState.x) - c * camState.vx) * dt; camState.vz += (k * (tz - camState.z) - c * camState.vz) * dt;
   camState.x += camState.vx * dt; camState.z += camState.vz * dt;
-  const pitch = THREE.MathUtils.degToRad(57);
-  camera.position.set(camState.x, Math.sin(pitch) * D, camState.z + Math.cos(pitch) * D);
+  const pitch = THREE.MathUtils.degToRad(tuning.camPitch);
+  camera.position.set(camState.x - fx * Math.cos(pitch) * D, Math.sin(pitch) * D, camState.z - fz * Math.cos(pitch) * D);
   camera.lookAt(camState.x, 0.6, camState.z);
   // bounded shake
   camState.trauma = Math.max(0, camState.trauma - dt * 2.2);
