@@ -63,3 +63,33 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   Downloads/nurse+character+3d+model.glb (it is Yola). Retarget with NLA tracks removed.
   OPEN: shotgun hold pose (low ready; short arms don't always reach the pump - last test left hand
   0.7 m off), user wants: knee-slide shotgun move, kicks/punches, dodge roll, more Tripo deaths/hits.
+- 2026-10-14 (round 5): REPLACED the double-barrel idea with a SHORT PUMP SHOTGUN (user wanted a pump + a real shell).
+  * Yola's game mesh was my 15k decimation and its UVs were broken (jagged blotches on face/body). Restored her ORIGINAL
+    42k-triangle mesh (user's call), 36 clips, assets/yola.glb (6.5 MB). The 15k version is not kept.
+  * Rig lab: http://localhost:5173/zombie/viewer.html (src/viewer.js, viewer.html, `node build.mjs`). Yola / nurse / patient
+    frame by frame next to the Mixamo source skeleton (known good), side by side or ghost overlay, hand-span readout,
+    gun + shell fit sliders ("Fit panel"). window.__lab for scripting. H hides the UI.
+  * Gun: assets/weapons/pump_short.glb = the weapon pack's shotgun reshaped in Blender (stock off, shortened so the pump sits
+    under her left hand 0.26 m from the grip, thicker/longer barrel, brown pistol grip + brown ribbed pump, separate sliding
+    'Pump' node, LoadPort / Muzzle / GameGrip_L empties). Shell: assets/weapons/shell.glb. Built by blender/make_pump.py
+    (shell + the first from-scratch gun) plus hand edits of the pack gun in the live scene.
+  * Hold: blender action sg_reload = rifle low-ready reload retargeted from Mixamo, spine twisted 52 deg so the barrel points
+    along the pelvis heading. Game: shotgun_hold_upper = its frame 1 (HOLD_T; a static clip time is applied only every other
+    mixer update, so the hold time alternates by 1e-6 each frame), shotgun_reload_upper = whole clip.
+  * Left hand uses shared 2-bone IK (src/render/ik.js): stays on the pump as it slides (shot rack, and rack at reload frames
+    80-96), reaches the loading port while the shell is in hand (frames 30-56). Shell hand offsets live in
+    SHOTGUN_SPEC.shell (core/weapons.js); tune them in the viewer ("Align shell to port" / sliders) and copy the values.
+  * SHOTGUN_HOLD.muzzle re-measured (-0.206, 1.196, 0.854).
+  NOT DONE / NEXT:
+  - User has not yet judged the shell/pump/hold in the viewer. Check reload frames 30-60 (shell size, fit) and the shot rack.
+  - Player deaths: Yola clips t_fall (real fall, 91f) and t_defeat_03 (stumble to face-down, 167f) are real deaths;
+    death_fall / death_defeat already in the glb; t_defeat_02 is only a standing slump (not a death). die() still plays
+    death_fall only -> pick a variant by last hit direction.
+  - Knee slide special = clip t_shoot (run, drop to one knee and slide, kneel and aim; frames ~20-50 slide). Plan: legs/hips from
+    t_shoot + the shotgun upper body layer, a button on the HUD. Dodge roll = t_dive. Punches t_box_01-03, kicks t_kick_01/02.
+  - Zombie physics per weapon (user's spec): pistol = small stagger, no big push; swing/bat = moderate shove that keeps the
+    zombie in reach so the combo continues; axe = LESS push, MORE limb removal; shotgun = major push + limb removal + extra gore.
+    Not started this round (per-weapon styles already exist in zombies.js takeHit / clipchars ZombieView, see round 4).
+  - HUD weapon icon for the shotgun is still the old pump shape; shotgun mag is back to pump numbers (6, 0.85 s).
+  - blender/characters.blend was saved with the live work (actions sg_reload, t_*, gs_low_slash, rifle_aim_idle; a few imported
+    helper objects are still in the scene: Armature (Tripo import), Armature.001/.002 (Mixamo rifle refs), Gun/Shell).
