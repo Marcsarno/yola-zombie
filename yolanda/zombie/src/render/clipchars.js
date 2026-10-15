@@ -466,10 +466,11 @@ export class YolaView extends ClipBody {
     const hold = this.act('shotgun_hold_upper'); hold.setEffectiveWeight((1 - rS) * uS * k);
     hold.time = HOLD_T + ((this.holdJit ^= 1) * 1e-6); // a static time is only applied every other update, so it alternates
     this.act('bat_idle_upper').setEffectiveWeight(uA * k);
-    this.act('fists_idle_upper').setEffectiveWeight(uF * k);
+    // unarmed: the regular full-body run/walk/strafe clips (arms included), not the legs under a static upper-body pose
+    this.act('fists_idle_upper').setEffectiveWeight(0);
     for (const n in w) {
-      this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
-      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uF + uP * rP) * k);
+      this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + uF) * k);
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP) * k);
     }
     // a scripted full-body clip (the reveal's wave) fades over the normal layers
     let scW = 0, sact = null;

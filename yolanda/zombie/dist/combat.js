@@ -47609,10 +47609,10 @@ void main() {
       hold.setEffectiveWeight((1 - rS) * uS * k);
       hold.time = HOLD_T + (this.holdJit ^= 1) * 1e-6;
       this.act("bat_idle_upper").setEffectiveWeight(uA * k);
-      this.act("fists_idle_upper").setEffectiveWeight(uF * k);
+      this.act("fists_idle_upper").setEffectiveWeight(0);
       for (const n in w) {
-        this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
-        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uF + uP * rP) * k);
+        this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + uF) * k);
+        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uP * rP) * k);
       }
       let scW = 0, sact = null;
       if (this.script) {
