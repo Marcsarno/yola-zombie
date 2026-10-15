@@ -288,7 +288,7 @@ function runFrame(dt, doRender = true) {
     acc -= STEP; steps++;
     if (hitPauseT > 0) { acc = 0; break; }
   }
-  const alpha = paused ? 1 : acc / STEP;
+  const alpha = paused || hitPauseT > 0 ? 1 : acc / STEP; // frozen frames show the latest step (alpha 0 rolled the pose back a step)
   handleEvents();
   const animDt = paused ? 0 : simDt;
 

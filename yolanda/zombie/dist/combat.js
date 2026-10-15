@@ -47559,7 +47559,7 @@ void main() {
           this.swingAct = act;
           this.swingName = A.name;
         }
-        act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps;
+        act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps + (this.swJit ^= 1) * 1e-6;
         const ramp = clamp4(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
         const out = t <= tEnd ? 1 : smooth(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
         sW = ramp * out;
@@ -47596,7 +47596,7 @@ void main() {
       if (s.action === "reload") {
         const sg = s.equipped === "shotgun", u = clamp4(s.actionT / s.reloadDur, 0, 1);
         const rl = this.act(sg ? "shotgun_reload_upper" : "pistol_reload_upper");
-        rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30;
+        rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + (this.rlJit ^= 1) * 1e-6;
         if (sg) this.reloadFrame = rl.time * 30;
         rW = smooth(clamp4(s.actionT / 0.08, 0, 1)) * smooth(clamp4((1 - u) / 0.12, 0, 1));
       }
@@ -53042,7 +53042,7 @@ void main() {
         break;
       }
     }
-    const alpha = paused ? 1 : acc / STEP;
+    const alpha = paused || hitPauseT > 0 ? 1 : acc / STEP;
     handleEvents();
     const animDt = paused ? 0 : simDt;
     const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;

@@ -425,7 +425,7 @@ export class YolaView extends ClipBody {
         if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; }
         this.swingId = s.swingId; this.swingAct = act; this.swingName = A.name;
       }
-      act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps; // glTF time = blender frame / fps
+      act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps + ((this.swJit ^= 1) * 1e-6); // glTF time = blender frame / fps; a static time is only applied every other update (hit-pause froze the swing pose), so it alternates
       const ramp = clamp(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
       const out = t <= tEnd ? 1 : smooth(clamp(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
       sW = ramp * out;
@@ -454,7 +454,7 @@ export class YolaView extends ClipBody {
     if (s.action === 'reload') {
       const sg = s.equipped === 'shotgun', u = clamp(s.actionT / s.reloadDur, 0, 1);
       const rl = this.act(sg ? 'shotgun_reload_upper' : 'pistol_reload_upper');
-      rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30;
+      rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + ((this.rlJit ^= 1) * 1e-6);
       if (sg) this.reloadFrame = rl.time * 30;
       rW = smooth(clamp(s.actionT / 0.08, 0, 1)) * smooth(clamp((1 - u) / 0.12, 0, 1));
     }
