@@ -131,3 +131,22 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     no physical-phone test; the improved Yola's wave (t_greet_04) reads well in stills but was not judged frame-by-frame by the
     user; guard seat height in the hall chair is approximate; Room 2 / reception fight not built (guard just sits there).
     Next if continuing: user review of the full run on their phone, then polish items they call out.
+- 2026-10-15 (round 7): Floor 3 / Level 1 "the hospital loop" + opening polish (branch opening-reveal).
+  * Level data: src/core/floor3.js (rooms, wall centre lines with door gaps, doors, props, signs, zombie groups, pickups,
+    interactions; plan px -> world: x=(px-918)/27-7, z=(py-520)/27-11.15). Game state: src/core/level.js (flags
+    lift_power_restored / cafeteria_brace_removed / ct_return_unbarred, pickups, prompts + Use, lift state machine, checkpoints).
+    layout.js now holds two layouts (wing for practice/waves/bench; floor3 for the story) chosen by mode (room1 = floor3).
+  * Renderer (render/arena.js): per-room floors, walls that cut away (lower to 1 m) between the camera and Yola, wall-mounted
+    items hide with their wall, kit doors/lift cut by clipping planes (armed on the first play frame), braced door + CT bar +
+    lift animated from level state, reset panel + FAULT/READY, canvas wayfinding signs + the supplied 2D room prints, room props
+    merged per material per room (OR props kept separate for the opening), walls baked to one vertex-coloured mesh each.
+  * Opening: assessment office (desk, clinician chair, two visitor chairs, supplies, info wall), two-bay room with three tiers
+    (bed, headwall, monitor, IV, cabinet, screen, cart, prep storage), staff corridor; athlete changes to white at the OR cut;
+    a lilac-scrubs clinician operates (Yola is called in); reveal: both Yolas stand still, no ECG over it, black beat, then a
+    Borderlands-style freeze/punch-in boss card (YOLA — Calm under pressure). iPhone audio: playback audio session + silent
+    looping <audio> unlock, narration/music join late if the context resumes after the tap.
+  * Tested (desktop pane, mobile viewport; NOT a phone): all pickups (incl. full-health refusal, emptied bag), lift fault ->
+    reset -> doors open -> board -> close -> level complete, brace removal (anim, collision off, cafeteria release), CT bar from
+    the CT side only (OR side says barred), every doorway walked both ways with stick input, nav reachability with each door
+    state, retry from checkpoint (flags, pickups, kills, loadout kept). Render: 230-370 calls, 210-360k tris per view.
+  * Not verified: sound on an iPhone; real-time playthrough with combat by a person; phone frame rate.
