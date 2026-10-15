@@ -1,0 +1,48 @@
+{
+ "_doc": "Clip 13 (side) frames a0-a1 as view A; clip 1 (front three-quarter) as view B. sync: [A frame, B offset] knots, measured by solving each stretch at candidate offsets and keeping the one where both cameras agree best (tools/track/syncsearch.py): 70-72 through the forehand, 80 from the upright hold on.",
+ "a0": 20,
+ "a1": 184,
+ "sync": [
+  [
+   20,
+   71
+  ],
+  [
+   44,
+   72
+  ],
+  [
+   56,
+   76
+  ],
+  [
+   66,
+   80
+  ],
+  [
+   184,
+   80
+  ]
+ ],
+ "A": {
+  "pose": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/tools/mocap/data/pose13.json",
+  "size": [
+   1152,
+   620
+  ],
+  "track": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/shots/batfix/track_c13.json",
+  "fix": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/shots/batfix_c13.json",
+  "reject": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/tools/track/data/reject13.json"
+ },
+ "B": {
+  "pose": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/tools/mocap/data/pose1.json",
+  "size": [
+   1152,
+   630
+  ],
+  "track": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/shots/batfix/track_c1.json",
+  "fix": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/shots/batfix_c1.json",
+  "reject": "C:/Users/marc7/.claude/projects/Zombie Apoc/yolanda/zombie/tools/track/data/reject1.json"
+ },
+ "iters": 300
+}

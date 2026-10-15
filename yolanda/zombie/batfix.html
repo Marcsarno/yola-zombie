@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bat Track Fixer</title>
+<style>
+  :root { --bg: #15191c; --panel: #1f262b; --line: #34414a; --text: #e8eef0; --dim: #93a3ab; --tip: #ff3b30; --knob: #2f8bff; --ok: #3ccf6e; --warn: #ff9f1a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
+  #app { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+  header, footer { background: var(--panel); border-color: var(--line); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  header { border-bottom: 1px solid var(--line); }
+  footer { border-top: 1px solid var(--line); }
+  button, select { font: inherit; color: var(--text); background: #2b363d; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button:hover { background: #36444c; }
+  button.on { background: #2f7f8f; }
+  #frame { font-weight: 700; min-width: 140px; }
+  #stage { position: relative; overflow: hidden; cursor: crosshair; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #ref { position: absolute; right: 10px; top: 10px; width: min(34%, 460px); background: #000; border: 2px solid #ffcc33; border-radius: 6px; overflow: hidden; display: none; }
+  #ref canvas { width: 100%; height: auto; display: block; }
+  #refl { position: absolute; left: 0; top: 0; right: 0; padding: 3px 6px; background: rgba(0,0,0,.65); color: #ffcc33; font-size: 12px; }
+  #note { position: absolute; left: 12px; top: 10px; padding: 6px 10px; border-radius: 6px; background: rgba(0,0,0,.6); pointer-events: none; }
+  #help { color: var(--dim); font-size: 13px; }
+  #strip { display: flex; gap: 1px; flex: 1 1 100%; height: 16px; cursor: pointer; }
+  #strip div { flex: 1; background: #3a464d; }
+  #strip div.fixed { background: var(--ok); } #strip div.hidden { background: #777; } #strip div.suspect { background: var(--warn); }
+  #strip div.cur { outline: 2px solid #fff; outline-offset: -2px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+  #saved { color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <select id="clip"><option value="c13">Clip 13 (side), frames 20-184</option><option value="c1">Clip 1 (front three-quarter), frames 90-270</option></select>
+    <button id="prev" title="Left arrow (Shift = 5)">&#9664; Prev</button>
+    <span id="frame">frame</span>
+    <button id="next" title="Right arrow (Shift = 5)">Next &#9654;</button>
+    <button id="play" title="Space">Play</button>
+    <button id="swap" title="S">Swap ends</button>
+    <button id="hide" title="H">Bat not visible here</button>
+    <button id="reset" title="R">Back to the tracked line</button>
+    <button id="onion" class="on" title="O">Show previous frame's bat</button>
+    <button id="fit" title="F">Fit</button>
+    <button id="refbtn" class="on" title="V">Side view (same moment)</button>
+    <button id="usesug" title="G">Use the 3D guess</button>
+    <span id="saved"></span>
+  </header>
+  <div id="stage"><canvas id="cv"></canvas><div id="note"></div><div id="ref"><canvas id="rc"></canvas><div id="refl"></div></div></div>
+  <footer>
+    <div id="strip" title="Click to jump. Green = you fixed it, grey = not visible, orange = I think my line is wrong here"></div>
+    <div id="help"><span class="sw" style="background:var(--tip)"></span>tip (barrel end) &nbsp; <span class="sw" style="background:var(--knob)"></span>knob (handle end) &nbsp; <span class="sw" style="background:#ff9f1a"></span>3D guess &nbsp;|&nbsp;
+      Drag a dot onto the end of the bat. Click anywhere to move the nearer dot there. Mouse wheel zooms, right-drag pans.
+      Each change saves by itself. Arrows step frames, Shift+arrow steps 5.</div>
+  </footer>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const cv = $('cv'), g = cv.getContext('2d');
+const RANGES = { c13: [20, 184], c1: [90, 270] };
+const S = { sug: {}, refOn: true, fix13: {}, clip: 'c13', f: 20, track: {}, fix: {}, suspect: new Set(), img: null, view: { s: 1, x: 0, y: 0 }, drag: null, pan: null, onion: true, playing: false, cache: new Map() };
+
+async function loadClip(c) {
+  S.clip = c; S.f = RANGES[c][0];
+  S.track = (await (await fetch(`shots/batfix/track_${c}.json?${Date.now()}`)).json()).frames;
+  try { S.fix = await (await fetch(`shots/batfix_${c}.json?${Date.now()}`)).json(); } catch (e) { S.fix = {}; }
+  S.fix = S.fix.frames || {};
+  S.sug = {}; try { S.sug = (await (await fetch(`shots/batfix/suggest_${c}.json?${Date.now()}`)).json()).frames; } catch (e) { /* none */ }
+  if (c === 'c1') { try { S.fix13 = (await (await fetch(`shots/batfix_c13.json?${Date.now()}`)).json()).frames || {}; } catch (e) { S.fix13 = {}; } }
+  S.suspect = new Set();
+  try { const r = await (await fetch(`tools/track/data/reject${c.slice(1)}.json?${Date.now()}`)).json(); r.frames.forEach((f) => S.suspect.add(f)); } catch (e) { /* none */ }
+  buildStrip(); await show(S.f, true);
+}
+function frameImg(f) {
+  const key = S.clip + f;
+  if (!S.cache.has(key)) S.cache.set(key, new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = `shots/batfix/${S.clip}/f${String(f).padStart(4, '0')}.jpg`; }));
+  return S.cache.get(key);
+}
+function cur(f = S.f) {  // the line shown for frame f: your fix, else the tracked line
+  const x = S.fix[f];
+  if (x) return { ...x, src: x.hidden ? 'hidden' : 'fixed' };
+  const t = S.track[f], g = S.sug[f];
+  const trackedOk = t && t.tip && !S.suspect.has(f) && t.conf > 0.5;
+  if (trackedOk) return { tip: t.tip.slice(), knob: t.knob.slice(), src: 'tracked' };
+  if (g) return { tip: g.tip.slice(), knob: g.knob.slice(), src: 'guess' };
+  if (t && t.tip) return { tip: t.tip.slice(), knob: t.knob.slice(), src: 'tracked' };
+  return { tip: null, knob: null, src: 'none' };
+}
+async function show(f, fit) {
+  const [a, b] = RANGES[S.clip]; S.f = Math.max(a, Math.min(b, f));
+  S.img = await frameImg(S.f);
+  for (const d of [1, 2, -1]) frameImg(Math.max(a, Math.min(b, S.f + d)));
+  if (fit) fitView();
+  draw();
+}
+function fitView() {
+  const r = cv.getBoundingClientRect(); if (!S.img) return;
+  const s = Math.min(r.width / S.img.width, r.height / S.img.height);
+  S.view = { s, x: (r.width - S.img.width * s) / 2, y: (r.height - S.img.height * s) / 2 };
+}
+const toScreen = (p) => [S.view.x + p[0] * S.view.s, S.view.y + p[1] * S.view.s];
+const toImage = (x, y) => [(x - S.view.x) / S.view.s, (y - S.view.y) / S.view.s];
+function draw() {
+  const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  cv.width = r.width * dpr; cv.height = r.height * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#0d1012'; g.fillRect(0, 0, r.width, r.height);
+  if (S.img) g.drawImage(S.img, S.view.x, S.view.y, S.img.width * S.view.s, S.img.height * S.view.s);
+  if (S.onion) { const p = cur(S.f - 1); if (p.tip && p.src !== 'hidden') line(p, 0.35, true); }
+  const c = cur(), gs = S.sug[S.f];
+  if (gs && c.src !== 'guess') guessLine(gs);
+  if (c.tip && c.src !== 'hidden') line(c, 1, c.src === 'tracked' || c.src === 'guess');
+  drawRef();
+  $('frame').textContent = `frame ${S.f}` + (S.clip === 'c13' ? `  (Yola ${S.f - 19})` : '');
+  const sus = S.suspect.has(S.f) && c.src === 'tracked';
+  $('note').textContent = c.src === 'fixed' ? 'Your correction' : c.src === 'hidden' ? 'Marked: bat not visible' : c.src === 'guess' ? 'Starting from the 3D guess (dashed): drag the dots onto the bat' : sus ? 'I think my tracked line is wrong here: please drag it onto the bat, or mark it not visible' : c.src === 'tracked' ? 'Tracked line (dashed): drag the dots if it is off' : 'No line: click the barrel end, then the knob end';
+  $('note').style.color = sus ? 'var(--warn)' : '';
+  $('hide').classList.toggle('on', c.src === 'hidden');
+  [...$('strip').children].forEach((d, i) => d.classList.toggle('cur', i + RANGES[S.clip][0] === S.f));
+}
+function guessLine(gs) {  // the 3D solve's guess, for reference (thin dotted orange)
+  const a = toScreen(gs.knob), b = toScreen(gs.tip);
+  g.lineWidth = 2; g.strokeStyle = '#ff9f1a'; g.setLineDash([3, 5]); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); g.setLineDash([]);
+}
+const rc = $('rc'), rg = rc.getContext('2d'); let refImgs = new Map();
+async function drawRef() {  // clip 1 only: the clip 13 frame at the same moment, with the user's corrected bat
+  const box = $('ref'); const gs = S.sug[S.f];
+  if (S.clip !== 'c1' || !S.refOn || !gs) { box.style.display = 'none'; return; }
+  box.style.display = 'block'; const a = gs.a, key = 'r' + a;
+  if (!refImgs.has(key)) refImgs.set(key, new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = `shots/batfix/c13/f${String(a).padStart(4, '0')}.jpg`; }));
+  const im = await refImgs.get(key); if (!im || S.sug[S.f] !== gs) return;
+  rc.width = im.width; rc.height = im.height; rg.drawImage(im, 0, 0);
+  const x = S.fix13[a];
+  if (x && !x.hidden) {
+    rg.lineWidth = 4; rg.strokeStyle = '#3ccf6e'; rg.beginPath(); rg.moveTo(x.knob[0], x.knob[1]); rg.lineTo(x.tip[0], x.tip[1]); rg.stroke();
+    for (const [p, col] of [[x.knob, '#2f8bff'], [x.tip, '#ff3b30']]) { rg.beginPath(); rg.arc(p[0], p[1], 9, 0, 7); rg.fillStyle = col; rg.fill(); }
+  }
+  $('refl').textContent = `Side view (clip 13) at the same moment: frame ${a} (Yola ${a - 19})` + (x ? ', your bat' : '');
+}
+function line(c, alpha, dashed) {
+  const a = toScreen(c.knob), b = toScreen(c.tip);
+  g.globalAlpha = alpha; g.lineWidth = 3; g.strokeStyle = '#3ccf6e'; g.setLineDash(dashed ? [8, 6] : []);
+  g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); g.setLineDash([]);
+  for (const [p, col] of [[a, '#2f8bff'], [b, '#ff3b30']]) { g.beginPath(); g.arc(p[0], p[1], 8, 0, 7); g.fillStyle = col; g.fill(); g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke(); }
+  g.globalAlpha = 1;
+}
+function buildStrip() {
+  const [a, b] = RANGES[S.clip]; const el = $('strip'); el.innerHTML = '';
+  for (let f = a; f <= b; f++) { const d = document.createElement('div'); d.onclick = () => show(f); el.appendChild(d); }
+  paintStrip();
+}
+function paintStrip() {
+  const a = RANGES[S.clip][0];
+  [...$('strip').children].forEach((d, i) => { const f = a + i, x = S.fix[f]; d.className = x ? (x.hidden ? 'hidden' : 'fixed') : S.suspect.has(f) ? 'suspect' : ''; });
+}
+let saveT = 0;
+function commit(c) { S.fix[S.f] = c; paintStrip(); draw(); saveSoon(); }
+function unfix() { delete S.fix[S.f]; paintStrip(); draw(); saveSoon(); }
+function saveSoon() {
+  clearTimeout(saveT); $('saved').textContent = 'saving...';
+  saveT = setTimeout(async () => {
+    const body = JSON.stringify({ clip: S.clip, units: 'pixels in the 1152-wide frames', frames: S.fix }, null, 1);
+    try { const r = await fetch(`/__shot/batfix_${S.clip}.json`, { method: 'POST', body }); $('saved').textContent = r.ok ? `saved (${Object.keys(S.fix).length} frames corrected)` : 'save FAILED'; }
+    catch (e) { $('saved').textContent = 'save FAILED'; }
+  }, 250);
+}
+// mouse
+cv.addEventListener('contextmenu', (e) => e.preventDefault());
+cv.addEventListener('pointerdown', (e) => {
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (e.button === 2 || e.button === 1) { S.pan = { x, y, vx: S.view.x, vy: S.view.y }; cv.setPointerCapture(e.pointerId); return; }
+  const c = cur(); const p = toImage(x, y);
+  if (!c.tip || c.src === 'hidden') { commit({ tip: p, knob: p.slice() }); S.drag = 'knob'; cv.setPointerCapture(e.pointerId); return; }
+  const dt = Math.hypot(...toScreen(c.tip).map((v, i) => v - [x, y][i])), dk = Math.hypot(...toScreen(c.knob).map((v, i) => v - [x, y][i]));
+  S.drag = dt < dk ? 'tip' : 'knob';
+  const n = { tip: c.tip.slice(), knob: c.knob.slice() }; n[S.drag] = p; commit(n);
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', (e) => {
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (S.pan) { S.view.x = S.pan.vx + x - S.pan.x; S.view.y = S.pan.vy + y - S.pan.y; draw(); return; }
+  if (!S.drag) return;
+  const c = cur(); const n = { tip: c.tip.slice(), knob: c.knob.slice() }; n[S.drag] = toImage(x, y);
+  S.fix[S.f] = n; draw();
+});
+cv.addEventListener('pointerup', () => { if (S.drag) commit(S.fix[S.f]); S.drag = null; S.pan = null; });
+cv.addEventListener('wheel', (e) => {
+  e.preventDefault(); const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const k = Math.exp(-e.deltaY * 0.0015), p = toImage(x, y);
+  S.view.s *= k; S.view.x = x - p[0] * S.view.s; S.view.y = y - p[1] * S.view.s; draw();
+}, { passive: false });
+// buttons and keys
+$('prev').onclick = (e) => show(S.f - (e.shiftKey ? 5 : 1));
+$('next').onclick = (e) => show(S.f + (e.shiftKey ? 5 : 1));
+$('swap').onclick = () => { const c = cur(); if (c.tip) commit({ tip: c.knob, knob: c.tip }); };
+$('hide').onclick = () => { if (cur().src === 'hidden') unfix(); else commit({ hidden: true }); };
+$('reset').onclick = () => unfix();
+$('onion').onclick = () => { S.onion = !S.onion; $('onion').classList.toggle('on', S.onion); draw(); };
+$('fit').onclick = () => { fitView(); draw(); };
+$('refbtn').onclick = () => { S.refOn = !S.refOn; $('refbtn').classList.toggle('on', S.refOn); draw(); };
+$('usesug').onclick = () => { const gs = S.sug[S.f]; if (gs) commit({ tip: gs.tip.slice(), knob: gs.knob.slice() }); };
+$('play').onclick = () => { S.playing = !S.playing; $('play').classList.toggle('on', S.playing); $('play').textContent = S.playing ? 'Pause' : 'Play'; if (S.playing) tick(); };
+async function tick() { if (!S.playing) return; const [a, b] = RANGES[S.clip]; await show(S.f >= b ? a : S.f + 1); setTimeout(tick, 1000 / 15); }
+$('clip').onchange = (e) => loadClip(e.target.value);
+addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') show(S.f - (e.shiftKey ? 5 : 1));
+  else if (e.key === 'ArrowRight') show(S.f + (e.shiftKey ? 5 : 1));
+  else if (e.key === ' ') { e.preventDefault(); $('play').click(); }
+  else if (e.key === 's' || e.key === 'S') $('swap').click();
+  else if (e.key === 'h' || e.key === 'H') $('hide').click();
+  else if (e.key === 'r' || e.key === 'R') $('reset').click();
+  else if (e.key === 'o' || e.key === 'O') $('onion').click();
+  else if (e.key === 'f' || e.key === 'F') $('fit').click();
+  else if (e.key === 'v' || e.key === 'V') $('refbtn').click();
+  else if (e.key === 'g' || e.key === 'G') $('usesug').click();
+});
+addEventListener('resize', () => { fitView(); draw(); });
+loadClip('c13');
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+{ "_doc": "clip 13 (side) frames whose 2D bat detection was checked by eye on the debug sheets and found wrong: motion-blurred contacts and follow-throughs where the bat is a pale streak (the tracker grabs a body band), and one swapped tip/knob. The 3D solve fills them from the other view and smooth rigid motion.",
+  "frames": [42, 43, 44, 45, 46, 47, 48, 52, 53, 54, 55, 56, 60, 128, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160] }

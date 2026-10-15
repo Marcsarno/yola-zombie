@@ -173,3 +173,59 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     reviewer's list (crouch/lean, finisher low-to-high, backhand contact in front, bat vertical at the reset). Then
     re-record, a phone test, and the same workflow for the axe. Optional upgrade: GVHMR/WHAM (needs SMPL registration
     by the user).
+- 2026-10-15 (round 11, bat only; uncommitted until the user says): the latest mocap clip checked against the video and fixed.
+  * Found by measuring (Rig Lab, rendered shoe soles): feet floated 10-30 cm for most of the combo with knees locked straight
+    (scale from hip height), the floor was tilted 3 deg (rest-skeleton "up"), knees caved inward (tracker depth), and in the game
+    planted feet skated up to ~10 cm/frame (the backhand's 0.6 m advance cut to ~30% to stop short of the zombie, and the
+    blends in from / out to idle).
+  * Fixed in tools/mocap/retarget_mocap.py (see its README "Round 11") and with a runtime foot lock + clavicle reach in
+    render/clipchars.js. Contacts per frame are exported in clipdata (cL/cR).
+  * Measured after: one foot on the floor in every frame except the forehand hop (as in the video); planted-foot slide median
+    <1 cm/frame, worst ~2 cm/frame (the finisher's pivot); left hand <=2 cm from the handle through all three strikes (was up to
+    7.4); simulated vs rendered bat <=3.3 cm in every damage window; same at 30/60/120 fps. Hit grid 32/42 open, 31/42 wall (was
+    34/33: two cells at the far left edge lost when the bat moved into her reach). Held combo still hit, hit, kill (4 seeds).
+    Crowd of 12: no double hits, hit-stop <=0.114 s per swing.
+  * recordings/bat_combo_before_after.mp4 (side view + gameplay camera at phone size, last commit vs now) and
+    recordings/bat_combo_vs_reference.png (20 frames, clip vs video).
+  * Remaining vs the video: the finisher wind-up leans less (video ~25-50 deg forward, Yola ~20); Yola is stockier, so the
+    crouch reads shallower. Not tested on a phone.
+  * USER REJECTED the look (full-size Rig Lab frames: contorted arms, torso facing the camera instead of the target,
+    inhuman wrists; "following the skeleton isn't viable"). Kept: the foot lock, the clavicle reach, the measuring
+    helpers and tests. The retargeted clip itself is NOT the way forward (see round 12).
+- 2026-10-15 (round 12, bat only): a new, reusable foundation for weapon holds. Read WEAPON_HOLD_PROCESS.md first.
+  * Process: WEAPON_HOLD_PROCESS.md (the procedure for every held weapon):
+    - The weapon is placed by a solved grip: the shaft through the fist centre.
+    - Body animation first, then the weapon, then the support hand. Human joint limits.
+    - Collision is checked against her skinned mesh.
+    - A review gate: full-size 8-angle grip sheets, then a 1x video watched before reporting.
+  * Hold toolkit tools/hold (Blender 5.2 headless):
+    - calibrate.py writes assets/hold/yola_hands.json: fist centres from the curled fingers, elbow hinges, capsules.
+    - holdcheck.py checks every frame: grip, joint limits, weapon and arms inside her body.
+    - gripsheet.py renders 8 views around the hands, full views, skeleton overlays and capsule cages.
+    - tools/labcheck.js gripSheet() lays out one page per frame with the numbers.
+    - Proven on raw bat_idle + bat_swing (Mixamo):
+      - The bottom (left) hand grips throughout. The top hand is 4.6-6.7 cm off the bat and opens in the follow-through.
+      - Mixamo wrists exceed human limits (the X Bot source itself bends 65-96 deg sideways).
+      - The bat goes through her big head in the stance.
+  * Reference footage, re-read with the user:
+    - Yola frames 71-85 are a BUTT STRIKE (knob-first), not a backhand swing.
+    - Clip 1 (front three-quarter) is the second angle of the same combo. Clip 13's second half is NOT a replay (it's the
+      finisher close-up, then idle).
+  * Weapon tracking pipeline tools/track (README.md there):
+    - frames.py, sync by contact frames + syncsearch.py, track2d.py (rigid-bat 2D tracker), batfix.html (the user's
+      large-frame correction page), solve3d.py (two-view rigid-bat + body solve), overlay.py.
+    - The user corrected 138 frames of clip 13 and 169 of clip 1.
+    - Result: tools/track/data/bat3d_combo.json, Yola frames 1-165. Both views agree within a median of 12-15 px.
+      Bat = 1.62 torso.
+    - Video: recordings/bat3d_both_clips_overlay.mp4.
+  * Measured sync: clip 1 = clip 13 + 70-72 (forehand), +80 from the upright hold on.
+  * NOT DONE / NEXT:
+    1. The finisher: clip 13 cuts away at 184. Track it from clip 13's close camera (~186-215) or clip 12's back view,
+       paired with clip 1 (~262-300).
+    2. Build Yola's bat combo from this:
+       - The 3D bat path is the primary; her hands are fitted to it by the hold toolkit, with joint limits.
+       - Body: mocap swings (Mixamo bat clips) retimed to the reference, or Blender-authored poses, with the torso turn
+         taken from the 3D solve.
+       - Then the checker and the grip sheets, then the game.
+    3. Then the axe through the same process.
+  * Uncommitted-then-committed: round 11 changes (rejected look) and round 12 tools are in separate commits.

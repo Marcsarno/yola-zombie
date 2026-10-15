@@ -1,0 +1,294 @@
+# Weapon hold process (any held weapon: bat first, then axe, pistol, shotgun, new weapons)
+
+Goal: Yola holds every weapon like a person does.
+- Fists closed on the handle.
+- Wrists and elbows within human limits.
+- The weapon and her arms never pass through her body.
+- It reads as real at normal speed, from the gameplay camera and close up.
+
+This file is the procedure. Each weapon fills in a data sheet (section 2) and goes through every step and gate below.
+
+Written 2026-10-15, after the tracked-skeleton bat clip failed review: the arms were contorted, the torso faced the camera
+instead of the target, and the wrists bent unnaturally. Root causes:
+1. **The motion source:** a single side-view video can't show which way the torso faces, or the arm rotations.
+2. **IK with no joint limits:** it forced the hands onto the bat any way it could.
+3. **Reviewing from thumbnails and numbers** instead of full-size close-ups and motion at normal speed.
+
+## 1. Rules (and where each comes from)
+
+1. **Solve the hold, never tune it by eye.**
+   - The weapon's handle passes through the centre of the closed fist, computed in the hand's own space.
+   - Stick Fight (Claude-built Three.js game, commit 0d9144f): eyeballed offsets left the shaft 31 mm off the fist centre;
+     the solve got 0.5 mm idle and 0.7 mm mid-swing.
+2. **One direction of dependency, in this order:**
+   1. Body animation.
+   2. Small body corrections (aim, turn, foot lock).
+   3. The weapon, placed from the primary hand.
+   4. The support hand, fitted to the weapon.
+   5. Fingers.
+
+   The weapon never follows the support hand: no loops. This is the Watch_Dogs layering (GDC 2015, Therriault): recoil and
+   aim layers first, then both hands fitted to the weapon's new position.
+3. **IK adjusts a good pose. It never invents one.**
+   - Chains keep the source pose's bend plane.
+   - The elbow direction comes from a hint (Unity Two Bone IK: target, hint, separate position and rotation weights).
+   - Reach is softened near full extension, so the arm never snaps straight (Holden, IK and foot locking: maxExtension from
+     the input pose, exponential softening).
+   - Every joint the IK moves has human limits (section 4). A pose that needs more than the limits is a FAILED pose:
+     fix the animation, don't bend the joint.
+4. **The motion must already be human.**
+   - Sources: real motion capture (Mixamo clips retargeted with rest-pose compensation, as in three-vrm's
+     loadMixamoAnimation and our blender/retarget.py), or poses authored in Blender on Yola's own skeleton.
+   - Reference videos give the order, timing, rhythm and key moments only. Never joint angles from a tracker.
+5. **Check numerically, then visually, then in motion.**
+   - Numbers: every frame of every clip, and the blends between clips.
+   - Pictures: frozen frames from 8 angles around the hands (Stick Fight's grip inspector), plus front, side and the gameplay
+     camera, at full size.
+   - Motion: a recording watched at normal speed (1x) before any slow-motion review.
+6. **Fix at the source; runtime is a safety net.**
+   - Holds are baked in Blender, where they can be seen and edited.
+   - The game's runtime IK only absorbs small differences (blends, aim, the shortened step-in). Each correction is bounded
+     and logged by the checker.
+
+## 2. Per-weapon data sheet (one per weapon, in code: `src/core/weapons.js` HOLDS, mirrored in the GLB)
+
+Every weapon model carries named points, the same convention as the weapon packs' `GameGrip_R`/`GameGrip_L`:
+
+| Name | What it is |
+|---|---|
+| `Grip_Primary` | Where the primary hand's fist centre sits. The weapon's origin. |
+| `Grip_Support` | Where the support hand's fist centre sits. None for one-handed weapons. |
+| `Shaft` axis | The handle's axis through both grips. Local +Z, pointing toward the business end. |
+| `Tip` / `Muzzle` / `Blade` | The working end: for hits, effects and aim. |
+| `Knob` / `Butt` | The end behind the hands. |
+
+The data sheet also records:
+- **Grip radius:** the handle radius at each grip. It sets how far the fingers close: bat ~15 mm, axe ~16 mm, pistol grip ~14×22 mm.
+- **Hands:** which is primary (right by default). For clips that need it (e.g. the left-handed home run), the hands swap.
+- **Grip pose:** the finger pose name per hand, e.g. `power_r15`. Each grip pose is authored once per radius in Blender
+  and shared by all weapons of that radius.
+- **Release windows:** per clip, the frame ranges where the support hand intentionally lets go (a one-handed follow-through,
+  a reload). The support constraint fades out over 4 frames and back in over 4.
+- **Collision capsules** (section 5): the weapon as 1–3 capsules (start, end, radius), e.g. a bat = handle capsule + barrel capsule.
+- **Hit geometry** (already in weapons.js): length, the part that hits, radius.
+
+## 3. Per-character hand calibration (once per character, reused by every weapon)
+
+Computed in Blender from her real hand, stored in `assets/clipdata.json` under `hands`:
+- **Fist centre** of each hand, in that hand bone's local space.
+  - Close the fingers into the grip pose. The fist centre is the centre of the circle fitted through the middle-finger
+    joints (proximal, middle, distal), averaged with the index and ring fingers.
+  - Not the wrist, and not "halfway to the knuckle" (Stick Fight's second lesson: "the wrist is not the fist centre").
+- **Grip axis** of each hand, in hand-local space: the line through the index → pinky knuckles when closed. The shaft
+  lies along it, offset by the grip radius toward the palm.
+- **Knuckle direction:** which way the back of the hand faces, to orient the support hand on the handle.
+- **Joint limits** (section 4), and the elbow hinge axis from the rest pose.
+- **Body collision capsules** (section 5), sized from her skinned mesh.
+
+## 4. Human joint limits (Yola; adjust per character)
+
+| Joint | Limit |
+|---|---|
+| Wrist, bending palm-down / back | ≤ 70° / ≤ 60° |
+| Wrist, side to side (thumb side / little-finger side) | ≤ 20° / ≤ 30° |
+| Forearm twist (palm up / palm down) | ≤ 85° each way. Twist belongs here, never in the wrist |
+| Elbow | Hinge only, 0–145° bend, no bending backwards. Side bend ≤ 5° |
+| Shoulder | Arm raise ≤ 170°. Reach across the chest stops at the far shoulder line. Twist ≤ ±90° |
+| Clavicle | ≤ 15° forward, ≤ 20° up. Used only to extend reach |
+
+How they're enforced:
+- **In Blender:**
+  - Limit Rotation constraints on the arm bones while holds are built.
+  - The wrist is split swing/twist: twist moves into the forearm, swing is clamped.
+  - The IK uses a pole target (the elbow hint).
+- **In the game:** the same limits, in a shared joint-limit module used after any arm IK.
+- **The checker:** flags every frame that hits a limit, with the joint and the amount.
+
+## 5. Never through the body: collision checking
+
+**Proxies (not physics):**
+- **Yola's capsules:**
+  - Pelvis.
+  - Abdomen.
+  - Chest.
+  - Head (sphere).
+  - Neck.
+  - Upper arms.
+  - Forearms.
+  - Hands (small boxes).
+  - Thighs.
+  - Shins.
+- **How they're sized:** each fitted to her skinned mesh vertices weighted to that bone, using the bone's own vertices,
+  measured once in Blender.
+- **The weapon:** its capsules come from the data sheet.
+
+**The checker** (`tools/holdcheck`, runs in Blender headless and in the Rig Lab) tests, for every frame and for blends
+sampled at 120 Hz:
+- **Weapon vs body:** weapon capsules against every body capsule, except the gripping hands. Then, where capsules come
+  close, against her actual skinned vertices.
+- **Arms vs body:**
+  - Forearm against the chest.
+  - Hand against the opposite forearm.
+  - Upper arm against the head.
+  - The neighbouring segment is ignored.
+- **Reported:** penetration depth and the frame.
+
+**Fixing a failure:**
+- **First, the pose in Blender:** move the hands, rotate the chest, change the elbow hint.
+- **At runtime, a bounded safety net:** if the weapon would enter the chest or abdomen capsule, rotate it about the primary
+  fist away from the body (at most 10°), then refit the support hand. Every use is counted by the checker: a weapon that
+  needs it often goes back to step 4.
+
+## 6. Pipeline for a weapon's clips
+
+0. **Sync every reference angle.**
+   - When a move was filmed from several angles (the bat combo: ScreenRecording …_1, _11, _12, _13), line them all up on one
+     shared event: the contact frame, or the first foot plant.
+   - Watch them side by side at the same time, next to Yola's skeleton rendered from matching cameras.
+   - One angle can't show which way the torso faces, or the arm rotations. Two synced angles can, and with two views the
+     joints can be triangulated instead of guessed.
+   - Reference footage sets order, timing and key moments, and, through the rigid weapon track and the hands (0b), the
+     weapon's path and the grip. Joint angles still never come from a single-view body tracker.
+0b. **Track the weapon as one rigid object, from every synced angle** (the user's rule: "the bat will never jitter").
+   - **It's a straight object of known length moving smoothly.** Any visible piece of it (the tip, the knob, a stretch of the
+     shaft) pins down the rest: mark the tip and the knob in each view and follow them through time.
+   - **Motion blur:** a blurred streak is the swept path, and its ends are the endpoints.
+   - **Hidden or blurred frames are filled from smooth motion,** never from guessed direction keys.
+   - **Two synced angles give 3D:** each view's 2D tip and knob, with the known length and straightness, fixes the weapon
+     in space. No jitter is allowed: the solved path must be smooth in position and rotation.
+   - **The hands are followed too, not just the arms:**
+     - Where each hand sits along the handle, frame by frame.
+     - When a hand lets go or regrips (the fingers).
+     - How the wrists turn, which comes from the weapon's direction plus the forearm.
+   - **Read the move for what it is.** In the bat combo, Yola frames 71–85 are a **butt strike**: the bat is pulled across
+     and driven knob-first into the target, both hands on the handle. Not a backhand swing. Follow the reference's actual
+     action instead of forcing it into a familiar one.
+1. **Pick the motion.** List the candidate mocap clips (`assets/mixamo/*.fbx`, plus new Mixamo downloads; the user signs in).
+   For the bat, we already have:
+   - Swings: `yola_baseball_single`, `yola_baseball_double`, `yola_baseball_homerun`, `yola_bat_swing`, `yola_heavy_swing`,
+     `yola_melee_horizontal`.
+   - Idle: `yola_bat_idle`.
+
+   Watch each at 1x in the Rig Lab next to the reference video. Write down which clip covers which beat of the reference
+   (wind-up, strike, follow-through, recovery, hand-over to the next strike).
+2. **Retarget** with rest-pose compensation (blender/retarget.py), then verify against the Mixamo reference skeleton in the
+   Rig Lab (ghost overlay). The pose must match before anything else is touched.
+3. **Assemble in Blender (NLA):**
+   - Trim and retime each strike to the reference's rhythm.
+   - Author the hand-over poses between strikes (pose-to-pose, matching momentum: the end of one strike sets up the next).
+   - Mirror only where the reference really changes hands.
+   - The combo stays one action, cut into strikes in weapons.js, as now.
+4. **Build the hold in Blender** (the hold rig; not baked yet):
+   - **The weapon:** an object with its grip empties. A Child Of constraint ties `Grip_Primary` to the primary hand's
+     fist centre, aligned to the grip axis.
+   - **The support arm:** IK to `Grip_Support`, elbow hint from the source animation's elbow, Limit Rotation on wrist,
+     forearm and elbow.
+   - **Fingers:** set to the grip pose.
+   - **Release windows:** keyed.
+5. **Bake.** Bake Action with Visual Keying, then clear the constraints, so the export holds exactly what was seen.
+   - The weapon's per-frame transform is written to clipdata as now (bat path), so the game places it identically.
+6. **Run the checker** (sections 4–5 and the grip distances below). Fix and re-bake until it's clean.
+7. **Export:** a skeleton-only GLB at 60 fps (export_combo.py), plus clipdata. Then the game: weapons.js strike frames and
+   hit windows, measured from the baked weapon path.
+8. **Check in the game:** grip numbers from tools/labgame.js; foot lock; the simulated weapon against the rendered weapon in
+   the damage windows; 30/60/120 fps; tests in tools/tests (hit grid, held combo, crowd, glide).
+
+## 7. Pass marks (every frame unless stated)
+
+| Check | Pass |
+|---|---|
+| Primary fist centre to the shaft axis | ≤ 3 mm |
+| Support fist centre to the shaft axis, while gripping | ≤ 8 mm |
+| Hand grip axis vs shaft | ≤ 10° |
+| Wrist, forearm, elbow, shoulder, clavicle | Within section 4. Zero frames at a limit for more than 2 frames in a row |
+| Weapon vs body capsules and skinned mesh | No penetration |
+| Arm vs body | No penetration (≤ 5 mm skin contact allowed: sleeves) |
+| Runtime safety-net use | Under 5% of frames in the held-combo test |
+| Simulated vs rendered weapon, inside damage windows | ≤ 3 cm |
+| Planted feet (foot lock) | Median ≤ 1 cm/frame, max ≤ 2 cm/frame |
+
+## 8. Review gate (before anything is called done)
+
+1. The checker's report is clean (section 7), and it's attached.
+2. A **grip sheet** at the key frames of each strike (wind-up, contact, follow-through, hand-over):
+   - 8 angles around the hands, full size, close enough to see fingers and wrists.
+   - Front, side and the gameplay camera at phone size.
+3. A **1x recording** from the side and from the gameplay camera, watched in full at normal speed by me first. Then the
+   side-by-side with the reference.
+4. Only then is it sent to the user, saying plainly what was and wasn't checked. Desktop tests are never called phone tests.
+
+## 9. Adding a new weapon (checklist)
+
+1. **Model:** made in Blender, with the named points from section 2 at real-world scale. Check the grip radius against her fist.
+2. **Data sheet** in weapons.js HOLDS: grips, radius, primary hand, capsules, hit geometry.
+3. **Grip pose** for its radius: reuse one if it exists, otherwise author it once.
+4. **Clips:** steps 6.1–6.8.
+5. **Gates:** sections 7 and 8.
+
+## 10. Order for the bat (the first weapon through this)
+
+1. **Grip foundations:**
+   - Hand calibration (fist centres, grip axes), joint limits, body capsules.
+   - The checker, in Blender and the Rig Lab.
+   - The 8-angle grip sheet.
+
+   Prove all of it on `bat_idle` and one Mixamo swing before building any combo.
+2. **The bat model:** rebuild it in Blender with the named points (it's procedural in weaponModels.js now).
+3. **The combo** from the Mixamo swings, assembled to the reference's order and rhythm: forehand → backhand → finisher.
+4. **The hold rig, bake, check, export.**
+5. **The game:** weapons.js strike frames, hit windows; keep the foot lock and the runtime support-hand IK, now with joint
+   limits.
+6. **Review gate**, then the axe through the same steps.
+
+## 11. Tools (tools/hold, Blender 5.2 headless; see each file's header)
+
+- **`calibrate.py`** writes `assets/hold/yola_hands.json`:
+  - Fist centres and grip axes, from circles fitted through the curled fingers.
+  - Elbow hinge axes, from 11 clips.
+  - Body capsules.
+- **`holdcheck.py`** checks every frame of the given actions. It places the weapon by the grip solve and reports:
+  - Grip: support fist distance to the shaft, along-shaft offset, axis angle.
+  - Every arm angle against the limits.
+  - Weapon and arm skin inside her body, tested on her skinned mesh.
+- **`gripsheet.py`** renders the 8 views around the hands (anything nearer than 16 cm in front of the hands is clipped
+  away), full front and side, skeleton views, and capsule cages.
+- **`tools/labcheck.js` `gripSheet(dir, out, {perFrame: true})`** (Rig Lab console) lays them out one page per frame
+  with the numbers.
+- **Weapon data sheets:** `tools/hold/weapons_hold.json`.
+
+## 12. Step 1 findings (2026-10-15, bat_idle + bat_swing, raw Mixamo motion)
+
+- **The mocap fingers make real fists.** Curl is about 145°, and the joints fit a 2.3 cm circle (handle plus finger
+  thickness), so fist centres can be calibrated from them.
+- **The bottom (left) hand closes on the handle in every frame.** The top (right) hand opens in bat_swing's follow-through
+  (frame 36 on), like a real batter's top hand. For the bat the primary hand is the LEFT; the right hand has a release window.
+- **The top hand's fist sits 4.6–6.8 cm off the bat** the bottom hand holds, turned about 16°: Mixamo doesn't model the bat.
+- **Mixamo's wrists are not human.** The original X Bot skeleton's `baseball_single` already bends the right wrist sideways
+  up to 65°, and the `bat_swing` source up to 96°. Yola's copies inherit this: 84 of 92 held frames are past the side-bend
+  limit. So wrists must never be taken from the mocap. Step 4 places the bat along the mocap's bat path, then fits both hands
+  to it with the limits applied (the wrist is set by the bat, and the arm adapts).
+- **The bat goes through her head** in the stance (up to 7 cm, beside the ear). Yola's head and hair are far bigger than the
+  mocap actor's, so the stance needs the hands moved back and out.
+- **Arm skin inside her body** is flagged after contact (right forearm up to 4.6 cm). This is not yet visually confirmed:
+  add penetration markers to the sheet.
+
+## 13. Reference footage for the bat combo (2026-10-15)
+
+| Clip | Frames | View |
+|---|---|---|
+| 13 | 1–~185 | Side, following the fighter (target on the left). The previous clip came from this section |
+| 13 | ~190–318 | The same combo from behind and to the side (target on the right) |
+| 12 | 1–~320 | The same as clip 13 |
+| 12 | ~330–494 | A close view from behind |
+| 1 and 11 | all | Three-quarter front views of the attacks |
+
+Yola frame = clip 13 video frame − 19.
+
+## 14. Status (2026-10-15, save point)
+
+- **Bat 3D path:** solved from both reference angles for Yola frames 1–165 (forehand, butt strike, low swing). See
+  tools/track/README.md. The finisher is still to track.
+- **Hold toolkit:** tools/hold works and is proven on the raw Mixamo bat clips. The support-hand fit with limits
+  (step 6.4) is next.
+- **Next:** build Yola's combo with the 3D bat path as the primary, both hands fitted to it, the body from mocap or
+  Blender poses matched to the solve's torso turn, then the checker and grip sheets, then the game.

@@ -1,0 +1,12 @@
+{
+  "_doc": "Per-weapon hold data sheets (WEAPON_HOLD_PROCESS.md section 2). Distances in metres along the weapon's shaft, from the back end (knob/butt) toward the working end. profile: [distance, radius] pairs of the weapon's outline (round weapons). primary: the hand that holds through the whole clip; support: the other hand (released where its fingers open or in release windows).",
+  "bat": {
+    "length": 0.84,
+    "profile": [[0.0, 0.026], [0.01, 0.03], [0.022, 0.024], [0.03, 0.0145], [0.3, 0.0145], [0.42, 0.019], [0.56, 0.028], [0.7, 0.033], [0.79, 0.034], [0.825, 0.031], [0.84, 0.02]],
+    "primary": "Left",
+    "grips": { "Left": 0.065, "Right": 0.14 },
+    "grip_radius": 0.0145,
+    "support_release_curl": 90,
+    "hit": { "from": 0.42, "to": 0.84 }
+  }
+}
