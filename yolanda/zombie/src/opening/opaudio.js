@@ -52,6 +52,29 @@ export class OpeningAudio {
   stopVoice() { try { if (this.voice.ok) speechSynthesis.cancel(); } catch { /* ignore */ } this.spoken = null; }
   pauseVoice(p) { try { if (this.voice.ok) p ? speechSynthesis.pause() : speechSynthesis.resume(); } catch { /* ignore */ } }
 
+  // ---- the narration recording: decoded up front; its playback position is the tour's shot clock ----
+  async loadNarration(url) {
+    try {
+      const data = await (await fetch(url)).arrayBuffer();
+      const oc = new OfflineAudioContext(1, 44100, 44100);
+      this.narr = { buf: await oc.decodeAudioData(data), src: null, t0: 0, playing: false };
+      return true;
+    } catch { this.narr = null; return false; } // absent or undecodable: the subtitles run on the timestamps instead
+  }
+  get hasNarration() { return !!this.narr; }
+  playNarration() {
+    if (!this.narr || !this.ready || this.ctx.state !== 'running') return false; // no audio permission: the subtitle fallback runs
+    this.stopNarration();
+    const c = this.ctx, src = c.createBufferSource(); src.buffer = this.narr.buf;
+    const g = c.createGain(); g.gain.value = 1.0; src.connect(g); g.connect(this.audio.master);
+    this.narr.t0 = c.currentTime + 0.05; src.start(this.narr.t0); this.narr.src = src; this.narr.playing = true;
+    src.onended = () => { if (this.narr) this.narr.playing = false; };
+    return true;
+  }
+  // seconds into the recording while it plays (null otherwise); frozen while the context is suspended (background)
+  narrationPos() { const n = this.narr; if (!n || !n.playing || !this.ctx) return null; return Math.max(0, this.ctx.currentTime - n.t0); }
+  stopNarration() { const n = this.narr; if (!n) return; try { n.src?.stop(); } catch { /* ignore */ } n.src = null; n.playing = false; }
+  pop() { if (!this.audio.ok) return; const t = this.ctx.currentTime + 0.005; this.audio.tone(t, 0.12, 520, { type: 'sine', gain: 0.05, f2: 760, attack: 0.004 }); }
   // ---- music ----
   startMusic(vol = 0.5) {
     if (!this.ready || this.musicOn) return;
@@ -168,5 +191,5 @@ export class OpeningAudio {
     this.pauseVoice(v);
     if (!v && this.ctx && this.musicOn) this.nextBeat = this.ctx.currentTime + 0.1;
   }
-  dispose() { this.stopMusic(0.2); this.stopAmbience(); this.stopVoice(); this.alarmOff(); this.flatlineOff(0.1); }
+  dispose() { this.stopMusic(0.2); this.stopAmbience(); this.stopVoice(); this.stopNarration(); this.alarmOff(); this.flatlineOff(0.1); }
 }

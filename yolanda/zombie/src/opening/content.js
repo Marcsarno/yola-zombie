@@ -1,6 +1,53 @@
 // Editable opening content: narration/subtitles, labels, and the (developer-only) assessment cards.
 // Kept apart from the staging code so qualified authors can replace it without touching the sequence.
 
+// ---------------------------------------------------------------------------------------------
+// THE TOUR NARRATION (the supplied ElevenLabs recording, assets/opening/audio/narration.mp3, 47.07 s).
+// Every phrase has editable start/end timestamps (seconds into the recording); the shots below are triggered from
+// them, not from a fixed runtime. Measured from the recording's pauses. If the recording is absent, the subtitles
+// run on these same timestamps as the fallback. Edit a number here and the shot moves with it.
+// ---------------------------------------------------------------------------------------------
+export const TOUR = {
+  audio: 'assets/opening/audio/narration.mp3',
+  duration: 47.07,
+  phrases: [
+    { id: 'p1', t0: 0.0, t1: 2.0, text: 'Welcome to Yola’s Medical Center.' },
+    { id: 'p2', t0: 2.48, t1: 3.34, text: 'Your hospital.' },
+    { id: 'p3', t0: 3.72, t1: 4.48, text: 'Your team.' },
+    { id: 'p4', t0: 4.94, t1: 7.48, text: 'Your chance to build something extraordinary.' },
+    { id: 'p5', t0: 8.04, t1: 11.02, text: 'Turn empty rooms into places of possibility.' },
+    { id: 'p6', t0: 11.5, t1: 12.48, text: 'Build your team.' },
+    { id: 'p7', t0: 12.94, t1: 15.2, text: 'Put the right people in the right places.' },
+    { id: 'p8', t0: 15.56, t1: 17.52, text: 'And bring your hospital to life.' },
+    { id: 'p9', t0: 18.12, t1: 20.18, text: 'Every patient brings a new challenge.' },
+    { id: 'p10', t0: 20.58, t1: 21.52, text: 'Review their chart.' },
+    { id: 'p11', t0: 21.9, t1: 23.0, text: 'Prepare your equipment.' },
+    { id: 'p12', t0: 23.36, t1: 26.06, text: 'And put your anesthesia expertise to the test.' },
+    { id: 'p13', t0: 26.52, t1: 28.72, text: 'Great care helps your hospital grow.' },
+    { id: 'p14', t0: 29.2, t1: 30.36, text: 'Upgrade your equipment.' },
+    { id: 'p15', t0: 30.7, t1: 32.28, text: 'Expand your possibilities.' },
+    { id: 'p16', t0: 32.62, t1: 34.74, text: 'And get ready for a busier tomorrow.' },
+    { id: 'p17', t0: 35.24, t1: 36.06, text: 'And leading it all?' },
+    { id: 'p18', t0: 36.56, t1: 37.02, text: 'Yola.' },
+    { id: 'p19', t0: 37.52, t1: 38.58, text: 'Calm under pressure.' },
+    { id: 'p20', t0: 38.92, t1: 40.22, text: 'Ready for anything.' },
+    { id: 'p21', t0: 40.68, t1: 42.02, text: 'Still working on the wave.' },
+    { id: 'p22', t0: 42.6, t1: 43.52, text: 'The doors are open.' },
+    { id: 'p23', t0: 43.9, t1: 45.54, text: 'Your first patient is waiting.' },
+    { id: 'p24', t0: 46.0, t1: 46.84, text: 'Let’s get to work.' },
+  ],
+  // shot triggers (seconds): each sits inside a pause in the voice so no cut or effect covers a word
+  cues: {
+    furnishCut: 7.55, // reception -> the empty treatment room
+    furnishFrom: 8.2, furnishStep: 0.3, // quick, satisfying placements across the sentence
+    teamCut: 11.08, receptionCut: 12.5, seatedCut: 15.22, // staff at stations -> receptionist greeting -> Yola seated opposite a patient
+    chartCut: 17.56, chartOn: 18.9, chartOff: 21.6, decisionOn: 21.95, decisionOff: 23.2, equipmentCut: 23.4,
+    holdCut: 26.1, midTier: 29.0, advTier: 30.4, restoreCut: 34.85, // equipment previews: steady camera, chimes in the pauses
+    yolaCut: 35.0, waveStart: 40.7, // original Yola; her awkward wave on the final phrase
+    arrivalCut: 42.1, objective: 43.9, settle: 46.0, handoff: 47.1,
+  },
+};
+
 export const NARRATION = {
   welcome: 'Welcome to Yola’s Medical Center! Every great medical center starts somewhere—and yours is ready for its very first patients.',
   essentials: 'You’ll begin with the essentials. Prepare your patients, plan your schedule, and put Yola’s anesthesia expertise to work.',

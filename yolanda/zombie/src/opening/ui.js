@@ -38,6 +38,14 @@ const CSS = `
 #op .urgency { position: absolute; top: calc(150px + env(safe-area-inset-top, 0px)); left: 50%; width: min(60vw, 260px); height: 8px; transform: translateX(-50%); border-radius: 6px; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .4s; overflow: hidden; }
 #op .urgency.show { opacity: 1; }
 #op .urgency i { display: block; height: 100%; width: 100%; background: #ff8a7a; }
+#op .prev { position: absolute; left: 50%; bottom: calc(24vh + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 10px) scale(.96); width: min(70vw, 280px); opacity: 0; transition: opacity .3s ease, transform .3s ease; }
+#op .prev.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+#op .prev .sheet { background: #fff8ea; color: #20474a; border-radius: 14px; padding: 12px 14px 14px; box-shadow: 0 10px 28px rgba(0,0,0,.32); }
+#op .prev h4 { margin: 0 0 8px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; display: flex; justify-content: space-between; }
+#op .prev h4 em { font-style: normal; color: #e07a5f; }
+#op .prev .bar { height: 9px; border-radius: 5px; background: #cfe3df; margin: 7px 0; }
+#op .prev .bar.s { width: 62%; } #op .prev .bar.m { width: 82%; }
+#op .prev .opt { height: 28px; border-radius: 9px; border: 2px solid #bfe0dc; background: #fff; margin: 6px 0; padding: 4px 10px; font-weight: 700; font-size: 13px; }
 #op .tag { position: absolute; transform: translate(-50%, -100%); background: rgba(255, 248, 234, .96); color: #20474a; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 13.5px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.28); opacity: 0; transition: opacity .35s ease, margin-top .35s ease; margin-top: 8px; text-align: center; }
 #op .tag small { display: block; font-weight: 700; color: #e07a5f; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; }
 #op .tag.show { opacity: 1; margin-top: 0; }
@@ -73,7 +81,7 @@ export class OpeningUI {
       <div class="fade"></div><div class="bars"></div><div class="vig"></div><div class="dark"></div>
       <canvas class="ecg" width="600" height="120"></canvas>
       <div class="title"><h1></h1><p></p></div>
-      <div class="chip"><div></div></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
+      <div class="chip"><div></div></div><div class="prev"></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
       <div class="sub"><span></span></div>
       <div class="card" role="dialog" aria-live="polite"></div>
       <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
@@ -81,7 +89,7 @@ export class OpeningUI {
     document.body.appendChild(el);
     const q = (s) => el.querySelector(s);
     this.fade = q('.fade'); this.vig = q('.vig'); this.dark = q('.dark'); this.ecg = q('canvas.ecg'); this.titleEl = q('.title');
-    this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.statusEl = q('.status'); this.urgEl = q('.urgency'); this.cardEl = q('.card'); this.gate = q('.gate');
+    this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.prevEl = q('.prev'); this.statusEl = q('.status'); this.urgEl = q('.urgency'); this.cardEl = q('.card'); this.gate = q('.gate');
     this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
     this.tags = new Map();
     this.cardResolve = null;
@@ -91,6 +99,15 @@ export class OpeningUI {
   setFade(o, ms = 500) { this.fade.style.transition = `opacity ${ms}ms ease`; this.fade.style.opacity = o; }
   setFadeColor(c) { this.fade.style.background = c; }
   chip(text) { this.chipEl.querySelector('div').textContent = text || ''; this.chipEl.classList.toggle('show', !!text); }
+  // brief tour previews (no clinical content: grey placeholder lines and generic option labels)
+  preview(kind) {
+    const el = this.prevEl;
+    if (!kind) { el.classList.remove('show'); return; }
+    el.innerHTML = kind === 'chart'
+      ? '<div class="sheet"><h4>Patient chart <em>Preview</em></h4><div class="bar m"></div><div class="bar"></div><div class="bar s"></div><div class="bar m"></div><div class="bar s"></div></div>'
+      : '<div class="sheet"><h4>Decision card <em>Preview</em></h4><div class="opt">Option A</div><div class="opt">Option B</div><div class="opt">Option C</div></div>';
+    requestAnimationFrame(() => el.classList.add('show'));
+  }
   status(text, alert = false) { this.statusEl.querySelector('div').textContent = text || ''; this.statusEl.classList.toggle('show', !!text); this.statusEl.classList.toggle('alert', alert); }
   urgency(p) { this.urgEl.classList.toggle('show', p != null); if (p != null) this.urgEl.querySelector('i').style.width = Math.max(0, Math.min(1, p)) * 100 + '%'; } // cosmetic only
   setVignette(o) { this.vig.style.opacity = o; }

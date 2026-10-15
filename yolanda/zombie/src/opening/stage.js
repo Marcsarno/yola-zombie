@@ -37,6 +37,7 @@ export class ClinicStage {
     this.tiers = []; this.tier = 'starter';
     this.actors = {};
     this.anchors = {};
+    this.byName = {}; this.pops = []; this.rings = []; this.onPop = null; // the "empty room becomes furnished" placements
   }
 
   gltf(url) { if (!this.cache.has(url)) this.cache.set(url, this.loader.loadAsync(url)); return this.cache.get(url); }
@@ -53,7 +54,7 @@ export class ClinicStage {
     obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= box.min.y;
     holder.position.set(x, y, z); holder.name = name;
     obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    parent.add(holder);
+    parent.add(holder); if (name) this.byName[name] = holder;
     return holder;
   }
 
@@ -103,11 +104,11 @@ export class ClinicStage {
     // ---- reception (x < 0.2)
     const R = 'reception/';
     const tasks = [];
-    tasks.push(this.prop(M + 'upgrades/01_reception/reception_T1_desk.glb', { x: -5.2, z: -4.7, rot: 0, name: 'desk' }));
+    tasks.push(this.prop(M + 'upgrades/01_reception/reception_T1_desk.glb', { x: -5.2, z: -4.7, rot: 180, name: 'desk' }));
     tasks.push(this.prop(M + 'upgrades/01_reception/reception_T1_chair.glb', { x: -5.2, z: -5.55, rot: 0 }));
     // waiting chairs (mismatched, as a starter lobby): they face north into the room so someone can sit and look at the aisle
     tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: -7.3, z: 3.4, rot: 180, name: 'wchair1' }));
-    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: -6.2, z: 3.45, rot: 180, name: 'wchair2' }));
+    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: -6.2, z: 3.45, rot: 0, name: 'wchair2' }));
     tasks.push(this.prop(M + 'furnishings/Lounge_Break_Chair.glb', { x: -5.0, z: 3.4, rot: 180, name: 'wchair3' }));
     tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: -8.2, z: -5.3 }));
     tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: -3.4, z: -5.4 }));
@@ -133,12 +134,12 @@ export class ClinicStage {
       slot('table', { starter: U + '04_surgery/operating_table_starter.glb', standard: U + '04_surgery/operating_table_standard.glb', advanced: U + '04_surgery/operating_table_advanced.glb' }, { x: 5.6, z: -2.4, rot: 90 }),
     ];
     for (const s of slots) for (const tier of ['starter', 'standard', 'advanced']) tasks.push(this.prop(s.files[tier], { ...s.opts, name: s.key + '_' + tier }).then((h) => { s.layers ||= {}; s.layers[tier] = h; this.fadeable(h); h.visible = tier === 'starter'; this.setOpacity(h, 1); }));
-    tasks.push(this.prop(M + 'upgrades/07_warmth_teamwork/TeamDesk_starter.glb', { x: 2.7, z: 2.6, rot: 0, name: 'assessDesk' }));
-    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: 2.7, z: 1.5, rot: 0, name: 'chairYola' })); // north side, faces south
+    tasks.push(this.prop(M + 'upgrades/07_warmth_teamwork/TeamDesk_starter.glb', { x: 2.7, z: 2.6, rot: 180, name: 'assessDesk' }));
+    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: 2.7, z: 1.5, rot: 180, name: 'chairYola' })); // north side, faces south
     tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: 2.7, z: 3.85, rot: 180, name: 'chairPatient' })); // south side, faces north
-    tasks.push(this.prop(M + 'utility/Utility_Supply_Shelf.glb', { x: 8.3, z: 1.4, rot: 270 }));
-    tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: 1.2, z: -5.2 }));
-    tasks.push(this.prop(M + 'decor2/Clinical_Art_Heart.glb', { x: 2.2, y: 1.5, z: -5.88 }));
+    tasks.push(this.prop(M + 'utility/Utility_Supply_Shelf.glb', { x: 8.3, z: 1.4, rot: 270, name: 'shelf' }));
+    tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: 1.2, z: -5.2, name: 'plantT' }));
+    tasks.push(this.prop(M + 'decor2/Clinical_Art_Heart.glb', { x: 2.2, y: 1.5, z: -5.88, name: 'artT' }));
     await Promise.all(tasks);
     // seat anchors for the sitting characters (seat centre on the floor plane, facing yaw)
     Object.assign(this.anchors, {
@@ -172,6 +173,33 @@ export class ClinicStage {
       f.t = Math.min(f.dur, f.t + dt); const u = f.t / f.dur, e = u * u * (3 - 2 * u);
       this.setOpacity(f.to, e); this.setOpacity(f.from, 1 - e);
       if (u >= 1) { f.from.visible = false; this.setOpacity(f.to, 1); s.fx = null; }
+    }
+  }
+
+  // ---- an empty room that gets furnished: quick, satisfying placements of the room's existing furniture ----
+  furnishList() {
+    const tier = (k) => this.tiers.find((t) => t.key === k)?.layers?.starter;
+    return [tier('table'), tier('workstation'), tier('monitor'), this.byName.assessDesk, this.byName.chairYola, this.byName.chairPatient, this.byName.shelf, this.byName.plantT, this.byName.artT].filter(Boolean);
+  }
+  setRoomEmpty(on) { for (const h of this.furnishList()) { h.visible = !on; h.scale.setScalar(1); } this.clearPops(); }
+  clearPops() { this.pops.length = 0; for (const r of this.rings) this.root.remove(r.m); this.rings.length = 0; for (const h of this.furnishList()) h.scale.setScalar(1); }
+  popIn(h, delay = 0) { h.visible = false; h.scale.setScalar(0.001); this.pops.push({ h, t: -delay, dur: 0.4, started: false }); }
+  tickPops(dt) {
+    for (let i = this.pops.length - 1; i >= 0; i--) {
+      const p = this.pops[i]; p.t += dt; if (p.t < 0) continue;
+      if (!p.started) {
+        p.started = true; p.h.visible = true; this.onPop?.();
+        const m = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.36, 40), new THREE.MeshBasicMaterial({ color: 0xfff3c9, transparent: true, opacity: 0.75, depthWrite: false }));
+        m.rotation.x = -Math.PI / 2; m.position.set(p.h.position.x, 0.03, p.h.position.z); m.renderOrder = 2; this.root.add(m); this.rings.push({ m, t: 0 });
+      }
+      const u = Math.min(1, p.t / p.dur), k = u < 1 ? 1 + Math.sin(u * Math.PI) * 0.13 * (1 - u) : 1; // a small overshoot
+      p.h.scale.setScalar(Math.max(0.001, k * Math.min(1, u * 1.25)));
+      if (u >= 1) { p.h.scale.setScalar(1); this.pops.splice(i, 1); }
+    }
+    for (let i = this.rings.length - 1; i >= 0; i--) {
+      const r = this.rings[i]; r.t += dt; const u = Math.min(1, r.t / 0.55);
+      r.m.scale.setScalar(1 + u * 2.6); r.m.material.opacity = 0.75 * (1 - u);
+      if (u >= 1) { this.root.remove(r.m); this.rings.splice(i, 1); }
     }
   }
 
@@ -219,7 +247,7 @@ export class ClinicStage {
   setActive(v) { this.root.visible = v; }
   update(dt) {
     for (const a of Object.values(this.actors)) if (a.root.visible) a.update(dt);
-    this.tickTiers(dt);
+    this.tickTiers(dt); this.tickPops(dt);
   }
   // clinic-local -> world
   toWorld(x, z) { return new THREE.Vector3(x + CLINIC.x, 0, z + CLINIC.z); }

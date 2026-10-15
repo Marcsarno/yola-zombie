@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { ClinicStage, CLINIC } from './stage.js';
 import { OpeningUI } from './ui.js';
 import { OpeningAudio } from './opaudio.js';
-import { NARRATION, UPGRADE_PREVIEW, OBJECTIVES, DIALOGUE, CARDS, EMERGENCY_LINES } from './content.js';
+import { TOUR, NARRATION, UPGRADE_PREVIEW, OBJECTIVES, DIALOGUE, CARDS, EMERGENCY_LINES } from './content.js';
 import { ROOM1 } from '../core/layout.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -34,13 +34,6 @@ const SHOTS = [
   { t0: 50, t1: 59.5, a: S(-6.6, 0.6, 0.9, 52, 30, 7.4), b: S(-6.5, 0.6, 0.85, 52, 30, 7.0) },
 ];
 
-const LINES = {
-  welcome: { t: 0.5, end: 11.8, text: NARRATION.welcome },
-  essentials: { t: 12.4, end: 24.8, text: NARRATION.essentials },
-  upgrades: { t: 25.3, end: 39.6, text: NARRATION.upgrades },
-  yola: { t: 40.4, end: 49.6, text: NARRATION.yola },
-  firstCase: { t: 50.5, end: 59.9, text: NARRATION.firstCase },
-};
 
 export class Opening {
   constructor(ctx) {
@@ -67,7 +60,9 @@ export class Opening {
   async preload(onProgress) {
     this.state = 'PRELOAD';
     await this.stage.build(); onProgress?.(0.6);
-    await this.stage.buildCast(); onProgress?.(0.9);
+    await this.stage.buildCast(); onProgress?.(0.8);
+    this.stage.onPop = () => { if (!this.silent) this.sound.pop?.(); };
+    this.narrLoaded = await this.sound.loadNarration(TOUR.audio); onProgress?.(0.9);
     this.stage.setActive(true);
     this.setupScene();
     this.resetTour();
@@ -112,34 +107,51 @@ export class Opening {
   // ------------------------------------------------------------------ the cue list
   buildCues() {
     const c = this.cues, at = (t, name, fn) => c.push({ t, name, fn });
-    const say = (k) => { const l = LINES[k]; at(l.t, 'say:' + k, () => { this.setSub(l.text); this.voice(l.text, l.end - l.t - 0.4); }); at(l.end, 'sub-off:' + k, () => this.setSub('')); };
-    const st = this.stage, A = st.actors;
-    // 0:00 reception
+    const st = this.stage, A = st.actors, K = TOUR.cues, P = TOUR.phrases;
+    // subtitles follow the phrases of the recording
+    for (const p of P) { at(p.t0, 'sub:' + p.id, () => this.setSub(p.text)); at(p.t1 + 0.25, 'subOff:' + p.id, () => { if (this.sub === p.text) this.setSub(''); }); }
+    // 1. "Welcome ... extraordinary."  Reception: the desk, the waiting area, clear routes in
     at(0.0, 'music', () => this.music());
-    at(0.2, 'title', () => this.ui.title('Yola’s Medical Center', 'Starter clinic'));
-    say('welcome');
-    at(10.2, 'title-off', () => this.ui.title(''));
-    // 0:12 treatment room (a soft dip through cream hides the cut)
-    at(11.55, 'dip-1', () => this.dip(0.45, 0.45));
-    at(12.0, 'cut-treatment', () => { this.showRoom('treatment'); });
-    say('essentials');
-    // 0:25 / 0:32 equipment previews
-    at(24.9, 'label-heading', () => this.ui.chip(UPGRADE_PREVIEW.heading));
-    at(25.0, 'tier-standard', () => { st.setTier('standard', 1.0); this.chime(0); this.tierLabel(UPGRADE_PREVIEW.tiers[0].label, UPGRADE_PREVIEW.tiers[0].name); });
-    say('upgrades');
-    at(32.0, 'tier-advanced', () => { st.setTier('advanced', 1.0); this.chime(1); this.tierLabel(UPGRADE_PREVIEW.tiers[1].label, UPGRADE_PREVIEW.tiers[1].name); });
-    at(39.0, 'tier-restore', () => { st.setTier('starter', 0.85); this.tierLabel(null); this.ui.chip(''); });
-    // 0:40 original Yola's awkward wave
-    say('yola');
-    at(42.2, 'wave', () => { A.yola.startWave(); });
-    at(47.1, 'wave-end', () => { A.yola.waveT = -1; A.yola.play('idle', { fade: 0.4 }); });
-    // 0:50 the first arrival at reception
-    at(49.55, 'dip-3', () => this.dip(0.45, 0.45));
-    at(50.0, 'cut-reception', () => { this.showRoom('arrival'); });
-    say('firstCase');
-    at(50.9, 'objective', () => { this.ui.objective(OBJECTIVES.chart); this.ui.reward('First case reward: $250'); });
-    // 1:00 hold
-    at(60.0, 'act2', () => { this.mode = 'co'; this.co = this.act2(); });
+    at(0.1, 'glide', () => this.camTo(S(-5.3, 0.9, -3.9, 49, 28, 8.4), 7.3));
+    at(0.15, 'title', () => this.ui.title('Yola’s Medical Center', 'Starter clinic'));
+    at(6.6, 'title-off', () => this.ui.title(''));
+    // 2. "Turn empty rooms into places of possibility."  an empty room, then quick placements of its furniture
+    at(K.furnishCut, 'dip-furnish', () => this.dip(0.22, 0.26));
+    at(K.furnishCut + 0.24, 'room-empty', () => { this.showRoom('empty'); this.camTo(S(4.0, 0.8, -2.2, 50, 30, 8.6), 0.01); });
+    at(K.furnishCut + 0.5, 'room-push', () => this.camTo(S(4.3, 0.8, -2.3, 49, 30, 7.9), 3.4));
+    for (let i = 0; i < 9; i++) at(K.furnishFrom + i * K.furnishStep, 'pop' + i, () => { const h = st.furnishList()[i]; if (h) st.popIn(h); });
+    // 3. staff at their stations -> a receptionist greeting someone -> Yola seated opposite a patient (previews)
+    at(K.teamCut, 'dip-team', () => this.dip(0.2, 0.22));
+    at(K.teamCut + 0.2, 'team', () => { this.showRoom('team'); this.camTo(S(5.7, 1.0, -3.7, 42, 26, 6.0), 0.01); this.camTo(S(5.8, 1.0, -3.7, 42, 26, 5.6), 2.2); });
+    at(K.receptionCut, 'dip-greet', () => this.dip(0.2, 0.22));
+    at(K.receptionCut + 0.2, 'greet', () => { this.showRoom('greet'); this.camTo(S(-5.4, 0.9, -3.2, 46, 26, 5.6), 0.01); });
+    at(K.seatedCut, 'dip-seated', () => this.dip(0.15, 0.2));
+    at(K.seatedCut + 0.18, 'seated', () => { this.showRoom('seated'); this.camTo(S(2.7, 0.9, 2.65, 32, 78, 4.3), 0.01); });
+    // 4. chart and decision-card previews, then the equipment
+    at(K.chartCut, 'dip-chart', () => this.dip(0.2, 0.25));
+    at(K.chartCut + 0.2, 'chart-room', () => { this.showRoom('room'); this.camTo(S(4.3, 0.9, -2.4, 46, 30, 7.2), 0.01); this.camTo(S(4.4, 0.9, -2.4, 46, 30, 6.8), 5.0); });
+    at(K.chartOn, 'chart-on', () => this.ui.preview('chart'));
+    at(K.chartOff, 'chart-off', () => this.ui.preview(null));
+    at(K.decisionOn, 'card-on', () => this.ui.preview('card'));
+    at(K.decisionOff, 'card-off', () => this.ui.preview(null));
+    at(K.equipmentCut, 'equipment', () => this.camTo(S(5.5, 1.1, -4.3, 34, 26, 4.6), 1.5));
+    // 5. the camera holds steady; the equipment changes to the middle tier, then the advanced tier (restrained chimes in the pauses)
+    at(K.holdCut, 'hold', () => { this.camTo(S(4.45, 0.8, -2.3, 49, 30, 7.6), 1.3); this.ui.chip(UPGRADE_PREVIEW.heading); });
+    at(K.midTier, 'tier-mid', () => { st.setTier('standard', 0.9); this.chime(0); this.tierLabel(UPGRADE_PREVIEW.tiers[0].label, UPGRADE_PREVIEW.tiers[0].name); });
+    at(K.advTier, 'tier-adv', () => { st.setTier('advanced', 0.9); this.chime(1); this.tierLabel(UPGRADE_PREVIEW.tiers[1].label, UPGRADE_PREVIEW.tiers[1].name); });
+    // 6. original Yola, her awkward wave on the final phrase; the starter hospital is restored behind the cut
+    at(K.restoreCut, 'dip-yola', () => this.dip(0.2, 0.22));
+    at(K.restoreCut + 0.22, 'yola', () => { this.restoreStarter(); this.showRoom('yola'); this.camTo(S(6.0, 1.2, -3.9, 30, 16, 3.0), 0.01); this.camTo(S(6.0, 1.22, -3.9, 30, 16, 2.7), 6.0); });
+    at(K.waveStart, 'wave', () => A.yola.startWave(2.2));
+    at(K.waveStart + 2.3, 'wave-end', () => { A.yola.waveT = -1; A.yola.play('idle', { fade: 0.2 }); });
+    // 7. the doors are open: the adult baseball player with his security guard, standing inside the entrance
+    at(K.arrivalCut, 'dip-arrival', () => this.dip(0.2, 0.3));
+    at(K.arrivalCut + 0.25, 'arrival', () => { this.showRoom('arrival'); this.camTo(S(-6.6, 0.6, 0.9, 52, 30, 7.4), 0.01); });
+    at(K.objective - 0.4, 'push', () => this.camTo(S(-6.5, 0.7, 0.85, 50, 30, 6.4), 3.6));
+    at(K.objective, 'objective', () => this.ui.objective(OBJECTIVES.chart));
+    // 8. "Let's get to work."  settle into the simulation camera and hand off to check-in
+    at(K.settle, 'settle', () => this.camTo(S(-6.0, 0.5, 0.0, 52, 30, 9.4), 1.2));
+    at(K.handoff, 'act2', () => { this.mode = 'co'; this.co = this.act2(); });
     c.sort((a, b) => a.t - b.t);
   }
 
@@ -155,13 +167,14 @@ export class Opening {
     st.tier = 'starter';
     for (const s of st.tiers) { s.fx = null; for (const [k, h] of Object.entries(s.layers || {})) { h.visible = k === 'starter'; st.setOpacity(h, 1); } }
     this.leaveOR(); this.alarmFx = null; this.ecg = null; this.tweens = []; this.tagPoints = null; this.urgencyTimer = 0; this.sound.alarmOff(); this.sound.flatlineOff(0.05);
+    st.clearPops(); st.setRoomEmpty(false); this.ui.preview(null); this.ui.letter(false);
     for (const a of Object.values(A)) { if (a.lying) a.unlie(); if (a.root.parent !== st.root) st.toClinic(a); a.adj = {}; a.stop(); a.timeScale = 1; a.setVisible(false); a.seated = false; }
     if (A.baseball.capSkin) A.baseball.capSkin.visible = true;
     this.ui.showEcg(false); this.ui.setVignette(0); this.ui.status(''); this.ui.urgency(null);
     this.animScale = 1; this.finalized = false; this.room1Preview = false; this.stillYola = false; this.poseAnim = null; this.restoreLook();
     // the receptionist sits at the desk (seat contract: the rig stands 0.45 m in front of the chair)
     A.staff.setVisible(true); A.staff.sitAt(-5.2, -5.5, 0, { instant: true });
-    A.yola.waveT = -1; A.yola.pose = null;
+    A.yola.waveT = -1; A.yola.waveRate = 1; A.yola.pose = null;
     A.yola.place(6.0, -3.9, 0.5); A.yola.play('idle', { fade: 0 });
     // the visitors wait outside the shot until the arrival
     const bb = A.baseball, sg = A.security;
@@ -173,12 +186,42 @@ export class Opening {
     this.ui.title(''); this.ui.objective(''); this.ui.reward(''); this.ui.chip(''); this.ui.clearTags(); this.ui.subtitle('');
     this.ui.setFade(0, 0); this.ui.setDark(0);
     this.rig = { ...SHOTS[0].a };
+    this.camAnim = null;
   }
 
   showRoom(which) {
-    const A = this.stage.actors;
-    if (which === 'treatment') { A.staff.setVisible(false); A.yola.setVisible(true); A.yola.play('idle', { fade: 0 }); }
-    if (which === 'arrival') { A.yola.setVisible(false); A.staff.setVisible(true); A.baseball.setVisible(true); A.security.setVisible(true); }
+    const st = this.stage, A = st.actors, an = st.anchors, hideAll = () => { for (const a of Object.values(A)) a.setVisible(false); };
+    const stations = () => { // staff at their stations in the treatment room
+      A.teamA.setVisible(true); A.teamA.place(6.9, -4.3, Math.PI); A.teamA.play('Work', { fade: 0 }) || A.teamA.play('Idle', { fade: 0 });
+      A.teamB.setVisible(true); A.teamB.place(4.6, -4.4, Math.PI); A.teamB.play('Work', { fade: 0 }) || A.teamB.play('Idle', { fade: 0 });
+    };
+    this.renderer.shadowMap.needsUpdate = true;
+    if (which === 'empty') { hideAll(); st.setRoomEmpty(true); }
+    if (which === 'team') { hideAll(); st.setRoomEmpty(false); stations(); }
+    if (which === 'greet') { // a receptionist greeting someone (a preview, not the first patient)
+      hideAll(); const rc = A.staff, w = A.waiting1;
+      rc.setVisible(true); rc.seat = null; rc.sitState = 'stand'; rc.seated = false; rc.place(-5.2, -5.4, 0); rc.play('Talk', { fade: 0 });
+      w.setVisible(true); w.place(-7.4, 0.9, Math.PI / 2); w.play('Idle', { fade: 0 }); w.walk([[-6.4, 0.9], [-5.6, -1.2], [-5.6, -3.6]], { endYaw: Math.PI });
+    }
+    if (which === 'seated') { // Yola seated opposite a patient (preview)
+      hideAll(); const yo = A.yola, pt = A.waiting2, c1 = an.chairYola, c2 = an.chairPatient;
+      yo.setVisible(true); yo.place(c1.x, c1.z, c1.yaw); yo.sitW = 1; yo.sitTarget = 1; yo.pose = 'sit'; yo.seated = true; yo.sitState = 'seated'; yo.sitSeatTop = c1.seatTop; yo.play('chart', { fade: 0 });
+      yo.model.position.y = yo.baseY - (yo.pelvisY0 - (c1.seatTop + 0.04));
+      pt.setVisible(true); pt.sitAt(c2.x, c2.z, c2.yaw, { instant: true });
+    }
+    if (which === 'room') { hideAll(); st.setRoomEmpty(false); stations(); }
+    if (which === 'yola') { hideAll(); A.yola.setVisible(true); A.yola.place(6.0, -3.9, 0.5); A.yola.play('idle', { fade: 0 }); }
+    if (which === 'arrival') { hideAll(); A.staff.setVisible(true); A.baseball.setVisible(true); A.security.setVisible(true); }
+  }
+  // the starter hospital state, exactly as play begins: equipment at starter tier, furnished, preview people gone,
+  // the receptionist seated at her desk
+  restoreStarter() {
+    const st = this.stage, A = st.actors;
+    st.setTier('starter', 0.01); st.tickTiers(1); st.setRoomEmpty(false);
+    this.tierLabel(null); this.ui.chip(''); this.ui.preview(null);
+    for (const k of ['teamA', 'teamB', 'waiting1', 'waiting2']) { A[k].stop(); A[k].setVisible(false); }
+    const yo = A.yola; yo.sitW = 0; yo.sitTarget = 0; yo.sitState = 'stand'; yo.seat = null; yo.pose = null; yo.model.position.y = yo.baseY; yo.seated = false;
+    const rc = A.staff; rc.stop(); rc.sitAt(-5.2, -5.5, 0, { instant: true }); rc.play('SeatedIdle', { fade: 0 });
   }
 
   // ------------------------------------------------------------------ camera
@@ -205,7 +248,7 @@ export class Opening {
   // ------------------------------------------------------------------ helpers (audio is skipped in seek mode)
   setSub(text) { this.sub = text; this.ui.subtitle(text); }
   voice(text, secs) { if (!this.silent) this.sound.say(text, secs); }
-  music() { if (!this.silent) this.sound.startMusic(0.5); }
+  music() { if (!this.silent) this.sound.startMusic(0.26); } // quiet, underneath the narration
   chime(step) { if (!this.silent) this.sound.chime(step); }
   dip(inS, outS) { // a soft dip through cream, driven by the story clock; reduced-flash keeps it gentler and slower
     if (this.silent) return;
@@ -236,7 +279,9 @@ export class Opening {
   }
   mark(name) { this.marks[name] = +this.t.toFixed(2); this.cueLog.push([this.marks[name], 'mark:' + name]); if (this.runLabel === name) this.frozen = true; }
   // camera: glide to a shot; follow = { actor, dx, dz } keeps its target on that actor
-  camTo(shot, secs = 1.2, follow = null) { this.camAnim = { from: { ...this.rig }, to: { ...shot }, t: 0, dur: Math.max(0.001, secs), follow }; }
+  camTo(shot, secs = 1.2, follow = null) {
+    if (secs <= 0.02) { this.rig = { ...shot }; this.camAnim = null; return; } // a cut: the rig jumps, so a glide queued right after starts from here
+    this.camAnim = { from: { ...this.rig }, to: { ...shot }, t: 0, dur: Math.max(0.001, secs), follow }; }
   tickCamera(d) {
     const a = this.camAnim; if (!a) return;
     a.t += d; const u = ease(a.t / a.dur), o = {};
@@ -334,8 +379,7 @@ export class Opening {
     yo.model.position.y = yo.baseY - (yo.pelvisY0 - (an.chairYola.seatTop + 0.04)); yo.play('chart', { fade: 0 });
     this.camTo(S(-6.3, 0.6, 0.8, 52, 30, 7.0), 0.01);
     // 1. arrival hold: the narrator line, then a cut to the receptionist's computer; the skinned bat is stowed during the cut
-    this.speak(DIALOGUE.star, 8.0, 1.1);
-    yield 2.4;
+    yield 1.3;
     this.dip(0.35, 0.35); yield 0.4;
     if (bat) bat.visible = false; // runtime logic: the bat cannot stay attached for walking or sitting
     this.camTo(S(-5.2, 1.05, -4.9, 30, 22, 3.3), 0.01); rc.turnTo(0.3);
@@ -661,6 +705,7 @@ export class Opening {
     this.started = true; this.state = 'TOUR';
     this.ui.gate.classList.remove('show');
     this.resetTour();
+    this.narrPlaying = this.sound.playNarration(); // false without audio permission: the subtitles run on the timestamps instead
   }
   setPaused(p) {
     if (!this.started || this.paused === p) return;
@@ -701,12 +746,14 @@ export class Opening {
     this.t += d;
     this.tickTimers(d);
     if (this.mode === 'cues') {
+      const np = this.silent ? null : this.sound.narrationPos(); // the recording is the clock while it plays
+      if (np !== null) this.t = Math.max(this.t - d, np);
       while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
     } else this.runCo(d);
     this.stage.update(da);
     if (this.stillYola) this.game().stillYola?.(da);
-    if (this.stage.tiers.some((s) => s.fx)) this.renderer.shadowMap.needsUpdate = true; // equipment fades change the shadows
-    if (this.poseAnim) this.tickPose(d); else if (this.mode === 'cues' && !this.camAnim) this.rig = this.shotAt(this.t); else this.tickCamera(d);
+    if (this.stage.tiers.some((s) => s.fx) || this.stage.pops.length) this.renderer.shadowMap.needsUpdate = true; // equipment fades and placements change the shadows
+    if (this.poseAnim) this.tickPose(d); else this.tickCamera(d);
     this.tickFx(d); this.tickAlarm(d); this.tickEcg(d); this.tickTweens(d);
     if (this.urgencyTimer > 0) { this.urgencyTimer -= d; this.ui.urgency(Math.max(0, this.urgencyTimer / 6)); }
     this.tagsFollow();

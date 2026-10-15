@@ -154,10 +154,10 @@ export class OriginalYola extends Actor {
     this.pelvisY0 = B.pelvis.getWorldPosition(new THREE.Vector3()).y - this.root.position.y;
     this.baseY = this.model.position.y; this.sitW = 0; this.sitTarget = 0; this.sitSeatTop = 0.5; this.sitDrop = 0;
   }
-  startWave() { this.waveT = 0; }
+  startWave(rate = 1) { this.waveT = 0; this.waveRate = rate; } // rate > 1: the same awkward wave, compressed to fit the phrase
   update(dt) {
     super.update(dt);
-    if (this.waveT >= 0) this.waveT += dt * this.timeScale;
+    if (this.waveT >= 0) this.waveT += dt * this.timeScale * (this.waveRate || 1);
     const sd = (dt * this.timeScale) / 0.7;
     this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
     this.applyProcedural();

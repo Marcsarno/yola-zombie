@@ -50033,12 +50033,14 @@ void main() {
       this.sitSeatTop = 0.5;
       this.sitDrop = 0;
     }
-    startWave() {
+    startWave(rate = 1) {
       this.waveT = 0;
+      this.waveRate = rate;
     }
+    // rate > 1: the same awkward wave, compressed to fit the phrase
     update(dt) {
       super.update(dt);
-      if (this.waveT >= 0) this.waveT += dt * this.timeScale;
+      if (this.waveT >= 0) this.waveT += dt * this.timeScale * (this.waveRate || 1);
       const sd = dt * this.timeScale / 0.7;
       this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
       this.applyProcedural();
@@ -50195,6 +50197,10 @@ void main() {
       this.tier = "starter";
       this.actors = {};
       this.anchors = {};
+      this.byName = {};
+      this.pops = [];
+      this.rings = [];
+      this.onPop = null;
     }
     gltf(url) {
       if (!this.cache.has(url)) this.cache.set(url, this.loader.loadAsync(url));
@@ -50229,6 +50235,7 @@ void main() {
         }
       });
       parent.add(holder);
+      if (name) this.byName[name] = holder;
       return holder;
     }
     box(w, h, d, x, y, z, color, { r = 0.04, shadow = true, rough = 0.8 } = {}) {
@@ -50297,10 +50304,10 @@ void main() {
       this.wall(0.2, 0.45, 0.6, Zs, 2.3, "glass");
       const R = "reception/";
       const tasks = [];
-      tasks.push(this.prop(M2 + "upgrades/01_reception/reception_T1_desk.glb", { x: -5.2, z: -4.7, rot: 0, name: "desk" }));
+      tasks.push(this.prop(M2 + "upgrades/01_reception/reception_T1_desk.glb", { x: -5.2, z: -4.7, rot: 180, name: "desk" }));
       tasks.push(this.prop(M2 + "upgrades/01_reception/reception_T1_chair.glb", { x: -5.2, z: -5.55, rot: 0 }));
       tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: -7.3, z: 3.4, rot: 180, name: "wchair1" }));
-      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: -6.2, z: 3.45, rot: 180, name: "wchair2" }));
+      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: -6.2, z: 3.45, rot: 0, name: "wchair2" }));
       tasks.push(this.prop(M2 + "furnishings/Lounge_Break_Chair.glb", { x: -5, z: 3.4, rot: 180, name: "wchair3" }));
       tasks.push(this.prop(M2 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.2, z: -5.3 }));
       tasks.push(this.prop(M2 + "decor/Reception_Water_Cooler.glb", { x: -3.4, z: -5.4 }));
@@ -50332,12 +50339,12 @@ void main() {
         h.visible = tier === "starter";
         this.setOpacity(h, 1);
       }));
-      tasks.push(this.prop(M2 + "upgrades/07_warmth_teamwork/TeamDesk_starter.glb", { x: 2.7, z: 2.6, rot: 0, name: "assessDesk" }));
-      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: 2.7, z: 1.5, rot: 0, name: "chairYola" }));
+      tasks.push(this.prop(M2 + "upgrades/07_warmth_teamwork/TeamDesk_starter.glb", { x: 2.7, z: 2.6, rot: 180, name: "assessDesk" }));
+      tasks.push(this.prop(M2 + "uploaded/staff-chair.glb", { x: 2.7, z: 1.5, rot: 180, name: "chairYola" }));
       tasks.push(this.prop(M2 + "uploaded/waiting-chair.glb", { x: 2.7, z: 3.85, rot: 180, name: "chairPatient" }));
-      tasks.push(this.prop(M2 + "utility/Utility_Supply_Shelf.glb", { x: 8.3, z: 1.4, rot: 270 }));
-      tasks.push(this.prop(M2 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 1.2, z: -5.2 }));
-      tasks.push(this.prop(M2 + "decor2/Clinical_Art_Heart.glb", { x: 2.2, y: 1.5, z: -5.88 }));
+      tasks.push(this.prop(M2 + "utility/Utility_Supply_Shelf.glb", { x: 8.3, z: 1.4, rot: 270, name: "shelf" }));
+      tasks.push(this.prop(M2 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 1.2, z: -5.2, name: "plantT" }));
+      tasks.push(this.prop(M2 + "decor2/Clinical_Art_Heart.glb", { x: 2.2, y: 1.5, z: -5.88, name: "artT" }));
       await Promise.all(tasks);
       Object.assign(this.anchors, {
         queue: { x: -5.9, z: -3.55 },
@@ -50394,6 +50401,64 @@ void main() {
           f.from.visible = false;
           this.setOpacity(f.to, 1);
           s.fx = null;
+        }
+      }
+    }
+    // ---- an empty room that gets furnished: quick, satisfying placements of the room's existing furniture ----
+    furnishList() {
+      const tier = (k) => this.tiers.find((t) => t.key === k)?.layers?.starter;
+      return [tier("table"), tier("workstation"), tier("monitor"), this.byName.assessDesk, this.byName.chairYola, this.byName.chairPatient, this.byName.shelf, this.byName.plantT, this.byName.artT].filter(Boolean);
+    }
+    setRoomEmpty(on) {
+      for (const h of this.furnishList()) {
+        h.visible = !on;
+        h.scale.setScalar(1);
+      }
+      this.clearPops();
+    }
+    clearPops() {
+      this.pops.length = 0;
+      for (const r of this.rings) this.root.remove(r.m);
+      this.rings.length = 0;
+      for (const h of this.furnishList()) h.scale.setScalar(1);
+    }
+    popIn(h, delay = 0) {
+      h.visible = false;
+      h.scale.setScalar(1e-3);
+      this.pops.push({ h, t: -delay, dur: 0.4, started: false });
+    }
+    tickPops(dt) {
+      for (let i = this.pops.length - 1; i >= 0; i--) {
+        const p = this.pops[i];
+        p.t += dt;
+        if (p.t < 0) continue;
+        if (!p.started) {
+          p.started = true;
+          p.h.visible = true;
+          this.onPop?.();
+          const m = new Mesh(new RingGeometry(0.28, 0.36, 40), new MeshBasicMaterial({ color: 16774089, transparent: true, opacity: 0.75, depthWrite: false }));
+          m.rotation.x = -Math.PI / 2;
+          m.position.set(p.h.position.x, 0.03, p.h.position.z);
+          m.renderOrder = 2;
+          this.root.add(m);
+          this.rings.push({ m, t: 0 });
+        }
+        const u = Math.min(1, p.t / p.dur), k = u < 1 ? 1 + Math.sin(u * Math.PI) * 0.13 * (1 - u) : 1;
+        p.h.scale.setScalar(Math.max(1e-3, k * Math.min(1, u * 1.25)));
+        if (u >= 1) {
+          p.h.scale.setScalar(1);
+          this.pops.splice(i, 1);
+        }
+      }
+      for (let i = this.rings.length - 1; i >= 0; i--) {
+        const r = this.rings[i];
+        r.t += dt;
+        const u = Math.min(1, r.t / 0.55);
+        r.m.scale.setScalar(1 + u * 2.6);
+        r.m.material.opacity = 0.75 * (1 - u);
+        if (u >= 1) {
+          this.root.remove(r.m);
+          this.rings.splice(i, 1);
         }
       }
     }
@@ -50471,6 +50536,7 @@ void main() {
     update(dt) {
       for (const a of Object.values(this.actors)) if (a.root.visible) a.update(dt);
       this.tickTiers(dt);
+      this.tickPops(dt);
     }
     // clinic-local -> world
     toWorld(x, z) {
@@ -50479,12 +50545,65 @@ void main() {
   };
 
   // src/opening/content.js
-  var NARRATION = {
-    welcome: "Welcome to Yola\u2019s Medical Center! Every great medical center starts somewhere\u2014and yours is ready for its very first patients.",
-    essentials: "You\u2019ll begin with the essentials. Prepare your patients, plan your schedule, and put Yola\u2019s anesthesia expertise to work.",
-    upgrades: "As your reputation grows, so will your budget! Invest in better equipment, faster preparation, and room for more patients.",
-    yola: "And the person making it all happen? Yola! Expert care. Excellent judgment. An enthusiastic approach to waving.",
-    firstCase: "Your first patient has arrived. Complete your first case to earn $250 toward your next upgrade!"
+  var TOUR = {
+    audio: "assets/opening/audio/narration.mp3",
+    duration: 47.07,
+    phrases: [
+      { id: "p1", t0: 0, t1: 2, text: "Welcome to Yola\u2019s Medical Center." },
+      { id: "p2", t0: 2.48, t1: 3.34, text: "Your hospital." },
+      { id: "p3", t0: 3.72, t1: 4.48, text: "Your team." },
+      { id: "p4", t0: 4.94, t1: 7.48, text: "Your chance to build something extraordinary." },
+      { id: "p5", t0: 8.04, t1: 11.02, text: "Turn empty rooms into places of possibility." },
+      { id: "p6", t0: 11.5, t1: 12.48, text: "Build your team." },
+      { id: "p7", t0: 12.94, t1: 15.2, text: "Put the right people in the right places." },
+      { id: "p8", t0: 15.56, t1: 17.52, text: "And bring your hospital to life." },
+      { id: "p9", t0: 18.12, t1: 20.18, text: "Every patient brings a new challenge." },
+      { id: "p10", t0: 20.58, t1: 21.52, text: "Review their chart." },
+      { id: "p11", t0: 21.9, t1: 23, text: "Prepare your equipment." },
+      { id: "p12", t0: 23.36, t1: 26.06, text: "And put your anesthesia expertise to the test." },
+      { id: "p13", t0: 26.52, t1: 28.72, text: "Great care helps your hospital grow." },
+      { id: "p14", t0: 29.2, t1: 30.36, text: "Upgrade your equipment." },
+      { id: "p15", t0: 30.7, t1: 32.28, text: "Expand your possibilities." },
+      { id: "p16", t0: 32.62, t1: 34.74, text: "And get ready for a busier tomorrow." },
+      { id: "p17", t0: 35.24, t1: 36.06, text: "And leading it all?" },
+      { id: "p18", t0: 36.56, t1: 37.02, text: "Yola." },
+      { id: "p19", t0: 37.52, t1: 38.58, text: "Calm under pressure." },
+      { id: "p20", t0: 38.92, t1: 40.22, text: "Ready for anything." },
+      { id: "p21", t0: 40.68, t1: 42.02, text: "Still working on the wave." },
+      { id: "p22", t0: 42.6, t1: 43.52, text: "The doors are open." },
+      { id: "p23", t0: 43.9, t1: 45.54, text: "Your first patient is waiting." },
+      { id: "p24", t0: 46, t1: 46.84, text: "Let\u2019s get to work." }
+    ],
+    // shot triggers (seconds): each sits inside a pause in the voice so no cut or effect covers a word
+    cues: {
+      furnishCut: 7.55,
+      // reception -> the empty treatment room
+      furnishFrom: 8.2,
+      furnishStep: 0.3,
+      // quick, satisfying placements across the sentence
+      teamCut: 11.08,
+      receptionCut: 12.5,
+      seatedCut: 15.22,
+      // staff at stations -> receptionist greeting -> Yola seated opposite a patient
+      chartCut: 17.56,
+      chartOn: 18.9,
+      chartOff: 21.6,
+      decisionOn: 21.95,
+      decisionOff: 23.2,
+      equipmentCut: 23.4,
+      holdCut: 26.1,
+      midTier: 29,
+      advTier: 30.4,
+      restoreCut: 34.85,
+      // equipment previews: steady camera, chimes in the pauses
+      yolaCut: 35,
+      waveStart: 40.7,
+      // original Yola; her awkward wave on the final phrase
+      arrivalCut: 42.1,
+      objective: 43.9,
+      settle: 46,
+      handoff: 47.1
+    }
   };
   var UPGRADE_PREVIEW = {
     heading: "Future upgrades",
@@ -50559,6 +50678,14 @@ void main() {
 #op .urgency { position: absolute; top: calc(150px + env(safe-area-inset-top, 0px)); left: 50%; width: min(60vw, 260px); height: 8px; transform: translateX(-50%); border-radius: 6px; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .4s; overflow: hidden; }
 #op .urgency.show { opacity: 1; }
 #op .urgency i { display: block; height: 100%; width: 100%; background: #ff8a7a; }
+#op .prev { position: absolute; left: 50%; bottom: calc(24vh + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 10px) scale(.96); width: min(70vw, 280px); opacity: 0; transition: opacity .3s ease, transform .3s ease; }
+#op .prev.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+#op .prev .sheet { background: #fff8ea; color: #20474a; border-radius: 14px; padding: 12px 14px 14px; box-shadow: 0 10px 28px rgba(0,0,0,.32); }
+#op .prev h4 { margin: 0 0 8px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; display: flex; justify-content: space-between; }
+#op .prev h4 em { font-style: normal; color: #e07a5f; }
+#op .prev .bar { height: 9px; border-radius: 5px; background: #cfe3df; margin: 7px 0; }
+#op .prev .bar.s { width: 62%; } #op .prev .bar.m { width: 82%; }
+#op .prev .opt { height: 28px; border-radius: 9px; border: 2px solid #bfe0dc; background: #fff; margin: 6px 0; padding: 4px 10px; font-weight: 700; font-size: 13px; }
 #op .tag { position: absolute; transform: translate(-50%, -100%); background: rgba(255, 248, 234, .96); color: #20474a; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 13.5px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.28); opacity: 0; transition: opacity .35s ease, margin-top .35s ease; margin-top: 8px; text-align: center; }
 #op .tag small { display: block; font-weight: 700; color: #e07a5f; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; }
 #op .tag.show { opacity: 1; margin-top: 0; }
@@ -50596,7 +50723,7 @@ void main() {
       <div class="fade"></div><div class="bars"></div><div class="vig"></div><div class="dark"></div>
       <canvas class="ecg" width="600" height="120"></canvas>
       <div class="title"><h1></h1><p></p></div>
-      <div class="chip"><div></div></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
+      <div class="chip"><div></div></div><div class="prev"></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
       <div class="sub"><span></span></div>
       <div class="card" role="dialog" aria-live="polite"></div>
       <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip \u25B8\u25B8</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">\u266A</button></div>
@@ -50612,6 +50739,7 @@ void main() {
       this.objEl = q(".obj");
       this.rewardEl = q(".reward");
       this.chipEl = q(".chip");
+      this.prevEl = q(".prev");
       this.statusEl = q(".status");
       this.urgEl = q(".urgency");
       this.cardEl = q(".card");
@@ -50641,6 +50769,16 @@ void main() {
     chip(text) {
       this.chipEl.querySelector("div").textContent = text || "";
       this.chipEl.classList.toggle("show", !!text);
+    }
+    // brief tour previews (no clinical content: grey placeholder lines and generic option labels)
+    preview(kind) {
+      const el = this.prevEl;
+      if (!kind) {
+        el.classList.remove("show");
+        return;
+      }
+      el.innerHTML = kind === "chart" ? '<div class="sheet"><h4>Patient chart <em>Preview</em></h4><div class="bar m"></div><div class="bar"></div><div class="bar s"></div><div class="bar m"></div><div class="bar s"></div></div>' : '<div class="sheet"><h4>Decision card <em>Preview</em></h4><div class="opt">Option A</div><div class="opt">Option B</div><div class="opt">Option C</div></div>';
+      requestAnimationFrame(() => el.classList.add("show"));
     }
     status(text, alert = false) {
       this.statusEl.querySelector("div").textContent = text || "";
@@ -50871,6 +51009,60 @@ void main() {
         if (this.voice.ok) p ? speechSynthesis.pause() : speechSynthesis.resume();
       } catch {
       }
+    }
+    // ---- the narration recording: decoded up front; its playback position is the tour's shot clock ----
+    async loadNarration(url) {
+      try {
+        const data = await (await fetch(url)).arrayBuffer();
+        const oc = new OfflineAudioContext(1, 44100, 44100);
+        this.narr = { buf: await oc.decodeAudioData(data), src: null, t0: 0, playing: false };
+        return true;
+      } catch {
+        this.narr = null;
+        return false;
+      }
+    }
+    get hasNarration() {
+      return !!this.narr;
+    }
+    playNarration() {
+      if (!this.narr || !this.ready || this.ctx.state !== "running") return false;
+      this.stopNarration();
+      const c = this.ctx, src = c.createBufferSource();
+      src.buffer = this.narr.buf;
+      const g = c.createGain();
+      g.gain.value = 1;
+      src.connect(g);
+      g.connect(this.audio.master);
+      this.narr.t0 = c.currentTime + 0.05;
+      src.start(this.narr.t0);
+      this.narr.src = src;
+      this.narr.playing = true;
+      src.onended = () => {
+        if (this.narr) this.narr.playing = false;
+      };
+      return true;
+    }
+    // seconds into the recording while it plays (null otherwise); frozen while the context is suspended (background)
+    narrationPos() {
+      const n = this.narr;
+      if (!n || !n.playing || !this.ctx) return null;
+      return Math.max(0, this.ctx.currentTime - n.t0);
+    }
+    stopNarration() {
+      const n = this.narr;
+      if (!n) return;
+      try {
+        n.src?.stop();
+      } catch {
+      }
+      n.src = null;
+      n.playing = false;
+    }
+    pop() {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 5e-3;
+      this.audio.tone(t, 0.12, 520, { type: "sine", gain: 0.05, f2: 760, attack: 4e-3 });
     }
     // ---- music ----
     startMusic(vol = 0.5) {
@@ -51126,6 +51318,7 @@ void main() {
       this.stopMusic(0.2);
       this.stopAmbience();
       this.stopVoice();
+      this.stopNarration();
       this.alarmOff();
       this.flatlineOff(0.1);
     }
@@ -51154,13 +51347,6 @@ void main() {
     // 0:50-1:00 back to the familiar simulation-height reception view: the entrance, the aisle and the desk
     { t0: 50, t1: 59.5, a: S(-6.6, 0.6, 0.9, 52, 30, 7.4), b: S(-6.5, 0.6, 0.85, 52, 30, 7) }
   ];
-  var LINES = {
-    welcome: { t: 0.5, end: 11.8, text: NARRATION.welcome },
-    essentials: { t: 12.4, end: 24.8, text: NARRATION.essentials },
-    upgrades: { t: 25.3, end: 39.6, text: NARRATION.upgrades },
-    yola: { t: 40.4, end: 49.6, text: NARRATION.yola },
-    firstCase: { t: 50.5, end: 59.9, text: NARRATION.firstCase }
-  };
   var Opening = class {
     constructor(ctx) {
       Object.assign(this, ctx);
@@ -51210,6 +51396,11 @@ void main() {
       await this.stage.build();
       onProgress?.(0.6);
       await this.stage.buildCast();
+      onProgress?.(0.8);
+      this.stage.onPop = () => {
+        if (!this.silent) this.sound.pop?.();
+      };
+      this.narrLoaded = await this.sound.loadNarration(TOUR.audio);
       onProgress?.(0.9);
       this.stage.setActive(true);
       this.setupScene();
@@ -51262,59 +51453,89 @@ void main() {
     // ------------------------------------------------------------------ the cue list
     buildCues() {
       const c = this.cues, at = (t, name, fn) => c.push({ t, name, fn });
-      const say = (k) => {
-        const l = LINES[k];
-        at(l.t, "say:" + k, () => {
-          this.setSub(l.text);
-          this.voice(l.text, l.end - l.t - 0.4);
+      const st = this.stage, A = st.actors, K = TOUR.cues, P = TOUR.phrases;
+      for (const p of P) {
+        at(p.t0, "sub:" + p.id, () => this.setSub(p.text));
+        at(p.t1 + 0.25, "subOff:" + p.id, () => {
+          if (this.sub === p.text) this.setSub("");
         });
-        at(l.end, "sub-off:" + k, () => this.setSub(""));
-      };
-      const st = this.stage, A = st.actors;
+      }
       at(0, "music", () => this.music());
-      at(0.2, "title", () => this.ui.title("Yola\u2019s Medical Center", "Starter clinic"));
-      say("welcome");
-      at(10.2, "title-off", () => this.ui.title(""));
-      at(11.55, "dip-1", () => this.dip(0.45, 0.45));
-      at(12, "cut-treatment", () => {
-        this.showRoom("treatment");
+      at(0.1, "glide", () => this.camTo(S(-5.3, 0.9, -3.9, 49, 28, 8.4), 7.3));
+      at(0.15, "title", () => this.ui.title("Yola\u2019s Medical Center", "Starter clinic"));
+      at(6.6, "title-off", () => this.ui.title(""));
+      at(K.furnishCut, "dip-furnish", () => this.dip(0.22, 0.26));
+      at(K.furnishCut + 0.24, "room-empty", () => {
+        this.showRoom("empty");
+        this.camTo(S(4, 0.8, -2.2, 50, 30, 8.6), 0.01);
       });
-      say("essentials");
-      at(24.9, "label-heading", () => this.ui.chip(UPGRADE_PREVIEW.heading));
-      at(25, "tier-standard", () => {
-        st.setTier("standard", 1);
+      at(K.furnishCut + 0.5, "room-push", () => this.camTo(S(4.3, 0.8, -2.3, 49, 30, 7.9), 3.4));
+      for (let i = 0; i < 9; i++) at(K.furnishFrom + i * K.furnishStep, "pop" + i, () => {
+        const h = st.furnishList()[i];
+        if (h) st.popIn(h);
+      });
+      at(K.teamCut, "dip-team", () => this.dip(0.2, 0.22));
+      at(K.teamCut + 0.2, "team", () => {
+        this.showRoom("team");
+        this.camTo(S(5.7, 1, -3.7, 42, 26, 6), 0.01);
+        this.camTo(S(5.8, 1, -3.7, 42, 26, 5.6), 2.2);
+      });
+      at(K.receptionCut, "dip-greet", () => this.dip(0.2, 0.22));
+      at(K.receptionCut + 0.2, "greet", () => {
+        this.showRoom("greet");
+        this.camTo(S(-5.4, 0.9, -3.2, 46, 26, 5.6), 0.01);
+      });
+      at(K.seatedCut, "dip-seated", () => this.dip(0.15, 0.2));
+      at(K.seatedCut + 0.18, "seated", () => {
+        this.showRoom("seated");
+        this.camTo(S(2.7, 0.9, 2.65, 32, 78, 4.3), 0.01);
+      });
+      at(K.chartCut, "dip-chart", () => this.dip(0.2, 0.25));
+      at(K.chartCut + 0.2, "chart-room", () => {
+        this.showRoom("room");
+        this.camTo(S(4.3, 0.9, -2.4, 46, 30, 7.2), 0.01);
+        this.camTo(S(4.4, 0.9, -2.4, 46, 30, 6.8), 5);
+      });
+      at(K.chartOn, "chart-on", () => this.ui.preview("chart"));
+      at(K.chartOff, "chart-off", () => this.ui.preview(null));
+      at(K.decisionOn, "card-on", () => this.ui.preview("card"));
+      at(K.decisionOff, "card-off", () => this.ui.preview(null));
+      at(K.equipmentCut, "equipment", () => this.camTo(S(5.5, 1.1, -4.3, 34, 26, 4.6), 1.5));
+      at(K.holdCut, "hold", () => {
+        this.camTo(S(4.45, 0.8, -2.3, 49, 30, 7.6), 1.3);
+        this.ui.chip(UPGRADE_PREVIEW.heading);
+      });
+      at(K.midTier, "tier-mid", () => {
+        st.setTier("standard", 0.9);
         this.chime(0);
         this.tierLabel(UPGRADE_PREVIEW.tiers[0].label, UPGRADE_PREVIEW.tiers[0].name);
       });
-      say("upgrades");
-      at(32, "tier-advanced", () => {
-        st.setTier("advanced", 1);
+      at(K.advTier, "tier-adv", () => {
+        st.setTier("advanced", 0.9);
         this.chime(1);
         this.tierLabel(UPGRADE_PREVIEW.tiers[1].label, UPGRADE_PREVIEW.tiers[1].name);
       });
-      at(39, "tier-restore", () => {
-        st.setTier("starter", 0.85);
-        this.tierLabel(null);
-        this.ui.chip("");
+      at(K.restoreCut, "dip-yola", () => this.dip(0.2, 0.22));
+      at(K.restoreCut + 0.22, "yola", () => {
+        this.restoreStarter();
+        this.showRoom("yola");
+        this.camTo(S(6, 1.2, -3.9, 30, 16, 3), 0.01);
+        this.camTo(S(6, 1.22, -3.9, 30, 16, 2.7), 6);
       });
-      say("yola");
-      at(42.2, "wave", () => {
-        A.yola.startWave();
-      });
-      at(47.1, "wave-end", () => {
+      at(K.waveStart, "wave", () => A.yola.startWave(2.2));
+      at(K.waveStart + 2.3, "wave-end", () => {
         A.yola.waveT = -1;
-        A.yola.play("idle", { fade: 0.4 });
+        A.yola.play("idle", { fade: 0.2 });
       });
-      at(49.55, "dip-3", () => this.dip(0.45, 0.45));
-      at(50, "cut-reception", () => {
+      at(K.arrivalCut, "dip-arrival", () => this.dip(0.2, 0.3));
+      at(K.arrivalCut + 0.25, "arrival", () => {
         this.showRoom("arrival");
+        this.camTo(S(-6.6, 0.6, 0.9, 52, 30, 7.4), 0.01);
       });
-      say("firstCase");
-      at(50.9, "objective", () => {
-        this.ui.objective(OBJECTIVES.chart);
-        this.ui.reward("First case reward: $250");
-      });
-      at(60, "act2", () => {
+      at(K.objective - 0.4, "push", () => this.camTo(S(-6.5, 0.7, 0.85, 50, 30, 6.4), 3.6));
+      at(K.objective, "objective", () => this.ui.objective(OBJECTIVES.chart));
+      at(K.settle, "settle", () => this.camTo(S(-6, 0.5, 0, 52, 30, 9.4), 1.2));
+      at(K.handoff, "act2", () => {
         this.mode = "co";
         this.co = this.act2();
       });
@@ -51360,6 +51581,10 @@ void main() {
       this.urgencyTimer = 0;
       this.sound.alarmOff();
       this.sound.flatlineOff(0.05);
+      st.clearPops();
+      st.setRoomEmpty(false);
+      this.ui.preview(null);
+      this.ui.letter(false);
       for (const a of Object.values(A)) {
         if (a.lying) a.unlie();
         if (a.root.parent !== st.root) st.toClinic(a);
@@ -51383,6 +51608,7 @@ void main() {
       A.staff.setVisible(true);
       A.staff.sitAt(-5.2, -5.5, 0, { instant: true });
       A.yola.waveT = -1;
+      A.yola.waveRate = 1;
       A.yola.pose = null;
       A.yola.place(6, -3.9, 0.5);
       A.yola.play("idle", { fade: 0 });
@@ -51411,20 +51637,104 @@ void main() {
       this.ui.setFade(0, 0);
       this.ui.setDark(0);
       this.rig = { ...SHOTS[0].a };
+      this.camAnim = null;
     }
     showRoom(which) {
-      const A = this.stage.actors;
-      if (which === "treatment") {
-        A.staff.setVisible(false);
+      const st = this.stage, A = st.actors, an = st.anchors, hideAll = () => {
+        for (const a of Object.values(A)) a.setVisible(false);
+      };
+      const stations = () => {
+        A.teamA.setVisible(true);
+        A.teamA.place(6.9, -4.3, Math.PI);
+        A.teamA.play("Work", { fade: 0 }) || A.teamA.play("Idle", { fade: 0 });
+        A.teamB.setVisible(true);
+        A.teamB.place(4.6, -4.4, Math.PI);
+        A.teamB.play("Work", { fade: 0 }) || A.teamB.play("Idle", { fade: 0 });
+      };
+      this.renderer.shadowMap.needsUpdate = true;
+      if (which === "empty") {
+        hideAll();
+        st.setRoomEmpty(true);
+      }
+      if (which === "team") {
+        hideAll();
+        st.setRoomEmpty(false);
+        stations();
+      }
+      if (which === "greet") {
+        hideAll();
+        const rc = A.staff, w = A.waiting1;
+        rc.setVisible(true);
+        rc.seat = null;
+        rc.sitState = "stand";
+        rc.seated = false;
+        rc.place(-5.2, -5.4, 0);
+        rc.play("Talk", { fade: 0 });
+        w.setVisible(true);
+        w.place(-7.4, 0.9, Math.PI / 2);
+        w.play("Idle", { fade: 0 });
+        w.walk([[-6.4, 0.9], [-5.6, -1.2], [-5.6, -3.6]], { endYaw: Math.PI });
+      }
+      if (which === "seated") {
+        hideAll();
+        const yo = A.yola, pt = A.waiting2, c1 = an.chairYola, c2 = an.chairPatient;
+        yo.setVisible(true);
+        yo.place(c1.x, c1.z, c1.yaw);
+        yo.sitW = 1;
+        yo.sitTarget = 1;
+        yo.pose = "sit";
+        yo.seated = true;
+        yo.sitState = "seated";
+        yo.sitSeatTop = c1.seatTop;
+        yo.play("chart", { fade: 0 });
+        yo.model.position.y = yo.baseY - (yo.pelvisY0 - (c1.seatTop + 0.04));
+        pt.setVisible(true);
+        pt.sitAt(c2.x, c2.z, c2.yaw, { instant: true });
+      }
+      if (which === "room") {
+        hideAll();
+        st.setRoomEmpty(false);
+        stations();
+      }
+      if (which === "yola") {
+        hideAll();
         A.yola.setVisible(true);
+        A.yola.place(6, -3.9, 0.5);
         A.yola.play("idle", { fade: 0 });
       }
       if (which === "arrival") {
-        A.yola.setVisible(false);
+        hideAll();
         A.staff.setVisible(true);
         A.baseball.setVisible(true);
         A.security.setVisible(true);
       }
+    }
+    // the starter hospital state, exactly as play begins: equipment at starter tier, furnished, preview people gone,
+    // the receptionist seated at her desk
+    restoreStarter() {
+      const st = this.stage, A = st.actors;
+      st.setTier("starter", 0.01);
+      st.tickTiers(1);
+      st.setRoomEmpty(false);
+      this.tierLabel(null);
+      this.ui.chip("");
+      this.ui.preview(null);
+      for (const k of ["teamA", "teamB", "waiting1", "waiting2"]) {
+        A[k].stop();
+        A[k].setVisible(false);
+      }
+      const yo = A.yola;
+      yo.sitW = 0;
+      yo.sitTarget = 0;
+      yo.sitState = "stand";
+      yo.seat = null;
+      yo.pose = null;
+      yo.model.position.y = yo.baseY;
+      yo.seated = false;
+      const rc = A.staff;
+      rc.stop();
+      rc.sitAt(-5.2, -5.5, 0, { instant: true });
+      rc.play("SeatedIdle", { fade: 0 });
     }
     // ------------------------------------------------------------------ camera
     shotAt(t) {
@@ -51456,8 +51766,9 @@ void main() {
       if (!this.silent) this.sound.say(text, secs);
     }
     music() {
-      if (!this.silent) this.sound.startMusic(0.5);
+      if (!this.silent) this.sound.startMusic(0.26);
     }
+    // quiet, underneath the narration
     chime(step) {
       if (!this.silent) this.sound.chime(step);
     }
@@ -51520,6 +51831,11 @@ void main() {
     }
     // camera: glide to a shot; follow = { actor, dx, dz } keeps its target on that actor
     camTo(shot2, secs = 1.2, follow = null) {
+      if (secs <= 0.02) {
+        this.rig = { ...shot2 };
+        this.camAnim = null;
+        return;
+      }
       this.camAnim = { from: { ...this.rig }, to: { ...shot2 }, t: 0, dur: Math.max(1e-3, secs), follow };
     }
     tickCamera(d) {
@@ -51696,8 +52012,7 @@ void main() {
       yo.model.position.y = yo.baseY - (yo.pelvisY0 - (an.chairYola.seatTop + 0.04));
       yo.play("chart", { fade: 0 });
       this.camTo(S(-6.3, 0.6, 0.8, 52, 30, 7), 0.01);
-      this.speak(DIALOGUE.star, 8, 1.1);
-      yield 2.4;
+      yield 1.3;
       this.dip(0.35, 0.35);
       yield 0.4;
       if (bat) bat.visible = false;
@@ -52201,6 +52516,7 @@ void main() {
       this.state = "TOUR";
       this.ui.gate.classList.remove("show");
       this.resetTour();
+      this.narrPlaying = this.sound.playNarration();
     }
     setPaused(p) {
       if (!this.started || this.paused === p) return;
@@ -52263,13 +52579,14 @@ void main() {
       this.t += d;
       this.tickTimers(d);
       if (this.mode === "cues") {
+        const np = this.silent ? null : this.sound.narrationPos();
+        if (np !== null) this.t = Math.max(this.t - d, np);
         while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
       } else this.runCo(d);
       this.stage.update(da);
       if (this.stillYola) this.game().stillYola?.(da);
-      if (this.stage.tiers.some((s) => s.fx)) this.renderer.shadowMap.needsUpdate = true;
+      if (this.stage.tiers.some((s) => s.fx) || this.stage.pops.length) this.renderer.shadowMap.needsUpdate = true;
       if (this.poseAnim) this.tickPose(d);
-      else if (this.mode === "cues" && !this.camAnim) this.rig = this.shotAt(this.t);
       else this.tickCamera(d);
       this.tickFx(d);
       this.tickAlarm(d);

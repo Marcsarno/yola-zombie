@@ -102,3 +102,18 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   * Also this round: unarmed fists (jab/cross/kick from Yola's Tripo clips; loadouts via Player.setLoadout), left-hand IK
     palm fix, greet_01/greet_04 baked into yola.glb (greet_01 is the improved Yola's smooth wave candidate).
   * Next: Prompt 2 (check-in, seated assessment, dev placeholder card), 3 (OR choices, flatline), 4 (reveal, Room 1).
+  * (later in round 6) Opening prompts 2-4 + the re-cut tour, branch `opening-reveal` (see git log):
+    - Tour re-cut to the supplied ElevenLabs narration (assets/opening/audio/narration.mp3, 47.07 s). Editable timestamps and shot
+      triggers: src/opening/content.js (TOUR). The recording's playback position is the shot clock; without audio permission the
+      same timestamps drive subtitles (fallback). Sequence: reception glide -> empty room furnished (popIn + floor rings) ->
+      staff at stations / receptionist greeting / Yola seated opposite a patient (previews) -> chart + decision-card previews ->
+      equipment -> tiers (hold) -> original Yola's awkward wave on "Still working on the wave" -> arrival -> settle.
+    - Acts after the tour live in src/opening/opening.js: act2 (check-in, seated assessment, dev placeholder card), act3 (OR
+      choices, alert, flatline, motion, scream), act4 (reveal at ROOM1.player anchor, smooth wave = t_greet_04, return to the
+      game camera) and finalize() = the ONE canonical Room 1 snapshot (normal, skip, replay, ?room1=1).
+    - Room 1 (core/layout.js ROOM1, sim.setupRoom1): fists only, 3 dormant zombies (wake 2/5/8 s), exit via the NW doorway to
+      the new Supply Hall (belongings table: bat + cap; picking up the bat gives the BAT weapon), objective chain in sim.updateFlow.
+    - Dev URLs: ?intro=1[&auto=1], ?reveal=1 (replay from "Get Yola"), ?room1=1 (direct canonical snapshot). Test hooks:
+      opening.seek(t), opening.runTo(label), opening.skip(), opening.replay(), opening.report().
+    - Asset orientation facts used: staff-chair front is -Z; waiting/break/reception chairs front +Z; reception and team desks
+      have the operator on +Z (rotated 180 here so the screen faces the person behind the desk).
