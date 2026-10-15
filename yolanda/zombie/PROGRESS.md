@@ -229,3 +229,53 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
        - Then the checker and the grip sheets, then the game.
     3. Then the axe through the same process.
   * Uncommitted-then-committed: round 11 changes (rejected look) and round 12 tools are in separate commits.
+- 2026-10-15 (round 13): the video-tracked bat combo was DROPPED; moves now come from free animation libraries, and the
+  user picks them in a new Move Library page.
+  * Why the video path was dropped:
+    - The two reference cameras face each other (clip 13 behind her, clip 1 in front, ~150-180 deg apart) and both
+      orbit, so depth was unobservable. The solve flattened her hands into her torso.
+    - A re-solve with the real camera angle plus hand priors fixed the depth (tools/track/solvecheck.py), but the
+      MediaPipe skeleton on the faceless mannequin is wrong in places, and the user called it.
+    - The work is kept: tools/track/{hands_on_bat,solve2combo,dummy2d,solvecheck}.py and the solve3d.py options
+      (yaw_init, init_from, hands, w_hands, w_front). The user marked the finisher frames in batfix.html (now with
+      clip 13's close camera and clip 1 up to 310).
+  * Libraries downloaded (raw files OUTSIDE the repo, in the session scratchpad; the zips are in ~/Downloads):
+    - Quaternius Universal Animation Library 1 + 2, Standard editions (CC0).
+    - Kevin Iglesias Human Melee FREE + Human Soldier FREE (royalty-free in games; raw files may not be redistributed).
+    - KayKit Character Animations 1.1 (CC0).
+    - Mixamo's export queue was stuck all afternoon; its 7 requested clips never arrived.
+  * New tools (tools/anim):
+    - import_lib.py retargets any of these rigs (ue / kevin / kaykit / mixamo bone maps) onto Yola. blender/retarget.py
+      now carries target bones the source lacks.
+    - assemble.py joins retimed pieces with cross-fades.
+    - export_lib.py writes assets/moves/yola_moves.glb (97 clips on Yola) and catalog.json (source, licence, weapon group).
+  * Hold toolkit (tools/hold):
+    - weaponpath.py: the weapon path from a clip's own two hands.
+    - holdfit.py 'action' mode, plus:
+      - per-hand grip direction with costly regrips (fingers open around them);
+      - reversed grip only inside HOLD_REVERSE_OK spans;
+      - clavicles capped at 18 deg;
+      - weapon pushed forward out of her deep torso;
+      - wider arm-vs-body test.
+    - holdlib:
+      - wrist flex/deviation are measured in the twisted forearm frame;
+      - per-side forearm-twist limits are measured from 4440 frames of real mocap (L -150..60, R -60..140);
+      - helper refactor: body_sets / inside.
+    - export_rig.py writes assets/hold/yola_rig.json.
+  * The library-built bat combo (recordings/bat_combo_library_v4.mp4) was superseded the same day. The user prefers the
+    Quaternius combos (Sword Heavy Combo, Sword Regular Combo) as-is for the bat and sledgehammer, so its cleanup was
+    frozen.
+  * New weapons from the user's Renovation pack: assets/weapons/{sledgehammer,crowbar,chainsaw}.glb.
+    - assets/moves/weapons.json holds grip frames for all 8 weapons, measured from the models.
+    - weapons_hold.json has hold sheets for the new three.
+    - Check image: recordings/weapons_check.png.
+  * Move Library (moves.html, src/moves.js, dist/moves.js; http://localhost:5173/zombie/moves.html):
+    - Yola plays every library move, grouped by weapon, with any of the 8 weapons in either hand
+      (roll/slide/flip/closed fists, speed).
+    - "Use in game" panel:
+      - verdict good / maybe / no;
+      - any number of weapon uses, each with a reason and the viewer settings;
+      - an overview of weapons with no attack or several attacks.
+    - Saved to shots/move_selection.json (git-ignored: copy it into the repo when the selection should be kept).
+  * NEXT: the user sorts the moves. Then each chosen attack goes through the hold fit for its weapon (grip sheets + 1x
+    video) before it goes into the game.

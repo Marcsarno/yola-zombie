@@ -123,6 +123,12 @@ for v, yd in cands[:6]:
     if nf > 0.2 and best is None: best = (yd, X0, ok0)
 if best is None: yd = cands[0][1]; X0, ok0 = init_for(math.radians(yd)); best = (yd, X0, ok0)
 yaw0, X0, ok0 = best
+if C.get('yaw_init') is not None and C.get('init_from'):
+    # the cameras' real angle (e.g. from MediaPipe's per-view body yaw): near-opposite cameras can't be found by the search,
+    # which prefers a mid angle; points start from a previous solve (right in each image, depth to be re-solved)
+    yaw0 = C['yaw_init']; prev = json.load(open(C['init_from']))['frames']; pa = {r['a']: np.array(r['X']) for r in prev}
+    X0 = np.array([pa[a] for a in frames]); ok0 = np.ones((T, NP), bool)
+    X0[:, :, 2] *= C.get('init_depth_scale', 1.0)
 print('initial yaw of camera B:', yaw0)
 # fill missing initial points by interpolation over time (per point, per axis)
 for j in range(NP):
@@ -145,6 +151,12 @@ for i in range(T):  # B scale from the init fit
 G0 = p0[T * PF:]
 for k, (a_, b_) in enumerate(BONES): G0[k] = np.median(np.linalg.norm(X0[:, a_] - X0[:, b_], axis=1))
 G0[-1] = np.median(np.linalg.norm(X0[:, TIP] - X0[:, KNOB], axis=1)) if ok0[:, TIP].any() else 1.7
+HANDS = None
+if C.get('hands'):
+    hh = json.load(open(C['hands']))['frames']; hs = {r['a']: (r['Left']['s'], r['Right']['s']) for r in hh}
+    rel = C.get('release_left', [])  # [a0, a1] clip-A frames where the left hand is off the bat (regrips)
+    HANDS = [(hs.get(a, (0.08, 0.17)), any(r0 <= a < r1 for r0, r1 in rel)) for a in frames]
+W_HAND = C.get('w_hands', 0.0); W_FRONT = C.get('w_front', 0.0)
 W_GRIP = C.get('w_grip', 5.0); W_SM = C.get('w_smooth', 3.0); W_SM_BAT = C.get('w_smooth_bat', 6.0); W_BONE = 8.0; W_BAT = 20.0; W_CAM = 30.0
 def residuals(p):
     X, ca, crv, cb, G = unpack(p); R = []
@@ -169,6 +181,16 @@ def residuals(p):
         def seg_d(p):
             u = np.clip((p - k_) @ hd / (hd @ hd + 1e-9), 0, 0.4); return np.linalg.norm(p - (k_ + hd * u))
         R.append(W_GRIP * max(0.0, min(seg_d(X[i, 5]), seg_d(X[i, 6])) - 0.15))
+        if HANDS is not None:  # each wrist by its own grip point on the bat (a wrist sits ~0.1 bat lengths off the shaft)
+            (sl, sr), relL = HANDS[i]
+            for j, s_ in ((5, sl), (6, sr)):
+                if j == 5 and relL: R.append(0.0); continue
+                R.append(W_HAND * max(0.0, np.linalg.norm(X[i, j] - (k_ + hd * min(max(s_, 0.0), 0.9))) - 0.16 * G[-1]))
+        if W_FRONT:  # the hands are in front of her chest (picks the side when the depth is ambiguous)
+            sh_ = X[i, 1] - X[i, 2]; up_ = (X[i, 1] + X[i, 2] - X[i, 7] - X[i, 8]) / 2 * np.array([1, -1, 1])
+            fw_ = np.cross(up_, sh_ * np.array([1, -1, 1])); fw_ = fw_ / (np.linalg.norm(fw_) + 1e-9) * np.array([1, -1, 1])
+            mid_ = (X[i, 1] + X[i, 2]) / 2; tl_ = np.linalg.norm(up_)
+            for j in (5, 6): R.append(W_FRONT * max(0.0, 0.12 * tl_ - (X[i, j] - mid_) @ fw_))
     acc = X[2:] - 2 * X[1:-1] + X[:-2]
     wsm = np.full(NP, W_SM); wsm[TIP] = wsm[KNOB] = W_SM_BAT
     R += list((acc * wsm[None, :, None]).ravel())
@@ -187,6 +209,10 @@ def sparsity():
         for k, (a_, b_) in enumerate(BONES): add([base + a_ * 3 + q for q in range(3)] + [base + b_ * 3 + q for q in range(3)] + [T * PF + k])
         add([base + TIP * 3 + q for q in range(3)] + [base + KNOB * 3 + q for q in range(3)] + [T * PF + NG - 1])
         add([base + j * 3 + q for j in (5, 6, TIP, KNOB) for q in range(3)])
+        if HANDS is not None:
+            for j in (5, 6): add([base + q for jj in (j, TIP, KNOB) for q in range(jj * 3, jj * 3 + 3)] + [T * PF + NG - 1])
+        if W_FRONT:
+            for j in (5, 6): add([base + jj * 3 + q for jj in (1, 2, 7, 8, j) for q in range(3)])
     for i in range(1, T - 1):
         for j in range(NP):
             for c in range(3): add([(i + d) * PF + j * 3 + c for d in (-1, 0, 1)])

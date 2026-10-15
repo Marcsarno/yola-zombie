@@ -1,0 +1,890 @@
+{
+ "groups": [
+  "Combos (built)",
+  "Two-handed: bat / sledgehammer / axe",
+  "Polearm / thrust (butt strikes)",
+  "One-handed blunt: crowbar / club / pipe",
+  "Knife / stab / dual",
+  "Shield",
+  "Guns: pistol / rifle / shotgun",
+  "Unarmed: punch / kick",
+  "Hit reactions / death",
+  "Idles / other"
+ ],
+ "clips": [
+  {
+   "clip": "baseball_double",
+   "label": "baseball double",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 88,
+   "fps": 30
+  },
+  {
+   "clip": "baseball_homerun",
+   "label": "baseball homerun",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 118,
+   "fps": 30
+  },
+  {
+   "clip": "bat_idle",
+   "label": "bat idle",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 46,
+   "fps": 30
+  },
+  {
+   "clip": "bat_swing",
+   "label": "bat swing",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 60,
+   "fps": 30
+  },
+  {
+   "clip": "built_bat_combo_v4",
+   "label": "built bat combo v4",
+   "group": "Combos (built)",
+   "source": "Built in Blender from the clips above (hands fitted)",
+   "license": "mixed (see recipe)",
+   "frames": 236,
+   "fps": 30
+  },
+  {
+   "clip": "death_fall",
+   "label": "death fall",
+   "group": "Hit reactions / death",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 73,
+   "fps": 30
+  },
+  {
+   "clip": "gs_low_slash",
+   "label": "gs low slash",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 56,
+   "fps": 30
+  },
+  {
+   "clip": "heavy_swing",
+   "label": "heavy swing",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 157,
+   "fps": 30
+  },
+  {
+   "clip": "hit_body",
+   "label": "hit body",
+   "group": "Hit reactions / death",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 32,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_Attack1H01_L",
+   "label": "Attack1H01 L",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 34,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_Attack1H01_R",
+   "label": "Attack1H01 R",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 34,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_Attack2H01",
+   "label": "Attack2H01",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 49,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_AttackPolearm01",
+   "label": "AttackPolearm01",
+   "group": "Polearm / thrust (butt strikes)",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 42,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_AttackShield01",
+   "label": "AttackShield01",
+   "group": "Shield",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 28,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_CombatDamage01",
+   "label": "CombatDamage01",
+   "group": "Hit reactions / death",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 31,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_CombatIdle01",
+   "label": "CombatIdle01",
+   "group": "Idles / other",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 41,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_CombatIdle1H01",
+   "label": "CombatIdle1H01",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 41,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_CombatIdle2H01",
+   "label": "CombatIdle2H01",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 41,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_CombatIdlePolearm01",
+   "label": "CombatIdlePolearm01",
+   "group": "Polearm / thrust (butt strikes)",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 41,
+   "fps": 30
+  },
+  {
+   "clip": "kev_HumanF_Death01",
+   "label": "Death01",
+   "group": "Hit reactions / death",
+   "source": "Kevin Iglesias - Human Melee FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 23,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_AssaultRifle_Aim01_Shoot01",
+   "label": "AssaultRifle Aim01 Shoot01",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 21,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Damage02",
+   "label": "Damage02",
+   "group": "Hit reactions / death",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 22,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Death02",
+   "label": "Death02",
+   "group": "Hit reactions / death",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 40,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Death06",
+   "label": "Death06",
+   "group": "Hit reactions / death",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 17,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Gun_Aim01",
+   "label": "Gun Aim01",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 59,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Gun_Aim01_Shoot01",
+   "label": "Gun Aim01 Shoot01",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 21,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Gun_Reload01",
+   "label": "Gun Reload01",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 43,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_IdleDamage01",
+   "label": "IdleDamage01",
+   "group": "Hit reactions / death",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 16,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Rifle_Aim01",
+   "label": "Rifle Aim01",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 59,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Rifle_Aim01_Shoot01",
+   "label": "Rifle Aim01 Shoot01",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 21,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_Rifle_Reload01",
+   "label": "Rifle Reload01",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 43,
+   "fps": 30
+  },
+  {
+   "clip": "kevs_HumanF_ThrowGrenade01_L",
+   "label": "ThrowGrenade01 L",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Kevin Iglesias - Human Soldier FREE",
+   "license": "royalty-free (no raw redistribution)",
+   "frames": 59,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_1H_Attack_Chop",
+   "label": "Melee 1H Attack Chop",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 33,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_1H_Attack_Jump_Chop",
+   "label": "Melee 1H Attack Jump Chop",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 34,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_1H_Attack_Slice_Diagonal",
+   "label": "Melee 1H Attack Slice Diagonal",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 26,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_1H_Attack_Slice_Horizontal",
+   "label": "Melee 1H Attack Slice Horizontal",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 42,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_1H_Attack_Stab",
+   "label": "Melee 1H Attack Stab",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 49,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_2H_Attack_Chop",
+   "label": "Melee 2H Attack Chop",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 50,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_2H_Attack_Slice",
+   "label": "Melee 2H Attack Slice",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 34,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_2H_Attack_Spin",
+   "label": "Melee 2H Attack Spin",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 73,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_2H_Attack_Spinning",
+   "label": "Melee 2H Attack Spinning",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 17,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_2H_Attack_Stab",
+   "label": "Melee 2H Attack Stab",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 49,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_2H_Idle",
+   "label": "Melee 2H Idle",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 27,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Block",
+   "label": "Melee Block",
+   "group": "Idles / other",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 27,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Block_Attack",
+   "label": "Melee Block Attack",
+   "group": "Idles / other",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 27,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Block_Hit",
+   "label": "Melee Block Hit",
+   "group": "Hit reactions / death",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 27,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Dualwield_Attack_Chop",
+   "label": "Melee Dualwield Attack Chop",
+   "group": "Knife / stab / dual",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 32,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Dualwield_Attack_Slice",
+   "label": "Melee Dualwield Attack Slice",
+   "group": "Knife / stab / dual",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 30,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Dualwield_Attack_Stab",
+   "label": "Melee Dualwield Attack Stab",
+   "group": "Knife / stab / dual",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 41,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Unarmed_Attack_Kick",
+   "label": "Melee Unarmed Attack Kick",
+   "group": "Unarmed: punch / kick",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 24,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Unarmed_Attack_Punch_A",
+   "label": "Melee Unarmed Attack Punch A",
+   "group": "Unarmed: punch / kick",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 30,
+   "fps": 30
+  },
+  {
+   "clip": "kk_Melee_Unarmed_Idle",
+   "label": "Melee Unarmed Idle",
+   "group": "Unarmed: punch / kick",
+   "source": "KayKit - Character Animations 1.1",
+   "license": "CC0",
+   "frames": 27,
+   "fps": 30
+  },
+  {
+   "clip": "melee_horizontal",
+   "label": "melee horizontal",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 73,
+   "fps": 30
+  },
+  {
+   "clip": "pistol_hit",
+   "label": "pistol hit",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 83,
+   "fps": 30
+  },
+  {
+   "clip": "pistol_idle",
+   "label": "pistol idle",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 41,
+   "fps": 30
+  },
+  {
+   "clip": "pistol_reload",
+   "label": "pistol reload",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 62,
+   "fps": 30
+  },
+  {
+   "clip": "reload_rifle_stand",
+   "label": "reload rifle stand",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 100,
+   "fps": 30
+  },
+  {
+   "clip": "rifle_aim_idle",
+   "label": "rifle aim idle",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 94,
+   "fps": 30
+  },
+  {
+   "clip": "sg_reload",
+   "label": "sg reload",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 100,
+   "fps": 30
+  },
+  {
+   "clip": "t_box_01",
+   "label": "t box 01",
+   "group": "Unarmed: punch / kick",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 67,
+   "fps": 30
+  },
+  {
+   "clip": "t_box_02",
+   "label": "t box 02",
+   "group": "Unarmed: punch / kick",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 85,
+   "fps": 30
+  },
+  {
+   "clip": "t_box_03",
+   "label": "t box 03",
+   "group": "Unarmed: punch / kick",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 77,
+   "fps": 30
+  },
+  {
+   "clip": "t_chop",
+   "label": "t chop",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 198,
+   "fps": 30
+  },
+  {
+   "clip": "t_hit_body_01",
+   "label": "t hit body 01",
+   "group": "Hit reactions / death",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 40,
+   "fps": 30
+  },
+  {
+   "clip": "t_hit_head",
+   "label": "t hit head",
+   "group": "Hit reactions / death",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 56,
+   "fps": 30
+  },
+  {
+   "clip": "t_kick_01",
+   "label": "t kick 01",
+   "group": "Unarmed: punch / kick",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 76,
+   "fps": 30
+  },
+  {
+   "clip": "t_kick_02",
+   "label": "t kick 02",
+   "group": "Unarmed: punch / kick",
+   "source": "Mixamo (Adobe)",
+   "license": "Mixamo terms (use in games)",
+   "frames": 42,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Death01",
+   "label": "Death01",
+   "group": "Hit reactions / death",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 61,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Hit_Chest",
+   "label": "Hit Chest",
+   "group": "Hit reactions / death",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 9,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Hit_Head",
+   "label": "Hit Head",
+   "group": "Hit reactions / death",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 11,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Pistol_Idle_Loop",
+   "label": "Pistol Idle Loop",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 42,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Pistol_Reload",
+   "label": "Pistol Reload",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 42,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Pistol_Shoot",
+   "label": "Pistol Shoot",
+   "group": "Guns: pistol / rifle / shotgun",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 16,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Punch_Cross",
+   "label": "Punch Cross",
+   "group": "Unarmed: punch / kick",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 26,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Punch_Jab",
+   "label": "Punch Jab",
+   "group": "Unarmed: punch / kick",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 22,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Roll",
+   "label": "Roll",
+   "group": "Idles / other",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 37,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Sword_Attack",
+   "label": "Sword Attack",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 39,
+   "fps": 30
+  },
+  {
+   "clip": "ual1_Sword_Idle",
+   "label": "Sword Idle",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 1",
+   "license": "CC0",
+   "frames": 42,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Hit_Knockback",
+   "label": "Hit Knockback",
+   "group": "Hit reactions / death",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 26,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Idle_Shield_Break",
+   "label": "Idle Shield Break",
+   "group": "Shield",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 27,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Idle_Shield_Loop",
+   "label": "Idle Shield Loop",
+   "group": "Shield",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 76,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Melee_Hook",
+   "label": "Melee Hook",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 15,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Melee_Hook_Rec",
+   "label": "Melee Hook Rec",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 16,
+   "fps": 30
+  },
+  {
+   "clip": "ual_OverhandThrow",
+   "label": "OverhandThrow",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 34,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Shield_Dash",
+   "label": "Shield Dash",
+   "group": "Shield",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 28,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Shield_OneShot",
+   "label": "Shield OneShot",
+   "group": "Shield",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 21,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Block",
+   "label": "Sword Block",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 31,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Dash",
+   "label": "Sword Dash",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 48,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Heavy_Combo",
+   "label": "Sword Heavy Combo",
+   "group": "Two-handed: bat / sledgehammer / axe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 131,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Regular_A",
+   "label": "Sword Regular A",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 14,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Regular_A_Rec",
+   "label": "Sword Regular A Rec",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 25,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Regular_B",
+   "label": "Sword Regular B",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 17,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Regular_B_Rec",
+   "label": "Sword Regular B Rec",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 26,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Regular_C",
+   "label": "Sword Regular C",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 61,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Sword_Regular_Combo",
+   "label": "Sword Regular Combo",
+   "group": "One-handed blunt: crowbar / club / pipe",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 91,
+   "fps": 30
+  },
+  {
+   "clip": "ual_TreeChopping_Loop",
+   "label": "TreeChopping Loop",
+   "group": "Idles / other",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 30,
+   "fps": 30
+  },
+  {
+   "clip": "ual_Zombie_Scratch",
+   "label": "Zombie Scratch",
+   "group": "Idles / other",
+   "source": "Quaternius - Universal Animation Library 2",
+   "license": "CC0",
+   "frames": 55,
+   "fps": 30
+  }
+ ],
+ "fps": 30
+}

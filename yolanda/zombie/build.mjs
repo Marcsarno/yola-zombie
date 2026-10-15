@@ -12,6 +12,7 @@ const base = {
 };
 const game = { ...base, entryPoints: ['src/main.js'], outfile: 'dist/combat.js' };
 const viewer = { ...base, entryPoints: ['src/viewer.js'], outfile: 'dist/viewer.js' };
+const moves = { ...base, entryPoints: ['src/moves.js'], outfile: 'dist/moves.js' };
 const rapier = { ...base, entryPoints: ['src/rapier-entry.js'], outfile: 'dist/rapier.js', sourcemap: false, minify: true };
 if (process.argv.includes('--watch')) (await esbuild.context(game)).watch();
-else await Promise.all([esbuild.build(game), esbuild.build(rapier), esbuild.build(viewer)]);
+else await Promise.all([esbuild.build(game), esbuild.build(rapier), esbuild.build(viewer), esbuild.build(moves)]);

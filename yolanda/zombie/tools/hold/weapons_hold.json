@@ -8,5 +8,41 @@
     "grip_radius": 0.0145,
     "support_release_curl": 90,
     "hit": { "from": 0.42, "to": 0.84 }
+  },
+  "sledgehammer": {
+    "length": 0.85,
+    "profile": [[0.0, 0.021], [0.005, 0.0235], [0.011, 0.0235], [0.019, 0.0207], [0.269, 0.0189], [0.289, 0.018], [0.29, 0.0176], [0.292, 0.0154], [0.451, 0.0146], [0.672, 0.0171], [0.674, 0.0208], [0.678, 0.0245], [0.703, 0.0277], [0.704, 0.0586], [0.706, 0.08], [0.708, 0.0896], [0.712, 0.0919], [0.73, 0.0955], [0.821, 0.0953], [0.836, 0.093], [0.844, 0.0903], [0.846, 0.0889], [0.848, 0.0858], [0.85, 0.0608]],
+    "primary": "Left",
+    "grips": { "Left": 0.145, "Right": 0.455 },
+    "grip_radius": 0.02,
+    "support_release_curl": 90,
+    "hit": { "from": 0.704, "to": 0.85 },
+    "_note": "Shaft = GLB +Y through grip_primary; distances from the butt (GLB y=-0.145). Profile = area-equivalent radius of the cross-section outline (convex hull) every 2 mm, simplified to 0.8 mm. The handle is oval, not round (rubber grip ~38 x 43 mm, wood ~27 x 30 mm). The head (from 0.703) is a 0.274 x 0.105 m block, so its profile radius (~0.095) is an area equivalent: it really reaches 0.137 m along the strike axis (GLB X) and only 0.0525 m across it (GLB Z). grip_radius 0.020 is the rubber grip at the primary hand; the support hand on the wood handle sees ~0.0147. Grips are the GLB grip empties (0.145 and 0.455 from the butt; GameGrip_R is the back one in the GLB, primary is Left to match the bat sheet). Hands-together alternative for the support hand: ~0.22."
+  },
+  "crowbar": {
+    "length": 0.7,
+    "profile": [[0.0, 0.0039], [0.003, 0.0081], [0.007, 0.0092], [0.019, 0.0116], [0.038, 0.0129], [0.58, 0.0127], [0.582, 0.0292], [0.642, 0.0337], [0.666, 0.0324], [0.684, 0.0281], [0.695, 0.022], [0.697, 0.0196], [0.699, 0.0154], [0.7, 0.0113]],
+    "primary": "Right",
+    "grips": { "Left": 0.3719, "Right": 0.1997 },
+    "grip_radius": 0.0127,
+    "support_release_curl": 90,
+    "hit": { "from": 0.58, "to": 0.7 },
+    "_note": "Shaft = GLB +Y through grip_primary; distances from the chisel tip (GLB y=-0.1997). Profile = area-equivalent radius of the cross-section outline (convex hull) every 2 mm, simplified to 0.8 mm. The shaft is an octagon 24.4 x 22.2 mm (corners at 14 mm). Above 0.58 the slices cut both the rising shaft and the returning claw arm, which sits ~0.05-0.09 m toward GLB -X, so the hook radii there are area equivalents of an off-axis shape (the hook reaches 0.097 m from the axis toward -X). Hit = the hook (0.58-0.70); the chisel end (0-0.06) is a second, butt-strike zone. One-handed: Left is the GLB secondary grip, used only for two-handed moves."
+  },
+  "chainsaw": {
+    "length": 0.818,
+    "profile": [[0.0, 0.0235], [0.005, 0.0378], [0.021, 0.0444], [0.133, 0.0482], [0.137, 0.0694], [0.161, 0.0706], [0.169, 0.0988], [0.189, 0.1146], [0.317, 0.1135], [0.321, 0.133], [0.333, 0.1429], [0.345, 0.1466], [0.397, 0.1139], [0.413, 0.1173], [0.428, 0.141], [0.436, 0.1381], [0.441, 0.0978], [0.445, 0.0959], [0.457, 0.0711], [0.461, 0.0521], [0.469, 0.0337], [0.477, 0.0337], [0.48, 0.0184], [0.764, 0.0197], [0.804, 0.015], [0.818, 0.0024]],
+    "primary": "Right",
+    "grips": { "Left": 0.333, "Right": 0.08 },
+    "grip_radius": 0.021,
+    "support_release_curl": 90,
+    "hit": { "from": 0.397, "to": 0.818 },
+    "_note": "APPROXIMATION: a chainsaw is not a shaft. Shaft here = the saw's long axis, GLB +X through grip_primary (parallel to the bar); distances from the rear of the rear handle (GLB x=-0.080). Rear handle = primary (Right, always: chainsaws are right-hand-rear), front handle = secondary (Left), bar = hit zone. Known violations of the shaft model: (1) the rear grasp bar is tilted 14 deg above +X (right-hand grip axis [0.970, 0.242, 0]), so the hand-axis-vs-shaft gate fails by design; (2) the front grip is 0.152 m ABOVE this axis (GLB y) and the left hand grips across it (axis along GLB +Z), so the support-hand-on-shaft gate and weaponpath.py's shaft-through-both-fists assumption do not apply: the saw's orientation must come from the primary hand only (plus the support target at its true 3D offset [0.253, 0.152, 0] from grip_primary); (3) the profile is the area-equivalent radius of the whole saw's cross-section, centred on the axis, but the body's centre is ~0.03 m below it and the bar's centreline is 0.075 m below and 0.047 m to the right (+Z) of it, so use _capsules (GLB frame, metres) for collision. grip_radius 0.021 = rear grasp bar (44 x 31 mm); front handle tube r = 0.0142.",
+    "_capsules": [
+      { "part": "rear_grasp_bar", "a": [-0.07, -0.017, 0.0], "b": [0.07, 0.017, 0.0], "r": 0.019 },
+      { "part": "body", "a": [0.12, -0.03, 0.015], "b": [0.34, -0.03, 0.015], "r": 0.12 },
+      { "part": "front_handle_top", "a": [0.253, 0.152, -0.09], "b": [0.253, 0.152, 0.09], "r": 0.0145 },
+      { "part": "bar_and_chain", "a": [0.33, -0.072, 0.047], "b": [0.7, -0.072, 0.047], "r": 0.048 }
+    ]
   }
 }

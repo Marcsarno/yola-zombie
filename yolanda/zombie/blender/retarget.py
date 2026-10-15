@@ -27,7 +27,11 @@ def retarget(src, tgt, name, frame_range=None, hips='mixamorig:Hips'):
         b = a.data.bones[hips]
         return (a.matrix_world @ b.head_local).z - min((a.matrix_world @ x.head_local).z for x in a.data.bones)
     k = hip_h(tgt) / hip_h(src)
-    bones = [b for b in _order(tgt) if b.name in src.data.bones]
+    # target bones the source lacks (e.g. a two-bone spine driving a three-bone one) keep their rest pose relative to
+    # their parent and are carried along, so everything below them still follows the body
+    allb = _order(tgt)
+    bones = [b for b in allb if b.name in src.data.bones]
+    carried = {b.name for b in allb if b.name not in src.data.bones and b.parent is not None}
     rest_t = {b.name: b.matrix_local.copy() for b in tgt.data.bones}
     rest_s = {b.name: src.data.bones[b.name].matrix_local.copy() for b in bones}
     # per-bone constant: world-space rest offset
@@ -52,7 +56,14 @@ def retarget(src, tgt, name, frame_range=None, hips='mixamorig:Hips'):
     for f in range(f0, f1 + 1):
         sc.frame_set(f)
         P = {}
-        for b in bones:
+        for b in allb:
+            if b.name in carried:
+                if b.parent.name in P:
+                    P[b.name] = P[b.parent.name] @ (rest_t[b.parent.name].inverted() @ rest_t[b.name])
+                    tpb = tgt.pose.bones[b.name]; tpb.rotation_quaternion = (1, 0, 0, 0)
+                    tpb.keyframe_insert('rotation_quaternion', frame=f - f0 + 1)
+                continue
+            if b.name not in off: continue
             spb = src.pose.bones[b.name]
             Ws = S @ spb.matrix.to_quaternion() # source posed world rotation
             Wt = Ws @ off[b.name]                  # target posed world rotation

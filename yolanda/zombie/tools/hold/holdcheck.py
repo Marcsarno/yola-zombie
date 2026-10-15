@@ -17,30 +17,8 @@ U = 1 / H.M  # metres -> model units
 arm, body = H.rig(); JF = H.joint_frames(arm, cal)
 prim = W['primary']; sup = 'Right' if prim == 'Left' else 'Left'
 
-# body regions by each face's majority bone
-gi = {g.index: g.name.replace('mixamorig:', '') for g in body.vertex_groups}
-def region(bn):
-    if bn is None: return None
-    if bn.startswith(('Left', 'Right')):
-        s = 'Left' if bn.startswith('Left') else 'Right'; r = bn[len(s):]
-        if r.startswith('Hand'): return s + 'Hand'
-        if r in ('Arm', 'ForeArm', 'Shoulder'): return s + ('Shoulder' if r == 'Shoulder' else 'Arm')
-        return 'legs'
-    return 'head' if bn.startswith('Head') else 'torso'
-vreg = []
-for v in body.data.vertices:
-    vreg.append(region(gi.get(max(v.groups, key=lambda e: e.weight).group)) if v.groups else None)
-BODY = {'torso', 'head', 'legs', 'LeftShoulder', 'RightShoulder'}
-body_faces = [p.index for p in body.data.polygons if sum(vreg[i] in BODY for i in p.vertices) * 2 > len(p.vertices)]
-# arm skin that can go through the body: the forearm and the outer 60% of the upper arm (the armpit end of the upper arm
-# meets the torso by design and is not a penetration)
-def outer_arm(i, s):
-    if vreg[i] != s + 'Arm': return False
-    bn = gi.get(max(body.data.vertices[i].groups, key=lambda e: e.weight).group)
-    if bn == s + 'ForeArm': return True
-    p = (arm.matrix_world.inverted() @ body.matrix_world) @ body.data.vertices[i].co
-    return H.seg_dist(p, H.rest_head(arm, s + 'Arm'), H.rest_head(arm, s + 'ForeArm'))[1] > 0.4
-arm_verts = {s: [i for i in range(len(vreg)) if outer_arm(i, s)] for s in H.SIDES}
+# body regions by each vertex's strongest bone, her body's faces, and the arm skin that can go through it (holdlib.body_sets)
+vreg, body_faces, arm_verts, arm_faces = H.body_sets(arm, body)
 print('faces in the body set', len(body_faces), 'arm skin vertices', {s: len(v) for s, v in arm_verts.items()})
 
 def weapon_points(knob, d):  # points on the weapon's surface: rings every 1 cm along the profile
@@ -56,12 +34,7 @@ def weapon_points(knob, d):  # points on the weapon's surface: rings every 1 cm 
         s += 0.01
     return pts
 
-def inside(bvh, p):  # both tests agree: the nearest surface faces away from p, and an upward ray leaves through a back face
-    hit = bvh.find_nearest(p)
-    if hit[0] is None or (p - hit[0]).dot(hit[1]) >= 0: return 0.0
-    loc, nrm, idx, dist = bvh.ray_cast(p, Vector((0, 0, 1)))
-    if loc is None or nrm.dot(Vector((0, 0, 1))) <= 0: return 0.0
-    return hit[3]
+inside = H.inside
 
 result = {'weapon': weapon, 'primary': prim, 'frames': []}
 dg = bpy.context.evaluated_depsgraph_get()
@@ -86,7 +59,7 @@ for spec in specs:
         row['joints'] = {}
         for s in H.SIDES:
             ang = H.measure_arm(arm, s, JF, cal['hinge']); row['joints'][s] = {k: round(x, 1) for k, x in ang.items()}
-            row['joints'][s]['faults'] = H.limit_faults(ang)
+            row['joints'][s]['faults'] = H.limit_faults(ang, s)
         # her skinned mesh this frame
         ev = body.evaluated_get(dg); me = ev.to_mesh(); mw = toA @ ev.matrix_world
         V = [mw @ v.co for v in me.vertices]
@@ -96,11 +69,11 @@ for spec in specs:
             dep = inside(bvh, p)
             if dep > pen: pen, pen_at = dep, s_
         row['weapon_in_body_cm'] = round(pen * H.M * 100, 2); row['weapon_in_body_at_m'] = pen_at
-        row['arm_in_body_cm'] = {}
-        for s in H.SIDES:
-            m = 0.0
-            for i in arm_verts[s][::2]: m = max(m, inside(bvh, V[i]))
-            row['arm_in_body_cm'][s] = round(m * H.M * 100, 2)
+        row['arm_in_body_cm'] = {}; row['arm_in_body_with_own_shoulder_cm'] = {}
+        for s in H.SIDES:  # against her body without this arm's own shoulder; the own-shoulder skin fold separately
+            m = m_all = 0.0
+            for i in arm_verts[s][::2]: m = max(m, inside(bvh, V[i], arm_faces[s])); m_all = max(m_all, inside(bvh, V[i]))
+            row['arm_in_body_cm'][s] = round(m * H.M * 100, 2); row['arm_in_body_with_own_shoulder_cm'][s] = round(m_all * H.M * 100, 2)
         ev.to_mesh_clear()
         result['frames'].append(row)
     print('checked', name, f0, f1)
@@ -118,6 +91,7 @@ summ = {
     'weapon_in_body_frames': sum(1 for r in fr if r['weapon_in_body_cm'] > 0.2), 'weapon_in_body_cm_max': mx([r['weapon_in_body_cm'] for r in fr]),
     'arm_in_body_frames': {s: sum(1 for r in fr if r['arm_in_body_cm'][s] > 0.5) for s in H.SIDES},
     'arm_in_body_cm_max': {s: mx([r['arm_in_body_cm'][s] for r in fr]) for s in H.SIDES},
+    'arm_in_body_with_own_shoulder_cm_max': {s: mx([r['arm_in_body_with_own_shoulder_cm'][s] for r in fr]) for s in H.SIDES},  # incl. shoulder skin folds
 }
 for s in H.SIDES:
     worst = {}

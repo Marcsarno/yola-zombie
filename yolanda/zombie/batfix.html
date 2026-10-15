@@ -34,7 +34,7 @@
 <body>
 <div id="app">
   <header>
-    <select id="clip"><option value="c13">Clip 13 (side), frames 20-184</option><option value="c1">Clip 1 (front three-quarter), frames 90-270</option></select>
+    <select id="clip"><option value="c13">Clip 13 (side), frames 20-184</option><option value="c13f">Clip 13 finisher (close camera from behind), frames 185-212</option><option value="c1">Clip 1 (front three-quarter), frames 90-310</option></select>
     <button id="prev" title="Left arrow (Shift = 5)">&#9664; Prev</button>
     <span id="frame">frame</span>
     <button id="next" title="Right arrow (Shift = 5)">Next &#9654;</button>
@@ -44,7 +44,7 @@
     <button id="reset" title="R">Back to the tracked line</button>
     <button id="onion" class="on" title="O">Show previous frame's bat</button>
     <button id="fit" title="F">Fit</button>
-    <button id="refbtn" class="on" title="V">Side view (same moment)</button>
+    <button id="refbtn" class="on" title="V">Other camera (same moment)</button>
     <button id="usesug" title="G">Use the 3D guess</button>
     <span id="saved"></span>
   </header>
@@ -59,23 +59,30 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const cv = $('cv'), g = cv.getContext('2d');
-const RANGES = { c13: [20, 184], c1: [90, 270] };
-const S = { sug: {}, refOn: true, fix13: {}, clip: 'c13', f: 20, track: {}, fix: {}, suspect: new Set(), img: null, view: { s: 1, x: 0, y: 0 }, drag: null, pan: null, onion: true, playing: false, cache: new Map() };
+const RANGES = { c13: [20, 184], c13f: [185, 212], c1: [90, 310] };
+const DIR = { c13: 'c13', c13f: 'c13', c1: 'c1' };
+const SYNC = [[20, 71], [44, 72], [56, 76], [66, 80], [212, 80]];  // clip 1 frame = clip 13 frame + offset (measured)
+function c1Of(a) { for (let i = 1; i < SYNC.length; i++) if (a <= SYNC[i][0]) { const [x0, y0] = SYNC[i - 1], [x1, y1] = SYNC[i]; return a + Math.round(y0 + (y1 - y0) * Math.max(0, a - x0) / (x1 - x0)); } return a + 80; }
+function c13Of(b) { let best = null; for (let a = 20; a <= 212; a++) if (best === null || Math.abs(c1Of(a) - b) < Math.abs(c1Of(best) - b)) best = a; return best; }
+const S = { sug: {}, refOn: true, fixOther: {}, clip: 'c13', f: 20, track: {}, fix: {}, suspect: new Set(), img: null, view: { s: 1, x: 0, y: 0 }, drag: null, pan: null, onion: true, playing: false, cache: new Map() };
 
 async function loadClip(c) {
-  S.clip = c; S.f = RANGES[c][0];
+  S.clip = c;
   S.track = (await (await fetch(`shots/batfix/track_${c}.json?${Date.now()}`)).json()).frames;
   try { S.fix = await (await fetch(`shots/batfix_${c}.json?${Date.now()}`)).json(); } catch (e) { S.fix = {}; }
   S.fix = S.fix.frames || {};
   S.sug = {}; try { S.sug = (await (await fetch(`shots/batfix/suggest_${c}.json?${Date.now()}`)).json()).frames; } catch (e) { /* none */ }
-  if (c === 'c1') { try { S.fix13 = (await (await fetch(`shots/batfix_c13.json?${Date.now()}`)).json()).frames || {}; } catch (e) { S.fix13 = {}; } }
+  S.fixOther = {};  // the other camera's corrections, for the panel showing the same moment
+  for (const o of (c === 'c1' ? ['c13', 'c13f'] : ['c1'])) { try { Object.assign(S.fixOther, (await (await fetch(`shots/batfix_${o}.json?${Date.now()}`)).json()).frames || {}); } catch (e) { /* none yet */ } }
+  const done = Object.keys(S.fix).map(Number).filter((f) => f >= RANGES[c][0] && f <= RANGES[c][1]);
+  S.f = done.length ? Math.min(RANGES[c][1], Math.max(...done) + 1) : RANGES[c][0];  // carry on after the last corrected frame
   S.suspect = new Set();
   try { const r = await (await fetch(`tools/track/data/reject${c.slice(1)}.json?${Date.now()}`)).json(); r.frames.forEach((f) => S.suspect.add(f)); } catch (e) { /* none */ }
   buildStrip(); await show(S.f, true);
 }
 function frameImg(f) {
   const key = S.clip + f;
-  if (!S.cache.has(key)) S.cache.set(key, new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = `shots/batfix/${S.clip}/f${String(f).padStart(4, '0')}.jpg`; }));
+  if (!S.cache.has(key)) S.cache.set(key, new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = `shots/batfix/${DIR[S.clip]}/f${String(f).padStart(4, '0')}.jpg`; }));
   return S.cache.get(key);
 }
 function cur(f = S.f) {  // the line shown for frame f: your fix, else the tracked line
@@ -112,7 +119,7 @@ function draw() {
   if (gs && c.src !== 'guess') guessLine(gs);
   if (c.tip && c.src !== 'hidden') line(c, 1, c.src === 'tracked' || c.src === 'guess');
   drawRef();
-  $('frame').textContent = `frame ${S.f}` + (S.clip === 'c13' ? `  (Yola ${S.f - 19})` : '');
+  $('frame').textContent = `frame ${S.f}  (Yola ${(S.clip === 'c1' ? c13Of(S.f) : S.f) - 19})`;
   const sus = S.suspect.has(S.f) && c.src === 'tracked';
   $('note').textContent = c.src === 'fixed' ? 'Your correction' : c.src === 'hidden' ? 'Marked: bat not visible' : c.src === 'guess' ? 'Starting from the 3D guess (dashed): drag the dots onto the bat' : sus ? 'I think my tracked line is wrong here: please drag it onto the bat, or mark it not visible' : c.src === 'tracked' ? 'Tracked line (dashed): drag the dots if it is off' : 'No line: click the barrel end, then the knob end';
   $('note').style.color = sus ? 'var(--warn)' : '';
@@ -124,19 +131,21 @@ function guessLine(gs) {  // the 3D solve's guess, for reference (thin dotted or
   g.lineWidth = 2; g.strokeStyle = '#ff9f1a'; g.setLineDash([3, 5]); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); g.setLineDash([]);
 }
 const rc = $('rc'), rg = rc.getContext('2d'); let refImgs = new Map();
-async function drawRef() {  // clip 1 only: the clip 13 frame at the same moment, with the user's corrected bat
-  const box = $('ref'); const gs = S.sug[S.f];
-  if (S.clip !== 'c1' || !S.refOn || !gs) { box.style.display = 'none'; return; }
-  box.style.display = 'block'; const a = gs.a, key = 'r' + a;
-  if (!refImgs.has(key)) refImgs.set(key, new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = `shots/batfix/c13/f${String(a).padStart(4, '0')}.jpg`; }));
-  const im = await refImgs.get(key); if (!im || S.sug[S.f] !== gs) return;
+async function drawRef() {  // the other camera at the same moment, with the user's corrected bat there
+  const box = $('ref'), f0 = S.f, toC1 = S.clip !== 'c1';
+  const a = toC1 ? c1Of(f0) : (S.sug[f0] ? S.sug[f0].a : c13Of(f0));
+  const okRange = toC1 ? a >= 90 && a <= 310 : a >= 20 && a <= 212;
+  if (!S.refOn || !okRange) { box.style.display = 'none'; return; }
+  box.style.display = 'block'; const dir = toC1 ? 'c1' : 'c13', key = dir + a;
+  if (!refImgs.has(key)) refImgs.set(key, new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = `shots/batfix/${dir}/f${String(a).padStart(4, '0')}.jpg`; }));
+  const im = await refImgs.get(key); if (!im || S.f !== f0) return;
   rc.width = im.width; rc.height = im.height; rg.drawImage(im, 0, 0);
-  const x = S.fix13[a];
+  const x = S.fixOther[a];
   if (x && !x.hidden) {
     rg.lineWidth = 4; rg.strokeStyle = '#3ccf6e'; rg.beginPath(); rg.moveTo(x.knob[0], x.knob[1]); rg.lineTo(x.tip[0], x.tip[1]); rg.stroke();
     for (const [p, col] of [[x.knob, '#2f8bff'], [x.tip, '#ff3b30']]) { rg.beginPath(); rg.arc(p[0], p[1], 9, 0, 7); rg.fillStyle = col; rg.fill(); }
   }
-  $('refl').textContent = `Side view (clip 13) at the same moment: frame ${a} (Yola ${a - 19})` + (x ? ', your bat' : '');
+  $('refl').textContent = (toC1 ? `Clip 1 at the same moment: frame ${a}` : `Clip 13 at the same moment: frame ${a} (Yola ${a - 19})`) + (x ? ', your bat' : '');
 }
 function line(c, alpha, dashed) {
   const a = toScreen(c.knob), b = toScreen(c.tip);

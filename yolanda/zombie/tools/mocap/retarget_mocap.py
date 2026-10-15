@@ -369,6 +369,9 @@ for sd, path in SOLEPATH.items():
     CONTACT[sd] = wts
     print('anim contacts', sd, sum(1 for x in wts if x >= 1), 'of', n, 'frames')
 act['contacts'] = json.dumps({'L': [round(x, 2) for x in CONTACT['Left']], 'R': [round(x, 2) for x in CONTACT['Right']]})
+# the reference -> armature mapping, for later passes (tools/hold/holdfit.py places the weapon with it)
+act['frameC'] = json.dumps({'ground0': list(ground0), 'left': list(left_a), 'up': list(up_a), 'fwd': list(fwd_a), 'k': k, 'k_arm': k_arm,
+                            'drop': [d for d in drop], 'src': src})
 print('bat pulled into reach on', len(BATPULL), 'frames, max', round(max(BATPULL or [0]), 3), 'm (reference scale)')
 print('RETARGETED', name, 'frames', len(frames))
 out = argv[4] if len(argv) > 4 else None

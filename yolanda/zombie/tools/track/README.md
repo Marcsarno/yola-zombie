@@ -62,5 +62,18 @@ Agreement:
 - Clip 1 bat: median 12 px (90% of frames within ~30 px).
 - Bat length = 1.62 × her torso.
 
+**KNOWN PROBLEM (found 2026-10-15, building Yola's combo): the depth in `bat3d_combo.json` is wrong.**
+- solve3d.py assumes camera A (clip 13) never rotates and camera B's angle to it changes only slowly. Both cameras
+  actually orbit the fighter. At Yola frame 1 clip 13 films her from behind and clip 1 from the front (~180° apart),
+  but the solve held them ~124° apart for the whole combo.
+- Cameras facing each other can't measure depth. In the solve the reference's hands and bat lie in the plane of her
+  torso, 0–10 cm from it, instead of ~30 cm in front, and the torso turn is relative to the orbiting camera.
+- Each video still lines up in 2D (that is all the overlay checked), so the 2D corrections and `hands_on_bat.py`'s
+  along-the-bat hand positions are still good. The 3D needs re-solving:
+  - per-frame rotation for every camera;
+  - a static landmark (the dummy) to anchor the world;
+  - a third angle (clip 12) where two cameras face each other;
+  - priors for both hands on the bat.
+
 **Not yet covered:** the overhead finisher. Clip 13's side camera cuts away at frame 184. That strike needs clip 13's
 close camera (frames ~186–215) or clip 12's back view, paired with clip 1 (~262–300).

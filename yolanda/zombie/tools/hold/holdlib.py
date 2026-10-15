@@ -115,8 +115,11 @@ def measure_arm(arm, s, JF, hinge):
     sw, tw_w = swing_twist(qw, F['fa'])
     out['forearm_twist'] = math.degrees(tw_f + tw_w)  # + = the rotation sense of the rest frame; see limits for sides
     a2 = sw @ F['fa']
-    out['wrist_flex'] = math.degrees(math.atan2(a2.dot(F['palm']), a2.dot(F['fa'])))   # + toward the palm
-    out['wrist_dev'] = math.degrees(math.atan2(a2.dot(F['thumb']), a2.dot(F['fa'])))   # + toward the thumb
+    # the wrist bends about axes fixed in the twisted distal forearm (the radius carries the hand's twist), so the
+    # palm/thumb directions are turned by the twist the hand bone carries before splitting the bend into flex/deviation
+    tq = Quaternion(F['fa'], tw_w); palm = tq @ F['palm']; thumb = tq @ F['thumb']
+    out['wrist_flex'] = math.degrees(math.atan2(a2.dot(palm), a2.dot(F['fa'])))   # + toward the palm
+    out['wrist_dev'] = math.degrees(math.atan2(a2.dot(thumb), a2.dot(F['fa'])))   # + toward the thumb
     # shoulder: upper arm direction in the chest frame vs rest
     cr = rot(arm, 'Spine2'); d = (cr.inverted() @ (head(arm, s + 'ForeArm') - head(arm, s + 'Arm'))).normalized()
     up = (rest_rot(arm, 'Spine2').inverted() @ Vector((0, 0, 1))).normalized()
@@ -138,9 +141,17 @@ LIMITS = {
     'elbow': (-5, 145), 'elbow_side': (-10, 10), 'forearm_twist': (-85, 85), 'wrist_flex': (-60, 70), 'wrist_dev': (-30, 20),
     'shoulder_raise': (0, 170), 'across_body': (-180, 50), 'upperarm_twist': (-90, 90), 'clavicle': (0, 20),
 }
-def limit_faults(angles):
+# Per-side overrides. Forearm twist: this measure's zero is the rest pose's forearm, not anatomical neutral, so its range
+# is taken from real motion capture on Yola's rig with this same measure (4440 frames, 107 Mixamo clips; 1st-99th
+# percentile): left -153..60, right -61..101 (2026-10-15).
+# Right widened to 140: real bat clips (bat_idle 60-65, heavy_swing up to 132) hold the top hand past the all-clip 99th
+# percentile, and a normal top-hand grip must stay legal.
+LIMITS_SIDE = {'forearm_twist': {'Left': (-150, 60), 'Right': (-60, 140)}}
+def limits_for(side=None):
+    return {k: (LIMITS_SIDE[k][side] if side and k in LIMITS_SIDE else v) for k, v in LIMITS.items()}
+def limit_faults(angles, side=None):
     out = []
-    for k, (lo, hi) in LIMITS.items():
+    for k, (lo, hi) in limits_for(side).items():
         v = angles.get(k)
         if v is None: continue
         if v < lo: out.append((k, round(v - lo, 1)))
@@ -234,6 +245,45 @@ def seg_seg(p1, q1, p2, q2):  # closest distance between two segments
             if t < 0: t, s = 0.0, max(0.0, min(1.0, -c / a))
             elif t > 1: t, s = 1.0, max(0.0, min(1.0, (b - c) / a))
     return ((p1 + d1 * s) - (p2 + d2 * t)).length
+
+# ---------------- her skinned mesh: body regions and inside tests (shared by holdcheck.py and holdfit.py) ----------------
+BODY_REGIONS = {'torso', 'head', 'legs', 'LeftShoulder', 'RightShoulder'}
+def vertex_bones(body):  # each vertex's strongest bone (without 'mixamorig:')
+    gi = {g.index: g.name.replace('mixamorig:', '') for g in body.vertex_groups}
+    return [gi.get(max(v.groups, key=lambda e: e.weight).group) if v.groups else None for v in body.data.vertices]
+def region(bn):
+    if bn is None: return None
+    if bn.startswith(('Left', 'Right')):
+        s = 'Left' if bn.startswith('Left') else 'Right'; r = bn[len(s):]
+        if r.startswith('Hand'): return s + 'Hand'
+        if r in ('Arm', 'ForeArm', 'Shoulder'): return s + ('Shoulder' if r == 'Shoulder' else 'Arm')
+        return 'legs'
+    return 'head' if bn.startswith('Head') else 'torso'
+def body_sets(arm, body):
+    """(vertex regions, the faces of her body proper, arm skin that can go through the body per side, and per side the
+    positions in that face list of the arm's own shoulder). The arm skin is the forearm and the outer 60% of the upper arm:
+    the armpit end of the upper arm meets the torso by design. Arm skin whose nearest body surface is its own shoulder (the
+    clavicle-weighted skin the upper arm grows out of: its neighbouring segment, WEAPON_HOLD_PROCESS.md section 5) is a
+    skin fold at the shoulder, not the arm going through her body, and is reported on its own."""
+    vb = vertex_bones(body); vreg = [region(b) for b in vb]
+    faces = [p.index for p in body.data.polygons if sum(vreg[i] in BODY_REGIONS for i in p.vertices) * 2 > len(p.vertices)]
+    toAr = arm.matrix_world.inverted() @ body.matrix_world
+    def outer(i, s):
+        if vreg[i] != s + 'Arm': return False
+        if vb[i] == s + 'ForeArm': return True
+        return seg_dist(toAr @ body.data.vertices[i].co, rest_head(arm, s + 'Arm'), rest_head(arm, s + 'ForeArm'))[1] > 0.4
+    arm_verts = {s: [i for i in range(len(vreg)) if outer(i, s)] for s in SIDES}
+    fown = {s: {j for j, k in enumerate(faces) if sum(vreg[i] == s + 'Shoulder' for i in body.data.polygons[k].vertices) * 2 > len(body.data.polygons[k].vertices)}
+            for s in SIDES}
+    return vreg, faces, arm_verts, fown
+def inside(bvh, p, skip=()):
+    """Depth of p inside her body (0 outside): both tests agree, the nearest surface faces away from p, and an upward ray
+    leaves through a back face. Points whose nearest face is in `skip` (face positions in the BVH) don't count."""
+    hit = bvh.find_nearest(p)
+    if hit[0] is None or (p - hit[0]).dot(hit[1]) >= 0 or hit[2] in skip: return 0.0
+    loc, nrm, idx, dist = bvh.ray_cast(p, Vector((0, 0, 1)))
+    if loc is None or nrm.dot(Vector((0, 0, 1))) <= 0: return 0.0
+    return hit[3]
 
 # ---------------- the weapon ----------------
 def load_json(path):

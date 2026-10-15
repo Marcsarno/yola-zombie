@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Move Library</title>
+<style>
+  :root { --bg:#1b2328; --panel:#24303a; --panel2:#2b3944; --ink:#eef2f0; --dim:#9db0ad; --teal:#2fb1b4; --amber:#ffb347; --red:#ff6b5e; --line:#3a4a52; }
+  * { box-sizing: border-box; } [hidden] { display:none !important; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:500 12px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif; overflow:hidden; }
+  #view { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  .panel { position:fixed; background:rgba(36,48,58,.94); border:1px solid var(--line); border-radius:12px; padding:10px; backdrop-filter: blur(6px); }
+  #left { top:8px; left:8px; bottom:96px; width:300px; display:flex; flex-direction:column; gap:8px; }
+  #right { top:8px; right:8px; width:330px; max-height:calc(100% - 112px); overflow:auto; }
+  #bottom { left:316px; right:346px; bottom:8px; }
+  h3 { margin:0 0 6px; font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.07em; }
+  button, select, input[type=text], input[type=number] { font:inherit; color:var(--ink); background:#33434c; border:1px solid var(--line); border-radius:7px; padding:3px 8px; }
+  button { cursor:pointer; } button:hover { background:#3d505a; } button.on { background:var(--teal); border-color:var(--teal); color:#06201f; font-weight:700; }
+  input[type=number] { width:58px; padding:2px 4px; }
+  .wrow { display:flex; flex-wrap:wrap; gap:4px; }
+  .wrow button { padding:3px 7px; }
+  #search { width:100%; }
+  #list { overflow:auto; flex:1; border-top:1px solid var(--line); padding-top:4px; }
+  details { margin:2px 0; } summary { cursor:pointer; padding:4px 2px; color:var(--amber); font-weight:700; }
+  summary span { color:var(--dim); font-weight:500; }
+  .clip { display:flex; justify-content:space-between; gap:6px; padding:4px 6px; border-radius:6px; cursor:pointer; }
+  .clip:hover { background:var(--panel2); } .clip.cur { background:#1f5d60; }
+  .clip small { color:var(--dim); white-space:nowrap; }
+  .tag { font-size:10px; padding:0 5px; border-radius:5px; background:#3a4a52; color:var(--dim); margin-left:4px; }
+  .row { display:grid; grid-template-columns:70px 1fr 48px; gap:6px; align-items:center; margin:3px 0; }
+  .row input[type=range] { width:100%; accent-color:var(--teal); } .row span { text-align:right; color:var(--dim); font-size:11px; }
+  #transport { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  #scrub { flex:1; min-width:120px; accent-color:var(--amber); }
+  #info { font-variant-numeric:tabular-nums; color:var(--dim); }
+  #clipInfo { color:var(--dim); margin-top:4px; font-size:11px; }
+  .slot { background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:6px 8px; margin:6px 0; }
+  .slot .hd { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px; }
+  .slot .hd b { font-size:12px; } .slot .nums { display:flex; gap:6px; align-items:center; flex-wrap:wrap; color:var(--dim); }
+  .slot.live { border-color:var(--amber); }
+  .ok { color:#66d18f; } .bad { color:var(--red); }
+  #saved div { display:flex; justify-content:space-between; gap:6px; padding:3px 0; border-bottom:1px solid var(--line); }
+  #note { color:var(--amber); min-height:16px; margin-top:6px; }
+  .hint { color:var(--dim); font-size:11px; margin:4px 0; }
+  .curname { font-size:14px; font-weight:700; margin-bottom:6px; }
+  .verd button.on.good { background:#3fae6a; border-color:#3fae6a; color:#06200f; }
+  .verd button.on.maybe { background:var(--amber); border-color:var(--amber); color:#2a1800; }
+  .verd button.on.no { background:var(--red); border-color:var(--red); color:#2a0600; }
+  .use { background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:6px 8px; margin:6px 0; }
+  .use .hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .use input[type=text], #right textarea { width:100%; font:inherit; color:var(--ink); background:#33434c; border:1px solid var(--line); border-radius:7px; padding:3px 6px; }
+  .use .hint button { padding:1px 6px; font-size:11px; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin:0 4px 0 6px; background:#55656d; vertical-align:middle; }
+  .dot.good { background:#3fae6a; } .dot.maybe { background:var(--amber); } .dot.no { background:var(--red); }
+  .wtag { font-size:10px; padding:0 4px; border-radius:4px; background:#1f5d60; color:#cfe; margin-left:3px; }
+  .piles { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; color:var(--dim); }
+  .piles .good { color:#66d18f; } .piles .maybe { color:var(--amber); } .piles .no { color:var(--red); }
+  .wsum { border-top:1px solid var(--line); padding:4px 0; }
+  .wsum .hd { display:flex; justify-content:space-between; } .wsum.none b { color:var(--red); }
+  .multi { color:var(--amber); font-weight:700; }
+  .witem { padding:2px 4px 2px 8px; cursor:pointer; border-radius:5px; } .witem:hover { background:var(--panel2); } .witem i { color:var(--dim); }
+  body.nopanels #left, body.nopanels #right { display:none; } body.nopanels #bottom { left:8px; right:8px; }
+  @media (max-width: 1250px) { #left { width:230px; } #right { width:260px; } #bottom { left:246px; right:276px; } #transport { gap:4px; } }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="left" class="panel">
+  <div>
+    <h3>Weapon in her hand</h3>
+    <div class="wrow" id="weapons"></div>
+    <div class="row" style="margin-top:6px"><label>Hand</label><select id="hand"><option value="Right">Right</option><option value="Left">Left</option></select><span></span></div>
+    <div class="row"><label>Roll</label><input type="range" id="roll" min="-180" max="180" step="5" value="0"><span id="rollV">0°</span></div>
+    <div class="row"><label>Slide</label><input type="range" id="slide" min="-0.3" max="0.3" step="0.01" value="0"><span id="slideV">0 m</span></div>
+    <div class="wrow"><button id="flip">Flip grip</button><button id="fists" class="on">Close fists</button><button id="inplace" class="on">In place</button><button id="skel">Skeleton</button></div>
+  </div>
+  <div>
+    <h3>Moves (by weapon)</h3>
+    <input id="search" type="text" placeholder="Search moves...">
+    <div class="row" style="grid-template-columns:70px 1fr"><label>Show</label><select id="filter"><option value="all">All moves</option><option value="unsorted">Unsorted</option><option value="good">Good for the game</option><option value="maybe">Maybe</option><option value="no">No</option></select></div>
+  </div>
+  <div id="list"></div>
+</div>
+<div id="right" class="panel">
+  <h3>Use in game</h3>
+  <div id="use"><div class="hint">Pick a move on the left.</div></div>
+  <div id="saved" class="hint"></div>
+  <h3 style="margin-top:10px">Weapons</h3>
+  <div id="overview"></div>
+</div>
+<div id="bottom" class="panel">
+  <div id="transport">
+    <button id="play">Pause</button>
+    <select id="speed"><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
+    <input type="range" id="scrub" min="0" max="1" step="0.001" value="0">
+    <span id="info">-</span>
+    <span class="wrow"><button data-cam="front">Front</button><button data-cam="side">Side</button><button data-cam="three">3/4</button><button data-cam="game">Game cam</button><button data-cam="top">Top</button></span> <button id="panels" title="P">Panels</button>
+  </div>
+  <div id="clipInfo">Loading Yola and the move library...</div>
+</div>
+<script src="dist/moves.js"></script>
+</body>
+</html>
