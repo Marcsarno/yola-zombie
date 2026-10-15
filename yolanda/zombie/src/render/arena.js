@@ -79,6 +79,8 @@ function signTexture(text, sub) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
 
+const EM_SKY = new THREE.Color(0x8ea6b8), EM_GROUND = new THREE.Color(0x3a1c1e), EM_SUN = new THREE.Color(0xc9d8ff); // emergency grade
+
 export class Arena {
   constructor(scene, quality, renderer) {
     this.scene = scene; this.quality = quality; this.renderer = renderer;
@@ -254,6 +256,7 @@ export class Arena {
       sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02; sun.shadow.radius = 3;
     }
     this.sun = sun;
+    if (this.f3) { this.redHemi = new THREE.HemisphereLight(0xff3a24, 0x2a0000, 0); s.add(this.redHemi); return; } // (Floor 3: emergency look, see setEmergency)
     // selective amber emergency light (the rooms themselves stay readable)
     if (this.quality !== 'low') {
       const spots = this.f3 ? LAYOUT.lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
@@ -495,8 +498,49 @@ export class Arena {
   }
 
   // ---- per frame (floor 3): the cut-away, the shadow window, the doors and the lift from the level state ----
+  // ---- emergency lighting (Floor 3 after the outbreak), graded across the whole floor for almost nothing: the one
+  //      shadowed sun turns a cold, dimmer emergency white, the fill goes cold blue over a dark red bounce, one red
+  //      hemisphere light breathes like a rotating beacon, and glow pools lie on the floor under the fittings and at the
+  //      doorways (unlit additive decals: red, and a few cold white tubes still working). No extra lights or shadows.
+  setEmergency(on, fade = 1.6) {
+    if (!this.f3 || !this.hemi) return;
+    if (!this.em) this.buildEmergency();
+    this.em.target = on ? 1 : 0; this.em.rate = fade > 0 ? 1 / fade : 1e9;
+    if (fade <= 0) this.tickEmergency(0);
+  }
+  buildEmergency() {
+    const s = this.scene;
+    const e = this.em = { k: 0, t: 0, target: 0, rate: 1, base: { sky: this.hemi.color.clone(), ground: this.hemi.groundColor.clone(), hemiI: this.hemi.intensity, sunC: this.sun.color.clone(), sunI: this.sun.intensity, env: s.environmentIntensity } };
+    const pool = (rgb) => { // a soft radial glow
+      const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      gr.addColorStop(0, `rgba(${rgb},1)`); gr.addColorStop(0.35, `rgba(${rgb},0.5)`); gr.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+      return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    };
+    e.redMat = pool('255,40,24'); e.coldMat = pool('190,220,255');
+    const grp = new THREE.Group(); grp.name = 'emergency'; grp.visible = false; s.add(grp); e.group = grp;
+    const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
+    const put = (m, x, z, size) => { const p = new THREE.Mesh(geo, m); p.position.set(x, 0.02, z); p.scale.set(size, 1, size); p.renderOrder = 2; grp.add(p); };
+    for (const l of LAYOUT.lights || []) put(e.redMat, l.x, l.z, 5.5);
+    for (const d of LAYOUT.doors || []) if (d.kind !== 'lift') put(e.redMat, d.x, d.z, 2.6);
+    for (const r of LAYOUT.rooms || []) for (const [x0, x1, z0, z1] of r.rects) { const w = x1 - x0, dd = z1 - z0; if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8); }
+  }
+  tickEmergency(dt) {
+    const e = this.em; if (!e) return;
+    if (e.k === e.target && e.k === 0) return;
+    e.k += Math.max(-dt * e.rate, Math.min(dt * e.rate, e.target - e.k)); if (dt === 0) e.k = e.target; e.t += dt;
+    const k = e.k, beacon = 0.5 + 0.5 * Math.sin((e.t * Math.PI * 2) / 1.9); // one slow sweep of a rotating beacon
+    this.hemi.color.copy(e.base.sky).lerp(EM_SKY, k); this.hemi.groundColor.copy(e.base.ground).lerp(EM_GROUND, k);
+    this.hemi.intensity = e.base.hemiI + (0.52 - e.base.hemiI) * k;
+    this.sun.color.copy(e.base.sunC).lerp(EM_SUN, k); this.sun.intensity = e.base.sunI + (0.72 - e.base.sunI) * k;
+    this.scene.environmentIntensity = e.base.env + (0.17 - e.base.env) * k;
+    if (this.redHemi) this.redHemi.intensity = k * (0.18 + 0.5 * beacon);
+    e.group.visible = k > 0.005;
+    e.redMat.opacity = k * (0.22 + 0.3 * beacon); e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3)); // (a tube that hums)
+  }
+
   update(dt, px, pz, camYaw, level) {
     if (!this.f3) return;
+    this.tickEmergency(dt);
     const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw); // screen-up on the floor
     const side = (b) => { // signed screen-up distance of a rectangle's nearest point from Yola (negative: camera side)
       const nx = Math.max(b.minX, Math.min(px, b.maxX)), nz = Math.max(b.minZ, Math.min(pz, b.maxZ));

@@ -39,7 +39,7 @@ const vseg = (x, z0, z1, gaps = [], h = WH) => { // a wall running along z at x
   if (z1 + T / 2 > a) walls.push([x - T / 2, x + T / 2, a, z1 + T / 2, h, 'full']);
 };
 // operating room (+ the CT's south wall, one line): CT return door (barred from the CT side), a closed second door
-hseg(-11.15, -10.93, 7.15, [[-6.0, -3.0], [-2.1, 0.9]]);
+hseg(-11.15, -10.93, 7.15, [[-6.0, -3.0], [3.3, 6.3]]); // (the closed door sits east of the table's head wall)
 vseg(7.15, -11.15, -1.35, [[-7.84, -2.56]]); // east: the lift cassette fills the gap
 hseg(-1.35, 3.8, 7.15); vseg(3.8, -1.35, 0.65); hseg(0.65, -7.15, 3.8); // the south-east notch, the south wall
 vseg(-7.15, -11.15, 1.65, [[-5.6, -3.6]]); // west: the new door into the Supply Hall
@@ -81,7 +81,7 @@ export const DOORS = [
   { id: 'brace', kind: 'braced', x: -25.6, z: -14.6, axis: 'z', width: 3.0, face: 'w', side: 'w' }, // Maintenance -> Cafeteria
   { id: 'ctbar', kind: 'barred', x: -4.5, z: -11.15, axis: 'x', width: 3.0, face: 'n', side: 'n' }, // CT -> OR, from the CT side
   { id: 'maint_cafe_2', kind: 'closed', x: -25.6, z: -19.4, axis: 'z', width: 3.0, face: 'w' },
-  { id: 'or_ct_2', kind: 'closed', x: -0.6, z: -11.15, axis: 'x', width: 3.0, face: 's' },
+  { id: 'or_ct_2', kind: 'closed', x: 4.8, z: -11.15, axis: 'x', width: 3.0, face: 's' },
   { id: 'staff_1', kind: 'closed', x: 0.89, z: -19.3, axis: 'z', width: 3.0, face: 'w' },
   { id: 'staff_2', kind: 'closed', x: 0.89, z: -15.4, axis: 'z', width: 3.0, face: 'w' },
   { id: 'lobby_1', kind: 'closed', x: -27.6, z: 5.07, axis: 'z', width: 3.0, face: 'e' },
@@ -103,15 +103,22 @@ const p = (m, x, z, rot, size, h, extra = {}) => { const sw = rot % 180 === 90; 
 // wall-mounted decoration: faces 'n'|'s'|'e'|'w'; (x, z) is the wall face it hangs on; y the bottom edge
 const wp = (m, x, z, face, y, extra = {}) => props.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, ...extra });
 
-// 1 | operating room: the table in the north half, anesthesia and monitors at its head, clear lanes around it
-p(H + 'operating_table.glb', 0, -8.2, 90, [0.78, 1.65], 0.94);
-p(H + 'anesthesia_workstation.glb', -2.3, -10.4, 0, [1.1, 0.7], 1.55);
-p(H + 'patient_monitor.glb', 2.2, -10.45, 0, [0.62, 0.71], 1.49);
+// 1 | operating room: one table (mid tier) under its ceiling light, the patient's head to the west at the anesthesia
+//     workstation and monitor, an IV pole at the table's side; the head wall behind (north) carries gloves, sanitizer,
+//     sharps and the clock; clear lanes all round. No door behind the table.
+p(U + '04_surgery/operating_table_standard.glb', 0, -8.2, 90, [0.78, 1.65], 0.94);
+p(U + '04_surgery/surgical_light_standard.glb', 0.1, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.62, noCollide: true, name: 'orLight' }); // ceiling-mounted: the head hangs over the table
+p(U + '02_anesthesia_monitoring/anesthesia_workstation_standard.glb', -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: 'orAnesthesia' }); // beside the head, facing the table (clear of Yola's spot at -1.6, -9.35)
+p(U + '02_anesthesia_monitoring/patient_monitor_standard.glb', -0.7, -10.0, 0, [0.62, 0.71], 1.46, { name: 'orMonitor' });
+p(U + '08_support_equipment/runtime/iv_stand_standard.glb', -0.35, -7.2, 0, [0.73, 0.7], 2.03, { noCollide: true });
+p(U + '08_support_equipment/runtime/supply_cart_standard.glb', 2.35, -10.6, 0, [0.88, 0.65], 1.21);
 p(H + 'supply_cart.glb', -5.9, -7.4, 90, [1.16, 1.1], 1.23);
-p(H + 'iv_stand.glb', 1.6, -9.0, 0, [0.73, 0.7], 2.03, { noCollide: true });
-p(H + 'supply_cart.glb', 5.8, -9.7, 270, [1.16, 1.1], 1.23);
-p(H + 'biohazard_bin.glb', -6.55, -10.5, 0, [0.39, 0.39], 0.69);
-p(U + '04_surgery/surgical_light_starter.glb', -1.6, -6.8, 0, [1.11, 0.7], 1.67, { noCollide: true });
+p(H + 'biohazard_bin.glb', -2.95, -10.7, 0, [0.39, 0.39], 0.69);
+p(H + 'lidded_waste_bin.glb', 1.45, -10.75, 0, [0.36, 0.4], 0.58);
+wp(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', 0.35, -11.0, 's', 1.05);
+wp(M + 'decor/Reception_Wall_Sanitizer.glb', 0.95, -11.0, 's', 1.1);
+wp(M + 'decor3/Clinical_Sharps_Container.glb', -1.0, -11.0, 's', 1.1);
+wp(M + 'decor/Recovery_Wall_Clock.glb', -0.3, -11.0, 's', 2.0);
 p(M + 'furnishings/Clinical_Storage_Cabinet.glb', -6.75, -1.4, 90, [1.4, 0.62], 0.88);
 p(H + 'procedure_stretcher.glb', 1.8, -2.6, 90, [0.9, 1.66], 1.22);
 p(H + 'wheelchair.glb', -4.0, -0.3, 0, [0.76, 0.91], 0.97);
@@ -119,7 +126,6 @@ p(H + 'lidded_waste_bin.glb', 3.4, 0.2, 0, [0.36, 0.4], 0.58);
 wp(M + 'furnishings/Clinical_Wall_Cupboard.glb', -6.75 - 0.25, -1.4, 'e', 1.45); // over the cabinet (west wall)
 wp(M + 'decor3/Clinical_Sharps_Container.glb', -7.0, -2.9, 'e', 1.1);
 wp(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', -7.0, -6.6, 'e', 1.0);
-wp(M + 'decor/Recovery_Wall_Clock.glb', 6.3, -11.0, 's', 1.95);
 // 2 | supply hall: shelving and carts on the walls, the patient-belongings table by the OR door, a clear lane
 p(M + 'furnishings/Lounge_Break_Table.glb', -9.6, -5.55, 0, [0.9, 0.9], 0.74, { name: 'belongings' });
 p(M + 'utility/Utility_Supply_Shelf.glb', -7.6, -0.9, 270, [1.39, 0.53], 2.0);

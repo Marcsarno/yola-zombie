@@ -44951,7 +44951,7 @@ void main() {
     }
     if (z1 + T / 2 > a) walls.push([x - T / 2, x + T / 2, a, z1 + T / 2, h, "full"]);
   };
-  hseg(-11.15, -10.93, 7.15, [[-6, -3], [-2.1, 0.9]]);
+  hseg(-11.15, -10.93, 7.15, [[-6, -3], [3.3, 6.3]]);
   vseg(7.15, -11.15, -1.35, [[-7.84, -2.56]]);
   hseg(-1.35, 3.8, 7.15);
   vseg(3.8, -1.35, 0.65);
@@ -44992,7 +44992,7 @@ void main() {
     { id: "ctbar", kind: "barred", x: -4.5, z: -11.15, axis: "x", width: 3, face: "n", side: "n" },
     // CT -> OR, from the CT side
     { id: "maint_cafe_2", kind: "closed", x: -25.6, z: -19.4, axis: "z", width: 3, face: "w" },
-    { id: "or_ct_2", kind: "closed", x: -0.6, z: -11.15, axis: "x", width: 3, face: "s" },
+    { id: "or_ct_2", kind: "closed", x: 4.8, z: -11.15, axis: "x", width: 3, face: "s" },
     { id: "staff_1", kind: "closed", x: 0.89, z: -19.3, axis: "z", width: 3, face: "w" },
     { id: "staff_2", kind: "closed", x: 0.89, z: -15.4, axis: "z", width: 3, face: "w" },
     { id: "lobby_1", kind: "closed", x: -27.6, z: 5.07, axis: "z", width: 3, face: "e" },
@@ -45015,14 +45015,19 @@ void main() {
     props.push({ m, x, z, rot, fp: sw ? [size[1], size[0]] : [size[0], size[1]], h, ...extra });
   };
   var wp = (m, x, z, face, y, extra = {}) => props.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, ...extra });
-  p(H + "operating_table.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
-  p(H + "anesthesia_workstation.glb", -2.3, -10.4, 0, [1.1, 0.7], 1.55);
-  p(H + "patient_monitor.glb", 2.2, -10.45, 0, [0.62, 0.71], 1.49);
+  p(U + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
+  p(U + "04_surgery/surgical_light_standard.glb", 0.1, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.62, noCollide: true, name: "orLight" });
+  p(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
+  p(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
+  p(U + "08_support_equipment/runtime/iv_stand_standard.glb", -0.35, -7.2, 0, [0.73, 0.7], 2.03, { noCollide: true });
+  p(U + "08_support_equipment/runtime/supply_cart_standard.glb", 2.35, -10.6, 0, [0.88, 0.65], 1.21);
   p(H + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
-  p(H + "iv_stand.glb", 1.6, -9, 0, [0.73, 0.7], 2.03, { noCollide: true });
-  p(H + "supply_cart.glb", 5.8, -9.7, 270, [1.16, 1.1], 1.23);
-  p(H + "biohazard_bin.glb", -6.55, -10.5, 0, [0.39, 0.39], 0.69);
-  p(U + "04_surgery/surgical_light_starter.glb", -1.6, -6.8, 0, [1.11, 0.7], 1.67, { noCollide: true });
+  p(H + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
+  p(H + "lidded_waste_bin.glb", 1.45, -10.75, 0, [0.36, 0.4], 0.58);
+  wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", 0.35, -11, "s", 1.05);
+  wp(M + "decor/Reception_Wall_Sanitizer.glb", 0.95, -11, "s", 1.1);
+  wp(M + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
+  wp(M + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
   p(M + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
   p(H + "procedure_stretcher.glb", 1.8, -2.6, 90, [0.9, 1.66], 1.22);
   p(H + "wheelchair.glb", -4, -0.3, 0, [0.76, 0.91], 0.97);
@@ -45030,7 +45035,6 @@ void main() {
   wp(M + "furnishings/Clinical_Wall_Cupboard.glb", -6.75 - 0.25, -1.4, "e", 1.45);
   wp(M + "decor3/Clinical_Sharps_Container.glb", -7, -2.9, "e", 1.1);
   wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -6.6, "e", 1);
-  wp(M + "decor/Recovery_Wall_Clock.glb", 6.3, -11, "s", 1.95);
   p(M + "furnishings/Lounge_Break_Table.glb", -9.6, -5.55, 0, [0.9, 0.9], 0.74, { name: "belongings" });
   p(M + "utility/Utility_Supply_Shelf.glb", -7.6, -0.9, 270, [1.39, 0.53], 2);
   p(M + "utility/Utility_Supply_Shelf.glb", -11.3, -5.75, 0, [1.39, 0.53], 2);
@@ -45338,65 +45342,45 @@ void main() {
     return out;
   }
   var deg = Math.PI / 180;
+  var SWING = {
+    // the leveled baseball swing, right to left at chest height (shared by the axe and the bat)
+    name: "swing",
+    clip: "bat_swing",
+    path: "bat_swing",
+    f0: 24,
+    f1: 40,
+    rate: 1.5,
+    fps: 30,
+    yawOffset: 40 * deg,
+    duration: 0.6,
+    activeStart: 0.14,
+    activeEnd: 0.33,
+    chainFrom: 0.3,
+    swapPoint: 0.48,
+    assist: 1.75
+  };
   var AXE_ATTACKS = [
+    { ...SWING, dmg: 1, knock: 1, style: "swing", sever: { head: 0.35, arm: 0.25 } },
     {
-      // 1: the leveled baseball swing, right to left at chest height
-      name: "swing",
-      clip: "bat_swing",
-      path: "bat_swing",
-      f0: 24,
-      f1: 40,
-      rate: 1.5,
-      fps: 30,
-      yawOffset: 40 * deg,
-      duration: 0.62,
-      activeStart: 0.14,
-      activeEnd: 0.33,
-      chainFrom: 0.34,
-      swapPoint: 0.48,
-      assist: 1.75,
-      dmg: 1,
-      knock: 1,
-      style: "swing",
-      sever: { head: 0.35, arm: 0.25 }
-    },
-    {
-      // 2: the backhand - a low two-handed slash back from left to right (Mixamo great sword low slash);
-      // it sweeps at the knees as much as the waist, so legs come off
-      name: "slash",
-      clip: "gs_low_slash",
-      path: "gs_low_slash",
-      f0: 10,
-      f1: 34,
-      rate: 1.5,
-      fps: 30,
-      yawOffset: 0,
-      duration: 0.72,
-      activeStart: 0.27,
-      activeEnd: 0.47,
-      chainFrom: 0.5,
-      swapPoint: 0.55,
-      dmg: 1.1,
-      knock: 1.15,
-      style: "heavy",
-      sever: { head: 0.15, arm: 0.25, leg: 0.35 }
-    },
-    {
-      // 3: the finisher - Yola's own overhead chop (Tripo): axe behind the head, straight up, slammed down
+      // 2: Yola's own overhead chop (Tripo), entered with the axe already raised behind her head so it follows the
+      // swing straight away: up, then slammed down on the aim
       name: "chop",
       clip: "t_chop",
       path: "t_chop",
-      f0: 44,
+      f0: 52,
       f1: 74,
       rate: 1.3,
       fps: 30,
       yawOffset: -14 * deg,
       // (the clip lands ~14 degrees left: she turns so it comes down on the aim)
-      duration: 0.95,
-      activeStart: 0.36,
-      activeEnd: 0.6,
+      duration: 0.74,
+      activeStart: 0.2,
+      activeEnd: 0.4,
       chainFrom: 9,
-      swapPoint: 0.75,
+      swapPoint: 0.55,
+      blendIn: 0.16,
+      assist: 2.1,
+      lungeMax: 0.6,
       dmg: 1.6,
       knock: 0.8,
       style: "chop",
@@ -45476,11 +45460,45 @@ void main() {
     }
   ];
   var BAT_ATTACKS = [
-    // (x axeDamage 62, zombie 100 hp: swing 37 + backhand 43 leave it standing; the slam finishes it)
-    { ...AXE_ATTACKS[0], name: "bat swing", dmg: 0.6, knock: 1, sever: {} },
-    { ...AXE_ATTACKS[1], name: "bat backhand", sock: "slash", dmg: 0.7, knock: 1.1, sever: {} },
-    { ...AXE_ATTACKS[2], name: "bat slam", sock: "chop", dmg: 1.3, knock: 0.85, sever: {} }
+    { ...SWING, name: "bat swing", dmg: 0.6, knock: 1, style: "swing", sever: {} },
+    {
+      name: "bat home run",
+      sock: "home run",
+      clip: "bat_swing_m",
+      path: "bat_swing_m",
+      hand: "Left",
+      f0: 28,
+      windTo: 31,
+      windRate: 0.4,
+      f1: 44,
+      rate: 1.7,
+      fps: 30,
+      yawOffset: -40 * deg,
+      duration: 0.8,
+      activeStart: 0.22,
+      activeEnd: 0.41,
+      chainFrom: 9,
+      swapPoint: 0.6,
+      blendIn: 0.16,
+      assist: 2.1,
+      lungeMax: 0.8,
+      dmg: 1.15,
+      knock: 1.7,
+      style: "heavy",
+      sever: {}
+    }
   ];
+  function attackFrame(A, t) {
+    if (!A.windRate) return A.f0 + t * A.fps * A.rate;
+    const tw = (A.windTo - A.f0) / (A.fps * A.windRate);
+    return t <= tw ? A.f0 + t * A.fps * A.windRate : A.windTo + (t - tw) * A.fps * A.rate;
+  }
+  function attackTime(A, f) {
+    if (!A.windRate) return (f - A.f0) / (A.fps * A.rate);
+    const tw = (A.windTo - A.f0) / (A.fps * A.windRate);
+    return f <= A.windTo ? (f - A.f0) / (A.fps * A.windRate) : tw + (f - A.windTo) / (A.fps * A.rate);
+  }
+  var attackEnd = (A) => attackTime(A, A.f1);
   var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS;
   var AXE_GEOM = {
     length: 0.74,
@@ -45492,13 +45510,13 @@ void main() {
   var BAT_SWING = AXE_ATTACKS[0];
   var rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
   function setMeleePaths(clipdata, scale, hipsRest2) {
-    for (const A of [...AXE_ATTACKS, ...FIST_ATTACKS]) {
+    for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS]) {
       const samples = clipdata[A.path];
       A.PATH = [];
       if (!samples) continue;
       for (const s of samples) {
-        const t = (s.f - A.f0) / (A.fps * A.rate);
-        if (t < -1e-3 || s.f > A.f1) continue;
+        if (s.f < A.f0 - 1e-3 || s.f > A.f1) continue;
+        const t = attackTime(A, s.f);
         const ox = s.hips && hipsRest2 ? s.hips[0] - hipsRest2[0] : 0, oz = s.hips && hipsRest2 ? s.hips[2] - hipsRest2[2] : 0;
         const pin = (v) => [v[0] - ox, v[1], v[2] - oz];
         if (A.limb) {
@@ -45513,9 +45531,6 @@ void main() {
         A.PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: d[0] / dl, dy: d[1] / dl, dz: d[2] / dl });
       }
     }
-    BAT_ATTACKS.forEach((B, i) => {
-      B.PATH = AXE_ATTACKS[i].PATH;
-    });
   }
   function meleePose(A, t, out = {}) {
     const P = A.PATH;
@@ -45770,7 +45785,7 @@ void main() {
       this.swingId++;
       const A = this.attacks[combo2];
       const tgt = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
-      const lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, combo2 > 0 ? 0.75 : 0.5) : 0;
+      const lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo2 > 0 ? 0.75 : 0.5)) : 0;
       this.setAction("swing", { st: 0, combo: combo2, hitSet: /* @__PURE__ */ new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked });
       this.attackPressT = 9;
       sim2.emit({ type: "swing", combo: combo2 });
@@ -46380,9 +46395,9 @@ void main() {
       this.bangT = 2;
       this.room = null;
       this.saveT = 0;
-      const W2 = sim2.world;
-      if (this.flags.cafeteria_brace_removed) W2.setOff(W2.dyn.brace, true);
-      if (this.flags.ct_return_unbarred) W2.setOff(W2.dyn.ctbar, true);
+      const W3 = sim2.world;
+      if (this.flags.cafeteria_brace_removed) W3.setOff(W3.dyn.brace, true);
+      if (this.flags.ct_return_unbarred) W3.setOff(W3.dyn.ctbar, true);
       const fresh = !save;
       for (const g of GROUPS) {
         g.zombies.forEach((zs, i) => {
@@ -46465,7 +46480,7 @@ void main() {
       }
     }
     step(dt, input2) {
-      const sim2 = this.sim, p2 = sim2.player, W2 = sim2.world;
+      const sim2 = this.sim, p2 = sim2.player, W3 = sim2.world;
       if (this.complete) return;
       for (const z of sim2.zombies) if (z.spawnKey && !z.alive && !this.killed.has(z.spawnKey)) this.killed.add(z.spawnKey);
       const room = roomAt(p2.x, p2.z);
@@ -46527,7 +46542,7 @@ void main() {
       return null;
     }
     use(id) {
-      const W2 = this.sim.world;
+      const W3 = this.sim.world;
       if (id === "liftReset" && !this.flags.lift_power_restored) {
         this.flags.lift_power_restored = true;
         if (this.lift.state === "fault") this.lift.state = "ready";
@@ -46544,14 +46559,14 @@ void main() {
     }
     // brace / bar removal, then the leaves swing open; the doorway only becomes passable once they are open
     doorStep(dt) {
-      const W2 = this.sim.world;
+      const W3 = this.sim.world;
       for (const key of ["brace", "ctbar"]) {
         const d = this.doors[key];
         if (!d.busy) continue;
         d.t += dt;
         d.brace = Math.min(1, d.t / BRACE_TIME);
         d.open = Math.min(1, Math.max(0, (d.t - BRACE_TIME) / DOOR_OPEN_TIME));
-        if (d.open >= 0.6 && W2.dyn[key] && !W2.dyn[key].off) W2.setOff(W2.dyn[key], true);
+        if (d.open >= 0.6 && W3.dyn[key] && !W3.dyn[key].off) W3.setOff(W3.dyn[key], true);
         if (d.open >= 1) {
           d.busy = false;
           if (key === "brace") {
@@ -46569,7 +46584,7 @@ void main() {
     // the lift: fault -> ready (power) -> opening (Yola at the call panel) -> open -> closing (Yola fully in the cab) -> gone.
     // Leaving the cab, or standing in the threshold, while the doors close sends them back open.
     liftStep(dt, p2) {
-      const L2 = this.lift, W2 = this.sim.world;
+      const L2 = this.lift, W3 = this.sim.world;
       const inCab = inRect(LIFT.cab, p2.x, p2.z, p2.r), atDoor = p2.x > 5.2 && p2.z > LIFT.z - 2.6 && p2.z < LIFT.z + 2.6;
       const inThreshold = inRect(LIFT.threshold, p2.x, p2.z, -p2.r);
       switch (L2.state) {
@@ -46581,7 +46596,7 @@ void main() {
           break;
         case "opening":
           L2.open = Math.min(1, L2.open + dt / LIFT_DOOR_TIME);
-          if (L2.open >= 0.7) W2.setOff(W2.dyn.liftDoors, true);
+          if (L2.open >= 0.7) W3.setOff(W3.dyn.liftDoors, true);
           if (L2.open >= 1) {
             L2.state = "open";
             this.setObjective("board");
@@ -46602,7 +46617,7 @@ void main() {
           }
           L2.open = Math.max(0, L2.open - dt / LIFT_DOOR_TIME);
           if (L2.open <= 0) {
-            W2.setOff(W2.dyn.liftDoors, false);
+            W3.setOff(W3.dyn.liftDoors, false);
             L2.state = "gone";
             this.complete = true;
             this.emit({ type: "levelComplete" });
@@ -46950,7 +46965,7 @@ void main() {
             const dmgF = T2.fistDamage * A.dmg;
             z.takeHit(dmgF, dx, dz, T2.fistKnockback * A.knock, "fist", this, "torso", A.style);
             this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
-            if (T2.hitPause > 0) this.emit({ type: "hitPause", dur: T2.hitPause * 0.6 * (z.alive ? 1 : 1.4) });
+            if (T2.hitPause > 0) this.emit({ type: "hitPause", dur: T2.hitPause * 0.5 * (z.alive ? 1 : 1.3) });
             continue;
           }
           const dmg = T2.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
@@ -46960,7 +46975,7 @@ void main() {
           const last2 = act.combo === p2.attacks.length - 1, holding = !last2 && p2.attackHeld;
           z.takeHit(dmg, dx, dz, T2.axeKnockback * A.knock * (holding ? 0.45 : 1), p2.equipped === BAT ? "bat" : "axe", this, part, holding ? "combo" : A.style);
           this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
-          if (T2.hitPause > 0) this.emit({ type: "hitPause", dur: T2.hitPause * (z.alive ? 1 : 1.4) * (A.style === "chop" ? 1.4 : 1) });
+          if (T2.hitPause > 0) this.emit({ type: "hitPause", dur: T2.hitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
         }
         px2 = tipX;
         pz2 = tipZ;
@@ -47020,8 +47035,8 @@ void main() {
     // jab; the cross and kick hit harder (weapons.js FIST_ATTACKS)
     fistKnockback: 4,
     // m/s impulse (x the attack's knock factor)
-    hitPause: 0.085,
-    // s freeze on axe hits (kills hold 1.4x longer; 0 = off)
+    hitPause: 0.07,
+    // s of slow motion on a melee hit (kills and the heavy second hit a little longer; 0 = off)
     shake: 1,
     zombieSpeed: 1,
     // m/s approach
@@ -47036,8 +47051,10 @@ void main() {
     camWidth: 7.2
     // metres of floor across a portrait screen at the player
   };
+  var TUNING_VERSION = 2;
   function makeTuning(saved) {
-    return Object.assign({}, TUNING_DEFAULTS, saved || {});
+    if (!saved || saved._v !== TUNING_VERSION) saved = null;
+    return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
   // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
@@ -47385,6 +47402,9 @@ void main() {
     t.anisotropy = 4;
     return t;
   }
+  var EM_SKY = new Color(9348792);
+  var EM_GROUND = new Color(3808286);
+  var EM_SUN = new Color(13228287);
   var Arena = class {
     constructor(scene2, quality2, renderer2) {
       this.scene = scene2;
@@ -47647,6 +47667,11 @@ void main() {
         sun.shadow.radius = 3;
       }
       this.sun = sun;
+      if (this.f3) {
+        this.redHemi = new HemisphereLight(16726564, 2752512, 0);
+        s.add(this.redHemi);
+        return;
+      }
       if (this.quality !== "low") {
         const spots = this.f3 ? LAYOUT.lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
         for (const p2 of spots) {
@@ -48040,8 +48065,76 @@ void main() {
       }
     }
     // ---- per frame (floor 3): the cut-away, the shadow window, the doors and the lift from the level state ----
+    // ---- emergency lighting (Floor 3 after the outbreak), graded across the whole floor for almost nothing: the one
+    //      shadowed sun turns a cold, dimmer emergency white, the fill goes cold blue over a dark red bounce, one red
+    //      hemisphere light breathes like a rotating beacon, and glow pools lie on the floor under the fittings and at the
+    //      doorways (unlit additive decals: red, and a few cold white tubes still working). No extra lights or shadows.
+    setEmergency(on, fade = 1.6) {
+      if (!this.f3 || !this.hemi) return;
+      if (!this.em) this.buildEmergency();
+      this.em.target = on ? 1 : 0;
+      this.em.rate = fade > 0 ? 1 / fade : 1e9;
+      if (fade <= 0) this.tickEmergency(0);
+    }
+    buildEmergency() {
+      const s = this.scene;
+      const e = this.em = { k: 0, t: 0, target: 0, rate: 1, base: { sky: this.hemi.color.clone(), ground: this.hemi.groundColor.clone(), hemiI: this.hemi.intensity, sunC: this.sun.color.clone(), sunI: this.sun.intensity, env: s.environmentIntensity } };
+      const pool = (rgb) => {
+        const c = document.createElement("canvas");
+        c.width = c.height = 128;
+        const g = c.getContext("2d"), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gr.addColorStop(0, `rgba(${rgb},1)`);
+        gr.addColorStop(0.35, `rgba(${rgb},0.5)`);
+        gr.addColorStop(1, `rgba(${rgb},0)`);
+        g.fillStyle = gr;
+        g.fillRect(0, 0, 128, 128);
+        return new MeshBasicMaterial({ map: new CanvasTexture(c), transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
+      };
+      e.redMat = pool("255,40,24");
+      e.coldMat = pool("190,220,255");
+      const grp = new Group();
+      grp.name = "emergency";
+      grp.visible = false;
+      s.add(grp);
+      e.group = grp;
+      const geo = new PlaneGeometry(1, 1);
+      geo.rotateX(-Math.PI / 2);
+      const put = (m, x, z, size) => {
+        const p2 = new Mesh(geo, m);
+        p2.position.set(x, 0.02, z);
+        p2.scale.set(size, 1, size);
+        p2.renderOrder = 2;
+        grp.add(p2);
+      };
+      for (const l of LAYOUT.lights || []) put(e.redMat, l.x, l.z, 5.5);
+      for (const d of LAYOUT.doors || []) if (d.kind !== "lift") put(e.redMat, d.x, d.z, 2.6);
+      for (const r of LAYOUT.rooms || []) for (const [x0, x1, z0, z1] of r.rects) {
+        const w = x1 - x0, dd = z1 - z0;
+        if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8);
+      }
+    }
+    tickEmergency(dt) {
+      const e = this.em;
+      if (!e) return;
+      if (e.k === e.target && e.k === 0) return;
+      e.k += Math.max(-dt * e.rate, Math.min(dt * e.rate, e.target - e.k));
+      if (dt === 0) e.k = e.target;
+      e.t += dt;
+      const k = e.k, beacon = 0.5 + 0.5 * Math.sin(e.t * Math.PI * 2 / 1.9);
+      this.hemi.color.copy(e.base.sky).lerp(EM_SKY, k);
+      this.hemi.groundColor.copy(e.base.ground).lerp(EM_GROUND, k);
+      this.hemi.intensity = e.base.hemiI + (0.52 - e.base.hemiI) * k;
+      this.sun.color.copy(e.base.sunC).lerp(EM_SUN, k);
+      this.sun.intensity = e.base.sunI + (0.72 - e.base.sunI) * k;
+      this.scene.environmentIntensity = e.base.env + (0.17 - e.base.env) * k;
+      if (this.redHemi) this.redHemi.intensity = k * (0.18 + 0.5 * beacon);
+      e.group.visible = k > 5e-3;
+      e.redMat.opacity = k * (0.22 + 0.3 * beacon);
+      e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3));
+    }
     update(dt, px2, pz2, camYaw, level) {
       if (!this.f3) return;
+      this.tickEmergency(dt);
       const fx2 = -Math.sin(camYaw), fz = -Math.cos(camYaw);
       const side = (b) => {
         const nx = Math.max(b.minX, Math.min(px2, b.maxX)), nz = Math.max(b.minZ, Math.min(pz2, b.maxZ));
@@ -48440,17 +48533,17 @@ void main() {
     }
     // states: [{pos, quat}] per part (same order as desc.parts)
     apply(states) {
-      const B = this.bones, W2 = this.want;
-      for (const k in W2) delete W2[k];
+      const B = this.bones, W3 = this.want;
+      for (const k in W3) delete W3[k];
       this.desc.parts.forEach((p2, i) => {
-        W2[p2.bone] = states[i].quat.clone().multiply(this.off[i]);
+        W3[p2.bone] = states[i].quat.clone().multiply(this.off[i]);
       });
-      const pel = W2.Hips, ch = W2.Spine2;
+      const pel = W3.Hips, ch = W3.Spine2;
       if (pel && ch) {
-        W2.Spine = pel.clone().slerp(ch, 0.33);
-        W2.Spine1 = pel.clone().slerp(ch, 0.66);
+        W3.Spine = pel.clone().slerp(ch, 0.33);
+        W3.Spine1 = pel.clone().slerp(ch, 0.66);
       }
-      if (ch && W2.Head) W2.Neck = ch.clone().slerp(W2.Head, 0.5);
+      if (ch && W3.Head) W3.Neck = ch.clone().slerp(W3.Head, 0.5);
       const ps = states[this.desc.idx.pelvis];
       const hipW = this.hipsLocal.clone().applyQuaternion(ps.quat).add(ps.pos);
       for (const name of ORDER) {
@@ -48461,9 +48554,9 @@ void main() {
           parent.updateWorldMatrix(true, false);
           b.position.copy(parent.worldToLocal(hipW.clone()));
         }
-        if (W2[name]) {
+        if (W3[name]) {
           parent.getWorldQuaternion(_q);
-          b.quaternion.copy(_q.invert().multiply(W2[name]));
+          b.quaternion.copy(_q.invert().multiply(W3[name]));
         }
         b.updateWorldMatrix(false, false);
       }
@@ -48478,6 +48571,7 @@ void main() {
   var _v23 = new Vector3();
   var _v32 = new Vector3();
   var _v43 = new Vector3();
+  var _v5 = new Vector3();
   var _ik = new Vector3();
   var _ikg = new Vector3();
   var _ikh = new Vector3();
@@ -48610,8 +48704,8 @@ void main() {
       if (!b) return;
       this.container.getWorldQuaternion(_q22);
       b.getWorldQuaternion(_q32);
-      const W2 = _q22.invert().multiply(_q32);
-      _q3.copy(W2).invert().multiply(D).multiply(W2);
+      const W3 = _q22.invert().multiply(_q32);
+      _q3.copy(W3).invert().multiply(D).multiply(W3);
       b.quaternion.multiply(_q3);
       b.updateMatrixWorld(true);
     }
@@ -48646,7 +48740,7 @@ void main() {
   var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
     constructor(scene2, gltf, clipdata, weapons) {
-      const H3 = 1.62;
+      const H4 = 1.62;
       const clips = [];
       const rest = hipsRest(gltf.scene);
       const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
@@ -48676,12 +48770,12 @@ void main() {
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_hold_upper"));
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_reload_upper"));
       clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), "fists_idle_upper"));
-      const melee = [...new Set([...AXE_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
+      const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
       const scriptNames = ["t_greet_01", "t_greet_04"].filter((n) => byName[n]);
       for (const n of scriptNames) clips.push(byName[n]);
-      super(scene2, gltf.scene, H3, clips);
-      this.H = H3;
+      super(scene2, gltf.scene, H4, clips);
+      this.H = H4;
       this.scriptNames = scriptNames;
       this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
@@ -48773,7 +48867,7 @@ void main() {
     // first frame, character space; each clip family grips differently) expressed in this hand's frame.
     calibrateMeleeSockets(clipdata) {
       this.meleeSocket = {};
-      for (const A of AXE_ATTACKS) {
+      for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS]) {
         const smp = clipdata?.[A.path]?.find((q) => q.f === A.f0);
         if (!smp?.d) continue;
         for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
@@ -48785,9 +48879,9 @@ void main() {
         this.mixer.update(0);
         this.container.updateMatrixWorld(true);
         this.container.getWorldQuaternion(_q22);
-        this.bones.RightHand.getWorldQuaternion(_q32);
+        this.bones[(A.hand || "Right") + "Hand"].getWorldQuaternion(_q32);
         const handC = _q22.invert().multiply(_q32);
-        this.meleeSocket[A.name] = new Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
+        this.meleeSocket[A.sock || A.name] = new Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
         act.setEffectiveWeight(0);
       }
     }
@@ -49056,19 +49150,22 @@ void main() {
       let sW = 0, turn = 0;
       const A = s.action === "swing" ? attacksOf(s.equipped)[s.combo] : null;
       if (A) {
-        const t = s.swingT, tEnd = (A.f1 - A.f0) / (A.fps * A.rate), act = this.act(A.clip);
+        const t = s.swingT, tEnd = attackEnd(A), act = this.act(A.clip);
         if (this.swingId !== s.swingId) {
           if (this.swingAct && this.swingAct !== act) {
             this.prevSwing = this.swingAct;
             this.prevSwingW = this.swingW || 1;
             this.prevSwingName = this.swingName;
+            this.prevSwingHand = this.swingHand;
           }
           this.swingId = s.swingId;
           this.swingAct = act;
           this.swingName = A.sock || A.name;
+          this.swingHand = A.hand || "Right";
+          this.swingBlend = A.blendIn || 0.1;
         }
-        act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps + (this.swJit ^= 1) * 1e-6;
-        const ramp = clamp4(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
+        act.time = attackFrame(A, Math.min(t, tEnd)) / A.fps + (this.swJit ^= 1) * 1e-6;
+        const ramp = smooth(clamp4(t / (this.prevSwing ? this.swingBlend : 0.05), 0, 1));
         const out = t <= tEnd ? 1 : smooth(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
         sW = ramp * out;
         turn = A.yawOffset * smooth(clamp4(t / 0.1, 0, 1)) * out;
@@ -49080,7 +49177,7 @@ void main() {
             this.prevSwing = null;
           }
         }
-        if (this.prevTurn != null && t < 0.1) turn = this.prevTurn + (turn - this.prevTurn) * smooth(t / 0.1);
+        if (this.prevTurn != null && t < this.swingBlend) turn = this.prevTurn + (turn - this.prevTurn) * smooth(t / this.swingBlend);
         else this.prevTurn = null;
       } else {
         this.swingAct = null;
@@ -49174,15 +49271,15 @@ void main() {
     // e.g. the rifle stance ~130 degrees; the turn onto the aim is done by the aim correction). Blended
     // by the layer's weight. (Hips' parent is static, so local hip rotations compare directly.)
     rebaseUpper() {
-      const H3 = this.bones.Hips, S2 = this.bones.Spine;
-      if (!H3 || !S2) return;
-      const inv = _q22.copy(H3.quaternion).invert();
+      const H4 = this.bones.Hips, S2 = this.bones.Spine;
+      if (!H4 || !S2) return;
+      const inv = _q22.copy(H4.quaternion).invert();
       for (const n in this.upperHips) {
         const a = this.act(n), w = a.getEffectiveWeight();
         if (w < 1e-3) continue;
         const v = this.upperHips[n].evaluate(a.time);
         _q32.set(v[0], v[1], v[2], v[3]);
-        const fc = _v4.set(0, 0, 1).applyQuaternion(_q32), fn = _v23.set(0, 0, 1).applyQuaternion(H3.quaternion);
+        const fc = _v4.set(0, 0, 1).applyQuaternion(_q32), fn = _v23.set(0, 0, 1).applyQuaternion(H4.quaternion);
         _q4.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
         _q32.premultiply(_q4);
         _q4.copy(inv).multiply(_q32);
@@ -49324,11 +49421,14 @@ void main() {
         if (this.batSocket) {
           const wA = this.swingAct ? this.swingW : 0, wP = this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0, wI = Math.max(0, 1 - wA - wP);
           const ms = this.meleeSocket || {};
-          dir = _v32.copy(this.batSocket).multiplyScalar(wI);
-          if (wA) dir.addScaledVector(ms[this.swingName] || this.batSocket, wA);
-          if (wP) dir.addScaledVector(ms[this.prevSwingName] || this.batSocket, wP);
-          this.bones.RightHand.getWorldQuaternion(_q3);
-          dir.applyQuaternion(_q3).normalize();
+          const inHand = (v, hand) => {
+            this.bones[(hand || "Right") + "Hand"].getWorldQuaternion(_q3);
+            return _v5.copy(v).applyQuaternion(_q3);
+          };
+          dir = _v32.set(0, 0, 0).addScaledVector(inHand(this.batSocket, "Right"), wI);
+          if (wA) dir.addScaledVector(inHand(ms[this.swingName] || this.batSocket, ms[this.swingName] ? this.swingHand : "Right"), wA);
+          if (wP) dir.addScaledVector(inHand(ms[this.prevSwingName] || this.batSocket, ms[this.prevSwingName] ? this.prevSwingHand : "Right"), wP);
+          dir.normalize();
         } else dir = _v32.copy(_v4).sub(_v23).normalize();
         const M4 = this.melee;
         M4.position.copy(_v4).add(_v23).multiplyScalar(0.5);
@@ -50075,6 +50175,161 @@ void main() {
     }
   };
 
+  // src/render/screens.js
+  var W = 256;
+  var H3 = 192;
+  var FPS = 12;
+  var LiveScreens = class {
+    constructor() {
+      this.canvas = document.createElement("canvas");
+      this.canvas.width = W;
+      this.canvas.height = H3;
+      this.g = this.canvas.getContext("2d");
+      this.tex = new CanvasTexture(this.canvas);
+      this.tex.colorSpace = SRGBColorSpace;
+      this.mat = new MeshBasicMaterial({ map: this.tex, toneMapped: false });
+      this.t = 0;
+      this.acc = 1;
+      this.flat = false;
+      this.done = /* @__PURE__ */ new WeakSet();
+      this.count = 0;
+      this.draw();
+    }
+    // find displays under root (call again after more models load; a screen is only dressed once)
+    scan(root) {
+      const screens2 = [];
+      const matName = (o) => [].concat(o.material).map((m) => m?.name || "").join("|");
+      const merged = (o) => {
+        for (let p2 = o.parent; p2; p2 = p2.parent) if (/^room:/.test(p2.name)) return true;
+        return false;
+      };
+      root.traverse((o) => {
+        if (o.isMesh && !this.done.has(o) && /^Screen/.test(matName(o)) && !merged(o)) screens2.push(o);
+      });
+      for (const s of screens2) {
+        this.done.add(s);
+        for (const sib of s.parent?.children || []) if (sib !== s && sib.isMesh && /^(ECG|SignalBlue|Yellow|Green|Trace)/.test(matName(sib)) && sib.geometry) {
+          sib.geometry.computeBoundingBox();
+          const bb = sib.geometry.boundingBox, w = bb.getSize(new Vector3());
+          if (Math.max(w.x, w.z) > 0.1) sib.visible = false;
+        }
+        s.geometry.computeBoundingBox();
+        const b = s.geometry.boundingBox, sz = b.getSize(new Vector3()), c = b.getCenter(new Vector3());
+        let top = s;
+        while (top.parent && !top.parent.userData.prop && top.parent.parent && top.parent.parent.type !== "Scene") top = top.parent;
+        s.updateWorldMatrix(true, false);
+        top.updateWorldMatrix(true, false);
+        const front = new Vector3(0, 0, 1).transformDirection(top.matrixWorld);
+        const inv = new Matrix4().copy(s.matrixWorld).invert();
+        front.transformDirection(inv);
+        const pos = s.geometry.attributes.position, nor = s.geometry.attributes.normal;
+        const n = new Vector3(), t = new Vector3();
+        if (nor) for (let i = 0; i < nor.count; i++) {
+          t.fromBufferAttribute(nor, i);
+          if (t.dot(front) > 0.5) n.add(t);
+        }
+        if (n.lengthSq() < 1e-6) n.copy(front);
+        n.normalize();
+        const u = new Vector3(0, 1, 0).cross(n);
+        if (u.lengthSq() < 1e-6) u.set(1, 0, 0);
+        u.normalize();
+        const v = new Vector3().crossVectors(n, u);
+        let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity, d1 = -Infinity;
+        for (let i = 0; i < pos.count; i++) {
+          t.fromBufferAttribute(pos, i);
+          const a = t.dot(u), bb = t.dot(v), dd = t.dot(n);
+          u0 = Math.min(u0, a);
+          u1 = Math.max(u1, a);
+          v0 = Math.min(v0, bb);
+          v1 = Math.max(v1, bb);
+          d1 = Math.max(d1, dd);
+        }
+        const face = new Mesh(new PlaneGeometry((u1 - u0) * 0.92, (v1 - v0) * 0.88), this.mat);
+        face.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(u, v, n));
+        face.position.copy(u).multiplyScalar((u0 + u1) / 2).addScaledVector(v, (v0 + v1) / 2).addScaledVector(n, d1 + 2e-3);
+        face.name = "liveScreen";
+        s.add(face);
+        this.count++;
+      }
+      return screens2.length;
+    }
+    update(dt) {
+      this.t += dt;
+      this.acc += dt;
+      if (this.acc < 1 / FPS) return;
+      this.acc = 0;
+      this.draw();
+      this.tex.needsUpdate = true;
+    }
+    draw() {
+      const g = this.g, t = this.t;
+      g.fillStyle = "#071a1c";
+      g.fillRect(0, 0, W, H3);
+      g.strokeStyle = "rgba(80, 160, 150, 0.12)";
+      g.lineWidth = 1;
+      for (let x = 0; x < W; x += 16) {
+        g.beginPath();
+        g.moveTo(x, 0);
+        g.lineTo(x, H3);
+        g.stroke();
+      }
+      for (let y = 0; y < H3; y += 16) {
+        g.beginPath();
+        g.moveTo(0, y);
+        g.lineTo(W, y);
+        g.stroke();
+      }
+      const tw = 178, sweep = t * 70 % tw;
+      const trace = (y0, amp, col, fn, flat = false) => {
+        g.strokeStyle = col;
+        g.lineWidth = 2.4;
+        g.shadowColor = col;
+        g.shadowBlur = 6;
+        g.beginPath();
+        let pen = false;
+        for (let x = 4; x < tw; x++) {
+          if (Math.abs(x - sweep) < 7) {
+            pen = false;
+            continue;
+          }
+          const age = x <= sweep ? (sweep - x) / 70 : (sweep + tw - x) / 70;
+          const y = y0 - (flat ? 0 : amp * fn(t - age));
+          if (!pen) {
+            g.moveTo(x, y);
+            pen = true;
+          } else g.lineTo(x, y);
+        }
+        g.stroke();
+        g.shadowBlur = 0;
+      };
+      const beat = (s) => {
+        const p2 = (s % 0.83 + 0.83) % 0.83;
+        return p2 < 0.03 ? -0.15 : p2 < 0.06 ? 1 : p2 < 0.09 ? -0.35 : p2 > 0.25 && p2 < 0.38 ? 0.22 * Math.sin((p2 - 0.25) / 0.13 * Math.PI) : 0;
+      };
+      const pleth = (s) => {
+        const p2 = (s % 0.83 + 0.83) % 0.83 / 0.83;
+        return p2 < 0.3 ? Math.sin(p2 / 0.3 * Math.PI * 0.5) : Math.max(0, 1 - (p2 - 0.3) / 0.7) * (0.85 + 0.15 * Math.sin(p2 * 12));
+      };
+      const resp = (s) => Math.sin(s * 1.6);
+      trace(52, 30, this.flat ? "#ff5a4f" : "#5cf08a", beat, this.flat);
+      trace(112, 22, "#5cc8ff", pleth);
+      trace(165, 12, "#ffd34f", resp);
+      g.textAlign = "right";
+      g.textBaseline = "middle";
+      const read = (label, val, col, y) => {
+        g.fillStyle = col;
+        g.font = "700 11px system-ui, sans-serif";
+        g.fillText(label, W - 8, y - 18);
+        g.font = "800 32px system-ui, sans-serif";
+        g.fillText(val, W - 8, y + 6);
+      };
+      const blink = this.flat && Math.floor(t * 2) % 2;
+      read("HR", this.flat ? blink ? "---" : "0" : String(72 + Math.round(Math.sin(t * 0.3) * 2)), this.flat ? "#ff5a4f" : "#5cf08a", 46);
+      read("SpO2", "98", "#5cc8ff", 108);
+      read("RR", "16", "#ffd34f", 162);
+    }
+  };
+
   // src/audio.js
   var SILENT_WAV = (() => {
     const n = 800, b = new Uint8Array(44 + n), v = new DataView(b.buffer), s = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
@@ -50733,6 +50988,12 @@ void main() {
       $("objectiveText").textContent = text || "";
       o.classList.toggle("show", !!text);
     }
+    // the emergency-lighting edge glow (a CSS overlay: no rendering cost)
+    setEmergency(v) {
+      if (v === this.emOn) return;
+      this.emOn = v;
+      document.getElementById("emergency")?.classList.toggle("on", v);
+    }
     // a quick punchy word over the fight (HEADSHOT): pops in big, fades on its own (CSS animation)
     popup(text) {
       const el = $("popup");
@@ -51112,7 +51373,7 @@ void main() {
     return RAPIER;
   }
   var _q6 = new Quaternion();
-  var _v5 = new Vector3();
+  var _v6 = new Vector3();
   var GROUP_WORLD = 1;
   var GROUP_BODY = 2;
   var groups = (member, filter) => member << 16 | filter;
@@ -51670,7 +51931,7 @@ void main() {
       });
     }
   };
-  var _v6 = new Vector3();
+  var _v7 = new Vector3();
   var _q7 = new Quaternion();
   var _q23 = new Quaternion();
   var _id3 = new Quaternion();
@@ -51740,7 +52001,7 @@ void main() {
       if (!b || w <= 1e-4) return;
       b.updateWorldMatrix(true, false);
       b.getWorldQuaternion(_q7);
-      const cur = _v6.copy(this.armDir[name]).applyQuaternion(_q7);
+      const cur = _v7.copy(this.armDir[name]).applyQuaternion(_q7);
       const rot = _q23.setFromUnitVectors(cur, target);
       rot.premultiply(_id3.identity());
       const part = new Quaternion().identity().slerp(rot, w);
@@ -51811,7 +52072,7 @@ void main() {
       const up = lift * (1 - ease2((t - 3.9) / 0.8));
       const wig = Math.sin(t * 16) * ease2((t - 0.9) / 0.3) * (1 - ease2((t - 3.7) / 0.5));
       const U2 = new Vector3(0, 1, 0);
-      const right = _v6.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
+      const right = _v7.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
       right.y = 0;
       right.normalize();
       const R3 = right.clone(), F3 = new Vector3().crossVectors(U2, R3).normalize();
@@ -51952,10 +52213,10 @@ void main() {
       return m;
     }
     async build() {
-      const W2 = 9.2, Zn = -6, Zs = 5;
+      const W3 = 9.2, Zn = -6, Zs = 5;
       const tex = checkerTexture();
-      tex.repeat.set((W2 * 2 + 1) / 1.2, (Zs - Zn + 1) / 1.2);
-      const floor = new Mesh(new PlaneGeometry(W2 * 2 + 1, Zs - Zn + 1), new MeshStandardMaterial({ map: tex, roughness: 0.5 }));
+      tex.repeat.set((W3 * 2 + 1) / 1.2, (Zs - Zn + 1) / 1.2);
+      const floor = new Mesh(new PlaneGeometry(W3 * 2 + 1, Zs - Zn + 1), new MeshStandardMaterial({ map: tex, roughness: 0.5 }));
       floor.rotation.x = -Math.PI / 2;
       floor.position.set(0, 0, (Zn + Zs) / 2);
       floor.receiveShadow = true;
@@ -51969,19 +52230,19 @@ void main() {
       rug.position.set(-5.2, 6e-3, 1.4);
       rug.receiveShadow = true;
       this.root.add(rug);
-      const inlay = new Mesh(new PlaneGeometry(W2 + 0.2, 0.3), new MeshStandardMaterial({ color: 10474700 }));
+      const inlay = new Mesh(new PlaneGeometry(W3 + 0.2, 0.3), new MeshStandardMaterial({ color: 10474700 }));
       inlay.rotation.x = -Math.PI / 2;
-      inlay.position.set(-W2 / 2 + 0.1, 5e-3, -3.5);
+      inlay.position.set(-W3 / 2 + 0.1, 5e-3, -3.5);
       this.root.add(inlay);
-      this.wall(-W2, W2, Zn - 0.3, Zn, 4, "full");
-      this.wall(-W2 - 0.3, -W2, Zn - 0.3, -0.2, 4, "full");
-      this.wall(-W2 - 0.3, -W2, 2, Zs, 4, "full");
-      this.wall(-W2, W2, Zs, Zs + 0.3, 0.95, "low");
-      this.wall(W2, W2 + 0.3, Zn - 0.3, Zs + 0.3, 0.95, "low");
+      this.wall(-W3, W3, Zn - 0.3, Zn, 4, "full");
+      this.wall(-W3 - 0.3, -W3, Zn - 0.3, -0.2, 4, "full");
+      this.wall(-W3 - 0.3, -W3, 2, Zs, 4, "full");
+      this.wall(-W3, W3, Zs, Zs + 0.3, 0.95, "low");
+      this.wall(W3, W3 + 0.3, Zn - 0.3, Zs + 0.3, 0.95, "low");
       this.wall(0.2, 0.45, Zn, -1.6, 2.3, "glass");
       this.wall(0.2, 0.45, -0.4, 2, 2.3, "glass");
       this.wall(0.2, 0.45, 3.4, Zs, 2.3, "glass");
-      this.wall(0.45, W2, -0.05, 0.2, 3, "full");
+      this.wall(0.45, W3, -0.05, 0.2, 3, "full");
       this.wall(3.05, 3.3, Zn, -1.9, 3, "full");
       this.wall(3.05, 3.3, -0.6, -0.05, 3, "full");
       const tasks = [];
@@ -51991,12 +52252,12 @@ void main() {
       tasks.push(this.prop(M3 + "uploaded/staff-chair.glb", { x: -6.2, z: 3.45, rot: 0, name: "wchair2" }));
       tasks.push(this.prop(M3 + "furnishings/Lounge_Break_Chair.glb", { x: -5, z: 3.4, rot: 180, name: "wchair3" }));
       tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.2, z: -5.3 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: -3.4, z: -5.4 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: -3.85, z: -5.4 }));
       tasks.push(this.prop(M3 + "entrance/Entrance_Double_Doorway.glb", { x: -1.4, z: -5.9, rot: 0, name: "orDoor" }));
       tasks.push(this.prop(M3 + "decor/Reception_Round_Side_Table.glb", { x: -3.2, z: 3.6 }));
       tasks.push(this.prop(M3 + "decor/Reception_Magazine_Rack.glb", { x: -1.2, z: 3.7, rot: 0 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Poster_Heart.glb", { x: -2.6, y: 1.35, z: -5.88 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: -0.9, y: 1.2, z: -5.88 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Poster_Heart.glb", { x: -3.15, y: 1.35, z: -5.88 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 0.02, y: 1.2, z: -5.88 }));
       tasks.push(this.prop(M3 + "entrance/Entrance_Double_Doorway.glb", { x: -9.05, z: 0.9, rot: 90, name: "door" }));
       this.signs = {};
       this.sign("reception", -5.2, 2.15, -5.94, 1.9);
@@ -52057,6 +52318,7 @@ void main() {
       tasks.push(this.prop(M3 + "decor/Recovery_Wall_Clock.glb", { x: 5, y: 2.25, z: BZ, wall: "s", name: "clockR" }));
       tasks.push(this.prop(M3 + "decor2/Clinical_Art_Lungs.glb", { x: 8.55, y: 1.45, z: BZ, wall: "s", name: "artR" }));
       this.sign("recovery", 2, 2.45, BZ + 0.012, 1);
+      tasks.push(this.buildExterior());
       await Promise.all(tasks);
       Object.assign(this.anchors, {
         queue: { x: -5.9, z: -3.55 },
@@ -52080,6 +52342,226 @@ void main() {
         yolaTour: { x: 5, z: 3.7, yaw: 0.45 }
         // original Yola in the two-bay room for the tour
       });
+    }
+    // ---- the outside of the medical center (the opening's first shot): the clinic's own front entrance in the west wall,
+    //      dressed as a building front - cream stucco, the teal name sign over a canopy with downlights, teal-framed glass
+    //      sliding doors (the real reception shows through them), planters, hedges, a sidewalk with leaf shadows, trees
+    //      behind the roofline and a painted sky. Facade face at x = -9.5 (local); the doorway is z -0.2..2.0.
+    async buildExterior() {
+      const g = new Group();
+      g.name = "exterior";
+      this.root.add(g);
+      this.exterior = g;
+      const std = (c, r = 0.85, o = {}) => new MeshStandardMaterial({ color: c, roughness: r, ...o });
+      const box = (w, h, d, x, y, z, m, { r = 0.04, shadow = true, parent = g } = {}) => {
+        const b = new Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), m);
+        b.position.set(x, y, z);
+        b.castShadow = shadow;
+        b.receiveShadow = true;
+        parent.add(b);
+        return b;
+      };
+      const bx = (x0, x1, y0, y1, z0, z1, m, o) => box(x1 - x0, y1 - y0, z1 - z0, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, m, o);
+      const stucco = std(15853004), stucco2 = std(15260091), capM = std(16314590), teal = std(2792086, 0.55), tealDk = std(2064252, 0.5);
+      const glassM = new MeshStandardMaterial({ color: 13627118, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false });
+      const winM = std(8369339, 0.15, { metalness: 0.3 }), steel = std(14212576, 0.3, { metalness: 0.7 });
+      for (const [z0, z1] of [[-8.6, -0.75], [2.55, 8.4]]) {
+        bx(-9.85, -9.5, 0, 4.25, z0, z1, stucco, { r: 0.05 });
+        bx(-9.9, -9.5, 0, 0.16, z0, z1, stucco2, { r: 0.02 });
+        bx(-9.92, -9.5, 4.2, 4.32, z0 - 0.02, z1 + 0.02, capM, { r: 0.03 });
+        bx(-9.88, -9.84, 3, 3.18, z0, z1, teal, { r: 0.01, shadow: false });
+      }
+      for (const zc of [-5.3, 5.3]) {
+        bx(-9.9, -9.84, 0.85, 2.65, zc - 1.3, zc + 1.3, tealDk, { r: 0.02, shadow: false });
+        bx(-9.93, -9.88, 0.93, 2.57, zc - 1.22, zc + 1.22, winM, { r: 0.01, shadow: false });
+        bx(-9.95, -9.88, 0.93, 2.57, zc - 0.03, zc + 0.03, tealDk, { r: 0.01, shadow: false });
+        bx(-10.02, -9.84, 0.8, 0.88, zc - 1.36, zc + 1.36, capM, { r: 0.02 });
+      }
+      bx(-10.55, -9.5, 0, 3, -0.78, -0.2, stucco2, { r: 0.06 });
+      bx(-10.55, -9.5, 0, 3, 2, 2.58, stucco2, { r: 0.06 });
+      bx(-10.8, -9.5, 2.95, 3.32, -1, 2.8, capM, { r: 0.06 });
+      const lampM = new MeshBasicMaterial({ color: 16774102 });
+      for (const zc of [-0.1, 0.9, 1.9]) {
+        const d = new Mesh(new CircleGeometry(0.11, 20), lampM);
+        d.rotation.x = Math.PI / 2;
+        d.position.set(-10.25, 2.945, zc);
+        g.add(d);
+      }
+      bx(-10.2, -9.5, 3.32, 4.8, -3, 4.8, stucco, { r: 0.06 });
+      bx(-10.24, -9.5, 4.75, 4.86, -3.04, 4.84, capM, { r: 0.03 });
+      bx(-10.32, -10.18, 3.5, 4.58, -2.55, 4.35, teal, { r: 0.08 });
+      const sc = document.createElement("canvas");
+      sc.width = 1400;
+      sc.height = 220;
+      const sg = sc.getContext("2d");
+      let fs0 = 150;
+      do {
+        sg.font = "800 " + fs0 + 'px system-ui, "Segoe UI", sans-serif';
+        fs0 -= 4;
+      } while (sg.measureText("Yola\u2019s Medical Center").width > 1300 && fs0 > 60);
+      sg.textAlign = "center";
+      sg.textBaseline = "middle";
+      sg.fillStyle = "rgba(0,0,0,0.18)";
+      sg.fillText("Yola\u2019s Medical Center", 706, 118);
+      sg.fillStyle = "#ffffff";
+      sg.fillText("Yola\u2019s Medical Center", 700, 110);
+      const stx = new CanvasTexture(sc);
+      stx.colorSpace = SRGBColorSpace;
+      stx.anisotropy = 4;
+      const sign2 = new Mesh(new PlaneGeometry(6.6, 6.6 * 220 / 1400), new MeshBasicMaterial({ map: stx, transparent: true }));
+      sign2.position.set(-10.33, 4.04, 0.9);
+      sign2.rotation.y = -Math.PI / 2;
+      g.add(sign2);
+      bx(-9.64, -9.52, 2.42, 2.95, -0.2, 2, tealDk, { r: 0.02 });
+      for (const [z0, z1] of [[-0.2, -0.12], [1.92, 2]]) bx(-9.64, -9.52, 0, 2.45, z0, z1, tealDk, { r: 0.01 });
+      this.extDoors = [];
+      for (const [zc, dir] of [[0.47, -1], [1.33, 1]]) {
+        const leaf = new Group();
+        leaf.position.set(-9.6, 0, zc);
+        g.add(leaf);
+        const W3 = 0.84;
+        bx(-0.035, 0.035, 0.02, 2.4, -W3 / 2, -W3 / 2 + 0.06, teal, { parent: leaf, r: 0.01 });
+        bx(-0.035, 0.035, 0.02, 2.4, W3 / 2 - 0.06, W3 / 2, teal, { parent: leaf, r: 0.01 });
+        bx(-0.035, 0.035, 2.34, 2.4, -W3 / 2, W3 / 2, teal, { parent: leaf, r: 0.01 });
+        bx(-0.035, 0.035, 0.02, 0.14, -W3 / 2, W3 / 2, teal, { parent: leaf, r: 0.01 });
+        bx(-0.01, 0.01, 0.14, 2.34, -W3 / 2 + 0.06, W3 / 2 - 0.06, glassM, { parent: leaf, r: 2e-3, shadow: false });
+        bx(-0.09, -0.05, 0.75, 1.6, -dir * (W3 / 2 - 0.14) - 0.02, -dir * (W3 / 2 - 0.14) + 0.02, steel, { parent: leaf, r: 0.015 });
+        this.extDoors.push({ leaf, z0: zc, dir });
+      }
+      const leafCols = [6266442, 5213246, 7648090, 4160053];
+      const leafMats = leafCols.map((c) => std(c, 0.9, { flatShading: true }));
+      const shrub = (x, y, z, r, k = 0, parent = g) => {
+        const m = new Mesh(new IcosahedronGeometry(r, 1), leafMats[k % 4]);
+        m.position.set(x, y, z);
+        m.scale.y = 0.8;
+        m.castShadow = true;
+        m.receiveShadow = true;
+        parent.add(m);
+        return m;
+      };
+      const jobs = [];
+      for (const zc of [-2.05, 3.85]) {
+        bx(-11.55, -10.6, 0, 0.82, zc - 0.62, zc + 0.62, capM, { r: 0.08 });
+        bx(-11.5, -10.65, 0.8, 0.83, zc - 0.57, zc + 0.57, std(5916214, 1), { r: 0.01, shadow: false });
+        jobs.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -11.08, y: 0.55, z: zc, rot: 90, s: 1.15, parent: g }));
+        for (let i = 0; i < 5; i++) {
+          const a = i / 5 * Math.PI * 2;
+          shrub(-11.08 + Math.cos(a) * 0.38, 0.95, zc + Math.sin(a) * 0.42, 0.2 + i % 2 * 0.05, i);
+        }
+      }
+      for (const zc of [-5.3, 5.3]) jobs.push(this.prop(M3 + "campus/hedge.glb", { x: -10.4, z: zc, rot: 90, parent: g }));
+      jobs.push(this.prop(M3 + "campus/flowerbed.glb", { x: -15.6, z: -4.8, rot: 75, parent: g }));
+      const tree = (x, z, h, r) => {
+        const t = new Group();
+        t.position.set(x, 0, z);
+        g.add(t);
+        const tr = new Mesh(new CylinderGeometry(0.12, 0.18, h * 0.55, 8), std(8018496, 0.9));
+        tr.position.y = h * 0.27;
+        tr.castShadow = true;
+        t.add(tr);
+        for (let i = 0; i < 7; i++) {
+          const a = i * 2.39, d = i ? r * 0.55 : 0;
+          shrub(Math.cos(a) * d, h * 0.62 + i % 3 * r * 0.28, Math.sin(a) * d, r * (i ? 0.62 : 0.8), i, t);
+        }
+      };
+      tree(-8.1, -4.3, 7.4, 1.6);
+      tree(-7.9, 6.1, 7.8, 1.7);
+      tree(-7.6, -10.6, 6.6, 1.7);
+      const pc = document.createElement("canvas");
+      pc.width = pc.height = 256;
+      const pg = pc.getContext("2d");
+      pg.fillStyle = "#ebe4d6";
+      pg.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 900; i++) {
+        pg.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.18)" : "rgba(150,135,110,0.08)";
+        pg.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+      }
+      pg.strokeStyle = "rgba(160,145,120,0.55)";
+      pg.lineWidth = 3;
+      pg.strokeRect(1.5, 1.5, 253, 253);
+      const pt = new CanvasTexture(pc);
+      pt.wrapS = pt.wrapT = RepeatWrapping;
+      pt.colorSpace = SRGBColorSpace;
+      pt.anisotropy = 8;
+      const walk = new Mesh(new PlaneGeometry(15.5, 34), new MeshStandardMaterial({ map: pt, roughness: 0.9 }));
+      pt.repeat.set(15.5 / 1.8, 34 / 1.8);
+      walk.rotation.x = -Math.PI / 2;
+      walk.position.set(-9.5 - 7.75, 6e-3, 0);
+      walk.receiveShadow = true;
+      g.add(walk);
+      const lawn = new Mesh(new PlaneGeometry(120, 160), std(10273900, 1));
+      lawn.rotation.x = -Math.PI / 2;
+      lawn.position.set(-25.2 - 60, 4e-3, 0);
+      lawn.receiveShadow = true;
+      g.add(lawn);
+      bx(-25.25, -24.95, 0, 0.12, -17, 17, std(14275268), { r: 0.03 });
+      const dc = document.createElement("canvas");
+      dc.width = dc.height = 256;
+      const dg = dc.getContext("2d");
+      for (let i = 0; i < 70; i++) {
+        const x = Math.random() * 256, y = Math.random() * 256, r = 6 + Math.random() * 22, gr = dg.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, "rgba(40,60,40,0.32)");
+        gr.addColorStop(1, "rgba(40,60,40,0)");
+        dg.fillStyle = gr;
+        dg.beginPath();
+        dg.arc(x, y, r, 0, Math.PI * 2);
+        dg.fill();
+      }
+      const dtex = new CanvasTexture(dc);
+      for (const [zc, w] of [[-8, 6], [8.6, 6.5]]) {
+        const d = new Mesh(new PlaneGeometry(6, w), new MeshBasicMaterial({ map: dtex, transparent: true, depthWrite: false }));
+        d.rotation.x = -Math.PI / 2;
+        d.position.set(-13.2, 0.012, zc);
+        g.add(d);
+      }
+      const kc = document.createElement("canvas");
+      kc.width = 512;
+      kc.height = 512;
+      const kg = kc.getContext("2d");
+      const sky = kg.createLinearGradient(0, 0, 0, 512);
+      sky.addColorStop(0, "#4f9fe6");
+      sky.addColorStop(0.55, "#8cc4f0");
+      sky.addColorStop(1, "#d8eef8");
+      kg.fillStyle = sky;
+      kg.fillRect(0, 0, 512, 512);
+      const cloud = (x, y, w) => {
+        for (let i = 0; i < 7; i++) {
+          const cx = x + (i - 3) * w * 0.16, cy = y - Math.sin(i / 6 * Math.PI) * w * 0.12, r = w * (0.14 + 0.1 * Math.sin(i / 6 * Math.PI)), gr = kg.createRadialGradient(cx, cy, 0, cx, cy, r);
+          gr.addColorStop(0, "rgba(255,255,255,0.95)");
+          gr.addColorStop(0.7, "rgba(255,255,255,0.75)");
+          gr.addColorStop(1, "rgba(255,255,255,0)");
+          kg.fillStyle = gr;
+          kg.beginPath();
+          kg.arc(cx, cy, r, 0, Math.PI * 2);
+          kg.fill();
+        }
+      };
+      cloud(390, 120, 190);
+      cloud(120, 210, 150);
+      cloud(300, 300, 120);
+      this.skyTex = new CanvasTexture(kc);
+      this.skyTex.colorSpace = SRGBColorSpace;
+      const ceil = new Mesh(new PlaneGeometry(9.8, 11.2), std(16051420, 0.9, { side: DoubleSide }));
+      ceil.rotation.x = Math.PI / 2;
+      ceil.position.set(-4.4, 3.05, -0.5);
+      g.add(ceil);
+      const panelM = new MeshBasicMaterial({ color: 16774882 });
+      for (const [x, z] of [[-7.2, -1.8], [-7.2, 2.4], [-4.4, -1.8], [-4.4, 2.4], [-1.6, -1.8], [-1.6, 2.4]]) {
+        const p2 = new Mesh(new PlaneGeometry(1.1, 0.55), panelM);
+        p2.rotation.x = Math.PI / 2;
+        p2.position.set(x, 3.04, z);
+        g.add(p2);
+      }
+      bx(0.25, 0.45, 0, 3.05, -6, 5, std(16051420), { r: 0.02, shadow: false });
+      bx(0.2, 0.25, 0.05, 0.4, -6, 5, std(8109496), { r: 0.01, shadow: false });
+      await Promise.all(jobs);
+      g.traverse((o) => {
+        if (o.isMesh && o.material?.transparent) o.castShadow = false;
+      });
+    }
+    // the sliding doors: k 0 shut .. 1 open
+    setEntranceOpen(k) {
+      for (const d of this.extDoors || []) d.leaf.position.z = d.z0 + d.dir * 0.82 * k;
     }
     // procedural desk-top dressing (the kit has no desk accessories): monitor and keyboard, a phone, a clipboard, paperwork
     deskTop(cx, y, cz) {
@@ -52117,7 +52599,7 @@ void main() {
     // fading one tier never touches another
     fadeable(h) {
       h.traverse((o) => {
-        if (o.isMesh) {
+        if (o.isMesh && o.name !== "liveScreen") {
           o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
           for (const m of [].concat(o.material)) m.transparent = true;
         }
@@ -52125,9 +52607,14 @@ void main() {
     }
     setOpacity(h, a) {
       h.traverse((o) => {
+        if (o.name === "liveScreen") {
+          o.visible = a > 0.5;
+          return;
+        }
         if (o.isMesh) for (const m of [].concat(o.material)) m.opacity = a;
       });
     }
+    // (a live screen face is shared by every monitor: it switches with the monitor instead of fading)
     setTier(tier, fade = 1) {
       const prev = this.tier;
       this.tier = tier;
@@ -52690,16 +53177,16 @@ void main() {
     }
     // flatline: a heart trace that flattens
     drawEcg(t, flat) {
-      const c = this.ecg, g = c.getContext("2d"), W2 = c.width, H3 = c.height;
-      g.clearRect(0, 0, W2, H3);
+      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H4 = c.height;
+      g.clearRect(0, 0, W3, H4);
       g.fillStyle = "rgba(8,24,20,.55)";
-      g.fillRect(0, 0, W2, H3);
+      g.fillRect(0, 0, W3, H4);
       g.strokeStyle = flat ? "#ff6a5a" : "#59f0a0";
       g.lineWidth = 3;
       g.lineJoin = "round";
       g.beginPath();
-      for (let x = 0; x <= W2; x += 3) {
-        const u = (x / W2 * 3 - t * 0.9) % 1, p2 = (u % 1 + 1) % 1;
+      for (let x = 0; x <= W3; x += 3) {
+        const u = (x / W3 * 3 - t * 0.9) % 1, p2 = (u % 1 + 1) % 1;
         let y = 0;
         if (!flat) {
           if (p2 > 0.1 && p2 < 0.14) y = -10;
@@ -52708,7 +53195,7 @@ void main() {
           else if (p2 > 0.235 && p2 < 0.27) y = 14;
           else if (p2 > 0.4 && p2 < 0.5) y = -8 * Math.sin((p2 - 0.4) / 0.1 * Math.PI);
         }
-        const yy = H3 / 2 + y + (flat ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
+        const yy = H4 / 2 + y + (flat ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
         x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
       }
       g.stroke();
@@ -53067,6 +53554,12 @@ void main() {
       this.audio.tone(t + 0.05, 0.8, 780, { type: "triangle", gain: 0.07, f2: 2100, attack: 0.05 });
       this.audio.noise(t, 0.9, { type: "bandpass", f: 1800, q: 2, f2: 3200, gain: 0.08, attack: 0.04 });
     }
+    flicker(on = true) {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 3e-3;
+      this.audio.tone(t, 0.025, on ? 2400 : 1600, { type: "square", gain: 0.05, attack: 1e-3 });
+      if (on) this.audio.tone(t + 0.01, 0.09, 100, { type: "sawtooth", gain: 0.07, attack: 4e-3 });
+    }
     revealCue() {
       if (!this.audio.ok) return;
       const t = this.ctx.currentTime + 0.01;
@@ -53158,11 +53651,18 @@ void main() {
   var lerp2 = (a, b, u) => a + (b - a) * u;
   var L = (x, y, z) => new Vector3(x + CLINIC.x, y, z + CLINIC.z);
   var S = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x: x + CLINIC.x, y, z: z + CLINIC.z, pitch, yaw, width, fov: fov2 });
-  var W = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x, y, z, pitch, yaw, width, fov: fov2 });
+  var W2 = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x, y, z, pitch, yaw, width, fov: fov2 });
   var OFFICE_SHOT = S(6.3, 0.85, -3, 30, 72, 4.6);
+  var EXT_A = { ...S(-9.7, 2.2, 0.9, 4, -95, 7, 46), fitH: 7.4 };
+  var EXT_B = { ...S(-9.7, 1.8, 0.9, 0, -90, 4, 46), fitH: 4.4 };
+  var IN_A = S(-8, 0.8, 1.2, 66, 14, 8.4);
+  var IN_B = S(-5.3, 0.9, -3.9, 49, 28, 8.4);
+  var EXT_END = 5.6;
   var SHOTS = [
-    // 0:00-0:12 above the reception entrance, gliding in toward the desk
-    { t0: 0, t1: 11.6, a: S(-8, 0.8, 1.2, 66, 14, 8.4), b: S(-5.3, 0.9, -3.9, 49, 28, 8.4) },
+    // 0:00-0:06 outside: the push in toward the entrance
+    { t0: 0, t1: EXT_END, a: EXT_A, b: EXT_B },
+    // 0:06-0:12 inside: above the reception entrance, gliding in toward the desk
+    { t0: EXT_END, t1: 11.6, a: IN_A, b: IN_B },
     // 0:12-0:25 the treatment room: doorway and starter equipment in one composition, a slow push
     { t0: 12, t1: 25, a: S(4.5, 0.8, 2.45, 49, 30, 8.8), b: S(4.8, 0.8, 2.35, 49, 30, 7.8) },
     // 0:25-0:40 hold (the faintest drift so it breathes)
@@ -53242,7 +53742,7 @@ void main() {
       for (const l of this.arena.lights) l.visible = false;
       this.setBlood(true);
       this.belongings.visible = true;
-      this.rig = { ...W(0, 0.9, -8, 50, 35, 8) };
+      this.rig = { ...W2(0, 0.9, -8, 50, 35, 8) };
       this.setCamera();
       this.renderer.render(this.scene, this.camera);
       this.setBlood(false);
@@ -53301,9 +53801,20 @@ void main() {
         });
       }
       at(0, "music", () => this.music());
-      at(0.1, "glide", () => this.camTo(S(-5.3, 0.9, -3.9, 49, 28, 8.4), 7.3));
-      at(0.15, "title", () => this.ui.title("Yola\u2019s Medical Center", "Starter clinic"));
-      at(6.6, "title-off", () => this.ui.title(""));
+      at(0, "exterior", () => {
+        this.outside(true);
+        this.camTo(EXT_A, 0.01);
+        this.camTo(EXT_B, EXT_END - 0.05);
+      });
+      at(3.3, "doors", () => this.tween(1.3, (k) => this.stage.setEntranceOpen(ease(k))));
+      at(EXT_END - 0.25, "dip-in", () => this.dip(0.22, 0.3));
+      at(EXT_END, "inside", () => {
+        this.outside(false);
+        this.camTo(IN_A, 0.01);
+        this.camTo(IN_B, 11.6 - EXT_END);
+      });
+      at(EXT_END + 0.4, "title", () => this.ui.title("Yola\u2019s Medical Center", "Starter clinic"));
+      at(10.6, "title-off", () => this.ui.title(""));
       at(K2.furnishCut, "dip-furnish", () => this.dip(0.22, 0.26));
       at(K2.furnishCut + 0.24, "room-empty", () => {
         this.showRoom("empty");
@@ -53380,6 +53891,14 @@ void main() {
       });
       c.sort((a, b) => a.t - b.t);
     }
+    outside(v) {
+      const st = this.stage;
+      if (st.exterior) st.exterior.visible = v;
+      if (st.byName.door) st.byName.door.visible = !v;
+      if (v) st.setEntranceOpen?.(0);
+      this.scene.background = v && st.skyTex ? st.skyTex : new Color(13624287);
+      this.renderer.shadowMap.needsUpdate = true;
+    }
     fire(cue) {
       this.cueLog.push([+this.t.toFixed(2), cue.name]);
       cue.fn();
@@ -53441,6 +53960,8 @@ void main() {
       }
       if (this.guardPool) this.guardPool.visible = false;
       A.baseball.setOutfit(null);
+      this.restoreGreen?.();
+      if (this.screens) this.screens.flat = false;
       this.ui.showEcg(false);
       this.ui.setVignette(0);
       this.ui.status("");
@@ -53602,7 +54123,8 @@ void main() {
       c.fov = r.fov;
       c.updateProjectionMatrix();
       const hf = 2 * Math.atan(Math.tan(MathUtils.degToRad(r.fov) / 2) * c.aspect);
-      const dist2 = r.dist ?? clamp6(r.width / (2 * Math.tan(hf / 2)), 2.5, 80);
+      let dist2 = r.dist ?? clamp6(r.width / (2 * Math.tan(hf / 2)), 2.5, 80);
+      if (r.fitH && r.dist == null) dist2 = Math.max(dist2, r.fitH / (2 * Math.tan(MathUtils.degToRad(r.fov) / 2)));
       c.position.set(r.x - fx2 * Math.cos(p2) * dist2, r.y + Math.sin(p2) * dist2, r.z - fz * Math.cos(p2) * dist2);
       c.lookAt(r.x, r.y, r.z);
     }
@@ -53821,6 +54343,7 @@ void main() {
       this.scene.environmentIntensity = b.env * k;
     }
     restoreLook() {
+      this.arena.setEmergency?.(false, 0);
       this.setLight(1);
       this.lightK = 1;
       if (this.spot) this.spot.intensity = 0;
@@ -53976,7 +54499,7 @@ void main() {
       op.play("Walk_InPlace", { fade: 0 });
       A.staff.setVisible(false);
       A.security.setVisible(false);
-      this.camTo(W(0, 0.9, -6.4, 50, 35, 8), 0.01);
+      this.camTo(W2(0, 0.9, -6.4, 50, 35, 8), 0.01);
       op.walk([[-6.2, -4.75], [-3.4, -6.4], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
       this.mark("or-enter");
       yield 1.5;
@@ -53986,7 +54509,7 @@ void main() {
       yield 0.6;
       this.dip(0.35, 0.35);
       yield 0.4;
-      this.camTo(W(-2.3, 1.15, -10, 28, 30, 3.6), 0.01);
+      this.camTo(W2(-2, 1.15, -7.9, 28, 30, 3.6), 0.01);
       if (bb.capSkin) bb.capSkin.visible = false;
       if (bb.bat) bb.bat.visible = false;
       bb.setOutfit(PATIENT_OUTFIT);
@@ -53997,22 +54520,22 @@ void main() {
       yield 3;
       this.dip(0.3, 0.3);
       yield 0.35;
-      this.camTo(W(BELONG.x, 0.8, BELONG.z + 0.1, 56, 30, 3), 0.01);
+      this.camTo(W2(BELONG.x, 0.8, BELONG.z + 0.1, 56, 30, 3), 0.01);
       this.mark("belongings");
       yield 2;
       this.dip(0.3, 0.3);
       yield 0.35;
-      this.camTo(W(0, 0.95, -8.2, 52, 35, 7.6), 0.01);
+      this.camTo(W2(0, 0.95, -8.2, 52, 35, 7.6), 0.01);
       this.mark("or-wide");
       yield 1.8;
       this.substate = "CHOICE_1";
       this.speak(DIALOGUE.equipment, 3, 1.4);
-      this.camTo(W(-2, 1, -9.8, 38, 35, 5.4), 1.6);
+      this.camTo(W2(-1.9, 1, -7.9, 38, 35, 5.4), 1.6);
       yield 1.8;
-      this.camTo(W(-1, 0.9, -8.8, 50, 33, 5.8), 1.2);
+      this.camTo(W2(-1, 0.9, -8.3, 50, 33, 5.8), 1.2);
       yield 1.4;
       this.ui.tag("equip", "Check the equipment", "Anesthesia workstation");
-      this.pointAt("equip", -2.3, 1.8, -10.4);
+      this.pointAt("equip", -2.25, 1.8, -7.75);
       this.mark("or-card-1");
       const a1 = yield* this.askCard(CARDS[1]);
       this.answers[CARDS[1].id] = a1;
@@ -54021,10 +54544,10 @@ void main() {
       yield 0.6;
       this.substate = "CHOICE_2";
       this.speak(DIALOGUE.monitor, 3, 1.4);
-      this.camTo(W(1.2, 0.95, -9.2, 46, 35, 5.8), 1.6);
+      this.camTo(W2(-0.4, 0.95, -9.3, 46, 35, 5.8), 1.6);
       yield 1.8;
       this.ui.tag("monitor", "Check the monitor", "Patient monitor");
-      this.pointAt("monitor", 2.2, 1.9, -10.45);
+      this.pointAt("monitor", -0.7, 1.9, -10);
       this.mark("or-card-2");
       const a2 = yield* this.askCard(CARDS[2]);
       this.answers[CARDS[2].id] = a2;
@@ -54033,7 +54556,7 @@ void main() {
       this.state = "APPARENT_SUCCESS";
       this.substate = "SETUP_COMPLETE";
       this.ui.status(EMERGENCY_LINES.stable);
-      this.camTo(W(0, 0.95, -8.2, 52, 35, 7), 1.6);
+      this.camTo(W2(0, 0.95, -8.2, 52, 35, 7), 1.6);
       this.mark("setup-complete");
       yield 4;
       this.state = "EMERGENCY_TOPDOWN";
@@ -54047,15 +54570,16 @@ void main() {
       }
       this.speak(DIALOGUE.somethingWrong, 3.2, 1);
       this.mark("alert");
-      op.walk([[-1.7, -9.2], [-2, -9.7]], { endYaw: Math.PI * 0.85 });
+      op.walk([[-1.5, -8.6], [-1.45, -7.9]], { endYaw: -Math.PI / 2 });
       let u = 1;
       this.urgencyTimer = 6;
       yield 3.4;
       this.state = "FLATLINE_MOVEMENT";
       this.substate = "FLATLINE";
-      this.camTo(W(0.45, 1, -8.3, 48, 35, 3.9), 2.2);
+      this.camTo(W2(0.45, 1, -8.3, 48, 35, 3.9), 2.2);
       this.ecg = { t: 0, flat: true };
       this.ui.showEcg(true);
+      if (this.screens) this.screens.flat = true;
       if (!this.silent) {
         this.sound.alarmOff();
         this.sound.flatlineOn();
@@ -54066,17 +54590,24 @@ void main() {
       yield 2;
       this.substate = "MOTION";
       bb.adjust("head", "head", 0, 0.55, 0, 0);
-      bb.adjust("hand", "forearm.R", 0, 0, -0.45, 0);
-      this.tween(1.4, (k) => {
-        bb.adj.head.w = ease(k);
-        bb.adj.hand.w = ease(k);
+      bb.adjust("hand", "forearmR", 0, 0, -0.5, 0);
+      this.tween(0.9, (k) => {
+        bb.adj.hand.w = Math.sin(k * Math.PI * 3) * 0.6 + ease(k) * 0.4;
       });
+      this.later(0.7, () => this.tween(1.1, (k) => {
+        bb.adj.head.w = ease(k);
+      }));
       this.mark("motion");
       yield 1.6;
-      ta.turnTo(Math.PI);
-      tb.turnTo(Math.PI / 2);
+      this.substate = "SIT_UP";
+      this.sitUp(bb, 2.4);
+      this.greenTo(bb, 3.2);
+      const lookAt = (a) => a.turnTo(Math.atan2(-0.15 - a.x, -8.2 - a.z));
+      for (const a of [ta, tb, op]) lookAt(a);
       this.speak(DIALOGUE.stillMoving, 2.6, 1);
       this.recoil(tb, -0.28, 0.4);
+      this.later(0.6, () => this.recoil(op, -0.3, 0.5));
+      this.mark("sit-up");
       yield 2.8;
       if (!this.silent) this.sound.flatlineOff(0.6);
       this.ui.status("", false);
@@ -54119,6 +54650,45 @@ void main() {
       this.tagPoints[id] = new Vector3(x, y, z);
     }
     // a modest step back/away from the table (staff recoil): slide the actor along its facing axis while walking backwards
+    // the patient sits up on the table: the spine hinges up from the hips (his legs stay flat on the table)
+    sitUp(a, secs) {
+      a.adjust("sitS", "spine", 0.95, 0, 0, 0);
+      a.adjust("sitC", "chest", 0.45, 0, 0, 0);
+      a.adjust("sitN", "neck", 0.2, 0, 0, 0);
+      this.tween(secs, (k) => {
+        const e = ease(k) * (1 - 0.06 * Math.sin(k * Math.PI * 5) * (1 - k));
+        for (const n of ["sitS", "sitC", "sitN"]) a.adj[n].w = e;
+      });
+    }
+    // his skin drains to a grey green (the material is cloned once; restoreGreen puts the original back)
+    greenTo(a, secs) {
+      const skins = [];
+      a.model.traverse((o) => {
+        if (!o.isMesh) return;
+        const ms = [].concat(o.material);
+        ms.forEach((m, i) => {
+          if (/^Skin_/.test(m.name)) {
+            const n = m.clone();
+            n.userData.orig = m;
+            skins.push({ o, i, n, c0: m.color.clone() });
+            if (Array.isArray(o.material)) o.material[i] = n;
+            else o.material = n;
+          }
+        });
+      });
+      this.greened = skins;
+      const green = new Color(9414524);
+      this.tween(secs, (k) => {
+        for (const s of skins) s.n.color.copy(s.c0).lerp(green, ease(k));
+      });
+    }
+    restoreGreen() {
+      for (const s of this.greened || []) {
+        if (Array.isArray(s.o.material)) s.o.material[s.i] = s.n.userData.orig;
+        else s.o.material = s.n.userData.orig;
+      }
+      this.greened = null;
+    }
     recoil(a, dist2, secs) {
       const dx = -Math.sin(a.yaw) * dist2, dz = -Math.cos(a.yaw) * dist2, x0 = a.root.position.x, z0 = a.root.position.z;
       this.tween(secs, (k) => {
@@ -54172,29 +54742,7 @@ void main() {
       this.mark("call-settled");
       this.state = "MODEL_REVEAL";
       this.substate = "HOLD_OLD";
-      yield 1.6;
-      this.substate = "LIGHT_FALLS";
-      this.redLight.position.set(an.x - fx2 * 0.6, 2.8, an.z - fz * 0.6);
-      this.tween(1, (k) => {
-        this.spot.intensity = 26 * (1 - ease(k));
-        this.setLight(0.82 - 0.74 * ease(k));
-        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (2.5 + 6 * ease(k));
-        this.setLamp(0.8 + 0.2 * ease(k));
-      });
-      yield 1.2;
-      this.substate = "BLACK";
-      const black = !this.reducedFlash && !this.silent;
-      if (black) {
-        this.ui.setFadeColor("#000");
-        this.ui.fade.style.transition = "none";
-        this.ui.fade.style.opacity = 1;
-      }
-      this.redLight.intensity = 0;
-      this.setLamp(0);
-      this.setLight(0.02);
-      yield 0.2;
-      yo.frozen = false;
-      yo.setVisible(false);
+      yield 1.5;
       Y.reset(an.x, an.z, an.yaw);
       Y.setShown(true);
       if (Y.up) {
@@ -54203,27 +54751,58 @@ void main() {
       }
       for (let i = 0; i < 4; i++) this.game().stillYola(0.016);
       this.stillYola = false;
-      this.mark("swapped");
-      yield 0.12;
-      this.substate = "IMPROVED_SILHOUETTE";
-      if (black) {
-        this.ui.fade.style.transition = "opacity 0.1s linear";
-        this.ui.fade.style.opacity = 0;
+      Y.setShown(false);
+      const showNew = (v) => {
+        yo.setVisible(!v);
+        Y.setShown(v);
+      };
+      const lit = (k) => {
+        this.spot.intensity = 26 * k;
+        this.setLight(0.03 + 0.79 * k);
+        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (k > 0 ? 2.5 : 1.5);
+        this.setLamp(k > 0 ? 0.8 : 0.5);
+      };
+      this.substate = "FLICKER";
+      this.redLight.position.set(an.x - fx2 * 0.6, 2.8, an.z - fz * 0.6);
+      const seq = this.reducedFlash || this.silent ? [[0.5, 0.35, "old"], [0.6, 0, "old"], [0.5, 0, "new"]] : [
+        [0.08, 0, "old"],
+        [0.07, 1, "old"],
+        [0.15, 0, "old"],
+        [0.05, 0.75, "old"],
+        [0.24, 0, "new"],
+        // dark: a shape in the red that is not quite her
+        [0.07, 0.95, "old"],
+        // lit: it is her... isn't it
+        [0.13, 0, "old"],
+        [0.045, 1, "new"],
+        // one bright frame of someone else
+        [0.11, 0, "new"],
+        [0.05, 0.55, "old"],
+        [0.8, 0, "new"]
+      ];
+      let was = 1;
+      for (const [sec, k, who] of seq) {
+        showNew(who === "new");
+        lit(k);
+        if (!this.silent && k > 0 !== was > 0) this.sound.flicker?.(k > 0);
+        was = k;
+        yield sec;
       }
-      this.tween(1.2, (k) => {
-        const p2 = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k);
-        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 8 * p2;
-        this.setLamp(0.5 + 0.5 * p2);
-        this.setLight(0.04 + 0.05 * ease(k));
+      this.mark("swapped");
+      this.substate = "IMPROVED_REVEAL";
+      if (!this.silent) this.sound.flicker?.(true);
+      lit(0.7);
+      yield 0.05;
+      lit(0.15);
+      yield 0.06;
+      this.tween(0.45, (k) => {
+        const e = ease(k);
+        this.spot.intensity = 24 * e;
+        this.setLight(0.12 + 0.72 * e);
+        this.redLight.intensity = 1.5 * (1 - e) + 1.2 * e;
+        this.setLamp(0.55 - 0.15 * e);
       });
-      yield 1.35;
       this.substate = "SETTLE";
-      this.tween(0.7, (k) => {
-        this.spot.intensity = 24 * ease(k);
-        this.setLight(0.09 + 0.75 * ease(k));
-        this.redLight.intensity = 6 * (1 - ease(k)) + 1.2 * ease(k);
-        this.setLamp(1 - 0.6 * ease(k));
-      });
       yield 0.8;
       this.mark("reveal-settled");
       this.state = "BOSS_CARD";
@@ -54264,7 +54843,7 @@ void main() {
     }
     // a front-on, low shot of a world anchor (the camera stands where the anchor's character faces)
     frontShot(an, dist2, pitch = 4, yaw = an.yaw) {
-      return { ...W(an.x, 0.88, an.z, pitch, MathUtils.radToDeg(yaw), 3, 44), dist: dist2 };
+      return { ...W2(an.x, 0.88, an.z, pitch, MathUtils.radToDeg(yaw), 3, 44), dist: dist2 };
     }
     // the reveal doorway: frame, two open door leaves, a dark corridor and the red emergency lamp, built once behind the anchor
     ensureDoorway(an, fy = an.yaw) {
@@ -54344,6 +54923,8 @@ void main() {
     finalize(via = "normal") {
       if (this.finalized) return;
       this.finalized = true;
+      if (this.screens) this.screens.flat = false;
+      this.arena.setEmergency?.(true, via === "normal" ? 1.6 : 0);
       const st = this.stage, A = st.actors, g = this.game(), an = ROOM1.player;
       this.co = null;
       this.wait = null;
@@ -54781,6 +55362,7 @@ void main() {
   var benchN = +(params.get("n") || 10);
   useLevel(levelForMode(mode));
   var levelSave = store.get("floor3save", null);
+  var HIT_SLOW = 0.2;
   var paused = false;
   var hitPauseT = 0;
   var acc = 0;
@@ -54809,16 +55391,19 @@ void main() {
     yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
     ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[i]);
     renderer.shadowMap.needsUpdate = true;
+    screens.scan(scene);
     restart();
     hud.loading(1);
     if (params.has("intro") || params.has("reveal") || params.has("room1")) await startOpening();
     requestAnimationFrame(frame);
   }
   var opening = null;
+  var screens = new LiveScreens();
   async function startOpening() {
-    opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning, game: () => window.game });
+    opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, screens, getSim: () => sim, tuning, game: () => window.game });
     window.opening = opening;
     await opening.preload((k) => hud.loading(0.95 + 0.05 * k));
+    screens.scan(scene);
     opening.begin();
     opening.warm2?.();
   }
@@ -55032,7 +55617,7 @@ void main() {
   var dbgCircle = new Mesh(new RingGeometry(0.3, 0.33, 24), new MeshBasicMaterial({ color: 65450, side: DoubleSide }));
   dbgCircle.rotation.x = -Math.PI / 2;
   var dbgBat = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), new LineBasicMaterial({ color: 16776960 }));
-  var _v7 = new Vector3();
+  var _v8 = new Vector3();
   var _seg2 = {};
   var groanT = 2;
   function frame(now) {
@@ -55050,6 +55635,7 @@ void main() {
   }
   function runFrame(dt, doRender = true) {
     perfSample(dt);
+    screens.update(dt);
     if (opening && !opening.active) opening.ambient?.(dt);
     if (opening?.active) {
       opening.update(dt);
@@ -55063,7 +55649,7 @@ void main() {
     if (hitPauseT > 0) {
       const h = Math.min(hitPauseT, simDt);
       hitPauseT -= h;
-      simDt -= h;
+      simDt -= h * (1 - HIT_SLOW);
     }
     acc += simDt;
     if (acc > STEP * 8) acc = STEP * 8;
@@ -55082,12 +55668,8 @@ void main() {
       if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
       acc -= STEP;
       steps++;
-      if (hitPauseT > 0) {
-        acc = 0;
-        break;
-      }
     }
-    const alpha = paused || hitPauseT > 0 ? 1 : acc / STEP;
+    const alpha = paused ? 1 : acc / STEP;
     handleEvents();
     const animDt = paused ? 0 : simDt;
     const ix = p2.px + (p2.x - p2.px) * alpha, iz = p2.pz + (p2.z - p2.pz) * alpha;
@@ -55116,7 +55698,7 @@ void main() {
       swapDur: tuning.swapTime
     });
     if (a.type === "swing" && p2.equipped === "axe" && a.st > p2.attacks[a.combo].activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
-      fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v7), true);
+      fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v8), true);
     }
     fx.setAim(ix, iz, iyaw, !p2.dead, p2.aiming ? p2.attackHeld ? 1 : 0.5 : 0.2);
     stepPhysics(animDt);
@@ -55161,11 +55743,12 @@ void main() {
     }
     fx.update(animDt);
     arena.update(dt, ix, iz, MathUtils.degToRad(tuning.camYaw), sim.level);
+    hud.setEmergency(!!arena.em && arena.em.target > 0);
     hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
     if (camOverride) applyCamOverride();
     else updateCamera(dt, ix, iz, iyaw, p2);
-    _v7.set(ix, 1, iz).project(camera);
-    playerScreen = { x: (_v7.x * 0.5 + 0.5) * innerWidth, y: (-_v7.y * 0.5 + 0.5) * innerHeight };
+    _v8.set(ix, 1, iz).project(camera);
+    playerScreen = { x: (_v8.x * 0.5 + 0.5) * innerWidth, y: (-_v8.y * 0.5 + 0.5) * innerHeight };
     if (debugOn) updateDebug(p2);
     hud.update(sim, dt);
     if (doRender) renderer.render(scene, camera);
@@ -55212,8 +55795,9 @@ void main() {
         }
         case "swing":
           sim.stats.swings++;
-          audio.play("swing", p2.equipped === "fists" ? 0.55 : e.combo === 2 ? 1.3 : 1);
+          audio.play("swing", p2.equipped === "fists" ? 0.55 : e.combo === 1 ? 1.35 : 1);
           break;
+        // (the second melee hit is the heavy one)
         case "batHit": {
           const chop = e.style === "chop";
           audio.play(e.fist ? "fistHit" : "axeHit", chop || e.style === "kick" ? 1.3 : 1);

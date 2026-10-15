@@ -117,13 +117,13 @@ export class ClinicStage {
     tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: -6.2, z: 3.45, rot: 0, name: 'wchair2' }));
     tasks.push(this.prop(M + 'furnishings/Lounge_Break_Chair.glb', { x: -5.0, z: 3.4, rot: 180, name: 'wchair3' }));
     tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: -8.2, z: -5.3 }));
-    tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: -3.4, z: -5.4 }));
+    tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: -3.85, z: -5.4 }));
     // the operating-room door in the north wall, with its 2D sign
     tasks.push(this.prop(M + 'entrance/Entrance_Double_Doorway.glb', { x: -1.4, z: -5.9, rot: 0, name: 'orDoor' }));
     tasks.push(this.prop(M + 'decor/Reception_Round_Side_Table.glb', { x: -3.2, z: 3.6 }));
     tasks.push(this.prop(M + 'decor/Reception_Magazine_Rack.glb', { x: -1.2, z: 3.7, rot: 0 }));
-    tasks.push(this.prop(M + 'decor/Reception_Poster_Heart.glb', { x: -2.6, y: 1.35, z: -5.88 }));
-    tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: -0.9, y: 1.2, z: -5.88 }));
+    tasks.push(this.prop(M + 'decor/Reception_Poster_Heart.glb', { x: -3.15, y: 1.35, z: -5.88 })); // clear of the OR doorway's frame (x -2.65..-0.15)
+    tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: 0.02, y: 1.2, z: -5.88 })); // between the doorway and the glass partition
     tasks.push(this.prop(M + 'entrance/Entrance_Double_Doorway.glb', { x: -9.05, z: 0.9, rot: 90, name: 'door' }));
     // room signs: the supplied 2D print faces (one flat quad each; no 3D sign meshes)
     this.signs = {};
@@ -189,6 +189,7 @@ export class ClinicStage {
     tasks.push(this.prop(M + 'decor/Recovery_Wall_Clock.glb', { x: 5.0, y: 2.25, z: BZ, wall: 's', name: 'clockR' }));
     tasks.push(this.prop(M + 'decor2/Clinical_Art_Lungs.glb', { x: 8.55, y: 1.45, z: BZ, wall: 's', name: 'artR' }));
     this.sign('recovery', 2.0, 2.45, BZ + 0.012, 1.0);
+    tasks.push(this.buildExterior());
     await Promise.all(tasks);
     // seat anchors for the sitting characters (seat centre on the floor plane, facing yaw; seatTop: the chair's seat height)
     Object.assign(this.anchors, {
@@ -205,6 +206,117 @@ export class ClinicStage {
       yolaTour: { x: 5.0, z: 3.7, yaw: 0.45 }, // original Yola in the two-bay room for the tour
     });
   }
+
+  // ---- the outside of the medical center (the opening's first shot): the clinic's own front entrance in the west wall,
+  //      dressed as a building front - cream stucco, the teal name sign over a canopy with downlights, teal-framed glass
+  //      sliding doors (the real reception shows through them), planters, hedges, a sidewalk with leaf shadows, trees
+  //      behind the roofline and a painted sky. Facade face at x = -9.5 (local); the doorway is z -0.2..2.0.
+  async buildExterior() {
+    const g = new THREE.Group(); g.name = 'exterior'; this.root.add(g); this.exterior = g;
+    const std = (c, r = 0.85, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...o });
+    const box = (w, h, d, x, y, z, m, { r = 0.04, shadow = true, parent = g } = {}) => { const b = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), m); b.position.set(x, y, z); b.castShadow = shadow; b.receiveShadow = true; parent.add(b); return b; };
+    const bx = (x0, x1, y0, y1, z0, z1, m, o) => box(x1 - x0, y1 - y0, z1 - z0, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, m, o);
+    const stucco = std(0xf1e5cc), stucco2 = std(0xe8d9bb), capM = std(0xf8f0de), teal = std(0x2a9a96, 0.55), tealDk = std(0x1f7f7c, 0.5);
+    const glassM = new THREE.MeshStandardMaterial({ color: 0xcfeeee, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false });
+    const winM = std(0x7fb4bb, 0.15, { metalness: 0.3 }), steel = std(0xd8dde0, 0.3, { metalness: 0.7 });
+    // facade body: two wings either side of the entrance portal, a plinth, a parapet cap and a teal accent band
+    for (const [z0, z1] of [[-8.6, -0.75], [2.55, 8.4]]) {
+      bx(-9.85, -9.5, 0, 4.25, z0, z1, stucco, { r: 0.05 });
+      bx(-9.9, -9.5, 0, 0.16, z0, z1, stucco2, { r: 0.02 });
+      bx(-9.92, -9.5, 4.2, 4.32, z0 - 0.02, z1 + 0.02, capM, { r: 0.03 });
+      bx(-9.88, -9.84, 3.0, 3.18, z0, z1, teal, { r: 0.01, shadow: false });
+    }
+    // windows in the wings (teal frames, tinted glass)
+    for (const zc of [-5.3, 5.3]) {
+      bx(-9.9, -9.84, 0.85, 2.65, zc - 1.3, zc + 1.3, tealDk, { r: 0.02, shadow: false });
+      bx(-9.93, -9.88, 0.93, 2.57, zc - 1.22, zc + 1.22, winM, { r: 0.01, shadow: false });
+      bx(-9.95, -9.88, 0.93, 2.57, zc - 0.03, zc + 0.03, tealDk, { r: 0.01, shadow: false });
+      bx(-10.02, -9.84, 0.8, 0.88, zc - 1.36, zc + 1.36, capM, { r: 0.02 }); // sill
+    }
+    // the entrance portal: two pillars, the canopy with its downlights, the sign block above
+    bx(-10.55, -9.5, 0, 3.0, -0.78, -0.2, stucco2, { r: 0.06 }); bx(-10.55, -9.5, 0, 3.0, 2.0, 2.58, stucco2, { r: 0.06 });
+    bx(-10.8, -9.5, 2.95, 3.32, -1.0, 2.8, capM, { r: 0.06 });
+    const lampM = new THREE.MeshBasicMaterial({ color: 0xfff3d6 });
+    for (const zc of [-0.1, 0.9, 1.9]) { const d = new THREE.Mesh(new THREE.CircleGeometry(0.11, 20), lampM); d.rotation.x = Math.PI / 2; d.position.set(-10.25, 2.945, zc); g.add(d); }
+    bx(-10.2, -9.5, 3.32, 4.8, -3.0, 4.8, stucco, { r: 0.06 });
+    bx(-10.24, -9.5, 4.75, 4.86, -3.04, 4.84, capM, { r: 0.03 });
+    // the sign: a teal panel, the name in white
+    bx(-10.32, -10.18, 3.5, 4.58, -2.55, 4.35, teal, { r: 0.08 });
+    const sc = document.createElement('canvas'); sc.width = 1400; sc.height = 220; const sg = sc.getContext('2d');
+    let fs0 = 150; do { sg.font = '800 ' + fs0 + 'px system-ui, "Segoe UI", sans-serif'; fs0 -= 4; } while (sg.measureText('Yola’s Medical Center').width > 1300 && fs0 > 60); sg.textAlign = 'center'; sg.textBaseline = 'middle'; // (fitted to the panel)
+    sg.fillStyle = 'rgba(0,0,0,0.18)'; sg.fillText('Yola’s Medical Center', 706, 118); sg.fillStyle = '#ffffff'; sg.fillText('Yola’s Medical Center', 700, 110);
+    const stx = new THREE.CanvasTexture(sc); stx.colorSpace = THREE.SRGBColorSpace; stx.anisotropy = 4;
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(6.6, (6.6 * 220) / 1400), new THREE.MeshBasicMaterial({ map: stx, transparent: true }));
+    sign.position.set(-10.33, 4.04, 0.9); sign.rotation.y = -Math.PI / 2; g.add(sign);
+    // the doors: a teal frame and transom, two sliding glass leaves (they part into the pillars)
+    bx(-9.64, -9.52, 2.42, 2.95, -0.2, 2.0, tealDk, { r: 0.02 });
+    for (const [z0, z1] of [[-0.2, -0.12], [1.92, 2.0]]) bx(-9.64, -9.52, 0, 2.45, z0, z1, tealDk, { r: 0.01 });
+    this.extDoors = [];
+    for (const [zc, dir] of [[0.47, -1], [1.33, 1]]) {
+      const leaf = new THREE.Group(); leaf.position.set(-9.6, 0, zc); g.add(leaf);
+      const W = 0.84;
+      bx(-0.035, 0.035, 0.02, 2.4, -W / 2, -W / 2 + 0.06, teal, { parent: leaf, r: 0.01 }); bx(-0.035, 0.035, 0.02, 2.4, W / 2 - 0.06, W / 2, teal, { parent: leaf, r: 0.01 });
+      bx(-0.035, 0.035, 2.34, 2.4, -W / 2, W / 2, teal, { parent: leaf, r: 0.01 }); bx(-0.035, 0.035, 0.02, 0.14, -W / 2, W / 2, teal, { parent: leaf, r: 0.01 });
+      bx(-0.01, 0.01, 0.14, 2.34, -W / 2 + 0.06, W / 2 - 0.06, glassM, { parent: leaf, r: 0.002, shadow: false });
+      bx(-0.09, -0.05, 0.75, 1.6, -dir * (W / 2 - 0.14) - 0.02, -dir * (W / 2 - 0.14) + 0.02, steel, { parent: leaf, r: 0.015 }); // handle
+      this.extDoors.push({ leaf, z0: zc, dir });
+    }
+    // planters either side of the entrance, each with a broadleaf plant and low shrubs around it
+    const leafCols = [0x5f9e4a, 0x4f8c3e, 0x74b35a, 0x3f7a35];
+    const leafMats = leafCols.map((c) => std(c, 0.9, { flatShading: true }));
+    const shrub = (x, y, z, r, k = 0, parent = g) => { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), leafMats[k % 4]); m.position.set(x, y, z); m.scale.y = 0.8; m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; };
+    const jobs = [];
+    for (const zc of [-2.05, 3.85]) {
+      bx(-11.55, -10.6, 0, 0.82, zc - 0.62, zc + 0.62, capM, { r: 0.08 });
+      bx(-11.5, -10.65, 0.8, 0.83, zc - 0.57, zc + 0.57, std(0x5a4636, 1), { r: 0.01, shadow: false });
+      jobs.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: -11.08, y: 0.55, z: zc, rot: 90, s: 1.15, parent: g }));
+      for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; shrub(-11.08 + Math.cos(a) * 0.38, 0.95, zc + Math.sin(a) * 0.42, 0.2 + (i % 2) * 0.05, i); }
+    }
+    // hedges under the wing windows, a flower bed in the near foreground
+    for (const zc of [-5.3, 5.3]) jobs.push(this.prop(M + 'campus/hedge.glb', { x: -10.4, z: zc, rot: 90, parent: g }));
+    jobs.push(this.prop(M + 'campus/flowerbed.glb', { x: -15.6, z: -4.8, rot: 75, parent: g }));
+    // trees: trunks and clustered low-poly crowns, behind the roofline at the sides and one in the near left
+    const tree = (x, z, h, r) => {
+      const t = new THREE.Group(); t.position.set(x, 0, z); g.add(t);
+      const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, h * 0.55, 8), std(0x7a5a40, 0.9)); tr.position.y = h * 0.27; tr.castShadow = true; t.add(tr);
+      for (let i = 0; i < 7; i++) { const a = i * 2.39, d = i ? r * 0.55 : 0; shrub(Math.cos(a) * d, h * 0.62 + (i % 3) * r * 0.28, Math.sin(a) * d, r * (i ? 0.62 : 0.8), i, t); }
+    };
+    tree(-8.1, -4.3, 7.4, 1.6); tree(-7.9, 6.1, 7.8, 1.7); tree(-7.6, -10.6, 6.6, 1.7); // (the first two rise over the roofline in a phone-width frame) tree(-6.4, 10.2, 7.0, 1.8); tree(-8.6, 12.2, 5.6, 1.4); tree(-7.0, -13.0, 6.0, 1.5); tree(-17.5, -9.6, 5.8, 1.6);
+    // the ground: a sidewalk of large pale slabs in front of the building, a curb, a lawn beyond
+    const pc = document.createElement('canvas'); pc.width = pc.height = 256; const pg = pc.getContext('2d');
+    pg.fillStyle = '#ebe4d6'; pg.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 900; i++) { pg.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.18)' : 'rgba(150,135,110,0.08)'; pg.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
+    pg.strokeStyle = 'rgba(160,145,120,0.55)'; pg.lineWidth = 3; pg.strokeRect(1.5, 1.5, 253, 253);
+    const pt = new THREE.CanvasTexture(pc); pt.wrapS = pt.wrapT = THREE.RepeatWrapping; pt.colorSpace = THREE.SRGBColorSpace; pt.anisotropy = 8;
+    const walk = new THREE.Mesh(new THREE.PlaneGeometry(15.5, 34), new THREE.MeshStandardMaterial({ map: pt, roughness: 0.9 }));
+    pt.repeat.set(15.5 / 1.8, 34 / 1.8); walk.rotation.x = -Math.PI / 2; walk.position.set(-9.5 - 7.75, 0.006, 0); walk.receiveShadow = true; g.add(walk);
+    const lawn = new THREE.Mesh(new THREE.PlaneGeometry(120, 160), std(0x9cc46c, 1)); lawn.rotation.x = -Math.PI / 2; lawn.position.set(-25.2 - 60, 0.004, 0); lawn.receiveShadow = true; g.add(lawn);
+    bx(-25.25, -24.95, 0, 0.12, -17, 17, std(0xd9d2c4), { r: 0.03 }); // the curb
+    // dappled leaf shadow on the walk (the trees' shade): soft dark blobs, no extra lights
+    const dc = document.createElement('canvas'); dc.width = dc.height = 256; const dg = dc.getContext('2d');
+    for (let i = 0; i < 70; i++) { const x = Math.random() * 256, y = Math.random() * 256, r = 6 + Math.random() * 22, gr = dg.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(40,60,40,0.32)'); gr.addColorStop(1, 'rgba(40,60,40,0)'); dg.fillStyle = gr; dg.beginPath(); dg.arc(x, y, r, 0, Math.PI * 2); dg.fill(); }
+    const dtex = new THREE.CanvasTexture(dc);
+    for (const [zc, w] of [[-8.0, 6], [8.6, 6.5]]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(6, w), new THREE.MeshBasicMaterial({ map: dtex, transparent: true, depthWrite: false })); d.rotation.x = -Math.PI / 2; d.position.set(-13.2, 0.012, zc); g.add(d); }
+    // the sky (the scene background for the outside shot)
+    const kc = document.createElement('canvas'); kc.width = 512; kc.height = 512; const kg = kc.getContext('2d');
+    const sky = kg.createLinearGradient(0, 0, 0, 512); sky.addColorStop(0, '#4f9fe6'); sky.addColorStop(0.55, '#8cc4f0'); sky.addColorStop(1, '#d8eef8');
+    kg.fillStyle = sky; kg.fillRect(0, 0, 512, 512);
+    const cloud = (x, y, w) => { for (let i = 0; i < 7; i++) { const cx = x + (i - 3) * w * 0.16, cy = y - Math.sin((i / 6) * Math.PI) * w * 0.12, r = w * (0.14 + 0.1 * Math.sin((i / 6) * Math.PI)), gr = kg.createRadialGradient(cx, cy, 0, cx, cy, r); gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.7, 'rgba(255,255,255,0.75)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); kg.fillStyle = gr; kg.beginPath(); kg.arc(cx, cy, r, 0, Math.PI * 2); kg.fill(); } };
+    cloud(390, 120, 190); cloud(120, 210, 150); cloud(300, 300, 120);
+    this.skyTex = new THREE.CanvasTexture(kc); this.skyTex.colorSpace = THREE.SRGBColorSpace;
+    // seen through the doors, the reception needs a ceiling and a far wall (inside, the diorama has neither): both belong
+    // to the outside shot only, with flush light panels like a real lobby
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(9.8, 11.2), std(0xf4ecdc, 0.9, { side: THREE.DoubleSide }));
+    ceil.rotation.x = Math.PI / 2; ceil.position.set(-4.4, 3.05, -0.5); g.add(ceil);
+    const panelM = new THREE.MeshBasicMaterial({ color: 0xfff6e2 });
+    for (const [x, z] of [[-7.2, -1.8], [-7.2, 2.4], [-4.4, -1.8], [-4.4, 2.4], [-1.6, -1.8], [-1.6, 2.4]]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.55), panelM); p.rotation.x = Math.PI / 2; p.position.set(x, 3.04, z); g.add(p); }
+    bx(0.25, 0.45, 0, 3.05, -6.0, 5.0, std(0xf4ecdc), { r: 0.02, shadow: false }); // the far wall (the glass partition's line)
+    bx(0.2, 0.25, 0.05, 0.4, -6.0, 5.0, std(0x7bbdb8), { r: 0.01, shadow: false });
+    await Promise.all(jobs);
+    g.traverse((o) => { if (o.isMesh && o.material?.transparent) o.castShadow = false; });
+  }
+  // the sliding doors: k 0 shut .. 1 open
+  setEntranceOpen(k) { for (const d of this.extDoors || []) d.leaf.position.z = d.z0 + d.dir * 0.82 * k; }
 
   // procedural desk-top dressing (the kit has no desk accessories): monitor and keyboard, a phone, a clipboard, paperwork
   deskTop(cx, y, cz) {
@@ -232,8 +344,8 @@ export class ClinicStage {
 
   // equipment tiers crossfade in place (same footprint, never stacked solid): materials are cloned per layer so
   // fading one tier never touches another
-  fadeable(h) { h.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); for (const m of [].concat(o.material)) m.transparent = true; } }); }
-  setOpacity(h, a) { h.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) m.opacity = a; }); }
+  fadeable(h) { h.traverse((o) => { if (o.isMesh && o.name !== 'liveScreen') { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); for (const m of [].concat(o.material)) m.transparent = true; } }); }
+  setOpacity(h, a) { h.traverse((o) => { if (o.name === 'liveScreen') { o.visible = a > 0.5; return; } if (o.isMesh) for (const m of [].concat(o.material)) m.opacity = a; }); } // (a live screen face is shared by every monitor: it switches with the monitor instead of fading)
   setTier(tier, fade = 1) {
     const prev = this.tier; this.tier = tier;
     for (const s of this.tiers) {

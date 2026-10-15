@@ -153,3 +153,8 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
 - 2026-10-14 (round 8): combat polish. Full details in COMBAT_POLISH_LOG.md. Unlimited spare ammo while testing (reloads
   kept); zombie crowd steering; three-hit bat combo; pistol headshots; bat hit registration (side walls, reaching arms,
   window/reach, crawlers); the finisher's 14° aim offset; fist hits counted twice.
+- 2026-10-15 (round 9): see COMBAT_POLISH_LOG.md (top). Two-hit combos (bat: swing + mirrored home run `bat_swing_m`,
+  new clip in yola.glb; axe: swing + raised chop); hit-stop is slow motion, not a freeze (tuning versioned); opening:
+  exterior first shot (stage.buildExterior), live monitor screens (render/screens.js), OR rebuilt around one mid-tier
+  table (floor3.js; door or_ct_2 moved to x 4.8), patient sits up and greens, flicker reveal; Floor 3 emergency
+  lighting (arena.setEmergency; amber point lights removed).

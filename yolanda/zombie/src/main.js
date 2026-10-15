@@ -8,6 +8,7 @@ import { LAYOUT, ROOM1, useLevel, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
+import { LiveScreens } from './render/screens.js';
 import { CombatAudio } from './audio.js';
 import { Input } from './ui/input.js';
 import { Hud } from './ui/hud.js';
@@ -97,6 +98,7 @@ const storyStart = params.has('intro') || params.has('reveal') || params.has('ro
 let mode = storyStart ? 'room1' : params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
 useLevel(levelForMode(mode)); // the story's Floor 3, or the combat wing for practice, waves and benchmarks
 let levelSave = store.get('floor3save', null); // the latest Floor 3 checkpoint (retry restores it)
+const HIT_SLOW = 0.2; // time runs at this rate through a hit-stop
 let paused = false, hitPauseT = 0, acc = 0, last = performance.now(), playerScreen = null;
 const camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new THREE.Vector2() };
 const perf = { frames: [], spikes: 0, t0: performance.now() };
@@ -124,16 +126,19 @@ async function load() {
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;
+  screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
   restart();
   hud.loading(1);
   if (params.has('intro') || params.has('reveal') || params.has('room1')) await startOpening();
   requestAnimationFrame(frame);
 }
 let opening = null;
+const screens = new LiveScreens();
 async function startOpening() {
-  opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning, game: () => window.game });
+  opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, screens, getSim: () => sim, tuning, game: () => window.game });
   window.opening = opening;
   await opening.preload((k) => hud.loading(0.95 + 0.05 * k));
+  screens.scan(scene);
   opening.begin();
   opening.warm2?.();
 }
@@ -284,12 +289,14 @@ function tick(n = 1, dt = 1 / 60, render = true) {
 }
 function runFrame(dt, doRender = true) {
   perfSample(dt);
+  screens.update(dt);
   if (opening && !opening.active) opening.ambient?.(dt); // the seated guard keeps idling after the hand-off
   if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (doRender) renderer.render(scene, camera); return; }
   const p = sim.player;
   let simDt = dt;
   if (paused) simDt = 0;
-  if (hitPauseT > 0) { const h = Math.min(hitPauseT, simDt); hitPauseT -= h; simDt -= h; }
+  // hit-stop: a short dip into slow motion (never a full freeze: a freeze reads as a stutter, and combo hits stacked them)
+  if (hitPauseT > 0) { const h = Math.min(hitPauseT, simDt); hitPauseT -= h; simDt -= h * (1 - HIT_SLOW); }
   // fixed-step simulation (input sampled once per frame; a swap press is delivered exactly once)
   acc += simDt;
   if (acc > STEP * 8) acc = STEP * 8; // never spiral after a stall
@@ -302,9 +309,8 @@ function runFrame(dt, doRender = true) {
     sim.step(inp);
     if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
     acc -= STEP; steps++;
-    if (hitPauseT > 0) { acc = 0; break; }
   }
-  const alpha = paused || hitPauseT > 0 ? 1 : acc / STEP; // frozen frames show the latest step (alpha 0 rolled the pose back a step)
+  const alpha = paused ? 1 : acc / STEP; // frozen frames show the latest step (alpha 0 rolled the pose back a step)
   handleEvents();
   const animDt = paused ? 0 : simDt;
 
@@ -350,6 +356,7 @@ function runFrame(dt, doRender = true) {
 
   fx.update(animDt);
   arena.update(dt, ix, iz, THREE.MathUtils.degToRad(tuning.camYaw), sim.level);
+  hud.setEmergency(!!arena.em && arena.em.target > 0);
   hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
   if (camOverride) applyCamOverride(); else updateCamera(dt, ix, iz, iyaw, p);
   // player screen position (mouse aiming)
@@ -391,7 +398,7 @@ function handleEvents() {
         setTimeout(() => audio.play('pump'), 240);
         break;
       }
-      case 'swing': sim.stats.swings++; audio.play('swing', p.equipped === 'fists' ? 0.55 : e.combo === 2 ? 1.3 : 1); break;
+      case 'swing': sim.stats.swings++; audio.play('swing', p.equipped === 'fists' ? 0.55 : e.combo === 1 ? 1.35 : 1); break; // (the second melee hit is the heavy one)
       case 'batHit': {
         const chop = e.style === 'chop';
         audio.play(e.fist ? 'fistHit' : 'axeHit', chop || e.style === 'kick' ? 1.3 : 1); fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed || chop ? 0.6 : 0.45);

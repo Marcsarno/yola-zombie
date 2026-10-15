@@ -39,28 +39,25 @@ export function muzzleLocal(weapon, out = {}) {
   return out;
 }
 
-// ---- axe: a three-attack combo, each attack sampled from its clip ----
-// Every attack: the clip frames that are played (clip time = frame / fps, advanced rate x real time),
-// the turn into the attack (yawOffset: the clip strikes off to one side, Yola turns so it lands on the
-// aim), the damaging window and when the next attack of the combo may start (chainFrom). The combo
-// continues only while the attack is held (or pressed again) AND the current attack connected.
-// style: how the zombie reacts - swing (thrown sideways), heavy (thrown hard), chop (driven down).
+// ---- melee: two-attack combos, each attack sampled from its clip ----
+// Every attack: the clip frames that are played (clip time = frame / fps, advanced rate x real time; an optional
+// held wind-up plays frames f0..windTo at windRate first), the turn into the attack (yawOffset: the clip strikes off
+// to one side, Yola turns so it lands on the aim), the damaging window and when the next attack of the combo may
+// start (chainFrom). The combo continues only while the attack is held (or pressed again) AND the first one
+// connected. blendIn: how long the previous attack's pose cross-fades into this one (s). hand: the hand the weapon is
+// rigid to in this clip (the mirrored swing holds it in the left). style: how the zombie reacts - swing (thrown
+// sideways), heavy (thrown hard), chop (driven down).
 const deg = Math.PI / 180;
+const SWING = { // the leveled baseball swing, right to left at chest height (shared by the axe and the bat)
+  name: 'swing', clip: 'bat_swing', path: 'bat_swing', f0: 24, f1: 40, rate: 1.5, fps: 30, yawOffset: 40 * deg,
+  duration: 0.6, activeStart: 0.14, activeEnd: 0.33, chainFrom: 0.3, swapPoint: 0.48, assist: 1.75,
+};
 export const AXE_ATTACKS = [
-  { // 1: the leveled baseball swing, right to left at chest height
-    name: 'swing', clip: 'bat_swing', path: 'bat_swing', f0: 24, f1: 40, rate: 1.5, fps: 30, yawOffset: 40 * deg,
-    duration: 0.62, activeStart: 0.14, activeEnd: 0.33, chainFrom: 0.34, swapPoint: 0.48, assist: 1.75,
-    dmg: 1, knock: 1, style: 'swing', sever: { head: 0.35, arm: 0.25 },
-  },
-  { // 2: the backhand - a low two-handed slash back from left to right (Mixamo great sword low slash);
-    // it sweeps at the knees as much as the waist, so legs come off
-    name: 'slash', clip: 'gs_low_slash', path: 'gs_low_slash', f0: 10, f1: 34, rate: 1.5, fps: 30, yawOffset: 0,
-    duration: 0.72, activeStart: 0.27, activeEnd: 0.47, chainFrom: 0.5, swapPoint: 0.55,
-    dmg: 1.1, knock: 1.15, style: 'heavy', sever: { head: 0.15, arm: 0.25, leg: 0.35 },
-  },
-  { // 3: the finisher - Yola's own overhead chop (Tripo): axe behind the head, straight up, slammed down
-    name: 'chop', clip: 't_chop', path: 't_chop', f0: 44, f1: 74, rate: 1.3, fps: 30, yawOffset: -14 * deg, // (the clip lands ~14 degrees left: she turns so it comes down on the aim)
-    duration: 0.95, activeStart: 0.36, activeEnd: 0.6, chainFrom: 9, swapPoint: 0.75,
+  { ...SWING, dmg: 1, knock: 1, style: 'swing', sever: { head: 0.35, arm: 0.25 } },
+  { // 2: Yola's own overhead chop (Tripo), entered with the axe already raised behind her head so it follows the
+    // swing straight away: up, then slammed down on the aim
+    name: 'chop', clip: 't_chop', path: 't_chop', f0: 52, f1: 74, rate: 1.3, fps: 30, yawOffset: -14 * deg, // (the clip lands ~14 degrees left: she turns so it comes down on the aim)
+    duration: 0.74, activeStart: 0.2, activeEnd: 0.4, chainFrom: 9, swapPoint: 0.55, blendIn: 0.16, assist: 2.1, lungeMax: 0.6,
     dmg: 1.6, knock: 0.8, style: 'chop', sever: { head: 0.6, arm: 0.35 },
   },
 ];
@@ -81,14 +78,29 @@ export const FIST_ATTACKS = [
     dmg: 2.2, knock: 1.0, style: 'kick', sever: {} },
 ];
 // attack set of a weapon
-// the bat: the axe's three-attack combo (leveled swing, low backhand, overhead finisher), blunt (never severs) and a
-// little lighter. sock: the grip calibration the renderer uses (the first swing keeps the bat's own idle grip).
+// the bat: the same leveled swing (right to left), then the home-run swing back the other way - her own swing
+// mirrored (left to right, the bat rigid to the left hand), loaded with a held wind-up and driven through hard.
+// Blunt: never severs. (x axeDamage 62, zombie 100 hp: the swing's 37 leaves it standing, the home run finishes it.)
+// sock: the grip calibration the renderer uses (the first swing keeps the bat's own idle grip).
 export const BAT_ATTACKS = [
-  // (x axeDamage 62, zombie 100 hp: swing 37 + backhand 43 leave it standing; the slam finishes it)
-  { ...AXE_ATTACKS[0], name: 'bat swing', dmg: 0.6, knock: 1.0, sever: {} },
-  { ...AXE_ATTACKS[1], name: 'bat backhand', sock: 'slash', dmg: 0.7, knock: 1.1, sever: {} },
-  { ...AXE_ATTACKS[2], name: 'bat slam', sock: 'chop', dmg: 1.3, knock: 0.85, sever: {} },
+  { ...SWING, name: 'bat swing', dmg: 0.6, knock: 1.0, style: 'swing', sever: {} },
+  { name: 'bat home run', sock: 'home run', clip: 'bat_swing_m', path: 'bat_swing_m', hand: 'Left',
+    f0: 28, windTo: 31, windRate: 0.4, f1: 44, rate: 1.7, fps: 30, yawOffset: -40 * deg,
+    duration: 0.8, activeStart: 0.22, activeEnd: 0.41, chainFrom: 9, swapPoint: 0.6, blendIn: 0.16, assist: 2.1, lungeMax: 0.8,
+    dmg: 1.15, knock: 1.7, style: 'heavy', sever: {} },
 ];
+// clip frame at attack time t (a held wind-up first when the attack has one), and its inverse
+export function attackFrame(A, t) {
+  if (!A.windRate) return A.f0 + t * A.fps * A.rate;
+  const tw = (A.windTo - A.f0) / (A.fps * A.windRate);
+  return t <= tw ? A.f0 + t * A.fps * A.windRate : A.windTo + (t - tw) * A.fps * A.rate;
+}
+export function attackTime(A, f) {
+  if (!A.windRate) return (f - A.f0) / (A.fps * A.rate);
+  const tw = (A.windTo - A.f0) / (A.fps * A.windRate);
+  return f <= A.windTo ? (f - A.f0) / (A.fps * A.windRate) : tw + (f - A.windTo) / (A.fps * A.rate);
+}
+export const attackEnd = (A) => attackTime(A, A.f1);
 export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS);
 export const AXE_GEOM = {
   length: 0.74, // hands (midpoint of the grip) to the blade, metres
@@ -102,13 +114,13 @@ const rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * M
 // samples: clipdata[path] ([{f, r:[x,y,z], l:[x,y,z], d, hips}] in model units); scale: model units -> metres
 // hipsRest: the renderer pins the hips' horizontal position, so the clip's hip drift is removed here too.
 export function setMeleePaths(clipdata, scale, hipsRest) {
-  for (const A of [...AXE_ATTACKS, ...FIST_ATTACKS]) {
+  for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS]) {
     const samples = clipdata[A.path];
     A.PATH = [];
     if (!samples) continue;
     for (const s of samples) {
-      const t = (s.f - A.f0) / (A.fps * A.rate);
-      if (t < -0.001 || s.f > A.f1) continue;
+      if (s.f < A.f0 - 0.001 || s.f > A.f1) continue;
+      const t = attackTime(A, s.f);
       const ox = s.hips && hipsRest ? s.hips[0] - hipsRest[0] : 0, oz = s.hips && hipsRest ? s.hips[2] - hipsRest[2] : 0;
       const pin = (v) => [v[0] - ox, v[1], v[2] - oz];
       if (A.limb) { // unarmed: the striking limb, pointing out from the hips
@@ -123,7 +135,6 @@ export function setMeleePaths(clipdata, scale, hipsRest) {
       A.PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: d[0] / dl, dy: d[1] / dl, dz: d[2] / dl });
     }
   }
-  BAT_ATTACKS.forEach((B, i) => { B.PATH = AXE_ATTACKS[i].PATH; });
 }
 
 // Pose of the axe at attack time t: hands midpoint (hx,hy,hz) and unit direction toward the head (dx,dy,dz).

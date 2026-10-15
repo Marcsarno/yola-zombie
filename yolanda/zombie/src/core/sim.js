@@ -286,7 +286,7 @@ export class Sim {
           const dmgF = T.fistDamage * A.dmg;
           z.takeHit(dmgF, dx, dz, T.fistKnockback * A.knock, 'fist', this, 'torso', A.style);
           this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
-          if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * 0.6 * (z.alive ? 1 : 1.4) });
+          if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * 0.5 * (z.alive ? 1 : 1.3) });
           continue;
         }
         const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
@@ -298,7 +298,7 @@ export class Sim {
         const last = act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
         z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), p.equipped === BAT ? 'bat' : 'axe', this, part, holding ? 'combo' : A.style);
         this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
-        if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.4) * (A.style === 'chop' ? 1.4 : 1) });
+        if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.3) * (last ? 1.25 : 0.8) });
       }
       px = tipX; pz = tipZ;
     }

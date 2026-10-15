@@ -32,6 +32,10 @@
   #banner.show { opacity: 1; transform: none; }
   #bannerTitle { font-size: 26px; font-weight: 750; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
   #bannerSub { color: var(--ink2); font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+  /* emergency lighting: a red edge that breathes with the beacon (the 3D grade does the rest) */
+  #emergency { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.6s; background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 52%, rgba(90,4,4,.38) 100%); }
+  #emergency.on { opacity: 1; animation: emBeacon 1.9s ease-in-out infinite; }
+  @keyframes emBeacon { 0%, 100% { filter: brightness(.75); } 50% { filter: brightness(1.25); } }
   #popup { position: absolute; top: 30%; left: 0; right: 0; text-align: center; pointer-events: none; opacity: 0; font-size: 34px; font-weight: 900; letter-spacing: .08em;
     color: #ffe9a8; text-shadow: 0 3px 0 #8a1c12, 0 6px 14px rgba(0,0,0,.55); font-style: italic; }
   #popup.show { animation: popupHit .9s ease-out forwards; }
@@ -111,6 +115,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
+<div id="emergency"></div>
 <div id="touch"></div>
 <div id="hud">
   <div id="vignette"></div>

@@ -24,9 +24,16 @@ const L = (x, y, z) => new THREE.Vector3(x + CLINIC.x, y, z + CLINIC.z); // clin
 const S = (x, y, z, pitch, yaw, width, fov = 34) => ({ x: x + CLINIC.x, y, z: z + CLINIC.z, pitch, yaw, width, fov });
 const W = (x, y, z, pitch, yaw, width, fov = 34) => ({ x, y, z, pitch, yaw, width, fov }); // world-space shot (the operating room)
 const OFFICE_SHOT = S(6.3, 0.85, -3.0, 30, 72, 4.6); // the assessment office from the east: Yola and both visitors in profile across the desk
+// the outside of the medical center: low and front-on to the entrance (the sign, the canopy, the glass doors and the
+// planters), pushing slowly in toward the doors as they slide open
+const EXT_A = { ...S(-9.7, 2.2, 0.9, 4, -95, 7.0, 46), fitH: 7.4 }, EXT_B = { ...S(-9.7, 1.8, 0.9, 0, -90, 4.0, 46), fitH: 4.4 };
+const IN_A = S(-8.0, 0.8, 1.2, 66, 14, 8.4), IN_B = S(-5.3, 0.9, -3.9, 49, 28, 8.4);
+const EXT_END = 5.6; // the cut through the doors into the reception
 const SHOTS = [
-  // 0:00-0:12 above the reception entrance, gliding in toward the desk
-  { t0: 0, t1: 11.6, a: S(-8.0, 0.8, 1.2, 66, 14, 8.4), b: S(-5.3, 0.9, -3.9, 49, 28, 8.4) },
+  // 0:00-0:06 outside: the push in toward the entrance
+  { t0: 0, t1: EXT_END, a: EXT_A, b: EXT_B },
+  // 0:06-0:12 inside: above the reception entrance, gliding in toward the desk
+  { t0: EXT_END, t1: 11.6, a: IN_A, b: IN_B },
   // 0:12-0:25 the treatment room: doorway and starter equipment in one composition, a slow push
   { t0: 12, t1: 25, a: S(4.50, 0.8, 2.45, 49, 30, 8.8), b: S(4.80, 0.8, 2.35, 49, 30, 7.8) },
   // 0:25-0:40 hold (the faintest drift so it breathes)
@@ -121,9 +128,13 @@ export class Opening {
     for (const p of P) { at(p.t0, 'sub:' + p.id, () => this.setSub(p.text)); at(p.t1 + 0.25, 'subOff:' + p.id, () => { if (this.sub === p.text) this.setSub(''); }); }
     // 1. "Welcome ... extraordinary."  Reception: the desk, the waiting area, clear routes in
     at(0.0, 'music', () => this.music());
-    at(0.1, 'glide', () => this.camTo(S(-5.3, 0.9, -3.9, 49, 28, 8.4), 7.3));
-    at(0.15, 'title', () => this.ui.title('Yola’s Medical Center', 'Starter clinic'));
-    at(6.6, 'title-off', () => this.ui.title(''));
+    // outside: the building front, a slow push in; the sliding doors part; through them into the reception
+    at(0.0, 'exterior', () => { this.outside(true); this.camTo(EXT_A, 0.01); this.camTo(EXT_B, EXT_END - 0.05); });
+    at(3.3, 'doors', () => this.tween(1.3, (k) => this.stage.setEntranceOpen(ease(k))));
+    at(EXT_END - 0.25, 'dip-in', () => this.dip(0.22, 0.3));
+    at(EXT_END, 'inside', () => { this.outside(false); this.camTo(IN_A, 0.01); this.camTo(IN_B, 11.6 - EXT_END); });
+    at(EXT_END + 0.4, 'title', () => this.ui.title('Yola’s Medical Center', 'Starter clinic'));
+    at(10.6, 'title-off', () => this.ui.title(''));
     // 2. "Turn empty rooms into places of possibility."  an empty room, then quick placements of its furniture
     at(K.furnishCut, 'dip-furnish', () => this.dip(0.22, 0.26));
     at(K.furnishCut + 0.24, 'room-empty', () => { this.showRoom('empty'); this.camTo(S(4.50, 0.8, 2.45, 50, 30, 8.8), 0.01); });
@@ -164,6 +175,13 @@ export class Opening {
     c.sort((a, b) => a.t - b.t);
   }
 
+  outside(v) {
+    const st = this.stage; if (st.exterior) st.exterior.visible = v;
+    if (st.byName.door) st.byName.door.visible = !v; // the reception's own entrance frame would stand right behind the glass doors
+    if (v) st.setEntranceOpen?.(0);
+    this.scene.background = v && st.skyTex ? st.skyTex : new THREE.Color(0xcfe3df);
+    this.renderer.shadowMap.needsUpdate = true;
+  }
   fire(cue) { this.cueLog.push([+this.t.toFixed(2), cue.name]); cue.fn(); }
 
   // ------------------------------------------------------------------ staging
@@ -180,7 +198,7 @@ export class Opening {
     for (const a of Object.values(A)) { a.frozen = false; if (a.lying) a.unlie(); if (a.root.parent !== st.root) st.toClinic(a); a.adj = {}; a.stop(); a.timeScale = 1; a.setVisible(false); a.seated = false; }
     if (A.baseball.capSkin) A.baseball.capSkin.visible = true;
     { const gp = A.security.model.getObjectByName('Security_Pistol'); if (gp) gp.visible = true; } if (this.guardPool) this.guardPool.visible = false;
-    A.baseball.setOutfit(null);
+    A.baseball.setOutfit(null); this.restoreGreen?.(); if (this.screens) this.screens.flat = false;
     this.ui.showEcg(false); this.ui.setVignette(0); this.ui.status(''); this.ui.urgency(null);
     this.animScale = 1; this.finalized = false; this.room1Preview = false; this.stillYola = false; this.poseAnim = null; this.restoreLook();
     // the receptionist sits at the desk (seat contract: the rig stands 0.45 m in front of the chair)
@@ -251,7 +269,8 @@ export class Opening {
     const fx = -Math.sin(y), fz = -Math.cos(y);
     c.fov = r.fov; c.updateProjectionMatrix();
     const hf = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(r.fov) / 2) * c.aspect);
-    const dist = r.dist ?? clamp(r.width / (2 * Math.tan(hf / 2)), 2.5, 80); // metres of floor across the screen at the target
+    let dist = r.dist ?? clamp(r.width / (2 * Math.tan(hf / 2)), 2.5, 80); // metres of floor across the screen at the target
+    if (r.fitH && r.dist == null) dist = Math.max(dist, r.fitH / (2 * Math.tan(THREE.MathUtils.degToRad(r.fov) / 2))); // and at least this much height (wide screens)
     c.position.set(r.x - fx * Math.cos(p) * dist, r.y + Math.sin(p) * dist, r.z - fz * Math.cos(p) * dist);
     c.lookAt(r.x, r.y, r.z);
   }
@@ -372,6 +391,7 @@ export class Opening {
     if (A.hemi) A.hemi.intensity = b.hemi * k; if (A.sun) A.sun.intensity = b.sun * k; this.scene.environmentIntensity = b.env * k;
   }
   restoreLook() {
+    this.arena.setEmergency?.(false, 0);
     this.setLight(1); this.lightK = 1;
     if (this.spot) this.spot.intensity = 0; if (this.redLight) this.redLight.intensity = 0;
     const Y = this.yola; Y?.setShown?.(false);
@@ -497,7 +517,7 @@ export class Opening {
     yield 0.6;
     // the athlete is moved onto the table behind a cut to the anesthesia equipment (three seconds); the cap comes off
     this.dip(0.35, 0.35); yield 0.4;
-    this.camTo(W(-2.3, 1.15, -10.0, 28, 30, 3.6), 0.01);
+    this.camTo(W(-2.0, 1.15, -7.9, 28, 30, 3.6), 0.01);
     if (bb.capSkin) bb.capSkin.visible = false;
     if (bb.bat) bb.bat.visible = false;
     bb.setOutfit(PATIENT_OUTFIT); // plain white patient clothing (no lettering, team colour or cap): the later white-clothed zombie is the same man
@@ -518,11 +538,11 @@ export class Opening {
     // 2. first OR choice, player-paced
     this.substate = 'CHOICE_1';
     this.speak(DIALOGUE.equipment, 3.0, 1.4);
-    this.camTo(W(-2.0, 1.0, -9.8, 38, 35, 5.4), 1.6);
+    this.camTo(W(-1.9, 1.0, -7.9, 38, 35, 5.4), 1.6);
     yield 1.8;
-    this.camTo(W(-1.0, 0.9, -8.8, 50, 33, 5.8), 1.2);
+    this.camTo(W(-1.0, 0.9, -8.3, 50, 33, 5.8), 1.2);
     yield 1.4;
-    this.ui.tag('equip', 'Check the equipment', 'Anesthesia workstation'); this.pointAt('equip', -2.3, 1.8, -10.4);
+    this.ui.tag('equip', 'Check the equipment', 'Anesthesia workstation'); this.pointAt('equip', -2.25, 1.8, -7.75);
     this.mark('or-card-1');
     const a1 = yield* this.askCard(CARDS[1]);
     this.answers[CARDS[1].id] = a1; this.ui.tag('equip', null);
@@ -531,9 +551,9 @@ export class Opening {
     // 3. second OR choice and apparent success
     this.substate = 'CHOICE_2';
     this.speak(DIALOGUE.monitor, 3.0, 1.4);
-    this.camTo(W(1.2, 0.95, -9.2, 46, 35, 5.8), 1.6);
+    this.camTo(W(-0.4, 0.95, -9.3, 46, 35, 5.8), 1.6);
     yield 1.8;
-    this.ui.tag('monitor', 'Check the monitor', 'Patient monitor'); this.pointAt('monitor', 2.2, 1.9, -10.45);
+    this.ui.tag('monitor', 'Check the monitor', 'Patient monitor'); this.pointAt('monitor', -0.7, 1.9, -10.0);
     this.mark('or-card-2');
     const a2 = yield* this.askCard(CARDS[2]);
     this.answers[CARDS[2].id] = a2; this.ui.tag('monitor', null);
@@ -551,26 +571,33 @@ export class Opening {
     if (!this.silent) { this.sound.setMusicLevel(0, 1.8); this.sound.alarmOn(0.75); }
     this.speak(DIALOGUE.somethingWrong, 3.2, 1.0);
     this.mark('alert');
-    op.walk([[-1.7, -9.2], [-2.0, -9.7]], { endYaw: Math.PI * 0.85 }); // she steps from the patient to the nearby workstation; the team stays
+    op.walk([[-1.5, -8.6], [-1.45, -7.9]], { endYaw: -Math.PI / 2 }); // she steps from the patient's head to the workstation beside it; the team stays
     let u = 1; this.urgencyTimer = 6; // a cosmetic bar only: nothing is lost when it empties
     yield 3.4;
     // 5. flatline, motion, and the call
     this.state = 'FLATLINE_MOVEMENT'; this.substate = 'FLATLINE';
     this.camTo(W(0.45, 1.0, -8.3, 48, 35, 3.9), 2.2); // eases toward the patient and the team; Yola's workstation drops out of the frame
-    this.ecg = { t: 0, flat: true }; this.ui.showEcg(true);
+    this.ecg = { t: 0, flat: true }; this.ui.showEcg(true); if (this.screens) this.screens.flat = true; // the room's monitors flatline too
     if (!this.silent) { this.sound.alarmOff(); this.sound.flatlineOn(); }
     this.ui.status('No heartbeat', true); this.ui.urgency(null);
     this.mark('flatline');
     yield 2.0;
-    // one small, achievable movement: his head turns a little and a hand lifts
+    // it starts small: the fingers of one hand twitch and his head rolls toward the room
     this.substate = 'MOTION';
-    bb.adjust('head', 'head', 0, 0.55, 0, 0); bb.adjust('hand', 'forearm.R', 0, 0, -0.45, 0);
-    this.tween(1.4, (k) => { bb.adj.head.w = ease(k); bb.adj.hand.w = ease(k); });
+    bb.adjust('head', 'head', 0, 0.55, 0, 0); bb.adjust('hand', 'forearmR', 0, 0, -0.5, 0);
+    this.tween(0.9, (k) => { bb.adj.hand.w = Math.sin(k * Math.PI * 3) * 0.6 + ease(k) * 0.4; });
+    this.later(0.7, () => this.tween(1.1, (k) => { bb.adj.head.w = ease(k); }));
     this.mark('motion');
     yield 1.6;
-    ta.turnTo(Math.PI); tb.turnTo(Math.PI / 2);
+    // then he sits up - slowly, stiffly, from the hips - and his skin drains to a grey green. Everyone turns to him.
+    this.substate = 'SIT_UP';
+    this.sitUp(bb, 2.4); this.greenTo(bb, 3.2);
+    const lookAt = (a) => a.turnTo(Math.atan2(-0.15 - a.x, -8.2 - a.z)); // (his chest, once he is up)
+    for (const a of [ta, tb, op]) lookAt(a);
     this.speak(DIALOGUE.stillMoving, 2.6, 1.0);
-    this.recoil(tb, -0.28, 0.4); yield 2.8;
+    this.recoil(tb, -0.28, 0.4); this.later(0.6, () => this.recoil(op, -0.3, 0.5));
+    this.mark('sit-up');
+    yield 2.8;
     // the tone falls away; a short quiet pause
     if (!this.silent) this.sound.flatlineOff(0.6);
     this.ui.status('', false);
@@ -595,6 +622,18 @@ export class Opening {
   // a world-anchored tag
   pointAt(id, x, y, z) { this.tagPoints ||= {}; this.tagPoints[id] = new THREE.Vector3(x, y, z); }
   // a modest step back/away from the table (staff recoil): slide the actor along its facing axis while walking backwards
+  // the patient sits up on the table: the spine hinges up from the hips (his legs stay flat on the table)
+  sitUp(a, secs) {
+    a.adjust('sitS', 'spine', 0.95, 0, 0, 0); a.adjust('sitC', 'chest', 0.45, 0, 0, 0); a.adjust('sitN', 'neck', 0.2, 0, 0, 0); // (+x bends him up off the table: checked in a render)
+    this.tween(secs, (k) => { const e = ease(k) * (1 - 0.06 * Math.sin(k * Math.PI * 5) * (1 - k)); for (const n of ['sitS', 'sitC', 'sitN']) a.adj[n].w = e; });
+  }
+  // his skin drains to a grey green (the material is cloned once; restoreGreen puts the original back)
+  greenTo(a, secs) {
+    const skins = []; a.model.traverse((o) => { if (!o.isMesh) return; const ms = [].concat(o.material); ms.forEach((m, i) => { if (/^Skin_/.test(m.name)) { const n = m.clone(); n.userData.orig = m; skins.push({ o, i, n, c0: m.color.clone() }); if (Array.isArray(o.material)) o.material[i] = n; else o.material = n; } }); });
+    this.greened = skins; const green = new THREE.Color(0x8fa77c);
+    this.tween(secs, (k) => { for (const s of skins) s.n.color.copy(s.c0).lerp(green, ease(k)); });
+  }
+  restoreGreen() { for (const s of this.greened || []) { if (Array.isArray(s.o.material)) s.o.material[s.i] = s.n.userData.orig; else s.o.material = s.n.userData.orig; } this.greened = null; }
   recoil(a, dist, secs) {
     const dx = -Math.sin(a.yaw) * dist, dz = -Math.cos(a.yaw) * dist, x0 = a.root.position.x, z0 = a.root.position.z;
     this.tween(secs, (k) => { const e = ease(k); a.root.position.x = x0 + dx * e; a.root.position.z = z0 + dz * e; });
@@ -619,32 +658,42 @@ export class Opening {
     this.redLight.position.set(an.x - fx * 0.9, 2.9, an.z - fz * 0.9); this.setLamp(0.8);
     this.spot.intensity = 26; this.setLight(0.82); this.redLight.intensity = 2.5; // bright and neutral; only the lamp above the door is red
     this.mark('call-settled');
-    // 2. original Yola in the light -> the light falls (red) -> a full black beat -> improved Yola in red -> full reveal.
-    //    The model swap happens inside the black beat, at the same world anchor.
+    // 2. original Yola in the light, then the light fails like a dying tube. It stutters, and in the stutter the figure
+    //    in the doorway is not always the same one: a dark beat shows a shape in the red that is not quite her, a lit
+    //    flash shows her again, a single bright frame shows someone else... then the light dies, and comes back on the
+    //    new Yola. Both stand at the same world anchor, posed and still; each flicker shows one or the other.
     this.state = 'MODEL_REVEAL'; this.substate = 'HOLD_OLD';
-    yield 1.6; // original Yola, clearly, for one beat
-    this.substate = 'LIGHT_FALLS';
-    this.redLight.position.set(an.x - fx * 0.6, 2.8, an.z - fz * 0.6);
-    this.tween(1.0, (k) => { this.spot.intensity = 26 * (1 - ease(k)); this.setLight(0.82 - 0.74 * ease(k)); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (2.5 + 6 * ease(k)); this.setLamp(0.8 + 0.2 * ease(k)); });
-    yield 1.2;
-    this.substate = 'BLACK';
-    const black = !this.reducedFlash && !this.silent; // reduced-flash mode never goes fully black
-    if (black) { this.ui.setFadeColor('#000'); this.ui.fade.style.transition = 'none'; this.ui.fade.style.opacity = 1; }
-    this.redLight.intensity = 0; this.setLamp(0); this.setLight(0.02);
-    yield 0.2; // the beat of black (a fifth of a second)
-    yo.frozen = false; yo.setVisible(false);
+    yield 1.5; // original Yola, clearly, for one beat
     Y.reset(an.x, an.z, an.yaw); Y.setShown(true);
     if (Y.up) { Y.up.pistol = Y.up.shotgun = Y.up.axe = 0; Y.up.fists = 1; } // she is unarmed from the first frame (no weapon swap on screen)
     for (let i = 0; i < 4; i++) this.game().stillYola(0.016); // settle one standing pose, then hold it (no idle motion)
-    this.stillYola = false;
+    this.stillYola = false; Y.setShown(false);
+    const showNew = (v) => { yo.setVisible(!v); Y.setShown(v); };
+    // k: the room light (0 = only the red lamp over the door glows)
+    const lit = (k) => { this.spot.intensity = 26 * k; this.setLight(0.03 + 0.79 * k); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (k > 0 ? 2.5 : 1.5); this.setLamp(k > 0 ? 0.8 : 0.5); }; // (dark: only a dim red, so the figure is hard to make out)
+    this.substate = 'FLICKER';
+    this.redLight.position.set(an.x - fx * 0.6, 2.8, an.z - fz * 0.6);
+    const seq = this.reducedFlash || this.silent
+      ? [[0.5, 0.35, 'old'], [0.6, 0, 'old'], [0.5, 0, 'new']] // reduced flash: one slow dip, no strobing
+      : [[0.08, 0, 'old'], [0.07, 1, 'old'], [0.15, 0, 'old'], [0.05, 0.75, 'old'],
+        [0.24, 0, 'new'], // dark: a shape in the red that is not quite her
+        [0.07, 0.95, 'old'], // lit: it is her... isn't it
+        [0.13, 0, 'old'], [0.045, 1, 'new'], // one bright frame of someone else
+        [0.11, 0, 'new'], [0.05, 0.55, 'old'],
+        [0.8, 0, 'new']]; // the light dies: only the red lamp
+    let was = 1;
+    for (const [sec, k, who] of seq) {
+      showNew(who === 'new'); lit(k);
+      if (!this.silent && (k > 0) !== (was > 0)) this.sound.flicker?.(k > 0);
+      was = k; yield sec;
+    }
     this.mark('swapped');
-    yield 0.12;
-    this.substate = 'IMPROVED_SILHOUETTE';
-    if (black) { this.ui.fade.style.transition = 'opacity 0.1s linear'; this.ui.fade.style.opacity = 0; }
-    this.tween(1.2, (k) => { const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 8 * p; this.setLamp(0.5 + 0.5 * p); this.setLight(0.04 + 0.05 * ease(k)); });
-    yield 1.35;
+    // 3. the light catches and stays on: the new Yola, clearly, in the doorway
+    this.substate = 'IMPROVED_REVEAL';
+    if (!this.silent) this.sound.flicker?.(true);
+    lit(0.7); yield 0.05; lit(0.15); yield 0.06;
+    this.tween(0.45, (k) => { const e = ease(k); this.spot.intensity = 24 * e; this.setLight(0.12 + 0.72 * e); this.redLight.intensity = 1.5 * (1 - e) + 1.2 * e; this.setLamp(0.55 - 0.15 * e); });
     this.substate = 'SETTLE';
-    this.tween(0.7, (k) => { this.spot.intensity = 24 * ease(k); this.setLight(0.09 + 0.75 * ease(k)); this.redLight.intensity = 6 * (1 - ease(k)) + 1.2 * ease(k); this.setLamp(1 - 0.6 * ease(k)); });
     yield 0.8; this.mark('reveal-settled');
     // 3. the boss card: a freeze frame, a hard punch-in on her face and torso, the name slammed across the screen
     this.state = 'BOSS_CARD'; this.substate = 'FREEZE';
@@ -711,7 +760,8 @@ export class Opening {
 
   // THE canonical Room 1 hand-off: normal completion, skip, replay and direct start all end here. Idempotent.
   finalize(via = 'normal') {
-    if (this.finalized) return; this.finalized = true;
+    if (this.finalized) return; this.finalized = true; if (this.screens) this.screens.flat = false;
+    this.arena.setEmergency?.(true, via === 'normal' ? 1.6 : 0); // the floor after the outbreak: emergency lighting
     const st = this.stage, A = st.actors, g = this.game(), an = ROOM1.player;
     // story state off: overlays, audio, timers, tweens, listeners that belong to the story
     this.co = null; this.wait = null; this.timers.length = 0; this.tweens = []; this.fx = null; this.camAnim = null; this.poseAnim = null; this.tagPoints = null;

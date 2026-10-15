@@ -6,12 +6,12 @@ import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe } from './weaponModels.js';
 import { ikArm as solveArm } from './ik.js';
-import { AXE_ATTACKS, FIST_ATTACKS, attacksOf, SHOTGUN_SPEC, isMelee } from '../core/weapons.js';
+import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, isMelee } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
-const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3();
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3(), _v5 = new THREE.Vector3();
 const _ik = new THREE.Vector3(), _ikg = new THREE.Vector3(), _ikh = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _q4 = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
@@ -149,7 +149,7 @@ export class YolaView extends ClipBody {
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_hold_upper'));
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_reload_upper'));
     clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), 'fists_idle_upper')); // unarmed: Yola's own idle on the upper body
-    const melee = [...new Set([...AXE_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
+    const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
     clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
     const scriptNames = ['t_greet_01', 't_greet_04'].filter((n) => byName[n]); // scripted full-body clips (the reveal's smooth wave)
     for (const n of scriptNames) clips.push(byName[n]);
@@ -208,16 +208,16 @@ export class YolaView extends ClipBody {
   // first frame, character space; each clip family grips differently) expressed in this hand's frame.
   calibrateMeleeSockets(clipdata) {
     this.meleeSocket = {};
-    for (const A of AXE_ATTACKS) {
+    for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS]) {
       const smp = clipdata?.[A.path]?.find((q) => q.f === A.f0);
       if (!smp?.d) continue;
       for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
       const act = this.act(A.clip); act.time = A.f0 / 30; act.setEffectiveWeight(1);
       this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
       this.mixer.update(0); this.container.updateMatrixWorld(true);
-      this.container.getWorldQuaternion(_q2); this.bones.RightHand.getWorldQuaternion(_q3);
+      this.container.getWorldQuaternion(_q2); this.bones[(A.hand || 'Right') + 'Hand'].getWorldQuaternion(_q3);
       const handC = _q2.invert().multiply(_q3);
-      this.meleeSocket[A.name] = new THREE.Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
+      this.meleeSocket[A.sock || A.name] = new THREE.Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
       act.setEffectiveWeight(0);
     }
   }
@@ -429,14 +429,14 @@ export class YolaView extends ClipBody {
     let sW = 0, turn = 0;
     const A = s.action === 'swing' ? attacksOf(s.equipped)[s.combo] : null;
     if (A) {
-      const t = s.swingT, tEnd = (A.f1 - A.f0) / (A.fps * A.rate), act = this.act(A.clip);
+      const t = s.swingT, tEnd = attackEnd(A), act = this.act(A.clip);
       if (this.swingId !== s.swingId) {
         // next attack of the combo: the previous clip fades out under the new one
-        if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; }
-        this.swingId = s.swingId; this.swingAct = act; this.swingName = A.sock || A.name;
+        if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; this.prevSwingHand = this.swingHand; }
+        this.swingId = s.swingId; this.swingAct = act; this.swingName = A.sock || A.name; this.swingHand = A.hand || 'Right'; this.swingBlend = A.blendIn || 0.1;
       }
-      act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps + ((this.swJit ^= 1) * 1e-6); // glTF time = blender frame / fps; a static time is only applied every other update (hit-pause froze the swing pose), so it alternates
-      const ramp = clamp(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
+      act.time = attackFrame(A, Math.min(t, tEnd)) / A.fps + ((this.swJit ^= 1) * 1e-6); // glTF time = blender frame / fps; a static time is only applied every other update (hit-pause froze the swing pose), so it alternates
+      const ramp = smooth(clamp(t / (this.prevSwing ? this.swingBlend : 0.05), 0, 1));
       const out = t <= tEnd ? 1 : smooth(clamp(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
       sW = ramp * out;
       // step into the attack: turn so it lands on the aim, then turn back during recovery
@@ -447,7 +447,7 @@ export class YolaView extends ClipBody {
         if (pw <= 1e-3) { this.prevSwing.setEffectiveWeight(0); this.prevSwing = null; }
       }
       // the turn carries over from the previous attack instead of snapping
-      if (this.prevTurn != null && t < 0.1) turn = this.prevTurn + (turn - this.prevTurn) * smooth(t / 0.1);
+      if (this.prevTurn != null && t < this.swingBlend) turn = this.prevTurn + (turn - this.prevTurn) * smooth(t / this.swingBlend);
       else this.prevTurn = null;
     } else {
       this.swingAct = null; this.swingId = -1;
@@ -653,10 +653,11 @@ export class YolaView extends ClipBody {
       if (this.batSocket) {
         const wA = this.swingAct ? this.swingW : 0, wP = this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0, wI = Math.max(0, 1 - wA - wP);
         const ms = this.meleeSocket || {};
-        dir = _v3.copy(this.batSocket).multiplyScalar(wI);
-        if (wA) dir.addScaledVector(ms[this.swingName] || this.batSocket, wA);
-        if (wP) dir.addScaledVector(ms[this.prevSwingName] || this.batSocket, wP);
-        this.bones.RightHand.getWorldQuaternion(_q); dir.applyQuaternion(_q).normalize();
+        const inHand = (v, hand) => { this.bones[(hand || 'Right') + 'Hand'].getWorldQuaternion(_q); return _v5.copy(v).applyQuaternion(_q); };
+        dir = _v3.set(0, 0, 0).addScaledVector(inHand(this.batSocket, 'Right'), wI);
+        if (wA) dir.addScaledVector(inHand(ms[this.swingName] || this.batSocket, ms[this.swingName] ? this.swingHand : 'Right'), wA);
+        if (wP) dir.addScaledVector(inHand(ms[this.prevSwingName] || this.batSocket, ms[this.prevSwingName] ? this.prevSwingHand : 'Right'), wP);
+        dir.normalize();
       } else dir = _v3.copy(_v).sub(_v2).normalize();
       const M = this.melee;
       M.position.copy(_v).add(_v2).multiplyScalar(0.5);

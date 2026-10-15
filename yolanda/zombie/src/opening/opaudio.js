@@ -166,6 +166,12 @@ export class OpeningAudio {
     this.audio.tone(t + 0.05, 0.8, 780, { type: 'triangle', gain: 0.07, f2: 2100, attack: 0.05 });
     this.audio.noise(t, 0.9, { type: 'bandpass', f: 1800, q: 2, f2: 3200, gain: 0.08, attack: 0.04 });
   }
+  flicker(on = true) { // a failing tube: an electrical tick and a short mains buzz as it catches (or drops)
+    if (!this.audio.ok) return;
+    const t = this.ctx.currentTime + 0.003;
+    this.audio.tone(t, 0.025, on ? 2400 : 1600, { type: 'square', gain: 0.05, attack: 0.001 });
+    if (on) this.audio.tone(t + 0.01, 0.09, 100, { type: 'sawtooth', gain: 0.07, attack: 0.004 });
+  }
   revealCue() { // restrained: a low swell and one soft bell
     if (!this.audio.ok) return;
     const t = this.ctx.currentTime + 0.01;

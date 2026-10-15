@@ -1,3 +1,99 @@
+# Polish log — round 9 (2026-10-15)
+
+Your notes from your last play-through, in order. Each change was checked with scripted simulation runs and with renders
+in the browser pane, at phone size and at desktop size. Nothing was played by a person on a phone yet.
+
+## Combat
+
+**The bat and the axe are now different, and each combo is two hits.**
+- **Bat:** the level swing (right to left), then a **home-run swing back the other way** (left to right).
+  - The home run is Yola's own swing mirrored in Blender, so she bats it left-handed. It isn't a new clip.
+  - It holds a wind-up behind her shoulder for about 0.2 s, then whips through in about 0.1 s.
+  - It also steps in further and hits much harder: about 37 for the first swing, then about 71, which kills.
+  - Checked: the mirrored pose matches her real pose reflected to within about 4 mm. `yola.glb` was re-exported, and its
+    mesh and textures are byte-identical to before, with the one new clip added.
+- **Axe:** the swing, then the overhead chop. The chop now starts with the axe already raised, so it flows straight out
+  of the swing instead of dropping down and lifting back up.
+- **Smoother chaining:** the second attack eases in (0.16 s cross-fade with a smooth curve) instead of the old 0.1 s
+  linear blend.
+- Checked: holding attack against one zombie gives first hit → finisher kill, for both weapons, on 4 different seeds.
+
+**The slowdown on hits.** It was a full freeze of the whole game (the game and all animation), so it read as a stutter, and
+combo hits stacked the freezes. It's now a brief dip into slow motion (20% speed) that never stops the game:
+- 0.07 s on a normal hit.
+- Slightly shorter for the first hit of a combo, slightly longer for the finisher or a kill.
+- Old saved tuning values reset to the new defaults once, automatically (the tuning settings now carry a version
+  number), so the old freeze length can't stick around.
+
+## The opening
+
+- **Poster in the reception:** the heart poster overlapped the operating-room doorway's frame, and the wall sanitizer
+  sat inside the doorway too. The poster moved left (with the water cooler shifted so they don't touch), and the
+  sanitizer moved between the doorway and the glass wall.
+- **Outside the medical center (new first shot), built after your picture:**
+  - Cream stucco front, the teal "Yola's Medical Center" sign, a canopy with downlights over the entrance pillars.
+  - Teal-framed glass sliding doors, planters with broadleaf plants, hedges under teal windows.
+  - Sidewalk with leaf shadows, trees above the roofline, a blue sky with clouds.
+  - The shot pushes in slowly from a low angle, the doors slide open, and the camera carries on into the reception.
+  - Through the glass you see the real reception (its peach rug, a ceiling with light panels).
+  - It frames properly on both a phone (portrait) and a wide screen.
+  - The title card now appears just after entering, since the sign shows the name outside.
+- **Monitors look switched on:** every patient monitor and anesthesia screen gets a live, glowing display: a sweeping
+  ECG, an oxygen trace and a breathing trace, with HR / SpO2 / RR readouts.
+  - All screens share one small texture redrawn 12 times a second, so it's cheap.
+  - The old static waveform shapes are hidden.
+  - When the patient flatlines, the screens show a red flat line and a blinking HR.
+  - (Recovery and Pre-Op on Floor 3 merge their props into single meshes for speed, so their monitors were left as they
+    were. The Pre-Op one is the deliberately cracked, post-outbreak model.)
+- **The surgery room:**
+  - The table no longer stands in front of double doors. The door that was behind it moved east along the wall.
+  - The wall behind the table is now a head wall with a glove dispenser, hand sanitizer, sharps bin and clock.
+  - One table (mid tier) under a mid-tier ceiling surgical light.
+  - The mid-tier anesthesia workstation beside the head of the table, facing it, plus a mid-tier monitor and a mid-tier
+    IV pole at the table's side.
+  - A biohazard bin, a waste bin and a mid-tier supply cart against the walls.
+  - The monitor and workstation screens are working displays (above) instead of broken-looking ones.
+  - The story's camera shots and the "check the equipment / monitor" tags follow the equipment.
+- **"Oh no, he's moving":**
+  - His fingers twitch and his head rolls toward the room. The old hand-lift never worked: it referred to a bone name
+    that doesn't exist.
+  - Then he slowly, stiffly sits up from the hips, legs still flat on the table, while his skin drains to a grey green.
+  - The surgeon and both staff turn to look at him and back away.
+- **The reveal:** the single fade to black is now a failing-light flicker:
+  - The light stutters with an electrical tick and buzz.
+  - In one dark beat, the shape in the doorway is the new Yola.
+  - A lit flash shows the old Yola again.
+  - One bright frame shows someone else.
+  - Then the light dies, and comes back on the new Yola.
+  - The dark beats are dim red only, so the figure is hard to make out.
+  - Reduced-flash mode gets one slow dip instead.
+
+## Zombie fight: emergency lighting (applied across the whole floor, almost no cost)
+
+- **Main lights:** the one shadow-casting sun turns a cold, dimmer emergency white. The fill light goes cold blue over a
+  dark red bounce.
+- **Warning beacon:** one red fill light that breathes slowly like a rotating beacon.
+- **Floor glow:** soft glow pools painted on the floor (red under the fittings and at every doorway, cold white in the
+  middle of each room). They're unlit decals, not lights.
+- **Screen edge:** a faint pulsing red vignette at the edges, drawn by the browser rather than the 3D renderer.
+- **Fewer lights:** Floor 3's five amber point lights (each one cost every lit pixel) are gone, so this is cheaper than
+  before. No light casts its own shadow. The red beacon light exists from the start at zero, so turning the look on
+  never triggers a shader recompile (no hitch).
+- **When it switches:** it fades in over 1.6 s as the camera widens after the reveal, and resets if the opening is
+  replayed.
+
+## Checked
+
+- **Bat hit grid:** unchanged at 30/42 on open floor, 26/42 beside a wall.
+- **Headshots:** 9.6% of hits.
+- **Crowd overlap:** still about half what it was before round 8.
+- **Floor 3 navigation:** unchanged, and no zombie gets stuck in the rebuilt operating room.
+
+## Not verified
+
+- Real-time feel on a phone: the home-run timing, the slow-motion length, and the flicker's rhythm with sound.
+- The emergency-light edge vignette on a real screen (the in-pane test views can't show page overlays).
+
 # Combat polish log — round 8 (2026-10-14)
 
 What changed in the combat, why, and how each change was checked. All numbers come from scripted runs of the real

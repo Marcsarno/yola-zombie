@@ -28,7 +28,7 @@ export const TUNING_DEFAULTS = {
   axeKnockdown: 0.45, // chance a non-lethal axe hit knocks the zombie flat (the chop: more)
   fistDamage: 18, // jab; the cross and kick hit harder (weapons.js FIST_ATTACKS)
   fistKnockback: 4.0, // m/s impulse (x the attack's knock factor)
-  hitPause: 0.085, // s freeze on axe hits (kills hold 1.4x longer; 0 = off)
+  hitPause: 0.07, // s of slow motion on a melee hit (kills and the heavy second hit a little longer; 0 = off)
   shake: 1.0,
   zombieSpeed: 1.0, // m/s approach
   zombieHp: 100,
@@ -39,6 +39,9 @@ export const TUNING_DEFAULTS = {
   camWidth: 7.2, // metres of floor across a portrait screen at the player
 };
 
+// bumped when defaults change, so tuning saved by an older build does not hide the new values
+export const TUNING_VERSION = 2;
 export function makeTuning(saved) {
-  return Object.assign({}, TUNING_DEFAULTS, saved || {});
+  if (!saved || saved._v !== TUNING_VERSION) saved = null;
+  return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
 }
