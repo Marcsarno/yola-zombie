@@ -11,7 +11,7 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
-const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3(), _v5 = new THREE.Vector3();
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3(), _v5 = new THREE.Vector3(), _v6 = new THREE.Vector3(), _v7 = new THREE.Vector3();
 const _ik = new THREE.Vector3(), _ikg = new THREE.Vector3(), _ikh = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _q4 = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
@@ -212,7 +212,7 @@ export class YolaView extends ClipBody {
       const smp = clipdata?.[A.path]?.find((q) => q.f === A.f0);
       if (!smp?.d) continue;
       for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
-      const act = this.act(A.clip); act.time = A.f0 / 30; act.setEffectiveWeight(1);
+      const act = this.act(A.clip); if (!act) continue; act.time = A.f0 / (A.fps || 30); act.setEffectiveWeight(1);
       this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
       this.mixer.update(0); this.container.updateMatrixWorld(true);
       this.container.getWorldQuaternion(_q2); this.bones[(A.hand || 'Right') + 'Hand'].getWorldQuaternion(_q3);
@@ -436,7 +436,8 @@ export class YolaView extends ClipBody {
         this.swingId = s.swingId; this.swingAct = act; this.swingName = A.sock || A.name; this.swingHand = A.hand || 'Right'; this.swingBlend = A.blendIn || 0.1;
       }
       act.time = attackFrame(A, Math.min(t, tEnd)) / A.fps + ((this.swJit ^= 1) * 1e-6); // glTF time = blender frame / fps; a static time is only applied every other update (hit-pause froze the swing pose), so it alternates
-      const ramp = smooth(clamp(t / (this.prevSwing ? this.swingBlend : 0.05), 0, 1));
+      const cont = A.continuous && s.combo > 0; // a chained strike of one continuous clip: already fully in
+      const ramp = cont ? 1 : smooth(clamp(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
       const out = t <= tEnd ? 1 : smooth(clamp(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
       sW = ramp * out;
       // step into the attack: turn so it lands on the aim, then turn back during recovery
@@ -660,7 +661,15 @@ export class YolaView extends ClipBody {
         dir.normalize();
       } else dir = _v3.copy(_v).sub(_v2).normalize();
       const M = this.melee;
-      M.position.copy(_v).add(_v2).multiplyScalar(0.5);
+      if (this.batMode) {
+        // the bat hangs from the right hand (its grip, along the socket); the LEFT hand is then put on the handle by
+        // two-bone IK after the blend, at the clip's own spacing along the bat. The bat never follows the left hand, so
+        // there is no loop; blends between clips (into a swing, back to idle) can no longer pull the hands apart.
+        const span = clamp(_v6.copy(_v).sub(_v2).dot(dir), 0.07, 0.16);
+        this.ikArm('Left', _v7.copy(_v).addScaledVector(dir, -span), 1);
+        this.grip('Left', _v2);
+        M.position.copy(_v).addScaledVector(dir, -span / 2);
+      } else M.position.copy(_v).add(_v2).multiplyScalar(0.5);
       const tip = _v4.copy(M.position).addScaledVector(dir, 0.7);
       const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new THREE.Vector3();
       this.prevTip.copy(tip);
@@ -672,7 +681,7 @@ export class YolaView extends ClipBody {
       want.normalize();
       const x = want.clone().negate(), y = new THREE.Vector3().crossVectors(dir, x); // local -X is the blade
       const target = _q2.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, dir));
-      if (!this.bladeInit) { this.bladeQ.copy(target); this.bladeInit = true; }
+      if (!this.bladeInit || this.batMode) { this.bladeQ.copy(target); this.bladeInit = true; } // (a round bat has no edge to lead: it follows the hand exactly)
       else this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
       M.quaternion.copy(this.bladeQ);
       M.updateMatrixWorld(true);

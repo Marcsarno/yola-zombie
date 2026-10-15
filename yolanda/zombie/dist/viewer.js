@@ -14651,6 +14651,156 @@
       return this;
     }
   };
+  var CylinderGeometry = class _CylinderGeometry extends BufferGeometry {
+    /**
+     * Constructs a new cylinder geometry.
+     *
+     * @param {number} [radiusTop=1] - Radius of the cylinder at the top.
+     * @param {number} [radiusBottom=1] - Radius of the cylinder at the bottom.
+     * @param {number} [height=1] - Height of the cylinder.
+     * @param {number} [radialSegments=32] - Number of segmented faces around the circumference of the cylinder.
+     * @param {number} [heightSegments=1] - Number of rows of faces along the height of the cylinder.
+     * @param {boolean} [openEnded=false] - Whether the base of the cylinder is open or capped.
+     * @param {number} [thetaStart=0] - Start angle for first segment, in radians.
+     * @param {number} [thetaLength=Math.PI*2] - The central angle, often called theta, of the circular sector, in radians.
+     * The default value results in a complete cylinder.
+     */
+    constructor(radiusTop = 1, radiusBottom = 1, height = 1, radialSegments = 32, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2) {
+      super();
+      this.type = "CylinderGeometry";
+      this.parameters = {
+        radiusTop,
+        radiusBottom,
+        height,
+        radialSegments,
+        heightSegments,
+        openEnded,
+        thetaStart,
+        thetaLength
+      };
+      const scope = this;
+      radialSegments = Math.floor(radialSegments);
+      heightSegments = Math.floor(heightSegments);
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      let index = 0;
+      const indexArray = [];
+      const halfHeight = height / 2;
+      let groupStart = 0;
+      generateTorso();
+      if (openEnded === false) {
+        if (radiusTop > 0) generateCap(true);
+        if (radiusBottom > 0) generateCap(false);
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+      function generateTorso() {
+        const normal = new Vector3();
+        const vertex2 = new Vector3();
+        let groupCount = 0;
+        const slope = (radiusBottom - radiusTop) / height;
+        for (let y = 0; y <= heightSegments; y++) {
+          const indexRow = [];
+          const v = y / heightSegments;
+          const radius = v * (radiusBottom - radiusTop) + radiusTop;
+          for (let x = 0; x <= radialSegments; x++) {
+            const u = x / radialSegments;
+            const theta = u * thetaLength + thetaStart;
+            const sinTheta = Math.sin(theta);
+            const cosTheta = Math.cos(theta);
+            vertex2.x = radius * sinTheta;
+            vertex2.y = -v * height + halfHeight;
+            vertex2.z = radius * cosTheta;
+            vertices.push(vertex2.x, vertex2.y, vertex2.z);
+            normal.set(sinTheta, slope, cosTheta).normalize();
+            normals.push(normal.x, normal.y, normal.z);
+            uvs.push(u, 1 - v);
+            indexRow.push(index++);
+          }
+          indexArray.push(indexRow);
+        }
+        for (let x = 0; x < radialSegments; x++) {
+          for (let y = 0; y < heightSegments; y++) {
+            const a = indexArray[y][x];
+            const b = indexArray[y + 1][x];
+            const c = indexArray[y + 1][x + 1];
+            const d = indexArray[y][x + 1];
+            if (radiusTop > 0 || y !== 0) {
+              indices.push(a, b, d);
+              groupCount += 3;
+            }
+            if (radiusBottom > 0 || y !== heightSegments - 1) {
+              indices.push(b, c, d);
+              groupCount += 3;
+            }
+          }
+        }
+        scope.addGroup(groupStart, groupCount, 0);
+        groupStart += groupCount;
+      }
+      function generateCap(top) {
+        const centerIndexStart = index;
+        const uv = new Vector2();
+        const vertex2 = new Vector3();
+        let groupCount = 0;
+        const radius = top === true ? radiusTop : radiusBottom;
+        const sign2 = top === true ? 1 : -1;
+        for (let x = 1; x <= radialSegments; x++) {
+          vertices.push(0, halfHeight * sign2, 0);
+          normals.push(0, sign2, 0);
+          uvs.push(0.5, 0.5);
+          index++;
+        }
+        const centerIndexEnd = index;
+        for (let x = 0; x <= radialSegments; x++) {
+          const u = x / radialSegments;
+          const theta = u * thetaLength + thetaStart;
+          const cosTheta = Math.cos(theta);
+          const sinTheta = Math.sin(theta);
+          vertex2.x = radius * sinTheta;
+          vertex2.y = halfHeight * sign2;
+          vertex2.z = radius * cosTheta;
+          vertices.push(vertex2.x, vertex2.y, vertex2.z);
+          normals.push(0, sign2, 0);
+          uv.x = cosTheta * 0.5 + 0.5;
+          uv.y = sinTheta * 0.5 * sign2 + 0.5;
+          uvs.push(uv.x, uv.y);
+          index++;
+        }
+        for (let x = 0; x < radialSegments; x++) {
+          const c = centerIndexStart + x;
+          const i = centerIndexEnd + x;
+          if (top === true) {
+            indices.push(i, i + 1, c);
+          } else {
+            indices.push(i + 1, i, c);
+          }
+          groupCount += 3;
+        }
+        scope.addGroup(groupStart, groupCount, top === true ? 1 : 2);
+        groupStart += groupCount;
+      }
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @return {CylinderGeometry} A new instance.
+     */
+    static fromJSON(data) {
+      return new _CylinderGeometry(data.radiusTop, data.radiusBottom, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength);
+    }
+  };
   var Curve = class {
     /**
      * Constructs a new curve.
@@ -14850,7 +15000,7 @@
       const normals = [];
       const binormals = [];
       const vec = new Vector3();
-      const mat = new Matrix4();
+      const mat2 = new Matrix4();
       for (let i = 0; i <= segments; i++) {
         const u = i / segments;
         tangents[i] = this.getTangentAt(u, new Vector3());
@@ -14882,7 +15032,7 @@
         if (vec.length() > Number.EPSILON) {
           vec.normalize();
           const theta = Math.acos(clamp(tangents[i - 1].dot(tangents[i]), -1, 1));
-          normals[i].applyMatrix4(mat.makeRotationAxis(vec, theta));
+          normals[i].applyMatrix4(mat2.makeRotationAxis(vec, theta));
         }
         binormals[i].crossVectors(tangents[i], normals[i]);
       }
@@ -14893,7 +15043,7 @@
           theta = -theta;
         }
         for (let i = 1; i <= segments; i++) {
-          normals[i].applyMatrix4(mat.makeRotationAxis(tangents[i], theta * i));
+          normals[i].applyMatrix4(mat2.makeRotationAxis(tangents[i], theta * i));
           binormals[i].crossVectors(tangents[i], normals[i]);
         }
       }
@@ -15446,6 +15596,121 @@
       vertices.push(contour[i].y);
     }
   }
+  var LatheGeometry = class _LatheGeometry extends BufferGeometry {
+    /**
+     * Constructs a new lathe geometry.
+     *
+     * @param {Array<Vector2|Vector3>} [points] - An array of points in 2D space. The x-coordinate of each point
+     * must be greater than zero.
+     * @param {number} [segments=12] - The number of circumference segments to generate.
+     * @param {number} [phiStart=0] - The starting angle in radians.
+     * @param {number} [phiLength=Math.PI*2] - The radian (0 to 2PI) range of the lathed section 2PI is a
+     * closed lathe, less than 2PI is a portion.
+     */
+    constructor(points = [new Vector2(0, -0.5), new Vector2(0.5, 0), new Vector2(0, 0.5)], segments = 12, phiStart = 0, phiLength = Math.PI * 2) {
+      super();
+      this.type = "LatheGeometry";
+      this.parameters = {
+        points,
+        segments,
+        phiStart,
+        phiLength
+      };
+      segments = Math.floor(segments);
+      phiLength = clamp(phiLength, 0, Math.PI * 2);
+      const indices = [];
+      const vertices = [];
+      const uvs = [];
+      const initNormals = [];
+      const normals = [];
+      const inverseSegments = 1 / segments;
+      const vertex2 = new Vector3();
+      const uv = new Vector2();
+      const normal = new Vector3();
+      const curNormal = new Vector3();
+      const prevNormal = new Vector3();
+      let dx = 0;
+      let dy = 0;
+      for (let j = 0; j <= points.length - 1; j++) {
+        switch (j) {
+          case 0:
+            dx = points[j + 1].x - points[j].x;
+            dy = points[j + 1].y - points[j].y;
+            normal.x = dy * 1;
+            normal.y = -dx;
+            normal.z = dy * 0;
+            prevNormal.copy(normal);
+            normal.normalize();
+            initNormals.push(normal.x, normal.y, normal.z);
+            break;
+          case points.length - 1:
+            initNormals.push(prevNormal.x, prevNormal.y, prevNormal.z);
+            break;
+          default:
+            dx = points[j + 1].x - points[j].x;
+            dy = points[j + 1].y - points[j].y;
+            normal.x = dy * 1;
+            normal.y = -dx;
+            normal.z = dy * 0;
+            curNormal.copy(normal);
+            normal.x += prevNormal.x;
+            normal.y += prevNormal.y;
+            normal.z += prevNormal.z;
+            normal.normalize();
+            initNormals.push(normal.x, normal.y, normal.z);
+            prevNormal.copy(curNormal);
+        }
+      }
+      for (let i = 0; i <= segments; i++) {
+        const phi = phiStart + i * inverseSegments * phiLength;
+        const sin = Math.sin(phi);
+        const cos = Math.cos(phi);
+        for (let j = 0; j <= points.length - 1; j++) {
+          vertex2.x = points[j].x * sin;
+          vertex2.y = points[j].y;
+          vertex2.z = points[j].x * cos;
+          vertices.push(vertex2.x, vertex2.y, vertex2.z);
+          uv.x = i / segments;
+          uv.y = j / (points.length - 1);
+          uvs.push(uv.x, uv.y);
+          const x = initNormals[3 * j + 0] * sin;
+          const y = initNormals[3 * j + 1];
+          const z = initNormals[3 * j + 0] * cos;
+          normals.push(x, y, z);
+        }
+      }
+      for (let i = 0; i < segments; i++) {
+        for (let j = 0; j < points.length - 1; j++) {
+          const base = j + i * points.length;
+          const a = base;
+          const b = base + points.length;
+          const c = base + points.length + 1;
+          const d = base + 1;
+          indices.push(a, b, d);
+          indices.push(c, d, b);
+        }
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @return {LatheGeometry} A new instance.
+     */
+    static fromJSON(data) {
+      return new _LatheGeometry(data.points, data.segments, data.phiStart, data.phiLength);
+    }
+  };
   var PlaneGeometry = class _PlaneGeometry extends BufferGeometry {
     /**
      * Constructs a new plane geometry.
@@ -15603,6 +15868,82 @@
      */
     static fromJSON(data) {
       return new _SphereGeometry(data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength);
+    }
+  };
+  var TorusGeometry = class _TorusGeometry extends BufferGeometry {
+    /**
+     * Constructs a new torus geometry.
+     *
+     * @param {number} [radius=1] - Radius of the torus, from the center of the torus to the center of the tube.
+     * @param {number} [tube=0.4] - Radius of the tube. Must be smaller than `radius`.
+     * @param {number} [radialSegments=12] - The number of radial segments.
+     * @param {number} [tubularSegments=48] - The number of tubular segments.
+     * @param {number} [arc=Math.PI*2] - Central angle in radians.
+     */
+    constructor(radius = 1, tube = 0.4, radialSegments = 12, tubularSegments = 48, arc = Math.PI * 2) {
+      super();
+      this.type = "TorusGeometry";
+      this.parameters = {
+        radius,
+        tube,
+        radialSegments,
+        tubularSegments,
+        arc
+      };
+      radialSegments = Math.floor(radialSegments);
+      tubularSegments = Math.floor(tubularSegments);
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      const center = new Vector3();
+      const vertex2 = new Vector3();
+      const normal = new Vector3();
+      for (let j = 0; j <= radialSegments; j++) {
+        for (let i = 0; i <= tubularSegments; i++) {
+          const u = i / tubularSegments * arc;
+          const v = j / radialSegments * Math.PI * 2;
+          vertex2.x = (radius + tube * Math.cos(v)) * Math.cos(u);
+          vertex2.y = (radius + tube * Math.cos(v)) * Math.sin(u);
+          vertex2.z = tube * Math.sin(v);
+          vertices.push(vertex2.x, vertex2.y, vertex2.z);
+          center.x = radius * Math.cos(u);
+          center.y = radius * Math.sin(u);
+          normal.subVectors(vertex2, center).normalize();
+          normals.push(normal.x, normal.y, normal.z);
+          uvs.push(i / tubularSegments);
+          uvs.push(j / radialSegments);
+        }
+      }
+      for (let j = 1; j <= radialSegments; j++) {
+        for (let i = 1; i <= tubularSegments; i++) {
+          const a = (tubularSegments + 1) * j + i - 1;
+          const b = (tubularSegments + 1) * (j - 1) + i - 1;
+          const c = (tubularSegments + 1) * (j - 1) + i;
+          const d = (tubularSegments + 1) * j + i;
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @return {TorusGeometry} A new instance.
+     */
+    static fromJSON(data) {
+      return new _TorusGeometry(data.radius, data.tube, data.radialSegments, data.tubularSegments, data.arc);
     }
   };
   var MeshStandardMaterial = class extends Material {
@@ -32802,11 +33143,11 @@ void main() {
           const jointNode = jointNodes[i];
           if (jointNode) {
             bones.push(jointNode);
-            const mat = new Matrix4();
+            const mat2 = new Matrix4();
             if (inverseBindMatrices !== null) {
-              mat.fromArray(inverseBindMatrices.array, i * 16);
+              mat2.fromArray(inverseBindMatrices.array, i * 16);
             }
-            boneInverses.push(mat);
+            boneInverses.push(mat2);
           } else {
             console.warn('THREE.GLTFLoader: Joint "%s" could not be found.', skinDef.joints[i]);
           }
@@ -37144,7 +37485,191 @@ void main() {
     }
   }
 
+  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  var _tempNormal = new Vector3();
+  function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
+    const totArcLength = 2 * Math.PI * radius / 4;
+    const centerLength = Math.max(sideLength - 2 * radius, 0);
+    const halfArc = Math.PI / 4;
+    _tempNormal.copy(normal);
+    _tempNormal[projectionAxis] = 0;
+    _tempNormal.normalize();
+    const arcUvRatio = 0.5 * totArcLength / (totArcLength + centerLength);
+    const arcAngleRatio = 1 - _tempNormal.angleTo(faceDirVector) / halfArc;
+    if (Math.sign(_tempNormal[uvAxis]) === 1) {
+      return arcAngleRatio * arcUvRatio;
+    } else {
+      const lenUv = centerLength / (totArcLength + centerLength);
+      return lenUv + arcUvRatio + arcUvRatio * (1 - arcAngleRatio);
+    }
+  }
+  var RoundedBoxGeometry = class _RoundedBoxGeometry extends BoxGeometry {
+    /**
+     * Constructs a new rounded box geometry.
+     *
+     * @param {number} [width=1] - The width. That is, the length of the edges parallel to the X axis.
+     * @param {number} [height=1] - The height. That is, the length of the edges parallel to the Y axis.
+     * @param {number} [depth=1] - The depth. That is, the length of the edges parallel to the Z axis.
+     * @param {number} [segments=2] - Number of segments that form the rounded corners.
+     * @param {number} [radius=0.1] - The radius of the rounded corners.
+     */
+    constructor(width = 1, height = 1, depth = 1, segments = 2, radius = 0.1) {
+      const totalSegments = segments * 2 + 1;
+      radius = Math.min(width / 2, height / 2, depth / 2, radius);
+      super(1, 1, 1, totalSegments, totalSegments, totalSegments);
+      this.type = "RoundedBoxGeometry";
+      this.parameters = {
+        width,
+        height,
+        depth,
+        segments,
+        radius
+      };
+      if (totalSegments === 1) return;
+      const geometry2 = this.toNonIndexed();
+      this.index = null;
+      this.attributes.position = geometry2.attributes.position;
+      this.attributes.normal = geometry2.attributes.normal;
+      this.attributes.uv = geometry2.attributes.uv;
+      const position = new Vector3();
+      const normal = new Vector3();
+      const box = new Vector3(width, height, depth).divideScalar(2).subScalar(radius);
+      const positions = this.attributes.position.array;
+      const normals = this.attributes.normal.array;
+      const uvs = this.attributes.uv.array;
+      const faceTris = positions.length / 6;
+      const faceDirVector = new Vector3();
+      const halfSegmentSize = 0.5 / totalSegments;
+      for (let i = 0, j = 0; i < positions.length; i += 3, j += 2) {
+        position.fromArray(positions, i);
+        normal.copy(position);
+        normal.x -= Math.sign(normal.x) * halfSegmentSize;
+        normal.y -= Math.sign(normal.y) * halfSegmentSize;
+        normal.z -= Math.sign(normal.z) * halfSegmentSize;
+        normal.normalize();
+        positions[i + 0] = box.x * Math.sign(position.x) + normal.x * radius;
+        positions[i + 1] = box.y * Math.sign(position.y) + normal.y * radius;
+        positions[i + 2] = box.z * Math.sign(position.z) + normal.z * radius;
+        normals[i + 0] = normal.x;
+        normals[i + 1] = normal.y;
+        normals[i + 2] = normal.z;
+        const side = Math.floor(i / faceTris);
+        switch (side) {
+          case 0:
+            faceDirVector.set(1, 0, 0);
+            uvs[j + 0] = getUv(faceDirVector, normal, "z", "y", radius, depth);
+            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "z", radius, height);
+            break;
+          case 1:
+            faceDirVector.set(-1, 0, 0);
+            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "z", "y", radius, depth);
+            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "z", radius, height);
+            break;
+          case 2:
+            faceDirVector.set(0, 1, 0);
+            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "x", "z", radius, width);
+            uvs[j + 1] = getUv(faceDirVector, normal, "z", "x", radius, depth);
+            break;
+          case 3:
+            faceDirVector.set(0, -1, 0);
+            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "x", "z", radius, width);
+            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "z", "x", radius, depth);
+            break;
+          case 4:
+            faceDirVector.set(0, 0, 1);
+            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "x", "y", radius, width);
+            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "x", radius, height);
+            break;
+          case 5:
+            faceDirVector.set(0, 0, -1);
+            uvs[j + 0] = getUv(faceDirVector, normal, "x", "y", radius, width);
+            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "x", radius, height);
+            break;
+        }
+      }
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @returns {RoundedBoxGeometry} A new instance.
+     */
+    static fromJSON(data) {
+      return new _RoundedBoxGeometry(
+        data.width,
+        data.height,
+        data.depth,
+        data.segments,
+        data.radius
+      );
+    }
+  };
+
   // src/render/weaponModels.js
+  var mat = (color, rough = 0.62, metal = 0.1) => new MeshStandardMaterial({ color, roughness: rough, metalness: metal });
+  function makePistol(scale = 1) {
+    const g = new Group();
+    const dark = mat(3883080, 0.5, 0.25), grip = mat(2764340, 0.85, 0), accent = mat(10134701, 0.4, 0.5);
+    const gripM = new Mesh(new RoundedBoxGeometry(0.03, 0.105, 0.046, 3, 0.012), grip);
+    gripM.position.set(0, -0.03, -0.012);
+    gripM.rotation.x = -0.28;
+    g.add(gripM);
+    const frame = new Mesh(new RoundedBoxGeometry(0.03, 0.026, 0.17, 3, 0.01), dark);
+    frame.position.set(0, 0.03, 0.055);
+    g.add(frame);
+    const slide = new Mesh(new RoundedBoxGeometry(0.034, 0.03, 0.19, 3, 0.012), dark);
+    slide.position.set(0, 0.058, 0.06);
+    g.add(slide);
+    const sight = new Mesh(new BoxGeometry(6e-3, 8e-3, 0.012), accent);
+    sight.position.set(0, 0.076, 0.145);
+    g.add(sight);
+    const guard = new Mesh(new TorusGeometry(0.02, 4e-3, 6, 14, Math.PI), dark);
+    guard.rotation.set(0, Math.PI / 2, Math.PI);
+    guard.position.set(0, 0.014, 0.03);
+    g.add(guard);
+    const muzzle = new Object3D();
+    muzzle.position.set(0, 0.058, 0.157);
+    g.add(muzzle);
+    g.userData.muzzle = muzzle;
+    g.scale.setScalar(scale);
+    g.traverse((o) => {
+      if (o.isMesh) o.castShadow = false;
+    });
+    return g;
+  }
+  function makeBat(length = 0.84) {
+    const L = length, s = L / 0.84;
+    const pts = [
+      [0, 0],
+      [0.026, 0],
+      [0.03, 0.01],
+      [0.024, 0.022],
+      [0.0145, 0.03],
+      [0.0145, 0.3],
+      [0.019, 0.42],
+      [0.028, 0.56],
+      [0.033, 0.7],
+      [0.034, 0.79],
+      [0.031, 0.825],
+      [0.02, 0.838],
+      [0, 0.84]
+    ].map(([r, y]) => new Vector2(r * s, y * s));
+    const geo = new LatheGeometry(pts, 18);
+    geo.rotateX(Math.PI / 2);
+    geo.translate(0, 0, -0.13 * s);
+    const wood = new Mesh(geo, mat(13081186, 0.7, 0));
+    const tape = new Mesh(new CylinderGeometry(0.0158 * s, 0.0158 * s, 0.2 * s, 14, 1, true), mat(3095114, 0.9, 0));
+    tape.rotation.x = Math.PI / 2;
+    tape.position.z = (0.13 - 0.13) * s;
+    const g = new Group();
+    g.add(wood, tape);
+    g.userData.tip = new Object3D();
+    g.userData.tip.position.z = (0.84 - 0.13) * s;
+    g.add(g.userData.tip);
+    g.userData.handOffset = 0.045 * s;
+    return g;
+  }
   function prepShotgun(gltf) {
     const g = gltf.scene, find = (n) => g.getObjectByName(n);
     g.traverse((o) => {
@@ -37156,6 +37681,20 @@ void main() {
     const pump = find("Shotgun_Pump"), gripL = find("GameGrip_L");
     if (gripL && pump && gripL.parent !== pump) pump.attach(gripL);
     g.userData = { pump, pumpX: pump.position.x, gripL, muzzle: find("Muzzle") };
+    return g;
+  }
+  function prepAxe(gltf) {
+    const inner = gltf.scene, g = new Group();
+    inner.rotation.x = Math.PI / 2;
+    inner.position.z = -0.06;
+    inner.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = false;
+        o.frustumCulled = false;
+      }
+    });
+    g.add(inner);
+    g.userData.tip = inner.getObjectByName("ImpactPoint");
     return g;
   }
   function prepPumpShort(gltf) {
@@ -37360,39 +37899,35 @@ void main() {
       sever: {}
     }
   ];
+  var BAT_CLIP = { clip: "bat_combo_mc", path: "bat_combo_mc", sock: "bat combo", fps: 60, rate: 1, yawOffset: 0, stand: 0.85, assist: 1.9, continuous: true, chainAlways: true, sever: {} };
   var BAT_ATTACKS = [
-    { ...SWING, name: "bat swing", dmg: 0.6, knock: 1, style: "swing", sever: {} },
-    {
-      name: "bat home run",
-      sock: "home run",
-      clip: "bat_swing_m",
-      path: "bat_swing_m",
-      hand: "Left",
-      f0: 28,
-      windTo: 31,
-      windRate: 0.4,
-      f1: 44,
-      rate: 1.7,
-      fps: 30,
-      yawOffset: -40 * deg,
-      duration: 0.8,
-      activeStart: 0.22,
-      activeEnd: 0.41,
-      chainFrom: 9,
-      swapPoint: 0.6,
-      blendIn: 0.16,
-      assist: 2.1,
-      lungeMax: 0.8,
-      dmg: 1.15,
-      knock: 1.7,
-      style: "heavy",
-      sever: {}
-    }
+    { ...BAT_CLIP, name: "bat forehand", f0: 4, f1: 40, hitF0: 20, hitF1: 32, recover: 0.36, enterBlend: 0.12, dmg: 0.6, knock: 0.9, style: "swing" },
+    { ...BAT_CLIP, name: "bat backhand", f0: 40, windTo: 70, windRate: 1.4, f1: 97, hitF0: 73, hitF1: 91, recover: 0.34, dmg: 0.7, knock: 1, style: "swing" },
+    { ...BAT_CLIP, name: "bat finisher", f0: 97, windTo: 118, windRate: 1.3, f1: 165, hitF0: 120, hitF1: 135, recover: 0.3, dmg: 1.3, knock: 1.8, style: "heavy", last: true }
   ];
+  function attackTime(A, f) {
+    if (!A.windRate) return (f - A.f0) / (A.fps * A.rate);
+    const tw = (A.windTo - A.f0) / (A.fps * A.windRate);
+    return f <= A.windTo ? (f - A.f0) / (A.fps * A.windRate) : tw + (f - A.windTo) / (A.fps * A.rate);
+  }
+  var attackEnd = (A) => attackTime(A, A.f1);
+  function timeBat() {
+    for (const A of BAT_ATTACKS) {
+      A.activeStart = attackTime(A, A.hitF0);
+      A.activeEnd = attackTime(A, A.hitF1);
+      const end = attackEnd(A);
+      A.chainFrom = A.last ? 9 : end;
+      A.duration = end + A.recover;
+      A.swapPoint = end;
+    }
+  }
+  timeBat();
   var BAT_SWING = AXE_ATTACKS[0];
 
   // src/viewer.js
   var FPS = 30;
+  var CLIP_FPS = { bat_combo_mc: 60 };
+  var VIDREF = { bat_combo_mc: { dir: "assets/ref/bat13/", offset: 19, first: 20, last: 184 } };
   var $ = (id) => document.getElementById(id);
   var clamp3 = (v, a, b) => v < a ? a : v > b ? b : v;
   var UP = new Vector3(0, 1, 0);
@@ -37406,7 +37941,9 @@ void main() {
     patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" }
   };
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
-  var GUNS = { none: "no weapon", old: "pump shotgun (old, too long)", short: "short pump (new)" };
+  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat" };
+  var HELD = { pistol: 1, axe: 1, bat: 1 };
+  var autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? "bat" : /chop|gs_|slash|axe/.test(name) ? "axe" : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? "short" : /pistol|t_shoot/.test(name) ? "pistol" : "none";
   var GUN_FILES = { old: "assets/weapons/pump_shotgun.glb", short: "assets/weapons/pump_short.glb" };
   var canvas = $("view");
   var renderer = new WebGLRenderer({ canvas, antialias: true });
@@ -37431,7 +37968,7 @@ void main() {
   }
   addEventListener("resize", resize);
   resize();
-  var CAMS = { face: [0, 1.42, 0.85], front: [0, 1, 3.4], side: [3.4, 1, 0], back: [0, 1, -3.4], top: [0, 4.4, 0.01], three: [2.4, 1.5, 2.6] };
+  var CAMS = { face: [0, 1.42, 0.85], front: [0, 1, 3.4], side: [3.4, 1, 0], left: [-3.4, 1, 0], back: [0, 1, -3.4], top: [0, 4.4, 0.01], three: [2.4, 1.5, 2.6] };
   function setCam(k) {
     const p = CAMS[k];
     camera.position.set(...p);
@@ -37461,7 +37998,8 @@ void main() {
     }
   }
   var clipT0 = (c) => Math.min(...c.tracks.map((t) => t.times[0]));
-  var clipFrames = (c) => Math.round((c.duration - clipT0(c)) * FPS) + 1;
+  var fpsOf = (c) => CLIP_FPS[c.name] || 30;
+  var clipFrames = (c) => Math.round((c.duration - clipT0(c)) * fpsOf(c)) + 1;
   var Actor = class {
     constructor(obj, height) {
       this.root = new Group();
@@ -37500,7 +38038,7 @@ void main() {
     }
     setFrame(f) {
       if (!this.action) return;
-      this.action.time = clamp3(this.t0 + (f - 1) / FPS, 0, this.clip.duration);
+      this.action.time = clamp3(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
       this.mixer.update(0);
       this.root.updateMatrixWorld(true);
     }
@@ -37556,7 +38094,8 @@ void main() {
       this.obj.updateMatrixWorld(true);
     }
   };
-  var S = { char: "yola", playing: true, frame: 1, speed: 1, overlay: false, gun: "short", frames: 1 };
+  var S = { char: "yola", playing: true, frame: 1, speed: 1, overlay: false, gun: "auto", frames: 1 };
+  var weaponOf = () => S.gun === "auto" ? autoWeapon(main?.clip?.name || "") : S.gun;
   var main;
   var ref;
   var mainGun;
@@ -37607,6 +38146,13 @@ void main() {
     }
     if (!mainCache[key]) {
       const g = await loadG(CHARS[key].file);
+      if (key === "yola") {
+        try {
+          const c = await loadG("assets/yola_combo.glb");
+          g.animations.push(...c.animations);
+        } catch {
+        }
+      }
       g.scene.traverse((o) => {
         if (o.isMesh) o.frustumCulled = false;
         if (/^GORE_/.test(o.name)) o.visible = false;
@@ -37620,7 +38166,7 @@ void main() {
     const sel = $("clip");
     sel.innerHTML = "";
     for (const c of gltf.animations) sel.add(new Option(`${c.name}  (${clipFrames(c)}f)`, c.name));
-    const first = key === "yola" ? "reload_rifle_stand" : gltf.animations[0].name;
+    const first = key === "yola" ? gltf.animations.some((c) => c.name === "bat_combo_mc") ? "bat_combo_mc" : "reload_rifle_stand" : gltf.animations[0].name;
     sel.value = gltf.animations.some((c) => c.name === first) ? first : gltf.animations[0].name;
     await setClip(sel.value);
     applyGun();
@@ -37629,6 +38175,8 @@ void main() {
     const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
     pinRoot(c, $("inplace").checked);
     main.play(c);
+    FPS = fpsOf(c);
+    vidRef(name);
     const base = REF_ALIAS[name] || name;
     const file = `assets/mixamo/${CHARS[S.char].ref}${base}.fbx`;
     const rc = await refClip(file);
@@ -37738,8 +38286,10 @@ void main() {
   function applyGun() {
     mainGun?.setObject(null);
     refGun?.setObject(null);
-    const t = gunTemplates[S.gun];
-    if (S.gun === "none" || !t) return;
+    const w = weaponOf();
+    for (const k in held) held[k].visible = false;
+    const t = gunTemplates[w];
+    if (w === "none" || HELD[w] || !t) return;
     const mk = () => {
       const o = t.clone(true);
       o.userData = { ...t.userData, gripL: o.getObjectByName("GameGrip_L"), port: o.getObjectByName("LoadPort"), pump: o.getObjectByName("Pump") };
@@ -37762,7 +38312,9 @@ void main() {
     updateMarks();
     updateShell(f);
     $("scrub").value = f;
-    $("frameInfo").textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s)`;
+    $("frameInfo").textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)`;
+    drawVidRef(f);
+    updateBat();
     const lines = [];
     if (main.action) {
       main.grip("Right", _v2);
@@ -37789,6 +38341,96 @@ void main() {
     $("readout").textContent = lines.join("\n");
     $("fitOut").value = JSON.stringify({ gun: S.gun, clip: $("clip").value, shell: shellFit, ...Object.fromEntries(Object.entries(fit).map(([k, v]) => [k, +(+v).toFixed(4)])) }, null, 1);
   }
+  var held = { bat: makeBat(), pistol: makePistol() };
+  for (const k in held) {
+    held[k].visible = false;
+    scene.add(held[k]);
+  }
+  loadG("assets/weapons/fire_axe.glb").then((g) => {
+    held.axe = prepAxe(g);
+    held.axe.visible = false;
+    scene.add(held.axe);
+    applyGun();
+    refresh();
+  }).catch(() => {
+  });
+  var _m4 = new Matrix4();
+  function updateBat() {
+    const w = weaponOf();
+    for (const k2 in held) held[k2].visible = false;
+    if (!main?.action || !HELD[w] || !held[w] || $("batShow")?.checked === false) return;
+    const o = held[w], k = main.height / 1.62;
+    o.visible = true;
+    o.scale.setScalar(k);
+    main.grip("Right", _v2);
+    main.grip("Left", _v22);
+    let d, pos;
+    if (w === "pistol") {
+      main.bones.RightForeArm.getWorldPosition(_v3);
+      d = _v2.clone().sub(_v3).normalize();
+      pos = _v2.clone();
+    } else {
+      d = _v2.clone().sub(_v22);
+      if (d.lengthSq() < 1e-8) return;
+      d.normalize();
+      pos = _v2.clone().add(_v22).multiplyScalar(0.5);
+    }
+    const x = new Vector3().crossVectors(UP, d);
+    if (x.lengthSq() < 1e-6) x.set(1, 0, 0);
+    x.normalize();
+    const y = new Vector3().crossVectors(d, x);
+    o.quaternion.setFromRotationMatrix(_m4.makeBasis(x, y, d));
+    o.position.copy(pos);
+  }
+  var vr = { panel: null, cv: null, label: null, cfg: null, imgs: {}, pose: null };
+  function vidRef(name) {
+    vr.cfg = VIDREF[name] || null;
+    if (!vr.panel) {
+      vr.panel = document.createElement("div");
+      vr.panel.style.cssText = "position:fixed;right:8px;bottom:120px;width:min(44vw,520px);background:#111;border-radius:8px;overflow:hidden;z-index:20";
+      vr.panel.innerHTML = '<canvas width="520" height="285" style="display:block;width:100%"></canvas><div style="color:#ddd;font:12px system-ui;padding:4px 8px"></div>';
+      document.body.appendChild(vr.panel);
+      vr.cv = vr.panel.querySelector("canvas");
+      vr.label = vr.panel.querySelector("div");
+    }
+    vr.panel.style.display = vr.cfg ? "" : "none";
+    if (!vr.cfg) return;
+    if (!vr.pose) fetch(vr.cfg.dir + "pose.json").then((r) => r.json()).then((p) => {
+      vr.pose = p;
+      refresh();
+    }).catch(() => {
+    });
+    for (let k = vr.cfg.first; k <= vr.cfg.last; k++) if (!vr.imgs[k]) {
+      const im = new Image();
+      im.src = vr.cfg.dir + "f" + String(k).padStart(4, "0") + ".jpg";
+      im.onload = () => {
+        if (Math.round(S.frame) + vr.cfg.offset === k) refresh();
+      };
+      vr.imgs[k] = im;
+    }
+    setCam("left");
+  }
+  var EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32], [0, 11], [0, 12]];
+  function drawVidRef(f) {
+    if (!vr.cfg) return;
+    const rf = clamp3(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext("2d");
+    if (im && im.complete && im.naturalWidth) {
+      cv.height = Math.round(520 * im.naturalHeight / im.naturalWidth);
+      cx.drawImage(im, 0, 0, 520, cv.height);
+    }
+    const lm = vr.pose?.frames?.[rf];
+    if (lm && $("vidSkel")?.checked !== false) {
+      cx.lineWidth = 2;
+      for (const [i, j] of EDGES) {
+        cx.strokeStyle = i % 2 && j % 2 ? "#4f9" : "#fc4";
+        cx.beginPath();
+        cx.moveTo(lm[i][0] * 520, lm[i][1] * cv.height);
+        cx.lineTo(lm[j][0] * 520, lm[j][1] * cv.height);
+        cx.stroke();
+      }
+    }
+    vr.label.textContent = "reference: clip 13 frame " + rf + "   (Yola frame " + f + ")";
+  }
   function pausedUI(p) {
     S.playing = !p;
     $("play").textContent = S.playing ? "Pause" : "Play";
@@ -37809,6 +38451,10 @@ void main() {
       applyGun();
       refresh();
     };
+    $("clip").addEventListener("change", () => setTimeout(() => {
+      applyGun();
+      refresh();
+    }, 0));
     $("gunref").onchange = () => {
       applyGun();
       refresh();
@@ -37871,6 +38517,8 @@ void main() {
       refresh();
     };
     $("marks").onchange = refresh;
+    $("batShow").onchange = refresh;
+    $("vidSkel").onchange = refresh;
     $("bones").onchange = () => {
       main.helper.visible = $("bones").checked;
       ref.helper.visible = $("bones").checked && ref.root.visible;
@@ -37933,7 +38581,7 @@ void main() {
       } catch {
       }
     }
-    for (const k of Object.keys(GUNS)) if (k !== "none" && !gunTemplates[k]) $("gun").querySelector(`option[value=${k}]`).textContent += " (not built yet)";
+    for (const k of ["short", "old"]) if (!gunTemplates[k]) $("gun").querySelector(`option[value=${k}]`).textContent += " (not built yet)";
     try {
       const g = await loadG("assets/weapons/shell.glb");
       shellTemplate = prepShell(g);

@@ -223,9 +223,7 @@ export class Sim {
     }
     if (!best) return null;
     const want = angleDiff(p.aimYaw, Math.atan2(best.x - p.x, best.z - p.z));
-    const turn = Math.max(-0.35, Math.min(0.35, want));
-    p.aimYaw += turn; p.aimTarget = p.aimYaw;
-    return best;
+    return { target: best, turn: Math.max(-0.35, Math.min(0.35, want)) }; // (the player eases this turn in over the windup)
   }
 
   // ---------------- axe: swept between simulation steps ----------------
@@ -297,7 +295,7 @@ export class Sim {
         if (part !== 'torso' && !z.severed.has(part)) z.limbHp[part] = 0; // the blade goes through
         const last = act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
         z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), p.equipped === BAT ? 'bat' : 'axe', this, part, holding ? 'combo' : A.style);
-        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
+        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: p.equipped });
         if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.3) * (last ? 1.25 : 0.8) });
       }
       px = tipX; pz = tipZ;

@@ -1,11 +1,19 @@
 // Player: one authoritative movement controller + one weapon action state machine.
 // Yaw convention: forward = (sin yaw, cos yaw) on (x, z).
 import { clamp, angleDiff, approachAngle, segPointDist2, rayCircle } from './world.js';
-import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, attacksOf, meleeSegment, muzzleLocal } from './weapons.js';
+import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, attacksOf, meleeSegment, muzzleLocal, attackEnd } from './weapons.js';
 
 const AIM_DEADZONE = 0.18;
 const FIRE_ALIGN = 0.38; // rad: the shot waits until the upper body faces within this of the stick
 const _seg = {}, _seg2 = {}, _mz = {};
+const _rm = { x: 0, z: 0 };
+// a root curve [{t, z}] at attack time t (linear between samples)
+function rootAt(R, t) {
+  if (t <= R[0].t) return R[0].z; let i = 0;
+  while (i < R.length - 2 && t > R[i + 1].t) i++;
+  const a = R[i], b = R[i + 1], u = Math.min(1, (t - a.t) / (b.t - a.t || 1)); return a.z + (b.z - a.z) * u;
+}
+const smooth = (u) => { u = u < 0 ? 0 : u > 1 ? 1 : u; return u * u * (3 - 2 * u); };
 
 export class Player {
   constructor(x, z, tuning) {
@@ -71,8 +79,11 @@ export class Player {
     else if (mag > 0.15) this.aimTarget = Math.atan2(mx, mz);
     let turn = T.turnRate;
     if (this.action.type === 'swing') {
-      // commit to the swing: facing is locked through windup and contact, then frees up in recovery
-      turn = this.action.st < this.action.activeEnd ? 0 : turn * 0.6;
+      // commit to the swing: facing is locked through windup and contact (an assist turn toward the target eases in
+      // over the first part of the windup instead of snapping), then frees up in recovery
+      const a = this.action;
+      turn = a.st < a.activeEnd ? 0 : turn * 0.6;
+      if (a.turnBy && a.st < a.activeEnd) { const k = smooth(a.st / Math.max(0.05, Math.min(0.14, this.attacks[a.combo].activeStart))); this.aimYaw = a.turnFrom + a.turnBy * k; this.aimTarget = this.aimYaw; }
     } else if (this.action.type === 'shot' && this.equipped === SHOTGUN) {
       turn *= 0.7; // a long gun turns a little slower
     }
@@ -86,7 +97,7 @@ export class Player {
       const k = rel >= 0 ? 1 - side * (1 - T.strafeSpeed) : T.strafeSpeed + (T.backpedalSpeed - T.strafeSpeed) * -rel;
       speed *= k;
     }
-    if (this.action.type === 'swing') speed *= 0.55;
+    if (this.action.type === 'swing') speed *= this.attackMoveScale();
     else if (this.equipped === SHOTGUN) speed *= 0.92;
     const dl = mag > 1e-4 ? speed / mag : 0;
     const dvx = mx * dl - this.vx, dvz = mz * dl - this.vz;
@@ -98,12 +109,10 @@ export class Player {
 
     const px = this.x, pz = this.z;
     this.x += this.vx * dt; this.z += this.vz * dt;
-    // lunge: a combo attack steps in toward its target during the windup
-    const act = this.action;
-    if (act.type === 'swing' && act.lunge > 0 && act.st < this.attacks[act.combo].activeStart) {
-      const v = (act.lunge / this.attacks[act.combo].activeStart) * T.axeSpeed * dt;
-      this.x += Math.sin(this.aimYaw) * v; this.z += Math.cos(this.aimYaw) * v;
-    }
+    // the attack's advance (root motion): a bounded step along the attack's heading, eased over the windup, stopping
+    // short of the target. It is NOT velocity: it never carries over into the next frame.
+    const rm = this.attackAdvance(sim);
+    this.x += rm.x; this.z += rm.z;
     // soft-collide with live zombies, then hard-collide with the world
     for (const e of sim.zombies) {
       if (!e.solid) continue;
@@ -111,12 +120,37 @@ export class Player {
       if (d2 < rr * rr && d2 > 1e-8) { const d = Math.sqrt(d2), push = (rr - d) * 0.85; this.x += (dx / d) * push; this.z += (dz / d) * push; }
     }
     world.resolveCircle(this, this.r);
-    // actual velocity after collisions (drives animation, stops running into walls)
-    this.vx = (this.x - px) / dt; this.vz = (this.z - pz) / dt;
+    // actual locomotion velocity after collisions (drives animation, stops running into walls); the attack advance
+    // is taken back out, so it cannot accumulate into speed
+    this.vx = (this.x - px - rm.x) / dt; this.vz = (this.z - pz - rm.z) / dt;
+    const vl = Math.hypot(this.vx, this.vz), vmax = T.moveSpeed * 1.05;
+    if (vl > vmax) { this.vx *= vmax / vl; this.vz *= vmax / vl; }
 
     if (this.invuln > 0) this.invuln -= dt;
     this.hurtT += dt;
     this.recoil = Math.max(0, this.recoil - dt * 7);
+  }
+
+  // how much stick movement is allowed during an attack: none while its clip owns the legs, back in as it blends out
+  attackMoveScale() {
+    const a = this.action; if (a.type !== 'swing') return 1;
+    const A = this.attacks[a.combo], tEnd = attackEnd(A);
+    return a.st <= tEnd ? 0 : smooth((a.st - tEnd) / Math.max(0.05, A.duration - tEnd));
+  }
+  // this step's attack advance: total distance eased over the windup along the heading fixed at the attack's start,
+  // reduced so Yola stops a body short of the target (zombie) she is stepping into
+  attackAdvance(sim) {
+    const out = _rm; out.x = out.z = 0;
+    const a = this.action; if (a.type !== 'swing' || !(a.lunge > 0)) return out;
+    const A = this.attacks[a.combo], dur = Math.max(0.05, A.activeStart);
+    const want = A.ROOT ? rootAt(A.ROOT, a.st) * a.rootScale : a.lunge * smooth(a.st / dur), step = want - (a.advanced || 0);
+    if (step <= 0) return out;
+    let d = step;
+    const tg = a.target;
+    if (tg && tg.alive) { const gap = Math.hypot(tg.x - this.x, tg.z - this.z) - (A.stand ?? 1.05); d = Math.max(0, Math.min(d, gap)); }
+    a.advanced = (a.advanced || 0) + step; // (the curve advances even when blocked: no catch-up burst later)
+    out.x = Math.sin(a.heading) * d; out.z = Math.cos(a.heading) * d;
+    return out;
   }
 
   // ---------------- actions ----------------
@@ -131,11 +165,12 @@ export class Player {
       case 'swing': {
         const A = this.attacks[a.combo];
         const prevT = a.st, st = (a.st = a.t * T.axeSpeed);
+        if (A.continuous && prevT < A.activeStart - 0.12 && st >= A.activeStart - 0.12) sim.emit({ type: 'whoosh', combo: a.combo }); // the swish peaks on the strike
         if (st > A.activeStart && prevT < a.activeEnd) sim.resolveMelee(this, Math.max(prevT, A.activeStart), Math.min(st, a.activeEnd), a);
         if (prevT < a.activeEnd && st >= a.activeEnd && !a.hits && !a.clanked) sim.emit({ type: 'batMiss' });
         // combo: once the opening attack connects, the rest of the combo follows while the attack is
         // held (or pressed again during the attack)
-        if (a.hits > 0) a.unlocked = true;
+        if (a.hits > 0 || A.chainAlways) a.unlocked = true; // (the bat's combo flows on input, hit or miss)
         if (a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
           this.startSwing(sim, a.combo + 1, true);
           break;
@@ -185,9 +220,17 @@ export class Player {
     this.swingId++;
     const A = this.attacks[combo];
     // turn toward a zombie in reach (combo follow-ups look further, and the chop finds bodies on the floor)
-    const tgt = sim.meleeAssist?.(this, A.assist ?? (combo > 0 ? 2.1 : 1.45), A.style === 'chop');
-    const lunge = tgt ? clamp(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo > 0 ? 0.75 : 0.5)) : 0;
-    this.setAction('swing', { st: 0, combo, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked });
+    const as = sim.meleeAssist?.(this, A.assist ?? (combo > 0 ? 2.1 : 1.45), A.style === 'chop');
+    const tgt = as?.target || null, turnBy = as?.turn || 0;
+    let lunge = tgt ? clamp(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo > 0 ? 0.75 : 0.5)) : 0;
+    let rootScale = 1;
+    if (A.ROOT) { // the clip's own advance, scaled down so she stops short of the target (no target: the full step)
+      const total = A.ROOT[A.ROOT.length - 1].z;
+      rootScale = tgt && total > 0.01 ? clamp((Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 0.85)) / total, 0, 1) : 1;
+      lunge = Math.max(0, total * rootScale);
+    }
+    this.setAction('swing', { st: 0, combo, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked,
+      target: tgt, heading: this.aimYaw + turnBy, turnFrom: this.aimYaw, turnBy, advanced: 0, rootScale });
     this.attackPressT = 9;
     sim.emit({ type: 'swing', combo });
   }

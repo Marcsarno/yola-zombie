@@ -4,11 +4,14 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { prepShotgun, prepPumpShort, prepShell } from './render/weaponModels.js';
+import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe } from './render/weaponModels.js';
 import { ikArm } from './render/ik.js';
 import { SHOTGUN_SPEC } from './core/weapons.js';
 
-const FPS = 30;
+let FPS = 30; // the current clip's frame rate (the bat combo: 60)
+const CLIP_FPS = { bat_combo_mc: 60 };
+// the bat combo's reference footage: clip 13, frame = clip frame + 19 (frames 20..184), with the detected skeleton
+const VIDREF = { bat_combo_mc: { dir: 'assets/ref/bat13/', offset: 19, first: 20, last: 184 } };
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const UP = new THREE.Vector3(0, 1, 0);
@@ -22,7 +25,9 @@ const CHARS = {
 };
 // clips whose Mixamo source file is named differently
 const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand' };
-const GUNS = { none: 'no weapon', old: 'pump shotgun (old, too long)', short: 'short pump (new)' };
+const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat' };
+const HELD = { pistol: 1, axe: 1, bat: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
+const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
 const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb' };
 
 // ---------------- scene ----------------
@@ -38,7 +43,7 @@ scene.add(new THREE.GridHelper(6, 24, 0x4b5f68, 0x33444c));
 const controls = new OrbitControls(camera, canvas); controls.target.set(0, 0.85, 0); controls.enableDamping = true;
 function resize() { renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
-const CAMS = { face: [0, 1.42, 0.85], front: [0, 1.0, 3.4], side: [3.4, 1.0, 0], back: [0, 1.0, -3.4], top: [0, 4.4, 0.01], three: [2.4, 1.5, 2.6] };
+const CAMS = { face: [0, 1.42, 0.85], front: [0, 1.0, 3.4], side: [3.4, 1.0, 0], left: [-3.4, 1.0, 0], back: [0, 1.0, -3.4], top: [0, 4.4, 0.01], three: [2.4, 1.5, 2.6] };
 function setCam(k) { const p = CAMS[k]; camera.position.set(...p); controls.target.set(0, k === 'face' ? 1.38 : 0.85, 0); controls.update(); }
 setCam('three');
 for (const b of document.querySelectorAll('[data-cam]')) b.onclick = () => setCam(b.dataset.cam);
@@ -62,7 +67,8 @@ function pinRoot(clip, on) {
   }
 }
 const clipT0 = (c) => Math.min(...c.tracks.map((t) => t.times[0]));
-const clipFrames = (c) => Math.round((c.duration - clipT0(c)) * FPS) + 1;
+const fpsOf = (c) => CLIP_FPS[c.name] || 30;
+const clipFrames = (c) => Math.round((c.duration - clipT0(c)) * fpsOf(c)) + 1;
 
 class Actor {
   constructor(obj, height) {
@@ -83,7 +89,7 @@ class Actor {
   }
   setFrame(f) {
     if (!this.action) return;
-    this.action.time = clamp(this.t0 + (f - 1) / FPS, 0, this.clip.duration);
+    this.action.time = clamp(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
     this.mixer.update(0); this.root.updateMatrixWorld(true);
   }
   grip(side, out) { // between the wrist and the middle-finger knuckle (same as the game)
@@ -126,7 +132,8 @@ class Gun {
 }
 
 // ---------------- state ----------------
-const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'short', frames: 1 };
+const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'auto', frames: 1 };
+const weaponOf = () => (S.gun === 'auto' ? autoWeapon(main?.clip?.name || '') : S.gun);
 let main, ref, mainGun, refGun;
 const gunTemplates = {}, marks = {}, mainCache = {};
 function ghostify(obj, on) {
@@ -163,6 +170,7 @@ async function setChar(key) {
   if (main) { scene.remove(main.root, main.helper); mainGun?.setObject(null); }
   if (!mainCache[key]) {
     const g = await loadG(CHARS[key].file);
+    if (key === 'yola') { try { const c = await loadG('assets/yola_combo.glb'); g.animations.push(...c.animations); } catch { /* no combo file */ } }
     g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; if (/^GORE_/.test(o.name)) o.visible = false; });
     mainCache[key] = { gltf: g, actor: new Actor(g.scene, CHARS[key].height) };
   }
@@ -171,14 +179,14 @@ async function setChar(key) {
   mainGun = new Gun(main);
   const sel = $('clip'); sel.innerHTML = '';
   for (const c of gltf.animations) sel.add(new Option(`${c.name}  (${clipFrames(c)}f)`, c.name));
-  const first = key === 'yola' ? 'reload_rifle_stand' : gltf.animations[0].name;
+  const first = key === 'yola' ? (gltf.animations.some((c) => c.name === 'bat_combo_mc') ? 'bat_combo_mc' : 'reload_rifle_stand') : gltf.animations[0].name;
   sel.value = gltf.animations.some((c) => c.name === first) ? first : gltf.animations[0].name;
   await setClip(sel.value);
   applyGun();
 }
 async function setClip(name) {
   const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
-  pinRoot(c, $('inplace').checked); main.play(c);
+  pinRoot(c, $('inplace').checked); main.play(c); FPS = fpsOf(c); vidRef(name);
   const base = REF_ALIAS[name] || name; // the reference: the Mixamo source of this clip
   const file = `assets/mixamo/${CHARS[S.char].ref}${base}.fbx`;
   const rc = await refClip(file);
@@ -255,8 +263,10 @@ function updateShell(f) {
 }
 function applyGun() {
   mainGun?.setObject(null); refGun?.setObject(null);
-  const t = gunTemplates[S.gun];
-  if (S.gun === 'none' || !t) return;
+  const w = weaponOf();
+  for (const k in held) held[k].visible = false;
+  const t = gunTemplates[w];
+  if (w === 'none' || HELD[w] || !t) return;
   const mk = () => { const o = t.clone(true); o.userData = { ...t.userData, gripL: o.getObjectByName('GameGrip_L'), port: o.getObjectByName('LoadPort'), pump: o.getObjectByName('Pump') }; return o; };
   mainGun.setObject(mk());
   if ($('gunref').checked) refGun.setObject(mk());
@@ -270,7 +280,8 @@ function refresh() {
   if (refGun?.obj) { refGun.obj.visible = ref.root.visible; refGun.update(ref.height / main.height); }
   updateMarks(); updateShell(f);
   $('scrub').value = f;
-  $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s)`;
+  $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)`;
+  drawVidRef(f); updateBat();
   const lines = [];
   if (main.action) { main.grip('Right', _v); main.grip('Left', _v2); lines.push(`${CHARS[S.char].label}   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
   if (ref.root.visible && ref.action) { ref.grip('Right', _v); ref.grip('Left', _v2); lines.push(`Reference   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
@@ -282,6 +293,51 @@ function refresh() {
   $('fitOut').value = JSON.stringify({ gun: S.gun, clip: $('clip').value, shell: shellFit, ...Object.fromEntries(Object.entries(fit).map(([k, v]) => [k, +(+v).toFixed(4)])) }, null, 1);
 }
 
+// ---------------- the bat (combo clip) and the reference footage ----------------
+// the bat runs along both grips (the combo clip keeps both hands on its line): from just below the left hand to the tip
+// held weapons (the game's own models): bat and axe between the hands along the line through both grips (origin at the
+// hands' midpoint, handle along +Z); the pistol in the right hand, barrel along the forearm (origin at the grip, top +Y)
+const held = { bat: makeBat(), pistol: makePistol() }; for (const k in held) { held[k].visible = false; scene.add(held[k]); }
+loadG('assets/weapons/fire_axe.glb').then((g) => { held.axe = prepAxe(g); held.axe.visible = false; scene.add(held.axe); applyGun(); refresh(); }).catch(() => {});
+const _m4 = new THREE.Matrix4();
+function updateBat() {
+  const w = weaponOf();
+  for (const k in held) held[k].visible = false;
+  if (!main?.action || !HELD[w] || !held[w] || $('batShow')?.checked === false) return;
+  const o = held[w], k = main.height / 1.62; o.visible = true; o.scale.setScalar(k);
+  main.grip('Right', _v); main.grip('Left', _v2);
+  let d, pos;
+  if (w === 'pistol') { main.bones.RightForeArm.getWorldPosition(_v3); d = _v.clone().sub(_v3).normalize(); pos = _v.clone(); }
+  else { d = _v.clone().sub(_v2); if (d.lengthSq() < 1e-8) return; d.normalize(); pos = _v.clone().add(_v2).multiplyScalar(0.5); }
+  const x = new THREE.Vector3().crossVectors(UP, d); if (x.lengthSq() < 1e-6) x.set(1, 0, 0); x.normalize();
+  const y = new THREE.Vector3().crossVectors(d, x);
+  o.quaternion.setFromRotationMatrix(_m4.makeBasis(x, y, d)); o.position.copy(pos);
+}
+const vr = { panel: null, cv: null, label: null, cfg: null, imgs: {}, pose: null };
+function vidRef(name) {
+  vr.cfg = VIDREF[name] || null;
+  if (!vr.panel) {
+    vr.panel = document.createElement('div');
+    vr.panel.style.cssText = 'position:fixed;right:8px;bottom:120px;width:min(44vw,520px);background:#111;border-radius:8px;overflow:hidden;z-index:20';
+    vr.panel.innerHTML = '<canvas width="520" height="285" style="display:block;width:100%"></canvas><div style="color:#ddd;font:12px system-ui;padding:4px 8px"></div>';
+    document.body.appendChild(vr.panel); vr.cv = vr.panel.querySelector('canvas'); vr.label = vr.panel.querySelector('div');
+  }
+  vr.panel.style.display = vr.cfg ? '' : 'none';
+  if (!vr.cfg) return;
+  if (!vr.pose) fetch(vr.cfg.dir + 'pose.json').then((r) => r.json()).then((p) => { vr.pose = p; refresh(); }).catch(() => {});
+  for (let k = vr.cfg.first; k <= vr.cfg.last; k++) if (!vr.imgs[k]) { const im = new Image(); im.src = vr.cfg.dir + 'f' + String(k).padStart(4, '0') + '.jpg'; im.onload = () => { if (Math.round(S.frame) + vr.cfg.offset === k) refresh(); }; vr.imgs[k] = im; }
+  setCam('left'); // (the reference films her left side)
+}
+const EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32], [0, 11], [0, 12]];
+function drawVidRef(f) {
+  if (!vr.cfg) return;
+  const rf = clamp(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext('2d');
+  if (im && im.complete && im.naturalWidth) { cv.height = Math.round(520 * im.naturalHeight / im.naturalWidth); cx.drawImage(im, 0, 0, 520, cv.height); }
+  const lm = vr.pose?.frames?.[rf];
+  if (lm && $('vidSkel')?.checked !== false) { cx.lineWidth = 2; for (const [i, j] of EDGES) { cx.strokeStyle = i % 2 && j % 2 ? '#4f9' : '#fc4'; cx.beginPath(); cx.moveTo(lm[i][0] * 520, lm[i][1] * cv.height); cx.lineTo(lm[j][0] * 520, lm[j][1] * cv.height); cx.stroke(); } }
+  vr.label.textContent = 'reference: clip 13 frame ' + rf + '   (Yola frame ' + f + ')';
+}
+
 // ---------------- UI ----------------
 function pausedUI(p) { S.playing = !p; $('play').textContent = S.playing ? 'Pause' : 'Play'; $('play').classList.toggle('on', S.playing); }
 function buildUI() {
@@ -289,6 +345,7 @@ function buildUI() {
   for (const k in GUNS) $('gun').add(new Option(GUNS[k], k));
   $('gun').value = S.gun;
   $('gun').onchange = (e) => { S.gun = e.target.value; applyGun(); refresh(); };
+  $('clip').addEventListener('change', () => setTimeout(() => { applyGun(); refresh(); }, 0)); // auto follows the clip
   $('gunref').onchange = () => { applyGun(); refresh(); };
   const host = $('fit');
   for (const [k, label, lo, hi, st] of FIT_ROWS) {
@@ -315,6 +372,7 @@ function buildUI() {
   $('lay').onclick = () => { S.overlay = !S.overlay; layout(); refresh(); };
   $('match').onchange = () => { layout(); refresh(); };
   $('marks').onchange = refresh;
+  $('batShow').onchange = refresh; $('vidSkel').onchange = refresh;
   $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; };
   $('inplace').onchange = () => setClip($('clip').value);
   $('speed').onchange = (e) => { S.speed = +e.target.value; };
@@ -346,14 +404,14 @@ function buildUI() {
   for (const [k, f] of Object.entries(GUN_FILES)) {
     try { const g = await loadG(f); gunTemplates[k] = k === 'short' ? prepPumpShort(g) : prepShotgun(g); } catch { /* not built yet */ }
   }
-  for (const k of Object.keys(GUNS)) if (k !== 'none' && !gunTemplates[k]) $('gun').querySelector(`option[value=${k}]`).textContent += ' (not built yet)';
+  for (const k of ['short', 'old']) if (!gunTemplates[k]) $('gun').querySelector(`option[value=${k}]`).textContent += ' (not built yet)';
   try { const g = await loadG('assets/weapons/shell.glb'); shellTemplate = prepShell(g); shellObj = shellTemplate; shellObj.visible = false; scene.add(shellObj); } catch { /* not built yet */ }
   await setChar('yola');
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (S.playing && main?.action) {
-      S.frame += dt * FPS * S.speed;
+      S.frame += dt * FPS * S.speed; // (frames of the current clip's own rate)
       if (S.frame >= S.frames + 1) S.frame = $('loop').checked ? 1 : S.frames;
       refresh();
     }

@@ -77,17 +77,18 @@ export const FIST_ATTACKS = [
     duration: 0.74, activeStart: 0.3, activeEnd: 0.56, chainFrom: 9, swapPoint: 0.6, geom: { length: 0.15, hitFrom: 0, radius: 0.15 }, stand: 0.95, assist: 1.9,
     dmg: 2.2, knock: 1.0, style: 'kick', sever: {} },
 ];
-// attack set of a weapon
-// the bat: the same leveled swing (right to left), then the home-run swing back the other way - her own swing
-// mirrored (left to right, the bat rigid to the left hand), loaded with a held wind-up and driven through hard.
-// Blunt: never severs. (x axeDamage 62, zombie 100 hp: the swing's 37 leaves it standing, the home run finishes it.)
-// sock: the grip calibration the renderer uses (the first swing keeps the bat's own idle grip).
+// the bat: ONE continuous combo clip (bat_combo_mc, 60 fps), retargeted onto Yola from the reference footage (pose
+// estimation + the tracked bat), cut into three strikes that hand over at the exact frame where the previous one
+// ends, so chaining never cross-fades: 1) the lunging forehand (right to left, a full-body turn), 2) the backhand
+// (left to right, from where the forehand left the bat), 3) the spinning, rising finisher (right to left). Each wind-up
+// may play a little faster than the reference (windRate); every strike plays at the reference's own speed.
+// Frames: hitF0..hitF1 the damaging sweep (from the measured bat path), f1 the hand-over. Blunt: never severs.
+// (x axeDamage 62, zombie 100 hp: forehand 37 + backhand 43 leave it standing; the finisher's 81 ends it.)
+const BAT_CLIP = { clip: 'bat_combo_mc', path: 'bat_combo_mc', sock: 'bat combo', fps: 60, rate: 1, yawOffset: 0, stand: 0.85, assist: 1.9, continuous: true, chainAlways: true, sever: {} };
 export const BAT_ATTACKS = [
-  { ...SWING, name: 'bat swing', dmg: 0.6, knock: 1.0, style: 'swing', sever: {} },
-  { name: 'bat home run', sock: 'home run', clip: 'bat_swing_m', path: 'bat_swing_m', hand: 'Left',
-    f0: 28, windTo: 31, windRate: 0.4, f1: 44, rate: 1.7, fps: 30, yawOffset: -40 * deg,
-    duration: 0.8, activeStart: 0.22, activeEnd: 0.41, chainFrom: 9, swapPoint: 0.6, blendIn: 0.16, assist: 2.1, lungeMax: 0.8,
-    dmg: 1.15, knock: 1.7, style: 'heavy', sever: {} },
+  { ...BAT_CLIP, name: 'bat forehand', f0: 4, f1: 40, hitF0: 20, hitF1: 32, recover: 0.36, enterBlend: 0.12, dmg: 0.6, knock: 0.9, style: 'swing' },
+  { ...BAT_CLIP, name: 'bat backhand', f0: 40, windTo: 70, windRate: 1.4, f1: 97, hitF0: 73, hitF1: 91, recover: 0.34, dmg: 0.7, knock: 1.0, style: 'swing' },
+  { ...BAT_CLIP, name: 'bat finisher', f0: 97, windTo: 118, windRate: 1.3, f1: 165, hitF0: 120, hitF1: 135, recover: 0.3, dmg: 1.3, knock: 1.8, style: 'heavy', last: true },
 ];
 // clip frame at attack time t (a held wind-up first when the attack has one), and its inverse
 export function attackFrame(A, t) {
@@ -101,6 +102,21 @@ export function attackTime(A, f) {
   return f <= A.windTo ? (f - A.f0) / (A.fps * A.windRate) : tw + (f - A.windTo) / (A.fps * A.rate);
 }
 export const attackEnd = (A) => attackTime(A, A.f1);
+// frame-authored attacks: their times (attack clock) from their frames (again after a retime: the lab's sliders)
+function timeBat() {
+  for (const A of BAT_ATTACKS) {
+    A.activeStart = attackTime(A, A.hitF0); A.activeEnd = attackTime(A, A.hitF1);
+    const end = attackEnd(A);
+    A.chainFrom = A.last ? 9 : end; // the hand-over: the next strike starts on the frame this one ends
+    A.duration = end + A.recover; A.swapPoint = end;
+  }
+}
+timeBat();
+let _pathArgs = null;
+export function retimeBat(changes) { // [{i, windRate?, recover?, enterBlend?}]
+  for (const c of changes) Object.assign(BAT_ATTACKS[c.i], c);
+  timeBat(); if (_pathArgs) setMeleePaths(..._pathArgs);
+}
 export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS);
 export const AXE_GEOM = {
   length: 0.74, // hands (midpoint of the grip) to the blade, metres
@@ -114,10 +130,12 @@ const rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * M
 // samples: clipdata[path] ([{f, r:[x,y,z], l:[x,y,z], d, hips}] in model units); scale: model units -> metres
 // hipsRest: the renderer pins the hips' horizontal position, so the clip's hip drift is removed here too.
 export function setMeleePaths(clipdata, scale, hipsRest) {
+  _pathArgs = [clipdata, scale, hipsRest];
   for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS]) {
     const samples = clipdata[A.path];
-    A.PATH = [];
+    A.PATH = []; A.ROOT = null;
     if (!samples) continue;
+    if (A.continuous) { const s0 = samples.find((q) => q.f >= A.f0); A.ROOT = samples.filter((q) => q.f >= A.f0 && q.f <= A.f1).map((q) => ({ t: attackTime(A, q.f), z: (q.hips[2] - s0.hips[2]) * scale })); }
     for (const s of samples) {
       if (s.f < A.f0 - 0.001 || s.f > A.f1) continue;
       const t = attackTime(A, s.f);

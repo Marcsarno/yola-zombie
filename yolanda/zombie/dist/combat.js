@@ -45459,34 +45459,11 @@ void main() {
       sever: {}
     }
   ];
+  var BAT_CLIP = { clip: "bat_combo_mc", path: "bat_combo_mc", sock: "bat combo", fps: 60, rate: 1, yawOffset: 0, stand: 0.85, assist: 1.9, continuous: true, chainAlways: true, sever: {} };
   var BAT_ATTACKS = [
-    { ...SWING, name: "bat swing", dmg: 0.6, knock: 1, style: "swing", sever: {} },
-    {
-      name: "bat home run",
-      sock: "home run",
-      clip: "bat_swing_m",
-      path: "bat_swing_m",
-      hand: "Left",
-      f0: 28,
-      windTo: 31,
-      windRate: 0.4,
-      f1: 44,
-      rate: 1.7,
-      fps: 30,
-      yawOffset: -40 * deg,
-      duration: 0.8,
-      activeStart: 0.22,
-      activeEnd: 0.41,
-      chainFrom: 9,
-      swapPoint: 0.6,
-      blendIn: 0.16,
-      assist: 2.1,
-      lungeMax: 0.8,
-      dmg: 1.15,
-      knock: 1.7,
-      style: "heavy",
-      sever: {}
-    }
+    { ...BAT_CLIP, name: "bat forehand", f0: 4, f1: 40, hitF0: 20, hitF1: 32, recover: 0.36, enterBlend: 0.12, dmg: 0.6, knock: 0.9, style: "swing" },
+    { ...BAT_CLIP, name: "bat backhand", f0: 40, windTo: 70, windRate: 1.4, f1: 97, hitF0: 73, hitF1: 91, recover: 0.34, dmg: 0.7, knock: 1, style: "swing" },
+    { ...BAT_CLIP, name: "bat finisher", f0: 97, windTo: 118, windRate: 1.3, f1: 165, hitF0: 120, hitF1: 135, recover: 0.3, dmg: 1.3, knock: 1.8, style: "heavy", last: true }
   ];
   function attackFrame(A, t) {
     if (!A.windRate) return A.f0 + t * A.fps * A.rate;
@@ -45499,6 +45476,23 @@ void main() {
     return f <= A.windTo ? (f - A.f0) / (A.fps * A.windRate) : tw + (f - A.windTo) / (A.fps * A.rate);
   }
   var attackEnd = (A) => attackTime(A, A.f1);
+  function timeBat() {
+    for (const A of BAT_ATTACKS) {
+      A.activeStart = attackTime(A, A.hitF0);
+      A.activeEnd = attackTime(A, A.hitF1);
+      const end = attackEnd(A);
+      A.chainFrom = A.last ? 9 : end;
+      A.duration = end + A.recover;
+      A.swapPoint = end;
+    }
+  }
+  timeBat();
+  var _pathArgs = null;
+  function retimeBat(changes) {
+    for (const c of changes) Object.assign(BAT_ATTACKS[c.i], c);
+    timeBat();
+    if (_pathArgs) setMeleePaths(..._pathArgs);
+  }
   var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS;
   var AXE_GEOM = {
     length: 0.74,
@@ -45510,10 +45504,16 @@ void main() {
   var BAT_SWING = AXE_ATTACKS[0];
   var rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
   function setMeleePaths(clipdata, scale, hipsRest2) {
+    _pathArgs = [clipdata, scale, hipsRest2];
     for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS]) {
       const samples = clipdata[A.path];
       A.PATH = [];
+      A.ROOT = null;
       if (!samples) continue;
+      if (A.continuous) {
+        const s0 = samples.find((q) => q.f >= A.f0);
+        A.ROOT = samples.filter((q) => q.f >= A.f0 && q.f <= A.f1).map((q) => ({ t: attackTime(A, q.f), z: (q.hips[2] - s0.hips[2]) * scale }));
+      }
       for (const s of samples) {
         if (s.f < A.f0 - 1e-3 || s.f > A.f1) continue;
         const t = attackTime(A, s.f);
@@ -45574,6 +45574,18 @@ void main() {
   var FIRE_ALIGN = 0.38;
   var _seg = {};
   var _mz = {};
+  var _rm = { x: 0, z: 0 };
+  function rootAt(R, t) {
+    if (t <= R[0].t) return R[0].z;
+    let i = 0;
+    while (i < R.length - 2 && t > R[i + 1].t) i++;
+    const a = R[i], b = R[i + 1], u = Math.min(1, (t - a.t) / (b.t - a.t || 1));
+    return a.z + (b.z - a.z) * u;
+  }
+  var smooth = (u) => {
+    u = u < 0 ? 0 : u > 1 ? 1 : u;
+    return u * u * (3 - 2 * u);
+  };
   var Player = class {
     constructor(x, z, tuning2) {
       this.T = tuning2;
@@ -45654,7 +45666,13 @@ void main() {
       else if (mag > 0.15) this.aimTarget = Math.atan2(mx, mz);
       let turn = T2.turnRate;
       if (this.action.type === "swing") {
-        turn = this.action.st < this.action.activeEnd ? 0 : turn * 0.6;
+        const a = this.action;
+        turn = a.st < a.activeEnd ? 0 : turn * 0.6;
+        if (a.turnBy && a.st < a.activeEnd) {
+          const k = smooth(a.st / Math.max(0.05, Math.min(0.14, this.attacks[a.combo].activeStart)));
+          this.aimYaw = a.turnFrom + a.turnBy * k;
+          this.aimTarget = this.aimYaw;
+        }
       } else if (this.action.type === "shot" && this.equipped === SHOTGUN) {
         turn *= 0.7;
       }
@@ -45666,7 +45684,7 @@ void main() {
         const k = rel >= 0 ? 1 - side * (1 - T2.strafeSpeed) : T2.strafeSpeed + (T2.backpedalSpeed - T2.strafeSpeed) * -rel;
         speed *= k;
       }
-      if (this.action.type === "swing") speed *= 0.55;
+      if (this.action.type === "swing") speed *= this.attackMoveScale();
       else if (this.equipped === SHOTGUN) speed *= 0.92;
       const dl = mag > 1e-4 ? speed / mag : 0;
       const dvx = mx * dl - this.vx, dvz = mz * dl - this.vz;
@@ -45683,12 +45701,9 @@ void main() {
       const px2 = this.x, pz2 = this.z;
       this.x += this.vx * dt;
       this.z += this.vz * dt;
-      const act = this.action;
-      if (act.type === "swing" && act.lunge > 0 && act.st < this.attacks[act.combo].activeStart) {
-        const v = act.lunge / this.attacks[act.combo].activeStart * T2.axeSpeed * dt;
-        this.x += Math.sin(this.aimYaw) * v;
-        this.z += Math.cos(this.aimYaw) * v;
-      }
+      const rm = this.attackAdvance(sim2);
+      this.x += rm.x;
+      this.z += rm.z;
       for (const e of sim2.zombies) {
         if (!e.solid) continue;
         const dx = this.x - e.x, dz = this.z - e.z, rr = this.r + e.r, d2 = dx * dx + dz * dz;
@@ -45699,11 +45714,44 @@ void main() {
         }
       }
       world.resolveCircle(this, this.r);
-      this.vx = (this.x - px2) / dt;
-      this.vz = (this.z - pz2) / dt;
+      this.vx = (this.x - px2 - rm.x) / dt;
+      this.vz = (this.z - pz2 - rm.z) / dt;
+      const vl = Math.hypot(this.vx, this.vz), vmax = T2.moveSpeed * 1.05;
+      if (vl > vmax) {
+        this.vx *= vmax / vl;
+        this.vz *= vmax / vl;
+      }
       if (this.invuln > 0) this.invuln -= dt;
       this.hurtT += dt;
       this.recoil = Math.max(0, this.recoil - dt * 7);
+    }
+    // how much stick movement is allowed during an attack: none while its clip owns the legs, back in as it blends out
+    attackMoveScale() {
+      const a = this.action;
+      if (a.type !== "swing") return 1;
+      const A = this.attacks[a.combo], tEnd = attackEnd(A);
+      return a.st <= tEnd ? 0 : smooth((a.st - tEnd) / Math.max(0.05, A.duration - tEnd));
+    }
+    // this step's attack advance: total distance eased over the windup along the heading fixed at the attack's start,
+    // reduced so Yola stops a body short of the target (zombie) she is stepping into
+    attackAdvance(sim2) {
+      const out = _rm;
+      out.x = out.z = 0;
+      const a = this.action;
+      if (a.type !== "swing" || !(a.lunge > 0)) return out;
+      const A = this.attacks[a.combo], dur = Math.max(0.05, A.activeStart);
+      const want = A.ROOT ? rootAt(A.ROOT, a.st) * a.rootScale : a.lunge * smooth(a.st / dur), step = want - (a.advanced || 0);
+      if (step <= 0) return out;
+      let d = step;
+      const tg = a.target;
+      if (tg && tg.alive) {
+        const gap = Math.hypot(tg.x - this.x, tg.z - this.z) - (A.stand ?? 1.05);
+        d = Math.max(0, Math.min(d, gap));
+      }
+      a.advanced = (a.advanced || 0) + step;
+      out.x = Math.sin(a.heading) * d;
+      out.z = Math.cos(a.heading) * d;
+      return out;
     }
     // ---------------- actions ----------------
     updateAction(dt, sim2) {
@@ -45717,9 +45765,10 @@ void main() {
         case "swing": {
           const A = this.attacks[a.combo];
           const prevT = a.st, st = a.st = a.t * T2.axeSpeed;
+          if (A.continuous && prevT < A.activeStart - 0.12 && st >= A.activeStart - 0.12) sim2.emit({ type: "whoosh", combo: a.combo });
           if (st > A.activeStart && prevT < a.activeEnd) sim2.resolveMelee(this, Math.max(prevT, A.activeStart), Math.min(st, a.activeEnd), a);
           if (prevT < a.activeEnd && st >= a.activeEnd && !a.hits && !a.clanked) sim2.emit({ type: "batMiss" });
-          if (a.hits > 0) a.unlocked = true;
+          if (a.hits > 0 || A.chainAlways) a.unlocked = true;
           if (a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
             this.startSwing(sim2, a.combo + 1, true);
             break;
@@ -45784,9 +45833,32 @@ void main() {
     startSwing(sim2, combo2, unlocked = false) {
       this.swingId++;
       const A = this.attacks[combo2];
-      const tgt = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
-      const lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo2 > 0 ? 0.75 : 0.5)) : 0;
-      this.setAction("swing", { st: 0, combo: combo2, hitSet: /* @__PURE__ */ new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked });
+      const as = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
+      const tgt = as?.target || null, turnBy = as?.turn || 0;
+      let lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo2 > 0 ? 0.75 : 0.5)) : 0;
+      let rootScale = 1;
+      if (A.ROOT) {
+        const total = A.ROOT[A.ROOT.length - 1].z;
+        rootScale = tgt && total > 0.01 ? clamp2((Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 0.85)) / total, 0, 1) : 1;
+        lunge = Math.max(0, total * rootScale);
+      }
+      this.setAction("swing", {
+        st: 0,
+        combo: combo2,
+        hitSet: /* @__PURE__ */ new Set(),
+        hits: 0,
+        clanked: false,
+        activeEnd: A.activeEnd,
+        id: this.swingId,
+        lunge,
+        unlocked,
+        target: tgt,
+        heading: this.aimYaw + turnBy,
+        turnFrom: this.aimYaw,
+        turnBy,
+        advanced: 0,
+        rootScale
+      });
       this.attackPressT = 9;
       sim2.emit({ type: "swing", combo: combo2 });
     }
@@ -46884,10 +46956,7 @@ void main() {
       }
       if (!best) return null;
       const want = angleDiff(p2.aimYaw, Math.atan2(best.x - p2.x, best.z - p2.z));
-      const turn = Math.max(-0.35, Math.min(0.35, want));
-      p2.aimYaw += turn;
-      p2.aimTarget = p2.aimYaw;
-      return best;
+      return { target: best, turn: Math.max(-0.35, Math.min(0.35, want)) };
     }
     // ---------------- axe: swept between simulation steps ----------------
     resolveMelee(p2, t0, t1, act) {
@@ -46974,7 +47043,7 @@ void main() {
           if (part !== "torso" && !z.severed.has(part)) z.limbHp[part] = 0;
           const last2 = act.combo === p2.attacks.length - 1, holding = !last2 && p2.attackHeld;
           z.takeHit(dmg, dx, dz, T2.axeKnockback * A.knock * (holding ? 0.45 : 1), p2.equipped === BAT ? "bat" : "axe", this, part, holding ? "combo" : A.style);
-          this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
+          this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: p2.equipped });
           if (T2.hitPause > 0) this.emit({ type: "hitPause", dur: T2.hitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
         }
         px2 = tipX;
@@ -48566,12 +48635,14 @@ void main() {
 
   // src/render/clipchars.js
   var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
-  var smooth = (u) => u * u * (3 - 2 * u);
+  var smooth2 = (u) => u * u * (3 - 2 * u);
   var _v4 = new Vector3();
   var _v23 = new Vector3();
   var _v32 = new Vector3();
   var _v43 = new Vector3();
   var _v5 = new Vector3();
+  var _v6 = new Vector3();
+  var _v7 = new Vector3();
   var _ik = new Vector3();
   var _ikg = new Vector3();
   var _ikh = new Vector3();
@@ -48872,7 +48943,8 @@ void main() {
         if (!smp?.d) continue;
         for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
         const act = this.act(A.clip);
-        act.time = A.f0 / 30;
+        if (!act) continue;
+        act.time = A.f0 / (A.fps || 30);
         act.setEffectiveWeight(1);
         this.container.rotation.y = 0;
         this.outer.position.set(0, 0, 0);
@@ -49087,17 +49159,17 @@ void main() {
         if (!this.backMode && ath > 1.95) this.backMode = true;
         else if (this.backMode && ath < 1.2) this.backMode = false;
         this.backBlend = clamp4((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
-        const mb = smooth(this.backBlend);
+        const mb = smooth2(this.backBlend);
         const put = (key, kk) => {
           const [walk, run] = GAIT[key], g0 = this.gait[walk], g1 = this.gait[run];
-          const r = smooth(clamp4((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
+          const r = smooth2(clamp4((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
           w[walk] += kk * (1 - r);
           w[run] += kk * r;
         };
         if (mb < 1) {
           const tf = clamp4(th, -Math.PI / 2, Math.PI / 2);
           const [a0, k0, a1, k1] = tf >= 0 ? [0, "f", Math.PI / 2, "l"] : [0, "f", -Math.PI / 2, "r"];
-          const u = smooth((tf - a0) / (a1 - a0));
+          const u = smooth2((tf - a0) / (a1 - a0));
           put(k0, (1 - u) * move * (1 - mb));
           put(k1, u * move * (1 - mb));
         }
@@ -49145,7 +49217,7 @@ void main() {
       const eqKey = s.equipped === "bat" ? "axe" : s.equipped;
       this.batMode = s.equipped === "bat";
       for (const k2 in this.up) this.up[k2] += clamp4((eqKey === k2 ? 1 : 0) - this.up[k2], -rate, rate);
-      const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
+      const uP0 = smooth2(this.up.pistol), uS0 = smooth2(this.up.shotgun), uA0 = smooth2(this.up.axe), uF0 = smooth2(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
       const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un;
       let sW = 0, turn = 0;
       const A = s.action === "swing" ? attacksOf(s.equipped)[s.combo] : null;
@@ -49165,10 +49237,11 @@ void main() {
           this.swingBlend = A.blendIn || 0.1;
         }
         act.time = attackFrame(A, Math.min(t, tEnd)) / A.fps + (this.swJit ^= 1) * 1e-6;
-        const ramp = smooth(clamp4(t / (this.prevSwing ? this.swingBlend : 0.05), 0, 1));
-        const out = t <= tEnd ? 1 : smooth(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
+        const cont = A.continuous && s.combo > 0;
+        const ramp = cont ? 1 : smooth2(clamp4(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
+        const out = t <= tEnd ? 1 : smooth2(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
         sW = ramp * out;
-        turn = A.yawOffset * smooth(clamp4(t / 0.1, 0, 1)) * out;
+        turn = A.yawOffset * smooth2(clamp4(t / 0.1, 0, 1)) * out;
         if (this.prevSwing) {
           const pw = this.prevSwingW * (1 - ramp);
           this.prevSwing.setEffectiveWeight(pw);
@@ -49177,7 +49250,7 @@ void main() {
             this.prevSwing = null;
           }
         }
-        if (this.prevTurn != null && t < this.swingBlend) turn = this.prevTurn + (turn - this.prevTurn) * smooth(t / this.swingBlend);
+        if (this.prevTurn != null && t < this.swingBlend) turn = this.prevTurn + (turn - this.prevTurn) * smooth2(t / this.swingBlend);
         else this.prevTurn = null;
       } else {
         this.swingAct = null;
@@ -49203,7 +49276,7 @@ void main() {
         const rl = this.act(sg ? "shotgun_reload_upper" : "pistol_reload_upper");
         rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + (this.rlJit ^= 1) * 1e-6;
         if (sg) this.reloadFrame = rl.time * 30;
-        rW = smooth(clamp4(s.actionT / 0.08, 0, 1)) * smooth(clamp4((1 - u) / 0.12, 0, 1));
+        rW = smooth2(clamp4(s.actionT / 0.08, 0, 1)) * smooth2(clamp4((1 - u) / 0.12, 0, 1));
       }
       this.reloadW = rW;
       const rP = s.equipped === "pistol" ? rW : 0, rS = s.equipped === "shotgun" ? rW : 0;
@@ -49227,7 +49300,7 @@ void main() {
         const S2 = this.script;
         S2.t += dt;
         const len = S2.len / S2.rate, inW = clamp4(S2.t / S2.fadeIn, 0, 1), outW = clamp4((len - S2.t) / S2.fadeOut, 0, 1);
-        scW = smooth(inW) * smooth(outW);
+        scW = smooth2(inW) * smooth2(outW);
         sact = S2.act;
         S2.act.time = S2.t0 + Math.min(S2.t * S2.rate, S2.len - 1e-3);
         S2.act.setEffectiveWeight(scW);
@@ -49347,7 +49420,7 @@ void main() {
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
     shotgunLeftHand(rf, G2) {
-      const U2 = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth(clamp4(u, 0, 1));
+      const U2 = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
       const shellOn = rf >= SH.from && rf <= SH.to;
       this.grip("Left", _v4);
       let wPort = 0;
@@ -49431,7 +49504,12 @@ void main() {
           dir.normalize();
         } else dir = _v32.copy(_v4).sub(_v23).normalize();
         const M4 = this.melee;
-        M4.position.copy(_v4).add(_v23).multiplyScalar(0.5);
+        if (this.batMode) {
+          const span = clamp4(_v6.copy(_v4).sub(_v23).dot(dir), 0.07, 0.16);
+          this.ikArm("Left", _v7.copy(_v4).addScaledVector(dir, -span), 1);
+          this.grip("Left", _v23);
+          M4.position.copy(_v4).addScaledVector(dir, -span / 2);
+        } else M4.position.copy(_v4).add(_v23).multiplyScalar(0.5);
         const tip = _v43.copy(M4.position).addScaledVector(dir, 0.7);
         const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new Vector3();
         this.prevTip.copy(tip);
@@ -49443,7 +49521,7 @@ void main() {
         want.normalize();
         const x = want.clone().negate(), y = new Vector3().crossVectors(dir, x);
         const target = _q22.setFromRotationMatrix(new Matrix4().makeBasis(x, y, dir));
-        if (!this.bladeInit) {
+        if (!this.bladeInit || this.batMode) {
           this.bladeQ.copy(target);
           this.bladeInit = true;
         } else this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
@@ -51373,7 +51451,7 @@ void main() {
     return RAPIER;
   }
   var _q6 = new Quaternion();
-  var _v6 = new Vector3();
+  var _v8 = new Vector3();
   var GROUP_WORLD = 1;
   var GROUP_BODY = 2;
   var groups = (member, filter) => member << 16 | filter;
@@ -51931,7 +52009,7 @@ void main() {
       });
     }
   };
-  var _v7 = new Vector3();
+  var _v9 = new Vector3();
   var _q7 = new Quaternion();
   var _q23 = new Quaternion();
   var _id3 = new Quaternion();
@@ -52001,7 +52079,7 @@ void main() {
       if (!b || w <= 1e-4) return;
       b.updateWorldMatrix(true, false);
       b.getWorldQuaternion(_q7);
-      const cur = _v7.copy(this.armDir[name]).applyQuaternion(_q7);
+      const cur = _v9.copy(this.armDir[name]).applyQuaternion(_q7);
       const rot = _q23.setFromUnitVectors(cur, target);
       rot.premultiply(_id3.identity());
       const part = new Quaternion().identity().slerp(rot, w);
@@ -52072,7 +52150,7 @@ void main() {
       const up = lift * (1 - ease2((t - 3.9) / 0.8));
       const wig = Math.sin(t * 16) * ease2((t - 0.9) / 0.3) * (1 - ease2((t - 3.7) / 0.5));
       const U2 = new Vector3(0, 1, 0);
-      const right = _v7.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
+      const right = _v9.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
       right.y = 0;
       right.normalize();
       const R3 = right.clone(), F3 = new Vector3().crossVectors(U2, R3).normalize();
@@ -55262,6 +55340,318 @@ void main() {
     }
   };
 
+  // src/lab.js
+  var REF = { dir: "assets/ref/bat13/", offset: 19, first: 20, last: 184, clip: "bat_combo_mc" };
+  var EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32]];
+  var CAMS = { game: null, side: { target: "yola", yaw: 90, pitch: 6, dist: 4.2, h: 0.95 }, front: { target: "yola", yaw: 0, pitch: 8, dist: 4.2, h: 0.95 }, top: { target: "yola", yaw: 0, pitch: 80, dist: 5, h: 0.4 } };
+  function startLab(game, weapon = "bat") {
+    const g = game, scene2 = g.scene, T2 = three_module_exports;
+    const S2 = { playing: false, speed: 0.25, frame: 0, scen: "still", input: "hold", cam: "side", skel: true, marks: true, rings: true, ref: true, weapon, log: [], contact: [] };
+    const css = document.createElement("style");
+    css.textContent = `#lab{position:fixed;left:6px;bottom:6px;z-index:50;background:rgba(14,20,24,.88);color:#e8eef0;font:12px/1.35 system-ui,sans-serif;padding:8px;border-radius:10px;max-width:min(560px,96vw)}
+  #lab button,#lab select{font:inherit;background:#28363d;color:#e8eef0;border:1px solid #3d525b;border-radius:6px;padding:4px 7px;margin:1px}
+  #lab button.on{background:#2f9fa0}#lab .row{margin:3px 0;display:flex;flex-wrap:wrap;align-items:center;gap:3px}
+  #labRead{font:11px/1.3 ui-monospace,monospace;white-space:pre;max-height:30vh;overflow:auto;margin-top:4px}
+  #labRef{position:fixed;right:6px;top:6px;z-index:50;width:min(46vw,480px);background:#111;border-radius:8px;overflow:hidden}
+  #labRef canvas{display:block;width:100%}#menu,#hud,#touch,.sheet{display:none!important}#labRef div{color:#ddd;font:11px system-ui;padding:3px 6px}`;
+    document.head.appendChild(css);
+    const box = document.createElement("div");
+    box.id = "lab";
+    box.innerHTML = `<div class="row"><b>Combat lab</b>
+    <button id="lbPlay">Play</button><button id="lbBack">&#9664; 1</button><button id="lbStep">1 &#9654;</button><button id="lbRestart">Restart</button>
+    <select id="lbSpeed"><option value="1">1x</option><option value="0.5">0.5x</option><option value="0.25" selected>0.25x</option><option value="0.1">0.1x</option></select></div>
+    <div class="row"><select id="lbScen"><option value="still">1 zombie, still</option><option value="walk">1 zombie, walking in</option><option value="three">3 zombies</option><option value="miss">miss (no target)</option></select>
+    <select id="lbInput"><option value="hold">hold attack</option><option value="taps">tap x3</option><option value="one">one swing</option></select>
+    <select id="lbCam"><option value="side" selected>side (as clip 13)</option><option value="game">gameplay camera</option><option value="front">front</option><option value="top">top</option></select></div>
+    <div class="row"><button id="lbSkel" class="on">skeleton</button><button id="lbMarks" class="on">grips + bat</button><button id="lbRings" class="on">collision</button><button id="lbRefT" class="on">reference</button></div>
+    <div class="row" id="lbTiming"></div>
+    <div id="labRead"></div>`;
+    document.body.appendChild(box);
+    const refBox = document.createElement("div");
+    refBox.id = "labRef";
+    refBox.innerHTML = '<canvas id="labRefC" width="480" height="263"></canvas><div id="labRefT">reference</div>';
+    document.body.appendChild(refBox);
+    const $2 = (id) => document.getElementById(id);
+    const tog = (id, key) => $2(id).onclick = () => {
+      S2[key] = !S2[key];
+      $2(id).classList.toggle("on", S2[key]);
+      redraw();
+    };
+    tog("lbSkel", "skel");
+    tog("lbMarks", "marks");
+    tog("lbRings", "rings");
+    tog("lbRefT", "ref");
+    $2("lbPlay").onclick = () => {
+      S2.playing = !S2.playing;
+      $2("lbPlay").textContent = S2.playing ? "Pause" : "Play";
+      $2("lbPlay").classList.toggle("on", S2.playing);
+    };
+    $2("lbStep").onclick = () => {
+      S2.playing = false;
+      stepFrames(1);
+    };
+    $2("lbBack").onclick = () => {
+      S2.playing = false;
+      const f = S2.frame - 1;
+      reset();
+      stepFrames(Math.max(0, f));
+    };
+    $2("lbRestart").onclick = () => {
+      reset();
+      redraw();
+    };
+    const tim = [["enter blend", 0, "enterBlend", 0, 0.4, 0.02], ["wind-up 2", 1, "windRate", 0.8, 2.5, 0.05], ["wind-up 3", 2, "windRate", 0.8, 2.5, 0.05], ["recover 1", 0, "recover", 0.1, 0.8, 0.02], ["recover 3", 2, "recover", 0.1, 0.8, 0.02]];
+    for (const [label, i, key, lo, hi, st] of tim) {
+      const w = document.createElement("label");
+      w.innerHTML = label + ' <input type="range" min="' + lo + '" max="' + hi + '" step="' + st + '" value="' + BAT_ATTACKS[i][key] + '" style="width:70px;vertical-align:middle"> <span>' + BAT_ATTACKS[i][key] + "</span>";
+      const inp = w.querySelector("input"), sp = w.querySelector("span");
+      inp.oninput = () => {
+        sp.textContent = inp.value;
+        retimeBat([{ i, [key]: +inp.value }]);
+        reset();
+        redraw();
+      };
+      $2("lbTiming").appendChild(w);
+    }
+    $2("lbSpeed").onchange = (e) => {
+      S2.speed = +e.target.value;
+    };
+    $2("lbScen").onchange = (e) => {
+      S2.scen = e.target.value;
+      reset();
+      redraw();
+    };
+    $2("lbInput").onchange = (e) => {
+      S2.input = e.target.value;
+      reset();
+      redraw();
+    };
+    $2("lbCam").onchange = (e) => {
+      S2.cam = e.target.value;
+      g.cam(CAMS[S2.cam]);
+      redraw();
+    };
+    addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        $2("lbPlay").click();
+        e.preventDefault();
+      }
+      if (e.code === "ArrowRight") $2("lbStep").click();
+      if (e.code === "ArrowLeft") $2("lbBack").click();
+    });
+    const refImgs = {};
+    let pose = null;
+    fetch(REF.dir + "pose.json").then((r) => r.json()).then((p2) => {
+      pose = p2;
+    }).catch(() => {
+    });
+    const refImg = (f) => {
+      if (!refImgs[f]) {
+        const im = new Image();
+        im.src = `${REF.dir}f${String(f).padStart(4, "0")}.jpg`;
+        im.onload = () => redraw();
+        refImgs[f] = im;
+      }
+      return refImgs[f];
+    };
+    for (let f = REF.first; f <= REF.last; f += 1) refImg(f);
+    const ov = new T2.Group();
+    ov.name = "labOverlay";
+    scene2.add(ov);
+    const skel = new T2.SkeletonHelper(g.yola.outer);
+    skel.material.depthTest = false;
+    skel.renderOrder = 10;
+    scene2.add(skel);
+    const dot = (c, r = 0.035) => {
+      const m = new T2.Mesh(new T2.SphereGeometry(r, 12, 8), new T2.MeshBasicMaterial({ color: c, depthTest: false }));
+      m.renderOrder = 11;
+      ov.add(m);
+      return m;
+    };
+    const gripR = dot(16724821), gripL = dot(3386111), tip = dot(16772659, 0.04), hipsDot = dot(16738047, 0.03);
+    const segGeo = new T2.BufferGeometry().setFromPoints([new T2.Vector3(), new T2.Vector3()]);
+    const seg = new T2.Line(segGeo, new T2.LineBasicMaterial({ color: 16720418, depthTest: false }));
+    seg.renderOrder = 12;
+    ov.add(seg);
+    const trailPts = [];
+    const trail = new T2.Line(new T2.BufferGeometry(), new T2.LineBasicMaterial({ color: 16746564, depthTest: false }));
+    trail.renderOrder = 12;
+    ov.add(trail);
+    const ring = (r, c) => {
+      const m = new T2.Mesh(new T2.RingGeometry(r - 0.012, r, 40), new T2.MeshBasicMaterial({ color: c, side: T2.DoubleSide, depthTest: false, transparent: true, opacity: 0.8 }));
+      m.rotation.x = -Math.PI / 2;
+      m.renderOrder = 9;
+      ov.add(m);
+      return m;
+    };
+    const pRing = ring(0.3, 4521864);
+    const zRings = [];
+    function reset() {
+      S2.frame = 0;
+      S2.log.length = 0;
+      S2.contact.length = 0;
+      trailPts.length = 0;
+      g.setPaused(false);
+      g.hideZombieViews();
+      const sim2 = g.sim;
+      if (!sim2._labEmit) {
+        const em = sim2.emit.bind(sim2);
+        sim2.emit = (e) => {
+          em(e);
+          if (["swing", "batHit", "batMiss", "hitPause", "zombieDeath", "zombieKnockdown"].includes(e.type)) S2.log.push(`${(S2.frame / 60).toFixed(2)}s ${e.type}${e.combo !== void 0 ? " c" + e.combo : ""}${e.dur ? " " + e.dur.toFixed(3) : ""}`);
+        };
+        sim2._labEmit = true;
+      }
+      sim2.director.update = () => {
+      };
+      sim2.zombies.length = 0;
+      sim2.events.length = 0;
+      const p2 = sim2.player;
+      p2.setLoadout([S2.weapon]);
+      p2.hp = p2.maxHp = 9999;
+      p2.x = 0;
+      p2.z = 0;
+      p2.vx = p2.vz = 0;
+      p2.aimYaw = p2.aimTarget = 0;
+      p2.dead = false;
+      const add = (x, z, walk) => {
+        const zz = sim2.spawnZombie(null, { x, z, yaw: Math.PI });
+        zz.set(ZS.CHASE);
+        zz.passive = true;
+        zz.attackCd = 99;
+        zz.speedMul = walk ? 0.8 : 0;
+        zz.hp = zz.maxHp = 99999;
+      };
+      if (S2.scen === "still") add(0, 1.15);
+      if (S2.scen === "walk") add(0.2, 3.2, true);
+      if (S2.scen === "three") {
+        add(-0.55, 1.2);
+        add(0.15, 1.35);
+        add(0.75, 1.05);
+      }
+      for (const r of zRings) ov.remove(r);
+      zRings.length = 0;
+      for (let i = 0; i < sim2.zombies.length; i++) zRings.push([ring(0.3, 16755251), ring(0.2, 16768358)]);
+      g.scriptInput = (s) => {
+        const t = S2.frame / 60;
+        let held = true;
+        if (S2.input === "taps") held = [0, 0.5, 1.3].some((a) => t >= a && t < a + 0.08);
+        if (S2.input === "one") held = t < 0.08;
+        return { moveX: 0, moveZ: 0, aimX: 0, aimZ: held ? 1 : 0, swapPresses: 0, usePresses: 0 };
+      };
+      g.cam(CAMS[S2.cam]);
+    }
+    function stepFrames(n, dt = 1 / 60) {
+      for (let i = 0; i < n; i++) {
+        g.tick(1, dt, i === n - 1);
+        S2.frame += dt * 60;
+        collect();
+      }
+      redraw();
+    }
+    function collect() {
+      if (S2.log.length > 14) S2.log.splice(0, S2.log.length - 14);
+    }
+    const _a4 = {}, v = new T2.Vector3(), v2 = new T2.Vector3();
+    function redraw() {
+      const sim2 = g.sim, p2 = sim2.player, y = g.yola, a = p2.action, A = a.type === "swing" ? attacksOf(p2.equipped)[a.combo] : null;
+      skel.visible = S2.skel;
+      ov.visible = true;
+      gripR.visible = gripL.visible = tip.visible = hipsDot.visible = S2.marks;
+      y.grip("Right", v);
+      gripR.position.copy(v);
+      y.grip("Left", v2);
+      gripL.position.copy(v2);
+      let offL = NaN, offR = NaN;
+      if (y.melee) {
+        const d = new T2.Vector3(0, 0, 1).applyQuaternion(y.melee.quaternion);
+        tip.position.copy(y.melee.position).addScaledVector(d, 0.74);
+        const off = (q) => {
+          const w = q.clone().sub(y.melee.position);
+          return w.sub(d.clone().multiplyScalar(w.dot(d))).length();
+        };
+        offL = off(v2);
+        offR = off(v);
+        S2.contact.push({ t: S2.frame / 60, l: offL, r: offR, act: p2.action.type, combo: p2.action.combo });
+      }
+      y.bones.Hips.getWorldPosition(v);
+      hipsDot.position.set(v.x, 0.02, v.z);
+      let active = false;
+      if (A && A.PATH) {
+        const s = meleeWorldSegment(p2, A, a.st, _a4);
+        active = a.st >= A.activeStart && a.st <= a.activeEnd;
+        segGeo.setFromPoints([new T2.Vector3(s.hx, s.hy, s.hz), new T2.Vector3(s.tx, s.ty, s.tz)]);
+        seg.visible = S2.marks;
+        seg.material.color.set(active ? 16720418 : 7829367);
+        if (active) {
+          trailPts.push(new T2.Vector3(s.tx, s.ty, s.tz));
+          trail.geometry.setFromPoints(trailPts);
+        }
+      } else seg.visible = false;
+      trail.visible = S2.marks && trailPts.length > 1;
+      pRing.visible = S2.rings;
+      pRing.position.set(p2.x, 0.02, p2.z);
+      sim2.zombies.forEach((z, i) => {
+        const [b, ar] = zRings[i] || [];
+        if (!b) return;
+        b.visible = ar.visible = S2.rings && z.alive;
+        b.position.set(z.x, 0.02, z.z);
+        ar.position.set(z.x + Math.sin(z.yaw) * 0.36, 0.02, z.z + Math.cos(z.yaw) * 0.36);
+      });
+      g.renderer.render(scene2, g.camera);
+      const fr = A ? attackFrame(A, Math.min(a.st, 99)) : null;
+      const drift = Math.hypot(v.x - p2.x, v.z - p2.z);
+      const acts = Object.entries(y.actions).map(([n, x]) => [n, x.getEffectiveWeight(), x.time]).filter((q) => q[1] > 0.01).sort((q, r) => r[1] - q[1]).map((q) => `  ${q[0].padEnd(24)} w ${q[1].toFixed(2)}  t ${q[2].toFixed(3)}`);
+      $2("labRead").textContent = [
+        `t ${(S2.frame / 60).toFixed(3)} s  (frame ${Math.round(S2.frame)})   fps ${g.perfReport ? "" : ""}hit-stop ${(g.hitPause || 0).toFixed(3)}`,
+        `action ${a.type}${A ? `  #${a.combo + 1} ${A.name}  st ${a.st.toFixed(3)}  clip frame ${fr.toFixed(1)}  ${active ? "HIT WINDOW" : ""}  hits ${a.hits}` : ""}`,
+        `grip contact: left hand ${(offL * 100).toFixed(1)} cm, right hand ${(offR * 100).toFixed(1)} cm from the bat axis`,
+        `pos (${p2.x.toFixed(2)}, ${p2.z.toFixed(2)})  facing ${(p2.aimYaw * 57.3).toFixed(1)} deg   rendered hips - gameplay pos: ${(drift * 100).toFixed(1)} cm`,
+        "actions (weight, time):",
+        ...acts,
+        "events:",
+        ...S2.log.map((l) => "  " + l)
+      ].join("\n");
+      const c = $2("labRefC"), cx = c.getContext("2d");
+      refBox.style.display = S2.ref ? "" : "none";
+      if (S2.ref && A && A.clip === REF.clip) {
+        const rf = Math.max(REF.first, Math.min(REF.last, Math.round(fr + REF.offset))), im = refImg(rf);
+        if (im.complete && im.naturalWidth) {
+          c.height = Math.round(480 * im.naturalHeight / im.naturalWidth);
+          cx.drawImage(im, 0, 0, 480, c.height);
+        }
+        const lm = pose?.frames?.[rf];
+        if (lm) {
+          cx.strokeStyle = "#3f6";
+          cx.lineWidth = 2;
+          for (const [i, j] of EDGES) {
+            cx.beginPath();
+            cx.moveTo(lm[i][0] * 480, lm[i][1] * c.height);
+            cx.lineTo(lm[j][0] * 480, lm[j][1] * c.height);
+            cx.stroke();
+          }
+        }
+        $2("labRefT").textContent = `reference clip 13, frame ${rf}  (Yola clip frame ${fr.toFixed(1)})`;
+      } else $2("labRefT").textContent = "reference: shown while the bat combo plays";
+    }
+    let last2 = performance.now();
+    function loop(now) {
+      requestAnimationFrame(loop);
+      const dt = Math.min(0.1, (now - last2) / 1e3);
+      last2 = now;
+      if (S2.playing) stepFrames(1, Math.min(1 / 60, dt * S2.speed));
+    }
+    g.tick(1, 1 / 60);
+    reset();
+    redraw();
+    requestAnimationFrame(loop);
+    window.lab = { S: S2, reset, stepFrames, redraw, setCam: (k) => {
+      S2.cam = k;
+      g.cam(CAMS[k]);
+    } };
+    return S2;
+  }
+
   // src/main.js
   var params = new URLSearchParams(location.search);
   var store = {
@@ -55380,7 +55770,10 @@ void main() {
   async function load() {
     hud.loading(0);
     arena = new Arena(scene, resolvedQuality(), renderer);
-    const yolaP = loader.loadAsync("assets/yola.glb");
+    const yolaP = Promise.all([loader.loadAsync("assets/yola.glb"), loader.loadAsync("assets/yola_combo.glb")]).then(([g, c]) => {
+      g.animations.push(...c.animations);
+      return g;
+    });
     const zomP = Promise.all(ZOMBIE_TYPES.map((t) => loader.loadAsync(t.file)));
     const dataP = fetch("assets/clipdata.json").then((r) => r.json());
     const wpnP = Promise.all([loader.loadAsync("assets/weapons/pump_short.glb"), loader.loadAsync("assets/weapons/fire_axe.glb"), loader.loadAsync("assets/weapons/shell.glb")]);
@@ -55396,6 +55789,7 @@ void main() {
     hud.loading(1);
     if (params.has("intro") || params.has("reveal") || params.has("room1")) await startOpening();
     requestAnimationFrame(frame);
+    if (params.has("lab")) startLab(window.game, params.get("lab") || "bat");
   }
   var opening = null;
   var screens = new LiveScreens();
@@ -55617,7 +56011,7 @@ void main() {
   var dbgCircle = new Mesh(new RingGeometry(0.3, 0.33, 24), new MeshBasicMaterial({ color: 65450, side: DoubleSide }));
   dbgCircle.rotation.x = -Math.PI / 2;
   var dbgBat = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), new LineBasicMaterial({ color: 16776960 }));
-  var _v8 = new Vector3();
+  var _v10 = new Vector3();
   var _seg2 = {};
   var groanT = 2;
   function frame(now) {
@@ -55698,7 +56092,7 @@ void main() {
       swapDur: tuning.swapTime
     });
     if (a.type === "swing" && p2.equipped === "axe" && a.st > p2.attacks[a.combo].activeStart - 0.04 && a.st < a.activeEnd + 0.04) {
-      fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v8), true);
+      fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v10), true);
     }
     fx.setAim(ix, iz, iyaw, !p2.dead, p2.aiming ? p2.attackHeld ? 1 : 0.5 : 0.2);
     stepPhysics(animDt);
@@ -55747,13 +56141,16 @@ void main() {
     hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
     if (camOverride) applyCamOverride();
     else updateCamera(dt, ix, iz, iyaw, p2);
-    _v8.set(ix, 1, iz).project(camera);
-    playerScreen = { x: (_v8.x * 0.5 + 0.5) * innerWidth, y: (-_v8.y * 0.5 + 0.5) * innerHeight };
+    _v10.set(ix, 1, iz).project(camera);
+    playerScreen = { x: (_v10.x * 0.5 + 0.5) * innerWidth, y: (-_v10.y * 0.5 + 0.5) * innerHeight };
     if (debugOn) updateDebug(p2);
     hud.update(sim, dt);
     if (doRender) renderer.render(scene, camera);
   }
+  var impactFrame = -1;
+  var frameNo = 0;
   function handleEvents() {
+    frameNo++;
     const p2 = sim.player;
     for (const e of sim.events) {
       switch (e.type) {
@@ -55795,12 +56192,18 @@ void main() {
         }
         case "swing":
           sim.stats.swings++;
-          audio.play("swing", p2.equipped === "fists" ? 0.55 : e.combo === 1 ? 1.35 : 1);
+          if (p2.equipped !== "bat") audio.play("swing", p2.equipped === "fists" ? 0.55 : e.combo === 1 ? 1.35 : 1);
           break;
-        // (the second melee hit is the heavy one)
+        case "whoosh":
+          audio.play("swing", e.combo === 2 ? 1.3 : 1);
+          break;
+        // (the bat combo: timed to each strike) // (the second melee hit is the heavy one)
         case "batHit": {
           const chop = e.style === "chop";
-          audio.play(e.fist ? "fistHit" : "axeHit", chop || e.style === "kick" ? 1.3 : 1);
+          if (impactFrame !== frameNo) {
+            impactFrame = frameNo;
+            audio.play(e.fist ? "fistHit" : e.weapon === "bat" ? "batHit" : "axeHit", chop || e.style === "kick" || e.style === "heavy" ? 1.3 : 1);
+          }
           fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true);
           shake(e.killed || chop ? 0.6 : 0.45);
           if (shakeOn) {
@@ -56156,7 +56559,9 @@ void main() {
     const s = acc2.map((a) => a[0]).sort((a, b) => a - b), worst = acc2.sort((a, b) => b[0] - a[0])[0];
     return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
   }
-  window.game = { stillYola(dt) {
+  window.game = { get hitPause() {
+    return hitPauseT;
+  }, stillYola(dt) {
     yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw));
   }, hideZombieViews() {
     for (const v of zviews.values()) {

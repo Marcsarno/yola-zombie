@@ -19,6 +19,7 @@ import { RapierPhysics } from './render/physics/rapier.js';
 import * as physlab from './physlab.js';
 import { Opening } from './opening/opening.js';
 import { OBJECTIVES } from './opening/content.js';
+import { startLab } from './lab.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -115,7 +116,8 @@ const loader = new GLTFLoader();
 async function load() {
   hud.loading(0);
   arena = new Arena(scene, resolvedQuality(), renderer);
-  const yolaP = loader.loadAsync('assets/yola.glb');
+  // Yola, plus the clips authored outside her model file (the bat combo: skeleton-only, same bone names)
+  const yolaP = Promise.all([loader.loadAsync('assets/yola.glb'), loader.loadAsync('assets/yola_combo.glb')]).then(([g, c]) => { g.animations.push(...c.animations); return g; });
   const zomP = Promise.all(ZOMBIE_TYPES.map((t) => loader.loadAsync(t.file)));
   const dataP = fetch('assets/clipdata.json').then((r) => r.json());
   const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shell.glb')]);
@@ -131,6 +133,7 @@ async function load() {
   hud.loading(1);
   if (params.has('intro') || params.has('reveal') || params.has('room1')) await startOpening();
   requestAnimationFrame(frame);
+  if (params.has('lab')) startLab(window.game, params.get('lab') || 'bat'); // the combat lab (frame-by-frame melee against the reference)
 }
 let opening = null;
 const screens = new LiveScreens();
@@ -368,7 +371,9 @@ function runFrame(dt, doRender = true) {
   if (doRender) renderer.render(scene, camera);
 }
 
+let impactFrame = -1, frameNo = 0;
 function handleEvents() {
+  frameNo++;
   const p = sim.player;
   for (const e of sim.events) {
     switch (e.type) {
@@ -398,10 +403,13 @@ function handleEvents() {
         setTimeout(() => audio.play('pump'), 240);
         break;
       }
-      case 'swing': sim.stats.swings++; audio.play('swing', p.equipped === 'fists' ? 0.55 : e.combo === 1 ? 1.35 : 1); break; // (the second melee hit is the heavy one)
+      case 'swing': sim.stats.swings++; if (p.equipped !== 'bat') audio.play('swing', p.equipped === 'fists' ? 0.55 : e.combo === 1 ? 1.35 : 1); break;
+      case 'whoosh': audio.play('swing', e.combo === 2 ? 1.3 : 1); break; // (the bat combo: timed to each strike) // (the second melee hit is the heavy one)
       case 'batHit': {
         const chop = e.style === 'chop';
-        audio.play(e.fist ? 'fistHit' : 'axeHit', chop || e.style === 'kick' ? 1.3 : 1); fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed || chop ? 0.6 : 0.45);
+        // one impact sound per frame however many are struck (a swing through three zombies is one crack, not three)
+        if (impactFrame !== frameNo) { impactFrame = frameNo; audio.play(e.fist ? 'fistHit' : e.weapon === 'bat' ? 'batHit' : 'axeHit', chop || e.style === 'kick' || e.style === 'heavy' ? 1.3 : 1); }
+        fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed || chop ? 0.6 : 0.45);
         // camera kicks along the blow (the follow spring brings it back); the chop kicks down-screen
         if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
         break;
@@ -601,6 +609,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { get hitPause() { return hitPauseT; }, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

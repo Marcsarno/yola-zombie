@@ -158,3 +158,18 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   exterior first shot (stage.buildExterior), live monitor screens (render/screens.js), OR rebuilt around one mid-tier
   table (floor3.js; door or_ct_2 moved to x 4.8), patient sits up and greens, flicker reveal; Floor 3 emergency
   lighting (arena.setEmergency; amber point lights removed).
+- 2026-10-15 (round 10, IN PROGRESS: bat combat rebuilt from the user's reference videos; bat only, the axe is next).
+  * Glide/teleport fixed (player.js): the attack advance fed back into the velocity (it snowballed to 15 m/s; she
+    jumped). Movement now has one owner: locomotion velocity plus a bounded attack-advance channel. Stick movement is
+    zero while the attack clip owns the legs. The assist turn eases in over the wind-up.
+  * Bat combo = mocap clip `bat_combo_mc` (assets/yola_combo.glb + clipdata), made by tools/mocap (see its README):
+    forehand / backhand / spinning finisher, chained on the same clip. The left hand goes on the handle by IK after
+    blending. The bat has its own impact crack (one per frame), and the whoosh is timed to each strike.
+  * Tools: the combat lab (combat.html?lab=bat) and the Rig Lab (viewer.html, combo + reference video + weapon selector).
+  * Measured: grip contact <=2 cm through a held combo; bat hit grid 34/42 (open) and 33/42 (wall); 12-zombie crowd:
+    no double hits, hit-stop <=0.114 s per swing, largest move step 3.2 cm.
+  * recordings/: bat_combo_before_after.mp4 and the reference-vs-game pair sheets.
+  * NEXT: review the latest clip (image-plane crouch, foot contacts, retuned keys) in the viewer against the
+    reviewer's list (crouch/lean, finisher low-to-high, backhand contact in front, bat vertical at the reset). Then
+    re-record, a phone test, and the same workflow for the axe. Optional upgrade: GVHMR/WHAM (needs SMPL registration
+    by the user).
