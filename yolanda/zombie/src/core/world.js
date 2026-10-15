@@ -20,6 +20,7 @@ export class World {
     for (let iter = 0; iter < 3; iter++) {
       let moved = false;
       for (const b of this.boxes) {
+        if (b.off) continue;
         const cx = Math.max(b.minX, Math.min(p.x, b.maxX));
         const cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
         let dx = p.x - cx, dz = p.z - cz;
@@ -48,7 +49,7 @@ export class World {
     const dx = bx - ax, dz = bz - az;
     let best = null;
     for (const b of this.boxes) {
-      if (b.h < minH) continue;
+      if (b.h < minH || b.off) continue;
       let t0 = 0, t1 = 1, nx = 0, nz = 0;
       // slab x
       if (Math.abs(dx) < 1e-9) { if (ax < b.minX || ax > b.maxX) continue; }
@@ -89,12 +90,29 @@ export class World {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
       const x = minX + (i + 0.5) * cell, z = minZ + (j + 0.5) * cell;
       for (const b of this.boxes) {
+        if (b.off) continue;
         if (x > b.minX - inflate && x < b.maxX + inflate && z > b.minZ - inflate && z < b.maxZ + inflate) {
           blocked[j * w + i] = 1; break;
         }
       }
     }
-    this.nav = { cell, w, h, blocked, dist: new Float32Array(w * h), queue: new Int32Array(w * h * 4), goal: -1 };
+    this.nav = { cell, w, h, blocked, dist: new Float32Array(w * h), queue: new Int32Array(w * h * 4), goal: -1, inflate };
+  }
+
+  // switch a box (a door) on or off and re-test the navigation cells around it; the flow field follows next update
+  setOff(b, off) {
+    if (!b || !!b.off === !!off) return;
+    b.off = !!off;
+    const n = this.nav; if (!n) return;
+    const { minX, minZ } = this.bounds, m = n.inflate + n.cell;
+    const i0 = Math.max(0, Math.floor((b.minX - m - minX) / n.cell)), i1 = Math.min(n.w - 1, Math.ceil((b.maxX + m - minX) / n.cell));
+    const j0 = Math.max(0, Math.floor((b.minZ - m - minZ) / n.cell)), j1 = Math.min(n.h - 1, Math.ceil((b.maxZ + m - minZ) / n.cell));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const x = minX + (i + 0.5) * n.cell, z = minZ + (j + 0.5) * n.cell;
+      let bl = 0;
+      for (const q of this.boxes) if (!q.off && x > q.minX - n.inflate && x < q.maxX + n.inflate && z > q.minZ - n.inflate && z < q.maxZ + n.inflate) { bl = 1; break; }
+      n.blocked[j * n.w + i] = bl;
+    }
   }
 
   cellOf(x, z) {

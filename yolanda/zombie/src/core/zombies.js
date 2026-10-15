@@ -119,10 +119,16 @@ export class Zombie {
     this.hitFlash = Math.max(0, this.hitFlash - dt * 6);
     if (this.bumpT > 0) this.bumpT -= dt;
     if (this.attackCd > 0) this.attackCd -= dt;
-    if (this.dormant && (sim.time >= this.dormant.wake || this.hitSeq > 0)) { // wakes: a normal zombie, its first attack a beat away
-      this.speedMul = this.dormant.speedMul; this.passive = false; this.dormant = null; this.attackCd = Math.max(this.attackCd, 1.1);
-    }
     const dx = p.x - this.x, dz = p.z - this.z, dist = Math.hypot(dx, dz);
+    if (this.dormant) { // stands where placed until its time, a hit, or (a sensed level zombie) Yola close by and in sight
+      const D = this.dormant;
+      let wake = sim.time >= D.wake || this.hitSeq > 0;
+      if (!wake && D.sense && !D.locked && !p.dead) wake = dist < D.sense * 0.5 || (dist < D.sense && world.lineOfSight(this.x, this.z, p.x, p.z, 1.0));
+      if (wake) { // a normal zombie now, its first attack a beat away
+        this.speedMul = D.speedMul; this.passive = false; this.dormant = null; this.attackCd = Math.max(this.attackCd, 1.1);
+        sim.level?.onWake(this); sim.emit({ type: 'zombieWake', id: this.id });
+      }
+    }
     let wantX = 0, wantZ = 0, speed = 0, turnRate = 5;
 
     switch (this.state) {
@@ -139,8 +145,8 @@ export class Zombie {
         if (p.dead) { speed = 0; break; }
         const los = dist < 7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
         if (los) { wantX = dx / (dist || 1); wantZ = dz / (dist || 1); }
-        else { world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; }
-        speed = T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1);
+        else { const rem = world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; if (rem > 1e7) { wantX = wantZ = 0; } } // no way through (a shut door): it stands and waits
+        speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
         if (dist < 1.25) speed *= 0.5; // close in carefully, no jitter at contact
         if (!this.passive && dist < 1.0 && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 &&
             world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {

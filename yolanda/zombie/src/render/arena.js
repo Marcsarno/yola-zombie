@@ -1,23 +1,61 @@
-// Hospital wing presentation built from LAYOUT: tiled floor, rounded cream/teal walls, glass partitions,
-// dark doorways with amber emergency lamps, and the existing hospital-kit props.
+// Hospital presentation built from LAYOUT: tiled floors, rounded cream/teal walls, glass partitions, doorways with
+// amber emergency lamps, and the hospital-kit props. Two layouts share it: the combat wing (fixed low camera-side
+// walls) and Floor 3 (every room walled on all sides: walls between the camera and Yola lower themselves, kit doors
+// are cut at the same height, and the braced door, the CT bar and the lift animate from the level's state).
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { LAYOUT } from '../core/layout.js';
+import { LAYOUT, doorBox } from '../core/layout.js';
+import { SIGNS, ROOM_SIGNS, LIFT, PICKUPS } from '../core/floor3.js';
+import { BRACE_TIME, DOOR_OPEN_TIME, roomAt } from '../core/level.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+const isUnder = (o, name) => { for (let p = o.parent; p; p = p.parent) if (p.name === name) return true; return false; };
+// a static model as one mesh per material (geometry baked into the model's own space): far fewer draw calls
+// (roots: one or more objects; geometry is baked in world space, so a root at the origin bakes in model space)
+function mergeStatic(roots, keep = () => true) {
+  const byKey = new Map();
+  const put = (material, g) => {
+    for (const n of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(n)) g.deleteAttribute(n);
+    const key = material.uuid + '|' + Object.keys(g.attributes).sort().join(',');
+    if (!byKey.has(key)) byKey.set(key, { material, geos: [] });
+    byKey.get(key).geos.push(g);
+  };
+  for (const root of [].concat(roots)) {
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      if (!o.isMesh || o.isSkinnedMesh || !keep(o)) return;
+      for (let p = o; p; p = p.parent) if (!p.visible) return;
+      const mats = [].concat(o.material);
+      const g0 = o.geometry.clone().applyMatrix4(o.matrixWorld), g = g0.index ? g0.toNonIndexed() : g0;
+      if (mats.length === 1 || !g0.groups.length) { put(mats[0], g); return; }
+      for (const gr of g0.groups) { // a multi-material mesh: one piece per group (non-indexed: groups index vertices directly)
+        const sub = new THREE.BufferGeometry();
+        for (const [n, a] of Object.entries(g.attributes)) sub.setAttribute(n, new THREE.BufferAttribute(a.array.slice(gr.start * a.itemSize, (gr.start + gr.count) * a.itemSize), a.itemSize, a.normalized));
+        put(mats[gr.materialIndex], sub);
+      }
+    });
+  }
+  const out = [];
+  for (const { material, geos } of byKey.values()) { const merged = mergeGeometries(geos, false); if (merged) out.push({ geometry: merged, material }); }
+  return out;
+}
 
 const PAL = {
   floorA: '#e4d8bf', floorB: '#b9d3c8', grout: '#cdbfa3', wall: 0xece4d3, band: 0x6fa7a6, cap: 0xf5efe2,
   glass: 0xbfe0e2, frame: 0x8fb7bb, door: 0x2c3a42, amber: 0xffb347,
 };
+const LOW_H = 1.0; // a cut-away wall's height (m)
+const FACE_ROT = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 };
 
-function floorTexture() {
+function floorTexture(a = PAL.floorA, b = PAL.floorB, grout = PAL.grout) {
   const c = document.createElement('canvas'); c.width = c.height = 256;
   const g = c.getContext('2d');
   const n = 2, s = 256 / n;
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    g.fillStyle = (i + j) % 2 ? PAL.floorB : PAL.floorA; g.fillRect(i * s, j * s, s, s);
+    g.fillStyle = (i + j) % 2 ? b : a; g.fillRect(i * s, j * s, s, s);
   }
-  g.strokeStyle = PAL.grout; g.lineWidth = 3;
+  g.strokeStyle = grout; g.lineWidth = 3;
   for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * s, 0); g.lineTo(i * s, 256); g.stroke(); g.beginPath(); g.moveTo(0, i * s); g.lineTo(256, i * s); g.stroke(); }
   // faint speckle so the floor reads as material, not flat colour
   const img = g.getImageData(0, 0, 256, 256);
@@ -28,11 +66,28 @@ function floorTexture() {
   return t;
 }
 
+// a printed wayfinding sign in the hospital's teal-and-cream style
+function signTexture(text, sub) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 300; const g = c.getContext('2d');
+  g.fillStyle = '#2f8f92'; g.beginPath(); g.roundRect(0, 0, 1024, 300, 38); g.fill();
+  g.fillStyle = '#fff8ea'; g.beginPath(); g.roundRect(14, 14, 996, 272, 28); g.fill();
+  g.fillStyle = '#1f6f72'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  let size = 104; g.font = `800 ${size}px system-ui, sans-serif`;
+  while (g.measureText(text).width > 940 && size > 40) { size -= 4; g.font = `800 ${size}px system-ui, sans-serif`; }
+  g.fillText(text, 512, sub ? 118 : 150);
+  if (sub) { g.fillStyle = '#c7553f'; let s2 = 56; g.font = `700 ${s2}px system-ui, sans-serif`; while (g.measureText(sub).width > 940 && s2 > 26) { s2 -= 3; g.font = `700 ${s2}px system-ui, sans-serif`; } g.fillText(sub, 512, 218); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+
 export class Arena {
   constructor(scene, quality, renderer) {
-    this.scene = scene; this.quality = quality;
+    this.scene = scene; this.quality = quality; this.renderer = renderer;
     this.group = new THREE.Group(); scene.add(this.group);
     this.lights = [];
+    this.walls = []; // floor 3: { group, box, h, k, target, attach: [] }
+    this.doorKits = {}; // floor 3: id -> { root, mixer, actions, clip plane, rect }
+    this.cutObjs = []; // objects cut by a clipping plane when on the camera side
+    this.f3 = LAYOUT.name === 'floor3';
     this.buildFloor();
     this.buildWalls();
     this.buildDoors();
@@ -40,7 +95,27 @@ export class Arena {
   }
 
   buildFloor() {
-    const b = LAYOUT.bounds;
+    if (this.f3) {
+      for (const r of LAYOUT.rooms) {
+        if (!r.floor) continue;
+        for (const [x0, x1, z0, z1] of r.rects) {
+          const w = x1 - x0, d = z1 - z0, tex = floorTexture(r.floor[0], r.floor[1]); tex.repeat.set(w / 1.2, d / 1.2); tex.offset.set(x0 / 1.2, z0 / 1.2);
+          const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0 }));
+          m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); m.receiveShadow = true; this.group.add(m);
+        }
+      }
+      // door thresholds: the floor carries through every doorway (the wall gap sits between two rooms' floors)
+      const thMat = new THREE.MeshStandardMaterial({ color: 0xc9c2b0, roughness: 0.6 });
+      for (const d of LAYOUT.doors) {
+        if (d.kind === 'lift') continue;
+        const [a, b, c, e] = doorBox(d);
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(b - a + (d.axis === 'z' ? 0.3 : 0), e - c + (d.axis === 'x' ? 0.3 : 0)), thMat);
+        m.rotation.x = -Math.PI / 2; m.position.set((a + b) / 2, 0.003, (c + e) / 2); m.receiveShadow = true; this.group.add(m);
+      }
+      const out = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), new THREE.MeshBasicMaterial({ color: 0x1d262c })); // (stops short of the opening's clinic set at x 60)
+      out.rotation.x = -Math.PI / 2; out.position.set(-13, -0.02, -6); this.group.add(out);
+      return;
+    }
     const w = 14.6, d = 22.6;
     const tex = floorTexture(); tex.repeat.set(w / 1.2, d / 1.2);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0 }));
@@ -50,47 +125,74 @@ export class Arena {
     const bandMat = new THREE.MeshStandardMaterial({ color: 0x9fc7c0, roughness: 0.6 });
     const band = (x0, x1, z0, z1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), bandMat); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0.004, (z0 + z1) / 2); m.receiveShadow = true; this.group.add(m); };
     band(-6.6, 6.6, -4.6, -4.35); band(-6.6, 6.6, 3.9, 4.15);
-    // dark surround outside the walls (hides the void, costs nothing)
-    // the Supply Hall floor (north of the OR)
-    const sTex = floorTexture(); sTex.repeat.set(6.2 / 1.2, 6.8 / 1.2);
-    const sFloor = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 6.8), new THREE.MeshStandardMaterial({ map: sTex, roughness: 0.55, metalness: 0 }));
-    sFloor.rotation.x = -Math.PI / 2; sFloor.position.set(-4.2, 0.001, -14.4); sFloor.receiveShadow = true; this.group.add(sFloor);
     const out = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshBasicMaterial({ color: 0x27323a }));
     out.rotation.x = -Math.PI / 2; out.position.y = -0.02; this.group.add(out);
   }
 
-  buildWalls() {
-    const wallMat = new THREE.MeshStandardMaterial({ color: PAL.wall, roughness: 0.85 });
-    const bandMat = new THREE.MeshStandardMaterial({ color: PAL.band, roughness: 0.8 });
-    const capMat = new THREE.MeshStandardMaterial({ color: PAL.cap, roughness: 0.7 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: PAL.glass, roughness: 0.15, metalness: 0, transparent: true, opacity: 0.28, depthWrite: false });
-    const frameMat = new THREE.MeshStandardMaterial({ color: PAL.frame, roughness: 0.6 });
-    for (const [x0, x1, z0, z1, h, style] of LAYOUT.walls) {
-      const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
-      if (style === 'glass') {
-        const base = new THREE.Mesh(new RoundedBoxGeometry(w, 0.75, d + 0.06, 2, 0.04), wallMat);
-        base.position.set(cx, 0.375, cz); base.castShadow = base.receiveShadow = true; this.group.add(base);
-        const glass = new THREE.Mesh(new THREE.BoxGeometry(w - 0.1, h - 0.8, 0.03), glassMat);
-        glass.position.set(cx, 0.75 + (h - 0.8) / 2, cz); this.group.add(glass);
-        const top = new THREE.Mesh(new RoundedBoxGeometry(w, 0.06, 0.1, 2, 0.025), frameMat);
-        top.position.set(cx, h, cz); this.group.add(top);
-        const n = Math.max(1, Math.round(w / 1.6));
-        for (let i = 0; i <= n; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.06, h - 0.75, 0.08), frameMat); p.position.set(x0 + (w * i) / n, 0.75 + (h - 0.75) / 2, cz); this.group.add(p); }
-        continue;
-      }
-      const m = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(0.06, d / 2.2)), wallMat);
-      m.position.set(cx, h / 2, cz); m.castShadow = style === 'full'; m.receiveShadow = true;
-      this.group.add(m);
-      // teal wainscot band and a soft cap
+  wallMats() {
+    if (!this._wm) this._wm = {
+      wall: new THREE.MeshStandardMaterial({ color: PAL.wall, roughness: 0.85 }), band: new THREE.MeshStandardMaterial({ color: PAL.band, roughness: 0.8 }),
+      cap: new THREE.MeshStandardMaterial({ color: PAL.cap, roughness: 0.7 }), frame: new THREE.MeshStandardMaterial({ color: PAL.frame, roughness: 0.6 }),
+      glass: new THREE.MeshStandardMaterial({ color: PAL.glass, roughness: 0.15, metalness: 0, transparent: true, opacity: 0.28, depthWrite: false }),
+    };
+    return this._wm;
+  }
+
+  // one wall: body, teal wainscot band and a soft cap (as its own group when it can be cut away)
+  addWall(x0, x1, z0, z1, h, style, y0 = 0) {
+    const M = this.wallMats();
+    const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    const g = new THREE.Group(); this.group.add(g);
+    if (style === 'glass') {
+      const base = new THREE.Mesh(new RoundedBoxGeometry(w, 0.75, d + 0.06, 2, 0.04), M.wall);
+      base.position.set(cx, 0.375, cz); base.castShadow = base.receiveShadow = true; g.add(base);
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(w - 0.1, h - 0.8, 0.03), M.glass);
+      glass.position.set(cx, 0.75 + (h - 0.8) / 2, cz); g.add(glass);
+      const top = new THREE.Mesh(new RoundedBoxGeometry(w, 0.06, 0.1, 2, 0.025), M.frame);
+      top.position.set(cx, h, cz); g.add(top);
+      const n = Math.max(1, Math.round(w / 1.6));
+      for (let i = 0; i <= n; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.06, h - 0.75, 0.08), M.frame); p.position.set(x0 + (w * i) / n, 0.75 + (h - 0.75) / 2, cz); g.add(p); }
+      return g;
+    }
+    if (this.f3) {
+      const part = (geo, x, y, z, hex) => { const q = geo.toNonIndexed(); q.translate(x, y, z); const c = new THREE.Color(hex), n = q.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } q.setAttribute('color', new THREE.BufferAttribute(a, 3)); q.deleteAttribute('uv'); return q; };
+      const parts = [part(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), cx, y0 + (h - y0) / 2, cz, PAL.wall)];
+      if (!y0) { const bh = Math.min(0.32, h * 0.35); parts.push(part(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), cx, bh / 2 + 0.06, cz, PAL.band)); }
+      parts.push(part(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), cx, h, cz, PAL.cap));
+      if (!this._wallVC) this._wallVC = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82 });
+      const m = new THREE.Mesh(mergeGeometries(parts, false), this._wallVC); m.receiveShadow = true; g.add(m);
+      return g;
+    }
+    const m = new THREE.Mesh(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), M.wall);
+    m.position.set(cx, y0 + (h - y0) / 2, cz); m.castShadow = style === 'full' && !this.f3; m.receiveShadow = true;
+    g.add(m);
+    if (!y0) { // teal wainscot band
       const bh = Math.min(0.32, h * 0.35);
-      const bandM = new THREE.Mesh(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), bandMat);
-      bandM.position.set(cx, bh / 2 + 0.06, cz); this.group.add(bandM);
-      const cap = new THREE.Mesh(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), capMat);
-      cap.position.set(cx, h, cz); this.group.add(cap);
+      const bandM = new THREE.Mesh(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), M.band);
+      bandM.position.set(cx, bh / 2 + 0.06, cz); g.add(bandM);
+    }
+    const cap = new THREE.Mesh(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), M.cap);
+    cap.position.set(cx, h, cz); g.add(cap);
+    return g;
+  }
+
+  buildWalls() {
+    for (const [x0, x1, z0, z1, h, style] of LAYOUT.walls) {
+      const g = this.addWall(x0, x1, z0, z1, h, style);
+      if (this.f3) this.walls.push({ group: g, box: { minX: x0, maxX: x1, minZ: z0, maxZ: z1 }, h, k: 1, target: 1, attach: [] });
+    }
+    if (!this.f3) return;
+    // lintels over the open doorways (signs and the cut-away read like real walls)
+    for (const d of LAYOUT.doors) {
+      if (d.kind !== 'open') continue;
+      const [a, b, c, e] = doorBox(d);
+      const g = this.addWall(a, b, c, e, 2.7, 'full', 2.48);
+      this.walls.push({ group: g, box: { minX: a, maxX: b, minZ: c, maxZ: e }, h: 2.7, k: 1, target: 1, attach: [], lintel: true });
     }
   }
 
   buildDoors() {
+    if (this.f3) { this.buildOpenFrames(); return; } // the kit doors load with the props
     const darkMat = new THREE.MeshBasicMaterial({ color: 0x1a2328 });
     const frameMat = new THREE.MeshStandardMaterial({ color: 0x6e9fa3, roughness: 0.6 });
     const leafMat = new THREE.MeshStandardMaterial({ color: 0x7fb0b3, roughness: 0.55 });
@@ -123,43 +225,61 @@ export class Arena {
     }
   }
 
+  // floor 3's open doorways: a teal frame (jambs and head), cut away with its wall
+  buildOpenFrames() {
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x6e9fa3, roughness: 0.6 });
+    for (const d of LAYOUT.doors) {
+      if (d.kind !== 'open') continue;
+      const g = new THREE.Group(); g.position.set(d.x, 0, d.z); g.rotation.y = d.axis === 'z' ? Math.PI / 2 : 0;
+      for (const sx of [-1, 1]) { const p = new THREE.Mesh(new RoundedBoxGeometry(0.1, 2.45, 0.38, 2, 0.03), frameMat); p.position.set((sx * (d.width - 0.1)) / 2, 1.225, 0); p.castShadow = true; g.add(p); }
+      const head = new THREE.Mesh(new RoundedBoxGeometry(d.width + 0.1, 0.12, 0.38, 2, 0.03), frameMat); head.position.set(0, 2.43, 0); g.add(head);
+      this.group.add(g);
+      this.walls.push({ group: g, box: { minX: d.x - 0.2, maxX: d.x + 0.2, minZ: d.z - 0.2, maxZ: d.z + 0.2 }, h: 2.5, k: 1, target: 1, attach: [], frame: true, door: d });
+    }
+  }
+
   buildLights(renderer) {
     const s = this.scene;
     // soft image-based fill so matte sculpted materials read with gentle shading in every direction
     if (renderer) { const pm = new THREE.PMREMGenerator(renderer); s.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; s.environmentIntensity = 0.32; pm.dispose(); }
-    const hemi = new THREE.HemisphereLight(0xfff4e3, 0x7c9a96, 0.85); s.add(hemi); this.hemi = hemi;
-    const sun = new THREE.DirectionalLight(0xfff1dc, 1.45);
+    const hemi = new THREE.HemisphereLight(0xfff4e3, 0x7c9a96, this.f3 ? 0.8 : 0.85); s.add(hemi); this.hemi = hemi;
+    const sun = new THREE.DirectionalLight(0xfff1dc, this.f3 ? 1.35 : 1.45);
     sun.position.set(-6, 14, 7); sun.target.position.set(0, 0, 0);
     s.add(sun, sun.target);
     if (this.quality !== 'low') {
       sun.castShadow = true;
       sun.shadow.mapSize.set(this.quality === 'high' ? 2048 : 1024, this.quality === 'high' ? 2048 : 1024);
       const c = sun.shadow.camera; c.left = -9; c.right = 9; c.top = 13; c.bottom = -13; c.near = 1; c.far = 40;
+      if (this.f3) { c.left = -13; c.right = 13; c.top = 13; c.bottom = -13; }
       sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02; sun.shadow.radius = 3;
     }
     this.sun = sun;
-    // selective amber emergency light at the doors (the hall itself stays readable)
+    // selective amber emergency light (the rooms themselves stay readable)
     if (this.quality !== 'low') {
-      for (const d of LAYOUT.doors) {
-        const l = new THREE.PointLight(PAL.amber, 3.2, 5.5, 1.6);
-        l.position.set(d.spawn.x, 2.2, d.spawn.z);
+      const spots = this.f3 ? LAYOUT.lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
+      for (const p of spots) {
+        const l = new THREE.PointLight(PAL.amber, this.f3 ? 2.6 : 3.2, this.f3 ? 6.5 : 5.5, 1.6);
+        l.position.set(p.x, p.y, p.z);
         s.add(l); this.lights.push(l);
       }
     }
   }
 
+  // ---- props (and, on floor 3, the kit doors, the lift, signs and pickups) ----
   async loadProps(loader, onProgress) {
     const cache = new Map();
+    const get = (m) => { if (!cache.has(m)) cache.set(m, loader.loadAsync('../' + m)); return cache.get(m); };
     let done = 0;
+    const total = LAYOUT.props.length + (this.f3 ? 4 : 0);
     const jobs = LAYOUT.props.map(async (p) => {
-      if (!cache.has(p.m)) cache.set(p.m, loader.loadAsync('../' + p.m));
-      const gltf = await cache.get(p.m);
+      if (p.kind) { this.procProp(p); onProgress?.(++done / total); return; }
+      const gltf = await get(p.m);
       const obj = gltf.scene.clone(true);
       obj.rotation.y = (p.rot * Math.PI) / 180;
-      const holder = new THREE.Group(); holder.add(obj);
+      const holder = new THREE.Group(); holder.add(obj); holder.userData.prop = true;
       holder.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(obj);
-      // centre on the footprint, sit on the floor; optionally fit to the authored footprint
+      // centre on the footprint, sit on the floor (or at y); optionally fit to the authored footprint
       const size = box.getSize(new THREE.Vector3());
       if (p.fit) {
         const k = Math.min(p.fp[0] / size.x, p.fp[1] / size.z);
@@ -167,12 +287,279 @@ export class Arena {
       }
       const ctr = box.getCenter(new THREE.Vector3());
       obj.position.x -= ctr.x; obj.position.z -= ctr.z; obj.position.y -= box.min.y;
-      holder.position.set(p.x, 0, p.z);
-      obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      holder.position.set(p.x, p.y || 0, p.z);
+      if (p.wall) { // the back against the wall face
+        const sz = box.getSize(new THREE.Vector3());
+        if (p.wall === 's') holder.position.z = p.z + sz.z / 2 + 0.005; else if (p.wall === 'n') holder.position.z = p.z - sz.z / 2 - 0.005;
+        else if (p.wall === 'e') holder.position.x = p.x + sz.x / 2 + 0.005; else holder.position.x = p.x - sz.x / 2 - 0.005;
+        this.attachToWall(holder, p.x, p.z, p.wall, (p.y || 0) + sz.y); holder.userData.keep = true;
+      }
+      obj.traverse((o) => { if (o.isMesh) { o.castShadow = !p.wall; o.receiveShadow = true; } });
+      if (p.name) holder.name = p.name;
       this.group.add(holder);
       p._actual = box.getSize(new THREE.Vector3());
-      onProgress?.(++done / LAYOUT.props.length);
+      onProgress?.(++done / total);
     });
+    if (this.f3) {
+      jobs.push(this.loadKits(get).then(() => onProgress?.(++done / total)));
+      jobs.push(this.loadPickups(get).then(() => onProgress?.(++done / total)));
+      this.buildSigns(); done += 2;
+    }
     await Promise.all(jobs);
+    if (this.f3) this.mergeRooms();
+  }
+
+  // Floor 3: each room's static props become one mesh per material (draw calls: one per material per room, not one per
+  // part per prop). The operating room's props stay separate: the opening stages them individually.
+  mergeRooms() {
+    const rooms = new Map();
+    for (const h of [...this.group.children]) {
+      if (!h.userData.prop || h.userData.keep) continue;
+      const id = roomAt(h.position.x, h.position.z);
+      if (!id || id === 'or') continue;
+      if (!rooms.has(id)) rooms.set(id, []);
+      rooms.get(id).push(h);
+    }
+    for (const [id, hs] of rooms) {
+      const g = new THREE.Group(); g.name = 'room:' + id;
+      for (const { geometry, material } of mergeStatic(hs)) { const m = new THREE.Mesh(geometry, material); m.castShadow = m.receiveShadow = true; g.add(m); }
+      for (const h of hs) this.group.remove(h);
+      this.group.add(g);
+    }
+  }
+
+  // procedural maintenance dressing (the kit has none): a workbench with tools, pipework along a wall, hazard striping
+  procProp(p) {
+    if (p.kind === 'box') return this.boxProp(p);
+    const g = new THREE.Group(); g.position.set(p.x, 0, p.z); g.userData.prop = true; this.group.add(g);
+    const mat = (c, r = 0.6, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+    const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
+    if (p.kind === 'bench') {
+      const [w, d, h] = p.size, top = mat(p.color, 0.75), steel = mat(0x5d666a, 0.45, 0.5);
+      add(new RoundedBoxGeometry(w, 0.06, d, 2, 0.02), top, 0, h - 0.03, 0);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(new THREE.BoxGeometry(0.05, h - 0.06, 0.05), steel, sx * (w / 2 - 0.06), (h - 0.06) / 2, sz * (d / 2 - 0.06));
+      add(new THREE.BoxGeometry(w - 0.12, 0.03, d - 0.12), steel, 0, 0.18, 0);
+      add(new RoundedBoxGeometry(0.42, 0.16, 0.2, 2, 0.02), mat(0xc9483f, 0.5), -0.5, h + 0.08, 0.05); // toolbox
+      add(new THREE.CylinderGeometry(0.035, 0.035, 0.32, 10), mat(0xf2b134, 0.5), 0.1, h + 0.04, 0.12, 0).rotation.z = Math.PI / 2; // a torch
+      add(new THREE.BoxGeometry(0.28, 0.02, 0.06), steel, 0.45, h + 0.01, -0.1, 0.4); // a spanner
+      add(new THREE.BoxGeometry(0.22, 0.12, 0.16), mat(0x3d4549, 0.4), 0.62, h + 0.06, 0.12); // a meter
+    } else if (p.kind === 'pipes') {
+      const pm = mat(0x9aa4a8, 0.4, 0.55), rm = mat(0xc9483f, 0.5);
+      for (const [dy, r, m] of [[0, 0.06, pm], [0.16, 0.04, rm], [-0.14, 0.035, pm]]) add(new THREE.CylinderGeometry(r, r, p.len, 12), m, 0, p.y + dy, 0.12, 0).rotation.z = Math.PI / 2;
+      for (let i = 0; i <= 4; i++) add(new THREE.BoxGeometry(0.04, 0.4, 0.14), mat(0x6c7478, 0.5), -p.len / 2 + (p.len * i) / 4, p.y, 0.06);
+      this.attachToWall(g, p.x, p.z, 's', p.y + 0.2); g.userData.keep = true;
+    } else if (p.kind === 'hazard') {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d');
+      x.fillStyle = '#f2b134'; x.fillRect(0, 0, 256, 128); x.fillStyle = '#23292c'; for (let i = -8; i < 16; i++) { x.beginPath(); x.moveTo(i * 32, 0); x.lineTo(i * 32 + 16, 0); x.lineTo(i * 32 - 48, 128); x.lineTo(i * 32 - 64, 128); x.fill(); }
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+      const [w, d] = p.size, o = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: t, roughness: 0.7, transparent: true, opacity: 0.85 }));
+      o.rotation.x = -Math.PI / 2; o.position.y = 0.006; o.receiveShadow = true; g.add(o);
+    }
+  }
+
+  boxProp(p) { // procedural electrical cabinets (no kit asset): a body with vents and a warning stripe
+    const [w, d, h] = p.size, g = new THREE.Group(); g.position.set(p.x, 0, p.z); g.userData.prop = true;
+    const body = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.03), new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.55, metalness: 0.25 }));
+    body.position.y = h / 2; body.castShadow = body.receiveShadow = true; g.add(body);
+    const vent = new THREE.MeshStandardMaterial({ color: 0x4a5356, roughness: 0.7 });
+    for (let i = 0; i < 4; i++) { const v = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 0.03, 0.01), vent); v.position.set(0, h * 0.75 + i * 0.06, d / 2 + 0.002); g.add(v); }
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 0.08, 0.01), new THREE.MeshStandardMaterial({ color: 0xf2b134, roughness: 0.5 }));
+    stripe.position.set(0, h * 0.45, d / 2 + 0.002); g.add(stripe);
+    const led = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.01), new THREE.MeshStandardMaterial({ color: 0x3a1a10, emissive: 0xff5a2a, emissiveIntensity: 1.6 }));
+    led.position.set(w * 0.3, h * 0.62, d / 2 + 0.004); g.add(led);
+    g.rotation.y = FACE_ROT[p.face || 's']; // size: [front width, depth, height]; the front looks toward face
+    this.group.add(g);
+  }
+
+  // ---- floor 3: kit doors (shut, braced, barred), the lift, the reset panel and the status lights ----
+  async loadKits(get) {
+    const [doorG, liftG, resetG, faultG, readyG] = await Promise.all(['zombie/assets/kit/Hospital_Braced_DoubleDoor.glb', 'zombie/assets/kit/Hospital_Elevator_Outbreak.glb',
+      'zombie/assets/kit/Lift_Reset.glb', 'zombie/assets/kit/status_amber_fault.glb', 'zombie/assets/kit/status_green_ready.glb'].map(get));
+    const own = (root) => { root.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.castShadow = true; o.receiveShadow = true; } }); return root; };
+    for (const d of LAYOUT.doors) {
+      if (d.kind === 'open') continue;
+      if (d.kind === 'lift') {
+        const root = own(liftG.scene.clone(true)); root.position.set(LIFT.x, 0, LIFT.z); root.rotation.y = LIFT.yaw;
+        const roof = root.getObjectByName('Cab_Roof'); if (roof) roof.visible = false; // a cut-away cab (the camera looks down into it)
+        this.group.add(root);
+        const mixer = new THREE.AnimationMixer(root), open = mixer.clipAction(THREE.AnimationClip.findByName(liftG.animations, 'Doors_Open'));
+        open.play(); open.paused = true; open.time = 0; mixer.update(0);
+        this.doorKits.lift = { root, mixer, open, last: -1, rect: { minX: 6.9, maxX: 10.7, minZ: LIFT.z - 2.64, maxZ: LIFT.z + 2.64 } };
+        this.cutable(root, this.doorKits.lift.rect, 1.5);
+        continue;
+      }
+      if (d.kind === 'closed') { // a shut door, no brace: one merged mesh per material (it never moves), its own materials
+        if (!this.shutTemplate) this.shutTemplate = mergeStatic(doorG.scene, (o) => o.name !== 'Brace_REMOVABLE' && !isUnder(o, 'Brace_REMOVABLE'));
+        const root = new THREE.Group(); root.position.set(d.x, 0, d.z); root.rotation.y = FACE_ROT[d.face];
+        for (const m of this.shutTemplate) { const o = new THREE.Mesh(m.geometry, m.material.clone()); o.castShadow = o.receiveShadow = true; root.add(o); }
+        this.group.add(root);
+        const [a, b, c, e] = doorBox(d);
+        this.cutable(root, { minX: a, maxX: b, minZ: c, maxZ: e });
+        continue;
+      }
+      const root = own(doorG.scene.clone(true)); root.position.set(d.x, 0, d.z); root.rotation.y = FACE_ROT[d.face];
+      this.group.add(root);
+      const kit = { root, kind: d.kind, last: -1, lastB: -1, shake: 0, L: root.getObjectByName('Door_L_HINGE'), R: root.getObjectByName('Door_R_HINGE') };
+      {
+        kit.mixer = new THREE.AnimationMixer(root);
+        kit.brace = kit.mixer.clipAction(THREE.AnimationClip.findByName(doorG.animations, 'Brace_Remove'));
+        kit.open = kit.mixer.clipAction(THREE.AnimationClip.findByName(doorG.animations, 'Doors_Open'));
+        for (const a of [kit.brace, kit.open]) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.play(); a.paused = true; a.time = 0; }
+        kit.mixer.update(0);
+        this.doorKits[d.id] = kit;
+      }
+      const [a, b, c, e] = doorBox(d);
+      this.cutable(root, { minX: a, maxX: b, minZ: c, maxZ: e });
+    }
+    // the lift-reset panel on Maintenance's north wall, and the lift's FAULT / READY light by its call panel
+    const panel = own(resetG.scene.clone(true)); panel.position.set(-29.5, 0.95, -22.75); panel.rotation.y = 0; this.group.add(panel);
+    const pm = new THREE.AnimationMixer(panel);
+    this.reset = { root: panel, mixer: pm, up: pm.clipAction(THREE.AnimationClip.findByName(resetG.animations, 'Reset_Handle_Up')), fault: panel.getObjectByName('Status_FAULT'), ready: panel.getObjectByName('Status_READY'), t: -1 };
+    this.reset.up.setLoop(THREE.LoopOnce, 1); this.reset.up.clampWhenFinished = true;
+    for (const n of [this.reset.fault, this.reset.ready]) if (n) n.scale.setScalar(1);
+    if (this.reset.ready) this.reset.ready.visible = false;
+    this.attachToWall(panel, -29.5, -22.75, 's', 1.6);
+    const f = own(faultG.scene.clone(true)), r = own(readyG.scene.clone(true));
+    for (const o of [f, r]) { o.position.set(6.99, 1.62, LIFT.z + 2.95); o.rotation.y = FACE_ROT.w; this.group.add(o); }
+    r.visible = false; this.liftStatus = { fault: f, ready: r };
+  }
+
+  // the pickups that belong in this floor: the guard's pistol beside him, his open bag (spare rounds), the first-aid case
+  async loadPickups(get) {
+    this.pickupViz = {};
+    const ring = (x, z) => { const m = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.42, 36), new THREE.MeshBasicMaterial({ color: 0xfff1b8, transparent: true, opacity: 0.55, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.02, z); m.renderOrder = 2; this.group.add(m); return m; };
+    const [pistolG, bagG, magG, aidG] = await Promise.all(['zombie/assets/pistol.glb', 'zombie/assets/kit/guard_duffel_open.glb', 'zombie/assets/kit/pistol_magazine_loaded.glb', 'zombie/assets/kit/first_aid_case_closed.glb'].map(get));
+    const P = Object.fromEntries(PICKUPS.map((q) => [q.id, q]));
+    const pistol = pistolG.scene.clone(true); pistol.position.set(P.pistol.x + 0.1, 0.03, P.pistol.z); pistol.rotation.set(0, 0.7, Math.PI / 2); pistol.scale.setScalar(1); this.group.add(pistol);
+    const bag = bagG.scene.clone(true); bag.position.set(P.ammo.x, 0, P.ammo.z); bag.rotation.y = -0.3; this.group.add(bag);
+    const mags = new THREE.Group(); for (let i = 0; i < 2; i++) { const m = magG.scene.clone(true); m.position.set(0.36 + i * 0.07, 0.004, -0.06 + i * 0.03); m.rotation.set(-Math.PI / 2, 0, 0.3 * i); mags.add(m); } mags.position.copy(bag.position); mags.rotation.y = bag.rotation.y; this.group.add(mags);
+    const aid = aidG.scene.clone(true); aid.position.set(P.health.x, 0.81, P.health.z); aid.rotation.y = -Math.PI / 2; this.group.add(aid);
+    for (const o of [pistol, bag, mags, aid]) o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+    this.pickupViz = { pistol: [pistol, ring(P.pistol.x, P.pistol.z)], ammo: [mags, ring(P.ammo.x, P.ammo.z)], health: [aid, ring(P.health.x, P.health.z)], bat: [ring(P.bat.x, P.bat.z)] };
+  }
+  takePickup(id) { for (const o of this.pickupViz?.[id] || []) o.visible = false; }
+  resetPickups(taken = []) { for (const [id, list] of Object.entries(this.pickupViz || {})) for (const o of list) o.visible = !taken.includes(id); }
+
+  buildSigns() {
+    const add = (mat, x, y, z, face, w, hk) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * hk), mat);
+      const n = { s: [0, 1], n: [0, -1], e: [1, 0], w: [-1, 0] }[face];
+      m.position.set(x + n[0] * 0.012, y, z + n[1] * 0.012); m.rotation.y = FACE_ROT[face];
+      this.group.add(m); this.attachToWall(m, x, z, face, y + (w * hk) / 2);
+      return m;
+    };
+    for (const s of SIGNS) add(new THREE.MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024);
+    const tl = new THREE.TextureLoader();
+    for (const s of ROOM_SIGNS) { const t = tl.load(`assets/opening/signs/${s.id}.png`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; add(new THREE.MeshBasicMaterial({ map: t }), s.x, s.y, s.z, s.face, s.w, 0.3); }
+  }
+
+  // wall-mounted things belong to the wall they hang on: they hide while that wall is cut away below them
+  attachToWall(obj, x, z, face, top) {
+    if (!this.f3) return;
+    let best = null, bd = 0.35;
+    for (const w of this.walls) {
+      if (w.frame) continue;
+      const b = w.box;
+      const along = face === 's' || face === 'n' ? (x >= b.minX - 0.05 && x <= b.maxX + 0.05) : (z >= b.minZ - 0.05 && z <= b.maxZ + 0.05);
+      if (!along) continue;
+      const dist = face === 's' ? Math.abs(z - b.maxZ) : face === 'n' ? Math.abs(z - b.minZ) : face === 'e' ? Math.abs(x - b.maxX) : Math.abs(x - b.minX);
+      if (dist < bd) { bd = dist; best = w; }
+    }
+    if (best && top > LOW_H + 0.05) best.attach.push(obj);
+  }
+
+  // a kit door (or the lift) standing between the camera and Yola is cut flat at `low` metres like the walls either side
+  // of it (a clipping plane per object; high enough that a door's brace or bar still shows). The planes are attached on
+  // the first gameplay frame: compiling clipped programs during the opening's warm-up render broke three's uniforms.
+  cutable(root, rect, low = 1.45) { this.cutObjs.push({ root, rect, low, k: 1, target: 1, plane: null }); }
+  armCuts() {
+    this.renderer.localClippingEnabled = true;
+    for (const c of this.cutObjs) {
+      c.plane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 50);
+      c.root.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) { m.clippingPlanes = [c.plane]; m.clipShadows = true; m.needsUpdate = true; } });
+    }
+    this.cutsArmed = true;
+  }
+
+  // the opening's operating-room scenes: cut the walls for a viewpoint at once (no kit-door clipping before play starts)
+  cutWalls(px, pz, camYaw) {
+    if (!this.f3) return;
+    const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
+    for (const w of this.walls) {
+      const b = w.box, nx = Math.max(b.minX, Math.min(px, b.maxX)), nz = Math.max(b.minZ, Math.min(pz, b.maxZ));
+      w.target = w.k = (nx - px) * fx + (nz - pz) * fz < -0.3 ? 0 : 1;
+      const low = w.lintel ? 0 : LOW_H / w.h;
+      w.group.scale.y = low + (1 - low) * w.k; if (w.lintel) w.group.visible = w.k > 0.5;
+      for (const at of w.attach) at.visible = w.k > 0.97;
+    }
+  }
+
+  // ---- per frame (floor 3): the cut-away, the shadow window, the doors and the lift from the level state ----
+  update(dt, px, pz, camYaw, level) {
+    if (!this.f3) return;
+    const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw); // screen-up on the floor
+    const side = (b) => { // signed screen-up distance of a rectangle's nearest point from Yola (negative: camera side)
+      const nx = Math.max(b.minX, Math.min(px, b.maxX)), nz = Math.max(b.minZ, Math.min(pz, b.maxZ));
+      return (nx - px) * fx + (nz - pz) * fz;
+    };
+    const rate = Math.min(1, dt * 7);
+    for (const w of this.walls) {
+      const s = side(w.box);
+      w.target = s < -0.3 ? 0 : 1;
+      if (w.k !== w.target) {
+        w.k += (w.target - w.k) * rate; if (Math.abs(w.k - w.target) < 0.01) w.k = w.target;
+        const low = w.frame ? LOW_H / w.h : w.lintel ? 0 : LOW_H / w.h;
+        w.group.scale.y = low + (1 - low) * w.k;
+        if (w.lintel) w.group.visible = w.k > 0.5;
+        for (const a of w.attach) a.visible = w.k > 0.97;
+      }
+    }
+    if (!this.cutsArmed) this.armCuts();
+    for (const c of this.cutObjs) {
+      c.target = side(c.rect) < -0.3 ? 0 : 1;
+      if (c.k !== c.target) { c.k += (c.target - c.k) * rate; if (Math.abs(c.k - c.target) < 0.01) c.k = c.target; }
+      c.plane.constant = c.k >= 1 ? 50 : c.low + (3.1 - c.low) * c.k;
+    }
+    // the sun's shadow window follows Yola in steps (the shadow map is redrawn only when it moves or a door moves)
+    if (this.sun && this.sun.castShadow) {
+      const sx = Math.round(px / 4) * 4, sz = Math.round(pz / 4) * 4;
+      if (sx !== this.shX || sz !== this.shZ) {
+        this.shX = sx; this.shZ = sz;
+        this.sun.target.position.set(sx, 0, sz); this.sun.position.set(sx - 6, 14, sz + 7); this.sun.target.updateMatrixWorld(true);
+        this.renderer.shadowMap.needsUpdate = true;
+      }
+    }
+    if (!level) return;
+    let moved = false;
+    for (const key of ['brace', 'ctbar']) {
+      const k = this.doorKits[key], d = level.doors[key]; if (!k || !d) continue;
+      if (d.brace !== k.lastB || d.open !== k.last) {
+        k.lastB = d.brace; k.last = d.open; moved = true;
+        k.brace.time = d.brace * BRACE_TIME * 0.999; k.open.time = d.open * DOOR_OPEN_TIME * 0.999;
+        k.mixer.update(0);
+        if (d.open >= 1 && k.root.getObjectByName('Brace_REMOVABLE')) k.root.getObjectByName('Brace_REMOVABLE').visible = false; // parked out of sight once the way is open
+      }
+      if (k.shake > 0) { k.shake = Math.max(0, k.shake - dt); const a = Math.sin(k.shake * 60) * 0.025 * (k.shake / 0.35); if (k.L) k.L.rotation.z = a; if (k.R) k.R.rotation.z = -a; if (!k.shake) { k.L && (k.L.rotation.z = 0); k.R && (k.R.rotation.z = 0); } }
+    }
+    const L = this.doorKits.lift;
+    if (L && level.lift.open !== L.last) { L.last = level.lift.open; L.open.time = level.lift.open * 0.999; L.mixer.update(0); moved = true; }
+    if (this.reset && this.reset.t >= 0) { this.reset.t += dt; this.reset.mixer.update(dt); if (this.reset.t > 0.7) this.reset.t = -1; }
+    if (moved) this.renderer.shadowMap.needsUpdate = true;
+  }
+  // the brace rattles in its receivers: the residents on the other side pushing
+  bang(door) { const k = this.doorKits[door]; if (k && !(k.last > 0)) k.shake = 0.35; }
+  liftPowered(on) {
+    const r = this.reset; if (!r) return;
+    if (on) { r.up.reset(); r.up.play(); r.t = 0; } else { r.up.stop(); r.mixer.update(0); }
+    if (r.fault) r.fault.visible = !on; if (r.ready) r.ready.visible = on;
+    if (this.liftStatus) { this.liftStatus.fault.visible = !on; this.liftStatus.ready.visible = on; }
+  }
+  // restore every door and the lift to a level's state (a fresh floor, a retry)
+  syncLevel(level) {
+    if (!this.f3) return;
+    for (const k of Object.values(this.doorKits)) { k.last = -1; k.lastB = -1; const b = k.root.getObjectByName('Brace_REMOVABLE'); if (b && k.kind !== 'closed') b.visible = true; }
+    this.liftPowered(!!level?.flags.lift_power_restored);
+    if (level?.flags.lift_power_restored && this.reset) { this.reset.up.reset(); this.reset.up.play(); this.reset.up.time = this.reset.up.getClip().duration; this.reset.mixer.update(0); this.reset.t = -1; }
+    this.resetPickups(level ? [...level.taken] : []);
   }
 }

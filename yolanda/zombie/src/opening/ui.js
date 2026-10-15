@@ -63,6 +63,27 @@ const CSS = `
 #op .card .ok { font-weight: 750; color: #2a8f92; padding: 6px 2px; }
 #op canvas.ecg { position: absolute; left: 6%; right: 6%; top: 22%; width: 88%; height: 90px; opacity: 0; transition: opacity .4s; }
 #op canvas.ecg.show { opacity: 1; }
+#op .boss { position: absolute; inset: 0; overflow: hidden; opacity: 0; transition: opacity .25s ease; z-index: 4; }
+#op .boss.show { opacity: 1; transition: none; }
+#op .boss .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+#op .boss.show .flash { animation: bossFlash .32s ease-out; }
+#op .boss.soft .flash { display: none; }
+#op .boss .lines { position: absolute; inset: -20%; background: repeating-conic-gradient(from 0deg at 50% 38%, rgba(255,255,255,.0) 0deg 7deg, rgba(255,255,255,.11) 7deg 9deg); opacity: 0; }
+#op .boss.show .lines { animation: bossLines 2.8s ease-out forwards; }
+#op .boss .ink { position: absolute; left: -12%; right: -12%; top: 57%; height: 21vh; background: #14191c; transform: rotate(-7deg) scaleX(0); transform-origin: 0 50%; box-shadow: 0 -10px 0 #e07a5f, 0 10px 0 #2f9fa0; }
+#op .boss.show .ink { animation: bossInk .24s cubic-bezier(.2,.9,.3,1.15) .05s forwards; }
+#op .boss .name { position: absolute; left: 5vw; top: 55%; margin: 0; font: italic 900 clamp(84px, 30vw, 230px)/.86 Impact, 'Arial Black', 'Helvetica Neue', system-ui, sans-serif; color: #fff8ea; letter-spacing: .02em;
+  -webkit-text-stroke: clamp(3px, .9vw, 6px) #14191c; paint-order: stroke fill; text-shadow: .06em .06em 0 #e07a5f, .1em .1em 0 #14191c; transform: rotate(-7deg) scale(2.8); opacity: 0; transform-origin: 30% 50%; }
+#op .boss.show .name { animation: bossSlam .2s cubic-bezier(.2,1.5,.4,1) .12s forwards, bossDrift 2.6s linear .32s forwards; }
+#op .boss .tagline { position: absolute; right: 4vw; top: calc(55% + clamp(80px, 27vw, 205px)); transform: rotate(-7deg) translateX(110%); background: #2f9fa0; color: #fff; padding: 8px 16px 7px; border-radius: 4px;
+  font: 900 clamp(15px, 4.6vw, 26px)/1 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; box-shadow: 5px 5px 0 #14191c; white-space: nowrap; }
+#op .boss.show .tagline { animation: bossTag .28s cubic-bezier(.2,1.2,.4,1) .34s forwards; }
+@keyframes bossFlash { 0% { opacity: .95; } 100% { opacity: 0; } }
+@keyframes bossLines { 0% { opacity: 0; transform: rotate(0deg) scale(1.15); } 15% { opacity: 1; } 100% { opacity: .55; transform: rotate(6deg) scale(1); } }
+@keyframes bossInk { to { transform: rotate(-7deg) scaleX(1); } }
+@keyframes bossSlam { 0% { opacity: 0; transform: rotate(-7deg) scale(2.8); } 100% { opacity: 1; transform: rotate(-7deg) scale(1); } }
+@keyframes bossDrift { from { translate: 0 0; } to { translate: 3vw 0; } }
+@keyframes bossTag { to { transform: rotate(-7deg) translateX(0); } }
 #op .gate { position: absolute; inset: 0; background: linear-gradient(#cfeae6, #f5e6c8); display: none; pointer-events: auto; z-index: 9; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
 #op .gate.show { display: flex; }
 #op .gate h1 { margin: 0 0 4px; font-size: clamp(34px, 10vw, 64px); line-height: 1.02; color: #2a8f92; font-weight: 900; text-shadow: 0 3px 0 #fff8ea; }
@@ -85,14 +106,16 @@ export class OpeningUI {
       <div class="title"><h1></h1><p></p></div>
       <div class="chip"><div></div></div><div class="prev"></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
       <div class="sub"><span></span></div>
+      <div class="boss"><div class="lines"></div><div class="ink"></div><h2 class="name"></h2><div class="tagline"></div><div class="flash"></div></div>
       <div class="card" role="dialog" aria-live="polite"></div>
       <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
-      <div class="gate"><h1>Yola’s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading…</button><button class="skipGate" hidden>Skip intro</button><div class="bar"><i></i></div><div class="small"></div></div>`;
+      <div class="gate"><h1>Yola’s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading…</button><button class="skipGate" hidden>Skip intro</button><button class="skipGate contGate" hidden>Continue from checkpoint</button><div class="bar"><i></i></div><div class="small"></div></div>`;
     document.body.appendChild(el);
     const q = (s) => el.querySelector(s);
     this.fade = q('.fade'); this.vig = q('.vig'); this.dark = q('.dark'); this.ecg = q('canvas.ecg'); this.titleEl = q('.title');
     this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.prevEl = q('.prev'); this.statusEl = q('.status'); this.urgEl = q('.urgency'); this.cardEl = q('.card'); this.gate = q('.gate');
-    this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.skipGateB = q('.skipGate'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
+    this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.skipGateB = q('.skipGate:not(.contGate)'); this.contB = q('.contGate'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
+    this.bossEl = q('.boss');
     this.tags = new Map();
     this.cardResolve = null;
   }
@@ -182,4 +205,15 @@ export class OpeningUI {
     g.stroke();
   }
   showEcg(v) { this.ecg.classList.toggle('show', v); }
+  // the boss-intro card: a freeze frame, a slammed name and a tagline (soft: no white flash, for reduced-flash mode)
+  bossCard(name, tagline, soft = false) {
+    const b = this.bossEl; b.classList.remove('show'); void b.offsetWidth;
+    b.querySelector('.name').textContent = name; b.querySelector('.tagline').textContent = tagline;
+    b.classList.toggle('soft', soft); b.classList.add('show');
+    const view = document.getElementById('view'); if (view) { view.style.transition = 'filter .15s'; view.style.filter = 'contrast(1.22) saturate(1.45) brightness(1.04)'; }
+  }
+  bossOff() {
+    this.bossEl.classList.remove('show');
+    const view = document.getElementById('view'); if (view) { view.style.transition = 'filter .4s'; view.style.filter = ''; }
+  }
 }

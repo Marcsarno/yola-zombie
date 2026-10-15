@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
 import { setMeleePaths, meleeSegment } from './core/weapons.js';
-import { LAYOUT, ROOM1 } from './core/layout.js';
+import { LAYOUT, ROOM1, useLevel, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
@@ -66,6 +66,8 @@ const input = new Input(document.getElementById('touch'), {
 });
 const unlockAudio = () => audio.init();
 addEventListener('pointerdown', unlockAudio, { capture: true });
+addEventListener('touchend', unlockAudio, { capture: true }); // (iPhone counts touchend/click, not touchstart, as the audio gesture)
+addEventListener('click', unlockAudio, { capture: true });
 addEventListener('keydown', unlockAudio, { capture: true });
 
 // ---------- physics (ragdolls, severed pieces): ?physics=custom | rapier | off ----------
@@ -91,7 +93,10 @@ function stepPhysics(dt) {
 
 let arena, yola, sim;
 const zviews = new Map(); const zpool = [[], []];
-let mode = params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
+const storyStart = params.has('intro') || params.has('reveal') || params.has('room1');
+let mode = storyStart ? 'room1' : params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
+useLevel(levelForMode(mode)); // the story's Floor 3, or the combat wing for practice, waves and benchmarks
+let levelSave = store.get('floor3save', null); // the latest Floor 3 checkpoint (retry restores it)
 let paused = false, hitPauseT = 0, acc = 0, last = performance.now(), playerScreen = null;
 const camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new THREE.Vector2() };
 const perf = { frames: [], spikes: 0, t0: performance.now() };
@@ -146,23 +151,29 @@ function cameraPose(x, z, yaw) {
   const cy = THREE.MathUtils.degToRad(tuning.camYaw), fx = -Math.sin(cy), fz = -Math.cos(cy), aspect = camera.aspect, up = aspect < 1 ? 1.4 : 0.6;
   const la = 0.45 * tuning.lookAhead;
   camState.look.set(Math.sin(yaw) * la, Math.cos(yaw) * la);
-  camState.x = THREE.MathUtils.clamp(x + camState.look.x + fx * up, -6.2, 6.2); camState.z = THREE.MathUtils.clamp(z + camState.look.y + fz * up, -9.2, aspect < 1 ? 6.6 : 7.6);
+  const cb = LAYOUT.camBounds;
+  camState.x = cb ? THREE.MathUtils.clamp(x + camState.look.x + fx * up, cb.minX, cb.maxX) : THREE.MathUtils.clamp(x + camState.look.x + fx * up, -6.2, 6.2);
+  camState.z = cb ? THREE.MathUtils.clamp(z + camState.look.y + fz * up, cb.minZ, cb.maxZ) : THREE.MathUtils.clamp(z + camState.look.y + fz * up, -9.2, aspect < 1 ? 6.6 : 7.6);
   camState.vx = camState.vz = 0; camState.trauma = 0;
   updateCamera(1e-4, x, z, yaw, p);
   const pose = { pos: camera.position.clone(), quat: camera.quaternion.clone(), fov: camera.fov };
   p.x = sx; p.z = sz; p.aimYaw = sy;
   return pose;
 }
-function applyRoom1() {
-  restart('room1'); // a fresh Sim: Room 1 mode, three dormant standard zombies, the bat pickup
+function applyRoom1() { levelSave = null; store.set('floor3save', null); return applyLevel(null); }
+// Floor 3 from its start (save null: Room 1, three dormant standard zombies, Yola unarmed) or from a checkpoint
+function applyLevel(save) {
+  restart('room1', benchN, save);
   const p = sim.player, A = ROOM1.player;
-  p.x = p.px = A.x; p.z = p.pz = A.z; p.aimYaw = p.aimTarget = p.pyaw = A.yaw; p.vx = p.vz = 0; p.hp = p.maxHp; p.invuln = 0; p.attackHeld = false; p.recoil = 0;
-  p.setLoadout(['fists']); // unarmed: fists only
+  if (!save) { p.x = A.x; p.z = A.z; p.aimYaw = p.aimTarget = A.yaw; p.hp = p.maxHp; p.setLoadout(['fists']); }
+  p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw; p.vx = p.vz = 0; p.invuln = save ? 1.2 : 0; p.attackHeld = false; p.recoil = 0;
   yola.reset(p.x, p.z, p.aimYaw); yola.setShown(true);
-  cameraPose(p.x, p.z, p.aimYaw); camState.x = camState.x; // the follow camera starts exactly at the pose
+  cameraPose(p.x, p.z, p.aimYaw); // the follow camera starts exactly at the pose
   for (const z of sim.zombies) { z.px = z.x; z.pz = z.z; z.pyaw = z.yaw; }
   input.clearAll(); input.enabled = true; acc = 0; hitPauseT = 0; last = performance.now();
-  hud.setObjective(OBJECTIVES.room1);
+  arena.syncLevel(sim.level);
+  if (sim.level?.taken.has('bat')) opening?.takeBat?.(); else opening?.restoreBat?.();
+  hud.setObjective(OBJECTIVES[sim.level ? sim.level.objective : 'room1'] || '');
   return sim;
 }
 // show the zombies and Yola without stepping the simulation (the reveal, before control is handed over)
@@ -177,7 +188,7 @@ function previewRoom1(dt) {
 // compile everything the hand-off draws (the zombies, Yola's fists) before the timed reveal, with no visible change
 function warmRoom1() {
   const sv = { x: camera.position.x, y: camera.position.y, z: camera.position.z, q: camera.quaternion.clone(), fov: camera.fov };
-  applyRoom1(); yola.setShown(true);
+  applyLevel(null); yola.setShown(true); // (warm-up only: the saved checkpoint is left alone)
   for (let i = 0; i < 3; i++) previewRoom1(1 / 60);
   renderer.render(scene, camera);
   for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); yola.setShown(false);
@@ -191,9 +202,13 @@ function newZombieView(type) {
 }
 
 // ---------- lifecycle ----------
-function restart(newMode = mode, n = benchN) {
+function restart(newMode = mode, n = benchN, save = null) {
+  if (levelForMode(newMode) !== LAYOUT.name) { // the other layout: load it fresh
+    const q = new URLSearchParams(); if (newMode !== 'room1') q.set('mode', newMode); else q.set('room1', '1'); if (newMode === 'bench') q.set('n', n);
+    location.search = q.toString(); return;
+  }
   mode = newMode; benchN = n;
-  sim = new Sim({ tuning, seed: +(params.get('seed') || 1234), mode, benchCount: n });
+  sim = new Sim({ tuning, seed: +(params.get('seed') || 1234), mode, benchCount: n, save });
   window.game.sim = sim;
   for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); }
   zviews.clear();
@@ -222,7 +237,8 @@ function uiAction(a, v) {
   switch (a) {
     case 'pause': if (!sim.player.dead) setPaused(true); break;
     case 'resume': setPaused(false); break;
-    case 'restart': restart(mode); break;
+    case 'restart': if (sim.level) applyLevel(levelSave); else restart(mode); break; // the story level retries from its checkpoint
+    case 'restartLevel': applyRoom1(); break;
     case 'mode': restart(v); break;
     case 'bench': restart('bench', v); break;
     case 'quality': quality = v; store.set('quality', v); location.reload(); break;
@@ -284,7 +300,7 @@ function runFrame(dt, doRender = true) {
     p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;
     for (const z of sim.zombies) { z.px = z.x; z.pz = z.z; z.pyaw = z.yaw; }
     sim.step(inp);
-    if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0 });
+    if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
     acc -= STEP; steps++;
     if (hitPauseT > 0) { acc = 0; break; }
   }
@@ -321,6 +337,9 @@ function runFrame(dt, doRender = true) {
       z.px ??= z.x; z.pz ??= z.z;
     }
     seen.add(z.id);
+    // Floor 3: a dormant zombie far from Yola (another room) is neither drawn nor animated
+    if (sim.level && z.dormant && (z.x - ix) * (z.x - ix) + (z.z - iz) * (z.z - iz) > 15 * 15) { if (v.outer.visible) { v.outer.visible = false; v.blob.visible = false; v.farHidden = true; } continue; }
+    if (v.farHidden) { v.outer.visible = true; v.blob.visible = true; v.farHidden = false; }
     v.update(animDt, z, z.px + (z.x - z.px) * alpha, z.pz + (z.z - z.pz) * alpha, sim.time);
   }
   for (const [id, v] of zviews) if (!seen.has(id)) { v.hide(); zviews.delete(id); zpool[v.type].push(v); }
@@ -330,6 +349,8 @@ function runFrame(dt, doRender = true) {
   if (groanT <= 0) { groanT = 1.6 + Math.random() * 2; const n = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < 9).length; if (n) audio.play('groan', Math.min(1, 0.5 + n * 0.1)); }
 
   fx.update(animDt);
+  arena.update(dt, ix, iz, THREE.MathUtils.degToRad(tuning.camYaw), sim.level);
+  hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
   if (camOverride) applyCamOverride(); else updateCamera(dt, ix, iz, iyaw, p);
   // player screen position (mouse aiming)
   _v.set(ix, 1.0, iz).project(camera);
@@ -379,7 +400,22 @@ function handleEvents() {
         break;
       }
       case 'objective': hud.setObjective(OBJECTIVES[e.id] || ''); audio.play('swap'); break;
-      case 'pickup': audio.play('reloadDone'); opening?.takeBat?.(); hud.flash('reload'); break;
+      case 'pickup': {
+        audio.play(e.kind === 'health' ? 'heal' : 'reloadDone'); hud.flash('reload');
+        if (e.id === 'bat') opening?.takeBat?.(); else arena.takePickup(e.id);
+        hud.toast(e.kind === 'weapon' ? (e.weapon === 'pistol' ? 'Pistol — the guard’s sidearm' : 'Baseball bat') : e.kind === 'ammo' ? 'Spare pistol rounds' : 'First aid: health restored');
+        break;
+      }
+      case 'checkpoint': levelSave = e.save; store.set('floor3save', e.save); break;
+      case 'liftPower': arena.liftPowered(true); audio.play('power'); hud.toast('Lift power restored'); break;
+      case 'unbrace': audio.play('unbrace'); break;
+      case 'doorOpened': audio.play('doorOpen'); break;
+      case 'bang': if (e.near < 11) { audio.play('bang', Math.max(0.25, 1 - e.near / 12)); arena.bang(e.door); if (Math.random() < 0.6) setTimeout(() => audio.play('groan', 0.7), 200); } break;
+      case 'liftDoors': audio.play(e.open ? 'liftDing' : 'liftClose'); break;
+      case 'levelComplete': input.clearAll(); input.enabled = false; store.set('floor3save', null); levelSave = null; hud.levelDone(sim); audio.play('clear'); break;
+      case 'roomEnter': { const r = LAYOUT.rooms?.find((q) => q.id === e.room); if (r && r.id !== 'or') hud.banner(r.name); break; }
+      case 'zombieWake': if (Math.random() < 0.6 && dist(e.id) < 12) audio.play('groan', 0.9); break;
+      case 'dryFire': audio.play('dry'); hud.toast('Out of rounds'); break;
       case 'zombieBump': audio.play('bump', Math.min(1.2, e.speed / 3)); break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
       case 'sever': audio.play('sever'); shake(0.15); break;
@@ -417,11 +453,15 @@ function updateCamera(dt, px, pz, yaw, p) {
   // keep Yola in the lower-middle of a portrait screen (most threats arrive from up-screen)
   const up = aspect < 1 ? 1.4 : 0.6;
   let tx = px + camState.look.x + fx * up, tz = pz + camState.look.y + fz * up;
-  if (Math.abs(tuning.camYaw) < 1) { // straight-on: stop at the side walls
-    const lim = Math.max(0, 7.4 - D * Math.tan(hfov / 2) + 0.8);
-    tx = THREE.MathUtils.clamp(tx, -lim, lim);
-  } else tx = THREE.MathUtils.clamp(tx, -6.2, 6.2);
-  tz = THREE.MathUtils.clamp(tz, -9.2, aspect < 1 ? 6.6 : 7.6);
+  const cb = LAYOUT.camBounds;
+  if (cb) { tx = THREE.MathUtils.clamp(tx, cb.minX, cb.maxX); tz = THREE.MathUtils.clamp(tz, cb.minZ, cb.maxZ); }
+  else {
+    if (Math.abs(tuning.camYaw) < 1) { // straight-on: stop at the side walls
+      const lim = Math.max(0, 7.4 - D * Math.tan(hfov / 2) + 0.8);
+      tx = THREE.MathUtils.clamp(tx, -lim, lim);
+    } else tx = THREE.MathUtils.clamp(tx, -6.2, 6.2);
+    tz = THREE.MathUtils.clamp(tz, -9.2, aspect < 1 ? 6.6 : 7.6);
+  }
   // critically damped follow
   const w = 7, k = w * w, c = 2 * w;
   camState.vx += (k * (tx - camState.x) - c * camState.vx) * dt; camState.vz += (k * (tz - camState.z) - c * camState.vz) * dt;
@@ -553,6 +593,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

@@ -1,6 +1,16 @@
 // Combat sounds, synthesised (same lazy-AudioContext pattern as the hospital game's sound class).
 // Starts on the first user gesture; master volume + mute.
 
+// a 0.1 s silent 8 kHz mono WAV (the iPhone media-session unlock)
+const SILENT_WAV = (() => {
+  const n = 800, b = new Uint8Array(44 + n), v = new DataView(b.buffer), s = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  s(0, 'RIFF'); v.setUint32(4, 36 + n, true); s(8, 'WAVE'); s(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); s(36, 'data'); v.setUint32(40, n, true);
+  b.fill(128, 44);
+  let str = ''; for (const x of b) str += String.fromCharCode(x);
+  return 'data:audio/wav;base64,' + btoa(str);
+})();
+
 export class CombatAudio {
   constructor() {
     this.ctx = null; this.master = null; this.noiseBuf = null;
@@ -17,7 +27,17 @@ export class CombatAudio {
       const d = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+    // iPhone: Web Audio follows the ring/silent switch unless the page is a media-playback session. Asking for
+    // playback and starting a silent looping <audio> element inside the gesture moves it out of the ringer's control.
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch { /* unsupported */ }
+    if (!this.keepAlive) {
+      try {
+        const el = new Audio(SILENT_WAV); el.loop = true; el.setAttribute('playsinline', ''); el.preload = 'auto';
+        const p = el.play(); if (p && p.catch) p.catch(() => { this.keepAlive = null; });
+        this.keepAlive = el;
+      } catch { /* no media element: Web Audio alone */ }
+    }
   }
 
   applyVolume() { if (this.master) this.master.gain.value = this.muted ? 0 : this.volume; }
@@ -57,6 +77,26 @@ export class CombatAudio {
         this.tone(t, 0.12, 60, { f2: 30, gain: 0.6 });
         this.noise(t + 0.03, 0.5, { type: 'bandpass', f: 700, q: 0.6, gain: 0.12, attack: 0.02 });
         break;
+      case 'heal': // a soft rising chime
+        this.tone(t, 0.35, 660, { type: 'triangle', gain: 0.14 }); this.tone(t + 0.1, 0.45, 990, { type: 'triangle', gain: 0.12 }); this.tone(t + 0.2, 0.6, 1320, { type: 'sine', gain: 0.08 });
+        break;
+      case 'power': // a relay clunk, then the hum coming up
+        this.noise(t, 0.12, { type: 'lowpass', f: 900, gain: 0.5 }); this.tone(t, 0.1, 120, { type: 'square', gain: 0.18, f2: 60 });
+        this.tone(t + 0.12, 1.2, 50, { type: 'sawtooth', gain: 0.06, f2: 100, attack: 0.4 }); this.tone(t + 0.5, 0.5, 880, { type: 'sine', gain: 0.08 }); this.tone(t + 0.62, 0.6, 1175, { type: 'sine', gain: 0.07 });
+        break;
+      case 'unbrace': // a steel beam lifted out of its receivers, scraped, set down
+        this.noise(t, 0.3, { type: 'bandpass', f: 2400, q: 3, gain: 0.18 }); this.tone(t + 0.02, 0.4, 330, { type: 'triangle', gain: 0.1, f2: 310 });
+        this.noise(t + 0.9, 0.6, { type: 'bandpass', f: 1600, q: 2, gain: 0.12, f2: 900, attack: 0.08 }); this.noise(t + 2.2, 0.25, { type: 'lowpass', f: 700, gain: 0.4 }); this.tone(t + 2.2, 0.3, 140, { type: 'triangle', gain: 0.2, f2: 90 });
+        break;
+      case 'doorOpen': this.noise(t, 0.5, { type: 'bandpass', f: 500, q: 1.2, gain: 0.12, attack: 0.05 }); this.tone(t, 0.4, 180, { type: 'triangle', gain: 0.06, f2: 140 }); break;
+      case 'bang': // fists and shoulders against a braced door
+        this.noise(t, 0.18, { type: 'lowpass', f: 420, gain: 0.7 * k }); this.tone(t, 0.16, 70, { type: 'triangle', gain: 0.45 * k, f2: 45 });
+        this.noise(t + 0.22, 0.15, { type: 'lowpass', f: 380, gain: 0.5 * k }); this.tone(t + 0.22, 0.12, 64, { type: 'triangle', gain: 0.35 * k, f2: 42 });
+        this.noise(t + 0.05, 0.12, { type: 'bandpass', f: 2600, q: 4, gain: 0.08 * k }); // the brace rattles
+        break;
+      case 'liftDing': this.tone(t, 0.9, 1046.5, { type: 'sine', gain: 0.16 }); this.tone(t + 0.28, 1.1, 784, { type: 'sine', gain: 0.14 }); this.noise(t + 0.1, 0.9, { type: 'bandpass', f: 400, q: 0.8, gain: 0.05, attack: 0.2 }); break;
+      case 'liftClose': this.noise(t, 0.9, { type: 'bandpass', f: 380, q: 0.9, gain: 0.07, attack: 0.15 }); this.tone(t + 0.85, 0.15, 90, { type: 'triangle', gain: 0.25, f2: 60 }); break;
+      case 'dry': this.noise(t, 0.04, { type: 'highpass', f: 3000, gain: 0.25 }); this.tone(t, 0.03, 1800, { type: 'square', gain: 0.05 }); break;
       case 'pump': // rack back, then forward
         this.noise(t, 0.06, { type: 'bandpass', f: 1300, q: 3, gain: 0.3 }); this.tone(t, 0.04, 420, { gain: 0.07, type: 'square' });
         this.noise(t + 0.17, 0.06, { type: 'bandpass', f: 1700, q: 4, gain: 0.35 }); this.tone(t + 0.17, 0.03, 560, { gain: 0.08, type: 'square' });

@@ -87,13 +87,23 @@ export class Hud {
   }
 
   onRestart(sim) {
-    $('death').classList.remove('show'); $('clear').classList.remove('show');
+    $('death').classList.remove('show'); $('clear').classList.remove('show'); $('levelDone').classList.remove('show'); this.setPrompt(null);
+    $('restartDeath').textContent = sim.level ? 'Retry from checkpoint' : 'Restart';
     this.deathT = -1;
     if (sim.director.mode === 'room1') { this.setObjective(''); this.hintT = 0; $('hint').classList.add('gone'); } else this.setObjective('');
     if (sim.director.mode !== 'room1') this.banner(sim.director.mode === 'calm' ? 'Practice' : sim.director.mode === 'bench' ? `Benchmark: ${sim.director.benchCount}` : 'Survive the ward', sim.director.mode === 'encounter' ? 'Four waves' : '');
   }
 
   // the current objective (the opening hands over "Get out of the operating room.")
+  // Floor 3: what Yola can use here (a Use button) or learn here (a short line); null clears both
+  setPrompt(p) {
+    const key = p ? p.id + (p.usable ? '+' : '-') : '';
+    if (key === this.promptKey) return; this.promptKey = key;
+    $('useBtn').classList.toggle('show', !!(p && p.usable)); $('useLabel').textContent = p && p.usable ? p.label : '';
+    $('prompt').classList.toggle('show', !!(p && !p.usable)); $('prompt').querySelector('span').textContent = p && !p.usable ? p.label : '';
+  }
+  toast(text) { const t = $('toast'); t.querySelector('span').textContent = text; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); this.toastT = 2.4; }
+  levelDone(sim) { $('levelStats').textContent = this.stats(sim) + ` · ${sim.time.toFixed(0)} s`; setTimeout(() => $('levelDone').classList.add('show'), 1400); this.setPrompt(null); }
   setObjective(text) { const o = $('objective'); if (!o) return; $('objectiveText').textContent = text || ''; o.classList.toggle('show', !!text); }
   banner(title, sub = '') {
     $('bannerTitle').textContent = title; $('bannerSub').textContent = sub;
@@ -120,7 +130,8 @@ export class Hud {
     b.classList.toggle('pending', p.desired !== p.equipped);
     b.dataset.next = p.desired === p.equipped ? nextWeapon(p.equipped, p.owned) : p.desired;
     b.classList.toggle('solo', p.owned.length < 2); // nothing to swap to
-    $('ammo').textContent = p.equipped in p.mags ? (p.action.type === 'reload' ? '…' : p.ammo) : '';
+    const res = p.reserve?.[p.equipped];
+    $('ammo').textContent = p.equipped in p.mags ? (p.action.type === 'reload' ? '…' : Number.isFinite(res) ? `${p.ammo} · ${res}` : p.ammo) : '';
     const ring = $('ring');
     let prog = 0;
     if (p.action.type === 'reload') prog = p.action.t / p.reloadTime();
@@ -128,6 +139,7 @@ export class Hud {
     ring.style.strokeDashoffset = String(176 * (1 - Math.min(1, prog)));
     ring.style.opacity = prog > 0 ? 1 : 0;
     if (this.bannerT > 0) { this.bannerT -= dt; if (this.bannerT <= 0) $('banner').classList.remove('show'); }
+    if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) $('toast').classList.remove('show'); }
     if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) $('hint').classList.add('gone'); }
     if (this.deathT >= 0) { this.deathT += dt; if (this.deathT > 0.8) $('death').classList.add('show'); }
   }

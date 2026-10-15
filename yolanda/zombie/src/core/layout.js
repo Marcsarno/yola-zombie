@@ -1,20 +1,24 @@
-// Hospital combat wing. Plain data shared by the simulation (colliders, spawns) and the renderer (models).
-// Ground plane: x -7..7 (left..right), z -11..11 (top of screen .. bottom). Camera looks toward -z.
+// Level layouts. Plain data shared by the simulation (colliders, spawns) and the renderer (models).
+// Two layouts: the original combat wing (practice, waves and benchmarks) and Floor 3, the hospital loop (the story level
+// that follows the opening). LAYOUT is a live object: useLevel() fills it before the world or the arena is built.
 // Props use 0/90/180/270 degree rotations only so their footprints stay axis-aligned.
 // fp = collision footprint [w (x), d (z)] AFTER rotation; h = height (shots pass over anything below ~1.25 m).
+import { FLOOR3, DOORS as F3_DOORS, LIFT, GROUPS } from './floor3.js';
 
 const M = 'assets/models/';
 const H = 'zombie/assets/hospital/'; // Outbreak hospital runtime set (metres, true scale)
+
 // Room 1 (the operating room): the canonical hand-off state used by normal completion, skip and direct start
 export const ROOM1 = {
   player: { x: -1.6, z: -9.35, yaw: 0.55 }, // the anchor where original Yola becomes improved Yola
-  zombies: [ // standard zombies preplaced around the OR perimeter, waking (and so attacking) one at a time
-    { x: -4.5, z: -6.4, yaw: 0.9, wake: 2.0 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 5.0 }, { x: 4.3, z: -6.2, yaw: -0.8, wake: 8.0 },
-  ],
-  bat: { x: -3.9, z: -14.3 }, // the belongings table in the Supply Hall (bat and cap)
-  hallLine: -11.5, hallMaxX: -1.4, // entering the Supply Hall: north of the OR wall, west of its east edge
+  zombies: GROUPS[0].zombies, // standard zombies preplaced around the OR perimeter, waking (and so attacking) one at a time
+  belongings: { x: -9.6, z: -5.55 }, // the patient-belongings table in the Supply Hall (bat and cap)
+  bat: { x: -9.6, z: -5.45 },
 };
-export const LAYOUT = {
+
+// ---- the original combat wing (Ground plane: x -7..7, z -11..11; the camera looks toward -z) ----
+const WING = {
+  name: 'wing',
   bounds: { minX: -7.6, maxX: 7.6, minZ: -18.0, maxZ: 11.6 },
   playerStart: { x: 0.4, z: 2.2, yaw: Math.PI },
   // walls: [minX, maxX, minZ, maxZ, h, style]; style 'full' (back walls), 'low' (camera-side cutaway), 'glass'
@@ -27,13 +31,11 @@ export const LAYOUT = {
     [7, 7.3, -11, -4.0, 0.95, 'low'], [7, 7.3, -2.4, 11.3, 0.95, 'low'],
     // south wall (camera side): low cutaway
     [-7.3, 7.3, 11, 11.3, 0.95, 'low'],
-    // Supply Hall (north of the OR, through the NW doorway): shelves, the patient-belongings table, a dead end
-    [-7.3, -1.1, -17.8, -17.5, 2.7, 'full'], [-7.3, -7.0, -17.5, -11.0, 2.7, 'full'], [-1.4, -1.1, -17.5, -11.3, 0.95, 'low'],
     // OR glass partitions with a 4.4 m central opening
     [-7, -2.2, -5.15, -4.95, 1.5, 'glass'], [2.2, 7, -5.15, -4.95, 1.5, 'glass'],
   ],
   doors: [
-    { id: 'NW', x: -4.4, z: -11.15, axis: 'x', width: 1.6, spawn: { x: -4.4, z: -10.3 }, yaw: 0, open: true }, // opens into the Supply Hall
+    { id: 'NW', x: -4.4, z: -11.15, axis: 'x', width: 1.6, spawn: { x: -4.4, z: -10.3 }, yaw: 0 },
     { id: 'NE', x: 4.2, z: -11.15, axis: 'x', width: 1.6, spawn: { x: 4.2, z: -10.3 }, yaw: 0 },
     { id: 'W', x: -7.15, z: 1.8, axis: 'z', width: 1.6, spawn: { x: -6.35, z: 1.8 }, yaw: Math.PI / 2 },
     { id: 'E', x: 7.15, z: -3.2, axis: 'z', width: 1.6, spawn: { x: 6.35, z: -3.2 }, yaw: -Math.PI / 2 },
@@ -47,13 +49,6 @@ export const LAYOUT = {
     { m: H + 'iv_stand.glb', x: 1.6, z: -9.0, rot: 0, fp: [0.4, 0.4], h: 1.9, noCollide: true },
     { m: H + 'supply_cart.glb', x: 6.1, z: -7.0, rot: 270, fp: [1.1, 1.16], h: 1.23 },
     { m: H + 'biohazard_bin.glb', x: -6.55, z: -10.5, rot: 0, fp: [0.39, 0.39], h: 0.69 },
-    // Supply Hall: shelving along the walls, a cart, and the patient-belongings table (bat and cap rest here)
-    { m: M + 'utility/Utility_Supply_Shelf.glb', x: -6.55, z: -15.2, rot: 90, fp: [0.5, 1.8], h: 1.9, fit: true },
-    { m: M + 'utility/Utility_Supply_Shelf.glb', x: -4.2, z: -17.2, rot: 0, fp: [1.8, 0.5], h: 1.9, fit: true },
-    { m: M + 'utility/Utility_Supply_Shelf.glb', x: -6.55, z: -12.6, rot: 90, fp: [0.5, 1.8], h: 1.9, fit: true },
-    { m: H + 'supply_cart.glb', x: -2.2, z: -16.4, rot: 180, fp: [1.1, 1.16], h: 1.23 },
-    { m: M + 'furnishings/Lounge_Break_Table.glb', x: -4.3, z: -14.2, rot: 0, fp: [0.9, 0.9], h: 0.8, name: 'belongings' },
-    { m: H + 'lidded_waste_bin.glb', x: -2.0, z: -12.3, rot: 0, fp: [0.36, 0.4], h: 0.58 },
     // central hall: nurse station island (circle around it), stretcher, wheelchair, waiting chairs, plants
     { m: H + 'reception_desk.glb', x: 2.9, z: -0.6, rot: 0, fp: [2.2, 0.9], h: 1.1 }, // counter top: shots pass over the screens
     { m: H + 'procedure_stretcher.glb', x: -3.4, z: -1.6, rot: 0, fp: [0.9, 1.65], h: 0.95 },
@@ -77,19 +72,51 @@ export const LAYOUT = {
   ],
 };
 
+export const LAYOUT = {};
+export function useLevel(name) {
+  for (const k of Object.keys(LAYOUT)) delete LAYOUT[k];
+  Object.assign(LAYOUT, name === 'floor3' ? FLOOR3 : WING);
+  return LAYOUT;
+}
+useLevel('wing');
+export const levelForMode = (mode) => (mode === 'room1' ? 'floor3' : 'wing');
+
+// the box a kit door fills in its wall gap (axis 'x': the wall runs along x)
+export function doorBox(d) {
+  return d.axis === 'x' ? [d.x - d.width / 2, d.x + d.width / 2, d.z - 0.15, d.z + 0.15] : [d.x - 0.15, d.x + 0.15, d.z - d.width / 2, d.z + d.width / 2];
+}
+
 export function buildWorld(World) {
   const w = new World(LAYOUT.bounds);
   for (const [a, b, c, d, h, style] of LAYOUT.walls) w.addBox(a, b, c, d, h, style);
   for (const p of LAYOUT.props) {
-    if (p.noCollide) continue;
+    if (p.noCollide || !p.h) continue;
     w.addBox(p.x - p.fp[0] / 2, p.x + p.fp[0] / 2, p.z - p.fp[1] / 2, p.z + p.fp[1] / 2, p.h, 'prop');
   }
-  // seal the doorways so nothing walks out (zombies enter from just inside them)
-  for (const d of LAYOUT.doors) {
-    if (d.open) continue; // a doorway that leads somewhere real
-    if (d.axis === 'x') w.addBox(d.x - d.width / 2, d.x + d.width / 2, d.z - 0.45, d.z - 0.15, 2.7, 'doorSeal');
-    else if (d.x < 0) w.addBox(d.x - 0.45, d.x - 0.15, d.z - d.width / 2, d.z + d.width / 2, 2.7, 'doorSeal');
-    else w.addBox(d.x + 0.15, d.x + 0.45, d.z - d.width / 2, d.z + d.width / 2, 2.7, 'doorSeal');
+  if (LAYOUT.name === 'floor3') {
+    // doors: shut ones block their gap; the braced and barred doors are dynamic (switched off when they open)
+    w.dyn = {};
+    for (const d of F3_DOORS) {
+      if (d.kind === 'open' || d.kind === 'lift') continue;
+      const [a, b, c, e] = doorBox(d);
+      const dyn = d.kind === 'braced' || d.kind === 'barred';
+      const box = w.addBox(a, b, c, e, 2.7, dyn ? 'door' : 'wall');
+      if (dyn) w.dyn[d.id] = box;
+    }
+    // the lift: pocket housings either side of the aperture, the cab walls, and the closed leaves (dynamic)
+    const L = LIFT;
+    w.addBox(6.99, 7.5, L.z - 2.64, L.z - 1.2, 2.7, 'wall'); w.addBox(6.99, 7.5, L.z + 1.2, L.z + 2.64, 2.7, 'wall');
+    w.addBox(7.5, 10.66, L.z - 1.66, L.z - 1.5, 2.7, 'wall'); w.addBox(7.5, 10.66, L.z + 1.5, L.z + 1.66, 2.7, 'wall');
+    w.addBox(10.5, 10.66, L.z - 1.66, L.z + 1.66, 2.7, 'wall');
+    w.dyn.liftDoors = w.addBox(7.1, 7.34, L.z - 1.2, L.z + 1.2, 2.7, 'door');
+  } else {
+    // seal the doorways so nothing walks out (zombies enter from just inside them)
+    for (const d of LAYOUT.doors) {
+      if (d.open) continue; // a doorway that leads somewhere real
+      if (d.axis === 'x') w.addBox(d.x - d.width / 2, d.x + d.width / 2, d.z - 0.45, d.z - 0.15, 2.7, 'doorSeal');
+      else if (d.x < 0) w.addBox(d.x - 0.45, d.x - 0.15, d.z - d.width / 2, d.z + d.width / 2, 2.7, 'doorSeal');
+      else w.addBox(d.x + 0.15, d.x + 0.45, d.z - d.width / 2, d.z + d.width / 2, 2.7, 'doorSeal');
+    }
   }
   w.buildNav(0.25, 0.3);
   return w;

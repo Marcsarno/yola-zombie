@@ -65,6 +65,7 @@ export class Actor {
   stop() { this.path = []; this.moving = false; }
 
   update(dt) {
+    if (this.frozen) return; // a held pose (the reveal's stills): nothing is re-evaluated, the last pose stays
     const d = dt * this.timeScale;
     for (const u of this._undo) u.bone.quaternion.copy(u.base); this._undo.length = 0; // undo last frame's adjustments before the mixer writes
     if (this.moving && this.path.length) {
@@ -102,10 +103,11 @@ export class Actor {
   // Sit on a chair whose seat centre is (cx, cz) with the character facing yaw. The visitor rigs' SitDown clip
   // expects the seat 0.45 m behind the standing origin (the source Blender contract), so stand 0.45 m in front.
   // The origin is placed by the caller's route (the sit anchor); this only plays the clip (instant = already seated).
-  sitAt(cx, cz, yaw, { instant = false, behind = 0.45 } = {}) {
+  sitAt(cx, cz, yaw, { instant = false, behind = 0.45, seatTop = 0.47 } = {}) {
     this.stop(); this.targetYaw = null;
     this.seat = { x: cx, z: cz, behind }; this.yaw = yaw;
-    this.root.position.set(cx + Math.sin(yaw) * behind, 0, cz + Math.cos(yaw) * behind);
+    // the clips sit onto a 0.47 m seat: a taller seat raises the whole body by the difference
+    this.root.position.set(cx + Math.sin(yaw) * behind, Math.max(0, seatTop - 0.47), cz + Math.cos(yaw) * behind);
     this.seated = true;
     if (instant) { this.sitState = 'seated'; this.play('SeatedIdle', { fade: 0 }); return; }
     this.sitState = 'sitting';
@@ -120,13 +122,23 @@ export class Actor {
     this.seated = false; this.sitState = 'rising';
     const a = this.play('StandUp', { once: true, fade: 0.1 });
     if (a) {
-      const done = (e) => { if (e.action === a) { this.mixer.removeEventListener('finished', done); this.sitState = 'stand'; this.seat = null; this.play(this.idleClip, { fade: 0.15 }); } };
+      const done = (e) => { if (e.action === a) { this.mixer.removeEventListener('finished', done); this.sitState = 'stand'; this.seat = null; this.root.position.y = 0; this.play(this.idleClip, { fade: 0.15 }); } };
       this.mixer.addEventListener('finished', done);
     }
   }
   get settled() { return this.sitState === 'seated'; }
   get upright() { return this.sitState === 'stand'; }
   setVisible(v) { this.root.visible = v; }
+  // swap clothing materials by name (map: material name -> colour), keeping the originals to restore
+  setOutfit(map) {
+    this._outfit ||= [];
+    this.model.traverse((o) => {
+      if (!o.isMesh) return;
+      const one = (m) => { const c = map && m && map[m.name]; if (c === undefined) return m; const n = m.clone(); n.color.set(c); n.map = null; n.userData.outfitOf = m; return n; };
+      if (!o.userData.matOrig) o.userData.matOrig = o.material;
+      o.material = map ? (Array.isArray(o.userData.matOrig) ? o.userData.matOrig.map(one) : one(o.userData.matOrig)) : o.userData.matOrig;
+    });
+  }
 }
 
 // The original (management-game) Yola: segmented rig with named parts instead of a skinned body, and no wave clip.
@@ -157,6 +169,7 @@ export class OriginalYola extends Actor {
   }
   startWave(rate = 1) { this.waveT = 0; this.waveRate = rate; } // rate > 1: the same awkward wave, compressed to fit the phrase
   update(dt) {
+    if (this.frozen) return;
     super.update(dt);
     if (this.waveT >= 0) this.waveT += dt * this.timeScale * (this.waveRate || 1);
     const sd = (dt * this.timeScale) / 0.7;

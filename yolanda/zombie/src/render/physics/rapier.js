@@ -37,7 +37,7 @@ export class RapierPhysics {
     const fix = (desc) => this.world.createCollider(desc.setFriction(0.8).setCollisionGroups(groups(GROUP_WORLD, GROUP_BODY)));
     fix(R.ColliderDesc.cuboid(60, 0.5, 60).setTranslation(0, -0.5, 0));
     for (const b of world.boxes) {
-      if (b.kind === 'doorSeal') continue;
+      if (b.kind === 'doorSeal' || b.kind === 'door') continue;
       const hx = (b.maxX - b.minX) / 2, hz = (b.maxZ - b.minZ) / 2, hy = Math.max(0.02, b.h / 2);
       fix(R.ColliderDesc.cuboid(hx, hy, hz).setTranslation((b.minX + b.maxX) / 2, hy, (b.minZ + b.maxZ) / 2));
     }

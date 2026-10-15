@@ -18,6 +18,7 @@ export class Player {
     this.owned = [...WEAPON_ORDER]; // weapons she carries (the swap button cycles through these)
     this.equipped = PISTOL; this.desired = PISTOL;
     this.mags = { [PISTOL]: tuning.magSize, [SHOTGUN]: tuning.shotgunMag };
+    this.reserve = { [PISTOL]: Infinity, [SHOTGUN]: Infinity }; // spare rounds (the story level counts them; practice never runs out)
     this.action = { type: 'ready', t: 0 };
     this.recoil = 0; // 0..1 visual recoil envelope
     this.shotCount = 0; this.swingId = 0;
@@ -144,7 +145,11 @@ export class Player {
       }
       case 'reload':
         if (!(this.equipped in this.mags)) { this.setAction('ready'); break; }
-        if (a.t >= this.reloadTime()) { this.ammo = this.magSize(); sim.emit({ type: 'reloadDone', weapon: this.equipped }); this.setAction('ready'); }
+        if (a.t >= this.reloadTime()) {
+          const w = this.equipped, take = Math.min(this.magSize() - this.ammo, this.reserve[w] ?? Infinity);
+          this.ammo += take; if (Number.isFinite(this.reserve[w])) this.reserve[w] -= take;
+          sim.emit({ type: 'reloadDone', weapon: w }); this.setAction('ready');
+        }
         break;
       case 'swap':
         if (!a.mid && a.t >= a.dur * 0.5) { a.mid = true; this.equipped = a.target; sim.emit({ type: 'swapMid', weapon: a.target }); }
@@ -160,7 +165,8 @@ export class Player {
     }
     if (this.action.type !== 'ready') return;
     if (this.equipped in this.mags && this.ammo <= 0) {
-      this.setAction('reload'); sim.emit({ type: 'reloadStart', weapon: this.equipped });
+      if ((this.reserve[this.equipped] ?? Infinity) > 0) { this.setAction('reload'); sim.emit({ type: 'reloadStart', weapon: this.equipped }); return; }
+      if (this.attackHeld && this.attackPressT < 0.05) sim.emit({ type: 'dryFire', weapon: this.equipped }); // empty: a click, no reload
       return;
     }
     if (!this.attackHeld) return;

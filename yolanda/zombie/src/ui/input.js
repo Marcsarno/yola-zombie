@@ -13,7 +13,7 @@ export class Input {
       move: { id: null, ox: 0, oy: 0, x: 0, y: 0, el: null },
       aim: { id: null, ox: 0, oy: 0, x: 0, y: 0, el: null },
     };
-    this.swapPresses = 0;
+    this.swapPresses = 0; this.usePresses = 0;
     this.keys = new Set();
     this.mouse = { active: false, x: 0, y: 0, down: false };
     this.enabled = true;
@@ -47,9 +47,12 @@ export class Input {
       this.swapButton.classList.add('pressed');
       setTimeout(() => this.swapButton.classList.remove('pressed'), 120);
     });
+    const useBtn = document.getElementById('useBtn');
+    if (useBtn) useBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.enabled) this.usePresses++; useBtn.classList.add('pressed'); setTimeout(() => useBtn.classList.remove('pressed'), 120); });
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
       this.keys.add(e.code);
+      if ((e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') && this.enabled) this.usePresses++;
       if ((e.code === 'Space' || e.code === 'KeyQ') && this.enabled) { this.swapPresses++; e.preventDefault(); }
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -111,7 +114,7 @@ export class Input {
     for (const s of Object.values(this.sticks)) this.release(s);
     this.keys.clear();
     this.mouse.down = false;
-    this.swapPresses = 0;
+    this.swapPresses = 0; this.usePresses = 0;
   }
 
   // Returns world-plane vectors. camYaw rotates screen axes onto the ground (0: screen up = -z).
@@ -136,9 +139,9 @@ export class Input {
     const out = {
       moveX: mx * c + my * s, moveZ: -mx * s + my * c,
       aimX: ax * c + ay * s, aimZ: -ax * s + ay * c,
-      swapPresses: this.swapPresses,
+      swapPresses: this.swapPresses, usePresses: this.usePresses,
     };
-    this.swapPresses = 0;
+    this.swapPresses = 0; this.usePresses = 0;
     return out;
   }
 }

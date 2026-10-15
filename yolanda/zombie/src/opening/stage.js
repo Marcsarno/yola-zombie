@@ -43,8 +43,10 @@ export class ClinicStage {
   gltf(url) { if (!this.cache.has(url)) this.cache.set(url, this.loader.loadAsync(url)); return this.cache.get(url); }
 
   // place a static prop: centred on x/z, standing on the floor, rotated about Y (degrees); fit scales to a target height
-  async prop(url, { x = 0, z = 0, y = 0, rot = 0, s = 1, h = 0, parent = this.root, name = '' } = {}) {
+  async prop(url, { x = 0, z = 0, y = 0, rot = 0, s = 1, h = 0, parent = this.root, name = '', wall = '' } = {}) {
     const g = await this.gltf(url);
+    // wall: mount on a wall and face 's' (+z), 'n' (-z), 'e' (+x) or 'w' (-x); x/z give the wall face the item's back touches
+    if (wall) rot = { s: 0, n: 180, e: 90, w: 270 }[wall];
     const obj = g.scene.clone(true); obj.rotation.y = (rot * Math.PI) / 180;
     const holder = new THREE.Group(); holder.add(obj); holder.updateMatrixWorld(true);
     let box = new THREE.Box3().setFromObject(obj);
@@ -53,6 +55,7 @@ export class ClinicStage {
     const c = box.getCenter(new THREE.Vector3());
     obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= box.min.y;
     holder.position.set(x, y, z); holder.name = name;
+    if (wall) { const sz = box.getSize(new THREE.Vector3()); if (wall === 's') holder.position.z = z + sz.z / 2 + 0.005; if (wall === 'n') holder.position.z = z - sz.z / 2 - 0.005; if (wall === 'e') holder.position.x = x + sz.x / 2 + 0.005; if (wall === 'w') holder.position.x = x - sz.x / 2 - 0.005; }
     obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     parent.add(holder); if (name) this.byName[name] = holder;
     return holder;
@@ -93,16 +96,19 @@ export class ClinicStage {
     const out = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshBasicMaterial({ color: 0xcfe3df })); out.rotation.x = -Math.PI / 2; out.position.set(0, -0.03, 0); this.root.add(out);
     // reception rug and a teal inlay band
     const rug = new THREE.Mesh(new THREE.CircleGeometry(1.7, 40), new THREE.MeshStandardMaterial({ color: 0xe9b8a4, roughness: 0.95 })); rug.rotation.x = -Math.PI / 2; rug.position.set(-5.2, 0.006, 1.4); rug.receiveShadow = true; this.root.add(rug);
-    const inlay = new THREE.Mesh(new THREE.PlaneGeometry(2 * W, 0.3), new THREE.MeshStandardMaterial({ color: 0x9fd4cc })); inlay.rotation.x = -Math.PI / 2; inlay.position.set(0, 0.005, -3.5); this.root.add(inlay);
+    const inlay = new THREE.Mesh(new THREE.PlaneGeometry(W + 0.2, 0.3), new THREE.MeshStandardMaterial({ color: 0x9fd4cc })); inlay.rotation.x = -Math.PI / 2; inlay.position.set(-W / 2 + 0.1, 0.005, -3.5); this.root.add(inlay);
     // walls: back (north) and west full, front (south) and east low cutaways (the camera looks in from the south-east)
     this.wall(-W, W, Zn - 0.3, Zn, 4.0, 'full');
     this.wall(-W - 0.3, -W, Zn - 0.3, -0.2, 4.0, 'full'); this.wall(-W - 0.3, -W, 2.0, Zs, 4.0, 'full'); // doorway in the west wall (z -0.2..2.0)
     this.wall(-W, W, Zs, Zs + 0.3, 0.95, 'low'); this.wall(W, W + 0.3, Zn - 0.3, Zs + 0.3, 0.95, 'low');
-    // glass partition between reception and the treatment room, with a doorway
-    this.wall(0.2, 0.45, Zn, -1.0, 2.3, 'glass'); this.wall(0.2, 0.45, 0.6, Zs, 2.3, 'glass');
+    // ---- the east side: a staff corridor and a compact assessment office (north), the two-bay clinical room (south) ----
+    // glass partition between reception and the east rooms: one doorway into the corridor/office, one into the two-bay room
+    this.wall(0.2, 0.45, Zn, -1.6, 2.3, 'glass'); this.wall(0.2, 0.45, -0.4, 2.0, 2.3, 'glass'); this.wall(0.2, 0.45, 3.4, Zs, 2.3, 'glass');
+    // the two-bay room's back wall (the office's south wall) and the office's west wall (a doorway from the corridor)
+    this.wall(0.45, W, -0.05, 0.2, 3.0, 'full');
+    this.wall(3.05, 3.3, Zn, -1.9, 3.0, 'full'); this.wall(3.05, 3.3, -0.6, -0.05, 3.0, 'full');
 
     // ---- reception (x < 0.2)
-    const R = 'reception/';
     const tasks = [];
     tasks.push(this.prop(M + 'upgrades/01_reception/reception_T1_desk.glb', { x: -5.2, z: -4.7, rot: 180, name: 'desk' }));
     tasks.push(this.prop(M + 'upgrades/01_reception/reception_T1_chair.glb', { x: -5.2, z: -5.55, rot: 0 }));
@@ -122,35 +128,106 @@ export class ClinicStage {
     // room signs: the supplied 2D print faces (one flat quad each; no 3D sign meshes)
     this.signs = {};
     this.sign('reception', -5.2, 2.15, -5.94, 1.9);
-    this.sign('assessment', 0.34, 2.05, -0.2, 1.25, Math.PI / 2); // over the treatment-room doorway, readable from the reception side
+    this.sign('assessment', 0.15, 2.05, -1.0, 1.0, -Math.PI / 2); // over the corridor doorway, facing reception
+    this.sign('recovery', 0.15, 2.05, 2.7, 1.0, -Math.PI / 2); // over the two-bay room doorway, facing reception
     this.sign('operating_room', -1.4, 2.7, -5.93, 1.7);
 
-    // ---- treatment room (x > 0.45): equipment slots that can swap tier (starter / standard / advanced)
+    // ---- the staff corridor (x 0.45..3.05, north): water, the notice board
+    tasks.push(this.prop(M + 'furnishings/Assessment_Board.glb', { x: 1.75, y: 1.0, z: Zn, wall: 's' }));
+    tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: 2.65, z: -5.55 }));
+    tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: 0.9, z: -5.45 }));
+
+    // ---- the assessment office (x 3.3..9.2, z -6..-0.05). The camera looks in from the east, so its back walls are the
+    //      north wall (supplies) and the west wall (medical information); the conversation sits in the middle.
+    const AF = M + 'upgrades/09_assessment_furniture/runtime/';
+    tasks.push(this.prop(AF + 'consultation_desk_standard.glb', { x: 6.3, z: -3.2, rot: 180, name: 'officeDesk' })); // drawers (the clinician's side) to the north
+    tasks.push(this.prop(AF + 'clinician_chair_standard.glb', { x: 6.3, z: -3.95, rot: 0, name: 'chairYola' })); // behind the desk, facing south
+    tasks.push(this.prop(AF + 'visitor_chair_standard.glb', { x: 5.72, z: -2.15, rot: 180, name: 'chairPatient' })); // opposite her, facing north
+    tasks.push(this.prop(AF + 'visitor_chair_standard.glb', { x: 6.88, z: -2.15, rot: 180, name: 'chairGuard' }));
+    // supplies along the north wall: storage cabinet with a wall cupboard over it, gloves and sanitizer, the clinical bin
+    tasks.push(this.prop(M + 'furnishings/Clinical_Storage_Cabinet.glb', { x: 7.85, z: Zn, wall: 's' }));
+    tasks.push(this.prop(M + 'furnishings/Clinical_Wall_Cupboard.glb', { x: 7.85, y: 1.45, z: Zn, wall: 's' }));
+    tasks.push(this.prop(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', { x: 6.55, y: 1.05, z: Zn, wall: 's' }));
+    tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: 6.05, y: 1.1, z: Zn, wall: 's' }));
+    tasks.push(this.prop(M + 'furnishings/Clinical_Lidded_Waste_Bin.glb', { x: 8.95, z: -5.65 }));
+    // medical information on the west wall: anatomy posters, the clock, the room's own sign
+    tasks.push(this.prop(M + 'furnishings/Assessment_Poster_Body.glb', { x: 3.3, y: 1.0, z: -4.6, wall: 'e' }));
+    tasks.push(this.prop(M + 'furnishings/Assessment_Poster_Lungs.glb', { x: 3.3, y: 1.0, z: -3.75, wall: 'e' }));
+    tasks.push(this.prop(M + 'decor/Recovery_Wall_Clock.glb', { x: 3.3, y: 2.0, z: -4.18, wall: 'e' }));
+    this.sign('assessment', 3.32, 2.35, -2.75, 1.05, Math.PI / 2);
+    // softening: a plant in the corner, a framed picture
+    tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: 3.85, z: -5.5 }));
+    tasks.push(this.prop(M + 'decor2/Clinical_Art_Heart.glb', { x: 4.75, y: 1.25, z: Zn, wall: 's' }));
+    // the desk top: computer, keyboard, phone, clipboard, a tidy stack of paperwork (on the clinician's side)
+    this.deskTop(6.3, 0.81, -3.2);
+
+    // ---- the two-bay clinical room (x 0.45..9.2, z 0.2..5): two complete care stations against the back wall, facing the
+    //      camera, with a privacy screen between them; each station's equipment changes tier in place
     const U = M + 'upgrades/';
-    const slot = (key, files, opts) => { const s = { key, files, opts, holder: null }; this.tiers.push(s); return s; };
-    const slots = [
-      slot('workstation', { starter: U + '02_anesthesia_monitoring/anesthesia_workstation_starter.glb', standard: U + '02_anesthesia_monitoring/anesthesia_workstation_standard.glb', advanced: U + '02_anesthesia_monitoring/anesthesia_workstation_advanced.glb' }, { x: 6.9, z: -5.2, rot: 0 }),
-      slot('monitor', { starter: U + '02_anesthesia_monitoring/patient_monitor_starter.glb', standard: U + '02_anesthesia_monitoring/patient_monitor_standard.glb', advanced: U + '02_anesthesia_monitoring/patient_monitor_advanced.glb' }, { x: 4.6, z: -5.3, rot: 0 }),
-      slot('table', { starter: U + '04_surgery/operating_table_starter.glb', standard: U + '04_surgery/operating_table_standard.glb', advanced: U + '04_surgery/operating_table_advanced.glb' }, { x: 5.6, z: -2.4, rot: 90 }),
-    ];
-    for (const s of slots) for (const tier of ['starter', 'standard', 'advanced']) tasks.push(this.prop(s.files[tier], { ...s.opts, name: s.key + '_' + tier }).then((h) => { s.layers ||= {}; s.layers[tier] = h; this.fadeable(h); h.visible = tier === 'starter'; this.setOpacity(h, 1); }));
-    tasks.push(this.prop(M + 'upgrades/07_warmth_teamwork/TeamDesk_starter.glb', { x: 2.7, z: 2.6, rot: 180, name: 'assessDesk' }));
-    tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: 2.7, z: 1.5, rot: 180, name: 'chairYola' })); // north side, faces south
-    tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: 2.7, z: 3.85, rot: 180, name: 'chairPatient' })); // south side, faces north
-    tasks.push(this.prop(M + 'utility/Utility_Supply_Shelf.glb', { x: 8.3, z: 1.4, rot: 270, name: 'shelf' }));
-    tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: 1.2, z: -5.2, name: 'plantT' }));
-    tasks.push(this.prop(M + 'decor2/Clinical_Art_Heart.glb', { x: 2.2, y: 1.5, z: -5.88, name: 'artT' }));
+    const T3 = (dir, name) => ({ starter: U + dir + name.replace('#', 'starter'), standard: U + dir + name.replace('#', 'standard'), advanced: U + dir + name.replace('#', 'advanced') });
+    const slot = (key, files, opts) => { const sl = { key, files, opts, holder: null }; this.tiers.push(sl); return sl; };
+    const BZ = 0.2; // the back wall's face
+    const slots = [];
+    for (const [k, cx] of [['A', 3.4], ['B', 6.6]]) {
+      slots.push(slot('head' + k, T3('05_recovery_bay/', 'RecoveryHeadwall_#.glb'), { x: cx, z: BZ, wall: 's' }));
+      slots.push(slot('bed' + k, T3('05_recovery_bay/', 'RecoveryBed_#.glb'), { x: cx, z: 1.62, rot: 0 })); // head to the headwall, foot toward the room
+      slots.push(slot('mon' + k, T3('02_anesthesia_monitoring/', 'patient_monitor_#.glb'), { x: cx - 0.98, z: 0.75, rot: 0 }));
+      slots.push(slot('iv' + k, T3('08_support_equipment/runtime/', 'iv_stand_#.glb'), { x: cx + 0.86, z: 0.8, rot: 0 }));
+      slots.push(slot('cab' + k, T3('05_recovery_bay/', 'BedsideCabinet_#.glb'), { x: cx - 0.95, z: 2.15, rot: 90 }));
+    }
+    slots.push(slot('curtain', T3('05_recovery_bay/', 'PrivacyCurtain_#.glb'), { x: 5.0, z: 1.6, rot: 0 }));
+    slots.push(slot('cart', T3('08_support_equipment/runtime/', 'supply_cart_#.glb'), { x: 8.55, z: 0.72, rot: 0 }));
+    slots.push(slot('prep', T3('09_assessment_furniture/runtime/', 'prep_storage_#.glb'), { x: 1.35, z: BZ, wall: 's' }));
+    for (const sl of slots) for (const tier of ['starter', 'standard', 'advanced']) tasks.push(this.prop(sl.files[tier], { ...sl.opts, name: sl.key + '_' + tier }).then((h) => { sl.layers ||= {}; sl.layers[tier] = h; this.fadeable(h); h.visible = tier === 'starter'; this.setOpacity(h, 1); }));
+    // freestanding examination lights at each bed (the arm reaches over the bed)
+    tasks.push(this.prop(U + '04_surgery/surgical_light_starter.glb', { x: 4.42, z: 2.45, rot: 180, name: 'lightA' }));
+    tasks.push(this.prop(U + '04_surgery/surgical_light_starter.glb', { x: 7.62, z: 2.45, rot: 180, name: 'lightB' }));
+    // the room's fixtures: gloves and sanitizer by the supply counter, the clinical bin, a clock over the screen, restrained art
+    tasks.push(this.prop(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', { x: 0.95, y: 1.3, z: BZ, wall: 's', name: 'glovesR' }));
+    tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: 1.75, y: 1.35, z: BZ, wall: 's', name: 'saniR' }));
+    tasks.push(this.prop(M + 'furnishings/Clinical_Lidded_Waste_Bin.glb', { x: 2.3, z: 0.5, name: 'binR' }));
+    tasks.push(this.prop(M + 'decor/Recovery_Wall_Clock.glb', { x: 5.0, y: 2.25, z: BZ, wall: 's', name: 'clockR' }));
+    tasks.push(this.prop(M + 'decor2/Clinical_Art_Lungs.glb', { x: 8.55, y: 1.45, z: BZ, wall: 's', name: 'artR' }));
+    this.sign('recovery', 2.0, 2.45, BZ + 0.012, 1.0);
     await Promise.all(tasks);
-    // seat anchors for the sitting characters (seat centre on the floor plane, facing yaw)
+    // seat anchors for the sitting characters (seat centre on the floor plane, facing yaw; seatTop: the chair's seat height)
     Object.assign(this.anchors, {
       queue: { x: -5.9, z: -3.55 }, guardQueue: { x: -4.6, z: -2.7 }, // public side of the reception desk (athlete, guard behind-right)
-      doorway: { x: 0.33, z: -0.2 }, // the assessment doorway
-      chairPatient: { x: 2.7, z: 3.85, yaw: Math.PI, seatTop: 0.47 }, // faces north (-z); the 0.47 m seat the rigs expect
-      chairYola: { x: 2.7, z: 1.5, yaw: 0, seatTop: 0.51 }, // faces south (+z)
+      doorway: { x: 0.33, z: -1.0 }, // reception -> the staff corridor
+      officeDoor: { x: 3.18, z: -1.25 }, // corridor -> the assessment office
+      bayDoor: { x: 0.33, z: 2.7 }, // reception -> the two-bay room
+      chairPatient: { x: 5.72, z: -2.15, yaw: Math.PI, seatTop: 0.53 }, // faces north, toward Yola
+      chairGuard: { x: 6.88, z: -2.15, yaw: Math.PI, seatTop: 0.53 },
+      chairYola: { x: 6.3, z: -3.95, yaw: 0, seatTop: 0.53 }, // faces south, across the desk
       guardChair: { x: -5.0, z: 3.4, yaw: Math.PI, seatTop: 0.47 }, // a waiting chair near reception
       receptionChair: { x: -5.2, z: -5.5, yaw: 0, seatTop: 0.5 },
       orDoor: { x: -1.4, z: -5.0 },
+      yolaTour: { x: 5.0, z: 3.7, yaw: 0.45 }, // original Yola in the two-bay room for the tour
     });
+  }
+
+  // procedural desk-top dressing (the kit has no desk accessories): monitor and keyboard, a phone, a clipboard, paperwork
+  deskTop(cx, y, cz) {
+    const g = new THREE.Group(); g.position.set(cx, y, cz); this.root.add(g); this.byName.deskTop = g;
+    const mat = (c, r = 0.6, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+    const add = (geo, m, x, yy, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, yy, z); o.rotation.y = ry; o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
+    const dark = mat(0x2a3238, 0.45), cream = mat(0xf2ead8), teal = mat(0x2f9fa0, 0.5);
+    const scr = mat(0x7fb7c9, 0.3); scr.emissive = new THREE.Color(0x1d3d48);
+    // monitor on a stand, turned toward the clinician (the north side of the desk)
+    add(new RoundedBoxGeometry(0.5, 0.32, 0.035, 2, 0.012), dark, 0.18, 0.3, 0.05, 0.25);
+    add(new THREE.BoxGeometry(0.44, 0.26, 0.004), scr, 0.18 - Math.sin(0.25) * 0.019, 0.3, 0.05 - Math.cos(0.25) * 0.019, 0.25);
+    add(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 10), dark, 0.18, 0.08, 0.07);
+    add(new RoundedBoxGeometry(0.2, 0.012, 0.14, 2, 0.005), dark, 0.18, 0.006, 0.07);
+    add(new RoundedBoxGeometry(0.42, 0.018, 0.14, 2, 0.006), cream, 0.12, 0.009, -0.17, 0.12); // keyboard (clinician side)
+    add(new RoundedBoxGeometry(0.07, 0.02, 0.1, 2, 0.008), cream, 0.42, 0.01, -0.2); // mouse
+    // telephone
+    add(new RoundedBoxGeometry(0.18, 0.06, 0.2, 2, 0.02), teal, -0.55, 0.03, -0.05, 0.4);
+    add(new RoundedBoxGeometry(0.2, 0.035, 0.055, 2, 0.015), dark, -0.55, 0.075, -0.05, 0.4);
+    // clipboard toward the visitors, and a squared stack of paperwork
+    add(new RoundedBoxGeometry(0.24, 0.012, 0.32, 2, 0.004), mat(0x9a6b44, 0.7), -0.18, 0.006, 0.16, -0.15);
+    add(new THREE.BoxGeometry(0.21, 0.004, 0.28), mat(0xfbfaf4, 0.9), -0.18, 0.014, 0.17, -0.15);
+    add(new RoundedBoxGeometry(0.08, 0.02, 0.03, 2, 0.006), mat(0xb8c0c4, 0.3, 0.6), -0.18 + Math.sin(-0.15) * -0.13, 0.02, 0.17 - 0.13, -0.15);
+    for (let i = 0; i < 5; i++) add(new THREE.BoxGeometry(0.21, 0.006, 0.29), mat(i % 2 ? 0xf6f3ea : 0xfdfcf6, 0.9), -0.52, 0.004 + i * 0.006, 0.2, 0.03 * ((i % 3) - 1));
   }
 
   // equipment tiers crossfade in place (same footprint, never stacked solid): materials are cloned per layer so
@@ -177,10 +254,13 @@ export class ClinicStage {
   }
 
   // ---- an empty room that gets furnished: quick, satisfying placements of the room's existing furniture ----
-  furnishList() {
-    const tier = (k) => this.tiers.find((t) => t.key === k)?.layers?.starter;
-    return [tier('table'), tier('workstation'), tier('monitor'), this.byName.assessDesk, this.byName.chairYola, this.byName.chairPatient, this.byName.shelf, this.byName.plantT, this.byName.artT].filter(Boolean);
+  // the two-bay room's equipment arrives in groups: both headwalls, each bed, each station's monitor and IV pole,
+  // each cabinet and light, the screen and clock, then the supply corner
+  furnishGroups() {
+    const t = (k) => this.tiers.find((sl) => sl.key === k)?.layers?.starter, n = this.byName;
+    return [[t('headA'), t('headB')], [t('bedA')], [t('bedB')], [t('monA'), t('ivA')], [t('monB'), t('ivB')], [t('cabA'), n.lightA], [t('cabB'), n.lightB], [t('curtain'), n.clockR], [t('prep'), t('cart'), n.glovesR, n.saniR, n.binR, n.artR]].map((g) => g.filter(Boolean));
   }
+  furnishList() { return this.furnishGroups().flat(); }
   setRoomEmpty(on) { for (const h of this.furnishList()) { h.visible = !on; h.scale.setScalar(1); } this.clearPops(); }
   clearPops() { this.pops.length = 0; for (const r of this.rings) this.root.remove(r.m); this.rings.length = 0; for (const h of this.furnishList()) h.scale.setScalar(1); }
   popIn(h, delay = 0) { h.visible = false; h.scale.setScalar(0.001); this.pops.push({ h, t: -delay, dur: 0.4, started: false }); }

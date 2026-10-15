@@ -85,6 +85,21 @@
   .tune-row b { font-weight: 600; text-align: right; color: var(--ink2); font-size: 12px; }
   #tuneBody h3 { margin: 12px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--amber); }
   #perfOut { white-space: pre-wrap; font: 11px/1.3 ui-monospace, monospace; color: var(--ink2); max-height: 160px; overflow: auto; }
+  /* Use: a context button above the swap button (Floor 3: the reset panel, the brace, the bar) */
+  #useBtn { position: absolute; right: calc(14px + var(--sar)); bottom: calc(31vh + 100px + var(--sab)); min-width: 86px; max-width: 46vw; padding: 12px 16px; border-radius: 18px;
+    background: #ffb347; color: #2a1d08; font-weight: 800; font-size: 15px; box-shadow: 0 4px 0 #b97a22, 0 8px 18px rgba(0,0,0,.35); display: none; text-align: center; line-height: 1.15; }
+  #useBtn.show { display: block; animation: usePop .25s ease-out; }
+  #useBtn small { display: block; font-size: 11px; font-weight: 700; opacity: .75; letter-spacing: .06em; text-transform: uppercase; }
+  #useBtn.pressed { transform: translateY(3px); box-shadow: 0 1px 0 #b97a22, 0 4px 10px rgba(0,0,0,.35); }
+  @keyframes usePop { from { transform: scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+  #prompt { position: absolute; left: 0; right: 0; bottom: calc(14vh + var(--sab)); text-align: center; pointer-events: none; opacity: 0; transition: opacity .25s; }
+  #prompt.show { opacity: 1; }
+  #prompt span { display: inline-block; background: rgba(20, 30, 36, .82); padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+  #toast { position: absolute; left: 0; right: 0; top: calc(104px + var(--sat)); text-align: center; pointer-events: none; opacity: 0; transform: translateY(-6px); transition: opacity .3s, transform .3s; }
+  #toast.show { opacity: 1; transform: none; }
+  #toast span { display: inline-block; background: rgba(47, 159, 160, .95); color: #fff; padding: 7px 14px; border-radius: 999px; font-weight: 800; font-size: 13.5px; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+  #levelDone .card { text-align: center; }
+  #levelDone h2 { font-size: 24px; }
   #loading { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #27323a; }
   #loadTrack { width: 180px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
   #loadBar { height: 100%; width: 0; background: var(--teal); }
@@ -118,6 +133,9 @@
     <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
     <div id="ammo"></div>
   </button>
+  <button id="useBtn" aria-label="Use"><small>Use</small><span id="useLabel"></span></button>
+  <div id="prompt"><span></span></div>
+  <div id="toast"><span></span></div>
   <div id="hint">Left thumb: move · Right thumb: aim, hold to attack · Swap button: pistol → shotgun → axe · hold the axe on a hit for a 3-hit combo<br>Desktop: WASD, mouse (hold to attack), Space to swap</div>
 
   <div id="menu" class="sheet"><div class="card">
@@ -150,6 +168,14 @@
     <h2>Yola is down</h2>
     <div id="deathStats" class="muted"></div>
     <button id="restartDeath" class="btn primary">Restart</button>
+  </div></div>
+
+  <div id="levelDone" class="sheet"><div class="card">
+    <h2>Floor 3 cleared</h2>
+    <div class="muted">The lift doors close. Going down…</div>
+    <div id="levelStats" class="muted" style="margin-top:8px"></div>
+    <button class="btn primary" data-act="restartLevel">Play Floor 3 again</button>
+    <button class="btn" data-act="mode" data-v="calm">Practice</button>
   </div></div>
 
   <div id="clear" class="sheet"><div class="card">

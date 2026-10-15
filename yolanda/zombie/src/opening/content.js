@@ -67,10 +67,13 @@ export const UPGRADE_PREVIEW = {
 
 export const OBJECTIVES = {
   chart: 'Review the patient’s chart.',
-  room1: 'Get out of the operating room.',
-  bat: 'Pick up the baseball bat.',
-  reception: 'Head for the Waiting Area and Reception.',
+  room1: 'Find the lift reset in Maintenance.',
+  maintenance: 'Find the lift reset in Maintenance.',
+  elevator: 'Return to the elevator.',
+  board: 'Step into the lift.',
 };
+// the reveal's boss-intro card (Borderlands-style freeze frame)
+export const BOSS_CARD = { name: 'YOLA', tagline: 'Calm under pressure' };
 
 // ---- dialogue (subtitled; a temporary browser voice reads it if one exists) ----
 export const DIALOGUE = {

@@ -6,6 +6,7 @@ import { Zombie, ZS, separate, bump } from './zombies.js';
 import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
+import { Level } from './level.js';
 
 export const STEP = 1 / 60;
 const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.28;
@@ -29,7 +30,7 @@ export class Sim {
     this.director = new Director(this, opts.mode || 'encounter', opts.benchCount || 0);
     this.world.updateFlow(this.player.x, this.player.z);
     this.pickups = []; this.flow = { objective: '' }; // Room 1: the bat pickup and the objective chain
-    if ((opts.mode || '') === 'room1') this.setupRoom1();
+    if ((opts.mode || '') === 'room1') { if (LAYOUT.name === 'floor3') this.level = new Level(this, opts.save || null); else this.setupRoom1(); }
   }
 
   // ---- Room 1: three static, preplaced standard zombies (staggered wake-ups), the exit to the Supply Hall, the bat ----
@@ -76,13 +77,13 @@ export class Sim {
     bump(this.zombies, this);
     separate(this.zombies, p);
     this.director.update(dt);
-    this.updateFlow();
+    if (this.level) this.level.step(dt, input); else this.updateFlow();
     // remove old corpses (renderer fades them first)
     if (this.zombies.length > 48 || this.time % 1 < dt) this.zombies = this.zombies.filter((z) => !(z.state === ZS.DEAD && z.corpseT > 7));
   }
 
   spawnZombie(door, opts = {}) {
-    const d = typeof door === 'string' ? LAYOUT.doors.find((x) => x.id === door) : door;
+    const d = (typeof door === 'string' ? LAYOUT.doors.find((x) => x.id === door) : door) || { id: 'placed', x: opts.x, z: opts.z, axis: 'x', spawn: { x: opts.x, z: opts.z }, yaw: opts.yaw ?? 0 };
     const jitter = (this.rand() - 0.5) * 0.8;
     const sx = d.spawn.x + (d.axis === 'x' ? jitter : 0), sz = d.spawn.z + (d.axis === 'z' ? jitter : 0);
     const z = new Zombie(sx, sz, d.yaw, {

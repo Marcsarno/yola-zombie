@@ -18,7 +18,7 @@ export class CustomPhysics {
   constructor() { this.name = 'custom'; this.syncInit = true; this.bodies = new Map(); this.nextId = 1; this.boxes = []; this.particles = []; this.stats = { steps: 0, ms: 0 }; }
   async init(world) {
     this.bodies.clear(); this.particles = [];
-    this.boxes = world.boxes.filter((b) => b.kind !== 'doorSeal').map((b) => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: b.h }));
+    this.boxes = world.boxes.filter((b) => b.kind !== 'doorSeal' && b.kind !== 'door').map((b) => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: b.h }));
   }
 
   _particle(body, pos, r, mass) {

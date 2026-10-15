@@ -8,8 +8,11 @@ import * as THREE from 'three';
 import { ClinicStage, CLINIC } from './stage.js';
 import { OpeningUI } from './ui.js';
 import { OpeningAudio } from './opaudio.js';
-import { TOUR, NARRATION, UPGRADE_PREVIEW, OBJECTIVES, DIALOGUE, CARDS, EMERGENCY_LINES } from './content.js';
+import { BOSS_CARD, TOUR, NARRATION, UPGRADE_PREVIEW, OBJECTIVES, DIALOGUE, CARDS, EMERGENCY_LINES } from './content.js';
 import { ROOM1 } from '../core/layout.js';
+const BELONG = ROOM1.belongings; // the patient-belongings table in the Supply Hall (bat and cap)
+// the athlete's clothing after the change, by material: white top and trousers, the trims and lettering whitened too
+const PATIENT_OUTFIT = { Jersey_Cream: 0xf2f1ec, Trousers_Gray: 0xebeae4, Uniform_Navy: 0xe4e3dd, Markings_OffWhite: 0xf2f1ec };
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const ease = (u) => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
@@ -20,16 +23,17 @@ const L = (x, y, z) => new THREE.Vector3(x + CLINIC.x, y, z + CLINIC.z); // clin
 // Each shot moves from `a` to `b` between t0 and t1 (eased) and holds b afterwards, until the next shot starts.
 const S = (x, y, z, pitch, yaw, width, fov = 34) => ({ x: x + CLINIC.x, y, z: z + CLINIC.z, pitch, yaw, width, fov });
 const W = (x, y, z, pitch, yaw, width, fov = 34) => ({ x, y, z, pitch, yaw, width, fov }); // world-space shot (the operating room)
+const OFFICE_SHOT = S(6.3, 0.85, -3.0, 30, 72, 4.6); // the assessment office from the east: Yola and both visitors in profile across the desk
 const SHOTS = [
   // 0:00-0:12 above the reception entrance, gliding in toward the desk
   { t0: 0, t1: 11.6, a: S(-8.0, 0.8, 1.2, 66, 14, 8.4), b: S(-5.3, 0.9, -3.9, 49, 28, 8.4) },
   // 0:12-0:25 the treatment room: doorway and starter equipment in one composition, a slow push
-  { t0: 12, t1: 25, a: S(4.0, 0.7, -1.9, 50, 30, 8.6), b: S(4.4, 0.8, -2.2, 49, 30, 7.6) },
+  { t0: 12, t1: 25, a: S(4.50, 0.8, 2.45, 49, 30, 8.8), b: S(4.80, 0.8, 2.35, 49, 30, 7.8) },
   // 0:25-0:40 hold (the faintest drift so it breathes)
-  { t0: 25, t1: 40, a: S(4.4, 0.8, -2.2, 49, 30, 7.6), b: S(4.45, 0.8, -2.25, 49, 30, 7.5) },
+  { t0: 25, t1: 40, a: S(4.80, 0.8, 2.35, 49, 30, 7.8), b: S(4.85, 0.8, 2.35, 49, 30, 7.7) },
   // 0:40-0:50 reframe on original Yola: whole upper body and the waving hand
-  { t0: 40, t1: 41.4, a: S(4.45, 0.8, -2.25, 49, 30, 7.5), b: S(6.0, 1.2, -3.9, 30, 16, 3.0) },
-  { t0: 41.4, t1: 49.6, a: S(6.0, 1.2, -3.9, 30, 16, 3.0), b: S(6.0, 1.22, -3.9, 30, 16, 2.8) },
+  { t0: 40, t1: 41.4, a: S(4.85, 0.8, 2.35, 49, 30, 7.7), b: S(5.0, 1.2, 3.7, 30, 16, 3.0) },
+  { t0: 41.4, t1: 49.6, a: S(5.0, 1.2, 3.7, 30, 16, 3.0), b: S(5.0, 1.22, 3.7, 30, 16, 2.8) },
   // 0:50-1:00 back to the familiar simulation-height reception view: the entrance, the aisle and the desk
   { t0: 50, t1: 59.5, a: S(-6.6, 0.6, 0.9, 52, 30, 7.4), b: S(-6.5, 0.6, 0.85, 52, 30, 7.0) },
 ];
@@ -122,31 +126,31 @@ export class Opening {
     at(6.6, 'title-off', () => this.ui.title(''));
     // 2. "Turn empty rooms into places of possibility."  an empty room, then quick placements of its furniture
     at(K.furnishCut, 'dip-furnish', () => this.dip(0.22, 0.26));
-    at(K.furnishCut + 0.24, 'room-empty', () => { this.showRoom('empty'); this.camTo(S(4.0, 0.8, -2.2, 50, 30, 8.6), 0.01); });
-    at(K.furnishCut + 0.5, 'room-push', () => this.camTo(S(4.3, 0.8, -2.3, 49, 30, 7.9), 3.4));
-    for (let i = 0; i < 9; i++) at(K.furnishFrom + i * K.furnishStep, 'pop' + i, () => { const h = st.furnishList()[i]; if (h) st.popIn(h); });
+    at(K.furnishCut + 0.24, 'room-empty', () => { this.showRoom('empty'); this.camTo(S(4.50, 0.8, 2.45, 50, 30, 8.8), 0.01); });
+    at(K.furnishCut + 0.5, 'room-push', () => this.camTo(S(4.80, 0.8, 2.35, 49, 30, 8), 3.4));
+    for (let i = 0; i < 9; i++) at(K.furnishFrom + i * K.furnishStep, 'pop' + i, () => { for (const h of st.furnishGroups()[i] || []) st.popIn(h); });
     // 3. staff at their stations -> a receptionist greeting someone -> Yola seated opposite a patient (previews)
     at(K.teamCut, 'dip-team', () => this.dip(0.2, 0.22));
-    at(K.teamCut + 0.2, 'team', () => { this.showRoom('team'); this.camTo(S(5.7, 1.0, -3.7, 42, 26, 6.0), 0.01); this.camTo(S(5.8, 1.0, -3.7, 42, 26, 5.6), 2.2); });
+    at(K.teamCut + 0.2, 'team', () => { this.showRoom('team'); this.camTo(S(4.6, 1.0, 2.3, 42, 26, 6.4), 0.01); this.camTo(S(4.7, 1.0, 2.3, 42, 26, 6.0), 2.2); });
     at(K.receptionCut, 'dip-greet', () => this.dip(0.2, 0.22));
     at(K.receptionCut + 0.2, 'greet', () => { this.showRoom('greet'); this.camTo(S(-5.4, 0.9, -3.2, 46, 26, 5.6), 0.01); });
     at(K.seatedCut, 'dip-seated', () => this.dip(0.15, 0.2));
-    at(K.seatedCut + 0.18, 'seated', () => { this.showRoom('seated'); this.camTo(S(2.7, 0.9, 2.65, 32, 78, 4.3), 0.01); });
+    at(K.seatedCut + 0.18, 'seated', () => { this.showRoom('seated'); this.camTo(OFFICE_SHOT, 0.01); });
     // 4. chart and decision-card previews, then the equipment
     at(K.chartCut, 'dip-chart', () => this.dip(0.2, 0.25));
-    at(K.chartCut + 0.2, 'chart-room', () => { this.showRoom('room'); this.camTo(S(4.3, 0.9, -2.4, 46, 30, 7.2), 0.01); this.camTo(S(4.4, 0.9, -2.4, 46, 30, 6.8), 5.0); });
+    at(K.chartCut + 0.2, 'chart-room', () => { this.showRoom('room'); this.camTo(S(4.60, 0.8, 2.40, 46, 30, 7.6), 0.01); this.camTo(S(4.70, 0.8, 2.40, 46, 30, 7.2), 5.0); });
     at(K.chartOn, 'chart-on', () => this.ui.preview('chart'));
     at(K.chartOff, 'chart-off', () => this.ui.preview(null));
     at(K.decisionOn, 'card-on', () => this.ui.preview('card'));
     at(K.decisionOff, 'card-off', () => this.ui.preview(null));
-    at(K.equipmentCut, 'equipment', () => this.camTo(S(5.5, 1.1, -4.3, 34, 26, 4.6), 1.5));
+    at(K.equipmentCut, 'equipment', () => this.camTo(S(4.2, 1.0, 1.4, 34, 24, 5.0), 1.5));
     // 5. the camera holds steady; the equipment changes to the middle tier, then the advanced tier (restrained chimes in the pauses)
-    at(K.holdCut, 'hold', () => { this.camTo(S(4.45, 0.8, -2.3, 49, 30, 7.6), 1.3); this.ui.chip(UPGRADE_PREVIEW.heading); });
+    at(K.holdCut, 'hold', () => { this.camTo(S(4.80, 0.8, 2.35, 49, 30, 7.8), 1.3); this.ui.chip(UPGRADE_PREVIEW.heading); });
     at(K.midTier, 'tier-mid', () => { st.setTier('standard', 0.9); this.chime(0); this.tierLabel(UPGRADE_PREVIEW.tiers[0].label, UPGRADE_PREVIEW.tiers[0].name); });
     at(K.advTier, 'tier-adv', () => { st.setTier('advanced', 0.9); this.chime(1); this.tierLabel(UPGRADE_PREVIEW.tiers[1].label, UPGRADE_PREVIEW.tiers[1].name); });
     // 6. original Yola, her awkward wave on the final phrase; the starter hospital is restored behind the cut
     at(K.restoreCut, 'dip-yola', () => this.dip(0.2, 0.22));
-    at(K.restoreCut + 0.22, 'yola', () => { this.restoreStarter(); this.showRoom('yola'); this.camTo(S(6.0, 1.2, -3.9, 30, 16, 3.0), 0.01); this.camTo(S(6.0, 1.22, -3.9, 30, 16, 2.7), 6.0); });
+    at(K.restoreCut + 0.22, 'yola', () => { this.restoreStarter(); this.showRoom('yola'); this.camTo(S(5.0, 1.2, 3.7, 30, 16, 3.0), 0.01); this.camTo(S(5.0, 1.22, 3.7, 30, 16, 2.7), 6.0); });
     at(K.waveStart, 'wave', () => A.yola.startWave(2.2));
     at(K.waveStart + 2.3, 'wave-end', () => { A.yola.waveT = -1; A.yola.play('idle', { fade: 0.2 }); });
     // 7. the doors are open: the adult baseball player with his security guard, standing inside the entrance
@@ -173,14 +177,16 @@ export class Opening {
     for (const s of st.tiers) { s.fx = null; for (const [k, h] of Object.entries(s.layers || {})) { h.visible = k === 'starter'; st.setOpacity(h, 1); } }
     this.leaveOR(); this.alarmFx = null; this.ecg = null; this.tweens = []; this.tagPoints = null; this.urgencyTimer = 0; this.sound.alarmOff(); this.sound.flatlineOff(0.05);
     st.clearPops(); st.setRoomEmpty(false); this.ui.preview(null); this.ui.letter(false);
-    for (const a of Object.values(A)) { if (a.lying) a.unlie(); if (a.root.parent !== st.root) st.toClinic(a); a.adj = {}; a.stop(); a.timeScale = 1; a.setVisible(false); a.seated = false; }
+    for (const a of Object.values(A)) { a.frozen = false; if (a.lying) a.unlie(); if (a.root.parent !== st.root) st.toClinic(a); a.adj = {}; a.stop(); a.timeScale = 1; a.setVisible(false); a.seated = false; }
     if (A.baseball.capSkin) A.baseball.capSkin.visible = true;
+    { const gp = A.security.model.getObjectByName('Security_Pistol'); if (gp) gp.visible = true; } if (this.guardPool) this.guardPool.visible = false;
+    A.baseball.setOutfit(null);
     this.ui.showEcg(false); this.ui.setVignette(0); this.ui.status(''); this.ui.urgency(null);
     this.animScale = 1; this.finalized = false; this.room1Preview = false; this.stillYola = false; this.poseAnim = null; this.restoreLook();
     // the receptionist sits at the desk (seat contract: the rig stands 0.45 m in front of the chair)
     A.staff.setVisible(true); A.staff.sitAt(-5.2, -5.5, 0, { instant: true });
     A.yola.waveT = -1; A.yola.waveRate = 1; A.yola.pose = null;
-    A.yola.place(6.0, -3.9, 0.5); A.yola.play('idle', { fade: 0 });
+    { const yt = st.anchors.yolaTour; A.yola.place(yt.x, yt.z, yt.yaw); } A.yola.play('idle', { fade: 0 });
     // the visitors wait outside the shot until the arrival
     const bb = A.baseball, sg = A.security;
     bb.place(-7.7, 0.75, Math.PI / 2); bb.play('Idle', { fade: 0 }); if (bb.bat) bb.bat.visible = true; // bat in its supplied standing pose
@@ -197,8 +203,8 @@ export class Opening {
   showRoom(which) {
     const st = this.stage, A = st.actors, an = st.anchors, hideAll = () => { for (const a of Object.values(A)) a.setVisible(false); };
     const stations = () => { // staff at their stations in the treatment room
-      A.teamA.setVisible(true); A.teamA.place(6.9, -4.3, Math.PI); A.teamA.play('Work', { fade: 0 }) || A.teamA.play('Idle', { fade: 0 });
-      A.teamB.setVisible(true); A.teamB.place(4.6, -4.4, Math.PI); A.teamB.play('Work', { fade: 0 }) || A.teamB.play('Idle', { fade: 0 });
+      A.teamA.setVisible(true); A.teamA.place(2.3, 2.85, 2.39); A.teamA.play('Work', { fade: 0 }) || A.teamA.play('Idle', { fade: 0 });
+      A.teamB.setVisible(true); A.teamB.place(5.55, 2.95, 2.5); A.teamB.play('Work', { fade: 0 }) || A.teamB.play('Idle', { fade: 0 });
     };
     this.renderer.shadowMap.needsUpdate = true;
     if (which === 'empty') { hideAll(); st.setRoomEmpty(true); }
@@ -212,10 +218,10 @@ export class Opening {
       hideAll(); const yo = A.yola, pt = A.waiting2, c1 = an.chairYola, c2 = an.chairPatient;
       yo.setVisible(true); yo.place(c1.x, c1.z, c1.yaw); yo.sitW = 1; yo.sitTarget = 1; yo.pose = 'sit'; yo.seated = true; yo.sitState = 'seated'; yo.sitSeatTop = c1.seatTop; yo.play('chart', { fade: 0 });
       yo.model.position.y = yo.baseY - (yo.pelvisY0 - (c1.seatTop + 0.04));
-      pt.setVisible(true); pt.sitAt(c2.x, c2.z, c2.yaw, { instant: true });
+      pt.setVisible(true); pt.sitAt(c2.x, c2.z, c2.yaw, { instant: true, seatTop: c2.seatTop });
     }
     if (which === 'room') { hideAll(); st.setRoomEmpty(false); stations(); }
-    if (which === 'yola') { hideAll(); A.yola.setVisible(true); A.yola.place(6.0, -3.9, 0.5); A.yola.play('idle', { fade: 0 }); }
+    if (which === 'yola') { hideAll(); A.yola.setVisible(true); A.yola.place(an.yolaTour.x, an.yolaTour.z, an.yolaTour.yaw); A.yola.play('idle', { fade: 0 }); }
     if (which === 'arrival') { hideAll(); A.staff.setVisible(true); A.baseball.setVisible(true); A.security.setVisible(true); }
   }
   // the starter hospital state, exactly as play begins: equipment at starter tier, furnished, preview people gone,
@@ -334,8 +340,8 @@ export class Opening {
     if (!this.belongings) {
       const g = new THREE.Group(); g.name = 'belongings';
       st.batStatic.visible = true; st.batStatic.parent?.remove(st.batStatic);
-      const bat = st.batStatic; bat.rotation.set(0, 0.12, -Math.PI / 2); bat.position.set(-4.72, 0.86, -14.42); g.add(bat); // resting on the table top
-      if (st.cap) { st.cap.visible = true; st.cap.position.set(-4.0, 0.84, -14.0); st.cap.rotation.y = 0.6; g.add(st.cap); }
+      const bat = st.batStatic; bat.rotation.set(0, 0.12, -Math.PI / 2); bat.position.set(BELONG.x - 0.42, 0.86, BELONG.z - 0.22); g.add(bat); // resting on the table top
+      if (st.cap) { st.cap.visible = true; st.cap.position.set(BELONG.x + 0.3, 0.84, BELONG.z + 0.2); st.cap.rotation.y = 0.6; g.add(st.cap); }
       this.scene.add(g); this.belongings = g;
     }
   }
@@ -343,6 +349,7 @@ export class Opening {
     const st = this.stage, A = this.arena;
     st.setActive(false);
     this.setSun(0, -7.5);
+    this.arena.cutWalls?.(0, -6.2, THREE.MathUtils.degToRad(35)); // the OR seen from the south-east, its near walls cut away
     this.scene.background = this.saved.bg || new THREE.Color(0x27323a);
     this.inOR = true;
     this.ensureBelongings();
@@ -417,26 +424,27 @@ export class Opening {
     this.speak(DIALOGUE.welcome, 4.8, 1.3);
     yield 0.3; if (!this.silent) this.sound.confirm();
     yield 4.8;
-    // 4. assessment entry: the athlete leads, the guard follows to the doorway then goes to a waiting chair
+    // 4. assessment entry: the athlete leads through the staff corridor into the office, the guard follows him in;
+    //    both take the visitor chairs opposite Yola (approached from the side, standing between chair and desk to sit)
     this.substate = 'ASSESSMENT_ENTRY';
     this.speak(DIALOGUE.takeChair, 3.0, 1.3);
-    bb.walk([[-3.4, -1.7], [-1.0, -0.2], [an.doorway.x, an.doorway.z], [1.5, 0.6], [1.6, 3.4], [an.chairPatient.x, an.chairPatient.z - 0.45]], { endYaw: Math.PI });
+    const cp = an.chairPatient, cg = an.chairGuard, od = an.officeDoor;
+    bb.walk([[-3.4, -1.7], [-1.0, -1.0], [an.doorway.x, an.doorway.z], [1.75, -1.0], [od.x, od.z], [4.4, -1.5], [cp.x - 0.6, cp.z - 0.45], [cp.x, cp.z - 0.45]], { endYaw: Math.PI });
     this.camTo(S(-3.5, 0.7, -1.6, 46, 28, 8.0), 1.5, { actor: bb, dx: 0.8, dz: 0.5 });
     yield 1.4;
-    sg.walk([[-4.2, -1.6], [-1.4, -0.2]]);
-    yield this.arrived(sg);
+    sg.walk([[-4.2, -1.6], [-1.2, -1.1], [an.doorway.x, an.doorway.z], [1.75, -0.95], [od.x, od.z + 0.1], [4.6, -1.2], [7.55, -1.4], [7.55, cg.z - 0.45], [cg.x, cg.z - 0.45]], { endYaw: Math.PI });
+    yield () => bb.x > 1.2; // into the corridor: cut inside the office as he arrives
+    this.dip(0.25, 0.3); yield 0.28;
+    this.camTo(OFFICE_SHOT, 0.01);
     this.mark('guard-at-door');
-    sg.walk([[-2.8, 0.4], [-4.6, 1.9], [an.guardChair.x, an.guardChair.z - 0.45 - 0.5], [an.guardChair.x, an.guardChair.z - 0.45]], { endYaw: Math.PI });
     yield this.arrived(bb);
     this.mark('athlete-at-chair-anchor');
     // 5. seat, then ask: turn to face Yola, align, SitDown, SeatedIdle
     this.state = 'SEATED_ASSESSMENT'; this.substate = 'SEATING';
-    this.camTo(S(2.7, 0.9, 2.65, 32, 78, 4.3), 1.6);
-    yield this.arrived(bb);
-    bb.sitAt(an.chairPatient.x, an.chairPatient.z, an.chairPatient.yaw);
+    bb.sitAt(cp.x, cp.z, cp.yaw, { seatTop: cp.seatTop });
     yield this.arrived(sg);
-    sg.sitAt(an.guardChair.x, an.guardChair.z, an.guardChair.yaw);
-    yield this.seated(bb);
+    sg.sitAt(cg.x, cg.z, cg.yaw, { seatTop: cg.seatTop });
+    yield this.seated(bb); yield this.seated(sg);
     yield 0.9; this.mark('both-seated');
     this.speak(DIALOGUE.review, 3.0, 1.4);
     yield 3.4;
@@ -446,19 +454,21 @@ export class Opening {
     this.mark('card-open');
     const ans = yield* this.askCard(card);
     this.answers[card.id] = ans; this.mark('card-answered');
-    // 6. departure: Yola stands first and steps clear, the athlete stands, Yola leads, the athlete follows; the guard stays seated
+    // 6. departure: Yola stands and steps clear around the desk, the athlete stands, Yola leads, the athlete follows;
+    //    the guard stays in the office
     this.substate = 'DEPARTURE';
     this.speak(DIALOGUE.toOR, 3.0, 1.4);
     yield 0.6;
     yo.riseUp(); yield this.upright(yo); yo.play('idle', { fade: 0.3 });
-    yo.walk([[1.7, 1.3]]); yield this.arrived(yo);
+    yo.walk([[5.15, -3.95]]); yield this.arrived(yo);
     bb.standUp(); yield this.upright(bb);
-    this.camTo(S(0.4, 0.9, 0.9, 46, 30, 7.4), 1.4, { actor: yo, dx: 0.4, dz: 0.2 });
-    yo.walk([[1.3, 0.5], [an.doorway.x, an.doorway.z], [-1.0, -1.5], [an.orDoor.x, an.orDoor.z + 0.4]], { endYaw: Math.PI });
+    yo.walk([[4.4, -1.6], [od.x, od.z], [1.75, -1.0], [an.doorway.x, an.doorway.z], [-1.0, -1.5], [an.orDoor.x, an.orDoor.z + 0.4]], { endYaw: Math.PI });
     yield 1.3;
-    bb.walk([[1.6, 3.4], [1.4, 0.8], [an.doorway.x, an.doorway.z], [-1.0, -0.9], [an.orDoor.x + 0.1, an.orDoor.z + 1.7]], { endYaw: Math.PI });
+    bb.walk([[cp.x - 0.6, cp.z - 0.45], [4.4, -1.5], [od.x, od.z], [1.75, -0.9], [an.doorway.x, an.doorway.z], [-1.0, -0.9], [an.orDoor.x + 0.1, an.orDoor.z + 1.7]], { endYaw: Math.PI });
+    yield () => yo.x < 0.6; // out of the corridor: cut back to reception as they come through
+    this.dip(0.25, 0.3); yield 0.28;
+    this.camTo(S(-1.4, 1.0, -3.6, 40, 30, 5.6), 0.01);
     yield this.arrived(yo, bb);
-    this.camTo(S(-1.4, 1.0, -3.6, 40, 30, 5.6), 1.2);
     yield 1.0;
     this.substate = 'OR_ENTRANCE_HOLD'; this.mark('or-entrance');
     yield* this.act3();
@@ -475,13 +485,13 @@ export class Opening {
     for (const a of [op, bb, ta, tb]) a.setVisible(true);
     st.actorToWorld(ta, 0.6, -9.2, 0); ta.play('Idle', { fade: 0 }); // the team is already at the table
     st.actorToWorld(tb, 1.75, -8.2, -Math.PI / 2); tb.play('Idle', { fade: 0 });
-    st.actorToWorld(op, 0.3, -4.1, Math.PI); st.actorToWorld(bb, 0.35, -2.4, Math.PI); bb.play('Idle', { fade: 0 }); op.play('Walk_InPlace', { fade: 0 });
+    st.actorToWorld(op, -8.1, -4.75, Math.PI / 2); st.actorToWorld(bb, -9.3, -4.35, Math.PI / 2); bb.play('Idle', { fade: 0 }); op.play('Walk_InPlace', { fade: 0 }); // they come in from the Supply Hall door
     A.staff.setVisible(false); A.security.setVisible(false);
     this.camTo(W(0, 0.9, -6.4, 50, 35, 8.0), 0.01);
-    op.walk([[0.2, -5.6], [-0.9, -7.0], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
+    op.walk([[-6.2, -4.75], [-3.4, -6.4], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
     this.mark('or-enter');
     yield 1.5;
-    bb.walk([[0.35, -5.5], [0.0, -6.6], [0.0, -7.35]], { endYaw: Math.PI });
+    bb.walk([[-6.2, -4.4], [-2.6, -5.5], [0.0, -6.4], [0.0, -7.35]], { endYaw: Math.PI });
     yield this.arrived(op, bb);
     this.mark('or-standing');
     yield 0.6;
@@ -489,12 +499,14 @@ export class Opening {
     this.dip(0.35, 0.35); yield 0.4;
     this.camTo(W(-2.3, 1.15, -10.0, 28, 30, 3.6), 0.01);
     if (bb.capSkin) bb.capSkin.visible = false;
+    if (bb.bat) bb.bat.visible = false;
+    bb.setOutfit(PATIENT_OUTFIT); // plain white patient clothing (no lettering, team colour or cap): the later white-clothed zombie is the same man
     bb.play('Idle', { fade: 0 }); bb.lie(0.9, 1.07, -8.2, Math.PI / 2); // supine, head to the west end (the anesthesia side), arms at his sides
     op.place(-1.3, -8.2, Math.PI / 2); op.play('Idle', { fade: 0 });
     yield 3.0;
     // continuity insert: the belongings spot in the Supply Hall (the bat and the cap together)
     this.dip(0.3, 0.3); yield 0.35;
-    this.camTo(W(-4.3, 0.8, -14.3, 56, 30, 3.0), 0.01);
+    this.camTo(W(BELONG.x, 0.8, BELONG.z + 0.1, 56, 30, 3.0), 0.01);
     this.mark('belongings');
     yield 2.0;
     this.dip(0.3, 0.3); yield 0.35;
@@ -592,57 +604,56 @@ export class Opening {
   *act4() {
     const st = this.stage, A = st.actors, yo = A.yola, an = ROOM1.player, Y = this.yola, g = this.game();
     const slow = (k) => { this.animScale = 1 - 0.65 * ease(k); };
-    // 1. the call changes the scene: perceived time slows, the red pulses slow; cut to the doorway frame (the concept's
-    //    framing: Yola full-length, low and front-on, in a doorway under a red emergency light)
+    // 1. the call: cut to the doorway frame (the concept's framing: full-length, low and front-on, in a doorway under a
+    //    red emergency lamp). Original Yola already stands at the anchor, perfectly still; the operating-room overlays
+    //    (the heart trace, the status, the urgency bar) are gone so nothing covers either Yola.
     this.state = 'GET_YOLA_SLOW'; this.substate = 'CALL';
-    this.tween(1.4, slow); this.setAlarm(0.3, 0.4);
-    if (!this.silent) this.sound.revealCue();
+    this.ecg = null; this.ui.showEcg(false); this.ui.status(''); this.ui.urgency(null); this.urgencyTimer = 0; this.ui.subtitle(''); this.sub = ''; this.ui.objective(''); this.ui.chip('');
+    this.setAlarm(0); this.animScale = 1;
+    if (!this.silent) { this.sound.alarmOff(); this.sound.flatlineOff(0.3); this.sound.revealCue(); }
     for (const a of [A.baseball, A.teamA, A.teamB, A.surgeon]) a.setVisible(false);
     const fy = an.yaw, fx = Math.sin(fy), fz = Math.cos(fy); // her facing at the anchor; the camera stands in front of it
     this.ensureDoorway(an, fy); this.doorway.visible = true; this.orTable(false); // (the operating table would stand between the camera and her)
-    st.actorToWorld(yo, an.x - fx * 1.5, an.z - fz * 1.5, fy); yo.setVisible(true); yo.play('idle', { fade: 0 });
+    st.actorToWorld(yo, an.x, an.z, fy); yo.frozen = false; yo.setVisible(true); yo.waveT = -1; yo.play('idle', { fade: 0 }); yo.update(0.02); yo.frozen = true; // one pose, held
     this.camTo(this.frontShot(an, 3.1, 4, fy), 0.01);
-    yo.walk([[an.x, an.z]], { endYaw: fy, speed: 0.95 }); // she steps out of the doorway toward us and settles at the anchor
-    this.tween(1.2, (k) => { this.setLight(1 - 0.15 * ease(k)); });
-    yield 2.0; yield this.arrived(yo);
-    yo.place(an.x, an.z, fy); // exactly the anchor and facing the improved model will take
+    this.redLight.position.set(an.x - fx * 0.9, 2.9, an.z - fz * 0.9); this.setLamp(0.8);
+    this.spot.intensity = 26; this.setLight(0.82); this.redLight.intensity = 2.5; // bright and neutral; only the lamp above the door is red
     this.mark('call-settled');
     // 2. original Yola in the light -> the light falls (red) -> a full black beat -> improved Yola in red -> full reveal.
     //    The model swap happens inside the black beat, at the same world anchor.
     this.state = 'MODEL_REVEAL'; this.substate = 'HOLD_OLD';
-    this.setAlarm(0);
-    this.redLight.position.set(an.x - fx * 0.9, 2.9, an.z - fz * 0.9); this.setLamp(0.8);
-    this.tween(0.8, (k) => { this.spot.intensity = 26 * ease(k); this.setLight(0.85 - 0.05 * ease(k)); this.redLight.intensity = 2.5 * ease(k); }); // bright and neutral; only the lamp above the door is red
-    yield 1.5; // original Yola, clearly, for one beat
+    yield 1.6; // original Yola, clearly, for one beat
     this.substate = 'LIGHT_FALLS';
     this.redLight.position.set(an.x - fx * 0.6, 2.8, an.z - fz * 0.6);
-    this.tween(1.1, (k) => { this.spot.intensity = 26 * (1 - ease(k)); this.setLight(0.8 - 0.72 * ease(k)); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (2.5 + 6 * ease(k)); this.setLamp(0.8 + 0.2 * ease(k)); });
-    yield 1.3;
+    this.tween(1.0, (k) => { this.spot.intensity = 26 * (1 - ease(k)); this.setLight(0.82 - 0.74 * ease(k)); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (2.5 + 6 * ease(k)); this.setLamp(0.8 + 0.2 * ease(k)); });
+    yield 1.2;
     this.substate = 'BLACK';
     const black = !this.reducedFlash && !this.silent; // reduced-flash mode never goes fully black
     if (black) { this.ui.setFadeColor('#000'); this.ui.fade.style.transition = 'none'; this.ui.fade.style.opacity = 1; }
     this.redLight.intensity = 0; this.setLamp(0); this.setLight(0.02);
-    yield 0.18; // the beat of black (about a fifth of a second)
-    yo.setVisible(false);
-    Y.reset(an.x, an.z, an.yaw); Y.setShown(true); this.stillYola = true;
+    yield 0.2; // the beat of black (a fifth of a second)
+    yo.frozen = false; yo.setVisible(false);
+    Y.reset(an.x, an.z, an.yaw); Y.setShown(true);
     if (Y.up) { Y.up.pistol = Y.up.shotgun = Y.up.axe = 0; Y.up.fists = 1; } // she is unarmed from the first frame (no weapon swap on screen)
-    for (let i = 0; i < 3; i++) this.game().stillYola(0.016);
+    for (let i = 0; i < 4; i++) this.game().stillYola(0.016); // settle one standing pose, then hold it (no idle motion)
+    this.stillYola = false;
     this.mark('swapped');
-    yield 0.14;
+    yield 0.12;
     this.substate = 'IMPROVED_SILHOUETTE';
-    if (black) { this.ui.fade.style.transition = 'opacity 0.12s linear'; this.ui.fade.style.opacity = 0; }
-    this.tween(1.5, (k) => { const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 8 * p; this.setLamp(0.5 + 0.5 * p); this.setLight(0.04 + 0.05 * ease(k)); });
-    yield 1.6;
+    if (black) { this.ui.fade.style.transition = 'opacity 0.1s linear'; this.ui.fade.style.opacity = 0; }
+    this.tween(1.2, (k) => { const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 8 * p; this.setLamp(0.5 + 0.5 * p); this.setLight(0.04 + 0.05 * ease(k)); });
+    yield 1.35;
     this.substate = 'SETTLE';
-    this.tween(1.3, (k) => { this.spot.intensity = 24 * ease(k); this.setLight(0.09 + 0.71 * ease(k)); this.redLight.intensity = 6 * (1 - ease(k)) + 1.2 * ease(k); this.setLamp(1 - 0.6 * ease(k)); });
-    yield 1.6; this.mark('reveal-settled');
-    // 3. the smooth wave: her own existing clip, once, at its natural timing (a callback to the awkward wave)
-    this.state = 'SMOOTH_WAVE'; this.substate = 'WAVE';
-    this.animScale = 1; this.camTo(this.frontShot(an, 3.1, 5, fy), 1.2); // full length, front-on: the face, the waving hand and the feet in frame
-    Y.playScript('t_greet_04', { fadeIn: 0.3, fadeOut: 0.5 });
-    if (!this.silent) this.sound.payoff();
-    this.tween(1.6, (k) => this.setLight(0.8 + 0.1 * ease(k)));
-    yield Y.scriptLength('t_greet_04') + 1.0; this.mark('wave-done');
+    this.tween(0.7, (k) => { this.spot.intensity = 24 * ease(k); this.setLight(0.09 + 0.75 * ease(k)); this.redLight.intensity = 6 * (1 - ease(k)) + 1.2 * ease(k); this.setLamp(1 - 0.6 * ease(k)); });
+    yield 0.8; this.mark('reveal-settled');
+    // 3. the boss card: a freeze frame, a hard punch-in on her face and torso, the name slammed across the screen
+    this.state = 'BOSS_CARD'; this.substate = 'FREEZE';
+    this.camTo({ ...this.frontShot(an, 1.45, 2, fy), y: 1.2 }, 0.22);
+    if (!this.silent) { this.ui.bossCard(BOSS_CARD.name, BOSS_CARD.tagline, this.reducedFlash); this.sound.bossSting(); }
+    yield 2.6; this.mark('boss-card');
+    if (!this.silent) this.ui.bossOff();
+    this.camTo(this.frontShot(an, 3.1, 5, fy), 0.5);
+    yield 0.6; this.mark('wave-done');
     // 4. return to the actual game: the combat framing, the room readable again, the zombies present once the camera widens
     this.state = 'COMBAT_READY'; this.substate = 'RETURN';
     this.ui.subtitle(''); this.sub = '';
@@ -685,7 +696,7 @@ export class Opening {
   }
   // the reveal doorway shows nothing but the doorway: the operating-room props near the anchor are hidden for the shot and restored after
   orTable(v) {
-    if (!v) { const an = ROOM1.player; const actors = Object.values(this.stage.actors).map((a) => a.root); this.hiddenProps = (this.hiddenProps || []).concat(this.arena.group.children.filter((c) => c.isGroup && c.visible && !actors.includes(c) && c !== this.doorway && Math.hypot(c.position.x - an.x, c.position.z - an.z) < 6.0)); for (const c of this.hiddenProps) c.visible = false; }
+    if (!v) { const an = ROOM1.player; const actors = Object.values(this.stage.actors).map((a) => a.root); this.hiddenProps = (this.hiddenProps || []).concat(this.arena.group.children.filter((c) => c.isGroup && c.userData.prop && c.visible && !actors.includes(c) && c !== this.doorway && Math.hypot(c.position.x - an.x, c.position.z - an.z) < 6.0)); for (const c of this.hiddenProps) c.visible = false; }
     else { for (const c of this.hiddenProps || []) c.visible = true; this.hiddenProps = []; }
   }
   setLamp(k) { if (this.lampMat) this.lampMat.color.setRGB(0.2 + 0.8 * k, 0.03 + 0.06 * k, 0.03 + 0.06 * k); }
@@ -706,7 +717,7 @@ export class Opening {
     this.co = null; this.wait = null; this.timers.length = 0; this.tweens = []; this.fx = null; this.camAnim = null; this.poseAnim = null; this.tagPoints = null;
     this.sound.alarmOff(); this.sound.flatlineOff(0.2); this.sound.stopVoice();
     this.ecg = null; this.ui.showEcg(false); this.ui.setVignette(0); this.ui.status(''); this.ui.urgency(null); this.ui.subtitle(''); this.ui.clearTags(); this.ui.closeCard();
-    this.ui.title(''); this.ui.chip(''); this.ui.objective(''); this.ui.reward(''); this.ui.setDark(0); this.ui.fade.style.opacity = 0; this.ui.letter(false);
+    this.ui.title(''); this.ui.chip(''); this.ui.objective(''); this.ui.reward(''); this.ui.setDark(0); this.ui.fade.style.opacity = 0; this.ui.letter(false); this.ui.bossOff();
     // the world: clinic away, combat lighting back, the cast gone (no duplicate humans), the guard waiting at reception
     st.setActive(false); this.inOR = true; // (the OR is the world now)
     const Bk = this.saved || {};
@@ -719,8 +730,7 @@ export class Opening {
     this.setBlood(true);
     this.ensureBelongings(); this.belongings.visible = true; st.batStatic.visible = !this.batPicked; if (st.cap) st.cap.visible = true;
     for (const k of ['yola', 'baseball', 'teamA', 'teamB', 'surgeon', 'staff']) A[k].setVisible(false);
-    const sg = A.security; // the guard waits in a Waiting Area chair near reception (Room 2's pistol connection)
-    st.actorToWorld(sg, 0, 0, Math.PI / 2); sg.setVisible(true); sg.sitAt(-6.6, -1.3, Math.PI / 2, { instant: true }); sg.play('SeatedIdle', { fade: 0 }); sg.root.position.y = 0.04; // the section's cushion top is ~0.51 m (the rig's seat contract is 0.47), so he is raised 4 cm
+    this.placeGuardBody();
     // the game: the canonical snapshot
     g.applyRoom1(); g.previewRoom1(0);
     this.stillYola = false; this.room1Preview = false; this.active = false; this.state = 'ROOM1_PLAYABLE'; this.substate = via;
@@ -728,7 +738,24 @@ export class Opening {
     try { localStorage.setItem('zc.introSeen', '1'); } catch { /* storage unavailable: the opening just plays next time */ }
     this.mark('room1-playable');
   }
-  ambient(dt) { const sg = this.stage.actors.security; if (this.finalized && sg.root.visible) sg.update(dt); }
+  ambient() {} // (the level's people are still: the guard's body does not move)
+  // the opening's guard, dead in the Waiting Area where the outbreak reached him: on his back by the reception seats, his
+  // holster empty (the pistol lies beside him as the pickup), a dark pool under him. One body, never a living duplicate.
+  placeGuardBody() {
+    const sg = this.stage.actors.security;
+    sg.frozen = false; sg.stop(); sg.seat = null; sg.seated = false; sg.sitState = 'stand';
+    this.stage.actorToWorld(sg, 0, 0, 0); sg.setVisible(true); sg.play('Idle', { fade: 0 }); sg.update(0.02);
+    sg.lie(-16.95, 0.13, -0.15, 1.95); sg.update(0.001); sg.frozen = true;
+    for (const n of ['Security_Pistol']) { const o = sg.model.getObjectByName(n); if (o) o.visible = false; }
+    if (!this.guardPool) {
+      const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 6, 64, 64, 62);
+      gr.addColorStop(0, 'rgba(70,6,8,.92)'); gr.addColorStop(0.55, 'rgba(92,10,12,.8)'); gr.addColorStop(1, 'rgba(92,10,12,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(64, 64, 62, 46, 0.4, 0, Math.PI * 2); g.fill();
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2; m.position.set(-16.35, 0.012, -0.45); m.renderOrder = 1; this.scene.add(m); this.guardPool = m;
+    }
+    this.guardPool.visible = true;
+  }
+  restoreBat() { this.batPicked = false; if (this.stage.batStatic) this.stage.batStatic.visible = true; }
   takeBat() { this.batPicked = true; this.stage.batStatic.visible = false; }
   // dev: replay the whole opening from the start, cleanly
   replay() {
@@ -761,6 +788,10 @@ export class Opening {
     let seen = false; try { seen = localStorage.getItem('zc.introSeen') === '1'; } catch { /* storage unavailable */ }
     this.ui.skipGateB.hidden = !seen;
     this.ui.skipGateB.onclick = () => { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.started = true; this.beginSilent(); this.finalize('returning'); };
+    // a Floor 3 checkpoint from an earlier session: continue straight from it
+    const save = this.game?.().levelSave;
+    this.ui.contB.hidden = !save;
+    this.ui.contB.onclick = () => { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.started = true; this.beginSilent(); this.finalize('continue'); this.game().applyLevel(save); };
     this.ui.skipB.onclick = () => this.skip();
     this.ui.muteB.onclick = () => { const m = !this.audio.muted; this.audio.setMuted(m); this.ui.muteB.classList.toggle('off', m); if (m) this.sound.stopVoice(); };
     this.ui.flashB.onclick = () => { this.reducedFlash = !this.reducedFlash; this.ui.flashB.classList.toggle('off', !this.reducedFlash); };
@@ -775,6 +806,19 @@ export class Opening {
     this.ui.gate.classList.remove('show');
     this.resetTour();
     this.narrPlaying = this.sound.playNarration(); // false without audio permission: the subtitles run on the timestamps instead
+    if (!this.narrPlaying) this.joinAudioLate();
+  }
+  // the audio context can come up a moment after the tap (iPhone resumes asynchronously): when it does, the
+  // narration and music join the tour where the story clock is, instead of staying silent
+  joinAudioLate() {
+    const ctx = this.audio.ctx; if (!ctx) return;
+    const tryJoin = () => {
+      if (ctx.state !== 'running' || !this.started || this.mode !== 'cues' || this.silent) return;
+      if (!this.sound.narr?.playing && this.t < TOUR.duration - 0.3) this.narrPlaying = this.sound.playNarration(this.t);
+      if (!this.sound.musicOn && this.t > 0) this.music();
+    };
+    ctx.addEventListener?.('statechange', tryJoin);
+    ctx.resume?.().then(tryJoin).catch(() => {});
   }
   setPaused(p) {
     if (!this.started || this.paused === p) return;
@@ -832,7 +876,7 @@ export class Opening {
     if (this.tagPoints) for (const id in this.tagPoints) { const t = this.ui.tags.get(id); if (t && t.classList.contains('show')) { const p = this.tagPoints[id].clone().project(this.camera); this.ui.placeTag(id, (p.x * 0.5 + 0.5) * innerWidth, (-p.y * 0.5 + 0.5) * innerHeight); } }
     const t = this.ui.tags.get('tier');
     if (t && t.classList.contains('show')) {
-      const p = L(5.6, 1.9, -2.4).project(this.camera);
+      const p = L(5.0, 2.35, 1.4).project(this.camera);
       this.ui.placeTag('tier', (p.x * 0.5 + 0.5) * innerWidth, (-p.y * 0.5 + 0.5) * innerHeight);
     }
   }

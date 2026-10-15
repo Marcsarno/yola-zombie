@@ -62,12 +62,13 @@ export class OpeningAudio {
     } catch { this.narr = null; return false; } // absent or undecodable: the subtitles run on the timestamps instead
   }
   get hasNarration() { return !!this.narr; }
-  playNarration() {
-    if (!this.narr || !this.ready || this.ctx.state !== 'running') return false; // no audio permission: the subtitle fallback runs
+  playNarration(offset = 0) { // offset: seconds into the recording (a late start joins the story where it is)
+    if (!this.narr || !this.ready || this.ctx.state !== 'running') return false; // no audio permission (yet): the subtitle clock runs
+    if (offset >= this.narr.buf.duration - 0.2) return false;
     this.stopNarration();
     const c = this.ctx, src = c.createBufferSource(); src.buffer = this.narr.buf;
     const g = c.createGain(); g.gain.value = 1.0; src.connect(g); g.connect(this.audio.master);
-    this.narr.t0 = c.currentTime + 0.05; src.start(this.narr.t0); this.narr.src = src; this.narr.playing = true;
+    const at = c.currentTime + 0.05; this.narr.t0 = at - offset; src.start(at, Math.max(0, offset)); this.narr.src = src; this.narr.playing = true;
     src.onended = () => { if (this.narr) this.narr.playing = false; };
     return true;
   }
@@ -176,6 +177,14 @@ export class OpeningAudio {
     if (!this.audio.ok) return;
     const t = this.ctx.currentTime + 0.02;
     [[0, 523.25], [0.22, 659.25], [0.44, 783.99], [0.7, 1046.5]].forEach(([d, f]) => { this.audio.tone(t + d, 1.4, f, { type: 'triangle', gain: 0.09, attack: 0.02 }); this.audio.tone(t + d, 1.0, f * 2, { type: 'sine', gain: 0.03 }); });
+  }
+  bossSting() { // the boss-card hit: a low slam, a whoosh and a bright stab on the cheerful key
+    if (!this.audio.ok) return;
+    const t = this.ctx.currentTime + 0.01, A = this.audio;
+    A.tone(t, 0.55, 90, { type: 'triangle', gain: 0.5, f2: 40 });
+    A.noise(t, 0.5, { type: 'lowpass', f: 2600, f2: 180, gain: 0.45 });
+    A.noise(t - 0.0, 0.28, { type: 'bandpass', f: 900, q: 0.6, f2: 3600, gain: 0.12, attack: 0.12 });
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { A.tone(t + 0.12, 1.3, f, { type: 'square', gain: 0.045 }); A.tone(t + 0.12, 1.5, f / 2, { type: 'triangle', gain: 0.05 }); });
   }
   combatAmbience() { // low room tone under the fight: a detuned drone and a slow rumble (no music)
     if (this.combatAmb || !this.ready) return; const c = this.ctx;
