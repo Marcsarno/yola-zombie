@@ -245,7 +245,7 @@ export class Opening {
     const fx = -Math.sin(y), fz = -Math.cos(y);
     c.fov = r.fov; c.updateProjectionMatrix();
     const hf = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(r.fov) / 2) * c.aspect);
-    const dist = clamp(r.width / (2 * Math.tan(hf / 2)), 2.5, 80); // metres of floor across the screen at the target
+    const dist = r.dist ?? clamp(r.width / (2 * Math.tan(hf / 2)), 2.5, 80); // metres of floor across the screen at the target
     c.position.set(r.x - fx * Math.cos(p) * dist, r.y + Math.sin(p) * dist, r.z - fz * Math.cos(p) * dist);
     c.lookAt(r.x, r.y, r.z);
   }
@@ -290,7 +290,7 @@ export class Opening {
   tickCamera(d) {
     const a = this.camAnim; if (!a) return;
     a.t += d; const u = ease(a.t / a.dur), o = {};
-    for (const k of Object.keys(a.to)) o[k] = lerp(a.from[k], a.to[k], u);
+    for (const k of Object.keys(a.to)) o[k] = lerp(a.from[k] ?? a.to[k], a.to[k], u);
     if (a.follow) {
       const fo = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.x, foz = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.z;
       const tx = a.follow.actor.x + fo + (a.follow.dx || 0), tz = a.follow.actor.z + foz + (a.follow.dz || 0);
@@ -591,37 +591,52 @@ export class Opening {
   *act4() {
     const st = this.stage, A = st.actors, yo = A.yola, an = ROOM1.player, Y = this.yola, g = this.game();
     const slow = (k) => { this.animScale = 1 - 0.65 * ease(k); };
-    // 1. the call changes the scene: perceived time slows, the red pulses slow, only now the room darkens
+    // 1. the call changes the scene: perceived time slows, the red pulses slow; cut to the doorway frame (the concept's
+    //    framing: Yola full-length, low and front-on, in a doorway under a red emergency light)
     this.state = 'GET_YOLA_SLOW'; this.substate = 'CALL';
     this.tween(1.4, slow); this.setAlarm(1, 0.4);
     if (!this.silent) this.sound.revealCue();
-    this.camTo(W(an.x + 0.45, 0.95, an.z + 0.3, 34, 28, 3.8), 2.0);
-    yo.walk([[an.x, an.z]], { endYaw: an.yaw, speed: 0.9 }); // she turns toward the disturbance and settles at the anchor
-    this.tween(2.0, (k) => this.setLight(1 - 0.6 * ease(k)));
+    for (const a of [A.baseball, A.teamA, A.teamB]) a.setVisible(false);
+    this.ensureDoorway(an); this.doorway.visible = true; this.orTable(false); // (the operating table would stand between the camera and her)
+    const fx = Math.sin(an.yaw), fz = Math.cos(an.yaw);
+    yo.setVisible(true); yo.place(an.x - fx * 1.5, an.z - fz * 1.5, an.yaw);
+    this.camTo(this.frontShot(an, 3.1), 0.01);
+    yo.walk([[an.x, an.z]], { endYaw: an.yaw, speed: 0.95 }); // she steps out of the doorway toward us and settles at the anchor
+    this.tween(1.2, (k) => { this.setLight(1 - 0.15 * ease(k)); });
     yield 2.0; yield this.arrived(yo);
     yo.place(an.x, an.z, an.yaw); // exactly the anchor and facing the improved model will take
     this.mark('call-settled');
-    // 2. old Yola -> dim -> improved Yola at the same world anchor (a few slow changes, never a strobe)
+    // 2. original Yola in the light -> the light falls (red) -> a full black beat -> improved Yola in red -> full reveal.
+    //    The model swap happens inside the black beat, at the same world anchor.
     this.state = 'MODEL_REVEAL'; this.substate = 'HOLD_OLD';
-    this.tween(0.9, (k) => { this.spot.intensity = 70 * ease(k); this.setLight(0.4 - 0.2 * ease(k)); });
     this.setAlarm(0);
-    yield 1.5; // old Yola, clearly, for one beat
-    this.substate = 'DIM';
-    this.tween(0.8, (k) => { this.spot.intensity = 70 * (1 - ease(k)); this.setLight(0.2 - 0.17 * ease(k)); });
-    yield 0.9;
-    // in the dark: swap the models at the one anchor (the patient and team leave the frame's rendering; no duplicate humans remain)
-    yo.setVisible(false); for (const a of [A.baseball, A.teamA, A.teamB]) a.setVisible(false);
-    Y.reset(an.x, an.z, an.yaw); Y.setShown(true); this.stillYola = true; this.game().stillYola(0.016);
+    this.tween(0.8, (k) => { this.spot.intensity = 70 * ease(k); this.setLight(0.85 - 0.15 * ease(k)); });
+    yield 1.5; // original Yola, clearly, for one beat
+    this.substate = 'LIGHT_FALLS';
+    this.redLight.position.set(an.x + fx * 0.5, 2.7, an.z + fz * 0.5);
+    this.tween(1.1, (k) => { this.spot.intensity = 70 * (1 - ease(k)); this.setLight(0.7 - 0.6 * ease(k)); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * ease(k); this.setLamp(ease(k)); });
+    yield 1.3;
+    this.substate = 'BLACK';
+    const black = !this.reducedFlash && !this.silent; // reduced-flash mode never goes fully black
+    if (black) { this.ui.setFadeColor('#000'); this.ui.fade.style.transition = 'none'; this.ui.fade.style.opacity = 1; }
+    this.redLight.intensity = 0; this.setLamp(0); this.setLight(0.02);
+    yield 0.18; // the beat of black (about a fifth of a second)
+    yo.setVisible(false);
+    Y.reset(an.x, an.z, an.yaw); Y.setShown(true); this.stillYola = true;
+    if (Y.up) { Y.up.pistol = Y.up.shotgun = Y.up.axe = 0; Y.up.fists = 1; } // she is unarmed from the first frame (no weapon swap on screen)
+    for (let i = 0; i < 3; i++) this.game().stillYola(0.016);
     this.mark('swapped');
+    yield 0.14;
     this.substate = 'IMPROVED_SILHOUETTE';
-    this.tween(1.6, (k) => { const p = Math.sin(Math.PI * ease(k)); this.redLight.position.set(an.x + 1.2, 2.6, an.z + 1.0); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 16 * p; this.setLight(0.03 + 0.14 * ease(k)); });
-    yield 1.7;
+    if (black) { this.ui.fade.style.transition = 'opacity 0.12s linear'; this.ui.fade.style.opacity = 0; }
+    this.tween(1.5, (k) => { const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * p; this.setLamp(p); this.setLight(0.04 + 0.1 * ease(k)); });
+    yield 1.6;
     this.substate = 'SETTLE';
-    this.tween(1.3, (k) => { this.spot.intensity = 60 * ease(k); this.setLight(0.17 + 0.5 * ease(k)); this.redLight.intensity = 0; });
+    this.tween(1.3, (k) => { this.spot.intensity = 60 * ease(k); this.setLight(0.14 + 0.56 * ease(k)); this.redLight.intensity = 18 * (1 - ease(k)); this.setLamp(1 - ease(k)); });
     yield 1.6; this.mark('reveal-settled');
     // 3. the smooth wave: her own existing clip, once, at its natural timing (a callback to the awkward wave)
     this.state = 'SMOOTH_WAVE'; this.substate = 'WAVE';
-    this.animScale = 1; this.camTo(W(an.x + 0.05, 1.02, an.z, 20, 26, 2.9), 1.0); // face, torso and the waving hand (head and feet both in frame)
+    this.animScale = 1; this.camTo(this.frontShot(an, 3.1, 5), 1.2); // full length, front-on: the face, the waving hand and the feet in frame
     Y.playScript('t_greet_04', { fadeIn: 0.3, fadeOut: 0.5 });
     if (!this.silent) this.sound.payoff();
     this.tween(1.6, (k) => this.setLight(0.67 + 0.18 * ease(k)));
@@ -642,6 +657,31 @@ export class Opening {
     this.finalize('normal');
   }
 
+  // a front-on, low shot of a world anchor (the camera stands where the anchor's character faces)
+  frontShot(an, dist, pitch = 4) { return { ...W(an.x, 0.88, an.z, pitch, THREE.MathUtils.radToDeg(an.yaw), 3, 44), dist }; }
+  // the reveal doorway: frame, two open door leaves, a dark corridor and the red emergency lamp, built once behind the anchor
+  ensureDoorway(an) {
+    if (this.doorway) return;
+    const g = new THREE.Group(); g.name = 'doorway';
+    const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, ...o });
+    const box = (w, h, d, x, y, z, m, p = g) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); p.add(b); return b; };
+    const trim = std(0x2f7b80), wall = std(0xe6e0d2), leaf = std(0xd9d2c2);
+    box(0.12, 2.5, 0.24, -0.68, 1.25, 0, trim); box(0.12, 2.5, 0.24, 0.68, 1.25, 0, trim); box(1.48, 0.14, 0.24, 0, 2.5, 0, trim);
+    box(2.6, 3.4, 0.2, -1.98, 1.7, -0.02, wall); box(2.6, 3.4, 0.2, 1.98, 1.7, -0.02, wall); box(1.4, 0.9, 0.2, 0, 3.0, -0.02, wall);
+    box(1.4, 2.45, 0.05, 0, 1.22, -0.5, new THREE.MeshBasicMaterial({ color: 0xa9bcc0 })); // the corridor beyond, lit
+    box(1.4, 0.05, 0.6, 0, 0.0, -0.25, std(0x8d9a9c)); box(1.4, 0.04, 0.6, 0, 2.47, -0.25, new THREE.MeshBasicMaterial({ color: 0xdfe8e8 }));
+    for (const sd of [-1, 1]) { // the leaves, swung open toward the camera
+      const piv = new THREE.Group(); piv.position.set(sd * 0.62, 0, 0.12); piv.rotation.y = sd * -1.2; g.add(piv);
+      box(0.64, 2.3, 0.07, -sd * 0.32, 1.15, 0, leaf, piv);
+      box(0.1, 0.6, 0.06, -sd * 0.5, 1.55, 0.06, std(0x2f7b80), piv); // a handle plate
+    }
+    this.lampMat = new THREE.MeshBasicMaterial({ color: 0x300808 });
+    box(0.56, 0.18, 0.14, 0, 2.78, 0.14, this.lampMat);
+    g.position.set(an.x - Math.sin(an.yaw) * 1.0, 0, an.z - Math.cos(an.yaw) * 1.0); g.rotation.y = an.yaw; g.visible = false;
+    this.scene.add(g); this.doorway = g;
+  }
+  orTable(v) { const t = this.arena.group.children.find((c) => c.position.x === 0 && c.position.z === -8.2); if (t) t.visible = v; }
+  setLamp(k) { if (this.lampMat) this.lampMat.color.setRGB(0.2 + 0.8 * k, 0.03 + 0.06 * k, 0.03 + 0.06 * k); }
   poseTo(pose, secs) { this.poseAnim = { from: { pos: this.camera.position.clone(), quat: this.camera.quaternion.clone(), fov: this.camera.fov }, to: pose, t: 0, dur: Math.max(0.001, secs) }; }
   tickPose(d) {
     const a = this.poseAnim; if (!a) return;
@@ -668,6 +708,7 @@ export class Opening {
     this.renderer.shadowMap.needsUpdate = true;
     for (const l of this.arena.lights) l.visible = true;
     this.animScale = 1; this.setLight(1); this.lightK = 1; if (this.spot) this.spot.intensity = 0; if (this.redLight) this.redLight.intensity = 0;
+    if (this.doorway) this.doorway.visible = false; this.orTable(true); this.setLamp(0); this.ui.fade.style.opacity = 0;
     this.setBlood(true);
     this.ensureBelongings(); this.belongings.visible = true; st.batStatic.visible = !this.batPicked; if (st.cap) st.cap.visible = true;
     for (const k of ['yola', 'baseball', 'teamA', 'teamB', 'staff']) A[k].setVisible(false);

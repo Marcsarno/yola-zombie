@@ -50041,6 +50041,9 @@ void main() {
       this.waveT = -1;
       this.rest = {};
       this.pose = null;
+      this.root.traverse((o) => {
+        if (/^Rounded part/.test(o.name)) o.visible = false;
+      });
       this.keyed = /* @__PURE__ */ new Set();
       for (const c of gltf.animations) for (const tr of c.tracks) this.keyed.add(tr.name.split(".")[0]);
       for (const n of ["upperarm_r", "forearm_r", "upperarm_l", "forearm_l", "head", "torso", "thigh_l", "thigh_r", "shin_l", "shin_r"]) if (this.bones[n]) this.rest[n] = this.bones[n].quaternion.clone();
@@ -51797,7 +51800,7 @@ void main() {
       c.fov = r.fov;
       c.updateProjectionMatrix();
       const hf = 2 * Math.atan(Math.tan(MathUtils.degToRad(r.fov) / 2) * c.aspect);
-      const dist2 = clamp6(r.width / (2 * Math.tan(hf / 2)), 2.5, 80);
+      const dist2 = r.dist ?? clamp6(r.width / (2 * Math.tan(hf / 2)), 2.5, 80);
       c.position.set(r.x - fx2 * Math.cos(p) * dist2, r.y + Math.sin(p) * dist2, r.z - fz * Math.cos(p) * dist2);
       c.lookAt(r.x, r.y, r.z);
     }
@@ -51887,7 +51890,7 @@ void main() {
       if (!a) return;
       a.t += d;
       const u = ease(a.t / a.dur), o = {};
-      for (const k of Object.keys(a.to)) o[k] = lerp2(a.from[k], a.to[k], u);
+      for (const k of Object.keys(a.to)) o[k] = lerp2(a.from[k] ?? a.to[k], a.to[k], u);
       if (a.follow) {
         const fo = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.x, foz = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.z;
         const tx = a.follow.actor.x + fo + (a.follow.dx || 0), tz = a.follow.actor.z + foz + (a.follow.dz || 0);
@@ -52325,54 +52328,86 @@ void main() {
       this.tween(1.4, slow);
       this.setAlarm(1, 0.4);
       if (!this.silent) this.sound.revealCue();
-      this.camTo(W(an.x + 0.45, 0.95, an.z + 0.3, 34, 28, 3.8), 2);
-      yo.walk([[an.x, an.z]], { endYaw: an.yaw, speed: 0.9 });
-      this.tween(2, (k) => this.setLight(1 - 0.6 * ease(k)));
+      for (const a of [A.baseball, A.teamA, A.teamB]) a.setVisible(false);
+      this.ensureDoorway(an);
+      this.doorway.visible = true;
+      this.orTable(false);
+      const fx2 = Math.sin(an.yaw), fz = Math.cos(an.yaw);
+      yo.setVisible(true);
+      yo.place(an.x - fx2 * 1.5, an.z - fz * 1.5, an.yaw);
+      this.camTo(this.frontShot(an, 3.1), 0.01);
+      yo.walk([[an.x, an.z]], { endYaw: an.yaw, speed: 0.95 });
+      this.tween(1.2, (k) => {
+        this.setLight(1 - 0.15 * ease(k));
+      });
       yield 2;
       yield this.arrived(yo);
       yo.place(an.x, an.z, an.yaw);
       this.mark("call-settled");
       this.state = "MODEL_REVEAL";
       this.substate = "HOLD_OLD";
-      this.tween(0.9, (k) => {
-        this.spot.intensity = 70 * ease(k);
-        this.setLight(0.4 - 0.2 * ease(k));
-      });
       this.setAlarm(0);
-      yield 1.5;
-      this.substate = "DIM";
       this.tween(0.8, (k) => {
-        this.spot.intensity = 70 * (1 - ease(k));
-        this.setLight(0.2 - 0.17 * ease(k));
+        this.spot.intensity = 70 * ease(k);
+        this.setLight(0.85 - 0.15 * ease(k));
       });
-      yield 0.9;
+      yield 1.5;
+      this.substate = "LIGHT_FALLS";
+      this.redLight.position.set(an.x + fx2 * 0.5, 2.7, an.z + fz * 0.5);
+      this.tween(1.1, (k) => {
+        this.spot.intensity = 70 * (1 - ease(k));
+        this.setLight(0.7 - 0.6 * ease(k));
+        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * ease(k);
+        this.setLamp(ease(k));
+      });
+      yield 1.3;
+      this.substate = "BLACK";
+      const black = !this.reducedFlash && !this.silent;
+      if (black) {
+        this.ui.setFadeColor("#000");
+        this.ui.fade.style.transition = "none";
+        this.ui.fade.style.opacity = 1;
+      }
+      this.redLight.intensity = 0;
+      this.setLamp(0);
+      this.setLight(0.02);
+      yield 0.18;
       yo.setVisible(false);
-      for (const a of [A.baseball, A.teamA, A.teamB]) a.setVisible(false);
       Y.reset(an.x, an.z, an.yaw);
       Y.setShown(true);
       this.stillYola = true;
-      this.game().stillYola(0.016);
+      if (Y.up) {
+        Y.up.pistol = Y.up.shotgun = Y.up.axe = 0;
+        Y.up.fists = 1;
+      }
+      for (let i = 0; i < 3; i++) this.game().stillYola(0.016);
       this.mark("swapped");
+      yield 0.14;
       this.substate = "IMPROVED_SILHOUETTE";
-      this.tween(1.6, (k) => {
-        const p = Math.sin(Math.PI * ease(k));
-        this.redLight.position.set(an.x + 1.2, 2.6, an.z + 1);
-        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 16 * p;
-        this.setLight(0.03 + 0.14 * ease(k));
+      if (black) {
+        this.ui.fade.style.transition = "opacity 0.12s linear";
+        this.ui.fade.style.opacity = 0;
+      }
+      this.tween(1.5, (k) => {
+        const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k);
+        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * p;
+        this.setLamp(p);
+        this.setLight(0.04 + 0.1 * ease(k));
       });
-      yield 1.7;
+      yield 1.6;
       this.substate = "SETTLE";
       this.tween(1.3, (k) => {
         this.spot.intensity = 60 * ease(k);
-        this.setLight(0.17 + 0.5 * ease(k));
-        this.redLight.intensity = 0;
+        this.setLight(0.14 + 0.56 * ease(k));
+        this.redLight.intensity = 18 * (1 - ease(k));
+        this.setLamp(1 - ease(k));
       });
       yield 1.6;
       this.mark("reveal-settled");
       this.state = "SMOOTH_WAVE";
       this.substate = "WAVE";
       this.animScale = 1;
-      this.camTo(W(an.x + 0.05, 1.02, an.z, 20, 26, 2.9), 1);
+      this.camTo(this.frontShot(an, 3.1, 5), 1.2);
       Y.playScript("t_greet_04", { fadeIn: 0.3, fadeOut: 0.5 });
       if (!this.silent) this.sound.payoff();
       this.tween(1.6, (k) => this.setLight(0.67 + 0.18 * ease(k)));
@@ -52400,6 +52435,55 @@ void main() {
       this.revealZombies();
       yield 1.2;
       this.finalize("normal");
+    }
+    // a front-on, low shot of a world anchor (the camera stands where the anchor's character faces)
+    frontShot(an, dist2, pitch = 4) {
+      return { ...W(an.x, 0.88, an.z, pitch, MathUtils.radToDeg(an.yaw), 3, 44), dist: dist2 };
+    }
+    // the reveal doorway: frame, two open door leaves, a dark corridor and the red emergency lamp, built once behind the anchor
+    ensureDoorway(an) {
+      if (this.doorway) return;
+      const g = new Group();
+      g.name = "doorway";
+      const std = (c, o = {}) => new MeshStandardMaterial({ color: c, roughness: 0.7, ...o });
+      const box = (w, h, d, x, y, z, m, p = g) => {
+        const b = new Mesh(new BoxGeometry(w, h, d), m);
+        b.position.set(x, y, z);
+        p.add(b);
+        return b;
+      };
+      const trim = std(3111808), wall = std(15130834), leaf = std(14275266);
+      box(0.12, 2.5, 0.24, -0.68, 1.25, 0, trim);
+      box(0.12, 2.5, 0.24, 0.68, 1.25, 0, trim);
+      box(1.48, 0.14, 0.24, 0, 2.5, 0, trim);
+      box(2.6, 3.4, 0.2, -1.98, 1.7, -0.02, wall);
+      box(2.6, 3.4, 0.2, 1.98, 1.7, -0.02, wall);
+      box(1.4, 0.9, 0.2, 0, 3, -0.02, wall);
+      box(1.4, 2.45, 0.05, 0, 1.22, -0.5, new MeshBasicMaterial({ color: 11123904 }));
+      box(1.4, 0.05, 0.6, 0, 0, -0.25, std(9280156));
+      box(1.4, 0.04, 0.6, 0, 2.47, -0.25, new MeshBasicMaterial({ color: 14674152 }));
+      for (const sd of [-1, 1]) {
+        const piv = new Group();
+        piv.position.set(sd * 0.62, 0, 0.12);
+        piv.rotation.y = sd * -1.2;
+        g.add(piv);
+        box(0.64, 2.3, 0.07, -sd * 0.32, 1.15, 0, leaf, piv);
+        box(0.1, 0.6, 0.06, -sd * 0.5, 1.55, 0.06, std(3111808), piv);
+      }
+      this.lampMat = new MeshBasicMaterial({ color: 3147784 });
+      box(0.56, 0.18, 0.14, 0, 2.78, 0.14, this.lampMat);
+      g.position.set(an.x - Math.sin(an.yaw) * 1, 0, an.z - Math.cos(an.yaw) * 1);
+      g.rotation.y = an.yaw;
+      g.visible = false;
+      this.scene.add(g);
+      this.doorway = g;
+    }
+    orTable(v) {
+      const t = this.arena.group.children.find((c) => c.position.x === 0 && c.position.z === -8.2);
+      if (t) t.visible = v;
+    }
+    setLamp(k) {
+      if (this.lampMat) this.lampMat.color.setRGB(0.2 + 0.8 * k, 0.03 + 0.06 * k, 0.03 + 0.06 * k);
     }
     poseTo(pose, secs) {
       this.poseAnim = { from: { pos: this.camera.position.clone(), quat: this.camera.quaternion.clone(), fov: this.camera.fov }, to: pose, t: 0, dur: Math.max(1e-3, secs) };
@@ -52468,6 +52552,10 @@ void main() {
       this.lightK = 1;
       if (this.spot) this.spot.intensity = 0;
       if (this.redLight) this.redLight.intensity = 0;
+      if (this.doorway) this.doorway.visible = false;
+      this.orTable(true);
+      this.setLamp(0);
+      this.ui.fade.style.opacity = 0;
       this.setBlood(true);
       this.ensureBelongings();
       this.belongings.visible = true;
