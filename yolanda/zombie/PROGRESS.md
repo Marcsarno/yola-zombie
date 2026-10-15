@@ -117,3 +117,17 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
       opening.seek(t), opening.runTo(label), opening.skip(), opening.replay(), opening.report().
     - Asset orientation facts used: staff-chair front is -Z; waiting/break/reception chairs front +Z; reception and team desks
       have the operator on +Z (rotated 180 here so the screen faces the person behind the desk).
+  * Verification so far (desktop pane, mobile-sized viewport 375x812; NOT a physical phone):
+    - Normal completion, skip, direct start (?room1=1) and replay all reach the same Room 1 snapshot (identical JSON snapshot of
+      sim, actors, lights, HUD, camera; only live mouse aim differs). Repeated Start taps/card taps start/answer once.
+    - Background/blur pauses the story clock, audio context and voice; resume continues with no cue burst.
+    - Reduced flash: min light 0.32 (vs 0.03), red light and vignette halved, same reveal timing (13.9 s).
+    - Live run with the real recording (real click for audio permission): story clock follows the narration position.
+    - Room 1: objective chain works (Get out of the operating room -> Pick up the baseball bat -> Head for the Waiting Area and
+      Reception), bat pickup grants BAT, zombies wake at 2/5/8 s, punches/kick hit.
+    - Desktop render cost (JS ms/frame, calls, tris): reception 3.2 ms/169/118k; treatment 2.7/184/142k; OR 3.7/221/182k; Room 1 +3
+      zombies 2.9/195/172k; 9 lights. Phone cost not measured.
+  * NOT yet verified / known gaps: sound itself (music, chimes, voice lines for non-recorded dialogue, scream, flatline) never heard;
+    no physical-phone test; the improved Yola's wave (t_greet_04) reads well in stills but was not judged frame-by-frame by the
+    user; guard seat height in the hall chair is approximate; Room 2 / reception fight not built (guard just sits there).
+    Next if continuing: user review of the full run on their phone, then polish items they call out.
