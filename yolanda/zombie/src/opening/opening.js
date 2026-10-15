@@ -361,6 +361,7 @@ export class Opening {
   setLight(k) {
     const A = this.arena, b = this.lightBase; if (!b) return;
     k = Math.max(this.reducedFlash ? 0.32 : 0.02, k); this.lightK = k;
+    if (this.hallMat) this.hallMat.color.setRGB(0.66 * Math.min(1, k * 1.1), 0.74 * Math.min(1, k * 1.1), 0.75 * Math.min(1, k * 1.1));
     if (A.hemi) A.hemi.intensity = b.hemi * k; if (A.sun) A.sun.intensity = b.sun * k; this.scene.environmentIntensity = b.env * k;
   }
   restoreLook() {
@@ -465,23 +466,23 @@ export class Opening {
 
   // ================================================================== ACT 3: OR choices, apparent success, impossible movement
   *act3() {
-    const st = this.stage, A = st.actors, bb = A.baseball, yo = A.yola, ta = A.teamA, tb = A.teamB;
+    const st = this.stage, A = st.actors, bb = A.baseball, op = A.surgeon, ta = A.teamA, tb = A.teamB;
     this.state = 'OR_CHOICES'; this.substate = 'ENTER';
     // 1. enter and prepare: Yola leads through the OR doorway; the athlete follows after she clears it
     this.speak(DIALOGUE.settle, 3.0, 1.4);
     this.dip(0.4, 0.4); yield 0.45;
     this.enterOR();
-    for (const a of [yo, bb, ta, tb]) a.setVisible(true);
+    for (const a of [op, bb, ta, tb]) a.setVisible(true);
     st.actorToWorld(ta, 0.6, -9.2, 0); ta.play('Idle', { fade: 0 }); // the team is already at the table
     st.actorToWorld(tb, 1.75, -8.2, -Math.PI / 2); tb.play('Idle', { fade: 0 });
-    st.actorToWorld(yo, 0.3, -4.1, Math.PI); st.actorToWorld(bb, 0.35, -2.4, Math.PI); bb.play('Idle', { fade: 0 }); yo.play('walk', { fade: 0 });
+    st.actorToWorld(op, 0.3, -4.1, Math.PI); st.actorToWorld(bb, 0.35, -2.4, Math.PI); bb.play('Idle', { fade: 0 }); op.play('Walk_InPlace', { fade: 0 });
     A.staff.setVisible(false); A.security.setVisible(false);
     this.camTo(W(0, 0.9, -6.4, 50, 35, 8.0), 0.01);
-    yo.walk([[0.2, -5.6], [-0.9, -7.0], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
+    op.walk([[0.2, -5.6], [-0.9, -7.0], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
     this.mark('or-enter');
     yield 1.5;
     bb.walk([[0.35, -5.5], [0.0, -6.6], [0.0, -7.35]], { endYaw: Math.PI });
-    yield this.arrived(yo, bb);
+    yield this.arrived(op, bb);
     this.mark('or-standing');
     yield 0.6;
     // the athlete is moved onto the table behind a cut to the anesthesia equipment (three seconds); the cap comes off
@@ -489,7 +490,7 @@ export class Opening {
     this.camTo(W(-2.3, 1.15, -10.0, 28, 30, 3.6), 0.01);
     if (bb.capSkin) bb.capSkin.visible = false;
     bb.play('Idle', { fade: 0 }); bb.lie(0.9, 1.07, -8.2, Math.PI / 2); // supine, head to the west end (the anesthesia side), arms at his sides
-    yo.place(-1.3, -8.2, Math.PI / 2); yo.play('idle', { fade: 0 });
+    op.place(-1.3, -8.2, Math.PI / 2); op.play('Idle', { fade: 0 });
     yield 3.0;
     // continuity insert: the belongings spot in the Supply Hall (the bat and the cap together)
     this.dip(0.3, 0.3); yield 0.35;
@@ -538,7 +539,7 @@ export class Opening {
     if (!this.silent) { this.sound.setMusicLevel(0, 1.8); this.sound.alarmOn(0.75); }
     this.speak(DIALOGUE.somethingWrong, 3.2, 1.0);
     this.mark('alert');
-    yo.walk([[-1.7, -9.2], [-2.0, -9.7]], { endYaw: Math.PI * 0.85 }); // she steps from the patient to the nearby workstation; the team stays
+    op.walk([[-1.7, -9.2], [-2.0, -9.7]], { endYaw: Math.PI * 0.85 }); // she steps from the patient to the nearby workstation; the team stays
     let u = 1; this.urgencyTimer = 6; // a cosmetic bar only: nothing is lost when it empties
     yield 3.4;
     // 5. flatline, motion, and the call
@@ -594,27 +595,28 @@ export class Opening {
     // 1. the call changes the scene: perceived time slows, the red pulses slow; cut to the doorway frame (the concept's
     //    framing: Yola full-length, low and front-on, in a doorway under a red emergency light)
     this.state = 'GET_YOLA_SLOW'; this.substate = 'CALL';
-    this.tween(1.4, slow); this.setAlarm(1, 0.4);
+    this.tween(1.4, slow); this.setAlarm(0.3, 0.4);
     if (!this.silent) this.sound.revealCue();
-    for (const a of [A.baseball, A.teamA, A.teamB]) a.setVisible(false);
-    this.ensureDoorway(an); this.doorway.visible = true; this.orTable(false); // (the operating table would stand between the camera and her)
-    const fx = Math.sin(an.yaw), fz = Math.cos(an.yaw);
-    yo.setVisible(true); yo.place(an.x - fx * 1.5, an.z - fz * 1.5, an.yaw);
-    this.camTo(this.frontShot(an, 3.1), 0.01);
-    yo.walk([[an.x, an.z]], { endYaw: an.yaw, speed: 0.95 }); // she steps out of the doorway toward us and settles at the anchor
+    for (const a of [A.baseball, A.teamA, A.teamB, A.surgeon]) a.setVisible(false);
+    const fy = an.yaw, fx = Math.sin(fy), fz = Math.cos(fy); // her facing at the anchor; the camera stands in front of it
+    this.ensureDoorway(an, fy); this.doorway.visible = true; this.orTable(false); // (the operating table would stand between the camera and her)
+    st.actorToWorld(yo, an.x - fx * 1.5, an.z - fz * 1.5, fy); yo.setVisible(true); yo.play('idle', { fade: 0 });
+    this.camTo(this.frontShot(an, 3.1, 4, fy), 0.01);
+    yo.walk([[an.x, an.z]], { endYaw: fy, speed: 0.95 }); // she steps out of the doorway toward us and settles at the anchor
     this.tween(1.2, (k) => { this.setLight(1 - 0.15 * ease(k)); });
     yield 2.0; yield this.arrived(yo);
-    yo.place(an.x, an.z, an.yaw); // exactly the anchor and facing the improved model will take
+    yo.place(an.x, an.z, fy); // exactly the anchor and facing the improved model will take
     this.mark('call-settled');
     // 2. original Yola in the light -> the light falls (red) -> a full black beat -> improved Yola in red -> full reveal.
     //    The model swap happens inside the black beat, at the same world anchor.
     this.state = 'MODEL_REVEAL'; this.substate = 'HOLD_OLD';
     this.setAlarm(0);
-    this.tween(0.8, (k) => { this.spot.intensity = 70 * ease(k); this.setLight(0.85 - 0.15 * ease(k)); });
+    this.redLight.position.set(an.x - fx * 0.9, 2.9, an.z - fz * 0.9); this.setLamp(0.8);
+    this.tween(0.8, (k) => { this.spot.intensity = 26 * ease(k); this.setLight(0.85 - 0.05 * ease(k)); this.redLight.intensity = 2.5 * ease(k); }); // bright and neutral; only the lamp above the door is red
     yield 1.5; // original Yola, clearly, for one beat
     this.substate = 'LIGHT_FALLS';
-    this.redLight.position.set(an.x + fx * 0.5, 2.7, an.z + fz * 0.5);
-    this.tween(1.1, (k) => { this.spot.intensity = 70 * (1 - ease(k)); this.setLight(0.7 - 0.6 * ease(k)); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * ease(k); this.setLamp(ease(k)); });
+    this.redLight.position.set(an.x - fx * 0.6, 2.8, an.z - fz * 0.6);
+    this.tween(1.1, (k) => { this.spot.intensity = 26 * (1 - ease(k)); this.setLight(0.8 - 0.72 * ease(k)); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (2.5 + 6 * ease(k)); this.setLamp(0.8 + 0.2 * ease(k)); });
     yield 1.3;
     this.substate = 'BLACK';
     const black = !this.reducedFlash && !this.silent; // reduced-flash mode never goes fully black
@@ -629,17 +631,17 @@ export class Opening {
     yield 0.14;
     this.substate = 'IMPROVED_SILHOUETTE';
     if (black) { this.ui.fade.style.transition = 'opacity 0.12s linear'; this.ui.fade.style.opacity = 0; }
-    this.tween(1.5, (k) => { const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * p; this.setLamp(p); this.setLight(0.04 + 0.1 * ease(k)); });
+    this.tween(1.5, (k) => { const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k); this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 8 * p; this.setLamp(0.5 + 0.5 * p); this.setLight(0.04 + 0.05 * ease(k)); });
     yield 1.6;
     this.substate = 'SETTLE';
-    this.tween(1.3, (k) => { this.spot.intensity = 60 * ease(k); this.setLight(0.14 + 0.56 * ease(k)); this.redLight.intensity = 18 * (1 - ease(k)); this.setLamp(1 - ease(k)); });
+    this.tween(1.3, (k) => { this.spot.intensity = 24 * ease(k); this.setLight(0.09 + 0.71 * ease(k)); this.redLight.intensity = 6 * (1 - ease(k)) + 1.2 * ease(k); this.setLamp(1 - 0.6 * ease(k)); });
     yield 1.6; this.mark('reveal-settled');
     // 3. the smooth wave: her own existing clip, once, at its natural timing (a callback to the awkward wave)
     this.state = 'SMOOTH_WAVE'; this.substate = 'WAVE';
-    this.animScale = 1; this.camTo(this.frontShot(an, 3.1, 5), 1.2); // full length, front-on: the face, the waving hand and the feet in frame
+    this.animScale = 1; this.camTo(this.frontShot(an, 3.1, 5, fy), 1.2); // full length, front-on: the face, the waving hand and the feet in frame
     Y.playScript('t_greet_04', { fadeIn: 0.3, fadeOut: 0.5 });
     if (!this.silent) this.sound.payoff();
-    this.tween(1.6, (k) => this.setLight(0.67 + 0.18 * ease(k)));
+    this.tween(1.6, (k) => this.setLight(0.8 + 0.1 * ease(k)));
     yield Y.scriptLength('t_greet_04') + 1.0; this.mark('wave-done');
     // 4. return to the actual game: the combat framing, the room readable again, the zombies present once the camera widens
     this.state = 'COMBAT_READY'; this.substate = 'RETURN';
@@ -658,9 +660,9 @@ export class Opening {
   }
 
   // a front-on, low shot of a world anchor (the camera stands where the anchor's character faces)
-  frontShot(an, dist, pitch = 4) { return { ...W(an.x, 0.88, an.z, pitch, THREE.MathUtils.radToDeg(an.yaw), 3, 44), dist }; }
+  frontShot(an, dist, pitch = 4, yaw = an.yaw) { return { ...W(an.x, 0.88, an.z, pitch, THREE.MathUtils.radToDeg(yaw), 3, 44), dist }; }
   // the reveal doorway: frame, two open door leaves, a dark corridor and the red emergency lamp, built once behind the anchor
-  ensureDoorway(an) {
+  ensureDoorway(an, fy = an.yaw) {
     if (this.doorway) return;
     const g = new THREE.Group(); g.name = 'doorway';
     const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, ...o });
@@ -668,7 +670,8 @@ export class Opening {
     const trim = std(0x2f7b80), wall = std(0xe6e0d2), leaf = std(0xd9d2c2);
     box(0.12, 2.5, 0.24, -0.68, 1.25, 0, trim); box(0.12, 2.5, 0.24, 0.68, 1.25, 0, trim); box(1.48, 0.14, 0.24, 0, 2.5, 0, trim);
     box(2.6, 3.4, 0.2, -1.98, 1.7, -0.02, wall); box(2.6, 3.4, 0.2, 1.98, 1.7, -0.02, wall); box(1.4, 0.9, 0.2, 0, 3.0, -0.02, wall);
-    box(1.4, 2.45, 0.05, 0, 1.22, -0.5, new THREE.MeshBasicMaterial({ color: 0xa9bcc0 })); // the corridor beyond, lit
+    this.hallMat = new THREE.MeshBasicMaterial({ color: 0xa9bcc0 });
+    box(1.4, 2.45, 0.05, 0, 1.22, -0.5, this.hallMat); // the corridor beyond, lit (dims with the room light)
     box(1.4, 0.05, 0.6, 0, 0.0, -0.25, std(0x8d9a9c)); box(1.4, 0.04, 0.6, 0, 2.47, -0.25, new THREE.MeshBasicMaterial({ color: 0xdfe8e8 }));
     for (const sd of [-1, 1]) { // the leaves, swung open toward the camera
       const piv = new THREE.Group(); piv.position.set(sd * 0.62, 0, 0.12); piv.rotation.y = sd * -1.2; g.add(piv);
@@ -677,10 +680,14 @@ export class Opening {
     }
     this.lampMat = new THREE.MeshBasicMaterial({ color: 0x300808 });
     box(0.56, 0.18, 0.14, 0, 2.78, 0.14, this.lampMat);
-    g.position.set(an.x - Math.sin(an.yaw) * 1.0, 0, an.z - Math.cos(an.yaw) * 1.0); g.rotation.y = an.yaw; g.visible = false;
+    g.position.set(an.x - Math.sin(fy) * 1.0, 0, an.z - Math.cos(fy) * 1.0); g.rotation.y = fy; g.visible = false;
     this.scene.add(g); this.doorway = g;
   }
-  orTable(v) { const t = this.arena.group.children.find((c) => c.position.x === 0 && c.position.z === -8.2); if (t) t.visible = v; }
+  // the reveal doorway shows nothing but the doorway: the operating-room props near the anchor are hidden for the shot and restored after
+  orTable(v) {
+    if (!v) { const an = ROOM1.player; const actors = Object.values(this.stage.actors).map((a) => a.root); this.hiddenProps = (this.hiddenProps || []).concat(this.arena.group.children.filter((c) => c.isGroup && c.visible && !actors.includes(c) && c !== this.doorway && Math.hypot(c.position.x - an.x, c.position.z - an.z) < 6.0)); for (const c of this.hiddenProps) c.visible = false; }
+    else { for (const c of this.hiddenProps || []) c.visible = true; this.hiddenProps = []; }
+  }
   setLamp(k) { if (this.lampMat) this.lampMat.color.setRGB(0.2 + 0.8 * k, 0.03 + 0.06 * k, 0.03 + 0.06 * k); }
   poseTo(pose, secs) { this.poseAnim = { from: { pos: this.camera.position.clone(), quat: this.camera.quaternion.clone(), fov: this.camera.fov }, to: pose, t: 0, dur: Math.max(0.001, secs) }; }
   tickPose(d) {
@@ -711,7 +718,7 @@ export class Opening {
     if (this.doorway) this.doorway.visible = false; this.orTable(true); this.setLamp(0); this.ui.fade.style.opacity = 0;
     this.setBlood(true);
     this.ensureBelongings(); this.belongings.visible = true; st.batStatic.visible = !this.batPicked; if (st.cap) st.cap.visible = true;
-    for (const k of ['yola', 'baseball', 'teamA', 'teamB', 'staff']) A[k].setVisible(false);
+    for (const k of ['yola', 'baseball', 'teamA', 'teamB', 'surgeon', 'staff']) A[k].setVisible(false);
     const sg = A.security; // the guard waits in a Waiting Area chair near reception (Room 2's pistol connection)
     st.actorToWorld(sg, 0, 0, Math.PI / 2); sg.setVisible(true); sg.sitAt(-6.6, -1.3, Math.PI / 2, { instant: true }); sg.play('SeatedIdle', { fade: 0 }); sg.root.position.y = 0.04; // the section's cushion top is ~0.51 m (the rig's seat contract is 0.47), so he is raised 4 cm
     // the game: the canonical snapshot

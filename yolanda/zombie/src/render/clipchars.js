@@ -140,6 +140,7 @@ export class YolaView extends ClipBody {
     }
     const unarmed = Object.values(UNARMED).every((n) => byName[n]);
     if (unarmed) for (const n in UNARMED) { const c = byName[UNARMED[n]].clone(); c.name = n + '_u'; loopClip(c); clips.push(c); }
+    { const tl = subClip(byName.tripo_idle, (b) => LOWER.test(b), 'tripo_idle_lower'); loopClip(tl); clips.push(tl); } // unarmed standing: Yola's own idle legs (front-on, not the pistol stance)
     clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), 'bat_idle_upper'));
     clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), 'pistol_reload_upper'));
     // sawn-off double barrel: held at the low ready (frame 1 of the rifle reload, retargeted from the Mixamo
@@ -160,6 +161,7 @@ export class YolaView extends ClipBody {
     this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
     const sufs = this.unarmed ? ['', '_lower', '_u'] : ['', '_lower'];
     for (const n of loco) for (const suf of sufs) { if (n === 'pistol_idle' && suf === '_u') continue; const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
+    { const tl = this.act('tripo_idle_lower'); tl.play(); tl.setEffectiveWeight(0); }
     this.gait = this.measureGaits();
     this.gaitU = this.unarmed ? this.measureGaits('_u') : null;
     // moving clips are driven from one shared gait phase (see locoWeights), not by the mixer clock
@@ -300,7 +302,7 @@ export class YolaView extends ClipBody {
     return true;
   }
   scriptLength(name) { const c = this.act(name)?.getClip(); return c ? c.duration - Math.min(...c.tracks.map((t) => t.times[0])) : 0; }
-  setShown(v) { this.outer.visible = v; this.blob.visible = v; }
+  setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
   reset(x, z, yaw) {
     this.script = null; for (const n of this.scriptNames || []) this.act(n).setEffectiveWeight(0);
     this.yaw = yaw; this.deathT = -1; this.outer.quaternion.identity();
@@ -479,7 +481,8 @@ export class YolaView extends ClipBody {
     this.act('fists_idle_upper').setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
     for (const n in w) {
       this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
-      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP + (n === 'pistol_idle' || !this.unarmed ? uF : 0)) * k);
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP + (this.unarmed ? 0 : uF)) * k);
+      if (this.unarmed && n === 'pistol_idle') this.act('tripo_idle_lower').setEffectiveWeight(w[n] * uF * k);
       if (this.unarmed && n !== 'pistol_idle') this.act(n + '_u').setEffectiveWeight(w[n] * uni * k);
     }
     // a scripted full-body clip (the reveal's wave) fades over the normal layers

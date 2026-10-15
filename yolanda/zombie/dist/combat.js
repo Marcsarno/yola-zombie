@@ -47197,6 +47197,11 @@ void main() {
         loopClip(c);
         clips.push(c);
       }
+      {
+        const tl = subClip(byName.tripo_idle, (b) => LOWER.test(b), "tripo_idle_lower");
+        loopClip(tl);
+        clips.push(tl);
+      }
       clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), "bat_idle_upper"));
       clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), "pistol_reload_upper"));
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_hold_upper"));
@@ -47217,6 +47222,11 @@ void main() {
         const a = this.act(n + suf);
         a.play();
         a.setEffectiveWeight(0);
+      }
+      {
+        const tl = this.act("tripo_idle_lower");
+        tl.play();
+        tl.setEffectiveWeight(0);
       }
       this.gait = this.measureGaits();
       this.gaitU = this.unarmed ? this.measureGaits("_u") : null;
@@ -47416,7 +47426,11 @@ void main() {
     setShown(v) {
       this.outer.visible = v;
       this.blob.visible = v;
+      if (!v) {
+        for (const g of [this.pistol, this.shotgun, this.melee, this.shell]) if (g) g.visible = false;
+      }
     }
+    // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
     reset(x, z, yaw) {
       this.script = null;
       for (const n of this.scriptNames || []) this.act(n).setEffectiveWeight(0);
@@ -47638,7 +47652,8 @@ void main() {
       this.act("fists_idle_upper").setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
       for (const n in w) {
         this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
-        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uP * rP + (n === "pistol_idle" || !this.unarmed ? uF : 0)) * k);
+        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uP * rP + (this.unarmed ? 0 : uF)) * k);
+        if (this.unarmed && n === "pistol_idle") this.act("tripo_idle_lower").setEffectiveWeight(w[n] * uF * k);
         if (this.unarmed && n !== "pistol_idle") this.act(n + "_u").setEffectiveWeight(w[n] * uni * k);
       }
       let scW = 0, sact = null;
@@ -50042,7 +50057,7 @@ void main() {
       this.rest = {};
       this.pose = null;
       this.root.traverse((o) => {
-        if (/^Rounded part/.test(o.name)) o.visible = false;
+        if (o.name === "carry_tray" || o.isMesh && !o.isSkinnedMesh && !o.name && o.parent === this.root.children[0]) o.visible = false;
       });
       this.keyed = /* @__PURE__ */ new Set();
       for (const c of gltf.animations) for (const tr of c.tracks) this.keyed.add(tr.name.split(".")[0]);
@@ -50495,7 +50510,7 @@ void main() {
     // ---- cast ----
     async buildCast() {
       const load2 = (f) => this.loader.loadAsync(f);
-      const [yolaOld, bb, sec, pat5, patOld, staff, staffB, staffC] = await Promise.all([
+      const [yolaOld, bb, sec, pat5, patOld, staff, staffB, staffC, staffL] = await Promise.all([
         load2(M2 + "blender/yola.glb"),
         load2("assets/opening/Baseball_Visitor.glb"),
         load2("assets/opening/Security_Visitor.glb"),
@@ -50503,7 +50518,8 @@ void main() {
         load2(M2 + "people/patient-older.glb"),
         load2(M2 + "people/staff-teal.glb"),
         load2(M2 + "people/staff-blue.glb"),
-        load2(M2 + "people/staff-coral.glb")
+        load2(M2 + "people/staff-coral.glb"),
+        load2(M2 + "people/staff-lilac.glb")
       ]);
       const batStatic = await load2("assets/opening/Baseball_Bat_Static.glb");
       this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
@@ -50516,6 +50532,7 @@ void main() {
       A.staff = new Actor(staff, { name: "staff" });
       A.teamA = new Actor(staffB, { name: "teamA" });
       A.teamB = new Actor(staffC, { name: "teamB" });
+      A.surgeon = new Actor(staffL, { name: "surgeon" });
       for (const a of Object.values(A)) {
         this.root.add(a.root);
         a.root.visible = false;
@@ -52012,6 +52029,7 @@ void main() {
       if (!b) return;
       k = Math.max(this.reducedFlash ? 0.32 : 0.02, k);
       this.lightK = k;
+      if (this.hallMat) this.hallMat.color.setRGB(0.66 * Math.min(1, k * 1.1), 0.74 * Math.min(1, k * 1.1), 0.75 * Math.min(1, k * 1.1));
       if (A.hemi) A.hemi.intensity = b.hemi * k;
       if (A.sun) A.sun.intensity = b.sun * k;
       this.scene.environmentIntensity = b.env * k;
@@ -52150,30 +52168,30 @@ void main() {
     }
     // ================================================================== ACT 3: OR choices, apparent success, impossible movement
     *act3() {
-      const st = this.stage, A = st.actors, bb = A.baseball, yo = A.yola, ta = A.teamA, tb = A.teamB;
+      const st = this.stage, A = st.actors, bb = A.baseball, op = A.surgeon, ta = A.teamA, tb = A.teamB;
       this.state = "OR_CHOICES";
       this.substate = "ENTER";
       this.speak(DIALOGUE.settle, 3, 1.4);
       this.dip(0.4, 0.4);
       yield 0.45;
       this.enterOR();
-      for (const a of [yo, bb, ta, tb]) a.setVisible(true);
+      for (const a of [op, bb, ta, tb]) a.setVisible(true);
       st.actorToWorld(ta, 0.6, -9.2, 0);
       ta.play("Idle", { fade: 0 });
       st.actorToWorld(tb, 1.75, -8.2, -Math.PI / 2);
       tb.play("Idle", { fade: 0 });
-      st.actorToWorld(yo, 0.3, -4.1, Math.PI);
+      st.actorToWorld(op, 0.3, -4.1, Math.PI);
       st.actorToWorld(bb, 0.35, -2.4, Math.PI);
       bb.play("Idle", { fade: 0 });
-      yo.play("walk", { fade: 0 });
+      op.play("Walk_InPlace", { fade: 0 });
       A.staff.setVisible(false);
       A.security.setVisible(false);
       this.camTo(W(0, 0.9, -6.4, 50, 35, 8), 0.01);
-      yo.walk([[0.2, -5.6], [-0.9, -7], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
+      op.walk([[0.2, -5.6], [-0.9, -7], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
       this.mark("or-enter");
       yield 1.5;
       bb.walk([[0.35, -5.5], [0, -6.6], [0, -7.35]], { endYaw: Math.PI });
-      yield this.arrived(yo, bb);
+      yield this.arrived(op, bb);
       this.mark("or-standing");
       yield 0.6;
       this.dip(0.35, 0.35);
@@ -52182,8 +52200,8 @@ void main() {
       if (bb.capSkin) bb.capSkin.visible = false;
       bb.play("Idle", { fade: 0 });
       bb.lie(0.9, 1.07, -8.2, Math.PI / 2);
-      yo.place(-1.3, -8.2, Math.PI / 2);
-      yo.play("idle", { fade: 0 });
+      op.place(-1.3, -8.2, Math.PI / 2);
+      op.play("Idle", { fade: 0 });
       yield 3;
       this.dip(0.3, 0.3);
       yield 0.35;
@@ -52237,7 +52255,7 @@ void main() {
       }
       this.speak(DIALOGUE.somethingWrong, 3.2, 1);
       this.mark("alert");
-      yo.walk([[-1.7, -9.2], [-2, -9.7]], { endYaw: Math.PI * 0.85 });
+      op.walk([[-1.7, -9.2], [-2, -9.7]], { endYaw: Math.PI * 0.85 });
       let u = 1;
       this.urgencyTimer = 6;
       yield 3.4;
@@ -52326,39 +52344,43 @@ void main() {
       this.state = "GET_YOLA_SLOW";
       this.substate = "CALL";
       this.tween(1.4, slow);
-      this.setAlarm(1, 0.4);
+      this.setAlarm(0.3, 0.4);
       if (!this.silent) this.sound.revealCue();
-      for (const a of [A.baseball, A.teamA, A.teamB]) a.setVisible(false);
-      this.ensureDoorway(an);
+      for (const a of [A.baseball, A.teamA, A.teamB, A.surgeon]) a.setVisible(false);
+      const fy = an.yaw, fx2 = Math.sin(fy), fz = Math.cos(fy);
+      this.ensureDoorway(an, fy);
       this.doorway.visible = true;
       this.orTable(false);
-      const fx2 = Math.sin(an.yaw), fz = Math.cos(an.yaw);
+      st.actorToWorld(yo, an.x - fx2 * 1.5, an.z - fz * 1.5, fy);
       yo.setVisible(true);
-      yo.place(an.x - fx2 * 1.5, an.z - fz * 1.5, an.yaw);
-      this.camTo(this.frontShot(an, 3.1), 0.01);
-      yo.walk([[an.x, an.z]], { endYaw: an.yaw, speed: 0.95 });
+      yo.play("idle", { fade: 0 });
+      this.camTo(this.frontShot(an, 3.1, 4, fy), 0.01);
+      yo.walk([[an.x, an.z]], { endYaw: fy, speed: 0.95 });
       this.tween(1.2, (k) => {
         this.setLight(1 - 0.15 * ease(k));
       });
       yield 2;
       yield this.arrived(yo);
-      yo.place(an.x, an.z, an.yaw);
+      yo.place(an.x, an.z, fy);
       this.mark("call-settled");
       this.state = "MODEL_REVEAL";
       this.substate = "HOLD_OLD";
       this.setAlarm(0);
+      this.redLight.position.set(an.x - fx2 * 0.9, 2.9, an.z - fz * 0.9);
+      this.setLamp(0.8);
       this.tween(0.8, (k) => {
-        this.spot.intensity = 70 * ease(k);
-        this.setLight(0.85 - 0.15 * ease(k));
+        this.spot.intensity = 26 * ease(k);
+        this.setLight(0.85 - 0.05 * ease(k));
+        this.redLight.intensity = 2.5 * ease(k);
       });
       yield 1.5;
       this.substate = "LIGHT_FALLS";
-      this.redLight.position.set(an.x + fx2 * 0.5, 2.7, an.z + fz * 0.5);
+      this.redLight.position.set(an.x - fx2 * 0.6, 2.8, an.z - fz * 0.6);
       this.tween(1.1, (k) => {
-        this.spot.intensity = 70 * (1 - ease(k));
-        this.setLight(0.7 - 0.6 * ease(k));
-        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * ease(k);
-        this.setLamp(ease(k));
+        this.spot.intensity = 26 * (1 - ease(k));
+        this.setLight(0.8 - 0.72 * ease(k));
+        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (2.5 + 6 * ease(k));
+        this.setLamp(0.8 + 0.2 * ease(k));
       });
       yield 1.3;
       this.substate = "BLACK";
@@ -52390,27 +52412,27 @@ void main() {
       }
       this.tween(1.5, (k) => {
         const p = Math.sin(Math.PI * ease(k)) * 0.35 + 0.65 * ease(k);
-        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 18 * p;
-        this.setLamp(p);
-        this.setLight(0.04 + 0.1 * ease(k));
+        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 8 * p;
+        this.setLamp(0.5 + 0.5 * p);
+        this.setLight(0.04 + 0.05 * ease(k));
       });
       yield 1.6;
       this.substate = "SETTLE";
       this.tween(1.3, (k) => {
-        this.spot.intensity = 60 * ease(k);
-        this.setLight(0.14 + 0.56 * ease(k));
-        this.redLight.intensity = 18 * (1 - ease(k));
-        this.setLamp(1 - ease(k));
+        this.spot.intensity = 24 * ease(k);
+        this.setLight(0.09 + 0.71 * ease(k));
+        this.redLight.intensity = 6 * (1 - ease(k)) + 1.2 * ease(k);
+        this.setLamp(1 - 0.6 * ease(k));
       });
       yield 1.6;
       this.mark("reveal-settled");
       this.state = "SMOOTH_WAVE";
       this.substate = "WAVE";
       this.animScale = 1;
-      this.camTo(this.frontShot(an, 3.1, 5), 1.2);
+      this.camTo(this.frontShot(an, 3.1, 5, fy), 1.2);
       Y.playScript("t_greet_04", { fadeIn: 0.3, fadeOut: 0.5 });
       if (!this.silent) this.sound.payoff();
-      this.tween(1.6, (k) => this.setLight(0.67 + 0.18 * ease(k)));
+      this.tween(1.6, (k) => this.setLight(0.8 + 0.1 * ease(k)));
       yield Y.scriptLength("t_greet_04") + 1;
       this.mark("wave-done");
       this.state = "COMBAT_READY";
@@ -52437,11 +52459,11 @@ void main() {
       this.finalize("normal");
     }
     // a front-on, low shot of a world anchor (the camera stands where the anchor's character faces)
-    frontShot(an, dist2, pitch = 4) {
-      return { ...W(an.x, 0.88, an.z, pitch, MathUtils.radToDeg(an.yaw), 3, 44), dist: dist2 };
+    frontShot(an, dist2, pitch = 4, yaw = an.yaw) {
+      return { ...W(an.x, 0.88, an.z, pitch, MathUtils.radToDeg(yaw), 3, 44), dist: dist2 };
     }
     // the reveal doorway: frame, two open door leaves, a dark corridor and the red emergency lamp, built once behind the anchor
-    ensureDoorway(an) {
+    ensureDoorway(an, fy = an.yaw) {
       if (this.doorway) return;
       const g = new Group();
       g.name = "doorway";
@@ -52459,7 +52481,8 @@ void main() {
       box(2.6, 3.4, 0.2, -1.98, 1.7, -0.02, wall);
       box(2.6, 3.4, 0.2, 1.98, 1.7, -0.02, wall);
       box(1.4, 0.9, 0.2, 0, 3, -0.02, wall);
-      box(1.4, 2.45, 0.05, 0, 1.22, -0.5, new MeshBasicMaterial({ color: 11123904 }));
+      this.hallMat = new MeshBasicMaterial({ color: 11123904 });
+      box(1.4, 2.45, 0.05, 0, 1.22, -0.5, this.hallMat);
       box(1.4, 0.05, 0.6, 0, 0, -0.25, std(9280156));
       box(1.4, 0.04, 0.6, 0, 2.47, -0.25, new MeshBasicMaterial({ color: 14674152 }));
       for (const sd of [-1, 1]) {
@@ -52472,15 +52495,23 @@ void main() {
       }
       this.lampMat = new MeshBasicMaterial({ color: 3147784 });
       box(0.56, 0.18, 0.14, 0, 2.78, 0.14, this.lampMat);
-      g.position.set(an.x - Math.sin(an.yaw) * 1, 0, an.z - Math.cos(an.yaw) * 1);
-      g.rotation.y = an.yaw;
+      g.position.set(an.x - Math.sin(fy) * 1, 0, an.z - Math.cos(fy) * 1);
+      g.rotation.y = fy;
       g.visible = false;
       this.scene.add(g);
       this.doorway = g;
     }
+    // the reveal doorway shows nothing but the doorway: the operating-room props near the anchor are hidden for the shot and restored after
     orTable(v) {
-      const t = this.arena.group.children.find((c) => c.position.x === 0 && c.position.z === -8.2);
-      if (t) t.visible = v;
+      if (!v) {
+        const an = ROOM1.player;
+        const actors = Object.values(this.stage.actors).map((a) => a.root);
+        this.hiddenProps = (this.hiddenProps || []).concat(this.arena.group.children.filter((c) => c.isGroup && c.visible && !actors.includes(c) && c !== this.doorway && Math.hypot(c.position.x - an.x, c.position.z - an.z) < 6));
+        for (const c of this.hiddenProps) c.visible = false;
+      } else {
+        for (const c of this.hiddenProps || []) c.visible = true;
+        this.hiddenProps = [];
+      }
     }
     setLamp(k) {
       if (this.lampMat) this.lampMat.color.setRGB(0.2 + 0.8 * k, 0.03 + 0.06 * k, 0.03 + 0.06 * k);
@@ -52561,7 +52592,7 @@ void main() {
       this.belongings.visible = true;
       st.batStatic.visible = !this.batPicked;
       if (st.cap) st.cap.visible = true;
-      for (const k of ["yola", "baseball", "teamA", "teamB", "staff"]) A[k].setVisible(false);
+      for (const k of ["yola", "baseball", "teamA", "teamB", "surgeon", "staff"]) A[k].setVisible(false);
       const sg = A.security;
       st.actorToWorld(sg, 0, 0, Math.PI / 2);
       sg.setVisible(true);

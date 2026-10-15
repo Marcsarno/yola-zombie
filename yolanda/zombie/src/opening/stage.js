@@ -206,10 +206,10 @@ export class ClinicStage {
   // ---- cast ----
   async buildCast() {
     const load = (f) => this.loader.loadAsync(f);
-    const [yolaOld, bb, sec, pat5, patOld, staff, staffB, staffC] = await Promise.all([
+    const [yolaOld, bb, sec, pat5, patOld, staff, staffB, staffC, staffL] = await Promise.all([
       load(M + 'blender/yola.glb'), load('assets/opening/Baseball_Visitor.glb'), load('assets/opening/Security_Visitor.glb'),
       load(M + 'people/patient-05.glb'), load(M + 'people/patient-older.glb'), load(M + 'people/staff-teal.glb'),
-      load(M + 'people/staff-blue.glb'), load(M + 'people/staff-coral.glb'),
+      load(M + 'people/staff-blue.glb'), load(M + 'people/staff-coral.glb'), load(M + 'people/staff-lilac.glb'),
     ]);
     const batStatic = await load('assets/opening/Baseball_Bat_Static.glb');
     this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
@@ -222,6 +222,7 @@ export class ClinicStage {
     A.staff = new Actor(staff, { name: 'staff' });
     A.teamA = new Actor(staffB, { name: 'teamA' }); // the OR team (existing staff rigs)
     A.teamB = new Actor(staffC, { name: 'teamB' });
+    A.surgeon = new Actor(staffL, { name: 'surgeon' }); // the clinician who operates: not Yola (she is called in afterwards)
     for (const a of Object.values(A)) { this.root.add(a.root); a.root.visible = false; }
     // the skinned bat and holster pistol stay in the visitors' rigs; the static bat is for belongings
     A.baseball.bat = A.baseball.model.getObjectByName('Baseball_Bat');

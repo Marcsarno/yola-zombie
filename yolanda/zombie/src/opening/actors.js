@@ -138,7 +138,7 @@ export class OriginalYola extends Actor {
   constructor(gltf, opts = {}) {
     super(gltf, { walkClip: 'walk', idleClip: 'idle', ...opts });
     this.waveT = -1; this.rest = {}; this.pose = null;
-    this.root.traverse((o) => { if (/^Rounded part/.test(o.name)) o.visible = false; }); // the pill tray baked into the original model: nothing floats against her body
+    this.root.traverse((o) => { if (o.name === 'carry_tray' || (o.isMesh && !o.isSkinnedMesh && !o.name && o.parent === this.root.children[0])) o.visible = false; }); // the pill tray baked into the original model: nothing floats against her body
     this.keyed = new Set(); for (const c of gltf.animations) for (const tr of c.tracks) this.keyed.add(tr.name.split('.')[0]);
     for (const n of ['upperarm_r', 'forearm_r', 'upperarm_l', 'forearm_l', 'head', 'torso', 'thigh_l', 'thigh_r', 'shin_l', 'shin_r']) if (this.bones[n]) this.rest[n] = this.bones[n].quaternion.clone();
     // length direction of the arm bones in their own frames, from the rest pose (the arms hang straight down)
