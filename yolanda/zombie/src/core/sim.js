@@ -41,7 +41,7 @@ export class Sim {
       z.set(ZS.CHASE); // already standing (no emerge walk-in)
       z.dormant = { wake: s.wake, speedMul: 0.85 + 0.1 * i }; // stands still until its wake time (or until it is hit)
     });
-    this.pickups.push({ id: 'bat', weapon: BAT, x: R.bat.x, z: R.bat.z, r: 0.85 });
+    this.pickups.push({ id: 'bat', weapon: BAT, x: R.bat.x, z: R.bat.z, r: 1.35 });
   }
   // objective chain: OR -> Supply Hall (bat) -> Waiting/Reception
   updateFlow() {

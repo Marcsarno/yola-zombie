@@ -68,6 +68,8 @@ const CSS = `
 #op .gate h1 { margin: 0 0 4px; font-size: clamp(34px, 10vw, 64px); line-height: 1.02; color: #2a8f92; font-weight: 900; text-shadow: 0 3px 0 #fff8ea; }
 #op .gate p { color: #20474a; font-weight: 650; margin: 6px 0 22px; }
 #op .gate button { font: 800 18px/1 system-ui, sans-serif; padding: 16px 34px; border-radius: 16px; border: 0; background: #e07a5f; color: #fff; box-shadow: 0 5px 0 #b95a42, 0 10px 24px rgba(0,0,0,.25); }
+#op .gate .skipGate { margin-top: 14px; background: none; color: #20474a; font: 700 14px system-ui, sans-serif; text-decoration: underline; padding: 8px 14px; border-radius: 10px; box-shadow: none; }
+#op .gate .skipGate[hidden] { display: none; }
 #op .gate .small { font-size: 12px; opacity: .7; margin-top: 18px; }
 #op .gate .bar { width: min(60vw, 260px); height: 8px; border-radius: 6px; background: rgba(32,71,74,.2); margin: 14px 0 0; overflow: hidden; }
 #op .gate .bar i { display: block; height: 100%; width: 0; background: #2f9fa0; transition: width .3s; }
@@ -85,12 +87,12 @@ export class OpeningUI {
       <div class="sub"><span></span></div>
       <div class="card" role="dialog" aria-live="polite"></div>
       <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
-      <div class="gate"><h1>Yola’s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading…</button><div class="bar"><i></i></div><div class="small"></div></div>`;
+      <div class="gate"><h1>Yola’s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading…</button><button class="skipGate" hidden>Skip intro</button><div class="bar"><i></i></div><div class="small"></div></div>`;
     document.body.appendChild(el);
     const q = (s) => el.querySelector(s);
     this.fade = q('.fade'); this.vig = q('.vig'); this.dark = q('.dark'); this.ecg = q('canvas.ecg'); this.titleEl = q('.title');
     this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.prevEl = q('.prev'); this.statusEl = q('.status'); this.urgEl = q('.urgency'); this.cardEl = q('.card'); this.gate = q('.gate');
-    this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
+    this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.skipGateB = q('.skipGate'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
     this.tags = new Map();
     this.cardResolve = null;
   }

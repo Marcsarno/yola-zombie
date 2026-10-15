@@ -42,6 +42,7 @@ renderer.shadowMap.autoUpdate = false; // the environment is static: render its 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x27323a);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 80);
+const GAME_FOV = 50; // the gameplay camera's field of view (the opening uses its own and hands back to this)
 let renderScale = 1;
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -139,6 +140,7 @@ function stillState(x, z, yaw) {
 }
 // put the game camera exactly where it will sit for the player at (x,z) facing yaw (no easing), and return that pose
 function cameraPose(x, z, yaw) {
+  camera.fov = GAME_FOV; camera.updateProjectionMatrix();
   const p = sim.player, sx = p.x, sz = p.z, sy = p.aimYaw;
   p.x = x; p.z = z; p.aimYaw = yaw;
   const cy = THREE.MathUtils.degToRad(tuning.camYaw), fx = -Math.sin(cy), fz = -Math.cos(cy), aspect = camera.aspect, up = aspect < 1 ? 1.4 : 0.6;

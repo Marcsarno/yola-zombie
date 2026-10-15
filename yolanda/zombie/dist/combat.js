@@ -45864,7 +45864,7 @@ void main() {
         z.set(ZS.CHASE);
         z.dormant = { wake: s.wake, speedMul: 0.85 + 0.1 * i };
       });
-      this.pickups.push({ id: "bat", weapon: BAT, x: R.bat.x, z: R.bat.z, r: 0.85 });
+      this.pickups.push({ id: "bat", weapon: BAT, x: R.bat.x, z: R.bat.z, r: 1.35 });
     }
     // objective chain: OR -> Supply Hall (bat) -> Waiting/Reception
     updateFlow() {
@@ -50708,6 +50708,8 @@ void main() {
 #op .gate h1 { margin: 0 0 4px; font-size: clamp(34px, 10vw, 64px); line-height: 1.02; color: #2a8f92; font-weight: 900; text-shadow: 0 3px 0 #fff8ea; }
 #op .gate p { color: #20474a; font-weight: 650; margin: 6px 0 22px; }
 #op .gate button { font: 800 18px/1 system-ui, sans-serif; padding: 16px 34px; border-radius: 16px; border: 0; background: #e07a5f; color: #fff; box-shadow: 0 5px 0 #b95a42, 0 10px 24px rgba(0,0,0,.25); }
+#op .gate .skipGate { margin-top: 14px; background: none; color: #20474a; font: 700 14px system-ui, sans-serif; text-decoration: underline; padding: 8px 14px; border-radius: 10px; box-shadow: none; }
+#op .gate .skipGate[hidden] { display: none; }
 #op .gate .small { font-size: 12px; opacity: .7; margin-top: 18px; }
 #op .gate .bar { width: min(60vw, 260px); height: 8px; border-radius: 6px; background: rgba(32,71,74,.2); margin: 14px 0 0; overflow: hidden; }
 #op .gate .bar i { display: block; height: 100%; width: 0; background: #2f9fa0; transition: width .3s; }
@@ -50727,7 +50729,7 @@ void main() {
       <div class="sub"><span></span></div>
       <div class="card" role="dialog" aria-live="polite"></div>
       <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip \u25B8\u25B8</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">\u266A</button></div>
-      <div class="gate"><h1>Yola\u2019s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading\u2026</button><div class="bar"><i></i></div><div class="small"></div></div>`;
+      <div class="gate"><h1>Yola\u2019s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading\u2026</button><button class="skipGate" hidden>Skip intro</button><div class="bar"><i></i></div><div class="small"></div></div>`;
       document.body.appendChild(el);
       const q = (s) => el.querySelector(s);
       this.fade = q(".fade");
@@ -50748,6 +50750,7 @@ void main() {
       this.flashB = q(".flashB");
       this.muteB = q(".muteB");
       this.goB = q(".go");
+      this.skipGateB = q(".skipGate");
       this.bar = q(".bar i");
       this.gateSmall = q(".gate .small");
       this.tags = /* @__PURE__ */ new Map();
@@ -51411,7 +51414,18 @@ void main() {
       } catch {
       }
       this.warm();
+      for (const l of this.arena.lights) l.visible = true;
       this.game?.().warmRoom1?.();
+      for (const l of this.arena.lights) l.visible = false;
+      this.setBlood(true);
+      this.belongings.visible = true;
+      this.rig = { ...W(0, 0.9, -8, 50, 35, 8) };
+      this.setCamera();
+      this.renderer.render(this.scene, this.camera);
+      this.setBlood(false);
+      this.belongings.visible = false;
+      this.rig = { ...SHOTS[0].a };
+      this.setCamera();
       this.yola?.setShown?.(false);
       this.setupDone = true;
       onProgress?.(1);
@@ -51445,6 +51459,9 @@ void main() {
       });
       this.setBlood(false);
       this.yola?.setShown?.(false);
+      this.ensureLights();
+      this.ensureBelongings();
+      this.belongings.visible = false;
       for (const l of A.lights) l.visible = false;
       document.getElementById("hud")?.style.setProperty("display", "none");
       document.getElementById("touch")?.style.setProperty("pointer-events", "none");
@@ -51901,12 +51918,23 @@ void main() {
       A.sun.target.updateMatrixWorld(true);
       this.renderer.shadowMap.needsUpdate = true;
     }
-    enterOR() {
-      const st = this.stage, A = this.arena;
-      st.setActive(false);
-      this.setSun(0, -7.5);
-      this.scene.background = this.saved.bg || new Color(2568762);
-      this.inOR = true;
+    // the patient-belongings spot in the Supply Hall: the stowed bat and the cap, together (it stays for gameplay)
+    ensureLights() {
+      if (!this.spot) {
+        this.spot = new SpotLight(16773340, 0, 14, 0.5, 0.75, 1.1);
+        this.spot.position.set(ROOM1.player.x + 1.4, 4, ROOM1.player.z + 1.8);
+        this.spot.target.position.set(ROOM1.player.x, 1, ROOM1.player.z);
+        this.scene.add(this.spot, this.spot.target);
+      }
+      if (!this.redLight) {
+        this.redLight = new PointLight(16722474, 0, 14, 1.5);
+        this.redLight.position.set(0, 3, -7);
+        this.scene.add(this.redLight);
+      }
+      if (!this.lightBase) this.lightBase = { hemi: this.arena.hemi?.intensity ?? 0.85, sun: this.arena.sun?.intensity ?? 1.45, env: this.scene.environmentIntensity ?? 0.32 };
+    }
+    ensureBelongings() {
+      const st = this.stage;
       if (!this.belongings) {
         const g = new Group();
         g.name = "belongings";
@@ -51925,20 +51953,18 @@ void main() {
         this.scene.add(g);
         this.belongings = g;
       }
+    }
+    enterOR() {
+      const st = this.stage, A = this.arena;
+      st.setActive(false);
+      this.setSun(0, -7.5);
+      this.scene.background = this.saved.bg || new Color(2568762);
+      this.inOR = true;
+      this.ensureBelongings();
       this.belongings.visible = true;
       st.batStatic.visible = true;
       if (st.cap) st.cap.visible = true;
-      if (!this.spot) {
-        this.spot = new SpotLight(16773340, 0, 14, 0.5, 0.75, 1.1);
-        this.spot.position.set(ROOM1.player.x + 1.4, 4, ROOM1.player.z + 1.8);
-        this.spot.target.position.set(ROOM1.player.x, 1, ROOM1.player.z);
-        this.scene.add(this.spot, this.spot.target);
-      }
-      if (!this.redLight) {
-        this.redLight = new PointLight(16722474, 0, 14, 1.5);
-        this.redLight.position.set(0, 3, -7);
-        this.scene.add(this.redLight);
-      }
+      this.ensureLights();
       if (!this.lightBase) this.lightBase = { hemi: A.hemi?.intensity ?? 0.85, sun: A.sun?.intensity ?? 1.45, env: this.scene.environmentIntensity ?? 0.32 };
     }
     leaveOR() {
@@ -52319,7 +52345,7 @@ void main() {
       this.state = "SMOOTH_WAVE";
       this.substate = "WAVE";
       this.animScale = 1;
-      this.camTo(W(an.x + 0.05, 1.2, an.z, 22, 26, 2.3), 1);
+      this.camTo(W(an.x + 0.05, 1.02, an.z, 20, 26, 2.9), 1);
       Y.playScript("t_greet_04", { fadeIn: 0.3, fadeOut: 0.5 });
       if (!this.silent) this.sound.payoff();
       this.tween(1.6, (k) => this.setLight(0.67 + 0.18 * ease(k)));
@@ -52329,11 +52355,15 @@ void main() {
       this.substate = "RETURN";
       this.ui.subtitle("");
       this.sub = "";
-      const pose = g.cameraPose(an.x, an.z, an.yaw);
-      this.camera.fov = 34;
-      this.camera.updateProjectionMatrix();
+      const from = { pos: null };
       this.setCamera();
-      this.poseTo(pose, 2.2);
+      const fromPos = this.camera.position.clone(), fromQuat = this.camera.quaternion.clone(), fromFov = this.camera.fov;
+      const pose = g.cameraPose(an.x, an.z, an.yaw);
+      this.camera.position.copy(fromPos);
+      this.camera.quaternion.copy(fromQuat);
+      this.camera.fov = fromFov;
+      this.camera.updateProjectionMatrix();
+      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 2.2 };
       this.tween(2, (k) => this.setLight(0.85 + 0.15 * ease(k)));
       if (!this.silent) {
         this.sound.setMusicLevel(0, 0.2);
@@ -52412,10 +52442,10 @@ void main() {
       if (this.spot) this.spot.intensity = 0;
       if (this.redLight) this.redLight.intensity = 0;
       this.setBlood(true);
-      if (this.belongings) {
-        this.belongings.visible = true;
-        st.batStatic.visible = !this.batPicked;
-      }
+      this.ensureBelongings();
+      this.belongings.visible = true;
+      st.batStatic.visible = !this.batPicked;
+      if (st.cap) st.cap.visible = true;
       for (const k of ["yola", "baseball", "teamA", "teamB", "staff"]) A[k].setVisible(false);
       const sg = A.security;
       st.actorToWorld(sg, 0, 0, Math.PI / 2);
@@ -52431,6 +52461,10 @@ void main() {
       this.substate = via;
       this.ui.show(false);
       g.hudShow(true);
+      try {
+        localStorage.setItem("zc.introSeen", "1");
+      } catch {
+      }
       this.mark("room1-playable");
     }
     ambient(dt) {
@@ -52482,6 +52516,19 @@ void main() {
       this.ui.goB.onclick = () => {
         this.sound.unlock();
         this.start();
+      };
+      let seen = false;
+      try {
+        seen = localStorage.getItem("zc.introSeen") === "1";
+      } catch {
+      }
+      this.ui.skipGateB.hidden = !seen;
+      this.ui.skipGateB.onclick = () => {
+        this.ui.gate.classList.remove("show");
+        this.sound.unlock();
+        this.started = true;
+        this.beginSilent();
+        this.finalize("returning");
       };
       this.ui.skipB.onclick = () => this.skip();
       this.ui.muteB.onclick = () => {
@@ -52564,6 +52611,7 @@ void main() {
       if (!this.active) return;
       if (this.started && !this.paused) this.step(dt);
       else this.stage.update(0);
+      if (!this.active) return;
       if (!this.poseAnim) this.setCamera();
     }
     step(dt) {
@@ -52651,6 +52699,7 @@ void main() {
   var scene = new Scene();
   scene.background = new Color(2568762);
   var camera = new PerspectiveCamera(50, 1, 0.5, 80);
+  var GAME_FOV = 50;
   var renderScale = 1;
   function resize() {
     const w = innerWidth, h = innerHeight;
@@ -52757,6 +52806,8 @@ void main() {
     return { x, z, vx: 0, vz: 0, aimYaw: yaw, equipped: "fists", action: "ready", actionT: 0, swingT: 0, combo: 0, swingId: -1, recoil: 0, recoilScale: 1, dead: false, deathDir: 0, hurtT: 99, hurtDirX: 0, hurtDirZ: 0, reloadDur: 1, swapDur: tuning.swapTime };
   }
   function cameraPose(x, z, yaw) {
+    camera.fov = GAME_FOV;
+    camera.updateProjectionMatrix();
     const p = sim.player, sx = p.x, sz = p.z, sy = p.aimYaw;
     p.x = x;
     p.z = z;

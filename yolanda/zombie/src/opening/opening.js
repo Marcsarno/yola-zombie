@@ -69,7 +69,12 @@ export class Opening {
     this.setCamera(); // frame the first shot so the shaders compile for it
     try { this.renderer.compile(this.scene, this.camera); } catch { /* ignore */ }
     this.warm();
+    for (const l of this.arena.lights) l.visible = true; // the combat configuration (amber door lights on) compiles too
     this.game?.().warmRoom1?.(); // compile the zombies and the unarmed Yola before the timed reveal (nothing visible changes)
+    for (const l of this.arena.lights) l.visible = false;
+    // the operating room with the reveal lights, in the opening's lighting
+    this.setBlood(true); this.belongings.visible = true; this.rig = { ...W(0, 0.9, -8.0, 50, 35, 8.0) }; this.setCamera(); this.renderer.render(this.scene, this.camera); this.setBlood(false); this.belongings.visible = false;
+    this.rig = { ...SHOTS[0].a }; this.setCamera();
     this.yola?.setShown?.(false); this.setupDone = true;
     onProgress?.(1);
   }
@@ -97,7 +102,7 @@ export class Opening {
     this.scene.background = new THREE.Color(0xcfe3df);
     // the combat wing's props carry dried-blood decals (the Blood_* materials): hidden for the innocent opening
     this.blood = []; A.group.traverse((o) => { if (o.isMesh && /^Blood_/i.test((o.material?.name) || '')) this.blood.push(o); });
-    this.setBlood(false); this.yola?.setShown?.(false);
+    this.setBlood(false); this.yola?.setShown?.(false); this.ensureLights(); this.ensureBelongings(); this.belongings.visible = false;
     for (const l of A.lights) l.visible = false; // the amber doorway lights belong to the combat wing
     document.getElementById('hud')?.style.setProperty('display', 'none');
     document.getElementById('touch')?.style.setProperty('pointer-events', 'none');
@@ -318,13 +323,14 @@ export class Opening {
   setBlood(v) { for (const m of this.blood || []) m.visible = v; }
   // ---- the operating room (the real combat wing) as a story set ----
   setSun(x, z) { const A = this.arena; if (!A.sun) return; A.sun.target.position.set(x, 0, z); A.sun.position.set(x - 6, 14, z + 7); A.sun.target.updateMatrixWorld(true); this.renderer.shadowMap.needsUpdate = true; }
-  enterOR() {
-    const st = this.stage, A = this.arena;
-    st.setActive(false);
-    this.setSun(0, -7.5);
-    this.scene.background = this.saved.bg || new THREE.Color(0x27323a);
-    this.inOR = true;
-    // the patient-belongings spot in the Supply Hall: the stowed bat and the cap, together; it stays for gameplay
+  // the patient-belongings spot in the Supply Hall: the stowed bat and the cap, together (it stays for gameplay)
+  ensureLights() {
+    if (!this.spot) { this.spot = new THREE.SpotLight(0xfff0dc, 0, 14, 0.5, 0.75, 1.1); this.spot.position.set(ROOM1.player.x + 1.4, 4.0, ROOM1.player.z + 1.8); this.spot.target.position.set(ROOM1.player.x, 1.0, ROOM1.player.z); this.scene.add(this.spot, this.spot.target); }
+    if (!this.redLight) { this.redLight = new THREE.PointLight(0xff2a2a, 0, 14, 1.5); this.redLight.position.set(0, 3.0, -7.0); this.scene.add(this.redLight); }
+    if (!this.lightBase) this.lightBase = { hemi: this.arena.hemi?.intensity ?? 0.85, sun: this.arena.sun?.intensity ?? 1.45, env: this.scene.environmentIntensity ?? 0.32 };
+  }
+  ensureBelongings() {
+    const st = this.stage;
     if (!this.belongings) {
       const g = new THREE.Group(); g.name = 'belongings';
       st.batStatic.visible = true; st.batStatic.parent?.remove(st.batStatic);
@@ -332,9 +338,16 @@ export class Opening {
       if (st.cap) { st.cap.visible = true; st.cap.position.set(-4.0, 0.84, -14.0); st.cap.rotation.y = 0.6; g.add(st.cap); }
       this.scene.add(g); this.belongings = g;
     }
+  }
+  enterOR() {
+    const st = this.stage, A = this.arena;
+    st.setActive(false);
+    this.setSun(0, -7.5);
+    this.scene.background = this.saved.bg || new THREE.Color(0x27323a);
+    this.inOR = true;
+    this.ensureBelongings();
     this.belongings.visible = true; st.batStatic.visible = true; if (st.cap) st.cap.visible = true;
-    if (!this.spot) { this.spot = new THREE.SpotLight(0xfff0dc, 0, 14, 0.5, 0.75, 1.1); this.spot.position.set(ROOM1.player.x + 1.4, 4.0, ROOM1.player.z + 1.8); this.spot.target.position.set(ROOM1.player.x, 1.0, ROOM1.player.z); this.scene.add(this.spot, this.spot.target); }
-    if (!this.redLight) { this.redLight = new THREE.PointLight(0xff2a2a, 0, 14, 1.5); this.redLight.position.set(0, 3.0, -7.0); this.scene.add(this.redLight); }
+    this.ensureLights();
     if (!this.lightBase) this.lightBase = { hemi: A.hemi?.intensity ?? 0.85, sun: A.sun?.intensity ?? 1.45, env: this.scene.environmentIntensity ?? 0.32 };
   }
   leaveOR() {
@@ -608,7 +621,7 @@ export class Opening {
     yield 1.6; this.mark('reveal-settled');
     // 3. the smooth wave: her own existing clip, once, at its natural timing (a callback to the awkward wave)
     this.state = 'SMOOTH_WAVE'; this.substate = 'WAVE';
-    this.animScale = 1; this.camTo(W(an.x + 0.05, 1.2, an.z, 22, 26, 2.3), 1.0);
+    this.animScale = 1; this.camTo(W(an.x + 0.05, 1.02, an.z, 20, 26, 2.9), 1.0); // face, torso and the waving hand (head and feet both in frame)
     Y.playScript('t_greet_04', { fadeIn: 0.3, fadeOut: 0.5 });
     if (!this.silent) this.sound.payoff();
     this.tween(1.6, (k) => this.setLight(0.67 + 0.18 * ease(k)));
@@ -616,8 +629,11 @@ export class Opening {
     // 4. return to the actual game: the combat framing, the room readable again, the zombies present once the camera widens
     this.state = 'COMBAT_READY'; this.substate = 'RETURN';
     this.ui.subtitle(''); this.sub = '';
-    const pose = g.cameraPose(an.x, an.z, an.yaw); this.camera.fov = 34; this.camera.updateProjectionMatrix();
-    this.setCamera(); this.poseTo(pose, 2.2);
+    const from = { pos: null };
+    this.setCamera(); const fromPos = this.camera.position.clone(), fromQuat = this.camera.quaternion.clone(), fromFov = this.camera.fov;
+    const pose = g.cameraPose(an.x, an.z, an.yaw); // (sets the camera to the game's own pose and field of view)
+    this.camera.position.copy(fromPos); this.camera.quaternion.copy(fromQuat); this.camera.fov = fromFov; this.camera.updateProjectionMatrix();
+    this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 2.2 };
     this.tween(2.0, (k) => this.setLight(0.85 + 0.15 * ease(k)));
     if (!this.silent) { this.sound.setMusicLevel(0, 0.2); this.sound.combatAmbience(); }
     yield 1.1;
@@ -653,7 +669,7 @@ export class Opening {
     for (const l of this.arena.lights) l.visible = true;
     this.animScale = 1; this.setLight(1); this.lightK = 1; if (this.spot) this.spot.intensity = 0; if (this.redLight) this.redLight.intensity = 0;
     this.setBlood(true);
-    if (this.belongings) { this.belongings.visible = true; st.batStatic.visible = !this.batPicked; }
+    this.ensureBelongings(); this.belongings.visible = true; st.batStatic.visible = !this.batPicked; if (st.cap) st.cap.visible = true;
     for (const k of ['yola', 'baseball', 'teamA', 'teamB', 'staff']) A[k].setVisible(false);
     const sg = A.security; // the guard waits in a Waiting Area chair near reception (Room 2's pistol connection)
     st.actorToWorld(sg, 0, 0, Math.PI / 2); sg.setVisible(true); sg.sitAt(-6.45, -1.5, Math.PI / 2, { instant: true }); sg.play('SeatedIdle', { fade: 0 });
@@ -661,6 +677,7 @@ export class Opening {
     g.applyRoom1(); g.previewRoom1(0);
     this.stillYola = false; this.room1Preview = false; this.active = false; this.state = 'ROOM1_PLAYABLE'; this.substate = via;
     this.ui.show(false); g.hudShow(true);
+    try { localStorage.setItem('zc.introSeen', '1'); } catch { /* storage unavailable: the opening just plays next time */ }
     this.mark('room1-playable');
   }
   ambient(dt) { const sg = this.stage.actors.security; if (this.finalized && sg.root.visible) sg.update(dt); }
@@ -692,6 +709,10 @@ export class Opening {
     this.ui.goB.disabled = false; this.ui.goB.textContent = 'Start';
     this.ui.bar.style.width = '100%';
     this.ui.goB.onclick = () => { this.sound.unlock(); this.start(); };
+    // returning players are never forced through the opening: once seen, the title screen offers to skip it
+    let seen = false; try { seen = localStorage.getItem('zc.introSeen') === '1'; } catch { /* storage unavailable */ }
+    this.ui.skipGateB.hidden = !seen;
+    this.ui.skipGateB.onclick = () => { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.started = true; this.beginSilent(); this.finalize('returning'); };
     this.ui.skipB.onclick = () => this.skip();
     this.ui.muteB.onclick = () => { const m = !this.audio.muted; this.audio.setMuted(m); this.ui.muteB.classList.toggle('off', m); if (m) this.sound.stopVoice(); };
     this.ui.flashB.onclick = () => { this.reducedFlash = !this.reducedFlash; this.ui.flashB.classList.toggle('off', !this.reducedFlash); };
@@ -737,6 +758,7 @@ export class Opening {
     if (!this.active) return;
     if (this.started && !this.paused) this.step(dt);
     else this.stage.update(0); // keep the picture alive on the gate / while paused
+    if (!this.active) return; // the hand-off happened inside step(): the game camera owns the view now
     if (!this.poseAnim) this.setCamera();
   }
   step(dt) {
