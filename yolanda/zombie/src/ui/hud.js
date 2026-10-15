@@ -105,6 +105,8 @@ export class Hud {
   toast(text) { const t = $('toast'); t.querySelector('span').textContent = text; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); this.toastT = 2.4; }
   levelDone(sim) { $('levelStats').textContent = this.stats(sim) + ` · ${sim.time.toFixed(0)} s`; setTimeout(() => $('levelDone').classList.add('show'), 1400); this.setPrompt(null); }
   setObjective(text) { const o = $('objective'); if (!o) return; $('objectiveText').textContent = text || ''; o.classList.toggle('show', !!text); }
+  // a quick punchy word over the fight (HEADSHOT): pops in big, fades on its own (CSS animation)
+  popup(text) { const el = $('popup'); if (!el) return; el.textContent = text; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
   banner(title, sub = '') {
     $('bannerTitle').textContent = title; $('bannerSub').textContent = sub;
     $('banner').classList.add('show'); this.bannerT = 1.8;

@@ -4,7 +4,7 @@ import { approachAngle, angleDiff } from './world.js';
 import { isMelee } from './weapons.js';
 
 let nextId = 1;
-const _flow = { x: 0, z: 0 };
+const _flow = { x: 0, z: 0 }, _steer = { x: 0, z: 0, k: 1 };
 
 export const ZS = { EMERGE: 'emerge', CHASE: 'chase', WINDUP: 'windup', STRIKE: 'strike', RECOVER: 'recover', STAGGER: 'stagger', KNOCKDOWN: 'knockdown', GETUP: 'getup', DYING: 'dying', DEAD: 'dead' };
 // Knocked flat by the bat: fall (thrown back, rolls onto the stomach), then get up. The get-up clip
@@ -28,6 +28,8 @@ export class Zombie {
     this.deathYaw = 0; this.deathSpeed = 0;
     this.corpseT = 0;
     this.phase = opts.phase ?? 0;
+    this.side = ((this.phase * 7.31) % 1) * 2 - 1; // its own approach side, -1..1 (from the phase: deterministic)
+    this.swayRate = 0.9 + ((this.phase * 3.7) % 1) * 0.7;
     this.struck = false;
     // dismemberment: limb health; a limb at 0 comes off at the elbow / knee / neck
     this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
@@ -113,6 +115,55 @@ export class Zombie {
     sim.emit({ type: 'zombieBump', id: this.id, speed });
   }
 
+  // Crowd steering on top of the path to Yola: its own approach side (a group fans out instead of filing in a line), a
+  // slow shambling sway, look-ahead avoidance of the zombies in its way (slowing to queue behind one that is busy
+  // attacking or staggered), and close to Yola, spreading around her rather than stacking up on one side.
+  // (wx, wz): the path heading (unit). Returns the new heading and a speed factor.
+  steer(wx, wz, dist, los, sim) {
+    const out = _steer; let k = 1;
+    const far = Math.min(1, Math.max(0, (dist - 1.6) / 3.5)); // 0 close in (it must still reach her) .. 1 from 5 m
+    const ang = (los ? this.side * 0.45 * far : 0) + Math.sin(sim.time * this.swayRate + this.phase * 6.283) * 0.2 * (0.3 + 0.7 * far);
+    const c = Math.cos(ang), s = Math.sin(ang);
+    let hx = wx * c + wz * s, hz = -wx * s + wz * c;
+    const lx = hz, lz = -hx; // perpendicular to the heading
+    const p = sim.player, myA = Math.atan2(this.x - p.x, this.z - p.z), avoid = los ? 1.5 : 0.9;
+    let ax = 0, az = 0;
+    for (const o of sim.zombies) {
+      if (o === this || !o.solid || !o.alive) continue;
+      const rx = o.x - this.x, rz = o.z - this.z, d2 = rx * rx + rz * rz;
+      if (d2 > 2.4 || d2 < 1e-6) continue;
+      const d = Math.sqrt(d2), along = rx * hx + rz * hz;
+      if (along > 0) { // ahead: in the way if within a body width of its line
+        const lat = rx * lx + rz * lz, clear = this.r + o.r + 0.14;
+        if (Math.abs(lat) < clear) {
+          const w = (1 - d / 1.55) * (1 - Math.abs(lat) / clear);
+          const sg = Math.abs(lat) > 0.03 ? -Math.sign(lat) : this.id & 1 ? 1 : -1; // pass on the side it is not on
+          ax += lx * sg * w * avoid; az += lz * sg * w * avoid;
+          if (o.state !== ZS.CHASE && d < 1.0) k = Math.min(k, 0.3 + 0.5 * d); // queue behind a busy one
+        }
+      }
+      // around Yola: two closing in from nearly the same side drift apart around her
+      if (dist < 2.8) {
+        const od = Math.hypot(o.x - p.x, o.z - p.z);
+        if (od < 2.8) {
+          const da = angleDiff(Math.atan2(o.x - p.x, o.z - p.z), myA);
+          if (Math.abs(da) < 0.75) {
+            const tx = Math.cos(myA), tz = -Math.sin(myA), sg = da === 0 ? (this.id & 1 ? 1 : -1) : Math.sign(da); // tangent around her
+            const w = (1 - Math.abs(da) / 0.75) * 0.9;
+            ax += tx * sg * w; az += tz * sg * w;
+          }
+        }
+      }
+    }
+    hx += ax; hz += az;
+    // never steered backwards off the path
+    const fwd = hx * wx + hz * wz;
+    if (fwd < 0.2) { hx += wx * (0.2 - fwd); hz += wz * (0.2 - fwd); }
+    const l = Math.hypot(hx, hz) || 1;
+    out.x = hx / l; out.z = hz / l; out.k = k;
+    return out;
+  }
+
   update(dt, sim) {
     const T = sim.T, p = sim.player, world = sim.world;
     this.t += dt;
@@ -147,6 +198,7 @@ export class Zombie {
         if (los) { wantX = dx / (dist || 1); wantZ = dz / (dist || 1); }
         else { const rem = world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; if (rem > 1e7) { wantX = wantZ = 0; } } // no way through (a shut door): it stands and waits
         speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
+        if (speed > 0) { const s = this.steer(wantX, wantZ, dist, los, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
         if (dist < 1.25) speed *= 0.5; // close in carefully, no jitter at contact
         if (!this.passive && dist < 1.0 && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 &&
             world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {

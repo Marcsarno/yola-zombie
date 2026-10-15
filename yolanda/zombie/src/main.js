@@ -419,6 +419,7 @@ function handleEvents() {
       case 'zombieBump': audio.play('bump', Math.min(1.2, e.speed / 3)); break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
       case 'sever': audio.play('sever'); shake(0.15); break;
+      case 'headshot': audio.play('bulletHit', 1.5); shake(0.35); hud.popup('HEADSHOT'); break;
       case 'batMiss': audio.play('batMiss'); break;
       case 'batClank': audio.play('clank'); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;
       case 'hitPause': hitPauseT = Math.max(hitPauseT, e.dur); break;

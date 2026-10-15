@@ -186,7 +186,7 @@ export class Player {
     const A = this.attacks[combo];
     // turn toward a zombie in reach (combo follow-ups look further, and the chop finds bodies on the floor)
     const tgt = sim.meleeAssist?.(this, A.assist ?? (combo > 0 ? 2.1 : 1.45), A.style === 'chop');
-    const lunge = tgt ? clamp(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, combo > 0 ? 0.75 : 0.35) : 0;
+    const lunge = tgt ? clamp(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, combo > 0 ? 0.75 : 0.5) : 0;
     this.setAction('swing', { st: 0, combo, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked });
     this.attackPressT = 9;
     sim.emit({ type: 'swing', combo });

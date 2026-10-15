@@ -49,7 +49,7 @@ const deg = Math.PI / 180;
 export const AXE_ATTACKS = [
   { // 1: the leveled baseball swing, right to left at chest height
     name: 'swing', clip: 'bat_swing', path: 'bat_swing', f0: 24, f1: 40, rate: 1.5, fps: 30, yawOffset: 40 * deg,
-    duration: 0.62, activeStart: 0.155, activeEnd: 0.31, chainFrom: 0.33, swapPoint: 0.48,
+    duration: 0.62, activeStart: 0.14, activeEnd: 0.33, chainFrom: 0.34, swapPoint: 0.48, assist: 1.75,
     dmg: 1, knock: 1, style: 'swing', sever: { head: 0.35, arm: 0.25 },
   },
   { // 2: the backhand - a low two-handed slash back from left to right (Mixamo great sword low slash);
@@ -59,7 +59,7 @@ export const AXE_ATTACKS = [
     dmg: 1.1, knock: 1.15, style: 'heavy', sever: { head: 0.15, arm: 0.25, leg: 0.35 },
   },
   { // 3: the finisher - Yola's own overhead chop (Tripo): axe behind the head, straight up, slammed down
-    name: 'chop', clip: 't_chop', path: 't_chop', f0: 44, f1: 74, rate: 1.3, fps: 30, yawOffset: 0,
+    name: 'chop', clip: 't_chop', path: 't_chop', f0: 44, f1: 74, rate: 1.3, fps: 30, yawOffset: -14 * deg, // (the clip lands ~14 degrees left: she turns so it comes down on the aim)
     duration: 0.95, activeStart: 0.36, activeEnd: 0.6, chainFrom: 9, swapPoint: 0.75,
     dmg: 1.6, knock: 0.8, style: 'chop', sever: { head: 0.6, arm: 0.35 },
   },
@@ -81,8 +81,14 @@ export const FIST_ATTACKS = [
     dmg: 2.2, knock: 1.0, style: 'kick', sever: {} },
 ];
 // attack set of a weapon
-// the bat: the leveled baseball swing (the first axe attack), blunt (never severs), a little lighter
-export const BAT_ATTACKS = [{ ...AXE_ATTACKS[0], name: 'bat swing', dmg: 0.8, knock: 1.0, style: 'swing', sever: {}, chainFrom: 9 }];
+// the bat: the axe's three-attack combo (leveled swing, low backhand, overhead finisher), blunt (never severs) and a
+// little lighter. sock: the grip calibration the renderer uses (the first swing keeps the bat's own idle grip).
+export const BAT_ATTACKS = [
+  // (x axeDamage 62, zombie 100 hp: swing 37 + backhand 43 leave it standing; the slam finishes it)
+  { ...AXE_ATTACKS[0], name: 'bat swing', dmg: 0.6, knock: 1.0, sever: {} },
+  { ...AXE_ATTACKS[1], name: 'bat backhand', sock: 'slash', dmg: 0.7, knock: 1.1, sever: {} },
+  { ...AXE_ATTACKS[2], name: 'bat slam', sock: 'chop', dmg: 1.3, knock: 0.85, sever: {} },
+];
 export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS);
 export const AXE_GEOM = {
   length: 0.74, // hands (midpoint of the grip) to the blade, metres
@@ -117,7 +123,7 @@ export function setMeleePaths(clipdata, scale, hipsRest) {
       A.PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: d[0] / dl, dy: d[1] / dl, dz: d[2] / dl });
     }
   }
-  BAT_ATTACKS[0].PATH = AXE_ATTACKS[0].PATH;
+  BAT_ATTACKS.forEach((B, i) => { B.PATH = AXE_ATTACKS[i].PATH; });
 }
 
 // Pose of the axe at attack time t: hands midpoint (hx,hy,hz) and unit direction toward the head (dx,dy,dz).

@@ -9,7 +9,8 @@ import { ROOM1 } from './layout.js';
 import { Level } from './level.js';
 
 export const STEP = 1 / 60;
-const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.28;
+const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.3;
+const ARM_REACH = 0.36, ARM_R = 0.2; // a standing zombie's reaching arms: a circle this far ahead of its body
 const _m = {}, _a = {}, _b = {};
 
 export class Sim {
@@ -131,8 +132,15 @@ export class Sim {
     const dx = Math.sin(yaw), dz = Math.cos(yaw);
     if (r.zombie) {
       this.stats.shotHits++;
-      r.zombie.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback, 'pistol', this, this.bulletPart(r.zombie, m.x, m.z, dx, dz));
-      this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'zombie', id: r.zombie.id, yaw, killed: !r.zombie.alive });
+      const z = r.zombie, along = (z.x - m.x) * dx + (z.z - m.z) * dz;
+      const off = Math.hypot(m.x + dx * along - z.x, m.z + dz * along - z.z);
+      // a perfect shot: through the middle of a standing zombie, not too far off, and every once in a while the
+      // head comes clean off (one hit, one kill)
+      const perfect = !z.down && !z.crawling && !z.severed.has('Head') && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
+      if (perfect) z.limbHp.Head = 0;
+      z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), 'pistol', this, perfect ? 'Head' : this.bulletPart(z, m.x, m.z, dx, dz));
+      if (perfect) { this.stats.headshots = (this.stats.headshots || 0) + 1; this.emit({ type: 'headshot', id: z.id, x: z.x, z: z.z }); if (this.T.hitPause > 0) this.emit({ type: 'hitPause', dur: this.T.hitPause * 1.6 }); }
+      this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'zombie', id: z.id, yaw, killed: !z.alive });
     } else {
       this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz, yaw });
     }
@@ -226,16 +234,19 @@ export class Sim {
     const SUB = 4, T = this.T, A = p.attacks[act.combo], G = A.geom || AXE_GEOM, fist = p.equipped === FISTS;
     let prev = meleeWorldSegment(p, A, t0, _a);
     let px = prev.tx, pz = prev.tz;
+    { const w0 = this.world.raycast(p.x, p.z, px, pz, 0.9); if (w0) { px = p.x + (px - p.x) * w0.t; pz = p.z + (pz - p.z) * w0.t; } }
+    // a wall only stops the attack when she swings INTO it (a wall straight ahead, within the bat's reach); a wall
+    // beside her (a corridor) just stops the bat where it meets it, and the rest of the arc still lands
+    if (act.facingWall === undefined) act.facingWall = !!this.world.raycast(p.x, p.z, p.x + Math.sin(p.aimYaw) * 0.85, p.z + Math.cos(p.aimYaw) * 0.85, 0.9);
     for (let s = 1; s <= SUB; s++) {
       const t = t0 + ((t1 - t0) * s) / SUB;
       if (t > act.activeEnd) break;
       const seg = meleeWorldSegment(p, A, t, _b);
-      // bat into a wall: clank, end the damaging window
       const wall = this.world.raycast(p.x, p.z, seg.tx, seg.tz, 0.9);
       let tipX = seg.tx, tipZ = seg.tz;
       if (wall) {
         tipX = p.x + (seg.tx - p.x) * wall.t; tipZ = p.z + (seg.tz - p.z) * wall.t;
-        if (!act.clanked) { act.clanked = true; act.activeEnd = t; this.emit({ type: 'batClank', x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz }); }
+        if (!act.clanked && act.facingWall) { act.clanked = true; act.activeEnd = t; this.emit({ type: 'batClank', x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz }); }
       }
       const f = G.hitFrom / G.length;
       const ax = seg.hx + (tipX - seg.hx) * f, az = seg.hz + (tipZ - seg.hz) * f;
@@ -247,13 +258,21 @@ export class Sim {
         if (!z.alive || act.hitSet.has(z.id)) continue;
         if (z.down && !chop) continue; // only the chop comes down far enough to hit a body on the floor
         const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G.radius : 0); // the visible torso (a lying body is longer)
-        const minY = z.down ? 0.05 : chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y;
+        const minY = z.down || z.crawling ? 0.05 : chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y; // (a crawler is struck as it rises at her)
         const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
         const y1 = ay + (seg.ty - ay) * h1.t;
         const d1 = y1 >= minY ? h1.d2 : 1e9;
         const d2 = seg.ty >= minY ? segPointDist2(px, pz, tipX, tipZ, z.x, z.z).d2 : 1e9;
-        if (Math.min(d1, d2) > rr * rr) continue;
-        if (!this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.9)) continue; // walls block strikes
+        let near = Math.min(d1, d2) <= rr * rr;
+        // the arms: a standing zombie reaches toward her, and a bat through the reaching arms is a hit too
+        if (!near && !z.down && !z.crawling && z.armsLost < 2) {
+          const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G.radius : 0);
+          const e1 = segPointDist2(ax, az, tipX, tipZ, ox, oz), ey = ay + (seg.ty - ay) * e1.t;
+          near = (ey >= minY && e1.d2 <= ar * ar) || (seg.ty >= minY && segPointDist2(px, pz, tipX, tipZ, ox, oz).d2 <= ar * ar);
+        }
+        if (!near) continue;
+        // walls block strikes (seen from her, or from where the bat is)
+        if (!this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.9) && !this.world.lineOfSight(tipX, tipZ, z.x, z.z, 0.9)) continue;
         // direction: mostly the bat's travel, partly away from Yola
         let vx = tipX - px, vz = tipZ - pz; const vl = Math.hypot(vx, vz) || 1; vx /= vl; vz /= vl;
         let rx = z.x - p.x, rz = z.z - p.z; const rl = Math.hypot(rx, rz) || 1; rx /= rl; rz /= rl;
@@ -265,7 +284,6 @@ export class Sim {
         // the blade cuts: a killing blow can take the head; otherwise an arm (or, low, a leg) can come off
         if (fist) { // unarmed: no blade, no severing; a light stagger (the kick can knock them flat)
           const dmgF = T.fistDamage * A.dmg;
-          act.hitSet.add(z.id); act.hits++; this.stats.batHits++;
           z.takeHit(dmgF, dx, dz, T.fistKnockback * A.knock, 'fist', this, 'torso', A.style);
           this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
           if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * 0.6 * (z.alive ? 1 : 1.4) });

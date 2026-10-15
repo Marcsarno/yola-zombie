@@ -433,7 +433,7 @@ export class YolaView extends ClipBody {
       if (this.swingId !== s.swingId) {
         // next attack of the combo: the previous clip fades out under the new one
         if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; }
-        this.swingId = s.swingId; this.swingAct = act; this.swingName = A.name;
+        this.swingId = s.swingId; this.swingAct = act; this.swingName = A.sock || A.name;
       }
       act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps + ((this.swJit ^= 1) * 1e-6); // glTF time = blender frame / fps; a static time is only applied every other update (hit-pause froze the swing pose), so it alternates
       const ramp = clamp(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);

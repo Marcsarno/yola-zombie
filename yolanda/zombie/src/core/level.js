@@ -60,6 +60,7 @@ export class Level {
       Object.assign(p.mags, s.mags || {}); Object.assign(p.reserve, s.reserve || {});
       p.hp = s.hp ?? p.maxHp;
     }
+    if (sim.T.testInfiniteAmmo) p.reserve = { pistol: Infinity, shotgun: Infinity }; // (a checkpoint stores Infinity as null)
   }
 
   emit(e) { this.sim.emit(e); }

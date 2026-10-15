@@ -13,6 +13,8 @@ export const TUNING_DEFAULTS = {
   pistolKnockback: 1.6, // m/s impulse
   aimAssist: 0.5, // 0 = off, 1 = full (max 5 degrees bend)
   magSize: 12,
+  testInfiniteAmmo: true, // testing: spare rounds never run out (magazines still empty and reload); false = Floor 3 counts them
+  headshotChance: 0.1, // a clean centre-mass pistol hit sometimes takes the head off (one-shot kill)
   reloadTime: 1.05,
   swapTime: 0.3,
   shotgunDamage: 16, // per pellet (9 pellets), full power inside ~2 m, falling off to a third at 11 m

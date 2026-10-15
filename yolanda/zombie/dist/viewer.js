@@ -37255,10 +37255,11 @@ void main() {
       fps: 30,
       yawOffset: 40 * deg,
       duration: 0.62,
-      activeStart: 0.155,
-      activeEnd: 0.31,
-      chainFrom: 0.33,
+      activeStart: 0.14,
+      activeEnd: 0.33,
+      chainFrom: 0.34,
       swapPoint: 0.48,
+      assist: 1.75,
       dmg: 1,
       knock: 1,
       style: "swing",
@@ -37294,7 +37295,8 @@ void main() {
       f1: 74,
       rate: 1.3,
       fps: 30,
-      yawOffset: 0,
+      yawOffset: -14 * deg,
+      // (the clip lands ~14 degrees left: she turns so it comes down on the aim)
       duration: 0.95,
       activeStart: 0.36,
       activeEnd: 0.6,
@@ -37378,7 +37380,12 @@ void main() {
       sever: {}
     }
   ];
-  var BAT_ATTACKS = [{ ...AXE_ATTACKS[0], name: "bat swing", dmg: 0.8, knock: 1, style: "swing", sever: {}, chainFrom: 9 }];
+  var BAT_ATTACKS = [
+    // (x axeDamage 62, zombie 100 hp: swing 37 + backhand 43 leave it standing; the slam finishes it)
+    { ...AXE_ATTACKS[0], name: "bat swing", dmg: 0.6, knock: 1, sever: {} },
+    { ...AXE_ATTACKS[1], name: "bat backhand", sock: "slash", dmg: 0.7, knock: 1.1, sever: {} },
+    { ...AXE_ATTACKS[2], name: "bat slam", sock: "chop", dmg: 1.3, knock: 0.85, sever: {} }
+  ];
   var BAT_SWING = AXE_ATTACKS[0];
 
   // src/viewer.js

@@ -150,3 +150,6 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     the CT side only (OR side says barred), every doorway walked both ways with stick input, nav reachability with each door
     state, retry from checkpoint (flags, pickups, kills, loadout kept). Render: 230-370 calls, 210-360k tris per view.
   * Not verified: sound on an iPhone; real-time playthrough with combat by a person; phone frame rate.
+- 2026-10-14 (round 8): combat polish. Full details in COMBAT_POLISH_LOG.md. Unlimited spare ammo while testing (reloads
+  kept); zombie crowd steering; three-hit bat combo; pistol headshots; bat hit registration (side walls, reaching arms,
+  window/reach, crawlers); the finisher's 14° aim offset; fist hits counted twice.

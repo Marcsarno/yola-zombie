@@ -45350,10 +45350,11 @@ void main() {
       fps: 30,
       yawOffset: 40 * deg,
       duration: 0.62,
-      activeStart: 0.155,
-      activeEnd: 0.31,
-      chainFrom: 0.33,
+      activeStart: 0.14,
+      activeEnd: 0.33,
+      chainFrom: 0.34,
       swapPoint: 0.48,
+      assist: 1.75,
       dmg: 1,
       knock: 1,
       style: "swing",
@@ -45389,7 +45390,8 @@ void main() {
       f1: 74,
       rate: 1.3,
       fps: 30,
-      yawOffset: 0,
+      yawOffset: -14 * deg,
+      // (the clip lands ~14 degrees left: she turns so it comes down on the aim)
       duration: 0.95,
       activeStart: 0.36,
       activeEnd: 0.6,
@@ -45473,7 +45475,12 @@ void main() {
       sever: {}
     }
   ];
-  var BAT_ATTACKS = [{ ...AXE_ATTACKS[0], name: "bat swing", dmg: 0.8, knock: 1, style: "swing", sever: {}, chainFrom: 9 }];
+  var BAT_ATTACKS = [
+    // (x axeDamage 62, zombie 100 hp: swing 37 + backhand 43 leave it standing; the slam finishes it)
+    { ...AXE_ATTACKS[0], name: "bat swing", dmg: 0.6, knock: 1, sever: {} },
+    { ...AXE_ATTACKS[1], name: "bat backhand", sock: "slash", dmg: 0.7, knock: 1.1, sever: {} },
+    { ...AXE_ATTACKS[2], name: "bat slam", sock: "chop", dmg: 1.3, knock: 0.85, sever: {} }
+  ];
   var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS;
   var AXE_GEOM = {
     length: 0.74,
@@ -45506,7 +45513,9 @@ void main() {
         A.PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: d[0] / dl, dy: d[1] / dl, dz: d[2] / dl });
       }
     }
-    BAT_ATTACKS[0].PATH = AXE_ATTACKS[0].PATH;
+    BAT_ATTACKS.forEach((B, i) => {
+      B.PATH = AXE_ATTACKS[i].PATH;
+    });
   }
   function meleePose(A, t, out = {}) {
     const P = A.PATH;
@@ -45761,7 +45770,7 @@ void main() {
       this.swingId++;
       const A = this.attacks[combo2];
       const tgt = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
-      const lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, combo2 > 0 ? 0.75 : 0.35) : 0;
+      const lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, combo2 > 0 ? 0.75 : 0.5) : 0;
       this.setAction("swing", { st: 0, combo: combo2, hitSet: /* @__PURE__ */ new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked });
       this.attackPressT = 9;
       sim2.emit({ type: "swing", combo: combo2 });
@@ -45827,6 +45836,7 @@ void main() {
   // src/core/zombies.js
   var nextId = 1;
   var _flow = { x: 0, z: 0 };
+  var _steer = { x: 0, z: 0, k: 1 };
   var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", KNOCKDOWN: "knockdown", GETUP: "getup", DYING: "dying", DEAD: "dead" };
   var KNOCKDOWN_FALL = 1.3;
   var KNOCKDOWN_GETUP = 2;
@@ -45862,6 +45872,8 @@ void main() {
       this.deathSpeed = 0;
       this.corpseT = 0;
       this.phase = opts.phase ?? 0;
+      this.side = this.phase * 7.31 % 1 * 2 - 1;
+      this.swayRate = 0.9 + this.phase * 3.7 % 1 * 0.7;
       this.struck = false;
       this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
       this.severed = /* @__PURE__ */ new Set();
@@ -45976,6 +45988,61 @@ void main() {
       this.attackCd = Math.max(this.attackCd, 0.5);
       sim2.emit({ type: "zombieBump", id: this.id, speed });
     }
+    // Crowd steering on top of the path to Yola: its own approach side (a group fans out instead of filing in a line), a
+    // slow shambling sway, look-ahead avoidance of the zombies in its way (slowing to queue behind one that is busy
+    // attacking or staggered), and close to Yola, spreading around her rather than stacking up on one side.
+    // (wx, wz): the path heading (unit). Returns the new heading and a speed factor.
+    steer(wx, wz, dist2, los, sim2) {
+      const out = _steer;
+      let k = 1;
+      const far = Math.min(1, Math.max(0, (dist2 - 1.6) / 3.5));
+      const ang = (los ? this.side * 0.45 * far : 0) + Math.sin(sim2.time * this.swayRate + this.phase * 6.283) * 0.2 * (0.3 + 0.7 * far);
+      const c = Math.cos(ang), s = Math.sin(ang);
+      let hx = wx * c + wz * s, hz = -wx * s + wz * c;
+      const lx = hz, lz = -hx;
+      const p2 = sim2.player, myA = Math.atan2(this.x - p2.x, this.z - p2.z), avoid = los ? 1.5 : 0.9;
+      let ax = 0, az = 0;
+      for (const o of sim2.zombies) {
+        if (o === this || !o.solid || !o.alive) continue;
+        const rx = o.x - this.x, rz = o.z - this.z, d2 = rx * rx + rz * rz;
+        if (d2 > 2.4 || d2 < 1e-6) continue;
+        const d = Math.sqrt(d2), along = rx * hx + rz * hz;
+        if (along > 0) {
+          const lat = rx * lx + rz * lz, clear = this.r + o.r + 0.14;
+          if (Math.abs(lat) < clear) {
+            const w = (1 - d / 1.55) * (1 - Math.abs(lat) / clear);
+            const sg = Math.abs(lat) > 0.03 ? -Math.sign(lat) : this.id & 1 ? 1 : -1;
+            ax += lx * sg * w * avoid;
+            az += lz * sg * w * avoid;
+            if (o.state !== ZS.CHASE && d < 1) k = Math.min(k, 0.3 + 0.5 * d);
+          }
+        }
+        if (dist2 < 2.8) {
+          const od = Math.hypot(o.x - p2.x, o.z - p2.z);
+          if (od < 2.8) {
+            const da = angleDiff(Math.atan2(o.x - p2.x, o.z - p2.z), myA);
+            if (Math.abs(da) < 0.75) {
+              const tx = Math.cos(myA), tz = -Math.sin(myA), sg = da === 0 ? this.id & 1 ? 1 : -1 : Math.sign(da);
+              const w = (1 - Math.abs(da) / 0.75) * 0.9;
+              ax += tx * sg * w;
+              az += tz * sg * w;
+            }
+          }
+        }
+      }
+      hx += ax;
+      hz += az;
+      const fwd = hx * wx + hz * wz;
+      if (fwd < 0.2) {
+        hx += wx * (0.2 - fwd);
+        hz += wz * (0.2 - fwd);
+      }
+      const l = Math.hypot(hx, hz) || 1;
+      out.x = hx / l;
+      out.z = hz / l;
+      out.k = k;
+      return out;
+    }
     update(dt, sim2) {
       const T2 = sim2.T, p2 = sim2.player, world = sim2.world;
       this.t += dt;
@@ -46029,6 +46096,12 @@ void main() {
             }
           }
           speed = wantX || wantZ ? T2.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
+          if (speed > 0) {
+            const s = this.steer(wantX, wantZ, dist2, los, sim2);
+            wantX = s.x;
+            wantZ = s.z;
+            speed *= s.k;
+          }
           if (dist2 < 1.25) speed *= 0.5;
           if (!this.passive && dist2 < 1 && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5)) {
             this.set(ZS.WINDUP, 0.52);
@@ -46341,6 +46414,7 @@ void main() {
         Object.assign(p2.reserve, s.reserve || {});
         p2.hp = s.hp ?? p2.maxHp;
       }
+      if (sim2.T.testInfiniteAmmo) p2.reserve = { pistol: Infinity, shotgun: Infinity };
     }
     emit(e) {
       this.sim.emit(e);
@@ -46544,7 +46618,9 @@ void main() {
   var BULLET_MIN_H = 1.25;
   var ZR_HIT = 0.36;
   var BAT_MIN_HIT_Y = 0.7;
-  var BAT_BODY_R = 0.28;
+  var BAT_BODY_R = 0.3;
+  var ARM_REACH = 0.36;
+  var ARM_R = 0.2;
   var _m = {};
   var _a = {};
   var _b = {};
@@ -46693,8 +46769,17 @@ void main() {
       const dx = Math.sin(yaw), dz = Math.cos(yaw);
       if (r.zombie) {
         this.stats.shotHits++;
-        r.zombie.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback, "pistol", this, this.bulletPart(r.zombie, m.x, m.z, dx, dz));
-        this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: "zombie", id: r.zombie.id, yaw, killed: !r.zombie.alive });
+        const z = r.zombie, along = (z.x - m.x) * dx + (z.z - m.z) * dz;
+        const off = Math.hypot(m.x + dx * along - z.x, m.z + dz * along - z.z);
+        const perfect = !z.down && !z.crawling && !z.severed.has("Head") && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
+        if (perfect) z.limbHp.Head = 0;
+        z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), "pistol", this, perfect ? "Head" : this.bulletPart(z, m.x, m.z, dx, dz));
+        if (perfect) {
+          this.stats.headshots = (this.stats.headshots || 0) + 1;
+          this.emit({ type: "headshot", id: z.id, x: z.x, z: z.z });
+          if (this.T.hitPause > 0) this.emit({ type: "hitPause", dur: this.T.hitPause * 1.6 });
+        }
+        this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: "zombie", id: z.id, yaw, killed: !z.alive });
       } else {
         this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz, yaw });
       }
@@ -46795,6 +46880,14 @@ void main() {
       const SUB = 4, T2 = this.T, A = p2.attacks[act.combo], G2 = A.geom || AXE_GEOM, fist = p2.equipped === FISTS;
       let prev = meleeWorldSegment(p2, A, t0, _a);
       let px2 = prev.tx, pz2 = prev.tz;
+      {
+        const w0 = this.world.raycast(p2.x, p2.z, px2, pz2, 0.9);
+        if (w0) {
+          px2 = p2.x + (px2 - p2.x) * w0.t;
+          pz2 = p2.z + (pz2 - p2.z) * w0.t;
+        }
+      }
+      if (act.facingWall === void 0) act.facingWall = !!this.world.raycast(p2.x, p2.z, p2.x + Math.sin(p2.aimYaw) * 0.85, p2.z + Math.cos(p2.aimYaw) * 0.85, 0.9);
       for (let s = 1; s <= SUB; s++) {
         const t = t0 + (t1 - t0) * s / SUB;
         if (t > act.activeEnd) break;
@@ -46804,7 +46897,7 @@ void main() {
         if (wall) {
           tipX = p2.x + (seg.tx - p2.x) * wall.t;
           tipZ = p2.z + (seg.tz - p2.z) * wall.t;
-          if (!act.clanked) {
+          if (!act.clanked && act.facingWall) {
             act.clanked = true;
             act.activeEnd = t;
             this.emit({ type: "batClank", x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz });
@@ -46818,13 +46911,19 @@ void main() {
           if (!z.alive || act.hitSet.has(z.id)) continue;
           if (z.down && !chop) continue;
           const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G2.radius : 0);
-          const minY = z.down ? 0.05 : chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y;
+          const minY = z.down || z.crawling ? 0.05 : chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y;
           const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
           const y1 = ay + (seg.ty - ay) * h1.t;
           const d1 = y1 >= minY ? h1.d2 : 1e9;
           const d2 = seg.ty >= minY ? segPointDist2(px2, pz2, tipX, tipZ, z.x, z.z).d2 : 1e9;
-          if (Math.min(d1, d2) > rr * rr) continue;
-          if (!this.world.lineOfSight(p2.x, p2.z, z.x, z.z, 0.9)) continue;
+          let near = Math.min(d1, d2) <= rr * rr;
+          if (!near && !z.down && !z.crawling && z.armsLost < 2) {
+            const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G2.radius : 0);
+            const e1 = segPointDist2(ax, az, tipX, tipZ, ox, oz), ey = ay + (seg.ty - ay) * e1.t;
+            near = ey >= minY && e1.d2 <= ar * ar || seg.ty >= minY && segPointDist2(px2, pz2, tipX, tipZ, ox, oz).d2 <= ar * ar;
+          }
+          if (!near) continue;
+          if (!this.world.lineOfSight(p2.x, p2.z, z.x, z.z, 0.9) && !this.world.lineOfSight(tipX, tipZ, z.x, z.z, 0.9)) continue;
           let vx = tipX - px2, vz = tipZ - pz2;
           const vl = Math.hypot(vx, vz) || 1;
           vx /= vl;
@@ -46849,9 +46948,6 @@ void main() {
           }
           if (fist) {
             const dmgF = T2.fistDamage * A.dmg;
-            act.hitSet.add(z.id);
-            act.hits++;
-            this.stats.batHits++;
             z.takeHit(dmgF, dx, dz, T2.fistKnockback * A.knock, "fist", this, "torso", A.style);
             this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
             if (T2.hitPause > 0) this.emit({ type: "hitPause", dur: T2.hitPause * 0.6 * (z.alive ? 1 : 1.4) });
@@ -46898,6 +46994,10 @@ void main() {
     aimAssist: 0.5,
     // 0 = off, 1 = full (max 5 degrees bend)
     magSize: 12,
+    testInfiniteAmmo: true,
+    // testing: spare rounds never run out (magazines still empty and reload); false = Floor 3 counts them
+    headshotChance: 0.1,
+    // a clean centre-mass pistol hit sometimes takes the head off (one-shot kill)
     reloadTime: 1.05,
     swapTime: 0.3,
     shotgunDamage: 16,
@@ -48965,7 +49065,7 @@ void main() {
           }
           this.swingId = s.swingId;
           this.swingAct = act;
-          this.swingName = A.name;
+          this.swingName = A.sock || A.name;
         }
         act.time = (A.f0 + Math.min(t, tEnd) * A.fps * A.rate) / A.fps + (this.swJit ^= 1) * 1e-6;
         const ramp = clamp4(t / (this.prevSwing ? 0.1 : 0.05), 0, 1);
@@ -50632,6 +50732,15 @@ void main() {
       if (!o) return;
       $("objectiveText").textContent = text || "";
       o.classList.toggle("show", !!text);
+    }
+    // a quick punchy word over the fight (HEADSHOT): pops in big, fades on its own (CSS animation)
+    popup(text) {
+      const el = $("popup");
+      if (!el) return;
+      el.textContent = text;
+      el.classList.remove("show");
+      void el.offsetWidth;
+      el.classList.add("show");
     }
     banner(title, sub = "") {
       $("bannerTitle").textContent = title;
@@ -55183,6 +55292,11 @@ void main() {
         case "sever":
           audio.play("sever");
           shake(0.15);
+          break;
+        case "headshot":
+          audio.play("bulletHit", 1.5);
+          shake(0.35);
+          hud.popup("HEADSHOT");
           break;
         case "batMiss":
           audio.play("batMiss");

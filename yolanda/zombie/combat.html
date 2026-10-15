@@ -32,6 +32,10 @@
   #banner.show { opacity: 1; transform: none; }
   #bannerTitle { font-size: 26px; font-weight: 750; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
   #bannerSub { color: var(--ink2); font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+  #popup { position: absolute; top: 30%; left: 0; right: 0; text-align: center; pointer-events: none; opacity: 0; font-size: 34px; font-weight: 900; letter-spacing: .08em;
+    color: #ffe9a8; text-shadow: 0 3px 0 #8a1c12, 0 6px 14px rgba(0,0,0,.55); font-style: italic; }
+  #popup.show { animation: popupHit .9s ease-out forwards; }
+  @keyframes popupHit { 0% { opacity: 0; transform: scale(1.8); } 12% { opacity: 1; transform: scale(.95); } 22% { transform: scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 
   /* weapon swap: big, above the right thumb zone, clear of the browser's bottom bar */
   #swapBtn { position: absolute; right: calc(14px + var(--sar)); bottom: calc(31vh + var(--sab)); width: 86px; height: 86px; border-radius: 50%;
@@ -118,6 +122,7 @@
   </div>
   <div id="objective"><div id="objectiveText"></div></div>
   <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+  <div id="popup"></div>
   <button id="swapBtn" data-weapon="pistol" data-next="shotgun" aria-label="Swap weapon">
     <svg id="ringSvg" viewBox="0 0 64 64"><circle id="ring" cx="32" cy="32" r="28"/></svg>
     <svg class="w i-pistol big" viewBox="0 0 48 48"><path fill="#f3eee2" d="M7 15h31l3 3v5H22l-3 2-3 13H9l3-14-5-3z"/></svg>
