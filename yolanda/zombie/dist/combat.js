@@ -52450,8 +52450,9 @@ void main() {
       const sg = A.security;
       st.actorToWorld(sg, 0, 0, Math.PI / 2);
       sg.setVisible(true);
-      sg.sitAt(-6.45, -1.5, Math.PI / 2, { instant: true });
+      sg.sitAt(-6.6, -1.3, Math.PI / 2, { instant: true });
       sg.play("SeatedIdle", { fade: 0 });
+      sg.root.position.y = 0.04;
       g.applyRoom1();
       g.previewRoom1(0);
       this.stillYola = false;

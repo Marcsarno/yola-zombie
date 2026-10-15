@@ -672,7 +672,7 @@ export class Opening {
     this.ensureBelongings(); this.belongings.visible = true; st.batStatic.visible = !this.batPicked; if (st.cap) st.cap.visible = true;
     for (const k of ['yola', 'baseball', 'teamA', 'teamB', 'staff']) A[k].setVisible(false);
     const sg = A.security; // the guard waits in a Waiting Area chair near reception (Room 2's pistol connection)
-    st.actorToWorld(sg, 0, 0, Math.PI / 2); sg.setVisible(true); sg.sitAt(-6.45, -1.5, Math.PI / 2, { instant: true }); sg.play('SeatedIdle', { fade: 0 });
+    st.actorToWorld(sg, 0, 0, Math.PI / 2); sg.setVisible(true); sg.sitAt(-6.6, -1.3, Math.PI / 2, { instant: true }); sg.play('SeatedIdle', { fade: 0 }); sg.root.position.y = 0.04; // the section's cushion top is ~0.51 m (the rig's seat contract is 0.47), so he is raised 4 cm
     // the game: the canonical snapshot
     g.applyRoom1(); g.previewRoom1(0);
     this.stillYola = false; this.room1Preview = false; this.active = false; this.state = 'ROOM1_PLAYABLE'; this.substate = via;
