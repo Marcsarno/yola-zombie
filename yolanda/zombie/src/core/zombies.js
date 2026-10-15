@@ -20,6 +20,7 @@ export class Zombie {
     this.hp = opts.hp; this.maxHp = opts.hp;
     this.speedMul = opts.speedMul ?? 1;
     this.passive = !!opts.passive; // practice dummies never attack
+    this.dormant = null; // { wake, speedMul }: stands still until sim time passes wake (or it is hit), then becomes a normal zombie
     this.state = ZS.EMERGE; this.t = 0; this.stateDur = 0.75;
     this.attackCd = 0.4;
     this.solid = true;
@@ -118,6 +119,9 @@ export class Zombie {
     this.hitFlash = Math.max(0, this.hitFlash - dt * 6);
     if (this.bumpT > 0) this.bumpT -= dt;
     if (this.attackCd > 0) this.attackCd -= dt;
+    if (this.dormant && (sim.time >= this.dormant.wake || this.hitSeq > 0)) { // wakes: a normal zombie, its first attack a beat away
+      this.speedMul = this.dormant.speedMul; this.passive = false; this.dormant = null; this.attackCd = Math.max(this.attackCd, 1.1);
+    }
     const dx = p.x - this.x, dz = p.z - this.z, dist = Math.hypot(dx, dz);
     let wantX = 0, wantZ = 0, speed = 0, turnRate = 5;
 

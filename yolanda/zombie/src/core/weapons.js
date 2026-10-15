@@ -7,7 +7,8 @@ export const PISTOL = 'pistol';
 export const SHOTGUN = 'shotgun';
 export const AXE = 'axe';
 export const FISTS = 'fists';
-export const WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, FISTS]; // the swap button cycles through these (the ones owned)
+export const BAT = 'bat'; // the baseball bat from the Supply Hall: one blunt swing, hold to keep swinging
+export const WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, BAT, FISTS]; // the swap button cycles through these (the ones owned)
 export const isGun = (w) => w === PISTOL || w === SHOTGUN;
 export const isMelee = (kind) => kind === AXE || kind === 'bat'; // kind 'fist' is its own, lighter reaction
 
@@ -80,7 +81,9 @@ export const FIST_ATTACKS = [
     dmg: 2.2, knock: 1.0, style: 'kick', sever: {} },
 ];
 // attack set of a weapon
-export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : AXE_ATTACKS);
+// the bat: the leveled baseball swing (the first axe attack), blunt (never severs), a little lighter
+export const BAT_ATTACKS = [{ ...AXE_ATTACKS[0], name: 'bat swing', dmg: 0.8, knock: 1.0, style: 'swing', sever: {}, chainFrom: 9 }];
+export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS);
 export const AXE_GEOM = {
   length: 0.74, // hands (midpoint of the grip) to the blade, metres
   hitFrom: 0.3, // only the outer part of the axe lands a blow
@@ -114,6 +117,7 @@ export function setMeleePaths(clipdata, scale, hipsRest) {
       A.PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: d[0] / dl, dy: d[1] / dl, dz: d[2] / dl });
     }
   }
+  BAT_ATTACKS[0].PATH = AXE_ATTACKS[0].PATH;
 }
 
 // Pose of the axe at attack time t: hands midpoint (hx,hy,hz) and unit direction toward the head (dx,dy,dz).

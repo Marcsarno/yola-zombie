@@ -44750,6 +44750,21 @@ void main() {
   // src/core/layout.js
   var M = "assets/models/";
   var H = "zombie/assets/hospital/";
+  var ROOM1 = {
+    player: { x: -1.6, z: -9.35, yaw: 0.55 },
+    // the anchor where original Yola becomes improved Yola
+    zombies: [
+      // standard zombies preplaced around the OR perimeter, waking (and so attacking) one at a time
+      { x: -4.5, z: -6.4, yaw: 0.9, wake: 2 },
+      { x: 4.6, z: -9.2, yaw: -1.2, wake: 5 },
+      { x: 4.3, z: -6.2, yaw: -0.8, wake: 8 }
+    ],
+    bat: { x: -3.9, z: -14.3 },
+    // the belongings table in the Supply Hall (bat and cap)
+    hallLine: -11.5,
+    hallMaxX: -1.4
+    // entering the Supply Hall: north of the OR wall, west of its east edge
+  };
   var LAYOUT = {
     bounds: { minX: -7.6, maxX: 7.6, minZ: -18, maxZ: 11.6 },
     playerStart: { x: 0.4, z: 2.2, yaw: Math.PI },
@@ -44843,7 +44858,8 @@ void main() {
   var SHOTGUN = "shotgun";
   var AXE = "axe";
   var FISTS = "fists";
-  var WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, FISTS];
+  var BAT = "bat";
+  var WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, BAT, FISTS];
   var isMelee = (kind) => kind === AXE || kind === "bat";
   var PISTOL_HOLD = {
     grip: { x: -0.066, y: 1.16, z: 0.43 },
@@ -45019,7 +45035,8 @@ void main() {
       sever: {}
     }
   ];
-  var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : AXE_ATTACKS;
+  var BAT_ATTACKS = [{ ...AXE_ATTACKS[0], name: "bat swing", dmg: 0.8, knock: 1, style: "swing", sever: {}, chainFrom: 9 }];
+  var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS;
   var AXE_GEOM = {
     length: 0.74,
     // hands (midpoint of the grip) to the blade, metres
@@ -45051,6 +45068,7 @@ void main() {
         A.PATH.push({ t, mx: (r[0] + l[0]) / 2, my: (r[1] + l[1]) / 2, mz: (r[2] + l[2]) / 2, dx: d[0] / dl, dy: d[1] / dl, dz: d[2] / dl });
       }
     }
+    BAT_ATTACKS[0].PATH = AXE_ATTACKS[0].PATH;
   }
   function meleePose(A, t, out = {}) {
     const P = A.PATH;
@@ -45383,6 +45401,7 @@ void main() {
       this.maxHp = opts.hp;
       this.speedMul = opts.speedMul ?? 1;
       this.passive = !!opts.passive;
+      this.dormant = null;
       this.state = ZS.EMERGE;
       this.t = 0;
       this.stateDur = 0.75;
@@ -45518,6 +45537,12 @@ void main() {
       this.hitFlash = Math.max(0, this.hitFlash - dt * 6);
       if (this.bumpT > 0) this.bumpT -= dt;
       if (this.attackCd > 0) this.attackCd -= dt;
+      if (this.dormant && (sim2.time >= this.dormant.wake || this.hitSeq > 0)) {
+        this.speedMul = this.dormant.speedMul;
+        this.passive = false;
+        this.dormant = null;
+        this.attackCd = Math.max(this.attackCd, 1.1);
+      }
       const dx = p.x - this.x, dz = p.z - this.z, dist2 = Math.hypot(dx, dz);
       let wantX = 0, wantZ = 0, speed = 0, turnRate = 5;
       switch (this.state) {
@@ -45739,6 +45764,7 @@ void main() {
     update(dt) {
       const sim2 = this.sim;
       if (sim2.player.dead) return;
+      if (this.mode === "room1") return;
       if (this.mode === "calm") {
         this.timer -= dt;
         if (sim2.aliveCount() < this.calmSpots.length && this.timer <= 0) {
@@ -45791,6 +45817,7 @@ void main() {
     }
     get label() {
       if (this.mode === "calm") return "Practice";
+      if (this.mode === "room1") return "Room 1";
       if (this.mode === "bench") return `Bench ${this.benchCount}`;
       if (this.cleared) return "Cleared";
       return `Wave ${this.beat + 1}/${BEATS.length}`;
@@ -45824,6 +45851,45 @@ void main() {
       this.stats = { shots: 0, shotHits: 0, swings: 0, batHits: 0, kills: 0, damageTaken: 0 };
       this.director = new Director(this, opts.mode || "encounter", opts.benchCount || 0);
       this.world.updateFlow(this.player.x, this.player.z);
+      this.pickups = [];
+      this.flow = { objective: "" };
+      if ((opts.mode || "") === "room1") this.setupRoom1();
+    }
+    // ---- Room 1: three static, preplaced standard zombies (staggered wake-ups), the exit to the Supply Hall, the bat ----
+    setupRoom1() {
+      const R = ROOM1;
+      this.flow = { objective: "room1", stage: "exit" };
+      R.zombies.forEach((s, i) => {
+        const z = this.spawnZombie("NE", { x: s.x, z: s.z, yaw: s.yaw, passive: true, speedMul: 0 });
+        z.set(ZS.CHASE);
+        z.dormant = { wake: s.wake, speedMul: 0.85 + 0.1 * i };
+      });
+      this.pickups.push({ id: "bat", weapon: BAT, x: R.bat.x, z: R.bat.z, r: 0.85 });
+    }
+    // objective chain: OR -> Supply Hall (bat) -> Waiting/Reception
+    updateFlow() {
+      const f = this.flow, p = this.player;
+      if (f.objective === void 0 || f.stage === void 0) return;
+      const inSupply = p.z < ROOM1.hallLine && p.x < ROOM1.hallMaxX;
+      if (f.stage === "exit" && inSupply) {
+        f.stage = this.pickups.some((q) => q.id === "bat") ? "bat" : "reception";
+        f.objective = f.stage;
+        this.emit({ type: "objective", id: f.objective });
+      }
+      for (const q of this.pickups) {
+        if (Math.hypot(p.x - q.x, p.z - q.z) < q.r && !p.dead) {
+          this.pickups.splice(this.pickups.indexOf(q), 1);
+          if (!p.owned.includes(q.weapon)) p.owned.push(q.weapon);
+          p.desired = q.weapon;
+          this.emit({ type: "pickup", id: q.id, weapon: q.weapon });
+          if (f.stage === "bat" || f.stage === "exit") {
+            f.stage = "reception";
+            f.objective = "reception";
+            this.emit({ type: "objective", id: "reception" });
+          }
+          break;
+        }
+      }
     }
     emit(ev) {
       ev.t = this.time;
@@ -45846,6 +45912,7 @@ void main() {
       bump(this.zombies, this);
       separate(this.zombies, p);
       this.director.update(dt);
+      this.updateFlow();
       if (this.zombies.length > 48 || this.time % 1 < dt) this.zombies = this.zombies.filter((z) => !(z.state === ZS.DEAD && z.corpseT > 7));
     }
     spawnZombie(door, opts = {}) {
@@ -46077,7 +46144,7 @@ void main() {
           const part = lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
           if (part !== "torso" && !z.severed.has(part)) z.limbHp[part] = 0;
           const last2 = act.combo === p.attacks.length - 1, holding = !last2 && p.attackHeld;
-          z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), "axe", this, part, holding ? "combo" : A.style);
+          z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), p.equipped === BAT ? "bat" : "axe", this, part, holding ? "combo" : A.style);
           this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
           if (T.hitPause > 0) this.emit({ type: "hitPause", dur: T.hitPause * (z.alive ? 1 : 1.4) * (A.style === "chop" ? 1.4 : 1) });
         }
@@ -46689,6 +46756,38 @@ void main() {
     });
     return g;
   }
+  function makeBat(length = 0.84) {
+    const L2 = length, s = L2 / 0.84;
+    const pts = [
+      [0, 0],
+      [0.026, 0],
+      [0.03, 0.01],
+      [0.024, 0.022],
+      [0.0145, 0.03],
+      [0.0145, 0.3],
+      [0.019, 0.42],
+      [0.028, 0.56],
+      [0.033, 0.7],
+      [0.034, 0.79],
+      [0.031, 0.825],
+      [0.02, 0.838],
+      [0, 0.84]
+    ].map(([r, y]) => new Vector2(r * s, y * s));
+    const geo = new LatheGeometry(pts, 18);
+    geo.rotateX(Math.PI / 2);
+    geo.translate(0, 0, -0.13 * s);
+    const wood = new Mesh(geo, mat(13081186, 0.7, 0));
+    const tape = new Mesh(new CylinderGeometry(0.0158 * s, 0.0158 * s, 0.2 * s, 14, 1, true), mat(3095114, 0.9, 0));
+    tape.rotation.x = Math.PI / 2;
+    tape.position.z = (0.13 - 0.13) * s;
+    const g = new Group();
+    g.add(wood, tape);
+    g.userData.tip = new Object3D();
+    g.userData.tip.position.z = (0.84 - 0.13) * s;
+    g.add(g.userData.tip);
+    g.userData.handOffset = 0.045 * s;
+    return g;
+  }
   function prepAxe(gltf) {
     const inner = gltf.scene, g = new Group();
     inner.rotation.x = Math.PI / 2;
@@ -47088,8 +47187,11 @@ void main() {
       clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), "fists_idle_upper"));
       const melee = [...new Set([...AXE_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
+      const scriptNames = ["t_greet_01", "t_greet_04"].filter((n) => byName[n]);
+      for (const n of scriptNames) clips.push(byName[n]);
       super(scene2, gltf.scene, H2, clips);
       this.H = H2;
+      this.scriptNames = scriptNames;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
       for (const n of loco) for (const suf of ["", "_lower"]) {
         const a = this.act(n + suf);
@@ -47139,7 +47241,18 @@ void main() {
       this.shell.visible = false;
       scene2.add(this.shell);
       this.melee = prepAxe(weapons.axe);
+      this.melee.userData.axeInner = this.melee.children[0];
+      this.batModel = makeBat();
+      this.batModel.visible = false;
+      this.melee.add(this.batModel);
       scene2.add(this.pistol, this.shotgun, this.melee);
+      for (const n of this.scriptNames) {
+        const a = this.act(n);
+        a.play();
+        a.setEffectiveWeight(0);
+        a.timeScale = 0;
+      }
+      this.script = null;
       this.up = { pistol: 1, shotgun: 0, axe: 0, fists: 0 };
       this.flinch = new Spring2(120, 13);
       this.prevHurt = 99;
@@ -47266,7 +47379,26 @@ void main() {
       cal.stop();
       cal.setEffectiveWeight(0);
     }
+    // a scripted full-body clip played once at its natural rate, blended in/out over the normal layers
+    playScript(name, { fadeIn = 0.3, fadeOut = 0.5, rate = 1 } = {}) {
+      const act = this.act(name);
+      if (!act) return false;
+      const clip = act.getClip(), t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
+      this.script = { act, t: 0, t0, len: clip.duration - t0, fadeIn, fadeOut, rate };
+      this.scriptDone = false;
+      return true;
+    }
+    scriptLength(name) {
+      const c = this.act(name)?.getClip();
+      return c ? c.duration - Math.min(...c.tracks.map((t) => t.times[0])) : 0;
+    }
+    setShown(v) {
+      this.outer.visible = v;
+      this.blob.visible = v;
+    }
     reset(x, z, yaw) {
+      this.script = null;
+      for (const n of this.scriptNames || []) this.act(n).setEffectiveWeight(0);
       this.yaw = yaw;
       this.deathT = -1;
       this.outer.quaternion.identity();
@@ -47408,7 +47540,9 @@ void main() {
       this.container.rotation.y = this.yaw;
       const w = this.locoWeights(s, dt);
       const rate = dt / Math.max(0.05, s.swapDur * 0.6);
-      for (const k2 in this.up) this.up[k2] += clamp4((s.equipped === k2 ? 1 : 0) - this.up[k2], -rate, rate);
+      const eqKey = s.equipped === "bat" ? "axe" : s.equipped;
+      this.batMode = s.equipped === "bat";
+      for (const k2 in this.up) this.up[k2] += clamp4((eqKey === k2 ? 1 : 0) - this.up[k2], -rate, rate);
       const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
       const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un;
       let sW = 0, turn = 0;
@@ -47479,6 +47613,26 @@ void main() {
       for (const n in w) {
         this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
         this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uF + uP * rP) * k);
+      }
+      let scW = 0, sact = null;
+      if (this.script) {
+        const S2 = this.script;
+        S2.t += dt;
+        const len = S2.len / S2.rate, inW = clamp4(S2.t / S2.fadeIn, 0, 1), outW = clamp4((len - S2.t) / S2.fadeOut, 0, 1);
+        scW = smooth(inW) * smooth(outW);
+        sact = S2.act;
+        S2.act.time = S2.t0 + Math.min(S2.t * S2.rate, S2.len - 1e-3);
+        S2.act.setEffectiveWeight(scW);
+        if (S2.t >= len) {
+          S2.act.setEffectiveWeight(0);
+          this.script = null;
+          this.scriptDone = true;
+          scW = 0;
+          sact = null;
+        }
+      }
+      if (scW > 0) {
+        for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
       }
       for (const [b, q] of this.restQ) b.quaternion.copy(q);
       this.mixer.update(dt);
@@ -47619,6 +47773,10 @@ void main() {
       this.shotgun.visible = shown === "shotgun";
       this.melee.visible = shown === "axe";
       this.shell.visible = false;
+      if (this.melee.userData.axeInner) {
+        this.melee.userData.axeInner.visible = !this.batMode;
+        this.batModel.visible = !!this.batMode;
+      }
       if (shown === "pistol") {
         this.aimQuat(_q3);
         const rW = this.reloadW || 0;
@@ -48929,7 +49087,19 @@ void main() {
       $("death").classList.remove("show");
       $("clear").classList.remove("show");
       this.deathT = -1;
-      this.banner(sim2.director.mode === "calm" ? "Practice" : sim2.director.mode === "bench" ? `Benchmark: ${sim2.director.benchCount}` : "Survive the ward", sim2.director.mode === "encounter" ? "Four waves" : "");
+      if (sim2.director.mode === "room1") {
+        this.setObjective("");
+        this.hintT = 0;
+        $("hint").classList.add("gone");
+      } else this.setObjective("");
+      if (sim2.director.mode !== "room1") this.banner(sim2.director.mode === "calm" ? "Practice" : sim2.director.mode === "bench" ? `Benchmark: ${sim2.director.benchCount}` : "Survive the ward", sim2.director.mode === "encounter" ? "Four waves" : "");
+    }
+    // the current objective (the opening hands over "Get out of the operating room.")
+    setObjective(text) {
+      const o = $("objective");
+      if (!o) return;
+      $("objectiveText").textContent = text || "";
+      o.classList.toggle("show", !!text);
     }
     banner(title, sub = "") {
       $("bannerTitle").textContent = title;
@@ -50900,6 +51070,49 @@ void main() {
       this.audio.tone(t + 1.2, 2.2, 440, { type: "sine", gain: 0.07, attack: 0.02 });
       this.audio.tone(t + 1.2, 2, 880, { type: "triangle", gain: 0.04, attack: 0.02 });
     }
+    payoff() {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 0.02;
+      [[0, 523.25], [0.22, 659.25], [0.44, 783.99], [0.7, 1046.5]].forEach(([d, f]) => {
+        this.audio.tone(t + d, 1.4, f, { type: "triangle", gain: 0.09, attack: 0.02 });
+        this.audio.tone(t + d, 1, f * 2, { type: "sine", gain: 0.03 });
+      });
+    }
+    combatAmbience() {
+      if (this.combatAmb || !this.ready) return;
+      const c = this.ctx;
+      const g = c.createGain();
+      g.gain.value = 0;
+      g.gain.linearRampToValueAtTime(0.05, c.currentTime + 2.5);
+      g.connect(this.audio.master);
+      const o1 = c.createOscillator(), o2 = c.createOscillator();
+      o1.type = "sawtooth";
+      o2.type = "sawtooth";
+      o1.frequency.value = 55;
+      o2.frequency.value = 55.6;
+      const f = c.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.value = 180;
+      o1.connect(f);
+      o2.connect(f);
+      f.connect(g);
+      o1.start();
+      o2.start();
+      this.combatAmb = { g, o1, o2 };
+    }
+    stopCombatAmbience() {
+      const a = this.combatAmb;
+      if (!a) return;
+      this.combatAmb = null;
+      a.g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
+      setTimeout(() => {
+        try {
+          a.o1.stop();
+          a.o2.stop();
+        } catch {
+        }
+      }, 600);
+    }
     suspend(v) {
       this.paused = v;
       try {
@@ -50977,6 +51190,11 @@ void main() {
       this.camAnim = null;
       this.fx = null;
       this.answers = {};
+      this.animScale = 1;
+      this.finalized = false;
+      this.room1Preview = false;
+      this.poseAnim = null;
+      this.lightK = 1;
       this.fadeColor = "#fff6e6";
       this.reducedFlash = false;
       addEventListener("visibilitychange", () => this.setPaused(document.hidden));
@@ -51002,6 +51220,9 @@ void main() {
       } catch {
       }
       this.warm();
+      this.game?.().warmRoom1?.();
+      this.yola?.setShown?.(false);
+      this.setupDone = true;
       onProgress?.(1);
     }
     // Render every distinct view once (the gate screen covers it), so the timed scene never hitches on first
@@ -51032,6 +51253,7 @@ void main() {
         if (o.isMesh && /^Blood_/i.test(o.material?.name || "")) this.blood.push(o);
       });
       this.setBlood(false);
+      this.yola?.setShown?.(false);
       for (const l of A.lights) l.visible = false;
       document.getElementById("hud")?.style.setProperty("display", "none");
       document.getElementById("touch")?.style.setProperty("pointer-events", "none");
@@ -51152,6 +51374,12 @@ void main() {
       this.ui.setVignette(0);
       this.ui.status("");
       this.ui.urgency(null);
+      this.animScale = 1;
+      this.finalized = false;
+      this.room1Preview = false;
+      this.stillYola = false;
+      this.poseAnim = null;
+      this.restoreLook();
       A.staff.setVisible(true);
       A.staff.sitAt(-5.2, -5.5, 0, { instant: true });
       A.yola.waveT = -1;
@@ -51384,6 +51612,12 @@ void main() {
       this.belongings.visible = true;
       st.batStatic.visible = true;
       if (st.cap) st.cap.visible = true;
+      if (!this.spot) {
+        this.spot = new SpotLight(16773340, 0, 14, 0.5, 0.75, 1.1);
+        this.spot.position.set(ROOM1.player.x + 1.4, 4, ROOM1.player.z + 1.8);
+        this.spot.target.position.set(ROOM1.player.x, 1, ROOM1.player.z);
+        this.scene.add(this.spot, this.spot.target);
+      }
       if (!this.redLight) {
         this.redLight = new PointLight(16722474, 0, 14, 1.5);
         this.redLight.position.set(0, 3, -7);
@@ -51399,6 +51633,28 @@ void main() {
       this.stage.setActive(true);
       this.setSun(CLINIC.x + 0.5, CLINIC.z - 0.5);
       this.scene.background = new Color(13624287);
+    }
+    // the room's controlled light: k scales the whole wing's lighting (1 = the normal bright look)
+    setLight(k) {
+      const A = this.arena, b = this.lightBase;
+      if (!b) return;
+      k = Math.max(this.reducedFlash ? 0.32 : 0.02, k);
+      this.lightK = k;
+      if (A.hemi) A.hemi.intensity = b.hemi * k;
+      if (A.sun) A.sun.intensity = b.sun * k;
+      this.scene.environmentIntensity = b.env * k;
+    }
+    restoreLook() {
+      this.setLight(1);
+      this.lightK = 1;
+      if (this.spot) this.spot.intensity = 0;
+      if (this.redLight) this.redLight.intensity = 0;
+      const Y = this.yola;
+      Y?.setShown?.(false);
+      this.game?.().hideZombieViews?.();
+      this.sound.stopCombatAmbience();
+      this.setBlood(false);
+      this.game?.().hudShow?.(false);
     }
     // alarm look: slow red pulses (amp 0..1) that never blackout and never exceed ~1 Hz; reduced flash softens them
     setAlarm(amp, hz = 0.8) {
@@ -51657,6 +51913,7 @@ void main() {
       yield 3.2;
       this.substate = "GET_YOLA_HOLD";
       this.mark("get-yola-done");
+      yield 0.05;
       yield* this.act4();
     }
     // gentle value animation on the story clock: fn(k) for k 0..1 over secs
@@ -51689,7 +51946,200 @@ void main() {
         a.root.position.z = z0 + dz * e;
       });
     }
+    // ================================================================== ACT 4: the same-position reveal, the smooth wave, unarmed play
     *act4() {
+      const st = this.stage, A = st.actors, yo = A.yola, an = ROOM1.player, Y = this.yola, g = this.game();
+      const slow = (k) => {
+        this.animScale = 1 - 0.65 * ease(k);
+      };
+      this.state = "GET_YOLA_SLOW";
+      this.substate = "CALL";
+      this.tween(1.4, slow);
+      this.setAlarm(1, 0.4);
+      if (!this.silent) this.sound.revealCue();
+      this.camTo(W(an.x + 0.45, 0.95, an.z + 0.3, 34, 28, 3.8), 2);
+      yo.walk([[an.x, an.z]], { endYaw: an.yaw, speed: 0.9 });
+      this.tween(2, (k) => this.setLight(1 - 0.6 * ease(k)));
+      yield 2;
+      yield this.arrived(yo);
+      yo.place(an.x, an.z, an.yaw);
+      this.mark("call-settled");
+      this.state = "MODEL_REVEAL";
+      this.substate = "HOLD_OLD";
+      this.tween(0.9, (k) => {
+        this.spot.intensity = 70 * ease(k);
+        this.setLight(0.4 - 0.2 * ease(k));
+      });
+      this.setAlarm(0);
+      yield 1.5;
+      this.substate = "DIM";
+      this.tween(0.8, (k) => {
+        this.spot.intensity = 70 * (1 - ease(k));
+        this.setLight(0.2 - 0.17 * ease(k));
+      });
+      yield 0.9;
+      yo.setVisible(false);
+      for (const a of [A.baseball, A.teamA, A.teamB]) a.setVisible(false);
+      Y.reset(an.x, an.z, an.yaw);
+      Y.setShown(true);
+      this.stillYola = true;
+      this.game().stillYola(0.016);
+      this.mark("swapped");
+      this.substate = "IMPROVED_SILHOUETTE";
+      this.tween(1.6, (k) => {
+        const p = Math.sin(Math.PI * ease(k));
+        this.redLight.position.set(an.x + 1.2, 2.6, an.z + 1);
+        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * 16 * p;
+        this.setLight(0.03 + 0.14 * ease(k));
+      });
+      yield 1.7;
+      this.substate = "SETTLE";
+      this.tween(1.3, (k) => {
+        this.spot.intensity = 60 * ease(k);
+        this.setLight(0.17 + 0.5 * ease(k));
+        this.redLight.intensity = 0;
+      });
+      yield 1.6;
+      this.mark("reveal-settled");
+      this.state = "SMOOTH_WAVE";
+      this.substate = "WAVE";
+      this.animScale = 1;
+      this.camTo(W(an.x + 0.05, 1.2, an.z, 22, 26, 2.3), 1);
+      Y.playScript("t_greet_04", { fadeIn: 0.3, fadeOut: 0.5 });
+      if (!this.silent) this.sound.payoff();
+      this.tween(1.6, (k) => this.setLight(0.67 + 0.18 * ease(k)));
+      yield Y.scriptLength("t_greet_04") + 1;
+      this.mark("wave-done");
+      this.state = "COMBAT_READY";
+      this.substate = "RETURN";
+      this.ui.subtitle("");
+      this.sub = "";
+      const pose = g.cameraPose(an.x, an.z, an.yaw);
+      this.camera.fov = 34;
+      this.camera.updateProjectionMatrix();
+      this.setCamera();
+      this.poseTo(pose, 2.2);
+      this.tween(2, (k) => this.setLight(0.85 + 0.15 * ease(k)));
+      if (!this.silent) {
+        this.sound.setMusicLevel(0, 0.2);
+        this.sound.combatAmbience();
+      }
+      yield 1.1;
+      this.revealZombies();
+      yield 1.2;
+      this.finalize("normal");
+    }
+    poseTo(pose, secs) {
+      this.poseAnim = { from: { pos: this.camera.position.clone(), quat: this.camera.quaternion.clone(), fov: this.camera.fov }, to: pose, t: 0, dur: Math.max(1e-3, secs) };
+    }
+    tickPose(d) {
+      const a = this.poseAnim;
+      if (!a) return;
+      a.t += d;
+      const u = ease(a.t / a.dur), c = this.camera;
+      c.position.lerpVectors(a.from.pos, a.to.pos, u);
+      c.quaternion.slerpQuaternions(a.from.quat, a.to.quat, u);
+      c.fov = lerp2(a.from.fov, a.to.fov, u);
+      c.updateProjectionMatrix();
+    }
+    // the three preplaced zombies become visible (still, unaware) as the camera widens
+    revealZombies() {
+      const g = this.game();
+      this.setBlood(true);
+      g.applyRoom1();
+      this.room1Preview = true;
+    }
+    // THE canonical Room 1 hand-off: normal completion, skip, replay and direct start all end here. Idempotent.
+    finalize(via = "normal") {
+      if (this.finalized) return;
+      this.finalized = true;
+      const st = this.stage, A = st.actors, g = this.game(), an = ROOM1.player;
+      this.co = null;
+      this.wait = null;
+      this.timers.length = 0;
+      this.tweens = [];
+      this.fx = null;
+      this.camAnim = null;
+      this.poseAnim = null;
+      this.tagPoints = null;
+      this.sound.alarmOff();
+      this.sound.flatlineOff(0.2);
+      this.sound.stopVoice();
+      this.ecg = null;
+      this.ui.showEcg(false);
+      this.ui.setVignette(0);
+      this.ui.status("");
+      this.ui.urgency(null);
+      this.ui.subtitle("");
+      this.ui.clearTags();
+      this.ui.closeCard();
+      this.ui.title("");
+      this.ui.chip("");
+      this.ui.objective("");
+      this.ui.reward("");
+      this.ui.setDark(0);
+      this.ui.fade.style.opacity = 0;
+      this.ui.letter(false);
+      st.setActive(false);
+      this.inOR = true;
+      const Bk = this.saved || {};
+      this.scene.background = Bk.bg || new Color(2568762);
+      if (this.arena.sun && Bk.sun) {
+        this.arena.sun.position.copy(Bk.sun);
+        this.arena.sun.target.position.copy(Bk.tgt);
+        this.arena.sun.target.updateMatrixWorld(true);
+      }
+      this.renderer.shadowMap.needsUpdate = true;
+      for (const l of this.arena.lights) l.visible = true;
+      this.animScale = 1;
+      this.setLight(1);
+      this.lightK = 1;
+      if (this.spot) this.spot.intensity = 0;
+      if (this.redLight) this.redLight.intensity = 0;
+      this.setBlood(true);
+      if (this.belongings) {
+        this.belongings.visible = true;
+        st.batStatic.visible = !this.batPicked;
+      }
+      for (const k of ["yola", "baseball", "teamA", "teamB", "staff"]) A[k].setVisible(false);
+      const sg = A.security;
+      st.actorToWorld(sg, 0, 0, Math.PI / 2);
+      sg.setVisible(true);
+      sg.sitAt(-6.45, -1.5, Math.PI / 2, { instant: true });
+      sg.play("SeatedIdle", { fade: 0 });
+      g.applyRoom1();
+      g.previewRoom1(0);
+      this.stillYola = false;
+      this.room1Preview = false;
+      this.active = false;
+      this.state = "ROOM1_PLAYABLE";
+      this.substate = via;
+      this.ui.show(false);
+      g.hudShow(true);
+      this.mark("room1-playable");
+    }
+    ambient(dt) {
+      const sg = this.stage.actors.security;
+      if (this.finalized && sg.root.visible) sg.update(dt);
+    }
+    takeBat() {
+      this.batPicked = true;
+      this.stage.batStatic.visible = false;
+    }
+    // dev: replay the whole opening from the start, cleanly
+    replay() {
+      if (!this.started) return;
+      this.finalized = false;
+      this.batPicked = false;
+      this.active = true;
+      this.ui.show(true);
+      this.beginSilent();
+      this.endSilent();
+      this.sound.stopMusic(0.1);
+      this.sound.stopAmbience();
+      this.started = true;
+      this.resetTour();
+      this.sound.unlock();
     }
     // a development card: opens the UI, waits for the choice and for the feedback to be dismissed (no timer).
     // In a silent (seek/skip) run it answers itself with the first option unless the run is stopping here.
@@ -51730,6 +52180,19 @@ void main() {
         this.ui.flashB.classList.toggle("off", !this.reducedFlash);
       };
       this.ui.flashB.classList.toggle("off", !this.reducedFlash);
+      if (this.params.has("room1")) {
+        this.started = true;
+        this.beginSilent();
+        this.finalize("direct");
+        return;
+      }
+      if (this.params.has("reveal")) {
+        this.ui.gate.classList.remove("show");
+        this.sound.unlock();
+        this.started = true;
+        this.runTo("get-yola-done", { stopAtLabel: false });
+        return;
+      }
       if (this.params.get("auto") === "1") this.start();
     }
     start() {
@@ -51746,7 +52209,7 @@ void main() {
     }
     skip() {
       if (!this.started) return;
-      this.runTo("or-entrance", { stopAtLabel: false });
+      this.runTo("room1-playable", { stopAtLabel: false, maxSec: 600 });
     }
     // dev/test: jump to time t by replaying the story silently from the start
     seek(t) {
@@ -51785,11 +52248,12 @@ void main() {
       if (!this.active) return;
       if (this.started && !this.paused) this.step(dt);
       else this.stage.update(0);
-      this.setCamera();
+      if (!this.poseAnim) this.setCamera();
     }
     step(dt) {
+      const da = dt * this.animScale;
       if (this.frozen) {
-        this.stage.update(dt);
+        this.stage.update(da);
         this.tickCamera(dt);
         this.tickFx(dt);
         this.tagsFollow();
@@ -51801,9 +52265,11 @@ void main() {
       if (this.mode === "cues") {
         while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
       } else this.runCo(d);
-      this.stage.update(d);
+      this.stage.update(da);
+      if (this.stillYola) this.game().stillYola?.(da);
       if (this.stage.tiers.some((s) => s.fx)) this.renderer.shadowMap.needsUpdate = true;
-      if (this.mode === "cues" && !this.camAnim) this.rig = this.shotAt(this.t);
+      if (this.poseAnim) this.tickPose(d);
+      else if (this.mode === "cues" && !this.camAnim) this.rig = this.shotAt(this.t);
       else this.tickCamera(d);
       this.tickFx(d);
       this.tickAlarm(d);
@@ -51964,10 +52430,92 @@ void main() {
   }
   var opening = null;
   async function startOpening() {
-    opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning });
+    opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning, game: () => window.game });
     window.opening = opening;
     await opening.preload((k) => hud.loading(0.95 + 0.05 * k));
     opening.begin();
+    opening.warm2?.();
+  }
+  function stillState(x, z, yaw) {
+    return { x, z, vx: 0, vz: 0, aimYaw: yaw, equipped: "fists", action: "ready", actionT: 0, swingT: 0, combo: 0, swingId: -1, recoil: 0, recoilScale: 1, dead: false, deathDir: 0, hurtT: 99, hurtDirX: 0, hurtDirZ: 0, reloadDur: 1, swapDur: tuning.swapTime };
+  }
+  function cameraPose(x, z, yaw) {
+    const p = sim.player, sx = p.x, sz = p.z, sy = p.aimYaw;
+    p.x = x;
+    p.z = z;
+    p.aimYaw = yaw;
+    const cy = MathUtils.degToRad(tuning.camYaw), fx2 = -Math.sin(cy), fz = -Math.cos(cy), aspect2 = camera.aspect, up = aspect2 < 1 ? 1.4 : 0.6;
+    const la = 0.45 * tuning.lookAhead;
+    camState.look.set(Math.sin(yaw) * la, Math.cos(yaw) * la);
+    camState.x = MathUtils.clamp(x + camState.look.x + fx2 * up, -6.2, 6.2);
+    camState.z = MathUtils.clamp(z + camState.look.y + fz * up, -9.2, aspect2 < 1 ? 6.6 : 7.6);
+    camState.vx = camState.vz = 0;
+    camState.trauma = 0;
+    updateCamera(1e-4, x, z, yaw, p);
+    const pose = { pos: camera.position.clone(), quat: camera.quaternion.clone(), fov: camera.fov };
+    p.x = sx;
+    p.z = sz;
+    p.aimYaw = sy;
+    return pose;
+  }
+  function applyRoom1() {
+    restart("room1");
+    const p = sim.player, A = ROOM1.player;
+    p.x = p.px = A.x;
+    p.z = p.pz = A.z;
+    p.aimYaw = p.aimTarget = p.pyaw = A.yaw;
+    p.vx = p.vz = 0;
+    p.hp = p.maxHp;
+    p.invuln = 0;
+    p.attackHeld = false;
+    p.recoil = 0;
+    p.setLoadout(["fists"]);
+    yola.reset(p.x, p.z, p.aimYaw);
+    yola.setShown(true);
+    cameraPose(p.x, p.z, p.aimYaw);
+    camState.x = camState.x;
+    for (const z of sim.zombies) {
+      z.px = z.x;
+      z.pz = z.z;
+      z.pyaw = z.yaw;
+    }
+    input.clearAll();
+    input.enabled = true;
+    acc = 0;
+    hitPauseT = 0;
+    last = performance.now();
+    hud.setObjective(OBJECTIVES.room1);
+    return sim;
+  }
+  function previewRoom1(dt) {
+    yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
+    for (const z of sim.zombies) {
+      let v = zviews.get(z.id);
+      if (!v) {
+        const type = z.id % 2;
+        v = zpool[type].pop() || newZombieView(type);
+        v.bind(z);
+        zviews.set(z.id, v);
+      }
+      v.update(dt, z, z.x, z.z, sim.time);
+    }
+  }
+  function warmRoom1() {
+    const sv = { x: camera.position.x, y: camera.position.y, z: camera.position.z, q: camera.quaternion.clone(), fov: camera.fov };
+    applyRoom1();
+    yola.setShown(true);
+    for (let i = 0; i < 3; i++) previewRoom1(1 / 60);
+    renderer.render(scene, camera);
+    for (const v of zviews.values()) {
+      v.hide();
+      zpool[v.type].push(v);
+    }
+    zviews.clear();
+    yola.setShown(false);
+    camera.position.set(sv.x, sv.y, sv.z);
+    camera.quaternion.copy(sv.q);
+    camera.fov = sv.fov;
+    camera.updateProjectionMatrix();
   }
   function newZombieView(type) {
     const t = ZOMBIE_TYPES[type];
@@ -52088,8 +52636,10 @@ void main() {
   }
   function runFrame(dt, doRender = true) {
     perfSample(dt);
+    if (opening && !opening.active) opening.ambient?.(dt);
     if (opening?.active) {
       opening.update(dt);
+      if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1));
       if (doRender) renderer.render(scene, camera);
       return;
     }
@@ -52247,6 +52797,15 @@ void main() {
           }
           break;
         }
+        case "objective":
+          hud.setObjective(OBJECTIVES[e.id] || "");
+          audio.play("swap");
+          break;
+        case "pickup":
+          audio.play("reloadDone");
+          opening?.takeBat?.();
+          hud.flash("reload");
+          break;
         case "zombieBump":
           audio.play("bump", Math.min(1.2, e.speed / 3));
           break;
@@ -52525,7 +53084,18 @@ void main() {
     const s = acc2.map((a) => a[0]).sort((a, b) => a - b), worst = acc2.sort((a, b) => b[0] - a[0])[0];
     return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
   }
-  window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st, combo2 = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo2], st, {}), cam(o) {
+  window.game = { stillYola(dt) {
+    yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw));
+  }, hideZombieViews() {
+    for (const v of zviews.values()) {
+      v.hide();
+      zpool[v.type].push(v);
+    }
+    zviews.clear();
+  }, applyRoom1, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) {
+    document.getElementById("hud").style.display = v ? "" : "none";
+    document.getElementById("touch").style.pointerEvents = v ? "" : "none";
+  }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo2 = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo2], st, {}), cam(o) {
     camOverride = o;
   }, resume() {
     manualTicks = false;

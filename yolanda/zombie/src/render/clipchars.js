@@ -4,7 +4,7 @@
 // hit flinch) are applied after the mixer in character ("container") space.
 import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { makePistol, prepPumpShort, prepShell, prepAxe } from './weaponModels.js';
+import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe } from './weaponModels.js';
 import { ikArm as solveArm } from './ik.js';
 import { AXE_ATTACKS, FIST_ATTACKS, attacksOf, SHOTGUN_SPEC, isMelee } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
@@ -145,8 +145,10 @@ export class YolaView extends ClipBody {
     clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), 'fists_idle_upper')); // unarmed: Yola's own idle on the upper body
     const melee = [...new Set([...AXE_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
     clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
+    const scriptNames = ['t_greet_01', 't_greet_04'].filter((n) => byName[n]); // scripted full-body clips (the reveal's smooth wave)
+    for (const n of scriptNames) clips.push(byName[n]);
     super(scene, gltf.scene, H, clips);
-    this.H = H;
+    this.H = H; this.scriptNames = scriptNames;
     // rest rotations: every frame starts from these, so the corrections applied after the mixer (aim,
     // hip turn, IK) never pile up on bones that the current clips do not key (constant tracks are
     // dropped at export, e.g. a spine bone the shotgun hold never moves)
@@ -175,7 +177,11 @@ export class YolaView extends ClipBody {
     this.shotgun = prepPumpShort(weapons.shotgun);
     this.shell = prepShell(weapons.shell); this.shell.visible = false; scene.add(this.shell);
     this.melee = prepAxe(weapons.axe);
+    this.melee.userData.axeInner = this.melee.children[0];
+    this.batModel = makeBat(); this.batModel.visible = false; this.melee.add(this.batModel); // the picked-up bat shares the melee socket
     scene.add(this.pistol, this.shotgun, this.melee);
+    for (const n of this.scriptNames) { const a = this.act(n); a.play(); a.setEffectiveWeight(0); a.timeScale = 0; }
+    this.script = null;
     this.up = { pistol: 1, shotgun: 0, axe: 0, fists: 0 }; // upper-body hold weights, cross-faded through swaps
     this.flinch = new Spring2(120, 13);
     this.prevHurt = 99; this.deathT = -1; this.yaw = Math.PI;
@@ -279,7 +285,17 @@ export class YolaView extends ClipBody {
     cal.stop(); cal.setEffectiveWeight(0);
   }
 
+  // a scripted full-body clip played once at its natural rate, blended in/out over the normal layers
+  playScript(name, { fadeIn = 0.3, fadeOut = 0.5, rate = 1 } = {}) {
+    const act = this.act(name); if (!act) return false;
+    const clip = act.getClip(), t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
+    this.script = { act, t: 0, t0, len: clip.duration - t0, fadeIn, fadeOut, rate }; this.scriptDone = false;
+    return true;
+  }
+  scriptLength(name) { const c = this.act(name)?.getClip(); return c ? c.duration - Math.min(...c.tracks.map((t) => t.times[0])) : 0; }
+  setShown(v) { this.outer.visible = v; this.blob.visible = v; }
   reset(x, z, yaw) {
+    this.script = null; for (const n of this.scriptNames || []) this.act(n).setEffectiveWeight(0);
     this.yaw = yaw; this.deathT = -1; this.outer.quaternion.identity();
     this.backMode = false; this.backBlend = 0; this.hipYaw = 0; this.sv.x = this.sv.z = 0; this.spS = 0; this.lw = null;
     for (const n of ['death_fall', 'death_defeat']) { this.act(n).stop(); }
@@ -394,7 +410,9 @@ export class YolaView extends ClipBody {
     const w = this.locoWeights(s, dt);
     // upper body: pistol / shotgun / axe holds, cross-faded through the swap
     const rate = dt / Math.max(0.05, s.swapDur * 0.6);
-    for (const k in this.up) this.up[k] += clamp((s.equipped === k ? 1 : 0) - this.up[k], -rate, rate);
+    const eqKey = s.equipped === 'bat' ? 'axe' : s.equipped; // the bat is held like the axe (bat idle), with its own model
+    this.batMode = s.equipped === 'bat';
+    for (const k in this.up) this.up[k] += clamp((eqKey === k ? 1 : 0) - this.up[k], -rate, rate);
     const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
     const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un;
     // axe attacks: full-body clips driven by the simulation's attack time (exact sync with the hit test)
@@ -453,6 +471,16 @@ export class YolaView extends ClipBody {
       this.act(n).setEffectiveWeight(w[n] * uP * (1 - rP) * k);
       this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uF + uP * rP) * k);
     }
+    // a scripted full-body clip (the reveal's wave) fades over the normal layers
+    let scW = 0, sact = null;
+    if (this.script) {
+      const S = this.script; S.t += dt;
+      const len = S.len / S.rate, inW = clamp(S.t / S.fadeIn, 0, 1), outW = clamp((len - S.t) / S.fadeOut, 0, 1);
+      scW = smooth(inW) * smooth(outW); sact = S.act;
+      S.act.time = S.t0 + Math.min(S.t * S.rate, S.len - 1e-3); S.act.setEffectiveWeight(scW);
+      if (S.t >= len) { S.act.setEffectiveWeight(0); this.script = null; this.scriptDone = true; scW = 0; sact = null; }
+    }
+    if (scW > 0) for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
     for (const [b, q] of this.restQ) b.quaternion.copy(q);
     this.mixer.update(dt);
     this.container.updateMatrixWorld(true);
@@ -575,6 +603,7 @@ export class YolaView extends ClipBody {
   placeWeapons(s, dt) {
     const shown = this.weaponShown;
     this.pistol.visible = shown === 'pistol'; this.shotgun.visible = shown === 'shotgun'; this.melee.visible = shown === 'axe'; this.shell.visible = false;
+    if (this.melee.userData.axeInner) { this.melee.userData.axeInner.visible = !this.batMode; this.batModel.visible = !!this.batMode; }
     if (shown === 'pistol') {
       // pistol: barrel along the arms' line toward the target; during a reload it follows the
       // right hand through the socket calibrated in the aiming pose

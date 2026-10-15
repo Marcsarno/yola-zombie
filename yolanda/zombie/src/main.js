@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
 import { setMeleePaths, meleeSegment } from './core/weapons.js';
-import { LAYOUT } from './core/layout.js';
+import { LAYOUT, ROOM1 } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
@@ -17,6 +17,7 @@ import { CustomPhysics } from './render/physics/custom.js';
 import { RapierPhysics } from './render/physics/rapier.js';
 import * as physlab from './physlab.js';
 import { Opening } from './opening/opening.js';
+import { OBJECTIVES } from './opening/content.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -124,10 +125,61 @@ async function load() {
 }
 let opening = null;
 async function startOpening() {
-  opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning });
+  opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, getSim: () => sim, tuning, game: () => window.game });
   window.opening = opening;
   await opening.preload((k) => hud.loading(0.95 + 0.05 * k));
   opening.begin();
+  opening.warm2?.();
+}
+
+// ---------- Room 1: the canonical hand-off (used by the opening's normal end, skip, replay and ?room1=1) ----------
+// A still frame of Yola for the opening (idle, unarmed): the same state object the game feeds the view each frame
+function stillState(x, z, yaw) {
+  return { x, z, vx: 0, vz: 0, aimYaw: yaw, equipped: 'fists', action: 'ready', actionT: 0, swingT: 0, combo: 0, swingId: -1, recoil: 0, recoilScale: 1, dead: false, deathDir: 0, hurtT: 99, hurtDirX: 0, hurtDirZ: 0, reloadDur: 1, swapDur: tuning.swapTime };
+}
+// put the game camera exactly where it will sit for the player at (x,z) facing yaw (no easing), and return that pose
+function cameraPose(x, z, yaw) {
+  const p = sim.player, sx = p.x, sz = p.z, sy = p.aimYaw;
+  p.x = x; p.z = z; p.aimYaw = yaw;
+  const cy = THREE.MathUtils.degToRad(tuning.camYaw), fx = -Math.sin(cy), fz = -Math.cos(cy), aspect = camera.aspect, up = aspect < 1 ? 1.4 : 0.6;
+  const la = 0.45 * tuning.lookAhead;
+  camState.look.set(Math.sin(yaw) * la, Math.cos(yaw) * la);
+  camState.x = THREE.MathUtils.clamp(x + camState.look.x + fx * up, -6.2, 6.2); camState.z = THREE.MathUtils.clamp(z + camState.look.y + fz * up, -9.2, aspect < 1 ? 6.6 : 7.6);
+  camState.vx = camState.vz = 0; camState.trauma = 0;
+  updateCamera(1e-4, x, z, yaw, p);
+  const pose = { pos: camera.position.clone(), quat: camera.quaternion.clone(), fov: camera.fov };
+  p.x = sx; p.z = sz; p.aimYaw = sy;
+  return pose;
+}
+function applyRoom1() {
+  restart('room1'); // a fresh Sim: Room 1 mode, three dormant standard zombies, the bat pickup
+  const p = sim.player, A = ROOM1.player;
+  p.x = p.px = A.x; p.z = p.pz = A.z; p.aimYaw = p.aimTarget = p.pyaw = A.yaw; p.vx = p.vz = 0; p.hp = p.maxHp; p.invuln = 0; p.attackHeld = false; p.recoil = 0;
+  p.setLoadout(['fists']); // unarmed: fists only
+  yola.reset(p.x, p.z, p.aimYaw); yola.setShown(true);
+  cameraPose(p.x, p.z, p.aimYaw); camState.x = camState.x; // the follow camera starts exactly at the pose
+  for (const z of sim.zombies) { z.px = z.x; z.pz = z.z; z.pyaw = z.yaw; }
+  input.clearAll(); input.enabled = true; acc = 0; hitPauseT = 0; last = performance.now();
+  hud.setObjective(OBJECTIVES.room1);
+  return sim;
+}
+// show the zombies and Yola without stepping the simulation (the reveal, before control is handed over)
+function previewRoom1(dt) {
+  yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
+  for (const z of sim.zombies) {
+    let v = zviews.get(z.id);
+    if (!v) { const type = z.id % 2; v = zpool[type].pop() || newZombieView(type); v.bind(z); zviews.set(z.id, v); }
+    v.update(dt, z, z.x, z.z, sim.time);
+  }
+}
+// compile everything the hand-off draws (the zombies, Yola's fists) before the timed reveal, with no visible change
+function warmRoom1() {
+  const sv = { x: camera.position.x, y: camera.position.y, z: camera.position.z, q: camera.quaternion.clone(), fov: camera.fov };
+  applyRoom1(); yola.setShown(true);
+  for (let i = 0; i < 3; i++) previewRoom1(1 / 60);
+  renderer.render(scene, camera);
+  for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); yola.setShown(false);
+  camera.position.set(sv.x, sv.y, sv.z); camera.quaternion.copy(sv.q); camera.fov = sv.fov; camera.updateProjectionMatrix();
 }
 function newZombieView(type) {
   const t = ZOMBIE_TYPES[type];
@@ -214,7 +266,8 @@ function tick(n = 1, dt = 1 / 60, render = true) {
 }
 function runFrame(dt, doRender = true) {
   perfSample(dt);
-  if (opening?.active) { opening.update(dt); if (doRender) renderer.render(scene, camera); return; }
+  if (opening && !opening.active) opening.ambient?.(dt); // the seated guard keeps idling after the hand-off
+  if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (doRender) renderer.render(scene, camera); return; }
   const p = sim.player;
   let simDt = dt;
   if (paused) simDt = 0;
@@ -323,6 +376,8 @@ function handleEvents() {
         if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
         break;
       }
+      case 'objective': hud.setObjective(OBJECTIVES[e.id] || ''); audio.play('swap'); break;
+      case 'pickup': audio.play('reloadDone'); opening?.takeBat?.(); hud.flash('reload'); break;
       case 'zombieBump': audio.play('bump', Math.min(1.2, e.speed / 3)); break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
       case 'sever': audio.play('sever'); shake(0.15); break;
@@ -496,6 +551,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

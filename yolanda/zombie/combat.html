@@ -40,8 +40,12 @@
   #swapBtn .big { width: 46px; height: 46px; left: 20px; top: 13px; }
   #swapBtn .small { width: 22px; height: 22px; right: 7px; bottom: 7px; opacity: .55; }
   #swapBtn svg.w { display: none; }
-  #swapBtn[data-weapon="pistol"] .i-pistol.big, #swapBtn[data-weapon="shotgun"] .i-shotgun.big, #swapBtn[data-weapon="axe"] .i-axe.big, #swapBtn[data-weapon="fists"] .i-fists.big,
-  #swapBtn[data-next="pistol"] .i-pistol.small, #swapBtn[data-next="shotgun"] .i-shotgun.small, #swapBtn[data-next="axe"] .i-axe.small, #swapBtn[data-next="fists"] .i-fists.small { display: block; }
+  #swapBtn[data-weapon="pistol"] .i-pistol.big, #swapBtn[data-weapon="shotgun"] .i-shotgun.big, #swapBtn[data-weapon="axe"] .i-axe.big, #swapBtn[data-weapon="fists"] .i-fists.big, #swapBtn[data-weapon="bat"] .i-bat.big,
+  #swapBtn[data-next="pistol"] .i-pistol.small, #swapBtn[data-next="shotgun"] .i-shotgun.small, #swapBtn[data-next="axe"] .i-axe.small, #swapBtn[data-next="fists"] .i-fists.small, #swapBtn[data-next="bat"] .i-bat.small { display: block; }
+  #objective { position: absolute; top: calc(60px + var(--sat)); left: calc(12px + var(--sal)); right: calc(12px + var(--sar)); display: none; }
+  #objective.show { display: block; }
+  #objective div { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 248, 234, .94); color: #20474a; padding: 7px 14px; border-radius: 12px; font-weight: 750; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+  #objective div::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #e07a5f; box-shadow: 0 0 0 4px rgba(224,122,95,.3); }
   #swapBtn.solo { display: none; }
   #swapBtn.pending { box-shadow: 0 0 0 3px var(--amber), 0 3px 10px rgba(0,0,0,.35); }
   #swapBtn.pending .small { opacity: 1; transform: scale(1.25); }
@@ -97,6 +101,7 @@
     <button id="muteTop" class="iconbtn" aria-label="Mute">♪</button>
     <button id="pauseBtn" class="iconbtn" aria-label="Pause">❚❚</button>
   </div>
+  <div id="objective"><div id="objectiveText"></div></div>
   <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
   <button id="swapBtn" data-weapon="pistol" data-next="shotgun" aria-label="Swap weapon">
     <svg id="ringSvg" viewBox="0 0 64 64"><circle id="ring" cx="32" cy="32" r="28"/></svg>
@@ -108,6 +113,8 @@
     <svg class="w i-axe small" viewBox="0 0 48 48"><path fill="#c9483f" d="M8 40l23-31 3 2L11 42z"/><path fill="#dfe5ea" d="M27 6c4-2 10-1 14 3l-4 7c-2-3-6-4-9-3z"/><path fill="#3a3f45" d="M8 40l3 2-2 3-3-2z"/></svg>
     <svg class="w i-fists big" viewBox="0 0 48 48"><path fill="#f3eee2" d="M10 20c0-4 3-6 7-6h13c5 0 8 3 8 8v6c0 5-4 9-9 9H19c-5 0-9-4-9-9z"/><path fill="none" stroke="#27323a" stroke-width="1.6" d="M18 15v9M25 14v10M32 15v9M10 28h26"/></svg>
     <svg class="w i-fists small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M10 20c0-4 3-6 7-6h13c5 0 8 3 8 8v6c0 5-4 9-9 9H19c-5 0-9-4-9-9z"/><path fill="none" stroke="#27323a" stroke-width="1.6" d="M18 15v9M25 14v10M32 15v9M10 28h26"/></svg>
+    <svg class="w i-bat big" viewBox="0 0 48 48"><path fill="#d9a86a" d="M39 6l3 3c1 1 0 3-1 4L16 38l-3 5-6-6 5-3L37 7c1-1 2-2 2-1z"/><path fill="#3a4658" d="M7 37l4 4-3 3-4-4z"/></svg>
+    <svg class="w i-bat small" viewBox="0 0 48 48"><path fill="#d9a86a" d="M39 6l3 3c1 1 0 3-1 4L16 38l-3 5-6-6 5-3L37 7c1-1 2-2 2-1z"/><path fill="#3a4658" d="M7 37l4 4-3 3-4-4z"/></svg>
     <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
     <div id="ammo"></div>
   </button>

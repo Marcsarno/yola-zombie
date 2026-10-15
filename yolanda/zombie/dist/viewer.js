@@ -37378,6 +37378,7 @@ void main() {
       sever: {}
     }
   ];
+  var BAT_ATTACKS = [{ ...AXE_ATTACKS[0], name: "bat swing", dmg: 0.8, knock: 1, style: "swing", sever: {}, chainFrom: 9 }];
   var BAT_SWING = AXE_ATTACKS[0];
 
   // src/viewer.js

@@ -3,8 +3,9 @@ import { World, rng, rayCircle, segPointDist2, angleDiff } from './world.js';
 import { LAYOUT, buildWorld } from './layout.js';
 import { Player, meleeWorldSegment } from './player.js';
 import { Zombie, ZS, separate, bump } from './zombies.js';
-import { AXE_GEOM, FISTS, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
+import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
+import { ROOM1 } from './layout.js';
 
 export const STEP = 1 / 60;
 const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.28;
@@ -27,6 +28,36 @@ export class Sim {
     this.stats = { shots: 0, shotHits: 0, swings: 0, batHits: 0, kills: 0, damageTaken: 0 };
     this.director = new Director(this, opts.mode || 'encounter', opts.benchCount || 0);
     this.world.updateFlow(this.player.x, this.player.z);
+    this.pickups = []; this.flow = { objective: '' }; // Room 1: the bat pickup and the objective chain
+    if ((opts.mode || '') === 'room1') this.setupRoom1();
+  }
+
+  // ---- Room 1: three static, preplaced standard zombies (staggered wake-ups), the exit to the Supply Hall, the bat ----
+  setupRoom1() {
+    const R = ROOM1;
+    this.flow = { objective: 'room1', stage: 'exit' };
+    R.zombies.forEach((s, i) => {
+      const z = this.spawnZombie('NE', { x: s.x, z: s.z, yaw: s.yaw, passive: true, speedMul: 0 });
+      z.set(ZS.CHASE); // already standing (no emerge walk-in)
+      z.dormant = { wake: s.wake, speedMul: 0.85 + 0.1 * i }; // stands still until its wake time (or until it is hit)
+    });
+    this.pickups.push({ id: 'bat', weapon: BAT, x: R.bat.x, z: R.bat.z, r: 0.85 });
+  }
+  // objective chain: OR -> Supply Hall (bat) -> Waiting/Reception
+  updateFlow() {
+    const f = this.flow, p = this.player; if (f.objective === undefined || f.stage === undefined) return;
+    const inSupply = p.z < ROOM1.hallLine && p.x < ROOM1.hallMaxX;
+    if (f.stage === 'exit' && inSupply) { f.stage = this.pickups.some((q) => q.id === 'bat') ? 'bat' : 'reception'; f.objective = f.stage; this.emit({ type: 'objective', id: f.objective }); }
+    for (const q of this.pickups) {
+      if (Math.hypot(p.x - q.x, p.z - q.z) < q.r && !p.dead) {
+        this.pickups.splice(this.pickups.indexOf(q), 1);
+        if (!p.owned.includes(q.weapon)) p.owned.push(q.weapon);
+        p.desired = q.weapon; // takes it out
+        this.emit({ type: 'pickup', id: q.id, weapon: q.weapon });
+        if (f.stage === 'bat' || f.stage === 'exit') { f.stage = 'reception'; f.objective = 'reception'; this.emit({ type: 'objective', id: 'reception' }); }
+        break;
+      }
+    }
   }
 
   emit(ev) { ev.t = this.time; this.events.push(ev); }
@@ -45,6 +76,7 @@ export class Sim {
     bump(this.zombies, this);
     separate(this.zombies, p);
     this.director.update(dt);
+    this.updateFlow();
     // remove old corpses (renderer fades them first)
     if (this.zombies.length > 48 || this.time % 1 < dt) this.zombies = this.zombies.filter((z) => !(z.state === ZS.DEAD && z.corpseT > 7));
   }
@@ -245,7 +277,7 @@ export class Sim {
           : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? 'LowerLeg' + side : 'torso';
         if (part !== 'torso' && !z.severed.has(part)) z.limbHp[part] = 0; // the blade goes through
         const last = act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
-        z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), 'axe', this, part, holding ? 'combo' : A.style);
+        z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), p.equipped === BAT ? 'bat' : 'axe', this, part, holding ? 'combo' : A.style);
         this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style });
         if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.4) * (A.style === 'chop' ? 1.4 : 1) });
       }

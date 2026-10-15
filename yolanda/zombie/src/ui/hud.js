@@ -89,9 +89,12 @@ export class Hud {
   onRestart(sim) {
     $('death').classList.remove('show'); $('clear').classList.remove('show');
     this.deathT = -1;
-    this.banner(sim.director.mode === 'calm' ? 'Practice' : sim.director.mode === 'bench' ? `Benchmark: ${sim.director.benchCount}` : 'Survive the ward', sim.director.mode === 'encounter' ? 'Four waves' : '');
+    if (sim.director.mode === 'room1') { this.setObjective(''); this.hintT = 0; $('hint').classList.add('gone'); } else this.setObjective('');
+    if (sim.director.mode !== 'room1') this.banner(sim.director.mode === 'calm' ? 'Practice' : sim.director.mode === 'bench' ? `Benchmark: ${sim.director.benchCount}` : 'Survive the ward', sim.director.mode === 'encounter' ? 'Four waves' : '');
   }
 
+  // the current objective (the opening hands over "Get out of the operating room.")
+  setObjective(text) { const o = $('objective'); if (!o) return; $('objectiveText').textContent = text || ''; o.classList.toggle('show', !!text); }
   banner(title, sub = '') {
     $('bannerTitle').textContent = title; $('bannerSub').textContent = sub;
     $('banner').classList.add('show'); this.bannerT = 1.8;

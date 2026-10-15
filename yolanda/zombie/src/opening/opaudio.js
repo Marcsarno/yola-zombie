@@ -149,6 +149,19 @@ export class OpeningAudio {
     this.audio.tone(t + 1.2, 2.2, 440, { type: 'sine', gain: 0.07, attack: 0.02 });
     this.audio.tone(t + 1.2, 2.0, 880, { type: 'triangle', gain: 0.04, attack: 0.02 });
   }
+  payoff() { // the restrained musical payoff of the smooth wave: a soft rising triad on the cheerful key
+    if (!this.audio.ok) return;
+    const t = this.ctx.currentTime + 0.02;
+    [[0, 523.25], [0.22, 659.25], [0.44, 783.99], [0.7, 1046.5]].forEach(([d, f]) => { this.audio.tone(t + d, 1.4, f, { type: 'triangle', gain: 0.09, attack: 0.02 }); this.audio.tone(t + d, 1.0, f * 2, { type: 'sine', gain: 0.03 }); });
+  }
+  combatAmbience() { // low room tone under the fight: a detuned drone and a slow rumble (no music)
+    if (this.combatAmb || !this.ready) return; const c = this.ctx;
+    const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.05, c.currentTime + 2.5); g.connect(this.audio.master);
+    const o1 = c.createOscillator(), o2 = c.createOscillator(); o1.type = 'sawtooth'; o2.type = 'sawtooth'; o1.frequency.value = 55; o2.frequency.value = 55.6;
+    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 180; o1.connect(f); o2.connect(f); f.connect(g); o1.start(); o2.start();
+    this.combatAmb = { g, o1, o2 };
+  }
+  stopCombatAmbience() { const a = this.combatAmb; if (!a) return; this.combatAmb = null; a.g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4); setTimeout(() => { try { a.o1.stop(); a.o2.stop(); } catch { /* ignore */ } }, 600); }
   suspend(v) { // background / foreground
     this.paused = v;
     try { if (this.ctx) v ? this.ctx.suspend() : this.ctx.resume(); } catch { /* ignore */ }
