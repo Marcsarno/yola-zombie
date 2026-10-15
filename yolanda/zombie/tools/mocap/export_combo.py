@@ -16,11 +16,13 @@ SOCK = Vector((0.972, 0, -0.233)).normalized()
 conv = lambda v: [round(v.x, 5), round(v.z, 5), round(-v.y, 5)]
 pb = lambda n: arm.pose.bones['mixamorig:' + n]
 grip = lambda s: (pb(s + 'Hand').head + pb(s + 'HandMiddle1').head) * 0.5
+CON = json.loads(act['contacts']) if 'contacts' in act else None  # planted weights per frame (retarget_mocap.py)
 samples = []
 for f in range(f0, f1 + 1):
     sc.frame_set(f)
     d = pb('RightHand').matrix.to_quaternion() @ SOCK
     samples.append({'f': f, 'r': conv(grip('Right')), 'l': conv(grip('Left')), 'd': conv(d), 'hips': conv(pb('Hips').head)})
+    if CON: samples[-1]['cL'] = CON['L'][f - f0]; samples[-1]['cR'] = CON['R'][f - f0]
 json.dump({name: samples}, open(out_json, 'w'))
 # export: the armature alone (no mesh), this action, sampled at 60 fps
 sc.render.fps = 60; sc.render.fps_base = 1; sc.frame_start = f0; sc.frame_end = f1

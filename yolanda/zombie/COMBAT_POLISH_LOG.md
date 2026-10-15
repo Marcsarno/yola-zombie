@@ -1,3 +1,42 @@
+# Bat combo, round 11 (2026-10-15): grounded feet, grip, no skating
+
+Checked the newest bat clip against your clip 13 frame by frame, measured it, and fixed what was off. Bat only.
+
+**What was wrong (measured, not eyeballed):**
+- **Feet floating, knees locked straight.** Her feet were 10–30 cm off the floor for most of the combo. The clip was sized
+  so her hips sat at standing height, but the fighter in the video crouches, so her legs couldn't reach the floor.
+- **A tilted floor.** The clip used her slightly leaning skeleton as "up", which lifted her ~5 cm per metre she moved.
+- **Knees caving in** (the tracker guesses badly at sideways depth).
+- **Skating in the game.** Against a zombie, the game shortens her step-in so she stops short of it. Her planted feet slid
+  up to ~10 cm per frame in the backhand, and again when blending in from idle and back out after the finisher.
+- **Left hand off the handle** by up to 7 cm in the finisher's follow-through (her arms are shorter than the fighter's).
+
+**What changed:**
+- **The clip (rebuilt in Blender):**
+  - Sized by leg length.
+  - Her shoe soles are planted, not her ankles, so she stands on the balls of her feet like the video.
+  - Knees point over the toes.
+  - The forehand landing, which the tracker lost in motion blur, is planted as the video shows.
+  - The bat moves into her reach when the video's hands are too far.
+- **In the game:** a foot lock. A planted foot stays on its spot while her body moves over it. If it falls too far behind,
+  she takes a quick small step instead of sliding. The left shoulder rolls forward a little when the handle is just out of reach.
+
+**Checked:**
+- One foot is on the floor in every frame, except the forehand hop (which the video has too).
+- Planted feet slide under 1 cm per frame on average, worst ~2 cm (the finisher's pivot).
+- Both hands are on the bat (within 2 cm) through all three strikes.
+- The bat the game hits with matches the one you see within 3.3 cm.
+- The same at 30, 60 and 120 fps.
+- Held combo still hit, hit, kill.
+- Hit grid 32/42 (it was 34): two edge positions far to her left are lost, because the bat now sits closer to her.
+
+**See:** recordings/bat_combo_before_after.mp4 and recordings/bat_combo_vs_reference.png.
+
+**Not done:**
+- The finisher's wind-up leans less than the video.
+- Not tested on a phone.
+- The axe comes next.
+
 # Polish log — round 9 (2026-10-15)
 
 Your notes from your last play-through, in order. Each change was checked with scripted simulation runs and with renders

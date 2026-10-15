@@ -38603,7 +38603,7 @@ void main() {
       controls.update();
       renderer.render(scene, camera);
     });
-    window.__lab = { PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
+    window.__lab = { renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
       Object.assign(shellFit, o);
       for (const r of $("fit2").children) r._set(shellFit[r.dataset.k]);
       refresh();

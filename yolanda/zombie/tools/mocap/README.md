@@ -24,6 +24,9 @@ Turns the reference videos (Downloads/ScreenRecording_10-15-2026 08-42-33_{1,11,
    - Phase keys (KEYS) give the bat's direction and which side of her body it is on.
    - The tracked image angle refines them where it agrees within 60°.
    - Contact frames (BLUR) use the keys only, because the "bat" there is a motion-blur streak.
+**Steps 6–7 in one go:** `sh tools/mocap/rebuild.sh <work dir>` (from yolanda/zombie) retargets, exports and installs the clip
+and its clipdata, and prints the checks (scale, contacts, pelvis drop, IK misses, soles).
+
 6. **Retarget:** `blender -b characters.blend --python retarget_mocap.py -- combo13b.json bat_combo_mc bat_swing 24 work.blend`
    - Hips, spine and chest get orientation from two vectors each, relative to Yola's rest pose.
    - The head rides the chest, turned toward the target, limited to 55°.
@@ -33,6 +36,21 @@ Turns the reference videos (Downloads/ScreenRecording_10-15-2026 08-42-33_{1,11,
    - The torso and head get 5-frame quaternion smoothing.
    - Fingers use the grip from `bat_swing`.
    - The result is saved to a copy (work.blend). characters.blend is never overwritten.
+   - Round 11 (2026-10-15) changes, each found by measuring the result against the video:
+     - **Scale from leg length** (the reference's hip → ankle with a straight knee, 0.736 m), not hip height. The old hip-height
+       scale placed her hips at standing height while the reference crouches: legs locked straight, feet floating.
+     - **Up is the world's up** (armature +Z). Her rest skeleton leans 3° forward; using it as "up" tilted the floor, so she rose
+       ~5 cm per metre travelled.
+     - **Arms at their own scale**, placed from her shoulders. When a grip is beyond her (short) reach, the whole bat moves toward
+       her, both hands together.
+     - **Soles, not ankles, are grounded.** The foot's pitch comes from the reference; the lowest of her shoe vertices under
+       that pitch sets the ankle height. Planted: sole on the floor. Lifted: as high as the reference's heel or toe. Lifted
+       paths are smoothed; the pelvis drops (smoothly) when a leg can't reach with a soft knee.
+     - **Knees point over the toes** (between foot and pelvis heading), not the tracker's sideways guess.
+     - **IK aims each bone at its next joint** (the Tripo bones' axes don't point exactly at their children).
+     - `BLUR_PLANTED`: frames where the tracker lost a foot in motion blur, planted per the video (forehand landing f23–30).
+     - The action stores per-frame planted weights measured on her posed shoes; export writes them to clipdata (`cL`, `cR`)
+       for the game's foot lock.
 7. **Export:** `blender -b work.blend --python export_combo.py -- bat_combo_mc yola_combo.glb combo_clipdata.json` writes the skeleton-only GLB at 60 fps plus the bat path (r, l, d, hips per frame). Copy the GLB to assets/ and merge the JSON into assets/clipdata.json.
 8. **Check renders:** `blender -b work.blend --python render_check.py -- bat_combo_mc <outdir> "11,17,23" left,top grips|socket`.
 
@@ -50,6 +68,16 @@ Turns the reference videos (Downloads/ScreenRecording_10-15-2026 08-42-33_{1,11,
 - Root motion follows the clip's own hip travel (`A.ROOT`), scaled so she stops short of the target.
 - Left hand: the bat hangs from the right hand. The left hand is put on the handle by two-bone IK after blending (`clipchars.js` `placeWeapons`, batMode).
 
+- **Foot lock** (`clipchars.js` `footLock`, bat only): planted feet (clipdata `cL`/`cR`, and the idle stance) hold their
+  spot on the floor while the body moves over them, by leg IK after the blend. A held foot more than 10 cm behind its animated
+  spot takes a quick step; a released foot eases back onto the animation. This keeps the feet still when the game shortens the
+  clip's advance to stop short of a zombie, during the assist turn, and while blending in from / back out to idle.
+- The left clavicle swings up to 15° when the handle is beyond the straight arm (`reachClavicle`).
+
 **Inspection tools:**
 - `combat.html?mode=calm&lab=bat`: the real game frame by frame with the synced reference, overlays, action weights and timing sliders.
 - `viewer.html` (Rig Lab): the clip with the reference video beside it and a weapon selector.
+- Console helpers (no UI): `tools/labcheck.js` in the Rig Lab (feet, knees and lean against the video; reference sheets) and
+  `tools/labgame.js` in the combat lab (grip gap, planted-foot slide, sim vs rendered bat, recordings). Their headers explain use.
+- `tools/tests/*.mjs` (node): bat hit grid (`battest.mjs bat [wall]`), held combo (`combotest.mjs bat`), 12-zombie crowd
+  (`crowdmelee.mjs`), glide/teleport probe (`glidetest.mjs`).

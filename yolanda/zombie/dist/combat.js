@@ -48930,6 +48930,8 @@ void main() {
       this.calibratePistolSocket();
       this.calibrateShotgunSocket();
       this.calibrateMeleeSockets(clipdata);
+      this.contacts = {};
+      for (const [k, smp] of Object.entries(clipdata || {})) if (Array.isArray(smp) && smp[0]?.cL !== void 0) this.contacts[k] = { f0: smp[0].f, L: smp.map((q) => q.cL), R: smp.map((q) => q.cR) };
       this.bladeQ = new Quaternion();
       this.prevTip = new Vector3();
       this.bladeInit = false;
@@ -48994,6 +48996,26 @@ void main() {
       hand.getWorldPosition(_ikh);
       t.sub(_ikg.sub(_ikh));
       ikArm(this.bones[side + "Arm"], this.bones[side + "ForeArm"], hand, t, w);
+    }
+    // A grip target beyond the straight arm: the clavicle swings the shoulder toward it first (at most 15 degrees, the
+    // way a reach across the body rolls the shoulder forward), so the hand gets there instead of stopping short.
+    reachClavicle(side, target) {
+      const cl = this.bones[side + "Shoulder"], up = this.bones[side + "Arm"], lo = this.bones[side + "ForeArm"], hand = this.bones[side + "Hand"];
+      if (!cl) return;
+      const R = this._rc || (this._rc = [0, 0, 0, 0, 0, 0].map(() => new Vector3()));
+      const c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]), g = this.grip(side, R[4]);
+      const len = a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g);
+      const need = a.distanceTo(target) - len * 0.97;
+      if (need <= 0) return;
+      const ca = R[1].sub(c), ct = R[5].copy(target).sub(c);
+      const axis = new Vector3().crossVectors(ca, ct);
+      if (axis.lengthSq() < 1e-10) return;
+      const ang = Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180);
+      _q3.setFromAxisAngle(axis.normalize(), ang);
+      cl.getWorldQuaternion(_q22);
+      cl.parent.getWorldQuaternion(_q32);
+      cl.quaternion.copy(_q32.invert().multiply(_q3).multiply(_q22));
+      cl.updateMatrixWorld(true);
     }
     // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
     // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the
@@ -49078,6 +49100,7 @@ void main() {
       this.sv.x = this.sv.z = 0;
       this.spS = 0;
       this.lw = null;
+      this.fl = null;
       for (const n of ["death_fall", "death_defeat"]) {
         this.act(n).stop();
       }
@@ -49236,7 +49259,8 @@ void main() {
           this.swingHand = A.hand || "Right";
           this.swingBlend = A.blendIn || 0.1;
         }
-        act.time = attackFrame(A, Math.min(t, tEnd)) / A.fps + (this.swJit ^= 1) * 1e-6;
+        this.clipF = attackFrame(A, Math.min(t, tEnd));
+        act.time = this.clipF / A.fps + (this.swJit ^= 1) * 1e-6;
         const cont = A.continuous && s.combo > 0;
         const ramp = cont ? 1 : smooth2(clamp4(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
         const out = t <= tEnd ? 1 : smooth2(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
@@ -49334,10 +49358,85 @@ void main() {
       this.flinch.step(dt);
       const f = this.flinch;
       if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC("Spine1", f.z * 0.6, 0, -f.x * 0.5);
+      this.footLock(dt, s, A, sW, w);
       this.weaponShown = uF > 0.5 ? "fists" : uA > 0.5 ? "axe" : uS > 0.5 ? "shotgun" : "pistol";
       if (this.weaponShown === "pistol") this.aimPistol(s, 1 - uP);
       else if (this.weaponShown === "shotgun") this.aimShotgun(s, 1 - uS);
       this.placeWeapons(s, dt);
+    }
+    // Foot lock (melee clips with planted-foot data: clipdata cL/cR, measured on her posed shoes in Blender). A planted
+    // foot holds its spot on the floor while the body moves over it (leg IK after the blend), so it cannot skate when the
+    // game shortens the clip's advance to stop short of a zombie, when she turns into a swing, or while the pose blends in
+    // from / back out to the idle stance. When a held foot falls more than STEP_AT behind its animated spot it takes a
+    // quick small step there (one foot at a time); a foot the animation lifts eases back onto the animation instead of
+    // popping. Only the legs are touched (the hips stay where the animation put them).
+    footLock(dt, s, A, sW, w) {
+      const FL = this.fl || (this.fl = {
+        L: { mode: "free", lock: new Vector3(), off: new Vector3(), from: new Vector3(), t: 0, dur: 0 },
+        R: { mode: "free", lock: new Vector3(), off: new Vector3(), from: new Vector3(), t: 0, dur: 0 },
+        settle: 0,
+        at: new Vector3(s.x, 0, s.z)
+      });
+      const STEP_AT = 0.1, LIFT2 = 0.05;
+      const C = A && this.contacts?.[A.path];
+      if (FL.at.distanceToSquared(_v4.set(s.x, 0, s.z)) > 0.25) for (const k of ["L", "R"]) {
+        FL[k].mode = "free";
+        FL[k].off.set(0, 0, 0);
+      }
+      FL.at.set(s.x, 0, s.z);
+      const moving = Math.hypot(s.vx, s.vz) > 0.25;
+      if (C) FL.settle = 0.6;
+      else FL.settle = moving || !this.batMode ? 0 : Math.max(0, FL.settle - dt);
+      const on = this.batMode && !s.dead && (C || FL.settle > 0);
+      const still = w.pistol_idle ?? 0;
+      const frozen = !!A && s.swingT >= attackEnd(A);
+      for (const k of ["L", "R"]) {
+        const st = FL[k], side = k === "L" ? "Left" : "Right", foot = this.bones[side + "Foot"];
+        const anim = foot.getWorldPosition(_v6);
+        let plant = 0;
+        if (on) {
+          const f = clamp4(this.clipF ?? 0, C ? C.f0 : 0, C ? C.f0 + C[k].length - 1 : 0);
+          let c = C ? C[k][Math.round(f) - C.f0] : 0;
+          if (frozen && anim.y < 0.16) c = 1;
+          plant = C ? sW * c + (1 - sW) * still : still;
+        }
+        const other = FL[k === "L" ? "R" : "L"];
+        if (st.mode === "locked") {
+          if (plant < 0.5) {
+            st.mode = "free";
+            st.off.set(st.lock.x - anim.x, 0, st.lock.z - anim.z);
+          } else {
+            const d = Math.hypot(st.lock.x - anim.x, st.lock.z - anim.z);
+            if (d > STEP_AT && other.mode !== "step") {
+              st.mode = "step";
+              st.from.copy(st.lock);
+              st.t = 0;
+              st.dur = clamp4(d / 1.4, 0.12, 0.22);
+            }
+          }
+        } else if (st.mode === "free") {
+          st.off.multiplyScalar(Math.exp(-dt / 0.08));
+          if (plant >= 0.5) {
+            st.mode = "locked";
+            st.lock.set(anim.x + st.off.x, 0, anim.z + st.off.z);
+            st.off.set(0, 0, 0);
+          }
+        }
+        const tgt = _v7;
+        if (st.mode === "step") {
+          st.t += dt;
+          const u = smooth2(clamp4(st.t / st.dur, 0, 1));
+          tgt.set(st.from.x + (anim.x - st.from.x) * u, anim.y + Math.sin(Math.PI * u) * LIFT2, st.from.z + (anim.z - st.from.z) * u);
+          if (st.t >= st.dur) {
+            st.mode = plant >= 0.5 ? "locked" : "free";
+            st.lock.set(anim.x, 0, anim.z);
+            st.off.set(0, 0, 0);
+          }
+        } else if (st.mode === "locked") tgt.set(st.lock.x, anim.y, st.lock.z);
+        else tgt.set(anim.x + st.off.x, anim.y, anim.z + st.off.z);
+        st.err = Math.hypot(tgt.x - anim.x, tgt.z - anim.z);
+        if (st.err > 1e-3 || st.mode === "step") ikArm(this.bones[side + "UpLeg"], this.bones[side + "Leg"], foot, tgt.clone(), 1);
+      }
     }
     // Spine re-based onto each upper-body layer's own hip TILT: S' = inv(Hnow) * Hclip' * S, where Hclip'
     // is the source clip's hip rotation turned to the current hips' heading (the source clips stand turned,
@@ -49506,7 +49605,9 @@ void main() {
         const M4 = this.melee;
         if (this.batMode) {
           const span = clamp4(_v6.copy(_v4).sub(_v23).dot(dir), 0.07, 0.16);
-          this.ikArm("Left", _v7.copy(_v4).addScaledVector(dir, -span), 1);
+          _v7.copy(_v4).addScaledVector(dir, -span);
+          this.reachClavicle("Left", _v7);
+          this.ikArm("Left", _v7, 1);
           this.grip("Left", _v23);
           M4.position.copy(_v4).addScaledVector(dir, -span / 2);
         } else M4.position.copy(_v4).add(_v23).multiplyScalar(0.5);
