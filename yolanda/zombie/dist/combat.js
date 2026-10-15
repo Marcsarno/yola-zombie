@@ -47164,6 +47164,16 @@ void main() {
     pistol_strafe_right: { dir: [-1, 0] },
     pistol_strafe_run_right: { dir: [-1, 0] }
   };
+  var UNARMED = {
+    pistol_walk: "p_run_plain",
+    pistol_run: "p_run_plain",
+    pistol_walk_back: "p_run_back_plain",
+    pistol_run_back: "p_run_back_plain",
+    pistol_strafe_left: "p_walk_strafe_left_plain",
+    pistol_strafe_run_left: "p_run_strafe_left_plain",
+    pistol_strafe_right: "p_walk_strafe_right_plain",
+    pistol_strafe_run_right: "p_run_strafe_right_plain"
+  };
   var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
     constructor(scene2, gltf, clipdata, weapons) {
@@ -47180,6 +47190,13 @@ void main() {
         clips.push(byName[n]);
         clips.push(subClip(byName[n], (b) => LOWER.test(b), n + "_lower"));
       }
+      const unarmed = Object.values(UNARMED).every((n) => byName[n]);
+      if (unarmed) for (const n in UNARMED) {
+        const c = byName[UNARMED[n]].clone();
+        c.name = n + "_u";
+        loopClip(c);
+        clips.push(c);
+      }
       clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), "bat_idle_upper"));
       clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), "pistol_reload_upper"));
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_hold_upper"));
@@ -47192,14 +47209,18 @@ void main() {
       super(scene2, gltf.scene, H2, clips);
       this.H = H2;
       this.scriptNames = scriptNames;
+      this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
-      for (const n of loco) for (const suf of ["", "_lower"]) {
+      const sufs = this.unarmed ? ["", "_lower", "_u"] : ["", "_lower"];
+      for (const n of loco) for (const suf of sufs) {
+        if (n === "pistol_idle" && suf === "_u") continue;
         const a = this.act(n + suf);
         a.play();
         a.setEffectiveWeight(0);
       }
       this.gait = this.measureGaits();
-      for (const n in LOCO) for (const suf of ["", "_lower"]) this.act(n + suf).timeScale = 0;
+      this.gaitU = this.unarmed ? this.measureGaits("_u") : null;
+      for (const n in LOCO) for (const suf of sufs) this.act(n + suf).timeScale = 0;
       this.phase = 0;
       this.sv = { x: 0, z: 0 };
       this.act("bat_idle_upper").play();
@@ -47414,14 +47435,14 @@ void main() {
     }
     // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
     // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
-    measureGaits() {
+    measureGaits(suf = "") {
       const out = {}, L2 = new Vector3(), LT = new Vector3(), R = new Vector3(), RT = new Vector3();
       const all = Object.values(this.actions);
       this.container.rotation.y = 0;
       this.outer.position.set(0, 0, 0);
       for (const n in LOCO) {
         for (const a2 of all) a2.setEffectiveWeight(0);
-        const a = this.act(n);
+        const a = this.act(n + suf);
         a.setEffectiveWeight(1);
         a.timeScale = 0;
         const D = a.getClip().duration, N = 90, [dx, dz] = LOCO[n].dir, rows = [];
@@ -47526,6 +47547,10 @@ void main() {
         const g = this.gait[n], t = (this.phase + g.lead) % 1 * g.dur;
         this.act(n).time = t;
         this.act(n + "_lower").time = t;
+        if (this.gaitU) {
+          const u = this.gaitU[n];
+          this.act(n + "_u").time = (this.phase + u.lead) % 1 * u.dur;
+        }
       }
       return lw;
     }
@@ -47609,10 +47634,12 @@ void main() {
       hold.setEffectiveWeight((1 - rS) * uS * k);
       hold.time = HOLD_T + (this.holdJit ^= 1) * 1e-6;
       this.act("bat_idle_upper").setEffectiveWeight(uA * k);
-      this.act("fists_idle_upper").setEffectiveWeight(0);
+      const uni = this.unarmed ? uF : 0;
+      this.act("fists_idle_upper").setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
       for (const n in w) {
-        this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + uF) * k);
-        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uP * rP) * k);
+        this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
+        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uP * rP + (n === "pistol_idle" || !this.unarmed ? uF : 0)) * k);
+        if (this.unarmed && n !== "pistol_idle") this.act(n + "_u").setEffectiveWeight(w[n] * uni * k);
       }
       let scW = 0, sact = null;
       if (this.script) {

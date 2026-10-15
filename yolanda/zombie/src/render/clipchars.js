@@ -119,6 +119,9 @@ const LOCO = {
   pistol_strafe_right: { dir: [-1, 0] }, pistol_strafe_run_right: { dir: [-1, 0] },
 };
 // walk and run clip for each travel direction key (f, b, l = left, r = right)
+// unarmed locomotion: the same gait slots played by gun-free Mixamo clips (arms swing like a normal run)
+const UNARMED = { pistol_walk: 'p_run_plain', pistol_run: 'p_run_plain', pistol_walk_back: 'p_run_back_plain', pistol_run_back: 'p_run_back_plain',
+  pistol_strafe_left: 'p_walk_strafe_left_plain', pistol_strafe_run_left: 'p_run_strafe_left_plain', pistol_strafe_right: 'p_walk_strafe_right_plain', pistol_strafe_run_right: 'p_run_strafe_right_plain' };
 const GAIT = { f: ['pistol_walk', 'pistol_run'], b: ['pistol_walk_back', 'pistol_run_back'], l: ['pistol_strafe_left', 'pistol_strafe_run_left'], r: ['pistol_strafe_right', 'pistol_strafe_run_right'] };
 
 export class YolaView extends ClipBody {
@@ -135,6 +138,8 @@ export class YolaView extends ClipBody {
       clips.push(byName[n]); // full body (pistol held)
       clips.push(subClip(byName[n], (b) => LOWER.test(b), n + '_lower')); // legs only (bat held)
     }
+    const unarmed = Object.values(UNARMED).every((n) => byName[n]);
+    if (unarmed) for (const n in UNARMED) { const c = byName[UNARMED[n]].clone(); c.name = n + '_u'; loopClip(c); clips.push(c); }
     clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), 'bat_idle_upper'));
     clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), 'pistol_reload_upper'));
     // sawn-off double barrel: held at the low ready (frame 1 of the rifle reload, retargeted from the Mixamo
@@ -148,15 +153,17 @@ export class YolaView extends ClipBody {
     const scriptNames = ['t_greet_01', 't_greet_04'].filter((n) => byName[n]); // scripted full-body clips (the reveal's smooth wave)
     for (const n of scriptNames) clips.push(byName[n]);
     super(scene, gltf.scene, H, clips);
-    this.H = H; this.scriptNames = scriptNames;
+    this.H = H; this.scriptNames = scriptNames; this.unarmed = unarmed;
     // rest rotations: every frame starts from these, so the corrections applied after the mixer (aim,
     // hip turn, IK) never pile up on bones that the current clips do not key (constant tracks are
     // dropped at export, e.g. a spine bone the shotgun hold never moves)
     this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
-    for (const n of loco) for (const suf of ['', '_lower']) { const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
+    const sufs = this.unarmed ? ['', '_lower', '_u'] : ['', '_lower'];
+    for (const n of loco) for (const suf of sufs) { if (n === 'pistol_idle' && suf === '_u') continue; const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
     this.gait = this.measureGaits();
+    this.gaitU = this.unarmed ? this.measureGaits('_u') : null;
     // moving clips are driven from one shared gait phase (see locoWeights), not by the mixer clock
-    for (const n in LOCO) for (const suf of ['', '_lower']) this.act(n + suf).timeScale = 0;
+    for (const n in LOCO) for (const suf of sufs) this.act(n + suf).timeScale = 0;
     this.phase = 0; this.sv = { x: 0, z: 0 };
     this.act('bat_idle_upper').play(); this.act('bat_idle_upper').setEffectiveWeight(0);
     { const fi = this.act('fists_idle_upper'); fi.play(); fi.setEffectiveWeight(0); }
@@ -303,13 +310,13 @@ export class YolaView extends ClipBody {
 
   // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
   // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
-  measureGaits() {
+  measureGaits(suf = '') {
     const out = {}, L = new THREE.Vector3(), LT = new THREE.Vector3(), R = new THREE.Vector3(), RT = new THREE.Vector3();
     const all = Object.values(this.actions);
     this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
     for (const n in LOCO) {
       for (const a of all) a.setEffectiveWeight(0);
-      const a = this.act(n); a.setEffectiveWeight(1); a.timeScale = 0;
+      const a = this.act(n + suf); a.setEffectiveWeight(1); a.timeScale = 0;
       const D = a.getClip().duration, N = 90, [dx, dz] = LOCO[n].dir, rows = [];
       for (let i = 0; i < N; i++) {
         a.time = (D * i) / N; this.mixer.update(0); this.outer.updateMatrixWorld(true);
@@ -396,6 +403,7 @@ export class YolaView extends ClipBody {
       if (!lw[n]) continue;
       const g = this.gait[n], t = ((this.phase + g.lead) % 1) * g.dur;
       this.act(n).time = t; this.act(n + '_lower').time = t;
+      if (this.gaitU) { const u = this.gaitU[n]; this.act(n + '_u').time = ((this.phase + u.lead) % 1) * u.dur; }
     }
     return lw;
   }
@@ -467,10 +475,12 @@ export class YolaView extends ClipBody {
     hold.time = HOLD_T + ((this.holdJit ^= 1) * 1e-6); // a static time is only applied every other update, so it alternates
     this.act('bat_idle_upper').setEffectiveWeight(uA * k);
     // unarmed: the regular full-body run/walk/strafe clips (arms included), not the legs under a static upper-body pose
-    this.act('fists_idle_upper').setEffectiveWeight(0);
+    const uni = this.unarmed ? uF : 0; // with the gun-free clips, moving unarmed uses them in full; standing still keeps the idle arms
+    this.act('fists_idle_upper').setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
     for (const n in w) {
-      this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + uF) * k);
-      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP) * k);
+      this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP + (n === 'pistol_idle' || !this.unarmed ? uF : 0)) * k);
+      if (this.unarmed && n !== 'pistol_idle') this.act(n + '_u').setEffectiveWeight(w[n] * uni * k);
     }
     // a scripted full-body clip (the reveal's wave) fades over the normal layers
     let scW = 0, sact = null;
