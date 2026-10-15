@@ -1,3 +1,5 @@
 dist/.assets.packed
 dist/.check.js
 *.zip
+
+.vercel
