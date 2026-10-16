@@ -7,7 +7,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe } from './render/weaponModels.js';
 import { ikArm } from './render/ik.js';
 import { SHOTGUN_SPEC } from './core/weapons.js';
-import { Compare, STATUS } from './viewcompare.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
 const CLIP_FPS = { bat_combo_mc: 60 };
@@ -68,46 +67,6 @@ const CAMS = { face: [0, 1.42, 0.85], front: [0, 1.0, 3.4], side: [3.4, 1.0, 0],
 function setCam(k) { const p = CAMS[k]; camera.position.set(...p); controls.target.set(0, k === 'face' ? 1.38 : 0.85, 0); controls.update(); }
 setCam('three');
 for (const b of document.querySelectorAll('[data-cam]')) b.onclick = () => setCam(b.dataset.cam);
-
-// ---------------- before / after (src/viewcompare.js) ----------------
-const cmp = new Compare({ scene, loadG: (f) => new Promise((res, rej) => new GLTFLoader().load(f, res, undefined, rej)), $ });
-function cmpPanel() {
-  let p = $('cmpPanel');
-  if (!p) {
-    p = document.createElement('div'); p.id = 'cmpPanel'; p.className = 'panel';
-    p.style.cssText = 'top:58px;left:6px;width:min(380px,46vw);max-height:calc(100vh - 160px);overflow:auto;z-index:12';
-    document.body.appendChild(p);
-  }
-  const W = { bat: 'Bat', axe: 'Axe', fists: 'Unarmed', pistol: 'Pistol', shotgun: 'Shotgun' }, G = { idle: 'Idle', walk: 'Walk', run: 'Run', strafe: 'Strafe', back: 'Back' };
-  const btn = (on, txt, k) => `<button class="${on ? 'on' : ''}" data-k="${k}">${txt}</button>`;
-  const clips = Object.keys(cmp.bodies?.after.clips || {}).sort();
-  const sel = (x) => (x.kind === 'hold' && cmp.mode === 'hold' && cmp.weapon === x.w) || (x.kind === 'clip' && cmp.mode === 'clip' && cmp.clip === x.clip);
-  if (cmp.collapsed) { p.innerHTML = '<button data-k="c:open">Show the status panel</button>'; p.querySelector('button').onclick = () => { cmp.collapsed = false; cmpPanel(); }; p.style.display = cmp.on ? '' : 'none'; return; }
-  p.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b style="font:700 14px system-ui">Before / After: Yola 2 grips + clip clean-up</b><button id="cmpHide">Hide</button></div>'
-    + '<div style="color:var(--dim);margin-bottom:6px">Left (red tag): BEFORE this pass, her old clips held by the game\'s old code. Right (teal tag): AFTER, what the game does now. Same frame on both. Click a status line to show it.</div>'
-    + '<div class="grp" style="flex-wrap:wrap;margin:4px 0"><span class="lbl">Show</span>' + btn(cmp.mode === 'hold', 'Weapon hold + gait', 'm:hold') + btn(cmp.mode === 'clip', 'One clip', 'm:clip') + '</div>'
-    + (cmp.mode === 'hold'
-      ? '<div class="grp" style="flex-wrap:wrap;margin:4px 0"><span class="lbl">Weapon</span>' + Object.entries(W).map(([k, t]) => btn(cmp.weapon === k, t, 'w:' + k)).join('') + '</div><div class="grp" style="flex-wrap:wrap;margin:4px 0"><span class="lbl">Gait</span>' + Object.entries(G).map(([k, t]) => btn(cmp.gait === k, t, 'g:' + k)).join('') + '</div>'
-      : '<div class="grp" style="margin:4px 0"><span class="lbl">Clip</span><select id="cmpClip">' + clips.map((c) => `<option ${c === cmp.clip ? 'selected' : ''}>${c}</option>`).join('') + '</select></div>')
-    + '<h4>Status</h4>' + STATUS.map((x, i) => `<div data-s="${i}" style="cursor:${x.kind === 'note' ? 'default' : 'pointer'};margin:5px 0;padding:6px 8px;border-radius:8px;background:${sel(x) ? '#3d505a' : '#1f2a30'}"><b style="color:${x.done ? '#5fd38a' : '#ffb347'}">${x.done ? 'FINISHED' : 'NOT FINISHED'}</b> &middot; <b>${x.label}</b><div style="color:#cfd8d6;margin-top:2px">${x.note}</div></div>`).join('');
-  for (const b of p.querySelectorAll('button[data-k]')) b.onclick = () => { const [t, v] = b.dataset.k.split(':'); if (t === 'm') cmp.mode = v; if (t === 'w') cmp.weapon = v; if (t === 'g') cmp.gait = v; cmpSync(); };
-  $('cmpHide').onclick = () => { cmp.collapsed = true; cmpPanel(); };
-  const cs = $('cmpClip'); if (cs) cs.onchange = () => { cmp.clip = cs.value; cmpSync(); };
-  for (const d of p.querySelectorAll('[data-s]')) d.onclick = () => { const x = STATUS[+d.dataset.s]; if (x.kind === 'hold') { cmp.mode = 'hold'; cmp.weapon = x.w; } else if (x.kind === 'clip') { cmp.mode = 'clip'; cmp.clip = x.clip; } else return; cmpSync(); };
-  p.style.display = cmp.on ? '' : 'none';
-}
-function cmpSync() { S.frames = cmp.length(); $('scrub').max = S.frames; if (S.frame > S.frames) S.frame = 1; cmpPanel(); refresh(); }
-async function setCompare(on) {
-  $('cmpBtn').textContent = on ? 'Loading...' : 'Before / After';
-  if (on) await cmp.load();
-  cmp.setOn(on); $('cmpBtn').classList.toggle('on', on); $('cmpBtn').textContent = 'Before / After';
-  for (const a of [main, ref]) if (a) { a.root.visible = !on && (a === main || !!a.action); a.helper.visible = false; }
-  for (const k in held) held[k].visible = false;
-  if (mainGun?.obj) mainGun.obj.visible = !on; if (refGun?.obj) refGun.obj.visible = !on;
-  for (const m of Object.values(marks)) for (const o of Object.values(m)) o.visible = false;
-  if (vr.panel) vr.panel.style.display = 'none';
-  if (on) { camera.position.set(-0.75, 1.0, 4.6); controls.target.set(-0.75, 0.9, 0); controls.update(); S.frame = 1; cmpSync(); } // (both figures right of the panel) else { cmpPanel(); setClip($('clip').value); }
-}
 
 // ---------------- loading ----------------
 const gltfLoader = new GLTFLoader(), fbxLoader = new FBXLoader();
@@ -358,7 +317,6 @@ function applyGun() {
 function refresh() {
   if (!main) return;
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
-  if (cmp.on) { cmp.update(f, camera); $('scrub').value = f; $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / 30).toFixed(2)} s at 30 fps)`; return; }
   main.setFrame(Math.min(f, main.frames));
   if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
   mainGun?.update(1); leftHand(f);
@@ -462,7 +420,6 @@ function buildUI() {
   $('inplace').onchange = () => setClip($('clip').value);
   $('speed').onchange = (e) => { S.speed = +e.target.value; };
   $('toggleSide').onclick = () => $('side').classList.toggle('open');
-  $('cmpBtn').onclick = () => setCompare(!cmp.on);
   const ui = () => { for (const id of ['top', 'bottom', 'side']) { const el = $(id); el.hidden = !el.hidden; } };
   $('hideUI').onclick = ui;
   addEventListener('keydown', (e) => { if (e.code === 'KeyH' && e.target.tagName !== 'TEXTAREA') ui(); });
@@ -494,7 +451,6 @@ function buildUI() {
   try { const g = await loadG('assets/weapons/shell.glb'); shellTemplate = prepShell(g); shellObj = shellTemplate; shellObj.visible = false; scene.add(shellObj); } catch { /* not built yet */ }
   const want = new URLSearchParams(location.search).get('char');
   await setChar(want in CHARS ? want : 'yola');
-  if (new URLSearchParams(location.search).has('compare')) await setCompare(true);
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
@@ -503,7 +459,6 @@ function buildUI() {
       if (S.frame >= S.frames + 1) S.frame = $('loop').checked ? 1 : S.frames;
       refresh();
     }
-    if (cmp.on && !S.playing) cmp.update(Math.round(S.frame), camera); // (the labels follow the camera)
     controls.update(); renderer.render(scene, camera);
   });
   window.__lab = { renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };

@@ -10,7 +10,7 @@ export function makePistol(scale = 1) {
   const dark = mat(0x3b4048, 0.5, 0.25), grip = mat(0x2a2e34, 0.85, 0), accent = mat(0x9aa4ad, 0.4, 0.5);
   // grip (canted back like a real pistol), the hand wraps it at the origin
   const gripM = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.105, 0.046, 3, 0.012), grip);
-  gripM.position.set(0, -0.03, -0.012); gripM.rotation.x = 0.28; g.add(gripM); // (+: the butt sweeps back; it leaned the wrong way until 2026-10-16)
+  gripM.position.set(0, -0.03, -0.012); gripM.rotation.x = -0.28; g.add(gripM);
   // frame + slide
   const frame = new THREE.Mesh(new RoundedBoxGeometry(0.03, 0.026, 0.17, 3, 0.01), dark);
   frame.position.set(0, 0.03, 0.055); g.add(frame);

@@ -12512,18 +12512,18 @@
      * @param {XRReferenceSpace} referenceSpace - The reference space.
      * @return {WebXRController} A reference to this instance.
      */
-    update(inputSource, frame3, referenceSpace) {
+    update(inputSource, frame, referenceSpace) {
       let inputPose = null;
       let gripPose = null;
       let handPose = null;
       const targetRay = this._targetRay;
       const grip = this._grip;
       const hand = this._hand;
-      if (inputSource && frame3.session.visibilityState !== "visible-blurred") {
+      if (inputSource && frame.session.visibilityState !== "visible-blurred") {
         if (hand && inputSource.hand) {
           handPose = true;
           for (const inputjoint of inputSource.hand.values()) {
-            const jointPose = frame3.getJointPose(inputjoint, referenceSpace);
+            const jointPose = frame.getJointPose(inputjoint, referenceSpace);
             const joint = this._getHandJoint(hand, inputjoint);
             if (jointPose !== null) {
               joint.matrix.fromArray(jointPose.transform.matrix);
@@ -12555,7 +12555,7 @@
           }
         } else {
           if (grip !== null && inputSource.gripSpace) {
-            gripPose = frame3.getPose(inputSource.gripSpace, referenceSpace);
+            gripPose = frame.getPose(inputSource.gripSpace, referenceSpace);
             if (gripPose !== null) {
               grip.matrix.fromArray(gripPose.transform.matrix);
               grip.matrix.decompose(grip.position, grip.rotation, grip.scale);
@@ -12576,7 +12576,7 @@
           }
         }
         if (targetRay !== null) {
-          inputPose = frame3.getPose(inputSource.targetRaySpace, referenceSpace);
+          inputPose = frame.getPose(inputSource.targetRaySpace, referenceSpace);
           if (inputPose === null && gripPose !== null) {
             inputPose = gripPose;
           }
@@ -20832,8 +20832,8 @@
     let isAnimating = false;
     let animationLoop = null;
     let requestId = null;
-    function onAnimationFrame(time, frame3) {
-      animationLoop(time, frame3);
+    function onAnimationFrame(time, frame) {
+      animationLoop(time, frame);
       requestId = context.requestAnimationFrame(onAnimationFrame);
     }
     return {
@@ -23537,30 +23537,30 @@
   function WebGLObjects(gl, geometries, attributes, info) {
     let updateMap = /* @__PURE__ */ new WeakMap();
     function update(object) {
-      const frame3 = info.render.frame;
+      const frame = info.render.frame;
       const geometry = object.geometry;
       const buffergeometry = geometries.get(object, geometry);
-      if (updateMap.get(buffergeometry) !== frame3) {
+      if (updateMap.get(buffergeometry) !== frame) {
         geometries.update(buffergeometry);
-        updateMap.set(buffergeometry, frame3);
+        updateMap.set(buffergeometry, frame);
       }
       if (object.isInstancedMesh) {
         if (object.hasEventListener("dispose", onInstancedMeshDispose) === false) {
           object.addEventListener("dispose", onInstancedMeshDispose);
         }
-        if (updateMap.get(object) !== frame3) {
+        if (updateMap.get(object) !== frame) {
           attributes.update(object.instanceMatrix, gl.ARRAY_BUFFER);
           if (object.instanceColor !== null) {
             attributes.update(object.instanceColor, gl.ARRAY_BUFFER);
           }
-          updateMap.set(object, frame3);
+          updateMap.set(object, frame);
         }
       }
       if (object.isSkinnedMesh) {
         const skeleton = object.skeleton;
-        if (updateMap.get(skeleton) !== frame3) {
+        if (updateMap.get(skeleton) !== frame) {
           skeleton.update();
-          updateMap.set(skeleton, frame3);
+          updateMap.set(skeleton, frame);
         }
       }
       return buffergeometry;
@@ -28146,9 +28146,9 @@
       return renderTarget.samples > 0 && extensions.has("WEBGL_multisampled_render_to_texture") === true && renderTargetProperties.__useRenderToTexture !== false;
     }
     function updateVideoTexture(texture) {
-      const frame3 = info.render.frame;
-      if (_videoTextures.get(texture) !== frame3) {
-        _videoTextures.set(texture, frame3);
+      const frame = info.render.frame;
+      if (_videoTextures.get(texture) !== frame) {
+        _videoTextures.set(texture, frame);
         texture.update();
       }
     }
@@ -28796,9 +28796,9 @@ void main() {
         return cameraAccessTextures[xrCamera];
       };
       let onAnimationFrameCallback = null;
-      function onAnimationFrame(time, frame3) {
-        pose = frame3.getViewerPose(customReferenceSpace || referenceSpace);
-        xrFrame = frame3;
+      function onAnimationFrame(time, frame) {
+        pose = frame.getViewerPose(customReferenceSpace || referenceSpace);
+        xrFrame = frame;
         if (pose !== null) {
           const views = pose.views;
           if (glBaseLayer !== null) {
@@ -28878,12 +28878,12 @@ void main() {
           const inputSource = controllerInputSources[i];
           const controller = controllers[i];
           if (inputSource !== null && controller !== void 0) {
-            controller.update(inputSource, frame3, customReferenceSpace || referenceSpace);
+            controller.update(inputSource, frame, customReferenceSpace || referenceSpace);
           }
         }
-        if (onAnimationFrameCallback) onAnimationFrameCallback(time, frame3);
-        if (frame3.detectedPlanes) {
-          scope.dispatchEvent({ type: "planesdetected", data: frame3 });
+        if (onAnimationFrameCallback) onAnimationFrameCallback(time, frame);
+        if (frame.detectedPlanes) {
+          scope.dispatchEvent({ type: "planesdetected", data: frame });
         }
         xrFrame = null;
       }
@@ -29226,10 +29226,10 @@ void main() {
       }
       const webglProgram = program.program;
       state.updateUBOMapping(uniformsGroup, webglProgram);
-      const frame3 = info.render.frame;
-      if (updateList[uniformsGroup.id] !== frame3) {
+      const frame = info.render.frame;
+      if (updateList[uniformsGroup.id] !== frame) {
         updateBufferData(uniformsGroup);
-        updateList[uniformsGroup.id] = frame3;
+        updateList[uniformsGroup.id] = frame;
       }
     }
     function createBuffer(uniformsGroup) {
@@ -37613,11 +37613,11 @@ void main() {
     const dark = mat(3883080, 0.5, 0.25), grip = mat(2764340, 0.85, 0), accent = mat(10134701, 0.4, 0.5);
     const gripM = new Mesh(new RoundedBoxGeometry(0.03, 0.105, 0.046, 3, 0.012), grip);
     gripM.position.set(0, -0.03, -0.012);
-    gripM.rotation.x = 0.28;
+    gripM.rotation.x = -0.28;
     g.add(gripM);
-    const frame3 = new Mesh(new RoundedBoxGeometry(0.03, 0.026, 0.17, 3, 0.01), dark);
-    frame3.position.set(0, 0.03, 0.055);
-    g.add(frame3);
+    const frame = new Mesh(new RoundedBoxGeometry(0.03, 0.026, 0.17, 3, 0.01), dark);
+    frame.position.set(0, 0.03, 0.055);
+    g.add(frame);
     const slide = new Mesh(new RoundedBoxGeometry(0.034, 0.03, 0.19, 3, 0.012), dark);
     slide.position.set(0, 0.058, 0.06);
     g.add(slide);
@@ -37781,27 +37781,6 @@ void main() {
     // metres and rotation in degrees, in the hand's frame; set with the rig lab, viewer.html)
     shell: { from: 30, to: 56, x: 0.0478, y: 0, z: 0, rx: 32.07, ry: 66.49, rz: -47.36, portDown: 0.05 }
   };
-  var HOLD_DEFS = {
-    pistol: {
-      grip_primary: [0, -0.03, -0.012],
-      shaft_axis: [0, 0.9611, 0.2764],
-      palm: { Right: 0, Left: 0 },
-      open: { Right: { Index: 0.7, Middle: 0.68, Ring: 0.82, Pinky: 0.9 }, Left: 0 }
-    },
-    // makePistol: the grip block's centre and axis (raked butt-back)
-    shotgun: {
-      grip_primary: [6e-3, -0.066, 0],
-      shaft_axis: [0.1, 0.995, 0],
-      support_axis: [1, 0, 0],
-      palm: { Right: 66e-4, Left: 91e-4 },
-      open: { Right: { Index: 0.68, Middle: 0.87, Pinky: 0.68 }, Left: { Thumb: 0.45, Index: 0.9, Middle: 0.9, Ring: 0.87, Pinky: 0.84 } }
-    },
-    // pump_short.glb: the pistol grip; the pump along +X
-    axe: { reach: [-0.25, 0.7], clear: 0.025, palm: { Right: 0, Left: 0 }, open: { Right: { Index: 0.08, Middle: 0.23, Ring: 0.35, Pinky: 0.45 }, Left: { Index: 0.44, Middle: 0.42, Ring: 0.51, Pinky: 0.53 } } },
-    // fire_axe.glb: the handle (r ~13-15 mm) along the hands' socket direction
-    bat: { palm: 0, open: { Index: 0.35, Middle: 0.3, Ring: 0.46, Pinky: 0.58 } }
-    // makeBat(0.84): the taped handle, r 15.8 mm
-  };
   var deg = Math.PI / 180;
   var SWING = {
     // the leveled baseball swing, right to left at chest height (shared by the axe and the bat)
@@ -37926,17 +37905,6 @@ void main() {
     { ...BAT_CLIP, name: "bat backhand", f0: 40, windTo: 70, windRate: 1.4, f1: 97, hitF0: 73, hitF1: 91, recover: 0.34, dmg: 0.7, knock: 1, style: "swing" },
     { ...BAT_CLIP, name: "bat finisher", f0: 97, windTo: 118, windRate: 1.3, f1: 165, hitF0: 120, hitF1: 135, recover: 0.3, dmg: 1.3, knock: 1.8, style: "heavy", last: true }
   ];
-  var BAT_DEF = {
-    builder: "makeBat",
-    hands: "one",
-    grip_primary: [0, 0, -0.065],
-    shaft_axis: [0, 0, 1],
-    ref_axis: [1, 0, 0],
-    length_m: 0.84,
-    impact_point: [0, 0, 0.55],
-    tip: [0, 0, 0.71],
-    knob: [0, 0, -0.13]
-  };
   function attackTime(A, f) {
     if (!A.windRate) return (f - A.f0) / (A.fps * A.rate);
     const tw = (A.windTo - A.f0) / (A.fps * A.windRate);
@@ -37957,485 +37925,13 @@ void main() {
   timeBat();
   var BAT_SWING = AXE_ATTACKS[0];
 
-  // src/render/holdsolve.js
-  var clamp3 = (v, a, b) => v < a ? a : v > b ? b : v;
-  var _fv = new Vector3();
-  var _fv2 = new Vector3();
-  var _fq = new Quaternion();
-  var _fq2 = new Quaternion();
-  var _fq3 = new Quaternion();
-  var _fq4 = new Quaternion();
-  var frame = () => ({ c: new Vector3(), a: new Vector3(), k: new Vector3() });
-  function fistFrame(B, side, out) {
-    const H = side + "Hand", c = out.c.set(0, 0, 0);
-    let n = 0;
-    for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
-      const b = B.bones[H + f + i];
-      if (b) {
-        c.add(b.getWorldPosition(_fv));
-        n++;
-      }
-    }
-    c.multiplyScalar(1 / n);
-    out.a.copy(B.bones[H + "Index1"].getWorldPosition(_fv)).sub(B.bones[H + "Pinky1"].getWorldPosition(_fv2)).normalize();
-    out.k.copy(B.bones[H + "Middle1"].getWorldPosition(_fv)).sub(c);
-    out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
-    c.addScaledVector(out.k, -0.01);
-    return out;
-  }
-  function fitFist(B, side, axis, w = 1, maxDeg = 35) {
-    const F = B._fitF || (B._fitF = frame());
-    fistFrame(B, side, F);
-    _fq.setFromUnitVectors(F.a, axis);
-    const ang = 2 * Math.acos(clamp3(Math.abs(_fq.w), 0, 1)), lim = maxDeg * Math.PI / 180, k = w * (ang > lim ? lim / ang : 1);
-    if (ang > 1e-4 && k > 0) {
-      _fq2.identity().slerp(_fq, k);
-      const hand = B.bones[side + "Hand"];
-      hand.getWorldQuaternion(_fq3);
-      hand.parent.getWorldQuaternion(_fq4);
-      hand.quaternion.copy(_fq4.invert().multiply(_fq2).multiply(_fq3));
-      hand.updateMatrixWorld(true);
-    }
-    return ang * 180 / Math.PI;
-  }
-  function openFingers(B, side, k, w = 1) {
-    if (!k || !(w > 0)) return;
-    const rest = B._restOf || (B._restOf = new Map(B.restQ));
-    for (const f of ["Thumb", "Index", "Middle", "Ring", "Pinky"]) {
-      const kf = (typeof k === "number" ? k : k[f] || 0) * w;
-      if (!(kf > 0)) continue;
-      for (const i of [1, 2, 3]) {
-        const b = B.bones[side + "Hand" + f + i];
-        if (b) b.quaternion.slerp(rest.get(b), kf);
-      }
-    }
-    B.bones[side + "Hand"].updateMatrixWorld(true);
-  }
-  function clearHead(B, p, dir, [from, to], clear, side, palm) {
-    const H = headPts(B);
-    if (!H) return 0;
-    const M = B.bones.Head.matrixWorld, q = _fv, v = _fv2;
-    let turned = 0;
-    for (let it = 0; it < 4; it++) {
-      let worst = 0, wt = 0;
-      const away = B._chA || (B._chA = new Vector3());
-      for (let i = 0; i < H.length; i += 3) {
-        v.set(H[i], H[i + 1], H[i + 2]).applyMatrix4(M);
-        const t = clamp3((v.x - p.x) * dir.x + (v.y - p.y) * dir.y + (v.z - p.z) * dir.z, from, to);
-        q.copy(p).addScaledVector(dir, t);
-        const d = q.distanceTo(v);
-        if (clear - d > worst) {
-          worst = clear - d;
-          wt = t;
-          away.copy(q).sub(v);
-          away.addScaledVector(dir, -away.dot(dir));
-        }
-      }
-      if (worst <= 1e-4 || away.lengthSq() < 1e-10) break;
-      if (Math.abs(wt) < 0.12 && side) {
-        const t = (B._chT || (B._chT = new Vector3())).copy(p).addScaledVector(away.normalize(), worst + 2e-3);
-        ikFist(B, side, t, 1, palm);
-        const F = B._chF || (B._chF = frame());
-        fistFrame(B, side, F);
-        gripAt(B, side, F, palm, p);
-        continue;
-      }
-      if (Math.abs(wt) < 0.05) break;
-      const ang = Math.min(Math.atan2(worst + 2e-3, Math.abs(wt)), 15 * Math.PI / 180 - turned);
-      if (ang <= 0) break;
-      const axis = _fv.crossVectors(dir, away.normalize()).normalize();
-      if (wt < 0) axis.negate();
-      dir.applyAxisAngle(axis, ang).normalize();
-      turned += ang;
-    }
-    if (turned > 1e-3) B.headTurns = (B.headTurns || 0) + 1;
-    return turned * 180 / Math.PI;
-  }
-  function headPts(B) {
-    if (B._headPts !== void 0) return B._headPts;
-    const out = [], v = new Vector3(), inv = new Matrix4();
-    B.model.updateMatrixWorld(true);
-    inv.copy(B.bones.Head.matrixWorld).invert();
-    B.model.traverse((o) => {
-      if (!o.isSkinnedMesh) return;
-      const hi = o.skeleton.bones.indexOf(B.bones.Head);
-      if (hi < 0) return;
-      const si = o.geometry.attributes.skinIndex, sw = o.geometry.attributes.skinWeight;
-      for (let i = 0; i < si.count; i++) {
-        let w = 0;
-        for (let k = 0; k < 4; k++) if (si.getComponent(i, k) === hi) w += sw.getComponent(i, k);
-        if (w < 0.9) continue;
-        o.getVertexPosition(i, v);
-        o.localToWorld(v);
-        v.applyMatrix4(inv);
-        out.push(v.x, v.y, v.z);
-      }
-    });
-    return B._headPts = out.length ? new Float32Array(out) : null;
-  }
-  function gripAt(B, side, F, palm, out) {
-    out.copy(F.c);
-    if (!palm) return out;
-    B.bones[side + "Hand"].getWorldPosition(_fv);
-    const p = _fv2.copy(F.c).sub(_fv);
-    p.addScaledVector(F.a, -p.dot(F.a)).normalize();
-    return out.addScaledVector(p, palm);
-  }
-  function ikFist(B, side, target, w = 1, palm = 0) {
-    const F = B._ikF || (B._ikF = frame());
-    fistFrame(B, side, F);
-    const hand = B.bones[side + "Hand"], g = gripAt(B, side, F, palm, B._ikG || (B._ikG = new Vector3()));
-    hand.getWorldPosition(_fv);
-    _fv2.copy(target).sub(g).add(_fv);
-    ikArm(B.bones[side + "Arm"], B.bones[side + "ForeArm"], hand, _fv2, w);
-  }
-
-  // src/viewcompare.js
-  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
-  var smooth01 = (u) => {
-    u = clamp4(u, 0, 1);
-    return u * u * (3 - 2 * u);
-  };
-  var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
-  var UP = new Vector3(0, 1, 0);
-  var V = () => new Vector3();
-  var frame2 = () => ({ c: V(), a: V(), k: V() });
-  var STATUS = [
-    { kind: "hold", w: "bat", label: "Bat (one-handed)", done: true, note: "Right fist wraps the handle (fingers fitted to it, 2 mm contact). Nothing enters her body standing, walking, running, strafing or backing up." },
-    { kind: "hold", w: "axe", label: "Axe", done: true, note: "Both fists closed on the handle (was: open flat hands, handle 6 cm off the fists). Kept off her head and hair (was 24 mm in while walking; now 0 standing, 3-6 mm hair contact moving)." },
-    { kind: "hold", w: "fists", label: "Unarmed", done: false, note: "Standing, walking, running, strafing: hands no longer sink into her thighs (was 3-5 cm; now 0-6 mm). NOT FINISHED: running backwards still puts a hand ~17 mm into a thigh." },
-    { kind: "hold", w: "pistol", label: "Pistol", done: false, note: "Grip now inside her fist (was at her wrist, 9 cm off), grip rake fixed, nothing enters her body. NOT FINISHED: fingers still sink ~9 mm into this grip and her two hands overlap ~2 cm. The pistol MODEL is up for review (options sheet: the Hospital Weapons Core pistol)." },
-    { kind: "hold", w: "shotgun", label: "Shotgun", done: false, note: "Grip and pump now in her fists (were 7-9 cm off), nothing enters her body. NOT FINISHED: this model's grip is thicker than her hand, fingers sink 9-14 mm (model change pending your choice)." },
-    { kind: "clip", clip: "tripo_idle", label: "Unarmed idle (clip)", done: true, note: "Arms turned out ~9 deg at the shoulder: hands beside the pockets instead of inside her thighs. Clean every frame (Blender scan)." },
-    { kind: "clip", clip: "p_run_plain", label: "Unarmed run (clip)", done: true, note: "Arms out 14-21 deg where they swung through her hips. Clean every frame." },
-    { kind: "clip", clip: "p_walk_strafe_left_plain", label: "Unarmed strafes / back run (clips)", done: true, note: "Arms out 5-11 deg. Clean every frame in Blender (in the game the back run still touches: see Unarmed)." },
-    { kind: "clip", clip: "bat_idle", label: "Axe stance (clip)", done: true, note: "Right fist moved 8 mm off her cheek. Clean." },
-    { kind: "clip", clip: "t_greet_01", label: "Greeting wave 1 (clip)", done: true, note: "Arms out ~10 deg. Clean." },
-    { kind: "clip", clip: "t_chop", label: "Axe chop (clip)", done: false, note: "Played frames 52-74: raised fist taken out of her head. NOT FINISHED: right hand still 7 mm in at frame 67." },
-    { kind: "clip", clip: "ual_Sword_Regular_Combo", label: "Bat combo (clip)", done: false, note: "Hands moved out (max 6 cm). NOT FINISHED: left hand 35 mm into her thigh at frame 6, right 8 mm at 78; right upper arm into her chest in the swings." },
-    { kind: "clip", clip: "t_box_01", label: "Jab (clip)", done: true, note: "Forearms taken out of her waist / chest (played frames 8-38). Clean." },
-    { kind: "clip", clip: "t_box_02", label: "Cross (clip)", done: false, note: "Right hand out of her body. NOT FINISHED: right upper arm into her chest at frame 45." },
-    { kind: "clip", clip: "t_kick_02", label: "Kick (clip)", done: false, note: "Left hand moved off her back. NOT FINISHED: still 14 mm in at frame 31." },
-    { kind: "clip", clip: "pistol_reload", label: "Pistol reload (clip)", done: false, note: "Hands moved out of her hip (max 6 cm). NOT FINISHED: left upper arm into her chest at frame 44." },
-    { kind: "clip", clip: "bat_swing", label: "Axe swing (clip)", done: false, note: "NOT FINISHED: upper arms press into her chest at the follow-through (frames 38-42)." },
-    { kind: "note", label: "Not touched yet", done: false, note: "Deaths, knockdown / get-up, hit reactions, greeting 2 (its hands meet her body on purpose). The first Yola is not yet re-checked with these grip changes (they are shared game code)." }
-  ];
-  var GAIT_CLIP = { idle: "pistol_idle", walk: "pistol_walk", run: "pistol_run", strafe: "pistol_strafe_left", back: "pistol_walk_back" };
-  var UNARMED = { idle: "tripo_idle", walk: "p_run_plain", run: "p_run_plain", strafe: "p_walk_strafe_left_plain", back: "p_run_back_plain" };
-  var HOLD_UPPER = { shotgun: "sg_reload", axe: "bat_idle", bat: "ual1_Sword_Idle" };
-  var weaponOfClip = (n) => /^ual_Sword|ual1_Sword/.test(n) ? "bat" : /bat_|chop|gs_/.test(n) ? "axe" : /^sg_/.test(n) ? "shotgun" : /^pistol_/.test(n) ? "pistol" : "fists";
-  function subClip(clip, keep, name) {
-    const c = clip.clone();
-    c.name = name;
-    c.tracks = c.tracks.filter((t) => keep(t.name.split(".")[0]));
-    return c;
-  }
-  function pin(clip, rest) {
-    for (const t of clip.tracks) {
-      if (!/Hips\.position$/.test(t.name)) continue;
-      const v = t.values;
-      for (let i = 0; i < v.length; i += 3) {
-        v[i] = rest.x;
-        v[i + 2] = rest.z;
-      }
-    }
-    return clip;
-  }
-  function mixAll(m) {
-    m.update(0);
-    const k = m._accuIndex + 1;
-    for (let i = 0; i < m._nActiveBindings; i++) {
-      const pm = m._bindings[i];
-      pm.binding.setValue(pm.buffer, k * pm.valueSize);
-    }
-  }
-  var Body = class {
-    constructor(gltf, legacy) {
-      this.legacy = legacy;
-      this.root = new Group();
-      this.model = gltf.scene;
-      this.root.add(this.model);
-      for (const ch of this.model.children) {
-        ch.position.x = 0;
-        ch.position.z = 0;
-      }
-      this.model.scale.setScalar(1.62);
-      this.model.traverse((o) => {
-        if (o.isMesh) {
-          o.frustumCulled = false;
-          const m = o.material;
-          if (m.metalnessMap) m.metalnessMap = null;
-          m.metalness = 0;
-          m.roughness = Math.max(m.roughness, 0.6);
-        }
-      });
-      this.bones = {};
-      this.model.traverse((o) => {
-        if (o.isBone) this.bones[o.name.replace(/^mixamorig:?/, "")] = o;
-      });
-      this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
-      const hips = this.bones.Hips.position;
-      this.clips = Object.fromEntries(gltf.animations.map((c) => [c.name, pin(c, hips)]));
-      this.mixer = new AnimationMixer(this.model);
-      this.acts = {};
-    }
-    act(name, part) {
-      const key = name + "|" + part;
-      if (this.acts[key]) return this.acts[key];
-      const c = this.clips[name];
-      if (!c) return null;
-      const clip = part === "full" ? c : subClip(c, (b) => part === "lower" ? LOWER.test(b) : !LOWER.test(b), key);
-      const a = this.mixer.clipAction(clip);
-      a.play();
-      a.setEffectiveWeight(0);
-      a.timeScale = 0;
-      const t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
-      a.userData = { t0, frames: Math.round((clip.duration - t0) * 30) + 1, constant: new Set(clip.tracks.filter((t) => /quaternion$/.test(t.name) && isConst(t)).map((t) => t.name.split(".")[0])) };
-      return this.acts[key] = a;
-    }
-    // layers: [[action, frame (1-based, wraps)]]
-    pose(layers) {
-      for (const a of Object.values(this.acts)) a.setEffectiveWeight(0);
-      for (const [b, q] of this.restQ) b.quaternion.copy(q);
-      for (const [a, f] of layers) {
-        const u = a.userData;
-        a.time = u.t0 + ((f - 1) % u.frames + u.frames) % u.frames / 30;
-        a.setEffectiveWeight(1);
-      }
-      mixAll(this.mixer);
-      if (this.legacy) {
-        const rest = this._restOf || (this._restOf = new Map(this.restQ));
-        const cons = /* @__PURE__ */ new Set();
-        for (const [a] of layers) for (const n of a.userData.constant) cons.add(n);
-        for (const n of cons) {
-          const b = this.model.getObjectByName(n);
-          if (b?.isBone && /Hand(Thumb|Index|Middle|Ring|Pinky)/.test(n)) b.quaternion.copy(rest.get(b));
-        }
-      }
-      this.root.updateMatrixWorld(true);
-    }
-    grip(side, out) {
-      this.bones[side + "Hand"].getWorldPosition(out);
-      return out.add(this.bones[side + "HandMiddle1"].getWorldPosition(V())).multiplyScalar(0.5);
-    }
-    ikArm(side, target, w) {
-      const hand = this.bones[side + "Hand"], t = target.clone();
-      const g = this.grip(side, V());
-      t.sub(g.sub(hand.getWorldPosition(V())));
-      ikArm(this.bones[side + "Arm"], this.bones[side + "ForeArm"], hand, t, w);
-    }
-    aimQuat(out) {
-      const r = this.grip("Right", V()), l = this.grip("Left", V()), mid = this.bones.RightArm.getWorldPosition(V()).add(this.bones.LeftArm.getWorldPosition(V())).multiplyScalar(0.5);
-      const d = r.add(l).multiplyScalar(0.5).sub(mid).normalize();
-      this.root.getWorldQuaternion(_rq);
-      const loc = d.applyQuaternion(_rq.clone().invert());
-      out.setFromEuler(new Euler(-Math.asin(clamp4(loc.y, -1, 1)), Math.atan2(loc.x, loc.z), 0, "YXZ"));
-      return out.premultiply(_rq);
-    }
-  };
-  var _rq = new Quaternion();
-  function isConst(t) {
-    const v = t.values, n = t.getValueSize();
-    for (let i = n; i < v.length; i++) if (Math.abs(v[i] - v[i % n]) > 1e-5) return false;
-    return true;
-  }
-  var Compare = class {
-    constructor({ scene: scene2, loadG: loadG2, $: $2 }) {
-      this.scene = scene2;
-      this.loadG = loadG2;
-      this.$ = $2;
-      this.on = false;
-      this.mode = "hold";
-      this.weapon = "axe";
-      this.gait = "walk";
-      this.clip = "tripo_idle";
-      this.frames = 60;
-    }
-    async load() {
-      if (this.bodies) return;
-      const [ga, gb, cd, sgA, sgB, axA, axB] = await Promise.all([
-        this.loadG("assets/yola2.glb"),
-        this.loadG("assets/source/yola_v2/yola2_before_grips.glb"),
-        fetch("assets/clipdata_yola2.json").then((r) => r.json()),
-        this.loadG("assets/weapons/pump_short.glb"),
-        this.loadG("assets/weapons/pump_short.glb"),
-        this.loadG("assets/weapons/fire_axe.glb"),
-        this.loadG("assets/weapons/fire_axe.glb")
-      ]);
-      const before = new Body(gb, true), after = new Body(ga, false);
-      before.root.position.x = -0.55;
-      after.root.position.x = 0.55;
-      this.bodies = { before, after };
-      const pistolOld = makePistol(1);
-      pistolOld.children[0].rotation.x = -0.28;
-      const bat = () => {
-        const h = new Group(), m = makeBat(0.84);
-        h.add(m);
-        return h;
-      };
-      before.w = { pistol: pistolOld, shotgun: prepPumpShort(sgB), axe: prepAxe(axB), bat: bat() };
-      after.w = { pistol: makePistol(1), shotgun: prepPumpShort(sgA), axe: prepAxe(axA), bat: bat() };
-      for (const b of [before, after]) {
-        this.scene.add(b.root);
-        for (const o of Object.values(b.w)) {
-          o.visible = false;
-          this.scene.add(o);
-        }
-        this.calibrate(b, cd);
-      }
-      this.labels = ["BEFORE", "AFTER"].map((t, i) => {
-        const d = document.createElement("div");
-        d.textContent = t;
-        d.style.cssText = `position:fixed;z-index:15;font:800 15px system-ui;padding:3px 10px;border-radius:7px;pointer-events:none;transform:translate(-50%,-100%);background:${i ? "#2fb1b4" : "#c0574b"};color:#fff`;
-        document.body.appendChild(d);
-        return d;
-      });
-    }
-    // the hand-relative sockets, as the game measures them at load (the same for both: the game's calibration did not change)
-    calibrate(b, cd) {
-      b.pose([[b.act("ual1_Sword_Idle", "full"), 1]]);
-      b.pose([[b.act("sg_reload", "upper"), 1], [b.act("pistol_idle", "lower"), 1]]);
-      const r = b.grip("Right", V()), l = b.grip("Left", V()), x = l.sub(r).normalize(), z = V().crossVectors(x, UP).normalize(), y = V().crossVectors(z, x);
-      const q = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
-      b.sgSocket = b.bones.RightHand.getWorldQuaternion(new Quaternion()).invert().multiply(q);
-      const d = cd?.bat_idle?.[0]?.d;
-      if (d) {
-        b.pose([[b.act("bat_idle", "full"), 1]]);
-        b.batSocket = new Vector3(...d).applyQuaternion(b.bones.RightHand.getWorldQuaternion(new Quaternion()).invert()).normalize();
-      }
-    }
-    setOn(v) {
-      this.on = v;
-      if (!this.bodies) return;
-      for (const b of Object.values(this.bodies)) {
-        b.root.visible = v;
-        if (!v) for (const o of Object.values(b.w)) o.visible = false;
-      }
-      for (const l of this.labels) l.style.display = v ? "" : "none";
-    }
-    layers(b) {
-      if (this.mode === "clip") {
-        const a = b.act(this.clip, "full");
-        return a ? [[a, null]] : [];
-      }
-      const w = this.weapon, g = this.gait;
-      if (w === "fists") return [[b.act(UNARMED[g], "full"), null]];
-      if (w === "pistol") return [[b.act(GAIT_CLIP[g], "full"), null]];
-      return [[b.act(HOLD_UPPER[w], "upper"), w === "shotgun" ? 1 : null], [b.act(GAIT_CLIP[g], "lower"), null]];
-    }
-    // frames of the shown animation (the gait's, or the clip's)
-    length() {
-      const b = this.bodies?.after;
-      if (!b) return 1;
-      const L = this.layers(b);
-      const main2 = L[L.length - 1]?.[0];
-      return main2 ? main2.userData.frames : 1;
-    }
-    update(f, camera2) {
-      if (!this.on || !this.bodies) return;
-      for (const b of Object.values(this.bodies)) {
-        const L = this.layers(b);
-        if (!L.length || L.some(([a]) => !a)) continue;
-        b.pose(L.map(([a, fixed]) => [a, fixed ?? f]));
-        const w = this.mode === "clip" ? weaponOfClip(this.clip) : this.weapon;
-        for (const [k, o] of Object.entries(b.w)) o.visible = k === w;
-        if (w !== "fists") (b.legacy ? holdBefore : holdAfter)(b, w);
-      }
-      if (camera2) ["before", "after"].forEach((k, i) => {
-        const p = this.bodies[k].bones.Head.getWorldPosition(V());
-        p.y += 0.3;
-        p.project(camera2);
-        this.labels[i].style.left = (p.x + 1) / 2 * innerWidth + "px";
-        this.labels[i].style.top = (1 - p.y) / 2 * innerHeight + "px";
-      });
-    }
-  };
-  function holdBefore(b, w) {
-    const o = b.w[w];
-    if (w === "pistol") {
-      b.aimQuat(o.quaternion);
-      o.position.copy(b.grip("Right", V()));
-    } else if (w === "shotgun") {
-      b.bones.RightHand.getWorldQuaternion(o.quaternion).multiply(b.sgSocket);
-      o.position.copy(b.grip("Right", V()));
-      o.updateMatrixWorld(true);
-      const U = o.userData, gl = b.grip("Left", V()), rest = o.localToWorld(new Vector3(U.pumpX, U.pump.position.y, U.pump.position.z));
-      const wHold = smooth01(1 - (gl.distanceTo(rest) - 0.03) / 0.12);
-      if (wHold > 0) b.ikArm("Left", U.gripL.getWorldPosition(V()), wHold);
-    } else if (w === "axe") {
-      const dir = b.batSocket.clone().applyQuaternion(b.bones.RightHand.getWorldQuaternion(new Quaternion())).normalize();
-      o.position.copy(b.grip("Right", V()).add(b.grip("Left", V())).multiplyScalar(0.5));
-      axeBlade(b, o, dir);
-    } else if (w === "bat") placeBat(b, o, false);
-    o.updateMatrixWorld(true);
-  }
-  function holdAfter(b, w) {
-    const o = b.w[w], F = frame2(), q = new Quaternion();
-    if (w === "pistol") {
-      const D = HOLD_DEFS.pistol;
-      b.aimQuat(q);
-      fitFist(b, "Right", new Vector3(...D.shaft_axis).applyQuaternion(q));
-      fistFrame(b, "Right", F);
-      o.quaternion.copy(q);
-      o.position.copy(gripAt(b, "Right", F, D.palm.Right, V())).sub(new Vector3(...D.grip_primary).applyQuaternion(q));
-      openFingers(b, "Right", D.open.Right);
-      openFingers(b, "Left", D.open.Left);
-    } else if (w === "shotgun") {
-      const D = HOLD_DEFS.shotgun;
-      b.bones.RightHand.getWorldQuaternion(q).multiply(b.sgSocket);
-      fitFist(b, "Right", new Vector3(...D.shaft_axis).applyQuaternion(q));
-      fistFrame(b, "Right", F);
-      o.quaternion.copy(q);
-      o.position.copy(gripAt(b, "Right", F, D.palm.Right, V())).sub(new Vector3(...D.grip_primary).applyQuaternion(q));
-      o.updateMatrixWorld(true);
-      openFingers(b, "Right", D.open.Right);
-      const t = o.userData.gripL.getWorldPosition(V()), pl = D.palm.Left;
-      ikFist(b, "Left", t, 1, pl);
-      fitFist(b, "Left", new Vector3(...D.support_axis).transformDirection(o.matrixWorld));
-      ikFist(b, "Left", t, 1, pl);
-      openFingers(b, "Left", D.open.Left);
-    } else if (w === "axe") {
-      const AX = HOLD_DEFS.axe, FL = frame2();
-      const dir = b.batSocket.clone().applyQuaternion(b.bones.RightHand.getWorldQuaternion(new Quaternion())).normalize();
-      fitFist(b, "Right", dir);
-      fistFrame(b, "Right", F);
-      fistFrame(b, "Left", FL);
-      const top = gripAt(b, "Right", F, AX.palm.Right, V());
-      clearHead(b, top, dir, AX.reach, AX.clear, "Right", AX.palm.Right);
-      const span = clamp4(top.clone().sub(FL.c).dot(dir), 0.07, 0.16), t = top.clone().addScaledVector(dir, -span);
-      ikFist(b, "Left", t, 1, AX.palm.Left);
-      fitFist(b, "Left", dir);
-      ikFist(b, "Left", t, 1, AX.palm.Left);
-      openFingers(b, "Right", AX.open.Right);
-      openFingers(b, "Left", AX.open.Left);
-      o.position.copy(top).addScaledVector(dir, -span / 2);
-      axeBlade(b, o, dir);
-    } else if (w === "bat") placeBat(b, o, true);
-    o.updateMatrixWorld(true);
-  }
-  function axeBlade(b, o, dir) {
-    const fwd = new Vector3(0, 0, 1).applyQuaternion(b.root.getWorldQuaternion(new Quaternion()));
-    const want = fwd.addScaledVector(dir, -fwd.dot(dir)).normalize(), x = want.clone().negate(), y = V().crossVectors(dir, x);
-    o.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(x, y, dir));
-  }
-  function placeBat(b, o, fitted) {
-    const F = frame2();
-    fistFrame(b, "Right", F);
-    const A = F.a.clone(), K = F.k.clone(), s = new Vector3(...BAT_DEF.shaft_axis).normalize(), r = new Vector3(...BAT_DEF.ref_axis);
-    r.addScaledVector(s, -r.dot(s)).normalize();
-    const M1 = new Matrix4().makeBasis(s, r, V().crossVectors(s, r)), M2 = new Matrix4().makeBasis(A, K, V().crossVectors(A, K));
-    o.quaternion.setFromRotationMatrix(M2.multiply(M1.transpose()));
-    o.position.copy(fitted ? gripAt(b, "Right", F, HOLD_DEFS.bat.palm, V()) : F.c).sub(new Vector3(...BAT_DEF.grip_primary).applyQuaternion(o.quaternion));
-    if (fitted) openFingers(b, "Right", HOLD_DEFS.bat.open);
-  }
-
   // src/viewer.js
   var FPS = 30;
   var CLIP_FPS = { bat_combo_mc: 60 };
   var VIDREF = { bat_combo_mc: { dir: "assets/ref/bat13/", offset: 19, first: 20, last: 184 } };
   var $ = (id) => document.getElementById(id);
-  var clamp5 = (v, a, b) => v < a ? a : v > b ? b : v;
-  var UP2 = new Vector3(0, 1, 0);
+  var clamp3 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var UP = new Vector3(0, 1, 0);
   var _v2 = new Vector3();
   var _v22 = new Vector3();
   var _v3 = new Vector3();
@@ -38520,89 +38016,6 @@ void main() {
   }
   setCam("three");
   for (const b of document.querySelectorAll("[data-cam]")) b.onclick = () => setCam(b.dataset.cam);
-  var cmp = new Compare({ scene, loadG: (f) => new Promise((res, rej) => new GLTFLoader().load(f, res, void 0, rej)), $ });
-  function cmpPanel() {
-    let p = $("cmpPanel");
-    if (!p) {
-      p = document.createElement("div");
-      p.id = "cmpPanel";
-      p.className = "panel";
-      p.style.cssText = "top:58px;left:6px;width:min(380px,46vw);max-height:calc(100vh - 160px);overflow:auto;z-index:12";
-      document.body.appendChild(p);
-    }
-    const W = { bat: "Bat", axe: "Axe", fists: "Unarmed", pistol: "Pistol", shotgun: "Shotgun" }, G = { idle: "Idle", walk: "Walk", run: "Run", strafe: "Strafe", back: "Back" };
-    const btn = (on, txt, k) => `<button class="${on ? "on" : ""}" data-k="${k}">${txt}</button>`;
-    const clips = Object.keys(cmp.bodies?.after.clips || {}).sort();
-    const sel = (x) => x.kind === "hold" && cmp.mode === "hold" && cmp.weapon === x.w || x.kind === "clip" && cmp.mode === "clip" && cmp.clip === x.clip;
-    if (cmp.collapsed) {
-      p.innerHTML = '<button data-k="c:open">Show the status panel</button>';
-      p.querySelector("button").onclick = () => {
-        cmp.collapsed = false;
-        cmpPanel();
-      };
-      p.style.display = cmp.on ? "" : "none";
-      return;
-    }
-    p.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b style="font:700 14px system-ui">Before / After: Yola 2 grips + clip clean-up</b><button id="cmpHide">Hide</button></div><div style="color:var(--dim);margin-bottom:6px">Left (red tag): BEFORE this pass, her old clips held by the game's old code. Right (teal tag): AFTER, what the game does now. Same frame on both. Click a status line to show it.</div><div class="grp" style="flex-wrap:wrap;margin:4px 0"><span class="lbl">Show</span>` + btn(cmp.mode === "hold", "Weapon hold + gait", "m:hold") + btn(cmp.mode === "clip", "One clip", "m:clip") + "</div>" + (cmp.mode === "hold" ? '<div class="grp" style="flex-wrap:wrap;margin:4px 0"><span class="lbl">Weapon</span>' + Object.entries(W).map(([k, t]) => btn(cmp.weapon === k, t, "w:" + k)).join("") + '</div><div class="grp" style="flex-wrap:wrap;margin:4px 0"><span class="lbl">Gait</span>' + Object.entries(G).map(([k, t]) => btn(cmp.gait === k, t, "g:" + k)).join("") + "</div>" : '<div class="grp" style="margin:4px 0"><span class="lbl">Clip</span><select id="cmpClip">' + clips.map((c) => `<option ${c === cmp.clip ? "selected" : ""}>${c}</option>`).join("") + "</select></div>") + "<h4>Status</h4>" + STATUS.map((x, i) => `<div data-s="${i}" style="cursor:${x.kind === "note" ? "default" : "pointer"};margin:5px 0;padding:6px 8px;border-radius:8px;background:${sel(x) ? "#3d505a" : "#1f2a30"}"><b style="color:${x.done ? "#5fd38a" : "#ffb347"}">${x.done ? "FINISHED" : "NOT FINISHED"}</b> &middot; <b>${x.label}</b><div style="color:#cfd8d6;margin-top:2px">${x.note}</div></div>`).join("");
-    for (const b of p.querySelectorAll("button[data-k]")) b.onclick = () => {
-      const [t, v] = b.dataset.k.split(":");
-      if (t === "m") cmp.mode = v;
-      if (t === "w") cmp.weapon = v;
-      if (t === "g") cmp.gait = v;
-      cmpSync();
-    };
-    $("cmpHide").onclick = () => {
-      cmp.collapsed = true;
-      cmpPanel();
-    };
-    const cs = $("cmpClip");
-    if (cs) cs.onchange = () => {
-      cmp.clip = cs.value;
-      cmpSync();
-    };
-    for (const d of p.querySelectorAll("[data-s]")) d.onclick = () => {
-      const x = STATUS[+d.dataset.s];
-      if (x.kind === "hold") {
-        cmp.mode = "hold";
-        cmp.weapon = x.w;
-      } else if (x.kind === "clip") {
-        cmp.mode = "clip";
-        cmp.clip = x.clip;
-      } else return;
-      cmpSync();
-    };
-    p.style.display = cmp.on ? "" : "none";
-  }
-  function cmpSync() {
-    S.frames = cmp.length();
-    $("scrub").max = S.frames;
-    if (S.frame > S.frames) S.frame = 1;
-    cmpPanel();
-    refresh();
-  }
-  async function setCompare(on) {
-    $("cmpBtn").textContent = on ? "Loading..." : "Before / After";
-    if (on) await cmp.load();
-    cmp.setOn(on);
-    $("cmpBtn").classList.toggle("on", on);
-    $("cmpBtn").textContent = "Before / After";
-    for (const a of [main, ref]) if (a) {
-      a.root.visible = !on && (a === main || !!a.action);
-      a.helper.visible = false;
-    }
-    for (const k in held) held[k].visible = false;
-    if (mainGun?.obj) mainGun.obj.visible = !on;
-    if (refGun?.obj) refGun.obj.visible = !on;
-    for (const m of Object.values(marks)) for (const o of Object.values(m)) o.visible = false;
-    if (vr.panel) vr.panel.style.display = "none";
-    if (on) {
-      camera.position.set(-0.75, 1, 4.6);
-      controls.target.set(-0.75, 0.9, 0);
-      controls.update();
-      S.frame = 1;
-      cmpSync();
-    }
-  }
   var gltfLoader = new GLTFLoader();
   var fbxLoader = new FBXLoader();
   var loadG = (f) => new Promise((res, rej) => gltfLoader.load(f, res, void 0, rej));
@@ -38667,7 +38080,7 @@ void main() {
     }
     setFrame(f) {
       if (!this.action) return;
-      this.action.time = clamp5(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
+      this.action.time = clamp3(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
       this.mixer.update(0);
       this.root.updateMatrixWorld(true);
     }
@@ -38704,7 +38117,7 @@ void main() {
       if (!this.obj || !a.action) return;
       a.grip("Right", _v2);
       a.grip("Left", _v22);
-      const x = _v22.clone().sub(_v2).normalize(), z = new Vector3().crossVectors(x, UP2).normalize(), y = new Vector3().crossVectors(z, x);
+      const x = _v22.clone().sub(_v2).normalize(), z = new Vector3().crossVectors(x, UP).normalize(), y = new Vector3().crossVectors(z, x);
       const g = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
       a.bones.RightHand.getWorldQuaternion(_q);
       this.socket.copy(_q.invert().multiply(g));
@@ -38884,8 +38297,8 @@ void main() {
   }
   var _m13 = new Vector3();
   var _m2 = new Vector3();
-  var smooth012 = (u) => {
-    u = clamp5(u, 0, 1);
+  var smooth01 = (u) => {
+    u = clamp3(u, 0, 1);
     return u * u * (3 - 2 * u);
   };
   function leftHand(f) {
@@ -38908,14 +38321,14 @@ void main() {
     let wPort = 0;
     if (shellOn && U.port) {
       const target = g.localToWorld(U.port.position.clone().add(new Vector3(0, -PUMP.portDown, 0)));
-      wPort = smooth012(1 - (_m13.distanceTo(target) - 0.05) / 0.2);
+      wPort = smooth01(1 - (_m13.distanceTo(target) - 0.05) / 0.2);
       if (wPort > 0) {
         ik(target, wPort);
         main.grip("Left", _m13);
       }
     }
     const rest = g.localToWorld(new Vector3(U.pumpX, 0, 0).add(U.gripL.position.clone().setX(0)));
-    const wHold = smooth012(1 - (_m13.distanceTo(rest) - 0.03) / 0.12) * (1 - wPort);
+    const wHold = smooth01(1 - (_m13.distanceTo(rest) - 0.03) / 0.12) * (1 - wPort);
     if (wHold > 0) ik(U.gripL.getWorldPosition(_m2), wHold);
   }
   function alignShell() {
@@ -38963,12 +38376,6 @@ void main() {
   function refresh() {
     if (!main) return;
     const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
-    if (cmp.on) {
-      cmp.update(f, camera);
-      $("scrub").value = f;
-      $("frameInfo").textContent = `frame ${f} / ${S.frames}  (${(f / 30).toFixed(2)} s at 30 fps)`;
-      return;
-    }
     main.setFrame(Math.min(f, main.frames));
     if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
     mainGun?.update(1);
@@ -39043,7 +38450,7 @@ void main() {
       d.normalize();
       pos = _v2.clone().add(_v22).multiplyScalar(0.5);
     }
-    const x = new Vector3().crossVectors(UP2, d);
+    const x = new Vector3().crossVectors(UP, d);
     if (x.lengthSq() < 1e-6) x.set(1, 0, 0);
     x.normalize();
     const y = new Vector3().crossVectors(d, x);
@@ -39081,7 +38488,7 @@ void main() {
   var EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32], [0, 11], [0, 12]];
   function drawVidRef(f) {
     if (!vr.cfg) return;
-    const rf = clamp5(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext("2d");
+    const rf = clamp3(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext("2d");
     if (im && im.complete && im.naturalWidth) {
       cv.height = Math.round(520 * im.naturalHeight / im.naturalWidth);
       cx.drawImage(im, 0, 0, 520, cv.height);
@@ -39196,7 +38603,6 @@ void main() {
       S.speed = +e.target.value;
     };
     $("toggleSide").onclick = () => $("side").classList.toggle("open");
-    $("cmpBtn").onclick = () => setCompare(!cmp.on);
     const ui = () => {
       for (const id of ["top", "bottom", "side"]) {
         const el = $(id);
@@ -39261,7 +38667,6 @@ void main() {
     }
     const want = new URLSearchParams(location.search).get("char");
     await setChar(want in CHARS ? want : "yola");
-    if (new URLSearchParams(location.search).has("compare")) await setCompare(true);
     let last = performance.now();
     renderer.setAnimationLoop((now) => {
       const dt = Math.min(0.1, (now - last) / 1e3);
@@ -39271,7 +38676,6 @@ void main() {
         if (S.frame >= S.frames + 1) S.frame = $("loop").checked ? 1 : S.frames;
         refresh();
       }
-      if (cmp.on && !S.playing) cmp.update(Math.round(S.frame), camera);
       controls.update();
       renderer.render(scene, camera);
     });

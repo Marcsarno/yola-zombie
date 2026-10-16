@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
-import { setMeleePaths, meleeSegment, BAT_DEF, BAT_PROFILE, HOLD_DEFS, useBuiltBat } from './core/weapons.js';
+import { setMeleePaths, meleeSegment, BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
 import { LAYOUT, ROOM1, useLevel, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
@@ -179,7 +179,7 @@ function setupBat(anims) {
   const h = new THREE.Group(), m = makeBat(0.84);
   m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   h.add(m); h.visible = false; scene.add(h);
-  const hold = { obj: h, w: BAT_DEF, hand: 'Right', roll: 0, slide: 0, flip: false, two: false, fingers: null, palm: HOLD_DEFS.bat.palm, open: HOLD_DEFS.bat.open };
+  const hold = { obj: h, w: BAT_DEF, hand: 'Right', roll: 0, slide: 0, flip: false, two: false, fingers: null };
   yola.setOneHandedBat(hold, idle);
   // (89 of its 91 frames: the last one snaps back to the loop pose; four strikes, the third a slower swing)
   useBuiltBat(buildLibraryAttack(yola, { clip: combo, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: 'bat', sound: 'bat', strikes: 4 }));
@@ -720,6 +720,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { yolaModel: YOLA_MODEL, HOLD_DEFS, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

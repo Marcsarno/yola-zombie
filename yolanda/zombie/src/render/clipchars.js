@@ -6,8 +6,7 @@ import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe } from './weaponModels.js';
 import { ikArm as solveArm } from './ik.js';
-import { fistFrame, fitFist, openFingers, clearHead, headPts, gripAt, ikFist } from './holdsolve.js';
-import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, HOLD_DEFS, isMelee, groundAttack } from '../core/weapons.js';
+import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, isMelee, groundAttack } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
@@ -105,15 +104,6 @@ class ClipBody {
   }
   act(name) { return this.actions[name]; }
   bone(n) { return this.bones[n]; }
-  // mixer.update, then every animated property written again. The mixer skips a property whose blended value is the same
-  // as on its previous update, so a bone put back to rest before the update (YolaView.update: the corrections never pile up)
-  // stayed at rest wherever the clips hold it still: a constant track (every Mixamo clip's finger curl: open flat hands on
-  // every weapon, 2026-10-16) or a static frame.
-  mix(dt) {
-    const m = this.mixer; m.update(dt);
-    const k = m._accuIndex + 1; // (PropertyMixer.apply: the blended value sits at (accuIndex + 1) * valueSize)
-    for (let i = 0, n = m._nActiveBindings; i < n; i++) { const pm = m._bindings[i]; pm.binding.setValue(pm.buffer, k * pm.valueSize); }
-  }
   // rotate bone n by D given in container axes, on top of its current (animated) pose
   rotateC(n, D) {
     const b = this.bones[n]; if (!b) return;
@@ -236,7 +226,7 @@ export class YolaView extends ClipBody {
       for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
       const act = this.act(A.clip); if (!act) continue; act.time = A.f0 / (A.fps || 30); act.setEffectiveWeight(1);
       this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
-      this.mix(0); this.container.updateMatrixWorld(true);
+      this.mixer.update(0); this.container.updateMatrixWorld(true);
       this.container.getWorldQuaternion(_q2); this.bones[(A.hand || 'Right') + 'Hand'].getWorldQuaternion(_q3);
       const handC = _q2.invert().multiply(_q3);
       this.meleeSocket[A.sock || A.name] = new THREE.Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
@@ -251,7 +241,7 @@ export class YolaView extends ClipBody {
     const h = this.act('shotgun_hold_upper'), id = this.act('pistol_idle_lower');
     h.time = HOLD_T; h.setEffectiveWeight(1); id.time = 0; id.setEffectiveWeight(1);
     this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
-    this.mix(0); this.outer.updateMatrixWorld(true);
+    this.mixer.update(0); this.outer.updateMatrixWorld(true);
     this.grip('Right', _v); this.grip('Left', _v2);
     const barrel = _v2.clone().sub(_v).normalize();
     this.shotgunQ(barrel, _q);
@@ -300,7 +290,7 @@ export class YolaView extends ClipBody {
     for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
     const id = this.act('pistol_idle'); id.time = 0; id.setEffectiveWeight(1);
     this.container.rotation.y = 0; this.outer.position.set(0, 0, 0);
-    this.mix(0); this.outer.updateMatrixWorld(true);
+    this.mixer.update(0); this.outer.updateMatrixWorld(true);
     this.aimQuat(_q);
     this.bones.RightHand.getWorldQuaternion(_q2);
     this.pistolSocket = _q2.invert().multiply(_q).clone();
@@ -325,7 +315,7 @@ export class YolaView extends ClipBody {
     for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
     const cal = this.act('bat_calib'); cal.reset(); cal.play(); cal.time = 1 / 30; cal.setEffectiveWeight(1); // blender frame 1
     this.container.rotation.y = 0;
-    this.mix(0);
+    this.mixer.update(0);
     this.container.updateMatrixWorld(true);
     this.container.getWorldQuaternion(_q2);
     this.bones.RightHand.getWorldQuaternion(_q3);
@@ -361,7 +351,7 @@ export class YolaView extends ClipBody {
       const a = this.act(n + suf); a.setEffectiveWeight(1); a.timeScale = 0;
       const D = a.getClip().duration, N = 90, [dx, dz] = LOCO[n].dir, rows = [];
       for (let i = 0; i < N; i++) {
-        a.time = (D * i) / N; this.mix(0); this.outer.updateMatrixWorld(true);
+        a.time = (D * i) / N; this.mixer.update(0); this.outer.updateMatrixWorld(true);
         this.worldPos('LeftFoot', L); this.worldPos('LeftToeBase', LT); this.worldPos('RightFoot', R); this.worldPos('RightToeBase', RT);
         rows.push({ L: L.x * dx + L.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L.y, LT.y), ry: Math.min(R.y, RT.y) });
       }
@@ -549,7 +539,7 @@ export class YolaView extends ClipBody {
     }
     if (scW > 0) for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
     for (const [b, q] of this.restQ) b.quaternion.copy(q);
-    this.mix(dt); // (every value written: the bones were just put back to rest)
+    this.mixer.update(dt);
     this.container.updateMatrixWorld(true);
 
     // ---- corrections after the mixer ----
@@ -699,9 +689,6 @@ export class YolaView extends ClipBody {
     }
   }
 
-  // the pistol's support hand (to be fitted to the gun)
-  pistolSupport(q, w) { void q; void w; }
-
   // Left hand on the shotgun: reaches the shell's loading port while it carries a shell, otherwise stays on
   // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
   // reach to the belt and back is left alone.
@@ -715,18 +702,9 @@ export class YolaView extends ClipBody {
       wPort = smooth01(1 - (_v.distanceTo(_v3) - 0.05) / 0.2);
       if (wPort > 0) { this.ikArm('Left', _v3, wPort); this.grip('Left', _v); }
     }
-    // the left fist's centre on the pump's grip point, the fist turned along the pump: always while she holds or fires it;
-    // in a reload by the hand's distance from it (the clip's own reach for a shell is left alone)
-    const FL = (this._sgL ||= { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() });
-    this.fistFrame('Left', FL); U.gripL.getWorldPosition(_v3);
-    const wHold = Math.max(1 - (this.reloadW || 0), smooth01(1 - (FL.c.distanceTo(_v3) - 0.03) / 0.12)) * (1 - wPort);
-    if (wHold > 0) {
-      const pl = HOLD_DEFS.shotgun.palm.Left;
-      this.ikFist('Left', _v3, wHold, pl);
-      this.fitFist('Left', _v4.set(...HOLD_DEFS.shotgun.support_axis).transformDirection(G.matrixWorld), wHold);
-      this.ikFist('Left', _v3, wHold, pl);
-      this.openFingers('Left', HOLD_DEFS.shotgun.open.Left, wHold);
-    }
+    _v2.set(U.pumpX, U.pump.position.y, U.pump.position.z); G.localToWorld(_v2); // the pump's rest hold point
+    const wHold = smooth01(1 - (_v.distanceTo(_v2) - 0.03) / 0.12) * (1 - wPort);
+    if (wHold > 0) this.ikArm('Left', U.gripL.getWorldPosition(_v3), wHold);
     // the shell rides the left hand
     const S = this.shell; S.visible = shellOn;
     if (shellOn) {
@@ -749,14 +727,16 @@ export class YolaView extends ClipBody {
   }
   // test: { obj (holder group or null), w (assets/moves/weapons.json frame), hand, roll (deg), slide (m), flip, two, fingers }
   setTestWeapon(test) { if (this.test?.obj && this.test.obj !== test?.obj) this.test.obj.visible = false; this.test = test; }
-  // the hold helpers (render/holdsolve.js, shared with the Rig Lab)
-  fistFrame(side, out) { return fistFrame(this, side, out); }
-  fitFist(side, axis, w, maxDeg) { return fitFist(this, side, axis, w, maxDeg); }
-  openFingers(side, k, w) { return openFingers(this, side, k, w); }
-  clearHead(p, dir, range, clear, side, palm) { return clearHead(this, p, dir, range, clear, side, palm); }
-  headPts() { return headPts(this); }
-  gripAt(side, F, palm, out) { return gripAt(this, side, F, palm, out); }
-  ikFist(side, target, w, palm) { return ikFist(this, side, target, w, palm); }
+  // fist centre, grip axis (pinky -> index) and knuckle direction from her finger joints (as in the move library)
+  fistFrame(side, out) {
+    const H = side + 'Hand', c = out.c.set(0, 0, 0); let n = 0;
+    for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (const i of [1, 2, 3]) { const b = this.bones[H + f + i]; if (b) { c.add(b.getWorldPosition(_v)); n++; } }
+    c.multiplyScalar(1 / n);
+    out.a.copy(this.bones[H + 'Index1'].getWorldPosition(_v)).sub(this.bones[H + 'Pinky1'].getWorldPosition(_v2)).normalize();
+    out.k.copy(this.bones[H + 'Middle1'].getWorldPosition(_v)).sub(c); out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
+    c.addScaledVector(out.k, -0.01); // the curled fingers' centroid sits on the knuckle side of the handle
+    return out;
+  }
   // a held weapon (the arena's test weapon, the one-handed bat): closed fists on it, its grip at the fist centre, its shaft
   // along the grip axis, its face toward the knuckles turned by roll, slid along the grip by slide. Sets heldGrip / heldTip
   // (world) for the attack builder's path sampling (src/render/libattack.js).
@@ -774,9 +754,8 @@ export class YolaView extends ClipBody {
     const M1 = (this._m1 ||= new THREE.Matrix4()).makeBasis(s, r, _v7.crossVectors(s, r));
     const M2 = (this._m2 ||= new THREE.Matrix4()).makeBasis(A, K, _v.crossVectors(A, K));
     o.quaternion.setFromRotationMatrix(M2.multiply(M1.transpose()));
-    o.position.copy(this.gripAt(T.hand, F, T.palm, this._phG ||= new THREE.Vector3())).sub(_v2.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T.slide || 0);
+    o.position.copy(F.c).sub(_v2.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T.slide || 0);
     o.visible = true; o.updateMatrixWorld(true);
-    if (T.open) this.openFingers(T.hand, T.open); // (after the weapon is placed: its centre is the closed fist's)
     (this.heldGrip ||= new THREE.Vector3()).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
     (this.heldTip ||= new THREE.Vector3()).set(...(w.impact_point || w.tip)).applyQuaternion(o.quaternion).add(o.position);
     this.testGrip = this.heldGrip; this.testTip = this.heldTip;
@@ -803,33 +782,24 @@ export class YolaView extends ClipBody {
     const shown = this.weaponShown;
     this.pistol.visible = shown === 'pistol'; this.shotgun.visible = shown === 'shotgun'; this.melee.visible = shown === 'axe'; this.shell.visible = false;
     if (this.melee.userData.axeInner) { this.melee.userData.axeInner.visible = !this.batMode; this.batModel.visible = !!this.batMode; }
-    // Every gun and the axe sit IN her fist (2026-10-16: they were put at the wrist / knuckle midpoint, the grips 6-9 cm off
-    // the fists' centres): the wrist turns the fist onto the grip's axis, then the grip's centre (its data sheet,
-    // core/weapons.js HOLD_DEFS) goes to the fist's centre; the support hand is then fitted to the weapon.
-    const F = (this._pwF ||= { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() });
     if (shown === 'pistol') {
       // pistol: barrel along the arms' line toward the target; during a reload it follows the
       // right hand through the socket calibrated in the aiming pose
       this.aimQuat(_q);
-      const rW = this.reloadW || 0, D = HOLD_DEFS.pistol;
+      const rW = this.reloadW || 0;
       if (rW > 0 && this.pistolSocket) { this.bones.RightHand.getWorldQuaternion(_q2); _q.slerp(_q2.multiply(this.pistolSocket), rW); }
-      this.fitFist('Right', _v5.set(...D.shaft_axis).applyQuaternion(_q));
-      this.fistFrame('Right', F);
-      this.pistol.position.copy(this.gripAt('Right', F, D.palm.Right, _v7)).sub(_v6.set(...D.grip_primary).applyQuaternion(_q));
+      this.grip('Right', _v);
+      this.pistol.position.copy(_v);
       this.pistol.quaternion.copy(_q);
       this.pistol.updateMatrixWorld(true);
       this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
-      this.pistolSupport(_q, 1 - rW);
-      this.openFingers('Right', D.open.Right); this.openFingers('Left', D.open.Left, 1 - rW); // (after the gun is placed: the fist's centre is the closed fist's)
     } else if (shown === 'shotgun') {
       // shotgun: rides the right hand. The pump slides after each shot and at the end of a reload; the left
       // hand follows it (IK), and during the reload it carries a shell up into the loading port.
-      const G = this.shotgun, U = G.userData, SP = SHOTGUN_SPEC, D = HOLD_DEFS.shotgun;
+      const G = this.shotgun, U = G.userData, SP = SHOTGUN_SPEC;
       this.bones.RightHand.getWorldQuaternion(_q).multiply(this.shotgunSocket);
-      this.fitFist('Right', _v5.set(...D.shaft_axis).applyQuaternion(_q));
-      this.fistFrame('Right', F);
-      G.position.copy(this.gripAt('Right', F, D.palm.Right, _v7)).sub(_v6.set(...D.grip_primary).applyQuaternion(_q)); G.quaternion.copy(_q);
-      this.openFingers('Right', D.open.Right);
+      this.grip('Right', _v);
+      G.position.copy(_v); G.quaternion.copy(_q);
       let slide = 0;
       if (s.action === 'shot') { const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart); if (u > 0 && u < 1) slide = Math.sin(Math.PI * u); }
       const rf = this.reloadFrame;
@@ -838,7 +808,7 @@ export class YolaView extends ClipBody {
       G.updateMatrixWorld(true);
       U.muzzle.getWorldPosition(this.muzzleWorld);
       this.shotgunLeftHand(rf, G);
-    } else if (shown === 'axe') { // (never with empty hands: the left hand would be put on an axe that is not there)
+    } else {
       // axe: handle direction from the right-hand socket (as on the reference skeleton), grip between
       // the hands; the blade turns to lead the motion (edge first), resting toward the front
       this.grip('Right', _v); this.grip('Left', _v2);
@@ -854,20 +824,17 @@ export class YolaView extends ClipBody {
         dir.normalize();
       } else dir = _v3.copy(_v).sub(_v2).normalize();
       const M = this.melee;
-      // the axe (and the two-handed bat) hangs from the right fist: the wrist turns the fist along the handle and the
-      // handle passes through the fist's centre; the LEFT fist is then put on the handle by two-bone IK after the blend,
-      // at the clip's own spacing along it, and turned along it too. The weapon never follows the left hand, so there is
-      // no loop; blends between clips (into a swing, back to idle) can no longer pull the hands apart.
-      const FL = (this._pwL ||= { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() });
-      this.fitFist('Right', dir); this.fistFrame('Right', F); this.fistFrame('Left', FL);
-      const AX = HOLD_DEFS.axe, top = this.gripAt('Right', F, AX.palm.Right, this._pwT ||= new THREE.Vector3());
-      this.clearHead(top, dir, AX.reach, AX.clear, 'Right', AX.palm.Right);
-      const span = clamp(_v6.copy(top).sub(FL.c).dot(dir), 0.07, 0.16);
-      _v7.copy(top).addScaledVector(dir, -span);
-      this.reachClavicle('Left', _v7);
-      this.ikFist('Left', _v7, 1, AX.palm.Left); this.fitFist('Left', dir); this.ikFist('Left', _v7, 1, AX.palm.Left);
-      this.openFingers('Right', HOLD_DEFS.axe.open.Right); this.openFingers('Left', HOLD_DEFS.axe.open.Left);
-      M.position.copy(top).addScaledVector(dir, -span / 2);
+      if (this.batMode) {
+        // the bat hangs from the right hand (its grip, along the socket); the LEFT hand is then put on the handle by
+        // two-bone IK after the blend, at the clip's own spacing along the bat. The bat never follows the left hand, so
+        // there is no loop; blends between clips (into a swing, back to idle) can no longer pull the hands apart.
+        const span = clamp(_v6.copy(_v).sub(_v2).dot(dir), 0.07, 0.16);
+        _v7.copy(_v).addScaledVector(dir, -span);
+        this.reachClavicle('Left', _v7);
+        this.ikArm('Left', _v7, 1);
+        this.grip('Left', _v2);
+        M.position.copy(_v).addScaledVector(dir, -span / 2);
+      } else M.position.copy(_v).add(_v2).multiplyScalar(0.5);
       const tip = _v4.copy(M.position).addScaledVector(dir, 0.7);
       const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new THREE.Vector3();
       this.prevTip.copy(tip);
