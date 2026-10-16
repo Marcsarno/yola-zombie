@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
-import { setMeleePaths, meleeSegment } from './core/weapons.js';
+import { setMeleePaths, meleeSegment, BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
+import { buildLibraryAttack } from './render/libattack.js';
 import { LAYOUT, ROOM1, useLevel, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
@@ -25,6 +26,7 @@ import { Opening } from './opening/opening.js';
 import { OBJECTIVES } from './opening/content.js';
 import { startLab } from './lab.js';
 import { startTestArena } from './arena/testarena.js';
+import { makeBat } from './render/weaponModels.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -127,6 +129,11 @@ const ZOMBIE_TYPES = [
 ];
 const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.look === 'nurse' ? 0 : z.look === 'patient' ? 1 : z.id % 2);
 const YOLA_HEIGHT = 1.62;
+// which Yola plays (2026-10-16): 1 = the original model, 2 = the user's new Tripo model (testing; tools/anim/yola2_build.py).
+// The pause menu's Yola choice (remembered), or ?yola=2. The opening keeps its own Yola either way.
+const YOLA_MODEL = params.get('yola') || store.get('yolaModel', '1');
+const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: [], data: 'assets/clipdata_yola2.json' }
+  : { model: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_extra.glb', 'assets/yola_sword.glb'], data: 'assets/clipdata.json' };
 const loader = new GLTFLoader();
 async function load() {
   hud.loading(0);
@@ -138,10 +145,10 @@ async function load() {
     clearTimeout(looks.fpsT); looks.fpsT = setTimeout(() => { const f = perf.frames.slice(-90), avg = f.reduce((a, b) => a + b, 0) / (f.length || 1); hud.toast(label + ' · ' + Math.round(1000 / avg) + ' fps'); }, 2500);
   });
   // Yola, plus the clips authored outside her model file (the bat combo: skeleton-only, same bone names)
-  const yolaP = Promise.all([loader.loadAsync('assets/yola.glb'), loader.loadAsync('assets/yola_combo.glb'), loader.loadAsync('assets/yola_extra.glb').catch(() => null)]).then(([g, c, x]) => { g.animations.push(...c.animations); if (x) g.animations.push(...x.animations); return g; });
+  const yolaP = Promise.all([loader.loadAsync(YOLA_FILES.model), ...YOLA_FILES.extra.map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; });
   // (each type's extra clips, the scratch, are retargeted onto its own skeleton: tools/anim/zombie_clip.py)
   const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), t.extra ? loader.loadAsync(t.extra).catch(() => null) : null]).then(([g, x]) => { if (x) g.animations.push(...x.animations); return g; })));
-  const dataP = fetch('assets/clipdata.json').then((r) => r.json());
+  const dataP = fetch(YOLA_FILES.data).then((r) => r.json());
   // the guard's shield (the user's v2 package): the GLB and the two damage maps, loaded once and shared by every guard
   const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
     .then(([gltf, damageTextures]) => { ZombieView.shieldAsset = { gltf, damageTextures }; }).catch((e) => console.warn('shield asset failed: stand-in shield', e));
@@ -152,6 +159,7 @@ async function load() {
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup')); // (tools/anim/yola_clips.py: knocked flat, getting up)
+  setupBat(yg.animations); window.game.yolaClips = yg.animations;
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
@@ -162,6 +170,19 @@ async function load() {
   warmPrograms();
   requestAnimationFrame(frame);
   if (params.has('lab')) startLab(window.game, params.get('lab') || 'bat'); // the combat lab (frame-by-frame melee against the reference)
+}
+// The bat: Quaternius's Sword Regular Combo (one-handed, four strikes), built on the Yola that plays, the bat in her right
+// fist and the matching Sword Idle as its stance (src/render/libattack.js). Without the clip the older bat combo stays.
+function setupBat(anims) {
+  const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = anims.find((c) => c.name === 'ual1_Sword_Idle');
+  if (!combo) return;
+  const h = new THREE.Group(), m = makeBat(0.84);
+  m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  h.add(m); h.visible = false; scene.add(h);
+  const hold = { obj: h, w: BAT_DEF, hand: 'Right', roll: 0, slide: 0, flip: false, two: false, fingers: null };
+  yola.setOneHandedBat(hold, idle);
+  // (89 of its 91 frames: the last one snaps back to the loop pose; four strikes, the third a slower swing)
+  useBuiltBat(buildLibraryAttack(yola, { clip: combo, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: 'bat', sound: 'bat', strikes: 4 }));
 }
 // Compile every shader the fight can need before play. A first use mid-fight compiled one and froze that frame (a limb
 // cut off: 70-270 ms; the first hit): severed pieces draw the zombie's materials unskinned, and pooled hidden things
@@ -315,6 +336,7 @@ function uiAction(a, v) {
     case 'bench': restart('bench', v); break;
     case 'quality': quality = v; store.set('quality', v); location.reload(); break;
     case 'gore': fx.gore = v; store.set('gore', v); break;
+    case 'yola': store.set('yolaModel', v); location.reload(); break;
     case 'shake': shakeOn = v; break;
     case 'debug': debugOn = v; debugGroup.visible = v; break;
   }
@@ -698,6 +720,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

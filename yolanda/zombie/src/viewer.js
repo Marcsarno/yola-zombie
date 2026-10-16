@@ -18,8 +18,17 @@ const UP = new THREE.Vector3(0, 1, 0);
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 
+// the new Yola's clips and their X Bot source files (tools/anim/yola2_build.py retargets each from its source; the
+// clips made by editing a Mixamo clip are shown against the clip they were made from)
+const YOLA2_REF = { bat_swing: 'yola_baseball_single', bat_swing_m: null, pistol_reload: 'yola_reload_walk', sg_reload: 'yola_reload_rifle_stand',
+  p_run_back_plain: 'yola_run_back_plain', p_run_plain: 'yola_run_plain', p_run_strafe_left_plain: 'yola_run_strafe_left_plain',
+  p_run_strafe_right_plain: 'yola_run_strafe_right_plain', p_walk_strafe_left_plain: 'yola_walk_strafe_left_plain',
+  p_walk_strafe_right_plain: 'yola_walk_strafe_right_plain', yola_knockdown: 'zombie_knockdown', yola_getup: 'zombie_standup_stomach',
+  pistol_strafe_left: null, pistol_strafe_run_left: null, pistol_strafe_run_right: null }; // (built from several clips: no single source)
 const CHARS = {
-  yola: { label: 'Yola', file: 'assets/yola.glb', height: 1.62, ref: 'yola_' },
+  yola: { label: 'Yola', file: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_sword.glb'], height: 1.62, ref: 'yola_' },
+  // the new Yola (2026-10-16, the user's Tripo nurse-scrubs model): every game clip plus the library picks
+  yola2: { label: 'Yola 2 (new model)', file: 'assets/yola2.glb', extra: ['assets/moves/yola2_moves.glb'], height: 1.62, ref: 'yola_', refMap: YOLA2_REF },
   nurse: { label: 'Zombie nurse', file: 'assets/zombie-nurse-mod.glb', height: 1.78, ref: 'zombie_' },
   patient: { label: 'Zombie patient', file: 'assets/zombie-patient-mod.glb', height: 1.78, ref: 'zombie_' },
   // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -27,6 +36,13 @@ const CHARS = {
   sprinter: { label: 'Zombie sprinter (big lady)', file: 'assets/zombie-sprinter.glb', height: 2.0, ref: 'zombie_' },
   guard: { label: 'Zombie big guard', file: 'assets/zombie-guard.glb', height: 2.05, ref: 'zombie_' },
 };
+// library clips (ual_ / ual1_): the reference is Quaternius's own mannequin playing the clip (assets/source/ual, local only)
+const UAL_FILES = { ual_: 'assets/source/ual/UAL2_Standard.glb', ual1_: 'assets/source/ual/UAL1_Standard.glb' };
+const UE_MAP = { pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', Head: 'Head' };
+for (const [s, S2] of [['l', 'Left'], ['r', 'Right']]) {
+  Object.assign(UE_MAP, { [`clavicle_${s}`]: S2 + 'Shoulder', [`upperarm_${s}`]: S2 + 'Arm', [`lowerarm_${s}`]: S2 + 'ForeArm', [`hand_${s}`]: S2 + 'Hand',
+    [`thigh_${s}`]: S2 + 'UpLeg', [`calf_${s}`]: S2 + 'Leg', [`foot_${s}`]: S2 + 'Foot', [`ball_${s}`]: S2 + 'ToeBase', [`middle_01_${s}`]: S2 + 'HandMiddle1' });
+}
 // clips whose Mixamo source file is named differently
 const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand' };
 const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat' };
@@ -64,7 +80,7 @@ function refClip(file) { // Mixamo source clip (skeleton-only FBX)
 function pinRoot(clip, on) {
   // keep the vertical bob, pin horizontal hips motion to the first frame
   for (const t of clip.tracks) {
-    if (!/Hips\.position$/.test(t.name)) continue;
+    if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
     if (!t.__orig) t.__orig = t.values.slice();
     const v = t.values, o = t.__orig;
     for (let i = 0; i < v.length; i += 3) { v[i] = on ? o[0] : o[i]; v[i + 2] = on ? o[2] : o[i + 2]; }
@@ -80,7 +96,7 @@ class Actor {
     const box = new THREE.Box3().setFromObject(obj); this.nat = box.max.y - box.min.y; // natural height
     this.setHeight(height);
     this.mixer = new THREE.AnimationMixer(obj);
-    this.bones = {}; obj.traverse((o) => { if (o.isBone) this.bones[o.name.replace(/^mixamorig:?/, '')] = o; });
+    this.bones = {}; obj.traverse((o) => { if (o.isBone) { const n = o.name.replace(/^mixamorig:?/, ''); this.bones[UE_MAP[n] || n] = o; } });
     this.helper = new THREE.SkeletonHelper(obj); this.helper.visible = false; this.helper.material.depthTest = false;
     this.clip = null; this.action = null; this.frames = 1; this.t0 = 0;
   }
@@ -138,7 +154,20 @@ class Gun {
 // ---------------- state ----------------
 const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'auto', frames: 1 };
 const weaponOf = () => (S.gun === 'auto' ? autoWeapon(main?.clip?.name || '') : S.gun);
-let main, ref, mainGun, refGun;
+let main, ref, mainGun, refGun, refX, refGunX;
+const ualCache = {};
+function ualRef(file) { // Quaternius's mannequin and its clips, loaded once per library file
+  if (!ualCache[file]) ualCache[file] = loadG(file).then((g) => {
+    g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+    const actor = new Actor(g.scene, 1.62); actor.root.visible = false; scene.add(actor.root, actor.helper);
+    return { actor, clips: g.animations };
+  }).catch(() => null);
+  return ualCache[file];
+}
+function useRef(a) { // switch the shown reference actor (the X Bot or a mannequin)
+  if (ref && ref !== a) { ref.root.visible = false; ref.helper.visible = false; }
+  ref = a; refGun = a === refX ? refGunX : new Gun(a);
+}
 const gunTemplates = {}, marks = {}, mainCache = {};
 function ghostify(obj, on) {
   obj.traverse((o) => {
@@ -174,7 +203,7 @@ async function setChar(key) {
   if (main) { scene.remove(main.root, main.helper); mainGun?.setObject(null); }
   if (!mainCache[key]) {
     const g = await loadG(CHARS[key].file);
-    if (key === 'yola') { try { const c = await loadG('assets/yola_combo.glb'); g.animations.push(...c.animations); } catch { /* no combo file */ } }
+    for (const f of CHARS[key].extra || []) { try { const c = await loadG(f); g.animations.push(...c.animations); } catch { /* not built */ } }
     g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; if (/^GORE_/.test(o.name)) o.visible = false; });
     mainCache[key] = { gltf: g, actor: new Actor(g.scene, CHARS[key].height) };
   }
@@ -183,7 +212,7 @@ async function setChar(key) {
   mainGun = new Gun(main);
   const sel = $('clip'); sel.innerHTML = '';
   for (const c of gltf.animations) sel.add(new Option(`${c.name}  (${clipFrames(c)}f)`, c.name));
-  const first = key === 'yola' ? (gltf.animations.some((c) => c.name === 'bat_combo_mc') ? 'bat_combo_mc' : 'reload_rifle_stand') : gltf.animations[0].name;
+  const first = key === 'yola2' ? 'ual_Sword_Regular_Combo' : key === 'yola' ? (gltf.animations.some((c) => c.name === 'bat_combo_mc') ? 'bat_combo_mc' : 'reload_rifle_stand') : gltf.animations[0].name;
   sel.value = gltf.animations.some((c) => c.name === first) ? first : gltf.animations[0].name;
   await setClip(sel.value);
   applyGun();
@@ -191,12 +220,22 @@ async function setChar(key) {
 async function setClip(name) {
   const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
   pinRoot(c, $('inplace').checked); main.play(c); FPS = fpsOf(c); vidRef(name);
-  const base = REF_ALIAS[name] || name; // the reference: the Mixamo source of this clip
-  const file = `assets/mixamo/${CHARS[S.char].ref}${base}.fbx`;
-  const rc = await refClip(file);
+  // the reference: the clip's own source rig. Mixamo clips: Mixamo's X Bot; library clips: Quaternius's mannequin
+  const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => name.startsWith(p));
+  let rc = null, file = '';
+  if (lib) {
+    const u = await ualRef(UAL_FILES[lib]);
+    useRef(u ? u.actor : refX);
+    rc = u?.clips.find((c) => c.name === name.slice(lib.length)) || null; file = UAL_FILES[lib];
+  } else {
+    useRef(refX);
+    const map = CHARS[S.char].refMap || {}, base = name in map ? map[name] : REF_ALIAS[name] || name;
+    file = base === null ? '' : `assets/mixamo/${map[name] ? '' : CHARS[S.char].ref}${base}.fbx`;
+    rc = file ? await refClip(file) : null;
+  }
   const rsel = $('refclip'); rsel.innerHTML = '';
-  if (rc) { rsel.add(new Option(file.split('/').pop(), file)); $('note').textContent = ''; }
-  else { rsel.add(new Option('no Mixamo source for this clip', '')); $('note').textContent = 'No Mixamo reference for this clip (Tripo or custom clip).'; }
+  if (rc) { rsel.add(new Option(lib ? `Quaternius mannequin: ${rc.name}` : file.split('/').pop(), file)); $('note').textContent = ''; }
+  else { rsel.add(new Option('no source rig for this clip', '')); $('note').textContent = 'No reference for this clip (Tripo or custom clip).'; }
   ref.root.visible = !!rc; ref.helper.visible = !!rc && $('bones').checked;
   if (rc) { pinRoot(rc, $('inplace').checked); ref.play(rc); }
   S.frames = Math.max(main.frames, rc ? ref.frames : 1);
@@ -403,14 +442,15 @@ function buildUI() {
   // reference: the Mixamo X Bot with skin (its own pistol-idle clip is replaced by the selected source clip)
   const xb = await loadF('assets/mixamo/reference/ref_xbot_pistol_idle.fbx');
   xb.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
-  ref = new Actor(xb, 1.62); ref.root.visible = false; scene.add(ref.root, ref.helper);
-  refGun = new Gun(ref);
+  ref = refX = new Actor(xb, 1.62); ref.root.visible = false; scene.add(ref.root, ref.helper);
+  refGun = refGunX = new Gun(ref);
   for (const [k, f] of Object.entries(GUN_FILES)) {
     try { const g = await loadG(f); gunTemplates[k] = k === 'short' ? prepPumpShort(g) : prepShotgun(g); } catch { /* not built yet */ }
   }
   for (const k of ['short', 'old']) if (!gunTemplates[k]) $('gun').querySelector(`option[value=${k}]`).textContent += ' (not built yet)';
   try { const g = await loadG('assets/weapons/shell.glb'); shellTemplate = prepShell(g); shellObj = shellTemplate; shellObj.visible = false; scene.add(shellObj); } catch { /* not built yet */ }
-  await setChar('yola');
+  const want = new URLSearchParams(location.search).get('char');
+  await setChar(want in CHARS ? want : 'yola');
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;

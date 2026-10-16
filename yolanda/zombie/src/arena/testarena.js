@@ -9,8 +9,8 @@
 import * as THREE from 'three';
 import { TEST, TEST_ATTACKS, BAT, AXE, FISTS, PISTOL, SHOTGUN, attackTime, attackEnd, resetGroundAttacks } from '../core/weapons.js';
 import { makeBat, prepAxe, makeKnife } from '../render/weaponModels.js';
+import { buildLibraryAttack, FPS } from '../render/libattack.js';
 
-const FPS = 30;
 const ORDER = ['bat', 'sledgehammer', 'axe', 'crowbar', 'chainsaw', 'knife', 'none', 'pistol', 'shotgun'];
 const LABEL = { bat: 'Bat', sledgehammer: 'Sledgehammer', axe: 'Axe', crowbar: 'Crowbar', chainsaw: 'Chainsaw', knife: 'Knife', none: 'Unarmed', pistol: 'Pistol', shotgun: 'Shotgun' };
 // How each weapon hits. dmg / knock: x the game's axe damage (62) and impact (zombies have 100 hp). kind: bat = blunt,
@@ -26,7 +26,7 @@ const PROFILE = {
   none: { kind: 'fist', dmg: 1.4, knock: 0.7, style: 'cross', sever: {} },
 };
 // the game's own attacks, equipped exactly as in the game
-const GAME = { bat: [BAT, 'Game: bat combo (3 hits)'], axe: [AXE, 'Game: axe swing + chop'], none: [FISTS, 'Game: jab, cross, kick'], pistol: [PISTOL, 'Game: pistol'], shotgun: [SHOTGUN, 'Game: shotgun'] };
+const GAME = { bat: [BAT, 'Game: bat (Sword Regular Combo, 4 hits)'], axe: [AXE, 'Game: axe swing + chop'], none: [FISTS, 'Game: jab, cross, kick'], pistol: [PISTOL, 'Game: pistol'], shotgun: [SHOTGUN, 'Game: shotgun'] };
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5];
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -41,9 +41,10 @@ async function loadSelection() {
 
 export async function startTestArena({ game, scene, loader, telegraphs }) {
   const yola = game.yola;
-  const [catalog, wj, SEL, lib] = await Promise.all([json('assets/moves/catalog.json'), json('assets/moves/weapons.json'), loadSelection(), loader.loadAsync('assets/moves/yola_moves.glb')]);
+  const [catalog, wj, SEL, lib] = await Promise.all([json('assets/moves/catalog.json'), json('assets/moves/weapons.json'), loadSelection(), loader.loadAsync(game.yolaModel === '2' ? 'assets/moves/yola2_moves.glb' : 'assets/moves/yola_moves.glb')]);
   const WDEF = wj?.weapons || {};
-  const clips = Object.fromEntries(lib.animations.map((c) => [c.name, c]));
+  // (the library picks, plus the clips in her own file: the new Yola carries the Mixamo and Tripo ones there)
+  const clips = Object.fromEntries([...(game.yolaClips || []), ...lib.animations].map((c) => [c.name, c]));
   const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
   // her closed fist (a frame of the built bat combo where both hands grip the bat), put on each hand holding a weapon
   let fingers = null;
@@ -85,98 +86,13 @@ export async function startTestArena({ game, scene, loader, telegraphs }) {
   const order = { good: 0, maybe: 1 };
   entries.sort((a, b) => (order[a.verdict] ?? 2) - (order[b.verdict] ?? 2) || a.label.localeCompare(b.label));
 
-  // ---- build a library attack: pose the clip frame by frame with the weapon in her hand ----
-  const V = () => new THREE.Vector3();
-  function sample(e, A, rawClip, w) {
-    const Y = yola, acts = Object.values(Y.actions), saved = acts.map((a) => [a, a.getEffectiveWeight(), a.time]);
-    const op = Y.outer.position.clone(), ry = Y.container.rotation.y;
-    Y.outer.position.set(0, 0, 0); Y.container.rotation.y = 0;
-    for (const a of acts) a.setEffectiveWeight(0);
-    const act = Y.act(e.clip), raw = Y.mixer.clipAction(rawClip); raw.play(); raw.timeScale = 0;
-    const ff = { c: V(), a: V(), k: V() }, rows = [];
-    const pose = (a, f) => { for (const [b, q] of Y.restQ) b.quaternion.copy(q); a.setEffectiveWeight(1); a.time = f / FPS + (f & 1) * 1e-6; Y.mixer.update(0); Y.outer.updateMatrixWorld(true); a.setEffectiveWeight(0); };
-    // (two passes: posing the two copies alternately frame by frame leaves the mixer applying stale poses)
-    const travel = [];
-    for (let f = A.f0; f <= A.f1; f++) { pose(raw, f); travel.push(Y.bones.Hips.getWorldPosition(V())); } // unpinned: her travel
-    for (let f = A.f0; f <= A.f1; f++) {
-      const hips = travel[f - A.f0];
-      pose(act, f); act.setEffectiveWeight(1);
-      Y.placeTest();
-      const row = { f, hips, pin: Y.bones.Hips.getWorldPosition(V()) };
-      if (w) { row.grip = Y.testGrip.clone(); row.tip = Y.testTip.clone(); }
-      else { row.l = Y.fistFrame('Left', ff).c.clone(); row.r = Y.fistFrame('Right', ff).c.clone(); row.lf = Y.bones.LeftToeBase.getWorldPosition(V()); row.rf = Y.bones.RightToeBase.getWorldPosition(V()); }
-      act.setEffectiveWeight(0); rows.push(row);
-    }
-    raw.stop(); Y.mixer.uncacheAction(rawClip);
-    for (const [a, wt, t] of saved) { a.setEffectiveWeight(wt); a.time = t; }
-    Y.outer.position.copy(op); Y.container.rotation.y = ry;
-    return rows;
-  }
+  // ---- build a library attack: the clip posed frame by frame with the weapon in her hand (src/render/libattack.js) ----
   async function buildAttack(e, speed) {
     const P = PROFILE[e.weapon], w = WDEF[e.weapon] && e.weapon !== 'none' ? WDEF[e.weapon] : null;
     const obj = w ? await model(e.weapon) : null;
-    const src = clips[e.clip], t0 = Math.min(...src.tracks.map((t) => t.times[0]));
-    const play = src.clone(); play.name = e.clip; yola.addAttackClips([play]);
-    yola.setTestWeapon({ obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null });
-    if (w && P.reach === 'tip' && w.tip) yola.test.w = { ...w, impact_point: w.tip };
-    const f0 = Math.round(t0 * FPS), f1 = f0 + (meta[e.clip]?.frames || Math.round((src.duration - t0) * FPS) + 1) - 1;
-    const A = { name: e.label, clip: e.clip, path: e.clip, f0, f1, fps: FPS, rate: speed, yawOffset: 0, chainFrom: 9, recover: 0.3, stand: 0.9, assist: 1.9,
-      lungeMax: 0.5, enterBlend: 0.12, minY: 0.45, kind: P.kind, dmg: P.dmg, knock: P.knock, style: P.style, sever: P.sever, sound: e.weapon };
-    const rows = sample(e, A, src.clone(), w);
-    // the striking point and the weapon (or limb) direction, character space
-    let pts, dirs, L, geom;
-    if (w) {
-      L = rows[0].tip.distanceTo(rows[0].grip);
-      pts = rows.map((r) => r.grip); dirs = rows.map((r) => r.tip.clone().sub(r.grip).normalize());
-      geom = { length: L, hitFrom: P.hitFrom, radius: P.radius };
-    } else { // unarmed: the limb that moves fastest in this clip (a fist, or the foot for a kick)
-      let best = 'r', bp = 0;
-      for (const k of ['l', 'r', 'lf', 'rf']) for (let i = 1; i < rows.length; i++) { const v = rows[i][k].distanceTo(rows[i - 1][k]); if (v > bp) { bp = v; best = k; } }
-      pts = rows.map((r) => r[best]); dirs = rows.map((r) => { const d = r[best].clone().sub(r.pin); d.y = 0; return d.normalize(); });
-      L = 0.12; geom = { length: L, hitFrom: 0, radius: best.endsWith('f') ? 0.15 : 0.12 };
-      if (best.endsWith('f')) { A.style = 'kick'; A.dmg = 2.2; A.knock = 1.0; }
-      A.limb = best;
-    }
-    A.geom = geom;
-    A.PATH = rows.map((r, i) => ({ t: attackTime(A, r.f), mx: pts[i].x, my: pts[i].y, mz: pts[i].z, dx: dirs[i].x, dy: dirs[i].y, dz: dirs[i].z }));
-    // damaging windows: where the business end moves fast (each one hits afresh)
-    const tip = (i) => pts[i].clone().addScaledVector(dirs[i], L);
-    const sp = rows.map((r, i) => (i ? tip(i).distanceTo(tip(i - 1)) * FPS : 0));
-    const peak = Math.max(...sp), thr = Math.max(w ? 2.6 : 2.0, peak * 0.42);
-    const wins = []; let cur = null;
-    sp.forEach((v, i) => { if (v >= thr) { if (cur && i - cur[1] <= 3) cur[1] = i; else { if (cur) wins.push(cur); cur = [i, i]; } } });
-    if (cur) wins.push(cur);
-    let windows = wins.filter((x) => x[1] - x[0] >= 1).map(([a, b]) => [attackTime(A, rows[Math.max(0, a - 1)].f), attackTime(A, rows[Math.min(rows.length - 1, b + 1)].f)]);
-    const end = attackEnd(A);
-    if (!windows.length) windows = [[end * 0.3, end * 0.6]];
-    A.windows = windows; A.activeStart = windows[0][0]; A.activeEnd = windows[windows.length - 1][1];
-    A.duration = end + A.recover; A.swapPoint = end * 0.85;
-    A.peak = peak;
-    // her travel: the hips' forward advance through the clip (applied as root motion; she stops short of a target)
-    const z0 = rows[0].hips.z, R = rows.map((r) => ({ t: attackTime(A, r.f), z: Math.max(0, r.hips.z - z0) }));
-    for (let i = 1; i < R.length; i++) R[i].z = Math.max(R[i].z, R[i - 1].z); // never pulled back
-    A.ROOT = R[R.length - 1].z > 0.3 ? R : null; // (a small shuffle: the game's own step toward the target instead)
-    return splitCombo(A);
-  }
-  // A combo clip (several strikes) becomes a chain of attacks, one per strike, cut between strikes, so the combo can stop
-  // after any hit: tap once for one strike, keep tapping (or hold) for the next, which starts on the very frame the last
-  // one ends (one continuous clip: no blend between them). Stopping early blends that strike's last pose back to the idle.
-  function splitCombo(A) {
-    const n = A.windows.length;
-    if (n < 2) return [A];
-    const toF = (t) => A.f0 + t * FPS * A.rate;
-    const cuts = A.windows.slice(0, -1).map(([, e], i) => Math.round(toF(e) + (toF(A.windows[i + 1][0]) - toF(e)) * 0.45));
-    const bounds = [A.f0, ...cuts, A.f1];
-    return A.windows.map((win, i) => {
-      const fa = bounds[i], fb = bounds[i + 1], t0 = (fa - A.f0) / (FPS * A.rate), t1 = (fb - A.f0) / (FPS * A.rate);
-      const S = { ...A, name: `${A.name} ${i + 1}/${n}`, f0: fa, f1: fb, continuous: true, chainAlways: true, last: i === n - 1 };
-      S.PATH = A.PATH.filter((q) => q.t >= t0 - 1e-6 && q.t <= t1 + 1e-6).map((q) => ({ ...q, t: q.t - t0 }));
-      S.windows = [[Math.max(0, win[0] - t0), win[1] - t0]]; S.activeStart = S.windows[0][0]; S.activeEnd = S.windows[0][1];
-      const end = attackEnd(S);
-      S.duration = end + (S.last ? A.recover : 0.4); S.swapPoint = end * 0.85; S.chainFrom = S.last ? 9 : end;
-      if (A.ROOT) { const R = A.ROOT.filter((q) => q.t >= t0 - 1e-6 && q.t <= t1 + 1e-6), z0 = R[0]?.z || 0; S.ROOT = R.length > 1 && R[R.length - 1].z - z0 > 0.05 ? R.map((q) => ({ t: q.t - t0, z: q.z - z0 })) : null; }
-      return S;
-    });
+    const hold = { obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null };
+    yola.setTestWeapon(hold);
+    return buildLibraryAttack(yola, { clip: clips[e.clip], frames: meta[e.clip]?.frames, hold: w ? hold : null, P, speed, name: e.label, sound: e.weapon });
   }
 
   // ---- state and arena actions ----

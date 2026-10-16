@@ -88,6 +88,12 @@ class ClipBody {
       o.castShadow = false; o.frustumCulled = false;
       // Tripo exports a metallic map; these are painted, matte characters
       const m = o.material; if (m.metalnessMap) m.metalnessMap = null; m.metalness = 0; m.roughness = Math.max(m.roughness, 0.6); m.needsUpdate = true;
+      // matte cotton (the new Yola's scrubs, tools/anim/yola2_cloth.py): the metal-roughness map's red channel says how
+      // much shine each texel keeps (cloth 0.3, everything else 1), applied to the specular reflection and its rim
+      if (m.userData?.clothSpec && m.roughnessMap) {
+        m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_ROUGHNESSMAP\n  material.specularColor *= texelRoughness.r; material.specularF90 *= texelRoughness.r;\n#endif'); };
+        m.customProgramCacheKey = () => 'clothSpec';
+      }
     });
     this.bones = {};
     model.traverse((o) => { if (o.isBone) this.bones[o.name.replace(/^mixamorig:?/, '')] = o; });
@@ -151,7 +157,7 @@ export class YolaView extends ClipBody {
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_hold_upper'));
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_reload_upper'));
     clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), 'fists_idle_upper')); // unarmed: Yola's own idle on the upper body
-    const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))];
+    const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))].filter((n) => byName[n]); // (the new Yola has no reference-video bat combo)
     clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
     const scriptNames = ['t_greet_01', 't_greet_04'].filter((n) => byName[n]); // scripted full-body clips (the reveal's smooth wave)
     for (const n of scriptNames) clips.push(byName[n]);
@@ -214,6 +220,7 @@ export class YolaView extends ClipBody {
   calibrateMeleeSockets(clipdata) {
     this.meleeSocket = {};
     for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS]) {
+      if (A.built) continue;
       const smp = clipdata?.[A.path]?.find((q) => q.f === A.f0);
       if (!smp?.d) continue;
       for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
@@ -325,7 +332,7 @@ export class YolaView extends ClipBody {
     return true;
   }
   scriptLength(name) { const c = this.act(name)?.getClip(); return c ? c.duration - Math.min(...c.tracks.map((t) => t.times[0])) : 0; }
-  setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
+  setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj, this.batLib?.obj]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
   reset(x, z, yaw) {
     this.script = null; for (const n of this.scriptNames || []) this.act(n).setEffectiveWeight(0);
     this.yaw = yaw; this.deathT = -1; this.outer.quaternion.identity();
@@ -444,11 +451,12 @@ export class YolaView extends ClipBody {
     // upper body: pistol / shotgun / axe holds, cross-faded through the swap
     const rate = dt / Math.max(0.05, s.swapDur * 0.6);
     // the bat is held like the axe (bat idle), with its own model; a test-arena weapon like the axe (two hands) or empty-handed
-    const eqKey = s.equipped === 'bat' ? 'axe' : s.equipped === 'test' ? (this.test?.two ? 'axe' : 'fists') : s.equipped;
+    // (the one-handed bat has its own stance: the sword idle)
+    const eqKey = s.equipped === 'bat' ? (this.batLib ? 'sword' : 'axe') : s.equipped === 'test' ? (this.test?.two ? 'axe' : 'fists') : s.equipped;
     this.batMode = s.equipped === 'bat';
     for (const k in this.up) this.up[k] += clamp((eqKey === k ? 1 : 0) - this.up[k], -rate, rate);
-    const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
-    const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un;
+    const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), uW0 = smooth(this.up.sword || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 || 1;
+    const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un;
     // axe attacks: full-body clips driven by the simulation's attack time (exact sync with the hit test)
     let sW = 0, turn = 0;
     const A = s.action === 'swing' ? (s.ground ? groundAttack(s.equipped) : attacksOf(s.equipped)[s.combo]) : null;
@@ -457,12 +465,14 @@ export class YolaView extends ClipBody {
       if (this.swingId !== s.swingId) {
         // next attack of the combo: the previous clip fades out under the new one
         if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; this.prevSwingHand = this.swingHand; }
+        // a strike chained late (the last one had begun to settle back to the stance): carry on from that weight, not 1
+        this.chainW0 = A.continuous && s.combo > 0 ? (this.swingW ?? 1) : 1;
         this.swingId = s.swingId; this.swingAct = act; this.swingName = A.sock || A.name; this.swingHand = A.hand || 'Right'; this.swingBlend = A.blendIn || 0.1;
       }
       this.clipF = attackFrame(A, Math.min(t, tEnd));
       act.time = this.clipF / A.fps + ((this.swJit ^= 1) * 1e-6); // glTF time = blender frame / fps; a static time is only applied every other update (hit-pause froze the swing pose), so it alternates
       const cont = A.continuous && s.combo > 0; // a chained strike of one continuous clip: already fully in
-      const ramp = cont ? 1 : smooth(clamp(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
+      const ramp = cont ? (this.chainW0 >= 0.999 ? 1 : this.chainW0 + (1 - this.chainW0) * smooth(clamp(t / 0.12, 0, 1))) : smooth(clamp(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
       const out = t <= tEnd ? 1 : smooth(clamp(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
       sW = ramp * out;
       // step into the attack: turn so it lands on the aim, then turn back during recovery
@@ -502,12 +512,13 @@ export class YolaView extends ClipBody {
     const hold = this.act('shotgun_hold_upper'); hold.setEffectiveWeight((1 - rS) * uS * k);
     hold.time = HOLD_T + ((this.holdJit ^= 1) * 1e-6); // a static time is only applied every other update, so it alternates
     this.act('bat_idle_upper').setEffectiveWeight(uA * k);
+    if (this.actions.sword_idle_upper) this.actions.sword_idle_upper.setEffectiveWeight(uW * k);
     // unarmed: the regular full-body run/walk/strafe clips (arms included), not the legs under a static upper-body pose
     const uni = this.unarmed ? uF : 0; // with the gun-free clips, moving unarmed uses them in full; standing still keeps the idle arms
     this.act('fists_idle_upper').setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
     for (const n in w) {
       this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
-      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uP * rP + (this.unarmed ? 0 : uF)) * k);
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uW + uP * rP + (this.unarmed ? 0 : uF)) * k);
       if (this.unarmed && n === 'pistol_idle') this.act('tripo_idle_lower').setEffectiveWeight(w[n] * uF * k);
       if (this.unarmed && n !== 'pistol_idle') this.act(n + '_u').setEffectiveWeight(w[n] * uni * k);
     }
@@ -545,8 +556,8 @@ export class YolaView extends ClipBody {
     const f = this.flinch;
     if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC('Spine1', f.z * 0.6, 0, -f.x * 0.5);
     this.footLock(dt, s, A, sW, w);
-    this.weaponShown = uF > 0.5 ? 'fists' : uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
-    if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; return; } // (on the floor: weapons away)
+    this.weaponShown = uF > 0.5 ? 'fists' : uW > 0.5 ? 'bat1' : uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
+    if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; return; } // (on the floor: weapons away)
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.placeWeapons(s, dt);
@@ -726,10 +737,12 @@ export class YolaView extends ClipBody {
     c.addScaledVector(out.k, -0.01); // the curled fingers' centroid sits on the knuckle side of the handle
     return out;
   }
-  // the test weapon: closed fists on it, its grip at the fist centre, its shaft along the grip axis, its face toward the
-  // knuckles turned by roll, slid along the grip by slide. Sets testGrip / testTip (world) for the arena's path sampling.
-  placeTest() {
-    const T = this.test, F = (this._ff ||= { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() });
+  // a held weapon (the arena's test weapon, the one-handed bat): closed fists on it, its grip at the fist centre, its shaft
+  // along the grip axis, its face toward the knuckles turned by roll, slid along the grip by slide. Sets heldGrip / heldTip
+  // (world) for the attack builder's path sampling (src/render/libattack.js).
+  placeTest() { this.placeHeld(this.test); }
+  placeHeld(T) {
+    const F = (this._ff ||= { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() });
     if (T.fingers) {
       for (const [n, q] of T.fingers) if (T.two || n.startsWith(T.hand)) this.bones[n].quaternion.copy(q);
       for (const side of T.two ? ['Left', 'Right'] : [T.hand]) this.bones[side + 'Hand'].updateMatrixWorld(true);
@@ -743,13 +756,29 @@ export class YolaView extends ClipBody {
     o.quaternion.setFromRotationMatrix(M2.multiply(M1.transpose()));
     o.position.copy(F.c).sub(_v2.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T.slide || 0);
     o.visible = true; o.updateMatrixWorld(true);
-    (this.testGrip ||= new THREE.Vector3()).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
-    (this.testTip ||= new THREE.Vector3()).set(...(w.impact_point || w.tip)).applyQuaternion(o.quaternion).add(o.position);
+    (this.heldGrip ||= new THREE.Vector3()).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
+    (this.heldTip ||= new THREE.Vector3()).set(...(w.impact_point || w.tip)).applyQuaternion(o.quaternion).add(o.position);
+    this.testGrip = this.heldGrip; this.testTip = this.heldTip;
+  }
+  // The bat as a one-handed weapon (2026-10-16: Quaternius's Sword Regular Combo, split into its strikes; the user's pick
+  // over the reference-video combo). hold: as placeHeld; idle: the Sword Idle clip, its upper body the bat's stance.
+  setOneHandedBat(hold, idle) {
+    this.batLib = hold;
+    if (idle && !this.actions.sword_idle_upper) {
+      const c = subClip(stripRoot(idle, hipsRest(this.model)), (b) => !LOWER.test(b), 'sword_idle_upper'); loopClip(c);
+      const a = this.mixer.clipAction(c); this.actions.sword_idle_upper = a; a.play(); a.setEffectiveWeight(0);
+    }
+    this.up.sword ??= 0;
   }
 
   placeWeapons(s, dt) {
-    if (s.equipped === 'test' && this.test) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; this.placeTest(); return; }
+    if (s.equipped === 'test' && this.test) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; this.placeTest(); return; }
     if (this.test?.obj) this.test.obj.visible = false;
+    if (this.batLib?.obj) {
+      const one = s.equipped === 'bat' && this.weaponShown !== 'fists' && this.weaponShown !== 'pistol' && this.weaponShown !== 'shotgun';
+      if (one) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; this.placeHeld(this.batLib); this.batTip.copy(this.heldTip); return; }
+      this.batLib.obj.visible = false;
+    }
     const shown = this.weaponShown;
     this.pistol.visible = shown === 'pistol'; this.shotgun.visible = shown === 'shotgun'; this.melee.visible = shown === 'axe'; this.shell.visible = false;
     if (this.melee.userData.axeInner) { this.melee.userData.axeInner.visible = !this.batMode; this.batModel.visible = !!this.batMode; }

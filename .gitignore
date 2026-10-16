@@ -11,3 +11,6 @@ yolanda/zombie/dist/*.map
 
 # raw supplied asset packs (kept in Downloads zips; processed outputs are tracked)
 yolanda/zombie/assets/source/
+
+# Move Library bake on the new Yola: contains Kevin Iglesias clips (no raw redistribution; the repo is public)
+yolanda/zombie/assets/moves/yola2_moves.glb

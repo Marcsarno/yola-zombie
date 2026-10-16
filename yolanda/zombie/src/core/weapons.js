@@ -90,6 +90,17 @@ export const BAT_ATTACKS = [
   { ...BAT_CLIP, name: 'bat backhand', f0: 40, windTo: 70, windRate: 1.4, f1: 97, hitF0: 73, hitF1: 91, recover: 0.34, dmg: 0.7, knock: 1.0, style: 'swing' },
   { ...BAT_CLIP, name: 'bat finisher', f0: 97, windTo: 118, windRate: 1.3, f1: 165, hitF0: 120, hitF1: 135, recover: 0.3, dmg: 1.3, knock: 1.8, style: 'heavy', last: true },
 ];
+// The bat since 2026-10-16: Quaternius's one-handed Sword Regular Combo (UAL2, CC0), the user's pick, split into its strikes
+// and built at load on whichever Yola is playing (src/render/libattack.js; main.js setupBat replaces the strikes above).
+// The bat model's frame (makeBat(0.84), the Move Library's data sheet) and how it hits.
+export const BAT_DEF = { builder: 'makeBat', hands: 'one', grip_primary: [0, 0, -0.065], shaft_axis: [0, 0, 1], ref_axis: [1, 0, 0],
+  length_m: 0.84, impact_point: [0, 0, 0.55], tip: [0, 0, 0.71], knob: [0, 0, -0.13] };
+export const BAT_PROFILE = { kind: 'bat', dmg: 0.75, knock: 1.0, style: 'swing', sever: {}, hitFrom: 0.45, radius: 0.1, reach: 'tip' };
+export function useBuiltBat(strikes) {
+  BAT_ATTACKS.length = 0; BAT_ATTACKS.push(...strikes);
+  const last = BAT_ATTACKS[BAT_ATTACKS.length - 1]; // the finisher lands harder
+  if (last && BAT_ATTACKS.length > 1) Object.assign(last, { dmg: BAT_PROFILE.dmg * 1.6, knock: 1.7, style: 'heavy' });
+}
 // clip frame at attack time t (a held wind-up first when the attack has one), and its inverse
 export function attackFrame(A, t) {
   if (!A.windRate) return A.f0 + t * A.fps * A.rate;
@@ -105,6 +116,7 @@ export const attackEnd = (A) => attackTime(A, A.f1);
 // frame-authored attacks: their times (attack clock) from their frames (again after a retime: the lab's sliders)
 function timeBat() {
   for (const A of BAT_ATTACKS) {
+    if (A.built) continue;
     A.activeStart = attackTime(A, A.hitF0); A.activeEnd = attackTime(A, A.hitF1);
     const end = attackEnd(A);
     A.chainFrom = A.last ? 9 : end; // the hand-over: the next strike starts on the frame this one ends
@@ -154,6 +166,7 @@ const rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * M
 export function setMeleePaths(clipdata, scale, hipsRest) {
   _pathArgs = [clipdata, scale, hipsRest];
   for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS]) {
+    if (A.built) continue; // (built at load with its own path)
     const samples = clipdata[A.path];
     A.PATH = []; A.ROOT = null;
     if (!samples) continue;

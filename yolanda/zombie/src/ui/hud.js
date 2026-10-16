@@ -55,6 +55,7 @@ export class Hud {
       el.addEventListener('change', () => this.act(key, el.checked));
     }
     $('qualitySel').value = store.get('quality', 'auto');
+    if ($('yolaSel')) { $('yolaSel').value = new URLSearchParams(location.search).get('yola') || store.get('yolaModel', '1'); $('yolaSel').addEventListener('change', (e) => this.act('yola', e.target.value)); }
     $('qualitySel').addEventListener('change', (e) => this.act('quality', e.target.value));
     $('perfBtn').addEventListener('click', () => { const r = this.perfReport?.(); $('perfOut').textContent = r ? JSON.stringify(r, null, 1) : '-'; });
     this.buildTuning();

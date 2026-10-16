@@ -177,11 +177,11 @@ export class Player {
       case 'swing': {
         const A = this.atk(a);
         const prevT = a.st, st = (a.st = a.t * T.axeSpeed);
-        if (A.continuous && prevT < A.activeStart - 0.12 && st >= A.activeStart - 0.12) sim.emit({ type: 'whoosh', combo: a.combo }); // the swish peaks on the strike
-        if (A.windows) { // several strikes in one clip (library combos): each window hits afresh, with its own swish
+        if (A.continuous && !A.windows && prevT < A.activeStart - 0.12 && st >= A.activeStart - 0.12) sim.emit({ type: 'whoosh', combo: a.combo }); // the swish peaks on the strike
+        if (A.windows) { // several strikes in one clip (library combos): each window hits afresh, with its own swish (one per strike: a split strike's own window)
           for (let i = 0; i < A.windows.length; i++) {
             const [w0, w1] = A.windows[i];
-            if (prevT < w0 - 0.1 && st >= w0 - 0.1) sim.emit({ type: 'whoosh', combo: i === A.windows.length - 1 ? 2 : 0 });
+            if (prevT < w0 - 0.1 && st >= w0 - 0.1) sim.emit({ type: 'whoosh', combo: (A.continuous ? A.last : i === A.windows.length - 1) ? 2 : 0 });
             if (st > w0 && prevT < w1) {
               if (a.win !== i) { a.win = i; a.hitSet = new Set(); a.activeEnd = w1; a.clanked = false; }
               sim.resolveMelee(this, Math.max(prevT, w0), Math.min(st, a.activeEnd), a);

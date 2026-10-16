@@ -37913,6 +37913,7 @@ void main() {
   var attackEnd = (A) => attackTime(A, A.f1);
   function timeBat() {
     for (const A of BAT_ATTACKS) {
+      if (A.built) continue;
       A.activeStart = attackTime(A, A.hitF0);
       A.activeEnd = attackTime(A, A.hitF1);
       const end = attackEnd(A);
@@ -37935,8 +37936,27 @@ void main() {
   var _v22 = new Vector3();
   var _v3 = new Vector3();
   var _q = new Quaternion();
+  var YOLA2_REF = {
+    bat_swing: "yola_baseball_single",
+    bat_swing_m: null,
+    pistol_reload: "yola_reload_walk",
+    sg_reload: "yola_reload_rifle_stand",
+    p_run_back_plain: "yola_run_back_plain",
+    p_run_plain: "yola_run_plain",
+    p_run_strafe_left_plain: "yola_run_strafe_left_plain",
+    p_run_strafe_right_plain: "yola_run_strafe_right_plain",
+    p_walk_strafe_left_plain: "yola_walk_strafe_left_plain",
+    p_walk_strafe_right_plain: "yola_walk_strafe_right_plain",
+    yola_knockdown: "zombie_knockdown",
+    yola_getup: "zombie_standup_stomach",
+    pistol_strafe_left: null,
+    pistol_strafe_run_left: null,
+    pistol_strafe_run_right: null
+  };
   var CHARS = {
-    yola: { label: "Yola", file: "assets/yola.glb", height: 1.62, ref: "yola_" },
+    yola: { label: "Yola", file: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_sword.glb"], height: 1.62, ref: "yola_" },
+    // the new Yola (2026-10-16, the user's Tripo nurse-scrubs model): every game clip plus the library picks
+    yola2: { label: "Yola 2 (new model)", file: "assets/yola2.glb", extra: ["assets/moves/yola2_moves.glb"], height: 1.62, ref: "yola_", refMap: YOLA2_REF },
     nurse: { label: "Zombie nurse", file: "assets/zombie-nurse-mod.glb", height: 1.78, ref: "zombie_" },
     patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" },
     // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -37944,6 +37964,21 @@ void main() {
     sprinter: { label: "Zombie sprinter (big lady)", file: "assets/zombie-sprinter.glb", height: 2, ref: "zombie_" },
     guard: { label: "Zombie big guard", file: "assets/zombie-guard.glb", height: 2.05, ref: "zombie_" }
   };
+  var UAL_FILES = { ual_: "assets/source/ual/UAL2_Standard.glb", ual1_: "assets/source/ual/UAL1_Standard.glb" };
+  var UE_MAP = { pelvis: "Hips", spine_01: "Spine", spine_02: "Spine1", spine_03: "Spine2", neck_01: "Neck", Head: "Head" };
+  for (const [s, S2] of [["l", "Left"], ["r", "Right"]]) {
+    Object.assign(UE_MAP, {
+      [`clavicle_${s}`]: S2 + "Shoulder",
+      [`upperarm_${s}`]: S2 + "Arm",
+      [`lowerarm_${s}`]: S2 + "ForeArm",
+      [`hand_${s}`]: S2 + "Hand",
+      [`thigh_${s}`]: S2 + "UpLeg",
+      [`calf_${s}`]: S2 + "Leg",
+      [`foot_${s}`]: S2 + "Foot",
+      [`ball_${s}`]: S2 + "ToeBase",
+      [`middle_01_${s}`]: S2 + "HandMiddle1"
+    });
+  }
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat" };
   var HELD = { pistol: 1, axe: 1, bat: 1 };
@@ -37992,7 +38027,7 @@ void main() {
   }
   function pinRoot(clip, on) {
     for (const t of clip.tracks) {
-      if (!/Hips\.position$/.test(t.name)) continue;
+      if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
       if (!t.__orig) t.__orig = t.values.slice();
       const v = t.values, o = t.__orig;
       for (let i = 0; i < v.length; i += 3) {
@@ -38015,7 +38050,10 @@ void main() {
       this.mixer = new AnimationMixer(obj);
       this.bones = {};
       obj.traverse((o) => {
-        if (o.isBone) this.bones[o.name.replace(/^mixamorig:?/, "")] = o;
+        if (o.isBone) {
+          const n = o.name.replace(/^mixamorig:?/, "");
+          this.bones[UE_MAP[n] || n] = o;
+        }
       });
       this.helper = new SkeletonHelper(obj);
       this.helper.visible = false;
@@ -38104,6 +38142,29 @@ void main() {
   var ref;
   var mainGun;
   var refGun;
+  var refX;
+  var refGunX;
+  var ualCache = {};
+  function ualRef(file) {
+    if (!ualCache[file]) ualCache[file] = loadG(file).then((g) => {
+      g.scene.traverse((o) => {
+        if (o.isMesh) o.frustumCulled = false;
+      });
+      const actor = new Actor(g.scene, 1.62);
+      actor.root.visible = false;
+      scene.add(actor.root, actor.helper);
+      return { actor, clips: g.animations };
+    }).catch(() => null);
+    return ualCache[file];
+  }
+  function useRef(a) {
+    if (ref && ref !== a) {
+      ref.root.visible = false;
+      ref.helper.visible = false;
+    }
+    ref = a;
+    refGun = a === refX ? refGunX : new Gun(a);
+  }
   var gunTemplates = {};
   var marks = {};
   var mainCache = {};
@@ -38150,9 +38211,9 @@ void main() {
     }
     if (!mainCache[key]) {
       const g = await loadG(CHARS[key].file);
-      if (key === "yola") {
+      for (const f of CHARS[key].extra || []) {
         try {
-          const c = await loadG("assets/yola_combo.glb");
+          const c = await loadG(f);
           g.animations.push(...c.animations);
         } catch {
         }
@@ -38170,7 +38231,7 @@ void main() {
     const sel = $("clip");
     sel.innerHTML = "";
     for (const c of gltf.animations) sel.add(new Option(`${c.name}  (${clipFrames(c)}f)`, c.name));
-    const first = key === "yola" ? gltf.animations.some((c) => c.name === "bat_combo_mc") ? "bat_combo_mc" : "reload_rifle_stand" : gltf.animations[0].name;
+    const first = key === "yola2" ? "ual_Sword_Regular_Combo" : key === "yola" ? gltf.animations.some((c) => c.name === "bat_combo_mc") ? "bat_combo_mc" : "reload_rifle_stand" : gltf.animations[0].name;
     sel.value = gltf.animations.some((c) => c.name === first) ? first : gltf.animations[0].name;
     await setClip(sel.value);
     applyGun();
@@ -38181,17 +38242,27 @@ void main() {
     main.play(c);
     FPS = fpsOf(c);
     vidRef(name);
-    const base = REF_ALIAS[name] || name;
-    const file = `assets/mixamo/${CHARS[S.char].ref}${base}.fbx`;
-    const rc = await refClip(file);
+    const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => name.startsWith(p));
+    let rc = null, file = "";
+    if (lib) {
+      const u = await ualRef(UAL_FILES[lib]);
+      useRef(u ? u.actor : refX);
+      rc = u?.clips.find((c2) => c2.name === name.slice(lib.length)) || null;
+      file = UAL_FILES[lib];
+    } else {
+      useRef(refX);
+      const map = CHARS[S.char].refMap || {}, base = name in map ? map[name] : REF_ALIAS[name] || name;
+      file = base === null ? "" : `assets/mixamo/${map[name] ? "" : CHARS[S.char].ref}${base}.fbx`;
+      rc = file ? await refClip(file) : null;
+    }
     const rsel = $("refclip");
     rsel.innerHTML = "";
     if (rc) {
-      rsel.add(new Option(file.split("/").pop(), file));
+      rsel.add(new Option(lib ? `Quaternius mannequin: ${rc.name}` : file.split("/").pop(), file));
       $("note").textContent = "";
     } else {
-      rsel.add(new Option("no Mixamo source for this clip", ""));
-      $("note").textContent = "No Mixamo reference for this clip (Tripo or custom clip).";
+      rsel.add(new Option("no source rig for this clip", ""));
+      $("note").textContent = "No reference for this clip (Tripo or custom clip).";
     }
     ref.root.visible = !!rc;
     ref.helper.visible = !!rc && $("bones").checked;
@@ -38574,10 +38645,10 @@ void main() {
     xb.traverse((o) => {
       if (o.isMesh) o.frustumCulled = false;
     });
-    ref = new Actor(xb, 1.62);
+    ref = refX = new Actor(xb, 1.62);
     ref.root.visible = false;
     scene.add(ref.root, ref.helper);
-    refGun = new Gun(ref);
+    refGun = refGunX = new Gun(ref);
     for (const [k, f] of Object.entries(GUN_FILES)) {
       try {
         const g = await loadG(f);
@@ -38594,7 +38665,8 @@ void main() {
       scene.add(shellObj);
     } catch {
     }
-    await setChar("yola");
+    const want = new URLSearchParams(location.search).get("char");
+    await setChar(want in CHARS ? want : "yola");
     let last = performance.now();
     renderer.setAnimationLoop((now) => {
       const dt = Math.min(0.1, (now - last) / 1e3);

@@ -459,3 +459,63 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     the rollback checkpoint: 7.7 / 9.1 ms (same). No melee hit-stop events. Node tests unchanged vs the checkpoint.
   * NOT DONE (by decision): the gore plan above (arms off at the shoulder, the burst and acid) is a new system; the
     polish brief said no new systems tonight. Not tested on a physical phone.
+- 2026-10-16 (round 18: the new Yola, and the bat on the one-handed sword combo). The first Yola (assets/yola.glb) and
+  the opening's Yola are untouched.
+  * The user's new model (Tripo "nurse scrubs", assets/source/yola_v2/nurse_scrubs_tripo.glb, 31k tris, mixamorig
+    65-bone A-pose rig, realistic proportions). Rig checked in Blender: every vertex weighted (max 4), joints centred in
+    the limbs, range-of-motion poses and a high kick deform cleanly. A hem weight ease (thighs -> hips above the crotch)
+    was tried and compared before/after: it only smooths a crease at the hip pocket, so it stays off
+    (YOLA2_FIX_HEM=1 in the build turns it on).
+  * tools/anim/yola2_build.py: every clip retargeted onto her from its ORIGINAL source (the user: the old Yola is not
+    the truth): Mixamo clips straight from the X Bot FBX files (matched to the game clips by motion, 0.0 deg apart);
+    library moves from their own rigs (Quaternius UAL1/2 mannequin, Kevin Iglesias). Clips that only exist as edits on
+    the first Yola (levelled swing, mirrored/composited strafes, trimmed reload, twisted shotgun hold) and Tripo's own
+    clips (punches, kicks, chop, greets, hits: authored on the Tripo rig) are carried from her.
+  * tools/anim/contacts.py (after each retarget, source still loaded): hands: in weapon-hold clips both hands go where
+    the source's are, from the shoulders' midpoint scaled by arm length, hands that touch on the source keep their
+    spacing at her hand size (pistol 0.36 -> 0.17 shoulder widths apart, X Bot 0.13; bat idle 0.80 -> 0.55, X Bot 0.41);
+    feet: whenever the source's foot is planted her shoe sole sits exactly on the floor (0.0 cm, was -1..-3 cm), and in
+    non-looping clips a planted foot is pinned where it landed (melee_horizontal slide 0.5 -> 0.01 cm/frame). Two-bone
+    IK keeps the source's elbow/knee plane and the wrist/foot orientation, rotations only (a matrix with scale left
+    unkeyed pose scale that crept into later clips: found by bisecting, fixed).
+  * tools/anim/yola2_compare.py: every frame vs the X Bot (limb directions, hands in arm lengths, hand gap, soles,
+    planted-foot slide). tools/anim/yola2_sheet.py: Blender sheets, her beside the source rig at her height, front /
+    side / x-ray with both skeletons (recordings/round18/*_vs_*.jpg).
+  * tools/anim/yola2_export.py: assets/yola2.glb (mesh 2048/1024 WebP + 50 clips, 7.3 MB), assets/yola_sword.glb (the
+    sword combo + idle on the first Yola), assets/moves/yola2_moves.glb (library picks, local only),
+    assets/clipdata_yola2.json (hit paths re-measured on her).
+  * Rig Lab: "Yola 2 (new model)" (viewer.html?char=yola2): each clip beside its source rig (X Bot, or Quaternius's
+    mannequin from assets/source/ual for ual_ clips).
+  * Game: pause menu "Yola: Original / Yola 2 (new, testing)" (remembered) or ?yola=2. Arena loads the matching
+    library file.
+  * The bat (both Yolas): Quaternius Sword Regular Combo (the user's pick; the reference-video combo is no longer used),
+    one-handed in the right fist (BAT_DEF), Sword Idle as its stance, split into its 4 strikes (src/render/libattack.js,
+    shared with the arena; strikes: 4 lowers the speed threshold until the slower 3rd swing is its own strike; the
+    last clip frame, a snap to the loop pose, is cut). Finisher x1.6 damage. A strike chained late carries on from the
+    weight it had (no pop: peak hand acceleration at the hand-over 485 vs ~1100 inside a strike). One swish per strike
+    (split strikes fired two). Melee hit slow-motion is 0 (round 17), the likely cause of the arena's "skipping frames".
+  * Not verified: on a phone; by ear; the user has not yet judged the new Yola's clips or the bat combo at 1x.
+- 2026-10-16 (round 18, later: Yola 2's scrubs, the user's option C + "depth where the shirt meets the pants and at the
+  pockets, like two pieces of clothing"). Only the cloth changes (a soft mask of the blue scrubs, checked painted on the
+  model: skin, hair, badge, shoes untouched, max change elsewhere 0.004).
+  * Why they read glossy: cloth roughness 0.70 (cotton ~0.9), the specular rim and room reflections, a saturated cyan,
+    and the normal map cut to 1024 at export (the fabric's weave lost: plastic).
+  * tools/anim/yola2_bake.py (Cycles, her own mesh): fold / contact shadow (AO, 4 cm) and curvature. Two traps found:
+    Tripo's mesh has an inner layer under the clothes (3.5k faces) that bakes black into shared texels (dropped from the
+    bake copy), and a background run must clear Blender's default cube first (it was baked instead of her).
+  * tools/anim/yola2_cloth.py -> assets/source/yola_v2/cloth: base colour (cloth 18% less saturated, 7% darker, times
+    the fold shadow, creases darker, hem lip / pocket flaps 10% lighter, never below 62%: the inside of a sleeve read as
+    a stain); metal-roughness (cloth 0.70 -> 0.90; R = shine kept, cloth 0.3); normal map 2048.
+  * yola2_export.py swaps them in (base colour and normal 2048) and flags the material (extras clothSpec); clipchars.js
+    scales the specular and its rim by the map's red channel for a flagged material (onBeforeCompile).
+  * Checked in the game at 375 x 812 under all 7 looks, front / side / back / game camera:
+    recordings/round18/scrubs_ba_closeup.jpg (the full sheets stayed in shots/). Shirt and pants are not given
+    different shades: the mesh has no clean hem crease to split them by (it would come out jagged).
+  * The user's verdict: "I don't like it, the original is better; we can work with the different lighting." assets/yola2.glb
+    is back to her scrubs as Tripo painted them. The cotton look stays available: YOLA2_CLOTH=1 for yola2_export.py
+    (textures in assets/source/yola_v2/cloth; the game's shine handler only acts on a flagged material).
+  * Then, from one-change-at-a-time full-body sheets (recordings/round18/scrubs_steps_*.jpg), the user kept only "+1 matte, less
+    shine" ("the cotton look made everything too dark"): assets/yola2.glb now has her colours and normal map exactly
+    as Tripo made them, and only the cloth's metal-roughness map changed (0.70 -> 0.90, shine kept 0.3 in R, flagged
+    clothSpec). yola2_export.py: YOLA2_CLOTH=matte is the default (full = the cotton look, none = as made).
+    recordings/round18/scrubs_matte_front_three_quarter.jpg, scrubs_matte_side_back.jpg.
