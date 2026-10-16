@@ -567,8 +567,11 @@ export class YolaView extends ClipBody {
     if (FL.at.distanceToSquared(_v.set(s.x, 0, s.z)) > 0.25) for (const k of ['L', 'R']) { FL[k].mode = 'free'; FL[k].off.set(0, 0, 0); }
     FL.at.set(s.x, 0, s.z);
     const moving = Math.hypot(s.vx, s.vz) > 0.25;
-    if (C) FL.settle = 0.6; else FL.settle = moving || !this.batMode ? 0 : Math.max(0, FL.settle - dt);
-    const on = this.batMode && !s.dead && (C || FL.settle > 0);
+    // every melee swing is locked (2026-10-16: the axe and the fists skated their planted feet as she turned into a strike):
+    // the bat's clips carry measured contacts; the others are read from the pose (a foot down on the floor is planted)
+    const swing = s.action === 'swing' && !!A && !s.dead;
+    if (C || swing) FL.settle = 0.5; else FL.settle = moving ? 0 : Math.max(0, FL.settle - dt);
+    const on = !s.dead && (C || swing || FL.settle > 0) && (this.batMode || swing || FL.settle > 0);
     const still = w.pistol_idle ?? 0; // standing (the idle stance is planted)
     const frozen = !!A && s.swingT >= attackEnd(A);
     for (const k of ['L', 'R']) {
@@ -578,8 +581,9 @@ export class YolaView extends ClipBody {
       if (on) {
         const f = clamp(this.clipF ?? 0, C ? C.f0 : 0, C ? C.f0 + C[k].length - 1 : 0);
         let c = C ? C[k][Math.round(f) - C.f0] : 0;
+        if (!C) { const toe = this.bones[side + 'ToeBase']?.getWorldPosition(this._toeV ||= new THREE.Vector3()).y ?? anim.y; c = anim.y < 0.15 && toe < 0.07 ? 1 : 0; } // (no measured contacts: down on the floor = planted)
         if (frozen && anim.y < 0.16) c = 1; // recovering: the clip's last pose is held while it blends to idle, so a foot on the floor stays put
-        plant = C ? sW * c + (1 - sW) * still : still;
+        plant = C || swing ? sW * c + (1 - sW) * still : still;
       }
       const other = FL[k === 'L' ? 'R' : 'L'];
       if (st.mode === 'locked') {

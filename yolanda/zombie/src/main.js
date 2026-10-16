@@ -442,7 +442,7 @@ function runFrame(dt, doRender = true) {
   if (doRender) looks.render();
 }
 
-let impactFrame = -1, frameNo = 0;
+let impactFrame = -1, frameNo = 0, impactN = 0;
 function handleEvents() {
   frameNo++;
   const p = sim.player;
@@ -468,7 +468,10 @@ function handleEvents() {
           else if (pl.hit === 'wall' && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
         }
         if (flesh) audio.play('bulletHit', 1.3);
-        shake(e.hits ? 0.5 : 0.35);
+        // point blank: the blast lands as one heavy thump with a white flash on the body it struck (restrained: one per blast)
+        const near = e.hits && e.closest < 2.6;
+        if (near) { audio.play('shotgunClose'); const zc = sim.zombies.find((q) => q.id === e.closestId); if (zc) fx.hitFlash(zc.x - Math.sin(e.yaw) * 0.25, 1.1, zc.z - Math.cos(e.yaw) * 0.25, Math.sin(e.yaw), Math.cos(e.yaw), 1.5); }
+        shake(near ? 0.7 : e.hits ? 0.5 : 0.35);
         // the camera kicks back against the shot
         if (shakeOn) { const k = 1.2 * tuning.shake; camState.vx -= Math.sin(e.yaw) * k; camState.vz -= Math.cos(e.yaw) * k; }
         setTimeout(() => audio.play('pump'), 240);
@@ -479,12 +482,18 @@ function handleEvents() {
       case 'batHit': {
         if (e.shield) { if (shakeOn) { camState.vx += e.dirX * 0.9 * tuning.shake; camState.vz += e.dirZ * 0.9 * tuning.shake; } break; } // (on the guard's shield: the shieldHit event sounds it)
         const chop = e.style === 'chop';
-        // one impact sound per frame however many are struck (a swing through three zombies is one crack, not three)
-        if (impactFrame !== frameNo) { impactFrame = frameNo; audio.play(e.fist ? 'fistHit' : e.weapon === 'bat' ? 'batHit' : 'axeHit', chop || e.style === 'kick' || e.style === 'heavy' ? 1.3 : 1); }
-        fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true); shake(e.killed || chop ? 0.6 : 0.45);
+        // one impact sound, one shake and one camera kick per frame however many are struck (a swing through three zombies
+        // is one crack and one jolt, a little bigger, not three stacked); every body gets its own flash and spray
+        const first = impactFrame !== frameNo;
+        if (first) { impactFrame = frameNo; impactN = 0; audio.play(e.fist ? 'fistHit' : e.weapon === 'bat' ? 'batHit' : 'axeHit', chop || e.style === 'kick' || e.style === 'heavy' ? 1.3 : 1); }
+        impactN++;
+        fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, impactN <= 3);
         fx.hitFlash(e.x - e.dirX * 0.18, chop ? 0.45 : 1.15, e.z - e.dirZ * 0.18, e.dirX, e.dirZ, (e.killed ? 1.3 : 1) * (e.style === 'heavy' || chop ? 1.2 : 1) * (e.fist ? 0.7 : 1));
-        // camera kicks along the blow (the follow spring brings it back); the chop kicks down-screen
-        if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
+        if (first) {
+          shake(e.killed || chop ? 0.6 : 0.45);
+          // the camera kicks along the blow (the follow spring brings it back); the chop kicks down-screen
+          if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
+        } else if (impactN === 2) shake(0.12); // (a second body in the same swing: a touch more, never a stack)
         break;
       }
       case 'objective': hud.setObjective(OBJECTIVES[e.id] || ''); audio.play('swap'); break;

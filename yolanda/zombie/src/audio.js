@@ -116,6 +116,9 @@ export class CombatAudio {
         this.tone(t, 0.12, 60, { f2: 30, gain: 0.6 });
         this.noise(t + 0.03, 0.5, { type: 'bandpass', f: 700, q: 0.6, gain: 0.12, attack: 0.02 });
         break;
+      case 'shotgunClose': // point blank: the pellets land as one heavy body thump under the boom
+        this.tone(t + 0.01, 0.28, 72, { f2: 34, gain: 0.8, type: 'sine' }); this.noise(t + 0.01, 0.16, { type: 'lowpass', f: 700, f2: 150, gain: 0.55 });
+        break;
       case 'heal': // a soft rising chime
         this.tone(t, 0.35, 660, { type: 'triangle', gain: 0.14 }); this.tone(t + 0.1, 0.45, 990, { type: 'triangle', gain: 0.12 }); this.tone(t + 0.2, 0.6, 1320, { type: 'sine', gain: 0.08 });
         break;

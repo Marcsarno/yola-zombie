@@ -197,7 +197,8 @@ export class Sim {
       if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, (T.shotgunKnockback * pl) / S.pellets, SHOTGUN, this, h.parts) === 'blocked') blocked.push(z.id);
       if (!z.alive) killed.push(z.id);
     }
-    this.emit({ type: 'shotgun', ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed, blocked });
+    let closest = 99, closestId = -1; for (const z of hits.keys()) { const d = Math.hypot(z.x - p.x, z.z - p.z); if (d < closest) { closest = d; closestId = z.id; } }
+    this.emit({ type: 'shotgun', ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed, blocked, closest, closestId });
     if (hits.size && this.T.hitPause > 0) this.emit({ type: 'hitPause', dur: this.T.hitPause * (killed.length ? 0.8 : 0.5) });
   }
 

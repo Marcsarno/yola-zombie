@@ -46028,6 +46028,7 @@ void main() {
   var shieldState = (z) => !z.shieldMax ? "none" : z.shieldHp <= 0 ? "break" : z.shieldHp / z.shieldMax > 0.62 ? "intact" : z.shieldHp / z.shieldMax > 0.3 ? "hairline" : "heavy";
   var TUMBLE_FALL = 1.3;
   var TUMBLE_GETUP = 1.9;
+  var PERSONAL = 1.05;
   var Zombie = class {
     constructor(x, z, yaw, opts) {
       this.id = nextId++;
@@ -46447,6 +46448,25 @@ void main() {
               wantX = dx / (dist2 || 1);
               wantZ = dz / (dist2 || 1);
               speed *= Math.max(0, Math.min(1, (dist2 - this.holdR) / 0.5));
+              let sx = 0, sz = 0;
+              for (const o of sim2.zombies) {
+                if (o === this || !o.alive || !o.solid) continue;
+                const ox = this.x - o.x, oz = this.z - o.z, d = Math.hypot(ox, oz);
+                if (d < PERSONAL && d > 1e-4) {
+                  const w = (PERSONAL - d) / PERSONAL;
+                  sx += ox / d * w;
+                  sz += oz / d * w;
+                }
+              }
+              if (sx || sz) {
+                const tx = Math.cos(a), tz = -Math.sin(a), tang = sx * tx + sz * tz, out = Math.max(0, sx * rx + sz * rz) * 0.5;
+                const mx = tx * tang + rx * out, mz = tz * tang + rz * out, ml = Math.hypot(mx, mz);
+                if (ml > 0.04) {
+                  wantX = mx / ml;
+                  wantZ = mz / ml;
+                  speed = T2.zombieSpeed * this.speedMul * 0.45 * Math.min(1, ml * 2.5);
+                }
+              }
               if ((this.repoWait -= dt) <= 0) {
                 let near = null, nd = 9;
                 for (const o of sim2.zombies) {
@@ -47246,7 +47266,15 @@ void main() {
         if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T2.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
         if (!z.alive) killed.push(z.id);
       }
-      this.emit({ type: "shotgun", ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed, blocked });
+      let closest = 99, closestId = -1;
+      for (const z of hits.keys()) {
+        const d = Math.hypot(z.x - p2.x, z.z - p2.z);
+        if (d < closest) {
+          closest = d;
+          closestId = z.id;
+        }
+      }
+      this.emit({ type: "shotgun", ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed, blocked, closest, closestId });
       if (hits.size && this.T.hitPause > 0) this.emit({ type: "hitPause", dur: this.T.hitPause * (killed.length ? 0.8 : 0.5) });
     }
     // Which part a bullet hits, from where it passes the body: wide of centre takes the arm on that side;
@@ -50258,9 +50286,10 @@ void main() {
       }
       FL.at.set(s.x, 0, s.z);
       const moving = Math.hypot(s.vx, s.vz) > 0.25;
-      if (C) FL.settle = 0.6;
-      else FL.settle = moving || !this.batMode ? 0 : Math.max(0, FL.settle - dt);
-      const on = this.batMode && !s.dead && (C || FL.settle > 0);
+      const swing = s.action === "swing" && !!A && !s.dead;
+      if (C || swing) FL.settle = 0.5;
+      else FL.settle = moving ? 0 : Math.max(0, FL.settle - dt);
+      const on = !s.dead && (C || swing || FL.settle > 0) && (this.batMode || swing || FL.settle > 0);
       const still = w.pistol_idle ?? 0;
       const frozen = !!A && s.swingT >= attackEnd(A);
       for (const k of ["L", "R"]) {
@@ -50270,8 +50299,12 @@ void main() {
         if (on) {
           const f = clamp4(this.clipF ?? 0, C ? C.f0 : 0, C ? C.f0 + C[k].length - 1 : 0);
           let c = C ? C[k][Math.round(f) - C.f0] : 0;
+          if (!C) {
+            const toe = this.bones[side + "ToeBase"]?.getWorldPosition(this._toeV || (this._toeV = new Vector3())).y ?? anim.y;
+            c = anim.y < 0.15 && toe < 0.07 ? 1 : 0;
+          }
           if (frozen && anim.y < 0.16) c = 1;
-          plant = C ? sW * c + (1 - sW) * still : still;
+          plant = C || swing ? sW * c + (1 - sW) * still : still;
         }
         const other = FL[k === "L" ? "R" : "L"];
         if (st.mode === "locked") {
@@ -54511,6 +54544,10 @@ void main() {
           this.tone(t, 0.2, 110, { f2: 38, gain: 0.85, type: "triangle" });
           this.tone(t, 0.12, 60, { f2: 30, gain: 0.6 });
           this.noise(t + 0.03, 0.5, { type: "bandpass", f: 700, q: 0.6, gain: 0.12, attack: 0.02 });
+          break;
+        case "shotgunClose":
+          this.tone(t + 0.01, 0.28, 72, { f2: 34, gain: 0.8, type: "sine" });
+          this.noise(t + 0.01, 0.16, { type: "lowpass", f: 700, f2: 150, gain: 0.55 });
           break;
         case "heal":
           this.tone(t, 0.35, 660, { type: "triangle", gain: 0.14 });
@@ -61858,6 +61895,7 @@ void main() {
   }
   var impactFrame = -1;
   var frameNo = 0;
+  var impactN = 0;
   function handleEvents() {
     frameNo++;
     const p2 = sim.player;
@@ -61890,7 +61928,13 @@ void main() {
             } else if (pl.hit === "wall" && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
           }
           if (flesh) audio.play("bulletHit", 1.3);
-          shake(e.hits ? 0.5 : 0.35);
+          const near = e.hits && e.closest < 2.6;
+          if (near) {
+            audio.play("shotgunClose");
+            const zc = sim.zombies.find((q) => q.id === e.closestId);
+            if (zc) fx.hitFlash(zc.x - Math.sin(e.yaw) * 0.25, 1.1, zc.z - Math.cos(e.yaw) * 0.25, Math.sin(e.yaw), Math.cos(e.yaw), 1.5);
+          }
+          shake(near ? 0.7 : e.hits ? 0.5 : 0.35);
           if (shakeOn) {
             const k = 1.2 * tuning.shake;
             camState.vx -= Math.sin(e.yaw) * k;
@@ -61916,18 +61960,23 @@ void main() {
             break;
           }
           const chop = e.style === "chop";
-          if (impactFrame !== frameNo) {
+          const first = impactFrame !== frameNo;
+          if (first) {
             impactFrame = frameNo;
+            impactN = 0;
             audio.play(e.fist ? "fistHit" : e.weapon === "bat" ? "batHit" : "axeHit", chop || e.style === "kick" || e.style === "heavy" ? 1.3 : 1);
           }
-          fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, true);
-          shake(e.killed || chop ? 0.6 : 0.45);
+          impactN++;
+          fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, impactN <= 3);
           fx.hitFlash(e.x - e.dirX * 0.18, chop ? 0.45 : 1.15, e.z - e.dirZ * 0.18, e.dirX, e.dirZ, (e.killed ? 1.3 : 1) * (e.style === "heavy" || chop ? 1.2 : 1) * (e.fist ? 0.7 : 1));
-          if (shakeOn) {
-            const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake;
-            camState.vx += e.dirX * k;
-            camState.vz += e.dirZ * k;
-          }
+          if (first) {
+            shake(e.killed || chop ? 0.6 : 0.45);
+            if (shakeOn) {
+              const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake;
+              camState.vx += e.dirX * k;
+              camState.vz += e.dirZ * k;
+            }
+          } else if (impactN === 2) shake(0.12);
           break;
         }
         case "objective":

@@ -37,7 +37,8 @@ export const KINDS = {
 export const SHIELD_HP = 190; // (about 3 bat or axe blows, 2 close shotgun blasts, 8 pistol rounds)
 export const SHIELD_MUL = { melee: 1.5, fist: 0.8, shotgun: 0.9, pistol: 0.7 };
 export const shieldState = (z) => !z.shieldMax ? 'none' : z.shieldHp <= 0 ? 'break' : z.shieldHp / z.shieldMax > 0.62 ? 'intact' : z.shieldHp / z.shieldMax > 0.3 ? 'hairline' : 'heavy';
-export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9; // the sprinter's trip: down onto her back, then up (no turn)
+export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9;
+const PERSONAL = 1.05; // m a waiting zombie keeps between itself and its neighbours // the sprinter's trip: down onto her back, then up (no turn)
 
 export class Zombie {
   constructor(x, z, yaw, opts) {
@@ -336,6 +337,19 @@ export class Zombie {
           } else {
             wantX = dx / (dist || 1); wantZ = dz / (dist || 1);
             speed *= Math.max(0, Math.min(1, (dist - this.holdR) / 0.5)); // eases to a stop at its spot
+            // personal space (2026-10-16: waiting zombies stood shoulder to shoulder, 0.65 m apart, and read as one mass): it
+            // keeps about a metre from its neighbours by sliding along its ring (and a little back), never toward her
+            let sx = 0, sz = 0;
+            for (const o of sim.zombies) {
+              if (o === this || !o.alive || !o.solid) continue;
+              const ox = this.x - o.x, oz = this.z - o.z, d = Math.hypot(ox, oz);
+              if (d < PERSONAL && d > 1e-4) { const w = (PERSONAL - d) / PERSONAL; sx += (ox / d) * w; sz += (oz / d) * w; }
+            }
+            if (sx || sz) {
+              const tx = Math.cos(a), tz = -Math.sin(a), tang = sx * tx + sz * tz, out = Math.max(0, sx * rx + sz * rz) * 0.5;
+              const mx = tx * tang + rx * out, mz = tz * tang + rz * out, ml = Math.hypot(mx, mz);
+              if (ml > 0.04) { wantX = mx / ml; wantZ = mz / ml; speed = T.zombieSpeed * this.speedMul * 0.45 * Math.min(1, ml * 2.5); }
+            }
             if ((this.repoWait -= dt) <= 0) {
               let near = null, nd = 9;
               for (const o of sim.zombies) {
