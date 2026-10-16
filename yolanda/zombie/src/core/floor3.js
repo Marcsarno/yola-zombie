@@ -235,7 +235,7 @@ export const ROOM_SIGNS = [
   { id: 'imaging', x: -6.0, y: 2.3, z: -22.75, face: 's', w: 1.4 },
   { id: 'recovery', x: -15.3, y: 2.3, z: 1.82, face: 's', w: 1.3 },
   { id: 'reception', x: -20.2, y: 2.35, z: -7.05, face: 's', w: 1.6 },
-  { id: 'elevator', x: 6.99, y: 2.75, z: -8.3, face: 'w', w: 1.1 },
+  { id: 'elevator', x: 6.99, y: 2.75, z: -8.42, face: 'w', w: 1.1 }, // (clear of the lift's pocket housing)
 ];
 
 // ---------------------------------------------------------------------------------------------- encounters

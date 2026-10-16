@@ -7,7 +7,8 @@ import { Actor, OriginalYola } from './actors.js';
 
 export const CLINIC = { x: 60, z: 0 }; // world offset of the clinic's local origin
 const M = '../assets/models/';
-const LIFT_KIT = 'assets/kit/Hospital_Elevator_Outbreak.glb'; // the same elevator kit as Floor 3's (one lift, two floors)
+const LIFT_KIT = 'assets/kit/Hospital_Elevator_Outbreak.glb';
+const RECL = 'assets/opening/recliners/TreatmentRecliner_'; // the same elevator kit as Floor 3's (one lift, two floors)
 export const CLINIC_LIFT = { x: -2.3, z: -6.0 }; // the ground-floor elevator in the reception's north wall (the kit's threshold; its cab is behind the wall)
 
 // the floor display over an elevator's doors: a small amber readout ("G ▲", "1", "2", "3"), drawn on a canvas.
@@ -193,7 +194,9 @@ export class ClinicStage {
     const slots = [];
     for (const [k, cx] of [['A', 3.4], ['B', 6.6]]) {
       slots.push(slot('head' + k, T3('05_recovery_bay/', 'RecoveryHeadwall_#.glb'), { x: cx, z: BZ, wall: 's' }));
-      slots.push(slot('bed' + k, T3('05_recovery_bay/', 'RecoveryBed_#.glb'), { x: cx, z: 1.62, rot: 0 })); // head to the headwall, foot toward the room
+      // a treatment recliner in each bay (tools/anim/make_recliner.py: the kit has none; the handoff asks for recliners or
+      // treatment chairs here), its back to the headwall, facing the room; its tier changes with the bay's equipment
+      slots.push(slot('bed' + k, { starter: RECL + 'starter.glb', standard: RECL + 'standard.glb', advanced: RECL + 'advanced.glb' }, { x: cx, z: 1.2, rot: 0 }));
       slots.push(slot('mon' + k, T3('02_anesthesia_monitoring/', 'patient_monitor_#.glb'), { x: cx - 0.98, z: 0.75, rot: 0 }));
       slots.push(slot('iv' + k, T3('08_support_equipment/runtime/', 'iv_stand_#.glb'), { x: cx + 0.86, z: 0.8, rot: 0 }));
       slots.push(slot('cab' + k, T3('05_recovery_bay/', 'BedsideCabinet_#.glb'), { x: cx - 0.95, z: 2.15, rot: 90 }));

@@ -45135,7 +45135,8 @@ void main() {
     { id: "imaging", x: -6, y: 2.3, z: -22.75, face: "s", w: 1.4 },
     { id: "recovery", x: -15.3, y: 2.3, z: 1.82, face: "s", w: 1.3 },
     { id: "reception", x: -20.2, y: 2.35, z: -7.05, face: "s", w: 1.6 },
-    { id: "elevator", x: 6.99, y: 2.75, z: -8.3, face: "w", w: 1.1 }
+    { id: "elevator", x: 6.99, y: 2.75, z: -8.42, face: "w", w: 1.1 }
+    // (clear of the lift's pocket housing)
   ];
   var GROUPS = [
     { id: "or", zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: "nurse" }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 8 }] },
@@ -56307,6 +56308,7 @@ void main() {
   var CLINIC = { x: 60, z: 0 };
   var M3 = "../assets/models/";
   var LIFT_KIT = "assets/kit/Hospital_Elevator_Outbreak.glb";
+  var RECL = "assets/opening/recliners/TreatmentRecliner_";
   var CLINIC_LIFT = { x: -2.3, z: -6 };
   function liftDisplay(root) {
     const c = document.createElement("canvas");
@@ -56548,7 +56550,7 @@ void main() {
       const slots = [];
       for (const [k, cx] of [["A", 3.4], ["B", 6.6]]) {
         slots.push(slot("head" + k, T3("05_recovery_bay/", "RecoveryHeadwall_#.glb"), { x: cx, z: BZ, wall: "s" }));
-        slots.push(slot("bed" + k, T3("05_recovery_bay/", "RecoveryBed_#.glb"), { x: cx, z: 1.62, rot: 0 }));
+        slots.push(slot("bed" + k, { starter: RECL + "starter.glb", standard: RECL + "standard.glb", advanced: RECL + "advanced.glb" }, { x: cx, z: 1.2, rot: 0 }));
         slots.push(slot("mon" + k, T3("02_anesthesia_monitoring/", "patient_monitor_#.glb"), { x: cx - 0.98, z: 0.75, rot: 0 }));
         slots.push(slot("iv" + k, T3("08_support_equipment/runtime/", "iv_stand_#.glb"), { x: cx + 0.86, z: 0.8, rot: 0 }));
         slots.push(slot("cab" + k, T3("05_recovery_bay/", "BedsideCabinet_#.glb"), { x: cx - 0.95, z: 2.15, rot: 90 }));
