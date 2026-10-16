@@ -62,8 +62,14 @@ const OB_BLOOD = [
   { kind: 'drag', x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
   { kind: 'drag', x: 3.75, z: -7.55, w: 0.6, l: 1.1, rot: 30 },
   { kind: 'splat', x: 5.7, z: -10.25, w: 1.05, l: 1.05, rot: 15 },
+  // where the patient turned: under the head of the table, a drag toward the Supply Hall door, a hand on the dead lift
+  { kind: 'splat', x: -0.35, z: -9.05, w: 0.95, l: 0.95, rot: -35 },
+  { kind: 'drag', x: -3.7, z: -5.75, w: 0.7, l: 1.7, rot: -55 },
+  { kind: 'hand', x: 6.99, z: -2.35, wall: 'w', y: 1.25, size: 0.33, tilt: 12 },
+  { kind: 'hand', x: 6.99, z: -1.95, wall: 'w', y: 1.02, size: 0.28, tilt: -9 },
   // supply hall (storage): one smear at the exit to the waiting area
   { kind: 'drag', x: -12.05, z: -3.75, w: 0.6, l: 1.0, rot: -60 },
+  { kind: 'hand', x: -8.4, z: -6.05, wall: 's', y: 1.15, size: 0.3, tilt: 7 }, // by the belongings table: where the guard waited
   // waiting area (circulation): small marks in a corner, one handprint, the travel lane clear
   { kind: 'splat', x: -24.9, z: -6.45, w: 0.65, l: 0.65, rot: 40 },
   { kind: 'hand', x: -24.3, z: -7.05, wall: 's', y: 1.0, size: 0.3, tilt: -4 },
@@ -124,7 +130,10 @@ function signTexture(text, sub) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
 
-const EM_SKY = new THREE.Color(0x8ea6b8), EM_GROUND = new THREE.Color(0x3a1c1e), EM_SUN = new THREE.Color(0xc9d8ff); // emergency grade
+// emergency grade: a cool, readable night fill over everything (silhouettes stay clear); the red is selective: pools under
+// the emergency lights and at the doors, and only a faint sweep of the beacon in the room light (2026-10-16: the room-wide
+// red had turned every surface pink-purple and flattened the outbreak textures)
+const EM_SKY = new THREE.Color(0x9ab4c8), EM_GROUND = new THREE.Color(0x2c2226), EM_SUN = new THREE.Color(0xd2defa);
 
 export class Arena {
   constructor(scene, quality, renderer) {
@@ -677,9 +686,9 @@ export class Arena {
     this.hemi.intensity = e.base.hemiI + (0.52 - e.base.hemiI) * k;
     this.sun.color.copy(e.base.sunC).lerp(EM_SUN, k); this.sun.intensity = e.base.sunI + (0.72 - e.base.sunI) * k;
     this.scene.environmentIntensity = e.base.env + (0.17 - e.base.env) * k;
-    if (this.redHemi) this.redHemi.intensity = k * (0.18 + 0.5 * beacon);
+    if (this.redHemi) this.redHemi.intensity = k * (0.05 + 0.13 * beacon);
     e.group.visible = k > 0.005;
-    e.redMat.opacity = k * (0.22 + 0.3 * beacon); e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3)); // (a tube that hums)
+    e.redMat.opacity = k * (0.3 + 0.38 * beacon); e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3)); // (a tube that hums)
   }
 
   update(dt, px, pz, camYaw, level) {

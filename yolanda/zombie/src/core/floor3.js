@@ -217,7 +217,7 @@ wp(M + 'decor/Recovery_Wall_Clock.glb', -19.9, 1.8, 's', 2.15);
 // ---------------------------------------------------------------------------------------------- wayfinding (canvas print signs)
 // text / sub lines; (x, y, z) centre on the wall face; face: the direction the sign looks; w metres wide
 export const SIGNS = [
-  { text: '← MAINTENANCE', sub: 'Lift reset', x: 2.5, y: 2.05, z: -11.0, face: 's', w: 1.5 },
+  { text: 'MAINTENANCE →', sub: 'Lift reset · via Supply Hall', x: -7.0, y: 1.95, z: -2.6, face: 'e', w: 1.3 }, // beside the OR's exit, on clear wall (it had hung beside the shut north door)
   { text: 'LIFT', sub: 'Power fault', x: 6.99, y: 2.3, z: -1.9, face: 'w', w: 0.9 },
   { text: 'BARRED', sub: 'From the CT side', x: -2.55, y: 1.75, z: -11.0, face: 's', w: 0.82 },
   { text: '← MAINTENANCE', sub: 'via Waiting · Pre-Op', x: -9.9, y: 2.2, z: -6.05, face: 's', w: 1.6 },
@@ -229,7 +229,7 @@ export const SIGNS = [
 ];
 // the supplied 2D room-name prints over doorways, read from inside the room they name
 export const ROOM_SIGNS = [
-  { id: 'operating_room', x: 4.55, y: 2.1, z: -10.99, face: 's', w: 1.5 },
+  { id: 'operating_room', x: -6.99, y: 2.48, z: -4.6, face: 'e', w: 1.3 }, // over the OR's own doorway (it had been printed across the shut double door)
   { id: 'maintenance', x: -31.5, y: 2.2, z: -22.75, face: 's', w: 1.4 },
   { id: 'cafeteria', x: -20.5, y: 2.3, z: -22.75, face: 's', w: 1.6 },
   { id: 'imaging', x: -6.0, y: 2.3, z: -22.75, face: 's', w: 1.4 },

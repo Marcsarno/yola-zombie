@@ -45116,7 +45116,8 @@ void main() {
   p(M + "decor/Recovery_Linen_Cabinet.glb", -13.4, 10.7, 270, [0.95, 0.59], 1.84);
   wp(M + "decor/Recovery_Wall_Clock.glb", -19.9, 1.8, "s", 2.15);
   var SIGNS = [
-    { text: "\u2190 MAINTENANCE", sub: "Lift reset", x: 2.5, y: 2.05, z: -11, face: "s", w: 1.5 },
+    { text: "MAINTENANCE \u2192", sub: "Lift reset \xB7 via Supply Hall", x: -7, y: 1.95, z: -2.6, face: "e", w: 1.3 },
+    // beside the OR's exit, on clear wall (it had hung beside the shut north door)
     { text: "LIFT", sub: "Power fault", x: 6.99, y: 2.3, z: -1.9, face: "w", w: 0.9 },
     { text: "BARRED", sub: "From the CT side", x: -2.55, y: 1.75, z: -11, face: "s", w: 0.82 },
     { text: "\u2190 MAINTENANCE", sub: "via Waiting \xB7 Pre-Op", x: -9.9, y: 2.2, z: -6.05, face: "s", w: 1.6 },
@@ -45127,7 +45128,8 @@ void main() {
     { text: "OR \xB7 LIFT \u2193", sub: "Remove the bar", x: -2.3, y: 2.3, z: -22.75, face: "s", w: 1.2 }
   ];
   var ROOM_SIGNS = [
-    { id: "operating_room", x: 4.55, y: 2.1, z: -10.99, face: "s", w: 1.5 },
+    { id: "operating_room", x: -6.99, y: 2.48, z: -4.6, face: "e", w: 1.3 },
+    // over the OR's own doorway (it had been printed across the shut double door)
     { id: "maintenance", x: -31.5, y: 2.2, z: -22.75, face: "s", w: 1.4 },
     { id: "cafeteria", x: -20.5, y: 2.3, z: -22.75, face: "s", w: 1.6 },
     { id: "imaging", x: -6, y: 2.3, z: -22.75, face: "s", w: 1.4 },
@@ -47793,8 +47795,15 @@ void main() {
     { kind: "drag", x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
     { kind: "drag", x: 3.75, z: -7.55, w: 0.6, l: 1.1, rot: 30 },
     { kind: "splat", x: 5.7, z: -10.25, w: 1.05, l: 1.05, rot: 15 },
+    // where the patient turned: under the head of the table, a drag toward the Supply Hall door, a hand on the dead lift
+    { kind: "splat", x: -0.35, z: -9.05, w: 0.95, l: 0.95, rot: -35 },
+    { kind: "drag", x: -3.7, z: -5.75, w: 0.7, l: 1.7, rot: -55 },
+    { kind: "hand", x: 6.99, z: -2.35, wall: "w", y: 1.25, size: 0.33, tilt: 12 },
+    { kind: "hand", x: 6.99, z: -1.95, wall: "w", y: 1.02, size: 0.28, tilt: -9 },
     // supply hall (storage): one smear at the exit to the waiting area
     { kind: "drag", x: -12.05, z: -3.75, w: 0.6, l: 1, rot: -60 },
+    { kind: "hand", x: -8.4, z: -6.05, wall: "s", y: 1.15, size: 0.3, tilt: 7 },
+    // by the belongings table: where the guard waited
     // waiting area (circulation): small marks in a corner, one handprint, the travel lane clear
     { kind: "splat", x: -24.9, z: -6.45, w: 0.65, l: 0.65, rot: 40 },
     { kind: "hand", x: -24.3, z: -7.05, wall: "s", y: 1, size: 0.3, tilt: -4 },
@@ -47896,9 +47905,9 @@ void main() {
     t.anisotropy = 4;
     return t;
   }
-  var EM_SKY = new Color(9348792);
-  var EM_GROUND = new Color(3808286);
-  var EM_SUN = new Color(13228287);
+  var EM_SKY = new Color(10138824);
+  var EM_GROUND = new Color(2892326);
+  var EM_SUN = new Color(13819642);
   var Arena = class {
     constructor(scene2, quality2, renderer2) {
       this.scene = scene2;
@@ -48777,9 +48786,9 @@ void main() {
       this.sun.color.copy(e.base.sunC).lerp(EM_SUN, k);
       this.sun.intensity = e.base.sunI + (0.72 - e.base.sunI) * k;
       this.scene.environmentIntensity = e.base.env + (0.17 - e.base.env) * k;
-      if (this.redHemi) this.redHemi.intensity = k * (0.18 + 0.5 * beacon);
+      if (this.redHemi) this.redHemi.intensity = k * (0.05 + 0.13 * beacon);
       e.group.visible = k > 5e-3;
-      e.redMat.opacity = k * (0.22 + 0.3 * beacon);
+      e.redMat.opacity = k * (0.3 + 0.38 * beacon);
       e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3));
     }
     update(dt, px2, pz2, camYaw, level) {
