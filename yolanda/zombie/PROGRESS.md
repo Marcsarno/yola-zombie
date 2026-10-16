@@ -378,3 +378,9 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     states intact / hairline / heavy, a break into five fragments that fade 5 s later, runtime/ShieldController.mjs
     (three 0.180), README_RUNTIME.md (the asset contract). Replaces the stand-in in render/clipchars.js makeStandInShield.
   * Combat music: assets/music/agile_groove.mp3 ("Agile Groove", 3.6 MB): to play when combat begins.
+  * TO FIX (the user, from Floor 3's operating room): signs sit in the wrong places. The OPERATING ROOM name sign
+    (floor3.js ROOM_SIGNS operating_room, x 4.55 on the north wall) is printed across the shut double door or_ct_2
+    (x 3.3-6.3), and the "← MAINTENANCE / Lift reset" wayfinding sign (SIGNS, x 2.5) hangs on the wall beside that door
+    where it reads oddly. Review every sign in SIGNS / ROOM_SIGNS against the doors and walls: room names over their
+    own doorway lintels (read from inside the room they name), direction signs on clear wall where the route turns,
+    never on a door leaf.
