@@ -45971,7 +45971,7 @@ void main() {
     }
     hurt(dmg, fromX, fromZ, sim2) {
       if (this.dead || this.invuln > 0) return false;
-      this.hp = Math.max(this.T.testInfiniteHealth ? Math.max(1, this.hp) : 0, this.hp - dmg);
+      if (!this.T.testInfiniteHealth) this.hp = Math.max(0, this.hp - dmg);
       this.invuln = 0.55;
       this.hurtT = 0;
       const dx = this.x - fromX, dz = this.z - fromZ, d = Math.hypot(dx, dz) || 1;
@@ -47462,7 +47462,7 @@ void main() {
     // 0 = off, 1 = full (max 5 degrees bend)
     magSize: 12,
     testInfiniteHealth: true,
-    // testing feel, not difficulty (the user, 2026-10-15): hits still flinch, push and knock her down, health never drops below 1
+    // testing feel, not difficulty (the user, 2026-10-15): hits still flinch, push and knock her down; her health does not drop
     testInfiniteAmmo: true,
     // testing: spare rounds never run out (magazines still empty and reload); false = Floor 3 counts them
     headshotChance: 0.1,
@@ -55042,7 +55042,7 @@ void main() {
       ["zombieWindup", "Lunge wind-up", 0.25, 1.2, 0.02, "s"],
       ["scratchWindup", "Scratch wind-up", 0.2, 1, 0.02, "s"],
       ["sprinterSpeed", "Sprinter charge speed", 2, 6, 0.1, "m/s"],
-      ["sprinterTurn", "Sprinter turn at speed", 0.5, 4, 0.1, "rad/s"]
+      ["sprinterWindup", "Orderly charge wind-up", 0.3, 1.5, 0.05, "s"]
     ]],
     ["Camera", [
       ["lookAhead", "Look-ahead", 0, 3, 0.1, "m"],
