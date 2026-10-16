@@ -28,7 +28,7 @@ const S = (x, y, z, pitch, yaw, width, fov = 34) => ({ x: x + CLINIC.x, y, z: z 
 const W = (x, y, z, pitch, yaw, width, fov = 34) => ({ x, y, z, pitch, yaw, width, fov }); // world-space shot (the operating room)
 const OFFICE_SHOT = S(6.3, 0.85, -3.0, 30, 72, 4.6); // the assessment office from the east: Yola and both visitors in profile across the desk
 const OFFICE_CLOSE = S(6.2, 0.9, -2.85, 22, 72, 3.2); // closer on the three of them for the bat talk
-const OFFICE_GUARD = S(5.6, 0.9, -2.4, 26, 40, 4.0); // Yola turned to the guard (line 15): "he" is clear
+const OFFICE_GUARD = S(5.8, 0.9, -2.35, 24, 80, 3.8); // Yola turned to the guard (line 15): "he" is clear (from the east: the office's south wall would block a view from the south)
 // the reveal: front-on to Yola's spot in the operating room (ROOM1.player), the table with the patient behind her. The
 // old hospital's last frame is captured from exactly this camera, so the picture lines up with the room behind it.
 const REVEAL_SHOT = { ...W(ROOM1.player.x, 1.02, ROOM1.player.z, 4, THREE.MathUtils.radToDeg(ROOM1.player.yaw), 3, 42), dist: 3.5 };
@@ -390,6 +390,7 @@ export class Opening {
     this.setSun(0, -7.5);
     this.arena.cutWalls?.(0, -6.2, THREE.MathUtils.degToRad(35)); // the OR seen from the south-east, its near walls cut away
     this.scene.background = new THREE.Color(0xcfe3df); // (the clean hospital's soft sky: the dark void belongs to the outbreak)
+    this.arena.outPlane?.material.color.set(0xb9cdc9); // (and the ground beyond the walls)
     this.inOR = true; this.game?.().fxAim?.(false); // (the gameplay aim ring is not part of the story)
     this.ensureBelongings();
     this.belongings.visible = true; st.batStatic.visible = true; if (st.cap) st.cap.visible = true;
@@ -503,15 +504,15 @@ export class Opening {
     const bat = this.stage.guardBat;
     if (!actor) { bat.visible = false; bat.parent?.remove(bat); return; }
     const hand = actor.bones.handR; if (!hand) return;
-    // the static bat: its origin is the knob, the barrel along +y (0.6 m). Set once in the current pose: the knob end in
-    // his fist, the barrel hanging down and a little forward along his leg; then it rides the hand bone.
+    // the static bat: its origin is the barrel end, the knob 0.6 m along +y (checked in a render). Set once in the current
+    // pose: the knob in his fist, the barrel hanging down and a little forward along his leg; then it rides the hand bone.
     actor.root.updateMatrixWorld(true);
     const qh = hand.getWorldQuaternion(new THREE.Quaternion()), hp = hand.getWorldPosition(new THREE.Vector3());
     const fwd = new THREE.Vector3(Math.sin(actor.yaw), 0, Math.cos(actor.yaw)), dir = new THREE.Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();
-    const qd = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const qd = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().negate());
     hand.add(bat); bat.visible = true; bat.scale.setScalar(1 / hand.getWorldScale(new THREE.Vector3()).x);
     bat.quaternion.copy(qh.clone().invert().multiply(qd));
-    bat.position.copy(hand.worldToLocal(hp.clone().addScaledVector(dir, -0.09)));
+    bat.position.copy(hand.worldToLocal(hp.clone().addScaledVector(dir, 0.52)));
   }
 
   // ================================================================== ACT 2: arrival, the seated assessment, the elevator
@@ -545,13 +546,15 @@ export class Opening {
     this.camTo(S(-3.5, 0.7, -1.6, 46, 28, 8.0), 1.5, { actor: bb, dx: 0.8, dz: 0.5 });
     yield 1.4;
     sg.walk([[-4.2, -1.6], [-1.2, -1.1], [an.doorway.x, an.doorway.z], [1.75, -0.95], [od.x, od.z + 0.1], [4.6, -1.2], [7.55, -1.4], [7.55, cg.z - 0.45], [cg.x, cg.z - 0.45]], { endYaw: Math.PI });
-    yield () => bb.x > 1.2; // into the corridor: cut inside the office as he arrives
+    yield 1.6; // they head off toward the staff corridor...
+    // ...a cut: they come in at the office door (the corridor walk is not shown; nothing about it matters)
     this.dip(0.25, 0.3); yield 0.28;
-    if (bat) bat.visible = false; // (the skinned bat cannot follow a seated pose: it rests against his chair, out of the sit)
-    this.leanBat(true);
+    bb.stop(); bb.place(od.x + 0.35, od.z, Math.PI / 2); bb.walk([[4.4, -1.5], [cp.x - 0.6, cp.z - 0.45], [cp.x, cp.z - 0.45]], { endYaw: Math.PI, speed: 0.85 });
+    sg.stop(); sg.place(od.x - 0.55, od.z + 0.1, Math.PI / 2); sg.walk([[od.x + 0.4, od.z + 0.15], [4.6, -1.2], [7.55, -1.4], [7.55, cg.z - 0.45], [cg.x, cg.z - 0.45]], { endYaw: Math.PI });
     this.camTo(OFFICE_SHOT, 0.01);
     yield this.arrived(bb);
     this.state = 'SEATED_ASSESSMENT'; this.substate = 'SEATING';
+    if (bat) bat.visible = false; this.leanBat(true); // (the skinned bat cannot follow a seated pose: it leans against his chair)
     bb.sitAt(cp.x, cp.z, cp.yaw, { seatTop: cp.seatTop });
     yield this.arrived(sg);
     sg.sitAt(cg.x, cg.z, cg.yaw, { seatTop: cg.seatTop });
@@ -605,17 +608,17 @@ export class Opening {
     // 8. to the elevator: Yola leads, the colleague wheels him, the guard follows with the bat
     this.substate = 'TO_ELEVATOR';
     const lf = an.liftFront;
-    yo.walk([[od.x, od.z], [1.75, -1.05], [an.doorway.x, an.doorway.z], [-1.0, -2.2], [lf.x - 0.9, lf.z + 0.6]], { endYaw: Math.PI });
-    yield 0.8;
-    this.roll([[od.x + 0.4, od.z + 0.1], [1.75, -1.0], [an.doorway.x - 0.2, an.doorway.z], [-1.1, -2.6], [lf.x, lf.z + 1.1]], { endYaw: Math.PI, speed: 0.9 });
-    yield 1.0;
-    sg.walk([[od.x, od.z + 0.05], [1.75, -0.95], [an.doorway.x, an.doorway.z + 0.1], [-0.3, -2.0], [lf.x + 1.0, lf.z + 0.7]], { endYaw: Math.PI });
-    yield 0.9;
-    // cut to the reception as they come out of the staff corridor: the doorway, the desk and the elevator in one frame
+    yo.walk([[od.x, od.z], [1.75, -1.05]]);
+    yield 0.7;
+    this.roll([[od.x + 0.4, od.z + 0.1], [1.75, -1.0]], { speed: 0.9 });
+    yield 1.2;
+    // a cut: they come out of the staff corridor into the reception, the elevator ahead
     this.dip(0.25, 0.3); yield 0.28;
+    yo.stop(); yo.place(-0.45, -1.55, -2.4); yo.walk([[-1.0, -2.2], [lf.x - 0.9, lf.z + 0.6]], { endYaw: Math.PI });
+    bb.stop(); bb.place(0.85, -1.0, -Math.PI / 2); this.roll([[-0.2, -1.4], [-1.1, -2.6], [lf.x, lf.z + 1.1]], { endYaw: Math.PI, speed: 0.9 });
+    sg.stop(); sg.place(3.0, -1.1, -Math.PI / 2); this.later(0.6, () => sg.walk([[an.doorway.x, an.doorway.z + 0.15], [-0.3, -2.0], [lf.x + 1.0, lf.z + 0.7]], { endYaw: Math.PI })); // (a body length behind the colleague)
     this.camTo(S(-1.6, 0.8, -3.2, 44, 22, 6.8), 0.01);
-    yield () => yo.x < 1.0;
-    this.camTo(S(-2.2, 0.85, -3.9, 40, 18, 6.0), 3.0);
+    this.camTo(S(-2.2, 0.85, -3.9, 40, 18, 6.0), 3.5);
     yield this.arrived(yo, bb, sg);
     this.mark('at-elevator');
     // 9. the elevator: the doors open, they enter (chair first, turned to face the doors), the doors close
@@ -655,7 +658,7 @@ export class Opening {
     const st = this.stage, an = st.anchors.chairPatient;
     if (!this.leanedBat) { this.leanedBat = st.guardBat.clone(true); st.root.add(this.leanedBat); }
     const b = this.leanedBat; b.visible = on; if (!on) return;
-    b.scale.setScalar(1); b.position.set(an.x - 0.4, 0.6, an.z + 0.1); b.rotation.set(0, 0.3, Math.PI - 0.2); // (standing on its barrel, the knob up against the seat)
+    b.scale.setScalar(1); b.position.set(an.x - 0.4, 0.01, an.z + 0.1); b.rotation.set(0, 0.3, -0.2); // (standing on its barrel, the knob up against the seat)
   }
 
   // ================================================================== ACT 3: Floor 3, preparation, the procedure, recovery
@@ -901,7 +904,7 @@ export class Opening {
   // the room after the outbreak, ready behind the picture: same geography, worn surfaces, emergency light, the dead lift
   revealWorld() {
     const g = this.game();
-    this.inOR = true; this.setBlood(true); this.scene.background = this.saved?.bg || new THREE.Color(0x27323a);
+    this.inOR = true; this.setBlood(true); this.scene.background = this.saved?.bg || new THREE.Color(0x27323a); this.arena.outPlane?.material.color.set(0x1d262c);
     g.applyRoom1(); this.room1Preview = true;
     this.arena.setEmergency?.(true, 0); this.setLight(1);
     if (this.spot) this.spot.intensity = 0; if (this.redLight) this.redLight.intensity = 0;
@@ -940,7 +943,7 @@ export class Opening {
     // the world: clinic away, combat lighting back, the cast gone (no duplicate humans), the guard waiting at reception
     st.setActive(false); this.inOR = true; // (the OR is the world now)
     const Bk = this.saved || {};
-    this.scene.background = Bk.bg || new THREE.Color(0x27323a);
+    this.scene.background = Bk.bg || new THREE.Color(0x27323a); this.arena.outPlane?.material.color.set(0x1d262c);
     if (this.arena.sun && Bk.sun) { this.arena.sun.position.copy(Bk.sun); this.arena.sun.target.position.copy(Bk.tgt); this.arena.sun.target.updateMatrixWorld(true); }
     this.renderer.shadowMap.needsUpdate = true;
     for (const l of this.arena.lights) l.visible = true;

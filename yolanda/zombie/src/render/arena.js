@@ -162,7 +162,7 @@ export class Arena {
         m.rotation.x = -Math.PI / 2; m.position.set((a + b) / 2, 0.003, (c + e) / 2); m.receiveShadow = true; this.group.add(m);
       }
       const out = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), new THREE.MeshBasicMaterial({ color: 0x1d262c })); // (stops short of the opening's clinic set at x 60)
-      out.rotation.x = -Math.PI / 2; out.position.set(-13, -0.02, -6); this.group.add(out);
+      out.rotation.x = -Math.PI / 2; out.position.set(-13, -0.02, -6); this.group.add(out); this.outPlane = out;
       return;
     }
     const w = 14.6, d = 22.6;

@@ -172,6 +172,7 @@ export class ClinicStage {
     tasks.push(this.prop(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', { x: 6.55, y: 1.05, z: Zn, wall: 's' }));
     tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: 6.05, y: 1.1, z: Zn, wall: 's' }));
     tasks.push(this.prop(M + 'furnishings/Clinical_Lidded_Waste_Bin.glb', { x: 8.95, z: -5.65 }));
+    tasks.push(this.prop(M + 'decor3/Clinical_Sharps_Container.glb', { x: 7.05, y: 1.05, z: Zn, wall: 's' })); // sharps by the gloves
     // medical information on the west wall: anatomy posters, the clock, the room's own sign
     tasks.push(this.prop(M + 'furnishings/Assessment_Poster_Body.glb', { x: 3.3, y: 1.0, z: -4.6, wall: 'e' }));
     tasks.push(this.prop(M + 'furnishings/Assessment_Poster_Lungs.glb', { x: 3.3, y: 1.0, z: -3.75, wall: 'e' }));
@@ -208,6 +209,7 @@ export class ClinicStage {
     tasks.push(this.prop(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', { x: 0.95, y: 1.3, z: BZ, wall: 's', name: 'glovesR' }));
     tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: 1.75, y: 1.35, z: BZ, wall: 's', name: 'saniR' }));
     tasks.push(this.prop(M + 'furnishings/Clinical_Lidded_Waste_Bin.glb', { x: 2.3, z: 0.5, name: 'binR' }));
+    tasks.push(this.prop(M + 'decor3/Clinical_Sharps_Container.glb', { x: 2.35, y: 1.2, z: BZ, wall: 's', name: 'sharpsR' })); // sharps over the bin, shared by both bays
     tasks.push(this.prop(M + 'decor/Recovery_Wall_Clock.glb', { x: 5.0, y: 2.25, z: BZ, wall: 's', name: 'clockR' }));
     tasks.push(this.prop(M + 'decor2/Clinical_Art_Lungs.glb', { x: 8.55, y: 1.45, z: BZ, wall: 's', name: 'artR' }));
     this.sign('recovery', 2.0, 2.45, BZ + 0.012, 1.0);
@@ -372,11 +374,12 @@ export class ClinicStage {
     const add = (geo, m, x, yy, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, yy, z); o.rotation.y = ry; o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
     const dark = mat(0x2a3238, 0.45), cream = mat(0xf2ead8), teal = mat(0x2f9fa0, 0.5);
     const scr = mat(0x7fb7c9, 0.3); scr.emissive = new THREE.Color(0x1d3d48);
-    // monitor on a stand, turned toward the clinician (the north side of the desk)
-    add(new RoundedBoxGeometry(0.5, 0.32, 0.035, 2, 0.012), dark, 0.18, 0.3, 0.05, 0.25);
-    add(new THREE.BoxGeometry(0.44, 0.26, 0.004), scr, 0.18 - Math.sin(0.25) * 0.019, 0.3, 0.05 - Math.cos(0.25) * 0.019, 0.25);
-    add(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 10), dark, 0.18, 0.08, 0.07);
-    add(new RoundedBoxGeometry(0.2, 0.012, 0.14, 2, 0.005), dark, 0.18, 0.006, 0.07);
+    // monitor on a stand at the desk's east end, angled to the clinician: never between her and the visitors' faces
+    const MX = 0.6, MZ = -0.12, MR = 0.66;
+    add(new RoundedBoxGeometry(0.5, 0.32, 0.035, 2, 0.012), dark, MX, 0.3, MZ, MR);
+    add(new THREE.BoxGeometry(0.44, 0.26, 0.004), scr, MX - Math.sin(MR) * 0.019, 0.3, MZ - Math.cos(MR) * 0.019, MR);
+    add(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 10), dark, MX + Math.sin(MR) * 0.02, 0.08, MZ + Math.cos(MR) * 0.02);
+    add(new RoundedBoxGeometry(0.2, 0.012, 0.14, 2, 0.005), dark, MX + Math.sin(MR) * 0.02, 0.006, MZ + Math.cos(MR) * 0.02, MR);
     add(new RoundedBoxGeometry(0.42, 0.018, 0.14, 2, 0.006), cream, 0.12, 0.009, -0.17, 0.12); // keyboard (clinician side)
     add(new RoundedBoxGeometry(0.07, 0.02, 0.1, 2, 0.008), cream, 0.42, 0.01, -0.2); // mouse
     // telephone
@@ -417,7 +420,7 @@ export class ClinicStage {
   // each cabinet and light, the screen and clock, then the supply corner
   furnishGroups() {
     const t = (k) => this.tiers.find((sl) => sl.key === k)?.layers?.starter, n = this.byName;
-    return [[t('headA'), t('headB')], [t('bedA')], [t('bedB')], [t('monA'), t('ivA')], [t('monB'), t('ivB')], [t('cabA'), n.lightA], [t('cabB'), n.lightB], [t('curtain'), n.clockR], [t('prep'), t('cart'), n.glovesR, n.saniR, n.binR, n.artR]].map((g) => g.filter(Boolean));
+    return [[t('headA'), t('headB')], [t('bedA')], [t('bedB')], [t('monA'), t('ivA')], [t('monB'), t('ivB')], [t('cabA'), n.lightA], [t('cabB'), n.lightB], [t('curtain'), n.clockR], [t('prep'), t('cart'), n.glovesR, n.saniR, n.binR, n.sharpsR, n.artR]].map((g) => g.filter(Boolean));
   }
   furnishList() { return this.furnishGroups().flat(); }
   setRoomEmpty(on) { for (const h of this.furnishList()) { h.visible = !on; h.scale.setScalar(1); } this.clearPops(); }

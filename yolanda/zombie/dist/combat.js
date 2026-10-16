@@ -47914,6 +47914,7 @@ void main() {
         out2.rotation.x = -Math.PI / 2;
         out2.position.set(-13, -0.02, -6);
         this.group.add(out2);
+        this.outPlane = out2;
         return;
       }
       const w = 14.6, d = 22.6;
@@ -56030,6 +56031,7 @@ void main() {
       tasks.push(this.prop(M3 + "furnishings/Endoscopy_Glove_Dispenser.glb", { x: 6.55, y: 1.05, z: Zn, wall: "s" }));
       tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 6.05, y: 1.1, z: Zn, wall: "s" }));
       tasks.push(this.prop(M3 + "furnishings/Clinical_Lidded_Waste_Bin.glb", { x: 8.95, z: -5.65 }));
+      tasks.push(this.prop(M3 + "decor3/Clinical_Sharps_Container.glb", { x: 7.05, y: 1.05, z: Zn, wall: "s" }));
       tasks.push(this.prop(M3 + "furnishings/Assessment_Poster_Body.glb", { x: 3.3, y: 1, z: -4.6, wall: "e" }));
       tasks.push(this.prop(M3 + "furnishings/Assessment_Poster_Lungs.glb", { x: 3.3, y: 1, z: -3.75, wall: "e" }));
       tasks.push(this.prop(M3 + "decor/Recovery_Wall_Clock.glb", { x: 3.3, y: 2, z: -4.18, wall: "e" }));
@@ -56068,6 +56070,7 @@ void main() {
       tasks.push(this.prop(M3 + "furnishings/Endoscopy_Glove_Dispenser.glb", { x: 0.95, y: 1.3, z: BZ, wall: "s", name: "glovesR" }));
       tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 1.75, y: 1.35, z: BZ, wall: "s", name: "saniR" }));
       tasks.push(this.prop(M3 + "furnishings/Clinical_Lidded_Waste_Bin.glb", { x: 2.3, z: 0.5, name: "binR" }));
+      tasks.push(this.prop(M3 + "decor3/Clinical_Sharps_Container.glb", { x: 2.35, y: 1.2, z: BZ, wall: "s", name: "sharpsR" }));
       tasks.push(this.prop(M3 + "decor/Recovery_Wall_Clock.glb", { x: 5, y: 2.25, z: BZ, wall: "s", name: "clockR" }));
       tasks.push(this.prop(M3 + "decor2/Clinical_Art_Lungs.glb", { x: 8.55, y: 1.45, z: BZ, wall: "s", name: "artR" }));
       this.sign("recovery", 2, 2.45, BZ + 0.012, 1);
@@ -56391,10 +56394,11 @@ void main() {
       const dark = mat2(2765368, 0.45), cream = mat2(15919832), teal = mat2(3121056, 0.5);
       const scr = mat2(8370121, 0.3);
       scr.emissive = new Color(1916232);
-      add(new RoundedBoxGeometry(0.5, 0.32, 0.035, 2, 0.012), dark, 0.18, 0.3, 0.05, 0.25);
-      add(new BoxGeometry(0.44, 0.26, 4e-3), scr, 0.18 - Math.sin(0.25) * 0.019, 0.3, 0.05 - Math.cos(0.25) * 0.019, 0.25);
-      add(new CylinderGeometry(0.02, 0.02, 0.14, 10), dark, 0.18, 0.08, 0.07);
-      add(new RoundedBoxGeometry(0.2, 0.012, 0.14, 2, 5e-3), dark, 0.18, 6e-3, 0.07);
+      const MX = 0.6, MZ = -0.12, MR = 0.66;
+      add(new RoundedBoxGeometry(0.5, 0.32, 0.035, 2, 0.012), dark, MX, 0.3, MZ, MR);
+      add(new BoxGeometry(0.44, 0.26, 4e-3), scr, MX - Math.sin(MR) * 0.019, 0.3, MZ - Math.cos(MR) * 0.019, MR);
+      add(new CylinderGeometry(0.02, 0.02, 0.14, 10), dark, MX + Math.sin(MR) * 0.02, 0.08, MZ + Math.cos(MR) * 0.02);
+      add(new RoundedBoxGeometry(0.2, 0.012, 0.14, 2, 5e-3), dark, MX + Math.sin(MR) * 0.02, 6e-3, MZ + Math.cos(MR) * 0.02, MR);
       add(new RoundedBoxGeometry(0.42, 0.018, 0.14, 2, 6e-3), cream, 0.12, 9e-3, -0.17, 0.12);
       add(new RoundedBoxGeometry(0.07, 0.02, 0.1, 2, 8e-3), cream, 0.42, 0.01, -0.2);
       add(new RoundedBoxGeometry(0.18, 0.06, 0.2, 2, 0.02), teal, -0.55, 0.03, -0.05, 0.4);
@@ -56456,7 +56460,7 @@ void main() {
     // each cabinet and light, the screen and clock, then the supply corner
     furnishGroups() {
       const t = (k) => this.tiers.find((sl) => sl.key === k)?.layers?.starter, n = this.byName;
-      return [[t("headA"), t("headB")], [t("bedA")], [t("bedB")], [t("monA"), t("ivA")], [t("monB"), t("ivB")], [t("cabA"), n.lightA], [t("cabB"), n.lightB], [t("curtain"), n.clockR], [t("prep"), t("cart"), n.glovesR, n.saniR, n.binR, n.artR]].map((g) => g.filter(Boolean));
+      return [[t("headA"), t("headB")], [t("bedA")], [t("bedB")], [t("monA"), t("ivA")], [t("monB"), t("ivB")], [t("cabA"), n.lightA], [t("cabB"), n.lightB], [t("curtain"), n.clockR], [t("prep"), t("cart"), n.glovesR, n.saniR, n.binR, n.sharpsR, n.artR]].map((g) => g.filter(Boolean));
     }
     furnishList() {
       return this.furnishGroups().flat();
@@ -58028,7 +58032,7 @@ void main() {
   var W2 = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x, y, z, pitch, yaw, width, fov: fov2 });
   var OFFICE_SHOT = S(6.3, 0.85, -3, 30, 72, 4.6);
   var OFFICE_CLOSE = S(6.2, 0.9, -2.85, 22, 72, 3.2);
-  var OFFICE_GUARD = S(5.6, 0.9, -2.4, 26, 40, 4);
+  var OFFICE_GUARD = S(5.8, 0.9, -2.35, 24, 80, 3.8);
   var REVEAL_SHOT = { ...W2(ROOM1.player.x, 1.02, ROOM1.player.z, 4, MathUtils.radToDeg(ROOM1.player.yaw), 3, 42), dist: 3.5 };
   var REVEAL_COMBO = 2;
   var REVEAL_FROM = 0;
@@ -58730,6 +58734,7 @@ void main() {
       this.setSun(0, -7.5);
       this.arena.cutWalls?.(0, -6.2, MathUtils.degToRad(35));
       this.scene.background = new Color(13624287);
+      this.arena.outPlane?.material.color.set(12176841);
       this.inOR = true;
       this.game?.().fxAim?.(false);
       this.ensureBelongings();
@@ -58914,12 +58919,12 @@ void main() {
       actor.root.updateMatrixWorld(true);
       const qh = hand.getWorldQuaternion(new Quaternion()), hp = hand.getWorldPosition(new Vector3());
       const fwd = new Vector3(Math.sin(actor.yaw), 0, Math.cos(actor.yaw)), dir = new Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();
-      const qd = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir);
+      const qd = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir.clone().negate());
       hand.add(bat);
       bat.visible = true;
       bat.scale.setScalar(1 / hand.getWorldScale(new Vector3()).x);
       bat.quaternion.copy(qh.clone().invert().multiply(qd));
-      bat.position.copy(hand.worldToLocal(hp.clone().addScaledVector(dir, -0.09)));
+      bat.position.copy(hand.worldToLocal(hp.clone().addScaledVector(dir, 0.52)));
     }
     // ================================================================== ACT 2: arrival, the seated assessment, the elevator
     *act2() {
@@ -58963,15 +58968,21 @@ void main() {
       this.camTo(S(-3.5, 0.7, -1.6, 46, 28, 8), 1.5, { actor: bb, dx: 0.8, dz: 0.5 });
       yield 1.4;
       sg.walk([[-4.2, -1.6], [-1.2, -1.1], [an.doorway.x, an.doorway.z], [1.75, -0.95], [od.x, od.z + 0.1], [4.6, -1.2], [7.55, -1.4], [7.55, cg.z - 0.45], [cg.x, cg.z - 0.45]], { endYaw: Math.PI });
-      yield () => bb.x > 1.2;
+      yield 1.6;
       this.dip(0.25, 0.3);
       yield 0.28;
-      if (bat) bat.visible = false;
-      this.leanBat(true);
+      bb.stop();
+      bb.place(od.x + 0.35, od.z, Math.PI / 2);
+      bb.walk([[4.4, -1.5], [cp.x - 0.6, cp.z - 0.45], [cp.x, cp.z - 0.45]], { endYaw: Math.PI, speed: 0.85 });
+      sg.stop();
+      sg.place(od.x - 0.55, od.z + 0.1, Math.PI / 2);
+      sg.walk([[od.x + 0.4, od.z + 0.15], [4.6, -1.2], [7.55, -1.4], [7.55, cg.z - 0.45], [cg.x, cg.z - 0.45]], { endYaw: Math.PI });
       this.camTo(OFFICE_SHOT, 0.01);
       yield this.arrived(bb);
       this.state = "SEATED_ASSESSMENT";
       this.substate = "SEATING";
+      if (bat) bat.visible = false;
+      this.leanBat(true);
       bb.sitAt(cp.x, cp.z, cp.yaw, { seatTop: cp.seatTop });
       yield this.arrived(sg);
       sg.sitAt(cg.x, cg.z, cg.yaw, { seatTop: cg.seatTop });
@@ -59051,17 +59062,23 @@ void main() {
       yield 1.2;
       this.substate = "TO_ELEVATOR";
       const lf = an.liftFront;
-      yo.walk([[od.x, od.z], [1.75, -1.05], [an.doorway.x, an.doorway.z], [-1, -2.2], [lf.x - 0.9, lf.z + 0.6]], { endYaw: Math.PI });
-      yield 0.8;
-      this.roll([[od.x + 0.4, od.z + 0.1], [1.75, -1], [an.doorway.x - 0.2, an.doorway.z], [-1.1, -2.6], [lf.x, lf.z + 1.1]], { endYaw: Math.PI, speed: 0.9 });
-      yield 1;
-      sg.walk([[od.x, od.z + 0.05], [1.75, -0.95], [an.doorway.x, an.doorway.z + 0.1], [-0.3, -2], [lf.x + 1, lf.z + 0.7]], { endYaw: Math.PI });
-      yield 0.9;
+      yo.walk([[od.x, od.z], [1.75, -1.05]]);
+      yield 0.7;
+      this.roll([[od.x + 0.4, od.z + 0.1], [1.75, -1]], { speed: 0.9 });
+      yield 1.2;
       this.dip(0.25, 0.3);
       yield 0.28;
+      yo.stop();
+      yo.place(-0.45, -1.55, -2.4);
+      yo.walk([[-1, -2.2], [lf.x - 0.9, lf.z + 0.6]], { endYaw: Math.PI });
+      bb.stop();
+      bb.place(0.85, -1, -Math.PI / 2);
+      this.roll([[-0.2, -1.4], [-1.1, -2.6], [lf.x, lf.z + 1.1]], { endYaw: Math.PI, speed: 0.9 });
+      sg.stop();
+      sg.place(3, -1.1, -Math.PI / 2);
+      this.later(0.6, () => sg.walk([[an.doorway.x, an.doorway.z + 0.15], [-0.3, -2], [lf.x + 1, lf.z + 0.7]], { endYaw: Math.PI }));
       this.camTo(S(-1.6, 0.8, -3.2, 44, 22, 6.8), 0.01);
-      yield () => yo.x < 1;
-      this.camTo(S(-2.2, 0.85, -3.9, 40, 18, 6), 3);
+      this.camTo(S(-2.2, 0.85, -3.9, 40, 18, 6), 3.5);
       yield this.arrived(yo, bb, sg);
       this.mark("at-elevator");
       this.substate = "ELEVATOR";
@@ -59142,8 +59159,8 @@ void main() {
       b.visible = on;
       if (!on) return;
       b.scale.setScalar(1);
-      b.position.set(an.x - 0.4, 0.6, an.z + 0.1);
-      b.rotation.set(0, 0.3, Math.PI - 0.2);
+      b.position.set(an.x - 0.4, 0.01, an.z + 0.1);
+      b.rotation.set(0, 0.3, -0.2);
     }
     // ================================================================== ACT 3: Floor 3, preparation, the procedure, recovery
     *act3() {
@@ -59523,6 +59540,7 @@ void main() {
       this.inOR = true;
       this.setBlood(true);
       this.scene.background = this.saved?.bg || new Color(2568762);
+      this.arena.outPlane?.material.color.set(1910316);
       g.applyRoom1();
       this.room1Preview = true;
       this.arena.setEmergency?.(true, 0);
@@ -59619,6 +59637,7 @@ void main() {
       this.inOR = true;
       const Bk = this.saved || {};
       this.scene.background = Bk.bg || new Color(2568762);
+      this.arena.outPlane?.material.color.set(1910316);
       if (this.arena.sun && Bk.sun) {
         this.arena.sun.position.copy(Bk.sun);
         this.arena.sun.target.position.copy(Bk.tgt);
