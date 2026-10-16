@@ -33522,7 +33522,7 @@ void main() {
     const dark = mat(3883080, 0.5, 0.25), grip = mat(2764340, 0.85, 0), accent = mat(10134701, 0.4, 0.5);
     const gripM = new Mesh(new RoundedBoxGeometry(0.03, 0.105, 0.046, 3, 0.012), grip);
     gripM.position.set(0, -0.03, -0.012);
-    gripM.rotation.x = -0.28;
+    gripM.rotation.x = 0.28;
     g.add(gripM);
     const frame = new Mesh(new RoundedBoxGeometry(0.03, 0.026, 0.17, 3, 0.01), dark);
     frame.position.set(0, 0.03, 0.055);

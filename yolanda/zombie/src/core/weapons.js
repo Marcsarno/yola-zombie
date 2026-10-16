@@ -33,6 +33,22 @@ export const SHOTGUN_SPEC = {
   shell: { from: 30, to: 56, x: 0.0478, y: 0, z: 0, rx: 32.07, ry: 66.49, rz: -47.36, portDown: 0.05 },
 };
 
+// Hold data sheets (assets/moves/weapons.json, measured from the models; WEAPON_HOLD_PROCESS.md section 2): where the primary
+// fist's centre goes (grip_primary) and the grip's axis, pinky -> index (shaft_axis), in the model's own frame; the support
+// fist's axis (support_axis); palm = how far the handle sits from the closed fist's centre toward the fingers (a grip thicker
+// than her fist rests against the palm); open = how far each hand's fingers open from the clip's fist toward her relaxed hand to wrap this
+// grip's thickness instead of sinking into it (measured: tools/gripcheck.js fitGrip); reach / clear = the weapon's line from the
+// fist (metres along it) kept clear metres off her head (YolaView.clearHead). The game puts every weapon in her fist with
+// these (render/clipchars.js placeWeapons; the one-handed bat: main.js setupBat).
+export const HOLD_DEFS = {
+  pistol: { grip_primary: [0, -0.03, -0.012], shaft_axis: [0, 0.9611, 0.2764], palm: { Right: 0, Left: 0 },
+    open: { Right: { Index: 0.7, Middle: 0.68, Ring: 0.82, Pinky: 0.9 }, Left: 0 } }, // makePistol: the grip block's centre and axis (raked butt-back)
+  shotgun: { grip_primary: [0.006, -0.066, 0], shaft_axis: [0.1, 0.995, 0], support_axis: [1, 0, 0], palm: { Right: 0.0066, Left: 0.0091 },
+    open: { Right: { Index: 0.68, Middle: 0.87, Pinky: 0.68 }, Left: { Thumb: 0.45, Index: 0.9, Middle: 0.9, Ring: 0.87, Pinky: 0.84 } } }, // pump_short.glb: the pistol grip; the pump along +X
+  axe: { reach: [-0.25, 0.7], clear: 0.025, palm: { Right: 0, Left: 0 }, open: { Right: { Index: 0.08, Middle: 0.23, Ring: 0.35, Pinky: 0.45 }, Left: { Index: 0.44, Middle: 0.42, Ring: 0.51, Pinky: 0.53 } } }, // fire_axe.glb: the handle (r ~13-15 mm) along the hands' socket direction
+  bat: { palm: 0, open: { Index: 0.35, Middle: 0.3, Ring: 0.46, Pinky: 0.58 } }, // makeBat(0.84): the taped handle, r 15.8 mm
+};
+
 export function muzzleLocal(weapon, out = {}) {
   if (weapon === SHOTGUN) { Object.assign(out, SHOTGUN_HOLD.muzzle); return out; }
   out.x = PISTOL_HOLD.grip.x; out.y = PISTOL_HOLD.grip.y + PISTOL_HOLD.muzzleUp; out.z = PISTOL_HOLD.grip.z + PISTOL_HOLD.muzzleForward;

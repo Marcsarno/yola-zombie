@@ -20,7 +20,7 @@ function sample(Y, A, rawClip, hold) {
   for (const a of acts) a.setEffectiveWeight(0);
   const act = Y.act(A.clip), raw = Y.mixer.clipAction(rawClip); raw.play(); raw.timeScale = 0;
   const ff = { c: V(), a: V(), k: V() }, rows = [];
-  const pose = (a, f) => { for (const [b, q] of Y.restQ) b.quaternion.copy(q); a.setEffectiveWeight(1); a.time = f / FPS + (f & 1) * 1e-6; Y.mixer.update(0); Y.outer.updateMatrixWorld(true); a.setEffectiveWeight(0); };
+  const pose = (a, f) => { for (const [b, q] of Y.restQ) b.quaternion.copy(q); a.setEffectiveWeight(1); a.time = f / FPS + (f & 1) * 1e-6; Y.mix(0); Y.outer.updateMatrixWorld(true); a.setEffectiveWeight(0); };
   // (two passes: posing the two copies alternately frame by frame leaves the mixer applying stale poses)
   const travel = [];
   for (let f = A.f0; f <= A.f1; f++) { pose(raw, f); travel.push(Y.bones.Hips.getWorldPosition(V())); } // unpinned: her travel

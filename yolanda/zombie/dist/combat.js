@@ -45334,6 +45334,27 @@ void main() {
     // metres and rotation in degrees, in the hand's frame; set with the rig lab, viewer.html)
     shell: { from: 30, to: 56, x: 0.0478, y: 0, z: 0, rx: 32.07, ry: 66.49, rz: -47.36, portDown: 0.05 }
   };
+  var HOLD_DEFS = {
+    pistol: {
+      grip_primary: [0, -0.03, -0.012],
+      shaft_axis: [0, 0.9611, 0.2764],
+      palm: { Right: 0, Left: 0 },
+      open: { Right: { Index: 0.7, Middle: 0.68, Ring: 0.82, Pinky: 0.9 }, Left: 0 }
+    },
+    // makePistol: the grip block's centre and axis (raked butt-back)
+    shotgun: {
+      grip_primary: [6e-3, -0.066, 0],
+      shaft_axis: [0.1, 0.995, 0],
+      support_axis: [1, 0, 0],
+      palm: { Right: 66e-4, Left: 91e-4 },
+      open: { Right: { Index: 0.68, Middle: 0.87, Pinky: 0.68 }, Left: { Thumb: 0.45, Index: 0.9, Middle: 0.9, Ring: 0.87, Pinky: 0.84 } }
+    },
+    // pump_short.glb: the pistol grip; the pump along +X
+    axe: { reach: [-0.25, 0.7], clear: 0.025, palm: { Right: 0, Left: 0 }, open: { Right: { Index: 0.08, Middle: 0.23, Ring: 0.35, Pinky: 0.45 }, Left: { Index: 0.44, Middle: 0.42, Ring: 0.51, Pinky: 0.53 } } },
+    // fire_axe.glb: the handle (r ~13-15 mm) along the hands' socket direction
+    bat: { palm: 0, open: { Index: 0.35, Middle: 0.3, Ring: 0.46, Pinky: 0.58 } }
+    // makeBat(0.84): the taped handle, r 15.8 mm
+  };
   function muzzleLocal(weapon, out = {}) {
     if (weapon === SHOTGUN) {
       Object.assign(out, SHOTGUN_HOLD.muzzle);
@@ -47572,7 +47593,7 @@ void main() {
       for (const [b, q] of Y.restQ) b.quaternion.copy(q);
       a.setEffectiveWeight(1);
       a.time = f / FPS + (f & 1) * 1e-6;
-      Y.mixer.update(0);
+      Y.mix(0);
       Y.outer.updateMatrixWorld(true);
       a.setEffectiveWeight(0);
     };
@@ -49181,7 +49202,7 @@ void main() {
     const dark = mat(3883080, 0.5, 0.25), grip = mat(2764340, 0.85, 0), accent = mat(10134701, 0.4, 0.5);
     const gripM = new Mesh(new RoundedBoxGeometry(0.03, 0.105, 0.046, 3, 0.012), grip);
     gripM.position.set(0, -0.03, -0.012);
-    gripM.rotation.x = -0.28;
+    gripM.rotation.x = 0.28;
     g.add(gripM);
     const frame2 = new Mesh(new RoundedBoxGeometry(0.03, 0.026, 0.17, 3, 0.01), dark);
     frame2.position.set(0, 0.03, 0.055);
@@ -49737,6 +49758,12 @@ void main() {
   var _q4 = new Quaternion();
   var UP = new Vector3(0, 1, 0);
   var _e = new Euler();
+  var _fv = new Vector3();
+  var _fv2 = new Vector3();
+  var _fq = new Quaternion();
+  var _fq2 = new Quaternion();
+  var _fq3 = new Quaternion();
+  var _fq4 = new Quaternion();
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
   var HOLD_T = 1 / 30 + 2e-4;
   function angleDiff2(a, b) {
@@ -49859,6 +49886,19 @@ void main() {
     }
     bone(n) {
       return this.bones[n];
+    }
+    // mixer.update, then every animated property written again. The mixer skips a property whose blended value is the same
+    // as on its previous update, so a bone put back to rest before the update (YolaView.update: the corrections never pile up)
+    // stayed at rest wherever the clips hold it still: a constant track (every Mixamo clip's finger curl: open flat hands on
+    // every weapon, 2026-10-16) or a static frame.
+    mix(dt) {
+      const m = this.mixer;
+      m.update(dt);
+      const k = m._accuIndex + 1;
+      for (let i = 0, n = m._nActiveBindings; i < n; i++) {
+        const pm = m._bindings[i];
+        pm.binding.setValue(pm.buffer, k * pm.valueSize);
+      }
     }
     // rotate bone n by D given in container axes, on top of its current (animated) pose
     rotateC(n, D) {
@@ -50042,7 +50082,7 @@ void main() {
         act.setEffectiveWeight(1);
         this.container.rotation.y = 0;
         this.outer.position.set(0, 0, 0);
-        this.mixer.update(0);
+        this.mix(0);
         this.container.updateMatrixWorld(true);
         this.container.getWorldQuaternion(_q22);
         this.bones[(A.hand || "Right") + "Hand"].getWorldQuaternion(_q32);
@@ -50062,7 +50102,7 @@ void main() {
       id.setEffectiveWeight(1);
       this.container.rotation.y = 0;
       this.outer.position.set(0, 0, 0);
-      this.mixer.update(0);
+      this.mix(0);
       this.outer.updateMatrixWorld(true);
       this.grip("Right", _v4);
       this.grip("Left", _v23);
@@ -50119,7 +50159,7 @@ void main() {
       id.setEffectiveWeight(1);
       this.container.rotation.y = 0;
       this.outer.position.set(0, 0, 0);
-      this.mixer.update(0);
+      this.mix(0);
       this.outer.updateMatrixWorld(true);
       this.aimQuat(_q3);
       this.bones.RightHand.getWorldQuaternion(_q22);
@@ -50150,7 +50190,7 @@ void main() {
       cal.time = 1 / 30;
       cal.setEffectiveWeight(1);
       this.container.rotation.y = 0;
-      this.mixer.update(0);
+      this.mix(0);
       this.container.updateMatrixWorld(true);
       this.container.getWorldQuaternion(_q22);
       this.bones.RightHand.getWorldQuaternion(_q32);
@@ -50212,7 +50252,7 @@ void main() {
         const D = a.getClip().duration, N = 90, [dx, dz] = LOCO[n].dir, rows = [];
         for (let i = 0; i < N; i++) {
           a.time = D * i / N;
-          this.mixer.update(0);
+          this.mix(0);
           this.outer.updateMatrixWorld(true);
           this.worldPos("LeftFoot", L2);
           this.worldPos("LeftToeBase", LT);
@@ -50446,7 +50486,7 @@ void main() {
         for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
       }
       for (const [b, q] of this.restQ) b.quaternion.copy(q);
-      this.mixer.update(dt);
+      this.mix(dt);
       this.container.updateMatrixWorld(true);
       this.rebaseUpper();
       const hy = this.hipYaw * (1 - sW);
@@ -50632,6 +50672,11 @@ void main() {
         this.rotateEulerC("LeftArm", -0.22 * kick * k, 0, 0);
       }
     }
+    // the pistol's support hand (to be fitted to the gun)
+    pistolSupport(q, w) {
+      void q;
+      void w;
+    }
     // Left hand on the shotgun: reaches the shell's loading port while it carries a shell, otherwise stays on
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
@@ -50649,10 +50694,17 @@ void main() {
           this.grip("Left", _v4);
         }
       }
-      _v23.set(U2.pumpX, U2.pump.position.y, U2.pump.position.z);
-      G2.localToWorld(_v23);
-      const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
-      if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
+      const FL = this._sgL || (this._sgL = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
+      this.fistFrame("Left", FL);
+      U2.gripL.getWorldPosition(_v32);
+      const wHold = Math.max(1 - (this.reloadW || 0), smooth01(1 - (FL.c.distanceTo(_v32) - 0.03) / 0.12)) * (1 - wPort);
+      if (wHold > 0) {
+        const pl = HOLD_DEFS.shotgun.palm.Left;
+        this.ikFist("Left", _v32, wHold, pl);
+        this.fitFist("Left", _v43.set(...HOLD_DEFS.shotgun.support_axis).transformDirection(G2.matrixWorld), wHold);
+        this.ikFist("Left", _v32, wHold, pl);
+        this.openFingers("Left", HOLD_DEFS.shotgun.open.Left, wHold);
+      }
       const S2 = this.shell;
       S2.visible = shellOn;
       if (shellOn) {
@@ -50690,16 +50742,140 @@ void main() {
       for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
         const b = this.bones[H4 + f + i];
         if (b) {
-          c.add(b.getWorldPosition(_v4));
+          c.add(b.getWorldPosition(_fv));
           n++;
         }
       }
       c.multiplyScalar(1 / n);
-      out.a.copy(this.bones[H4 + "Index1"].getWorldPosition(_v4)).sub(this.bones[H4 + "Pinky1"].getWorldPosition(_v23)).normalize();
-      out.k.copy(this.bones[H4 + "Middle1"].getWorldPosition(_v4)).sub(c);
+      out.a.copy(this.bones[H4 + "Index1"].getWorldPosition(_fv)).sub(this.bones[H4 + "Pinky1"].getWorldPosition(_fv2)).normalize();
+      out.k.copy(this.bones[H4 + "Middle1"].getWorldPosition(_fv)).sub(c);
       out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
       c.addScaledVector(out.k, -0.01);
       return out;
+    }
+    // The fist turned at the wrist so its grip axis (pinky -> index) lies along `axis` (world, unit): the hand closes along the
+    // handle instead of the handle crossing the fist. At most maxDeg (a bigger miss is the pose's to fix, never a broken wrist).
+    // Returns the miss in degrees before the turn.
+    fitFist(side, axis, w = 1, maxDeg = 35) {
+      const F = this._fitF || (this._fitF = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
+      this.fistFrame(side, F);
+      _fq.setFromUnitVectors(F.a, axis);
+      const ang = 2 * Math.acos(clamp4(Math.abs(_fq.w), 0, 1)), lim = maxDeg * Math.PI / 180, k = w * (ang > lim ? lim / ang : 1);
+      if (ang > 1e-4 && k > 0) {
+        _fq2.identity().slerp(_fq, k);
+        const hand = this.bones[side + "Hand"];
+        hand.getWorldQuaternion(_fq3);
+        hand.parent.getWorldQuaternion(_fq4);
+        hand.quaternion.copy(_fq4.invert().multiply(_fq2).multiply(_fq3));
+        hand.updateMatrixWorld(true);
+      }
+      return ang * 180 / Math.PI;
+    }
+    // The fingers opened toward her relaxed hand by `k` (0 = the clip's fist): the mocap fists close on a ~2 cm handle, so on
+    // a thicker grip they would sink into it. k: one amount, or one per finger ({ Thumb, Index, ... }: the data sheet's, HOLD_DEFS
+    // open, measured by tools/gripcheck.js fitOpen), times w.
+    openFingers(side, k, w = 1) {
+      if (!k || !(w > 0)) return;
+      const rest = this._restOf || (this._restOf = new Map(this.restQ));
+      for (const f of ["Thumb", "Index", "Middle", "Ring", "Pinky"]) {
+        const kf = (typeof k === "number" ? k : k[f] || 0) * w;
+        if (!(kf > 0)) continue;
+        for (const i of [1, 2, 3]) {
+          const b = this.bones[side + "Hand" + f + i];
+          if (b) b.quaternion.slerp(rest.get(b), kf);
+        }
+      }
+      this.bones[side + "Hand"].updateMatrixWorld(true);
+    }
+    // A held weapon never through her head (2026-10-16: the axe stance loops while she walks, and at times her head and hair
+    // moved into the handle, 24 mm): the weapon's line, from `from` to `to` metres along dir from the fist at p, is turned away
+    // about the fist by the least angle that keeps it `clear` metres off every vertex of her head (her own skinned head: hair
+    // included, rigid on the Head bone), at most 15 degrees (WEAPON_HOLD_PROCESS.md section 5's safety net). dir is changed in
+    // place; returns the turn in degrees (counted in this.headTurns for the checker).
+    // Where the line is in her head right at the fist (turning about the fist cannot move it), the fist itself is moved out by
+    // arm IK (side, palm: the fist holding it; p follows).
+    clearHead(p2, dir, [from, to], clear, side, palm) {
+      const H4 = this.headPts();
+      if (!H4) return 0;
+      const M4 = this.bones.Head.matrixWorld, q = _fv, v = _fv2;
+      let turned = 0;
+      for (let it = 0; it < 4; it++) {
+        let worst = 0, wt = 0;
+        const away = this._chA || (this._chA = new Vector3());
+        for (let i = 0; i < H4.length; i += 3) {
+          v.set(H4[i], H4[i + 1], H4[i + 2]).applyMatrix4(M4);
+          const t = clamp4((v.x - p2.x) * dir.x + (v.y - p2.y) * dir.y + (v.z - p2.z) * dir.z, from, to);
+          q.copy(p2).addScaledVector(dir, t);
+          const d = q.distanceTo(v);
+          if (clear - d > worst) {
+            worst = clear - d;
+            wt = t;
+            away.copy(q).sub(v);
+            away.addScaledVector(dir, -away.dot(dir));
+          }
+        }
+        if (worst <= 1e-4 || away.lengthSq() < 1e-10) break;
+        if (Math.abs(wt) < 0.12 && side) {
+          const t = (this._chT || (this._chT = new Vector3())).copy(p2).addScaledVector(away.normalize(), worst + 2e-3);
+          this.ikFist(side, t, 1, palm);
+          const F = this._chF || (this._chF = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
+          this.fistFrame(side, F);
+          this.gripAt(side, F, palm, p2);
+          continue;
+        }
+        if (Math.abs(wt) < 0.05) break;
+        const ang = Math.min(Math.atan2(worst + 2e-3, Math.abs(wt)), 15 * Math.PI / 180 - turned);
+        if (ang <= 0) break;
+        const axis = _fv.crossVectors(dir, away.normalize()).normalize();
+        if (wt < 0) axis.negate();
+        dir.applyAxisAngle(axis, ang).normalize();
+        turned += ang;
+      }
+      if (turned > 1e-3) this.headTurns = (this.headTurns || 0) + 1;
+      return turned * 180 / Math.PI;
+    }
+    // her head's vertices (strongest bone Head, 90%+ on it: they move rigidly with it) in the Head bone's frame, found once
+    headPts() {
+      if (this._headPts !== void 0) return this._headPts;
+      const out = [], v = new Vector3(), inv = new Matrix4();
+      this.model.updateMatrixWorld(true);
+      inv.copy(this.bones.Head.matrixWorld).invert();
+      this.model.traverse((o) => {
+        if (!o.isSkinnedMesh) return;
+        const hi = o.skeleton.bones.indexOf(this.bones.Head);
+        if (hi < 0) return;
+        const si = o.geometry.attributes.skinIndex, sw = o.geometry.attributes.skinWeight;
+        for (let i = 0; i < si.count; i++) {
+          let w = 0;
+          for (let k = 0; k < 4; k++) if (si.getComponent(i, k) === hi) w += sw.getComponent(i, k);
+          if (w < 0.9) continue;
+          o.getVertexPosition(i, v);
+          o.localToWorld(v);
+          v.applyMatrix4(inv);
+          out.push(v.x, v.y, v.z);
+        }
+      });
+      return this._headPts = out.length ? new Float32Array(out) : null;
+    }
+    // Where a handle's centre sits in this fist (F: its fistFrame): the closed fist's centre, moved `palm` metres away from the
+    // palm toward the fingers. A grip thicker than her closed fist (the guns' grips) rests against the palm with the fingers
+    // opened around it (HOLD_DEFS palm / open, measured by tools/gripcheck.js fitGrip).
+    gripAt(side, F, palm, out) {
+      out.copy(F.c);
+      if (!palm) return out;
+      this.bones[side + "Hand"].getWorldPosition(_fv);
+      const p2 = _fv2.copy(F.c).sub(_fv);
+      p2.addScaledVector(F.a, -p2.dot(F.a)).normalize();
+      return out.addScaledVector(p2, palm);
+    }
+    // two-bone arm IK putting the handle point of the fist (gripAt) on `target` (world); the hand keeps its orientation (render/ik.js)
+    ikFist(side, target, w = 1, palm = 0) {
+      const F = this._ikF || (this._ikF = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
+      this.fistFrame(side, F);
+      const hand = this.bones[side + "Hand"], g = this.gripAt(side, F, palm, this._ikG || (this._ikG = new Vector3()));
+      hand.getWorldPosition(_fv);
+      _fv2.copy(target).sub(g).add(_fv);
+      ikArm(this.bones[side + "Arm"], this.bones[side + "ForeArm"], hand, _fv2, w);
     }
     // a held weapon (the arena's test weapon, the one-handed bat): closed fists on it, its grip at the fist centre, its shaft
     // along the grip axis, its face toward the knuckles turned by roll, slid along the grip by slide. Sets heldGrip / heldTip
@@ -50722,9 +50898,10 @@ void main() {
       const M1 = (this._m1 || (this._m1 = new Matrix4())).makeBasis(s, r, _v7.crossVectors(s, r));
       const M22 = (this._m2 || (this._m2 = new Matrix4())).makeBasis(A, K2, _v4.crossVectors(A, K2));
       o.quaternion.setFromRotationMatrix(M22.multiply(M1.transpose()));
-      o.position.copy(F.c).sub(_v23.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T2.slide || 0);
+      o.position.copy(this.gripAt(T2.hand, F, T2.palm, this._phG || (this._phG = new Vector3()))).sub(_v23.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T2.slide || 0);
       o.visible = true;
       o.updateMatrixWorld(true);
+      if (T2.open) this.openFingers(T2.hand, T2.open);
       (this.heldGrip || (this.heldGrip = new Vector3())).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
       (this.heldTip || (this.heldTip = new Vector3())).set(...w.impact_point || w.tip).applyQuaternion(o.quaternion).add(o.position);
       this.testGrip = this.heldGrip;
@@ -50772,24 +50949,31 @@ void main() {
         this.melee.userData.axeInner.visible = !this.batMode;
         this.batModel.visible = !!this.batMode;
       }
+      const F = this._pwF || (this._pwF = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
       if (shown === "pistol") {
         this.aimQuat(_q3);
-        const rW = this.reloadW || 0;
+        const rW = this.reloadW || 0, D = HOLD_DEFS.pistol;
         if (rW > 0 && this.pistolSocket) {
           this.bones.RightHand.getWorldQuaternion(_q22);
           _q3.slerp(_q22.multiply(this.pistolSocket), rW);
         }
-        this.grip("Right", _v4);
-        this.pistol.position.copy(_v4);
+        this.fitFist("Right", _v5.set(...D.shaft_axis).applyQuaternion(_q3));
+        this.fistFrame("Right", F);
+        this.pistol.position.copy(this.gripAt("Right", F, D.palm.Right, _v7)).sub(_v6.set(...D.grip_primary).applyQuaternion(_q3));
         this.pistol.quaternion.copy(_q3);
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
+        this.pistolSupport(_q3, 1 - rW);
+        this.openFingers("Right", D.open.Right);
+        this.openFingers("Left", D.open.Left, 1 - rW);
       } else if (shown === "shotgun") {
-        const G2 = this.shotgun, U2 = G2.userData, SP = SHOTGUN_SPEC;
+        const G2 = this.shotgun, U2 = G2.userData, SP = SHOTGUN_SPEC, D = HOLD_DEFS.shotgun;
         this.bones.RightHand.getWorldQuaternion(_q3).multiply(this.shotgunSocket);
-        this.grip("Right", _v4);
-        G2.position.copy(_v4);
+        this.fitFist("Right", _v5.set(...D.shaft_axis).applyQuaternion(_q3));
+        this.fistFrame("Right", F);
+        G2.position.copy(this.gripAt("Right", F, D.palm.Right, _v7)).sub(_v6.set(...D.grip_primary).applyQuaternion(_q3));
         G2.quaternion.copy(_q3);
+        this.openFingers("Right", D.open.Right);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -50801,7 +50985,7 @@ void main() {
         G2.updateMatrixWorld(true);
         U2.muzzle.getWorldPosition(this.muzzleWorld);
         this.shotgunLeftHand(rf, G2);
-      } else {
+      } else if (shown === "axe") {
         this.grip("Right", _v4);
         this.grip("Left", _v23);
         let dir;
@@ -50818,14 +51002,21 @@ void main() {
           dir.normalize();
         } else dir = _v32.copy(_v4).sub(_v23).normalize();
         const M4 = this.melee;
-        if (this.batMode) {
-          const span = clamp4(_v6.copy(_v4).sub(_v23).dot(dir), 0.07, 0.16);
-          _v7.copy(_v4).addScaledVector(dir, -span);
-          this.reachClavicle("Left", _v7);
-          this.ikArm("Left", _v7, 1);
-          this.grip("Left", _v23);
-          M4.position.copy(_v4).addScaledVector(dir, -span / 2);
-        } else M4.position.copy(_v4).add(_v23).multiplyScalar(0.5);
+        const FL = this._pwL || (this._pwL = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
+        this.fitFist("Right", dir);
+        this.fistFrame("Right", F);
+        this.fistFrame("Left", FL);
+        const AX = HOLD_DEFS.axe, top = this.gripAt("Right", F, AX.palm.Right, this._pwT || (this._pwT = new Vector3()));
+        this.clearHead(top, dir, AX.reach, AX.clear, "Right", AX.palm.Right);
+        const span = clamp4(_v6.copy(top).sub(FL.c).dot(dir), 0.07, 0.16);
+        _v7.copy(top).addScaledVector(dir, -span);
+        this.reachClavicle("Left", _v7);
+        this.ikFist("Left", _v7, 1, AX.palm.Left);
+        this.fitFist("Left", dir);
+        this.ikFist("Left", _v7, 1, AX.palm.Left);
+        this.openFingers("Right", HOLD_DEFS.axe.open.Right);
+        this.openFingers("Left", HOLD_DEFS.axe.open.Left);
+        M4.position.copy(top).addScaledVector(dir, -span / 2);
         const tip = _v43.copy(M4.position).addScaledVector(dir, 0.7);
         const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new Vector3();
         this.prevTip.copy(tip);
@@ -61130,7 +61321,7 @@ void main() {
         a.play();
         a.setEffectiveWeight(1);
         a.time = Math.min(...gc.tracks.map((t) => t.times[0])) + 9 / FPS;
-        yola2.mixer.update(0);
+        yola2.mix(0);
         fingers = Object.entries(yola2.bones).filter(([n]) => /Hand(Thumb|Index|Middle|Ring|Pinky)\d/.test(n)).map(([n, b]) => [n, b.quaternion.clone()]);
         a.stop();
         yola2.mixer.uncacheAction(gc);
@@ -61581,7 +61772,7 @@ void main() {
     h.add(m);
     h.visible = false;
     scene.add(h);
-    const hold = { obj: h, w: BAT_DEF, hand: "Right", roll: 0, slide: 0, flip: false, two: false, fingers: null };
+    const hold = { obj: h, w: BAT_DEF, hand: "Right", roll: 0, slide: 0, flip: false, two: false, fingers: null, palm: HOLD_DEFS.bat.palm, open: HOLD_DEFS.bat.open };
     yola.setOneHandedBat(hold, idle);
     useBuiltBat(buildLibraryAttack(yola, { clip: combo2, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: "bat", sound: "bat", strikes: 4 }));
   }
@@ -62490,7 +62681,7 @@ void main() {
     const s = acc2.map((a) => a[0]).sort((a, b) => a - b), worst = acc2.sort((a, b) => b[0] - a[0])[0];
     return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
   }
-  window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() {
+  window.game = { yolaModel: YOLA_MODEL, HOLD_DEFS, yolaClips: null, get hitPause() {
     return hitPauseT;
   }, yolaPose(dt, s) {
     yola.update(dt, s);

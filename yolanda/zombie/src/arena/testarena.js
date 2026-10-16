@@ -52,7 +52,7 @@ export async function startTestArena({ game, scene, loader, telegraphs }) {
     const gc = clips.built_bat_combo_v4;
     if (gc) {
       const a = yola.mixer.clipAction(gc); for (const x of Object.values(yola.actions)) x.setEffectiveWeight(0);
-      a.play(); a.setEffectiveWeight(1); a.time = Math.min(...gc.tracks.map((t) => t.times[0])) + 9 / FPS; yola.mixer.update(0);
+      a.play(); a.setEffectiveWeight(1); a.time = Math.min(...gc.tracks.map((t) => t.times[0])) + 9 / FPS; yola.mix(0);
       fingers = Object.entries(yola.bones).filter(([n]) => /Hand(Thumb|Index|Middle|Ring|Pinky)\d/.test(n)).map(([n, b]) => [n, b.quaternion.clone()]);
       a.stop(); yola.mixer.uncacheAction(gc);
     }
