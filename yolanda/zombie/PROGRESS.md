@@ -372,3 +372,9 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     (GTAO contact shadows), glow (bloom), AO + glow, Cinematic (+ grade and vignette), Crisp shadows (2x shadow map),
     Performance (no shadows). Desktop cost on Floor 3 (ms/frame, incl. sim): 16 / 28 / 19 / 27 / 30 / 12 / 13.
     recordings/looks_standard_ao_cinematic.png. Not measured on the phone.
+- 2026-10-15 (saved for the next round, not wired in yet):
+  * The big guard's shield: assets/source/Modular_Bed_Shield_v2/ (the user's package, as delivered): modular_bed_shield.glb
+    (metre scale, +Z front / +Y up; Shield_Root with five fragments; one rear grip empty Grip_Center), damage base-colour
+    states intact / hairline / heavy, a break into five fragments that fade 5 s later, runtime/ShieldController.mjs
+    (three 0.180), README_RUNTIME.md (the asset contract). Replaces the stand-in in render/clipchars.js makeStandInShield.
+  * Combat music: assets/music/agile_groove.mp3 ("Agile Groove", 3.6 MB): to play when combat begins.
