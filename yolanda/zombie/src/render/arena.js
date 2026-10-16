@@ -702,7 +702,7 @@ export class Arena {
     const rate = Math.min(1, dt * 7);
     for (const w of this.walls) {
       const s = side(w.box);
-      w.target = s < -0.3 ? 0 : 1;
+      w.target = s < -0.38 ? 0 : s > -0.22 ? 1 : w.target ?? 1; // (hysteresis: walking along a wall's line never flickers it)
       if (w.k !== w.target) {
         w.k += (w.target - w.k) * rate; if (Math.abs(w.k - w.target) < 0.01) w.k = w.target;
         const low = w.frame ? LOW_H / w.h : w.lintel ? 0 : LOW_H / w.h;
@@ -713,7 +713,7 @@ export class Arena {
     }
     if (!this.cutsArmed) this.armCuts();
     for (const c of this.cutObjs) {
-      c.target = side(c.rect) < -0.3 ? 0 : 1;
+      const sc = side(c.rect); c.target = sc < -0.38 ? 0 : sc > -0.22 ? 1 : c.target ?? 1;
       if (c.k !== c.target) { c.k += (c.target - c.k) * rate; if (Math.abs(c.k - c.target) < 0.01) c.k = c.target; }
       c.plane.constant = c.k >= 1 ? 50 : c.low + (3.1 - c.low) * c.k;
     }

@@ -754,8 +754,9 @@ export class Opening {
     yo.turnTo(2.18); yo.play('handoff', { fade: 0.3 }) || yo.play('idle');
     this.camTo(W(-0.9, 1.0, -8.9, 30, 35, 3.4), 1.0);
     yield* this.say('24'); yield* this.say('25'); yield* this.say('26', { pause: 0.2 });
-    su.walk([[-3.0, -6.2], [-6.6, -4.6], [-8.0, -4.2]]); // the surgeon leaves too; the anesthesia colleague and the nurse stay
-    yo.walk([[-2.4, -7.0], [-5.6, -4.6], [-7.6, -4.4]]);
+    // (both leave between the head of the table and the workstation: no path through the furniture)
+    su.walk([[-1.3, -9.4], [-1.6, -6.9], [-6.6, -4.6], [-8.0, -4.2]]); // the surgeon leaves too; the anesthesia colleague and the nurse stay
+    yo.walk([[-1.6, -6.9], [-5.6, -4.6], [-7.6, -4.4]]);
     co.walk([[-0.85, -8.85]], { endYaw: 0.17 }); // back at his head, watching him and the monitor
     ta.walk([[0.55, -9.1]], { endYaw: 0 });
     this.camTo(W(-1.2, 0.95, -8.0, 46, 35, 7.2), 1.6);
@@ -832,7 +833,7 @@ export class Opening {
     co.turnTo(-Math.PI * 0.75); this.recoil(co, -0.35, 0.5);
     yield 0.9;
     // 30-31: the calls for Yola (the nurse backs toward the door; the colleague shouts after her)
-    ta.walk([[-1.6, -6.9], [-2.8, -6.2]], { endYaw: -Math.PI / 2 - 0.4 });
+    ta.walk([[-1.3, -9.2], [-1.55, -7.0], [-2.8, -6.2]], { endYaw: -Math.PI / 2 - 0.4 }); // (round the head of the table, never through it)
     yield* this.say('30', { pause: 0.1, alarm: true });
     co.turnTo(-Math.PI / 2 - 0.6);
     yield* this.say('31', { pause: 0.0, alarm: true });

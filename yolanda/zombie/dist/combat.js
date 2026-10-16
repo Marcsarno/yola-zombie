@@ -48830,7 +48830,7 @@ void main() {
       const rate = Math.min(1, dt * 7);
       for (const w of this.walls) {
         const s = side(w.box);
-        w.target = s < -0.3 ? 0 : 1;
+        w.target = s < -0.38 ? 0 : s > -0.22 ? 1 : w.target ?? 1;
         if (w.k !== w.target) {
           w.k += (w.target - w.k) * rate;
           if (Math.abs(w.k - w.target) < 0.01) w.k = w.target;
@@ -48842,7 +48842,8 @@ void main() {
       }
       if (!this.cutsArmed) this.armCuts();
       for (const c of this.cutObjs) {
-        c.target = side(c.rect) < -0.3 ? 0 : 1;
+        const sc = side(c.rect);
+        c.target = sc < -0.38 ? 0 : sc > -0.22 ? 1 : c.target ?? 1;
         if (c.k !== c.target) {
           c.k += (c.target - c.k) * rate;
           if (Math.abs(c.k - c.target) < 0.01) c.k = c.target;
@@ -59788,8 +59789,8 @@ void main() {
       yield* this.say("24");
       yield* this.say("25");
       yield* this.say("26", { pause: 0.2 });
-      su.walk([[-3, -6.2], [-6.6, -4.6], [-8, -4.2]]);
-      yo.walk([[-2.4, -7], [-5.6, -4.6], [-7.6, -4.4]]);
+      su.walk([[-1.3, -9.4], [-1.6, -6.9], [-6.6, -4.6], [-8, -4.2]]);
+      yo.walk([[-1.6, -6.9], [-5.6, -4.6], [-7.6, -4.4]]);
       co.walk([[-0.85, -8.85]], { endYaw: 0.17 });
       ta.walk([[0.55, -9.1]], { endYaw: 0 });
       this.camTo(W2(-1.2, 0.95, -8, 46, 35, 7.2), 1.6);
@@ -59934,7 +59935,7 @@ void main() {
       co.turnTo(-Math.PI * 0.75);
       this.recoil(co, -0.35, 0.5);
       yield 0.9;
-      ta.walk([[-1.6, -6.9], [-2.8, -6.2]], { endYaw: -Math.PI / 2 - 0.4 });
+      ta.walk([[-1.3, -9.2], [-1.55, -7], [-2.8, -6.2]], { endYaw: -Math.PI / 2 - 0.4 });
       yield* this.say("30", { pause: 0.1, alarm: true });
       co.turnTo(-Math.PI / 2 - 0.6);
       yield* this.say("31", { pause: 0, alarm: true });
