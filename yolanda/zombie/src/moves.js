@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { makeBat, makePistol, prepAxe, prepShotgun } from './render/weaponModels.js';
+import { makeBat, makePistol, prepAxe, prepShotgun, makeKnife } from './render/weaponModels.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -42,13 +42,6 @@ const WEAPONS = {
   pistol: { label: 'Pistol', builder: 'makePistol', hands: 'one', grip_primary: [0, -0.03, -0.012], shaft_axis: [0, 0.96, -0.28], ref_axis: [0, 0, 1] },
   shotgun: { label: 'Shotgun', file: 'assets/weapons/pump_shotgun.glb', prep: 'shotgun', hands: 'two', grip_primary: [0, 0, 0], shaft_axis: [0, 1, 0], ref_axis: [1, 0, 0] },
 };
-function makeKnife() {
-  const g = new THREE.Group(), m = (c, r, mt) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.016, 0.11, 12), m(0x2b2b2e, 0.8, 0)); handle.rotation.x = Math.PI / 2; g.add(handle);
-  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.008), m(0x777c80, 0.4, 0.6)); guard.position.z = 0.058; g.add(guard);
-  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.03, 0.15), m(0xc9ced2, 0.25, 0.85)); blade.position.set(0, -0.003, 0.137); g.add(blade);
-  return g;
-}
 const gltfLoader = new GLTFLoader();
 const loadG = (f) => new Promise((res, rej) => gltfLoader.load(f, res, undefined, rej));
 const weaponObj = {};

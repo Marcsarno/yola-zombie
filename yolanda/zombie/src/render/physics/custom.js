@@ -61,6 +61,14 @@ export class CustomPhysics {
     // legs and arms may not fold up into the torso
     for (const k of ['knL', 'knR']) if (P[k]) this._link(body, P[k], P.spine1, 0.8, Infinity);
     for (const k of ['elL', 'elR']) if (P[k]) this._link(body, P[k], P.hips, 0.6, Infinity);
+    // nor may the body fold shut (a jackknife: the chest down onto the thighs, the knees up into the belly): the neck keeps
+    // most of its distance from the pelvis, each hip joint, each knee and each foot (fractions of the pose at death)
+    if (P.neck) {
+      this._link(body, P.neck, P.hips, 0.88, Infinity);
+      for (const k of ['hipL', 'hipR']) if (P[k]) this._link(body, P.neck, P[k], 0.85, Infinity);
+      for (const k of ['knL', 'knR']) if (P[k]) this._link(body, P.neck, P[k], 0.75, Infinity);
+      for (const k of ['ftL', 'ftR']) if (P[k]) this._link(body, P.neck, P[k], 0.72, Infinity);
+    }
     // part -> particle pair
     const ends = { pelvis: ['hips', 'spine1'], chest: ['spine1', 'neck'], head: ['head', 'top'], upperArmL: ['shL', 'elL'], foreArmL: ['elL', 'haL'],
       upperArmR: ['shR', 'elR'], foreArmR: ['elR', 'haR'], thighL: ['hipL', 'knL'], shinL: ['knL', 'ftL'], thighR: ['hipR', 'knR'], shinR: ['knR', 'ftR'] };

@@ -17,10 +17,13 @@ const TUNE_SPEC = [
     ['shotgunDamage', 'Shotgun pellet damage', 4, 40, 1, ''], ['shotgunKnockback', 'Shotgun impact', 2, 16, 0.5, 'm/s'], ['shotgunInterval', 'Shotgun cadence', 0.4, 1.4, 0.05, 's'],
     ['shotgunReload', 'Shotgun reload', 0.8, 3, 0.05, 's'],
     ['axeDamage', 'Axe damage', 20, 150, 1, ''], ['axeKnockback', 'Axe impact', 1, 10, 0.1, 'm/s'], ['axeSpeed', 'Axe speed', 0.6, 1.6, 0.05, '×'],
-    ['axeKnockdown', 'Axe knockdown chance', 0, 1, 0.05, ''], ['hitPause', 'Heavy-hit pause', 0, 0.16, 0.005, 's'], ['shake', 'Camera shake', 0, 2, 0.1, '×'],
+    ['axeKnockdown', 'Axe knockdown chance', 0, 1, 0.05, ''], ['hitPause', 'Gun hit pause', 0, 0.16, 0.005, 's'], ['meleeHitPause', 'Melee hit pause', 0, 0.16, 0.005, 's'], ['shake', 'Camera shake', 0, 2, 0.1, '×'],
   ]],
   ['Enemies', [
-    ['zombieSpeed', 'Approach speed', 0.5, 3.5, 0.05, 'm/s'], ['zombieHp', 'Zombie health', 30, 300, 5, ''], ['zombieDamage', 'Zombie damage', 0, 40, 1, ''],
+    ['zombieSpeed', 'Approach speed', 0.5, 3.5, 0.05, 'm/s'], ['zombieHp', 'Zombie health', 30, 300, 5, ''], ['zombieDamage', 'Lunge damage', 0, 40, 1, ''],
+    ['scratchDamage', 'Scratch damage', 0, 40, 1, ''], ['zombieEngage', 'Zombies attacking at once', 1, 6, 1, ''], ['zombieAttackGap', 'Gap between attacks', 0, 2, 0.05, 's'],
+    ['zombieWindup', 'Lunge wind-up', 0.25, 1.2, 0.02, 's'], ['scratchWindup', 'Scratch wind-up', 0.2, 1, 0.02, 's'],
+    ['sprinterSpeed', 'Sprinter charge speed', 2, 6, 0.1, 'm/s'], ['sprinterTurn', 'Sprinter turn at speed', 0.5, 4, 0.1, 'rad/s'],
   ]],
   ['Camera', [['lookAhead', 'Look-ahead', 0, 3, 0.1, 'm'], ['camPitch', 'Camera angle (down)', 30, 75, 1, '°'],
     ['camYaw', 'Camera turn', -45, 45, 1, '°'], ['camWidth', 'Camera width', 3.5, 9, 0.1, 'm']]],
@@ -91,7 +94,7 @@ export class Hud {
     $('restartDeath').textContent = sim.level ? 'Retry from checkpoint' : 'Restart';
     this.deathT = -1;
     if (sim.director.mode === 'room1') { this.setObjective(''); this.hintT = 0; $('hint').classList.add('gone'); } else this.setObjective('');
-    if (sim.director.mode !== 'room1') this.banner(sim.director.mode === 'calm' ? 'Practice' : sim.director.mode === 'bench' ? `Benchmark: ${sim.director.benchCount}` : 'Survive the ward', sim.director.mode === 'encounter' ? 'Four waves' : '');
+    if (sim.director.mode !== 'room1') this.banner(sim.director.mode === 'calm' ? 'Practice' : sim.director.mode === 'arena' ? 'Weapon test' : sim.director.mode === 'bench' ? `Benchmark: ${sim.director.benchCount}` : 'Survive the ward', sim.director.mode === 'encounter' ? 'Four waves' : sim.director.mode === 'arena' ? 'Pick an attack: ⚔ Attacks' : '');
   }
 
   // the current objective (the opening hands over "Get out of the operating room.")

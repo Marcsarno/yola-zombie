@@ -57,7 +57,8 @@ export function frameQuat(dir, ref, out) {
 
 // Build a ragdoll description from the current (animated) pose of a view's skeleton.
 // missing: Set of part names that are severed (they and their children are left out).
-export function describeRagdoll(bones, height, missing = new Set()) {
+// girth: how much wider than the slim standard zombie this body is (the parts' radii; the torso fully, the limbs partly)
+export function describeRagdoll(bones, height, missing = new Set(), girth = 1) {
   const parts = [], idx = {};
   const skip = new Set();
   for (const p of PARTS) if (missing.has(p[0]) || skip.has(p[6])) skip.add(p[0]);
@@ -75,7 +76,8 @@ export function describeRagdoll(bones, height, missing = new Set()) {
     }
     const q0 = frameQuat(b.clone().sub(a), ref, new THREE.Quaternion());
     idx[name] = parts.length;
-    parts.push({ name, bone, a, b, r: rad * height, mass, parent, q0, ref, boneQ0: bq, hinge: !!HINGES[name] });
+    const gk = name === 'pelvis' || name === 'chest' ? girth : 1 + (girth - 1) * 0.6;
+    parts.push({ name, bone, a, b, r: rad * height * gk, mass: mass * gk * gk, parent, q0, ref, boneQ0: bq, hinge: !!HINGES[name] });
   }
   // joints at the child's 'a' end
   const joints = [];

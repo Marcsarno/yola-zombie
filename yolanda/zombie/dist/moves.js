@@ -33606,6 +33606,19 @@ void main() {
     g.userData.tip = inner.getObjectByName("ImpactPoint");
     return g;
   }
+  function makeKnife() {
+    const g = new Group(), m = (c, r, mt) => new MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
+    const handle = new Mesh(new CylinderGeometry(0.014, 0.016, 0.11, 12), m(2829102, 0.8, 0));
+    handle.rotation.x = Math.PI / 2;
+    g.add(handle);
+    const guard = new Mesh(new BoxGeometry(0.05, 0.012, 8e-3), m(7830656, 0.4, 0.6));
+    guard.position.z = 0.058;
+    g.add(guard);
+    const blade = new Mesh(new BoxGeometry(4e-3, 0.03, 0.15), m(13225682, 0.25, 0.85));
+    blade.position.set(0, -3e-3, 0.137);
+    g.add(blade);
+    return g;
+  }
 
   // src/moves.js
   var $ = (id) => document.getElementById(id);
@@ -33652,19 +33665,6 @@ void main() {
     pistol: { label: "Pistol", builder: "makePistol", hands: "one", grip_primary: [0, -0.03, -0.012], shaft_axis: [0, 0.96, -0.28], ref_axis: [0, 0, 1] },
     shotgun: { label: "Shotgun", file: "assets/weapons/pump_shotgun.glb", prep: "shotgun", hands: "two", grip_primary: [0, 0, 0], shaft_axis: [0, 1, 0], ref_axis: [1, 0, 0] }
   };
-  function makeKnife() {
-    const g = new Group(), m = (c, r, mt) => new MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
-    const handle = new Mesh(new CylinderGeometry(0.014, 0.016, 0.11, 12), m(2829102, 0.8, 0));
-    handle.rotation.x = Math.PI / 2;
-    g.add(handle);
-    const guard = new Mesh(new BoxGeometry(0.05, 0.012, 8e-3), m(7830656, 0.4, 0.6));
-    guard.position.z = 0.058;
-    g.add(guard);
-    const blade = new Mesh(new BoxGeometry(4e-3, 0.03, 0.15), m(13225682, 0.25, 0.85));
-    blade.position.set(0, -3e-3, 0.137);
-    g.add(blade);
-    return g;
-  }
   var gltfLoader = new GLTFLoader();
   var loadG = (f) => new Promise((res, rej) => gltfLoader.load(f, res, void 0, rej));
   var weaponObj = {};

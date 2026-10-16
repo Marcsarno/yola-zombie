@@ -10,11 +10,34 @@ export const ZS = { EMERGE: 'emerge', CHASE: 'chase', WINDUP: 'windup', STRIKE: 
 // Knocked flat by the bat: fall (thrown back, rolls onto the stomach), then get up. The get-up clip
 // starts turned ~155 degrees from where the fall ends, so the facing turns with it.
 export const KNOCKDOWN_FALL = 1.3, KNOCKDOWN_GETUP = 2.0, GETUP_YAW = -2.705;
+// The two attacks. lunge: the long reach (starts from ~1 m, steps in as it strikes). scratch: both arms raked down from
+// above (Quaternius UAL2 Zombie_Scratch), quicker to come but short and wide; a zombie that gets inside ~0.9 m uses it.
+// from: the distance it starts from; range / arc (half-angle, rad): what the strike reaches (also the floor telegraph).
+export const ZATTACKS = {
+  lunge: { from: 1.0, range: 1.12, arc: 0.95, strike: 0.14, recover: 0.55, step: 0.9 },
+  scratch: { from: 0.92, range: 0.98, arc: 1.25, strike: 0.13, recover: 0.62, step: 0.35 },
+  // the big guard's slam (KayKit Melee_1H_Attack_Jump_Chop): a long wind-up (he crouches and leaps), the smash lands a
+  // wide area in front of him and knocks Yola flat; then a slow recovery (the opening to hit him)
+  slam: { from: 2.4, range: 2.1, arc: 1.0, strike: 0.15, recover: 1.0, step: 0, windup: 0.95, leap: 1.4 },
+};
+// Zombie kinds (multipliers on the tuning values; r: body radius in metres).
+//  sprinter (the big lady): once she sees Yola she charges, faster than Yola can run, but she turns slowly at speed, so a
+//    late side-step sends her past and she has to brake and come round; running into a wall, a prop or another zombie at
+//    speed trips her: she stumbles back onto her backside and has to get up. Takes a couple more bullets.
+//  guard (the big guard): slow, hits very hard, takes many more bullets, barely pushed by blows and rarely floored. His
+//    shield (a broken-off hospital-bed panel) is being modelled; the renderer gives him a stand-in.
+export const KINDS = {
+  normal: { hp: 1, speed: 1, dmg: 1, knock: 1, kd: 1, stagger: 1, r: 0.32 },
+  sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
+  guard: { hp: 2.6, speed: 0.6, dmg: 1.8, knock: 0.4, kd: 0.25, stagger: 0.55, r: 0.42 },
+};
+export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9; // the sprinter's trip: down onto her back, then up (no turn)
 
 export class Zombie {
   constructor(x, z, yaw, opts) {
     this.id = nextId++;
-    this.x = x; this.z = z; this.yaw = yaw; this.r = 0.32;
+    this.kind = opts.kind || 'normal'; this.K = KINDS[this.kind] || KINDS.normal;
+    this.x = x; this.z = z; this.yaw = yaw; this.r = this.K.r;
     this.vx = 0; this.vz = 0; // locomotion velocity
     this.kx = 0; this.kz = 0; // knockback velocity (decays, never overwritten by navigation)
     this.hp = opts.hp; this.maxHp = opts.hp;
@@ -35,6 +58,11 @@ export class Zombie {
     this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
     this.severed = new Set(); this.crawling = false; this.lastHitPart = 'torso'; this.toCrawl = false;
     this.hitStyle = ''; this.bumpT = 0;
+    this.attack = 'lunge'; // the attack being wound up / struck
+    this.holdR = 2.0 + ((this.phase * 5.17) % 1) * 0.7; // waiting its turn: how far back it stands
+    this.repoT = 0; this.repoDir = 0; this.repoWait = 1 + ((this.phase * 2.3) % 1) * 1.5; // waiting: short walks along the ring
+    this.sprinting = false; this.spd = 0; this.spotT = 0; this.braking = false; this.chargeHit = false; this.fall = '';
+    this.slamCd = 1.5; // the guard's slam cooldown // the sprinter's charge (sprinterChase); fall: 'tumble' when she trips
   }
   get armsLost() { return (this.severed.has('Forearm_L') ? 1 : 0) + (this.severed.has('Forearm_R') ? 1 : 0); }
 
@@ -69,7 +97,7 @@ export class Zombie {
     }
     this.lastHitPart = main;
     this.hp -= loss;
-    const push = wasDown ? 0.3 : 1; // a body on the floor barely slides
+    const push = (wasDown ? 0.3 : 1) * this.K.knock; // a body on the floor barely slides (a heavy one barely moves)
     this.kx += dirX * impulse * push; this.kz += dirZ * impulse * push;
     this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse; this.hitSeq++; this.hitKind = kind; this.hitStyle = style;
     this.hitFlash = 1;
@@ -83,20 +111,24 @@ export class Zombie {
       return;
     }
     if (wasDown) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
+    // the sprinter caught mid-charge by a melee blow or a shotgun blast: her own speed takes her down (the trip)
+    if (this.sprinting && this.spd > 2.0 && (melee || kind === 'fist' || kind === 'shotgun')) { this.tumble(sim, 'hit'); sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
     // knocked flat: the axe (the chop most of all), or a close shotgun blast that lifts them off their feet
     const T = sim.T;
     const fist = kind === 'fist';
     const kd = fist ? (style === 'kick' ? 0.55 : 0) : melee ? (style === 'combo' ? 0 : style === 'chop' ? Math.max(0.75, T.axeKnockdown) : style === 'heavy' ? Math.min(1, T.axeKnockdown + 0.25) : T.axeKnockdown)
       : kind === 'shotgun' ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
-    if (this.toCrawl || (!this.crawling && kd > 0 && sim.rand() < kd)) { this.knockDown(dirX, dirZ, sim); return; }
+    if (this.toCrawl || (!this.crawling && kd > 0 && sim.rand() < kd * this.K.kd)) { this.knockDown(dirX, dirZ, sim); return; }
+    this.sprinting = false; this.spd = 0; // a hit breaks a charge
     // Any hit interrupts a windup (rewarding a timely shot); heavier hits stagger longer.
-    const dur = fist ? (style === 'kick' ? 0.8 : 0.5) : melee ? 0.95 : kind === 'shotgun' ? Math.min(0.85, 0.3 + impulse * 0.1) : 0.26;
+    const dur = (fist ? (style === 'kick' ? 0.8 : 0.5) : melee ? 0.95 : kind === 'shotgun' ? Math.min(0.85, 0.3 + impulse * 0.1) : 0.26) * this.K.stagger;
     if (this.state !== ZS.STAGGER || dur > this.stateDur - this.t) this.set(ZS.STAGGER, dur);
     this.attackCd = Math.max(this.attackCd, melee || kind === 'shotgun' ? 0.9 : fist ? 0.7 : 0.35);
     sim.emit({ type: 'zombieHit', id: this.id, kind });
   }
 
   knockDown(dirX, dirZ, sim) {
+    this.fall = ''; this.sprinting = false; this.spd = 0;
     this.set(ZS.KNOCKDOWN, KNOCKDOWN_FALL);
     this.solid = false;
     this.yaw = Math.atan2(-dirX, -dirZ); // face the blow, thrown onto the back
@@ -164,6 +196,67 @@ export class Zombie {
     return out;
   }
 
+  // The sprinter's charge. Returns true while it owns her movement (heading and speed set here). She spots Yola (in sight,
+  // 2.4-12 m), stops for a beat (the scream: sprinterSpot), then accelerates to a full sprint along her facing and runs
+  // straight through: reaching Yola at speed is the hit (a hard shove), and she keeps going. At speed she turns slowly
+  // (sprinterTurn), so a late side-step makes her miss and overshoot; past Yola she brakes over a few metres and comes
+  // round slowly (the opening to hit her), then charges again, or, close in, falls back on the normal attacks. Running into
+  // a wall or a prop at speed trips her (update: tumble); another zombie in her path is bowled over.
+  sprinterChase(dt, sim, dx, dz, dist) {
+    const T = sim.T, p = sim.player, top = (T.sprinterSpeed ?? 3.9) * this.speedMul;
+    const sees = !p.dead && dist < 12 && sim.world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
+    if (!this.sprinting) {
+      if (!sees || dist < 2.4 || this.attackCd > 0.3) { this.spotT = 0; return false; }
+      if (this.spotT === 0) sim.emit({ type: 'sprinterSpot', id: this.id });
+      this.spotT += dt;
+      this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
+      if (this.spotT < 0.35) return true; // the beat before the charge
+      this.sprinting = true; this.spd = Math.max(this.spd, 1.0); this.braking = false; this.chargeHit = false;
+    }
+    const off = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
+    if (p.dead || dist > 14 || (!sees && dist > 3)) { this.sprinting = false; this.spotT = 0; this.spd = 0; return false; } // lost her
+    if (!this.braking && off > 1.4 && dist < 3.5) this.braking = true; // ran past her
+    let turn;
+    if (this.braking) {
+      this.spd = Math.max(0, this.spd - 6 * dt); turn = this.spd < 1.2 ? 1.3 : 0.3; // brakes hard, comes round slowly
+      if (this.spd < 1.2 && off < 0.5) {
+        this.braking = false; this.chargeHit = false;
+        if (dist < 2.4) { this.sprinting = false; this.spotT = 0; this.spd = 0; this.attackCd = 0; return false; } // close: the normal attacks
+      }
+    } else {
+      this.spd = Math.min(top, this.spd + (off < 0.6 ? 5.5 : 2) * dt);
+      // committed: inside 1.6 m at speed she no longer steers (a late side-step beats her; an early one does not)
+      turn = dist < 2.0 && this.spd > 2.4 ? 0 : (T.sprinterTurn ?? 0.9) * (1 + Math.max(0, 2.2 - this.spd) * 0.6);
+    }
+    this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), turn * dt);
+    // the charge hit: into Yola at speed (once per pass); she runs on through
+    const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx + dz * fz, lat = dx * fz - dz * fx;
+    if (!this.chargeHit && !this.braking && this.spd > 2.4 && along > -0.1 && along < this.r + p.r + 0.2 && Math.abs(lat) < this.r + p.r - 0.1) {
+      this.chargeHit = true; this.braking = true; // she runs on past and brakes
+      // the shove: Yola thrown aside off her path (and along it), so the charge goes by instead of pinning her
+      const sg = lat >= 0 ? 1 : -1;
+      if (p.hurt(T.zombieDamage * 1.3 * this.K.dmg, this.x, this.z, sim) && !p.dead) p.knockDown(this.x - fz * sg * 0.6, this.z + fx * sg * 0.6, sim); // knocked flat, thrown off her path
+      sim.emit({ type: 'sprinterHit', id: this.id });
+    }
+    if (this.spd > 2.2) { // bowling: another zombie in her path at speed
+      for (const o of sim.zombies) {
+        if (o === this || !o.solid || !o.alive) continue;
+        const rx = o.x - this.x, rz = o.z - this.z, d = Math.hypot(rx, rz);
+        if (d < this.r + o.r + 0.08 && rx * fx + rz * fz > 0.1) { o.bumped(this.spd * 0.75, rx / (d || 1), rz / (d || 1), sim); this.tumble(sim, 'zombie'); break; }
+      }
+    }
+    return this.sprinting;
+  }
+  // tripped at speed: she stumbles back and sits down hard (a zombie in the way: half the time she only staggers)
+  tumble(sim, what) {
+    if (!this.alive || this.down) return;
+    this.sprinting = false; this.spd = 0; this.vx = this.vz = 0; this.spotT = 0;
+    if (what === 'zombie' && sim.rand() < 0.5) { this.set(ZS.STAGGER, 0.6); sim.emit({ type: 'zombieBump', id: this.id, speed: 2 }); return; }
+    this.fall = 'tumble'; this.solid = false;
+    this.set(ZS.KNOCKDOWN, TUMBLE_FALL);
+    sim.emit({ type: 'zombieTumble', id: this.id, what });
+  }
+
   update(dt, sim) {
     const T = sim.T, p = sim.player, world = sim.world;
     this.t += dt;
@@ -197,38 +290,85 @@ export class Zombie {
         const los = dist < 7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
         if (los) { wantX = dx / (dist || 1); wantZ = dz / (dist || 1); }
         else { const rem = world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; if (rem > 1e7) { wantX = wantZ = 0; } } // no way through (a shut door): it stands and waits
+        if (this.kind === 'sprinter' && !this.crawling && !this.passive && this.sprinterChase(dt, sim, dx, dz, dist)) { turnRate = 0; break; }
         speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
         if (speed > 0) { const s = this.steer(wantX, wantZ, dist, los, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
-        if (dist < 1.25) speed *= 0.5; // close in carefully, no jitter at contact
-        if (!this.passive && dist < 1.0 && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 &&
-            world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
-          this.set(ZS.WINDUP, 0.52);
-          sim.emit({ type: 'zombieWindup', id: this.id });
+        // Waiting its turn (spacing): a zombie without an attack slot stops a step back from her (at its own distance),
+        // facing her, and now and then takes a few steps along the ring away from the nearest other zombie, so a group
+        // spreads around her instead of piling in. It closes in when a slot frees (one ahead of it falls or is floored).
+        const waiting = !this.passive && los && sim.engaged && !sim.engaged.has(this.id) && !this.crawling && this.kind !== 'sprinter'; // (a sprinter never waits)
+        if (waiting && dist < this.holdR + 0.5 && speed > 0) {
+          const a = Math.atan2(this.x - p.x, this.z - p.z), rx = Math.sin(a), rz = Math.cos(a); // rx, rz: away from her
+          if (this.repoT > 0) {
+            this.repoT -= dt;
+            const e = Math.max(-1, Math.min(1, dist - this.holdR)); // keep to its ring while it walks
+            wantX = Math.cos(a) * this.repoDir - rx * e * 0.6; wantZ = -Math.sin(a) * this.repoDir - rz * e * 0.6;
+            speed = T.zombieSpeed * this.speedMul * 0.5;
+          } else {
+            wantX = dx / (dist || 1); wantZ = dz / (dist || 1);
+            speed *= Math.max(0, Math.min(1, (dist - this.holdR) / 0.5)); // eases to a stop at its spot
+            if ((this.repoWait -= dt) <= 0) {
+              let near = null, nd = 9;
+              for (const o of sim.zombies) {
+                if (o === this || !o.alive || !o.solid) continue;
+                const d = Math.hypot(o.x - this.x, o.z - this.z); if (d < nd) { nd = d; near = o; }
+              }
+              this.repoDir = near && nd < 2.2 ? (angleDiff(a, Math.atan2(near.x - p.x, near.z - p.z)) > 0 ? -1 : 1) : (sim.rand() < 0.5 ? -1 : 1);
+              this.repoT = 0.5 + sim.rand() * 0.6; this.repoWait = 1.4 + sim.rand() * 2.2;
+            }
+          }
+        } else {
+          this.repoT = 0;
+          if (dist < 1.25) speed *= 0.5; // close in carefully, no jitter at contact
+          if (dist < 0.8) speed = 0; // in reach: it stands and waits for its turn rather than pushing into her
+        }
+        // Attack (pacing): only a zombie with a slot, in reach, facing her, and only once the floor's attack turn comes
+        // round (each attack started holds the next one off by zombieAttackGap). Inside ~0.9 m it scratches.
+        const slot = !sim.engaged || sim.engaged.has(this.id) || this.crawling || this.kind === 'sprinter';
+        if (this.kind === 'guard' && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist > 1.3 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
+            sim.time >= (sim.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          this.attack = 'slam'; this.set(ZS.WINDUP, ZATTACKS.slam.windup); this.slamCd = 4 + sim.rand() * 2.5;
+          sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * 1.5;
+          sim.emit({ type: 'zombieWindup', id: this.id, attack: 'slam' });
+          break;
+        }
+        if (!this.passive && slot && sim.time >= (sim.nextAttackT || 0) && dist < ZATTACKS.lunge.from && this.attackCd <= 0 &&
+            Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          const armed = this.armsLost < 2 && !this.crawling; // no arms (a bite) or crawling: the plain lunge
+          this.attack = armed && (dist < 0.85 || (dist < ZATTACKS.scratch.from && sim.rand() < 0.25)) ? 'scratch' : 'lunge';
+          this.set(ZS.WINDUP, this.attack === 'scratch' ? T.scratchWindup ?? 0.42 : T.zombieWindup ?? 0.62);
+          sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * (0.8 + sim.rand() * 0.5);
+          sim.emit({ type: 'zombieWindup', id: this.id, attack: this.attack });
         }
         break;
       }
       case ZS.WINDUP:
-        turnRate = 2.5; wantX = dx; wantZ = dz; // keep tracking slowly: stepping aside works
-        if (this.t >= this.stateDur) { this.set(ZS.STRIKE, 0.14); this.struck = false; }
+        turnRate = this.attack === 'slam' ? (this.t < 0.45 ? 1.6 : 0) : 2.5; wantX = dx; wantZ = dz; // keep tracking slowly: stepping aside works (the slam commits once he leaps)
+        if (this.attack === 'slam' && this.t > this.stateDur * 0.45) { const L = ZATTACKS.slam.leap / (this.stateDur * 0.55); this.vx = Math.sin(this.yaw) * L; this.vz = Math.cos(this.yaw) * L; } // the leap forward
+        if (this.t >= this.stateDur) { this.set(ZS.STRIKE, ZATTACKS[this.attack].strike); this.struck = false; }
         break;
-      case ZS.STRIKE:
+      case ZS.STRIKE: {
         turnRate = 0;
+        const Z = ZATTACKS[this.attack];
         if (!this.struck) {
           this.struck = true;
           const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
           const along = dx * fx + dz * fz;
           const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
-          const hit = !p.dead && dist < 1.12 && along > 0 && ang < 0.95 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
+          const hit = !p.dead && dist < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
           // losing arms leaves a weaker claw (both gone: a bite); crawlers hit low and weaker
-          if (hit) p.hurt(T.zombieDamage * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim);
-          sim.emit({ type: hit ? 'zombieStrikeHit' : 'zombieStrikeMiss', id: this.id });
+          const dmg = (this.attack === 'scratch' ? T.scratchDamage ?? 8 : this.attack === 'slam' ? T.zombieDamage * 1.3 : T.zombieDamage) * this.K.dmg;
+          if (hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim) && this.attack === 'slam' && !p.dead) p.knockDown(this.x, this.z, sim);
+          if (this.attack === 'slam') sim.emit({ type: 'zombieSlam', id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1 });
+          sim.emit({ type: hit ? 'zombieStrikeHit' : 'zombieStrikeMiss', id: this.id, attack: this.attack });
         }
-        this.vx = Math.sin(this.yaw) * 0.9; this.vz = Math.cos(this.yaw) * 0.9; // lunge
-        if (this.t >= this.stateDur) this.set(ZS.RECOVER, 0.55);
+        this.vx = Math.sin(this.yaw) * Z.step; this.vz = Math.cos(this.yaw) * Z.step; // steps into it
+        if (this.t >= this.stateDur) this.set(ZS.RECOVER, Z.recover);
         break;
+      }
       case ZS.RECOVER:
         turnRate = 2;
-        if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.attackCd = 0.35; }
+        if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.attackCd = 0.6 + sim.rand() * 0.6; }
         break;
       case ZS.STAGGER:
         turnRate = 0;
@@ -236,6 +376,7 @@ export class Zombie {
         break;
       case ZS.KNOCKDOWN:
         turnRate = 0;
+        if (this.t >= this.stateDur && this.fall === 'tumble') { this.set(ZS.GETUP, TUMBLE_GETUP); break; } // (on her back: up the way she faces)
         if (this.t >= this.stateDur) {
           this.yaw += GETUP_YAW; // lying on the stomach: turn with the pose
           if (this.toCrawl) { this.toCrawl = false; this.set(ZS.CHASE); this.solid = true; this.attackCd = Math.max(this.attackCd, 0.6); }
@@ -246,7 +387,7 @@ export class Zombie {
         turnRate = 0;
         if (this.toCrawl) { this.toCrawl = false; this.set(ZS.CHASE); this.solid = true; break; } // lost a leg while getting up
         if (this.t >= this.stateDur * 0.6) this.solid = true; // up on its feet again
-        if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.attackCd = Math.max(this.attackCd, 0.5); }
+        if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.fall = ''; this.attackCd = Math.max(this.attackCd, 0.5); }
         break;
       case ZS.DYING:
         turnRate = 0;
@@ -261,14 +402,17 @@ export class Zombie {
     if (turnRate > 0 && (wantX || wantZ)) this.yaw = approachAngle(this.yaw, Math.atan2(wantX, wantZ), turnRate * dt);
 
     // locomotion velocity (only in states that walk)
-    if (this.state === ZS.CHASE) {
+    if (this.state === ZS.CHASE && (this.sprinting || this.spotT > 0)) { // the charge: along her facing at her own speed
+      const k = Math.min(1, dt * 10), sp = this.sprinting ? this.spd : 0, tx = Math.sin(this.yaw) * sp, tz = Math.cos(this.yaw) * sp;
+      this.vx += (tx - this.vx) * k; this.vz += (tz - this.vz) * k;
+    } else if (this.state === ZS.CHASE) {
       // walk mostly where we face: turning zombies slow down instead of sliding sideways
       const face = Math.max(0, Math.cos(angleDiff(this.yaw, Math.atan2(wantX, wantZ))));
       const s = speed * (0.35 + 0.65 * face);
       const tx = Math.sin(this.yaw) * s, tz = Math.cos(this.yaw) * s;
       const k = Math.min(1, dt * 6);
       this.vx += (tx - this.vx) * k; this.vz += (tz - this.vz) * k;
-    } else if (this.state !== ZS.STRIKE && this.state !== ZS.EMERGE) {
+    } else if (this.state !== ZS.STRIKE && this.state !== ZS.EMERGE && !(this.state === ZS.WINDUP && this.attack === 'slam')) {
       const k = Math.min(1, dt * 10);
       this.vx -= this.vx * k; this.vz -= this.vz * k;
     }
@@ -279,7 +423,12 @@ export class Zombie {
     this.kx *= fr; this.kz *= fr;
     if (this.state !== ZS.DEAD) {
       const bx = this.x, bz = this.z;
-      if (world.resolveCircle(this, this.r) && (this.kx || this.kz)) {
+      const hitWall = world.resolveCircle(this, this.r);
+      if (hitWall && this.sprinting && this.spd > 2.2) { // ran into a wall or a prop at speed: she trips
+        const nx = this.x - bx, nz = this.z - bz, nl = Math.hypot(nx, nz);
+        if (nl > 1e-5 && (this.vx * nx + this.vz * nz) / (nl * this.spd) < -0.45) this.tumble(sim, 'wall');
+      }
+      if (hitWall && (this.kx || this.kz)) {
         // knocked into furniture: lose the velocity component into the obstacle
         const nx = this.x - bx, nz = this.z - bz, nl = Math.hypot(nx, nz);
         if (nl > 1e-5) { const ux = nx / nl, uz = nz / nl, into = this.kx * ux + this.kz * uz; if (into < 0) { this.kx -= into * ux; this.kz -= into * uz; } }

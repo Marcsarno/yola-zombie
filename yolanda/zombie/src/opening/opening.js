@@ -345,7 +345,7 @@ export class Opening {
   seated(a) { return () => a.settled; }
   upright(a) { return () => a.upright; }
 
-  setBlood(v) { for (const m of this.blood || []) m.visible = v; }
+  setBlood(v) { for (const m of this.blood || []) m.visible = v; this.arena.setOutbreak?.(v); } // (with the blood: the floor's worn outbreak surfaces, render/arena.js)
   // ---- the operating room (the real combat wing) as a story set ----
   setSun(x, z) { const A = this.arena; if (!A.sun) return; A.sun.target.position.set(x, 0, z); A.sun.position.set(x - 6, 14, z + 7); A.sun.target.updateMatrixWorld(true); this.renderer.shadowMap.needsUpdate = true; }
   // the patient-belongings spot in the Supply Hall: the stowed bat and the cap, together (it stays for gameplay)

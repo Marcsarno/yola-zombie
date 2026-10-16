@@ -63,15 +63,17 @@ export class FX {
       const m = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.26, 28), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
       m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); this.rings.push({ m, t: 1 });
     }
-    // bat trail ribbon
-    this.trailN = 14;
+    // swing arc: a ribbon over the outer part of the weapon, along its last ~0.14 s, bright at the weapon and fading to
+    // nothing at its tail (vertex alpha), added on top of the scene; how strong it is follows how fast the weapon moves
+    this.trailN = 18;
     this.trailGeo = new THREE.BufferGeometry();
     this.trailPos = new Float32Array(this.trailN * 2 * 3);
-    this.trailAlpha = new Float32Array(this.trailN * 2);
+    this.trailCol = new Float32Array(this.trailN * 2 * 4);
     this.trailGeo.setAttribute('position', new THREE.BufferAttribute(this.trailPos, 3));
+    this.trailGeo.setAttribute('color', new THREE.BufferAttribute(this.trailCol, 4));
     const idx = []; for (let i = 0; i < this.trailN - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     this.trailGeo.setIndex(idx);
-    this.trail = new THREE.Mesh(this.trailGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false }));
+    this.trail = new THREE.Mesh(this.trailGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
     this.trail.frustumCulled = false; this.trail.visible = false; scene.add(this.trail);
     this.trailPts = [];
     // aim marker: restrained chevron + arc on the floor
@@ -94,6 +96,17 @@ export class FX {
       this.pools.push({ m, t: 99, size: 1 });
     }
     this.poolNext = 0;
+    // hit flashes: a quick bright star where a blow lands (pooled sprites)
+    const star = starTexture();
+    this.hits = [];
+    for (let i = 0; i < 6; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: star, color: 0xffffff, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })); s.visible = false; s.renderOrder = 5; scene.add(s); this.hits.push({ s, t: 1, k: 1 }); }
+  }
+  // a blow lands: the flash, a puff of dust and bits thrown along the blow (k: 1 normal, more for kills and heavy hits)
+  hitFlash(x, y, z, dirX, dirZ, k = 1) {
+    const h = this.hits.find((q) => q.t >= 1) || this.hits[0];
+    h.s.position.set(x, y, z); h.t = 0; h.k = k; h.s.visible = true; h.s.material.rotation = Math.random() * Math.PI;
+    this.burst(x, y, z, Math.round(5 * k), 0xfff3d6, 2.6 * k, 0.5, 0.16, dirX, dirZ); // bright sparks, short
+    this.burst(x, y - 0.1, z, Math.round(4 * k), 0xcfc8b8, 1.2, 0.3, 0.5, dirX * 0.5, dirZ * 0.5); // dust
   }
 
   // Blood: dark particles thrown along (dx, dy, dz) and a pool spreading on the floor.
@@ -156,7 +169,8 @@ export class FX {
   }
 
   trailPush(hands, tip, active) {
-    this.trailPts.unshift({ a: hands.clone(), b: tip.clone(), t: 0, active });
+    const prev = this.trailPts[0], sp = prev ? tip.distanceTo(prev.b) / Math.max(1e-3, 1 / 60) : 0; // tip speed (m/s, per frame)
+    this.trailPts.unshift({ a: hands.clone(), b: tip.clone(), t: 0, active, k: Math.min(1, Math.max(0, (sp - 2) / 6)) });
     if (this.trailPts.length > this.trailN) this.trailPts.length = this.trailN;
   }
   trailClear() { this.trailPts.length = 0; this.trail.visible = false; }
@@ -195,9 +209,10 @@ export class FX {
       if (q.t > 31) { q.m.visible = false; q.t = 99; }
     }
     this.pGeo.attributes.position.needsUpdate = true; this.pGeo.attributes.color.needsUpdate = true;
-    // bat trail
+    for (const h of this.hits) if (h.t < 1) { h.t += dt / 0.11; const u = Math.min(1, h.t); h.s.scale.setScalar((0.35 + 0.55 * u) * h.k); h.s.material.opacity = (1 - u) * 0.95; if (h.t >= 1) h.s.visible = false; }
+    // swing arc
     for (const q of this.trailPts) q.t += dt;
-    while (this.trailPts.length && this.trailPts[this.trailPts.length - 1].t > 0.12) this.trailPts.pop();
+    while (this.trailPts.length && this.trailPts[this.trailPts.length - 1].t > 0.14) this.trailPts.pop();
     const n = this.trailPts.length;
     this.trail.visible = n > 1;
     if (n > 1) {
@@ -206,8 +221,10 @@ export class FX {
         // ribbon covers the outer half of the bat only
         const ax = q.a.x + (q.b.x - q.a.x) * 0.45, ay = q.a.y + (q.b.y - q.a.y) * 0.45, az = q.a.z + (q.b.z - q.a.z) * 0.45;
         this.trailPos.set([ax, ay, az, q.b.x, q.b.y, q.b.z], i * 6);
+        const fade = i >= n ? 0 : (1 - i / (n - 1)) * (1 - q.t / 0.14) * (q.k ?? 1), a = 0.28 * fade; // (k: the weapon's speed)
+        this.trailCol.set([0.9, 0.95, 1, a * 0.3, 0.95, 0.98, 1, a], i * 8); // fainter toward the hands
       }
-      this.trailGeo.attributes.position.needsUpdate = true;
+      this.trailGeo.attributes.position.needsUpdate = true; this.trailGeo.attributes.color.needsUpdate = true;
       this.trailGeo.computeBoundingSphere();
     }
   }

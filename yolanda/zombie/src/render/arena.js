@@ -46,6 +46,51 @@ const PAL = {
   glass: 0xbfe0e2, frame: 0x8fb7bb, door: 0x2c3a42, amber: 0xffb347,
 };
 const LOW_H = 1.0; // a cut-away wall's height (m)
+// ---- the Hospital Outbreak surface kit (Floor 3 after the reveal; see Arena.loadOutbreak) ----
+const OB_TILE = 0.75; // one floor tile (m): the kit's floor images hold 4 x 4 tiles
+// room -> [floor, wall] (the kit's START_HERE recipes): treatment rooms clinical, circulation the warmer corridor tiles,
+// the service area concrete and petrol-blue paint, staff / storage rooms corridor tiles with the maintenance wall
+const OB_ROOMS = {
+  or: ['clinical', 'clinical'], ct: ['clinical', 'clinical'], waiting: ['corridor', 'clinical'], preop: ['corridor', 'clinical'],
+  recovery: ['corridor', 'clinical'], supply: ['corridor', 'maintenance'], cafe: ['corridor', 'maintenance'], maint: ['maintenance', 'maintenance'],
+};
+// blood (floor: centre, width, length, turn in degrees; wall: point on the face, face, height of the mark's centre, size)
+const OB_BLOOD = [
+  // operating room: a handprint by each door at hand height, a drag from the stretcher toward the shut north door, cut short
+  { kind: 'hand', x: -7.0, z: -3.15, wall: 'e', y: 1.2, size: 0.34, tilt: -6 },
+  { kind: 'hand', x: 6.75, z: -11.0, wall: 's', y: 1.12, size: 0.32, tilt: 8 },
+  { kind: 'drag', x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
+  { kind: 'drag', x: 3.75, z: -7.55, w: 0.6, l: 1.1, rot: 30 },
+  { kind: 'splat', x: 5.7, z: -10.25, w: 1.05, l: 1.05, rot: 15 },
+  // supply hall (storage): one smear at the exit to the waiting area
+  { kind: 'drag', x: -12.05, z: -3.75, w: 0.6, l: 1.0, rot: -60 },
+  // waiting area (circulation): small marks in a corner, one handprint, the travel lane clear
+  { kind: 'splat', x: -24.9, z: -6.45, w: 0.65, l: 0.65, rot: 40 },
+  { kind: 'hand', x: -24.3, z: -7.05, wall: 's', y: 1.0, size: 0.3, tilt: -4 },
+  // pre-op: a smear beside the first bed
+  { kind: 'drag', x: -34.75, z: -8.0, w: 0.55, l: 1.0, rot: 75 },
+  // maintenance: one concentrated splatter where the encounter is
+  { kind: 'splat', x: -31.4, z: -15.4, w: 1.35, l: 1.35, rot: -20 },
+  { kind: 'drag', x: -29.2, z: -20.3, w: 0.7, l: 1.4, rot: 110 },
+  // cafeteria (staff): light, a single smear at the braced exit
+  { kind: 'drag', x: -24.65, z: -14.0, w: 0.6, l: 1.0, rot: -100 },
+  // CT: a handprint on the barred door's CT side, a little spatter by the scanner
+  { kind: 'hand', x: -2.55, z: -11.3, wall: 'n', y: 1.22, size: 0.33, tilt: 5 },
+  { kind: 'splat', x: -7.6, z: -13.2, w: 0.7, l: 0.7, rot: 70 },
+  // recovery: a smear beside the bed by the east door
+  { kind: 'drag', x: -17.7, z: 6.1, w: 0.55, l: 0.95, rot: 10 },
+];
+// the combat wing (the weapon test arena): its operating room and its hall, a few marks clear of the dummies
+const OB_WING_ROOMS = [{ id: 'or', floor: true, rects: [[-7.3, 7.3, -11.3, -5.05]] }, { id: 'waiting', floor: true, rects: [[-7.3, 7.3, -5.05, 11.3]] }];
+const OB_BLOOD_WING = [
+  { kind: 'hand', x: 5.6, z: -11.0, wall: 's', y: 1.15, size: 0.32, tilt: 6 },
+  { kind: 'drag', x: -2.2, z: -6.6, w: 0.9, l: 1.8, rot: -25 },
+  { kind: 'splat', x: 5.2, z: -9.6, w: 1.0, l: 1.0, rot: 20 },
+  { kind: 'drag', x: -5.6, z: 3.2, w: 0.6, l: 1.0, rot: 70 },
+  { kind: 'splat', x: 5.3, z: 2.4, w: 0.7, l: 0.7, rot: -40 },
+  { kind: 'hand', x: -7.0, z: 0.4, wall: 'e', y: 1.05, size: 0.3, tilt: -5 },
+];
+const OB_FLAT = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), OB_UPRIGHT = new THREE.PlaneGeometry(1, 1);
 const FACE_ROT = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 };
 
 function floorTexture(a = PAL.floorA, b = PAL.floorB, grout = PAL.grout) {
@@ -94,6 +139,7 @@ export class Arena {
     this.buildWalls();
     this.buildDoors();
     this.buildLights(renderer);
+    if (this.f3) this.loadOutbreak();
   }
 
   buildFloor() {
@@ -104,6 +150,7 @@ export class Arena {
           const w = x1 - x0, d = z1 - z0, tex = floorTexture(r.floor[0], r.floor[1]); tex.repeat.set(w / 1.2, d / 1.2); tex.offset.set(x0 / 1.2, z0 / 1.2);
           const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0 }));
           m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); m.receiveShadow = true; this.group.add(m);
+          (this.cuteFloors ||= []).push(m);
         }
       }
       // door thresholds: the floor carries through every doorway (the wall gap sits between two rooms' floors)
@@ -122,10 +169,10 @@ export class Arena {
     const tex = floorTexture(); tex.repeat.set(w / 1.2, d / 1.2);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0 }));
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
-    this.group.add(floor);
+    this.group.add(floor); this.cuteFloors = [floor];
     // teal border inlay (like the concept's floor bands)
     const bandMat = new THREE.MeshStandardMaterial({ color: 0x9fc7c0, roughness: 0.6 });
-    const band = (x0, x1, z0, z1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), bandMat); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0.004, (z0 + z1) / 2); m.receiveShadow = true; this.group.add(m); };
+    const band = (x0, x1, z0, z1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), bandMat); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0.004, (z0 + z1) / 2); m.receiveShadow = true; this.group.add(m); this.cuteFloors.push(m); };
     band(-6.6, 6.6, -4.6, -4.35); band(-6.6, 6.6, 3.9, 4.15);
     const out = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshBasicMaterial({ color: 0x27323a }));
     out.rotation.x = -Math.PI / 2; out.position.y = -0.02; this.group.add(out);
@@ -181,7 +228,7 @@ export class Arena {
   buildWalls() {
     for (const [x0, x1, z0, z1, h, style] of LAYOUT.walls) {
       const g = this.addWall(x0, x1, z0, z1, h, style);
-      if (this.f3) this.walls.push({ group: g, box: { minX: x0, maxX: x1, minZ: z0, maxZ: z1 }, h, k: 1, target: 1, attach: [] });
+      this.walls.push({ group: g, box: { minX: x0, maxX: x1, minZ: z0, maxZ: z1 }, h, y0: 0, k: 1, target: 1, attach: [], style }); // (the wing's are only used by the outbreak surfaces)
     }
     if (!this.f3) return;
     // lintels over the open doorways (signs and the cut-away read like real walls)
@@ -189,7 +236,7 @@ export class Arena {
       if (d.kind !== 'open') continue;
       const [a, b, c, e] = doorBox(d);
       const g = this.addWall(a, b, c, e, 2.7, 'full', 2.48);
-      this.walls.push({ group: g, box: { minX: a, maxX: b, minZ: c, maxZ: e }, h: 2.7, k: 1, target: 1, attach: [], lintel: true });
+      this.walls.push({ group: g, box: { minX: a, maxX: b, minZ: c, maxZ: e }, h: 2.7, y0: 2.48, k: 1, target: 1, attach: [], lintel: true });
     }
   }
 
@@ -454,6 +501,102 @@ export class Arena {
     for (const s of SIGNS) add(new THREE.MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024);
     const tl = new THREE.TextureLoader();
     for (const s of ROOM_SIGNS) { const t = tl.load(`assets/opening/signs/${s.id}.png`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; add(new THREE.MeshBasicMaterial({ map: t }), s.x, s.y, s.z, s.face, s.w, 0.3); }
+  }
+
+  // ---- Floor 3 after the reveal: the Hospital Outbreak surface kit (v1) ----
+  // The opening's clean, cute hospital keeps its own floors and walls; from the reveal on (setOutbreak, called with the
+  // opening's blood) every room switches to the kit's worn surfaces by the kit's room recipes, and the blood decals are
+  // placed by hand where the story happened. Colour maps only (no normal / roughness maps); one shared texture per role,
+  // dimensions carried by world-scaled UVs (floors: one repeat = 4 tiles = OB_TILE * 4 m; walls: one square repeat per
+  // wall height, horizontal only, the blue band at the same height everywhere).
+  loadOutbreak() {
+    const tl = new THREE.TextureLoader(), A = 'assets/hospital_outbreak/';
+    const tex = (n, wall) => { const t = tl.load(A + n); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping; t.wrapT = wall ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping; return t; };
+    const std = (map, rough) => new THREE.MeshStandardMaterial({ map, roughness: rough, metalness: 0 });
+    const decal = (map) => new THREE.MeshStandardMaterial({ map, roughness: 0.45, metalness: 0, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    this.ob = {
+      on: false, built: false,
+      floor: { clinical: std(tex('floor_clinical.jpg'), 0.62), corridor: std(tex('floor_corridor.jpg'), 0.66), maintenance: std(tex('floor_maintenance.jpg'), 0.8) },
+      wall: { clinical: std(tex('wall_clinical.jpg', true), 0.86), maintenance: std(tex('wall_maintenance.jpg', true), 0.88) },
+      cap: new THREE.MeshStandardMaterial({ color: 0xcfc8b8, roughness: 0.85 }),
+      blood: { hand: decal(tl.load(A + 'blood_handprint.webp')), drag: decal(tl.load(A + 'blood_drag.webp')), splat: decal(tl.load(A + 'blood_splatter.webp')) },
+      meshes: [],
+    };
+    for (const m of Object.values(this.ob.blood)) m.map.colorSpace = THREE.SRGBColorSpace;
+    this.buildOutbreak();
+  }
+  roomAt(x, z) { for (const r of this.obRooms) for (const [x0, x1, z0, z1] of r.rects) if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r.id; return null; }
+  buildOutbreak() {
+    const O = this.ob, S = OB_TILE * 4, H = 2.7;
+    this.obRooms = LAYOUT.rooms || OB_WING_ROOMS; // (the combat wing has no rooms: its operating room and its hall)
+    // floors: the room's recipe, UVs from world position (one continuous grid across rooms)
+    for (const r of this.obRooms) {
+      if (!r.floor) continue;
+      const mat = O.floor[OB_ROOMS[r.id]?.[0] || 'clinical'];
+      for (const [x0, x1, z0, z1] of r.rects) {
+        const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0); g.rotateX(-Math.PI / 2); g.translate((x0 + x1) / 2, 0.001, (z0 + z1) / 2);
+        const p = g.attributes.position, uv = g.attributes.uv;
+        for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / S, -p.getZ(i) / S);
+        const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.visible = false; this.group.add(m); O.meshes.push(m);
+      }
+    }
+    // walls: each face, in pieces of at most a metre, takes the wall recipe of the room it faces (a wall between two
+    // rooms is painted for each); the top is a plain cap. Built inside the wall's own group, so it cuts away with it.
+    const mats = [O.wall.clinical, O.wall.maintenance, O.cap], key = { clinical: 0, maintenance: 1 };
+    for (const w of this.walls) {
+      if (w.frame || w.style === 'glass') continue;
+      const { minX: x0, maxX: x1, minZ: z0, maxZ: z1 } = w.box, y0 = w.y0 || 0, h = w.h;
+      const buf = [[], [], []]; // per material: [pos, normal, uv] triangles
+      const quad = (mi, BL, BR, TR, TL, n, u0, u1) => {
+        const P = [BL, BR, TR, BL, TR, TL], U = [[u0, BL[1] / H], [u1, BR[1] / H], [u1, TR[1] / H], [u0, BL[1] / H], [u1, TR[1] / H], [u0, TL[1] / H]];
+        for (let k = 0; k < 6; k++) buf[mi].push(P[k], n, U[k]);
+      };
+      // faces: outward normal, the along-face axis seen from outside (right), its extent
+      const faces = [
+        { n: [0, 0, 1], at: z1, r: [1, 0], a0: x0, a1: x1 }, { n: [0, 0, -1], at: z0, r: [-1, 0], a0: x0, a1: x1 },
+        { n: [1, 0, 0], at: x1, r: [0, -1], a0: z0, a1: z1 }, { n: [-1, 0, 0], at: x0, r: [0, 1], a0: z0, a1: z1 },
+      ];
+      for (const F of faces) {
+        const len = F.a1 - F.a0, nSeg = Math.max(1, Math.ceil(len / 1.0)), alongX = F.n[0] === 0;
+        for (let s = 0; s < nSeg; s++) {
+          let a = F.a0 + (len * s) / nSeg, b = F.a0 + (len * (s + 1)) / nSeg, c = (a + b) / 2;
+          const sx = alongX ? c : F.at + F.n[0] * 0.25, sz = alongX ? F.at + F.n[2] * 0.25 : c;
+          const room = this.roomAt(sx, sz);
+          const mi = key[OB_ROOMS[room]?.[1] || 'clinical'];
+          const pt = (t, y) => (alongX ? [t, y, F.at] : [F.at, y, t]);
+          const rs = alongX ? F.r[0] : F.r[1]; // +1: right runs with the axis
+          if (rs < 0) [a, b] = [b, a];
+          quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F.n, (a * rs) / H, (b * rs) / H);
+        }
+      }
+      buf[2].push([x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z1], [0, 1, 0], [1, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z0], [0, 1, 0], [0, 1]);
+      const pos = [], nor = [], uvs = [], g = new THREE.BufferGeometry(); let start = 0;
+      buf.forEach((b, mi) => { for (let k = 0; k < b.length; k += 3) { pos.push(...b[k]); nor.push(...b[k + 1]); uvs.push(...b[k + 2]); } const cnt = b.length / 3; if (cnt) g.addGroup(start, cnt, mi); start += cnt; });
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      const m = new THREE.Mesh(g, mats); m.receiveShadow = true; m.visible = false; w.group.add(m); w.cute = w.group.children.filter((c) => c !== m); w.ob = m;
+    }
+    // blood: deliberate, sparse placements (the kit's recipes); the main fighting lanes stay clear
+    const D = new THREE.Group(); D.visible = false; this.group.add(D); O.decals = D;
+    const flat = (kind, x, z, w, l, rot) => { const m = new THREE.Mesh(OB_FLAT, O.blood[kind]); m.position.set(x, 0.008, z); m.scale.set(w, 1, l); m.rotation.y = (rot * Math.PI) / 180; m.renderOrder = 1; D.add(m); };
+    const onWall = (kind, x, z, face, y, size, tilt = 0) => { // (x, z) on the wall face; drips stay downward
+      const m = new THREE.Mesh(OB_UPRIGHT, O.blood[kind]); m.scale.setScalar(size); m.rotation.set(0, FACE_ROT[face], (tilt * Math.PI) / 180);
+      const o = { s: [0, 0.012], n: [0, -0.012], e: [0.012, 0], w: [-0.012, 0] }[face]; m.position.set(x + o[0], y, z + o[1]); m.renderOrder = 1; D.add(m);
+      this.attachToWall(m, x, z, face, y + size / 2);
+    };
+    for (const d of this.f3 ? OB_BLOOD : OB_BLOOD_WING) d.wall ? onWall(d.kind, d.x, d.z, d.wall, d.y, d.size, d.tilt) : flat(d.kind, d.x, d.z, d.w, d.l, d.rot);
+    O.built = true;
+    if (O.on) this.setOutbreak(true);
+  }
+  // the reveal: the worn surfaces and the blood on (the opening calls this with its own blood; false restores the clean look)
+  setOutbreak(on) {
+    if (!this.ob && on) this.loadOutbreak(); // (built on first use outside Floor 3: the weapon test arena)
+    const O = this.ob; if (!O) return;
+    O.on = on; if (!O.built) return;
+    for (const m of this.cuteFloors || []) m.visible = !on;
+    for (const m of O.meshes) m.visible = on;
+    for (const w of this.walls) if (w.ob) { w.ob.visible = on; for (const c of w.cute) c.visible = !on; }
+    O.decals.visible = on;
+    this.renderer.shadowMap.needsUpdate = true;
   }
 
   // wall-mounted things belong to the wall they hang on: they hide while that wall is cut away below them

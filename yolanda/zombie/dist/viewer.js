@@ -37938,7 +37938,11 @@ void main() {
   var CHARS = {
     yola: { label: "Yola", file: "assets/yola.glb", height: 1.62, ref: "yola_" },
     nurse: { label: "Zombie nurse", file: "assets/zombie-nurse-mod.glb", height: 1.78, ref: "zombie_" },
-    patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" }
+    patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" },
+    // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
+    // hands) and the big guard (his shield is still being modelled)
+    sprinter: { label: "Zombie sprinter (big lady)", file: "assets/zombie-sprinter.glb", height: 2, ref: "zombie_" },
+    guard: { label: "Zombie big guard", file: "assets/zombie-guard.glb", height: 2.05, ref: "zombie_" }
   };
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat" };

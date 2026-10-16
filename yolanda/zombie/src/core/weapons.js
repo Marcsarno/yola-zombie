@@ -117,7 +117,29 @@ export function retimeBat(changes) { // [{i, windRate?, recover?, enterBlend?}]
   for (const c of changes) Object.assign(BAT_ATTACKS[c.i], c);
   timeBat(); if (_pathArgs) setMeleePaths(..._pathArgs);
 }
-export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : AXE_ATTACKS);
+// ---- the weapon test arena (combat.html?mode=arena): any library attack on any weapon, one at a time ----
+// TEST_ATTACKS holds the attack picked in the arena (src/arena/testarena.js builds it: the clip, its sampled weapon path
+// PATH, its damaging windows from the weapon's speed, its forward travel ROOT and the weapon's damage profile).
+export const TEST = 'test';
+export const TEST_ATTACKS = [];
+// The downward strike at a zombie on the floor (knocked down, tripped or crawling): Yola's own overhead chop (t_chop, the
+// axe's second attack) for every melee weapon, with that weapon's profile (blunt weapons crush, blades cut). Started
+// instead of the combo's first attack when the nearest thing in front of her is down (Sim.groundTarget).
+const GROUND = {};
+export function groundAttack(w) {
+  if (w !== AXE && w !== BAT && w !== TEST) return null;
+  const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : null;
+  if (!base.PATH || (w === TEST && !T0)) return null;
+  const key = w + (T0 ? '|' + T0.clip + T0.kind : '');
+  if (GROUND[key]) return GROUND[key];
+  const g = { ...base, name: 'ground', sock: 'chop', chainFrom: 9, blendIn: 0.12, enterBlend: 0.14, assist: 2.0, ground: true };
+  if (w === BAT) Object.assign(g, { kind: 'bat', sever: {}, dmg: 1.4, knock: 0.6 });
+  if (T0) Object.assign(g, { kind: T0.kind, sever: T0.kind === 'axe' ? { head: 0.5, arm: 0.3, leg: 0.2 } : {}, dmg: Math.max(1.2, T0.dmg * 1.5), knock: 0.6, sound: T0.sound,
+    geom: T0.geom && T0.kind !== 'fist' ? { length: Math.max(0.45, T0.geom.length), hitFrom: 0.3, radius: Math.max(0.1, T0.geom.radius) } : base.geom });
+  return (GROUND[key] = g);
+}
+export const resetGroundAttacks = () => { for (const k in GROUND) delete GROUND[k]; };
+export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : w === TEST ? TEST_ATTACKS : AXE_ATTACKS);
 export const AXE_GEOM = {
   length: 0.74, // hands (midpoint of the grip) to the blade, metres
   hitFrom: 0.3, // only the outer part of the axe lands a blow

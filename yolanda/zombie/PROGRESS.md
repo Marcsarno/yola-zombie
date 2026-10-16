@@ -279,3 +279,96 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     - Saved to shots/move_selection.json (git-ignored: copy it into the repo when the selection should be kept).
   * NEXT: the user sorts the moves. Then each chosen attack goes through the hold fit for its weapon (grip sheets + 1x
     video) before it goes into the game.
+- 2026-10-15 (round 14): the weapon test arena, zombie spacing / pacing / telegraphs, the zombie scratch, and the
+  Hospital Outbreak texture kit on Floor 3. The user sorted 65 moves in the Move Library; the game's own melee combo
+  stays as it is for now.
+  * Weapon test arena: combat.html?mode=arena (also "Weapon test" in the pause menu). src/arena/testarena.js.
+    - The "⚔ Attacks" panel lists, per weapon, the game's own attacks plus every Move Library pick (good / maybe, with a
+      weapon use; gun reloads left out) at the speed / hand / roll / slide it was judged with; speed chips 0.5-1.5x.
+    - Each pick is built from its clip on Yola (assets/moves/yola_moves.glb): posed frame by frame with the weapon
+      placed as drawn, giving the hit path, the damaging windows (where the business end moves fast: Sword Heavy Combo
+      4, Sword Regular Combo 3, each hits afresh) and her forward travel (root motion when over 0.3 m).
+    - Weapon profiles (damage, impact, blunt / blade / unarmed, sever chances) in testarena.js PROFILE.
+    - Zombie buttons (3 dummies that come back, 1 / 3 / 6 live, clear), "Yola can't die", wedges on/off, and a
+      "How does it feel?" rating + note per attack, saved to shots/arena_feel.json (and this browser).
+    - The picks are read from the newest of shots/move_selection.json, assets/moves/selection.json (the shipped copy,
+      refreshed this round) and the browser's own Move Library copy.
+    - Engine: weapons.js TEST / TEST_ATTACKS; player.js multi-window strikes (A.windows); sim.js A.kind / A.minY;
+      YolaView.addAttackClips / setTestWeapon / placeTest (the move library's fist-frame weapon placement, closed fists).
+    - All 26 weapon picks connect with the dummies (node checks in the session); bat idle is a stance, not an attack.
+  * Zombie AI (core/zombies.js, sim.js updateEngagement; tuning panel "Enemies"):
+    - Spacing: only zombieEngage (2) nearest standing zombies within 7 m may close in and attack; the others stop at
+      their own 2.0-2.7 m ring facing her and now and then walk along it away from their neighbour
+      (recordings/zombie_spacing_ring.png).
+    - Pacing: each attack started holds the next one off by zombieAttackGap (0.75 s x 0.8-1.3); cooldown after an
+      attack 0.6-1.2 s (was 0.35).
+    - Telegraphs: the lunge wind-up is 0.62 s (was 0.52); a red floor wedge shows the exact reach and width and fills
+      over the wind-up, flashes on the strike (render/telegraph.js); the body warms to red.
+    - The scratch (Quaternius UAL2 Zombie_Scratch, retargeted onto each zombie skeleton by tools/anim/zombie_clip.py ->
+      assets/zombie-{nurse,patient}-scratch.glb): used inside ~0.9 m (and 25% from 0.92 m), 0.42 s wind-up, 8 damage,
+      reach 0.98 m, wide (+-72 deg); armless or crawling zombies keep the lunge (recordings/zombie_scratch_telegraph.png).
+  * Hospital Outbreak texture kit v1 (assets/hospital_outbreak: the five surfaces as JPG, the three decals as 512 px
+    WebP; 1.3 MB instead of 12 MB): Floor 3 only, switched on at the reveal with the opening's blood (setBlood ->
+    Arena.setOutbreak), so the clean opening is unchanged.
+    - Room recipes from the kit (OB_ROOMS in render/arena.js); floor tiles 0.75 m (one image = 3 m), walls one square
+      repeat per 2.7 m height, horizontal only; wall faces painted per the room they face.
+    - 15 hand-placed blood marks (OB_BLOOD): handprints by doors at hand height, the stretcher drag in the OR, one
+      concentrated splatter in Maintenance, light smears elsewhere, fighting lanes clear.
+    - +14 draw calls, fewer triangles than the clean look (Room 1 view). Plain repeat (not mirrored): the seams barely
+      show. Cut-away walls squash the wall image with them (the blue band stays proportional).
+    - recordings/outbreak_textures_floor3.png.
+  * NOT verified on the phone: frame time with the textures, the arena panel by touch, how the AI feels in play.
+  * Follow-up (the user: melee hits felt choppy): the melee hit slow motion is off (tuning meleeHitPause = 0, its own
+    slider; gun hits keep hitPause). The real freezes were shaders compiled on first use mid-fight (a limb cut off:
+    70-270 ms; the first bat hit: 28 ms): main.js warmPrograms() now compiles everything at load, with hidden pooled
+    objects shown (lights left exactly as they are, since programs depend on the light count), unskinned copies of each
+    zombie view's materials (as sever bakes them), the arena's weapon models preloaded, and one shadow-map frame. After:
+    no program compiles during play; hit frames 5-15 ms on the desktop (axe frames with many cut pieces and bodies on the
+    floor still reach 25-35 ms). Not measured on the phone.
+  * The weapon test arena shows the outbreak surfaces too (panel switch "Floor 3 outbreak textures", on by default,
+    remembered): the combat wing's operating room gets the clinical recipe, its hall the corridor one, six blood marks
+    (OB_WING_ROOMS / OB_BLOOD_WING in render/arena.js; built on first use). recordings/outbreak_textures_arena.png.
+- 2026-10-15 (round 15): two new zombies from the user's Tripo models (big+black+lady, big+guard), built by
+  tools/anim/build_zombie.py -> assets/zombie-sprinter.glb, assets/zombie-guard.glb (21 / 24 clips: the Mixamo zombie
+  set, UAL1 Sprint_Loop, UAL2 Zombie_Scratch / Hit_Knockback, and for the guard UAL2's shield clips).
+  * The lady's clothing stuck to her hands: checked by eye in Blender (sprint, side views): both cargo-pocket flaps were
+    weighted 25-40% to her finger bones, so they stretched out in strips with every arm swing. build_zombie.py
+    --fix-hands re-weights vertices below the elbow that sit nearer the thigh or torso than the hand (107) from their
+    clean neighbours; re-checked in Blender (sprint, scratch, stumble-fall, get-up) and in the Rig Lab from the exported
+    GLB (recordings/sprinter_weights_before.png / _after.png). The guard has none (checked walking in the Rig Lab).
+  * Both are in the Rig Lab (viewer.html) next to the Mixamo reference.
+  * The sprinter (core/zombies.js KINDS / sprinterChase / tumble): 1.5x health, 2.0 m (15% bigger than first built, the
+    user's call), spots Yola in sight within 12 m, a beat (scream), then charges at sprinterSpeed 3.9 m/s (Yola runs 3.3),
+    turning only sprinterTurn 1.5 rad/s and not at all inside 1.6 m. She runs through: a hit is a hard shove aside;
+    a side-step when she is ~1.8-2.8 m away makes her miss and run ~1.8 m past, brake and come round slowly (measured);
+    too late or too early and she hits. Into a wall, a prop or a zombie at speed she trips: stumble_fall frames 40-90
+    onto her back, then standup_back (she sits up on her backside, then stands). Close in: the normal attacks.
+  * The guard: 2.6x health, 0.6x pace, 1.8x damage, 0.4x knockback, rarely floored, 2.05 m; walks with UAL2's shield
+    hold on the upper body and a stand-in bed-panel shield (render/clipchars.js makeStandInShield) until the real one is
+    modelled. Neither new zombie is modular (no limbs come off yet).
+  * Ragdolls (all zombies): the body may no longer fold shut (custom.js: the neck keeps 0.72-0.88 of its distance from
+    the pelvis, hips, knees and feet); the parts' radii scale with a per-type girth (sprinter 1.7, guard 1.4) so limbs do
+    not sink into a big body; heavy bodies are thrown less far. recordings/sprinter_ragdoll_after.png, guard_ragdoll.png.
+  * Arena buttons "Sprinter" / "Big guard"; the encounter's waves 3 and 4 include them; tuning: sprinter speed / turn.
+- 2026-10-15 (round 16, the user's notes after trying the new zombies):
+  * Library combos stop where you stop (testarena.js splitCombo): a multi-strike clip becomes one attack per strike, cut
+    between strikes, chained on the frame the last one ends; tap once = 1 hit, each further tap (or holding) adds the
+    next (Sword Heavy Combo: 1-4, checked in the sim).
+  * Downward strike at a zombie on the floor (knocked down, tripped or crawling): weapons.js groundAttack (Yola's t_chop
+    with the weapon's profile) replaces the combo opener when Sim.groundTarget finds one in front and nothing standing
+    nearer; bat, axe and every arena weapon (bat on a floored dummy: 100 -> 13).
+  * Feel: a faint additive swing arc on every melee weapon, fading at its tail and stronger with speed (fx.js), and a
+    hit flash + sparks + dust on every blow (fx.hitFlash).
+  * Sprinter: turns 0.9 rad/s at speed (was 1.5; saved tuning for it resets, tuning v3), stops steering inside 2 m;
+    a melee blow or shotgun blast mid-charge trips her; her charge hit knocks Yola flat.
+  * Yola knocked down (player.js knockDown, 'down' action: thrown back, untouchable, gets up ~2.9 s later):
+    assets/yola_extra.glb (tools/anim/yola_clips.py: the Mixamo knockdown + stomach get-up retargeted onto YOLA).
+    recordings/yola_knocked_down.png.
+  * The guard's slam: KayKit Melee_1H_Attack_Jump_Chop (a leap and an overhead smash; its hip rise halved at load),
+    chosen at 1.3-2.4 m every 4-6.5 s: 0.95 s wind-up with a wide red wedge, a 1.4 m leap, the smash (1.3x his hit,
+    knocks Yola flat; dust ring, shake), 1 s recovery. build_zombie.py reads KayKit clips (--kk). The first KayKit
+    choice (2H chop) was rejected on sight: a twist across the body, not a slam. recordings/guard_slam.png.
+  * Lighting looks (render/looks.js; the ☀ button cycles them, remembered; a toast shows the frame rate): Standard, AO
+    (GTAO contact shadows), glow (bloom), AO + glow, Cinematic (+ grade and vignette), Crisp shadows (2x shadow map),
+    Performance (no shadows). Desktop cost on Floor 3 (ms/frame, incl. sim): 16 / 28 / 19 / 27 / 30 / 12 / 13.
+    recordings/looks_standard_ao_cinematic.png. Not measured on the phone.

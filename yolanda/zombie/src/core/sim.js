@@ -2,7 +2,7 @@
 import { World, rng, rayCircle, segPointDist2, angleDiff } from './world.js';
 import { LAYOUT, buildWorld } from './layout.js';
 import { Player, meleeWorldSegment } from './player.js';
-import { Zombie, ZS, separate, bump } from './zombies.js';
+import { Zombie, ZS, KINDS, separate, bump } from './zombies.js';
 import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
@@ -27,6 +27,7 @@ export class Sim {
     this.events = [];
     this.time = 0;
     this.flowT = 0;
+    this.engaged = new Set(); this.engageT = 0; this.nextAttackT = 0; // zombie attack slots and turns (updateEngagement)
     this.stats = { shots: 0, shotHits: 0, swings: 0, batHits: 0, kills: 0, damageTaken: 0 };
     this.director = new Director(this, opts.mode || 'encounter', opts.benchCount || 0);
     this.world.updateFlow(this.player.x, this.player.z);
@@ -74,6 +75,7 @@ export class Sim {
     p.updateAction(dt, this);
     this.flowT -= dt;
     if (this.flowT <= 0) { this.world.updateFlow(p.x, p.z); this.flowT = 0.2; }
+    if ((this.engageT -= dt) <= 0) { this.engageT = 0.2; this.updateEngagement(); }
     for (const z of this.zombies) z.update(dt, this);
     bump(this.zombies, this);
     separate(this.zombies, p);
@@ -87,11 +89,13 @@ export class Sim {
     const d = (typeof door === 'string' ? LAYOUT.doors.find((x) => x.id === door) : door) || { id: 'placed', x: opts.x, z: opts.z, axis: 'x', spawn: { x: opts.x, z: opts.z }, yaw: opts.yaw ?? 0 };
     const jitter = (this.rand() - 0.5) * 0.8;
     const sx = d.spawn.x + (d.axis === 'x' ? jitter : 0), sz = d.spawn.z + (d.axis === 'z' ? jitter : 0);
+    const K = KINDS[opts.kind] || KINDS.normal; // (the sprinter and the big guard: their own health and pace)
     const z = new Zombie(sx, sz, d.yaw, {
-      hp: opts.hp ?? this.T.zombieHp,
-      speedMul: opts.speedMul ?? 0.85 + this.rand() * 0.3,
+      hp: (opts.hp ?? this.T.zombieHp) * K.hp,
+      speedMul: (opts.speedMul ?? 0.85 + this.rand() * 0.3) * K.speed,
       passive: opts.passive,
       phase: this.rand(),
+      kind: opts.kind,
     });
     if (opts.x !== undefined) { z.x = opts.x; z.z = opts.z; z.yaw = opts.yaw ?? z.yaw; z.stateDur = 0.3; }
     else { z.emergeTo = { x: sx, z: sz }; z.x = d.axis === 'x' ? sx : d.x + (d.x < 0 ? 0.35 : -0.35); z.z = d.axis === 'x' ? d.z + 0.35 : sz; }
@@ -101,6 +105,20 @@ export class Sim {
   }
 
   aliveCount() { let n = 0; for (const z of this.zombies) if (z.alive) n++; return n; }
+
+  // Attack slots (spacing): the T.zombieEngage nearest standing zombies within 7 m may close in and attack; the others
+  // hold a step back (zombies.js). A zombie keeps its slot over a slightly nearer rival (no flip-flopping), and loses it
+  // while floored, so the next one steps up.
+  updateEngagement() {
+    const p = this.player, n = Math.max(1, Math.round(this.T.zombieEngage ?? 2)), cand = [];
+    for (const z of this.zombies) {
+      if (!z.alive || z.passive || z.dormant || z.down) continue;
+      const d = Math.hypot(z.x - p.x, z.z - p.z);
+      if (d < 7) cand.push([d - (this.engaged.has(z.id) ? 0.7 : 0), z.id]);
+    }
+    cand.sort((a, b) => a[0] - b[0]);
+    this.engaged = new Set(cand.slice(0, n).map((c) => c[1]));
+  }
 
   // ---------------- pistol ----------------
   firePistol(p) {
@@ -226,10 +244,23 @@ export class Sim {
     return { target: best, turn: Math.max(-0.35, Math.min(0.35, want)) }; // (the player eases this turn in over the windup)
   }
 
+  // the zombie on the floor (knocked down or crawling) to strike down at: in reach (1.9 m), within ~50 degrees of the aim,
+  // in sight, and nearer than anything standing in that cone
+  groundTarget(p, reach = 1.9) {
+    let best = null, bd = 1e9, up = 1e9;
+    for (const z of this.zombies) {
+      if (!z.alive) continue;
+      const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
+      if (d > reach || Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz))) > 0.9 || !this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.5)) continue;
+      if (z.down || z.crawling) { if (d < bd) { bd = d; best = z; } } else up = Math.min(up, d);
+    }
+    return best && bd < up ? best : null;
+  }
+
   // ---------------- axe: swept between simulation steps ----------------
   resolveMelee(p, t0, t1, act) {
     if (t1 <= t0) return;
-    const SUB = 4, T = this.T, A = p.attacks[act.combo], G = A.geom || AXE_GEOM, fist = p.equipped === FISTS;
+    const SUB = 4, T = this.T, A = p.atk(act), G = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === 'fist';
     let prev = meleeWorldSegment(p, A, t0, _a);
     let px = prev.tx, pz = prev.tz;
     { const w0 = this.world.raycast(p.x, p.z, px, pz, 0.9); if (w0) { px = p.x + (px - p.x) * w0.t; pz = p.z + (pz - p.z) * w0.t; } }
@@ -256,7 +287,7 @@ export class Sim {
         if (!z.alive || act.hitSet.has(z.id)) continue;
         if (z.down && !chop) continue; // only the chop comes down far enough to hit a body on the floor
         const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G.radius : 0); // the visible torso (a lying body is longer)
-        const minY = z.down || z.crawling ? 0.05 : chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y; // (a crawler is struck as it rises at her)
+        const minY = z.down || z.crawling ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y); // (a test-arena attack sets its own) // (a crawler is struck as it rises at her)
         const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
         const y1 = ay + (seg.ty - ay) * h1.t;
         const d1 = y1 >= minY ? h1.d2 : 1e9;
@@ -284,7 +315,7 @@ export class Sim {
           const dmgF = T.fistDamage * A.dmg;
           z.takeHit(dmgF, dx, dz, T.fistKnockback * A.knock, 'fist', this, 'torso', A.style);
           this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
-          if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * 0.5 * (z.alive ? 1 : 1.3) });
+          if (T.meleeHitPause > 0) this.emit({ type: 'hitPause', dur: T.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
           continue;
         }
         const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
@@ -293,10 +324,11 @@ export class Sim {
           : r < (lethal ? sv.head : 0) + sv.arm ? 'Forearm' + side
           : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? 'LowerLeg' + side : 'torso';
         if (part !== 'torso' && !z.severed.has(part)) z.limbHp[part] = 0; // the blade goes through
-        const last = act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
-        z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), p.equipped === BAT ? 'bat' : 'axe', this, part, holding ? 'combo' : A.style);
-        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: p.equipped });
-        if (T.hitPause > 0) this.emit({ type: 'hitPause', dur: T.hitPause * (z.alive ? 1 : 1.3) * (last ? 1.25 : 0.8) });
+        const last = act.ground || act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
+        const kind = A.kind || (p.equipped === BAT ? 'bat' : 'axe'); // (a test-arena attack names its own: bat = blunt, axe = blade)
+        z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? 'combo' : A.style);
+        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p.equipped });
+        if (T.meleeHitPause > 0) this.emit({ type: 'hitPause', dur: T.meleeHitPause * (z.alive ? 1 : 1.3) * (last ? 1.25 : 0.8) });
       }
       px = tipX; pz = tipZ;
     }

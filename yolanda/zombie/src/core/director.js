@@ -5,8 +5,8 @@ import { LAYOUT } from './layout.js';
 const BEATS = [
   { n: 2, every: 0.9, doors: ['NE', 'NW'], breather: 3.0, delay: 1.2 },
   { n: 4, every: 1.1, doors: ['NE', 'NW', 'E'], breather: 3.5 },
-  { n: 6, every: 0.85, doors: ['NW', 'W', 'NE'], breather: 4.0 },
-  { n: 9, every: 0.7, doors: ['NE', 'NW', 'W', 'E'], breather: 0 },
+  { n: 6, every: 0.85, doors: ['NW', 'W', 'NE'], breather: 4.0, kinds: ['sprinter'] },
+  { n: 9, every: 0.7, doors: ['NE', 'NW', 'W', 'E'], breather: 0, kinds: ['guard', 'normal', 'sprinter'] },
 ];
 const MIN_SPAWN_DIST = 5.5;
 
@@ -36,7 +36,7 @@ export class Director {
   update(dt) {
     const sim = this.sim;
     if (sim.player.dead) return;
-    if (this.mode === 'room1') return; // authored, not wave-driven
+    if (this.mode === 'room1' || this.mode === 'arena') return; // authored, not wave-driven (the arena spawns from its panel)
     if (this.mode === 'calm') {
       // respawn a dummy a moment after it dies
       this.timer -= dt;
@@ -63,7 +63,7 @@ export class Director {
     if (this.state === 'spawning') {
       if (this.spawned < B.n && this.timer <= 0) {
         const d = this.pickDoor(B.doors);
-        if (d) { sim.spawnZombie(d); this.spawned++; }
+        if (d) { sim.spawnZombie(d, { kind: B.kinds?.[this.spawned] }); this.spawned++; } // (kinds: the first ones of the beat)
         this.timer = B.every;
       }
       if (this.spawned >= B.n && sim.aliveCount() === 0) {
@@ -80,6 +80,7 @@ export class Director {
   get label() {
     if (this.mode === 'calm') return 'Practice';
     if (this.mode === 'room1') return 'Floor 3';
+    if (this.mode === 'arena') return this.arenaLabel || 'Weapon test';
     if (this.mode === 'bench') return `Bench ${this.benchCount}`;
     if (this.cleared) return 'Cleared';
     return `Wave ${this.beat + 1}/${BEATS.length}`;

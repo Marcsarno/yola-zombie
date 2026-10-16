@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe } from './weaponModels.js';
 import { ikArm as solveArm } from './ik.js';
-import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, isMelee } from '../core/weapons.js';
+import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, isMelee, groundAttack } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -323,7 +323,7 @@ export class YolaView extends ClipBody {
     return true;
   }
   scriptLength(name) { const c = this.act(name)?.getClip(); return c ? c.duration - Math.min(...c.tracks.map((t) => t.times[0])) : 0; }
-  setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
+  setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
   reset(x, z, yaw) {
     this.script = null; for (const n of this.scriptNames || []) this.act(n).setEffectiveWeight(0);
     this.yaw = yaw; this.deathT = -1; this.outer.quaternion.identity();
@@ -441,14 +441,15 @@ export class YolaView extends ClipBody {
     const w = this.locoWeights(s, dt);
     // upper body: pistol / shotgun / axe holds, cross-faded through the swap
     const rate = dt / Math.max(0.05, s.swapDur * 0.6);
-    const eqKey = s.equipped === 'bat' ? 'axe' : s.equipped; // the bat is held like the axe (bat idle), with its own model
+    // the bat is held like the axe (bat idle), with its own model; a test-arena weapon like the axe (two hands) or empty-handed
+    const eqKey = s.equipped === 'bat' ? 'axe' : s.equipped === 'test' ? (this.test?.two ? 'axe' : 'fists') : s.equipped;
     this.batMode = s.equipped === 'bat';
     for (const k in this.up) this.up[k] += clamp((eqKey === k ? 1 : 0) - this.up[k], -rate, rate);
     const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), un = uP0 + uS0 + uA0 + uF0 || 1;
     const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un;
     // axe attacks: full-body clips driven by the simulation's attack time (exact sync with the hit test)
     let sW = 0, turn = 0;
-    const A = s.action === 'swing' ? attacksOf(s.equipped)[s.combo] : null;
+    const A = s.action === 'swing' ? (s.ground ? groundAttack(s.equipped) : attacksOf(s.equipped)[s.combo]) : null;
     if (A) {
       const t = s.swingT, tEnd = attackEnd(A), act = this.act(A.clip);
       if (this.swingId !== s.swingId) {
@@ -510,7 +511,13 @@ export class YolaView extends ClipBody {
     }
     // a scripted full-body clip (the reveal's wave) fades over the normal layers
     let scW = 0, sact = null;
-    if (this.script) {
+    if (s.action === 'down' && this.act('yola_knockdown')) { // knocked flat: the fall, then the get-up, over everything else
+      const F = s.downFall || 1.15, U = s.downUp || 1.7, t = s.actionT, up = t >= F;
+      const a = this.act(up ? 'yola_getup' : 'yola_knockdown'); this.act(up ? 'yola_knockdown' : 'yola_getup').setEffectiveWeight(0);
+      a.time = (up ? 20 + Math.min(1, (t - F) / U) * 161 : 1 + Math.min(1, t / F) * 58) / 30 + ((this.dnJit ^= 1) * 1e-6);
+      scW = smooth(clamp(t / 0.08, 0, 1)) * smooth(clamp((F + U - t) / 0.25, 0, 1)); sact = a; a.setEffectiveWeight(scW);
+    } else if (this.act('yola_knockdown')) { this.act('yola_knockdown').setEffectiveWeight(0); this.act('yola_getup').setEffectiveWeight(0); }
+    if (this.script && !sact) {
       const S = this.script; S.t += dt;
       const len = S.len / S.rate, inW = clamp(S.t / S.fadeIn, 0, 1), outW = clamp((len - S.t) / S.fadeOut, 0, 1);
       scW = smooth(inW) * smooth(outW); sact = S.act;
@@ -537,6 +544,7 @@ export class YolaView extends ClipBody {
     if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC('Spine1', f.z * 0.6, 0, -f.x * 0.5);
     this.footLock(dt, s, A, sW, w);
     this.weaponShown = uF > 0.5 ? 'fists' : uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
+    if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; return; } // (on the floor: weapons away)
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.placeWeapons(s, dt);
@@ -690,7 +698,52 @@ export class YolaView extends ClipBody {
     }
   }
 
+  // ---- the weapon test arena (src/arena/testarena.js) ----
+  // Library attack clips (skeleton-only GLB, same bones): root pinned like every clip, driven by the attack clock.
+  addAttackClips(clips) {
+    const rest = hipsRest(this.model);
+    for (const c of clips) {
+      if (this.actions[c.name]) continue;
+      const a = this.mixer.clipAction(stripRoot(c, rest)); this.actions[c.name] = a;
+      a.play(); a.setEffectiveWeight(0); a.timeScale = 0; this.meleeClips.push(c.name);
+    }
+  }
+  // test: { obj (holder group or null), w (assets/moves/weapons.json frame), hand, roll (deg), slide (m), flip, two, fingers }
+  setTestWeapon(test) { if (this.test?.obj && this.test.obj !== test?.obj) this.test.obj.visible = false; this.test = test; }
+  // fist centre, grip axis (pinky -> index) and knuckle direction from her finger joints (as in the move library)
+  fistFrame(side, out) {
+    const H = side + 'Hand', c = out.c.set(0, 0, 0); let n = 0;
+    for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (const i of [1, 2, 3]) { const b = this.bones[H + f + i]; if (b) { c.add(b.getWorldPosition(_v)); n++; } }
+    c.multiplyScalar(1 / n);
+    out.a.copy(this.bones[H + 'Index1'].getWorldPosition(_v)).sub(this.bones[H + 'Pinky1'].getWorldPosition(_v2)).normalize();
+    out.k.copy(this.bones[H + 'Middle1'].getWorldPosition(_v)).sub(c); out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
+    c.addScaledVector(out.k, -0.01); // the curled fingers' centroid sits on the knuckle side of the handle
+    return out;
+  }
+  // the test weapon: closed fists on it, its grip at the fist centre, its shaft along the grip axis, its face toward the
+  // knuckles turned by roll, slid along the grip by slide. Sets testGrip / testTip (world) for the arena's path sampling.
+  placeTest() {
+    const T = this.test, F = (this._ff ||= { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() });
+    if (T.fingers) {
+      for (const [n, q] of T.fingers) if (T.two || n.startsWith(T.hand)) this.bones[n].quaternion.copy(q);
+      for (const side of T.two ? ['Left', 'Right'] : [T.hand]) this.bones[side + 'Hand'].updateMatrixWorld(true);
+    }
+    const o = T.obj; if (!o) return;
+    this.fistFrame(T.hand, F);
+    const A = _v3.copy(F.a).multiplyScalar(T.flip ? -1 : 1), K = _v4.copy(F.k).applyAxisAngle(A, THREE.MathUtils.degToRad(T.roll || 0));
+    const w = T.w, s = _v5.set(...w.shaft_axis).normalize(), r = _v6.set(...w.ref_axis); r.addScaledVector(s, -r.dot(s)).normalize();
+    const M1 = (this._m1 ||= new THREE.Matrix4()).makeBasis(s, r, _v7.crossVectors(s, r));
+    const M2 = (this._m2 ||= new THREE.Matrix4()).makeBasis(A, K, _v.crossVectors(A, K));
+    o.quaternion.setFromRotationMatrix(M2.multiply(M1.transpose()));
+    o.position.copy(F.c).sub(_v2.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T.slide || 0);
+    o.visible = true; o.updateMatrixWorld(true);
+    (this.testGrip ||= new THREE.Vector3()).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
+    (this.testTip ||= new THREE.Vector3()).set(...(w.impact_point || w.tip)).applyQuaternion(o.quaternion).add(o.position);
+  }
+
   placeWeapons(s, dt) {
+    if (s.equipped === 'test' && this.test) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; this.placeTest(); return; }
+    if (this.test?.obj) this.test.obj.visible = false;
     const shown = this.weaponShown;
     this.pistol.visible = shown === 'pistol'; this.shotgun.visible = shown === 'shotgun'; this.melee.visible = shown === 'axe'; this.shell.visible = false;
     if (this.melee.userData.axeInner) { this.melee.userData.axeInner.visible = !this.batMode; this.batModel.visible = !!this.batMode; }
@@ -772,6 +825,7 @@ export class YolaView extends ClipBody {
       for (const a of Object.values(this.actions)) a.setEffectiveWeight(0);
       const d = this.act('death_fall'); d.reset(); d.setLoop(THREE.LoopOnce); d.clampWhenFinished = true; d.setEffectiveWeight(1); d.play();
       this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
+      if (this.test?.obj) this.test.obj.visible = false;
     }
     this.deathT += dt;
     this.mixer.update(dt);
@@ -781,7 +835,17 @@ export class YolaView extends ClipBody {
 // ----------------------------------------------------------------------------------------------
 const SHARED_CLIPS = new WeakMap(); // gltf -> processed clips, shared by all views of a zombie type
 const ONE_SHOTS = ['attack', 'hit_flinch', 'hit_stumble', 'death_back', 'death_forward', 'death_headshot_knees', 'death_chest_back',
-  'react_large_front', 'react_large_back', 'react_large_left', 'react_large_right', 'knockdown', 'standup_stomach'];
+  'react_large_front', 'react_large_back', 'react_large_left', 'react_large_right', 'knockdown', 'standup_stomach', 'scratch', 'stumble_fall', 'standup_back'];
+// the sprinter's trip (core/zombies.js tumble): stumble_fall's stagger back and fall (frames 40-90, on her back by ~80),
+// then standup_back from the floor (she sits up onto her backside around frames 30-45, then stands)
+const TUMBLE = { f0: 40, f1: 90, up0: 1, up1: 94 };
+// the scratch (Quaternius UAL2 Zombie_Scratch, retargeted by tools/anim/zombie_clip.py): arms up over frames 1-16 (played
+// over the wind-up), the rake 17-21 (the strike), back down 22-45 (the recovery; the clip's long settle is skipped)
+const SCRATCH = { f0: 1, hit: 17, hitEnd: 21, end: 45 };
+// the guard's slam (KayKit Melee_1H_Attack_Jump_Chop): crouch and leap over the wind-up (frames 1-18), the smash 18-23,
+// landing and rising 23-41 (the recovery). Its hips rise is halved at load: a heavy man's hop, not an acrobat's leap.
+const SLAM = { f0: 1, hit: 18, hitEnd: 23, end: 41, lift: 0.5 };
+const ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM };
 // Death clips: [clip, start frame, frame the body is on the floor]. Played so the fall takes ~1.1-1.4 s.
 const DEATHS = {
   back: [['death_back', 7, 53], ['death_chest_back', 20, 66]],
@@ -803,12 +867,24 @@ const PIECE_ENDS = {
 const MAX_PIECES = 40;
 const _bv = new THREE.Vector3(), _bq = new THREE.Quaternion();
 
+// Stand-in for the guard's shield: a broken-off hospital-bed end panel (teal board in a grey frame, ~0.8 x 0.6 m).
+// Replaced by the real model when it is ready.
+function makeStandInShield(scene) {
+  const g = new THREE.Group(), m = (c, r, mt = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
+  const board = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.56, 0.04), m(0x2f8f92, 0.6)); g.add(board);
+  const frame = m(0x9aa3a6, 0.4, 0.5);
+  for (const y of [-0.3, 0.3]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.86, 10), frame); b.rotation.z = Math.PI / 2; b.position.set(0, y, 0); g.add(b); }
+  for (const x of [-0.41, 0.41]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.7, 10), frame); b.position.set(x, -0.04, 0); g.add(b); }
+  g.visible = false; scene.add(g);
+  return g;
+}
+
 export class ZombieView extends ClipBody {
   static physics = null; // shared physics backend (custom / Rapier); null = death clips only
   static fx = null;      // blood effects
   static scene = null;   // severed pieces live in the scene, independent of the (pooled) views
   static pieces = [];
-  constructor(scene, gltf, height, speeds) {
+  constructor(scene, gltf, height, speeds, opts = {}) {
     const model = skClone(gltf.scene);
     const mats = [];
     model.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); mats.push(o.material); } });
@@ -818,7 +894,15 @@ export class ZombieView extends ClipBody {
     if (!clips) {
       const rest = hipsRest(gltf.scene);
       clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
-      for (const c of clips) if (c.name === 'walk' || c.name === 'idle' || c.name === 'crawl') loopClip(c);
+      for (const c of clips) if (['walk', 'idle', 'crawl', 'sprint', 'shield_idle'].includes(c.name)) loopClip(c);
+      for (const c of clips) if (c.name === 'slam') for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) { const v = t.values, y0 = v[1]; for (let i = 1; i < v.length; i += 3) v[i] = y0 + (v[i] - y0) * SLAM.lift; }
+      // the guard holds his shield up: walk and idle on the legs only, the shield hold on the upper body
+      if (opts.shield && clips.some((c) => c.name === 'shield_idle')) {
+        const by = Object.fromEntries(clips.map((c) => [c.name, c]));
+        const lower = (n) => { const c = subClip(by[n], (b) => LOWER.test(b), n); clips[clips.indexOf(by[n])] = c; };
+        lower('walk'); lower('idle');
+        clips.push(subClip(by.shield_idle, (b) => !LOWER.test(b), 'shield_upper'));
+      }
       SHARED_CLIPS.set(gltf, clips);
     }
     ZombieView.scene = scene;
@@ -844,6 +928,10 @@ export class ZombieView extends ClipBody {
     this.severed = new Set(); this.rag = null; this.bleed = {};
     this.hasCrawl = !!this.act('crawl');
     if (this.hasCrawl) { this.act('crawl').play(); this.act('crawl').setEffectiveWeight(0); }
+    this.sprintNative = (opts.sprint || 4.3) * (height / 1.74); // m/s the sprint clip's feet travel at full rate
+    this.girth = opts.girth || 1; // the ragdoll's body width against the slim standard zombie
+    for (const n of ['sprint', 'shield_upper']) if (this.act(n)) { this.act(n).play(); this.act(n).setEffectiveWeight(0); }
+    if (opts.shield) this.shield = makeStandInShield(scene);
   }
 
   // ---- dismemberment ----
@@ -938,10 +1026,12 @@ export class ZombieView extends ClipBody {
     for (const a of Object.values(this.actions)) { a.stop(); a.setEffectiveWeight(0); }
     for (const n of ['walk', 'idle']) { this.act(n).play(); this.act(n).time = Math.random() * this.act(n).getClip().duration; }
     if (this.hasCrawl) this.act('crawl').play();
+    for (const n of ['sprint', 'shield_upper']) if (this.act(n)) this.act(n).play();
+    if (this.shield) this.shield.visible = true;
     this.react.x = this.react.z = this.react.vx = this.react.vz = 0;
     this.bleed = {};
   }
-  hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); this.endRagdoll(); }
+  hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); this.endRagdoll(); if (this.shield) this.shield.visible = false; }
 
   // ---- ragdoll: from the current animated pose, carrying the blow's momentum ----
   startRagdoll(z) {
@@ -949,7 +1039,7 @@ export class ZombieView extends ClipBody {
     if (!P || !P.ready) return false;
     this.container.updateMatrixWorld(true);
     const missing = new Set([...this.severed].map((s) => SEVER_PART[s]));
-    const desc = describeRagdoll(this.bones, this.height, missing);
+    const desc = describeRagdoll(this.bones, this.height, missing, this.girth);
     const dir = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
     // each weapon throws the body its own way:
     //  pistol: a slump along the shot (the head snaps back on a head shot)
@@ -958,13 +1048,14 @@ export class ZombieView extends ClipBody {
     const kind = z.hitKind, style = z.hitStyle, melee = isMelee(kind), sg = kind === 'shotgun';
     const s = sg ? 1.2 + z.hitStrength * 0.55 : melee ? (style === 'chop' ? 1.4 : style === 'heavy' ? 5.2 : 4.2) : 2.0;
     const lift = sg ? 0.4 + z.hitStrength * 0.22 : melee && style === 'chop' ? -2.6 : 0;
+    const heavy = Math.sqrt(z.K?.knock ?? 1); // a heavy body (the big guard) is thrown less far and less high
     const hitPart = !melee && !sg && z.lastHitPart === 'Head' ? 'head' : 'chest';
     const base = new THREE.Vector3(z.kx * 0.35, 0.2, z.kz * 0.35);
     const vels = desc.parts.map((p) => {
       const core = p.name === 'chest' || p.name === 'head';
       const k = p.name === hitPart ? 1 : core ? 0.6 : p.name === 'pelvis' ? (sg ? 0.7 : 0.3) : sg ? 0.45 : 0.25;
-      const v = base.clone().addScaledVector(dir, s * k);
-      if (lift > 0) v.y += lift * (core || p.name === 'pelvis' ? 1 : 0.6);
+      const v = base.clone().addScaledVector(dir, s * k * heavy);
+      if (lift > 0) v.y += lift * heavy * (core || p.name === 'pelvis' ? 1 : 0.6);
       else if (lift < 0 && core) v.y += lift;
       return v;
     });
@@ -994,7 +1085,7 @@ export class ZombieView extends ClipBody {
   }
 
   update(dt, z, x, zz) {
-    if (this.rag) { this.updateRagdoll(z); return; }
+    if (this.rag) { if (this.shield) this.shield.visible = false; this.updateRagdoll(z); return; }
     // limbs the simulation took off this step: cut them from the pose that is on screen now
     if (this.modular && z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part)) this.sever(part, z);
     this.outer.position.x = x; this.outer.position.z = zz;
@@ -1004,12 +1095,23 @@ export class ZombieView extends ClipBody {
     // state transitions -> clips (attack timed so the swipe lands at the end of the windup)
     if (z.state !== this.lastState) {
       const S = z.state;
-      if (S === 'windup') this.playOnce('attack', 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
-      else if (S === 'stagger') {
+      const AC = ATTACK_CLIPS[z.attack], scr = AC && this.act(z.attack);
+      if (S === 'windup') {
+        if (scr) { const t0 = Math.min(...scr.getClip().tracks.map((t) => t.times[0])); this.playOnce(z.attack, t0 + (AC.f0 - 1) / 30, (AC.hit - AC.f0) / 30 / Math.max(0.2, z.stateDur)); this.acT0 = t0; }
+        else this.playOnce('attack', 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
+      } else if ((S === 'strike' || S === 'recover') && scr && this.oneShot === scr) { // the strike at its own pace, then back down
+        scr.time = this.acT0 + ((S === 'strike' ? AC.hit : AC.hitEnd) - 1) / 30;
+        scr.timeScale = (S === 'strike' ? AC.hitEnd - AC.hit : AC.end - AC.hitEnd) / 30 / Math.max(0.05, z.stateDur);
+      } else if (S === 'stagger') {
         if (isMelee(z.hitKind) || z.hitKind === 'shotgun' || z.hitKind === 'bump') {
           const n = this.reactClip(z), len = this.act(n).getClip().duration;
           this.playOnce(n, 2 / 30, (len - 2 / 30) / Math.max(0.3, z.stateDur));
         } else this.playOnce('hit_flinch', 0.15, 1.6);
+      } else if (S === 'knockdown' && z.fall === 'tumble' && this.act('stumble_fall')) {
+        this.deathYaw = null; // the sprinter tripped: staggers back and goes down on her backside
+        this.playOnce('stumble_fall', TUMBLE.f0 / 30, (TUMBLE.f1 - TUMBLE.f0) / 30 / z.stateDur, 0.08);
+      } else if (S === 'getup' && z.fall === 'tumble' && this.act('standup_back')) {
+        this.playOnce('standup_back', TUMBLE.up0 / 30, (TUMBLE.up1 - TUMBLE.up0) / 30 / z.stateDur, 0.15);
       } else if (S === 'knockdown') {
         this.deathYaw = null;
         this.playOnce('knockdown', 1 / 30, 59 / 30 / z.stateDur, 0.05); // thrown back, rolls onto the stomach
@@ -1039,13 +1141,18 @@ export class ZombieView extends ClipBody {
     const move = clamp(sp / 0.25, 0, 1);
     const one = this.oneShot ? this.oneShot.getEffectiveWeight() : 0;
     const crawl = z.crawling && this.hasCrawl ? 1 : 0; // legless: drags itself along
-    this.act('walk').setEffectiveWeight(move * (1 - one) * (1 - crawl));
+    // the sprinter's charge: the sprint clip takes over from the walk as she speeds up, played at the rate her feet travel
+    const sprint = this.act('sprint') ? clamp((sp - 1.3) / 1.2, 0, 1) : 0;
+    if (sprint || this.act('sprint')) { const a = this.act('sprint'); a.setEffectiveWeight(move * sprint * (1 - one) * (1 - crawl)); a.timeScale = clamp(sp / this.sprintNative, 0.5, 1.6); }
+    this.act('walk').setEffectiveWeight(move * (1 - sprint) * (1 - one) * (1 - crawl));
     this.act('idle').setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
     this.act('walk').timeScale = clamp(sp / this.nativeWalk, 0.5, 3.2);
+    if (this.act('shield_upper')) this.act('shield_upper').setEffectiveWeight((1 - one) * (1 - crawl)); // (the guard's shield hold over the legs)
     if (this.hasCrawl) { const c = this.act('crawl'); c.setEffectiveWeight(crawl * (1 - one)); c.timeScale = clamp(sp / (0.22 * this.height), 0.45, 2.5); }
     this.mixer.update(dt);
     this.container.updateMatrixWorld(true);
     this.bleeding(dt);
+    if (this.shield) this.placeShield(z);
 
     // small directional jolt on every hit (the clip gives the body reaction; this gives direction)
     if (z.hitSeq !== this.lastSeq) {
@@ -1058,10 +1165,21 @@ export class ZombieView extends ClipBody {
     this.react.step(dt);
     if (!dying && Math.abs(this.react.x) + Math.abs(this.react.z) > 1e-3) this.rotateEulerC('Spine1', this.react.z * 0.7, 0, -this.react.x * 0.6);
     const fl = z.hitFlash * z.hitFlash; // sharp: a bright first frame, gone within ~0.1 s
-    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4, fl * 0.33, fl * 0.27);
+    // the attack tell: the body warms to red through the wind-up (with the floor wedge, render/telegraph.js)
+    const tell = z.state === 'windup' ? Math.min(1, z.t / Math.max(0.05, z.stateDur)) : 0, tk = tell * tell * 0.3;
+    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk, fl * 0.33 + tk * 0.05, fl * 0.27 + tk * 0.03);
     // corpse sinks away after a while
     if (z.state === 'dead' && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
     this.blob.visible = z.state !== 'dead' || z.corpseT < 4.5;
+  }
+
+  // the guard's stand-in shield: in front of him at his left hand, upright and square to his facing (dropped when he dies)
+  placeShield(z) {
+    const S = this.shield, h = this.bones.LeftHand; if (!h) return;
+    if (!z.alive) { S.visible = false; return; }
+    h.getWorldPosition(_v); const yaw = this.container.rotation.y;
+    S.position.set(_v.x + Math.sin(yaw) * 0.12, Math.max(0.35, _v.y), _v.z + Math.cos(yaw) * 0.12);
+    S.rotation.set(0, yaw, 0); S.visible = this.outer.visible;
   }
 
   // Ragdolled: the skeleton follows the physics parts. The body leaves the physics world once the

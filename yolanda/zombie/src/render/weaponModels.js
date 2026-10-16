@@ -84,3 +84,12 @@ export function prepShell(gltf) {
   g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
   return g;
 }
+
+// a kitchen-style knife (the move library and the weapon test arena): handle along +Z from the origin, blade beyond it
+export function makeKnife() {
+  const g = new THREE.Group(), m = (c, r, mt) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.016, 0.11, 12), m(0x2b2b2e, 0.8, 0)); handle.rotation.x = Math.PI / 2; g.add(handle);
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.008), m(0x777c80, 0.4, 0.6)); guard.position.z = 0.058; g.add(guard);
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.03, 0.15), m(0xc9ced2, 0.25, 0.85)); blade.position.set(0, -0.003, 0.137); g.add(blade);
+  return g;
+}
