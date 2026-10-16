@@ -130,6 +130,14 @@ is nothing on the shoulders. Plan, one at a time, measured before/after:
 6. Optional: tame the flailing in attacks (sword combo).
 Cost: a few thousand distance checks per frame, well under 0.1 ms on a phone. Mesh-level collision is out (too heavy).
 
+Also saved for this pass (user, 2026-10-16: "save for a late development polish pass"), from the T-pose audit:
+7. Shirt hem folds/drags up when her thigh lifts (knee raise; shirt bottom too much on UpLeg: more Hips). Image
+   shots/audit/a7.
+8. Sharp weight steps at the wrists, fingers and ankles (judge each by bending it, vs Yola 2.0 / X Bot).
+9. The skeleton sticks out of her fingertips in Blender (check whether it is only the display-only end bones, like
+   HeadTop_End, or real finger joints placed too far out).
+10. Faint diagonal line on her neck at extreme head turns (bat_idle f31, seen from below: not visible in game views).
+
 ## After the ponytail (user, 2026-10-16)
 
 - Face bend (user spotted in the Rig Lab, bat_idle frame 22): NOT caused by the ponytail work (face weights untouched).
