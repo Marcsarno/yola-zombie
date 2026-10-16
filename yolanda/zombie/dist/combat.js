@@ -55087,6 +55087,15 @@ void main() {
         audio2.setVolume(+vol.value);
         store3.set("volume", +vol.value);
       });
+      for (const b of ["music", "sfx", "voice"]) {
+        const el = $("vol_" + b);
+        if (!el) continue;
+        el.value = audio2.levels[b];
+        el.addEventListener("input", () => {
+          audio2.setLevel(b, +el.value);
+          store3.set("lvl_" + b, +el.value);
+        });
+      }
       const mute = $("muteBtn");
       const syncMute = () => {
         mute.textContent = audio2.muted ? "Sound: off" : "Sound: on";

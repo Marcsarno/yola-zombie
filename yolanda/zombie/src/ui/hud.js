@@ -44,6 +44,8 @@ export class Hud {
     $('tuneCopy').addEventListener('click', () => { const s = JSON.stringify(this.T, null, 1); navigator.clipboard?.writeText(s).catch(() => {}); $('tuneCopy').textContent = 'Copied'; setTimeout(() => ($('tuneCopy').textContent = 'Copy values'), 1200); });
     const vol = $('volume'); vol.value = audio.volume;
     vol.addEventListener('input', () => { audio.setVolume(+vol.value); store.set('volume', +vol.value); });
+    // the three buses (music, effects, dialogue) under the master volume: 0 silences one without touching the others
+    for (const b of ['music', 'sfx', 'voice']) { const el = $('vol_' + b); if (!el) continue; el.value = audio.levels[b]; el.addEventListener('input', () => { audio.setLevel(b, +el.value); store.set('lvl_' + b, +el.value); }); }
     const mute = $('muteBtn');
     const syncMute = () => { mute.textContent = audio.muted ? 'Sound: off' : 'Sound: on'; $('muteTop').classList.toggle('off', audio.muted); };
     const toggleMute = () => { audio.init(); audio.setMuted(!audio.muted); store.set('muted', audio.muted); syncMute(); };
