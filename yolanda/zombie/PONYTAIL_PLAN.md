@@ -115,6 +115,21 @@ next one starts.
   within 1-7 mm across fps); hit head tip 3-4x head, reversals 1-4%; sword combo FLAILS (tip 2-3x head, paths up to
   29 cm apart at uneven 60 fps: chaotic, not jittery). Image shots/ponytail/step5b_*. Not committed.
 
+- COMMITTED abe9223 (2026-10-16, user: "lets commit").
+
+## FINAL POLISH PASS (saved for when the game is more complete; user, 2026-10-16)
+
+Hair clipping through her body (light, mobile-safe). Why it clips: only the 3 bone tails are tested (a bone's middle
+can cut through), only the centre line (the ponytail is up to 12 cm wide and flat), the spheres leave gaps, and there
+is nothing on the shoulders. Plan, one at a time, measured before/after:
+1. Measure first: a Blender check counting ponytail vertices inside her body over every clip (no game cost).
+2. Capsules along neck -> spine instead of the 6 spheres (no gaps).
+3. Test each bone's midpoint too (6 points).
+4. Test the ponytail's two edge points at its wide part (the flat sides into the shoulders).
+5. Shoulder capsules sized across ALL clips (rest-pose spheres failed: the shoulders rise with the arms).
+6. Optional: tame the flailing in attacks (sword combo).
+Cost: a few thousand distance checks per frame, well under 0.1 ms on a phone. Mesh-level collision is out (too heavy).
+
 ## After the ponytail (user, 2026-10-16)
 
 - Face bend (user spotted in the Rig Lab, bat_idle frame 22): NOT caused by the ponytail work (face weights untouched).
