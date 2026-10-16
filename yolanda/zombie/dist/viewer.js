@@ -37697,6 +37697,21 @@ void main() {
     g.userData.tip = inner.getObjectByName("ImpactPoint");
     return g;
   }
+  var PISTOL_CORE_SCALE = 0.8;
+  function prepPistolCore(gltf) {
+    const inner = gltf.scene, g = new Group();
+    inner.rotation.y = -Math.PI / 2;
+    inner.scale.setScalar(PISTOL_CORE_SCALE);
+    inner.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = false;
+        o.frustumCulled = false;
+      }
+    });
+    g.add(inner);
+    g.userData = { muzzle: inner.getObjectByName("Muzzle"), slide: inner.getObjectByName("Pistol_Slide"), gripL: inner.getObjectByName("GameGrip_L") };
+    return g;
+  }
   function prepPumpShort(gltf) {
     const g = gltf.scene, find = (n) => g.getObjectByName(n);
     g.traverse((o) => {
@@ -38194,6 +38209,17 @@ void main() {
     controls.target.set(0, k === "face" ? 1.38 : 0.85, 0);
     controls.update();
   }
+  function camHands(who) {
+    const a = who === "ref" ? ref : main;
+    if (!a?.action || !a.root.visible) return;
+    a.grip("Right", _v2);
+    a.grip("Left", _v22);
+    const c = _v2.clone().lerp(_v22, 0.5);
+    const dir = camera.position.clone().sub(controls.target).normalize();
+    controls.target.copy(c);
+    camera.position.copy(c).addScaledVector(dir, 0.5);
+    controls.update();
+  }
   setCam("three");
   for (const b of document.querySelectorAll("[data-cam]")) b.onclick = () => setCam(b.dataset.cam);
   var gltfLoader = new GLTFLoader();
@@ -38219,6 +38245,66 @@ void main() {
   var clipT0 = (c) => Math.min(...c.tracks.map((t) => t.times[0]));
   var fpsOf = (c) => CLIP_FPS[c.name] || 30;
   var clipFrames = (c) => Math.round((c.duration - clipT0(c)) * fpsOf(c)) + 1;
+  var FCOL = { thumb: 16731469, index: 16765517, middle: 5111688, ring: 5096447, pinky: 13794303 };
+  var fingerKind = (n) => {
+    const m = /thumb|index|middle|ring|pinky/i.exec(n);
+    return m ? m[0].toLowerCase() : null;
+  };
+  var FSPH = new SphereGeometry(45e-4, 8, 6);
+  var ACTORS = [];
+  var FingerSkel = class {
+    constructor(actor) {
+      this.a = actor;
+      this.g = new Group();
+      this.g.visible = false;
+      this.joints = [];
+      this.pairs = [];
+      actor.obj.traverse((b) => {
+        if (!b.isBone) return;
+        const k = fingerKind(b.name);
+        if (!k) return;
+        const s = new Mesh(FSPH, new MeshBasicMaterial({ color: FCOL[k], depthTest: false }));
+        s.renderOrder = 12;
+        s.frustumCulled = false;
+        this.g.add(s);
+        this.joints.push([b, s]);
+        if (b.parent?.isBone) this.pairs.push([b.parent, b, new Color(FCOL[k])]);
+      });
+      const geo = new BufferGeometry(), n = this.pairs.length * 2;
+      geo.setAttribute("position", new BufferAttribute(new Float32Array(n * 3), 3));
+      const col = new Float32Array(n * 3);
+      this.pairs.forEach(([, , c], i) => {
+        for (const j of [0, 1]) c.toArray(col, (i * 2 + j) * 3);
+      });
+      geo.setAttribute("color", new BufferAttribute(col, 3));
+      this.lines = new LineSegments(geo, new LineBasicMaterial({ vertexColors: true, depthTest: false }));
+      this.lines.renderOrder = 12;
+      this.lines.frustumCulled = false;
+      this.g.add(this.lines);
+      scene.add(this.g);
+    }
+    update(show) {
+      this.g.visible = show;
+      if (!show) return;
+      const k = this.a.height / 1.62;
+      for (const [b, s] of this.joints) {
+        b.getWorldPosition(s.position);
+        s.scale.setScalar(k);
+      }
+      const P = this.lines.geometry.attributes.position;
+      this.pairs.forEach(([p, c], i) => {
+        p.getWorldPosition(_v3);
+        P.setXYZ(i * 2, _v3.x, _v3.y, _v3.z);
+        c.getWorldPosition(_v3);
+        P.setXYZ(i * 2 + 1, _v3.x, _v3.y, _v3.z);
+      });
+      P.needsUpdate = true;
+    }
+  };
+  function updateFingers() {
+    const on = $("fingerBones")?.checked !== false;
+    for (const a of ACTORS) a.fing.update(on && (a === main || a === ref && ref.root.visible) && a.root.parent === scene);
+  }
   var Actor = class {
     constructor(obj, height) {
       this.root = new Group();
@@ -38243,6 +38329,8 @@ void main() {
       this.frames = 1;
       this.t0 = 0;
       this.hair = new HairSway(this.bones);
+      this.fing = new FingerSkel(this);
+      ACTORS.push(this);
     }
     setHeight(h) {
       this.height = h;
@@ -38572,6 +38660,8 @@ void main() {
     $("frameInfo").textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)`;
     drawVidRef(f);
     updateBat();
+    updateFingers();
+    updatePistolFitUI();
     const lines = [];
     if (main.action) {
       main.grip("Right", _v2);
@@ -38603,6 +38693,14 @@ void main() {
     held[k].visible = false;
     scene.add(held[k]);
   }
+  loadG("assets/weapons/pistol_core.glb").then((g) => {
+    scene.remove(held.pistol);
+    held.pistol = prepPistolCore(g);
+    held.pistol.visible = false;
+    scene.add(held.pistol);
+    refresh();
+  }).catch(() => {
+  });
   loadG("assets/weapons/fire_axe.glb").then((g) => {
     held.axe = prepAxe(g);
     held.axe.visible = false;
@@ -38612,23 +38710,165 @@ void main() {
   }).catch(() => {
   });
   var _m4 = new Matrix4();
-  function updateBat() {
-    const w = weaponOf();
-    for (const k2 in held) held[k2].visible = false;
-    if (!main?.action || !HELD[w] || !held[w] || $("batShow")?.checked === false) return;
-    const o = held[w], k = main.height / 1.62;
+  var heldRef = { bat: makeBat(), pistol: makePistol() };
+  for (const k in heldRef) {
+    heldRef[k].visible = false;
+    scene.add(heldRef[k]);
+  }
+  loadG("assets/weapons/pistol_core.glb").then((g) => {
+    scene.remove(heldRef.pistol);
+    heldRef.pistol = prepPistolCore(g);
+    heldRef.pistol.visible = false;
+    scene.add(heldRef.pistol);
+  }).catch(() => {
+  });
+  loadG("assets/weapons/fire_axe.glb").then((g) => {
+    heldRef.axe = prepAxe(g);
+    heldRef.axe.visible = false;
+    scene.add(heldRef.axe);
+  }).catch(() => {
+  });
+  var PG = { at: new Vector3(0, 5e-3, 26e-4), axis: new Vector3(0, 0.9509, 0.3094).normalize() };
+  function pistolInFist(a, o) {
+    const B = a.bones, c = new Vector3();
+    let n = 0;
+    for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
+      const b = B["RightHand" + f + i];
+      if (b) {
+        c.add(b.getWorldPosition(_v3));
+        n++;
+      }
+    }
+    if (!n) return false;
+    c.multiplyScalar(1 / n);
+    const A = B.RightHandIndex1.getWorldPosition(new Vector3()).sub(B.RightHandPinky1.getWorldPosition(_v3)).normalize();
+    const F = B.RightHand.getWorldPosition(new Vector3()).sub(B.RightForeArm.getWorldPosition(_v3));
+    F.addScaledVector(A, -F.dot(A)).normalize();
+    const zb = new Vector3(0, 0, 1).addScaledVector(PG.axis, -PG.axis.z).normalize();
+    const M1 = new Matrix4().makeBasis(PG.axis, zb, new Vector3().crossVectors(PG.axis, zb));
+    const M2 = new Matrix4().makeBasis(A, F, new Vector3().crossVectors(A, F));
+    const q0 = new Quaternion().setFromRotationMatrix(M2.multiply(M1.transpose()));
+    const P = fitOf(a), d2r = Math.PI / 180;
+    o.scale.multiplyScalar(P.size / 100);
+    o.quaternion.copy(q0).multiply(new Quaternion().setFromEuler(new Euler(P.tilt * d2r, P.turn * d2r, P.roll * d2r, "YXZ")));
+    const off = new Vector3(P.side, P.up, P.fwd).multiplyScalar(1e-3 * a.height / 1.62).applyQuaternion(q0);
+    o.position.copy(c).add(off).sub(PG.at.clone().multiplyScalar(o.scale.x * PISTOL_CORE_SCALE).applyQuaternion(o.quaternion));
+    return true;
+  }
+  var PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
+  var FITS = {};
+  var fitKey = (a) => a === main ? S.char : a === refX ? "xbot" : "mannequin";
+  var fitOf = (a) => {
+    var _a4;
+    return FITS[_a4 = fitKey(a)] || (FITS[_a4] = { ...PFIT0 });
+  };
+  var fitsReady = fetch("assets/hold/pistol_fit.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
+    for (const [k, v] of Object.entries(j)) if (typeof v === "object") FITS[k] = { ...PFIT0, ...v };
+    try {
+      for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem("pistolFits") || "{}"))) FITS[k] = { ...PFIT0, ...v };
+    } catch {
+    }
+    pfitSync?.();
+    refresh?.();
+  });
+  var PFIT_ROWS = [
+    ["size", "size %", 60, 120, 1],
+    ["fwd", "forward / back (mm)", -60, 60, 1],
+    ["up", "up / down the grip (mm)", -60, 60, 1],
+    ["side", "left / right (mm)", -40, 40, 1],
+    ["tilt", "tilt muzzle up/down (deg)", -45, 45, 1],
+    ["turn", "turn muzzle left/right (deg)", -45, 45, 1],
+    ["roll", "roll (deg)", -45, 45, 1]
+  ];
+  var pfitWho = "main";
+  var pfitSync = null;
+  function buildPistolFit() {
+    const box = document.createElement("div");
+    box.id = "pfit";
+    box.style.cssText = "position:fixed;right:8px;top:200px;z-index:30;background:rgba(20,26,30,.85);color:#ddd;font:11px system-ui;padding:6px 8px;border-radius:8px;width:210px";
+    box.innerHTML = '<b>Pistol fit</b> &nbsp;editing: <button id="pfitMain"></button><button id="pfitRef"></button><div id="pfitRows"></div><button id="pfitReset">reset this one</button> <button id="pfitSave">save</button><div id="pfitOut" style="opacity:.7;word-break:break-all;font-size:10px"></div>';
+    document.body.appendChild(box);
+    const rows = box.querySelector("#pfitRows"), out = box.querySelector("#pfitOut");
+    const cur = () => fitOf(pfitWho === "ref" ? ref : main);
+    const keep = () => {
+      try {
+        localStorage.setItem("pistolFits", JSON.stringify(FITS));
+      } catch {
+      }
+    };
+    const set = [];
+    for (const [k, label, lo, hi, st] of PFIT_ROWS) {
+      const r = document.createElement("div");
+      r.style.cssText = "display:grid;grid-template-columns:1fr 34px;gap:0;margin:1px 0";
+      r.innerHTML = `<label>${label}</label><span></span><input type="range" min="${lo}" max="${hi}" step="${st}" style="grid-column:1/3">`;
+      const inp = r.querySelector("input"), sp = r.querySelector("span");
+      set.push(() => {
+        inp.value = cur()[k];
+        sp.textContent = cur()[k];
+      });
+      inp.oninput = () => {
+        cur()[k] = +inp.value;
+        sp.textContent = inp.value;
+        keep();
+        pfitSync();
+        refresh();
+      };
+      rows.appendChild(r);
+    }
+    const bm = box.querySelector("#pfitMain"), br = box.querySelector("#pfitRef");
+    pfitSync = () => {
+      const on = "background:#2a7fd4;color:#fff", off = "background:#333;color:#ccc";
+      bm.textContent = CHARS[S.char]?.label || S.char;
+      br.textContent = ref === refX ? "X Bot" : "mannequin";
+      bm.style.cssText = pfitWho === "main" ? on : off;
+      br.style.cssText = pfitWho === "ref" ? on : off;
+      set.forEach((f) => f());
+      out.textContent = fitKey(pfitWho === "ref" ? ref : main) + " " + JSON.stringify(cur());
+    };
+    bm.onclick = () => {
+      pfitWho = "main";
+      pfitSync();
+    };
+    br.onclick = () => {
+      pfitWho = "ref";
+      pfitSync();
+    };
+    box.querySelector("#pfitReset").onclick = () => {
+      Object.assign(cur(), PFIT0);
+      keep();
+      pfitSync();
+      refresh();
+    };
+    box.querySelector("#pfitSave").onclick = async () => {
+      const r = await fetch("/__shot/pistol_fit.json", { method: "POST", body: JSON.stringify(FITS, null, 1) });
+      out.textContent = r.ok ? "saved (shots/pistol_fit.json)" : "save failed";
+    };
+    pfitSync();
+    return box;
+  }
+  var pfitBox = null;
+  function updatePistolFitUI() {
+    pfitBox || (pfitBox = buildPistolFit());
+    pfitBox.style.display = weaponOf() === "pistol" && $("pistolFist")?.checked ? "" : "none";
+  }
+  function placeHeldOn(a, o) {
+    const w = weaponOf(), k = a.height / 1.62;
     o.visible = true;
     o.scale.setScalar(k);
-    main.grip("Right", _v2);
-    main.grip("Left", _v22);
+    if (w === "pistol" && $("pistolFist")?.checked && pistolInFist(a, o)) return;
+    a.grip("Right", _v2);
+    a.grip("Left", _v22);
     let d, pos;
     if (w === "pistol") {
-      main.bones.RightForeArm.getWorldPosition(_v3);
+      a.bones.RightForeArm.getWorldPosition(_v3);
       d = _v2.clone().sub(_v3).normalize();
       pos = _v2.clone();
     } else {
       d = _v2.clone().sub(_v22);
-      if (d.lengthSq() < 1e-8) return;
+      if (d.lengthSq() < 1e-8) {
+        o.visible = false;
+        return;
+      }
       d.normalize();
       pos = _v2.clone().add(_v22).multiplyScalar(0.5);
     }
@@ -38638,6 +38878,14 @@ void main() {
     const y = new Vector3().crossVectors(d, x);
     o.quaternion.setFromRotationMatrix(_m4.makeBasis(x, y, d));
     o.position.copy(pos);
+  }
+  function updateBat() {
+    const w = weaponOf();
+    for (const k in held) held[k].visible = false;
+    for (const k in heldRef) heldRef[k].visible = false;
+    if (!main?.action || !HELD[w] || !held[w] || $("batShow")?.checked === false) return;
+    placeHeldOn(main, held[w]);
+    if (ref?.root.visible && ref.action && $("gunref").checked && heldRef[w]) placeHeldOn(ref, heldRef[w]);
   }
   var vr = { panel: null, cv: null, label: null, cfg: null, imgs: {}, pose: null };
   function vidRef(name) {
@@ -38753,6 +39001,10 @@ void main() {
       host2.appendChild(row);
     }
     $("alignShell").onclick = alignShell;
+    $("camYolaHands").onclick = () => camHands("main");
+    $("camRefHands").onclick = () => camHands("ref");
+    $("fingerBones").onchange = () => updateFingers();
+    $("pistolFist").onchange = refresh;
     $("fitReset").onclick = () => {
       Object.assign(fit, FIT0);
       for (const r of host.children) r._set(fit[r.dataset.k]);
@@ -38862,10 +39114,11 @@ void main() {
         main.hair.on = $("hairSway").checked;
         main.hair.update(dt * (S.playing ? S.speed : 1));
       }
+      updateFingers();
       controls.update();
       renderer.render(scene, camera);
     });
-    window.__lab = { renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
+    window.__lab = { camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
       Object.assign(shellFit, o);
       for (const r of $("fit2").children) r._set(shellFit[r.dataset.k]);
       refresh();

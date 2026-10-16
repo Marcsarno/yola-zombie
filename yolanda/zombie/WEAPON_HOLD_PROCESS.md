@@ -292,3 +292,37 @@ Yola frame = clip 13 video frame − 19.
   (step 6.4) is next.
 - **Next:** build Yola's combo with the 3D bat path as the primary, both hands fitted to it, the body from mocap or
   Blender poses matched to the solve's torso turn, then the checker and grip sheets, then the game.
+
+## 15. Yola 3.0 hold check (2026-10-16, read-only, the user: "her rig is slightly different size")
+
+- **Proportions** (both shown 1.62 m): Yola 3.0 is adult-proportioned, Yola 2.0 chibi. Yola 3.0 vs 2.0: arm reach to the
+  grip 52.8 vs 44.1 cm (+20%), upper arm +26%, forearm +12%, hand-to-knuckle +26%, middle finger -10%, thigh +30%,
+  shin +18%, shoulders -4%.
+- **The game calibrates every socket on whatever skeleton it loads** (clipchars.js calibrate*Socket), so the weapons
+  land in her hands on both: bat grip on the fist centre 0 mm (both), shotgun left hand on the pump 0.2 vs 0 cm,
+  pistol left hand 5 vs 12 cm from the gun. Yola 3.0's right arm is nearly locked straight on the pistol (12 deg bend,
+  99% reach; Yola 2.0 30 deg).
+- **Close-ups (game renderer, 4 angles round the hands; shots/grip_*_y20_top_y30_bottom.png, hold_* for wide views):**
+  the same on both Yolas. Shotgun is the best (right hand on the grip, left cups the pump). Pistol: left hand an open
+  palm beside the gun. Axe: both hands flat open palms either side of the handle ("praying hands"), nothing closes.
+  Bat (one-handed): fingers half open, the bat hangs under them. Reads fine from the gameplay camera.
+- Not checked yet: attacks, reloads, running, the swaps between weapons.
+- **Inspect mode** (combat.html?mode=calm&inspect=1&yola=2|1, src/inspect.js): the real game, Yola standing still with a
+  free orbit camera; 1-5 weapons, H hands, B body, P cycles pistol models.
+- **Pistol switched to the Hospital Weapons Core pistol** (the user's pick 2026-10-16: "I hate the one she has"):
+  assets/weapons/pistol_core.glb (copy of the pack file), prepPistolCore (weaponModels.js: -90 deg about Y, origin
+  GameGrip_R), loaded in main.js for both Yolas (makePistol only if the file fails), and in the Rig Lab. Its muzzle is
+  4.3 cm higher and 4.4 cm further out than the old one's. The sim's muzzle point (core/weapons.js PISTOL_HOLD, measured
+  on Yola 2.0) sits ~20 cm from Yola 3.0's rendered muzzle, mostly her longer arms, not the gun; only the invisible shot
+  ray's start uses it (flash and tracer come from the real muzzle). Left as is. Not yet updated: moves.js /
+  assets/moves/weapons.json pistol entries (the move library still shows the old one). Images: shots/pistol_*.png.
+- Lesson kept from round 19: closing fingers was tried and rejected ("claws"); any finger work goes one weapon at a
+  time against the source rig (X Bot / UAL mannequin) in motion.
+- **Pistol at 80% size** (the user: "about 20% too large"): PISTOL_CORE_SCALE in weaponModels.js, in the game too.
+- **Rig Lab, side by side with the reference rig:** finger bones on both rigs (coloured per finger), the held weapon in
+  both rigs' hands, "Yola hands" / "Ref hands" camera buttons. Finding: on pistol_idle her finger curl matches X Bot's
+  within a few degrees: the fists are fine, the gun's placement is the problem.
+- **Pistol fit panel** (Rig Lab, "pistol grip in the fist"): the grip through the fist centre along the fist's grip line,
+  then the user's per-character fit (size, moves in mm along the gun's axes, turns in degrees). Saved fits:
+  assets/hold/pistol_fit.json (yola2 and xbot set by the user 2026-10-16). Rig Lab only so far: the game still places
+  the pistol the old way (next: use the yola2 fit in clipchars.js placeWeapons).

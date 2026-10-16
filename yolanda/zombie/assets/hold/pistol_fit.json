@@ -1,0 +1,7 @@
+{
+  "note": "Pistol (Hospital Weapons Core, 80% size) fit per character, set by the user in the Rig Lab Pistol fit panel. Applied on top of the grip-in-the-fist placement (viewer.js pistolInFist): size %, moves in mm along the gun's own axes (fwd = barrel, up = grip, side), turns in degrees, pivoting on the fist centre.",
+  "yola2": { "size": 101, "fwd": -21, "up": 7, "side": 14, "tilt": 3, "turn": -14, "roll": -11 },
+  "yola": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 },
+  "xbot": { "size": 100, "fwd": -36, "up": 8, "side": 17, "tilt": 15, "turn": -18, "roll": -5 },
+  "mannequin": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 }
+}

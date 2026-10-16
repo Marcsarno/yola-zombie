@@ -68,6 +68,19 @@ export function prepAxe(gltf) {
   return g;
 }
 
+// Hospital Weapons Core pistol (assets/weapons/pistol_core.glb, the user's pick 2026-10-16 over the built-in model): the
+// GLB's origin is GameGrip_R (on the grip's axis), barrel +X, +Y up; wrapped into makePistol's frame (barrel +Z, top +Y,
+// origin still at the grip) by a -90 deg turn about Y. 'Muzzle' as makePistol's muzzle; 'Pistol_Slide' for a recoil later.
+export const PISTOL_CORE_SCALE = 0.8; // the user, 2026-10-16: "about 20% too large" (the pack gun is 230 mm, full-size)
+export function prepPistolCore(gltf) {
+  const inner = gltf.scene, g = new THREE.Group();
+  inner.rotation.y = -Math.PI / 2; inner.scale.setScalar(PISTOL_CORE_SCALE); // (scaled about the grip: the hand stays put)
+  inner.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+  g.add(inner);
+  g.userData = { muzzle: inner.getObjectByName('Muzzle'), slide: inner.getObjectByName('Pistol_Slide'), gripL: inner.getObjectByName('GameGrip_L') };
+  return g;
+}
+
 // Short pump shotgun (assets/weapons/pump_short.glb, blender/make_pump.py): origin at the right-hand grip, barrel
 // along +X, +Y up. 'Pump' (the forend) slides along X and carries the left-hand hold point (GameGrip_L);
 // 'LoadPort' is the loading slot under the receiver, where the shell goes in.

@@ -4,7 +4,7 @@
 // hit flinch) are applied after the mixer in character ("container") space.
 import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe } from './weaponModels.js';
+import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe, prepPistolCore } from './weaponModels.js';
 import { ikArm as solveArm } from './ik.js';
 import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, isMelee, groundAttack } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
@@ -191,7 +191,7 @@ export class YolaView extends ClipBody {
     for (const [n, src] of [['shotgun_reload_upper', 'sg_reload'], ['shotgun_hold_upper', 'sg_reload'], ['pistol_reload_upper', 'pistol_reload']]) {
       const t = hipsTrack(byName[src]); if (t) this.upperHips[n] = t.createInterpolant(new Float32Array(4));
     }
-    this.pistol = makePistol(1);
+    this.pistol = weapons.pistol ? prepPistolCore(weapons.pistol) : makePistol(1); // (the pack pistol; the built-in one if it fails to load)
     this.shotgun = prepPumpShort(weapons.shotgun);
     this.shell = prepShell(weapons.shell); this.shell.visible = false; scene.add(this.shell);
     this.melee = prepAxe(weapons.axe);

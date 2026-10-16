@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe } from './render/weaponModels.js';
+import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe, prepPistolCore, PISTOL_CORE_SCALE } from './render/weaponModels.js';
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC } from './core/weapons.js';
@@ -66,6 +66,13 @@ function resize() { renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); rende
 addEventListener('resize', resize); resize();
 const CAMS = { face: [0, 1.42, 0.85], front: [0, 1.0, 3.4], side: [3.4, 1.0, 0], left: [-3.4, 1.0, 0], back: [0, 1.0, -3.4], top: [0, 4.4, 0.01], three: [2.4, 1.5, 2.6] };
 function setCam(k) { const p = CAMS[k]; camera.position.set(...p); controls.target.set(0, k === 'face' ? 1.38 : 0.85, 0); controls.update(); }
+// zoom onto one rig's hands, keeping the current viewing direction (orbit around them afterwards)
+function camHands(who) {
+  const a = who === 'ref' ? ref : main; if (!a?.action || !a.root.visible) return;
+  a.grip('Right', _v); a.grip('Left', _v2); const c = _v.clone().lerp(_v2, 0.5);
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  controls.target.copy(c); camera.position.copy(c).addScaledVector(dir, 0.5); controls.update();
+}
 setCam('three');
 for (const b of document.querySelectorAll('[data-cam]')) b.onclick = () => setCam(b.dataset.cam);
 
@@ -91,6 +98,42 @@ const clipT0 = (c) => Math.min(...c.tracks.map((t) => t.times[0]));
 const fpsOf = (c) => CLIP_FPS[c.name] || 30;
 const clipFrames = (c) => Math.round((c.duration - clipT0(c)) * fpsOf(c)) + 1;
 
+// Finger bones drawn over the mesh (the user, 2026-10-16: "the finger skeleton enabled"): a dot on every finger joint and a
+// line from each joint to its parent, coloured per finger (thumb red, index yellow, middle green, ring blue, pinky violet).
+const FCOL = { thumb: 0xff4d4d, index: 0xffd24d, middle: 0x4dff88, ring: 0x4dc3ff, pinky: 0xd27bff };
+const fingerKind = (n) => { const m = /thumb|index|middle|ring|pinky/i.exec(n); return m ? m[0].toLowerCase() : null; };
+const FSPH = new THREE.SphereGeometry(0.0045, 8, 6);
+const ACTORS = [];
+class FingerSkel {
+  constructor(actor) {
+    this.a = actor; this.g = new THREE.Group(); this.g.visible = false; this.joints = []; this.pairs = [];
+    actor.obj.traverse((b) => {
+      if (!b.isBone) return; const k = fingerKind(b.name); if (!k) return;
+      const s = new THREE.Mesh(FSPH, new THREE.MeshBasicMaterial({ color: FCOL[k], depthTest: false })); s.renderOrder = 12; s.frustumCulled = false;
+      this.g.add(s); this.joints.push([b, s]);
+      if (b.parent?.isBone) this.pairs.push([b.parent, b, new THREE.Color(FCOL[k])]);
+    });
+    const geo = new THREE.BufferGeometry(), n = this.pairs.length * 2;
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+    const col = new Float32Array(n * 3); this.pairs.forEach(([, , c], i) => { for (const j of [0, 1]) c.toArray(col, (i * 2 + j) * 3); });
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    this.lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false })); this.lines.renderOrder = 12; this.lines.frustumCulled = false;
+    this.g.add(this.lines); scene.add(this.g);
+  }
+  update(show) {
+    this.g.visible = show; if (!show) return;
+    const k = this.a.height / 1.62;
+    for (const [b, s] of this.joints) { b.getWorldPosition(s.position); s.scale.setScalar(k); }
+    const P = this.lines.geometry.attributes.position;
+    this.pairs.forEach(([p, c], i) => { p.getWorldPosition(_v3); P.setXYZ(i * 2, _v3.x, _v3.y, _v3.z); c.getWorldPosition(_v3); P.setXYZ(i * 2 + 1, _v3.x, _v3.y, _v3.z); });
+    P.needsUpdate = true;
+  }
+}
+function updateFingers() {
+  const on = $('fingerBones')?.checked !== false;
+  for (const a of ACTORS) a.fing.update(on && (a === main || (a === ref && ref.root.visible)) && a.root.parent === scene);
+}
+
 class Actor {
   constructor(obj, height) {
     this.root = new THREE.Group(); this.obj = obj; this.root.add(obj);
@@ -101,6 +144,7 @@ class Actor {
     this.helper = new THREE.SkeletonHelper(obj); this.helper.visible = false; this.helper.material.depthTest = false;
     this.clip = null; this.action = null; this.frames = 1; this.t0 = 0;
     this.hair = new HairSway(this.bones); // the ponytail sway (the new Yola), stepped by the render loop
+    this.fing = new FingerSkel(this); ACTORS.push(this);
   }
   setHeight(h) { this.height = h; this.root.scale.setScalar(h / this.nat); this.root.updateMatrixWorld(true); }
   play(clip) {
@@ -326,7 +370,7 @@ function refresh() {
   updateMarks(); updateShell(f);
   $('scrub').value = f;
   $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)`;
-  drawVidRef(f); updateBat();
+  drawVidRef(f); updateBat(); updateFingers(); updatePistolFitUI();
   const lines = [];
   if (main.action) { main.grip('Right', _v); main.grip('Left', _v2); lines.push(`${CHARS[S.char].label}   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
   if (ref.root.visible && ref.action) { ref.grip('Right', _v); ref.grip('Left', _v2); lines.push(`Reference   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
@@ -343,20 +387,104 @@ function refresh() {
 // held weapons (the game's own models): bat and axe between the hands along the line through both grips (origin at the
 // hands' midpoint, handle along +Z); the pistol in the right hand, barrel along the forearm (origin at the grip, top +Y)
 const held = { bat: makeBat(), pistol: makePistol() }; for (const k in held) { held[k].visible = false; scene.add(held[k]); }
+loadG('assets/weapons/pistol_core.glb').then((g) => { scene.remove(held.pistol); held.pistol = prepPistolCore(g); held.pistol.visible = false; scene.add(held.pistol); refresh(); }).catch(() => {}); // the game's pistol (the pack's)
 loadG('assets/weapons/fire_axe.glb').then((g) => { held.axe = prepAxe(g); held.axe.visible = false; scene.add(held.axe); applyGun(); refresh(); }).catch(() => {});
 const _m4 = new THREE.Matrix4();
-function updateBat() {
-  const w = weaponOf();
-  for (const k in held) held[k].visible = false;
-  if (!main?.action || !HELD[w] || !held[w] || $('batShow')?.checked === false) return;
-  const o = held[w], k = main.height / 1.62; o.visible = true; o.scale.setScalar(k);
-  main.grip('Right', _v); main.grip('Left', _v2);
+// the same held weapon in the reference rig's hands (the user, 2026-10-16: to compare how each hand closes on it)
+const heldRef = { bat: makeBat(), pistol: makePistol() }; for (const k in heldRef) { heldRef[k].visible = false; scene.add(heldRef[k]); }
+loadG('assets/weapons/pistol_core.glb').then((g) => { scene.remove(heldRef.pistol); heldRef.pistol = prepPistolCore(g); heldRef.pistol.visible = false; scene.add(heldRef.pistol); }).catch(() => {});
+loadG('assets/weapons/fire_axe.glb').then((g) => { heldRef.axe = prepAxe(g); heldRef.axe.visible = false; scene.add(heldRef.axe); }).catch(() => {});
+// PROPOSED pistol placement (Rig Lab only, "pistol in the fist" checkbox): the grip through the right fist's centre (the
+// curled fingers' joints), along the fist's grip axis (pinky -> index knuckle), the barrel toward the forearm's direction.
+// Pistol frame (pistol_core.glb, measured): grip fist point (0, 0.005, 0.0026), grip axis (0, 0.9509, 0.3094), barrel +Z.
+const PG = { at: new THREE.Vector3(0, 0.005, 0.0026), axis: new THREE.Vector3(0, 0.9509, 0.3094).normalize() };
+function pistolInFist(a, o) {
+  const B = a.bones, c = new THREE.Vector3(); let n = 0;
+  for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (const i of [1, 2, 3]) { const b = B['RightHand' + f + i]; if (b) { c.add(b.getWorldPosition(_v3)); n++; } }
+  if (!n) return false; c.multiplyScalar(1 / n);
+  const A = B.RightHandIndex1.getWorldPosition(new THREE.Vector3()).sub(B.RightHandPinky1.getWorldPosition(_v3)).normalize();
+  const F = B.RightHand.getWorldPosition(new THREE.Vector3()).sub(B.RightForeArm.getWorldPosition(_v3)); F.addScaledVector(A, -F.dot(A)).normalize();
+  const zb = new THREE.Vector3(0, 0, 1).addScaledVector(PG.axis, -PG.axis.z).normalize(); // the barrel, square to the grip axis
+  const M1 = new THREE.Matrix4().makeBasis(PG.axis, zb, new THREE.Vector3().crossVectors(PG.axis, zb));
+  const M2 = new THREE.Matrix4().makeBasis(A, F, new THREE.Vector3().crossVectors(A, F));
+  const q0 = new THREE.Quaternion().setFromRotationMatrix(M2.multiply(M1.transpose()));
+  // the user's fit for this rig (sliders): size, then a move and a turn in the gun's own axes, pivoting on the fist centre
+  const P = fitOf(a), d2r = Math.PI / 180;
+  o.scale.multiplyScalar(P.size / 100);
+  o.quaternion.copy(q0).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(P.tilt * d2r, P.turn * d2r, P.roll * d2r, 'YXZ')));
+  const off = new THREE.Vector3(P.side, P.up, P.fwd).multiplyScalar(0.001 * a.height / 1.62).applyQuaternion(q0);
+  o.position.copy(c).add(off).sub(PG.at.clone().multiplyScalar(o.scale.x * PISTOL_CORE_SCALE).applyQuaternion(o.quaternion));
+  return true;
+}
+// pistol fit sliders (the user, 2026-10-16): one fit per character (Yola 3.0 / Yola 2.0 / X Bot / the UAL mannequin), the
+// saved ones in assets/hold/pistol_fit.json; edits are kept in this browser and "save" writes zombie/shots/pistol_fit.json
+// (copied into assets/hold by Claude when the user says so)
+const PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
+const FITS = {};
+const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
+const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
+const fitsReady = fetch('assets/hold/pistol_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
+  for (const [k, v] of Object.entries(j)) if (typeof v === 'object') FITS[k] = { ...PFIT0, ...v };
+  try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('pistolFits') || '{}'))) FITS[k] = { ...PFIT0, ...v }; } catch { /* none */ }
+  pfitSync?.(); refresh?.();
+});
+const PFIT_ROWS = [['size', 'size %', 60, 120, 1], ['fwd', 'forward / back (mm)', -60, 60, 1], ['up', 'up / down the grip (mm)', -60, 60, 1], ['side', 'left / right (mm)', -40, 40, 1],
+  ['tilt', 'tilt muzzle up/down (deg)', -45, 45, 1], ['turn', 'turn muzzle left/right (deg)', -45, 45, 1], ['roll', 'roll (deg)', -45, 45, 1]];
+let pfitWho = 'main', pfitSync = null;
+function buildPistolFit() {
+  const box = document.createElement('div'); box.id = 'pfit';
+  box.style.cssText = 'position:fixed;right:8px;top:200px;z-index:30;background:rgba(20,26,30,.85);color:#ddd;font:11px system-ui;padding:6px 8px;border-radius:8px;width:210px';
+  box.innerHTML = '<b>Pistol fit</b> &nbsp;editing: <button id="pfitMain"></button><button id="pfitRef"></button><div id="pfitRows"></div>' +
+    '<button id="pfitReset">reset this one</button> <button id="pfitSave">save</button><div id="pfitOut" style="opacity:.7;word-break:break-all;font-size:10px"></div>';
+  document.body.appendChild(box);
+  const rows = box.querySelector('#pfitRows'), out = box.querySelector('#pfitOut');
+  const cur = () => fitOf(pfitWho === 'ref' ? ref : main);
+  const keep = () => { try { localStorage.setItem('pistolFits', JSON.stringify(FITS)); } catch { /* private window */ } };
+  const set = [];
+  for (const [k, label, lo, hi, st] of PFIT_ROWS) {
+    const r = document.createElement('div'); r.style.cssText = 'display:grid;grid-template-columns:1fr 34px;gap:0;margin:1px 0';
+    r.innerHTML = `<label>${label}</label><span></span><input type="range" min="${lo}" max="${hi}" step="${st}" style="grid-column:1/3">`;
+    const inp = r.querySelector('input'), sp = r.querySelector('span');
+    set.push(() => { inp.value = cur()[k]; sp.textContent = cur()[k]; });
+    inp.oninput = () => { cur()[k] = +inp.value; sp.textContent = inp.value; keep(); pfitSync(); refresh(); };
+    rows.appendChild(r);
+  }
+  const bm = box.querySelector('#pfitMain'), br = box.querySelector('#pfitRef');
+  pfitSync = () => {
+    const on = 'background:#2a7fd4;color:#fff', off = 'background:#333;color:#ccc';
+    bm.textContent = CHARS[S.char]?.label || S.char; br.textContent = ref === refX ? 'X Bot' : 'mannequin';
+    bm.style.cssText = pfitWho === 'main' ? on : off; br.style.cssText = pfitWho === 'ref' ? on : off;
+    set.forEach((f) => f()); out.textContent = fitKey(pfitWho === 'ref' ? ref : main) + ' ' + JSON.stringify(cur());
+  };
+  bm.onclick = () => { pfitWho = 'main'; pfitSync(); }; br.onclick = () => { pfitWho = 'ref'; pfitSync(); };
+  box.querySelector('#pfitReset').onclick = () => { Object.assign(cur(), PFIT0); keep(); pfitSync(); refresh(); };
+  box.querySelector('#pfitSave').onclick = async () => {
+    const r = await fetch('/__shot/pistol_fit.json', { method: 'POST', body: JSON.stringify(FITS, null, 1) });
+    out.textContent = r.ok ? 'saved (shots/pistol_fit.json)' : 'save failed';
+  };
+  pfitSync();
+  return box;
+}
+let pfitBox = null;
+function updatePistolFitUI() { pfitBox ||= buildPistolFit(); pfitBox.style.display = weaponOf() === 'pistol' && $('pistolFist')?.checked ? '' : 'none'; }
+function placeHeldOn(a, o) {
+  const w = weaponOf(), k = a.height / 1.62; o.visible = true; o.scale.setScalar(k);
+  if (w === 'pistol' && $('pistolFist')?.checked && pistolInFist(a, o)) return;
+  a.grip('Right', _v); a.grip('Left', _v2);
   let d, pos;
-  if (w === 'pistol') { main.bones.RightForeArm.getWorldPosition(_v3); d = _v.clone().sub(_v3).normalize(); pos = _v.clone(); }
-  else { d = _v.clone().sub(_v2); if (d.lengthSq() < 1e-8) return; d.normalize(); pos = _v.clone().add(_v2).multiplyScalar(0.5); }
+  if (w === 'pistol') { a.bones.RightForeArm.getWorldPosition(_v3); d = _v.clone().sub(_v3).normalize(); pos = _v.clone(); }
+  else { d = _v.clone().sub(_v2); if (d.lengthSq() < 1e-8) { o.visible = false; return; } d.normalize(); pos = _v.clone().add(_v2).multiplyScalar(0.5); }
   const x = new THREE.Vector3().crossVectors(UP, d); if (x.lengthSq() < 1e-6) x.set(1, 0, 0); x.normalize();
   const y = new THREE.Vector3().crossVectors(d, x);
   o.quaternion.setFromRotationMatrix(_m4.makeBasis(x, y, d)); o.position.copy(pos);
+}
+function updateBat() {
+  const w = weaponOf();
+  for (const k in held) held[k].visible = false;
+  for (const k in heldRef) heldRef[k].visible = false;
+  if (!main?.action || !HELD[w] || !held[w] || $('batShow')?.checked === false) return;
+  placeHeldOn(main, held[w]);
+  if (ref?.root.visible && ref.action && $('gunref').checked && heldRef[w]) placeHeldOn(ref, heldRef[w]);
 }
 const vr = { panel: null, cv: null, label: null, cfg: null, imgs: {}, pose: null };
 function vidRef(name) {
@@ -411,6 +539,9 @@ function buildUI() {
     row.dataset.k = k; host2.appendChild(row);
   }
   $('alignShell').onclick = alignShell;
+  $('camYolaHands').onclick = () => camHands('main'); $('camRefHands').onclick = () => camHands('ref');
+  $('fingerBones').onchange = () => updateFingers();
+  $('pistolFist').onchange = refresh;
   $('fitReset').onclick = () => { Object.assign(fit, FIT0); for (const r of host.children) r._set(fit[r.dataset.k]); refresh(); };
   $('fitHere').onclick = () => { mainGun.calibrate(); refGun.calibrate(); refresh(); };
   $('clip').onchange = (e) => setClip(e.target.value);
@@ -462,7 +593,8 @@ function buildUI() {
       refresh();
     }
     if (main?.hair?.ok) { main.hair.on = $('hairSway').checked; main.hair.update(dt * (S.playing ? S.speed : 1)); }
+    updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();

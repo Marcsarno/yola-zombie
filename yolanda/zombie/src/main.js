@@ -25,6 +25,7 @@ import * as physlab from './physlab.js';
 import { Opening } from './opening/opening.js';
 import { OBJECTIVES } from './opening/content.js';
 import { startLab } from './lab.js';
+import { startInspect } from './inspect.js';
 import { startTestArena } from './arena/testarena.js';
 import { makeBat } from './render/weaponModels.js';
 
@@ -152,12 +153,13 @@ async function load() {
   // the guard's shield (the user's v2 package): the GLB and the two damage maps, loaded once and shared by every guard
   const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
     .then(([gltf, damageTextures]) => { ZombieView.shieldAsset = { gltf, damageTextures }; }).catch((e) => console.warn('shield asset failed: stand-in shield', e));
-  const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shell.glb')]);
+  const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shell.glb'),
+    loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null)]);
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-  const [yg, zgs, clipdata, [sgG, axeG, shellG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
+  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
+  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup')); // (tools/anim/yola_clips.py: knocked flat, getting up)
   setupBat(yg.animations); window.game.yolaClips = yg.animations;
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
@@ -170,6 +172,7 @@ async function load() {
   warmPrograms();
   requestAnimationFrame(frame);
   if (params.has('lab')) startLab(window.game, params.get('lab') || 'bat'); // the combat lab (frame-by-frame melee against the reference)
+  if (params.has('inspect')) window.game.inspect = startInspect(window.game); // free camera on Yola's weapon holds (src/inspect.js)
 }
 // The bat: Quaternius's Sword Regular Combo (one-handed, four strikes), built on the Yola that plays, the bat in her right
 // fist and the matching Sword Idle as its stance (src/render/libattack.js). Without the clip the older bat combo stays.
@@ -454,7 +457,7 @@ function runFrame(dt, doRender = true) {
   arena.update(dt, ix, iz, THREE.MathUtils.degToRad(tuning.camYaw), sim.level);
   hud.setEmergency(!!arena.em && arena.em.target > 0);
   hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
-  if (camOverride) applyCamOverride(); else updateCamera(dt, ix, iz, iyaw, p);
+  if (camOverride) applyCamOverride(); else if (!window.game.camFree) updateCamera(dt, ix, iz, iyaw, p); // (camFree: inspect mode moves the camera)
   // player screen position (mouse aiming)
   _v.set(ix, 1.0, iz).project(camera);
   playerScreen = { x: (_v.x * 0.5 + 0.5) * innerWidth, y: (-_v.y * 0.5 + 0.5) * innerHeight };
