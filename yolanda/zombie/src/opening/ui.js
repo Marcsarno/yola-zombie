@@ -65,6 +65,14 @@ const CSS = `
 #op .card .why { background: none; border: 0; color: #2a8f92; font-weight: 800; text-decoration: underline; padding: 4px 2px; min-height: 0; width: auto; display: inline-block; }
 #op .card .explain { font-size: 13px; color: #2c5558; padding: 2px 2px 6px; }
 #op .card { max-height: 74vh; overflow-y: auto; }
+/* short phones (a 320 x 690 portrait was tested): a tighter card that clears the patient monitor at the top */
+@media (max-height: 760px) {
+  #op .card { bottom: 1.5vh; padding: 10px 11px 7px; border-radius: 16px; }
+  #op .card h3 { font-size: 15px; margin-bottom: 7px; }
+  #op .card button { padding: 8px 12px; min-height: 40px; font-size: 14px; margin-bottom: 6px; }
+  #op .card .ctx { font-size: 11.5px; padding: 5px 8px; margin-bottom: 6px; }
+  #op .card .note { font-size: 10.5px; }
+}
 #op .card h3 { margin: 0 0 10px; font-size: 16px; line-height: 1.3; }
 #op .card button { display: block; width: 100%; text-align: left; margin: 0 0 7px; padding: 12px 14px; border-radius: 12px; border: 2px solid #bfe0dc; background: #fff; color: #20474a; font: 650 15px/1.3 system-ui, sans-serif; min-height: 46px; }
 #op .card button:active, #op .card button.pick { background: #d6f0ec; border-color: #2f9fa0; }
