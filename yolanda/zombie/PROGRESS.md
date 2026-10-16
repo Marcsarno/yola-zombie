@@ -519,3 +519,18 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     as Tripo made them, and only the cloth's metal-roughness map changed (0.70 -> 0.90, shine kept 0.3 in R, flagged
     clothSpec). yola2_export.py: YOLA2_CLOTH=matte is the default (full = the cotton look, none = as made).
     recordings/round18/scrubs_matte_front_three_quarter.jpg, scrubs_matte_side_back.jpg.
+- 2026-10-16 (round 19, grips on every weapon, Yola 2; save points 8cbb899 + the next commit): the user asked for every grip,
+  idle and walk checked one by one, nothing clipping. Found and fixed: (1) the mixer skipped re-applying constant tracks
+  after the per-frame rest reset, so every Mixamo clip's finger curl was lost in game (flat hands): ClipBody.mix();
+  (2) every weapon was placed at the wrist / knuckle midpoint (grips 6-9 cm off the fists): now the grip's centre goes to
+  the closed fist's centre with the wrist turned along it, the support hand IK'd by its fist, the fingers opened to the
+  grip (render/holdsolve.js, core/weapons.js HOLD_DEFS, fitted by tools/gripcheck.js fitGrip); (3) the pistol grip raked the
+  wrong way; (4) the axe went into her head while walking: clearHead; (5) clips where her arms sank into her wider body:
+  tools/anim/yola2_fixes.py (arms turned out at the shoulder for arms-down clips, hands moved out within an attack's played
+  frames). Checks: tools/gripcheck.js measures against her skinned mesh in the real game (weapon into body, arms into body,
+  fingers into the weapon) for every weapon x idle/walk/run/strafe/back. Rig Lab: viewer.html?char=yola2&compare shows
+  BEFORE / AFTER side by side with a Finished / Not finished list (src/viewcompare.js).
+  NOT FINISHED: pistol and shotgun (fingers still sink 9-15 mm: the models' grips; the user is choosing models; the
+  Hospital Weapons Core pistol is measured and ready: tools/hold/pistol_core_README.md), pistol support hand overlaps
+  the right hand ~2 cm, unarmed back run ~17 mm, chop / sword combo / kick / cross / reload / swing residuals (upper arms
+  into her chest in swings), deaths and knockdowns untouched, the first Yola not re-checked with the shared changes.

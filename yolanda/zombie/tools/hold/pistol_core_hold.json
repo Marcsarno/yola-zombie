@@ -1,0 +1,179 @@
+{
+ "_doc": "Measured by tools/measure_pistol_core.mjs from the GLB (README: tools/hold/pistol_core_README.md). Metres unless a key ends in _mm or _deg. glb: the GLB's own frame (glTF, +Y up, barrel +X, +Z = the gun's right side, origin = GameGrip_R). game: the game's pistol frame (makePistol: barrel +Z, top +Y, +X = the gun's left), origin still GameGrip_R, reached by game.rotation_* (GLB -> game). game.HOLD_DEFS_pistol: grip_primary = where the closed right fist's centre goes, shaft_axis = the grip's axis bottom -> top (pinky -> index), support_point = GameGrip_L.",
+ "source": {
+  "file": "assets/weapons/pistol_core.glb",
+  "bytes": 603448,
+  "nodes": [
+   "Pistol",
+   "GameGrip_L",
+   "GameGrip_R",
+   "Muzzle",
+   "Pistol_Body",
+   "Pistol_Magazine_Art",
+   "Pistol_Slide",
+   "SightLine"
+  ]
+ },
+ "glb": {
+  "markers": {
+   "GameGrip_R": {
+    "position": [0, 0, 0],
+    "parent": "Pistol",
+    "x_axis": [1, 0, 0],
+    "y_axis": [0, 1, 0]
+   },
+   "GameGrip_L": {
+    "position": [0.02, 0.01, 0],
+    "parent": "Pistol",
+    "x_axis": [1, 0, 0],
+    "y_axis": [0, 1, 0]
+   },
+   "Muzzle": {
+    "position": [0.201, 0.101, 0],
+    "parent": "Pistol",
+    "x_axis": [1, 0, 0],
+    "y_axis": [0, 1, 0]
+   },
+   "SightLine": {
+    "position": [0.182, 0.123, 0],
+    "parent": "Pistol",
+    "x_axis": [1, 0, 0],
+    "y_axis": [0, 1, 0]
+   }
+  },
+  "bbox": {
+   "min": [-0.0308, -0.043, -0.019],
+   "max": [0.199, 0.123, 0.019],
+   "size": [0.2298, 0.166, 0.038]
+  },
+  "mesh_bbox": {
+   "Pistol_Body": {
+    "min": [-0.0276, -0.0398, -0.0184],
+    "max": [0.199, 0.123, 0.0184],
+    "size": [0.2266, 0.1628, 0.0368]
+   },
+   "Pistol_Magazine_Art": {
+    "min": [-0.0308, -0.043, -0.019],
+    "max": [0.0147, -0.032, 0.019],
+    "size": [0.0456, 0.011, 0.038]
+   },
+   "Pistol_Slide": {
+    "min": [-0.0249, 0.085, -0.015],
+    "max": [0.196, 0.118, 0.015],
+    "size": [0.2209, 0.033, 0.03]
+   }
+  },
+  "barrel": {
+   "direction": [1, 0, 0],
+   "direction_source": "Muzzle node +X (agrees with the slide PCA)",
+   "up": [0, 1, 0],
+   "side_right": [0, 0, 1],
+   "from_slide_pca": [1, -0.0098, 0.0005],
+   "muzzle_minus_slide_centre": [1, -0.0043, 0],
+   "muzzle_node_x_axis": [1, 0, 0],
+   "disagreement_deg": {
+    "slide_pca_vs_muzzle_minus_slide_centre": 0.32,
+    "slide_pca_vs_muzzle_node_x": 0.56
+   },
+   "slide_centre": [0.0855, 0.1015, 0],
+   "slide_bottom_y": 0.085,
+   "muzzle_ahead_of_GameGrip_R": 0.201,
+   "bore_above_GameGrip_R": 0.101
+  },
+  "grip": {
+   "method": "horizontal cuts every 0.5 mm, rearmost piece = grip; axis = PCA line through the cut centres between the baseplate and the trigger guard; fist centre = that axis at mid height, centred in the cross-section perpendicular to the axis",
+   "bottom_y": -0.043,
+   "top_front_strap_y": 0.0436,
+   "top_back_strap_y": 0.0616,
+   "top_y": 0.0526,
+   "height_mm": 95.6,
+   "length_along_axis_mm": 100.6,
+   "mid_y": 0.0048,
+   "axis_fit_from_y": -0.03,
+   "axis_fit_to_y": 0.0416,
+   "axis_fit_cuts": 144,
+   "fist_centre": [0.0026, 0.005, 0],
+   "axis_bottom_to_top": [0.3094, 0.9509, 0],
+   "rake_deg": 18,
+   "axis_vertex_pca": [0.3484, 0.9374, 0],
+   "rake_vertex_pca_deg": 20.4,
+   "vertex_count": 906,
+   "cross_section_at_fist": {
+    "width_mm": 36.8,
+    "depth_mm": 42.5,
+    "girth_mm": 148.8,
+    "note": "cut perpendicular to the axis; width = side to side, depth = front strap to back strap, girth = the outline's convex perimeter (what the fingers wrap)"
+   },
+   "cross_section_range_along_clean_grip": {
+    "width_mm": [34, 38],
+    "depth_mm": [38.4, 43.4]
+   },
+   "horizontal_depth_at_mid_mm": 44.8,
+   "horizontal_width_at_mid_mm": 36.8,
+   "GameGrip_R": {
+    "along_axis_from_fist_mm": -5.5,
+    "off_axis_mm": 1,
+    "off_axis_toward_muzzle_mm": -1,
+    "off_axis_side_mm": 0,
+    "to_surface_mm": {
+     "front": 21.9,
+     "back": 20.1,
+     "right": 18.4,
+     "left": 18.4
+    },
+    "verdict": "at the grip centre (on its axis)"
+   },
+   "GameGrip_L": {
+    "along_axis_from_fist_mm": 10.2,
+    "off_axis_mm": 14.9,
+    "off_axis_toward_muzzle_mm": 14.9,
+    "off_axis_side_mm": 0,
+    "to_surface_mm": {
+     "front": 6.7,
+     "back": 36.6,
+     "right": 18.4,
+     "left": 18.4
+    },
+    "verdict": "inside the grip, off its axis"
+   }
+  }
+ },
+ "game": {
+  "rotation_rows": [
+   [0, 0, -1],
+   [0, 1, 0],
+   [1, 0, 0]
+  ],
+  "rotation_quaternion_xyzw": [0, -0.707107, 0, 0.707107],
+  "rotation_y_rad": -1.570796,
+  "three_js": "wrap the GLB scene: inner.rotation.y = -Math.PI / 2 (-1.5708 rad); game = (-z, y, x) of the GLB",
+  "origin": "GameGrip_R (the GLB origin), unchanged by the rotation",
+  "HOLD_DEFS_pistol": {
+   "grip_primary": [0, 0.005, 0.0026],
+   "shaft_axis": [0, 0.9509, 0.3094],
+   "support_point": [0, 0.01, 0.02]
+  },
+  "ref_axis": [0, -0.3094, 0.9509],
+  "barrel_axis": [0, 0, 1],
+  "up_axis": [0, 1, 0],
+  "muzzle": [0, 0.101, 0.201],
+  "sightline": [0, 0.123, 0.182],
+  "GameGrip_R": [0, 0, 0],
+  "GameGrip_L": [0, 0.01, 0.02],
+  "muzzle_from_grip_primary": [0, 0.096, 0.1984],
+  "bbox": {
+   "min": [-0.019, -0.043, -0.0308],
+   "max": [0.019, 0.123, 0.199],
+   "size": [0.038, 0.166, 0.2298]
+  },
+  "makePistol_for_comparison": {
+   "grip_primary": [0, -0.03, -0.012],
+   "shaft_axis": [0, 0.9611, 0.2764],
+   "muzzle": [0, 0.058, 0.157],
+   "grip_block_mm": [30, 105, 46],
+   "grip_girth_mm": 131.4,
+   "muzzle_from_grip_primary": [0, 0.088, 0.169],
+   "rake_deg": 16
+  }
+ }
+}
