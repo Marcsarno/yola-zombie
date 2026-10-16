@@ -8,6 +8,8 @@ import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe } from './weapon
 import { ikArm as solveArm } from './ik.js';
 import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, isMelee, groundAttack } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
+import { ShieldController } from './ShieldController.mjs';
+import { shieldState } from '../core/zombies.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
@@ -879,11 +881,33 @@ function makeStandInShield(scene) {
   return g;
 }
 
+function shieldPhysics(P, fragments, dir) {
+  const items = fragments.map((f, i) => {
+    const o = f.object; o.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(o), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+    const axis = size.x >= size.y && size.x >= size.z ? new THREE.Vector3(1, 0, 0) : size.y >= size.z ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+    const half = Math.max(size.x, size.y, size.z) * 0.38, r = THREE.MathUtils.clamp(Math.min(...[size.x, size.y, size.z].sort((a, b) => b - a).slice(0, 2)) * 0.32, 0.05, 0.14);
+    const a = c.clone().addScaledVector(axis, -half), b = c.clone().addScaledVector(axis, half);
+    const side = new THREE.Vector3(dir.z, 0, -dir.x).multiplyScalar((i % 2 ? 1 : -1) * (0.6 + 0.3 * i / 4));
+    const vel = dir.clone().multiplyScalar(1.6).add(side).add(new THREE.Vector3(0, 1.4 + (i % 3) * 0.4, 0));
+    const q0 = f.worldQuaternion.clone(), s0 = f.worldScale.x;
+    const off = c.clone().sub(f.worldPosition).applyQuaternion(q0.clone().invert()).divideScalar(s0); // the centre in the fragment's frame
+    return { o, id: P.addPiece(a, b, r, vel, q0), off, s0, st: [] };
+  });
+  const tmp = new THREE.Vector3();
+  return {
+    update() { for (const it of items) { const st = P.read(it.id, it.st); if (!st) continue; it.o.quaternion.copy(st[0].quat); it.o.position.copy(st[0].pos).sub(tmp.copy(it.off).multiplyScalar(it.s0).applyQuaternion(st[0].quat)); } },
+    dispose() { for (const it of items) P.remove(it.id); },
+  };
+}
+
 export class ZombieView extends ClipBody {
   static physics = null; // shared physics backend (custom / Rapier); null = death clips only
   static fx = null;      // blood effects
   static scene = null;   // severed pieces live in the scene, independent of the (pooled) views
   static pieces = [];
+  static shieldAsset = null; // { gltf, damageTextures }: the guard's bed-panel shield (loaded once, shared by every guard)
+  static brokenShields = []; // shields in pieces: their controllers run the 5 s lifetime and the fade, then free themselves
   constructor(scene, gltf, height, speeds, opts = {}) {
     const model = skClone(gltf.scene);
     const mats = [];
@@ -931,7 +955,7 @@ export class ZombieView extends ClipBody {
     this.sprintNative = (opts.sprint || 4.3) * (height / 1.74); // m/s the sprint clip's feet travel at full rate
     this.girth = opts.girth || 1; // the ragdoll's body width against the slim standard zombie
     for (const n of ['sprint', 'shield_upper']) if (this.act(n)) { this.act(n).play(); this.act(n).setEffectiveWeight(0); }
-    if (opts.shield) this.shield = makeStandInShield(scene);
+    if (opts.shield) this.wantShield = true; // (the real shield is made per life in bind: a broken one is never reused)
   }
 
   // ---- dismemberment ----
@@ -1027,11 +1051,55 @@ export class ZombieView extends ClipBody {
     for (const n of ['walk', 'idle']) { this.act(n).play(); this.act(n).time = Math.random() * this.act(n).getClip().duration; }
     if (this.hasCrawl) this.act('crawl').play();
     for (const n of ['sprint', 'shield_upper']) if (this.act(n)) this.act(n).play();
-    if (this.shield) this.shield.visible = true;
+    if (this.wantShield) this.freshShield();
     this.react.x = this.react.z = this.react.vx = this.react.vz = 0;
     this.bleed = {};
   }
-  hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); this.endRagdoll(); if (this.shield) this.shield.visible = false; }
+  hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); this.endRagdoll(); if (this.shieldC && this.shieldC.state !== 'break') this.shieldC.object3D.visible = false; }
+
+  // ---- the guard's shield (render/ShieldController.mjs: the package's controller, unchanged) ----
+  // A new intact shield for each life (a damaged one is disposed; a broken one finishes its own fall and fade).
+  freshShield() {
+    const S = ZombieView.shieldAsset;
+    if (this.shieldC && this.shieldC.state !== 'break' && !this.shieldC.disposed) this.shieldC.dispose();
+    this.shieldC = null; this.shieldFit = false;
+    if (!S) { this.shield ||= makeStandInShield(ZombieView.scene); this.shield.visible = true; return; } // (the asset failed to load: the stand-in)
+    const c = new ShieldController({ gltf: S.gltf, scene: ZombieView.scene, damageTextures: S.damageTextures });
+    c.object3D.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    this.shieldC = c;
+  }
+  get shieldUp() { const c = this.shieldC; return !!(c && !c.disposed && c.state !== 'break') || !!(this.shield && this.shield.visible); }
+  // Fit once per life, in the hold pose: the centred rear grip (Grip_Center) in his left palm, the panel upright and
+  // square to his facing; from then on the shield rides the hand bone, so the hand never slides on the grip.
+  fitShield() {
+    const c = this.shieldC, hand = this.bones.LeftHand, mid = this.bones.LeftHandMiddle1 || this.bones.LeftHandIndex1;
+    if (!c || !hand) return;
+    this.container.updateMatrixWorld(true);
+    // the bar sits inside the closed fist: between the knuckle line (index and pinky bases) and the curled middle finger
+    const B = this.bones, wp = (n) => B[n]?.getWorldPosition(new THREE.Vector3());
+    const I = wp('LeftHandIndex1'), Pk = wp('LeftHandPinky1'), M3 = wp('LeftHandMiddle3');
+    const palm = I && Pk && M3 ? I.add(Pk).multiplyScalar(0.25).addScaledVector(M3, 0.5) : hand.getWorldPosition(new THREE.Vector3()).lerp(mid.getWorldPosition(new THREE.Vector3()), 0.55);
+    const qh = hand.getWorldQuaternion(new THREE.Quaternion()), qd = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.container.rotation.y);
+    const ws = hand.getWorldScale(new THREE.Vector3()).x;
+    c.object3D.position.set(0, 0, 0); c.object3D.quaternion.identity(); c.object3D.scale.setScalar(1); c.object3D.updateMatrixWorld(true);
+    const grip = c.grips.center.getWorldPosition(new THREE.Vector3()); // the grip in the shield's own (unit) frame
+    hand.add(c.object3D);
+    c.object3D.scale.setScalar(1 / ws);
+    c.object3D.quaternion.copy(qh.clone().invert().multiply(qd));
+    c.object3D.position.copy(hand.worldToLocal(palm.clone().sub(grip.applyQuaternion(qd))));
+    c.object3D.visible = true; this.shieldFit = true;
+  }
+  // the panel in pieces: the five fragments become capsules in the game's custom physics (thrown off along the blow),
+  // never the baked clip at the same time; the hold stops at once
+  breakShield(z) {
+    const c = this.shieldC; if (!c || c.state === 'break' || c.disposed) return;
+    const P = ZombieView.physics, dir = new THREE.Vector3(z.hitDirX || Math.sin(this.container.rotation.y + Math.PI), 0, z.hitDirZ || Math.cos(this.container.rotation.y + Math.PI));
+    const useP = P && P.ready;
+    c.object3D.visible = true;
+    c.breakApart(useP ? { mode: 'physics', createPhysics: ({ fragments }) => shieldPhysics(P, fragments, dir) } : { mode: 'clip' });
+    ZombieView.brokenShields.push(c);
+    this.shieldC = null;
+  }
 
   // ---- ragdoll: from the current animated pose, carrying the blow's momentum ----
   startRagdoll(z) {
@@ -1147,12 +1215,18 @@ export class ZombieView extends ClipBody {
     this.act('walk').setEffectiveWeight(move * (1 - sprint) * (1 - one) * (1 - crawl));
     this.act('idle').setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
     this.act('walk').timeScale = clamp(sp / this.nativeWalk, 0.5, 3.2);
-    if (this.act('shield_upper')) this.act('shield_upper').setEffectiveWeight((1 - one) * (1 - crawl)); // (the guard's shield hold over the legs)
+    // the guard's shield hold over the legs, while he has it: it outweighs a hit reaction (the panel stays up and square while
+    // he flinches behind it) but yields to his own attacks (the slam swings it)
+    if (this.act('shield_upper')) { const own = z.state === 'windup' || z.state === 'strike' || z.state === 'recover'; this.act('shield_upper').setEffectiveWeight(this.shieldUp ? (own ? 1 - one : 3) * (1 - crawl) : 0); }
     if (this.hasCrawl) { const c = this.act('crawl'); c.setEffectiveWeight(crawl * (1 - one)); c.timeScale = clamp(sp / (0.22 * this.height), 0.45, 2.5); }
     this.mixer.update(dt);
     this.container.updateMatrixWorld(true);
     this.bleeding(dt);
-    if (this.shield) this.placeShield(z);
+    if (this.shieldC) {
+      const st = shieldState(z);
+      if (st === 'break' || !z.alive) this.breakShield(z); // (dead with it intact: it falls apart with him)
+      else { if (!this.shieldFit) this.fitShield(); if (st !== this.shieldC.state && st !== 'none') this.shieldC.setDamageState(st); this.shieldC.object3D.visible = this.outer.visible; }
+    } else if (this.shield) this.placeShield(z);
 
     // small directional jolt on every hit (the clip gives the body reaction; this gives direction)
     if (z.hitSeq !== this.lastSeq) {
@@ -1182,6 +1256,8 @@ export class ZombieView extends ClipBody {
     S.rotation.set(0, yaw, 0); S.visible = this.outer.visible;
   }
 
+  // (the broken shields' lifetimes run on the game clock with the severed pieces)
+  static updateShields(dt) { const L = ZombieView.brokenShields; for (let i = L.length - 1; i >= 0; i--) { L[i].update(dt); if (L[i].disposed) L.splice(i, 1); } }
   // Ragdolled: the skeleton follows the physics parts. The body leaves the physics world once the
   // corpse starts sinking (the last pose is kept and sinks with the model).
   updateRagdoll(z, dt = 1 / 60) {

@@ -40,6 +40,7 @@ export const TUNING_DEFAULTS = {
   zombieWindup: 0.62, // s: the lunge's wind-up (its telegraph: arms back, red wedge on the floor)
   scratchWindup: 0.42, // s: the scratch's quicker wind-up (used close in: under ~0.9 m)
   scratchDamage: 8,
+  sprinterWindup: 0.7, // s: the orderly plants, roars and squares up before a charge (the lane shows on the floor)
   sprinterSpeed: 3.9, // m/s: the sprinter's charge (Yola runs 3.3)
   sprinterTurn: 0.9, // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
   lookAhead: 1.3, // camera look-ahead toward aim (m)

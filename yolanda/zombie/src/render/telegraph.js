@@ -16,6 +16,9 @@ export class Telegraphs {
     this.scene = scene;
     this.geo = Object.fromEntries(Object.entries(ZATTACKS).map(([k, A]) => [k, sector(A.arc)]));
     this.pool = []; this.used = new Map();
+    // the orderly's charge lane: a long strip from her feet along the line she will run (unit length along +z)
+    this.laneGeo = new THREE.PlaneGeometry(1, 1); this.laneGeo.rotateX(-Math.PI / 2); this.laneGeo.translate(0, 0, 0.5);
+    this.lanes = new Map(); this.lanePool = [];
     this.enabled = true;
   }
   make() {
@@ -56,5 +59,20 @@ export class Telegraphs {
       }
     }
     for (const [id, g] of this.used) if (!seen.has(id)) { g.visible = false; this.used.delete(id); this.pool.push(g); }
+    // charge lanes: growing over her wind-up, held faint while she runs, gone once she brakes
+    const lseen = new Set();
+    if (this.enabled) for (const z of zombies) {
+      if (z.kind !== 'sprinter' || !z.alive || z.down) continue;
+      const winding = !z.sprinting && z.spotT > 0, running = z.sprinting && !z.braking;
+      if (!winding && !running) continue;
+      lseen.add(z.id);
+      let m = this.lanes.get(z.id);
+      if (!m) { m = this.lanePool.pop() || this.scene.add(new THREE.Mesh(this.laneGeo, new THREE.MeshBasicMaterial({ color: 0xff3a2a, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }))).children.at(-1); m.renderOrder = 3; this.lanes.set(z.id, m); }
+      const px = z.px ?? z.x, pz = z.pz ?? z.z;
+      m.visible = true; m.position.set(px + (z.x - px) * alpha, 0.025, pz + (z.z - pz) * alpha); m.rotation.y = z.yaw;
+      const u = winding ? Math.min(1, z.spotT / 0.7) : 1;
+      m.scale.set(0.9, 1, 1 + 5 * u); m.material.opacity = winding ? 0.12 + 0.25 * u : 0.16;
+    }
+    for (const [id, m] of this.lanes) if (!lseen.has(id)) { m.visible = false; this.lanes.delete(id); this.lanePool.push(m); }
   }
 }

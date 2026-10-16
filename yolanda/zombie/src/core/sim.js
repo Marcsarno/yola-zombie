@@ -154,11 +154,11 @@ export class Sim {
       const off = Math.hypot(m.x + dx * along - z.x, m.z + dz * along - z.z);
       // a perfect shot: through the middle of a standing zombie, not too far off, and every once in a while the
       // head comes clean off (one hit, one kill)
-      const perfect = !z.down && !z.crawling && !z.severed.has('Head') && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
+      const perfect = !z.down && !z.crawling && !z.severed.has('Head') && !z.shieldBlocks(dx, dz) && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
       if (perfect) z.limbHp.Head = 0;
-      z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), 'pistol', this, perfect ? 'Head' : this.bulletPart(z, m.x, m.z, dx, dz));
+      const res = z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), 'pistol', this, perfect ? 'Head' : this.bulletPart(z, m.x, m.z, dx, dz));
       if (perfect) { this.stats.headshots = (this.stats.headshots || 0) + 1; this.emit({ type: 'headshot', id: z.id, x: z.x, z: z.z }); if (this.T.hitPause > 0) this.emit({ type: 'hitPause', dur: this.T.hitPause * 1.6 }); }
-      this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'zombie', id: z.id, yaw, killed: !z.alive });
+      this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'zombie', id: z.id, yaw, killed: !z.alive, blocked: res === 'blocked' });
     } else {
       this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz, yaw });
     }
@@ -190,14 +190,14 @@ export class Sim {
         pellets.push({ ex, ez, hit: 'zombie', id: r.zombie.id });
       } else pellets.push({ ex, ez, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz });
     }
-    const killed = [];
+    const killed = [], blocked = [];
     for (const [z, h] of hits) {
       this.stats.shotHits++;
       const pl = Math.hypot(h.px, h.pz) || 1;
-      z.takeHit(h.dmg, h.px / pl, h.pz / pl, (T.shotgunKnockback * pl) / S.pellets, SHOTGUN, this, h.parts);
+      if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, (T.shotgunKnockback * pl) / S.pellets, SHOTGUN, this, h.parts) === 'blocked') blocked.push(z.id);
       if (!z.alive) killed.push(z.id);
     }
-    this.emit({ type: 'shotgun', ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed });
+    this.emit({ type: 'shotgun', ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed, blocked });
     if (hits.size && this.T.hitPause > 0) this.emit({ type: 'hitPause', dur: this.T.hitPause * (killed.length ? 0.8 : 0.5) });
   }
 
@@ -312,22 +312,22 @@ export class Sim {
         if (A.style === 'chop') { dx = dx * 0.5 + rx * 0.5; dz = dz * 0.5 + rz * 0.5; const l2 = Math.hypot(dx, dz) || 1; dx /= l2; dz /= l2; }
         // the blade cuts: a killing blow can take the head; otherwise an arm (or, low, a leg) can come off
         if (fist) { // unarmed: no blade, no severing; a light stagger (the kick can knock them flat)
-          const dmgF = T.fistDamage * A.dmg;
+          const dmgF = T.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
           z.takeHit(dmgF, dx, dz, T.fistKnockback * A.knock, 'fist', this, 'torso', A.style);
-          this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
+          this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true, shield: blk });
           if (T.meleeHitPause > 0) this.emit({ type: 'hitPause', dur: T.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
           continue;
         }
         const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
-        const side = this.rand() < 0.5 ? '_L' : '_R';
-        const part = lethal && r < sv.head ? 'Head'
+        const side = this.rand() < 0.5 ? '_L' : '_R', shielded = z.shieldBlocks(dx, dz); // (a blow on the guard's shield cuts nothing)
+        const part = shielded ? 'torso' : lethal && r < sv.head ? 'Head'
           : r < (lethal ? sv.head : 0) + sv.arm ? 'Forearm' + side
           : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? 'LowerLeg' + side : 'torso';
         if (part !== 'torso' && !z.severed.has(part)) z.limbHp[part] = 0; // the blade goes through
         const last = act.ground || act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
         const kind = A.kind || (p.equipped === BAT ? 'bat' : 'axe'); // (a test-arena attack names its own: bat = blunt, axe = blade)
         z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? 'combo' : A.style);
-        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p.equipped });
+        this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p.equipped, shield: shielded });
         if (T.meleeHitPause > 0) this.emit({ type: 'hitPause', dur: T.meleeHitPause * (z.alive ? 1 : 1.3) * (last ? 1.25 : 0.8) });
       }
       px = tipX; pz = tipZ;

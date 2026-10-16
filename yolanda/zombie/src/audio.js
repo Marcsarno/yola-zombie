@@ -176,6 +176,15 @@ export class CombatAudio {
         this.tone(t + 0.55, 0.18, 70, { f2: 40, gain: 0.45 });
         break;
       case 'batMiss': this.noise(t, 0.12, { type: 'highpass', f: 2200, gain: 0.07, attack: 0.02 }); break;
+      case 'shieldHit': // a hollow board knock with a rattle of the bed frame
+        this.tone(t, 0.16, 190, { type: 'triangle', gain: 0.5 * k, f2: 120 }); this.noise(t, 0.08, { type: 'bandpass', f: 900, q: 1.5, gain: 0.45 * k });
+        this.tone(t + 0.01, 0.22, 620, { type: 'square', gain: 0.05 * k, f2: 560 }); this.noise(t + 0.03, 0.18, { type: 'bandpass', f: 3200, q: 4, gain: 0.08 * k });
+        break;
+      case 'shieldBreak': // the panel splits: a crack, a splintering tail and the pieces landing
+        this.noise(t, 0.04, { type: 'highpass', f: 1800, gain: 0.7 }); this.tone(t, 0.25, 140, { type: 'triangle', gain: 0.6, f2: 60 });
+        this.noise(t + 0.02, 0.45, { type: 'bandpass', f: 1400, q: 1.2, f2: 600, gain: 0.35, attack: 0.01 });
+        [0.35, 0.5, 0.62].forEach((d) => this.noise(t + d, 0.09, { type: 'lowpass', f: 700, gain: 0.3 }));
+        break;
       case 'clank':
         this.tone(t, 0.18, 880, { gain: 0.15, type: 'square', f2: 840 }); this.tone(t, 0.25, 1320, { gain: 0.08 });
         this.noise(t, 0.06, { f: 3000, q: 2, gain: 0.25 });

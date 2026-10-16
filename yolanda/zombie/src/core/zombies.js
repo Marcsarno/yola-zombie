@@ -24,13 +24,19 @@ export const ZATTACKS = {
 //  sprinter (the big lady): once she sees Yola she charges, faster than Yola can run, but she turns slowly at speed, so a
 //    late side-step sends her past and she has to brake and come round; running into a wall, a prop or another zombie at
 //    speed trips her: she stumbles back onto her backside and has to get up. Takes a couple more bullets.
-//  guard (the big guard): slow, hits very hard, takes many more bullets, barely pushed by blows and rarely floored. His
-//    shield (a broken-off hospital-bed panel) is being modelled; the renderer gives him a stand-in.
+//  guard (the big guard): slow, hits very hard, takes many more bullets, barely pushed by blows and rarely floored. He
+//    carries a broken-off hospital-bed panel as a shield (assets/shield, the user's v2 package): blows and bullets from
+//    the front (within ~70 degrees of where he faces) hit the shield instead of him. It cracks (hairline, then heavy) and
+//    breaks after SHIELD_HP of shield damage; melee wrecks it fastest (x1.5), bullets least (x0.7). Broken, he staggers
+//    and is open: every hit lands. From the side or behind, the shield never helps him.
 export const KINDS = {
   normal: { hp: 1, speed: 1, dmg: 1, knock: 1, kd: 1, stagger: 1, r: 0.32 },
   sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
   guard: { hp: 2.6, speed: 0.6, dmg: 1.8, knock: 0.4, kd: 0.25, stagger: 0.55, r: 0.42 },
 };
+export const SHIELD_HP = 190; // (about 3 bat or axe blows, 2 close shotgun blasts, 8 pistol rounds)
+export const SHIELD_MUL = { melee: 1.5, fist: 0.8, shotgun: 0.9, pistol: 0.7 };
+export const shieldState = (z) => !z.shieldMax ? 'none' : z.shieldHp <= 0 ? 'break' : z.shieldHp / z.shieldMax > 0.62 ? 'intact' : z.shieldHp / z.shieldMax > 0.3 ? 'hairline' : 'heavy';
 export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9; // the sprinter's trip: down onto her back, then up (no turn)
 
 export class Zombie {
@@ -62,7 +68,8 @@ export class Zombie {
     this.holdR = 2.0 + ((this.phase * 5.17) % 1) * 0.7; // waiting its turn: how far back it stands
     this.repoT = 0; this.repoDir = 0; this.repoWait = 1 + ((this.phase * 2.3) % 1) * 1.5; // waiting: short walks along the ring
     this.sprinting = false; this.spd = 0; this.spotT = 0; this.braking = false; this.chargeHit = false; this.fall = '';
-    this.slamCd = 1.5; // the guard's slam cooldown // the sprinter's charge (sprinterChase); fall: 'tumble' when she trips
+    this.slamCd = 1.5; // the guard's slam cooldown
+    this.shieldHp = this.shieldMax = this.kind === 'guard' ? SHIELD_HP : 0; // the sprinter's charge (sprinterChase); fall: 'tumble' when she trips
   }
   get armsLost() { return (this.severed.has('Forearm_L') ? 1 : 0) + (this.severed.has('Forearm_R') ? 1 : 0); }
 
@@ -75,6 +82,11 @@ export class Zombie {
   }
 
   set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
+  // does his shield take a blow travelling along (dirX, dirZ)? Only from the front, only while he holds it up
+  shieldBlocks(dirX, dirZ) {
+    if (!(this.shieldHp > 0) || !this.alive || this.down) return false;
+    return -(dirX * Math.sin(this.yaw) + dirZ * Math.cos(this.yaw)) > 0.34;
+  }
   get alive() { return this.state !== ZS.DYING && this.state !== ZS.DEAD; }
   get down() { return this.state === ZS.KNOCKDOWN || this.state === ZS.GETUP; }
 
@@ -84,6 +96,22 @@ export class Zombie {
     if (!this.alive) return;
     const wasDown = this.down, melee = isMelee(kind);
     const parts = Array.isArray(part) ? part : [[part, dmg]];
+    // the guard's shield takes a frontal blow: the panel is damaged, he is shoved a little and flinches, nothing else
+    if (this.shieldBlocks(dirX, dirZ)) {
+      const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1;
+      this.shieldHp = Math.max(0, this.shieldHp - total * mul);
+      this.kx += dirX * impulse * 0.35 * this.K.knock; this.kz += dirZ * impulse * 0.35 * this.K.knock;
+      this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse * 0.4; this.hitSeq++; this.hitKind = kind; this.hitStyle = 'shield'; this.hitFlash = 0.25;
+      if (this.shieldHp <= 0) { // broken: the pieces fall away and he reels, open
+        this.set(ZS.STAGGER, 1.1); this.attackCd = Math.max(this.attackCd, 1.3);
+        sim.emit({ type: 'shieldBreak', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind });
+      } else {
+        if (melee && this.state !== ZS.STAGGER) this.set(ZS.STAGGER, 0.28); // a hard blow on the panel rocks him back a step
+        if (this.state === ZS.WINDUP && melee) this.set(ZS.STAGGER, 0.35); // and breaks his wind-up
+        sim.emit({ type: 'shieldHit', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
+      }
+      return 'blocked';
+    }
     const limbMul = kind === 'shotgun' ? 1.35 : melee ? 1.2 : 1;
     let loss = 0, main = 'torso', mainD = 0;
     for (let [pt, d] of parts) {
@@ -209,24 +237,25 @@ export class Zombie {
       if (!sees || dist < 2.4 || this.attackCd > 0.3) { this.spotT = 0; return false; }
       if (this.spotT === 0) sim.emit({ type: 'sprinterSpot', id: this.id });
       this.spotT += dt;
+      // the wind-up: she plants, squares up to Yola and roars (the lane on the floor shows where she will run)
       this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
-      if (this.spotT < 0.35) return true; // the beat before the charge
+      if (this.spotT < (T.sprinterWindup ?? 0.7)) return true;
       this.sprinting = true; this.spd = Math.max(this.spd, 1.0); this.braking = false; this.chargeHit = false;
+      this.yaw = Math.atan2(dx, dz); // the line is set here: she never steers again until she has stopped
     }
     const off = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
     if (p.dead || dist > 14 || (!sees && dist > 3)) { this.sprinting = false; this.spotT = 0; this.spd = 0; return false; } // lost her
     if (!this.braking && off > 1.4 && dist < 3.5) this.braking = true; // ran past her
     let turn;
     if (this.braking) {
-      this.spd = Math.max(0, this.spd - 6 * dt); turn = this.spd < 1.2 ? 1.3 : 0.3; // brakes hard, comes round slowly
-      if (this.spd < 1.2 && off < 0.5) {
-        this.braking = false; this.chargeHit = false;
-        if (dist < 2.4) { this.sprinting = false; this.spotT = 0; this.spd = 0; this.attackCd = 0; return false; } // close: the normal attacks
+      this.spd = Math.max(0, this.spd - 6 * dt); turn = this.spd < 1.2 ? 1.3 : 0; // brakes hard in a straight line, then comes round slowly
+      if (this.spd < 0.6 && off < 0.6) { // stopped and facing her again: a breather, then a fresh wind-up (never a second run without one)
+        this.braking = false; this.chargeHit = false; this.sprinting = false; this.spotT = 0; this.spd = 0;
+        this.attackCd = dist < 2.4 ? 0 : 0.9; return false;
       }
     } else {
-      this.spd = Math.min(top, this.spd + (off < 0.6 ? 5.5 : 2) * dt);
-      // committed: inside 1.6 m at speed she no longer steers (a late side-step beats her; an early one does not)
-      turn = dist < 2.0 && this.spd > 2.4 ? 0 : (T.sprinterTurn ?? 0.9) * (1 + Math.max(0, 2.2 - this.spd) * 0.6);
+      this.spd = Math.min(top, this.spd + 5.5 * dt);
+      turn = 0; // committed: a straight line, no homing (a side-step at any point beats her)
     }
     this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), turn * dt);
     // the charge hit: into Yola at speed (once per pass); she runs on through

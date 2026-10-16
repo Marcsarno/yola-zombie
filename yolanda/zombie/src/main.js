@@ -18,6 +18,7 @@ import { Hud } from './ui/hud.js';
 import { angleDiff } from './core/world.js';
 import { meleeWorldSegment } from './core/player.js';
 import { CustomPhysics } from './render/physics/custom.js';
+import { loadDamageTextures } from './render/ShieldController.mjs';
 import { RapierPhysics } from './render/physics/rapier.js';
 import * as physlab from './physlab.js';
 import { Opening } from './opening/opening.js';
@@ -141,9 +142,12 @@ async function load() {
   // (each type's extra clips, the scratch, are retargeted onto its own skeleton: tools/anim/zombie_clip.py)
   const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), t.extra ? loader.loadAsync(t.extra).catch(() => null) : null]).then(([g, x]) => { if (x) g.animations.push(...x.animations); return g; })));
   const dataP = fetch('assets/clipdata.json').then((r) => r.json());
+  // the guard's shield (the user's v2 package): the GLB and the two damage maps, loaded once and shared by every guard
+  const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
+    .then(([gltf, damageTextures]) => { ZombieView.shieldAsset = { gltf, damageTextures }; }).catch((e) => console.warn('shield asset failed: stand-in shield', e));
   const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shell.glb')]);
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-  const [yg, zgs, clipdata, [sgG, axeG, shellG]] = await Promise.all([yolaP, zomP, dataP, wpnP]);
+  const [yg, zgs, clipdata, [sgG, axeG, shellG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
@@ -399,7 +403,7 @@ function runFrame(dt, doRender = true) {
   fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? (p.attackHeld ? 1 : 0.5) : 0.2);
 
   stepPhysics(animDt);
-  ZombieView.updatePieces(animDt);
+  ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt);
   // ---- zombies (pooled views) ----
   const seen = new Set();
   for (const z of sim.zombies) {
@@ -448,7 +452,7 @@ function handleEvents() {
         audio.play('shot');
         fx.muzzle(yola.muzzleWorld);
         fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez);
-        if (e.hit === 'zombie') { fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); audio.play('bulletHit'); if (!e.killed) audio.play('zombieHurt'); }
+        if (e.hit === 'zombie' && !e.blocked) { fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); audio.play('bulletHit'); if (!e.killed) audio.play('zombieHurt'); } // (a round on the guard's shield: its own knock, no blood)
         else if (e.hit === 'wall') { fx.impactWall(e.ex, e.ez, e.nx, e.nz); audio.play('ricochet'); }
         shake(0.12);
         break;
@@ -460,7 +464,7 @@ function handleEvents() {
         let flesh = 0;
         for (const pl of e.pellets) {
           fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6);
-          if (pl.hit === 'zombie') { if (flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); }
+          if (pl.hit === 'zombie') { if (!e.blocked?.includes(pl.id) && flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); }
           else if (pl.hit === 'wall' && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
         }
         if (flesh) audio.play('bulletHit', 1.3);
@@ -473,6 +477,7 @@ function handleEvents() {
       case 'swing': sim.stats.swings++; if (p.equipped !== 'bat' && !p.attacks[e.combo]?.windows) audio.play('swing', p.equipped === 'fists' ? 0.55 : e.combo === 1 ? 1.35 : 1); break;
       case 'whoosh': audio.play('swing', e.combo === 2 ? 1.3 : 1); break; // (the bat combo: timed to each strike) // (the second melee hit is the heavy one)
       case 'batHit': {
+        if (e.shield) { if (shakeOn) { camState.vx += e.dirX * 0.9 * tuning.shake; camState.vz += e.dirZ * 0.9 * tuning.shake; } break; } // (on the guard's shield: the shieldHit event sounds it)
         const chop = e.style === 'chop';
         // one impact sound per frame however many are struck (a swing through three zombies is one crack, not three)
         if (impactFrame !== frameNo) { impactFrame = frameNo; audio.play(e.fist ? 'fistHit' : e.weapon === 'bat' ? 'batHit' : 'axeHit', chop || e.style === 'kick' || e.style === 'heavy' ? 1.3 : 1); }
@@ -507,6 +512,8 @@ function handleEvents() {
       case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 16, 0xcfc6b4, 2.2, 0.8, 0.6); if (d < 7) shake(0.9 - d * 0.1); break; } // the guard's smash: dust, a ring, the floor shakes
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
+      case 'shieldHit': audio.play('shieldHit', e.kind === 'pistol' ? 0.7 : 1); fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ); if (e.kind !== 'pistol') shake(0.25); break;
+      case 'shieldBreak': audio.play('shieldBreak'); fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 0xd7e7e2, 2.4, 0.9, 0.55); shake(0.55); hud.popup('SHIELD BROKEN'); break;
       case 'headshot': audio.play('bulletHit', 1.5); shake(0.35); hud.popup('HEADSHOT'); break;
       case 'batMiss': audio.play('batMiss'); break;
       case 'batClank': audio.play('clank'); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;

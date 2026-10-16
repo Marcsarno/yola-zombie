@@ -43839,14 +43839,14 @@ void main() {
         return this.sourceCache[sourceIndex].then((texture) => texture.clone());
       }
       const sourceDef = json2.images[sourceIndex];
-      const URL = self.URL || self.webkitURL;
+      const URL2 = self.URL || self.webkitURL;
       let sourceURI = sourceDef.uri || "";
       let isObjectURL = false;
       if (sourceDef.bufferView !== void 0) {
         sourceURI = parser.getDependency("bufferView", sourceDef.bufferView).then(function(bufferView) {
           isObjectURL = true;
           const blob = new Blob([bufferView], { type: sourceDef.mimeType });
-          sourceURI = URL.createObjectURL(blob);
+          sourceURI = URL2.createObjectURL(blob);
           return sourceURI;
         });
       } else if (sourceDef.uri === void 0) {
@@ -43866,7 +43866,7 @@ void main() {
         });
       }).then(function(texture) {
         if (isObjectURL === true) {
-          URL.revokeObjectURL(sourceURI);
+          URL2.revokeObjectURL(sourceURI);
         }
         assignExtrasToUserData(texture, sourceDef);
         texture.userData.mimeType = sourceDef.mimeType || getImageURIMimeType(sourceDef.uri);
@@ -46021,6 +46021,9 @@ void main() {
     sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
     guard: { hp: 2.6, speed: 0.6, dmg: 1.8, knock: 0.4, kd: 0.25, stagger: 0.55, r: 0.42 }
   };
+  var SHIELD_HP = 190;
+  var SHIELD_MUL = { melee: 1.5, fist: 0.8, shotgun: 0.9, pistol: 0.7 };
+  var shieldState = (z) => !z.shieldMax ? "none" : z.shieldHp <= 0 ? "break" : z.shieldHp / z.shieldMax > 0.62 ? "intact" : z.shieldHp / z.shieldMax > 0.3 ? "hairline" : "heavy";
   var TUMBLE_FALL = 1.3;
   var TUMBLE_GETUP = 1.9;
   var Zombie = class {
@@ -46078,6 +46081,7 @@ void main() {
       this.chargeHit = false;
       this.fall = "";
       this.slamCd = 1.5;
+      this.shieldHp = this.shieldMax = this.kind === "guard" ? SHIELD_HP : 0;
     }
     get armsLost() {
       return (this.severed.has("Forearm_L") ? 1 : 0) + (this.severed.has("Forearm_R") ? 1 : 0);
@@ -46094,6 +46098,11 @@ void main() {
       this.t = 0;
       this.stateDur = dur;
     }
+    // does his shield take a blow travelling along (dirX, dirZ)? Only from the front, only while he holds it up
+    shieldBlocks(dirX, dirZ) {
+      if (!(this.shieldHp > 0) || !this.alive || this.down) return false;
+      return -(dirX * Math.sin(this.yaw) + dirZ * Math.cos(this.yaw)) > 0.34;
+    }
     get alive() {
       return this.state !== ZS.DYING && this.state !== ZS.DEAD;
     }
@@ -46106,6 +46115,29 @@ void main() {
       if (!this.alive) return;
       const wasDown = this.down, melee = isMelee(kind);
       const parts = Array.isArray(part) ? part : [[part, dmg]];
+      if (this.shieldBlocks(dirX, dirZ)) {
+        const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1;
+        this.shieldHp = Math.max(0, this.shieldHp - total * mul);
+        this.kx += dirX * impulse * 0.35 * this.K.knock;
+        this.kz += dirZ * impulse * 0.35 * this.K.knock;
+        this.hitDirX = dirX;
+        this.hitDirZ = dirZ;
+        this.hitStrength = impulse * 0.4;
+        this.hitSeq++;
+        this.hitKind = kind;
+        this.hitStyle = "shield";
+        this.hitFlash = 0.25;
+        if (this.shieldHp <= 0) {
+          this.set(ZS.STAGGER, 1.1);
+          this.attackCd = Math.max(this.attackCd, 1.3);
+          sim2.emit({ type: "shieldBreak", id: this.id, x: this.x, z: this.z, dirX, dirZ, kind });
+        } else {
+          if (melee && this.state !== ZS.STAGGER) this.set(ZS.STAGGER, 0.28);
+          if (this.state === ZS.WINDUP && melee) this.set(ZS.STAGGER, 0.35);
+          sim2.emit({ type: "shieldHit", id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
+        }
+        return "blocked";
+      }
       const limbMul = kind === "shotgun" ? 1.35 : melee ? 1.2 : 1;
       let loss = 0, main = "torso", mainD = 0;
       for (let [pt, d] of parts) {
@@ -46266,11 +46298,12 @@ void main() {
         if (this.spotT === 0) sim2.emit({ type: "sprinterSpot", id: this.id });
         this.spotT += dt;
         this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
-        if (this.spotT < 0.35) return true;
+        if (this.spotT < (T2.sprinterWindup ?? 0.7)) return true;
         this.sprinting = true;
         this.spd = Math.max(this.spd, 1);
         this.braking = false;
         this.chargeHit = false;
+        this.yaw = Math.atan2(dx, dz);
       }
       const off = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
       if (p2.dead || dist2 > 14 || !sees && dist2 > 3) {
@@ -46283,21 +46316,19 @@ void main() {
       let turn;
       if (this.braking) {
         this.spd = Math.max(0, this.spd - 6 * dt);
-        turn = this.spd < 1.2 ? 1.3 : 0.3;
-        if (this.spd < 1.2 && off < 0.5) {
+        turn = this.spd < 1.2 ? 1.3 : 0;
+        if (this.spd < 0.6 && off < 0.6) {
           this.braking = false;
           this.chargeHit = false;
-          if (dist2 < 2.4) {
-            this.sprinting = false;
-            this.spotT = 0;
-            this.spd = 0;
-            this.attackCd = 0;
-            return false;
-          }
+          this.sprinting = false;
+          this.spotT = 0;
+          this.spd = 0;
+          this.attackCd = dist2 < 2.4 ? 0 : 0.9;
+          return false;
         }
       } else {
-        this.spd = Math.min(top, this.spd + (off < 0.6 ? 5.5 : 2) * dt);
-        turn = dist2 < 2 && this.spd > 2.4 ? 0 : (T2.sprinterTurn ?? 0.9) * (1 + Math.max(0, 2.2 - this.spd) * 0.6);
+        this.spd = Math.min(top, this.spd + 5.5 * dt);
+        turn = 0;
       }
       this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), turn * dt);
       const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx2 + dz * fz, lat = dx * fz - dz * fx2;
@@ -47161,15 +47192,15 @@ void main() {
         this.stats.shotHits++;
         const z = r.zombie, along = (z.x - m.x) * dx + (z.z - m.z) * dz;
         const off = Math.hypot(m.x + dx * along - z.x, m.z + dz * along - z.z);
-        const perfect = !z.down && !z.crawling && !z.severed.has("Head") && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
+        const perfect = !z.down && !z.crawling && !z.severed.has("Head") && !z.shieldBlocks(dx, dz) && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
         if (perfect) z.limbHp.Head = 0;
-        z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), "pistol", this, perfect ? "Head" : this.bulletPart(z, m.x, m.z, dx, dz));
+        const res = z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), "pistol", this, perfect ? "Head" : this.bulletPart(z, m.x, m.z, dx, dz));
         if (perfect) {
           this.stats.headshots = (this.stats.headshots || 0) + 1;
           this.emit({ type: "headshot", id: z.id, x: z.x, z: z.z });
           if (this.T.hitPause > 0) this.emit({ type: "hitPause", dur: this.T.hitPause * 1.6 });
         }
-        this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: "zombie", id: z.id, yaw, killed: !z.alive });
+        this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: "zombie", id: z.id, yaw, killed: !z.alive, blocked: res === "blocked" });
       } else {
         this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz, yaw });
       }
@@ -47206,14 +47237,14 @@ void main() {
           pellets.push({ ex, ez, hit: "zombie", id: r.zombie.id });
         } else pellets.push({ ex, ez, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz });
       }
-      const killed = [];
+      const killed = [], blocked = [];
       for (const [z, h] of hits) {
         this.stats.shotHits++;
         const pl = Math.hypot(h.px, h.pz) || 1;
-        z.takeHit(h.dmg, h.px / pl, h.pz / pl, T2.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts);
+        if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T2.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
         if (!z.alive) killed.push(z.id);
       }
-      this.emit({ type: "shotgun", ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed });
+      this.emit({ type: "shotgun", ox: m.x, oy: m.y, oz: m.z, yaw: yaw0, pellets, hits: hits.size, killed, blocked });
       if (hits.size && this.T.hitPause > 0) this.emit({ type: "hitPause", dur: this.T.hitPause * (killed.length ? 0.8 : 0.5) });
     }
     // Which part a bullet hits, from where it passes the body: wide of centre takes the arm on that side;
@@ -47351,20 +47382,20 @@ void main() {
             dz /= l2;
           }
           if (fist) {
-            const dmgF = T2.fistDamage * A.dmg;
+            const dmgF = T2.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
             z.takeHit(dmgF, dx, dz, T2.fistKnockback * A.knock, "fist", this, "torso", A.style);
-            this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true });
+            this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true, shield: blk });
             if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
             continue;
           }
           const dmg = T2.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
-          const side = this.rand() < 0.5 ? "_L" : "_R";
-          const part = lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
+          const side = this.rand() < 0.5 ? "_L" : "_R", shielded = z.shieldBlocks(dx, dz);
+          const part = shielded ? "torso" : lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
           if (part !== "torso" && !z.severed.has(part)) z.limbHp[part] = 0;
           const last2 = act.ground || act.combo === p2.attacks.length - 1, holding = !last2 && p2.attackHeld;
           const kind = A.kind || (p2.equipped === BAT ? "bat" : "axe");
           z.takeHit(dmg, dx, dz, T2.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? "combo" : A.style);
-          this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p2.equipped });
+          this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p2.equipped, shield: shielded });
           if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
         }
         px2 = tipX;
@@ -47446,6 +47477,8 @@ void main() {
     scratchWindup: 0.42,
     // s: the scratch's quicker wind-up (used close in: under ~0.9 m)
     scratchDamage: 8,
+    sprinterWindup: 0.7,
+    // s: the orderly plants, roars and squares up before a charge (the lane shows on the floor)
     sprinterSpeed: 3.9,
     // m/s: the sprinter's charge (Yola runs 3.3)
     sprinterTurn: 0.9,
@@ -49195,6 +49228,258 @@ void main() {
     }
   };
 
+  // src/render/ShieldController.mjs
+  var FRAGMENT_NAMES = Object.freeze([
+    "Fragment_01_UpperLeft",
+    "Fragment_02_UpperRight",
+    "Fragment_03_Center",
+    "Fragment_04_LowerLeft",
+    "Fragment_05_LowerRight"
+  ]);
+  async function loadDamageTextures(assetDirectoryURL, loader2 = new TextureLoader()) {
+    const results = await Promise.allSettled(["hairline", "heavy"].map(async (state) => {
+      const suffix = state === "hairline" ? "Hairline" : "Heavy";
+      const texture = await loader2.loadAsync(new URL(
+        `textures/Shield_BaseColor_${suffix}.png`,
+        assetDirectoryURL
+      ).href);
+      texture.flipY = false;
+      texture.colorSpace = SRGBColorSpace;
+      texture.needsUpdate = true;
+      return [state, texture];
+    }));
+    const failure = results.find((result) => result.status === "rejected");
+    if (failure) {
+      for (const result of results) {
+        if (result.status === "fulfilled") result.value[1].dispose();
+      }
+      throw failure.reason;
+    }
+    return Object.fromEntries(results.map((result) => result.value));
+  }
+  function uniqueNode(root, name) {
+    const nodes = [];
+    root.traverse((node) => {
+      if (node.name === name) nodes.push(node);
+    });
+    if (nodes.length !== 1) throw new Error(`Expected exactly one ${name}; found ${nodes.length}.`);
+    return nodes[0];
+  }
+  function assertUniformHierarchy(node) {
+    for (let ancestor = node; ancestor; ancestor = ancestor.parent) {
+      const { x, y, z } = ancestor.scale;
+      const tolerance = 1e-6 * Math.max(1, Math.abs(x), Math.abs(y), Math.abs(z));
+      if (Math.min(x, y, z) <= 0 || Math.abs(x - y) > tolerance || Math.abs(y - z) > tolerance) {
+        throw new Error("Break requires positive uniform scale throughout both parent chains. Bake scale first.");
+      }
+    }
+  }
+  var ShieldController = class {
+    constructor({ gltf, scene: scene2, damageTextures, fadeDelaySeconds = 5, fadeSeconds = 0.6 }) {
+      if (!gltf?.scene?.isObject3D || !scene2?.isScene) {
+        throw new TypeError("Provide a GLTFLoader result and the world THREE.Scene.");
+      }
+      if (!Number.isFinite(fadeDelaySeconds) || fadeDelaySeconds < 0 || !Number.isFinite(fadeSeconds) || fadeSeconds <= 0) {
+        throw new RangeError("fadeDelaySeconds must be >= 0; fadeSeconds must be > 0.");
+      }
+      for (const state of ["hairline", "heavy"]) {
+        const texture = damageTextures?.[state];
+        if (!texture?.isTexture || texture.flipY !== false || texture.colorSpace !== SRGBColorSpace) {
+          throw new Error(`${state} must be a texture with flipY=false and colorSpace=SRGBColorSpace.`);
+        }
+      }
+      this.scene = scene2;
+      this.object3D = gltf.scene.clone(true);
+      this.root = uniqueNode(this.object3D, "Shield_Root");
+      this.fragments = FRAGMENT_NAMES.map((name) => uniqueNode(this.root, name));
+      this.grips = { center: uniqueNode(this.root, "Grip_Center") };
+      const gripMarkers = [];
+      this.root.traverse((node) => {
+        if (!node.isMesh && /^Grip_/.test(node.name)) gripMarkers.push(node);
+      });
+      if (gripMarkers.length !== 1 || this.grips.center.parent !== this.fragments[2]) {
+        throw new Error("Expected one Grip_Center marker parented to Fragment_03_Center.");
+      }
+      const allFragments = [];
+      this.root.traverse((node) => {
+        if (/^Fragment_\d\d_/.test(node.name)) allFragments.push(node);
+      });
+      if (allFragments.length !== 5 || this.fragments.some((node) => node.isMesh)) {
+        throw new Error("Expected exactly five named fragment groups/empties.");
+      }
+      let hasSkinnedMesh = false;
+      this.root.traverse((node) => {
+        hasSkinnedMesh || (hasSkinnedMesh = !!node.isSkinnedMesh);
+      });
+      if (hasSkinnedMesh) throw new Error("This controller is for the static shield, not skinned meshes.");
+      this._materials = /* @__PURE__ */ new Map();
+      this._surfaceMaterials = [];
+      this.root.traverse((node) => {
+        if (!node.isMesh) return;
+        const cloneMaterial = (source) => {
+          if (!this._materials.has(source)) {
+            const material = source.clone();
+            this._materials.set(source, {
+              material,
+              opacity: source.opacity
+            });
+            if (source.name === "Shield_Surface") {
+              this._surfaceMaterials.push({ material, intactMap: source.map });
+            }
+          }
+          return this._materials.get(source).material;
+        };
+        node.material = Array.isArray(node.material) ? node.material.map(cloneMaterial) : cloneMaterial(node.material);
+      });
+      if (!this._surfaceMaterials.length || this._surfaceMaterials.some(({ intactMap }) => !intactMap)) {
+        for (const { material } of this._materials.values()) material.dispose();
+        throw new Error("Shield_Surface with an embedded intact base-color map is required.");
+      }
+      this._damageTextures = damageTextures;
+      this._clip = gltf.animations?.find((clip) => clip.name === "Break_Test");
+      this._mixer = null;
+      this._physics = null;
+      this._mode = null;
+      this._breakElapsed = 0;
+      this._fadeDelaySeconds = fadeDelaySeconds;
+      this._fadeSeconds = fadeSeconds;
+      this.state = "intact";
+      this.phase = "attached";
+      this.disposed = false;
+      scene2.add(this.object3D);
+    }
+    /** Texture states may be previewed in any order before break. 'break' delegates. */
+    setDamageState(state, breakOptions) {
+      if (state === "break") return this.breakApart(breakOptions);
+      if (this.disposed || this.state === "break") throw new Error("Create a new controller to reset a broken shield.");
+      if (!["intact", "hairline", "heavy"].includes(state)) throw new Error(`Unknown damage state: ${state}`);
+      for (const { material, intactMap } of this._surfaceMaterials) {
+        material.map = state === "intact" ? intactMap : this._damageTextures[state];
+        material.needsUpdate = true;
+      }
+      this.state = state;
+      return this;
+    }
+    /**
+     * mode='clip': authored transform demo, no physics/collision.
+     * mode='physics': createPhysics({ scene, fragments }) must synchronously return
+     * { update(deltaSeconds), dispose() }. See README_RUNTIME.md.
+     */
+    breakApart({ mode: mode2 = "clip", createPhysics } = {}) {
+      if (this.disposed) throw new Error("Shield has been disposed.");
+      if (this.state === "break") return this;
+      if (!["clip", "physics"].includes(mode2)) throw new Error("Break mode must be clip or physics.");
+      if (mode2 === "clip" && createPhysics) throw new Error("Choose clip OR physics, never both.");
+      if (mode2 === "physics" && typeof createPhysics !== "function") {
+        throw new Error("Physics mode requires your engine adapter createPhysics callback.");
+      }
+      if (mode2 === "clip") {
+        if (!this._clip) throw new Error("Break_Test is absent. Use an engine physics adapter.");
+        const animated = /* @__PURE__ */ new Set();
+        for (const track of this._clip.tracks) {
+          const binding = PropertyBinding.parseTrackName(track.name);
+          if (!FRAGMENT_NAMES.includes(binding.nodeName) || !["position", "quaternion", "scale"].includes(binding.propertyName)) {
+            throw new Error(`Break_Test has an unexpected track: ${track.name}`);
+          }
+          animated.add(binding.nodeName);
+        }
+        if (animated.size !== 5) throw new Error("Break_Test must animate all five fragment groups.");
+      }
+      assertUniformHierarchy(this.root);
+      assertUniformHierarchy(this.scene);
+      if (mode2 === "physics") this.fragments.forEach(assertUniformHierarchy);
+      this.setDamageState("heavy");
+      this.root.updateWorldMatrix(true, true);
+      this.scene.updateWorldMatrix(true, false);
+      this.scene.attach(this.root);
+      if (this.object3D !== this.root) this.object3D.removeFromParent();
+      this._mode = mode2;
+      this.state = "break";
+      this.phase = "breaking";
+      if (mode2 === "clip") {
+        this._mixer = new AnimationMixer(this.root);
+        const action = this._mixer.clipAction(this._clip);
+        action.setLoop(LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.reset().play();
+        this._mixer.update(0);
+      } else {
+        const fragments = this.fragments.map((object) => {
+          this.scene.attach(object);
+          object.updateWorldMatrix(true, true);
+          return {
+            name: object.name,
+            object,
+            worldMatrix: object.matrixWorld.clone(),
+            worldPosition: object.getWorldPosition(new Vector3()),
+            worldQuaternion: object.getWorldQuaternion(new Quaternion()),
+            worldScale: object.getWorldScale(new Vector3())
+          };
+        });
+        this.root.removeFromParent();
+        try {
+          const handle = createPhysics({ scene: this.scene, fragments });
+          this._physics = handle;
+          if (!handle || ["update", "dispose"].some((key) => typeof handle[key] !== "function")) {
+            throw new Error("Physics adapter must return update and dispose functions.");
+          }
+        } catch (error) {
+          this.dispose();
+          throw error;
+        }
+      }
+      return this;
+    }
+    /** Call once each frame with nonnegative elapsed simulation time in seconds. */
+    update(deltaSeconds) {
+      if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) throw new RangeError("Invalid frame delta.");
+      if (this.disposed || this.state !== "break") return;
+      this._breakElapsed += deltaSeconds;
+      if (this._mode === "clip") {
+        this._mixer.update(deltaSeconds);
+        if (this._breakElapsed >= this._clip.duration && this.phase === "breaking") this.phase = "holding";
+      } else {
+        this._physics.update(deltaSeconds);
+      }
+      if (this._breakElapsed < this._fadeDelaySeconds) return;
+      if (this.phase !== "fading") {
+        this.phase = "fading";
+        for (const { material } of this._materials.values()) {
+          material.transparent = true;
+          material.depthWrite = false;
+          material.needsUpdate = true;
+        }
+        for (const fragment2 of this.fragments) fragment2.traverse((node) => {
+          if (node.isMesh) node.castShadow = false;
+        });
+      }
+      const alpha = Math.max(0, 1 - (this._breakElapsed - this._fadeDelaySeconds) / this._fadeSeconds);
+      for (const { material, opacity } of this._materials.values()) material.opacity = opacity * alpha;
+      if (alpha <= 0) this.dispose();
+    }
+    /** Idempotent. Removes this instance and frees only its material clones/body handle. */
+    dispose() {
+      if (this.disposed) return;
+      this.disposed = true;
+      this.phase = "disposed";
+      try {
+        if (typeof this._physics?.dispose === "function") this._physics.dispose();
+      } finally {
+        this._physics = null;
+        if (this._mixer) {
+          this._mixer.stopAllAction();
+          this._mixer.uncacheRoot(this.root);
+          this._mixer = null;
+        }
+        for (const fragment2 of this.fragments) fragment2.removeFromParent();
+        this.root.removeFromParent();
+        this.object3D.removeFromParent();
+        for (const { material } of this._materials.values()) material.dispose();
+        this._materials.clear();
+      }
+    }
+  };
+
   // src/render/clipchars.js
   var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
   var smooth2 = (u) => u * u * (3 - 2 * u);
@@ -50358,7 +50643,37 @@ void main() {
     scene2.add(g);
     return g;
   }
+  function shieldPhysics(P, fragments, dir) {
+    const items = fragments.map((f, i) => {
+      const o = f.object;
+      o.updateMatrixWorld(true);
+      const box = new Box3().setFromObject(o), c = box.getCenter(new Vector3()), size = box.getSize(new Vector3());
+      const axis = size.x >= size.y && size.x >= size.z ? new Vector3(1, 0, 0) : size.y >= size.z ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1);
+      const half = Math.max(size.x, size.y, size.z) * 0.38, r = MathUtils.clamp(Math.min(...[size.x, size.y, size.z].sort((a2, b2) => b2 - a2).slice(0, 2)) * 0.32, 0.05, 0.14);
+      const a = c.clone().addScaledVector(axis, -half), b = c.clone().addScaledVector(axis, half);
+      const side = new Vector3(dir.z, 0, -dir.x).multiplyScalar((i % 2 ? 1 : -1) * (0.6 + 0.3 * i / 4));
+      const vel = dir.clone().multiplyScalar(1.6).add(side).add(new Vector3(0, 1.4 + i % 3 * 0.4, 0));
+      const q0 = f.worldQuaternion.clone(), s0 = f.worldScale.x;
+      const off = c.clone().sub(f.worldPosition).applyQuaternion(q0.clone().invert()).divideScalar(s0);
+      return { o, id: P.addPiece(a, b, r, vel, q0), off, s0, st: [] };
+    });
+    const tmp2 = new Vector3();
+    return {
+      update() {
+        for (const it of items) {
+          const st = P.read(it.id, it.st);
+          if (!st) continue;
+          it.o.quaternion.copy(st[0].quat);
+          it.o.position.copy(st[0].pos).sub(tmp2.copy(it.off).multiplyScalar(it.s0).applyQuaternion(st[0].quat));
+        }
+      },
+      dispose() {
+        for (const it of items) P.remove(it.id);
+      }
+    };
+  }
   var _ZombieView = class _ZombieView extends ClipBody {
+    // shields in pieces: their controllers run the 5 s lifetime and the fade, then free themselves
     constructor(scene2, gltf, height, speeds, opts = {}) {
       const model = clone(gltf.scene);
       const mats = [];
@@ -50434,7 +50749,7 @@ void main() {
         this.act(n).play();
         this.act(n).setEffectiveWeight(0);
       }
-      if (opts.shield) this.shield = makeStandInShield(scene2);
+      if (opts.shield) this.wantShield = true;
     }
     // ---- dismemberment ----
     sever(part, z) {
@@ -50562,7 +50877,7 @@ void main() {
       }
       if (this.hasCrawl) this.act("crawl").play();
       for (const n of ["sprint", "shield_upper"]) if (this.act(n)) this.act(n).play();
-      if (this.shield) this.shield.visible = true;
+      if (this.wantShield) this.freshShield();
       this.react.x = this.react.z = this.react.vx = this.react.vz = 0;
       this.bleed = {};
     }
@@ -50572,7 +50887,67 @@ void main() {
       this.id = -1;
       this.mixer.stopAllAction();
       this.endRagdoll();
-      if (this.shield) this.shield.visible = false;
+      if (this.shieldC && this.shieldC.state !== "break") this.shieldC.object3D.visible = false;
+    }
+    // ---- the guard's shield (render/ShieldController.mjs: the package's controller, unchanged) ----
+    // A new intact shield for each life (a damaged one is disposed; a broken one finishes its own fall and fade).
+    freshShield() {
+      const S2 = _ZombieView.shieldAsset;
+      if (this.shieldC && this.shieldC.state !== "break" && !this.shieldC.disposed) this.shieldC.dispose();
+      this.shieldC = null;
+      this.shieldFit = false;
+      if (!S2) {
+        this.shield || (this.shield = makeStandInShield(_ZombieView.scene));
+        this.shield.visible = true;
+        return;
+      }
+      const c = new ShieldController({ gltf: S2.gltf, scene: _ZombieView.scene, damageTextures: S2.damageTextures });
+      c.object3D.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      this.shieldC = c;
+    }
+    get shieldUp() {
+      const c = this.shieldC;
+      return !!(c && !c.disposed && c.state !== "break") || !!(this.shield && this.shield.visible);
+    }
+    // Fit once per life, in the hold pose: the centred rear grip (Grip_Center) in his left palm, the panel upright and
+    // square to his facing; from then on the shield rides the hand bone, so the hand never slides on the grip.
+    fitShield() {
+      const c = this.shieldC, hand = this.bones.LeftHand, mid = this.bones.LeftHandMiddle1 || this.bones.LeftHandIndex1;
+      if (!c || !hand) return;
+      this.container.updateMatrixWorld(true);
+      const B = this.bones, wp2 = (n) => B[n]?.getWorldPosition(new Vector3());
+      const I = wp2("LeftHandIndex1"), Pk = wp2("LeftHandPinky1"), M32 = wp2("LeftHandMiddle3");
+      const palm = I && Pk && M32 ? I.add(Pk).multiplyScalar(0.25).addScaledVector(M32, 0.5) : hand.getWorldPosition(new Vector3()).lerp(mid.getWorldPosition(new Vector3()), 0.55);
+      const qh = hand.getWorldQuaternion(new Quaternion()), qd = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), this.container.rotation.y);
+      const ws = hand.getWorldScale(new Vector3()).x;
+      c.object3D.position.set(0, 0, 0);
+      c.object3D.quaternion.identity();
+      c.object3D.scale.setScalar(1);
+      c.object3D.updateMatrixWorld(true);
+      const grip = c.grips.center.getWorldPosition(new Vector3());
+      hand.add(c.object3D);
+      c.object3D.scale.setScalar(1 / ws);
+      c.object3D.quaternion.copy(qh.clone().invert().multiply(qd));
+      c.object3D.position.copy(hand.worldToLocal(palm.clone().sub(grip.applyQuaternion(qd))));
+      c.object3D.visible = true;
+      this.shieldFit = true;
+    }
+    // the panel in pieces: the five fragments become capsules in the game's custom physics (thrown off along the blow),
+    // never the baked clip at the same time; the hold stops at once
+    breakShield(z) {
+      const c = this.shieldC;
+      if (!c || c.state === "break" || c.disposed) return;
+      const P = _ZombieView.physics, dir = new Vector3(z.hitDirX || Math.sin(this.container.rotation.y + Math.PI), 0, z.hitDirZ || Math.cos(this.container.rotation.y + Math.PI));
+      const useP = P && P.ready;
+      c.object3D.visible = true;
+      c.breakApart(useP ? { mode: "physics", createPhysics: ({ fragments }) => shieldPhysics(P, fragments, dir) } : { mode: "clip" });
+      _ZombieView.brokenShields.push(c);
+      this.shieldC = null;
     }
     // ---- ragdoll: from the current animated pose, carrying the blow's momentum ----
     startRagdoll(z) {
@@ -50709,7 +51084,10 @@ void main() {
       this.act("walk").setEffectiveWeight(move * (1 - sprint) * (1 - one) * (1 - crawl));
       this.act("idle").setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
       this.act("walk").timeScale = clamp4(sp / this.nativeWalk, 0.5, 3.2);
-      if (this.act("shield_upper")) this.act("shield_upper").setEffectiveWeight((1 - one) * (1 - crawl));
+      if (this.act("shield_upper")) {
+        const own = z.state === "windup" || z.state === "strike" || z.state === "recover";
+        this.act("shield_upper").setEffectiveWeight(this.shieldUp ? (own ? 1 - one : 3) * (1 - crawl) : 0);
+      }
       if (this.hasCrawl) {
         const c = this.act("crawl");
         c.setEffectiveWeight(crawl * (1 - one));
@@ -50718,7 +51096,15 @@ void main() {
       this.mixer.update(dt);
       this.container.updateMatrixWorld(true);
       this.bleeding(dt);
-      if (this.shield) this.placeShield(z);
+      if (this.shieldC) {
+        const st = shieldState(z);
+        if (st === "break" || !z.alive) this.breakShield(z);
+        else {
+          if (!this.shieldFit) this.fitShield();
+          if (st !== this.shieldC.state && st !== "none") this.shieldC.setDamageState(st);
+          this.shieldC.object3D.visible = this.outer.visible;
+        }
+      } else if (this.shield) this.placeShield(z);
       if (z.hitSeq !== this.lastSeq) {
         this.lastSeq = z.hitSeq;
         const sn = Math.sin(this.container.rotation.y), cs = Math.cos(this.container.rotation.y);
@@ -50748,6 +51134,14 @@ void main() {
       S2.rotation.set(0, yaw, 0);
       S2.visible = this.outer.visible;
     }
+    // (the broken shields' lifetimes run on the game clock with the severed pieces)
+    static updateShields(dt) {
+      const L2 = _ZombieView.brokenShields;
+      for (let i = L2.length - 1; i >= 0; i--) {
+        L2[i].update(dt);
+        if (L2[i].disposed) L2.splice(i, 1);
+      }
+    }
     // Ragdolled: the skeleton follows the physics parts. The body leaves the physics world once the
     // corpse starts sinking (the last pose is kept and sinks with the model).
     updateRagdoll(z, dt = 1 / 60) {
@@ -50776,6 +51170,9 @@ void main() {
   __publicField(_ZombieView, "scene", null);
   // severed pieces live in the scene, independent of the (pooled) views
   __publicField(_ZombieView, "pieces", []);
+  __publicField(_ZombieView, "shieldAsset", null);
+  // { gltf, damageTextures }: the guard's bed-panel shield (loaded once, shared by every guard)
+  __publicField(_ZombieView, "brokenShields", []);
   var ZombieView = _ZombieView;
 
   // src/render/fx.js
@@ -51136,6 +51533,11 @@ void main() {
       this.geo = Object.fromEntries(Object.entries(ZATTACKS).map(([k, A]) => [k, sector(A.arc)]));
       this.pool = [];
       this.used = /* @__PURE__ */ new Map();
+      this.laneGeo = new PlaneGeometry(1, 1);
+      this.laneGeo.rotateX(-Math.PI / 2);
+      this.laneGeo.translate(0, 0, 0.5);
+      this.lanes = /* @__PURE__ */ new Map();
+      this.lanePool = [];
       this.enabled = true;
     }
     make() {
@@ -51189,6 +51591,31 @@ void main() {
         g.visible = false;
         this.used.delete(id);
         this.pool.push(g);
+      }
+      const lseen = /* @__PURE__ */ new Set();
+      if (this.enabled) for (const z of zombies) {
+        if (z.kind !== "sprinter" || !z.alive || z.down) continue;
+        const winding = !z.sprinting && z.spotT > 0, running = z.sprinting && !z.braking;
+        if (!winding && !running) continue;
+        lseen.add(z.id);
+        let m = this.lanes.get(z.id);
+        if (!m) {
+          m = this.lanePool.pop() || this.scene.add(new Mesh(this.laneGeo, new MeshBasicMaterial({ color: 16726570, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }))).children.at(-1);
+          m.renderOrder = 3;
+          this.lanes.set(z.id, m);
+        }
+        const px2 = z.px ?? z.x, pz2 = z.pz ?? z.z;
+        m.visible = true;
+        m.position.set(px2 + (z.x - px2) * alpha, 0.025, pz2 + (z.z - pz2) * alpha);
+        m.rotation.y = z.yaw;
+        const u = winding ? Math.min(1, z.spotT / 0.7) : 1;
+        m.scale.set(0.9, 1, 1 + 5 * u);
+        m.material.opacity = winding ? 0.12 + 0.25 * u : 0.16;
+      }
+      for (const [id, m] of this.lanes) if (!lseen.has(id)) {
+        m.visible = false;
+        this.lanes.delete(id);
+        this.lanePool.push(m);
       }
     }
   };
@@ -54162,6 +54589,18 @@ void main() {
           break;
         case "batMiss":
           this.noise(t, 0.12, { type: "highpass", f: 2200, gain: 0.07, attack: 0.02 });
+          break;
+        case "shieldHit":
+          this.tone(t, 0.16, 190, { type: "triangle", gain: 0.5 * k, f2: 120 });
+          this.noise(t, 0.08, { type: "bandpass", f: 900, q: 1.5, gain: 0.45 * k });
+          this.tone(t + 0.01, 0.22, 620, { type: "square", gain: 0.05 * k, f2: 560 });
+          this.noise(t + 0.03, 0.18, { type: "bandpass", f: 3200, q: 4, gain: 0.08 * k });
+          break;
+        case "shieldBreak":
+          this.noise(t, 0.04, { type: "highpass", f: 1800, gain: 0.7 });
+          this.tone(t, 0.25, 140, { type: "triangle", gain: 0.6, f2: 60 });
+          this.noise(t + 0.02, 0.45, { type: "bandpass", f: 1400, q: 1.2, f2: 600, gain: 0.35, attack: 0.01 });
+          [0.35, 0.5, 0.62].forEach((d) => this.noise(t + d, 0.09, { type: "lowpass", f: 700, gain: 0.3 }));
           break;
         case "clank":
           this.tone(t, 0.18, 880, { gain: 0.15, type: "square", f2: 840 });
@@ -60936,9 +61375,12 @@ void main() {
       return g;
     })));
     const dataP = fetch("assets/clipdata.json").then((r) => r.json());
+    const shieldP = Promise.all([loader.loadAsync("assets/shield/modular_bed_shield.glb"), loadDamageTextures(new URL("assets/shield/", location.href))]).then(([gltf, damageTextures]) => {
+      ZombieView.shieldAsset = { gltf, damageTextures };
+    }).catch((e) => console.warn("shield asset failed: stand-in shield", e));
     const wpnP = Promise.all([loader.loadAsync("assets/weapons/pump_short.glb"), loader.loadAsync("assets/weapons/fire_axe.glb"), loader.loadAsync("assets/weapons/shell.glb")]);
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-    const [yg, zgs, clipdata, [sgG, axeG, shellG]] = await Promise.all([yolaP, zomP, dataP, wpnP]);
+    const [yg, zgs, clipdata, [sgG, axeG, shellG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
     yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG });
@@ -61326,6 +61768,7 @@ void main() {
     fx.setAim(ix, iz, iyaw, !p2.dead, p2.aiming ? p2.attackHeld ? 1 : 0.5 : 0.2);
     stepPhysics(animDt);
     ZombieView.updatePieces(animDt);
+    ZombieView.updateShields(animDt);
     const seen = /* @__PURE__ */ new Set();
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
@@ -61392,7 +61835,7 @@ void main() {
           audio.play("shot");
           fx.muzzle(yola.muzzleWorld);
           fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez);
-          if (e.hit === "zombie") {
+          if (e.hit === "zombie" && !e.blocked) {
             fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false);
             audio.play("bulletHit");
             if (!e.killed) audio.play("zombieHurt");
@@ -61411,7 +61854,7 @@ void main() {
           for (const pl of e.pellets) {
             fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6);
             if (pl.hit === "zombie") {
-              if (flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false);
+              if (!e.blocked?.includes(pl.id) && flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false);
             } else if (pl.hit === "wall" && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
           }
           if (flesh) audio.play("bulletHit", 1.3);
@@ -61433,6 +61876,13 @@ void main() {
           break;
         // (the bat combo: timed to each strike) // (the second melee hit is the heavy one)
         case "batHit": {
+          if (e.shield) {
+            if (shakeOn) {
+              camState.vx += e.dirX * 0.9 * tuning.shake;
+              camState.vz += e.dirZ * 0.9 * tuning.shake;
+            }
+            break;
+          }
           const chop = e.style === "chop";
           if (impactFrame !== frameNo) {
             impactFrame = frameNo;
@@ -61544,6 +61994,17 @@ void main() {
         case "sever":
           audio.play("sever");
           shake(0.15);
+          break;
+        case "shieldHit":
+          audio.play("shieldHit", e.kind === "pistol" ? 0.7 : 1);
+          fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ);
+          if (e.kind !== "pistol") shake(0.25);
+          break;
+        case "shieldBreak":
+          audio.play("shieldBreak");
+          fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 14149602, 2.4, 0.9, 0.55);
+          shake(0.55);
+          hud.popup("SHIELD BROKEN");
           break;
         case "headshot":
           audio.play("bulletHit", 1.5);
