@@ -50,10 +50,13 @@ export const TUNING_DEFAULTS = {
 };
 
 // bumped when defaults change, so tuning saved by an older build does not hide the new values
-export const TUNING_VERSION = 3;
-const CHANGED = { 3: ['sprinterTurn'] }; // defaults changed since an older version: those keys go back to the new default
+export const TUNING_VERSION = 4;
+// defaults changed since an older version: on load those keys go back to the new default (each version's list applies to
+// everything saved before it). 4: the melee hit-stop is off by default (a panel save from before round 16 kept 0.07: the
+// stutter the user felt on multi-target axe hits), the orderly's charge no longer steers.
+const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'] };
 export function makeTuning(saved) {
-  if (saved && saved._v === 2) { saved = { ...saved }; for (const k of CHANGED[3]) delete saved[k]; saved._v = TUNING_VERSION; }
+  if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) { saved = { ...saved }; for (let v = saved._v + 1; v <= TUNING_VERSION; v++) for (const k of CHANGED[v] || []) delete saved[k]; saved._v = TUNING_VERSION; }
   if (!saved || saved._v !== TUNING_VERSION) saved = null;
   return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
 }

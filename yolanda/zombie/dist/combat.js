@@ -47492,12 +47492,12 @@ void main() {
     camWidth: 7.2
     // metres of floor across a portrait screen at the player
   };
-  var TUNING_VERSION = 3;
-  var CHANGED = { 3: ["sprinterTurn"] };
+  var TUNING_VERSION = 4;
+  var CHANGED = { 3: ["sprinterTurn"], 4: ["meleeHitPause", "sprinterTurn", "sprinterWindup"] };
   function makeTuning(saved) {
-    if (saved && saved._v === 2) {
+    if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) {
       saved = { ...saved };
-      for (const k of CHANGED[3]) delete saved[k];
+      for (let v = saved._v + 1; v <= TUNING_VERSION; v++) for (const k of CHANGED[v] || []) delete saved[k];
       saved._v = TUNING_VERSION;
     }
     if (!saved || saved._v !== TUNING_VERSION) saved = null;
@@ -51016,6 +51016,11 @@ void main() {
       }
       this.outer.position.x = x;
       this.outer.position.z = zz;
+      if (z.crawling && this.hasCrawl && (z.state === "strike" || z.state === "recover")) {
+        const u = Math.min(1, z.t / Math.max(0.05, z.stateDur)), k = Math.sin((z.state === "strike" ? u : 1 - u) * Math.PI / 2) * 0.3;
+        this.outer.position.x += Math.sin(z.yaw) * k;
+        this.outer.position.z += Math.cos(z.yaw) * k;
+      }
       this.blob.position.set(x, 0.012, zz);
       const dying = z.state === "dying" || z.state === "dead";
       if (z.state === "dying" && this.lastState !== "dying" && this.startRagdoll(z)) {
@@ -51026,7 +51031,9 @@ void main() {
       if (z.state !== this.lastState) {
         const S2 = z.state;
         const AC = ATTACK_CLIPS[z.attack], scr = AC && this.act(z.attack);
-        if (S2 === "windup") {
+        const crawler = z.crawling && this.hasCrawl;
+        if (crawler && (S2 === "windup" || S2 === "strike" || S2 === "recover" || S2 === "stagger")) {
+        } else if (S2 === "windup") {
           if (scr) {
             const t0 = Math.min(...scr.getClip().tracks.map((t) => t.times[0]));
             this.playOnce(z.attack, t0 + (AC.f0 - 1) / 30, (AC.hit - AC.f0) / 30 / Math.max(0.2, z.stateDur));
@@ -51092,6 +51099,11 @@ void main() {
         const c = this.act("crawl");
         c.setEffectiveWeight(crawl * (1 - one));
         c.timeScale = clamp4(sp / (0.22 * this.height), 0.45, 2.5);
+        if (crawl) {
+          if (z.state === "windup") c.timeScale = 0.25;
+          else if (z.state === "strike") c.timeScale = 2.6;
+          else if (z.state === "stagger") c.timeScale = 0.15;
+        }
       }
       this.mixer.update(dt);
       this.container.updateMatrixWorld(true);
@@ -54737,7 +54749,7 @@ void main() {
         if (!this.el.paused) this.el.pause();
         return;
       }
-      if (this.el.paused) this.el.play()?.catch?.(() => {
+      if (this.el.paused && this.audio.ctx?.state === "running" && !this.audio.muted) this.el.play()?.catch?.(() => {
       });
       this.since += dt;
       this.calm = fighting ? 0 : this.calm + dt;
@@ -59928,6 +59940,7 @@ void main() {
         this.revealSwing.hold = REVEAL_HOLD;
         this.sound.shatter();
         this.audio.play("batHit", 1.4);
+        this.sound.stopMusic(0.15);
         g.musicStart?.("combat");
         g.fxBurst?.(an.x + Math.sin(an.yaw) * 0.9, 1.2, an.z + Math.cos(an.yaw) * 0.9, 18, 15260868, 2.6, 0.9, 0.7);
       }
@@ -60120,6 +60133,9 @@ void main() {
         requestAnimationFrame(tick2);
       } else if (this.bt.state !== "idle") this.bt.finish();
       this.sound.stopLine();
+      this.sound.stopNarration();
+      this.sound.stopMusic(0.3);
+      if (g.music?.state === "off") g.musicStart?.("explore");
       if (via === "normal") this.later33();
       g.applyRoom1();
       g.previewRoom1(0);
@@ -60229,6 +60245,11 @@ void main() {
       this.started = true;
       this.resetTour();
       this.sound.unlock();
+      this.game?.().music?.stop(0.4);
+      this.game?.().hudShow?.(false);
+      this.setupScene();
+      this.narrPlaying = this.sound.playNarration();
+      if (!this.narrPlaying) this.joinAudioLate();
     }
     // ------------------------------------------------------------------ run
     begin() {
@@ -60347,6 +60368,8 @@ void main() {
       this.silent = true;
       this.sound.stopVoice();
       this.sound.stopLine();
+      this.sound.stopNarration();
+      this.narrPlaying = false;
       this.resetTour();
       this.started = true;
       this.state = "TOUR";

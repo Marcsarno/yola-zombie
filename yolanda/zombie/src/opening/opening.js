@@ -868,7 +868,7 @@ export class Opening {
     if (!this.silent) {
       const ndc = this.batNdc(); bt.shatter(ndc.x, ndc.y, 1, 0.45); this.revealSwing.hold = REVEAL_HOLD; // (the bat travels left to right across the picture, rising)
       this.sound.shatter(); this.audio.play('batHit', 1.4);
-      g.musicStart?.('combat'); // the music changes on the impact
+      this.sound.stopMusic(0.15); g.musicStart?.('combat'); // the music changes on the impact: the clinic's jingle out, the supplied track in
       g.fxBurst?.(an.x + Math.sin(an.yaw) * 0.9, 1.2, an.z + Math.cos(an.yaw) * 0.9, 18, 0xe8dcc4, 2.6, 0.9, 0.7);
     }
     this.mark('shatter');
@@ -955,7 +955,8 @@ export class Opening {
     if (this.guardPool) this.guardPool.visible = true; else this.placeGuardPool(); // (his blood and his pistol remain; no body)
     this.endRide(); this.stopEmptyChair(); this.holdBat(null); this.cpr = null; this.revealSwing = null; this.monitorOn = false; this.ui.showMonitor(false); this.ui.readiness(null); this.ui.timeCard('');
     if (this.bt.state === 'flying') { const bt = this.bt; const tick = () => { if (bt.state !== 'flying') return; bt.update(1 / 60); requestAnimationFrame(tick); }; requestAnimationFrame(tick); } else if (this.bt.state !== 'idle') this.bt.finish();
-    this.sound.stopLine();
+    this.sound.stopLine(); this.sound.stopNarration(); this.sound.stopMusic(0.3);
+    if (g.music?.state === 'off') g.musicStart?.('explore'); // (skip / continue / replay: the game's music from the floor's calm state)
     if (via === 'normal') this.later33();
     // the game: the canonical snapshot
     g.applyRoom1(); g.previewRoom1(0);
@@ -1000,6 +1001,8 @@ export class Opening {
     if (!this.started) return;
     this.finalized = false; this.batPicked = false; this.active = true; this.ui.show(true); this.beginSilent(); this.endSilent();
     this.sound.stopMusic(0.1); this.sound.stopAmbience(); this.started = true; this.resetTour(); this.sound.unlock();
+    this.game?.().music?.stop(0.4); this.game?.().hudShow?.(false); this.setupScene();
+    this.narrPlaying = this.sound.playNarration(); if (!this.narrPlaying) this.joinAudioLate(); // (the narrator starts over with the tour)
   }
 
 
@@ -1070,7 +1073,7 @@ export class Opening {
     const keep = stopAtLabel; this.endSilent(keep);
     return this.marks[label];
   }
-  beginSilent() { this.silent = true; this.sound.stopVoice(); this.sound.stopLine(); this.resetTour(); this.started = true; this.state = 'TOUR'; this.ui.gate.classList.remove('show'); }
+  beginSilent() { this.silent = true; this.sound.stopVoice(); this.sound.stopLine(); this.sound.stopNarration(); this.narrPlaying = false; this.resetTour(); this.started = true; this.state = 'TOUR'; this.ui.gate.classList.remove('show'); }
   endSilent(keepFrozen = false) { this.silent = false; this.runLabel = null; if (!keepFrozen) this.frozen = false; this.ui.fade.style.opacity = 0; this.fx = null; this.ui.setFade(0, 0); }
 
   update(dt) {

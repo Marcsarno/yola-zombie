@@ -48,7 +48,7 @@ export class GameMusic {
   update(dt, fighting, paused) {
     if (this.state === 'off' || !this.node) return;
     if (paused) { if (!this.el.paused) this.el.pause(); return; }
-    if (this.el.paused) this.el.play()?.catch?.(() => {});
+    if (this.el.paused && this.audio.ctx?.state === 'running' && !this.audio.muted) this.el.play()?.catch?.(() => {}); // (waits for the first gesture)
     this.since += dt;
     this.calm = fighting ? 0 : this.calm + dt;
     if (this.since < COOLDOWN) return;

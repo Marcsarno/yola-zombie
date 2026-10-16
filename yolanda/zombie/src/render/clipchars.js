@@ -1157,6 +1157,11 @@ export class ZombieView extends ClipBody {
     // limbs the simulation took off this step: cut them from the pose that is on screen now
     if (this.modular && z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part)) this.sever(part, z);
     this.outer.position.x = x; this.outer.position.z = zz;
+    // a crawler's lunge: the body lurches forward along the floor through the strike and draws back in the recovery
+    if (z.crawling && this.hasCrawl && (z.state === 'strike' || z.state === 'recover')) {
+      const u = Math.min(1, z.t / Math.max(0.05, z.stateDur)), k = Math.sin((z.state === 'strike' ? u : 1 - u) * Math.PI / 2) * 0.3;
+      this.outer.position.x += Math.sin(z.yaw) * k; this.outer.position.z += Math.cos(z.yaw) * k;
+    }
     this.blob.position.set(x, 0.012, zz);
     const dying = z.state === 'dying' || z.state === 'dead';
     if (z.state === 'dying' && this.lastState !== 'dying' && this.startRagdoll(z)) { this.lastState = 'dying'; this.updateRagdoll(z); return; }
@@ -1164,7 +1169,9 @@ export class ZombieView extends ClipBody {
     if (z.state !== this.lastState) {
       const S = z.state;
       const AC = ATTACK_CLIPS[z.attack], scr = AC && this.act(z.attack);
-      if (S === 'windup') {
+      const crawler = z.crawling && this.hasCrawl; // (a legless zombie never plays a standing clip: its attacks and flinches stay in the crawl)
+      if (crawler && (S === 'windup' || S === 'strike' || S === 'recover' || S === 'stagger')) { /* the crawl itself coils and lunges (below) */ }
+      else if (S === 'windup') {
         if (scr) { const t0 = Math.min(...scr.getClip().tracks.map((t) => t.times[0])); this.playOnce(z.attack, t0 + (AC.f0 - 1) / 30, (AC.hit - AC.f0) / 30 / Math.max(0.2, z.stateDur)); this.acT0 = t0; }
         else this.playOnce('attack', 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
       } else if ((S === 'strike' || S === 'recover') && scr && this.oneShot === scr) { // the strike at its own pace, then back down
@@ -1218,7 +1225,10 @@ export class ZombieView extends ClipBody {
     // the guard's shield hold over the legs, while he has it: it outweighs a hit reaction (the panel stays up and square while
     // he flinches behind it) but yields to his own attacks (the slam swings it)
     if (this.act('shield_upper')) { const own = z.state === 'windup' || z.state === 'strike' || z.state === 'recover'; this.act('shield_upper').setEffectiveWeight(this.shieldUp ? (own ? 1 - one : 3) * (1 - crawl) : 0); }
-    if (this.hasCrawl) { const c = this.act('crawl'); c.setEffectiveWeight(crawl * (1 - one)); c.timeScale = clamp(sp / (0.22 * this.height), 0.45, 2.5); }
+    if (this.hasCrawl) {
+      const c = this.act('crawl'); c.setEffectiveWeight(crawl * (1 - one)); c.timeScale = clamp(sp / (0.22 * this.height), 0.45, 2.5);
+      if (crawl) { if (z.state === 'windup') c.timeScale = 0.25; else if (z.state === 'strike') c.timeScale = 2.6; else if (z.state === 'stagger') c.timeScale = 0.15; } // coils, lunges, flinches: still on the floor
+    }
     this.mixer.update(dt);
     this.container.updateMatrixWorld(true);
     this.bleeding(dt);
