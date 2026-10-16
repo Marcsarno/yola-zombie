@@ -384,3 +384,43 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
     where it reads oddly. Review every sign in SIGNS / ROOM_SIGNS against the doors and walls: room names over their
     own doorway lintels (read from inside the room they name), direction signs on clear wall where the route turns,
     never on a door leaf.
+- 2026-10-15 PLANNED (the user's notes, not started): gore for the two big zombies. Neither is modular yet (only the
+  nurse / patient are: assets/zombie-*-mod.glb, cut in Blender, wound caps from blender/gore_kit.py, severed in
+  render/clipchars.js ZombieView.sever, core/zombies.js sever / limbHp). Their legs never come off (too much for them).
+  * The big guard: arms shot off, and finally his head. The same modular route as the nurse: cut his Tripo mesh at the
+    elbows (maybe the shoulders: ask) and the neck in Blender, welded seams, gore_kit stumps and caps on each cut,
+    checked BY EYE in Blender before export. Rules to settle: more limb hp than the nurse (he is armoured / big);
+    losing the shield arm drops the shield (the real shield's break or a drop); no arms = no slam (a body check or a
+    headbutt instead); the head last (only once both arms are gone, or just very high head hp: ask). Blood and gore
+    on every cut (fx.bloodSpray / bloodPool exist; add a stump spurt).
+  * The big lady: she pops. Feasible with what exists, no new library: (1) a warning: as her hp runs low she swells
+    (spine / belly bones scaled up, a skin tint pulse, a gurgle sound), so the player knows to back off or shoot from
+    range; (2) the burst: her body hides and in its place a burst of blood particles, 8-12 gibs (meat chunks, rib
+    pieces: a gore_kit style set baked once, thrown by the custom physics as the severed pieces are, capped by
+    MAX_PIECES for the phone), a large blood pool and a shake; close by, Yola is knocked down (player.knockDown);
+    (3) acid: a green-yellow pool left where she burst, hurting Yola over time while she stands in it, fading after
+    ~6-8 s (a hazard list in the sim: x, z, radius, time, damage per second; deterministic, testable in tools/tests);
+    rendered as a floor pool with bubbling (a small shader) that glows under the bloom looks. Precedents: Left 4
+    Dead's Boomer (bursts when killed: punishes melee kills up close) and Spitter (an acid pool that hurts over time:
+    area denial). Choices for the user: does she pop on every death or only some (a melee kill, a shotgun blast, the
+    swollen stage)? Does the acid hurt other zombies too (a tactic: lure them into it)? Can she pop mid-charge?
+  * DECIDED (the user, 2026-10-15):
+    - Guard progression: shield off -> one arm off -> the other arm off -> ENRAGED: faster and now able to sprint
+      (his only attack then: a charge / body check, like the sprinter's) -> the head comes off (only now: no head
+      before both arms are gone, a headshot alone never does it). Arms come off at the SHOULDER (unlike the other
+      zombies). The enraged stage must not drag: the head goes quickly once he is enraged. Tune by testing.
+    - The lady copies Left 4 Dead's Boomer: she bursts wherever and however she dies (mid-charge too: the burst
+      carries her momentum forward), and the burst makes anyone close stumble or fall (Yola knocked down inside
+      ~2 m, staggered to ~3.5 m). The counter is the Boomer's: keep your distance, or push her off before the kill.
+      Our twist on the Boomer's bile: acid that hurts over time where she burst. The swollen look is her warning
+      stage at low hp ("only when swollen": a kill that skips it, e.g. one shotgun blast, still swells her for a
+      beat before she pops, so it always reads).
+    - Acid on other zombies: not decided (default: yes, it hurts them too).
+    - UPDATE (the user): nothing annoying. The burst is mainly a spray of guts. The acid stays only ~5 s, then
+      dissolves. It does NOT hurt zombies: they walk straight through it, but it hisses and gives off steam /
+      bubbles around their feet as they do. (It still hurts Yola while it lasts.)
+  * NEW YOLA: every attempt so far was REJECTED by the user. Any new-Yola item in the overnight prompt does not count;
+    if one comes it will be a later, separate round (then: full rig + animation re-setup; never decimate her).
+  * The acid WILL hurt Yola eventually, but for now (testing gameplay and feel, not difficulty) Yola has infinite
+    health: add a testInfiniteHealth tuning flag (as testInfiniteAmmo), on by default, hits still react and knock
+    her down. Health and difficulty come later, when the user asks.
