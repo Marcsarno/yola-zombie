@@ -1,0 +1,15 @@
+Public reference sources carried forward from the script and implementation handoff
+
+OrphanAnesthesia: pseudocholinesterase deficiency
+https://www.orphananesthesia.eu/rare-diseases/published-guidelines/pseudocholinesterase-deficiency/1793-pseudocholinesterase-deficiency-1/file.html
+
+APSF: quantitative neuromuscular monitoring and recovery
+https://www.apsf.org/article/new-practice-guidelines-for-neuromuscular-blockade/
+
+ASA: qualified anesthesia presence and standard monitoring
+https://www.asahq.org/standards-and-practice-parameters/standards-for-basic-anesthetic-monitoring
+
+Three.js: render targets
+https://threejs.org/manual/pages/rendertargets.html
+
+These are public research references, not audio download links. The clinical content is for the fictional entertainment sequence and is not a clinician-approved training module.

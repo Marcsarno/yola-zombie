@@ -12,6 +12,7 @@ import { Telegraphs } from './render/telegraph.js';
 import { Looks, LOOKS } from './render/looks.js';
 import { LiveScreens } from './render/screens.js';
 import { CombatAudio } from './audio.js';
+import { GameMusic } from './music.js';
 import { Input } from './ui/input.js';
 import { Hud } from './ui/hud.js';
 import { angleDiff } from './core/world.js';
@@ -63,6 +64,8 @@ addEventListener('resize', resize); resize();
 const tuning = makeTuning(store.get('tuning', null));
 const audio = new CombatAudio();
 audio.setVolume(store.get('volume', 0.8)); audio.setMuted(store.get('muted', false));
+for (const b of ['sfx', 'music', 'voice']) { audio.levels[b] = store.get('lvl_' + b, audio.levels[b]); audio.busMuted[b] = store.get('mute_' + b, false); }
+const music = new GameMusic(audio); // the supplied combat track: explore / combat with hysteresis (music.js)
 const fx = new FX(scene);
 const telegraphs = new Telegraphs(scene); // zombie attack wedges on the floor
 fx.gore = store.get('gore', true);
@@ -121,7 +124,7 @@ const ZOMBIE_TYPES = [
   { file: 'assets/zombie-sprinter.glb', height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
   { file: 'assets/zombie-guard.glb', height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
 ];
-const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.id % 2);
+const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.look === 'nurse' ? 0 : z.look === 'patient' ? 1 : z.id % 2);
 const YOLA_HEIGHT = 1.62;
 const loader = new GLTFLoader();
 async function load() {
@@ -225,7 +228,11 @@ function applyRoom1() { levelSave = null; store.set('floor3save', null); return 
 function applyLevel(save) {
   restart('room1', benchN, save);
   const p = sim.player, A = ROOM1.player;
-  if (!save) { p.x = A.x; p.z = A.z; p.aimYaw = p.aimTarget = A.yaw; p.hp = p.maxHp; p.setLoadout(['fists']); }
+  if (!save) {
+    p.x = A.x; p.z = A.z; p.aimYaw = p.aimTarget = A.yaw; p.hp = p.maxHp;
+    p.setLoadout(['bat', 'fists'], 'bat'); // she breaks through with the guard's bat in her hands
+    if (sim.level) { sim.level.taken.add('bat'); sim.level.pickups = sim.level.pickups.filter((q) => q.id !== 'bat'); }
+  }
   p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw; p.vx = p.vz = 0; p.invuln = save ? 1.2 : 0; p.attackHeld = false; p.recoil = 0;
   yola.reset(p.x, p.z, p.aimYaw); yola.setShown(true);
   cameraPose(p.x, p.z, p.aimYaw); // the follow camera starts exactly at the pose
@@ -238,7 +245,7 @@ function applyLevel(save) {
 }
 // show the zombies and Yola without stepping the simulation (the reveal, before control is handed over)
 function previewRoom1(dt) {
-  yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
+  if (!opening?.revealSwing) yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
   for (const z of sim.zombies) {
     let v = zviews.get(z.id);
     if (!v) { const type = viewType(z); v = zpool[type].pop() || newZombieView(type); v.bind(z); zviews.set(z.id, v); }
@@ -417,6 +424,7 @@ function runFrame(dt, doRender = true) {
   if (groanT <= 0) { groanT = 1.6 + Math.random() * 2; const n = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < 9).length; if (n) audio.play('groan', Math.min(1, 0.5 + n * 0.1)); }
 
   fx.update(animDt);
+  if (music.state !== 'off') { const R = music.state === 'combat' ? 11 : 7; music.update(dt, sim.zombies.some((z) => z.alive && !z.dormant && !z.passive && (Math.hypot(z.x - p.x, z.z - p.z) < R || z.state === 'windup' || z.state === 'strike')), paused || p.dead); }
   arena.update(dt, ix, iz, THREE.MathUtils.degToRad(tuning.camYaw), sim.level);
   hud.setEmergency(!!arena.em && arena.em.target > 0);
   hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
@@ -674,6 +682,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { get hitPause() { return hitPauseT; }, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

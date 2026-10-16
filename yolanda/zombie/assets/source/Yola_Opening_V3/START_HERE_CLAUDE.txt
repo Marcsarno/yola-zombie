@@ -1,0 +1,7 @@
+Continue my current Three.js Yola hospital zombie game. Read the attached Yola_Overnight_Claude_Handoff.txt completely; it is the newest instruction layer and overrides conflicting notes in the older opening package. First checkpoint the current working build and preserve the guard/orderly animation work already underway.
+
+Implement the complete scripted opening, the reviewed clinical choice cards, supplied take-B dialogue, existing narrator, elevator journey to floor three, and the painted-scene bat breakthrough into the upgraded hospital. Omit line 32, “Behind me.” Use supplied music and the new one-centered-handle modular shield v2. Do not buy or regenerate audio. The newest Yola artwork is a reference, not permission to replace her working rig before a compatible model exists.
+
+Follow the handoff's priorities. Improve staging, room decoration, lighting, continuity and audio reliability, then verify shield integration, crowd spacing, melee hit-stop, crawlers and the existing combat regressions. Keep the current floor plan. Choose up to three small creative polish improvements within this scope; implement them rather than stopping at suggestions.
+
+Use the actual supplied files, inspect the game, test through normal controls, and report missing inputs honestly. Deliver the runnable updated build, screenshots/video if actually captured, tests, unresolved issues and a concise changelog. Distinguish desktop mobile-viewport checks from physical-phone testing. Do not spend credits, discard working animation fixes, or claim untested gameplay works.

@@ -13,6 +13,7 @@ export const TUNING_DEFAULTS = {
   pistolKnockback: 1.6, // m/s impulse
   aimAssist: 0.5, // 0 = off, 1 = full (max 5 degrees bend)
   magSize: 12,
+  testInfiniteHealth: true, // testing feel, not difficulty (the user, 2026-10-15): hits still flinch, push and knock her down, health never drops below 1
   testInfiniteAmmo: true, // testing: spare rounds never run out (magazines still empty and reload); false = Floor 3 counts them
   headshotChance: 0.1, // a clean centre-mass pistol hit sometimes takes the head off (one-shot kill)
   reloadTime: 1.05,

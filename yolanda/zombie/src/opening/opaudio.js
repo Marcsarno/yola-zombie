@@ -1,7 +1,8 @@
-// Opening audio: an original cheerful 16-bit-style loop, room ambience, UI chimes and a temporary narrator voice.
-// Everything is synthesised (no recorded assets exist). The voice is the browser's speech synthesis when it exists;
-// otherwise the timed subtitles stand alone. Nothing here can block the sequence: if audio never starts, the
-// clock still runs.
+// Opening audio: the narrator recording, the recorded dialogue (one clip per numbered line), an original cheerful
+// 16-bit-style loop, room ambience, UI chimes and the emergency sounds. Music goes to the music bus, the voices to the
+// dialogue bus (the music ducks under them), everything else to the effects bus (audio.js).
+// Nothing here can block the sequence: a clip that fails to load or play falls back to its measured length on the story
+// clock, so the scene never waits for audio that will not come.
 
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -52,6 +53,42 @@ export class OpeningAudio {
   stopVoice() { try { if (this.voice.ok) speechSynthesis.cancel(); } catch { /* ignore */ } this.spoken = null; }
   pauseVoice(p) { try { if (this.voice.ok) p ? speechSynthesis.pause() : speechSynthesis.resume(); } catch { /* ignore */ } }
 
+  // ---- the dialogue: every line decoded up front (no fetch mid-scene); one line at a time ----
+  // A line is started by playLine and is over when its speech has played (lineDone). The generation number makes a
+  // stopped clip's late 'ended' callback harmless (skip, replay, a new line).
+  async loadVoices(lines, dir, onEach) {
+    this.vbuf = {}; this.vgen = 0; this.vcur = null;
+    const oc = new OfflineAudioContext(1, 44100, 44100);
+    let n = 0;
+    await Promise.all(lines.filter((l) => !l.omit).map(async (l) => {
+      try { this.vbuf[l.id] = await oc.decodeAudioData(await (await fetch(dir + l.file)).arrayBuffer()); }
+      catch { /* missing or undecodable: that line runs on its measured length, silently */ }
+      onEach?.(++n);
+    }));
+    return Object.keys(this.vbuf).length;
+  }
+  playLine(l) {
+    this.stopLine();
+    const buf = this.vbuf?.[l.id];
+    if (!buf || !this.ready || this.ctx.state !== 'running') return false;
+    const c = this.ctx, src = c.createBufferSource(), g = c.createGain();
+    src.buffer = buf; g.gain.value = Math.pow(10, (l.gainDb || 0) / 20);
+    src.connect(g); g.connect(this.audio.voiceBus);
+    const gen = ++this.vgen, at = c.currentTime + 0.02;
+    src.start(at); this.vcur = { src, gen, at, l };
+    this.audio.duck(true);
+    src.onended = () => { if (this.vcur?.gen === gen) { this.vcur = null; this.audio.duck(false, 0.6); } };
+    return true;
+  }
+  // seconds of the current line heard so far (null when no clip is playing: the caller runs on the story clock)
+  linePos() { const v = this.vcur; return v ? Math.max(0, this.ctx.currentTime - v.at) : null; }
+  stopLine() {
+    const v = this.vcur; if (!v) return;
+    this.vcur = null; this.vgen++;
+    try { v.src.onended = null; v.src.stop(); } catch { /* already stopped */ }
+    this.audio.duck(false, 0.3);
+  }
+
   // ---- the narration recording: decoded up front; its playback position is the tour's shot clock ----
   async loadNarration(url) {
     try {
@@ -67,7 +104,7 @@ export class OpeningAudio {
     if (offset >= this.narr.buf.duration - 0.2) return false;
     this.stopNarration();
     const c = this.ctx, src = c.createBufferSource(); src.buffer = this.narr.buf;
-    const g = c.createGain(); g.gain.value = 1.0; src.connect(g); g.connect(this.audio.master);
+    const g = c.createGain(); g.gain.value = 1.0; src.connect(g); g.connect(this.audio.voiceBus);
     const at = c.currentTime + 0.05; this.narr.t0 = at - offset; src.start(at, Math.max(0, offset)); this.narr.src = src; this.narr.playing = true;
     src.onended = () => { if (this.narr) this.narr.playing = false; };
     return true;
@@ -80,7 +117,7 @@ export class OpeningAudio {
   startMusic(vol = 0.5) {
     if (!this.ready || this.musicOn) return;
     const c = this.ctx;
-    this.musicGain = c.createGain(); this.musicGain.gain.value = 0; this.musicGain.connect(this.audio.master);
+    this.musicGain = c.createGain(); this.musicGain.gain.value = 0; this.musicGain.connect(this.audio.musicBus);
     this.musicGain.gain.linearRampToValueAtTime(vol * 0.5, c.currentTime + 1.5);
     this.musicOn = true; this.nextBeat = c.currentTime + 0.1; this.beatIdx = 0;
     this.timer = setInterval(() => this.schedule(), 90);
@@ -133,7 +170,7 @@ export class OpeningAudio {
     const c = this.ctx, src = c.createBufferSource(); src.buffer = this.audio.noiseBuf; src.loop = true;
     const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 420;
     this.ambGain = c.createGain(); this.ambGain.gain.value = 0; this.ambGain.gain.linearRampToValueAtTime(0.05, c.currentTime + 2);
-    src.connect(f); f.connect(this.ambGain); this.ambGain.connect(this.audio.master); src.start();
+    src.connect(f); f.connect(this.ambGain); this.ambGain.connect(this.audio.sfx); src.start();
     this.ambSrc = src;
   }
   stopAmbience() { if (!this.ambGain) return; const c = this.ctx; this.ambGain.gain.linearRampToValueAtTime(0, c.currentTime + 0.5); const s = this.ambSrc; setTimeout(() => { try { s.stop(); } catch { /* ignore */ } }, 700); this.ambGain = null; }
@@ -156,7 +193,7 @@ export class OpeningAudio {
     this.flatlineOff(); if (!this.ready || this.audio.muted) return;
     const c = this.ctx, o = c.createOscillator(), g = c.createGain();
     o.type = 'sine'; o.frequency.value = 1000; g.gain.value = 0; g.gain.linearRampToValueAtTime(gain, c.currentTime + 0.06);
-    o.connect(g); g.connect(this.audio.master); o.start(); this.flat = { o, g };
+    o.connect(g); g.connect(this.audio.sfx); o.start(); this.flat = { o, g };
   }
   flatlineOff(secs = 0.5) { const f = this.flat; if (!f) return; this.flat = null; const c = this.ctx; f.g.gain.cancelScheduledValues(c.currentTime); f.g.gain.setValueAtTime(f.g.gain.value, c.currentTime); f.g.gain.linearRampToValueAtTime(0, c.currentTime + secs); setTimeout(() => { try { f.o.stop(); } catch { /* ignore */ } }, secs * 1000 + 50); }
   scream() { // a brief, thin shriek: a pitch glide with a breathy noise layer (no recorded voice exists)
@@ -194,7 +231,7 @@ export class OpeningAudio {
   }
   combatAmbience() { // low room tone under the fight: a detuned drone and a slow rumble (no music)
     if (this.combatAmb || !this.ready) return; const c = this.ctx;
-    const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.05, c.currentTime + 2.5); g.connect(this.audio.master);
+    const g = c.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.05, c.currentTime + 2.5); g.connect(this.audio.sfx);
     const o1 = c.createOscillator(), o2 = c.createOscillator(); o1.type = 'sawtooth'; o2.type = 'sawtooth'; o1.frequency.value = 55; o2.frequency.value = 55.6;
     const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 180; o1.connect(f); o2.connect(f); f.connect(g); o1.start(); o2.start();
     this.combatAmb = { g, o1, o2 };
@@ -206,5 +243,19 @@ export class OpeningAudio {
     this.pauseVoice(v);
     if (!v && this.ctx && this.musicOn) this.nextBeat = this.ctx.currentTime + 0.1;
   }
-  dispose() { this.stopMusic(0.2); this.stopAmbience(); this.stopVoice(); this.stopNarration(); this.alarmOff(); this.flatlineOff(0.1); }
+  // the painted picture breaking: a hard crack, a glassy shatter tail and a low thump under it
+  shatter() {
+    if (!this.audio.ok) return;
+    const t = this.ctx.currentTime + 0.005, A = this.audio;
+    A.noise(t, 0.05, { type: 'highpass', f: 2500, gain: 0.6 });
+    A.tone(t, 0.32, 110, { type: 'triangle', gain: 0.75, f2: 42 });
+    A.noise(t + 0.01, 0.6, { type: 'bandpass', f: 4200, q: 1.4, f2: 1800, gain: 0.32, attack: 0.01 });
+    A.noise(t + 0.06, 0.9, { type: 'bandpass', f: 6500, q: 3, f2: 3000, gain: 0.12, attack: 0.03 });
+    A.noise(t, 0.4, { type: 'lowpass', f: 600, f2: 120, gain: 0.55 });
+  }
+  // a short rising breath before the strike (the beat where the picture holds)
+  riser(secs = 0.9) { if (!this.audio.ok) return; const t = this.ctx.currentTime + 0.01; this.audio.noise(t, secs, { type: 'bandpass', f: 300, q: 0.8, f2: 2400, gain: 0.16, attack: secs * 0.85 }); }
+  heartbeat() { if (!this.audio.ok) return; const t = this.ctx.currentTime + 0.01, A = this.audio; A.tone(t, 0.12, 62, { gain: 0.32, f2: 45 }); A.tone(t + 0.2, 0.12, 58, { gain: 0.24, f2: 42 }); }
+  monitorBeep() { if (!this.audio.ok) return; const t = this.ctx.currentTime + 0.005; this.audio.tone(t, 0.08, 1046.5, { type: 'sine', gain: 0.045 }); } // the normal pulse tone
+  dispose() { this.stopMusic(0.2); this.stopAmbience(); this.stopVoice(); this.stopLine(); this.stopNarration(); this.alarmOff(); this.flatlineOff(0.1); }
 }

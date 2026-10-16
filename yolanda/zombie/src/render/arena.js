@@ -498,7 +498,8 @@ export class Arena {
       this.group.add(m); this.attachToWall(m, x, z, face, y + (w * hk) / 2);
       return m;
     };
-    for (const s of SIGNS) add(new THREE.MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024);
+    this.signMeshes = [];
+    for (const s of SIGNS) { const m = add(new THREE.MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024); m.userData.sign = s.text; this.signMeshes.push(m); }
     const tl = new THREE.TextureLoader();
     for (const s of ROOM_SIGNS) { const t = tl.load(`assets/opening/signs/${s.id}.png`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; add(new THREE.MeshBasicMaterial({ map: t }), s.x, s.y, s.z, s.face, s.w, 0.3); }
   }

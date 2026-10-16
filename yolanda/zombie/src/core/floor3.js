@@ -107,10 +107,10 @@ const wp = (m, x, z, face, y, extra = {}) => props.push({ m, x, z, rot: { s: 0, 
 //     workstation and monitor, an IV pole at the table's side; the head wall behind (north) carries gloves, sanitizer,
 //     sharps and the clock; clear lanes all round. No door behind the table.
 p(U + '04_surgery/operating_table_standard.glb', 0, -8.2, 90, [0.78, 1.65], 0.94);
-p(U + '04_surgery/surgical_light_standard.glb', 0.1, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.62, noCollide: true, name: 'orLight' }); // ceiling-mounted: the head hangs over the table
+p(U + '04_surgery/surgical_light_standard.glb', 0.75, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: 'orLight' }); // ceiling-mounted, over the knee (the operated end): never between the camera and his head
 p(U + '02_anesthesia_monitoring/anesthesia_workstation_standard.glb', -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: 'orAnesthesia' }); // beside the head, facing the table (clear of Yola's spot at -1.6, -9.35)
 p(U + '02_anesthesia_monitoring/patient_monitor_standard.glb', -0.7, -10.0, 0, [0.62, 0.71], 1.46, { name: 'orMonitor' });
-p(U + '08_support_equipment/runtime/iv_stand_standard.glb', -0.35, -7.2, 0, [0.73, 0.7], 2.03, { noCollide: true });
+p(U + '08_support_equipment/runtime/iv_stand_standard.glb', -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true }); // by the head, out of the line from the room to the patient
 p(U + '08_support_equipment/runtime/supply_cart_standard.glb', 2.35, -10.6, 0, [0.88, 0.65], 1.21);
 p(H + 'supply_cart.glb', -5.9, -7.4, 90, [1.16, 1.1], 1.23);
 p(H + 'biohazard_bin.glb', -2.95, -10.7, 0, [0.39, 0.39], 0.69);
@@ -242,7 +242,7 @@ export const ROOM_SIGNS = [
 // Zombies stand where placed until they sense Yola (sense: metres with line of sight, or half that without), are hit,
 // or their group is woken (a trigger: the bat pickup brings the Supply Hall group in; the brace releases the Cafeteria).
 export const GROUPS = [
-  { id: 'or', zombies: [{ x: -4.5, z: -6.4, yaw: 0.9, wake: 2.0 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 5.0 }, { x: 4.3, z: -6.2, yaw: -0.8, wake: 8.0 }] },
+  { id: 'or', zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: 'nurse' }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 8.0 }] },
   { id: 'supply', trigger: 'bat', sense: 4.5, zombies: [{ x: -14.0, z: -4.6, yaw: Math.PI / 2 }, { x: -15.0, z: -4.0, yaw: Math.PI / 2 }, { x: -14.2, z: -0.4, yaw: Math.PI / 2 }] },
   { id: 'waiting', sense: 6.5, zombies: [{ x: -21.6, z: -0.6, yaw: 1.2 }, { x: -16.8, z: -5.4, yaw: 2.4 }, { x: -23.6, z: -4.2, yaw: 1.6 }, { x: -14.4, z: -2.7, yaw: 0.4 }] },
   { id: 'preop', sense: 6.0, zombies: [{ x: -33.4, z: -8.0, yaw: 0.3 }, { x: -31.6, z: -3.2, yaw: 2.0 }, { x: -27.9, z: -8.6, yaw: -2.6 }] },
@@ -269,7 +269,7 @@ export const INTERACT = [
 export const FLOOR3 = {
   name: 'floor3',
   bounds: { minX: -37.8, maxX: 11.0, minZ: -23.3, maxZ: 11.8 },
-  playerStart: { x: -1.6, z: -9.35, yaw: 0.55 },
+  playerStart: { x: 0.75, z: -6.05, yaw: 0.61 },
   walls, doors: DOORS, props, rooms: ROOMS,
   cutaway: true, // walls between the camera and Yola lower themselves (every room has walls on all sides)
   camBounds: { minX: -36.5, maxX: 10, minZ: -21.2, maxZ: 10.5 },

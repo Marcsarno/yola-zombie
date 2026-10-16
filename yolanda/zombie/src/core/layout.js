@@ -10,7 +10,7 @@ const H = 'zombie/assets/hospital/'; // Outbreak hospital runtime set (metres, t
 
 // Room 1 (the operating room): the canonical hand-off state used by normal completion, skip and direct start
 export const ROOM1 = {
-  player: { x: -1.6, z: -9.35, yaw: 0.55 }, // the anchor where original Yola becomes improved Yola
+  player: { x: 0.75, z: -6.05, yaw: 0.61 }, // where Yola breaks through the painted picture: the table behind her, facing the camera (south-east)
   zombies: GROUPS[0].zombies, // standard zombies preplaced around the OR perimeter, waking (and so attacking) one at a time
   belongings: { x: -9.6, z: -5.55 }, // the patient-belongings table in the Supply Hall (bat and cap)
   bat: { x: -9.6, z: -5.45 },

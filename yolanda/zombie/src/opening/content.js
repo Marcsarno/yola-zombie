@@ -72,41 +72,102 @@ export const OBJECTIVES = {
   elevator: 'Return to the elevator.',
   board: 'Step into the lift.',
 };
-// the reveal's boss-intro card (Borderlands-style freeze frame)
-export const BOSS_CARD = { name: 'YOLA', tagline: 'Calm under pressure' };
-
-// ---- dialogue (subtitled; a temporary browser voice reads it if one exists) ----
-export const DIALOGUE = {
-  star: { who: 'Narrator', text: 'At Yola’s Medical Center, every patient gets star treatment. Sometimes, the patient actually is a star.' },
-  welcome: { who: 'Receptionist', text: 'Welcome. Yola is ready for you. We’ll keep your belongings by the operating room.' },
-  takeChair: { who: 'Receptionist', text: 'Please take the chair opposite Yola.' },
-  review: { who: 'Yola', text: 'Let’s review your chart before we begin.' },
-  toOR: { who: 'Yola', text: 'We’re ready to move to the operating room.' },
-  settle: { who: 'Yola', text: 'We’ll get you settled, then check the setup.' },
-  equipment: { who: 'Yola', text: 'First, let’s check the equipment.' },
-  monitor: { who: 'Yola', text: 'Now check the monitor.' },
-  somethingWrong: { who: 'Staff', text: 'Something’s wrong. His condition is changing.' },
-  stillMoving: { who: 'Staff', text: 'But how is he still moving?' },
-  getYola: { who: 'Staff', text: 'Get Yola… Get Yola now!' },
-};
 
 // ---------------------------------------------------------------------------------------------
-// ASSESSMENT / OR CARDS: DEVELOPMENT PLACEHOLDERS.
-// These questions have NOT been medically researched or approved. They exist only so the card UI and the state
-// pipeline can be built and tested. No doses, clinical facts, answer keys or treatment teaching are claimed.
-// Every option continues the story: the outbreak happens whatever is chosen, and nothing here ever scores a
-// choice as wrong. Replace with qualified, reviewed content (set status to 'reviewed') before shipping.
-// Question text, options and feedback live in this table so they can be authored independently of the staging.
+// THE SCRIPT (Yola Opening V3, assets/source/Yola_Opening_V3): 33 numbered lines, one recorded take each. The user chose
+// take B for every line (Yola_Overnight_Claude_Handoff, 2026-10-15); the A files stay in assets/opening/voice for review.
+// Line 32 ("Behind me.") is never played (the user's call); its files and number are kept so the IDs stay stable.
+// Line 33 is optional and plays once, after control returns.
+// dur: the clip; end: where the speech ends (the trailing silence is trimmed, measured from the decoded audio);
+// gainDb: a per-clip level match (speech RMS measured in the browser: conversational lines to about -15 dB, the two
+// shouted calls for Yola to about -12 dB), applied at playback; the MP3s are untouched.
 // ---------------------------------------------------------------------------------------------
-export const CARD_STATUS = 'DEVELOPMENT PLACEHOLDER — clinical content pending review.';
-export const CARD_FEEDBACK = (label) => `Test feedback: ${label} selected. This only tests the card interface; it is not a clinical answer.`;
-const OPTS = [{ id: 'a', text: 'Option A' }, { id: 'b', text: 'Option B' }, { id: 'c', text: 'Option C' }];
-export const CARDS = [
-  { id: 'assess-1', where: 'assessment', status: 'placeholder', prompt: 'Test question: choose any option to try this card.', options: OPTS },
-  { id: 'or-1', where: 'workstation', status: 'placeholder', prompt: 'Test question (equipment check): choose any option to try this card.', options: OPTS },
-  { id: 'or-2', where: 'monitor', status: 'placeholder', prompt: 'Test question (monitor check): choose any option to try this card.', options: OPTS },
+export const VOICE_DIR = 'assets/opening/voice/';
+export const TAKE = 'B';
+export const LINES = [
+  { id: '01', who: 'Reception', file: '01_Reception_takeB.mp3', dur: 4.16, end: 4.16, gainDb: -0.9, text: "Good morning. Yola's expecting you. Take the two seats across from her." },
+  { id: '02', who: 'Yola', file: '02_Yola_takeB.mp3', dur: 1.84, end: 1.84, gainDb: -1.8, text: "Hi. How's that knee treating you?" },
+  { id: '03', who: 'Patient', file: '03_Patient_takeB.mp3', dur: 3.28, end: 3.28, gainDb: 0.4, text: 'Still hurts when I walk. Running bases is out.' },
+  { id: '04', who: 'Yola', file: '04_Yola_takeB.mp3', dur: 1.84, end: 0.7, gainDb: -1.5, text: 'And the bat?' },
+  { id: '05', who: 'Patient', file: '05_Patient_takeB.mp3', dur: 5.2, end: 5.2, gainDb: 1.3, text: "Temporary crutch. Didn't have crutches at home, and I'm definitely not using a cane." },
+  { id: '06', who: 'Yola', file: '06_Yola_takeB.mp3', dur: 1.04, end: 1.02, gainDb: -1.8, text: 'So you brought a bat.' },
+  { id: '07', who: 'Patient', file: '07_Patient_takeB.mp3', dur: 1.52, end: 1.32, gainDb: 0.9, text: 'I have a reputation.' },
+  { id: '08', who: 'Yola', file: '08_Yola_takeB.mp3', dur: 1.76, end: 1.72, gainDb: -1.1, text: 'Any trouble with anesthesia before?' },
+  { id: '09', who: 'Patient', file: '09_Patient_takeB.mp3', dur: 4.16, end: 4.16, gainDb: 1.4, text: 'Last time, they had to help me breathe for a few hours. They found an enzyme problem.' },
+  { id: '10', who: 'Yola', file: '10_Yola_takeB.mp3', dur: 2.72, end: 2.7, gainDb: 0.6, text: 'I see the test results here. Thanks for telling me.' },
+  { id: '11', who: 'Yola', file: '11_Yola_takeB.mp3', dur: 2.16, end: 2.16, gainDb: 1.6, text: "We'll account for that in your anesthesia plan." },
+  { id: '12', who: 'Yola', file: '12_Yola_takeB.mp3', dur: 2.96, end: 2.94, gainDb: -1.1, text: "Your team's ready on the third floor. I'll come up with you." },
+  { id: '13', who: 'Colleague', file: '13_Colleague_takeB.mp3', dur: 3.2, end: 3.2, gainDb: 2.0, text: "Let's give that knee a break. I've got a wheelchair for you." },
+  { id: '14', who: 'Patient', file: '14_Patient_takeB.mp3', dur: 2.08, end: 2.08, gainDb: 0.9, text: "All right. But the bat's coming." },
+  { id: '15', who: 'Yola', file: '15_Yola_takeB.mp3', dur: 2.24, end: 2.22, gainDb: -0.3, text: "He can look after it while we're in the operating room." },
+  { id: '16', who: 'Colleague', file: '16_Colleague_takeB.mp3', dur: 2.96, end: 2.96, gainDb: 0.6, text: "Third floor. We'll help you get changed and settled." },
+  { id: '17', who: 'Yola', file: '17_Yola_takeB.mp3', dur: 1.44, end: 0.64, gainDb: -2.1, text: 'Comfortable?' },
+  { id: '18', who: 'Patient', file: '18_Patient_takeB.mp3', dur: 2.88, end: 2.88, gainDb: 2.7, text: "As comfortable as I'm going to get. Let's do this." },
+  { id: '19', who: 'Yola', file: '19_Yola_takeB.mp3', dur: 1.28, end: 1.2, gainDb: 0.2, text: "We'll take good care of you." },
+  { id: '20', who: 'Colleague', file: '20_Colleague_takeB.mp3', dur: 1.6, end: 1.6, gainDb: 1.5, text: 'Equipment checks complete.' },
+  { id: '21', who: 'Yola', file: '21_Yola_takeB.mp3', dur: 1.12, end: 1.12, gainDb: -1.1, text: "I'm right here with you." },
+  { id: '22', who: 'Colleague', file: '22_Colleague_takeB.mp3', dur: 2.72, end: 2.72, gainDb: 2.3, text: "The procedure's finished. Let's check his recovery." },
+  { id: '23', who: 'Yola', file: '23_Yola_takeB.mp3', dur: 4.08, end: 4.08, gainDb: 0.6, text: "There's still some rocuronium effect. Let's complete reversal and check again." },
+  { id: '24', who: 'Yola', file: '24_Yola_takeB.mp3', dur: 2.8, end: 2.78, gainDb: 0.2, text: "He's recovering well. I've handed everything over." },
+  { id: '25', who: 'Colleague', file: '25_Colleague_takeB.mp3', dur: 1.68, end: 1.68, gainDb: -0.7, text: "I've got him. I'll stay with him." },
+  { id: '26', who: 'Yola', file: '26_Yola_takeB.mp3', dur: 1.84, end: 1.84, gainDb: 0.1, text: "Thanks. I'll be just outside." },
+  { id: '27', who: 'Colleague', file: '27_Colleague_takeB.mp3', dur: 2.16, end: 2.16, gainDb: -0.5, text: "Something's wrong. Check his pulse." },
+  { id: '28', who: 'Colleague', file: '28_Colleague_takeB.mp3', dur: 1.68, end: 1.12, gainDb: -0.6, text: "There's no pulse." },
+  { id: '29', who: 'Colleague', file: '29_Colleague_takeB.mp3', dur: 2.08, end: 2.08, gainDb: 3.3, text: 'Wait... why is he moving?' },
+  { id: '30', who: 'Colleague', file: '30_Colleague_takeB.mp3', dur: 2, end: 1.04, gainDb: -1.0, text: 'Get Yola!' },
+  { id: '31', who: 'Colleague', file: '31_Colleague_takeB.mp3', dur: 2.48, end: 1.76, gainDb: -2.9, text: 'Yola! We need you in here!' },
+  { id: '32', who: 'Yola', file: '32_Yola_takeB.mp3', dur: 2.16, end: 0.8, gainDb: -4.0, text: 'Behind me.', omit: true },
+  { id: '33', who: 'Yola', file: '33_Yola_takeB.mp3', dur: 2.72, end: 1.46, gainDb: 0.2, text: 'We need to get downstairs.', optional: true },
 ];
+export const LINE = Object.fromEntries(LINES.map((l) => [l.id, l]));
+export const SPEAKER = { Reception: 'Receptionist', Yola: 'Yola', Patient: 'Patient', Colleague: 'Anesthesia colleague' };
 
-// The scripted story does not depend on the answer.
-export const CARD_KEYS = { 'assess-1': {}, 'or-1': {}, 'or-2': {} };
-export const EMERGENCY_LINES = { stable: 'Setup complete', alert: 'Monitor alert' };
+// ---------------------------------------------------------------------------------------------
+// THE CHOICE CARDS (reviewed script, three passes against the sources in assets/source/Yola_Opening_V3/SOURCES.txt;
+// anesthesia-informed entertainment, not a treatment guide or a clinician-approved training module). The answer keys
+// are unchanged from the script. A wrong answer shows its hint and the card stays open for another try; nothing unsafe
+// is ever administered and no answer is scored. The scene waits while a card is open.
+// ---------------------------------------------------------------------------------------------
+export const CARD_NOTE = 'Story card: anesthesia-informed entertainment, not medical advice.';
+export const CLINICAL_CARDS = {
+  assess: {
+    id: 'assess', title: 'Assessment', sub: 'History changes the plan',
+    context: 'Chart: scheduled knee procedure; general anesthesia is planned. Prior testing confirms butyrylcholinesterase (pseudocholinesterase) deficiency. Routine history, medications, allergies, fasting, consent and preparation are documented.',
+    prompt: 'Which pair should be avoided because of his documented enzyme deficiency?',
+    options: [
+      { id: 'a', text: 'Succinylcholine and mivacurium', correct: true },
+      { id: 'b', text: 'Rocuronium and vecuronium' },
+      { id: 'c', text: 'Propofol and sevoflurane' },
+    ],
+    success: 'History accounted for. An alternative plan is selected.',
+    explain: 'The affected pair can cause prolonged paralysis in this condition. Today’s clinician-selected alternative uses rocuronium, which is not dependent on that enzyme.',
+    retry: 'Check which two muscle relaxants depend on this enzyme.',
+  },
+  equip: {
+    id: 'equip', title: 'Equipment', sub: 'Prepare to measure recovery',
+    prompt: 'Which monitoring will best confirm neuromuscular recovery at the end of the case?',
+    options: [
+      { id: 'a', text: 'Qualitative assessment of facial-muscle twitches' },
+      { id: 'b', text: 'Quantitative monitoring at the adductor pollicis', correct: true },
+      { id: 'c', text: 'A sustained head-lift test alone' },
+    ],
+    success: 'Quantitative recovery monitor ready.',
+    retry: 'Clinical or visual checks alone can miss residual block.',
+  },
+  monitor: {
+    id: 'monitor', title: 'Monitor', sub: 'Interpret the result',
+    context: 'After rocuronium, four twitch responses are present. Quantitative TOF ratio: 0.78.',
+    prompt: 'Does this establish adequate neuromuscular recovery for extubation?',
+    options: [
+      { id: 'a', text: 'Yes. Four responses establish full recovery.' },
+      { id: 'b', text: 'Yes, if a head lift can be sustained.' },
+      { id: 'c', text: 'No. Residual neuromuscular blockade remains.', correct: true },
+    ],
+    success: 'Recovery checks continue.',
+    explain: 'Confirm a quantitative TOF ratio of at least 0.9 alongside the other clinical readiness requirements before extubation. A TOF ratio alone is not the complete readiness assessment.',
+    retry: 'Four responses do not establish full recovery. Check the ratio.',
+  },
+};
+// the readiness check shown with the 0.96 reading, before the handoff (the ratio is one requirement among several)
+export const READINESS = ['TOF ratio 0.96', 'Breathing regular and adequate', 'Awake, following commands', 'Oxygen saturation stable', 'Airway reflexes back'];
+export const TIME_CARDS = { later: 'Later in the procedure', reversal: 'A few minutes later' };

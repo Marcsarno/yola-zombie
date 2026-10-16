@@ -1,5 +1,8 @@
 // Combat sounds, synthesised (same lazy-AudioContext pattern as the hospital game's sound class).
-// Starts on the first user gesture; master volume + mute.
+// Starts on the first user gesture; master volume + mute, and three buses under it (effects, music, dialogue), each
+// with its own level and mute. Effects are capped: a swing through five zombies plays one crack, not five, and no more
+// than MAX_VOICES effect sounds ring at once (the newest important ones win).
+const MAX_VOICES = 14;
 
 // a 0.1 s silent 8 kHz mono WAV (the iPhone media-session unlock)
 const SILENT_WAV = (() => {
@@ -11,16 +14,23 @@ const SILENT_WAV = (() => {
   return 'data:audio/wav;base64,' + btoa(str);
 })();
 
+const MINOR = new Set(['groan', 'zombieHurt', 'bump', 'ricochet', 'batMiss', 'windup', 'empty', 'dry']); // dropped first when crowded
+
 export class CombatAudio {
   constructor() {
     this.ctx = null; this.master = null; this.noiseBuf = null;
     this.volume = 0.8; this.muted = false;
+    this.levels = { sfx: 1, music: 0.7, voice: 1 }; this.busMuted = { sfx: false, music: false, voice: false };
+    this.recent = new Map(); this.active = []; this.duckK = 1;
   }
 
   init() {
     if (!this.ctx) {
       try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
       this.master = this.ctx.createGain(); this.master.connect(this.ctx.destination);
+      // the buses: effects (the synthesised one-shots), music (the opening's loop, the combat track), dialogue (voices)
+      this.sfx = this.ctx.createGain(); this.musicBus = this.ctx.createGain(); this.voiceBus = this.ctx.createGain();
+      for (const b of [this.sfx, this.musicBus, this.voiceBus]) b.connect(this.master);
       this.applyVolume();
       const len = this.ctx.sampleRate * 0.6;
       this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -40,7 +50,22 @@ export class CombatAudio {
     }
   }
 
-  applyVolume() { if (this.master) this.master.gain.value = this.muted ? 0 : this.volume; }
+  applyVolume() {
+    if (!this.master) return;
+    this.master.gain.value = this.muted ? 0 : this.volume;
+    this.sfx.gain.value = this.busMuted.sfx ? 0 : this.levels.sfx;
+    this.voiceBus.gain.value = this.busMuted.voice ? 0 : this.levels.voice;
+    const g = this.musicBus.gain, t = this.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(this.musicTarget(), t);
+  }
+  musicTarget() { return this.busMuted.music ? 0 : this.levels.music * this.duckK; }
+  setLevel(bus, v) { this.levels[bus] = v; this.applyVolume(); }
+  setBusMuted(bus, m) { this.busMuted[bus] = m; this.applyVolume(); }
+  // music dips under speech and comes back after it (a short ramp both ways, never a jump)
+  duck(on, secs = 0.25) {
+    this.duckK = on ? 0.38 : 1;
+    if (!this.musicBus) return;
+    const g = this.musicBus.gain, t = this.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(this.musicTarget(), t + secs);
+  }
   setVolume(v) { this.volume = v; this.applyVolume(); }
   setMuted(m) { this.muted = m; this.applyVolume(); }
 
@@ -51,7 +76,7 @@ export class CombatAudio {
     const flt = c.createBiquadFilter(); flt.type = type; flt.frequency.setValueAtTime(f, t); flt.Q.value = q;
     if (f2) flt.frequency.exponentialRampToValueAtTime(f2, t + dur);
     const g = c.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack); g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
-    src.connect(flt); flt.connect(g); g.connect(this.master);
+    src.connect(flt); flt.connect(g); g.connect(this.out || this.sfx);
     src.start(t, Math.random() * 0.3); src.stop(t + dur + 0.02);
   }
 
@@ -59,11 +84,25 @@ export class CombatAudio {
     const c = this.ctx, o = c.createOscillator(), g = c.createGain();
     o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack); g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
-    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.02);
+    o.connect(g); g.connect(this.out || this.sfx); o.start(t); o.stop(t + dur + 0.02);
+  }
+
+  // the effect-voice cap: the same sound at most twice in 60 ms (a crowd hit is one sound, slightly louder), and at most
+  // MAX_VOICES sounds started in the last 0.35 s (minor sounds are dropped first)
+  admit(name, k) {
+    const t = this.ctx.currentTime, r = this.recent.get(name) || [];
+    while (r.length && t - r[0] > 0.06) r.shift();
+    if (r.length >= 2) return false;
+    r.push(t); this.recent.set(name, r);
+    while (this.active.length && t - this.active[0] > 0.35) this.active.shift();
+    const minor = MINOR.has(name);
+    if (this.active.length >= (minor ? MAX_VOICES - 4 : MAX_VOICES)) return false;
+    this.active.push(t);
+    return true;
   }
 
   play(name, k = 1) {
-    if (!this.ok) return;
+    if (!this.ok || !this.admit(name, k)) return;
     const t = this.ctx.currentTime;
     switch (name) {
       case 'shot':

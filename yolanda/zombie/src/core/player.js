@@ -298,7 +298,7 @@ export class Player {
 
   hurt(dmg, fromX, fromZ, sim) {
     if (this.dead || this.invuln > 0) return false;
-    this.hp = Math.max(0, this.hp - dmg);
+    this.hp = Math.max(this.T.testInfiniteHealth ? Math.max(1, this.hp) : 0, this.hp - dmg); // (test mode: every reaction, no death)
     this.invuln = 0.55; this.hurtT = 0;
     const dx = this.x - fromX, dz = this.z - fromZ, d = Math.hypot(dx, dz) || 1;
     this.vx += (dx / d) * 2.2; this.vz += (dz / d) * 2.2;

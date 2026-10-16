@@ -1,0 +1,255 @@
+Yola Opening — Third-Pass Script and Overnight Polish Handoff
+Prepared October 15, 2026 (user local time). 33 spoken lines, 3 choice cards, 66 generated takes. Narrator recording retained. No new floor plans.
+Status: all 66 generated MP3 takes have been downloaded and packaged. All 66 are nonempty, decode completely without ffmpeg errors, and have distinct file and decoded-audio hashes. Measured durations match provider metadata within 0.25 seconds. The original MP3 bytes have not been edited. Two sequential raw-take audition reels are included for convenient listening, with 0.4-second gaps. They are unselected compilations, not a staged or fully mixed opening. No full perceptual acting/pronunciation review, take selection, loudness normalization or in-game testing has been performed. 92 included credits were used for the earlier generations, with 393 remaining at generation completion; packaging and technical checks used no new generation calls or credits, and no credits were purchased.
+Cast: Yola=Niki; patient=Brodie; receptionist=Wanda; qualified anesthesia colleague=Leslie. Guard is silent. These are stock generated voices, not clones of real people.
+Estimated presentation: roughly 3–4 minutes with the existing tour, staging and short choices, but actual duration depends on reading/selection and implementation. The 33 lines are short; not 33 separate cutscenes.
+
+
+1. Arrival and seated assessment
+Dialogue lines 01–11.
+Keep the existing approved trailer-style narration and recording. After it ends, the adult baseball player arrives for his scheduled knee procedure with his private security guard. He favors the knee and uses his bat as an improvised cane. This is characterization, not advice to use a bat as a mobility aid. Reception directs both men to the two chairs opposite seated Yola. Show actual arrival, a brief reception interaction, and settled seated poses. No overlapping bodies or instant sit/stand. During the guard’s turn or seated movement, his holstered pistol is briefly visible without a gun close-up or dramatic cue. The bat stays visibly with the patient. Card 1 appears after line 10; line 11 follows its correct answer.
+
+2. Elevator to floor three
+Dialogue lines 12–16.
+A qualified anesthesia colleague arrives with a wheelchair. Patient accepts help; use a clean cut to a seated pose if transfer animation is unavailable. The guard carries the bat. Yola, patient, guard and colleague travel together in an actual elevator, rather than disappearing through generic double doors. Show doors opening, group entering, doors closing, indicator changing from ground to 3, and doors reopening upstairs. Brief framing changes can cover imperfect walking/pushing animation. Do not remove the patient’s support and then have him walk unsupported. Line 15 gestures toward the guard, making ‘he’ clear. On floor 3, changing occurs off camera. The patient subsequently wears simple white hospital clothing. Guard and bat remain outside the operating area.
+
+3. Operating-room preparation
+Dialogue lines 17–21.
+Patient is safely positioned on the bed with the appropriate team. Use existing medical props, short camera details and simple poses. Card 2 follows line 19. Complete equipment checks and establish the selected monitor before anesthesia. Standard monitoring remains in place; the neuromuscular monitor does not replace ECG, oxygenation, ventilation or blood-pressure monitoring. Lines 20–21 follow success. A short ‘Later in the procedure’ time transition conveys elapsed time. Yola manages anesthesia; the qualified surgical team performs the knee operation. Do not invent a rushed emergency operation or a VIP shortcut.
+
+4. Recovery check and handoff
+Dialogue lines 22–26.
+Line 22 introduces Card 3. After correct selection and line 23, appropriate care and reassessment occur across a brief time transition. Show quantitative TOF recovery to 0.96 and confirmation that the other clinical readiness criteria are met before extubation and handoff. Do not make the 0.78 reading an unresolved failure, or imply time alone treats it. The complete clinical handoff is compressed in staging: colleague reviews chart and accepts responsibility. Lines 24–26 are its conversational ending, not the entirety of a real handoff. Colleague is a qualified anesthesia professional, stays bedside, and continues monitoring. Yola steps just outside. Keep the same operating room for the later crisis.
+
+5. Crisis and action reveal
+Dialogue lines 27–33.
+Hold a brief normal beat after confirmed recovery. Only now does the new fictional crisis begin. The monitor alarms; staff immediately assess the patient and equipment while calling for help. A flat displayed trace alone is not proof of no pulse. Line 28 follows verification. The patient’s unnatural movement interrupts the response almost immediately; do not let staff stand watching or wait for Yola before responding. Lines 29–31 escalate quickly. The outbreak is supernatural fiction, not a consequence of the enzyme condition, appropriate anesthesia, or the player’s choices. Yola gets the bat from the guard in a brief insert or an economical cut. Line 32 precedes the action. The old hospital view becomes a painted scene, then the new Yola’s strong bat swing breaks through it. A few large fragments reveal the upgraded hospital in the SAME layout behind her. One strong impact, a readable finishing pose, then the gameplay camera and control. Line 33 is an optional once-only first objective cue after control returns. No shotgun slide, no old-model body dismemberment, and no early zombie hints in the cheerful introduction.
+
+Exact spoken script
+01. Reception: “Good morning. Yola's expecting you. Take the two seats across from her.”
+
+02. Yola: “Hi. How's that knee treating you?”
+
+03. Patient: “Still hurts when I walk. Running bases is out.”
+
+04. Yola: “And the bat?”
+
+05. Patient: “Temporary crutch. Didn't have crutches at home, and I'm definitely not using a cane.”
+
+06. Yola: “So you brought a bat.”
+
+07. Patient: “I have a reputation.”
+
+08. Yola: “Any trouble with anesthesia before?”
+
+09. Patient: “Last time, they had to help me breathe for a few hours. They found an enzyme problem.”
+
+10. Yola: “I see the test results here. Thanks for telling me.”
+
+11. Yola: “We'll account for that in your anesthesia plan.”
+
+12. Yola: “Your team's ready on the third floor. I'll come up with you.”
+
+13. Colleague: “Let's give that knee a break. I've got a wheelchair for you.”
+
+14. Patient: “All right. But the bat's coming.”
+
+15. Yola: “He can look after it while we're in the operating room.”
+
+16. Colleague: “Third floor. We'll help you get changed and settled.”
+
+17. Yola: “Comfortable?”
+
+18. Patient: “As comfortable as I'm going to get. Let's do this.”
+
+19. Yola: “We'll take good care of you.”
+
+20. Colleague: “Equipment checks complete.”
+
+21. Yola: “I'm right here with you.”
+
+22. Colleague: “The procedure's finished. Let's check his recovery.”
+
+23. Yola: “There's still some rocuronium effect. Let's complete reversal and check again.”
+
+24. Yola: “He's recovering well. I've handed everything over.”
+
+25. Colleague: “I've got him. I'll stay with him.”
+
+26. Yola: “Thanks. I'll be just outside.”
+
+27. Colleague: “Something's wrong. Check his pulse.”
+
+28. Colleague: “There's no pulse.”
+
+29. Colleague: “Wait... why is he moving?”
+
+30. Colleague: “Get Yola!”
+
+31. Colleague: “Yola! We need you in here!”
+
+32. Yola: “Behind me.”
+
+33. Yola: “We need to get downstairs.”
+
+Choice cards
+Card 1 — Assessment: history changes the plan
+Chart: scheduled knee procedure; general anesthesia is planned. Prior testing confirms butyrylcholinesterase (pseudocholinesterase) deficiency. Routine history, medications, allergies, fasting, consent and relevant preparation are documented; the short conversation is not a complete preanesthesia examination.
+Prompt: “Which pair should be avoided because of his documented enzyme deficiency?”
+A. Succinylcholine and mivacurium — CORRECT
+B. Rocuronium and vecuronium
+C. Propofol and sevoflurane
+Success: “History accounted for. An alternative plan is selected.”
+Explanation on demand: the affected pair can cause prolonged paralysis in this condition. Today's clinician-selected alternative uses rocuronium, which is not dependent on that enzyme.
+Retry: “Check which two muscle relaxants depend on this enzyme.”
+No incorrect drug is administered. The diagnosis is documented, not guessed from ‘slow to wake.’
+
+Card 2 — Equipment: prepare to measure recovery
+Prompt: “Which monitoring will best confirm neuromuscular recovery at the end of the case?”
+A. Qualitative assessment of facial-muscle twitches
+B. Quantitative monitoring at the adductor pollicis — CORRECT
+C. A sustained head-lift test alone
+Success: “Quantitative recovery monitor ready.”
+Retry: “Clinical or visual checks alone can miss residual block.”
+This is an anticipatory equipment choice before anesthesia, not an improvised test after a crisis.
+
+Card 3 — Monitor: interpret the result
+Context: after rocuronium, four twitch responses are present. Quantitative TOF ratio: 0.78.
+Prompt: “Does this establish adequate neuromuscular recovery for extubation?”
+A. Yes. Four responses establish full recovery.
+B. Yes, if a head lift can be sustained.
+C. No. Residual neuromuscular blockade remains. — CORRECT
+Success: “Recovery checks continue.”
+Explanation: confirm a quantitative TOF ratio of at least 0.9 alongside the other clinical readiness requirements before extubation. A TOF ratio alone is not the complete readiness assessment.
+Retry: “Four responses do not establish full recovery. Check the ratio.”
+Continue appropriate care, then show 0.96 and other criteria satisfied before handoff.
+
+All cards: three readable choices; pause the scene for selection; no overlapping spoken explanation. A wrong answer offers a brief hint and retry, never an unsafe administered action. Each correct answer visibly succeeds. No medical score or death screen falsely blames the outbreak on her answers. These are anesthesia-informed entertainment questions, not a treatment guide or a clinician-approved training module.
+
+Three-pass review record
+Pass 1: drafted the complete appointment-to-reveal sequence with one assessment card, two OR cards, and natural bat small talk.
+Pass 2: checked the clinical links against the sources. Clarified that the later residual effect is rocuronium, not the documented enzyme problem; made equipment selection anticipatory; required staff to respond immediately rather than await Yola.
+Pass 3: checked staging and pacing. Kept the guard and bat in the elevator group, retained the brief personality beats, naturalized the handoff line, and tightened the emergency to one quick escalation. No extra questions or floor plans were added.
+This is source-based critical review, not review by a licensed clinician. Final clinical content should receive qualified review before being presented as clinically validated.
+
+Claude overnight implementation handoff
+Continue the existing Three.js game. Preserve the working combat, rigs, animations, controls, saves and existing narrator recording. Inspect the current implementation rather than assuming the historical source is the live build.
+
+Required outcomes
+- Implement this connected dialogue and the three cards in order. One assessment question is enough; do not add a second just to pad the tutorial.
+- Use the real elevator journey to floor three. Maintain guard, bat, patient, clothing and room continuity.
+- Replace temporary browser speech with the supplied numbered voice clips. Each line has takes A and B; choose after listening, not by filename. Keep both alternatives available during review. Do not silently regenerate or buy audio.
+- Trigger staging from audio playback completion with short intentional pauses, not guessed fixed durations. Prevent overlapping dialogue, repeated lines and callbacks continuing after skip/restart. Resume browser audio from a user gesture; test pause, mute, replay and interrupted playback. Keep music below dialogue.
+- Preserve the user’s uncluttered presentation: subtitles off by default; optional captions available without hiding the action. Clinical choice cards remain visible and readable.
+- Implement the approved painted-scene breakthrough, using the strongest available bat animation. Do not assume a particular Quaternius clip name or that the current rig is already retargeted correctly. Inspect and preview the actual available animation.
+- Make the visual reveal a whole-scene change, not just a character swap. Preserve geography and camera alignment while moving from clean hospital to the approved stained floors, blood handprints, scuffed walls and damaged furniture. Keep enemies and navigation readable.
+- Deliver an actual tested build and refreshed download; report precisely what was and was not tested.
+
+Creative freedom
+You have room to improve camera composition, transitions, rhythm, impact timing, subtle effects, environmental storytelling, sound layering and small visual jokes. Make a small number of strong, coherent choices rather than adding every possible effect. Choose details that improve this specific scene. Do not stop at a list of ideas; implement and inspect the results.
+The fixed boundaries are the patient’s knee appointment, bat premise, credible medical choices, elevator to floor three, competent care before the outbreak, and the painted-scene bat reveal. Do not add new floor plans, specialties, management systems, enemy systems, or a full game rewrite. Do not change the clinical answer keys without a sourced reason and a clear report.
+
+Reveal implementation option, not a required algorithm
+Capture the exact old scene frame into a Three.js render target. A capture alone is not painterly; use a light art treatment or a matched painted image if necessary. Map it continuously over about ten pre-cut thin fragments, aligned to the reveal camera. Prepare the upgraded room behind the assembled picture before the transition. Capture the old hospital without choice-card or HUD overlays. Preserve the captured frame’s colors and exposure; avoid accidentally lighting or tone-mapping it twice. Hide fragment seams until impact. At the bat impact, choreograph fragment rotation and movement, a small dust burst, strong impact sound, and the music change. Keep the camera matched until the image begins breaking, then move toward the gameplay view. Avoid a prolonged blackout or a loading hitch. Stop rendering the old scene after capture and release resources safely after the transition. Do not run the heavy old and new simulations together unnecessarily. Profile the real transition; do not claim a mobile budget from fragment count alone.
+
+Surface and lighting direction
+Use the existing Hospital_Outbreak_Texture_Kit_v1.zip: stained clinical/corridor tiles, worn concrete, wall variants, blood handprints and smears. Reuse existing approved damaged furniture. Confirm actual files/materials are loaded; a placeholder with the right name does not count. Use varied placement and restrained repetition, preserving clean negative space around gameplay.
+Prioritize large visible surfaces, material contrast, readable warm/cool light separation and a small number of deliberate light sources. Investigate inexpensive emissive fixtures, baked/static lighting where appropriate and carefully limited dynamic shadows. Avoid expensive screen-wide effects or many shadowed lights by default. Match color management and exposure so the new textures do not wash out.
+Do not bulk-apply the AO furniture experiment. The user reviewed it and found the payoff too small. Those test assets are not an approved replacement library. Existing base-color floor/wall textures are not complete PBR sets; do not claim they include normal/roughness/AO maps.
+
+Inspect and test
+Watch the complete opening through normal controls. Verify the seated conversation, no character overlap, aided transfer, elevator doors/indicator, all three card retries and successes, patient clothing change, stable handoff, readable zombie head, bat continuity, final swing contact and camera transition.
+Test at 320 and 390 px portrait widths and desktop; distinguish physical-phone testing from emulation. Check sound on first visit, muted start, replay, skipping, background/resume and lost focus. Make no phone-performance claim if no phone was tested. If WebGL/browser access is blocked, report it rather than claiming gameplay QA.
+Check the biggest current combat regressions while integrating: melee root-motion gliding/teleporting, weapon grip clipping, and stacked crowd hit-stop. Preserve working combat rather than rebuilding it during a cinematic pass. Fix only demonstrated regressions within scope.
+Save a rollback checkpoint. Provide a short change log, actual screenshots/video if available, test results, unresolved issues, and the creative improvements you chose.
+
+Sources
+- OrphanAnesthesia: documented pseudocholinesterase deficiency and anesthetic implications: https://www.orphananesthesia.eu/rare-diseases/published-guidelines/pseudocholinesterase-deficiency/1793-pseudocholinesterase-deficiency-1/file.html
+- APSF: quantitative neuromuscular monitoring and recovery: https://www.apsf.org/article/new-practice-guidelines-for-neuromuscular-blockade/
+- ASA: continuous qualified anesthesia presence and standard monitoring: https://www.asahq.org/standards-and-practice-parameters/standards-for-basic-anesthetic-monitoring
+- Three.js render-to-texture explanation: https://threejs.org/manual/pages/rendertargets.html
+
+Existing materials for this handoff
+- Hospital_Outbreak_Texture_Kit_v1.zip (already delivered): Library ID libfile_dd3f826b3ae48191b91e31951b8d0017.
+- Approved grounded-outbreak mockup: libfile_a8a2c2911a5081919bf5d0a3e6c7c6b2.
+- Existing narrator recording in the saved project: assets/opening/audio/narration.mp3, approximately 47 seconds. Preserve unless the current implementation has an explicitly approved replacement.
+- Prior dialogue draft version 1 is superseded by this third-pass script.
+Library IDs identify the user's files; they are not public links or a promise that an external Claude chat can access them. Supply the actual downloads to Claude.
+
+Delivered package and audio review
+Read README.txt first. START_HERE_CLAUDE.txt is a short implementation prompt. audio_manifest.json and audio_manifest.csv map each exact spoken line to its two local MP3 files, role, stock voice, take, measured duration and stable provider task ID. technical_qa.json records the completed integrity checks and hashes.
+
+The choice cards, hints and explanations are on-screen text and were not voiced. Preserve the existing approximately 47-second narrator recording in the current project; it was not regenerated and is not included in this package. The already delivered Hospital_Outbreak_Texture_Kit_v1.zip and approved visual reference remain separate existing materials and are not redundantly embedded here. Supply those existing assets alongside this package if Claude does not already have them.
+
+There are 33 spoken lines and two alternatives per line. Use exactly one chosen take per line in-game. No take is marked as preferred. Listen to both alternatives before selection, especially the pronunciation of Yola and rocuronium, the character consistency, urgency and unintended whispers. Select using the scene's needs, rather than assuming A or B is better. Keep the original files intact; if you edit an implementation copy, preserve the originals for comparison.
+
+Audition reels are all-A and all-B sequences in line order 01–33, including the optional line 33, with 0.4 seconds of added silence between clips. No narration, choices, music, sound effects, clinical pauses or dramatic staging are included. Existing silences inside the raw takes are retained. These are listening conveniences, not final cinematic timings. audition_reels/audition_cues.csv gives decoded-timeline start/end positions for each line. MP3 players may report a small encoder-padding difference.
+
+Audio take manifest
+The filenames below are relative to the package root. The complete JSON/CSV manifest includes the exact transcript, role and technical details. A/B is not a quality ranking. Durations below are measured MP3 container durations; decoded durations are also recorded in the manifest.
+01A | Reception | Wanda | 4.284 seconds | audio/01_Reception_takeA.mp3 | task eb67ff35-dfd7-4532-8473-43a20cc9b70b
+01B | Reception | Wanda | 4.206 seconds | audio/01_Reception_takeB.mp3 | task 4e7a4fb4-997a-4d6d-b832-eb33860e1597
+02A | Yola | Niki | 1.802 seconds | audio/02_Yola_takeA.mp3 | task d32f72b7-128f-412a-9790-e24f35bfc711
+02B | Yola | Niki | 1.881 seconds | audio/02_Yola_takeB.mp3 | task 8f3d5734-6e49-468e-a089-7adceee83ea9
+03A | Patient | Brodie | 3.004 seconds | audio/03_Patient_takeA.mp3 | task 8bd711cb-25bb-4cb0-bf66-f2eaf0929018
+03B | Patient | Brodie | 3.318 seconds | audio/03_Patient_takeB.mp3 | task 3be1ba5b-a878-4ec6-ac56-0918df5ac337
+04A | Yola | Niki | 1.646 seconds | audio/04_Yola_takeA.mp3 | task 43d2843c-bb52-4a1e-9eb9-8b9703d85a30
+04B | Yola | Niki | 1.881 seconds | audio/04_Yola_takeB.mp3 | task dba44c66-9e69-4c8a-990a-799d731ff1b2
+05A | Patient | Brodie | 4.989 seconds | audio/05_Patient_takeA.mp3 | task 507f556f-65e2-4a05-8505-ec88cb3dd829
+05B | Patient | Brodie | 5.251 seconds | audio/05_Patient_takeB.mp3 | task 94e0981d-a265-4303-b4e1-840ffad7b33a
+06A | Yola | Niki | 1.071 seconds | audio/06_Yola_takeA.mp3 | task 1d6d451b-9209-43b4-965e-ebaa5e9066e3
+06B | Yola | Niki | 1.071 seconds | audio/06_Yola_takeB.mp3 | task 753d97de-1a91-4111-a427-f65655454c84
+07A | Patient | Brodie | 1.411 seconds | audio/07_Patient_takeA.mp3 | task 00aba202-7fe7-45f2-acc4-e3dde7c769dd
+07B | Patient | Brodie | 1.567 seconds | audio/07_Patient_takeB.mp3 | task 9aa79a6e-8256-4bc6-82fa-534f43d52398
+08A | Yola | Niki | 1.802 seconds | audio/08_Yola_takeA.mp3 | task 6511372e-a16b-4a68-bdfa-deeac3276718
+08B | Yola | Niki | 1.802 seconds | audio/08_Yola_takeB.mp3 | task af223a7b-254b-4f72-9314-4a3e4080b993
+09A | Patient | Brodie | 4.049 seconds | audio/09_Patient_takeA.mp3 | task 09186f1a-9c38-4c45-86a8-f68f10974166
+09B | Patient | Brodie | 4.206 seconds | audio/09_Patient_takeB.mp3 | task 256ac16e-6e87-4785-95aa-941554080b63
+10A | Yola | Niki | 2.769 seconds | audio/10_Yola_takeA.mp3 | task e1036282-b71d-47ec-b1e4-dea62fb6b25a
+10B | Yola | Niki | 2.769 seconds | audio/10_Yola_takeB.mp3 | task af8fd9fa-94bb-49f1-ae93-f53e983ad285
+11A | Yola | Niki | 2.116 seconds | audio/11_Yola_takeA.mp3 | task a6b9e03e-5d9c-4857-ac22-b2f24bb0600e
+11B | Yola | Niki | 2.194 seconds | audio/11_Yola_takeB.mp3 | task ee496e4a-3e16-405c-9189-8c7c144f5860
+12A | Yola | Niki | 3.004 seconds | audio/12_Yola_takeA.mp3 | task 38b8c525-dda6-4140-9b05-01f42bd81138
+12B | Yola | Niki | 3.004 seconds | audio/12_Yola_takeB.mp3 | task 5ba11f51-4906-411a-8fd2-c7bdc9733ca2
+13A | Colleague | Leslie | 3.239 seconds | audio/13_Colleague_takeA.mp3 | task 93804672-4e49-4dad-995e-ac8a1abbaddb
+13B | Colleague | Leslie | 3.239 seconds | audio/13_Colleague_takeB.mp3 | task b8c7d3c5-8d85-469c-809a-282d6a35fd30
+14A | Patient | Brodie | 1.959 seconds | audio/14_Patient_takeA.mp3 | task c8b42836-b255-4e3e-9a63-bc1aee7e69c8
+14B | Patient | Brodie | 2.116 seconds | audio/14_Patient_takeB.mp3 | task 5dbbb17b-242a-42eb-9134-6f6d1422baa1
+15A | Yola | Niki | 2.508 seconds | audio/15_Yola_takeA.mp3 | task c012464b-a0ee-490a-8db2-efd171d0172e
+15B | Yola | Niki | 2.273 seconds | audio/15_Yola_takeB.mp3 | task 1685000c-cab2-49fa-a4b3-08e45ef1133b
+16A | Colleague | Leslie | 3.082 seconds | audio/16_Colleague_takeA.mp3 | task 61926dab-f805-44cf-8c2f-86dd4e2638cb
+16B | Colleague | Leslie | 3.004 seconds | audio/16_Colleague_takeB.mp3 | task 04959b33-646b-4c59-9c63-150bd2570e08
+17A | Yola | Niki | 1.071 seconds | audio/17_Yola_takeA.mp3 | task 2ed9d8bb-798e-4dd7-8efd-33484f0b439b
+17B | Yola | Niki | 1.489 seconds | audio/17_Yola_takeB.mp3 | task 7abc4045-5ad9-4cbb-aa3f-4d56a71c8e2d
+18A | Patient | Brodie | 2.429 seconds | audio/18_Patient_takeA.mp3 | task aa2fc6f1-2c12-46a7-a5ba-d11775800a2f
+18B | Patient | Brodie | 2.926 seconds | audio/18_Patient_takeB.mp3 | task 132d74db-3a8f-49c2-b021-d9ec43feaea6
+19A | Yola | Niki | 1.306 seconds | audio/19_Yola_takeA.mp3 | task da241664-9fc5-4cbc-9d6c-baaabc52c2c6
+19B | Yola | Niki | 1.306 seconds | audio/19_Yola_takeB.mp3 | task 04a6517a-f337-487a-9d48-46c8f413a6e3
+20A | Colleague | Leslie | 1.724 seconds | audio/20_Colleague_takeA.mp3 | task 1bbc43c0-4e19-4f6c-a52a-63b389116c81
+20B | Colleague | Leslie | 1.646 seconds | audio/20_Colleague_takeB.mp3 | task 5ef01e98-747e-4e20-9359-77fb407c8ca5
+21A | Yola | Niki | 1.228 seconds | audio/21_Yola_takeA.mp3 | task 9456147e-10e1-4be5-888b-a8052c0cf534
+21B | Yola | Niki | 1.149 seconds | audio/21_Yola_takeB.mp3 | task e41d8101-3751-4558-99c1-7bd6ad0bf4c8
+22A | Colleague | Leslie | 3.239 seconds | audio/22_Colleague_takeA.mp3 | task 53b1c741-3c30-4a15-ad34-c026bd31c89e
+22B | Colleague | Leslie | 2.769 seconds | audio/22_Colleague_takeB.mp3 | task 4dd49ace-b7b7-42ec-a5a2-6c48c539ceb8
+23A | Yola | Niki | 4.284 seconds | audio/23_Yola_takeA.mp3 | task 7c739b4b-7a0f-4e89-ba73-3728cda3ad44
+23B | Yola | Niki | 4.127 seconds | audio/23_Yola_takeB.mp3 | task 6adcfd52-b697-4287-94d7-05aef5da3d30
+24A | Yola | Niki | 2.769 seconds | audio/24_Yola_takeA.mp3 | task 0bdf9b37-9a16-49b2-b755-1558cd6a54d7
+24B | Yola | Niki | 2.847 seconds | audio/24_Yola_takeB.mp3 | task 4f7264ed-43af-4acb-bb15-1c62800f8282
+25A | Colleague | Leslie | 2.116 seconds | audio/25_Colleague_takeA.mp3 | task 4e3a625f-4548-442b-b61c-0f49c7d60acd
+25B | Colleague | Leslie | 1.724 seconds | audio/25_Colleague_takeB.mp3 | task 22891120-303c-48ce-83b4-d07e652dfbeb
+26A | Yola | Niki | 2.194 seconds | audio/26_Yola_takeA.mp3 | task 271cbe27-3831-49e8-9847-3e196ed39e84
+26B | Yola | Niki | 1.881 seconds | audio/26_Yola_takeB.mp3 | task 50eb0239-f708-4b04-a04f-cc4e09ed84d9
+27A | Colleague | Leslie | 1.959 seconds | audio/27_Colleague_takeA.mp3 | task 62e831ba-8f52-4887-ae69-6cc4dfcfa32e
+27B | Colleague | Leslie | 2.194 seconds | audio/27_Colleague_takeB.mp3 | task 21a5e45c-1463-434a-a260-f452e2e6c21f
+28A | Colleague | Leslie | 1.881 seconds | audio/28_Colleague_takeA.mp3 | task 2901a8ca-5035-44bb-aa6e-f22f67804813
+28B | Colleague | Leslie | 1.724 seconds | audio/28_Colleague_takeB.mp3 | task 470905cb-de04-44d6-a215-80e9f1769f10
+29A | Colleague | Leslie | 2.194 seconds | audio/29_Colleague_takeA.mp3 | task b72de303-5b2e-45d5-92e3-308b096db3e4
+29B | Colleague | Leslie | 2.116 seconds | audio/29_Colleague_takeB.mp3 | task 2340fcb5-e7c5-4ca0-9c48-f2b128fc6811
+30A | Colleague | Leslie | 1.724 seconds | audio/30_Colleague_takeA.mp3 | task 6995c030-9b0a-4fef-a470-d11e612dbb88
+30B | Colleague | Leslie | 2.038 seconds | audio/30_Colleague_takeB.mp3 | task bc059c4a-4889-4253-bcb5-eecf47ed0a98
+31A | Colleague | Leslie | 2.691 seconds | audio/31_Colleague_takeA.mp3 | task ed306d47-576e-4969-827f-53456ef91f12
+31B | Colleague | Leslie | 2.508 seconds | audio/31_Colleague_takeB.mp3 | task d4f4e414-8640-4bda-8c46-ec469a921cc0
+32A | Yola | Niki | 1.802 seconds | audio/32_Yola_takeA.mp3 | task 14e34b37-b31a-48f7-8f60-71ad9f66fe46
+32B | Yola | Niki | 2.194 seconds | audio/32_Yola_takeB.mp3 | task 44652693-51d7-4dc2-9f27-6cbbf0558029
+33A | Yola | Niki | 1.646 seconds | audio/33_Yola_takeA.mp3 | task 2d2b3938-80fb-43ac-b6cd-de8bfcc71fe8
+33B | Yola | Niki | 2.769 seconds | audio/33_Yola_takeB.mp3 | task 83b0eea3-9e11-40ef-b599-62067bc545ce

@@ -7,6 +7,28 @@ import { Actor, OriginalYola } from './actors.js';
 
 export const CLINIC = { x: 60, z: 0 }; // world offset of the clinic's local origin
 const M = '../assets/models/';
+const LIFT_KIT = 'assets/kit/Hospital_Elevator_Outbreak.glb'; // the same elevator kit as Floor 3's (one lift, two floors)
+export const CLINIC_LIFT = { x: -2.3, z: -6.0 }; // the ground-floor elevator in the reception's north wall (the kit's threshold; its cab is behind the wall)
+
+// the floor display over an elevator's doors: a small amber readout ("G ▲", "1", "2", "3"), drawn on a canvas.
+// root: the elevator kit's root (front +z local); the kit's own floor lamps are hidden in favour of this.
+export function liftDisplay(root) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 96; const g = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.21), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  m.position.set(0, 2.65, 0.272); root.add(m);
+  root.traverse((o) => { if (/^Indicator_/.test(o.name)) o.visible = false; });
+  const set = (text, arrow = '') => {
+    g.fillStyle = '#120c06'; g.fillRect(0, 0, 256, 96);
+    g.fillStyle = '#ffb648'; g.font = '800 70px ui-monospace, Menlo, Consolas, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.shadowColor = '#ff8a00'; g.shadowBlur = 14;
+    g.fillText(text, arrow ? 104 : 128, 52);
+    if (arrow) { g.font = '800 46px system-ui, sans-serif'; g.fillText(arrow, 186, 50); }
+    tex.needsUpdate = true;
+  };
+  set('G');
+  return { mesh: m, set };
+}
 
 const PAL = { wall: 0xf4ecdc, band: 0x7bbdb8, cap: 0xfff8ea, floorA: '#f2e6cc', floorB: '#cfe6dc', grout: '#e1d4b8', glass: 0xcfeaec, frame: 0x8fc1c4 };
 
@@ -116,21 +138,21 @@ export class ClinicStage {
     tasks.push(this.prop(M + 'uploaded/waiting-chair.glb', { x: -7.3, z: 3.4, rot: 180, name: 'wchair1' }));
     tasks.push(this.prop(M + 'uploaded/staff-chair.glb', { x: -6.2, z: 3.45, rot: 0, name: 'wchair2' }));
     tasks.push(this.prop(M + 'furnishings/Lounge_Break_Chair.glb', { x: -5.0, z: 3.4, rot: 180, name: 'wchair3' }));
-    tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: -8.2, z: -5.3 }));
-    tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: -3.85, z: -5.4 }));
-    // the operating-room door in the north wall, with its 2D sign
-    tasks.push(this.prop(M + 'entrance/Entrance_Double_Doorway.glb', { x: -1.4, z: -5.9, rot: 0, name: 'orDoor' }));
+    tasks.push(this.prop(M + 'decor/Reception_Tall_Broadleaf_Plant.glb', { x: -8.65, z: -5.4 }));
+    tasks.push(this.prop(M + 'decor/Reception_Water_Cooler.glb', { x: -7.6, z: -5.45 }));
+    // the elevator in the north wall (to Floor 3): the kit, its floor display and its 2D sign
+    tasks.push(this.buildLift());
     tasks.push(this.prop(M + 'decor/Reception_Round_Side_Table.glb', { x: -3.2, z: 3.6 }));
     tasks.push(this.prop(M + 'decor/Reception_Magazine_Rack.glb', { x: -1.2, z: 3.7, rot: 0 }));
-    tasks.push(this.prop(M + 'decor/Reception_Poster_Heart.glb', { x: -3.15, y: 1.35, z: -5.88 })); // clear of the OR doorway's frame (x -2.65..-0.15)
-    tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: 0.02, y: 1.2, z: -5.88 })); // between the doorway and the glass partition
+    tasks.push(this.prop(M + 'decor/Reception_Poster_Heart.glb', { x: -6.75, y: 1.35, z: -5.88 })); // on clear wall between the cooler and the reception sign
+    tasks.push(this.prop(M + 'decor/Reception_Wall_Sanitizer.glb', { x: -9.2, y: 1.2, z: 3.1, wall: 'e' })); // by the entrance
     tasks.push(this.prop(M + 'entrance/Entrance_Double_Doorway.glb', { x: -9.05, z: 0.9, rot: 90, name: 'door' }));
     // room signs: the supplied 2D print faces (one flat quad each; no 3D sign meshes)
     this.signs = {};
     this.sign('reception', -5.2, 2.15, -5.94, 1.9);
     this.sign('assessment', 0.15, 2.05, -1.0, 1.0, -Math.PI / 2); // over the corridor doorway, facing reception
     this.sign('recovery', 0.15, 2.05, 2.7, 1.0, -Math.PI / 2); // over the two-bay room doorway, facing reception
-    this.sign('operating_room', -1.4, 2.7, -5.93, 1.7);
+    this.sign('elevator', CLINIC_LIFT.x, 3.25, -5.94, 1.3);
 
     // ---- the staff corridor (x 0.45..3.05, north): water, the notice board
     tasks.push(this.prop(M + 'furnishings/Assessment_Board.glb', { x: 1.75, y: 1.0, z: Zn, wall: 's' }));
@@ -203,6 +225,7 @@ export class ClinicStage {
       guardChair: { x: -5.0, z: 3.4, yaw: Math.PI, seatTop: 0.47 }, // a waiting chair near reception
       receptionChair: { x: -5.2, z: -5.5, yaw: 0, seatTop: 0.5 },
       orDoor: { x: -1.4, z: -5.0 },
+      liftFront: { x: CLINIC_LIFT.x, z: -4.75 }, // the call point in front of the ground-floor elevator
       yolaTour: { x: 5.0, z: 3.7, yaw: 0.45 }, // original Yola in the two-bay room for the tour
     });
   }
@@ -318,6 +341,30 @@ export class ClinicStage {
   // the sliding doors: k 0 shut .. 1 open
   setEntranceOpen(k) { for (const d of this.extDoors || []) d.leaf.position.z = d.z0 + d.dir * 0.82 * k; }
 
+  // the ground-floor elevator: the Floor 3 kit, its doors driven by the kit's own Doors_Open clip (0 shut .. 1 open)
+  async buildLift() {
+    const g = await this.gltf(LIFT_KIT);
+    const root = g.scene.clone(true); root.position.set(CLINIC_LIFT.x, 0, CLINIC_LIFT.z); root.name = 'clinicLift';
+    root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    this.root.add(root);
+    const mixer = new THREE.AnimationMixer(root), clip = THREE.AnimationClip.findByName(g.animations, 'Doors_Open');
+    const open = clip ? mixer.clipAction(clip) : null; if (open) { open.play(); open.paused = true; open.time = 0; mixer.update(0); }
+    this.lift = { root, mixer, open, k: 0, display: liftDisplay(root) };
+  }
+  setLiftOpen(k) { const L = this.lift; if (!L?.open) return; L.k = k; L.open.time = Math.max(0, Math.min(0.999, k)) * L.open.getClip().duration; L.mixer.update(0); }
+
+  // the wheelchair the colleague brings: a prop that travels with whoever sits in it (seat centre at the group's origin)
+  async buildWheelchair() {
+    const g = await this.gltf('assets/hospital/wheelchair.glb');
+    const obj = g.scene.clone(true); obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const holder = new THREE.Group(); holder.add(obj); holder.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(obj), c = box.getCenter(new THREE.Vector3());
+    obj.position.set(-c.x, -box.min.y, -c.z);
+    const wc = new THREE.Group(); wc.name = 'wheelchair'; wc.add(holder); wc.visible = false; this.root.add(wc);
+    this.wheelchair = wc; this.wheelchairSize = box.getSize(new THREE.Vector3());
+    return wc;
+  }
+
   // procedural desk-top dressing (the kit has no desk accessories): monitor and keyboard, a phone, a clipboard, paperwork
   deskTop(cx, y, cz) {
     const g = new THREE.Group(); g.position.set(cx, y, cz); this.root.add(g); this.byName.deskTop = g;
@@ -404,6 +451,7 @@ export class ClinicStage {
       load(M + 'people/staff-blue.glb'), load(M + 'people/staff-coral.glb'), load(M + 'people/staff-lilac.glb'),
     ]);
     const batStatic = await load('assets/opening/Baseball_Bat_Static.glb');
+    await this.buildWheelchair();
     this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
     const A = this.actors;
     A.yola = new OriginalYola(yolaOld, { height: 1.62, name: 'yolaOld', walkSpeed: 1.0 });
@@ -421,6 +469,9 @@ export class ClinicStage {
     A.baseball.bat0 = A.baseball.bat ? A.baseball.bat.visible : false;
     this.batStatic = batStatic.scene; this.batStatic.visible = false; this.root.add(this.batStatic);
     this.batStatic.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    // the bat the guard carries upstairs: a copy of the static bat, held in his right hand (placed by holdBat)
+    this.guardBat = batStatic.scene.clone(true); this.guardBat.visible = false;
+    { const b = new THREE.Box3().setFromObject(this.guardBat); this.batLen = b.getSize(new THREE.Vector3()); this.batBox = b; }
     // the cap, as a static prop: the same geometry and materials as the worn cap, in its bind pose
     const capSkin = A.baseball.model.getObjectByName('Baseball_Cap');
     this.cap = null; A.baseball.capSkin = capSkin;

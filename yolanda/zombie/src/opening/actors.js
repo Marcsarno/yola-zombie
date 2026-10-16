@@ -56,11 +56,13 @@ export class Actor {
   }
   duration(name) { return this.actions[name]?.getClip().duration ?? 0; }
 
-  // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle
-  walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null } = {}) {
+  // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle. clip / idle: what plays while
+  // moving and on arrival (a seated rider: SeatedIdle for both); keepSeat: a rider stays seated (no stand-up state change)
+  walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null, clip = null, idle = null, keepSeat = false } = {}) {
     this.path = points.map((p) => ({ x: p[0], z: p[1] })); this.speed = speed; this.endYaw = endYaw; this.onArrive = onArrive;
-    this.moving = this.path.length > 0; this.seated = false;
-    if (this.moving) this.play(this.walkClip, { rate: speed / this.walkSpeed });
+    this.moving = this.path.length > 0; if (!keepSeat) this.seated = false;
+    this.arriveClip = idle || this.idleClip;
+    if (this.moving) this.play(clip || this.walkClip, { rate: clip ? 1 : speed / this.walkSpeed });
   }
   stop() { this.path = []; this.moving = false; }
 
@@ -72,7 +74,7 @@ export class Actor {
       const t = this.path[0], dx = t.x - this.x, dz = t.z - this.z, L = Math.hypot(dx, dz), step = this.speed * d;
       if (L <= step + 1e-4) {
         this.root.position.x = t.x; this.root.position.z = t.z; this.path.shift();
-        if (!this.path.length) { this.moving = false; if (this.endYaw != null) this.targetYaw = this.endYaw; this.play(this.idleClip); const cb = this.onArrive; this.onArrive = null; cb?.(); }
+        if (!this.path.length) { this.moving = false; if (this.endYaw != null) this.targetYaw = this.endYaw; this.play(this.arriveClip || this.idleClip); const cb = this.onArrive; this.onArrive = null; cb?.(); }
       } else {
         this.root.position.x += (dx / L) * step; this.root.position.z += (dz / L) * step;
         this.targetYaw = Math.atan2(dx, dz);
@@ -80,7 +82,7 @@ export class Actor {
     }
     if (this.targetYaw != null) {
       const e = angDiff(this.yaw, this.targetYaw);
-      this.yaw += clamp(e, -d * 7, d * 7);
+      this.yaw += clamp(e, -d * (this.turnRate || 7), d * (this.turnRate || 7));
       if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
     }
     if (this.lying) this.root.rotation.set(-Math.PI / 2, this.yaw, 0, 'YXZ'); else this.root.rotation.y = this.yaw;

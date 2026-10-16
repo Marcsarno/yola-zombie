@@ -1,6 +1,8 @@
-// Overlay UI for the opening: title card, subtitles, objective chip, tier labels, assessment cards, flatline ECG,
-// red alarm vignette, fade/letterbox, and the small always-available controls (skip, mute, reduced flash).
-import { CARD_STATUS, CARD_FEEDBACK } from './content.js';
+// Overlay UI for the opening: title card, captions (off by default: the user's preference; the CC button turns them on),
+// objective chip, tier labels, the three clinical choice cards, the small patient monitor, the readiness checklist, the
+// time cards, red alarm vignette, fade/letterbox, and the small always-available controls (skip, captions, soft light,
+// sound).
+import { CARD_NOTE } from './content.js';
 
 const CSS = `
 #op { position: fixed; inset: 0; z-index: 20; pointer-events: none; font: 500 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; display: none; }
@@ -54,15 +56,45 @@ const CSS = `
 #op .ctl button.off { opacity: .55; }
 #op .card { position: absolute; left: 50%; bottom: 8vh; transform: translate(-50%, 14px); width: min(92vw, 460px); background: #fff8ea; color: #20474a; border-radius: 18px; padding: 14px 14px 10px; box-shadow: 0 14px 40px rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
 #op .card.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-#op .card .st { font-size: 11px; font-weight: 800; letter-spacing: .02em; color: #fff; background: #c9483f; display: inline-block; border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
+#op .card .st { font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: #2f9fa0; display: inline-block; border-radius: 6px; padding: 3px 8px; margin-bottom: 6px; }
+#op .card .st em { font-style: normal; font-weight: 700; letter-spacing: .02em; text-transform: none; opacity: .9; margin-left: 6px; }
+#op .card .ctx { font-size: 12.5px; line-height: 1.35; background: #eef6f3; border-left: 4px solid #2f9fa0; border-radius: 6px; padding: 7px 9px; margin: 0 0 8px; color: #2c5558; }
+#op .card button.tried { opacity: .5; text-decoration: line-through; border-color: #e6c9c1; background: #fbf1ee; }
+#op .card button.right { background: #d6f0ec; border-color: #2f9fa0; font-weight: 800; }
+#op .card .hint { font-weight: 750; color: #b4513f; padding: 2px 2px 8px; }
+#op .card .why { background: none; border: 0; color: #2a8f92; font-weight: 800; text-decoration: underline; padding: 4px 2px; min-height: 0; width: auto; display: inline-block; }
+#op .card .explain { font-size: 13px; color: #2c5558; padding: 2px 2px 6px; }
+#op .card { max-height: 74vh; overflow-y: auto; }
 #op .card h3 { margin: 0 0 10px; font-size: 16px; line-height: 1.3; }
 #op .card button { display: block; width: 100%; text-align: left; margin: 0 0 7px; padding: 12px 14px; border-radius: 12px; border: 2px solid #bfe0dc; background: #fff; color: #20474a; font: 650 15px/1.3 system-ui, sans-serif; min-height: 46px; }
 #op .card button:active, #op .card button.pick { background: #d6f0ec; border-color: #2f9fa0; }
 #op .card button.cont { background: #2f9fa0; color: #fff; border-color: #2f9fa0; text-align: center; margin-top: 8px; }
 #op .card .note { font-size: 11.5px; color: #6b8a8a; margin-top: 4px; }
 #op .card .ok { font-weight: 750; color: #2a8f92; padding: 6px 2px; }
-#op canvas.ecg { position: absolute; left: 6%; right: 6%; top: 22%; width: 88%; height: 90px; opacity: 0; transition: opacity .4s; }
-#op canvas.ecg.show { opacity: 1; }
+#op .mon { position: absolute; left: 12px; top: calc(60px + env(safe-area-inset-top, 0px)); width: 176px; background: rgba(10, 24, 22, .86); border-radius: 12px; padding: 7px 9px 8px; opacity: 0; transform: translateY(-6px); transition: opacity .35s, transform .35s; box-shadow: 0 4px 14px rgba(0,0,0,.35); font: 700 12px/1.2 ui-monospace, Menlo, Consolas, monospace; color: #7ef0b0; }
+#op .mon.show { opacity: 1; transform: none; }
+#op .mon .row { display: flex; justify-content: space-between; align-items: baseline; }
+#op .mon .row b { font-size: 17px; }
+#op .mon .row small { color: #9fd8c4; font-weight: 600; font-size: 10px; letter-spacing: .06em; }
+#op .mon canvas { display: block; width: 100%; height: 40px; margin: 3px 0 2px; }
+#op .mon .tof { display: none; margin-top: 4px; padding-top: 5px; border-top: 1px solid rgba(126,240,176,.25); color: #ffd36e; }
+#op .mon .tof.show { display: block; }
+#op .mon .tof .bars { display: flex; gap: 4px; align-items: flex-end; height: 18px; margin: 3px 0; }
+#op .mon .tof .bars i { flex: 1; background: #ffd36e; border-radius: 2px; }
+#op .mon.alarm { color: #ff8a7a; box-shadow: 0 0 0 2px rgba(255,90,80,.6), 0 4px 14px rgba(0,0,0,.35); }
+#op .mon.alarm .row small { color: #ffb0a6; }
+#op .ready { position: absolute; left: 50%; top: 30%; transform: translate(-50%, 8px); width: min(84vw, 330px); background: #fff8ea; color: #20474a; border-radius: 16px; padding: 12px 16px 10px; box-shadow: 0 12px 34px rgba(0,0,0,.35); opacity: 0; transition: opacity .35s, transform .35s; }
+#op .ready.show { opacity: 1; transform: translate(-50%, 0); }
+#op .ready h4 { margin: 0 0 6px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: #2a8f92; }
+#op .ready li { list-style: none; margin: 4px 0; font-weight: 700; font-size: 14.5px; opacity: .25; transition: opacity .3s; }
+#op .ready li.ok { opacity: 1; }
+#op .ready li::before { content: '✓'; display: inline-block; width: 22px; color: #2a8f92; font-weight: 900; }
+#op .ready ul { margin: 0; padding: 0; }
+#op .ready .rdone { margin-top: 6px; font-weight: 850; color: #e07a5f; opacity: 0; transition: opacity .3s; }
+#op .ready .rdone.show { opacity: 1; }
+#op .timecard { position: absolute; left: 0; right: 0; top: 44%; text-align: center; opacity: 0; transition: opacity .45s; z-index: 2; }
+#op .timecard.show { opacity: 1; }
+#op .timecard span { display: inline-block; font: 800 clamp(18px, 5.4vw, 26px)/1.1 system-ui, sans-serif; color: #fff8ea; letter-spacing: .02em; padding: 10px 20px; border-radius: 14px; background: rgba(20, 34, 40, .55); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
 #op .boss { position: absolute; inset: 0; overflow: hidden; opacity: 0; transition: opacity .25s ease; z-index: 4; }
 #op .boss.show { opacity: 1; transition: none; }
 #op .boss .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
@@ -102,17 +134,23 @@ export class OpeningUI {
     const el = this.el = document.createElement('div'); el.id = 'op';
     el.innerHTML = `
       <div class="fade"></div><div class="bars"></div><div class="vig"></div><div class="dark"></div>
-      <canvas class="ecg" width="600" height="120"></canvas>
+      <div class="mon"><div class="row"><small>HR</small><b class="hr">72</b><small>SpO₂</small><b class="spo2">98</b></div><canvas width="320" height="80"></canvas><div class="row"><small class="st">SINUS</small><small class="bp">BP 118/74</small></div><div class="tof"><div class="row"><small>TOF · ADDUCTOR POLLICIS</small></div><div class="bars"><i></i><i></i><i></i><i></i></div><div class="row"><small>RATIO</small><b class="ratio">—</b></div></div></div>
+      <div class="ready"><h4>Ready for extubation?</h4><ul></ul><div class="rdone">Criteria met. Extubated, breathing well.</div></div>
+      <div class="timecard"><span></span></div>
       <div class="title"><h1></h1><p></p></div>
       <div class="chip"><div></div></div><div class="prev"></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
       <div class="sub"><span></span></div>
       <div class="boss"><div class="lines"></div><div class="ink"></div><h2 class="name"></h2><div class="tagline"></div><div class="flash"></div></div>
       <div class="card" role="dialog" aria-live="polite"></div>
-      <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
+      <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="ccB off" aria-label="Captions" title="Captions">CC</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
       <div class="gate"><h1>Yola’s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading…</button><button class="skipGate" hidden>Skip intro</button><button class="skipGate contGate" hidden>Continue from checkpoint</button><div class="bar"><i></i></div><div class="small"></div></div>`;
     document.body.appendChild(el);
     const q = (s) => el.querySelector(s);
-    this.fade = q('.fade'); this.vig = q('.vig'); this.dark = q('.dark'); this.ecg = q('canvas.ecg'); this.titleEl = q('.title');
+    this.fade = q('.fade'); this.vig = q('.vig'); this.dark = q('.dark'); this.monEl = q('.mon'); this.ecg = q('.mon canvas'); this.titleEl = q('.title'); this.readyEl = q('.ready'); this.timeEl = q('.timecard');
+    this.ccB = q('.ccB');
+    try { this.captions = localStorage.getItem('zc.captions') === '1'; } catch { this.captions = false; } // off by default (the user's preference)
+    this.ccB.classList.toggle('off', !this.captions);
+    this.ccB.addEventListener('click', () => { this.captions = !this.captions; this.ccB.classList.toggle('off', !this.captions); try { localStorage.setItem('zc.captions', this.captions ? '1' : '0'); } catch { /* no storage */ } if (!this.captions) this.subEl.classList.remove('show'); else if (this.lastSub) this.subtitle(this.lastSub.text, this.lastSub.opts); });
     this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.prevEl = q('.prev'); this.statusEl = q('.status'); this.urgEl = q('.urgency'); this.cardEl = q('.card'); this.gate = q('.gate');
     this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.skipGateB = q('.skipGate:not(.contGate)'); this.contB = q('.contGate'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
     this.bossEl = q('.boss');
@@ -138,9 +176,11 @@ export class OpeningUI {
   setVignette(o) { this.vig.style.opacity = o; }
   setDark(o) { this.dark.style.opacity = o; }
   title(h, p) { this.titleEl.querySelector('h1').textContent = h || ''; this.titleEl.querySelector('p').textContent = p || ''; this.titleEl.classList.toggle('show', !!h); }
+  // captions: shown only when the player turned them on (CC); the latest line is remembered so turning them on mid-line shows it
   subtitle(text, { alarm = false, who = '' } = {}) {
+    this.lastSub = text ? { text, opts: { alarm, who } } : null;
     this.subEl.classList.toggle('alarm', alarm);
-    if (!text) { this.subEl.classList.remove('show'); return; }
+    if (!text || !this.captions) { this.subEl.classList.remove('show'); return; }
     const sp = this.subEl.querySelector('span'); sp.textContent = '';
     if (who) { const b = document.createElement('b'); b.textContent = who; sp.appendChild(b); }
     sp.appendChild(document.createTextNode(text)); this.subEl.classList.add('show');
@@ -158,53 +198,97 @@ export class OpeningUI {
   placeTag(id, x, y) { const t = this.tags.get(id); if (t) { t.style.left = x + 'px'; t.style.top = y + 'px'; } }
   clearTags() { for (const t of this.tags.values()) t.classList.remove('show'); }
 
-  // Development placeholder card: shows the status label, the options, then explicit test feedback with a Continue
-  // button. Resolves with the chosen option id only after Continue is tapped (no timer, no auto-selection).
-  // Never marks an answer right or wrong.
-  askCard(card, { where = '' } = {}) {
+  // A clinical choice card (content.js CLINICAL_CARDS): the context, the question and three choices. A wrong choice is
+  // struck through and its hint shown; the card stays open for another try (nothing is administered, nothing scored).
+  // The right choice shows the success line, an optional "Why?" explanation, and Continue. Resolves with the number of
+  // tries once Continue is tapped (no timer, no auto-selection).
+  askCard(card) {
     const el = this.cardEl;
-    el.innerHTML = `<span class="st"></span><h3></h3><div class="opts"></div><div class="note">Placeholder content: no clinical meaning. Every option continues the story.</div>`;
-    el.querySelector('.st').textContent = CARD_STATUS;
+    el.innerHTML = `<span class="st"></span><div class="ctx" hidden></div><h3></h3><div class="hint" hidden></div><div class="opts"></div><div class="note"></div>`;
+    const st = el.querySelector('.st'); st.textContent = card.title; if (card.sub) { const em = document.createElement('em'); em.textContent = card.sub; st.appendChild(em); }
+    if (card.context) { const c = el.querySelector('.ctx'); c.hidden = false; c.textContent = card.context; }
     el.querySelector('h3').textContent = card.prompt;
-    const box = el.querySelector('.opts');
+    el.querySelector('.note').textContent = CARD_NOTE;
+    const box = el.querySelector('.opts'), hint = el.querySelector('.hint');
+    this.cardTries = 0;
     return new Promise((resolve) => {
-      let chosen = null;
+      let done = false;
       this.cardResolve = resolve;
+      const finish = (b) => {
+        done = true; b.classList.add('right'); hint.hidden = true;
+        for (const x of box.querySelectorAll('button')) if (x !== b) x.remove();
+        const ok = document.createElement('div'); ok.className = 'ok'; ok.textContent = '✓ ' + card.success; box.appendChild(ok);
+        if (card.explain) {
+          const why = document.createElement('button'); why.className = 'why'; why.textContent = 'Why?';
+          const ex = document.createElement('div'); ex.className = 'explain'; ex.textContent = card.explain; ex.hidden = true;
+          why.addEventListener('click', () => { ex.hidden = !ex.hidden; why.textContent = ex.hidden ? 'Why?' : 'Hide'; });
+          box.append(why, ex);
+        }
+        const cont = document.createElement('button'); cont.className = 'cont'; cont.textContent = 'Continue';
+        cont.addEventListener('click', () => { if (!this.cardResolve) return; const r = this.cardResolve; this.cardResolve = null; el.classList.remove('show'); r(this.cardTries); });
+        box.appendChild(cont);
+      };
       for (const o of card.options) {
         const b = document.createElement('button'); b.textContent = o.text; b.dataset.id = o.id;
         b.addEventListener('click', () => {
-          if (chosen) return; // repeated taps: the first one wins
-          chosen = o; b.classList.add('pick');
-          box.innerHTML = '';
-          const ok = document.createElement('div'); ok.className = 'ok'; ok.textContent = CARD_FEEDBACK(o.text); box.appendChild(ok);
-          const cont = document.createElement('button'); cont.className = 'cont'; cont.textContent = 'Continue';
-          cont.addEventListener('click', () => { if (!this.cardResolve) return; const r = this.cardResolve; this.cardResolve = null; el.classList.remove('show'); r(chosen.id); });
-          box.appendChild(cont);
+          if (done || b.classList.contains('tried')) return; // repeated taps do nothing
+          this.cardTries++;
+          if (o.correct) { finish(b); return; }
+          b.classList.add('tried'); hint.hidden = false; hint.textContent = card.retry;
         });
         box.appendChild(b);
       }
       requestAnimationFrame(() => el.classList.add('show'));
     });
   }
-  get cardOpen() { return this.cardEl.classList.contains('show'); }
-  closeCard() { this.cardEl.classList.remove('show'); this.cardResolve = null; }
+  // test hook: answer the open card (the option id), as a tap would
+  pickCard(id) { const b = this.cardEl.querySelector(`.opts button[data-id="${id}"]`); b?.click(); return !!b; }
+  continueCard() { const b = this.cardEl.querySelector('.cont'); b?.click(); return !!b; }
 
-  // flatline: a heart trace that flattens
-  drawEcg(t, flat) {
-    const c = this.ecg, g = c.getContext('2d'), W = c.width, H = c.height;
+  // ---- the small patient monitor (2D): HR, SpO2, a trace, and the quantitative TOF reading when asked ----
+  // mode: 'normal' | 'irregular' (the alarm) | 'flat' (asystole on the trace, shown only once the pulse is confirmed absent)
+  showMonitor(v) { this.monEl.classList.toggle('show', v); }
+  monitor({ mode, hr, spo2, tof, alarm, status } = {}) {
+    const m = this.monEl;
+    if (mode) this.monMode = mode;
+    if (hr !== undefined) m.querySelector('.hr').textContent = hr;
+    if (spo2 !== undefined) m.querySelector('.spo2').textContent = spo2;
+    if (status !== undefined) m.querySelector('.st').textContent = status;
+    if (alarm !== undefined) m.classList.toggle('alarm', alarm);
+    if (tof !== undefined) {
+      const t = m.querySelector('.tof'); t.classList.toggle('show', tof !== null);
+      if (tof) { m.querySelector('.ratio').textContent = tof.ratio == null ? 'READY' : tof.ratio.toFixed(2); const bars = m.querySelectorAll('.tof i'); tof.twitches.forEach((h, i) => { bars[i].style.height = Math.round(h * 100) + '%'; }); }
+    }
+  }
+  drawMonitor(t) {
+    const c = this.ecg, g = c.getContext('2d'), W = c.width, H = c.height, mode = this.monMode || 'normal';
     g.clearRect(0, 0, W, H);
-    g.fillStyle = 'rgba(8,24,20,.55)'; g.fillRect(0, 0, W, H);
-    g.strokeStyle = flat ? '#ff6a5a' : '#59f0a0'; g.lineWidth = 3; g.lineJoin = 'round'; g.beginPath();
+    g.strokeStyle = mode === 'normal' ? '#59f0a0' : '#ff7a6a'; g.lineWidth = 3; g.lineJoin = 'round'; g.beginPath();
     for (let x = 0; x <= W; x += 3) {
-      const u = (x / W * 3 - t * 0.9) % 1, p = ((u % 1) + 1) % 1;
+      const rate = mode === 'irregular' ? 1.7 : 1.15, u = x / W * 2.2 - t * rate * 0.45, p = ((u % 1) + 1) % 1;
       let y = 0;
-      if (!flat) { if (p > 0.1 && p < 0.14) y = -10; else if (p > 0.18 && p < 0.2) y = 9; else if (p > 0.2 && p < 0.235) y = -46; else if (p > 0.235 && p < 0.27) y = 14; else if (p > 0.4 && p < 0.5) y = -8 * Math.sin((p - 0.4) / 0.1 * Math.PI); }
-      const yy = H / 2 + y + (flat ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
+      if (mode === 'normal') { if (p > 0.1 && p < 0.14) y = -6; else if (p > 0.18 && p < 0.2) y = 6; else if (p > 0.2 && p < 0.235) y = -30; else if (p > 0.235 && p < 0.27) y = 9; else if (p > 0.4 && p < 0.5) y = -6 * Math.sin((p - 0.4) / 0.1 * Math.PI); }
+      else if (mode === 'irregular') y = Math.sin(x * 0.09 + t * 9) * 9 + Math.sin(x * 0.23 - t * 5) * 6; // a chaotic, wide rhythm
+      const yy = H / 2 + y + (mode === 'flat' ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
       x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
     }
     g.stroke();
   }
-  showEcg(v) { this.ecg.classList.toggle('show', v); }
+  // the readiness checklist: items tick one by one (k: how many are ticked); done shows the result line
+  readiness(items, k = 0, done = false) {
+    const el = this.readyEl;
+    if (!items) { el.classList.remove('show'); return; }
+    const ul = el.querySelector('ul');
+    if (ul.children.length !== items.length) { ul.innerHTML = ''; for (const it of items) { const li = document.createElement('li'); li.textContent = it; ul.appendChild(li); } }
+    [...ul.children].forEach((li, i) => li.classList.toggle('ok', i < k));
+    el.querySelector('.rdone').classList.toggle('show', done);
+    el.classList.add('show');
+  }
+  timeCard(text) { const el = this.timeEl; if (text) el.querySelector('span').textContent = text; el.classList.toggle('show', !!text); }
+  get cardOpen() { return this.cardEl.classList.contains('show'); }
+  closeCard() { this.cardEl.classList.remove('show'); this.cardResolve = null; }
+
+  showEcg(v) { this.showMonitor(v); } // (the old name)
   // the boss-intro card: a freeze frame, a slammed name and a tagline (soft: no white flash, for reduced-flash mode)
   bossCard(name, tagline, soft = false) {
     const b = this.bossEl; b.classList.remove('show'); void b.offsetWidth;

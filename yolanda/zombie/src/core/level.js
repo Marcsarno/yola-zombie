@@ -41,7 +41,7 @@ export class Level {
         const key = g.id + ':' + i;
         if (this.killed.has(key)) return;
         const z = sim.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0 });
-        z.set(ZS.CHASE); z.spawnKey = key; z.group = g.id;
+        z.set(ZS.CHASE); z.spawnKey = key; z.group = g.id; if (zs.look) z.look = zs.look;
         const locked = !!g.locked && !(g.trigger === 'brace' && this.flags.cafeteria_brace_removed);
         z.dormant = {
           wake: fresh && zs.wake !== undefined ? zs.wake : Infinity, sense: g.sense ?? (zs.wake !== undefined ? 6 : 0), locked,

@@ -1,0 +1,215 @@
+YOLA HOSPITAL ZOMBIE GAME — OVERNIGHT IMPLEMENTATION HANDOFF
+Updated October 15, 2026, evening US Eastern time.
+This is the current instruction layer. It overrides conflicting instructions in the older opening package. Preserve the old source files for rollback.
+
+WHAT HAS ACTUALLY BEEN GIVEN TO CLAUDE
+The user says the latest game has the guard character without his shield and the heavy Black female orderly character. Claude is already working on the guard's attacks, the orderly's running, and animation smoothing. The environment texture package was supplied earlier. Do not assume the script, dialogue clips, music, new shield, or newest Yola art are integrated. Verify the current project before changing it. Do not overwrite animation work already in progress.
+
+MAIN OUTCOME
+One coherent, playable opening with a satisfying reveal, working dialogue/music, the two new enemies, and the modular shield. Preserve what already feels good. Complete the highest-priority integrated work first; do not turn this into a new engine, new hospital-management system, new floor plan, or wholesale combat rewrite.
+
+PRIORITY AND CHECKPOINTS
+0. Make a rollback checkpoint of the latest working game and record its revision. Inventory supplied assets, audio, clips, and current animation fixes. Keep existing runtime rigs and combat intact. If an attachment is absent, name the missing file and continue independent work; do not invent having it.
+1. Integrate the approved opening script, choice cards, take-B dialogue, and existing narrator. Repair audio activation and replay reliability.
+2. Stage the continuous hospital journey and the painted-scene bat breakthrough. Improve the large visible floors/walls, room dressing, lighting, camera and transition together.
+3. Integrate the supplied music and shield; finish the already-started orderly/guard animation work. Make these independently testable without replaying the whole opening.
+4. Address demonstrated crowd-spacing and melee problems with measurement, then restrained hit feedback and crawler verification. Do not jeopardize the opening by adding unproven systems.
+5. Play through, capture actual evidence, report results and unresolved items. Keep a playable checkpoint after each major phase.
+
+AUDIO DECISION — USE TAKE B
+The user prefers the second dialogue audition. Default to the B recording for each included line. Keep A files available, but do not silently replace the chosen performance or regenerate voices. Listen for pronunciation, clipping, unintended pauses and inconsistent volume. The earlier files were technically decoded and integrity checked, not fully acting-reviewed or mixed in-game.
+The user's description most closely matches line 32, “Behind me.” Omit it from playback. This is an inferred match to his recollection. The literal last line in the old audition is line 33, “We need to get downstairs.” That line remains optional and can be replaced by the objective “Reach the elevator.” Do not add a replacement action-movie quip.
+Keep the existing approximately 47-second approved narrator recording. The new package does not replace it. Use numbered per-line clips from audio_manifest.json, not the concatenated audition reel as the cinematic soundtrack. Maintain original IDs so dialogue timing/events stay understandable.
+Do not spend money, purchase credits, regenerate voices, or use a paid music service. Use only music the user supplies or already owns in this project. If no music file is supplied, finish a clean ready-to-load music hook and report that the soundtrack itself is pending; do not claim music has been added.
+
+PART 1 — CHEERFUL TOUR, ARRIVAL, SEATED ASSESSMENT
+Begin outside, looking toward the front entrance, then move into the cheerful original hospital as the approved narrator introduces it. Use the existing staged tour and upgrade preview rather than replacing it with generic text. Keep zombie foreshadowing out of this introduction. The medical room upgrade preview should be a real furnished room, not unrelated equipment scattered in a blank space.
+Show the adult baseball player and his private security guard arrive and briefly interact at reception. The patient favors his knee and carries the bat as his improvised crutch. There are two guest chairs opposite Yola, one for each visitor. Yola sits properly in her own chair at the assessment desk. Feet, hips, seat heights and hand placement must make visual sense. Let them settle; no instant sit-and-stand or clipping through one another.
+Give the assessment room its own enclosure and clear purpose. Use an attractive approved desk, monitor/chart/clipboard, Yola's chair, two guest chairs, sanitizer, glove dispenser, anatomy or patient-information poster, waste/sharps props where appropriate, and restrained personal touches. Keep the conversation sightlines clear. No floating medicine tray attached to Yola's belly. Avoid operating equipment crammed into this office.
+The guard's holstered pistol can be visible naturally as he turns or sits. No ominous gun close-up. Keep the bat visible, without adding a difficult handoff animation solely to explain it.
+Dialogue 01–10 leads to Card 1. Line 11 follows its correct answer. Wrong choices pause for a hint and retry, not a harmful drug being administered.
+
+PART 2 — GO UP TO FLOOR THREE
+Dialogue 12–16. A qualified colleague brings the wheelchair; the patient accepts. If a transfer animation is missing, an intentional cut to the seated pose is better than a broken transfer. The guard carries the bat. Yola, patient, guard and colleague go to the elevator together.
+Show a real elevator: doors open, the group enters with adequate spacing, doors close, the indicator changes from ground to 3, and the doors open upstairs. Compact camera cuts are acceptable. Do not simulate vertical travel by teleporting through ordinary double doors. Do not make the patient suddenly walk unsupported after accepting the wheelchair.
+Line 15 refers to the guard; frame or gesture so that is clear. Changing clothes occurs off camera. In the procedure room the patient wears simple white hospital clothing rather than his baseball uniform. The bat and guard remain outside the operating area. This prepares the later white-clothed zombie and avoids a costume discontinuity.
+
+PART 3 — PROCEDURE AND GENUINELY SUCCESSFUL RECOVERY
+Dialogue 17–21 and Card 2 establish proper preparation. Yola handles anesthesia; a surgical team performs the knee procedure. This is a scheduled appointment, not preferential unsafe care because he is famous.
+The upgrade-showcase treatment room should feel like a hospital room. Arrange two hospital-style recliners or treatment chairs in two organized bays against a wall. Give each an IV pole, monitor/equipment relationship, wall-mounted clinical items and a suitable light; add shared storage, waste/sharps disposal, gloves, sanitizer and readable wall art. Preserve a clear aisle and believable staff access. Use the existing tiers so the same useful bays become better equipped instead of unrelated objects appearing in the center. Match equipment position and camera across upgrades. This showcase room is distinct from Yola's assessment office and need not be the surgical OR.
+The actual OR needs a central operating bed, nearby anesthesia station/monitor, supply trolley and storage placed with usable circulation around the patient. Dress the walls with the approved medical props. Remove the overhead operating light that blocks the patient's head from the reveal camera; use another visible light placement or lighting treatment rather than reintroducing the occlusion.
+After preparation, use a brief “Later in the procedure” transition. Dialogue 22 introduces Card 3. Correct care follows, then a short time transition and quantitative recovery to 0.96 with other readiness criteria satisfied. Handoff occurs only after this. Preserve the reviewed clinical details below. No medication dosing minigame, forced wrong answer, or unexplained failed anesthesia.
+Yola hands over to a qualified anesthesia colleague who remains bedside monitoring the patient. Lines 24–26 are the conversational end of a fuller compressed handoff. Yola steps just outside the same room.
+
+PART 4 — CRISIS, PAINTED-SCENE BREAKTHROUGH, CONTROL
+After a short stable beat, a new fictional crisis starts. Staff check the patient and equipment and respond immediately. They do not stand waiting for Yola. “There's no pulse” follows verification; a flat monitor graphic alone does not establish it. Then the patient moves unnaturally, followed by the urgent calls for Yola.
+Use sound, simple poses, framing and a small readable 2D monitor element if needed. Do not build an elaborate clinical monitor or facial-performance system. A restrained red emergency pulse may build urgency, but avoid rapid full-screen strobing or obscuring the patient. Keep a reduced-flashing option. The supernatural outbreak is separate from the documented enzyme deficiency and successfully managed recovery.
+Latest approved reveal: the old hospital image becomes a painted scene, then the improved Yola breaks through it with a strong bat attack. This supersedes the old flicker-only model swap, wave reveal, shotgun knee-slide and shotgun explosion ideas. Do not dismember the old Yola model. Use the strongest available fitted bat animation; inspect its actual clip rather than guessing a pack name.
+Use roughly ten large thin picture fragments with continuous image mapping and matching break seams, a short impact cue, minimal dust/debris, and a clear follow-through. This can be authored/choreographed rather than heavy physics. Keep the upgraded hospital prepared behind the image. Do not hide an unrelated room change in the break: doors, major furniture and room geography should line up. The bat can already be in Yola's hands after an economical cut; its earlier presence explains it.
+Move close enough for the reveal to read as a cinematic, rather than leaving the camera at ordinary gameplay distance. Avoid covering her with a giant name/title. A short pose/impact hold is acceptable if it improves the strongest frame, then promptly settle into the gameplay camera and enable control. No long freeze before the player can act.
+The whole environment should become more striking: approved stained floors, blood handprints, worn walls, damaged furniture, selective emergency lighting and stronger material contrast. Preserve navigable space and mobile readability. Keep enough light to understand the room and zombie silhouettes.
+The new approved Yola artwork is a future character reference, not a rigged replacement. Until a compatible model is delivered and verified, use the existing working improved Yola rig. Do not discard working attacks, weapon grips or animations to chase a new face overnight.
+
+EXACT DIALOGUE AND CHOICE CARDS
+01. Reception: “Good morning. Yola's expecting you. Take the two seats across from her.”
+
+02. Yola: “Hi. How's that knee treating you?”
+
+03. Patient: “Still hurts when I walk. Running bases is out.”
+
+04. Yola: “And the bat?”
+
+05. Patient: “Temporary crutch. Didn't have crutches at home, and I'm definitely not using a cane.”
+
+06. Yola: “So you brought a bat.”
+
+07. Patient: “I have a reputation.”
+
+08. Yola: “Any trouble with anesthesia before?”
+
+09. Patient: “Last time, they had to help me breathe for a few hours. They found an enzyme problem.”
+
+10. Yola: “I see the test results here. Thanks for telling me.”
+
+11. Yola: “We'll account for that in your anesthesia plan.”
+
+12. Yola: “Your team's ready on the third floor. I'll come up with you.”
+
+13. Colleague: “Let's give that knee a break. I've got a wheelchair for you.”
+
+14. Patient: “All right. But the bat's coming.”
+
+15. Yola: “He can look after it while we're in the operating room.”
+
+16. Colleague: “Third floor. We'll help you get changed and settled.”
+
+17. Yola: “Comfortable?”
+
+18. Patient: “As comfortable as I'm going to get. Let's do this.”
+
+19. Yola: “We'll take good care of you.”
+
+20. Colleague: “Equipment checks complete.”
+
+21. Yola: “I'm right here with you.”
+
+22. Colleague: “The procedure's finished. Let's check his recovery.”
+
+23. Yola: “There's still some rocuronium effect. Let's complete reversal and check again.”
+
+24. Yola: “He's recovering well. I've handed everything over.”
+
+25. Colleague: “I've got him. I'll stay with him.”
+
+26. Yola: “Thanks. I'll be just outside.”
+
+27. Colleague: “Something's wrong. Check his pulse.”
+
+28. Colleague: “There's no pulse.”
+
+29. Colleague: “Wait... why is he moving?”
+
+30. Colleague: “Get Yola!”
+
+31. Colleague: “Yola! We need you in here!”
+
+32. OMIT THIS LINE. Do not play “Behind me.” Preserve the original numbering and audio files.
+
+33. Yola: “We need to get downstairs.” OPTIONAL, once after control returns; a short on-screen objective can replace it.
+
+Choice cards
+Card 1 — Assessment: history changes the plan
+Chart: scheduled knee procedure; general anesthesia is planned. Prior testing confirms butyrylcholinesterase (pseudocholinesterase) deficiency. Routine history, medications, allergies, fasting, consent and relevant preparation are documented; the short conversation is not a complete preanesthesia examination.
+Prompt: “Which pair should be avoided because of his documented enzyme deficiency?”
+A. Succinylcholine and mivacurium — CORRECT
+B. Rocuronium and vecuronium
+C. Propofol and sevoflurane
+Success: “History accounted for. An alternative plan is selected.”
+Explanation on demand: the affected pair can cause prolonged paralysis in this condition. Today's clinician-selected alternative uses rocuronium, which is not dependent on that enzyme.
+Retry: “Check which two muscle relaxants depend on this enzyme.”
+No incorrect drug is administered. The diagnosis is documented, not guessed from ‘slow to wake.’
+
+Card 2 — Equipment: prepare to measure recovery
+Prompt: “Which monitoring will best confirm neuromuscular recovery at the end of the case?”
+A. Qualitative assessment of facial-muscle twitches
+B. Quantitative monitoring at the adductor pollicis — CORRECT
+C. A sustained head-lift test alone
+Success: “Quantitative recovery monitor ready.”
+Retry: “Clinical or visual checks alone can miss residual block.”
+This is an anticipatory equipment choice before anesthesia, not an improvised test after a crisis.
+
+Card 3 — Monitor: interpret the result
+Context: after rocuronium, four twitch responses are present. Quantitative TOF ratio: 0.78.
+Prompt: “Does this establish adequate neuromuscular recovery for extubation?”
+A. Yes. Four responses establish full recovery.
+B. Yes, if a head lift can be sustained.
+C. No. Residual neuromuscular blockade remains. — CORRECT
+Success: “Recovery checks continue.”
+Explanation: confirm a quantitative TOF ratio of at least 0.9 alongside the other clinical readiness requirements before extubation. A TOF ratio alone is not the complete readiness assessment.
+Retry: “Four responses do not establish full recovery. Check the ratio.”
+Continue appropriate care, then show 0.96 and other criteria satisfied before handoff.
+
+All cards: three readable choices; pause the scene for selection; no overlapping spoken explanation. A wrong answer offers a brief hint and retry, never an unsafe administered action. Each correct answer visibly succeeds. No medical score or death screen falsely blames the outbreak on her answers. These are anesthesia-informed entertainment questions, not a treatment guide or a clinician-approved training module.
+
+
+IMPLEMENTATION NOTES FOR AUDIO AND MUSIC
+Start/resume the audio context from a genuine user gesture. Prevent overlapping speech, duplicate playback, old callbacks firing after scene changes, and narration continuing after skip/restart. Advance dialogue from playback completion with deliberate pauses rather than guessed lengths. Handle failed/loading clips without trapping the scene. Keep replay deterministic.
+Subtitles off by default is the user's preference. Optional compact captions are fine. Choice cards and meaningful objectives remain readable. Keep separate music, effects and dialogue levels/mutes.
+Use the user's preferred game-like music direction: a listenable exploration bed and more energetic combat, not relentless creepy drones. Use supplied tracks. Crossfade intentionally, with hysteresis/cooldown so enemies entering/leaving range do not chatter between cues. Duck music under speech. Avoid dozens of duplicate impact voices when an axe hits a group; cap concurrent effect voices while retaining important hits. A/B-test audio against silent gameplay to ensure impact is improved without hiding timings.
+
+MODULAR BED-END SHIELD V2
+Use the newly supplied v2 package, not the earlier two-handle model. Read its README_RUNTIME.md and manifest.json. Main GLB: modular_bed_shield.glb. It has one centered rear vertical grip named Grip_Center on Fragment_03_Center, richer teal/cream coloring, baked AO packed with roughness, and five complete breakaway sections including the outer frame. No hollow intact perimeter should remain held after break.
+Asset statistics: 8,250 triangles, five runtime meshes, four materials, 18 material primitives. Do not treat those as five draw calls or a demonstrated mobile performance budget. Approximately 1.032 m wide and 0.949 m tall overall; metres, glTF +Y up / +Z front. Fit to the guard's existing hold animation using the provided grip target and appropriate socket transform. Actual guard hand fitting has not been tested.
+Damage states: intact → hairline → heavy → break, using the supplied surface maps with the same UVs. Cracks follow the eventual full-piece separation. Change only the surface color map; retain the embedded ORM and other materials. The grip belongs to the center chunk and falls with it. Stop the guard's hold/IK behavior on break and transition to his unshielded attack state.
+The provided controller offers a baked Break_Test visual clip OR an adapter path for the game's custom physics. Choose one, never have animation and physics write the same fragment transforms. The baked path is an orientation-dependent preview, not full collision physics. The adapter needs real body/collider implementation in the game. Preserve each chunk's world pose when detaching.
+Five seconds after break, the included JS controller starts a 0.6-second fade and removes the instance. This is runtime logic, not GLB opacity animation. Cap debris lifetime and recycle resources correctly; do not dispose shared cached textures/geometry per enemy. Seven Node lifecycle/contract tests and GLB reimport checks passed in the asset build. Browser GPU, character fit, physics and physical-phone integration remain untested and are your integration QA.
+
+ENEMIES, SPACING AND COMBAT FEEL
+Continue the existing guard and heavy orderly work rather than replacing it. The large orderly is the straight-line charger: clear windup, fast committed run, no homing turn during the charge, knockdown on contact, understandable recovery after a miss or obstruction. Tune from the actual existing animation and controller. Keep her ordinary movement and charge distinct. Avoid adding an elaborate new special ability tree.
+The shield guard should visibly block frontal hits, communicate damage, lose the full shield when broken, then become vulnerable. Melee should have a clear useful role. Use the supplied shield animation if available; do not let hands slide through the grip. Exact damage values are tuning decisions, not locked by this document.
+Current observed issue: zombies overlap/stack, then an axe combo hits five or six together and can feel slow even with around ten enemies. Diagnose intentional hit-stop versus actual frame-time spikes before changing speed or damage. A single attack must not stack many full-duration global pauses from every contacted enemy. Preserve multi-target cleave while bounding cumulative feedback.
+Use modest local separation and destination variation so bodies do not occupy the same space. Keep enemies pressuring the player; avoid a conspicuous polite ring taking turns. Telegraph individual attacks, avoid simultaneous unavoidable dogpiles, and limit how many committed attacks can threaten at once as appropriate to the mobile camera. Others may approach, reposition or recover naturally. Tune and test instead of claiming one universal attacker count.
+Verify the allegedly existing leg-loss-to-crawl behavior in a dedicated test. Detaching a leg is not enough; a surviving enemy needs the appropriate locomotion/attack state, collider/height and space to be seen. Confirm it actually occurs in gameplay and does not slide, overlap, or stand back up. Do not claim a system exists solely because a function name exists.
+Add restrained bat/axe motion trails only during the active swing, aligned to the real weapon path. Contact reactions must occur on contact, with direction-aware recoil/stagger, a short controlled sound/particle cue, and no extra damage callbacks from the same intended hit. Avoid giant constant ribbons, obscuring blood clouds, and expensive persistent debris. Maintain distinct misses versus hits.
+The user wants reliable melee combos and substantial shotgun feel. Prevent root-motion gliding/teleporting; inspect actual mixer actions, root transforms and combo transitions. Keep the same attack reference clips as the current animation work. Weapon damage, attack speed, zombie movement and spacing should be tuned together in a small test, not changed blindly everywhere. No weapon durability/breakage for the player's bat/axe in this pass.
+Test 10 and 15 active zombies with group melee, detached limbs and ragdolls, not just standing enemies. A 30-enemy room can be an optional stress test. Measure before imposing budgets; current smooth gun tests do not prove worst-case melee performance. Corpses and detached parts may fade/recycle.
+
+ROOMS, WALLS, UI AND ENVIRONMENT QA
+Keep the existing floor plan. No extra floors, mission redesign or new blocker quest chain overnight. Fix obvious bypasses only when they contradict an already-required objective. Record any progression redesign as a separate recommendation.
+Use the supplied outbreak surfaces intentionally. Floors, wall handprints, stains, worn grout and occasional environmental damage have much more visible payoff than a wholesale AO pass on furniture. Do not assume the existing base-color kit contains normals/roughness. Vary placement; preserve readable cleaner combat lanes.
+The shield's explicit AO bake is approved. Bulk replacement with earlier subtle AO furniture tests is not. Use existing approved damaged versions where appropriate. No pointless blanket polygon reduction that ruins silhouettes/faces.
+Keep room signs, doorways and traversal boundaries clear from the locked game camera. A locked/barred side must be visible if it conveys the solution. Do not rely on a hidden bar only revealed in a prompt. If a door is an optional shortcut, label it as such instead of presenting it as a mandatory escape blocker.
+Walls may cut away but retain a low base so boundaries remain readable. Door openings should stay visibly open; headers must not rise/dip like phantom blockers as Yola approaches. Avoid repeated camera-dependent wall popping. Remove pictures clipping through walls or hidden behind opening doors, particularly the early art behind the water cooler.
+Remove leftover original Gumby guard/patient models from the combat scene once their cinematic roles have ended. Do not delete the original actors from the opening itself. Ensure the upgraded room is the same place, not an unexplained jump to an arena.
+Use clear Back/Close/Cancel behavior for any panels touched. Keep text concise. Do not expand menus just to expose settings. Preserve phone gesture/controls and avoid cinematic taps firing weapons accidentally at control handoff.
+
+THREE CREATIVE IMPROVEMENTS ARE WELCOME
+Choose up to three small, coherent improvements to timing, sound layering, camera composition, material contrast, room dressing or visual feedback that improve the current experience. Implement and explain them. This is permission to exercise design judgment within the existing opening and combat, not to rewrite the story, add levels, spend money, redesign Yola, or swap engines.
+
+ACCEPTANCE TESTS AND REPORT
+- Play the full intro through normal controls. Confirm outside entrance shot, clean reception, seated actors, correct spacing, readable Card 1, supported elevator trip and floor indicator, white patient clothes, prepared OR, Cards 2/3 and correct retries, genuinely successful recovery/handoff, crisis and readable moving zombie head, painted breakthrough, and prompt control handoff.
+- Verify B clips are used and line 32 is excluded. Preserve the existing narrator. Test first-visit audio activation, mute, pause, skip, replay and background/resume without overlaps or softlocks.
+- Verify the shield grip visually from front/side/rear while moving and attacking; all five chunks detach, full perimeter breaks, damage maps line up, and debris cleans up. Inspect exported asset in the game, not just Blender.
+- Test current guard/orderly animations and charge behavior, melee combos, crowd spacing, hit-stop, crawlers, and resource cleanup. Compare measured frame time to the checkpoint.
+- Inspect at 320 and 390 px portrait and desktop. Report physical-device tests separately from desktop viewport emulation. If no physical phone is available, say so.
+- If execution/WebGL is blocked, report precisely what could not be checked and still deliver available code/tests. Never substitute code inspection for a claimed playable visual test.
+- Deliver the runnable updated project/build and a refreshed download, concise changelog, actual screenshots/video when captured, test results, unresolved blockers, and the three design decisions. Use an existing authorized deployment workflow only; do not create accounts, accept new paid plans or publish private assets to a new destination.
+
+ATTACHMENT CHECKLIST FOR THE USER
+1. Latest game project/repository and the latest animation changes already in progress.
+2. Yola_Opening_V3_Claude_Package.zip, containing the 66 original audio clips and reviewed source script. This new document overrides its take-selection rule and line 32.
+3. New modular bed-end shield v2 runtime ZIP supplied separately; verify its manifest says one centered grip and 8,250 triangles.
+4. Approved music audio files. The desired music is not embedded in the script or shield ZIP.
+5. Hospital_Outbreak_Texture_Kit_v1.zip if it is not already in the current project.
+6. New approved Yola art is optional visual direction only until a rig-compatible 3D model exists. The source artwork is identified in this conversation by Library ID libfile_1aa4d8b6461081919c225e4877226633; Claude needs the actual attachment, not this ID.
+Library IDs are not public URLs and do not grant Claude access. Supply downloaded attachments or project files.
+
+REVIEW STATUS / SOURCES
+Clinical text above reuses the previous three-pass source-reviewed script without changing its answer keys. It is entertainment, not a licensed-clinician-reviewed training module or patient-specific treatment guide. No medical doses are specified. Source checking does not certify clinical use.
+- OrphanAnesthesia: https://www.orphananesthesia.eu/rare-diseases/published-guidelines/pseudocholinesterase-deficiency/1793-pseudocholinesterase-deficiency-1/file.html
+- APSF quantitative monitoring/recovery: https://www.apsf.org/article/new-practice-guidelines-for-neuromuscular-blockade/
+- ASA basic monitoring: https://www.asahq.org/standards-and-practice-parameters/standards-for-basic-anesthetic-monitoring
+- Three.js render targets: https://threejs.org/manual/pages/rendertargets.html
+- Three.js Object3D.attach: https://threejs.org/docs/pages/Object3D.html#attach
+- Three.js GLTFLoader: https://threejs.org/docs/pages/GLTFLoader.html
+This document proposes implementation and verification; it is not a claim that these changes already exist in the game.
