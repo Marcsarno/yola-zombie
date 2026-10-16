@@ -44750,12 +44750,12 @@ void main() {
       return !this.raycast(ax, az, bx, bz, minH);
     }
     // ---------- navigation grid + flow field toward a goal ----------
-    buildNav(cell = 0.25, inflate = 0.3) {
+    buildNav(cell2 = 0.25, inflate = 0.3) {
       const { minX, maxX, minZ, maxZ } = this.bounds;
-      const w = Math.ceil((maxX - minX) / cell), h = Math.ceil((maxZ - minZ) / cell);
+      const w = Math.ceil((maxX - minX) / cell2), h = Math.ceil((maxZ - minZ) / cell2);
       const blocked = new Uint8Array(w * h);
       for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-        const x = minX + (i + 0.5) * cell, z = minZ + (j + 0.5) * cell;
+        const x = minX + (i + 0.5) * cell2, z = minZ + (j + 0.5) * cell2;
         for (const b of this.boxes) {
           if (b.off) continue;
           if (x > b.minX - inflate && x < b.maxX + inflate && z > b.minZ - inflate && z < b.maxZ + inflate) {
@@ -44764,7 +44764,7 @@ void main() {
           }
         }
       }
-      this.nav = { cell, w, h, blocked, dist: new Float32Array(w * h), queue: new Int32Array(w * h * 4), goal: -1, inflate };
+      this.nav = { cell: cell2, w, h, blocked, dist: new Float32Array(w * h), queue: new Int32Array(w * h * 4), goal: -1, inflate };
     }
     // switch a box (a door) on or off and re-test the navigation cells around it; the flow field follows next update
     setOff(b, off) {
@@ -45016,10 +45016,10 @@ void main() {
   };
   var wp = (m, x, z, face, y, extra = {}) => props.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, ...extra });
   p(U + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
-  p(U + "04_surgery/surgical_light_standard.glb", 0.1, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.62, noCollide: true, name: "orLight" });
+  p(U + "04_surgery/surgical_light_standard.glb", 0.75, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
   p(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
   p(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
-  p(U + "08_support_equipment/runtime/iv_stand_standard.glb", -0.35, -7.2, 0, [0.73, 0.7], 2.03, { noCollide: true });
+  p(U + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
   p(U + "08_support_equipment/runtime/supply_cart_standard.glb", 2.35, -10.6, 0, [0.88, 0.65], 1.21);
   p(H + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
   p(H + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
@@ -45136,7 +45136,7 @@ void main() {
     { id: "elevator", x: 6.99, y: 2.75, z: -8.3, face: "w", w: 1.1 }
   ];
   var GROUPS = [
-    { id: "or", zombies: [{ x: -4.5, z: -6.4, yaw: 0.9, wake: 2 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 5 }, { x: 4.3, z: -6.2, yaw: -0.8, wake: 8 }] },
+    { id: "or", zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: "nurse" }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 8 }] },
     { id: "supply", trigger: "bat", sense: 4.5, zombies: [{ x: -14, z: -4.6, yaw: Math.PI / 2 }, { x: -15, z: -4, yaw: Math.PI / 2 }, { x: -14.2, z: -0.4, yaw: Math.PI / 2 }] },
     { id: "waiting", sense: 6.5, zombies: [{ x: -21.6, z: -0.6, yaw: 1.2 }, { x: -16.8, z: -5.4, yaw: 2.4 }, { x: -23.6, z: -4.2, yaw: 1.6 }, { x: -14.4, z: -2.7, yaw: 0.4 }] },
     { id: "preop", sense: 6, zombies: [{ x: -33.4, z: -8, yaw: 0.3 }, { x: -31.6, z: -3.2, yaw: 2 }, { x: -27.9, z: -8.6, yaw: -2.6 }] },
@@ -45159,7 +45159,7 @@ void main() {
   var FLOOR3 = {
     name: "floor3",
     bounds: { minX: -37.8, maxX: 11, minZ: -23.3, maxZ: 11.8 },
-    playerStart: { x: -1.6, z: -9.35, yaw: 0.55 },
+    playerStart: { x: 0.75, z: -6.05, yaw: 0.61 },
     walls,
     doors: DOORS,
     props,
@@ -45181,8 +45181,8 @@ void main() {
   var M2 = "assets/models/";
   var H2 = "zombie/assets/hospital/";
   var ROOM1 = {
-    player: { x: -1.6, z: -9.35, yaw: 0.55 },
-    // the anchor where original Yola becomes improved Yola
+    player: { x: 0.75, z: -6.05, yaw: 0.61 },
+    // where Yola breaks through the painted picture: the table behind her, facing the camera (south-east)
     zombies: GROUPS[0].zombies,
     // standard zombies preplaced around the OR perimeter, waking (and so attacking) one at a time
     belongings: { x: -9.6, z: -5.55 },
@@ -45968,7 +45968,7 @@ void main() {
     }
     hurt(dmg, fromX, fromZ, sim2) {
       if (this.dead || this.invuln > 0) return false;
-      this.hp = Math.max(0, this.hp - dmg);
+      this.hp = Math.max(this.T.testInfiniteHealth ? Math.max(1, this.hp) : 0, this.hp - dmg);
       this.invuln = 0.55;
       this.hurtT = 0;
       const dx = this.x - fromX, dz = this.z - fromZ, d = Math.hypot(dx, dz) || 1;
@@ -46759,6 +46759,7 @@ void main() {
           z.set(ZS.CHASE);
           z.spawnKey = key;
           z.group = g.id;
+          if (zs.look) z.look = zs.look;
           const locked = !!g.locked && !(g.trigger === "brace" && this.flags.cafeteria_brace_removed);
           z.dormant = {
             wake: fresh && zs.wake !== void 0 ? zs.wake : Infinity,
@@ -47398,6 +47399,8 @@ void main() {
     aimAssist: 0.5,
     // 0 = off, 1 = full (max 5 degrees bend)
     magSize: 12,
+    testInfiniteHealth: true,
+    // testing feel, not difficulty (the user, 2026-10-15): hits still flinch, push and knock her down, health never drops below 1
     testInfiniteAmmo: true,
     // testing: spare rounds never run out (magazines still empty and reload); false = Floor 3 counts them
     headshotChance: 0.1,
@@ -48467,7 +48470,12 @@ void main() {
         this.attachToWall(m, x, z, face, y + w * hk / 2);
         return m;
       };
-      for (const s of SIGNS) add(new MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024);
+      this.signMeshes = [];
+      for (const s of SIGNS) {
+        const m = add(new MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024);
+        m.userData.sign = s.text;
+        this.signMeshes.push(m);
+      }
       const tl = new TextureLoader();
       for (const s of ROOM_SIGNS) {
         const t = tl.load(`assets/opening/signs/${s.id}.png`);
@@ -53880,6 +53888,7 @@ void main() {
   };
 
   // src/audio.js
+  var MAX_VOICES = 14;
   var SILENT_WAV = (() => {
     const n = 800, b = new Uint8Array(44 + n), v = new DataView(b.buffer), s = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
     s(0, "RIFF");
@@ -53900,6 +53909,7 @@ void main() {
     for (const x of b) str += String.fromCharCode(x);
     return "data:audio/wav;base64," + btoa(str);
   })();
+  var MINOR = /* @__PURE__ */ new Set(["groan", "zombieHurt", "bump", "ricochet", "batMiss", "windup", "empty", "dry"]);
   var CombatAudio = class {
     constructor() {
       this.ctx = null;
@@ -53907,6 +53917,11 @@ void main() {
       this.noiseBuf = null;
       this.volume = 0.8;
       this.muted = false;
+      this.levels = { sfx: 1, music: 0.7, voice: 1 };
+      this.busMuted = { sfx: false, music: false, voice: false };
+      this.recent = /* @__PURE__ */ new Map();
+      this.active = [];
+      this.duckK = 1;
     }
     init() {
       if (!this.ctx) {
@@ -53917,6 +53932,10 @@ void main() {
         }
         this.master = this.ctx.createGain();
         this.master.connect(this.ctx.destination);
+        this.sfx = this.ctx.createGain();
+        this.musicBus = this.ctx.createGain();
+        this.voiceBus = this.ctx.createGain();
+        for (const b of [this.sfx, this.musicBus, this.voiceBus]) b.connect(this.master);
         this.applyVolume();
         const len = this.ctx.sampleRate * 0.6;
         this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -53945,7 +53964,33 @@ void main() {
       }
     }
     applyVolume() {
-      if (this.master) this.master.gain.value = this.muted ? 0 : this.volume;
+      if (!this.master) return;
+      this.master.gain.value = this.muted ? 0 : this.volume;
+      this.sfx.gain.value = this.busMuted.sfx ? 0 : this.levels.sfx;
+      this.voiceBus.gain.value = this.busMuted.voice ? 0 : this.levels.voice;
+      const g = this.musicBus.gain, t = this.ctx.currentTime;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(this.musicTarget(), t);
+    }
+    musicTarget() {
+      return this.busMuted.music ? 0 : this.levels.music * this.duckK;
+    }
+    setLevel(bus, v) {
+      this.levels[bus] = v;
+      this.applyVolume();
+    }
+    setBusMuted(bus, m) {
+      this.busMuted[bus] = m;
+      this.applyVolume();
+    }
+    // music dips under speech and comes back after it (a short ramp both ways, never a jump)
+    duck(on, secs = 0.25) {
+      this.duckK = on ? 0.38 : 1;
+      if (!this.musicBus) return;
+      const g = this.musicBus.gain, t = this.ctx.currentTime;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(this.musicTarget(), t + secs);
     }
     setVolume(v) {
       this.volume = v;
@@ -53972,7 +54017,7 @@ void main() {
       g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
       src.connect(flt);
       flt.connect(g);
-      g.connect(this.master);
+      g.connect(this.out || this.sfx);
       src.start(t, Math.random() * 0.3);
       src.stop(t + dur + 0.02);
     }
@@ -53985,12 +54030,26 @@ void main() {
       g.gain.linearRampToValueAtTime(gain, t + attack);
       g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
       o.connect(g);
-      g.connect(this.master);
+      g.connect(this.out || this.sfx);
       o.start(t);
       o.stop(t + dur + 0.02);
     }
+    // the effect-voice cap: the same sound at most twice in 60 ms (a crowd hit is one sound, slightly louder), and at most
+    // MAX_VOICES sounds started in the last 0.35 s (minor sounds are dropped first)
+    admit(name, k) {
+      const t = this.ctx.currentTime, r = this.recent.get(name) || [];
+      while (r.length && t - r[0] > 0.06) r.shift();
+      if (r.length >= 2) return false;
+      r.push(t);
+      this.recent.set(name, r);
+      while (this.active.length && t - this.active[0] > 0.35) this.active.shift();
+      const minor = MINOR.has(name);
+      if (this.active.length >= (minor ? MAX_VOICES - 4 : MAX_VOICES)) return false;
+      this.active.push(t);
+      return true;
+    }
     play(name, k = 1) {
-      if (!this.ok) return;
+      if (!this.ok || !this.admit(name, k)) return;
       const t = this.ctx.currentTime;
       switch (name) {
         case "shot":
@@ -54150,6 +54209,101 @@ void main() {
           [330, 262, 196].forEach((f, i) => this.tone(t + i * 0.16, 0.3, f, { type: "triangle", gain: 0.1 }));
           break;
       }
+    }
+  };
+
+  // src/music.js
+  var SRC = "assets/music/agile_groove.mp3";
+  var COOLDOWN = 3;
+  var CALM = 4.5;
+  var LEVEL = { explore: 0.42, combat: 1 };
+  var CUTOFF = { explore: 900, combat: 2e4 };
+  var GameMusic = class {
+    constructor(audio2) {
+      this.audio = audio2;
+      this.state = "off";
+      this.since = 99;
+      this.calm = 0;
+      this.el = null;
+      this.failed = false;
+    }
+    ensure() {
+      const a = this.audio;
+      if (this.node || this.failed || !a.ctx) return !!this.node;
+      try {
+        const el = new Audio(SRC);
+        el.loop = true;
+        el.preload = "auto";
+        el.crossOrigin = "anonymous";
+        el.setAttribute("playsinline", "");
+        const src = a.ctx.createMediaElementSource(el), f = a.ctx.createBiquadFilter(), g = a.ctx.createGain();
+        f.type = "lowpass";
+        f.frequency.value = CUTOFF.explore;
+        f.Q.value = 0.5;
+        g.gain.value = 0;
+        src.connect(f);
+        f.connect(g);
+        g.connect(a.musicBus);
+        el.addEventListener("error", () => {
+          this.failed = true;
+        });
+        this.el = el;
+        this.node = { src, f, g };
+        return true;
+      } catch (e) {
+        this.failed = true;
+        console.warn("music unavailable", e);
+        return false;
+      }
+    }
+    // kind: 'combat' | 'explore'; fade seconds
+    start(kind = "explore", fade = 0.6) {
+      if (!this.ensure()) return;
+      if (this.el.paused) {
+        const p2 = this.el.play();
+        p2?.catch?.(() => {
+        });
+      }
+      this.set(kind, fade);
+    }
+    set(kind, fade = 1.6) {
+      if (!this.node) return;
+      const c = this.audio.ctx, t = c.currentTime, { f, g } = this.node;
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(LEVEL[kind], t + fade);
+      f.frequency.cancelScheduledValues(t);
+      f.frequency.setValueAtTime(f.frequency.value, t);
+      f.frequency.exponentialRampToValueAtTime(CUTOFF[kind], t + fade * 1.2);
+      this.state = kind;
+      this.since = 0;
+    }
+    stop(fade = 0.8) {
+      if (!this.node) return;
+      const c = this.audio.ctx, t = c.currentTime, g = this.node.g;
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(0, t + fade);
+      const el = this.el;
+      setTimeout(() => {
+        if (this.state === "off") el.pause();
+      }, fade * 1e3 + 100);
+      this.state = "off";
+    }
+    // per frame: threat 'combat' (a woken zombie near or attacking) or 'calm'
+    update(dt, fighting, paused2) {
+      if (this.state === "off" || !this.node) return;
+      if (paused2) {
+        if (!this.el.paused) this.el.pause();
+        return;
+      }
+      if (this.el.paused) this.el.play()?.catch?.(() => {
+      });
+      this.since += dt;
+      this.calm = fighting ? 0 : this.calm + dt;
+      if (this.since < COOLDOWN) return;
+      if (this.state === "explore" && fighting) this.set("combat", 1);
+      else if (this.state === "combat" && this.calm > CALM) this.set("explore", 2.4);
     }
   };
 
@@ -55335,15 +55489,17 @@ void main() {
     duration(name) {
       return this.actions[name]?.getClip().duration ?? 0;
     }
-    // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle
-    walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null } = {}) {
+    // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle. clip / idle: what plays while
+    // moving and on arrival (a seated rider: SeatedIdle for both); keepSeat: a rider stays seated (no stand-up state change)
+    walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null, clip = null, idle = null, keepSeat = false } = {}) {
       this.path = points.map((p2) => ({ x: p2[0], z: p2[1] }));
       this.speed = speed;
       this.endYaw = endYaw;
       this.onArrive = onArrive;
       this.moving = this.path.length > 0;
-      this.seated = false;
-      if (this.moving) this.play(this.walkClip, { rate: speed / this.walkSpeed });
+      if (!keepSeat) this.seated = false;
+      this.arriveClip = idle || this.idleClip;
+      if (this.moving) this.play(clip || this.walkClip, { rate: clip ? 1 : speed / this.walkSpeed });
     }
     stop() {
       this.path = [];
@@ -55363,7 +55519,7 @@ void main() {
           if (!this.path.length) {
             this.moving = false;
             if (this.endYaw != null) this.targetYaw = this.endYaw;
-            this.play(this.idleClip);
+            this.play(this.arriveClip || this.idleClip);
             const cb = this.onArrive;
             this.onArrive = null;
             cb?.();
@@ -55376,7 +55532,7 @@ void main() {
       }
       if (this.targetYaw != null) {
         const e = angDiff(this.yaw, this.targetYaw);
-        this.yaw += clamp5(e, -d * 7, d * 7);
+        this.yaw += clamp5(e, -d * (this.turnRate || 7), d * (this.turnRate || 7));
         if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
       }
       if (this.lying) this.root.rotation.set(-Math.PI / 2, this.yaw, 0, "YXZ");
@@ -55651,6 +55807,40 @@ void main() {
   // src/opening/stage.js
   var CLINIC = { x: 60, z: 0 };
   var M3 = "../assets/models/";
+  var LIFT_KIT = "assets/kit/Hospital_Elevator_Outbreak.glb";
+  var CLINIC_LIFT = { x: -2.3, z: -6 };
+  function liftDisplay(root) {
+    const c = document.createElement("canvas");
+    c.width = 256;
+    c.height = 96;
+    const g = c.getContext("2d");
+    const tex = new CanvasTexture(c);
+    tex.colorSpace = SRGBColorSpace;
+    const m = new Mesh(new PlaneGeometry(0.56, 0.21), new MeshBasicMaterial({ map: tex, toneMapped: false }));
+    m.position.set(0, 2.65, 0.272);
+    root.add(m);
+    root.traverse((o) => {
+      if (/^Indicator_/.test(o.name)) o.visible = false;
+    });
+    const set = (text, arrow = "") => {
+      g.fillStyle = "#120c06";
+      g.fillRect(0, 0, 256, 96);
+      g.fillStyle = "#ffb648";
+      g.font = "800 70px ui-monospace, Menlo, Consolas, monospace";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.shadowColor = "#ff8a00";
+      g.shadowBlur = 14;
+      g.fillText(text, arrow ? 104 : 128, 52);
+      if (arrow) {
+        g.font = "800 46px system-ui, sans-serif";
+        g.fillText(arrow, 186, 50);
+      }
+      tex.needsUpdate = true;
+    };
+    set("G");
+    return { mesh: m, set };
+  }
   var PAL2 = { wall: 16051420, band: 8109496, cap: 16775402, floorA: "#f2e6cc", floorB: "#cfe6dc", grout: "#e1d4b8", glass: 13626092, frame: 9421252 };
   function checkerTexture() {
     const c = document.createElement("canvas");
@@ -55814,19 +56004,19 @@ void main() {
       tasks.push(this.prop(M3 + "uploaded/waiting-chair.glb", { x: -7.3, z: 3.4, rot: 180, name: "wchair1" }));
       tasks.push(this.prop(M3 + "uploaded/staff-chair.glb", { x: -6.2, z: 3.45, rot: 0, name: "wchair2" }));
       tasks.push(this.prop(M3 + "furnishings/Lounge_Break_Chair.glb", { x: -5, z: 3.4, rot: 180, name: "wchair3" }));
-      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.2, z: -5.3 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: -3.85, z: -5.4 }));
-      tasks.push(this.prop(M3 + "entrance/Entrance_Double_Doorway.glb", { x: -1.4, z: -5.9, rot: 0, name: "orDoor" }));
+      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.65, z: -5.4 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: -7.6, z: -5.45 }));
+      tasks.push(this.buildLift());
       tasks.push(this.prop(M3 + "decor/Reception_Round_Side_Table.glb", { x: -3.2, z: 3.6 }));
       tasks.push(this.prop(M3 + "decor/Reception_Magazine_Rack.glb", { x: -1.2, z: 3.7, rot: 0 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Poster_Heart.glb", { x: -3.15, y: 1.35, z: -5.88 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 0.02, y: 1.2, z: -5.88 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Poster_Heart.glb", { x: -6.75, y: 1.35, z: -5.88 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: -9.2, y: 1.2, z: 3.1, wall: "e" }));
       tasks.push(this.prop(M3 + "entrance/Entrance_Double_Doorway.glb", { x: -9.05, z: 0.9, rot: 90, name: "door" }));
       this.signs = {};
       this.sign("reception", -5.2, 2.15, -5.94, 1.9);
       this.sign("assessment", 0.15, 2.05, -1, 1, -Math.PI / 2);
       this.sign("recovery", 0.15, 2.05, 2.7, 1, -Math.PI / 2);
-      this.sign("operating_room", -1.4, 2.7, -5.93, 1.7);
+      this.sign("elevator", CLINIC_LIFT.x, 3.25, -5.94, 1.3);
       tasks.push(this.prop(M3 + "furnishings/Assessment_Board.glb", { x: 1.75, y: 1, z: Zn, wall: "s" }));
       tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: 2.65, z: -5.55 }));
       tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 0.9, z: -5.45 }));
@@ -55902,6 +56092,8 @@ void main() {
         // a waiting chair near reception
         receptionChair: { x: -5.2, z: -5.5, yaw: 0, seatTop: 0.5 },
         orDoor: { x: -1.4, z: -5 },
+        liftFront: { x: CLINIC_LIFT.x, z: -4.75 },
+        // the call point in front of the ground-floor elevator
         yolaTour: { x: 5, z: 3.7, yaw: 0.45 }
         // original Yola in the two-bay room for the tour
       });
@@ -56126,6 +56318,60 @@ void main() {
     setEntranceOpen(k) {
       for (const d of this.extDoors || []) d.leaf.position.z = d.z0 + d.dir * 0.82 * k;
     }
+    // the ground-floor elevator: the Floor 3 kit, its doors driven by the kit's own Doors_Open clip (0 shut .. 1 open)
+    async buildLift() {
+      const g = await this.gltf(LIFT_KIT);
+      const root = g.scene.clone(true);
+      root.position.set(CLINIC_LIFT.x, 0, CLINIC_LIFT.z);
+      root.name = "clinicLift";
+      root.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      this.root.add(root);
+      const mixer = new AnimationMixer(root), clip = AnimationClip.findByName(g.animations, "Doors_Open");
+      const open = clip ? mixer.clipAction(clip) : null;
+      if (open) {
+        open.play();
+        open.paused = true;
+        open.time = 0;
+        mixer.update(0);
+      }
+      this.lift = { root, mixer, open, k: 0, display: liftDisplay(root) };
+    }
+    setLiftOpen(k) {
+      const L2 = this.lift;
+      if (!L2?.open) return;
+      L2.k = k;
+      L2.open.time = Math.max(0, Math.min(0.999, k)) * L2.open.getClip().duration;
+      L2.mixer.update(0);
+    }
+    // the wheelchair the colleague brings: a prop that travels with whoever sits in it (seat centre at the group's origin)
+    async buildWheelchair() {
+      const g = await this.gltf("assets/hospital/wheelchair.glb");
+      const obj = g.scene.clone(true);
+      obj.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      const holder = new Group();
+      holder.add(obj);
+      holder.updateMatrixWorld(true);
+      const box = new Box3().setFromObject(obj), c = box.getCenter(new Vector3());
+      obj.position.set(-c.x, -box.min.y, -c.z);
+      const wc = new Group();
+      wc.name = "wheelchair";
+      wc.add(holder);
+      wc.visible = false;
+      this.root.add(wc);
+      this.wheelchair = wc;
+      this.wheelchairSize = box.getSize(new Vector3());
+      return wc;
+    }
     // procedural desk-top dressing (the kit has no desk accessories): monitor and keyboard, a phone, a clipboard, paperwork
     deskTop(cx, y, cz) {
       const g = new Group();
@@ -56283,6 +56529,7 @@ void main() {
         load2(M3 + "people/staff-lilac.glb")
       ]);
       const batStatic = await load2("assets/opening/Baseball_Bat_Static.glb");
+      await this.buildWheelchair();
       this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
       const A = this.actors;
       A.yola = new OriginalYola(yolaOld, { height: 1.62, name: "yolaOld", walkSpeed: 1 });
@@ -56306,6 +56553,13 @@ void main() {
       this.batStatic.traverse((o) => {
         if (o.isMesh) o.castShadow = true;
       });
+      this.guardBat = batStatic.scene.clone(true);
+      this.guardBat.visible = false;
+      {
+        const b = new Box3().setFromObject(this.guardBat);
+        this.batLen = b.getSize(new Vector3());
+        this.batBox = b;
+      }
       const capSkin = A.baseball.model.getObjectByName("Baseball_Cap");
       this.cap = null;
       A.baseball.capSkin = capSkin;
@@ -56427,29 +56681,92 @@ void main() {
     elevator: "Return to the elevator.",
     board: "Step into the lift."
   };
-  var BOSS_CARD = { name: "YOLA", tagline: "Calm under pressure" };
-  var DIALOGUE = {
-    star: { who: "Narrator", text: "At Yola\u2019s Medical Center, every patient gets star treatment. Sometimes, the patient actually is a star." },
-    welcome: { who: "Receptionist", text: "Welcome. Yola is ready for you. We\u2019ll keep your belongings by the operating room." },
-    takeChair: { who: "Receptionist", text: "Please take the chair opposite Yola." },
-    review: { who: "Yola", text: "Let\u2019s review your chart before we begin." },
-    toOR: { who: "Yola", text: "We\u2019re ready to move to the operating room." },
-    settle: { who: "Yola", text: "We\u2019ll get you settled, then check the setup." },
-    equipment: { who: "Yola", text: "First, let\u2019s check the equipment." },
-    monitor: { who: "Yola", text: "Now check the monitor." },
-    somethingWrong: { who: "Staff", text: "Something\u2019s wrong. His condition is changing." },
-    stillMoving: { who: "Staff", text: "But how is he still moving?" },
-    getYola: { who: "Staff", text: "Get Yola\u2026 Get Yola now!" }
-  };
-  var CARD_STATUS = "DEVELOPMENT PLACEHOLDER \u2014 clinical content pending review.";
-  var CARD_FEEDBACK = (label) => `Test feedback: ${label} selected. This only tests the card interface; it is not a clinical answer.`;
-  var OPTS = [{ id: "a", text: "Option A" }, { id: "b", text: "Option B" }, { id: "c", text: "Option C" }];
-  var CARDS = [
-    { id: "assess-1", where: "assessment", status: "placeholder", prompt: "Test question: choose any option to try this card.", options: OPTS },
-    { id: "or-1", where: "workstation", status: "placeholder", prompt: "Test question (equipment check): choose any option to try this card.", options: OPTS },
-    { id: "or-2", where: "monitor", status: "placeholder", prompt: "Test question (monitor check): choose any option to try this card.", options: OPTS }
+  var VOICE_DIR = "assets/opening/voice/";
+  var LINES = [
+    { id: "01", who: "Reception", file: "01_Reception_takeB.mp3", dur: 4.16, end: 4.16, gainDb: -0.9, text: "Good morning. Yola's expecting you. Take the two seats across from her." },
+    { id: "02", who: "Yola", file: "02_Yola_takeB.mp3", dur: 1.84, end: 1.84, gainDb: -1.8, text: "Hi. How's that knee treating you?" },
+    { id: "03", who: "Patient", file: "03_Patient_takeB.mp3", dur: 3.28, end: 3.28, gainDb: 0.4, text: "Still hurts when I walk. Running bases is out." },
+    { id: "04", who: "Yola", file: "04_Yola_takeB.mp3", dur: 1.84, end: 0.7, gainDb: -1.5, text: "And the bat?" },
+    { id: "05", who: "Patient", file: "05_Patient_takeB.mp3", dur: 5.2, end: 5.2, gainDb: 1.3, text: "Temporary crutch. Didn't have crutches at home, and I'm definitely not using a cane." },
+    { id: "06", who: "Yola", file: "06_Yola_takeB.mp3", dur: 1.04, end: 1.02, gainDb: -1.8, text: "So you brought a bat." },
+    { id: "07", who: "Patient", file: "07_Patient_takeB.mp3", dur: 1.52, end: 1.32, gainDb: 0.9, text: "I have a reputation." },
+    { id: "08", who: "Yola", file: "08_Yola_takeB.mp3", dur: 1.76, end: 1.72, gainDb: -1.1, text: "Any trouble with anesthesia before?" },
+    { id: "09", who: "Patient", file: "09_Patient_takeB.mp3", dur: 4.16, end: 4.16, gainDb: 1.4, text: "Last time, they had to help me breathe for a few hours. They found an enzyme problem." },
+    { id: "10", who: "Yola", file: "10_Yola_takeB.mp3", dur: 2.72, end: 2.7, gainDb: 0.6, text: "I see the test results here. Thanks for telling me." },
+    { id: "11", who: "Yola", file: "11_Yola_takeB.mp3", dur: 2.16, end: 2.16, gainDb: 1.6, text: "We'll account for that in your anesthesia plan." },
+    { id: "12", who: "Yola", file: "12_Yola_takeB.mp3", dur: 2.96, end: 2.94, gainDb: -1.1, text: "Your team's ready on the third floor. I'll come up with you." },
+    { id: "13", who: "Colleague", file: "13_Colleague_takeB.mp3", dur: 3.2, end: 3.2, gainDb: 2, text: "Let's give that knee a break. I've got a wheelchair for you." },
+    { id: "14", who: "Patient", file: "14_Patient_takeB.mp3", dur: 2.08, end: 2.08, gainDb: 0.9, text: "All right. But the bat's coming." },
+    { id: "15", who: "Yola", file: "15_Yola_takeB.mp3", dur: 2.24, end: 2.22, gainDb: -0.3, text: "He can look after it while we're in the operating room." },
+    { id: "16", who: "Colleague", file: "16_Colleague_takeB.mp3", dur: 2.96, end: 2.96, gainDb: 0.6, text: "Third floor. We'll help you get changed and settled." },
+    { id: "17", who: "Yola", file: "17_Yola_takeB.mp3", dur: 1.44, end: 0.64, gainDb: -2.1, text: "Comfortable?" },
+    { id: "18", who: "Patient", file: "18_Patient_takeB.mp3", dur: 2.88, end: 2.88, gainDb: 2.7, text: "As comfortable as I'm going to get. Let's do this." },
+    { id: "19", who: "Yola", file: "19_Yola_takeB.mp3", dur: 1.28, end: 1.2, gainDb: 0.2, text: "We'll take good care of you." },
+    { id: "20", who: "Colleague", file: "20_Colleague_takeB.mp3", dur: 1.6, end: 1.6, gainDb: 1.5, text: "Equipment checks complete." },
+    { id: "21", who: "Yola", file: "21_Yola_takeB.mp3", dur: 1.12, end: 1.12, gainDb: -1.1, text: "I'm right here with you." },
+    { id: "22", who: "Colleague", file: "22_Colleague_takeB.mp3", dur: 2.72, end: 2.72, gainDb: 2.3, text: "The procedure's finished. Let's check his recovery." },
+    { id: "23", who: "Yola", file: "23_Yola_takeB.mp3", dur: 4.08, end: 4.08, gainDb: 0.6, text: "There's still some rocuronium effect. Let's complete reversal and check again." },
+    { id: "24", who: "Yola", file: "24_Yola_takeB.mp3", dur: 2.8, end: 2.78, gainDb: 0.2, text: "He's recovering well. I've handed everything over." },
+    { id: "25", who: "Colleague", file: "25_Colleague_takeB.mp3", dur: 1.68, end: 1.68, gainDb: -0.7, text: "I've got him. I'll stay with him." },
+    { id: "26", who: "Yola", file: "26_Yola_takeB.mp3", dur: 1.84, end: 1.84, gainDb: 0.1, text: "Thanks. I'll be just outside." },
+    { id: "27", who: "Colleague", file: "27_Colleague_takeB.mp3", dur: 2.16, end: 2.16, gainDb: -0.5, text: "Something's wrong. Check his pulse." },
+    { id: "28", who: "Colleague", file: "28_Colleague_takeB.mp3", dur: 1.68, end: 1.12, gainDb: -0.6, text: "There's no pulse." },
+    { id: "29", who: "Colleague", file: "29_Colleague_takeB.mp3", dur: 2.08, end: 2.08, gainDb: 3.3, text: "Wait... why is he moving?" },
+    { id: "30", who: "Colleague", file: "30_Colleague_takeB.mp3", dur: 2, end: 1.04, gainDb: -1, text: "Get Yola!" },
+    { id: "31", who: "Colleague", file: "31_Colleague_takeB.mp3", dur: 2.48, end: 1.76, gainDb: -2.9, text: "Yola! We need you in here!" },
+    { id: "32", who: "Yola", file: "32_Yola_takeB.mp3", dur: 2.16, end: 0.8, gainDb: -4, text: "Behind me.", omit: true },
+    { id: "33", who: "Yola", file: "33_Yola_takeB.mp3", dur: 2.72, end: 1.46, gainDb: 0.2, text: "We need to get downstairs.", optional: true }
   ];
-  var EMERGENCY_LINES = { stable: "Setup complete", alert: "Monitor alert" };
+  var LINE = Object.fromEntries(LINES.map((l) => [l.id, l]));
+  var SPEAKER = { Reception: "Receptionist", Yola: "Yola", Patient: "Patient", Colleague: "Anesthesia colleague" };
+  var CARD_NOTE = "Story card: anesthesia-informed entertainment, not medical advice.";
+  var CLINICAL_CARDS = {
+    assess: {
+      id: "assess",
+      title: "Assessment",
+      sub: "History changes the plan",
+      context: "Chart: scheduled knee procedure; general anesthesia is planned. Prior testing confirms butyrylcholinesterase (pseudocholinesterase) deficiency. Routine history, medications, allergies, fasting, consent and preparation are documented.",
+      prompt: "Which pair should be avoided because of his documented enzyme deficiency?",
+      options: [
+        { id: "a", text: "Succinylcholine and mivacurium", correct: true },
+        { id: "b", text: "Rocuronium and vecuronium" },
+        { id: "c", text: "Propofol and sevoflurane" }
+      ],
+      success: "History accounted for. An alternative plan is selected.",
+      explain: "The affected pair can cause prolonged paralysis in this condition. Today\u2019s clinician-selected alternative uses rocuronium, which is not dependent on that enzyme.",
+      retry: "Check which two muscle relaxants depend on this enzyme."
+    },
+    equip: {
+      id: "equip",
+      title: "Equipment",
+      sub: "Prepare to measure recovery",
+      prompt: "Which monitoring will best confirm neuromuscular recovery at the end of the case?",
+      options: [
+        { id: "a", text: "Qualitative assessment of facial-muscle twitches" },
+        { id: "b", text: "Quantitative monitoring at the adductor pollicis", correct: true },
+        { id: "c", text: "A sustained head-lift test alone" }
+      ],
+      success: "Quantitative recovery monitor ready.",
+      retry: "Clinical or visual checks alone can miss residual block."
+    },
+    monitor: {
+      id: "monitor",
+      title: "Monitor",
+      sub: "Interpret the result",
+      context: "After rocuronium, four twitch responses are present. Quantitative TOF ratio: 0.78.",
+      prompt: "Does this establish adequate neuromuscular recovery for extubation?",
+      options: [
+        { id: "a", text: "Yes. Four responses establish full recovery." },
+        { id: "b", text: "Yes, if a head lift can be sustained." },
+        { id: "c", text: "No. Residual neuromuscular blockade remains.", correct: true }
+      ],
+      success: "Recovery checks continue.",
+      explain: "Confirm a quantitative TOF ratio of at least 0.9 alongside the other clinical readiness requirements before extubation. A TOF ratio alone is not the complete readiness assessment.",
+      retry: "Four responses do not establish full recovery. Check the ratio."
+    }
+  };
+  var READINESS = ["TOF ratio 0.96", "Breathing regular and adequate", "Awake, following commands", "Oxygen saturation stable", "Airway reflexes back"];
+  var TIME_CARDS = { later: "Later in the procedure", reversal: "A few minutes later" };
 
   // src/opening/ui.js
   var CSS = `
@@ -56504,15 +56821,45 @@ void main() {
 #op .ctl button.off { opacity: .55; }
 #op .card { position: absolute; left: 50%; bottom: 8vh; transform: translate(-50%, 14px); width: min(92vw, 460px); background: #fff8ea; color: #20474a; border-radius: 18px; padding: 14px 14px 10px; box-shadow: 0 14px 40px rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; }
 #op .card.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-#op .card .st { font-size: 11px; font-weight: 800; letter-spacing: .02em; color: #fff; background: #c9483f; display: inline-block; border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
+#op .card .st { font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: #2f9fa0; display: inline-block; border-radius: 6px; padding: 3px 8px; margin-bottom: 6px; }
+#op .card .st em { font-style: normal; font-weight: 700; letter-spacing: .02em; text-transform: none; opacity: .9; margin-left: 6px; }
+#op .card .ctx { font-size: 12.5px; line-height: 1.35; background: #eef6f3; border-left: 4px solid #2f9fa0; border-radius: 6px; padding: 7px 9px; margin: 0 0 8px; color: #2c5558; }
+#op .card button.tried { opacity: .5; text-decoration: line-through; border-color: #e6c9c1; background: #fbf1ee; }
+#op .card button.right { background: #d6f0ec; border-color: #2f9fa0; font-weight: 800; }
+#op .card .hint { font-weight: 750; color: #b4513f; padding: 2px 2px 8px; }
+#op .card .why { background: none; border: 0; color: #2a8f92; font-weight: 800; text-decoration: underline; padding: 4px 2px; min-height: 0; width: auto; display: inline-block; }
+#op .card .explain { font-size: 13px; color: #2c5558; padding: 2px 2px 6px; }
+#op .card { max-height: 74vh; overflow-y: auto; }
 #op .card h3 { margin: 0 0 10px; font-size: 16px; line-height: 1.3; }
 #op .card button { display: block; width: 100%; text-align: left; margin: 0 0 7px; padding: 12px 14px; border-radius: 12px; border: 2px solid #bfe0dc; background: #fff; color: #20474a; font: 650 15px/1.3 system-ui, sans-serif; min-height: 46px; }
 #op .card button:active, #op .card button.pick { background: #d6f0ec; border-color: #2f9fa0; }
 #op .card button.cont { background: #2f9fa0; color: #fff; border-color: #2f9fa0; text-align: center; margin-top: 8px; }
 #op .card .note { font-size: 11.5px; color: #6b8a8a; margin-top: 4px; }
 #op .card .ok { font-weight: 750; color: #2a8f92; padding: 6px 2px; }
-#op canvas.ecg { position: absolute; left: 6%; right: 6%; top: 22%; width: 88%; height: 90px; opacity: 0; transition: opacity .4s; }
-#op canvas.ecg.show { opacity: 1; }
+#op .mon { position: absolute; left: 12px; top: calc(60px + env(safe-area-inset-top, 0px)); width: 176px; background: rgba(10, 24, 22, .86); border-radius: 12px; padding: 7px 9px 8px; opacity: 0; transform: translateY(-6px); transition: opacity .35s, transform .35s; box-shadow: 0 4px 14px rgba(0,0,0,.35); font: 700 12px/1.2 ui-monospace, Menlo, Consolas, monospace; color: #7ef0b0; }
+#op .mon.show { opacity: 1; transform: none; }
+#op .mon .row { display: flex; justify-content: space-between; align-items: baseline; }
+#op .mon .row b { font-size: 17px; }
+#op .mon .row small { color: #9fd8c4; font-weight: 600; font-size: 10px; letter-spacing: .06em; }
+#op .mon canvas { display: block; width: 100%; height: 40px; margin: 3px 0 2px; }
+#op .mon .tof { display: none; margin-top: 4px; padding-top: 5px; border-top: 1px solid rgba(126,240,176,.25); color: #ffd36e; }
+#op .mon .tof.show { display: block; }
+#op .mon .tof .bars { display: flex; gap: 4px; align-items: flex-end; height: 18px; margin: 3px 0; }
+#op .mon .tof .bars i { flex: 1; background: #ffd36e; border-radius: 2px; }
+#op .mon.alarm { color: #ff8a7a; box-shadow: 0 0 0 2px rgba(255,90,80,.6), 0 4px 14px rgba(0,0,0,.35); }
+#op .mon.alarm .row small { color: #ffb0a6; }
+#op .ready { position: absolute; left: 50%; top: 30%; transform: translate(-50%, 8px); width: min(84vw, 330px); background: #fff8ea; color: #20474a; border-radius: 16px; padding: 12px 16px 10px; box-shadow: 0 12px 34px rgba(0,0,0,.35); opacity: 0; transition: opacity .35s, transform .35s; }
+#op .ready.show { opacity: 1; transform: translate(-50%, 0); }
+#op .ready h4 { margin: 0 0 6px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: #2a8f92; }
+#op .ready li { list-style: none; margin: 4px 0; font-weight: 700; font-size: 14.5px; opacity: .25; transition: opacity .3s; }
+#op .ready li.ok { opacity: 1; }
+#op .ready li::before { content: '\u2713'; display: inline-block; width: 22px; color: #2a8f92; font-weight: 900; }
+#op .ready ul { margin: 0; padding: 0; }
+#op .ready .rdone { margin-top: 6px; font-weight: 850; color: #e07a5f; opacity: 0; transition: opacity .3s; }
+#op .ready .rdone.show { opacity: 1; }
+#op .timecard { position: absolute; left: 0; right: 0; top: 44%; text-align: center; opacity: 0; transition: opacity .45s; z-index: 2; }
+#op .timecard.show { opacity: 1; }
+#op .timecard span { display: inline-block; font: 800 clamp(18px, 5.4vw, 26px)/1.1 system-ui, sans-serif; color: #fff8ea; letter-spacing: .02em; padding: 10px 20px; border-radius: 14px; background: rgba(20, 34, 40, .55); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
 #op .boss { position: absolute; inset: 0; overflow: hidden; opacity: 0; transition: opacity .25s ease; z-index: 4; }
 #op .boss.show { opacity: 1; transition: none; }
 #op .boss .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
@@ -56554,21 +56901,43 @@ void main() {
       el.id = "op";
       el.innerHTML = `
       <div class="fade"></div><div class="bars"></div><div class="vig"></div><div class="dark"></div>
-      <canvas class="ecg" width="600" height="120"></canvas>
+      <div class="mon"><div class="row"><small>HR</small><b class="hr">72</b><small>SpO\u2082</small><b class="spo2">98</b></div><canvas width="320" height="80"></canvas><div class="row"><small class="st">SINUS</small><small class="bp">BP 118/74</small></div><div class="tof"><div class="row"><small>TOF \xB7 ADDUCTOR POLLICIS</small></div><div class="bars"><i></i><i></i><i></i><i></i></div><div class="row"><small>RATIO</small><b class="ratio">\u2014</b></div></div></div>
+      <div class="ready"><h4>Ready for extubation?</h4><ul></ul><div class="rdone">Criteria met. Extubated, breathing well.</div></div>
+      <div class="timecard"><span></span></div>
       <div class="title"><h1></h1><p></p></div>
       <div class="chip"><div></div></div><div class="prev"></div><div class="status"><div></div></div><div class="urgency"><i></i></div><div class="obj"><div></div></div><div class="reward"><div></div></div>
       <div class="sub"><span></span></div>
       <div class="boss"><div class="lines"></div><div class="ink"></div><h2 class="name"></h2><div class="tagline"></div><div class="flash"></div></div>
       <div class="card" role="dialog" aria-live="polite"></div>
-      <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip \u25B8\u25B8</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">\u266A</button></div>
+      <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip \u25B8\u25B8</button><button class="ccB off" aria-label="Captions" title="Captions">CC</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">\u266A</button></div>
       <div class="gate"><h1>Yola\u2019s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading\u2026</button><button class="skipGate" hidden>Skip intro</button><button class="skipGate contGate" hidden>Continue from checkpoint</button><div class="bar"><i></i></div><div class="small"></div></div>`;
       document.body.appendChild(el);
       const q = (s) => el.querySelector(s);
       this.fade = q(".fade");
       this.vig = q(".vig");
       this.dark = q(".dark");
-      this.ecg = q("canvas.ecg");
+      this.monEl = q(".mon");
+      this.ecg = q(".mon canvas");
       this.titleEl = q(".title");
+      this.readyEl = q(".ready");
+      this.timeEl = q(".timecard");
+      this.ccB = q(".ccB");
+      try {
+        this.captions = localStorage.getItem("zc.captions") === "1";
+      } catch {
+        this.captions = false;
+      }
+      this.ccB.classList.toggle("off", !this.captions);
+      this.ccB.addEventListener("click", () => {
+        this.captions = !this.captions;
+        this.ccB.classList.toggle("off", !this.captions);
+        try {
+          localStorage.setItem("zc.captions", this.captions ? "1" : "0");
+        } catch {
+        }
+        if (!this.captions) this.subEl.classList.remove("show");
+        else if (this.lastSub) this.subtitle(this.lastSub.text, this.lastSub.opts);
+      });
       this.subEl = q(".sub");
       this.objEl = q(".obj");
       this.rewardEl = q(".reward");
@@ -56638,9 +57007,11 @@ void main() {
       this.titleEl.querySelector("p").textContent = p2 || "";
       this.titleEl.classList.toggle("show", !!h);
     }
+    // captions: shown only when the player turned them on (CC); the latest line is remembered so turning them on mid-line shows it
     subtitle(text, { alarm = false, who = "" } = {}) {
+      this.lastSub = text ? { text, opts: { alarm, who } } : null;
       this.subEl.classList.toggle("alarm", alarm);
-      if (!text) {
+      if (!text || !this.captions) {
         this.subEl.classList.remove("show");
         return;
       }
@@ -56689,47 +57060,168 @@ void main() {
     clearTags() {
       for (const t of this.tags.values()) t.classList.remove("show");
     }
-    // Development placeholder card: shows the status label, the options, then explicit test feedback with a Continue
-    // button. Resolves with the chosen option id only after Continue is tapped (no timer, no auto-selection).
-    // Never marks an answer right or wrong.
-    askCard(card, { where = "" } = {}) {
+    // A clinical choice card (content.js CLINICAL_CARDS): the context, the question and three choices. A wrong choice is
+    // struck through and its hint shown; the card stays open for another try (nothing is administered, nothing scored).
+    // The right choice shows the success line, an optional "Why?" explanation, and Continue. Resolves with the number of
+    // tries once Continue is tapped (no timer, no auto-selection).
+    askCard(card) {
       const el = this.cardEl;
-      el.innerHTML = `<span class="st"></span><h3></h3><div class="opts"></div><div class="note">Placeholder content: no clinical meaning. Every option continues the story.</div>`;
-      el.querySelector(".st").textContent = CARD_STATUS;
+      el.innerHTML = `<span class="st"></span><div class="ctx" hidden></div><h3></h3><div class="hint" hidden></div><div class="opts"></div><div class="note"></div>`;
+      const st = el.querySelector(".st");
+      st.textContent = card.title;
+      if (card.sub) {
+        const em = document.createElement("em");
+        em.textContent = card.sub;
+        st.appendChild(em);
+      }
+      if (card.context) {
+        const c = el.querySelector(".ctx");
+        c.hidden = false;
+        c.textContent = card.context;
+      }
       el.querySelector("h3").textContent = card.prompt;
-      const box = el.querySelector(".opts");
+      el.querySelector(".note").textContent = CARD_NOTE;
+      const box = el.querySelector(".opts"), hint = el.querySelector(".hint");
+      this.cardTries = 0;
       return new Promise((resolve) => {
-        let chosen = null;
+        let done = false;
         this.cardResolve = resolve;
+        const finish = (b) => {
+          done = true;
+          b.classList.add("right");
+          hint.hidden = true;
+          for (const x of box.querySelectorAll("button")) if (x !== b) x.remove();
+          const ok = document.createElement("div");
+          ok.className = "ok";
+          ok.textContent = "\u2713 " + card.success;
+          box.appendChild(ok);
+          if (card.explain) {
+            const why = document.createElement("button");
+            why.className = "why";
+            why.textContent = "Why?";
+            const ex = document.createElement("div");
+            ex.className = "explain";
+            ex.textContent = card.explain;
+            ex.hidden = true;
+            why.addEventListener("click", () => {
+              ex.hidden = !ex.hidden;
+              why.textContent = ex.hidden ? "Why?" : "Hide";
+            });
+            box.append(why, ex);
+          }
+          const cont = document.createElement("button");
+          cont.className = "cont";
+          cont.textContent = "Continue";
+          cont.addEventListener("click", () => {
+            if (!this.cardResolve) return;
+            const r = this.cardResolve;
+            this.cardResolve = null;
+            el.classList.remove("show");
+            r(this.cardTries);
+          });
+          box.appendChild(cont);
+        };
         for (const o of card.options) {
           const b = document.createElement("button");
           b.textContent = o.text;
           b.dataset.id = o.id;
           b.addEventListener("click", () => {
-            if (chosen) return;
-            chosen = o;
-            b.classList.add("pick");
-            box.innerHTML = "";
-            const ok = document.createElement("div");
-            ok.className = "ok";
-            ok.textContent = CARD_FEEDBACK(o.text);
-            box.appendChild(ok);
-            const cont = document.createElement("button");
-            cont.className = "cont";
-            cont.textContent = "Continue";
-            cont.addEventListener("click", () => {
-              if (!this.cardResolve) return;
-              const r = this.cardResolve;
-              this.cardResolve = null;
-              el.classList.remove("show");
-              r(chosen.id);
-            });
-            box.appendChild(cont);
+            if (done || b.classList.contains("tried")) return;
+            this.cardTries++;
+            if (o.correct) {
+              finish(b);
+              return;
+            }
+            b.classList.add("tried");
+            hint.hidden = false;
+            hint.textContent = card.retry;
           });
           box.appendChild(b);
         }
         requestAnimationFrame(() => el.classList.add("show"));
       });
+    }
+    // test hook: answer the open card (the option id), as a tap would
+    pickCard(id) {
+      const b = this.cardEl.querySelector(`.opts button[data-id="${id}"]`);
+      b?.click();
+      return !!b;
+    }
+    continueCard() {
+      const b = this.cardEl.querySelector(".cont");
+      b?.click();
+      return !!b;
+    }
+    // ---- the small patient monitor (2D): HR, SpO2, a trace, and the quantitative TOF reading when asked ----
+    // mode: 'normal' | 'irregular' (the alarm) | 'flat' (asystole on the trace, shown only once the pulse is confirmed absent)
+    showMonitor(v) {
+      this.monEl.classList.toggle("show", v);
+    }
+    monitor({ mode: mode2, hr, spo2, tof, alarm, status } = {}) {
+      const m = this.monEl;
+      if (mode2) this.monMode = mode2;
+      if (hr !== void 0) m.querySelector(".hr").textContent = hr;
+      if (spo2 !== void 0) m.querySelector(".spo2").textContent = spo2;
+      if (status !== void 0) m.querySelector(".st").textContent = status;
+      if (alarm !== void 0) m.classList.toggle("alarm", alarm);
+      if (tof !== void 0) {
+        const t = m.querySelector(".tof");
+        t.classList.toggle("show", tof !== null);
+        if (tof) {
+          m.querySelector(".ratio").textContent = tof.ratio == null ? "READY" : tof.ratio.toFixed(2);
+          const bars = m.querySelectorAll(".tof i");
+          tof.twitches.forEach((h, i) => {
+            bars[i].style.height = Math.round(h * 100) + "%";
+          });
+        }
+      }
+    }
+    drawMonitor(t) {
+      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H4 = c.height, mode2 = this.monMode || "normal";
+      g.clearRect(0, 0, W3, H4);
+      g.strokeStyle = mode2 === "normal" ? "#59f0a0" : "#ff7a6a";
+      g.lineWidth = 3;
+      g.lineJoin = "round";
+      g.beginPath();
+      for (let x = 0; x <= W3; x += 3) {
+        const rate = mode2 === "irregular" ? 1.7 : 1.15, u = x / W3 * 2.2 - t * rate * 0.45, p2 = (u % 1 + 1) % 1;
+        let y = 0;
+        if (mode2 === "normal") {
+          if (p2 > 0.1 && p2 < 0.14) y = -6;
+          else if (p2 > 0.18 && p2 < 0.2) y = 6;
+          else if (p2 > 0.2 && p2 < 0.235) y = -30;
+          else if (p2 > 0.235 && p2 < 0.27) y = 9;
+          else if (p2 > 0.4 && p2 < 0.5) y = -6 * Math.sin((p2 - 0.4) / 0.1 * Math.PI);
+        } else if (mode2 === "irregular") y = Math.sin(x * 0.09 + t * 9) * 9 + Math.sin(x * 0.23 - t * 5) * 6;
+        const yy = H4 / 2 + y + (mode2 === "flat" ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
+        x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
+      }
+      g.stroke();
+    }
+    // the readiness checklist: items tick one by one (k: how many are ticked); done shows the result line
+    readiness(items, k = 0, done = false) {
+      const el = this.readyEl;
+      if (!items) {
+        el.classList.remove("show");
+        return;
+      }
+      const ul = el.querySelector("ul");
+      if (ul.children.length !== items.length) {
+        ul.innerHTML = "";
+        for (const it of items) {
+          const li = document.createElement("li");
+          li.textContent = it;
+          ul.appendChild(li);
+        }
+      }
+      [...ul.children].forEach((li, i) => li.classList.toggle("ok", i < k));
+      el.querySelector(".rdone").classList.toggle("show", done);
+      el.classList.add("show");
+    }
+    timeCard(text) {
+      const el = this.timeEl;
+      if (text) el.querySelector("span").textContent = text;
+      el.classList.toggle("show", !!text);
     }
     get cardOpen() {
       return this.cardEl.classList.contains("show");
@@ -56738,34 +57230,10 @@ void main() {
       this.cardEl.classList.remove("show");
       this.cardResolve = null;
     }
-    // flatline: a heart trace that flattens
-    drawEcg(t, flat) {
-      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H4 = c.height;
-      g.clearRect(0, 0, W3, H4);
-      g.fillStyle = "rgba(8,24,20,.55)";
-      g.fillRect(0, 0, W3, H4);
-      g.strokeStyle = flat ? "#ff6a5a" : "#59f0a0";
-      g.lineWidth = 3;
-      g.lineJoin = "round";
-      g.beginPath();
-      for (let x = 0; x <= W3; x += 3) {
-        const u = (x / W3 * 3 - t * 0.9) % 1, p2 = (u % 1 + 1) % 1;
-        let y = 0;
-        if (!flat) {
-          if (p2 > 0.1 && p2 < 0.14) y = -10;
-          else if (p2 > 0.18 && p2 < 0.2) y = 9;
-          else if (p2 > 0.2 && p2 < 0.235) y = -46;
-          else if (p2 > 0.235 && p2 < 0.27) y = 14;
-          else if (p2 > 0.4 && p2 < 0.5) y = -8 * Math.sin((p2 - 0.4) / 0.1 * Math.PI);
-        }
-        const yy = H4 / 2 + y + (flat ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
-        x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
-      }
-      g.stroke();
-    }
     showEcg(v) {
-      this.ecg.classList.toggle("show", v);
+      this.showMonitor(v);
     }
+    // (the old name)
     // the boss-intro card: a freeze frame, a slammed name and a tagline (soft: no white flash, for reduced-flash mode)
     bossCard(name, tagline, soft = false) {
       const b = this.bossEl;
@@ -56870,6 +57338,62 @@ void main() {
       } catch {
       }
     }
+    // ---- the dialogue: every line decoded up front (no fetch mid-scene); one line at a time ----
+    // A line is started by playLine and is over when its speech has played (lineDone). The generation number makes a
+    // stopped clip's late 'ended' callback harmless (skip, replay, a new line).
+    async loadVoices(lines, dir, onEach) {
+      this.vbuf = {};
+      this.vgen = 0;
+      this.vcur = null;
+      const oc = new OfflineAudioContext(1, 44100, 44100);
+      let n = 0;
+      await Promise.all(lines.filter((l) => !l.omit).map(async (l) => {
+        try {
+          this.vbuf[l.id] = await oc.decodeAudioData(await (await fetch(dir + l.file)).arrayBuffer());
+        } catch {
+        }
+        onEach?.(++n);
+      }));
+      return Object.keys(this.vbuf).length;
+    }
+    playLine(l) {
+      this.stopLine();
+      const buf = this.vbuf?.[l.id];
+      if (!buf || !this.ready || this.ctx.state !== "running") return false;
+      const c = this.ctx, src = c.createBufferSource(), g = c.createGain();
+      src.buffer = buf;
+      g.gain.value = Math.pow(10, (l.gainDb || 0) / 20);
+      src.connect(g);
+      g.connect(this.audio.voiceBus);
+      const gen = ++this.vgen, at = c.currentTime + 0.02;
+      src.start(at);
+      this.vcur = { src, gen, at, l };
+      this.audio.duck(true);
+      src.onended = () => {
+        if (this.vcur?.gen === gen) {
+          this.vcur = null;
+          this.audio.duck(false, 0.6);
+        }
+      };
+      return true;
+    }
+    // seconds of the current line heard so far (null when no clip is playing: the caller runs on the story clock)
+    linePos() {
+      const v = this.vcur;
+      return v ? Math.max(0, this.ctx.currentTime - v.at) : null;
+    }
+    stopLine() {
+      const v = this.vcur;
+      if (!v) return;
+      this.vcur = null;
+      this.vgen++;
+      try {
+        v.src.onended = null;
+        v.src.stop();
+      } catch {
+      }
+      this.audio.duck(false, 0.3);
+    }
     // ---- the narration recording: decoded up front; its playback position is the tour's shot clock ----
     async loadNarration(url) {
       try {
@@ -56894,7 +57418,7 @@ void main() {
       const g = c.createGain();
       g.gain.value = 1;
       src.connect(g);
-      g.connect(this.audio.master);
+      g.connect(this.audio.voiceBus);
       const at = c.currentTime + 0.05;
       this.narr.t0 = at - offset;
       src.start(at, Math.max(0, offset));
@@ -56932,7 +57456,7 @@ void main() {
       const c = this.ctx;
       this.musicGain = c.createGain();
       this.musicGain.gain.value = 0;
-      this.musicGain.connect(this.audio.master);
+      this.musicGain.connect(this.audio.musicBus);
       this.musicGain.gain.linearRampToValueAtTime(vol * 0.5, c.currentTime + 1.5);
       this.musicOn = true;
       this.nextBeat = c.currentTime + 0.1;
@@ -57031,7 +57555,7 @@ void main() {
       this.ambGain.gain.linearRampToValueAtTime(0.05, c.currentTime + 2);
       src.connect(f);
       f.connect(this.ambGain);
-      this.ambGain.connect(this.audio.master);
+      this.ambGain.connect(this.audio.sfx);
       src.start();
       this.ambSrc = src;
     }
@@ -57091,7 +57615,7 @@ void main() {
       g.gain.value = 0;
       g.gain.linearRampToValueAtTime(gain, c.currentTime + 0.06);
       o.connect(g);
-      g.connect(this.audio.master);
+      g.connect(this.audio.sfx);
       o.start();
       this.flat = { o, g };
     }
@@ -57155,7 +57679,7 @@ void main() {
       const g = c.createGain();
       g.gain.value = 0;
       g.gain.linearRampToValueAtTime(0.05, c.currentTime + 2.5);
-      g.connect(this.audio.master);
+      g.connect(this.audio.sfx);
       const o1 = c.createOscillator(), o2 = c.createOscillator();
       o1.type = "sawtooth";
       o2.type = "sawtooth";
@@ -57193,13 +57717,300 @@ void main() {
       this.pauseVoice(v);
       if (!v && this.ctx && this.musicOn) this.nextBeat = this.ctx.currentTime + 0.1;
     }
+    // the painted picture breaking: a hard crack, a glassy shatter tail and a low thump under it
+    shatter() {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 5e-3, A = this.audio;
+      A.noise(t, 0.05, { type: "highpass", f: 2500, gain: 0.6 });
+      A.tone(t, 0.32, 110, { type: "triangle", gain: 0.75, f2: 42 });
+      A.noise(t + 0.01, 0.6, { type: "bandpass", f: 4200, q: 1.4, f2: 1800, gain: 0.32, attack: 0.01 });
+      A.noise(t + 0.06, 0.9, { type: "bandpass", f: 6500, q: 3, f2: 3e3, gain: 0.12, attack: 0.03 });
+      A.noise(t, 0.4, { type: "lowpass", f: 600, f2: 120, gain: 0.55 });
+    }
+    // a short rising breath before the strike (the beat where the picture holds)
+    riser(secs = 0.9) {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 0.01;
+      this.audio.noise(t, secs, { type: "bandpass", f: 300, q: 0.8, f2: 2400, gain: 0.16, attack: secs * 0.85 });
+    }
+    heartbeat() {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 0.01, A = this.audio;
+      A.tone(t, 0.12, 62, { gain: 0.32, f2: 45 });
+      A.tone(t + 0.2, 0.12, 58, { gain: 0.24, f2: 42 });
+    }
+    monitorBeep() {
+      if (!this.audio.ok) return;
+      const t = this.ctx.currentTime + 5e-3;
+      this.audio.tone(t, 0.08, 1046.5, { type: "sine", gain: 0.045 });
+    }
+    // the normal pulse tone
     dispose() {
       this.stopMusic(0.2);
       this.stopAmbience();
       this.stopVoice();
+      this.stopLine();
       this.stopNarration();
       this.alarmOff();
       this.flatlineOff(0.1);
+    }
+  };
+
+  // src/opening/breakthrough.js
+  var PaintShader = {
+    uniforms: { tSrc: { value: null }, k: { value: 0 }, texel: { value: new Vector2(1 / 512, 1 / 512) }, seed: { value: 0.37 }, exposure: { value: 0.92 }, display: { value: 1 } },
+    vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+    // Everything happens in display space: the linear capture is tone-mapped (three's Neutral curve, the game's exposure)
+    // first, painted, then written as sRGB (display = 1; the shards draw it untouched). With a post-processing look the
+    // composer tone-maps the whole frame itself, so the painting is written back linear instead (display = 0).
+    fragmentShader: `uniform sampler2D tSrc; uniform float k; uniform vec2 texel; uniform float seed; uniform float exposure; uniform float display; varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7)) + seed) * 43758.5453); }
+    float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+    vec3 neutral(vec3 color) {
+      const float sc = 0.8 - 0.04; const float desat = 0.15;
+      color *= exposure;
+      float x = min(color.r, min(color.g, color.b)); float off = x < 0.08 ? x - 6.25 * x * x : 0.04; color -= off;
+      float peak = max(color.r, max(color.g, color.b)); if (peak < sc) return color;
+      float d = 1.0 - sc; float np = 1.0 - d * d / (peak + d - sc); color *= np / peak;
+      float g = 1.0 - 1.0 / (desat * (peak - np) + 1.0); return mix(color, vec3(np), g);
+    }
+    vec3 D(vec2 uv) { return clamp(neutral(texture2D(tSrc, uv).rgb), 0.0, 1.0); }
+    vec3 srgb(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
+    vec3 lin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }
+    void main() {
+      vec3 src = D(vUv);
+      // brush strokes: Kuwahara (4 sectors, radius 4): each pixel takes the mean of its calmest neighbourhood. The sampling
+      // grid wobbles a little along a slow noise field so the strokes are irregular, not a grid.
+      vec2 wob = (vec2(noise(vUv * 70.0), noise(vUv * 70.0 + 7.3)) - 0.5) * texel * 3.0;
+      vec3 m0 = vec3(0.0), m1 = vec3(0.0), m2 = vec3(0.0), m3 = vec3(0.0), s0 = vec3(0.0), s1 = vec3(0.0), s2 = vec3(0.0), s3 = vec3(0.0);
+      for (int j = 0; j <= 4; j++) for (int i = 0; i <= 4; i++) {
+        vec2 o = vec2(float(i), float(j)) * texel * 1.25;
+        vec3 a = D(vUv + wob + vec2(-o.x, -o.y)); m0 += a; s0 += a * a;
+        vec3 b = D(vUv + wob + vec2(o.x, -o.y)); m1 += b; s1 += b * b;
+        vec3 c = D(vUv + wob + vec2(-o.x, o.y)); m2 += c; s2 += c * c;
+        vec3 e = D(vUv + wob + vec2(o.x, o.y)); m3 += e; s3 += e * e;
+      }
+      m0 /= 25.0; m1 /= 25.0; m2 /= 25.0; m3 /= 25.0;
+      vec3 v0 = s0 / 25.0 - m0 * m0, v1 = s1 / 25.0 - m1 * m1, v2 = s2 / 25.0 - m2 * m2, v3 = s3 / 25.0 - m3 * m3;
+      float w0 = v0.r + v0.g + v0.b, w1 = v1.r + v1.g + v1.b, w2 = v2.r + v2.g + v2.b, w3 = v3.r + v3.g + v3.b;
+      vec3 p = m0; float bw = w0;
+      if (w1 < bw) { bw = w1; p = m1; } if (w2 < bw) { bw = w2; p = m2; } if (w3 < bw) { bw = w3; p = m3; }
+      // a gently richer, warmer palette (a painter's colour, not a filter)
+      float l = dot(p, vec3(0.299, 0.587, 0.114));
+      p = mix(vec3(l), p, 1.18); p *= vec3(1.04, 1.0, 0.93); p = mix(p, p * p * (3.0 - 2.0 * p), 0.25);
+      // outlines where the picture changes sharply (a soft dark line, like a brush edge)
+      float gx = dot(D(vUv + vec2(2.0, 0.0) * texel) - D(vUv - vec2(2.0, 0.0) * texel), vec3(0.33));
+      float gy = dot(D(vUv + vec2(0.0, 2.0) * texel) - D(vUv - vec2(0.0, 2.0) * texel), vec3(0.33));
+      p *= 1.0 - 0.3 * smoothstep(0.08, 0.3, length(vec2(gx, gy)));
+      // canvas: a fine weave, a slow paper grain, diagonal brush drag
+      vec2 w = vUv / texel;
+      float weave = 0.5 + 0.5 * sin(w.x * 1.9) * sin(w.y * 1.9);
+      float grain = noise(w * 0.18);
+      float drag = noise(vec2(w.x * 0.05 + w.y * 0.05, (w.x - w.y) * 0.4));
+      p *= 0.93 + 0.05 * weave + 0.04 * grain + 0.04 * (drag - 0.5);
+      // an old painting's darker edges
+      vec2 q = vUv - 0.5; p *= 1.0 - 0.22 * smoothstep(0.3, 0.75, length(q * vec2(1.0, 0.8)));
+      vec3 outc = mix(src, clamp(p, 0.0, 1.0), k);
+      gl_FragColor = vec4(display > 0.5 ? srgb(outc) : lin(outc) / max(exposure, 1e-3), 1.0);
+    }`
+  };
+  function cell(seeds, i) {
+    let poly = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    const [sx, sy] = seeds[i];
+    for (let j = 0; j < seeds.length; j++) {
+      if (j === i) continue;
+      const [ox, oy] = seeds[j], nx = ox - sx, ny = oy - sy, mx = (ox + sx) / 2, my = (oy + sy) / 2;
+      const side = (p2) => (p2[0] - mx) * nx + (p2[1] - my) * ny;
+      const out = [];
+      for (let a = 0; a < poly.length; a++) {
+        const p2 = poly[a], q = poly[(a + 1) % poly.length], dp = side(p2), dq = side(q);
+        if (dp <= 0) out.push(p2);
+        if (dp <= 0 !== dq <= 0) {
+          const t = dp / (dp - dq);
+          out.push([p2[0] + (q[0] - p2[0]) * t, p2[1] + (q[1] - p2[1]) * t]);
+        }
+      }
+      poly = out;
+      if (poly.length < 3) break;
+    }
+    return poly;
+  }
+  function rng2(seed) {
+    let s = seed >>> 0;
+    return () => {
+      s = s * 1664525 + 1013904223 >>> 0;
+      return s / 4294967296;
+    };
+  }
+  var Breakthrough = class {
+    constructor(renderer2, scene2, camera2) {
+      this.renderer = renderer2;
+      this.scene = scene2;
+      this.camera = camera2;
+      this.group = null;
+      this.shards = [];
+      this.t = 0;
+      this.state = "idle";
+    }
+    // render the current view once into a target (the old hospital, exactly as framed)
+    capture({ post = false, exposure = 0.92 } = {}) {
+      const r = this.renderer, size = r.getDrawingBufferSize(new Vector2());
+      const w = Math.max(2, Math.round(size.x)), h = Math.max(2, Math.round(size.y));
+      this.dispose();
+      const opt = { type: HalfFloatType, depthBuffer: true };
+      this.src = new WebGLRenderTarget(w, h, opt);
+      const pw = Math.max(2, Math.round(w * 0.6)), ph = Math.max(2, Math.round(h * 0.6));
+      this.dst = new WebGLRenderTarget(pw, ph, { type: HalfFloatType, depthBuffer: false });
+      const prevT = r.getRenderTarget(), prevS = r.shadowMap.autoUpdate;
+      r.setRenderTarget(this.src);
+      r.clear();
+      r.render(this.scene, this.camera);
+      r.setRenderTarget(prevT);
+      r.shadowMap.autoUpdate = prevS;
+      this.paintMat = new ShaderMaterial({ ...PaintShader, uniforms: UniformsUtils.clone(PaintShader.uniforms), depthTest: false, depthWrite: false });
+      this.paintMat.uniforms.tSrc.value = this.src.texture;
+      this.paintMat.uniforms.texel.value.set(1 / w, 1 / h);
+      this.paintMat.uniforms.exposure.value = exposure;
+      this.paintMat.uniforms.display.value = post ? 0 : 1;
+      this.post = post;
+      if (!post) this.dst.texture.colorSpace = SRGBColorSpace;
+      this.quad = new Mesh(new PlaneGeometry(2, 2), this.paintMat);
+      this.quadScene = new Scene();
+      this.quadScene.add(this.quad);
+      this.quadCam = new Camera();
+      this.paint(0);
+      this.aspect = w / h;
+    }
+    paint(k) {
+      if (!this.paintMat) return;
+      this.k = k;
+      this.paintMat.uniforms.k.value = k;
+      const r = this.renderer, prev = r.getRenderTarget();
+      r.setRenderTarget(this.dst);
+      r.render(this.quadScene, this.quadCam);
+      r.setRenderTarget(prev);
+    }
+    // the picture in front of the camera, filling the view exactly (distance d), as one seamless quad
+    mount(d = 0.8) {
+      const c = this.camera;
+      c.updateMatrixWorld(true);
+      const hh = Math.tan(MathUtils.degToRad(c.fov) / 2) * d, hw = hh * c.aspect;
+      const g = new Group();
+      g.matrixAutoUpdate = false;
+      g.matrix.copy(c.matrixWorld);
+      g.matrixWorldNeedsUpdate = true;
+      this.scene.add(g);
+      this.group = g;
+      this.d = d;
+      this.hw = hw;
+      this.hh = hh;
+      this.mat = new MeshBasicMaterial({ map: this.dst.texture, depthTest: false, depthWrite: false, transparent: true, toneMapped: !!this.post, fog: false });
+      this.back = new MeshBasicMaterial({ color: 15327176, depthTest: false, depthWrite: false, transparent: true, side: BackSide, toneMapped: !!this.post });
+      const whole = new Mesh(new PlaneGeometry(hw * 2 * 1.002, hh * 2 * 1.002), this.mat);
+      whole.position.z = -d;
+      whole.renderOrder = 50;
+      whole.frustumCulled = false;
+      g.add(whole);
+      this.whole = whole;
+      this.state = "held";
+    }
+    // the strike: ndc impact point (x, y in -1..1) and the swing's screen direction (dx, dy); ten pieces fly
+    shatter(ix = 0, iy = 0.1, dx = -1, dy = 0.25, n = 10, seed = 7) {
+      if (!this.group) return;
+      const R = rng2(seed), seeds = [];
+      for (let i = 0; i < n; i++) {
+        const near = i < 4, a = i / (near ? 4 : n - 4) * Math.PI * 2 + R() * 0.8, rad = near ? 0.22 + R() * 0.2 : 0.75 + R() * 0.55;
+        seeds.push([MathUtils.clamp(ix + Math.cos(a) * rad, -0.98, 0.98), MathUtils.clamp(iy + Math.sin(a) * rad * 1.15, -0.98, 0.98)]);
+      }
+      this.group.remove(this.whole);
+      this.whole.geometry.dispose();
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len;
+      dy /= len;
+      for (let i = 0; i < n; i++) {
+        const poly = cell(seeds, i);
+        if (poly.length < 3) continue;
+        let cx = 0, cy = 0;
+        for (const p2 of poly) {
+          cx += p2[0];
+          cy += p2[1];
+        }
+        cx /= poly.length;
+        cy /= poly.length;
+        const pos = [], uv = [], idx = [];
+        pos.push(0, 0, 0);
+        uv.push((cx + 1) / 2, (cy + 1) / 2);
+        for (const p2 of poly) {
+          pos.push((p2[0] - cx) * this.hw * 1.002, (p2[1] - cy) * this.hh * 1.002, 0);
+          uv.push((p2[0] + 1) / 2, (p2[1] + 1) / 2);
+        }
+        for (let k = 1; k <= poly.length; k++) idx.push(0, k, k % poly.length + 1);
+        const geo = new BufferGeometry();
+        geo.setAttribute("position", new Float32BufferAttribute(pos, 3));
+        geo.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+        geo.setIndex(idx);
+        const piece = new Group();
+        piece.position.set(cx * this.hw, cy * this.hh, -this.d);
+        const front = new Mesh(geo, this.mat), back = new Mesh(geo, this.back);
+        front.renderOrder = 51;
+        back.renderOrder = 50;
+        front.frustumCulled = back.frustumCulled = false;
+        piece.add(back, front);
+        this.group.add(piece);
+        const ox = cx - ix, oy = cy - iy, od = Math.hypot(ox, oy) || 1, near = Math.max(0, 1 - od / 1.6);
+        const sp = 0.9 + near * 2.2 + R() * 0.5;
+        const v = new Vector3(ox / od * sp * this.hw + dx * 0.5 * near * this.hw, oy / od * sp * this.hh * 0.7 + dy * 0.4 * near * this.hh + 0.25 * this.hh, 0.25 + near * 0.7 + R() * 0.2);
+        const w = new Vector3((R() - 0.5) * 5, (R() - 0.5) * 5, (R() - 0.5) * 4).multiplyScalar(0.5 + near);
+        this.shards.push({ piece, v, w, delay: (1 - near) * 0.07 + R() * 0.03, life: 0 });
+      }
+      this.state = "flying";
+      this.t = 0;
+    }
+    update(dt) {
+      if (this.state !== "flying") return;
+      this.t += dt;
+      let live = 0;
+      for (const s of this.shards) {
+        if (this.t < s.delay) {
+          live++;
+          continue;
+        }
+        s.life += dt;
+        s.v.y -= 2.6 * this.hh * dt;
+        s.piece.position.addScaledVector(s.v, dt);
+        s.piece.rotation.x += s.w.x * dt;
+        s.piece.rotation.y += s.w.y * dt;
+        s.piece.rotation.z += s.w.z * dt;
+        if (s.life < 1.05) live++;
+      }
+      const fade = MathUtils.clamp(1 - (this.t - 0.7) / 0.35, 0, 1);
+      this.mat.opacity = this.back.opacity = fade;
+      if (!live || fade <= 0) this.finish();
+    }
+    get done() {
+      return this.state === "done" || this.state === "idle";
+    }
+    finish() {
+      this.state = "done";
+      if (this.group) {
+        this.scene.remove(this.group);
+        this.group.traverse((o) => {
+          if (o.isMesh) o.geometry.dispose();
+        });
+        this.group = null;
+      }
+      this.shards.length = 0;
+      this.dispose();
+    }
+    dispose() {
+      this.src?.dispose();
+      this.dst?.dispose();
+      this.paintMat?.dispose();
+      this.mat?.dispose();
+      this.back?.dispose();
+      this.quad?.geometry.dispose();
+      this.src = this.dst = this.paintMat = this.mat = this.back = this.quad = null;
     }
   };
 
@@ -57216,6 +58027,16 @@ void main() {
   var S = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x: x + CLINIC.x, y, z: z + CLINIC.z, pitch, yaw, width, fov: fov2 });
   var W2 = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x, y, z, pitch, yaw, width, fov: fov2 });
   var OFFICE_SHOT = S(6.3, 0.85, -3, 30, 72, 4.6);
+  var OFFICE_CLOSE = S(6.2, 0.9, -2.85, 22, 72, 3.2);
+  var OFFICE_GUARD = S(5.6, 0.9, -2.4, 26, 40, 4);
+  var REVEAL_SHOT = { ...W2(ROOM1.player.x, 1.02, ROOM1.player.z, 4, MathUtils.radToDeg(ROOM1.player.yaw), 3, 42), dist: 3.5 };
+  var REVEAL_COMBO = 2;
+  var REVEAL_FROM = 0;
+  var REVEAL_RATE = 1;
+  var REVEAL_HIT = 0.44;
+  var REVEAL_END = 1.25;
+  var REVEAL_HOLD = 0.3;
+  var REVEAL_HOLD_RATE = 0.16;
   var EXT_A = { ...S(-9.7, 2.2, 0.9, 4, -95, 7, 46), fitH: 7.4 };
   var EXT_B = { ...S(-9.7, 1.8, 0.9, 0, -90, 4, 46), fitH: 4.4 };
   var IN_A = S(-8, 0.8, 1.2, 66, 14, 8.4);
@@ -57272,6 +58093,9 @@ void main() {
       this.lightK = 1;
       this.fadeColor = "#fff6e6";
       this.reducedFlash = false;
+      this.bt = new Breakthrough(this.renderer, this.scene, this.camera);
+      this.lineLog = [];
+      this.answers = {};
       addEventListener("visibilitychange", () => this.setPaused(document.hidden));
       addEventListener("blur", () => this.setPaused(true));
       addEventListener("focus", () => {
@@ -57290,7 +58114,9 @@ void main() {
         if (!this.silent) this.sound.pop?.();
       };
       this.narrLoaded = await this.sound.loadNarration(TOUR.audio);
-      onProgress?.(0.9);
+      onProgress?.(0.85);
+      this.voicesLoaded = await this.sound.loadVoices(LINES, VOICE_DIR, (n) => onProgress?.(0.85 + 0.1 * n / LINES.length));
+      onProgress?.(0.95);
       this.stage.setActive(true);
       this.setupScene();
       this.resetTour();
@@ -57502,6 +58328,31 @@ void main() {
       this.urgencyTimer = 0;
       this.sound.alarmOff();
       this.sound.flatlineOff(0.05);
+      this.sound.stopLine();
+      this.line = null;
+      this.lineLog.length = 0;
+      this.cardDone = null;
+      this.endRide();
+      this.stopEmptyChair();
+      if (this.leanedBat) this.leanedBat.visible = false;
+      this.holdBat(null);
+      this.cpr = null;
+      this.revealSwing = null;
+      if (this.bt.state !== "idle") this.bt.finish();
+      this.bt.state = "idle";
+      this.monitorOn = false;
+      this.ui.showMonitor(false);
+      this.ui.readiness(null);
+      this.ui.timeCard("");
+      this.ui.monitor({ mode: "normal", alarm: false, tof: null });
+      st.setLiftOpen(0);
+      st.lift?.display.set("G");
+      this.setLift3(0);
+      this.setLiftSign(true);
+      if (st.wheelchair) {
+        st.wheelchair.visible = false;
+        if (st.wheelchair.parent !== st.root) st.root.add(st.wheelchair);
+      }
       st.clearPops();
       st.setRoomEmpty(false);
       this.ui.preview(null);
@@ -57878,8 +58729,9 @@ void main() {
       st.setActive(false);
       this.setSun(0, -7.5);
       this.arena.cutWalls?.(0, -6.2, MathUtils.degToRad(35));
-      this.scene.background = this.saved.bg || new Color(2568762);
+      this.scene.background = new Color(13624287);
       this.inOR = true;
+      this.game?.().fxAim?.(false);
       this.ensureBelongings();
       this.belongings.visible = true;
       st.batStatic.visible = true;
@@ -57942,9 +58794,136 @@ void main() {
       e.t += d;
       this.ui.drawEcg(e.t, e.flat);
     }
-    // ================================================================== ACT 2: check-in, walk route, seated assessment
+    // ================================================================== the dialogue and the cards
+    // A numbered line (content.js LINES, take B): the clip plays on the dialogue bus (the music ducks), the caption shows
+    // if captions are on, and the scene moves on when the speech has actually played (the clip's playback position), plus a
+    // deliberate pause. Without a playing clip (muted start before the gesture, a failed load, a silent seek) the line
+    // runs its measured length on the story clock instead: the scene never waits on audio that will not come.
+    *say(id, { pause = 0.32, alarm = false } = {}) {
+      const L2 = LINE[id];
+      if (!L2 || L2.omit) return;
+      this.line = L2;
+      this.cueLog.push([+this.t.toFixed(2), "line:" + id]);
+      this.sub = L2.text;
+      this.ui.subtitle(L2.text, { who: SPEAKER[L2.who] || L2.who, alarm });
+      const playing = !this.silent && !this.storyClockLines && this.sound.playLine(L2);
+      this.lineLog.push({ id, t: +this.t.toFixed(2), audio: playing });
+      const t0 = this.t;
+      yield () => {
+        const pos = playing ? this.sound.linePos() : null;
+        return pos !== null ? pos >= L2.end : this.t - t0 >= L2.end;
+      };
+      if (this.sub === L2.text) {
+        this.sub = "";
+        this.ui.subtitle("");
+      }
+      this.line = null;
+      if (pause > 0) yield pause;
+    }
+    // a clinical choice card: the scene holds (the coroutine waits) until the right answer is found and Continue tapped.
+    // A silent run (seek / skip) answers it with the right choice.
+    *card(key) {
+      const C = CLINICAL_CARDS[key];
+      this.mark("card:" + key);
+      if (this.silent && this.runLabel !== "card:" + key) {
+        this.answers[key] = 1;
+        return 1;
+      }
+      this.cardDone = null;
+      this.ui.askCard(C).then((tries2) => {
+        this.cardDone = tries2;
+      });
+      yield () => this.cardDone !== null;
+      const tries = this.cardDone;
+      this.cardDone = null;
+      this.ui.closeCard();
+      this.answers[key] = tries;
+      this.mark("card-done:" + key);
+      if (!this.silent) this.sound.confirm();
+      return tries;
+    }
+    // a short time transition: a dip through dark with a caption that is always shown (it is staging, not dialogue)
+    *timeCut(text, hold = 1.3) {
+      if (!this.silent) {
+        this.ui.setFadeColor("#0e1418");
+        this.ui.setFade(1, 380);
+      }
+      yield 0.42;
+      if (text) this.ui.timeCard(text);
+      yield hold;
+      this.ui.timeCard("");
+      if (!this.silent) this.ui.setFade(0, 450);
+      yield 0.2;
+    }
+    // ---- the wheelchair: the rider sits in it (seat centre 0.45 m behind his origin), the pusher walks behind it ----
+    startRide(rider, pusher) {
+      const wc = this.stage.wheelchair;
+      wc.visible = true;
+      if (wc.parent !== rider.root.parent) rider.root.parent.add(wc);
+      this.ride = { rider, pusher, wc };
+      rider.seat = null;
+      rider.sitState = "seated";
+      rider.seated = true;
+      rider.play("SeatedIdle", { fade: 0 });
+      rider.root.position.y = Math.max(0, 0.5 - 0.47);
+      if (pusher) {
+        pusher.adjust("pushL", "upper_armL", -1, 0, 0.25);
+        pusher.adjust("pushR", "upper_armR", -1, 0, -0.25);
+        pusher.adjust("pushFL", "forearmL", -0.5, 0, 0);
+        pusher.adjust("pushFR", "forearmR", -0.5, 0, 0);
+      }
+      this.tickRide(0);
+    }
+    endRide() {
+      const r = this.ride;
+      if (!r) return;
+      if (r.pusher) for (const k of ["pushL", "pushR", "pushFL", "pushFR"]) delete r.pusher.adj[k];
+      r.wc.visible = false;
+      this.ride = null;
+    }
+    // roll the rider along waypoints (his origin's path); the chair and the pusher follow
+    roll(points, { speed = 0.85, endYaw = null } = {}) {
+      this.ride.rider.walk(points, { speed, endYaw, clip: "SeatedIdle", idle: "SeatedIdle", keepSeat: true });
+    }
+    tickRide() {
+      const r = this.ride;
+      if (!r) return;
+      const a = r.rider, fx2 = Math.sin(a.yaw), fz = Math.cos(a.yaw);
+      const sx = a.root.position.x - fx2 * 0.45, sz = a.root.position.z - fz * 0.45;
+      r.wc.position.set(sx + fx2 * 0.05, 0, sz + fz * 0.05);
+      r.wc.rotation.y = a.yaw + Math.PI;
+      if (r.pusher) {
+        const p2 = r.pusher, moving = a.moving || a.targetYaw != null;
+        p2.root.position.set(sx - fx2 * 0.98, 0, sz - fz * 0.98);
+        p2.yaw = a.yaw;
+        p2.root.rotation.y = a.yaw;
+        if (moving && p2.curName !== "Walk_InPlace") p2.play("Walk_InPlace", { fade: 0.15 });
+        if (!moving && p2.curName === "Walk_InPlace") p2.play("Idle", { fade: 0.25 });
+      }
+    }
+    // the guard carries the bat in his right hand, pointing down along his leg (or puts it away: null)
+    holdBat(actor) {
+      const bat = this.stage.guardBat;
+      if (!actor) {
+        bat.visible = false;
+        bat.parent?.remove(bat);
+        return;
+      }
+      const hand = actor.bones.handR;
+      if (!hand) return;
+      actor.root.updateMatrixWorld(true);
+      const qh = hand.getWorldQuaternion(new Quaternion()), hp = hand.getWorldPosition(new Vector3());
+      const fwd = new Vector3(Math.sin(actor.yaw), 0, Math.cos(actor.yaw)), dir = new Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();
+      const qd = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir);
+      hand.add(bat);
+      bat.visible = true;
+      bat.scale.setScalar(1 / hand.getWorldScale(new Vector3()).x);
+      bat.quaternion.copy(qh.clone().invert().multiply(qd));
+      bat.position.copy(hand.worldToLocal(hp.clone().addScaledVector(dir, -0.09)));
+    }
+    // ================================================================== ACT 2: arrival, the seated assessment, the elevator
     *act2() {
-      const st = this.stage, A = st.actors, an = st.anchors, bb = A.baseball, sg = A.security, rc = A.staff, yo = A.yola;
+      const st = this.stage, A = st.actors, an = st.anchors, bb = A.baseball, sg = A.security, rc = A.staff, yo = A.yola, co = A.teamB;
       const bat = bb.bat;
       this.state = "CHECK_IN";
       this.substate = "ARRIVAL_HOLD";
@@ -57960,50 +58939,37 @@ void main() {
       yo.model.position.y = yo.baseY - (yo.pelvisY0 - (an.chairYola.seatTop + 0.04));
       yo.play("chart", { fade: 0 });
       this.camTo(S(-6.3, 0.6, 0.8, 52, 30, 7), 0.01);
-      yield 1.3;
-      this.dip(0.35, 0.35);
-      yield 0.4;
-      if (bat) bat.visible = false;
-      this.camTo(S(-5.2, 1.05, -4.9, 30, 22, 3.3), 0.01);
-      rc.turnTo(0.3);
-      yield 3;
-      this.dip(0.35, 0.35);
-      yield 0.4;
-      rc.turnTo(-0.3);
-      this.camTo(S(-6, 0.5, 0, 52, 30, 9.4), 0.01);
-      yield 1.9;
+      yield 1;
       this.substate = "WALK";
       this.mark("walk-start");
-      bb.walk([[-6.4, 0.9], [-5.2, -1], [an.queue.x, an.queue.z]], { endYaw: Math.PI });
-      yield 1;
+      bb.walk([[-6.4, 0.9], [-5.2, -1], [an.queue.x, an.queue.z]], { endYaw: Math.PI, speed: 0.8 });
+      yield 0.9;
       sg.walk([[-7, 1.5], [-5.6, -0.2], [-4.8, -1.4], [an.guardQueue.x, an.guardQueue.z]], { endYaw: Math.PI });
+      this.camTo(S(-5.6, 0.8, -2.2, 50, 26, 6.2), 2.6);
       yield this.arrived(bb, sg);
       this.mark("queue");
-      this.camTo(S(-5.3, 0.9, -3.5, 50, 26, 5.4), 1.2);
-      yield 0.7;
+      this.camTo(S(-5.3, 0.9, -3.5, 46, 26, 5), 1);
+      yield 0.5;
       rc.turnTo(0.3);
-      yield 1.9;
+      yield 1.1;
       rc.turnTo(-0.3);
-      yield 0.9;
+      yield 0.5;
       this.mark("checkin");
-      this.speak(DIALOGUE.welcome, 4.8, 1.3);
-      yield 0.3;
+      yield* this.say("01", { pause: 0.25 });
       if (!this.silent) this.sound.confirm();
-      yield 4.8;
       this.substate = "ASSESSMENT_ENTRY";
-      this.speak(DIALOGUE.takeChair, 3, 1.3);
       const cp = an.chairPatient, cg = an.chairGuard, od = an.officeDoor;
-      bb.walk([[-3.4, -1.7], [-1, -1], [an.doorway.x, an.doorway.z], [1.75, -1], [od.x, od.z], [4.4, -1.5], [cp.x - 0.6, cp.z - 0.45], [cp.x, cp.z - 0.45]], { endYaw: Math.PI });
+      bb.walk([[-3.4, -1.7], [-1, -1], [an.doorway.x, an.doorway.z], [1.75, -1], [od.x, od.z], [4.4, -1.5], [cp.x - 0.6, cp.z - 0.45], [cp.x, cp.z - 0.45]], { endYaw: Math.PI, speed: 0.85 });
       this.camTo(S(-3.5, 0.7, -1.6, 46, 28, 8), 1.5, { actor: bb, dx: 0.8, dz: 0.5 });
       yield 1.4;
       sg.walk([[-4.2, -1.6], [-1.2, -1.1], [an.doorway.x, an.doorway.z], [1.75, -0.95], [od.x, od.z + 0.1], [4.6, -1.2], [7.55, -1.4], [7.55, cg.z - 0.45], [cg.x, cg.z - 0.45]], { endYaw: Math.PI });
       yield () => bb.x > 1.2;
       this.dip(0.25, 0.3);
       yield 0.28;
+      if (bat) bat.visible = false;
+      this.leanBat(true);
       this.camTo(OFFICE_SHOT, 0.01);
-      this.mark("guard-at-door");
       yield this.arrived(bb);
-      this.mark("athlete-at-chair-anchor");
       this.state = "SEATED_ASSESSMENT";
       this.substate = "SEATING";
       bb.sitAt(cp.x, cp.z, cp.yaw, { seatTop: cp.seatTop });
@@ -58011,186 +58977,312 @@ void main() {
       sg.sitAt(cg.x, cg.z, cg.yaw, { seatTop: cg.seatTop });
       yield this.seated(bb);
       yield this.seated(sg);
-      yield 0.9;
+      yield 0.5;
       this.mark("both-seated");
-      this.speak(DIALOGUE.review, 3, 1.4);
-      yield 3.4;
-      this.substate = "CARD_OPEN";
-      const card = CARDS[0];
+      this.substate = "CONVERSATION";
+      yield* this.say("02");
+      yield* this.say("03");
+      this.camTo(OFFICE_CLOSE, 1.6);
+      yield* this.say("04", { pause: 0.2 });
+      yield* this.say("05");
+      yield* this.say("06", { pause: 0.2 });
+      yield* this.say("07", { pause: 0.55 });
+      this.camTo(OFFICE_SHOT, 1.4);
+      yield* this.say("08");
+      yield* this.say("09");
+      yo.play("chart", { fade: 0.2 });
+      yield* this.say("10", { pause: 0.4 });
+      this.substate = "CARD_1";
       this.mark("card-open");
-      const ans = yield* this.askCard(card);
-      this.answers[card.id] = ans;
-      this.mark("card-answered");
-      this.substate = "DEPARTURE";
-      this.speak(DIALOGUE.toOR, 3, 1.4);
-      yield 0.6;
+      yield* this.card("assess");
+      this.ui.objective("");
+      yield 0.3;
+      yield* this.say("11", { pause: 0.4 });
+      this.substate = "WHEELCHAIR";
+      yield* this.say("12", { pause: 0.1 });
       yo.riseUp();
       yield this.upright(yo);
       yo.play("idle", { fade: 0.3 });
-      yo.walk([[5.15, -3.95]]);
-      yield this.arrived(yo);
-      bb.standUp();
-      yield this.upright(bb);
-      yo.walk([[4.4, -1.6], [od.x, od.z], [1.75, -1], [an.doorway.x, an.doorway.z], [-1, -1.5], [an.orDoor.x, an.orDoor.z + 0.4]], { endYaw: Math.PI });
-      yield 1.3;
-      bb.walk([[cp.x - 0.6, cp.z - 0.45], [4.4, -1.5], [od.x, od.z], [1.75, -0.9], [an.doorway.x, an.doorway.z], [-1, -0.9], [an.orDoor.x + 0.1, an.orDoor.z + 1.7]], { endYaw: Math.PI });
-      yield () => yo.x < 0.6;
+      yo.walk([[5.15, -3.95], [4.55, -2.95]], { endYaw: 2.2 });
+      st.toClinic(co);
+      co.setVisible(true);
+      co.place(1.9, -1, Math.PI / 2);
+      co.play("Idle", { fade: 0 });
+      this.emptyChair = true;
+      this.startEmptyChair(co);
+      co.walk([[od.x, od.z], [4.05, -1.25]], { endYaw: Math.PI / 2, speed: 0.95 });
+      yield this.arrived(co, yo);
+      this.mark("colleague-in");
+      yield* this.say("13");
+      yield* this.say("14", { pause: 0.2 });
+      yo.turnTo(Math.atan2(cg.x - 4.55, cg.z - -2.95));
+      sg.adjust("nod", "head", 0.18, 0, 0, 0);
+      this.tween(0.6, (k) => {
+        sg.adj.nod.w = Math.sin(k * Math.PI);
+      });
+      this.camTo(OFFICE_GUARD, 0.9);
+      yield* this.say("15", { pause: 0.4 });
+      delete sg.adj.nod;
+      this.substate = "TRANSFER_CUT";
+      this.dip(0.3, 0.35);
+      yield 0.34;
+      this.leanBat(false);
+      this.stopEmptyChair();
+      bb.stop();
+      bb.seat = null;
+      bb.place(4.55, -1.25, -Math.PI / 2);
+      bb.targetYaw = null;
+      this.startRide(bb, co);
+      sg.stop();
+      sg.sitState = "stand";
+      sg.seated = false;
+      sg.seat = null;
+      sg.root.position.y = 0;
+      sg.place(6.85, -0.75, -Math.PI / 2);
+      sg.targetYaw = null;
+      sg.play("Idle", { fade: 0 });
+      this.holdBat(sg);
+      yo.stop();
+      yo.place(4, -2.2, -Math.PI / 2 - 0.35);
+      yo.targetYaw = null;
+      yo.play("idle", { fade: 0 });
+      this.camTo(S(4.8, 0.8, -1.7, 40, 72, 5.2), 0.01);
+      this.mark("in-wheelchair");
+      yield 1.2;
+      this.substate = "TO_ELEVATOR";
+      const lf = an.liftFront;
+      yo.walk([[od.x, od.z], [1.75, -1.05], [an.doorway.x, an.doorway.z], [-1, -2.2], [lf.x - 0.9, lf.z + 0.6]], { endYaw: Math.PI });
+      yield 0.8;
+      this.roll([[od.x + 0.4, od.z + 0.1], [1.75, -1], [an.doorway.x - 0.2, an.doorway.z], [-1.1, -2.6], [lf.x, lf.z + 1.1]], { endYaw: Math.PI, speed: 0.9 });
+      yield 1;
+      sg.walk([[od.x, od.z + 0.05], [1.75, -0.95], [an.doorway.x, an.doorway.z + 0.1], [-0.3, -2], [lf.x + 1, lf.z + 0.7]], { endYaw: Math.PI });
+      yield 0.9;
       this.dip(0.25, 0.3);
       yield 0.28;
-      this.camTo(S(-1.4, 1, -3.6, 40, 30, 5.6), 0.01);
-      yield this.arrived(yo, bb);
-      yield 1;
-      this.substate = "OR_ENTRANCE_HOLD";
-      this.mark("or-entrance");
+      this.camTo(S(-1.6, 0.8, -3.2, 44, 22, 6.8), 0.01);
+      yield () => yo.x < 1;
+      this.camTo(S(-2.2, 0.85, -3.9, 40, 18, 6), 3);
+      yield this.arrived(yo, bb, sg);
+      this.mark("at-elevator");
+      this.substate = "ELEVATOR";
+      if (!this.silent) this.audio.play("liftDing");
+      this.tween(1, (k) => st.setLiftOpen(ease(k)));
+      const cx = CLINIC_LIFT.x;
+      this.camTo(S(cx, 1, -5.6, 22, 8, 4.6), 1.1);
+      yield 1.1;
+      this.roll([[cx, -6], [cx, -8.35]], { speed: 0.8 });
+      yield 0.5;
+      yo.walk([[lf.x - 0.9, -6.1], [cx - 1, -7]], { endYaw: 0 });
+      sg.walk([[lf.x + 1, -6.1], [cx + 1.05, -7]], { endYaw: 0 });
+      yield this.arrived(bb);
+      {
+        const sx = bb.x, sz = bb.z + 0.45;
+        this.tween(1.1, (k) => {
+          const yw = Math.PI + Math.PI * ease(k);
+          bb.yaw = yw;
+          bb.root.rotation.y = yw;
+          bb.root.position.x = sx + Math.sin(yw) * 0.45;
+          bb.root.position.z = sz + Math.cos(yw) * 0.45;
+        });
+      }
+      yield 1.15;
+      yield this.arrived(yo, sg);
+      this.mark("in-elevator");
+      yield 0.3;
+      if (!this.silent) this.audio.play("liftClose");
+      this.tween(1, (k) => st.setLiftOpen(1 - ease(k)));
+      yield 1.05;
+      this.camTo(S(cx, 2.05, -6, 6, 0, 1.6, 40), 0.01);
+      const disp = st.lift.display;
+      disp.set("G", "\u25B2");
+      yield 0.7;
+      disp.set("1", "\u25B2");
+      yield 0.6;
+      disp.set("2", "\u25B2");
+      yield 0.6;
+      disp.set("3");
+      if (!this.silent) this.audio.play("liftDing");
+      yield 0.55;
+      this.mark("floor-3");
       yield* this.act3();
     }
-    // ================================================================== ACT 3: OR choices, apparent success, impossible movement
+    // the empty wheelchair, pushed by the colleague before anyone sits in it
+    startEmptyChair(pusher) {
+      const wc = this.stage.wheelchair;
+      wc.visible = true;
+      if (wc.parent !== pusher.root.parent) pusher.root.parent.add(wc);
+      this.chairPush = pusher;
+      pusher.adjust("pushL", "upper_armL", -1, 0, 0.25);
+      pusher.adjust("pushR", "upper_armR", -1, 0, -0.25);
+      pusher.adjust("pushFL", "forearmL", -0.5, 0, 0);
+      pusher.adjust("pushFR", "forearmR", -0.5, 0, 0);
+    }
+    stopEmptyChair() {
+      const p2 = this.chairPush;
+      if (!p2) return;
+      for (const k of ["pushL", "pushR", "pushFL", "pushFR"]) delete p2.adj[k];
+      this.chairPush = null;
+    }
+    tickEmptyChair() {
+      const p2 = this.chairPush;
+      if (!p2) return;
+      const fx2 = Math.sin(p2.yaw), fz = Math.cos(p2.yaw);
+      const wc = this.stage.wheelchair;
+      wc.position.set(p2.root.position.x + fx2 * 0.93, 0, p2.root.position.z + fz * 0.93);
+      wc.rotation.y = p2.yaw + Math.PI;
+    }
+    // the athlete's bat while he sits: the static copy leans against his chair (continuity: it is never out of sight)
+    leanBat(on) {
+      const st = this.stage, an = st.anchors.chairPatient;
+      if (!this.leanedBat) {
+        this.leanedBat = st.guardBat.clone(true);
+        st.root.add(this.leanedBat);
+      }
+      const b = this.leanedBat;
+      b.visible = on;
+      if (!on) return;
+      b.scale.setScalar(1);
+      b.position.set(an.x - 0.4, 0.6, an.z + 0.1);
+      b.rotation.set(0, 0.3, Math.PI - 0.2);
+    }
+    // ================================================================== ACT 3: Floor 3, preparation, the procedure, recovery
     *act3() {
-      const st = this.stage, A = st.actors, bb = A.baseball, op = A.surgeon, ta = A.teamA, tb = A.teamB;
-      this.state = "OR_CHOICES";
-      this.substate = "ENTER";
-      this.speak(DIALOGUE.settle, 3, 1.4);
-      this.dip(0.4, 0.4);
-      yield 0.45;
+      const st = this.stage, A = st.actors, bb = A.baseball, sg = A.security, yo = A.yola, co = A.teamB, su = A.surgeon, ta = A.teamA;
+      this.state = "FLOOR_3";
+      this.substate = "ARRIVAL";
       this.enterOR();
-      for (const a of [op, bb, ta, tb]) a.setVisible(true);
-      st.actorToWorld(ta, 0.6, -9.2, 0);
-      ta.play("Idle", { fade: 0 });
-      st.actorToWorld(tb, 1.75, -8.2, -Math.PI / 2);
-      tb.play("Idle", { fade: 0 });
-      st.actorToWorld(op, -8.1, -4.75, Math.PI / 2);
-      st.actorToWorld(bb, -9.3, -4.35, Math.PI / 2);
-      bb.play("Idle", { fade: 0 });
-      op.play("Walk_InPlace", { fade: 0 });
+      this.arena.liftPowered?.(true);
+      this.setLiftSign(false);
+      const L2 = LIFT;
+      const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
+      toWorld(bb, 8.5, L2.z, -Math.PI / 2);
+      toWorld(co, 9.9, L2.z, -Math.PI / 2);
+      this.scene.add(st.wheelchair);
+      this.tickRide();
+      toWorld(yo, 8.05, L2.z - 1, -Math.PI / 2);
+      yo.play("idle", { fade: 0 });
+      toWorld(sg, 8.05, L2.z + 1, -Math.PI / 2);
+      sg.play("Idle", { fade: 0 });
+      for (const a of [su, ta]) a.setVisible(false);
       A.staff.setVisible(false);
-      A.security.setVisible(false);
-      this.camTo(W2(0, 0.9, -6.4, 50, 35, 8), 0.01);
-      op.walk([[-6.2, -4.75], [-3.4, -6.4], [-1.4, -8.2]], { endYaw: Math.PI / 2 });
-      this.mark("or-enter");
-      yield 1.5;
-      bb.walk([[-6.2, -4.4], [-2.6, -5.5], [0, -6.4], [0, -7.35]], { endYaw: Math.PI });
-      yield this.arrived(op, bb);
-      this.mark("or-standing");
-      yield 0.6;
-      this.dip(0.35, 0.35);
-      yield 0.4;
-      this.camTo(W2(-2, 1.15, -7.9, 28, 30, 3.6), 0.01);
+      this.liftDisp3 || (this.liftDisp3 = liftDisplay(this.arena.doorKits.lift.root));
+      this.liftDisp3.set("3");
+      this.setLift3(0);
+      this.camTo(W2(7.3, 1, -5.2, 30, -78, 6, 42), 0.01);
+      yield 0.45;
+      if (!this.silent) this.audio.play("liftDing");
+      this.tween(1, (k) => this.setLift3(ease(k)));
+      yield 1;
+      yo.walk([[6.2, L2.z - 1.1], [4.6, -6.9]], { endYaw: -Math.PI / 2 });
+      this.roll([[6.3, L2.z], [3.6, -5]], { speed: 0.85, endYaw: -Math.PI / 2 });
+      sg.walk([[6.3, L2.z + 1], [4.9, -3.9]], { endYaw: -Math.PI / 2 });
+      this.camTo(W2(4.6, 0.9, -5, 42, -40, 6.8), 2.2);
+      yield 1.2;
+      yield* this.say("16", { pause: 0.5 });
+      yield this.arrived(bb, yo, sg);
+      sg.walk([[2, -4.2], [-3, -4.4], [-6.6, -4.6], [-8.6, -4.9]], { endYaw: Math.PI / 2 });
+      yield 1.2;
+      this.substate = "PREPARED";
+      yield* this.timeCut("", 0.6);
+      this.endRide();
+      sg.stop();
+      toWorld(sg, -9.1, -4.95, Math.PI / 2);
+      sg.play("Idle", { fade: 0 });
       if (bb.capSkin) bb.capSkin.visible = false;
       if (bb.bat) bb.bat.visible = false;
       bb.setOutfit(PATIENT_OUTFIT);
+      bb.sitState = "stand";
+      bb.seated = false;
+      bb.root.position.y = 0;
       bb.play("Idle", { fade: 0 });
       bb.lie(0.9, 1.07, -8.2, Math.PI / 2);
-      op.place(-1.3, -8.2, Math.PI / 2);
-      op.play("Idle", { fade: 0 });
-      yield 3;
-      this.dip(0.3, 0.3);
-      yield 0.35;
-      this.camTo(W2(BELONG.x, 0.8, BELONG.z + 0.1, 56, 30, 3), 0.01);
-      this.mark("belongings");
-      yield 2;
-      this.dip(0.3, 0.3);
-      yield 0.35;
-      this.camTo(W2(0, 0.95, -8.2, 52, 35, 7.6), 0.01);
-      this.mark("or-wide");
-      yield 1.8;
-      this.substate = "CHOICE_1";
-      this.speak(DIALOGUE.equipment, 3, 1.4);
-      this.camTo(W2(-1.9, 1, -7.9, 38, 35, 5.4), 1.6);
-      yield 1.8;
-      this.camTo(W2(-1, 0.9, -8.3, 50, 33, 5.8), 1.2);
-      yield 1.4;
-      this.ui.tag("equip", "Check the equipment", "Anesthesia workstation");
+      toWorld(yo, -1.45, -8.65, 1);
+      yo.play("patient", { fade: 0 }) || yo.play("idle", { fade: 0 });
+      toWorld(co, -0.45, -9.35, 0.2);
+      co.play("Idle", { fade: 0 });
+      toWorld(su, 0.5, -9.15, 0);
+      su.play("Idle", { fade: 0 });
+      su.setVisible(true);
+      toWorld(ta, 1.4, -9.05, -0.35);
+      ta.play("Idle", { fade: 0 });
+      ta.setVisible(true);
+      this.ui.showMonitor(true);
+      this.ui.monitor({ mode: "normal", hr: 74, spo2: 99, status: "SINUS", alarm: false, tof: null });
+      this.monitorOn = true;
+      this.camTo(W2(0.2, 0.95, -8.2, 48, 35, 6.2), 0.01);
+      this.mark("or-prepared");
+      yield 0.8;
+      this.substate = "PREP";
+      this.camTo(W2(-0.7, 1, -8.3, 34, 35, 3.6), 1.2);
+      yield* this.say("17", { pause: 0.25 });
+      yield* this.say("18");
+      yield* this.say("19", { pause: 0.4 });
+      this.camTo(W2(-1.9, 1.05, -7.9, 36, 35, 4.2), 1.2);
+      yo.walk([[-1.75, -8.35]], { endYaw: -0.69 });
+      yield this.arrived(yo);
+      yo.play("machine", { fade: 0.25 }) || yo.play("idle");
+      this.ui.tag("equip", "Anesthesia workstation", "Equipment");
       this.pointAt("equip", -2.25, 1.8, -7.75);
-      this.mark("or-card-1");
-      const a1 = yield* this.askCard(CARDS[1]);
-      this.answers[CARDS[1].id] = a1;
+      yield* this.card("equip");
       this.ui.tag("equip", null);
-      if (!this.silent) this.sound.chime(0);
+      this.ui.monitor({ tof: { ratio: null, twitches: [0, 0, 0, 0] } });
+      yield 0.3;
+      yield* this.say("20", { pause: 0.2 });
+      yo.walk([[-1.45, -8.65]], { endYaw: 1 });
+      yield this.arrived(yo);
+      yo.play("patient", { fade: 0.25 }) || yo.play("idle");
+      this.camTo(W2(-0.7, 1, -8.3, 34, 35, 3.6), 1);
+      yield* this.say("21", { pause: 0.5 });
+      this.substate = "PROCEDURE";
+      yield* this.timeCut(TIME_CARDS.later, 1.1);
+      su.play("Work", { fade: 0 }) || su.play("Idle");
+      ta.play("Work", { fade: 0 }) || ta.play("Idle");
+      yo.play("monitor", { fade: 0 }) || yo.play("idle");
+      this.camTo(W2(0.2, 0.95, -8.2, 46, 35, 6), 0.01);
+      this.camTo(W2(0.1, 0.95, -8.2, 46, 35, 5.4), 3.5);
+      yield 1.4;
+      su.play("Idle", { fade: 0.4 });
+      ta.play("Idle", { fade: 0.4 });
+      this.substate = "RECOVERY_CHECK";
+      yield* this.say("22", { pause: 0.3 });
+      this.ui.monitor({ tof: { ratio: 0.78, twitches: [1, 0.93, 0.86, 0.78] } });
+      this.camTo(W2(-0.6, 1.05, -9.2, 38, 35, 4), 1);
       yield 0.6;
-      this.substate = "CHOICE_2";
-      this.speak(DIALOGUE.monitor, 3, 1.4);
-      this.camTo(W2(-0.4, 0.95, -9.3, 46, 35, 5.8), 1.6);
-      yield 1.8;
-      this.ui.tag("monitor", "Check the monitor", "Patient monitor");
-      this.pointAt("monitor", -0.7, 1.9, -10);
-      this.mark("or-card-2");
-      const a2 = yield* this.askCard(CARDS[2]);
-      this.answers[CARDS[2].id] = a2;
-      this.ui.tag("monitor", null);
+      yield* this.card("monitor");
+      yield* this.say("23", { pause: 0.4 });
+      yield* this.timeCut(TIME_CARDS.reversal, 1);
+      this.ui.monitor({ tof: { ratio: 0.96, twitches: [1, 0.99, 0.975, 0.96] } });
+      this.camTo(W2(-0.4, 1, -8.6, 42, 35, 4.6), 0.01);
+      this.ui.readiness(READINESS, 0);
+      for (let i = 1; i <= READINESS.length; i++) {
+        yield 0.42;
+        this.ui.readiness(READINESS, i);
+        if (!this.silent) this.sound.monitorBeep();
+      }
+      yield 0.35;
+      this.ui.readiness(READINESS, READINESS.length, true);
       if (!this.silent) this.sound.confirm();
-      this.state = "APPARENT_SUCCESS";
-      this.substate = "SETUP_COMPLETE";
-      this.ui.status(EMERGENCY_LINES.stable);
-      this.camTo(W2(0, 0.95, -8.2, 52, 35, 7), 1.6);
-      this.mark("setup-complete");
-      yield 4;
-      this.state = "EMERGENCY_TOPDOWN";
-      this.substate = "ALERT";
-      this.ui.status(EMERGENCY_LINES.alert, true);
-      this.ui.urgency(1);
-      this.setAlarm(1, 0.8);
-      if (!this.silent) {
-        this.sound.setMusicLevel(0, 1.8);
-        this.sound.alarmOn(0.75);
-      }
-      this.speak(DIALOGUE.somethingWrong, 3.2, 1);
-      this.mark("alert");
-      op.walk([[-1.5, -8.6], [-1.45, -7.9]], { endYaw: -Math.PI / 2 });
-      let u = 1;
-      this.urgencyTimer = 6;
-      yield 3.4;
-      this.state = "FLATLINE_MOVEMENT";
-      this.substate = "FLATLINE";
-      this.camTo(W2(0.45, 1, -8.3, 48, 35, 3.9), 2.2);
-      this.ecg = { t: 0, flat: true };
-      this.ui.showEcg(true);
-      if (this.screens) this.screens.flat = true;
-      if (!this.silent) {
-        this.sound.alarmOff();
-        this.sound.flatlineOn();
-      }
-      this.ui.status("No heartbeat", true);
-      this.ui.urgency(null);
-      this.mark("flatline");
-      yield 2;
-      this.substate = "MOTION";
-      bb.adjust("head", "head", 0, 0.55, 0, 0);
-      bb.adjust("hand", "forearmR", 0, 0, -0.5, 0);
-      this.tween(0.9, (k) => {
-        bb.adj.hand.w = Math.sin(k * Math.PI * 3) * 0.6 + ease(k) * 0.4;
-      });
-      this.later(0.7, () => this.tween(1.1, (k) => {
-        bb.adj.head.w = ease(k);
-      }));
-      this.mark("motion");
+      this.mark("recovered");
       yield 1.6;
-      this.substate = "SIT_UP";
-      this.sitUp(bb, 2.4);
-      this.greenTo(bb, 3.2);
-      const lookAt = (a) => a.turnTo(Math.atan2(-0.15 - a.x, -8.2 - a.z));
-      for (const a of [ta, tb, op]) lookAt(a);
-      this.speak(DIALOGUE.stillMoving, 2.6, 1);
-      this.recoil(tb, -0.28, 0.4);
-      this.later(0.6, () => this.recoil(op, -0.3, 0.5));
-      this.mark("sit-up");
-      yield 2.8;
-      if (!this.silent) this.sound.flatlineOff(0.6);
-      this.ui.status("", false);
-      this.mark("quiet");
-      yield 1.6;
-      this.substate = "SCREAM";
-      if (!this.silent) this.sound.scream();
-      this.recoil(ta, 0.45, 0.5);
-      this.recoil(tb, 0.3, 0.5);
-      this.mark("scream");
-      yield 1.3;
-      this.speak(DIALOGUE.getYola, 3, 1);
-      this.substate = "GET_YOLA_LINE";
-      this.mark("get-yola");
-      yield 3.2;
-      this.substate = "GET_YOLA_HOLD";
-      this.mark("get-yola-done");
-      yield 0.05;
+      this.ui.readiness(null);
+      this.ui.monitor({ tof: null });
+      this.substate = "HANDOFF";
+      co.walk([[-0.95, -9.05]], { endYaw: -0.96 });
+      yo.turnTo(2.18);
+      yo.play("handoff", { fade: 0.3 }) || yo.play("idle");
+      this.camTo(W2(-0.9, 1, -8.9, 30, 35, 3.4), 1);
+      yield* this.say("24");
+      yield* this.say("25");
+      yield* this.say("26", { pause: 0.2 });
+      su.walk([[-3, -6.2], [-6.6, -4.6], [-8, -4.2]]);
+      yo.walk([[-2.4, -7], [-5.6, -4.6], [-7.6, -4.4]]);
+      co.walk([[-0.85, -8.85]], { endYaw: 0.17 });
+      ta.walk([[0.55, -9.1]], { endYaw: 0 });
+      this.camTo(W2(-1.2, 0.95, -8, 46, 35, 7.2), 1.6);
+      yield () => yo.x < -5.8;
+      yo.setVisible(false);
+      su.setVisible(false);
+      this.mark("handoff-done");
       yield* this.act4();
     }
     // gentle value animation on the story clock: fn(k) for k 0..1 over secs
@@ -58262,132 +59354,134 @@ void main() {
         a.root.position.z = z0 + dz * e;
       });
     }
-    // ================================================================== ACT 4: the same-position reveal, the smooth wave, unarmed play
+    // ================================================================== ACT 4: the crisis, the painted breakthrough, control
     *act4() {
-      const st = this.stage, A = st.actors, yo = A.yola, an = ROOM1.player, Y = this.yola, g = this.game();
-      const slow = (k) => {
-        this.animScale = 1 - 0.65 * ease(k);
-      };
-      this.state = "GET_YOLA_SLOW";
-      this.substate = "CALL";
-      this.ecg = null;
-      this.ui.showEcg(false);
-      this.ui.status("");
-      this.ui.urgency(null);
-      this.urgencyTimer = 0;
-      this.ui.subtitle("");
-      this.sub = "";
-      this.ui.objective("");
-      this.ui.chip("");
-      this.setAlarm(0);
-      this.animScale = 1;
+      const st = this.stage, A = st.actors, bb = A.baseball, co = A.teamB, ta = A.teamA, an = ROOM1.player, Y = this.yola, g = this.game();
+      this.state = "STABLE";
+      this.substate = "BEAT";
+      this.camTo(REVEAL_SHOT, 2.4);
+      for (let i = 0; i < 3; i++) {
+        if (!this.silent) this.sound.monitorBeep();
+        yield 0.8;
+      }
+      this.state = "EMERGENCY";
+      this.substate = "ALARM";
+      this.ui.monitor({ mode: "irregular", hr: "---", status: "ALARM", alarm: true });
+      this.setAlarm(0.55, 0.8);
+      if (!this.silent) {
+        this.sound.setMusicLevel(0, 1.2);
+        this.sound.alarmOn(0.75);
+      }
+      co.turnTo(-Math.PI + 0.4);
+      ta.walk([[0.05, -8.85]], { endYaw: Math.PI * 0.95 });
+      yield* this.say("27", { pause: 0.1 });
+      ta.adjust("chk", "upper_armR", -0.9, 0, -0.2);
+      ta.adjust("chkF", "forearmR", -0.6, 0, 0);
+      this.tween(0.5, (k) => {
+        ta.adj.chk.w = ease(k);
+        ta.adj.chkF.w = ease(k);
+      });
+      co.play("Work", { fade: 0.2 }) || co.play("Idle");
+      this.camTo(W2(-0.45, 1.05, -8.5, 34, 35, 3.6), 1);
+      yield 1.7;
+      this.ui.monitor({ mode: "flat", hr: 0, spo2: "--", status: "NO PULSE" });
       if (!this.silent) {
         this.sound.alarmOff();
-        this.sound.flatlineOff(0.3);
-        this.sound.revealCue();
+        this.sound.flatlineOn();
       }
-      for (const a of [A.baseball, A.teamA, A.teamB, A.surgeon]) a.setVisible(false);
-      const fy = an.yaw, fx2 = Math.sin(fy), fz = Math.cos(fy);
-      this.ensureDoorway(an, fy);
-      this.doorway.visible = true;
-      this.orTable(false);
-      st.actorToWorld(yo, an.x, an.z, fy);
-      yo.frozen = false;
-      yo.setVisible(true);
-      yo.waveT = -1;
-      yo.play("idle", { fade: 0 });
-      yo.update(0.02);
-      yo.frozen = true;
-      this.camTo(this.frontShot(an, 3.1, 4, fy), 0.01);
-      this.redLight.position.set(an.x - fx2 * 0.9, 2.9, an.z - fz * 0.9);
-      this.setLamp(0.8);
-      this.spot.intensity = 26;
-      this.setLight(0.82);
-      this.redLight.intensity = 2.5;
-      this.mark("call-settled");
-      this.state = "MODEL_REVEAL";
-      this.substate = "HOLD_OLD";
-      yield 1.5;
-      Y.reset(an.x, an.z, an.yaw);
-      Y.setShown(true);
-      if (Y.up) {
-        Y.up.pistol = Y.up.shotgun = Y.up.axe = 0;
-        Y.up.fists = 1;
-      }
-      for (let i = 0; i < 4; i++) this.game().stillYola(0.016);
-      this.stillYola = false;
-      Y.setShown(false);
-      const showNew = (v) => {
-        yo.setVisible(!v);
-        Y.setShown(v);
-      };
-      const lit = (k) => {
-        this.spot.intensity = 26 * k;
-        this.setLight(0.03 + 0.79 * k);
-        this.redLight.intensity = (this.reducedFlash ? 0.5 : 1) * (k > 0 ? 2.5 : 1.5);
-        this.setLamp(k > 0 ? 0.8 : 0.5);
-      };
-      this.substate = "FLICKER";
-      this.redLight.position.set(an.x - fx2 * 0.6, 2.8, an.z - fz * 0.6);
-      const seq = this.reducedFlash || this.silent ? [[0.5, 0.35, "old"], [0.6, 0, "old"], [0.5, 0, "new"]] : [
-        [0.08, 0, "old"],
-        [0.07, 1, "old"],
-        [0.15, 0, "old"],
-        [0.05, 0.75, "old"],
-        [0.24, 0, "new"],
-        // dark: a shape in the red that is not quite her
-        [0.07, 0.95, "old"],
-        // lit: it is her... isn't it
-        [0.13, 0, "old"],
-        [0.045, 1, "new"],
-        // one bright frame of someone else
-        [0.11, 0, "new"],
-        [0.05, 0.55, "old"],
-        [0.8, 0, "new"]
-      ];
-      let was = 1;
-      for (const [sec, k, who] of seq) {
-        showNew(who === "new");
-        lit(k);
-        if (!this.silent && k > 0 !== was > 0) this.sound.flicker?.(k > 0);
-        was = k;
-        yield sec;
-      }
-      this.mark("swapped");
-      this.substate = "IMPROVED_REVEAL";
-      if (!this.silent) this.sound.flicker?.(true);
-      lit(0.7);
-      yield 0.05;
-      lit(0.15);
-      yield 0.06;
-      this.tween(0.45, (k) => {
-        const e = ease(k);
-        this.spot.intensity = 24 * e;
-        this.setLight(0.12 + 0.72 * e);
-        this.redLight.intensity = 1.5 * (1 - e) + 1.2 * e;
-        this.setLamp(0.55 - 0.15 * e);
+      yield* this.say("28", { pause: 0.15 });
+      this.substate = "RESPONSE";
+      delete ta.adj.chk;
+      delete ta.adj.chkF;
+      ta.adjust("cprL", "upper_armL", -1.25, 0, 0.3);
+      ta.adjust("cprR", "upper_armR", -1.25, 0, -0.3);
+      this.cpr = { a: ta, t: 0 };
+      yield 1.3;
+      this.substate = "MOTION";
+      bb.adjust("head", "head", 0, 0.55, 0, 0);
+      bb.adjust("hand", "forearmR", 0, 0, -0.5, 0);
+      this.tween(0.9, (k) => {
+        bb.adj.hand.w = Math.sin(k * Math.PI * 3) * 0.6 + ease(k) * 0.4;
       });
-      this.substate = "SETTLE";
-      yield 0.8;
-      this.mark("reveal-settled");
-      this.state = "BOSS_CARD";
-      this.substate = "FREEZE";
-      this.camTo({ ...this.frontShot(an, 1.45, 2, fy), y: 1.2 }, 0.22);
-      if (!this.silent) {
-        this.ui.bossCard(BOSS_CARD.name, BOSS_CARD.tagline, this.reducedFlash);
-        this.sound.bossSting();
-      }
-      yield 2.6;
-      this.mark("boss-card");
-      if (!this.silent) this.ui.bossOff();
-      this.camTo(this.frontShot(an, 3.1, 5, fy), 0.5);
-      yield 0.6;
-      this.mark("wave-done");
-      this.state = "COMBAT_READY";
-      this.substate = "RETURN";
+      this.later(0.5, () => this.tween(1, (k) => {
+        bb.adj.head.w = ease(k);
+      }));
+      this.mark("motion");
+      yield 0.9;
+      this.cpr = null;
+      delete ta.adj.cprL;
+      delete ta.adj.cprR;
+      this.recoil(ta, -0.5, 0.5);
+      yield* this.say("29", { pause: 0.1 });
+      if (!this.silent) this.sound.flatlineOff(0.5);
+      this.sitUp(bb, 2);
+      this.greenTo(bb, 2.6);
+      this.camTo(REVEAL_SHOT, 1.6);
+      co.turnTo(-Math.PI * 0.75);
+      this.recoil(co, -0.35, 0.5);
+      yield 0.9;
+      ta.walk([[-1.6, -6.9], [-2.8, -6.2]], { endYaw: -Math.PI / 2 - 0.4 });
+      yield* this.say("30", { pause: 0.1, alarm: true });
+      co.turnTo(-Math.PI / 2 - 0.6);
+      yield* this.say("31", { pause: 0, alarm: true });
+      this.mark("get-yola-done");
+      yield* this.breakthrough();
+    }
+    // The old hospital becomes a painting; Yola's bat breaks through it into the same room, now overrun.
+    *breakthrough() {
+      const st = this.stage, A = st.actors, an = ROOM1.player, Y = this.yola, g = this.game(), bt = this.bt;
+      this.state = "BREAKTHROUGH";
+      this.substate = "PAINT";
+      this.setAlarm(0);
+      this.ui.showMonitor(false);
+      this.monitorOn = false;
       this.ui.subtitle("");
       this.sub = "";
-      const from = { pos: null };
+      if (!this.silent) {
+        this.sound.alarmOff();
+        this.sound.flatlineOff(0.2);
+        this.sound.stopLine();
+      }
+      this.camAnim = null;
+      this.rig = { ...REVEAL_SHOT };
+      this.setCamera();
+      if (!this.silent) {
+        g.fxAim?.(false);
+        bt.capture({ post: !!g.looks?.post, exposure: this.renderer.toneMappingExposure });
+        bt.mount(1.25);
+      }
+      for (const k of ["baseball", "teamA", "teamB", "surgeon", "security", "yola", "staff"]) A[k].setVisible(false);
+      this.holdBat(null);
+      this.cpr = null;
+      this.setLiftSign(true);
+      this.revealWorld();
+      this.revealSwing = { t: -1 };
+      this.poseReveal(0);
+      this.mark("painted");
+      if (!this.silent) this.sound.riser(1.2);
+      this.tween(0.9, (k) => {
+        if (!this.silent) bt.paint(ease(k));
+      });
+      yield 1.25;
+      this.substate = "STRIKE";
+      this.revealSwing.t = 0;
+      yield () => this.revealSwing.t >= (this.revealOpts?.hit ?? REVEAL_HIT);
+      if (!this.silent) {
+        const ndc = this.batNdc();
+        bt.shatter(ndc.x, ndc.y, 1, 0.45);
+        this.revealSwing.hold = REVEAL_HOLD;
+        this.sound.shatter();
+        this.audio.play("batHit", 1.4);
+        g.musicStart?.("combat");
+        g.fxBurst?.(an.x + Math.sin(an.yaw) * 0.9, 1.2, an.z + Math.cos(an.yaw) * 0.9, 18, 15260868, 2.6, 0.9, 0.7);
+      }
+      this.mark("shatter");
+      this.substate = "HOLD";
+      this.camTo({ ...REVEAL_SHOT, dist: REVEAL_SHOT.dist * 0.82, y: REVEAL_SHOT.y + 0.04 }, 0.5);
+      yield () => this.revealSwing.t >= (this.revealOpts?.end ?? REVEAL_END);
+      yield 0.25;
+      this.state = "COMBAT_READY";
+      this.substate = "RETURN";
       this.setCamera();
       const fromPos = this.camera.position.clone(), fromQuat = this.camera.quaternion.clone(), fromFov = this.camera.fov;
       const pose = g.cameraPose(an.x, an.z, an.yaw);
@@ -58395,59 +59489,61 @@ void main() {
       this.camera.quaternion.copy(fromQuat);
       this.camera.fov = fromFov;
       this.camera.updateProjectionMatrix();
-      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 2.2 };
-      this.tween(2, (k) => this.setLight(0.85 + 0.15 * ease(k)));
-      if (!this.silent) {
-        this.sound.setMusicLevel(0, 0.2);
-        this.sound.combatAmbience();
-      }
-      yield 1.1;
-      this.revealZombies();
-      yield 1.2;
+      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 1.5 };
+      yield 1.5;
       this.finalize("normal");
     }
-    // a front-on, low shot of a world anchor (the camera stands where the anchor's character faces)
-    frontShot(an, dist2, pitch = 4, yaw = an.yaw) {
-      return { ...W2(an.x, 0.88, an.z, pitch, MathUtils.radToDeg(yaw), 3, 44), dist: dist2 };
-    }
-    // the reveal doorway: frame, two open door leaves, a dark corridor and the red emergency lamp, built once behind the anchor
-    ensureDoorway(an, fy = an.yaw) {
-      if (this.doorway) return;
-      const g = new Group();
-      g.name = "doorway";
-      const std = (c, o = {}) => new MeshStandardMaterial({ color: c, roughness: 0.7, ...o });
-      const box = (w, h, d, x, y, z, m, p2 = g) => {
-        const b = new Mesh(new BoxGeometry(w, h, d), m);
-        b.position.set(x, y, z);
-        p2.add(b);
-        return b;
-      };
-      const trim = std(3111808), wall = std(15130834), leaf = std(14275266);
-      box(0.12, 2.5, 0.24, -0.68, 1.25, 0, trim);
-      box(0.12, 2.5, 0.24, 0.68, 1.25, 0, trim);
-      box(1.48, 0.14, 0.24, 0, 2.5, 0, trim);
-      box(2.6, 3.4, 0.2, -1.98, 1.7, -0.02, wall);
-      box(2.6, 3.4, 0.2, 1.98, 1.7, -0.02, wall);
-      box(1.4, 0.9, 0.2, 0, 3, -0.02, wall);
-      this.hallMat = new MeshBasicMaterial({ color: 11123904 });
-      box(1.4, 2.45, 0.05, 0, 1.22, -0.5, this.hallMat);
-      box(1.4, 0.05, 0.6, 0, 0, -0.25, std(9280156));
-      box(1.4, 0.04, 0.6, 0, 2.47, -0.25, new MeshBasicMaterial({ color: 14674152 }));
-      for (const sd of [-1, 1]) {
-        const piv = new Group();
-        piv.position.set(sd * 0.62, 0, 0.12);
-        piv.rotation.y = sd * -1.2;
-        g.add(piv);
-        box(0.64, 2.3, 0.07, -sd * 0.32, 1.15, 0, leaf, piv);
-        box(0.1, 0.6, 0.06, -sd * 0.5, 1.55, 0.06, std(3111808), piv);
+    // Yola behind the picture: the bat swing of the reveal (the game's own bat finisher), driven on the story clock
+    poseReveal(dt) {
+      const s = this.revealSwing;
+      if (!s) return;
+      const an = ROOM1.player, g = this.game();
+      if (s.t >= 0) {
+        if (s.hold > 0) {
+          s.hold -= dt;
+          dt *= REVEAL_HOLD_RATE;
+        }
+        s.t += dt;
       }
-      this.lampMat = new MeshBasicMaterial({ color: 3147784 });
-      box(0.56, 0.18, 0.14, 0, 2.78, 0.14, this.lampMat);
-      g.position.set(an.x - Math.sin(fy) * 1, 0, an.z - Math.cos(fy) * 1);
-      g.rotation.y = fy;
-      g.visible = false;
-      this.scene.add(g);
-      this.doorway = g;
+      const st = g.stillState(an.x, an.z, an.yaw);
+      st.equipped = "bat";
+      const R = this.revealOpts || {};
+      if (s.t >= 0) Object.assign(st, { action: "swing", swingT: Math.min(s.t, R.end ?? REVEAL_END) * (R.rate ?? REVEAL_RATE) + (R.from ?? REVEAL_FROM), combo: R.combo ?? REVEAL_COMBO, swingId: 9001 });
+      g.yolaPose?.(dt, st);
+    }
+    // where the bat's tip is on screen (ndc), for the impact point
+    batNdc() {
+      const v = this.yola.melee?.userData?.tip ? this.yola.melee.userData.tip.getWorldPosition(new Vector3()) : new Vector3(ROOM1.player.x, 1.2, ROOM1.player.z);
+      v.project(this.camera);
+      return { x: MathUtils.clamp(v.x, -0.7, 0.7), y: MathUtils.clamp(v.y, -0.5, 0.6) };
+    }
+    // the room after the outbreak, ready behind the picture: same geography, worn surfaces, emergency light, the dead lift
+    revealWorld() {
+      const g = this.game();
+      this.inOR = true;
+      this.setBlood(true);
+      this.scene.background = this.saved?.bg || new Color(2568762);
+      g.applyRoom1();
+      this.room1Preview = true;
+      this.arena.setEmergency?.(true, 0);
+      this.setLight(1);
+      if (this.spot) this.spot.intensity = 0;
+      if (this.redLight) this.redLight.intensity = 0;
+      this.belongings && (this.belongings.visible = true);
+      this.stage.batStatic.visible = false;
+      const Y = this.yola;
+      Y.setShown(true);
+    }
+    setLift3(k) {
+      const L2 = this.arena.doorKits?.lift;
+      if (!L2) return;
+      L2.open.time = Math.max(0, Math.min(0.999, k)) * L2.open.getClip().duration;
+      L2.mixer.update(0);
+      L2.last = -1;
+    }
+    // the printed "LIFT / Power fault" notice only makes sense after the outbreak
+    setLiftSign(v) {
+      for (const m of this.arena.signMeshes || []) if (/^LIFT$/.test(m.userData.sign || "")) m.visible = v;
     }
     // the reveal doorway shows nothing but the doorway: the operating-room props near the anchor are hidden for the shot and restored after
     orTable(v) {
@@ -58502,6 +59598,7 @@ void main() {
       this.sound.alarmOff();
       this.sound.flatlineOff(0.2);
       this.sound.stopVoice();
+      this.sound.stopLine();
       this.ecg = null;
       this.ui.showEcg(false);
       this.ui.setVignette(0);
@@ -58544,7 +59641,28 @@ void main() {
       st.batStatic.visible = !this.batPicked;
       if (st.cap) st.cap.visible = true;
       for (const k of ["yola", "baseball", "teamA", "teamB", "surgeon", "staff"]) A[k].setVisible(false);
-      this.placeGuardBody();
+      if (this.guardPool) this.guardPool.visible = true;
+      else this.placeGuardPool();
+      this.endRide();
+      this.stopEmptyChair();
+      this.holdBat(null);
+      this.cpr = null;
+      this.revealSwing = null;
+      this.monitorOn = false;
+      this.ui.showMonitor(false);
+      this.ui.readiness(null);
+      this.ui.timeCard("");
+      if (this.bt.state === "flying") {
+        const bt = this.bt;
+        const tick2 = () => {
+          if (bt.state !== "flying") return;
+          bt.update(1 / 60);
+          requestAnimationFrame(tick2);
+        };
+        requestAnimationFrame(tick2);
+      } else if (this.bt.state !== "idle") this.bt.finish();
+      this.sound.stopLine();
+      if (via === "normal") this.later33();
       g.applyRoom1();
       g.previewRoom1(0);
       this.stillYola = false;
@@ -58603,6 +59721,34 @@ void main() {
       }
       this.guardPool.visible = true;
     }
+    placeGuardPool() {
+      const c = document.createElement("canvas");
+      c.width = c.height = 128;
+      const g = c.getContext("2d"), gr = g.createRadialGradient(64, 64, 6, 64, 64, 62);
+      gr.addColorStop(0, "rgba(70,6,8,.92)");
+      gr.addColorStop(0.55, "rgba(92,10,12,.8)");
+      gr.addColorStop(1, "rgba(92,10,12,0)");
+      g.fillStyle = gr;
+      g.beginPath();
+      g.ellipse(64, 64, 62, 46, 0.4, 0, Math.PI * 2);
+      g.fill();
+      const m = new Mesh(new PlaneGeometry(1.6, 1.6), new MeshBasicMaterial({ map: new CanvasTexture(c), transparent: true, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(-16.35, 0.012, -0.45);
+      m.renderOrder = 1;
+      this.scene.add(m);
+      this.guardPool = m;
+    }
+    // line 33, once, a moment after control returns (only after the opening was played through, never mid-fight noise)
+    later33() {
+      if (this.played33) return;
+      const gen = this.gen33 = (this.gen33 || 0) + 1;
+      setTimeout(() => {
+        if (gen !== this.gen33 || this.active || this.played33) return;
+        this.played33 = true;
+        this.sound.playLine(LINE["33"]);
+      }, 1600);
+    }
     restoreBat() {
       this.batPicked = false;
       if (this.stage.batStatic) this.stage.batStatic.visible = true;
@@ -58625,20 +59771,6 @@ void main() {
       this.started = true;
       this.resetTour();
       this.sound.unlock();
-    }
-    // a development card: opens the UI, waits for the choice and for the feedback to be dismissed (no timer).
-    // In a silent (seek/skip) run it answers itself with the first option unless the run is stopping here.
-    *askCard(card) {
-      if (this.silent && this.runLabel !== "card-open") return card.options[0].id;
-      this.cardDone = null;
-      this.ui.askCard(card).then((id2) => {
-        this.cardDone = id2;
-      });
-      yield () => this.cardDone !== null;
-      const id = this.cardDone;
-      this.cardDone = null;
-      this.ui.closeCard();
-      return id;
     }
     // ------------------------------------------------------------------ run
     begin() {
@@ -58733,6 +59865,8 @@ void main() {
     }
     skip() {
       if (!this.started) return;
+      this.sound.stopLine();
+      this.gen33 = (this.gen33 || 0) + 1;
       this.runTo("room1-playable", { stopAtLabel: false, maxSec: 600 });
     }
     // dev/test: jump to time t by replaying the story silently from the start
@@ -58749,12 +59883,12 @@ void main() {
       while (!(label in this.marks) && this.t < maxSec && guard++ < 4e4) this.step(1 / 20);
       const keep = stopAtLabel;
       this.endSilent(keep);
-      if (keep && label === "card-open") this.ui.askCard(CARDS[0]);
       return this.marks[label];
     }
     beginSilent() {
       this.silent = true;
       this.sound.stopVoice();
+      this.sound.stopLine();
       this.resetTour();
       this.started = true;
       this.state = "TOUR";
@@ -58793,6 +59927,16 @@ void main() {
         while (this.cueIdx < this.cues.length && this.cues[this.cueIdx].t <= this.t) this.fire(this.cues[this.cueIdx++]);
       } else this.runCo(d);
       this.stage.update(da);
+      this.tickRide();
+      this.tickEmptyChair();
+      if (this.cpr) {
+        this.cpr.t += da;
+        const w = 0.72 + 0.28 * Math.sin(this.cpr.t * Math.PI * 2 * 1.8);
+        for (const k of ["cprL", "cprR"]) if (this.cpr.a.adj[k]) this.cpr.a.adj[k].w = w;
+      }
+      if (this.monitorOn) this.ui.drawMonitor(this.t);
+      if (this.revealSwing) this.poseReveal(da);
+      this.bt.update(d);
       if (this.stillYola) this.game().stillYola?.(da);
       if (this.stage.tiers.some((s) => s.fx) || this.stage.pops.length) this.renderer.shadowMap.needsUpdate = true;
       if (this.poseAnim) this.tickPose(d);
@@ -58823,7 +59967,7 @@ void main() {
     }
     // test hook: the checkpoint report
     report() {
-      return { state: this.state, substate: this.substate, t: +this.t.toFixed(2), tier: this.stage.tier, sub: this.sub, cues: this.cueLog.slice(-8) };
+      return { state: this.state, substate: this.substate, t: +this.t.toFixed(2), tier: this.stage.tier, sub: this.sub, line: this.line?.id || null, cues: this.cueLog.slice(-8), lines: this.lineLog.map((l) => l.id + (l.audio ? "" : "(silent)")).join(" "), answers: { ...this.answers } };
     }
   };
 
@@ -59668,6 +60812,11 @@ void main() {
   var audio = new CombatAudio();
   audio.setVolume(store2.get("volume", 0.8));
   audio.setMuted(store2.get("muted", false));
+  for (const b of ["sfx", "music", "voice"]) {
+    audio.levels[b] = store2.get("lvl_" + b, audio.levels[b]);
+    audio.busMuted[b] = store2.get("mute_" + b, false);
+  }
+  var music = new GameMusic(audio);
   var fx = new FX(scene);
   var telegraphs = new Telegraphs(scene);
   fx.gore = store2.get("gore", true);
@@ -59739,7 +60888,7 @@ void main() {
     // (15% bigger than first built: she has to feel big)
     { file: "assets/zombie-guard.glb", height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 }
   ];
-  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.id % 2;
+  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.look === "nurse" ? 0 : z.look === "patient" ? 1 : z.id % 2;
   var YOLA_HEIGHT = 1.62;
   var loader = new GLTFLoader();
   async function load() {
@@ -59887,7 +61036,11 @@ void main() {
       p2.z = A.z;
       p2.aimYaw = p2.aimTarget = A.yaw;
       p2.hp = p2.maxHp;
-      p2.setLoadout(["fists"]);
+      p2.setLoadout(["bat", "fists"], "bat");
+      if (sim.level) {
+        sim.level.taken.add("bat");
+        sim.level.pickups = sim.level.pickups.filter((q) => q.id !== "bat");
+      }
     }
     p2.px = p2.x;
     p2.pz = p2.z;
@@ -59916,7 +61069,7 @@ void main() {
     return sim;
   }
   function previewRoom1(dt) {
-    yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
+    if (!opening?.revealSwing) yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
       if (!v) {
@@ -60194,6 +61347,10 @@ void main() {
       if (n) audio.play("groan", Math.min(1, 0.5 + n * 0.1));
     }
     fx.update(animDt);
+    if (music.state !== "off") {
+      const R = music.state === "combat" ? 11 : 7;
+      music.update(dt, sim.zombies.some((z) => z.alive && !z.dormant && !z.passive && (Math.hypot(z.x - p2.x, z.z - p2.z) < R || z.state === "windup" || z.state === "strike")), paused || p2.dead);
+    }
     arena.update(dt, ix, iz, MathUtils.degToRad(tuning.camYaw), sim.level);
     hud.setEmergency(!!arena.em && arena.em.target > 0);
     hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
@@ -60650,7 +61807,15 @@ void main() {
   }
   window.game = { get hitPause() {
     return hitPauseT;
-  }, stillYola(dt) {
+  }, yolaPose(dt, s) {
+    yola.update(dt, s);
+  }, fxAim(v) {
+    fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0);
+  }, fxBurst(...a) {
+    fx.burst(...a);
+  }, musicStart(k) {
+    music.start(k);
+  }, music, stillYola(dt) {
     yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw));
   }, hideZombieViews() {
     for (const v of zviews.values()) {
