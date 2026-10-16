@@ -37760,6 +37760,186 @@ void main() {
     hand.updateMatrixWorld(true);
   }
 
+  // src/render/hairsway.js
+  var COLLIDERS = [
+    { bone: "Head", at: [0, 0.057, 0], r: 0.0942 },
+    { bone: "Neck", at: [0, 0.0266, 0], r: 0.0708 },
+    { bone: "Spine2", at: [0, 0.0704, 0], r: 0.0655 },
+    { bone: "Spine2", at: [0, 0.0352, 0], r: 0.0768 },
+    { bone: "Spine2", at: [0, 0, 0], r: 0.0816 },
+    { bone: "Spine1", at: [0, 0.0334, 0], r: 0.0767 }
+    // (no shoulder spheres: the shoulders rise into the ponytail whenever her arms go up, and shoved it sideways)
+  ];
+  var HAIR3_RATIO = 0.0717 / 0.0758;
+  var STEP = 1 / 120;
+  var SETTLE = 1;
+  var Y = new Vector3(0, 1, 0);
+  var HAIR_DEFAULTS = {
+    // (2026-10-16, the user: "let it hang more ... so it doesn't stick up when her head goes back")
+    k: [100, 35, 20],
+    // spring back to the modelled shape (1/s^2), firmer at the tie, loose at the tips
+    zeta: 0.5,
+    // damping ratio (1 = no bounce)
+    g: 12,
+    // gravity (m/s^2; more than real: the springs hold the modelled shape, gravity must win over them)
+    drag: 0.4,
+    // air drag on the tips (trails a little when she runs)
+    maxDeg: [60, 90, 100]
+    // furthest each bone may turn from the modelled shape (her head/neck/back spheres stop it first)
+  };
+  var _a3 = new Vector3();
+  var _b3 = new Vector3();
+  var _c2 = new Vector3();
+  var _d = new Vector3();
+  var _e = new Vector3();
+  var _q = new Quaternion();
+  var _q2 = new Quaternion();
+  var _q3 = new Quaternion();
+  var HairSway = class {
+    // bones: name -> Bone with the 'mixamorig' prefix stripped (Hair1..3, Head, ...)
+    constructor(bones, opt = {}) {
+      this.chain = ["Hair1", "Hair2", "Hair3"].map((n) => bones[n]);
+      this.ok = this.chain.every(Boolean) && !!bones.Head;
+      if (!this.ok) return;
+      this.cfg = { ...HAIR_DEFAULTS, ...opt };
+      this.on = true;
+      this.restQ = this.chain.map((b) => b.quaternion.clone());
+      this.restLen = [this.chain[1].position.length(), this.chain[2].position.length(), this.chain[2].position.length() * HAIR3_RATIO];
+      this.cols = COLLIDERS.filter((c) => bones[c.bone]).map((c) => ({ b: bones[c.bone], at: new Vector3(...c.at), r: c.r, c0: new Vector3(), c1: new Vector3(), rw: 0, cs: new Vector3() }));
+      this.p = [0, 1, 2].map(() => new Vector3());
+      this.v = [0, 1, 2].map(() => new Vector3());
+      this.dir0 = [0, 1, 2].map(() => new Vector3());
+      this.dir1 = [0, 1, 2].map(() => new Vector3());
+      this.root0 = new Vector3();
+      this.root1 = new Vector3();
+      this.len = [0, 0, 0];
+      this.ready = false;
+    }
+    reset() {
+      this.ready = false;
+    }
+    // the modelled ponytail for the current head pose: root position, each bone's direction, world lengths
+    sampleAnimated() {
+      const c = this.chain, parent = c[0].parent;
+      parent.updateWorldMatrix(true, false);
+      c[0].updateWorldMatrix(false, false);
+      c[0].getWorldPosition(this.root1);
+      parent.getWorldQuaternion(_q);
+      const s = _a3.setFromMatrixColumn(parent.matrixWorld, 0).length();
+      for (let i = 0; i < 3; i++) {
+        _q.multiply(this.restQ[i]);
+        this.dir1[i].copy(Y).applyQuaternion(_q);
+        this.len[i] = this.restLen[i] * s;
+      }
+      for (const k of this.cols) {
+        k.b.updateWorldMatrix(true, false);
+        k.c1.copy(k.at).applyMatrix4(k.b.matrixWorld);
+        k.rw = k.r * _a3.setFromMatrixColumn(k.b.matrixWorld, 0).length();
+      }
+    }
+    update(dt) {
+      if (!this.ok) return;
+      this.sampleAnimated();
+      if (!this.on) {
+        this.apply(true);
+        this.ready = false;
+        return;
+      }
+      if (!this.ready || dt > 0.25) {
+        let h = this.root1;
+        for (let i = 0; i < 3; i++) {
+          this.p[i].copy(h).addScaledVector(this.dir1[i], this.len[i]);
+          this.v[i].set(0, 0, 0);
+          h = this.p[i];
+        }
+        this.root0.copy(this.root1);
+        for (let i = 0; i < 3; i++) this.dir0[i].copy(this.dir1[i]);
+        for (const k of this.cols) k.c0.copy(k.c1);
+        this.ready = true;
+        this.integrate(SETTLE);
+      }
+      this.integrate(dt);
+      this.root0.copy(this.root1);
+      for (let i = 0; i < 3; i++) this.dir0[i].copy(this.dir1[i]);
+      for (const k of this.cols) k.c0.copy(k.c1);
+      this.apply(false);
+    }
+    // advance dt seconds in fixed sub-steps, the head and colliders moving from their last-frame to their current spots
+    integrate(dt) {
+      const C = this.cfg, n = Math.min(SETTLE / STEP, Math.max(1, Math.ceil(dt / STEP - 1e-6))), hdt = dt / n;
+      const rootPrev = _e.copy(this.root0);
+      for (let s = 1; s <= n; s++) {
+        const u = s / n;
+        const root = _d.copy(this.root0).lerp(this.root1, u);
+        for (const k of this.cols) k.cs.copy(k.c0).lerp(k.c1, u);
+        const rootV = _c2.copy(root).sub(rootPrev).divideScalar(hdt);
+        rootPrev.copy(root);
+        let head = root, headV = rootV;
+        for (let i = 0; i < 3; i++) {
+          const p = this.p[i], v = this.v[i], L = this.len[i];
+          const dir = _a3.copy(this.dir0[i]).lerp(this.dir1[i], u).normalize();
+          const k = C.k[i], c = 2 * C.zeta * Math.sqrt(k);
+          const tx = head.x + dir.x * L, ty = head.y + dir.y * L, tz = head.z + dir.z * L;
+          const ax = k * (tx - p.x) - c * (v.x - headV.x) - C.drag * v.x;
+          const ay = k * (ty - p.y) - c * (v.y - headV.y) - C.drag * v.y - C.g;
+          const az = k * (tz - p.z) - c * (v.z - headV.z) - C.drag * v.z;
+          const ox = p.x, oy = p.y, oz = p.z;
+          v.x += ax * hdt;
+          v.y += ay * hdt;
+          v.z += az * hdt;
+          p.x += v.x * hdt;
+          p.y += v.y * hdt;
+          p.z += v.z * hdt;
+          const w = _b3.copy(p).sub(head);
+          let wl = w.length();
+          if (wl < 1e-9) w.copy(dir);
+          else w.divideScalar(wl);
+          const cos = w.dot(dir), cmax = Math.cos(C.maxDeg[i] * Math.PI / 180);
+          if (cos < cmax) {
+            w.addScaledVector(dir, -cos);
+            const pl = w.length();
+            if (pl < 1e-9) w.copy(dir);
+            else w.divideScalar(pl).multiplyScalar(Math.sqrt(1 - cmax * cmax)).addScaledVector(dir, cmax);
+          }
+          p.copy(head).addScaledVector(w, L);
+          for (const K of this.cols) {
+            const dx = p.x - K.cs.x, dy = p.y - K.cs.y, dz = p.z - K.cs.z, d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 < K.rw * K.rw && d2 > 1e-12) {
+              const f = K.rw / Math.sqrt(d2);
+              p.set(K.cs.x + dx * f, K.cs.y + dy * f, K.cs.z + dz * f);
+            }
+          }
+          w.copy(p).sub(head);
+          wl = w.length();
+          if (wl > 1e-9) p.copy(head).addScaledVector(w, L / wl);
+          v.set((p.x - ox) / hdt, (p.y - oy) / hdt, (p.z - oz) / hdt);
+          head = p;
+          headV = v;
+        }
+      }
+    }
+    // turn each hair bone (from its rest pose under the already placed parent) to point at its simulated tail
+    apply(rest) {
+      for (let i = 0; i < 3; i++) {
+        const b = this.chain[i];
+        if (rest) {
+          b.quaternion.copy(this.restQ[i]);
+          continue;
+        }
+        b.parent.updateWorldMatrix(false, false);
+        b.parent.getWorldQuaternion(_q);
+        _q2.copy(_q).multiply(this.restQ[i]);
+        const from = _a3.copy(Y).applyQuaternion(_q2);
+        const bp = _c2.copy(b.position).applyMatrix4(b.parent.matrixWorld);
+        const to = _d.copy(this.p[i]).sub(bp).normalize();
+        _q3.setFromUnitVectors(from, to).multiply(_q2);
+        b.quaternion.copy(_q.invert().multiply(_q3));
+        b.updateWorldMatrix(false, false);
+      }
+      this.chain[2].updateMatrixWorld(true);
+    }
+  };
+
   // src/core/weapons.js
   var SHOTGUN_SPEC = {
     pellets: 9,
@@ -37935,7 +38115,7 @@ void main() {
   var _v2 = new Vector3();
   var _v22 = new Vector3();
   var _v3 = new Vector3();
-  var _q = new Quaternion();
+  var _q4 = new Quaternion();
   var YOLA2_REF = {
     bat_swing: "yola_baseball_single",
     bat_swing_m: null,
@@ -38062,6 +38242,7 @@ void main() {
       this.action = null;
       this.frames = 1;
       this.t0 = 0;
+      this.hair = new HairSway(this.bones);
     }
     setHeight(h) {
       this.height = h;
@@ -38119,16 +38300,16 @@ void main() {
       a.grip("Left", _v22);
       const x = _v22.clone().sub(_v2).normalize(), z = new Vector3().crossVectors(x, UP).normalize(), y = new Vector3().crossVectors(z, x);
       const g = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
-      a.bones.RightHand.getWorldQuaternion(_q);
-      this.socket.copy(_q.invert().multiply(g));
+      a.bones.RightHand.getWorldQuaternion(_q4);
+      this.socket.copy(_q4.invert().multiply(g));
       this.has = true;
     }
     update(k) {
       if (!this.obj || !this.has) return;
       const a = this.actor;
-      a.bones.RightHand.getWorldQuaternion(_q);
+      a.bones.RightHand.getWorldQuaternion(_q4);
       const adj = new Quaternion().setFromEuler(new Euler(fit.rx * Math.PI / 180, fit.ry * Math.PI / 180, fit.rz * Math.PI / 180, "XYZ"));
-      const gq = _q.multiply(this.socket).multiply(adj);
+      const gq = _q4.multiply(this.socket).multiply(adj);
       a.grip("Right", _v2);
       this.obj.quaternion.copy(gq);
       this.obj.position.copy(_v2).add(_v22.set(fit.ox, fit.oy, fit.oz).multiplyScalar(k).applyQuaternion(gq));
@@ -38240,6 +38421,7 @@ void main() {
     const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
     pinRoot(c, $("inplace").checked);
     main.play(c);
+    main.hair?.reset?.();
     FPS = fpsOf(c);
     vidRef(name);
     const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => name.startsWith(p));
@@ -38334,11 +38516,11 @@ void main() {
   function alignShell() {
     const g = mainGun?.obj;
     if (!g?.userData.port) return;
-    main.bones.LeftHand.getWorldQuaternion(_q);
+    main.bones.LeftHand.getWorldQuaternion(_q4);
     main.grip("Left", _v2);
     g.userData.port.getWorldPosition(_v22);
     const d = _v22.clone().sub(_v2), L = d.length();
-    d.normalize().applyQuaternion(_q.clone().invert());
+    d.normalize().applyQuaternion(_q4.clone().invert());
     const q = new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), d), e = new Euler().setFromQuaternion(q, "XYZ");
     Object.assign(shellFit, { rx: e.x * 180 / Math.PI, ry: e.y * 180 / Math.PI, rz: e.z * 180 / Math.PI, x: Math.max(0, L - 0.037), y: 0, z: 0 });
     window.__lab.setShell({});
@@ -38350,12 +38532,12 @@ void main() {
     const on = !!main.action && f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from && S.gun === "short";
     shellObj.visible = on;
     if (!on) return;
-    main.bones.LeftHand.getWorldQuaternion(_q);
+    main.bones.LeftHand.getWorldQuaternion(_q4);
     const adj = new Quaternion().setFromEuler(new Euler(shellFit.rx * Math.PI / 180, shellFit.ry * Math.PI / 180, shellFit.rz * Math.PI / 180, "XYZ"));
-    const q = _q.multiply(adj);
+    const q = _q4.multiply(adj);
     main.grip("Left", _v2);
     shellObj.quaternion.copy(q);
-    shellObj.position.copy(_v2).add(_v22.set(shellFit.x, shellFit.y, shellFit.z).applyQuaternion(_q.copy(q)));
+    shellObj.position.copy(_v2).add(_v22.set(shellFit.x, shellFit.y, shellFit.z).applyQuaternion(_q4.copy(q)));
     shellObj.updateMatrixWorld(true);
   }
   function applyGun() {
@@ -38376,7 +38558,7 @@ void main() {
   function refresh() {
     if (!main) return;
     const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
-    main.setFrame(Math.min(f, main.frames));
+    main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames));
     if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
     mainGun?.update(1);
     leftHand(f);
@@ -38675,6 +38857,10 @@ void main() {
         S.frame += dt * FPS * S.speed;
         if (S.frame >= S.frames + 1) S.frame = $("loop").checked ? 1 : S.frames;
         refresh();
+      }
+      if (main?.hair?.ok) {
+        main.hair.on = $("hairSway").checked;
+        main.hair.update(dt * (S.playing ? S.speed : 1));
       }
       controls.update();
       renderer.render(scene, camera);

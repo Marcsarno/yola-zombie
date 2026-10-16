@@ -95,6 +95,26 @@ next one starts.
 - Game: loads the new file (68 bones, Hair1-3 parented to Head), no console errors. Rig Lab bat_idle f28 old vs new:
   shots/ponytail/step4_*. Only assets/yola2.glb shows as modified in git.
 
+## Step 5: the sway (2026-10-16, built, NOT committed; waiting for the user's verdict)
+
+- src/render/hairsway.js (shared): damped springs on Hair1-3 tails toward the modelled shape, gravity, drag, length
+  + per-bone angle limit, 6 collision spheres (head, neck, spine; bone-local, sized in Blender to just miss the hair at
+  rest), fixed 1/120 s sub-steps with the head/colliders interpolated, 1 s settle on (re)start. Defaults k 180/90/60,
+  zeta 0.5, g 6, drag 0.4, max 25/35/35 deg. Game: YolaView.update after footLock + die(). Rig Lab: "hair sway"
+  checkbox; while playing, the Rig Lab now poses between frames (smooth).
+- Fixed on the way: shoulder spheres removed (shoulders rise into the hair when the arms go up: 44 deg shove); the
+  first-frame drop (settle before the first frame).
+- Jitter (tools/hairjitter.js, run in the Rig Lab console): bat idle tip accel = head's (1 vs 1-2 m/s^2), 30/60/120 fps
+  paths within 0.5 mm; strafe tip below head, 0.4 mm; hit head / sword combo tip 1.5-3x head (whip after a jerk),
+  reversals 1-2%; violent combo at 30 fps path differs up to 7 cm (contact timing), smooth.
+- Look (shots/ponytail/step5_sway_off_vs_on.png): light. Hangs better after a hit (f20) but STILL sticks up at the
+  head-thrown-back moment (hit head f12): the angle limits stop gravity. Options: larger limits / more gravity.
+- v2 (user: "let it hang more"): k 100/35/20, g 12, limits 60/90/100 (tried 3 sets; this one hangs most: standing
+  14/12/10 deg from vertical vs 23/15/22). Hit f12: she is bent far back, the hair now lies on her neck/upper back
+  (spheres 1-3; without them it would pass through her). Jitter: standing/strafe smooth (tip 5 vs head 1-2; paths
+  within 1-7 mm across fps); hit head tip 3-4x head, reversals 1-4%; sword combo FLAILS (tip 2-3x head, paths up to
+  29 cm apart at uneven 60 fps: chaotic, not jittery). Image shots/ponytail/step5b_*. Not committed.
+
 ## After the ponytail (user, 2026-10-16)
 
 - Face bend (user spotted in the Rig Lab, bat_idle frame 22): NOT caused by the ponytail work (face weights untouched).

@@ -47558,63 +47558,63 @@ void main() {
   // src/render/libattack.js
   var FPS = 30;
   var V = () => new Vector3();
-  function sample(Y, A, rawClip, hold) {
-    const acts = Object.values(Y.actions), saved = acts.map((a) => [a, a.getEffectiveWeight(), a.time]);
-    const op = Y.outer.position.clone(), ry = Y.container.rotation.y;
-    Y.outer.position.set(0, 0, 0);
-    Y.container.rotation.y = 0;
+  function sample(Y2, A, rawClip, hold) {
+    const acts = Object.values(Y2.actions), saved = acts.map((a) => [a, a.getEffectiveWeight(), a.time]);
+    const op = Y2.outer.position.clone(), ry = Y2.container.rotation.y;
+    Y2.outer.position.set(0, 0, 0);
+    Y2.container.rotation.y = 0;
     for (const a of acts) a.setEffectiveWeight(0);
-    const act = Y.act(A.clip), raw = Y.mixer.clipAction(rawClip);
+    const act = Y2.act(A.clip), raw = Y2.mixer.clipAction(rawClip);
     raw.play();
     raw.timeScale = 0;
     const ff = { c: V(), a: V(), k: V() }, rows = [];
     const pose = (a, f) => {
-      for (const [b, q] of Y.restQ) b.quaternion.copy(q);
+      for (const [b, q] of Y2.restQ) b.quaternion.copy(q);
       a.setEffectiveWeight(1);
       a.time = f / FPS + (f & 1) * 1e-6;
-      Y.mixer.update(0);
-      Y.outer.updateMatrixWorld(true);
+      Y2.mixer.update(0);
+      Y2.outer.updateMatrixWorld(true);
       a.setEffectiveWeight(0);
     };
     const travel = [];
     for (let f = A.f0; f <= A.f1; f++) {
       pose(raw, f);
-      travel.push(Y.bones.Hips.getWorldPosition(V()));
+      travel.push(Y2.bones.Hips.getWorldPosition(V()));
     }
     for (let f = A.f0; f <= A.f1; f++) {
       const hips = travel[f - A.f0];
       pose(act, f);
       act.setEffectiveWeight(1);
-      if (hold) Y.placeHeld(hold);
-      const row = { f, hips, pin: Y.bones.Hips.getWorldPosition(V()) };
+      if (hold) Y2.placeHeld(hold);
+      const row = { f, hips, pin: Y2.bones.Hips.getWorldPosition(V()) };
       if (hold?.obj) {
-        row.grip = Y.heldGrip.clone();
-        row.tip = Y.heldTip.clone();
+        row.grip = Y2.heldGrip.clone();
+        row.tip = Y2.heldTip.clone();
       } else {
-        row.l = Y.fistFrame("Left", ff).c.clone();
-        row.r = Y.fistFrame("Right", ff).c.clone();
-        row.lf = Y.bones.LeftToeBase.getWorldPosition(V());
-        row.rf = Y.bones.RightToeBase.getWorldPosition(V());
+        row.l = Y2.fistFrame("Left", ff).c.clone();
+        row.r = Y2.fistFrame("Right", ff).c.clone();
+        row.lf = Y2.bones.LeftToeBase.getWorldPosition(V());
+        row.rf = Y2.bones.RightToeBase.getWorldPosition(V());
       }
       act.setEffectiveWeight(0);
       rows.push(row);
     }
     raw.stop();
-    Y.mixer.uncacheAction(rawClip);
+    Y2.mixer.uncacheAction(rawClip);
     for (const [a, wt, t] of saved) {
       a.setEffectiveWeight(wt);
       a.time = t;
     }
-    Y.outer.position.copy(op);
-    Y.container.rotation.y = ry;
+    Y2.outer.position.copy(op);
+    Y2.container.rotation.y = ry;
     if (hold?.obj) hold.obj.visible = false;
     return rows;
   }
-  function buildLibraryAttack(Y, { clip, frames = null, hold = null, P, speed = 1, name, sound, recover = 0.3, splitRecover = 0.4, strikes = 0 }) {
+  function buildLibraryAttack(Y2, { clip, frames = null, hold = null, P, speed = 1, name, sound, recover = 0.3, splitRecover = 0.4, strikes = 0 }) {
     const t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
     const play = clip.clone();
     play.name = clip.name;
-    Y.addAttackClips([play]);
+    Y2.addAttackClips([play]);
     const w = hold?.w || null;
     const f0 = Math.round(t0 * FPS), f1 = f0 + (frames || Math.round((clip.duration - t0) * FPS) + 1) - 1;
     const A = {
@@ -47642,7 +47642,7 @@ void main() {
       built: true
     };
     const hold2 = hold && w && P.reach === "tip" && w.tip ? { ...hold, w: { ...w, impact_point: w.tip } } : hold;
-    const rows = sample(Y, A, clip.clone(), hold2);
+    const rows = sample(Y2, A, clip.clone(), hold2);
     let pts, dirs, L2, geom;
     if (hold?.obj) {
       L2 = rows[0].tip.distanceTo(rows[0].grip);
@@ -49718,6 +49718,186 @@ void main() {
     }
   };
 
+  // src/render/hairsway.js
+  var COLLIDERS = [
+    { bone: "Head", at: [0, 0.057, 0], r: 0.0942 },
+    { bone: "Neck", at: [0, 0.0266, 0], r: 0.0708 },
+    { bone: "Spine2", at: [0, 0.0704, 0], r: 0.0655 },
+    { bone: "Spine2", at: [0, 0.0352, 0], r: 0.0768 },
+    { bone: "Spine2", at: [0, 0, 0], r: 0.0816 },
+    { bone: "Spine1", at: [0, 0.0334, 0], r: 0.0767 }
+    // (no shoulder spheres: the shoulders rise into the ponytail whenever her arms go up, and shoved it sideways)
+  ];
+  var HAIR3_RATIO = 0.0717 / 0.0758;
+  var STEP2 = 1 / 120;
+  var SETTLE = 1;
+  var Y = new Vector3(0, 1, 0);
+  var HAIR_DEFAULTS = {
+    // (2026-10-16, the user: "let it hang more ... so it doesn't stick up when her head goes back")
+    k: [100, 35, 20],
+    // spring back to the modelled shape (1/s^2), firmer at the tie, loose at the tips
+    zeta: 0.5,
+    // damping ratio (1 = no bounce)
+    g: 12,
+    // gravity (m/s^2; more than real: the springs hold the modelled shape, gravity must win over them)
+    drag: 0.4,
+    // air drag on the tips (trails a little when she runs)
+    maxDeg: [60, 90, 100]
+    // furthest each bone may turn from the modelled shape (her head/neck/back spheres stop it first)
+  };
+  var _a3 = new Vector3();
+  var _b3 = new Vector3();
+  var _c3 = new Vector3();
+  var _d = new Vector3();
+  var _e = new Vector3();
+  var _q3 = new Quaternion();
+  var _q22 = new Quaternion();
+  var _q32 = new Quaternion();
+  var HairSway = class {
+    // bones: name -> Bone with the 'mixamorig' prefix stripped (Hair1..3, Head, ...)
+    constructor(bones, opt = {}) {
+      this.chain = ["Hair1", "Hair2", "Hair3"].map((n) => bones[n]);
+      this.ok = this.chain.every(Boolean) && !!bones.Head;
+      if (!this.ok) return;
+      this.cfg = { ...HAIR_DEFAULTS, ...opt };
+      this.on = true;
+      this.restQ = this.chain.map((b) => b.quaternion.clone());
+      this.restLen = [this.chain[1].position.length(), this.chain[2].position.length(), this.chain[2].position.length() * HAIR3_RATIO];
+      this.cols = COLLIDERS.filter((c) => bones[c.bone]).map((c) => ({ b: bones[c.bone], at: new Vector3(...c.at), r: c.r, c0: new Vector3(), c1: new Vector3(), rw: 0, cs: new Vector3() }));
+      this.p = [0, 1, 2].map(() => new Vector3());
+      this.v = [0, 1, 2].map(() => new Vector3());
+      this.dir0 = [0, 1, 2].map(() => new Vector3());
+      this.dir1 = [0, 1, 2].map(() => new Vector3());
+      this.root0 = new Vector3();
+      this.root1 = new Vector3();
+      this.len = [0, 0, 0];
+      this.ready = false;
+    }
+    reset() {
+      this.ready = false;
+    }
+    // the modelled ponytail for the current head pose: root position, each bone's direction, world lengths
+    sampleAnimated() {
+      const c = this.chain, parent = c[0].parent;
+      parent.updateWorldMatrix(true, false);
+      c[0].updateWorldMatrix(false, false);
+      c[0].getWorldPosition(this.root1);
+      parent.getWorldQuaternion(_q3);
+      const s = _a3.setFromMatrixColumn(parent.matrixWorld, 0).length();
+      for (let i = 0; i < 3; i++) {
+        _q3.multiply(this.restQ[i]);
+        this.dir1[i].copy(Y).applyQuaternion(_q3);
+        this.len[i] = this.restLen[i] * s;
+      }
+      for (const k of this.cols) {
+        k.b.updateWorldMatrix(true, false);
+        k.c1.copy(k.at).applyMatrix4(k.b.matrixWorld);
+        k.rw = k.r * _a3.setFromMatrixColumn(k.b.matrixWorld, 0).length();
+      }
+    }
+    update(dt) {
+      if (!this.ok) return;
+      this.sampleAnimated();
+      if (!this.on) {
+        this.apply(true);
+        this.ready = false;
+        return;
+      }
+      if (!this.ready || dt > 0.25) {
+        let h = this.root1;
+        for (let i = 0; i < 3; i++) {
+          this.p[i].copy(h).addScaledVector(this.dir1[i], this.len[i]);
+          this.v[i].set(0, 0, 0);
+          h = this.p[i];
+        }
+        this.root0.copy(this.root1);
+        for (let i = 0; i < 3; i++) this.dir0[i].copy(this.dir1[i]);
+        for (const k of this.cols) k.c0.copy(k.c1);
+        this.ready = true;
+        this.integrate(SETTLE);
+      }
+      this.integrate(dt);
+      this.root0.copy(this.root1);
+      for (let i = 0; i < 3; i++) this.dir0[i].copy(this.dir1[i]);
+      for (const k of this.cols) k.c0.copy(k.c1);
+      this.apply(false);
+    }
+    // advance dt seconds in fixed sub-steps, the head and colliders moving from their last-frame to their current spots
+    integrate(dt) {
+      const C = this.cfg, n = Math.min(SETTLE / STEP2, Math.max(1, Math.ceil(dt / STEP2 - 1e-6))), hdt = dt / n;
+      const rootPrev = _e.copy(this.root0);
+      for (let s = 1; s <= n; s++) {
+        const u = s / n;
+        const root = _d.copy(this.root0).lerp(this.root1, u);
+        for (const k of this.cols) k.cs.copy(k.c0).lerp(k.c1, u);
+        const rootV = _c3.copy(root).sub(rootPrev).divideScalar(hdt);
+        rootPrev.copy(root);
+        let head = root, headV = rootV;
+        for (let i = 0; i < 3; i++) {
+          const p2 = this.p[i], v = this.v[i], L2 = this.len[i];
+          const dir = _a3.copy(this.dir0[i]).lerp(this.dir1[i], u).normalize();
+          const k = C.k[i], c = 2 * C.zeta * Math.sqrt(k);
+          const tx = head.x + dir.x * L2, ty = head.y + dir.y * L2, tz = head.z + dir.z * L2;
+          const ax = k * (tx - p2.x) - c * (v.x - headV.x) - C.drag * v.x;
+          const ay = k * (ty - p2.y) - c * (v.y - headV.y) - C.drag * v.y - C.g;
+          const az = k * (tz - p2.z) - c * (v.z - headV.z) - C.drag * v.z;
+          const ox = p2.x, oy = p2.y, oz = p2.z;
+          v.x += ax * hdt;
+          v.y += ay * hdt;
+          v.z += az * hdt;
+          p2.x += v.x * hdt;
+          p2.y += v.y * hdt;
+          p2.z += v.z * hdt;
+          const w = _b3.copy(p2).sub(head);
+          let wl = w.length();
+          if (wl < 1e-9) w.copy(dir);
+          else w.divideScalar(wl);
+          const cos = w.dot(dir), cmax = Math.cos(C.maxDeg[i] * Math.PI / 180);
+          if (cos < cmax) {
+            w.addScaledVector(dir, -cos);
+            const pl = w.length();
+            if (pl < 1e-9) w.copy(dir);
+            else w.divideScalar(pl).multiplyScalar(Math.sqrt(1 - cmax * cmax)).addScaledVector(dir, cmax);
+          }
+          p2.copy(head).addScaledVector(w, L2);
+          for (const K2 of this.cols) {
+            const dx = p2.x - K2.cs.x, dy = p2.y - K2.cs.y, dz = p2.z - K2.cs.z, d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 < K2.rw * K2.rw && d2 > 1e-12) {
+              const f = K2.rw / Math.sqrt(d2);
+              p2.set(K2.cs.x + dx * f, K2.cs.y + dy * f, K2.cs.z + dz * f);
+            }
+          }
+          w.copy(p2).sub(head);
+          wl = w.length();
+          if (wl > 1e-9) p2.copy(head).addScaledVector(w, L2 / wl);
+          v.set((p2.x - ox) / hdt, (p2.y - oy) / hdt, (p2.z - oz) / hdt);
+          head = p2;
+          headV = v;
+        }
+      }
+    }
+    // turn each hair bone (from its rest pose under the already placed parent) to point at its simulated tail
+    apply(rest) {
+      for (let i = 0; i < 3; i++) {
+        const b = this.chain[i];
+        if (rest) {
+          b.quaternion.copy(this.restQ[i]);
+          continue;
+        }
+        b.parent.updateWorldMatrix(false, false);
+        b.parent.getWorldQuaternion(_q3);
+        _q22.copy(_q3).multiply(this.restQ[i]);
+        const from = _a3.copy(Y).applyQuaternion(_q22);
+        const bp = _c3.copy(b.position).applyMatrix4(b.parent.matrixWorld);
+        const to = _d.copy(this.p[i]).sub(bp).normalize();
+        _q32.setFromUnitVectors(from, to).multiply(_q22);
+        b.quaternion.copy(_q3.invert().multiply(_q32));
+        b.updateWorldMatrix(false, false);
+      }
+      this.chain[2].updateMatrixWorld(true);
+    }
+  };
+
   // src/render/clipchars.js
   var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
   var smooth2 = (u) => u * u * (3 - 2 * u);
@@ -49731,12 +49911,12 @@ void main() {
   var _ik = new Vector3();
   var _ikg = new Vector3();
   var _ikh = new Vector3();
-  var _q3 = new Quaternion();
-  var _q22 = new Quaternion();
-  var _q32 = new Quaternion();
   var _q4 = new Quaternion();
+  var _q23 = new Quaternion();
+  var _q33 = new Quaternion();
+  var _q42 = new Quaternion();
   var UP = new Vector3(0, 1, 0);
-  var _e = new Euler();
+  var _e2 = new Euler();
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
   var HOLD_T = 1 / 30 + 2e-4;
   function angleDiff2(a, b) {
@@ -49864,16 +50044,16 @@ void main() {
     rotateC(n, D) {
       const b = this.bones[n];
       if (!b) return;
-      this.container.getWorldQuaternion(_q22);
-      b.getWorldQuaternion(_q32);
-      const W3 = _q22.invert().multiply(_q32);
-      _q3.copy(W3).invert().multiply(D).multiply(W3);
-      b.quaternion.multiply(_q3);
+      this.container.getWorldQuaternion(_q23);
+      b.getWorldQuaternion(_q33);
+      const W3 = _q23.invert().multiply(_q33);
+      _q4.copy(W3).invert().multiply(D).multiply(W3);
+      b.quaternion.multiply(_q4);
       b.updateMatrixWorld(true);
     }
     rotateEulerC(n, x, y, z) {
-      _q3.setFromEuler(new Euler(x, y, z, "YXZ"));
-      this.rotateC(n, _q3.clone());
+      _q4.setFromEuler(new Euler(x, y, z, "YXZ"));
+      this.rotateC(n, _q4.clone());
     }
     worldPos(n, out) {
       return this.bones[n].getWorldPosition(out);
@@ -50026,6 +50206,7 @@ void main() {
       this.bladeQ = new Quaternion();
       this.prevTip = new Vector3();
       this.bladeInit = false;
+      this.hair = new HairSway(this.bones);
     }
     // Axe socket for each attack: the handle direction sampled in Blender (clipdata[path].d at the attack's
     // first frame, character space; each clip family grips differently) expressed in this hand's frame.
@@ -50044,9 +50225,9 @@ void main() {
         this.outer.position.set(0, 0, 0);
         this.mixer.update(0);
         this.container.updateMatrixWorld(true);
-        this.container.getWorldQuaternion(_q22);
-        this.bones[(A.hand || "Right") + "Hand"].getWorldQuaternion(_q32);
-        const handC = _q22.invert().multiply(_q32);
+        this.container.getWorldQuaternion(_q23);
+        this.bones[(A.hand || "Right") + "Hand"].getWorldQuaternion(_q33);
+        const handC = _q23.invert().multiply(_q33);
         this.meleeSocket[A.sock || A.name] = new Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
         act.setEffectiveWeight(0);
       }
@@ -50067,9 +50248,9 @@ void main() {
       this.grip("Right", _v4);
       this.grip("Left", _v23);
       const barrel = _v23.clone().sub(_v4).normalize();
-      this.shotgunQ(barrel, _q3);
-      this.bones.RightHand.getWorldQuaternion(_q22);
-      this.shotgunSocket = _q22.invert().multiply(_q3).clone();
+      this.shotgunQ(barrel, _q4);
+      this.bones.RightHand.getWorldQuaternion(_q23);
+      this.shotgunSocket = _q23.invert().multiply(_q4).clone();
       this.shotgunHoldSpan = _v23.distanceTo(_v4);
       h.setEffectiveWeight(0);
       id.setEffectiveWeight(0);
@@ -50103,10 +50284,10 @@ void main() {
       const axis = new Vector3().crossVectors(ca, ct);
       if (axis.lengthSq() < 1e-10) return;
       const ang = Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180);
-      _q3.setFromAxisAngle(axis.normalize(), ang);
-      cl.getWorldQuaternion(_q22);
-      cl.parent.getWorldQuaternion(_q32);
-      cl.quaternion.copy(_q32.invert().multiply(_q3).multiply(_q22));
+      _q4.setFromAxisAngle(axis.normalize(), ang);
+      cl.getWorldQuaternion(_q23);
+      cl.parent.getWorldQuaternion(_q33);
+      cl.quaternion.copy(_q33.invert().multiply(_q4).multiply(_q23));
       cl.updateMatrixWorld(true);
     }
     // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
@@ -50121,9 +50302,9 @@ void main() {
       this.outer.position.set(0, 0, 0);
       this.mixer.update(0);
       this.outer.updateMatrixWorld(true);
-      this.aimQuat(_q3);
-      this.bones.RightHand.getWorldQuaternion(_q22);
-      this.pistolSocket = _q22.invert().multiply(_q3).clone();
+      this.aimQuat(_q4);
+      this.bones.RightHand.getWorldQuaternion(_q23);
+      this.pistolSocket = _q23.invert().multiply(_q4).clone();
       id.setEffectiveWeight(0);
     }
     // pistol orientation from the arms: barrel along shoulders -> hands, slide upright (no roll)
@@ -50135,7 +50316,7 @@ void main() {
       const mid = _v32.add(_v43).multiplyScalar(0.5);
       const dir = _v43.copy(_v4).add(_v23).multiplyScalar(0.5).sub(mid).normalize();
       const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp4(dir.y, -1, 1));
-      return out.setFromEuler(_e.set(pitch, yawOnly, 0, "YXZ"));
+      return out.setFromEuler(_e2.set(pitch, yawOnly, 0, "YXZ"));
     }
     // Weapon socket on the right hand: the bat direction measured on the Mixamo reference skeleton
     // (clipdata.bat_idle[0].d, character space) expressed in this hand bone's own frame.
@@ -50152,9 +50333,9 @@ void main() {
       this.container.rotation.y = 0;
       this.mixer.update(0);
       this.container.updateMatrixWorld(true);
-      this.container.getWorldQuaternion(_q22);
-      this.bones.RightHand.getWorldQuaternion(_q32);
-      const handC = _q22.invert().multiply(_q32);
+      this.container.getWorldQuaternion(_q23);
+      this.bones.RightHand.getWorldQuaternion(_q33);
+      const handC = _q23.invert().multiply(_q33);
       this.batSocket = new Vector3(...s0.d).applyQuaternion(handC.invert()).normalize();
       cal.stop();
       cal.setEffectiveWeight(0);
@@ -50451,10 +50632,10 @@ void main() {
       this.rebaseUpper();
       const hy = this.hipYaw * (1 - sW);
       if (Math.abs(hy) > 1e-3) {
-        _q4.setFromAxisAngle(UP, hy);
-        this.rotateC("Hips", _q4);
-        _q4.setFromAxisAngle(UP, -hy);
-        this.rotateC("Spine", _q4);
+        _q42.setFromAxisAngle(UP, hy);
+        this.rotateC("Hips", _q42);
+        _q42.setFromAxisAngle(UP, -hy);
+        this.rotateC("Spine", _q42);
       }
       if (s.hurtT < this.prevHurt) {
         const l = this.toLocal(s.hurtDirX, s.hurtDirZ);
@@ -50465,6 +50646,7 @@ void main() {
       const f = this.flinch;
       if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC("Spine1", f.z * 0.6, 0, -f.x * 0.5);
       this.footLock(dt, s, A, sW, w);
+      this.hair.update(dt);
       this.weaponShown = uF > 0.5 ? "fists" : uW > 0.5 ? "bat1" : uA > 0.5 ? "axe" : uS > 0.5 ? "shotgun" : "pistol";
       if (s.action === "down") {
         this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
@@ -50562,18 +50744,18 @@ void main() {
     rebaseUpper() {
       const H4 = this.bones.Hips, S2 = this.bones.Spine;
       if (!H4 || !S2) return;
-      const inv = _q22.copy(H4.quaternion).invert();
+      const inv = _q23.copy(H4.quaternion).invert();
       for (const n in this.upperHips) {
         const a = this.act(n), w = a.getEffectiveWeight();
         if (w < 1e-3) continue;
         const v = this.upperHips[n].evaluate(a.time);
-        _q32.set(v[0], v[1], v[2], v[3]);
-        const fc = _v4.set(0, 0, 1).applyQuaternion(_q32), fn = _v23.set(0, 0, 1).applyQuaternion(H4.quaternion);
-        _q4.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
-        _q32.premultiply(_q4);
-        _q4.copy(inv).multiply(_q32);
-        _q3.identity().slerp(_q4, Math.min(1, w));
-        S2.quaternion.premultiply(_q3);
+        _q33.set(v[0], v[1], v[2], v[3]);
+        const fc = _v4.set(0, 0, 1).applyQuaternion(_q33), fn = _v23.set(0, 0, 1).applyQuaternion(H4.quaternion);
+        _q42.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
+        _q33.premultiply(_q42);
+        _q42.copy(inv).multiply(_q33);
+        _q4.identity().slerp(_q42, Math.min(1, w));
+        S2.quaternion.premultiply(_q4);
       }
       S2.updateMatrixWorld(true);
     }
@@ -50607,9 +50789,9 @@ void main() {
     }
     // Shotgun barrel direction in character (container) space, from the right-hand socket.
     shotgunBarrel(out) {
-      this.container.getWorldQuaternion(_q32).invert();
-      this.bones.RightHand.getWorldQuaternion(_q3).multiply(this.shotgunSocket);
-      return out.set(1, 0, 0).applyQuaternion(_q3).applyQuaternion(_q32);
+      this.container.getWorldQuaternion(_q33).invert();
+      this.bones.RightHand.getWorldQuaternion(_q4).multiply(this.shotgunSocket);
+      return out.set(1, 0, 0).applyQuaternion(_q4).applyQuaternion(_q33);
     }
     // Shotgun: the hold is baked in Blender so the barrel points along the pelvis' heading (blender: sg_reload);
     // what is left here is the small error when the running strafes turn the pelvis toward travel, turned out
@@ -50621,8 +50803,8 @@ void main() {
       if (rW === 0) this.sgYaw = live;
       const ey = (live * (1 - rW) + (this.sgYaw || 0) * rW) * k;
       if (Math.abs(ey) > 1e-4) for (const n of ["Spine", "Spine1", "Spine2"]) {
-        _q4.setFromAxisAngle(UP, ey / 3);
-        this.rotateC(n, _q4);
+        _q42.setFromAxisAngle(UP, ey / 3);
+        this.rotateC(n, _q42);
       }
       const kick = s.recoil * s.recoil * s.recoilScale;
       if (kick > 0.01) {
@@ -50656,12 +50838,12 @@ void main() {
       const S2 = this.shell;
       S2.visible = shellOn;
       if (shellOn) {
-        this.bones.LeftHand.getWorldQuaternion(_q3);
-        _q22.setFromEuler(_e.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, "XYZ"));
-        _q3.multiply(_q22);
-        S2.quaternion.copy(_q3);
+        this.bones.LeftHand.getWorldQuaternion(_q4);
+        _q23.setFromEuler(_e2.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, "XYZ"));
+        _q4.multiply(_q23);
+        S2.quaternion.copy(_q4);
         this.grip("Left", _v4);
-        S2.position.copy(_v4).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q3));
+        S2.position.copy(_v4).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q4));
       }
     }
     // ---- the weapon test arena (src/arena/testarena.js) ----
@@ -50733,7 +50915,7 @@ void main() {
     // The bat as a one-handed weapon (2026-10-16: Quaternius's Sword Regular Combo, split into its strikes; the user's pick
     // over the reference-video combo). hold: as placeHeld; idle: the Sword Idle clip, its upper body the bat's stance.
     setOneHandedBat(hold, idle) {
-      var _a4;
+      var _a5;
       this.batLib = hold;
       if (idle && !this.actions.sword_idle_upper) {
         const c = subClip(stripRoot(idle, hipsRest(this.model)), (b) => !LOWER.test(b), "sword_idle_upper");
@@ -50743,7 +50925,7 @@ void main() {
         a.play();
         a.setEffectiveWeight(0);
       }
-      (_a4 = this.up).sword ?? (_a4.sword = 0);
+      (_a5 = this.up).sword ?? (_a5.sword = 0);
     }
     placeWeapons(s, dt) {
       if (s.equipped === "test" && this.test) {
@@ -50773,23 +50955,23 @@ void main() {
         this.batModel.visible = !!this.batMode;
       }
       if (shown === "pistol") {
-        this.aimQuat(_q3);
+        this.aimQuat(_q4);
         const rW = this.reloadW || 0;
         if (rW > 0 && this.pistolSocket) {
-          this.bones.RightHand.getWorldQuaternion(_q22);
-          _q3.slerp(_q22.multiply(this.pistolSocket), rW);
+          this.bones.RightHand.getWorldQuaternion(_q23);
+          _q4.slerp(_q23.multiply(this.pistolSocket), rW);
         }
         this.grip("Right", _v4);
         this.pistol.position.copy(_v4);
-        this.pistol.quaternion.copy(_q3);
+        this.pistol.quaternion.copy(_q4);
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
         const G2 = this.shotgun, U2 = G2.userData, SP = SHOTGUN_SPEC;
-        this.bones.RightHand.getWorldQuaternion(_q3).multiply(this.shotgunSocket);
+        this.bones.RightHand.getWorldQuaternion(_q4).multiply(this.shotgunSocket);
         this.grip("Right", _v4);
         G2.position.copy(_v4);
-        G2.quaternion.copy(_q3);
+        G2.quaternion.copy(_q4);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -50809,8 +50991,8 @@ void main() {
           const wA = this.swingAct ? this.swingW : 0, wP = this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0, wI = Math.max(0, 1 - wA - wP);
           const ms = this.meleeSocket || {};
           const inHand = (v, hand) => {
-            this.bones[(hand || "Right") + "Hand"].getWorldQuaternion(_q3);
-            return _v5.copy(v).applyQuaternion(_q3);
+            this.bones[(hand || "Right") + "Hand"].getWorldQuaternion(_q4);
+            return _v5.copy(v).applyQuaternion(_q4);
           };
           dir = _v32.set(0, 0, 0).addScaledVector(inHand(this.batSocket, "Right"), wI);
           if (wA) dir.addScaledVector(inHand(ms[this.swingName] || this.batSocket, ms[this.swingName] ? this.swingHand : "Right"), wA);
@@ -50836,7 +51018,7 @@ void main() {
         if (want.lengthSq() < 1e-6) want.set(1, 0, 0).addScaledVector(dir, -dir.x);
         want.normalize();
         const x = want.clone().negate(), y = new Vector3().crossVectors(dir, x);
-        const target = _q22.setFromRotationMatrix(new Matrix4().makeBasis(x, y, dir));
+        const target = _q23.setFromRotationMatrix(new Matrix4().makeBasis(x, y, dir));
         if (!this.bladeInit || this.batMode) {
           this.bladeQ.copy(target);
           this.bladeInit = true;
@@ -50860,6 +51042,7 @@ void main() {
       }
       this.deathT += dt;
       this.mixer.update(dt);
+      this.hair.update(dt);
     }
   };
   var SHARED_CLIPS = /* @__PURE__ */ new WeakMap();
@@ -51014,10 +51197,10 @@ void main() {
       this.modules = {};
       this.gore = {};
       model.traverse((o) => {
-        var _a4, _b4;
+        var _a5, _b5;
         for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
         const m = GORE_NAME.exec(o.name);
-        if (m) ((_a4 = this.gore)[_b4 = m[1]] || (_a4[_b4] = {}))[m[2].toLowerCase()] = o;
+        if (m) ((_a5 = this.gore)[_b5 = m[1]] || (_a5[_b5] = {}))[m[2].toLowerCase()] = o;
       });
       this.modular = Object.keys(this.modules).length === 5;
       this.severed = /* @__PURE__ */ new Set();
@@ -55542,8 +55725,8 @@ void main() {
   var FRICTION = 0.55;
   var BOUNCE = 0.15;
   var CELL = 0.3;
-  var _a3 = new Vector3();
-  var _b3 = new Vector3();
+  var _a4 = new Vector3();
+  var _b4 = new Vector3();
   var _q5 = new Quaternion();
   var Particle = class {
     constructor(p2, r, invMass) {
@@ -55718,13 +55901,13 @@ void main() {
           if (body.sleep >= 1.5) continue;
           for (const c of body.cons) {
             const A = c.A, B = c.B;
-            _a3.subVectors(B.x, A.x);
-            const d = _a3.length() || 1e-6;
+            _a4.subVectors(B.x, A.x);
+            const d = _a4.length() || 1e-6;
             let target = d < c.lo ? c.lo : d > c.hi ? c.hi : d;
             if (target === d) continue;
             const k = (d - target) / (d * (A.w + B.w));
-            A.x.addScaledVector(_a3, k * A.w);
-            B.x.addScaledVector(_a3, -k * B.w);
+            A.x.addScaledVector(_a4, k * A.w);
+            B.x.addScaledVector(_a4, -k * B.w);
           }
         }
         if (it % 2 === 0) this._contacts(pts, grid);
@@ -55741,11 +55924,11 @@ void main() {
         for (const p2 of body.pts) maxV = Math.max(maxV, p2.x.distanceTo(p2.p) / dt);
         body.sleep = maxV < 0.08 ? body.sleep + dt : 0;
         body.ends.forEach(([A, B], i) => {
-          const axis = _a3.subVectors(B.x, A.x).normalize();
+          const axis = _a4.subVectors(B.x, A.x).normalize();
           const name = body.kind === "ragdoll" ? body.desc.parts[i].name : "";
           if (name === "pelvis" || name === "chest") {
             const [L2, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
-            frameQuat(axis, _b3.subVectors(L2.x, R.x), body.q[i]);
+            frameQuat(axis, _b4.subVectors(L2.x, R.x), body.q[i]);
           } else {
             _q5.setFromUnitVectors(body.prevAxis[i], axis);
             body.q[i].premultiply(_q5).normalize();
@@ -55764,12 +55947,12 @@ void main() {
           if (!c) continue;
           for (const q of c) {
             if (q === p2 || q.body.id < p2.body.id || q.body === p2.body && (q.i <= p2.i || p2.body.adj.has(p2.i * 64 + q.i))) continue;
-            _a3.subVectors(q.x, p2.x);
-            const d2 = _a3.lengthSq(), rr = p2.r + q.r;
+            _a4.subVectors(q.x, p2.x);
+            const d2 = _a4.lengthSq(), rr = p2.r + q.r;
             if (d2 >= rr * rr || d2 < 1e-10) continue;
             const d = Math.sqrt(d2), k = (rr - d) / (d * (p2.w + q.w));
-            p2.x.addScaledVector(_a3, -k * p2.w);
-            q.x.addScaledVector(_a3, k * q.w);
+            p2.x.addScaledVector(_a4, -k * p2.w);
+            q.x.addScaledVector(_a4, k * q.w);
           }
         }
       }
@@ -56406,7 +56589,7 @@ void main() {
   };
   var _v9 = new Vector3();
   var _q7 = new Quaternion();
-  var _q23 = new Quaternion();
+  var _q24 = new Quaternion();
   var _id3 = new Quaternion();
   var OriginalYola = class extends Actor {
     constructor(gltf, opts = {}) {
@@ -56475,12 +56658,12 @@ void main() {
       b.updateWorldMatrix(true, false);
       b.getWorldQuaternion(_q7);
       const cur = _v9.copy(this.armDir[name]).applyQuaternion(_q7);
-      const rot = _q23.setFromUnitVectors(cur, target);
+      const rot = _q24.setFromUnitVectors(cur, target);
       rot.premultiply(_id3.identity());
       const part = new Quaternion().identity().slerp(rot, w);
       const world = part.multiply(_q7.clone());
-      b.parent.getWorldQuaternion(_q23);
-      b.quaternion.copy(_q23.invert().multiply(world));
+      b.parent.getWorldQuaternion(_q24);
+      b.quaternion.copy(_q24.invert().multiply(world));
       b.updateMatrixWorld(true);
     }
     // rotate a bone about a world axis
@@ -56490,8 +56673,8 @@ void main() {
       b.updateWorldMatrix(true, false);
       b.getWorldQuaternion(_q7);
       const world = _id3.setFromAxisAngle(axis, angle).multiply(_q7.clone());
-      b.parent.getWorldQuaternion(_q23);
-      b.quaternion.copy(_q23.invert().multiply(world));
+      b.parent.getWorldQuaternion(_q24);
+      b.quaternion.copy(_q24.invert().multiply(world));
       b.updateMatrixWorld(true);
     }
     applySit() {
@@ -59532,8 +59715,8 @@ void main() {
       this.lightK = 1;
       if (this.spot) this.spot.intensity = 0;
       if (this.redLight) this.redLight.intensity = 0;
-      const Y = this.yola;
-      Y?.setShown?.(false);
+      const Y2 = this.yola;
+      Y2?.setShown?.(false);
       this.game?.().hideZombieViews?.();
       this.sound.stopCombatAmbience();
       this.setBlood(false);
@@ -60135,7 +60318,7 @@ void main() {
     }
     // ================================================================== ACT 4: the crisis, the painted breakthrough, control
     *act4() {
-      const st = this.stage, A = st.actors, bb = A.baseball, co = A.teamB, ta = A.teamA, an = ROOM1.player, Y = this.yola, g = this.game();
+      const st = this.stage, A = st.actors, bb = A.baseball, co = A.teamB, ta = A.teamA, an = ROOM1.player, Y2 = this.yola, g = this.game();
       this.state = "STABLE";
       this.substate = "BEAT";
       this.camTo(REVEAL_SHOT, 2.4);
@@ -60208,7 +60391,7 @@ void main() {
     }
     // The old hospital becomes a painting; Yola's bat breaks through it into the same room, now overrun.
     *breakthrough() {
-      const st = this.stage, A = st.actors, an = ROOM1.player, Y = this.yola, g = this.game(), bt = this.bt;
+      const st = this.stage, A = st.actors, an = ROOM1.player, Y2 = this.yola, g = this.game(), bt = this.bt;
       this.state = "BREAKTHROUGH";
       this.substate = "PAINT";
       this.setAlarm(0);
@@ -60312,8 +60495,8 @@ void main() {
       if (this.redLight) this.redLight.intensity = 0;
       this.belongings && (this.belongings.visible = true);
       this.stage.batStatic.visible = false;
-      const Y = this.yola;
-      Y.setShown(true);
+      const Y2 = this.yola;
+      Y2.setShown(true);
     }
     setLift3(k) {
       const L2 = this.arena.doorKits?.lift;
@@ -60975,7 +61158,7 @@ void main() {
     function collect() {
       if (S2.log.length > 14) S2.log.splice(0, S2.log.length - 14);
     }
-    const _a4 = {}, v = new T2.Vector3(), v2 = new T2.Vector3();
+    const _a5 = {}, v = new T2.Vector3(), v2 = new T2.Vector3();
     function redraw() {
       const sim2 = g.sim, p2 = sim2.player, y = g.yola, a = p2.action, A = a.type === "swing" ? attacksOf(p2.equipped)[a.combo] : null;
       skel.visible = S2.skel;
@@ -61001,7 +61184,7 @@ void main() {
       hipsDot.position.set(v.x, 0.02, v.z);
       let active = false;
       if (A && A.PATH) {
-        const s = meleeWorldSegment(p2, A, a.st, _a4);
+        const s = meleeWorldSegment(p2, A, a.st, _a5);
         active = a.st >= A.activeStart && a.st <= a.activeEnd;
         segGeo.setFromPoints([new T2.Vector3(s.hx, s.hy, s.hz), new T2.Vector3(s.tx, s.ty, s.tz)]);
         seg.visible = S2.marks;

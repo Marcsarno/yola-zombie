@@ -10,6 +10,7 @@ import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackE
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
+import { HairSway } from './hairsway.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
@@ -213,6 +214,7 @@ export class YolaView extends ClipBody {
     this.contacts = {};
     for (const [k, smp] of Object.entries(clipdata || {})) if (Array.isArray(smp) && smp[0]?.cL !== undefined) this.contacts[k] = { f0: smp[0].f, L: smp.map((q) => q.cL), R: smp.map((q) => q.cR) };
     this.bladeQ = new THREE.Quaternion(); this.prevTip = new THREE.Vector3(); this.bladeInit = false;
+    this.hair = new HairSway(this.bones); // the new Yola's ponytail sway (no hair bones on the first Yola: does nothing)
   }
 
   // Axe socket for each attack: the handle direction sampled in Blender (clipdata[path].d at the attack's
@@ -556,6 +558,7 @@ export class YolaView extends ClipBody {
     const f = this.flinch;
     if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC('Spine1', f.z * 0.6, 0, -f.x * 0.5);
     this.footLock(dt, s, A, sW, w);
+    this.hair.update(dt);
     this.weaponShown = uF > 0.5 ? 'fists' : uW > 0.5 ? 'bat1' : uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
     if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; return; } // (on the floor: weapons away)
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
@@ -864,6 +867,7 @@ export class YolaView extends ClipBody {
     }
     this.deathT += dt;
     this.mixer.update(dt);
+    this.hair.update(dt);
   }
 }
 

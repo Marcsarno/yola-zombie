@@ -6,6 +6,7 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe } from './render/weaponModels.js';
 import { ikArm } from './render/ik.js';
+import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC } from './core/weapons.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -99,6 +100,7 @@ class Actor {
     this.bones = {}; obj.traverse((o) => { if (o.isBone) { const n = o.name.replace(/^mixamorig:?/, ''); this.bones[UE_MAP[n] || n] = o; } });
     this.helper = new THREE.SkeletonHelper(obj); this.helper.visible = false; this.helper.material.depthTest = false;
     this.clip = null; this.action = null; this.frames = 1; this.t0 = 0;
+    this.hair = new HairSway(this.bones); // the ponytail sway (the new Yola), stepped by the render loop
   }
   setHeight(h) { this.height = h; this.root.scale.setScalar(h / this.nat); this.root.updateMatrixWorld(true); }
   play(clip) {
@@ -219,7 +221,7 @@ async function setChar(key) {
 }
 async function setClip(name) {
   const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
-  pinRoot(c, $('inplace').checked); main.play(c); FPS = fpsOf(c); vidRef(name);
+  pinRoot(c, $('inplace').checked); main.play(c); main.hair?.reset?.(); FPS = fpsOf(c); vidRef(name);
   // the reference: the clip's own source rig. Mixamo clips: Mixamo's X Bot; library clips: Quaternius's mannequin
   const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => name.startsWith(p));
   let rc = null, file = '';
@@ -317,7 +319,7 @@ function applyGun() {
 function refresh() {
   if (!main) return;
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
-  main.setFrame(Math.min(f, main.frames));
+  main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
   mainGun?.update(1); leftHand(f);
   if (refGun?.obj) { refGun.obj.visible = ref.root.visible; refGun.update(ref.height / main.height); }
@@ -459,6 +461,7 @@ function buildUI() {
       if (S.frame >= S.frames + 1) S.frame = $('loop').checked ? 1 : S.frames;
       refresh();
     }
+    if (main?.hair?.ok) { main.hair.on = $('hairSway').checked; main.hair.update(dt * (S.playing ? S.speed : 1)); }
     controls.update(); renderer.render(scene, camera);
   });
   window.__lab = { renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
