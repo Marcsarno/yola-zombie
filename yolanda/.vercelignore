@@ -3,3 +3,11 @@ zombie/blender
 zombie/shots
 zombie/node_modules
 tools
+# raw sources and licensed library files stay out of the public build (2026-10-16): the user's shield and opening
+# packages, the Mixamo FBX set, the Move Library bake (Kevin Iglesias clips may not be redistributed raw), proof images
+zombie/assets/source
+zombie/assets/mixamo
+zombie/assets/moves
+zombie/moves.html
+zombie/recordings
+zombie/dist/*.map

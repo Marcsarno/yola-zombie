@@ -424,3 +424,38 @@ Hospital route: http://localhost:5173/dist/Yolanda-Specialty-Medical-Center.html
   * The acid WILL hurt Yola eventually, but for now (testing gameplay and feel, not difficulty) Yola has infinite
     health: add a testInfiniteHealth tuning flag (as testInfiniteAmmo), on by default, hits still react and knock
     her down. Health and difficulty come later, when the user asks.
+- 2026-10-16 (round 17, overnight: Yola_Overnight_Claude_Handoff + Opening V3 package, then the play-and-polish loop).
+  Rollback: tag checkpoint-pre-opening-v3 (452925a). Full report: OVERNIGHT_REPORT.md.
+  * Opening V3: the reviewed 33-line script, take B for every line (line 32 never played, line 33 once after control),
+    on a dialogue bus with music ducking; scenes advance on actual playback completion (story-clock fallback when no
+    clip plays: muted start, failed load, silent seek). Clips: assets/opening/voice (A and B kept). Per-clip level match
+    measured in the browser (no clipping found; 29B is quiet, 30B/31B shouted). Captions off by default (CC button).
+    Three clinical cards (content.js CLINICAL_CARDS: wrong = hint + retry, right = success, Why?, Continue). A small 2D
+    patient monitor (HR, SpO2, trace, TOF row), the readiness checklist at 0.96, time cards.
+  * Journey: reception (line 01) -> office (02-11, Card 1) -> the colleague's wheelchair (12-15, a clean cut to him
+    seated; the guard carries the bat) -> a real ground-floor elevator (the Floor 3 kit, in the reception's north wall,
+    with a floor display G..3) -> the same lift opens into the Floor 3 OR suite (16) -> prepared, white clothes; guard
+    and bat outside by the belongings table -> 17-21 + Card 2 -> "Later in the procedure" -> 22 + Card 3 (0.78) -> 23
+    -> "A few minutes later" -> 0.96 + criteria -> handoff 24-26, Yola steps out -> stable beat -> crisis 27-31 (pulse
+    checked before "no pulse", compressions, he moves) -> the painted breakthrough (opening/breakthrough.js: the last
+    frame captured, painted, shattered by the bat finisher at its contact frame, ten Voronoi pieces, the outbreak OR
+    behind; strike frame held a beat; then the gameplay camera). ROOM1.player moved to (0.75, -6.05): the reveal spot.
+    Yola starts with the bat; the OR group has the white patient zombie and a nurse. No Gumby guard body in the level.
+  * Rooms: office monitor moved (it hid Yola's face), sharps added; reception poster no longer behind the cooler;
+    treatment recliners in the two bays (tools/anim/make_recliner.py, three tiers); the OR light over the knee (not
+    the head); clean light backdrop before the outbreak; selective emergency red after it, cooler fill, story blood;
+    OR / maintenance signs moved.
+  * Music: GameMusic (src/music.js) streams the supplied Agile Groove: explore (low-passed, quieter) / combat (full)
+    with distance hysteresis and a 3 s switch cooldown; starts on the breakthrough impact (or skip / continue).
+    Audio buses with Music / Effects / Voices levels in the pause menu; an effect-voice cap.
+  * Shield v2 on the guard (render/ShieldController.mjs unchanged; fitted to his fist in the hold pose; frontal blocks,
+    intact > hairline > heavy > break into five physics capsules, 5 s + fade). Orderly: 0.7 s wind-up with a floor lane,
+    a straight committed charge, a fresh wind-up after every miss.
+  * Polish loop: foot lock for every melee swing (axe / fists skated), one sound + shake + kick per swing however many
+    are hit, point-blank shotgun thump, crowd personal space, crawlers stay on the floor to attack (they stood up),
+    tuning v4 resets a stale meleeHitPause, cut-away hysteresis, card fits 320 x 690.
+  * Measured (desktop GPU, 375 x 812 emulation, real frame loop, tools/crowdtest.js): axe into 10 zombies 7.8 ms avg,
+    p95 14, max 35; 15 zombies 9.4 / 14 / 21; 30 zombies 15.5 / 21 / 118 (one spike while 20 extra views are created);
+    the rollback checkpoint: 7.7 / 9.1 ms (same). No melee hit-stop events. Node tests unchanged vs the checkpoint.
+  * NOT DONE (by decision): the gore plan above (arms off at the shoulder, the burst and acid) is a new system; the
+    polish brief said no new systems tonight. Not tested on a physical phone.
