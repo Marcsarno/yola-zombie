@@ -204,3 +204,16 @@ user dropped a stray -1 from the browser).
 
 Hair clipping through her body, shirt hem folding on a knee raise, sharp wrist/finger/ankle weights, fingertip bones
 sticking out, faint neck line: PONYTAIL_PLAN.md "FINAL POLISH PASS".
+
+## 2026-10-17: every weapon hold checked in Blender (the user: "use blender to check the hold of the weapons ... all of them")
+How: the Rig Lab's `__lab.exportHolds(name, cases)` writes each case as shots/<name>_NN.json (her hands and forearms posed
+and skinned, her body, the weapon, world metres); the game's own axe the same way from combat.html (Yola's renderer). In
+Blender (shots/hold_check.blend, one collection per case, bodies hidden): each hand's gap to the weapon and how far it
+sinks in (BVH nearest point), and four renders per case (front, her right, three-quarter, top: shots/bl/, sheets
+shots/blender_holds_*.png).
+- OK: pistol (idle, run, the reload), shotgun (hold, reload, rack), bat (idle and every strike, leg strike, floor smash),
+  axe idle / swing / chop, knife, sledgehammer and chainsaw in the hand that holds them.
+- Axe leg chop (gs_low_slash) frames ~22-27: her hands part; one fist holds the axe, the handle runs under the other wrist.
+- Sledgehammer and chainsaw: the arena holds them in ONE fist (the pick's hand); the left hand is never on the second grip
+  (weapons.json grip_secondary). The Rig Lab now holds the arena's weapons exactly as the arena does (it ran them through
+  both fists before).

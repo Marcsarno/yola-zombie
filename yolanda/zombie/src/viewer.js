@@ -84,7 +84,7 @@ const HELD = { pistol: 1, axe: 1, bat: 1, sledgehammer: 1, chainsaw: 1, knife: 1
 // .. and the knife"): their frames from the Move Library's data sheet (assets/arena/weapons.json: grip point, shaft and
 // reference axes, one or two hands), held as the bat (one hand) or the axe (two hands) is
 const LIB_WEAPONS = { sledgehammer: 1, chainsaw: 1, knife: 1 };
-let WDEFS = {};
+let WDEFS = {}, PICKS = {}; // PICKS: "<clip>|<weapon>" -> the Move Library pick's hold (hand, roll, slide, flip), as the arena uses it
 const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
 const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb' };
 
@@ -530,6 +530,7 @@ function updateMags() {
 }
 loadG('assets/weapons/pistol_core.glb').then((g) => { scene.remove(held.pistol); held.pistol = prepPistolCore(g); held.pistol.visible = false; scene.add(held.pistol); refresh(); }).catch(() => {}); // the game's pistol (the pack's)
 loadG('assets/weapons/fire_axe.glb').then((g) => { held.axe = prepAxe(g); held.axe.visible = false; scene.add(held.axe); applyGun(); refresh(); }).catch(() => {});
+fetch('assets/arena/selection.json').then((r) => r.json()).then((j) => { for (const [clip, m] of Object.entries(j.moves || {})) for (const u of m.uses || []) PICKS[clip + '|' + u.weapon] = { hand: u.hand || 'Right', roll: +u.roll || 0, slide: +u.slide || 0, flip: !!u.flip }; }).catch(() => {});
 fetch('assets/arena/weapons.json').then((r) => r.json()).then(async (j) => {
   WDEFS = j.weapons || {};
   for (const k in LIB_WEAPONS) {
@@ -782,13 +783,15 @@ function placeHeldOn(a, o) {
   if (w === 'bat' && placeOneHanded(a.bones, a === main ? handsOf().gunHand : 'Right', o, BAT_DEF, fitW('bat', a), {}, k)) return;
   // a two-handed weapon in a pose with the hands apart (an idle carried in one hand: the hold options, 2026-10-17): in the
   // right fist alone, as the bat (the data sheet's frame)
-  if ((w === 'axe' || (LIB_WEAPONS[w] && WDEFS[w]?.hands === 'two')) && WDEFS[w] && a.bones.LeftHandIndex1) {
+  if (w === 'axe' && WDEFS[w] && a.bones.LeftHandIndex1) {
     const B = a.bones, mid = (sd) => B[sd + 'HandIndex1'].getWorldPosition(new THREE.Vector3()).lerp(B[sd + 'HandPinky1'].getWorldPosition(new THREE.Vector3()), 0.5);
     if (mid('Right').distanceTo(mid('Left')) > 0.32 * k && placeOneHanded(B, 'Right', o, WDEFS[w], fitW(w, a), {}, k)) return;
   }
-  // the arena's other weapons: one-handed as the bat, two-handed as the axe (the handle through both fists), in their own
-  // model frames (the data sheet's shaft and reference axes), then the user's fit
+  // the arena's own weapons, as the arena holds them (src/arena/testarena.js: YolaView.placeHeld): in ONE fist, the pick's
+  // hand (else the data sheet's primary hand), turned by its roll, slid by its slide, flipped (2026-10-17: the Rig Lab ran the
+  // two-handed ones through both fists, which the game never does)
   const LD = LIB_WEAPONS[w] && WDEFS[w];
+  if (LD) { const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' }; if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) return; }
   if (LD && LD.hands === 'one' && placeOneHanded(a.bones, a === main ? handsOf().gunHand : 'Right', o, LD, fitW(w, a), {}, k)) return;
   if (LD && LD.hands === 'two') {
     const B = a.bones, ax = (sd) => B[sd + 'HandIndex1'].getWorldPosition(new THREE.Vector3()).sub(B[sd + 'HandPinky1'].getWorldPosition(_v3)).normalize();
@@ -1047,6 +1050,48 @@ function buildUI() {
 }
 
 // ---------------- review captures (full-size close-ups without the window: WEAPON_HOLD_PROCESS.md 16) ----------------
+// For Blender (2026-10-17, the user: "use blender to check the hold of the weapons ... all of them"): each case, as the Rig
+// Lab shows it, written to shots/<name>_<i>.json: her hands and forearms posed and skinned (the triangles whose vertices
+// belong to a hand, finger or forearm bone), her body around them, and the held weapon, all in world metres
+async function exportHolds(name, cases) {
+  const out = [], V = new THREE.Vector3();
+  for (let i = 0; i < cases.length; i++) {
+    const C = cases[i];
+    S.gun = C.gun; $('gun').value = C.gun; applyGun(); await setClip(C.clip); pausedUI(true); S.frame = C.frame; refresh(); refresh();
+    main.root.updateMatrixWorld(true);
+    const meshes = [], part = (bn) => /RightHand|RightForeArm/.test(bn) ? 'handR' : /LeftHand|LeftForeArm/.test(bn) ? 'handL' : 'body';
+    main.obj.traverse((o) => {
+      if (!o.isSkinnedMesh || !o.visible) return;
+      o.skeleton.update();
+      const g = o.geometry, n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, names = o.skeleton.bones.map((b) => b.name);
+      const vp = new Array(n), P = new Float32Array(n * 3);
+      for (let v = 0; v < n; v++) { let bi = 0, bw = -1; for (let k = 0; k < 4; k++) { const w = sw.getComponent(v, k); if (w > bw) { bw = w; bi = si.getComponent(v, k); } } vp[v] = part(names[bi] || ''); o.getVertexPosition(v, V).applyMatrix4(o.matrixWorld); P[v * 3] = V.x; P[v * 3 + 1] = V.y; P[v * 3 + 2] = V.z; }
+      const idx = g.index ? g.index.array : Array.from({ length: n }, (_, q) => q), by = {};
+      for (let t = 0; t < idx.length; t += 3) { const k = vp[idx[t]]; (by[k] ||= []).push(idx[t], idx[t + 1], idx[t + 2]); }
+      for (const [k, list] of Object.entries(by)) {
+        const map = new Map(), pos = [], ind = [];
+        for (const v of list) { let j = map.get(v); if (j === undefined) { j = map.size; map.set(v, j); pos.push(+P[v * 3].toFixed(4), +P[v * 3 + 1].toFixed(4), +P[v * 3 + 2].toFixed(4)); } ind.push(j); }
+        meshes.push({ name: k, pos, idx: ind });
+      }
+    });
+    const W = HELD[C.gun] ? held[C.gun] : mainGun?.obj;
+    if (W?.visible) {
+      W.updateMatrixWorld(true); const pos = [], ind = [];
+      W.traverse((m) => {
+        if (!m.isMesh || !m.visible) return;
+        const g = m.geometry, base = pos.length / 3, n = g.attributes.position.count;
+        for (let v = 0; v < n; v++) { V.fromBufferAttribute(g.attributes.position, v).applyMatrix4(m.matrixWorld); pos.push(+V.x.toFixed(4), +V.y.toFixed(4), +V.z.toFixed(4)); }
+        const idx = g.index ? g.index.array : Array.from({ length: n }, (_, q) => q); for (const q of idx) ind.push(base + q);
+      });
+      meshes.push({ name: 'weapon', pos, idx: ind });
+    }
+    const f = `${name}_${String(i).padStart(2, '0')}.json`;
+    await fetch('/__shot/' + f, { method: 'POST', body: JSON.stringify({ label: C.label || `${C.gun} ${C.clip} f${C.frame}`, gun: C.gun, clip: C.clip, frame: C.frame, hand: (PICKS[C.clip + '|' + C.gun] || {}).hand || null, meshes }) });
+    out.push(f);
+  }
+  return out;
+}
+
 // capView: one rig (who 'main' / 'ref'), looking at target ('hands', 'rhand', 'lhand', 'head', 'body', 'pair') from dir (world:
 // she faces +Z, her right is +X) at dist metres. capSheet: a grid of such views (each cell may set clip / frame / gun /
 // pre()) saved as shots/<name>.png through the dev server.
@@ -1117,5 +1162,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { HOLD_TUNE, HANDS, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();
