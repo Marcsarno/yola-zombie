@@ -49053,13 +49053,14 @@ void main() {
   var _sp = new Vector3();
   var _sd = new Vector3();
   var _sx = new Vector3(1, 0, 0);
-  function placeShell(bones, o, portWorld, side = "Left") {
+  var SHELL_INSERT = 6;
+  function placeShell(bones, o, portWorld, side = "Left", insert = 0) {
     const t = bones[side + "HandThumb2"], i = bones[side + "HandIndex2"];
     if (!t || !i) return false;
     t.getWorldPosition(_sp).lerp(i.getWorldPosition(_sd), 0.5);
     _sd.copy(portWorld).sub(_sp);
     if (_sd.lengthSq() < 1e-8) return false;
-    o.position.copy(_sp);
+    o.position.copy(_sp).lerp(portWorld, insert);
     o.quaternion.setFromUnitVectors(_sx, _sd.normalize());
     return true;
   }
@@ -50203,10 +50204,20 @@ void main() {
       const shellOn = rf >= SH.from && rf <= SH.to;
       this.grip("Left", _v4);
       let wPort = 0;
-      if (shellOn) {
+      const tail = rf > SH.to && rf < SH.to + 5;
+      if (shellOn || tail) {
         _v32.copy(U2.port.position).add(_v43.set(0, -SH.portDown, 0));
         G2.localToWorld(_v32);
-        wPort = smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
+        wPort = tail ? 0 : smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
+        const ins = tail ? smooth01(1 - (rf - SH.to) / 5) : smooth01((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT);
+        if (ins > 0) {
+          this.bones.LeftHandThumb2.getWorldPosition(_v43).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v6), 0.5).sub(_v4);
+          _v6.copy(U2.port.position);
+          G2.localToWorld(_v6);
+          _v6.sub(_v43);
+          _v32.lerp(_v6, ins);
+          wPort = Math.max(wPort, ins);
+        }
         if (wPort > 0) {
           this.ikArm("Left", _v32, wPort);
           this.grip("Left", _v4);
@@ -50218,7 +50229,7 @@ void main() {
       if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
       S2.visible = shellOn;
-      if (shellOn) placeShell(this.bones, S2, U2.port.getWorldPosition(_v32));
+      if (shellOn) placeShell(this.bones, S2, U2.port.getWorldPosition(_v32), "Left", smooth2(clamp4((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT, 0, 1)));
     }
     // ---- the weapon test arena (src/arena/testarena.js) ----
     // Library attack clips (skeleton-only GLB, same bones): root pinned like every clip, driven by the attack clock.

@@ -38226,13 +38226,14 @@ void main() {
   var _sp = new Vector3();
   var _sd = new Vector3();
   var _sx = new Vector3(1, 0, 0);
-  function placeShell(bones, o, portWorld, side = "Left") {
+  var SHELL_INSERT = 6;
+  function placeShell(bones, o, portWorld, side = "Left", insert = 0) {
     const t = bones[side + "HandThumb2"], i = bones[side + "HandIndex2"];
     if (!t || !i) return false;
     t.getWorldPosition(_sp).lerp(i.getWorldPosition(_sd), 0.5);
     _sd.copy(portWorld).sub(_sp);
     if (_sd.lengthSq() < 1e-8) return false;
-    o.position.copy(_sp);
+    o.position.copy(_sp).lerp(portWorld, insert);
     o.quaternion.setFromUnitVectors(_sx, _sd.normalize());
     return true;
   }
@@ -38769,10 +38770,17 @@ void main() {
     };
     main.grip("Left", _m14);
     const shellOn = f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from;
+    const tail = f > shellFit.to && f < shellFit.to + 5;
     let wPort = 0;
-    if (shellOn && U.port) {
+    if ((shellOn || tail) && U.port) {
       const target = g.localToWorld(U.port.position.clone().add(new Vector3(0, -PUMP.portDown, 0)));
-      wPort = smooth01(1 - (_m14.distanceTo(target) - 0.05) / 0.2);
+      wPort = tail ? 0 : smooth01(1 - (_m14.distanceTo(target) - 0.05) / 0.2);
+      const ins = tail ? smooth01(1 - (f - shellFit.to) / 5) : smooth01((f - (shellFit.to - SHELL_INSERT)) / SHELL_INSERT);
+      if (ins > 0) {
+        const B2 = main.bones, pinch = B2.LeftHandThumb2.getWorldPosition(new Vector3()).lerp(B2.LeftHandIndex2.getWorldPosition(_v3), 0.5).sub(_m14);
+        target.lerp(U.port.getWorldPosition(new Vector3()).sub(pinch), ins);
+        wPort = Math.max(wPort, ins);
+      }
       if (wPort > 0) {
         ik(target, wPort);
         main.grip("Left", _m14);
@@ -38801,8 +38809,8 @@ void main() {
     const on = !!main.action && f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from && S.gun === "short";
     shellObj.visible = on;
     if (!on) return;
-    const port = mainGun?.obj?.userData.port;
-    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v2))) {
+    const port = mainGun?.obj?.userData.port, u = smooth01((f - (shellFit.to - SHELL_INSERT)) / SHELL_INSERT);
+    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v2), "Left", u)) {
       shellObj.visible = false;
       return;
     }
