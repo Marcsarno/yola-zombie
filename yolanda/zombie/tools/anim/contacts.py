@@ -10,7 +10,7 @@
 #     her shoe sole (the lowest vertex of the shoe) sits exactly on the floor; in between, the correction fades.
 import bpy, math, os
 DEBUG = bool(os.environ.get('CONTACTS_DEBUG'))
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 
 def _pb(a, n): return a.pose.bones['mixamorig:' + n]
 def _wp(a, n): return a.matrix_world @ _pb(a, n).head
@@ -94,6 +94,49 @@ def support(src, tgt, act, f0, f1, log=None, on=1.2, off=2.2):
         worst['contact_frames'] += 1
         _key(tgt, ['LeftArm', 'LeftForeArm', 'LeftHand'], f)
     if log is not None: log.append(('support', act.name, worst))
+    return worst
+
+def _frame_q(a, side):
+    """The hand's joint frame (_hand_frame axes) as a world rotation."""
+    o, x, y, z, hs = _hand_frame(a, side)
+    return Matrix((x, y, z)).transposed().to_quaternion()
+
+def grip_relation(src, f0, f1):
+    """The support (left) hand in the gun (right) hand's own frame, averaged over a clip: the wrist's place in hand-lengths
+    and the left hand's turn, both from the joints (rig-independent). From X Bot's pistol_idle: his two-hand grip."""
+    sc = bpy.context.scene; c = Vector((0, 0, 0)); acc = Vector((0, 0, 0, 0)); q0 = None; n = 0
+    for f in range(f0, f1 + 1):
+        sc.frame_set(f)
+        o, x, y, z, hs = _hand_frame(src); d = _wp(src, 'LeftHand') - o
+        c += Vector((d.dot(x), d.dot(y), d.dot(z))) / hs
+        r = _frame_q(src, 'Right').inverted() @ _frame_q(src, 'Left')
+        if q0 is None: q0 = r.copy()
+        if q0.dot(r) < 0: r = Quaternion((-r.w, -r.x, -r.y, -r.z))
+        acc += Vector((r.w, r.x, r.y, r.z)); n += 1
+    return {'pos': c / n, 'rot': Quaternion(acc).normalized(), 'frames': n}
+
+def support_rel(tgt, act, f0, f1, rel, log=None):
+    """Composite pistol clips (built from several clips: no single source to copy): the support hand takes the reference
+    grip `rel` (grip_relation of X Bot's pistol_idle) on every frame: her left wrist where his is in the gun hand's frame,
+    scaled by her hand size, and her left hand turned as his is relative to the gun hand. Her gun hand stays put."""
+    sc = bpy.context.scene; worst = {'bend': 0, 'reach': 0, 'moved_cm': 0}
+    pl = _pb(tgt, 'LeftHand'); Mw = tgt.matrix_world
+    for f in range(f0, f1 + 1):
+        sc.frame_set(f)
+        to, tx, ty, tz, ths = _hand_frame(tgt); c = rel['pos']
+        goal = to + (tx * c.x + ty * c.y + tz * c.z) * ths
+        before = _wp(tgt, 'LeftHand')
+        r = two_bone(tgt, 'LeftArm', 'LeftForeArm', 'LeftHand', goal, 1.0)
+        if r:
+            worst['bend'] = max(worst['bend'], r[0]); worst['reach'] = max(worst['reach'], r[1])
+            worst['moved_cm'] = max(worst['moved_cm'], (before - _wp(tgt, 'LeftHand')).length)
+        # the left hand's turn: its joint frame = the gun hand's joint frame x rel (the bone keeps its offset to its joints)
+        want = _frame_q(tgt, 'Right') @ rel['rot']
+        K = (Mw.to_quaternion() @ pl.matrix.to_quaternion()).inverted() @ _frame_q(tgt, 'Left')  # joints in the bone's frame
+        Rw = want @ K.inverted()  # the bone's world rotation
+        _set_rot(pl, (Mw.to_quaternion().inverted() @ Rw).to_matrix())
+        _key(tgt, ['LeftArm', 'LeftForeArm', 'LeftHand'], f)
+    if log is not None: log.append(('support_rel', act.name, worst))
     return worst
 
 def hands(src, tgt, act, f0, f1, log=None, mode='arm', near=0.5, far=1.0):

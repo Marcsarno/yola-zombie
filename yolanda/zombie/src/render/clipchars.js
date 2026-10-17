@@ -56,6 +56,15 @@ function loopClip(clip) {
   clip.resetDuration();
   return clip;
 }
+// three.js's mixer only writes a bone when its blended value differs from what it wrote last update (PropertyMixer.apply
+// compares its two accumulation buffers). Yola's bones are put back to rest before each update (restQ), so a bone whose
+// value held still (a constant track, a held frame: fingers, a shoulder) was never written again and stayed at REST: in
+// the game her fingers were open and her right shoulder 10 deg off the clip (found 2026-10-17; the Rig Lab undoes its own
+// changes instead, so it showed the clips right). Spoiling the "last written" buffers makes the next update write every
+// bound value. (private: AnimationMixer._bindings, PropertyMixer.buffer = [incoming, accu0, accu1, original, ...])
+export function mixerWritesAll(mixer) {
+  for (const b of mixer._bindings) { const n = b.valueSize, buf = b.buffer; for (let i = n; i < 3 * n; i++) buf[i] = NaN; }
+}
 function hipsRest(root) {
   let h = null; root.traverse((o) => { if (!h && o.isBone && /Hips$/.test(o.name)) h = o; });
   return h ? { x: h.position.x, z: h.position.z } : null;
@@ -582,6 +591,7 @@ export class YolaView extends ClipBody {
     }
     if (scW > 0) for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
     for (const [b, q] of this.restQ) b.quaternion.copy(q);
+    mixerWritesAll(this.mixer); // (the mixer must rewrite every bone it drives, held values included)
     this.mixer.update(dt);
     this.container.updateMatrixWorld(true);
 
@@ -698,9 +708,16 @@ export class YolaView extends ClipBody {
   // During a reload the hands leave the aim, so the last aiming correction is held instead.
   aimPistol(s, ub) {
     const k = 1 - ub, rW = this.reloadW || 0;
-    this.grip('Right', _v); this.grip('Left', _v2);
-    this.bones.RightArm.getWorldPosition(_v3); this.bones.LeftArm.getWorldPosition(_v4);
-    const hx = (_v.x + _v2.x) / 2 - (_v3.x + _v4.x) / 2, hz = (_v.z + _v2.z) / 2 - (_v3.z + _v4.z) / 2;
+    let hx, hz;
+    if (this.pistolPlace !== 'old' && this.pistolInFist()) {
+      // the gun in her fist (pistolInFist): the BARREL is what turns onto the aim (2026-10-17: X Bot's own barrel sits ~8 deg
+      // off his arms' midline, hers ~12, so aiming the arms left the shots' gun 5-8 deg off the target)
+      const d = _v.set(0, 0, 1).applyQuaternion(this.pistol.quaternion); hx = d.x; hz = d.z;
+    } else {
+      this.grip('Right', _v); this.grip('Left', _v2);
+      this.bones.RightArm.getWorldPosition(_v3); this.bones.LeftArm.getWorldPosition(_v4);
+      hx = (_v.x + _v2.x) / 2 - (_v3.x + _v4.x) / 2; hz = (_v.z + _v2.z) / 2 - (_v3.z + _v4.z) / 2;
+    }
     const live = clamp(angleDiff(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
     if (rW === 0) this.aimErr = live;
     const err = live * (1 - rW) + (this.aimErr || 0) * rW;

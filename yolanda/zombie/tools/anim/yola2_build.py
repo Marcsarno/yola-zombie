@@ -86,6 +86,18 @@ LOOP = re.compile(r'run|walk|strafe|idle|_plain|Idle')  # looping gaits and idle
 HOLD = re.compile(r'bat_|baseball|pistol_|rifle|sg_reload|gs_|melee_horizontal|Heavy_Combo|2H|Polearm')  # two-handed weapon holds
 SHOES = {}
 CLOG = []
+# the pistol strafes built from several clips (carried from the first Yola: no single source rig to copy the support hand
+# from): her left hand takes X Bot's pistol_idle two-hand grip in the gun hand's frame (contacts.support_rel; before
+# 2026-10-17 it hung a hand-width below the gun)
+COMPOSITE = {'pistol_strafe_left', 'pistol_strafe_run_left', 'pistol_strafe_run_right'}
+_GRIP = {}
+def grip_ref():
+    if 'rel' not in _GRIP:
+        objs, src, acts = import_any(os.path.join(MX, 'yola_pistol_idle.fbx')); set_action(src, acts[0])
+        _GRIP['rel'] = contacts.grip_relation(src, int(acts[0].frame_range[0]), int(acts[0].frame_range[1]))
+        print('GRIP_REF', {k: (tuple(round(x, 3) for x in v) if hasattr(v, '__iter__') else v) for k, v in _GRIP['rel'].items()})
+        drop(objs, acts)
+    return _GRIP['rel']
 def bake(src, tgt, name):
     sact = src.animation_data.action
     s0 = int(round(sact.frame_range[0]))
@@ -97,8 +109,11 @@ def bake(src, tgt, name):
     mesh = next((c for c in tgt.children if c.type == 'MESH'), None)
     if os.environ.get('YOLA2_HANDS') == 'support':  # (test: the support hand placed in the gun hand's frame, any clip)
         contacts.support(src, tgt, act, f0, f1, CLOG, off=float(os.environ.get('YOLA2_SUPPORT_OFF', 2.2)))
+    elif name in COMPOSITE and not os.environ.get('YOLA2_NO_HANDS') and 'YOLA2_HANDS' not in os.environ:
+        contacts.support_rel(tgt, act, f0, f1, grip_ref(), CLOG)  # (built from several clips: X Bot's pistol_idle grip)
     elif HOLD.search(name) and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts)
-        contacts.hands(src, tgt, act, f0, f1, CLOG, mode=os.environ.get('YOLA2_HANDS', 'arm'),  # (YOLA2_HANDS=gunhand: test)
+        # pistol clips: 'gunhand' (2026-10-17: the gun arm bends as X Bot's, no locked shoulder); the other holds as built
+        contacts.hands(src, tgt, act, f0, f1, CLOG, mode=os.environ.get('YOLA2_HANDS', 'gunhand' if name.startswith('pistol_') else 'arm'),
                        near=float(os.environ.get('YOLA2_HANDS_NEAR', 0.5)), far=float(os.environ.get('YOLA2_HANDS_FAR', 1.0)))
     if mesh is not None:
         if tgt.name not in SHOES: SHOES[tgt.name] = contacts.shoe_vertices(mesh)

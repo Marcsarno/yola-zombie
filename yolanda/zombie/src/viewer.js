@@ -834,6 +834,42 @@ function buildUI() {
   });
 }
 
+// ---------------- review captures (full-size close-ups without the window: WEAPON_HOLD_PROCESS.md 16) ----------------
+// capView: one rig (who 'main' / 'ref'), looking at target ('hands', 'rhand', 'lhand', 'body', 'pair') from dir (world:
+// she faces +Z, her right is +X) at dist metres. capSheet: a grid of such views (each cell may set clip / frame / gun /
+// pre()) saved as shots/<name>.png through the dev server.
+async function capView({ who = 'main', dir = [1, 0.3, 1], dist = 0.5, target = 'hands', w = 600, h = 450 }) {
+  const a = who === 'ref' ? ref : main, cam = camera, c = new THREE.Vector3();
+  if (target === 'hands') { a.grip('Right', _v); a.grip('Left', _v2); c.copy(_v).lerp(_v2, 0.5); }
+  else if (target === 'rhand' || target === 'lhand') a.grip(target === 'rhand' ? 'Right' : 'Left', c);
+  else if (target === 'pair') { main.bones.Hips.getWorldPosition(_v); ref.bones.Hips.getWorldPosition(_v2); c.copy(_v).lerp(_v2, 0.5); c.y = 0.9; }
+  else { a.bones.Hips.getWorldPosition(c); c.y = 0.9 * a.height / 1.62; }
+  const keep = { p: cam.position.clone(), t: controls.target.clone(), asp: cam.aspect, pr: renderer.getPixelRatio() };
+  cam.position.copy(c).addScaledVector(_v3.set(...dir).normalize(), dist); cam.lookAt(c); cam.aspect = w / h; cam.updateProjectionMatrix();
+  renderer.setPixelRatio(1); renderer.setSize(w, h, false); updateFingers(); renderer.render(scene, cam);
+  const bmp = await createImageBitmap(renderer.domElement);
+  renderer.setPixelRatio(keep.pr); renderer.setSize(innerWidth, innerHeight, false); cam.aspect = keep.asp; cam.updateProjectionMatrix();
+  cam.position.copy(keep.p); controls.target.copy(keep.t); controls.update();
+  return bmp;
+}
+async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
+  const rows = Math.ceil(cells.length / cols), oc = new OffscreenCanvas(cols * w, rows * h), cx = oc.getContext('2d');
+  cx.fillStyle = '#111'; cx.fillRect(0, 0, oc.width, oc.height);
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i];
+    if (c.gun && S.gun !== c.gun) { S.gun = c.gun; $('gun').value = c.gun; fillClips(); applyGun(); weaponUI(); }
+    if (c.clip && main.clip?.name !== c.clip) { $('clip').value = c.clip; await setClip(c.clip); applyGun(); }
+    pausedUI(true); if (c.frame) S.frame = c.frame;
+    c.pre?.(); refresh();
+    const bmp = await capView({ ...c, w, h }), x = (i % cols) * w, y = Math.floor(i / cols) * h;
+    cx.drawImage(bmp, x, y);
+    cx.fillStyle = 'rgba(0,0,0,.6)'; cx.fillRect(x, y, w, 22); cx.fillStyle = '#fff'; cx.font = '15px sans-serif'; cx.fillText(c.label || '', x + 6, y + 16);
+    cx.strokeStyle = '#444'; cx.strokeRect(x, y, w, h);
+  }
+  const r = await fetch('/__shot/' + name + '.png', { method: 'POST', body: await oc.convertToBlob({ type: 'image/png' }) });
+  return r.status;
+}
+
 // ---------------- main ----------------
 (async function init() {
   buildUI(); makeMarks();
@@ -864,5 +900,5 @@ function buildUI() {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { view: capView, sheet: capSheet, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();
