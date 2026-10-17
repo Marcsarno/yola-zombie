@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -46219,8 +46219,8 @@ void main() {
     }
     startSwing(sim2, combo2, unlocked = false) {
       this.swingId++;
-      const G4 = combo2 === 0 ? groundAttack(this.equipped) : null, ground = !!(G4 && sim2.groundTarget?.(this));
-      const A = ground ? G4 : this.attacks[combo2];
+      const G5 = combo2 === 0 ? groundAttack(this.equipped) : null, ground = !!(G5 && sim2.groundTarget?.(this));
+      const A = ground ? G5 : this.attacks[combo2];
       const as = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
       const tgt = as?.target || null, turnBy = as?.turn || 0;
       let lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo2 > 0 ? 0.75 : 0.5)) : 0;
@@ -47883,7 +47883,7 @@ void main() {
     // ---------------- axe: swept between simulation steps ----------------
     resolveMelee(p, t0, t1, act) {
       if (t1 <= t0) return;
-      const SUB = 4, T2 = this.T, A = p.atk(act), G4 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
+      const SUB = 4, T2 = this.T, A = p.atk(act), G5 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
       let prev = meleeWorldSegment(p, A, t0, _a);
       let px2 = prev.tx, pz2 = prev.tz;
       {
@@ -47909,14 +47909,14 @@ void main() {
             this.emit({ type: "batClank", x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz });
           }
         }
-        const f = G4.hitFrom / G4.length;
+        const f = G5.hitFrom / G5.length;
         const ax = seg.hx + (tipX - seg.hx) * f, az = seg.hz + (tipZ - seg.hz) * f;
         const ay = seg.hy + (seg.ty - seg.hy) * f;
         const chop = A.style === "chop";
         for (const z of this.zombies) {
           if (!z.alive || act.hitSet.has(z.id)) continue;
           if (z.down && !chop) continue;
-          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G4.radius : 0);
+          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G5.radius : 0);
           const minY = z.down || z.crawling ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y);
           const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
           const y1 = ay + (seg.ty - ay) * h1.t;
@@ -47924,7 +47924,7 @@ void main() {
           const d2 = seg.ty >= minY ? segPointDist2(px2, pz2, tipX, tipZ, z.x, z.z).d2 : 1e9;
           let near = Math.min(d1, d2) <= rr * rr;
           if (!near && !z.down && !z.crawling && z.armsLost < 2) {
-            const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G4.radius : 0);
+            const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G5.radius : 0);
             const e1 = segPointDist2(ax, az, tipX, tipZ, ox, oz), ey = ay + (seg.ty - ay) * e1.t;
             near = ey >= minY && e1.d2 <= ar * ar || seg.ty >= minY && segPointDist2(px2, pz2, tipX, tipZ, ox, oz).d2 <= ar * ar;
           }
@@ -48075,7 +48075,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -48105,7 +48105,7 @@ void main() {
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -50236,21 +50236,21 @@ void main() {
     // Left hand on the shotgun: reaches the shell's loading port while it carries a shell, otherwise stays on
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
-    shotgunLeftHand(rf, G4) {
-      const U2 = G4.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
+    shotgunLeftHand(rf, G5) {
+      const U2 = G5.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
       const shellOn = rf >= SH.from && rf <= SH.to;
       this.grip("Left", _v4);
       let wPort = 0;
       const tail = rf > SH.to && rf < SH.to + 5;
       if (shellOn || tail) {
         _v32.copy(U2.port.position).add(_v43.set(0, -SH.portDown, 0));
-        G4.localToWorld(_v32);
+        G5.localToWorld(_v32);
         wPort = tail ? 0 : smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
         const ins = tail ? smooth01(1 - (rf - SH.to) / 5) : smooth01((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT);
         if (ins > 0) {
           this.bones.LeftHandThumb2.getWorldPosition(_v43).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v6), 0.5).sub(_v4);
           _v6.copy(U2.port.position);
-          G4.localToWorld(_v6);
+          G5.localToWorld(_v6);
           _v6.sub(_v43);
           _v32.lerp(_v6, ins);
           wPort = Math.max(wPort, ins);
@@ -50261,7 +50261,7 @@ void main() {
         }
       }
       _v23.set(U2.pumpX, U2.pump.position.y, U2.pump.position.z);
-      G4.localToWorld(_v23);
+      G5.localToWorld(_v23);
       const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
       if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
@@ -50437,8 +50437,8 @@ void main() {
       }
       if (this.test?.obj) this.test.obj.visible = false;
       if (this.batLib?.obj) {
-        const one = s.equipped === "bat" && this.weaponShown !== "fists" && this.weaponShown !== "pistol" && this.weaponShown !== "shotgun";
-        if (one) {
+        const one2 = s.equipped === "bat" && this.weaponShown !== "fists" && this.weaponShown !== "pistol" && this.weaponShown !== "shotgun";
+        if (one2) {
           this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
           this.placeHeld(this.batLib);
           this.batTip.copy(this.heldTip);
@@ -50471,12 +50471,12 @@ void main() {
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
-        const G4 = this.shotgun, U2 = G4.userData, SP = SHOTGUN_SPEC;
+        const G5 = this.shotgun, U2 = G5.userData, SP = SHOTGUN_SPEC;
         this.bones.RightHand.getWorldQuaternion(_q5).multiply(this.shotgunSocket);
         this.grip("Right", _v4);
-        G4.position.copy(_v4);
-        G4.quaternion.copy(_q5);
-        if (this.shotgunFit) applyFit(G4, _v4, _q5, this.shotgunFit, AXE_AT);
+        G5.position.copy(_v4);
+        G5.quaternion.copy(_q5);
+        if (this.shotgunFit) applyFit(G5, _v4, _q5, this.shotgunFit, AXE_AT);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -50485,9 +50485,9 @@ void main() {
         const rf = this.reloadFrame;
         if (rf >= SP.rackFrom && rf <= SP.rackTo) slide = Math.max(slide, Math.sin(Math.PI * (rf - SP.rackFrom) / (SP.rackTo - SP.rackFrom)));
         U2.pump.position.x = U2.pumpX - SP.pumpStroke * slide;
-        G4.updateMatrixWorld(true);
+        G5.updateMatrixWorld(true);
         U2.muzzle.getWorldPosition(this.muzzleWorld);
-        this.shotgunLeftHand(rf, G4);
+        this.shotgunLeftHand(rf, G5);
       } else {
         this.grip("Right", _v4);
         this.grip("Left", _v23);
@@ -51069,24 +51069,24 @@ void main() {
       else this.container.rotation.y = z.yaw;
       const sp = Math.hypot(z.vx, z.vz);
       const move = clamp4(sp / 0.25, 0, 1);
-      const one = this.oneShot ? this.oneShot.getEffectiveWeight() : 0;
+      const one2 = this.oneShot ? this.oneShot.getEffectiveWeight() : 0;
       const crawl = z.crawling && this.hasCrawl ? 1 : 0;
       const sprint = this.act("sprint") ? clamp4((sp - 1.3) / 1.2, 0, 1) : 0;
       if (sprint || this.act("sprint")) {
         const a = this.act("sprint");
-        a.setEffectiveWeight(move * sprint * (1 - one) * (1 - crawl));
+        a.setEffectiveWeight(move * sprint * (1 - one2) * (1 - crawl));
         a.timeScale = clamp4(sp / this.sprintNative, 0.5, 1.6);
       }
-      this.act("walk").setEffectiveWeight(move * (1 - sprint) * (1 - one) * (1 - crawl));
-      this.act("idle").setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
+      this.act("walk").setEffectiveWeight(move * (1 - sprint) * (1 - one2) * (1 - crawl));
+      this.act("idle").setEffectiveWeight((1 - move) * (1 - one2) * (1 - crawl));
       this.act("walk").timeScale = clamp4(sp / this.nativeWalk, 0.5, 3.2);
       if (this.act("shield_upper")) {
         const own = z.state === "windup" || z.state === "strike" || z.state === "recover";
-        this.act("shield_upper").setEffectiveWeight(this.shieldUp ? (own ? 1 - one : 3) * (1 - crawl) : 0);
+        this.act("shield_upper").setEffectiveWeight(this.shieldUp ? (own ? 1 - one2 : 3) * (1 - crawl) : 0);
       }
       if (this.hasCrawl) {
         const c = this.act("crawl");
-        c.setEffectiveWeight(crawl * (1 - one));
+        c.setEffectiveWeight(crawl * (1 - one2));
         c.timeScale = clamp4(sp / (0.22 * this.height), 0.45, 2.5);
         if (crawl) {
           if (z.state === "windup") c.timeScale = 0.25;
@@ -51356,7 +51356,7 @@ void main() {
     });
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -51710,7 +51710,7 @@ void main() {
       this._outfit || (this._outfit = []);
       this.model.traverse((o) => {
         if (!o.isMesh) return;
-        const one = (m) => {
+        const one2 = (m) => {
           const c = map && m && map[m.name];
           if (c === void 0) return m;
           const n = m.clone();
@@ -51720,7 +51720,7 @@ void main() {
           return n;
         };
         if (!o.userData.matOrig) o.userData.matOrig = o.material;
-        o.material = map ? Array.isArray(o.userData.matOrig) ? o.userData.matOrig.map(one) : one(o.userData.matOrig) : o.userData.matOrig;
+        o.material = map ? Array.isArray(o.userData.matOrig) ? o.userData.matOrig.map(one2) : one2(o.userData.matOrig) : o.userData.matOrig;
       });
     }
   };
@@ -54722,7 +54722,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -54762,7 +54762,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -54853,7 +54853,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -54918,7 +54918,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -55006,7 +55006,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -55190,7 +55190,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -55262,7 +55262,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -55615,7 +55615,7 @@ void main() {
     return magicSquare;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -55814,7 +55814,7 @@ void main() {
     return samples;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -56140,7 +56140,7 @@ void main() {
       const simplex = this.simplex;
       const perm = this.perm;
       const F4 = (Math.sqrt(5) - 1) / 4;
-      const G4 = (5 - Math.sqrt(5)) / 20;
+      const G42 = (5 - Math.sqrt(5)) / 20;
       let n0;
       let n1;
       let n2;
@@ -56151,7 +56151,7 @@ void main() {
       const j = Math.floor(y + s);
       const k = Math.floor(z + s);
       const l = Math.floor(w + s);
-      const t = (i + j + k + l) * G4;
+      const t = (i + j + k + l) * G42;
       const X0 = i - t;
       const Y0 = j - t;
       const Z0 = k - t;
@@ -56179,22 +56179,22 @@ void main() {
       const j3 = simplex[c][1] >= 1 ? 1 : 0;
       const k3 = simplex[c][2] >= 1 ? 1 : 0;
       const l3 = simplex[c][3] >= 1 ? 1 : 0;
-      const x1 = x0 - i1 + G4;
-      const y1 = y0 - j1 + G4;
-      const z1 = z0 - k1 + G4;
-      const w1 = w0 - l1 + G4;
-      const x2 = x0 - i2 + 2 * G4;
-      const y2 = y0 - j2 + 2 * G4;
-      const z2 = z0 - k2 + 2 * G4;
-      const w2 = w0 - l2 + 2 * G4;
-      const x3 = x0 - i3 + 3 * G4;
-      const y3 = y0 - j3 + 3 * G4;
-      const z3 = z0 - k3 + 3 * G4;
-      const w3 = w0 - l3 + 3 * G4;
-      const x4 = x0 - 1 + 4 * G4;
-      const y4 = y0 - 1 + 4 * G4;
-      const z4 = z0 - 1 + 4 * G4;
-      const w4 = w0 - 1 + 4 * G4;
+      const x1 = x0 - i1 + G42;
+      const y1 = y0 - j1 + G42;
+      const z1 = z0 - k1 + G42;
+      const w1 = w0 - l1 + G42;
+      const x2 = x0 - i2 + 2 * G42;
+      const y2 = y0 - j2 + 2 * G42;
+      const z2 = z0 - k2 + 2 * G42;
+      const w2 = w0 - l2 + 2 * G42;
+      const x3 = x0 - i3 + 3 * G42;
+      const y3 = y0 - j3 + 3 * G42;
+      const z3 = z0 - k3 + 3 * G42;
+      const w3 = w0 - l3 + 3 * G42;
+      const x4 = x0 - 1 + 4 * G42;
+      const y4 = y0 - 1 + 4 * G42;
+      const z4 = z0 - 1 + 4 * G42;
+      const w4 = w0 - 1 + 4 * G42;
       const ii = i & 255;
       const jj = j & 255;
       const kk = k & 255;
@@ -56248,7 +56248,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -56675,7 +56675,7 @@ void main() {
     "Denoise": 5
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -56727,7 +56727,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -57011,7 +57011,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -57099,7 +57099,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -57417,6 +57417,114 @@ void main() {
     }
   };
 
+  // src/sfx/banks.js
+  var G2 = "assets/sfx/guns/";
+  var takes = (name, n) => Array.from({ length: n }, (_, i) => `${G2}${name}_${String(i + 1).padStart(2, "0")}.mp3`);
+  var one = (name) => [`${G2}${name}.mp3`];
+  var BANKS = {
+    // the pistol: a close 9 mm / .45 crack + a sub thump for headphones + the corridor answering + brass on the tile
+    shot: { layers: [
+      { files: takes("pistol", 5), gain: 0.8, pitch: [-0.7, 0.5], wet: 0.34 },
+      { synth: "subPistol", gain: 1, wet: 0 },
+      { files: takes("brass", 4), gain: 0.2, pitch: [-1.5, 1.5], at: [0.34, 0.52], wet: 0.1, side: true }
+    ] },
+    // the shotgun: a 12 gauge pump blast + a deep sub + a long room (the pump follows as its own sound)
+    shotgun: { layers: [
+      { files: takes("shotgun", 8), gain: 1, pitch: [-0.9, 0.4], wet: 0.45 },
+      { synth: "subShotgun", gain: 1, wet: 0 }
+    ] },
+    // the Model 12's own rack: back, forward, and the spent hull bouncing off the floor
+    pump: { layers: [
+      { files: one("pump_back"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.16 },
+      { files: one("pump_fwd"), gain: 0.5, pitch: [-0.4, 0.4], at: 0.19, wet: 0.16 },
+      { files: takes("hull", 3), gain: 0.32, pitch: [-1, 1], at: [0.38, 0.5], wet: 0.1, side: true }
+    ] },
+    // the pistol reload (1.05 s): the empty magazine drops, the new one seats; the slide is reloadDone
+    pistolReload: { layers: [
+      { files: one("mag_out"), gain: 0.35, pitch: [-0.5, 0.5], at: 0.06, wet: 0.12 },
+      { files: one("mag_in"), gain: 0.45, pitch: [-0.5, 0.5], at: 0.5, wet: 0.12 }
+    ] },
+    pistolReloadDone: { layers: [{ files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
+    // the shotgun reload (1.9 s): four shells thumbed into the tube; the pump closes it (reloadDone)
+    shotgunReload: { layers: [0.12, 0.52, 0.92, 1.32].map((at) => ({ files: one("mag_in"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
+    dry: { layers: [{ files: one("dry_click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] }
+  };
+
+  // src/sfx/samples.js
+  var Samples = class {
+    constructor() {
+      this.raw = /* @__PURE__ */ new Map();
+      this.buf = /* @__PURE__ */ new Map();
+      this.lead = /* @__PURE__ */ new Map();
+      this.last = /* @__PURE__ */ new Map();
+      this.decoding = false;
+    }
+    files() {
+      const s = /* @__PURE__ */ new Set();
+      for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of l.files || []) s.add(f);
+      return [...s];
+    }
+    preload() {
+      if (this.started) return;
+      this.started = true;
+      for (const f of this.files()) fetch(f).then((r) => r.ok ? r.arrayBuffer() : null).then((ab) => {
+        if (ab) {
+          this.raw.set(f, ab);
+          if (this.ctx) this.decode(f);
+        }
+      }).catch(() => {
+      });
+    }
+    // with the AudioContext: decode everything fetched so far (and anything still arriving, as it lands)
+    attach(ctx) {
+      if (this.ctx) return;
+      this.ctx = ctx;
+      for (const f of this.raw.keys()) this.decode(f);
+    }
+    decode(f) {
+      const ab = this.raw.get(f);
+      if (!ab || this.buf.has(f)) return;
+      this.raw.delete(f);
+      const done = (b) => {
+        if (!b) return;
+        this.buf.set(f, b);
+        this.lead.set(f, onset(b));
+      };
+      try {
+        const p = this.ctx.decodeAudioData(ab, done, () => {
+        });
+        p?.catch?.(() => {
+        });
+      } catch {
+      }
+    }
+    // a bank plays only when every file of its main layer is in (half a bank would repeat the same take)
+    ready(name) {
+      const b = BANKS[name];
+      return !!b && (b.layers[0].files || []).every((f) => this.buf.has(f));
+    }
+    // a random take, never the one that played last time from this layer
+    pick(key, files) {
+      const have = files.filter((f) => this.buf.has(f));
+      if (!have.length) return null;
+      let i = Math.floor(Math.random() * have.length);
+      if (have.length > 1 && have[i] === this.last.get(key)) i = (i + 1 + Math.floor(Math.random() * (have.length - 1))) % have.length;
+      this.last.set(key, have[i]);
+      return have[i];
+    }
+  };
+  function onset(b) {
+    const d = b.getChannelData(0);
+    let pk = 0;
+    for (let i = 0; i < d.length; i++) {
+      const a = Math.abs(d[i]);
+      if (a > pk) pk = a;
+    }
+    const th = pk * 0.02;
+    for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > th) return Math.max(0, i / b.sampleRate - 1e-3);
+    return 0;
+  }
+
   // src/audio.js
   var MAX_VOICES = 14;
   var SILENT_WAV = (() => {
@@ -57440,6 +57548,26 @@ void main() {
     return "data:audio/wav;base64," + btoa(str);
   })();
   var MINOR = /* @__PURE__ */ new Set(["groan", "zombieHurt", "bump", "ricochet", "batMiss", "windup", "empty", "dry"]);
+  var SYNTH_ALIAS = { pistolReload: "reload", pistolReloadDone: "reloadDone", shotgunReload: "shellsStart" };
+  var SYNTH_WET = { heal: 0.05, swap: 0.04, wave: 0.03, clear: 0.03, death: 0.05, liftDing: 0.2, power: 0.2, bang: 0.3, groan: 0.3, zombieDeath: 0.2, knockdown: 0.22, shieldBreak: 0.3 };
+  function makeRoomIR(ctx, secs = 1.05, pre = 9e-3) {
+    const sr = ctx.sampleRate, n = Math.floor(sr * (secs + pre)), ir = ctx.createBuffer(2, n, sr);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = ir.getChannelData(ch);
+      let lo = 0;
+      for (let i = Math.floor(pre * sr); i < n; i++) {
+        const t = i / sr - pre, w = Math.random() * 2 - 1;
+        lo += (w - lo) * 0.08;
+        const hi = w - lo;
+        d[i] = lo * 2.2 * Math.exp(-6.9 * t / secs) + hi * 0.5 * Math.exp(-6.9 * t / (secs * 0.35));
+      }
+      for (const [ms, a] of [[11, 0.5], [17, 0.38], [23, 0.33], [31, 0.27], [39, 0.2], [52, 0.16]]) {
+        const i = Math.floor((pre + (ms + (ch ? 2.7 : 0)) / 1e3) * sr);
+        if (i < n) d[i] += a * (ch ? -1 : 1) * (0.8 + Math.random() * 0.4);
+      }
+    }
+    return ir;
+  }
   var CombatAudio = class {
     constructor() {
       this.ctx = null;
@@ -57452,7 +57580,14 @@ void main() {
       this.recent = /* @__PURE__ */ new Map();
       this.active = [];
       this.duckK = 1;
+      this.modern = true;
+      this.samples = new Samples();
+      this.spatial = null;
     }
+    preload() {
+      this.samples.preload();
+    }
+    // fetch the recorded banks while the game loads
     init() {
       if (!this.ctx) {
         try {
@@ -57460,12 +57595,30 @@ void main() {
         } catch {
           return;
         }
-        this.master = this.ctx.createGain();
-        this.master.connect(this.ctx.destination);
-        this.sfx = this.ctx.createGain();
-        this.musicBus = this.ctx.createGain();
-        this.voiceBus = this.ctx.createGain();
-        for (const b of [this.sfx, this.musicBus, this.voiceBus]) b.connect(this.master);
+        const c = this.ctx;
+        this.limiter = c.createDynamicsCompressor();
+        Object.entries({ threshold: -2.5, knee: 0, ratio: 20, attack: 2e-3, release: 0.12 }).forEach(([k, v]) => this.limiter[k].value = v);
+        this.master = c.createGain();
+        this.master.connect(this.limiter);
+        this.limiter.connect(c.destination);
+        this.sfx = c.createGain();
+        this.musicBus = c.createGain();
+        this.voiceBus = c.createGain();
+        for (const b of [this.musicBus, this.voiceBus]) b.connect(this.master);
+        this.sfxComp = c.createDynamicsCompressor();
+        Object.entries({ threshold: -16, knee: 8, ratio: 3, attack: 4e-3, release: 0.18 }).forEach(([k, v]) => this.sfxComp[k].value = v);
+        this.sfxComp.connect(this.master);
+        this.sfx.connect(this.modern ? this.sfxComp : this.master);
+        try {
+          this.reverbIn = c.createGain();
+          const conv = c.createConvolver();
+          conv.buffer = makeRoomIR(c);
+          this.reverbIn.connect(conv);
+          conv.connect(this.sfx);
+        } catch {
+          this.reverbIn = null;
+        }
+        this.samples.attach(c);
         this.applyVolume();
         const len = this.ctx.sampleRate * 0.6;
         this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -57578,10 +57731,91 @@ void main() {
       this.active.push(t);
       return true;
     }
-    play(name, k = 1) {
+    // pos: {x, z} in the world (panned and faded by distance through this.spatial, which main.js supplies); none = at Yola
+    play(name, k = 1, pos = null) {
       if (!this.ok || !this.admit(name, k)) return;
       const t = this.ctx.currentTime;
+      if (!this.modern) {
+        this.out = null;
+        this.synth(SYNTH_ALIAS[name] || name, k, t);
+        return;
+      }
+      const sp = pos && this.spatial ? this.spatial(pos.x, pos.z) : null;
+      if (this.samples.ready(name)) {
+        this.playBank(name, k, t, sp);
+        return;
+      }
+      this.out = this.chain(sp, SYNTH_WET[name] ?? 0.14);
+      this.synth(SYNTH_ALIAS[name] || name, k, t);
+      this.out = null;
+    }
+    playBank(name, k, t, sp) {
+      const c = this.ctx;
+      BANKS[name].layers.forEach((l, li) => {
+        const at = Array.isArray(l.at) ? l.at[0] + Math.random() * (l.at[1] - l.at[0]) : l.at || 0;
+        const lsp = l.side && sp ? { ...sp, pan: Math.max(-0.9, Math.min(0.9, sp.pan + (Math.random() < 0.5 ? -0.18 : 0.18))) } : l.side ? { pan: Math.random() < 0.5 ? -0.18 : 0.18, d: 0 } : sp;
+        if (l.synth) {
+          this.out = this.chain(lsp, l.wet ?? 0, l.gain ?? 1);
+          this.synth(l.synth, k, t + at);
+          this.out = null;
+          return;
+        }
+        const f = this.samples.pick(name + li, l.files);
+        if (!f) return;
+        const src = c.createBufferSource();
+        src.buffer = this.samples.buf.get(f);
+        const semi = l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
+        src.playbackRate.value = Math.pow(2, semi / 12);
+        const jitter = Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20);
+        src.connect(this.chain(lsp, l.wet ?? 0.15, (l.gain ?? 1) * Math.min(1.6, k) * jitter));
+        src.start(t + at, this.samples.lead.get(f) || 0);
+      });
+    }
+    // one voice's route: level and distance -> air (far sounds lose their top) -> stereo position -> the effects bus,
+    // plus a send into the room reverb that grows with distance (far away is mostly room)
+    chain(sp, wet = 0, gain = 1) {
+      const c = this.ctx, g = c.createGain(), d = sp?.d || 0, pan = sp?.pan || 0;
+      g.gain.value = gain / (1 + Math.max(0, d - 2.5) * 0.16);
+      let tail = g;
+      if (d > 5) {
+        const lp = c.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = Math.max(2400, 2e4 * Math.exp(-(d - 5) * 0.08));
+        tail.connect(lp);
+        tail = lp;
+      }
+      if (pan && c.createStereoPanner) {
+        const p = c.createStereoPanner();
+        p.pan.value = pan;
+        tail.connect(p);
+        tail = p;
+      }
+      tail.connect(this.sfx);
+      if (wet > 0 && this.reverbIn) {
+        const s = c.createGain();
+        s.gain.value = wet * (1 + Math.min(1.2, d / 12));
+        g.connect(s);
+        s.connect(this.reverbIn);
+      }
+      return g;
+    }
+    // the classic (synthesised only) sounds or the new ones: recorded banks, panning, the room, the bus compressor
+    setModern(on) {
+      this.modern = on;
+      if (!this.sfx) return;
+      this.sfx.disconnect();
+      this.sfx.connect(on ? this.sfxComp : this.master);
+    }
+    synth(name, k, t) {
       switch (name) {
+        case "subPistol":
+          this.tone(t, 0.13, 125, { f2: 46, gain: 0.32 * k, type: "sine", attack: 1e-3 });
+          break;
+        // headphone weight under the recorded crack
+        case "subShotgun":
+          this.tone(t, 0.32, 92, { f2: 32, gain: 0.55 * k, type: "sine", attack: 1e-3 });
+          this.tone(t, 0.16, 180, { f2: 70, gain: 0.18 * k, type: "triangle", attack: 1e-3 });
+          break;
         case "shot":
           this.noise(t, 0.12, { type: "lowpass", f: 5200, f2: 600, gain: 0.55 * k });
           this.tone(t, 0.09, 150, { f2: 55, gain: 0.5 * k, type: "triangle" });
@@ -58158,6 +58392,18 @@ void main() {
       mute.addEventListener("click", toggleMute);
       $("muteTop").addEventListener("click", toggleMute);
       syncMute();
+      const sfxMode = $("sfxModeBtn");
+      if (sfxMode) {
+        const syncMode = () => {
+          sfxMode.textContent = audio2.modern ? "Effects: new" : "Effects: classic";
+        };
+        sfxMode.addEventListener("click", () => {
+          audio2.setModern(!audio2.modern);
+          store3.set("sfxModern", audio2.modern);
+          syncMode();
+        });
+        syncMode();
+      }
       for (const [id, key, def] of [["goreChk", "gore", true], ["shakeChk", "shake", true], ["debugChk", "debug", false]]) {
         const el = $(id);
         el.checked = id === "debugChk" ? new URLSearchParams(location.search).get("debug") === "1" : store3.get(key, def);
@@ -58343,7 +58589,7 @@ void main() {
   };
 
   // src/render/physics/custom.js
-  var G2 = -9.81;
+  var G3 = -9.81;
   var ITER = 6;
   var DAMP = 0.996;
   var FRICTION = 0.55;
@@ -58505,7 +58751,7 @@ void main() {
         const vx = (p.x.x - p.p.x) * DAMP, vy = (p.x.y - p.p.y) * DAMP, vz = (p.x.z - p.p.z) * DAMP;
         p.p.copy(p.x);
         p.x.x += vx;
-        p.x.y += vy + G2 * dt * dt;
+        p.x.y += vy + G3 * dt * dt;
         p.x.z += vz;
         const c = p.cand || (p.cand = []);
         c.length = 0;
@@ -60709,7 +60955,7 @@ void main() {
 
   // src/opening/burst.js
   var HEIGHT = 1.68;
-  var G3 = 9;
+  var G4 = 9;
   function blobTexture(soft) {
     const c = document.createElement("canvas");
     c.width = c.height = 64;
@@ -60975,7 +61221,7 @@ void main() {
             continue;
           }
           if (c.rest) continue;
-          c.vel.y -= G3 * dt;
+          c.vel.y -= G4 * dt;
           p.addScaledVector(c.vel, dt);
           e.set(c.spin.x * dt, c.spin.y * dt, c.spin.z * dt);
           dq.setFromEuler(e);
@@ -61099,7 +61345,7 @@ void main() {
       for (const d of this.drops) {
         if (d.life <= 0) continue;
         d.life -= dt;
-        d.v.y -= G3 * dt;
+        d.v.y -= G4 * dt;
         d.p.addScaledVector(d.v, dt);
         const B = this.bounds;
         if (B && (d.p.x < B.x0 || d.p.x > B.x1 || d.p.z < B.z0 || d.p.z > B.z1)) {
@@ -62316,12 +62562,12 @@ void main() {
     }
     // the pusher's hands on the chair's push grips (a two-bone reach after the clip, every frame the chair is pushed)
     handsToGrips(p, wc) {
-      const G4 = wc.userData.grips;
-      if (!G4?.L || !G4?.R) return;
+      const G5 = wc.userData.grips;
+      if (!G5?.L || !G5?.R) return;
       wc.updateMatrixWorld(true);
       p.root.updateMatrixWorld(true);
       const B = p.bones;
-      for (const [side, grip] of [["L", G4.L], ["R", G4.R]]) {
+      for (const [side, grip] of [["L", G5.L], ["R", G5.R]]) {
         const up = B["upper_arm" + side], lo = B["forearm" + side], hand = B["hand" + side];
         if (up && lo && hand) ikArm(up, lo, hand, grip.getWorldPosition(new Vector3()), 1);
       }
@@ -64518,7 +64764,7 @@ void main() {
     return S2;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -66216,6 +66462,12 @@ void main() {
     audio.levels[b] = store2.get("lvl_" + b, audio.levels[b]);
     audio.busMuted[b] = store2.get("mute_" + b, false);
   }
+  audio.setModern(store2.get("sfxModern", true));
+  var _ap = new Vector3();
+  audio.spatial = (x, z) => {
+    _ap.set(x, 1, z).project(camera);
+    return { pan: Math.max(-0.85, Math.min(0.85, _ap.x * 0.7)), d: Math.hypot(x - sim.player.x, z - sim.player.z) };
+  };
   var music = new GameMusic(audio);
   var fx = new FX(scene);
   var gibs = new GibBurst(scene, new GLTFLoader(), fx);
@@ -66297,6 +66549,7 @@ void main() {
   var loader = new GLTFLoader();
   async function load() {
     gibs.load({ 0: "assets/zombie-nurse-burst.glb", 1: "assets/zombie-patient-burst.glb" });
+    audio.preload();
     music.preload();
     hud.loading(0);
     arena = new Arena(scene, resolvedQuality(), renderer);
@@ -66860,11 +67113,11 @@ void main() {
           fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez);
           if (e.hit === "zombie" && !e.blocked) {
             fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false);
-            audio.play("bulletHit");
-            if (!e.killed) audio.play("zombieHurt");
+            audio.play("bulletHit", 1, { x: e.ex, z: e.ez });
+            if (!e.killed) audio.play("zombieHurt", 1, { x: e.ex, z: e.ez });
           } else if (e.hit === "wall") {
             fx.impactWall(e.ex, e.ez, e.nx, e.nz);
-            audio.play("ricochet");
+            audio.play("ricochet", 1, { x: e.ex, z: e.ez });
           }
           shake(0.12);
           break;
@@ -67033,7 +67286,7 @@ void main() {
         // her charge ran into Yola
         case "zombieSlam": {
           const d = Math.hypot(e.x - p.x, e.z - p.z);
-          audio.play("knockdown", 1.4);
+          audio.play("knockdown", 1.4, e);
           fx.ring(e.x, e.z, 14208959);
           fx.burst(e.x, 0.1, e.z, 16, 13616820, 2.2, 0.8, 0.6);
           if (d < 7) shake(0.9 - d * 0.1);
@@ -67053,7 +67306,7 @@ void main() {
           shake(0.15);
           break;
         case "shieldHit":
-          audio.play("shieldHit", e.kind === "pistol" ? 0.7 : 1);
+          audio.play("shieldHit", e.kind === "pistol" ? 0.7 : 1, e);
           fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ);
           if (e.kind !== "pistol") shake(0.25);
           break;
@@ -67072,7 +67325,7 @@ void main() {
           audio.play("batMiss");
           break;
         case "batClank":
-          audio.play("clank");
+          audio.play("clank", 1, e);
           fx.impactWall(e.x, e.z, e.nx, e.nz);
           shake(0.2);
           break;
@@ -67080,11 +67333,11 @@ void main() {
           hitPauseT = Math.max(hitPauseT, e.dur);
           break;
         case "reloadStart":
-          audio.play(e.weapon === "shotgun" ? "shellsStart" : "reload");
+          audio.play(e.weapon === "shotgun" ? "shotgunReload" : "pistolReload");
           hud.flash("reload");
           break;
         case "reloadDone":
-          audio.play(e.weapon === "shotgun" ? "pump" : "reloadDone");
+          audio.play(e.weapon === "shotgun" ? "pump" : "pistolReloadDone");
           break;
         case "swapStart":
           audio.play("swap");
