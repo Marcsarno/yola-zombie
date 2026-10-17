@@ -38205,6 +38205,10 @@ void main() {
     out.c.lerp(ch, sm(0.36, 0.5, out.span));
     return out;
   }
+  var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
+  function magInsert(out, pinch, s) {
+    return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
+  }
 
   // src/render/posture.js
   var POSTURE_C = {
@@ -38854,7 +38858,7 @@ void main() {
     held[k].visible = false;
     scene.add(held[k]);
   }
-  var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
+  var MAG_SEAT2 = new Vector3(-8e-3, -0.039, 0);
   var RELOAD_EVENTS = [{ test: /Pistol_Reload|^pistol_reload$/i, drop: 6, grab: 13, insert: 23, seat: 28 }];
   var mags = { empty: null, loaded: null, fall: null };
   var prepMag = (g) => {
@@ -38903,7 +38907,7 @@ void main() {
         inner.updateWorldMatrix(true, false);
       };
       at(E.drop);
-      const M = inner.matrixWorld.clone().multiply(new Matrix4().makeTranslation(MAG_SEAT));
+      const M = inner.matrixWorld.clone().multiply(new Matrix4().makeTranslation(MAG_SEAT2));
       const p0 = new Vector3(), q0 = new Quaternion(), s0 = new Vector3();
       M.decompose(p0, q0, s0);
       mags.fall = { key, p0, q0, s0 };
@@ -38912,7 +38916,7 @@ void main() {
     if (mags.loaded.parent !== inner) inner.add(mags.loaded);
     if (f >= E.grab && f < E.seat) {
       const u = f <= E.insert ? 0 : (f - E.insert) / (E.seat - E.insert), s = u * u * (3 - 2 * u);
-      mags.loaded.position.copy(inner.worldToLocal(magPinch())).lerp(MAG_SEAT, s);
+      magInsert(mags.loaded.position, inner.worldToLocal(magPinch()), s);
       mags.loaded.quaternion.identity();
       mags.loaded.visible = true;
     }

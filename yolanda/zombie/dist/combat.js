@@ -49032,6 +49032,10 @@ void main() {
     out.c.lerp(ch, sm(0.36, 0.5, out.span));
     return out;
   }
+  var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
+  function magInsert(out, pinch, s) {
+    return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
+  }
 
   // src/render/posture.js
   var POSTURE_C = {
@@ -49095,7 +49099,7 @@ void main() {
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
   var HOLD_T = 1 / 30 + 2e-4;
   var PISTOL_MAGS = { drop: 6, grab: 13, insert: 23, seat: 28 };
-  var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
+  var MAG_SEAT2 = new Vector3(-8e-3, -0.039, 0);
   var _m4 = new Matrix4();
   var _m4b = new Matrix4();
   var PG_AT = new Vector3(0, 5e-3, 26e-4);
@@ -50294,7 +50298,7 @@ void main() {
           inner.updateWorldMatrix(true, false);
           this.bones.LeftHandThumb2.getWorldPosition(_v43).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v32), 0.5);
           const u = f <= E.insert ? 0 : clamp4((f - E.insert) / (E.seat - E.insert), 0, 1);
-          this.magLoaded.position.copy(inner.worldToLocal(_v43)).lerp(MAG_SEAT, smooth2(u));
+          magInsert(this.magLoaded.position, inner.worldToLocal(_v43), smooth2(u));
           this.magLoaded.quaternion.identity();
         }
         this.magLoaded.visible = on;
@@ -50302,7 +50306,7 @@ void main() {
       if (this.magEmpty) {
         if (playing && f >= E.drop && (this.prevMagF ?? -1) < E.drop) {
           inner.updateWorldMatrix(true, false);
-          const M4 = _m4.copy(inner.matrixWorld).multiply(_m4b.makeTranslation(MAG_SEAT.x, MAG_SEAT.y, MAG_SEAT.z));
+          const M4 = _m4.copy(inner.matrixWorld).multiply(_m4b.makeTranslation(MAG_SEAT2.x, MAG_SEAT2.y, MAG_SEAT2.z));
           this.magFall = { p: new Vector3(), q: new Quaternion(), s: new Vector3(), t: 0 };
           M4.decompose(this.magFall.p, this.magFall.q, this.magFall.s);
         }
