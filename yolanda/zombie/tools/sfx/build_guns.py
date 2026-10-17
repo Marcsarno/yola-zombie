@@ -79,6 +79,16 @@ k = shots('Nova/O_21P.wav', 2, 0.7, 'shotgun', 1, 0.6)
 k = shots('Model 12/K_22P.wav', 2, 0.7, 'shotgun', k, 0.6)
 k = shots('CD/H_21P.wav', 2, 0.7, 'shotgun', k, 0.6)
 k = shots('Mossberg/N_30P.wav', 2, 0.7, 'shotgun', k, 0.6)
+# candidates for the Sound Board (sounds.html): not in the game until the user approves them
+k = shots('Bersa/F_47P.wav', 2, 0.42, 'pistol', 6, 0.5)            # 06-07 .380, lighter
+k = shots('Smith & Wesson 642/V_27P.wav', 2, 0.45, 'pistol', k, 0.5) # 08-09 .38 revolver, sharper
+k = shots('Ruger Mark III/R_35P.wav', 2, 0.4, 'pistol', k, 0.5)      # 10-11 .22, small
+k = shots('1911/A_34P.wav', 1, 1.1, 'pistol', k, 0.5)                # 12 the 1911 from further off: a slap of echo
+k = shots('Walther PPQ/X_31P.wav', 2, 0.9, 'pistol', k, 0.5)         # 13-14 the PPQ from further off
+k = shots('Nova/O_17P.wav', 1, 1.4, 'shotgun', 9, 0.6)              # 09-12: each shotgun from further off,
+k = shots('Model 12/K_17P.wav', 1, 1.4, 'shotgun', k, 0.6)           # with the long rolling echo (bigger, wilder)
+k = shots('CD/H_16P.wav', 1, 1.4, 'shotgun', k, 0.6)
+k = shots('Mossberg/N_26P.wav', 1, 1.4, 'shotgun', k, 0.6)
 
 # ---------- the Model 12's own pump, recorded between its shots ----------
 m12 = load(os.path.join(LIB, 'Model 12/K_22P.wav'))

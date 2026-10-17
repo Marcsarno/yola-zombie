@@ -155,20 +155,28 @@ export class CombatAudio {
     this.out = this.chain(sp, SYNTH_WET[name] ?? 0.14); this.synth(SYNTH_ALIAS[name] || name, k, t); this.out = null;
   }
 
-  playBank(name, k, t, sp) {
-    const c = this.ctx;
+  // only: a layer index to play alone (the Sound Board); force: a take to play instead of a random one
+  playBank(name, k, t, sp, { only = -1, forceLayer = -1, force = null, dry = false } = {}) {
+    const s = this.samples, sg = s.soundGain(name);
     BANKS[name].layers.forEach((l, li) => {
-      const at = Array.isArray(l.at) ? l.at[0] + Math.random() * (l.at[1] - l.at[0]) : l.at || 0;
+      if (only >= 0 && li !== only) return;
+      const lg = s.layerGain(name, li); if (!lg) return;
+      const at = only >= 0 ? 0 : Array.isArray(l.at) ? l.at[0] + Math.random() * (l.at[1] - l.at[0]) : l.at || 0;
       const lsp = l.side && sp ? { ...sp, pan: Math.max(-0.9, Math.min(0.9, sp.pan + (Math.random() < 0.5 ? -0.18 : 0.18))) } : l.side ? { pan: Math.random() < 0.5 ? -0.18 : 0.18, d: 0 } : sp;
-      if (l.synth) { this.out = this.chain(lsp, l.wet ?? 0, l.gain ?? 1); this.synth(l.synth, k, t + at); this.out = null; return; }
-      const f = this.samples.pick(name + li, l.files); if (!f) return;
-      const src = c.createBufferSource(); src.buffer = this.samples.buf.get(f);
-      const semi = l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
-      src.playbackRate.value = Math.pow(2, semi / 12);
-      const jitter = Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20); // +-1.2 dB, take to take
-      src.connect(this.chain(lsp, l.wet ?? 0.15, (l.gain ?? 1) * Math.min(1.6, k) * jitter));
-      src.start(t + at, this.samples.lead.get(f) || 0);
+      const wet = dry ? 0 : l.wet ?? (l.synth ? 0 : 0.15), gain = (l.gain ?? 1) * lg * sg;
+      if (l.synth) { this.out = this.chain(lsp, wet, gain); this.synth(l.synth, k, t + at); this.out = null; return; }
+      const forced = li === forceLayer && force;
+      const f = forced || s.pick(name + li, s.active(l)); if (!f) return;
+      const jitter = forced ? 1 : Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20); // +-1.2 dB, take to take
+      const semi = forced ? 0 : l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
+      this.playBuffer(f, t + at, this.chain(lsp, wet, gain * s.takeGain(f) * Math.min(1.6, k) * jitter), semi);
     });
+  }
+  playBuffer(f, t, dest, semi = 0) {
+    const b = this.samples.buf.get(f); if (!b) return null;
+    const src = this.ctx.createBufferSource(); src.buffer = b; src.playbackRate.value = Math.pow(2, semi / 12);
+    src.connect(dest); src.start(t, this.samples.lead.get(f) || 0);
+    return src;
   }
 
   // one voice's route: level and distance -> air (far sounds lose their top) -> stereo position -> the effects bus,

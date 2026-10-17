@@ -28,6 +28,20 @@ http.createServer((req, res) => {
     req.on('end', () => { fs.writeFileSync(path.join(dir, name), Buffer.concat(chunks)); res.writeHead(200); res.end('ok'); });
     return;
   }
+  // the Sound Board's save (zombie/sounds.html): POST /__sfx/selection.json -> zombie/assets/sfx/selection.json only,
+  // from this machine or a phone on the home network (judging sounds on the phone's own speaker)
+  if (req.method === 'POST' && p === '/__sfx/selection.json') {
+    const ra = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+    if (!/^(::1$|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ra)) { res.writeHead(403); return res.end(); }
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      const body = Buffer.concat(chunks).toString('utf8');
+      try { JSON.parse(body); } catch { res.writeHead(400); return res.end('bad json'); }
+      fs.writeFileSync(path.join(root, 'zombie', 'assets', 'sfx', 'selection.json'), body); res.writeHead(200); res.end('ok');
+    });
+    return;
+  }
   if (p.endsWith('/')) p += 'index.html';
   const file = path.join(root, p);
   if (!file.startsWith(root)) { res.writeHead(403); return res.end(); }

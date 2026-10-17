@@ -1,17 +1,26 @@
 // Recorded sound effects: the files are fetched while the game loads (no AudioContext needed), decoded once the first
 // tap has made the context, and kept as AudioBuffers. Each buffer remembers where its sound really starts (an MP3
 // carries a few ms of encoder silence in front), so a transient lands on the frame that asked for it.
+// The user's Sound Board choices (assets/sfx/selection.json) decide which takes play and at what level:
+//   takes[file]   = { v: 'yes' | 'no' | undefined, db }   a default take plays unless 'no'; a candidate only if 'yes'
+//   layers[key]   = { db, off }                            key = '<sound>#<layer index>'
+//   sounds[name]  = { db, note }
 import { BANKS } from './banks.js';
 
+export const SELECTION_URL = 'assets/sfx/selection.json';
+const dbk = (db) => Math.pow(10, (db || 0) / 20);
+
 export class Samples {
-  constructor() { this.raw = new Map(); this.buf = new Map(); this.lead = new Map(); this.last = new Map(); this.decoding = false; }
+  constructor() { this.raw = new Map(); this.buf = new Map(); this.lead = new Map(); this.last = new Map(); this.sel = { takes: {}, layers: {}, sounds: {} }; }
 
-  files() { const s = new Set(); for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of l.files || []) s.add(f); return [...s]; }
+  files() { const s = new Set(); for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of [...(l.files || []), ...(l.extra || [])]) s.add(f); return [...s]; }
 
-  preload() {
+  preload({ selection = true } = {}) {
     if (this.started) return; this.started = true;
+    if (selection) fetch(SELECTION_URL, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) this.setSelection(j); }).catch(() => {});
     for (const f of this.files()) fetch(f).then((r) => (r.ok ? r.arrayBuffer() : null)).then((ab) => { if (ab) { this.raw.set(f, ab); if (this.ctx) this.decode(f); } }).catch(() => {});
   }
+  setSelection(j) { this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {} }; }
 
   // with the AudioContext: decode everything fetched so far (and anything still arriving, as it lands)
   attach(ctx) {
@@ -25,8 +34,18 @@ export class Samples {
     try { const p = this.ctx.decodeAudioData(ab, done, () => {}); p?.catch?.(() => {}); } catch { /* undecodable: the synth stands in */ }
   }
 
-  // a bank plays only when every file of its main layer is in (half a bank would repeat the same take)
-  ready(name) { const b = BANKS[name]; return !!b && (b.layers[0].files || []).every((f) => this.buf.has(f)); }
+  // the takes a layer plays now: its defaults the user has not rejected + candidates the user approved
+  active(l) {
+    const v = (f) => this.sel.takes[f]?.v;
+    return [...(l.files || []).filter((f) => v(f) !== 'no'), ...(l.extra || []).filter((f) => v(f) === 'yes')];
+  }
+  takeGain(f) { return dbk(this.sel.takes[f]?.db); }
+  layerGain(name, li) { const s = this.sel.layers[name + '#' + li]; return s?.off ? 0 : dbk(s?.db); }
+  soundGain(name) { return dbk(this.sel.sounds[name]?.db); }
+
+  // a bank plays only when every take of its main layer is in (half a bank would repeat the same take); with every
+  // take rejected the synth plays instead
+  ready(name) { const b = BANKS[name]; if (!b) return false; const a = this.active(b.layers[0]); return a.length > 0 && a.every((f) => this.buf.has(f)); }
 
   // a random take, never the one that played last time from this layer
   pick(key, files) {

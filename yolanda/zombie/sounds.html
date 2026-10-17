@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sound Board</title>
+<style>
+  :root { --bg:#1b2328; --panel:#24303a; --panel2:#2b3944; --ink:#eef2f0; --dim:#9db0ad; --teal:#2fb1b4; --amber:#ffb347; --red:#ff6b5e; --green:#66d18f; --line:#3a4a52; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); font:500 13px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  button, select, input[type=text], textarea { font:inherit; color:var(--ink); background:#33434c; border:1px solid var(--line); border-radius:8px; padding:6px 10px; }
+  button { cursor:pointer; touch-action:manipulation; } button:hover { background:#3d505a; }
+  button.primary { background:var(--teal); border-color:var(--teal); color:#06201f; font-weight:700; }
+  button.big { padding:9px 14px; font-size:14px; }
+  input[type=range] { accent-color:var(--teal); }
+  h1 { font-size:16px; margin:0; } h2 { font-size:15px; margin:0; } h3 { margin:0; font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.07em; }
+  #top { position:sticky; top:0; z-index:5; background:var(--bg); box-shadow:0 4px 12px rgba(0,0,0,.35); border-bottom:1px solid var(--line); padding:10px 16px; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
+  #top .grp { display:flex; gap:8px; align-items:center; }
+  #top label { display:flex; gap:6px; align-items:center; color:var(--dim); white-space:nowrap; }
+  #top input[type=range] { width:110px; }
+  #status { color:var(--dim); font-variant-numeric:tabular-nums; }
+  #saveState { color:var(--dim); min-width:90px; } #saveState.dirty { color:var(--amber); } #saveState.ok { color:var(--green); }
+  #wrap { display:flex; gap:16px; padding:16px; align-items:flex-start; }
+  #side { width:250px; flex:none; position:sticky; top:76px; }
+  #side .g { margin-bottom:12px; }
+  .snd { display:block; width:100%; text-align:left; margin:4px 0; background:var(--panel); padding:8px 10px; }
+  .snd.cur { background:#1f5d60; border-color:var(--teal); }
+  .snd small { display:block; color:var(--dim); font-size:11px; }
+  #main { flex:1; min-width:0; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:12px; }
+  .hd { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  .hd .sp { flex:1; }
+  .trim { display:flex; gap:6px; align-items:center; color:var(--dim); font-variant-numeric:tabular-nums; }
+  .trim input { width:120px; } .trim b { color:var(--ink); min-width:52px; text-align:right; font-weight:600; }
+  textarea { width:100%; min-height:38px; margin-top:8px; resize:vertical; }
+  .help { color:var(--dim); font-size:12px; margin-top:6px; }
+  .take { display:grid; grid-template-columns:auto 220px 1fr auto; gap:8px 10px; align-items:center; padding:7px 8px; border-radius:9px; border:1px solid transparent; }
+  .take:nth-child(odd) { background:rgba(255,255,255,.025); }
+  .take:focus { outline:none; border-color:var(--teal); }
+  .take canvas { width:220px; height:34px; background:#1a2329; border-radius:6px; cursor:pointer; display:block; }
+  .take .nm { min-width:0; } .take .nm div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chip { display:inline-block; font-size:10.5px; padding:1px 7px; border-radius:6px; margin-right:6px; }
+  .chip.in { background:#1f5d60; color:#bff3f1; } .chip.cand { background:#4a3c22; color:#ffd99a; } .chip.out { background:#5a2a27; color:#ffc2bb; }
+  .vd { display:flex; gap:6px; }
+  .vd button { min-width:40px; padding:6px 9px; }
+  .vd .yes.on { background:var(--green); border-color:var(--green); color:#0b2615; font-weight:700; }
+  .vd .no.on { background:var(--red); border-color:var(--red); color:#2a0b08; font-weight:700; }
+  .take.rej canvas, .take.rej .nm { opacity:.45; }
+  .play { width:40px; height:34px; padding:0; font-size:15px; }
+  .play.mix { width:auto; padding:0 9px; font-size:12px; }
+  .lyr { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; }
+  .lyr .hd h3 { color:var(--amber); font-size:12px; }
+  .lyr.off .takes { opacity:.4; }
+  .flash { animation:fl .35s; } @keyframes fl { from { background:#2f6e70; } }
+  @media (max-width: 760px) {
+    #wrap { flex-direction:column; padding:10px 12px; }
+    #side { width:100%; position:static; display:flex; gap:6px; overflow-x:auto; }
+    #side .g { display:flex; gap:6px; margin:0; } #side h3 { display:none; }
+    .snd { width:auto; white-space:nowrap; margin:0; }
+    .take { grid-template-columns:auto 1fr; }
+    .take canvas { grid-column:1 / -1; width:100%; order:-1; }
+    .take .vd { grid-column:1 / -1; }
+    .vd button { flex:1; }
+    #top { padding:8px 12px; gap:8px 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="top">
+  <h1>Sound Board</h1>
+  <span id="status">loading…</span>
+  <div class="grp">
+    <label><input type="checkbox" id="phone"> Phone speaker</label>
+    <label><input type="checkbox" id="room" checked> Room reverb</label>
+  </div>
+  <div class="grp">
+    <label>Left/right <input type="range" id="pan" min="-0.85" max="0.85" step="0.05" value="0"></label>
+    <label>Distance <input type="range" id="dist" min="0" max="20" step="0.5" value="0"> <span id="distV">0 m</span></label>
+  </div>
+  <label>Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="0.9"></label>
+  <div class="grp" style="margin-left:auto">
+    <span id="saveState">saved</span>
+    <button id="save" class="primary">Save choices</button>
+  </div>
+</div>
+<div id="wrap">
+  <div id="side"></div>
+  <div id="main"></div>
+</div>
+<script type="module" src="src/soundboard.js"></script>
+</body>
+</html>

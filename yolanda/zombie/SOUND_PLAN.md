@@ -112,8 +112,20 @@ under the 40-180 Hz body, peak -1 dBFS, MP3).
 - Mix: effects bus -> gentle compressor (new mode) -> master -> limiter (-2.5 dB). Generated ~1 s room IR.
 - Pause menu "Effects: new / classic" (stored as sfxModern) — classic = the original synth only, dry and centred.
 
+## The Sound Board (sounds.html) — where the user judges every sound
+
+`/zombie/sounds.html` on this chat's server (port 5177; it needs tools/serve.mjs's /__sfx save, so a server started
+before 2026-10-17 must be restarted). Every bank, layer and take: play solo / in the full mix / repeat x6 / the old
+synth version; keep or reject takes (candidates, in amber, join the game only when kept); level trims per take, layer
+and sound; notes per sound for Claude; phone-speaker and left/right/distance simulation. "Save choices" writes
+assets/sfx/selection.json, which the game reads on load (src/sfx/samples.js). Read the user's notes there before
+changing a sound. Works from a phone on the home network too (the save accepts private LAN addresses).
+
 ## Log
 (newest at top)
+- 2026-10-17: the user: "some are ok, some are not" -> the Sound Board. Added candidates: pistol_06-14 (Bersa .380,
+  S&W 642 .38, Ruger Mark III .22, 1911 + PPQ from further off) and shotgun_09-12 (each shotgun from further off,
+  long rolling echo).
 - 2026-10-17 (Phase 0 + 1 built): the engine above + the gun banks: pistol shot (5 takes + sub + room + brass),
   shotgun (8 takes + sub + room), Model 12 pump (back/forward + hull), pistol reload (mag out/in, slide on done),
   shotgun reload (4 shell inserts), dry fire. Bullet impacts/ricochets/shield/clank/slam now positioned (still synth
