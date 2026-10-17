@@ -46506,6 +46506,8 @@ void main() {
     // leaves it stumbling (the long recovery is the opening). range: the wedge (the leap plus the bite's reach).
     pounce: { min: 1.7, from: 3.2, range: 3.3, arc: 0.32, windup: 0.75, lock: 0.6, strike: 0.32, leapMax: 2.5, bite: 0.55, recover: 0.95, cd: 5, chance: 0.4, step: 0 }
   };
+  var GUARD = { armHp: 130, headHp: 35, rageSpeed: 1.7 };
+  var LADY = { swell: 0.3, knock: 2, stagger: 3.5, acid: { r: 1.5, dur: 5, dps: 6 } };
   var GAITS = { runnerShare: 0.15, ualShare: 0.45 };
   var RUNNER_SPEED = 2.5;
   var KINDS = {
@@ -46556,6 +46558,9 @@ void main() {
       this.swayRate = 0.9 + this.phase * 3.7 % 1 * 0.7;
       this.struck = false;
       this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
+      if (this.kind === "guard") Object.assign(this.limbHp, { Forearm_L: GUARD.armHp, Forearm_R: GUARD.armHp, Head: Infinity });
+      this.enraged = false;
+      this.burst = false;
       this.severed = /* @__PURE__ */ new Set();
       this.crawling = false;
       this.lastHitPart = "torso";
@@ -46590,6 +46595,19 @@ void main() {
       sim2.emit({ type: "sever", id: this.id, part, dirX, dirZ, x: this.x, z: this.z });
       if (part === "Head") this.hp = 0;
       else if (part.startsWith("LowerLeg") && !this.crawling) this.crawling = this.toCrawl = true;
+      if (this.kind === "guard" && part.startsWith("Forearm")) {
+        if (part === "Forearm_L" && this.shieldHp > 0) {
+          this.shieldHp = 0;
+          sim2.emit({ type: "shieldBreak", id: this.id, x: this.x, z: this.z, dirX, dirZ, kind: "drop" });
+        }
+        if (this.armsLost >= 2 && !this.enraged) {
+          this.enraged = true;
+          this.limbHp.Head = GUARD.headHp;
+          this.speedMul *= GUARD.rageSpeed;
+          this.attackCd = Math.min(this.attackCd, 0.3);
+          sim2.emit({ type: "guardEnraged", id: this.id, x: this.x, z: this.z });
+        }
+      }
     }
     // a leg broken (a bat or a slide tackle at its shins): it stays on, but the zombie goes down and crawls from then on
     cripple(part, sim2) {
@@ -46930,7 +46948,7 @@ void main() {
               wantX = wantZ = 0;
             }
           }
-          if (this.kind === "sprinter" && !this.crawling && !this.passive && this.sprinterChase(dt, sim2, dx, dz, dist2)) {
+          if ((this.kind === "sprinter" || this.enraged) && !this.crawling && !this.passive && this.sprinterChase(dt, sim2, dx, dz, dist2)) {
             turnRate = 0;
             break;
           }
@@ -46994,7 +47012,7 @@ void main() {
             if (dist2 < 0.8) speed = 0;
           }
           const slot = !sim2.engaged || sim2.engaged.has(this.id) || this.crawling || this.kind === "sprinter";
-          if (this.kind === "guard" && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 1.3 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          if (this.kind === "guard" && !this.enraged && this.armsLost < 1 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 1.3 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             this.attack = "slam";
             this.set(ZS.WINDUP, ZATTACKS.slam.windup);
             this.slamCd = 4 + sim2.rand() * 2.5;
@@ -47122,6 +47140,10 @@ void main() {
           }
           break;
         case ZS.DYING:
+          if (this.kind === "sprinter" && !this.burst && this.t >= LADY.swell) {
+            this.burst = true;
+            sim2.ladyBurst(this);
+          }
           turnRate = 0;
           if (this.t >= this.stateDur) {
             this.set(ZS.DEAD);
@@ -47822,6 +47844,7 @@ void main() {
       this.player.aimYaw = this.player.aimTarget = s.yaw;
       this.zombies = [];
       this.events = [];
+      this.hazards = [];
       this.time = 0;
       this.flowT = 0;
       this.engaged = /* @__PURE__ */ new Set();
@@ -47897,6 +47920,7 @@ void main() {
         this.updateEngagement();
       }
       for (const z of this.zombies) z.update(dt, this);
+      this.updateHazards(dt);
       bump(this.zombies, this);
       separate(this.zombies, p);
       this.director.update(dt);
@@ -47929,6 +47953,34 @@ void main() {
       this.zombies.push(z);
       this.emit({ type: "zombieSpawn", id: z.id, door: d.id });
       return z;
+    }
+    // The lady bursts (core/zombies.js LADY): her burst knocks Yola flat close by and staggers her further out; an acid pool
+    // stays where she was. (Her death momentum carries the burst forward: the gore flies along it.)
+    ladyBurst(z) {
+      const p = this.player, A = LADY.acid, d = Math.hypot(p.x - z.x, p.z - z.z);
+      this.hazards.push({ id: z.id, x: z.x, z: z.z, r: A.r, t: 0, dur: A.dur, dps: A.dps });
+      this.emit({ type: "ladyBurst", id: z.id, x: z.x, z: z.z, dirX: z.hitDirX || 0, dirZ: z.hitDirZ || 0, vx: z.vx + z.kx, vz: z.vz + z.kz });
+      if (!p.dead && p.invuln <= 0 && p.action.type !== "vault") {
+        if (d < LADY.knock) p.knockDown(z.x, z.z, this);
+        else if (d < LADY.stagger) p.hurt(4, z.x, z.z, this);
+      }
+    }
+    // acid: hurts Yola while she stands in it (a slow burn, no knockback); fades out at the end
+    updateHazards(dt) {
+      const p = this.player;
+      for (const h of this.hazards) {
+        h.t += dt;
+        if (p.dead || Math.hypot(p.x - h.x, p.z - h.z) > h.r) continue;
+        if (!this.T.testInfiniteHealth) {
+          p.hp = Math.max(0, p.hp - h.dps * dt);
+          if (p.hp <= 0) p.hurt(0.01, h.x, h.z, this);
+        }
+        if ((h.burnT = (h.burnT || 0) - dt) <= 0) {
+          h.burnT = 0.45;
+          this.emit({ type: "acidBurn", x: p.x, z: p.z });
+        }
+      }
+      this.hazards = this.hazards.filter((h) => h.t < h.dur);
     }
     // Something she can dodge is coming: a zombie winding up its lunge or pounce at her (or in the pounce's leap), the big
     // guard winding up his jump slam, the big lady squaring up for her charge or running it at her
@@ -48203,7 +48255,8 @@ void main() {
           const dmg = T2.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
           const side = this.rand() < 0.5 ? "_L" : "_R", shielded = !A.legs && z.shieldBlocks(dx, dz);
           const kind = A.kind || (p.equipped === BAT ? "bat" : "axe");
-          const part = shielded ? "torso" : A.legs ? "LowerLeg" + side : lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
+          const headOk = z.kind !== "guard" || z.enraged;
+          const part = shielded ? "torso" : A.legs ? "LowerLeg" + side : lethal && headOk && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
           if (part !== "torso" && !z.severed.has(part)) {
             if (kind === "bat") z.cripple(part, this);
             else z.limbHp[part] = 0;
@@ -51028,6 +51081,83 @@ void main() {
     LowerLeg_R: ["RightLeg", "RightFoot", 0.1, 0.06]
   };
   var MAX_PIECES = 40;
+  var CUT_ROOTS = { Forearm_L: ["LeftArm", "LeftHand", 0.07], Forearm_R: ["RightArm", "RightHand", 0.07], Head: ["Head", "HeadTop_End", 0.1], LowerLeg_L: ["LeftLeg", "LeftFoot", 0.06], LowerLeg_R: ["RightLeg", "RightFoot", 0.06] };
+  var CUT_STUMP = { Forearm_L: "LeftShoulder", Forearm_R: "RightShoulder", Head: "Neck", LowerLeg_L: "LeftUpLeg", LowerLeg_R: "RightUpLeg" };
+  var BURST_CHUNKS = {
+    Head: ["Head", "HeadTop_End", 0.11],
+    ArmL: ["LeftArm", "LeftForeArm", 0.07],
+    ForeL: ["LeftForeArm", "LeftHand", 0.06],
+    ArmR: ["RightArm", "RightForeArm", 0.07],
+    ForeR: ["RightForeArm", "RightHand", 0.06],
+    Chest: ["Spine2", "Neck", 0.17],
+    Belly: ["Spine", "Spine2", 0.18],
+    Pelvis: ["Hips", "Spine", 0.16],
+    ThighL: ["LeftUpLeg", "LeftLeg", 0.09],
+    ThighR: ["RightUpLeg", "RightLeg", 0.09],
+    ShinL: ["LeftLeg", "LeftFoot", 0.07],
+    ShinR: ["RightLeg", "RightFoot", 0.07]
+  };
+  function chunkOfBones(skeleton, roots) {
+    return skeleton.bones.map((b) => {
+      for (let n = b; n && n.isBone; n = n.parent) {
+        const k = roots[n.name.replace(/^mixamorig:?/, "")];
+        if (k) return k;
+      }
+      return null;
+    });
+  }
+  function bakeChunks(model, roots, frames) {
+    const out = {};
+    model.traverse((o) => {
+      if (!o.isSkinnedMesh || !o.visible) return;
+      o.skeleton.update();
+      const g = o.geometry, n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
+      const boneChunk = chunkOfBones(o.skeleton, roots), vChunk = new Array(n);
+      for (let i = 0; i < n; i++) {
+        let bi = 0, bw = -1;
+        for (let k = 0; k < 4; k++) {
+          const w = sw.getComponent(i, k);
+          if (w > bw) {
+            bw = w;
+            bi = si.getComponent(i, k);
+          }
+        }
+        vChunk[i] = boneChunk[bi];
+      }
+      const idx = g.index ? g.index.array : Array.from({ length: n }, (_, i) => i);
+      const tris = {};
+      for (let t = 0; t < idx.length; t += 3) {
+        const k = vChunk[idx[t]];
+        if (k) (tris[k] || (tris[k] = [])).push(idx[t], idx[t + 1], idx[t + 2]);
+      }
+      for (const [k, list] of Object.entries(tris)) {
+        const F = frames[k];
+        if (!F) continue;
+        const map = /* @__PURE__ */ new Map(), pos = [], uv = [], index = [], uvs = g.attributes.uv;
+        for (const vi of list) {
+          let j = map.get(vi);
+          if (j === void 0) {
+            j = map.size;
+            map.set(vi, j);
+            o.getVertexPosition(vi, _bv);
+            _bv.applyMatrix4(o.matrixWorld).sub(F.c).applyQuaternion(F.qi);
+            pos.push(_bv.x, _bv.y, _bv.z);
+            if (uvs) uv.push(uvs.getX(vi), uvs.getY(vi));
+          }
+          index.push(j);
+        }
+        const geo = new BufferGeometry();
+        geo.setAttribute("position", new Float32BufferAttribute(pos, 3));
+        if (uvs) geo.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+        geo.setIndex(index);
+        geo.computeVertexNormals();
+        const mat2 = o.material.clone();
+        if (mat2.emissive) mat2.emissive.setRGB(0, 0, 0);
+        (out[k] || (out[k] = new Group())).add(new Mesh(geo, mat2));
+      }
+    });
+    return out;
+  }
   var _bv = new Vector3();
   var _bq = new Quaternion();
   function makeStandInShield(scene2) {
@@ -51223,6 +51353,71 @@ void main() {
       }
       this.bleed[part] = 2.5;
     }
+    // a cut on a zombie without a cut model (the guard's arms at the shoulder, his head; bakeChunks): the piece baked from
+    // its own vertices and thrown, the limb's bone collapsed into its joint from now on (it vanishes), blood at the stump
+    cutByWeights(part, z) {
+      const R = CUT_ROOTS[part];
+      if (!R || !this.bones[R[0]]) return;
+      this.container.updateMatrixWorld(true);
+      const a = this.bones[R[0]].getWorldPosition(new Vector3()), b = (this.bones[R[1]] || this.bones[R[0]]).getWorldPosition(new Vector3());
+      if (b.distanceTo(a) < 0.02) b.y += 0.15;
+      this.throwChunks({ [part]: { a, b, r: R[2], bone: R[0] } }, { [R[0]]: part }, z, isMelee(z.hitKind) ? 4.5 : 3);
+      (this.collapsed || (this.collapsed = [])).push(this.bones[R[0]]);
+      const s = this.bones[CUT_STUMP[part]]?.getWorldPosition(new Vector3()) || a, fx2 = _ZombieView.fx, dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
+      if (fx2) {
+        fx2.bloodSpray(s.x, s.y, s.z, dir.x * 0.8, 0.5, dir.z * 0.8, part === "Head" ? 34 : 26, 3.4);
+        fx2.bloodPool(s.x + dir.x * 0.4, s.z + dir.z * 0.4, part === "Head" ? 1.1 : 0.9);
+      }
+      (this.stumpOf || (this.stumpOf = {}))[part] = CUT_STUMP[part];
+      this.bleed[part] = 3;
+    }
+    // bake and throw chunks: C = { chunk: { a, b (its two ends, world), r (radius at 1.7 m) } }, roots = { bone: chunk }
+    throwChunks(C, roots, z, speed, extra = null) {
+      const P = _ZombieView.physics, frames = {};
+      for (const [k, e] of Object.entries(C)) {
+        const q0 = frameQuat(e.b.clone().sub(e.a), new Vector3(1, 0, 0).applyQuaternion(this.bones[e.bone].getWorldQuaternion(_bq)), new Quaternion());
+        frames[k] = { c: e.a.clone().add(e.b).multiplyScalar(0.5), q0, qi: q0.clone().invert() };
+      }
+      const baked = bakeChunks(this.model, roots, frames), dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
+      for (const [k, obj] of Object.entries(baked)) {
+        const F = frames[k], e = C[k];
+        obj.position.copy(F.c);
+        obj.quaternion.copy(F.q0);
+        _ZombieView.scene.add(obj);
+        const vel = (extra ? extra(k, F.c) : dir.clone().multiplyScalar(speed)).add(new Vector3(z.vx * 0.5, 2.2 + Math.random() * 1.2, z.vz * 0.5));
+        const r = e.r * (this.height / 1.7);
+        const piece = { obj, t: 0, id: P && P.ready ? P.addPiece(e.a, e.b, r, vel, F.q0) : 0, P: P && P.ready ? P : null, vel, r, states: [] };
+        _ZombieView.pieces.push(piece);
+        if (_ZombieView.pieces.length > MAX_PIECES) _ZombieView.dropPiece(_ZombieView.pieces[0]);
+      }
+    }
+    // the lady pops (core/sim.js ladyBurst): her body in chunks thrown out from her belly (and along her momentum), a big
+    // spray of blood and a pool; she is gone
+    burstLady(z, e) {
+      this.container.updateMatrixWorld(true);
+      const C = {}, roots = {}, wp = (n) => this.bones[n]?.getWorldPosition(new Vector3());
+      for (const [k, [r0, r1, rad]] of Object.entries(BURST_CHUNKS)) {
+        const a = wp(r0);
+        if (!a) continue;
+        const b = wp(r1) || a.clone().add(new Vector3(0, 0.1, 0));
+        C[k] = { a, b, r: rad, bone: r0 };
+        roots[r0] = k;
+      }
+      const mid = wp("Spine1") || wp("Hips"), mv = new Vector3(e.vx || 0, 0, e.vz || 0).multiplyScalar(0.6);
+      this.throwChunks(C, roots, z, 0, (k, c) => c.clone().sub(mid).setY(0).normalize().multiplyScalar(3 + Math.random() * 2.5).add(mv));
+      const fx2 = _ZombieView.fx;
+      if (fx2) {
+        for (let i = 0; i < 6; i++) {
+          const a = i / 6 * Math.PI * 2;
+          fx2.bloodSpray(mid.x, mid.y, mid.z, Math.cos(a), 0.6, Math.sin(a), 22, 4.2);
+        }
+        fx2.burst(mid.x, mid.y, mid.z, 26, 5903380, 4.5, 1.2, 0.7);
+        fx2.bloodPool(mid.x, mid.z, 1.8);
+      }
+      this.outer.visible = false;
+      this.blob.visible = false;
+      this.popped = true;
+    }
     bleeding(dt) {
       const fx2 = _ZombieView.fx;
       if (!fx2) return;
@@ -51232,7 +51427,7 @@ void main() {
           continue;
         }
         if (Math.random() < dt * 18) {
-          const s = this.bones[STUMP_BONE[part]].getWorldPosition(_bv);
+          const s = this.bones[this.stumpOf?.[part] || STUMP_BONE[part]].getWorldPosition(_bv);
           fx2.bloodSpray(s.x, s.y, s.z, 0, part === "Head" ? 0.6 : -0.1, 0, 1, 0.8);
         }
       }
@@ -51280,6 +51475,11 @@ void main() {
       this.deathYaw = null;
       this.endRagdoll();
       this.severed.clear();
+      for (const b of this.collapsed || []) b.scale.set(1, 1, 1);
+      this.collapsed = [];
+      this.stumpOf = {};
+      this.popped = false;
+      this.kindOf = z.kind;
       for (const m of Object.values(this.modules)) m.visible = true;
       for (const g of Object.values(this.gore)) {
         if (g.stump) g.stump.visible = false;
@@ -51439,8 +51639,22 @@ void main() {
         this.updateRagdoll(z);
         return;
       }
-      if (this.modular && z.severed.size !== this.severed.size) {
-        for (const part of z.severed) if (!this.severed.has(part)) this.sever(part, z);
+      if (z.severed.size !== this.severed.size) {
+        for (const part of z.severed) if (!this.severed.has(part)) {
+          if (this.modular) this.sever(part, z);
+          else {
+            this.severed.add(part);
+            this.cutByWeights(part, z);
+          }
+        }
+      }
+      if (this.popped) {
+        this.outer.visible = this.blob.visible = false;
+        return;
+      }
+      if (z.burst) {
+        this.burstLady(z, { vx: z.vx + z.kx, vz: z.vz + z.kz });
+        return;
       }
       this.outer.position.x = x;
       this.outer.position.z = zz;
@@ -51452,7 +51666,7 @@ void main() {
       if (z.state !== "dead") this.outer.position.y = z.attack === "pounce" && z.state === "strike" ? Math.sin(Math.PI * Math.min(1, z.t / Math.max(0.05, z.stateDur))) * 0.22 * (this.height / 1.7) : 0;
       this.blob.position.set(x, 0.012, zz);
       const dying = z.state === "dying" || z.state === "dead";
-      if (z.state === "dying" && this.lastState !== "dying" && this.startRagdoll(z)) {
+      if (z.state === "dying" && this.lastState !== "dying" && z.kind !== "sprinter" && this.startRagdoll(z)) {
         this.lastState = "dying";
         this.updateRagdoll(z);
         return;
@@ -51565,6 +51779,14 @@ void main() {
         }
       }
       this.mixer.update(dt);
+      for (const b of this.collapsed || []) b.scale.setScalar(1e-4);
+      const sw = z.kind === "sprinter" ? z.state === "dying" ? 1 + Math.min(1, z.t / 0.3) : clamp4(1 - z.hp / Math.max(1, z.maxHp) / 0.35, 0, 1) : 0;
+      if (z.kind === "sprinter" && this.bones.Spine1 && this.bones.Spine2) {
+        const k = sw > 0 ? 1 + 0.2 * sw * (1 + 0.07 * Math.sin(performance.now() * 0.014)) : 1;
+        this.bones.Spine1.scale.setScalar(k);
+        this.bones.Spine2.scale.setScalar(1 / k);
+      }
+      this.swell = sw;
       this.container.updateMatrixWorld(true);
       this.bleeding(dt);
       if (this.shieldC) {
@@ -51587,7 +51809,8 @@ void main() {
       if (!dying && Math.abs(this.react.x) + Math.abs(this.react.z) > 1e-3) this.rotateEulerC("Spine1", this.react.z * 0.7, 0, -this.react.x * 0.6);
       const fl = z.hitFlash * z.hitFlash;
       const tell = z.state === "windup" ? Math.min(1, z.t / Math.max(0.05, z.stateDur)) : 0, tk = tell * tell * 0.3;
-      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk, fl * 0.33 + tk * 0.05, fl * 0.27 + tk * 0.03);
+      const sg = (this.swell || 0) * (0.06 + 0.06 * Math.sin(performance.now() * 9e-3));
+      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5, fl * 0.33 + tk * 0.05 + sg, fl * 0.27 + tk * 0.03);
       if (z.state === "dead" && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
       this.blob.visible = z.state !== "dead" || z.corpseT < 4.5;
     }
@@ -51988,6 +52211,62 @@ void main() {
     }
     A.lowY = Math.min(...rows.map((r) => tip(r)[1]));
   }
+
+  // src/render/acid.js
+  var AcidPools = class {
+    constructor(scene2, fx2) {
+      this.scene = scene2;
+      this.fx = fx2;
+      this.used = /* @__PURE__ */ new Map();
+      this.pool = [];
+      this.geo = new CircleGeometry(1, 40);
+      this.geo.rotateX(-Math.PI / 2);
+    }
+    make() {
+      const g = new Group();
+      const mat2 = (c, o) => new MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false, toneMapped: false });
+      g.userData.base = new Mesh(this.geo, mat2(8367642, 0));
+      g.userData.core = new Mesh(this.geo, mat2(14283354, 0));
+      g.userData.core.position.y = 2e-3;
+      g.userData.base.renderOrder = g.userData.core.renderOrder = 2;
+      g.add(g.userData.base, g.userData.core);
+      this.scene.add(g);
+      return g;
+    }
+    update(hazards, zombies, dt) {
+      const seen = /* @__PURE__ */ new Set(), fx2 = this.fx;
+      for (const h of hazards || []) {
+        const key = h.id + ":" + h.x.toFixed(2);
+        seen.add(key);
+        let g = this.used.get(key);
+        if (!g) {
+          g = this.pool.pop() || this.make();
+          this.used.set(key, g);
+        }
+        const grow = Math.min(1, h.t / 0.4), fade = Math.min(1, (h.dur - h.t) / 1.2);
+        g.visible = true;
+        g.position.set(h.x, 0.02, h.z);
+        g.userData.base.scale.setScalar(h.r * (0.55 + 0.45 * grow));
+        g.userData.core.scale.setScalar(h.r * 0.55 * (0.5 + 0.5 * grow) * (0.95 + 0.05 * Math.sin(h.t * 6)));
+        g.userData.base.material.opacity = 0.62 * fade;
+        g.userData.core.material.opacity = 0.45 * fade;
+        if (!fx2 || !dt) continue;
+        if (Math.random() < dt * 14 * fade) {
+          const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * h.r * 0.9;
+          fx2.burst(h.x + Math.cos(a) * r, 0.04, h.z + Math.sin(a) * r, 1, 13168730, 0.35, 1.6, 0.35);
+        }
+        for (const z of zombies) {
+          if (!z.alive || Math.hypot(z.x - h.x, z.z - h.z) > h.r) continue;
+          if (Math.random() < dt * 10) fx2.burst(z.x + (Math.random() - 0.5) * 0.3, 0.08, z.z + (Math.random() - 0.5) * 0.3, 2, 15660518, 0.5, 2.2, 0.7);
+        }
+      }
+      for (const [k, g] of this.used) if (!seen.has(k)) {
+        g.visible = false;
+        this.used.delete(k);
+        this.pool.push(g);
+      }
+    }
+  };
 
   // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
@@ -67452,6 +67731,7 @@ void main() {
   var fx = new FX(scene);
   var gibs = new GibBurst(scene, new GLTFLoader(), fx);
   var telegraphs = new Telegraphs(scene);
+  var acid = new AcidPools(scene, fx);
   fx.gore = store2.get("gore", true);
   var shakeOn = true;
   var hud = new Hud({ tuning, audio, store: store2, onAction: (a, v) => uiAction(a, v) });
@@ -68012,6 +68292,7 @@ void main() {
     }
     fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? p.attackHeld ? 1 : 0.5 : 0.2);
     stepPhysics(animDt);
+    acid.update(sim.hazards, sim.zombies, animDt);
     ZombieView.updatePieces(animDt);
     ZombieView.updateShields(animDt);
     gibs.world = sim.world;
@@ -68292,6 +68573,20 @@ void main() {
         case "sever":
           audio.play("sever");
           shake(0.15);
+          break;
+        case "ladyBurst":
+          audio.play("sever");
+          audio.play("zombieDeath");
+          shake(0.85);
+          break;
+        // (the lady pops: core/sim.js ladyBurst)
+        case "guardEnraged":
+          hud.popup("ENRAGED");
+          shake(0.4);
+          break;
+        // (the guard, both arms gone)
+        case "acidBurn":
+          fx.burst(e.x, 0.1, e.z, 3, 14283354, 0.6, 1.8, 0.45);
           break;
         case "shieldHit":
           audio.play("shieldHit", e.kind === "pistol" ? 0.7 : 1, e);
