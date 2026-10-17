@@ -484,6 +484,7 @@ export class YolaView extends ClipBody {
   }
 
   update(dt, s) {
+    this.dtNow = dt;
     this.outer.position.set(s.x, 0, s.z);
     this.blob.position.set(s.x, 0.012, s.z);
     if (s.dead) { this.die(dt, s); return; }
@@ -786,7 +787,10 @@ export class YolaView extends ClipBody {
       this.bones.RightArm.getWorldPosition(_v3); this.bones.LeftArm.getWorldPosition(_v4);
       hx = (_v.x + _v2.x) / 2 - (_v3.x + _v4.x) / 2; hz = (_v.z + _v2.z) / 2 - (_v3.z + _v4.z) / 2;
     }
-    const live = clamp(angleDiff(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+    let live = clamp(angleDiff(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+    // eased (~0.1 s): the fist's barrel wobbles with the clips' wrists (the back run: 15 deg a stride with sharp turns);
+    // followed exactly, every wobble jerked her whole upper body (gun hand 30-40 mm per frame^2)
+    if (this.pistolPlace !== 'old') { const a = 1 - Math.exp(-(this.dtNow || 1 / 60) / 0.1); this.aimLive = this.aimLive == null ? live : this.aimLive + (live - this.aimLive) * a; live = this.aimLive; }
     if (rW === 0) this.aimErr = live;
     const err = live * (1 - rW) + (this.aimErr || 0) * rW;
     const kick = s.recoil * s.recoil * s.recoilScale;
