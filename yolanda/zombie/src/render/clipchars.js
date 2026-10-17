@@ -503,16 +503,23 @@ export class YolaView extends ClipBody {
     const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), uW0 = smooth(this.up.sword || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 || 1;
     const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un;
     // axe attacks: full-body clips driven by the simulation's attack time (exact sync with the hit test)
-    let sW = 0, turn = 0;
+    let sW = 0, turn = 0, prevW = 0; // (prevW: the previous attack's pose still fading out)
     const A = s.action === 'swing' ? (s.ground ? groundAttack(s.equipped) : attacksOf(s.equipped)[s.combo]) : null;
     if (A) {
       const t = s.swingT, tEnd = attackEnd(A), act = this.act(A.clip);
       if (this.swingId !== s.swingId) {
         // next attack of the combo: the previous clip fades out under the new one
         if (this.swingAct && this.swingAct !== act) { this.prevSwing = this.swingAct; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; this.prevSwingHand = this.swingHand; }
+        else if (this.swingAct === act && A.f0 < (this.clipF ?? 0) - 1) {
+          // the same clip starting over (the bat combo again before its finisher settled: A.restartFrom): its pose fades
+          // out on a copy of the clip, held where it was, while the clip itself jumps back to the opener (no snap)
+          const ghost = this.ghostOf(act); ghost.time = act.time; ghost.setEffectiveWeight(this.swingW || 1);
+          this.prevSwing = ghost; this.prevSwingW = this.swingW || 1; this.prevSwingName = this.swingName; this.prevSwingHand = this.swingHand;
+        }
         // a strike chained late (the last one had begun to settle back to the stance): carry on from that weight, not 1
         this.chainW0 = A.continuous && s.combo > 0 ? (this.swingW ?? 1) : 1;
         this.swingId = s.swingId; this.swingAct = act; this.swingName = A.sock || A.name; this.swingHand = A.hand || 'Right'; this.swingBlend = A.blendIn || 0.1;
+        if (this.prevSwing?.getClip().name.endsWith('__ghost')) this.swingBlend = Math.max(this.swingBlend, 0.2); // (the restart carries her arm ~1 m back: 0.1 s whipped)
       }
       this.clipF = attackFrame(A, Math.min(t, tEnd));
       act.time = this.clipF / A.fps + ((this.swJit ^= 1) * 1e-6); // glTF time = blender frame / fps; a static time is only applied every other update (hit-pause froze the swing pose), so it alternates
@@ -524,7 +531,7 @@ export class YolaView extends ClipBody {
       turn = A.yawOffset * smooth(clamp(t / 0.1, 0, 1)) * out;
       if (this.prevSwing) {
         const pw = this.prevSwingW * (1 - ramp);
-        this.prevSwing.setEffectiveWeight(pw);
+        this.prevSwing.setEffectiveWeight(pw); prevW = pw;
         if (pw <= 1e-3) { this.prevSwing.setEffectiveWeight(0); this.prevSwing = null; }
       }
       // the turn carries over from the previous attack instead of snapping
@@ -551,7 +558,7 @@ export class YolaView extends ClipBody {
     }
     this.reloadW = rW;
     const rP = s.equipped === 'pistol' ? rW : 0, rS = s.equipped === 'shotgun' ? rW : 0;
-    const k = 1 - sW;
+    const k = 1 - Math.min(1, sW + prevW); // (the fading attack counts too: else the idle came back under it, 50/50)
     this.act('pistol_reload_upper').setEffectiveWeight(rP * uP * k);
     this.act('shotgun_reload_upper').setEffectiveWeight(rS * uS * k);
     const hold = this.act('shotgun_hold_upper'); hold.setEffectiveWeight((1 - rS) * uS * k);
@@ -648,11 +655,17 @@ export class YolaView extends ClipBody {
       const base = this.baseClip(n); if (base) this.handActs.push([a, base]);
     }
   }
+  // a second action on the same clip (made once): carries a clip's last pose while the clip restarts (see the swing hand-over)
+  ghostOf(act) {
+    const n = act.getClip().name + '__ghost';
+    if (!this.actions[n]) { const c = act.getClip().clone(); c.name = n; const g = this.mixer.clipAction(c); g.play(); g.timeScale = 0; g.setEffectiveWeight(0); this.actions[n] = g; this.postureActs = null; }
+    return this.actions[n];
+  }
   // the game clip an action plays (the derived layers: legs-only, upper-only, the unarmed copies)
   baseClip(n) {
     const BASE = { shotgun_hold_upper: 'sg_reload', shotgun_reload_upper: 'sg_reload', pistol_reload_upper: 'pistol_reload', bat_idle_upper: 'bat_idle', bat_calib: 'bat_idle',
       fists_idle_upper: 'tripo_idle', sword_idle_upper: 'ual1_Sword_Idle', sword_idle_rarm: 'ual1_Sword_Idle', sword_idle_rhand: 'ual1_Sword_Idle', tripo_idle_lower: 'tripo_idle' };
-    return n in BASE ? BASE[n] : n.endsWith('_u') ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, '');
+    return n in BASE ? BASE[n] : n.endsWith('_u') ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, '').replace(/__ghost$/, '');
   }
   // the posture fix (render/posture.js), after the body's corrections, before the weapons: each bone turned by the shares of the clips driving
   // it, per source family (only her pelvis / chest / neck / head meshes change; arms, hands, weapons and feet stay put)

@@ -100,6 +100,10 @@ export function useBuiltBat(strikes) {
   BAT_ATTACKS.length = 0; BAT_ATTACKS.push(...strikes);
   const last = BAT_ATTACKS[BAT_ATTACKS.length - 1]; // the finisher lands harder
   if (last && BAT_ATTACKS.length > 1) Object.assign(last, { dmg: BAT_PROFILE.dmg * 1.6, knock: 1.7, style: 'heavy' });
+  // the wait after the finisher before the combo can start again, cut by 75% (the user, 2026-10-17): from the end of its
+  // hit to the end of its action was 1.6 s (its settle back to the stance + recover); a new combo may now start a quarter
+  // of the way through it (player.js restartFrom), the finisher's pose fading out under the new opener
+  if (last) last.restartFrom = last.activeEnd + 0.25 * (last.duration - last.activeEnd);
 }
 // clip frame at attack time t (a held wind-up first when the attack has one), and its inverse
 export function attackFrame(A, t) {

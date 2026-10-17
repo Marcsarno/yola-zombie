@@ -198,6 +198,11 @@ export class Player {
           this.startSwing(sim, a.combo + 1, true);
           break;
         }
+        // the combo again before the last attack has fully settled (A.restartFrom: the bat, core/weapons.js useBuiltBat)
+        if (!a.ground && A.restartFrom != null && st >= A.restartFrom && st < A.duration && (this.attackHeld || this.attackPressT < a.t)) {
+          this.startSwing(sim, 0);
+          break;
+        }
         if (st >= A.duration) this.setAction('ready');
         break;
       }
