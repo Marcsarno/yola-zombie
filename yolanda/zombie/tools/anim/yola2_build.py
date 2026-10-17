@@ -96,7 +96,8 @@ def bake(src, tgt, name):
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     mesh = next((c for c in tgt.children if c.type == 'MESH'), None)
     if HOLD.search(name) and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts)
-        contacts.hands(src, tgt, act, f0, f1, CLOG, mode=os.environ.get('YOLA2_HANDS', 'arm'))  # (YOLA2_HANDS=natural: test)
+        contacts.hands(src, tgt, act, f0, f1, CLOG, mode=os.environ.get('YOLA2_HANDS', 'arm'),  # (YOLA2_HANDS=gunhand: test)
+                       near=float(os.environ.get('YOLA2_HANDS_NEAR', 0.5)), far=float(os.environ.get('YOLA2_HANDS_FAR', 1.0)))
     if mesh is not None:
         if tgt.name not in SHOES: SHOES[tgt.name] = contacts.shoe_vertices(mesh)
         contacts.feet(src, tgt, mesh, act, f0, f1, SHOES[tgt.name], CLOG, lock=not LOOP.search(name))
@@ -122,6 +123,8 @@ XBOT = {  # game clip -> X Bot source (matched to the first Yola's clips by moti
     'melee_horizontal': 'yola_melee_horizontal',
 }
 ONLY = set(filter(None, os.environ.get('YOLA2_ONLY', '').split(',')))
+# (test bakes: YOLA2_EXTRA_XBOT="name=fbx,..." adds clips straight from X Bot, e.g. pistol_reload_x=yola_reload_walk)
+for pair in filter(None, os.environ.get('YOLA2_EXTRA_XBOT', '').split(',')): k, v = pair.split('='); XBOT[k] = v
 for name, fbx in XBOT.items():
     if ONLY and name not in ONLY: continue
     objs, src, acts = import_any(os.path.join(MX, fbx + '.fbx'))

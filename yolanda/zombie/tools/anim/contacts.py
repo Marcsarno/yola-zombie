@@ -63,7 +63,9 @@ def _key(a, names, f):
     for n in names:
         p = _pb(a, n); p.keyframe_insert('rotation_quaternion', frame=f)
 
-def hands(src, tgt, act, f0, f1, log=None, mode='arm'):
+def hands(src, tgt, act, f0, f1, log=None, mode='arm', near=0.5, far=1.0):
+    # near / far: the source's hand gap (shoulder widths) below which the hands count as together, above which apart
+    # (the pistol reload's insert: X Bot's hands 0.45-0.75 apart, so its test bake uses 0.8 / 1.4)
     # mode 'arm' (as built): the hands' midpoint is the source's, from the shoulders, scaled by arm length. On the new Yola
     # (arms ~20% longer, narrower shoulders) that put the gun past her reach: the arm locked straight (99.5%) across her
     # chest (pistol_walk_back: elbow 12 vs X Bot 31 deg, the user's "shoulder tucks in").
@@ -84,7 +86,7 @@ def hands(src, tgt, act, f0, f1, log=None, mode='arm'):
         HL, HR = _wp(src, 'LeftHand'), _wp(src, 'RightHand')
         mid = (HL + HR) * 0.5
         gap = (HL - HR).length / sw_src
-        k = _ss((gap - 0.5) / 0.5)  # 0 = hands together on the source: keep their spacing at her hand size
+        k = _ss((gap - near) / (far - near))  # 0 = hands together on the source: keep their spacing at her hand size
         s_rel = s_hand + (s_arm - s_hand) * k
         goal_mid = Ot + (mid - Os) * s_arm
         if mode == 'natural':

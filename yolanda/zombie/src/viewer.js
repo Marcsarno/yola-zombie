@@ -46,6 +46,9 @@ for (const [s, S2] of [['l', 'Left'], ['r', 'Right']]) {
 }
 // clips whose Mixamo source file is named differently
 const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand' };
+// clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
+// frames 38-99, measured by matching both hands over the clip, 2026-10-16; before this the two were shown out of step)
+const REF_OFFSET = { pistol_reload: 37 };
 const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat' };
 const HELD = { pistol: 1, axe: 1, bat: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
 const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
@@ -86,12 +89,13 @@ function refClip(file) { // Mixamo source clip (skeleton-only FBX)
   return refCache.get(file);
 }
 function pinRoot(clip, on) {
-  // keep the vertical bob, pin horizontal hips motion to the first frame
+  // keep the vertical bob, pin horizontal hips motion to the rig's own centre (0, as the game strips to the rest hips;
+  // pinning to the first frame left a clip cut from mid-walk, e.g. the reload from X Bot frame 38, a step forward)
   for (const t of clip.tracks) {
     if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
     if (!t.__orig) t.__orig = t.values.slice();
     const v = t.values, o = t.__orig;
-    for (let i = 0; i < v.length; i += 3) { v[i] = on ? o[0] : o[i]; v[i + 2] = on ? o[2] : o[i + 2]; }
+    for (let i = 0; i < v.length; i += 3) { v[i] = on ? 0 : o[i]; v[i + 2] = on ? 0 : o[i + 2]; }
   }
 }
 const clipT0 = (c) => Math.min(...c.tracks.map((t) => t.times[0]));
@@ -286,7 +290,8 @@ async function setClip(name) {
   else { rsel.add(new Option('no source rig for this clip', '')); $('note').textContent = 'No reference for this clip (Tripo or custom clip).'; }
   ref.root.visible = !!rc; ref.helper.visible = !!rc && $('bones').checked;
   if (rc) { pinRoot(rc, $('inplace').checked); ref.play(rc); }
-  S.frames = Math.max(main.frames, rc ? ref.frames : 1);
+  S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, '')] || 0 : 0;
+  S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
   $('scrub').max = S.frames; S.frame = 1;
   layout(); refresh(); mainGun.calibrate(); refGun?.calibrate(); refresh();
 }
@@ -366,14 +371,14 @@ function refresh() {
   if (!main) return;
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
-  if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
+  if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
   undoPost(main); undoPost(ref); postureFix(main, ref);
   shotKick(main); if (ref.root.visible) shotKick(ref);
   mainGun?.update(1); leftHand(f);
   if (refGun?.obj) { refGun.obj.visible = ref.root.visible; refGun.update(ref.height / main.height); }
   updateMarks(); updateShell(f);
   $('scrub').value = f;
-  $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)`;
+  $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)` + (S.refOff ? `  ·  reference frame ${f + S.refOff}` : '');
   drawVidRef(f); updateBat(); updateFingers(); updatePistolFitUI();
   const lines = [];
   if (main.action) { main.grip('Right', _v); main.grip('Left', _v2); lines.push(`${CHARS[S.char].label}   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }

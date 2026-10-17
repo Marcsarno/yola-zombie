@@ -38180,6 +38180,7 @@ void main() {
     });
   }
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
+  var REF_OFFSET = { pistol_reload: 37 };
   var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat" };
   var HELD = { pistol: 1, axe: 1, bat: 1 };
   var autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? "bat" : /chop|gs_|slash|axe/.test(name) ? "axe" : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? "short" : /pistol|t_shoot/.test(name) ? "pistol" : "none";
@@ -38242,8 +38243,8 @@ void main() {
       if (!t.__orig) t.__orig = t.values.slice();
       const v = t.values, o = t.__orig;
       for (let i = 0; i < v.length; i += 3) {
-        v[i] = on ? o[0] : o[i];
-        v[i + 2] = on ? o[2] : o[i + 2];
+        v[i] = on ? 0 : o[i];
+        v[i + 2] = on ? 0 : o[i + 2];
       }
     }
   }
@@ -38547,7 +38548,8 @@ void main() {
       pinRoot(rc, $("inplace").checked);
       ref.play(rc);
     }
-    S.frames = Math.max(main.frames, rc ? ref.frames : 1);
+    S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, "")] || 0 : 0;
+    S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
     $("scrub").max = S.frames;
     S.frame = 1;
     layout();
@@ -38654,7 +38656,7 @@ void main() {
     if (!main) return;
     const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
     main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames));
-    if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
+    if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
     undoPost(main);
     undoPost(ref);
     postureFix(main, ref);
@@ -38669,7 +38671,7 @@ void main() {
     updateMarks();
     updateShell(f);
     $("scrub").value = f;
-    $("frameInfo").textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)`;
+    $("frameInfo").textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)` + (S.refOff ? `  \xB7  reference frame ${f + S.refOff}` : "");
     drawVidRef(f);
     updateBat();
     updateFingers();
