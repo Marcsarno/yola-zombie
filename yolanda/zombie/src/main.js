@@ -596,6 +596,7 @@ function handleEvents() {
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
       case 'shieldHit': audio.play('shieldHit', e.kind === 'pistol' ? 0.7 : 1, e); fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ); if (e.kind !== 'pistol') shake(0.25); break;
+      case 'shieldCrack': fx.burst(e.x - e.dirX * 0.45, 1.15, e.z - e.dirZ * 0.45, e.state === 'heavy' ? 12 : 8, 0xd7e7e2, 2.0, 0.7, 0.4); shake(e.state === 'heavy' ? 0.4 : 0.3); break; // (a new crack stage: chips off the panel)
       case 'shieldBreak': audio.play('shieldBreak'); fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 0xd7e7e2, 2.4, 0.9, 0.55); shake(0.55); hud.popup('SHIELD BROKEN'); break;
       case 'headshot': audio.play('bulletHit', 1.5); shake(0.35); hud.popup('HEADSHOT'); break;
       case 'batMiss': audio.play('batMiss'); break;

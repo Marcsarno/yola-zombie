@@ -44,9 +44,12 @@ export const KINDS = {
   sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
   guard: { hp: 2.6, speed: 0.6, dmg: 1.8, knock: 0.4, kd: 0.25, stagger: 0.55, r: 0.42 },
 };
-export const SHIELD_HP = 190; // (about 3 bat or axe blows, 2 close shotgun blasts, 8 pistol rounds)
+// (2026-10-17, the user: "more progression of the shield breaking ... I don't get a chance to see the cracks": 190 hp and
+// 0.62 / 0.3 stages went intact -> heavy -> broken in three bat blows. Now four bat or axe blows (intact, hairline,
+// hairline, heavy, broken), 3 close shotgun blasts, ~12 pistol rounds; each new stage throws chips: shieldCrack)
+export const SHIELD_HP = 270;
 export const SHIELD_MUL = { melee: 1.5, fist: 0.8, shotgun: 0.9, pistol: 0.7 };
-export const shieldState = (z) => !z.shieldMax ? 'none' : z.shieldHp <= 0 ? 'break' : z.shieldHp / z.shieldMax > 0.62 ? 'intact' : z.shieldHp / z.shieldMax > 0.3 ? 'hairline' : 'heavy';
+export const shieldState = (z) => !z.shieldMax ? 'none' : z.shieldHp <= 0 ? 'break' : z.shieldHp / z.shieldMax > 0.78 ? 'intact' : z.shieldHp / z.shieldMax > 0.4 ? 'hairline' : 'heavy';
 export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9;
 const PERSONAL = 1.05; // m a waiting zombie keeps between itself and its neighbours // the sprinter's trip: down onto her back, then up (no turn)
 
@@ -119,8 +122,9 @@ export class Zombie {
     const parts = Array.isArray(part) ? part : [[part, dmg]];
     // the guard's shield takes a frontal blow: the panel is damaged, he is shoved a little and flinches, nothing else
     if (this.shieldBlocks(dirX, dirZ)) {
-      const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1;
+      const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1, was = shieldState(this);
       this.shieldHp = Math.max(0, this.shieldHp - total * mul);
+      if (this.shieldHp > 0 && shieldState(this) !== was) sim.emit({ type: 'shieldCrack', id: this.id, x: this.x, z: this.z, dirX, dirZ, state: shieldState(this) });
       this.kx += dirX * impulse * 0.35 * this.K.knock; this.kz += dirZ * impulse * 0.35 * this.K.knock;
       this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse * 0.4; this.hitSeq++; this.hitKind = kind; this.hitStyle = 'shield'; this.hitFlash = 0.25;
       if (this.shieldHp <= 0) { // broken: the pieces fall away and he reels, open
