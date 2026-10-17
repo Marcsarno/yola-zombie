@@ -49723,6 +49723,7 @@ void main() {
       return lw;
     }
     update(dt, s) {
+      this.dtNow = dt;
       this.outer.position.set(s.x, 0, s.z);
       this.blob.position.set(s.x, 0.012, s.z);
       if (s.dead) {
@@ -50125,7 +50126,12 @@ void main() {
         hx = (_v4.x + _v23.x) / 2 - (_v32.x + _v43.x) / 2;
         hz = (_v4.z + _v23.z) / 2 - (_v32.z + _v43.z) / 2;
       }
-      const live = clamp4(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+      let live = clamp4(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+      if (this.pistolPlace !== "old") {
+        const a = 1 - Math.exp(-(this.dtNow || 1 / 60) / 0.1);
+        this.aimLive = this.aimLive == null ? live : this.aimLive + (live - this.aimLive) * a;
+        live = this.aimLive;
+      }
       if (rW === 0) this.aimErr = live;
       const err = live * (1 - rW) + (this.aimErr || 0) * rW;
       const kick = s.recoil * s.recoil * s.recoilScale;
