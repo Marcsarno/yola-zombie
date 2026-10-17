@@ -52,6 +52,7 @@ export function placeOneHanded(bones, side, o, def, fit, T = {}, k = 1) {
 // measured handle direction, render/clipchars.js batSocket / meleeSocket: which way the head points). When the hands part
 // (a one-handed follow-through) or the fists' line turns across `toward`, the handle eases onto `toward` and stays in
 // the `hold` hand (its fist centre). out: { c (the grip point), d (unit handle direction, toward the head), span (m) }
+export const HOLD_TUNE = { axeAxis: 1 }; // (the share of the fists' grip axes in the axe handle's direction; see twoHandLine)
 const F2 = { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() }, _cr = new THREE.Vector3(), _ar = new THREE.Vector3(), _ax = new THREE.Vector3();
 const sm = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 export function twoHandLine(bones, toward, out, hold = 'Right', prev = null) {
@@ -61,12 +62,13 @@ export function twoHandLine(bones, toward, out, hold = 'Right', prev = null) {
   const ch = hold === 'Left' ? F2.c : cr; // (the hand that keeps it when they part)
   out.c.copy(cr).add(F2.c).multiplyScalar(0.5);
   out.d.copy(cr).sub(F2.c); out.span = out.d.length(); out.d.normalize();
-  // ...turned 70% toward the fists' own grip axes (pinky -> index: where a handle lies in a closed fist) while both hands
-  // agree on it: the line between the fist centres alone ran the axe handle through her head in the batting idle (2.5 cm
-  // from its centre; the axes clear it by 16 cm, the mix by ~13, each fist ~2.5 cm off the handle's centre line)
+  // ...turned toward the fists' own grip axes (pinky -> index: where a handle lies in a closed fist; HOLD_TUNE.axeAxis of
+  // the way) while both hands agree on it: the line between the fist centres alone ran the axe handle through her head in
+  // the batting idle (2.5 cm from its centre). At 0.7 it still cut the ponytail base (~240 vertices); at 1 ~20, each fist
+  // ~3.5 cm off the handle's centre line (her stacked hands are not on one line: X Bot's neither, 3.7 cm)
   const agree = ar.dot(F2.a), ax = _ax.copy(ar).add(F2.a).normalize();
   if (ax.dot(out.d) < 0) ax.negate();
-  out.d.lerp(ax, 0.7 * sm(0.5, 0.85, agree) * sm(0.6, 0.8, ax.dot(out.d))).normalize(); // (not when the axes turn square to the line: a swing's blends)
+  out.d.lerp(ax, HOLD_TUNE.axeAxis * sm(0.5, 0.85, agree) * sm(0.6, 0.8, ax.dot(out.d))).normalize(); // (not when the axes turn square to the line: a swing's blends)
   // the head end: continuous with the last frame's handle (prev) where there is one, `toward` breaking ties (re-choosing it
   // from `toward` alone each frame flipped the axe end over end in the swing's recovery)
   if (out.d.dot(_b.copy(toward).addScaledVector(prev || toward, 2)) < 0) out.d.negate();
