@@ -58702,8 +58702,8 @@ void main() {
       <div class="sub"><span></span></div>
       <div class="boss"><div class="lines"></div><div class="ink"></div><h2 class="name"></h2><div class="tagline"></div><div class="flash"></div></div>
       <div class="card" role="dialog" aria-live="polite"></div>
-      <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip \u25B8\u25B8</button><button class="ccB off" aria-label="Captions" title="Captions">CC</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">\u266A</button></div>
-      <div class="gate"><h1>Yola\u2019s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading\u2026</button><button class="skipGate" hidden>Skip intro</button><button class="skipGate contGate" hidden>Continue from checkpoint</button><div class="bar"><i></i></div><div class="small"></div></div>`;
+      <div class="ctl"><button class="revealB" aria-label="Skip to reveal" title="Jump to the reveal">Reveal \u25B8</button><button class="skipB" aria-label="Skip intro">Skip \u25B8\u25B8</button><button class="ccB off" aria-label="Captions" title="Captions">CC</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">\u266A</button></div>
+      <div class="gate"><h1>Yola\u2019s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading\u2026</button><button class="skipGate" hidden>Skip intro</button><button class="skipGate contGate" hidden>Continue from checkpoint</button><button class="skipGate revealGate">Skip to reveal \u25B8</button><div class="bar"><i></i></div><div class="small"></div></div>`;
       document.body.appendChild(el);
       const q = (s) => el.querySelector(s);
       this.fade = q(".fade");
@@ -58746,6 +58746,13 @@ void main() {
       this.goB = q(".go");
       this.skipGateB = q(".skipGate:not(.contGate)");
       this.contB = q(".contGate");
+      this.revealGateB = q(".revealGate");
+      this.revealB = q(".revealB");
+      this.againB = document.createElement("button");
+      this.againB.id = "opAgain";
+      this.againB.textContent = "\u21BA Reveal";
+      this.againB.style.cssText = "position:fixed;left:12px;top:calc(122px + env(safe-area-inset-top,0px));z-index:25;height:34px;padding:0 12px;border-radius:11px;border:0;background:rgba(30,42,48,.78);color:#fff;font:700 13px system-ui,sans-serif;display:none";
+      document.body.appendChild(this.againB);
       this.bar = q(".bar i");
       this.gateSmall = q(".gate .small");
       this.bossEl = q(".boss");
@@ -58754,6 +58761,9 @@ void main() {
     }
     show(v) {
       this.el.classList.toggle("on", v);
+    }
+    again(v) {
+      this.againB.style.display = v ? "block" : "none";
     }
     letter(v) {
       this.el.classList.toggle("letter", v);
@@ -62331,6 +62341,7 @@ void main() {
       } catch {
       }
       this.mark("room1-playable");
+      this.ui.again(true);
     }
     ambient() {
     }
@@ -62411,9 +62422,32 @@ void main() {
       this.batPicked = true;
       this.stage.batStatic.visible = false;
     }
+    // the reveal on demand: replay the story silently to the calm beat before the flatline (the patient on the table, his
+    // colleague at his head, Yola gone down to six), then let it play live with its sound. Works from anywhere, any number of times.
+    toReveal() {
+      this.ui.again(false);
+      window.chapterUI?.reset?.();
+      this.finalized = false;
+      this.batPicked = false;
+      this.active = true;
+      this.started = true;
+      this.ui.show(true);
+      this.sound.stopMusic(0.1);
+      this.sound.stopAmbience();
+      this.sound.unlock();
+      this.rs?.stopAll(0.1);
+      this.game?.().music?.stop(0.3);
+      this.game?.().hudShow?.(false);
+      this.setupScene();
+      this.runTo("handoff-done", { stopAtLabel: false, maxSec: 900 });
+      this.ui.setFadeColor("#000000");
+      this.ui.setFade(1, 0);
+      requestAnimationFrame(() => this.ui.setFade(0, 700));
+    }
     // dev: replay the whole opening from the start, cleanly
     replay() {
       if (!this.started) return;
+      this.ui.again(false);
       this.finalized = false;
       this.batPicked = false;
       this.active = true;
@@ -62468,6 +62502,15 @@ void main() {
         this.game().applyLevel(save);
       };
       this.ui.skipB.onclick = () => this.skip();
+      const toReveal = (ev) => {
+        ev?.preventDefault?.();
+        this.ui.gate.classList.remove("show");
+        this.sound.unlock();
+        this.toReveal();
+      };
+      this.ui.revealGateB.onclick = toReveal;
+      this.ui.revealB.onclick = toReveal;
+      this.ui.againB.onclick = toReveal;
       this.ui.muteB.onclick = () => {
         const m = !this.audio.muted;
         this.audio.setMuted(m);
@@ -62483,6 +62526,12 @@ void main() {
         this.started = true;
         this.beginSilent();
         this.finalize("direct");
+        return;
+      }
+      if (this.params.has("crisis")) {
+        this.ui.gate.classList.remove("show");
+        this.sound.unlock();
+        this.toReveal();
         return;
       }
       if (this.params.has("reveal")) {

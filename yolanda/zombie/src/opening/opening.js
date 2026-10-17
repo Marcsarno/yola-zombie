@@ -1276,6 +1276,7 @@ export class Opening {
     this.ui.show(false); g.hudShow(true);
     try { localStorage.setItem('zc.introSeen', '1'); } catch { /* storage unavailable: the opening just plays next time */ }
     this.mark('room1-playable');
+    this.ui.again(true); // (watch the reveal again)
   }
   ambient() {} // (the level's people are still: the guard's body does not move)
   // the opening's guard, dead in the Waiting Area where the outbreak reached him: on his back by the reception seats, his
@@ -1308,10 +1309,20 @@ export class Opening {
   }
   restoreBat() { this.batPicked = false; if (this.stage.batStatic) this.stage.batStatic.visible = true; }
   takeBat() { this.batPicked = true; this.stage.batStatic.visible = false; }
+  // the reveal on demand: replay the story silently to the calm beat before the flatline (the patient on the table, his
+  // colleague at his head, Yola gone down to six), then let it play live with its sound. Works from anywhere, any number of times.
+  toReveal() {
+    this.ui.again(false); window.chapterUI?.reset?.();
+    this.finalized = false; this.batPicked = false; this.active = true; this.started = true; this.ui.show(true);
+    this.sound.stopMusic(0.1); this.sound.stopAmbience(); this.sound.unlock(); this.rs?.stopAll(0.1);
+    this.game?.().music?.stop(0.3); this.game?.().hudShow?.(false); this.setupScene();
+    this.runTo('handoff-done', { stopAtLabel: false, maxSec: 900 });
+    this.ui.setFadeColor('#000000'); this.ui.setFade(1, 0); requestAnimationFrame(() => this.ui.setFade(0, 700)); // (in from black)
+  }
   // dev: replay the whole opening from the start, cleanly
   replay() {
     if (!this.started) return;
-    this.finalized = false; this.batPicked = false; this.active = true; this.ui.show(true); this.beginSilent(); this.endSilent();
+    this.ui.again(false); this.finalized = false; this.batPicked = false; this.active = true; this.ui.show(true); this.beginSilent(); this.endSilent();
     this.sound.stopMusic(0.1); this.sound.stopAmbience(); this.started = true; this.resetTour(); this.sound.unlock();
     this.game?.().music?.stop(0.4); this.game?.().hudShow?.(false); this.setupScene();
     this.narrPlaying = this.sound.playNarration(); if (!this.narrPlaying) this.joinAudioLate(); // (the narrator starts over with the tour)
@@ -1335,10 +1346,14 @@ export class Opening {
     this.ui.contB.hidden = !save;
     this.ui.contB.onclick = () => { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.started = true; this.beginSilent(); this.finalize('continue'); this.game().applyLevel(save); };
     this.ui.skipB.onclick = () => this.skip();
+    // straight to the reveal (the calm beat before the patient flatlines), from the title, mid-opening, or again after play
+    const toReveal = (ev) => { ev?.preventDefault?.(); this.ui.gate.classList.remove('show'); this.sound.unlock(); this.toReveal(); };
+    this.ui.revealGateB.onclick = toReveal; this.ui.revealB.onclick = toReveal; this.ui.againB.onclick = toReveal;
     this.ui.muteB.onclick = () => { const m = !this.audio.muted; this.audio.setMuted(m); this.ui.muteB.classList.toggle('off', m); if (m) this.sound.stopVoice(); };
     this.ui.flashB.onclick = () => { this.reducedFlash = !this.reducedFlash; this.ui.flashB.classList.toggle('off', !this.reducedFlash); };
     this.ui.flashB.classList.toggle('off', !this.reducedFlash);
     if (this.params.has('room1')) { this.started = true; this.beginSilent(); this.finalize('direct'); return; } // dev: straight to the canonical Room 1 snapshot
+    if (this.params.has('crisis')) { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.toReveal(); return; } // dev: the reveal from just before the patient turns
     if (this.params.has('reveal')) { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.started = true; this.runTo('get-yola-done', { stopAtLabel: false }); return; } // dev: the reveal replay
     if (this.params.get('auto') === '1') this.start();
   }

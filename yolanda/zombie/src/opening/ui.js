@@ -150,8 +150,8 @@ export class OpeningUI {
       <div class="sub"><span></span></div>
       <div class="boss"><div class="lines"></div><div class="ink"></div><h2 class="name"></h2><div class="tagline"></div><div class="flash"></div></div>
       <div class="card" role="dialog" aria-live="polite"></div>
-      <div class="ctl"><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="ccB off" aria-label="Captions" title="Captions">CC</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
-      <div class="gate"><h1>Yola’s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading…</button><button class="skipGate" hidden>Skip intro</button><button class="skipGate contGate" hidden>Continue from checkpoint</button><div class="bar"><i></i></div><div class="small"></div></div>`;
+      <div class="ctl"><button class="revealB" aria-label="Skip to reveal" title="Jump to the reveal">Reveal ▸</button><button class="skipB" aria-label="Skip intro">Skip ▸▸</button><button class="ccB off" aria-label="Captions" title="Captions">CC</button><button class="flashB" aria-label="Reduced flash" title="Reduced flash">Soft light</button><button class="muteB" aria-label="Mute">♪</button></div>
+      <div class="gate"><h1>Yola’s<br>Medical Center</h1><p>Your clinic opens today.</p><button class="go" disabled>Loading…</button><button class="skipGate" hidden>Skip intro</button><button class="skipGate contGate" hidden>Continue from checkpoint</button><button class="skipGate revealGate">Skip to reveal ▸</button><div class="bar"><i></i></div><div class="small"></div></div>`;
     document.body.appendChild(el);
     const q = (s) => el.querySelector(s);
     this.fade = q('.fade'); this.vig = q('.vig'); this.dark = q('.dark'); this.monEl = q('.mon'); this.ecg = q('.mon canvas'); this.titleEl = q('.title'); this.readyEl = q('.ready'); this.timeEl = q('.timecard');
@@ -160,12 +160,15 @@ export class OpeningUI {
     this.ccB.classList.toggle('off', !this.captions);
     this.ccB.addEventListener('click', () => { this.captions = !this.captions; this.ccB.classList.toggle('off', !this.captions); try { localStorage.setItem('zc.captions', this.captions ? '1' : '0'); } catch { /* no storage */ } if (!this.captions) this.subEl.classList.remove('show'); else if (this.lastSub) this.subtitle(this.lastSub.text, this.lastSub.opts); });
     this.subEl = q('.sub'); this.objEl = q('.obj'); this.rewardEl = q('.reward'); this.chipEl = q('.chip'); this.prevEl = q('.prev'); this.statusEl = q('.status'); this.urgEl = q('.urgency'); this.cardEl = q('.card'); this.gate = q('.gate');
-    this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.skipGateB = q('.skipGate:not(.contGate)'); this.contB = q('.contGate'); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
+    this.skipB = q('.skipB'); this.flashB = q('.flashB'); this.muteB = q('.muteB'); this.goB = q('.go'); this.skipGateB = q('.skipGate:not(.contGate)'); this.contB = q('.contGate'); this.revealGateB = q('.revealGate'); this.revealB = q('.revealB');
+    // after the hand-off: one button to watch the reveal again (outside the opening's layer, which is hidden in play)
+    this.againB = document.createElement('button'); this.againB.id = 'opAgain'; this.againB.textContent = '↺ Reveal'; this.againB.style.cssText = 'position:fixed;left:12px;top:calc(122px + env(safe-area-inset-top,0px));z-index:25;height:34px;padding:0 12px;border-radius:11px;border:0;background:rgba(30,42,48,.78);color:#fff;font:700 13px system-ui,sans-serif;display:none'; document.body.appendChild(this.againB); this.bar = q('.bar i'); this.gateSmall = q('.gate .small');
     this.bossEl = q('.boss');
     this.tags = new Map();
     this.cardResolve = null;
   }
   show(v) { this.el.classList.toggle('on', v); }
+  again(v) { this.againB.style.display = v ? 'block' : 'none'; }
   letter(v) { this.el.classList.toggle('letter', v); }
   setFade(o, ms = 500) { this.fade.style.transition = `opacity ${ms}ms ease`; this.fade.style.opacity = o; }
   setFadeColor(c) { this.fade.style.background = c; }
