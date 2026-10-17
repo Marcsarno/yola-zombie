@@ -14,3 +14,7 @@ yolanda/zombie/assets/source/
 
 # Move Library bake on the new Yola: contains Kevin Iglesias clips (no raw redistribution; the repo is public)
 yolanda/zombie/assets/moves/yola2_moves.glb
+
+# Move Library bake on the first Yola: 23 Kevin Iglesias clips (Human Melee / Human Soldier FREE: no raw redistribution).
+# Kept on disk for the Move Library and the weapon test arena; never committed or deployed.
+yolanda/zombie/assets/moves/yola_moves.glb
