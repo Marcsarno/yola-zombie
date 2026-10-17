@@ -63,7 +63,15 @@ def _key(a, names, f):
     for n in names:
         p = _pb(a, n); p.keyframe_insert('rotation_quaternion', frame=f)
 
-def hands(src, tgt, act, f0, f1, log=None):
+def hands(src, tgt, act, f0, f1, log=None, mode='arm'):
+    # mode 'arm' (as built): the hands' midpoint is the source's, from the shoulders, scaled by arm length. On the new Yola
+    # (arms ~20% longer, narrower shoulders) that put the gun past her reach: the arm locked straight (99.5%) across her
+    # chest (pistol_walk_back: elbow 12 vs X Bot 31 deg, the user's "shoulder tucks in").
+    # mode 'natural' (test, 2026-10-16): the midpoint is where her own retargeted hands already are (her natural reach,
+    # the arm bent like the source's); hands together on the source meet there at her hand size; apart ones stay put.
+    # (Measured: no better: her gun arm is already at 97% reach, so meeting halfway straightened it again.)
+    # mode 'gunhand' (test): the right (gun) hand stays where her own arm puts it; the left (support) hand comes to it,
+    # at the source's spacing scaled by hand size (the left arm has slack: ~75% reach).
     sc = bpy.context.scene
     s_arm = _len(tgt, 'LeftArm', 'LeftForeArm', 'LeftHand') / _len(src, 'LeftArm', 'LeftForeArm', 'LeftHand')
     s_hand = (_rest(tgt, 'LeftHandMiddle1') - _rest(tgt, 'LeftHand')).length / (_rest(src, 'LeftHandMiddle1') - _rest(src, 'LeftHand')).length
@@ -79,8 +87,19 @@ def hands(src, tgt, act, f0, f1, log=None):
         k = _ss((gap - 0.5) / 0.5)  # 0 = hands together on the source: keep their spacing at her hand size
         s_rel = s_hand + (s_arm - s_hand) * k
         goal_mid = Ot + (mid - Os) * s_arm
+        if mode == 'natural':
+            TL, TR = _wp(tgt, 'LeftHand'), _wp(tgt, 'RightHand')
+            goal_mid = (TL + TR) * 0.5
+        TR0 = _wp(tgt, 'RightHand')
         for side, H in (('Left', HL), ('Right', HR)):
             g = goal_mid + (H - mid) * s_rel
+            if mode == 'natural':
+                g = goal_mid + (H - mid) * s_hand
+                g = g.lerp(_wp(tgt, side + 'Hand'), k)  # (apart on the source: her own hand stays)
+            if mode == 'gunhand':  # the gun (right) hand stays at her own reach; the support hand comes to it
+                if side == 'Right': continue
+                g = TR0 + (HL - HR) * s_hand
+                g = g.lerp(_wp(tgt, 'LeftHand'), k)
             before = _wp(tgt, side + 'Hand')
             r = two_bone(tgt, side + 'Arm', side + 'ForeArm', side + 'Hand', g, 1.0)
             if r:
