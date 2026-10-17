@@ -110,6 +110,15 @@ user dropped a stray -1 from the browser).
   yola2_work.blend (keep its weight work), export, then re-check the pistol fit (the gun hand's pose changed).
   Open: the composite strafes (left, run left, run right) measure hands ~0.6 shoulder widths apart (look OK in pictures);
   the reload swings the arm out more than X Bot's (-21 vs -11 deg), before and after.
+- **Pistol reload DONE in the game (2026-10-17, 3a2b41b):** the old one was cut from X Bot's walking reload (frames
+  38-99) and moved like a long-gun reload (the user). Now Quaternius UAL1 Pistol_Reload with contacts.support (her left
+  hand placed where the mannequin's is, in the gun hand's frame: 0.04-0.11 hand-lengths off on frames 22-48, was 0.57).
+  Magazines (the user's props, assets/weapons/pistol_mag_*.glb, made for this pistol: MAG_SEAT): empty drops at frame
+  6, loaded taken from the hip at 13 (held by its base at her thumb-index pinch), into the grip 23-28. clipchars.js
+  placeMags = viewer.js updateMags. Inspect mode "reload" move. Open: the game's pistol placement is the old one (not the
+  Rig Lab fit), so the gun sits more upright and the magazine leads her fingers by up to 5.7 cm at the insert; the
+  shotgun shell prop (assets/weapons/shotgun_shell.glb) is copied in but not used yet.
+- **How to check a contact:** WEAPON_HOLD_PROCESS.md section 16 (the user's lesson after the reload miss).
 - **The 4-strike bat combo** (Sword Regular Combo split) "didn't feel as great as hoped": ask what felt off.
 
 ## Next steps (in order, each one shown to the user before the next)
