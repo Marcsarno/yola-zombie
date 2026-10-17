@@ -2,7 +2,7 @@
 import { World, rng, rayCircle, segPointDist2, angleDiff } from './world.js';
 import { LAYOUT, buildWorld } from './layout.js';
 import { Player, meleeWorldSegment } from './player.js';
-import { Zombie, ZS, KINDS, ZATTACKS, separate, bump } from './zombies.js';
+import { Zombie, ZS, KINDS, ZATTACKS, LADY, separate, bump } from './zombies.js';
 import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
@@ -25,6 +25,7 @@ export class Sim {
     this.player.aimYaw = this.player.aimTarget = s.yaw;
     this.zombies = [];
     this.events = [];
+    this.hazards = []; // acid pools: { x, z, r, t, dur, dps } (the lady's burst)
     this.time = 0;
     this.flowT = 0;
     this.engaged = new Set(); this.engageT = 0; this.nextAttackT = 0; // zombie attack slots and turns (updateEngagement)
@@ -80,6 +81,7 @@ export class Sim {
     if (this.flowT <= 0) { this.world.updateFlow(p.x, p.z); this.flowT = 0.2; }
     if ((this.engageT -= dt) <= 0) { this.engageT = 0.2; this.updateEngagement(); }
     for (const z of this.zombies) z.update(dt, this);
+    this.updateHazards(dt);
     bump(this.zombies, this);
     separate(this.zombies, p);
     this.director.update(dt);
@@ -105,6 +107,29 @@ export class Sim {
     this.zombies.push(z);
     this.emit({ type: 'zombieSpawn', id: z.id, door: d.id });
     return z;
+  }
+
+  // The lady bursts (core/zombies.js LADY): her burst knocks Yola flat close by and staggers her further out; an acid pool
+  // stays where she was. (Her death momentum carries the burst forward: the gore flies along it.)
+  ladyBurst(z) {
+    const p = this.player, A = LADY.acid, d = Math.hypot(p.x - z.x, p.z - z.z);
+    this.hazards.push({ id: z.id, x: z.x, z: z.z, r: A.r, t: 0, dur: A.dur, dps: A.dps });
+    this.emit({ type: 'ladyBurst', id: z.id, x: z.x, z: z.z, dirX: z.hitDirX || 0, dirZ: z.hitDirZ || 0, vx: z.vx + z.kx, vz: z.vz + z.kz });
+    if (!p.dead && p.invuln <= 0 && p.action.type !== 'vault') {
+      if (d < LADY.knock) p.knockDown(z.x, z.z, this);
+      else if (d < LADY.stagger) p.hurt(4, z.x, z.z, this);
+    }
+  }
+  // acid: hurts Yola while she stands in it (a slow burn, no knockback); fades out at the end
+  updateHazards(dt) {
+    const p = this.player;
+    for (const h of this.hazards) {
+      h.t += dt;
+      if (p.dead || Math.hypot(p.x - h.x, p.z - h.z) > h.r) continue;
+      if (!this.T.testInfiniteHealth) { p.hp = Math.max(0, p.hp - h.dps * dt); if (p.hp <= 0) p.hurt(0.01, h.x, h.z, this); }
+      if ((h.burnT = (h.burnT || 0) - dt) <= 0) { h.burnT = 0.45; this.emit({ type: 'acidBurn', x: p.x, z: p.z }); }
+    }
+    this.hazards = this.hazards.filter((h) => h.t < h.dur);
   }
 
   // Something she can dodge is coming: a zombie winding up its lunge or pounce at her (or in the pounce's leap), the big
@@ -341,7 +366,8 @@ export class Sim {
         // (a leg attack goes in under the guard's shield and always finds the shins)
         const side = this.rand() < 0.5 ? '_L' : '_R', shielded = !A.legs && z.shieldBlocks(dx, dz); // (a blow on the guard's shield cuts nothing)
         const kind = A.kind || (p.equipped === BAT ? 'bat' : 'axe'); // (a test-arena attack names its own: bat = blunt, axe = blade)
-        const part = shielded ? 'torso' : A.legs ? 'LowerLeg' + side : lethal && r < sv.head ? 'Head'
+        const headOk = z.kind !== 'guard' || z.enraged; // (the guard's head only once both arms are gone)
+        const part = shielded ? 'torso' : A.legs ? 'LowerLeg' + side : lethal && headOk && r < sv.head ? 'Head'
           : r < (lethal ? sv.head : 0) + sv.arm ? 'Forearm' + side
           : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? 'LowerLeg' + side : 'torso';
         if (part !== 'torso' && !z.severed.has(part)) { if (kind === 'bat') z.cripple(part, this); else z.limbHp[part] = 0; } // the blade goes through; a bat breaks the leg

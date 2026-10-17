@@ -6,6 +6,7 @@ import { makeTuning } from './core/tuning.js';
 import { setMeleePaths, meleeSegment, BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
 import { setupNewMoves } from './render/newmoves.js';
+import { AcidPools } from './render/acid.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
@@ -82,6 +83,7 @@ const fx = new FX(scene);
 // the full burst on big finishing blows (render/gibburst.js): one model per zombie type that has one (0 nurse, 1 patient)
 const gibs = new GibBurst(scene, new GLTFLoader(), fx);
 const telegraphs = new Telegraphs(scene); // zombie attack wedges on the floor
+const acid = new AcidPools(scene, fx); // the lady's acid pools (render/acid.js)
 fx.gore = store.get('gore', true);
 let shakeOn = true;
 const hud = new Hud({ tuning, audio, store, onAction: (a, v) => uiAction(a, v) });
@@ -462,6 +464,7 @@ function runFrame(dt, doRender = true) {
   fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? (p.attackHeld ? 1 : 0.5) : 0.2);
 
   stepPhysics(animDt);
+  acid.update(sim.hazards, sim.zombies, animDt);
   ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
   // ---- zombies (pooled views) ----
   const seen = new Set();
@@ -595,6 +598,9 @@ function handleEvents() {
       case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 16, 0xcfc6b4, 2.2, 0.8, 0.6); if (d < 7) shake(0.9 - d * 0.1); break; } // the guard's smash: dust, a ring, the floor shakes
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
+      case 'ladyBurst': audio.play('sever'); audio.play('zombieDeath'); shake(0.85); break; // (the lady pops: core/sim.js ladyBurst)
+      case 'guardEnraged': hud.popup('ENRAGED'); shake(0.4); break; // (the guard, both arms gone)
+      case 'acidBurn': fx.burst(e.x, 0.1, e.z, 3, 0xd9f25a, 0.6, 1.8, 0.45); break;
       case 'shieldHit': audio.play('shieldHit', e.kind === 'pistol' ? 0.7 : 1, e); fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ); if (e.kind !== 'pistol') shake(0.25); break;
       case 'shieldCrack': fx.burst(e.x - e.dirX * 0.45, 1.15, e.z - e.dirZ * 0.45, e.state === 'heavy' ? 12 : 8, 0xd7e7e2, 2.0, 0.7, 0.4); shake(e.state === 'heavy' ? 0.4 : 0.3); break; // (a new crack stage: chips off the panel)
       case 'shieldBreak': audio.play('shieldBreak'); fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 0xd7e7e2, 2.4, 0.9, 0.55); shake(0.55); hud.popup('SHIELD BROKEN'); break;

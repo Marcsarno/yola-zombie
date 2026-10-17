@@ -28,6 +28,13 @@ export const ZATTACKS = {
 // how a standing zombie walks (render/clipchars.js ZombieView): 'shamble' the Mixamo zombie walk, 'ual' Quaternius's
 // zombie walk in eight directions (it side-steps when it circles her), 'run' Quaternius's zombie run, a runner (faster:
 // RUNNER_SPEED). Picked from each zombie's phase; the sprinter and the guard keep their own.
+// the guard's gore (PROGRESS.md plan): arms off at the shoulder (armHp each: ~4 pistol rounds, an axe blow can take one),
+// both gone: enraged (speed x, the lady's charge, no slam), the head now only headHp (it goes quickly)
+export const GUARD = { armHp: 130, headHp: 35, rageSpeed: 1.7 };
+// the lady's burst (PROGRESS.md plan): however she dies, she swells for a beat (swell, s into her dying) and pops: Yola
+// knocked down inside knock m, staggered to stagger m; an acid pool (radius r) that hurts Yola dps for dur s, then dissolves.
+// Zombies walk through it (it only steams around their feet).
+export const LADY = { swell: 0.3, knock: 2.0, stagger: 3.5, acid: { r: 1.5, dur: 5, dps: 6 } };
 export const GAITS = { runnerShare: 0.15, ualShare: 0.45 };
 export const RUNNER_SPEED = 2.5; // (x zombieSpeed: ~2.5 m/s, Yola runs 3.3; the run clip's own pace is ~4 m/s, slower looked like slow motion)
 // Zombie kinds (multipliers on the tuning values; r: body radius in metres).
@@ -76,6 +83,10 @@ export class Zombie {
     this.struck = false;
     // dismemberment: limb health; a limb at 0 comes off at the elbow / knee / neck
     this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
+    // the big guard's progression (PROGRESS.md gore plan, the user 2026-10-15): the shield, then one arm (at the shoulder),
+    // the other arm, then ENRAGED (faster, charges like the lady), and only then the head, quickly
+    if (this.kind === 'guard') Object.assign(this.limbHp, { Forearm_L: GUARD.armHp, Forearm_R: GUARD.armHp, Head: Infinity });
+    this.enraged = false; this.burst = false; // (burst: the lady has popped)
     this.severed = new Set(); this.crawling = false; this.lastHitPart = 'torso'; this.toCrawl = false;
     this.hitStyle = ''; this.bumpT = 0;
     this.attack = 'lunge'; // the attack being wound up / struck
@@ -96,6 +107,13 @@ export class Zombie {
     sim.emit({ type: 'sever', id: this.id, part, dirX, dirZ, x: this.x, z: this.z });
     if (part === 'Head') this.hp = 0;
     else if (part.startsWith('LowerLeg') && !this.crawling) this.crawling = this.toCrawl = true; // falls, then crawls
+    if (this.kind === 'guard' && part.startsWith('Forearm')) {
+      if (part === 'Forearm_L' && this.shieldHp > 0) { this.shieldHp = 0; sim.emit({ type: 'shieldBreak', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind: 'drop' }); } // (his shield arm: the shield goes with it)
+      if (this.armsLost >= 2 && !this.enraged) { // both arms gone: enraged, and the head can go now
+        this.enraged = true; this.limbHp.Head = GUARD.headHp; this.speedMul *= GUARD.rageSpeed; this.attackCd = Math.min(this.attackCd, 0.3);
+        sim.emit({ type: 'guardEnraged', id: this.id, x: this.x, z: this.z });
+      }
+    }
   }
 
   // a leg broken (a bat or a slide tackle at its shins): it stays on, but the zombie goes down and crawls from then on
@@ -347,7 +365,7 @@ export class Zombie {
         const los = dist < 7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
         if (los) { wantX = dx / (dist || 1); wantZ = dz / (dist || 1); }
         else { const rem = world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; if (rem > 1e7) { wantX = wantZ = 0; } } // no way through (a shut door): it stands and waits
-        if (this.kind === 'sprinter' && !this.crawling && !this.passive && this.sprinterChase(dt, sim, dx, dz, dist)) { turnRate = 0; break; }
+        if ((this.kind === 'sprinter' || this.enraged) && !this.crawling && !this.passive && this.sprinterChase(dt, sim, dx, dz, dist)) { turnRate = 0; break; } // (the enraged guard charges as she does)
         speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === 'run' ? RUNNER_SPEED : 1) : 0;
         if (speed > 0) { const s = this.steer(wantX, wantZ, dist, los, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
         // Waiting its turn (spacing): a zombie without an attack slot stops a step back from her (at its own distance),
@@ -395,7 +413,7 @@ export class Zombie {
         // Attack (pacing): only a zombie with a slot, in reach, facing her, and only once the floor's attack turn comes
         // round (each attack started holds the next one off by zombieAttackGap). Inside ~0.9 m it scratches.
         const slot = !sim.engaged || sim.engaged.has(this.id) || this.crawling || this.kind === 'sprinter';
-        if (this.kind === 'guard' && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist > 1.3 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
+        if (this.kind === 'guard' && !this.enraged && this.armsLost < 1 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist > 1.3 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
             sim.time >= (sim.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
           this.attack = 'slam'; this.set(ZS.WINDUP, ZATTACKS.slam.windup); this.slamCd = 4 + sim.rand() * 2.5;
           sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * 1.5;
@@ -494,6 +512,8 @@ export class Zombie {
         if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.fall = ''; this.attackCd = Math.max(this.attackCd, 0.5); }
         break;
       case ZS.DYING:
+        // the lady pops: a beat into her death (her swell), wherever and however she died, carrying her momentum
+        if (this.kind === 'sprinter' && !this.burst && this.t >= LADY.swell) { this.burst = true; sim.ladyBurst(this); }
         turnRate = 0;
         if (this.t >= this.stateDur) { this.set(ZS.DEAD); this.corpseT = 0; }
         break;
