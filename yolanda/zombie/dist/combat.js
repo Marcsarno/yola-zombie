@@ -48878,6 +48878,10 @@ void main() {
         return;
       }
       if (this.sitTarget === 1 && this.sitW >= 1) this.sitState = "seated";
+      if (B.pelvis) {
+        this.pelvisRest || (this.pelvisRest = B.pelvis.position.clone());
+        B.pelvis.position.lerp(this.pelvisRest, w);
+      }
       this.root.updateMatrixWorld(true);
       const U2 = new Vector3(0, 1, 0), yawF = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
       const drop = (this.pelvisY0 - (this.sitSeatTop + 0.04)) * w;
@@ -59821,7 +59825,7 @@ void main() {
     const img = g.getImageData(0, 0, w, h), d = img.data, n = w * h;
     const lum = new Float32Array(n);
     for (let i = 0; i < n; i++) lum[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255;
-    const edge = new Uint8Array(n), T2 = 0.16;
+    const edge = new Uint8Array(n), T2 = 0.3;
     for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
       const i = y * w + x;
       const gx = lum[i - w + 1] + 2 * lum[i + 1] + lum[i + w + 1] - lum[i - w - 1] - 2 * lum[i - 1] - lum[i + w - 1];
@@ -59829,38 +59833,16 @@ void main() {
       if (gx * gx + gy * gy > T2 * T2) edge[i] = 1;
     }
     const ink = new Uint8Array(n);
-    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      if (edge[i] || edge[i - 1] || edge[i + w]) ink[i] = 1;
-    }
-    const q = (v) => Math.round(v * 5) / 5;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = y * w + x, o = i * 4;
+    for (let i = 0; i < n; i++) if (edge[i]) ink[i] = 1;
+    for (let i = 0; i < n; i++) {
+      const o = i * 4;
       if (ink[i]) {
-        d[o] = 18;
-        d[o + 1] = 14;
-        d[o + 2] = 16;
+        d[o] = d[o] * 0.35;
+        d[o + 1] = d[o + 1] * 0.32;
+        d[o + 2] = d[o + 2] * 0.34;
         continue;
       }
-      let r = d[o] / 255, gg = d[o + 1] / 255, b = d[o + 2] / 255;
-      const l = lum[i], sat = Math.max(r, gg, b) - Math.min(r, gg, b), s = 1 + 0.3 * Math.min(1, sat * 3);
-      r = l + (r - l) * s;
-      gg = l + (gg - l) * s;
-      b = l + (b - l) * s;
-      r = (r - 0.5) * 1.15 + 0.53;
-      gg = (gg - 0.5) * 1.15 + 0.5;
-      b = (b - 0.5) * 1.15 + 0.45;
-      r = q(Math.min(1, Math.max(0, r)));
-      gg = q(Math.min(1, Math.max(0, gg)));
-      b = q(Math.min(1, Math.max(0, b)));
-      if (l < 0.22 && (x + y) % 5 === 0) {
-        r *= 0.35;
-        gg *= 0.35;
-        b *= 0.35;
-      }
-      d[o] = r * 255;
-      d[o + 1] = gg * 255;
-      d[o + 2] = b * 255;
+      for (let k = 0; k < 3; k++) d[o + k] = Math.max(0, Math.min(255, (d[o + k] - 128) * 1.08 + 128));
     }
     g.putImageData(img, 0, 0);
     return c;
@@ -60976,24 +60958,24 @@ void main() {
         if (b) this.camTo(b, secs);
       };
       const ON_PATIENT2 = this.headShot(bb, 42, 2.5, 10), ON_PATIENT_CLOSE2 = this.headShot(bb, 38, 2, 8);
-      const ON_YOLA2 = this.headShot(yo, 28, 2.5, 25, -0.05), ON_YOLA_CLOSE2 = this.headShot(yo, 24, 2.1, 23, -0.05);
-      cut(ON_YOLA2, ON_YOLA_CLOSE2);
+      const ON_YOLA2 = this.headShot(yo, 2, 2.6, 27, -0.05), ON_YOLA_CLOSE2 = this.headShot(yo, 2, 2.2, 25, -0.05);
+      cut(ON_YOLA2);
       yield* this.say("02");
-      cut(ON_PATIENT2, ON_PATIENT_CLOSE2, 3.2);
+      cut(ON_PATIENT2);
       yield* this.say("03");
       cut(OFFICE_CLOSE);
       yield* this.say("04", { pause: 0.2 });
-      cut(ON_PATIENT2, ON_PATIENT_CLOSE2, 4);
+      cut(ON_PATIENT2);
       yield* this.say("05");
       cut(ON_YOLA_CLOSE2);
       yield* this.say("06", { pause: 0.2 });
       cut(ON_PATIENT_CLOSE2);
       yield* this.say("07", { pause: 0.55 });
-      cut(OFFICE_SHOT, OFFICE_CLOSE, 5);
+      cut(OFFICE_SHOT);
       yield* this.say("08");
-      cut(ON_PATIENT2, ON_PATIENT_CLOSE2, 4);
+      cut(ON_PATIENT2);
       yield* this.say("09");
-      cut(ON_YOLA2, ON_YOLA_CLOSE2, 3);
+      cut(ON_YOLA_CLOSE2);
       yo.play("chart", { fade: 0.2 });
       yo.adjust("chartLook", "head", 0.38, 0, 0, 0);
       this.tween(0.5, (k) => {
@@ -61092,8 +61074,8 @@ void main() {
       yield 1.1;
       this.roll([[cx, -6], [cx, -8.35]], { speed: 0.8 });
       yield 0.5;
-      yo.walk([[lf.x - 0.9, -6.1], [cx - 1, -7]], { endYaw: 0 });
-      sg.walk([[lf.x + 1, -6.1], [cx + 1.05, -7]], { endYaw: 0 });
+      yo.walk([[cx - 0.45, -5.45], [cx - 0.45, -6.6], [cx - 0.95, -7.1]], { endYaw: 0 });
+      sg.walk([[cx + 0.45, -5.55], [cx + 0.45, -6.6], [cx + 1, -7.1]], { endYaw: 0 });
       yield this.arrived(bb);
       {
         const sx = bb.x, sz = bb.z + 0.45;
@@ -61189,9 +61171,9 @@ void main() {
       if (!this.silent) this.audio.play("liftDing");
       this.tween(1, (k) => this.setLift3(ease(k)));
       yield 1.05;
-      yo.walk([[L2.x - 1, -10.2], [1.4, -7.2]], { endYaw: Math.PI });
-      this.roll([[L2.x, -10], [L2.x, -6.6]], { speed: 0.85, endYaw: 0 });
-      sg.walk([[L2.x + 1, -10.2], [4.6, -6]], { endYaw: -Math.PI / 2 });
+      yo.walk([[L2.x - 0.45, -11.7], [L2.x - 0.45, -10.4], [1.4, -7.2]], { endYaw: Math.PI });
+      sg.walk([[L2.x + 0.45, -11.7], [L2.x + 0.45, -10.4], [4.6, -6]], { endYaw: -Math.PI / 2 });
+      this.later(0.9, () => this.roll([[L2.x, -10], [L2.x, -6.6]], { speed: 0.85, endYaw: 0 }));
       this.camTo(W2(2.4, 0.9, -7.6, 40, 30, 6.8), 2.2);
       yield 1.2;
       yield* this.say("16", { pause: 0.5 });
@@ -61636,6 +61618,8 @@ void main() {
       yield 0.55;
       this.substate = "B12_CARD";
       this.mark("beat12");
+      this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: "key" }, 0.45);
+      yield 0.5;
       if (!this.silent) {
         this.showCard();
         this.sound.bossSting?.();
@@ -61718,7 +61702,7 @@ void main() {
       if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : 0.16));
       const tube = r.tube > 0 ? r.tube * (Math.sin(r.t * 31) * Math.sin(r.t * 7.3) > 0.55 ? 0 : 6 + 3 * Math.sin(r.t * 53)) * soft : 0;
       const flash = 70 * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
-      if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 26;
+      if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 16;
       this.renderer.toneMappingExposure = (this.baseExposure ?? 0.92) * r.exposure;
       if (!this.cabLamps) {
         this.cabLamps = [];
@@ -61811,7 +61795,6 @@ void main() {
     // the comic freeze card over the frozen frame
     showCard() {
       this.hideCard();
-      this.revLight({ key: 1, amb: 0.22, red: 0.3, spotAt: "key" });
       this.tickRevLight(0);
       this.game().looks?.render ? this.game().looks.render() : this.renderer.render(this.scene, this.camera);
       const src = this.renderer.domElement, base = comicFrame(src), name = nameCard(src.width, src.height, "YOLA", "Anesthesiologist. Off shift.");

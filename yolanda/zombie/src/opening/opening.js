@@ -627,17 +627,19 @@ export class Opening {
     const cut = (a, b, secs = 2.6) => { this.camTo(a, 0.01); if (b) this.camTo(b, secs); }; // a hard cut, then a slow push through the line
     // the reverse angles, from each speaker's head and facing (always from the east side of the desk, where no head is in the way)
     const ON_PATIENT = this.headShot(bb, 42, 2.5, 10), ON_PATIENT_CLOSE = this.headShot(bb, 38, 2.0, 8);
-    const ON_YOLA = this.headShot(yo, 28, 2.5, 25, -0.05), ON_YOLA_CLOSE = this.headShot(yo, 24, 2.1, 23, -0.05); // (from above the desk monitor)
-    cut(ON_YOLA, ON_YOLA_CLOSE); yield* this.say('02');
-    cut(ON_PATIENT, ON_PATIENT_CLOSE, 3.2); yield* this.say('03');
+    // Yola from behind the visitors, looking down between their heads (over the monitor; no head ever between the lens and her)
+    const ON_YOLA = this.headShot(yo, 2, 2.6, 27, -0.05), ON_YOLA_CLOSE = this.headShot(yo, 2, 2.2, 25, -0.05);
+    // held angles (2026-10-17: no push-in on every line): a cut, then the frame stays put
+    cut(ON_YOLA); yield* this.say('02');
+    cut(ON_PATIENT); yield* this.say('03');
     cut(OFFICE_CLOSE); yield* this.say('04', { pause: 0.2 });
-    cut(ON_PATIENT, ON_PATIENT_CLOSE, 4.0); yield* this.say('05');
+    cut(ON_PATIENT); yield* this.say('05');
     cut(ON_YOLA_CLOSE); yield* this.say('06', { pause: 0.2 });
     cut(ON_PATIENT_CLOSE); yield* this.say('07', { pause: 0.55 });
-    cut(OFFICE_SHOT, OFFICE_CLOSE, 5.0); yield* this.say('08');
-    cut(ON_PATIENT, ON_PATIENT_CLOSE, 4.0); yield* this.say('09');
+    cut(OFFICE_SHOT); yield* this.say('08');
+    cut(ON_PATIENT); yield* this.say('09');
     // "I see the test results here": her eyes go down to the chart
-    cut(ON_YOLA, ON_YOLA_CLOSE, 3.0);
+    cut(ON_YOLA_CLOSE);
     yo.play('chart', { fade: 0.2 }); yo.adjust('chartLook', 'head', 0.38, 0, 0, 0); this.tween(0.5, (k) => { yo.adj.chartLook.w = ease(k); });
     yield* this.say('10', { pause: 0.4 });
     this.tween(0.6, (k) => { if (yo.adj.chartLook) yo.adj.chartLook.w = 1 - ease(k); }); this.later(0.65, () => delete yo.adj.chartLook);
@@ -703,8 +705,9 @@ export class Opening {
     yield 1.1;
     this.roll([[cx, -6.0], [cx, -8.35]], { speed: 0.8 });
     yield 0.5;
-    yo.walk([[lf.x - 0.9, -6.1], [cx - 1.0, -7.0]], { endYaw: 0 });
-    sg.walk([[lf.x + 1.0, -6.1], [cx + 1.05, -7.0]], { endYaw: 0 });
+    // (through the doorway, not its frame: in on the centre lines either side of the chair, then apart inside the cab)
+    yo.walk([[cx - 0.45, -5.45], [cx - 0.45, -6.6], [cx - 0.95, -7.1]], { endYaw: 0 });
+    sg.walk([[cx + 0.45, -5.55], [cx + 0.45, -6.6], [cx + 1.0, -7.1]], { endYaw: 0 });
     yield this.arrived(bb);
     // the chair turns about its seat to face the doors
     { const sx = bb.x, sz = bb.z + 0.45; this.tween(1.1, (k) => { const yw = Math.PI + Math.PI * ease(k); bb.yaw = yw; bb.root.rotation.y = yw; bb.root.position.x = sx + Math.sin(yw) * 0.45; bb.root.position.z = sz + Math.cos(yw) * 0.45; }); }
@@ -755,9 +758,10 @@ export class Opening {
     this.tween(1.0, (k) => this.setLift3(ease(k)));
     yield 1.05;
     // out into the suite (the doors are open: nobody passes through them shut); line 16
-    yo.walk([[L.x - 1.0, -10.2], [1.4, -7.2]], { endYaw: Math.PI });
-    this.roll([[L.x, -10.0], [L.x, -6.6]], { speed: 0.85, endYaw: 0 });
-    sg.walk([[L.x + 1.0, -10.2], [4.6, -6.0]], { endYaw: -Math.PI / 2 });
+    // (out through the doorway, not its frame: Yola and the guard step to the centre lines and go first, the chair follows)
+    yo.walk([[L.x - 0.45, -11.7], [L.x - 0.45, -10.4], [1.4, -7.2]], { endYaw: Math.PI });
+    sg.walk([[L.x + 0.45, -11.7], [L.x + 0.45, -10.4], [4.6, -6.0]], { endYaw: -Math.PI / 2 });
+    this.later(0.9, () => this.roll([[L.x, -10.0], [L.x, -6.6]], { speed: 0.85, endYaw: 0 }));
     this.camTo(W(2.4, 0.9, -7.6, 40, 30, 6.8), 2.2);
     yield 1.2;
     yield* this.say('16', { pause: 0.5 });
@@ -1036,6 +1040,9 @@ export class Opening {
     yield 0.55;
     // BEAT 12: freeze: the comic card
     this.substate = 'B12_CARD'; this.mark('beat12');
+    // the one moment she steps into the light: a warm key swells on her, then the frame freezes in her true colours
+    this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: 'key' }, 0.45);
+    yield 0.5;
     if (!this.silent) { this.showCard(); this.sound.bossSting?.(); }
     this.animScale = 0;
     yield 2.7;
@@ -1081,7 +1088,7 @@ export class Opening {
     if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : 0.16));
     const tube = r.tube > 0 ? r.tube * (Math.sin(r.t * 31) * Math.sin(r.t * 7.3) > 0.55 ? 0 : 6 + 3 * Math.sin(r.t * 53)) * soft : 0;
     const flash = 70 * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
-    if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 26;
+    if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 16;
     this.renderer.toneMappingExposure = (this.baseExposure ?? 0.92) * r.exposure;
     // the cab's own lamps (the kit's Warm_Light material): off in the dark scene
     if (!this.cabLamps) { this.cabLamps = []; this.arena.doorKits?.lift?.root.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) if (/Warm_Light/i.test(m.name) && m.emissive) this.cabLamps.push({ m, e: m.emissiveIntensity, c: m.color.clone() }); }); }
@@ -1129,8 +1136,7 @@ export class Opening {
   // the comic freeze card over the frozen frame
   showCard() {
     this.hideCard();
-    // the freeze is lit: a warm key on her (her real colours under the ink), the hall left dark and red
-    this.revLight({ key: 1, amb: 0.22, red: 0.3, spotAt: 'key' }); this.tickRevLight(0);
+    this.tickRevLight(0);
     this.game().looks?.render ? this.game().looks.render() : this.renderer.render(this.scene, this.camera);
     const src = this.renderer.domElement, base = comicFrame(src), name = nameCard(src.width, src.height, 'YOLA', 'Anesthesiologist. Off shift.');
     const wrap = document.createElement('div'); wrap.className = 'opCard';

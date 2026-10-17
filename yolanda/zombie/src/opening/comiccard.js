@@ -13,7 +13,7 @@ export function comicFrame(source) {
   const lum = new Float32Array(n);
   for (let i = 0; i < n; i++) lum[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255;
   // ink: Sobel edges on the luminance, thickened by a pixel
-  const edge = new Uint8Array(n), T = 0.16;
+  const edge = new Uint8Array(n), T = 0.3; // (only the strong edges: a light outline)
   for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
     const i = y * w + x;
     const gx = lum[i - w + 1] + 2 * lum[i + 1] + lum[i + w + 1] - lum[i - w - 1] - 2 * lum[i - 1] - lum[i + w - 1];
@@ -21,19 +21,12 @@ export function comicFrame(source) {
     if (gx * gx + gy * gy > T * T) edge[i] = 1;
   }
   const ink = new Uint8Array(n);
-  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) { const i = y * w + x; if (edge[i] || edge[i - 1] || edge[i + w]) ink[i] = 1; }
-  // flat colour: a little more contrast and saturation, warm, quantised to a few tones; hatching in the darks
-  const q = (v) => Math.round(v * 5) / 5;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const i = y * w + x, o = i * 4;
-    if (ink[i]) { d[o] = 18; d[o + 1] = 14; d[o + 2] = 16; continue; }
-    let r = d[o] / 255, gg = d[o + 1] / 255, b = d[o + 2] / 255;
-    const l = lum[i], sat = Math.max(r, gg, b) - Math.min(r, gg, b), s = 1 + 0.3 * Math.min(1, sat * 3); // (more colour where there is colour: no rainbow banding in the greys)
-    r = l + (r - l) * s; gg = l + (gg - l) * s; b = l + (b - l) * s; // saturation
-    r = (r - 0.5) * 1.15 + 0.53; gg = (gg - 0.5) * 1.15 + 0.5; b = (b - 0.5) * 1.15 + 0.45; // contrast, warm
-    r = q(Math.min(1, Math.max(0, r))); gg = q(Math.min(1, Math.max(0, gg))); b = q(Math.min(1, Math.max(0, b)));
-    if (l < 0.22 && (x + y) % 5 === 0) { r *= 0.35; gg *= 0.35; b *= 0.35; } // hatching
-    d[o] = r * 255; d[o + 1] = gg * 255; d[o + 2] = b * 255;
+  for (let i = 0; i < n; i++) if (edge[i]) ink[i] = 1; // (one pixel: an outline, not a cartoon)
+  // her true colours (2026-10-17: the flattened, saturated grade drowned them): a touch of contrast and a light ink line
+  for (let i = 0; i < n; i++) {
+    const o = i * 4;
+    if (ink[i]) { d[o] = d[o] * 0.35; d[o + 1] = d[o + 1] * 0.32; d[o + 2] = d[o + 2] * 0.34; continue; }
+    for (let k = 0; k < 3; k++) d[o + k] = Math.max(0, Math.min(255, (d[o + k] - 128) * 1.08 + 128));
   }
   g.putImageData(img, 0, 0);
   return c;

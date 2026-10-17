@@ -214,6 +214,8 @@ export class OriginalYola extends Actor {
     this._wasSit = w > 1e-3;
     if (w <= 1e-3) { this.model.position.y = this.baseY; this.sitDrop = 0; if (this.sitState === 'rising' && this.sitTarget === 0) { this.sitState = 'stand'; this.seated = false; this.pose = null; } return; }
     if (this.sitTarget === 1 && this.sitW >= 1) this.sitState = 'seated';
+    // seated, the standing clip's breathing bob in the hips read as a bounce: the pelvis holds still on the seat
+    if (B.pelvis) { this.pelvisRest ||= B.pelvis.position.clone(); B.pelvis.position.lerp(this.pelvisRest, w); }
     this.root.updateMatrixWorld(true);
     const U = new THREE.Vector3(0, 1, 0), yawF = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     // pelvis onto the seat (4 cm above its top), legs: thighs forward and down, shins nearly straight down
