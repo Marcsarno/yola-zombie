@@ -82,13 +82,17 @@ export function startInspect(game) {
       '<br>move: ' + Object.keys(MOVES).map((m) => btn('m', m, m, m === move)).join('') +
       '<br>speed: ' + [1, 0.5, 0.25].map((s) => btn('s', s, s + 'x', s === speed && !paused)).join('') + btn('s', 'pause', 'pause', paused) + btn('s', 'step', 'step', false) +
       '<br>camera: ' + ['side', 'left side', 'front', 'body', 'hands', 'game'].map((c) => btn('c', c, c === 'game' ? 'game' : c, c === camMode)).join('') +
-      (cur === 'bat' ? '<br>bat run: ' + BATRUNS.map(([k, l]) => btn('r', k, l, Y.batRun === k)).join('') : '') +
+      (cur === 'bat' ? '<br>bat run: ' + BATRUNS.map(([k, l]) => btn('r', k, l, Y.batRun === k)).join('') +
+        (Y.batRun === 'plain' ? ` bat arm hold <input id="batArm" type="range" min="0" max="90" step="5" value="${Math.round(Y.batArmHold * 100)}" style="width:90px;vertical-align:middle"> <span id="batArmV">${Math.round(Y.batArmHold * 100)}%</span>` +
+          ` wrist hold <input id="batWrist" type="range" min="0" max="95" step="5" value="${Math.round(Y.batWristHold * 100)}" style="width:90px;vertical-align:middle"> <span id="batWristV">${Math.round(Y.batWristHold * 100)}%</span>` : '') : '') +
       (cur === 'pistol' ? '<br>pistol (P): ' + PISTOLS.map((o) => btn('p', o.key, o.label + (o.file && !alts[o.key] ? ' (loading)' : ''), o.key === pist)).join('') : '');
     box.querySelector('[data-k=fold]').onclick = () => { folded = true; label(); };
     for (const b of box.querySelectorAll('button[data-m]')) b.onclick = () => { move = b.dataset.m; label(); };
     for (const b of box.querySelectorAll('button[data-s]')) b.onclick = () => { const v = b.dataset.s; if (v === 'pause') paused = !paused; else if (v === 'step') { paused = true; game.tick(1, 1 / 60, true); } else { speed = +v; paused = false; } label(); };
     for (const b of box.querySelectorAll('button[data-c]')) b.onclick = () => setCam(b.dataset.c);
     for (const b of box.querySelectorAll('button[data-r]')) b.onclick = () => { Y.batRun = b.dataset.r; label(); };
+    const arm = box.querySelector('#batArm'); if (arm) arm.oninput = () => { Y.batArmHold = arm.value / 100; box.querySelector('#batArmV').textContent = arm.value + '%'; }; // (0 = the run's own swing)
+    const wr = box.querySelector('#batWrist'); if (wr) wr.oninput = () => { Y.batWristHold = wr.value / 100; box.querySelector('#batWristV').textContent = wr.value + '%'; };
     for (const b of box.querySelectorAll('button[data-p]')) b.onclick = () => { if (cur !== 'pistol') equip('pistol'); setPistol(b.dataset.p); };
     for (const b of box.querySelectorAll('button[data-w]')) b.onclick = () => equip(b.dataset.w);
   };

@@ -177,7 +177,10 @@ export class YolaView extends ClipBody {
     //   'rebase'    the same, the sword idle's spine re-based onto the running hips (as the shotgun / reload layers)
     //   'plain'     moving: the regular run / strafe clips in full (arms swing, the bat in her hand); standing: sword idle
     //   'plainlegs' the regular runs' legs + the sword idle's upper body, re-based
-    this.batRun = new URLSearchParams(globalThis.location?.search || '').get('batrun') || 'now';
+    const q = new URLSearchParams(globalThis.location?.search || '');
+    this.batRun = q.get('batrun') || 'plain'; // (the user, 2026-10-16: "plain looks the best", the bat arm calmed below)
+    this.batArmHold = q.has('batarm') ? +q.get('batarm') : 0.5; // 'plain': how much of the sword stance the bat arm keeps while running
+    this.batWristHold = q.has('batwrist') ? +q.get('batwrist') : 0.9; // ... and the bat hand (the bat's angle)
     for (const n of loco) for (const suf of sufs) { if (n === 'pistol_idle' && (suf === '_u' || suf === '_ul')) continue; const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
     { const tl = this.act('tripo_idle_lower'); tl.play(); tl.setEffectiveWeight(0); }
     this.gait = this.measureGaits();
@@ -527,6 +530,12 @@ export class YolaView extends ClipBody {
     const br = this.batRun, uWp = this.unarmed && (br === 'plain' || br === 'plainlegs') ? uW : 0;
     if (this.actions.sword_idle_upper) this.actions.sword_idle_upper.setEffectiveWeight((br === 'plain' && uWp ? uW * w.pistol_idle : uW) * k);
     if (this.swordHips) { if (br === 'rebase' || br === 'plainlegs') this.upperHips.sword_idle_upper = this.swordHips; else delete this.upperHips.sword_idle_upper; }
+    // 'plain': the bat arm held part-way to the sword stance while moving (batArmHold = the share of the stance; the mixer
+    // averages it with the run's arm, so weight h on top of the run's 1 gives h / (1 + h))
+    const share = (f) => { f = Math.min(0.95, Math.max(0, f)); return f / (1 - f); };
+    for (const [n, f] of [['sword_idle_rarm', this.batArmHold], ['sword_idle_rhand', this.batWristHold]]) {
+      if (this.actions[n]) this.actions[n].setEffectiveWeight(br === 'plain' ? uWp * (1 - w.pistol_idle) * share(f) * k : 0);
+    }
     // unarmed: the regular full-body run/walk/strafe clips (arms included), not the legs under a static upper-body pose
     const uni = this.unarmed ? uF : 0; // with the gun-free clips, moving unarmed uses them in full; standing still keeps the idle arms
     this.act('fists_idle_upper').setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
@@ -788,6 +797,12 @@ export class YolaView extends ClipBody {
       if (ht) this.swordHips = ht.createInterpolant(new Float32Array(4)); // (its hip tilt, for the re-based bat run options)
       const c = subClip(full, (b) => !LOWER.test(b), 'sword_idle_upper'); loopClip(c);
       const a = this.mixer.clipAction(c); this.actions.sword_idle_upper = a; a.play(); a.setEffectiveWeight(0);
+      // its bat arm alone (shoulder to fingers): calms the bat arm's swing in the 'plain' run (batArmHold)
+      const r = subClip(full, (b) => /Right(Shoulder|Arm|ForeArm)$/.test(b.replace(/\..*$/, '')), 'sword_idle_rarm'); loopClip(r);
+      const ra = this.mixer.clipAction(r); this.actions.sword_idle_rarm = ra; ra.play(); ra.setEffectiveWeight(0);
+      // and its bat hand + fingers (the wrist sets the bat's angle: held, the bat stops flipping up with each swing)
+      const h = subClip(full, (b) => /RightHand/.test(b), 'sword_idle_rhand'); loopClip(h);
+      const ha = this.mixer.clipAction(h); this.actions.sword_idle_rhand = ha; ha.play(); ha.setEffectiveWeight(0);
     }
     this.up.sword ??= 0;
   }

@@ -52035,7 +52035,10 @@ void main() {
       this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
       const sufs = this.unarmed ? ["", "_lower", "_u", "_ul"] : ["", "_lower"];
-      this.batRun = new URLSearchParams(globalThis.location?.search || "").get("batrun") || "now";
+      const q = new URLSearchParams(globalThis.location?.search || "");
+      this.batRun = q.get("batrun") || "plain";
+      this.batArmHold = q.has("batarm") ? +q.get("batarm") : 0.5;
+      this.batWristHold = q.has("batwrist") ? +q.get("batwrist") : 0.9;
       for (const n of loco) for (const suf of sufs) {
         if (n === "pistol_idle" && (suf === "_u" || suf === "_ul")) continue;
         const a = this.act(n + suf);
@@ -52116,7 +52119,7 @@ void main() {
       this.calibrateShotgunSocket();
       this.calibrateMeleeSockets(clipdata);
       this.contacts = {};
-      for (const [k, smp] of Object.entries(clipdata || {})) if (Array.isArray(smp) && smp[0]?.cL !== void 0) this.contacts[k] = { f0: smp[0].f, L: smp.map((q) => q.cL), R: smp.map((q) => q.cR) };
+      for (const [k, smp] of Object.entries(clipdata || {})) if (Array.isArray(smp) && smp[0]?.cL !== void 0) this.contacts[k] = { f0: smp[0].f, L: smp.map((q2) => q2.cL), R: smp.map((q2) => q2.cR) };
       this.bladeQ = new Quaternion();
       this.prevTip = new Vector3();
       this.bladeInit = false;
@@ -52505,6 +52508,13 @@ void main() {
         if (br === "rebase" || br === "plainlegs") this.upperHips.sword_idle_upper = this.swordHips;
         else delete this.upperHips.sword_idle_upper;
       }
+      const share = (f2) => {
+        f2 = Math.min(0.95, Math.max(0, f2));
+        return f2 / (1 - f2);
+      };
+      for (const [n, f2] of [["sword_idle_rarm", this.batArmHold], ["sword_idle_rhand", this.batWristHold]]) {
+        if (this.actions[n]) this.actions[n].setEffectiveWeight(br === "plain" ? uWp * (1 - w.pistol_idle) * share(f2) * k : 0);
+      }
       const uni = this.unarmed ? uF : 0;
       this.act("fists_idle_upper").setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
       for (const n in w) {
@@ -52849,6 +52859,18 @@ void main() {
         this.actions.sword_idle_upper = a;
         a.play();
         a.setEffectiveWeight(0);
+        const r = subClip(full, (b) => /Right(Shoulder|Arm|ForeArm)$/.test(b.replace(/\..*$/, "")), "sword_idle_rarm");
+        loopClip(r);
+        const ra = this.mixer.clipAction(r);
+        this.actions.sword_idle_rarm = ra;
+        ra.play();
+        ra.setEffectiveWeight(0);
+        const h = subClip(full, (b) => /RightHand/.test(b), "sword_idle_rhand");
+        loopClip(h);
+        const ha = this.mixer.clipAction(h);
+        this.actions.sword_idle_rhand = ha;
+        ha.play();
+        ha.setEffectiveWeight(0);
       }
       (_a5 = this.up).sword ?? (_a5.sword = 0);
     }
@@ -63247,7 +63269,7 @@ void main() {
         };
         return;
       }
-      box.innerHTML = `<b>Yola ${yolaN === 2 ? "3.0" : "2.0"}</b> \xB7 ${cur} ` + btn("k", "fold", "\u25BE hide (U)", false) + ` <a style="color:#8cf" href="?mode=calm&inspect=1&yola=${yolaN === 2 ? 1 : 2}">Yola ${yolaN === 2 ? "2.0" : "3.0"}</a><br>` + WEAPONS.map((w, i) => btn("w", w, `${i + 1} ${w}`, w === cur)).join("") + "<br>move: " + Object.keys(MOVES).map((m) => btn("m", m, m, m === move)).join("") + "<br>speed: " + [1, 0.5, 0.25].map((s) => btn("s", s, s + "x", s === speed && !paused2)).join("") + btn("s", "pause", "pause", paused2) + btn("s", "step", "step", false) + "<br>camera: " + ["side", "left side", "front", "body", "hands", "game"].map((c) => btn("c", c, c === "game" ? "game" : c, c === camMode)).join("") + (cur === "bat" ? "<br>bat run: " + BATRUNS.map(([k, l]) => btn("r", k, l, Y2.batRun === k)).join("") : "") + (cur === "pistol" ? "<br>pistol (P): " + PISTOLS.map((o) => btn("p", o.key, o.label + (o.file && !alts[o.key] ? " (loading)" : ""), o.key === pist)).join("") : "");
+      box.innerHTML = `<b>Yola ${yolaN === 2 ? "3.0" : "2.0"}</b> \xB7 ${cur} ` + btn("k", "fold", "\u25BE hide (U)", false) + ` <a style="color:#8cf" href="?mode=calm&inspect=1&yola=${yolaN === 2 ? 1 : 2}">Yola ${yolaN === 2 ? "2.0" : "3.0"}</a><br>` + WEAPONS.map((w, i) => btn("w", w, `${i + 1} ${w}`, w === cur)).join("") + "<br>move: " + Object.keys(MOVES).map((m) => btn("m", m, m, m === move)).join("") + "<br>speed: " + [1, 0.5, 0.25].map((s) => btn("s", s, s + "x", s === speed && !paused2)).join("") + btn("s", "pause", "pause", paused2) + btn("s", "step", "step", false) + "<br>camera: " + ["side", "left side", "front", "body", "hands", "game"].map((c) => btn("c", c, c === "game" ? "game" : c, c === camMode)).join("") + (cur === "bat" ? "<br>bat run: " + BATRUNS.map(([k, l]) => btn("r", k, l, Y2.batRun === k)).join("") + (Y2.batRun === "plain" ? ` bat arm hold <input id="batArm" type="range" min="0" max="90" step="5" value="${Math.round(Y2.batArmHold * 100)}" style="width:90px;vertical-align:middle"> <span id="batArmV">${Math.round(Y2.batArmHold * 100)}%</span> wrist hold <input id="batWrist" type="range" min="0" max="95" step="5" value="${Math.round(Y2.batWristHold * 100)}" style="width:90px;vertical-align:middle"> <span id="batWristV">${Math.round(Y2.batWristHold * 100)}%</span>` : "") : "") + (cur === "pistol" ? "<br>pistol (P): " + PISTOLS.map((o) => btn("p", o.key, o.label + (o.file && !alts[o.key] ? " (loading)" : ""), o.key === pist)).join("") : "");
       box.querySelector("[data-k=fold]").onclick = () => {
         folded = true;
         label();
@@ -63272,6 +63294,16 @@ void main() {
       for (const b of box.querySelectorAll("button[data-r]")) b.onclick = () => {
         Y2.batRun = b.dataset.r;
         label();
+      };
+      const arm = box.querySelector("#batArm");
+      if (arm) arm.oninput = () => {
+        Y2.batArmHold = arm.value / 100;
+        box.querySelector("#batArmV").textContent = arm.value + "%";
+      };
+      const wr = box.querySelector("#batWrist");
+      if (wr) wr.oninput = () => {
+        Y2.batWristHold = wr.value / 100;
+        box.querySelector("#batWristV").textContent = wr.value + "%";
       };
       for (const b of box.querySelectorAll("button[data-p]")) b.onclick = () => {
         if (cur !== "pistol") equip("pistol");
