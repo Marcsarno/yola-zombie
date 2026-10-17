@@ -4,9 +4,31 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
-**First thing to do: ask the user what the redo should be.** The user said "redo the opening and the maps" and gave no
-script or layout yet. Do not assume: ask for the new story beats / script and what to change in the maps, and
-whether the opening should use the new Yola (Yola 3.0) or keep the original.
+## STATE NOW (2026-10-16 evening): the brief is built
+
+The user's brief arrived: `~/Downloads/Yola_Complete_Claude_Build_Brief_2026-10-16.txt` (the authority) plus the Tiled v3
+maps `~/Downloads/Yola_Floors_7_6_5_Tiled_v3.zip` (extracted copy: session scratchpad `maps_v3/`; `source/*_Spatial_Data_v3.json`
+holds the exact room polygons and doorways). Rollback tag for this round: `checkpoint-pre-brief-2026-10-16`.
+Commits: 9bf7759 (Chapter 1 blockout), c8429d2 (opening + 13-beat reveal), a1a36a5 (furnishing), then the carry/handoff commit.
+
+- **Floors 7, 6, 5 = `src/core/chapter.js`** (data, built from the plans' px: 25 px = 1 m; floors stacked along z: 7 at 0,
+  6 at -80, 5 at -160). The renderer builds all three once; the simulation's world is the current floor (`useFloor`).
+  `src/core/level.js` = the chapter's state (flags, the case, the lift and its floor picker, the radio/phone lines,
+  the partition, saves per floor; save key `zc.chapter1save`, v 2). `src/ui/chapter.js` = radio captions (draft lines,
+  labelled "not recorded"), lift picker and ride, the case in her left hand and its off-screen marker, the docket, the end card.
+- **Opening**: lift to Floor 7 (display G-7), arrival through the OR's back-wall lift, Yola walks the guard down to six
+  after the handoff (her errand), crisis = beats 1-4, `reveal()` = beats 5-13 (silhouettes are a material swap,
+  `silhouette()`; Yola 3.0 is posed with the game's own clips via `poseRevealYola`). Lines 12/16/26 play clean edits of
+  their takes (`from`/`to` in content.js LINES); 32 omitted. Clean wheelchair `assets/models/wheelchair/Hospital_Wheelchair.glb`
+  (anchors: seat, pusher origin, push grips; hands reach the grips with `render/ik.js`).
+- **Yola 3.0 is the default hero** (main.js `yolaModel` default '2'); the old toon Yola only in the tour and beat 7.
+- Test hooks: `opening.runTo('beat5' | 'beat7' | 'beat9' | 'beat12' | 'errand-done' | 'motion' ...)`, `game.applyLevel(save)`
+  with `{ v: 2, floor, flags, case, ... }`; shots prefixed `op_` / `map_` in shots/.
+- **Open items**: the guard's arms do not detach (his model is not modular: Blender work); ragdoll frame cost with many
+  simultaneous deaths (measured in both the chapter and the old wing, pre-existing); no carry pose in the rig (the case
+  follows her left hand through the bat stance); the radio script has no recordings; physical-phone test not done.
+
+(The original instruction below — ask the user first — is done.)
 
 ## Rollback point
 

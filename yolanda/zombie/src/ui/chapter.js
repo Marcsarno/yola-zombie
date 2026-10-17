@@ -112,8 +112,9 @@ export class ChapterUI {
       if (hand) { // hang it from the fist: the handle in the hand, the case below it, upright in the world whatever the arm does
         hand.updateMatrixWorld(true);
         const s = hand.getWorldScale(new THREE.Vector3()).x || 1, hp = hand.getWorldPosition(new THREE.Vector3());
-        const want = new THREE.Vector3(hp.x, hp.y - 0.06 - (A.caseSize?.y || 0.2), hp.z);
-        o.position.copy(hand.worldToLocal(want)); o.scale.setScalar(1 / s);
+        const yw = this.sim().player.aimYaw, side = 0.09; // (a little out from her hip, on her left: +x when she faces +z)
+        const want = new THREE.Vector3(hp.x + Math.cos(yw) * side, hp.y - 0.05 - (A.caseSize?.y || 0.2) * 0.85, hp.z - Math.sin(yw) * side);
+        o.position.copy(hand.worldToLocal(want)); o.scale.setScalar(0.85 / s);
         const pq = hand.getWorldQuaternion(new THREE.Quaternion()).invert(), yaw = this.sim().player.aimYaw;
         o.quaternion.copy(pq.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw + Math.PI / 2)));
         o.visible = Y.root ? Y.root.visible !== false : true;

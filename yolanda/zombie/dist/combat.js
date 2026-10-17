@@ -63729,9 +63729,10 @@ void main() {
         if (hand) {
           hand.updateMatrixWorld(true);
           const s = hand.getWorldScale(new Vector3()).x || 1, hp = hand.getWorldPosition(new Vector3());
-          const want = new Vector3(hp.x, hp.y - 0.06 - (A.caseSize?.y || 0.2), hp.z);
+          const yw = this.sim().player.aimYaw, side = 0.09;
+          const want = new Vector3(hp.x + Math.cos(yw) * side, hp.y - 0.05 - (A.caseSize?.y || 0.2) * 0.85, hp.z - Math.sin(yw) * side);
           o.position.copy(hand.worldToLocal(want));
-          o.scale.setScalar(1 / s);
+          o.scale.setScalar(0.85 / s);
           const pq = hand.getWorldQuaternion(new Quaternion()).invert(), yaw = this.sim().player.aimYaw;
           o.quaternion.copy(pq.multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), yaw + Math.PI / 2)));
           o.visible = Y2.root ? Y2.root.visible !== false : true;
