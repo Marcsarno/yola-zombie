@@ -4,6 +4,37 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
+## NEWEST (2026-10-17, round 2 of the reveal polish): the home-run burst — read this first, then LATEST below
+
+The user's next pass, built and checked in the browser (NOT yet committed or deployed when written, ask first):
+- **Kevin Iglesias file:** `assets/moves/yola_moves.glb` untracked + gitignored (kept on disk for the Move Library and the
+  `?mode=arena` test arena, the only places that load it; the game/opening never used it). Its 23 clips: kev_ Human Melee
+  + kevs_ Human Soldier; only two were assigned in the Move Library: Attack1H01_L (knife, "maybe") and AttackPolearm01
+  (chainsaw, "good"), both arena-only. It is still inside the 70 unpushed commits (from 402d424): rewriting that history
+  was blocked by the permission guard and needs the user's explicit OK before any push.
+- **Flashes:** speed up (0.15 → 0.09 s), then slow click by click (0.16, 0.27, 0.38 s), a 0.95 s held breath with a
+  heartbeat, then the BOOM on Yola 3.0 (rs.flashBoom, camera jolt, fog kicked). `seq` in `reveal()`.
+- **Feet:** floor-level lens 17 cm up (lower grazes the floor decals), tilted up, fov 30, slow creep, backlit from the cab;
+  each slowed step = bass boom (rs.footstep) + war drum + a camera jolt (`stepShake`). Cue louder (+ sub).
+- **Smoke:** sprites anchored low (`center 0.5,0.3`) so the floor no longer cuts them in a hard band, wispier texture with
+  a soft edge, 72 puffs with curl, a few taller wisps (a stray `//` had disabled their rotation before).
+- **Bat:** a copy of her own bat (Y.batLib.obj) leaning knob-up on the wall right of the doors (REV_BAT), no clipping.
+- **The burst (src/opening/burst.js, assets/opening/zombie-patient-burst.glb from tools/opening/make_zombie_burst.py):**
+  the modular patient cut further in background Blender (never the user's open Blender: it holds the animation chat's
+  file) into head, chest, pelvis, upper arms, forearms, thighs, shins + 3 gut loops + 8 gibs; every cut closed with the
+  burgundy tissue and capped both sides by blender/gore_kit.py. All skinned to his skeleton: he walks in on the mod file's
+  clips, and at contact each chunk is baked to a still mesh in the exact pose (CPU skinning) and thrown.
+  `planHit()` finds the contact from her own clip (the barrel's furthest reach in front of her), places him there, and
+  picks a camera across the line between them that stays inside the OR walls. Contact: hit-stop, smash sound, slow motion
+  (0.26), pieces to both sides, blood spray/mist/pools; the head flies a tumbling arc and ends face-on 0.62 m from the
+  lens, up-right of centre (its face glows a little so it reads); `lensCrack()` draws the cracked glass + smear; the head
+  bounces off and drops away; then the freeze cuts to Yola with the pieces hanging in the air, name card + the crack over
+  it; the crack fades as the camera rises. The OR's patient zombie is removed from the game (`dropPatient`, only after the
+  burst played); his pieces and blood stay on the floor in gameplay. Camera near plane 0.05 during the swing, restored.
+- **To tweak with the user:** hit timing (contact = 1.53 s into the clip, late in the swing), how far/fast pieces fly
+  (`kick()` in burst.js), the head's flight time (`headSecs`), blood amount, the feet angle, the mix (not heard by me).
+  A chapter restart from scratch brings the patient back at the table (no level flag yet).
+
 ## LATEST (2026-10-17): the reveal the user signed off on — read this first
 
 The user reviewed the opening over several rounds on 2026-10-17 and said "this is so close… commit it". Everything below is

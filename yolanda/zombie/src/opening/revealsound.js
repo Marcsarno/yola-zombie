@@ -49,6 +49,14 @@ export class RevealSound {
     A.tone(t, 0.55, 78, { type: 'sine', gain: 0.3 * k, f2: 38 });
     A.tone(t, 0.12, 100, { type: 'sawtooth', gain: 0.06 * k, attack: 0.003 });
   }
+  flashBoom() { // the last flash, the one that lands on her: a sub drop under a long crack, a cinematic impact
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.tone(t, 2.2, 52, { type: 'sine', gain: 0.75, f2: 26, attack: 0.004 });
+    A.tone(t, 0.9, 104, { type: 'triangle', gain: 0.28, f2: 40 });
+    A.noise(t, 0.06, { type: 'highpass', f: 2600, gain: 0.6 });
+    A.noise(t, 1.6, { type: 'lowpass', f: 1800, f2: 70, gain: 0.45, attack: 0.004 });
+    A.noise(t + 0.02, 0.5, { type: 'bandpass', f: 4800, q: 2, f2: 1600, gain: 0.12 });
+  }
   liftArrive() { // the car coming up the shaft: a motor rising under the doors, a soft clunk as it settles
     if (!this.ok) return; const t = this.now(), A = this.audio;
     A.tone(t, 2.4, 82, { type: 'sawtooth', gain: 0.05, f2: 118, attack: 0.9 });
@@ -69,11 +77,33 @@ export class RevealSound {
     A.tone(t + 0.8, 1.4, 62, { type: 'sine', gain: 0.38, f2: 28 });
     A.noise(t + 0.8, 1.2, { type: 'lowpass', f: 300, f2: 60, gain: 0.25 });
   }
-  footstep() { // a heavy, slowed footfall with a short room tail
+  footstep() { // a slowed footfall that lands like a bass hit: the heel's knock, a deep boom, a long dark tail
     if (!this.ok) return; const t = this.now(), A = this.audio;
-    A.tone(t, 0.3, 66, { type: 'sine', gain: 0.32, f2: 40 });
-    A.noise(t, 0.16, { type: 'lowpass', f: 520, f2: 140, gain: 0.3 });
-    A.noise(t + 0.14, 0.35, { type: 'lowpass', f: 380, f2: 120, gain: 0.08 });
+    A.noise(t, 0.09, { type: 'lowpass', f: 1400, f2: 300, gain: 0.32 });
+    A.tone(t, 1.3, 48, { type: 'sine', gain: 0.7, f2: 27, attack: 0.006 });
+    A.tone(t, 0.45, 96, { type: 'triangle', gain: 0.18, f2: 44 });
+    A.noise(t + 0.03, 1.1, { type: 'lowpass', f: 260, f2: 60, gain: 0.22, attack: 0.02 });
+  }
+  smash() { // the bat through him: the crack of the swing, bone, a wet burst, a huge low hit
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.noise(t, 0.05, { type: 'highpass', f: 1800, gain: 0.7 });
+    for (const dt of [0, 0.018, 0.04, 0.07]) A.noise(t + dt, 0.035, { type: 'bandpass', f: 2600 + Math.random() * 1800, q: 3, gain: 0.35 });
+    A.noise(t + 0.01, 0.7, { type: 'bandpass', f: 700, q: 0.8, f2: 180, gain: 0.5 });
+    A.tone(t, 1.8, 46, { type: 'sine', gain: 0.85, f2: 24, attack: 0.003 });
+    A.tone(t, 0.5, 140, { type: 'triangle', gain: 0.25, f2: 50 });
+    A.noise(t + 0.15, 1.6, { type: 'lowpass', f: 900, f2: 90, gain: 0.25 });
+  }
+  slowDown() { // time stretching: a falling, sucking whoosh
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.noise(t, 1.2, { type: 'bandpass', f: 2400, q: 0.8, f2: 220, gain: 0.22, attack: 0.05 });
+    A.tone(t, 1.4, 180, { type: 'sawtooth', gain: 0.04, f2: 40 });
+  }
+  lensHit() { // the head against the lens: a hollow thunk and glass cracking, a few tiny ringing shards
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.tone(t, 0.35, 120, { type: 'sine', gain: 0.6, f2: 55 });
+    A.noise(t, 0.12, { type: 'lowpass', f: 900, f2: 200, gain: 0.5 });
+    for (const dt of [0, 0.012, 0.03, 0.05, 0.085, 0.12]) A.noise(t + dt, 0.03, { type: 'highpass', f: 3000 + Math.random() * 3000, gain: 0.3 });
+    for (const [dt, hz] of [[0.02, 4186], [0.06, 5274], [0.11, 6272]]) A.tone(t + dt, 0.5, hz, { type: 'sine', gain: 0.04 });
   }
 
   // ---- the walk-out cue: a low D-minor chord swelling, war drums on her steps, a string tremolo climbing to the freeze ----
@@ -83,9 +113,9 @@ export class RevealSound {
     this.cue = this.hold((g) => {
       const f = this.lp(420, g, 0.9), nodes = [f];
       for (const [hz, det] of [[36.71, 0], [73.42, 6], [110.0, -5], [146.83, 4], [174.61, -7]]) nodes.push(this.osc('sawtooth', hz, f, det)); // D1 D2 A2 D3 F3
-      f.frequency.setValueAtTime(260, c.currentTime); f.frequency.linearRampToValueAtTime(900, c.currentTime + secs); // the chord opens up as she walks
+      f.frequency.setValueAtTime(260, c.currentTime); f.frequency.linearRampToValueAtTime(1400, c.currentTime + secs); // the chord opens up as she walks
       return nodes;
-    }, bus, 0.07, 1.6);
+    }, bus, 0.16, 1.6);
     this.strings = this.hold((g) => { // a high tremolo on A and D, getting louder and faster to the freeze
       const trem = c.createGain(); trem.gain.value = 0.5; trem.connect(g);
       const lfo = this.osc('sine', 7, null), lg = c.createGain(); lg.gain.value = 0.5; lfo.connect(lg); lg.connect(trem.gain);
@@ -93,12 +123,13 @@ export class RevealSound {
       const f = this.lp(2600, trem), a = this.osc('sawtooth', 440, f, -4), d = this.osc('sawtooth', 587.33, f, 5);
       return [trem, lfo, lg, f, a, d];
     }, bus, 0.0, 0.1);
-    this.fade(this.strings, 0.035, secs);
+    this.fade(this.strings, 0.065, secs);
+    this.sub = this.hold((g) => [this.osc('sine', 36.71, g)], bus, 0.22, 2.5); // a sub under the chord (felt more than heard)
   }
   drum(k = 1) { // a war drum under each footfall
     if (!this.ok || !this.cue) return; const t = this.now(), A = this.audio;
-    A.tone(t, 0.7, 58, { type: 'sine', gain: 0.42 * k, f2: 36 });
-    A.noise(t, 0.3, { type: 'lowpass', f: 900, f2: 160, gain: 0.22 * k });
+    A.tone(t, 0.9, 58, { type: 'sine', gain: 0.6 * k, f2: 34 });
+    A.noise(t, 0.35, { type: 'lowpass', f: 1100, f2: 160, gain: 0.32 * k });
   }
   cueHit() { // the freeze: one huge hit, the cue cut dead behind it
     if (!this.ok) return; const t = this.now(), A = this.audio;
@@ -107,7 +138,7 @@ export class RevealSound {
     A.noise(t, 0.9, { type: 'lowpass', f: 3200, f2: 140, gain: 0.5 });
     A.noise(t, 0.12, { type: 'highpass', f: 2600, gain: 0.3 });
     for (const hz of [146.83, 220.0, 293.66]) A.tone(t, 2.2, hz, { type: 'sawtooth', gain: 0.03, attack: 0.01 }); // a brass-like D chord ringing out
-    this.kill(this.cue, 0.08); this.kill(this.strings, 0.08); this.cue = this.strings = null;
+    this.kill(this.cue, 0.08); this.kill(this.strings, 0.08); this.kill(this.sub, 0.08); this.cue = this.strings = this.sub = null;
   }
-  stopAll(secs = 0.3) { for (const h of [...this.live]) this.kill(h, secs); this.bed = this.cue = this.strings = null; }
+  stopAll(secs = 0.3) { for (const h of [...this.live]) this.kill(h, secs); this.bed = this.cue = this.strings = this.sub = null; }
 }
