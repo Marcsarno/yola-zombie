@@ -1,58 +1,58 @@
 // The game's music: the user's supplied track (assets/music/agile_groove.mp3, "Agile Groove"), streamed from an <audio>
 // element through the music bus (decoding the whole 3.6 MB file would hold ~80 MB of samples on a phone).
-// Two states on the one track, never two tracks fighting:
-//  explore: the groove low-passed and quieter (a listenable bed while walking the floor)
-//  combat:  the full groove at full level
-// The state follows the fight with hysteresis: combat starts when a woken zombie is close or attacking, and only ends
-// after a calm spell; a switch is never sooner than COOLDOWN after the last, so enemies stepping in and out of range do
-// not make it chatter. Crossfades are ramps on a gain and a filter (no restarts). The opening starts it on the reveal.
+// ONE steady level once the zombie gameplay begins (the user, 2026-10-17: "keep it consistent"): the full groove, no
+// quieter/muffled "explore" mix, no switching by room or by fight. The only changes left are a pause (the game paused,
+// Yola down) and the brief duck under a spoken line (audio.duck, so the words are heard).
+// The file is fetched while the game loads (preload), so the music is there the moment the reveal hands over.
+// start(kind)/set(kind) still take 'combat' | 'explore' from their callers; both mean the same full level now.
 const SRC = 'assets/music/agile_groove.mp3';
-const COOLDOWN = 3.0, CALM = 4.5; // s
-const LEVEL = { explore: 0.42, combat: 1.0 }, CUTOFF = { explore: 900, combat: 20000 };
+const LEVEL = 1.0;
 
 export class GameMusic {
-  constructor(audio) { this.audio = audio; this.state = 'off'; this.since = 99; this.calm = 0; this.el = null; this.failed = false; }
+  constructor(audio) { this.audio = audio; this.state = 'off'; this.el = null; this.failed = false; }
+  // the <audio> element, created and buffering as early as possible (no AudioContext needed yet)
+  element() {
+    if (this.el || this.failed) return this.el;
+    const el = new Audio(SRC); el.loop = true; el.preload = 'auto'; el.crossOrigin = 'anonymous'; el.setAttribute('playsinline', '');
+    el.addEventListener('error', () => { this.failed = true; });
+    try { el.load(); } catch { /* the browser fetches it on play instead */ }
+    return (this.el = el);
+  }
+  preload() { this.element(); }
+  // the element through the music bus (needs the AudioContext, made on the first gesture)
   ensure() {
     const a = this.audio; if (this.node || this.failed || !a.ctx) return !!this.node;
     try {
-      const el = new Audio(SRC); el.loop = true; el.preload = 'auto'; el.crossOrigin = 'anonymous'; el.setAttribute('playsinline', '');
-      const src = a.ctx.createMediaElementSource(el), f = a.ctx.createBiquadFilter(), g = a.ctx.createGain();
-      f.type = 'lowpass'; f.frequency.value = CUTOFF.explore; f.Q.value = 0.5; g.gain.value = 0;
-      src.connect(f); f.connect(g); g.connect(a.musicBus);
-      el.addEventListener('error', () => { this.failed = true; });
-      this.el = el; this.node = { src, f, g };
+      const el = this.element(); if (!el) return false;
+      const src = a.ctx.createMediaElementSource(el), g = a.ctx.createGain();
+      g.gain.value = 0; src.connect(g); g.connect(a.musicBus);
+      this.node = { src, g };
       return true;
     } catch (e) { this.failed = true; console.warn('music unavailable', e); return false; }
   }
-  // kind: 'combat' | 'explore'; fade seconds
-  start(kind = 'explore', fade = 0.6) {
-    if (!this.ensure()) return;
-    if (this.el.paused) { const p = this.el.play(); p?.catch?.(() => { /* no gesture yet: retried on the next start/update */ }); }
+  start(kind = 'combat', fade = 0.6) {
+    if (!this.ensure()) { if (!this.failed) this.state = 'pending'; return; } // (no AudioContext yet: starts on the first frame after the first tap)
+    if (this.el.paused) { const p = this.el.play(); p?.catch?.(() => { /* no gesture yet: retried on the next update */ }); }
     this.set(kind, fade);
   }
-  set(kind, fade = 1.6) {
+  set(kind, fade = 0.6) {
     if (!this.node) return;
-    const c = this.audio.ctx, t = c.currentTime, { f, g } = this.node;
-    g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(LEVEL[kind], t + fade);
-    f.frequency.cancelScheduledValues(t); f.frequency.setValueAtTime(f.frequency.value, t); f.frequency.exponentialRampToValueAtTime(CUTOFF[kind], t + fade * 1.2);
-    this.state = kind; this.since = 0;
+    const t = this.audio.ctx.currentTime, g = this.node.g.gain;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(LEVEL, t + fade);
+    this.state = kind === 'off' ? 'off' : 'on';
   }
   stop(fade = 0.8) {
     if (!this.node) return;
-    const c = this.audio.ctx, t = c.currentTime, g = this.node.g;
-    g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + fade);
+    const t = this.audio.ctx.currentTime, g = this.node.g.gain;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + fade);
     const el = this.el; setTimeout(() => { if (this.state === 'off') el.pause(); }, fade * 1000 + 100);
     this.state = 'off';
   }
-  // per frame: threat 'combat' (a woken zombie near or attacking) or 'calm'
+  // per frame: keep it playing at its one level (paused while the game is paused or Yola is down)
   update(dt, fighting, paused) {
+    if (this.state === 'pending') { if (this.audio.ctx?.state === 'running') this.start('combat'); return; }
     if (this.state === 'off' || !this.node) return;
     if (paused) { if (!this.el.paused) this.el.pause(); return; }
     if (this.el.paused && this.audio.ctx?.state === 'running' && !this.audio.muted) this.el.play()?.catch?.(() => {}); // (waits for the first gesture)
-    this.since += dt;
-    this.calm = fighting ? 0 : this.calm + dt;
-    if (this.since < COOLDOWN) return;
-    if (this.state === 'explore' && fighting) this.set('combat', 1.0);
-    else if (this.state === 'combat' && this.calm > CALM) this.set('explore', 2.4);
   }
 }

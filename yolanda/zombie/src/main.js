@@ -143,6 +143,7 @@ const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: [], 
 const loader = new GLTFLoader();
 async function load() {
   gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb' }); // (in the background: until it is in, kills die as before)
+  music.preload(); // (the gameplay track buffers while the game loads: it starts the moment the reveal hands over)
   hud.loading(0);
   arena = new Arena(scene, resolvedQuality(), renderer);
   looks = new Looks(renderer, scene, camera); looks.set(store.get('look', 'standard'));
