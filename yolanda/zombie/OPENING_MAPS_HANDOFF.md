@@ -39,6 +39,13 @@ The user's next pass, built and checked in the browser (NOT yet committed or dep
   skeleton, bakes and throws the chunks (walls via world.raycast, the game's fx blood), keeps the last 4 bursts on the
   floor. main.js hooks (shared file, small): gibs load/update/clear, `gib()` beside handleEvents, the two triggers in the
   'shotgun'/'batHit' cases, and `z.gibbed` skipping the view in the zombie loop. Sprinter and guard: no burst model yet.
+- **Gown/scrubs riding the arms FIXED (2026-10-17):** 200 patient / 250 nurse body verts were skinned to the upper-arm
+  bones (leftovers of ef9a693, which took hand/forearm weights off), so a flap lifted with the arms.
+  tools/anim/fix_gown_weights.mjs rewrites ONLY the body's JOINTS/WEIGHTS inside the GLB (verified: no other byte
+  changes): off-sleeve arm-weighted verts take their weights from the nearest arm-free body verts; the sleeve edge is
+  eased. blender/characters.blend still has the OLD weights: after any re-export from it, run the tool again
+  (`node tools/anim/fix_gown_weights.mjs assets/zombie-patient-mod.glb assets/zombie-patient-mod.glb Patient_Torso`,
+  nurse: `... Nurse_Body`), then rebuild the burst models.
 - **To tweak with the user:** hit timing (contact = 1.53 s into the clip, late in the swing), how far/fast pieces fly
   (`kick()` in burst.js), the head's flight time (`headSecs`), blood amount, the feet angle, the mix (not heard by me).
   A chapter restart from scratch brings the patient back at the table (no level flag yet).
