@@ -12,6 +12,7 @@ const K = 'zombie/assets/kit/';
 const T = 0.3; // wall thickness (walls are given by their centre lines)
 const WH = 2.7; // wall height
 export const FLOOR_Z = { 7: 0, 6: -80, 5: -160 }; // each floor's z offset in the shared world
+export const OR_TABLE = { x: -3.4, z: -8.75 }; // Floor 7's operating table (its head north, against the back wall): the opening stages around it
 const r2 = (v) => Math.round(v * 20) / 20; // plans are drawn to 25 px = 1 m; positions to the nearest 5 cm
 const X = (px) => r2((px - 1141) / 25); // the plans' px -> world x (the OR's centre line is x = 0)
 const Zf = (oz) => (py) => r2((py - 260) / 25 - 11.15 + oz); // px -> world z on a floor (the OR's north wall is z = -11.15)
@@ -139,21 +140,27 @@ const F7 = buildFloor(7, {
     { id: 'orbar', o: 'h', c: 565, a: 1065, b: 1150, kind: 'barred', face: 's', side: 's' }, // OR south / R7 north: barred, released from R7 only
   ],
   dress({ p, wp, raw, sign, room, X, Z }) {
-    // O7 | the operating room, as the opening stages it: one table under its light, the patient's head to the west at the
-    //      anesthesia workstation and monitor; the head-wall dressing moved west of the lift's doors
-    p(U + '04_surgery/operating_table_standard.glb', 0, -8.2, 90, [0.78, 1.65], 0.94);
-    p(U + '04_surgery/surgical_light_standard.glb', 1.15, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: 'orLight' }); // over the knee (the operated end): never between the camera and his head
-    p(U + '02_anesthesia_monitoring/anesthesia_workstation_standard.glb', -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: 'orAnesthesia' });
-    p(U + '02_anesthesia_monitoring/patient_monitor_standard.glb', -0.7, -10.0, 0, [0.62, 0.71], 1.46, { name: 'orMonitor' });
-    p(U + '08_support_equipment/runtime/iv_stand_standard.glb', -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
-    p(U + '08_support_equipment/runtime/supply_cart_standard.glb', -4.4, -10.6, 0, [0.88, 0.65], 1.21);
-    p(H + 'supply_cart.glb', -5.9, -7.4, 90, [1.16, 1.1], 1.23);
-    p(H + 'biohazard_bin.glb', -2.95, -10.7, 0, [0.39, 0.39], 0.69);
-    p(H + 'lidded_waste_bin.glb', -5.6, -10.75, 0, [0.36, 0.4], 0.58);
-    wp(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', -2.15, -11.0, 's', 1.05);
-    wp(M + 'decor/Reception_Wall_Sanitizer.glb', -1.6, -11.0, 's', 1.1);
+    // O7 | the operating room (2026-10-16 feedback): one table in a curtained surgical bay on the west side, well clear of
+    //      the lift; its head against the back wall under a bay headwall (the treatment room's look), the anesthesia
+    //      station at the head, the monitor and IV beside it; screens on the lift side close the bay off, the camera
+    //      side stays open. OR_TABLE in chapter.js is the staging's reference.
+    p(U + '04_surgery/operating_table_standard.glb', OR_TABLE.x, OR_TABLE.z, 0, [0.78, 1.65], 0.94, { name: 'orTable' });
+    wp(U + '05_recovery_bay/RecoveryHeadwall_standard.glb', OR_TABLE.x, -11.0, 's', 0, { name: 'orHeadwall' });
+    p(U + '04_surgery/surgical_light_standard.glb', OR_TABLE.x + 0.15, OR_TABLE.z + 0.55, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: 'orLight' }); // over the knee: swung clear for the crisis
+    p(U + '02_anesthesia_monitoring/anesthesia_workstation_standard.glb', OR_TABLE.x - 1.7, OR_TABLE.z - 0.95, 90, [1.1, 0.7], 1.55, { name: 'orAnesthesia' });
+    p(U + '02_anesthesia_monitoring/patient_monitor_standard.glb', OR_TABLE.x + 1.45, OR_TABLE.z - 1.5, 0, [0.62, 0.71], 1.46, { name: 'orMonitor' });
+    p(U + '08_support_equipment/runtime/iv_stand_standard.glb', OR_TABLE.x + 1.0, OR_TABLE.z - 0.55, 0, [0.73, 0.7], 2.03, { noCollide: true });
+    p(U + '08_support_equipment/runtime/supply_cart_standard.glb', -6.5, -7.4, 90, [0.88, 0.65], 1.21);
+    p(H + 'supply_cart.glb', -6.3, -5.3, 90, [1.16, 1.1], 1.23);
+    p(H + 'biohazard_bin.glb', -6.6, -10.65, 0, [0.39, 0.39], 0.69);
+    p(H + 'lidded_waste_bin.glb', -6.1, -10.7, 0, [0.36, 0.4], 0.58);
+    p(U + '05_recovery_bay/PrivacyCurtain_standard.glb', -0.85, -9.75, 90, [0.14, 1.84], 1.97, { name: 'orCurtain' }); // the bay's screens on the lift side
+    p(U + '05_recovery_bay/PrivacyCurtain_standard.glb', -0.85, -7.85, 90, [0.14, 1.84], 1.97);
+    wp(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', -5.6, -11.0, 's', 1.05);
+    wp(M + 'decor/Reception_Wall_Sanitizer.glb', -1.45, -11.0, 's', 1.1);
     wp(M + 'decor3/Clinical_Sharps_Container.glb', -1.0, -11.0, 's', 1.1);
-    wp(M + 'decor/Recovery_Wall_Clock.glb', -0.3, -11.0, 's', 2.0);
+    wp(M + 'decor/Recovery_Wall_Clock.glb', -0.4, -11.0, 's', 2.0);
+    wp(M + 'decor3/Clinical_Sign_OR.glb', -5.6, -11.0, 's', 2.15);
     p(M + 'furnishings/Clinical_Storage_Cabinet.glb', -6.75, -1.4, 90, [1.4, 0.62], 0.88);
     wp(M + 'furnishings/Clinical_Wall_Cupboard.glb', -7.0, -1.4, 'e', 1.45);
     p(H + 'procedure_stretcher.glb', 5.4, -4.6, 0, [0.9, 1.66], 1.22);
@@ -283,7 +290,7 @@ const F7 = buildFloor(7, {
   },
   groups: (Z) => [
     // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
-    { id: 'or', zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: 'nurse' }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 5.3, z: -7.6, yaw: -1.2, wake: 8.0 }] },
+    { id: 'or', zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1.0, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: 'nurse' }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.3, z: -7.6, yaw: -1.2, wake: 8.0 }] },
     // supply: one straggler (a short orientation pocket, not another big fight)
     { id: 's7', sense: 5.0, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: 'patient' }] },
     // nurse station: two at the far end of the room, by the beds' door
@@ -312,7 +319,7 @@ const F7 = buildFloor(7, {
     { kind: 'hand', x: -7.0, z: -2.9, wall: 'e', y: 1.2, size: 0.34, tilt: -6 },
     { kind: 'drag', x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
     { kind: 'splat', x: 5.7, z: -9.6, w: 1.05, l: 1.05, rot: 15 },
-    { kind: 'splat', x: -0.35, z: -9.05, w: 0.95, l: 0.95, rot: -35 },
+    { kind: 'splat', x: OR_TABLE.x + 0.5, z: OR_TABLE.z - 1.15, w: 0.95, l: 0.95, rot: -35 },
     { kind: 'drag', x: -3.7, z: -5.75, w: 0.7, l: 1.7, rot: -55 },
     { kind: 'hand', x: 0.9, z: -11.0, wall: 's', y: 1.25, size: 0.33, tilt: 12 }, // a hand on the dead lift's frame
     { kind: 'drag', x: -12.05, z: -3.75, w: 0.6, l: 1.0, rot: -60 },

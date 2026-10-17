@@ -44924,6 +44924,7 @@ void main() {
   var T = 0.3;
   var WH = 2.7;
   var FLOOR_Z = { 7: 0, 6: -80, 5: -160 };
+  var OR_TABLE = { x: -3.4, z: -8.75 };
   var r2 = (v) => Math.round(v * 20) / 20;
   var X = (px2) => r2((px2 - 1141) / 25);
   var Zf = (oz) => (py2) => r2((py2 - 260) / 25 - 11.15 + oz);
@@ -45095,19 +45096,23 @@ void main() {
       // OR south / R7 north: barred, released from R7 only
     ],
     dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
-      p(U + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
-      p(U + "04_surgery/surgical_light_standard.glb", 1.15, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
-      p(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
-      p(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
-      p(U + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
-      p(U + "08_support_equipment/runtime/supply_cart_standard.glb", -4.4, -10.6, 0, [0.88, 0.65], 1.21);
-      p(H + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
-      p(H + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
-      p(H + "lidded_waste_bin.glb", -5.6, -10.75, 0, [0.36, 0.4], 0.58);
-      wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -2.15, -11, "s", 1.05);
-      wp(M + "decor/Reception_Wall_Sanitizer.glb", -1.6, -11, "s", 1.1);
+      p(U + "04_surgery/operating_table_standard.glb", OR_TABLE.x, OR_TABLE.z, 0, [0.78, 1.65], 0.94, { name: "orTable" });
+      wp(U + "05_recovery_bay/RecoveryHeadwall_standard.glb", OR_TABLE.x, -11, "s", 0, { name: "orHeadwall" });
+      p(U + "04_surgery/surgical_light_standard.glb", OR_TABLE.x + 0.15, OR_TABLE.z + 0.55, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
+      p(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", OR_TABLE.x - 1.7, OR_TABLE.z - 0.95, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
+      p(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", OR_TABLE.x + 1.45, OR_TABLE.z - 1.5, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
+      p(U + "08_support_equipment/runtime/iv_stand_standard.glb", OR_TABLE.x + 1, OR_TABLE.z - 0.55, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      p(U + "08_support_equipment/runtime/supply_cart_standard.glb", -6.5, -7.4, 90, [0.88, 0.65], 1.21);
+      p(H + "supply_cart.glb", -6.3, -5.3, 90, [1.16, 1.1], 1.23);
+      p(H + "biohazard_bin.glb", -6.6, -10.65, 0, [0.39, 0.39], 0.69);
+      p(H + "lidded_waste_bin.glb", -6.1, -10.7, 0, [0.36, 0.4], 0.58);
+      p(U + "05_recovery_bay/PrivacyCurtain_standard.glb", -0.85, -9.75, 90, [0.14, 1.84], 1.97, { name: "orCurtain" });
+      p(U + "05_recovery_bay/PrivacyCurtain_standard.glb", -0.85, -7.85, 90, [0.14, 1.84], 1.97);
+      wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -5.6, -11, "s", 1.05);
+      wp(M + "decor/Reception_Wall_Sanitizer.glb", -1.45, -11, "s", 1.1);
       wp(M + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
-      wp(M + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
+      wp(M + "decor/Recovery_Wall_Clock.glb", -0.4, -11, "s", 2);
+      wp(M + "decor3/Clinical_Sign_OR.glb", -5.6, -11, "s", 2.15);
       p(M + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
       wp(M + "furnishings/Clinical_Wall_Cupboard.glb", -7, -1.4, "e", 1.45);
       p(H + "procedure_stretcher.glb", 5.4, -4.6, 0, [0.9, 1.66], 1.22);
@@ -45225,7 +45230,7 @@ void main() {
     },
     groups: (Z) => [
       // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
-      { id: "or", zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: "nurse" }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 5.3, z: -7.6, yaw: -1.2, wake: 8 }] },
+      { id: "or", zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1, yaw: 0.75, wake: 1.8, look: "patient" }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: "nurse" }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.3, z: -7.6, yaw: -1.2, wake: 8 }] },
       // supply: one straggler (a short orientation pocket, not another big fight)
       { id: "s7", sense: 5, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: "patient" }] },
       // nurse station: two at the far end of the room, by the beds' door
@@ -45254,7 +45259,7 @@ void main() {
       { kind: "hand", x: -7, z: -2.9, wall: "e", y: 1.2, size: 0.34, tilt: -6 },
       { kind: "drag", x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
       { kind: "splat", x: 5.7, z: -9.6, w: 1.05, l: 1.05, rot: 15 },
-      { kind: "splat", x: -0.35, z: -9.05, w: 0.95, l: 0.95, rot: -35 },
+      { kind: "splat", x: OR_TABLE.x + 0.5, z: OR_TABLE.z - 1.15, w: 0.95, l: 0.95, rot: -35 },
       { kind: "drag", x: -3.7, z: -5.75, w: 0.7, l: 1.7, rot: -55 },
       { kind: "hand", x: 0.9, z: -11, wall: "s", y: 1.25, size: 0.33, tilt: 12 },
       // a hand on the dead lift's frame
@@ -51766,6 +51771,11 @@ void main() {
       if (!this.on) {
         this.apply(true);
         this.ready = false;
+        return;
+      }
+      if (!Number.isFinite(this.p[2].x + this.p[2].y + this.p[2].z)) this.ready = false;
+      if (this.ready && !(dt > 0)) {
+        this.apply(false);
         return;
       }
       if (!this.ready || dt > 0.25) {
@@ -59800,7 +59810,114 @@ void main() {
     }
   };
 
+  // src/opening/comiccard.js
+  function comicFrame(source) {
+    const w = source.width, h = source.height;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(source, 0, 0, w, h);
+    const img = g.getImageData(0, 0, w, h), d = img.data, n = w * h;
+    const lum = new Float32Array(n);
+    for (let i = 0; i < n; i++) lum[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255;
+    const edge = new Uint8Array(n), T2 = 0.16;
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const gx = lum[i - w + 1] + 2 * lum[i + 1] + lum[i + w + 1] - lum[i - w - 1] - 2 * lum[i - 1] - lum[i + w - 1];
+      const gy = lum[i + w - 1] + 2 * lum[i + w] + lum[i + w + 1] - lum[i - w - 1] - 2 * lum[i - w] - lum[i - w + 1];
+      if (gx * gx + gy * gy > T2 * T2) edge[i] = 1;
+    }
+    const ink = new Uint8Array(n);
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (edge[i] || edge[i - 1] || edge[i + w]) ink[i] = 1;
+    }
+    const q = (v) => Math.round(v * 5) / 5;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x, o = i * 4;
+      if (ink[i]) {
+        d[o] = 18;
+        d[o + 1] = 14;
+        d[o + 2] = 16;
+        continue;
+      }
+      let r = d[o] / 255, gg = d[o + 1] / 255, b = d[o + 2] / 255;
+      const l = lum[i], sat = Math.max(r, gg, b) - Math.min(r, gg, b), s = 1 + 0.3 * Math.min(1, sat * 3);
+      r = l + (r - l) * s;
+      gg = l + (gg - l) * s;
+      b = l + (b - l) * s;
+      r = (r - 0.5) * 1.15 + 0.53;
+      gg = (gg - 0.5) * 1.15 + 0.5;
+      b = (b - 0.5) * 1.15 + 0.45;
+      r = q(Math.min(1, Math.max(0, r)));
+      gg = q(Math.min(1, Math.max(0, gg)));
+      b = q(Math.min(1, Math.max(0, b)));
+      if (l < 0.22 && (x + y) % 5 === 0) {
+        r *= 0.35;
+        gg *= 0.35;
+        b *= 0.35;
+      }
+      d[o] = r * 255;
+      d[o + 1] = gg * 255;
+      d[o + 2] = b * 255;
+    }
+    g.putImageData(img, 0, 0);
+    return c;
+  }
+  function nameCard(w, h, name, tagline) {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const g = c.getContext("2d"), u = Math.min(w, h * 0.62);
+    const cx = w * 0.5, cy = h * 0.83;
+    g.save();
+    g.translate(cx, cy);
+    g.rotate(-0.09);
+    g.fillStyle = "#e8902e";
+    g.beginPath();
+    const L2 = u * 0.5, H4 = u * 0.17;
+    g.moveTo(-L2, -H4 * 0.5);
+    for (let i = 0; i <= 12; i++) {
+      const x = -L2 + 2 * L2 * i / 12;
+      g.lineTo(x, -H4 * 0.55 + Math.sin(i * 2.3) * H4 * 0.12);
+    }
+    g.lineTo(L2 * 1.04, H4 * 0.15);
+    for (let i = 12; i >= 0; i--) {
+      const x = -L2 + 2 * L2 * i / 12;
+      g.lineTo(x, H4 * 0.6 + Math.cos(i * 1.7) * H4 * 0.14);
+    }
+    g.closePath();
+    g.fill();
+    g.globalAlpha = 0.35;
+    g.fillStyle = "#b8541c";
+    g.fillRect(-L2 * 0.9, H4 * 0.25, L2 * 1.7, H4 * 0.12);
+    g.globalAlpha = 1;
+    const fs = Math.round(u * 0.29);
+    g.font = `900 ${fs}px Impact, "Arial Black", "Helvetica Neue", sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.lineJoin = "round";
+    g.lineWidth = fs * 0.16;
+    g.strokeStyle = "#141012";
+    g.strokeText(name, 0, -H4 * 0.05);
+    g.fillStyle = "#fff8ec";
+    g.fillText(name, 0, -H4 * 0.05);
+    const ts = Math.round(u * 0.058);
+    g.rotate(0.05);
+    g.font = `italic 700 ${ts}px "Segoe Print", "Bradley Hand", "Marker Felt", "Comic Sans MS", cursive`;
+    g.lineWidth = ts * 0.32;
+    g.strokeStyle = "#141012";
+    g.strokeText(tagline, 0, H4 * 1.1);
+    g.fillStyle = "#ffffff";
+    g.fillText(tagline, 0, H4 * 1.1);
+    g.restore();
+    return c;
+  }
+
   // src/opening/opening.js
+  var TX = OR_TABLE.x;
+  var TZ = OR_TABLE.z;
   var LIFT7 = LIFTS[7];
   var BELONG = ROOM1.belongings;
   var PATIENT_OUTFIT = { Jersey_Cream: 15921644, Trousers_Gray: 15461092, Uniform_Navy: 15000541, Markings_OffWhite: 15921644 };
@@ -59877,6 +59994,7 @@ void main() {
       this.lightK = 1;
       this.fadeColor = "#fff6e6";
       this.reducedFlash = false;
+      this.baseExposure = this.renderer.toneMappingExposure;
       this.bt = new Breakthrough(this.renderer, this.scene, this.camera);
       this.lineLog = [];
       this.answers = {};
@@ -59956,6 +60074,7 @@ void main() {
       this.setBlood(false);
       this.yola?.setShown?.(false);
       this.ensureLights();
+      this.ensureSmoke();
       this.ensureBelongings();
       this.belongings.visible = false;
       for (const l of A.lights) l.visible = false;
@@ -60124,17 +60243,16 @@ void main() {
       this.revealSwing = null;
       this.revealPose = null;
       this.sweepT = null;
-      if (this.rfx) {
-        this.backlight(0);
-        this.rfx.g.visible = false;
-        this.rfx.smoke = this.rfx.smokeTarget = 0;
-      }
       this.setOrLamp(true);
       this.talkers = null;
-      this.silhouette(this.stage.actors.yola?.root, false);
-      if (this.yola) {
-        this.silhouette(this.yola.outer, false);
-        this.silhouette(this.yola.batLib?.obj, false);
+      this.revLightOff();
+      this.standYola(null);
+      this.hideCard();
+      this.camTrack = null;
+      if (this.smoke) {
+        this.smoke.target = 0;
+        this.smoke.k = 0;
+        this.tickSmoke(0);
       }
       if (this.bt.state !== "idle") this.bt.finish();
       this.bt.state = "idle";
@@ -60501,6 +60619,66 @@ void main() {
         this.scene.add(this.redLight);
       }
       if (!this.lightBase) this.lightBase = { hemi: this.arena.hemi?.intensity ?? 0.85, sun: this.arena.sun?.intensity ?? 1.45, env: this.scene.environmentIntensity ?? 0.32 };
+    }
+    // dry-ice smoke from the lift (2026-10-16): a low, thick fog that pours over the threshold and rolls out along the floor.
+    // Sprites are unlit, so their brightness follows the reveal's light by hand: dark between flashes, lit by each flash,
+    // tinged by the red pulse. Built at load with zero opacity so its shader compiles behind the gate.
+    ensureSmoke() {
+      if (this.smoke) return;
+      const c = document.createElement("canvas");
+      c.width = c.height = 128;
+      const x = c.getContext("2d");
+      for (let i = 0; i < 26; i++) {
+        const px2 = 64 + (Math.random() - 0.5) * 50, py2 = 64 + (Math.random() - 0.5) * 34, r = 18 + Math.random() * 26;
+        const gr = x.createRadialGradient(px2, py2, 0, px2, py2, r);
+        gr.addColorStop(0, "rgba(255,255,255,0.22)");
+        gr.addColorStop(1, "rgba(255,255,255,0)");
+        x.fillStyle = gr;
+        x.fillRect(0, 0, 128, 128);
+      }
+      const tex = new CanvasTexture(c);
+      const g = new Group();
+      g.name = "revealSmoke";
+      this.scene.add(g);
+      const parts = [];
+      for (let i = 0; i < 46; i++) {
+        const m = new SpriteMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false, color: 16777215 });
+        const sp = new Sprite(m);
+        sp.position.set(LIFT7.x, 0.2, -12);
+        g.add(sp);
+        parts.push({ sp, life: Math.random(), speed: 0.18 + Math.random() * 0.2, side: (Math.random() - 0.5) * 2.4, h: 0.03 + Math.random() * 0.1, size: 0.55 + Math.random() * 0.6, spin: (Math.random() - 0.5) * 0.4 });
+      }
+      this.smoke = { g, parts, k: 0, target: 0 };
+    }
+    tickSmoke(d) {
+      const S2 = this.smoke;
+      if (!S2) return;
+      S2.k += (S2.target - S2.k) * Math.min(1, d * (S2.target > S2.k ? 0.9 : 0.6));
+      if (S2.k < 3e-3 && S2.target === 0) {
+        for (const p of S2.parts) p.sp.material.opacity = 0;
+        return;
+      }
+      const r = this.rl || {}, pulse = 0.5 + 0.5 * Math.sin((r.t || 0) * Math.PI * 2 * 0.55 - Math.PI / 2);
+      const lit = 0.05 + 0.55 * Math.min(1, r.flash || 0) + 0.2 * (r.amb || 0) + 0.3 * (r.key || 0), red = 0.35 * (r.red || 0) * (0.4 + 0.6 * pulse);
+      const L2 = LIFT7, z0 = L2.cab.minZ + 0.4;
+      for (const p of S2.parts) {
+        p.life += d * p.speed / 3.2;
+        if (p.life > 1) {
+          p.life -= 1;
+          p.side = (Math.random() - 0.5) * 2.4;
+        }
+        const t = p.life, out = t * 3.6;
+        const spread = t < 0.42 ? 0.45 : 0.45 + (t - 0.42) * 3.2;
+        p.sp.position.set(L2.x + p.side * spread * 0.5, p.h * (1 - 0.5 * t) + 0.04, z0 + out);
+        const sz = p.size * (0.7 + t * 1.3);
+        p.sp.scale.set(sz * 1.7, sz * 0.38, 1);
+        const fade = Math.sin(Math.min(1, t * 1.15) * Math.PI);
+        p.sp.material.opacity = S2.k * 0.4 * fade;
+        p.sp.material.color.setRGB(Math.min(1, lit + red), Math.min(1, lit * 0.95 + red * 0.08), Math.min(1, lit * 0.98 + red * 0.08));
+      }
+    }
+    setSmoke(on) {
+      if (this.smoke) this.smoke.target = on ? 1 : 0;
     }
     ensureBelongings() {
       const st = this.stage;
@@ -61033,64 +61211,64 @@ void main() {
       bb.seated = false;
       bb.root.position.y = 0;
       bb.play("Idle", { fade: 0 });
-      bb.lie(0.9, 1.07, -8.2, Math.PI / 2);
-      toWorld(yo, -1.45, -8.65, 1);
+      bb.lie(TX, 1.07, TZ + 0.85, 0);
+      toWorld(yo, TX - 0.85, TZ - 0.95, Math.PI / 2 - 0.35);
       yo.play("patient", { fade: 0 }) || yo.play("idle", { fade: 0 });
-      toWorld(co, -0.45, -9.35, 0.2);
+      toWorld(co, TX + 0.85, TZ - 1.1, -Math.PI / 2 + 0.35);
       co.play("Idle", { fade: 0 });
-      toWorld(su, 0.5, -9.15, 0);
+      toWorld(su, TX + 0.85, TZ + 0.55, -Math.PI / 2);
       su.play("Idle", { fade: 0 });
       su.setVisible(true);
-      toWorld(ta, 1.4, -9.05, -0.35);
+      toWorld(ta, TX - 0.85, TZ + 0.65, Math.PI / 2);
       ta.play("Idle", { fade: 0 });
       ta.setVisible(true);
       this.ui.showMonitor(true);
       this.ui.monitor({ mode: "normal", hr: 74, spo2: 99, status: "SINUS", alarm: false, tof: null });
       this.monitorOn = true;
-      this.camTo(W2(0.2, 0.95, -8.2, 48, 35, 6.2), 0.01);
+      this.camTo(W2(TX + 0.4, 0.95, TZ, 46, 35, 6), 0.01);
       this.mark("or-prepared");
       yield 0.8;
       this.substate = "PREP";
-      this.camTo(W2(-0.7, 1, -8.3, 34, 35, 3.6), 1.2);
+      this.camTo(W2(TX, 1, TZ - 0.6, 30, 30, 3.6), 1.2);
       yield* this.say("17", { pause: 0.25 });
       yield* this.say("18");
       yield* this.say("19", { pause: 0.4 });
-      this.camTo(W2(-1.9, 1.05, -7.9, 36, 35, 4.2), 1.2);
-      yo.walk([[-1.75, -8.35]], { endYaw: -0.69 });
+      this.camTo(W2(TX - 1.1, 1.05, TZ - 0.6, 34, 30, 4.2), 1.2);
+      yo.walk([[TX - 0.95, TZ - 0.5]], { endYaw: -Math.PI / 2 - 0.2 });
       yield this.arrived(yo);
       yo.play("machine", { fade: 0.25 }) || yo.play("idle");
       this.ui.tag("equip", "Anesthesia workstation", "Equipment");
-      this.pointAt("equip", -2.25, 1.8, -7.75);
+      this.pointAt("equip", TX - 1.7, 1.8, TZ - 0.95);
       yield* this.card("equip");
       this.ui.tag("equip", null);
       this.ui.monitor({ tof: { ratio: null, twitches: [0, 0, 0, 0] } });
       yield 0.3;
       yield* this.say("20", { pause: 0.2 });
-      yo.walk([[-1.45, -8.65]], { endYaw: 1 });
+      yo.walk([[TX - 0.85, TZ - 0.95]], { endYaw: Math.PI / 2 - 0.35 });
       yield this.arrived(yo);
       yo.play("patient", { fade: 0.25 }) || yo.play("idle");
-      this.camTo(W2(-0.7, 1, -8.3, 34, 35, 3.6), 1);
+      this.camTo(W2(TX, 1, TZ - 0.6, 30, 30, 3.6), 1);
       yield* this.say("21", { pause: 0.5 });
       this.substate = "PROCEDURE";
       yield* this.timeCut(TIME_CARDS.later, 1.1);
       su.play("Work", { fade: 0 }) || su.play("Idle");
       ta.play("Work", { fade: 0 }) || ta.play("Idle");
       yo.play("monitor", { fade: 0 }) || yo.play("idle");
-      this.camTo(W2(0.2, 0.95, -8.2, 46, 35, 6), 0.01);
-      this.camTo(W2(0.1, 0.95, -8.2, 46, 35, 5.4), 3.5);
+      this.camTo(W2(TX + 0.4, 0.95, TZ, 46, 35, 6), 0.01);
+      this.camTo(W2(TX + 0.3, 0.95, TZ, 46, 35, 5.4), 3.5);
       yield 1.4;
       su.play("Idle", { fade: 0.4 });
       ta.play("Idle", { fade: 0.4 });
       this.substate = "RECOVERY_CHECK";
       yield* this.say("22", { pause: 0.3 });
       this.ui.monitor({ tof: { ratio: 0.78, twitches: [1, 0.93, 0.86, 0.78] } });
-      this.camTo(W2(-0.6, 1.05, -9.2, 38, 35, 4), 1);
+      this.camTo(W2(TX + 0.6, 1.05, TZ - 0.9, 34, 30, 4), 1);
       yield 0.6;
       yield* this.card("monitor");
       yield* this.say("23", { pause: 0.4 });
       yield* this.timeCut(TIME_CARDS.reversal, 1);
       this.ui.monitor({ tof: { ratio: 0.96, twitches: [1, 0.99, 0.975, 0.96] } });
-      this.camTo(W2(-0.4, 1, -8.6, 42, 35, 4.6), 0.01);
+      this.camTo(W2(TX + 0.2, 1, TZ - 0.4, 40, 30, 4.6), 0.01);
       this.ui.readiness(READINESS, 0);
       for (let i = 1; i <= READINESS.length; i++) {
         yield 0.42;
@@ -61105,18 +61283,18 @@ void main() {
       this.ui.readiness(null);
       this.ui.monitor({ tof: null });
       this.substate = "HANDOFF";
-      co.walk([[-0.95, -9.05]], { endYaw: -0.96 });
-      yo.turnTo(2.18);
+      co.walk([[TX + 0.6, TZ - 1.25]], { endYaw: -Math.PI / 2 - 0.6 });
+      yo.turnTo(Math.PI / 2 + 0.3);
       yo.play("handoff", { fade: 0.3 }) || yo.play("idle");
-      this.camTo(W2(-0.9, 1, -8.9, 30, 35, 3.4), 1);
+      this.camTo(W2(TX, 1, TZ - 1, 28, 30, 3.4), 1);
       yield* this.say("24");
       yield* this.say("25");
       yield* this.say("26", { pause: 0.2 });
-      su.walk([[-1.3, -9.4], [-1.6, -6.9], [-6.6, -4.6], [-8, -4.2]]);
-      yo.walk([[-1.6, -6.9], [-5.6, -4.6], [-7.6, -4.4]]);
-      co.walk([[-0.85, -8.85]], { endYaw: 0.17 });
-      ta.walk([[0.55, -9.1]], { endYaw: 0 });
-      this.camTo(W2(-1.2, 0.95, -8, 46, 35, 7.2), 1.6);
+      su.walk([[TX + 1.1, TZ + 1.4], [-5.4, -5], [-8, -4.1]]);
+      yo.walk([[TX - 1, TZ + 1.4], [-5.6, -4.6], [-7.8, -4.2]]);
+      co.walk([[TX + 0.85, TZ - 1.1]], { endYaw: -Math.PI / 2 + 0.35 });
+      ta.walk([[TX - 0.85, TZ + 0.3]], { endYaw: Math.PI / 2 });
+      this.camTo(W2(TX + 0.3, 0.95, TZ + 0.5, 46, 35, 7.2), 1.6);
       yield () => yo.x < -5.8;
       su.setVisible(false);
       yo.setVisible(false);
@@ -61266,15 +61444,20 @@ void main() {
         a.root.position.z = z0 + dz * e;
       });
     }
-    // ================================================================== ACT 4: the crisis (reveal beats 1-4)
-    // The OR starts close to the ordinary game view and grows unsettled; the staff were already responding when the
-    // movement changes that response. Lines 27-31 (take B); "Behind me" (32) is never played.
+    // ================================================================== ACT 4 + THE REVEAL (the approved 2026-10-16 beat sheet)
+    // The lights die with the patient: each alarm pulse takes some of the room's light, then it fails to red emergency light
+    // and a flickering tube. The elevator is near black: flashes from a failing light outside the doors show a standing
+    // silhouette, the original toon Yola and Yola 3.0 in the same standing pose, the hall's surfaces flipping clean / outbreak
+    // with them. She walks out (the bat, her feet, all of her), the frame freezes into a comic card, and the game snaps back:
+    // music, emergency light, control. Real light throughout (no painted shadows); Soft light swaps every flash for a swell.
     *act4() {
       const st = this.stage, A = st.actors, bb = A.baseball, co = A.teamB, ta = A.teamA;
+      const head = { x: TX, z: TZ - 0.85 }, body = { x: TX, z: TZ - 0.3 }, face = (a, p = body) => Math.atan2(p.x - a.x, p.z - a.z);
       this.state = "STABLE";
       this.substate = "BEAT";
       this.setOrLamp(false);
-      this.camTo(W2(0.3, 0.9, -7.7, 48, 35, 7.6), 2);
+      this.revLight({ amb: 1, red: 0, tube: 0, exposure: 1, redAt: "or", spotAt: "tube" });
+      this.camTo(W2(TX + 0.5, 0.9, TZ + 0.3, 46, 35, 7), 2);
       for (let i = 0; i < 3; i++) {
         if (!this.silent) this.sound.monitorBeep();
         yield 0.75;
@@ -61283,14 +61466,17 @@ void main() {
       this.substate = "B1_FLATLINE";
       this.mark("beat1");
       this.ui.monitor({ mode: "irregular", hr: "---", status: "ALARM", alarm: true, bp: "BP ---" });
-      this.setAlarm(0.35, 0.6);
       if (!this.silent) {
         this.sound.setMusicLevel(0, 1.2);
         this.sound.alarmOn(0.75);
       }
-      co.turnTo(-Math.PI + 0.4);
-      ta.walk([[0.05, -8.85]], { endYaw: Math.PI * 0.95 });
-      this.camTo(W2(-0.2, 0.95, -8.3, 34, 35, 4.4), 4.2);
+      this.tween(4.2, (k) => {
+        const step = Math.floor(k * 6) / 6, blip = k * 6 % 1 < 0.12 ? 0.08 : 0;
+        this.revLight({ amb: 1 - 0.5 * step - blip, red: 0.3 * k });
+      });
+      co.turnTo(face(co, { x: TX + 1.45, z: TZ - 1.5 }));
+      ta.walk([[TX - 0.6, TZ - 0.55]], { endYaw: face({ x: TX - 0.6, z: TZ - 0.55 }, head) });
+      this.camTo(W2(TX, 0.95, TZ - 0.4, 32, 30, 4.4), 4.2);
       yield* this.say("27", { pause: 0.1 });
       ta.adjust("chk", "upper_armR", -0.9, 0, -0.2);
       ta.adjust("chkF", "forearmR", -0.6, 0, 0);
@@ -61315,8 +61501,9 @@ void main() {
       yield 1.6;
       this.substate = "B2_MOVES";
       this.mark("motion");
-      this.camTo({ ...W2(-0.6, 1.3, -8.2, 22, 76, 3, 40), dist: 3.4 }, 0.01);
-      this.camTo({ ...W2(-0.6, 1.4, -8.2, 18, 80, 3, 40), dist: 3, roll: 0.045 }, 4);
+      this.revLight({ amb: 0.42, red: 0.42 }, 0.4);
+      this.camTo({ x: TX, y: 1.3, z: TZ - 0.35, pitch: 20, yaw: 12, dist: 4.1, fov: 40 }, 0.01);
+      this.camTo({ x: TX, y: 1.38, z: TZ - 0.4, pitch: 16, yaw: 8, dist: 3.5, fov: 40, roll: 0.04 }, 4);
       bb.adjust("hand", "forearmR", 0, 0, -0.5, 0);
       this.tween(0.9, (k) => {
         bb.adj.hand.w = Math.sin(k * Math.PI * 3) * 0.6 + ease(k) * 0.4;
@@ -61333,177 +61520,325 @@ void main() {
       this.cpr = null;
       delete ta.adj.cprL;
       delete ta.adj.cprR;
-      const pz2 = { x: 0, z: -8.2 }, face = (a) => Math.atan2(pz2.x - a.x, pz2.z - a.z);
       ta.turnTo(face(ta));
       co.turnTo(face(co));
-      this.camTo(W2(0.1, 1, -8.5, 26, 35, 5.4), 1.4);
+      this.camTo(W2(TX + 0.3, 1, TZ, 26, 32, 5.4), 1.4);
+      this.later(0.5, () => {
+        this.scene.background = new Color(725011);
+        this.arena.outPlane?.material.color.set(725011);
+      });
+      this.tween(1.8, (k) => {
+        const f = k < 0.25 ? 0.42 : k < 0.33 ? 0.06 : k < 0.45 ? 0.3 : k < 0.52 ? 0.02 : k < 0.62 ? 0.16 : 0.03;
+        this.revLight({ amb: f, red: 0.42 + 0.3 * k, tube: k > 0.5 ? 1 : 0 });
+        if (k > 0.3 && k < 0.34 && !this.silent) this.sound.flicker?.(true);
+      });
       yield 0.8;
       yield* this.say("29", { pause: 0.1 });
-      this.backAway(ta, 1.35, -9.9, 1.3, pz2);
-      this.backAway(co, -1.55, -9.75, 1.3, pz2);
+      this.backAway(ta, TX - 1.15, TZ + 1.1, 1.3, body);
+      this.backAway(co, TX + 1.85, TZ - 0.5, 1.3, body);
       yield 1;
       this.substate = "B4_CALL";
-      this.setAlarm(0.7, 0.55);
+      this.revLight({ amb: 0.03, red: 0.85, tube: 1 });
       if (!this.silent) this.audio.play("groan", 1.1);
-      bb.adjust("look", "head", 0, 0.42, 0, 0);
-      this.tween(0.8, (k) => {
-        bb.adj.look.w = ease(k);
-      });
       yield* this.say("30", { pause: 0.1, alarm: true });
       yield* this.say("31", { pause: 0, alarm: true });
+      if (!this.silent) {
+        this.ui.setFadeColor("#000000");
+        this.ui.setFade(1, 0);
+      }
+      this.ui.showMonitor(false);
+      this.monitorOn = false;
+      if (!this.silent) {
+        this.sound.alarmOff();
+        this.sound.flatlineOff(0.1);
+      }
       this.mark("get-yola-done");
+      yield 0.45;
       yield* this.reveal();
     }
-    // ================================================================== THE REVEAL (beats 5-13 of the Motion study)
-    // The elevator framing is level, controlled and still; the strongest camera move is kept for Yola's entrance. The old toon
-    // silhouette becomes Yola 3.0 (the game's own model and clips: nothing here changes how she animates), no intermediate
-    // model, no wave, smash, slide, shot or kill. Light: slow red pulses, a few restrained accents (none with Soft light on).
     *reveal() {
-      const st = this.stage, A = st.actors, L2 = LIFT7, g = this.game(), Y2 = this.yola, old = A.yola, bb = A.baseball;
+      const st = this.stage, A = st.actors, L2 = LIFT7, g = this.game(), Y2 = this.yola, old = A.yola;
       const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
-      const cabX = L2.x, cabZ = -12.75;
+      const cabX = L2.x, cabZ = -12.7, an = ROOM1.player;
+      const doorShot = (dist2 = 4.6) => ({ x: L2.x, y: 1.15, z: -11.3, pitch: 2, yaw: 0, dist: dist2, fov: 40 });
       this.state = "REVEAL";
-      this.ensureRevealFx();
-      const doorShot = (dist2 = 4.3, y = 1.15) => ({ ...W2(L2.x, y, -11.3, 2, 0, 3, 40), dist: dist2 });
-      this.substate = "B5_ARRIVES";
+      this.substate = "B5_DOORS";
       this.mark("beat5");
       this.liftDisp3.set("6", "\u25B2");
       this.setLift3(0);
-      this.scene.background = new Color(1054234);
-      this.camTo({ ...W2(L2.x, 0.3, -11.1, 6, 0, 3, 40), dist: 1.7 }, 0.01);
+      this.scene.background = new Color(329738);
+      this.revLight({ amb: 0, red: 0.5, tube: 0, cab: 0, redAt: "doors", spotAt: "flash" });
+      this.camTo({ x: L2.x, y: 0.4, z: -11, pitch: 6, yaw: 0, dist: 1.9, fov: 40 }, 0.01);
       if (!this.silent) {
-        this.sound.setMusicLevel(0, 0.6);
-        this.audio.play("liftClose", 0.5);
+        this.ui.setFade(0, 600);
+        this.audio.play("liftClose", 0.45);
       }
-      this.sweepT = 0;
-      yield 1.3;
-      this.camTo({ ...W2(L2.x, 2.45, -11.1, -14, 0, 3, 40), dist: 1.9 }, 1.5);
+      yield 1.5;
+      this.camTo({ x: L2.x, y: 2.45, z: -11.05, pitch: -12, yaw: 0, dist: 2, fov: 40 }, 1.5);
       yield 1.6;
-      this.substate = "B6_DING";
       this.liftDisp3.set("7");
-      if (!this.silent) {
-        this.audio.play("liftDing");
-        this.sound.alarmOff();
-      }
-      this.setAlarm(0.35, 0.45);
-      yield 2.2;
-      this.substate = "B7_SILHOUETTE";
-      this.mark("beat7");
-      toWorld(old, cabX, cabZ, 0);
-      old.setVisible(true);
+      if (!this.silent) this.audio.play("liftDing");
+      yield 1.7;
+      this.substate = "B6_FLASHES";
+      this.mark("beat6");
       old.stop();
+      old.targetYaw = null;
+      toWorld(old, cabX, cabZ, 0);
       old.play("idle", { fade: 0 });
       old.waveT = -1;
-      this.silhouette(old.root, true);
-      this.backlight(1);
-      this.setLight(0.28);
+      old.setVisible(true);
+      this.standYola(cabX, cabZ, 0);
+      this.yola.setShown(false);
       this.camTo(doorShot(), 0.01);
-      if (!this.silent) this.audio.play("liftDing", 0.4);
-      this.tween(1.3, (k) => this.setLift3(ease(k)));
-      this.smoke(true);
-      yield 3.2;
+      if (!this.silent) this.audio.play("liftDing", 0.35);
+      this.tween(1.4, (k) => this.setLift3(ease(k)));
+      this.setSmoke(true);
+      yield 1.7;
+      this.revLight({ red: 0.28 });
+      const seq = [[0, "old", 1], [1.15, "old", 0.55], [2, "new", 0.85], [2.55, "old", 0.6], [3.05, "new", 1], [3.55, "new", 0.6]];
+      for (const [t, who, k] of seq) this.later(t, () => this.flashOn(who, k));
+      yield 4.4;
       this.substate = "B8_THREAT";
-      this.camTo({ ...W2(-0.6, 1.55, -8.2, 14, 70, 3, 40), dist: 3.6 }, 0.01);
-      this.camTo({ ...W2(-0.6, 1.6, -8.2, 11, 76, 3, 40), dist: 3, roll: -0.04 }, 1);
+      this.revLight({ amb: 0, red: 0.9, redAt: "or" });
+      this.camTo({ x: TX, y: 1.5, z: TZ - 0.4, pitch: 12, yaw: 14, dist: 4.2, fov: 40 }, 0.01);
+      this.camTo({ x: TX, y: 1.55, z: TZ - 0.45, pitch: 10, yaw: 10, dist: 3.4, fov: 40 }, 1.1);
       if (!this.silent) this.audio.play("groan", 1.3);
-      bb.adjust("growl", "neck", -0.22, 0.15, 0, 0);
-      this.tween(0.9, (k) => {
-        bb.adj.growl.w = Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5) * (1 + 0.15 * Math.sin(k * 40));
-      });
-      yield 1.9;
-      this.substate = "B9_CHANGE";
-      this.mark("beat9");
-      this.silhouette(old.root, false);
-      old.setVisible(false);
+      yield 1.8;
       this.revealWorld();
-      this.scene.background = new Color(1054234);
-      Y2.setShown(true);
-      this.revealPose = { x: cabX, z: cabZ, yaw: 0, vx: 0, vz: 0 };
+      old.setVisible(false);
+      this.setOutbreakLook(true);
+      this.substate = "B9_BAT";
+      this.mark("beat9");
+      this.standYola(null);
+      this.yola.setShown(true);
+      {
+        const dz = an.z - cabZ, dx = an.x - cabX, d = Math.hypot(dx, dz), sp = 1;
+        this.revealPose = { x: cabX, z: cabZ, yaw: 0, vx: dx / d * sp, vz: dz / d * sp, goal: { x: an.x, z: an.z, yaw: an.yaw } };
+      }
       this.poseRevealYola(0);
-      this.silhouette(Y2.outer, true);
-      if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, true, true);
-      this.camTo(doorShot(), 0.01);
-      this.accent(0.35, 0.18);
-      yield 1;
-      this.accent(0.8, 0.3);
-      if (!this.silent) this.sound.riser(1);
+      this.revLight({ amb: 0.06, red: 0.75, redAt: "doors", em: true });
+      this.camTrack = () => {
+        const b = this.batCentre();
+        return { x: b.x, y: b.y, z: b.z, pitch: 8, yaw: -38, dist: 1.15, fov: 38 };
+      };
+      yield 1.7;
+      this.substate = "B10_FEET";
+      this.camTrack = () => {
+        const f = this.feetCentre();
+        return { x: f.x, y: 0.16, z: f.z + 0.1, pitch: 7, yaw: 28, dist: 1.5, fov: 40 };
+      };
       yield 1.5;
-      this.substate = "B10_BAT";
-      {
-        const h = Y2.bones?.RightHand?.getWorldPosition(new Vector3()) || new Vector3(cabX - 0.3, 0.95, cabZ);
-        const bb3 = Y2.batLib?.obj ? new Box3().setFromObject(Y2.batLib.obj) : null, mid = bb3 ? bb3.getCenter(new Vector3()) : h.clone().add(new Vector3(0.3, -0.1, 0.1));
-        const tip = mid.clone().multiplyScalar(2).sub(h).lerp(mid, 0.35);
-        this.silhouette(Y2.outer, false);
-        if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, false);
-        this.setLight(0.45);
-        this.camTo({ x: h.x, y: h.y, z: h.z, pitch: 6, yaw: -24, dist: 0.95, fov: 38 }, 0.01);
-        this.camTo({ x: tip.x, y: tip.y, z: tip.z, pitch: 4, yaw: -30, dist: 1.05, fov: 38 }, 2.3);
-      }
-      this.later(0.7, () => this.accent(0.25, 0.12));
-      this.later(1.6, () => this.accent(0.2, 0.1));
-      yield 2.4;
-      this.substate = "B11_STEP";
-      this.camTo(doorShot(5.4, 1.1), 0.01);
-      this.silhouette(Y2.outer, true);
-      if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, true, true);
-      yield 0.8;
-      if (!this.silent) this.audio.play("bump", 1.4);
-      this.tween(0.6, (k) => {
-        this.backlight(1 - 0.75 * ease(k));
-        this.setLight(0.28 - 0.16 * ease(k));
-      });
-      yield 1.1;
-      this.substate = "B12_ENTRANCE";
-      this.mark("beat12");
-      this.tween(0.8, (k) => {
-        this.backlight(0.25 + 0.75 * ease(k));
-        this.setLight(0.12 + 0.55 * ease(k));
-      });
-      if (!this.silent) {
-        g.musicStart?.("combat");
-        this.sound.revealCue?.();
-      }
-      this.silhouette(Y2.outer, false);
-      if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, false);
-      const bw = (n, fb) => Y2.bones?.[n]?.getWorldPosition(new Vector3()) || fb;
-      const foot = bw("RightToeBase", bw("RightFoot", new Vector3(cabX - 0.12, 0.08, cabZ + 0.1))), hip = bw("Hips", new Vector3(cabX, 0.95, cabZ)), head = bw("Head", new Vector3(cabX, 1.5, cabZ));
-      const batMid = Y2.batLib?.obj ? new Box3().setFromObject(Y2.batLib.obj).getCenter(new Vector3()) : hip;
-      this.camTo({ x: foot.x, y: Math.max(0.1, foot.y), z: foot.z, pitch: 12, yaw: -18, dist: 1.25, fov: 40 }, 0.01);
-      this.camTo({ x: (batMid.x + hip.x) / 2, y: (batMid.y + hip.y) / 2, z: (batMid.z + hip.z) / 2, pitch: 8, yaw: -24, dist: 1.7, fov: 40 }, 1.6);
-      yield 1.6;
-      this.camTo({ x: head.x, y: head.y - 0.18, z: head.z + 0.08, pitch: 6, yaw: 16, dist: 2.6, fov: 40 }, 1.7);
-      yield 1.9;
-      this.smoke(false);
-      {
-        const an2 = ROOM1.player, rp = this.revealPose, sp = 1.05, dx = an2.x - rp.x, dz = an2.z - rp.z, d = Math.hypot(dx, dz);
-        rp.vx = dx / d * sp;
-        rp.vz = dz / d * sp;
-        rp.goal = { x: an2.x, z: an2.z, yaw: an2.yaw };
-        this.camTo({ x: an2.x, y: 1.1, z: an2.z - 0.4, pitch: 20, yaw: 18, dist: 3.8, fov: 40 }, d / sp + 0.4, null);
-      }
+      this.substate = "B11_FULL";
+      this.camTrack = null;
+      this.later(0.8, () => this.setSmoke(false));
+      this.camTo({ x: an.x, y: 1, z: an.z, pitch: 9, yaw: 12, dist: 3.5, fov: 40 }, 0.01);
       yield () => !this.revealPose.vx && !this.revealPose.vz;
-      yield 0.5;
+      yield 0.55;
+      this.substate = "B12_CARD";
+      this.mark("beat12");
+      if (!this.silent) {
+        this.showCard();
+        this.sound.bossSting?.();
+      }
+      this.animScale = 0;
+      yield 2.7;
       this.state = "COMBAT_READY";
       this.substate = "B13_RETURN";
+      this.animScale = 1;
+      this.hideCard();
+      if (!this.silent) g.musicStart?.("combat");
+      this.revLight({ amb: 1, red: 0, tube: 0, key: 0, em: true, exposure: 1 });
       this.setCamera();
       const fromPos = this.camera.position.clone(), fromQuat = this.camera.quaternion.clone(), fromFov = this.camera.fov;
-      const an = ROOM1.player, pose = g.cameraPose(an.x, an.z, an.yaw);
+      const pose = g.cameraPose(an.x, an.z, an.yaw);
       this.camera.position.copy(fromPos);
       this.camera.quaternion.copy(fromQuat);
       this.camera.fov = fromFov;
       this.camera.updateProjectionMatrix();
-      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 2.2 };
-      this.tween(2, (k) => {
-        this.backlight(1 - ease(k));
-        this.setLight(0.67 + 0.33 * ease(k));
-      });
-      yield 2.3;
+      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 1.5 };
+      yield 1.6;
       this.finalize("normal");
     }
-    // Yola 3.0 in the reveal: the game's view, fed the same still/walking state the game feeds it (bat equipped)
+    // ---- the reveal's light: one controller, real lights only ----
+    // amb: the room's light (0 dark .. 1 the normal look, against the clean or the emergency base), red: the emergency red
+    // pulse (at the OR or the lift doors), tube: a dying cold tube over the table, flash: the failing light outside the lift,
+    // cab: the cab's own lamps, exposure: the whole picture (unlit signs and screens dim with it)
+    revLight(p, secs = 0) {
+      const r = this.rl || (this.rl = { amb: 1, red: 0, tube: 0, cab: 1, exposure: 1, flash: 0, key: 0, em: false, redAt: "or", t: 0 });
+      for (const k of ["amb", "red", "tube", "cab", "exposure", "key"]) if (p[k] !== void 0) {
+        if (secs > 0) {
+          const a = r[k], b = p[k];
+          this.tween(secs, (u) => {
+            r[k] = a + (b - a) * ease(u);
+          });
+        } else r[k] = p[k];
+      }
+      if (p.em !== void 0) r.em = p.em;
+      if (p.redAt) {
+        r.redAt = p.redAt;
+        if (this.redLight) {
+          if (p.redAt === "doors") this.redLight.position.set(LIFT7.x - 1.6, 2.4, -9.6);
+          else this.redLight.position.set(TX + 1.2, 2.8, TZ + 1.2);
+        }
+      }
+      if (p.spotAt && this.spot) {
+        const sp = this.spot;
+        if (p.spotAt === "key") {
+          const a = ROOM1.player;
+          sp.position.set(a.x + 1.1, 2.5, a.z + 2.4);
+          sp.target.position.set(a.x, 0.95, a.z);
+          sp.angle = 0.3;
+          sp.penumbra = 0.6;
+        } else if (p.spotAt === "tube") {
+          sp.position.set(TX, 2.7, TZ + 0.3);
+          sp.target.position.set(TX, 0.8, TZ - 0.2);
+          sp.angle = 0.9;
+        } else {
+          sp.position.set(LIFT7.x + 0.15, 3.7, -14.35);
+          sp.target.position.set(LIFT7.x, 0.2, -11.1);
+          sp.angle = 0.75;
+        }
+        sp.distance = 12;
+        sp.target.updateMatrixWorld(true);
+      }
+      r.on = true;
+    }
+    tickRevLight(d) {
+      const r = this.rl;
+      if (!r?.on) return;
+      r.t += d;
+      const A = this.arena, b = r.em ? { hemi: 0.52, sun: 0.72, env: 0.17 } : this.lightBase || { hemi: 0.8, sun: 1.35, env: 0.32 };
+      if (A.hemi) A.hemi.intensity = b.hemi * r.amb;
+      if (A.sun) A.sun.intensity = b.sun * r.amb;
+      this.scene.environmentIntensity = b.env * r.amb;
+      const pulse = 0.5 + 0.5 * Math.sin(r.t * Math.PI * 2 * 0.55 - Math.PI / 2), soft = this.reducedFlash ? 0.6 : 1;
+      if (this.redLight) this.redLight.intensity = r.red * soft * (1.2 + 7 * pulse);
+      if (A.redHemi) A.redHemi.intensity = r.red * 0.045 * pulse;
+      this.ui.setVignette(r.red * 0.35 * (0.4 + 0.6 * pulse));
+      if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : 0.16));
+      const tube = r.tube > 0 ? r.tube * (Math.sin(r.t * 31) * Math.sin(r.t * 7.3) > 0.55 ? 0 : 6 + 3 * Math.sin(r.t * 53)) * soft : 0;
+      const flash = 70 * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
+      if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 26;
+      this.renderer.toneMappingExposure = (this.baseExposure ?? 0.92) * r.exposure;
+      if (!this.cabLamps) {
+        this.cabLamps = [];
+        this.arena.doorKits?.lift?.root.traverse((o) => {
+          if (o.isMesh) {
+            for (const m of [].concat(o.material)) if (/Warm_Light/i.test(m.name) && m.emissive) this.cabLamps.push({ m, e: m.emissiveIntensity, c: m.color.clone() });
+          }
+        });
+      }
+      for (const l of this.cabLamps) {
+        l.m.emissiveIntensity = l.e * r.cab;
+        l.m.color.copy(l.c).multiplyScalar(0.15 + 0.85 * r.cab);
+      }
+    }
+    revLightOff() {
+      const r = this.rl;
+      if (!r) return;
+      r.on = false;
+      if (this.redLight) this.redLight.intensity = 0;
+      if (this.spot) this.spot.intensity = 0;
+      this.renderer.toneMappingExposure = this.baseExposure ?? 0.92;
+      for (const l of this.cabLamps || []) {
+        l.m.emissiveIntensity = l.e;
+        l.m.color.copy(l.c);
+      }
+      this.rl = null;
+    }
+    // a flash from the failing light outside the doors: one silhouette or the other, the surfaces clean or outbreak with it
+    flashOn(who, k) {
+      const old = this.stage.actors.yola;
+      old.setVisible(who === "old");
+      this.standVisible(who === "new");
+      this.setOutbreakLook(who === "new");
+      if (this.rl) this.rl.flash = k;
+      if (!this.silent) this.sound.flicker?.(true);
+    }
+    setOutbreakLook(on) {
+      this.setBlood(on);
+      this.renderer.shadowMap.needsUpdate = true;
+    }
+    // Yola 3.0 standing (her own standing idle clip, the old Yola's standing pose: no combat stance) with the bat at her side;
+    // driven on a separate mixer only while she stands, then handed back to the game's view for the walk
+    standYola(x, z, yaw) {
+      const Y2 = this.yola;
+      if (!Y2) return;
+      if (x === null) {
+        if (this.stand) {
+          this.stand.mixer.stopAllAction();
+          this.stand = null;
+        }
+        return;
+      }
+      const clip = (this.game().yolaClips || []).find((c) => c.name === "tripo_idle");
+      const mixer = new AnimationMixer(Y2.model);
+      if (clip) mixer.clipAction(clip).play();
+      this.stand = { mixer, x, z, yaw, shown: false };
+      this.tickStand(0);
+    }
+    standVisible(v) {
+      if (!this.stand) return;
+      this.stand.shown = v;
+      this.yola.setShown(v);
+      if (v) this.tickStand(0);
+    }
+    tickStand(dt) {
+      const s = this.stand, Y2 = this.yola;
+      if (!s || !Y2) return;
+      Y2.outer.position.set(s.x, 0, s.z);
+      Y2.container.rotation.y = s.yaw;
+      s.mixer.update(dt);
+      const bat = Y2.batLib?.obj, hand = Y2.bones.RightHand;
+      if (bat && hand) {
+        Y2.outer.updateMatrixWorld(true);
+        const hp = hand.getWorldPosition(new Vector3()), fwd = new Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw));
+        const dir = new Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();
+        bat.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), dir);
+        bat.position.copy(hp).addScaledVector(dir, 0.02).addScaledVector(fwd, 0.015);
+        bat.scale.setScalar(1);
+        bat.visible = s.shown;
+      }
+    }
+    batCentre() {
+      const b = this.yola?.batLib?.obj;
+      return b ? new Box3().setFromObject(b).getCenter(new Vector3()) : new Vector3(this.revealPose.x, 0.8, this.revealPose.z);
+    }
+    feetCentre() {
+      const B = this.yola?.bones || {}, a = B.LeftFoot?.getWorldPosition(new Vector3()), b = B.RightFoot?.getWorldPosition(new Vector3());
+      return a && b ? a.add(b).multiplyScalar(0.5) : new Vector3(this.revealPose.x, 0.1, this.revealPose.z);
+    }
+    // the comic freeze card over the frozen frame
+    showCard() {
+      this.hideCard();
+      this.revLight({ key: 1, amb: 0.22, red: 0.3, spotAt: "key" });
+      this.tickRevLight(0);
+      this.game().looks?.render ? this.game().looks.render() : this.renderer.render(this.scene, this.camera);
+      const src = this.renderer.domElement, base = comicFrame(src), name = nameCard(src.width, src.height, "YOLA", "Anesthesiologist. Off shift.");
+      const wrap = document.createElement("div");
+      wrap.className = "opCard";
+      wrap.style.cssText = "position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden;background:#000";
+      for (const [c, anim] of [[base, "opCardIn .16s ease-out"], [name, "opCardName .22s cubic-bezier(.2,1.6,.4,1) .08s both"]]) {
+        c.style.cssText = `position:absolute;inset:0;width:100%;height:100%;animation:${anim}`;
+        wrap.appendChild(c);
+      }
+      if (!document.getElementById("opCardCss")) {
+        const st = document.createElement("style");
+        st.id = "opCardCss";
+        st.textContent = "@keyframes opCardIn{from{transform:scale(1.06);filter:brightness(2)}to{transform:none;filter:none}}@keyframes opCardName{from{transform:scale(1.9) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}";
+        document.head.appendChild(st);
+      }
+      document.body.appendChild(wrap);
+      this.freezeEl = wrap;
+    }
+    hideCard() {
+      this.freezeEl?.remove();
+      this.freezeEl = null;
+    }
+    // Yola 3.0 walking out in the reveal: the game's view, fed the state the game feeds it (bat equipped, her plain walk)
     poseRevealYola(dt) {
       const r = this.revealPose;
-      if (!r) return;
+      if (!r || this.stand) return;
       const g = this.game();
       if (r.goal && (r.vx || r.vz)) {
         r.x += r.vx * dt;
@@ -61526,96 +61861,8 @@ void main() {
       s.vz = r.vz;
       g.yolaPose?.(dt, s);
     }
-    // the reveal's light: a warm panel and lamp at the back of the cab (the silhouette), a sweep of light under the shut doors,
-    // a thin layer of mist at the threshold, and brief restrained accents (Soft light: gentle ramps, never a flash)
-    ensureRevealFx() {
-      if (this.rfx) return;
-      const L2 = LIFT7, g = new Group();
-      g.name = "revealFx";
-      this.scene.add(g);
-      const panel = new Mesh(new PlaneGeometry(2.95, 2.75), new MeshBasicMaterial({ color: 16773592, toneMapped: false, transparent: true, opacity: 0 }));
-      panel.position.set(L2.x, 1.38, L2.cab.minZ + 0.06);
-      g.add(panel);
-      const lamp = new PointLight(16771012, 0, 7, 1.6);
-      lamp.position.set(L2.x, 2, L2.cab.minZ + 0.6);
-      g.add(lamp);
-      const fill2 = new PointLight(16773340, 0, 5, 1.8);
-      fill2.position.set(L2.x, 0.5, -11.6);
-      g.add(fill2);
-      const sweep = new Mesh(new PlaneGeometry(0.5, 0.18), new MeshBasicMaterial({ color: 16773852, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
-      sweep.rotation.x = -Math.PI / 2;
-      sweep.position.set(L2.x, 0.012, -11);
-      g.add(sweep);
-      const c = document.createElement("canvas");
-      c.width = c.height = 64;
-      const x = c.getContext("2d"), gr = x.createRadialGradient(32, 32, 2, 32, 32, 31);
-      gr.addColorStop(0, "rgba(225,228,232,0.9)");
-      gr.addColorStop(1, "rgba(225,228,232,0)");
-      x.fillStyle = gr;
-      x.fillRect(0, 0, 64, 64);
-      const smokeMat = new SpriteMaterial({ map: new CanvasTexture(c), transparent: true, opacity: 0, depthWrite: false });
-      const puffs = [];
-      for (let i = 0; i < 9; i++) {
-        const s = new Sprite(smokeMat.clone());
-        s.position.set(L2.x + (i - 4) * 0.28, 0.25, -11.4);
-        s.scale.setScalar(1.2);
-        g.add(s);
-        puffs.push({ s, seed: i * 1.7 });
-      }
-      g.visible = false;
-      this.rfx = { g, panel, lamp, fill: fill2, sweep, puffs, back: 0, smoke: 0, smokeTarget: 0, acc: 0, accT: 0 };
-    }
-    backlight(k) {
-      const f = this.rfx;
-      if (!f) return;
-      f.back = k;
-      f.g.visible = true;
-      f.panel.material.opacity = 0.95 * k;
-      f.lamp.intensity = 26 * k;
-      f.fill.intensity = 2.2 * k;
-    }
-    smoke(on) {
-      if (this.rfx) this.rfx.smokeTarget = on ? 1 : 0;
-    }
-    accent(k, secs) {
-      const f = this.rfx;
-      if (!f) return;
-      if (this.reducedFlash) k *= 0.25;
-      f.acc = k;
-      f.accT = secs;
-      f.accDur = secs;
-      if (!this.silent) this.sound.flicker?.(true);
-    }
-    tickReveal(d) {
-      const f = this.rfx;
-      if (!f || !f.g.visible) return;
-      if (this.sweepT !== void 0 && this.sweepT !== null) {
-        this.sweepT += d;
-        const u = this.sweepT / 1.2;
-        f.sweep.material.opacity = u < 1 ? Math.sin(u * Math.PI) * 0.8 : 0;
-        f.sweep.position.x = LIFT7.x - 1 + 2 * Math.min(1, u);
-        if (u >= 1) this.sweepT = null;
-      }
-      f.smoke += (f.smokeTarget - f.smoke) * Math.min(1, d * 1.5);
-      for (const p of f.puffs) {
-        const t = (this.t * 0.25 + p.seed) % 1;
-        p.s.position.z = -11.5 + t * 2.4;
-        p.s.position.y = 0.2 + t * 0.35;
-        p.s.scale.setScalar(1 + t * 1.6);
-        p.s.material.opacity = f.smoke * 0.22 * Math.sin(t * Math.PI);
-      }
-      let a = 0;
-      if (f.accT > 0) {
-        f.accT -= d;
-        const u = 1 - f.accT / f.accDur;
-        a = f.acc * Math.sin(Math.min(1, u) * Math.PI);
-        f.fill.intensity = 2.2 * f.back + 10 * a;
-        this.redLight && (this.redLight.intensity += 4 * a);
-      }
-      if (this.silMat) this.silMat.color.setRGB(0.043 + 0.2 * a, 0.055 + 0.21 * a, 0.063 + 0.22 * a);
-    }
-    // the hospital after the outbreak, committed at beat 9 behind the doorway: the same architecture, worn surfaces, blood,
-    // emergency light, the dead lift sign back; the opening's cast leaves and the floor's zombies stand where they will wake
+    // the hospital after the outbreak, committed behind the patient's cut: the same architecture, worn surfaces, blood, the dead
+    // lift sign back; the opening's cast leaves and the floor's zombies stand where they will wake
     revealWorld() {
       const g = this.game(), A = this.stage.actors;
       for (const k of ["baseball", "teamA", "teamB", "surgeon", "security", "staff"]) A[k].setVisible(false);
@@ -61625,33 +61872,13 @@ void main() {
       this.monitorOn = false;
       this.inOR = true;
       this.setBlood(true);
-      this.scene.background = this.saved?.bg || new Color(2568762);
+      this.scene.background = new Color(329738);
       this.arena.outPlane?.material.color.set(1910316);
       g.applyRoom1();
       this.room1Preview = true;
-      this.arena.setEmergency?.(true, 0.4);
+      this.arena.setEmergency?.(true, 0);
       if (this.spot) this.spot.intensity = 0;
       this.setOrLamp(true);
-    }
-    // a backlit silhouette: every mesh under root drawn in one dark, unlit colour (the accents lift it a little to hint at
-    // the form); off puts the original materials back exactly. Purely a look for the reveal: no rig, clip or model changes.
-    silhouette(root, on, keepDepth = false) {
-      if (!root) return;
-      this.silMat || (this.silMat = new MeshBasicMaterial({ color: 724496 }));
-      root.traverse((o) => {
-        if (!o.isMesh || !o.userData.silOrig && [].concat(o.material)[0]?.transparent) return;
-        if (on && !o.userData.silOrig) {
-          o.userData.silOrig = o.material;
-          o.material = o.isSkinnedMesh ? this.silSkinMat() : this.silMat;
-        } else if (!on && o.userData.silOrig) {
-          o.material = o.userData.silOrig;
-          delete o.userData.silOrig;
-        }
-      });
-      void keepDepth;
-    }
-    silSkinMat() {
-      return this.silMat;
     }
     setOrLamp(v) {
       const o = this.arena.group.getObjectByName("orLight");
@@ -61780,13 +62007,15 @@ void main() {
       this.belongings.visible = false;
       this.revealPose = null;
       this.sweepT = null;
-      if (this.rfx) {
-        this.backlight(0);
-        this.rfx.g.visible = false;
+      this.revLightOff();
+      this.standYola(null);
+      this.hideCard();
+      this.camTrack = null;
+      if (this.smoke) {
+        this.smoke.target = 0;
+        this.smoke.k = 0;
+        this.tickSmoke(0);
       }
-      this.silhouette(A.yola?.root, false);
-      this.silhouette(this.yola?.outer, false);
-      this.silhouette(this.yola?.batLib?.obj, false);
       for (const k of ["yola", "baseball", "teamA", "teamB", "surgeon", "staff"]) A[k].setVisible(false);
       if (this.guardPool) this.guardPool.visible = true;
       else this.placeGuardPool();
@@ -62093,7 +62322,13 @@ void main() {
       }
       if (this.monitorOn) this.ui.drawMonitor(this.t);
       if (this.revealPose) this.poseRevealYola(da);
-      this.tickReveal(d);
+      this.tickStand(da);
+      this.tickRevLight(d);
+      this.tickSmoke(d);
+      if (this.camTrack) {
+        this.rig = this.camTrack();
+        this.camAnim = null;
+      }
       this.bt.update(d);
       if (this.stillYola) this.game().stillYola?.(da);
       if (this.stage.tiers.some((s) => s.fx) || this.stage.pops.length) this.renderer.shadowMap.needsUpdate = true;
