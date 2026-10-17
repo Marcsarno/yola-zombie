@@ -383,7 +383,7 @@ function refresh() {
   updateMarks(); updateShell(f);
   $('scrub').value = f;
   $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)` + (S.refOff ? `  ·  reference frame ${f + S.refOff}` : '');
-  drawVidRef(f); updateBat(); updateFingers(); updatePistolFitUI();
+  drawVidRef(f); updateBat(); updateMags(); updateFingers(); updatePistolFitUI();
   const lines = [];
   if (main.action) { main.grip('Right', _v); main.grip('Left', _v2); lines.push(`${CHARS[S.char].label}   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
   if (ref.root.visible && ref.action) { ref.grip('Right', _v); ref.grip('Left', _v2); lines.push(`Reference   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
@@ -400,6 +400,57 @@ function refresh() {
 // held weapons (the game's own models): bat and axe between the hands along the line through both grips (origin at the
 // hands' midpoint, handle along +Z); the pistol in the right hand, barrel along the forearm (origin at the grip, top +Y)
 const held = { bat: makeBat(), pistol: makePistol() }; for (const k in held) { held[k].visible = false; scene.add(held[k]); }
+// ---- pistol reload magazines (the user's props, 2026-10-17: assets/weapons/pistol_mag_empty / _loaded.glb) ----
+// Made for this pistol: in the pistol model's own frame (+X barrel, +Y up) a seated magazine sits at MAG_SEAT, its base
+// plate exactly over the pistol's Pistol_Magazine_Art (hidden while the props play). Events, frames of the reload clip
+// (Quaternius Pistol_Reload with the support hand, measured on her: gun tips up 4-7, left hand at the hip pouch 13-15,
+// at the grip 28-37): the empty one drops at `drop` and falls; the loaded one is in her left hand (held by its base between thumb and index,
+// magPinch) from `grab`, slides into the grip from `insert` and is seated at `seat`, when the gun's own magazine shows again.
+const MAG_SEAT = new THREE.Vector3(-0.008, -0.039, 0);
+const RELOAD_EVENTS = [{ test: /Pistol_Reload|^pistol_reload$/i, drop: 6, grab: 13, insert: 23, seat: 28 }];
+const mags = { empty: null, loaded: null, fall: null };
+const prepMag = (g) => { const o = g.scene; o.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.frustumCulled = false; } }); o.visible = false; return o; };
+loadG('assets/weapons/pistol_mag_empty.glb').then((g) => { mags.empty = prepMag(g); scene.add(mags.empty); refresh(); }).catch(() => {});
+loadG('assets/weapons/pistol_mag_loaded.glb').then((g) => { mags.loaded = prepMag(g); refresh(); }).catch(() => {});
+const magPinch = () => { const B = main.bones; return B.LeftHandThumb2.getWorldPosition(new THREE.Vector3()).lerp(B.LeftHandIndex2.getWorldPosition(_v3), 0.5); }; // (where her hand holds the magazine)
+function reloadEvents() { return weaponOf() === 'pistol' && $('mags')?.checked !== false ? RELOAD_EVENTS.find((e) => e.test.test(main?.clip?.name || '')) : null; }
+function updateMags() {
+  const P = held.pistol, inner = P?.children?.[0], E = reloadEvents(), art = inner?.getObjectByName?.('Pistol_Magazine_Art');
+  if (mags.empty) mags.empty.visible = false;
+  if (mags.loaded) mags.loaded.visible = false;
+  if (art) art.visible = true;
+  if (!E || !inner || !P.visible || !mags.empty || !mags.loaded) return;
+  const f = S.playing ? S.frame : Math.round(S.frame);
+  if (art) art.visible = f < E.drop || f >= E.seat;
+  inner.updateWorldMatrix(true, false);
+  // per clip and fit: the empty one's start pose (seated, at the drop frame) and the small correction that seats the
+  // loaded one (measured at the seat frame: her thumb-index pinch ends ~2.4 cm from a seated magazine's base)
+  const key = main.clip.name + JSON.stringify(fitOf(main));
+  if (mags.fall?.key !== key) {
+    const keep = S.frame, at = (fr) => { main.setFrame(fr); placeHeldOn(main, P); inner.updateWorldMatrix(true, false); };
+    at(E.drop); const M = inner.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(MAG_SEAT));
+    const p0 = new THREE.Vector3(), q0 = new THREE.Quaternion(), s0 = new THREE.Vector3(); M.decompose(p0, q0, s0);
+    at(E.seat); const delta = MAG_SEAT.clone().sub(inner.worldToLocal(magPinch()));
+    mags.fall = { key, p0, q0, s0, delta };
+    at(Math.min(S.playing ? Math.max(1, keep) : Math.round(keep), main.frames));
+  }
+  // the loaded one: a child of the pistol model (its frame and scale), held by its base between her thumb and index
+  // finger; from `insert` the correction above is eased in, so it stays in her fingers and ends exactly seated
+  if (mags.loaded.parent !== inner) inner.add(mags.loaded);
+  if (f >= E.grab && f < E.seat) {
+    const u = f <= E.insert ? 0 : (f - E.insert) / (E.seat - E.insert), s = u * u * (3 - 2 * u);
+    mags.loaded.position.copy(inner.worldToLocal(magPinch())).addScaledVector(mags.fall.delta, s); mags.loaded.quaternion.identity(); mags.loaded.visible = true;
+  }
+  // the empty one: leaves the grip at `drop` and falls (world space)
+  if (f >= E.drop) {
+    const F = mags.fall, t = (f - E.drop) / FPS, k = main.height / 1.62;
+    const tHit = Math.sqrt(Math.max(0, 2 * (F.p0.y - 0.02) / (9.8 * k)));
+    const tt = Math.min(t, tHit);
+    mags.empty.position.copy(F.p0).add(new THREE.Vector3(0, -4.9 * k * tt * tt, 0));
+    const spin = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1).applyQuaternion(F.q0), 5 * tt); // (a tumble about its own side axis)
+    mags.empty.quaternion.copy(spin.multiply(F.q0)); mags.empty.scale.copy(F.s0); mags.empty.visible = true;
+  }
+}
 loadG('assets/weapons/pistol_core.glb').then((g) => { scene.remove(held.pistol); held.pistol = prepPistolCore(g); held.pistol.visible = false; scene.add(held.pistol); refresh(); }).catch(() => {}); // the game's pistol (the pack's)
 loadG('assets/weapons/fire_axe.glb').then((g) => { held.axe = prepAxe(g); held.axe.visible = false; scene.add(held.axe); applyGun(); refresh(); }).catch(() => {});
 const _m4 = new THREE.Matrix4();
@@ -701,7 +752,7 @@ function buildUI() {
   $('clip').onchange = (e) => setClip(e.target.value);
   $('lay').onclick = () => { S.overlay = !S.overlay; layout(); refresh(); };
   $('match').onchange = () => { layout(); refresh(); };
-  $('marks').onchange = refresh; $('posture').onchange = refresh;
+  $('marks').onchange = refresh; $('posture').onchange = refresh; $('mags').onchange = refresh;
   $('batShow').onchange = refresh; $('vidSkel').onchange = refresh;
   $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; };
   $('inplace').onchange = () => setClip($('clip').value);

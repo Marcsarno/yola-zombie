@@ -38679,6 +38679,7 @@ void main() {
     $("frameInfo").textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)` + (S.refOff ? `  \xB7  reference frame ${f + S.refOff}` : "");
     drawVidRef(f);
     updateBat();
+    updateMags();
     updateFingers();
     updatePistolFitUI();
     const lines = [];
@@ -38711,6 +38712,81 @@ void main() {
   for (const k in held) {
     held[k].visible = false;
     scene.add(held[k]);
+  }
+  var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
+  var RELOAD_EVENTS = [{ test: /Pistol_Reload|^pistol_reload$/i, drop: 6, grab: 13, insert: 23, seat: 28 }];
+  var mags = { empty: null, loaded: null, fall: null };
+  var prepMag = (g) => {
+    const o = g.scene;
+    o.traverse((m) => {
+      if (m.isMesh) {
+        m.castShadow = false;
+        m.frustumCulled = false;
+      }
+    });
+    o.visible = false;
+    return o;
+  };
+  loadG("assets/weapons/pistol_mag_empty.glb").then((g) => {
+    mags.empty = prepMag(g);
+    scene.add(mags.empty);
+    refresh();
+  }).catch(() => {
+  });
+  loadG("assets/weapons/pistol_mag_loaded.glb").then((g) => {
+    mags.loaded = prepMag(g);
+    refresh();
+  }).catch(() => {
+  });
+  var magPinch = () => {
+    const B = main.bones;
+    return B.LeftHandThumb2.getWorldPosition(new Vector3()).lerp(B.LeftHandIndex2.getWorldPosition(_v3), 0.5);
+  };
+  function reloadEvents() {
+    return weaponOf() === "pistol" && $("mags")?.checked !== false ? RELOAD_EVENTS.find((e) => e.test.test(main?.clip?.name || "")) : null;
+  }
+  function updateMags() {
+    const P = held.pistol, inner = P?.children?.[0], E = reloadEvents(), art = inner?.getObjectByName?.("Pistol_Magazine_Art");
+    if (mags.empty) mags.empty.visible = false;
+    if (mags.loaded) mags.loaded.visible = false;
+    if (art) art.visible = true;
+    if (!E || !inner || !P.visible || !mags.empty || !mags.loaded) return;
+    const f = S.playing ? S.frame : Math.round(S.frame);
+    if (art) art.visible = f < E.drop || f >= E.seat;
+    inner.updateWorldMatrix(true, false);
+    const key = main.clip.name + JSON.stringify(fitOf(main));
+    if (mags.fall?.key !== key) {
+      const keep = S.frame, at = (fr) => {
+        main.setFrame(fr);
+        placeHeldOn(main, P);
+        inner.updateWorldMatrix(true, false);
+      };
+      at(E.drop);
+      const M = inner.matrixWorld.clone().multiply(new Matrix4().makeTranslation(MAG_SEAT));
+      const p0 = new Vector3(), q0 = new Quaternion(), s0 = new Vector3();
+      M.decompose(p0, q0, s0);
+      at(E.seat);
+      const delta = MAG_SEAT.clone().sub(inner.worldToLocal(magPinch()));
+      mags.fall = { key, p0, q0, s0, delta };
+      at(Math.min(S.playing ? Math.max(1, keep) : Math.round(keep), main.frames));
+    }
+    if (mags.loaded.parent !== inner) inner.add(mags.loaded);
+    if (f >= E.grab && f < E.seat) {
+      const u = f <= E.insert ? 0 : (f - E.insert) / (E.seat - E.insert), s = u * u * (3 - 2 * u);
+      mags.loaded.position.copy(inner.worldToLocal(magPinch())).addScaledVector(mags.fall.delta, s);
+      mags.loaded.quaternion.identity();
+      mags.loaded.visible = true;
+    }
+    if (f >= E.drop) {
+      const F = mags.fall, t = (f - E.drop) / FPS, k = main.height / 1.62;
+      const tHit = Math.sqrt(Math.max(0, 2 * (F.p0.y - 0.02) / (9.8 * k)));
+      const tt = Math.min(t, tHit);
+      mags.empty.position.copy(F.p0).add(new Vector3(0, -4.9 * k * tt * tt, 0));
+      const spin = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1).applyQuaternion(F.q0), 5 * tt);
+      mags.empty.quaternion.copy(spin.multiply(F.q0));
+      mags.empty.scale.copy(F.s0);
+      mags.empty.visible = true;
+    }
   }
   loadG("assets/weapons/pistol_core.glb").then((g) => {
     scene.remove(held.pistol);
@@ -39251,6 +39327,7 @@ void main() {
     };
     $("marks").onchange = refresh;
     $("posture").onchange = refresh;
+    $("mags").onchange = refresh;
     $("batShow").onchange = refresh;
     $("vidSkel").onchange = refresh;
     $("bones").onchange = () => {
