@@ -38192,19 +38192,24 @@ void main() {
   }
   var F2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var _cr = new Vector3();
+  var _ar = new Vector3();
+  var _ax = new Vector3();
   var sm = (a, b, x) => {
     const u = Math.min(1, Math.max(0, (x - a) / (b - a)));
     return u * u * (3 - 2 * u);
   };
   function twoHandLine(bones, toward, out, hold = "Right", prev = null) {
     if (!fistFrame(bones, "Right", F2)) return null;
-    const cr = _cr.copy(F2.c);
+    const cr = _cr.copy(F2.c), ar = _ar.copy(F2.a);
     if (!fistFrame(bones, "Left", F2)) return null;
     const ch = hold === "Left" ? F2.c : cr;
     out.c.copy(cr).add(F2.c).multiplyScalar(0.5);
     out.d.copy(cr).sub(F2.c);
     out.span = out.d.length();
     out.d.normalize();
+    const agree = ar.dot(F2.a), ax = _ax.copy(ar).add(F2.a).normalize();
+    if (ax.dot(out.d) < 0) ax.negate();
+    out.d.lerp(ax, 0.7 * sm(0.5, 0.85, agree) * sm(0.6, 0.8, ax.dot(out.d))).normalize();
     if (out.d.dot(_b4.copy(toward).addScaledVector(prev || toward, 2)) < 0) out.d.negate();
     const ref2 = prev || toward;
     const w = sm(0.15, 0.3, out.d.dot(ref2)) * (1 - sm(0.36, 0.5, out.span));
@@ -39157,7 +39162,7 @@ void main() {
     for (const side of ["Right", "Left"]) {
       const k = H[side];
       if (!(k > 0)) continue;
-      for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, k));
+      for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, Math.min(1.5, k)));
     }
     a.root.updateMatrixWorld(true);
   }
@@ -39172,7 +39177,7 @@ void main() {
       } catch {
       }
     };
-    const row = (side) => `<span class="lbl">${side === "Right" ? "R hand" : "L hand"}</span>` + [["open", 0], ["support", 0.5], ["closed", 1]].map(([t, v]) => `<button data-h="${side}" data-v="${v}">${t}</button>`).join("") + `<input type="range" min="0" max="100" step="5" data-hs="${side}" style="width:70px;vertical-align:middle"><span data-hv="${side}" style="display:inline-block;width:32px"></span>`;
+    const row = (side) => `<span class="lbl">${side === "Right" ? "R hand" : "L hand"}</span>` + [["open", 0], ["support", 0.5], ["closed", 1], ["punch", 1.3]].map(([t, v]) => `<button data-h="${side}" data-v="${v}" title="${v > 1 ? "tighter than her bat grip: a punching fist, no handle hole" : ""}">${t}</button>`).join("") + `<input type="range" min="0" max="150" step="5" data-hs="${side}" style="width:70px;vertical-align:middle"><span data-hv="${side}" style="display:inline-block;width:32px"></span>`;
     box.innerHTML = row("Right") + row("Left") + '<span class="lbl">pistol in</span><button data-g="Right">R</button><button data-g="Left">L</button><button id="handsSave">save hands</button>';
     handsUI = () => {
       const H = handsOf();
