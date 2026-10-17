@@ -63186,9 +63186,9 @@ void main() {
       controls.target.copy(c);
       cam.position.set(c.x + Math.sin(p.aimYaw + 0.9) * 0.6, c.y + 0.2, c.z + Math.cos(p.aimYaw + 0.9) * 0.6);
     };
-    const BATRUNS = [["now", "now (pistol jog legs + sword idle)"], ["rebase", "rebase (sword idle on the hips)"], ["plain", "plain (regular run, bat in hand)"], ["plainlegs", "plainlegs (regular legs + sword idle)"]];
+    const BATRUNS = [["now", "now"], ["rebase", "rebase"], ["plain", "plain"], ["plainlegs", "plainlegs"]];
     let camMode = "body";
-    const btn = (k, v, text, on) => `<button data-${k}="${v}" style="margin:2px;padding:3px 7px;border:1px solid #777;border-radius:5px;color:#fff;background:${on ? "#2a7fd4" : "#333"}">${text}</button>`;
+    const btn = (k, v, text, on) => `<button data-${k}="${v}" style="margin:1px;padding:1px 5px;font:11px system-ui;border:1px solid #666;border-radius:4px;color:#fff;background:${on ? "#2a7fd4" : "#333"}">${text}</button>`;
     const setCam = (c) => {
       camMode = c;
       if (c === "side") {
@@ -63208,7 +63208,7 @@ void main() {
       label();
     };
     const box = document.createElement("div");
-    box.style.cssText = "position:fixed;left:8px;top:8px;z-index:50;background:rgba(0,0,0,.65);color:#fff;font:13px system-ui;padding:8px 10px;border-radius:8px;line-height:1.5";
+    box.style.cssText = "position:fixed;left:6px;top:6px;z-index:50;background:rgba(0,0,0,.6);color:#fff;font:11px system-ui;padding:4px 6px;border-radius:7px;line-height:1.35;max-width:min(560px,92vw)";
     document.body.appendChild(box);
     let cur = "pistol", pist = "current";
     const P = Y2.pistol, own = [...P.children], alts = {};
@@ -63237,8 +63237,21 @@ void main() {
       for (const [key, w] of Object.entries(alts)) w.visible = key === k;
       label();
     };
+    let folded = false;
     const label = () => {
-      box.innerHTML = `<b>Inspect: Yola ${yolaN === 2 ? "3.0 (new)" : "2.0 (original)"}</b> \u2014 holding <b>${cur}</b><br>` + WEAPONS.map((w, i) => `<button data-w="${w}" style="margin:2px;padding:3px 7px;border:1px solid #777;border-radius:5px;color:#fff;background:${w === cur ? "#2a7fd4" : "#333"}">${i + 1} ${w}</button>`).join("") + `<br><button data-k="hands" style="margin:2px;padding:3px 7px;border:1px solid #777;border-radius:5px;color:#fff;background:#333">H hands</button> <button data-k="body" style="margin:2px;padding:3px 7px;border:1px solid #777;border-radius:5px;color:#fff;background:#333">B body</button> <a style="color:#8cf" href="?mode=calm&inspect=1&yola=${yolaN === 2 ? 1 : 2}">switch to Yola ${yolaN === 2 ? "2.0" : "3.0"}</a><br>pistol model (P): ` + PISTOLS.map((o) => `<button data-p="${o.key}" style="margin:2px;padding:3px 7px;border:1px solid #777;border-radius:5px;color:#fff;background:${o.key === pist ? "#2a7fd4" : "#333"}">${o.label}${o.file && !alts[o.key] ? " (loading)" : ""}</button>`).join("") + "<br>move: " + Object.keys(MOVES).map((m) => btn("m", m, m, m === move)).join("") + "<br>speed: " + [1, 0.5, 0.25].map((s) => btn("s", s, s + "x", s === speed && !paused2)).join("") + btn("s", "pause", "pause", paused2) + btn("s", "step", "step 1 frame", false) + "<br>camera: " + ["side", "left side", "front", "body", "hands", "game"].map((c) => btn("c", c, c === "game" ? "game camera" : c, c === camMode)).join("") + (cur === "bat" ? "<br>bat run: " + BATRUNS.map(([k, l]) => btn("r", k, l, Y2.batRun === k)).join("") : "") + '<br><span style="opacity:.8">drag: orbit \xB7 wheel: zoom \xB7 right-drag: pan</span>';
+      if (folded) {
+        box.innerHTML = btn("k", "unfold", "\u25B8 inspect panel (U)", false);
+        box.querySelector("[data-k=unfold]").onclick = () => {
+          folded = false;
+          label();
+        };
+        return;
+      }
+      box.innerHTML = `<b>Yola ${yolaN === 2 ? "3.0" : "2.0"}</b> \xB7 ${cur} ` + btn("k", "fold", "\u25BE hide (U)", false) + ` <a style="color:#8cf" href="?mode=calm&inspect=1&yola=${yolaN === 2 ? 1 : 2}">Yola ${yolaN === 2 ? "2.0" : "3.0"}</a><br>` + WEAPONS.map((w, i) => btn("w", w, `${i + 1} ${w}`, w === cur)).join("") + "<br>move: " + Object.keys(MOVES).map((m) => btn("m", m, m, m === move)).join("") + "<br>speed: " + [1, 0.5, 0.25].map((s) => btn("s", s, s + "x", s === speed && !paused2)).join("") + btn("s", "pause", "pause", paused2) + btn("s", "step", "step", false) + "<br>camera: " + ["side", "left side", "front", "body", "hands", "game"].map((c) => btn("c", c, c === "game" ? "game" : c, c === camMode)).join("") + (cur === "bat" ? "<br>bat run: " + BATRUNS.map(([k, l]) => btn("r", k, l, Y2.batRun === k)).join("") : "") + (cur === "pistol" ? "<br>pistol (P): " + PISTOLS.map((o) => btn("p", o.key, o.label + (o.file && !alts[o.key] ? " (loading)" : ""), o.key === pist)).join("") : "");
+      box.querySelector("[data-k=fold]").onclick = () => {
+        folded = true;
+        label();
+      };
       for (const b of box.querySelectorAll("button[data-m]")) b.onclick = () => {
         move = b.dataset.m;
         label();
@@ -63265,8 +63278,6 @@ void main() {
         setPistol(b.dataset.p);
       };
       for (const b of box.querySelectorAll("button[data-w]")) b.onclick = () => equip(b.dataset.w);
-      box.querySelector("[data-k=hands]").onclick = hands;
-      box.querySelector("[data-k=body]").onclick = body;
     };
     const equip = (w) => {
       cur = w;
@@ -63279,6 +63290,10 @@ void main() {
       if (i >= 0) equip(WEAPONS[i]);
       if (e.key === "h" || e.key === "H") hands();
       if (e.key === "b" || e.key === "B") body();
+      if (e.key === "u" || e.key === "U") {
+        folded = !folded;
+        label();
+      }
       if (e.key === "p" || e.key === "P") {
         if (cur !== "pistol") equip("pistol");
         setPistol(PISTOLS[(PISTOLS.findIndex((o) => o.key === pist) + 1) % PISTOLS.length].key);
