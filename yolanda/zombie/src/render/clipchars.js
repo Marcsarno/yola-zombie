@@ -641,6 +641,24 @@ export class YolaView extends ClipBody {
       S.act.time = S.t0 + Math.min(S.t * S.rate, S.len - 1e-3); S.act.setEffectiveWeight(scW);
       if (S.t >= len) { S.act.setEffectiveWeight(0); this.script = null; this.scriptDone = true; scW = 0; sact = null; }
     }
+    // the bat drawn from her back (setupBatBack): Sword_Enter on the upper body as she takes it out; an attack, a fall or
+    // another weapon cuts it, its pose fading out over 0.12 s
+    const DC = this.drawClip;
+    if (DC) {
+      if (s.equipped === 'bat' && this.prevEquip && this.prevEquip !== 'bat' && s.action !== 'down') this.draw = { t: 0, f: 1, k: (DC.frames - 1) / (DC.dur * 30), w: 0 };
+      this.prevEquip = s.equipped;
+      const D = this.draw;
+      if (D) {
+        D.t += dt; D.f = 1 + D.t * 30 * D.k;
+        const cut = s.action === 'swing' || s.action === 'down' || s.action === 'dodge' || s.equipped !== 'bat';
+        if (D.f >= DC.frames || cut) { this.drawFade = { w: D.w, f: Math.min(D.f, DC.frames) }; this.draw = null; }
+        else { D.w = smooth(clamp(D.t / 0.08, 0, 1)) * smooth(clamp((DC.frames - D.f) / (0.15 * 30 * D.k), 0, 1)); DC.act.time = DC.t0 + (D.f - 1) / 30 + ((this.drJit ^= 1) * 1e-6); DC.act.setEffectiveWeight(D.w * 8); }
+      }
+      if (!this.draw) {
+        const F = this.drawFade;
+        if (F && F.w > 0) { F.w = Math.max(0, F.w - dt / 0.12); DC.act.time = DC.t0 + (F.f - 1) / 30; DC.act.setEffectiveWeight(F.w * 8); } else DC.act.setEffectiveWeight(0);
+      }
+    }
     if (scW > 0) for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
     for (const [b, q] of this.restQ) b.quaternion.copy(q);
     mixerWritesAll(this.mixer); // (the mixer must rewrite every bone it drives, held values included)
@@ -971,6 +989,52 @@ export class YolaView extends ClipBody {
     this.up.sword ??= 0;
   }
 
+  // The bat on her back (2026-10-17, the user: "Sword Enter ... when we are carrying a melee weapon on our back"): carried
+  // and not in hand, it rides her upper back where Quaternius's Sword_Enter (UAL1) reaches for it; taking it out plays
+  // Sword_Enter on her upper body (legs keep walking), the bat leaving her back on the frame her hand comes closest to its
+  // handle (grab). An attack cuts the draw short. The back slot, set once here in her Spine2 bone's frame from her own
+  // build: the handle a hand behind and above her right shoulder, the barrel diagonally down across her back to her left
+  // hip (as a sword on the back; the first try, the bat as her fist holds it at the clip's furthest-back frame, stood
+  // straight up over her head). (?batdraw=0: off)
+  setupBatBack(enter) {
+    if (!this.batLib?.obj || !enter || new URLSearchParams(globalThis.location?.search || '').get('batdraw') === '0') return false;
+    const full = stripRoot(enter.clone(), hipsRest(this.model)), t0 = Math.min(...full.tracks.map((t) => t.times[0])), n = Math.round((full.duration - t0) * 30) + 1;
+    const up = subClip(full, (b) => !LOWER.test(b), 'bat_draw_upper'), a = this.mixer.clipAction(up); this.actions.bat_draw_upper = a; a.play(); a.setEffectiveWeight(0); a.timeScale = 0;
+    const acts = Object.values(this.actions), saved = acts.map((x) => [x, x.getEffectiveWeight(), x.time]);
+    const op = this.outer.position.clone(), ry = this.container.rotation.y;
+    this.outer.position.set(0, 0, 0); this.container.rotation.y = 0;
+    for (const x of acts) x.setEffectiveWeight(0);
+    // (measured on the whole clip: posed alone, the upper-body layer leaves the hips unwritten, NaN after mixerWritesAll)
+    const meas = this.mixer.clipAction(full); meas.play(); meas.timeScale = 0;
+    const pose = (f) => { for (const [b, q] of this.restQ) b.quaternion.copy(q); mixerWritesAll(this.mixer); meas.setEffectiveWeight(1); meas.time = t0 + (f - 1) / 30 + (f & 1) * 1e-6; this.mixer.update(0); this.outer.updateMatrixWorld(true); };
+    // the slot, on her at rest (she faces +Z: her back is -Z)
+    for (const [b, q] of this.restQ) b.quaternion.copy(q); this.outer.updateMatrixWorld(true);
+    const B = this.bones, k = this.H / 1.62, wp = (n) => B[n].getWorldPosition(new THREE.Vector3());
+    const grip = wp('RightArm').lerp(wp('RightShoulder'), 0.5).add(new THREE.Vector3(0, 0.1 * k, -0.15 * k)); // (the handle: behind and over the right shoulder)
+    const hip = wp('LeftUpLeg').add(new THREE.Vector3(0.04 * k, 0.12 * k, -0.17 * k)); // (the barrel's end: behind the left hip)
+    const w = this.batLib.w, size = (this.batLib.fit?.size ?? 100) / 100, dir = hip.clone().sub(grip).normalize();
+    const o = this.batLib.obj;
+    o.quaternion.setFromUnitVectors(new THREE.Vector3(...w.shaft_axis).normalize(), dir);
+    o.scale.setScalar(size); o.position.copy(grip).sub(new THREE.Vector3(...w.grip_primary).multiplyScalar(size).applyQuaternion(o.quaternion));
+    o.updateMatrixWorld(true);
+    this.batBack = new THREE.Matrix4().copy(B.Spine2.matrixWorld).invert().multiply(o.matrixWorld);
+    const gripS = B.Spine2.worldToLocal(grip.clone());
+    // the grab: the frame her right fist comes closest to the handle (in her chest's frame), frames 6-32
+    let grab = 20, best = 9;
+    for (let f = 6; f <= Math.min(32, n); f++) { pose(f); const d = B.Spine2.worldToLocal(wp('RightHandMiddle1')).distanceTo(gripS); if (d < best) { best = d; grab = f; } }
+    this.batGrabGap = best;
+    meas.stop(); this.mixer.uncacheAction(full);
+    for (const [x, w, t] of saved) { x.setEffectiveWeight(w); x.time = t; }
+    a.setEffectiveWeight(0); this.outer.position.copy(op); this.container.rotation.y = ry; o.visible = false;
+    this.drawClip = { act: a, t0, frames: n, grab, dur: 0.8 }; this.draw = null; this.prevEquip = null;
+    return grab;
+  }
+  placeBatBack() {
+    const o = this.batLib.obj; this.bones.Spine2.updateWorldMatrix(true, false);
+    _m4.copy(this.bones.Spine2.matrixWorld).multiply(this.batBack); _m4.decompose(o.position, o.quaternion, o.scale);
+    o.visible = this.outer.visible; o.updateMatrixWorld(true);
+  }
+
   // Pistol reload magazines. Frames of pistol_reload (Quaternius Pistol_Reload with the support hand placed on the gun;
   // measured on her: gun tips up 4-7, left hand at the hip pouch 13-15, at the grip 28-37). The empty one leaves the grip
   // at `drop` and falls to the floor; the loaded one is held by its base between her left thumb and index finger from
@@ -1037,8 +1101,10 @@ export class YolaView extends ClipBody {
     if (this.test?.obj) this.test.obj.visible = false;
     if (this.batLib?.obj) {
       const one = s.equipped === 'bat' && this.weaponShown !== 'fists' && this.weaponShown !== 'pistol' && this.weaponShown !== 'shotgun';
-      if (one) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; this.placeHeld(this.batLib); this.batTip.copy(this.heldTip); return; }
-      this.batLib.obj.visible = false;
+      const onBack = this.batBack && (this.draw ? this.draw.f < this.drawClip.grab : !one); // (drawing: on her back until her hand reaches it)
+      if (one && !onBack) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; this.placeHeld(this.batLib); this.batTip.copy(this.heldTip); return; }
+      if (onBack && (one || s.owned?.includes('bat'))) this.placeBatBack(); else this.batLib.obj.visible = false;
+      if (one) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; return; } // (empty-handed while she reaches for it)
     }
     const shown = this.weaponShown;
     this.pistol.visible = shown === 'pistol'; this.shotgun.visible = shown === 'shotgun'; this.melee.visible = shown === 'axe'; this.shell.visible = false;

@@ -11,6 +11,7 @@
 //     through the low part of the slash)
 //   the bat's own strike at a body on the floor (Sword_Heavy_D, its frames 10-34: overhead, into the floor)
 //   the dodge and the vault clips (played by clipchars.js OVERLAY_CLIPS)
+//   the bat on her back, drawn over her shoulder with UAL1 Sword_Enter (clipchars.js setupBatBack; an experiment, ?batdraw=0)
 import * as THREE from 'three';
 import { buildLibraryAttack } from './libattack.js';
 import { mixerWritesAll, OVERLAY_NAMES } from './clipchars.js';
@@ -94,6 +95,8 @@ export function setupNewMoves(yola, anims, hold) {
       GROUND_OWN.bat = S; made.push('bat ground');
     }
   }
+  // ---- the bat on her back, drawn with Sword_Enter (clipchars.js setupBatBack) ----
+  if (hold && by.ual1_Sword_Enter) { const g = yola.setupBatBack(by.ual1_Sword_Enter); if (g) made.push(`bat on the back (grab at frame ${g})`); }
   // ---- the fists' slide tackle ----
   if (by.ual_Slide_Start && by.ual_Slide_Exit) {
     const clip = joinClips(by.ual_Slide_Start, by.ual_Slide_Exit, 'ual_Slide_Tackle');

@@ -446,7 +446,7 @@ function runFrame(dt, doRender = true) {
   const a = p.action;
   yola.update(animDt, {
     x: ix, z: iz, vx: p.vx, vz: p.vz, aimYaw: iyaw, equipped: p.equipped, action: a.type, actionT: a.t,
-    swingT: a.type === 'swing' ? a.st : 0, combo: a.combo || 0, ground: !!a.ground, swingId: a.id, atk: a.type === 'swing' ? p.atk(a) : null, act: a, downFall: a.fall, downUp: a.up, recoil: p.recoil, recoilScale: tuning.pistolRecoil,
+    swingT: a.type === 'swing' ? a.st : 0, combo: a.combo || 0, ground: !!a.ground, swingId: a.id, atk: a.type === 'swing' ? p.atk(a) : null, act: a, owned: p.owned, downFall: a.fall, downUp: a.up, recoil: p.recoil, recoilScale: tuning.pistolRecoil,
     dead: p.dead, deathDir: p.deathDir || 0, hurtT: p.hurtT, hurtDirX: p.hurtDirX || 0, hurtDirZ: p.hurtDirZ || 0,
     reloadDur: p.reloadTime(), swapDur: tuning.swapTime,
   });
