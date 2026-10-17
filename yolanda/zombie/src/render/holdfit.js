@@ -83,6 +83,51 @@ export function twoHandLine(bones, toward, out, hold = 'Right', prev = null) {
   return out;
 }
 
+// ---- the other hand on the handle (2026-10-17, from the Blender hold check: the arena held its two-handed weapons in one
+// fist, the second hand never on the second grip; the axe's leg chop let one fist drift off the handle mid-slash) ----
+// The hand turned so its grip axis (pinky -> index knuckle) runs along the handle (whichever way round is nearer), then the
+// arm (render/ik.js, which keeps the hand's turn) brings its grip point (between the wrist and the middle knuckle) to
+// `point`. w: how much (0 = untouched). The caller closes the fingers.
+const _ha = new THREE.Vector3(), _hb = new THREE.Vector3(), _hd = new THREE.Vector3(), _hq = new THREE.Quaternion(), _hw = new THREE.Quaternion(), _hp = new THREE.Quaternion(), _hi = new THREE.Quaternion();
+export function handOnto(bones, side, point, dir, w, solveArm) {
+  if (!(w > 1e-3)) return false;
+  const H = bones[side + 'Hand'], I = bones[side + 'HandIndex1'], P = bones[side + 'HandPinky1'], M = bones[side + 'HandMiddle1'];
+  if (!H || !I || !P || !M) return false;
+  const a = I.getWorldPosition(_ha).sub(P.getWorldPosition(_hb)).normalize(), d = _hd.copy(dir).normalize();
+  if (a.dot(d) < 0) d.negate();
+  _hq.setFromUnitVectors(a, d); _hi.identity().slerp(_hq, w);
+  H.getWorldQuaternion(_hw); H.parent.getWorldQuaternion(_hp);
+  H.quaternion.copy(_hp.invert().multiply(_hi).multiply(_hw)); H.updateMatrixWorld(true);
+  const off = M.getWorldPosition(_ha).add(H.getWorldPosition(_hb)).multiplyScalar(0.5).sub(H.getWorldPosition(_hb)); // (grip point - wrist)
+  solveArm(bones[side + 'Arm'], bones[side + 'ForeArm'], H, _hb.copy(point).sub(off), w);
+  return true;
+}
+// A grip target beyond the straight arm: the collarbone swings the shoulder toward it first (at most 15 degrees, the way a
+// reach across the body rolls the shoulder forward), so the hand gets there instead of stopping short (shared: the game's
+// YolaView.reachClavicle, the Rig Lab)
+const _rc = [0, 0, 0, 0, 0, 0].map(() => new THREE.Vector3()), _rq = new THREE.Quaternion(), _rq2 = new THREE.Quaternion(), _rq3 = new THREE.Quaternion();
+export function reachShoulder(bones, side, target) {
+  const cl = bones[side + 'Shoulder'], up = bones[side + 'Arm'], lo = bones[side + 'ForeArm'], hand = bones[side + 'Hand'], mid = bones[side + 'HandMiddle1'];
+  if (!cl || !up || !lo || !hand || !mid) return;
+  const R = _rc, c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]);
+  const g = mid.getWorldPosition(R[4]).add(h).multiplyScalar(0.5);
+  const need = a.distanceTo(target) - (a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g)) * 0.97;
+  if (need <= 0) return;
+  const ca = R[1].sub(c), ct = R[5].copy(target).sub(c), axis = new THREE.Vector3().crossVectors(ca, ct); if (axis.lengthSq() < 1e-10) return;
+  _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180));
+  cl.getWorldQuaternion(_rq2); cl.parent.getWorldQuaternion(_rq3);
+  cl.quaternion.copy(_rq3.invert().multiply(_rq).multiply(_rq2)); cl.updateMatrixWorld(true);
+}
+// where the free hand goes on a held handle: the nearest point of the handle line (from `origin` along `dir`, between
+// lo and hi metres) to its grip point; returns the gap (m) and fills out
+export function handleSpot(bones, side, origin, dir, lo, hi, out) {
+  const H = bones[side + 'Hand'], M = bones[side + 'HandMiddle1']; if (!H || !M) return 9;
+  const g = H.getWorldPosition(_ha).add(M.getWorldPosition(_hb)).multiplyScalar(0.5);
+  const t = Math.min(hi, Math.max(lo, g.clone().sub(origin).dot(dir)));
+  out.copy(origin).addScaledVector(dir, t);
+  return out.distanceTo(g);
+}
+
 // ---- the pistol reload's loaded magazine (the user's props, assets/weapons/pistol_mag_*.glb) ----
 // a seated magazine in the pistol model's own frame (the props' pistol_seated_translation)
 export const MAG_SEAT = new THREE.Vector3(-0.008, -0.039, 0);

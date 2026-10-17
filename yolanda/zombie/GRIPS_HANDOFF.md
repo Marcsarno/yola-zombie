@@ -217,3 +217,11 @@ shots/blender_holds_*.png).
 - Sledgehammer and chainsaw: the arena holds them in ONE fist (the pick's hand); the left hand is never on the second grip
   (weapons.json grip_secondary). The Rig Lab now holds the arena's weapons exactly as the arena does (it ran them through
   both fists before).
+- FIXED (same day, the user: "fix both"): render/holdfit.js handOnto (the hand turned so its grip runs along the handle,
+  then the arm IK) + reachShoulder (the collarbone reach, now shared by the game and the Rig Lab). The arena's two-handed
+  weapons put the other hand on the data sheet's second grip (YolaView.placeHeld; the Rig Lab the same); the axe's free
+  fist is put back on the handle when it drifts off more than ~1 cm, unless the hands are more than ~45 cm apart
+  (YolaView.placeWeapons; the Rig Lab the same). Checked again in Blender (shots/blender_holds_fixed.png): chainsaw both
+  hands, axe leg chop both fists (0-1 mm), sledgehammer both in its idle and its attack's start; at the widest point of
+  its attack (Sword_Heavy_Combo frame 60, a one-handed sword swing that flings the free arm out) the left hand ends ~3 cm
+  short of the handle.

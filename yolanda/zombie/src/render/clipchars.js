@@ -11,7 +11,7 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT } from './holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
@@ -316,21 +316,7 @@ export class YolaView extends ClipBody {
 
   // A grip target beyond the straight arm: the clavicle swings the shoulder toward it first (at most 15 degrees, the
   // way a reach across the body rolls the shoulder forward), so the hand gets there instead of stopping short.
-  reachClavicle(side, target) {
-    const cl = this.bones[side + 'Shoulder'], up = this.bones[side + 'Arm'], lo = this.bones[side + 'ForeArm'], hand = this.bones[side + 'Hand'];
-    if (!cl) return;
-    const R = (this._rc ||= [0, 0, 0, 0, 0, 0].map(() => new THREE.Vector3())); // (own scratch: placeWeapons holds the bat direction in _v3)
-    const c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]), g = this.grip(side, R[4]);
-    const len = a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g); // shoulder -> grip, arm straight
-    const need = a.distanceTo(target) - len * 0.97;
-    if (need <= 0) return;
-    const ca = R[1].sub(c), ct = R[5].copy(target).sub(c);
-    const axis = new THREE.Vector3().crossVectors(ca, ct); if (axis.lengthSq() < 1e-10) return;
-    const ang = Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180);
-    _q.setFromAxisAngle(axis.normalize(), ang);
-    cl.getWorldQuaternion(_q2); cl.parent.getWorldQuaternion(_q3);
-    cl.quaternion.copy(_q3.invert().multiply(_q).multiply(_q2)); cl.updateMatrixWorld(true);
-  }
+  reachClavicle(side, target) { reachShoulder(this.bones, side, target); } // (render/holdfit.js, shared with the Rig Lab)
 
   // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
   // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the
@@ -965,6 +951,12 @@ export class YolaView extends ClipBody {
     // fit for this weapon on this Yola from assets/hold/weapon_fit.json)
     placeOneHanded(this.bones, T.hand, o, T.w, T.fit, T);
     const w = T.w;
+    // a two-handed weapon: the other hand on its second grip (the data sheet's grip_secondary; render/holdfit.js handOnto)
+    if (T.two && w.grip_secondary) {
+      const other = T.hand === 'Left' ? 'Right' : 'Left'; o.updateMatrixWorld(true);
+      const pt = o.localToWorld(_v6.set(...w.grip_secondary)), dir = _v7.set(...w.shaft_axis).transformDirection(o.matrixWorld);
+      this.reachClavicle(other, pt); if (handOnto(this.bones, other, pt, dir, 1, solveArm)) this.closeFist(other, 1);
+    }
     o.visible = true; o.updateMatrixWorld(true);
     (this.heldGrip ||= new THREE.Vector3()).set(...w.grip_primary).applyMatrix4(o.matrixWorld);
     (this.heldTip ||= new THREE.Vector3()).set(...(w.impact_point || w.tip)).applyMatrix4(o.matrixWorld);
@@ -972,6 +964,8 @@ export class YolaView extends ClipBody {
   }
   // The bat as a one-handed weapon (2026-10-16: Quaternius's Sword Regular Combo, split into its strikes; the user's pick
   // over the reference-video combo). hold: as placeHeld; idle: the Sword Idle clip, its upper body the bat's stance.
+  // her closed fist (the bat idle's grip, setHandPoses) on one hand, by w
+  closeFist(side, w) { for (const [b, q, sd] of this.fist || []) if (sd === side) b.quaternion.slerp(q, Math.min(1, w)); this.bones[side + 'Hand']?.updateMatrixWorld(true); }
   setOneHandedBat(hold, idle) {
     this.batLib = hold;
     if (idle && !this.actions.sword_idle_upper) {
@@ -1191,6 +1185,15 @@ export class YolaView extends ClipBody {
       M.quaternion.copy(this.bladeQ);
       if (!this.batMode && this.axeFit) applyFit(M, _v5.copy(M.position), this.bladeQ, this.axeFit, AXE_AT); // (the user's axe fit)
       M.updateMatrixWorld(true);
+      // the free fist kept on the handle (2026-10-17, the Blender hold check: in the leg chop's slash her hands part and the
+      // handle ran under one wrist): when it drifts more than ~1 cm off, it is put back on at its own spot along the handle,
+      // unless the hands have really let go (more than ~45 cm apart: a one-handed follow-through)
+      if (!this.batMode) {
+        const off = (this.swingAct ? this.swingHand : 'Right') === 'Right' ? 'Left' : 'Right', hd = _v5.set(0, 0, 1).applyQuaternion(M.quaternion);
+        const gap = handleSpot(this.bones, off, M.position, hd, -0.12, 0.5, _v6), span = this._l2?.span ?? 0;
+        const wOn = smooth(clamp((gap - 0.012) / 0.04, 0, 1)) * (1 - smooth(clamp((span - 0.45) / 0.15, 0, 1)));
+        if (wOn > 0.01) { this.reachClavicle(off, _v6); handOnto(this.bones, off, _v6, hd, wOn, solveArm); this.closeFist(off, wOn); }
+      }
     }
   }
 

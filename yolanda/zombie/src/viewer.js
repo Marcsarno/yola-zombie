@@ -8,7 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, makeKnife, 
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT } from './render/holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -776,6 +776,17 @@ function updatePistolFitUI() {
   pfitBox.style.top = top + 'px'; pfitBox.style.maxHeight = `calc(100vh - ${top + 8}px)`; pfitBox.style.overflowY = 'auto';
   if (ref !== pfitRefWas) { pfitRefWas = ref; pfitSync(); } // (the reference changes with the clip: X Bot / mannequin)
 }
+// the other hand onto a handle as the game puts it (render/holdfit.js handOnto; the game's YolaView.placeHeld / placeWeapons),
+// its fingers closed into her fist by w; every bone it turns recorded (postRot), so the next redraw undoes it
+function otherHandOn(a, side, point, dir, w) {
+  const chain = Object.entries(a.bones).filter(([n]) => n.startsWith(side) && /(Shoulder|Arm|ForeArm|Hand)/.test(n)).map(([, b]) => b), before = chain.map((b) => b.quaternion.clone());
+  if (w >= 0.5) reachShoulder(a.bones, side, point);
+  if (!handOnto(a.bones, side, point, dir, w, ikArm)) return;
+  const after = chain.map((b) => b.quaternion.clone());
+  chain.forEach((b, i) => { b.quaternion.copy(before[i]); if (!after[i].equals(before[i])) postRot(a, b, (cur) => cur.copy(after[i])); });
+  const P = fistPose(a); if (P) for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, Math.min(1, w)));
+  a.root.updateMatrixWorld(true);
+}
 function placeHeldOn(a, o) {
   const w = weaponOf(), k = a.height / 1.62; o.visible = true; o.scale.setScalar(k);
   if (w === 'pistol' && $('pistolFist')?.checked && pistolInFist(a, o)) return;
@@ -791,7 +802,13 @@ function placeHeldOn(a, o) {
   // hand (else the data sheet's primary hand), turned by its roll, slid by its slide, flipped (2026-10-17: the Rig Lab ran the
   // two-handed ones through both fists, which the game never does)
   const LD = LIB_WEAPONS[w] && WDEFS[w];
-  if (LD) { const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' }; if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) return; }
+  if (LD) {
+    const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' };
+    if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
+      if (LD.hands === 'two' && LD.grip_secondary) { o.updateMatrixWorld(true); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), new THREE.Vector3(...LD.shaft_axis).transformDirection(o.matrixWorld), 1); }
+      return;
+    }
+  }
   if (LD && LD.hands === 'one' && placeOneHanded(a.bones, a === main ? handsOf().gunHand : 'Right', o, LD, fitW(w, a), {}, k)) return;
   if (LD && LD.hands === 'two') {
     const B = a.bones, ax = (sd) => B[sd + 'HandIndex1'].getWorldPosition(new THREE.Vector3()).sub(B[sd + 'HandPinky1'].getWorldPosition(_v3)).normalize();
@@ -814,6 +831,11 @@ function placeHeldOn(a, o) {
       const fwd = a.root.getWorldDirection(new THREE.Vector3()); fwd.addScaledVector(L2.d, -fwd.dot(L2.d)).normalize();
       const x = fwd.negate(), y = new THREE.Vector3().crossVectors(L2.d, x);
       applyFit(o, L2.c, new THREE.Quaternion().setFromRotationMatrix(_m4.makeBasis(x, y, L2.d)), fitW('axe', a), new THREE.Vector3(), k, k);
+      // (as the game: the free fist kept on the handle when it drifts off, unless the hands have let go)
+      o.updateMatrixWorld(true); const hd = new THREE.Vector3(0, 0, 1).applyQuaternion(o.quaternion), pt = new THREE.Vector3();
+      const pt2 = new THREE.Vector3(), gL = handleSpot(B, 'Left', o.position, hd, -0.12, 0.5, pt), gR = handleSpot(B, 'Right', o.position, hd, -0.12, 0.5, pt2);
+      const off = gR > gL ? 'Right' : 'Left', gap = Math.max(gL, gR), wOn = smooth01((gap - 0.012) / 0.04) * (1 - smooth01((L2.span - 0.45) / 0.15)); // (the Rig Lab's own holding hand: whichever stays on)
+      if (wOn > 0.01) otherHandOn(a, off, off === 'Right' ? pt2 : pt, hd, wOn);
       return;
     }
   }
