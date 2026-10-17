@@ -101,6 +101,15 @@ user dropped a stray -1 from the browser).
 - **Right shoulder tucks (pistol_walk_back f27, the user's screenshot):** collarbone matches X Bot (1.5 deg); her
   upper arm swings 10 deg further across the chest (35 vs 25) with a near-straight elbow (12 vs 31 deg bend). Suspect:
   the build's contacts.hands two-hand IK (pistol_ clips). Test before fixing: re-bake pistol_walk_back without it.
+- **Shoulder tuck SOLVED in a test (2026-10-16):** contacts.hands ('arm' mode, as built) scales the hands' goal by her
+  longer arms -> past her reach -> gun arm locked at 99.5% (elbow 11.6 vs X Bot 30.6 in idle/walk/walk_back). Test mode
+  YOLA2_HANDS=gunhand (the gun hand stays where her arm puts it, the support hand comes to it) re-baked all 11 pistol
+  clips (assets/test_clips/pistol_gunhand.glb, local; Rig Lab &extra=assets/test_clips/pistol_gunhand.glb, clips
+  *_REBAKE_gunhand): gun-arm elbow = X Bot's exactly in all 6 referenced clips, across-chest within 1-3 deg, hands as
+  close as now. Sheets: shots/sheet_pg_<clip>.png. NOT in the game yet. To put it in: re-bake those 11 actions into
+  yola2_work.blend (keep its weight work), export, then re-check the pistol fit (the gun hand's pose changed).
+  Open: the composite strafes (left, run left, run right) measure hands ~0.6 shoulder widths apart (look OK in pictures);
+  the reload swings the arm out more than X Bot's (-21 vs -11 deg), before and after.
 - **The 4-strike bat combo** (Sword Regular Combo split) "didn't feel as great as hoped": ask what felt off.
 
 ## Next steps (in order, each one shown to the user before the next)
