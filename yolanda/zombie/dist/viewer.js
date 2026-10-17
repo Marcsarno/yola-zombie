@@ -38485,6 +38485,15 @@ void main() {
     calibrate() {
       const a = this.actor;
       if (!this.obj || !a.action) return;
+      const hold = a === main && mainCache[S.char]?.gltf.animations.find((c) => c.name === "sg_reload");
+      if (hold && a.clip !== hold) {
+        withPose(a, hold, 1, () => this.calibrateHere());
+        return;
+      }
+      this.calibrateHere();
+    }
+    calibrateHere() {
+      const a = this.actor;
       a.grip("Right", _v2);
       a.grip("Left", _v22);
       const x = _v22.clone().sub(_v2).normalize(), z = new Vector3().crossVectors(x, UP).normalize(), y = new Vector3().crossVectors(z, x);
@@ -38497,12 +38506,9 @@ void main() {
       if (!this.obj || !this.has) return;
       const a = this.actor;
       a.bones.RightHand.getWorldQuaternion(_q5);
-      const adj = new Quaternion().setFromEuler(new Euler(fit.rx * Math.PI / 180, fit.ry * Math.PI / 180, fit.rz * Math.PI / 180, "XYZ"));
-      const gq = _q5.multiply(this.socket).multiply(adj);
+      const gq = _q5.multiply(this.socket);
       a.grip("Right", _v2);
-      this.obj.quaternion.copy(gq);
-      this.obj.position.copy(_v2).add(_v22.set(fit.ox, fit.oy, fit.oz).multiplyScalar(k).applyQuaternion(gq));
-      this.obj.scale.setScalar(fit.s * k);
+      applyFit(this.obj, _v2, gq, fitW("short", a), new Vector3(), k, k);
       this.obj.updateMatrixWorld(true);
     }
   };
@@ -39048,6 +39054,28 @@ void main() {
     fistCache.set(a.obj.uuid, pose);
     return pose;
   }
+  function withPose(a, clip, f, fn) {
+    const saved = [];
+    a.obj.traverse((o) => {
+      if (o.isBone) saved.push([o, o.quaternion.clone(), o.position.clone()]);
+    });
+    const mx = new AnimationMixer(a.obj), ac = mx.clipAction(clip);
+    ac.play();
+    ac.time = clipT0(clip) + (f - 1) / fpsOf(clip);
+    mx.update(0);
+    a.root.updateMatrixWorld(true);
+    try {
+      fn();
+    } finally {
+      ac.stop();
+      mx.uncacheRoot(a.obj);
+      for (const [b, q, p] of saved) {
+        b.quaternion.copy(q);
+        b.position.copy(p);
+      }
+      a.root.updateMatrixWorld(true);
+    }
+  }
   var HAND0 = { Right: 0, Left: 0, gunHand: "Right" };
   var HANDS = {};
   var handKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
@@ -39139,7 +39167,7 @@ void main() {
     return FITS[_a5 = fitKey(a)] || (FITS[_a5] = { ...PFIT0 });
   };
   var WFITS = {};
-  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", axe: "Axe" };
+  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", axe: "Axe", short: "Shotgun" };
   var fitW = (w, a) => {
     var _a5, _b5;
     return w === "pistol" ? fitOf(a) : (_a5 = WFITS[w] || (WFITS[w] = {}))[_b5 = fitKey(a)] || (_a5[_b5] = { ...PFIT0 });
@@ -39173,7 +39201,7 @@ void main() {
   ];
   var pfitWho = "main";
   var pfitSync = null;
-  var FIT_LABELS = { axe: ["size %", "slide along the handle (mm)", "move sideways (mm)", "move toward the blade side (mm)", "tilt (deg)", "turn (deg)", "roll the blade (deg)"], bat: ["size %", "slide along the bat (mm)", "move toward wrist / fingertips (mm)", "move toward knuckles / palm (mm)", "tip toward wrist / fingertips (deg)", "tip toward knuckles / palm (deg)", "roll the bat (deg)"] };
+  var FIT_LABELS = { short: ["size %", "move sideways (mm)", "move up / down (mm)", "slide along the barrel (mm)", "roll (deg)", "turn muzzle left / right (deg)", "tip muzzle up / down (deg)"], axe: ["size %", "slide along the handle (mm)", "move sideways (mm)", "move toward the blade side (mm)", "tilt (deg)", "turn (deg)", "roll the blade (deg)"], bat: ["size %", "slide along the bat (mm)", "move toward wrist / fingertips (mm)", "move toward knuckles / palm (mm)", "tip toward wrist / fingertips (deg)", "tip toward knuckles / palm (deg)", "roll the bat (deg)"] };
   function buildPistolFit() {
     const box = document.createElement("div");
     box.id = "pfit";

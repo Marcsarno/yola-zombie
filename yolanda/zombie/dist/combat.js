@@ -50261,6 +50261,7 @@ void main() {
         this.grip("Right", _v4);
         G2.position.copy(_v4);
         G2.quaternion.copy(_q5);
+        if (this.shotgunFit) applyFit(G2, _v4, _q5, this.shotgunFit, AXE_AT);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -65191,7 +65192,9 @@ void main() {
     if (params.has("inspect")) window.game.inspect = startInspect(window.game);
   }
   function setupBat(anims, fits = {}) {
-    yola.axeFit = fits.axe?.[YOLA_MODEL === "2" ? "yola2" : "yola"] || null;
+    const who = YOLA_MODEL === "2" ? "yola2" : "yola";
+    yola.axeFit = fits.axe?.[who] || null;
+    yola.shotgunFit = fits.short?.[who] || null;
     const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = anims.find((c) => c.name === "ual1_Sword_Idle");
     if (!combo2) return;
     const h = new Group(), m = makeBat(0.84);
