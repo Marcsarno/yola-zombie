@@ -38190,6 +38190,7 @@ void main() {
     applyFit(o, c, q0, fit2, new Vector3(...def.grip_primary), 1, k);
     return true;
   }
+  var HOLD_TUNE = { axeAxis: 1 };
   var F2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var _cr = new Vector3();
   var _ar = new Vector3();
@@ -38209,7 +38210,7 @@ void main() {
     out.d.normalize();
     const agree = ar.dot(F2.a), ax = _ax.copy(ar).add(F2.a).normalize();
     if (ax.dot(out.d) < 0) ax.negate();
-    out.d.lerp(ax, 0.7 * sm(0.5, 0.85, agree) * sm(0.6, 0.8, ax.dot(out.d))).normalize();
+    out.d.lerp(ax, HOLD_TUNE.axeAxis * sm(0.5, 0.85, agree) * sm(0.6, 0.8, ax.dot(out.d))).normalize();
     if (out.d.dot(_b4.copy(toward).addScaledVector(prev || toward, 2)) < 0) out.d.negate();
     const ref2 = prev || toward;
     const w = sm(0.15, 0.3, out.d.dot(ref2)) * (1 - sm(0.36, 0.5, out.span));
@@ -39831,7 +39832,7 @@ void main() {
       controls.update();
       renderer.render(scene, camera);
     });
-    window.__lab = { view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
+    window.__lab = { HOLD_TUNE, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
       Object.assign(shellFit, o);
       for (const r of $("fit2").children) r._set(shellFit[r.dataset.k]);
       refresh();
