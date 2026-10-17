@@ -184,6 +184,7 @@ async function load() {
 function setupBat(anims, fits = {}) {
   const who = YOLA_MODEL === '2' ? 'yola2' : 'yola';
   yola.axeFit = fits.axe?.[who] || null; yola.shotgunFit = fits.short?.[who] || null; // (the axe's and shotgun's fits, same Rig Lab file)
+  fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {}); // (the Rig Lab Hands settings)
   const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = anims.find((c) => c.name === 'ual1_Sword_Idle');
   if (!combo) return;
   const h = new THREE.Group(), m = makeBat(0.84);

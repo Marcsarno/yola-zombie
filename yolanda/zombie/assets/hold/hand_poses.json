@@ -1,0 +1,3 @@
+{
+  "note": "Yola's hands per clip, set by the user in the Rig Lab Hands controls ('save hands' writes shots/hand_poses.json; copy it here). Keys '<character>:<clip>' (yola2 = Yola 3.0): Right / Left from 0 (the clip's own fingers) to 1 (her closed fist, her bat_idle grip); gunHand = which hand holds the pistol (Rig Lab only). The game (render/clipchars.js handPoses) blends the playing clips' settings by weight. Empty = every clip keeps its own fingers."
+}

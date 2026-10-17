@@ -595,6 +595,7 @@ export class YolaView extends ClipBody {
     for (const [b, q] of this.restQ) b.quaternion.copy(q);
     mixerWritesAll(this.mixer); // (the mixer must rewrite every bone it drives, held values included)
     this.mixer.update(dt);
+    this.handPoses();
     this.container.updateMatrixWorld(true);
 
     // ---- corrections after the mixer ----
@@ -617,6 +618,43 @@ export class YolaView extends ClipBody {
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.placeWeapons(s, dt); this.placeMags(dt);
+  }
+
+  // HANDS (the user's Rig Lab Hands controls, assets/hold/hand_poses.json "<yola>:<clip>": { Right, Left } from 0 = the
+  // clip's own fingers to 1 = her closed fist, her bat_idle frame 1 grip, as viewer.js handPose): each hand's curl is the
+  // blend of the playing clips' settings, by their weights (only clips that carry finger keys count: a legs-only layer has
+  // none). Nothing saved for a clip = 0.
+  setHandPoses(json, who) {
+    this.handSet = {};
+    for (const [k, v] of Object.entries(json || {})) if (k.startsWith(who + ':') && typeof v === 'object') this.handSet[k.slice(who.length + 1)] = v;
+    if (!Object.keys(this.handSet).length) { this.handSet = null; return; }
+    const bi = this.act('bat_idle_upper')?.getClip(), FING = /Hand(Thumb|Index|Middle|Ring|Pinky)\d$/;
+    this.fist = [];
+    for (const t of bi?.tracks || []) {
+      const bn = t.name.split('.')[0], b = Object.values(this.bones).find((x) => x.name === bn);
+      if (!b || !FING.test(bn.replace(/^mixamorig:?/, '')) || !/quaternion$/.test(t.name)) continue;
+      const v = t.createInterpolant(new Float32Array(4)).evaluate(bi.tracks[0].times[0]);
+      this.fist.push([b, new THREE.Quaternion(v[0], v[1], v[2], v[3]), /Right/.test(bn) ? 'Right' : 'Left']);
+    }
+    // each action's source clip (for its setting) and whether it moves the fingers
+    const BASE = { shotgun_hold_upper: 'sg_reload', shotgun_reload_upper: 'sg_reload', pistol_reload_upper: 'pistol_reload', bat_idle_upper: 'bat_idle',
+      fists_idle_upper: 'tripo_idle', sword_idle_upper: 'ual1_Sword_Idle', sword_idle_rhand: 'ual1_Sword_Idle', tripo_idle_lower: null };
+    this.handActs = [];
+    for (const [n, a] of Object.entries(this.actions)) {
+      if (!a.getClip().tracks.some((t) => FING.test(t.name.split('.')[0].replace(/^mixamorig:?/, '')))) continue;
+      const base = n in BASE ? BASE[n] : n.endsWith('_u') ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, '');
+      if (base) this.handActs.push([a, base]);
+    }
+  }
+  handPoses() {
+    if (!this.handSet) return;
+    const k = { Right: 0, Left: 0 }; let W = 0;
+    for (const [a, base] of this.handActs) {
+      const w = a.getEffectiveWeight(); if (w <= 1e-3) continue;
+      const h = this.handSet[base]; W += w; if (h) { k.Right += w * (h.Right || 0); k.Left += w * (h.Left || 0); }
+    }
+    if (W <= 1e-3) return;
+    for (const [b, q, side] of this.fist) { const c = k[side] / W; if (c > 1e-3) b.quaternion.slerp(q, Math.min(1, c)); }
   }
 
   // Foot lock (melee clips with planted-foot data: clipdata cL/cR, measured on her posed shoes in Blender). A planted
