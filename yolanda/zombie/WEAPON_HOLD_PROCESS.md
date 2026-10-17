@@ -345,3 +345,50 @@ only angles where her body or the gun hides the support hand; "matches" without 
    left (the support-hand side), below, above, the user's usual 3/4; add any angle that shows what another hides.
    Frames: contact start, middle, end, and the worst one, worst first.
 4. Look for the problem. Say exactly what was checked and what was not.
+
+## 17. Rigging and retargeting: what works, what not to do (2026-10-16/17, learned with the user)
+
+**The way to work**
+1. One viewer: the Rig Lab (viewer.html), Yola beside the clip's own source rig (Mixamo X Bot or the Quaternius
+   mannequin), skeleton and finger bones on. New review features go INTO the Rig Lab; no new viewers or test pages.
+   The game is only for confirming the game matches the Rig Lab.
+2. Watch the source first and trust your eyes over a clip's name: our "pistol reload" was cut from a walking long-gun
+   reload (the user: "it's definitely a rifle reload"). The real one came from Quaternius UAL1 Pistol_Reload.
+3. Line the reference up: clips cut from the middle of a source need their offset (REF_OFFSET, e.g. her old reload =
+   X Bot frames 38-99); hips pinned to each rig's own rest, not frame 1 (a mid-walk cut stood a step forward).
+4. Check contacts per section 16: describe the reference contact, measure in the contacted thing's frame (3 axes),
+   worst frame first, close-ups from 4+ angles including her support side and below. Say what was not checked.
+5. Test bakes before the game: bake into assets/test_clips (tools/anim/yola2_build.py with YOLA2_ONLY / test env
+   switches, tools/anim/test_export_clips.py), view with viewer.html?char=yola2&extra=<glb> (named *_REBAKE_*), and
+   only after the user approves swap the action into yola2_work.blend (back it up first), export, check by hash that
+   only that clip changed, restore side files that changed by float noise only.
+6. Never fix toward a self-measured number (round 19). Fix the cause, then show it against the reference.
+
+**What the retarget does and where it goes wrong** (blender/retarget.py: each of her bones points along the source
+bone's own axis)
+- If a rig's bone axis is not its real limb line, the error lands on her: X Bot's Neck / Head axes sit 16.9 / 25.8 deg
+  off his neck line -> her head ~26 deg back, chin up, in every Mixamo clip; her own Hips / Spine2 / Hands axes are
+  4.1 / 1.6 / ~4 deg off -> pelvis tucked ~4 deg. Check axis-vs-line on BOTH rigs before trusting a retarget. (Rig Lab
+  "posture fix (preview)" shows the cure; not baked yet.)
+- Different proportions break hand placement: scaling the hands' goal by arm length put the gun past her reach (arms
+  ~20% longer), so her gun arm locked straight across her chest (the user's "shoulder tucks in"). Do instead: the gun
+  hand stays where her own arm puts it, the support hand comes to it (contacts 'gunhand'); for two-hand contacts like a
+  reload, place the support hand where the source's is in the gun hand's own frame, scaled by hand size ('support').
+- Fingers are the clip's own: Mixamo / Quaternius hands are relaxed or open. Nothing closes them on a weapon unless we
+  do it (Rig Lab Hands controls: open / support / closed per hand, her fist from her bat_idle).
+- Composite clips (legs of one clip, upper body of another) need the upper layer re-based onto the hips, or the torso
+  hunches (the bat run). The regular full run with the arm / wrist partly held toward the stance looked best.
+
+**Props on a rig**
+- Use the prop's own markers (the magazines' pistol_seated_translation / HandAttach): they were made to fit.
+- A hand holds small things between thumb and index finger, not at the palm centre (a palm-attached magazine floated
+  10 cm ahead of her hand).
+
+**Viewer / engine traps (cost hours)**
+- three.js AnimationMixer only rewrites a bone whose animated value changed: anything you add on top on a held frame
+  stacks. Record and undo (viewer.js postRot / undoPost).
+- The X Bot FBX nests a same-named copy inside each bone: rotate the outer, animated one.
+- The Quaternius rig is Z-up: never zero "z" on its hips.
+- Hidden or background tabs pause requestAnimationFrame: step the game yourself and stop any page loop while capturing.
+- Holding a character in place by putting her back each step needs fixed steps (uneven steps = fake 9.5 cm jitter).
+- dt = 0 (a paused game) divided by 0 made the hair sway NaN forever: guard zero steps.
