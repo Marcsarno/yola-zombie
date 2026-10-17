@@ -38325,7 +38325,8 @@ void main() {
     sprinter: { label: "Zombie sprinter (big lady)", file: "assets/zombie-sprinter.glb", height: 2, ref: "zombie_" },
     guard: { label: "Zombie big guard", file: "assets/zombie-guard.glb", height: 2.05, ref: "zombie_" }
   };
-  var UAL_FILES = { ual_: "assets/source/ual/UAL2_Standard.glb", ual1_: "assets/source/ual/UAL1_Standard.glb" };
+  var UAL_FILES = { ual_: "assets/source/ual/UAL2_Full.glb", ual1_: "assets/source/ual/UAL1_Full.glb" };
+  var UAL_FEMALE = "assets/source/ual/Mannequin_F.glb";
   var UE_MAP = { pelvis: "Hips", spine_01: "Spine", spine_02: "Spine1", spine_03: "Spine2", neck_01: "Neck", Head: "Head" };
   for (const [s, S2] of [["l", "Left"], ["r", "Right"]]) {
     Object.assign(UE_MAP, {
@@ -38402,10 +38403,11 @@ void main() {
     for (const t of clip.tracks) {
       if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
       if (!t.__orig) t.__orig = t.values.slice();
-      const v = t.values, o = t.__orig, r = a?.restPos?.[t.name.split(".")[0].replace(/^mixamorig:?/, "")], rx = r ? r.x : o[0], rz = r ? r.z : o[2];
+      const bn = t.name.split(".")[0], k = /^(pelvis|root)$/.test(bn) ? 1 : 2;
+      const v = t.values, o = t.__orig, r = a?.restPos?.[bn.replace(/^mixamorig:?/, "")], rx = r ? r.x : o[0], rk = r ? k === 1 ? r.y : r.z : o[k];
       for (let i = 0; i < v.length; i += 3) {
         v[i] = on ? rx : o[i];
-        v[i + 2] = on ? rz : o[i + 2];
+        v[i + k] = on ? rk : o[i + k];
       }
     }
   }
@@ -38592,17 +38594,19 @@ void main() {
   var refX;
   var refGunX;
   var ualCache = {};
-  function ualRef(file) {
-    if (!ualCache[file]) ualCache[file] = loadG(file).then((g) => {
-      g.scene.traverse((o) => {
+  function ualRef(file, female = $("femref")?.checked) {
+    const key = file + (female ? "|F" : "");
+    if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), female ? loadG(UAL_FEMALE) : null]).then(([g, f]) => {
+      const body = f ? f.scene : g.scene;
+      body.traverse((o) => {
         if (o.isMesh) o.frustumCulled = false;
       });
-      const actor = new Actor(g.scene, 1.62);
+      const actor = new Actor(body, 1.62);
       actor.root.visible = false;
       scene.add(actor.root, actor.helper);
       return { actor, clips: g.animations };
     }).catch(() => null);
-    return ualCache[file];
+    return ualCache[key];
   }
   function useRef(a) {
     if (ref && ref !== a) {
@@ -38662,6 +38666,7 @@ void main() {
       for (const f of [...CHARS[key].extra || [], ...extraQ]) {
         try {
           const c = await loadG(f);
+          if (extraQ.includes(f)) for (const a of c.animations) a.userData = { ...a.userData, test: f.split("/").pop() };
           g.animations.push(...c.animations);
         } catch {
         }
@@ -39495,6 +39500,7 @@ void main() {
   };
   var EVERYONE = { "Everyone: hit, knockdown, death": ["hit_body", "yola_knockdown", "yola_getup", "death_fall", "death_defeat"], "Everyone: scripted (the opening)": ["t_greet_01", "t_greet_04"] };
   function fillClips() {
+    var _a5;
     const sel = $("clip"), keep = sel.value, anims = mainCache[S.char].gltf.animations, byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
     sel.innerHTML = "";
     const group = (label, list) => {
@@ -39509,6 +39515,9 @@ void main() {
       sel.appendChild(g);
     };
     group("TEST RE-BAKES (not in the game)", anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
+    const tests = {};
+    for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a5 = c.userData.test] || (tests[_a5] = [])).push(c.name);
+    for (const [f, list] of Object.entries(tests)) group(`TEST: ${f} (not in the game)`, list.sort());
     const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
     for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === "None" ? "Fists / none" : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
     for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
@@ -39661,6 +39670,7 @@ void main() {
       layout();
       refresh();
     };
+    $("femref").onchange = () => setClip($("clip").value);
     $("marks").onchange = refresh;
     $("posture").onchange = refresh;
     $("mags").onchange = refresh;
