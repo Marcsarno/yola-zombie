@@ -107,8 +107,11 @@ def bake(src, tgt, name):
     act = retarget(src, tgt, name); act.use_fake_user = True
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     mesh = next((c for c in tgt.children if c.type == 'MESH'), None)
-    if os.environ.get('YOLA2_HANDS') == 'support':  # (test: the support hand placed in the gun hand's frame, any clip)
-        contacts.support(src, tgt, act, f0, f1, CLOG, off=float(os.environ.get('YOLA2_SUPPORT_OFF', 2.2)))
+    if name == 'sg_reload' and 'YOLA2_HANDS' not in os.environ:  # (the shotgun: the support hand where X Bot's is on the gun,
+        # in the gun hand's frame; on the pump at ~2.9 hand-lengths, eased off between 3.2 and 4.5 for the shell fetch)
+        contacts.support(src, tgt, act, f0, f1, CLOG, on=3.2, off=4.5)
+    elif os.environ.get('YOLA2_HANDS') == 'support':  # (test: the support hand placed in the gun hand's frame, any clip)
+        contacts.support(src, tgt, act, f0, f1, CLOG, on=float(os.environ.get('YOLA2_SUPPORT_ON', 1.2)), off=float(os.environ.get('YOLA2_SUPPORT_OFF', 2.2)))
     elif name in COMPOSITE and not os.environ.get('YOLA2_NO_HANDS') and 'YOLA2_HANDS' not in os.environ:
         contacts.support_rel(tgt, act, f0, f1, grip_ref(), CLOG)  # (built from several clips: X Bot's pistol_idle grip)
     elif HOLD.search(name) and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts)
@@ -138,6 +141,9 @@ XBOT = {  # game clip -> X Bot source (matched to the first Yola's clips by moti
     'pistol_walk': 'yola_pistol_walk', 'pistol_walk_back': 'yola_pistol_walk_back', 'reload_rifle_stand': 'yola_reload_rifle_stand',
     'rifle_aim_idle': 'yola_rifle_aim_idle', 'yola_knockdown': 'zombie_knockdown', 'yola_getup': 'zombie_standup_stomach',
     'melee_horizontal': 'yola_melee_horizontal',
+    # the shotgun: straight from X Bot's rifle reload since 2026-10-17 (it was carried from the first Yola with a hand-made
+    # 52 deg spine twist: her chest 51 deg off X Bot's, her gun 37 deg off; the game now keeps this clip's own heading)
+    'sg_reload': 'yola_reload_rifle_stand',
 }
 ONLY = set(filter(None, os.environ.get('YOLA2_ONLY', '').split(',')))
 # (test bakes: YOLA2_EXTRA_XBOT="name=fbx,..." adds clips straight from X Bot, e.g. pistol_reload_x=yola_reload_walk)

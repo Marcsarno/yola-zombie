@@ -174,9 +174,9 @@ export class YolaView extends ClipBody {
     { const tl = subClip(byName.tripo_idle, (b) => LOWER.test(b), 'tripo_idle_lower'); loopClip(tl); clips.push(tl); } // unarmed standing: Yola's own idle legs (front-on, not the pistol stance)
     clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), 'bat_idle_upper'));
     clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), 'pistol_reload_upper'));
-    // sawn-off double barrel: held at the low ready (frame 1 of the rifle reload, retargeted from the Mixamo
-    // skeleton and twisted at the spine in Blender so the barrel points along the pelvis' heading); the clip
-    // itself is the reload (blender: sg_reload)
+    // shotgun: held at the low ready (frame 1 of X Bot's rifle reload, retargeted straight onto her: 2026-10-17, the old
+    // hand-made 52 deg spine twist is gone, kept in yola2_work.blend as sg_reload_twisted_OLD); the clip itself is the
+    // reload. Its upper body keeps the clip's own heading over the legs (rebaseUpper), so the gun stays on the aim
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_hold_upper'));
     clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), 'shotgun_reload_upper'));
     clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), 'fists_idle_upper')); // unarmed: Yola's own idle on the upper body
@@ -233,6 +233,7 @@ export class YolaView extends ClipBody {
     this.pistolFit = weapons.pistolFit || null; // (the user's Rig Lab fit for this Yola; see pistolInFist)
     this.pistolPlace = new URLSearchParams(globalThis.location?.search || '').get('pistolplace') || 'fist';
     this.postureOff = new URLSearchParams(globalThis.location?.search || '').get('posture') === '0'; // (?posture=0: without the posture fix)
+    this.sgOwnHeading = new URLSearchParams(globalThis.location?.search || '').get('sghead') !== 'legs'; // (see rebaseUpper)
     this.shotgun = prepPumpShort(weapons.shotgun);
     this.shell = prepShell(weapons.shell); this.shell.visible = false; scene.add(this.shell);
     this.melee = prepAxe(weapons.axe);
@@ -754,9 +755,14 @@ export class YolaView extends ClipBody {
       if (w < 1e-3) continue;
       const v = this.upperHips[n].evaluate(a.time);
       _q3.set(v[0], v[1], v[2], v[3]);
-      const fc = _v.set(0, 0, 1).applyQuaternion(_q3), fn = _v2.set(0, 0, 1).applyQuaternion(H.quaternion);
-      _q4.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
-      _q3.premultiply(_q4); // same heading as the hips now
+      // the shotgun layers keep their clip's own heading (2026-10-17): X Bot's rifle clip already points the gun along the
+      // character's forward, so the upper body stays on the aim whatever the legs' hips do. Turned onto the legs' heading
+      // (as before, ?sghead=legs) the aim correction ran into its 46 deg limit and the left strafe aimed up to 59 deg off.
+      if (!(this.sgOwnHeading && /^shotgun_/.test(n))) {
+        const fc = _v.set(0, 0, 1).applyQuaternion(_q3), fn = _v2.set(0, 0, 1).applyQuaternion(H.quaternion);
+        _q4.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
+        _q3.premultiply(_q4); // same heading as the hips now
+      }
       _q4.copy(inv).multiply(_q3); // inv(Hnow) * Hclip'
       _q.identity().slerp(_q4, Math.min(1, w));
       S.quaternion.premultiply(_q);
@@ -802,11 +808,13 @@ export class YolaView extends ClipBody {
   shotgunBarrel(out) {
     this.container.getWorldQuaternion(_q3).invert();
     this.bones.RightHand.getWorldQuaternion(_q).multiply(this.shotgunSocket);
+    const F = this.shotgunFit; // (the user's grip turns the gun in her hand: the aim must see the gun as it sits)
+    if (F) _q.multiply(_q2.setFromEuler(_e.set((F.tilt || 0) * Math.PI / 180, (F.turn || 0) * Math.PI / 180, (F.roll || 0) * Math.PI / 180, 'YXZ')));
     return out.set(1, 0, 0).applyQuaternion(_q).applyQuaternion(_q3);
   }
-  // Shotgun: the hold is baked in Blender so the barrel points along the pelvis' heading (blender: sg_reload);
-  // what is left here is the small error when the running strafes turn the pelvis toward travel, turned out
-  // over the spine (held through a reload), and the kick: chest and arms thrown up and back.
+  // Shotgun: the upper body keeps its clip's own heading (rebaseUpper), so the barrel already points near the aim in every
+  // move; what is left here is the small residual and the user's grip turn, turned out over the spine (held through a
+  // reload), and the kick: chest and arms thrown up and back.
   aimShotgun(s, ub) {
     const k = 1 - ub, rW = this.reloadW || 0;
     const b = this.shotgunBarrel(_v);
