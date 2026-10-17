@@ -507,7 +507,7 @@ export class Arena {
     const [pistolG, bagG, magG, aidG, axeG] = await Promise.all(['zombie/assets/pistol.glb', 'zombie/assets/kit/guard_duffel_open.glb', 'zombie/assets/kit/pistol_magazine_loaded.glb', 'zombie/assets/kit/first_aid_case_closed.glb', 'zombie/assets/weapons/fire_axe.glb'].map(get));
     for (const q of CH().pickups || []) {
       const objs = [];
-      if (q.model === 'pistol') { const o = pistolG.scene.clone(true); o.position.set(q.x + 0.1, 0.03, q.z); o.rotation.set(0, 0.7, Math.PI / 2); objs.push(o); }
+      if (q.model === 'pistol') { const o = pistolG.scene.clone(true); o.position.set(q.x + 0.1, (q.y ?? 0) + 0.03, q.z); o.rotation.set(0, 0.7, Math.PI / 2); objs.push(o); }
       else if (q.model === 'bag') {
         const bag = bagG.scene.clone(true); bag.position.set(q.x, 0, q.z); bag.rotation.y = -0.3; objs.push(bag);
         const mags = new THREE.Group(); for (let i = 0; i < 2; i++) { const m = magG.scene.clone(true); m.position.set(0.36 + i * 0.07, 0.004, -0.06 + i * 0.03); m.rotation.set(-Math.PI / 2, 0, 0.3 * i); mags.add(m); } mags.position.copy(bag.position); mags.rotation.y = bag.rotation.y; objs.push(mags);

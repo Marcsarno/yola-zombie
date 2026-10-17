@@ -560,7 +560,7 @@ function handleEvents() {
       case 'pickup': {
         audio.play(e.kind === 'health' ? 'heal' : 'reloadDone'); hud.flash('reload');
         if (e.id === 'bat') opening?.takeBat?.(); else arena.takePickup(e.id);
-        hud.toast(e.kind === 'weapon' ? (e.weapon === 'pistol' ? 'Pistol — the guard’s sidearm' : e.weapon === 'axe' ? 'Fire axe' : 'Baseball bat') : e.kind === 'ammo' ? 'Spare pistol rounds' : 'First aid: health restored');
+        hud.toast(e.kind === 'weapon' ? (e.weapon === 'pistol' ? (e.id === 'pistol' ? 'Pistol — the guard’s sidearm' : 'Pistol') : e.weapon === 'axe' ? 'Fire axe' : 'Baseball bat') : e.kind === 'ammo' ? 'Spare pistol rounds' : 'First aid: health restored');
         break;
       }
       case 'checkpoint': levelSave = e.save; store.set('chapter1save', e.save); break;
