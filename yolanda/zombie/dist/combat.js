@@ -57417,8 +57417,228 @@ void main() {
     }
   };
 
+  // src/sfx/library.gen.js
+  var LIB = {
+    "shellin": [
+      "assets/sfx/lib/shellin_01.mp3",
+      "assets/sfx/lib/shellin_02.mp3",
+      "assets/sfx/lib/shellin_03.mp3",
+      "assets/sfx/lib/shellin_04.mp3",
+      "assets/sfx/lib/shellin_05.mp3",
+      "assets/sfx/lib/shellin_06.mp3",
+      "assets/sfx/lib/shellin_07.mp3",
+      "assets/sfx/lib/shellin_08.mp3",
+      "assets/sfx/lib/shellin_09.mp3"
+    ],
+    "rack": [
+      "assets/sfx/lib/rack_01.mp3",
+      "assets/sfx/lib/rack_02.mp3",
+      "assets/sfx/lib/rack_03.mp3",
+      "assets/sfx/lib/rack_04.mp3"
+    ],
+    "brass": [
+      "assets/sfx/lib/brass_01.mp3",
+      "assets/sfx/lib/brass_02.mp3",
+      "assets/sfx/lib/brass_03.mp3",
+      "assets/sfx/lib/brass_04.mp3",
+      "assets/sfx/lib/brass_05.mp3",
+      "assets/sfx/lib/brass_06.mp3",
+      "assets/sfx/lib/brass_07.mp3",
+      "assets/sfx/lib/brass_08.mp3",
+      "assets/sfx/lib/brass_09.mp3",
+      "assets/sfx/lib/brass_10.mp3"
+    ],
+    "hull": [
+      "assets/sfx/lib/hull_01.mp3",
+      "assets/sfx/lib/hull_02.mp3",
+      "assets/sfx/lib/hull_03.mp3",
+      "assets/sfx/lib/hull_04.mp3",
+      "assets/sfx/lib/hull_05.mp3",
+      "assets/sfx/lib/hull_06.mp3",
+      "assets/sfx/lib/hull_07.mp3",
+      "assets/sfx/lib/hull_08.mp3",
+      "assets/sfx/lib/hull_09.mp3",
+      "assets/sfx/lib/hull_10.mp3"
+    ],
+    "magdrop": [
+      "assets/sfx/lib/magdrop_01.mp3",
+      "assets/sfx/lib/magdrop_02.mp3",
+      "assets/sfx/lib/magdrop_03.mp3",
+      "assets/sfx/lib/magdrop_04.mp3",
+      "assets/sfx/lib/magdrop_05.mp3",
+      "assets/sfx/lib/magdrop_06.mp3",
+      "assets/sfx/lib/magdrop_07.mp3",
+      "assets/sfx/lib/magdrop_08.mp3",
+      "assets/sfx/lib/magdrop_09.mp3",
+      "assets/sfx/lib/magdrop_10.mp3"
+    ],
+    "click": [
+      "assets/sfx/lib/click_01.mp3",
+      "assets/sfx/lib/click_02.mp3",
+      "assets/sfx/lib/click_03.mp3",
+      "assets/sfx/lib/click_04.mp3"
+    ],
+    "punch": [
+      "assets/sfx/lib/punch_01.mp3",
+      "assets/sfx/lib/punch_02.mp3",
+      "assets/sfx/lib/punch_03.mp3",
+      "assets/sfx/lib/punch_04.mp3",
+      "assets/sfx/lib/punch_05.mp3",
+      "assets/sfx/lib/punch_06.mp3",
+      "assets/sfx/lib/punch_07.mp3",
+      "assets/sfx/lib/punch_08.mp3",
+      "assets/sfx/lib/punch_09.mp3",
+      "assets/sfx/lib/punch_10.mp3"
+    ],
+    "punchheavy": [
+      "assets/sfx/lib/punchheavy_01.mp3",
+      "assets/sfx/lib/punchheavy_02.mp3",
+      "assets/sfx/lib/punchheavy_03.mp3",
+      "assets/sfx/lib/punchheavy_04.mp3",
+      "assets/sfx/lib/punchheavy_05.mp3"
+    ],
+    "wood": [
+      "assets/sfx/lib/wood_01.mp3",
+      "assets/sfx/lib/wood_02.mp3",
+      "assets/sfx/lib/wood_03.mp3",
+      "assets/sfx/lib/wood_04.mp3",
+      "assets/sfx/lib/wood_05.mp3",
+      "assets/sfx/lib/wood_06.mp3",
+      "assets/sfx/lib/wood_07.mp3",
+      "assets/sfx/lib/wood_08.mp3",
+      "assets/sfx/lib/wood_09.mp3",
+      "assets/sfx/lib/wood_10.mp3"
+    ],
+    "thwack": [
+      "assets/sfx/lib/thwack_01.mp3",
+      "assets/sfx/lib/thwack_02.mp3",
+      "assets/sfx/lib/thwack_03.mp3",
+      "assets/sfx/lib/thwack_04.mp3",
+      "assets/sfx/lib/thwack_05.mp3",
+      "assets/sfx/lib/thwack_06.mp3",
+      "assets/sfx/lib/thwack_07.mp3",
+      "assets/sfx/lib/thwack_08.mp3",
+      "assets/sfx/lib/thwack_09.mp3",
+      "assets/sfx/lib/thwack_10.mp3"
+    ],
+    "soft": [
+      "assets/sfx/lib/soft_01.mp3",
+      "assets/sfx/lib/soft_02.mp3",
+      "assets/sfx/lib/soft_03.mp3",
+      "assets/sfx/lib/soft_04.mp3",
+      "assets/sfx/lib/soft_05.mp3",
+      "assets/sfx/lib/soft_06.mp3",
+      "assets/sfx/lib/soft_07.mp3",
+      "assets/sfx/lib/soft_08.mp3",
+      "assets/sfx/lib/soft_09.mp3",
+      "assets/sfx/lib/soft_10.mp3"
+    ],
+    "blade": [
+      "assets/sfx/lib/blade_01.mp3",
+      "assets/sfx/lib/blade_02.mp3",
+      "assets/sfx/lib/blade_03.mp3",
+      "assets/sfx/lib/blade_04.mp3",
+      "assets/sfx/lib/blade_05.mp3",
+      "assets/sfx/lib/blade_06.mp3"
+    ],
+    "squish": [
+      "assets/sfx/lib/squish_01.mp3",
+      "assets/sfx/lib/squish_02.mp3",
+      "assets/sfx/lib/squish_03.mp3",
+      "assets/sfx/lib/squish_04.mp3",
+      "assets/sfx/lib/squish_05.mp3",
+      "assets/sfx/lib/squish_06.mp3",
+      "assets/sfx/lib/squish_07.mp3",
+      "assets/sfx/lib/squish_08.mp3"
+    ],
+    "metal": [
+      "assets/sfx/lib/metal_01.mp3",
+      "assets/sfx/lib/metal_02.mp3",
+      "assets/sfx/lib/metal_03.mp3",
+      "assets/sfx/lib/metal_04.mp3",
+      "assets/sfx/lib/metal_05.mp3",
+      "assets/sfx/lib/metal_06.mp3",
+      "assets/sfx/lib/metal_07.mp3",
+      "assets/sfx/lib/metal_08.mp3",
+      "assets/sfx/lib/metal_09.mp3",
+      "assets/sfx/lib/metal_10.mp3"
+    ],
+    "glass": [
+      "assets/sfx/lib/glass_01.mp3",
+      "assets/sfx/lib/glass_02.mp3",
+      "assets/sfx/lib/glass_03.mp3",
+      "assets/sfx/lib/glass_04.mp3",
+      "assets/sfx/lib/glass_05.mp3",
+      "assets/sfx/lib/glass_06.mp3",
+      "assets/sfx/lib/glass_07.mp3",
+      "assets/sfx/lib/glass_08.mp3",
+      "assets/sfx/lib/glass_09.mp3",
+      "assets/sfx/lib/glass_10.mp3"
+    ],
+    "step": [
+      "assets/sfx/lib/step_01.mp3",
+      "assets/sfx/lib/step_02.mp3",
+      "assets/sfx/lib/step_03.mp3",
+      "assets/sfx/lib/step_04.mp3",
+      "assets/sfx/lib/step_05.mp3",
+      "assets/sfx/lib/step_06.mp3",
+      "assets/sfx/lib/step_07.mp3",
+      "assets/sfx/lib/step_08.mp3",
+      "assets/sfx/lib/step_09.mp3",
+      "assets/sfx/lib/step_10.mp3",
+      "assets/sfx/lib/step_11.mp3",
+      "assets/sfx/lib/step_12.mp3",
+      "assets/sfx/lib/step_13.mp3",
+      "assets/sfx/lib/step_14.mp3",
+      "assets/sfx/lib/step_15.mp3"
+    ],
+    "stepsoft": [
+      "assets/sfx/lib/stepsoft_01.mp3",
+      "assets/sfx/lib/stepsoft_02.mp3",
+      "assets/sfx/lib/stepsoft_03.mp3",
+      "assets/sfx/lib/stepsoft_04.mp3",
+      "assets/sfx/lib/stepsoft_05.mp3",
+      "assets/sfx/lib/stepsoft_06.mp3",
+      "assets/sfx/lib/stepsoft_07.mp3",
+      "assets/sfx/lib/stepsoft_08.mp3",
+      "assets/sfx/lib/stepsoft_09.mp3",
+      "assets/sfx/lib/stepsoft_10.mp3"
+    ],
+    "door": [
+      "assets/sfx/lib/door_01.mp3",
+      "assets/sfx/lib/door_02.mp3",
+      "assets/sfx/lib/door_03.mp3",
+      "assets/sfx/lib/door_04.mp3",
+      "assets/sfx/lib/door_05.mp3"
+    ],
+    "doorshut": [
+      "assets/sfx/lib/doorshut_01.mp3",
+      "assets/sfx/lib/doorshut_02.mp3",
+      "assets/sfx/lib/doorshut_03.mp3",
+      "assets/sfx/lib/doorshut_04.mp3"
+    ],
+    "cloth": [
+      "assets/sfx/lib/cloth_01.mp3",
+      "assets/sfx/lib/cloth_02.mp3",
+      "assets/sfx/lib/cloth_03.mp3",
+      "assets/sfx/lib/cloth_04.mp3",
+      "assets/sfx/lib/cloth_05.mp3",
+      "assets/sfx/lib/cloth_06.mp3",
+      "assets/sfx/lib/cloth_07.mp3",
+      "assets/sfx/lib/cloth_08.mp3"
+    ],
+    "pickup": [
+      "assets/sfx/lib/pickup_01.mp3",
+      "assets/sfx/lib/pickup_02.mp3",
+      "assets/sfx/lib/pickup_03.mp3",
+      "assets/sfx/lib/pickup_04.mp3",
+      "assets/sfx/lib/pickup_05.mp3"
+    ]
+  };
+
   // src/sfx/banks.js
   var G2 = "assets/sfx/guns/";
+  var lib = (...keys) => keys.flatMap((k) => LIB[k] || []);
   var take = (name, i) => `${G2}${name}_${String(i).padStart(2, "0")}.mp3`;
   var takes = (name, from, to) => Array.from({ length: to - from + 1 }, (_, i) => take(name, from + i));
   var one = (name) => [`${G2}${name}.mp3`];
@@ -57427,7 +57647,7 @@ void main() {
     shot: { label: "Pistol shot", group: "Guns", cadence: 0.26, layers: [
       { label: "Shot", files: takes("pistol", 1, 5), extra: takes("pistol", 6, 14), gain: 0.8, pitch: [-0.7, 0.5], wet: 0.34 },
       { label: "Sub thump (headphones)", synth: "subPistol", gain: 1, wet: 0 },
-      { label: "Brass casing", files: takes("brass", 1, 4), gain: 0.2, pitch: [-1.5, 1.5], at: [0.34, 0.52], wet: 0.1, side: true }
+      { label: "Brass casing", files: takes("brass", 1, 4), extra: lib("brass"), gain: 0.2, pitch: [-1.5, 1.5], at: [0.34, 0.52], wet: 0.1, side: true }
     ] },
     // the shotgun: a 12 gauge pump blast + a deep sub + a long room (the pump follows as its own sound)
     shotgun: { label: "Shotgun blast", group: "Guns", cadence: 0.85, then: { name: "pump", at: 0.24 }, layers: [
@@ -57438,17 +57658,68 @@ void main() {
     pump: { label: "Shotgun pump", group: "Guns", cadence: 0.85, layers: [
       { label: "Rack back", files: one("pump_back"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.16 },
       { label: "Rack forward", files: one("pump_fwd"), gain: 0.5, pitch: [-0.4, 0.4], at: 0.19, wet: 0.16 },
-      { label: "Spent hull", files: takes("hull", 1, 3), gain: 0.32, pitch: [-1, 1], at: [0.38, 0.5], wet: 0.1, side: true }
+      { label: "Full rack (one real recording)", files: [], extra: lib("rack"), gain: 0.55, pitch: [-0.4, 0.4], wet: 0.16 },
+      { label: "Spent hull", files: takes("hull", 1, 3), extra: lib("hull"), gain: 0.32, pitch: [-1, 1], at: [0.38, 0.5], wet: 0.1, side: true }
     ] },
     // the pistol reload (1.05 s): the empty magazine drops, the new one seats; the slide is reloadDone
     pistolReload: { label: "Pistol reload", group: "Reloads", layers: [
-      { label: "Magazine out", files: one("mag_out"), gain: 0.35, pitch: [-0.5, 0.5], at: 0.06, wet: 0.12 },
+      { label: "Magazine out", files: one("mag_out"), extra: lib("magdrop"), gain: 0.35, pitch: [-0.5, 0.5], at: 0.06, wet: 0.12 },
       { label: "Magazine in", files: one("mag_in"), gain: 0.45, pitch: [-0.5, 0.5], at: 0.5, wet: 0.12 }
     ] },
     pistolReloadDone: { label: "Pistol slide (reload done)", group: "Reloads", layers: [{ label: "Slide", files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
     // the shotgun reload (1.9 s): four shells thumbed into the tube; the pump closes it (reloadDone)
-    shotgunReload: { label: "Shotgun reload (4 shells)", group: "Reloads", layers: [0.12, 0.52, 0.92, 1.32].map((at, i) => ({ label: `Shell ${i + 1}`, files: one("mag_in"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
-    dry: { label: "Dry fire (empty)", group: "Guns", layers: [{ label: "Click", files: one("dry_click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] }
+    shotgunReload: { label: "Shotgun reload (4 shells)", group: "Reloads", layers: [0.12, 0.52, 0.92, 1.32].map((at, i) => ({ label: `Shell ${i + 1}`, files: one("mag_in"), extra: lib("shellin"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
+    dry: { label: "Dry fire (empty)", group: "Guns", layers: [{ label: "Click", files: one("dry_click"), extra: lib("click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] },
+    // ---- melee hits: the game already plays these (synthesised); the first takes the user adds replace the synth,
+    // which stays as a quiet "classic" layer underneath until switched off on the board ----
+    fistHit: { label: "Fist / kick hit", group: "Melee hits", layers: [
+      { label: "Punch", files: [], extra: lib("punch", "punchheavy"), gain: 0.9, pitch: [-1, 1], wet: 0.12 },
+      { label: "Classic synth thump (under it)", synth: "fistHit", gain: 0.6 }
+    ] },
+    batHit: { label: "Bat hit", group: "Melee hits", layers: [
+      { label: "Crack", files: [], extra: lib("wood", "thwack"), gain: 0.9, pitch: [-1, 0.8], wet: 0.2 },
+      { label: "Body", files: [], extra: lib("soft", "punchheavy"), gain: 0.8, pitch: [-1.5, 0.5], wet: 0.1 },
+      { label: "Classic synth (under it)", synth: "batHit", gain: 0.5 }
+    ] },
+    axeHit: { label: "Axe hit", group: "Melee hits", layers: [
+      { label: "Blade bite", files: [], extra: lib("blade", "thwack"), gain: 0.85, pitch: [-1, 1], wet: 0.15 },
+      { label: "Wet", files: [], extra: lib("squish"), gain: 0.5, pitch: [-1.5, 0.5], wet: 0.08 },
+      { label: "Body", files: [], extra: lib("soft", "punchheavy"), gain: 0.7, pitch: [-1.5, 0.5], wet: 0.1 },
+      { label: "Classic synth (under it)", synth: "axeHit", gain: 0.5 }
+    ] },
+    sever: { label: "Limb severed / gore", group: "Melee hits", layers: [
+      { label: "Wet", files: [], extra: lib("squish"), gain: 0.85, pitch: [-2, 0.5], wet: 0.15 },
+      { label: "Snap", files: [], extra: lib("thwack", "wood"), gain: 0.5, pitch: [0, 2], wet: 0.1 },
+      { label: "Classic synth (under it)", synth: "sever", gain: 0.5 }
+    ] },
+    knockdown: { label: "Body hits the floor", group: "Melee hits", layers: [
+      { label: "Thud (as the fall lands)", files: [], extra: lib("soft", "punchheavy"), gain: 0.85, pitch: [-2, 0], at: 0.55, wet: 0.25 },
+      { label: "Classic synth (under it)", synth: "knockdown", gain: 0.5 }
+    ] },
+    bump: { label: "Zombie bumps into Yola", group: "Melee hits", layers: [
+      { label: "Thud", files: [], extra: lib("soft"), gain: 0.7, pitch: [-1, 1], wet: 0.1 },
+      { label: "Classic synth (under it)", synth: "bump", gain: 0.5 }
+    ] },
+    clank: { label: "Bat hits a wall / metal", group: "Melee hits", layers: [
+      { label: "Metal", files: [], extra: lib("metal"), gain: 0.8, pitch: [-1, 1], wet: 0.25 },
+      { label: "Classic synth (under it)", synth: "clank", gain: 0.4 }
+    ] },
+    shieldHit: { label: "Hit on the guard's shield", group: "Melee hits", layers: [
+      { label: "Board knock", files: [], extra: lib("wood", "thwack"), gain: 0.85, pitch: [-2, 0], wet: 0.2 },
+      { label: "Classic synth (under it)", synth: "shieldHit", gain: 0.5 }
+    ] },
+    doorOpen: { label: "Door opens", group: "World", layers: [
+      { label: "Door", files: [], extra: lib("door"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
+      { label: "Classic synth (under it)", synth: "doorOpen", gain: 0.4 }
+    ] },
+    // ---- coming next: no game hook yet (Phase 2-5); pick now, they go in when wired ----
+    footstep: { label: "Yola footstep", group: "Coming next (not in the game yet)", pending: true, cadence: 0.32, layers: [
+      { label: "Step", files: [], extra: lib("step", "stepsoft"), gain: 0.5, pitch: [-1, 1], wet: 0.08 }
+    ] },
+    doorClose: { label: "Door closes", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Door", files: [], extra: lib("doorshut"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }] },
+    glassBreak: { label: "Glass breaks", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Glass", files: [], extra: lib("glass"), gain: 0.85, pitch: [-1, 1], wet: 0.3 }] },
+    weaponSwap: { label: "Weapon swap (handling)", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Handling", files: [], extra: lib("cloth", "click"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] },
+    pickupItem: { label: "Pick up an item", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Item", files: [], extra: lib("pickup", "cloth"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] }
   };
 
   // src/sfx/samples.js
@@ -57467,20 +57738,33 @@ void main() {
       for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of [...l.files || [], ...l.extra || []]) s.add(f);
       return [...s];
     }
+    // the game: the user's selection first, then only the takes it plays (the board's candidates stay on the server);
+    // the Sound Board (selection: false): every take
     preload({ selection = true } = {}) {
       if (this.started) return;
       this.started = true;
-      if (selection) fetch(SELECTION_URL, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((j) => {
+      if (!selection) {
+        this.fetchFiles(this.files());
+        return;
+      }
+      fetch(SELECTION_URL, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((j) => {
         if (j) this.setSelection(j);
       }).catch(() => {
-      });
-      for (const f of this.files()) fetch(f).then((r) => r.ok ? r.arrayBuffer() : null).then((ab) => {
+      }).finally(() => this.fetchFiles(this.used()));
+    }
+    fetchFiles(list) {
+      for (const f of list) fetch(f).then((r) => r.ok ? r.arrayBuffer() : null).then((ab) => {
         if (ab) {
           this.raw.set(f, ab);
           if (this.ctx) this.decode(f);
         }
       }).catch(() => {
       });
+    }
+    used() {
+      const s = /* @__PURE__ */ new Set();
+      for (const [n, b] of Object.entries(BANKS)) for (const l of b.layers) for (const f of this.active(n, l)) s.add(f);
+      return [...s];
     }
     setSelection(j) {
       this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {} };
@@ -57529,12 +57813,12 @@ void main() {
     soundGain(name) {
       return dbk(this.sel.sounds[name]?.db);
     }
-    // a bank plays only when every take of its main layer is in (half a bank would repeat the same take); with every
-    // take rejected the synth plays instead
+    // a bank plays when any of its recorded layers has takes in use and every one of them is loaded (half a bank would
+    // repeat the same take); with nothing kept (every take rejected, or none added yet) the synth plays instead
     ready(name) {
       const b = BANKS[name];
       if (!b) return false;
-      const a = this.active(name, b.layers[0]);
+      const a = b.layers.filter((l) => !l.synth).flatMap((l) => this.active(name, l));
       return a.length > 0 && a.every((f) => this.buf.has(f));
     }
     // a random take, never the one that played last time from this layer
@@ -65896,9 +66180,9 @@ void main() {
   }
   async function startTestArena({ game, scene: scene2, loader: loader2, telegraphs: telegraphs2 }) {
     const yola2 = game.yola;
-    const [catalog, wj, SEL, lib] = await Promise.all([json("assets/moves/catalog.json"), json("assets/moves/weapons.json"), loadSelection(), loader2.loadAsync(game.yolaModel === "2" ? "assets/moves/yola2_moves.glb" : "assets/moves/yola_moves.glb")]);
+    const [catalog, wj, SEL, lib2] = await Promise.all([json("assets/moves/catalog.json"), json("assets/moves/weapons.json"), loadSelection(), loader2.loadAsync(game.yolaModel === "2" ? "assets/moves/yola2_moves.glb" : "assets/moves/yola_moves.glb")]);
     const WDEF = wj?.weapons || {};
-    const clips = Object.fromEntries([...game.yolaClips || [], ...lib.animations].map((c) => [c.name, c]));
+    const clips = Object.fromEntries([...game.yolaClips || [], ...lib2.animations].map((c) => [c.name, c]));
     const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
     let fingers = null;
     {
