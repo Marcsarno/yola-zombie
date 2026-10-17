@@ -57760,41 +57760,46 @@ void main() {
 
   // src/music.js
   var SRC = "assets/music/agile_groove.mp3";
-  var COOLDOWN = 3;
-  var CALM = 4.5;
-  var LEVEL = { explore: 0.42, combat: 1 };
-  var CUTOFF = { explore: 900, combat: 2e4 };
+  var LEVEL = 1;
   var GameMusic = class {
     constructor(audio2) {
       this.audio = audio2;
       this.state = "off";
-      this.since = 99;
-      this.calm = 0;
       this.el = null;
       this.failed = false;
     }
+    // the <audio> element, created and buffering as early as possible (no AudioContext needed yet)
+    element() {
+      if (this.el || this.failed) return this.el;
+      const el = new Audio(SRC);
+      el.loop = true;
+      el.preload = "auto";
+      el.crossOrigin = "anonymous";
+      el.setAttribute("playsinline", "");
+      el.addEventListener("error", () => {
+        this.failed = true;
+      });
+      try {
+        el.load();
+      } catch {
+      }
+      return this.el = el;
+    }
+    preload() {
+      this.element();
+    }
+    // the element through the music bus (needs the AudioContext, made on the first gesture)
     ensure() {
       const a = this.audio;
       if (this.node || this.failed || !a.ctx) return !!this.node;
       try {
-        const el = new Audio(SRC);
-        el.loop = true;
-        el.preload = "auto";
-        el.crossOrigin = "anonymous";
-        el.setAttribute("playsinline", "");
-        const src = a.ctx.createMediaElementSource(el), f = a.ctx.createBiquadFilter(), g = a.ctx.createGain();
-        f.type = "lowpass";
-        f.frequency.value = CUTOFF.explore;
-        f.Q.value = 0.5;
+        const el = this.element();
+        if (!el) return false;
+        const src = a.ctx.createMediaElementSource(el), g = a.ctx.createGain();
         g.gain.value = 0;
-        src.connect(f);
-        f.connect(g);
+        src.connect(g);
         g.connect(a.musicBus);
-        el.addEventListener("error", () => {
-          this.failed = true;
-        });
-        this.el = el;
-        this.node = { src, f, g };
+        this.node = { src, g };
         return true;
       } catch (e) {
         this.failed = true;
@@ -57802,9 +57807,11 @@ void main() {
         return false;
       }
     }
-    // kind: 'combat' | 'explore'; fade seconds
-    start(kind = "explore", fade = 0.6) {
-      if (!this.ensure()) return;
+    start(kind = "combat", fade = 0.6) {
+      if (!this.ensure()) {
+        if (!this.failed) this.state = "pending";
+        return;
+      }
       if (this.el.paused) {
         const p = this.el.play();
         p?.catch?.(() => {
@@ -57812,32 +57819,32 @@ void main() {
       }
       this.set(kind, fade);
     }
-    set(kind, fade = 1.6) {
+    set(kind, fade = 0.6) {
       if (!this.node) return;
-      const c = this.audio.ctx, t = c.currentTime, { f, g } = this.node;
-      g.gain.cancelScheduledValues(t);
-      g.gain.setValueAtTime(g.gain.value, t);
-      g.gain.linearRampToValueAtTime(LEVEL[kind], t + fade);
-      f.frequency.cancelScheduledValues(t);
-      f.frequency.setValueAtTime(f.frequency.value, t);
-      f.frequency.exponentialRampToValueAtTime(CUTOFF[kind], t + fade * 1.2);
-      this.state = kind;
-      this.since = 0;
+      const t = this.audio.ctx.currentTime, g = this.node.g.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(LEVEL, t + fade);
+      this.state = kind === "off" ? "off" : "on";
     }
     stop(fade = 0.8) {
       if (!this.node) return;
-      const c = this.audio.ctx, t = c.currentTime, g = this.node.g;
-      g.gain.cancelScheduledValues(t);
-      g.gain.setValueAtTime(g.gain.value, t);
-      g.gain.linearRampToValueAtTime(0, t + fade);
+      const t = this.audio.ctx.currentTime, g = this.node.g.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0, t + fade);
       const el = this.el;
       setTimeout(() => {
         if (this.state === "off") el.pause();
       }, fade * 1e3 + 100);
       this.state = "off";
     }
-    // per frame: threat 'combat' (a woken zombie near or attacking) or 'calm'
+    // per frame: keep it playing at its one level (paused while the game is paused or Yola is down)
     update(dt, fighting, paused2) {
+      if (this.state === "pending") {
+        if (this.audio.ctx?.state === "running") this.start("combat");
+        return;
+      }
       if (this.state === "off" || !this.node) return;
       if (paused2) {
         if (!this.el.paused) this.el.pause();
@@ -57845,11 +57852,6 @@ void main() {
       }
       if (this.el.paused && this.audio.ctx?.state === "running" && !this.audio.muted) this.el.play()?.catch?.(() => {
       });
-      this.since += dt;
-      this.calm = fighting ? 0 : this.calm + dt;
-      if (this.since < COOLDOWN) return;
-      if (this.state === "explore" && fighting) this.set("combat", 1);
-      else if (this.state === "combat" && this.calm > CALM) this.set("explore", 2.4);
     }
   };
 
@@ -66295,6 +66297,7 @@ void main() {
   var loader = new GLTFLoader();
   async function load() {
     gibs.load({ 0: "assets/zombie-nurse-burst.glb", 1: "assets/zombie-patient-burst.glb" });
+    music.preload();
     hud.loading(0);
     arena = new Arena(scene, resolvedQuality(), renderer);
     looks = new Looks(renderer, scene, camera);
