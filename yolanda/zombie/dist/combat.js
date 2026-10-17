@@ -44669,13 +44669,13 @@ void main() {
       this.boxes.push(b);
       return b;
     }
-    // Push a circle out of all boxes. Returns true if it collided.
-    resolveCircle(p, r) {
+    // Push a circle out of all boxes (but `skip`: the prop Yola is vaulting over). Returns true if it collided.
+    resolveCircle(p, r, skip = null) {
       let hit = false;
       for (let iter = 0; iter < 3; iter++) {
         let moved = false;
         for (const b of this.boxes) {
-          if (b.off) continue;
+          if (b.off || b === skip) continue;
           const cx = Math.max(b.minX, Math.min(p.x, b.maxX));
           const cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
           let dx = p.x - cx, dz = p.z - cz;
@@ -45811,6 +45811,7 @@ void main() {
   var TEST_ATTACKS = [];
   var GROUND = {};
   function groundAttack(w) {
+    if (GROUND_OWN[w]) return GROUND_OWN[w];
     if (w !== AXE && w !== BAT && w !== TEST) return null;
     const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : null;
     if (!base.PATH || w === TEST && !T0) return null;
@@ -45831,6 +45832,36 @@ void main() {
   var resetGroundAttacks = () => {
     for (const k in GROUND) delete GROUND[k];
   };
+  var GROUND_OWN = {};
+  var LEG_ATTACKS = {
+    axe: {
+      name: "leg chop",
+      clip: "gs_low_slash",
+      path: "gs_low_slash",
+      f0: 12,
+      f1: 34,
+      rate: 1.25,
+      fps: 30,
+      yawOffset: 0,
+      sock: "leg chop",
+      duration: 0.95,
+      activeStart: 0.3,
+      activeEnd: 0.5,
+      chainFrom: 9,
+      swapPoint: 0.7,
+      blendIn: 0.12,
+      enterBlend: 0.12,
+      assist: 1.8,
+      lungeMax: 0.5,
+      dmg: 0.9,
+      knock: 0.5,
+      style: "legs",
+      minY: 0,
+      legs: true,
+      sever: { leg: 1 }
+    }
+  };
+  var legAttack = (w) => LEG_ATTACKS[w] || null;
   var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : w === TEST ? TEST_ATTACKS : AXE_ATTACKS;
   var AXE_GEOM = {
     length: 0.74,
@@ -45843,7 +45874,7 @@ void main() {
   var rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
   function setMeleePaths(clipdata, scale, hipsRest2) {
     _pathArgs = [clipdata, scale, hipsRest2];
-    for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS]) {
+    for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS, LEG_ATTACKS.axe]) {
       if (A.built) continue;
       const samples = clipdata[A.path];
       A.PATH = [];
@@ -45928,6 +45959,27 @@ void main() {
     u = u < 0 ? 0 : u > 1 ? 1 : u;
     return u * u * (3 - 2 * u);
   };
+  var DODGE = {
+    side: { dur: 0.72, dist: 1.9, iframes: [0.03, 0.42], cancel: 0.5, out: (u) => 1 - Math.pow(1 - u, 2.6) },
+    roll: { dur: 0.8, dist: 3, iframes: [0.03, 0.5], cancel: 0.62, out: (u) => smooth(u) * 0.35 + u * 0.65 },
+    cooldown: 0.25
+  };
+  var VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, push: 0.6 };
+  function rayBox(b, x, z, dx, dz) {
+    let t0 = -1e9, t1 = 1e9;
+    for (const [p, d, lo, hi] of [[x, dx, b.minX, b.maxX], [z, dz, b.minZ, b.maxZ]]) {
+      if (Math.abs(d) < 1e-9) {
+        if (p < lo || p > hi) return null;
+        continue;
+      }
+      let a = (lo - p) / d, c = (hi - p) / d;
+      if (a > c) [a, c] = [c, a];
+      t0 = Math.max(t0, a);
+      t1 = Math.min(t1, c);
+      if (t0 > t1) return null;
+    }
+    return [t0, t1];
+  }
   var Player = class {
     constructor(x, z, tuning2) {
       this.T = tuning2;
@@ -45955,6 +46007,74 @@ void main() {
       this.shotCount = 0;
       this.swingId = 0;
       this.moveIntent = 0;
+      this.dodgeCd = 0;
+    }
+    // ---------------- the dodge, the vault, the leg attack ----------------
+    // a dodge press: along the move stick (in world directions), or straight back from the aim
+    tryDodge(mx, mz, sim2) {
+      if (this.dead || this.dodgeCd > 0) return false;
+      const a = this.action, t = a.type;
+      const free = t === "ready" || t === "reload" || t === "shot" || t === "swing" && a.st >= this.atk(a).activeEnd || t === "dodge" && a.t >= DODGE[a.kind === "roll" ? "roll" : "side"].dur * 0.85;
+      if (!free) return false;
+      let l = Math.hypot(mx, mz);
+      if (l < 0.2) {
+        mx = -Math.sin(this.aimYaw);
+        mz = -Math.cos(this.aimYaw);
+        l = 1;
+      }
+      mx /= l;
+      mz /= l;
+      const dirYaw = Math.atan2(mx, mz), rel = angleDiff(this.aimYaw, dirYaw), side = Math.abs(rel) > Math.PI * 0.25 && Math.abs(rel) < Math.PI * 0.75;
+      const D = side ? DODGE.side : DODGE.roll;
+      const kind = side ? rel > 0 ? "left" : "right" : "roll";
+      if (kind === "roll") {
+        this.aimYaw = this.aimTarget = dirYaw;
+      }
+      this.setAction("dodge", { kind, dirX: mx, dirZ: mz, dur: D.dur, dist: D.dist, done: 0 });
+      this.attackHeld = false;
+      this.vx *= 0.3;
+      this.vz *= 0.3;
+      sim2.emit({ type: "dodge", kind });
+      return true;
+    }
+    // the leg attack of the weapon in hand (Legs button): a low strike at the shins
+    tryLegs(sim2) {
+      const L2 = legAttack(this.equipped);
+      if (!L2 || this.dead) return false;
+      const a = this.action, t = a.type;
+      if (!(t === "ready" || t === "swing" && a.st >= this.atk(a).swapPoint || t === "dodge" && a.t >= DODGE[a.kind === "roll" ? "roll" : "side"].cancel)) return false;
+      this.startSwing(sim2, 0, false, "legs");
+      return true;
+    }
+    // a vault over the low prop she is running into (from move: stick direction mx, mz, unit)
+    tryVault(mx, mz, world, sim2) {
+      const V2 = VAULT, ahead = this.r + V2.reach;
+      for (const b of world.boxes) {
+        if (b.off || b.kind !== "prop" || b.h < V2.minH || b.h > V2.maxH) continue;
+        const tt = rayBox(b, this.x, this.z, mx, mz);
+        if (!tt || tt[0] < 0 || tt[0] > ahead || tt[1] - tt[0] > V2.maxDepth) continue;
+        const land = tt[1] + this.r + 0.12, lx = this.x + mx * land, lz = this.z + mz * land;
+        const probe = { x: lx, z: lz };
+        let clear = true;
+        for (const o of world.boxes) {
+          if (o === b || o.off) continue;
+          const cx = Math.max(o.minX, Math.min(lx, o.maxX)), cz = Math.max(o.minZ, Math.min(lz, o.maxZ));
+          if ((lx - cx) ** 2 + (lz - cz) ** 2 < this.r * this.r) {
+            clear = false;
+            break;
+          }
+        }
+        const B = world.bounds;
+        if (B && (lx < B.minX || lx > B.maxX || lz < B.minZ || lz > B.maxZ)) clear = false;
+        if (!clear || !world.lineOfSight(this.x, this.z, lx, lz, 1.2)) continue;
+        this.aimYaw = this.aimTarget = Math.atan2(mx, mz);
+        this.setAction("vault", { box: b, x0: this.x, z0: this.z, x1: probe.x, z1: probe.z, dur: V2.dur, h: b.h });
+        this.attackHeld = false;
+        this.vx = this.vz = 0;
+        sim2.emit({ type: "vault", h: b.h });
+        return true;
+      }
+      return false;
     }
     get ammo() {
       return this.mags[this.equipped] ?? 0;
@@ -45982,9 +46102,9 @@ void main() {
     get attacks() {
       return attacksOf(this.equipped);
     }
-    // the attack an action plays: the combo's, or the downward strike at a zombie on the floor
+    // the attack an action plays: the combo's, the downward strike at a zombie on the floor, or the leg attack
     atk(a = this.action) {
-      return a.ground ? groundAttack(this.equipped) : this.attacks[a.combo];
+      return a.ground ? groundAttack(this.equipped) : a.leg ? legAttack(this.equipped) : this.attacks[a.combo];
     }
     cancelAttacks() {
       const a = this.action.type;
@@ -45999,8 +46119,14 @@ void main() {
       const T2 = this.T;
       let mx = input2.moveX, mz = input2.moveZ, mag = Math.min(1, Math.hypot(mx, mz));
       this.moveIntent = mag;
-      const down = this.action.type === "down";
-      if (this.dead || down) {
+      if (this.dodgeCd > 0) this.dodgeCd -= dt;
+      {
+        const t = this.action.type;
+        if (!this.dead && mag > 0.6 && (t === "ready" || t === "shot" || t === "reload") && this.tryVault(mx / mag, mz / mag, world, sim2)) {
+        }
+      }
+      const down = this.action.type === "down", dodging = this.action.type === "dodge", vaulting = this.action.type === "vault";
+      if (this.dead || down || dodging || vaulting) {
         mx = mz = mag = 0;
       }
       const am = down ? 0 : Math.hypot(input2.aimX, input2.aimZ);
@@ -46011,7 +46137,7 @@ void main() {
       this.attackHeld = held;
       if (this.aiming) this.aimTarget = Math.atan2(input2.aimX, input2.aimZ);
       else if (mag > 0.15) this.aimTarget = Math.atan2(mx, mz);
-      let turn = down ? 0 : T2.turnRate;
+      let turn = down || vaulting || dodging && this.action.kind === "roll" ? 0 : T2.turnRate;
       if (this.action.type === "swing") {
         const a = this.action;
         turn = a.st < a.activeEnd ? 0 : turn * 0.6;
@@ -46057,9 +46183,21 @@ void main() {
         if (Math.abs(this.slide.x) + Math.abs(this.slide.z) < 0.05) this.slide = null;
       }
       const rm = this.attackAdvance(sim2);
+      const A0 = this.action;
+      if (dodging) {
+        const D = DODGE[A0.kind === "roll" ? "roll" : "side"], want = A0.dist * D.out(Math.min(1, (A0.t + dt) / A0.dur)), step = want - A0.done;
+        A0.done = want;
+        rm.x += A0.dirX * step;
+        rm.z += A0.dirZ * step;
+      } else if (vaulting) {
+        const u = smooth(Math.min(1, (A0.t + dt) / A0.dur));
+        rm.x += A0.x0 + (A0.x1 - A0.x0) * u - this.x;
+        rm.z += A0.z0 + (A0.z1 - A0.z0) * u - this.z;
+      }
       this.x += rm.x;
       this.z += rm.z;
-      for (const e of sim2.zombies) {
+      const through = vaulting || dodging && this.invuln > 0;
+      if (!through) for (const e of sim2.zombies) {
         if (!e.solid) continue;
         const dx = this.x - e.x, dz = this.z - e.z, rr = this.r + e.r, d2 = dx * dx + dz * dz;
         if (d2 < rr * rr && d2 > 1e-8) {
@@ -46068,10 +46206,10 @@ void main() {
           this.z += dz / d * push;
         }
       }
-      world.resolveCircle(this, this.r);
+      world.resolveCircle(this, this.r, vaulting ? A0.box : null);
       this.vx = (this.x - px2 - rm.x - (this.slide ? this.slide.x * dt : 0)) / dt;
       this.vz = (this.z - pz2 - rm.z - (this.slide ? this.slide.z * dt : 0)) / dt;
-      if (down) this.vx = this.vz = 0;
+      if (down || dodging || vaulting) this.vx = this.vz = 0;
       const vl = Math.hypot(this.vx, this.vz), vmax = T2.moveSpeed * 1.05;
       if (vl > vmax) {
         this.vx *= vmax / vl;
@@ -46141,11 +46279,11 @@ void main() {
             if (prevT < a.activeEnd && st >= a.activeEnd && !a.hits && !a.clanked) sim2.emit({ type: "batMiss" });
           }
           if (a.hits > 0 || A.chainAlways) a.unlocked = true;
-          if (!a.ground && a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
+          if (!a.ground && !a.leg && a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
             this.startSwing(sim2, a.combo + 1, true);
             break;
           }
-          if (!a.ground && A.restartFrom != null && st >= A.restartFrom && st < A.duration && (this.attackHeld || this.attackPressT < a.t)) {
+          if (!a.ground && !a.leg && A.restartFrom != null && st >= A.restartFrom && st < A.duration && (this.attackHeld || this.attackPressT < a.t)) {
             this.startSwing(sim2, 0);
             break;
           }
@@ -46187,6 +46325,21 @@ void main() {
             this.setAction("ready");
           }
           break;
+        case "dodge": {
+          const D = DODGE[a.kind === "roll" ? "roll" : "side"];
+          if (a.t >= D.iframes[0] && a.t <= D.iframes[1]) this.invuln = Math.max(this.invuln, 0.02);
+          if (a.t >= a.dur) {
+            this.setAction("ready");
+            this.dodgeCd = DODGE.cooldown;
+          } else if (a.t >= D.cancel && this.attackHeld) {
+            this.setAction("ready");
+            this.dodgeCd = DODGE.cooldown;
+          }
+          break;
+        }
+        case "vault":
+          if (a.t >= a.dur) this.setAction("ready");
+          break;
       }
       if (this.desired !== this.equipped && this.action.type !== "swap" && this.canBeginSwap()) {
         this.setAction("swap", { dur: T2.swapTime, target: this.desired, mid: false });
@@ -46217,10 +46370,11 @@ void main() {
     reloadTime() {
       return this.equipped === SHOTGUN ? this.T.shotgunReload : this.T.reloadTime;
     }
-    startSwing(sim2, combo2, unlocked = false) {
+    startSwing(sim2, combo2, unlocked = false, special = null) {
       this.swingId++;
-      const G5 = combo2 === 0 ? groundAttack(this.equipped) : null, ground = !!(G5 && sim2.groundTarget?.(this));
-      const A = ground ? G5 : this.attacks[combo2];
+      const leg = special === "legs";
+      const G5 = combo2 === 0 && !leg ? groundAttack(this.equipped) : null, ground = !!(G5 && sim2.groundTarget?.(this));
+      const A = leg ? legAttack(this.equipped) : ground ? G5 : this.attacks[combo2];
       const as = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
       const tgt = as?.target || null, turnBy = as?.turn || 0;
       let lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo2 > 0 ? 0.75 : 0.5)) : 0;
@@ -46234,6 +46388,7 @@ void main() {
         st: 0,
         combo: combo2,
         ground,
+        leg,
         hitSet: /* @__PURE__ */ new Set(),
         hits: 0,
         clanked: false,
@@ -46333,8 +46488,15 @@ void main() {
     scratch: { from: 0.92, range: 0.98, arc: 1.25, strike: 0.13, recover: 0.62, step: 0.35 },
     // the big guard's slam (KayKit Melee_1H_Attack_Jump_Chop): a long wind-up (he crouches and leaps), the smash lands a
     // wide area in front of him and knocks Yola flat; then a slow recovery (the opening to hit him)
-    slam: { from: 2.4, range: 2.1, arc: 1, strike: 0.15, recover: 1, step: 0, windup: 0.95, leap: 1.4 }
+    slam: { from: 2.4, range: 2.1, arc: 1, strike: 0.15, recover: 1, step: 0, windup: 0.95, leap: 1.4 },
+    // the pounce (2026-10-17, the user: "a lunge attack you can dodge"; Quaternius UAL2 Zombie_Bite): from 1.7-3.2 m a
+    // standing zombie rears back (the wind-up, a long narrow wedge on the floor; it stops turning after `lock` of it), then
+    // leaps along that line and bites whatever it reaches. Committed: a side-step or Yola's dodge beats it, and a miss
+    // leaves it stumbling (the long recovery is the opening). range: the wedge (the leap plus the bite's reach).
+    pounce: { min: 1.7, from: 3.2, range: 3.3, arc: 0.32, windup: 0.75, lock: 0.6, strike: 0.32, leapMax: 2.5, bite: 0.55, recover: 0.95, cd: 5, chance: 0.4, step: 0 }
   };
+  var GAITS = { runnerShare: 0.15, ualShare: 0.45 };
+  var RUNNER_SPEED = 2.5;
   var KINDS = {
     normal: { hp: 1, speed: 1, dmg: 1, knock: 1, kd: 1, stagger: 1, r: 0.32 },
     sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
@@ -46401,6 +46563,11 @@ void main() {
       this.chargeHit = false;
       this.fall = "";
       this.slamCd = 1.5;
+      this.pounceCd = 1 + this.phase * 9.13 % 1 * 2;
+      {
+        const g = opts.gait || (this.phase * 13.7 % 1 < GAITS.runnerShare ? "run" : this.phase * 13.7 % 1 < GAITS.runnerShare + GAITS.ualShare ? "ual" : "shamble");
+        this.gait = this.kind === "normal" ? g : "shamble";
+      }
       this.shieldHp = this.shieldMax = this.kind === "guard" ? SHIELD_HP : 0;
     }
     get armsLost() {
@@ -46412,6 +46579,14 @@ void main() {
       sim2.emit({ type: "sever", id: this.id, part, dirX, dirZ, x: this.x, z: this.z });
       if (part === "Head") this.hp = 0;
       else if (part.startsWith("LowerLeg") && !this.crawling) this.crawling = this.toCrawl = true;
+    }
+    // a leg broken (a bat or a slide tackle at its shins): it stays on, but the zombie goes down and crawls from then on
+    cripple(part, sim2) {
+      if (this.crawling || !this.alive || this.severed.has(part)) return;
+      this.limbHp[part] = Math.max(1, this.limbHp[part]);
+      this.crawling = this.toCrawl = true;
+      this.broken = part;
+      sim2.emit({ type: "legBreak", id: this.id, part, x: this.x, z: this.z });
     }
     set(state, dur = 0) {
       this.state = state;
@@ -46462,7 +46637,7 @@ void main() {
       let loss = 0, main = "torso", mainD = 0;
       for (let [pt, d] of parts) {
         if (pt !== "torso" && this.severed.has(pt)) pt = "torso";
-        if (pt !== "torso") {
+        if (pt !== "torso" && this.broken !== pt) {
           this.limbHp[pt] -= d * limbMul;
           if (this.limbHp[pt] <= 0) this.sever(pt, dirX, dirZ, sim2);
         }
@@ -46504,7 +46679,7 @@ void main() {
       }
       const T2 = sim2.T;
       const fist = kind === "fist";
-      const kd = fist ? style === "kick" ? 0.55 : 0 : melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T2.axeKnockdown) : style === "heavy" ? Math.min(1, T2.axeKnockdown + 0.25) : T2.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
+      const kd = style === "legs" ? 1 : fist ? style === "kick" ? 0.55 : 0 : melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T2.axeKnockdown) : style === "heavy" ? Math.min(1, T2.axeKnockdown + 0.25) : T2.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
       if (this.toCrawl || !this.crawling && kd > 0 && sim2.rand() < kd * this.K.kd) {
         this.knockDown(dirX, dirZ, sim2);
         return;
@@ -46745,7 +46920,7 @@ void main() {
             turnRate = 0;
             break;
           }
-          speed = wantX || wantZ ? T2.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
+          speed = wantX || wantZ ? T2.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === "run" ? RUNNER_SPEED : 1) : 0;
           if (speed > 0) {
             const s = this.steer(wantX, wantZ, dist2, los, sim2);
             wantX = s.x;
@@ -46813,6 +46988,18 @@ void main() {
             sim2.emit({ type: "zombieWindup", id: this.id, attack: "slam" });
             break;
           }
+          const PO = ZATTACKS.pounce;
+          if (this.kind === "normal" && !this.crawling && !this.passive && slot && (this.pounceCd -= dt) <= 0 && dist2 > PO.min && dist2 < PO.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+            if (sim2.rand() < (T2.pounceChance ?? PO.chance)) {
+              this.attack = "pounce";
+              this.set(ZS.WINDUP, T2.pounceWindup ?? PO.windup);
+              this.pounceCd = PO.cd + sim2.rand() * 4;
+              sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * 1.4;
+              sim2.emit({ type: "zombieWindup", id: this.id, attack: "pounce" });
+              break;
+            }
+            this.pounceCd = 1.5 + sim2.rand() * 1.5;
+          }
           if (!this.passive && slot && sim2.time >= (sim2.nextAttackT || 0) && dist2 < ZATTACKS.lunge.from && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             const armed = this.armsLost < 2 && !this.crawling;
             this.attack = armed && (dist2 < 0.85 || dist2 < ZATTACKS.scratch.from && sim2.rand() < 0.25) ? "scratch" : "lunge";
@@ -46823,7 +47010,7 @@ void main() {
           break;
         }
         case ZS.WINDUP:
-          turnRate = this.attack === "slam" ? this.t < 0.45 ? 1.6 : 0 : 2.5;
+          turnRate = this.attack === "slam" ? this.t < 0.45 ? 1.6 : 0 : this.attack === "pounce" ? this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0 : 2.5;
           wantX = dx;
           wantZ = dz;
           if (this.attack === "slam" && this.t > this.stateDur * 0.45) {
@@ -46834,11 +47021,34 @@ void main() {
           if (this.t >= this.stateDur) {
             this.set(ZS.STRIKE, ZATTACKS[this.attack].strike);
             this.struck = false;
+            if (this.attack === "pounce") {
+              const PO = ZATTACKS.pounce, L2 = Math.max(1, Math.min(PO.leapMax, dist2 - 0.45)) / PO.strike;
+              this.vx = Math.sin(this.yaw) * L2;
+              this.vz = Math.cos(this.yaw) * L2;
+              sim2.emit({ type: "zombiePounce", id: this.id });
+            }
           }
           break;
         case ZS.STRIKE: {
           turnRate = 0;
           const Z = ZATTACKS[this.attack];
+          if (this.attack === "pounce") {
+            if (!this.struck && !p.dead) {
+              const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx2 + dz * fz, lat = Math.abs(dx * fz - dz * fx2);
+              if (along > -0.1 && along < Z.bite + p.r && lat < this.r + p.r && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+                this.struck = true;
+                this.vx *= 0.25;
+                this.vz *= 0.25;
+                const hit = p.hurt(T2.zombieDamage * 1.25 * this.K.dmg * (1 - 0.3 * this.armsLost), this.x, this.z, sim2);
+                sim2.emit({ type: hit ? "zombieStrikeHit" : "zombieStrikeMiss", id: this.id, attack: "pounce" });
+              }
+            }
+            if (this.t >= this.stateDur) {
+              if (!this.struck) sim2.emit({ type: "zombieStrikeMiss", id: this.id, attack: "pounce" });
+              this.set(ZS.RECOVER, Z.recover * (this.struck ? 0.8 : 1.15));
+            }
+            break;
+          }
           if (!this.struck) {
             this.struck = true;
             const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw);
@@ -47659,6 +47869,8 @@ void main() {
       this.time += dt;
       const p = this.player;
       for (let i = 0; i < input2.swapPresses; i++) p.requestSwap();
+      if (input2.dodgePresses) p.tryDodge(input2.moveX, input2.moveZ, this);
+      if (input2.legsPresses) p.tryLegs(this);
       p.move(dt, input2, this.world, this);
       p.updateAction(dt, this);
       this.flowT -= dt;
@@ -47953,18 +48165,22 @@ void main() {
             dz /= l2;
           }
           if (fist) {
-            const dmgF = T2.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
+            const dmgF = T2.fistDamage * A.dmg, blk = !A.legs && z.shieldBlocks(dx, dz);
+            if (A.legs && this.rand() < 0.35) z.cripple(this.rand() < 0.5 ? "LowerLeg_L" : "LowerLeg_R", this);
             z.takeHit(dmgF, dx, dz, T2.fistKnockback * A.knock, "fist", this, "torso", A.style);
             this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true, shield: blk });
             if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
             continue;
           }
           const dmg = T2.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
-          const side = this.rand() < 0.5 ? "_L" : "_R", shielded = z.shieldBlocks(dx, dz);
-          const part = shielded ? "torso" : lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
-          if (part !== "torso" && !z.severed.has(part)) z.limbHp[part] = 0;
-          const last2 = act.ground || act.combo === p.attacks.length - 1, holding = !last2 && p.attackHeld;
+          const side = this.rand() < 0.5 ? "_L" : "_R", shielded = !A.legs && z.shieldBlocks(dx, dz);
           const kind = A.kind || (p.equipped === BAT ? "bat" : "axe");
+          const part = shielded ? "torso" : A.legs ? "LowerLeg" + side : lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
+          if (part !== "torso" && !z.severed.has(part)) {
+            if (kind === "bat") z.cripple(part, this);
+            else z.limbHp[part] = 0;
+          }
+          const last2 = act.ground || act.leg || act.combo === p.attacks.length - 1, holding = !last2 && p.attackHeld;
           z.takeHit(dmg, dx, dz, T2.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? "combo" : A.style);
           this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p.equipped, shield: shielded });
           if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
@@ -49290,6 +49506,8 @@ void main() {
       return this.bones[n].getWorldPosition(out);
     }
   };
+  var OVERLAY_CLIPS = { left: { clip: "ual1_Dodge_Left", f0: 1, f1: 36 }, right: { clip: "ual1_Dodge_Right", f0: 1, f1: 36 }, roll: { clip: "ual1_Roll", f0: 1, f1: 40 }, vault: { clip: "ual_SafetyVault", f0: 1, f1: 23 } };
+  var OVERLAY_NAMES = Object.values(OVERLAY_CLIPS).map((m) => m.clip);
   var LOCO = {
     pistol_walk: { dir: [0, 1] },
     pistol_run: { dir: [0, 1] },
@@ -49346,7 +49564,7 @@ void main() {
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_hold_upper"));
       clips.push(subClip(byName.sg_reload, (b) => !LOWER.test(b), "shotgun_reload_upper"));
       clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), "fists_idle_upper"));
-      const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS].map((A) => A.clip))].filter((n) => byName[n]);
+      const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS, LEG_ATTACKS.axe].map((A) => A.clip))].filter((n) => byName[n]);
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
       const scriptNames = ["t_greet_01", "t_greet_04"].filter((n) => byName[n]);
       for (const n of scriptNames) clips.push(byName[n]);
@@ -49471,7 +49689,7 @@ void main() {
     // first frame, character space; each clip family grips differently) expressed in this hand's frame.
     calibrateMeleeSockets(clipdata) {
       this.meleeSocket = {};
-      for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS]) {
+      for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, LEG_ATTACKS.axe]) {
         if (A.built) continue;
         const smp = clipdata?.[A.path]?.find((q) => q.f === A.f0);
         if (!smp?.d) continue;
@@ -49776,11 +49994,19 @@ void main() {
       const uP0 = smooth2(this.up.pistol), uS0 = smooth2(this.up.shotgun), uA0 = smooth2(this.up.axe), uF0 = smooth2(this.up.fists), uW0 = smooth2(this.up.sword || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 || 1;
       const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un;
       let sW = 0, turn = 0, prevW = 0;
-      const A = s.action === "swing" ? s.ground ? groundAttack(s.equipped) : attacksOf(s.equipped)[s.combo] : null;
+      const A = s.action === "swing" ? s.atk || (s.ground ? groundAttack(s.equipped) : attacksOf(s.equipped)[s.combo]) : null;
+      let swingActW = -1, R = this.recCur;
       if (A) {
         const t = s.swingT, tEnd = attackEnd(A), act = this.act(A.clip);
         if (this.swingId !== s.swingId) {
-          if (this.swingAct && this.swingAct !== act) {
+          this.fromRec = !!(R && R.w > 0.02);
+          if (this.fromRec) {
+            this.prevSwing = R.act;
+            this.prevSwingW = R.w;
+            this.prevSwingName = this.swingName;
+            this.prevSwingHand = this.swingHand;
+            this.recCur = R = null;
+          } else if (this.swingAct && this.swingAct !== act) {
             this.prevSwing = this.swingAct;
             this.prevSwingW = this.swingW || 1;
             this.prevSwingName = this.swingName;
@@ -49804,11 +50030,21 @@ void main() {
         }
         this.clipF = attackFrame(A, Math.min(t, tEnd));
         act.time = this.clipF / A.fps + (this.swJit ^= 1) * 1e-6;
-        const cont = A.continuous && s.combo > 0;
-        const ramp = cont ? this.chainW0 >= 0.999 ? 1 : this.chainW0 + (1 - this.chainW0) * smooth2(clamp4(t / 0.12, 0, 1)) : smooth2(clamp4(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
-        const out = t <= tEnd ? 1 : smooth2(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
+        const cont = A.continuous && s.combo > 0 && !this.fromRec;
+        const ramp = cont ? this.chainW0 >= 0.999 ? 1 : this.chainW0 + (1 - this.chainW0) * smooth2(clamp4(t / 0.12, 0, 1)) : smooth2(clamp4(t / (this.prevSwing ? Math.max(this.swingBlend, this.fromRec ? 0.14 : 0) : A.enterBlend || 0.05), 0, 1));
+        const rec = A.rec ? this.act(A.rec) : null, inRec = !!rec && t > tEnd;
+        const out = inRec || t <= tEnd ? 1 : smooth2(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
         sW = ramp * out;
-        turn = A.yawOffset * smooth2(clamp4(t / 0.1, 0, 1)) * out;
+        if (inRec) {
+          if (!R || R.id !== s.swingId) {
+            const c = rec.getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0]));
+            this.recCur = R = { act: rec, t0, dur: c.duration - t0, id: s.swingId, t: 0, w: 0 };
+          }
+          R.t = t - tEnd;
+          R.w = sW;
+          swingActW = 0;
+        }
+        turn = A.yawOffset * smooth2(clamp4(t / (A.turnIn || 0.1), 0, 1)) * out;
         if (this.prevSwing) {
           const pw = this.prevSwingW * (1 - ramp);
           this.prevSwing.setEffectiveWeight(pw);
@@ -49827,15 +50063,28 @@ void main() {
           this.prevSwing.setEffectiveWeight(0);
           this.prevSwing = null;
         }
+        if (R) {
+          R.t += dt;
+          const busy = s.action !== "ready" || Math.hypot(s.vx, s.vz) > 0.35;
+          R.w = Math.min(busy ? R.w - dt / 0.15 : R.w, smooth2(clamp4((R.dur - R.t) / 0.25, 0, 1)));
+          if (R.w <= 1e-3 || R.t >= R.dur) {
+            R.act.setEffectiveWeight(0);
+            this.recCur = R = null;
+          } else sW = R.w;
+        }
       }
       this.swingW = sW;
       if (A && s.swingT >= 0.1) this.lastTurn = turn;
       if (A && this.prevTurn == null && s.swingT < 0.02 && s.combo > 0) this.prevTurn = this.lastTurn || 0;
       for (const n of this.meleeClips) {
         const a = this.act(n);
-        if (a !== this.swingAct && a !== this.prevSwing) a.setEffectiveWeight(0);
+        if (a !== this.swingAct && a !== this.prevSwing && a !== R?.act) a.setEffectiveWeight(0);
       }
-      if (A) this.swingAct.setEffectiveWeight(sW);
+      if (A) this.swingAct.setEffectiveWeight(swingActW >= 0 ? swingActW : sW);
+      if (R) {
+        R.act.time = R.t0 + Math.min(R.t, R.dur - 1e-3) + (this.rcJit ^= 1) * 1e-6;
+        R.act.setEffectiveWeight(R.w);
+      }
       this.container.rotation.y = this.yaw + turn;
       let rW = 0;
       this.reloadFrame = -1;
@@ -49895,6 +50144,27 @@ void main() {
         this.act("yola_knockdown").setEffectiveWeight(0);
         this.act("yola_getup").setEffectiveWeight(0);
       }
+      const OV = this.ov || (this.ov = { act: null, w: 0 });
+      if (!sact && (s.action === "dodge" || s.action === "vault") && s.act) {
+        const M4 = OVERLAY_CLIPS[s.action === "vault" ? "vault" : s.act.kind], oa = M4 && this.act(M4.clip);
+        if (oa) {
+          if (OV.act && OV.act !== oa) OV.act.setEffectiveWeight(0);
+          oa.time = (M4.f0 + clamp4(s.actionT / s.act.dur, 0, 1) * (M4.f1 - M4.f0)) / 30 + (this.ovJit ^= 1) * 1e-6;
+          OV.act = oa;
+          OV.w = smooth2(clamp4(s.actionT / 0.06, 0, 1)) * smooth2(clamp4((s.act.dur - s.actionT) / 0.12, 0, 1));
+          scW = OV.w;
+          sact = oa;
+          oa.setEffectiveWeight(scW);
+        }
+      } else if (OV.act) {
+        OV.w = Math.max(0, OV.w - dt / 0.15);
+        OV.act.setEffectiveWeight(OV.w);
+        if (!sact && OV.w > 0) {
+          scW = OV.w;
+          sact = OV.act;
+        }
+        if (OV.w <= 0) OV.act = null;
+      }
       if (this.script && !sact) {
         const S2 = this.script;
         S2.t += dt;
@@ -49935,7 +50205,7 @@ void main() {
       this.flinch.step(dt);
       const f = this.flinch;
       if (Math.abs(f.x) + Math.abs(f.z) > 1e-3) this.rotateEulerC("Spine1", f.z * 0.6, 0, -f.x * 0.5);
-      this.footLock(dt, s, A, sW, w);
+      if (!(this.ov?.w > 0)) this.footLock(dt, s, A, sW, w);
       this.hair.update(dt);
       this.weaponShown = uF > 0.5 ? "fists" : uW > 0.5 ? "bat1" : uA > 0.5 ? "axe" : uS > 0.5 ? "shotgun" : "pistol";
       if (s.action === "down") {
@@ -50588,7 +50858,13 @@ void main() {
   var TUMBLE = { f0: 40, f1: 90, up0: 1, up1: 94 };
   var SCRATCH = { f0: 1, hit: 17, hitEnd: 21, end: 45 };
   var SLAM = { f0: 1, hit: 18, hitEnd: 23, end: 41, lift: 0.5 };
-  var ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM };
+  var POUNCE = { f0: 1, hit: 10, hitEnd: 19, end: 46, clip: "ual_Zombie_Bite" };
+  var ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM, pounce: POUNCE };
+  var GAIT_SETS = {
+    ual: { idle: "ual_Zombie_Idle_Loop", dur: 1.333, dirs: [["Fwd", 0, 1, 1.05], ["Fwd_L", 0.707, 0.707, 1.06], ["L", 1, 0, 0.75], ["Bwd_L", 0.707, -0.707, 1.06], ["Bwd", 0, -1, 1.2], ["Bwd_R", -0.707, -0.707, 1.06], ["R", -1, 0, 0.75], ["Fwd_R", -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
+    run: { idle: "ual_Zombie_Idle_Loop", dur: 0.733, dirs: [["Fwd", 0, 1, 4.1], ["L", 1, 0, 2.05], ["Bwd", 0, -1, 4.1], ["R", -1, 0, 2.05]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Run_${k}_Loop`, x, z, s })) }
+  };
+  var HIT_CLIPS = { Head: "ual1_Hit_Head", Forearm_L: "ual1_Hit_Shoulder_L", Forearm_R: "ual1_Hit_Shoulder_R", torso: ["ual1_Hit_Chest", "ual1_Hit_Stomach"], leg: "ual1_Hit_Stomach" };
   var DEATHS = {
     back: [["death_back", 7, 53], ["death_chest_back", 20, 66]],
     forward: [["death_forward", 10, 67], ["death_headshot_knees", 18, 70]]
@@ -50676,7 +50952,15 @@ void main() {
       if (!clips) {
         const rest = hipsRest(gltf.scene);
         clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
-        for (const c of clips) if (["walk", "idle", "crawl", "sprint", "shield_idle"].includes(c.name)) loopClip(c);
+        for (const c of clips) if (["walk", "idle", "crawl", "sprint", "shield_idle"].includes(c.name) || /_Loop$/.test(c.name)) loopClip(c);
+        {
+          const b = clips.find((c) => c.name === POUNCE.clip);
+          if (b) {
+            const p = b.clone();
+            p.name = "pounce";
+            clips.push(p);
+          }
+        }
         for (const c of clips) if (c.name === "slam") {
           for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) {
             const v = t.values, y0 = v[1];
@@ -50703,12 +50987,15 @@ void main() {
         this.act(n).play();
         this.act(n).setEffectiveWeight(0);
       }
-      for (const n of ONE_SHOTS) {
+      for (const n of [...ONE_SHOTS, "pounce", ...Object.values(HIT_CLIPS).flat()]) {
         const a = this.act(n);
         if (!a) continue;
         a.setLoop(LoopOnce);
         a.clampWhenFinished = true;
       }
+      this.gaitSet = null;
+      this.gw = {};
+      this.gPhase = 0;
       this.react = new Spring2(70, 9);
       this.oneShot = null;
       this.lastSeq = 0;
@@ -50866,6 +51153,16 @@ void main() {
       }
       if (this.hasCrawl) this.act("crawl").play();
       for (const n of ["sprint", "shield_upper"]) if (this.act(n)) this.act(n).play();
+      const G5 = GAIT_SETS[z.gait];
+      this.gaitSet = G5 && this.act(G5.idle) && G5.dirs.every((d) => this.act(d.n)) ? G5 : null;
+      this.gw = {};
+      this.gPhase = Math.random();
+      if (this.gaitSet) for (const n of [G5.idle, ...G5.dirs.map((d) => d.n)]) {
+        const a = this.act(n);
+        a.play();
+        a.setEffectiveWeight(0);
+        a.timeScale = n === G5.idle ? 1 : 0;
+      }
       if (this.wantShield) this.freshShield();
       this.react.x = this.react.z = this.react.vx = this.react.vz = 0;
       this.bleed = {};
@@ -51010,6 +51307,7 @@ void main() {
         this.outer.position.x += Math.sin(z.yaw) * k;
         this.outer.position.z += Math.cos(z.yaw) * k;
       }
+      if (z.state !== "dead") this.outer.position.y = z.attack === "pounce" && z.state === "strike" ? Math.sin(Math.PI * Math.min(1, z.t / Math.max(0.05, z.stateDur))) * 0.22 * (this.height / 1.7) : 0;
       this.blob.position.set(x, 0.012, zz);
       const dying = z.state === "dying" || z.state === "dead";
       if (z.state === "dying" && this.lastState !== "dying" && this.startRagdoll(z)) {
@@ -51035,7 +51333,13 @@ void main() {
           if (isMelee(z.hitKind) || z.hitKind === "shotgun" || z.hitKind === "bump") {
             const n = this.reactClip(z), len = this.act(n).getClip().duration;
             this.playOnce(n, 2 / 30, (len - 2 / 30) / Math.max(0.3, z.stateDur));
-          } else this.playOnce("hit_flinch", 0.15, 1.6);
+          } else {
+            const P = z.lastHitPart, hc = HIT_CLIPS[P?.startsWith("LowerLeg") ? "leg" : P] || HIT_CLIPS.torso, n = Array.isArray(hc) ? hc[z.hitSeq & 1] : hc;
+            if (this.act(n)) {
+              const c = this.act(n).getClip(), t0 = Math.min(...c.tracks.map((t) => t.times[0]));
+              this.playOnce(n, t0, (c.duration - t0) / 0.45);
+            } else this.playOnce("hit_flinch", 0.15, 1.6);
+          }
         } else if (S2 === "knockdown" && z.fall === "tumble" && this.act("stumble_fall")) {
           this.deathYaw = null;
           this.playOnce("stumble_fall", TUMBLE.f0 / 30, (TUMBLE.f1 - TUMBLE.f0) / 30 / z.stateDur, 0.08);
@@ -51077,9 +51381,33 @@ void main() {
         a.setEffectiveWeight(move * sprint * (1 - one2) * (1 - crawl));
         a.timeScale = clamp4(sp / this.sprintNative, 0.5, 1.6);
       }
-      this.act("walk").setEffectiveWeight(move * (1 - sprint) * (1 - one2) * (1 - crawl));
-      this.act("idle").setEffectiveWeight((1 - move) * (1 - one2) * (1 - crawl));
+      const G5 = this.gaitSet;
+      this.act("walk").setEffectiveWeight(G5 ? 0 : move * (1 - sprint) * (1 - one2) * (1 - crawl));
+      this.act("idle").setEffectiveWeight(G5 ? 0 : (1 - move) * (1 - one2) * (1 - crawl));
       this.act("walk").timeScale = clamp4(sp / this.nativeWalk, 0.5, 3.2);
+      if (G5) {
+        const base = (1 - one2) * (1 - crawl), sn = Math.sin(z.yaw), cs = Math.cos(z.yaw);
+        const vF = z.vx * sn + z.vz * cs, vL = z.vx * cs - z.vz * sn, th = sp > 0.05 ? Math.atan2(vL, vF) : 0;
+        const ang = (d) => Math.atan2(d.x, d.z), k = Math.min(1, dt * 8);
+        let native = 0, wsum = 0;
+        for (const d of G5.dirs) {
+          const gap = Math.PI * 2 / G5.dirs.length, w = Math.max(0, 1 - Math.abs(angleDiff2(ang(d), th)) / gap);
+          this.gw[d.n] = (this.gw[d.n] ?? w) + (w - (this.gw[d.n] ?? w)) * k;
+          wsum += this.gw[d.n];
+        }
+        for (const d of G5.dirs) {
+          this.gw[d.n] /= wsum || 1;
+          native += this.gw[d.n] * d.s * (this.height / 1.69);
+        }
+        const rate = clamp4(sp / Math.max(0.1, native), 0.55, 1.6);
+        if (move > 0.01) this.gPhase = (this.gPhase + dt * rate / G5.dur) % 1;
+        for (const d of G5.dirs) {
+          const a = this.act(d.n);
+          a.time = this.gPhase * G5.dur + (this.gJit ^= 1) * 1e-6;
+          a.setEffectiveWeight(move * base * this.gw[d.n]);
+        }
+        this.act(G5.idle).setEffectiveWeight((1 - move) * base);
+      }
       if (this.act("shield_upper")) {
         const own = z.state === "windup" || z.state === "strike" || z.state === "recover";
         this.act("shield_upper").setEffectiveWeight(this.shieldUp ? (own ? 1 - one2 : 3) * (1 - crawl) : 0);
@@ -51232,7 +51560,7 @@ void main() {
     if (hold?.obj) hold.obj.visible = false;
     return rows;
   }
-  function buildLibraryAttack(Y2, { clip, frames = null, hold = null, P, speed = 1, name, sound, recover = 0.3, splitRecover = 0.4, strikes = 0 }) {
+  function buildLibraryAttack(Y2, { clip, frames = null, hold = null, P, speed = 1, name, sound, recover = 0.3, splitRecover = 0.4, strikes = 0, split = true }) {
     const t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
     const play = clip.clone();
     play.name = clip.name;
@@ -51329,7 +51657,7 @@ void main() {
     const z0 = rows[0].hips.z, R = rows.map((r) => ({ t: attackTime(A, r.f), z: Math.max(0, r.hips.z - z0) }));
     for (let i = 1; i < R.length; i++) R[i].z = Math.max(R[i].z, R[i - 1].z);
     A.ROOT = R[R.length - 1].z > 0.3 ? R : null;
-    return splitCombo(A, splitRecover);
+    return split ? splitCombo(A, splitRecover) : [A];
   }
   function splitCombo(A, splitRecover = 0.4) {
     const n = A.windows.length;
@@ -51354,6 +51682,165 @@ void main() {
       }
       return S2;
     });
+  }
+
+  // src/render/newmoves.js
+  var SETTLE2 = 0.45;
+  var REC = ["ual_Sword_Regular_A_Rec", "ual_Sword_Regular_B_Rec"];
+  var deg2 = Math.PI / 180;
+  function turnAttack(S2, a, turnIn) {
+    const c = Math.cos(a), sn = Math.sin(a);
+    for (const q of S2.PATH) {
+      const mx = q.mx * c + q.mz * sn, mz = -q.mx * sn + q.mz * c, dx = q.dx * c + q.dz * sn, dz = -q.dx * sn + q.dz * c;
+      q.mx = mx;
+      q.mz = mz;
+      q.dx = dx;
+      q.dz = dz;
+    }
+    S2.yawOffset = a;
+    S2.turnIn = turnIn;
+  }
+  function lowWindow(S2, maxY = 0.6, minSpeed = 1.2) {
+    const L2 = S2.geom?.length || 0.74, P = S2.PATH, tip = (q) => q.my + q.dy * L2;
+    let a0 = null, a1 = null;
+    for (let i = 1; i < P.length; i++) {
+      const v = Math.hypot(P[i].mx + P[i].dx * L2 - P[i - 1].mx - P[i - 1].dx * L2, tip(P[i]) - tip(P[i - 1]), P[i].mz + P[i].dz * L2 - P[i - 1].mz - P[i - 1].dz * L2) / (P[i].t - P[i - 1].t);
+      if (tip(P[i]) < maxY && v > minSpeed) {
+        a0 ?? (a0 = P[i - 1].t);
+        a1 = P[i].t;
+      }
+    }
+    if (a0 == null) return false;
+    S2.windows = [[a0, a1 + 0.02]];
+    S2.activeStart = a0;
+    S2.activeEnd = a1 + 0.02;
+    return true;
+  }
+  function cutClip(c, f0, f1, name) {
+    const out = c.clone();
+    out.name = name;
+    out.tracks = c.tracks.map((t) => {
+      const n = t.getValueSize(), it = t.createInterpolant(), times = [], vals = [];
+      for (let f = f0; f <= f1; f++) {
+        times.push((f - f0 + 1) / 30);
+        vals.push(...it.evaluate(f / 30));
+      }
+      return new t.constructor(t.name, times, vals.slice(0, times.length * n));
+    });
+    out.resetDuration();
+    return out;
+  }
+  function joinClips(a, b, name) {
+    const out = a.clone();
+    out.name = name;
+    const fa = Math.round(a.duration * 30);
+    out.tracks = a.tracks.map((t) => {
+      const u = b.tracks.find((q) => q.name === t.name);
+      if (!u) return t.clone();
+      const times = [...t.times, ...Array.from(u.times, (x) => x + fa / 30)];
+      return new t.constructor(t.name, times, [...t.values, ...u.values]);
+    });
+    out.resetDuration();
+    return out;
+  }
+  function setupNewMoves(yola2, anims, hold) {
+    const by = Object.fromEntries(anims.map((c) => [c.name, c])), made = [];
+    yola2.addAttackClips([...OVERLAY_NAMES, ...REC].map((n) => by[n]).filter(Boolean));
+    if (hold) {
+      const A = by.ual_Sword_Regular_A, B = by.ual_Sword_Regular_B, C = by.ual_Sword_Regular_C;
+      if (A && B && C) {
+        const one2 = (clip, name, rec) => {
+          const parts = buildLibraryAttack(yola2, { clip, hold, P: BAT_PROFILE, name, sound: "bat", strikes: 1, recover: SETTLE2, split: false });
+          for (const S2 of parts) {
+            const end = attackEnd(S2);
+            Object.assign(S2, { continuous: true, chainAlways: true, chainFrom: end, last: false, rec, duration: end + SETTLE2, swapPoint: end * 0.85 });
+          }
+          return parts;
+        };
+        const cFrames = Math.round(C.duration * 30) - 2;
+        const strikes = [...one2(A, "bat 1", REC[0]), ...one2(B, "bat 2", REC[1]), ...buildLibraryAttack(yola2, { clip: C, frames: cFrames, hold, P: BAT_PROFILE, name: "bat 3", sound: "bat", strikes: 2 })];
+        useBuiltBat(strikes);
+        made.push(`bat combo: ${strikes.length} strikes`);
+      }
+      if (by.ual1_Sword_Attack) {
+        const clip = cutClip(by.ual1_Sword_Attack, 1, 30, "ual1_Sword_Attack_legs");
+        const [S2] = buildLibraryAttack(yola2, { clip, hold, P: { ...BAT_PROFILE, style: "legs" }, name: "bat legs", sound: "bat", recover: 0.4, split: false });
+        turnAttack(S2, -67 * deg2, 0.3);
+        lowWindow(S2);
+        Object.assign(S2, { legs: true, minY: 0, style: "legs", dmg: 0.8, knock: 0.5, chainFrom: 9, stand: 0.95, kind: "bat" });
+        LEG_ATTACKS.bat = S2;
+        made.push(`bat legs ${S2.activeStart.toFixed(2)}-${S2.activeEnd.toFixed(2)} s`);
+      }
+      if (by.ual_Sword_Heavy_D) {
+        const clip = cutClip(by.ual_Sword_Heavy_D, 10, 34, "ual_Sword_Heavy_D_ground");
+        const [S2] = buildLibraryAttack(yola2, { clip, hold, P: { ...BAT_PROFILE, style: "chop", dmg: 1.4, knock: 0.6 }, name: "bat ground", sound: "bat", recover: 0.3, split: false });
+        Object.assign(S2, { ground: true, style: "chop", minY: 0.05, chainFrom: 9, assist: 2, stand: 1, kind: "bat", dmg: 1.4, knock: 0.6 });
+        GROUND_OWN.bat = S2;
+        made.push("bat ground");
+      }
+    }
+    if (by.ual_Slide_Start && by.ual_Slide_Exit) {
+      const clip = joinClips(by.ual_Slide_Start, by.ual_Slide_Exit, "ual_Slide_Tackle");
+      const [S2] = buildLibraryAttack(yola2, { clip, P: { kind: "fist", dmg: 1.4, knock: 1.2, style: "legs", sever: {} }, name: "slide", sound: "fist", recover: 0.25, split: false });
+      const end = attackEnd(S2);
+      const k = 0.55, st = [[0, 0], [0.208, 0.857], [0.417, 2.333], [0.625, 3.167], [0.833, 4]], ex = [[0.125, 0.286], [0.25, 0.688], [0.375, 1.25], [0.5, 2]];
+      S2.ROOT = [...st.map(([t, z]) => ({ t, z: z * k })), ...ex.map(([t, z]) => ({ t: 0.833 + t, z: (4 + z) * k }))].filter((q) => q.t <= end + 1e-6);
+      Object.assign(S2, { legs: true, minY: 0, style: "legs", dmg: 1.4, knock: 1.2, stand: 0.25, chainFrom: 9, windows: [[0.25, 0.95]], activeStart: 0.25, activeEnd: 0.95, geom: { length: 0.35, hitFrom: 0, radius: 0.18 } });
+      LEG_ATTACKS.fists = S2;
+      made.push("slide");
+    }
+    const L2 = LEG_ATTACKS.axe;
+    if (L2 && yola2.act(L2.clip)) {
+      sampleAxePath(yola2, L2);
+      made.push(`axe legs ${L2.activeStart.toFixed(2)}-${L2.activeEnd.toFixed(2)} s`);
+    }
+    console.info("[newmoves]", made.join(", "));
+  }
+  function sampleAxePath(Y2, A) {
+    const acts = Object.values(Y2.actions), saved = acts.map((a) => [a, a.getEffectiveWeight(), a.time]);
+    const op = Y2.outer.position.clone(), ry = Y2.container.rotation.y, keep = { weaponShown: Y2.weaponShown, batMode: Y2.batMode, swingAct: Y2.swingAct, swingW: Y2.swingW, swingName: Y2.swingName, swingHand: Y2.swingHand, prevSwing: Y2.prevSwing, axeDir: Y2.axeDir };
+    Y2.outer.position.set(0, 0, 0);
+    Y2.container.rotation.y = 0;
+    for (const a of acts) a.setEffectiveWeight(0);
+    const act = Y2.act(A.clip), rows = [], q = new Quaternion(), d = new Vector3();
+    Object.assign(Y2, { weaponShown: "axe", batMode: false, swingAct: act, swingW: 1, swingName: A.sock, swingHand: "Right", prevSwing: null, axeDir: null });
+    for (let f = A.f0; f <= A.f1; f++) {
+      for (const [b, q0] of Y2.restQ) b.quaternion.copy(q0);
+      mixerWritesAll(Y2.mixer);
+      act.setEffectiveWeight(1);
+      act.time = f / 30 + (f & 1) * 1e-6;
+      Y2.mixer.update(0);
+      Y2.outer.updateMatrixWorld(true);
+      Y2.posture();
+      Y2.placeWeapons({ equipped: "axe", action: "swing" }, 0);
+      const M4 = Y2.melee;
+      M4.getWorldQuaternion(q);
+      d.set(0, 0, 1).applyQuaternion(q);
+      rows.push({ t: attackTime(A, f), mx: M4.position.x, my: M4.position.y, mz: M4.position.z, dx: d.x, dy: d.y, dz: d.z });
+    }
+    for (const [a, w, t] of saved) {
+      a.setEffectiveWeight(w);
+      a.time = t;
+    }
+    Y2.outer.position.copy(op);
+    Y2.container.rotation.y = ry;
+    Object.assign(Y2, keep);
+    A.PATH = rows;
+    A.built = true;
+    const L2 = 0.74, tip = (r) => [r.mx + r.dx * L2, r.my + r.dy * L2, r.mz + r.dz * L2];
+    let a0 = null, a1 = null;
+    for (let i = 1; i < rows.length; i++) {
+      const p = tip(rows[i]), o = tip(rows[i - 1]), v = Math.hypot(p[0] - o[0], p[1] - o[1], p[2] - o[2]) / (rows[i].t - rows[i - 1].t);
+      if (p[1] < 0.7 && v > 3) {
+        a0 ?? (a0 = rows[i - 1].t);
+        a1 = rows[i].t;
+      }
+    }
+    if (a0 != null) {
+      A.activeStart = a0;
+      A.activeEnd = a1 + 0.03;
+    }
+    A.lowY = Math.min(...rows.map((r) => tip(r)[1]));
   }
 
   // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
@@ -58432,6 +58919,8 @@ void main() {
       };
       this.swapPresses = 0;
       this.usePresses = 0;
+      this.dodgePresses = 0;
+      this.legsPresses = 0;
       this.keys = /* @__PURE__ */ new Set();
       this.mouse = { active: false, x: 0, y: 0, down: false };
       this.enabled = true;
@@ -58464,6 +58953,17 @@ void main() {
         this.swapButton.classList.add("pressed");
         setTimeout(() => this.swapButton.classList.remove("pressed"), 120);
       });
+      for (const [id, k] of [["dodgeBtn", "dodgePresses"], ["legsBtn", "legsPresses"]]) {
+        const b = document.getElementById(id);
+        if (!b) continue;
+        b.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (this.enabled) this[k]++;
+          b.classList.add("pressed");
+          setTimeout(() => b.classList.remove("pressed"), 120);
+        });
+      }
       const useBtn = document.getElementById("useBtn");
       if (useBtn) useBtn.addEventListener("pointerdown", (e) => {
         e.preventDefault();
@@ -58480,6 +58980,8 @@ void main() {
           this.swapPresses++;
           e.preventDefault();
         }
+        if ((e.code === "ShiftLeft" || e.code === "ShiftRight") && this.enabled) this.dodgePresses++;
+        if (e.code === "KeyC" && this.enabled) this.legsPresses++;
       });
       window.addEventListener("keyup", (e) => this.keys.delete(e.code));
       window.addEventListener("blur", () => this.clearAll());
@@ -58564,6 +59066,8 @@ void main() {
       this.mouse.down = false;
       this.swapPresses = 0;
       this.usePresses = 0;
+      this.dodgePresses = 0;
+      this.legsPresses = 0;
     }
     // Returns world-plane vectors. camYaw rotates screen axes onto the ground (0: screen up = -z).
     sample(camYaw = 0) {
@@ -58603,10 +59107,14 @@ void main() {
         aimX: ax * c + ay * s,
         aimZ: -ax * s + ay * c,
         swapPresses: this.swapPresses,
-        usePresses: this.usePresses
+        usePresses: this.usePresses,
+        dodgePresses: this.dodgePresses,
+        legsPresses: this.legsPresses
       };
       this.swapPresses = 0;
       this.usePresses = 0;
+      this.dodgePresses = 0;
+      this.legsPresses = 0;
       return out;
     }
   };
@@ -66863,19 +67371,19 @@ void main() {
   var camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new Vector2() };
   var perf = { frames: [], spikes: 0, t0: performance.now() };
   var ZOMBIE_TYPES = [
-    { file: "assets/zombie-nurse-mod.glb", extra: "assets/zombie-nurse-scratch.glb", height: 1.78, walk: { speed: 0.168 } },
+    { file: "assets/zombie-nurse-mod.glb", extra: ["assets/zombie-nurse-scratch.glb", "assets/zombie_moves/nurse-mod.glb"], height: 1.78, walk: { speed: 0.168 } },
     // modular: severable head, forearms, lower legs
-    { file: "assets/zombie-patient-mod.glb", extra: "assets/zombie-patient-scratch.glb", height: 1.68, walk: { speed: 0.174 } },
+    { file: "assets/zombie-patient-mod.glb", extra: ["assets/zombie-patient-scratch.glb", "assets/zombie_moves/patient-mod.glb"], height: 1.68, walk: { speed: 0.174 } },
     // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
     // bed-panel shield is modelled). Not modular: no limbs come off them yet.
-    { file: "assets/zombie-sprinter.glb", height: 2, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 },
+    { file: "assets/zombie-sprinter.glb", extra: ["assets/zombie_moves/sprinter.glb"], height: 2, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 },
     // (15% bigger than first built: she has to feel big)
-    { file: "assets/zombie-guard.glb", height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 }
+    { file: "assets/zombie-guard.glb", extra: ["assets/zombie_moves/guard.glb"], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 }
   ];
   var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.look === "nurse" ? 0 : z.look === "patient" ? 1 : z.id % 2;
   var YOLA_HEIGHT = 1.62;
   var YOLA_MODEL = params.get("yola") || store2.get("yolaModel", "2");
-  var YOLA_FILES = YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: [], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
+  var YOLA_FILES = YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: ["assets/yola2_ual.glb"], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
   var loader = new GLTFLoader();
   async function load() {
     gibs.load({ 0: "assets/zombie-nurse-burst.glb", 1: "assets/zombie-patient-burst.glb" });
@@ -66900,8 +67408,8 @@ void main() {
       for (const x of xs) if (x) g.animations.push(...x.animations);
       return g;
     });
-    const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), t.extra ? loader.loadAsync(t.extra).catch(() => null) : null]).then(([g, x]) => {
-      if (x) g.animations.push(...x.animations);
+    const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => {
+      for (const x of xs) if (x) g.animations.push(...x.animations);
       return g;
     })));
     const dataP = fetch(YOLA_FILES.data).then((r) => r.json());
@@ -66947,7 +67455,10 @@ void main() {
     fetch("assets/hold/hand_poses.json").then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {
     });
     const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = anims.find((c) => c.name === "ual1_Sword_Idle");
-    if (!combo2) return;
+    if (!combo2) {
+      setupNewMoves(yola, anims, null);
+      return;
+    }
     const h = new Group(), m = makeBat(0.84);
     m.traverse((o) => {
       if (o.isMesh) {
@@ -66962,6 +67473,7 @@ void main() {
     hold.fit = fits.bat?.[YOLA_MODEL === "2" ? "yola2" : "yola"] || null;
     yola.setOneHandedBat(hold, idle);
     useBuiltBat(buildLibraryAttack(yola, { clip: combo2, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: "bat", sound: "bat", strikes: 4 }));
+    setupNewMoves(yola, anims, hold);
   }
   var warmMats = [];
   function warmPrograms() {
@@ -67333,6 +67845,8 @@ void main() {
       combo: a.combo || 0,
       ground: !!a.ground,
       swingId: a.id,
+      atk: a.type === "swing" ? p.atk(a) : null,
+      act: a,
       downFall: a.fall,
       downUp: a.up,
       recoil: p.recoil,
