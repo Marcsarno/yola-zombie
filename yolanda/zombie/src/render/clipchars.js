@@ -12,7 +12,7 @@ import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
 import { placeOneHanded, twoHandLine, applyFit } from './holdfit.js';
-const AXE_AT = new THREE.Vector3(); // (the axe model's origin is its grip point between the hands)
+const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
@@ -931,6 +931,7 @@ export class YolaView extends ClipBody {
       this.bones.RightHand.getWorldQuaternion(_q).multiply(this.shotgunSocket);
       this.grip('Right', _v);
       G.position.copy(_v); G.quaternion.copy(_q);
+      if (this.shotgunFit) applyFit(G, _v, _q, this.shotgunFit, AXE_AT); // (the user's shotgun fit, pivoting on the right grip)
       let slide = 0;
       if (s.action === 'shot') { const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart); if (u > 0 && u < 1) slide = Math.sin(Math.PI * u); }
       const rf = this.reloadFrame;

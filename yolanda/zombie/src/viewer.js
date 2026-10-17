@@ -189,6 +189,14 @@ class Gun {
   setObject(o) { if (this.obj) scene.remove(this.obj); this.obj = o; if (o) { scene.add(o); this.calibrate(); } }
   calibrate() {
     const a = this.actor; if (!this.obj || !a.action) return;
+    // Yola: on sg_reload frame 1 whatever clip is shown, as the game calibrates it (render/clipchars.js
+    // calibrateShotgunSocket); the reference on its own clip's frame 1
+    const hold = a === main && mainCache[S.char]?.gltf.animations.find((c) => c.name === 'sg_reload');
+    if (hold && a.clip !== hold) { withPose(a, hold, 1, () => this.calibrateHere()); return; }
+    this.calibrateHere();
+  }
+  calibrateHere() {
+    const a = this.actor;
     a.grip('Right', _v); a.grip('Left', _v2);
     const x = _v2.clone().sub(_v).normalize(), z = new THREE.Vector3().crossVectors(x, UP).normalize(), y = new THREE.Vector3().crossVectors(z, x);
     const g = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
@@ -196,13 +204,12 @@ class Gun {
   }
   update(k) { // k: world size of this actor relative to Yola (1 for Yola)
     if (!this.obj || !this.has) return;
+    // as the game (render/clipchars.js placeWeapons): the right-hand socket at the right grip, then the user's shotgun fit
+    // (the fit panel; render/holdfit.js applyFit, pivoting on the right grip)
     const a = this.actor; a.bones.RightHand.getWorldQuaternion(_q);
-    const adj = new THREE.Quaternion().setFromEuler(new THREE.Euler(fit.rx * Math.PI / 180, fit.ry * Math.PI / 180, fit.rz * Math.PI / 180, 'XYZ'));
-    const gq = _q.multiply(this.socket).multiply(adj);
+    const gq = _q.multiply(this.socket);
     a.grip('Right', _v);
-    this.obj.quaternion.copy(gq);
-    this.obj.position.copy(_v).add(_v2.set(fit.ox, fit.oy, fit.oz).multiplyScalar(k).applyQuaternion(gq));
-    this.obj.scale.setScalar(fit.s * k);
+    applyFit(this.obj, _v, gq, fitW('short', a), new THREE.Vector3(), k, k);
     this.obj.updateMatrixWorld(true);
   }
 }
@@ -564,6 +571,12 @@ function fistPose(a) {
   }
   fistCache.set(a.obj.uuid, pose); return pose;
 }
+// pose actor a on frame f of clip, run fn, then put the actor back exactly as it was
+function withPose(a, clip, f, fn) {
+  const saved = []; a.obj.traverse((o) => { if (o.isBone) saved.push([o, o.quaternion.clone(), o.position.clone()]); });
+  const mx = new THREE.AnimationMixer(a.obj), ac = mx.clipAction(clip); ac.play(); ac.time = clipT0(clip) + (f - 1) / fpsOf(clip); mx.update(0); a.root.updateMatrixWorld(true);
+  try { fn(); } finally { ac.stop(); mx.uncacheRoot(a.obj); for (const [b, q, p] of saved) { b.quaternion.copy(q); b.position.copy(p); } a.root.updateMatrixWorld(true); }
+}
 const HAND0 = { Right: 0, Left: 0, gunHand: 'Right' };
 const HANDS = {};
 const handKey = () => S.char + ':' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
@@ -616,7 +629,7 @@ const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
-const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', axe: 'Axe' };
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', axe: 'Axe', short: 'Shotgun' };
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
   for (const [w, v] of Object.entries(j)) if (typeof v === 'object') for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f };
@@ -633,7 +646,7 @@ const PFIT_ROWS = [['size', 'size %', 60, 120, 1], ['fwd', 'forward / back (mm)'
 let pfitWho = 'main', pfitSync = null;
 // slider labels per weapon (the bat: its long axis runs through her fist from the little finger to the index knuckle;
 // model +X points to the knuckles, +Y toward the wrist or the fingertips)
-const FIT_LABELS = { axe: ['size %', 'slide along the handle (mm)', 'move sideways (mm)', 'move toward the blade side (mm)', 'tilt (deg)', 'turn (deg)', 'roll the blade (deg)'], bat: ['size %', 'slide along the bat (mm)', 'move toward wrist / fingertips (mm)', 'move toward knuckles / palm (mm)', 'tip toward wrist / fingertips (deg)', 'tip toward knuckles / palm (deg)', 'roll the bat (deg)'] };
+const FIT_LABELS = { short: ['size %', 'move sideways (mm)', 'move up / down (mm)', 'slide along the barrel (mm)', 'roll (deg)', 'turn muzzle left / right (deg)', 'tip muzzle up / down (deg)'], axe: ['size %', 'slide along the handle (mm)', 'move sideways (mm)', 'move toward the blade side (mm)', 'tilt (deg)', 'turn (deg)', 'roll the blade (deg)'], bat: ['size %', 'slide along the bat (mm)', 'move toward wrist / fingertips (mm)', 'move toward knuckles / palm (mm)', 'tip toward wrist / fingertips (deg)', 'tip toward knuckles / palm (deg)', 'roll the bat (deg)'] };
 function buildPistolFit() {
   const box = document.createElement('div'); box.id = 'pfit';
   box.style.cssText = 'position:fixed;right:8px;top:200px;z-index:30;background:rgba(20,26,30,.85);color:#ddd;font:11px system-ui;padding:6px 8px;border-radius:8px;width:210px';

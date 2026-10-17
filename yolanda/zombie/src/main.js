@@ -182,7 +182,8 @@ async function load() {
 // The bat: Quaternius's Sword Regular Combo (one-handed, four strikes), built on the Yola that plays, the bat in her right
 // fist and the matching Sword Idle as its stance (src/render/libattack.js). Without the clip the older bat combo stays.
 function setupBat(anims, fits = {}) {
-  yola.axeFit = fits.axe?.[YOLA_MODEL === '2' ? 'yola2' : 'yola'] || null; // (the axe's fit, from the same Rig Lab file)
+  const who = YOLA_MODEL === '2' ? 'yola2' : 'yola';
+  yola.axeFit = fits.axe?.[who] || null; yola.shotgunFit = fits.short?.[who] || null; // (the axe's and shotgun's fits, same Rig Lab file)
   const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = anims.find((c) => c.name === 'ual1_Sword_Idle');
   if (!combo) return;
   const h = new THREE.Group(), m = makeBat(0.84);
