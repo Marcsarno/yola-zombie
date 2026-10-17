@@ -1,0 +1,596 @@
+{
+ "moves": {
+  "baseball_double": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "built_bat_combo_v4": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "baseball_homerun": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "bat_idle": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "bat",
+     "why": "",
+     "speed": 1,
+     "hand": "Left",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "bat_swing": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "gs_low_slash": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "heavy_swing": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kev_HumanF_Attack2H01": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_2H_Attack_Chop": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_2H_Attack_Slice": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_2H_Attack_Spin": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_2H_Attack_Spinning": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_2H_Attack_Stab": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_2H_Idle": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "t_chop": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "ual_Sword_Heavy_Combo": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "sledgehammer",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "axe",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "kev_HumanF_AttackPolearm01": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "chainsaw",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "kev_HumanF_CombatIdlePolearm01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kev_HumanF_Attack1H01_L": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "knife",
+     "why": "",
+     "speed": 1,
+     "hand": "Left",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "kev_HumanF_Attack1H01_R": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kev_HumanF_CombatIdle1H01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_1H_Attack_Chop": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_1H_Attack_Jump_Chop": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "melee_horizontal": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "bat",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "crowbar",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "chainsaw",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "axe",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    }
+   ]
+  },
+  "ual1_Sword_Attack": {
+   "verdict": "good",
+   "note": "would be good for the axe. but axe blade is facing wrong way",
+   "uses": [
+    {
+     "weapon": "bat",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "crowbar",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "ual1_Sword_Idle": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "ual_Melee_Hook": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "ual_Melee_Hook_Rec": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "ual_OverhandThrow": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "ual_Sword_Block": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "ual_Sword_Dash": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "knife",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "bat",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "crowbar",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 0,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "kk_Melee_1H_Attack_Slice_Diagonal": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_1H_Attack_Slice_Horizontal": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_1H_Attack_Stab": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "ual_Sword_Regular_A": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "ual_Sword_Regular_A_Rec": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "ual_Sword_Regular_B": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "bat",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    },
+    {
+     "weapon": "sledgehammer",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    },
+    {
+     "weapon": "axe",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    },
+    {
+     "weapon": "crowbar",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    },
+    {
+     "weapon": "knife",
+     "why": "",
+     "speed": 0.75,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    }
+   ]
+  },
+  "ual_Sword_Regular_B_Rec": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "ual_Sword_Regular_C": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "bat",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    },
+    {
+     "weapon": "sledgehammer",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 95,
+     "slide": 0.04,
+     "flip": false
+    }
+   ]
+  },
+  "ual_Sword_Regular_Combo": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "bat",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "crowbar",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    },
+    {
+     "weapon": "knife",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "kevs_HumanF_AssaultRifle_Aim01_Shoot01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kevs_HumanF_Gun_Aim01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kevs_HumanF_Gun_Aim01_Shoot01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kevs_HumanF_Gun_Reload01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kevs_HumanF_Rifle_Aim01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kevs_HumanF_Rifle_Aim01_Shoot01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kevs_HumanF_Rifle_Reload01": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "kevs_HumanF_ThrowGrenade01_L": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "reload_rifle_stand": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "shotgun",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "sg_reload": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "t_kick_01": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "none",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "t_kick_02": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "none",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "t_box_02": {
+   "verdict": "good",
+   "note": "",
+   "uses": [
+    {
+     "weapon": "none",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    }
+   ]
+  },
+  "death_fall": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "hit_body": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "kev_HumanF_CombatDamage01": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "kk_Melee_Block_Hit": {
+   "verdict": "no",
+   "note": "",
+   "uses": []
+  },
+  "t_hit_body_01": {
+   "verdict": "maybe",
+   "note": "",
+   "uses": []
+  },
+  "t_hit_head": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "ual1_Death01": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "ual1_Hit_Chest": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "ual1_Hit_Head": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "ual_Hit_Knockback": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "ual1_Roll": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  },
+  "ual_Zombie_Scratch": {
+   "verdict": "good",
+   "note": "",
+   "uses": []
+  }
+ },
+ "updated": "2026-10-16T00:51:12.231Z"
+}

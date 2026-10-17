@@ -35,16 +35,20 @@ const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ==
 async function json(url) { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } }
 // the newest of: the dev server's live copy, the copy shipped with the game, this browser's own copy (moves.html)
 async function loadSelection() {
-  const all = [await json('shots/move_selection.json?' + Date.now()), await json('assets/moves/selection.json'), store.get('moves_selection', null)].filter(Boolean);
+  const all = [await json('shots/move_selection.json?' + Date.now()), await json('assets/moves/selection.json'), await json('assets/arena/selection.json'), store.get('moves_selection', null)].filter(Boolean);
   return all.sort((a, b) => String(b.updated).localeCompare(String(a.updated)))[0] || { moves: {} };
 }
 
 export async function startTestArena({ game, scene, loader, telegraphs }) {
   const yola = game.yola;
-  const [catalog, wj, SEL, lib] = await Promise.all([json('assets/moves/catalog.json'), json('assets/moves/weapons.json'), loadSelection(), loader.loadAsync(game.yolaModel === '2' ? 'assets/moves/yola2_moves.glb' : 'assets/moves/yola_moves.glb')]);
+  // (assets/moves stays out of the public build: its Move Library bake holds Kevin Iglesias clips. The arena's own data is
+  // copied to assets/arena, and the clips of the picks are in the game's files (yola2.glb, yola2_ual.glb), so online it
+  // has every weapon; the bake, when it is here (local), adds the rest. 2026-10-17: online it had no library weapons.)
+  const either = async (f) => (await json('assets/moves/' + f)) || json('assets/arena/' + f);
+  const [catalog, wj, SEL, lib] = await Promise.all([either('catalog.json'), either('weapons.json'), loadSelection(), loader.loadAsync(game.yolaModel === '2' ? 'assets/moves/yola2_moves.glb' : 'assets/moves/yola_moves.glb').catch(() => null)]);
   const WDEF = wj?.weapons || {};
   // (the library picks, plus the clips in her own file: the new Yola carries the Mixamo and Tripo ones there)
-  const clips = Object.fromEntries([...(game.yolaClips || []), ...lib.animations].map((c) => [c.name, c]));
+  const clips = Object.fromEntries([...(game.yolaClips || []), ...(lib?.animations || [])].map((c) => [c.name, c]));
   const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
   // her closed fist (a frame of the built bat combo where both hands grip the bat), put on each hand holding a weapon
   let fingers = null;

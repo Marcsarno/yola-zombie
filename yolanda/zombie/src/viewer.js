@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe, prepPistolCore, PISTOL_CORE_SCALE } from './render/weaponModels.js';
+import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, makeKnife, prepAxe, prepPistolCore, PISTOL_CORE_SCALE } from './render/weaponModels.js';
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
@@ -31,7 +31,7 @@ const YOLA2_REF = { bat_swing: 'yola_baseball_single', bat_swing_m: null, pistol
 const CHARS = {
   yola: { label: 'Yola', file: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_sword.glb'], height: 1.62, ref: 'yola_' },
   // the new Yola (2026-10-16, the user's Tripo nurse-scrubs model): every game clip plus the library picks
-  yola2: { label: 'Yola 2 (new model)', file: 'assets/yola2.glb', extra: ['assets/moves/yola2_moves.glb'], height: 1.62, ref: 'yola_', refMap: YOLA2_REF,
+  yola2: { label: 'Yola 2 (new model)', file: 'assets/yola2.glb', extra: ['assets/yola2_ual.glb', 'assets/moves/yola2_moves.glb'], height: 1.62, ref: 'yola_', refMap: YOLA2_REF,
     libRef: { pistol_reload: 'ual1_Pistol_Reload' } }, // (2026-10-17: her reload is Quaternius Pistol_Reload, support hand on the gun)
   nurse: { label: 'Zombie nurse', file: 'assets/zombie-nurse-mod.glb', height: 1.78, ref: 'zombie_' },
   patient: { label: 'Zombie patient', file: 'assets/zombie-patient-mod.glb', height: 1.78, ref: 'zombie_' },
@@ -72,8 +72,13 @@ const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand
 // clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
 // frames 38-99, measured by matching both hands over the clip, 2026-10-16; before this the two were shown out of step)
 const REF_OFFSET = { pistol_reload: 37 };
-const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat' };
-const HELD = { pistol: 1, axe: 1, bat: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
+const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
+const HELD = { pistol: 1, axe: 1, bat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
+// the weapon test arena's other weapons (2026-10-17, the user: "add the axe, chainsaw, sledge hammer back to ... the rig lab
+// .. and the knife"): their frames from the Move Library's data sheet (assets/arena/weapons.json: grip point, shaft and
+// reference axes, one or two hands), held as the bat (one hand) or the axe (two hands) is
+const LIB_WEAPONS = { sledgehammer: 1, chainsaw: 1, knife: 1 };
+let WDEFS = {};
 const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
 const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb' };
 
@@ -310,7 +315,8 @@ async function setChar(key) {
           const tag = packs.includes(f) ? { pack: /ual1_/.test(a.name) ? 'UAL1' : 'UAL2' } : extraQ.includes(f) ? { test: f.split('/').pop() } : {};
           // (a pack clip the character already has, e.g. a library pick, keeps the one it has, listed with the pack)
           if (tag.pack && have[a.name]) { have[a.name].userData = { ...have[a.name].userData, ...tag }; continue; }
-          a.userData = { ...a.userData, ...tag }; g.animations.push(a);
+          if (have[a.name] && !extraQ.includes(f)) continue; // (a clip in two of her files, e.g. yola2_ual and the Move Library bake: the first one)
+          a.userData = { ...a.userData, ...tag }; g.animations.push(a); have[a.name] = a;
         }
       } catch { /* not built */ }
     }
@@ -515,6 +521,15 @@ function updateMags() {
 }
 loadG('assets/weapons/pistol_core.glb').then((g) => { scene.remove(held.pistol); held.pistol = prepPistolCore(g); held.pistol.visible = false; scene.add(held.pistol); refresh(); }).catch(() => {}); // the game's pistol (the pack's)
 loadG('assets/weapons/fire_axe.glb').then((g) => { held.axe = prepAxe(g); held.axe.visible = false; scene.add(held.axe); applyGun(); refresh(); }).catch(() => {});
+fetch('assets/arena/weapons.json').then((r) => r.json()).then(async (j) => {
+  WDEFS = j.weapons || {};
+  for (const k in LIB_WEAPONS) {
+    const D = WDEFS[k]; if (!D) continue;
+    const make = async () => { const o = D.builder === 'knife' ? makeKnife() : (await loadG(D.file)).scene; o.traverse((m) => { if (m.isMesh) m.frustumCulled = false; }); const h = new THREE.Group(); h.add(o); h.visible = false; scene.add(h); return h; };
+    try { held[k] = await make(); heldRef[k] = await make(); } catch (e) { console.warn('weapon', k, e); }
+  }
+  refresh();
+}).catch(() => {});
 const _m4 = new THREE.Matrix4();
 // the same held weapon in the reference rig's hands (the user, 2026-10-16: to compare how each hand closes on it)
 const heldRef = { bat: makeBat(), pistol: makePistol() }; for (const k in heldRef) { heldRef[k].visible = false; scene.add(heldRef[k]); }
@@ -678,7 +693,7 @@ const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
-const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', axe: 'Axe', short: 'Shotgun' };
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', axe: 'Axe', short: 'Shotgun', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
   for (const [w, v] of Object.entries(j)) if (typeof v === 'object') for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f };
@@ -756,6 +771,21 @@ function placeHeldOn(a, o) {
   if (w === 'pistol' && $('pistolFist')?.checked && pistolInFist(a, o)) return;
   // the one-handed bat as the game holds it (render/holdfit.js): grip in her fist, shaft along the knuckles, the user's fit
   if (w === 'bat' && placeOneHanded(a.bones, a === main ? handsOf().gunHand : 'Right', o, BAT_DEF, fitW('bat', a), {}, k)) return;
+  // the arena's other weapons: one-handed as the bat, two-handed as the axe (the handle through both fists), in their own
+  // model frames (the data sheet's shaft and reference axes), then the user's fit
+  const LD = LIB_WEAPONS[w] && WDEFS[w];
+  if (LD && LD.hands === 'one' && placeOneHanded(a.bones, a === main ? handsOf().gunHand : 'Right', o, LD, fitW(w, a), {}, k)) return;
+  if (LD && LD.hands === 'two') {
+    const B = a.bones, ax = (sd) => B[sd + 'HandIndex1'].getWorldPosition(new THREE.Vector3()).sub(B[sd + 'HandPinky1'].getWorldPosition(_v3)).normalize();
+    const L2 = B.LeftHandIndex1 && twoHandLine(B, ax('Right').add(ax('Left')).normalize(), { c: new THREE.Vector3(), d: new THREE.Vector3(), span: 0 });
+    if (L2) {
+      const sh = new THREE.Vector3(...LD.shaft_axis).normalize(), rf = new THREE.Vector3(...LD.ref_axis); rf.addScaledVector(sh, -rf.dot(sh)).normalize();
+      const fwd = a.root.getWorldDirection(new THREE.Vector3()); fwd.addScaledVector(L2.d, -fwd.dot(L2.d)).normalize();
+      const m1 = new THREE.Matrix4().makeBasis(sh, rf, new THREE.Vector3().crossVectors(sh, rf)), m2 = new THREE.Matrix4().makeBasis(L2.d, fwd, new THREE.Vector3().crossVectors(L2.d, fwd));
+      applyFit(o, L2.c, new THREE.Quaternion().setFromRotationMatrix(m2.multiply(m1.transpose())), fitW(w, a), new THREE.Vector3(...LD.grip_primary), k, k);
+      return;
+    }
+  }
   // the fire axe as the game holds it (render/clipchars.js placeWeapons): the handle through both fists' centres, the
   // blade facing her front (the game also turns it to lead a fast swing), then the user's fit. Which end is the head: the
   // fists' grip axes here (the game uses the handle direction it measured on X Bot)
@@ -818,6 +848,10 @@ const WEAPON_CLIPS = {
   short: { label: 'Shotgun', idle: 'sg_reload', attack: null }, // (the game holds sg_reload's hold frame; its kick is not in the Rig Lab yet)
   axe: { label: 'Axe', idle: 'bat_idle', attack: 'bat_swing' }, // (its combo: bat_swing, then t_chop)
   bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
+  // (the arena's weapons: their first "good" pick in the Move Library as the attack)
+  sledgehammer: { label: 'Sledgehammer', idle: 'bat_idle', attack: 'ual_Sword_Heavy_Combo' },
+  chainsaw: { label: 'Chainsaw', idle: 'bat_idle', attack: 'melee_horizontal' },
+  knife: { label: 'Knife', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Dash' },
   none: { label: 'None', idle: null, attack: null },
 };
 // the clip list grouped by weapon and kind of move, as the game plays them (the user, 2026-10-16: "this viewer isn't
