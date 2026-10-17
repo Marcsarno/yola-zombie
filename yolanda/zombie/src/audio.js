@@ -1,4 +1,8 @@
-// Combat sounds, synthesised (same lazy-AudioContext pattern as the hospital game's sound class).
+import { Samples } from './sfx/samples.js';
+import { BANKS } from './sfx/banks.js';
+
+// Combat sounds: recorded banks (src/sfx, SOUND_PLAN.md) where they exist, synthesised for the rest; the pause menu's
+// "Effects: classic" plays only the original synthesised set (same lazy-AudioContext pattern as the hospital game's sound class).
 // Starts on the first user gesture; master volume + mute, and three buses under it (effects, music, dialogue), each
 // with its own level and mute. Effects are capped: a swing through five zombies plays one crack, not five, and no more
 // than MAX_VOICES effect sounds ring at once (the newest important ones win).
@@ -15,6 +19,29 @@ const SILENT_WAV = (() => {
 })();
 
 const MINOR = new Set(['groan', 'zombieHurt', 'bump', 'ricochet', 'batMiss', 'windup', 'empty', 'dry']); // dropped first when crowded
+// names the game asks for that only the recorded banks know: the synth plays its older equivalent
+const SYNTH_ALIAS = { pistolReload: 'reload', pistolReloadDone: 'reloadDone', shotgunReload: 'shellsStart' };
+// the room's share of a synthesised sound in the new mix (the rest get 0.14)
+const SYNTH_WET = { heal: 0.05, swap: 0.04, wave: 0.03, clear: 0.03, death: 0.05, liftDing: 0.2, power: 0.2, bang: 0.3, groan: 0.3, zombieDeath: 0.2, knockdown: 0.22, shieldBreak: 0.3 };
+
+// a room's answer, generated (no file): a few early reflections, then a diffuse tail that loses its top faster than
+// its body (hospital corridors: hard walls, ~1 s)
+function makeRoomIR(ctx, secs = 1.05, pre = 0.009) {
+  const sr = ctx.sampleRate, n = Math.floor(sr * (secs + pre)), ir = ctx.createBuffer(2, n, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch); let lo = 0;
+    for (let i = Math.floor(pre * sr); i < n; i++) {
+      const t = i / sr - pre, w = Math.random() * 2 - 1;
+      lo += (w - lo) * 0.08; // one-pole split: the body ...
+      const hi = w - lo;     // ... and the air
+      d[i] = lo * 2.2 * Math.exp(-6.9 * t / secs) + hi * 0.5 * Math.exp(-6.9 * t / (secs * 0.35));
+    }
+    for (const [ms, a] of [[11, 0.5], [17, 0.38], [23, 0.33], [31, 0.27], [39, 0.2], [52, 0.16]]) { // early reflections, different per ear
+      const i = Math.floor((pre + (ms + (ch ? 2.7 : 0)) / 1000) * sr); if (i < n) d[i] += a * (ch ? -1 : 1) * (0.8 + Math.random() * 0.4);
+    }
+  }
+  return ir;
+}
 
 export class CombatAudio {
   constructor() {
@@ -22,15 +49,32 @@ export class CombatAudio {
     this.volume = 0.8; this.muted = false;
     this.levels = { sfx: 1, music: 0.7, voice: 1 }; this.busMuted = { sfx: false, music: false, voice: false };
     this.recent = new Map(); this.active = []; this.duckK = 1;
+    this.modern = true; this.samples = new Samples(); this.spatial = null;
   }
+  preload() { this.samples.preload(); } // fetch the recorded banks while the game loads
 
   init() {
     if (!this.ctx) {
       try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
-      this.master = this.ctx.createGain(); this.master.connect(this.ctx.destination);
-      // the buses: effects (the synthesised one-shots), music (the opening's loop, the combat track), dialogue (voices)
-      this.sfx = this.ctx.createGain(); this.musicBus = this.ctx.createGain(); this.voiceBus = this.ctx.createGain();
-      for (const b of [this.sfx, this.musicBus, this.voiceBus]) b.connect(this.master);
+      const c = this.ctx;
+      // a brick-wall limiter last: big moments can be loud without clipping the phone's output
+      this.limiter = c.createDynamicsCompressor();
+      Object.entries({ threshold: -2.5, knee: 0, ratio: 20, attack: 0.002, release: 0.12 }).forEach(([k, v]) => (this.limiter[k].value = v));
+      this.master = c.createGain(); this.master.connect(this.limiter); this.limiter.connect(c.destination);
+      // the buses: effects (the one-shots), music (the opening's loop, the combat track), dialogue (voices)
+      this.sfx = c.createGain(); this.musicBus = c.createGain(); this.voiceBus = c.createGain();
+      for (const b of [this.musicBus, this.voiceBus]) b.connect(this.master);
+      // effects glue (new mode): a gentle bus compressor so the hits sit together and the tails come up
+      this.sfxComp = c.createDynamicsCompressor();
+      Object.entries({ threshold: -16, knee: 8, ratio: 3, attack: 0.004, release: 0.18 }).forEach(([k, v]) => (this.sfxComp[k].value = v));
+      this.sfxComp.connect(this.master);
+      this.sfx.connect(this.modern ? this.sfxComp : this.master);
+      // the room: one shared convolution reverb fed by each voice's send, returned into the effects bus
+      try {
+        this.reverbIn = c.createGain(); const conv = c.createConvolver(); conv.buffer = makeRoomIR(c);
+        this.reverbIn.connect(conv); conv.connect(this.sfx);
+      } catch { this.reverbIn = null; }
+      this.samples.attach(c);
       this.applyVolume();
       const len = this.ctx.sampleRate * 0.6;
       this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -101,10 +145,57 @@ export class CombatAudio {
     return true;
   }
 
-  play(name, k = 1) {
+  // pos: {x, z} in the world (panned and faded by distance through this.spatial, which main.js supplies); none = at Yola
+  play(name, k = 1, pos = null) {
     if (!this.ok || !this.admit(name, k)) return;
     const t = this.ctx.currentTime;
+    if (!this.modern) { this.out = null; this.synth(SYNTH_ALIAS[name] || name, k, t); return; }
+    const sp = pos && this.spatial ? this.spatial(pos.x, pos.z) : null;
+    if (this.samples.ready(name)) { this.playBank(name, k, t, sp); return; }
+    this.out = this.chain(sp, SYNTH_WET[name] ?? 0.14); this.synth(SYNTH_ALIAS[name] || name, k, t); this.out = null;
+  }
+
+  playBank(name, k, t, sp) {
+    const c = this.ctx;
+    BANKS[name].layers.forEach((l, li) => {
+      const at = Array.isArray(l.at) ? l.at[0] + Math.random() * (l.at[1] - l.at[0]) : l.at || 0;
+      const lsp = l.side && sp ? { ...sp, pan: Math.max(-0.9, Math.min(0.9, sp.pan + (Math.random() < 0.5 ? -0.18 : 0.18))) } : l.side ? { pan: Math.random() < 0.5 ? -0.18 : 0.18, d: 0 } : sp;
+      if (l.synth) { this.out = this.chain(lsp, l.wet ?? 0, l.gain ?? 1); this.synth(l.synth, k, t + at); this.out = null; return; }
+      const f = this.samples.pick(name + li, l.files); if (!f) return;
+      const src = c.createBufferSource(); src.buffer = this.samples.buf.get(f);
+      const semi = l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
+      src.playbackRate.value = Math.pow(2, semi / 12);
+      const jitter = Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20); // +-1.2 dB, take to take
+      src.connect(this.chain(lsp, l.wet ?? 0.15, (l.gain ?? 1) * Math.min(1.6, k) * jitter));
+      src.start(t + at, this.samples.lead.get(f) || 0);
+    });
+  }
+
+  // one voice's route: level and distance -> air (far sounds lose their top) -> stereo position -> the effects bus,
+  // plus a send into the room reverb that grows with distance (far away is mostly room)
+  chain(sp, wet = 0, gain = 1) {
+    const c = this.ctx, g = c.createGain(), d = sp?.d || 0, pan = sp?.pan || 0;
+    g.gain.value = gain / (1 + Math.max(0, d - 2.5) * 0.16);
+    let tail = g;
+    if (d > 5) { const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = Math.max(2400, 20000 * Math.exp(-(d - 5) * 0.08)); tail.connect(lp); tail = lp; }
+    if (pan && c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pan; tail.connect(p); tail = p; }
+    tail.connect(this.sfx);
+    if (wet > 0 && this.reverbIn) { const s = c.createGain(); s.gain.value = wet * (1 + Math.min(1.2, d / 12)); g.connect(s); s.connect(this.reverbIn); }
+    return g;
+  }
+
+  // the classic (synthesised only) sounds or the new ones: recorded banks, panning, the room, the bus compressor
+  setModern(on) {
+    this.modern = on;
+    if (!this.sfx) return;
+    this.sfx.disconnect();
+    this.sfx.connect(on ? this.sfxComp : this.master);
+  }
+
+  synth(name, k, t) {
     switch (name) {
+      case 'subPistol': this.tone(t, 0.13, 125, { f2: 46, gain: 0.32 * k, type: 'sine', attack: 0.001 }); break; // headphone weight under the recorded crack
+      case 'subShotgun': this.tone(t, 0.32, 92, { f2: 32, gain: 0.55 * k, type: 'sine', attack: 0.001 }); this.tone(t, 0.16, 180, { f2: 70, gain: 0.18 * k, type: 'triangle', attack: 0.001 }); break;
       case 'shot':
         this.noise(t, 0.12, { type: 'lowpass', f: 5200, f2: 600, gain: 0.55 * k });
         this.tone(t, 0.09, 150, { f2: 55, gain: 0.5 * k, type: 'triangle' });

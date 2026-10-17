@@ -71,6 +71,11 @@ const tuning = makeTuning(store.get('tuning', null));
 const audio = new CombatAudio();
 audio.setVolume(store.get('volume', 0.8)); audio.setMuted(store.get('muted', false));
 for (const b of ['sfx', 'music', 'voice']) { audio.levels[b] = store.get('lvl_' + b, audio.levels[b]); audio.busMuted[b] = store.get('mute_' + b, false); }
+audio.setModern(store.get('sfxModern', true)); // (pause menu: new recorded effects / the classic synthesised set)
+// where a sound sits: left/right from its place on screen (the camera never turns, so screen left is the left ear), and
+// its distance from Yola (fainter, duller, more room)
+const _ap = new THREE.Vector3();
+audio.spatial = (x, z) => { _ap.set(x, 1, z).project(camera); return { pan: Math.max(-0.85, Math.min(0.85, _ap.x * 0.7)), d: Math.hypot(x - sim.player.x, z - sim.player.z) }; };
 const music = new GameMusic(audio); // the supplied combat track: explore / combat with hysteresis (music.js)
 const fx = new FX(scene);
 // the full burst on big finishing blows (render/gibburst.js): one model per zombie type that has one (0 nurse, 1 patient)
@@ -143,6 +148,7 @@ const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: [], 
 const loader = new GLTFLoader();
 async function load() {
   gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb' }); // (in the background: until it is in, kills die as before)
+  audio.preload(); // (the recorded effect banks: small, fetched now, decoded on the first tap)
   music.preload(); // (the gameplay track buffers while the game loads: it starts the moment the reveal hands over)
   hud.loading(0);
   arena = new Arena(scene, resolvedQuality(), renderer);
@@ -511,8 +517,8 @@ function handleEvents() {
         audio.play('shot');
         fx.muzzle(yola.muzzleWorld);
         fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez);
-        if (e.hit === 'zombie' && !e.blocked) { fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); audio.play('bulletHit'); if (!e.killed) audio.play('zombieHurt'); } // (a round on the guard's shield: its own knock, no blood)
-        else if (e.hit === 'wall') { fx.impactWall(e.ex, e.ez, e.nx, e.nz); audio.play('ricochet'); }
+        if (e.hit === 'zombie' && !e.blocked) { fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); audio.play('bulletHit', 1, { x: e.ex, z: e.ez }); if (!e.killed) audio.play('zombieHurt', 1, { x: e.ex, z: e.ez }); } // (a round on the guard's shield: its own knock, no blood)
+        else if (e.hit === 'wall') { fx.impactWall(e.ex, e.ez, e.nx, e.nz); audio.play('ricochet', 1, { x: e.ex, z: e.ez }); }
         shake(0.12);
         break;
       }
@@ -581,17 +587,17 @@ function handleEvents() {
       case 'sprinterSpot': if (dist(e.id) < 14) audio.play('groan', 1.5); break; // her scream before the charge
       case 'zombieTumble': audio.play('knockdown'); if (dist(e.id) < 8) shake(0.15); break;
       case 'sprinterHit': audio.play('bump', 1.2); shake(0.5); break; // her charge ran into Yola
-      case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 16, 0xcfc6b4, 2.2, 0.8, 0.6); if (d < 7) shake(0.9 - d * 0.1); break; } // the guard's smash: dust, a ring, the floor shakes
+      case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 16, 0xcfc6b4, 2.2, 0.8, 0.6); if (d < 7) shake(0.9 - d * 0.1); break; } // the guard's smash: dust, a ring, the floor shakes
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
-      case 'shieldHit': audio.play('shieldHit', e.kind === 'pistol' ? 0.7 : 1); fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ); if (e.kind !== 'pistol') shake(0.25); break;
+      case 'shieldHit': audio.play('shieldHit', e.kind === 'pistol' ? 0.7 : 1, e); fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ); if (e.kind !== 'pistol') shake(0.25); break;
       case 'shieldBreak': audio.play('shieldBreak'); fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 0xd7e7e2, 2.4, 0.9, 0.55); shake(0.55); hud.popup('SHIELD BROKEN'); break;
       case 'headshot': audio.play('bulletHit', 1.5); shake(0.35); hud.popup('HEADSHOT'); break;
       case 'batMiss': audio.play('batMiss'); break;
-      case 'batClank': audio.play('clank'); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;
+      case 'batClank': audio.play('clank', 1, e); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;
       case 'hitPause': hitPauseT = Math.max(hitPauseT, e.dur); break;
-      case 'reloadStart': audio.play(e.weapon === 'shotgun' ? 'shellsStart' : 'reload'); hud.flash('reload'); break;
-      case 'reloadDone': audio.play(e.weapon === 'shotgun' ? 'pump' : 'reloadDone'); break;
+      case 'reloadStart': audio.play(e.weapon === 'shotgun' ? 'shotgunReload' : 'pistolReload'); hud.flash('reload'); break;
+      case 'reloadDone': audio.play(e.weapon === 'shotgun' ? 'pump' : 'pistolReloadDone'); break;
       case 'swapStart': audio.play('swap'); break;
       case 'zombieWindup': if (dist(e.id) < 8) audio.play('windup'); break;
       case 'playerHurt': audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;

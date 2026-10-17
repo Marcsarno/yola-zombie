@@ -1,0 +1,122 @@
+# SOUND PLAN — making Yola's audio feel AAA
+
+This chat (started 2026-10-17) works ONLY on game sound and sound effects. Files it owns: `src/audio.js`, new
+`src/sfx/*`, new `assets/sfx/*`, this file. Shared: `src/main.js` (only the `audio.play(...)` hooks), `dist/combat.js`
+(commit bundles via `sh tools/clean_dist.sh`). The opening's own audio (`src/opening/opaudio.js`) belongs to the
+opening chat; `src/music.js` stays as it is (the user: one steady music level).
+
+## Why it sounds weak today (diagnosis)
+
+1. **Every effect is synthesised** from white noise and sine/saw oscillators (`src/audio.js`, ~40 sounds). No recorded
+   sound at all, so guns, bats and zombies sound like 8-bit "beeps and hiss" rather than real objects.
+2. **The weight lives where a phone can't play it.** The punch of the shot, the bat and the body thumps is a 38-120 Hz
+   sine. Phone speakers roll off below ~200-300 Hz, so on the device the user tests on those layers are nearly silent:
+   only the thin hiss is left.
+3. **One layer, no variation.** Each sound is the same every time (no round robin, no pitch/volume randomness), so
+   repetition makes it feel cheap within seconds.
+4. **No space.** Everything is mono, dead centre, same loudness at any distance, no room reverb. A zombie across the
+   ward sounds exactly like one on Yola's shoulder.
+5. **No mix processing.** No compressor or limiter on the master, so gains are kept low to avoid clipping, and big
+   moments can't be louder than small ones.
+6. **Whole categories are missing in gameplay:** Yola's footsteps, clothing and weapon foley, her effort/pain voice,
+   zombie footsteps and drags, real zombie vocals (today: a 90 Hz sawtooth "groan"), blood/gore, shell casings, body
+   falls with variety, room ambience (hospital hum, fluorescent buzz, alarms, distant moans), proper UI sounds.
+
+## What "AAA" means here (the techniques)
+
+- **Layering**: every important sound = transient (the crack) + body (the punch) + tail (the room) + detail
+  (mechanics, debris, blood). Built from recorded sources, mixed per event.
+- **Variation**: 3-6 takes per sound, random pick (never the same twice running) + small pitch/volume jitter.
+- **Phone translation**: the weight carried at 150-500 Hz plus gentle saturation so the bass is *implied* on small
+  speakers; the real sub still there for headphones.
+- **Space**: stereo pan from the screen position (the camera is fixed, so left-of-screen = left ear), distance
+  falloff, a room reverb per area (small office, long corridor, stairwell, lift shaft).
+- **A real mix**: master compressor + limiter, priority/voice stealing (already partly there), a short duck of the
+  ambience under the biggest hits so they "punch through". Music untouched.
+- **Feedback sounds** the player feels without thinking: hit-confirm and kill-confirm layers, a distinct headshot,
+  the shield-break crack, a low-health heartbeat and muffle, reload ticks synced to the animation frames.
+
+## The phases (each one is playable and judged by the user in the game before the next)
+
+**Phase 0 — the engine** (no new sounds yet, nothing audible changes)
+Sample loader + sound banks (variations, jitter, layers), stereo pan + distance from world position, convolution
+reverb per area (generated impulse responses, no big files), master compressor/limiter, mobile-friendly format
+(AAC .m4a; decoded size budget ~25 MB). The current synth sounds stay as the fallback, and the pause menu gets an
+**old / new sound toggle** so the user can A/B every phase.
+
+**Phase 1 — guns** (the biggest payoff)
+Pistol and shotgun: crack + body + indoor tail + mechanics; shell casings tinkling on the tile; dry fire; reloads in
+2-3 parts synced to the clip frames; pump rack; point-blank shotgun = an extra flesh/gore layer.
+
+**Phase 2 — melee and gore**
+Bat (wood crack + flesh), axe (blade bite + chop), fists/kick (slaps and thuds), sledgehammer (huge crunch), swing
+whooshes sized by weapon, clank on walls, sever, the gib burst (big wet explosion + pieces raining down), blood
+splats, body falls on tile. A kill-confirm layer on the hit that kills.
+
+**Phase 3 — zombies**
+A vocal set per type (patient, nurse, orderly, sprinter, guard): idle moans, alert, attack telegraph (the cue to
+dodge), hurt, death. The sprinter's scream before the charge, the guard's roar and slam. Shuffling/dragging feet.
+All positional, so the player can hear where they are off-screen.
+
+**Phase 4 — Yola**
+Footsteps on tile/linoleum/blood, scrubs rustle, weapon rattle while running, efforts on swings, pain on hits,
+knockdown, low-health heartbeat + muffled world.
+
+**Phase 5 — the world**
+Ambience bed per floor (ventilation, fluorescent buzz, distant alarm, far-off screams and banging), door/barricade
+sounds, lift (motor, cables, ding), pickups, objective and UI sounds.
+
+**Phase 6 — the mix pass**
+Final loudness and priorities, checked on the phone speaker AND headphones.
+
+## Where the sounds come from (decision needed from the user)
+
+- **Free libraries** — Sonniss GDC bundles (tens of GB of pro-recorded guns, impacts, foley, ambience; royalty-free
+  for games), Kenney audio and Freesound filtered to CC0. Raw packs stay in the gitignored `assets/source/` (like the
+  Kevin Iglesias files: the GitHub repo is public); only the edited in-game bank ships.
+- **ElevenLabs sound effects** (the user already uses ElevenLabs for the narration) — best for character-specific
+  sounds: zombie vocals per type and Yola's efforts/pain. Costs credits: agree a spending cap first.
+- Recommended: libraries for guns, impacts, gore, foley and ambience; ElevenLabs for the voices.
+
+## Yola's voice (the user, 2026-10-17) — rules for Phase 4 efforts/pain lines
+
+- Keep her consistent with the opening recordings: made with **Runway's generate_speech** tool, model **eleven_v3**,
+  voice **Niki** (a stock voice, not a custom clone), language **en**. One MP3 per line, two takes each: Take A plain,
+  Take B with `[confident]` before the line (e.g. "[confident] Hi. How's that knee treating you?"). The user prefers
+  **Take B**: that is the performance reference — conversational, clear, confident.
+- Keep approved audio where possible. Omit "Behind me."
+- The saved requests have NO stability, similarity, speed, seed or numeric ElevenLabs voice ID: never invent them.
+  If using ElevenLabs directly, verify it is the same voice preset (a matching name alone does not prove it).
+- Yola is separate from the intro narrator. Other voices: Brodie = the patient, Wanda = reception, Leslie = the
+  anesthesia colleague.
+
+## Sources used so far (raw files kept in the session scratchpad only, never committed)
+
+| Source | Licence | Used for |
+|---|---|---|
+| The Free Firearm Sound Library, "Prepared SFX Library.7z" (opengameart.org/content/the-free-firearm-sound-library) | CC0 | pistol (Walther PPQ near x3, 1911 near x2), shotgun (Benelli Nova, Winchester Model 12, Charles Daly, Mossberg 190: near x2 each), the Model 12's pump rack |
+| "handgun reload sound effect" reload.wav by zer0_sol (opengameart.org/content/handgun-reload-sound-effect) | CC0 | mag out, mag in (also the shotgun shell insert, pitched up), slide, dry-fire click |
+| synthesised in tools/sfx/build_guns.py | — | brass casings (9 mm on tile), shotgun hulls |
+
+Rebuild the bank: `python tools/sfx/build_guns.py "<...>/Prepared SFX Library" <...>/reload.wav assets/sfx/guns`
+(needs numpy, scipy, soundfile; the near-mic shots are cut at the transient, a "phone punch" harmonic layer is added
+under the 40-180 Hz body, peak -1 dBFS, MP3).
+
+## How the engine works (Phase 0, src/audio.js + src/sfx/)
+
+- `src/sfx/banks.js`: each sound = layers (takes picked at random, never twice running; pitch/level jitter; delays;
+  reverb send; synth layers mixed in). A name without a loaded bank falls back to the synth in audio.js.
+- `src/sfx/samples.js`: fetches the files while the game loads, decodes on the first tap, trims MP3 lead-in.
+- `audio.play(name, k, pos)`: `pos {x, z}` pans by screen position (fixed camera) and fades/dulls with distance
+  from Yola; more room reverb when far. main.js supplies `audio.spatial`.
+- Mix: effects bus -> gentle compressor (new mode) -> master -> limiter (-2.5 dB). Generated ~1 s room IR.
+- Pause menu "Effects: new / classic" (stored as sfxModern) — classic = the original synth only, dry and centred.
+
+## Log
+(newest at top)
+- 2026-10-17 (Phase 0 + 1 built): the engine above + the gun banks: pistol shot (5 takes + sub + room + brass),
+  shotgun (8 takes + sub + room), Model 12 pump (back/forward + hull), pistol reload (mag out/in, slide on done),
+  shotgun reload (4 shell inserts), dry fire. Bullet impacts/ricochets/shield/clank/slam now positioned (still synth
+  sounds: Phase 2). Measured through a phone-speaker filter (>300 Hz): new pistol ~7 dB louder than the old synth,
+  reloads ~13 dB; mechanics set ~10 dB under the shots. NOT yet heard by the user: judge on the phone + headphones.
+- 2026-10-17: plan written; nothing built yet.

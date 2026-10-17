@@ -50,6 +50,13 @@ export class Hud {
     const syncMute = () => { mute.textContent = audio.muted ? 'Sound: off' : 'Sound: on'; $('muteTop').classList.toggle('off', audio.muted); };
     const toggleMute = () => { audio.init(); audio.setMuted(!audio.muted); store.set('muted', audio.muted); syncMute(); };
     mute.addEventListener('click', toggleMute); $('muteTop').addEventListener('click', toggleMute); syncMute();
+    // A/B the sound work: the new recorded effects (SOUND_PLAN.md) or the classic synthesised set
+    const sfxMode = $('sfxModeBtn');
+    if (sfxMode) {
+      const syncMode = () => { sfxMode.textContent = audio.modern ? 'Effects: new' : 'Effects: classic'; };
+      sfxMode.addEventListener('click', () => { audio.setModern(!audio.modern); store.set('sfxModern', audio.modern); syncMode(); });
+      syncMode();
+    }
     for (const [id, key, def] of [['goreChk', 'gore', true], ['shakeChk', 'shake', true], ['debugChk', 'debug', false]]) {
       const el = $(id); el.checked = id === 'debugChk' ? new URLSearchParams(location.search).get('debug') === '1' : store.get(key, def);
       el.addEventListener('change', () => this.act(key, el.checked));
