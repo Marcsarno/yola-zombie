@@ -12515,13 +12515,13 @@
     update(inputSource, frame, referenceSpace) {
       let inputPose = null;
       let gripPose = null;
-      let handPose = null;
+      let handPose2 = null;
       const targetRay = this._targetRay;
       const grip = this._grip;
       const hand = this._hand;
       if (inputSource && frame.session.visibilityState !== "visible-blurred") {
         if (hand && inputSource.hand) {
-          handPose = true;
+          handPose2 = true;
           for (const inputjoint of inputSource.hand.values()) {
             const jointPose = frame.getJointPose(inputjoint, referenceSpace);
             const joint = this._getHandJoint(hand, inputjoint);
@@ -12607,7 +12607,7 @@
         grip.visible = gripPose !== null;
       }
       if (hand !== null) {
-        hand.visible = handPose !== null;
+        hand.visible = handPose2 !== null;
       }
       return this;
     }
@@ -38675,6 +38675,11 @@ void main() {
     undoPost(main);
     undoPost(ref);
     postureFix(main, ref);
+    handPose(main);
+    if (handsUI && handsSeen !== handKey()) {
+      handsSeen = handKey();
+      handsUI();
+    }
     shotKick(main);
     if (ref.root.visible) shotKick(ref);
     mainGun?.update(1);
@@ -38833,19 +38838,20 @@ void main() {
   });
   var PG = { at: new Vector3(0, 5e-3, 26e-4), axis: new Vector3(0, 0.9509, 0.3094).normalize() };
   function pistolInFist(a, o) {
+    const h = a === main ? handsOf().gunHand : "Right";
     const B = a.bones, c = new Vector3();
     let n = 0;
     for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
-      const b = B["RightHand" + f + i];
+      const b = B[h + "Hand" + f + i];
       if (b) {
         c.add(b.getWorldPosition(_v3));
         n++;
       }
     }
-    if (!n || !B.RightHandIndex1 || !B.RightHandPinky1) return false;
+    if (!n || !B[h + "HandIndex1"] || !B[h + "HandPinky1"]) return false;
     c.multiplyScalar(1 / n);
-    const A = B.RightHandIndex1.getWorldPosition(new Vector3()).sub(B.RightHandPinky1.getWorldPosition(_v3)).normalize();
-    const F = B.RightHand.getWorldPosition(new Vector3()).sub(B.RightForeArm.getWorldPosition(_v3));
+    const A = B[h + "HandIndex1"].getWorldPosition(new Vector3()).sub(B[h + "HandPinky1"].getWorldPosition(_v3)).normalize();
+    const F = B[h + "Hand"].getWorldPosition(new Vector3()).sub(B[h + "ForeArm"].getWorldPosition(_v3));
     F.addScaledVector(A, -F.dot(A)).normalize();
     const zb = new Vector3(0, 0, 1).addScaledVector(PG.axis, -PG.axis.z).normalize();
     const M1 = new Matrix4().makeBasis(PG.axis, zb, new Vector3().crossVectors(PG.axis, zb));
@@ -38932,6 +38938,107 @@ void main() {
       for (const k of b.children) if (k.isBone) postRot(a, k, (q) => q.premultiply(ci));
     }
     a.root.updateMatrixWorld(true);
+  }
+  var FINGER = /Hand(Thumb|Index|Middle|Ring|Pinky)\d$/;
+  var fistCache = /* @__PURE__ */ new Map();
+  function fistPose(a) {
+    if (fistCache.has(a.obj.uuid)) return fistCache.get(a.obj.uuid);
+    const clip = mainCache[S.char]?.gltf.animations.find((c) => c.name === "bat_idle");
+    let pose = null;
+    if (clip) {
+      const saved = [];
+      a.obj.traverse((o) => {
+        if (o.isBone) saved.push([o, o.quaternion.clone(), o.position.clone()]);
+      });
+      const mx = new AnimationMixer(a.obj), ac = mx.clipAction(clip);
+      ac.play();
+      ac.time = clipT0(clip);
+      mx.update(0);
+      pose = {};
+      for (const [n, b] of Object.entries(a.bones)) if (FINGER.test(n)) pose[n] = b.quaternion.clone();
+      ac.stop();
+      mx.uncacheRoot(a.obj);
+      for (const [b, q, p] of saved) {
+        b.quaternion.copy(q);
+        b.position.copy(p);
+      }
+      a.root.updateMatrixWorld(true);
+    }
+    fistCache.set(a.obj.uuid, pose);
+    return pose;
+  }
+  var HAND0 = { Right: 0, Left: 0, gunHand: "Right" };
+  var HANDS = {};
+  var handKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
+  var handsOf = () => {
+    var _a4;
+    return HANDS[_a4 = handKey()] || (HANDS[_a4] = { ...HAND0 });
+  };
+  fetch("assets/hold/hand_poses.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
+    for (const [k, v] of Object.entries(j)) if (typeof v === "object") HANDS[k] = { ...HAND0, ...v };
+    try {
+      for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem("handPoses") || "{}"))) HANDS[k] = { ...HAND0, ...v };
+    } catch {
+    }
+    handsUI?.();
+    refresh?.();
+  });
+  function handPose(a) {
+    const H = handsOf(), P = fistPose(a);
+    if (!P) return;
+    for (const side of ["Right", "Left"]) {
+      const k = H[side];
+      if (!(k > 0)) continue;
+      for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, k));
+    }
+    a.root.updateMatrixWorld(true);
+  }
+  var handsUI = null;
+  var handsSeen = "";
+  function buildHandsUI() {
+    const box = $("handsGrp");
+    if (!box) return;
+    const keep = () => {
+      try {
+        localStorage.setItem("handPoses", JSON.stringify(HANDS));
+      } catch {
+      }
+    };
+    const row = (side) => `<span class="lbl">${side === "Right" ? "R hand" : "L hand"}</span>` + [["open", 0], ["support", 0.5], ["closed", 1]].map(([t, v]) => `<button data-h="${side}" data-v="${v}">${t}</button>`).join("") + `<input type="range" min="0" max="100" step="5" data-hs="${side}" style="width:70px;vertical-align:middle"><span data-hv="${side}" style="display:inline-block;width:32px"></span>`;
+    box.innerHTML = row("Right") + row("Left") + '<span class="lbl">pistol in</span><button data-g="Right">R</button><button data-g="Left">L</button><button id="handsSave">save hands</button>';
+    handsUI = () => {
+      const H = handsOf();
+      for (const b of box.querySelectorAll("button[data-h]")) b.classList.toggle("on", Math.abs(H[b.dataset.h] - +b.dataset.v) < 0.01);
+      for (const r of box.querySelectorAll("input[data-hs]")) r.value = Math.round(H[r.dataset.hs] * 100);
+      for (const s of box.querySelectorAll("span[data-hv]")) s.textContent = Math.round(H[s.dataset.hv] * 100) + "%";
+      for (const b of box.querySelectorAll("button[data-g]")) b.classList.toggle("on", H.gunHand === b.dataset.g);
+    };
+    for (const b of box.querySelectorAll("button[data-h]")) b.onclick = () => {
+      handsOf()[b.dataset.h] = +b.dataset.v;
+      keep();
+      handsUI();
+      refresh();
+    };
+    for (const r of box.querySelectorAll("input[data-hs]")) r.oninput = () => {
+      handsOf()[r.dataset.hs] = r.value / 100;
+      keep();
+      handsUI();
+      refresh();
+    };
+    for (const b of box.querySelectorAll("button[data-g]")) b.onclick = () => {
+      handsOf().gunHand = b.dataset.g;
+      keep();
+      handsUI();
+      refresh();
+    };
+    $("handsSave").onclick = async () => {
+      const r = await fetch("/__shot/hand_poses.json", { method: "POST", body: JSON.stringify(HANDS, null, 1) });
+      $("handsSave").textContent = r.ok ? "saved" : "save failed";
+      setTimeout(() => {
+        $("handsSave").textContent = "save hands";
+      }, 1500);
+    };
+    handsUI();
   }
   function shotKick(a) {
     if (!a || weaponOf() !== "pistol" || !a.action) return;
@@ -39336,6 +39443,7 @@ void main() {
     $("marks").onchange = refresh;
     $("posture").onchange = refresh;
     $("mags").onchange = refresh;
+    buildHandsUI();
     $("batShow").onchange = refresh;
     $("vidSkel").onchange = refresh;
     $("bones").onchange = () => {
