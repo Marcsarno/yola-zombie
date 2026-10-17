@@ -98,7 +98,7 @@ export async function startTestArena({ game, scene, loader, telegraphs }) {
   async function buildAttack(e, speed) {
     const P = PROFILE[e.weapon], w = WDEF[e.weapon] && e.weapon !== 'none' ? WDEF[e.weapon] : null;
     const obj = w ? await model(e.weapon) : null;
-    const hold = { obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, fit: fits[e.weapon] || null }; // (carry: how it is held at rest, render/holdfit.js CARRY; fit: the user's Rig Lab fit)
+    const hold = { key: e.weapon, obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, fit: fits[e.weapon] || null }; // (carry: how it is held at rest, render/holdfit.js CARRY; fit: the user's Rig Lab fit)
     yola.setTestWeapon(hold);
     return buildLibraryAttack(yola, { clip: clips[e.clip], frames: meta[e.clip]?.frames, hold: w ? hold : null, P, speed, name: e.label, sound: e.weapon });
   }

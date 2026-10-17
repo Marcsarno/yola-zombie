@@ -7,6 +7,7 @@
 // A fit: size %, a move in mm along the weapon's own axes (fwd = its long axis, up = model +Y, side = model +X) and a turn
 // in degrees (tilt about +X, turn about +Y, roll about the long axis), pivoting on the grip point.
 import * as THREE from 'three';
+import { armToGrip } from './armfit.js';
 
 export const FIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _e = new THREE.Euler();
@@ -85,22 +86,34 @@ export function twoHandLine(bones, toward, out, hold = 'Right', prev = null) {
 
 // ---- the other hand on the handle (2026-10-17, from the Blender hold check: the arena held its two-handed weapons in one
 // fist, the second hand never on the second grip; the axe's leg chop let one fist drift off the handle mid-slash) ----
-// The hand turned so its grip axis (pinky -> index knuckle) runs along the handle (whichever way round is nearer), then the
-// arm (render/ik.js, which keeps the hand's turn) brings its grip point (between the wrist and the middle knuckle) to
-// `point`. w: how much (0 = untouched). The caller closes the fingers.
-const _ha = new THREE.Vector3(), _hb = new THREE.Vector3(), _hd = new THREE.Vector3(), _hq = new THREE.Quaternion(), _hw = new THREE.Quaternion(), _hp = new THREE.Quaternion(), _hi = new THREE.Quaternion();
-export function handOnto(bones, side, point, dir, w, solveArm) {
+// The hand's grip axis (pinky -> index knuckle) along the handle, its grip point (between the wrist and the middle knuckle)
+// on `point`, by render/armfit.js: within the wrist's, forearm's and elbow's anatomical ranges, the hand turned around the
+// handle and the elbow swung to where they are most natural (2026-10-17: the shortest turn from the clip's hand bent her
+// wrist ~90 deg on the chainsaw). w: how much (0 = untouched). o: armToGrip's options (back, backTol, signFree). The
+// caller closes the fingers. (solveArm: no longer used, kept for the callers' signature)
+export function handOnto(bones, side, point, dir, w, solveArm, o = {}) {
   if (!(w > 1e-3)) return false;
-  const H = bones[side + 'Hand'], I = bones[side + 'HandIndex1'], P = bones[side + 'HandPinky1'], M = bones[side + 'HandMiddle1'];
-  if (!H || !I || !P || !M) return false;
-  const a = I.getWorldPosition(_ha).sub(P.getWorldPosition(_hb)).normalize(), d = _hd.copy(dir).normalize();
-  if (a.dot(d) < 0) d.negate();
-  _hq.setFromUnitVectors(a, d); _hi.identity().slerp(_hq, w);
-  H.getWorldQuaternion(_hw); H.parent.getWorldQuaternion(_hp);
-  H.quaternion.copy(_hp.invert().multiply(_hi).multiply(_hw)); H.updateMatrixWorld(true);
-  const off = M.getWorldPosition(_ha).add(H.getWorldPosition(_hb)).multiplyScalar(0.5).sub(H.getWorldPosition(_hb)); // (grip point - wrist)
-  solveArm(bones[side + 'Arm'], bones[side + 'ForeArm'], H, _hb.copy(point).sub(off), w);
+  const H = bones[side + 'Hand']; if (!H) return false;
+  const r = armToGrip(bones, side, point, dir, { ...o, w, seed: H.userData.gripSeed });
+  if (!r) return false;
+  H.userData.gripSeed = { psi: r.psi, phi: r.phi }; H.userData.gripDiag = r;
   return true;
+}
+// how each hand takes a weapon's grips, beyond its data sheet (weapon model frame): axis (the hand's pinky -> index way,
+// fixed sign), back (where the back of the hand faces), backTol (deg) and elbow (where the elbow points from the
+// shoulder-wrist line, in her frame: out to her side, down, back). The chainsaw's rear grasp bar is the top of a
+// closed loop: her right hand palm down on it from above (the user's reference photo, 2026-10-17: a woman holding a
+// running saw at her waist, the bar out to her left, both hands over the top). Its front handle is a
+// tube over the top: the left hand from above or in front, never from inside the saw. The hammer's handle is round (any
+// turn), both index fingers toward the head.
+export const GRIP_HANDS = {
+  chainsaw: { primary: { back: [0, 1, 0], backTol: 45 }, secondary: { axis: [0, 0, 1], back: [0, 1, 0], backTol: 70 } },
+  sledgehammer: { primary: {}, secondary: {} },
+};
+// world-space options for handOnto from a placed weapon holder o: { axis, back?, backTol?, signFree }
+export function gripOpts(key, def, which, o) {
+  const G = GRIP_HANDS[key]?.[which], ax = new THREE.Vector3(...(G?.axis || (which === 'secondary' && def.secondary_grip_axis) || def.shaft_axis)).transformDirection(o.matrixWorld);
+  return { axis: ax, signFree: !G, back: G?.back ? new THREE.Vector3(...G.back).transformDirection(o.matrixWorld) : null, backTol: G?.backTol, elbow: G?.elbow };
 }
 // ---- carrying a two-handed weapon at rest (2026-10-17, the user: "create custom idle for the sledge hammer and chainsaw
 // that make more sense ... I'm pretty sure old version of the game had better idle"): the first Yola's Move Library
@@ -113,8 +126,11 @@ export function handOnto(bones, side, point, dir, w, solveArm) {
 export const CARRY = {
   // port arms: the handle's end by her right hip, the head up by her left shoulder, in front of her
   sledgehammer: { clip: 'kk_Melee_2H_Idle', grip: [-0.15, 0.98, 0.3], dir: [0.55, 0.8, 0.18], ref: [0, 0, 1] },
-  // at the waist: the rear handle by her right hip, the bar forward and a little down, the top handle for the left hand
-  chainsaw: { clip: 'kk_Melee_2H_Idle', grip: [-0.15, 0.95, 0.22], dir: [0.3, -0.12, 0.95], ref: [0, 1, 0] },
+  // at her waist as in the user's reference photo (2026-10-17): the saw in front of her belly, the rear handle palm down
+  // in her right hand from above, the bar out 40 deg to her left and a little up, her left hand over the front handle;
+  // picked in the Rig Lab by armfit.js's anatomy (right wrist 19% of its range, both forearms near thumb-up, nothing
+  // through her body)
+  chainsaw: { clip: 'kk_Melee_2H_Idle', grip: [-0.14, 1.02, 0.24], dir: [0.637, 0.139, 0.759], ref: [0, 1, 0] },
 };
 const _cm1 = new THREE.Matrix4(), _cm2 = new THREE.Matrix4(), _cq = new THREE.Quaternion(), _cs = new THREE.Vector3(1, 1, 1);
 // the carry's frame (at the main grip, oriented as the weapon) in her chest bone's frame, measured once in the idle's
@@ -157,6 +173,7 @@ export function reachShoulder(bones, side, target, maxDeg = 15) {
 }
 // where the free hand goes on a held handle: the nearest point of the handle line (from `origin` along `dir`, between
 // lo and hi metres) to its grip point; returns the gap (m) and fills out
+const _ha = new THREE.Vector3(), _hb = new THREE.Vector3();
 export function handleSpot(bones, side, origin, dir, lo, hi, out) {
   const H = bones[side + 'Hand'], M = bones[side + 'HandMiddle1']; if (!H || !M) return 9;
   const g = H.getWorldPosition(_ha).add(M.getWorldPosition(_hb)).multiplyScalar(0.5);

@@ -8,7 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, makeKnife, 
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace } from './render/holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -29,7 +29,7 @@ const YOLA2_REF = { bat_swing: 'yola_baseball_single', bat_swing_m: null, pistol
   p_walk_strafe_right_plain: 'yola_walk_strafe_right_plain', yola_knockdown: 'zombie_knockdown', yola_getup: 'zombie_standup_stomach',
   pistol_strafe_left: null, pistol_strafe_run_left: null, pistol_strafe_run_right: null }; // (built from several clips: no single source)
 const CHARS = {
-  yola: { label: 'Yola', file: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_sword.glb'], height: 1.62, ref: 'yola_' },
+  yola: { label: 'Yola', file: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_sword.glb', 'assets/moves/yola_moves.glb'], height: 1.62, ref: 'yola_' }, // (moves: her Move Library bake, local only: the first arena's idles, Kevin Iglesias CombatIdle*)
   // the new Yola (2026-10-16, the user's Tripo nurse-scrubs model): every game clip plus the library picks
   yola2: { label: 'Yola 2 (new model)', file: 'assets/yola2.glb', extra: ['assets/yola2_ual.glb', 'assets/moves/yola2_moves.glb'], height: 1.62, ref: 'yola_', refMap: YOLA2_REF,
     libRef: { pistol_reload: 'ual1_Pistol_Reload' } }, // (2026-10-17: her reload is Quaternius Pistol_Reload, support hand on the gun)
@@ -778,10 +778,10 @@ function updatePistolFitUI() {
 }
 // the other hand onto a handle as the game puts it (render/holdfit.js handOnto; the game's YolaView.placeHeld / placeWeapons),
 // its fingers closed into her fist by w; every bone it turns recorded (postRot), so the next redraw undoes it
-function otherHandOn(a, side, point, dir, w) {
+function otherHandOn(a, side, point, dir, w, go = {}) {
   const chain = Object.entries(a.bones).filter(([n]) => n.startsWith(side) && /(Shoulder|Arm|ForeArm|Hand)/.test(n)).map(([, b]) => b), before = chain.map((b) => b.quaternion.clone());
   if (w >= 0.5) reachShoulder(a.bones, side, point, 25); // (a second grip can sit further out than the bat's: 25 deg, as the game)
-  if (!handOnto(a.bones, side, point, dir, w, ikArm)) return;
+  if (!handOnto(a.bones, side, point, dir, w, ikArm, go)) return;
   const after = chain.map((b) => b.quaternion.clone());
   chain.forEach((b, i) => { b.quaternion.copy(before[i]); if (!after[i].equals(before[i])) postRot(a, b, (cur) => cur.copy(after[i])); });
   const P = fistPose(a); if (P) for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, Math.min(1, w)));
@@ -817,15 +817,15 @@ function placeHeldOn(a, o) {
     const cal = carryCalOf(a, w, LD, CY, k);
     if (cal) {
       const P = carryPlace(a.bones, o, LD, cal, fitW(w, a), k, { grip: new THREE.Vector3(), dir: new THREE.Vector3() });
-      otherHandOn(a, 'Right', P.grip, P.dir, 1); o.updateMatrixWorld(true);
-      otherHandOn(a, 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), P.dir, 1);
+      const g1 = gripOpts(w, LD, 'primary', o); otherHandOn(a, 'Right', P.grip, g1.axis, 1, g1); o.updateMatrixWorld(true);
+      const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), g2.axis, 1, g2);
       return;
     }
   }
   if (LD) {
     const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' };
     if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
-      if (LD.hands === 'two' && LD.grip_secondary) { o.updateMatrixWorld(true); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), new THREE.Vector3(...LD.shaft_axis).transformDirection(o.matrixWorld), 1); }
+      if (LD.hands === 'two' && LD.grip_secondary) { o.updateMatrixWorld(true); const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), g2.axis, 1, g2); }
       return;
     }
   }
@@ -1204,5 +1204,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { CARRY, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();
