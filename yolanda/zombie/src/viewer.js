@@ -365,6 +365,7 @@ function refresh() {
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
+  shotKick(main); if (ref.root.visible) shotKick(ref);
   mainGun?.update(1); leftHand(f);
   if (refGun?.obj) { refGun.obj.visible = ref.root.visible; refGun.update(ref.height / main.height); }
   updateMarks(); updateShell(f);
@@ -416,6 +417,31 @@ function pistolInFist(a, o) {
   o.position.copy(c).add(off).sub(PG.at.clone().multiplyScalar(o.scale.x * PISTOL_CORE_SCALE).applyQuaternion(o.quaternion));
   return true;
 }
+// the pistol shot (the game has no shooting clip: render/clipchars.js aimPistol kicks the chest and both upper arms
+// up and back on top of the idle pose; kick = recoil^2 x tuning.pistolRecoil, recoil 1 at the shot, falling 7/s).
+// "shot kick" holds a kick to study it frame by frame; "fire" plays one shot; "keep firing" shoots every 0.24 s
+const SHOT = { hold: 0, recoil: 0, auto: false, next: 0 };
+const _qk = new THREE.Quaternion(), _qk2 = new THREE.Quaternion();
+function kickC(a, n, x) { // rotate bone n by x about the character's own left-right axis (as the game's rotateEulerC)
+  let b = a.bones[n]; if (!b) return;
+  while (b.parent?.name === b.name) b = b.parent; // (the X Bot FBX nests a same-named copy in each bone: turn the outer, animated one)
+  a.root.getWorldQuaternion(_qk); b.getWorldQuaternion(_qk2);
+  const W = _qk.invert().multiply(_qk2), D = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, 0, 0, 'YXZ'));
+  const base = b.quaternion.clone();
+  b.quaternion.multiply(W.clone().invert().multiply(D).multiply(W)); b.updateMatrixWorld(true);
+  a.kicked.push([b, base, b.quaternion.clone()]);
+}
+function shotKick(a) {
+  if (!a) return;
+  // the mixer only rewrites a bone whose animated value changed: on a held frame the last kick would stay and stack
+  for (const [b, base, kicked] of a.kicked || []) if (b.quaternion.equals(kicked)) b.quaternion.copy(base);
+  if (a.kicked?.length) a.root.updateMatrixWorld(true);
+  a.kicked = [];
+  if (weaponOf() !== 'pistol' || !a.action) return;
+  const r = Math.max(SHOT.hold, SHOT.recoil), kick = r * r;
+  if (kick < 0.001) return;
+  kickC(a, 'Spine2', -0.09 * kick); if (kick > 0.01) { kickC(a, 'RightArm', -0.25 * kick); kickC(a, 'LeftArm', -0.25 * kick); }
+}
 // pistol fit sliders (the user, 2026-10-16): one fit per character (Yola 3.0 / Yola 2.0 / X Bot / the UAL mannequin), the
 // saved ones in assets/hold/pistol_fit.json; edits are kept in this browser and "save" writes zombie/shots/pistol_fit.json
 // (copied into assets/hold by Claude when the user says so)
@@ -435,7 +461,10 @@ function buildPistolFit() {
   const box = document.createElement('div'); box.id = 'pfit';
   box.style.cssText = 'position:fixed;right:8px;top:200px;z-index:30;background:rgba(20,26,30,.85);color:#ddd;font:11px system-ui;padding:6px 8px;border-radius:8px;width:210px';
   box.innerHTML = '<b>Pistol fit</b> &nbsp;editing: <button id="pfitMain"></button><button id="pfitRef"></button><div id="pfitRows"></div>' +
-    '<button id="pfitReset">reset this one</button> <button id="pfitSave">save</button><div id="pfitOut" style="opacity:.7;word-break:break-all;font-size:10px"></div>';
+    '<button id="pfitReset">reset this one</button> <button id="pfitSave">save</button><div id="pfitOut" style="opacity:.7;word-break:break-all;font-size:10px"></div>' +
+    '<hr style="border:0;border-top:1px solid #456;margin:5px 0"><b>Shot (game recoil, both rigs)</b>' +
+    '<div style="display:grid;grid-template-columns:1fr 34px"><label>shot kick (hold, %)</label><span id="pkickV">0</span><input id="pkick" type="range" min="0" max="100" step="1" value="0" style="grid-column:1/3"></div>' +
+    '<button id="pfire">fire</button> <label><input id="pauto" type="checkbox"> keep firing</label>';
   document.body.appendChild(box);
   const rows = box.querySelector('#pfitRows'), out = box.querySelector('#pfitOut');
   const cur = () => fitOf(pfitWho === 'ref' ? ref : main);
@@ -462,11 +491,21 @@ function buildPistolFit() {
     const r = await fetch('/__shot/pistol_fit.json', { method: 'POST', body: JSON.stringify(FITS, null, 1) });
     out.textContent = r.ok ? 'saved (shots/pistol_fit.json)' : 'save failed';
   };
+  const kv = box.querySelector('#pkickV');
+  box.querySelector('#pkick').oninput = (e) => { SHOT.hold = Math.sqrt(+e.target.value / 100); kv.textContent = e.target.value; refresh(); }; // (% of the full kick)
+  box.querySelector('#pfire').onclick = () => { SHOT.recoil = 1; refresh(); };
+  box.querySelector('#pauto').onchange = (e) => { SHOT.auto = e.target.checked; SHOT.next = 0; };
   pfitSync();
   return box;
 }
 let pfitBox = null;
-function updatePistolFitUI() { pfitBox ||= buildPistolFit(); pfitBox.style.display = weaponOf() === 'pistol' && $('pistolFist')?.checked ? '' : 'none'; }
+let pfitRefWas = null;
+function updatePistolFitUI() {
+  pfitBox ||= buildPistolFit(); pfitBox.style.display = weaponOf() === 'pistol' && $('pistolFist')?.checked ? '' : 'none';
+  const top = $('top').hidden ? 8 : $('top').getBoundingClientRect().bottom + 8; // (below the top bar, scrolling in a short window)
+  pfitBox.style.top = top + 'px'; pfitBox.style.maxHeight = `calc(100vh - ${top + 8}px)`; pfitBox.style.overflowY = 'auto';
+  if (ref !== pfitRefWas) { pfitRefWas = ref; pfitSync(); } // (the reference changes with the clip: X Bot / mannequin)
+}
 function placeHeldOn(a, o) {
   const w = weaponOf(), k = a.height / 1.62; o.visible = true; o.scale.setScalar(k);
   if (w === 'pistol' && $('pistolFist')?.checked && pistolInFist(a, o)) return;
@@ -512,12 +551,45 @@ function drawVidRef(f) {
 }
 
 // ---------------- UI ----------------
+// each weapon's idle and attack clips in the game (render/clipchars.js, core/weapons.js): the axe holds the bat idle and
+// chops; the one-handed bat is the Quaternius sword set; the guns shoot with a kick in code, not a clip
+const WEAPON_CLIPS = {
+  pistol: { label: 'Pistol', idle: 'pistol_idle', attack: 'kick' },
+  short: { label: 'Shotgun', idle: 'sg_reload', attack: null }, // (the game holds sg_reload's hold frame; its kick is not in the Rig Lab yet)
+  axe: { label: 'Axe', idle: 'bat_idle', attack: 't_chop' },
+  bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
+  none: { label: 'None', idle: null, attack: null },
+};
+function pickClip(name) {
+  const sel = $('clip'); if (!name || ![...sel.options].some((o) => o.value === name)) return;
+  if (sel.value !== name) { sel.value = name; sel.dispatchEvent(new Event('change')); }
+}
+function stopFiring() { SHOT.auto = false; SHOT.recoil = 0; const c = $('pauto'); if (c) c.checked = false; }
+function weaponUI() {
+  for (const b of $('weapons').children) b.classList.toggle('on', b.dataset.k === S.gun);
+  const W = WEAPON_CLIPS[S.gun];
+  $('wIdle').disabled = !W?.idle; $('wAttack').disabled = !W?.attack;
+  $('wAttack').title = W?.attack === 'kick' ? 'the idle with the game\'s shot kick, firing every 0.24 s' : W?.attack || 'not in the Rig Lab yet';
+}
 function pausedUI(p) { S.playing = !p; $('play').textContent = S.playing ? 'Pause' : 'Play'; $('play').classList.toggle('on', S.playing); }
 function buildUI() {
   for (const k in CHARS) { const b = document.createElement('button'); b.textContent = CHARS[k].label; b.dataset.k = k; b.onclick = () => setChar(k); $('chars').appendChild(b); }
   for (const k in GUNS) $('gun').add(new Option(GUNS[k], k));
   $('gun').value = S.gun;
-  $('gun').onchange = (e) => { S.gun = e.target.value; applyGun(); refresh(); };
+  $('gun').onchange = (e) => { S.gun = e.target.value; applyGun(); refresh(); weaponUI(); };
+  // weapon picker (top bar, the user 2026-10-16): what she holds, kept when the clip changes; Idle / Attack jump to
+  // that weapon's own clips as the game plays them (pistol: the idle with the game's shot kick, see SHOT)
+  for (const k of Object.keys(WEAPON_CLIPS)) {
+    const b = document.createElement('button'); b.textContent = WEAPON_CLIPS[k].label; b.dataset.k = k;
+    b.onclick = () => { S.gun = k; $('gun').value = k; pickClip(WEAPON_CLIPS[k].idle); applyGun(); refresh(); weaponUI(); };
+    $('weapons').appendChild(b);
+  }
+  $('wIdle').onclick = () => { const W = WEAPON_CLIPS[S.gun]; if (W) { stopFiring(); pickClip(W.idle); } };
+  $('wAttack').onclick = () => {
+    const W = WEAPON_CLIPS[S.gun]; if (!W) return;
+    if (W.attack === 'kick') { pickClip(W.idle); SHOT.auto = true; SHOT.next = 0; const c = $('pauto'); if (c) c.checked = true; } else if (W.attack) pickClip(W.attack);
+  };
+  weaponUI();
   $('clip').addEventListener('change', () => setTimeout(() => { applyGun(); refresh(); }, 0)); // auto follows the clip
   $('gunref').onchange = () => { applyGun(); refresh(); };
   const host = $('fit');
@@ -587,11 +659,14 @@ function buildUI() {
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    const kicking = SHOT.recoil > 0 || SHOT.auto;
+    if (SHOT.auto && (SHOT.next -= dt) <= 0) { SHOT.recoil = 1; SHOT.next = 0.24; } // (tuning.pistolInterval)
+    SHOT.recoil = Math.max(0, SHOT.recoil - dt * 7); // (core/player.js)
     if (S.playing && main?.action) {
       S.frame += dt * FPS * S.speed; // (frames of the current clip's own rate)
       if (S.frame >= S.frames + 1) S.frame = $('loop').checked ? 1 : S.frames;
       refresh();
-    }
+    } else if (kicking) refresh();
     if (main?.hair?.ok) { main.hair.on = $('hairSway').checked; main.hair.update(dt * (S.playing ? S.speed : 1)); }
     updateFingers();
     controls.update(); renderer.render(scene, camera);
