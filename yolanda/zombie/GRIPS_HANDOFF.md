@@ -88,6 +88,16 @@ user dropped a stray -1 from the browser).
   (rebaseUpper / upperHips), plus the game's Spine1 lean. Result (shots/sheet_game_runs.png): hunched at the waist,
   head down, arms hanging. Options: the unarmed run clips (p_run_plain etc., arms swing) with the bat in hand, or the
   sword idle re-based onto the hips. Quaternius has Jog_Fwd_Loop / Sprint_Loop / Walk_Loop but no sword run.
+- **Bat run DECIDED (user):** 'plain' = the regular run clips with the bat in hand (clipchars.js batRun, default),
+  bat arm held part-way to the sword stance: batArmHold 0.5 (shoulder..forearm), batWristHold 0.9 (hand + fingers:
+  the bat's angle; its tilt over a stride 81 -> 41 deg). The user: plain "100 percent" better; better from the front.
+  Options kept: ?batrun=now|rebase|plain|plainlegs, ?batarm=, ?batwrist=. No melee-run reference exists here
+  (Quaternius has none; Mixamo's sword packs would need the user to download them).
+- **Inspect mode = the game viewer for moves:** combat.html?mode=calm&inspect=1&yola=2&w=bat&move=run&cam=side:
+  moves on the spot (walk/run/back/strafes/attack), speed/pause/step, cameras, bat run options + arm/wrist sliders,
+  panel folds with U. It steps the game in fixed 1/60 s steps: uneven steps made a fake 9.5 cm forward/back jitter.
+  Checked with the full skeleton vs X Bot: her plain run, pistol run and walk match him joint for joint.
+- **Rig Lab clip list** is grouped by weapon and move type (GAME_CLIPS in viewer.js); picking a weapon lists its clips first.
 - **Right shoulder tucks (pistol_walk_back f27, the user's screenshot):** collarbone matches X Bot (1.5 deg); her
   upper arm swings 10 deg further across the chest (35 vs 25) with a near-straight elbow (12 vs 31 deg bend). Suspect:
   the build's contacts.hands two-hand IK (pistol_ clips). Test before fixing: re-bake pistol_walk_back without it.
