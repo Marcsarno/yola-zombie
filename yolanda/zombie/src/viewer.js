@@ -42,11 +42,12 @@ const CHARS = {
 };
 // the new Quaternius packs' test bakes (UAL_PACKS.md; tools/anim/yola2_build.py YOLA2_EXTRA_UAL1/2, test_zombie_clips.py)
 const TC = 'assets/test_clips/';
-CHARS.yola2.newPacks = [TC + 'ual1_full_yola2.glb', TC + 'ual2_full_yola2.glb', TC + 'ual2_full_yola2_b.glb'];
+CHARS.yola2.newPacks = [TC + 'idle_options.glb', TC + 'ual1_full_yola2.glb', TC + 'ual2_full_yola2.glb', TC + 'ual2_full_yola2_b.glb'];
 CHARS.patient.newPacks = [TC + 'ual1_full_patient.glb', TC + 'ual2_full_patient.glb'];
 CHARS.guard.newPacks = [TC + 'ual2_full_guard.glb'];
 // their kinds in the clip list (first match wins; the name without its ual_ / ual1_ prefix)
 const NEW_KINDS = [
+  ['Idle holds (options for the bat, axe, chainsaw)', /^Melee_2H_Idle|^Melee_Blocking|^Melee_Unarmed_Idle|^Idle_A$|^Idle_B$|^Holding_|^Ranged_2H_Aiming|^Idle_Lantern|^Idle_Torch|^Idle_Shield_Loop|^Sword_Block|^Idle_FoldArms|^Idle_Tired|^Idle_Loop$/],
   ['Zombie moves & attacks', /^Zombie_|^MonsterTransformation/],
   ['Jump, slam & shield (the guard)', /^NinjaJump|^DoubleJump|^Sword_GroundPound|^Shield_|^Idle_Shield|^Sprint_Shield|^LiftAir/],
   ['Run, walk & turn', /^Jog_|^Walk_|^Sprint_|^Turn\d|^Idle_Loop$|^Idle_Tired|^Idle_LookAround/],
@@ -66,7 +67,12 @@ for (const [s, S2] of [['l', 'Left'], ['r', 'Right']]) {
     [`thigh_${s}`]: S2 + 'UpLeg', [`calf_${s}`]: S2 + 'Leg', [`foot_${s}`]: S2 + 'Foot', [`ball_${s}`]: S2 + 'ToeBase' });
   // every finger (the pistol in the mannequin's fist needs the index and pinky knuckles; finger bones overlay too)
   for (const [f, F] of [['thumb', 'Thumb'], ['index', 'Index'], ['middle', 'Middle'], ['ring', 'Ring'], ['pinky', 'Pinky']]) for (const i of [1, 2, 3]) UE_MAP[`${f}_0${i}_${s}`] = `${S2}Hand${F}${i}`;
+  // KayKit's rig (its node names lose their dots on load: upperarm.l -> upperarml); no fingers: its hand bone stands in for the knuckles
+  Object.assign(UE_MAP, { [`upperarm${s}`]: S2 + 'Arm', [`lowerarm${s}`]: S2 + 'ForeArm', [`wrist${s}`]: S2 + 'Hand', [`hand${s}`]: S2 + 'HandMiddle1', [`upperleg${s}`]: S2 + 'UpLeg', [`lowerleg${s}`]: S2 + 'Leg', [`foot${s}`]: S2 + 'Foot', [`toes${s}`]: S2 + 'ToeBase' });
 }
+Object.assign(UE_MAP, { hips: 'Hips', spine: 'Spine', chest: 'Spine2', head: 'Head' });
+// KayKit Character Animations 1.1 (CC0, local copies in assets/source/kaykit): kk_ clips are shown beside its own mannequin (in each file)
+const KK_FILES = ['Rig_Medium_CombatMelee', 'Rig_Medium_General', 'Rig_Medium_Tools', 'Rig_Medium_CombatRanged'].map((n) => `assets/source/kaykit/${n}.glb`);
 // clips whose Mixamo source file is named differently
 const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand' };
 // clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
@@ -121,7 +127,7 @@ function pinRoot(clip, on, a) {
   // pinning to the first frame left a clip cut from mid-walk, e.g. the reload from X Bot frame 38, a step forward).
   // (a: the actor, for its bones' rest positions; the Quaternius rig is Z-up, so "0" would have sunk it)
   for (const t of clip.tracks) {
-    if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
+    if (!/(Hips|pelvis|root|hips)\.position$/.test(t.name)) continue;
     if (!t.__orig) t.__orig = t.values.slice();
     // (the mannequin's pelvis / root move in a Z-up frame: their height is z, so pin x / y there; 2026-10-17: pinning z
     // flattened every mannequin jump and crouch, e.g. the vault's 0.67 m lift, while Yola's stayed)
@@ -312,7 +318,7 @@ async function setChar(key) {
       try {
         const c = await loadG(f), have = Object.fromEntries(g.animations.map((a) => [a.name, a]));
         for (const a of c.animations) {
-          const tag = packs.includes(f) ? { pack: /ual1_/.test(a.name) ? 'UAL1' : 'UAL2' } : extraQ.includes(f) ? { test: f.split('/').pop() } : {};
+          const tag = packs.includes(f) ? { pack: /^kk_/.test(a.name) ? 'KayKit' : /ual1_/.test(a.name) ? 'UAL1' : 'UAL2' } : extraQ.includes(f) ? { test: f.split('/').pop() } : {};
           // (a pack clip the character already has, e.g. a library pick, keeps the one it has, listed with the pack)
           if (tag.pack && have[a.name]) { have[a.name].userData = { ...have[a.name].userData, ...tag }; continue; }
           if (have[a.name] && !extraQ.includes(f)) continue; // (a clip in two of her files, e.g. yola2_ual and the Move Library bake: the first one)
@@ -340,7 +346,10 @@ async function setClip(name) {
   const libName = (CHARS[S.char].libRef || {})[name.replace(/_REBAKE_.*$/, '')] || name;
   const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => libName.startsWith(p));
   let rc = null, file = '';
-  if (lib) {
+  if (libName.startsWith('kk_')) { // (a KayKit clip: the file that has it, its mannequin as the reference)
+    for (const f of KK_FILES) { const u = await ualRef(f, false); const c = u?.clips.find((q) => q.name === libName.slice(3)); if (c) { useRef(u.actor); rc = c; file = f; break; } }
+    if (!rc) useRef(refX);
+  } else if (lib) {
     const u = await ualRef(UAL_FILES[lib]);
     useRef(u ? u.actor : refX);
     rc = u?.clips.find((c) => c.name === libName.replace(/_REBAKE_.*$/, '').slice(lib.length)) || null; file = UAL_FILES[lib];
@@ -352,11 +361,11 @@ async function setClip(name) {
     rc = file ? await refClip(file) : null;
   }
   const rsel = $('refclip'); rsel.innerHTML = '';
-  if (rc) { rsel.add(new Option(lib ? `Quaternius mannequin: ${rc.name}` : file.split('/').pop(), file)); $('note').textContent = ''; }
+  if (rc) { rsel.add(new Option(libName.startsWith('kk_') ? `KayKit mannequin: ${rc.name}` : lib ? `Quaternius mannequin: ${rc.name}` : file.split('/').pop(), file)); $('note').textContent = ''; }
   else { rsel.add(new Option('no source rig for this clip', '')); $('note').textContent = 'No reference for this clip (Tripo or custom clip).'; }
   ref.root.visible = !!rc; ref.helper.visible = !!rc && $('bones').checked;
   if (rc) { pinRoot(rc, $('inplace').checked, ref); ref.play(rc); }
-  S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, '')] || 0 : 0;
+  S.refOff = rc && !lib && !libName.startsWith('kk_') ? REF_OFFSET[name.replace(/_REBAKE_.*$/, '')] || 0 : 0;
   S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
   $('scrub').max = S.frames; S.frame = 1;
   layout(); refresh(); mainGun.calibrate(); refGun?.calibrate(); refresh();
@@ -771,6 +780,12 @@ function placeHeldOn(a, o) {
   if (w === 'pistol' && $('pistolFist')?.checked && pistolInFist(a, o)) return;
   // the one-handed bat as the game holds it (render/holdfit.js): grip in her fist, shaft along the knuckles, the user's fit
   if (w === 'bat' && placeOneHanded(a.bones, a === main ? handsOf().gunHand : 'Right', o, BAT_DEF, fitW('bat', a), {}, k)) return;
+  // a two-handed weapon in a pose with the hands apart (an idle carried in one hand: the hold options, 2026-10-17): in the
+  // right fist alone, as the bat (the data sheet's frame)
+  if ((w === 'axe' || (LIB_WEAPONS[w] && WDEFS[w]?.hands === 'two')) && WDEFS[w] && a.bones.LeftHandIndex1) {
+    const B = a.bones, mid = (sd) => B[sd + 'HandIndex1'].getWorldPosition(new THREE.Vector3()).lerp(B[sd + 'HandPinky1'].getWorldPosition(new THREE.Vector3()), 0.5);
+    if (mid('Right').distanceTo(mid('Left')) > 0.32 * k && placeOneHanded(B, 'Right', o, WDEFS[w], fitW(w, a), {}, k)) return;
+  }
   // the arena's other weapons: one-handed as the bat, two-handed as the axe (the handle through both fists), in their own
   // model frames (the data sheet's shaft and reference axes), then the user's fit
   const LD = LIB_WEAPONS[w] && WDEFS[w];
@@ -884,11 +899,11 @@ function fillClips() {
   };
   // the new Quaternius packs (UAL_PACKS.md): their own section at the top, by kind, whatever weapon is picked (test bakes,
   // not in the game; each plays beside the mannequin)
-  const fresh = {}; for (const c of anims) if (c.userData?.pack && !used.has(c.name)) { const k = NEW_KINDS.find(([, re]) => re.test(c.name.replace(/^ual1?_/, '')))?.[0] || 'Other'; (fresh[k] ||= []).push(c.name); }
+  const fresh = {}; for (const c of anims) if (c.userData?.pack && !used.has(c.name)) { const k = NEW_KINDS.find(([, re]) => re.test(c.name.replace(/^(ual1?|kk)_/, '')))?.[0] || 'Other'; (fresh[k] ||= []).push(c.name); }
   for (const [k] of [...NEW_KINDS, ['Other']]) {
     const list = (fresh[k] || []).sort(); if (!list.length) continue;
     const g = document.createElement('optgroup'); g.label = `★ NEW PACKS: ${k} (${list.length})`;
-    for (const n of list) { g.appendChild(new Option(`${n.replace(/^ual1?_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ')}  [${byN[n].userData.pack}, ${clipFrames(byN[n])}f]${usedTag(n)}`, n)); used.add(n); }
+    for (const n of list) { g.appendChild(new Option(`${n.replace(/^(ual1?|kk)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ')}  [${byN[n].userData.pack}, ${clipFrames(byN[n])}f]${usedTag(n)}`, n)); used.add(n); }
     sel.appendChild(g);
   }
   group('TEST RE-BAKES (not in the game)', anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
@@ -1102,5 +1117,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { HOLD_TUNE, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { HOLD_TUNE, HANDS, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();

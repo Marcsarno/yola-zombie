@@ -175,6 +175,11 @@ def bone_map(rig):
                       f'thigh_{s}': S + 'UpLeg', f'calf_{s}': S + 'Leg', f'foot_{s}': S + 'Foot', f'ball_{s}': S + 'ToeBase'})
             for f, F in FING:
                 for i in (1, 2, 3): M[f'{f}_0{i}_{s}'] = f'{S}Hand{F}{i}'
+    elif rig == 'kaykit':  # (KayKit Character Animations 1.1, CC0: no neck, no shoulder, no finger bones)
+        M = {'hips': 'Hips', 'spine': 'Spine', 'chest': 'Spine2', 'head': 'Head'}
+        for s, S in (('l', 'Left'), ('r', 'Right')):
+            M.update({f'upperarm.{s}': S + 'Arm', f'lowerarm.{s}': S + 'ForeArm', f'wrist.{s}': S + 'Hand',
+                      f'upperleg.{s}': S + 'UpLeg', f'lowerleg.{s}': S + 'Leg', f'foot.{s}': S + 'Foot', f'toes.{s}': S + 'ToeBase'})
     elif rig == 'kevin':
         M = {'B-hips': 'Hips', 'B-spine': 'Spine', 'B-chest': 'Spine2', 'B-neck': 'Neck', 'B-head': 'Head'}
         for s, S in (('L', 'Left'), ('R', 'Right')):
@@ -202,6 +207,9 @@ def from_library(rig, path, clips, prefix, targets):
 # the bat: Sword Regular Combo (UAL2, CC0) and Sword Idle (UAL1) on both Yolas; the other arena picks on the new one
 # (test bakes: YOLA2_EXTRA_UAL1="Pistol_Reload,Pistol_Shoot" retargets those UAL1 clips onto the new Yola, as ual1_<name>)
 if os.environ.get('YOLA2_EXTRA_UAL1'): from_library('ue', UAL1, os.environ['YOLA2_EXTRA_UAL1'].split(','), 'ual1_', [(Y2, made2, '')])
+# (test bakes: YOLA2_EXTRA_KK="<Rig_Medium_*.glb>:A,B;<file>:C" retargets KayKit clips onto the new Yola, as kk_<name>)
+for grp in filter(None, os.environ.get('YOLA2_EXTRA_KK', '').split(';')):
+    f, names = grp.rsplit(':', 1); from_library('kaykit', f, names.split(','), 'kk_', [(Y2, made2, '')])
 if os.environ.get('YOLA2_EXTRA_UAL2'): from_library('ue', UAL2, os.environ['YOLA2_EXTRA_UAL2'].split(','), 'ual_', [(Y2, made2, '')])  # (the same from UAL2, as ual_<name>)
 if not ONLY: from_library('ue', UAL2, ['Sword_Regular_Combo'], 'ual_', [(Y2, made2, ''), (Y1, made1, 'Y1S_')])
 if not ONLY: from_library('ue', UAL1, ['Sword_Idle'], 'ual1_', [(Y2, made2, ''), (Y1, made1, 'Y1S_')])  # (the bat's idle: the stance the combo starts from)
