@@ -38325,6 +38325,20 @@ void main() {
     sprinter: { label: "Zombie sprinter (big lady)", file: "assets/zombie-sprinter.glb", height: 2, ref: "zombie_" },
     guard: { label: "Zombie big guard", file: "assets/zombie-guard.glb", height: 2.05, ref: "zombie_" }
   };
+  var TC = "assets/test_clips/";
+  CHARS.yola2.newPacks = [TC + "ual1_full_yola2.glb", TC + "ual2_full_yola2.glb", TC + "ual2_full_yola2_b.glb"];
+  CHARS.patient.newPacks = [TC + "ual1_full_patient.glb", TC + "ual2_full_patient.glb"];
+  CHARS.guard.newPacks = [TC + "ual2_full_guard.glb"];
+  var NEW_KINDS = [
+    ["Zombie moves & attacks", /^Zombie_|^MonsterTransformation/],
+    ["Jump, slam & shield (the guard)", /^NinjaJump|^DoubleJump|^Sword_GroundPound|^Shield_|^Idle_Shield|^Sprint_Shield|^LiftAir/],
+    ["Run, walk & turn", /^Jog_|^Walk_|^Sprint_|^Turn\d|^Idle_Loop$|^Idle_Tired|^Idle_LookAround/],
+    ["Dodge, vault & climb", /^Dodge|^Roll$|^Slide_|^SafetyVault|^Climb|^StepUp|^GetOffWall|^JogToFlip/],
+    ["Fists & kicks", /^Punch|^Kick$|^Melee_|^PunchKick/],
+    ["Weapon strikes & chains", /^Sword_|^TreeChopping|^Mining/],
+    ["Hits, falls & deaths", /^Hit_|^Death|^KipUp|^LayToIdle|^IdleToLay|^Crawl_/],
+    ["Pick up, use & react", /^PickUp|^Interact|^Drink|^Consume|^Bandage|^Chest_Open|^OverhandThrow|^Celebration|^Surprise|^Push_|^Fixing/]
+  ];
   var UAL_FILES = { ual_: "assets/source/ual/UAL2_Full.glb", ual1_: "assets/source/ual/UAL1_Full.glb" };
   var UAL_FEMALE = "assets/source/ual/Mannequin_F.glb";
   var UE_MAP = { pelvis: "Hips", spine_01: "Spine", spine_02: "Spine1", spine_03: "Spine2", neck_01: "Neck", Head: "Head" };
@@ -38663,11 +38677,19 @@ void main() {
     if (!mainCache[key]) {
       const g = await loadG(CHARS[key].file);
       const extraQ = key === new URLSearchParams(location.search).get("char") ? (new URLSearchParams(location.search).get("extra") || "").split(",").filter(Boolean) : [];
-      for (const f of [...CHARS[key].extra || [], ...extraQ]) {
+      const packs = CHARS[key].newPacks || [];
+      for (const f of [...CHARS[key].extra || [], ...packs, ...extraQ]) {
         try {
-          const c = await loadG(f);
-          if (extraQ.includes(f)) for (const a of c.animations) a.userData = { ...a.userData, test: f.split("/").pop() };
-          g.animations.push(...c.animations);
+          const c = await loadG(f), have = Object.fromEntries(g.animations.map((a) => [a.name, a]));
+          for (const a of c.animations) {
+            const tag = packs.includes(f) ? { pack: /ual1_/.test(a.name) ? "UAL1" : "UAL2" } : extraQ.includes(f) ? { test: f.split("/").pop() } : {};
+            if (tag.pack && have[a.name]) {
+              have[a.name].userData = { ...have[a.name].userData, ...tag };
+              continue;
+            }
+            a.userData = { ...a.userData, ...tag };
+            g.animations.push(a);
+          }
         } catch {
         }
       }
@@ -38735,6 +38757,7 @@ void main() {
     mainGun.calibrate();
     refGun?.calibrate();
     refresh();
+    markClipPanel();
   }
   function layout() {
     const sep = S.overlay ? 0 : 0.55;
@@ -39499,6 +39522,14 @@ void main() {
     none: { "Idle (fists)": ["tripo_idle"], Move: PLAIN, "Attack (jab, cross, kick)": ["t_box_01", "t_box_02", "t_kick_02"] }
   };
   var EVERYONE = { "Everyone: hit, knockdown, death": ["hit_body", "yola_knockdown", "yola_getup", "death_fall", "death_defeat"], "Everyone: scripted (the opening)": ["t_greet_01", "t_greet_04"] };
+  var GAME_JS = null;
+  fetch("dist/combat.js").then((r) => r.text()).then((t) => {
+    GAME_JS = t;
+    if (mainCache[S.char]) fillClips();
+  }).catch(() => {
+  });
+  var inGame = (n) => !!GAME_JS && GAME_JS.includes(`"${n}"`);
+  var usedTag = (n) => inGame(n) ? "  (currently used)" : "";
   function fillClips() {
     var _a5;
     const sel = $("clip"), keep = sel.value, anims = mainCache[S.char].gltf.animations, byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
@@ -39509,11 +39540,27 @@ void main() {
       const g = document.createElement("optgroup");
       g.label = label;
       for (const n of ok) {
-        g.appendChild(new Option(`${n}  (${clipFrames(byN[n])}f)`, n));
+        g.appendChild(new Option(`${n}  (${clipFrames(byN[n])}f)${usedTag(n)}`, n));
         used.add(n);
       }
       sel.appendChild(g);
     };
+    const fresh = {};
+    for (const c of anims) if (c.userData?.pack && !used.has(c.name)) {
+      const k = NEW_KINDS.find(([, re]) => re.test(c.name.replace(/^ual1?_/, "")))?.[0] || "Other";
+      (fresh[k] || (fresh[k] = [])).push(c.name);
+    }
+    for (const [k] of [...NEW_KINDS, ["Other"]]) {
+      const list = (fresh[k] || []).sort();
+      if (!list.length) continue;
+      const g = document.createElement("optgroup");
+      g.label = `\u2605 NEW PACKS: ${k} (${list.length})`;
+      for (const n of list) {
+        g.appendChild(new Option(`${n.replace(/^ual1?_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ")}  [${byN[n].userData.pack}, ${clipFrames(byN[n])}f]${usedTag(n)}`, n));
+        used.add(n);
+      }
+      sel.appendChild(g);
+    }
     group("TEST RE-BAKES (not in the game)", anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
     const tests = {};
     for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a5 = c.userData.test] || (tests[_a5] = [])).push(c.name);
@@ -39521,8 +39568,74 @@ void main() {
     const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
     for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === "None" ? "Fists / none" : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
     for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
-    group(ws.length === 1 ? "Other clips (other weapons, library picks, unused)" : "Other clips (library picks, unused)", anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
+    group(!/^yola/.test(S.char) ? "This character's clips" : ws.length === 1 ? "Other clips (other weapons, library picks, unused)" : "Other clips (library picks, unused)", anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
     if (byN[keep]) sel.value = keep;
+    buildClipPanel();
+  }
+  var SHUT_KEY = "riglab.clipGroupsShut";
+  var shut = {};
+  try {
+    shut = JSON.parse(localStorage.getItem(SHUT_KEY) || "{}");
+  } catch {
+  }
+  function buildClipPanel() {
+    const list = $("clipList");
+    if (!list) return;
+    const q = ($("clipFind").value || "").trim().toLowerCase(), usedOnly = $("clipUsedOnly").checked;
+    list.innerHTML = "";
+    for (const g of $("clip").querySelectorAll("optgroup")) {
+      const key = g.label.replace(/\s*\(\d+\)$/, "");
+      const items = [...g.children].filter((o) => (!usedOnly || inGame(o.value)) && (!q || (o.text + " " + o.value + " " + g.label).toLowerCase().includes(q)));
+      if (!items.length) continue;
+      const h = document.createElement("div");
+      h.className = "cgh" + (/NEW PACKS/.test(key) ? " new" : "") + (shut[key] && !q ? " shut" : "");
+      h.textContent = `${key} (${items.length})`;
+      const box = document.createElement("div");
+      box.hidden = !!shut[key] && !q;
+      h.onclick = () => {
+        shut[key] = !shut[key];
+        try {
+          localStorage.setItem(SHUT_KEY, JSON.stringify(shut));
+        } catch {
+        }
+        h.classList.toggle("shut", shut[key]);
+        box.hidden = shut[key];
+      };
+      for (const o of items) {
+        const d = document.createElement("div");
+        d.className = "ci";
+        d.dataset.v = o.value;
+        d.title = o.value;
+        const m = /^(.*?)\s+(\(\d+f\)|\[[^\]]*\])(\s+\(currently used\))?$/.exec(o.text);
+        if (m) {
+          d.append(m[1] + " ");
+          const s = document.createElement("span");
+          s.className = "meta";
+          s.textContent = m[2];
+          d.append(s);
+          if (m[3]) {
+            const u = document.createElement("span");
+            u.className = "used";
+            u.textContent = " (currently used)";
+            d.append(u);
+          }
+        } else d.textContent = o.text;
+        d.onclick = () => pickClip(o.value);
+        box.appendChild(d);
+      }
+      list.append(h, box);
+    }
+    markClipPanel();
+  }
+  function markClipPanel() {
+    const v = $("clip").value;
+    let on = null;
+    for (const d of $("clipList").children) for (const c of d.children || []) {
+      const hit = c.dataset?.v === v;
+      c.classList.toggle("on", hit);
+      if (hit && !on) on = c;
+    }
+    if (on && !on.parentElement.hidden) on.scrollIntoView({ block: "nearest" });
   }
   function pickClip(name) {
     const sel = $("clip");
@@ -39686,8 +39799,22 @@ void main() {
       S.speed = +e.target.value;
     };
     $("toggleSide").onclick = () => $("side").classList.toggle("open");
+    $("toggleClips").onclick = () => {
+      const p = $("clipPanel");
+      p.hidden = !p.hidden;
+      $("toggleClips").classList.toggle("on", !p.hidden);
+    };
+    $("clipFind").oninput = buildClipPanel;
+    $("clipUsedOnly").onchange = buildClipPanel;
+    $("clipFind").addEventListener("keydown", (e) => e.stopPropagation());
+    $("clip").addEventListener("change", markClipPanel);
+    const fitClipPanel = () => {
+      $("clipPanel").style.top = ($("top").hidden ? 6 : $("top").offsetTop + $("top").offsetHeight + 6) + "px";
+    };
+    new ResizeObserver(fitClipPanel).observe($("top"));
+    fitClipPanel();
     const ui = () => {
-      for (const id of ["top", "bottom", "side"]) {
+      for (const id of ["top", "bottom", "side", "clipPanel"]) {
         const el = $(id);
         el.hidden = !el.hidden;
       }
