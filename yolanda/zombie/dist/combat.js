@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -46212,8 +46212,8 @@ void main() {
     }
     startSwing(sim2, combo2, unlocked = false) {
       this.swingId++;
-      const G2 = combo2 === 0 ? groundAttack(this.equipped) : null, ground = !!(G2 && sim2.groundTarget?.(this));
-      const A = ground ? G2 : this.attacks[combo2];
+      const G3 = combo2 === 0 ? groundAttack(this.equipped) : null, ground = !!(G3 && sim2.groundTarget?.(this));
+      const A = ground ? G3 : this.attacks[combo2];
       const as = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
       const tgt = as?.target || null, turnBy = as?.turn || 0;
       let lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo2 > 0 ? 0.75 : 0.5)) : 0;
@@ -47876,7 +47876,7 @@ void main() {
     // ---------------- axe: swept between simulation steps ----------------
     resolveMelee(p, t0, t1, act) {
       if (t1 <= t0) return;
-      const SUB = 4, T2 = this.T, A = p.atk(act), G2 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
+      const SUB = 4, T2 = this.T, A = p.atk(act), G3 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
       let prev = meleeWorldSegment(p, A, t0, _a);
       let px2 = prev.tx, pz2 = prev.tz;
       {
@@ -47902,14 +47902,14 @@ void main() {
             this.emit({ type: "batClank", x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz });
           }
         }
-        const f = G2.hitFrom / G2.length;
+        const f = G3.hitFrom / G3.length;
         const ax = seg.hx + (tipX - seg.hx) * f, az = seg.hz + (tipZ - seg.hz) * f;
         const ay = seg.hy + (seg.ty - seg.hy) * f;
         const chop = A.style === "chop";
         for (const z of this.zombies) {
           if (!z.alive || act.hitSet.has(z.id)) continue;
           if (z.down && !chop) continue;
-          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G2.radius : 0);
+          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G3.radius : 0);
           const minY = z.down || z.crawling ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y);
           const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
           const y1 = ay + (seg.ty - ay) * h1.t;
@@ -47917,7 +47917,7 @@ void main() {
           const d2 = seg.ty >= minY ? segPointDist2(px2, pz2, tipX, tipZ, z.x, z.z).d2 : 1e9;
           let near = Math.min(d1, d2) <= rr * rr;
           if (!near && !z.down && !z.crawling && z.armsLost < 2) {
-            const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G2.radius : 0);
+            const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G3.radius : 0);
             const e1 = segPointDist2(ax, az, tipX, tipZ, ox, oz), ey = ay + (seg.ty - ay) * e1.t;
             near = ey >= minY && e1.d2 <= ar * ar || seg.ty >= minY && segPointDist2(px2, pz2, tipX, tipZ, ox, oz).d2 <= ar * ar;
           }
@@ -48068,7 +48068,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -48098,7 +48098,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -50199,21 +50199,21 @@ void main() {
     // Left hand on the shotgun: reaches the shell's loading port while it carries a shell, otherwise stays on
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
-    shotgunLeftHand(rf, G2) {
-      const U2 = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
+    shotgunLeftHand(rf, G3) {
+      const U2 = G3.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
       const shellOn = rf >= SH.from && rf <= SH.to;
       this.grip("Left", _v4);
       let wPort = 0;
       const tail = rf > SH.to && rf < SH.to + 5;
       if (shellOn || tail) {
         _v32.copy(U2.port.position).add(_v43.set(0, -SH.portDown, 0));
-        G2.localToWorld(_v32);
+        G3.localToWorld(_v32);
         wPort = tail ? 0 : smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
         const ins = tail ? smooth01(1 - (rf - SH.to) / 5) : smooth01((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT);
         if (ins > 0) {
           this.bones.LeftHandThumb2.getWorldPosition(_v43).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v6), 0.5).sub(_v4);
           _v6.copy(U2.port.position);
-          G2.localToWorld(_v6);
+          G3.localToWorld(_v6);
           _v6.sub(_v43);
           _v32.lerp(_v6, ins);
           wPort = Math.max(wPort, ins);
@@ -50224,7 +50224,7 @@ void main() {
         }
       }
       _v23.set(U2.pumpX, U2.pump.position.y, U2.pump.position.z);
-      G2.localToWorld(_v23);
+      G3.localToWorld(_v23);
       const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
       if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
@@ -50434,12 +50434,12 @@ void main() {
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
-        const G2 = this.shotgun, U2 = G2.userData, SP = SHOTGUN_SPEC;
+        const G3 = this.shotgun, U2 = G3.userData, SP = SHOTGUN_SPEC;
         this.bones.RightHand.getWorldQuaternion(_q5).multiply(this.shotgunSocket);
         this.grip("Right", _v4);
-        G2.position.copy(_v4);
-        G2.quaternion.copy(_q5);
-        if (this.shotgunFit) applyFit(G2, _v4, _q5, this.shotgunFit, AXE_AT);
+        G3.position.copy(_v4);
+        G3.quaternion.copy(_q5);
+        if (this.shotgunFit) applyFit(G3, _v4, _q5, this.shotgunFit, AXE_AT);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -50448,9 +50448,9 @@ void main() {
         const rf = this.reloadFrame;
         if (rf >= SP.rackFrom && rf <= SP.rackTo) slide = Math.max(slide, Math.sin(Math.PI * (rf - SP.rackFrom) / (SP.rackTo - SP.rackFrom)));
         U2.pump.position.x = U2.pumpX - SP.pumpStroke * slide;
-        G2.updateMatrixWorld(true);
+        G3.updateMatrixWorld(true);
         U2.muzzle.getWorldPosition(this.muzzleWorld);
-        this.shotgunLeftHand(rf, G2);
+        this.shotgunLeftHand(rf, G3);
       } else {
         this.grip("Right", _v4);
         this.grip("Left", _v23);
@@ -51319,7 +51319,7 @@ void main() {
     });
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -54499,7 +54499,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -54539,7 +54539,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -54630,7 +54630,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -54695,7 +54695,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -54783,7 +54783,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -54967,7 +54967,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -55039,7 +55039,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -55392,7 +55392,7 @@ void main() {
     return magicSquare;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -55591,7 +55591,7 @@ void main() {
     return samples;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -55738,8 +55738,8 @@ void main() {
       const s = (xin + yin) * F22;
       const i = Math.floor(xin + s);
       const j = Math.floor(yin + s);
-      const G2 = (3 - Math.sqrt(3)) / 6;
-      const t = (i + j) * G2;
+      const G22 = (3 - Math.sqrt(3)) / 6;
+      const t = (i + j) * G22;
       const X0 = i - t;
       const Y0 = j - t;
       const x0 = xin - X0;
@@ -55753,10 +55753,10 @@ void main() {
         i1 = 0;
         j1 = 1;
       }
-      const x1 = x0 - i1 + G2;
-      const y1 = y0 - j1 + G2;
-      const x2 = x0 - 1 + 2 * G2;
-      const y2 = y0 - 1 + 2 * G2;
+      const x1 = x0 - i1 + G22;
+      const y1 = y0 - j1 + G22;
+      const x2 = x0 - 1 + 2 * G22;
+      const y2 = y0 - 1 + 2 * G22;
       const ii = i & 255;
       const jj = j & 255;
       const gi0 = this.perm[ii + this.perm[jj]] % 12;
@@ -56025,7 +56025,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -56452,7 +56452,7 @@ void main() {
     "Denoise": 5
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -56504,7 +56504,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -56788,7 +56788,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -56876,7 +56876,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -60362,6 +60362,15 @@ void main() {
       A.tone(t, 0.55, 78, { type: "sine", gain: 0.3 * k, f2: 38 });
       A.tone(t, 0.12, 100, { type: "sawtooth", gain: 0.06 * k, attack: 3e-3 });
     }
+    flashBoom() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 2.2, 52, { type: "sine", gain: 0.75, f2: 26, attack: 4e-3 });
+      A.tone(t, 0.9, 104, { type: "triangle", gain: 0.28, f2: 40 });
+      A.noise(t, 0.06, { type: "highpass", f: 2600, gain: 0.6 });
+      A.noise(t, 1.6, { type: "lowpass", f: 1800, f2: 70, gain: 0.45, attack: 4e-3 });
+      A.noise(t + 0.02, 0.5, { type: "bandpass", f: 4800, q: 2, f2: 1600, gain: 0.12 });
+    }
     liftArrive() {
       if (!this.ok) return;
       const t = this.now(), A = this.audio;
@@ -60393,9 +60402,34 @@ void main() {
     footstep() {
       if (!this.ok) return;
       const t = this.now(), A = this.audio;
-      A.tone(t, 0.3, 66, { type: "sine", gain: 0.32, f2: 40 });
-      A.noise(t, 0.16, { type: "lowpass", f: 520, f2: 140, gain: 0.3 });
-      A.noise(t + 0.14, 0.35, { type: "lowpass", f: 380, f2: 120, gain: 0.08 });
+      A.noise(t, 0.09, { type: "lowpass", f: 1400, f2: 300, gain: 0.32 });
+      A.tone(t, 1.3, 48, { type: "sine", gain: 0.7, f2: 27, attack: 6e-3 });
+      A.tone(t, 0.45, 96, { type: "triangle", gain: 0.18, f2: 44 });
+      A.noise(t + 0.03, 1.1, { type: "lowpass", f: 260, f2: 60, gain: 0.22, attack: 0.02 });
+    }
+    smash() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, 0.05, { type: "highpass", f: 1800, gain: 0.7 });
+      for (const dt of [0, 0.018, 0.04, 0.07]) A.noise(t + dt, 0.035, { type: "bandpass", f: 2600 + Math.random() * 1800, q: 3, gain: 0.35 });
+      A.noise(t + 0.01, 0.7, { type: "bandpass", f: 700, q: 0.8, f2: 180, gain: 0.5 });
+      A.tone(t, 1.8, 46, { type: "sine", gain: 0.85, f2: 24, attack: 3e-3 });
+      A.tone(t, 0.5, 140, { type: "triangle", gain: 0.25, f2: 50 });
+      A.noise(t + 0.15, 1.6, { type: "lowpass", f: 900, f2: 90, gain: 0.25 });
+    }
+    slowDown() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, 1.2, { type: "bandpass", f: 2400, q: 0.8, f2: 220, gain: 0.22, attack: 0.05 });
+      A.tone(t, 1.4, 180, { type: "sawtooth", gain: 0.04, f2: 40 });
+    }
+    lensHit() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 0.35, 120, { type: "sine", gain: 0.6, f2: 55 });
+      A.noise(t, 0.12, { type: "lowpass", f: 900, f2: 200, gain: 0.5 });
+      for (const dt of [0, 0.012, 0.03, 0.05, 0.085, 0.12]) A.noise(t + dt, 0.03, { type: "highpass", f: 3e3 + Math.random() * 3e3, gain: 0.3 });
+      for (const [dt, hz] of [[0.02, 4186], [0.06, 5274], [0.11, 6272]]) A.tone(t + dt, 0.5, hz, { type: "sine", gain: 0.04 });
     }
     // ---- the walk-out cue: a low D-minor chord swelling, war drums on her steps, a string tremolo climbing to the freeze ----
     cueStart(secs = 4.5) {
@@ -60405,9 +60439,9 @@ void main() {
         const f = this.lp(420, g, 0.9), nodes = [f];
         for (const [hz, det] of [[36.71, 0], [73.42, 6], [110, -5], [146.83, 4], [174.61, -7]]) nodes.push(this.osc("sawtooth", hz, f, det));
         f.frequency.setValueAtTime(260, c.currentTime);
-        f.frequency.linearRampToValueAtTime(900, c.currentTime + secs);
+        f.frequency.linearRampToValueAtTime(1400, c.currentTime + secs);
         return nodes;
-      }, bus, 0.07, 1.6);
+      }, bus, 0.16, 1.6);
       this.strings = this.hold((g) => {
         const trem = c.createGain();
         trem.gain.value = 0.5;
@@ -60420,13 +60454,14 @@ void main() {
         const f = this.lp(2600, trem), a = this.osc("sawtooth", 440, f, -4), d = this.osc("sawtooth", 587.33, f, 5);
         return [trem, lfo, lg, f, a, d];
       }, bus, 0, 0.1);
-      this.fade(this.strings, 0.035, secs);
+      this.fade(this.strings, 0.065, secs);
+      this.sub = this.hold((g) => [this.osc("sine", 36.71, g)], bus, 0.22, 2.5);
     }
     drum(k = 1) {
       if (!this.ok || !this.cue) return;
       const t = this.now(), A = this.audio;
-      A.tone(t, 0.7, 58, { type: "sine", gain: 0.42 * k, f2: 36 });
-      A.noise(t, 0.3, { type: "lowpass", f: 900, f2: 160, gain: 0.22 * k });
+      A.tone(t, 0.9, 58, { type: "sine", gain: 0.6 * k, f2: 34 });
+      A.noise(t, 0.35, { type: "lowpass", f: 1100, f2: 160, gain: 0.32 * k });
     }
     cueHit() {
       if (!this.ok) return;
@@ -60438,19 +60473,548 @@ void main() {
       for (const hz of [146.83, 220, 293.66]) A.tone(t, 2.2, hz, { type: "sawtooth", gain: 0.03, attack: 0.01 });
       this.kill(this.cue, 0.08);
       this.kill(this.strings, 0.08);
-      this.cue = this.strings = null;
+      this.kill(this.sub, 0.08);
+      this.cue = this.strings = this.sub = null;
     }
     stopAll(secs = 0.3) {
       for (const h of [...this.live]) this.kill(h, secs);
-      this.bed = this.cue = this.strings = null;
+      this.bed = this.cue = this.strings = this.sub = null;
     }
   };
+
+  // src/opening/burst.js
+  var HEIGHT = 1.68;
+  var G2 = 9;
+  function blobTexture(soft) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const x = c.getContext("2d");
+    if (soft) {
+      const g = x.createRadialGradient(32, 32, 0, 32, 32, 31);
+      g.addColorStop(0, "rgba(255,255,255,1)");
+      g.addColorStop(0.5, "rgba(255,255,255,0.5)");
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      x.fillStyle = g;
+      x.fillRect(0, 0, 64, 64);
+    } else {
+      x.fillStyle = "#fff";
+      x.beginPath();
+      for (let i = 0; i <= 24; i++) {
+        const a = i / 24 * Math.PI * 2, r = 17 + Math.random() * 9 + (i % 5 === 0 ? 6 : 0);
+        x.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+      }
+      x.fill();
+      for (let i = 0; i < 9; i++) {
+        const a = Math.random() * Math.PI * 2, r = 26 + Math.random() * 5;
+        x.beginPath();
+        x.arc(32 + Math.cos(a) * r, 32 + Math.sin(a) * r, 1 + Math.random() * 2.5, 0, Math.PI * 2);
+        x.fill();
+      }
+    }
+    const t = new CanvasTexture(c);
+    t.colorSpace = SRGBColorSpace;
+    return t;
+  }
+  var ZombieBurst = class {
+    constructor(scene2, loader2) {
+      this.scene = scene2;
+      this.loader = loader2;
+      this.ready = false;
+      this.state = "off";
+      this.chunks = [];
+      this.timeScale = 1;
+      this.bounds = null;
+    }
+    async load() {
+      const [g, mod] = await Promise.all([this.loader.loadAsync("assets/opening/zombie-patient-burst.glb"), this.loader.loadAsync("assets/zombie-patient-mod.glb")]);
+      const root = this.root = g.scene;
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        o.castShadow = true;
+        o.frustumCulled = false;
+        const geo = o.geometry;
+        if (geo.attributes.color_1) {
+          geo.setAttribute("color", geo.attributes.color_1);
+          geo.deleteAttribute("color_1");
+        }
+        if (geo.attributes.color) {
+          o.material = o.material.clone();
+          o.material.vertexColors = true;
+        }
+      });
+      const box = new Box3().setFromObject(root);
+      this.scale = HEIGHT / Math.max(0.5, box.max.y - box.min.y);
+      root.scale.setScalar(this.scale);
+      root.visible = false;
+      this.scene.add(root);
+      this.mixer = new AnimationMixer(root);
+      this.clips = Object.fromEntries(mod.animations.map((a) => [a.name, a]));
+      const byChunk = /* @__PURE__ */ new Map();
+      root.traverse((o) => {
+        if (!o.isSkinnedMesh) return;
+        let n = o;
+        while (n && !/^B__/.test(n.name)) n = n.parent;
+        const chunk = n ? n.name.split("__")[1] : "Chest";
+        if (!byChunk.has(chunk)) byChunk.set(chunk, []);
+        byChunk.get(chunk).push(o);
+      });
+      this.byChunk = byChunk;
+      this.headMats = [];
+      for (const m of byChunk.get("Head") || []) {
+        m.material = m.material.clone();
+        if (m.material.map && "emissive" in m.material) {
+          m.material.emissive = new Color(16766656);
+          m.material.emissiveMap = m.material.map;
+          m.material.emissiveIntensity = 0;
+          this.headMats.push(m.material);
+        }
+      }
+      this.headBone = root.getObjectByName("mixamorigHead") || root.getObjectByName("mixamorig:Head");
+      this.chestBone = root.getObjectByName("mixamorigSpine2") || root.getObjectByName("mixamorig:Spine2");
+      this.initBlood();
+      this.ready = true;
+    }
+    // ---- the intact zombie ----
+    place(x, z, yaw) {
+      const r = this.root;
+      if (!r) return;
+      this.clearPieces();
+      r.visible = true;
+      r.position.set(x, 0, z);
+      r.rotation.set(0, yaw, 0);
+      this.state = "intact";
+      this.walkV = null;
+    }
+    play(name, { fade = 0.2, timeScale = 1, loop = true, at = 0 } = {}) {
+      const clip = this.clips?.[name];
+      if (!clip) return null;
+      const a = this.mixer.clipAction(clip);
+      a.setLoop(loop ? LoopRepeat : LoopOnce, Infinity);
+      a.clampWhenFinished = !loop;
+      a.timeScale = timeScale;
+      a.reset();
+      a.time = at;
+      a.play();
+      if (this.cur && this.cur !== a) a.crossFadeFrom(this.cur, fade, false);
+      this.cur = a;
+      return a;
+    }
+    // walk toward (x, z), arriving in secs (the opening's clock)
+    walkTo(x, z, secs) {
+      const r = this.root;
+      this.walkV = { vx: (x - r.position.x) / secs, vz: (z - r.position.z) / secs, t: secs };
+    }
+    hide() {
+      if (this.root) this.root.visible = false;
+      this.clearPieces();
+      this.state = "off";
+      this.mixer?.stopAllAction();
+      this.cur = null;
+    }
+    chestPoint() {
+      this.root.updateMatrixWorld(true);
+      return (this.chestBone || this.root).getWorldPosition(new Vector3());
+    }
+    // ---- the hit: every chunk baked in the pose he stands in, then thrown ----
+    // dir: the blow's direction (horizontal), cam: the camera (the head flies into it), headSecs: the head's flight on the
+    // burst's own clock, right: the screen's right on the floor (pieces go to both sides of the frame)
+    burst(hit, dir, cam, { headSecs = 0.42, lensDist = 0.42 } = {}) {
+      const r = this.root;
+      r.updateMatrixWorld(true);
+      this.mixer.update(0);
+      const right = new Vector3().crossVectors(new Vector3(0, 1, 0), cam.getWorldDirection(new Vector3()).negate()).normalize();
+      const v = new Vector3(), centre = this.chestPoint();
+      for (const [name, meshes] of this.byChunk) {
+        const grp = new Group();
+        let n = 0;
+        const c = new Vector3();
+        const baked = [];
+        for (const m of meshes) {
+          m.skeleton.update();
+          const src = m.geometry, pos = src.attributes.position, out2 = new Float32Array(pos.count * 3);
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i);
+            m.applyBoneTransform(i, v);
+            v.applyMatrix4(m.matrixWorld);
+            out2[i * 3] = v.x;
+            out2[i * 3 + 1] = v.y;
+            out2[i * 3 + 2] = v.z;
+            c.add(v);
+            n++;
+          }
+          baked.push({ m, out: out2 });
+        }
+        c.divideScalar(Math.max(1, n));
+        let rad = 0;
+        for (const { m, out: out2 } of baked) {
+          const geo = new BufferGeometry();
+          for (let i = 0; i < out2.length; i += 3) {
+            out2[i] -= c.x;
+            out2[i + 1] -= c.y;
+            out2[i + 2] -= c.z;
+            rad = Math.max(rad, Math.hypot(out2[i], out2[i + 1], out2[i + 2]));
+          }
+          geo.setAttribute("position", new BufferAttribute(out2, 3));
+          for (const k of ["uv", "color"]) if (m.geometry.attributes[k]) geo.setAttribute(k, m.geometry.attributes[k]);
+          if (m.geometry.index) geo.setIndex(m.geometry.index);
+          for (const gr of m.geometry.groups) geo.addGroup(gr.start, gr.count, gr.materialIndex);
+          geo.computeVertexNormals();
+          const mesh = new Mesh(geo, m.material);
+          mesh.castShadow = true;
+          mesh.frustumCulled = false;
+          grp.add(mesh);
+        }
+        grp.position.copy(c);
+        this.scene.add(grp);
+        const ch = { name, grp, rad: Math.min(rad, 0.35), low: 0, vel: new Vector3(), spin: new Vector3(), rest: false, bleed: 0 };
+        const out = c.clone().sub(centre);
+        out.y = 0;
+        if (out.lengthSq() < 1e-4) out.copy(dir);
+        out.normalize();
+        const sideOf = (s) => right.clone().multiplyScalar(s);
+        const R = (a, b) => a + Math.random() * (b - a);
+        const kick = (sp, side, up) => ch.vel.copy(dir).multiplyScalar(sp).add(sideOf(side)).add(out.clone().multiplyScalar(0.8)).setY(up);
+        if (name === "Head") ch.head = true;
+        else if (name === "Chest") kick(3.2, -1.6, 2.6);
+        else if (name === "Pelvis") kick(1.6, 0.6, 1.2);
+        else if (/UpperArm_L|Forearm_L/.test(name)) kick(R(2.5, 3.5), -4.2, R(2.6, 3.6));
+        else if (/UpperArm_R|Forearm_R/.test(name)) kick(R(2.5, 3.5), 4.2, R(2.6, 3.6));
+        else if (/Thigh|Shin/.test(name)) kick(R(1, 2), (/_L/.test(name) ? -1 : 1) * R(1.2, 2.2), R(0.8, 1.8));
+        else kick(R(2.5, 5), R(-3.5, 3.5), R(1.5, 4.5));
+        ch.spin.set(R(-9, 9), R(-9, 9), R(-9, 9));
+        if (/Gut|Gib/.test(name)) ch.spin.multiplyScalar(1.6);
+        ch.bleed = /Gib/.test(name) ? 0.4 : 1.6;
+        this.chunks.push(ch);
+      }
+      r.visible = false;
+      this.state = "burst";
+      this.t = 0;
+      const head = this.chunks.find((q) => q.head);
+      if (head) {
+        cam.updateMatrixWorld(true);
+        const C = cam.getWorldPosition(new Vector3()), F = cam.getWorldDirection(new Vector3());
+        const camR = new Vector3().setFromMatrixColumn(cam.matrixWorld, 0), camU = new Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
+        const E = C.clone().addScaledVector(F, lensDist).addScaledVector(camR, lensDist * 0.2).addScaledVector(camU, lensDist * 0.09), S2 = head.grp.position.clone();
+        const mid = S2.clone().lerp(E, 0.5);
+        mid.y += 0.35 + 0.15 * S2.distanceTo(E);
+        const face = new Vector3(Math.sin(r.rotation.y), 0, Math.cos(r.rotation.y));
+        const endQ = new Quaternion().setFromUnitVectors(face, F.clone().negate());
+        const axis = new Vector3().crossVectors(new Vector3(0, 1, 0), E.clone().sub(S2)).normalize();
+        head.path = { S: S2, mid, E, endQ, axis, secs: headSecs, t: 0, done: false };
+      }
+      this.spray(hit, dir, 90, 4.2, 1.4);
+      this.mist(hit, 6);
+      for (let i = 0; i < 4; i++) this.pool(hit.x + (Math.random() - 0.5) * 0.8 + dir.x * 0.6, hit.z + (Math.random() - 0.5) * 0.8 + dir.z * 0.6, 0.5 + Math.random() * 0.5);
+      return head;
+    }
+    clearPieces() {
+      for (const c of this.chunks) {
+        this.scene.remove(c.grp);
+        c.grp.traverse((o) => o.geometry?.dispose());
+      }
+      this.chunks = [];
+    }
+    // dt: already slowed by the caller. Returns 'lens' on the frame the head reaches the lens.
+    update(dt) {
+      let ev = null;
+      if (this.state === "intact") {
+        if (this.walkV && this.walkV.t > 0) {
+          const w = this.walkV, s = Math.min(dt, w.t);
+          this.root.position.x += w.vx * s;
+          this.root.position.z += w.vz * s;
+          w.t -= s;
+        }
+        this.mixer.update(dt);
+      }
+      if (this.state === "burst") {
+        this.t += dt;
+        const q = new Quaternion(), dq = new Quaternion(), e = new Euler();
+        for (const c of this.chunks) {
+          const p = c.grp.position;
+          if (c.path && !c.path.done) {
+            const P = c.path;
+            P.t += dt;
+            const u = Math.min(1, P.t / P.secs), a = 1 - u;
+            p.set(0, 0, 0).addScaledVector(P.S, a * a).addScaledVector(P.mid, 2 * a * u).addScaledVector(P.E, u * u);
+            q.identity().slerp(P.endQ, u * u);
+            dq.setFromAxisAngle(P.axis, -Math.PI * 2 * (1 - u) * (1 - u));
+            c.grp.quaternion.copy(dq).multiply(q);
+            for (const hm of this.headMats) hm.emissiveIntensity = 0.55 * u * u;
+            if (Math.random() < 0.6) this.drop(p, new Vector3((Math.random() - 0.5) * 0.6, -0.4, (Math.random() - 0.5) * 0.6), 0.05);
+            if (u >= 1) {
+              P.done = true;
+              ev = "lens";
+              c.vel.copy(P.S).sub(P.E).setY(0).normalize().multiplyScalar(2.4).setY(-4.5);
+              c.spin.set(4, 0, 7);
+            }
+            continue;
+          }
+          if (c.rest) continue;
+          c.vel.y -= G2 * dt;
+          p.addScaledVector(c.vel, dt);
+          e.set(c.spin.x * dt, c.spin.y * dt, c.spin.z * dt);
+          dq.setFromEuler(e);
+          c.grp.quaternion.premultiply(dq);
+          const B = this.bounds, m = c.rad * 0.4;
+          if (B) {
+            if (p.x < B.x0 + m) {
+              p.x = B.x0 + m;
+              c.vel.x = Math.abs(c.vel.x) * 0.3;
+            }
+            if (p.x > B.x1 - m) {
+              p.x = B.x1 - m;
+              c.vel.x = -Math.abs(c.vel.x) * 0.3;
+            }
+            if (p.z < B.z0 + m) {
+              p.z = B.z0 + m;
+              c.vel.z = Math.abs(c.vel.z) * 0.3;
+            }
+            if (p.z > B.z1 - m) {
+              p.z = B.z1 - m;
+              c.vel.z = -Math.abs(c.vel.z) * 0.3;
+            }
+          }
+          const floor = Math.max(0.05, c.rad * 0.45);
+          if (p.y < floor) {
+            p.y = floor;
+            if (c.vel.y < -1.2) {
+              this.pool(p.x, p.z, 0.35 + c.rad);
+              c.vel.y *= -0.28;
+              c.vel.x *= 0.55;
+              c.vel.z *= 0.55;
+              c.spin.multiplyScalar(0.5);
+            } else {
+              c.vel.set(0, 0, 0);
+              c.spin.set(0, 0, 0);
+              c.rest = true;
+            }
+          }
+          if (c.bleed > 0 && this.t < 1.2 && Math.random() < c.bleed * dt * 30) this.drop(p, c.vel.clone().multiplyScalar(0.3), 0.04);
+        }
+      }
+      this.tickBlood(dt);
+      return ev;
+    }
+    // ---- blood: droplets (points), mist puffs (sprites), pools (floor decals) ----
+    initBlood() {
+      const N = this.dropN = 900;
+      this.drops = Array.from({ length: N }, () => ({ p: new Vector3(), v: new Vector3(), life: 0, s: 0 }));
+      this.dropNext = 0;
+      const geo = this.dropGeo = new BufferGeometry();
+      geo.setAttribute("position", new BufferAttribute(new Float32Array(N * 3), 3));
+      geo.setAttribute("size", new BufferAttribute(new Float32Array(N), 1));
+      const mat2 = new PointsMaterial({ color: 10095628, size: 0.05, map: blobTexture(true), transparent: true, depthWrite: false, alphaTest: 0.05 });
+      this.dropPts = new Points(geo, mat2);
+      this.dropPts.frustumCulled = false;
+      this.scene.add(this.dropPts);
+      const mistTex = blobTexture(true);
+      this.mists = Array.from({ length: 10 }, () => {
+        const s = new Sprite(new SpriteMaterial({ map: mistTex, color: 7996934, transparent: true, opacity: 0, depthWrite: false }));
+        s.visible = false;
+        this.scene.add(s);
+        return { s, t: 9, v: new Vector3() };
+      });
+      const splat = blobTexture(false);
+      this.pools = Array.from({ length: 28 }, (_, i) => {
+        const m = new Mesh(new PlaneGeometry(1, 1), new MeshStandardMaterial({ map: splat, color: 3801859, roughness: 0.25, metalness: 0, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 - i * 0.05 }));
+        m.rotation.x = -Math.PI / 2;
+        m.visible = false;
+        m.renderOrder = 1;
+        this.scene.add(m);
+        return { m, t: 99, size: 1 };
+      });
+      this.poolNext = 0;
+    }
+    drop(p, v, s = 0.045) {
+      const d = this.drops[this.dropNext];
+      this.dropNext = (this.dropNext + 1) % this.dropN;
+      d.p.copy(p);
+      d.v.copy(v);
+      d.life = 0.9 + Math.random() * 0.8;
+      d.s = s * (0.6 + Math.random() * 0.9);
+    }
+    spray(p, dir, n, speed, up) {
+      for (let i = 0; i < n; i++) {
+        const s = speed * (0.25 + Math.random() * 0.9);
+        this.drop(
+          p.clone().add(new Vector3((Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.2)),
+          new Vector3(dir.x * s + (Math.random() - 0.5) * 2.6, up * Math.random() * 2.2 + (Math.random() - 0.3) * 1.2, dir.z * s + (Math.random() - 0.5) * 2.6),
+          0.06
+        );
+      }
+    }
+    mist(p, n) {
+      let k = 0;
+      for (const m of this.mists) {
+        if (m.t < 1) continue;
+        m.t = 0;
+        m.s.visible = true;
+        m.s.position.copy(p).add(new Vector3((Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3));
+        m.v.set((Math.random() - 0.5) * 0.8, 0.2 + Math.random() * 0.3, (Math.random() - 0.5) * 0.8);
+        if (++k >= n) break;
+      }
+    }
+    pool(x, z, size) {
+      const B = this.bounds;
+      if (B) {
+        x = Math.min(B.x1 - size * 0.3, Math.max(B.x0 + size * 0.3, x));
+        z = Math.min(B.z1 - size * 0.3, Math.max(B.z0 + size * 0.3, z));
+      }
+      const q = this.pools[this.poolNext];
+      this.poolNext = (this.poolNext + 1) % this.pools.length;
+      q.t = 0;
+      q.size = size;
+      q.m.position.set(x, 0.012 + this.poolNext * 3e-4, z);
+      q.m.rotation.z = Math.random() * Math.PI * 2;
+      q.m.visible = true;
+    }
+    tickBlood(dt) {
+      const pos = this.dropGeo.attributes.position, sz = this.dropGeo.attributes.size;
+      let k = 0;
+      for (const d of this.drops) {
+        if (d.life <= 0) continue;
+        d.life -= dt;
+        d.v.y -= G2 * dt;
+        d.p.addScaledVector(d.v, dt);
+        const B = this.bounds;
+        if (B && (d.p.x < B.x0 || d.p.x > B.x1 || d.p.z < B.z0 || d.p.z > B.z1)) {
+          d.life = 0;
+          continue;
+        }
+        if (d.p.y < 0.015) {
+          d.life = 0;
+          if (Math.random() < 0.08) this.pool(d.p.x, d.p.z, 0.1 + Math.random() * 0.15);
+          continue;
+        }
+        pos.setXYZ(k, d.p.x, d.p.y, d.p.z);
+        sz.setX(k, d.s);
+        k++;
+      }
+      this.dropGeo.setDrawRange(0, k);
+      pos.needsUpdate = true;
+      sz.needsUpdate = true;
+      for (const m of this.mists) if (m.t < 1) {
+        m.t += dt / 1.4;
+        m.s.position.addScaledVector(m.v, dt);
+        const s = 0.25 + m.t * 1.1;
+        m.s.scale.set(s, s, s);
+        m.s.material.opacity = 0.55 * (1 - m.t);
+        if (m.t >= 1) m.s.visible = false;
+      }
+      for (const q of this.pools) {
+        if (q.t > 50) continue;
+        q.t += dt;
+        const g = Math.min(1, q.t / 1.2), s = q.size * (0.3 + 0.7 * (1 - (1 - g) * (1 - g)));
+        q.m.scale.set(s, s, 1);
+        q.m.material.opacity = 0.92;
+      }
+    }
+    clearBlood() {
+      for (const d of this.drops) d.life = 0;
+      for (const m of this.mists) {
+        m.t = 9;
+        m.s.visible = false;
+      }
+      for (const q of this.pools) {
+        q.t = 99;
+        q.m.visible = false;
+      }
+      this.tickBlood(0);
+    }
+    reset() {
+      this.hide();
+      this.clearBlood();
+      for (const hm of this.headMats || []) hm.emissiveIntensity = 0;
+    }
+  };
+  function lensCrack(cx, cy) {
+    const w = innerWidth, h = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+    const c = document.createElement("canvas");
+    c.width = w * dpr;
+    c.height = h * dpr;
+    c.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:61;pointer-events:none;animation:opCrackIn .09s ease-out";
+    const x = c.getContext("2d");
+    x.scale(dpr, dpr);
+    x.lineCap = "round";
+    x.lineJoin = "round";
+    const R = (a, b) => a + Math.random() * (b - a), M4 = Math.max(w, h);
+    x.fillStyle = "rgba(110,8,8,0.55)";
+    x.beginPath();
+    for (let i = 0; i <= 18; i++) {
+      const a = i / 18 * Math.PI * 2, r = R(16, 34);
+      x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.85);
+    }
+    x.fill();
+    for (let i = 0; i < 4; i++) {
+      const dx = R(-24, 24), len = R(30, 110);
+      x.fillRect(cx + dx, cy, R(2, 5), len);
+      x.beginPath();
+      x.arc(cx + dx + 2, cy + len, R(2.5, 4.5), 0, Math.PI * 2);
+      x.fill();
+    }
+    const stroke = (pts, wdt) => {
+      x.beginPath();
+      pts.forEach(([px2, py2], i) => i ? x.lineTo(px2, py2) : x.moveTo(px2, py2));
+      x.strokeStyle = "rgba(0,0,0,0.45)";
+      x.lineWidth = wdt + 1.6;
+      x.stroke();
+      x.strokeStyle = "rgba(235,245,255,0.92)";
+      x.lineWidth = wdt;
+      x.stroke();
+    };
+    const arms = 13, ends = [];
+    for (let i = 0; i < arms; i++) {
+      let a = i / arms * Math.PI * 2 + R(-0.2, 0.2), px2 = cx, py2 = cy;
+      const len = R(0.12, 0.42) * M4, pts = [[px2, py2]];
+      const steps = 9;
+      for (let s = 1; s <= steps; s++) {
+        a += R(-0.18, 0.18);
+        const d = len / steps;
+        px2 += Math.cos(a) * d;
+        py2 += Math.sin(a) * d;
+        pts.push([px2, py2]);
+        if (s > 2 && Math.random() < 0.18) {
+          let b = a + R(0.5, 0.9) * (Math.random() < 0.5 ? -1 : 1), bx = px2, by = py2;
+          const bp = [[bx, by]];
+          for (let k = 0; k < 4; k++) {
+            b += R(-0.2, 0.2);
+            bx += Math.cos(b) * d * 0.7;
+            by += Math.sin(b) * d * 0.7;
+            bp.push([bx, by]);
+          }
+          stroke(bp, 0.9);
+        }
+      }
+      stroke(pts, 1.6);
+      ends.push(pts);
+    }
+    for (const k of [2, 4]) for (let i = 0; i < arms; i++) {
+      const A = ends[i][k], B = ends[(i + 1) % arms][k];
+      if (Math.random() < 0.8) stroke([A, [(A[0] + B[0]) / 2 + R(-6, 6), (A[1] + B[1]) / 2 + R(-6, 6)], B], 1.1);
+    }
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, 22);
+    g.addColorStop(0, "rgba(255,255,255,0.85)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    x.fillStyle = g;
+    x.beginPath();
+    x.arc(cx, cy, 22, 0, Math.PI * 2);
+    x.fill();
+    if (!document.getElementById("opCrackCss")) {
+      const st = document.createElement("style");
+      st.id = "opCrackCss";
+      st.textContent = "@keyframes opCrackIn{from{transform:scale(1.04);opacity:0}to{transform:none;opacity:1}}";
+      document.head.appendChild(st);
+    }
+    document.body.appendChild(c);
+    return c;
+  }
 
   // src/opening/opening.js
   var TX = OR_TABLE.x;
   var TZ = OR_TABLE.z;
   var LIFT7 = LIFTS[7];
   var HR = { stance: 0.2, freeze: 1.62, yaw: 0.35, camYaw: 34 };
+  var REV_BAT = { x: 4.3, z: -10.86, lean: [-0.1, -0.95, 0.3] };
   var BELONG = ROOM1.belongings;
   var PATIENT_OUTFIT = { Jersey_Cream: 15921644, Trousers_Gray: 15461092, Uniform_Navy: 15000541, Markings_OffWhite: 15921644 };
   var clamp6 = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -60493,6 +61057,7 @@ void main() {
   var Opening = class {
     constructor(ctx) {
       Object.assign(this, ctx);
+      this.near0 = this.camera.near;
       this.stage = new ClinicStage(this.scene, this.loader);
       this.ui = new OpeningUI();
       this.sound = new OpeningAudio(this.audio);
@@ -60557,6 +61122,14 @@ void main() {
         this.revClips = { homerun: rc.animations.find((a) => a.name === "reveal_homerun"), walk: rc.animations.find((a) => a.name === "reveal_walk") };
       } catch (e) {
         console.warn("reveal clips", e);
+      }
+      try {
+        this.burst = new ZombieBurst(this.scene, this.loader);
+        this.burst.bounds = { x0: -7, x1: 7, z0: -11.05, z1: 0.95 };
+        await this.burst.load();
+      } catch (e) {
+        console.warn("zombie burst", e);
+        this.burst = null;
       }
       this.stage.setActive(true);
       this.setupScene();
@@ -60797,6 +61370,15 @@ void main() {
       this.rs?.stopAll(0.2);
       this.slowmo = 0;
       this.revBat?.(false);
+      this.burst?.reset();
+      this.crackEl?.remove();
+      this.crackEl = null;
+      this.burstScale = 1;
+      this.shake = 0;
+      this.stepShake = 0;
+      this.patientDown = false;
+      this.camera.near = this.near0 ?? 0.5;
+      this.camera.updateProjectionMatrix();
       if (this.bt.state !== "idle") this.bt.finish();
       this.bt.state = "idle";
       this.monitorOn = false;
@@ -61001,6 +61583,13 @@ void main() {
       c.position.set(r.x - fx2 * Math.cos(p) * dist2, r.y + Math.sin(p) * dist2, r.z - fz * Math.cos(p) * dist2);
       c.lookAt(r.x, r.y, r.z);
       if (r.roll) c.rotateZ(r.roll);
+      if (this.shake) {
+        const k = this.shake;
+        c.position.x += (Math.random() - 0.5) * k;
+        c.position.y += (Math.random() - 0.5) * k;
+        c.position.z += (Math.random() - 0.5) * k;
+        c.rotateZ((Math.random() - 0.5) * k * 0.6);
+      }
     }
     // ------------------------------------------------------------------ helpers (audio is skipped in seek mode)
     setSub(text) {
@@ -61171,25 +61760,33 @@ void main() {
       const c = document.createElement("canvas");
       c.width = c.height = 128;
       const x = c.getContext("2d");
-      for (let i = 0; i < 26; i++) {
-        const px2 = 64 + (Math.random() - 0.5) * 50, py2 = 64 + (Math.random() - 0.5) * 34, r = 18 + Math.random() * 26;
+      for (let i = 0; i < 40; i++) {
+        const px2 = 64 + (Math.random() - 0.5) * 70, py2 = 70 + (Math.random() - 0.5) * 30 - Math.random() * Math.random() * 30, r = 8 + Math.random() * 26;
         const gr = x.createRadialGradient(px2, py2, 0, px2, py2, r);
-        gr.addColorStop(0, "rgba(255,255,255,0.22)");
+        gr.addColorStop(0, "rgba(255,255,255," + (0.1 + Math.random() * 0.16).toFixed(2) + ")");
         gr.addColorStop(1, "rgba(255,255,255,0)");
         x.fillStyle = gr;
         x.fillRect(0, 0, 128, 128);
       }
+      x.globalCompositeOperation = "destination-in";
+      const fall = x.createRadialGradient(64, 64, 20, 64, 64, 64);
+      fall.addColorStop(0, "rgba(0,0,0,1)");
+      fall.addColorStop(1, "rgba(0,0,0,0)");
+      x.fillStyle = fall;
+      x.fillRect(0, 0, 128, 128);
       const tex = new CanvasTexture(c);
       const g = new Group();
       g.name = "revealSmoke";
       this.scene.add(g);
       const parts = [];
-      for (let i = 0; i < 46; i++) {
-        const m = new SpriteMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false, color: 16777215 });
+      for (let i = 0; i < 72; i++) {
+        const m = new SpriteMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false, color: 16777215, rotation: (Math.random() - 0.5) * 0.3 });
         const sp = new Sprite(m);
         sp.position.set(LIFT7.x, 0.2, -12);
+        sp.center.set(0.5, 0.3);
         g.add(sp);
-        parts.push({ sp, life: Math.random(), speed: 0.18 + Math.random() * 0.2, side: (Math.random() - 0.5) * 2.4, h: 0.03 + Math.random() * 0.1, size: 0.55 + Math.random() * 0.6, spin: (Math.random() - 0.5) * 0.4 });
+        const wisp = i % 6 === 0;
+        parts.push({ sp, life: Math.random(), speed: 0.16 + Math.random() * 0.22, side: (Math.random() - 0.5) * 2.4, h: wisp ? 0.04 : Math.random() * 0.05, size: 0.45 + Math.random() * 0.6, aspect: wisp ? 0.9 : 1.4 + Math.random() * 0.9, flat: wisp ? 0.75 : 0.32 + Math.random() * 0.18, curl: Math.random() * 6.3, spin: (Math.random() - 0.5) * 0.06, wisp });
       }
       this.smoke = { g, parts, k: 0, target: 0 };
     }
@@ -61240,11 +61837,13 @@ void main() {
         p.ox = (p.ox || 0) * decay;
         p.oz = (p.oz || 0) * decay;
         p.oy = (p.oy || 0) * decay;
-        p.sp.position.set(px2 + p.ox, p.h * (1 - 0.5 * t) + 0.04 + p.oy, pz2 + p.oz);
+        const curl = Math.sin(t * 5 + p.curl) * 0.12 * t;
+        p.sp.position.set(px2 + p.ox + curl, p.h * (1 - 0.5 * t) + p.oy + (p.wisp ? t * 0.25 : 0), pz2 + p.oz);
         const sz = p.size * (0.7 + t * 1.3);
-        p.sp.scale.set(sz * 1.7, sz * 0.38, 1);
+        p.sp.scale.set(sz * p.aspect, sz * p.flat, 1);
+        p.sp.material.rotation += p.spin * d;
         const fade = Math.sin(Math.min(1, t * 1.15) * Math.PI);
-        p.sp.material.opacity = S2.k * 0.4 * fade;
+        p.sp.material.opacity = S2.k * (p.wisp ? 0.18 : 0.3) * fade;
         p.sp.material.color.setRGB(Math.min(1, lit + red), Math.min(1, lit * 0.95 + red * 0.08), Math.min(1, lit * 0.98 + red * 0.08));
       }
     }
@@ -61492,12 +62091,12 @@ void main() {
     }
     // the pusher's hands on the chair's push grips (a two-bone reach after the clip, every frame the chair is pushed)
     handsToGrips(p, wc) {
-      const G2 = wc.userData.grips;
-      if (!G2?.L || !G2?.R) return;
+      const G3 = wc.userData.grips;
+      if (!G3?.L || !G3?.R) return;
       wc.updateMatrixWorld(true);
       p.root.updateMatrixWorld(true);
       const B = p.bones;
-      for (const [side, grip] of [["L", G2.L], ["R", G2.R]]) {
+      for (const [side, grip] of [["L", G3.L], ["R", G3.R]]) {
         const up = B["upper_arm" + side], lo = B["forearm" + side], hand = B["hand" + side];
         if (up && lo && hand) ikArm(up, lo, hand, grip.getWorldPosition(new Vector3()), 1);
       }
@@ -62226,17 +62825,22 @@ void main() {
         [2, "new", 0.85],
         [2.55, "old", 0.6],
         // the first exchanges
-        [3.75, "old", 0.7],
-        [4, "new", 0.75],
-        [4.2, "old", 0.8],
-        [4.37, "new", 0.85],
-        [4.51, "old", 0.9],
-        [4.63, "new", 0.95],
-        [4.74, "old", 0.95],
-        [4.84, "new", 1.15, 0.7]
+        [3.6, "old", 0.8],
+        [3.76, "new", 0.85],
+        [3.89, "old", 0.9],
+        [4, "new", 0.9],
+        [4.1, "old", 0.95],
+        [4.19, "new", 0.95],
+        // (a beat of dark, then the burst, speeding up)
+        [4.36, "old", 0.85],
+        [4.62, "new", 0.75],
+        [5, "old", 0.65],
+        // (then slowing, click by click, the light dying)
+        [5.95, "new", 1.5, 1.1, true]
       ];
-      for (const [t, who, k, decay] of seq) this.later(t, () => this.flashOn(who, k, decay));
-      yield 6;
+      for (const [t, who, k, decay, boom] of seq) this.later(t, () => this.flashOn(who, k, decay, boom));
+      if (!this.silent) this.later(5.45, () => this.rs.heartbeat(1));
+      yield 7.2;
       this.substate = "B8_THREAT";
       this.revLight({ amb: 0, red: 0.9, redAt: "or" });
       this.camTo({ x: TX, y: 1.5, z: TZ - 0.4, pitch: 12, yaw: 14, dist: 4.2, fov: 40 }, 0.01);
@@ -62256,50 +62860,99 @@ void main() {
       this.stand.bat = "none";
       this.standClipWalk(this.revClips?.walk, { x: cabX, z: -9.75 }, 0.7, 0.8);
       this.slowmo = 0.7;
+      this.stepShake = 0.012;
       if (!this.silent) {
         this.rs.slowWhoosh();
         this.rs.bedStop(1.6);
         this.rs.cueStart(7);
       }
-      this.revLight({ amb: 0.06, red: 0.75, redAt: "doors", em: true });
-      this.camTrack = () => {
-        const f = this.feetCentre();
-        return { x: f.x, y: 0.17, z: f.z, pitch: 6, yaw: 22, dist: 1.45, fov: 40 };
-      };
+      this.revLight({ amb: 0.05, red: 0.42, redAt: "doors", em: true, key: 0.3, spotAt: "flash" });
+      this.camTo({ x: cabX + 0.15, y: 0.25, z: -11, pitch: -2, yaw: 8, dist: 2.3, fov: 30 }, 0.01);
+      this.camTo({ x: cabX + 0.12, y: 0.23, z: -10.75, pitch: -1.5, yaw: 6, dist: 2.05, fov: 30 }, 2.7);
       yield 2.7;
       this.substate = "B10_BAT";
       this.camTrack = null;
       this.slowmo = 0;
+      this.stepShake = 0;
       this.revBat(true);
-      this.camTo({ x: LIFT7.x + 1.55, y: 0.5, z: -10.8, pitch: 4, yaw: -28, dist: 1.5, fov: 40 }, 0.01);
-      this.camTo({ x: LIFT7.x + 1.55, y: 0.55, z: -10.8, pitch: 3, yaw: -24, dist: 1.2, fov: 40 }, 1.7);
+      this.camTo({ x: REV_BAT.x - 0.05, y: 0.5, z: -10.75, pitch: 4, yaw: -28, dist: 1.6, fov: 40 }, 0.01);
+      this.camTo({ x: REV_BAT.x - 0.05, y: 0.55, z: -10.75, pitch: 3, yaw: -24, dist: 1.25, fov: 40 }, 1.7);
       this.standHomerun(an, HR.stance);
       yield 1.7;
       this.substate = "B11_SWING";
       this.mark("beat11");
       this.revBat(false);
-      {
+      const hit = this.planHit(), Z = this.burst?.ready ? this.burst : null;
+      this.camera.near = 0.05;
+      this.camera.updateProjectionMatrix();
+      this.revLight({ amb: 0.16, red: 0.55, key: 0.45, spotAt: "key" });
+      if (Z && hit) {
+        const toC = 0.55 + (hit.tc - HR.stance);
+        Z.place(hit.zx + hit.away.x * 1.5, hit.zz + hit.away.z * 1.5, hit.zyaw);
+        Z.play("walk", { timeScale: 1.7, at: 1.2 });
+        Z.walkTo(hit.zx, hit.zz, toC);
+        this.later(Math.max(0, toC - 0.7), () => Z.play("attack", { fade: 0.25, timeScale: 1.2, loop: false, at: 0.3 }));
+        this.dropPatient();
+        this.camTo(hit.cam, 0.01);
+        this.camTo({ ...hit.cam, dist: hit.cam.dist - 0.35 }, toC + 0.3);
+      } else {
         const p = this.stand;
         this.camTo({ x: p.x - 0.2, y: 1.1, z: p.z + 0.25, pitch: 7, yaw: HR.camYaw, dist: 4, fov: 40 }, 0.01);
       }
-      this.revLight({ amb: 0.16, red: 0.55, key: 0.45, spotAt: "key" });
-      yield 0.5;
+      if (!this.silent) this.rs.drum(1.1);
+      yield 0.55;
       this.stand.clip.paused = false;
       this.stand.clip.timeScale = 1;
-      if (!this.silent) this.rs.drum(1.2);
-      {
-        const p = this.stand;
-        this.camTo({ x: p.x - 0.35, y: 1.2, z: p.z + 0.35, pitch: 6, yaw: HR.camYaw - 6, dist: 3.7, fov: 40 }, 0.6);
-      }
-      yield () => this.stand.clip.time >= HR.freeze;
+      if (!this.silent) this.rs.drum(1.3);
+      if (Z && hit) {
+        yield () => this.stand.clip.time >= hit.tc;
+        this.substate = "B11_HIT";
+        this.mark("hit");
+        this.stand.clip.paused = true;
+        this.burstScale = 0;
+        this.shake = 0.07;
+        this.camAnim = null;
+        if (this.rl) {
+          this.rl.flash = 0.45;
+          this.rl.flashDecay = 0.25;
+        }
+        if (!this.silent) {
+          this.rs.smash();
+          this.rs.slowDown();
+        }
+        this.lensHit = false;
+        this.setCamera();
+        Z.burst(hit.tip, hit.dir, this.camera, { headSecs: 0.42, lensDist: 0.62 });
+        this.patientDown = true;
+        yield 0.08;
+        const realHead = 0.42 / 0.26, after = 0.5;
+        this.burstScale = 0.26;
+        this.stand.clip.paused = false;
+        this.stand.clip.timeScale = Math.max(0.05, (HR.freeze - hit.tc) / (realHead + after));
+        yield () => this.lensHit;
+        this.substate = "B11_LENS";
+        {
+          const sp = this.lensAt.clone().project(this.camera);
+          this.crackEl?.remove();
+          this.crackEl = lensCrack((sp.x * 0.5 + 0.5) * innerWidth, (-sp.y * 0.5 + 0.5) * innerHeight);
+        }
+        this.shake = 0.03;
+        const bs = this.burstScale;
+        this.burstScale = 0;
+        if (!this.silent) this.rs.lensHit();
+        yield 0.06;
+        this.burstScale = bs;
+        yield after;
+      } else yield () => this.stand.clip.time >= HR.freeze;
       this.substate = "B12_CARD";
       this.mark("beat12");
       this.stand.clip.paused = true;
+      this.burstScale = 0;
       {
-        const b = this.batCentre(), p = this.stand, bb = this.yola?.batLib?.obj ? new Box3().setFromObject(this.yola.batLib.obj) : null;
+        const bb = this.yola?.batLib?.obj ? new Box3().setFromObject(this.yola.batLib.obj) : null, p = this.stand;
         const tx = bb ? (p.x + (bb.min.x + bb.max.x) / 2) / 2 : p.x, tz = bb ? (p.z + (bb.min.z + bb.max.z) / 2) / 2 : p.z;
-        void b;
         this.camAnim = null;
+        this.shake = 0;
         this.rig = { x: tx, y: 1.2, z: tz, pitch: 6, yaw: HR.camYaw - 6, dist: 4.8, fov: 40 };
         this.setCamera();
       }
@@ -62315,6 +62968,9 @@ void main() {
       this.substate = "B13_RETURN";
       this.hideCard();
       this.stand.clip.paused = false;
+      this.stand.clip.timeScale = 1;
+      this.burstScale = 1;
+      this.fadeCrack();
       if (!this.silent) g.musicStart?.("combat");
       this.revLight({ amb: 1, red: 0, tube: 0, key: 0, em: true, exposure: 1 });
       this.setCamera();
@@ -62323,6 +62979,7 @@ void main() {
       this.camera.position.copy(fromPos);
       this.camera.quaternion.copy(fromQuat);
       this.camera.fov = fromFov;
+      this.camera.near = 0.05;
       this.camera.updateProjectionMatrix();
       this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 1.8 };
       yield () => this.stand.clip.time >= this.stand.clip.getClip().duration - 0.05;
@@ -62417,7 +63074,7 @@ void main() {
       this.rl = null;
     }
     // a flash from the failing light outside the doors: one silhouette or the other, the surfaces clean or outbreak with it
-    flashOn(who, k, decay) {
+    flashOn(who, k, decay, boom) {
       const old = this.stage.actors.yola;
       old.setVisible(who === "old");
       this.standVisible(who === "new");
@@ -62426,9 +63083,14 @@ void main() {
         this.rl.flash = k;
         this.rl.flashDecay = decay || 0.16;
       }
+      if (boom) {
+        this.shake = 0.05;
+        this.smokeKick(LIFT7.x, -12.2, 1.6);
+      }
       if (!this.silent) {
         this.sound.flicker?.(true);
-        this.rs.flash(k);
+        if (boom) this.rs.flashBoom();
+        else this.rs.flash(k);
       }
     }
     setOutbreakLook(on) {
@@ -62525,16 +63187,92 @@ void main() {
     }
     // the athlete's bat leaning against the lift's frame, beside the doors (the opening's static bat: barrel down, knob up)
     revBat(on) {
-      if (!this.revBatObj) {
-        this.revBatObj = this.stage.guardBat.clone(true);
+      const src = this.yola?.batLib?.obj || this.stage.guardBat;
+      if (!this.revBatObj && on) {
+        this.revBatObj = src.clone(true);
+        this.revBatObj.traverse((o) => {
+          o.visible = true;
+          if (o.isMesh) o.castShadow = true;
+        });
         this.scene.add(this.revBatObj);
       }
       const b = this.revBatObj;
+      if (!b) return;
       b.visible = on;
       if (!on) return;
+      const d = new Vector3(...REV_BAT.lean).normalize(), T2 = new Vector3(REV_BAT.x, 0, REV_BAT.z);
+      T2.y = 0.045 - d.y * 0.71;
       b.scale.setScalar(1);
-      b.position.set(LIFT7.x + 1.55, 0.01, -10.86);
-      b.rotation.set(-0.3, 0.4, 0.06);
+      b.position.copy(T2);
+      b.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), d);
+    }
+    // the swing's contact, worked out from her own clip where she stands: the moment the bat's barrel sweeps furthest out in
+    // front of her (tc), where it is then (tip), where the zombie must stand to take it, which way he flies, and a camera
+    // across the line between them (on the side nearer the angle the user liked for the swing)
+    planHit() {
+      const s = this.stand, Y2 = this.yola, act = s?.clip, bat = Y2?.batLib?.obj;
+      if (!act || !bat) return null;
+      const t0 = act.time, fwd = new Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), hips = new Vector3(s.x, 0, s.z);
+      const tipAt = (t) => {
+        act.time = t;
+        s.mixer.update(0);
+        this.tickStand(0);
+        bat.updateMatrixWorld(true);
+        return new Vector3(0, 0, 0.62).applyMatrix4(bat.matrixWorld);
+      };
+      const back = () => {
+        act.time = t0;
+        s.mixer.update(0);
+        this.tickStand(0);
+      };
+      let best = null, prev = null;
+      for (let t = HR.stance + 0.2; t <= HR.freeze; t += 1 / 60) {
+        const p = tipAt(t), out = p.clone().sub(hips).setY(0), reach = out.dot(fwd);
+        const sp = prev ? p.distanceTo(prev) * 60 : 0;
+        prev = p;
+        const score = reach * (1 + sp * 0.02);
+        if (p.y > 0.6 && p.y < 1.5 && reach > 0.3 && (!best || score > best.score)) best = { t, p, score, out };
+      }
+      if (!best) {
+        back();
+        return null;
+      }
+      const after = tipAt(Math.min(HR.freeze, best.t + 1 / 30));
+      back();
+      const swing = after.clone().sub(best.p).setY(0).normalize();
+      const away = best.out.clone().normalize();
+      const dir = swing.clone().multiplyScalar(0.7).add(away.clone().multiplyScalar(0.6)).normalize();
+      const zx = best.p.x + away.x * 0.16, zz = best.p.z + away.z * 0.16, zyaw = Math.atan2(s.x - zx, s.z - zz);
+      const line = Math.atan2(zx - s.x, zz - s.z) * 180 / Math.PI, wrap = (a) => (a % 360 + 540) % 360 - 180;
+      const cx = s.x + (zx - s.x) * 0.42, cz = s.z + (zz - s.z) * 0.42, dist2 = 5.6;
+      const inRoom = (y) => {
+        const a = y * Math.PI / 180, px2 = cx + Math.sin(a) * dist2, pz2 = cz + Math.cos(a) * dist2;
+        return px2 > -6.7 && px2 < 6.7 && pz2 > -10.7 && pz2 < 0.6;
+      };
+      let yaw = [line + 90, line - 90].map((y) => y + wrap(s.yaw * 180 / Math.PI - y) * 0.25).sort((a, b) => inRoom(b) - inRoom(a) || Math.abs(wrap(a - HR.camYaw)) - Math.abs(wrap(b - HR.camYaw)))[0];
+      const cam = { x: cx, y: 1.1, z: cz, pitch: 6, yaw, dist: dist2, fov: 40 };
+      return { tc: best.t, tip: best.p, dir, away, zx, zz, zyaw, cam };
+    }
+    // the patient zombie on the OR table is the one she smashes: out of the game's room
+    dropPatient() {
+      const g = this.game(), sim2 = g.sim;
+      if (!sim2?.zombies) return;
+      const z = sim2.zombies.find((q) => q.group === "or" && q.look === "patient");
+      if (!z) return;
+      sim2.zombies.splice(sim2.zombies.indexOf(z), 1);
+      const v = g.zviews?.get(z.id);
+      if (v) {
+        v.hide();
+        g.zviews.delete(z.id);
+      }
+    }
+    fadeCrack() {
+      const el = this.crackEl;
+      if (!el) return;
+      this.crackEl = null;
+      el.style.transition = "opacity .7s";
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 800);
     }
     standVisible(v) {
       if (!this.stand) return;
@@ -62581,6 +63319,7 @@ void main() {
             this.rs.drum(0.8);
           }
           this.smokeKick(s.x, s.z, 0.9);
+          if (this.stepShake) this.shake = Math.max(this.shake || 0, this.stepShake);
         }
         w.last = ph;
         if ((w.goal.x - s.x) * w.vx + (w.goal.z - s.z) * w.vz <= 0) {
@@ -62838,6 +63577,14 @@ void main() {
       this.rs?.stopAll(0.2);
       this.slowmo = 0;
       this.revBat?.(false);
+      if (this.burst?.state === "burst") for (let i = 0; i < 240; i++) this.burst.update(1 / 60);
+      this.crackEl?.remove();
+      this.crackEl = null;
+      this.burstScale = 1;
+      this.shake = 0;
+      this.stepShake = 0;
+      this.camera.near = this.near0 ?? 0.5;
+      this.camera.updateProjectionMatrix();
       for (const k of ["yola", "baseball", "teamA", "teamB", "surgeon", "staff"]) A[k].setVisible(false);
       if (this.guardPool) this.guardPool.visible = true;
       else this.placeGuardPool();
@@ -62865,6 +63612,7 @@ void main() {
       if (g.music?.state === "off") g.musicStart?.("explore");
       if (via === "normal") this.later33();
       g.applyRoom1();
+      if (this.patientDown) this.dropPatient();
       g.previewRoom1(0);
       this.stillYola = false;
       this.room1Preview = false;
@@ -63187,6 +63935,13 @@ void main() {
       this.tickRevLight(d);
       this.tickSmoke(d);
       this.tickDoorSweep(d);
+      if (this.burst && this.burst.state !== "off") {
+        if (this.burst.update(d * (this.burstScale ?? 1)) === "lens") {
+          this.lensHit = true;
+          this.lensAt = this.burst.chunks.find((c) => c.head)?.path.E.clone() || new Vector3();
+        }
+      }
+      if (this.shake) this.shake = this.shake < 5e-4 ? 0 : this.shake * Math.exp(-dt * 9);
       if (this.camTrack) {
         this.rig = this.camTrack();
         this.camAnim = null;
@@ -63538,7 +64293,7 @@ void main() {
     return S2;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
