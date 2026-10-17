@@ -37742,6 +37742,19 @@ void main() {
     }
     return g;
   }
+  function makeKnife() {
+    const g = new Group(), m = (c, r, mt) => new MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
+    const handle = new Mesh(new CylinderGeometry(0.014, 0.016, 0.11, 12), m(2829102, 0.8, 0));
+    handle.rotation.x = Math.PI / 2;
+    g.add(handle);
+    const guard = new Mesh(new BoxGeometry(0.05, 0.012, 8e-3), m(7830656, 0.4, 0.6));
+    guard.position.z = 0.058;
+    g.add(guard);
+    const blade = new Mesh(new BoxGeometry(4e-3, 0.03, 0.15), m(13225682, 0.25, 0.85));
+    blade.position.set(0, -3e-3, 0.137);
+    g.add(blade);
+    return g;
+  }
 
   // src/render/ik.js
   var clamp2 = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -38311,7 +38324,7 @@ void main() {
     yola2: {
       label: "Yola 2 (new model)",
       file: "assets/yola2.glb",
-      extra: ["assets/moves/yola2_moves.glb"],
+      extra: ["assets/yola2_ual.glb", "assets/moves/yola2_moves.glb"],
       height: 1.62,
       ref: "yola_",
       refMap: YOLA2_REF,
@@ -38357,8 +38370,10 @@ void main() {
   }
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var REF_OFFSET = { pistol_reload: 37 };
-  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat" };
-  var HELD = { pistol: 1, axe: 1, bat: 1 };
+  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
+  var HELD = { pistol: 1, axe: 1, bat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
+  var LIB_WEAPONS = { sledgehammer: 1, chainsaw: 1, knife: 1 };
+  var WDEFS = {};
   var autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? "bat" : /chop|gs_|slash|axe/.test(name) ? "axe" : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? "short" : /pistol|t_shoot/.test(name) ? "pistol" : "none";
   var GUN_FILES = { old: "assets/weapons/pump_shotgun.glb", short: "assets/weapons/pump_short.glb" };
   var canvas = $("view");
@@ -38696,8 +38711,10 @@ void main() {
               have[a.name].userData = { ...have[a.name].userData, ...tag };
               continue;
             }
+            if (have[a.name] && !extraQ.includes(f)) continue;
             a.userData = { ...a.userData, ...tag };
             g.animations.push(a);
+            have[a.name] = a;
           }
         } catch {
         }
@@ -39022,6 +39039,32 @@ void main() {
     refresh();
   }).catch(() => {
   });
+  fetch("assets/arena/weapons.json").then((r) => r.json()).then(async (j) => {
+    WDEFS = j.weapons || {};
+    for (const k in LIB_WEAPONS) {
+      const D = WDEFS[k];
+      if (!D) continue;
+      const make = async () => {
+        const o = D.builder === "knife" ? makeKnife() : (await loadG(D.file)).scene;
+        o.traverse((m) => {
+          if (m.isMesh) m.frustumCulled = false;
+        });
+        const h = new Group();
+        h.add(o);
+        h.visible = false;
+        scene.add(h);
+        return h;
+      };
+      try {
+        held[k] = await make();
+        heldRef[k] = await make();
+      } catch (e) {
+        console.warn("weapon", k, e);
+      }
+    }
+    refresh();
+  }).catch(() => {
+  });
   var _m4 = new Matrix4();
   var heldRef = { bat: makeBat(), pistol: makePistol() };
   for (const k in heldRef) {
@@ -39281,7 +39324,7 @@ void main() {
     return FITS[_a5 = fitKey(a)] || (FITS[_a5] = { ...PFIT0 });
   };
   var WFITS = {};
-  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", axe: "Axe", short: "Shotgun" };
+  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", axe: "Axe", short: "Shotgun", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
   var fitW = (w, a) => {
     var _a5, _b5;
     return w === "pistol" ? fitOf(a) : (_a5 = WFITS[w] || (WFITS[w] = {}))[_b5 = fitKey(a)] || (_a5[_b5] = { ...PFIT0 });
@@ -39425,6 +39468,21 @@ void main() {
     o.scale.setScalar(k);
     if (w === "pistol" && $("pistolFist")?.checked && pistolInFist(a, o)) return;
     if (w === "bat" && placeOneHanded(a.bones, a === main ? handsOf().gunHand : "Right", o, BAT_DEF, fitW("bat", a), {}, k)) return;
+    const LD = LIB_WEAPONS[w] && WDEFS[w];
+    if (LD && LD.hands === "one" && placeOneHanded(a.bones, a === main ? handsOf().gunHand : "Right", o, LD, fitW(w, a), {}, k)) return;
+    if (LD && LD.hands === "two") {
+      const B = a.bones, ax = (sd) => B[sd + "HandIndex1"].getWorldPosition(new Vector3()).sub(B[sd + "HandPinky1"].getWorldPosition(_v3)).normalize();
+      const L2 = B.LeftHandIndex1 && twoHandLine(B, ax("Right").add(ax("Left")).normalize(), { c: new Vector3(), d: new Vector3(), span: 0 });
+      if (L2) {
+        const sh = new Vector3(...LD.shaft_axis).normalize(), rf = new Vector3(...LD.ref_axis);
+        rf.addScaledVector(sh, -rf.dot(sh)).normalize();
+        const fwd = a.root.getWorldDirection(new Vector3());
+        fwd.addScaledVector(L2.d, -fwd.dot(L2.d)).normalize();
+        const m1 = new Matrix4().makeBasis(sh, rf, new Vector3().crossVectors(sh, rf)), m2 = new Matrix4().makeBasis(L2.d, fwd, new Vector3().crossVectors(L2.d, fwd));
+        applyFit(o, L2.c, new Quaternion().setFromRotationMatrix(m2.multiply(m1.transpose())), fitW(w, a), new Vector3(...LD.grip_primary), k, k);
+        return;
+      }
+    }
     if (w === "axe") {
       const B = a.bones, ax = (s) => B[s + "HandIndex1"].getWorldPosition(new Vector3()).sub(B[s + "HandPinky1"].getWorldPosition(_v3)).normalize();
       const L2 = B.LeftHandIndex1 && twoHandLine(B, ax("Right").add(ax("Left")).normalize(), { c: new Vector3(), d: new Vector3(), span: 0 });
@@ -39523,6 +39581,10 @@ void main() {
     axe: { label: "Axe", idle: "bat_idle", attack: "bat_swing" },
     // (its combo: bat_swing, then t_chop)
     bat: { label: "Bat", idle: "ual1_Sword_Idle", attack: "ual_Sword_Regular_Combo" },
+    // (the arena's weapons: their first "good" pick in the Move Library as the attack)
+    sledgehammer: { label: "Sledgehammer", idle: "bat_idle", attack: "ual_Sword_Heavy_Combo" },
+    chainsaw: { label: "Chainsaw", idle: "bat_idle", attack: "melee_horizontal" },
+    knife: { label: "Knife", idle: "ual1_Sword_Idle", attack: "ual_Sword_Dash" },
     none: { label: "None", idle: null, attack: null }
   };
   var PMOVE = ["pistol_walk", "pistol_run", "pistol_walk_back", "pistol_run_back", "pistol_strafe_left", "pistol_strafe_right", "pistol_strafe_run_left", "pistol_strafe_run_right"];

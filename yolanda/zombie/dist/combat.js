@@ -45964,21 +45964,24 @@ void main() {
     roll: { dur: 0.8, dist: 3, iframes: [0.03, 0.5], cancel: 0.62, out: (u) => smooth(u) * 0.35 + u * 0.65 },
     cooldown: 0.25
   };
-  var VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, push: 0.6 };
+  var VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, headOn: 25 * Math.PI / 180, minSpeed: 0.55 };
   function rayBox(b, x, z, dx, dz) {
-    let t0 = -1e9, t1 = 1e9;
-    for (const [p, d, lo, hi] of [[x, dx, b.minX, b.maxX], [z, dz, b.minZ, b.maxZ]]) {
+    let t0 = -1e9, t1 = 1e9, face = 0;
+    for (const [k, p, d, lo, hi] of [[0, x, dx, b.minX, b.maxX], [1, z, dz, b.minZ, b.maxZ]]) {
       if (Math.abs(d) < 1e-9) {
         if (p < lo || p > hi) return null;
         continue;
       }
       let a = (lo - p) / d, c = (hi - p) / d;
       if (a > c) [a, c] = [c, a];
-      t0 = Math.max(t0, a);
+      if (a > t0) {
+        t0 = a;
+        face = k;
+      }
       t1 = Math.min(t1, c);
       if (t0 > t1) return null;
     }
-    return [t0, t1];
+    return [t0, t1, face];
   }
   var Player = class {
     constructor(x, z, tuning2) {
@@ -46037,7 +46040,7 @@ void main() {
       sim2.emit({ type: "dodge", kind });
       return true;
     }
-    // the leg attack of the weapon in hand (Legs button): a low strike at the shins
+    // the leg attack of the weapon in hand, on demand (tests; in play it comes now and then on its own: startSwing)
     tryLegs(sim2) {
       const L2 = legAttack(this.equipped);
       if (!L2 || this.dead) return false;
@@ -46048,11 +46051,15 @@ void main() {
     }
     // a vault over the low prop she is running into (from move: stick direction mx, mz, unit)
     tryVault(mx, mz, world, sim2) {
-      const V2 = VAULT, ahead = this.r + V2.reach;
+      const V2 = VAULT, ahead = this.r + V2.reach, sp = Math.hypot(this.vx, this.vz);
+      if (sp < V2.minSpeed * this.T.moveSpeed) return false;
+      const cosOn = Math.cos(V2.headOn), vx = this.vx / sp, vz = this.vz / sp;
       for (const b of world.boxes) {
         if (b.off || b.kind !== "prop" || b.h < V2.minH || b.h > V2.maxH) continue;
         const tt = rayBox(b, this.x, this.z, mx, mz);
         if (!tt || tt[0] < 0 || tt[0] > ahead || tt[1] - tt[0] > V2.maxDepth) continue;
+        const nx = tt[2] === 0 ? Math.sign(mx) : 0, nz = tt[2] === 1 ? Math.sign(mz) : 0;
+        if (mx * nx + mz * nz < cosOn || vx * nx + vz * nz < cosOn) continue;
         const land = tt[1] + this.r + 0.12, lx = this.x + mx * land, lz = this.z + mz * land;
         const probe = { x: lx, z: lz };
         let clear = true;
@@ -46372,7 +46379,11 @@ void main() {
     }
     startSwing(sim2, combo2, unlocked = false, special = null) {
       this.swingId++;
-      const leg = special === "legs";
+      let leg = special === "legs";
+      if (!leg && combo2 === 0 && legAttack(this.equipped)) {
+        const t = sim2.meleeAssist?.(this, 1.7)?.target;
+        if (t && t.kind === "normal" && !t.crawling && !t.down && sim2.rand() < (this.T.legStrikeChance ?? 0.25)) leg = true;
+      }
       const G5 = combo2 === 0 && !leg ? groundAttack(this.equipped) : null, ground = !!(G5 && sim2.groundTarget?.(this));
       const A = leg ? legAttack(this.equipped) : ground ? G5 : this.attacks[combo2];
       const as = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
@@ -46502,9 +46513,9 @@ void main() {
     sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
     guard: { hp: 2.6, speed: 0.6, dmg: 1.8, knock: 0.4, kd: 0.25, stagger: 0.55, r: 0.42 }
   };
-  var SHIELD_HP = 190;
+  var SHIELD_HP = 270;
   var SHIELD_MUL = { melee: 1.5, fist: 0.8, shotgun: 0.9, pistol: 0.7 };
-  var shieldState = (z) => !z.shieldMax ? "none" : z.shieldHp <= 0 ? "break" : z.shieldHp / z.shieldMax > 0.62 ? "intact" : z.shieldHp / z.shieldMax > 0.3 ? "hairline" : "heavy";
+  var shieldState = (z) => !z.shieldMax ? "none" : z.shieldHp <= 0 ? "break" : z.shieldHp / z.shieldMax > 0.78 ? "intact" : z.shieldHp / z.shieldMax > 0.4 ? "hairline" : "heavy";
   var TUMBLE_FALL = 1.3;
   var TUMBLE_GETUP = 1.9;
   var PERSONAL = 1.05;
@@ -46611,8 +46622,9 @@ void main() {
       const wasDown = this.down, melee = isMelee(kind);
       const parts = Array.isArray(part) ? part : [[part, dmg]];
       if (this.shieldBlocks(dirX, dirZ)) {
-        const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1;
+        const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1, was = shieldState(this);
         this.shieldHp = Math.max(0, this.shieldHp - total * mul);
+        if (this.shieldHp > 0 && shieldState(this) !== was) sim2.emit({ type: "shieldCrack", id: this.id, x: this.x, z: this.z, dirX, dirZ, state: shieldState(this) });
         this.kx += dirX * impulse * 0.35 * this.K.knock;
         this.kz += dirZ * impulse * 0.35 * this.K.knock;
         this.hitDirX = dirX;
@@ -46637,6 +46649,8 @@ void main() {
       let loss = 0, main = "torso", mainD = 0;
       for (let [pt, d] of parts) {
         if (pt !== "torso" && this.severed.has(pt)) pt = "torso";
+        if (pt.startsWith("LowerLeg") && this.kind !== "normal") pt = "torso";
+        if (pt.startsWith("LowerLeg") && (kind === "pistol" || kind === "shotgun") && this.limbHp[pt] > 0 && sim2.rand() < (sim2.T.legShotChance ?? 0.5)) this.limbHp[pt] = Math.min(this.limbHp[pt], d * limbMul * 0.99);
         if (pt !== "torso" && this.broken !== pt) {
           this.limbHp[pt] -= d * limbMul;
           if (this.limbHp[pt] <= 0) this.sever(pt, dirX, dirZ, sim2);
@@ -47869,8 +47883,8 @@ void main() {
       this.time += dt;
       const p = this.player;
       for (let i = 0; i < input2.swapPresses; i++) p.requestSwap();
-      if (input2.dodgePresses) p.tryDodge(input2.moveX, input2.moveZ, this);
-      if (input2.legsPresses) p.tryLegs(this);
+      p.dodgeOpen = this.dodgeThreat() ? 0.3 : Math.max(0, (p.dodgeOpen || 0) - dt);
+      if (input2.dodgePresses && p.dodgeOpen > 0) p.tryDodge(input2.moveX, input2.moveZ, this);
       p.move(dt, input2, this.world, this);
       p.updateAction(dt, this);
       this.flowT -= dt;
@@ -47915,6 +47929,20 @@ void main() {
       this.zombies.push(z);
       this.emit({ type: "zombieSpawn", id: z.id, door: d.id });
       return z;
+    }
+    // Something she can dodge is coming: a zombie winding up its lunge or pounce at her (or in the pounce's leap), the big
+    // guard winding up his jump slam, the big lady squaring up for her charge or running it at her
+    dodgeThreat() {
+      const p = this.player;
+      if (p.dead) return false;
+      for (const z of this.zombies) {
+        if (!z.alive || z.down) continue;
+        const d = Math.hypot(z.x - p.x, z.z - p.z);
+        if (z.state === ZS.WINDUP && (z.attack === "lunge" || z.attack === "pounce" || z.attack === "slam") && d < ZATTACKS[z.attack].range + 1.2) return true;
+        if (z.state === ZS.STRIKE && z.attack === "pounce") return true;
+        if (z.kind === "sprinter" && d < 8 && (z.spotT > 0 && !z.sprinting || z.sprinting && !z.braking)) return true;
+      }
+      return false;
     }
     aliveCount() {
       let n = 0;
@@ -48233,6 +48261,10 @@ void main() {
     // s between shots (the pump)
     shotgunMag: 6,
     shotgunReload: 1.9,
+    legStrikeChance: 0.25,
+    // a melee opener at a standing walker goes in low for its legs (core/player.js startSwing)
+    legShotChance: 0.5,
+    // a bullet in a walker's lower leg takes it off (core/zombies.js takeHit)
     axeDamage: 62,
     // first attack; the combo's later attacks hit harder (weapons.js AXE_ATTACKS)
     axeKnockback: 5,
@@ -50181,6 +50213,33 @@ void main() {
           sact = null;
         }
       }
+      const DC = this.drawClip;
+      if (DC) {
+        if (s.equipped === "bat" && this.prevEquip && this.prevEquip !== "bat" && s.action !== "down") this.draw = { t: 0, f: 1, k: (DC.frames - 1) / (DC.dur * 30), w: 0 };
+        this.prevEquip = s.equipped;
+        const D = this.draw;
+        if (D) {
+          D.t += dt;
+          D.f = 1 + D.t * 30 * D.k;
+          const cut = s.action === "swing" || s.action === "down" || s.action === "dodge" || s.equipped !== "bat";
+          if (D.f >= DC.frames || cut) {
+            this.drawFade = { w: D.w, f: Math.min(D.f, DC.frames) };
+            this.draw = null;
+          } else {
+            D.w = smooth2(clamp4(D.t / 0.08, 0, 1)) * smooth2(clamp4((DC.frames - D.f) / (0.15 * 30 * D.k), 0, 1));
+            DC.act.time = DC.t0 + (D.f - 1) / 30 + (this.drJit ^= 1) * 1e-6;
+            DC.act.setEffectiveWeight(D.w * 8);
+          }
+        }
+        if (!this.draw) {
+          const F = this.drawFade;
+          if (F && F.w > 0) {
+            F.w = Math.max(0, F.w - dt / 0.12);
+            DC.act.time = DC.t0 + (F.f - 1) / 30;
+            DC.act.setEffectiveWeight(F.w * 8);
+          } else DC.act.setEffectiveWeight(0);
+        }
+      }
       if (scW > 0) {
         for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
       }
@@ -50626,6 +50685,83 @@ void main() {
       }
       (_a6 = this.up).sword ?? (_a6.sword = 0);
     }
+    // The bat on her back (2026-10-17, the user: "Sword Enter ... when we are carrying a melee weapon on our back"): carried
+    // and not in hand, it rides her upper back where Quaternius's Sword_Enter (UAL1) reaches for it; taking it out plays
+    // Sword_Enter on her upper body (legs keep walking), the bat leaving her back on the frame her hand comes closest to its
+    // handle (grab). An attack cuts the draw short. The back slot, set once here in her Spine2 bone's frame from her own
+    // build: the handle a hand behind and above her right shoulder, the barrel diagonally down across her back to her left
+    // hip (as a sword on the back; the first try, the bat as her fist holds it at the clip's furthest-back frame, stood
+    // straight up over her head). (?batdraw=0: off)
+    setupBatBack(enter) {
+      if (!this.batLib?.obj || !enter || new URLSearchParams(globalThis.location?.search || "").get("batdraw") === "0") return false;
+      const full = stripRoot(enter.clone(), hipsRest(this.model)), t0 = Math.min(...full.tracks.map((t) => t.times[0])), n = Math.round((full.duration - t0) * 30) + 1;
+      const up = subClip(full, (b) => !LOWER.test(b), "bat_draw_upper"), a = this.mixer.clipAction(up);
+      this.actions.bat_draw_upper = a;
+      a.play();
+      a.setEffectiveWeight(0);
+      a.timeScale = 0;
+      const acts = Object.values(this.actions), saved = acts.map((x) => [x, x.getEffectiveWeight(), x.time]);
+      const op = this.outer.position.clone(), ry = this.container.rotation.y;
+      this.outer.position.set(0, 0, 0);
+      this.container.rotation.y = 0;
+      for (const x of acts) x.setEffectiveWeight(0);
+      const meas = this.mixer.clipAction(full);
+      meas.play();
+      meas.timeScale = 0;
+      const pose = (f) => {
+        for (const [b, q] of this.restQ) b.quaternion.copy(q);
+        mixerWritesAll(this.mixer);
+        meas.setEffectiveWeight(1);
+        meas.time = t0 + (f - 1) / 30 + (f & 1) * 1e-6;
+        this.mixer.update(0);
+        this.outer.updateMatrixWorld(true);
+      };
+      for (const [b, q] of this.restQ) b.quaternion.copy(q);
+      this.outer.updateMatrixWorld(true);
+      const B = this.bones, k = this.H / 1.62, wp = (n2) => B[n2].getWorldPosition(new Vector3());
+      const grip = wp("RightArm").lerp(wp("RightShoulder"), 0.5).add(new Vector3(0, 0.1 * k, -0.15 * k));
+      const hip = wp("LeftUpLeg").add(new Vector3(0.04 * k, 0.12 * k, -0.17 * k));
+      const w = this.batLib.w, size = (this.batLib.fit?.size ?? 100) / 100, dir = hip.clone().sub(grip).normalize();
+      const o = this.batLib.obj;
+      o.quaternion.setFromUnitVectors(new Vector3(...w.shaft_axis).normalize(), dir);
+      o.scale.setScalar(size);
+      o.position.copy(grip).sub(new Vector3(...w.grip_primary).multiplyScalar(size).applyQuaternion(o.quaternion));
+      o.updateMatrixWorld(true);
+      this.batBack = new Matrix4().copy(B.Spine2.matrixWorld).invert().multiply(o.matrixWorld);
+      const gripS = B.Spine2.worldToLocal(grip.clone());
+      let grab = 20, best = 9;
+      for (let f = 6; f <= Math.min(32, n); f++) {
+        pose(f);
+        const d = B.Spine2.worldToLocal(wp("RightHandMiddle1")).distanceTo(gripS);
+        if (d < best) {
+          best = d;
+          grab = f;
+        }
+      }
+      this.batGrabGap = best;
+      meas.stop();
+      this.mixer.uncacheAction(full);
+      for (const [x, w2, t] of saved) {
+        x.setEffectiveWeight(w2);
+        x.time = t;
+      }
+      a.setEffectiveWeight(0);
+      this.outer.position.copy(op);
+      this.container.rotation.y = ry;
+      o.visible = false;
+      this.drawClip = { act: a, t0, frames: n, grab, dur: 0.8 };
+      this.draw = null;
+      this.prevEquip = null;
+      return grab;
+    }
+    placeBatBack() {
+      const o = this.batLib.obj;
+      this.bones.Spine2.updateWorldMatrix(true, false);
+      _m4.copy(this.bones.Spine2.matrixWorld).multiply(this.batBack);
+      _m4.decompose(o.position, o.quaternion, o.scale);
+      o.visible = this.outer.visible;
+      o.updateMatrixWorld(true);
+    }
     // Pistol reload magazines. Frames of pistol_reload (Quaternius Pistol_Reload with the support hand placed on the gun;
     // measured on her: gun tips up 4-7, left hand at the hip pouch 13-15, at the grip 28-37). The empty one leaves the grip
     // at `drop` and falls to the floor; the loaded one is held by its base between her left thumb and index finger from
@@ -50708,13 +50844,19 @@ void main() {
       if (this.test?.obj) this.test.obj.visible = false;
       if (this.batLib?.obj) {
         const one2 = s.equipped === "bat" && this.weaponShown !== "fists" && this.weaponShown !== "pistol" && this.weaponShown !== "shotgun";
-        if (one2) {
+        const onBack = this.batBack && (this.draw ? this.draw.f < this.drawClip.grab : !one2);
+        if (one2 && !onBack) {
           this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
           this.placeHeld(this.batLib);
           this.batTip.copy(this.heldTip);
           return;
         }
-        this.batLib.obj.visible = false;
+        if (onBack && (one2 || s.owned?.includes("bat"))) this.placeBatBack();
+        else this.batLib.obj.visible = false;
+        if (one2) {
+          this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
+          return;
+        }
       }
       const shown = this.weaponShown;
       this.pistol.visible = shown === "pistol";
@@ -51778,6 +51920,10 @@ void main() {
         GROUND_OWN.bat = S2;
         made.push("bat ground");
       }
+    }
+    if (hold && by.ual1_Sword_Enter) {
+      const g = yola2.setupBatBack(by.ual1_Sword_Enter);
+      if (g) made.push(`bat on the back (grab at frame ${g})`);
     }
     if (by.ual_Slide_Start && by.ual_Slide_Exit) {
       const clip = joinClips(by.ual_Slide_Start, by.ual_Slide_Exit, "ual_Slide_Tackle");
@@ -58920,7 +59066,6 @@ void main() {
       this.swapPresses = 0;
       this.usePresses = 0;
       this.dodgePresses = 0;
-      this.legsPresses = 0;
       this.keys = /* @__PURE__ */ new Set();
       this.mouse = { active: false, x: 0, y: 0, down: false };
       this.enabled = true;
@@ -58953,7 +59098,7 @@ void main() {
         this.swapButton.classList.add("pressed");
         setTimeout(() => this.swapButton.classList.remove("pressed"), 120);
       });
-      for (const [id, k] of [["dodgeBtn", "dodgePresses"], ["legsBtn", "legsPresses"]]) {
+      for (const [id, k] of [["dodgeBtn", "dodgePresses"]]) {
         const b = document.getElementById(id);
         if (!b) continue;
         b.addEventListener("pointerdown", (e) => {
@@ -58981,7 +59126,6 @@ void main() {
           e.preventDefault();
         }
         if ((e.code === "ShiftLeft" || e.code === "ShiftRight") && this.enabled) this.dodgePresses++;
-        if (e.code === "KeyC" && this.enabled) this.legsPresses++;
       });
       window.addEventListener("keyup", (e) => this.keys.delete(e.code));
       window.addEventListener("blur", () => this.clearAll());
@@ -59067,7 +59211,6 @@ void main() {
       this.swapPresses = 0;
       this.usePresses = 0;
       this.dodgePresses = 0;
-      this.legsPresses = 0;
     }
     // Returns world-plane vectors. camYaw rotates screen axes onto the ground (0: screen up = -z).
     sample(camYaw = 0) {
@@ -59108,13 +59251,11 @@ void main() {
         aimZ: -ax * s + ay * c,
         swapPresses: this.swapPresses,
         usePresses: this.usePresses,
-        dodgePresses: this.dodgePresses,
-        legsPresses: this.legsPresses
+        dodgePresses: this.dodgePresses
       };
       this.swapPresses = 0;
       this.usePresses = 0;
       this.dodgePresses = 0;
-      this.legsPresses = 0;
       return out;
     }
   };
@@ -66683,14 +66824,15 @@ void main() {
     }
   }
   async function loadSelection() {
-    const all = [await json("shots/move_selection.json?" + Date.now()), await json("assets/moves/selection.json"), store.get("moves_selection", null)].filter(Boolean);
+    const all = [await json("shots/move_selection.json?" + Date.now()), await json("assets/moves/selection.json"), await json("assets/arena/selection.json"), store.get("moves_selection", null)].filter(Boolean);
     return all.sort((a, b) => String(b.updated).localeCompare(String(a.updated)))[0] || { moves: {} };
   }
   async function startTestArena({ game, scene: scene2, loader: loader2, telegraphs: telegraphs2 }) {
     const yola2 = game.yola;
-    const [catalog, wj, SEL, lib2] = await Promise.all([json("assets/moves/catalog.json"), json("assets/moves/weapons.json"), loadSelection(), loader2.loadAsync(game.yolaModel === "2" ? "assets/moves/yola2_moves.glb" : "assets/moves/yola_moves.glb")]);
+    const either = async (f) => await json("assets/moves/" + f) || json("assets/arena/" + f);
+    const [catalog, wj, SEL, lib2] = await Promise.all([either("catalog.json"), either("weapons.json"), loadSelection(), loader2.loadAsync(game.yolaModel === "2" ? "assets/moves/yola2_moves.glb" : "assets/moves/yola_moves.glb").catch(() => null)]);
     const WDEF = wj?.weapons || {};
-    const clips = Object.fromEntries([...game.yolaClips || [], ...lib2.animations].map((c) => [c.name, c]));
+    const clips = Object.fromEntries([...game.yolaClips || [], ...lib2?.animations || []].map((c) => [c.name, c]));
     const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
     let fingers = null;
     {
@@ -67829,6 +67971,7 @@ void main() {
     handleEvents();
     if (steps) window.game.arenaTick?.(steps * STEP);
     const animDt = paused ? 0 : simDt;
+    (window.__dodgeBtn ?? (window.__dodgeBtn = document.getElementById("dodgeBtn")))?.classList.toggle("show", p.dodgeOpen > 0 && !p.dead);
     const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
     const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
     const a = p.action;
@@ -67847,6 +67990,7 @@ void main() {
       swingId: a.id,
       atk: a.type === "swing" ? p.atk(a) : null,
       act: a,
+      owned: p.owned,
       downFall: a.fall,
       downUp: a.up,
       recoil: p.recoil,
@@ -68154,6 +68298,11 @@ void main() {
           fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ);
           if (e.kind !== "pistol") shake(0.25);
           break;
+        case "shieldCrack":
+          fx.burst(e.x - e.dirX * 0.45, 1.15, e.z - e.dirZ * 0.45, e.state === "heavy" ? 12 : 8, 14149602, 2, 0.7, 0.4);
+          shake(e.state === "heavy" ? 0.4 : 0.3);
+          break;
+        // (a new crack stage: chips off the panel)
         case "shieldBreak":
           audio.play("shieldBreak");
           fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 14149602, 2.4, 0.9, 0.55);
