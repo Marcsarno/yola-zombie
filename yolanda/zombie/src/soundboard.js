@@ -70,7 +70,7 @@ const sel = () => S.sel;
 const takeSel = (name, f) => (sel().takes[name + ':' + f] ||= {});
 const layerSel = (name, li) => (sel().layers[name + '#' + li] ||= {});
 const soundSel = (name) => (sel().sounds[name] ||= {});
-const FUTURE = ['Revolver', 'Heavy pistol (.45 / .50)', 'Small pistol (.22 / .380)', 'SMG', 'Assault rifle', 'Hunting / bolt rifle', 'Double-barrel shotgun', 'Sawn-off shotgun', 'Something else (see note)'];
+const FUTURE = ['Rifle', 'Revolver', 'Heavy pistol (.45 / .50)', 'Small pistol (.22 / .380)', 'SMG', 'Assault rifle', 'Hunting / bolt rifle', 'Double-barrel shotgun', 'Sawn-off shotgun', 'Something else (see note)'];
 function touch() {
   dirty = true; $('saveState').textContent = 'unsaved changes'; $('saveState').className = 'dirty';
   try { localStorage.setItem(DRAFT, JSON.stringify(pruned())); } catch { /* private window */ }
@@ -145,7 +145,7 @@ function renderSide() {
   const nl = laterList().length;
   $('side').innerHTML = Object.entries(groups).map(([g, names]) => `<div class="g"><h3>${g}</h3>${names.map((n) => {
     const c = counts(n);
-    return `<button class="snd${n === cur ? ' cur' : ''}" data-snd="${n}">${BANKS[n].label}<small>${c.game} in game${c.review ? ` · <b class="todo">${c.review} to review</b>` : ' · all reviewed ✓'}</small></button>`;
+    return `<button class="snd${n === cur ? ' cur' : ''}" data-snd="${n}">${BANKS[n].label}<small>${c.game} ${BANKS[n].pending ? 'picked' : 'in game'}${c.review ? ` · <b class="todo">${c.review} to review</b>` : ' · all reviewed ✓'}</small></button>`;
   }).join('')}</div>`).join('') + `<div class="g"><h3>Library</h3><button class="snd${cur === '@later' ? ' cur' : ''}" data-snd="@later">★ Saved for future weapons<small>${nl} take${nl === 1 ? '' : 's'}</small></button></div>`;
   for (const b of $('side').querySelectorAll('.snd')) b.onclick = () => { cur = b.dataset.snd; renderSide(); renderMain(); scrollTo(0, 0); };
 }
@@ -157,7 +157,8 @@ const esc = (s) => String(s || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '
 function rowHtml(name, li, f, k, showFrom = false) {
   const ts = sel().takes[name + ':' + f] || {}, [cls, text] = KIND[k];
   const also = alsoUsed(name, f);
-  const where = inGameKind(k) ? `Part of the ${BANKS[name].label.toLowerCase()} you hear in the game` : k === 'review-new' ? 'Try “Hear in mix” to hear it in the full sound' : '';
+  const where = BANKS[name].pending ? (inGameKind(k) ? 'Picked: used as soon as this sound is wired into the game' : '')
+    : inGameKind(k) ? `Part of the ${BANKS[name].label.toLowerCase()} you hear in the game` : k === 'review-new' ? 'Try “Hear in mix” to hear it in the full sound' : '';
   let acts;
   if (k === 'review-in') acts = `<button class="yes" data-act="yes" title="K">✓ Keep</button><button class="lat" data-act="later" title="L">★ Save for later</button><button class="no" data-act="no" title="R">✗ Take out</button>`;
   else if (k === 'review-new') acts = `<button class="yes" data-act="yes" title="K">+ Add to game</button><button class="lat" data-act="later" title="L">★ Save for later</button><button class="no" data-act="no" title="R">✗ Reject</button>`;
@@ -182,8 +183,9 @@ function renderMain() {
   let h = `<div class="card"><div class="hd"><h2>${b.label}</h2><span class="prog">${c.all - c.review} of ${c.all} takes reviewed</span><span class="sp"></span>
     <button class="big primary" data-act="full" title="Space">▶ Play in game</button>
     <button class="big" data-act="burst">Repeat ×6</button>
-    <button class="big" data-act="classic">Old version</button>
+    ${b.pending ? '' : '<button class="big" data-act="classic">Old version</button>'}
     ${c.review ? '<button class="big next" data-act="next" title="N">Next to review ▶</button>' : ''}</div>
+    ${b.pending ? '<div class="help pend">Not in the game yet: pick the takes you like now, and they go in when this sound is wired (the next phases).</div>' : !b.layers[0].files?.length ? '<div class="help pend">The game plays its old synthesised version of this until you add takes here.</div>' : ''}
     <div class="hd" style="margin-top:8px">${trimHtml('sound', ss.db)}<span class="help">level of the whole sound</span></div>
     <textarea data-note placeholder="Notes for Claude about this sound (what's wrong, what you want instead)…">${esc(ss.note)}</textarea>
     <div class="tabs">${tab('all', 'All', c.all)}${tab('review', 'To review', c.review)}${tab('game', 'In the game', c.game)}${tab('later', 'Saved for later', c.later)}${tab('out', 'Rejected', c.out)}</div>
@@ -224,7 +226,7 @@ function bindMain() {
   const name = cur, m = $('main');
   m.querySelector('[data-act=full]').onclick = () => playFull(name);
   m.querySelector('[data-act=burst]').onclick = () => burst(name);
-  m.querySelector('[data-act=classic]').onclick = () => classic(name);
+  m.querySelector('[data-act=classic]')?.addEventListener('click', () => classic(name));
   m.querySelector('[data-act=next]')?.addEventListener('click', () => nextToReview(null, true));
   m.querySelector('[data-note]').oninput = (e) => { soundSel(name).note = e.target.value; touch(); };
   for (const el of m.querySelectorAll('[data-filter]')) el.onclick = () => { filter = el.dataset.filter; try { localStorage.setItem('soundboard_filter', filter); } catch { /* ignore */ } renderMain(); };

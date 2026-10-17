@@ -17,11 +17,18 @@ export class Samples {
 
   files() { const s = new Set(); for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of [...(l.files || []), ...(l.extra || [])]) s.add(f); return [...s]; }
 
+  // the game: the user's selection first, then only the takes it plays (the board's candidates stay on the server);
+  // the Sound Board (selection: false): every take
   preload({ selection = true } = {}) {
     if (this.started) return; this.started = true;
-    if (selection) fetch(SELECTION_URL, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) this.setSelection(j); }).catch(() => {});
-    for (const f of this.files()) fetch(f).then((r) => (r.ok ? r.arrayBuffer() : null)).then((ab) => { if (ab) { this.raw.set(f, ab); if (this.ctx) this.decode(f); } }).catch(() => {});
+    if (!selection) { this.fetchFiles(this.files()); return; }
+    fetch(SELECTION_URL, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) this.setSelection(j); })
+      .catch(() => {}).finally(() => this.fetchFiles(this.used()));
   }
+  fetchFiles(list) {
+    for (const f of list) fetch(f).then((r) => (r.ok ? r.arrayBuffer() : null)).then((ab) => { if (ab) { this.raw.set(f, ab); if (this.ctx) this.decode(f); } }).catch(() => {});
+  }
+  used() { const s = new Set(); for (const [n, b] of Object.entries(BANKS)) for (const l of b.layers) for (const f of this.active(n, l)) s.add(f); return [...s]; }
   setSelection(j) { this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {} }; }
 
   // with the AudioContext: decode everything fetched so far (and anything still arriving, as it lands)
@@ -44,9 +51,13 @@ export class Samples {
   layerGain(name, li) { const s = this.sel.layers[name + '#' + li]; return s?.off ? 0 : dbk(s?.db); }
   soundGain(name) { return dbk(this.sel.sounds[name]?.db); }
 
-  // a bank plays only when every take of its main layer is in (half a bank would repeat the same take); with every
-  // take rejected the synth plays instead
-  ready(name) { const b = BANKS[name]; if (!b) return false; const a = this.active(name, b.layers[0]); return a.length > 0 && a.every((f) => this.buf.has(f)); }
+  // a bank plays when any of its recorded layers has takes in use and every one of them is loaded (half a bank would
+  // repeat the same take); with nothing kept (every take rejected, or none added yet) the synth plays instead
+  ready(name) {
+    const b = BANKS[name]; if (!b) return false;
+    const a = b.layers.filter((l) => !l.synth).flatMap((l) => this.active(name, l));
+    return a.length > 0 && a.every((f) => this.buf.has(f));
+  }
 
   // a random take, never the one that played last time from this layer
   pick(key, files) {

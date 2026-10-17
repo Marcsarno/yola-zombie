@@ -96,7 +96,17 @@ Final loudness and priorities, checked on the phone speaker AND headphones.
 |---|---|---|
 | The Free Firearm Sound Library, "Prepared SFX Library.7z" (opengameart.org/content/the-free-firearm-sound-library) | CC0 | pistol (Walther PPQ near x3, 1911 near x2), shotgun (Benelli Nova, Winchester Model 12, Charles Daly, Mossberg 190: near x2 each), the Model 12's pump rack |
 | "handgun reload sound effect" reload.wav by zer0_sol (opengameart.org/content/handgun-reload-sound-effect) | CC0 | mag out, mag in (also the shotgun shell insert, pitched up), slide, dry-fire click |
-| synthesised in tools/sfx/build_guns.py | — | brass casings (9 mm on tile), shotgun hulls |
+| synthesised in tools/sfx/build_guns.py | — | brass casings (9 mm on tile), shotgun hulls — ALL REJECTED by the user (2026-10-17): no synthesised foley |
+| Kenney Impact Sounds (kenney.nl/assets/impact-sounds) | CC0 | punches, wood/plank/metal/glass/soft impacts, footsteps (concrete/carpet/wood); tinks pitched up as casings |
+| Kenney RPG Audio (kenney.nl/assets/rpg-audio) | CC0 | blade chop/slice, doors, creaks, cloth, clicks/latches, footsteps, leather/coin handling |
+| "Shotgun Reload Sound effects" shotgunsounds.zip by zer0_sol (opengameart.org) | CC0 | real shell inserts, full pump rack, shell chambered |
+| "Punch" qubodupPunch.7z by qubodup (opengameart.org) | CC0 | body punches |
+| "thwack sounds" thwack-1.0.zip by AntumDeluge (opengameart.org) | CC0 | hard thwacks/cracks |
+| "Squish Sounds Effects" by EZduzziteh (opengameart.org) | CC0 | 8 small wet squish/splat MP3s (low bitrate) |
+
+Candidate library: `tools/sfx/build_library.py <scratch with the unpacked packs> .` -> assets/sfx/lib/*.mp3 (173
+takes, ~0.9 MB) + src/sfx/library.gen.js (groups + labels). The game downloads only the takes in use (selection.json);
+the board loads everything.
 
 Rebuild the bank: `python tools/sfx/build_guns.py "<...>/Prepared SFX Library" <...>/reload.wav assets/sfx/guns`
 (needs numpy, scipy, soundfile; the near-mic shots are cut at the transient, a "phone punch" harmonic layer is added
@@ -129,6 +139,13 @@ changing a sound. Works from a phone on the home network too (the save accepts p
 
 ## Log
 (newest at top)
+- 2026-10-17: the user's first picks: pistol 01-06 in; pistol 07, 09-14 saved for a future **rifle** (the user's
+  words); 08 and every synthesised casing/hull/dry click rejected; ALL close shotguns rejected, the 4 distant
+  long-echo shotguns in (they want the big wild blast); pump: forward kept, back rejected; mag out rejected.
+  Then "find more": 173 real CC0 candidates (shell inserts, full rack, casings from real tinks, mag drops, clicks;
+  new Melee hits / World / Coming next sounds — melee picks replace the synth live). Fix: a sound now plays when ANY
+  of its layers has kept takes (the pump and pistol reload had fallen back to the synth because their first layer was
+  empty). The game now fetches only the takes in use.
 - 2026-10-17: the user asked for friendlier reviewing: "save for a future weapon" (tagged with the weapon type),
   "this is already part of the mix" labels, per-sound choices, filters and next-to-review.
 - 2026-10-17: the user: "some are ok, some are not" -> the Sound Board. Added candidates: pistol_06-14 (Bersa .380,

@@ -1,6 +1,142 @@
 {
  "version": 2,
- "takes": {},
+ "savedAt": "2026-10-17T16:41:13.260Z",
+ "takes": {
+  "shot:assets/sfx/guns/pistol_01.mp3": {
+   "v": "yes"
+  },
+  "shot:assets/sfx/guns/pistol_02.mp3": {
+   "v": "yes"
+  },
+  "shot:assets/sfx/guns/pistol_03.mp3": {
+   "v": "yes"
+  },
+  "shot:assets/sfx/guns/pistol_04.mp3": {
+   "v": "yes"
+  },
+  "shot:assets/sfx/guns/pistol_05.mp3": {
+   "v": "yes"
+  },
+  "shot:assets/sfx/guns/pistol_06.mp3": {
+   "v": "yes"
+  },
+  "shot:assets/sfx/guns/pistol_07.mp3": {
+   "v": "later",
+   "for": "Rifle",
+   "note": "the user, 2026-10-17: these saved pistols make sense for a future rifle"
+  },
+  "shot:assets/sfx/guns/pistol_08.mp3": {
+   "v": "no"
+  },
+  "shot:assets/sfx/guns/brass_01.mp3": {
+   "v": "no"
+  },
+  "shot:assets/sfx/guns/brass_02.mp3": {
+   "v": "no"
+  },
+  "shot:assets/sfx/guns/brass_03.mp3": {
+   "v": "no"
+  },
+  "shot:assets/sfx/guns/brass_04.mp3": {
+   "v": "no"
+  },
+  "shot:assets/sfx/guns/pistol_09.mp3": {
+   "v": "later",
+   "for": "Rifle",
+   "note": "the user, 2026-10-17: these saved pistols make sense for a future rifle"
+  },
+  "shot:assets/sfx/guns/pistol_10.mp3": {
+   "v": "later",
+   "for": "Rifle",
+   "note": "the user, 2026-10-17: these saved pistols make sense for a future rifle"
+  },
+  "shot:assets/sfx/guns/pistol_11.mp3": {
+   "v": "later",
+   "for": "Rifle",
+   "note": "the user, 2026-10-17: these saved pistols make sense for a future rifle"
+  },
+  "shot:assets/sfx/guns/pistol_12.mp3": {
+   "v": "later",
+   "for": "Rifle",
+   "note": "the user, 2026-10-17: these saved pistols make sense for a future rifle"
+  },
+  "shot:assets/sfx/guns/pistol_13.mp3": {
+   "v": "later",
+   "for": "Rifle",
+   "note": "the user, 2026-10-17: these saved pistols make sense for a future rifle"
+  },
+  "shot:assets/sfx/guns/pistol_14.mp3": {
+   "v": "later",
+   "for": "Rifle",
+   "note": "the user, 2026-10-17: these saved pistols make sense for a future rifle"
+  },
+  "shotgun:assets/sfx/guns/shotgun_01.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_02.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_03.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_04.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_05.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_06.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_07.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_08.mp3": {
+   "v": "no"
+  },
+  "shotgun:assets/sfx/guns/shotgun_09.mp3": {
+   "v": "yes"
+  },
+  "shotgun:assets/sfx/guns/shotgun_10.mp3": {
+   "v": "yes"
+  },
+  "shotgun:assets/sfx/guns/shotgun_11.mp3": {
+   "v": "yes"
+  },
+  "shotgun:assets/sfx/guns/shotgun_12.mp3": {
+   "v": "yes"
+  },
+  "pump:assets/sfx/guns/pump_back.mp3": {
+   "v": "no"
+  },
+  "pump:assets/sfx/guns/pump_fwd.mp3": {
+   "v": "yes"
+  },
+  "pump:assets/sfx/guns/hull_01.mp3": {
+   "v": "no"
+  },
+  "pump:assets/sfx/guns/hull_02.mp3": {
+   "v": "no"
+  },
+  "pump:assets/sfx/guns/hull_03.mp3": {
+   "v": "no"
+  },
+  "dry:assets/sfx/guns/dry_click.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/guns/mag_in.mp3": {
+   "v": "yes"
+  },
+  "pistolReload:assets/sfx/guns/mag_out.mp3": {
+   "v": "no"
+  },
+  "pistolReloadDone:assets/sfx/guns/slide.mp3": {
+   "v": "yes"
+  },
+  "shotgunReload:assets/sfx/guns/mag_in.mp3": {
+   "v": "yes"
+  }
+ },
  "layers": {},
  "sounds": {}
 }
