@@ -160,6 +160,12 @@ class FingerSkel {
     P.needsUpdate = true;
   }
 }
+// the characters' meshes on / off (the "mesh" box): only what is inside each rig (the held weapons are separate); a mesh
+// hidden for its own reason (the gore pieces) stays hidden
+function applyMesh() {
+  const on = $('meshOn')?.checked !== false;
+  for (const a of ACTORS) a.obj.traverse((o) => { if (!o.isMesh) return; if (!('__vis' in o)) o.__vis = o.visible; o.visible = on && o.__vis; });
+}
 function updateFingers() {
   const on = $('fingerBones')?.checked !== false;
   for (const a of ACTORS) a.fing.update(on && (a === main || (a === ref && ref.root.visible)) && a.root.parent === scene);
@@ -174,6 +180,9 @@ class Actor {
     this.bones = {}; obj.traverse((o) => { if (o.isBone) { const n = o.name.replace(/^mixamorig:?/, ''); this.bones[UE_MAP[n] || n] = o; } });
     this.restPos = {}; obj.traverse((o) => { if (o.isBone) this.restPos[o.name.replace(/^mixamorig:?/, '')] ||= o.position.clone(); }); // (by the file's own names)
     this.helper = new THREE.SkeletonHelper(obj); this.helper.visible = false; this.helper.material.depthTest = false;
+    // (the body bones only: the fingers have their own coloured overlay, FingerSkel; the helper's unused line ends stay at
+    // 0,0,0 both, so they draw nothing)
+    this.helper.bones = this.helper.bones.filter((b) => !fingerKind(b.name));
     this.clip = null; this.action = null; this.frames = 1; this.t0 = 0;
     this.hair = new HairSway(this.bones); // the ponytail sway (the new Yola), stepped by the render loop
     this.fing = new FingerSkel(this); ACTORS.push(this);
@@ -346,6 +355,7 @@ async function setClip(name) {
   $('scrub').max = S.frames; S.frame = 1;
   layout(); refresh(); mainGun.calibrate(); refGun?.calibrate(); refresh();
   markClipPanel(); // (setChar picks its first clip without a change event)
+  if (!$('meshOn').checked) { applyMesh(); refresh(); } // (a reference or character loaded since keeps the mesh choice)
 }
 function layout() {
   const sep = S.overlay ? 0 : 0.55;
@@ -941,7 +951,14 @@ function buildUI() {
     row.dataset.k = k; host2.appendChild(row);
   }
   $('alignShell').onclick = alignShell;
-  $('camYolaHands').onclick = () => camHands('main'); $('camRefHands').onclick = () => camHands('ref');
+  // the camera views in one dropdown (the user 2026-10-17: rarely used, they took a whole row); it resets after each pick
+  // so the same view can be picked again
+  $('camPick').onchange = (e) => { const v = e.target.value; e.target.value = ''; if (v === 'yolaHands') camHands('main'); else if (v === 'refHands') camHands('ref'); else if (v) setCam(v); };
+  // skeleton: off / body (the bones without the fingers) / hands (the coloured finger bones) / both; drives the side
+  // panel's two boxes, which the rest of the lab reads
+  const skelUI = () => { const b = $('bones').checked, h = $('fingerBones').checked; const k = b && h ? 'both' : b ? 'body' : h ? 'hands' : 'off'; for (const x of $('skelPick').children) x.classList.toggle('on', x.dataset.skel === k); };
+  for (const x of $('skelPick').children) x.onclick = () => { const k = x.dataset.skel; $('bones').checked = k === 'body' || k === 'both'; $('fingerBones').checked = k === 'hands' || k === 'both'; $('bones').onchange(); updateFingers(); skelUI(); refresh(); };
+  $('meshOn').onchange = () => { applyMesh(); refresh(); };
   $('fingerBones').onchange = () => updateFingers();
   $('pistolFist').onchange = refresh;
   $('fitReset').onclick = () => { Object.assign(fit, FIT0); for (const r of host.children) r._set(fit[r.dataset.k]); refresh(); };
@@ -952,7 +969,8 @@ function buildUI() {
   $('femref').onchange = () => setClip($('clip').value);
   $('marks').onchange = refresh; $('posture').onchange = refresh; $('mags').onchange = refresh; buildHandsUI();
   $('batShow').onchange = refresh; $('vidSkel').onchange = refresh;
-  $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; };
+  $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; skelUI(); };
+  $('fingerBones').addEventListener('change', skelUI); skelUI();
   $('inplace').onchange = () => setClip($('clip').value);
   $('speed').onchange = (e) => { S.speed = +e.target.value; };
   $('toggleSide').onclick = () => $('side').classList.toggle('open');

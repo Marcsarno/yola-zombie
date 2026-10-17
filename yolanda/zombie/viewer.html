@@ -53,8 +53,11 @@
   <div class="grp"><label class="chk" title="the game's posture fix (render/posture.js, in the game since 2026-10-17): her head, neck, chest and pelvis turned onto the source rig's real bone lines (untick to see the clip as retargeted)"><input type="checkbox" id="posture" checked> posture fix (as the game)</label>
     <label class="chk" title="pistol reload: the empty magazine drops, the loaded one goes in"><input type="checkbox" id="mags" checked> magazines</label></div>
   <div class="grp" id="handsGrp" title="Yola's hands for this clip: open = the clip's own fingers, closed = her fist (the reference keeps its own)"></div>
-  <div class="grp"><span class="lbl">Camera</span>
-    <button data-cam="face">Face</button><button data-cam="front">Front</button><button data-cam="side">Side (her right)</button><button data-cam="back">Back</button><button data-cam="top">Top</button><button data-cam="three">3/4</button><button id="camYolaHands">Yola hands</button><button id="camRefHands">Ref hands</button></div>
+  <div class="grp" title="what is drawn: the bones of the body, the finger bones (coloured per finger), both, or none; and the characters' meshes"><span class="lbl">Skeleton</span>
+    <span id="skelPick"><button data-skel="off">Off</button><button data-skel="body">Body</button><button data-skel="hands">Hands</button><button data-skel="both">Both</button></span>
+    <label class="chk"><input type="checkbox" id="meshOn" checked> mesh</label></div>
+  <div class="grp"><span class="lbl">Camera</span><select id="camPick">
+    <option value="">view&hellip;</option><option value="face">Face</option><option value="front">Front</option><option value="side">Side (her right)</option><option value="back">Back</option><option value="top">Top</option><option value="three">3/4</option><option value="yolaHands">Yola hands</option><option value="refHands">Ref hands</option></select></div>
   <div class="grp"><button id="toggleClips" class="on">Clip list</button><button id="toggleSide">Fit panel</button><button id="hideUI">Hide UI (H)</button></div>
   <div id="note"></div>
 </div>
