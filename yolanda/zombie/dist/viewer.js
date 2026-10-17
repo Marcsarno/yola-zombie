@@ -37725,13 +37725,21 @@ void main() {
     return g;
   }
   function prepShell(gltf) {
-    const g = gltf.scene;
+    let g = gltf.scene;
     g.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = false;
         o.frustumCulled = false;
       }
     });
+    const at = g.getObjectByName("HandAttach");
+    if (at) {
+      const inner = g;
+      g = new Group();
+      inner.rotation.z = -Math.PI / 2;
+      inner.position.x = -at.position.y;
+      g.add(inner);
+    }
     return g;
   }
 
@@ -38208,6 +38216,19 @@ void main() {
   var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
   function magInsert(out, pinch, s) {
     return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
+  }
+  var _sp = new Vector3();
+  var _sd = new Vector3();
+  var _sx = new Vector3(1, 0, 0);
+  function placeShell(bones, o, portWorld, side = "Left") {
+    const t = bones[side + "HandThumb2"], i = bones[side + "HandIndex2"];
+    if (!t || !i) return false;
+    t.getWorldPosition(_sp).lerp(i.getWorldPosition(_sd), 0.5);
+    _sd.copy(portWorld).sub(_sp);
+    if (_sd.lengthSq() < 1e-8) return false;
+    o.position.copy(_sp);
+    o.quaternion.setFromUnitVectors(_sx, _sd.normalize());
+    return true;
   }
 
   // src/render/posture.js
@@ -38774,12 +38795,11 @@ void main() {
     const on = !!main.action && f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from && S.gun === "short";
     shellObj.visible = on;
     if (!on) return;
-    main.bones.LeftHand.getWorldQuaternion(_q5);
-    const adj = new Quaternion().setFromEuler(new Euler(shellFit.rx * Math.PI / 180, shellFit.ry * Math.PI / 180, shellFit.rz * Math.PI / 180, "XYZ"));
-    const q = _q5.multiply(adj);
-    main.grip("Left", _v2);
-    shellObj.quaternion.copy(q);
-    shellObj.position.copy(_v2).add(_v22.set(shellFit.x, shellFit.y, shellFit.z).applyQuaternion(_q5.copy(q)));
+    const port = mainGun?.obj?.userData.port;
+    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v2))) {
+      shellObj.visible = false;
+      return;
+    }
     shellObj.updateMatrixWorld(true);
   }
   function applyGun() {
@@ -39774,7 +39794,7 @@ void main() {
     }
     for (const k of ["short", "old"]) if (!gunTemplates[k]) $("gun").querySelector(`option[value=${k}]`).textContent += " (not built yet)";
     try {
-      const g = await loadG("assets/weapons/shell.glb");
+      const g = await loadG("assets/weapons/shotgun_shell.glb");
       shellTemplate = prepShell(g);
       shellObj = shellTemplate;
       shellObj.visible = false;

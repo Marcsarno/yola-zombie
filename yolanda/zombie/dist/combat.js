@@ -48325,13 +48325,21 @@ void main() {
     return g;
   }
   function prepShell(gltf) {
-    const g = gltf.scene;
+    let g = gltf.scene;
     g.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = false;
         o.frustumCulled = false;
       }
     });
+    const at = g.getObjectByName("HandAttach");
+    if (at) {
+      const inner = g;
+      g = new Group();
+      inner.rotation.z = -Math.PI / 2;
+      inner.position.x = -at.position.y;
+      g.add(inner);
+    }
     return g;
   }
   function makeKnife() {
@@ -49035,6 +49043,19 @@ void main() {
   var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
   function magInsert(out, pinch, s) {
     return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
+  }
+  var _sp = new Vector3();
+  var _sd = new Vector3();
+  var _sx = new Vector3(1, 0, 0);
+  function placeShell(bones, o, portWorld, side = "Left") {
+    const t = bones[side + "HandThumb2"], i = bones[side + "HandIndex2"];
+    if (!t || !i) return false;
+    t.getWorldPosition(_sp).lerp(i.getWorldPosition(_sd), 0.5);
+    _sd.copy(portWorld).sub(_sp);
+    if (_sd.lengthSq() < 1e-8) return false;
+    o.position.copy(_sp);
+    o.quaternion.setFromUnitVectors(_sx, _sd.normalize());
+    return true;
   }
 
   // src/render/posture.js
@@ -50191,14 +50212,7 @@ void main() {
       if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
       S2.visible = shellOn;
-      if (shellOn) {
-        this.bones.LeftHand.getWorldQuaternion(_q5);
-        _q23.setFromEuler(_e3.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, "XYZ"));
-        _q5.multiply(_q23);
-        S2.quaternion.copy(_q5);
-        this.grip("Left", _v4);
-        S2.position.copy(_v4).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q5));
-      }
+      if (shellOn) placeShell(this.bones, S2, U2.port.getWorldPosition(_v32));
     }
     // ---- the weapon test arena (src/arena/testarena.js) ----
     // Library attack clips (skeleton-only GLB, same bones): root pinned like every clip, driven by the attack clock.
@@ -65314,7 +65328,7 @@ void main() {
     const wpnP = Promise.all([
       loader.loadAsync("assets/weapons/pump_short.glb"),
       loader.loadAsync("assets/weapons/fire_axe.glb"),
-      loader.loadAsync("assets/weapons/shell.glb"),
+      loader.loadAsync("assets/weapons/shotgun_shell.glb"),
       loader.loadAsync("assets/weapons/pistol_core.glb").catch(() => null),
       loader.loadAsync("assets/weapons/pistol_mag_empty.glb").catch(() => null),
       loader.loadAsync("assets/weapons/pistol_mag_loaded.glb").catch(() => null),
