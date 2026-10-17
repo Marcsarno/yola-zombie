@@ -57508,13 +57508,19 @@ void main() {
       } catch {
       }
     }
-    // the takes a layer plays now: its defaults the user has not rejected + candidates the user approved
-    active(l) {
-      const v = (f) => this.sel.takes[f]?.v;
-      return [...(l.files || []).filter((f) => v(f) !== "no"), ...(l.extra || []).filter((f) => v(f) === "yes")];
+    // the takes a layer of a sound plays now: its defaults the user has not taken out + candidates the user added
+    verdict(name, f) {
+      return this.sel.takes[name + ":" + f]?.v;
     }
-    takeGain(f) {
-      return dbk(this.sel.takes[f]?.db);
+    inGame(name, l, f) {
+      const v = this.verdict(name, f);
+      return (l.extra || []).includes(f) && !(l.files || []).includes(f) ? v === "yes" : v !== "no" && v !== "later";
+    }
+    active(name, l) {
+      return [.../* @__PURE__ */ new Set([...l.files || [], ...l.extra || []])].filter((f) => this.inGame(name, l, f));
+    }
+    takeGain(name, f) {
+      return dbk(this.sel.takes[name + ":" + f]?.db);
     }
     layerGain(name, li) {
       const s = this.sel.layers[name + "#" + li];
@@ -57528,7 +57534,7 @@ void main() {
     ready(name) {
       const b = BANKS[name];
       if (!b) return false;
-      const a = this.active(b.layers[0]);
+      const a = this.active(name, b.layers[0]);
       return a.length > 0 && a.every((f) => this.buf.has(f));
     }
     // a random take, never the one that played last time from this layer
@@ -57794,11 +57800,11 @@ void main() {
           return;
         }
         const forced = li === forceLayer && force;
-        const f = forced || s.pick(name + li, s.active(l));
+        const f = forced || s.pick(name + li, s.active(name, l));
         if (!f) return;
         const jitter = forced ? 1 : Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20);
         const semi = forced ? 0 : l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
-        this.playBuffer(f, t + at, this.chain(lsp, wet, gain * s.takeGain(f) * Math.min(1.6, k) * jitter), semi);
+        this.playBuffer(f, t + at, this.chain(lsp, wet, gain * s.takeGain(name, f) * Math.min(1.6, k) * jitter), semi);
       });
     }
     playBuffer(f, t, dest, semi = 0) {
