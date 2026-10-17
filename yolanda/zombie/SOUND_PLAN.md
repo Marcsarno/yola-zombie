@@ -117,12 +117,20 @@ under the 40-180 Hz body, peak -1 dBFS, MP3).
 `/zombie/sounds.html` on this chat's server (port 5177; it needs tools/serve.mjs's /__sfx save, so a server started
 before 2026-10-17 must be restarted). Every bank, layer and take: play solo / in the full mix / repeat x6 / the old
 synth version; keep or reject takes (candidates, in amber, join the game only when kept); level trims per take, layer
-and sound; notes per sound for Claude; phone-speaker and left/right/distance simulation. "Save choices" writes
+and sound; notes per sound for Claude; phone-speaker and left/right/distance simulation.
+Every take says plainly what it is: "Already in the game" / "New option" / kept / added / "Saved for a future weapon"
+/ rejected, with only the buttons that make sense (Keep · Save for later · Take out; Add to game · Save for later ·
+Reject; Undo). Choices are per sound (keys "<sound>:<file>"); "Also used by" names other sounds sharing a file.
+Filters (to review / in the game / saved / rejected), "N of M reviewed", "Next to review". **Saved for future
+weapons** (sidebar, Library): takes the user liked for another gun, each tagged with the weapon it is for — start
+there when building a new weapon's sounds. "Save choices" writes
 assets/sfx/selection.json, which the game reads on load (src/sfx/samples.js). Read the user's notes there before
 changing a sound. Works from a phone on the home network too (the save accepts private LAN addresses).
 
 ## Log
 (newest at top)
+- 2026-10-17: the user asked for friendlier reviewing: "save for a future weapon" (tagged with the weapon type),
+  "this is already part of the mix" labels, per-sound choices, filters and next-to-review.
 - 2026-10-17: the user: "some are ok, some are not" -> the Sound Board. Added candidates: pistol_06-14 (Bersa .380,
   S&W 642 .38, Ruger Mark III .22, 1911 + PPQ from further off) and shotgun_09-12 (each shotgun from further off,
   long rolling echo).

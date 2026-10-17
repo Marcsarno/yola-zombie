@@ -166,10 +166,10 @@ export class CombatAudio {
       const wet = dry ? 0 : l.wet ?? (l.synth ? 0 : 0.15), gain = (l.gain ?? 1) * lg * sg;
       if (l.synth) { this.out = this.chain(lsp, wet, gain); this.synth(l.synth, k, t + at); this.out = null; return; }
       const forced = li === forceLayer && force;
-      const f = forced || s.pick(name + li, s.active(l)); if (!f) return;
+      const f = forced || s.pick(name + li, s.active(name, l)); if (!f) return;
       const jitter = forced ? 1 : Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20); // +-1.2 dB, take to take
       const semi = forced ? 0 : l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
-      this.playBuffer(f, t + at, this.chain(lsp, wet, gain * s.takeGain(f) * Math.min(1.6, k) * jitter), semi);
+      this.playBuffer(f, t + at, this.chain(lsp, wet, gain * s.takeGain(name, f) * Math.min(1.6, k) * jitter), semi);
     });
   }
   playBuffer(f, t, dest, semi = 0) {

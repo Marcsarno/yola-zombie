@@ -2,7 +2,9 @@
 // tap has made the context, and kept as AudioBuffers. Each buffer remembers where its sound really starts (an MP3
 // carries a few ms of encoder silence in front), so a transient lands on the frame that asked for it.
 // The user's Sound Board choices (assets/sfx/selection.json) decide which takes play and at what level:
-//   takes[file]   = { v: 'yes' | 'no' | undefined, db }   a default take plays unless 'no'; a candidate only if 'yes'
+//   takes['<sound>:<file>'] = { v, db, for, note }  per sound (a file shared by two sounds is judged in each):
+//       v 'yes' kept/added, 'no' rejected, 'later' saved for a future weapon (for: which), none = not reviewed;
+//       a default take plays unless 'no'/'later', a candidate only when 'yes'
 //   layers[key]   = { db, off }                            key = '<sound>#<layer index>'
 //   sounds[name]  = { db, note }
 import { BANKS } from './banks.js';
@@ -34,18 +36,17 @@ export class Samples {
     try { const p = this.ctx.decodeAudioData(ab, done, () => {}); p?.catch?.(() => {}); } catch { /* undecodable: the synth stands in */ }
   }
 
-  // the takes a layer plays now: its defaults the user has not rejected + candidates the user approved
-  active(l) {
-    const v = (f) => this.sel.takes[f]?.v;
-    return [...(l.files || []).filter((f) => v(f) !== 'no'), ...(l.extra || []).filter((f) => v(f) === 'yes')];
-  }
-  takeGain(f) { return dbk(this.sel.takes[f]?.db); }
+  // the takes a layer of a sound plays now: its defaults the user has not taken out + candidates the user added
+  verdict(name, f) { return this.sel.takes[name + ':' + f]?.v; }
+  inGame(name, l, f) { const v = this.verdict(name, f); return (l.extra || []).includes(f) && !(l.files || []).includes(f) ? v === 'yes' : v !== 'no' && v !== 'later'; }
+  active(name, l) { return [...new Set([...(l.files || []), ...(l.extra || [])])].filter((f) => this.inGame(name, l, f)); }
+  takeGain(name, f) { return dbk(this.sel.takes[name + ':' + f]?.db); }
   layerGain(name, li) { const s = this.sel.layers[name + '#' + li]; return s?.off ? 0 : dbk(s?.db); }
   soundGain(name) { return dbk(this.sel.sounds[name]?.db); }
 
   // a bank plays only when every take of its main layer is in (half a bank would repeat the same take); with every
   // take rejected the synth plays instead
-  ready(name) { const b = BANKS[name]; if (!b) return false; const a = this.active(b.layers[0]); return a.length > 0 && a.every((f) => this.buf.has(f)); }
+  ready(name) { const b = BANKS[name]; if (!b) return false; const a = this.active(name, b.layers[0]); return a.length > 0 && a.every((f) => this.buf.has(f)); }
 
   // a random take, never the one that played last time from this layer
   pick(key, files) {
