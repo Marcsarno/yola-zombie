@@ -1,7 +1,17 @@
-# Weapons and grips: where we are (handoff, 2026-10-16, commit 885e9e3)
+# Weapons and grips: where we are (handoff, 2026-10-16, commit 8e44d9b)
 
 Read this first when continuing the weapon/grip work. Deeper background: WEAPON_HOLD_PROCESS.md (sections 15+ are
 today's), PONYTAIL_PLAN.md (Yola 3.0 rig work, done).
+
+## Another chat shares this folder (from 2026-10-16)
+
+A separate chat redoes the opening and the maps in this same folder and branch (OPENING_MAPS_HANDOFF.md has the
+full rules). This chat sticks to animations, grips and the Rig Lab:
+- stage files by name only (never `git add -A` / `-a`); commit only files this chat changed
+- leave `src/opening/*`, `opening.html`, `core/floor3.js`, `core/layout.js`, `core/level.js`, `render/arena.js`,
+  `render/screens.js`, `render/looks.js` alone; `src/main.js` is shared: small separate edits only
+- `dist/combat.js` holds both chats' code: rebuild right before committing, commit it only with your own source change
+- prefix screenshots in `shots/` (`grip_`, `kick_`, ...); never stop the shared dev server
 
 ## How the user wants to work (non-negotiable)
 
@@ -25,6 +35,16 @@ today's), PONYTAIL_PLAN.md (Yola 3.0 rig work, done).
   Today's additions: **finger bones** on both rigs (thumb red, index yellow, middle green, ring blue, pinky violet;
   checkbox "finger bones"), the held weapon in **both** rigs' hands ("same gun on the reference"), camera buttons
   **Yola hands / Ref hands**, and the **Pistol fit panel** (shown with the pistol and "pistol grip in the fist" on).
+  **Weapon picker** (top bar): Pistol / Shotgun / Axe / Bat / None sets what she holds (kept when the clip changes)
+  and jumps to that weapon's game idle clip; **Idle / Attack** jump to its clips as the game plays them (pistol
+  idle `pistol_idle`, attack = the same idle with the game's shot kick; shotgun idle `sg_reload`, attack not in the
+  Rig Lab yet; axe `bat_idle` / `t_chop`; bat `ual1_Sword_Idle` / `ual_Sword_Regular_Combo`). `t_shoot` is the
+  knee-slide special, NOT a pistol shot: the game has no pistol shooting clip.
+- **Shot section** (bottom of the Pistol fit panel): "shot kick" holds the game's recoil at any % (clipchars.js
+  aimPistol: Spine2 -0.09 x kick, both upper arms -0.25 x kick, kick = recoil^2, recoil 1 at the shot, -7/s),
+  "fire" plays one shot, "keep firing" every 0.24 s. Both rigs; at the peak the muzzle rises ~22 cm on each and the
+  gun stays in both fists. The X Bot FBX nests a same-named copy inside each bone: turn the outer one.
+  The Rig Lab runs the bundle `dist/viewer.js`: `node build.mjs` after editing src/viewer.js.
 - **Pistol fit panel:** the grip goes through the fist centre (centre of the curled index-pinky joints) along the
   fist's grip line (pinky -> index knuckle), barrel toward the forearm; then per-character size %, move (mm along the
   gun's axes: forward, up the grip, side) and turn (tilt, turn, roll, degrees). "editing:" switches Yola / reference.
@@ -51,8 +71,14 @@ today's), PONYTAIL_PLAN.md (Yola 3.0 rig work, done).
 Pistol finding (today): on `pistol_idle` her finger curl matches X Bot's within a few degrees. The fists were fine;
 the gun's placement (floating behind the knuckles) was the problem.
 
+Checked 2026-10-16 (screens in shots/grip_idle_*, kick_*): pistol idle frame 1 and the shot kick (0 and 100%) on
+Yola 3.0 and X Bot from side / front / top. The user is now spot-checking grips themselves with the picker; wait
+for their findings (weapon + clip + frame) before changing anything. Yola's fit stays the saved one (up 7; the
+user dropped a stray -1 from the browser).
+
 ## Next steps (in order, each one shown to the user before the next)
 
+0. **The user's spot-check findings** (they were checking many grips with the picker when this was written).
 1. **Pistol in the game:** make placeWeapons use the same fist placement + the `yola2` fit (and `yola` for Yola 2.0
    once set). Show game vs Rig Lab, same frame, several angles. Then the walk/strafe/run/reload clips frame by frame
    vs X Bot (the fit was set on pistol_idle frame 1 only).
