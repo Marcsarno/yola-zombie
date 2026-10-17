@@ -74,3 +74,13 @@ export function twoHandLine(bones, toward, out, hold = 'Right', prev = null) {
   out.c.lerp(ch, sm(0.36, 0.5, out.span)); // (apart: the grip is the holding fist)
   return out;
 }
+
+// ---- the pistol reload's loaded magazine (the user's props, assets/weapons/pistol_mag_*.glb) ----
+// a seated magazine in the pistol model's own frame (the props' pistol_seated_translation)
+export const MAG_SEAT = new THREE.Vector3(-0.008, -0.039, 0);
+// the loaded magazine during the insert (pistol model frame; pinch = her thumb-index pinch there, s = 0..1 from insert to
+// seat): it rises with her fingers along the grip (+Y), never past its seat, while it slides sideways into line
+// (2026-10-17: easing all of it on a timer put it 3.5 cm ahead of her fingers). viewer.js updateMags plays the same rule.
+export function magInsert(out, pinch, s) {
+  return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
+}

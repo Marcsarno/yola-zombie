@@ -11,7 +11,7 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
-import { placeOneHanded, twoHandLine, applyFit } from './holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
@@ -920,7 +920,7 @@ export class YolaView extends ClipBody {
         inner.updateWorldMatrix(true, false);
         this.bones.LeftHandThumb2.getWorldPosition(_v4).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v3), 0.5);
         const u = f <= E.insert ? 0 : clamp((f - E.insert) / (E.seat - E.insert), 0, 1);
-        this.magLoaded.position.copy(inner.worldToLocal(_v4)).lerp(MAG_SEAT, smooth(u)); this.magLoaded.quaternion.identity();
+        magInsert(this.magLoaded.position, inner.worldToLocal(_v4), smooth(u)); this.magLoaded.quaternion.identity();
       }
       this.magLoaded.visible = on;
     }

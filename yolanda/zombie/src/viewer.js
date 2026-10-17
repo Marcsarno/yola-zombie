@@ -8,7 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe, pr
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
-import { placeOneHanded, twoHandLine, applyFit } from './render/holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -451,7 +451,7 @@ function updateMags() {
   if (mags.loaded.parent !== inner) inner.add(mags.loaded);
   if (f >= E.grab && f < E.seat) {
     const u = f <= E.insert ? 0 : (f - E.insert) / (E.seat - E.insert), s = u * u * (3 - 2 * u);
-    mags.loaded.position.copy(inner.worldToLocal(magPinch())).lerp(MAG_SEAT, s); mags.loaded.quaternion.identity(); mags.loaded.visible = true;
+    magInsert(mags.loaded.position, inner.worldToLocal(magPinch()), s); mags.loaded.quaternion.identity(); mags.loaded.visible = true; // (the game's rule)
   }
   // the empty one: leaves the grip at `drop` and falls (world space)
   if (f >= E.drop) {
