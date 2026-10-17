@@ -110,12 +110,16 @@ export function startInspect(game) {
   equip(WEAPONS.includes(q.get('w')) ? q.get('w') : 'pistol');
   setTimeout(() => setCam(q.get('cam') || 'body'), 600); // (after the first frames have placed her)
   // the game is stepped from here (slow motion, pause, single frames); 'game camera' hands the view back to the game's
-  let last = performance.now();
+  // Fixed 1/60 s steps: she is held in place by putting her back on her spot every step, so each step must move her the
+  // same distance; a step that followed the screen's uneven frame times made her jump forward and back by up to 9.5 cm
+  // (the user, 2026-10-16: "a jitter of the entire body ... from the side")
+  let last = performance.now(), acc = 0;
   const loop = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     controls.enabled = camMode !== 'game'; game.camFree = camMode !== 'game';
     if (camMode !== 'game') controls.update();
-    if (!paused) game.tick(1, dt * speed, true); else game.looks.render();
+    if (!paused) { acc += dt * speed; let n = 0; while (acc >= 1 / 60 && n < 4) { game.tick(1, 1 / 60, false); acc -= 1 / 60; n++; } if (n === 4) acc = 0; }
+    game.looks.render();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
