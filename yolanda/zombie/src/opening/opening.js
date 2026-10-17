@@ -22,7 +22,7 @@ import { RevealSound } from './revealsound.js';
 const SLOW = 0.42;
 // the home run's moments (seconds into reveal_homerun): loaded in the stance, the follow-through to freeze on; her facing
 // for the swing and the camera's angle on it
-const HR = { stance: 0.8, freeze: 1.62, yaw: 0.35, camYaw: 34 };
+const HR = { stance: 0.2, freeze: 1.62, yaw: 0.35, camYaw: 34 }; // (from 0.2 s: the wind-up shows)
 const _ = SLOW; void _; // the walk-out's slow motion (her walk at 42%: a heavy step about every second)
 const BELONG = ROOM1.belongings; // the patient-belongings table in the Supply Hall (bat and cap)
 // the athlete's clothing after the change, by material: white top and trousers, the trims and lettering whitened too
@@ -1046,9 +1046,10 @@ export class Opening {
     this.tween(1.4, (k) => this.setLift3(ease(k))); this.setSmoke(true);
     yield 1.7;
     this.revLight({ red: 0.28 });
-    const seq = [[0, 'old', 1], [1.15, 'old', 0.55], [2.0, 'new', 0.85], [2.55, 'old', 0.6], [3.05, 'new', 1], [3.55, 'new', 0.6]];
-    for (const [t, who, k] of seq) this.later(t, () => this.flashOn(who, k));
-    yield 4.4;
+    const seq = [[0, 'old', 1], [1.15, 'old', 0.55], [2.0, 'new', 0.85], [2.55, 'old', 0.6], // the first exchanges
+      [3.75, 'old', 0.7], [4.0, 'new', 0.75], [4.2, 'old', 0.8], [4.37, 'new', 0.85], [4.51, 'old', 0.9], [4.63, 'new', 0.95], [4.74, 'old', 0.95], [4.84, 'new', 1.15, 0.7]]; // (a beat of dark, then the burst: faster and brighter, landing on her)
+    for (const [t, who, k, decay] of seq) this.later(t, () => this.flashOn(who, k, decay));
+    yield 6.0;
     // BEAT 8: what she is walking into: the patient, red-lit, risen (a quick push)
     this.substate = 'B8_THREAT';
     this.revLight({ amb: 0, red: 0.9, redAt: 'or' });
@@ -1080,7 +1081,7 @@ export class Opening {
     this.revBat(false);
     { const p = this.stand; this.camTo({ x: p.x - 0.2, y: 1.1, z: p.z + 0.25, pitch: 7, yaw: HR.camYaw, dist: 4.0, fov: 40 }, 0.01); }
     this.revLight({ amb: 0.16, red: 0.55, key: 0.45, spotAt: 'key' }); // (a soft key on her: the stance and the bat read in the dark)
-    yield 1.0;
+    yield 0.5;
     this.stand.clip.paused = false; this.stand.clip.timeScale = 1;
     if (!this.silent) this.rs.drum(1.2);
     { const p = this.stand; this.camTo({ x: p.x - 0.35, y: 1.2, z: p.z + 0.35, pitch: 6, yaw: HR.camYaw - 6, dist: 3.7, fov: 40 }, 0.6); } // (wide enough for the bat at the top of the follow-through)
@@ -1088,6 +1089,9 @@ export class Opening {
     // BEAT 12: freeze on the follow-through: her exactly as she is, the boss-style name card over her
     this.substate = 'B12_CARD'; this.mark('beat12');
     this.stand.clip.paused = true;
+    { const b = this.batCentre(), p = this.stand, bb = this.yola?.batLib?.obj ? new THREE.Box3().setFromObject(this.yola.batLib.obj) : null; // (the freeze frames all of her and the whole bat)
+      const tx = bb ? (p.x + (bb.min.x + bb.max.x) / 2) / 2 : p.x, tz = bb ? (p.z + (bb.min.z + bb.max.z) / 2) / 2 : p.z; void b;
+      this.camAnim = null; this.rig = { x: tx, y: 1.2, z: tz, pitch: 6, yaw: HR.camYaw - 6, dist: 4.8, fov: 40 }; this.setCamera(); }
     this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: 'key' }); this.tickRevLight(0);
     if (!this.silent) { this.showCard(); this.rs.cueHit(); }
     this.setSmoke(false);
@@ -1132,7 +1136,7 @@ export class Opening {
     this.ui.setVignette(r.red * 0.35 * (0.4 + 0.6 * pulse));
     // the opening's spotlight is the dying tube over the table, or the failing light outside the lift (re-aimed per beat:
     // no extra lights in the scene, so gameplay pays nothing for the reveal)
-    if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : 0.16));
+    if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : r.flashDecay || 0.16));
     const tube = r.tube > 0 ? r.tube * (Math.sin(r.t * 31) * Math.sin(r.t * 7.3) > 0.55 ? 0 : 6 + 3 * Math.sin(r.t * 53)) * soft : 0;
     const flash = 70 * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
     if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 16;
@@ -1149,11 +1153,11 @@ export class Opening {
     this.rl = null;
   }
   // a flash from the failing light outside the doors: one silhouette or the other, the surfaces clean or outbreak with it
-  flashOn(who, k) {
+  flashOn(who, k, decay) {
     const old = this.stage.actors.yola;
     old.setVisible(who === 'old'); this.standVisible(who === 'new');
     this.setOutbreakLook(who === 'new');
-    if (this.rl) this.rl.flash = k;
+    if (this.rl) { this.rl.flash = k; this.rl.flashDecay = decay || 0.16; } // (the last one fades slowly: she stays)
     if (!this.silent) { this.sound.flicker?.(true); this.rs.flash(k); }
   }
   setOutbreakLook(on) { this.setBlood(on); this.renderer.shadowMap.needsUpdate = true; }
@@ -1201,7 +1205,7 @@ export class Opening {
     const end = hipsAt(clip.duration - 0.02);
     s.x = mark.x - end.x; s.z = mark.z - end.z;
     act.time = t0; act.paused = true; s.mixer.update(0);
-    s.clip = act; s.bat = 'held';
+    s.clip = act; s.bat = 'heldL'; // (the swing follows her left hand)
     this.tickStand(0);
   }
   // the athlete's bat leaning against the lift's frame, beside the doors (the opening's static bat: barrel down, knob up)
@@ -1237,7 +1241,7 @@ export class Opening {
 
     const bat = Y.batLib?.obj, hand = Y.bones.RightHand;
     if (bat && s.bat === 'none') bat.visible = false;
-    else if (bat && s.bat === 'held') { Y.outer.updateMatrixWorld(true); Y.placeHeld(Y.batLib); bat.visible = s.shown; } // (the game's own grip: the bat follows her fist through the swing)
+    else if (bat && (s.bat === 'held' || s.bat === 'heldL')) { Y.outer.updateMatrixWorld(true); Y.placeHeld(s.bat === 'heldL' ? (this.leftBat ||= { ...Y.batLib, hand: 'Left' }) : Y.batLib); bat.visible = s.shown; } // (the game's own grip: the bat follows her fist through the swing)
     else if (bat && hand) { // in her right fist, the barrel hanging down along her leg, a little forward (the bat's origin is the grip, its barrel +z)
       Y.outer.updateMatrixWorld(true); const hp = hand.getWorldPosition(new THREE.Vector3()), fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw));
       const dir = new THREE.Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();

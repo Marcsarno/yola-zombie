@@ -4,7 +4,75 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
-## STATE NOW (2026-10-16 evening): the brief is built
+## LATEST (2026-10-17): the reveal the user signed off on — read this first
+
+The user reviewed the opening over several rounds on 2026-10-17 and said "this is so close… commit it". Everything below is
+committed on `opening-reveal` (last commit of this round: see `git log`; rollback tags `checkpoint-pre-brief-2026-10-16`,
+`checkpoint-pre-opening-redo`). Production deploy of this round: yola-zombie.vercel.app (see the deploy note at the end).
+
+**Watch it fast:** title screen "Skip to reveal ▸", the "Reveal ▸" button in the opening's top-right controls, the
+"↺ Reveal" button that stays top-left after the hand-off, or `combat.html?crisis=1`. All jump (≈0.3 s) to the calm beat
+before the flatline (`opening.toReveal()`, mark `handoff-done`) and play live with sound.
+
+**The opening as it stands (src/opening/opening.js):**
+- Tour, check-in, office: the office conversation cuts between HELD reverse angles (`headShot()`, no push-in per line;
+  Yola's angle looks down between the visitors' heads over her monitor), the speaker's hand gestures (`gesture()`), Yola's
+  head dips to the chart on line 10; seated Yola's pelvis is pinned (actors.js applySit: her standing clip's breathing bob
+  read as bouncing). Recliners rebuilt by tools/anim/make_recliner.py (backrest hinged, headrest; the old back floated).
+- Clean wheelchair (assets/models/wheelchair/Hospital_Wheelchair.glb: its anchors place the seat and pusher; hands IK'd to
+  the push grips). Ground-floor lift: the reception wall is opened for the cab, the kit's blood hidden there, the cab's
+  1-2-3 panel replaced by a G-7 panel (stage.js liftDisplay). Everyone walks through the doorway centre lines.
+- Floor 7 OR (core/chapter.js, OR_TABLE = x -3.4, z -8.75): one table on the west side, head under a bay headwall,
+  curtain screens on the lift side. Lines 12/16/26 play clean edits of their takes (content.js from/to). After line 26 Yola
+  simply walks out (her trip to six is off screen); the OR lift display is set to 6.
+- Crisis (act4): each alarm pulse dims the room; the power dies (sound) to red emergency light and a dying tube; staff
+  turn to the patient before line 29 and back away (`backAway()`); hard cut to black after line 31. No head spin.
+- Reveal (`reveal()`), the user's approved beat sheet, refined:
+  5 the shut doors in the dark, a LINE OF LIGHT SLIDES LEFT→RIGHT UNDER THE DOORS (`doorSweep()`), up to the indicator 6→7;
+  6-7 doors open on a black cab; flashes from above-behind (the opening's spotlight re-aimed, `revLight`/`flashOn`) show the
+     ORIGINAL TOON YOLA and YOLA 3.0 in the SAME standing pose, same spot, both facing the camera (`standYola()`: her
+     tripo_idle on a separate mixer), surfaces flipping clean/outbreak with them; then a beat of dark and a FAST BURST that
+     speeds up and lands on Yola 3.0, the last flash fading slowly so she stays (the user asked for exactly this);
+     dry-ice smoke pours low out of the cab (`ensureSmoke`), lit only by the flashes and the red;
+  8 the patient, red-lit; the outbreak world is committed behind the cut (`revealWorld()`);
+  9 FEET ONLY: she walks out through the fog (natural walk, slowed 70%, hands empty), each step a thud + war drum + fog kicked;
+  10 the athlete's bat leaning on the lift frame (`revBat()`), nobody picks it up on screen;
+  11 a cut to her set in the batter's stance; the MIXAMO HOME RUN plays from its wind-up (HR.stance 0.2 s) with the bat in
+     her LEFT hand (`placeHeld` with a left-hand copy of the game's bat hold);
+  12 FREEZE on the one-handed follow-through, reframed to hold her and the whole bat; her picture is NOT stylised (the user
+     hated the comic filter on her) — only the name card is Borderlands-style ("YOLA", "Anesthesiologist. Off shift.",
+     comiccard.js nameCard); the cue's hit;
+  13 the music hits, the clip's walk-off plays while the camera rises to the game; her root was placed so the walk-off ends
+     exactly on ROOM1.player (no jump at the hand-off).
+- Sound: src/opening/revealsound.js (synthesized, nothing recorded or bought): drone bed, power-down, lift motor, door
+  hiss, heartbeats, a crack per flash, slow-mo whoosh, footsteps, the walk-out cue (low D-minor chord, war drums, rising
+  strings) slamming on the freeze. Not heard by me (the pane cannot listen): the user must judge the mix.
+- Her reveal clips: tools/opening/make_reveal_clips.py (Blender, read-only use of blender/retarget.py and
+  tools/anim/contacts.py) writes assets/opening/yola2_reveal.glb (reveal_homerun from the X Bot FBX
+  assets/mixamo/yola_baseball_homerun.fbx; reveal_walk from Quaternius UAL1 Walk_Loop, CC0). assets/yola2.glb untouched.
+
+**The user's STILL-TO-TWEAK list (they said so explicitly; do these with them, step by step):**
+1. The home run: timing of the wind-up into the swing could be tuned more; the left hand / bat may drift on her longer
+   arms — the user says they can fix the hand fit in another file; the bat follows her left hand now.
+2. Smash the zombie: once they like the exit, the patient (white-gown) zombie should burst on the swing. He is modular only
+   into ~6 parts (head, forearms, lower legs, torso; the game's sever/ragdoll can do that today); more pieces need Blender
+   cuts. Zombie placement for the swing not built yet (one OR zombie was moved off the lift so it stopped blocking the shot).
+3. The shotgun KNEE SLIDE: Tripo's "shoot" clip = `t_shoot` in both Yola files (runs, drops to the knees, kneeling aim,
+   9.07 s, root motion stripped — re-add forward travel like the walk-out). The shotgun hold must be fitted to that pose
+   (the user wants to do the grip together, Rig Lab side by side as with the animation chat). Not built.
+4. Ideas offered, not started: slow-mo first step with fog swirl (partly done), rotating emergency beacon, sound mix
+   review, depth of field in close-ups.
+5. Older open items: guard's arms do not detach (not modular); ragdoll frame cost with many simultaneous deaths
+   (pre-existing, measured in both the chapter and the old wing); no carry pose (the case follows her left hand); the radio
+   script for Floors 7/6/5 is unrecorded (captions labelled draft); physical-phone and real desktop-width tests not done.
+
+**Known gotchas:** `opening.card` is the clinical-card method (the freeze overlay is `freezeEl`); opening actors have no
+backward walk (use `backAway`); OriginalYola's procedure resets head/right arm each frame (actors.js re-applies adj after
+it); in tests set `opening.storyClockLines = true` and use `runTo(mark)` + `game.shot`/`game.sheet`; overlays (the freeze
+card) need a real `computer` screenshot, not `game.shot`. Marks: beat1, motion, beat5, beat6, beat9, beat11, beat12,
+handoff-done, get-yola-done, room1-playable.
+
+## STATE (2026-10-16 evening): the brief is built
 
 The user's brief arrived: `~/Downloads/Yola_Complete_Claude_Build_Brief_2026-10-16.txt` (the authority) plus the Tiled v3
 maps `~/Downloads/Yola_Floors_7_6_5_Tiled_v3.zip` (extracted copy: session scratchpad `maps_v3/`; `source/*_Spatial_Data_v3.json`
