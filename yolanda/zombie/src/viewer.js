@@ -29,7 +29,8 @@ const YOLA2_REF = { bat_swing: 'yola_baseball_single', bat_swing_m: null, pistol
 const CHARS = {
   yola: { label: 'Yola', file: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_sword.glb'], height: 1.62, ref: 'yola_' },
   // the new Yola (2026-10-16, the user's Tripo nurse-scrubs model): every game clip plus the library picks
-  yola2: { label: 'Yola 2 (new model)', file: 'assets/yola2.glb', extra: ['assets/moves/yola2_moves.glb'], height: 1.62, ref: 'yola_', refMap: YOLA2_REF },
+  yola2: { label: 'Yola 2 (new model)', file: 'assets/yola2.glb', extra: ['assets/moves/yola2_moves.glb'], height: 1.62, ref: 'yola_', refMap: YOLA2_REF,
+    libRef: { pistol_reload: 'ual1_Pistol_Reload' } }, // (2026-10-17: her reload is Quaternius Pistol_Reload, support hand on the gun)
   nurse: { label: 'Zombie nurse', file: 'assets/zombie-nurse-mod.glb', height: 1.78, ref: 'zombie_' },
   patient: { label: 'Zombie patient', file: 'assets/zombie-patient-mod.glb', height: 1.78, ref: 'zombie_' },
   // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -276,12 +277,14 @@ async function setClip(name) {
   const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
   pinRoot(c, $('inplace').checked, main); main.play(c); main.hair?.reset?.(); FPS = fpsOf(c); vidRef(name);
   // the reference: the clip's own source rig. Mixamo clips: Mixamo's X Bot; library clips: Quaternius's mannequin
-  const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => name.startsWith(p));
+  // (a game clip made from a library move is shown against that move: CHARS[].libRef)
+  const libName = (CHARS[S.char].libRef || {})[name.replace(/_REBAKE_.*$/, '')] || name;
+  const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => libName.startsWith(p));
   let rc = null, file = '';
   if (lib) {
     const u = await ualRef(UAL_FILES[lib]);
     useRef(u ? u.actor : refX);
-    rc = u?.clips.find((c) => c.name === name.replace(/_REBAKE_.*$/, '').slice(lib.length)) || null; file = UAL_FILES[lib];
+    rc = u?.clips.find((c) => c.name === libName.replace(/_REBAKE_.*$/, '').slice(lib.length)) || null; file = UAL_FILES[lib];
   } else {
     useRef(refX);
     const nm = name.replace(/_REBAKE_.*$/, ''); // (a test re-bake: the clip it re-bakes has the reference)
@@ -423,23 +426,22 @@ function updateMags() {
   const f = S.playing ? S.frame : Math.round(S.frame);
   if (art) art.visible = f < E.drop || f >= E.seat;
   inner.updateWorldMatrix(true, false);
-  // per clip and fit: the empty one's start pose (seated, at the drop frame) and the small correction that seats the
-  // loaded one (measured at the seat frame: her thumb-index pinch ends ~2.4 cm from a seated magazine's base)
+  // per clip and fit: the empty one's start pose (seated, at the drop frame)
   const key = main.clip.name + JSON.stringify(fitOf(main));
   if (mags.fall?.key !== key) {
     const keep = S.frame, at = (fr) => { main.setFrame(fr); placeHeldOn(main, P); inner.updateWorldMatrix(true, false); };
     at(E.drop); const M = inner.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(MAG_SEAT));
     const p0 = new THREE.Vector3(), q0 = new THREE.Quaternion(), s0 = new THREE.Vector3(); M.decompose(p0, q0, s0);
-    at(E.seat); const delta = MAG_SEAT.clone().sub(inner.worldToLocal(magPinch()));
-    mags.fall = { key, p0, q0, s0, delta };
+    mags.fall = { key, p0, q0, s0 };
     at(Math.min(S.playing ? Math.max(1, keep) : Math.round(keep), main.frames));
   }
   // the loaded one: a child of the pistol model (its frame and scale), held by its base between her thumb and index
-  // finger; from `insert` the correction above is eased in, so it stays in her fingers and ends exactly seated
+  // finger; from `insert` it eases from her fingers to its seat (her pinch ends ~2.4 cm from a seated magazine's base,
+  // so it stays in her fingers) and is seated at `seat`. (The game's clipchars.js placeMags plays the same rules.)
   if (mags.loaded.parent !== inner) inner.add(mags.loaded);
   if (f >= E.grab && f < E.seat) {
     const u = f <= E.insert ? 0 : (f - E.insert) / (E.seat - E.insert), s = u * u * (3 - 2 * u);
-    mags.loaded.position.copy(inner.worldToLocal(magPinch())).addScaledVector(mags.fall.delta, s); mags.loaded.quaternion.identity(); mags.loaded.visible = true;
+    mags.loaded.position.copy(inner.worldToLocal(magPinch())).lerp(MAG_SEAT, s); mags.loaded.quaternion.identity(); mags.loaded.visible = true;
   }
   // the empty one: leaves the grip at `drop` and falls (world space)
   if (f >= E.drop) {

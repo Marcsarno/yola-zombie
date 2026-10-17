@@ -25,11 +25,12 @@ export function startInspect(game) {
   const cam = game.camera, p = game.sim.player, Y = game.yola, V = game.THREE.Vector3;
   // moves on the spot (2026-10-16, the user: "you'll have to show me"): she plays the game's real blend for each move
   // (walk / run / back / strafes / attack) while held in place, facing +Z; speed, pause and single steps drive the game
-  const MOVES = { stand: [0, 0, 0], walk: [0, 1, 0.4], run: [0, 1, 1], back: [0, -1, 1], 'strafe L': [1, 0, 1], 'strafe R': [-1, 0, 1], attack: [0, 0, 0] };
+  const MOVES = { stand: [0, 0, 0], walk: [0, 1, 0.4], run: [0, 1, 1], back: [0, -1, 1], 'strafe L': [1, 0, 1], 'strafe R': [-1, 0, 1], attack: [0, 0, 0], reload: [0, 0, 0] };
   let move = 'stand', speed = 1, paused = false;
   const x0 = p.x, z0 = p.z;
   game.scriptInput = () => {
     park(); p.x = p.px = x0; p.z = p.pz = z0; const [mx, mz, m] = MOVES[move];
+    if (move === 'reload' && p.action.type === 'ready' && p.equipped in p.mags) p.ammo = 0; // (an empty gun reloads by itself: over and over)
     return { moveX: mx * m, moveZ: mz * m, aimX: 0, aimZ: move === 'attack' ? 1 : 0.3, swapPresses: 0, usePresses: 0 }; // (aim 0.3: facing without attacking)
   };
   game.camFree = true;

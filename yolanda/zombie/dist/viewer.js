@@ -38156,7 +38156,16 @@ void main() {
   var CHARS = {
     yola: { label: "Yola", file: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_sword.glb"], height: 1.62, ref: "yola_" },
     // the new Yola (2026-10-16, the user's Tripo nurse-scrubs model): every game clip plus the library picks
-    yola2: { label: "Yola 2 (new model)", file: "assets/yola2.glb", extra: ["assets/moves/yola2_moves.glb"], height: 1.62, ref: "yola_", refMap: YOLA2_REF },
+    yola2: {
+      label: "Yola 2 (new model)",
+      file: "assets/yola2.glb",
+      extra: ["assets/moves/yola2_moves.glb"],
+      height: 1.62,
+      ref: "yola_",
+      refMap: YOLA2_REF,
+      libRef: { pistol_reload: "ual1_Pistol_Reload" }
+    },
+    // (2026-10-17: her reload is Quaternius Pistol_Reload, support hand on the gun)
     nurse: { label: "Zombie nurse", file: "assets/zombie-nurse-mod.glb", height: 1.78, ref: "zombie_" },
     patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" },
     // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -38524,12 +38533,13 @@ void main() {
     main.hair?.reset?.();
     FPS = fpsOf(c);
     vidRef(name);
-    const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => name.startsWith(p));
+    const libName = (CHARS[S.char].libRef || {})[name.replace(/_REBAKE_.*$/, "")] || name;
+    const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => libName.startsWith(p));
     let rc = null, file = "";
     if (lib) {
       const u = await ualRef(UAL_FILES[lib]);
       useRef(u ? u.actor : refX);
-      rc = u?.clips.find((c2) => c2.name === name.replace(/_REBAKE_.*$/, "").slice(lib.length)) || null;
+      rc = u?.clips.find((c2) => c2.name === libName.replace(/_REBAKE_.*$/, "").slice(lib.length)) || null;
       file = UAL_FILES[lib];
     } else {
       useRef(refX);
@@ -38765,15 +38775,13 @@ void main() {
       const M = inner.matrixWorld.clone().multiply(new Matrix4().makeTranslation(MAG_SEAT));
       const p0 = new Vector3(), q0 = new Quaternion(), s0 = new Vector3();
       M.decompose(p0, q0, s0);
-      at(E.seat);
-      const delta = MAG_SEAT.clone().sub(inner.worldToLocal(magPinch()));
-      mags.fall = { key, p0, q0, s0, delta };
+      mags.fall = { key, p0, q0, s0 };
       at(Math.min(S.playing ? Math.max(1, keep) : Math.round(keep), main.frames));
     }
     if (mags.loaded.parent !== inner) inner.add(mags.loaded);
     if (f >= E.grab && f < E.seat) {
       const u = f <= E.insert ? 0 : (f - E.insert) / (E.seat - E.insert), s = u * u * (3 - 2 * u);
-      mags.loaded.position.copy(inner.worldToLocal(magPinch())).addScaledVector(mags.fall.delta, s);
+      mags.loaded.position.copy(inner.worldToLocal(magPinch())).lerp(MAG_SEAT, s);
       mags.loaded.quaternion.identity();
       mags.loaded.visible = true;
     }

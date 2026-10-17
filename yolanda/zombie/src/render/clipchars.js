@@ -21,6 +21,9 @@ const UP = new THREE.Vector3(0, 1, 0);
 const _e = new THREE.Euler();
 const LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
 const HOLD_T = 1 / 30 + 2e-4; // the shotgun hold is frame 1 of its clip (evaluated at exactly the first key time it is skipped)
+const PISTOL_MAGS = { drop: 6, grab: 13, insert: 23, seat: 28 }; // pistol_reload frames (see placeMags)
+const MAG_SEAT = new THREE.Vector3(-0.008, -0.039, 0); // a seated magazine in the pistol model's own frame (the props' pistol_seated_translation)
+const _m4 = new THREE.Matrix4(), _m4b = new THREE.Matrix4();
 
 function angleDiff(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; else if (d < -Math.PI) d += Math.PI * 2; return d; }
 
@@ -204,6 +207,13 @@ export class YolaView extends ClipBody {
       const t = hipsTrack(byName[src]); if (t) this.upperHips[n] = t.createInterpolant(new Float32Array(4));
     }
     this.pistol = weapons.pistol ? prepPistolCore(weapons.pistol) : makePistol(1); // (the pack pistol; the built-in one if it fails to load)
+    // the pistol reload's magazines (the user's props, 2026-10-17; see placeMags): the empty one falls in the world, the
+    // loaded one rides the pistol model (its frame and scale); the pistol's own magazine plate hides while they play
+    const prepMag = (g) => { const o = g.scene; o.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.frustumCulled = false; } }); o.visible = false; return o; };
+    this.magEmpty = weapons.magEmpty ? prepMag(weapons.magEmpty) : null; if (this.magEmpty) scene.add(this.magEmpty);
+    this.magLoaded = weapons.magLoaded ? prepMag(weapons.magLoaded) : null;
+    this.magArt = this.pistol.children[0]?.getObjectByName?.('Pistol_Magazine_Art') || null;
+    this.magFall = null; this.pistolReloadFrame = -1;
     this.shotgun = prepPumpShort(weapons.shotgun);
     this.shell = prepShell(weapons.shell); this.shell.visible = false; scene.add(this.shell);
     this.melee = prepAxe(weapons.axe);
@@ -510,12 +520,12 @@ export class YolaView extends ClipBody {
     if (A) this.swingAct.setEffectiveWeight(sW);
     this.container.rotation.y = this.yaw + turn;
     // reloads: upper-body clips driven by the simulation's reload time, legs keep the locomotion
-    let rW = 0; this.reloadFrame = -1;
+    let rW = 0; this.reloadFrame = -1; this.pistolReloadFrame = -1;
     if (s.action === 'reload') {
       const sg = s.equipped === 'shotgun', u = clamp(s.actionT / s.reloadDur, 0, 1);
       const rl = this.act(sg ? 'shotgun_reload_upper' : 'pistol_reload_upper');
       rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + ((this.rlJit ^= 1) * 1e-6);
-      if (sg) this.reloadFrame = rl.time * 30;
+      if (sg) this.reloadFrame = rl.time * 30; else this.pistolReloadFrame = rl.time * 30;
       rW = smooth(clamp(s.actionT / 0.08, 0, 1)) * smooth(clamp((1 - u) / 0.12, 0, 1));
     }
     this.reloadW = rW;
@@ -588,7 +598,7 @@ export class YolaView extends ClipBody {
     if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; return; } // (on the floor: weapons away)
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
-    this.placeWeapons(s, dt);
+    this.placeWeapons(s, dt); this.placeMags(dt);
   }
 
   // Foot lock (melee clips with planted-foot data: clipdata cL/cR, measured on her posed shoes in Blender). A planted
@@ -805,6 +815,44 @@ export class YolaView extends ClipBody {
       const ha = this.mixer.clipAction(h); this.actions.sword_idle_rhand = ha; ha.play(); ha.setEffectiveWeight(0);
     }
     this.up.sword ??= 0;
+  }
+
+  // Pistol reload magazines. Frames of pistol_reload (Quaternius Pistol_Reload with the support hand placed on the gun;
+  // measured on her: gun tips up 4-7, left hand at the hip pouch 13-15, at the grip 28-37). The empty one leaves the grip
+  // at `drop` and falls to the floor; the loaded one is held by its base between her left thumb and index finger from
+  // `grab`, eases to its seat (MAG_SEAT, in the pistol model's own frame: its base plate over Pistol_Magazine_Art) from
+  // `insert` and is seated at `seat`. The Rig Lab (viewer.js updateMags) plays the same rules.
+  placeMags(dt) {
+    const E = PISTOL_MAGS, f = this.pistolReloadFrame, inner = this.pistol.children[0];
+    const playing = f >= 0 && this.pistol.visible && inner;
+    if (this.magArt) this.magArt.visible = !(playing && f >= E.drop && f < E.seat);
+    if (this.magLoaded && inner) {
+      const on = playing && f >= E.grab && f < E.seat;
+      if (on) {
+        if (this.magLoaded.parent !== inner) inner.add(this.magLoaded);
+        inner.updateWorldMatrix(true, false);
+        this.bones.LeftHandThumb2.getWorldPosition(_v4).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v3), 0.5);
+        const u = f <= E.insert ? 0 : clamp((f - E.insert) / (E.seat - E.insert), 0, 1);
+        this.magLoaded.position.copy(inner.worldToLocal(_v4)).lerp(MAG_SEAT, smooth(u)); this.magLoaded.quaternion.identity();
+      }
+      this.magLoaded.visible = on;
+    }
+    if (this.magEmpty) {
+      if (playing && f >= E.drop && (this.prevMagF ?? -1) < E.drop) { // it leaves the grip now: start its fall from the seated pose
+        inner.updateWorldMatrix(true, false);
+        const M = _m4.copy(inner.matrixWorld).multiply(_m4b.makeTranslation(MAG_SEAT.x, MAG_SEAT.y, MAG_SEAT.z));
+        this.magFall = { p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), t: 0 }; M.decompose(this.magFall.p, this.magFall.q, this.magFall.s);
+      }
+      const F = this.magFall;
+      if (F) {
+        F.t += dt; const tHit = Math.sqrt(Math.max(0, 2 * (F.p.y - 0.02) / 9.8)), t = Math.min(F.t, tHit);
+        this.magEmpty.position.copy(F.p); this.magEmpty.position.y -= 4.9 * t * t;
+        _q3.setFromAxisAngle(_v3.set(0, 0, 1).applyQuaternion(F.q), 5 * t); this.magEmpty.quaternion.copy(_q3).multiply(F.q); this.magEmpty.scale.copy(F.s);
+        this.magEmpty.visible = this.outer.visible && F.t < tHit + 4; // (lies on the floor for 4 s)
+        if (!this.magEmpty.visible) this.magFall = null;
+      } else this.magEmpty.visible = false;
+    }
+    this.prevMagF = playing ? f : -1;
   }
 
   placeWeapons(s, dt) {

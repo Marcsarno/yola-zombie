@@ -156,12 +156,13 @@ async function load() {
   const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
     .then(([gltf, damageTextures]) => { ZombieView.shieldAsset = { gltf, damageTextures }; }).catch((e) => console.warn('shield asset failed: stand-in shield', e));
   const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shell.glb'),
-    loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null)]);
+    loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null),
+    loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null)]); // (the reload's magazines)
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
+  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG });
+  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup')); // (tools/anim/yola_clips.py: knocked flat, getting up)
   setupBat(yg.animations); window.game.yolaClips = yg.animations;
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
