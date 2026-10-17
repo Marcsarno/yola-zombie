@@ -8,6 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, makeKnife, 
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
+import { buildBodyClip, bodyClipFrame, bodyClipProbe } from './render/bodyclip.js';
 import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
@@ -1095,6 +1096,29 @@ function buildUI() {
 // For Blender (2026-10-17, the user: "use blender to check the hold of the weapons ... all of them"): each case, as the Rig
 // Lab shows it, written to shots/<name>_<i>.json: her hands and forearms posed and skinned (the triangles whose vertices
 // belong to a hand, finger or forearm bone), her body around them, and the held weapon, all in world metres
+// every clip the game uses (or `clips`), frame by frame, for an arm inside her body (render/bodyclip.js); the deepest
+// frame of each clip that has one, deepest first. gun: the weapon held while checking ('none': the clip alone)
+let bodyClipC = null;
+async function bodyClipScan({ clips = null, gun = 'none', minDepth = 0.015 } = {}) {
+  S.gun = gun; $('gun').value = gun; applyGun();
+  const list = clips || mainCache[S.char].gltf.animations.map((c) => c.name).filter(inGame);
+  if (bodyClipC?.char !== S.char) bodyClipC = null;
+  const out = [];
+  for (const name of list) {
+    try { await setClip(name); } catch { continue; }
+    pausedUI(true);
+    if (!bodyClipC) { bodyClipC = buildBodyClip(main.obj, main.bones); bodyClipC.char = S.char; }
+    const n = Math.max(1, Math.round(main.clip.duration * FPS));
+    let worst = null, frames = 0;
+    for (let f = 1; f <= n; f++) {
+      S.frame = f; refresh(); main.root.updateMatrixWorld(true);
+      const h = bodyClipFrame(bodyClipC, minDepth);
+      if (h.length) { frames++; if (!worst || h[0].depth > worst.depth) worst = { ...h[0], frame: f, others: h.slice(1).map((x) => `${x.side} ${x.part} in ${x.into} ${(x.depth * 100).toFixed(1)} cm`) }; }
+    }
+    if (worst) out.push({ clip: name, frames, of: n, ...worst });
+  }
+  return out.sort((a, b) => b.depth - a.depth);
+}
 async function exportHolds(name, cases) {
   const out = [], V = new THREE.Vector3();
   for (let i = 0; i < cases.length; i++) {
@@ -1143,6 +1167,7 @@ async function capView({ who = 'main', dir = [1, 0.3, 1], dist = 0.5, target = '
   else if (target === 'rhand' || target === 'lhand') a.grip(target === 'rhand' ? 'Right' : 'Left', c);
   else if (target === 'pair') { main.bones.Hips.getWorldPosition(_v); ref.bones.Hips.getWorldPosition(_v2); c.copy(_v).lerp(_v2, 0.5); c.y = 0.9; }
   else if (target === 'head') a.bones.Neck.getWorldPosition(c);
+  else if (Array.isArray(target)) c.set(...target); // (a point: e.g. where an arm goes through her, bodyClipScan)
   else { a.bones.Hips.getWorldPosition(c); c.y = 0.9 * a.height / 1.62; }
   const keep = { p: cam.position.clone(), t: controls.target.clone(), asp: cam.aspect, pr: renderer.getPixelRatio() };
   cam.position.copy(c).addScaledVector(_v3.set(...dir).normalize(), dist); cam.lookAt(c); cam.aspect = w / h; cam.updateProjectionMatrix();
@@ -1204,5 +1229,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { CARRY, GRIP_HANDS, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { bodyClipScan, bodyClipProbe: (w, via) => bodyClipProbe(bodyClipC ||= Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char }), w, via), CARRY, GRIP_HANDS, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();
