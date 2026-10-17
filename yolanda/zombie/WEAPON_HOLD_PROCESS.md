@@ -413,3 +413,11 @@ bone's own axis)
   many times the median that repeats at the same stride phase is a footfall, a one-off or a correction-driven one is a bug.
 - **Shared folder:** commit dist bundles built from committed sources only (a temporary git worktree build, staged with
   git hash-object / update-index), never the working copy's build while the other chat has work in progress.
+- **Check arm reach with any hand placement.** Placing the support hand by the source's offset scaled by HAND size put
+  her left hand past her reach (her hands are proportionally bigger than her arms): the arm locked straight in the
+  shotgun hold itself. Always count frames where an arm is > 98.5% straight and compare elbows with the reference.
+- **A fit is relative to the hold it was set on.** The Rig Lab measures the shotgun's hold on the game's sg_reload frame
+  1; a fit set while viewing another clip compensates that clip's mismatch. When the clip changes, re-check the fit
+  (here the user's adjustment had only undone the old clip's hold: zero was right for the new one).
+- **Hand-made spine twists hide in carried clips** (the shotgun's 52 deg): compare chest / hips / weapon headings with
+  the source rig before trusting any clip carried from the first Yola.
