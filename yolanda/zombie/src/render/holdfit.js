@@ -102,11 +102,48 @@ export function handOnto(bones, side, point, dir, w, solveArm) {
   solveArm(bones[side + 'Arm'], bones[side + 'ForeArm'], H, _hb.copy(point).sub(off), w);
   return true;
 }
+// ---- carrying a two-handed weapon at rest (2026-10-17, the user: "create custom idle for the sledge hammer and chainsaw
+// that make more sense ... I'm pretty sure old version of the game had better idle"): the first Yola's Move Library
+// idles (Kevin Iglesias CombatIdle01 / 2H: local only, never published) held them across the body; rebuilt here from
+// CC0 parts: KayKit's Melee_2H_Idle for the body, the weapon set in front of her (in her chest's frame, so it breathes
+// with her) and both fists closed on its two grips by the arm IK (handOnto) ----
+// grip: the main (right) hand's grip in character space at 1.62 m (x = her left, y up, z forward, metres); dir: the
+// weapon's shaft (data sheet shaft_axis) points this way; ref: its reference axis (ref_axis) this way. The user's fit
+// sliders (weapon_fit.json) move it from there.
+export const CARRY = {
+  // port arms: the handle's end by her right hip, the head up by her left shoulder, in front of her
+  sledgehammer: { clip: 'kk_Melee_2H_Idle', grip: [-0.15, 0.98, 0.3], dir: [0.55, 0.8, 0.18], ref: [0, 0, 1] },
+  // at the waist: the rear handle by her right hip, the bar forward and a little down, the top handle for the left hand
+  chainsaw: { clip: 'kk_Melee_2H_Idle', grip: [-0.15, 0.95, 0.22], dir: [0.3, -0.12, 0.95], ref: [0, 1, 0] },
+};
+const _cm1 = new THREE.Matrix4(), _cm2 = new THREE.Matrix4(), _cq = new THREE.Quaternion(), _cs = new THREE.Vector3(1, 1, 1);
+// the carry's frame (at the main grip, oriented as the weapon) in her chest bone's frame, measured once in the idle's
+// pose. charW: her character frame in the world (no scale), k: her height / 1.62
+export function carryCalibrate(bones, charW, def, C, k = 1) {
+  const s = new THREE.Vector3(...def.shaft_axis).normalize(), r = new THREE.Vector3(...def.ref_axis); r.addScaledVector(s, -r.dot(s)).normalize();
+  const d = new THREE.Vector3(...C.dir).normalize(), r2 = new THREE.Vector3(...C.ref); r2.addScaledVector(d, -r2.dot(d)).normalize();
+  _cm1.makeBasis(s, r, new THREE.Vector3().crossVectors(s, r)); _cm2.makeBasis(d, r2, new THREE.Vector3().crossVectors(d, r2));
+  _cq.setFromRotationMatrix(_cm2.multiply(_cm1.transpose()));
+  const F = new THREE.Matrix4().compose(new THREE.Vector3(...C.grip).multiplyScalar(k), _cq, _cs).premultiply(charW);
+  bones.Spine2.updateWorldMatrix(true, false);
+  return new THREE.Matrix4().copy(bones.Spine2.matrixWorld).invert().multiply(F);
+}
+// place the weapon holder o at its carry this frame (its main grip on the carry's point, then the user's fit); fills
+// out.grip (world) and out.dir (the shaft, world)
+const _cp = new THREE.Vector3(), _cs2 = new THREE.Vector3();
+export function carryPlace(bones, o, def, cal, fit, k, out) {
+  bones.Spine2.updateWorldMatrix(true, false);
+  _cm1.copy(bones.Spine2.matrixWorld).multiply(cal).decompose(_cp, _cq, _cs2);
+  applyFit(o, _cp, _cq, fit, new THREE.Vector3(...def.grip_primary), 1, k); o.updateMatrixWorld(true);
+  out.grip.copy(o.localToWorld(new THREE.Vector3(...def.grip_primary))); out.dir.set(...def.shaft_axis).transformDirection(o.matrixWorld);
+  return out;
+}
+
 // A grip target beyond the straight arm: the collarbone swings the shoulder toward it first (at most 15 degrees, the way a
 // reach across the body rolls the shoulder forward), so the hand gets there instead of stopping short (shared: the game's
 // YolaView.reachClavicle, the Rig Lab)
 const _rc = [0, 0, 0, 0, 0, 0].map(() => new THREE.Vector3()), _rq = new THREE.Quaternion(), _rq2 = new THREE.Quaternion(), _rq3 = new THREE.Quaternion();
-export function reachShoulder(bones, side, target) {
+export function reachShoulder(bones, side, target, maxDeg = 15) {
   const cl = bones[side + 'Shoulder'], up = bones[side + 'Arm'], lo = bones[side + 'ForeArm'], hand = bones[side + 'Hand'], mid = bones[side + 'HandMiddle1'];
   if (!cl || !up || !lo || !hand || !mid) return;
   const R = _rc, c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]);
@@ -114,7 +151,7 @@ export function reachShoulder(bones, side, target) {
   const need = a.distanceTo(target) - (a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g)) * 0.97;
   if (need <= 0) return;
   const ca = R[1].sub(c), ct = R[5].copy(target).sub(c), axis = new THREE.Vector3().crossVectors(ca, ct); if (axis.lengthSq() < 1e-10) return;
-  _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180));
+  _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), maxDeg * Math.PI / 180));
   cl.getWorldQuaternion(_rq2); cl.parent.getWorldQuaternion(_rq3);
   cl.quaternion.copy(_rq3.invert().multiply(_rq).multiply(_rq2)); cl.updateMatrixWorld(true);
 }

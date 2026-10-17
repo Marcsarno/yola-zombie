@@ -225,3 +225,15 @@ shots/blender_holds_*.png).
   hands, axe leg chop both fists (0-1 mm), sledgehammer both in its idle and its attack's start; at the widest point of
   its attack (Sword_Heavy_Combo frame 60, a one-handed sword swing that flings the free arm out) the left hand ends ~3 cm
   short of the handle.
+- 2026-10-17 later: CUSTOM CARRY IDLES for the sledgehammer and chainsaw (the user: the old game had better idles; the
+  first Yola's arena used Kevin Iglesias CombatIdle01 / 2H, local only, never published). render/holdfit.js CARRY: the
+  weapon set in front of her in her chest bone's frame (measured once on the idle's first frame, so it breathes with
+  her), both fists closed on its two grips (handOnto), on KayKit's Melee_2H_Idle body (CC0, now in yola2_ual.glb).
+  Sledgehammer: port arms (handle end by her right hip, head up by her left shoulder). Chainsaw: at the waist, bar
+  forward. The user's fit sliders move the carry (weapon_fit.json; the arena now loads those fits too). The arena plays
+  it at rest and hands over to the attack (YolaView.setupCarry / placeTest; up.carry layer); the Rig Lab shows it on
+  the weapon's Idle button. Checked in Blender: both hands 0 mm on the grips in both carries.
+  OPEN: the sledgehammer's attack (UAL Sword_Heavy_Combo, a one-handed sword combo) throws the free arm out: the left
+  hand is 26-271 mm off the handle through the swing. Needs a TWO-HANDED attack clip for it (candidates on disk: KayKit
+  Melee_2H_Attack_Chop / Slice / Spin, the Mixamo heavy_swing / gs_* clips). The user has not yet picked idle holds
+  for the bat / axe (shots/holds_*.png sheets, letters A-F).

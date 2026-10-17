@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { TEST, TEST_ATTACKS, BAT, AXE, FISTS, PISTOL, SHOTGUN, attackTime, attackEnd, resetGroundAttacks } from '../core/weapons.js';
 import { makeBat, prepAxe, makeKnife } from '../render/weaponModels.js';
 import { buildLibraryAttack, FPS } from '../render/libattack.js';
+import { CARRY } from '../render/holdfit.js';
 
 const ORDER = ['bat', 'sledgehammer', 'axe', 'crowbar', 'chainsaw', 'knife', 'none', 'pistol', 'shotgun'];
 const LABEL = { bat: 'Bat', sledgehammer: 'Sledgehammer', axe: 'Axe', crowbar: 'Crowbar', chainsaw: 'Chainsaw', knife: 'Knife', none: 'Unarmed', pistol: 'Pistol', shotgun: 'Shotgun' };
@@ -47,6 +48,9 @@ export async function startTestArena({ game, scene, loader, telegraphs }) {
   const either = async (f) => (await json('assets/moves/' + f)) || json('assets/arena/' + f);
   const [catalog, wj, SEL, lib] = await Promise.all([either('catalog.json'), either('weapons.json'), loadSelection(), loader.loadAsync(game.yolaModel === '2' ? 'assets/moves/yola2_moves.glb' : 'assets/moves/yola_moves.glb').catch(() => null)]);
   const WDEF = wj?.weapons || {};
+  // the user's fits for these weapons on this Yola (the Rig Lab's fit panel, assets/hold/weapon_fit.json)
+  const fitsJ = await json('assets/hold/weapon_fit.json'), who = game.yolaModel === '2' ? 'yola2' : 'yola', fits = {};
+  for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === 'object' && v[who]) fits[k] = v[who];
   // (the library picks, plus the clips in her own file: the new Yola carries the Mixamo and Tripo ones there)
   const clips = Object.fromEntries([...(game.yolaClips || []), ...(lib?.animations || [])].map((c) => [c.name, c]));
   const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
@@ -94,7 +98,7 @@ export async function startTestArena({ game, scene, loader, telegraphs }) {
   async function buildAttack(e, speed) {
     const P = PROFILE[e.weapon], w = WDEF[e.weapon] && e.weapon !== 'none' ? WDEF[e.weapon] : null;
     const obj = w ? await model(e.weapon) : null;
-    const hold = { obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null };
+    const hold = { obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, fit: fits[e.weapon] || null }; // (carry: how it is held at rest, render/holdfit.js CARRY; fit: the user's Rig Lab fit)
     yola.setTestWeapon(hold);
     return buildLibraryAttack(yola, { clip: clips[e.clip], frames: meta[e.clip]?.frames, hold: w ? hold : null, P, speed, name: e.label, sound: e.weapon });
   }

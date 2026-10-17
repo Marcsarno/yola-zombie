@@ -111,7 +111,7 @@ def bake(src, tgt, name):
         contacts.support(src, tgt, act, f0, f1, CLOG, on=float(os.environ.get('YOLA2_SUPPORT_ON', 1.2)), off=float(os.environ.get('YOLA2_SUPPORT_OFF', 2.2)))
     elif name in COMPOSITE and not os.environ.get('YOLA2_NO_HANDS') and 'YOLA2_HANDS' not in os.environ:
         contacts.support_rel(tgt, act, f0, f1, grip_ref(), CLOG)  # (built from several clips: X Bot's pistol_idle grip)
-    elif HOLD.search(name) and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts)
+    elif HOLD.search(name) and not name.startswith('kk_') and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts; KayKit clips have no finger bones)
         # pistol clips: 'gunhand' (2026-10-17: the gun arm bends as X Bot's, no locked shoulder); the other holds as built
         # (the shotgun too: 'support' placed her left hand by X Bot's offset scaled by her bigger hands: out of reach, the
         # left arm locked straight in the hold itself, 99% vs X Bot's 84%; 'gunhand' 91%, never locked, gap within 2-6 cm)

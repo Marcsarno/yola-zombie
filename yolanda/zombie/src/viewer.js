@@ -8,7 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, makeKnife, 
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder } from './render/holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -780,12 +780,20 @@ function updatePistolFitUI() {
 // its fingers closed into her fist by w; every bone it turns recorded (postRot), so the next redraw undoes it
 function otherHandOn(a, side, point, dir, w) {
   const chain = Object.entries(a.bones).filter(([n]) => n.startsWith(side) && /(Shoulder|Arm|ForeArm|Hand)/.test(n)).map(([, b]) => b), before = chain.map((b) => b.quaternion.clone());
-  if (w >= 0.5) reachShoulder(a.bones, side, point);
+  if (w >= 0.5) reachShoulder(a.bones, side, point, 25); // (a second grip can sit further out than the bat's: 25 deg, as the game)
   if (!handOnto(a.bones, side, point, dir, w, ikArm)) return;
   const after = chain.map((b) => b.quaternion.clone());
   chain.forEach((b, i) => { b.quaternion.copy(before[i]); if (!after[i].equals(before[i])) postRot(a, b, (cur) => cur.copy(after[i])); });
   const P = fistPose(a); if (P) for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, Math.min(1, w)));
   a.root.updateMatrixWorld(true);
+}
+function carryCalOf(a, w, LD, CY, k) {
+  const C = (a.carryCal ||= {}); if (C[w]) return C[w];
+  const saved = []; a.obj.traverse((b) => { if (b.isBone) saved.push([b, b.quaternion.clone(), b.position.clone()]); });
+  a.setFrame(1); a.root.updateMatrixWorld(true);
+  C[w] = carryCalibrate(a.bones, new THREE.Matrix4().compose(a.root.position, a.root.quaternion, new THREE.Vector3(1, 1, 1)), LD, CY, k);
+  for (const [b, q, p2] of saved) { b.quaternion.copy(q); b.position.copy(p2); } a.root.updateMatrixWorld(true);
+  return C[w];
 }
 function placeHeldOn(a, o) {
   const w = weaponOf(), k = a.height / 1.62; o.visible = true; o.scale.setScalar(k);
@@ -802,6 +810,18 @@ function placeHeldOn(a, o) {
   // hand (else the data sheet's primary hand), turned by its roll, slid by its slide, flipped (2026-10-17: the Rig Lab ran the
   // two-handed ones through both fists, which the game never does)
   const LD = LIB_WEAPONS[w] && WDEFS[w];
+  // carried at rest (render/holdfit.js CARRY: the sledgehammer, the chainsaw on KayKit's two-handed idle): in front of her,
+  // riding her chest, both fists on its grips; measured once on the idle's first frame, as the game does
+  const CY = LD && CARRY[w];
+  if (CY && a === main && main.clip?.name === CY.clip) {
+    const cal = carryCalOf(a, w, LD, CY, k);
+    if (cal) {
+      const P = carryPlace(a.bones, o, LD, cal, fitW(w, a), k, { grip: new THREE.Vector3(), dir: new THREE.Vector3() });
+      otherHandOn(a, 'Right', P.grip, P.dir, 1); o.updateMatrixWorld(true);
+      otherHandOn(a, 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), P.dir, 1);
+      return;
+    }
+  }
   if (LD) {
     const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' };
     if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
@@ -889,8 +909,8 @@ const WEAPON_CLIPS = {
   axe: { label: 'Axe', idle: 'bat_idle', attack: 'bat_swing' }, // (its combo: bat_swing, then t_chop)
   bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
   // (the arena's weapons: their first "good" pick in the Move Library as the attack)
-  sledgehammer: { label: 'Sledgehammer', idle: 'bat_idle', attack: 'ual_Sword_Heavy_Combo' },
-  chainsaw: { label: 'Chainsaw', idle: 'bat_idle', attack: 'melee_horizontal' },
+  sledgehammer: { label: 'Sledgehammer', idle: 'kk_Melee_2H_Idle', attack: 'ual_Sword_Heavy_Combo' }, // (its carry: render/holdfit.js CARRY)
+  chainsaw: { label: 'Chainsaw', idle: 'kk_Melee_2H_Idle', attack: 'melee_horizontal' },
   knife: { label: 'Knife', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Dash' },
   none: { label: 'None', idle: null, attack: null },
 };
