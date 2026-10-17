@@ -392,3 +392,24 @@ bone's own axis)
 - Hidden or background tabs pause requestAnimationFrame: step the game yourself and stop any page loop while capturing.
 - Holding a character in place by putting her back each step needs fixed steps (uneven steps = fake 9.5 cm jitter).
 - dt = 0 (a paused game) divided by 0 made the hair sway NaN forever: guard zero steps.
+
+**Learned in the overnight review (2026-10-17)**
+- **The game must look like the Rig Lab, so measure that it does.** The game reset bones to rest every frame while the
+  mixer skipped "unchanged" values: held fingers / shoulders sat at rest in the game only (open hands, a 10 deg shoulder,
+  the support hand off the gun). Check: in the game, every bone's quaternion against its clip evaluated at the action's
+  time (all within 1 deg), and the contact in the gun hand's frame, as in the Rig Lab. Fix: clipchars.js mixerWritesAll.
+- **One placement function, two callers.** The Rig Lab and the game had separate weapon code and drifted (bat between
+  the hands vs in the fist; axe from a measured socket). render/holdfit.js now serves both; new weapons go there.
+- **Aim the thing that shoots.** Aiming the arms' midline left the barrel 5-8 deg off (X Bot's own barrel is ~8 deg off
+  his arms). Aim the barrel, but ease the correction: an exact per-frame correction copies the clip's wrist wobble onto
+  the whole torso (jerk).
+- **Use the reference for which end, not for the line.** X Bot's measured axe direction sits ~50 deg off her fists'
+  line: use it only to pick the head end (continuous frame to frame), let her fists define the handle.
+- **Smoothing must not smooth the contact.** Easing the axe's whole orientation lagged the handle 3 cm off her fists;
+  ease only what is free (the blade's roll).
+- **A prop pushed by a hand follows the hand along the push axis** (the magazine rises with her fingers), and only the
+  sideways error is eased away; easing everything on a timer let it lead her fingers by 3.5 cm.
+- **Jitter check:** step the game at a fixed 1/60 s and look at each point's second difference per frame (mm); a spike
+  many times the median that repeats at the same stride phase is a footfall, a one-off or a correction-driven one is a bug.
+- **Shared folder:** commit dist bundles built from committed sources only (a temporary git worktree build, staged with
+  git hash-object / update-index), never the working copy's build while the other chat has work in progress.

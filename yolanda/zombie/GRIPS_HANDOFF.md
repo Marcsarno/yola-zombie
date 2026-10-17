@@ -3,26 +3,42 @@
 Read this first when continuing the weapon/grip work. Then WEAPON_HOLD_PROCESS.md sections 16 (how to check a
 contact) and 17 (rigging and retargeting: what works, what not to do). PONYTAIL_PLAN.md = Yola 3.0 rig work (done).
 
-## START HERE (2026-10-17, before the chat was compacted)
+## START HERE: the overnight review (2026-10-17, for the user to check)
 
-**Done and in the game:** pistol reload = Quaternius Pistol_Reload with her support hand placed on the gun + the
-user's magazines (empty drops, loaded goes in); bat run = 'plain' with the arm / wrist held; the pistol sits in her
-fist with the user's Rig Lab fit (79844b7, `?pistolplace=old` = the old way); hair sway survives a pause.
-**In the Rig Lab (one viewer, beside X Bot / the Quaternius mannequin):** weapon picker (Idle / Attack), clip list by
-weapon and move type, shot kick, posture fix preview, magazines, Hands controls (open / support / closed per hand,
-pistol hand, "save hands" -> shots/hand_poses.json), test bakes via &extra=assets/test_clips/<glb>.
+The user asked Claude to review every grip clip alone, fix what it could against the reference rigs, and leave the Rig
+Lab ready for adjustments. Everything below is committed (commits 761161a .. today); screenshots are in shots/rv_*.png.
 
-**Next, in order (show the user each step in the Rig Lab beside the dummy):**
-1. The pistol fit in the game points the barrel 5 deg (idle) to 8 deg (run) off her aim and 6-14 deg up: decide with
-   the user (aim correction on the chest / wrist, or adjust the fit), then re-check the reload magazine (it led her
-   fingers by 5.7 cm with the old placement; 2.2 cm in the Rig Lab) and the idle / run grips against X Bot.
-2. Hands: the user sets open / closed per clip in the Rig Lab; then make the game read assets/hold/hand_poses.json
-   (a finger layer in clipchars.js) - only after they have saved some.
-3. The gun-hand test bakes for the other pistol clips (assets/test_clips/pistol_gunhand.glb: her gun arm bends like
-   X Bot's, no locked shoulder) - approved in the test, NOT in the game yet.
-4. Posture fix (neck / head / hips / hands from the retarget's axis errors): preview only, not baked.
-5. Open items: the 4-strike bat combo "didn't feel as great" (ask what); the composite pistol strafes measure hands
-   apart (look OK); the shotgun shell prop is in assets/weapons, unused; the shotgun / axe / bat fit panels.
+**Fixed (in the game and the Rig Lab):**
+1. **Game bones stuck at rest (the big one).** The game put every bone back to rest before each frame, and three.js's
+   mixer only rewrites a bone whose value changed, so any bone a clip held still stayed at REST: open fingers (16-79 deg
+   off the clip), a right shoulder 10 deg off, the support hand a hand-width under the gun in the run. Now every bone is
+   rewritten each frame (clipchars.js mixerWritesAll). This was most of "the hands don't look closed".
+2. **Pistol clips re-baked** with the approved 'gunhand' fix (her gun arm bends like X Bot's, no locked shoulder), and
+   the three built strafes (strafe_left, strafe_run_left / right, no X Bot source) now hold X Bot's pistol_idle two-hand
+   grip: support hand within 0.07 hand-lengths of X Bot's in every pistol clip.
+3. **Pistol aim:** the game turns her chest so the BARREL (not the arms' midline) points at the target, eased ~0.1 s:
+   0.0 deg off standing, sways +-3 deg running / ~+-7 backing and strafing as X Bot's gun does. The yola2 fit's tilt 17
+   / turn -18 were the Rig Lab's unsaved values (they put her barrel pitch within 3-4 deg of X Bot's); saved them.
+4. **Posture** (render/posture.js, in the game): her head was tipped back ~26 deg in every Mixamo clip (chin up, eyes
+   on the sky in the run), pelvis tucked 4 deg. Fixed per source rig, hands left alone. `?posture=0` = without it.
+5. **Bat / axe / shotgun on one shared hold module** (render/holdfit.js, used by both the game and the Rig Lab): the
+   Rig Lab drew the bat between both hands while the game held it one-handed; the axe handle passed 3-12 cm behind her
+   fists in the game (now through both fists, 1 cm; no end-over-end flip); the shotgun calibrates the same way in both.
+6. **Reload magazine** rises with her fingers along the grip (within 2.4 cm of her pinch; was 3.5 cm ahead).
+7. **Fists:** Tripo's jab / cross / kick had flat open hands (palms together in the jab): closed fists now
+   (assets/hold/hand_poses.json, the game reads the Rig Lab Hands settings).
+
+**Rig Lab controls for the user (viewer.html?char=yola2):** pick a weapon (top bar) and the fit panel on the right
+follows it: Pistol / Bat / Axe / Shotgun, each with size, three moves (mm) and three turns (deg), "editing" Yola or the
+reference; "save" writes shots/pistol_fit.json + shots/weapon_fit.json (Claude copies them into assets/hold/, which the
+game reads). Hands: R / L open / support / closed + a slider, per clip; "save hands" writes shots/hand_poses.json (same).
+"posture fix (as the game)" on by default; untick to compare.
+
+**For the user to decide / look at:** (a) the barrel pitch change (tilt 17 / turn -18 from the browser; the saved file
+had tilt 3 / turn -14); (b) the posture fix overall; (c) the axe blade turns to lead a swing in the game but faces her
+front in the Rig Lab (a still frame has no swing direction); (d) the bat combo "feel"; (e) any clip's hands.
+**Not done:** the shotgun shell prop (assets/weapons/shotgun_shell.glb) is still unused; the 4-strike bat combo's timing;
+pistol_hit's left hand flies less far than X Bot's (the gun hand bake keeps it nearer, looks fine).
 
 ## Another chat shares this folder (from 2026-10-16)
 
@@ -31,7 +47,7 @@ full rules). This chat sticks to animations, grips and the Rig Lab:
 - stage files by name only (never `git add -A` / `-a`); commit only files this chat changed
 - leave `src/opening/*`, `opening.html`, `core/floor3.js`, `core/layout.js`, `core/level.js`, `render/arena.js`,
   `render/screens.js`, `render/looks.js` alone; `src/main.js` is shared: small separate edits only
-- `dist/combat.js` holds both chats' code: rebuild right before committing, commit it only with your own source change
+- `dist/combat.js` holds both chats' code: commit it only built from committed sources (`sh tools/clean_dist.sh` after committing your sources)
 - prefix screenshots in `shots/` (`grip_`, `kick_`, ...); never stop the shared dev server
 
 ## How the user wants to work (non-negotiable)
