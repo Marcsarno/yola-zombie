@@ -45246,7 +45246,7 @@ void main() {
     ],
     pickups: () => [
       { id: "s7aid", kind: "health", amount: 40, x: -15.6, z: -1, r: 1, label: "First-aid case", model: "aid", y: 1.01 },
-      { id: "s7pistol", kind: "weapon", weapon: "pistol", x: -15.66, z: -1, r: 1, mag: 12, label: "Pistol", model: "pistol", y: 1.19 },
+      { id: "s7pistol", kind: "weapon", weapon: "pistol", x: -15.56, z: -1, r: 1, mag: 12, label: "Pistol", model: "pistol", y: 1.21 },
       // (the user, 2026-10-17: a pistol with the first med pack, lying on the case's lid; the guard's on Floor 6 then refills it)
       { id: "v7ammo", kind: "health", amount: 50, x: -37.4, z: 17, r: 1.1, label: "First-aid case", model: "aid", y: 0.92 },
       { id: "axe", kind: "weapon", weapon: "axe", x: -15, z: 9.4, r: 1.2, label: "Fire axe", model: "axe", y: 0.95 }
@@ -53542,13 +53542,16 @@ void main() {
         this.group.add(m);
         return m;
       };
-      const [pistolG, bagG, magG, aidG, axeG] = await Promise.all(["zombie/assets/pistol.glb", "zombie/assets/kit/guard_duffel_open.glb", "zombie/assets/kit/pistol_magazine_loaded.glb", "zombie/assets/kit/first_aid_case_closed.glb", "zombie/assets/weapons/fire_axe.glb"].map(get));
+      const [pistolG, bagG, magG, aidG, axeG] = await Promise.all(["zombie/assets/weapons/pistol_core.glb", "zombie/assets/kit/guard_duffel_open.glb", "zombie/assets/kit/pistol_magazine_loaded.glb", "zombie/assets/kit/first_aid_case_closed.glb", "zombie/assets/weapons/fire_axe.glb"].map(get));
       for (const q of CH().pickups || []) {
         const objs = [];
         if (q.model === "pistol") {
           const o = pistolG.scene.clone(true);
-          o.position.set(q.x + 0.1, (q.y ?? 0) + 0.03, q.z);
-          o.rotation.set(0, 0.7, Math.PI / 2);
+          o.scale.setScalar(PISTOL_CORE_SCALE);
+          o.rotation.set(-Math.PI / 2, 0, 0.7, "YXZ");
+          o.updateMatrixWorld(true);
+          const b = new Box3().setFromObject(o), c = b.getCenter(new Vector3());
+          o.position.set(q.x - c.x, (q.y ?? 0) - b.min.y, q.z - c.z);
           objs.push(o);
         } else if (q.model === "bag") {
           const bag = bagG.scene.clone(true);
