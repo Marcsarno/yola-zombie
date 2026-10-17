@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -48247,7 +48247,7 @@ void main() {
     });
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -48368,7 +48368,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -48467,7 +48467,7 @@ void main() {
     return material;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -51902,6 +51902,13 @@ void main() {
   var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
   var _m4 = new Matrix4();
   var _m4b = new Matrix4();
+  var PG_AT = new Vector3(0, 5e-3, 26e-4);
+  var PG_AXIS = new Vector3(0, 0.9509, 0.3094).normalize();
+  var PG_BARREL = new Vector3(0, 0, 1).addScaledVector(PG_AXIS, -PG_AXIS.z).normalize();
+  var _pf = new Vector3();
+  var _pf2 = new Vector3();
+  var _pf3 = new Vector3();
+  var _pf4 = new Vector3();
   function angleDiff2(a, b) {
     let d = (b - a) % (Math.PI * 2);
     if (d > Math.PI) d -= Math.PI * 2;
@@ -52179,6 +52186,8 @@ void main() {
       this.magArt = this.pistol.children[0]?.getObjectByName?.("Pistol_Magazine_Art") || null;
       this.magFall = null;
       this.pistolReloadFrame = -1;
+      this.pistolFit = weapons.pistolFit || null;
+      this.pistolPlace = new URLSearchParams(globalThis.location?.search || "").get("pistolplace") || "fist";
       this.shotgun = prepPumpShort(weapons.shotgun);
       this.shell = prepShell(weapons.shell);
       this.shell.visible = false;
@@ -53010,6 +53019,35 @@ void main() {
       }
       this.prevMagF = playing ? f : -1;
     }
+    // The pistol in her fist, as the Rig Lab places it (viewer.js pistolInFist, same math): the grip through the fist centre
+    // (the centre of the curled index-pinky joints 1-3), the grip line along the knuckles (pinky -> index), the barrel toward
+    // the forearm's direction; then the user's fit for this character (assets/hold/pistol_fit.json: size %, a move in mm
+    // along the gun's axes, a turn in degrees), pivoting on the fist centre. Follows her hand in every clip, the reload too.
+    pistolInFist() {
+      const B = this.bones, P = this.pistolFit, o = this.pistol;
+      if (!P || !o.userData.slide || !B.RightHandIndex1 || !B.RightHandPinky1) return false;
+      const c = _pf.set(0, 0, 0);
+      let n = 0;
+      for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
+        const b = B["RightHand" + f + i];
+        if (b) {
+          c.add(b.getWorldPosition(_pf2));
+          n++;
+        }
+      }
+      c.multiplyScalar(1 / n);
+      const A = B.RightHandIndex1.getWorldPosition(_pf2).sub(B.RightHandPinky1.getWorldPosition(_pf3)).normalize();
+      const F = B.RightHand.getWorldPosition(_pf3).sub(B.RightForeArm.getWorldPosition(_pf4));
+      F.addScaledVector(A, -F.dot(A)).normalize();
+      _m4.makeBasis(PG_AXIS, PG_BARREL, _pf4.crossVectors(PG_AXIS, PG_BARREL));
+      _m4b.makeBasis(A, F, _pf4.crossVectors(A, F)).multiply(_m4.transpose());
+      _q5.setFromRotationMatrix(_m4b);
+      const d2r = Math.PI / 180, size = (P.size ?? 100) / 100;
+      o.scale.setScalar(size);
+      o.quaternion.copy(_q5).multiply(_q24.setFromEuler(_e2.set((P.tilt || 0) * d2r, (P.turn || 0) * d2r, (P.roll || 0) * d2r, "YXZ")));
+      o.position.copy(c).add(_pf2.set(P.side || 0, P.up || 0, P.fwd || 0).multiplyScalar(1e-3).applyQuaternion(_q5)).sub(_pf3.copy(PG_AT).multiplyScalar(size * PISTOL_CORE_SCALE).applyQuaternion(o.quaternion));
+      return true;
+    }
     placeWeapons(s, dt) {
       if (s.equipped === "test" && this.test) {
         this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
@@ -53038,15 +53076,18 @@ void main() {
         this.batModel.visible = !!this.batMode;
       }
       if (shown === "pistol") {
-        this.aimQuat(_q5);
-        const rW = this.reloadW || 0;
-        if (rW > 0 && this.pistolSocket) {
-          this.bones.RightHand.getWorldQuaternion(_q24);
-          _q5.slerp(_q24.multiply(this.pistolSocket), rW);
+        if (this.pistolPlace === "old" || !this.pistolInFist()) {
+          this.aimQuat(_q5);
+          const rW = this.reloadW || 0;
+          if (rW > 0 && this.pistolSocket) {
+            this.bones.RightHand.getWorldQuaternion(_q24);
+            _q5.slerp(_q24.multiply(this.pistolSocket), rW);
+          }
+          this.grip("Right", _v5);
+          this.pistol.position.copy(_v5);
+          this.pistol.quaternion.copy(_q5);
+          this.pistol.scale.setScalar(1);
         }
-        this.grip("Right", _v5);
-        this.pistol.position.copy(_v5);
-        this.pistol.quaternion.copy(_q5);
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
@@ -54183,7 +54224,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
+  // node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -54223,7 +54264,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
+  // node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -54314,7 +54355,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -54379,7 +54420,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -54467,7 +54508,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -54651,7 +54692,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -54723,7 +54764,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -55076,7 +55117,7 @@ void main() {
     return magicSquare;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -55275,7 +55316,7 @@ void main() {
     return samples;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
+  // node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -55709,7 +55750,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -56136,7 +56177,7 @@ void main() {
     "Denoise": 5
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -56188,7 +56229,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -56472,7 +56513,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
+  // node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -56560,7 +56601,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -63222,7 +63263,7 @@ void main() {
     return S2;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -65032,13 +65073,15 @@ void main() {
       loader.loadAsync("assets/weapons/shell.glb"),
       loader.loadAsync("assets/weapons/pistol_core.glb").catch(() => null),
       loader.loadAsync("assets/weapons/pistol_mag_empty.glb").catch(() => null),
-      loader.loadAsync("assets/weapons/pistol_mag_loaded.glb").catch(() => null)
+      loader.loadAsync("assets/weapons/pistol_mag_loaded.glb").catch(() => null),
+      // (the reload's magazines)
+      fetch("assets/hold/pistol_fit.json").then((r) => r.json()).catch(() => ({}))
     ]);
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
+    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG });
+    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === "2" ? "yola2" : "yola"] });
     yola.addAttackClips(yg.animations.filter((c) => c.name === "yola_knockdown" || c.name === "yola_getup"));
     setupBat(yg.animations);
     window.game.yolaClips = yg.animations;

@@ -4,7 +4,7 @@
 // hit flinch) are applied after the mixer in character ("container") space.
 import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe, prepPistolCore } from './weaponModels.js';
+import { makePistol, makeBat, prepPumpShort, prepShell, prepAxe, prepPistolCore, PISTOL_CORE_SCALE } from './weaponModels.js';
 import { ikArm as solveArm } from './ik.js';
 import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, attacksOf, attackFrame, attackEnd, SHOTGUN_SPEC, isMelee, groundAttack } from '../core/weapons.js';
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
@@ -24,6 +24,10 @@ const HOLD_T = 1 / 30 + 2e-4; // the shotgun hold is frame 1 of its clip (evalua
 const PISTOL_MAGS = { drop: 6, grab: 13, insert: 23, seat: 28 }; // pistol_reload frames (see placeMags)
 const MAG_SEAT = new THREE.Vector3(-0.008, -0.039, 0); // a seated magazine in the pistol model's own frame (the props' pistol_seated_translation)
 const _m4 = new THREE.Matrix4(), _m4b = new THREE.Matrix4();
+// the pistol model's grip (measured on pistol_core.glb, as the Rig Lab): the fist's point on it, its grip line, the barrel
+const PG_AT = new THREE.Vector3(0, 0.005, 0.0026), PG_AXIS = new THREE.Vector3(0, 0.9509, 0.3094).normalize();
+const PG_BARREL = new THREE.Vector3(0, 0, 1).addScaledVector(PG_AXIS, -PG_AXIS.z).normalize(); // (square to the grip line)
+const _pf = new THREE.Vector3(), _pf2 = new THREE.Vector3(), _pf3 = new THREE.Vector3(), _pf4 = new THREE.Vector3();
 
 function angleDiff(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; else if (d < -Math.PI) d += Math.PI * 2; return d; }
 
@@ -214,6 +218,8 @@ export class YolaView extends ClipBody {
     this.magLoaded = weapons.magLoaded ? prepMag(weapons.magLoaded) : null;
     this.magArt = this.pistol.children[0]?.getObjectByName?.('Pistol_Magazine_Art') || null;
     this.magFall = null; this.pistolReloadFrame = -1;
+    this.pistolFit = weapons.pistolFit || null; // (the user's Rig Lab fit for this Yola; see pistolInFist)
+    this.pistolPlace = new URLSearchParams(globalThis.location?.search || '').get('pistolplace') || 'fist';
     this.shotgun = prepPumpShort(weapons.shotgun);
     this.shell = prepShell(weapons.shell); this.shell.visible = false; scene.add(this.shell);
     this.melee = prepAxe(weapons.axe);
@@ -855,6 +861,29 @@ export class YolaView extends ClipBody {
     this.prevMagF = playing ? f : -1;
   }
 
+  // The pistol in her fist, as the Rig Lab places it (viewer.js pistolInFist, same math): the grip through the fist centre
+  // (the centre of the curled index-pinky joints 1-3), the grip line along the knuckles (pinky -> index), the barrel toward
+  // the forearm's direction; then the user's fit for this character (assets/hold/pistol_fit.json: size %, a move in mm
+  // along the gun's axes, a turn in degrees), pivoting on the fist centre. Follows her hand in every clip, the reload too.
+  pistolInFist() {
+    const B = this.bones, P = this.pistolFit, o = this.pistol;
+    if (!P || !o.userData.slide || !B.RightHandIndex1 || !B.RightHandPinky1) return false;
+    const c = _pf.set(0, 0, 0); let n = 0;
+    for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (const i of [1, 2, 3]) { const b = B['RightHand' + f + i]; if (b) { c.add(b.getWorldPosition(_pf2)); n++; } }
+    c.multiplyScalar(1 / n);
+    const A = B.RightHandIndex1.getWorldPosition(_pf2).sub(B.RightHandPinky1.getWorldPosition(_pf3)).normalize();
+    const F = B.RightHand.getWorldPosition(_pf3).sub(B.RightForeArm.getWorldPosition(_pf4)); F.addScaledVector(A, -F.dot(A)).normalize();
+    _m4.makeBasis(PG_AXIS, PG_BARREL, _pf4.crossVectors(PG_AXIS, PG_BARREL));
+    _m4b.makeBasis(A, F, _pf4.crossVectors(A, F)).multiply(_m4.transpose());
+    _q.setFromRotationMatrix(_m4b);
+    const d2r = Math.PI / 180, size = (P.size ?? 100) / 100;
+    o.scale.setScalar(size);
+    o.quaternion.copy(_q).multiply(_q2.setFromEuler(_e.set((P.tilt || 0) * d2r, (P.turn || 0) * d2r, (P.roll || 0) * d2r, 'YXZ')));
+    o.position.copy(c).add(_pf2.set(P.side || 0, P.up || 0, P.fwd || 0).multiplyScalar(0.001).applyQuaternion(_q))
+      .sub(_pf3.copy(PG_AT).multiplyScalar(size * PISTOL_CORE_SCALE).applyQuaternion(o.quaternion));
+    return true;
+  }
+
   placeWeapons(s, dt) {
     if (s.equipped === 'test' && this.test) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; this.placeTest(); return; }
     if (this.test?.obj) this.test.obj.visible = false;
@@ -867,14 +896,17 @@ export class YolaView extends ClipBody {
     this.pistol.visible = shown === 'pistol'; this.shotgun.visible = shown === 'shotgun'; this.melee.visible = shown === 'axe'; this.shell.visible = false;
     if (this.melee.userData.axeInner) { this.melee.userData.axeInner.visible = !this.batMode; this.batModel.visible = !!this.batMode; }
     if (shown === 'pistol') {
-      // pistol: barrel along the arms' line toward the target; during a reload it follows the
-      // right hand through the socket calibrated in the aiming pose
-      this.aimQuat(_q);
-      const rW = this.reloadW || 0;
-      if (rW > 0 && this.pistolSocket) { this.bones.RightHand.getWorldQuaternion(_q2); _q.slerp(_q2.multiply(this.pistolSocket), rW); }
-      this.grip('Right', _v);
-      this.pistol.position.copy(_v);
-      this.pistol.quaternion.copy(_q);
+      // pistol: in her fist with the user's Rig Lab fit (pistolInFist); the old placement (?pistolplace=old, or no fit):
+      // barrel along the arms' line toward the target, during a reload following the right hand through the socket
+      // calibrated in the aiming pose
+      if (this.pistolPlace === 'old' || !this.pistolInFist()) {
+        this.aimQuat(_q);
+        const rW = this.reloadW || 0;
+        if (rW > 0 && this.pistolSocket) { this.bones.RightHand.getWorldQuaternion(_q2); _q.slerp(_q2.multiply(this.pistolSocket), rW); }
+        this.grip('Right', _v);
+        this.pistol.position.copy(_v);
+        this.pistol.quaternion.copy(_q); this.pistol.scale.setScalar(1);
+      }
       this.pistol.updateMatrixWorld(true);
       this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
     } else if (shown === 'shotgun') {
