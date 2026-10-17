@@ -18,6 +18,8 @@ const LIFT7 = LIFTS[7]; // the OR's lift, on its back (north) wall: the reveal's
 import { Breakthrough } from './breakthrough.js';
 import { ikArm } from '../render/ik.js';
 import { comicFrame, nameCard } from './comiccard.js';
+import { RevealSound } from './revealsound.js';
+const SLOW = 0.42; // the walk-out's slow motion (her walk at 42%: a heavy step about every second)
 const BELONG = ROOM1.belongings; // the patient-belongings table in the Supply Hall (bat and cap)
 // the athlete's clothing after the change, by material: white top and trousers, the trims and lettering whitened too
 const PATIENT_OUTFIT = { Jersey_Cream: 0xf2f1ec, Trousers_Gray: 0xebeae4, Uniform_Navy: 0xe4e3dd, Markings_OffWhite: 0xf2f1ec };
@@ -72,7 +74,7 @@ export class Opening {
     Object.assign(this, ctx); // scene, camera, renderer, loader, audio, params, game(), arena, yola, getSim, tuning
     this.stage = new ClinicStage(this.scene, this.loader);
     this.ui = new OpeningUI();
-    this.sound = new OpeningAudio(this.audio);
+    this.sound = new OpeningAudio(this.audio); this.rs = new RevealSound(this.audio);
     this.active = false; this.started = false; this.state = 'PRELOAD'; this.sub = '';
     this.t = 0; this.END = 60; this.timeScale = 1; this.paused = false; this.silent = false;
     this.rig = { ...SHOTS[0].a };
@@ -220,7 +222,7 @@ export class Opening {
     this.sound.stopLine(); this.line = null; this.lineLog.length = 0; this.cardDone = null;
     this.endRide(); this.stopEmptyChair(); if (this.leanedBat) this.leanedBat.visible = false; this.holdBat(null); this.cpr = null; this.revealSwing = null;
     this.revealPose = null; this.sweepT = null; this.setOrLamp(true); this.talkers = null;
-    this.revLightOff(); this.standYola(null); this.hideCard(); this.camTrack = null; if (this.smoke) { this.smoke.target = 0; this.smoke.k = 0; this.tickSmoke(0); }
+    this.revLightOff(); this.standYola(null); this.hideCard(); this.camTrack = null; if (this.smoke) { this.smoke.target = 0; this.smoke.k = 0; this.tickSmoke(0); } this.rs?.stopAll(0.2); this.slowmo = 0;
     if (this.bt.state !== 'idle') this.bt.finish(); this.bt.state = 'idle';
     this.monitorOn = false; this.ui.showMonitor(false); this.ui.readiness(null); this.ui.timeCard(''); this.ui.monitor({ mode: 'normal', alarm: false, tof: null, bp: 'BP 118/74' });
     st.setLiftOpen(0); st.lift?.display.set('G'); this.setLift3(0); this.setLiftSign(true);
@@ -406,9 +408,11 @@ export class Opening {
     }
     this.smoke = { g, parts, k: 0, target: 0 };
   }
+  smokeKick(x, z, k) { const S = this.smoke; if (!S) return; for (const p of S.parts) { const dx = p.sp.position.x - x, dz = p.sp.position.z - z, dd = Math.hypot(dx, dz); if (dd < 1.3 && dd > 1e-3) { p.ox = (p.ox || 0) + (dx / dd) * k * (1.3 - dd) * 0.5; p.oz = (p.oz || 0) + (dz / dd) * k * (1.3 - dd) * 0.5; p.oy = (p.oy || 0) + 0.06 * k; } } }
   tickSmoke(d) {
     const S = this.smoke; if (!S) return;
-    S.k += (S.target - S.k) * Math.min(1, d * (S.target > S.k ? 0.9 : 0.6));
+    const real = d; d *= this.slowmo || 1; // (slow motion slows the fog too)
+    S.k += (S.target - S.k) * Math.min(1, real * (S.target > S.k ? 0.9 : 0.6));
     if (S.k < 0.003 && S.target === 0) { for (const p of S.parts) p.sp.material.opacity = 0; return; }
     const r = this.rl || {}, pulse = 0.5 + 0.5 * Math.sin((r.t || 0) * Math.PI * 2 * 0.55 - Math.PI / 2);
     const lit = 0.05 + 0.55 * Math.min(1, r.flash || 0) + 0.2 * (r.amb || 0) + 0.3 * (r.key || 0), red = 0.35 * (r.red || 0) * (0.4 + 0.6 * pulse);
@@ -417,7 +421,12 @@ export class Opening {
       p.life += d * p.speed / 3.2; if (p.life > 1) { p.life -= 1; p.side = (Math.random() - 0.5) * 2.4; }
       const t = p.life, out = t * 3.6; // it pours out of the cab and spreads over the floor just beyond the doors (never up to the camera)
       const spread = t < 0.42 ? 0.45 : 0.45 + (t - 0.42) * 3.2;
-      p.sp.position.set(L.x + p.side * spread * 0.5, p.h * (1 - 0.5 * t) + 0.04, z0 + out);
+      // her feet part the fog: anything close is pushed aside and lifted a little, then it settles back
+      const st = this.stand; const px = L.x + p.side * spread * 0.5, pz = z0 + out;
+      if (st?.shown) { const dx = px + (p.ox || 0) - st.x, dz = pz + (p.oz || 0) - st.z, dd = Math.hypot(dx, dz); if (dd < 0.75 && dd > 1e-3) { p.ox = (p.ox || 0) + (dx / dd) * (0.75 - dd) * d * 3; p.oz = (p.oz || 0) + (dz / dd) * (0.75 - dd) * d * 3; p.oy = Math.min(0.25, (p.oy || 0) + d * 0.2); } }
+      const decay = Math.max(0, 1 - d * 0.5); p.ox = (p.ox || 0) * decay; p.oz = (p.oz || 0) * decay; p.oy = (p.oy || 0) * decay;
+      p.sp.position.set(px + p.ox, p.h * (1 - 0.5 * t) + 0.04 + p.oy, pz + p.oz);
+
       const sz = p.size * (0.7 + t * 1.3); p.sp.scale.set(sz * 1.7, sz * 0.38, 1); // (flat, low: dry ice hugs the floor) p.sp.material.rotation += p.spin * d;
       const fade = Math.sin(Math.min(1, t * 1.15) * Math.PI); // in, then thinning out as it spreads
       p.sp.material.opacity = S.k * 0.4 * fade;
@@ -965,6 +974,7 @@ export class Opening {
     ta.turnTo(face(ta)); co.turnTo(face(co));
     this.camTo(W(TX + 0.3, 1.0, TZ, 26, 32, 5.4), 1.4);
     this.later(0.5, () => { this.scene.background = new THREE.Color(0x0b1013); this.arena.outPlane?.material.color.set(0x0b1013); });
+    if (!this.silent) this.later(0.55, () => { this.rs.powerDown(); this.rs.bedStart(0.45); });
     this.tween(1.8, (k) => { const f = k < 0.25 ? 0.42 : k < 0.33 ? 0.06 : k < 0.45 ? 0.3 : k < 0.52 ? 0.02 : k < 0.62 ? 0.16 : 0.03; this.revLight({ amb: f, red: 0.42 + 0.3 * k, tube: k > 0.5 ? 1 : 0 }); if (k > 0.3 && k < 0.34 && !this.silent) this.sound.flicker?.(true); });
     yield 0.8;
     yield* this.say('29', { pause: 0.1 });
@@ -972,7 +982,7 @@ export class Opening {
     yield 1.0;
     // BEAT 4: the call for Yola; the red builds; his growl; a hard cut to black on the last word
     this.substate = 'B4_CALL';
-    this.revLight({ amb: 0.03, red: 0.85, tube: 1 });
+    this.revLight({ amb: 0.03, red: 0.85, tube: 1 }); if (!this.silent) this.rs.bedLevel(0.75);
     if (!this.silent) this.audio.play('groan', 1.1);
     yield* this.say('30', { pause: 0.1, alarm: true });
     yield* this.say('31', { pause: 0.0, alarm: true });
@@ -994,7 +1004,7 @@ export class Opening {
     this.liftDisp3.set('6', '▲'); this.setLift3(0); this.scene.background = new THREE.Color(0x05080a);
     this.revLight({ amb: 0, red: 0.5, tube: 0, cab: 0, redAt: 'doors', spotAt: 'flash' });
     this.camTo({ x: L.x, y: 0.4, z: -11.0, pitch: 6, yaw: 0, dist: 1.9, fov: 40 }, 0.01);
-    if (!this.silent) { this.ui.setFade(0, 600); this.audio.play('liftClose', 0.45); }
+    if (!this.silent) { this.ui.setFade(0, 600); this.rs.liftArrive(); this.rs.bedLevel(0.5); for (const t of [1.1, 2.3, 4.0, 4.9]) this.later(t, () => this.rs.heartbeat(0.85)); }
     yield 1.5;
     this.camTo({ x: L.x, y: 2.45, z: -11.05, pitch: -12, yaw: 0, dist: 2.0, fov: 40 }, 1.5);
     yield 1.6;
@@ -1005,7 +1015,7 @@ export class Opening {
     old.stop(); old.targetYaw = null; toWorld(old, cabX, cabZ, 0); old.play('idle', { fade: 0 }); old.waveT = -1; old.setVisible(true); // (no turn left over from the OR)
     this.standYola(cabX, cabZ, 0); this.yola.setShown(false);
     this.camTo(doorShot(), 0.01);
-    if (!this.silent) this.audio.play('liftDing', 0.35);
+    if (!this.silent) this.rs.doorsOpen();
     this.tween(1.4, (k) => this.setLift3(ease(k))); this.setSmoke(true);
     yield 1.7;
     this.revLight({ red: 0.28 });
@@ -1016,34 +1026,35 @@ export class Opening {
     this.substate = 'B8_THREAT';
     this.revLight({ amb: 0, red: 0.9, redAt: 'or' });
     this.camTo({ x: TX, y: 1.5, z: TZ - 0.4, pitch: 12, yaw: 14, dist: 4.2, fov: 40 }, 0.01); this.camTo({ x: TX, y: 1.55, z: TZ - 0.45, pitch: 10, yaw: 10, dist: 3.4, fov: 40 }, 1.1);
-    if (!this.silent) this.audio.play('groan', 1.3);
+    if (!this.silent) { this.audio.play('groan', 1.3); this.rs.bedLevel(0.9, 0.5); }
     yield 1.8;
     // the hall is the outbreak now (the same architecture): the cast leaves, the floor's zombies stand where they will wake
     this.revealWorld(); old.setVisible(false); this.setOutbreakLook(true);
-    // BEAT 9: she walks out: close on the bat, the red sliding along it
+    // BEAT 9: slow motion: she walks out (her walk on the legs, standing easy above, the bat low at her side), close on the bat
     this.substate = 'B9_BAT'; this.mark('beat9');
-    this.standYola(null); this.yola.setShown(true);
-    { const dz = an.z - cabZ, dx = an.x - cabX, d = Math.hypot(dx, dz), sp = 1.0; this.revealPose = { x: cabX, z: cabZ, yaw: 0, vx: (dx / d) * sp, vz: (dz / d) * sp, goal: { x: an.x, z: an.z, yaw: an.yaw } }; }
-    this.poseRevealYola(0);
+    this.revealPose = { stand: true, x: cabX, z: cabZ }; // (the reveal poses her; the game's preview leaves her alone)
+    this.standVisible(true); this.standWalk({ x: an.x, z: an.z, yaw: an.yaw }, SLOW); this.slowmo = SLOW;
+    if (!this.silent) { this.rs.slowWhoosh(); this.rs.bedStop(1.6); this.rs.cueStart(5.5); }
     this.revLight({ amb: 0.06, red: 0.75, redAt: 'doors', em: true });
-    this.camTrack = () => { const b = this.batCentre(); return { x: b.x, y: b.y, z: b.z, pitch: 8, yaw: -38, dist: 1.15, fov: 38 }; };
+    this.camTrack = () => { const b = this.batCentre(); return { x: b.x, y: b.y, z: b.z, pitch: 8, yaw: -38, dist: 1.2, fov: 38 }; };
     yield 1.7;
-    // BEAT 10: her sneakers crossing the threshold onto the stained floor
+    // BEAT 10: her sneakers through the fog, onto the stained floor
     this.substate = 'B10_FEET';
-    this.camTrack = () => { const f = this.feetCentre(); return { x: f.x, y: 0.16, z: f.z + 0.1, pitch: 7, yaw: 28, dist: 1.5, fov: 40 }; };
-    yield 1.5;
-    // BEAT 11: all of her in the doorway, red light on her, the dark cab behind
+    this.camTrack = () => { const f = this.feetCentre(); return { x: f.x, y: 0.18, z: f.z + 0.1, pitch: 7, yaw: 28, dist: 1.55, fov: 40 }; };
+    yield 1.5; // (she walks the last metre into the wide frame)
+    // BEAT 11: all of her in the doorway, red light on her, the dark cab behind, the fog parting round her
     this.substate = 'B11_FULL';
-    this.camTrack = null; this.later(0.8, () => this.setSmoke(false));
-    this.camTo({ x: an.x, y: 1.0, z: an.z, pitch: 9, yaw: 12, dist: 3.5, fov: 40 }, 0.01);
-    yield () => !this.revealPose.vx && !this.revealPose.vz;
-    yield 0.55;
+    this.camTrack = null;
+    this.camTo({ x: an.x, y: 1.0, z: an.z, pitch: 9, yaw: 12, dist: 3.6, fov: 40 }, 0.01);
+    yield () => !this.stand?.walk;
+    yield 0.7;
     // BEAT 12: freeze: the comic card
     this.substate = 'B12_CARD'; this.mark('beat12');
     // the one moment she steps into the light: a warm key swells on her, then the frame freezes in her true colours
     this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: 'key' }, 0.45);
     yield 0.5;
-    if (!this.silent) { this.showCard(); this.sound.bossSting?.(); }
+    if (!this.silent) { this.showCard(); this.rs.cueHit(); }
+    this.slowmo = 0; this.setSmoke(false);
     this.animScale = 0;
     yield 2.7;
     // BEAT 13: snap back to the game: the music, the emergency light, the camera up to the combat view, control
@@ -1107,7 +1118,7 @@ export class Opening {
     old.setVisible(who === 'old'); this.standVisible(who === 'new');
     this.setOutbreakLook(who === 'new');
     if (this.rl) this.rl.flash = k;
-    if (!this.silent) this.sound.flicker?.(true);
+    if (!this.silent) { this.sound.flicker?.(true); this.rs.flash(k); }
   }
   setOutbreakLook(on) { this.setBlood(on); this.renderer.shadowMap.needsUpdate = true; }
   // Yola 3.0 standing (her own standing idle clip, the old Yola's standing pose: no combat stance) with the bat at her side;
@@ -1116,14 +1127,42 @@ export class Opening {
     const Y = this.yola; if (!Y) return;
     if (x === null) { if (this.stand) { this.stand.mixer.stopAllAction(); this.stand = null; } return; }
     const clip = (this.game().yolaClips || []).find((c) => c.name === 'tripo_idle');
-    const mixer = new THREE.AnimationMixer(Y.model); if (clip) mixer.clipAction(clip).play();
-    this.stand = { mixer, x, z, yaw, shown: false };
+    const mixer = new THREE.AnimationMixer(Y.model), idle = clip ? mixer.clipAction(clip) : null; idle?.play();
+    this.stand = { mixer, idle, x, z, yaw, shown: false };
     this.tickStand(0);
+  }
+  // the slow walk-out: her walk clip on the legs only, the standing idle above the hips (arms easy, the bat held low by
+  // tickStand), moving at the clip's measured ground speed times the slow motion (no foot slide)
+  standWalk(goal, slow) {
+    const s = this.stand, Y = this.yola; if (!s) return;
+    const all = this.game().yolaClips || [], walk = all.find((c) => c.name === 'pistol_walk'), idle = all.find((c) => c.name === 'tripo_idle');
+    if (!walk || !idle) return;
+    const low = (t) => /^mixamorig(Hips|(Left|Right)(UpLeg|Leg|Foot|ToeBase|Toe_End))\./.test(t.name);
+    this.walkLayers ||= { legs: new THREE.AnimationClip('reveal_legs', walk.duration, walk.tracks.filter(low)), upper: new THREE.AnimationClip('reveal_upper', idle.duration, idle.tracks.filter((t) => !low(t))) };
+    const legs = s.mixer.clipAction(this.walkLayers.legs), upper = s.mixer.clipAction(this.walkLayers.upper);
+    legs.timeScale = slow; upper.timeScale = slow; legs.reset().play(); upper.reset().play(); if (s.idle) legs.crossFadeFrom(s.idle, 0.25, false); upper.setEffectiveWeight(1);
+    const speed = (Y.gait?.pistol_walk?.speed || 2.11) * slow, dx = goal.x - s.x, dz = goal.z - s.z, d = Math.hypot(dx, dz) || 1;
+    s.walk = { goal, legs, upper, vx: (dx / d) * speed, vz: (dz / d) * speed, dur: walk.duration, last: 0 };
+    s.yaw = Math.atan2(dx, dz); s.turn = undefined;
   }
   standVisible(v) { if (!this.stand) return; this.stand.shown = v; this.yola.setShown(v); if (v) this.tickStand(0); }
   tickStand(dt) {
     const s = this.stand, Y = this.yola; if (!s || !Y) return;
+    if (s.walk) {
+      const w = s.walk; s.x += w.vx * dt; s.z += w.vz * dt;
+      const ph = (w.legs.time % w.dur) / w.dur; // a footfall at each half of the cycle: the step's sound, the drum, the fog kicked aside
+      if ((w.last < 0.5 && ph >= 0.5) || ph < w.last) { if (!this.silent) { this.rs.footstep(); this.rs.drum(0.9); } this.smokeKick(s.x, s.z, 0.9); }
+      w.last = ph;
+      if ((w.goal.x - s.x) * w.vx + (w.goal.z - s.z) * w.vz <= 0) { // arrived: standing again, turning to her mark
+        s.x = w.goal.x; s.z = w.goal.z;
+        if (s.idle) { s.idle.reset().play(); s.idle.crossFadeFrom(w.legs, 0.5, false); }
+        w.upper.fadeOut(0.5); s.turn = w.goal.yaw; s.walk = null;
+      }
+    }
+    if (s.turn !== undefined && dt > 0) { const e = Math.atan2(Math.sin(s.turn - s.yaw), Math.cos(s.turn - s.yaw)); s.yaw += e * Math.min(1, dt * 2.5); }
+    if (this.revealPose) { this.revealPose.x = s.x; this.revealPose.z = s.z; }
     Y.outer.position.set(s.x, 0, s.z); Y.container.rotation.y = s.yaw; s.mixer.update(dt);
+
     const bat = Y.batLib?.obj, hand = Y.bones.RightHand;
     if (bat && hand) { // in her right fist, the barrel hanging down along her leg, a little forward (the bat's origin is the grip, its barrel +z)
       Y.outer.updateMatrixWorld(true); const hp = hand.getWorldPosition(new THREE.Vector3()), fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw));
@@ -1223,7 +1262,7 @@ export class Opening {
     this.setBlood(true);
     this.ensureBelongings(); this.belongings.visible = false; // (Yola has the athlete's bat: no belongings table on Floor 7)
     this.revealPose = null; this.sweepT = null;
-    this.revLightOff(); this.standYola(null); this.hideCard(); this.camTrack = null; if (this.smoke) { this.smoke.target = 0; this.smoke.k = 0; this.tickSmoke(0); }
+    this.revLightOff(); this.standYola(null); this.hideCard(); this.camTrack = null; if (this.smoke) { this.smoke.target = 0; this.smoke.k = 0; this.tickSmoke(0); } this.rs?.stopAll(0.2); this.slowmo = 0;
     for (const k of ['yola', 'baseball', 'teamA', 'teamB', 'surgeon', 'staff']) A[k].setVisible(false);
     if (this.guardPool) this.guardPool.visible = true; else this.placeGuardPool(); // (his blood and his pistol remain; no body)
     this.endRide(); this.stopEmptyChair(); this.holdBat(null); this.cpr = null; this.revealSwing = null; this.monitorOn = false; this.ui.showMonitor(false); this.ui.readiness(null); this.ui.timeCard('');

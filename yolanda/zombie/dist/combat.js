@@ -59897,10 +59897,199 @@ void main() {
     return c;
   }
 
+  // src/opening/revealsound.js
+  var RevealSound = class {
+    constructor(audio2) {
+      this.audio = audio2;
+      this.live = [];
+    }
+    get ok() {
+      return !!(this.audio.ok && this.audio.ctx);
+    }
+    get ctx() {
+      return this.audio.ctx;
+    }
+    now() {
+      return this.ctx.currentTime + 0.01;
+    }
+    // a long tone or noise layer with its own gain (for beds and the cue), kept so it can be faded and stopped
+    hold(build, bus, level, attack) {
+      const c = this.ctx, g = c.createGain();
+      g.gain.value = 0;
+      g.gain.linearRampToValueAtTime(level, c.currentTime + attack);
+      g.connect(bus);
+      const nodes = build(g);
+      const h = { g, nodes };
+      this.live.push(h);
+      return h;
+    }
+    fade(h, level, secs) {
+      if (!h || !this.ok) return;
+      const g = h.g.gain, t = this.ctx.currentTime;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(level, t + secs);
+    }
+    kill(h, secs = 0.4) {
+      if (!h || !this.ok) return;
+      this.fade(h, 0, secs);
+      setTimeout(() => {
+        for (const n of h.nodes) try {
+          n.stop?.();
+          n.disconnect?.();
+        } catch {
+        }
+        try {
+          h.g.disconnect();
+        } catch {
+        }
+      }, secs * 1e3 + 80);
+      this.live = this.live.filter((x) => x !== h);
+    }
+    osc(type, f, dest, detune = 0) {
+      const o = this.ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = f;
+      o.detune.value = detune;
+      if (dest) o.connect(dest);
+      o.start();
+      return o;
+    }
+    lp(f, dest, q = 0.7) {
+      const b = this.ctx.createBiquadFilter();
+      b.type = "lowpass";
+      b.frequency.value = f;
+      b.Q.value = q;
+      b.connect(dest);
+      return b;
+    }
+    // ---- the bed: a low detuned drone and a sub rumble under the failing room and the dark lift ----
+    bedStart(level = 0.4) {
+      if (!this.ok || this.bed) return;
+      this.bed = this.hold((g) => {
+        const f = this.lp(150, g), o1 = this.osc("sawtooth", 41.2, f), o2 = this.osc("sawtooth", 41.7, f, 7);
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.audio.noiseBuf;
+        src.loop = true;
+        const nf = this.lp(80, g);
+        src.connect(nf);
+        src.start();
+        return [o1, o2, src, f, nf];
+      }, this.audio.sfx, 0.09 * level, 2);
+    }
+    bedLevel(level, secs = 1.5) {
+      this.fade(this.bed, 0.09 * level, secs);
+    }
+    bedStop(secs = 1.2) {
+      this.kill(this.bed, secs);
+      this.bed = null;
+    }
+    // ---- one-shots ----
+    powerDown() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 1.3, 190, { type: "sine", gain: 0.18, f2: 32, attack: 0.02 });
+      A.tone(t, 1, 380, { type: "triangle", gain: 0.05, f2: 60, attack: 0.02 });
+      A.noise(t, 0.9, { type: "lowpass", f: 900, f2: 90, gain: 0.25 });
+      A.tone(t + 0.05, 0.4, 70, { type: "sine", gain: 0.35, f2: 38 });
+    }
+    flash(k = 1) {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, 0.04, { type: "highpass", f: 3200, gain: 0.45 * k });
+      A.noise(t + 0.01, 0.28, { type: "bandpass", f: 5200, q: 2, f2: 2600, gain: 0.1 * k, attack: 5e-3 });
+      A.tone(t, 0.55, 78, { type: "sine", gain: 0.3 * k, f2: 38 });
+      A.tone(t, 0.12, 100, { type: "sawtooth", gain: 0.06 * k, attack: 3e-3 });
+    }
+    liftArrive() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 2.4, 82, { type: "sawtooth", gain: 0.05, f2: 118, attack: 0.9 });
+      A.noise(t, 2.4, { type: "bandpass", f: 220, q: 1.2, f2: 360, gain: 0.08, attack: 1 });
+      A.tone(t + 2.3, 0.25, 95, { type: "triangle", gain: 0.22, f2: 52 });
+      A.noise(t + 2.3, 0.18, { type: "lowpass", f: 700, f2: 150, gain: 0.2 });
+    }
+    doorsOpen() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, 1.3, { type: "bandpass", f: 900, q: 0.9, f2: 380, gain: 0.12, attack: 0.15 });
+      A.tone(t, 1.3, 60, { type: "sawtooth", gain: 0.04, f2: 48, attack: 0.2 });
+      A.noise(t + 1.2, 0.2, { type: "lowpass", f: 500, f2: 120, gain: 0.18 });
+    }
+    heartbeat(k = 1) {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 0.14, 60, { gain: 0.34 * k, f2: 42 });
+      A.tone(t + 0.22, 0.14, 56, { gain: 0.26 * k, f2: 40 });
+    }
+    slowWhoosh() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, 0.9, { type: "bandpass", f: 400, q: 0.7, f2: 3e3, gain: 0.2, attack: 0.82 });
+      A.tone(t + 0.8, 1.4, 62, { type: "sine", gain: 0.38, f2: 28 });
+      A.noise(t + 0.8, 1.2, { type: "lowpass", f: 300, f2: 60, gain: 0.25 });
+    }
+    footstep() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 0.3, 66, { type: "sine", gain: 0.32, f2: 40 });
+      A.noise(t, 0.16, { type: "lowpass", f: 520, f2: 140, gain: 0.3 });
+      A.noise(t + 0.14, 0.35, { type: "lowpass", f: 380, f2: 120, gain: 0.08 });
+    }
+    // ---- the walk-out cue: a low D-minor chord swelling, war drums on her steps, a string tremolo climbing to the freeze ----
+    cueStart(secs = 4.5) {
+      if (!this.ok || this.cue) return;
+      const bus = this.audio.musicBus, c = this.ctx;
+      this.cue = this.hold((g) => {
+        const f = this.lp(420, g, 0.9), nodes = [f];
+        for (const [hz, det] of [[36.71, 0], [73.42, 6], [110, -5], [146.83, 4], [174.61, -7]]) nodes.push(this.osc("sawtooth", hz, f, det));
+        f.frequency.setValueAtTime(260, c.currentTime);
+        f.frequency.linearRampToValueAtTime(900, c.currentTime + secs);
+        return nodes;
+      }, bus, 0.07, 1.6);
+      this.strings = this.hold((g) => {
+        const trem = c.createGain();
+        trem.gain.value = 0.5;
+        trem.connect(g);
+        const lfo = this.osc("sine", 7, null), lg = c.createGain();
+        lg.gain.value = 0.5;
+        lfo.connect(lg);
+        lg.connect(trem.gain);
+        lfo.frequency.linearRampToValueAtTime(13, c.currentTime + secs);
+        const f = this.lp(2600, trem), a = this.osc("sawtooth", 440, f, -4), d = this.osc("sawtooth", 587.33, f, 5);
+        return [trem, lfo, lg, f, a, d];
+      }, bus, 0, 0.1);
+      this.fade(this.strings, 0.035, secs);
+    }
+    drum(k = 1) {
+      if (!this.ok || !this.cue) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 0.7, 58, { type: "sine", gain: 0.42 * k, f2: 36 });
+      A.noise(t, 0.3, { type: "lowpass", f: 900, f2: 160, gain: 0.22 * k });
+    }
+    cueHit() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 1.6, 55, { type: "sine", gain: 0.6, f2: 30 });
+      A.tone(t, 0.7, 110, { type: "triangle", gain: 0.3, f2: 55 });
+      A.noise(t, 0.9, { type: "lowpass", f: 3200, f2: 140, gain: 0.5 });
+      A.noise(t, 0.12, { type: "highpass", f: 2600, gain: 0.3 });
+      for (const hz of [146.83, 220, 293.66]) A.tone(t, 2.2, hz, { type: "sawtooth", gain: 0.03, attack: 0.01 });
+      this.kill(this.cue, 0.08);
+      this.kill(this.strings, 0.08);
+      this.cue = this.strings = null;
+    }
+    stopAll(secs = 0.3) {
+      for (const h of [...this.live]) this.kill(h, secs);
+      this.bed = this.cue = this.strings = null;
+    }
+  };
+
   // src/opening/opening.js
   var TX = OR_TABLE.x;
   var TZ = OR_TABLE.z;
   var LIFT7 = LIFTS[7];
+  var SLOW = 0.42;
   var BELONG = ROOM1.belongings;
   var PATIENT_OUTFIT = { Jersey_Cream: 15921644, Trousers_Gray: 15461092, Uniform_Navy: 15000541, Markings_OffWhite: 15921644 };
   var clamp6 = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -59946,6 +60135,7 @@ void main() {
       this.stage = new ClinicStage(this.scene, this.loader);
       this.ui = new OpeningUI();
       this.sound = new OpeningAudio(this.audio);
+      this.rs = new RevealSound(this.audio);
       this.active = false;
       this.started = false;
       this.state = "PRELOAD";
@@ -60236,6 +60426,8 @@ void main() {
         this.smoke.k = 0;
         this.tickSmoke(0);
       }
+      this.rs?.stopAll(0.2);
+      this.slowmo = 0;
       if (this.bt.state !== "idle") this.bt.finish();
       this.bt.state = "idle";
       this.monitorOn = false;
@@ -60632,10 +60824,24 @@ void main() {
       }
       this.smoke = { g, parts, k: 0, target: 0 };
     }
+    smokeKick(x, z, k) {
+      const S2 = this.smoke;
+      if (!S2) return;
+      for (const p of S2.parts) {
+        const dx = p.sp.position.x - x, dz = p.sp.position.z - z, dd = Math.hypot(dx, dz);
+        if (dd < 1.3 && dd > 1e-3) {
+          p.ox = (p.ox || 0) + dx / dd * k * (1.3 - dd) * 0.5;
+          p.oz = (p.oz || 0) + dz / dd * k * (1.3 - dd) * 0.5;
+          p.oy = (p.oy || 0) + 0.06 * k;
+        }
+      }
+    }
     tickSmoke(d) {
       const S2 = this.smoke;
       if (!S2) return;
-      S2.k += (S2.target - S2.k) * Math.min(1, d * (S2.target > S2.k ? 0.9 : 0.6));
+      const real = d;
+      d *= this.slowmo || 1;
+      S2.k += (S2.target - S2.k) * Math.min(1, real * (S2.target > S2.k ? 0.9 : 0.6));
       if (S2.k < 3e-3 && S2.target === 0) {
         for (const p of S2.parts) p.sp.material.opacity = 0;
         return;
@@ -60651,7 +60857,21 @@ void main() {
         }
         const t = p.life, out = t * 3.6;
         const spread = t < 0.42 ? 0.45 : 0.45 + (t - 0.42) * 3.2;
-        p.sp.position.set(L2.x + p.side * spread * 0.5, p.h * (1 - 0.5 * t) + 0.04, z0 + out);
+        const st = this.stand;
+        const px2 = L2.x + p.side * spread * 0.5, pz2 = z0 + out;
+        if (st?.shown) {
+          const dx = px2 + (p.ox || 0) - st.x, dz = pz2 + (p.oz || 0) - st.z, dd = Math.hypot(dx, dz);
+          if (dd < 0.75 && dd > 1e-3) {
+            p.ox = (p.ox || 0) + dx / dd * (0.75 - dd) * d * 3;
+            p.oz = (p.oz || 0) + dz / dd * (0.75 - dd) * d * 3;
+            p.oy = Math.min(0.25, (p.oy || 0) + d * 0.2);
+          }
+        }
+        const decay = Math.max(0, 1 - d * 0.5);
+        p.ox = (p.ox || 0) * decay;
+        p.oz = (p.oz || 0) * decay;
+        p.oy = (p.oy || 0) * decay;
+        p.sp.position.set(px2 + p.ox, p.h * (1 - 0.5 * t) + 0.04 + p.oy, pz2 + p.oz);
         const sz = p.size * (0.7 + t * 1.3);
         p.sp.scale.set(sz * 1.7, sz * 0.38, 1);
         const fade = Math.sin(Math.min(1, t * 1.15) * Math.PI);
@@ -61509,6 +61729,10 @@ void main() {
         this.scene.background = new Color(725011);
         this.arena.outPlane?.material.color.set(725011);
       });
+      if (!this.silent) this.later(0.55, () => {
+        this.rs.powerDown();
+        this.rs.bedStart(0.45);
+      });
       this.tween(1.8, (k) => {
         const f = k < 0.25 ? 0.42 : k < 0.33 ? 0.06 : k < 0.45 ? 0.3 : k < 0.52 ? 0.02 : k < 0.62 ? 0.16 : 0.03;
         this.revLight({ amb: f, red: 0.42 + 0.3 * k, tube: k > 0.5 ? 1 : 0 });
@@ -61521,6 +61745,7 @@ void main() {
       yield 1;
       this.substate = "B4_CALL";
       this.revLight({ amb: 0.03, red: 0.85, tube: 1 });
+      if (!this.silent) this.rs.bedLevel(0.75);
       if (!this.silent) this.audio.play("groan", 1.1);
       yield* this.say("30", { pause: 0.1, alarm: true });
       yield* this.say("31", { pause: 0, alarm: true });
@@ -61553,7 +61778,9 @@ void main() {
       this.camTo({ x: L2.x, y: 0.4, z: -11, pitch: 6, yaw: 0, dist: 1.9, fov: 40 }, 0.01);
       if (!this.silent) {
         this.ui.setFade(0, 600);
-        this.audio.play("liftClose", 0.45);
+        this.rs.liftArrive();
+        this.rs.bedLevel(0.5);
+        for (const t of [1.1, 2.3, 4, 4.9]) this.later(t, () => this.rs.heartbeat(0.85));
       }
       yield 1.5;
       this.camTo({ x: L2.x, y: 2.45, z: -11.05, pitch: -12, yaw: 0, dist: 2, fov: 40 }, 1.5);
@@ -61572,7 +61799,7 @@ void main() {
       this.standYola(cabX, cabZ, 0);
       this.yola.setShown(false);
       this.camTo(doorShot(), 0.01);
-      if (!this.silent) this.audio.play("liftDing", 0.35);
+      if (!this.silent) this.rs.doorsOpen();
       this.tween(1.4, (k) => this.setLift3(ease(k)));
       this.setSmoke(true);
       yield 1.7;
@@ -61584,46 +61811,52 @@ void main() {
       this.revLight({ amb: 0, red: 0.9, redAt: "or" });
       this.camTo({ x: TX, y: 1.5, z: TZ - 0.4, pitch: 12, yaw: 14, dist: 4.2, fov: 40 }, 0.01);
       this.camTo({ x: TX, y: 1.55, z: TZ - 0.45, pitch: 10, yaw: 10, dist: 3.4, fov: 40 }, 1.1);
-      if (!this.silent) this.audio.play("groan", 1.3);
+      if (!this.silent) {
+        this.audio.play("groan", 1.3);
+        this.rs.bedLevel(0.9, 0.5);
+      }
       yield 1.8;
       this.revealWorld();
       old.setVisible(false);
       this.setOutbreakLook(true);
       this.substate = "B9_BAT";
       this.mark("beat9");
-      this.standYola(null);
-      this.yola.setShown(true);
-      {
-        const dz = an.z - cabZ, dx = an.x - cabX, d = Math.hypot(dx, dz), sp = 1;
-        this.revealPose = { x: cabX, z: cabZ, yaw: 0, vx: dx / d * sp, vz: dz / d * sp, goal: { x: an.x, z: an.z, yaw: an.yaw } };
+      this.revealPose = { stand: true, x: cabX, z: cabZ };
+      this.standVisible(true);
+      this.standWalk({ x: an.x, z: an.z, yaw: an.yaw }, SLOW);
+      this.slowmo = SLOW;
+      if (!this.silent) {
+        this.rs.slowWhoosh();
+        this.rs.bedStop(1.6);
+        this.rs.cueStart(5.5);
       }
-      this.poseRevealYola(0);
       this.revLight({ amb: 0.06, red: 0.75, redAt: "doors", em: true });
       this.camTrack = () => {
         const b = this.batCentre();
-        return { x: b.x, y: b.y, z: b.z, pitch: 8, yaw: -38, dist: 1.15, fov: 38 };
+        return { x: b.x, y: b.y, z: b.z, pitch: 8, yaw: -38, dist: 1.2, fov: 38 };
       };
       yield 1.7;
       this.substate = "B10_FEET";
       this.camTrack = () => {
         const f = this.feetCentre();
-        return { x: f.x, y: 0.16, z: f.z + 0.1, pitch: 7, yaw: 28, dist: 1.5, fov: 40 };
+        return { x: f.x, y: 0.18, z: f.z + 0.1, pitch: 7, yaw: 28, dist: 1.55, fov: 40 };
       };
       yield 1.5;
       this.substate = "B11_FULL";
       this.camTrack = null;
-      this.later(0.8, () => this.setSmoke(false));
-      this.camTo({ x: an.x, y: 1, z: an.z, pitch: 9, yaw: 12, dist: 3.5, fov: 40 }, 0.01);
-      yield () => !this.revealPose.vx && !this.revealPose.vz;
-      yield 0.55;
+      this.camTo({ x: an.x, y: 1, z: an.z, pitch: 9, yaw: 12, dist: 3.6, fov: 40 }, 0.01);
+      yield () => !this.stand?.walk;
+      yield 0.7;
       this.substate = "B12_CARD";
       this.mark("beat12");
       this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: "key" }, 0.45);
       yield 0.5;
       if (!this.silent) {
         this.showCard();
-        this.sound.bossSting?.();
+        this.rs.cueHit();
       }
+      this.slowmo = 0;
+      this.setSmoke(false);
       this.animScale = 0;
       yield 2.7;
       this.state = "COMBAT_READY";
@@ -61737,7 +61970,10 @@ void main() {
       this.standVisible(who === "new");
       this.setOutbreakLook(who === "new");
       if (this.rl) this.rl.flash = k;
-      if (!this.silent) this.sound.flicker?.(true);
+      if (!this.silent) {
+        this.sound.flicker?.(true);
+        this.rs.flash(k);
+      }
     }
     setOutbreakLook(on) {
       this.setBlood(on);
@@ -61756,10 +61992,31 @@ void main() {
         return;
       }
       const clip = (this.game().yolaClips || []).find((c) => c.name === "tripo_idle");
-      const mixer = new AnimationMixer(Y2.model);
-      if (clip) mixer.clipAction(clip).play();
-      this.stand = { mixer, x, z, yaw, shown: false };
+      const mixer = new AnimationMixer(Y2.model), idle = clip ? mixer.clipAction(clip) : null;
+      idle?.play();
+      this.stand = { mixer, idle, x, z, yaw, shown: false };
       this.tickStand(0);
+    }
+    // the slow walk-out: her walk clip on the legs only, the standing idle above the hips (arms easy, the bat held low by
+    // tickStand), moving at the clip's measured ground speed times the slow motion (no foot slide)
+    standWalk(goal, slow) {
+      const s = this.stand, Y2 = this.yola;
+      if (!s) return;
+      const all = this.game().yolaClips || [], walk = all.find((c) => c.name === "pistol_walk"), idle = all.find((c) => c.name === "tripo_idle");
+      if (!walk || !idle) return;
+      const low = (t) => /^mixamorig(Hips|(Left|Right)(UpLeg|Leg|Foot|ToeBase|Toe_End))\./.test(t.name);
+      this.walkLayers || (this.walkLayers = { legs: new AnimationClip("reveal_legs", walk.duration, walk.tracks.filter(low)), upper: new AnimationClip("reveal_upper", idle.duration, idle.tracks.filter((t) => !low(t))) });
+      const legs = s.mixer.clipAction(this.walkLayers.legs), upper = s.mixer.clipAction(this.walkLayers.upper);
+      legs.timeScale = slow;
+      upper.timeScale = slow;
+      legs.reset().play();
+      upper.reset().play();
+      if (s.idle) legs.crossFadeFrom(s.idle, 0.25, false);
+      upper.setEffectiveWeight(1);
+      const speed = (Y2.gait?.pistol_walk?.speed || 2.11) * slow, dx = goal.x - s.x, dz = goal.z - s.z, d = Math.hypot(dx, dz) || 1;
+      s.walk = { goal, legs, upper, vx: dx / d * speed, vz: dz / d * speed, dur: walk.duration, last: 0 };
+      s.yaw = Math.atan2(dx, dz);
+      s.turn = void 0;
     }
     standVisible(v) {
       if (!this.stand) return;
@@ -61770,6 +62027,39 @@ void main() {
     tickStand(dt) {
       const s = this.stand, Y2 = this.yola;
       if (!s || !Y2) return;
+      if (s.walk) {
+        const w = s.walk;
+        s.x += w.vx * dt;
+        s.z += w.vz * dt;
+        const ph = w.legs.time % w.dur / w.dur;
+        if (w.last < 0.5 && ph >= 0.5 || ph < w.last) {
+          if (!this.silent) {
+            this.rs.footstep();
+            this.rs.drum(0.9);
+          }
+          this.smokeKick(s.x, s.z, 0.9);
+        }
+        w.last = ph;
+        if ((w.goal.x - s.x) * w.vx + (w.goal.z - s.z) * w.vz <= 0) {
+          s.x = w.goal.x;
+          s.z = w.goal.z;
+          if (s.idle) {
+            s.idle.reset().play();
+            s.idle.crossFadeFrom(w.legs, 0.5, false);
+          }
+          w.upper.fadeOut(0.5);
+          s.turn = w.goal.yaw;
+          s.walk = null;
+        }
+      }
+      if (s.turn !== void 0 && dt > 0) {
+        const e = Math.atan2(Math.sin(s.turn - s.yaw), Math.cos(s.turn - s.yaw));
+        s.yaw += e * Math.min(1, dt * 2.5);
+      }
+      if (this.revealPose) {
+        this.revealPose.x = s.x;
+        this.revealPose.z = s.z;
+      }
       Y2.outer.position.set(s.x, 0, s.z);
       Y2.container.rotation.y = s.yaw;
       s.mixer.update(dt);
@@ -61999,6 +62289,8 @@ void main() {
         this.smoke.k = 0;
         this.tickSmoke(0);
       }
+      this.rs?.stopAll(0.2);
+      this.slowmo = 0;
       for (const k of ["yola", "baseball", "teamA", "teamB", "surgeon", "staff"]) A[k].setVisible(false);
       if (this.guardPool) this.guardPool.visible = true;
       else this.placeGuardPool();
