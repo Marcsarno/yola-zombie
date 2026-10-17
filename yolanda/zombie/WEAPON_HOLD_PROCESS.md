@@ -326,3 +326,22 @@ Yola frame = clip 13 video frame − 19.
   then the user's per-character fit (size, moves in mm along the gun's axes, turns in degrees). Saved fits:
   assets/hold/pistol_fit.json (yola2 and xbot set by the user 2026-10-16). Rig Lab only so far: the game still places
   the pistol the old way (next: use the yola2 fit in clipchars.js placeWeapons).
+
+## 16. Checking a contact: how not to, and how to (2026-10-17, the user's lesson)
+
+**The miss:** in the Quaternius pistol reload I said her left hand "meets the gun like the mannequin's". It passed under
+and beyond the grip while the mannequin's cups it (the user's screenshot, 3/4 from her left). I had measured one number,
+the distance between the two hands (blind to which side), looked at small whole-body sheets from the front and her right
+only, and used the pictures to agree with the number.
+
+**How not to:** one distance as proof of a contact; averages; thumbnails; whole bodies with skeleton lines over the hands;
+only angles where her body or the gun hides the support hand; "matches" without saying what was not checked.
+
+**How to:**
+1. Write down the reference contact first: what the hand touches, where, and its start / hold / end frames.
+2. Measure in the gun hand's own frame (forward-back, up-down, side), 3 components in hand-lengths, every frame, against
+   the reference; report the worst frames (flag > ~0.3 hand-lengths).
+3. Full-size close-ups of the hands (Rig Lab Yola hands / Ref hands, same zoom, finger bones on) from 4+ angles: her
+   left (the support-hand side), below, above, the user's usual 3/4; add any angle that shows what another hides.
+   Frames: contact start, middle, end, and the worst one, worst first.
+4. Look for the problem. Say exactly what was checked and what was not.
