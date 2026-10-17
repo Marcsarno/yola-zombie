@@ -137,6 +137,9 @@ export class Zombie {
     let loss = 0, main = 'torso', mainD = 0;
     for (let [pt, d] of parts) {
       if (pt !== 'torso' && this.severed.has(pt)) pt = 'torso';
+      if (pt.startsWith('LowerLeg') && this.kind !== 'normal') pt = 'torso'; // (the big two never lose a leg: PROGRESS.md gore plan)
+      // a bullet in a walker's leg takes it off half the time (the user, 2026-10-17: "randomly shoot a leg off")
+      if (pt.startsWith('LowerLeg') && (kind === 'pistol' || kind === 'shotgun') && this.limbHp[pt] > 0 && sim.rand() < (sim.T.legShotChance ?? 0.5)) this.limbHp[pt] = Math.min(this.limbHp[pt], d * limbMul * 0.99);
       if (pt !== 'torso' && this.broken !== pt) { // (a broken leg stays on: a blunt blow never cuts)
         this.limbHp[pt] -= d * limbMul;
         if (this.limbHp[pt] <= 0) this.sever(pt, dirX, dirZ, sim);

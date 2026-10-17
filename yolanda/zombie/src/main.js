@@ -441,6 +441,7 @@ function runFrame(dt, doRender = true) {
   const animDt = paused ? 0 : simDt;
 
   // ---- Yola ----
+  (window.__dodgeBtn ??= document.getElementById('dodgeBtn'))?.classList.toggle('show', p.dodgeOpen > 0 && !p.dead); // (only while a dodgeable attack is coming: sim.dodgeThreat)
   const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
   const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
   const a = p.action;

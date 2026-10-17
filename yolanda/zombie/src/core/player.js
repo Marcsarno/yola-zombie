@@ -30,16 +30,19 @@ export const DODGE = {
 };
 // the vault: a prop she runs into that is low (0.35-1.1 m) and thin (at most 1.3 m through along her run), with room to
 // land on the far side. She clears it in VAULT.dur, untouched by that prop; the zombies have to go round.
-export const VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, push: 0.6 };
-// ray (x,z)+(dx,dz)t against a box: [tEnter, tExit] or null
+// Only head-on (the user, 2026-10-17: "if you're gliding into it, don't vault"): her stick and her actual run both within
+// headOn of square to the face she meets, at more than minSpeed of her full run.
+export const VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, headOn: 25 * Math.PI / 180, minSpeed: 0.55 };
+// ray (x,z)+(dx,dz)t against a box: [tEnter, tExit, the face it enters: 0 = an x face, 1 = a z face] or null
 function rayBox(b, x, z, dx, dz) {
-  let t0 = -1e9, t1 = 1e9;
-  for (const [p, d, lo, hi] of [[x, dx, b.minX, b.maxX], [z, dz, b.minZ, b.maxZ]]) {
+  let t0 = -1e9, t1 = 1e9, face = 0;
+  for (const [k, p, d, lo, hi] of [[0, x, dx, b.minX, b.maxX], [1, z, dz, b.minZ, b.maxZ]]) {
     if (Math.abs(d) < 1e-9) { if (p < lo || p > hi) return null; continue; }
     let a = (lo - p) / d, c = (hi - p) / d; if (a > c) [a, c] = [c, a];
-    t0 = Math.max(t0, a); t1 = Math.min(t1, c); if (t0 > t1) return null;
+    if (a > t0) { t0 = a; face = k; }
+    t1 = Math.min(t1, c); if (t0 > t1) return null;
   }
-  return [t0, t1];
+  return [t0, t1, face];
 }
 
 export class Player {
@@ -81,7 +84,7 @@ export class Player {
     sim.emit({ type: 'dodge', kind });
     return true;
   }
-  // the leg attack of the weapon in hand (Legs button): a low strike at the shins
+  // the leg attack of the weapon in hand, on demand (tests; in play it comes now and then on its own: startSwing)
   tryLegs(sim) {
     const L = legAttack(this.equipped); if (!L || this.dead) return false;
     const a = this.action, t = a.type;
@@ -91,11 +94,16 @@ export class Player {
   }
   // a vault over the low prop she is running into (from move: stick direction mx, mz, unit)
   tryVault(mx, mz, world, sim) {
-    const V = VAULT, ahead = this.r + V.reach;
+    const V = VAULT, ahead = this.r + V.reach, sp = Math.hypot(this.vx, this.vz);
+    if (sp < V.minSpeed * this.T.moveSpeed) return false; // (running at it, not walking or easing in)
+    const cosOn = Math.cos(V.headOn), vx = this.vx / sp, vz = this.vz / sp;
     for (const b of world.boxes) {
       if (b.off || b.kind !== 'prop' || b.h < V.minH || b.h > V.maxH) continue;
       const tt = rayBox(b, this.x, this.z, mx, mz);
       if (!tt || tt[0] < 0 || tt[0] > ahead || tt[1] - tt[0] > V.maxDepth) continue;
+      // head-on: the stick and her run square to the face she meets (not gliding along it, not clipping its corner)
+      const nx = tt[2] === 0 ? Math.sign(mx) : 0, nz = tt[2] === 1 ? Math.sign(mz) : 0;
+      if (mx * nx + mz * nz < cosOn || vx * nx + vz * nz < cosOn) continue;
       const land = tt[1] + this.r + 0.12, lx = this.x + mx * land, lz = this.z + mz * land;
       // room to land: clear of every other box, inside the level
       const probe = { x: lx, z: lz };
@@ -353,8 +361,14 @@ export class Player {
 
   startSwing(sim, combo, unlocked = false, special = null) {
     this.swingId++;
+    // now and then the opener goes in low instead, at a standing walker in reach (no button: the user, 2026-10-17): the
+    // weapon's leg strike (core/weapons.js LEG_ATTACKS), which takes a leg and leaves it crawling
+    let leg = special === 'legs';
+    if (!leg && combo === 0 && legAttack(this.equipped)) {
+      const t = sim.meleeAssist?.(this, 1.7)?.target;
+      if (t && t.kind === 'normal' && !t.crawling && !t.down && sim.rand() < (this.T.legStrikeChance ?? 0.25)) leg = true;
+    }
     // a zombie on the floor in front (and nothing standing nearer): the downward strike instead of the combo's opener
-    const leg = special === 'legs';
     const G = combo === 0 && !leg ? groundAttack(this.equipped) : null, ground = !!(G && sim.groundTarget?.(this));
     const A = leg ? legAttack(this.equipped) : ground ? G : this.attacks[combo];
     // turn toward a zombie in reach (combo follow-ups look further, and the chop finds bodies on the floor)

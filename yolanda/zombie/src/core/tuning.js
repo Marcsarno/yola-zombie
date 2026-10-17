@@ -23,6 +23,8 @@ export const TUNING_DEFAULTS = {
   shotgunInterval: 0.85, // s between shots (the pump)
   shotgunMag: 6,
   shotgunReload: 1.9,
+  legStrikeChance: 0.25, // a melee opener at a standing walker goes in low for its legs (core/player.js startSwing)
+  legShotChance: 0.5, // a bullet in a walker's lower leg takes it off (core/zombies.js takeHit)
   axeDamage: 62, // first attack; the combo's later attacks hit harder (weapons.js AXE_ATTACKS)
   axeKnockback: 5.0, // m/s impulse
   axeSpeed: 1.0, // attack time scale (higher = faster)

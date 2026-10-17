@@ -2,7 +2,7 @@
 import { World, rng, rayCircle, segPointDist2, angleDiff } from './world.js';
 import { LAYOUT, buildWorld } from './layout.js';
 import { Player, meleeWorldSegment } from './player.js';
-import { Zombie, ZS, KINDS, separate, bump } from './zombies.js';
+import { Zombie, ZS, KINDS, ZATTACKS, separate, bump } from './zombies.js';
 import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
@@ -71,8 +71,9 @@ export class Sim {
     this.time += dt;
     const p = this.player;
     for (let i = 0; i < input.swapPresses; i++) p.requestSwap();
-    if (input.dodgePresses) p.tryDodge(input.moveX, input.moveZ, this); // (Dodge / Shift: core/player.js DODGE)
-    if (input.legsPresses) p.tryLegs(this); // (Legs / C: the weapon's leg attack, core/weapons.js LEG_ATTACKS)
+    // the dodge is there only while something dodgeable is coming at her (the user, 2026-10-17): its button shows then
+    p.dodgeOpen = this.dodgeThreat() ? 0.3 : Math.max(0, (p.dodgeOpen || 0) - dt);
+    if (input.dodgePresses && p.dodgeOpen > 0) p.tryDodge(input.moveX, input.moveZ, this); // (Dodge / Shift: core/player.js DODGE)
     p.move(dt, input, this.world, this);
     p.updateAction(dt, this);
     this.flowT -= dt;
@@ -104,6 +105,20 @@ export class Sim {
     this.zombies.push(z);
     this.emit({ type: 'zombieSpawn', id: z.id, door: d.id });
     return z;
+  }
+
+  // Something she can dodge is coming: a zombie winding up its lunge or pounce at her (or in the pounce's leap), the big
+  // guard winding up his jump slam, the big lady squaring up for her charge or running it at her
+  dodgeThreat() {
+    const p = this.player; if (p.dead) return false;
+    for (const z of this.zombies) {
+      if (!z.alive || z.down) continue;
+      const d = Math.hypot(z.x - p.x, z.z - p.z);
+      if (z.state === ZS.WINDUP && (z.attack === 'lunge' || z.attack === 'pounce' || z.attack === 'slam') && d < ZATTACKS[z.attack].range + 1.2) return true;
+      if (z.state === ZS.STRIKE && z.attack === 'pounce') return true;
+      if (z.kind === 'sprinter' && d < 8 && ((z.spotT > 0 && !z.sprinting) || (z.sprinting && !z.braking))) return true;
+    }
+    return false;
   }
 
   aliveCount() { let n = 0; for (const z of this.zombies) if (z.alive) n++; return n; }
