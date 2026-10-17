@@ -38648,6 +38648,9 @@ void main() {
     const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
     main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames));
     if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
+    undoPost(main);
+    undoPost(ref);
+    postureFix(main, ref);
     shotKick(main);
     if (ref.root.visible) shotKick(ref);
     mainGun?.update(1);
@@ -38767,17 +38770,73 @@ void main() {
     a.root.getWorldQuaternion(_qk);
     b.getWorldQuaternion(_qk2);
     const W = _qk.invert().multiply(_qk2), D = new Quaternion().setFromEuler(new Euler(x, 0, 0, "YXZ"));
+    postRot(a, b, (q) => q.multiply(W.clone().invert().multiply(D).multiply(W)));
+  }
+  function postRot(a, b, fn) {
     const base = b.quaternion.clone();
-    b.quaternion.multiply(W.clone().invert().multiply(D).multiply(W));
-    b.updateMatrixWorld(true);
-    a.kicked.push([b, base, b.quaternion.clone()]);
+    fn(b.quaternion);
+    (a.post || (a.post = [])).push([b, base, b.quaternion.clone()]);
+  }
+  function undoPost(a) {
+    if (!a?.post?.length) return;
+    for (const [b, base, done] of a.post.reverse()) if (b.quaternion.equals(done)) b.quaternion.copy(base);
+    a.post = [];
+    a.root.updateMatrixWorld(true);
+  }
+  var POSTURE = [["Hips", "Spine"], ["Spine2", "Neck"], ["Neck", "Head"], ["Head", "HeadTop_End"], ["LeftHand", "LeftHandMiddle1"], ["RightHand", "RightHandMiddle1"]];
+  var outerBone = (b) => {
+    while (b?.parent?.name === b.name) b = b.parent;
+    return b;
+  };
+  function restFrames(a) {
+    const t = a.action?.time;
+    a.action?.stop();
+    a.obj.traverse((o) => {
+      if (o.isSkinnedMesh) o.skeleton.pose();
+    });
+    a.root.updateMatrixWorld(true);
+    const out = {};
+    for (const [n, c] of POSTURE) {
+      const b = outerBone(a.bones[n]), k = outerBone(a.bones[c]);
+      if (!b || !k) continue;
+      const R = b.getWorldQuaternion(new Quaternion());
+      out[n] = { R, axis: new Vector3(0, 1, 0).applyQuaternion(R), line: k.getWorldPosition(new Vector3()).sub(b.getWorldPosition(new Vector3())).normalize() };
+    }
+    if (a.action) {
+      a.action.play();
+      a.action.time = t;
+      a.mixer.update(0);
+      a.root.updateMatrixWorld(true);
+    }
+    return out;
+  }
+  var postureCache = /* @__PURE__ */ new Map();
+  function postureC(a, src) {
+    const key = a.obj.uuid + "|" + src.obj.uuid;
+    if (postureCache.has(key)) return postureCache.get(key);
+    const T = restFrames(a), S2 = restFrames(src), C = {};
+    for (const [n] of POSTURE) {
+      if (!T[n] || !S2[n]) continue;
+      const A = new Quaternion().setFromUnitVectors(T[n].axis, S2[n].axis), A2 = new Quaternion().setFromUnitVectors(T[n].line, S2[n].line);
+      C[n] = T[n].R.clone().invert().multiply(A.invert()).multiply(A2).multiply(T[n].R);
+    }
+    postureCache.set(key, C);
+    return C;
+  }
+  function postureFix(a, src) {
+    if (!$("posture")?.checked || !a?.action || !src?.root.visible || !src.action) return;
+    const C = postureC(a, src);
+    for (const [n] of POSTURE) {
+      const b = outerBone(a.bones[n]), c = C[n];
+      if (!b || !c) continue;
+      postRot(a, b, (q) => q.multiply(c));
+      const ci = c.clone().invert();
+      for (const k of b.children) if (k.isBone) postRot(a, k, (q) => q.premultiply(ci));
+    }
+    a.root.updateMatrixWorld(true);
   }
   function shotKick(a) {
-    if (!a) return;
-    for (const [b, base, kicked] of a.kicked || []) if (b.quaternion.equals(kicked)) b.quaternion.copy(base);
-    if (a.kicked?.length) a.root.updateMatrixWorld(true);
-    a.kicked = [];
-    if (weaponOf() !== "pistol" || !a.action) return;
+    if (!a || weaponOf() !== "pistol" || !a.action) return;
     const r = Math.max(SHOT.hold, SHOT.recoil), kick = r * r;
     if (kick < 1e-3) return;
     kickC(a, "Spine2", -0.09 * kick);
@@ -39143,6 +39202,7 @@ void main() {
       refresh();
     };
     $("marks").onchange = refresh;
+    $("posture").onchange = refresh;
     $("batShow").onchange = refresh;
     $("vidSkel").onchange = refresh;
     $("bones").onchange = () => {

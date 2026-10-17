@@ -365,6 +365,7 @@ function refresh() {
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f, ref.frames));
+  undoPost(main); undoPost(ref); postureFix(main, ref);
   shotKick(main); if (ref.root.visible) shotKick(ref);
   mainGun?.update(1); leftHand(f);
   if (refGun?.obj) { refGun.obj.visible = ref.root.visible; refGun.update(ref.height / main.height); }
@@ -427,17 +428,58 @@ function kickC(a, n, x) { // rotate bone n by x about the character's own left-r
   while (b.parent?.name === b.name) b = b.parent; // (the X Bot FBX nests a same-named copy in each bone: turn the outer, animated one)
   a.root.getWorldQuaternion(_qk); b.getWorldQuaternion(_qk2);
   const W = _qk.invert().multiply(_qk2), D = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, 0, 0, 'YXZ'));
-  const base = b.quaternion.clone();
-  b.quaternion.multiply(W.clone().invert().multiply(D).multiply(W)); b.updateMatrixWorld(true);
-  a.kicked.push([b, base, b.quaternion.clone()]);
+  postRot(a, b, (q) => q.multiply(W.clone().invert().multiply(D).multiply(W)));
+}
+// changes made on top of the clip (the posture preview, the shot kick) are recorded per actor and undone before the next
+// redraw: the mixer only rewrites a bone whose animated value changed, so on a held frame they would stay and stack
+function postRot(a, b, fn) { const base = b.quaternion.clone(); fn(b.quaternion); (a.post ||= []).push([b, base, b.quaternion.clone()]); }
+function undoPost(a) {
+  if (!a?.post?.length) return;
+  for (const [b, base, done] of a.post.reverse()) if (b.quaternion.equals(done)) b.quaternion.copy(base);
+  a.post = []; a.root.updateMatrixWorld(true);
+}
+// POSTURE PREVIEW (2026-10-16, Rig Lab only): blender/retarget.py points each of Yola's bones along the source bone's own
+// axis (head -> tail), but X Bot's Neck and Head axes sit 16.9 / 25.8 deg off his real neck line (Neck -> Head -> head
+// top) and Yola's Hips / Spine2 / Hands axes 4.1 / 1.6 / ~4 deg off hers, so her head ends up tipped back and her pelvis
+// tucked in every Mixamo clip. The fix is a constant turn per bone (what the retarget gives when it matches the lines):
+// C = Rt^-1 A^-1 A' Rt  (Rt her rest rotation, A axis->axis, A' line->line); her children keep their own rotations.
+const POSTURE = [['Hips', 'Spine'], ['Spine2', 'Neck'], ['Neck', 'Head'], ['Head', 'HeadTop_End'], ['LeftHand', 'LeftHandMiddle1'], ['RightHand', 'RightHandMiddle1']];
+const outerBone = (b) => { while (b?.parent?.name === b.name) b = b.parent; return b; };
+function restFrames(a) { // each bone's world rotation, +Y axis and line to its child at the bind pose
+  const t = a.action?.time; a.action?.stop(); a.obj.traverse((o) => { if (o.isSkinnedMesh) o.skeleton.pose(); }); a.root.updateMatrixWorld(true);
+  const out = {};
+  for (const [n, c] of POSTURE) {
+    const b = outerBone(a.bones[n]), k = outerBone(a.bones[c]); if (!b || !k) continue;
+    const R = b.getWorldQuaternion(new THREE.Quaternion());
+    out[n] = { R, axis: new THREE.Vector3(0, 1, 0).applyQuaternion(R), line: k.getWorldPosition(new THREE.Vector3()).sub(b.getWorldPosition(new THREE.Vector3())).normalize() };
+  }
+  if (a.action) { a.action.play(); a.action.time = t; a.mixer.update(0); a.root.updateMatrixWorld(true); }
+  return out;
+}
+const postureCache = new Map();
+function postureC(a, src) { // per (character, source rig): the constant turn for each posture bone, in the bone's own frame
+  const key = a.obj.uuid + '|' + src.obj.uuid; if (postureCache.has(key)) return postureCache.get(key);
+  const T = restFrames(a), S = restFrames(src), C = {};
+  for (const [n] of POSTURE) {
+    if (!T[n] || !S[n]) continue;
+    const A = new THREE.Quaternion().setFromUnitVectors(T[n].axis, S[n].axis), A2 = new THREE.Quaternion().setFromUnitVectors(T[n].line, S[n].line);
+    C[n] = T[n].R.clone().invert().multiply(A.invert()).multiply(A2).multiply(T[n].R);
+  }
+  postureCache.set(key, C); return C;
+}
+function postureFix(a, src) {
+  if (!$('posture')?.checked || !a?.action || !src?.root.visible || !src.action) return;
+  const C = postureC(a, src);
+  for (const [n] of POSTURE) {
+    const b = outerBone(a.bones[n]), c = C[n]; if (!b || !c) continue;
+    postRot(a, b, (q) => q.multiply(c));
+    const ci = c.clone().invert();
+    for (const k of b.children) if (k.isBone) postRot(a, k, (q) => q.premultiply(ci)); // (children keep their own rotations)
+  }
+  a.root.updateMatrixWorld(true);
 }
 function shotKick(a) {
-  if (!a) return;
-  // the mixer only rewrites a bone whose animated value changed: on a held frame the last kick would stay and stack
-  for (const [b, base, kicked] of a.kicked || []) if (b.quaternion.equals(kicked)) b.quaternion.copy(base);
-  if (a.kicked?.length) a.root.updateMatrixWorld(true);
-  a.kicked = [];
-  if (weaponOf() !== 'pistol' || !a.action) return;
+  if (!a || weaponOf() !== 'pistol' || !a.action) return;
   const r = Math.max(SHOT.hold, SHOT.recoil), kick = r * r;
   if (kick < 0.001) return;
   kickC(a, 'Spine2', -0.09 * kick); if (kick > 0.01) { kickC(a, 'RightArm', -0.25 * kick); kickC(a, 'LeftArm', -0.25 * kick); }
@@ -619,7 +661,7 @@ function buildUI() {
   $('clip').onchange = (e) => setClip(e.target.value);
   $('lay').onclick = () => { S.overlay = !S.overlay; layout(); refresh(); };
   $('match').onchange = () => { layout(); refresh(); };
-  $('marks').onchange = refresh;
+  $('marks').onchange = refresh; $('posture').onchange = refresh;
   $('batShow').onchange = refresh; $('vidSkel').onchange = refresh;
   $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; };
   $('inplace').onchange = () => setClip($('clip').value);
