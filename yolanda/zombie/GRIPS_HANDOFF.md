@@ -1,7 +1,28 @@
-# Weapons and grips: where we are (handoff, 2026-10-16, commit 8e44d9b)
+# Weapons and grips: where we are (handoff, updated 2026-10-17)
 
-Read this first when continuing the weapon/grip work. Deeper background: WEAPON_HOLD_PROCESS.md (sections 15+ are
-today's), PONYTAIL_PLAN.md (Yola 3.0 rig work, done).
+Read this first when continuing the weapon/grip work. Then WEAPON_HOLD_PROCESS.md sections 16 (how to check a
+contact) and 17 (rigging and retargeting: what works, what not to do). PONYTAIL_PLAN.md = Yola 3.0 rig work (done).
+
+## START HERE (2026-10-17, before the chat was compacted)
+
+**Done and in the game:** pistol reload = Quaternius Pistol_Reload with her support hand placed on the gun + the
+user's magazines (empty drops, loaded goes in); bat run = 'plain' with the arm / wrist held; the pistol sits in her
+fist with the user's Rig Lab fit (79844b7, `?pistolplace=old` = the old way); hair sway survives a pause.
+**In the Rig Lab (one viewer, beside X Bot / the Quaternius mannequin):** weapon picker (Idle / Attack), clip list by
+weapon and move type, shot kick, posture fix preview, magazines, Hands controls (open / support / closed per hand,
+pistol hand, "save hands" -> shots/hand_poses.json), test bakes via &extra=assets/test_clips/<glb>.
+
+**Next, in order (show the user each step in the Rig Lab beside the dummy):**
+1. The pistol fit in the game points the barrel 5 deg (idle) to 8 deg (run) off her aim and 6-14 deg up: decide with
+   the user (aim correction on the chest / wrist, or adjust the fit), then re-check the reload magazine (it led her
+   fingers by 5.7 cm with the old placement; 2.2 cm in the Rig Lab) and the idle / run grips against X Bot.
+2. Hands: the user sets open / closed per clip in the Rig Lab; then make the game read assets/hold/hand_poses.json
+   (a finger layer in clipchars.js) - only after they have saved some.
+3. The gun-hand test bakes for the other pistol clips (assets/test_clips/pistol_gunhand.glb: her gun arm bends like
+   X Bot's, no locked shoulder) - approved in the test, NOT in the game yet.
+4. Posture fix (neck / head / hips / hands from the retarget's axis errors): preview only, not baked.
+5. Open items: the 4-strike bat combo "didn't feel as great" (ask what); the composite pistol strafes measure hands
+   apart (look OK); the shotgun shell prop is in assets/weapons, unused; the shotgun / axe / bat fit panels.
 
 ## Another chat shares this folder (from 2026-10-16)
 
