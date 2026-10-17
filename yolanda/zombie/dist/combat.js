@@ -46158,9 +46158,9 @@ void main() {
             break;
           }
           if (a.t >= this.reloadTime()) {
-            const w = this.equipped, take = Math.min(this.magSize() - this.ammo, this.reserve[w] ?? Infinity);
-            this.ammo += take;
-            if (Number.isFinite(this.reserve[w])) this.reserve[w] -= take;
+            const w = this.equipped, take2 = Math.min(this.magSize() - this.ammo, this.reserve[w] ?? Infinity);
+            this.ammo += take2;
+            if (Number.isFinite(this.reserve[w])) this.reserve[w] -= take2;
             sim2.emit({ type: "reloadDone", weapon: w });
             this.setAction("ready");
           }
@@ -57419,54 +57419,61 @@ void main() {
 
   // src/sfx/banks.js
   var G2 = "assets/sfx/guns/";
-  var takes = (name, n) => Array.from({ length: n }, (_, i) => `${G2}${name}_${String(i + 1).padStart(2, "0")}.mp3`);
+  var take = (name, i) => `${G2}${name}_${String(i).padStart(2, "0")}.mp3`;
+  var takes = (name, from, to) => Array.from({ length: to - from + 1 }, (_, i) => take(name, from + i));
   var one = (name) => [`${G2}${name}.mp3`];
   var BANKS = {
     // the pistol: a close 9 mm / .45 crack + a sub thump for headphones + the corridor answering + brass on the tile
-    shot: { layers: [
-      { files: takes("pistol", 5), gain: 0.8, pitch: [-0.7, 0.5], wet: 0.34 },
-      { synth: "subPistol", gain: 1, wet: 0 },
-      { files: takes("brass", 4), gain: 0.2, pitch: [-1.5, 1.5], at: [0.34, 0.52], wet: 0.1, side: true }
+    shot: { label: "Pistol shot", group: "Guns", cadence: 0.26, layers: [
+      { label: "Shot", files: takes("pistol", 1, 5), extra: takes("pistol", 6, 14), gain: 0.8, pitch: [-0.7, 0.5], wet: 0.34 },
+      { label: "Sub thump (headphones)", synth: "subPistol", gain: 1, wet: 0 },
+      { label: "Brass casing", files: takes("brass", 1, 4), gain: 0.2, pitch: [-1.5, 1.5], at: [0.34, 0.52], wet: 0.1, side: true }
     ] },
     // the shotgun: a 12 gauge pump blast + a deep sub + a long room (the pump follows as its own sound)
-    shotgun: { layers: [
-      { files: takes("shotgun", 8), gain: 1, pitch: [-0.9, 0.4], wet: 0.45 },
-      { synth: "subShotgun", gain: 1, wet: 0 }
+    shotgun: { label: "Shotgun blast", group: "Guns", cadence: 0.85, then: { name: "pump", at: 0.24 }, layers: [
+      { label: "Blast", files: takes("shotgun", 1, 8), extra: takes("shotgun", 9, 12), gain: 1, pitch: [-0.9, 0.4], wet: 0.45 },
+      { label: "Sub boom (headphones)", synth: "subShotgun", gain: 1, wet: 0 }
     ] },
     // the Model 12's own rack: back, forward, and the spent hull bouncing off the floor
-    pump: { layers: [
-      { files: one("pump_back"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.16 },
-      { files: one("pump_fwd"), gain: 0.5, pitch: [-0.4, 0.4], at: 0.19, wet: 0.16 },
-      { files: takes("hull", 3), gain: 0.32, pitch: [-1, 1], at: [0.38, 0.5], wet: 0.1, side: true }
+    pump: { label: "Shotgun pump", group: "Guns", cadence: 0.85, layers: [
+      { label: "Rack back", files: one("pump_back"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.16 },
+      { label: "Rack forward", files: one("pump_fwd"), gain: 0.5, pitch: [-0.4, 0.4], at: 0.19, wet: 0.16 },
+      { label: "Spent hull", files: takes("hull", 1, 3), gain: 0.32, pitch: [-1, 1], at: [0.38, 0.5], wet: 0.1, side: true }
     ] },
     // the pistol reload (1.05 s): the empty magazine drops, the new one seats; the slide is reloadDone
-    pistolReload: { layers: [
-      { files: one("mag_out"), gain: 0.35, pitch: [-0.5, 0.5], at: 0.06, wet: 0.12 },
-      { files: one("mag_in"), gain: 0.45, pitch: [-0.5, 0.5], at: 0.5, wet: 0.12 }
+    pistolReload: { label: "Pistol reload", group: "Reloads", layers: [
+      { label: "Magazine out", files: one("mag_out"), gain: 0.35, pitch: [-0.5, 0.5], at: 0.06, wet: 0.12 },
+      { label: "Magazine in", files: one("mag_in"), gain: 0.45, pitch: [-0.5, 0.5], at: 0.5, wet: 0.12 }
     ] },
-    pistolReloadDone: { layers: [{ files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
+    pistolReloadDone: { label: "Pistol slide (reload done)", group: "Reloads", layers: [{ label: "Slide", files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
     // the shotgun reload (1.9 s): four shells thumbed into the tube; the pump closes it (reloadDone)
-    shotgunReload: { layers: [0.12, 0.52, 0.92, 1.32].map((at) => ({ files: one("mag_in"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
-    dry: { layers: [{ files: one("dry_click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] }
+    shotgunReload: { label: "Shotgun reload (4 shells)", group: "Reloads", layers: [0.12, 0.52, 0.92, 1.32].map((at, i) => ({ label: `Shell ${i + 1}`, files: one("mag_in"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
+    dry: { label: "Dry fire (empty)", group: "Guns", layers: [{ label: "Click", files: one("dry_click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] }
   };
 
   // src/sfx/samples.js
+  var SELECTION_URL = "assets/sfx/selection.json";
+  var dbk = (db) => Math.pow(10, (db || 0) / 20);
   var Samples = class {
     constructor() {
       this.raw = /* @__PURE__ */ new Map();
       this.buf = /* @__PURE__ */ new Map();
       this.lead = /* @__PURE__ */ new Map();
       this.last = /* @__PURE__ */ new Map();
-      this.decoding = false;
+      this.sel = { takes: {}, layers: {}, sounds: {} };
     }
     files() {
       const s = /* @__PURE__ */ new Set();
-      for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of l.files || []) s.add(f);
+      for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of [...l.files || [], ...l.extra || []]) s.add(f);
       return [...s];
     }
-    preload() {
+    preload({ selection = true } = {}) {
       if (this.started) return;
       this.started = true;
+      if (selection) fetch(SELECTION_URL, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((j) => {
+        if (j) this.setSelection(j);
+      }).catch(() => {
+      });
       for (const f of this.files()) fetch(f).then((r) => r.ok ? r.arrayBuffer() : null).then((ab) => {
         if (ab) {
           this.raw.set(f, ab);
@@ -57474,6 +57481,9 @@ void main() {
         }
       }).catch(() => {
       });
+    }
+    setSelection(j) {
+      this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {} };
     }
     // with the AudioContext: decode everything fetched so far (and anything still arriving, as it lands)
     attach(ctx) {
@@ -57498,10 +57508,28 @@ void main() {
       } catch {
       }
     }
-    // a bank plays only when every file of its main layer is in (half a bank would repeat the same take)
+    // the takes a layer plays now: its defaults the user has not rejected + candidates the user approved
+    active(l) {
+      const v = (f) => this.sel.takes[f]?.v;
+      return [...(l.files || []).filter((f) => v(f) !== "no"), ...(l.extra || []).filter((f) => v(f) === "yes")];
+    }
+    takeGain(f) {
+      return dbk(this.sel.takes[f]?.db);
+    }
+    layerGain(name, li) {
+      const s = this.sel.layers[name + "#" + li];
+      return s?.off ? 0 : dbk(s?.db);
+    }
+    soundGain(name) {
+      return dbk(this.sel.sounds[name]?.db);
+    }
+    // a bank plays only when every take of its main layer is in (half a bank would repeat the same take); with every
+    // take rejected the synth plays instead
     ready(name) {
       const b = BANKS[name];
-      return !!b && (b.layers[0].files || []).every((f) => this.buf.has(f));
+      if (!b) return false;
+      const a = this.active(b.layers[0]);
+      return a.length > 0 && a.every((f) => this.buf.has(f));
     }
     // a random take, never the one that played last time from this layer
     pick(key, files) {
@@ -57749,27 +57777,39 @@ void main() {
       this.synth(SYNTH_ALIAS[name] || name, k, t);
       this.out = null;
     }
-    playBank(name, k, t, sp) {
-      const c = this.ctx;
+    // only: a layer index to play alone (the Sound Board); force: a take to play instead of a random one
+    playBank(name, k, t, sp, { only = -1, forceLayer = -1, force = null, dry = false } = {}) {
+      const s = this.samples, sg = s.soundGain(name);
       BANKS[name].layers.forEach((l, li) => {
-        const at = Array.isArray(l.at) ? l.at[0] + Math.random() * (l.at[1] - l.at[0]) : l.at || 0;
+        if (only >= 0 && li !== only) return;
+        const lg = s.layerGain(name, li);
+        if (!lg) return;
+        const at = only >= 0 ? 0 : Array.isArray(l.at) ? l.at[0] + Math.random() * (l.at[1] - l.at[0]) : l.at || 0;
         const lsp = l.side && sp ? { ...sp, pan: Math.max(-0.9, Math.min(0.9, sp.pan + (Math.random() < 0.5 ? -0.18 : 0.18))) } : l.side ? { pan: Math.random() < 0.5 ? -0.18 : 0.18, d: 0 } : sp;
+        const wet = dry ? 0 : l.wet ?? (l.synth ? 0 : 0.15), gain = (l.gain ?? 1) * lg * sg;
         if (l.synth) {
-          this.out = this.chain(lsp, l.wet ?? 0, l.gain ?? 1);
+          this.out = this.chain(lsp, wet, gain);
           this.synth(l.synth, k, t + at);
           this.out = null;
           return;
         }
-        const f = this.samples.pick(name + li, l.files);
+        const forced = li === forceLayer && force;
+        const f = forced || s.pick(name + li, s.active(l));
         if (!f) return;
-        const src = c.createBufferSource();
-        src.buffer = this.samples.buf.get(f);
-        const semi = l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
-        src.playbackRate.value = Math.pow(2, semi / 12);
-        const jitter = Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20);
-        src.connect(this.chain(lsp, l.wet ?? 0.15, (l.gain ?? 1) * Math.min(1.6, k) * jitter));
-        src.start(t + at, this.samples.lead.get(f) || 0);
+        const jitter = forced ? 1 : Math.pow(10, (Math.random() * 2 - 1) * 1.2 / 20);
+        const semi = forced ? 0 : l.pitch ? l.pitch[0] + Math.random() * (l.pitch[1] - l.pitch[0]) : 0;
+        this.playBuffer(f, t + at, this.chain(lsp, wet, gain * s.takeGain(f) * Math.min(1.6, k) * jitter), semi);
       });
+    }
+    playBuffer(f, t, dest, semi = 0) {
+      const b = this.samples.buf.get(f);
+      if (!b) return null;
+      const src = this.ctx.createBufferSource();
+      src.buffer = b;
+      src.playbackRate.value = Math.pow(2, semi / 12);
+      src.connect(dest);
+      src.start(t, this.samples.lead.get(f) || 0);
+      return src;
     }
     // one voice's route: level and distance -> air (far sounds lose their top) -> stereo position -> the effects bus,
     // plus a send into the room reverb that grows with distance (far away is mostly room)
