@@ -76,6 +76,23 @@ Yola 3.0 and X Bot from side / front / top. The user is now spot-checking grips 
 for their findings (weapon + clip + frame) before changing anything. Yola's fit stays the saved one (up 7; the
 user dropped a stray -1 from the browser).
 
+## Findings 2026-10-16 (late), waiting on the user's pick
+
+- **Posture (all Mixamo clips):** retarget.py matches bone AXES; X Bot's Neck/Head axes are 16.9/25.8 deg off his neck
+  line, Yola's Hips/Spine2/Hands 4.1/1.6/~4 deg off hers -> her head ~26 deg back (chin up), pelvis ~4 deg tucked.
+  Rig Lab "posture fix (preview)" (top bar, c139565) shows the cure: those lines land 0.0 deg from X Bot, feet 1 mm,
+  hands 2-3 mm. Not in the game. Baking it: constant per-bone turn C = Rt^-1 A^-1 A' Rt on those bones (children
+  counter-turned), or retarget.py matching joint->child lines; library (UAL mannequin) and carried clips not checked yet.
+- **Bat run (game):** no clip of its own: legs = pistol_* `_lower` (the aiming jog), upper = `sword_idle_upper`
+  (ual1_Sword_Idle, set in clipchars.js setOneHandedBat) WITHOUT the hip re-base the shotgun/reload layers get
+  (rebaseUpper / upperHips), plus the game's Spine1 lean. Result (shots/sheet_game_runs.png): hunched at the waist,
+  head down, arms hanging. Options: the unarmed run clips (p_run_plain etc., arms swing) with the bat in hand, or the
+  sword idle re-based onto the hips. Quaternius has Jog_Fwd_Loop / Sprint_Loop / Walk_Loop but no sword run.
+- **Right shoulder tucks (pistol_walk_back f27, the user's screenshot):** collarbone matches X Bot (1.5 deg); her
+  upper arm swings 10 deg further across the chest (35 vs 25) with a near-straight elbow (12 vs 31 deg bend). Suspect:
+  the build's contacts.hands two-hand IK (pistol_ clips). Test before fixing: re-bake pistol_walk_back without it.
+- **The 4-strike bat combo** (Sword Regular Combo split) "didn't feel as great as hoped": ask what felt off.
+
 ## Next steps (in order, each one shown to the user before the next)
 
 0. **The user's spot-check findings** (they were checking many grips with the picker when this was written).
