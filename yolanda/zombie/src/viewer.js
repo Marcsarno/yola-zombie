@@ -8,7 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe, pr
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert } from './render/holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -365,12 +365,8 @@ function updateShell(f) {
   if (!shellObj) return;
   const on = !!main.action && f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from && S.gun === 'short';
   shellObj.visible = on; if (!on) return;
-  main.bones.LeftHand.getWorldQuaternion(_q);
-  const adj = new THREE.Quaternion().setFromEuler(new THREE.Euler(shellFit.rx * Math.PI / 180, shellFit.ry * Math.PI / 180, shellFit.rz * Math.PI / 180, 'XYZ'));
-  const q = _q.multiply(adj);
-  main.grip('Left', _v);
-  shellObj.quaternion.copy(q);
-  shellObj.position.copy(_v).add(_v2.set(shellFit.x, shellFit.y, shellFit.z).applyQuaternion(_q.copy(q)));
+  // as the game (holdfit.js placeShell): in her thumb-index pinch, pointing at the loading port
+  const port = mainGun?.obj?.userData.port; if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v))) { shellObj.visible = false; return; }
   shellObj.updateMatrixWorld(true);
 }
 function applyGun() {
@@ -933,7 +929,7 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     try { const g = await loadG(f); gunTemplates[k] = k === 'short' ? prepPumpShort(g) : prepShotgun(g); } catch { /* not built yet */ }
   }
   for (const k of ['short', 'old']) if (!gunTemplates[k]) $('gun').querySelector(`option[value=${k}]`).textContent += ' (not built yet)';
-  try { const g = await loadG('assets/weapons/shell.glb'); shellTemplate = prepShell(g); shellObj = shellTemplate; shellObj.visible = false; scene.add(shellObj); } catch { /* not built yet */ }
+  try { const g = await loadG('assets/weapons/shotgun_shell.glb'); shellTemplate = prepShell(g); shellObj = shellTemplate; shellObj.visible = false; scene.add(shellObj); } catch { /* not built yet */ }
   const want = new URLSearchParams(location.search).get('char');
   await setChar(want in CHARS ? want : 'yola');
   let last = performance.now();

@@ -91,10 +91,18 @@ export function prepPumpShort(gltf) {
   g.userData = { pump, pumpX: pump.position.x, gripL: find('GameGrip_L'), muzzle: find('Muzzle'), port: find('LoadPort') };
   return g;
 }
-// 12-gauge shell (assets/weapons/shell.glb): axis along +X, brass head toward -X, origin at the centre.
+// 12-gauge shell: axis along +X, brass head toward -X, origin at the centre. The user's prop (2026-10-17,
+// assets/weapons/shotgun_shell.glb: base at its origin, up +Y, HandAttach at the middle, ShellTip at the crimp) is wrapped
+// into that frame; the older stand-in (assets/weapons/shell.glb) already is.
 export function prepShell(gltf) {
-  const g = gltf.scene;
+  let g = gltf.scene;
   g.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+  const at = g.getObjectByName('HandAttach');
+  if (at) {
+    const inner = g; g = new THREE.Group();
+    inner.rotation.z = -Math.PI / 2; inner.position.x = -at.position.y; // (+Y -> +X, the base toward -X, HandAttach at the origin)
+    g.add(inner);
+  }
   return g;
 }
 

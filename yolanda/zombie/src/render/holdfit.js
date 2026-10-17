@@ -84,3 +84,16 @@ export const MAG_SEAT = new THREE.Vector3(-0.008, -0.039, 0);
 export function magInsert(out, pinch, s) {
   return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
 }
+
+// ---- the shotgun reload's shell (the user's prop, assets/weapons/shotgun_shell.glb, prepShell frame: axis +X, brass
+// toward -X, centre at its HandAttach) ----
+// held between her thumb and index finger (the middle of the shell at the pinch), pointing at the loading port it is
+// about to go into. Before 2026-10-17 it rode fixed offsets from the palm and floated 5-8 cm behind her fingers.
+const _sp = new THREE.Vector3(), _sd = new THREE.Vector3(), _sx = new THREE.Vector3(1, 0, 0);
+export function placeShell(bones, o, portWorld, side = 'Left') {
+  const t = bones[side + 'HandThumb2'], i = bones[side + 'HandIndex2']; if (!t || !i) return false;
+  t.getWorldPosition(_sp).lerp(i.getWorldPosition(_sd), 0.5);
+  _sd.copy(portWorld).sub(_sp); if (_sd.lengthSq() < 1e-8) return false;
+  o.position.copy(_sp); o.quaternion.setFromUnitVectors(_sx, _sd.normalize());
+  return true;
+}

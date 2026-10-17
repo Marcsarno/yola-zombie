@@ -155,7 +155,7 @@ async function load() {
   // the guard's shield (the user's v2 package): the GLB and the two damage maps, loaded once and shared by every guard
   const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
     .then(([gltf, damageTextures]) => { ZombieView.shieldAsset = { gltf, damageTextures }; }).catch((e) => console.warn('shield asset failed: stand-in shield', e));
-  const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shell.glb'),
+  const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shotgun_shell.glb'),
     loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null),
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
     fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({}))]); // (the user's pistol fit per character, set in the Rig Lab)

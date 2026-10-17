@@ -11,7 +11,7 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert } from './holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
@@ -840,12 +840,7 @@ export class YolaView extends ClipBody {
     if (wHold > 0) this.ikArm('Left', U.gripL.getWorldPosition(_v3), wHold);
     // the shell rides the left hand
     const S = this.shell; S.visible = shellOn;
-    if (shellOn) {
-      this.bones.LeftHand.getWorldQuaternion(_q);
-      _q2.setFromEuler(_e.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, 'XYZ'));
-      _q.multiply(_q2); S.quaternion.copy(_q);
-      this.grip('Left', _v); S.position.copy(_v).add(_v2.set(SH.x, SH.y, SH.z).applyQuaternion(_q));
-    }
+    if (shellOn) placeShell(this.bones, S, U.port.getWorldPosition(_v3)); // (in her fingers, toward the port: holdfit.js)
   }
 
   // ---- the weapon test arena (src/arena/testarena.js) ----
