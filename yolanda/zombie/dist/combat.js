@@ -49354,6 +49354,56 @@ void main() {
     out.c.lerp(ch, sm(0.36, 0.5, out.span));
     return out;
   }
+  var _ha = new Vector3();
+  var _hb = new Vector3();
+  var _hd = new Vector3();
+  var _hq2 = new Quaternion();
+  var _hw = new Quaternion();
+  var _hp = new Quaternion();
+  var _hi = new Quaternion();
+  function handOnto(bones, side, point, dir, w, solveArm) {
+    if (!(w > 1e-3)) return false;
+    const H4 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
+    if (!H4 || !I2 || !P || !M4) return false;
+    const a = I2.getWorldPosition(_ha).sub(P.getWorldPosition(_hb)).normalize(), d = _hd.copy(dir).normalize();
+    if (a.dot(d) < 0) d.negate();
+    _hq2.setFromUnitVectors(a, d);
+    _hi.identity().slerp(_hq2, w);
+    H4.getWorldQuaternion(_hw);
+    H4.parent.getWorldQuaternion(_hp);
+    H4.quaternion.copy(_hp.invert().multiply(_hi).multiply(_hw));
+    H4.updateMatrixWorld(true);
+    const off = M4.getWorldPosition(_ha).add(H4.getWorldPosition(_hb)).multiplyScalar(0.5).sub(H4.getWorldPosition(_hb));
+    solveArm(bones[side + "Arm"], bones[side + "ForeArm"], H4, _hb.copy(point).sub(off), w);
+    return true;
+  }
+  var _rc = [0, 0, 0, 0, 0, 0].map(() => new Vector3());
+  var _rq = new Quaternion();
+  var _rq2 = new Quaternion();
+  var _rq3 = new Quaternion();
+  function reachShoulder(bones, side, target) {
+    const cl = bones[side + "Shoulder"], up = bones[side + "Arm"], lo = bones[side + "ForeArm"], hand = bones[side + "Hand"], mid = bones[side + "HandMiddle1"];
+    if (!cl || !up || !lo || !hand || !mid) return;
+    const R = _rc, c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]);
+    const g = mid.getWorldPosition(R[4]).add(h).multiplyScalar(0.5);
+    const need = a.distanceTo(target) - (a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g)) * 0.97;
+    if (need <= 0) return;
+    const ca = R[1].sub(c), ct = R[5].copy(target).sub(c), axis = new Vector3().crossVectors(ca, ct);
+    if (axis.lengthSq() < 1e-10) return;
+    _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180));
+    cl.getWorldQuaternion(_rq2);
+    cl.parent.getWorldQuaternion(_rq3);
+    cl.quaternion.copy(_rq3.invert().multiply(_rq).multiply(_rq2));
+    cl.updateMatrixWorld(true);
+  }
+  function handleSpot(bones, side, origin, dir, lo, hi, out) {
+    const H4 = bones[side + "Hand"], M4 = bones[side + "HandMiddle1"];
+    if (!H4 || !M4) return 9;
+    const g = H4.getWorldPosition(_ha).add(M4.getWorldPosition(_hb)).multiplyScalar(0.5);
+    const t = Math.min(hi, Math.max(lo, g.clone().sub(origin).dot(dir)));
+    out.copy(origin).addScaledVector(dir, t);
+    return out.distanceTo(g);
+  }
   var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
   function magInsert(out, pinch, s) {
     return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
@@ -49835,23 +49885,9 @@ void main() {
     // A grip target beyond the straight arm: the clavicle swings the shoulder toward it first (at most 15 degrees, the
     // way a reach across the body rolls the shoulder forward), so the hand gets there instead of stopping short.
     reachClavicle(side, target) {
-      const cl = this.bones[side + "Shoulder"], up = this.bones[side + "Arm"], lo = this.bones[side + "ForeArm"], hand = this.bones[side + "Hand"];
-      if (!cl) return;
-      const R = this._rc || (this._rc = [0, 0, 0, 0, 0, 0].map(() => new Vector3()));
-      const c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]), g = this.grip(side, R[4]);
-      const len = a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g);
-      const need = a.distanceTo(target) - len * 0.97;
-      if (need <= 0) return;
-      const ca = R[1].sub(c), ct = R[5].copy(target).sub(c);
-      const axis = new Vector3().crossVectors(ca, ct);
-      if (axis.lengthSq() < 1e-10) return;
-      const ang = Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180);
-      _q5.setFromAxisAngle(axis.normalize(), ang);
-      cl.getWorldQuaternion(_q23);
-      cl.parent.getWorldQuaternion(_q33);
-      cl.quaternion.copy(_q33.invert().multiply(_q5).multiply(_q23));
-      cl.updateMatrixWorld(true);
+      reachShoulder(this.bones, side, target);
     }
+    // (render/holdfit.js, shared with the Rig Lab)
     // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
     // arms, slide upright) expressed in the hand bone's frame, so the gun follows the hand when the
     // hands leave the aim (reload).
@@ -50702,6 +50738,13 @@ void main() {
       if (!o) return;
       placeOneHanded(this.bones, T2.hand, o, T2.w, T2.fit, T2);
       const w = T2.w;
+      if (T2.two && w.grip_secondary) {
+        const other = T2.hand === "Left" ? "Right" : "Left";
+        o.updateMatrixWorld(true);
+        const pt = o.localToWorld(_v6.set(...w.grip_secondary)), dir = _v7.set(...w.shaft_axis).transformDirection(o.matrixWorld);
+        this.reachClavicle(other, pt);
+        if (handOnto(this.bones, other, pt, dir, 1, ikArm)) this.closeFist(other, 1);
+      }
       o.visible = true;
       o.updateMatrixWorld(true);
       (this.heldGrip || (this.heldGrip = new Vector3())).set(...w.grip_primary).applyMatrix4(o.matrixWorld);
@@ -50711,6 +50754,11 @@ void main() {
     }
     // The bat as a one-handed weapon (2026-10-16: Quaternius's Sword Regular Combo, split into its strikes; the user's pick
     // over the reference-video combo). hold: as placeHeld; idle: the Sword Idle clip, its upper body the bat's stance.
+    // her closed fist (the bat idle's grip, setHandPoses) on one hand, by w
+    closeFist(side, w) {
+      for (const [b, q, sd] of this.fist || []) if (sd === side) b.quaternion.slerp(q, Math.min(1, w));
+      this.bones[side + "Hand"]?.updateMatrixWorld(true);
+    }
     setOneHandedBat(hold, idle) {
       var _a6;
       this.batLib = hold;
@@ -51007,6 +51055,16 @@ void main() {
         M4.quaternion.copy(this.bladeQ);
         if (!this.batMode && this.axeFit) applyFit(M4, _v5.copy(M4.position), this.bladeQ, this.axeFit, AXE_AT);
         M4.updateMatrixWorld(true);
+        if (!this.batMode) {
+          const off = (this.swingAct ? this.swingHand : "Right") === "Right" ? "Left" : "Right", hd = _v5.set(0, 0, 1).applyQuaternion(M4.quaternion);
+          const gap = handleSpot(this.bones, off, M4.position, hd, -0.12, 0.5, _v6), span = this._l2?.span ?? 0;
+          const wOn = smooth2(clamp4((gap - 0.012) / 0.04, 0, 1)) * (1 - smooth2(clamp4((span - 0.45) / 0.15, 0, 1)));
+          if (wOn > 0.01) {
+            this.reachClavicle(off, _v6);
+            handOnto(this.bones, off, _v6, hd, wOn, ikArm);
+            this.closeFist(off, wOn);
+          }
+        }
       }
     }
     die(dt, s) {

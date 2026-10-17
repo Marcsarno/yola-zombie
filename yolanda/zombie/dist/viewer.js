@@ -38232,6 +38232,56 @@ void main() {
     out.c.lerp(ch, sm(0.36, 0.5, out.span));
     return out;
   }
+  var _ha = new Vector3();
+  var _hb = new Vector3();
+  var _hd = new Vector3();
+  var _hq2 = new Quaternion();
+  var _hw = new Quaternion();
+  var _hp = new Quaternion();
+  var _hi = new Quaternion();
+  function handOnto(bones, side, point, dir, w, solveArm) {
+    if (!(w > 1e-3)) return false;
+    const H = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P = bones[side + "HandPinky1"], M = bones[side + "HandMiddle1"];
+    if (!H || !I2 || !P || !M) return false;
+    const a = I2.getWorldPosition(_ha).sub(P.getWorldPosition(_hb)).normalize(), d = _hd.copy(dir).normalize();
+    if (a.dot(d) < 0) d.negate();
+    _hq2.setFromUnitVectors(a, d);
+    _hi.identity().slerp(_hq2, w);
+    H.getWorldQuaternion(_hw);
+    H.parent.getWorldQuaternion(_hp);
+    H.quaternion.copy(_hp.invert().multiply(_hi).multiply(_hw));
+    H.updateMatrixWorld(true);
+    const off = M.getWorldPosition(_ha).add(H.getWorldPosition(_hb)).multiplyScalar(0.5).sub(H.getWorldPosition(_hb));
+    solveArm(bones[side + "Arm"], bones[side + "ForeArm"], H, _hb.copy(point).sub(off), w);
+    return true;
+  }
+  var _rc = [0, 0, 0, 0, 0, 0].map(() => new Vector3());
+  var _rq = new Quaternion();
+  var _rq2 = new Quaternion();
+  var _rq3 = new Quaternion();
+  function reachShoulder(bones, side, target) {
+    const cl = bones[side + "Shoulder"], up = bones[side + "Arm"], lo = bones[side + "ForeArm"], hand = bones[side + "Hand"], mid = bones[side + "HandMiddle1"];
+    if (!cl || !up || !lo || !hand || !mid) return;
+    const R = _rc, c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]);
+    const g = mid.getWorldPosition(R[4]).add(h).multiplyScalar(0.5);
+    const need = a.distanceTo(target) - (a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g)) * 0.97;
+    if (need <= 0) return;
+    const ca = R[1].sub(c), ct = R[5].copy(target).sub(c), axis = new Vector3().crossVectors(ca, ct);
+    if (axis.lengthSq() < 1e-10) return;
+    _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180));
+    cl.getWorldQuaternion(_rq2);
+    cl.parent.getWorldQuaternion(_rq3);
+    cl.quaternion.copy(_rq3.invert().multiply(_rq).multiply(_rq2));
+    cl.updateMatrixWorld(true);
+  }
+  function handleSpot(bones, side, origin, dir, lo, hi, out) {
+    const H = bones[side + "Hand"], M = bones[side + "HandMiddle1"];
+    if (!H || !M) return 9;
+    const g = H.getWorldPosition(_ha).add(M.getWorldPosition(_hb)).multiplyScalar(0.5);
+    const t = Math.min(hi, Math.max(lo, g.clone().sub(origin).dot(dir)));
+    out.copy(origin).addScaledVector(dir, t);
+    return out.distanceTo(g);
+  }
   var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
   function magInsert(out, pinch, s) {
     return out.set(MAG_SEAT.x + (pinch.x - MAG_SEAT.x) * (1 - s), MAG_SEAT.y + Math.min(0, pinch.y - MAG_SEAT.y) * (s >= 1 ? 0 : 1), MAG_SEAT.z + (pinch.z - MAG_SEAT.z) * (1 - s));
@@ -38339,10 +38389,11 @@ void main() {
     guard: { label: "Zombie big guard", file: "assets/zombie-guard.glb", height: 2.05, ref: "zombie_" }
   };
   var TC = "assets/test_clips/";
-  CHARS.yola2.newPacks = [TC + "ual1_full_yola2.glb", TC + "ual2_full_yola2.glb", TC + "ual2_full_yola2_b.glb"];
+  CHARS.yola2.newPacks = [TC + "idle_options.glb", TC + "ual1_full_yola2.glb", TC + "ual2_full_yola2.glb", TC + "ual2_full_yola2_b.glb"];
   CHARS.patient.newPacks = [TC + "ual1_full_patient.glb", TC + "ual2_full_patient.glb"];
   CHARS.guard.newPacks = [TC + "ual2_full_guard.glb"];
   var NEW_KINDS = [
+    ["Idle holds (options for the bat, axe, chainsaw)", /^Melee_2H_Idle|^Melee_Blocking|^Melee_Unarmed_Idle|^Idle_A$|^Idle_B$|^Holding_|^Ranged_2H_Aiming|^Idle_Lantern|^Idle_Torch|^Idle_Shield_Loop|^Sword_Block|^Idle_FoldArms|^Idle_Tired|^Idle_Loop$/],
     ["Zombie moves & attacks", /^Zombie_|^MonsterTransformation/],
     ["Jump, slam & shield (the guard)", /^NinjaJump|^DoubleJump|^Sword_GroundPound|^Shield_|^Idle_Shield|^Sprint_Shield|^LiftAir/],
     ["Run, walk & turn", /^Jog_|^Walk_|^Sprint_|^Turn\d|^Idle_Loop$|^Idle_Tired|^Idle_LookAround/],
@@ -38367,13 +38418,17 @@ void main() {
       [`ball_${s}`]: S2 + "ToeBase"
     });
     for (const [f, F] of [["thumb", "Thumb"], ["index", "Index"], ["middle", "Middle"], ["ring", "Ring"], ["pinky", "Pinky"]]) for (const i of [1, 2, 3]) UE_MAP[`${f}_0${i}_${s}`] = `${S2}Hand${F}${i}`;
+    Object.assign(UE_MAP, { [`upperarm${s}`]: S2 + "Arm", [`lowerarm${s}`]: S2 + "ForeArm", [`wrist${s}`]: S2 + "Hand", [`hand${s}`]: S2 + "HandMiddle1", [`upperleg${s}`]: S2 + "UpLeg", [`lowerleg${s}`]: S2 + "Leg", [`foot${s}`]: S2 + "Foot", [`toes${s}`]: S2 + "ToeBase" });
   }
+  Object.assign(UE_MAP, { hips: "Hips", spine: "Spine", chest: "Spine2", head: "Head" });
+  var KK_FILES = ["Rig_Medium_CombatMelee", "Rig_Medium_General", "Rig_Medium_Tools", "Rig_Medium_CombatRanged"].map((n) => `assets/source/kaykit/${n}.glb`);
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var REF_OFFSET = { pistol_reload: 37 };
   var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
   var HELD = { pistol: 1, axe: 1, bat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
   var LIB_WEAPONS = { sledgehammer: 1, chainsaw: 1, knife: 1 };
   var WDEFS = {};
+  var PICKS = {};
   var autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? "bat" : /chop|gs_|slash|axe/.test(name) ? "axe" : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? "short" : /pistol|t_shoot/.test(name) ? "pistol" : "none";
   var GUN_FILES = { old: "assets/weapons/pump_shotgun.glb", short: "assets/weapons/pump_short.glb" };
   var canvas = $("view");
@@ -38430,7 +38485,7 @@ void main() {
   }
   function pinRoot(clip, on, a) {
     for (const t of clip.tracks) {
-      if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
+      if (!/(Hips|pelvis|root|hips)\.position$/.test(t.name)) continue;
       if (!t.__orig) t.__orig = t.values.slice();
       const bn = t.name.split(".")[0], k = /^(pelvis|root)$/.test(bn) ? 1 : 2;
       const v = t.values, o = t.__orig, r = a?.restPos?.[bn.replace(/^mixamorig:?/, "")], rx = r ? r.x : o[0], rk = r ? k === 1 ? r.y : r.z : o[k];
@@ -38706,7 +38761,7 @@ void main() {
         try {
           const c = await loadG(f), have = Object.fromEntries(g.animations.map((a) => [a.name, a]));
           for (const a of c.animations) {
-            const tag = packs.includes(f) ? { pack: /ual1_/.test(a.name) ? "UAL1" : "UAL2" } : extraQ.includes(f) ? { test: f.split("/").pop() } : {};
+            const tag = packs.includes(f) ? { pack: /^kk_/.test(a.name) ? "KayKit" : /ual1_/.test(a.name) ? "UAL1" : "UAL2" } : extraQ.includes(f) ? { test: f.split("/").pop() } : {};
             if (tag.pack && have[a.name]) {
               have[a.name].userData = { ...have[a.name].userData, ...tag };
               continue;
@@ -38747,7 +38802,19 @@ void main() {
     const libName = (CHARS[S.char].libRef || {})[name.replace(/_REBAKE_.*$/, "")] || name;
     const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => libName.startsWith(p));
     let rc = null, file = "";
-    if (lib) {
+    if (libName.startsWith("kk_")) {
+      for (const f of KK_FILES) {
+        const u = await ualRef(f, false);
+        const c2 = u?.clips.find((q) => q.name === libName.slice(3));
+        if (c2) {
+          useRef(u.actor);
+          rc = c2;
+          file = f;
+          break;
+        }
+      }
+      if (!rc) useRef(refX);
+    } else if (lib) {
       const u = await ualRef(UAL_FILES[lib]);
       useRef(u ? u.actor : refX);
       rc = u?.clips.find((c2) => c2.name === libName.replace(/_REBAKE_.*$/, "").slice(lib.length)) || null;
@@ -38762,7 +38829,7 @@ void main() {
     const rsel = $("refclip");
     rsel.innerHTML = "";
     if (rc) {
-      rsel.add(new Option(lib ? `Quaternius mannequin: ${rc.name}` : file.split("/").pop(), file));
+      rsel.add(new Option(libName.startsWith("kk_") ? `KayKit mannequin: ${rc.name}` : lib ? `Quaternius mannequin: ${rc.name}` : file.split("/").pop(), file));
       $("note").textContent = "";
     } else {
       rsel.add(new Option("no source rig for this clip", ""));
@@ -38774,7 +38841,7 @@ void main() {
       pinRoot(rc, $("inplace").checked, ref);
       ref.play(rc);
     }
-    S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, "")] || 0 : 0;
+    S.refOff = rc && !lib && !libName.startsWith("kk_") ? REF_OFFSET[name.replace(/_REBAKE_.*$/, "")] || 0 : 0;
     S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
     $("scrub").max = S.frames;
     S.frame = 1;
@@ -39037,6 +39104,10 @@ void main() {
     scene.add(held.axe);
     applyGun();
     refresh();
+  }).catch(() => {
+  });
+  fetch("assets/arena/selection.json").then((r) => r.json()).then((j) => {
+    for (const [clip, m] of Object.entries(j.moves || {})) for (const u of m.uses || []) PICKS[clip + "|" + u.weapon] = { hand: u.hand || "Right", roll: +u.roll || 0, slide: +u.slide || 0, flip: !!u.flip };
   }).catch(() => {
   });
   fetch("assets/arena/weapons.json").then((r) => r.json()).then(async (j) => {
@@ -39462,13 +39533,42 @@ void main() {
       pfitSync();
     }
   }
+  function otherHandOn(a, side, point, dir, w) {
+    const chain = Object.entries(a.bones).filter(([n]) => n.startsWith(side) && /(Shoulder|Arm|ForeArm|Hand)/.test(n)).map(([, b]) => b), before = chain.map((b) => b.quaternion.clone());
+    if (w >= 0.5) reachShoulder(a.bones, side, point);
+    if (!handOnto(a.bones, side, point, dir, w, ikArm)) return;
+    const after = chain.map((b) => b.quaternion.clone());
+    chain.forEach((b, i) => {
+      b.quaternion.copy(before[i]);
+      if (!after[i].equals(before[i])) postRot(a, b, (cur) => cur.copy(after[i]));
+    });
+    const P = fistPose(a);
+    if (P) {
+      for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, Math.min(1, w)));
+    }
+    a.root.updateMatrixWorld(true);
+  }
   function placeHeldOn(a, o) {
     const w = weaponOf(), k = a.height / 1.62;
     o.visible = true;
     o.scale.setScalar(k);
     if (w === "pistol" && $("pistolFist")?.checked && pistolInFist(a, o)) return;
     if (w === "bat" && placeOneHanded(a.bones, a === main ? handsOf().gunHand : "Right", o, BAT_DEF, fitW("bat", a), {}, k)) return;
+    if (w === "axe" && WDEFS[w] && a.bones.LeftHandIndex1) {
+      const B = a.bones, mid = (sd) => B[sd + "HandIndex1"].getWorldPosition(new Vector3()).lerp(B[sd + "HandPinky1"].getWorldPosition(new Vector3()), 0.5);
+      if (mid("Right").distanceTo(mid("Left")) > 0.32 * k && placeOneHanded(B, "Right", o, WDEFS[w], fitW(w, a), {}, k)) return;
+    }
     const LD = LIB_WEAPONS[w] && WDEFS[w];
+    if (LD) {
+      const pk = PICKS[(main?.clip?.name || "").replace(/_REBAKE_.*$/, "") + "|" + w] || { hand: LD.primary_hand || "Right" };
+      if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
+        if (LD.hands === "two" && LD.grip_secondary) {
+          o.updateMatrixWorld(true);
+          otherHandOn(a, pk.hand === "Left" ? "Right" : "Left", o.localToWorld(new Vector3(...LD.grip_secondary)), new Vector3(...LD.shaft_axis).transformDirection(o.matrixWorld), 1);
+        }
+        return;
+      }
+    }
     if (LD && LD.hands === "one" && placeOneHanded(a.bones, a === main ? handsOf().gunHand : "Right", o, LD, fitW(w, a), {}, k)) return;
     if (LD && LD.hands === "two") {
       const B = a.bones, ax = (sd) => B[sd + "HandIndex1"].getWorldPosition(new Vector3()).sub(B[sd + "HandPinky1"].getWorldPosition(_v3)).normalize();
@@ -39491,6 +39591,11 @@ void main() {
         fwd.addScaledVector(L2.d, -fwd.dot(L2.d)).normalize();
         const x2 = fwd.negate(), y2 = new Vector3().crossVectors(L2.d, x2);
         applyFit(o, L2.c, new Quaternion().setFromRotationMatrix(_m4.makeBasis(x2, y2, L2.d)), fitW("axe", a), new Vector3(), k, k);
+        o.updateMatrixWorld(true);
+        const hd = new Vector3(0, 0, 1).applyQuaternion(o.quaternion), pt = new Vector3();
+        const pt2 = new Vector3(), gL = handleSpot(B, "Left", o.position, hd, -0.12, 0.5, pt), gR = handleSpot(B, "Right", o.position, hd, -0.12, 0.5, pt2);
+        const off = gR > gL ? "Right" : "Left", gap = Math.max(gL, gR), wOn = smooth01((gap - 0.012) / 0.04) * (1 - smooth01((L2.span - 0.45) / 0.15));
+        if (wOn > 0.01) otherHandOn(a, off, off === "Right" ? pt2 : pt, hd, wOn);
         return;
       }
     }
@@ -39622,7 +39727,7 @@ void main() {
     };
     const fresh = {};
     for (const c of anims) if (c.userData?.pack && !used.has(c.name)) {
-      const k = NEW_KINDS.find(([, re]) => re.test(c.name.replace(/^ual1?_/, "")))?.[0] || "Other";
+      const k = NEW_KINDS.find(([, re]) => re.test(c.name.replace(/^(ual1?|kk)_/, "")))?.[0] || "Other";
       (fresh[k] || (fresh[k] = [])).push(c.name);
     }
     for (const [k] of [...NEW_KINDS, ["Other"]]) {
@@ -39631,7 +39736,7 @@ void main() {
       const g = document.createElement("optgroup");
       g.label = `\u2605 NEW PACKS: ${k} (${list.length})`;
       for (const n of list) {
-        g.appendChild(new Option(`${n.replace(/^ual1?_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ")}  [${byN[n].userData.pack}, ${clipFrames(byN[n])}f]${usedTag(n)}`, n));
+        g.appendChild(new Option(`${n.replace(/^(ual1?|kk)_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ")}  [${byN[n].userData.pack}, ${clipFrames(byN[n])}f]${usedTag(n)}`, n));
         used.add(n);
       }
       sel.appendChild(g);
@@ -39949,6 +40054,81 @@ void main() {
       else if (e.code === "ArrowRight") step(e.shiftKey ? 10 : 1);
     });
   }
+  async function exportHolds(name, cases) {
+    const out = [], V = new Vector3();
+    for (let i = 0; i < cases.length; i++) {
+      const C = cases[i];
+      S.gun = C.gun;
+      $("gun").value = C.gun;
+      applyGun();
+      await setClip(C.clip);
+      pausedUI(true);
+      S.frame = C.frame;
+      refresh();
+      refresh();
+      main.root.updateMatrixWorld(true);
+      const meshes = [], part = (bn) => /RightHand|RightForeArm/.test(bn) ? "handR" : /LeftHand|LeftForeArm/.test(bn) ? "handL" : "body";
+      main.obj.traverse((o) => {
+        if (!o.isSkinnedMesh || !o.visible) return;
+        o.skeleton.update();
+        const g = o.geometry, n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, names = o.skeleton.bones.map((b) => b.name);
+        const vp = new Array(n), P = new Float32Array(n * 3);
+        for (let v = 0; v < n; v++) {
+          let bi = 0, bw = -1;
+          for (let k = 0; k < 4; k++) {
+            const w = sw.getComponent(v, k);
+            if (w > bw) {
+              bw = w;
+              bi = si.getComponent(v, k);
+            }
+          }
+          vp[v] = part(names[bi] || "");
+          o.getVertexPosition(v, V).applyMatrix4(o.matrixWorld);
+          P[v * 3] = V.x;
+          P[v * 3 + 1] = V.y;
+          P[v * 3 + 2] = V.z;
+        }
+        const idx = g.index ? g.index.array : Array.from({ length: n }, (_, q) => q), by = {};
+        for (let t = 0; t < idx.length; t += 3) {
+          const k = vp[idx[t]];
+          (by[k] || (by[k] = [])).push(idx[t], idx[t + 1], idx[t + 2]);
+        }
+        for (const [k, list] of Object.entries(by)) {
+          const map = /* @__PURE__ */ new Map(), pos = [], ind = [];
+          for (const v of list) {
+            let j = map.get(v);
+            if (j === void 0) {
+              j = map.size;
+              map.set(v, j);
+              pos.push(+P[v * 3].toFixed(4), +P[v * 3 + 1].toFixed(4), +P[v * 3 + 2].toFixed(4));
+            }
+            ind.push(j);
+          }
+          meshes.push({ name: k, pos, idx: ind });
+        }
+      });
+      const W = HELD[C.gun] ? held[C.gun] : mainGun?.obj;
+      if (W?.visible) {
+        W.updateMatrixWorld(true);
+        const pos = [], ind = [];
+        W.traverse((m) => {
+          if (!m.isMesh || !m.visible) return;
+          const g = m.geometry, base = pos.length / 3, n = g.attributes.position.count;
+          for (let v = 0; v < n; v++) {
+            V.fromBufferAttribute(g.attributes.position, v).applyMatrix4(m.matrixWorld);
+            pos.push(+V.x.toFixed(4), +V.y.toFixed(4), +V.z.toFixed(4));
+          }
+          const idx = g.index ? g.index.array : Array.from({ length: n }, (_, q) => q);
+          for (const q of idx) ind.push(base + q);
+        });
+        meshes.push({ name: "weapon", pos, idx: ind });
+      }
+      const f = `${name}_${String(i).padStart(2, "0")}.json`;
+      await fetch("/__shot/" + f, { method: "POST", body: JSON.stringify({ label: C.label || `${C.gun} ${C.clip} f${C.frame}`, gun: C.gun, clip: C.clip, frame: C.frame, hand: (PICKS[C.clip + "|" + C.gun] || {}).hand || null, meshes }) });
+      out.push(f);
+    }
+    return out;
+  }
   async function capView({ who = "main", dir = [1, 0.3, 1], dist = 0.5, target = "hands", w = 600, h = 450, solo = false }) {
     const a = who === "ref" ? ref : main, cam = camera, c = new Vector3();
     if (target === "hands") {
@@ -40078,7 +40258,7 @@ void main() {
       controls.update();
       renderer.render(scene, camera);
     });
-    window.__lab = { HOLD_TUNE, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
+    window.__lab = { HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
       Object.assign(shellFit, o);
       for (const r of $("fit2").children) r._set(shellFit[r.dataset.k]);
       refresh();
