@@ -31,6 +31,14 @@ The user's next pass, built and checked in the browser (NOT yet committed or dep
   bounces off and drops away; then the freeze cuts to Yola with the pieces hanging in the air, name card + the crack over
   it; the crack fades as the camera rises. The OR's patient zombie is removed from the game (`dropPatient`, only after the
   burst played); his pieces and blood stay on the floor in gameplay. Camera near plane 0.05 during the swing, restored.
+- **IN THE GAME TOO (2026-10-17, the user's rule):** the full burst on BIG FINISHING BLOWS only: the bat's finisher (the
+  combo's last strike, style 'heavy' = its home-run swing), the shotgun at point blank (< 2.6 m, GIB_SHOTGUN_RANGE), the
+  sledgehammer (arena only today; its profile is 'heavy'). Normal kills keep the ordinary severing. Patient AND nurse
+  (assets/zombie-patient-burst.glb, assets/zombie-nurse-burst.glb: `make_zombie_burst.py -- <assets> patient|nurse`; the
+  opening now loads the patient file from assets/ too). src/render/gibburst.js copies the live view's pose onto the burst
+  skeleton, bakes and throws the chunks (walls via world.raycast, the game's fx blood), keeps the last 4 bursts on the
+  floor. main.js hooks (shared file, small): gibs load/update/clear, `gib()` beside handleEvents, the two triggers in the
+  'shotgun'/'batHit' cases, and `z.gibbed` skipping the view in the zombie loop. Sprinter and guard: no burst model yet.
 - **To tweak with the user:** hit timing (contact = 1.53 s into the clip, late in the swing), how far/fast pieces fly
   (`kick()` in burst.js), the head's flight time (`headSecs`), blood amount, the feet angle, the mix (not heard by me).
   A chapter restart from scratch brings the patient back at the table (no level flag yet).

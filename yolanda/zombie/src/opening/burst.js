@@ -1,5 +1,5 @@
 // The reveal's home run (2026-10-17): the patient zombie walks into Yola's swing and bursts. His burst model
-// (assets/opening/zombie-patient-burst.glb, tools/opening/make_zombie_burst.py) is the modular patient cut into chunks
+// (assets/zombie-patient-burst.glb, tools/opening/make_zombie_burst.py) is the modular patient cut into chunks
 // (head, chest, pelvis, upper arms, forearms, thighs, shins, guts, gibs), every cut capped with the gore kit, all skinned
 // to his skeleton. Until the hit he is one intact zombie on his own clips (assets/zombie-patient-mod.glb); at the hit each
 // chunk is baked to a still mesh in exactly the pose he stands in and thrown: pieces to either side of the frame, guts
@@ -28,7 +28,7 @@ export class ZombieBurst {
     this.bounds = null; // { x0, x1, z0, z1 }: the room's walls (pieces bounce off them, blood stops at them)
   }
   async load() {
-    const [g, mod] = await Promise.all([this.loader.loadAsync('assets/opening/zombie-patient-burst.glb'), this.loader.loadAsync('assets/zombie-patient-mod.glb')]);
+    const [g, mod] = await Promise.all([this.loader.loadAsync('assets/zombie-patient-burst.glb'), this.loader.loadAsync('assets/zombie-patient-mod.glb')]);
     const root = this.root = g.scene;
     root.traverse((o) => {
       if (!o.isMesh) return;

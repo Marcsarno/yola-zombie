@@ -4,25 +4,30 @@
 # both sides by blender/gore_kit.py (torn skin, fat, muscle, splintered bone), plus guts out of the waist and loose gibs.
 # Everything stays skinned to the same skeleton, so the game can pose it exactly as the live zombie stands at the hit,
 # bake each chunk to a still mesh and throw it. Meshes are named B__<chunk>__<part>; the chunks are what fly.
-# Writes a SEPARATE file used by the opening alone; assets/zombie-patient-mod.glb and its build are untouched.
-#   assets/opening/zombie-patient-burst.glb
-# usage: blender -b --factory-startup --python tools/opening/make_zombie_burst.py -- <assets dir> [preview.png]
+# Writes a SEPARATE file per zombie (the opening's home run and the game's finishing blows, src/render/gibburst.js);
+# the -mod files and their build are untouched.
+#   assets/zombie-patient-burst.glb, assets/zombie-nurse-burst.glb
+# usage: blender -b --factory-startup --python tools/opening/make_zombie_burst.py -- <assets dir> <patient|nurse> [preview.png]
 import bpy, bmesh, sys, os, math, random
 from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[sys.argv.index('--') + 1:]
-A = argv[0]; PREVIEW = argv[1] if len(argv) > 1 else None
+A = argv[0]; WHO = argv[1] if len(argv) > 1 else 'patient'; PREVIEW = argv[2] if len(argv) > 2 else None
+SRC = {  # the modular zombie: its torso mesh and its already-separate pieces (-> chunk names)
+    'patient': ('zombie-patient-mod.glb', 'Patient_Torso', {'Patient_Head': 'Head', 'Patient_LeftForearm': 'Forearm_L', 'Patient_RightForearm': 'Forearm_R', 'Patient_LeftLowerLeg': 'Shin_L', 'Patient_RightLowerLeg': 'Shin_R'}),
+    'nurse': ('zombie-nurse-mod.glb', 'Nurse_Body', {'Nurse_Head': 'Head', 'Nurse_Forearm_L': 'Forearm_L', 'Nurse_Forearm_R': 'Forearm_R', 'Nurse_LowerLeg_L': 'Shin_L', 'Nurse_LowerLeg_R': 'Shin_R'}),
+}[WHO]
 exec(open(os.path.join(HERE, '..', '..', 'blender', 'gore_kit.py')).read())  # build_piece, gore_material, colours
 
 for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
-bpy.ops.import_scene.gltf(filepath=os.path.join(A, 'zombie-patient-mod.glb'))
+bpy.ops.import_scene.gltf(filepath=os.path.join(A, SRC[0]))
 for o in list(bpy.data.objects):
     if o.type == 'MESH' and o.parent is None: bpy.data.objects.remove(o, do_unlink=True)  # (a stray icosphere)
 arm = next(o for o in bpy.data.objects if o.type == 'ARMATURE'); arm.animation_data_clear(); arm.data.pose_position = 'REST'
 for pb in arm.pose.bones: pb.matrix_basis.identity()
 bones = arm.data.bones
 M = lambda n: 'mixamorig:' + n
-TISSUE = 'Fracture | Deep burgundy closed tissue'
+TISSUE = 'Fracture | Deep burgundy closed tissue'  # (the mod files' closed-cut material; made if missing)
 
 # ---- 1. the torso split by its skin weights: each face goes to the chunk its vertices are mostly weighted to ----
 CHUNK_OF = {}
@@ -31,7 +36,7 @@ for b in ['Hips', 'Spine']: CHUNK_OF[M(b)] = 'Pelvis'
 for side, S in (('Left', 'L'), ('Right', 'R')):
     for b in ['Arm', 'ForeArm', 'Hand']: CHUNK_OF[M(side + b)] = 'UpperArm_' + S
     for b in ['UpLeg', 'Leg', 'Foot']: CHUNK_OF[M(side + b)] = 'Thigh_' + S
-torso = bpy.data.objects['Patient_Torso']; me = torso.data
+torso = next(o for o in bpy.data.objects if o.type == 'MESH' and o.name.split('.')[0] == SRC[1]); me = torso.data
 gname = {g.index: g.name for g in torso.vertex_groups}
 def vchunks(v):
     acc = {}
@@ -96,7 +101,11 @@ for c in CHUNKS:
     pieces[c] = (ob, bm)
 
 # ---- 2. each new cut: closed with the burgundy tissue, and a ring for the gore caps ----
-tissue_i = [m.name for m in me.materials].index(TISSUE)
+if TISSUE not in [m.name for m in me.materials if m]:
+    tm = bpy.data.materials.get(TISSUE) or bpy.data.materials.new(TISSUE); tm.use_nodes = True
+    next(n for n in tm.node_tree.nodes if n.type == 'BSDF_PRINCIPLED').inputs['Base Color'].default_value = (0.22, 0.02, 0.03, 1)
+    me.materials.append(tm)
+tissue_i = [m.name if m else '' for m in me.materials].index(TISSUE)
 orig_boundary = {k for k, v in edge_faces.items() if len(v) == 1}  # the mesh's real openings
 cut_pts = {}  # chunk -> list of cut-edge vertex positions (for the rings)
 for c, (ob, bm) in pieces.items():
@@ -133,11 +142,10 @@ for name, (sc, dc, prox, dist, nb) in CUTS.items():
     caps += [s, d]
 
 # ---- 3. the mod file's own pieces and caps, renamed into their chunks ----
-RENAME = {'Patient_Head': 'Head', 'Patient_LeftForearm': 'Forearm_L', 'Patient_RightForearm': 'Forearm_R',
-          'Patient_LeftLowerLeg': 'Shin_L', 'Patient_RightLowerLeg': 'Shin_R'}
+RENAME = SRC[2]
 for o in list(bpy.data.objects):
     if o.type != 'MESH': continue
-    if o.name in RENAME: o.name = 'B__%s__skin' % RENAME[o.name]
+    if o.name.split('.')[0] in RENAME: o.name = 'B__%s__skin' % RENAME[o.name.split('.')[0]]
     elif o.name.startswith('GORE_'):
         part, side = o.name.split('.')[0][5:].rsplit('_', 1)  # e.g. Forearm_L, Detached
         if part == 'Head': chunk = 'Head' if side == 'Detached' else 'Chest'
@@ -222,7 +230,7 @@ if PREVIEW:  # an exploded view: each chunk pushed out from the waist
     sc.render.filepath = PREVIEW; bpy.ops.render.render(write_still=True)
     for o in [o for o in bpy.data.objects if '_off' in o]: o.location = (0, 0, 0)
 arm.data.pose_position = 'POSE'
-out = os.path.join(A, 'opening', 'zombie-patient-burst.glb')
+out = os.path.join(A, 'zombie-%s-burst.glb' % WHO)
 bpy.ops.object.select_all(action='DESELECT')
 for o in bpy.data.objects:
     if o.type == 'ARMATURE' or (o.type == 'MESH' and o.name.startswith('B__')): o.select_set(True)

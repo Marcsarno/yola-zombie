@@ -9,6 +9,7 @@ import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.j
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
+import { GibBurst } from './render/gibburst.js';
 import { Telegraphs } from './render/telegraph.js';
 import { Looks, LOOKS } from './render/looks.js';
 import { LiveScreens } from './render/screens.js';
@@ -72,6 +73,8 @@ audio.setVolume(store.get('volume', 0.8)); audio.setMuted(store.get('muted', fal
 for (const b of ['sfx', 'music', 'voice']) { audio.levels[b] = store.get('lvl_' + b, audio.levels[b]); audio.busMuted[b] = store.get('mute_' + b, false); }
 const music = new GameMusic(audio); // the supplied combat track: explore / combat with hysteresis (music.js)
 const fx = new FX(scene);
+// the full burst on big finishing blows (render/gibburst.js): one model per zombie type that has one (0 nurse, 1 patient)
+const gibs = new GibBurst(scene, new GLTFLoader(), fx);
 const telegraphs = new Telegraphs(scene); // zombie attack wedges on the floor
 fx.gore = store.get('gore', true);
 let shakeOn = true;
@@ -139,6 +142,7 @@ const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: [], 
   : { model: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_extra.glb', 'assets/yola_sword.glb'], data: 'assets/clipdata.json' };
 const loader = new GLTFLoader();
 async function load() {
+  gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb' }); // (in the background: until it is in, kills die as before)
   hud.loading(0);
   arena = new Arena(scene, resolvedQuality(), renderer);
   looks = new Looks(renderer, scene, camera); looks.set(store.get('look', 'standard'));
@@ -325,7 +329,7 @@ function restart(newMode = mode, n = benchN, save = null) {
   window.game.sim = sim;
   for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); }
   zviews.clear();
-  ZombieView.clearPieces();
+  ZombieView.clearPieces(); gibs.clear();
   resetPhysics();
   const p = sim.player;
   p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;
@@ -446,7 +450,7 @@ function runFrame(dt, doRender = true) {
   fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? (p.attackHeld ? 1 : 0.5) : 0.2);
 
   stepPhysics(animDt);
-  ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt);
+  ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
   // ---- zombies (pooled views) ----
   const seen = new Set();
   for (const z of sim.zombies) {
@@ -458,6 +462,7 @@ function runFrame(dt, doRender = true) {
       z.px ??= z.x; z.pz ??= z.z;
     }
     seen.add(z.id);
+    if (z.gibbed) { if (v.outer.visible) v.hide(); continue; } // (blown apart: its pieces are the burst's, the view stays hidden)
     // Floor 3: a dormant zombie far from Yola (another room) is neither drawn nor animated
     if (sim.level && z.dormant && (z.x - ix) * (z.x - ix) + (z.z - iz) * (z.z - iz) > 15 * 15) { if (v.outer.visible) { v.outer.visible = false; v.blob.visible = false; v.farHidden = true; } continue; }
     if (v.farHidden) { v.outer.visible = true; v.blob.visible = true; v.farHidden = false; }
@@ -487,6 +492,15 @@ function runFrame(dt, doRender = true) {
 }
 
 let impactFrame = -1, frameNo = 0, impactN = 0;
+// a big finishing blow: the zombie's view bursts into its pieces (only the zombies with a burst model, only when drawn)
+const GIB_SHOTGUN_RANGE = 2.6; // m: the shotgun's point-blank range (the same as its close-blast thump)
+function gib(id, dx, dz, power) {
+  const z = sim.zombies.find((q) => q.id === id), v = zviews.get(id);
+  if (!z || z.gibbed || !v || !v.outer.visible || v.farHidden || !gibs.has(v.type)) return false;
+  if (!gibs.burst(v, dx, dz, power)) return false;
+  z.gibbed = true; v.hide(); audio.play('sever', 1.4); shake(0.55);
+  return true;
+}
 function handleEvents() {
   frameNo++;
   const p = sim.player;
@@ -514,6 +528,7 @@ function handleEvents() {
         if (flesh) audio.play('bulletHit', 1.3);
         // point blank: the blast lands as one heavy thump with a white flash on the body it struck (restrained: one per blast)
         const near = e.hits && e.closest < 2.6;
+        for (const id of e.killed || []) { const zk = sim.zombies.find((q) => q.id === id); if (zk && Math.hypot(zk.x - p.x, zk.z - p.z) < GIB_SHOTGUN_RANGE) gib(id, Math.sin(e.yaw), Math.cos(e.yaw), 1.4); } // (point blank: the full burst)
         if (near) { audio.play('shotgunClose'); const zc = sim.zombies.find((q) => q.id === e.closestId); if (zc) fx.hitFlash(zc.x - Math.sin(e.yaw) * 0.25, 1.1, zc.z - Math.cos(e.yaw) * 0.25, Math.sin(e.yaw), Math.cos(e.yaw), 1.5); }
         shake(near ? 0.7 : e.hits ? 0.5 : 0.35);
         // the camera kicks back against the shot
@@ -538,6 +553,7 @@ function handleEvents() {
           // the camera kicks along the blow (the follow spring brings it back); the chop kicks down-screen
           if (shakeOn) { const k = (e.killed ? 2.2 : 1.7) * (chop ? 1.3 : 1) * tuning.shake; camState.vx += e.dirX * k; camState.vz += e.dirZ * k; }
         } else if (impactN === 2) shake(0.12); // (a second body in the same swing: a touch more, never a stack)
+        if (e.killed && !e.fist && e.style === 'heavy') gib(e.id, e.dirX, e.dirZ, 1); // (the bat's finisher, the sledgehammer: the full burst)
         break;
       }
       case 'objective': hud.setObjective(OBJECTIVES[e.id] || ''); audio.play('swap'); break;
