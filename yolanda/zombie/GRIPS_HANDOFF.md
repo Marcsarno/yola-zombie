@@ -3,6 +3,27 @@
 Read this first when continuing the weapon/grip work. Then WEAPON_HOLD_PROCESS.md sections 16 (how to check a
 contact) and 17 (rigging and retargeting: what works, what not to do). PONYTAIL_PLAN.md = Yola 3.0 rig work (done).
 
+## LATEST (2026-10-17, after the overnight review; read this first)
+
+**Shotgun redone (the user: "her aim and hips are way off with the shotgun"):** the old sg_reload had a hand-made 52 deg
+spine twist (carried from the first Yola); her hips matched X Bot but her chest was 51 deg off and the gun 37 deg off,
+and in the game the aim correction undid it at its 46 deg limit. Now: sg_reload = X Bot's rifle reload with contacts
+'gunhand' (her left arm 85% reach in the hold, X Bot 84%; the 'support' version locked it straight, 99%), the game keeps
+the shotgun upper body on its clip's own heading (clipchars.js rebaseUpper, `?sghead=legs` = before), and aimShotgun
+sees the gun with the fit's turn. Result in the game: barrel on the aim in every move (16 deg steady correction), left
+hand on the pump, shell into the port. The left strafe twists her waist strongly (hips toward travel, chest on the aim):
+the user has not judged it yet. Shotgun fit yola2 = zero (the user's saved numbers had only undone the old clip's hold).
+Old clips kept in yola2_work.blend: sg_reload_twisted_OLD, sg_reload_support_OLD.
+**Bat combo restart (the user liked it):** after the finisher a new combo can start 0.4 s after its hit (was 1.6 s):
+weapons.js useBuiltBat restartFrom, player.js, clipchars.js ghostOf (the clip's last pose fades out on a copy over 0.2
+s; a fading attack counts in the layer weights).
+**Deployed** to https://yola-zombie.vercel.app (the bare address now redirects to /zombie/combat.html: yolanda/vercel.json)
+from a clean worktree build of HEAD (the other chat also deploys). NOT pushed to GitHub: 115+ local commits, and the
+history from 402d424 still holds the Kevin Iglesias yola_moves.glb; the repo is public, so scrub that file from history
+(with the user's OK: it rewrites commits) before any push.
+**Open:** the shotgun left-strafe waist twist; the punch thumbs lie along the fist; bat fingers vs the handle around combo
+frame 40; the pistol reload's left hand ~1 hand-length higher than the mannequin's at the hip pouch; Yola 2.0 unchecked.
+
 ## START HERE: the overnight review (2026-10-17, for the user to check)
 
 The user asked Claude to review every grip clip alone, fix what it could against the reference rigs, and leave the Rig
