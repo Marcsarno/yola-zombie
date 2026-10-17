@@ -98,10 +98,13 @@ export function magInsert(out, pinch, s) {
 // held between her thumb and index finger (the middle of the shell at the pinch), pointing at the loading port it is
 // about to go into. Before 2026-10-17 it rode fixed offsets from the palm and floated 5-8 cm behind her fingers.
 const _sp = new THREE.Vector3(), _sd = new THREE.Vector3(), _sx = new THREE.Vector3(1, 0, 0);
-export function placeShell(bones, o, portWorld, side = 'Left') {
+// insert (0..1): at the end of the reload the shell slides from her fingers into the port (2026-10-17: it vanished ~10 cm
+// short of it); SHELL_INSERT = how many reload frames that takes, before the shell's last frame
+export const SHELL_INSERT = 6;
+export function placeShell(bones, o, portWorld, side = 'Left', insert = 0) {
   const t = bones[side + 'HandThumb2'], i = bones[side + 'HandIndex2']; if (!t || !i) return false;
   t.getWorldPosition(_sp).lerp(i.getWorldPosition(_sd), 0.5);
   _sd.copy(portWorld).sub(_sp); if (_sd.lengthSq() < 1e-8) return false;
-  o.position.copy(_sp); o.quaternion.setFromUnitVectors(_sx, _sd.normalize());
+  o.position.copy(_sp).lerp(portWorld, insert); o.quaternion.setFromUnitVectors(_sx, _sd.normalize());
   return true;
 }

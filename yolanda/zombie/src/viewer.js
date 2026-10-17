@@ -8,7 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe, pr
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE } from './render/holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -340,10 +340,17 @@ function leftHand(f) {
   main.grip('Left', _m1);
   // the shell goes up into the loading port from below
   const shellOn = f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from;
+  const tail = f > shellFit.to && f < shellFit.to + 5; // (as the game, clipchars.js shotgunLeftHand)
   let wPort = 0;
-  if (shellOn && U.port) {
+  if ((shellOn || tail) && U.port) {
     const target = g.localToWorld(U.port.position.clone().add(new THREE.Vector3(0, -PUMP.portDown, 0)));
-    wPort = smooth01(1 - (_m1.distanceTo(target) - 0.05) / 0.2);
+    wPort = tail ? 0 : smooth01(1 - (_m1.distanceTo(target) - 0.05) / 0.2);
+    // at the end her thumb-index pinch (the shell) goes to the port: she pushes it in
+    const ins = tail ? smooth01(1 - (f - shellFit.to) / 5) : smooth01((f - (shellFit.to - SHELL_INSERT)) / SHELL_INSERT);
+    if (ins > 0) {
+      const B = main.bones, pinch = B.LeftHandThumb2.getWorldPosition(new THREE.Vector3()).lerp(B.LeftHandIndex2.getWorldPosition(_v3), 0.5).sub(_m1);
+      target.lerp(U.port.getWorldPosition(new THREE.Vector3()).sub(pinch), ins); wPort = Math.max(wPort, ins);
+    }
     if (wPort > 0) { ik(target, wPort); main.grip('Left', _m1); }
   }
   // otherwise the hand stays on the pump wherever it slides
@@ -366,7 +373,8 @@ function updateShell(f) {
   const on = !!main.action && f >= shellFit.from && f <= shellFit.to && shellFit.to > shellFit.from && S.gun === 'short';
   shellObj.visible = on; if (!on) return;
   // as the game (holdfit.js placeShell): in her thumb-index pinch, pointing at the loading port
-  const port = mainGun?.obj?.userData.port; if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v))) { shellObj.visible = false; return; }
+  const port = mainGun?.obj?.userData.port, u = smooth01((f - (shellFit.to - SHELL_INSERT)) / SHELL_INSERT);
+  if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v), 'Left', u)) { shellObj.visible = false; return; }
   shellObj.updateMatrixWorld(true);
 }
 function applyGun() {

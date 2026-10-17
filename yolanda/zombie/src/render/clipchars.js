@@ -11,7 +11,7 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell } from './holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
@@ -830,9 +830,17 @@ export class YolaView extends ClipBody {
     const shellOn = rf >= SH.from && rf <= SH.to;
     this.grip('Left', _v);
     let wPort = 0;
-    if (shellOn) {
+    const tail = rf > SH.to && rf < SH.to + 5; // (after the shell is in: her hand eases off the port, it snapped back 14 cm)
+    if (shellOn || tail) {
       _v3.copy(U.port.position).add(_v4.set(0, -SH.portDown, 0)); G.localToWorld(_v3);
-      wPort = smooth01(1 - (_v.distanceTo(_v3) - 0.05) / 0.2);
+      wPort = tail ? 0 : smooth01(1 - (_v.distanceTo(_v3) - 0.05) / 0.2);
+      // at the end her thumb-index pinch (the shell, holdfit.js placeShell) goes to the port itself: the grip point is
+      // aimed short of it by the pinch's offset, so she pushes the shell in (2026-10-17: it left her fingers ~10 cm short)
+      const ins = tail ? smooth01(1 - (rf - SH.to) / 5) : smooth01((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT);
+      if (ins > 0) {
+        this.bones.LeftHandThumb2.getWorldPosition(_v4).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v6), 0.5).sub(_v); // pinch - grip
+        _v6.copy(U.port.position); G.localToWorld(_v6); _v6.sub(_v4); _v3.lerp(_v6, ins); wPort = Math.max(wPort, ins);
+      }
       if (wPort > 0) { this.ikArm('Left', _v3, wPort); this.grip('Left', _v); }
     }
     _v2.set(U.pumpX, U.pump.position.y, U.pump.position.z); G.localToWorld(_v2); // the pump's rest hold point
@@ -840,7 +848,7 @@ export class YolaView extends ClipBody {
     if (wHold > 0) this.ikArm('Left', U.gripL.getWorldPosition(_v3), wHold);
     // the shell rides the left hand
     const S = this.shell; S.visible = shellOn;
-    if (shellOn) placeShell(this.bones, S, U.port.getWorldPosition(_v3)); // (in her fingers, toward the port: holdfit.js)
+    if (shellOn) placeShell(this.bones, S, U.port.getWorldPosition(_v3), 'Left', smooth(clamp((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT, 0, 1))); // (in her fingers, toward the port, then in: holdfit.js)
   }
 
   // ---- the weapon test arena (src/arena/testarena.js) ----
