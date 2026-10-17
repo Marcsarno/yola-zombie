@@ -256,8 +256,7 @@ async function setChar(key) {
   const { gltf, actor } = mainCache[key];
   main = actor; scene.add(main.root, main.helper);
   mainGun = new Gun(main);
-  const sel = $('clip'); sel.innerHTML = '';
-  for (const c of gltf.animations) sel.add(new Option(`${c.name}  (${clipFrames(c)}f)`, c.name));
+  const sel = $('clip'); sel.innerHTML = ''; fillClips();
   const first = key === 'yola2' ? 'ual_Sword_Regular_Combo' : key === 'yola' ? (gltf.animations.some((c) => c.name === 'bat_combo_mc') ? 'bat_combo_mc' : 'reload_rifle_stand') : gltf.animations[0].name;
   sel.value = gltf.animations.some((c) => c.name === first) ? first : gltf.animations[0].name;
   await setClip(sel.value);
@@ -598,10 +597,38 @@ function drawVidRef(f) {
 const WEAPON_CLIPS = {
   pistol: { label: 'Pistol', idle: 'pistol_idle', attack: 'kick' },
   short: { label: 'Shotgun', idle: 'sg_reload', attack: null }, // (the game holds sg_reload's hold frame; its kick is not in the Rig Lab yet)
-  axe: { label: 'Axe', idle: 'bat_idle', attack: 't_chop' },
+  axe: { label: 'Axe', idle: 'bat_idle', attack: 'bat_swing' }, // (its combo: bat_swing, then t_chop)
   bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
   none: { label: 'None', idle: null, attack: null },
 };
+// the clip list grouped by weapon and kind of move, as the game plays them (the user, 2026-10-16: "this viewer isn't
+// sorting the animations per weapon and per type"). The guns, axe and bat run on the pistol gait's LEGS under their own
+// upper body (the bat's options: render/clipchars.js batRun); unarmed runs are the regular "plain" clips.
+const PMOVE = ['pistol_walk', 'pistol_run', 'pistol_walk_back', 'pistol_run_back', 'pistol_strafe_left', 'pistol_strafe_right', 'pistol_strafe_run_left', 'pistol_strafe_run_right'];
+const PLAIN = ['p_run_plain', 'p_run_back_plain', 'p_walk_strafe_left_plain', 'p_walk_strafe_right_plain', 'p_run_strafe_left_plain', 'p_run_strafe_right_plain'];
+const GAME_CLIPS = {
+  pistol: { Idle: ['pistol_idle'], Move: PMOVE, Reload: ['pistol_reload'], 'Hit (pistol)': ['pistol_hit'] },
+  short: { 'Idle (its hold frame)': ['sg_reload'], 'Move (legs only, upper body = hold)': PMOVE, Reload: ['sg_reload'], 'Mixamo sources': ['rifle_aim_idle', 'reload_rifle_stand'] },
+  axe: { 'Idle (upper body)': ['bat_idle'], 'Move (legs only)': PMOVE, 'Attack (swing, chop)': ['bat_swing', 't_chop'] },
+  bat: { Idle: ['ual1_Sword_Idle'], 'Move, run "now" / "rebase" (legs only)': PMOVE, 'Move, run "plain"': PLAIN, 'Attack (4 strikes)': ['ual_Sword_Regular_Combo'] },
+  none: { 'Idle (fists)': ['tripo_idle'], Move: PLAIN, 'Attack (jab, cross, kick)': ['t_box_01', 't_box_02', 't_kick_02'] },
+};
+const EVERYONE = { 'Everyone: hit, knockdown, death': ['hit_body', 'yola_knockdown', 'yola_getup', 'death_fall', 'death_defeat'], 'Everyone: scripted (the opening)': ['t_greet_01', 't_greet_04'] };
+function fillClips() {
+  const sel = $('clip'), keep = sel.value, anims = mainCache[S.char].gltf.animations, byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = new Set();
+  sel.innerHTML = '';
+  const group = (label, list) => {
+    const ok = list.filter((n) => byN[n]); if (!ok.length) return;
+    const g = document.createElement('optgroup'); g.label = label;
+    for (const n of ok) { g.appendChild(new Option(`${n}  (${clipFrames(byN[n])}f)`, n)); used.add(n); }
+    sel.appendChild(g);
+  };
+  const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
+  for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === 'None' ? 'Fists / none' : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
+  for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
+  group(ws.length === 1 ? 'Other clips (other weapons, library picks, unused)' : 'Other clips (library picks, unused)', anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
+  if (byN[keep]) sel.value = keep;
+}
 function pickClip(name) {
   const sel = $('clip'); if (!name || ![...sel.options].some((o) => o.value === name)) return;
   if (sel.value !== name) { sel.value = name; sel.dispatchEvent(new Event('change')); }
@@ -618,12 +645,12 @@ function buildUI() {
   for (const k in CHARS) { const b = document.createElement('button'); b.textContent = CHARS[k].label; b.dataset.k = k; b.onclick = () => setChar(k); $('chars').appendChild(b); }
   for (const k in GUNS) $('gun').add(new Option(GUNS[k], k));
   $('gun').value = S.gun;
-  $('gun').onchange = (e) => { S.gun = e.target.value; applyGun(); refresh(); weaponUI(); };
+  $('gun').onchange = (e) => { S.gun = e.target.value; fillClips(); applyGun(); refresh(); weaponUI(); };
   // weapon picker (top bar, the user 2026-10-16): what she holds, kept when the clip changes; Idle / Attack jump to
   // that weapon's own clips as the game plays them (pistol: the idle with the game's shot kick, see SHOT)
   for (const k of Object.keys(WEAPON_CLIPS)) {
     const b = document.createElement('button'); b.textContent = WEAPON_CLIPS[k].label; b.dataset.k = k;
-    b.onclick = () => { S.gun = k; $('gun').value = k; pickClip(WEAPON_CLIPS[k].idle); applyGun(); refresh(); weaponUI(); };
+    b.onclick = () => { S.gun = k; $('gun').value = k; fillClips(); pickClip(WEAPON_CLIPS[k].idle); applyGun(); refresh(); weaponUI(); };
     $('weapons').appendChild(b);
   }
   $('wIdle').onclick = () => { const W = WEAPON_CLIPS[S.gun]; if (W) { stopFiring(); pickClip(W.idle); } };
