@@ -11,6 +11,8 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
+import { placeOneHanded, twoHandLine, applyFit } from './holdfit.js';
+const AXE_AT = new THREE.Vector3(); // (the axe model's origin is its grip point between the hands)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
@@ -803,22 +805,18 @@ export class YolaView extends ClipBody {
   // (world) for the attack builder's path sampling (src/render/libattack.js).
   placeTest() { this.placeHeld(this.test); }
   placeHeld(T) {
-    const F = (this._ff ||= { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() });
     if (T.fingers) {
       for (const [n, q] of T.fingers) if (T.two || n.startsWith(T.hand)) this.bones[n].quaternion.copy(q);
       for (const side of T.two ? ['Left', 'Right'] : [T.hand]) this.bones[side + 'Hand'].updateMatrixWorld(true);
     }
     const o = T.obj; if (!o) return;
-    this.fistFrame(T.hand, F);
-    const A = _v3.copy(F.a).multiplyScalar(T.flip ? -1 : 1), K = _v4.copy(F.k).applyAxisAngle(A, THREE.MathUtils.degToRad(T.roll || 0));
-    const w = T.w, s = _v5.set(...w.shaft_axis).normalize(), r = _v6.set(...w.ref_axis); r.addScaledVector(s, -r.dot(s)).normalize();
-    const M1 = (this._m1 ||= new THREE.Matrix4()).makeBasis(s, r, _v7.crossVectors(s, r));
-    const M2 = (this._m2 ||= new THREE.Matrix4()).makeBasis(A, K, _v.crossVectors(A, K));
-    o.quaternion.setFromRotationMatrix(M2.multiply(M1.transpose()));
-    o.position.copy(F.c).sub(_v2.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T.slide || 0);
+    // (render/holdfit.js, the same math as the Rig Lab: grip in the fist, shaft along the knuckles, then T.fit, the user's
+    // fit for this weapon on this Yola from assets/hold/weapon_fit.json)
+    placeOneHanded(this.bones, T.hand, o, T.w, T.fit, T);
+    const w = T.w;
     o.visible = true; o.updateMatrixWorld(true);
-    (this.heldGrip ||= new THREE.Vector3()).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
-    (this.heldTip ||= new THREE.Vector3()).set(...(w.impact_point || w.tip)).applyQuaternion(o.quaternion).add(o.position);
+    (this.heldGrip ||= new THREE.Vector3()).set(...w.grip_primary).applyMatrix4(o.matrixWorld);
+    (this.heldTip ||= new THREE.Vector3()).set(...(w.impact_point || w.tip)).applyMatrix4(o.matrixWorld);
     this.testGrip = this.heldGrip; this.testTip = this.heldTip;
   }
   // The bat as a one-handed weapon (2026-10-16: Quaternius's Sword Regular Combo, split into its strikes; the user's pick
@@ -967,7 +965,12 @@ export class YolaView extends ClipBody {
         this.ikArm('Left', _v7, 1);
         this.grip('Left', _v2);
         M.position.copy(_v).addScaledVector(dir, -span / 2);
-      } else M.position.copy(_v).add(_v2).multiplyScalar(0.5);
+      } else {
+        // the handle through both fist centres, its head end from the socket direction (render/holdfit.js twoHandLine, as
+        // the Rig Lab places it; before 2026-10-17 it ran from the palms' midpoint and passed behind her fists)
+        const L2 = twoHandLine(this.bones, dir, this._l2 ||= { c: new THREE.Vector3(), d: new THREE.Vector3(), span: 0 }, this.swingAct ? this.swingHand : 'Right', this.axeDir);
+        if (L2) { dir.copy(L2.d); M.position.copy(L2.c); (this.axeDir ||= new THREE.Vector3()).copy(dir); } else M.position.copy(_v).add(_v2).multiplyScalar(0.5);
+      }
       const tip = _v4.copy(M.position).addScaledVector(dir, 0.7);
       const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new THREE.Vector3();
       this.prevTip.copy(tip);
@@ -980,8 +983,13 @@ export class YolaView extends ClipBody {
       const x = want.clone().negate(), y = new THREE.Vector3().crossVectors(dir, x); // local -X is the blade
       const target = _q2.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, dir));
       if (!this.bladeInit || this.batMode) { this.bladeQ.copy(target); this.bladeInit = true; } // (a round bat has no edge to lead: it follows the hand exactly)
-      else this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
+      else {
+        this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
+        // (only the blade's roll is eased: the handle stays exactly on its line through her fists, it lagged 3 cm off them)
+        _q.setFromUnitVectors(_v5.set(0, 0, 1).applyQuaternion(this.bladeQ), dir); this.bladeQ.premultiply(_q);
+      }
       M.quaternion.copy(this.bladeQ);
+      if (!this.batMode && this.axeFit) applyFit(M, _v5.copy(M.position), this.bladeQ, this.axeFit, AXE_AT); // (the user's axe fit)
       M.updateMatrixWorld(true);
     }
   }

@@ -7,7 +7,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, prepAxe, prepPistolCore, PISTOL_CORE_SCALE } from './render/weaponModels.js';
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
-import { SHOTGUN_SPEC } from './core/weapons.js';
+import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
+import { placeOneHanded, twoHandLine, applyFit } from './render/holdfit.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
 const CLIP_FPS = { bat_combo_mc: 60 };
@@ -613,6 +614,15 @@ const PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
 const FITS = {};
 const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
+// the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
+const WFITS = {};
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', axe: 'Axe' };
+const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
+fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
+  for (const [w, v] of Object.entries(j)) if (typeof v === 'object') for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f };
+  try { for (const [w, v] of Object.entries(JSON.parse(localStorage.getItem('weaponFits') || '{}'))) for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f }; } catch { /* none */ }
+  pfitSync?.(); refresh?.();
+});
 const fitsReady = fetch('assets/hold/pistol_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
   for (const [k, v] of Object.entries(j)) if (typeof v === 'object') FITS[k] = { ...PFIT0, ...v };
   try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('pistolFits') || '{}'))) FITS[k] = { ...PFIT0, ...v }; } catch { /* none */ }
@@ -621,18 +631,21 @@ const fitsReady = fetch('assets/hold/pistol_fit.json', { cache: 'reload' }).then
 const PFIT_ROWS = [['size', 'size %', 60, 120, 1], ['fwd', 'forward / back (mm)', -60, 60, 1], ['up', 'up / down the grip (mm)', -60, 60, 1], ['side', 'left / right (mm)', -40, 40, 1],
   ['tilt', 'tilt muzzle up/down (deg)', -45, 45, 1], ['turn', 'turn muzzle left/right (deg)', -45, 45, 1], ['roll', 'roll (deg)', -45, 45, 1]];
 let pfitWho = 'main', pfitSync = null;
+// slider labels per weapon (the bat: its long axis runs through her fist from the little finger to the index knuckle;
+// model +X points to the knuckles, +Y toward the wrist or the fingertips)
+const FIT_LABELS = { axe: ['size %', 'slide along the handle (mm)', 'move sideways (mm)', 'move toward the blade side (mm)', 'tilt (deg)', 'turn (deg)', 'roll the blade (deg)'], bat: ['size %', 'slide along the bat (mm)', 'move toward wrist / fingertips (mm)', 'move toward knuckles / palm (mm)', 'tip toward wrist / fingertips (deg)', 'tip toward knuckles / palm (deg)', 'roll the bat (deg)'] };
 function buildPistolFit() {
   const box = document.createElement('div'); box.id = 'pfit';
   box.style.cssText = 'position:fixed;right:8px;top:200px;z-index:30;background:rgba(20,26,30,.85);color:#ddd;font:11px system-ui;padding:6px 8px;border-radius:8px;width:210px';
-  box.innerHTML = '<b>Pistol fit</b> &nbsp;editing: <button id="pfitMain"></button><button id="pfitRef"></button><div id="pfitRows"></div>' +
+  box.innerHTML = '<b id="pfitTitle">Pistol fit</b> &nbsp;editing: <button id="pfitMain"></button><button id="pfitRef"></button><div id="pfitRows"></div>' +
     '<button id="pfitReset">reset this one</button> <button id="pfitSave">save</button><div id="pfitOut" style="opacity:.7;word-break:break-all;font-size:10px"></div>' +
-    '<hr style="border:0;border-top:1px solid #456;margin:5px 0"><b>Shot (game recoil, both rigs)</b>' +
+    '<div id="pshot"><hr style="border:0;border-top:1px solid #456;margin:5px 0"><b>Shot (game recoil, both rigs)</b>' +
     '<div style="display:grid;grid-template-columns:1fr 34px"><label>shot kick (hold, %)</label><span id="pkickV">0</span><input id="pkick" type="range" min="0" max="100" step="1" value="0" style="grid-column:1/3"></div>' +
-    '<button id="pfire">fire</button> <label><input id="pauto" type="checkbox"> keep firing</label>';
+    '<button id="pfire">fire</button> <label><input id="pauto" type="checkbox"> keep firing</label></div>';
   document.body.appendChild(box);
   const rows = box.querySelector('#pfitRows'), out = box.querySelector('#pfitOut');
-  const cur = () => fitOf(pfitWho === 'ref' ? ref : main);
-  const keep = () => { try { localStorage.setItem('pistolFits', JSON.stringify(FITS)); } catch { /* private window */ } };
+  const cur = () => fitW(weaponOf(), pfitWho === 'ref' ? ref : main);
+  const keep = () => { try { localStorage.setItem('pistolFits', JSON.stringify(FITS)); localStorage.setItem('weaponFits', JSON.stringify(WFITS)); } catch { /* private window */ } };
   const set = [];
   for (const [k, label, lo, hi, st] of PFIT_ROWS) {
     const r = document.createElement('div'); r.style.cssText = 'display:grid;grid-template-columns:1fr 34px;gap:0;margin:1px 0';
@@ -647,13 +660,17 @@ function buildPistolFit() {
     const on = 'background:#2a7fd4;color:#fff', off = 'background:#333;color:#ccc';
     bm.textContent = CHARS[S.char]?.label || S.char; br.textContent = ref === refX ? 'X Bot' : 'mannequin';
     bm.style.cssText = pfitWho === 'main' ? on : off; br.style.cssText = pfitWho === 'ref' ? on : off;
-    set.forEach((f) => f()); out.textContent = fitKey(pfitWho === 'ref' ? ref : main) + ' ' + JSON.stringify(cur());
+    const w = weaponOf(); box.querySelector('#pfitTitle').textContent = (FIT_WEAPONS[w] || w) + ' fit';
+    for (const [i, el] of [...rows.children].entries()) el.querySelector('label').textContent = (FIT_LABELS[w] || PFIT_ROWS.map((r) => r[1]))[i];
+    box.querySelector('#pshot').style.display = w === 'pistol' ? '' : 'none';
+    set.forEach((f) => f()); out.textContent = w + ' / ' + fitKey(pfitWho === 'ref' ? ref : main) + ' ' + JSON.stringify(cur());
   };
   bm.onclick = () => { pfitWho = 'main'; pfitSync(); }; br.onclick = () => { pfitWho = 'ref'; pfitSync(); };
   box.querySelector('#pfitReset').onclick = () => { Object.assign(cur(), PFIT0); keep(); pfitSync(); refresh(); };
   box.querySelector('#pfitSave').onclick = async () => {
     const r = await fetch('/__shot/pistol_fit.json', { method: 'POST', body: JSON.stringify(FITS, null, 1) });
-    out.textContent = r.ok ? 'saved (shots/pistol_fit.json)' : 'save failed';
+    const r2 = await fetch('/__shot/weapon_fit.json', { method: 'POST', body: JSON.stringify(WFITS, null, 1) });
+    out.textContent = r.ok && r2.ok ? 'saved (shots/pistol_fit.json, shots/weapon_fit.json)' : 'save failed';
   };
   const kv = box.querySelector('#pkickV');
   box.querySelector('#pkick').oninput = (e) => { SHOT.hold = Math.sqrt(+e.target.value / 100); kv.textContent = e.target.value; refresh(); }; // (% of the full kick)
@@ -665,7 +682,9 @@ function buildPistolFit() {
 let pfitBox = null;
 let pfitRefWas = null;
 function updatePistolFitUI() {
-  pfitBox ||= buildPistolFit(); pfitBox.style.display = weaponOf() === 'pistol' && $('pistolFist')?.checked ? '' : 'none';
+  pfitBox ||= buildPistolFit(); const w = weaponOf();
+  pfitBox.style.display = (w === 'pistol' && $('pistolFist')?.checked) || (FIT_WEAPONS[w] && w !== 'pistol') ? '' : 'none';
+  if (w !== pfitBox.dataset.w) { pfitBox.dataset.w = w; pfitSync(); }
   const top = $('top').hidden ? 8 : $('top').getBoundingClientRect().bottom + 8; // (below the top bar, scrolling in a short window)
   pfitBox.style.top = top + 'px'; pfitBox.style.maxHeight = `calc(100vh - ${top + 8}px)`; pfitBox.style.overflowY = 'auto';
   if (ref !== pfitRefWas) { pfitRefWas = ref; pfitSync(); } // (the reference changes with the clip: X Bot / mannequin)
@@ -673,6 +692,21 @@ function updatePistolFitUI() {
 function placeHeldOn(a, o) {
   const w = weaponOf(), k = a.height / 1.62; o.visible = true; o.scale.setScalar(k);
   if (w === 'pistol' && $('pistolFist')?.checked && pistolInFist(a, o)) return;
+  // the one-handed bat as the game holds it (render/holdfit.js): grip in her fist, shaft along the knuckles, the user's fit
+  if (w === 'bat' && placeOneHanded(a.bones, a === main ? handsOf().gunHand : 'Right', o, BAT_DEF, fitW('bat', a), {}, k)) return;
+  // the fire axe as the game holds it (render/clipchars.js placeWeapons): the handle through both fists' centres, the
+  // blade facing her front (the game also turns it to lead a fast swing), then the user's fit. Which end is the head: the
+  // fists' grip axes here (the game uses the handle direction it measured on X Bot)
+  if (w === 'axe') {
+    const B = a.bones, ax = (s) => B[s + 'HandIndex1'].getWorldPosition(new THREE.Vector3()).sub(B[s + 'HandPinky1'].getWorldPosition(_v3)).normalize();
+    const L2 = B.LeftHandIndex1 && twoHandLine(B, ax('Right').add(ax('Left')).normalize(), { c: new THREE.Vector3(), d: new THREE.Vector3(), span: 0 });
+    if (L2) {
+      const fwd = a.root.getWorldDirection(new THREE.Vector3()); fwd.addScaledVector(L2.d, -fwd.dot(L2.d)).normalize();
+      const x = fwd.negate(), y = new THREE.Vector3().crossVectors(L2.d, x);
+      applyFit(o, L2.c, new THREE.Quaternion().setFromRotationMatrix(_m4.makeBasis(x, y, L2.d)), fitW('axe', a), new THREE.Vector3(), k, k);
+      return;
+    }
+  }
   a.grip('Right', _v); a.grip('Left', _v2);
   let d, pos;
   if (w === 'pistol') { a.bones.RightForeArm.getWorldPosition(_v3); d = _v.clone().sub(_v3).normalize(); pos = _v.clone(); }

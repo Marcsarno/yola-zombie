@@ -1,0 +1,9 @@
+{
+  "note": "Held-weapon fits per weapon and character, set by the user in the Rig Lab fit panel (beside the X Bot / Quaternius mannequin), applied by render/holdfit.js in both the Rig Lab and the game: size %, a move in mm along the weapon's own axes (fwd = its long axis, up = model +Y, side = model +X), a turn in degrees (tilt about +X, turn about +Y, roll about the long axis), pivoting on the grip point. The pistol's fits are in pistol_fit.json.",
+  "bat": {
+    "yola2": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 },
+    "yola": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 },
+    "mannequin": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 },
+    "xbot": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 }
+  }
+}

@@ -165,7 +165,7 @@ async function load() {
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup')); // (tools/anim/yola_clips.py: knocked flat, getting up)
-  setupBat(yg.animations); window.game.yolaClips = yg.animations;
+  setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({}))); window.game.yolaClips = yg.animations;
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
@@ -181,13 +181,15 @@ async function load() {
 }
 // The bat: Quaternius's Sword Regular Combo (one-handed, four strikes), built on the Yola that plays, the bat in her right
 // fist and the matching Sword Idle as its stance (src/render/libattack.js). Without the clip the older bat combo stays.
-function setupBat(anims) {
+function setupBat(anims, fits = {}) {
+  yola.axeFit = fits.axe?.[YOLA_MODEL === '2' ? 'yola2' : 'yola'] || null; // (the axe's fit, from the same Rig Lab file)
   const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = anims.find((c) => c.name === 'ual1_Sword_Idle');
   if (!combo) return;
   const h = new THREE.Group(), m = makeBat(0.84);
   m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   h.add(m); h.visible = false; scene.add(h);
   const hold = { obj: h, w: BAT_DEF, hand: 'Right', roll: 0, slide: 0, flip: false, two: false, fingers: null };
+  hold.fit = fits.bat?.[YOLA_MODEL === '2' ? 'yola2' : 'yola'] || null; // (the user's bat fit, set in the Rig Lab: render/holdfit.js)
   yola.setOneHandedBat(hold, idle);
   // (89 of its 91 frames: the last one snaps back to the loop pose; four strikes, the third a slower swing)
   useBuiltBat(buildLibraryAttack(yola, { clip: combo, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: 'bat', sound: 'bat', strikes: 4 }));
