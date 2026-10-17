@@ -9347,18 +9347,18 @@
      * @param {Vector3} target - The target vector that is used to store the method's result.
      * @return {Vector3} The closest point on the triangle.
      */
-    closestPointToPoint(p2, target) {
+    closestPointToPoint(p, target) {
       const a = this.a, b = this.b, c = this.c;
       let v, w;
       _vab.subVectors(b, a);
       _vac.subVectors(c, a);
-      _vap.subVectors(p2, a);
+      _vap.subVectors(p, a);
       const d1 = _vab.dot(_vap);
       const d2 = _vac.dot(_vap);
       if (d1 <= 0 && d2 <= 0) {
         return target.copy(a);
       }
-      _vbp.subVectors(p2, b);
+      _vbp.subVectors(p, b);
       const d3 = _vab.dot(_vbp);
       const d4 = _vac.dot(_vbp);
       if (d3 >= 0 && d4 <= d3) {
@@ -9369,7 +9369,7 @@
         v = d1 / (d1 - d3);
         return target.copy(a).addScaledVector(_vab, v);
       }
-      _vcp.subVectors(p2, c);
+      _vcp.subVectors(p, c);
       const d5 = _vab.dot(_vcp);
       const d6 = _vac.dot(_vcp);
       if (d6 >= 0 && d5 <= d6) {
@@ -9553,13 +9553,13 @@
   };
   var _hslA = { h: 0, s: 0, l: 0 };
   var _hslB = { h: 0, s: 0, l: 0 };
-  function hue2rgb(p2, q, t) {
+  function hue2rgb(p, q, t) {
     if (t < 0) t += 1;
     if (t > 1) t -= 1;
-    if (t < 1 / 6) return p2 + (q - p2) * 6 * t;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
     if (t < 1 / 2) return q;
-    if (t < 2 / 3) return p2 + (q - p2) * 6 * (2 / 3 - t);
-    return p2;
+    if (t < 2 / 3) return p + (q - p) * 6 * (2 / 3 - t);
+    return p;
   }
   var Color = class {
     /**
@@ -9663,11 +9663,11 @@
       if (s === 0) {
         this.r = this.g = this.b = l;
       } else {
-        const p2 = l <= 0.5 ? l * (1 + s) : l + s - l * s;
-        const q = 2 * l - p2;
-        this.r = hue2rgb(q, p2, h + 1 / 3);
-        this.g = hue2rgb(q, p2, h);
-        this.b = hue2rgb(q, p2, h - 1 / 3);
+        const p = l <= 0.5 ? l * (1 + s) : l + s - l * s;
+        const q = 2 * l - p;
+        this.r = hue2rgb(q, p, h + 1 / 3);
+        this.g = hue2rgb(q, p, h);
+        this.b = hue2rgb(q, p, h - 1 / 3);
       }
       ColorManagement.colorSpaceToWorking(this, colorSpace);
       return this;
@@ -12460,19 +12460,19 @@
     const dst = {};
     for (const u in src) {
       dst[u] = {};
-      for (const p2 in src[u]) {
-        const property = src[u][p2];
+      for (const p in src[u]) {
+        const property = src[u][p];
         if (property && (property.isColor || property.isMatrix3 || property.isMatrix4 || property.isVector2 || property.isVector3 || property.isVector4 || property.isTexture || property.isQuaternion)) {
           if (property.isRenderTargetTexture) {
             console.warn("UniformsUtils: Textures of render targets cannot be cloned via cloneUniforms() or mergeUniforms().");
-            dst[u][p2] = null;
+            dst[u][p] = null;
           } else {
-            dst[u][p2] = property.clone();
+            dst[u][p] = property.clone();
           }
         } else if (Array.isArray(property)) {
-          dst[u][p2] = property.slice();
+          dst[u][p] = property.slice();
         } else {
-          dst[u][p2] = property;
+          dst[u][p] = property;
         }
       }
     }
@@ -12482,8 +12482,8 @@
     const merged = {};
     for (let u = 0; u < uniforms.length; u++) {
       const tmp2 = cloneUniforms(uniforms[u]);
-      for (const p2 in tmp2) {
-        merged[p2] = tmp2[p2];
+      for (const p in tmp2) {
+        merged[p] = tmp2[p];
       }
     }
     return merged;
@@ -18124,8 +18124,8 @@
       let current, last2 = this.getPoint(0);
       let sum = 0;
       cache.push(0);
-      for (let p2 = 1; p2 <= divisions; p2++) {
-        current = this.getPoint(p2 / divisions);
+      for (let p = 1; p <= divisions; p++) {
+        current = this.getPoint(p / divisions);
         sum += current.distanceTo(last2);
         cache.push(sum);
         last2 = current;
@@ -18514,9 +18514,9 @@
       const point = optionalTarget;
       const points = this.points;
       const l = points.length;
-      const p2 = (l - (this.closed ? 0 : 1)) * t;
-      let intPoint = Math.floor(p2);
-      let weight = p2 - intPoint;
+      const p = (l - (this.closed ? 0 : 1)) * t;
+      let intPoint = Math.floor(p);
+      let weight = p - intPoint;
       if (this.closed) {
         intPoint += intPoint > 0 ? 0 : (Math.floor(Math.abs(intPoint) / l) + 1) * l;
       } else if (weight === 0 && intPoint === l - 1) {
@@ -18531,7 +18531,7 @@
         p0 = tmp;
       }
       const p1 = points[intPoint % l];
-      const p22 = points[(intPoint + 1) % l];
+      const p2 = points[(intPoint + 1) % l];
       if (this.closed || intPoint + 2 < l) {
         p3 = points[(intPoint + 2) % l];
       } else {
@@ -18541,18 +18541,18 @@
       if (this.curveType === "centripetal" || this.curveType === "chordal") {
         const pow = this.curveType === "chordal" ? 0.5 : 0.25;
         let dt0 = Math.pow(p0.distanceToSquared(p1), pow);
-        let dt1 = Math.pow(p1.distanceToSquared(p22), pow);
-        let dt2 = Math.pow(p22.distanceToSquared(p3), pow);
+        let dt1 = Math.pow(p1.distanceToSquared(p2), pow);
+        let dt2 = Math.pow(p2.distanceToSquared(p3), pow);
         if (dt1 < 1e-4) dt1 = 1;
         if (dt0 < 1e-4) dt0 = dt1;
         if (dt2 < 1e-4) dt2 = dt1;
-        px.initNonuniformCatmullRom(p0.x, p1.x, p22.x, p3.x, dt0, dt1, dt2);
-        py.initNonuniformCatmullRom(p0.y, p1.y, p22.y, p3.y, dt0, dt1, dt2);
-        pz.initNonuniformCatmullRom(p0.z, p1.z, p22.z, p3.z, dt0, dt1, dt2);
+        px.initNonuniformCatmullRom(p0.x, p1.x, p2.x, p3.x, dt0, dt1, dt2);
+        py.initNonuniformCatmullRom(p0.y, p1.y, p2.y, p3.y, dt0, dt1, dt2);
+        pz.initNonuniformCatmullRom(p0.z, p1.z, p2.z, p3.z, dt0, dt1, dt2);
       } else if (this.curveType === "catmullrom") {
-        px.initCatmullRom(p0.x, p1.x, p22.x, p3.x, this.tension);
-        py.initCatmullRom(p0.y, p1.y, p22.y, p3.y, this.tension);
-        pz.initCatmullRom(p0.z, p1.z, p22.z, p3.z, this.tension);
+        px.initCatmullRom(p0.x, p1.x, p2.x, p3.x, this.tension);
+        py.initCatmullRom(p0.y, p1.y, p2.y, p3.y, this.tension);
+        pz.initCatmullRom(p0.z, p1.z, p2.z, p3.z, this.tension);
       }
       point.set(
         px.calc(weight),
@@ -18605,32 +18605,32 @@
     const t3 = t * t2;
     return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (-3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
   }
-  function QuadraticBezierP0(t, p2) {
+  function QuadraticBezierP0(t, p) {
     const k = 1 - t;
-    return k * k * p2;
+    return k * k * p;
   }
-  function QuadraticBezierP1(t, p2) {
-    return 2 * (1 - t) * t * p2;
+  function QuadraticBezierP1(t, p) {
+    return 2 * (1 - t) * t * p;
   }
-  function QuadraticBezierP2(t, p2) {
-    return t * t * p2;
+  function QuadraticBezierP2(t, p) {
+    return t * t * p;
   }
   function QuadraticBezier(t, p0, p1, p2) {
     return QuadraticBezierP0(t, p0) + QuadraticBezierP1(t, p1) + QuadraticBezierP2(t, p2);
   }
-  function CubicBezierP0(t, p2) {
+  function CubicBezierP0(t, p) {
     const k = 1 - t;
-    return k * k * k * p2;
+    return k * k * k * p;
   }
-  function CubicBezierP1(t, p2) {
+  function CubicBezierP1(t, p) {
     const k = 1 - t;
-    return 3 * k * k * t * p2;
+    return 3 * k * k * t * p;
   }
-  function CubicBezierP2(t, p2) {
-    return 3 * (1 - t) * t * t * p2;
+  function CubicBezierP2(t, p) {
+    return 3 * (1 - t) * t * t * p;
   }
-  function CubicBezierP3(t, p2) {
-    return t * t * t * p2;
+  function CubicBezierP3(t, p) {
+    return t * t * t * p;
   }
   function CubicBezier(t, p0, p1, p2, p3) {
     return CubicBezierP0(t, p0) + CubicBezierP1(t, p1) + CubicBezierP2(t, p2) + CubicBezierP3(t, p3);
@@ -19005,16 +19005,16 @@
     getPoint(t, optionalTarget = new Vector2()) {
       const point = optionalTarget;
       const points = this.points;
-      const p2 = (points.length - 1) * t;
-      const intPoint = Math.floor(p2);
-      const weight = p2 - intPoint;
+      const p = (points.length - 1) * t;
+      const intPoint = Math.floor(p);
+      const weight = p - intPoint;
       const p0 = points[intPoint === 0 ? intPoint : intPoint - 1];
       const p1 = points[intPoint];
-      const p22 = points[intPoint > points.length - 2 ? points.length - 1 : intPoint + 1];
+      const p2 = points[intPoint > points.length - 2 ? points.length - 1 : intPoint + 1];
       const p3 = points[intPoint > points.length - 3 ? points.length - 1 : intPoint + 2];
       point.set(
-        CatmullRom(weight, p0.x, p1.x, p22.x, p3.x),
-        CatmullRom(weight, p0.y, p1.y, p22.y, p3.y)
+        CatmullRom(weight, p0.x, p1.x, p2.x, p3.x),
+        CatmullRom(weight, p0.y, p1.y, p2.y, p3.y)
       );
       return point;
     }
@@ -19527,18 +19527,18 @@
   function filterPoints(start, end) {
     if (!start) return start;
     if (!end) end = start;
-    let p2 = start, again;
+    let p = start, again;
     do {
       again = false;
-      if (!p2.steiner && (equals(p2, p2.next) || area(p2.prev, p2, p2.next) === 0)) {
-        removeNode(p2);
-        p2 = end = p2.prev;
-        if (p2 === p2.next) break;
+      if (!p.steiner && (equals(p, p.next) || area(p.prev, p, p.next) === 0)) {
+        removeNode(p);
+        p = end = p.prev;
+        if (p === p.next) break;
         again = true;
       } else {
-        p2 = p2.next;
+        p = p.next;
       }
-    } while (again || p2 !== end);
+    } while (again || p !== end);
     return end;
   }
   function earcutLinked(ear, triangles, dim, minX, minY, invSize, pass) {
@@ -19574,10 +19574,10 @@
     if (area(a, b, c) >= 0) return false;
     const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
     const x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy);
-    let p2 = c.next;
-    while (p2 !== a) {
-      if (p2.x >= x0 && p2.x <= x1 && p2.y >= y0 && p2.y <= y1 && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p2.x, p2.y) && area(p2.prev, p2, p2.next) >= 0) return false;
-      p2 = p2.next;
+    let p = c.next;
+    while (p !== a) {
+      if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+      p = p.next;
     }
     return true;
   }
@@ -19587,16 +19587,16 @@
     const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
     const x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy);
     const minZ = zOrder(x0, y0, minX, minY, invSize), maxZ = zOrder(x1, y1, minX, minY, invSize);
-    let p2 = ear.prevZ, n = ear.nextZ;
-    while (p2 && p2.z >= minZ && n && n.z <= maxZ) {
-      if (p2.x >= x0 && p2.x <= x1 && p2.y >= y0 && p2.y <= y1 && p2 !== a && p2 !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p2.x, p2.y) && area(p2.prev, p2, p2.next) >= 0) return false;
-      p2 = p2.prevZ;
+    let p = ear.prevZ, n = ear.nextZ;
+    while (p && p.z >= minZ && n && n.z <= maxZ) {
+      if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+      p = p.prevZ;
       if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
       n = n.nextZ;
     }
-    while (p2 && p2.z >= minZ) {
-      if (p2.x >= x0 && p2.x <= x1 && p2.y >= y0 && p2.y <= y1 && p2 !== a && p2 !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p2.x, p2.y) && area(p2.prev, p2, p2.next) >= 0) return false;
-      p2 = p2.prevZ;
+    while (p && p.z >= minZ) {
+      if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+      p = p.prevZ;
     }
     while (n && n.z <= maxZ) {
       if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
@@ -19605,18 +19605,18 @@
     return true;
   }
   function cureLocalIntersections(start, triangles) {
-    let p2 = start;
+    let p = start;
     do {
-      const a = p2.prev, b = p2.next.next;
-      if (!equals(a, b) && intersects(a, p2, p2.next, b) && locallyInside(a, b) && locallyInside(b, a)) {
-        triangles.push(a.i, p2.i, b.i);
-        removeNode(p2);
-        removeNode(p2.next);
-        p2 = start = b;
+      const a = p.prev, b = p.next.next;
+      if (!equals(a, b) && intersects(a, p, p.next, b) && locallyInside(a, b) && locallyInside(b, a)) {
+        triangles.push(a.i, p.i, b.i);
+        removeNode(p);
+        removeNode(p.next);
+        p = start = b;
       }
-      p2 = p2.next;
-    } while (p2 !== start);
-    return filterPoints(p2);
+      p = p.next;
+    } while (p !== start);
+    return filterPoints(p);
   }
   function splitEarcut(start, triangles, dim, minX, minY, invSize) {
     let a = start;
@@ -19673,69 +19673,69 @@
     return filterPoints(bridge, bridge.next);
   }
   function findHoleBridge(hole, outerNode) {
-    let p2 = outerNode;
+    let p = outerNode;
     const hx = hole.x;
     const hy = hole.y;
     let qx = -Infinity;
     let m;
-    if (equals(hole, p2)) return p2;
+    if (equals(hole, p)) return p;
     do {
-      if (equals(hole, p2.next)) return p2.next;
-      else if (hy <= p2.y && hy >= p2.next.y && p2.next.y !== p2.y) {
-        const x = p2.x + (hy - p2.y) * (p2.next.x - p2.x) / (p2.next.y - p2.y);
+      if (equals(hole, p.next)) return p.next;
+      else if (hy <= p.y && hy >= p.next.y && p.next.y !== p.y) {
+        const x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y);
         if (x <= hx && x > qx) {
           qx = x;
-          m = p2.x < p2.next.x ? p2 : p2.next;
+          m = p.x < p.next.x ? p : p.next;
           if (x === hx) return m;
         }
       }
-      p2 = p2.next;
-    } while (p2 !== outerNode);
+      p = p.next;
+    } while (p !== outerNode);
     if (!m) return null;
     const stop = m;
     const mx = m.x;
     const my = m.y;
     let tanMin = Infinity;
-    p2 = m;
+    p = m;
     do {
-      if (hx >= p2.x && p2.x >= mx && hx !== p2.x && pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p2.x, p2.y)) {
-        const tan = Math.abs(hy - p2.y) / (hx - p2.x);
-        if (locallyInside(p2, hole) && (tan < tanMin || tan === tanMin && (p2.x > m.x || p2.x === m.x && sectorContainsSector(m, p2)))) {
-          m = p2;
+      if (hx >= p.x && p.x >= mx && hx !== p.x && pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y)) {
+        const tan = Math.abs(hy - p.y) / (hx - p.x);
+        if (locallyInside(p, hole) && (tan < tanMin || tan === tanMin && (p.x > m.x || p.x === m.x && sectorContainsSector(m, p)))) {
+          m = p;
           tanMin = tan;
         }
       }
-      p2 = p2.next;
-    } while (p2 !== stop);
+      p = p.next;
+    } while (p !== stop);
     return m;
   }
-  function sectorContainsSector(m, p2) {
-    return area(m.prev, m, p2.prev) < 0 && area(p2.next, m, m.next) < 0;
+  function sectorContainsSector(m, p) {
+    return area(m.prev, m, p.prev) < 0 && area(p.next, m, m.next) < 0;
   }
   function indexCurve(start, minX, minY, invSize) {
-    let p2 = start;
+    let p = start;
     do {
-      if (p2.z === 0) p2.z = zOrder(p2.x, p2.y, minX, minY, invSize);
-      p2.prevZ = p2.prev;
-      p2.nextZ = p2.next;
-      p2 = p2.next;
-    } while (p2 !== start);
-    p2.prevZ.nextZ = null;
-    p2.prevZ = null;
-    sortLinked(p2);
+      if (p.z === 0) p.z = zOrder(p.x, p.y, minX, minY, invSize);
+      p.prevZ = p.prev;
+      p.nextZ = p.next;
+      p = p.next;
+    } while (p !== start);
+    p.prevZ.nextZ = null;
+    p.prevZ = null;
+    sortLinked(p);
   }
   function sortLinked(list) {
     let numMerges;
     let inSize = 1;
     do {
-      let p2 = list;
+      let p = list;
       let e;
       list = null;
       let tail = null;
       numMerges = 0;
-      while (p2) {
+      while (p) {
         numMerges++;
-        let q = p2;
+        let q = p;
         let pSize = 0;
         for (let i = 0; i < inSize; i++) {
           pSize++;
@@ -19744,9 +19744,9 @@
         }
         let qSize = inSize;
         while (pSize > 0 || qSize > 0 && q) {
-          if (pSize !== 0 && (qSize === 0 || !q || p2.z <= q.z)) {
-            e = p2;
-            p2 = p2.nextZ;
+          if (pSize !== 0 && (qSize === 0 || !q || p.z <= q.z)) {
+            e = p;
+            p = p.nextZ;
             pSize--;
           } else {
             e = q;
@@ -19758,7 +19758,7 @@
           e.prevZ = tail;
           tail = e;
         }
-        p2 = q;
+        p = q;
       }
       tail.nextZ = null;
       inSize *= 2;
@@ -19779,11 +19779,11 @@
     return x | y << 1;
   }
   function getLeftmost(start) {
-    let p2 = start, leftmost = start;
+    let p = start, leftmost = start;
     do {
-      if (p2.x < leftmost.x || p2.x === leftmost.x && p2.y < leftmost.y) leftmost = p2;
-      p2 = p2.next;
-    } while (p2 !== start);
+      if (p.x < leftmost.x || p.x === leftmost.x && p.y < leftmost.y) leftmost = p;
+      p = p.next;
+    } while (p !== start);
     return leftmost;
   }
   function pointInTriangle(ax, ay, bx, by, cx, cy, px2, py2) {
@@ -19798,8 +19798,8 @@
     (area(a.prev, a, b.prev) || area(a, b.prev, b)) || // does not create opposite-facing sectors
     equals(a, b) && area(a.prev, a, a.next) > 0 && area(b.prev, b, b.next) > 0);
   }
-  function area(p2, q, r) {
-    return (q.y - p2.y) * (r.x - q.x) - (q.x - p2.x) * (r.y - q.y);
+  function area(p, q, r) {
+    return (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
   }
   function equals(p1, p2) {
     return p1.x === p2.x && p1.y === p2.y;
@@ -19816,33 +19816,33 @@
     if (o4 === 0 && onSegment(p2, q1, q2)) return true;
     return false;
   }
-  function onSegment(p2, q, r) {
-    return q.x <= Math.max(p2.x, r.x) && q.x >= Math.min(p2.x, r.x) && q.y <= Math.max(p2.y, r.y) && q.y >= Math.min(p2.y, r.y);
+  function onSegment(p, q, r) {
+    return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
   }
   function sign(num) {
     return num > 0 ? 1 : num < 0 ? -1 : 0;
   }
   function intersectsPolygon(a, b) {
-    let p2 = a;
+    let p = a;
     do {
-      if (p2.i !== a.i && p2.next.i !== a.i && p2.i !== b.i && p2.next.i !== b.i && intersects(p2, p2.next, a, b)) return true;
-      p2 = p2.next;
-    } while (p2 !== a);
+      if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i && intersects(p, p.next, a, b)) return true;
+      p = p.next;
+    } while (p !== a);
     return false;
   }
   function locallyInside(a, b) {
     return area(a.prev, a, a.next) < 0 ? area(a, b, a.next) >= 0 && area(a, a.prev, b) >= 0 : area(a, b, a.prev) < 0 || area(a, a.next, b) < 0;
   }
   function middleInside(a, b) {
-    let p2 = a;
+    let p = a;
     let inside = false;
     const px2 = (a.x + b.x) / 2;
     const py2 = (a.y + b.y) / 2;
     do {
-      if (p2.y > py2 !== p2.next.y > py2 && p2.next.y !== p2.y && px2 < (p2.next.x - p2.x) * (py2 - p2.y) / (p2.next.y - p2.y) + p2.x)
+      if (p.y > py2 !== p.next.y > py2 && p.next.y !== p.y && px2 < (p.next.x - p.x) * (py2 - p.y) / (p.next.y - p.y) + p.x)
         inside = !inside;
-      p2 = p2.next;
-    } while (p2 !== a);
+      p = p.next;
+    } while (p !== a);
     return inside;
   }
   function splitPolygon(a, b) {
@@ -19858,23 +19858,23 @@
     return b2;
   }
   function insertNode(i, x, y, last2) {
-    const p2 = createNode(i, x, y);
+    const p = createNode(i, x, y);
     if (!last2) {
-      p2.prev = p2;
-      p2.next = p2;
+      p.prev = p;
+      p.next = p;
     } else {
-      p2.next = last2.next;
-      p2.prev = last2;
-      last2.next.prev = p2;
-      last2.next = p2;
+      p.next = last2.next;
+      p.prev = last2;
+      last2.next.prev = p;
+      last2.next = p;
     }
-    return p2;
+    return p;
   }
-  function removeNode(p2) {
-    p2.next.prev = p2.prev;
-    p2.prev.next = p2.next;
-    if (p2.prevZ) p2.prevZ.nextZ = p2.nextZ;
-    if (p2.nextZ) p2.nextZ.prevZ = p2.prevZ;
+  function removeNode(p) {
+    p.next.prev = p.prev;
+    p.prev.next = p.next;
+    if (p.prevZ) p.prevZ.nextZ = p.nextZ;
+    if (p.nextZ) p.nextZ.prevZ = p.prevZ;
   }
   function createNode(i, x, y) {
     return {
@@ -19927,8 +19927,8 @@
     static area(contour) {
       const n = contour.length;
       let a = 0;
-      for (let p2 = n - 1, q = 0; q < n; p2 = q++) {
-        a += contour[p2].x * contour[q].y - contour[q].x * contour[p2].y;
+      for (let p = n - 1, q = 0; q < n; p = q++) {
+        a += contour[p].x * contour[q].y - contour[q].x * contour[p].y;
       }
       return a * 0.5;
     }
@@ -21218,7 +21218,7 @@
      * @param {number} [p=2] - This value determines, how many times the geometry winds around its axis of rotational symmetry.
      * @param {number} [q=3] - This value determines, how many times the geometry winds around a circle in the interior of the torus.
      */
-    constructor(radius = 1, tube = 0.4, tubularSegments = 64, radialSegments = 8, p2 = 2, q = 3) {
+    constructor(radius = 1, tube = 0.4, tubularSegments = 64, radialSegments = 8, p = 2, q = 3) {
       super();
       this.type = "TorusKnotGeometry";
       this.parameters = {
@@ -21226,7 +21226,7 @@
         tube,
         tubularSegments,
         radialSegments,
-        p: p2,
+        p,
         q
       };
       tubularSegments = Math.floor(tubularSegments);
@@ -21240,16 +21240,16 @@
       const P1 = new Vector3();
       const P2 = new Vector3();
       const B = new Vector3();
-      const T3 = new Vector3();
+      const T2 = new Vector3();
       const N = new Vector3();
       for (let i = 0; i <= tubularSegments; ++i) {
-        const u = i / tubularSegments * p2 * Math.PI * 2;
-        calculatePositionOnCurve(u, p2, q, radius, P1);
-        calculatePositionOnCurve(u + 0.01, p2, q, radius, P2);
-        T3.subVectors(P2, P1);
+        const u = i / tubularSegments * p * Math.PI * 2;
+        calculatePositionOnCurve(u, p, q, radius, P1);
+        calculatePositionOnCurve(u + 0.01, p, q, radius, P2);
+        T2.subVectors(P2, P1);
         N.addVectors(P2, P1);
-        B.crossVectors(T3, N);
-        N.crossVectors(B, T3);
+        B.crossVectors(T2, N);
+        N.crossVectors(B, T2);
         B.normalize();
         N.normalize();
         for (let j = 0; j <= radialSegments; ++j) {
@@ -21280,10 +21280,10 @@
       this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
       this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
       this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
-      function calculatePositionOnCurve(u, p3, q2, radius2, position) {
+      function calculatePositionOnCurve(u, p2, q2, radius2, position) {
         const cu = Math.cos(u);
         const su = Math.sin(u);
-        const quOverP = q2 / p3 * u;
+        const quOverP = q2 / p2 * u;
         const cs = Math.cos(quOverP);
         position.x = radius2 * (2 + cs) * 0.5 * cu;
         position.y = radius2 * (2 + cs) * su * 0.5;
@@ -22726,10 +22726,10 @@
       this._offsetNext = iNext * stride;
     }
     interpolate_(i1, t0, t, t1) {
-      const result = this.resultBuffer, values = this.sampleValues, stride = this.valueSize, o1 = i1 * stride, o0 = o1 - stride, oP = this._offsetPrev, oN = this._offsetNext, wP = this._weightPrev, wN = this._weightNext, p2 = (t - t0) / (t1 - t0), pp = p2 * p2, ppp = pp * p2;
-      const sP = -wP * ppp + 2 * wP * pp - wP * p2;
-      const s0 = (1 + wP) * ppp + (-1.5 - 2 * wP) * pp + (-0.5 + wP) * p2 + 1;
-      const s1 = (-1 - wN) * ppp + (1.5 + wN) * pp + 0.5 * p2;
+      const result = this.resultBuffer, values = this.sampleValues, stride = this.valueSize, o1 = i1 * stride, o0 = o1 - stride, oP = this._offsetPrev, oN = this._offsetNext, wP = this._weightPrev, wN = this._weightNext, p = (t - t0) / (t1 - t0), pp = p * p, ppp = pp * p;
+      const sP = -wP * ppp + 2 * wP * pp - wP * p;
+      const s0 = (1 + wP) * ppp + (-1.5 - 2 * wP) * pp + (-0.5 + wP) * p + 1;
+      const s1 = (-1 - wN) * ppp + (1.5 + wN) * pp + 0.5 * p;
       const sN = wN * ppp - wN * pp;
       for (let i = 0; i !== stride; ++i) {
         result[i] = sP * values[oP + i] + s0 * values[o0 + i] + s1 * values[o1 + i] + sN * values[oN + i];
@@ -31416,8 +31416,8 @@
       function isPointInsidePolygon(inPt, inPolygon) {
         const polyLen = inPolygon.length;
         let inside = false;
-        for (let p2 = polyLen - 1, q = 0; q < polyLen; p2 = q++) {
-          let edgeLowPt = inPolygon[p2];
+        for (let p = polyLen - 1, q = 0; q < polyLen; p = q++) {
+          let edgeLowPt = inPolygon[p];
           let edgeHighPt = inPolygon[q];
           let edgeDx = edgeHighPt.x - edgeLowPt.x;
           let edgeDy = edgeHighPt.y - edgeLowPt.y;
@@ -31425,7 +31425,7 @@
             if (edgeDy < 0) {
               edgeLowPt = inPolygon[q];
               edgeDx = -edgeDx;
-              edgeHighPt = inPolygon[p2];
+              edgeHighPt = inPolygon[p];
               edgeDy = -edgeDy;
             }
             if (inPt.y < edgeLowPt.y || inPt.y > edgeHighPt.y) continue;
@@ -36321,8 +36321,8 @@
     }
     function acquireProgram(parameters, cacheKey) {
       let program;
-      for (let p2 = 0, pl = programs.length; p2 < pl; p2++) {
-        const preexistingProgram = programs[p2];
+      for (let p = 0, pl = programs.length; p < pl; p++) {
+        const preexistingProgram = programs[p];
         if (preexistingProgram.cacheKey === cacheKey) {
           program = preexistingProgram;
           ++program.usedTimes;
@@ -39150,118 +39150,118 @@
     this.useMultisampledRTT = useMultisampledRTT;
   }
   function WebGLUtils(gl, extensions) {
-    function convert(p2, colorSpace = NoColorSpace) {
+    function convert(p, colorSpace = NoColorSpace) {
       let extension;
       const transfer = ColorManagement.getTransfer(colorSpace);
-      if (p2 === UnsignedByteType) return gl.UNSIGNED_BYTE;
-      if (p2 === UnsignedShort4444Type) return gl.UNSIGNED_SHORT_4_4_4_4;
-      if (p2 === UnsignedShort5551Type) return gl.UNSIGNED_SHORT_5_5_5_1;
-      if (p2 === UnsignedInt5999Type) return gl.UNSIGNED_INT_5_9_9_9_REV;
-      if (p2 === UnsignedInt101111Type) return gl.UNSIGNED_INT_10F_11F_11F_REV;
-      if (p2 === ByteType) return gl.BYTE;
-      if (p2 === ShortType) return gl.SHORT;
-      if (p2 === UnsignedShortType) return gl.UNSIGNED_SHORT;
-      if (p2 === IntType) return gl.INT;
-      if (p2 === UnsignedIntType) return gl.UNSIGNED_INT;
-      if (p2 === FloatType) return gl.FLOAT;
-      if (p2 === HalfFloatType) return gl.HALF_FLOAT;
-      if (p2 === AlphaFormat) return gl.ALPHA;
-      if (p2 === RGBFormat) return gl.RGB;
-      if (p2 === RGBAFormat) return gl.RGBA;
-      if (p2 === DepthFormat) return gl.DEPTH_COMPONENT;
-      if (p2 === DepthStencilFormat) return gl.DEPTH_STENCIL;
-      if (p2 === RedFormat) return gl.RED;
-      if (p2 === RedIntegerFormat) return gl.RED_INTEGER;
-      if (p2 === RGFormat) return gl.RG;
-      if (p2 === RGIntegerFormat) return gl.RG_INTEGER;
-      if (p2 === RGBAIntegerFormat) return gl.RGBA_INTEGER;
-      if (p2 === RGB_S3TC_DXT1_Format || p2 === RGBA_S3TC_DXT1_Format || p2 === RGBA_S3TC_DXT3_Format || p2 === RGBA_S3TC_DXT5_Format) {
+      if (p === UnsignedByteType) return gl.UNSIGNED_BYTE;
+      if (p === UnsignedShort4444Type) return gl.UNSIGNED_SHORT_4_4_4_4;
+      if (p === UnsignedShort5551Type) return gl.UNSIGNED_SHORT_5_5_5_1;
+      if (p === UnsignedInt5999Type) return gl.UNSIGNED_INT_5_9_9_9_REV;
+      if (p === UnsignedInt101111Type) return gl.UNSIGNED_INT_10F_11F_11F_REV;
+      if (p === ByteType) return gl.BYTE;
+      if (p === ShortType) return gl.SHORT;
+      if (p === UnsignedShortType) return gl.UNSIGNED_SHORT;
+      if (p === IntType) return gl.INT;
+      if (p === UnsignedIntType) return gl.UNSIGNED_INT;
+      if (p === FloatType) return gl.FLOAT;
+      if (p === HalfFloatType) return gl.HALF_FLOAT;
+      if (p === AlphaFormat) return gl.ALPHA;
+      if (p === RGBFormat) return gl.RGB;
+      if (p === RGBAFormat) return gl.RGBA;
+      if (p === DepthFormat) return gl.DEPTH_COMPONENT;
+      if (p === DepthStencilFormat) return gl.DEPTH_STENCIL;
+      if (p === RedFormat) return gl.RED;
+      if (p === RedIntegerFormat) return gl.RED_INTEGER;
+      if (p === RGFormat) return gl.RG;
+      if (p === RGIntegerFormat) return gl.RG_INTEGER;
+      if (p === RGBAIntegerFormat) return gl.RGBA_INTEGER;
+      if (p === RGB_S3TC_DXT1_Format || p === RGBA_S3TC_DXT1_Format || p === RGBA_S3TC_DXT3_Format || p === RGBA_S3TC_DXT5_Format) {
         if (transfer === SRGBTransfer) {
           extension = extensions.get("WEBGL_compressed_texture_s3tc_srgb");
           if (extension !== null) {
-            if (p2 === RGB_S3TC_DXT1_Format) return extension.COMPRESSED_SRGB_S3TC_DXT1_EXT;
-            if (p2 === RGBA_S3TC_DXT1_Format) return extension.COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
-            if (p2 === RGBA_S3TC_DXT3_Format) return extension.COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
-            if (p2 === RGBA_S3TC_DXT5_Format) return extension.COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+            if (p === RGB_S3TC_DXT1_Format) return extension.COMPRESSED_SRGB_S3TC_DXT1_EXT;
+            if (p === RGBA_S3TC_DXT1_Format) return extension.COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+            if (p === RGBA_S3TC_DXT3_Format) return extension.COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+            if (p === RGBA_S3TC_DXT5_Format) return extension.COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
           } else {
             return null;
           }
         } else {
           extension = extensions.get("WEBGL_compressed_texture_s3tc");
           if (extension !== null) {
-            if (p2 === RGB_S3TC_DXT1_Format) return extension.COMPRESSED_RGB_S3TC_DXT1_EXT;
-            if (p2 === RGBA_S3TC_DXT1_Format) return extension.COMPRESSED_RGBA_S3TC_DXT1_EXT;
-            if (p2 === RGBA_S3TC_DXT3_Format) return extension.COMPRESSED_RGBA_S3TC_DXT3_EXT;
-            if (p2 === RGBA_S3TC_DXT5_Format) return extension.COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            if (p === RGB_S3TC_DXT1_Format) return extension.COMPRESSED_RGB_S3TC_DXT1_EXT;
+            if (p === RGBA_S3TC_DXT1_Format) return extension.COMPRESSED_RGBA_S3TC_DXT1_EXT;
+            if (p === RGBA_S3TC_DXT3_Format) return extension.COMPRESSED_RGBA_S3TC_DXT3_EXT;
+            if (p === RGBA_S3TC_DXT5_Format) return extension.COMPRESSED_RGBA_S3TC_DXT5_EXT;
           } else {
             return null;
           }
         }
       }
-      if (p2 === RGB_PVRTC_4BPPV1_Format || p2 === RGB_PVRTC_2BPPV1_Format || p2 === RGBA_PVRTC_4BPPV1_Format || p2 === RGBA_PVRTC_2BPPV1_Format) {
+      if (p === RGB_PVRTC_4BPPV1_Format || p === RGB_PVRTC_2BPPV1_Format || p === RGBA_PVRTC_4BPPV1_Format || p === RGBA_PVRTC_2BPPV1_Format) {
         extension = extensions.get("WEBGL_compressed_texture_pvrtc");
         if (extension !== null) {
-          if (p2 === RGB_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
-          if (p2 === RGB_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
-          if (p2 === RGBA_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
-          if (p2 === RGBA_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
+          if (p === RGB_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
+          if (p === RGB_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
+          if (p === RGBA_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
+          if (p === RGBA_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
         } else {
           return null;
         }
       }
-      if (p2 === RGB_ETC1_Format || p2 === RGB_ETC2_Format || p2 === RGBA_ETC2_EAC_Format) {
+      if (p === RGB_ETC1_Format || p === RGB_ETC2_Format || p === RGBA_ETC2_EAC_Format) {
         extension = extensions.get("WEBGL_compressed_texture_etc");
         if (extension !== null) {
-          if (p2 === RGB_ETC1_Format || p2 === RGB_ETC2_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ETC2 : extension.COMPRESSED_RGB8_ETC2;
-          if (p2 === RGBA_ETC2_EAC_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ETC2_EAC : extension.COMPRESSED_RGBA8_ETC2_EAC;
+          if (p === RGB_ETC1_Format || p === RGB_ETC2_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ETC2 : extension.COMPRESSED_RGB8_ETC2;
+          if (p === RGBA_ETC2_EAC_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ETC2_EAC : extension.COMPRESSED_RGBA8_ETC2_EAC;
         } else {
           return null;
         }
       }
-      if (p2 === RGBA_ASTC_4x4_Format || p2 === RGBA_ASTC_5x4_Format || p2 === RGBA_ASTC_5x5_Format || p2 === RGBA_ASTC_6x5_Format || p2 === RGBA_ASTC_6x6_Format || p2 === RGBA_ASTC_8x5_Format || p2 === RGBA_ASTC_8x6_Format || p2 === RGBA_ASTC_8x8_Format || p2 === RGBA_ASTC_10x5_Format || p2 === RGBA_ASTC_10x6_Format || p2 === RGBA_ASTC_10x8_Format || p2 === RGBA_ASTC_10x10_Format || p2 === RGBA_ASTC_12x10_Format || p2 === RGBA_ASTC_12x12_Format) {
+      if (p === RGBA_ASTC_4x4_Format || p === RGBA_ASTC_5x4_Format || p === RGBA_ASTC_5x5_Format || p === RGBA_ASTC_6x5_Format || p === RGBA_ASTC_6x6_Format || p === RGBA_ASTC_8x5_Format || p === RGBA_ASTC_8x6_Format || p === RGBA_ASTC_8x8_Format || p === RGBA_ASTC_10x5_Format || p === RGBA_ASTC_10x6_Format || p === RGBA_ASTC_10x8_Format || p === RGBA_ASTC_10x10_Format || p === RGBA_ASTC_12x10_Format || p === RGBA_ASTC_12x12_Format) {
         extension = extensions.get("WEBGL_compressed_texture_astc");
         if (extension !== null) {
-          if (p2 === RGBA_ASTC_4x4_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : extension.COMPRESSED_RGBA_ASTC_4x4_KHR;
-          if (p2 === RGBA_ASTC_5x4_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR : extension.COMPRESSED_RGBA_ASTC_5x4_KHR;
-          if (p2 === RGBA_ASTC_5x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR : extension.COMPRESSED_RGBA_ASTC_5x5_KHR;
-          if (p2 === RGBA_ASTC_6x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR : extension.COMPRESSED_RGBA_ASTC_6x5_KHR;
-          if (p2 === RGBA_ASTC_6x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR : extension.COMPRESSED_RGBA_ASTC_6x6_KHR;
-          if (p2 === RGBA_ASTC_8x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR : extension.COMPRESSED_RGBA_ASTC_8x5_KHR;
-          if (p2 === RGBA_ASTC_8x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR : extension.COMPRESSED_RGBA_ASTC_8x6_KHR;
-          if (p2 === RGBA_ASTC_8x8_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR : extension.COMPRESSED_RGBA_ASTC_8x8_KHR;
-          if (p2 === RGBA_ASTC_10x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR : extension.COMPRESSED_RGBA_ASTC_10x5_KHR;
-          if (p2 === RGBA_ASTC_10x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR : extension.COMPRESSED_RGBA_ASTC_10x6_KHR;
-          if (p2 === RGBA_ASTC_10x8_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR : extension.COMPRESSED_RGBA_ASTC_10x8_KHR;
-          if (p2 === RGBA_ASTC_10x10_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR : extension.COMPRESSED_RGBA_ASTC_10x10_KHR;
-          if (p2 === RGBA_ASTC_12x10_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR : extension.COMPRESSED_RGBA_ASTC_12x10_KHR;
-          if (p2 === RGBA_ASTC_12x12_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR : extension.COMPRESSED_RGBA_ASTC_12x12_KHR;
+          if (p === RGBA_ASTC_4x4_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : extension.COMPRESSED_RGBA_ASTC_4x4_KHR;
+          if (p === RGBA_ASTC_5x4_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR : extension.COMPRESSED_RGBA_ASTC_5x4_KHR;
+          if (p === RGBA_ASTC_5x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR : extension.COMPRESSED_RGBA_ASTC_5x5_KHR;
+          if (p === RGBA_ASTC_6x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR : extension.COMPRESSED_RGBA_ASTC_6x5_KHR;
+          if (p === RGBA_ASTC_6x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR : extension.COMPRESSED_RGBA_ASTC_6x6_KHR;
+          if (p === RGBA_ASTC_8x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR : extension.COMPRESSED_RGBA_ASTC_8x5_KHR;
+          if (p === RGBA_ASTC_8x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR : extension.COMPRESSED_RGBA_ASTC_8x6_KHR;
+          if (p === RGBA_ASTC_8x8_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR : extension.COMPRESSED_RGBA_ASTC_8x8_KHR;
+          if (p === RGBA_ASTC_10x5_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR : extension.COMPRESSED_RGBA_ASTC_10x5_KHR;
+          if (p === RGBA_ASTC_10x6_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR : extension.COMPRESSED_RGBA_ASTC_10x6_KHR;
+          if (p === RGBA_ASTC_10x8_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR : extension.COMPRESSED_RGBA_ASTC_10x8_KHR;
+          if (p === RGBA_ASTC_10x10_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR : extension.COMPRESSED_RGBA_ASTC_10x10_KHR;
+          if (p === RGBA_ASTC_12x10_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR : extension.COMPRESSED_RGBA_ASTC_12x10_KHR;
+          if (p === RGBA_ASTC_12x12_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR : extension.COMPRESSED_RGBA_ASTC_12x12_KHR;
         } else {
           return null;
         }
       }
-      if (p2 === RGBA_BPTC_Format || p2 === RGB_BPTC_SIGNED_Format || p2 === RGB_BPTC_UNSIGNED_Format) {
+      if (p === RGBA_BPTC_Format || p === RGB_BPTC_SIGNED_Format || p === RGB_BPTC_UNSIGNED_Format) {
         extension = extensions.get("EXT_texture_compression_bptc");
         if (extension !== null) {
-          if (p2 === RGBA_BPTC_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT : extension.COMPRESSED_RGBA_BPTC_UNORM_EXT;
-          if (p2 === RGB_BPTC_SIGNED_Format) return extension.COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT;
-          if (p2 === RGB_BPTC_UNSIGNED_Format) return extension.COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT;
+          if (p === RGBA_BPTC_Format) return transfer === SRGBTransfer ? extension.COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT : extension.COMPRESSED_RGBA_BPTC_UNORM_EXT;
+          if (p === RGB_BPTC_SIGNED_Format) return extension.COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT;
+          if (p === RGB_BPTC_UNSIGNED_Format) return extension.COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT;
         } else {
           return null;
         }
       }
-      if (p2 === RED_RGTC1_Format || p2 === SIGNED_RED_RGTC1_Format || p2 === RED_GREEN_RGTC2_Format || p2 === SIGNED_RED_GREEN_RGTC2_Format) {
+      if (p === RED_RGTC1_Format || p === SIGNED_RED_RGTC1_Format || p === RED_GREEN_RGTC2_Format || p === SIGNED_RED_GREEN_RGTC2_Format) {
         extension = extensions.get("EXT_texture_compression_rgtc");
         if (extension !== null) {
-          if (p2 === RED_RGTC1_Format) return extension.COMPRESSED_RED_RGTC1_EXT;
-          if (p2 === SIGNED_RED_RGTC1_Format) return extension.COMPRESSED_SIGNED_RED_RGTC1_EXT;
-          if (p2 === RED_GREEN_RGTC2_Format) return extension.COMPRESSED_RED_GREEN_RGTC2_EXT;
-          if (p2 === SIGNED_RED_GREEN_RGTC2_Format) return extension.COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT;
+          if (p === RED_RGTC1_Format) return extension.COMPRESSED_RED_RGTC1_EXT;
+          if (p === SIGNED_RED_RGTC1_Format) return extension.COMPRESSED_SIGNED_RED_RGTC1_EXT;
+          if (p === RED_GREEN_RGTC2_Format) return extension.COMPRESSED_RED_GREEN_RGTC2_EXT;
+          if (p === SIGNED_RED_GREEN_RGTC2_Format) return extension.COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT;
         } else {
           return null;
         }
       }
-      if (p2 === UnsignedInt248Type) return gl.UNSIGNED_INT_24_8;
-      return gl[p2] !== void 0 ? gl[p2] : null;
+      if (p === UnsignedInt248Type) return gl.UNSIGNED_INT_24_8;
+      return gl[p] !== void 0 ? gl[p] : null;
     }
     return { convert };
   }
@@ -42976,13 +42976,13 @@ void main() {
         const instancedMeshes = [];
         for (const mesh of meshes) {
           const m = new Matrix4();
-          const p2 = new Vector3();
+          const p = new Vector3();
           const q = new Quaternion();
           const s = new Vector3(1, 1, 1);
           const instancedMesh = new InstancedMesh(mesh.geometry, mesh.material, count);
           for (let i = 0; i < count; i++) {
             if (attributes.TRANSLATION) {
-              p2.fromBufferAttribute(attributes.TRANSLATION, i);
+              p.fromBufferAttribute(attributes.TRANSLATION, i);
             }
             if (attributes.ROTATION) {
               q.fromBufferAttribute(attributes.ROTATION, i);
@@ -42990,7 +42990,7 @@ void main() {
             if (attributes.SCALE) {
               s.fromBufferAttribute(attributes.SCALE, i);
             }
-            instancedMesh.setMatrixAt(i, m.compose(p2, q, s));
+            instancedMesh.setMatrixAt(i, m.compose(p, q, s));
           }
           for (const attributeName in attributes) {
             if (attributeName === "_COLOR_0") {
@@ -43148,15 +43148,15 @@ void main() {
       const stride2 = stride * 2;
       const stride3 = stride * 3;
       const td = t1 - t0;
-      const p2 = (t - t0) / td;
-      const pp = p2 * p2;
-      const ppp = pp * p2;
+      const p = (t - t0) / td;
+      const pp = p * p;
+      const ppp = pp * p;
       const offset1 = i1 * stride3;
       const offset0 = offset1 - stride3;
       const s2 = -2 * ppp + 3 * pp;
       const s3 = ppp - pp;
       const s0 = 1 - s2;
-      const s1 = s3 - pp + p2;
+      const s1 = s3 - pp + p;
       for (let i = 0; i !== stride; i++) {
         const p0 = values[offset0 + i + stride];
         const m0 = values[offset0 + i + stride2] * td;
@@ -44670,28 +44670,28 @@ void main() {
       return b;
     }
     // Push a circle out of all boxes. Returns true if it collided.
-    resolveCircle(p2, r) {
+    resolveCircle(p, r) {
       let hit = false;
       for (let iter = 0; iter < 3; iter++) {
         let moved = false;
         for (const b of this.boxes) {
           if (b.off) continue;
-          const cx = Math.max(b.minX, Math.min(p2.x, b.maxX));
-          const cz = Math.max(b.minZ, Math.min(p2.z, b.maxZ));
-          let dx = p2.x - cx, dz = p2.z - cz;
+          const cx = Math.max(b.minX, Math.min(p.x, b.maxX));
+          const cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
+          let dx = p.x - cx, dz = p.z - cz;
           const d2 = dx * dx + dz * dz;
           if (d2 >= r * r) continue;
           if (d2 > 1e-10) {
             const d = Math.sqrt(d2);
-            p2.x = cx + dx / d * r;
-            p2.z = cz + dz / d * r;
+            p.x = cx + dx / d * r;
+            p.z = cz + dz / d * r;
           } else {
-            const l = p2.x - b.minX, rr = b.maxX - p2.x, t = p2.z - b.minZ, bt = b.maxZ - p2.z;
+            const l = p.x - b.minX, rr = b.maxX - p.x, t = p.z - b.minZ, bt = b.maxZ - p.z;
             const m = Math.min(l, rr, t, bt);
-            if (m === l) p2.x = b.minX - r;
-            else if (m === rr) p2.x = b.maxX + r;
-            else if (m === t) p2.z = b.minZ - r;
-            else p2.z = b.maxZ + r;
+            if (m === l) p.x = b.minX - r;
+            else if (m === rr) p.x = b.maxX + r;
+            else if (m === t) p.z = b.minZ - r;
+            else p.z = b.maxZ + r;
           }
           hit = moved = true;
         }
@@ -44958,7 +44958,7 @@ void main() {
   }
   function buildFloor(n, def) {
     const oz = FLOOR_Z[n], Z = Zf(oz);
-    const rooms = [], walls2 = [], doors = [], props2 = [], signs = [], roomSigns = [];
+    const rooms = [], walls = [], doors = [], props = [], signs = [], roomSigns = [];
     const edges = { h: /* @__PURE__ */ new Map(), v: /* @__PURE__ */ new Map() };
     const addEdge = (o, c, a, b) => {
       const k = r2(c);
@@ -44972,7 +44972,7 @@ void main() {
         if (az === bz) addEdge("h", az, ax, bx);
         else addEdge("v", ax, az, bz);
       }
-      const zs2 = [...new Set(pts.map((p2) => p2[1]))].sort((a, b) => a - b), rects = [];
+      const zs2 = [...new Set(pts.map((p) => p[1]))].sort((a, b) => a - b), rects = [];
       for (let i = 0; i < zs2.length - 1; i++) {
         const zm = (zs2[i] + zs2[i + 1]) / 2, xs2 = [];
         for (let j = 0; j < pts.length; j++) {
@@ -45001,14 +45001,14 @@ void main() {
     doors.push({ id: "lift" + n, floor: n, kind: "lift", axis: "x", x: L2.x, z: L2.z, width: 5.28, face: "s" });
     addGap("h", L2.wallZ, L2.x - 2.64, L2.x + 2.64);
     for (const o of ["h", "v"]) for (const [c, list] of edges[o]) {
-      list.sort((p2, q) => p2[0] - q[0]);
+      list.sort((p, q) => p[0] - q[0]);
       const merged = [];
       for (const [a, b] of list) {
         const m = merged[merged.length - 1];
         if (m && a <= m[1] + 1e-6) m[1] = Math.max(m[1], b);
         else merged.push([a, b]);
       }
-      const gs = (gaps[o].get(c) || []).sort((p2, q) => p2[0] - q[0]);
+      const gs = (gaps[o].get(c) || []).sort((p, q) => p[0] - q[0]);
       for (const [a0, b0] of merged) {
         let a = a0 - T / 2;
         const end = b0 + T / 2;
@@ -45021,19 +45021,19 @@ void main() {
       }
     }
     function push(o, c, a, b) {
-      if (o === "h") walls2.push([a, b, c - T / 2, c + T / 2, WH, "full"]);
-      else walls2.push([c - T / 2, c + T / 2, a, b, WH, "full"]);
+      if (o === "h") walls.push([a, b, c - T / 2, c + T / 2, WH, "full"]);
+      else walls.push([c - T / 2, c + T / 2, a, b, WH, "full"]);
     }
     const P = {
       p(m, x, z, rot, size, h, extra = {}) {
         const sw = rot % 180 === 90;
-        props2.push({ m, x, z, rot, fp: sw ? [size[1], size[0]] : [size[0], size[1]], h, floor: n, ...extra });
+        props.push({ m, x, z, rot, fp: sw ? [size[1], size[0]] : [size[0], size[1]], h, floor: n, ...extra });
       },
       wp(m, x, z, face, y, extra = {}) {
-        props2.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, floor: n, ...extra });
+        props.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, floor: n, ...extra });
       },
       raw(o) {
-        props2.push({ floor: n, ...o });
+        props.push({ floor: n, ...o });
       },
       sign(text, sub, x, y, z, face, w, extra = {}) {
         signs.push({ text, sub, x, y, z, face, w, ...extra });
@@ -45052,9 +45052,9 @@ void main() {
       floor: n,
       oz,
       rooms,
-      walls: walls2,
+      walls,
       doors,
-      props: props2,
+      props,
       signs,
       roomSigns,
       lift: L2,
@@ -45094,92 +45094,92 @@ void main() {
       { id: "orbar", o: "h", c: 565, a: 1065, b: 1150, kind: "barred", face: "s", side: "s" }
       // OR south / R7 north: barred, released from R7 only
     ],
-    dress({ p: p2, wp: wp2, raw, sign: sign2, room, X: X2, Z }) {
-      p2(U + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
-      p2(U + "04_surgery/surgical_light_standard.glb", 1.15, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
-      p2(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
-      p2(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
-      p2(U + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
-      p2(U + "08_support_equipment/runtime/supply_cart_standard.glb", -4.4, -10.6, 0, [0.88, 0.65], 1.21);
-      p2(H + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
-      p2(H + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
-      p2(H + "lidded_waste_bin.glb", -5.6, -10.75, 0, [0.36, 0.4], 0.58);
-      wp2(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -2.15, -11, "s", 1.05);
-      wp2(M + "decor/Reception_Wall_Sanitizer.glb", -1.6, -11, "s", 1.1);
-      wp2(M + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
-      wp2(M + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
-      p2(M + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
-      wp2(M + "furnishings/Clinical_Wall_Cupboard.glb", -7, -1.4, "e", 1.45);
-      p2(H + "procedure_stretcher.glb", 5.4, -4.6, 0, [0.9, 1.66], 1.22);
-      p2(H + "lidded_waste_bin.glb", 6.6, -1.4, 0, [0.36, 0.4], 0.58);
-      wp2(M + "decor3/Clinical_Sharps_Container.glb", -7, -6.9, "e", 1.1);
-      wp2(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -7.6, "e", 1);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -20.6, -10.6, 0, [1.39, 0.53], 2);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -18.9, -10.6, 0, [1.39, 0.53], 2);
-      p2(K + "pharmacy_medicine_shelf.glb", -12.2, -10.6, 0, [1.39, 0.53], 1.95);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -10.2, -10.6, 0, [1.39, 0.53], 2);
-      p2(M + "decor/Recovery_Linen_Cabinet.glb", -25, -9.6, 90, [0.95, 0.59], 1.84);
-      p2(U + "08_support_equipment/runtime/supply_cart_starter.glb", -15.6, -1, 0, [0.78, 0.52], 1.01, { name: "s7cart" });
-      p2(M + "utility/Utility_Laundry_Hamper.glb", -8, 0.4, 0, [0.6, 0.54], 0.97);
-      p2(H + "wheelchair.glb", -21.6, 0.1, 270, [0.76, 0.91], 0.97);
-      p2(M + "utility/Utility_Wet_Floor_Sign.glb", -17.4, -4.6, 0, [0.36, 0.66], 0.67, { noCollide: true });
-      p2(U + "01_reception/reception_T2_desk.glb", -37.2, -9.9, 180, [2.2, 0.9], 1.1, { name: "n7desk" });
-      p2(U + "01_reception/reception_T2_chair.glb", -37.2, -10.75, 0, [0.63, 0.62], 0.99, { noCollide: true });
+    dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
+      p(U + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
+      p(U + "04_surgery/surgical_light_standard.glb", 1.15, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
+      p(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
+      p(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
+      p(U + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      p(U + "08_support_equipment/runtime/supply_cart_standard.glb", -4.4, -10.6, 0, [0.88, 0.65], 1.21);
+      p(H + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
+      p(H + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
+      p(H + "lidded_waste_bin.glb", -5.6, -10.75, 0, [0.36, 0.4], 0.58);
+      wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -2.15, -11, "s", 1.05);
+      wp(M + "decor/Reception_Wall_Sanitizer.glb", -1.6, -11, "s", 1.1);
+      wp(M + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
+      wp(M + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
+      p(M + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
+      wp(M + "furnishings/Clinical_Wall_Cupboard.glb", -7, -1.4, "e", 1.45);
+      p(H + "procedure_stretcher.glb", 5.4, -4.6, 0, [0.9, 1.66], 1.22);
+      p(H + "lidded_waste_bin.glb", 6.6, -1.4, 0, [0.36, 0.4], 0.58);
+      wp(M + "decor3/Clinical_Sharps_Container.glb", -7, -6.9, "e", 1.1);
+      wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -7.6, "e", 1);
+      p(M + "utility/Utility_Supply_Shelf.glb", -20.6, -10.6, 0, [1.39, 0.53], 2);
+      p(M + "utility/Utility_Supply_Shelf.glb", -18.9, -10.6, 0, [1.39, 0.53], 2);
+      p(K + "pharmacy_medicine_shelf.glb", -12.2, -10.6, 0, [1.39, 0.53], 1.95);
+      p(M + "utility/Utility_Supply_Shelf.glb", -10.2, -10.6, 0, [1.39, 0.53], 2);
+      p(M + "decor/Recovery_Linen_Cabinet.glb", -25, -9.6, 90, [0.95, 0.59], 1.84);
+      p(U + "08_support_equipment/runtime/supply_cart_starter.glb", -15.6, -1, 0, [0.78, 0.52], 1.01, { name: "s7cart" });
+      p(M + "utility/Utility_Laundry_Hamper.glb", -8, 0.4, 0, [0.6, 0.54], 0.97);
+      p(H + "wheelchair.glb", -21.6, 0.1, 270, [0.76, 0.91], 0.97);
+      p(M + "utility/Utility_Wet_Floor_Sign.glb", -17.4, -4.6, 0, [0.36, 0.66], 0.67, { noCollide: true });
+      p(U + "01_reception/reception_T2_desk.glb", -37.2, -9.9, 180, [2.2, 0.9], 1.1, { name: "n7desk" });
+      p(U + "01_reception/reception_T2_chair.glb", -37.2, -10.75, 0, [0.63, 0.62], 0.99, { noCollide: true });
       raw({ kind: "radio", x: -36.6, z: -9.75, y: 1.1, fp: [0.1, 0.1], h: 0, noCollide: true, name: "radio" });
-      p2(M + "decor/Reception_Linked_Seats_3.glb", -30.4, -10.65, 0, [2.61, 0.62], 0.92);
-      p2(M + "decor/Reception_Water_Cooler.glb", -26.4, -10.7, 0, [0.44, 0.49], 1.47);
-      p2(M + "decor/Recovery_Linen_Cabinet.glb", -40.2, -0.4, 90, [0.95, 0.59], 1.84);
-      p2(H + "patient_monitor.glb", -40.2, -2.6, 90, [0.62, 0.71], 1.49);
-      p2(U + "12_lobby/lobby_T2_floor_planter.glb", -28.2, -10.6, 0, [0.55, 0.86], 1.2, { fit: true });
-      wp2(M + "decor/Reception_Poster_Clinician.glb", -33.6, -11, "s", 1.15);
+      p(M + "decor/Reception_Linked_Seats_3.glb", -30.4, -10.65, 0, [2.61, 0.62], 0.92);
+      p(M + "decor/Reception_Water_Cooler.glb", -26.4, -10.7, 0, [0.44, 0.49], 1.47);
+      p(M + "decor/Recovery_Linen_Cabinet.glb", -40.2, -0.4, 90, [0.95, 0.59], 1.84);
+      p(H + "patient_monitor.glb", -40.2, -2.6, 90, [0.62, 0.71], 1.49);
+      p(U + "12_lobby/lobby_T2_floor_planter.glb", -28.2, -10.6, 0, [0.55, 0.86], 1.2, { fit: true });
+      wp(M + "decor/Reception_Poster_Clinician.glb", -33.6, -11, "s", 1.15);
       for (const [bx, bz, rot] of [[-39.2, 5, 90], [-39.2, 9, 90], [-39.2, 13, 90], [-27.3, 6.2, 270], [-27.3, 10.6, 270]]) {
-        p2(H + "recovery_bed.glb", bx, bz, rot, [1.25, 2.11], 0.87);
-        p2(H + "bedside_cabinet.glb", bx + (rot === 90 ? -0.55 : 0.55), bz - 1.35, rot, [0.52, 0.63], 0.81);
-        p2(U + "08_support_equipment/runtime/iv_stand_starter.glb", bx + (rot === 90 ? 1 : -1), bz - 1.1, 0, [0.68, 0.65], 1.99, { noCollide: true });
+        p(H + "recovery_bed.glb", bx, bz, rot, [1.25, 2.11], 0.87);
+        p(H + "bedside_cabinet.glb", bx + (rot === 90 ? -0.55 : 0.55), bz - 1.35, rot, [0.52, 0.63], 0.81);
+        p(U + "08_support_equipment/runtime/iv_stand_starter.glb", bx + (rot === 90 ? 1 : -1), bz - 1.1, 0, [0.68, 0.65], 1.99, { noCollide: true });
       }
-      p2(H + "privacy_screen.glb", -38.1, 7, 90, [0.14, 1.84], 1.97);
-      p2(H + "privacy_screen.glb", -38.1, 11, 90, [0.14, 1.84], 1.97);
-      p2(H + "procedure_stretcher.glb", -33.4, 8.4, 0, [0.9, 1.66], 1.22);
-      p2(H + "supply_cart.glb", -26.3, 14.4, 0, [1.16, 1.1], 1.23);
+      p(H + "privacy_screen.glb", -38.1, 7, 90, [0.14, 1.84], 1.97);
+      p(H + "privacy_screen.glb", -38.1, 11, 90, [0.14, 1.84], 1.97);
+      p(H + "procedure_stretcher.glb", -33.4, 8.4, 0, [0.9, 1.66], 1.22);
+      p(H + "supply_cart.glb", -26.3, 14.4, 0, [1.16, 1.1], 1.23);
       raw({ kind: "bench", x: -38, z: 17, size: [2.4, 0.7, 0.92], color: 9206364, fp: [2.4, 0.7], h: 0.92, name: "v7bench" });
       raw({ kind: "hazard", x: -31.5, z: 24, size: [3.4, 1.4], noCollide: true, fp: [0.1, 0.1], h: 0 });
       raw({ kind: "pipes", x: -32, z: 15.8, len: 9, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
-      p2(K + "isolation_windowed_partition.glb", -36, 23.2, 90, [2, 0.15], 2.4);
-      p2(K + "isolation_windowed_partition.glb", -36, 25.4, 90, [2, 0.15], 2.4);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -40.25, 20.4, 90, [1.39, 0.53], 2);
-      p2(M + "utility/Utility_Janitor_Cart.glb", -26.2, 26.8, 0, [0.83, 0.94], 1.24);
-      p2(M + "utility/Utility_Mop_Bucket.glb", -27.3, 27.3, 0, [0.43, 0.51], 0.66);
-      p2(M + "utility/Utility_Wet_Floor_Sign.glb", -30.2, 18.9, 0, [0.36, 0.66], 0.67, { noCollide: true });
-      p2(M + "utility/Utility_Wet_Floor_Sign.glb", -28.9, 18.6, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
-      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", -40.3, 26.6, 90, [0.82, 0.51], 1.82);
-      wp2(M + "utility/Utility_Toolboard.glb", -38, 15.8, "s", 1);
-      p2(K + "cafeteria_serving_counter.glb", -20.3, 16.25, 0, [2.46, 0.96], 1.53);
-      p2(K + "cafeteria_tray_return.glb", -18.3, 16.1, 0, [0.68, 0.56], 1);
-      p2(K + "cafeteria_vending_machine.glb", -11.2, 16.25, 0, [0.93, 0.87], 1.9);
-      p2(K + "cafeteria_vending_machine.glb", -10.1, 16.25, 0, [0.93, 0.87], 1.9);
+      p(K + "isolation_windowed_partition.glb", -36, 23.2, 90, [2, 0.15], 2.4);
+      p(K + "isolation_windowed_partition.glb", -36, 25.4, 90, [2, 0.15], 2.4);
+      p(M + "utility/Utility_Supply_Shelf.glb", -40.25, 20.4, 90, [1.39, 0.53], 2);
+      p(M + "utility/Utility_Janitor_Cart.glb", -26.2, 26.8, 0, [0.83, 0.94], 1.24);
+      p(M + "utility/Utility_Mop_Bucket.glb", -27.3, 27.3, 0, [0.43, 0.51], 0.66);
+      p(M + "utility/Utility_Wet_Floor_Sign.glb", -30.2, 18.9, 0, [0.36, 0.66], 0.67, { noCollide: true });
+      p(M + "utility/Utility_Wet_Floor_Sign.glb", -28.9, 18.6, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", -40.3, 26.6, 90, [0.82, 0.51], 1.82);
+      wp(M + "utility/Utility_Toolboard.glb", -38, 15.8, "s", 1);
+      p(K + "cafeteria_serving_counter.glb", -20.3, 16.25, 0, [2.46, 0.96], 1.53);
+      p(K + "cafeteria_tray_return.glb", -18.3, 16.1, 0, [0.68, 0.56], 1);
+      p(K + "cafeteria_vending_machine.glb", -11.2, 16.25, 0, [0.93, 0.87], 1.9);
+      p(K + "cafeteria_vending_machine.glb", -10.1, 16.25, 0, [0.93, 0.87], 1.9);
       for (const [tx, tz] of [[-19.6, 20.6], [-15, 22.4], [-10.6, 20.6], [-19, 25.8], [-11.2, 25.8]]) {
-        p2(H + "break_table.glb", tx, tz, 0, [0.95, 0.86], 0.85);
-        p2(H + "break_chair.glb", tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
-        p2(H + "break_chair.glb", tx + 0.85, tz, 270, [0.72, 0.62], 0.92, { noCollide: true });
+        p(H + "break_table.glb", tx, tz, 0, [0.95, 0.86], 0.85);
+        p(H + "break_chair.glb", tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
+        p(H + "break_chair.glb", tx + 0.85, tz, 270, [0.72, 0.62], 0.92, { noCollide: true });
         raw({ m: K + "cafeteria_meal_tray_set.glb", x: tx, z: tz, rot: 0, y: 0.85, fp: [0.1, 0.1], h: 0, noCollide: true });
       }
       raw({ kind: "box", x: -5.2, z: 16.3, size: [1.4, 0.7, 1.9], face: "s", color: 9410715, fp: [1.4, 0.7], h: 1.9, name: "switchgear" });
       raw({ kind: "box", x: 6.55, z: 21.5, size: [1.6, 0.6, 2.1], face: "w", color: 8226698, fp: [0.6, 1.6], h: 2.1, name: "panelboard" });
-      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", -6.55, 26.6, 90, [0.82, 0.51], 1.82);
-      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", 6.55, 26.4, 270, [0.82, 0.51], 1.82);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", -6.55, 26.6, 90, [0.82, 0.51], 1.82);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", 6.55, 26.4, 270, [0.82, 0.51], 1.82);
       raw({ kind: "hazard", x: -1, z: 16.9, size: [1.8, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
-      p2(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -5.4, 1.55, 0, [0.87, 0.63], 1.16);
-      p2(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -4.3, 1.55, 0, [0.87, 0.63], 1.16);
-      p2(M + "decor/Recovery_Linen_Cabinet.glb", -6.55, 8, 90, [0.95, 0.59], 1.84);
-      p2(U + "08_support_equipment/runtime/supply_cart_standard.glb", 6.5, 6.2, 270, [0.88, 0.65], 1.21);
-      p2(H + "procedure_stretcher.glb", -5.6, 12.6, 90, [0.9, 1.66], 1.22);
-      wp2(M + "decor3/Clinical_Sign_PreOp.glb", 4.6, 1.2, "s", 2.2);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -22.25, 7.4, 90, [1.39, 0.53], 2);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -22.25, 10.4, 90, [1.39, 0.53], 2);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -7.75, 7.4, 270, [1.39, 0.53], 2);
-      p2(M + "utility/Utility_Supply_Shelf.glb", -7.75, 10.4, 270, [1.39, 0.53], 2);
+      p(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -5.4, 1.55, 0, [0.87, 0.63], 1.16);
+      p(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -4.3, 1.55, 0, [0.87, 0.63], 1.16);
+      p(M + "decor/Recovery_Linen_Cabinet.glb", -6.55, 8, 90, [0.95, 0.59], 1.84);
+      p(U + "08_support_equipment/runtime/supply_cart_standard.glb", 6.5, 6.2, 270, [0.88, 0.65], 1.21);
+      p(H + "procedure_stretcher.glb", -5.6, 12.6, 90, [0.9, 1.66], 1.22);
+      wp(M + "decor3/Clinical_Sign_PreOp.glb", 4.6, 1.2, "s", 2.2);
+      p(M + "utility/Utility_Supply_Shelf.glb", -22.25, 7.4, 90, [1.39, 0.53], 2);
+      p(M + "utility/Utility_Supply_Shelf.glb", -22.25, 10.4, 90, [1.39, 0.53], 2);
+      p(M + "utility/Utility_Supply_Shelf.glb", -7.75, 7.4, 270, [1.39, 0.53], 2);
+      p(M + "utility/Utility_Supply_Shelf.glb", -7.75, 10.4, 270, [1.39, 0.53], 2);
       raw({ kind: "bench", x: -15, z: 9.4, size: [2, 0.75, 0.92], color: 9206364, fp: [2, 0.75], h: 0.92, name: "x7bench" });
-      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", -12.4, 5, 0, [0.82, 0.51], 1.82);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", -12.4, 5, 0, [0.82, 0.51], 1.82);
       sign2("LIFT SERVICE \u2192", "Lift power \xB7 past the cafeteria", -25.8, 1.95, -1.4, "w", 1.5);
       sign2("LIFT", "Power fault", X2(1214) + 3.65, 2.3, -11, "s", 0.8, { lift: 7 });
       sign2("BARRED", "From the prep room side", 1, 1.75, 0.9, "n", 0.86, { id: "orbarSign" });
@@ -45261,36 +45261,36 @@ void main() {
       { id: "partition", o: "v", c: 710, a: 1095, b: 1180, kind: "partition" }
       // the weak renovation partition (A6 | K6)
     ],
-    dress({ p: p2, wp: wp2, raw, sign: sign2, room, X: X2, Z }) {
+    dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
       const z = Z;
-      p2(M + "decor/Reception_Linked_Seats_3.glb", 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
-      p2(U + "12_lobby/lobby_T2_floor_planter.glb", 6.5, z(270) + 0.6, 0, [0.55, 0.86], 1.2, { fit: true });
-      p2(H + "procedure_stretcher.glb", X2(780), z(330) + 0.3, 90, [0.9, 1.66], 1.22);
-      p2(H + "wheelchair.glb", X2(1100), z(330), 0, [0.76, 0.91], 0.97);
+      p(M + "decor/Reception_Linked_Seats_3.glb", 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
+      p(U + "12_lobby/lobby_T2_floor_planter.glb", 6.5, z(270) + 0.6, 0, [0.55, 0.86], 1.2, { fit: true });
+      p(H + "procedure_stretcher.glb", X2(780), z(330) + 0.3, 90, [0.9, 1.66], 1.22);
+      p(H + "wheelchair.glb", X2(1100), z(330), 0, [0.76, 0.91], 0.97);
       for (const bx of [X2(242), X2(397), X2(577)]) {
-        p2(H + "recovery_bed.glb", bx, z(378), 0, [1.25, 2.11], 0.87);
-        p2(H + "bedside_cabinet.glb", bx + 0.95, z(320), 0, [0.52, 0.63], 0.81);
+        p(H + "recovery_bed.glb", bx, z(378), 0, [1.25, 2.11], 0.87);
+        p(H + "bedside_cabinet.glb", bx + 0.95, z(320), 0, [0.52, 0.63], 0.81);
       }
-      p2(H + "privacy_screen.glb", (X2(242) + X2(397)) / 2, z(378), 0, [0.14, 1.84], 1.97);
-      p2(H + "recovery_bed.glb", X2(367), z(577), 90, [1.25, 2.11], 0.87);
-      p2(H + "recovery_bed.glb", X2(557), z(620), 0, [1.25, 2.11], 0.87);
-      p2(U + "08_support_equipment/runtime/iv_stand_starter.glb", X2(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
-      p2(H + "patient_monitor.glb", X2(200), z(690), 90, [0.62, 0.71], 1.49);
-      p2(M + "decor/Recovery_Linen_Cabinet.glb", X2(270), z(790), 0, [0.95, 0.59], 1.84);
-      p2(U + "06_prep_airway/SedaPrep_standard.glb", X2(530), z(920), 0, [1, 0.6], 1.1);
-      p2(H + "supply_cart.glb", X2(260), z(895), 90, [1.16, 1.1], 1.23);
-      p2(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", X2(560), z(785), 0, [0.87, 0.63], 1.16);
-      p2(K + "pharmacy_locked_cupboard.glb", X2(260), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
-      p2(K + "pharmacy_locked_cupboard.glb", X2(370), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
-      p2(K + "pharmacy_medicine_shelf.glb", X2(640), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
-      p2(M + "furnishings/Lounge_Break_Table.glb", X2(305), z(1077), 0, [0.9, 0.9], 0.74, { name: "k6table" });
+      p(H + "privacy_screen.glb", (X2(242) + X2(397)) / 2, z(378), 0, [0.14, 1.84], 1.97);
+      p(H + "recovery_bed.glb", X2(367), z(577), 90, [1.25, 2.11], 0.87);
+      p(H + "recovery_bed.glb", X2(557), z(620), 0, [1.25, 2.11], 0.87);
+      p(U + "08_support_equipment/runtime/iv_stand_starter.glb", X2(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
+      p(H + "patient_monitor.glb", X2(200), z(690), 90, [0.62, 0.71], 1.49);
+      p(M + "decor/Recovery_Linen_Cabinet.glb", X2(270), z(790), 0, [0.95, 0.59], 1.84);
+      p(U + "06_prep_airway/SedaPrep_standard.glb", X2(530), z(920), 0, [1, 0.6], 1.1);
+      p(H + "supply_cart.glb", X2(260), z(895), 90, [1.16, 1.1], 1.23);
+      p(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", X2(560), z(785), 0, [0.87, 0.63], 1.16);
+      p(K + "pharmacy_locked_cupboard.glb", X2(260), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
+      p(K + "pharmacy_locked_cupboard.glb", X2(370), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
+      p(K + "pharmacy_medicine_shelf.glb", X2(640), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
+      p(M + "furnishings/Lounge_Break_Table.glb", X2(305), z(1077), 0, [0.9, 0.9], 0.74, { name: "k6table" });
       raw({ m: K + "lab_sample_rack.glb", x: X2(560), z: z(1077), rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
-      p2(M + "furnishings/Lounge_Break_Table.glb", X2(560), z(1077), 0, [0.9, 0.9], 0.74);
-      p2(M + "utility/Utility_Supply_Shelf.glb", X2(1110), z(880), 270, [1.39, 0.53], 2);
-      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1110), z(1180), 270, [0.82, 0.51], 1.82);
+      p(M + "furnishings/Lounge_Break_Table.glb", X2(560), z(1077), 0, [0.9, 0.9], 0.74);
+      p(M + "utility/Utility_Supply_Shelf.glb", X2(1110), z(880), 270, [1.39, 0.53], 2);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1110), z(1180), 270, [0.82, 0.51], 1.82);
       raw({ kind: "hazard", x: X2(780), z: z(1137), size: [1.2, 3], noCollide: true, fp: [0.1, 0.1], h: 0 });
       raw({ kind: "bench", x: X2(1e3), z: z(1250), size: [1.8, 0.65, 0.92], color: 9206364, fp: [1.8, 0.65], h: 0.92 });
-      p2(M + "utility/Utility_Wet_Floor_Sign.glb", X2(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
+      p(M + "utility/Utility_Wet_Floor_Sign.glb", X2(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
       raw({ kind: "partition", x: X2(710), z: (z(1095) + z(1180)) / 2, w: 3, fp: [0.1, 0.1], h: 0, noCollide: true, name: "partition" });
       sign2("\u2190 COLD DISPATCH", "via Recovery Ward", X2(920) - 0.6, 2.3, z(300) + 0.15, "s", 1.5);
       sign2("SERVICE \u2193", "Partition works", X2(1060), 2.3, z(300) + 0.15, "s", 1.3);
@@ -45342,29 +45342,29 @@ void main() {
       { id: "w5_r5", o: "h", c: 1e3, a: 450, b: 540 },
       { id: "t5_r5", o: "v", c: 700, a: 1100, b: 1190 }
     ],
-    dress({ p: p2, wp: wp2, raw, sign: sign2, room, X: X2, Z }) {
+    dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
       const z = Z;
-      p2(M + "decor/Reception_Linked_Seats_3.glb", 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
-      p2(U + "07_warmth_teamwork/ThermaNest_standard.glb", X2(830), z(300) + 0.45, 0, [1, 0.7], 1.6, { name: "intake" });
-      p2(K + "pharmacy_locked_cupboard.glb", X2(760), z(300) + 0.4, 0, [0.95, 0.55], 1.95);
-      p2(U + "07_warmth_teamwork/TeamDesk_standard.glb", X2(785), z(525), 0, [1.6, 0.8], 1);
-      p2(U + "12_lobby/lobby_T2_floor_planter.glb", X2(1085), z(527), 0, [0.55, 0.86], 1.2, { fit: true });
-      p2(H + "procedure_stretcher.glb", X2(790), z(630), 90, [0.9, 1.66], 1.22);
-      p2(H + "supply_cart.glb", X2(1065), z(650), 0, [1.16, 1.1], 1.23);
-      p2(H + "recovery_bed.glb", X2(330), z(650), 90, [1.25, 2.11], 0.87);
-      p2(H + "recovery_bed.glb", X2(325), z(895), 90, [1.25, 2.11], 0.87);
-      p2(H + "break_table.glb", X2(435), z(810), 0, [0.95, 0.86], 0.85);
-      p2(H + "privacy_screen.glb", X2(390), z(770), 0, [0.14, 1.84], 1.97);
-      p2(H + "bedside_cabinet.glb", X2(627), z(930), 0, [0.52, 0.63], 0.81);
-      p2(U + "09_assessment_furniture/runtime/consultation_desk_standard.glb", X2(340), z(1255) - 0.45, 180, [1.5, 0.75], 0.78, { name: "docket" });
-      p2(K + "pharmacy_medicine_shelf.glb", X2(620), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
-      p2(M + "decor/Recovery_Linen_Cabinet.glb", X2(280), z(1050), 90, [0.95, 0.59], 1.84);
+      p(M + "decor/Reception_Linked_Seats_3.glb", 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
+      p(U + "07_warmth_teamwork/ThermaNest_standard.glb", X2(830), z(300) + 0.45, 0, [1, 0.7], 1.6, { name: "intake" });
+      p(K + "pharmacy_locked_cupboard.glb", X2(760), z(300) + 0.4, 0, [0.95, 0.55], 1.95);
+      p(U + "07_warmth_teamwork/TeamDesk_standard.glb", X2(785), z(525), 0, [1.6, 0.8], 1);
+      p(U + "12_lobby/lobby_T2_floor_planter.glb", X2(1085), z(527), 0, [0.55, 0.86], 1.2, { fit: true });
+      p(H + "procedure_stretcher.glb", X2(790), z(630), 90, [0.9, 1.66], 1.22);
+      p(H + "supply_cart.glb", X2(1065), z(650), 0, [1.16, 1.1], 1.23);
+      p(H + "recovery_bed.glb", X2(330), z(650), 90, [1.25, 2.11], 0.87);
+      p(H + "recovery_bed.glb", X2(325), z(895), 90, [1.25, 2.11], 0.87);
+      p(H + "break_table.glb", X2(435), z(810), 0, [0.95, 0.86], 0.85);
+      p(H + "privacy_screen.glb", X2(390), z(770), 0, [0.14, 1.84], 1.97);
+      p(H + "bedside_cabinet.glb", X2(627), z(930), 0, [0.52, 0.63], 0.81);
+      p(U + "09_assessment_furniture/runtime/consultation_desk_standard.glb", X2(340), z(1255) - 0.45, 180, [1.5, 0.75], 0.78, { name: "docket" });
+      p(K + "pharmacy_medicine_shelf.glb", X2(620), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
+      p(M + "decor/Recovery_Linen_Cabinet.glb", X2(280), z(1050), 90, [0.95, 0.59], 1.84);
       raw({ kind: "screen", x: X2(340), z: z(1255) - 0.55, y: 0.78, fp: [0.1, 0.1], h: 0, noCollide: true, name: "docketScreen" });
-      p2(K + "ct_scanner_gantry.glb", X2(970), z(1075), 0, [2.13, 0.87], 2.26);
-      p2(H + "procedure_stretcher.glb", X2(780), z(955), 90, [0.9, 1.66], 1.22);
-      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1218), z(1005), 270, [0.82, 0.51], 1.82);
-      p2(M + "utility/Utility_Supply_Shelf.glb", X2(1218), z(1200), 270, [1.39, 0.53], 2);
-      p2(U + "03_endoscopy/endoscopy_tower_standard.glb", X2(760), z(1250), 0, [0.7, 0.6], 1.6);
+      p(K + "ct_scanner_gantry.glb", X2(970), z(1075), 0, [2.13, 0.87], 2.26);
+      p(H + "procedure_stretcher.glb", X2(780), z(955), 90, [0.9, 1.66], 1.22);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1218), z(1005), 270, [0.82, 0.51], 1.82);
+      p(M + "utility/Utility_Supply_Shelf.glb", X2(1218), z(1200), 270, [1.39, 0.53], 2);
+      p(U + "03_endoscopy/endoscopy_tower_standard.glb", X2(760), z(1250), 0, [0.7, 0.6], 1.6);
       sign2("DIAGNOSTIC INTAKE", "Specimen hold", X2(920), 2.3, z(300) + 0.15, "s", 1.4);
       sign2("\u2190 RECORDS", "Short ward", X2(700) + 0.16, 2.3, z(745) - 1.8, "e", 1.3);
       sign2("RECORDS \u2193", "Equipment bay", X2(975) + 2, 2.3, z(580) + 0.15, "s", 1.3);
@@ -45515,9 +45515,9 @@ void main() {
   function buildWorld(World2) {
     const w = new World2(LAYOUT.bounds);
     for (const [a, b, c, d, h, style] of LAYOUT.walls) w.addBox(a, b, c, d, h, style);
-    for (const p2 of LAYOUT.props) {
-      if (p2.noCollide || !p2.h) continue;
-      w.addBox(p2.x - p2.fp[0] / 2, p2.x + p2.fp[0] / 2, p2.z - p2.fp[1] / 2, p2.z + p2.fp[1] / 2, p2.h, "prop");
+    for (const p of LAYOUT.props) {
+      if (p.noCollide || !p.h) continue;
+      w.addBox(p.x - p.fp[0] / 2, p.x + p.fp[0] / 2, p.z - p.fp[1] / 2, p.z + p.fp[1] / 2, p.h, "prop");
     }
     if (LAYOUT.story) {
       w.dyn = {};
@@ -45812,9 +45812,9 @@ void main() {
         const ox = s.hips && hipsRest2 ? s.hips[0] - hipsRest2[0] : 0, oz = s.hips && hipsRest2 ? s.hips[2] - hipsRest2[2] : 0;
         const pin = (v) => [v[0] - ox, v[1], v[2] - oz];
         if (A.limb) {
-          const p2 = rotY(pin(s[A.limb]).map((v) => v * scale), A.yawOffset), h = rotY(pin(s.hips).map((v) => v * scale), A.yawOffset);
-          const d2 = [p2[0] - h[0], 0, p2[2] - h[2]], dl2 = Math.hypot(d2[0], d2[2]) || 1;
-          A.PATH.push({ t, mx: p2[0], my: p2[1], mz: p2[2], dx: d2[0] / dl2, dy: 0, dz: d2[2] / dl2 });
+          const p = rotY(pin(s[A.limb]).map((v) => v * scale), A.yawOffset), h = rotY(pin(s.hips).map((v) => v * scale), A.yawOffset);
+          const d2 = [p[0] - h[0], 0, p[2] - h[2]], dl2 = Math.hypot(d2[0], d2[2]) || 1;
+          A.PATH.push({ t, mx: p[0], my: p[1], mz: p[2], dx: d2[0] / dl2, dy: 0, dz: d2[2] / dl2 });
           continue;
         }
         const r = rotY(pin(s.r).map((v) => v * scale), A.yawOffset), l = rotY(pin(s.l).map((v) => v * scale), A.yawOffset);
@@ -45949,7 +45949,7 @@ void main() {
     }
     // ---------------- movement ----------------
     move(dt, input2, world, sim2) {
-      const T3 = this.T;
+      const T2 = this.T;
       let mx = input2.moveX, mz = input2.moveZ, mag = Math.min(1, Math.hypot(mx, mz));
       this.moveIntent = mag;
       const down = this.action.type === "down";
@@ -45958,13 +45958,13 @@ void main() {
       }
       const am = down ? 0 : Math.hypot(input2.aimX, input2.aimZ);
       this.aiming = !this.dead && am > AIM_DEADZONE;
-      const held = !this.dead && am >= T3.attackThreshold;
+      const held = !this.dead && am >= T2.attackThreshold;
       if (held && !this.attackHeld) this.attackPressT = 0;
       this.attackPressT = (this.attackPressT ?? 9) + dt;
       this.attackHeld = held;
       if (this.aiming) this.aimTarget = Math.atan2(input2.aimX, input2.aimZ);
       else if (mag > 0.15) this.aimTarget = Math.atan2(mx, mz);
-      let turn = down ? 0 : T3.turnRate;
+      let turn = down ? 0 : T2.turnRate;
       if (this.action.type === "swing") {
         const a = this.action;
         turn = a.st < a.activeEnd ? 0 : turn * 0.6;
@@ -45977,11 +45977,11 @@ void main() {
         turn *= 0.7;
       }
       this.aimYaw = approachAngle(this.aimYaw, this.aimTarget, turn * dt);
-      let speed = T3.moveSpeed * mag;
+      let speed = T2.moveSpeed * mag;
       if (mag > 0.01 && this.aiming) {
         const rel = Math.cos(angleDiff(this.aimYaw, Math.atan2(mx, mz)));
         const side = 1 - Math.abs(rel);
-        const k = rel >= 0 ? 1 - side * (1 - T3.strafeSpeed) : T3.strafeSpeed + (T3.backpedalSpeed - T3.strafeSpeed) * -rel;
+        const k = rel >= 0 ? 1 - side * (1 - T2.strafeSpeed) : T2.strafeSpeed + (T2.backpedalSpeed - T2.strafeSpeed) * -rel;
         speed *= k;
       }
       if (this.action.type === "swing") speed *= this.attackMoveScale();
@@ -45990,7 +45990,7 @@ void main() {
       const dvx = mx * dl - this.vx, dvz = mz * dl - this.vz;
       const dvl = Math.hypot(dvx, dvz);
       const speeding = mx * this.vx + mz * this.vz > 0 && speed * speed >= this.vx * this.vx + this.vz * this.vz;
-      const maxDv = (speeding ? T3.accel : T3.decel) * dt;
+      const maxDv = (speeding ? T2.accel : T2.decel) * dt;
       if (dvl > maxDv) {
         this.vx += dvx / dvl * maxDv;
         this.vz += dvz / dvl * maxDv;
@@ -46025,7 +46025,7 @@ void main() {
       this.vx = (this.x - px2 - rm.x - (this.slide ? this.slide.x * dt : 0)) / dt;
       this.vz = (this.z - pz2 - rm.z - (this.slide ? this.slide.z * dt : 0)) / dt;
       if (down) this.vx = this.vz = 0;
-      const vl = Math.hypot(this.vx, this.vz), vmax = T3.moveSpeed * 1.05;
+      const vl = Math.hypot(this.vx, this.vz), vmax = T2.moveSpeed * 1.05;
       if (vl > vmax) {
         this.vx *= vmax / vl;
         this.vz *= vmax / vl;
@@ -46064,16 +46064,16 @@ void main() {
     }
     // ---------------- actions ----------------
     updateAction(dt, sim2) {
-      const T3 = this.T, a = this.action;
+      const T2 = this.T, a = this.action;
       if (this.dead) return;
       a.t += dt;
       switch (a.type) {
         case "shot":
-          if (a.t >= (this.equipped === SHOTGUN ? T3.shotgunInterval : T3.pistolInterval)) this.setAction("ready");
+          if (a.t >= (this.equipped === SHOTGUN ? T2.shotgunInterval : T2.pistolInterval)) this.setAction("ready");
           break;
         case "swing": {
           const A = this.atk(a);
-          const prevT = a.st, st = a.st = a.t * T3.axeSpeed;
+          const prevT = a.st, st = a.st = a.t * T2.axeSpeed;
           if (A.continuous && !A.windows && prevT < A.activeStart - 0.12 && st >= A.activeStart - 0.12) sim2.emit({ type: "whoosh", combo: a.combo });
           if (A.windows) {
             for (let i = 0; i < A.windows.length; i++) {
@@ -46138,7 +46138,7 @@ void main() {
           break;
       }
       if (this.desired !== this.equipped && this.action.type !== "swap" && this.canBeginSwap()) {
-        this.setAction("swap", { dur: T3.swapTime, target: this.desired, mid: false });
+        this.setAction("swap", { dur: T2.swapTime, target: this.desired, mid: false });
         sim2.emit({ type: "swapStart", weapon: this.desired });
         return;
       }
@@ -46255,12 +46255,12 @@ void main() {
       return true;
     }
   };
-  function meleeWorldSegment(p2, A, t, out) {
+  function meleeWorldSegment(p, A, t, out) {
     const s = meleeSegment(A, t, _seg);
-    const sy = Math.sin(p2.aimYaw), cy = Math.cos(p2.aimYaw);
+    const sy = Math.sin(p.aimYaw), cy = Math.cos(p.aimYaw);
     const tw = (lx, lz, o, kx, kz) => {
-      o[kx] = p2.x + lx * cy + lz * sy;
-      o[kz] = p2.z - lx * sy + lz * cy;
+      o[kx] = p.x + lx * cy + lz * sy;
+      o[kz] = p.z - lx * sy + lz * cy;
     };
     tw(s.hx, s.hz, out, "hx", "hz");
     tw(s.tx, s.tz, out, "tx", "tz");
@@ -46451,9 +46451,9 @@ void main() {
         sim2.emit({ type: "zombieHit", id: this.id, kind });
         return;
       }
-      const T3 = sim2.T;
+      const T2 = sim2.T;
       const fist = kind === "fist";
-      const kd = fist ? style === "kick" ? 0.55 : 0 : melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T3.axeKnockdown) : style === "heavy" ? Math.min(1, T3.axeKnockdown + 0.25) : T3.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
+      const kd = fist ? style === "kick" ? 0.55 : 0 : melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T2.axeKnockdown) : style === "heavy" ? Math.min(1, T2.axeKnockdown + 0.25) : T2.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
       if (this.toCrawl || !this.crawling && kd > 0 && sim2.rand() < kd * this.K.kd) {
         this.knockDown(dirX, dirZ, sim2);
         return;
@@ -46507,7 +46507,7 @@ void main() {
       const c = Math.cos(ang), s = Math.sin(ang);
       let hx = wx * c + wz * s, hz = -wx * s + wz * c;
       const lx = hz, lz = -hx;
-      const p2 = sim2.player, myA = Math.atan2(this.x - p2.x, this.z - p2.z), avoid = los ? 1.5 : 0.9;
+      const p = sim2.player, myA = Math.atan2(this.x - p.x, this.z - p.z), avoid = los ? 1.5 : 0.9;
       let ax = 0, az = 0;
       for (const o of sim2.zombies) {
         if (o === this || !o.solid || !o.alive) continue;
@@ -46525,9 +46525,9 @@ void main() {
           }
         }
         if (dist2 < 2.8) {
-          const od = Math.hypot(o.x - p2.x, o.z - p2.z);
+          const od = Math.hypot(o.x - p.x, o.z - p.z);
           if (od < 2.8) {
-            const da = angleDiff(Math.atan2(o.x - p2.x, o.z - p2.z), myA);
+            const da = angleDiff(Math.atan2(o.x - p.x, o.z - p.z), myA);
             if (Math.abs(da) < 0.75) {
               const tx = Math.cos(myA), tz = -Math.sin(myA), sg = da === 0 ? this.id & 1 ? 1 : -1 : Math.sign(da);
               const w = (1 - Math.abs(da) / 0.75) * 0.9;
@@ -46557,8 +46557,8 @@ void main() {
     // round slowly (the opening to hit her), then charges again, or, close in, falls back on the normal attacks. Running into
     // a wall or a prop at speed trips her (update: tumble); another zombie in her path is bowled over.
     sprinterChase(dt, sim2, dx, dz, dist2) {
-      const T3 = sim2.T, p2 = sim2.player, top = (T3.sprinterSpeed ?? 3.9) * this.speedMul;
-      const sees = !p2.dead && dist2 < 12 && sim2.world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5);
+      const T2 = sim2.T, p = sim2.player, top = (T2.sprinterSpeed ?? 3.9) * this.speedMul;
+      const sees = !p.dead && dist2 < 12 && sim2.world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
       if (!this.sprinting) {
         if (!sees || dist2 < 2.4 || this.attackCd > 0.3) {
           this.spotT = 0;
@@ -46567,7 +46567,7 @@ void main() {
         if (this.spotT === 0) sim2.emit({ type: "sprinterSpot", id: this.id });
         this.spotT += dt;
         this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
-        if (this.spotT < (T3.sprinterWindup ?? 0.7)) return true;
+        if (this.spotT < (T2.sprinterWindup ?? 0.7)) return true;
         this.sprinting = true;
         this.spd = Math.max(this.spd, 1);
         this.braking = false;
@@ -46575,7 +46575,7 @@ void main() {
         this.yaw = Math.atan2(dx, dz);
       }
       const off = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
-      if (p2.dead || dist2 > 14 || !sees && dist2 > 3) {
+      if (p.dead || dist2 > 14 || !sees && dist2 > 3) {
         this.sprinting = false;
         this.spotT = 0;
         this.spd = 0;
@@ -46601,11 +46601,11 @@ void main() {
       }
       this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), turn * dt);
       const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx2 + dz * fz, lat = dx * fz - dz * fx2;
-      if (!this.chargeHit && !this.braking && this.spd > 2.4 && along > -0.1 && along < this.r + p2.r + 0.2 && Math.abs(lat) < this.r + p2.r - 0.1) {
+      if (!this.chargeHit && !this.braking && this.spd > 2.4 && along > -0.1 && along < this.r + p.r + 0.2 && Math.abs(lat) < this.r + p.r - 0.1) {
         this.chargeHit = true;
         this.braking = true;
         const sg = lat >= 0 ? 1 : -1;
-        if (p2.hurt(T3.zombieDamage * 1.3 * this.K.dmg, this.x, this.z, sim2) && !p2.dead) p2.knockDown(this.x - fz * sg * 0.6, this.z + fx2 * sg * 0.6, sim2);
+        if (p.hurt(T2.zombieDamage * 1.3 * this.K.dmg, this.x, this.z, sim2) && !p.dead) p.knockDown(this.x - fz * sg * 0.6, this.z + fx2 * sg * 0.6, sim2);
         sim2.emit({ type: "sprinterHit", id: this.id });
       }
       if (this.spd > 2.2) {
@@ -46639,16 +46639,16 @@ void main() {
       sim2.emit({ type: "zombieTumble", id: this.id, what });
     }
     update(dt, sim2) {
-      const T3 = sim2.T, p2 = sim2.player, world = sim2.world;
+      const T2 = sim2.T, p = sim2.player, world = sim2.world;
       this.t += dt;
       this.hitFlash = Math.max(0, this.hitFlash - dt * 6);
       if (this.bumpT > 0) this.bumpT -= dt;
       if (this.attackCd > 0) this.attackCd -= dt;
-      const dx = p2.x - this.x, dz = p2.z - this.z, dist2 = Math.hypot(dx, dz);
+      const dx = p.x - this.x, dz = p.z - this.z, dist2 = Math.hypot(dx, dz);
       if (this.dormant) {
         const D = this.dormant;
         let wake = sim2.time >= D.wake || this.hitSeq > 0;
-        if (!wake && D.sense && !D.locked && !p2.dead) wake = dist2 < D.sense * 0.5 || dist2 < D.sense && world.lineOfSight(this.x, this.z, p2.x, p2.z, 1);
+        if (!wake && D.sense && !D.locked && !p.dead) wake = dist2 < D.sense * 0.5 || dist2 < D.sense && world.lineOfSight(this.x, this.z, p.x, p.z, 1);
         if (wake) {
           this.speedMul = D.speedMul;
           this.passive = false;
@@ -46674,11 +46674,11 @@ void main() {
           if (this.t >= this.stateDur) this.set(ZS.CHASE);
           break;
         case ZS.CHASE: {
-          if (p2.dead) {
+          if (p.dead) {
             speed = 0;
             break;
           }
-          const los = dist2 < 7 && world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5);
+          const los = dist2 < 7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
           if (los) {
             wantX = dx / (dist2 || 1);
             wantZ = dz / (dist2 || 1);
@@ -46694,7 +46694,7 @@ void main() {
             turnRate = 0;
             break;
           }
-          speed = wantX || wantZ ? T3.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
+          speed = wantX || wantZ ? T2.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
           if (speed > 0) {
             const s = this.steer(wantX, wantZ, dist2, los, sim2);
             wantX = s.x;
@@ -46703,13 +46703,13 @@ void main() {
           }
           const waiting = !this.passive && los && sim2.engaged && !sim2.engaged.has(this.id) && !this.crawling && this.kind !== "sprinter";
           if (waiting && dist2 < this.holdR + 0.5 && speed > 0) {
-            const a = Math.atan2(this.x - p2.x, this.z - p2.z), rx = Math.sin(a), rz = Math.cos(a);
+            const a = Math.atan2(this.x - p.x, this.z - p.z), rx = Math.sin(a), rz = Math.cos(a);
             if (this.repoT > 0) {
               this.repoT -= dt;
               const e = Math.max(-1, Math.min(1, dist2 - this.holdR));
               wantX = Math.cos(a) * this.repoDir - rx * e * 0.6;
               wantZ = -Math.sin(a) * this.repoDir - rz * e * 0.6;
-              speed = T3.zombieSpeed * this.speedMul * 0.5;
+              speed = T2.zombieSpeed * this.speedMul * 0.5;
             } else {
               wantX = dx / (dist2 || 1);
               wantZ = dz / (dist2 || 1);
@@ -46730,7 +46730,7 @@ void main() {
                 if (ml > 0.04) {
                   wantX = mx / ml;
                   wantZ = mz / ml;
-                  speed = T3.zombieSpeed * this.speedMul * 0.45 * Math.min(1, ml * 2.5);
+                  speed = T2.zombieSpeed * this.speedMul * 0.45 * Math.min(1, ml * 2.5);
                 }
               }
               if ((this.repoWait -= dt) <= 0) {
@@ -46743,7 +46743,7 @@ void main() {
                     near = o;
                   }
                 }
-                this.repoDir = near && nd < 2.2 ? angleDiff(a, Math.atan2(near.x - p2.x, near.z - p2.z)) > 0 ? -1 : 1 : sim2.rand() < 0.5 ? -1 : 1;
+                this.repoDir = near && nd < 2.2 ? angleDiff(a, Math.atan2(near.x - p.x, near.z - p.z)) > 0 ? -1 : 1 : sim2.rand() < 0.5 ? -1 : 1;
                 this.repoT = 0.5 + sim2.rand() * 0.6;
                 this.repoWait = 1.4 + sim2.rand() * 2.2;
               }
@@ -46754,19 +46754,19 @@ void main() {
             if (dist2 < 0.8) speed = 0;
           }
           const slot = !sim2.engaged || sim2.engaged.has(this.id) || this.crawling || this.kind === "sprinter";
-          if (this.kind === "guard" && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 1.3 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5)) {
+          if (this.kind === "guard" && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 1.3 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             this.attack = "slam";
             this.set(ZS.WINDUP, ZATTACKS.slam.windup);
             this.slamCd = 4 + sim2.rand() * 2.5;
-            sim2.nextAttackT = sim2.time + (T3.zombieAttackGap ?? 0.75) * 1.5;
+            sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * 1.5;
             sim2.emit({ type: "zombieWindup", id: this.id, attack: "slam" });
             break;
           }
-          if (!this.passive && slot && sim2.time >= (sim2.nextAttackT || 0) && dist2 < ZATTACKS.lunge.from && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5)) {
+          if (!this.passive && slot && sim2.time >= (sim2.nextAttackT || 0) && dist2 < ZATTACKS.lunge.from && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             const armed = this.armsLost < 2 && !this.crawling;
             this.attack = armed && (dist2 < 0.85 || dist2 < ZATTACKS.scratch.from && sim2.rand() < 0.25) ? "scratch" : "lunge";
-            this.set(ZS.WINDUP, this.attack === "scratch" ? T3.scratchWindup ?? 0.42 : T3.zombieWindup ?? 0.62);
-            sim2.nextAttackT = sim2.time + (T3.zombieAttackGap ?? 0.75) * (0.8 + sim2.rand() * 0.5);
+            this.set(ZS.WINDUP, this.attack === "scratch" ? T2.scratchWindup ?? 0.42 : T2.zombieWindup ?? 0.62);
+            sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * (0.8 + sim2.rand() * 0.5);
             sim2.emit({ type: "zombieWindup", id: this.id, attack: this.attack });
           }
           break;
@@ -46793,9 +46793,9 @@ void main() {
             const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw);
             const along = dx * fx2 + dz * fz;
             const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
-            const hit = !p2.dead && dist2 < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5);
-            const dmg = (this.attack === "scratch" ? T3.scratchDamage ?? 8 : this.attack === "slam" ? T3.zombieDamage * 1.3 : T3.zombieDamage) * this.K.dmg;
-            if (hit && p2.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2) && this.attack === "slam" && !p2.dead) p2.knockDown(this.x, this.z, sim2);
+            const hit = !p.dead && dist2 < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
+            const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage) * this.K.dmg;
+            if (hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2) && this.attack === "slam" && !p.dead) p.knockDown(this.x, this.z, sim2);
             if (this.attack === "slam") sim2.emit({ type: "zombieSlam", id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1 });
             sim2.emit({ type: hit ? "zombieStrikeHit" : "zombieStrikeMiss", id: this.id, attack: this.attack });
           }
@@ -46968,9 +46968,9 @@ void main() {
       for (const [x, z] of spots) this.sim.spawnZombie("NE", { x, z, yaw: 0, passive: true, speedMul: 0 });
     }
     pickDoor(allowed) {
-      const p2 = this.sim.player;
-      const ok = LAYOUT.doors.filter((d) => allowed.includes(d.id) && Math.hypot(d.spawn.x - p2.x, d.spawn.z - p2.z) > MIN_SPAWN_DIST);
-      const pool = ok.length ? ok : LAYOUT.doors.filter((d) => Math.hypot(d.spawn.x - p2.x, d.spawn.z - p2.z) > MIN_SPAWN_DIST);
+      const p = this.sim.player;
+      const ok = LAYOUT.doors.filter((d) => allowed.includes(d.id) && Math.hypot(d.spawn.x - p.x, d.spawn.z - p.z) > MIN_SPAWN_DIST);
+      const pool = ok.length ? ok : LAYOUT.doors.filter((d) => Math.hypot(d.spawn.x - p.x, d.spawn.z - p.z) > MIN_SPAWN_DIST);
       if (!pool.length) return null;
       return pool[Math.floor(this.sim.rand() * pool.length)];
     }
@@ -47113,24 +47113,24 @@ void main() {
         });
       }
       this.pickups = this.F.pickups.filter((q) => !this.taken.has(q.id)).map((q) => ({ ...q }));
-      const p2 = sim2.player;
-      p2.reserve = { pistol: 0, shotgun: 0 };
+      const p = sim2.player;
+      p.reserve = { pistol: 0, shotgun: 0 };
       if (save) {
         if (s.arrive) {
-          p2.x = this.L.inside.x;
-          p2.z = this.L.inside.z;
-          p2.aimYaw = p2.aimTarget = 0;
+          p.x = this.L.inside.x;
+          p.z = this.L.inside.z;
+          p.aimYaw = p.aimTarget = 0;
         } else {
-          p2.x = s.x;
-          p2.z = s.z;
-          p2.aimYaw = p2.aimTarget = s.yaw ?? 0;
+          p.x = s.x;
+          p.z = s.z;
+          p.aimYaw = p.aimTarget = s.yaw ?? 0;
         }
-        p2.setLoadout(s.owned?.length ? s.owned : ["fists"], s.equipped || s.owned && s.owned[0] || "fists");
-        Object.assign(p2.mags, s.mags || {});
-        Object.assign(p2.reserve, s.reserve || {});
-        p2.hp = s.hp ?? p2.maxHp;
+        p.setLoadout(s.owned?.length ? s.owned : ["fists"], s.equipped || s.owned && s.owned[0] || "fists");
+        Object.assign(p.mags, s.mags || {});
+        Object.assign(p.reserve, s.reserve || {});
+        p.hp = s.hp ?? p.maxHp;
       }
-      if (sim2.T.testInfiniteAmmo) p2.reserve = { pistol: Infinity, shotgun: Infinity };
+      if (sim2.T.testInfiniteAmmo) p.reserve = { pistol: Infinity, shotgun: Infinity };
       if (this.case.state === "carried") this.applyCarry(true);
     }
     emit(e) {
@@ -47148,8 +47148,8 @@ void main() {
     // a short exchange (captions; the UI plays it while play goes on)
     // a checkpoint: everything needed to restore a coherent chapter (doors and pickups keep their state; the dead stay dead)
     snapshot(extra = {}) {
-      const p2 = this.sim.player;
-      const owned = this.ownedFull || p2.owned;
+      const p = this.sim.player;
+      const owned = this.ownedFull || p.owned;
       return {
         v: 2,
         level: "chapter",
@@ -47161,13 +47161,13 @@ void main() {
         visited: [...this.visited],
         objective: this.objective,
         owned: [...owned],
-        equipped: p2.equipped,
-        mags: { ...p2.mags },
-        reserve: { ...p2.reserve },
-        hp: Math.max(35, p2.hp),
-        x: +p2.x.toFixed(2),
-        z: +p2.z.toFixed(2),
-        yaw: +p2.aimYaw.toFixed(3),
+        equipped: p.equipped,
+        mags: { ...p.mags },
+        reserve: { ...p.reserve },
+        hp: Math.max(35, p.hp),
+        x: +p.x.toFixed(2),
+        z: +p.z.toFixed(2),
+        yaw: +p.aimYaw.toFixed(3),
         ...extra
       };
     }
@@ -47191,17 +47191,17 @@ void main() {
     }
     // ---- the case: carried in the off hand (one-handed weapons only), set down with one action, picked up again ----
     applyCarry(on) {
-      const p2 = this.sim.player;
+      const p = this.sim.player;
       if (on) {
-        if (!this.ownedFull) this.ownedFull = [...p2.owned];
+        if (!this.ownedFull) this.ownedFull = [...p.owned];
         const allowed = this.ownedFull.filter((w) => ONE_HANDED.includes(w));
-        p2.owned = allowed.length ? allowed : [...this.ownedFull];
-        if (!p2.owned.includes(p2.desired)) p2.desired = p2.owned[0];
+        p.owned = allowed.length ? allowed : [...this.ownedFull];
+        if (!p.owned.includes(p.desired)) p.desired = p.owned[0];
       } else if (this.ownedFull) {
-        const keep = p2.desired;
-        p2.owned = WEAPON_SORT(this.ownedFull.concat(p2.owned.filter((w) => !this.ownedFull.includes(w))));
+        const keep = p.desired;
+        p.owned = WEAPON_SORT(this.ownedFull.concat(p.owned.filter((w) => !this.ownedFull.includes(w))));
         this.ownedFull = null;
-        if (p2.owned.includes(keep)) p2.desired = keep;
+        if (p.owned.includes(keep)) p.desired = keep;
       }
     }
     canCarry() {
@@ -47256,10 +47256,10 @@ void main() {
       this.setObjective(this.case.state === "carried" ? "f5_down" : "f5_retrieve");
     }
     step(dt, input2) {
-      const sim2 = this.sim, p2 = sim2.player;
+      const sim2 = this.sim, p = sim2.player;
       if (this.complete) return;
       for (const z of sim2.zombies) if (z.spawnKey && !z.alive && !this.killed.has(z.spawnKey)) this.killed.add(z.spawnKey);
-      const room = roomAt2(p2.x, p2.z);
+      const room = roomAt2(p.x, p.z);
       if (room && room !== this.room) {
         this.room = room;
         const key = this.floor + ":" + room;
@@ -47268,13 +47268,13 @@ void main() {
           this.emit({ type: "roomEnter", room });
           this.onFirstVisit(room);
         }
-        if (!p2.dead) this.checkpoint();
+        if (!p.dead) this.checkpoint();
       }
-      this.pickupStep(p2);
+      this.pickupStep(p);
       this.doorStep(dt);
       this.partitionStep();
-      this.liftStep(dt, p2);
-      this.prompt = p2.dead ? null : this.findPrompt(p2);
+      this.liftStep(dt, p);
+      this.prompt = p.dead ? null : this.findPrompt(p);
       if (input2.usePresses > 0 && this.prompt?.usable) this.use(this.prompt.id);
     }
     onFirstVisit(room) {
@@ -47282,34 +47282,34 @@ void main() {
       if (room === "j6" && !this.flags.case_picked) this.setObjective("f6_case");
       if (room === "i5" && this.floor === 5 && this.case.state !== "carried" && !this.flags.case_secured) this.say("f5_first");
     }
-    pickupStep(p2) {
-      if (p2.dead) return;
+    pickupStep(p) {
+      if (p.dead) return;
       for (const q of this.pickups) {
-        if (Math.hypot(p2.x - q.x, p2.z - q.z) > q.r) continue;
-        if (q.kind === "health" && p2.hp >= p2.maxHp) continue;
+        if (Math.hypot(p.x - q.x, p.z - q.z) > q.r) continue;
+        if (q.kind === "health" && p.hp >= p.maxHp) continue;
         this.pickups.splice(this.pickups.indexOf(q), 1);
         this.taken.add(q.id);
         if (q.kind === "weapon") {
-          const list = this.ownedFull || p2.owned;
+          const list = this.ownedFull || p.owned;
           if (!list.includes(q.weapon)) {
             list.push(q.weapon);
             if (this.ownedFull) this.applyCarry(true);
           }
-          if (q.mag !== void 0) p2.mags[q.weapon] = q.mag;
-          if (!this.ownedFull || ONE_HANDED.includes(q.weapon)) p2.desired = q.weapon;
-        } else if (q.kind === "ammo") p2.reserve[q.weapon] = (p2.reserve[q.weapon] || 0) + q.rounds;
-        else if (q.kind === "health") p2.hp = Math.min(p2.maxHp, p2.hp + q.amount);
+          if (q.mag !== void 0) p.mags[q.weapon] = q.mag;
+          if (!this.ownedFull || ONE_HANDED.includes(q.weapon)) p.desired = q.weapon;
+        } else if (q.kind === "ammo") p.reserve[q.weapon] = (p.reserve[q.weapon] || 0) + q.rounds;
+        else if (q.kind === "health") p.hp = Math.min(p.maxHp, p.hp + q.amount);
         this.emit({ type: "pickup", id: q.id, kind: q.kind, weapon: q.weapon, label: q.label });
         this.checkpoint();
         break;
       }
     }
-    findPrompt(p2) {
-      const near = (o, r) => Math.hypot(p2.x - o.x, p2.z - o.z) < r;
+    findPrompt(p) {
+      const near = (o, r) => Math.hypot(p.x - o.x, p.z - o.z) < r;
       const c = this.case, carrying = c.state === "carried", f = this.floor;
       for (const it of this.F.interact) {
         if (!near(it, it.r)) continue;
-        const okSide = !it.side || (it.side.min !== void 0 ? it.side.axis === "x" ? p2.x > it.side.min : p2.z > it.side.min : it.side.axis === "x" ? p2.x < it.side.max : p2.z < it.side.max);
+        const okSide = !it.side || (it.side.min !== void 0 ? it.side.axis === "x" ? p.x > it.side.min : p.z > it.side.min : it.side.axis === "x" ? p.x < it.side.max : p.z < it.side.max);
         if (it.id === "radio" && !this.flags.radio_heard) return { id: it.id, label: it.label, usable: true };
         if (it.id === "liftReset" && !this.flags.lift_power_restored) return { id: it.id, label: it.label, usable: true };
         if (it.id === "orBar" && !this.flags.or_south_unbarred && !this.doors.orbar.busy && okSide) return { id: it.id, label: it.label, usable: true };
@@ -47324,18 +47324,18 @@ void main() {
         return { id: "takeCase", label: c.state === "home" ? "Take the sealed case" : "Pick up the case", usable: true };
       }
       if (f === 7) {
-        if (!this.flags.or_south_unbarred && p2.z < 1.05 && near({ x: -1.35, z: 0.2 }, 2)) return { id: "orBarred", label: "Barred from the other side", usable: false };
+        if (!this.flags.or_south_unbarred && p.z < 1.05 && near({ x: -1.35, z: 0.2 }, 2)) return { id: "orBarred", label: "Barred from the other side", usable: false };
         if (this.lift.state === "fault" && near(this.L.call, 2.6)) return { id: "liftFault", label: "Lift: no power", usable: false };
         if (!this.flags.lift_power_restored && near({ x: -15.05, z: 16.4 }, 1.8)) return { id: "x7Locked", label: "Powered door: no power", usable: false };
       }
       if (f === 6 && !this.flags.partition_broken && near({ x: -16.6, z: -56.05 }, 1.6)) return { id: "partitionWeak", label: "A weak partition \u2014 too solid to push", usable: false };
       if (f === 5 && this.case.state === "stored" && near(INTAKE_SPOT, 2.2) && !this.flags.sample_matched && !this.flags.record_seen) return { id: "caseHeld", label: "The case is secured here", usable: false };
-      for (const q of this.pickups) if (q.kind === "health" && near(q, q.r + 0.6) && p2.hp >= p2.maxHp) return { id: "healthFull", label: "Health full \u2014 leave the first-aid case", usable: false };
+      for (const q of this.pickups) if (q.kind === "health" && near(q, q.r + 0.6) && p.hp >= p.maxHp) return { id: "healthFull", label: "Health full \u2014 leave the first-aid case", usable: false };
       if (carrying && !this.lift.choosing) return { id: "dropCase", label: "Set the case down", usable: true, quiet: true };
       return null;
     }
     use(id) {
-      const p2 = this.sim.player;
+      const p = this.sim.player;
       if (id === "radio" && !this.flags.radio_heard) {
         this.flags.radio_heard = true;
         this.say("f7_radio");
@@ -47355,7 +47355,7 @@ void main() {
         d.t = 0;
         this.emit({ type: "unbrace", door: "orbar" });
       } else if (id === "takeCase") this.takeCase();
-      else if (id === "dropCase") this.dropCase(p2.x + Math.sin(p2.aimYaw) * 0.55, p2.z + Math.cos(p2.aimYaw) * 0.55);
+      else if (id === "dropCase") this.dropCase(p.x + Math.sin(p.aimYaw) * 0.55, p.z + Math.cos(p.aimYaw) * 0.55);
       else if (id === "intake") this.secureCase();
       else if (id === "match") this.matchSample();
       else if (id === "record") {
@@ -47437,13 +47437,13 @@ void main() {
       L2.choosing = false;
       this.emit({ type: "liftDoors", open: false });
     }
-    liftStep(dt, p2) {
+    liftStep(dt, p) {
       const L2 = this.lift, W3 = this.sim.world, LF = this.L;
-      const inCab = inRect(LF.cab, p2.x, p2.z, p2.r * 0.6), atDoor = Math.abs(p2.x - LF.x) < 2.8 && p2.z < LF.z + 2.8 && p2.z > LF.z - 3.6;
-      const inThreshold = inRect(LF.threshold, p2.x, p2.z, -p2.r);
+      const inCab = inRect(LF.cab, p.x, p.z, p.r * 0.6), atDoor = Math.abs(p.x - LF.x) < 2.8 && p.z < LF.z + 2.8 && p.z > LF.z - 3.6;
+      const inThreshold = inRect(LF.threshold, p.x, p.z, -p.r);
       switch (L2.state) {
         case "fault":
-          if (this.floor === 7 && !this.flags.phone_checked && !p2.dead && Math.hypot(p2.x - LF.call.x, p2.z - LF.call.z) < 2.2 && !this.sim.zombies.some((z) => z.alive && !z.dormant && Math.hypot(z.x - p2.x, z.z - p2.z) < 7)) {
+          if (this.floor === 7 && !this.flags.phone_checked && !p.dead && Math.hypot(p.x - LF.call.x, p.z - LF.call.z) < 2.2 && !this.sim.zombies.some((z) => z.alive && !z.dormant && Math.hypot(z.x - p.x, z.z - p.z) < 7)) {
             this.flags.phone_checked = true;
             this.emit({ type: "liftFault" });
             this.say("f7_phone");
@@ -47451,7 +47451,7 @@ void main() {
           }
           break;
         case "ready":
-          if (atDoor && !p2.dead) {
+          if (atDoor && !p.dead) {
             L2.state = "opening";
             this.emit({ type: "liftDoors", open: true });
           }
@@ -47469,8 +47469,8 @@ void main() {
           if (L2.open >= 1) L2.state = "open";
           break;
         case "open":
-          L2.choosing = inCab && !p2.dead;
-          if (!atDoor && !inCab && p2.z > LF.z + 3.4) {
+          L2.choosing = inCab && !p.dead;
+          if (!atDoor && !inCab && p.z > LF.z + 3.4) {
             L2.state = "closingIdle";
             L2.choosing = false;
           }
@@ -47485,7 +47485,7 @@ void main() {
           if (L2.open <= 0) L2.state = "ready";
           break;
         case "closing":
-          if (!inCab || inThreshold || p2.dead) {
+          if (!inCab || inThreshold || p.dead) {
             L2.state = "opening";
             L2.target = null;
             this.emit({ type: "liftDoors", open: true });
@@ -47575,19 +47575,19 @@ void main() {
     }
     // objective chain: OR -> Supply Hall (bat) -> Waiting/Reception
     updateFlow() {
-      const f = this.flow, p2 = this.player;
+      const f = this.flow, p = this.player;
       if (f.objective === void 0 || f.stage === void 0) return;
-      const inSupply = p2.z < ROOM1.hallLine && p2.x < ROOM1.hallMaxX;
+      const inSupply = p.z < ROOM1.hallLine && p.x < ROOM1.hallMaxX;
       if (f.stage === "exit" && inSupply) {
         f.stage = this.pickups.some((q) => q.id === "bat") ? "bat" : "reception";
         f.objective = f.stage;
         this.emit({ type: "objective", id: f.objective });
       }
       for (const q of this.pickups) {
-        if (Math.hypot(p2.x - q.x, p2.z - q.z) < q.r && !p2.dead) {
+        if (Math.hypot(p.x - q.x, p.z - q.z) < q.r && !p.dead) {
           this.pickups.splice(this.pickups.indexOf(q), 1);
-          if (!p2.owned.includes(q.weapon)) p2.owned.push(q.weapon);
-          p2.desired = q.weapon;
+          if (!p.owned.includes(q.weapon)) p.owned.push(q.weapon);
+          p.desired = q.weapon;
           this.emit({ type: "pickup", id: q.id, weapon: q.weapon });
           if (f.stage === "bat" || f.stage === "exit") {
             f.stage = "reception";
@@ -47606,13 +47606,13 @@ void main() {
     step(input2) {
       const dt = STEP;
       this.time += dt;
-      const p2 = this.player;
-      for (let i = 0; i < input2.swapPresses; i++) p2.requestSwap();
-      p2.move(dt, input2, this.world, this);
-      p2.updateAction(dt, this);
+      const p = this.player;
+      for (let i = 0; i < input2.swapPresses; i++) p.requestSwap();
+      p.move(dt, input2, this.world, this);
+      p.updateAction(dt, this);
       this.flowT -= dt;
       if (this.flowT <= 0) {
-        this.world.updateFlow(p2.x, p2.z);
+        this.world.updateFlow(p.x, p.z);
         this.flowT = 0.2;
       }
       if ((this.engageT -= dt) <= 0) {
@@ -47621,7 +47621,7 @@ void main() {
       }
       for (const z of this.zombies) z.update(dt, this);
       bump(this.zombies, this);
-      separate(this.zombies, p2);
+      separate(this.zombies, p);
       this.director.update(dt);
       if (this.level) this.level.step(dt, input2);
       else this.updateFlow();
@@ -47631,10 +47631,10 @@ void main() {
       const d = (typeof door === "string" ? LAYOUT.doors.find((x) => x.id === door) : door) || { id: "placed", x: opts.x, z: opts.z, axis: "x", spawn: { x: opts.x, z: opts.z }, yaw: opts.yaw ?? 0 };
       const jitter = (this.rand() - 0.5) * 0.8;
       const sx = d.spawn.x + (d.axis === "x" ? jitter : 0), sz = d.spawn.z + (d.axis === "z" ? jitter : 0);
-      const K3 = KINDS[opts.kind] || KINDS.normal;
+      const K2 = KINDS[opts.kind] || KINDS.normal;
       const z = new Zombie(sx, sz, d.yaw, {
-        hp: (opts.hp ?? this.T.zombieHp) * K3.hp,
-        speedMul: (opts.speedMul ?? 0.85 + this.rand() * 0.3) * K3.speed,
+        hp: (opts.hp ?? this.T.zombieHp) * K2.hp,
+        speedMul: (opts.speedMul ?? 0.85 + this.rand() * 0.3) * K2.speed,
         passive: opts.passive,
         phase: this.rand(),
         kind: opts.kind
@@ -47662,23 +47662,23 @@ void main() {
     // hold a step back (zombies.js). A zombie keeps its slot over a slightly nearer rival (no flip-flopping), and loses it
     // while floored, so the next one steps up.
     updateEngagement() {
-      const p2 = this.player, n = Math.max(1, Math.round(this.T.zombieEngage ?? 2)), cand = [];
+      const p = this.player, n = Math.max(1, Math.round(this.T.zombieEngage ?? 2)), cand = [];
       for (const z of this.zombies) {
         if (!z.alive || z.passive || z.dormant || z.down) continue;
-        const d = Math.hypot(z.x - p2.x, z.z - p2.z);
+        const d = Math.hypot(z.x - p.x, z.z - p.z);
         if (d < 7) cand.push([d - (this.engaged.has(z.id) ? 0.7 : 0), z.id]);
       }
       cand.sort((a, b) => a[0] - b[0]);
       this.engaged = new Set(cand.slice(0, n).map((c) => c[1]));
     }
     // ---------------- pistol ----------------
-    firePistol(p2) {
+    firePistol(p) {
       this.stats.shots++;
-      const m = p2.muzzleWorld(_m);
-      let yaw = p2.aimYaw + (this.rand() - 0.5) * 0.02;
-      const block = this.world.raycast(p2.x, p2.z, m.x, m.z, BULLET_MIN_H);
+      const m = p.muzzleWorld(_m);
+      let yaw = p.aimYaw + (this.rand() - 0.5) * 0.02;
+      const block = this.world.raycast(p.x, p.z, m.x, m.z, BULLET_MIN_H);
       if (block) {
-        const ix = p2.x + (m.x - p2.x) * block.t, iz = p2.z + (m.z - p2.z) * block.t;
+        const ix = p.x + (m.x - p.x) * block.t, iz = p.z + (m.z - p.z) * block.t;
         this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: ix, ez: iz, hit: "wall", nx: block.nx, nz: block.nz, yaw });
         return;
       }
@@ -47721,19 +47721,19 @@ void main() {
     // Nine pellets across a cone. Each pellet is its own ray (the spread can catch several zombies);
     // damage and push fall off with distance. Every zombie takes one combined hit: the summed damage,
     // a push along the average pellet direction, and each pellet's body part (several limbs can go).
-    fireShotgun(p2) {
+    fireShotgun(p) {
       this.stats.shots++;
-      const S2 = SHOTGUN_SPEC, T3 = this.T, m = p2.muzzleWorld(_m);
-      p2.vx -= Math.sin(p2.aimYaw) * 1.1;
-      p2.vz -= Math.cos(p2.aimYaw) * 1.1;
-      const block = this.world.raycast(p2.x, p2.z, m.x, m.z, BULLET_MIN_H);
-      const yaw0 = p2.aimYaw, pellets = [], hits = /* @__PURE__ */ new Map();
+      const S2 = SHOTGUN_SPEC, T2 = this.T, m = p.muzzleWorld(_m);
+      p.vx -= Math.sin(p.aimYaw) * 1.1;
+      p.vz -= Math.cos(p.aimYaw) * 1.1;
+      const block = this.world.raycast(p.x, p.z, m.x, m.z, BULLET_MIN_H);
+      const yaw0 = p.aimYaw, pellets = [], hits = /* @__PURE__ */ new Map();
       for (let i = 0; i < S2.pellets; i++) {
         const u = (i + 0.5) / S2.pellets * 2 - 1;
         const yaw = yaw0 + (u * 0.85 + (this.rand() - 0.5) * 0.3) * S2.spread;
         const dx = Math.sin(yaw), dz = Math.cos(yaw);
         if (block) {
-          pellets.push({ ex: p2.x + (m.x - p2.x) * block.t, ez: p2.z + (m.z - p2.z) * block.t, hit: "wall", nx: block.nx, nz: block.nz });
+          pellets.push({ ex: p.x + (m.x - p.x) * block.t, ez: p.z + (m.z - p.z) * block.t, hit: "wall", nx: block.nx, nz: block.nz });
           continue;
         }
         const r = this.traceBullet(m.x, m.z, yaw, S2.range);
@@ -47742,10 +47742,10 @@ void main() {
           const fall = r.t <= S2.falloffFrom ? 1 : Math.max(0.33, 1 - (r.t - S2.falloffFrom) / (S2.range - S2.falloffFrom) * 0.67);
           let h = hits.get(r.zombie);
           if (!h) hits.set(r.zombie, h = { dmg: 0, px: 0, pz: 0, parts: [] });
-          h.dmg += T3.shotgunDamage * fall;
+          h.dmg += T2.shotgunDamage * fall;
           h.px += dx * fall;
           h.pz += dz * fall;
-          h.parts.push([this.bulletPart(r.zombie, m.x, m.z, dx, dz, true), T3.shotgunDamage * fall]);
+          h.parts.push([this.bulletPart(r.zombie, m.x, m.z, dx, dz, true), T2.shotgunDamage * fall]);
           pellets.push({ ex, ez, hit: "zombie", id: r.zombie.id });
         } else pellets.push({ ex, ez, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz });
       }
@@ -47753,12 +47753,12 @@ void main() {
       for (const [z, h] of hits) {
         this.stats.shotHits++;
         const pl = Math.hypot(h.px, h.pz) || 1;
-        if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T3.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
+        if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T2.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
         if (!z.alive) killed.push(z.id);
       }
       let closest = 99, closestId = -1;
       for (const z of hits.keys()) {
-        const d = Math.hypot(z.x - p2.x, z.z - p2.z);
+        const d = Math.hypot(z.x - p.x, z.z - p.z);
         if (d < closest) {
           closest = d;
           closestId = z.id;
@@ -47796,30 +47796,30 @@ void main() {
     // Gentle melee assist: at swing start, turn up to ~20 degrees toward a zombie that is within reach,
     // roughly in front (50 degrees) and not behind a wall. The turn is real (the body rotates), so the
     // bat still has to meet the body for a hit.
-    meleeAssist(p2, reach = 1.45, downToo = false) {
+    meleeAssist(p, reach = 1.45, downToo = false) {
       let best = null, bestA = 0.87;
       for (const z of this.zombies) {
         if (!z.alive || z.down && !downToo) continue;
-        const dx = z.x - p2.x, dz = z.z - p2.z, d = Math.hypot(dx, dz);
+        const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
         if (d > reach || d < 0.2) continue;
-        const a = Math.abs(angleDiff(p2.aimYaw, Math.atan2(dx, dz)));
-        if (a < bestA && this.world.lineOfSight(p2.x, p2.z, z.x, z.z, 0.9)) {
+        const a = Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz)));
+        if (a < bestA && this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.9)) {
           best = z;
           bestA = a;
         }
       }
       if (!best) return null;
-      const want = angleDiff(p2.aimYaw, Math.atan2(best.x - p2.x, best.z - p2.z));
+      const want = angleDiff(p.aimYaw, Math.atan2(best.x - p.x, best.z - p.z));
       return { target: best, turn: Math.max(-0.35, Math.min(0.35, want)) };
     }
     // the zombie on the floor (knocked down or crawling) to strike down at: in reach (1.9 m), within ~50 degrees of the aim,
     // in sight, and nearer than anything standing in that cone
-    groundTarget(p2, reach = 1.9) {
+    groundTarget(p, reach = 1.9) {
       let best = null, bd = 1e9, up = 1e9;
       for (const z of this.zombies) {
         if (!z.alive) continue;
-        const dx = z.x - p2.x, dz = z.z - p2.z, d = Math.hypot(dx, dz);
-        if (d > reach || Math.abs(angleDiff(p2.aimYaw, Math.atan2(dx, dz))) > 0.9 || !this.world.lineOfSight(p2.x, p2.z, z.x, z.z, 0.5)) continue;
+        const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
+        if (d > reach || Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz))) > 0.9 || !this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.5)) continue;
         if (z.down || z.crawling) {
           if (d < bd) {
             bd = d;
@@ -47830,28 +47830,28 @@ void main() {
       return best && bd < up ? best : null;
     }
     // ---------------- axe: swept between simulation steps ----------------
-    resolveMelee(p2, t0, t1, act) {
+    resolveMelee(p, t0, t1, act) {
       if (t1 <= t0) return;
-      const SUB = 4, T3 = this.T, A = p2.atk(act), G2 = A.geom || AXE_GEOM, fist = p2.equipped === FISTS || A.kind === "fist";
-      let prev = meleeWorldSegment(p2, A, t0, _a);
+      const SUB = 4, T2 = this.T, A = p.atk(act), G2 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
+      let prev = meleeWorldSegment(p, A, t0, _a);
       let px2 = prev.tx, pz2 = prev.tz;
       {
-        const w0 = this.world.raycast(p2.x, p2.z, px2, pz2, 0.9);
+        const w0 = this.world.raycast(p.x, p.z, px2, pz2, 0.9);
         if (w0) {
-          px2 = p2.x + (px2 - p2.x) * w0.t;
-          pz2 = p2.z + (pz2 - p2.z) * w0.t;
+          px2 = p.x + (px2 - p.x) * w0.t;
+          pz2 = p.z + (pz2 - p.z) * w0.t;
         }
       }
-      if (act.facingWall === void 0) act.facingWall = !!this.world.raycast(p2.x, p2.z, p2.x + Math.sin(p2.aimYaw) * 0.85, p2.z + Math.cos(p2.aimYaw) * 0.85, 0.9);
+      if (act.facingWall === void 0) act.facingWall = !!this.world.raycast(p.x, p.z, p.x + Math.sin(p.aimYaw) * 0.85, p.z + Math.cos(p.aimYaw) * 0.85, 0.9);
       for (let s = 1; s <= SUB; s++) {
         const t = t0 + (t1 - t0) * s / SUB;
         if (t > act.activeEnd) break;
-        const seg = meleeWorldSegment(p2, A, t, _b);
-        const wall = this.world.raycast(p2.x, p2.z, seg.tx, seg.tz, 0.9);
+        const seg = meleeWorldSegment(p, A, t, _b);
+        const wall = this.world.raycast(p.x, p.z, seg.tx, seg.tz, 0.9);
         let tipX = seg.tx, tipZ = seg.tz;
         if (wall) {
-          tipX = p2.x + (seg.tx - p2.x) * wall.t;
-          tipZ = p2.z + (seg.tz - p2.z) * wall.t;
+          tipX = p.x + (seg.tx - p.x) * wall.t;
+          tipZ = p.z + (seg.tz - p.z) * wall.t;
           if (!act.clanked && act.facingWall) {
             act.clanked = true;
             act.activeEnd = t;
@@ -47878,12 +47878,12 @@ void main() {
             near = ey >= minY && e1.d2 <= ar * ar || seg.ty >= minY && segPointDist2(px2, pz2, tipX, tipZ, ox, oz).d2 <= ar * ar;
           }
           if (!near) continue;
-          if (!this.world.lineOfSight(p2.x, p2.z, z.x, z.z, 0.9) && !this.world.lineOfSight(tipX, tipZ, z.x, z.z, 0.9)) continue;
+          if (!this.world.lineOfSight(p.x, p.z, z.x, z.z, 0.9) && !this.world.lineOfSight(tipX, tipZ, z.x, z.z, 0.9)) continue;
           let vx = tipX - px2, vz = tipZ - pz2;
           const vl = Math.hypot(vx, vz) || 1;
           vx /= vl;
           vz /= vl;
-          let rx = z.x - p2.x, rz = z.z - p2.z;
+          let rx = z.x - p.x, rz = z.z - p.z;
           const rl = Math.hypot(rx, rz) || 1;
           rx /= rl;
           rz /= rl;
@@ -47902,21 +47902,21 @@ void main() {
             dz /= l2;
           }
           if (fist) {
-            const dmgF = T3.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
-            z.takeHit(dmgF, dx, dz, T3.fistKnockback * A.knock, "fist", this, "torso", A.style);
+            const dmgF = T2.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
+            z.takeHit(dmgF, dx, dz, T2.fistKnockback * A.knock, "fist", this, "torso", A.style);
             this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true, shield: blk });
-            if (T3.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T3.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
+            if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
             continue;
           }
-          const dmg = T3.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
+          const dmg = T2.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
           const side = this.rand() < 0.5 ? "_L" : "_R", shielded = z.shieldBlocks(dx, dz);
           const part = shielded ? "torso" : lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
           if (part !== "torso" && !z.severed.has(part)) z.limbHp[part] = 0;
-          const last2 = act.ground || act.combo === p2.attacks.length - 1, holding = !last2 && p2.attackHeld;
-          const kind = A.kind || (p2.equipped === BAT ? "bat" : "axe");
-          z.takeHit(dmg, dx, dz, T3.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? "combo" : A.style);
-          this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p2.equipped, shield: shielded });
-          if (T3.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T3.meleeHitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
+          const last2 = act.ground || act.combo === p.attacks.length - 1, holding = !last2 && p.attackHeld;
+          const kind = A.kind || (p.equipped === BAT ? "bat" : "axe");
+          z.takeHit(dmg, dx, dz, T2.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? "combo" : A.style);
+          this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p.equipped, shield: shielded });
+          if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
         }
         px2 = tipX;
         pz2 = tipZ;
@@ -48564,7 +48564,7 @@ void main() {
     // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle. clip / idle: what plays while
     // moving and on arrival (a seated rider: SeatedIdle for both); keepSeat: a rider stays seated (no stand-up state change)
     walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null, clip = null, idle = null, keepSeat = false } = {}) {
-      this.path = points.map((p2) => ({ x: p2[0], z: p2[1] }));
+      this.path = points.map((p) => ({ x: p[0], z: p[1] }));
       this.speed = speed;
       this.endYaw = endYaw;
       this.onArrive = onArrive;
@@ -48830,11 +48830,11 @@ void main() {
       }
       if (this.sitTarget === 1 && this.sitW >= 1) this.sitState = "seated";
       this.root.updateMatrixWorld(true);
-      const U3 = new Vector3(0, 1, 0), yawF = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+      const U2 = new Vector3(0, 1, 0), yawF = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
       const drop = (this.pelvisY0 - (this.sitSeatTop + 0.04)) * w;
       this.sitDrop = drop;
-      const th = yawF.clone().multiplyScalar(0.82).add(U3.clone().multiplyScalar(-0.57)).normalize();
-      const sh = U3.clone().multiplyScalar(-0.96).add(yawF.clone().multiplyScalar(0.18)).normalize();
+      const th = yawF.clone().multiplyScalar(0.82).add(U2.clone().multiplyScalar(-0.57)).normalize();
+      const sh = U2.clone().multiplyScalar(-0.96).add(yawF.clone().multiplyScalar(0.18)).normalize();
       for (const side of ["l", "r"]) {
         this.aim("thigh_" + side, th, w);
         this.aim("shin_" + side, sh, w);
@@ -48862,14 +48862,14 @@ void main() {
       const lift = t < 0.5 ? ease2(t / 0.5) * 0.35 : 0.35 + ease2((t - 0.5) / 0.5) * 0.65;
       const up = lift * (1 - ease2((t - 3.9) / 0.8));
       const wig = Math.sin(t * 16) * ease2((t - 0.9) / 0.3) * (1 - ease2((t - 3.7) / 0.5));
-      const U3 = new Vector3(0, 1, 0);
+      const U2 = new Vector3(0, 1, 0);
       const right = _v.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
       right.y = 0;
       right.normalize();
-      const R3 = right.clone(), F3 = new Vector3().crossVectors(U3, R3).normalize();
-      const du = R3.clone().multiplyScalar(0.78).add(U3.clone().multiplyScalar(0.42)).add(F3.clone().multiplyScalar(0.22)).normalize();
+      const R3 = right.clone(), F3 = new Vector3().crossVectors(U2, R3).normalize();
+      const du = R3.clone().multiplyScalar(0.78).add(U2.clone().multiplyScalar(0.42)).add(F3.clone().multiplyScalar(0.22)).normalize();
       this.aim("upperarm_r", du, up);
-      const df = U3.clone().add(R3.clone().multiplyScalar(0.1 + wig * 0.85)).add(F3.clone().multiplyScalar(0.3)).normalize();
+      const df = U2.clone().add(R3.clone().multiplyScalar(0.1 + wig * 0.85)).add(F3.clone().multiplyScalar(0.3)).normalize();
       this.aim("forearm_r", df, up);
       const shy = ease2((t - 0.9) / 0.5) * (1 - ease2((t - 3.9) / 0.6));
       this.rotW("head", F3, -0.13 * shy);
@@ -49060,7 +49060,9 @@ void main() {
       inlay.rotation.x = -Math.PI / 2;
       inlay.position.set(-W3 / 2 + 0.1, 5e-3, -3.5);
       this.root.add(inlay);
-      this.wall(-W3, W3, Zn - 0.3, Zn, 4, "full");
+      this.wall(-W3, CLINIC_LIFT.x - 2.64, Zn - 0.3, Zn, 4, "full");
+      this.wall(CLINIC_LIFT.x + 2.64, W3, Zn - 0.3, Zn, 4, "full");
+      this.box(5.28, 1.1, 0.3, CLINIC_LIFT.x, 3.45, Zn - 0.15, PAL.wall, { r: 0.03 });
       this.wall(-W3 - 0.3, -W3, Zn - 0.3, -0.2, 4, "full");
       this.wall(-W3 - 0.3, -W3, 2, Zs, 4, "full");
       this.wall(-W3, W3, Zs, Zs + 0.3, 0.95, "low");
@@ -49111,8 +49113,8 @@ void main() {
       tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 3.85, z: -5.5 }));
       tasks.push(this.prop(M3 + "decor2/Clinical_Art_Heart.glb", { x: 4.75, y: 1.25, z: Zn, wall: "s" }));
       this.deskTop(6.3, 0.81, -3.2);
-      const U3 = M3 + "upgrades/";
-      const T3 = (dir, name) => ({ starter: U3 + dir + name.replace("#", "starter"), standard: U3 + dir + name.replace("#", "standard"), advanced: U3 + dir + name.replace("#", "advanced") });
+      const U2 = M3 + "upgrades/";
+      const T3 = (dir, name) => ({ starter: U2 + dir + name.replace("#", "starter"), standard: U2 + dir + name.replace("#", "standard"), advanced: U2 + dir + name.replace("#", "advanced") });
       const slot = (key, files, opts) => {
         const sl = { key, files, opts, holder: null };
         this.tiers.push(sl);
@@ -49137,8 +49139,8 @@ void main() {
         h.visible = tier === "starter";
         this.setOpacity(h, 1);
       }));
-      tasks.push(this.prop(U3 + "04_surgery/surgical_light_starter.glb", { x: 4.42, z: 2.45, rot: 180, name: "lightA" }));
-      tasks.push(this.prop(U3 + "04_surgery/surgical_light_starter.glb", { x: 7.62, z: 2.45, rot: 180, name: "lightB" }));
+      tasks.push(this.prop(U2 + "04_surgery/surgical_light_starter.glb", { x: 4.42, z: 2.45, rot: 180, name: "lightA" }));
+      tasks.push(this.prop(U2 + "04_surgery/surgical_light_starter.glb", { x: 7.62, z: 2.45, rot: 180, name: "lightB" }));
       tasks.push(this.prop(M3 + "furnishings/Endoscopy_Glove_Dispenser.glb", { x: 0.95, y: 1.3, z: BZ, wall: "s", name: "glovesR" }));
       tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 1.75, y: 1.35, z: BZ, wall: "s", name: "saniR" }));
       tasks.push(this.prop(M3 + "furnishings/Clinical_Lidded_Waste_Bin.glb", { x: 2.3, z: 0.5, name: "binR" }));
@@ -49377,10 +49379,10 @@ void main() {
       g.add(ceil);
       const panelM = new MeshBasicMaterial({ color: 16774882 });
       for (const [x, z] of [[-7.2, -1.8], [-7.2, 2.4], [-4.4, -1.8], [-4.4, 2.4], [-1.6, -1.8], [-1.6, 2.4]]) {
-        const p2 = new Mesh(new PlaneGeometry(1.1, 0.55), panelM);
-        p2.rotation.x = Math.PI / 2;
-        p2.position.set(x, 3.04, z);
-        g.add(p2);
+        const p = new Mesh(new PlaneGeometry(1.1, 0.55), panelM);
+        p.rotation.x = Math.PI / 2;
+        p.position.set(x, 3.04, z);
+        g.add(p);
       }
       bx(0.25, 0.45, 0, 3.05, -6, 5, std(16051420), { r: 0.02, shadow: false });
       bx(0.2, 0.25, 0.05, 0.4, -6, 5, std(8109496), { r: 0.01, shadow: false });
@@ -49403,6 +49405,7 @@ void main() {
         if (o.isMesh) {
           o.castShadow = true;
           o.receiveShadow = true;
+          if ([].concat(o.material).some((m) => /^Blood_/i.test(m?.name || ""))) o.visible = false;
         }
       });
       this.root.add(root);
@@ -49423,9 +49426,11 @@ void main() {
       L2.open.time = Math.max(0, Math.min(0.999, k)) * L2.open.getClip().duration;
       L2.mixer.update(0);
     }
-    // the wheelchair the colleague brings: a prop that travels with whoever sits in it (seat centre at the group's origin)
+    // the wheelchair the colleague brings: the CLEAN hospital wheelchair (assets/models/wheelchair: no blood before the
+    // outbreak), a prop that travels with whoever sits in it. Its own anchors: the origin is the seated character's origin
+    // under the seat (front +z), the pusher stands at ANCHOR_Pusher_Origin, the hands go to ANCHOR_Push_Grip_L/R.
     async buildWheelchair() {
-      const g = await this.gltf("assets/hospital/wheelchair.glb");
+      const g = await this.gltf("../assets/models/wheelchair/Hospital_Wheelchair.glb");
       const obj = g.scene.clone(true);
       obj.traverse((o) => {
         if (o.isMesh) {
@@ -49436,13 +49441,15 @@ void main() {
       const holder = new Group();
       holder.add(obj);
       holder.updateMatrixWorld(true);
-      const box = new Box3().setFromObject(obj), c = box.getCenter(new Vector3());
-      obj.position.set(-c.x, -box.min.y, -c.z);
+      const box = new Box3().setFromObject(obj);
       const wc = new Group();
       wc.name = "wheelchair";
       wc.add(holder);
       wc.visible = false;
       this.root.add(wc);
+      const a = (n) => obj.getObjectByName(n);
+      wc.userData.grips = { L: a("ANCHOR_Push_Grip_L"), R: a("ANCHOR_Push_Grip_R") };
+      wc.userData.pusherBack = Math.abs(a("ANCHOR_Pusher_Origin")?.position.z ?? 0.68);
       this.wheelchair = wc;
       this.wheelchairSize = box.getSize(new Vector3());
       return wc;
@@ -49557,24 +49564,24 @@ void main() {
     }
     tickPops(dt) {
       for (let i = this.pops.length - 1; i >= 0; i--) {
-        const p2 = this.pops[i];
-        p2.t += dt;
-        if (p2.t < 0) continue;
-        if (!p2.started) {
-          p2.started = true;
-          p2.h.visible = true;
+        const p = this.pops[i];
+        p.t += dt;
+        if (p.t < 0) continue;
+        if (!p.started) {
+          p.started = true;
+          p.h.visible = true;
           this.onPop?.();
           const m = new Mesh(new RingGeometry(0.28, 0.36, 40), new MeshBasicMaterial({ color: 16774089, transparent: true, opacity: 0.75, depthWrite: false }));
           m.rotation.x = -Math.PI / 2;
-          m.position.set(p2.h.position.x, 0.03, p2.h.position.z);
+          m.position.set(p.h.position.x, 0.03, p.h.position.z);
           m.renderOrder = 2;
           this.root.add(m);
           this.rings.push({ m, t: 0 });
         }
-        const u = Math.min(1, p2.t / p2.dur), k = u < 1 ? 1 + Math.sin(u * Math.PI) * 0.13 * (1 - u) : 1;
-        p2.h.scale.setScalar(Math.max(1e-3, k * Math.min(1, u * 1.25)));
+        const u = Math.min(1, p.t / p.dur), k = u < 1 ? 1 + Math.sin(u * Math.PI) * 0.13 * (1 - u) : 1;
+        p.h.scale.setScalar(Math.max(1e-3, k * Math.min(1, u * 1.25)));
         if (u >= 1) {
-          p2.h.scale.setScalar(1);
+          p.h.scale.setScalar(1);
           this.pops.splice(i, 1);
         }
       }
@@ -49645,10 +49652,10 @@ void main() {
           if (o.isMesh) parts.push(o);
         });
         const g = new Group(), box = new Box3();
-        for (const p2 of parts) {
-          p2.geometry.computeBoundingBox();
-          box.union(p2.geometry.boundingBox);
-          g.add(new Mesh(p2.geometry, p2.material));
+        for (const p of parts) {
+          p.geometry.computeBoundingBox();
+          box.union(p.geometry.boundingBox);
+          g.add(new Mesh(p.geometry, p.material));
         }
         const c = box.getCenter(new Vector3());
         for (const m of g.children) m.position.set(-c.x, -box.min.y, -c.z);
@@ -49685,7 +49692,7 @@ void main() {
   // src/render/arena.js
   var CH = () => LAYOUT.chapter || LAYOUT;
   var isUnder = (o, name) => {
-    for (let p2 = o.parent; p2; p2 = p2.parent) if (p2.name === name) return true;
+    for (let p = o.parent; p; p = p.parent) if (p.name === name) return true;
     return false;
   };
   function mergeStatic(roots, keep = () => true) {
@@ -49700,7 +49707,7 @@ void main() {
       root.updateMatrixWorld(true);
       root.traverse((o) => {
         if (!o.isMesh || o.isSkinnedMesh || !keep(o)) return;
-        for (let p2 = o; p2; p2 = p2.parent) if (!p2.visible) return;
+        for (let p = o; p; p = p.parent) if (!p.visible) return;
         const mats = [].concat(o.material);
         const g0 = o.geometry.clone().applyMatrix4(o.matrixWorld), g = g0.index ? g0.toNonIndexed() : g0;
         if (mats.length === 1 || !g0.groups.length) {
@@ -49915,26 +49922,26 @@ void main() {
     }
     // one wall: body, teal wainscot band and a soft cap (as its own group when it can be cut away)
     addWall(x0, x1, z0, z1, h, style, y0 = 0) {
-      const M5 = this.wallMats();
+      const M4 = this.wallMats();
       const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
       const g = new Group();
       this.group.add(g);
       if (style === "glass") {
-        const base = new Mesh(new RoundedBoxGeometry(w, 0.75, d + 0.06, 2, 0.04), M5.wall);
+        const base = new Mesh(new RoundedBoxGeometry(w, 0.75, d + 0.06, 2, 0.04), M4.wall);
         base.position.set(cx, 0.375, cz);
         base.castShadow = base.receiveShadow = true;
         g.add(base);
-        const glass = new Mesh(new BoxGeometry(w - 0.1, h - 0.8, 0.03), M5.glass);
+        const glass = new Mesh(new BoxGeometry(w - 0.1, h - 0.8, 0.03), M4.glass);
         glass.position.set(cx, 0.75 + (h - 0.8) / 2, cz);
         g.add(glass);
-        const top = new Mesh(new RoundedBoxGeometry(w, 0.06, 0.1, 2, 0.025), M5.frame);
+        const top = new Mesh(new RoundedBoxGeometry(w, 0.06, 0.1, 2, 0.025), M4.frame);
         top.position.set(cx, h, cz);
         g.add(top);
         const n = Math.max(1, Math.round(w / 1.6));
         for (let i = 0; i <= n; i++) {
-          const p2 = new Mesh(new BoxGeometry(0.06, h - 0.75, 0.08), M5.frame);
-          p2.position.set(x0 + w * i / n, 0.75 + (h - 0.75) / 2, cz);
-          g.add(p2);
+          const p = new Mesh(new BoxGeometry(0.06, h - 0.75, 0.08), M4.frame);
+          p.position.set(x0 + w * i / n, 0.75 + (h - 0.75) / 2, cz);
+          g.add(p);
         }
         return g;
       }
@@ -49964,18 +49971,18 @@ void main() {
         g.add(m2);
         return g;
       }
-      const m = new Mesh(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), M5.wall);
+      const m = new Mesh(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), M4.wall);
       m.position.set(cx, y0 + (h - y0) / 2, cz);
       m.castShadow = style === "full" && !this.f3;
       m.receiveShadow = true;
       g.add(m);
       if (!y0) {
         const bh = Math.min(0.32, h * 0.35);
-        const bandM = new Mesh(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), M5.band);
+        const bandM = new Mesh(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), M4.band);
         bandM.position.set(cx, bh / 2 + 0.06, cz);
         g.add(bandM);
       }
-      const cap = new Mesh(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), M5.cap);
+      const cap = new Mesh(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), M4.cap);
       cap.position.set(cx, h, cz);
       g.add(cap);
       return g;
@@ -50017,9 +50024,9 @@ void main() {
           g.add(floorDark);
         }
         for (const sx of [-1, 1]) {
-          const p2 = new Mesh(new RoundedBoxGeometry(0.1, 2.35, 0.36, 2, 0.03), frameMat);
-          p2.position.set(sx * (d.width + 0.1) / 2, 1.175, 0);
-          g.add(p2);
+          const p = new Mesh(new RoundedBoxGeometry(0.1, 2.35, 0.36, 2, 0.03), frameMat);
+          p.position.set(sx * (d.width + 0.1) / 2, 1.175, 0);
+          g.add(p);
         }
         const head = new Mesh(new RoundedBoxGeometry(d.width + 0.3, 0.14, 0.36, 2, 0.03), frameMat);
         head.position.set(0, 2.38, 0);
@@ -50047,10 +50054,10 @@ void main() {
         g.position.set(d.x, 0, d.z);
         g.rotation.y = d.axis === "z" ? Math.PI / 2 : 0;
         for (const sx of [-1, 1]) {
-          const p2 = new Mesh(new RoundedBoxGeometry(0.1, 2.45, 0.38, 2, 0.03), frameMat);
-          p2.position.set(sx * (d.width - 0.1) / 2, 1.225, 0);
-          p2.castShadow = true;
-          g.add(p2);
+          const p = new Mesh(new RoundedBoxGeometry(0.1, 2.45, 0.38, 2, 0.03), frameMat);
+          p.position.set(sx * (d.width - 0.1) / 2, 1.225, 0);
+          p.castShadow = true;
+          g.add(p);
         }
         const head = new Mesh(new RoundedBoxGeometry(d.width + 0.1, 0.12, 0.38, 2, 0.03), frameMat);
         head.position.set(0, 2.43, 0);
@@ -50102,9 +50109,9 @@ void main() {
       }
       if (this.quality !== "low") {
         const spots = this.f3 ? CH().lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
-        for (const p2 of spots) {
+        for (const p of spots) {
           const l = new PointLight(PAL2.amber, this.f3 ? 2.6 : 3.2, this.f3 ? 6.5 : 5.5, 1.6);
-          l.position.set(p2.x, p2.y, p2.z);
+          l.position.set(p.x, p.y, p.z);
           s.add(l);
           this.lights.push(l);
         }
@@ -50118,25 +50125,25 @@ void main() {
         return cache.get(m);
       };
       let done = 0;
-      const props2 = CH().props;
-      const total = props2.length + (this.f3 ? 4 : 0);
-      const jobs = props2.map(async (p2) => {
-        if (p2.kind) {
-          this.procProp(p2);
+      const props = CH().props;
+      const total = props.length + (this.f3 ? 4 : 0);
+      const jobs = props.map(async (p) => {
+        if (p.kind) {
+          this.procProp(p);
           onProgress?.(++done / total);
           return;
         }
-        const gltf = await get(p2.m);
+        const gltf = await get(p.m);
         const obj = gltf.scene.clone(true);
-        obj.rotation.y = p2.rot * Math.PI / 180;
+        obj.rotation.y = p.rot * Math.PI / 180;
         const holder = new Group();
         holder.add(obj);
         holder.userData.prop = true;
         holder.updateMatrixWorld(true);
         const box = new Box3().setFromObject(obj);
         const size = box.getSize(new Vector3());
-        if (p2.fit) {
-          const k = Math.min(p2.fp[0] / size.x, p2.fp[1] / size.z);
+        if (p.fit) {
+          const k = Math.min(p.fp[0] / size.x, p.fp[1] / size.z);
           if (k < 0.97 || k > 1.03) {
             obj.scale.multiplyScalar(k);
             holder.updateMatrixWorld(true);
@@ -50147,25 +50154,25 @@ void main() {
         obj.position.x -= ctr.x;
         obj.position.z -= ctr.z;
         obj.position.y -= box.min.y;
-        holder.position.set(p2.x, p2.y || 0, p2.z);
-        if (p2.wall) {
+        holder.position.set(p.x, p.y || 0, p.z);
+        if (p.wall) {
           const sz = box.getSize(new Vector3());
-          if (p2.wall === "s") holder.position.z = p2.z + sz.z / 2 + 5e-3;
-          else if (p2.wall === "n") holder.position.z = p2.z - sz.z / 2 - 5e-3;
-          else if (p2.wall === "e") holder.position.x = p2.x + sz.x / 2 + 5e-3;
-          else holder.position.x = p2.x - sz.x / 2 - 5e-3;
-          this.attachToWall(holder, p2.x, p2.z, p2.wall, (p2.y || 0) + sz.y);
+          if (p.wall === "s") holder.position.z = p.z + sz.z / 2 + 5e-3;
+          else if (p.wall === "n") holder.position.z = p.z - sz.z / 2 - 5e-3;
+          else if (p.wall === "e") holder.position.x = p.x + sz.x / 2 + 5e-3;
+          else holder.position.x = p.x - sz.x / 2 - 5e-3;
+          this.attachToWall(holder, p.x, p.z, p.wall, (p.y || 0) + sz.y);
           holder.userData.keep = true;
         }
         obj.traverse((o) => {
           if (o.isMesh) {
-            o.castShadow = !p2.wall;
+            o.castShadow = !p.wall;
             o.receiveShadow = true;
           }
         });
-        if (p2.name) holder.name = p2.name;
+        if (p.name) holder.name = p.name;
         this.group.add(holder);
-        p2._actual = box.getSize(new Vector3());
+        p._actual = box.getSize(new Vector3());
         onProgress?.(++done / total);
       });
       if (this.f3) {
@@ -50201,11 +50208,11 @@ void main() {
       }
     }
     // procedural maintenance dressing (the kit has none): a workbench with tools, pipework along a wall, hazard striping
-    procProp(p2) {
-      if (p2.kind === "box") return this.boxProp(p2);
-      if (p2.kind === "radio" || p2.kind === "screen" || p2.kind === "partition") return this.storyProp(p2);
+    procProp(p) {
+      if (p.kind === "box") return this.boxProp(p);
+      if (p.kind === "radio" || p.kind === "screen" || p.kind === "partition") return this.storyProp(p);
       const g = new Group();
-      g.position.set(p2.x, 0, p2.z);
+      g.position.set(p.x, 0, p.z);
       g.userData.prop = true;
       this.group.add(g);
       const mat2 = (c, r = 0.6, m = 0) => new MeshStandardMaterial({ color: c, roughness: r, metalness: m });
@@ -50218,8 +50225,8 @@ void main() {
         g.add(o);
         return o;
       };
-      if (p2.kind === "bench") {
-        const [w, d, h] = p2.size, top = mat2(p2.color, 0.75), steel = mat2(6121066, 0.45, 0.5);
+      if (p.kind === "bench") {
+        const [w, d, h] = p.size, top = mat2(p.color, 0.75), steel = mat2(6121066, 0.45, 0.5);
         add(new RoundedBoxGeometry(w, 0.06, d, 2, 0.02), top, 0, h - 0.03, 0);
         for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(new BoxGeometry(0.05, h - 0.06, 0.05), steel, sx * (w / 2 - 0.06), (h - 0.06) / 2, sz * (d / 2 - 0.06));
         add(new BoxGeometry(w - 0.12, 0.03, d - 0.12), steel, 0, 0.18, 0);
@@ -50227,13 +50234,13 @@ void main() {
         add(new CylinderGeometry(0.035, 0.035, 0.32, 10), mat2(15905076, 0.5), 0.1, h + 0.04, 0.12, 0).rotation.z = Math.PI / 2;
         add(new BoxGeometry(0.28, 0.02, 0.06), steel, 0.45, h + 0.01, -0.1, 0.4);
         add(new BoxGeometry(0.22, 0.12, 0.16), mat2(4015433, 0.4), 0.62, h + 0.06, 0.12);
-      } else if (p2.kind === "pipes") {
+      } else if (p.kind === "pipes") {
         const pm = mat2(10134696, 0.4, 0.55), rm = mat2(13191231, 0.5);
-        for (const [dy, r, m] of [[0, 0.06, pm], [0.16, 0.04, rm], [-0.14, 0.035, pm]]) add(new CylinderGeometry(r, r, p2.len, 12), m, 0, p2.y + dy, 0.12, 0).rotation.z = Math.PI / 2;
-        for (let i = 0; i <= 4; i++) add(new BoxGeometry(0.04, 0.4, 0.14), mat2(7107704, 0.5), -p2.len / 2 + p2.len * i / 4, p2.y, 0.06);
-        this.attachToWall(g, p2.x, p2.z, "s", p2.y + 0.2);
+        for (const [dy, r, m] of [[0, 0.06, pm], [0.16, 0.04, rm], [-0.14, 0.035, pm]]) add(new CylinderGeometry(r, r, p.len, 12), m, 0, p.y + dy, 0.12, 0).rotation.z = Math.PI / 2;
+        for (let i = 0; i <= 4; i++) add(new BoxGeometry(0.04, 0.4, 0.14), mat2(7107704, 0.5), -p.len / 2 + p.len * i / 4, p.y, 0.06);
+        this.attachToWall(g, p.x, p.z, "s", p.y + 0.2);
         g.userData.keep = true;
-      } else if (p2.kind === "hazard") {
+      } else if (p.kind === "hazard") {
         const c = document.createElement("canvas");
         c.width = 256;
         c.height = 128;
@@ -50251,7 +50258,7 @@ void main() {
         }
         const t = new CanvasTexture(c);
         t.colorSpace = SRGBColorSpace;
-        const [w, d] = p2.size, o = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: t, roughness: 0.7, transparent: true, opacity: 0.85 }));
+        const [w, d] = p.size, o = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: t, roughness: 0.7, transparent: true, opacity: 0.85 }));
         o.rotation.x = -Math.PI / 2;
         o.position.y = 6e-3;
         o.receiveShadow = true;
@@ -50259,12 +50266,12 @@ void main() {
       }
     }
     // blockout story objects (no kit asset): the nurse station's radio, the records docket's screen, the weak partition
-    storyProp(p2) {
+    storyProp(p) {
       const g = new Group();
-      g.position.set(p2.x, p2.y || 0, p2.z);
+      g.position.set(p.x, p.y || 0, p.z);
       g.userData.prop = true;
       g.userData.keep = true;
-      if (p2.name) g.name = p2.name;
+      if (p.name) g.name = p.name;
       const mat2 = (c, r = 0.6, m = 0, e) => new MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...e ? { emissive: e, emissiveIntensity: 1.4 } : {} });
       const add = (geo, m, x, y, z) => {
         const o = new Mesh(geo, m);
@@ -50274,12 +50281,12 @@ void main() {
         g.add(o);
         return o;
       };
-      if (p2.kind === "radio") {
+      if (p.kind === "radio") {
         add(new RoundedBoxGeometry(0.34, 0.16, 0.22, 2, 0.02), mat2(2830902, 0.5, 0.2), 0, 0.08, 0);
         add(new BoxGeometry(0.14, 0.09, 5e-3), mat2(1382683, 0.8), -0.07, 0.085, 0.112);
         add(new CylinderGeometry(8e-3, 8e-3, 0.34, 6), mat2(1711391, 0.4, 0.4), 0.12, 0.33, -0.05);
         this.radioLed = add(new BoxGeometry(0.03, 0.03, 6e-3), mat2(1063440, 0.4, 0, 2948938), 0.1, 0.11, 0.112);
-      } else if (p2.kind === "screen") {
+      } else if (p.kind === "screen") {
         add(new RoundedBoxGeometry(0.62, 0.4, 0.04, 2, 0.01), mat2(2304300, 0.5), 0, 0.42, 0);
         const c = document.createElement("canvas");
         c.width = 256;
@@ -50299,15 +50306,15 @@ void main() {
         face.position.set(0, 0.42, 0.022);
         g.add(face);
         add(new BoxGeometry(0.06, 0.2, 0.06), mat2(3093816, 0.5), 0, 0.12, -0.02);
-      } else if (p2.kind === "partition") {
-        const n = 2, w = p2.w / n;
+      } else if (p.kind === "partition") {
+        const n = 2, w = p.w / n;
         for (let i = 0; i < n; i++) {
-          const z0 = -p2.w / 2 + w * (i + 0.5);
+          const z0 = -p.w / 2 + w * (i + 0.5);
           add(new BoxGeometry(0.1, 2.3, w - 0.04), mat2(14275264, 0.85), 0, 1.15, z0);
           add(new BoxGeometry(0.11, 0.7, w * 0.6), new MeshStandardMaterial({ color: 12574946, roughness: 0.15, transparent: true, opacity: 0.45 }), 0, 1.55, z0);
         }
-        for (const z0 of [-p2.w / 2, 0, p2.w / 2]) add(new BoxGeometry(0.14, 2.42, 0.08), mat2(10123858, 0.8), 0, 1.21, z0);
-        add(new BoxGeometry(0.14, 0.08, p2.w + 0.08), mat2(10123858, 0.8), 0, 2.42, 0);
+        for (const z0 of [-p.w / 2, 0, p.w / 2]) add(new BoxGeometry(0.14, 2.42, 0.08), mat2(10123858, 0.8), 0, 1.21, z0);
+        add(new BoxGeometry(0.14, 0.08, p.w + 0.08), mat2(10123858, 0.8), 0, 2.42, 0);
         const c = document.createElement("canvas");
         c.width = 256;
         c.height = 64;
@@ -50325,17 +50332,17 @@ void main() {
         }
         const tape = new MeshStandardMaterial({ map: new CanvasTexture(c), roughness: 0.7 });
         tape.map.colorSpace = SRGBColorSpace;
-        add(new BoxGeometry(0.12, 0.12, p2.w), tape, 0.02, 1, 0);
+        add(new BoxGeometry(0.12, 0.12, p.w), tape, 0.02, 1, 0);
         this.partitionObj = g;
       }
       this.group.add(g);
-      if (p2.kind === "partition") this.cutable(g, { minX: p2.x - 0.2, maxX: p2.x + 0.2, minZ: p2.z - p2.w / 2, maxZ: p2.z + p2.w / 2 });
+      if (p.kind === "partition") this.cutable(g, { minX: p.x - 0.2, maxX: p.x + 0.2, minZ: p.z - p.w / 2, maxZ: p.z + p.w / 2 });
     }
-    boxProp(p2) {
-      const [w, d, h] = p2.size, g = new Group();
-      g.position.set(p2.x, 0, p2.z);
+    boxProp(p) {
+      const [w, d, h] = p.size, g = new Group();
+      g.position.set(p.x, 0, p.z);
       g.userData.prop = true;
-      const body = new Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.03), new MeshStandardMaterial({ color: p2.color, roughness: 0.55, metalness: 0.25 }));
+      const body = new Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.03), new MeshStandardMaterial({ color: p.color, roughness: 0.55, metalness: 0.25 }));
       body.position.y = h / 2;
       body.castShadow = body.receiveShadow = true;
       g.add(body);
@@ -50351,7 +50358,7 @@ void main() {
       const led = new Mesh(new BoxGeometry(0.05, 0.05, 0.01), new MeshStandardMaterial({ color: 3807760, emissive: 16734762, emissiveIntensity: 1.6 }));
       led.position.set(w * 0.3, h * 0.62, d / 2 + 4e-3);
       g.add(led);
-      g.rotation.y = FACE_ROT[p2.face || "s"];
+      g.rotation.y = FACE_ROT[p.face || "s"];
       this.group.add(g);
     }
     // ---- floor 3: kit doors (shut, braced, barred), the lift, the reset panel and the status lights ----
@@ -50645,7 +50652,7 @@ void main() {
       return null;
     }
     buildOutbreak() {
-      const O = this.ob, S2 = OB_TILE * 4, H5 = 2.7;
+      const O = this.ob, S2 = OB_TILE * 4, H4 = 2.7;
       this.obRooms = this.f3 ? CH().rooms : OB_WING_ROOMS;
       for (const r of this.obRooms) {
         if (!r.floor) continue;
@@ -50654,8 +50661,8 @@ void main() {
           const g = new PlaneGeometry(x1 - x0, z1 - z0);
           g.rotateX(-Math.PI / 2);
           g.translate((x0 + x1) / 2, 1e-3, (z0 + z1) / 2);
-          const p2 = g.attributes.position, uv = g.attributes.uv;
-          for (let i = 0; i < p2.count; i++) uv.setXY(i, p2.getX(i) / S2, -p2.getZ(i) / S2);
+          const p = g.attributes.position, uv = g.attributes.uv;
+          for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / S2, -p.getZ(i) / S2);
           const m = new Mesh(g, mat2);
           m.receiveShadow = true;
           m.visible = false;
@@ -50669,8 +50676,8 @@ void main() {
         const { minX: x0, maxX: x1, minZ: z0, maxZ: z1 } = w.box, y0 = w.y0 || 0, h = w.h;
         const buf = [[], [], []];
         const quad = (mi, BL, BR, TR, TL, n, u0, u1) => {
-          const P = [BL, BR, TR, BL, TR, TL], U3 = [[u0, BL[1] / H5], [u1, BR[1] / H5], [u1, TR[1] / H5], [u0, BL[1] / H5], [u1, TR[1] / H5], [u0, TL[1] / H5]];
-          for (let k = 0; k < 6; k++) buf[mi].push(P[k], n, U3[k]);
+          const P = [BL, BR, TR, BL, TR, TL], U2 = [[u0, BL[1] / H4], [u1, BR[1] / H4], [u1, TR[1] / H4], [u0, BL[1] / H4], [u1, TR[1] / H4], [u0, TL[1] / H4]];
+          for (let k = 0; k < 6; k++) buf[mi].push(P[k], n, U2[k]);
         };
         const faces = [
           { n: [0, 0, 1], at: z1, r: [1, 0], a0: x0, a1: x1 },
@@ -50688,7 +50695,7 @@ void main() {
             const pt = (t, y) => alongX ? [t, y, F.at] : [F.at, y, t];
             const rs = alongX ? F.r[0] : F.r[1];
             if (rs < 0) [a, b] = [b, a];
-            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F.n, a * rs / H5, b * rs / H5);
+            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F.n, a * rs / H4, b * rs / H4);
           }
         }
         buf[2].push([x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z1], [0, 1, 0], [1, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z0], [0, 1, 0], [0, 1]);
@@ -50842,11 +50849,11 @@ void main() {
       const geo = new PlaneGeometry(1, 1);
       geo.rotateX(-Math.PI / 2);
       const put = (m, x, z, size) => {
-        const p2 = new Mesh(geo, m);
-        p2.position.set(x, 0.02, z);
-        p2.scale.set(size, 1, size);
-        p2.renderOrder = 2;
-        grp.add(p2);
+        const p = new Mesh(geo, m);
+        p.position.set(x, 0.02, z);
+        p.scale.set(size, 1, size);
+        p.renderOrder = 2;
+        grp.add(p);
       };
       for (const l of CH().lights || []) put(e.redMat, l.x, l.z, 5.5);
       for (const d of CH().doors || []) if (d.kind !== "lift") put(e.redMat, d.x, d.z, 2.6);
@@ -51252,7 +51259,7 @@ void main() {
   function describeRagdoll(bones, height, missing = /* @__PURE__ */ new Set(), girth = 1) {
     const parts = [], idx = {};
     const skip = /* @__PURE__ */ new Set();
-    for (const p2 of PARTS) if (missing.has(p2[0]) || skip.has(p2[6])) skip.add(p2[0]);
+    for (const p of PARTS) if (missing.has(p[0]) || skip.has(p[6])) skip.add(p[0]);
     bones.Hips.updateWorldMatrix(true, true);
     for (const [name, bone, from, to, rad, mass, parent] of PARTS) {
       if (skip.has(name)) continue;
@@ -51270,17 +51277,17 @@ void main() {
       parts.push({ name, bone, a, b, r: rad * height * gk, mass: mass * gk * gk, parent, q0, ref, boneQ0: bq, hinge: !!HINGES[name] });
     }
     const joints = [];
-    for (const p2 of parts) {
-      if (!p2.parent || idx[p2.parent] === void 0) continue;
-      const par = parts[idx[p2.parent]];
+    for (const p of parts) {
+      if (!p.parent || idx[p.parent] === void 0) continue;
+      const par = parts[idx[p.parent]];
       let axis = null;
-      if (p2.hinge) {
-        const u = par.b.clone().sub(par.a).normalize(), w = p2.b.clone().sub(p2.a).normalize();
+      if (p.hinge) {
+        const u = par.b.clone().sub(par.a).normalize(), w = p.b.clone().sub(p.a).normalize();
         axis = new Vector3().crossVectors(u, w);
         if (axis.lengthSq() < 1e-4) axis.set(1, 0, 0).applyQuaternion(par.boneQ0);
         axis.normalize();
       }
-      joints.push({ parent: idx[p2.parent], child: idx[p2.name], at: p2.a.clone(), type: p2.hinge ? "hinge" : "ball", axis });
+      joints.push({ parent: idx[p.parent], child: idx[p.name], at: p.a.clone(), type: p.hinge ? "hinge" : "ball", axis });
     }
     return { parts, joints, idx };
   }
@@ -51289,20 +51296,20 @@ void main() {
     constructor(bones, desc) {
       this.bones = bones;
       this.desc = desc;
-      this.off = desc.parts.map((p2) => p2.q0.clone().invert().multiply(p2.boneQ0));
+      this.off = desc.parts.map((p) => p.q0.clone().invert().multiply(p.boneQ0));
       const pel = desc.parts[desc.idx.pelvis];
       const hp = bones.Hips.getWorldPosition(new Vector3());
       this.hipsLocal = hp.sub(pel.a.clone().add(pel.b).multiplyScalar(0.5)).applyQuaternion(pel.q0.clone().invert());
       this.byBone = {};
-      desc.parts.forEach((p2, i) => this.byBone[p2.bone] = i);
+      desc.parts.forEach((p, i) => this.byBone[p.bone] = i);
       this.want = {};
     }
     // states: [{pos, quat}] per part (same order as desc.parts)
     apply(states) {
       const B = this.bones, W3 = this.want;
       for (const k in W3) delete W3[k];
-      this.desc.parts.forEach((p2, i) => {
-        W3[p2.bone] = states[i].quat.clone().multiply(this.off[i]);
+      this.desc.parts.forEach((p, i) => {
+        W3[p.bone] = states[i].quat.clone().multiply(this.off[i]);
       });
       const pel = W3.Hips, ch = W3.Spine2;
       if (pel && ch) {
@@ -51698,21 +51705,21 @@ void main() {
         rootPrev.copy(root);
         let head = root, headV = rootV;
         for (let i = 0; i < 3; i++) {
-          const p2 = this.p[i], v = this.v[i], L2 = this.len[i];
+          const p = this.p[i], v = this.v[i], L2 = this.len[i];
           const dir = _a3.copy(this.dir0[i]).lerp(this.dir1[i], u).normalize();
           const k = C.k[i], c = 2 * C.zeta * Math.sqrt(k);
           const tx = head.x + dir.x * L2, ty = head.y + dir.y * L2, tz = head.z + dir.z * L2;
-          const ax = k * (tx - p2.x) - c * (v.x - headV.x) - C.drag * v.x;
-          const ay = k * (ty - p2.y) - c * (v.y - headV.y) - C.drag * v.y - C.g;
-          const az = k * (tz - p2.z) - c * (v.z - headV.z) - C.drag * v.z;
-          const ox = p2.x, oy = p2.y, oz = p2.z;
+          const ax = k * (tx - p.x) - c * (v.x - headV.x) - C.drag * v.x;
+          const ay = k * (ty - p.y) - c * (v.y - headV.y) - C.drag * v.y - C.g;
+          const az = k * (tz - p.z) - c * (v.z - headV.z) - C.drag * v.z;
+          const ox = p.x, oy = p.y, oz = p.z;
           v.x += ax * hdt;
           v.y += ay * hdt;
           v.z += az * hdt;
-          p2.x += v.x * hdt;
-          p2.y += v.y * hdt;
-          p2.z += v.z * hdt;
-          const w = _b3.copy(p2).sub(head);
+          p.x += v.x * hdt;
+          p.y += v.y * hdt;
+          p.z += v.z * hdt;
+          const w = _b3.copy(p).sub(head);
           let wl = w.length();
           if (wl < 1e-9) w.copy(dir);
           else w.divideScalar(wl);
@@ -51723,19 +51730,19 @@ void main() {
             if (pl < 1e-9) w.copy(dir);
             else w.divideScalar(pl).multiplyScalar(Math.sqrt(1 - cmax * cmax)).addScaledVector(dir, cmax);
           }
-          p2.copy(head).addScaledVector(w, L2);
-          for (const K3 of this.cols) {
-            const dx = p2.x - K3.cs.x, dy = p2.y - K3.cs.y, dz = p2.z - K3.cs.z, d2 = dx * dx + dy * dy + dz * dz;
-            if (d2 < K3.rw * K3.rw && d2 > 1e-12) {
-              const f = K3.rw / Math.sqrt(d2);
-              p2.set(K3.cs.x + dx * f, K3.cs.y + dy * f, K3.cs.z + dz * f);
+          p.copy(head).addScaledVector(w, L2);
+          for (const K2 of this.cols) {
+            const dx = p.x - K2.cs.x, dy = p.y - K2.cs.y, dz = p.z - K2.cs.z, d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 < K2.rw * K2.rw && d2 > 1e-12) {
+              const f = K2.rw / Math.sqrt(d2);
+              p.set(K2.cs.x + dx * f, K2.cs.y + dy * f, K2.cs.z + dz * f);
             }
           }
-          w.copy(p2).sub(head);
+          w.copy(p).sub(head);
           wl = w.length();
-          if (wl > 1e-9) p2.copy(head).addScaledVector(w, L2 / wl);
-          v.set((p2.x - ox) / hdt, (p2.y - oy) / hdt, (p2.z - oz) / hdt);
-          head = p2;
+          if (wl > 1e-9) p.copy(head).addScaledVector(w, L2 / wl);
+          v.set((p.x - ox) / hdt, (p.y - oy) / hdt, (p.z - oz) / hdt);
+          head = p;
           headV = v;
         }
       }
@@ -51946,7 +51953,7 @@ void main() {
   var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
     constructor(scene2, gltf, clipdata, weapons) {
-      const H5 = 1.62;
+      const H4 = 1.62;
       const clips = [];
       const rest = hipsRest(gltf.scene);
       const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
@@ -51980,8 +51987,8 @@ void main() {
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
       const scriptNames = ["t_greet_01", "t_greet_04"].filter((n) => byName[n]);
       for (const n of scriptNames) clips.push(byName[n]);
-      super(scene2, gltf.scene, H5, clips);
-      this.H = H5;
+      super(scene2, gltf.scene, H4, clips);
+      this.H = H4;
       this.scriptNames = scriptNames;
       this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
@@ -52266,14 +52273,14 @@ void main() {
           rows.push({ L: L2.x * dx + L2.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L2.y, LT.y), ry: Math.min(R.y, RT.y) });
         }
         const vel = [];
-        for (const [p2, y] of [["L", "ly"], ["R", "ry"]]) {
+        for (const [p, y] of [["L", "ly"], ["R", "ry"]]) {
           const minY = Math.min(...rows.map((r) => r[y]));
           for (let i = 0; i < N; i++) {
             const j = (i + 1) % N;
-            if (rows[i][y] < minY + 0.02 && rows[j][y] < minY + 0.02) vel.push(-(rows[j][p2] - rows[i][p2]) / (D / N));
+            if (rows[i][y] < minY + 0.02 && rows[j][y] < minY + 0.02) vel.push(-(rows[j][p] - rows[i][p]) / (D / N));
           }
         }
-        vel.sort((p2, q) => p2 - q);
+        vel.sort((p, q) => p - q);
         const speed = vel.length ? vel[vel.length >> 1] : 1;
         let lead = 0, best = -1e9;
         rows.forEach((r, i) => {
@@ -52460,11 +52467,11 @@ void main() {
       }
       let scW = 0, sact = null;
       if (s.action === "down" && this.act("yola_knockdown")) {
-        const F = s.downFall || 1.15, U3 = s.downUp || 1.7, t = s.actionT, up = t >= F;
+        const F = s.downFall || 1.15, U2 = s.downUp || 1.7, t = s.actionT, up = t >= F;
         const a = this.act(up ? "yola_getup" : "yola_knockdown");
         this.act(up ? "yola_knockdown" : "yola_getup").setEffectiveWeight(0);
-        a.time = (up ? 20 + Math.min(1, (t - F) / U3) * 161 : 1 + Math.min(1, t / F) * 58) / 30 + (this.dnJit ^= 1) * 1e-6;
-        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F + U3 - t) / 0.25, 0, 1));
+        a.time = (up ? 20 + Math.min(1, (t - F) / U2) * 161 : 1 + Math.min(1, t / F) * 58) / 30 + (this.dnJit ^= 1) * 1e-6;
+        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F + U2 - t) / 0.25, 0, 1));
         sact = a;
         a.setEffectiveWeight(scW);
       } else if (this.act("yola_knockdown")) {
@@ -52535,7 +52542,7 @@ void main() {
         settle: 0,
         at: new Vector3(s.x, 0, s.z)
       });
-      const STEP_AT = 0.1, LIFT2 = 0.05;
+      const STEP_AT = 0.1, LIFT = 0.05;
       const C = A && this.contacts?.[A.path];
       if (FL.at.distanceToSquared(_v5.set(s.x, 0, s.z)) > 0.25) for (const k of ["L", "R"]) {
         FL[k].mode = "free";
@@ -52589,7 +52596,7 @@ void main() {
         if (st.mode === "step") {
           st.t += dt;
           const u = smooth2(clamp5(st.t / st.dur, 0, 1));
-          tgt.set(st.from.x + (anim.x - st.from.x) * u, anim.y + Math.sin(Math.PI * u) * LIFT2, st.from.z + (anim.z - st.from.z) * u);
+          tgt.set(st.from.x + (anim.x - st.from.x) * u, anim.y + Math.sin(Math.PI * u) * LIFT, st.from.z + (anim.z - st.from.z) * u);
           if (st.t >= st.dur) {
             st.mode = plant >= 0.5 ? "locked" : "free";
             st.lock.set(anim.x, 0, anim.z);
@@ -52606,15 +52613,15 @@ void main() {
     // e.g. the rifle stance ~130 degrees; the turn onto the aim is done by the aim correction). Blended
     // by the layer's weight. (Hips' parent is static, so local hip rotations compare directly.)
     rebaseUpper() {
-      const H5 = this.bones.Hips, S2 = this.bones.Spine;
-      if (!H5 || !S2) return;
-      const inv = _q24.copy(H5.quaternion).invert();
+      const H4 = this.bones.Hips, S2 = this.bones.Spine;
+      if (!H4 || !S2) return;
+      const inv = _q24.copy(H4.quaternion).invert();
       for (const n in this.upperHips) {
         const a = this.act(n), w = a.getEffectiveWeight();
         if (w < 1e-3) continue;
         const v = this.upperHips[n].evaluate(a.time);
         _q33.set(v[0], v[1], v[2], v[3]);
-        const fc = _v5.set(0, 0, 1).applyQuaternion(_q33), fn = _v23.set(0, 0, 1).applyQuaternion(H5.quaternion);
+        const fc = _v5.set(0, 0, 1).applyQuaternion(_q33), fn = _v23.set(0, 0, 1).applyQuaternion(H4.quaternion);
         _q42.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
         _q33.premultiply(_q42);
         _q42.copy(inv).multiply(_q33);
@@ -52682,12 +52689,12 @@ void main() {
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
     shotgunLeftHand(rf, G2) {
-      const U3 = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp5(u, 0, 1));
+      const U2 = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp5(u, 0, 1));
       const shellOn = rf >= SH.from && rf <= SH.to;
       this.grip("Left", _v5);
       let wPort = 0;
       if (shellOn) {
-        _v32.copy(U3.port.position).add(_v43.set(0, -SH.portDown, 0));
+        _v32.copy(U2.port.position).add(_v43.set(0, -SH.portDown, 0));
         G2.localToWorld(_v32);
         wPort = smooth01(1 - (_v5.distanceTo(_v32) - 0.05) / 0.2);
         if (wPort > 0) {
@@ -52695,10 +52702,10 @@ void main() {
           this.grip("Left", _v5);
         }
       }
-      _v23.set(U3.pumpX, U3.pump.position.y, U3.pump.position.z);
+      _v23.set(U2.pumpX, U2.pump.position.y, U2.pump.position.z);
       G2.localToWorld(_v23);
       const wHold = smooth01(1 - (_v5.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
-      if (wHold > 0) this.ikArm("Left", U3.gripL.getWorldPosition(_v32), wHold);
+      if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
       S2.visible = shellOn;
       if (shellOn) {
@@ -52731,18 +52738,18 @@ void main() {
     }
     // fist centre, grip axis (pinky -> index) and knuckle direction from her finger joints (as in the move library)
     fistFrame(side, out) {
-      const H5 = side + "Hand", c = out.c.set(0, 0, 0);
+      const H4 = side + "Hand", c = out.c.set(0, 0, 0);
       let n = 0;
       for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
-        const b = this.bones[H5 + f + i];
+        const b = this.bones[H4 + f + i];
         if (b) {
           c.add(b.getWorldPosition(_v5));
           n++;
         }
       }
       c.multiplyScalar(1 / n);
-      out.a.copy(this.bones[H5 + "Index1"].getWorldPosition(_v5)).sub(this.bones[H5 + "Pinky1"].getWorldPosition(_v23)).normalize();
-      out.k.copy(this.bones[H5 + "Middle1"].getWorldPosition(_v5)).sub(c);
+      out.a.copy(this.bones[H4 + "Index1"].getWorldPosition(_v5)).sub(this.bones[H4 + "Pinky1"].getWorldPosition(_v23)).normalize();
+      out.k.copy(this.bones[H4 + "Middle1"].getWorldPosition(_v5)).sub(c);
       out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
       c.addScaledVector(out.k, -0.01);
       return out;
@@ -52753,22 +52760,22 @@ void main() {
     placeTest() {
       this.placeHeld(this.test);
     }
-    placeHeld(T3) {
+    placeHeld(T2) {
       const F = this._ff || (this._ff = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
-      if (T3.fingers) {
-        for (const [n, q] of T3.fingers) if (T3.two || n.startsWith(T3.hand)) this.bones[n].quaternion.copy(q);
-        for (const side of T3.two ? ["Left", "Right"] : [T3.hand]) this.bones[side + "Hand"].updateMatrixWorld(true);
+      if (T2.fingers) {
+        for (const [n, q] of T2.fingers) if (T2.two || n.startsWith(T2.hand)) this.bones[n].quaternion.copy(q);
+        for (const side of T2.two ? ["Left", "Right"] : [T2.hand]) this.bones[side + "Hand"].updateMatrixWorld(true);
       }
-      const o = T3.obj;
+      const o = T2.obj;
       if (!o) return;
-      this.fistFrame(T3.hand, F);
-      const A = _v32.copy(F.a).multiplyScalar(T3.flip ? -1 : 1), K3 = _v43.copy(F.k).applyAxisAngle(A, MathUtils.degToRad(T3.roll || 0));
-      const w = T3.w, s = _v52.set(...w.shaft_axis).normalize(), r = _v6.set(...w.ref_axis);
+      this.fistFrame(T2.hand, F);
+      const A = _v32.copy(F.a).multiplyScalar(T2.flip ? -1 : 1), K2 = _v43.copy(F.k).applyAxisAngle(A, MathUtils.degToRad(T2.roll || 0));
+      const w = T2.w, s = _v52.set(...w.shaft_axis).normalize(), r = _v6.set(...w.ref_axis);
       r.addScaledVector(s, -r.dot(s)).normalize();
       const M1 = (this._m1 || (this._m1 = new Matrix4())).makeBasis(s, r, _v7.crossVectors(s, r));
-      const M22 = (this._m2 || (this._m2 = new Matrix4())).makeBasis(A, K3, _v5.crossVectors(A, K3));
+      const M22 = (this._m2 || (this._m2 = new Matrix4())).makeBasis(A, K2, _v5.crossVectors(A, K2));
       o.quaternion.setFromRotationMatrix(M22.multiply(M1.transpose()));
-      o.position.copy(F.c).sub(_v23.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T3.slide || 0);
+      o.position.copy(F.c).sub(_v23.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T2.slide || 0);
       o.visible = true;
       o.updateMatrixWorld(true);
       (this.heldGrip || (this.heldGrip = new Vector3())).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
@@ -52831,7 +52838,7 @@ void main() {
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
-        const G2 = this.shotgun, U3 = G2.userData, SP = SHOTGUN_SPEC;
+        const G2 = this.shotgun, U2 = G2.userData, SP = SHOTGUN_SPEC;
         this.bones.RightHand.getWorldQuaternion(_q5).multiply(this.shotgunSocket);
         this.grip("Right", _v5);
         G2.position.copy(_v5);
@@ -52843,9 +52850,9 @@ void main() {
         }
         const rf = this.reloadFrame;
         if (rf >= SP.rackFrom && rf <= SP.rackTo) slide = Math.max(slide, Math.sin(Math.PI * (rf - SP.rackFrom) / (SP.rackTo - SP.rackFrom)));
-        U3.pump.position.x = U3.pumpX - SP.pumpStroke * slide;
+        U2.pump.position.x = U2.pumpX - SP.pumpStroke * slide;
         G2.updateMatrixWorld(true);
-        U3.muzzle.getWorldPosition(this.muzzleWorld);
+        U2.muzzle.getWorldPosition(this.muzzleWorld);
         this.shotgunLeftHand(rf, G2);
       } else {
         this.grip("Right", _v5);
@@ -52863,16 +52870,16 @@ void main() {
           if (wP) dir.addScaledVector(inHand(ms[this.prevSwingName] || this.batSocket, ms[this.prevSwingName] ? this.prevSwingHand : "Right"), wP);
           dir.normalize();
         } else dir = _v32.copy(_v5).sub(_v23).normalize();
-        const M5 = this.melee;
+        const M4 = this.melee;
         if (this.batMode) {
           const span = clamp5(_v6.copy(_v5).sub(_v23).dot(dir), 0.07, 0.16);
           _v7.copy(_v5).addScaledVector(dir, -span);
           this.reachClavicle("Left", _v7);
           this.ikArm("Left", _v7, 1);
           this.grip("Left", _v23);
-          M5.position.copy(_v5).addScaledVector(dir, -span / 2);
-        } else M5.position.copy(_v5).add(_v23).multiplyScalar(0.5);
-        const tip = _v43.copy(M5.position).addScaledVector(dir, 0.7);
+          M4.position.copy(_v5).addScaledVector(dir, -span / 2);
+        } else M4.position.copy(_v5).add(_v23).multiplyScalar(0.5);
+        const tip = _v43.copy(M4.position).addScaledVector(dir, 0.7);
         const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new Vector3();
         this.prevTip.copy(tip);
         const fwd = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
@@ -52887,8 +52894,8 @@ void main() {
           this.bladeQ.copy(target);
           this.bladeInit = true;
         } else this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
-        M5.quaternion.copy(this.bladeQ);
-        M5.updateMatrixWorld(true);
+        M4.quaternion.copy(this.bladeQ);
+        M4.updateMatrixWorld(true);
       }
     }
     die(dt, s) {
@@ -53252,8 +53259,8 @@ void main() {
       const c = this.shieldC, hand = this.bones.LeftHand, mid = this.bones.LeftHandMiddle1 || this.bones.LeftHandIndex1;
       if (!c || !hand) return;
       this.container.updateMatrixWorld(true);
-      const B = this.bones, wp2 = (n) => B[n]?.getWorldPosition(new Vector3());
-      const I = wp2("LeftHandIndex1"), Pk = wp2("LeftHandPinky1"), M32 = wp2("LeftHandMiddle3");
+      const B = this.bones, wp = (n) => B[n]?.getWorldPosition(new Vector3());
+      const I = wp("LeftHandIndex1"), Pk = wp("LeftHandPinky1"), M32 = wp("LeftHandMiddle3");
       const palm = I && Pk && M32 ? I.add(Pk).multiplyScalar(0.25).addScaledVector(M32, 0.5) : hand.getWorldPosition(new Vector3()).lerp(mid.getWorldPosition(new Vector3()), 0.55);
       const qh = hand.getWorldQuaternion(new Quaternion()), qd = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), this.container.rotation.y);
       const ws = hand.getWorldScale(new Vector3()).x;
@@ -53295,11 +53302,11 @@ void main() {
       const heavy = Math.sqrt(z.K?.knock ?? 1);
       const hitPart = !melee && !sg && z.lastHitPart === "Head" ? "head" : "chest";
       const base = new Vector3(z.kx * 0.35, 0.2, z.kz * 0.35);
-      const vels = desc.parts.map((p2) => {
-        const core = p2.name === "chest" || p2.name === "head";
-        const k = p2.name === hitPart ? 1 : core ? 0.6 : p2.name === "pelvis" ? sg ? 0.7 : 0.3 : sg ? 0.45 : 0.25;
+      const vels = desc.parts.map((p) => {
+        const core = p.name === "chest" || p.name === "head";
+        const k = p.name === hitPart ? 1 : core ? 0.6 : p.name === "pelvis" ? sg ? 0.7 : 0.3 : sg ? 0.45 : 0.25;
         const v = base.clone().addScaledVector(dir, s * k * heavy);
-        if (lift > 0) v.y += lift * heavy * (core || p2.name === "pelvis" ? 1 : 0.6);
+        if (lift > 0) v.y += lift * heavy * (core || p.name === "pelvis" ? 1 : 0.6);
         else if (lift < 0 && core) v.y += lift;
         return v;
       });
@@ -53685,20 +53692,20 @@ void main() {
     bloodSpray(x, y, z, dx, dy, dz, n = 22, speed = 3) {
       if (!this.gore) return;
       for (let i = 0; i < n; i++) {
-        const p2 = this.parts[this.pNext];
+        const p = this.parts[this.pNext];
         this.pNext = (this.pNext + 1) % MAX_P;
         const s = speed * (0.35 + Math.random() * 0.75);
-        p2.x = x;
-        p2.y = y;
-        p2.z = z;
-        p2.vx = dx * s + (Math.random() - 0.5) * 1.4;
-        p2.vy = dy * s + Math.random() * 1.2;
-        p2.vz = dz * s + (Math.random() - 0.5) * 1.4;
-        p2.life = p2.max = 0.5 + Math.random() * 0.5;
-        p2.r = 0.42;
-        p2.g = 0.02;
-        p2.b = 0.02;
-        p2.dark = true;
+        p.x = x;
+        p.y = y;
+        p.z = z;
+        p.vx = dx * s + (Math.random() - 0.5) * 1.4;
+        p.vy = dy * s + Math.random() * 1.2;
+        p.vz = dz * s + (Math.random() - 0.5) * 1.4;
+        p.life = p.max = 0.5 + Math.random() * 0.5;
+        p.r = 0.42;
+        p.g = 0.02;
+        p.b = 0.02;
+        p.dark = true;
       }
     }
     bloodPool(x, z, size = 0.8) {
@@ -53734,20 +53741,20 @@ void main() {
     burst(x, y, z, n, color, speed, up = 1, life = 0.45, dirX = 0, dirZ = 0) {
       const c = new Color(color);
       for (let i = 0; i < n; i++) {
-        const p2 = this.parts[this.pNext];
+        const p = this.parts[this.pNext];
         this.pNext = (this.pNext + 1) % MAX_P;
         const a = Math.random() * Math.PI * 2, s = speed * (0.4 + Math.random() * 0.6);
-        p2.x = x;
-        p2.y = y;
-        p2.z = z;
-        p2.vx = Math.cos(a) * s * 0.6 + dirX * s;
-        p2.vz = Math.sin(a) * s * 0.6 + dirZ * s;
-        p2.vy = (0.5 + Math.random()) * up;
-        p2.life = p2.max = life * (0.6 + Math.random() * 0.5);
-        p2.r = c.r;
-        p2.g = c.g;
-        p2.b = c.b;
-        p2.dark = false;
+        p.x = x;
+        p.y = y;
+        p.z = z;
+        p.vx = Math.cos(a) * s * 0.6 + dirX * s;
+        p.vz = Math.sin(a) * s * 0.6 + dirZ * s;
+        p.vy = (0.5 + Math.random()) * up;
+        p.life = p.max = life * (0.6 + Math.random() * 0.5);
+        p.r = c.r;
+        p.g = c.g;
+        p.b = c.b;
+        p.dark = false;
       }
     }
     impactZombie(x, z, dirX, dirZ, heavy) {
@@ -53802,26 +53809,26 @@ void main() {
       }
       let k = 0;
       for (let i = 0; i < MAX_P; i++) {
-        const p2 = this.parts[i];
-        if (p2.life > 0) {
-          p2.life -= dt;
-          p2.vy -= 9 * dt;
-          p2.x += p2.vx * dt;
-          p2.y += p2.vy * dt;
-          p2.z += p2.vz * dt;
-          if (p2.y < 0.02) {
-            p2.y = 0.02;
-            p2.vx *= 0.5;
-            p2.vz *= 0.5;
-            p2.vy = 0;
+        const p = this.parts[i];
+        if (p.life > 0) {
+          p.life -= dt;
+          p.vy -= 9 * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.z += p.vz * dt;
+          if (p.y < 0.02) {
+            p.y = 0.02;
+            p.vx *= 0.5;
+            p.vz *= 0.5;
+            p.vy = 0;
           }
-          const f = Math.max(0, p2.life / p2.max), to = p2.dark ? 0.12 : 0.9;
-          this.pPos[k * 3] = p2.x;
-          this.pPos[k * 3 + 1] = p2.y;
-          this.pPos[k * 3 + 2] = p2.z;
-          this.pCol[k * 3] = p2.r * f + (1 - f) * to;
-          this.pCol[k * 3 + 1] = p2.g * f + (1 - f) * to * (p2.dark ? 0.1 : 1);
-          this.pCol[k * 3 + 2] = p2.b * f + (1 - f) * to * (p2.dark ? 0.1 : 0.98);
+          const f = Math.max(0, p.life / p.max), to = p.dark ? 0.12 : 0.9;
+          this.pPos[k * 3] = p.x;
+          this.pPos[k * 3 + 1] = p.y;
+          this.pPos[k * 3 + 2] = p.z;
+          this.pCol[k * 3] = p.r * f + (1 - f) * to;
+          this.pCol[k * 3 + 1] = p.g * f + (1 - f) * to * (p.dark ? 0.1 : 1);
+          this.pCol[k * 3 + 2] = p.b * f + (1 - f) * to * (p.dark ? 0.1 : 0.98);
           k++;
         }
       }
@@ -56529,7 +56536,7 @@ void main() {
       const screens2 = [];
       const matName = (o) => [].concat(o.material).map((m) => m?.name || "").join("|");
       const merged = (o) => {
-        for (let p2 = o.parent; p2; p2 = p2.parent) if (/^room:/.test(p2.name)) return true;
+        for (let p = o.parent; p; p = p.parent) if (/^room:/.test(p.name)) return true;
         return false;
       };
       root.traverse((o) => {
@@ -56632,12 +56639,12 @@ void main() {
         g.shadowBlur = 0;
       };
       const beat = (s) => {
-        const p2 = (s % 0.83 + 0.83) % 0.83;
-        return p2 < 0.03 ? -0.15 : p2 < 0.06 ? 1 : p2 < 0.09 ? -0.35 : p2 > 0.25 && p2 < 0.38 ? 0.22 * Math.sin((p2 - 0.25) / 0.13 * Math.PI) : 0;
+        const p = (s % 0.83 + 0.83) % 0.83;
+        return p < 0.03 ? -0.15 : p < 0.06 ? 1 : p < 0.09 ? -0.35 : p > 0.25 && p < 0.38 ? 0.22 * Math.sin((p - 0.25) / 0.13 * Math.PI) : 0;
       };
       const pleth = (s) => {
-        const p2 = (s % 0.83 + 0.83) % 0.83 / 0.83;
-        return p2 < 0.3 ? Math.sin(p2 / 0.3 * Math.PI * 0.5) : Math.max(0, 1 - (p2 - 0.3) / 0.7) * (0.85 + 0.15 * Math.sin(p2 * 12));
+        const p = (s % 0.83 + 0.83) % 0.83 / 0.83;
+        return p < 0.3 ? Math.sin(p / 0.3 * Math.PI * 0.5) : Math.max(0, 1 - (p - 0.3) / 0.7) * (0.85 + 0.15 * Math.sin(p * 12));
       };
       const resp = (s) => Math.sin(s * 1.6);
       trace(52, 30, this.flat ? "#ff5a4f" : "#5cf08a", beat, this.flat);
@@ -56726,8 +56733,8 @@ void main() {
           el.loop = true;
           el.setAttribute("playsinline", "");
           el.preload = "auto";
-          const p2 = el.play();
-          if (p2 && p2.catch) p2.catch(() => {
+          const p = el.play();
+          if (p && p.catch) p.catch(() => {
             this.keepAlive = null;
           });
           this.keepAlive = el;
@@ -57048,8 +57055,8 @@ void main() {
     start(kind = "explore", fade = 0.6) {
       if (!this.ensure()) return;
       if (this.el.paused) {
-        const p2 = this.el.play();
-        p2?.catch?.(() => {
+        const p = this.el.play();
+        p?.catch?.(() => {
         });
       }
       this.set(kind, fade);
@@ -57472,14 +57479,14 @@ void main() {
     }
     // the current objective (the opening hands over "Get out of the operating room.")
     // Floor 3: what Yola can use here (a Use button) or learn here (a short line); null clears both
-    setPrompt(p2) {
-      const key = p2 ? p2.id + (p2.usable ? "+" : "-") : "";
+    setPrompt(p) {
+      const key = p ? p.id + (p.usable ? "+" : "-") : "";
       if (key === this.promptKey) return;
       this.promptKey = key;
-      $("useBtn").classList.toggle("show", !!(p2 && p2.usable));
-      $("useLabel").textContent = p2 && p2.usable ? p2.label : "";
-      $("prompt").classList.toggle("show", !!(p2 && !p2.usable));
-      $("prompt").querySelector("span").textContent = p2 && !p2.usable ? p2.label : "";
+      $("useBtn").classList.toggle("show", !!(p && p.usable));
+      $("useLabel").textContent = p && p.usable ? p.label : "";
+      $("prompt").classList.toggle("show", !!(p && !p.usable));
+      $("prompt").querySelector("span").textContent = p && !p.usable ? p.label : "";
     }
     toast(text) {
       const t = $("toast");
@@ -57546,21 +57553,21 @@ void main() {
       return `${s.kills} down \xB7 guns ${acc2}% \xB7 axe ${s.batHits}/${s.swings}`;
     }
     update(sim2, dt) {
-      const p2 = sim2.player;
-      $("hpFill").style.width = 100 * p2.hp / p2.maxHp + "%";
-      $("hp").classList.toggle("low", p2.hp <= 30);
+      const p = sim2.player;
+      $("hpFill").style.width = 100 * p.hp / p.maxHp + "%";
+      $("hp").classList.toggle("low", p.hp <= 30);
       $("wave").textContent = sim2.director.label + (sim2.director.state === "breather" && !sim2.director.cleared && sim2.director.mode === "encounter" ? ` \xB7 ${Math.max(0, sim2.director.timer).toFixed(0)}` : "");
       const b = $("swapBtn");
-      b.dataset.weapon = p2.equipped;
-      b.classList.toggle("pending", p2.desired !== p2.equipped);
-      b.dataset.next = p2.desired === p2.equipped ? nextWeapon(p2.equipped, p2.owned) : p2.desired;
-      b.classList.toggle("solo", p2.owned.length < 2);
-      const res = p2.reserve?.[p2.equipped];
-      $("ammo").textContent = p2.equipped in p2.mags ? p2.action.type === "reload" ? "\u2026" : Number.isFinite(res) ? `${p2.ammo} \xB7 ${res}` : p2.ammo : "";
+      b.dataset.weapon = p.equipped;
+      b.classList.toggle("pending", p.desired !== p.equipped);
+      b.dataset.next = p.desired === p.equipped ? nextWeapon(p.equipped, p.owned) : p.desired;
+      b.classList.toggle("solo", p.owned.length < 2);
+      const res = p.reserve?.[p.equipped];
+      $("ammo").textContent = p.equipped in p.mags ? p.action.type === "reload" ? "\u2026" : Number.isFinite(res) ? `${p.ammo} \xB7 ${res}` : p.ammo : "";
       const ring = $("ring");
       let prog = 0;
-      if (p2.action.type === "reload") prog = p2.action.t / p2.reloadTime();
-      else if (p2.action.type === "swap") prog = p2.action.t / this.T.swapTime;
+      if (p.action.type === "reload") prog = p.action.t / p.reloadTime();
+      else if (p.action.type === "swap") prog = p.action.t / this.T.swapTime;
       ring.style.strokeDashoffset = String(176 * (1 - Math.min(1, prog)));
       ring.style.opacity = prog > 0 ? 1 : 0;
       if (this.bannerT > 0) {
@@ -57593,9 +57600,9 @@ void main() {
   var _b4 = new Vector3();
   var _q6 = new Quaternion();
   var Particle = class {
-    constructor(p2, r, invMass) {
-      this.x = p2.clone();
-      this.p = p2.clone();
+    constructor(p, r, invMass) {
+      this.x = p.clone();
+      this.p = p.clone();
       this.r = r;
       this.w = invMass;
       this.body = null;
@@ -57660,9 +57667,9 @@ void main() {
         this._link(body, P.top, P.spine1, 0.85, Infinity);
       }
       const limb = (up, lo, a, mid, end) => {
-        const U3 = part(up);
-        if (!U3) return;
-        pt(mid, U3.b, U3.r, U3.mass);
+        const U2 = part(up);
+        if (!U2) return;
+        pt(mid, U2.b, U2.r, U2.mass);
         this._link(body, P[a], P[mid]);
         const L2 = part(lo);
         if (L2) {
@@ -57696,11 +57703,11 @@ void main() {
         thighR: ["hipR", "knR"],
         shinR: ["knR", "ftR"]
       };
-      body.ends = desc.parts.map((p2) => ends[p2.name].map((k) => P[k]));
+      body.ends = desc.parts.map((p) => ends[p.name].map((k) => P[k]));
       body.side = { pelvis: [P.hipL, P.hipR], chest: [P.shL, P.shR] };
-      body.q = desc.parts.map((p2) => p2.q0.clone());
+      body.q = desc.parts.map((p) => p.q0.clone());
       body.prevAxis = body.ends.map(([A, B]) => B.x.clone().sub(A.x).normalize());
-      desc.parts.forEach((p2, i) => {
+      desc.parts.forEach((p, i) => {
         for (const e of body.ends[i]) e.p.copy(e.x).addScaledVector(vels[i], -1 / 60);
       });
       this.bodies.set(id, body);
@@ -57734,31 +57741,31 @@ void main() {
       if (!body) return;
       this.bodies.delete(id);
       const set = new Set(body.pts);
-      this.particles = this.particles.filter((p2) => !set.has(p2));
+      this.particles = this.particles.filter((p) => !set.has(p));
     }
     step(dt) {
       const t0 = performance.now();
       const pts = this._active || (this._active = []);
       pts.length = 0;
-      for (const body of this.bodies.values()) if (body.sleep < 1.5) for (const p2 of body.pts) pts.push(p2);
-      for (const p2 of pts) {
-        const vx = (p2.x.x - p2.p.x) * DAMP, vy = (p2.x.y - p2.p.y) * DAMP, vz = (p2.x.z - p2.p.z) * DAMP;
-        p2.p.copy(p2.x);
-        p2.x.x += vx;
-        p2.x.y += vy + G * dt * dt;
-        p2.x.z += vz;
-        const c = p2.cand || (p2.cand = []);
+      for (const body of this.bodies.values()) if (body.sleep < 1.5) for (const p of body.pts) pts.push(p);
+      for (const p of pts) {
+        const vx = (p.x.x - p.p.x) * DAMP, vy = (p.x.y - p.p.y) * DAMP, vz = (p.x.z - p.p.z) * DAMP;
+        p.p.copy(p.x);
+        p.x.x += vx;
+        p.x.y += vy + G * dt * dt;
+        p.x.z += vz;
+        const c = p.cand || (p.cand = []);
         c.length = 0;
-        const m = p2.r + 0.25;
-        for (const b of this.boxes) if (p2.x.x > b.minX - m && p2.x.x < b.maxX + m && p2.x.z > b.minZ - m && p2.x.z < b.maxZ + m && p2.x.y - m < b.h) c.push(b);
+        const m = p.r + 0.25;
+        for (const b of this.boxes) if (p.x.x > b.minX - m && p.x.x < b.maxX + m && p.x.z > b.minZ - m && p.x.z < b.maxZ + m && p.x.y - m < b.h) c.push(b);
       }
       const grid = this._grid || (this._grid = /* @__PURE__ */ new Map());
       for (const c of grid.values()) c.length = 0;
-      for (const p2 of pts) {
-        const k = Math.floor(p2.x.x / CELL) * 73856093 ^ Math.floor(p2.x.z / CELL) * 19349663;
+      for (const p of pts) {
+        const k = Math.floor(p.x.x / CELL) * 73856093 ^ Math.floor(p.x.z / CELL) * 19349663;
         let c = grid.get(k);
         if (!c) grid.set(k, c = []);
-        c.push(p2);
+        c.push(p);
       }
       for (let it = 0; it < ITER; it++) {
         for (const body of this.bodies.values()) {
@@ -57775,17 +57782,17 @@ void main() {
           }
         }
         if (it % 2 === 0) this._contacts(pts, grid);
-        for (const p2 of pts) this._collide(p2);
+        for (const p of pts) this._collide(p);
       }
-      for (const p2 of pts) {
-        if (!p2.ground) continue;
-        p2.p.x = p2.x.x - (p2.x.x - p2.p.x) * (1 - FRICTION);
-        p2.p.z = p2.x.z - (p2.x.z - p2.p.z) * (1 - FRICTION);
+      for (const p of pts) {
+        if (!p.ground) continue;
+        p.p.x = p.x.x - (p.x.x - p.p.x) * (1 - FRICTION);
+        p.p.z = p.x.z - (p.x.z - p.p.z) * (1 - FRICTION);
       }
       for (const body of this.bodies.values()) {
         if (body.sleep >= 1.5) continue;
         let maxV = 0;
-        for (const p2 of body.pts) maxV = Math.max(maxV, p2.x.distanceTo(p2.p) / dt);
+        for (const p of body.pts) maxV = Math.max(maxV, p.x.distanceTo(p.p) / dt);
         body.sleep = maxV < 0.08 ? body.sleep + dt : 0;
         body.ends.forEach(([A, B], i) => {
           const axis = _a4.subVectors(B.x, A.x).normalize();
@@ -57804,51 +57811,51 @@ void main() {
       this.stats.ms += performance.now() - t0;
     }
     _contacts(pts, grid) {
-      for (const p2 of pts) {
-        const cx = Math.floor(p2.x.x / CELL), cz = Math.floor(p2.x.z / CELL);
+      for (const p of pts) {
+        const cx = Math.floor(p.x.x / CELL), cz = Math.floor(p.x.z / CELL);
         for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
           const c = grid.get((cx + dx) * 73856093 ^ (cz + dz) * 19349663);
           if (!c) continue;
           for (const q of c) {
-            if (q === p2 || q.body.id < p2.body.id || q.body === p2.body && (q.i <= p2.i || p2.body.adj.has(p2.i * 64 + q.i))) continue;
-            _a4.subVectors(q.x, p2.x);
-            const d2 = _a4.lengthSq(), rr = p2.r + q.r;
+            if (q === p || q.body.id < p.body.id || q.body === p.body && (q.i <= p.i || p.body.adj.has(p.i * 64 + q.i))) continue;
+            _a4.subVectors(q.x, p.x);
+            const d2 = _a4.lengthSq(), rr = p.r + q.r;
             if (d2 >= rr * rr || d2 < 1e-10) continue;
-            const d = Math.sqrt(d2), k = (rr - d) / (d * (p2.w + q.w));
-            p2.x.addScaledVector(_a4, -k * p2.w);
+            const d = Math.sqrt(d2), k = (rr - d) / (d * (p.w + q.w));
+            p.x.addScaledVector(_a4, -k * p.w);
             q.x.addScaledVector(_a4, k * q.w);
           }
         }
       }
     }
-    _collide(p2) {
-      p2.ground = false;
-      if (p2.x.y < p2.r) {
-        p2.x.y = p2.r;
-        p2.ground = true;
-        if (p2.p.y < p2.x.y) p2.p.y = p2.x.y + (p2.x.y - p2.p.y) * BOUNCE;
+    _collide(p) {
+      p.ground = false;
+      if (p.x.y < p.r) {
+        p.x.y = p.r;
+        p.ground = true;
+        if (p.p.y < p.x.y) p.p.y = p.x.y + (p.x.y - p.p.y) * BOUNCE;
       }
-      for (const b of p2.cand) {
-        if (p2.x.y - p2.r > b.h) continue;
-        const cx = Math.max(b.minX, Math.min(p2.x.x, b.maxX)), cz = Math.max(b.minZ, Math.min(p2.x.z, b.maxZ)), cy = Math.min(p2.x.y, b.h);
-        const dx = p2.x.x - cx, dy = p2.x.y - cy, dz = p2.x.z - cz, d2 = dx * dx + dy * dy + dz * dz;
-        if (d2 >= p2.r * p2.r) continue;
+      for (const b of p.cand) {
+        if (p.x.y - p.r > b.h) continue;
+        const cx = Math.max(b.minX, Math.min(p.x.x, b.maxX)), cz = Math.max(b.minZ, Math.min(p.x.z, b.maxZ)), cy = Math.min(p.x.y, b.h);
+        const dx = p.x.x - cx, dy = p.x.y - cy, dz = p.x.z - cz, d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 >= p.r * p.r) continue;
         if (d2 > 1e-10) {
-          const d = Math.sqrt(d2), k = (p2.r - d) / d;
-          p2.x.x += dx * k;
-          p2.x.y += dy * k;
-          p2.x.z += dz * k;
-          if (dy > 0 && dy * dy > dx * dx + dz * dz) p2.ground = true;
+          const d = Math.sqrt(d2), k = (p.r - d) / d;
+          p.x.x += dx * k;
+          p.x.y += dy * k;
+          p.x.z += dz * k;
+          if (dy > 0 && dy * dy > dx * dx + dz * dz) p.ground = true;
         } else {
-          const m = [p2.x.x - b.minX, b.maxX - p2.x.x, p2.x.z - b.minZ, b.maxZ - p2.x.z, b.h - p2.x.y];
+          const m = [p.x.x - b.minX, b.maxX - p.x.x, p.x.z - b.minZ, b.maxZ - p.x.z, b.h - p.x.y];
           const i = m.indexOf(Math.min(...m));
-          if (i === 0) p2.x.x = b.minX - p2.r;
-          else if (i === 1) p2.x.x = b.maxX + p2.r;
-          else if (i === 2) p2.x.z = b.minZ - p2.r;
-          else if (i === 3) p2.x.z = b.maxZ + p2.r;
+          if (i === 0) p.x.x = b.minX - p.r;
+          else if (i === 1) p.x.x = b.maxX + p.r;
+          else if (i === 2) p.x.z = b.minZ - p.r;
+          else if (i === 3) p.x.z = b.maxZ + p.r;
           else {
-            p2.x.y = b.h + p2.r;
-            p2.ground = true;
+            p.x.y = b.h + p.r;
+            p.ground = true;
           }
         }
       }
@@ -57926,7 +57933,7 @@ void main() {
     }
     addRagdoll(desc, vels) {
       const R = RAPIER, id = this.nextId++;
-      const rb = desc.parts.map((p2, i) => this._capsuleBody(p2.a, p2.b, p2.r, p2.mass, p2.q0, vels[i]));
+      const rb = desc.parts.map((p, i) => this._capsuleBody(p.a, p.b, p.r, p.mass, p.q0, vels[i]));
       const joints = [];
       for (const j of desc.joints) {
         const P = rb[j.parent], C = rb[j.child];
@@ -57944,7 +57951,7 @@ void main() {
         joint.setContactsEnabled(false);
         joints.push(joint);
       }
-      this.bodies.set(id, { id, kind: "ragdoll", rb, joints, q0: desc.parts.map((p2) => p2.q0.clone()) });
+      this.bodies.set(id, { id, kind: "ragdoll", rb, joints, q0: desc.parts.map((p) => p.q0.clone()) });
       return id;
     }
     addPiece(a, b, r, vel, q0) {
@@ -58003,11 +58010,11 @@ void main() {
   async function kill(g, tag, kind = "pistol", frames = [0, 6, 12, 20, 30, 45, 70, 110]) {
     g.restart("calm");
     await settle();
-    const sim2 = g.sim, p2 = sim2.player;
+    const sim2 = g.sim, p = sim2.player;
     sim2.zombies.length = 0;
-    p2.x = p2.px = 0.3;
-    p2.z = p2.pz = 1.8;
-    p2.aimYaw = p2.aimTarget = Math.PI;
+    p.x = p.px = 0.3;
+    p.z = p.pz = 1.8;
+    p.aimYaw = p.aimTarget = Math.PI;
     const z = sim2.spawnZombie("NW", { x: 0.3, z: -1.6, yaw: 0 });
     z.set("chase");
     z.passive = true;
@@ -58032,11 +58039,11 @@ void main() {
   async function sever(g, tag, parts = ["Forearm_R"], kill2 = false, frames = [0, 4, 10, 18, 30, 50, 90]) {
     g.restart("calm");
     await settle();
-    const sim2 = g.sim, p2 = sim2.player;
+    const sim2 = g.sim, p = sim2.player;
     sim2.zombies.length = 0;
-    p2.x = p2.px = 0.3;
-    p2.z = p2.pz = 1.8;
-    p2.aimYaw = p2.aimTarget = Math.PI;
+    p.x = p.px = 0.3;
+    p.z = p.pz = 1.8;
+    p.aimYaw = p.aimTarget = Math.PI;
     const z = sim2.spawnZombie("NW", { x: 0.3, z: -1.6, yaw: 0 });
     z.set("chase");
     z.passive = true;
@@ -58065,11 +58072,11 @@ void main() {
     const rnd = () => (s = s * 16807 % 2147483647) / 2147483647;
     g.restart("calm");
     await settle();
-    const sim2 = g.sim, p2 = sim2.player;
+    const sim2 = g.sim, p = sim2.player;
     sim2.zombies.length = 0;
-    p2.x = p2.px = 0.3;
-    p2.z = p2.pz = 4;
-    p2.aimYaw = p2.aimTarget = Math.PI;
+    p.x = p.px = 0.3;
+    p.z = p.pz = 4;
+    p.aimYaw = p.aimTarget = Math.PI;
     const zs = [];
     for (let i = 0; i < n; i++) {
       const x = -2.4 + i % 6 * 0.95 + (rnd() - 0.5) * 0.2, z = -3 + Math.floor(i / 6) * 0.9;
@@ -58117,12 +58124,12 @@ void main() {
   async function blast(g, tag, dist2 = 2, n = 3, hp = 100, frames = [0, 4, 8, 14, 22, 34, 50, 80]) {
     g.restart("calm");
     await settle();
-    const sim2 = g.sim, p2 = sim2.player;
+    const sim2 = g.sim, p = sim2.player;
     sim2.zombies.length = 0;
-    p2.x = p2.px = 0.3;
-    p2.z = p2.pz = 2.4;
-    p2.aimYaw = p2.aimTarget = Math.PI;
-    p2.equipped = p2.desired = "shotgun";
+    p.x = p.px = 0.3;
+    p.z = p.pz = 2.4;
+    p.aimYaw = p.aimTarget = Math.PI;
+    p.equipped = p.desired = "shotgun";
     const zs = [];
     for (let i = 0; i < n; i++) {
       const z = sim2.spawnZombie("NW", { x: 0.3 + (i === 0 ? 0 : i % 2 ? -0.75 : 0.75), z: 2.4 - dist2 - (i === 0 ? 0 : 0.7), yaw: 0 });
@@ -58154,12 +58161,12 @@ void main() {
   async function combo(g, tag, hp = 400, every = 5, n = 16, camYaw = -60, weapon = "axe") {
     g.restart("calm");
     await settle();
-    const sim2 = g.sim, p2 = sim2.player;
+    const sim2 = g.sim, p = sim2.player;
     sim2.zombies.length = 0;
-    p2.x = p2.px = 0.3;
-    p2.z = p2.pz = 2.4;
-    p2.aimYaw = p2.aimTarget = Math.PI;
-    p2.equipped = p2.desired = weapon;
+    p.x = p.px = 0.3;
+    p.z = p.pz = 2.4;
+    p.aimYaw = p.aimTarget = Math.PI;
+    p.equipped = p.desired = weapon;
     const z = sim2.spawnZombie("NW", { x: 0.3, z: 1.35, yaw: 0 });
     z.set("chase");
     z.passive = true;
@@ -58171,7 +58178,7 @@ void main() {
     g.scriptInput = () => ({ moveX: 0, moveZ: 0, aimX: 0, aimZ: -1, swapPresses: 0 });
     for (let i = 0; i < n; i++) {
       g.tick(every, 1 / 60, false);
-      const a = p2.action;
+      const a = p.action;
       log.push(a.type === "swing" ? `${a.combo}:${a.st.toFixed(2)}${a.hits ? "*" : ""}` : a.type);
       g.cam({ target: "yola", yaw: camYaw, pitch: 14, dist: 3.4, h: 0.9 });
       names.push(await g.shot(`${tag}_${i}`));
@@ -58324,11 +58331,13 @@ void main() {
     { id: "09", who: "Patient", file: "09_Patient_takeB.mp3", dur: 4.16, end: 4.16, gainDb: 1.4, text: "Last time, they had to help me breathe for a few hours. They found an enzyme problem." },
     { id: "10", who: "Yola", file: "10_Yola_takeB.mp3", dur: 2.72, end: 2.7, gainDb: 0.6, text: "I see the test results here. Thanks for telling me." },
     { id: "11", who: "Yola", file: "11_Yola_takeB.mp3", dur: 2.16, end: 2.16, gainDb: 1.6, text: "We'll account for that in your anesthesia plan." },
-    { id: "12", who: "Yola", file: "12_Yola_takeB.mp3", dur: 2.96, end: 2.94, gainDb: -1.1, text: "Your team's ready on the third floor. I'll come up with you." },
+    { id: "12", who: "Yola", file: "12_Yola_takeB.mp3", dur: 2.96, from: 1.9, end: 1.04, gainDb: -1.1, text: "I'll come up with you." },
+    // (2026-10-16: an edit of the take: "Your team's ready on the third floor." contradicts Floor 7; only its neutral second sentence plays, from the pause at 1.68-2.08 s)
     { id: "13", who: "Colleague", file: "13_Colleague_takeB.mp3", dur: 3.2, end: 3.2, gainDb: 2, text: "Let's give that knee a break. I've got a wheelchair for you." },
     { id: "14", who: "Patient", file: "14_Patient_takeB.mp3", dur: 2.08, end: 2.08, gainDb: 0.9, text: "All right. But the bat's coming." },
     { id: "15", who: "Yola", file: "15_Yola_takeB.mp3", dur: 2.24, end: 2.22, gainDb: -0.3, text: "He can look after it while we're in the operating room." },
-    { id: "16", who: "Colleague", file: "16_Colleague_takeB.mp3", dur: 2.96, end: 2.96, gainDb: 0.6, text: "Third floor. We'll help you get changed and settled." },
+    { id: "16", who: "Colleague", file: "16_Colleague_takeB.mp3", dur: 2.96, from: 1, end: 1.96, gainDb: 0.6, text: "We'll help you get changed and settled." },
+    // (an edit: "Third floor." is cut in the pause at 0.78-1.16 s)
     { id: "17", who: "Yola", file: "17_Yola_takeB.mp3", dur: 1.44, end: 0.64, gainDb: -2.1, text: "Comfortable?" },
     { id: "18", who: "Patient", file: "18_Patient_takeB.mp3", dur: 2.88, end: 2.88, gainDb: 2.7, text: "As comfortable as I'm going to get. Let's do this." },
     { id: "19", who: "Yola", file: "19_Yola_takeB.mp3", dur: 1.28, end: 1.2, gainDb: 0.2, text: "We'll take good care of you." },
@@ -58338,7 +58347,8 @@ void main() {
     { id: "23", who: "Yola", file: "23_Yola_takeB.mp3", dur: 4.08, end: 4.08, gainDb: 0.6, text: "There's still some rocuronium effect. Let's complete reversal and check again." },
     { id: "24", who: "Yola", file: "24_Yola_takeB.mp3", dur: 2.8, end: 2.78, gainDb: 0.2, text: "He's recovering well. I've handed everything over." },
     { id: "25", who: "Colleague", file: "25_Colleague_takeB.mp3", dur: 1.68, end: 1.68, gainDb: -0.7, text: "I've got him. I'll stay with him." },
-    { id: "26", who: "Yola", file: "26_Yola_takeB.mp3", dur: 1.84, end: 1.84, gainDb: 0.1, text: "Thanks. I'll be just outside." },
+    { id: "26", who: "Yola", file: "26_Yola_takeB.mp3", dur: 1.84, to: 0.64, end: 0.6, gainDb: 0.1, text: "Thanks." },
+    // (an edit: "I'll be just outside" contradicts her errand downstairs; the take stops in the pause at 0.52-0.82 s)
     { id: "27", who: "Colleague", file: "27_Colleague_takeB.mp3", dur: 2.16, end: 2.16, gainDb: -0.5, text: "Something's wrong. Check his pulse." },
     { id: "28", who: "Colleague", file: "28_Colleague_takeB.mp3", dur: 1.68, end: 1.12, gainDb: -0.6, text: "There's no pulse." },
     { id: "29", who: "Colleague", file: "29_Colleague_takeB.mp3", dur: 2.08, end: 2.08, gainDb: 3.3, text: "Wait... why is he moving?" },
@@ -58629,9 +58639,9 @@ void main() {
       this.statusEl.classList.toggle("show", !!text);
       this.statusEl.classList.toggle("alert", alert);
     }
-    urgency(p2) {
-      this.urgEl.classList.toggle("show", p2 != null);
-      if (p2 != null) this.urgEl.querySelector("i").style.width = Math.max(0, Math.min(1, p2)) * 100 + "%";
+    urgency(p) {
+      this.urgEl.classList.toggle("show", p != null);
+      if (p != null) this.urgEl.querySelector("i").style.width = Math.max(0, Math.min(1, p)) * 100 + "%";
     }
     // cosmetic only
     setVignette(o) {
@@ -58640,9 +58650,9 @@ void main() {
     setDark(o) {
       this.dark.style.opacity = o;
     }
-    title(h, p2) {
+    title(h, p) {
       this.titleEl.querySelector("h1").textContent = h || "";
-      this.titleEl.querySelector("p").textContent = p2 || "";
+      this.titleEl.querySelector("p").textContent = p || "";
       this.titleEl.classList.toggle("show", !!h);
     }
     // captions: shown only when the player turned them on (CC); the latest line is remembered so turning them on mid-line shows it
@@ -58795,8 +58805,9 @@ void main() {
     showMonitor(v) {
       this.monEl.classList.toggle("show", v);
     }
-    monitor({ mode: mode2, hr, spo2, tof, alarm, status } = {}) {
+    monitor({ mode: mode2, hr, spo2, tof, alarm, status, bp } = {}) {
       const m = this.monEl;
+      if (bp !== void 0) m.querySelector(".bp").textContent = bp;
       if (mode2) this.monMode = mode2;
       if (hr !== void 0) m.querySelector(".hr").textContent = hr;
       if (spo2 !== void 0) m.querySelector(".spo2").textContent = spo2;
@@ -58815,23 +58826,23 @@ void main() {
       }
     }
     drawMonitor(t) {
-      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H5 = c.height, mode2 = this.monMode || "normal";
-      g.clearRect(0, 0, W3, H5);
+      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H4 = c.height, mode2 = this.monMode || "normal";
+      g.clearRect(0, 0, W3, H4);
       g.strokeStyle = mode2 === "normal" ? "#59f0a0" : "#ff7a6a";
       g.lineWidth = 3;
       g.lineJoin = "round";
       g.beginPath();
       for (let x = 0; x <= W3; x += 3) {
-        const rate = mode2 === "irregular" ? 1.7 : 1.15, u = x / W3 * 2.2 - t * rate * 0.45, p2 = (u % 1 + 1) % 1;
+        const rate = mode2 === "irregular" ? 1.7 : 1.15, u = x / W3 * 2.2 - t * rate * 0.45, p = (u % 1 + 1) % 1;
         let y = 0;
         if (mode2 === "normal") {
-          if (p2 > 0.1 && p2 < 0.14) y = -6;
-          else if (p2 > 0.18 && p2 < 0.2) y = 6;
-          else if (p2 > 0.2 && p2 < 0.235) y = -30;
-          else if (p2 > 0.235 && p2 < 0.27) y = 9;
-          else if (p2 > 0.4 && p2 < 0.5) y = -6 * Math.sin((p2 - 0.4) / 0.1 * Math.PI);
+          if (p > 0.1 && p < 0.14) y = -6;
+          else if (p > 0.18 && p < 0.2) y = 6;
+          else if (p > 0.2 && p < 0.235) y = -30;
+          else if (p > 0.235 && p < 0.27) y = 9;
+          else if (p > 0.4 && p < 0.5) y = -6 * Math.sin((p - 0.4) / 0.1 * Math.PI);
         } else if (mode2 === "irregular") y = Math.sin(x * 0.09 + t * 9) * 9 + Math.sin(x * 0.23 - t * 5) * 6;
-        const yy = H5 / 2 + y + (mode2 === "flat" ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
+        const yy = H4 / 2 + y + (mode2 === "flat" ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
         x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
       }
       g.stroke();
@@ -58970,9 +58981,9 @@ void main() {
       }
       this.spoken = null;
     }
-    pauseVoice(p2) {
+    pauseVoice(p) {
       try {
-        if (this.voice.ok) p2 ? speechSynthesis.pause() : speechSynthesis.resume();
+        if (this.voice.ok) p ? speechSynthesis.pause() : speechSynthesis.resume();
       } catch {
       }
     }
@@ -59004,7 +59015,13 @@ void main() {
       src.connect(g);
       g.connect(this.audio.voiceBus);
       const gen = ++this.vgen, at = c.currentTime + 0.02;
-      src.start(at);
+      const from = l.from || 0, len = l.to ? l.to - from : void 0;
+      if (len) {
+        const g0 = g.gain.value;
+        g.gain.setValueAtTime(g0, at + Math.max(0, len - 0.06));
+        g.gain.linearRampToValueAtTime(0, at + len);
+      }
+      src.start(at, from, len);
       this.vcur = { src, gen, at, l };
       this.audio.duck(true);
       src.onended = () => {
@@ -59394,181 +59411,6 @@ void main() {
     }
   };
 
-  // src/core/floor3.js
-  var M4 = "assets/models/";
-  var U2 = M4 + "upgrades/";
-  var H4 = "zombie/assets/hospital/";
-  var K2 = "zombie/assets/kit/";
-  var T2 = 0.3;
-  var WH2 = 2.7;
-  var walls = [];
-  var hseg = (z, x0, x1, gaps = [], h = WH2) => {
-    let a = x0 - T2 / 2;
-    for (const [g0, g1] of [...gaps].sort((p2, q) => p2[0] - q[0])) {
-      if (g0 > a) walls.push([a, g0, z - T2 / 2, z + T2 / 2, h, "full"]);
-      a = g1;
-    }
-    if (x1 + T2 / 2 > a) walls.push([a, x1 + T2 / 2, z - T2 / 2, z + T2 / 2, h, "full"]);
-  };
-  var vseg = (x, z0, z1, gaps = [], h = WH2) => {
-    let a = z0 - T2 / 2;
-    for (const [g0, g1] of [...gaps].sort((p2, q) => p2[0] - q[0])) {
-      if (g0 > a) walls.push([x - T2 / 2, x + T2 / 2, a, g0, h, "full"]);
-      a = g1;
-    }
-    if (z1 + T2 / 2 > a) walls.push([x - T2 / 2, x + T2 / 2, a, z1 + T2 / 2, h, "full"]);
-  };
-  hseg(-11.15, -10.93, 7.15, [[-6, -3], [3.3, 6.3]]);
-  vseg(7.15, -11.15, -1.35, [[-7.84, -2.56]]);
-  hseg(-1.35, 3.8, 7.15);
-  vseg(3.8, -1.35, 0.65);
-  hseg(0.65, -7.15, 3.8);
-  vseg(-7.15, -11.15, 1.65, [[-5.6, -3.6]]);
-  hseg(-6.2, -12.85, -7.15);
-  hseg(1.65, -27.6, -7.15, [[-24.8, -23], [-16.2, -14.4]]);
-  vseg(-12.85, -7.2, 11.45, [[-5.6, -3.6], [-1.4, 0.4]]);
-  hseg(-7.2, -25.6, -12.85);
-  vseg(-25.6, -22.9, 1.65, [[-20.9, -17.9], [-16.1, -13.1], [-6.6, -4.8], [-2.8, -0.8]]);
-  hseg(-11.15, -37.4, -25.6, [[-33, -31.2], [-28.2, -26.4]]);
-  vseg(-37.4, -19, 0.6);
-  hseg(0.6, -37.4, -25.6);
-  hseg(-19, -37.4, -33.5);
-  vseg(-33.5, -22.9, -19);
-  hseg(-22.9, -33.5, 0.89);
-  hseg(-10.15, -25.6, -14.8);
-  vseg(-14.8, -12.1, -10.15);
-  hseg(-12.1, -14.8, -10.93);
-  vseg(-10.93, -22.9, -11.15, [[-21, -19.2], [-15.6, -13.6]]);
-  vseg(0.89, -22.9, -11.15, [[-20.8, -17.8], [-16.9, -13.9]]);
-  vseg(-27.6, 1.65, 11.45, [[3.57, 6.57], [7.46, 10.46]]);
-  hseg(11.45, -27.6, -12.85);
-  var LIFT = {
-    x: 7.2,
-    z: -5.2,
-    yaw: -Math.PI / 2,
-    cab: { minX: 7.5, maxX: 10.45, minZ: -6.66, maxZ: -3.74 },
-    // finished cab floor (world)
-    threshold: { minX: 6.55, maxX: 7.55, minZ: -6.4, maxZ: -4 },
-    call: { x: 6.75, z: -3.9 }
-    // the call panel by the doors (the approach trigger)
-  };
-  var props = [];
-  var p = (m, x, z, rot, size, h, extra = {}) => {
-    const sw = rot % 180 === 90;
-    props.push({ m, x, z, rot, fp: sw ? [size[1], size[0]] : [size[0], size[1]], h, ...extra });
-  };
-  var wp = (m, x, z, face, y, extra = {}) => props.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, ...extra });
-  p(U2 + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
-  p(U2 + "04_surgery/surgical_light_standard.glb", 0.75, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
-  p(U2 + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
-  p(U2 + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
-  p(U2 + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
-  p(U2 + "08_support_equipment/runtime/supply_cart_standard.glb", 2.35, -10.6, 0, [0.88, 0.65], 1.21);
-  p(H4 + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
-  p(H4 + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
-  p(H4 + "lidded_waste_bin.glb", 1.45, -10.75, 0, [0.36, 0.4], 0.58);
-  wp(M4 + "furnishings/Endoscopy_Glove_Dispenser.glb", 0.35, -11, "s", 1.05);
-  wp(M4 + "decor/Reception_Wall_Sanitizer.glb", 0.95, -11, "s", 1.1);
-  wp(M4 + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
-  wp(M4 + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
-  p(M4 + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
-  p(H4 + "procedure_stretcher.glb", 1.8, -2.6, 90, [0.9, 1.66], 1.22);
-  p(H4 + "wheelchair.glb", -4, -0.3, 0, [0.76, 0.91], 0.97);
-  p(H4 + "lidded_waste_bin.glb", 3.4, 0.2, 0, [0.36, 0.4], 0.58);
-  wp(M4 + "furnishings/Clinical_Wall_Cupboard.glb", -6.75 - 0.25, -1.4, "e", 1.45);
-  wp(M4 + "decor3/Clinical_Sharps_Container.glb", -7, -2.9, "e", 1.1);
-  wp(M4 + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -6.6, "e", 1);
-  p(M4 + "furnishings/Lounge_Break_Table.glb", -9.6, -5.55, 0, [0.9, 0.9], 0.74, { name: "belongings" });
-  p(M4 + "utility/Utility_Supply_Shelf.glb", -7.6, -0.9, 270, [1.39, 0.53], 2);
-  p(M4 + "utility/Utility_Supply_Shelf.glb", -11.3, -5.75, 0, [1.39, 0.53], 2);
-  p(U2 + "08_support_equipment/runtime/supply_cart_starter.glb", -11, 1.05, 180, [0.78, 0.52], 1.01);
-  p(M4 + "utility/Utility_Laundry_Hamper.glb", -8, 1.2, 0, [0.6, 0.54], 0.97);
-  p(H4 + "lidded_waste_bin.glb", -7.6, -2.75, 0, [0.36, 0.4], 0.58);
-  p(M4 + "utility/Utility_Wet_Floor_Sign.glb", -10.3, -2.2, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
-  p(U2 + "01_reception/reception_T2_desk.glb", -20.2, -5.3, 180, [2.2, 0.9], 1.1);
-  p(U2 + "01_reception/reception_T2_chair.glb", -20.2, -6.35, 0, [0.63, 0.62], 0.99, { noCollide: true });
-  p(M4 + "decor/Reception_Linked_Seats_3.glb", -19.6, -2.45, 180, [2.61, 0.62], 0.92);
-  p(M4 + "decor/Reception_Linked_Seats_3.glb", -19.6, -1.75, 0, [2.61, 0.62], 0.92);
-  p(U2 + "12_lobby/lobby_T2_floor_planter.glb", -21.35, -2.1, 0, [0.55, 0.86], 1.2, { fit: true });
-  p(U2 + "12_lobby/lobby_T2_floor_planter.glb", -17.85, -2.1, 0, [0.55, 0.86], 1.2, { fit: true });
-  p(M4 + "decor/Reception_Linked_Seats_3.glb", -23.4, -6.65, 0, [2.61, 0.62], 0.92);
-  p(M4 + "decor/Reception_Water_Cooler.glb", -13.45, -6.7, 0, [0.44, 0.49], 1.47);
-  p(M4 + "decor/Reception_Magazine_Rack.glb", -14.6, -6.75, 0, [0.55, 0.43], 1.05);
-  p(M4 + "decor/Reception_Linked_Seats_3.glb", -21, 1.2, 180, [2.61, 0.62], 0.92);
-  wp(U2 + "12_lobby/lobby_T2_health_poster.glb", -17.4, -7.05, "s", 1.15);
-  wp(M4 + "decor/Reception_Poster_Clinician.glb", -22.8, -7.05, "s", 1.15);
-  for (const [i, bz] of [-9.4, -6.4, -3.4].entries()) {
-    p(H4 + "recovery_bed.glb", -36.1, bz, 90, [1.25, 2.11], 0.87);
-    p(H4 + "bedside_cabinet.glb", -36.9, bz + 1.05, 90, [0.52, 0.63], 0.81);
-    if (i < 2) p(H4 + "privacy_screen.glb", -35.9, bz + 1.5, 90, [0.14, 1.84], 1.97);
-    p(U2 + "08_support_equipment/runtime/iv_stand_starter.glb", -35, bz - 0.9, 0, [0.68, 0.65], 1.99, { noCollide: true });
-  }
-  p(H4 + "procedure_stretcher.glb", -31.4, -6.6, 0, [0.9, 1.66], 1.22);
-  p(H4 + "procedure_stretcher.glb", -30, -1.4, 90, [0.9, 1.66], 1.22);
-  p(H4 + "patient_monitor.glb", -33.6, -10.55, 0, [0.62, 0.71], 1.49);
-  p(H4 + "supply_cart.glb", -36.6, -0.1, 90, [1.16, 1.1], 1.23);
-  p(M4 + "decor/Recovery_Linen_Cabinet.glb", -29.3, -10.7, 0, [0.95, 0.59], 1.84);
-  wp(M4 + "decor3/Clinical_Sign_PreOp.glb", -35.4, -11, "s", 2.2);
-  p(U2 + "10_janitor_utility/starter/10_starter_rack.glb", -36.9, -12.6, 90, [0.82, 0.51], 1.82);
-  p(U2 + "10_janitor_utility/starter/10_starter_rack.glb", -36.9, -14, 90, [0.82, 0.51], 1.82);
-  p(M4 + "utility/Utility_Janitor_Cart.glb", -35, -17.8, 0, [0.83, 0.94], 1.24);
-  p(M4 + "utility/Utility_Mop_Bucket.glb", -33.9, -18.2, 0, [0.43, 0.51], 0.66);
-  p(U2 + "10_janitor_utility/starter/10_starter_steel_sink.glb", -27.5, -22.4, 0, [0.87, 0.63], 1.16);
-  p(M4 + "utility/Utility_Supply_Shelf.glb", -26.05, -22, 270, [1.39, 0.53], 2);
-  p(M4 + "utility/Utility_Laundry_Hamper.glb", -26.05, -12.9, 0, [0.6, 0.54], 0.97);
-  wp(M4 + "utility/Utility_Toolboard.glb", -35.6, -18.85, "s", 1);
-  props.push({ kind: "bench", x: -32.55, z: -22.35, size: [1.8, 0.65, 0.92], color: 9206364, fp: [1.8, 0.65], h: 0.92, name: "workbench" });
-  props.push({ kind: "pipes", x: -29.6, z: -22.75, len: 7.6, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
-  props.push({ kind: "hazard", x: -29.5, z: -21.95, size: [1.6, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
-  p(M4 + "utility/Utility_Supply_Shelf.glb", -36.95, -17.9, 90, [1.39, 0.53], 2);
-  p(U2 + "10_janitor_utility/starter/10_starter_mop_bucket.glb", -36.6, -11.9, 0, [0.63, 0.54], 1.55);
-  p(M4 + "utility/Utility_Mop.glb", -36, -11.6, 0, [0.21, 0.21], 1.5, { noCollide: true });
-  props.push({ kind: "box", x: -30.2, z: -16.4, size: [1.4, 0.7, 1.9], face: "s", color: 9410715, fp: [1.4, 0.7], h: 1.9, name: "switchgear" });
-  props.push({ kind: "box", x: -36.95, z: -16.2, size: [1.6, 0.6, 2.1], face: "e", color: 8226698, fp: [0.6, 1.6], h: 2.1, name: "panelboard" });
-  p(K2 + "cafeteria_serving_counter.glb", -17.5, -22.25, 0, [2.46, 0.96], 1.53);
-  p(K2 + "cafeteria_tray_return.glb", -15.6, -22.4, 0, [0.68, 0.56], 1);
-  p(K2 + "cafeteria_vending_machine.glb", -12, -22.25, 0, [0.93, 0.87], 1.9);
-  p(K2 + "cafeteria_vending_machine.glb", -13, -22.25, 0, [0.93, 0.87], 1.9);
-  for (const [tx, tz] of [[-22.3, -18.4], [-19, -18.8], [-22, -14.8], [-18.6, -15.2], [-15.6, -17]]) {
-    p(H4 + "break_table.glb", tx, tz, 0, [0.95, 0.86], 0.85);
-    p(H4 + "break_chair.glb", tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
-    p(H4 + "break_chair.glb", tx + 0.85, tz, 270, [0.72, 0.62], 0.92, { noCollide: true });
-    props.push({ m: K2 + "cafeteria_meal_tray_set.glb", x: tx, z: tz, rot: 0, y: 0.85, fp: [0.1, 0.1], h: 0, noCollide: true });
-  }
-  p(K2 + "ct_scanner_gantry.glb", -5.5, -18, 0, [2.13, 0.87], 2.26);
-  p(K2 + "ct_sliding_patient_table.glb", -5.5, -16.45, 0, [0.71, 2.05], 1.11);
-  p(K2 + "ct_control_pedestal.glb", -2, -20.6, 0, [0.53, 0.49], 1.16);
-  p(K2 + "isolation_windowed_partition.glb", -1.3, -19.6, 0, [2, 0.15], 2.4);
-  p(K2 + "pharmacy_medicine_shelf.glb", -9.6, -22.45, 0, [1.39, 0.53], 1.95);
-  p(M4 + "furnishings/Lounge_Break_Table.glb", -0.2, -21.9, 0, [0.9, 0.9], 0.74);
-  props.push({ m: K2 + "lab_microscope.glb", x: -0.35, z: -21.95, rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
-  props.push({ m: K2 + "lab_centrifuge.glb", x: 0.05, z: -21.8, rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
-  p(H4 + "procedure_stretcher.glb", -9, -12.3, 90, [0.9, 1.66], 1.22);
-  for (const bx of [-21.4, -18.4]) {
-    wp(U2 + "05_recovery_bay/RecoveryHeadwall_standard.glb", bx, 1.8, "s", 0);
-    p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", bx, 3.15, 0, [1.1, 2.11], 0.87);
-    p(U2 + "05_recovery_bay/BedsideCabinet_standard.glb", bx + 0.9, 2.3, 0, [0.52, 0.5], 0.81);
-  }
-  p(U2 + "05_recovery_bay/PrivacyCurtain_standard.glb", -19.9, 3.15, 0, [0.14, 1.84], 1.97);
-  p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", -16.6, 7.2, 90, [1.1, 2.11], 0.87);
-  p(U2 + "05_recovery_bay/BedsideCabinet_standard.glb", -14.75, 7.2, 270, [0.52, 0.5], 0.81, { name: "healthCab" });
-  p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", -24.6, 9.9, 180, [1.1, 2.11], 0.87);
-  p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", -21.8, 9.9, 180, [1.1, 2.11], 0.87);
-  p(U2 + "05_recovery_bay/PrivacyCurtain_standard.glb", -23.2, 9.9, 0, [0.14, 1.84], 1.97);
-  p(U2 + "02_anesthesia_monitoring/patient_monitor_standard.glb", -26.9, 2.3, 90, [0.62, 0.71], 1.46);
-  p(M4 + "decor/Recovery_Linen_Cabinet.glb", -13.4, 10.7, 270, [0.95, 0.59], 1.84);
-  wp(M4 + "decor/Recovery_Wall_Clock.glb", -19.9, 1.8, "s", 2.15);
-  var GROUPS = [
-    { id: "or", zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: "nurse" }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 8 }] },
-    { id: "supply", trigger: "bat", sense: 4.5, zombies: [{ x: -14, z: -4.6, yaw: Math.PI / 2 }, { x: -15, z: -4, yaw: Math.PI / 2 }, { x: -14.2, z: -0.4, yaw: Math.PI / 2 }] },
-    { id: "waiting", sense: 6.5, zombies: [{ x: -21.6, z: -0.6, yaw: 1.2 }, { x: -16.8, z: -5.4, yaw: 2.4 }, { x: -23.6, z: -4.2, yaw: 1.6 }, { x: -14.4, z: -2.7, yaw: 0.4 }] },
-    { id: "preop", sense: 6, zombies: [{ x: -33.4, z: -8, yaw: 0.3 }, { x: -31.6, z: -3.2, yaw: 2 }, { x: -27.9, z: -8.6, yaw: -2.6 }] },
-    { id: "maint", sense: 5.5, zombies: [{ x: -34.6, z: -13.4, yaw: 1.4 }, { x: -28.2, z: -18.4, yaw: -0.6 }] },
-    { id: "cafe", locked: true, trigger: "brace", sense: 6.5, zombies: [{ x: -23.2, z: -20.5, yaw: 1 }, { x: -17.3, z: -20.5, yaw: -1 }, { x: -21.7, z: -17, yaw: -1.6 }, { x: -22.9, z: -13.4, yaw: -1.4 }] },
-    { id: "ct", sense: 6, zombies: [{ x: -8.6, z: -14.4, yaw: 2.6 }, { x: -2.2, z: -15.8, yaw: -2.2 }] },
-    { id: "recovery", sense: 4.5, zombies: [{ x: -20.2, z: 6.4, yaw: 0.6 }] }
-  ];
-
   // src/opening/breakthrough.js
   var PaintShader = {
     uniforms: { tSrc: { value: null }, k: { value: 0 }, texel: { value: new Vector2(1 / 512, 1 / 512) }, seed: { value: 0.37 }, exposure: { value: 0.92 }, display: { value: 1 } },
@@ -59634,14 +59476,14 @@ void main() {
     for (let j = 0; j < seeds.length; j++) {
       if (j === i) continue;
       const [ox, oy] = seeds[j], nx = ox - sx, ny = oy - sy, mx = (ox + sx) / 2, my = (oy + sy) / 2;
-      const side = (p2) => (p2[0] - mx) * nx + (p2[1] - my) * ny;
+      const side = (p) => (p[0] - mx) * nx + (p[1] - my) * ny;
       const out = [];
       for (let a = 0; a < poly.length; a++) {
-        const p2 = poly[a], q = poly[(a + 1) % poly.length], dp = side(p2), dq = side(q);
-        if (dp <= 0) out.push(p2);
+        const p = poly[a], q = poly[(a + 1) % poly.length], dp = side(p), dq = side(q);
+        if (dp <= 0) out.push(p);
         if (dp <= 0 !== dq <= 0) {
           const t = dp / (dp - dq);
-          out.push([p2[0] + (q[0] - p2[0]) * t, p2[1] + (q[1] - p2[1]) * t]);
+          out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]);
         }
       }
       poly = out;
@@ -59745,18 +59587,18 @@ void main() {
         const poly = cell(seeds, i);
         if (poly.length < 3) continue;
         let cx = 0, cy = 0;
-        for (const p2 of poly) {
-          cx += p2[0];
-          cy += p2[1];
+        for (const p of poly) {
+          cx += p[0];
+          cy += p[1];
         }
         cx /= poly.length;
         cy /= poly.length;
         const pos = [], uv = [], idx = [];
         pos.push(0, 0, 0);
         uv.push((cx + 1) / 2, (cy + 1) / 2);
-        for (const p2 of poly) {
-          pos.push((p2[0] - cx) * this.hw * 1.002, (p2[1] - cy) * this.hh * 1.002, 0);
-          uv.push((p2[0] + 1) / 2, (p2[1] + 1) / 2);
+        for (const p of poly) {
+          pos.push((p[0] - cx) * this.hw * 1.002, (p[1] - cy) * this.hh * 1.002, 0);
+          uv.push((p[0] + 1) / 2, (p[1] + 1) / 2);
         }
         for (let k = 1; k <= poly.length; k++) idx.push(0, k, k % poly.length + 1);
         const geo = new BufferGeometry();
@@ -59828,6 +59670,7 @@ void main() {
   };
 
   // src/opening/opening.js
+  var LIFT7 = LIFTS[7];
   var BELONG = ROOM1.belongings;
   var PATIENT_OUTFIT = { Jersey_Cream: 15921644, Trousers_Gray: 15461092, Uniform_Navy: 15000541, Markings_OffWhite: 15921644 };
   var clamp6 = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -59843,13 +59686,6 @@ void main() {
   var OFFICE_CLOSE = S(6.2, 0.9, -2.85, 22, 72, 3.2);
   var OFFICE_GUARD = S(5.8, 0.9, -2.35, 24, 80, 3.8);
   var REVEAL_SHOT = { ...W2(ROOM1.player.x, 1.02, ROOM1.player.z, 4, MathUtils.radToDeg(ROOM1.player.yaw), 3, 42), dist: 3.5 };
-  var REVEAL_COMBO = 2;
-  var REVEAL_FROM = 0;
-  var REVEAL_RATE = 1;
-  var REVEAL_HIT = 0.44;
-  var REVEAL_END = 1.25;
-  var REVEAL_HOLD = 0.3;
-  var REVEAL_HOLD_RATE = 0.16;
   var EXT_A = { ...S(-9.7, 2.2, 0.9, 4, -95, 7, 46), fitH: 7.4 };
   var EXT_B = { ...S(-9.7, 1.8, 0.9, 0, -90, 4, 46), fitH: 4.4 };
   var IN_A = S(-8, 0.8, 1.2, 66, 14, 8.4);
@@ -59995,11 +59831,11 @@ void main() {
     // ------------------------------------------------------------------ the cue list
     buildCues() {
       const c = this.cues, at = (t, name, fn) => c.push({ t, name, fn });
-      const st = this.stage, A = st.actors, K3 = TOUR.cues, P = TOUR.phrases;
-      for (const p2 of P) {
-        at(p2.t0, "sub:" + p2.id, () => this.setSub(p2.text));
-        at(p2.t1 + 0.25, "subOff:" + p2.id, () => {
-          if (this.sub === p2.text) this.setSub("");
+      const st = this.stage, A = st.actors, K2 = TOUR.cues, P = TOUR.phrases;
+      for (const p of P) {
+        at(p.t0, "sub:" + p.id, () => this.setSub(p.text));
+        at(p.t1 + 0.25, "subOff:" + p.id, () => {
+          if (this.sub === p.text) this.setSub("");
         });
       }
       at(0, "music", () => this.music());
@@ -60017,77 +59853,77 @@ void main() {
       });
       at(EXT_END + 0.4, "title", () => this.ui.title("Yola\u2019s Medical Center", "Starter clinic"));
       at(10.6, "title-off", () => this.ui.title(""));
-      at(K3.furnishCut, "dip-furnish", () => this.dip(0.22, 0.26));
-      at(K3.furnishCut + 0.24, "room-empty", () => {
+      at(K2.furnishCut, "dip-furnish", () => this.dip(0.22, 0.26));
+      at(K2.furnishCut + 0.24, "room-empty", () => {
         this.showRoom("empty");
         this.camTo(S(4.5, 0.8, 2.45, 50, 30, 8.8), 0.01);
       });
-      at(K3.furnishCut + 0.5, "room-push", () => this.camTo(S(4.8, 0.8, 2.35, 49, 30, 8), 3.4));
-      for (let i = 0; i < 9; i++) at(K3.furnishFrom + i * K3.furnishStep, "pop" + i, () => {
+      at(K2.furnishCut + 0.5, "room-push", () => this.camTo(S(4.8, 0.8, 2.35, 49, 30, 8), 3.4));
+      for (let i = 0; i < 9; i++) at(K2.furnishFrom + i * K2.furnishStep, "pop" + i, () => {
         for (const h of st.furnishGroups()[i] || []) st.popIn(h);
       });
-      at(K3.teamCut, "dip-team", () => this.dip(0.2, 0.22));
-      at(K3.teamCut + 0.2, "team", () => {
+      at(K2.teamCut, "dip-team", () => this.dip(0.2, 0.22));
+      at(K2.teamCut + 0.2, "team", () => {
         this.showRoom("team");
         this.camTo(S(4.6, 1, 2.3, 42, 26, 6.4), 0.01);
         this.camTo(S(4.7, 1, 2.3, 42, 26, 6), 2.2);
       });
-      at(K3.receptionCut, "dip-greet", () => this.dip(0.2, 0.22));
-      at(K3.receptionCut + 0.2, "greet", () => {
+      at(K2.receptionCut, "dip-greet", () => this.dip(0.2, 0.22));
+      at(K2.receptionCut + 0.2, "greet", () => {
         this.showRoom("greet");
         this.camTo(S(-5.4, 0.9, -3.2, 46, 26, 5.6), 0.01);
       });
-      at(K3.seatedCut, "dip-seated", () => this.dip(0.15, 0.2));
-      at(K3.seatedCut + 0.18, "seated", () => {
+      at(K2.seatedCut, "dip-seated", () => this.dip(0.15, 0.2));
+      at(K2.seatedCut + 0.18, "seated", () => {
         this.showRoom("seated");
         this.camTo(OFFICE_SHOT, 0.01);
       });
-      at(K3.chartCut, "dip-chart", () => this.dip(0.2, 0.25));
-      at(K3.chartCut + 0.2, "chart-room", () => {
+      at(K2.chartCut, "dip-chart", () => this.dip(0.2, 0.25));
+      at(K2.chartCut + 0.2, "chart-room", () => {
         this.showRoom("room");
         this.camTo(S(4.6, 0.8, 2.4, 46, 30, 7.6), 0.01);
         this.camTo(S(4.7, 0.8, 2.4, 46, 30, 7.2), 5);
       });
-      at(K3.chartOn, "chart-on", () => this.ui.preview("chart"));
-      at(K3.chartOff, "chart-off", () => this.ui.preview(null));
-      at(K3.decisionOn, "card-on", () => this.ui.preview("card"));
-      at(K3.decisionOff, "card-off", () => this.ui.preview(null));
-      at(K3.equipmentCut, "equipment", () => this.camTo(S(4.2, 1, 1.4, 34, 24, 5), 1.5));
-      at(K3.holdCut, "hold", () => {
+      at(K2.chartOn, "chart-on", () => this.ui.preview("chart"));
+      at(K2.chartOff, "chart-off", () => this.ui.preview(null));
+      at(K2.decisionOn, "card-on", () => this.ui.preview("card"));
+      at(K2.decisionOff, "card-off", () => this.ui.preview(null));
+      at(K2.equipmentCut, "equipment", () => this.camTo(S(4.2, 1, 1.4, 34, 24, 5), 1.5));
+      at(K2.holdCut, "hold", () => {
         this.camTo(S(4.8, 0.8, 2.35, 49, 30, 7.8), 1.3);
         this.ui.chip(UPGRADE_PREVIEW.heading);
       });
-      at(K3.midTier, "tier-mid", () => {
+      at(K2.midTier, "tier-mid", () => {
         st.setTier("standard", 0.9);
         this.chime(0);
         this.tierLabel(UPGRADE_PREVIEW.tiers[0].label, UPGRADE_PREVIEW.tiers[0].name);
       });
-      at(K3.advTier, "tier-adv", () => {
+      at(K2.advTier, "tier-adv", () => {
         st.setTier("advanced", 0.9);
         this.chime(1);
         this.tierLabel(UPGRADE_PREVIEW.tiers[1].label, UPGRADE_PREVIEW.tiers[1].name);
       });
-      at(K3.restoreCut, "dip-yola", () => this.dip(0.2, 0.22));
-      at(K3.restoreCut + 0.22, "yola", () => {
+      at(K2.restoreCut, "dip-yola", () => this.dip(0.2, 0.22));
+      at(K2.restoreCut + 0.22, "yola", () => {
         this.restoreStarter();
         this.showRoom("yola");
         this.camTo(S(5, 1.2, 3.7, 30, 16, 3), 0.01);
         this.camTo(S(5, 1.22, 3.7, 30, 16, 2.7), 6);
       });
-      at(K3.waveStart, "wave", () => A.yola.startWave(2.2));
-      at(K3.waveStart + 2.3, "wave-end", () => {
+      at(K2.waveStart, "wave", () => A.yola.startWave(2.2));
+      at(K2.waveStart + 2.3, "wave-end", () => {
         A.yola.waveT = -1;
         A.yola.play("idle", { fade: 0.2 });
       });
-      at(K3.arrivalCut, "dip-arrival", () => this.dip(0.2, 0.3));
-      at(K3.arrivalCut + 0.25, "arrival", () => {
+      at(K2.arrivalCut, "dip-arrival", () => this.dip(0.2, 0.3));
+      at(K2.arrivalCut + 0.25, "arrival", () => {
         this.showRoom("arrival");
         this.camTo(S(-6.6, 0.6, 0.9, 52, 30, 7.4), 0.01);
       });
-      at(K3.objective - 0.4, "push", () => this.camTo(S(-6.5, 0.7, 0.85, 50, 30, 6.4), 3.6));
-      at(K3.objective, "objective", () => this.ui.objective(OBJECTIVES.chart));
-      at(K3.settle, "settle", () => this.camTo(S(-6, 0.5, 0, 52, 30, 9.4), 1.2));
-      at(K3.handoff, "act2", () => {
+      at(K2.objective - 0.4, "push", () => this.camTo(S(-6.5, 0.7, 0.85, 50, 30, 6.4), 3.6));
+      at(K2.objective, "objective", () => this.ui.objective(OBJECTIVES.chart));
+      at(K2.settle, "settle", () => this.camTo(S(-6, 0.5, 0, 52, 30, 9.4), 1.2));
+      at(K2.handoff, "act2", () => {
         this.mode = "co";
         this.co = this.act2();
       });
@@ -60151,13 +59987,26 @@ void main() {
       this.holdBat(null);
       this.cpr = null;
       this.revealSwing = null;
+      this.revealPose = null;
+      this.sweepT = null;
+      if (this.rfx) {
+        this.backlight(0);
+        this.rfx.g.visible = false;
+        this.rfx.smoke = this.rfx.smokeTarget = 0;
+      }
+      this.setOrLamp(true);
+      this.silhouette(this.stage.actors.yola?.root, false);
+      if (this.yola) {
+        this.silhouette(this.yola.outer, false);
+        this.silhouette(this.yola.batLib?.obj, false);
+      }
       if (this.bt.state !== "idle") this.bt.finish();
       this.bt.state = "idle";
       this.monitorOn = false;
       this.ui.showMonitor(false);
       this.ui.readiness(null);
       this.ui.timeCard("");
-      this.ui.monitor({ mode: "normal", alarm: false, tof: null });
+      this.ui.monitor({ mode: "normal", alarm: false, tof: null, bp: "BP 118/74" });
       st.setLiftOpen(0);
       st.lift?.display.set("G");
       this.setLift3(0);
@@ -60345,15 +60194,16 @@ void main() {
     }
     setCamera() {
       const r = this.rig, c = this.camera;
-      const p2 = MathUtils.degToRad(r.pitch), y = MathUtils.degToRad(r.yaw);
+      const p = MathUtils.degToRad(r.pitch), y = MathUtils.degToRad(r.yaw);
       const fx2 = -Math.sin(y), fz = -Math.cos(y);
       c.fov = r.fov;
       c.updateProjectionMatrix();
       const hf = 2 * Math.atan(Math.tan(MathUtils.degToRad(r.fov) / 2) * c.aspect);
       let dist2 = r.dist ?? clamp6(r.width / (2 * Math.tan(hf / 2)), 2.5, 80);
       if (r.fitH && r.dist == null) dist2 = Math.max(dist2, r.fitH / (2 * Math.tan(MathUtils.degToRad(r.fov) / 2)));
-      c.position.set(r.x - fx2 * Math.cos(p2) * dist2, r.y + Math.sin(p2) * dist2, r.z - fz * Math.cos(p2) * dist2);
+      c.position.set(r.x - fx2 * Math.cos(p) * dist2, r.y + Math.sin(p) * dist2, r.z - fz * Math.cos(p) * dist2);
       c.lookAt(r.x, r.y, r.z);
+      if (r.roll) c.rotateZ(r.roll);
     }
     // ------------------------------------------------------------------ helpers (audio is skipped in seek mode)
     setSub(text) {
@@ -60441,7 +60291,7 @@ void main() {
       if (!a) return;
       a.t += d;
       const u = ease(a.t / a.dur), o = {};
-      for (const k of Object.keys(a.to)) o[k] = lerp2(a.from[k] ?? a.to[k], a.to[k], u);
+      for (const k of Object.keys(a.to)) o[k] = lerp2(a.from[k] ?? (k === "roll" ? 0 : a.to[k]), a.to[k], u);
       if (a.follow) {
         const fo = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.x, foz = a.follow.actor.root.parent === this.scene ? 0 : CLINIC.z;
         const tx = a.follow.actor.x + fo + (a.follow.dx || 0), tz = a.follow.actor.z + foz + (a.follow.dz || 0);
@@ -60547,9 +60397,7 @@ void main() {
       this.inOR = true;
       this.game?.().fxAim?.(false);
       this.ensureBelongings();
-      this.belongings.visible = true;
-      st.batStatic.visible = true;
-      if (st.cap) st.cap.visible = true;
+      this.belongings.visible = false;
       this.ensureLights();
       if (!this.lightBase) this.lightBase = { hemi: A.hemi?.intensity ?? 0.85, sun: A.sun?.intensity ?? 1.45, env: this.scene.environmentIntensity ?? 0.32 };
     }
@@ -60598,9 +60446,9 @@ void main() {
       const a = this.alarmFx;
       if (!a) return;
       a.t += d;
-      const p2 = 0.5 + 0.5 * Math.sin(a.t * Math.PI * 2 * a.hz - Math.PI / 2), k = this.reducedFlash ? 0.45 : 1;
-      if (this.redLight) this.redLight.intensity = a.amp * k * (3 + 11 * p2);
-      this.ui.setVignette(a.amp * k * (0.15 + 0.45 * p2));
+      const p = 0.5 + 0.5 * Math.sin(a.t * Math.PI * 2 * a.hz - Math.PI / 2), k = this.reducedFlash ? 0.45 : 1;
+      if (this.redLight) this.redLight.intensity = a.amp * k * (3 + 11 * p);
+      this.ui.setVignette(a.amp * k * (0.15 + 0.45 * p));
     }
     tickEcg(d) {
       const e = this.ecg;
@@ -60680,18 +60528,11 @@ void main() {
       rider.seated = true;
       rider.play("SeatedIdle", { fade: 0 });
       rider.root.position.y = Math.max(0, 0.5 - 0.47);
-      if (pusher) {
-        pusher.adjust("pushL", "upper_armL", -1, 0, 0.25);
-        pusher.adjust("pushR", "upper_armR", -1, 0, -0.25);
-        pusher.adjust("pushFL", "forearmL", -0.5, 0, 0);
-        pusher.adjust("pushFR", "forearmR", -0.5, 0, 0);
-      }
       this.tickRide(0);
     }
     endRide() {
       const r = this.ride;
       if (!r) return;
-      if (r.pusher) for (const k of ["pushL", "pushR", "pushFL", "pushFR"]) delete r.pusher.adj[k];
       r.wc.visible = false;
       this.ride = null;
     }
@@ -60704,15 +60545,28 @@ void main() {
       if (!r) return;
       const a = r.rider, fx2 = Math.sin(a.yaw), fz = Math.cos(a.yaw);
       const sx = a.root.position.x - fx2 * 0.45, sz = a.root.position.z - fz * 0.45;
-      r.wc.position.set(sx + fx2 * 0.05, 0, sz + fz * 0.05);
-      r.wc.rotation.y = a.yaw + Math.PI;
+      r.wc.position.set(sx, 0, sz);
+      r.wc.rotation.y = a.yaw;
       if (r.pusher) {
-        const p2 = r.pusher, moving = a.moving || a.targetYaw != null;
-        p2.root.position.set(sx - fx2 * 0.98, 0, sz - fz * 0.98);
-        p2.yaw = a.yaw;
-        p2.root.rotation.y = a.yaw;
-        if (moving && p2.curName !== "Walk_InPlace") p2.play("Walk_InPlace", { fade: 0.15 });
-        if (!moving && p2.curName === "Walk_InPlace") p2.play("Idle", { fade: 0.25 });
+        const p = r.pusher, moving = a.moving || a.targetYaw != null, back = r.wc.userData.pusherBack || 0.68;
+        p.root.position.set(sx - fx2 * back, 0, sz - fz * back);
+        p.yaw = a.yaw;
+        p.root.rotation.y = a.yaw;
+        if (moving && p.curName !== "Walk_InPlace") p.play("Walk_InPlace", { fade: 0.15 });
+        if (!moving && p.curName === "Walk_InPlace") p.play("Idle", { fade: 0.25 });
+        this.handsToGrips(p, r.wc);
+      }
+    }
+    // the pusher's hands on the chair's push grips (a two-bone reach after the clip, every frame the chair is pushed)
+    handsToGrips(p, wc) {
+      const G2 = wc.userData.grips;
+      if (!G2?.L || !G2?.R) return;
+      wc.updateMatrixWorld(true);
+      p.root.updateMatrixWorld(true);
+      const B = p.bones;
+      for (const [side, grip] of [["L", G2.L], ["R", G2.R]]) {
+        const up = B["upper_arm" + side], lo = B["forearm" + side], hand = B["hand" + side];
+        if (up && lo && hand) ikArm(up, lo, hand, grip.getWorldPosition(new Vector3()), 1);
       }
     }
     // the guard carries the bat in his right hand, pointing down along his leg (or puts it away: null)
@@ -60921,15 +60775,15 @@ void main() {
       this.camTo(S(cx, 2.05, -6, 6, 0, 1.6, 40), 0.01);
       const disp = st.lift.display;
       disp.set("G", "\u25B2");
-      yield 0.7;
-      disp.set("1", "\u25B2");
-      yield 0.6;
-      disp.set("2", "\u25B2");
-      yield 0.6;
-      disp.set("3");
+      yield 0.55;
+      for (const n of ["1", "2", "3", "4", "5", "6"]) {
+        disp.set(n, "\u25B2");
+        yield 0.32;
+      }
+      disp.set("7");
       if (!this.silent) this.audio.play("liftDing");
       yield 0.55;
-      this.mark("floor-3");
+      this.mark("floor-7");
       yield* this.act3();
     }
     // the empty wheelchair, pushed by the colleague before anyone sits in it
@@ -60938,24 +60792,20 @@ void main() {
       wc.visible = true;
       if (wc.parent !== pusher.root.parent) pusher.root.parent.add(wc);
       this.chairPush = pusher;
-      pusher.adjust("pushL", "upper_armL", -1, 0, 0.25);
-      pusher.adjust("pushR", "upper_armR", -1, 0, -0.25);
-      pusher.adjust("pushFL", "forearmL", -0.5, 0, 0);
-      pusher.adjust("pushFR", "forearmR", -0.5, 0, 0);
     }
     stopEmptyChair() {
-      const p2 = this.chairPush;
-      if (!p2) return;
-      for (const k of ["pushL", "pushR", "pushFL", "pushFR"]) delete p2.adj[k];
+      const p = this.chairPush;
+      if (!p) return;
       this.chairPush = null;
     }
     tickEmptyChair() {
-      const p2 = this.chairPush;
-      if (!p2) return;
-      const fx2 = Math.sin(p2.yaw), fz = Math.cos(p2.yaw);
-      const wc = this.stage.wheelchair;
-      wc.position.set(p2.root.position.x + fx2 * 0.93, 0, p2.root.position.z + fz * 0.93);
-      wc.rotation.y = p2.yaw + Math.PI;
+      const p = this.chairPush;
+      if (!p) return;
+      const fx2 = Math.sin(p.yaw), fz = Math.cos(p.yaw);
+      const wc = this.stage.wheelchair, back = wc.userData.pusherBack || 0.68;
+      wc.position.set(p.root.position.x + fx2 * back, 0, p.root.position.z + fz * back);
+      wc.rotation.y = p.yaw;
+      this.handsToGrips(p, wc);
     }
     // the athlete's bat while he sits: the static copy leans against his chair (continuity: it is never out of sight)
     leanBat(on) {
@@ -60971,48 +60821,48 @@ void main() {
       b.position.set(an.x - 0.4, 0.01, an.z + 0.1);
       b.rotation.set(0, 0.3, -0.2);
     }
-    // ================================================================== ACT 3: Floor 3, preparation, the procedure, recovery
+    // ================================================================== ACT 3: Floor 7, preparation, the procedure, recovery
     *act3() {
       const st = this.stage, A = st.actors, bb = A.baseball, sg = A.security, yo = A.yola, co = A.teamB, su = A.surgeon, ta = A.teamA;
-      this.state = "FLOOR_3";
+      this.state = "FLOOR_7";
       this.substate = "ARRIVAL";
       this.enterOR();
       this.arena.liftPowered?.(true);
       this.setLiftSign(false);
-      const L2 = LIFT;
+      const L2 = LIFT7;
       const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
-      toWorld(bb, 8.5, L2.z, -Math.PI / 2);
-      toWorld(co, 9.9, L2.z, -Math.PI / 2);
+      toWorld(bb, L2.x, -12.35, 0);
+      toWorld(co, L2.x, -13.8, 0);
       this.scene.add(st.wheelchair);
       this.tickRide();
-      toWorld(yo, 8.05, L2.z - 1, -Math.PI / 2);
+      toWorld(yo, L2.x - 1, -12, 0);
       yo.play("idle", { fade: 0 });
-      toWorld(sg, 8.05, L2.z + 1, -Math.PI / 2);
+      toWorld(sg, L2.x + 1, -12, 0);
       sg.play("Idle", { fade: 0 });
       for (const a of [su, ta]) a.setVisible(false);
       A.staff.setVisible(false);
       this.liftDisp3 || (this.liftDisp3 = this.arena.doorKits.lift.display || liftDisplay(this.arena.doorKits.lift.root));
       this.liftDisp3.set("7");
       this.setLift3(0);
-      this.camTo(W2(7.3, 1, -5.2, 30, -78, 6, 42), 0.01);
+      this.camTo(W2(L2.x - 0.2, 1, -9.6, 26, 12, 6, 42), 0.01);
       yield 0.45;
       if (!this.silent) this.audio.play("liftDing");
       this.tween(1, (k) => this.setLift3(ease(k)));
-      yield 1;
-      yo.walk([[6.2, L2.z - 1.1], [4.6, -6.9]], { endYaw: -Math.PI / 2 });
-      this.roll([[6.3, L2.z], [3.6, -5]], { speed: 0.85, endYaw: -Math.PI / 2 });
-      sg.walk([[6.3, L2.z + 1], [4.9, -3.9]], { endYaw: -Math.PI / 2 });
-      this.camTo(W2(4.6, 0.9, -5, 42, -40, 6.8), 2.2);
+      yield 1.05;
+      yo.walk([[L2.x - 1, -10.2], [1.4, -7.2]], { endYaw: Math.PI });
+      this.roll([[L2.x, -10], [L2.x, -6.6]], { speed: 0.85, endYaw: 0 });
+      sg.walk([[L2.x + 1, -10.2], [4.6, -6]], { endYaw: -Math.PI / 2 });
+      this.camTo(W2(2.4, 0.9, -7.6, 40, 30, 6.8), 2.2);
       yield 1.2;
       yield* this.say("16", { pause: 0.5 });
       yield this.arrived(bb, yo, sg);
-      sg.walk([[2, -4.2], [-3, -4.4], [-6.6, -4.6], [-8.6, -4.9]], { endYaw: Math.PI / 2 });
+      sg.walk([[2, -4.2], [-3, -4.3], [-6.6, -4.1], [-9, -4.2]], { endYaw: Math.PI / 2 });
       yield 1.2;
       this.substate = "PREPARED";
       yield* this.timeCut("", 0.6);
       this.endRide();
       sg.stop();
-      toWorld(sg, -9.1, -4.95, Math.PI / 2);
+      toWorld(sg, -9.4, -4.3, Math.PI / 2);
       sg.play("Idle", { fade: 0 });
       if (bb.capSkin) bb.capSkin.visible = false;
       if (bb.bat) bb.bat.visible = false;
@@ -61106,10 +60956,52 @@ void main() {
       ta.walk([[0.55, -9.1]], { endYaw: 0 });
       this.camTo(W2(-1.2, 0.95, -8, 46, 35, 7.2), 1.6);
       yield () => yo.x < -5.8;
-      yo.setVisible(false);
       su.setVisible(false);
       this.mark("handoff-done");
+      yield* this.errand();
       yield* this.act4();
+    }
+    // Yola's brief absence (2026-10-16 brief A6): with the patient stable and his anesthesia colleague staying at his side, she
+    // walks the guard (the athlete's bat in his care) down to six, out of the clinical area. A compact staging: the two of
+    // them cross the OR to the lift, the doors close, the display counts down to 6. She will come back up with the bat.
+    *errand() {
+      const st = this.stage, A = st.actors, sg = A.security, yo = A.yola, L2 = LIFT7;
+      this.substate = "ERRAND";
+      const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
+      this.dip(0.25, 0.3);
+      yield 0.28;
+      yo.stop();
+      toWorld(yo, -6.4, -4.4, Math.PI / 2);
+      yo.setVisible(true);
+      yo.play("idle", { fade: 0 });
+      sg.stop();
+      toWorld(sg, -6.9, -3.5, Math.PI / 2);
+      sg.setVisible(true);
+      sg.play("Idle", { fade: 0 });
+      yo.walk([[-3, -5], [1, -8.6], [L2.x - 0.55, -10.2], [L2.x - 0.55, -12.6]], { endYaw: 0, speed: 1.1 });
+      this.later(0.35, () => sg.walk([[-3, -4], [3.6, -8.4], [L2.x + 0.55, -10.2], [L2.x + 0.55, -12.6]], { endYaw: 0 }));
+      this.camTo(W2(0.6, 0.9, -8, 46, 35, 7.6), 0.01);
+      if (!this.silent) this.later(2.6, () => {
+        this.audio.play("liftDing");
+        this.tween(0.9, (k) => this.setLift3(ease(k)));
+      });
+      yield 2.6;
+      yield 0.95;
+      yield this.arrived(yo, sg);
+      yo.turnTo(0);
+      sg.turnTo(0);
+      yield 0.6;
+      if (!this.silent) this.audio.play("liftClose");
+      this.tween(1, (k) => this.setLift3(1 - ease(k)));
+      this.camTo(W2(L2.x, 1.6, -10.4, 10, 0, 3.4, 40), 1.2);
+      yield 1.1;
+      yo.setVisible(false);
+      sg.setVisible(false);
+      this.holdBat(null);
+      this.liftDisp3.set("7", "\u25BC");
+      yield 0.8;
+      this.liftDisp3.set("6");
+      this.mark("errand-done");
     }
     // gentle value animation on the story clock: fn(k) for k 0..1 over secs
     tween(secs, fn) {
@@ -61180,26 +61072,31 @@ void main() {
         a.root.position.z = z0 + dz * e;
       });
     }
-    // ================================================================== ACT 4: the crisis, the painted breakthrough, control
+    // ================================================================== ACT 4: the crisis (reveal beats 1-4)
+    // The OR starts close to the ordinary game view and grows unsettled; the staff were already responding when the
+    // movement changes that response. Lines 27-31 (take B); "Behind me" (32) is never played.
     *act4() {
-      const st = this.stage, A = st.actors, bb = A.baseball, co = A.teamB, ta = A.teamA, an = ROOM1.player, Y2 = this.yola, g = this.game();
+      const st = this.stage, A = st.actors, bb = A.baseball, co = A.teamB, ta = A.teamA;
       this.state = "STABLE";
       this.substate = "BEAT";
-      this.camTo(REVEAL_SHOT, 2.4);
+      this.setOrLamp(false);
+      this.camTo(W2(0.3, 0.9, -7.7, 48, 35, 7.6), 2);
       for (let i = 0; i < 3; i++) {
         if (!this.silent) this.sound.monitorBeep();
-        yield 0.8;
+        yield 0.75;
       }
       this.state = "EMERGENCY";
-      this.substate = "ALARM";
-      this.ui.monitor({ mode: "irregular", hr: "---", status: "ALARM", alarm: true });
-      this.setAlarm(0.55, 0.8);
+      this.substate = "B1_FLATLINE";
+      this.mark("beat1");
+      this.ui.monitor({ mode: "irregular", hr: "---", status: "ALARM", alarm: true, bp: "BP ---" });
+      this.setAlarm(0.35, 0.6);
       if (!this.silent) {
         this.sound.setMusicLevel(0, 1.2);
         this.sound.alarmOn(0.75);
       }
       co.turnTo(-Math.PI + 0.4);
       ta.walk([[0.05, -8.85]], { endYaw: Math.PI * 0.95 });
+      this.camTo(W2(-0.2, 0.95, -8.3, 34, 35, 4.4), 4.2);
       yield* this.say("27", { pause: 0.1 });
       ta.adjust("chk", "upper_armR", -0.9, 0, -0.2);
       ta.adjust("chkF", "forearmR", -0.6, 0, 0);
@@ -61208,159 +61105,379 @@ void main() {
         ta.adj.chkF.w = ease(k);
       });
       co.play("Work", { fade: 0.2 }) || co.play("Idle");
-      this.camTo(W2(-0.45, 1.05, -8.5, 34, 35, 3.6), 1);
-      yield 1.7;
-      this.ui.monitor({ mode: "flat", hr: 0, spo2: "--", status: "NO PULSE" });
+      yield 1.6;
+      this.ui.monitor({ mode: "flat", hr: 0, spo2: "--", status: "NO PULSE", bp: "BP ---" });
       if (!this.silent) {
         this.sound.alarmOff();
         this.sound.flatlineOn();
       }
       yield* this.say("28", { pause: 0.15 });
-      this.substate = "RESPONSE";
+      this.substate = "B1_RESPONSE";
       delete ta.adj.chk;
       delete ta.adj.chkF;
       ta.adjust("cprL", "upper_armL", -1.25, 0, 0.3);
       ta.adjust("cprR", "upper_armR", -1.25, 0, -0.3);
       this.cpr = { a: ta, t: 0 };
-      yield 1.3;
-      this.substate = "MOTION";
-      bb.adjust("head", "head", 0, 0.55, 0, 0);
+      yield 1.6;
+      this.substate = "B2_MOVES";
+      this.mark("motion");
+      this.camTo({ ...W2(-0.6, 1.3, -8.2, 22, 76, 3, 40), dist: 3.4 }, 0.01);
+      this.camTo({ ...W2(-0.6, 1.4, -8.2, 18, 80, 3, 40), dist: 3, roll: 0.045 }, 4);
       bb.adjust("hand", "forearmR", 0, 0, -0.5, 0);
       this.tween(0.9, (k) => {
         bb.adj.hand.w = Math.sin(k * Math.PI * 3) * 0.6 + ease(k) * 0.4;
       });
-      this.later(0.5, () => this.tween(1, (k) => {
-        bb.adj.head.w = ease(k);
-      }));
-      this.mark("motion");
-      yield 0.9;
+      yield 0.8;
+      this.sitUp(bb, 2.6);
+      this.greenTo(bb, 3);
+      if (!this.silent) {
+        this.sound.flatlineOff(1.2);
+        this.audio.play("groan", 0.6);
+      }
+      yield 2.4;
+      this.substate = "B3_NOTICE";
       this.cpr = null;
       delete ta.adj.cprL;
       delete ta.adj.cprR;
-      this.recoil(ta, -0.5, 0.5);
+      const pz2 = { x: 0, z: -8.2 }, face = (a) => Math.atan2(pz2.x - a.x, pz2.z - a.z);
+      ta.turnTo(face(ta));
+      co.turnTo(face(co));
+      this.camTo(W2(0.1, 1, -8.5, 26, 35, 5.4), 1.4);
+      yield 0.8;
       yield* this.say("29", { pause: 0.1 });
-      if (!this.silent) this.sound.flatlineOff(0.5);
-      this.sitUp(bb, 2);
-      this.greenTo(bb, 2.6);
-      this.camTo(REVEAL_SHOT, 1.6);
-      co.turnTo(-Math.PI * 0.75);
-      this.recoil(co, -0.35, 0.5);
-      yield 0.9;
-      ta.walk([[-1.3, -9.2], [-1.55, -7], [-2.8, -6.2]], { endYaw: -Math.PI / 2 - 0.4 });
+      this.backAway(ta, 1.35, -9.9, 1.3, pz2);
+      this.backAway(co, -1.55, -9.75, 1.3, pz2);
+      yield 1;
+      this.substate = "B4_CALL";
+      this.setAlarm(0.7, 0.55);
+      if (!this.silent) this.audio.play("groan", 1.1);
+      bb.adjust("look", "head", 0, 0.42, 0, 0);
+      this.tween(0.8, (k) => {
+        bb.adj.look.w = ease(k);
+      });
       yield* this.say("30", { pause: 0.1, alarm: true });
-      co.turnTo(-Math.PI / 2 - 0.6);
       yield* this.say("31", { pause: 0, alarm: true });
       this.mark("get-yola-done");
-      yield* this.breakthrough();
+      yield* this.reveal();
     }
-    // The old hospital becomes a painting; Yola's bat breaks through it into the same room, now overrun.
-    *breakthrough() {
-      const st = this.stage, A = st.actors, an = ROOM1.player, Y2 = this.yola, g = this.game(), bt = this.bt;
-      this.state = "BREAKTHROUGH";
-      this.substate = "PAINT";
-      this.setAlarm(0);
-      this.ui.showMonitor(false);
-      this.monitorOn = false;
-      this.ui.subtitle("");
-      this.sub = "";
+    // ================================================================== THE REVEAL (beats 5-13 of the Motion study)
+    // The elevator framing is level, controlled and still; the strongest camera move is kept for Yola's entrance. The old toon
+    // silhouette becomes Yola 3.0 (the game's own model and clips: nothing here changes how she animates), no intermediate
+    // model, no wave, smash, slide, shot or kill. Light: slow red pulses, a few restrained accents (none with Soft light on).
+    *reveal() {
+      const st = this.stage, A = st.actors, L2 = LIFT7, g = this.game(), Y2 = this.yola, old = A.yola, bb = A.baseball;
+      const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
+      const cabX = L2.x, cabZ = -12.75;
+      this.state = "REVEAL";
+      this.ensureRevealFx();
+      const doorShot = (dist2 = 4.3, y = 1.15) => ({ ...W2(L2.x, y, -11.3, 2, 0, 3, 40), dist: dist2 });
+      this.substate = "B5_ARRIVES";
+      this.mark("beat5");
+      this.liftDisp3.set("6", "\u25B2");
+      this.setLift3(0);
+      this.scene.background = new Color(1054234);
+      this.camTo({ ...W2(L2.x, 0.3, -11.1, 6, 0, 3, 40), dist: 1.7 }, 0.01);
       if (!this.silent) {
+        this.sound.setMusicLevel(0, 0.6);
+        this.audio.play("liftClose", 0.5);
+      }
+      this.sweepT = 0;
+      yield 1.3;
+      this.camTo({ ...W2(L2.x, 2.45, -11.1, -14, 0, 3, 40), dist: 1.9 }, 1.5);
+      yield 1.6;
+      this.substate = "B6_DING";
+      this.liftDisp3.set("7");
+      if (!this.silent) {
+        this.audio.play("liftDing");
         this.sound.alarmOff();
-        this.sound.flatlineOff(0.2);
-        this.sound.stopLine();
       }
-      this.camAnim = null;
-      this.rig = { ...REVEAL_SHOT };
-      this.setCamera();
-      if (!this.silent) {
-        g.fxAim?.(false);
-        bt.capture({ post: !!g.looks?.post, exposure: this.renderer.toneMappingExposure });
-        bt.mount(1.25);
-      }
-      for (const k of ["baseball", "teamA", "teamB", "surgeon", "security", "yola", "staff"]) A[k].setVisible(false);
-      this.holdBat(null);
-      this.cpr = null;
-      this.setLiftSign(true);
-      this.revealWorld();
-      this.revealSwing = { t: -1 };
-      this.poseReveal(0);
-      this.mark("painted");
-      if (!this.silent) this.sound.riser(1.2);
+      this.setAlarm(0.35, 0.45);
+      yield 2.2;
+      this.substate = "B7_SILHOUETTE";
+      this.mark("beat7");
+      toWorld(old, cabX, cabZ, 0);
+      old.setVisible(true);
+      old.stop();
+      old.play("idle", { fade: 0 });
+      old.waveT = -1;
+      this.silhouette(old.root, true);
+      this.backlight(1);
+      this.setLight(0.28);
+      this.camTo(doorShot(), 0.01);
+      if (!this.silent) this.audio.play("liftDing", 0.4);
+      this.tween(1.3, (k) => this.setLift3(ease(k)));
+      this.smoke(true);
+      yield 3.2;
+      this.substate = "B8_THREAT";
+      this.camTo({ ...W2(-0.6, 1.55, -8.2, 14, 70, 3, 40), dist: 3.6 }, 0.01);
+      this.camTo({ ...W2(-0.6, 1.6, -8.2, 11, 76, 3, 40), dist: 3, roll: -0.04 }, 1);
+      if (!this.silent) this.audio.play("groan", 1.3);
+      bb.adjust("growl", "neck", -0.22, 0.15, 0, 0);
       this.tween(0.9, (k) => {
-        if (!this.silent) bt.paint(ease(k));
+        bb.adj.growl.w = Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5) * (1 + 0.15 * Math.sin(k * 40));
       });
-      yield 1.25;
-      this.substate = "STRIKE";
-      this.revealSwing.t = 0;
-      yield () => this.revealSwing.t >= (this.revealOpts?.hit ?? REVEAL_HIT);
-      if (!this.silent) {
-        const ndc = this.batNdc();
-        bt.shatter(ndc.x, ndc.y, 1, 0.45);
-        this.revealSwing.hold = REVEAL_HOLD;
-        this.sound.shatter();
-        this.audio.play("batHit", 1.4);
-        this.sound.stopMusic(0.15);
-        g.musicStart?.("combat");
-        g.fxBurst?.(an.x + Math.sin(an.yaw) * 0.9, 1.2, an.z + Math.cos(an.yaw) * 0.9, 18, 15260868, 2.6, 0.9, 0.7);
+      yield 1.9;
+      this.substate = "B9_CHANGE";
+      this.mark("beat9");
+      this.silhouette(old.root, false);
+      old.setVisible(false);
+      this.revealWorld();
+      this.scene.background = new Color(1054234);
+      Y2.setShown(true);
+      this.revealPose = { x: cabX, z: cabZ, yaw: 0, vx: 0, vz: 0 };
+      this.poseRevealYola(0);
+      this.silhouette(Y2.outer, true);
+      if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, true, true);
+      this.camTo(doorShot(), 0.01);
+      this.accent(0.35, 0.18);
+      yield 1;
+      this.accent(0.8, 0.3);
+      if (!this.silent) this.sound.riser(1);
+      yield 1.5;
+      this.substate = "B10_BAT";
+      {
+        const h = Y2.bones?.RightHand?.getWorldPosition(new Vector3()) || new Vector3(cabX - 0.3, 0.95, cabZ);
+        const bb3 = Y2.batLib?.obj ? new Box3().setFromObject(Y2.batLib.obj) : null, mid = bb3 ? bb3.getCenter(new Vector3()) : h.clone().add(new Vector3(0.3, -0.1, 0.1));
+        const tip = mid.clone().multiplyScalar(2).sub(h).lerp(mid, 0.35);
+        this.silhouette(Y2.outer, false);
+        if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, false);
+        this.setLight(0.45);
+        this.camTo({ x: h.x, y: h.y, z: h.z, pitch: 6, yaw: -24, dist: 0.95, fov: 38 }, 0.01);
+        this.camTo({ x: tip.x, y: tip.y, z: tip.z, pitch: 4, yaw: -30, dist: 1.05, fov: 38 }, 2.3);
       }
-      this.mark("shatter");
-      this.substate = "HOLD";
-      this.camTo({ ...REVEAL_SHOT, dist: REVEAL_SHOT.dist * 0.82, y: REVEAL_SHOT.y + 0.04 }, 0.5);
-      yield () => this.revealSwing.t >= (this.revealOpts?.end ?? REVEAL_END);
-      yield 0.25;
+      this.later(0.7, () => this.accent(0.25, 0.12));
+      this.later(1.6, () => this.accent(0.2, 0.1));
+      yield 2.4;
+      this.substate = "B11_STEP";
+      this.camTo(doorShot(5.4, 1.1), 0.01);
+      this.silhouette(Y2.outer, true);
+      if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, true, true);
+      yield 0.8;
+      if (!this.silent) this.audio.play("bump", 1.4);
+      this.tween(0.6, (k) => {
+        this.backlight(1 - 0.75 * ease(k));
+        this.setLight(0.28 - 0.16 * ease(k));
+      });
+      yield 1.1;
+      this.substate = "B12_ENTRANCE";
+      this.mark("beat12");
+      this.tween(0.8, (k) => {
+        this.backlight(0.25 + 0.75 * ease(k));
+        this.setLight(0.12 + 0.55 * ease(k));
+      });
+      if (!this.silent) {
+        g.musicStart?.("combat");
+        this.sound.revealCue?.();
+      }
+      this.silhouette(Y2.outer, false);
+      if (Y2.batLib?.obj) this.silhouette(Y2.batLib.obj, false);
+      const bw = (n, fb) => Y2.bones?.[n]?.getWorldPosition(new Vector3()) || fb;
+      const foot = bw("RightToeBase", bw("RightFoot", new Vector3(cabX - 0.12, 0.08, cabZ + 0.1))), hip = bw("Hips", new Vector3(cabX, 0.95, cabZ)), head = bw("Head", new Vector3(cabX, 1.5, cabZ));
+      const batMid = Y2.batLib?.obj ? new Box3().setFromObject(Y2.batLib.obj).getCenter(new Vector3()) : hip;
+      this.camTo({ x: foot.x, y: Math.max(0.1, foot.y), z: foot.z, pitch: 12, yaw: -18, dist: 1.25, fov: 40 }, 0.01);
+      this.camTo({ x: (batMid.x + hip.x) / 2, y: (batMid.y + hip.y) / 2, z: (batMid.z + hip.z) / 2, pitch: 8, yaw: -24, dist: 1.7, fov: 40 }, 1.6);
+      yield 1.6;
+      this.camTo({ x: head.x, y: head.y - 0.18, z: head.z + 0.08, pitch: 6, yaw: 16, dist: 2.6, fov: 40 }, 1.7);
+      yield 1.9;
+      this.smoke(false);
+      {
+        const an2 = ROOM1.player, rp = this.revealPose, sp = 1.05, dx = an2.x - rp.x, dz = an2.z - rp.z, d = Math.hypot(dx, dz);
+        rp.vx = dx / d * sp;
+        rp.vz = dz / d * sp;
+        rp.goal = { x: an2.x, z: an2.z, yaw: an2.yaw };
+        this.camTo({ x: an2.x, y: 1.1, z: an2.z - 0.4, pitch: 20, yaw: 18, dist: 3.8, fov: 40 }, d / sp + 0.4, null);
+      }
+      yield () => !this.revealPose.vx && !this.revealPose.vz;
+      yield 0.5;
       this.state = "COMBAT_READY";
-      this.substate = "RETURN";
+      this.substate = "B13_RETURN";
       this.setCamera();
       const fromPos = this.camera.position.clone(), fromQuat = this.camera.quaternion.clone(), fromFov = this.camera.fov;
-      const pose = g.cameraPose(an.x, an.z, an.yaw);
+      const an = ROOM1.player, pose = g.cameraPose(an.x, an.z, an.yaw);
       this.camera.position.copy(fromPos);
       this.camera.quaternion.copy(fromQuat);
       this.camera.fov = fromFov;
       this.camera.updateProjectionMatrix();
-      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 1.5 };
-      yield 1.5;
+      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 2.2 };
+      this.tween(2, (k) => {
+        this.backlight(1 - ease(k));
+        this.setLight(0.67 + 0.33 * ease(k));
+      });
+      yield 2.3;
       this.finalize("normal");
     }
-    // Yola behind the picture: the bat swing of the reveal (the game's own bat finisher), driven on the story clock
-    poseReveal(dt) {
-      const s = this.revealSwing;
-      if (!s) return;
-      const an = ROOM1.player, g = this.game();
-      if (s.t >= 0) {
-        if (s.hold > 0) {
-          s.hold -= dt;
-          dt *= REVEAL_HOLD_RATE;
-        }
-        s.t += dt;
-      }
-      const st = g.stillState(an.x, an.z, an.yaw);
-      st.equipped = "bat";
-      const R = this.revealOpts || {};
-      if (s.t >= 0) Object.assign(st, { action: "swing", swingT: Math.min(s.t, R.end ?? REVEAL_END) * (R.rate ?? REVEAL_RATE) + (R.from ?? REVEAL_FROM), combo: R.combo ?? REVEAL_COMBO, swingId: 9001 });
-      g.yolaPose?.(dt, st);
-    }
-    // where the bat's tip is on screen (ndc), for the impact point
-    batNdc() {
-      const v = this.yola.melee?.userData?.tip ? this.yola.melee.userData.tip.getWorldPosition(new Vector3()) : new Vector3(ROOM1.player.x, 1.2, ROOM1.player.z);
-      v.project(this.camera);
-      return { x: MathUtils.clamp(v.x, -0.7, 0.7), y: MathUtils.clamp(v.y, -0.5, 0.6) };
-    }
-    // the room after the outbreak, ready behind the picture: same geography, worn surfaces, emergency light, the dead lift
-    revealWorld() {
+    // Yola 3.0 in the reveal: the game's view, fed the same still/walking state the game feeds it (bat equipped)
+    poseRevealYola(dt) {
+      const r = this.revealPose;
+      if (!r) return;
       const g = this.game();
+      if (r.goal && (r.vx || r.vz)) {
+        r.x += r.vx * dt;
+        r.z += r.vz * dt;
+        r.yaw = Math.atan2(r.vx, r.vz);
+        if ((r.goal.x - r.x) * r.vx + (r.goal.z - r.z) * r.vz <= 0) {
+          r.x = r.goal.x;
+          r.z = r.goal.z;
+          r.vx = r.vz = 0;
+          r.turn = r.goal.yaw;
+        }
+      }
+      if (r.turn !== void 0) {
+        const d = Math.atan2(Math.sin(r.turn - r.yaw), Math.cos(r.turn - r.yaw));
+        r.yaw += d * Math.min(1, dt * 5);
+      }
+      const s = g.stillState(r.x, r.z, r.yaw);
+      s.equipped = "bat";
+      s.vx = r.vx;
+      s.vz = r.vz;
+      g.yolaPose?.(dt, s);
+    }
+    // the reveal's light: a warm panel and lamp at the back of the cab (the silhouette), a sweep of light under the shut doors,
+    // a thin layer of mist at the threshold, and brief restrained accents (Soft light: gentle ramps, never a flash)
+    ensureRevealFx() {
+      if (this.rfx) return;
+      const L2 = LIFT7, g = new Group();
+      g.name = "revealFx";
+      this.scene.add(g);
+      const panel = new Mesh(new PlaneGeometry(2.95, 2.75), new MeshBasicMaterial({ color: 16773592, toneMapped: false, transparent: true, opacity: 0 }));
+      panel.position.set(L2.x, 1.38, L2.cab.minZ + 0.06);
+      g.add(panel);
+      const lamp = new PointLight(16771012, 0, 7, 1.6);
+      lamp.position.set(L2.x, 2, L2.cab.minZ + 0.6);
+      g.add(lamp);
+      const fill2 = new PointLight(16773340, 0, 5, 1.8);
+      fill2.position.set(L2.x, 0.5, -11.6);
+      g.add(fill2);
+      const sweep = new Mesh(new PlaneGeometry(0.5, 0.18), new MeshBasicMaterial({ color: 16773852, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
+      sweep.rotation.x = -Math.PI / 2;
+      sweep.position.set(L2.x, 0.012, -11);
+      g.add(sweep);
+      const c = document.createElement("canvas");
+      c.width = c.height = 64;
+      const x = c.getContext("2d"), gr = x.createRadialGradient(32, 32, 2, 32, 32, 31);
+      gr.addColorStop(0, "rgba(225,228,232,0.9)");
+      gr.addColorStop(1, "rgba(225,228,232,0)");
+      x.fillStyle = gr;
+      x.fillRect(0, 0, 64, 64);
+      const smokeMat = new SpriteMaterial({ map: new CanvasTexture(c), transparent: true, opacity: 0, depthWrite: false });
+      const puffs = [];
+      for (let i = 0; i < 9; i++) {
+        const s = new Sprite(smokeMat.clone());
+        s.position.set(L2.x + (i - 4) * 0.28, 0.25, -11.4);
+        s.scale.setScalar(1.2);
+        g.add(s);
+        puffs.push({ s, seed: i * 1.7 });
+      }
+      g.visible = false;
+      this.rfx = { g, panel, lamp, fill: fill2, sweep, puffs, back: 0, smoke: 0, smokeTarget: 0, acc: 0, accT: 0 };
+    }
+    backlight(k) {
+      const f = this.rfx;
+      if (!f) return;
+      f.back = k;
+      f.g.visible = true;
+      f.panel.material.opacity = 0.95 * k;
+      f.lamp.intensity = 26 * k;
+      f.fill.intensity = 2.2 * k;
+    }
+    smoke(on) {
+      if (this.rfx) this.rfx.smokeTarget = on ? 1 : 0;
+    }
+    accent(k, secs) {
+      const f = this.rfx;
+      if (!f) return;
+      if (this.reducedFlash) k *= 0.25;
+      f.acc = k;
+      f.accT = secs;
+      f.accDur = secs;
+      if (!this.silent) this.sound.flicker?.(true);
+    }
+    tickReveal(d) {
+      const f = this.rfx;
+      if (!f || !f.g.visible) return;
+      if (this.sweepT !== void 0 && this.sweepT !== null) {
+        this.sweepT += d;
+        const u = this.sweepT / 1.2;
+        f.sweep.material.opacity = u < 1 ? Math.sin(u * Math.PI) * 0.8 : 0;
+        f.sweep.position.x = LIFT7.x - 1 + 2 * Math.min(1, u);
+        if (u >= 1) this.sweepT = null;
+      }
+      f.smoke += (f.smokeTarget - f.smoke) * Math.min(1, d * 1.5);
+      for (const p of f.puffs) {
+        const t = (this.t * 0.25 + p.seed) % 1;
+        p.s.position.z = -11.5 + t * 2.4;
+        p.s.position.y = 0.2 + t * 0.35;
+        p.s.scale.setScalar(1 + t * 1.6);
+        p.s.material.opacity = f.smoke * 0.22 * Math.sin(t * Math.PI);
+      }
+      let a = 0;
+      if (f.accT > 0) {
+        f.accT -= d;
+        const u = 1 - f.accT / f.accDur;
+        a = f.acc * Math.sin(Math.min(1, u) * Math.PI);
+        f.fill.intensity = 2.2 * f.back + 10 * a;
+        this.redLight && (this.redLight.intensity += 4 * a);
+      }
+      if (this.silMat) this.silMat.color.setRGB(0.043 + 0.2 * a, 0.055 + 0.21 * a, 0.063 + 0.22 * a);
+    }
+    // the hospital after the outbreak, committed at beat 9 behind the doorway: the same architecture, worn surfaces, blood,
+    // emergency light, the dead lift sign back; the opening's cast leaves and the floor's zombies stand where they will wake
+    revealWorld() {
+      const g = this.game(), A = this.stage.actors;
+      for (const k of ["baseball", "teamA", "teamB", "surgeon", "security", "staff"]) A[k].setVisible(false);
+      this.holdBat(null);
+      this.cpr = null;
+      this.ui.showMonitor(false);
+      this.monitorOn = false;
       this.inOR = true;
       this.setBlood(true);
       this.scene.background = this.saved?.bg || new Color(2568762);
       this.arena.outPlane?.material.color.set(1910316);
       g.applyRoom1();
       this.room1Preview = true;
-      this.arena.setEmergency?.(true, 0);
-      this.setLight(1);
+      this.arena.setEmergency?.(true, 0.4);
       if (this.spot) this.spot.intensity = 0;
-      if (this.redLight) this.redLight.intensity = 0;
-      this.belongings && (this.belongings.visible = true);
-      this.stage.batStatic.visible = false;
-      const Y2 = this.yola;
-      Y2.setShown(true);
+      this.setOrLamp(true);
+    }
+    // a backlit silhouette: every mesh under root drawn in one dark, unlit colour (the accents lift it a little to hint at
+    // the form); off puts the original materials back exactly. Purely a look for the reveal: no rig, clip or model changes.
+    silhouette(root, on, keepDepth = false) {
+      if (!root) return;
+      this.silMat || (this.silMat = new MeshBasicMaterial({ color: 724496 }));
+      root.traverse((o) => {
+        if (!o.isMesh || !o.userData.silOrig && [].concat(o.material)[0]?.transparent) return;
+        if (on && !o.userData.silOrig) {
+          o.userData.silOrig = o.material;
+          o.material = o.isSkinnedMesh ? this.silSkinMat() : this.silMat;
+        } else if (!on && o.userData.silOrig) {
+          o.material = o.userData.silOrig;
+          delete o.userData.silOrig;
+        }
+      });
+      void keepDepth;
+    }
+    silSkinMat() {
+      return this.silMat;
+    }
+    setOrLamp(v) {
+      const o = this.arena.group.getObjectByName("orLight");
+      if (o) o.visible = v;
+    }
+    // staff stepping back from the table, eyes on the patient: the walk clip played backwards along a short clear path
+    backAway(a, x, z, secs, look) {
+      a.stop();
+      a.targetYaw = null;
+      const x0 = a.root.position.x, z0 = a.root.position.z;
+      a.play("Walk_InPlace", { fade: 0.15, rate: -0.75 }) || a.play("Walk", { fade: 0.15, rate: -0.75 });
+      this.tween(secs, (k) => {
+        const e = ease(k);
+        a.root.position.x = x0 + (x - x0) * e;
+        a.root.position.z = z0 + (z - z0) * e;
+        const yw = Math.atan2(look.x - a.root.position.x, look.z - a.root.position.z);
+        a.yaw = yw;
+        a.root.rotation.y = yw;
+        if (k >= 1) a.play("Idle", { fade: 0.25 });
+      });
     }
     setLift3(k) {
       const L2 = this.arena.doorKits?.lift;
@@ -61466,9 +61583,16 @@ void main() {
       this.ui.fade.style.opacity = 0;
       this.setBlood(true);
       this.ensureBelongings();
-      this.belongings.visible = true;
-      st.batStatic.visible = !this.batPicked;
-      if (st.cap) st.cap.visible = true;
+      this.belongings.visible = false;
+      this.revealPose = null;
+      this.sweepT = null;
+      if (this.rfx) {
+        this.backlight(0);
+        this.rfx.g.visible = false;
+      }
+      this.silhouette(A.yola?.root, false);
+      this.silhouette(this.yola?.outer, false);
+      this.silhouette(this.yola?.batLib?.obj, false);
       for (const k of ["yola", "baseball", "teamA", "teamB", "surgeon", "staff"]) A[k].setVisible(false);
       if (this.guardPool) this.guardPool.visible = true;
       else this.placeGuardPool();
@@ -61695,10 +61819,10 @@ void main() {
       ctx.resume?.().then(tryJoin).catch(() => {
       });
     }
-    setPaused(p2) {
-      if (!this.started || this.paused === p2) return;
-      this.paused = p2;
-      this.sound.suspend(p2);
+    setPaused(p) {
+      if (!this.started || this.paused === p) return;
+      this.paused = p;
+      this.sound.suspend(p);
     }
     skip() {
       if (!this.started) return;
@@ -61774,7 +61898,8 @@ void main() {
         for (const k of ["cprL", "cprR"]) if (this.cpr.a.adj[k]) this.cpr.a.adj[k].w = w;
       }
       if (this.monitorOn) this.ui.drawMonitor(this.t);
-      if (this.revealSwing) this.poseReveal(da);
+      if (this.revealPose) this.poseRevealYola(da);
+      this.tickReveal(d);
       this.bt.update(d);
       if (this.stillYola) this.game().stillYola?.(da);
       if (this.stage.tiers.some((s) => s.fx) || this.stage.pops.length) this.renderer.shadowMap.needsUpdate = true;
@@ -61794,14 +61919,14 @@ void main() {
       if (this.tagPoints) for (const id in this.tagPoints) {
         const t2 = this.ui.tags.get(id);
         if (t2 && t2.classList.contains("show")) {
-          const p2 = this.tagPoints[id].clone().project(this.camera);
-          this.ui.placeTag(id, (p2.x * 0.5 + 0.5) * innerWidth, (-p2.y * 0.5 + 0.5) * innerHeight);
+          const p = this.tagPoints[id].clone().project(this.camera);
+          this.ui.placeTag(id, (p.x * 0.5 + 0.5) * innerWidth, (-p.y * 0.5 + 0.5) * innerHeight);
         }
       }
       const t = this.ui.tags.get("tier");
       if (t && t.classList.contains("show")) {
-        const p2 = L(5, 2.35, 1.4).project(this.camera);
-        this.ui.placeTag("tier", (p2.x * 0.5 + 0.5) * innerWidth, (-p2.y * 0.5 + 0.5) * innerHeight);
+        const p = L(5, 2.35, 1.4).project(this.camera);
+        this.ui.placeTag("tier", (p.x * 0.5 + 0.5) * innerWidth, (-p.y * 0.5 + 0.5) * innerHeight);
       }
     }
     // test hook: the checkpoint report
@@ -61815,7 +61940,7 @@ void main() {
   var EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32]];
   var CAMS = { game: null, side: { target: "yola", yaw: 90, pitch: 6, dist: 4.2, h: 0.95 }, front: { target: "yola", yaw: 0, pitch: 8, dist: 4.2, h: 0.95 }, top: { target: "yola", yaw: 0, pitch: 80, dist: 5, h: 0.4 } };
   function startLab(game, weapon = "bat") {
-    const g = game, scene2 = g.scene, T3 = three_module_exports;
+    const g = game, scene2 = g.scene, T2 = three_module_exports;
     const S2 = { playing: false, speed: 0.25, frame: 0, scen: "still", input: "hold", cam: "side", skel: true, marks: true, rings: true, ref: true, weapon, log: [], contact: [] };
     const css = document.createElement("style");
     css.textContent = `#lab{position:fixed;left:6px;bottom:6px;z-index:50;background:rgba(14,20,24,.88);color:#e8eef0;font:12px/1.35 system-ui,sans-serif;padding:8px;border-radius:10px;max-width:min(560px,96vw)}
@@ -61911,8 +62036,8 @@ void main() {
     });
     const refImgs = {};
     let pose = null;
-    fetch(REF.dir + "pose.json").then((r) => r.json()).then((p2) => {
-      pose = p2;
+    fetch(REF.dir + "pose.json").then((r) => r.json()).then((p) => {
+      pose = p;
     }).catch(() => {
     });
     const refImg = (f) => {
@@ -61925,30 +62050,30 @@ void main() {
       return refImgs[f];
     };
     for (let f = REF.first; f <= REF.last; f += 1) refImg(f);
-    const ov = new T3.Group();
+    const ov = new T2.Group();
     ov.name = "labOverlay";
     scene2.add(ov);
-    const skel = new T3.SkeletonHelper(g.yola.outer);
+    const skel = new T2.SkeletonHelper(g.yola.outer);
     skel.material.depthTest = false;
     skel.renderOrder = 10;
     scene2.add(skel);
     const dot = (c, r = 0.035) => {
-      const m = new T3.Mesh(new T3.SphereGeometry(r, 12, 8), new T3.MeshBasicMaterial({ color: c, depthTest: false }));
+      const m = new T2.Mesh(new T2.SphereGeometry(r, 12, 8), new T2.MeshBasicMaterial({ color: c, depthTest: false }));
       m.renderOrder = 11;
       ov.add(m);
       return m;
     };
     const gripR = dot(16724821), gripL = dot(3386111), tip = dot(16772659, 0.04), hipsDot = dot(16738047, 0.03);
-    const segGeo = new T3.BufferGeometry().setFromPoints([new T3.Vector3(), new T3.Vector3()]);
-    const seg = new T3.Line(segGeo, new T3.LineBasicMaterial({ color: 16720418, depthTest: false }));
+    const segGeo = new T2.BufferGeometry().setFromPoints([new T2.Vector3(), new T2.Vector3()]);
+    const seg = new T2.Line(segGeo, new T2.LineBasicMaterial({ color: 16720418, depthTest: false }));
     seg.renderOrder = 12;
     ov.add(seg);
     const trailPts = [];
-    const trail = new T3.Line(new T3.BufferGeometry(), new T3.LineBasicMaterial({ color: 16746564, depthTest: false }));
+    const trail = new T2.Line(new T2.BufferGeometry(), new T2.LineBasicMaterial({ color: 16746564, depthTest: false }));
     trail.renderOrder = 12;
     ov.add(trail);
     const ring = (r, c) => {
-      const m = new T3.Mesh(new T3.RingGeometry(r - 0.012, r, 40), new T3.MeshBasicMaterial({ color: c, side: T3.DoubleSide, depthTest: false, transparent: true, opacity: 0.8 }));
+      const m = new T2.Mesh(new T2.RingGeometry(r - 0.012, r, 40), new T2.MeshBasicMaterial({ color: c, side: T2.DoubleSide, depthTest: false, transparent: true, opacity: 0.8 }));
       m.rotation.x = -Math.PI / 2;
       m.renderOrder = 9;
       ov.add(m);
@@ -61976,14 +62101,14 @@ void main() {
       };
       sim2.zombies.length = 0;
       sim2.events.length = 0;
-      const p2 = sim2.player;
-      p2.setLoadout([S2.weapon]);
-      p2.hp = p2.maxHp = 9999;
-      p2.x = 0;
-      p2.z = 0;
-      p2.vx = p2.vz = 0;
-      p2.aimYaw = p2.aimTarget = 0;
-      p2.dead = false;
+      const p = sim2.player;
+      p.setLoadout([S2.weapon]);
+      p.hp = p.maxHp = 9999;
+      p.x = 0;
+      p.z = 0;
+      p.vx = p.vz = 0;
+      p.aimYaw = p.aimTarget = 0;
+      p.dead = false;
       const add = (x, z, walk) => {
         const zz = sim2.spawnZombie(null, { x, z, yaw: Math.PI });
         zz.set(ZS.CHASE);
@@ -62022,9 +62147,9 @@ void main() {
     function collect() {
       if (S2.log.length > 14) S2.log.splice(0, S2.log.length - 14);
     }
-    const _a5 = {}, v = new T3.Vector3(), v2 = new T3.Vector3();
+    const _a5 = {}, v = new T2.Vector3(), v2 = new T2.Vector3();
     function redraw() {
-      const sim2 = g.sim, p2 = sim2.player, y = g.yola, a = p2.action, A = a.type === "swing" ? attacksOf(p2.equipped)[a.combo] : null;
+      const sim2 = g.sim, p = sim2.player, y = g.yola, a = p.action, A = a.type === "swing" ? attacksOf(p.equipped)[a.combo] : null;
       skel.visible = S2.skel;
       ov.visible = true;
       gripR.visible = gripL.visible = tip.visible = hipsDot.visible = S2.marks;
@@ -62034,7 +62159,7 @@ void main() {
       gripL.position.copy(v2);
       let offL = NaN, offR = NaN;
       if (y.melee) {
-        const d = new T3.Vector3(0, 0, 1).applyQuaternion(y.melee.quaternion);
+        const d = new T2.Vector3(0, 0, 1).applyQuaternion(y.melee.quaternion);
         tip.position.copy(y.melee.position).addScaledVector(d, 0.74);
         const off = (q) => {
           const w = q.clone().sub(y.melee.position);
@@ -62042,25 +62167,25 @@ void main() {
         };
         offL = off(v2);
         offR = off(v);
-        S2.contact.push({ t: S2.frame / 60, l: offL, r: offR, act: p2.action.type, combo: p2.action.combo });
+        S2.contact.push({ t: S2.frame / 60, l: offL, r: offR, act: p.action.type, combo: p.action.combo });
       }
       y.bones.Hips.getWorldPosition(v);
       hipsDot.position.set(v.x, 0.02, v.z);
       let active = false;
       if (A && A.PATH) {
-        const s = meleeWorldSegment(p2, A, a.st, _a5);
+        const s = meleeWorldSegment(p, A, a.st, _a5);
         active = a.st >= A.activeStart && a.st <= a.activeEnd;
-        segGeo.setFromPoints([new T3.Vector3(s.hx, s.hy, s.hz), new T3.Vector3(s.tx, s.ty, s.tz)]);
+        segGeo.setFromPoints([new T2.Vector3(s.hx, s.hy, s.hz), new T2.Vector3(s.tx, s.ty, s.tz)]);
         seg.visible = S2.marks;
         seg.material.color.set(active ? 16720418 : 7829367);
         if (active) {
-          trailPts.push(new T3.Vector3(s.tx, s.ty, s.tz));
+          trailPts.push(new T2.Vector3(s.tx, s.ty, s.tz));
           trail.geometry.setFromPoints(trailPts);
         }
       } else seg.visible = false;
       trail.visible = S2.marks && trailPts.length > 1;
       pRing.visible = S2.rings;
-      pRing.position.set(p2.x, 0.02, p2.z);
+      pRing.position.set(p.x, 0.02, p.z);
       sim2.zombies.forEach((z, i) => {
         const [b, ar] = zRings[i] || [];
         if (!b) return;
@@ -62070,13 +62195,13 @@ void main() {
       });
       g.renderer.render(scene2, g.camera);
       const fr = A ? attackFrame(A, Math.min(a.st, 99)) : null;
-      const drift = Math.hypot(v.x - p2.x, v.z - p2.z);
+      const drift = Math.hypot(v.x - p.x, v.z - p.z);
       const acts = Object.entries(y.actions).map(([n, x]) => [n, x.getEffectiveWeight(), x.time]).filter((q) => q[1] > 0.01).sort((q, r) => r[1] - q[1]).map((q) => `  ${q[0].padEnd(24)} w ${q[1].toFixed(2)}  t ${q[2].toFixed(3)}`);
       $2("labRead").textContent = [
         `t ${(S2.frame / 60).toFixed(3)} s  (frame ${Math.round(S2.frame)})   fps ${g.perfReport ? "" : ""}hit-stop ${(g.hitPause || 0).toFixed(3)}`,
         `action ${a.type}${A ? `  #${a.combo + 1} ${A.name}  st ${a.st.toFixed(3)}  clip frame ${fr.toFixed(1)}  ${active ? "HIT WINDOW" : ""}  hits ${a.hits}` : ""}`,
         `grip contact: left hand ${(offL * 100).toFixed(1)} cm, right hand ${(offR * 100).toFixed(1)} cm from the bat axis`,
-        `pos (${p2.x.toFixed(2)}, ${p2.z.toFixed(2)})  facing ${(p2.aimYaw * 57.3).toFixed(1)} deg   rendered hips - gameplay pos: ${(drift * 100).toFixed(1)} cm`,
+        `pos (${p.x.toFixed(2)}, ${p.z.toFixed(2)})  facing ${(p.aimYaw * 57.3).toFixed(1)} deg   rendered hips - gameplay pos: ${(drift * 100).toFixed(1)} cm`,
         "actions (weight, time):",
         ...acts,
         "events:",
@@ -62987,19 +63112,19 @@ void main() {
       return { moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0 };
     };
     game.camFree = true;
-    const cam = game.camera, p2 = game.sim.player, Y2 = game.yola, V2 = game.THREE.Vector3;
+    const cam = game.camera, p = game.sim.player, Y2 = game.yola, V2 = game.THREE.Vector3;
     cam.near = 0.02;
     cam.updateProjectionMatrix();
     const controls = new OrbitControls(cam, game.renderer.domElement);
     controls.enableDamping = true;
     const body = () => {
-      controls.target.set(p2.x, 1, p2.z);
-      cam.position.set(p2.x + Math.sin(p2.aimYaw + 0.9) * 2.4, 1.5, p2.z + Math.cos(p2.aimYaw + 0.9) * 2.4);
+      controls.target.set(p.x, 1, p.z);
+      cam.position.set(p.x + Math.sin(p.aimYaw + 0.9) * 2.4, 1.5, p.z + Math.cos(p.aimYaw + 0.9) * 2.4);
     };
     const hands = () => {
       const c = Y2.grip("Right", new V2()).lerp(Y2.grip("Left", new V2()), 0.5);
       controls.target.copy(c);
-      cam.position.set(c.x + Math.sin(p2.aimYaw + 0.9) * 0.6, c.y + 0.2, c.z + Math.cos(p2.aimYaw + 0.9) * 0.6);
+      cam.position.set(c.x + Math.sin(p.aimYaw + 0.9) * 0.6, c.y + 0.2, c.z + Math.cos(p.aimYaw + 0.9) * 0.6);
     };
     const box = document.createElement("div");
     box.style.cssText = "position:fixed;left:8px;top:8px;z-index:50;background:rgba(0,0,0,.65);color:#fff;font:13px system-ui;padding:8px 10px;border-radius:8px;line-height:1.5";
@@ -63043,7 +63168,7 @@ void main() {
     };
     const equip = (w) => {
       cur = w;
-      p2.setLoadout(WEAPONS, w);
+      p.setLoadout(WEAPONS, w);
       label();
       setTimeout(hands, 900);
     };
@@ -63194,13 +63319,13 @@ void main() {
     const feel = store.get("ta.feel", {});
     const label = (e) => e ? `${LABEL[e.weapon]} \xB7 ${e.label}` : "";
     async function equip(id, speed = null) {
-      const sim2 = game.sim, p2 = sim2.player;
+      const sim2 = game.sim, p = sim2.player;
       S2.pick = id;
       store.set("ta.pick", id);
       if (id.startsWith("game|")) {
         const key = id.split("|")[1], [w, name] = GAME[key];
-        p2.setLoadout([w]);
-        p2.equipped = p2.desired = w;
+        p.setLoadout([w]);
+        p.equipped = p.desired = w;
         current = { id, name: `${LABEL[key]} \xB7 ${name.replace("Game: ", "the game\u2019s ")}` };
       } else {
         const e = entries.find((x) => x.id === id);
@@ -63217,12 +63342,12 @@ void main() {
       render();
     }
     function freeSpot(near, minD, maxD) {
-      const sim2 = game.sim, p2 = sim2.player;
+      const sim2 = game.sim, p = sim2.player;
       for (let k = 0; k < 40; k++) {
         const a = sim2.rand() * Math.PI * 2, d = minD + sim2.rand() * (maxD - minD), x = near.x + Math.sin(a) * d, z = near.z + Math.cos(a) * d;
         const t = { x, z };
         if (sim2.world.resolveCircle(t, 0.4) || Math.hypot(t.x - x, t.z - z) > 1e-3) continue;
-        if (!sim2.world.lineOfSight(p2.x, p2.z, x, z, 0.5)) continue;
+        if (!sim2.world.lineOfSight(p.x, p.z, x, z, 0.5)) continue;
         if (sim2.zombies.some((q) => q.alive && Math.hypot(q.x - x, q.z - z) < 0.9)) continue;
         return { x, z };
       }
@@ -63230,10 +63355,10 @@ void main() {
     }
     const dummySpots = [];
     function dummies() {
-      const sim2 = game.sim, p2 = sim2.player, fy = p2.aimYaw, fx2 = Math.sin(fy), fz = Math.cos(fy), lx = Math.cos(fy), lz = -Math.sin(fy);
+      const sim2 = game.sim, p = sim2.player, fy = p.aimYaw, fx2 = Math.sin(fy), fz = Math.cos(fy), lx = Math.cos(fy), lz = -Math.sin(fy);
       dummySpots.length = 0;
       for (const o of [-1.1, 0, 1.1]) {
-        const x = p2.x + fx2 * 1.35 + lx * o, z = p2.z + fz * 1.35 + lz * o;
+        const x = p.x + fx2 * 1.35 + lx * o, z = p.z + fz * 1.35 + lz * o;
         dummySpots.push({ x, z, yaw: fy + Math.PI });
         sim2.spawnZombie("NE", { x, z, yaw: fy + Math.PI, passive: true, speedMul: 0 });
       }
@@ -63259,8 +63384,8 @@ void main() {
     }
     let respawnT = 0;
     game.arenaTick = (dt) => {
-      const sim2 = game.sim, p2 = sim2.player;
-      if (S2.god && p2.hp < 40 && !p2.dead) p2.hp = p2.maxHp;
+      const sim2 = game.sim, p = sim2.player;
+      if (S2.god && p.hp < 40 && !p.dead) p.hp = p.maxHp;
       if (S2.respawn && dummySpots.length && (respawnT -= dt) <= 0) {
         respawnT = 0.5;
         for (const d of dummySpots) if (!sim2.zombies.some((q) => q.alive && q.passive && Math.hypot(q.x - d.x, q.z - d.z) < 0.6)) {
@@ -63579,7 +63704,7 @@ void main() {
         A.group.add(o);
         o.scale.setScalar(1);
       }
-      const p2 = this.sim().player, tx = this.caseEl.querySelector(".tx"), ar = this.caseEl.querySelector(".ar");
+      const p = this.sim().player, tx = this.caseEl.querySelector(".tx"), ar = this.caseEl.querySelector(".ar");
       if (!lv.flags.case_picked && c.state === "home" && lv.floor !== 6) {
         this.caseEl.style.display = "none";
         return;
@@ -63599,7 +63724,7 @@ void main() {
       }
       const v = new Vector3(c.x, (c.y || 0) + 0.3, c.z).project(this.camera);
       const on = v.z < 1 && Math.abs(v.x) < 0.92 && Math.abs(v.y) < 0.88;
-      if (on || Math.hypot(p2.x - c.x, p2.z - c.z) < 2.5) {
+      if (on || Math.hypot(p.x - c.x, p.z - c.z) < 2.5) {
         this.caseEl.style.display = "none";
         return;
       }
@@ -63744,9 +63869,9 @@ void main() {
     if (!physics) return;
     physics.ready = false;
     physAcc = 0;
-    const p2 = physics.init(sim.world);
+    const p = physics.init(sim.world);
     if (physics.syncInit) physics.ready = true;
-    else p2.then(() => {
+    else p.then(() => {
       physics.ready = true;
     }).catch((e) => {
       console.error(e);
@@ -63953,10 +64078,10 @@ void main() {
   function cameraPose(x, z, yaw) {
     camera.fov = GAME_FOV;
     camera.updateProjectionMatrix();
-    const p2 = sim.player, sx = p2.x, sz = p2.z, sy = p2.aimYaw;
-    p2.x = x;
-    p2.z = z;
-    p2.aimYaw = yaw;
+    const p = sim.player, sx = p.x, sz = p.z, sy = p.aimYaw;
+    p.x = x;
+    p.z = z;
+    p.aimYaw = yaw;
     const cy = MathUtils.degToRad(tuning.camYaw), fx2 = -Math.sin(cy), fz = -Math.cos(cy), aspect2 = camera.aspect, up = aspect2 < 1 ? 1.4 : 0.6;
     const la = 0.45 * tuning.lookAhead;
     camState.look.set(Math.sin(yaw) * la, Math.cos(yaw) * la);
@@ -63965,11 +64090,11 @@ void main() {
     camState.z = cb ? MathUtils.clamp(z + camState.look.y + fz * up, cb.minZ, cb.maxZ) : MathUtils.clamp(z + camState.look.y + fz * up, -9.2, aspect2 < 1 ? 6.6 : 7.6);
     camState.vx = camState.vz = 0;
     camState.trauma = 0;
-    updateCamera(1e-4, x, z, yaw, p2);
+    updateCamera(1e-4, x, z, yaw, p);
     const pose = { pos: camera.position.clone(), quat: camera.quaternion.clone(), fov: camera.fov };
-    p2.x = sx;
-    p2.z = sz;
-    p2.aimYaw = sy;
+    p.x = sx;
+    p.z = sz;
+    p.aimYaw = sy;
     return pose;
   }
   function applyRoom1() {
@@ -63980,28 +64105,28 @@ void main() {
   function applyLevel(save) {
     if (LAYOUT.story) useFloor(save?.floor || 7);
     restart("room1", benchN, save);
-    const p2 = sim.player, A = ROOM1.player;
+    const p = sim.player, A = ROOM1.player;
     if (!save) {
-      p2.x = A.x;
-      p2.z = A.z;
-      p2.aimYaw = p2.aimTarget = A.yaw;
-      p2.hp = p2.maxHp;
-      p2.setLoadout(["bat", "fists"], "bat");
+      p.x = A.x;
+      p.z = A.z;
+      p.aimYaw = p.aimTarget = A.yaw;
+      p.hp = p.maxHp;
+      p.setLoadout(["bat", "fists"], "bat");
       if (sim.level) {
         sim.level.taken.add("bat");
         sim.level.pickups = sim.level.pickups.filter((q) => q.id !== "bat");
       }
     }
-    p2.px = p2.x;
-    p2.pz = p2.z;
-    p2.pyaw = p2.aimYaw;
-    p2.vx = p2.vz = 0;
-    p2.invuln = save ? 1.2 : 0;
-    p2.attackHeld = false;
-    p2.recoil = 0;
-    yola.reset(p2.x, p2.z, p2.aimYaw);
+    p.px = p.x;
+    p.pz = p.z;
+    p.pyaw = p.aimYaw;
+    p.vx = p.vz = 0;
+    p.invuln = save ? 1.2 : 0;
+    p.attackHeld = false;
+    p.recoil = 0;
+    yola.reset(p.x, p.z, p.aimYaw);
     yola.setShown(true);
-    cameraPose(p2.x, p2.z, p2.aimYaw);
+    cameraPose(p.x, p.z, p.aimYaw);
     for (const z of sim.zombies) {
       z.px = z.x;
       z.pz = z.z;
@@ -64019,7 +64144,7 @@ void main() {
     return sim;
   }
   function previewRoom1(dt) {
-    if (!opening?.revealSwing) yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
+    if (!opening?.revealSwing && !opening?.revealPose) yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
       if (!v) {
@@ -64074,14 +64199,14 @@ void main() {
     zviews.clear();
     ZombieView.clearPieces();
     resetPhysics();
-    const p2 = sim.player;
-    p2.px = p2.x;
-    p2.pz = p2.z;
-    p2.pyaw = p2.aimYaw;
-    yola.reset(p2.x, p2.z, p2.aimYaw);
+    const p = sim.player;
+    p.px = p.x;
+    p.pz = p.z;
+    p.pyaw = p.aimYaw;
+    yola.reset(p.x, p.z, p.aimYaw);
     fx.trailClear();
-    camState.x = p2.x;
-    camState.z = p2.z - 1.2;
+    camState.x = p.x;
+    camState.z = p.z - 1.2;
     camState.vx = camState.vz = 0;
     hitPauseT = 0;
     acc = 0;
@@ -64193,7 +64318,7 @@ void main() {
       if (doRender) looks.render();
       return;
     }
-    const p2 = sim.player;
+    const p = sim.player;
     let simDt = dt;
     if (paused) simDt = 0;
     if (hitPauseT > 0) {
@@ -64206,9 +64331,9 @@ void main() {
     let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(MathUtils.degToRad(tuning.camYaw));
     let steps = 0;
     while (acc >= STEP) {
-      p2.px = p2.x;
-      p2.pz = p2.z;
-      p2.pyaw = p2.aimYaw;
+      p.px = p.x;
+      p.pz = p.z;
+      p.pyaw = p.aimYaw;
       for (const z of sim.zombies) {
         z.px = z.x;
         z.pz = z.z;
@@ -64223,16 +64348,16 @@ void main() {
     handleEvents();
     if (steps) window.game.arenaTick?.(steps * STEP);
     const animDt = paused ? 0 : simDt;
-    const ix = p2.px + (p2.x - p2.px) * alpha, iz = p2.pz + (p2.z - p2.pz) * alpha;
-    const iyaw = p2.pyaw + angleDiff(p2.pyaw, p2.aimYaw) * alpha;
-    const a = p2.action;
+    const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
+    const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
+    const a = p.action;
     yola.update(animDt, {
       x: ix,
       z: iz,
-      vx: p2.vx,
-      vz: p2.vz,
+      vx: p.vx,
+      vz: p.vz,
       aimYaw: iyaw,
-      equipped: p2.equipped,
+      equipped: p.equipped,
       action: a.type,
       actionT: a.t,
       swingT: a.type === "swing" ? a.st : 0,
@@ -64241,24 +64366,24 @@ void main() {
       swingId: a.id,
       downFall: a.fall,
       downUp: a.up,
-      recoil: p2.recoil,
+      recoil: p.recoil,
       recoilScale: tuning.pistolRecoil,
-      dead: p2.dead,
-      deathDir: p2.deathDir || 0,
-      hurtT: p2.hurtT,
-      hurtDirX: p2.hurtDirX || 0,
-      hurtDirZ: p2.hurtDirZ || 0,
-      reloadDur: p2.reloadTime(),
+      dead: p.dead,
+      deathDir: p.deathDir || 0,
+      hurtT: p.hurtT,
+      hurtDirX: p.hurtDirX || 0,
+      hurtDirZ: p.hurtDirZ || 0,
+      reloadDur: p.reloadTime(),
       swapDur: tuning.swapTime
     });
-    if (a.type === "swing" && p2.equipped !== "fists") {
-      const A = p2.atk(), wins = A.windows || [[A.activeStart, a.activeEnd]];
+    if (a.type === "swing" && p.equipped !== "fists") {
+      const A = p.atk(), wins = A.windows || [[A.activeStart, a.activeEnd]];
       if (wins.some(([w0, w1]) => a.st > w0 - 0.07 && a.st < w1 + 0.05)) {
-        if (p2.equipped === "test" && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
+        if (p.equipped === "test" && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
         else if (yola.melee.visible) fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v10), true);
       }
     }
-    fx.setAim(ix, iz, iyaw, !p2.dead, p2.aiming ? p2.attackHeld ? 1 : 0.5 : 0.2);
+    fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? p.attackHeld ? 1 : 0.5 : 0.2);
     stepPhysics(animDt);
     ZombieView.updatePieces(animDt);
     ZombieView.updateShields(animDt);
@@ -64298,23 +64423,23 @@ void main() {
     groanT -= animDt;
     if (groanT <= 0) {
       groanT = 1.6 + Math.random() * 2;
-      const n = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p2.x, z.z - p2.z) < 9).length;
+      const n = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < 9).length;
       if (n) audio.play("groan", Math.min(1, 0.5 + n * 0.1));
     }
     fx.update(animDt);
     if (music.state !== "off") {
       const R = music.state === "combat" ? 11 : 7;
-      music.update(dt, sim.zombies.some((z) => z.alive && !z.dormant && !z.passive && (Math.hypot(z.x - p2.x, z.z - p2.z) < R || z.state === "windup" || z.state === "strike")), paused || p2.dead);
+      music.update(dt, sim.zombies.some((z) => z.alive && !z.dormant && !z.passive && (Math.hypot(z.x - p.x, z.z - p.z) < R || z.state === "windup" || z.state === "strike")), paused || p.dead);
     }
     arena.update(dt, ix, iz, MathUtils.degToRad(tuning.camYaw), sim.level);
     hud.setEmergency(!!arena.em && arena.em.target > 0);
     hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
     chapterUI?.update(paused ? 0 : dt);
     if (camOverride) applyCamOverride();
-    else if (!window.game.camFree) updateCamera(dt, ix, iz, iyaw, p2);
+    else if (!window.game.camFree) updateCamera(dt, ix, iz, iyaw, p);
     _v10.set(ix, 1, iz).project(camera);
     playerScreen = { x: (_v10.x * 0.5 + 0.5) * innerWidth, y: (-_v10.y * 0.5 + 0.5) * innerHeight };
-    if (debugOn) updateDebug(p2);
+    if (debugOn) updateDebug(p);
     hud.update(sim, dt);
     if (doRender) looks.render();
   }
@@ -64323,7 +64448,7 @@ void main() {
   var impactN = 0;
   function handleEvents() {
     frameNo++;
-    const p2 = sim.player;
+    const p = sim.player;
     for (const e of sim.events) {
       switch (e.type) {
         case "shot": {
@@ -64370,7 +64495,7 @@ void main() {
         }
         case "swing":
           sim.stats.swings++;
-          if (p2.equipped !== "bat" && !p2.attacks[e.combo]?.windows) audio.play("swing", p2.equipped === "fists" ? 0.55 : e.combo === 1 ? 1.35 : 1);
+          if (p.equipped !== "bat" && !p.attacks[e.combo]?.windows) audio.play("swing", p.equipped === "fists" ? 0.55 : e.combo === 1 ? 1.35 : 1);
           break;
         case "whoosh":
           audio.play("swing", e.combo === 2 ? 1.3 : 1);
@@ -64499,7 +64624,7 @@ void main() {
           break;
         // her charge ran into Yola
         case "zombieSlam": {
-          const d = Math.hypot(e.x - p2.x, e.z - p2.z);
+          const d = Math.hypot(e.x - p.x, e.z - p.z);
           audio.play("knockdown", 1.4);
           fx.ring(e.x, e.z, 14208959);
           fx.burst(e.x, 0.1, e.z, 16, 13616820, 2.2, 0.8, 0.6);
@@ -64563,8 +64688,8 @@ void main() {
           audio.play("playerHurt");
           shake(0.4);
           hud.hurt();
-          p2.hurtDirX = e.dirX;
-          p2.hurtDirZ = e.dirZ;
+          p.hurtDirX = e.dirX;
+          p.hurtDirZ = e.dirZ;
           sim.stats.damageTaken += 1;
           break;
         case "playerDeath":
@@ -64603,13 +64728,13 @@ void main() {
   function shake(k) {
     if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake);
   }
-  function updateCamera(dt, px2, pz2, yaw, p2) {
+  function updateCamera(dt, px2, pz2, yaw, p) {
     const aspect2 = camera.aspect;
     const vfov = MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect2);
     const want = aspect2 < 1 ? tuning.camWidth : tuning.camWidth * 1.7;
     const D = MathUtils.clamp(want / (2 * Math.tan(hfov / 2)), 4, 22);
     const cy = MathUtils.degToRad(tuning.camYaw), fx2 = -Math.sin(cy), fz = -Math.cos(cy);
-    const la = (p2.aiming ? 1 : 0.45) * tuning.lookAhead * (p2.dead ? 0 : 1);
+    const la = (p.aiming ? 1 : 0.45) * tuning.lookAhead * (p.dead ? 0 : 1);
     camState.look.x += (Math.sin(yaw) * la - camState.look.x) * Math.min(1, dt * 3);
     camState.look.y += (Math.cos(yaw) * la - camState.look.y) * Math.min(1, dt * 3);
     const up = aspect2 < 1 ? 1.4 : 0.6;
@@ -64641,16 +64766,16 @@ void main() {
       camera.position.z += (Math.random() - 0.5) * s;
     }
   }
-  function updateDebug(p2) {
+  function updateDebug(p) {
     if (!debugGroup.children.length || debugGroup.userData.sim !== sim) {
       buildDebug();
       debugGroup.userData.sim = sim;
       debugGroup.add(dbgCircle, dbgBat);
     }
-    dbgCircle.position.set(p2.x, 0.05, p2.z);
-    if (p2.action.type === "swing") {
-      const s = meleeSegment(p2.atk(), p2.action.st, _seg2), sy = Math.sin(p2.aimYaw), cy = Math.cos(p2.aimYaw);
-      const w = (x, y, z) => new Vector3(p2.x + x * cy + z * sy, y, p2.z - x * sy + z * cy);
+    dbgCircle.position.set(p.x, 0.05, p.z);
+    if (p.action.type === "swing") {
+      const s = meleeSegment(p.atk(), p.action.st, _seg2), sy = Math.sin(p.aimYaw), cy = Math.cos(p.aimYaw);
+      const w = (x, y, z) => new Vector3(p.x + x * cy + z * sy, y, p.z - x * sy + z * cy);
       dbgBat.geometry.setFromPoints([w(s.hx, s.hy, s.hz), w(s.tx, s.ty, s.tz)]);
       dbgBat.visible = true;
     } else dbgBat.visible = false;
@@ -64753,11 +64878,11 @@ void main() {
       z.z = 50;
       z.solid = false;
     }
-    const p2 = sim.player, V2 = Vector3, L2 = new V2(), R = new V2(), LT = new V2(), RT = new V2(), rows = [];
+    const p = sim.player, V2 = Vector3, L2 = new V2(), R = new V2(), LT = new V2(), RT = new V2(), rows = [];
     window.game.scriptInput = () => ({ moveX: mx, moveZ: mz, aimX: ax, aimZ: az, swapPresses: 0 });
     for (let i = 0; i < n + 40; i++) {
-      p2.x = p2.px = 0.4;
-      p2.z = p2.pz = 0;
+      p.x = p.px = 0.4;
+      p.z = p.pz = 0;
       tick(1, 1 / 60, false);
       if (i < 40) continue;
       const o = yola.outer.position;
@@ -64765,10 +64890,10 @@ void main() {
       yola.worldPos("RightFoot", R);
       yola.worldPos("LeftToeBase", LT);
       yola.worldPos("RightToeBase", RT);
-      rows.push({ L: [L2.x - o.x, Math.min(L2.y, LT.y), L2.z - o.z], R: [R.x - o.x, Math.min(R.y, RT.y), R.z - o.z], vx: p2.vx, vz: p2.vz });
+      rows.push({ L: [L2.x - o.x, Math.min(L2.y, LT.y), L2.z - o.z], R: [R.x - o.x, Math.min(R.y, RT.y), R.z - o.z], vx: p.vx, vz: p.vz });
     }
     window.game.scriptInput = null;
-    const out = { speed: +Math.hypot(p2.vx, p2.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
+    const out = { speed: +Math.hypot(p.vx, p.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
     for (const f of ["L", "R"]) {
       const minY = Math.min(...rows.map((r) => r[f][1])), s = [];
       for (let i = 1; i < rows.length; i++) {
@@ -64787,12 +64912,12 @@ void main() {
       z.z = 50;
       z.solid = false;
     }
-    const p2 = sim.player, V2 = Vector3, L2 = new V2(), R = new V2(), rows = [];
+    const p = sim.player, V2 = Vector3, L2 = new V2(), R = new V2(), rows = [];
     let i = 0;
     window.game.scriptInput = () => Object.assign({ moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0 }, fn(i));
     for (i = 0; i < frames; i++) {
-      p2.x = p2.px = 0.4;
-      p2.z = p2.pz = 0;
+      p.x = p.px = 0.4;
+      p.z = p.pz = 0;
       tick(1, 1 / 60, false);
       const o = yola.outer.position;
       yola.worldPos("LeftFoot", L2);

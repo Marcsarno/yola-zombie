@@ -121,7 +121,10 @@ export class ClinicStage {
     const rug = new THREE.Mesh(new THREE.CircleGeometry(1.7, 40), new THREE.MeshStandardMaterial({ color: 0xe9b8a4, roughness: 0.95 })); rug.rotation.x = -Math.PI / 2; rug.position.set(-5.2, 0.006, 1.4); rug.receiveShadow = true; this.root.add(rug);
     const inlay = new THREE.Mesh(new THREE.PlaneGeometry(W + 0.2, 0.3), new THREE.MeshStandardMaterial({ color: 0x9fd4cc })); inlay.rotation.x = -Math.PI / 2; inlay.position.set(-W / 2 + 0.1, 0.005, -3.5); this.root.add(inlay);
     // walls: back (north) and west full, front (south) and east low cutaways (the camera looks in from the south-east)
-    this.wall(-W, W, Zn - 0.3, Zn, 4.0, 'full');
+    // the back wall opens for the elevator kit (its pocket housings fill x -4.94..0.34; the cab stands behind it): without the
+    // opening the group walked into a solid wall behind the open doors. A header closes the wall above the kit.
+    this.wall(-W, CLINIC_LIFT.x - 2.64, Zn - 0.3, Zn, 4.0, 'full'); this.wall(CLINIC_LIFT.x + 2.64, W, Zn - 0.3, Zn, 4.0, 'full');
+    this.box(5.28, 1.1, 0.3, CLINIC_LIFT.x, 3.45, Zn - 0.15, PAL.wall, { r: 0.03 });
     this.wall(-W - 0.3, -W, Zn - 0.3, -0.2, 4.0, 'full'); this.wall(-W - 0.3, -W, 2.0, Zs, 4.0, 'full'); // doorway in the west wall (z -0.2..2.0)
     this.wall(-W, W, Zs, Zs + 0.3, 0.95, 'low'); this.wall(W, W + 0.3, Zn - 0.3, Zs + 0.3, 0.95, 'low');
     // ---- the east side: a staff corridor and a compact assessment office (north), the two-bay clinical room (south) ----
@@ -350,7 +353,7 @@ export class ClinicStage {
   async buildLift() {
     const g = await this.gltf(LIFT_KIT);
     const root = g.scene.clone(true); root.position.set(CLINIC_LIFT.x, 0, CLINIC_LIFT.z); root.name = 'clinicLift';
-    root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if ([].concat(o.material).some((m) => /^Blood_/i.test(m?.name || ''))) o.visible = false; } }); // (the outbreak kit's blood: never in the clean clinic)
     this.root.add(root);
     const mixer = new THREE.AnimationMixer(root), clip = THREE.AnimationClip.findByName(g.animations, 'Doors_Open');
     const open = clip ? mixer.clipAction(clip) : null; if (open) { open.play(); open.paused = true; open.time = 0; mixer.update(0); }
@@ -358,14 +361,18 @@ export class ClinicStage {
   }
   setLiftOpen(k) { const L = this.lift; if (!L?.open) return; L.k = k; L.open.time = Math.max(0, Math.min(0.999, k)) * L.open.getClip().duration; L.mixer.update(0); }
 
-  // the wheelchair the colleague brings: a prop that travels with whoever sits in it (seat centre at the group's origin)
+  // the wheelchair the colleague brings: the CLEAN hospital wheelchair (assets/models/wheelchair: no blood before the
+  // outbreak), a prop that travels with whoever sits in it. Its own anchors: the origin is the seated character's origin
+  // under the seat (front +z), the pusher stands at ANCHOR_Pusher_Origin, the hands go to ANCHOR_Push_Grip_L/R.
   async buildWheelchair() {
-    const g = await this.gltf('assets/hospital/wheelchair.glb');
+    const g = await this.gltf('../assets/models/wheelchair/Hospital_Wheelchair.glb');
     const obj = g.scene.clone(true); obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     const holder = new THREE.Group(); holder.add(obj); holder.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(obj), c = box.getCenter(new THREE.Vector3());
-    obj.position.set(-c.x, -box.min.y, -c.z);
+    const box = new THREE.Box3().setFromObject(obj);
     const wc = new THREE.Group(); wc.name = 'wheelchair'; wc.add(holder); wc.visible = false; this.root.add(wc);
+    const a = (n) => obj.getObjectByName(n);
+    wc.userData.grips = { L: a('ANCHOR_Push_Grip_L'), R: a('ANCHOR_Push_Grip_R') };
+    wc.userData.pusherBack = Math.abs(a('ANCHOR_Pusher_Origin')?.position.z ?? 0.68); // metres behind the seat
     this.wheelchair = wc; this.wheelchairSize = box.getSize(new THREE.Vector3());
     return wc;
   }

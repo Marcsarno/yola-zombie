@@ -256,8 +256,9 @@ export class OpeningUI {
   // ---- the small patient monitor (2D): HR, SpO2, a trace, and the quantitative TOF reading when asked ----
   // mode: 'normal' | 'irregular' (the alarm) | 'flat' (asystole on the trace, shown only once the pulse is confirmed absent)
   showMonitor(v) { this.monEl.classList.toggle('show', v); }
-  monitor({ mode, hr, spo2, tof, alarm, status } = {}) {
+  monitor({ mode, hr, spo2, tof, alarm, status, bp } = {}) {
     const m = this.monEl;
+    if (bp !== undefined) m.querySelector('.bp').textContent = bp; // (a failing trace never sits beside a healthy, stale pressure)
     if (mode) this.monMode = mode;
     if (hr !== undefined) m.querySelector('.hr').textContent = hr;
     if (spo2 !== undefined) m.querySelector('.spo2').textContent = spo2;

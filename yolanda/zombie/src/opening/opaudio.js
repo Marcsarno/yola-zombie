@@ -75,7 +75,10 @@ export class OpeningAudio {
     src.buffer = buf; g.gain.value = Math.pow(10, (l.gainDb || 0) / 20);
     src.connect(g); g.connect(this.audio.voiceBus);
     const gen = ++this.vgen, at = c.currentTime + 0.02;
-    src.start(at); this.vcur = { src, gen, at, l };
+    // a clean edit of a recorded take (from/to, seconds into the file): the cut falls in a pause, with a short fade out
+    const from = l.from || 0, len = l.to ? l.to - from : undefined;
+    if (len) { const g0 = g.gain.value; g.gain.setValueAtTime(g0, at + Math.max(0, len - 0.06)); g.gain.linearRampToValueAtTime(0, at + len); }
+    src.start(at, from, len); this.vcur = { src, gen, at, l };
     this.audio.duck(true);
     src.onended = () => { if (this.vcur?.gen === gen) { this.vcur = null; this.audio.duck(false, 0.6); } };
     return true;

@@ -284,7 +284,7 @@ function applyLevel(save) {
 }
 // show the zombies and Yola without stepping the simulation (the reveal, before control is handed over)
 function previewRoom1(dt) {
-  if (!opening?.revealSwing) yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw));
+  if (!opening?.revealSwing && !opening?.revealPose) yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw)); // (the reveal poses Yola itself)
   for (const z of sim.zombies) {
     let v = zviews.get(z.id);
     if (!v) { const type = viewType(z); v = zpool[type].pop() || newZombieView(type); v.bind(z); zviews.set(z.id, v); }

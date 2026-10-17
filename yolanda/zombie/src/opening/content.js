@@ -158,11 +158,11 @@ export const LINES = [
   { id: '09', who: 'Patient', file: '09_Patient_takeB.mp3', dur: 4.16, end: 4.16, gainDb: 1.4, text: 'Last time, they had to help me breathe for a few hours. They found an enzyme problem.' },
   { id: '10', who: 'Yola', file: '10_Yola_takeB.mp3', dur: 2.72, end: 2.7, gainDb: 0.6, text: 'I see the test results here. Thanks for telling me.' },
   { id: '11', who: 'Yola', file: '11_Yola_takeB.mp3', dur: 2.16, end: 2.16, gainDb: 1.6, text: "We'll account for that in your anesthesia plan." },
-  { id: '12', who: 'Yola', file: '12_Yola_takeB.mp3', dur: 2.96, end: 2.94, gainDb: -1.1, text: "Your team's ready on the third floor. I'll come up with you." },
+  { id: '12', who: 'Yola', file: '12_Yola_takeB.mp3', dur: 2.96, from: 1.9, end: 1.04, gainDb: -1.1, text: "I'll come up with you." }, // (2026-10-16: an edit of the take: "Your team's ready on the third floor." contradicts Floor 7; only its neutral second sentence plays, from the pause at 1.68-2.08 s)
   { id: '13', who: 'Colleague', file: '13_Colleague_takeB.mp3', dur: 3.2, end: 3.2, gainDb: 2.0, text: "Let's give that knee a break. I've got a wheelchair for you." },
   { id: '14', who: 'Patient', file: '14_Patient_takeB.mp3', dur: 2.08, end: 2.08, gainDb: 0.9, text: "All right. But the bat's coming." },
   { id: '15', who: 'Yola', file: '15_Yola_takeB.mp3', dur: 2.24, end: 2.22, gainDb: -0.3, text: "He can look after it while we're in the operating room." },
-  { id: '16', who: 'Colleague', file: '16_Colleague_takeB.mp3', dur: 2.96, end: 2.96, gainDb: 0.6, text: "Third floor. We'll help you get changed and settled." },
+  { id: '16', who: 'Colleague', file: '16_Colleague_takeB.mp3', dur: 2.96, from: 1.0, end: 1.96, gainDb: 0.6, text: "We'll help you get changed and settled." }, // (an edit: "Third floor." is cut in the pause at 0.78-1.16 s)
   { id: '17', who: 'Yola', file: '17_Yola_takeB.mp3', dur: 1.44, end: 0.64, gainDb: -2.1, text: 'Comfortable?' },
   { id: '18', who: 'Patient', file: '18_Patient_takeB.mp3', dur: 2.88, end: 2.88, gainDb: 2.7, text: "As comfortable as I'm going to get. Let's do this." },
   { id: '19', who: 'Yola', file: '19_Yola_takeB.mp3', dur: 1.28, end: 1.2, gainDb: 0.2, text: "We'll take good care of you." },
@@ -172,7 +172,7 @@ export const LINES = [
   { id: '23', who: 'Yola', file: '23_Yola_takeB.mp3', dur: 4.08, end: 4.08, gainDb: 0.6, text: "There's still some rocuronium effect. Let's complete reversal and check again." },
   { id: '24', who: 'Yola', file: '24_Yola_takeB.mp3', dur: 2.8, end: 2.78, gainDb: 0.2, text: "He's recovering well. I've handed everything over." },
   { id: '25', who: 'Colleague', file: '25_Colleague_takeB.mp3', dur: 1.68, end: 1.68, gainDb: -0.7, text: "I've got him. I'll stay with him." },
-  { id: '26', who: 'Yola', file: '26_Yola_takeB.mp3', dur: 1.84, end: 1.84, gainDb: 0.1, text: "Thanks. I'll be just outside." },
+  { id: '26', who: 'Yola', file: '26_Yola_takeB.mp3', dur: 1.84, to: 0.64, end: 0.6, gainDb: 0.1, text: 'Thanks.' }, // (an edit: "I'll be just outside" contradicts her errand downstairs; the take stops in the pause at 0.52-0.82 s)
   { id: '27', who: 'Colleague', file: '27_Colleague_takeB.mp3', dur: 2.16, end: 2.16, gainDb: -0.5, text: "Something's wrong. Check his pulse." },
   { id: '28', who: 'Colleague', file: '28_Colleague_takeB.mp3', dur: 1.68, end: 1.12, gainDb: -0.6, text: "There's no pulse." },
   { id: '29', who: 'Colleague', file: '29_Colleague_takeB.mp3', dur: 2.08, end: 2.08, gainDb: 3.3, text: 'Wait... why is he moving?' },
