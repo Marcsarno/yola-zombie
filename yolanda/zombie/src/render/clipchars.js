@@ -683,7 +683,7 @@ export class YolaView extends ClipBody {
       const h = this.handSet[base]; W += w; if (h) { k.Right += w * (h.Right || 0); k.Left += w * (h.Left || 0); }
     }
     if (W <= 1e-3) return;
-    for (const [b, q, side] of this.fist) { const c = k[side] / W; if (c > 1e-3) b.quaternion.slerp(q, Math.min(1, c)); }
+    for (const [b, q, side] of this.fist) { const c = k[side] / W; if (c > 1e-3) b.quaternion.slerp(q, Math.min(1.5, c)); } // (> 1: a tighter fist than the grip)
   }
 
   // Foot lock (melee clips with planted-foot data: clipdata cL/cR, measured on her posed shoes in Blender). A planted

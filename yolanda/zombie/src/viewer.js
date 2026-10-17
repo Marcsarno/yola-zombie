@@ -585,7 +585,7 @@ function handPose(a) {
   const H = handsOf(), P = fistPose(a); if (!P) return;
   for (const side of ['Right', 'Left']) {
     const k = H[side]; if (!(k > 0)) continue;
-    for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, k));
+    for (const [n, q] of Object.entries(P)) if (n.startsWith(side)) postRot(a, a.bones[n], (cur) => cur.slerp(q, Math.min(1.5, k))); // (> 1: past her grip, a tighter fist)
   }
   a.root.updateMatrixWorld(true);
 }
@@ -593,8 +593,8 @@ let handsUI = null, handsSeen = '';
 function buildHandsUI() {
   const box = $('handsGrp'); if (!box) return;
   const keep = () => { try { localStorage.setItem('handPoses', JSON.stringify(HANDS)); } catch { /* private window */ } };
-  const row = (side) => `<span class="lbl">${side === 'Right' ? 'R hand' : 'L hand'}</span>` + [['open', 0], ['support', 0.5], ['closed', 1]].map(([t, v]) => `<button data-h="${side}" data-v="${v}">${t}</button>`).join('') +
-    `<input type="range" min="0" max="100" step="5" data-hs="${side}" style="width:70px;vertical-align:middle"><span data-hv="${side}" style="display:inline-block;width:32px"></span>`;
+  const row = (side) => `<span class="lbl">${side === 'Right' ? 'R hand' : 'L hand'}</span>` + [['open', 0], ['support', 0.5], ['closed', 1], ['punch', 1.3]].map(([t, v]) => `<button data-h="${side}" data-v="${v}" title="${v > 1 ? 'tighter than her bat grip: a punching fist, no handle hole' : ''}">${t}</button>`).join('') +
+    `<input type="range" min="0" max="150" step="5" data-hs="${side}" style="width:70px;vertical-align:middle"><span data-hv="${side}" style="display:inline-block;width:32px"></span>`;
   box.innerHTML = row('Right') + row('Left') + '<span class="lbl">pistol in</span><button data-g="Right">R</button><button data-g="Left">L</button><button id="handsSave">save hands</button>';
   handsUI = () => {
     const H = handsOf();
