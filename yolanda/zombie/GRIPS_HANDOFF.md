@@ -237,3 +237,12 @@ shots/blender_holds_*.png).
   hand is 26-271 mm off the handle through the swing. Needs a TWO-HANDED attack clip for it (candidates on disk: KayKit
   Melee_2H_Attack_Chop / Slice / Spin, the Mixamo heavy_swing / gs_* clips). The user has not yet picked idle holds
   for the bat / axe (shots/holds_*.png sheets, letters A-F).
+- 2026-10-17 later still: ANATOMY. render/armfit.js puts a hand on a handle within real ranges (wrist flexion 75 /
+  extension 65 / radial 20 / ulnar 30 deg, forearm supination 85 / pronation 80 from thumb-up about the elbow hinge,
+  elbow a one-way hinge to 150 deg pointing down and out), choosing the hand's turn around the handle and the elbow's
+  swing; handOnto uses it (game + Rig Lab). GRIP_HANDS (holdfit.js): per-weapon grip rules (the chainsaw's front handle
+  across; back of the hand over its handles). Chainsaw carry re-done from the user's reference photo (at her waist, bar
+  40 deg to her left, both hands over the top). The user rejected palm-up and the "football" cradle; the user then said
+  to stop on custom grips. Old idles (Kevin Iglesias CombatIdle*) shown on the first Yola: shots/old_idles.png.
+  NEXT: ARM_TOOL_PLAN.md (arm fit sliders + mouse dragging with joint locks + motion/jump check + interface clean-up),
+  waiting for the user's go and two answers. The frame-to-frame jump test is part of its phase 1.
