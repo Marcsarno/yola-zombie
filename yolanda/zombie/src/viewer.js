@@ -249,7 +249,9 @@ async function setChar(key) {
   if (main) { scene.remove(main.root, main.helper); mainGun?.setObject(null); }
   if (!mainCache[key]) {
     const g = await loadG(CHARS[key].file);
-    for (const f of CHARS[key].extra || []) { try { const c = await loadG(f); g.animations.push(...c.animations); } catch { /* not built */ } }
+    // (&extra=a.glb,b.glb: test bakes of this character's clips, e.g. assets/test_clips; named <clip>_REBAKE_<what>)
+    const extraQ = key === new URLSearchParams(location.search).get('char') ? (new URLSearchParams(location.search).get('extra') || '').split(',').filter(Boolean) : [];
+    for (const f of [...(CHARS[key].extra || []), ...extraQ]) { try { const c = await loadG(f); g.animations.push(...c.animations); } catch { /* not built */ } }
     g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; if (/^GORE_/.test(o.name)) o.visible = false; });
     mainCache[key] = { gltf: g, actor: new Actor(g.scene, CHARS[key].height) };
   }
@@ -274,8 +276,9 @@ async function setClip(name) {
     rc = u?.clips.find((c) => c.name === name.slice(lib.length)) || null; file = UAL_FILES[lib];
   } else {
     useRef(refX);
-    const map = CHARS[S.char].refMap || {}, base = name in map ? map[name] : REF_ALIAS[name] || name;
-    file = base === null ? '' : `assets/mixamo/${map[name] ? '' : CHARS[S.char].ref}${base}.fbx`;
+    const nm = name.replace(/_REBAKE_.*$/, ''); // (a test re-bake: the clip it re-bakes has the reference)
+    const map = CHARS[S.char].refMap || {}, base = nm in map ? map[nm] : REF_ALIAS[nm] || nm;
+    file = base === null ? '' : `assets/mixamo/${map[nm] ? '' : CHARS[S.char].ref}${base}.fbx`;
     rc = file ? await refClip(file) : null;
   }
   const rsel = $('refclip'); rsel.innerHTML = '';
@@ -623,6 +626,7 @@ function fillClips() {
     for (const n of ok) { g.appendChild(new Option(`${n}  (${clipFrames(byN[n])}f)`, n)); used.add(n); }
     sel.appendChild(g);
   };
+  group('TEST RE-BAKES (not in the game)', anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
   const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
   for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === 'None' ? 'Fists / none' : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
   for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);

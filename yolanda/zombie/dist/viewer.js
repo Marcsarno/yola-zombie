@@ -37860,6 +37860,11 @@ void main() {
         this.ready = false;
         return;
       }
+      if (!Number.isFinite(this.p[2].x + this.p[2].y + this.p[2].z)) this.ready = false;
+      if (this.ready && !(dt > 0)) {
+        this.apply(false);
+        return;
+      }
       if (!this.ready || dt > 0.25) {
         let h = this.root1;
         for (let i = 0; i < 3; i++) {
@@ -38480,7 +38485,8 @@ void main() {
     }
     if (!mainCache[key]) {
       const g = await loadG(CHARS[key].file);
-      for (const f of CHARS[key].extra || []) {
+      const extraQ = key === new URLSearchParams(location.search).get("char") ? (new URLSearchParams(location.search).get("extra") || "").split(",").filter(Boolean) : [];
+      for (const f of [...CHARS[key].extra || [], ...extraQ]) {
         try {
           const c = await loadG(f);
           g.animations.push(...c.animations);
@@ -38521,8 +38527,9 @@ void main() {
       file = UAL_FILES[lib];
     } else {
       useRef(refX);
-      const map = CHARS[S.char].refMap || {}, base = name in map ? map[name] : REF_ALIAS[name] || name;
-      file = base === null ? "" : `assets/mixamo/${map[name] ? "" : CHARS[S.char].ref}${base}.fbx`;
+      const nm = name.replace(/_REBAKE_.*$/, "");
+      const map = CHARS[S.char].refMap || {}, base = nm in map ? map[nm] : REF_ALIAS[nm] || nm;
+      file = base === null ? "" : `assets/mixamo/${map[nm] ? "" : CHARS[S.char].ref}${base}.fbx`;
       rc = file ? await refClip(file) : null;
     }
     const rsel = $("refclip");
@@ -39082,6 +39089,7 @@ void main() {
       }
       sel.appendChild(g);
     };
+    group("TEST RE-BAKES (not in the game)", anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
     const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
     for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === "None" ? "Fists / none" : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
     for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);

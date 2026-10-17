@@ -75,6 +75,10 @@ export class HairSway {
     if (!this.ok) return;
     this.sampleAnimated();
     if (!this.on) { this.apply(true); this.ready = false; return; }
+    // a paused game steps with dt 0 (the pause menu, a lost focus): hold the hair where it is. (A 0 step divided by 0 and
+    // turned every hair bone NaN for good: the ponytail vanished after the first pause; the user, 2026-10-16.)
+    if (!Number.isFinite(this.p[2].x + this.p[2].y + this.p[2].z)) this.ready = false; // (never draw a broken state: start over)
+    if (this.ready && !(dt > 0)) { this.apply(false); return; }
     if (!this.ready || dt > 0.25) { // first frame, or a jump in time (pause, teleport): start from the modelled shape
       let h = this.root1;
       for (let i = 0; i < 3; i++) { this.p[i].copy(h).addScaledVector(this.dir1[i], this.len[i]); this.v[i].set(0, 0, 0); h = this.p[i]; }
