@@ -306,7 +306,7 @@ const F7 = buildFloor(7, {
   ],
   pickups: () => [
     { id: 's7aid', kind: 'health', amount: 40, x: -15.6, z: -1.0, r: 1.0, label: 'First-aid case', model: 'aid', y: 1.01 },
-    { id: 's7pistol', kind: 'weapon', weapon: 'pistol', x: -15.66, z: -1.0, r: 1.0, mag: 12, label: 'Pistol', model: 'pistol', y: 1.19 }, // (the user, 2026-10-17: a pistol with the first med pack, lying on the case's lid; the guard's on Floor 6 then refills it)
+    { id: 's7pistol', kind: 'weapon', weapon: 'pistol', x: -15.56, z: -1.0, r: 1.0, mag: 12, label: 'Pistol', model: 'pistol', y: 1.21 }, // (the user, 2026-10-17: a pistol with the first med pack, lying on the case's lid; the guard's on Floor 6 then refills it)
     { id: 'v7ammo', kind: 'health', amount: 50, x: -37.4, z: 17.0, r: 1.1, label: 'First-aid case', model: 'aid', y: 0.92 },
     { id: 'axe', kind: 'weapon', weapon: 'axe', x: -15.0, z: 9.4, r: 1.2, label: 'Fire axe', model: 'axe', y: 0.95 },
   ],
