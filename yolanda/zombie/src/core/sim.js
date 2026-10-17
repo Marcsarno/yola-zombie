@@ -32,7 +32,7 @@ export class Sim {
     this.director = new Director(this, opts.mode || 'encounter', opts.benchCount || 0);
     this.world.updateFlow(this.player.x, this.player.z);
     this.pickups = []; this.flow = { objective: '' }; // Room 1: the bat pickup and the objective chain
-    if ((opts.mode || '') === 'room1') { if (LAYOUT.name === 'floor3') this.level = new Level(this, opts.save || null); else this.setupRoom1(); }
+    if ((opts.mode || '') === 'room1') { if (LAYOUT.story) this.level = new Level(this, opts.save || null); else this.setupRoom1(); }
   }
 
   // ---- Room 1: three static, preplaced standard zombies (staggered wake-ups), the exit to the Supply Hall, the bat ----

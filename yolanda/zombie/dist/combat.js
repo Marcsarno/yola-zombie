@@ -2268,12 +2268,12 @@
       const theta2 = 2 * Math.PI * Math.random();
       const x0 = Math.random();
       const r1 = Math.sqrt(1 - x0);
-      const r2 = Math.sqrt(x0);
+      const r22 = Math.sqrt(x0);
       return this.set(
         r1 * Math.sin(theta1),
         r1 * Math.cos(theta1),
-        r2 * Math.sin(theta2),
-        r2 * Math.cos(theta2)
+        r22 * Math.sin(theta2),
+        r22 * Math.cos(theta2)
       );
     }
     /**
@@ -21240,16 +21240,16 @@
       const P1 = new Vector3();
       const P2 = new Vector3();
       const B = new Vector3();
-      const T2 = new Vector3();
+      const T3 = new Vector3();
       const N = new Vector3();
       for (let i = 0; i <= tubularSegments; ++i) {
         const u = i / tubularSegments * p2 * Math.PI * 2;
         calculatePositionOnCurve(u, p2, q, radius, P1);
         calculatePositionOnCurve(u + 0.01, p2, q, radius, P2);
-        T2.subVectors(P2, P1);
+        T3.subVectors(P2, P1);
         N.addVectors(P2, P1);
-        B.crossVectors(T2, N);
-        N.crossVectors(B, T2);
+        B.crossVectors(T3, N);
+        N.crossVectors(B, T3);
         B.normalize();
         N.normalize();
         for (let j = 0; j <= radialSegments; ++j) {
@@ -44916,281 +44916,525 @@ void main() {
     return Math.abs(d) <= maxStep ? b : a + Math.sign(d) * maxStep;
   }
 
-  // src/core/floor3.js
+  // src/core/chapter.js
   var M = "assets/models/";
   var U = M + "upgrades/";
   var H = "zombie/assets/hospital/";
   var K = "zombie/assets/kit/";
   var T = 0.3;
   var WH = 2.7;
-  var ROOMS = [
-    { id: "or", name: "Operating Room", rects: [[-7.15, 7.15, -11.15, -1.35], [-7.15, 3.8, -1.35, 0.65]], floor: ["#e4d8bf", "#b9d3c8"] },
-    { id: "supply", name: "Supply Hall", rects: [[-12.85, -7.15, -6.2, 1.65]], floor: ["#d9d6cc", "#c2c9c6"] },
-    { id: "waiting", name: "Waiting Area", rects: [[-25.6, -12.85, -7.2, 1.65]], floor: ["#efe2c8", "#d9c9a8"] },
-    { id: "preop", name: "Pre-Op Holding", rects: [[-37.4, -25.6, -11.15, 0.6]], floor: ["#e2e8ea", "#bfd2da"] },
-    { id: "maint", name: "Maintenance", rects: [[-37.4, -25.6, -19, -11.15], [-33.5, -25.6, -22.9, -19]], floor: ["#b9b8b0", "#a3a39a"] },
-    { id: "cafe", name: "Staff Cafeteria", rects: [[-25.6, -10.93, -22.9, -12.1], [-25.6, -14.8, -12.1, -10.15]], floor: ["#f0dccb", "#d8a98c"] },
-    { id: "ct", name: "CT Imaging", rects: [[-10.93, 0.89, -22.9, -11.15]], floor: ["#e6eef2", "#c4d6e2"] },
-    { id: "recovery", name: "Recovery Bay", rects: [[-27.6, -12.85, 1.65, 11.45]], floor: ["#e9eedf", "#c8dcc4"] },
-    { id: "lift", name: "Lift", rects: [[7.3, 10.6, -6.85, -3.55]], floor: null }
-  ];
-  var walls = [];
-  var hseg = (z, x0, x1, gaps = [], h = WH) => {
-    let a = x0 - T / 2;
-    for (const [g0, g1] of [...gaps].sort((p2, q) => p2[0] - q[0])) {
-      if (g0 > a) walls.push([a, g0, z - T / 2, z + T / 2, h, "full"]);
-      a = g1;
+  var FLOOR_Z = { 7: 0, 6: -80, 5: -160 };
+  var r2 = (v) => Math.round(v * 20) / 20;
+  var X = (px2) => r2((px2 - 1141) / 25);
+  var Zf = (oz) => (py2) => r2((py2 - 260) / 25 - 11.15 + oz);
+  function liftAt(floor) {
+    const oz = FLOOR_Z[floor], x = X(1214), z = -11.2 + oz;
+    return {
+      floor,
+      x,
+      z,
+      yaw: 0,
+      wallZ: -11.15 + oz,
+      cab: { minX: x - 1.46, maxX: x + 1.46, minZ: z - 3.25, maxZ: z - 0.3 },
+      // finished cab floor (world)
+      threshold: { minX: x - 1.2, maxX: x + 1.2, minZ: z - 0.35, maxZ: z + 0.65 },
+      call: { x: x + 1.3, z: z + 0.45 },
+      // the call panel beside the doors
+      status: { x: x + 2.95, y: 1.62, z: -11.15 + oz },
+      // the FAULT / READY light on the wall by the call panel
+      rect: { minX: x - 2.7, maxX: x + 2.7, minZ: z - 3.5, maxZ: z + 0.4 },
+      // the kit's cut-away rectangle
+      inside: { x, z: z - 1.8 }
+      // where Yola stands in the cab (facing the doors)
+    };
+  }
+  var LIFTS = { 7: liftAt(7), 6: liftAt(6), 5: liftAt(5) };
+  function liftBoxes(L2) {
+    const box = (f0, f1, s0, s1) => [L2.x + s0, L2.x + s1, L2.z + f0, L2.z + f1];
+    return {
+      walls: [box(-0.3, 0.21, -2.64, -1.2), box(-0.3, 0.21, 1.2, 2.64), box(-3.46, -0.3, -1.66, -1.5), box(-3.46, -0.3, 1.5, 1.66), box(-3.46, -3.3, -1.66, 1.66)],
+      doors: box(-0.14, 0.1, -1.2, 1.2)
+    };
+  }
+  function buildFloor(n, def) {
+    const oz = FLOOR_Z[n], Z = Zf(oz);
+    const rooms = [], walls2 = [], doors = [], props2 = [], signs = [], roomSigns = [];
+    const edges = { h: /* @__PURE__ */ new Map(), v: /* @__PURE__ */ new Map() };
+    const addEdge = (o, c, a, b) => {
+      const k = r2(c);
+      if (!edges[o].has(k)) edges[o].set(k, []);
+      edges[o].get(k).push([Math.min(a, b), Math.max(a, b)]);
+    };
+    for (const r of def.rooms) {
+      const pts = r.poly.map(([px2, py2]) => [X(px2), Z(py2)]);
+      for (let i = 0; i < pts.length; i++) {
+        const [ax, az] = pts[i], [bx, bz] = pts[(i + 1) % pts.length];
+        if (az === bz) addEdge("h", az, ax, bx);
+        else addEdge("v", ax, az, bz);
+      }
+      const zs2 = [...new Set(pts.map((p2) => p2[1]))].sort((a, b) => a - b), rects = [];
+      for (let i = 0; i < zs2.length - 1; i++) {
+        const zm = (zs2[i] + zs2[i + 1]) / 2, xs2 = [];
+        for (let j = 0; j < pts.length; j++) {
+          const [ax, az] = pts[j], [bx, bz] = pts[(j + 1) % pts.length];
+          if (ax === bx && Math.min(az, bz) < zm && Math.max(az, bz) > zm) xs2.push(ax);
+        }
+        xs2.sort((a, b) => a - b);
+        for (let k = 0; k + 1 < xs2.length; k += 2) rects.push([xs2[k], xs2[k + 1], zs2[i], zs2[i + 1]]);
+      }
+      rooms.push({ id: r.id, floorN: n, name: r.name, rects, floor: r.floor, ob: r.ob, area: r.area });
     }
-    if (x1 + T / 2 > a) walls.push([a, x1 + T / 2, z - T / 2, z + T / 2, h, "full"]);
-  };
-  var vseg = (x, z0, z1, gaps = [], h = WH) => {
-    let a = z0 - T / 2;
-    for (const [g0, g1] of [...gaps].sort((p2, q) => p2[0] - q[0])) {
-      if (g0 > a) walls.push([x - T / 2, x + T / 2, a, g0, h, "full"]);
-      a = g1;
+    const gaps = { h: /* @__PURE__ */ new Map(), v: /* @__PURE__ */ new Map() };
+    const addGap = (o, c, a, b) => {
+      const k = r2(c);
+      if (!gaps[o].has(k)) gaps[o].set(k, []);
+      gaps[o].get(k).push([a, b]);
+    };
+    for (const d of def.doors) {
+      const o = d.o, c = o === "h" ? Z(d.c) : X(d.c), a = o === "h" ? X(d.a) : Z(d.a), b = o === "h" ? X(d.b) : Z(d.b);
+      const mid = r2((a + b) / 2), width = d.kind && d.kind !== "open" ? 3 : r2(b - a);
+      const door = { id: d.id, floor: n, kind: d.kind || "open", axis: o === "h" ? "x" : "z", x: o === "h" ? mid : c, z: o === "h" ? c : mid, width, ...d.face ? { face: d.face } : {}, ...d.side ? { side: d.side } : {} };
+      doors.push(door);
+      addGap(o, c, mid - width / 2, mid + width / 2);
     }
-    if (z1 + T / 2 > a) walls.push([x - T / 2, x + T / 2, a, z1 + T / 2, h, "full"]);
-  };
-  hseg(-11.15, -10.93, 7.15, [[-6, -3], [3.3, 6.3]]);
-  vseg(7.15, -11.15, -1.35, [[-7.84, -2.56]]);
-  hseg(-1.35, 3.8, 7.15);
-  vseg(3.8, -1.35, 0.65);
-  hseg(0.65, -7.15, 3.8);
-  vseg(-7.15, -11.15, 1.65, [[-5.6, -3.6]]);
-  hseg(-6.2, -12.85, -7.15);
-  hseg(1.65, -27.6, -7.15, [[-24.8, -23], [-16.2, -14.4]]);
-  vseg(-12.85, -7.2, 11.45, [[-5.6, -3.6], [-1.4, 0.4]]);
-  hseg(-7.2, -25.6, -12.85);
-  vseg(-25.6, -22.9, 1.65, [[-20.9, -17.9], [-16.1, -13.1], [-6.6, -4.8], [-2.8, -0.8]]);
-  hseg(-11.15, -37.4, -25.6, [[-33, -31.2], [-28.2, -26.4]]);
-  vseg(-37.4, -19, 0.6);
-  hseg(0.6, -37.4, -25.6);
-  hseg(-19, -37.4, -33.5);
-  vseg(-33.5, -22.9, -19);
-  hseg(-22.9, -33.5, 0.89);
-  hseg(-10.15, -25.6, -14.8);
-  vseg(-14.8, -12.1, -10.15);
-  hseg(-12.1, -14.8, -10.93);
-  vseg(-10.93, -22.9, -11.15, [[-21, -19.2], [-15.6, -13.6]]);
-  vseg(0.89, -22.9, -11.15, [[-20.8, -17.8], [-16.9, -13.9]]);
-  vseg(-27.6, 1.65, 11.45, [[3.57, 6.57], [7.46, 10.46]]);
-  hseg(11.45, -27.6, -12.85);
-  var DOORS = [
-    { id: "or_supply", kind: "open", x: -7.15, z: -4.6, axis: "z", width: 2 },
-    { id: "supply_wait_n", kind: "open", x: -12.85, z: -4.6, axis: "z", width: 2 },
-    { id: "supply_wait_s", kind: "open", x: -12.85, z: -0.5, axis: "z", width: 1.8 },
-    { id: "wait_preop_n", kind: "open", x: -25.6, z: -5.7, axis: "z", width: 1.8 },
-    { id: "wait_preop_s", kind: "open", x: -25.6, z: -1.8, axis: "z", width: 2 },
-    { id: "wait_rec_w", kind: "open", x: -23.9, z: 1.65, axis: "x", width: 1.8 },
-    { id: "wait_rec_e", kind: "open", x: -15.3, z: 1.65, axis: "x", width: 1.8 },
-    { id: "preop_maint_w", kind: "open", x: -32.1, z: -11.15, axis: "x", width: 1.8 },
-    { id: "preop_maint_e", kind: "open", x: -27.3, z: -11.15, axis: "x", width: 1.8 },
-    { id: "cafe_ct_n", kind: "open", x: -10.93, z: -20.1, axis: "z", width: 1.8 },
-    { id: "cafe_ct_s", kind: "open", x: -10.93, z: -14.6, axis: "z", width: 2 },
-    { id: "brace", kind: "braced", x: -25.6, z: -14.6, axis: "z", width: 3, face: "w", side: "w" },
-    // Maintenance -> Cafeteria
-    { id: "ctbar", kind: "barred", x: -4.5, z: -11.15, axis: "x", width: 3, face: "n", side: "n" },
-    // CT -> OR, from the CT side
-    { id: "maint_cafe_2", kind: "closed", x: -25.6, z: -19.4, axis: "z", width: 3, face: "w" },
-    { id: "or_ct_2", kind: "closed", x: 4.8, z: -11.15, axis: "x", width: 3, face: "s" },
-    { id: "staff_1", kind: "closed", x: 0.89, z: -19.3, axis: "z", width: 3, face: "w" },
-    { id: "staff_2", kind: "closed", x: 0.89, z: -15.4, axis: "z", width: 3, face: "w" },
-    { id: "lobby_1", kind: "closed", x: -27.6, z: 5.07, axis: "z", width: 3, face: "e" },
-    { id: "lobby_2", kind: "closed", x: -27.6, z: 8.96, axis: "z", width: 3, face: "e" },
-    { id: "lift", kind: "lift", x: 7.2, z: -5.2, axis: "z", width: 5.28, face: "w" }
-  ];
-  var LIFT = {
-    x: 7.2,
-    z: -5.2,
-    yaw: -Math.PI / 2,
-    cab: { minX: 7.5, maxX: 10.45, minZ: -6.66, maxZ: -3.74 },
-    // finished cab floor (world)
-    threshold: { minX: 6.55, maxX: 7.55, minZ: -6.4, maxZ: -4 },
-    call: { x: 6.75, z: -3.9 }
-    // the call panel by the doors (the approach trigger)
-  };
-  var props = [];
-  var p = (m, x, z, rot, size, h, extra = {}) => {
-    const sw = rot % 180 === 90;
-    props.push({ m, x, z, rot, fp: sw ? [size[1], size[0]] : [size[0], size[1]], h, ...extra });
-  };
-  var wp = (m, x, z, face, y, extra = {}) => props.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, ...extra });
-  p(U + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
-  p(U + "04_surgery/surgical_light_standard.glb", 0.75, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
-  p(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
-  p(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
-  p(U + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
-  p(U + "08_support_equipment/runtime/supply_cart_standard.glb", 2.35, -10.6, 0, [0.88, 0.65], 1.21);
-  p(H + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
-  p(H + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
-  p(H + "lidded_waste_bin.glb", 1.45, -10.75, 0, [0.36, 0.4], 0.58);
-  wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", 0.35, -11, "s", 1.05);
-  wp(M + "decor/Reception_Wall_Sanitizer.glb", 0.95, -11, "s", 1.1);
-  wp(M + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
-  wp(M + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
-  p(M + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
-  p(H + "procedure_stretcher.glb", 1.8, -2.6, 90, [0.9, 1.66], 1.22);
-  p(H + "wheelchair.glb", -4, -0.3, 0, [0.76, 0.91], 0.97);
-  p(H + "lidded_waste_bin.glb", 3.4, 0.2, 0, [0.36, 0.4], 0.58);
-  wp(M + "furnishings/Clinical_Wall_Cupboard.glb", -6.75 - 0.25, -1.4, "e", 1.45);
-  wp(M + "decor3/Clinical_Sharps_Container.glb", -7, -2.9, "e", 1.1);
-  wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -6.6, "e", 1);
-  p(M + "furnishings/Lounge_Break_Table.glb", -9.6, -5.55, 0, [0.9, 0.9], 0.74, { name: "belongings" });
-  p(M + "utility/Utility_Supply_Shelf.glb", -7.6, -0.9, 270, [1.39, 0.53], 2);
-  p(M + "utility/Utility_Supply_Shelf.glb", -11.3, -5.75, 0, [1.39, 0.53], 2);
-  p(U + "08_support_equipment/runtime/supply_cart_starter.glb", -11, 1.05, 180, [0.78, 0.52], 1.01);
-  p(M + "utility/Utility_Laundry_Hamper.glb", -8, 1.2, 0, [0.6, 0.54], 0.97);
-  p(H + "lidded_waste_bin.glb", -7.6, -2.75, 0, [0.36, 0.4], 0.58);
-  p(M + "utility/Utility_Wet_Floor_Sign.glb", -10.3, -2.2, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
-  p(U + "01_reception/reception_T2_desk.glb", -20.2, -5.3, 180, [2.2, 0.9], 1.1);
-  p(U + "01_reception/reception_T2_chair.glb", -20.2, -6.35, 0, [0.63, 0.62], 0.99, { noCollide: true });
-  p(M + "decor/Reception_Linked_Seats_3.glb", -19.6, -2.45, 180, [2.61, 0.62], 0.92);
-  p(M + "decor/Reception_Linked_Seats_3.glb", -19.6, -1.75, 0, [2.61, 0.62], 0.92);
-  p(U + "12_lobby/lobby_T2_floor_planter.glb", -21.35, -2.1, 0, [0.55, 0.86], 1.2, { fit: true });
-  p(U + "12_lobby/lobby_T2_floor_planter.glb", -17.85, -2.1, 0, [0.55, 0.86], 1.2, { fit: true });
-  p(M + "decor/Reception_Linked_Seats_3.glb", -23.4, -6.65, 0, [2.61, 0.62], 0.92);
-  p(M + "decor/Reception_Water_Cooler.glb", -13.45, -6.7, 0, [0.44, 0.49], 1.47);
-  p(M + "decor/Reception_Magazine_Rack.glb", -14.6, -6.75, 0, [0.55, 0.43], 1.05);
-  p(M + "decor/Reception_Linked_Seats_3.glb", -21, 1.2, 180, [2.61, 0.62], 0.92);
-  wp(U + "12_lobby/lobby_T2_health_poster.glb", -17.4, -7.05, "s", 1.15);
-  wp(M + "decor/Reception_Poster_Clinician.glb", -22.8, -7.05, "s", 1.15);
-  for (const [i, bz] of [-9.4, -6.4, -3.4].entries()) {
-    p(H + "recovery_bed.glb", -36.1, bz, 90, [1.25, 2.11], 0.87);
-    p(H + "bedside_cabinet.glb", -36.9, bz + 1.05, 90, [0.52, 0.63], 0.81);
-    if (i < 2) p(H + "privacy_screen.glb", -35.9, bz + 1.5, 90, [0.14, 1.84], 1.97);
-    p(U + "08_support_equipment/runtime/iv_stand_starter.glb", -35, bz - 0.9, 0, [0.68, 0.65], 1.99, { noCollide: true });
+    const L2 = LIFTS[n];
+    doors.push({ id: "lift" + n, floor: n, kind: "lift", axis: "x", x: L2.x, z: L2.z, width: 5.28, face: "s" });
+    addGap("h", L2.wallZ, L2.x - 2.64, L2.x + 2.64);
+    for (const o of ["h", "v"]) for (const [c, list] of edges[o]) {
+      list.sort((p2, q) => p2[0] - q[0]);
+      const merged = [];
+      for (const [a, b] of list) {
+        const m = merged[merged.length - 1];
+        if (m && a <= m[1] + 1e-6) m[1] = Math.max(m[1], b);
+        else merged.push([a, b]);
+      }
+      const gs = (gaps[o].get(c) || []).sort((p2, q) => p2[0] - q[0]);
+      for (const [a0, b0] of merged) {
+        let a = a0 - T / 2;
+        const end = b0 + T / 2;
+        for (const [g0, g1] of gs) {
+          if (g1 <= a || g0 >= end) continue;
+          if (g0 > a) push(o, c, a, g0);
+          a = Math.max(a, g1);
+        }
+        if (end > a + 0.02) push(o, c, a, end);
+      }
+    }
+    function push(o, c, a, b) {
+      if (o === "h") walls2.push([a, b, c - T / 2, c + T / 2, WH, "full"]);
+      else walls2.push([c - T / 2, c + T / 2, a, b, WH, "full"]);
+    }
+    const P = {
+      p(m, x, z, rot, size, h, extra = {}) {
+        const sw = rot % 180 === 90;
+        props2.push({ m, x, z, rot, fp: sw ? [size[1], size[0]] : [size[0], size[1]], h, floor: n, ...extra });
+      },
+      wp(m, x, z, face, y, extra = {}) {
+        props2.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, floor: n, ...extra });
+      },
+      raw(o) {
+        props2.push({ floor: n, ...o });
+      },
+      sign(text, sub, x, y, z, face, w, extra = {}) {
+        signs.push({ text, sub, x, y, z, face, w, ...extra });
+      },
+      room(id, x, y, z, face, w) {
+        roomSigns.push({ id, x, y, z, face, w });
+      },
+      X,
+      Z
+    };
+    def.dress(P);
+    const xs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[0], q[1]])), zs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[2], q[3]]));
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs, L2.cab.minZ), maxZ = Math.max(...zs);
+    return {
+      name: "chapter",
+      floor: n,
+      oz,
+      rooms,
+      walls: walls2,
+      doors,
+      props: props2,
+      signs,
+      roomSigns,
+      lift: L2,
+      bounds: { minX: minX - 0.6, maxX: maxX + 0.6, minZ: minZ - 0.6, maxZ: maxZ + 0.6 },
+      camBounds: { minX: minX + 1.2, maxX: maxX - 1, minZ: minZ + 1.6, maxZ: maxZ - 0.6 },
+      groups: def.groups(Z),
+      pickups: def.pickups(Z),
+      interact: def.interact(Z),
+      lights: def.lights(Z),
+      blood: def.blood?.(Z) || [],
+      playerStart: def.start(Z),
+      cutaway: true
+    };
   }
-  p(H + "procedure_stretcher.glb", -31.4, -6.6, 0, [0.9, 1.66], 1.22);
-  p(H + "procedure_stretcher.glb", -30, -1.4, 90, [0.9, 1.66], 1.22);
-  p(H + "patient_monitor.glb", -33.6, -10.55, 0, [0.62, 0.71], 1.49);
-  p(H + "supply_cart.glb", -36.6, -0.1, 90, [1.16, 1.1], 1.23);
-  p(M + "decor/Recovery_Linen_Cabinet.glb", -29.3, -10.7, 0, [0.95, 0.59], 1.84);
-  wp(M + "decor3/Clinical_Sign_PreOp.glb", -35.4, -11, "s", 2.2);
-  p(U + "10_janitor_utility/starter/10_starter_rack.glb", -36.9, -12.6, 90, [0.82, 0.51], 1.82);
-  p(U + "10_janitor_utility/starter/10_starter_rack.glb", -36.9, -14, 90, [0.82, 0.51], 1.82);
-  p(M + "utility/Utility_Janitor_Cart.glb", -35, -17.8, 0, [0.83, 0.94], 1.24);
-  p(M + "utility/Utility_Mop_Bucket.glb", -33.9, -18.2, 0, [0.43, 0.51], 0.66);
-  p(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -27.5, -22.4, 0, [0.87, 0.63], 1.16);
-  p(M + "utility/Utility_Supply_Shelf.glb", -26.05, -22, 270, [1.39, 0.53], 2);
-  p(M + "utility/Utility_Laundry_Hamper.glb", -26.05, -12.9, 0, [0.6, 0.54], 0.97);
-  wp(M + "utility/Utility_Toolboard.glb", -35.6, -18.85, "s", 1);
-  props.push({ kind: "bench", x: -32.55, z: -22.35, size: [1.8, 0.65, 0.92], color: 9206364, fp: [1.8, 0.65], h: 0.92, name: "workbench" });
-  props.push({ kind: "pipes", x: -29.6, z: -22.75, len: 7.6, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
-  props.push({ kind: "hazard", x: -29.5, z: -21.95, size: [1.6, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
-  p(M + "utility/Utility_Supply_Shelf.glb", -36.95, -17.9, 90, [1.39, 0.53], 2);
-  p(U + "10_janitor_utility/starter/10_starter_mop_bucket.glb", -36.6, -11.9, 0, [0.63, 0.54], 1.55);
-  p(M + "utility/Utility_Mop.glb", -36, -11.6, 0, [0.21, 0.21], 1.5, { noCollide: true });
-  props.push({ kind: "box", x: -30.2, z: -16.4, size: [1.4, 0.7, 1.9], face: "s", color: 9410715, fp: [1.4, 0.7], h: 1.9, name: "switchgear" });
-  props.push({ kind: "box", x: -36.95, z: -16.2, size: [1.6, 0.6, 2.1], face: "e", color: 8226698, fp: [0.6, 1.6], h: 2.1, name: "panelboard" });
-  p(K + "cafeteria_serving_counter.glb", -17.5, -22.25, 0, [2.46, 0.96], 1.53);
-  p(K + "cafeteria_tray_return.glb", -15.6, -22.4, 0, [0.68, 0.56], 1);
-  p(K + "cafeteria_vending_machine.glb", -12, -22.25, 0, [0.93, 0.87], 1.9);
-  p(K + "cafeteria_vending_machine.glb", -13, -22.25, 0, [0.93, 0.87], 1.9);
-  for (const [tx, tz] of [[-22.3, -18.4], [-19, -18.8], [-22, -14.8], [-18.6, -15.2], [-15.6, -17]]) {
-    p(H + "break_table.glb", tx, tz, 0, [0.95, 0.86], 0.85);
-    p(H + "break_chair.glb", tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
-    p(H + "break_chair.glb", tx + 0.85, tz, 270, [0.72, 0.62], 0.92, { noCollide: true });
-    props.push({ m: K + "cafeteria_meal_tray_set.glb", x: tx, z: tz, rot: 0, y: 0.85, fp: [0.1, 0.1], h: 0, noCollide: true });
-  }
-  p(K + "ct_scanner_gantry.glb", -5.5, -18, 0, [2.13, 0.87], 2.26);
-  p(K + "ct_sliding_patient_table.glb", -5.5, -16.45, 0, [0.71, 2.05], 1.11);
-  p(K + "ct_control_pedestal.glb", -2, -20.6, 0, [0.53, 0.49], 1.16);
-  p(K + "isolation_windowed_partition.glb", -1.3, -19.6, 0, [2, 0.15], 2.4);
-  p(K + "pharmacy_medicine_shelf.glb", -9.6, -22.45, 0, [1.39, 0.53], 1.95);
-  p(M + "furnishings/Lounge_Break_Table.glb", -0.2, -21.9, 0, [0.9, 0.9], 0.74);
-  props.push({ m: K + "lab_microscope.glb", x: -0.35, z: -21.95, rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
-  props.push({ m: K + "lab_centrifuge.glb", x: 0.05, z: -21.8, rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
-  p(H + "procedure_stretcher.glb", -9, -12.3, 90, [0.9, 1.66], 1.22);
-  for (const bx of [-21.4, -18.4]) {
-    wp(U + "05_recovery_bay/RecoveryHeadwall_standard.glb", bx, 1.8, "s", 0);
-    p(U + "05_recovery_bay/RecoveryBed_standard.glb", bx, 3.15, 0, [1.1, 2.11], 0.87);
-    p(U + "05_recovery_bay/BedsideCabinet_standard.glb", bx + 0.9, 2.3, 0, [0.52, 0.5], 0.81);
-  }
-  p(U + "05_recovery_bay/PrivacyCurtain_standard.glb", -19.9, 3.15, 0, [0.14, 1.84], 1.97);
-  p(U + "05_recovery_bay/RecoveryBed_standard.glb", -16.6, 7.2, 90, [1.1, 2.11], 0.87);
-  p(U + "05_recovery_bay/BedsideCabinet_standard.glb", -14.75, 7.2, 270, [0.52, 0.5], 0.81, { name: "healthCab" });
-  p(U + "05_recovery_bay/RecoveryBed_standard.glb", -24.6, 9.9, 180, [1.1, 2.11], 0.87);
-  p(U + "05_recovery_bay/RecoveryBed_standard.glb", -21.8, 9.9, 180, [1.1, 2.11], 0.87);
-  p(U + "05_recovery_bay/PrivacyCurtain_standard.glb", -23.2, 9.9, 0, [0.14, 1.84], 1.97);
-  p(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -26.9, 2.3, 90, [0.62, 0.71], 1.46);
-  p(M + "decor/Recovery_Linen_Cabinet.glb", -13.4, 10.7, 270, [0.95, 0.59], 1.84);
-  wp(M + "decor/Recovery_Wall_Clock.glb", -19.9, 1.8, "s", 2.15);
-  var SIGNS = [
-    { text: "MAINTENANCE \u2192", sub: "Lift reset \xB7 via Supply Hall", x: -7, y: 1.95, z: -2.6, face: "e", w: 1.3 },
-    // beside the OR's exit, on clear wall (it had hung beside the shut north door)
-    { text: "LIFT", sub: "Power fault", x: 6.99, y: 2.3, z: -1.9, face: "w", w: 0.9 },
-    { text: "BARRED", sub: "From the CT side", x: -2.55, y: 1.75, z: -11, face: "s", w: 0.82 },
-    { text: "\u2190 MAINTENANCE", sub: "via Waiting \xB7 Pre-Op", x: -9.9, y: 2.2, z: -6.05, face: "s", w: 1.6 },
-    { text: "\u2190 PRE-OP \xB7 MAINTENANCE", sub: "Recovery Bay \u2193", x: -16, y: 2.25, z: -7.05, face: "s", w: 1.8 },
-    { text: "MAINTENANCE \u2191", sub: "Lift reset panel", x: -29.7, y: 2.25, z: -11, face: "s", w: 1.4 },
-    { text: "CT / LIFT RETURN", sub: "Staff Cafeteria \u2014 keep shut", x: -25.75, y: 1.85, z: -12.1, face: "w", w: 1.6 },
-    { text: "LIFT RESET", sub: "Local power", x: -29.5, y: 2.2, z: -22.75, face: "s", w: 0.9 },
-    { text: "OR \xB7 LIFT \u2193", sub: "Remove the bar", x: -2.3, y: 2.3, z: -22.75, face: "s", w: 1.2 }
-  ];
-  var ROOM_SIGNS = [
-    { id: "operating_room", x: -6.99, y: 2.48, z: -4.6, face: "e", w: 1.3 },
-    // over the OR's own doorway (it had been printed across the shut double door)
-    { id: "maintenance", x: -31.5, y: 2.2, z: -22.75, face: "s", w: 1.4 },
-    { id: "cafeteria", x: -20.5, y: 2.3, z: -22.75, face: "s", w: 1.6 },
-    { id: "imaging", x: -6, y: 2.3, z: -22.75, face: "s", w: 1.4 },
-    { id: "recovery", x: -15.3, y: 2.3, z: 1.82, face: "s", w: 1.3 },
-    { id: "reception", x: -20.2, y: 2.35, z: -7.05, face: "s", w: 1.6 },
-    { id: "elevator", x: 6.99, y: 2.75, z: -8.42, face: "w", w: 1.1 }
-    // (clear of the lift's pocket housing)
-  ];
-  var GROUPS = [
-    { id: "or", zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: "nurse" }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 8 }] },
-    { id: "supply", trigger: "bat", sense: 4.5, zombies: [{ x: -14, z: -4.6, yaw: Math.PI / 2 }, { x: -15, z: -4, yaw: Math.PI / 2 }, { x: -14.2, z: -0.4, yaw: Math.PI / 2 }] },
-    { id: "waiting", sense: 6.5, zombies: [{ x: -21.6, z: -0.6, yaw: 1.2 }, { x: -16.8, z: -5.4, yaw: 2.4 }, { x: -23.6, z: -4.2, yaw: 1.6 }, { x: -14.4, z: -2.7, yaw: 0.4 }] },
-    { id: "preop", sense: 6, zombies: [{ x: -33.4, z: -8, yaw: 0.3 }, { x: -31.6, z: -3.2, yaw: 2 }, { x: -27.9, z: -8.6, yaw: -2.6 }] },
-    { id: "maint", sense: 5.5, zombies: [{ x: -34.6, z: -13.4, yaw: 1.4 }, { x: -28.2, z: -18.4, yaw: -0.6 }] },
-    { id: "cafe", locked: true, trigger: "brace", sense: 6.5, zombies: [{ x: -23.2, z: -20.5, yaw: 1 }, { x: -17.3, z: -20.5, yaw: -1 }, { x: -21.7, z: -17, yaw: -1.6 }, { x: -22.9, z: -13.4, yaw: -1.4 }] },
-    { id: "ct", sense: 6, zombies: [{ x: -8.6, z: -14.4, yaw: 2.6 }, { x: -2.2, z: -15.8, yaw: -2.2 }] },
-    { id: "recovery", sense: 4.5, zombies: [{ x: -20.2, z: 6.4, yaw: 0.6 }] }
-  ];
-  var PICKUPS = [
-    { id: "bat", kind: "weapon", weapon: "bat", x: -9.6, z: -5.45, r: 1.3 },
-    { id: "pistol", kind: "weapon", weapon: "pistol", x: -15.8, z: -0.75, r: 1.1, mag: 12, label: "The guard\u2019s pistol" },
-    { id: "ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: -14.85, z: 3.25, r: 1, label: "Guard\u2019s bag: spare rounds" },
-    { id: "health", kind: "health", amount: 50, x: -14.75, z: 7.2, r: 1, label: "First-aid case" }
-  ];
-  var INTERACT = [
-    { id: "liftReset", x: -29.5, z: -22.3, r: 1.35, label: "Reset the lift" },
-    { id: "brace", x: -26.25, z: -14.6, r: 1.5, side: { axis: "x", max: -25.6 }, label: "Remove the brace" },
-    { id: "ctBar", x: -4.5, z: -11.85, r: 1.6, side: { axis: "z", max: -11.15 }, label: "Lift the bar" }
-  ];
-  var FLOOR3 = {
-    name: "floor3",
-    bounds: { minX: -37.8, maxX: 11, minZ: -23.3, maxZ: 11.8 },
-    playerStart: { x: 0.75, z: -6.05, yaw: 0.61 },
-    walls,
-    doors: DOORS,
-    props,
-    rooms: ROOMS,
-    cutaway: true,
-    // walls between the camera and Yola lower themselves (every room has walls on all sides)
-    camBounds: { minX: -36.5, maxX: 10, minZ: -21.2, maxZ: 10.5 },
-    lights: [
-      // a few amber emergency points where the story happens (each point light costs every lit pixel)
-      { x: 6, y: 2.3, z: -5.2 },
-      { x: -29.5, y: 2.3, z: -21.2 },
-      { x: -26.8, y: 2.3, z: -14.6 },
-      { x: -4.5, y: 2.3, z: -12.6 },
-      { x: -19.5, y: 2.4, z: -3 }
-    ]
+  var F7 = buildFloor(7, {
+    rooms: [
+      { id: "or", name: "Operating Room", poly: [[963, 260], [1319, 260], [1319, 516], [1243, 516], [1243, 565], [963, 565]], floor: ["#e4d8bf", "#b9d3c8"], ob: ["clinical", "clinical"] },
+      { id: "s7", name: "Supply", poly: [[500, 260], [963, 260], [963, 565], [500, 565]], floor: ["#d9d6cc", "#c2c9c6"], ob: ["corridor", "maintenance"] },
+      { id: "n7", name: "Nurse Station", poly: [[120, 260], [500, 260], [500, 590], [120, 590]], floor: ["#efe2c8", "#d9c9a8"], ob: ["corridor", "clinical"] },
+      { id: "t7", name: "Treatment Ward", poly: [[120, 590], [500, 590], [500, 930], [120, 930]], floor: ["#e2e8ea", "#bfd2da"], ob: ["corridor", "clinical"] },
+      { id: "v7", name: "Renovation", poly: [[120, 930], [570, 930], [570, 1240], [120, 1240]], floor: ["#c9c4b8", "#b3ad9f"], ob: ["maintenance", "maintenance"] },
+      { id: "c7", name: "Staff Cafeteria", poly: [[570, 930], [963, 930], [963, 1240], [570, 1240]], floor: ["#f0dccb", "#d8a98c"], ob: ["corridor", "maintenance"] },
+      { id: "p7", name: "Lift Service", poly: [[963, 930], [1319, 930], [1319, 1240], [963, 1240]], floor: ["#b9b8b0", "#a3a39a"], ob: ["maintenance", "maintenance"] },
+      { id: "x7", name: "Contractor Store", poly: [[570, 650], [963, 650], [963, 930], [570, 930]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] },
+      { id: "r7", name: "Prep Room", poly: [[963, 565], [1243, 565], [1243, 516], [1319, 516], [1319, 930], [963, 930]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] }
+    ],
+    doors: [
+      { id: "or_s7", o: "v", c: 963, a: 385, b: 490 },
+      { id: "s7_n7", o: "v", c: 500, a: 395, b: 475 },
+      { id: "n7_t7", o: "h", c: 590, a: 310, b: 400 },
+      { id: "t7_v7", o: "h", c: 930, a: 310, b: 400 },
+      { id: "v7_c7", o: "v", c: 570, a: 1015, b: 1100 },
+      { id: "c7_p7", o: "v", c: 963, a: 1015, b: 1100 },
+      { id: "p7_r7", o: "h", c: 930, a: 1190, b: 1275 },
+      { id: "x7door", o: "h", c: 930, a: 720, b: 810, kind: "powered", face: "s" },
+      // the contractor store: opens when P7's power returns
+      { id: "orbar", o: "h", c: 565, a: 1065, b: 1150, kind: "barred", face: "s", side: "s" }
+      // OR south / R7 north: barred, released from R7 only
+    ],
+    dress({ p: p2, wp: wp2, raw, sign: sign2, room, X: X2, Z }) {
+      p2(U + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
+      p2(U + "04_surgery/surgical_light_standard.glb", 1.15, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
+      p2(U + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
+      p2(U + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
+      p2(U + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      p2(U + "08_support_equipment/runtime/supply_cart_standard.glb", -4.4, -10.6, 0, [0.88, 0.65], 1.21);
+      p2(H + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
+      p2(H + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
+      p2(H + "lidded_waste_bin.glb", -5.6, -10.75, 0, [0.36, 0.4], 0.58);
+      wp2(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -2.15, -11, "s", 1.05);
+      wp2(M + "decor/Reception_Wall_Sanitizer.glb", -1.6, -11, "s", 1.1);
+      wp2(M + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
+      wp2(M + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
+      p2(M + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
+      wp2(M + "furnishings/Clinical_Wall_Cupboard.glb", -7, -1.4, "e", 1.45);
+      p2(H + "procedure_stretcher.glb", 5.4, -4.6, 0, [0.9, 1.66], 1.22);
+      p2(H + "lidded_waste_bin.glb", 6.6, -1.4, 0, [0.36, 0.4], 0.58);
+      wp2(M + "decor3/Clinical_Sharps_Container.glb", -7, -6.9, "e", 1.1);
+      wp2(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -7.6, "e", 1);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -20.6, -10.6, 0, [1.39, 0.53], 2);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -18.9, -10.6, 0, [1.39, 0.53], 2);
+      p2(K + "pharmacy_medicine_shelf.glb", -12.2, -10.6, 0, [1.39, 0.53], 1.95);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -10.2, -10.6, 0, [1.39, 0.53], 2);
+      p2(M + "decor/Recovery_Linen_Cabinet.glb", -25, -9.6, 90, [0.95, 0.59], 1.84);
+      p2(U + "08_support_equipment/runtime/supply_cart_starter.glb", -15.6, -1, 0, [0.78, 0.52], 1.01, { name: "s7cart" });
+      p2(M + "utility/Utility_Laundry_Hamper.glb", -8, 0.4, 0, [0.6, 0.54], 0.97);
+      p2(H + "wheelchair.glb", -21.6, 0.1, 270, [0.76, 0.91], 0.97);
+      p2(M + "utility/Utility_Wet_Floor_Sign.glb", -17.4, -4.6, 0, [0.36, 0.66], 0.67, { noCollide: true });
+      p2(U + "01_reception/reception_T2_desk.glb", -37.2, -9.9, 180, [2.2, 0.9], 1.1, { name: "n7desk" });
+      p2(U + "01_reception/reception_T2_chair.glb", -37.2, -10.75, 0, [0.63, 0.62], 0.99, { noCollide: true });
+      raw({ kind: "radio", x: -36.6, z: -9.75, y: 1.1, fp: [0.1, 0.1], h: 0, noCollide: true, name: "radio" });
+      p2(M + "decor/Reception_Linked_Seats_3.glb", -30.4, -10.65, 0, [2.61, 0.62], 0.92);
+      p2(M + "decor/Reception_Water_Cooler.glb", -26.4, -10.7, 0, [0.44, 0.49], 1.47);
+      p2(M + "decor/Recovery_Linen_Cabinet.glb", -40.2, -0.4, 90, [0.95, 0.59], 1.84);
+      p2(H + "patient_monitor.glb", -40.2, -2.6, 90, [0.62, 0.71], 1.49);
+      p2(U + "12_lobby/lobby_T2_floor_planter.glb", -28.2, -10.6, 0, [0.55, 0.86], 1.2, { fit: true });
+      wp2(M + "decor/Reception_Poster_Clinician.glb", -33.6, -11, "s", 1.15);
+      for (const [bx, bz, rot] of [[-39.2, 5, 90], [-39.2, 9, 90], [-39.2, 13, 90], [-27.3, 6.2, 270], [-27.3, 10.6, 270]]) {
+        p2(H + "recovery_bed.glb", bx, bz, rot, [1.25, 2.11], 0.87);
+        p2(H + "bedside_cabinet.glb", bx + (rot === 90 ? -0.55 : 0.55), bz - 1.35, rot, [0.52, 0.63], 0.81);
+        p2(U + "08_support_equipment/runtime/iv_stand_starter.glb", bx + (rot === 90 ? 1 : -1), bz - 1.1, 0, [0.68, 0.65], 1.99, { noCollide: true });
+      }
+      p2(H + "privacy_screen.glb", -38.1, 7, 90, [0.14, 1.84], 1.97);
+      p2(H + "privacy_screen.glb", -38.1, 11, 90, [0.14, 1.84], 1.97);
+      p2(H + "procedure_stretcher.glb", -33.4, 8.4, 0, [0.9, 1.66], 1.22);
+      p2(H + "supply_cart.glb", -26.3, 14.4, 0, [1.16, 1.1], 1.23);
+      raw({ kind: "bench", x: -38, z: 17, size: [2.4, 0.7, 0.92], color: 9206364, fp: [2.4, 0.7], h: 0.92, name: "v7bench" });
+      raw({ kind: "hazard", x: -31.5, z: 24, size: [3.4, 1.4], noCollide: true, fp: [0.1, 0.1], h: 0 });
+      raw({ kind: "pipes", x: -32, z: 15.8, len: 9, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
+      p2(K + "isolation_windowed_partition.glb", -36, 23.2, 90, [2, 0.15], 2.4);
+      p2(K + "isolation_windowed_partition.glb", -36, 25.4, 90, [2, 0.15], 2.4);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -40.25, 20.4, 90, [1.39, 0.53], 2);
+      p2(M + "utility/Utility_Janitor_Cart.glb", -26.2, 26.8, 0, [0.83, 0.94], 1.24);
+      p2(M + "utility/Utility_Mop_Bucket.glb", -27.3, 27.3, 0, [0.43, 0.51], 0.66);
+      p2(M + "utility/Utility_Wet_Floor_Sign.glb", -30.2, 18.9, 0, [0.36, 0.66], 0.67, { noCollide: true });
+      p2(M + "utility/Utility_Wet_Floor_Sign.glb", -28.9, 18.6, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
+      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", -40.3, 26.6, 90, [0.82, 0.51], 1.82);
+      wp2(M + "utility/Utility_Toolboard.glb", -38, 15.8, "s", 1);
+      p2(K + "cafeteria_serving_counter.glb", -20.3, 16.25, 0, [2.46, 0.96], 1.53);
+      p2(K + "cafeteria_tray_return.glb", -18.3, 16.1, 0, [0.68, 0.56], 1);
+      p2(K + "cafeteria_vending_machine.glb", -11.2, 16.25, 0, [0.93, 0.87], 1.9);
+      p2(K + "cafeteria_vending_machine.glb", -10.1, 16.25, 0, [0.93, 0.87], 1.9);
+      for (const [tx, tz] of [[-19.6, 20.6], [-15, 22.4], [-10.6, 20.6], [-19, 25.8], [-11.2, 25.8]]) {
+        p2(H + "break_table.glb", tx, tz, 0, [0.95, 0.86], 0.85);
+        p2(H + "break_chair.glb", tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
+        p2(H + "break_chair.glb", tx + 0.85, tz, 270, [0.72, 0.62], 0.92, { noCollide: true });
+        raw({ m: K + "cafeteria_meal_tray_set.glb", x: tx, z: tz, rot: 0, y: 0.85, fp: [0.1, 0.1], h: 0, noCollide: true });
+      }
+      raw({ kind: "box", x: -5.2, z: 16.3, size: [1.4, 0.7, 1.9], face: "s", color: 9410715, fp: [1.4, 0.7], h: 1.9, name: "switchgear" });
+      raw({ kind: "box", x: 6.55, z: 21.5, size: [1.6, 0.6, 2.1], face: "w", color: 8226698, fp: [0.6, 1.6], h: 2.1, name: "panelboard" });
+      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", -6.55, 26.6, 90, [0.82, 0.51], 1.82);
+      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", 6.55, 26.4, 270, [0.82, 0.51], 1.82);
+      raw({ kind: "hazard", x: -1, z: 16.9, size: [1.8, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
+      p2(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -5.4, 1.55, 0, [0.87, 0.63], 1.16);
+      p2(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -4.3, 1.55, 0, [0.87, 0.63], 1.16);
+      p2(M + "decor/Recovery_Linen_Cabinet.glb", -6.55, 8, 90, [0.95, 0.59], 1.84);
+      p2(U + "08_support_equipment/runtime/supply_cart_standard.glb", 6.5, 6.2, 270, [0.88, 0.65], 1.21);
+      p2(H + "procedure_stretcher.glb", -5.6, 12.6, 90, [0.9, 1.66], 1.22);
+      wp2(M + "decor3/Clinical_Sign_PreOp.glb", 4.6, 1.2, "s", 2.2);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -22.25, 7.4, 90, [1.39, 0.53], 2);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -22.25, 10.4, 90, [1.39, 0.53], 2);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -7.75, 7.4, 270, [1.39, 0.53], 2);
+      p2(M + "utility/Utility_Supply_Shelf.glb", -7.75, 10.4, 270, [1.39, 0.53], 2);
+      raw({ kind: "bench", x: -15, z: 9.4, size: [2, 0.75, 0.92], color: 9206364, fp: [2, 0.75], h: 0.92, name: "x7bench" });
+      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", -12.4, 5, 0, [0.82, 0.51], 1.82);
+      sign2("LIFT SERVICE \u2192", "Lift power \xB7 past the cafeteria", -25.8, 1.95, -1.4, "w", 1.5);
+      sign2("LIFT", "Power fault", X2(1214) + 3.65, 2.3, -11, "s", 0.8, { lift: 7 });
+      sign2("BARRED", "From the prep room side", 1, 1.75, 0.9, "n", 0.86, { id: "orbarSign" });
+      sign2("\u2193 TREATMENT \xB7 RENOVATION", "Lift service \u2192", -31.4, 2.3, -11, "s", 1.8);
+      sign2("LIFT SERVICE \u2192", "via Staff Cafeteria", -30.2, 2.25, 15.8, "s", 1.4);
+      sign2("CONTRACTOR STORE", "Powered door \xB7 lift circuit", -17.4, 2.1, 15.8, "s", 1.3);
+      sign2("LIFT RESET", "Local power", -1, 2.2, 15.8, "s", 0.9);
+      sign2("OR \xB7 LIFT \u2191", "Through the prep room", 6.3, 2, 15.8, "s", 1.1);
+      room("operating_room", -7, 2.48, -4.05, "e", 1.3);
+      room("reception", -33.6, 2.35, -11, "s", 1.6);
+      room("cafeteria", -14.6, 2.3, 15.8, "s", 1.6);
+      room("maintenance", 5.6, 2.3, 15.8, "s", 1.4);
+      room("elevator", X2(1214) - 3.3, 2.75, -11, "s", 1.1);
+    },
+    groups: (Z) => [
+      // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
+      { id: "or", zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: "nurse" }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 5.3, z: -7.6, yaw: -1.2, wake: 8 }] },
+      // supply: one straggler (a short orientation pocket, not another big fight)
+      { id: "s7", sense: 5, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: "patient" }] },
+      // nurse station: two at the far end of the room, by the beds' door
+      { id: "n7", sense: 6, zombies: [{ x: -38.6, z: -3.2, yaw: 1.2, look: "nurse" }, { x: -31, z: 0.6, yaw: -2.6 }] },
+      // treatment ward: spread down both lanes, waking a beat apart (flank around the beds, never a doorway queue)
+      { id: "t7", sense: 6.5, zombies: [{ x: -36.2, z: 6.8, yaw: 0.4, look: "patient" }, { x: -30.2, z: 8.6, yaw: -0.8 }, { x: -33, z: 12.6, yaw: 2.6, look: "nurse" }, { x: -28.6, z: 13.8, yaw: -2.2 }] },
+      // renovation: two in the quiet corner
+      { id: "v7", sense: 5.5, zombies: [{ x: -33.2, z: 26.2, yaw: 0.2 }, { x: -25, z: 21.4, yaw: -1.6, look: "nurse" }] },
+      // cafeteria: the shield carrier's introduction, with two walkers to read his front against
+      { id: "c7", sense: 7, zombies: [{ x: -15, z: 24.6, yaw: Math.PI, kind: "guard" }, { x: -19.6, z: 23.4, yaw: 1 }, { x: -10.4, z: 23.2, yaw: -1, look: "nurse" }] },
+      // lift service: one by the switchgear
+      { id: "p7", sense: 5, zombies: [{ x: 2.2, z: 24.6, yaw: -2, look: "patient" }] }
+    ],
+    pickups: () => [
+      { id: "s7aid", kind: "health", amount: 40, x: -15.6, z: -1, r: 1, label: "First-aid case", model: "aid", y: 1.01 },
+      { id: "v7ammo", kind: "health", amount: 50, x: -37.4, z: 17, r: 1.1, label: "First-aid case", model: "aid", y: 0.92 },
+      { id: "axe", kind: "weapon", weapon: "axe", x: -15, z: 9.4, r: 1.2, label: "Fire axe", model: "axe", y: 0.95 }
+    ],
+    interact: () => [
+      { id: "radio", x: -36.6, z: -8.9, r: 1.7, label: "Answer the radio" },
+      { id: "liftReset", x: -1, z: 16.5, r: 1.5, label: "Restore the lift circuit" },
+      { id: "orBar", x: -1.35, z: 1.8, r: 1.6, side: { axis: "z", min: 1.05 }, label: "Lift the bar" }
+    ],
+    lights: () => [{ x: 2.9, y: 2.3, z: -9.4 }, { x: -1, y: 2.3, z: 17.4 }, { x: -1.35, y: 2.3, z: 2.6 }, { x: -36.6, y: 2.4, z: -8 }, { x: -15, y: 2.4, z: 18 }],
+    blood: () => [
+      { kind: "hand", x: -7, z: -2.9, wall: "e", y: 1.2, size: 0.34, tilt: -6 },
+      { kind: "drag", x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
+      { kind: "splat", x: 5.7, z: -9.6, w: 1.05, l: 1.05, rot: 15 },
+      { kind: "splat", x: -0.35, z: -9.05, w: 0.95, l: 0.95, rot: -35 },
+      { kind: "drag", x: -3.7, z: -5.75, w: 0.7, l: 1.7, rot: -55 },
+      { kind: "hand", x: 0.9, z: -11, wall: "s", y: 1.25, size: 0.33, tilt: 12 },
+      // a hand on the dead lift's frame
+      { kind: "drag", x: -12.05, z: -3.75, w: 0.6, l: 1, rot: -60 },
+      { kind: "hand", x: -24, z: -11, wall: "s", y: 1.15, size: 0.3, tilt: 7 },
+      { kind: "splat", x: -39.6, z: -5.9, w: 0.65, l: 0.65, rot: 40 },
+      { kind: "drag", x: -34.75, z: 9, w: 0.55, l: 1, rot: 75 },
+      { kind: "splat", x: -29.6, z: 12.4, w: 1, l: 1, rot: -20 },
+      { kind: "drag", x: -23.6, z: 21, w: 0.6, l: 1, rot: -100 },
+      { kind: "splat", x: -15, z: 26.6, w: 1.2, l: 1.2, rot: 30 },
+      { kind: "hand", x: -11.6, z: 15.8, wall: "s", y: 1.1, size: 0.3, tilt: -8 },
+      { kind: "drag", x: 1.2, z: 22.4, w: 0.7, l: 1.4, rot: 110 }
+    ],
+    start: () => ({ x: 0.75, z: -6.05, yaw: 0.61 })
+  });
+  var F6 = buildFloor(6, {
+    rooms: [
+      { id: "e6", name: "Lift Lobby", poly: [[1140, 260], [1319, 260], [1319, 580], [1140, 580]], floor: ["#e4d8bf", "#cfc4ab"], ob: ["corridor", "clinical"] },
+      { id: "j6", name: "Junction", poly: [[700, 300], [1140, 300], [1140, 580], [700, 580]], floor: ["#efe2c8", "#d9c9a8"], ob: ["corridor", "clinical"] },
+      { id: "w6", name: "Recovery Ward", poly: [[180, 300], [700, 300], [700, 580], [620, 580], [620, 760], [180, 760]], floor: ["#e9eedf", "#c8dcc4"], ob: ["corridor", "clinical"] },
+      { id: "p6", name: "Preparation", poly: [[180, 760], [620, 760], [620, 1030], [180, 1030]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
+      { id: "k6", name: "Cold Dispatch", poly: [[180, 1030], [710, 1030], [710, 1280], [180, 1280]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] },
+      { id: "sp6", name: "Service Passage", poly: [[830, 580], [1e3, 580], [1e3, 800], [830, 800]], floor: ["#c9c4b8", "#b3ad9f"], ob: ["maintenance", "maintenance"] },
+      { id: "a6", name: "Partition Works", poly: [[710, 800], [1140, 800], [1140, 1280], [710, 1280]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] }
+    ],
+    doors: [
+      { id: "e6_j6", o: "v", c: 1140, a: 420, b: 500 },
+      { id: "j6_w6", o: "v", c: 700, a: 420, b: 500 },
+      { id: "w6_p6", o: "h", c: 760, a: 350, b: 440 },
+      { id: "p6_k6", o: "h", c: 1030, a: 350, b: 440 },
+      { id: "j6_sp6", o: "h", c: 580, a: 850, b: 970 },
+      { id: "sp6_a6", o: "h", c: 800, a: 850, b: 970 },
+      { id: "partition", o: "v", c: 710, a: 1095, b: 1180, kind: "partition" }
+      // the weak renovation partition (A6 | K6)
+    ],
+    dress({ p: p2, wp: wp2, raw, sign: sign2, room, X: X2, Z }) {
+      const z = Z;
+      p2(M + "decor/Reception_Linked_Seats_3.glb", 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
+      p2(U + "12_lobby/lobby_T2_floor_planter.glb", 6.5, z(270) + 0.6, 0, [0.55, 0.86], 1.2, { fit: true });
+      p2(H + "procedure_stretcher.glb", X2(780), z(330) + 0.3, 90, [0.9, 1.66], 1.22);
+      p2(H + "wheelchair.glb", X2(1100), z(330), 0, [0.76, 0.91], 0.97);
+      for (const bx of [X2(242), X2(397), X2(577)]) {
+        p2(H + "recovery_bed.glb", bx, z(378), 0, [1.25, 2.11], 0.87);
+        p2(H + "bedside_cabinet.glb", bx + 0.95, z(320), 0, [0.52, 0.63], 0.81);
+      }
+      p2(H + "privacy_screen.glb", (X2(242) + X2(397)) / 2, z(378), 0, [0.14, 1.84], 1.97);
+      p2(H + "recovery_bed.glb", X2(367), z(577), 90, [1.25, 2.11], 0.87);
+      p2(H + "recovery_bed.glb", X2(557), z(620), 0, [1.25, 2.11], 0.87);
+      p2(U + "08_support_equipment/runtime/iv_stand_starter.glb", X2(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
+      p2(H + "patient_monitor.glb", X2(200), z(690), 90, [0.62, 0.71], 1.49);
+      p2(M + "decor/Recovery_Linen_Cabinet.glb", X2(270), z(790), 0, [0.95, 0.59], 1.84);
+      p2(U + "06_prep_airway/SedaPrep_standard.glb", X2(530), z(920), 0, [1, 0.6], 1.1);
+      p2(H + "supply_cart.glb", X2(260), z(895), 90, [1.16, 1.1], 1.23);
+      p2(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", X2(560), z(785), 0, [0.87, 0.63], 1.16);
+      p2(K + "pharmacy_locked_cupboard.glb", X2(260), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
+      p2(K + "pharmacy_locked_cupboard.glb", X2(370), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
+      p2(K + "pharmacy_medicine_shelf.glb", X2(640), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
+      p2(M + "furnishings/Lounge_Break_Table.glb", X2(305), z(1077), 0, [0.9, 0.9], 0.74, { name: "k6table" });
+      raw({ m: K + "lab_sample_rack.glb", x: X2(560), z: z(1077), rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
+      p2(M + "furnishings/Lounge_Break_Table.glb", X2(560), z(1077), 0, [0.9, 0.9], 0.74);
+      p2(M + "utility/Utility_Supply_Shelf.glb", X2(1110), z(880), 270, [1.39, 0.53], 2);
+      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1110), z(1180), 270, [0.82, 0.51], 1.82);
+      raw({ kind: "hazard", x: X2(780), z: z(1137), size: [1.2, 3], noCollide: true, fp: [0.1, 0.1], h: 0 });
+      raw({ kind: "bench", x: X2(1e3), z: z(1250), size: [1.8, 0.65, 0.92], color: 9206364, fp: [1.8, 0.65], h: 0.92 });
+      p2(M + "utility/Utility_Wet_Floor_Sign.glb", X2(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
+      raw({ kind: "partition", x: X2(710), z: (z(1095) + z(1180)) / 2, w: 3, fp: [0.1, 0.1], h: 0, noCollide: true, name: "partition" });
+      sign2("\u2190 COLD DISPATCH", "via Recovery Ward", X2(920) - 0.6, 2.3, z(300) + 0.15, "s", 1.5);
+      sign2("SERVICE \u2193", "Partition works", X2(1060), 2.3, z(300) + 0.15, "s", 1.3);
+      sign2("RENOVATION", "Temporary partition \u2014 weak", X2(710) + 0.16, 2.35, (z(1095) + z(1180)) / 2 + 2.2, "e", 1.2);
+      sign2("COLD DISPATCH \u2193", "Specimen hold", X2(530), 2.3, z(760) + 0.15, "s", 1.3);
+      room("elevator", X2(1214) + 3.5, 2.75, z(260) + 0.15, "s", 1.1);
+      room("recovery", X2(445), 2.3, z(300) + 0.15, "s", 1.3);
+      room("lab", X2(530), 2.3, z(1030) + 0.15, "s", 1.3);
+    },
+    groups: (Z) => [
+      // W6: a broad ward, four spread between the beds (a worthwhile regular route, not padded)
+      { id: "w6", sense: 6.5, zombies: [{ x: X(300), z: Z(470), yaw: 0.8, look: "patient" }, { x: X(520), z: Z(500), yaw: -0.6 }, { x: X(260), z: Z(660), yaw: 2.4, look: "nurse" }, { x: X(470), z: Z(700), yaw: -2 }] },
+      // P6: two in the preparation room
+      { id: "p6", sense: 5.5, zombies: [{ x: X(300), z: Z(840), yaw: 0.4, look: "nurse" }, { x: X(480), z: Z(980), yaw: -2.4 }] },
+      // A6: the big lady straight charger, at the far east of the bay: her lane runs west at the weak partition
+      { id: "a6", sense: 9, zombies: [{ x: X(1060), z: Z(1150), yaw: -Math.PI / 2, kind: "sprinter" }] }
+    ],
+    pickups: (Z) => [
+      { id: "p6aid", kind: "health", amount: 40, x: X(260), z: Z(895), r: 1, label: "First-aid case", model: "aid", y: 1.23 },
+      // the guard's pistol and his open bag in the junction, where he and Yola parted before the call (no body: he went on down)
+      { id: "pistol", kind: "weapon", weapon: "pistol", x: X(1010), z: Z(545), r: 1.1, mag: 12, label: "The guard\u2019s pistol", model: "pistol" },
+      { id: "ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: X(1060), z: Z(540), r: 1, label: "Guard\u2019s bag: spare rounds", model: "bag" }
+    ],
+    interact: (Z) => [],
+    lights: (Z) => [{ x: X(1214), y: 2.3, z: Z(300) }, { x: X(445), y: 2.4, z: Z(1150) }, { x: X(900), y: 2.4, z: Z(1050) }],
+    blood: (Z) => [
+      { kind: "drag", x: X(800), z: Z(450), w: 0.7, l: 1.6, rot: 30 },
+      { kind: "splat", x: X(420), z: Z(520), w: 1, l: 1, rot: -15 },
+      { kind: "hand", x: X(700) + 0.16, z: Z(380), wall: "e", y: 1.15, size: 0.32, tilt: 4 },
+      { kind: "drag", x: X(330), z: Z(900), w: 0.55, l: 1, rot: 80 },
+      { kind: "splat", x: X(950), z: Z(1e3), w: 0.9, l: 0.9, rot: 25 }
+    ],
+    start: (Z) => ({ x: LIFTS[6].x, z: LIFTS[6].z + 1.2, yaw: 0 })
+  });
+  var F5 = buildFloor(5, {
+    rooms: [
+      { id: "e5", name: "Lift Lobby", poly: [[1140, 260], [1319, 260], [1319, 580], [1140, 580]], floor: ["#e4d8bf", "#cfc4ab"], ob: ["corridor", "clinical"] },
+      { id: "i5", name: "Diagnostic Intake", poly: [[700, 300], [1140, 300], [1140, 580], [700, 580]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] },
+      { id: "d5", name: "Transfer Hub", poly: [[700, 580], [1140, 580], [1140, 900], [700, 900]], floor: ["#efe2c8", "#d9c9a8"], ob: ["corridor", "clinical"] },
+      { id: "w5", name: "Short Ward", poly: [[250, 580], [700, 580], [700, 1e3], [250, 1e3]], floor: ["#e9eedf", "#c8dcc4"], ob: ["corridor", "clinical"] },
+      { id: "r5", name: "Transfer Records", poly: [[250, 1e3], [700, 1e3], [700, 1280], [250, 1280]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
+      { id: "t5", name: "Equipment Bay", poly: [[700, 900], [1250, 900], [1250, 1280], [700, 1280]], floor: ["#c9c4b8", "#b3ad9f"], ob: ["maintenance", "maintenance"] }
+    ],
+    doors: [
+      { id: "e5_i5", o: "v", c: 1140, a: 420, b: 500 },
+      { id: "i5_d5", o: "h", c: 580, a: 900, b: 990 },
+      { id: "d5_w5", o: "v", c: 700, a: 700, b: 790 },
+      { id: "d5_t5", o: "h", c: 900, a: 930, b: 1020 },
+      { id: "w5_r5", o: "h", c: 1e3, a: 450, b: 540 },
+      { id: "t5_r5", o: "v", c: 700, a: 1100, b: 1190 }
+    ],
+    dress({ p: p2, wp: wp2, raw, sign: sign2, room, X: X2, Z }) {
+      const z = Z;
+      p2(M + "decor/Reception_Linked_Seats_3.glb", 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
+      p2(U + "07_warmth_teamwork/ThermaNest_standard.glb", X2(830), z(300) + 0.45, 0, [1, 0.7], 1.6, { name: "intake" });
+      p2(K + "pharmacy_locked_cupboard.glb", X2(760), z(300) + 0.4, 0, [0.95, 0.55], 1.95);
+      p2(U + "07_warmth_teamwork/TeamDesk_standard.glb", X2(785), z(525), 0, [1.6, 0.8], 1);
+      p2(U + "12_lobby/lobby_T2_floor_planter.glb", X2(1085), z(527), 0, [0.55, 0.86], 1.2, { fit: true });
+      p2(H + "procedure_stretcher.glb", X2(790), z(630), 90, [0.9, 1.66], 1.22);
+      p2(H + "supply_cart.glb", X2(1065), z(650), 0, [1.16, 1.1], 1.23);
+      p2(H + "recovery_bed.glb", X2(330), z(650), 90, [1.25, 2.11], 0.87);
+      p2(H + "recovery_bed.glb", X2(325), z(895), 90, [1.25, 2.11], 0.87);
+      p2(H + "break_table.glb", X2(435), z(810), 0, [0.95, 0.86], 0.85);
+      p2(H + "privacy_screen.glb", X2(390), z(770), 0, [0.14, 1.84], 1.97);
+      p2(H + "bedside_cabinet.glb", X2(627), z(930), 0, [0.52, 0.63], 0.81);
+      p2(U + "09_assessment_furniture/runtime/consultation_desk_standard.glb", X2(340), z(1255) - 0.45, 180, [1.5, 0.75], 0.78, { name: "docket" });
+      p2(K + "pharmacy_medicine_shelf.glb", X2(620), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
+      p2(M + "decor/Recovery_Linen_Cabinet.glb", X2(280), z(1050), 90, [0.95, 0.59], 1.84);
+      raw({ kind: "screen", x: X2(340), z: z(1255) - 0.55, y: 0.78, fp: [0.1, 0.1], h: 0, noCollide: true, name: "docketScreen" });
+      p2(K + "ct_scanner_gantry.glb", X2(970), z(1075), 0, [2.13, 0.87], 2.26);
+      p2(H + "procedure_stretcher.glb", X2(780), z(955), 90, [0.9, 1.66], 1.22);
+      p2(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1218), z(1005), 270, [0.82, 0.51], 1.82);
+      p2(M + "utility/Utility_Supply_Shelf.glb", X2(1218), z(1200), 270, [1.39, 0.53], 2);
+      p2(U + "03_endoscopy/endoscopy_tower_standard.glb", X2(760), z(1250), 0, [0.7, 0.6], 1.6);
+      sign2("DIAGNOSTIC INTAKE", "Specimen hold", X2(920), 2.3, z(300) + 0.15, "s", 1.4);
+      sign2("\u2190 RECORDS", "Short ward", X2(700) + 0.16, 2.3, z(745) - 1.8, "e", 1.3);
+      sign2("RECORDS \u2193", "Equipment bay", X2(975) + 2, 2.3, z(580) + 0.15, "s", 1.3);
+      sign2("TRANSFER RECORDS", "Dispatch dockets", X2(330), 2.3, z(1e3) + 0.15, "s", 1.4);
+      room("elevator", X2(1214) + 3.5, 2.75, z(260) + 0.15, "s", 1.1);
+      room("lab", X2(830), 2.62, z(300) + 0.15, "s", 1.1);
+      room("recovery", X2(420), 2.3, z(580) + 0.15, "s", 1.3);
+    },
+    groups: (Z) => [
+      { id: "d5", sense: 5, zombies: [{ x: X(950), z: Z(780), yaw: 2.6, look: "patient" }] },
+      // W5: the shield carrier with two walkers (the shorter, contained way)
+      { id: "w5", sense: 6, zombies: [{ x: X(560), z: Z(820), yaw: Math.PI / 2, kind: "guard" }, { x: X(330), z: Z(760), yaw: 1.2, look: "nurse" }, { x: X(470), z: Z(950), yaw: 0.4 }] },
+      // T5: the charger at the east end (her lane runs the bay's length), two walkers by the scanner
+      { id: "t5", sense: 9, zombies: [{ x: X(1150), z: Z(1200), yaw: -Math.PI / 2, kind: "sprinter" }, { x: X(880), z: Z(1180), yaw: 1.2, look: "nurse" }, { x: X(1080), z: Z(960), yaw: -2.4 }] }
+    ],
+    pickups: (Z) => [
+      { id: "w5aid", kind: "health", amount: 40, x: X(627), z: Z(930), r: 1, label: "First-aid case", model: "aid", y: 0.81 },
+      { id: "t5ammo", kind: "ammo", weapon: "pistol", rounds: 18, x: X(1180), z: Z(1140), r: 1, label: "Spare pistol rounds", model: "mag" }
+    ],
+    interact: (Z) => [
+      { id: "intake", x: X(830), z: Z(300) + 1.35, r: 1.6, label: "Secure the case" },
+      { id: "record", x: X(340), z: Z(1255) - 1.4, r: 1.6, label: "Read the dispatch record" }
+    ],
+    lights: (Z) => [{ x: X(1214), y: 2.3, z: Z(300) }, { x: X(830), y: 2.4, z: Z(330) }, { x: X(340), y: 2.4, z: Z(1200) }],
+    blood: (Z) => [
+      { kind: "drag", x: X(900), z: Z(700), w: 0.7, l: 1.5, rot: -30 },
+      { kind: "splat", x: X(450), z: Z(700), w: 0.9, l: 0.9, rot: 10 },
+      { kind: "hand", x: X(1250) - 0.16, z: Z(1100), wall: "w", y: 1.2, size: 0.32, tilt: 6 },
+      { kind: "splat", x: X(1e3), z: Z(1220), w: 1.1, l: 1.1, rot: 40 }
+    ],
+    start: (Z) => ({ x: LIFTS[5].x, z: LIFTS[5].z + 1.2, yaw: 0 })
+  });
+  var FLOORS = { 7: F7, 6: F6, 5: F5 };
+  var CASE_HOME = { floor: 6, x: X(305), z: Zf(FLOOR_Z[6])(1077), y: 0.74 };
+  var INTAKE_SPOT = { floor: 5, x: X(830), z: Zf(FLOOR_Z[5])(300) + 0.45, y: 1.6 };
+  var CHAPTER = {
+    name: "chapter",
+    rooms: [...F7.rooms, ...F6.rooms, ...F5.rooms],
+    walls: [...F7.walls, ...F6.walls, ...F5.walls],
+    doors: [...F7.doors, ...F6.doors, ...F5.doors],
+    props: [...F7.props, ...F6.props, ...F5.props],
+    signs: [...F7.signs, ...F6.signs, ...F5.signs],
+    roomSigns: [...F7.roomSigns, ...F6.roomSigns, ...F5.roomSigns],
+    lights: [...F7.lights, ...F6.lights, ...F5.lights],
+    blood: [...F7.blood, ...F6.blood, ...F5.blood],
+    pickups: [...F7.pickups.map((q) => ({ ...q, floor: 7 })), ...F6.pickups.map((q) => ({ ...q, floor: 6 })), ...F5.pickups.map((q) => ({ ...q, floor: 5 }))],
+    lifts: LIFTS
   };
+  function floorAtZ(z) {
+    return z > -40 ? 7 : z > -120 ? 6 : 5;
+  }
+  function roomAt(x, z) {
+    const f = FLOORS[floorAtZ(z)];
+    for (const r of f.rooms) for (const [x0, x1, z0, z1] of r.rects) if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r.id;
+    return null;
+  }
 
   // src/core/layout.js
   var M2 = "assets/models/";
   var H2 = "zombie/assets/hospital/";
   var ROOM1 = {
-    player: { x: 0.75, z: -6.05, yaw: 0.61 },
-    // where Yola breaks through the painted picture: the table behind her, facing the camera (south-east)
-    zombies: GROUPS[0].zombies,
-    // standard zombies preplaced around the OR perimeter, waking (and so attacking) one at a time
-    belongings: { x: -9.6, z: -5.55 },
-    // the patient-belongings table in the Supply Hall (bat and cap)
-    bat: { x: -9.6, z: -5.45 }
+    player: { x: 2.9, z: -8.85, yaw: 0.35 },
+    // where Yola stands when control returns: two steps out of the lift (Floor 7's back wall), the bat in hand
+    zombies: FLOORS[7].groups[0].zombies,
+    // the OR's zombies (the patient and three of the team), waking one at a time
+    lift: { x: FLOORS[7].lift.x, z: FLOORS[7].lift.z },
+    // the reveal's elevator
+    belongings: { x: -15.6, z: -1 },
+    // (the opening's belongings table: no longer in the playable floor)
+    bat: { x: -15.6, z: -1 }
   };
   var WING = {
     name: "wing",
@@ -45253,13 +45497,18 @@ void main() {
     ]
   };
   var LAYOUT = {};
-  function useLevel(name) {
+  function useLevel(name, floor = 7) {
     for (const k of Object.keys(LAYOUT)) delete LAYOUT[k];
-    Object.assign(LAYOUT, name === "floor3" ? FLOOR3 : WING);
+    if (name === "chapter") Object.assign(LAYOUT, FLOORS[floor] || FLOORS[7], { chapter: CHAPTER, story: true });
+    else Object.assign(LAYOUT, WING);
+    return LAYOUT;
+  }
+  function useFloor(floor) {
+    if (LAYOUT.story && LAYOUT.floor !== floor) useLevel("chapter", floor);
     return LAYOUT;
   }
   useLevel("wing");
-  var levelForMode = (mode2) => mode2 === "room1" ? "floor3" : "wing";
+  var levelForMode = (mode2) => mode2 === "room1" ? "chapter" : "wing";
   function doorBox(d) {
     return d.axis === "x" ? [d.x - d.width / 2, d.x + d.width / 2, d.z - 0.15, d.z + 0.15] : [d.x - 0.15, d.x + 0.15, d.z - d.width / 2, d.z + d.width / 2];
   }
@@ -45270,22 +45519,18 @@ void main() {
       if (p2.noCollide || !p2.h) continue;
       w.addBox(p2.x - p2.fp[0] / 2, p2.x + p2.fp[0] / 2, p2.z - p2.fp[1] / 2, p2.z + p2.fp[1] / 2, p2.h, "prop");
     }
-    if (LAYOUT.name === "floor3") {
+    if (LAYOUT.story) {
       w.dyn = {};
-      for (const d of DOORS) {
+      for (const d of LAYOUT.doors) {
         if (d.kind === "open" || d.kind === "lift") continue;
         const [a, b, c, e] = doorBox(d);
-        const dyn = d.kind === "braced" || d.kind === "barred";
+        const dyn = d.kind !== "closed";
         const box = w.addBox(a, b, c, e, 2.7, dyn ? "door" : "wall");
         if (dyn) w.dyn[d.id] = box;
       }
-      const L2 = LIFT;
-      w.addBox(6.99, 7.5, L2.z - 2.64, L2.z - 1.2, 2.7, "wall");
-      w.addBox(6.99, 7.5, L2.z + 1.2, L2.z + 2.64, 2.7, "wall");
-      w.addBox(7.5, 10.66, L2.z - 1.66, L2.z - 1.5, 2.7, "wall");
-      w.addBox(7.5, 10.66, L2.z + 1.5, L2.z + 1.66, 2.7, "wall");
-      w.addBox(10.5, 10.66, L2.z - 1.66, L2.z + 1.66, 2.7, "wall");
-      w.dyn.liftDoors = w.addBox(7.1, 7.34, L2.z - 1.2, L2.z + 1.2, 2.7, "door");
+      const LB = liftBoxes(LAYOUT.lift);
+      for (const [a, b, c, e] of LB.walls) w.addBox(a, b, c, e, 2.7, "wall");
+      w.dyn.liftDoors = w.addBox(...LB.doors, 2.7, "door");
     } else {
       for (const d of LAYOUT.doors) {
         if (d.open) continue;
@@ -45704,7 +45949,7 @@ void main() {
     }
     // ---------------- movement ----------------
     move(dt, input2, world, sim2) {
-      const T2 = this.T;
+      const T3 = this.T;
       let mx = input2.moveX, mz = input2.moveZ, mag = Math.min(1, Math.hypot(mx, mz));
       this.moveIntent = mag;
       const down = this.action.type === "down";
@@ -45713,13 +45958,13 @@ void main() {
       }
       const am = down ? 0 : Math.hypot(input2.aimX, input2.aimZ);
       this.aiming = !this.dead && am > AIM_DEADZONE;
-      const held = !this.dead && am >= T2.attackThreshold;
+      const held = !this.dead && am >= T3.attackThreshold;
       if (held && !this.attackHeld) this.attackPressT = 0;
       this.attackPressT = (this.attackPressT ?? 9) + dt;
       this.attackHeld = held;
       if (this.aiming) this.aimTarget = Math.atan2(input2.aimX, input2.aimZ);
       else if (mag > 0.15) this.aimTarget = Math.atan2(mx, mz);
-      let turn = down ? 0 : T2.turnRate;
+      let turn = down ? 0 : T3.turnRate;
       if (this.action.type === "swing") {
         const a = this.action;
         turn = a.st < a.activeEnd ? 0 : turn * 0.6;
@@ -45732,11 +45977,11 @@ void main() {
         turn *= 0.7;
       }
       this.aimYaw = approachAngle(this.aimYaw, this.aimTarget, turn * dt);
-      let speed = T2.moveSpeed * mag;
+      let speed = T3.moveSpeed * mag;
       if (mag > 0.01 && this.aiming) {
         const rel = Math.cos(angleDiff(this.aimYaw, Math.atan2(mx, mz)));
         const side = 1 - Math.abs(rel);
-        const k = rel >= 0 ? 1 - side * (1 - T2.strafeSpeed) : T2.strafeSpeed + (T2.backpedalSpeed - T2.strafeSpeed) * -rel;
+        const k = rel >= 0 ? 1 - side * (1 - T3.strafeSpeed) : T3.strafeSpeed + (T3.backpedalSpeed - T3.strafeSpeed) * -rel;
         speed *= k;
       }
       if (this.action.type === "swing") speed *= this.attackMoveScale();
@@ -45745,7 +45990,7 @@ void main() {
       const dvx = mx * dl - this.vx, dvz = mz * dl - this.vz;
       const dvl = Math.hypot(dvx, dvz);
       const speeding = mx * this.vx + mz * this.vz > 0 && speed * speed >= this.vx * this.vx + this.vz * this.vz;
-      const maxDv = (speeding ? T2.accel : T2.decel) * dt;
+      const maxDv = (speeding ? T3.accel : T3.decel) * dt;
       if (dvl > maxDv) {
         this.vx += dvx / dvl * maxDv;
         this.vz += dvz / dvl * maxDv;
@@ -45780,7 +46025,7 @@ void main() {
       this.vx = (this.x - px2 - rm.x - (this.slide ? this.slide.x * dt : 0)) / dt;
       this.vz = (this.z - pz2 - rm.z - (this.slide ? this.slide.z * dt : 0)) / dt;
       if (down) this.vx = this.vz = 0;
-      const vl = Math.hypot(this.vx, this.vz), vmax = T2.moveSpeed * 1.05;
+      const vl = Math.hypot(this.vx, this.vz), vmax = T3.moveSpeed * 1.05;
       if (vl > vmax) {
         this.vx *= vmax / vl;
         this.vz *= vmax / vl;
@@ -45819,16 +46064,16 @@ void main() {
     }
     // ---------------- actions ----------------
     updateAction(dt, sim2) {
-      const T2 = this.T, a = this.action;
+      const T3 = this.T, a = this.action;
       if (this.dead) return;
       a.t += dt;
       switch (a.type) {
         case "shot":
-          if (a.t >= (this.equipped === SHOTGUN ? T2.shotgunInterval : T2.pistolInterval)) this.setAction("ready");
+          if (a.t >= (this.equipped === SHOTGUN ? T3.shotgunInterval : T3.pistolInterval)) this.setAction("ready");
           break;
         case "swing": {
           const A = this.atk(a);
-          const prevT = a.st, st = a.st = a.t * T2.axeSpeed;
+          const prevT = a.st, st = a.st = a.t * T3.axeSpeed;
           if (A.continuous && !A.windows && prevT < A.activeStart - 0.12 && st >= A.activeStart - 0.12) sim2.emit({ type: "whoosh", combo: a.combo });
           if (A.windows) {
             for (let i = 0; i < A.windows.length; i++) {
@@ -45893,7 +46138,7 @@ void main() {
           break;
       }
       if (this.desired !== this.equipped && this.action.type !== "swap" && this.canBeginSwap()) {
-        this.setAction("swap", { dur: T2.swapTime, target: this.desired, mid: false });
+        this.setAction("swap", { dur: T3.swapTime, target: this.desired, mid: false });
         sim2.emit({ type: "swapStart", weapon: this.desired });
         return;
       }
@@ -46206,9 +46451,9 @@ void main() {
         sim2.emit({ type: "zombieHit", id: this.id, kind });
         return;
       }
-      const T2 = sim2.T;
+      const T3 = sim2.T;
       const fist = kind === "fist";
-      const kd = fist ? style === "kick" ? 0.55 : 0 : melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T2.axeKnockdown) : style === "heavy" ? Math.min(1, T2.axeKnockdown + 0.25) : T2.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
+      const kd = fist ? style === "kick" ? 0.55 : 0 : melee ? style === "combo" ? 0 : style === "chop" ? Math.max(0.75, T3.axeKnockdown) : style === "heavy" ? Math.min(1, T3.axeKnockdown + 0.25) : T3.axeKnockdown : kind === "shotgun" ? Math.min(1, Math.max(0, (impulse - 3.5) / 3)) : 0;
       if (this.toCrawl || !this.crawling && kd > 0 && sim2.rand() < kd * this.K.kd) {
         this.knockDown(dirX, dirZ, sim2);
         return;
@@ -46312,7 +46557,7 @@ void main() {
     // round slowly (the opening to hit her), then charges again, or, close in, falls back on the normal attacks. Running into
     // a wall or a prop at speed trips her (update: tumble); another zombie in her path is bowled over.
     sprinterChase(dt, sim2, dx, dz, dist2) {
-      const T2 = sim2.T, p2 = sim2.player, top = (T2.sprinterSpeed ?? 3.9) * this.speedMul;
+      const T3 = sim2.T, p2 = sim2.player, top = (T3.sprinterSpeed ?? 3.9) * this.speedMul;
       const sees = !p2.dead && dist2 < 12 && sim2.world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5);
       if (!this.sprinting) {
         if (!sees || dist2 < 2.4 || this.attackCd > 0.3) {
@@ -46322,7 +46567,7 @@ void main() {
         if (this.spotT === 0) sim2.emit({ type: "sprinterSpot", id: this.id });
         this.spotT += dt;
         this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
-        if (this.spotT < (T2.sprinterWindup ?? 0.7)) return true;
+        if (this.spotT < (T3.sprinterWindup ?? 0.7)) return true;
         this.sprinting = true;
         this.spd = Math.max(this.spd, 1);
         this.braking = false;
@@ -46360,7 +46605,7 @@ void main() {
         this.chargeHit = true;
         this.braking = true;
         const sg = lat >= 0 ? 1 : -1;
-        if (p2.hurt(T2.zombieDamage * 1.3 * this.K.dmg, this.x, this.z, sim2) && !p2.dead) p2.knockDown(this.x - fz * sg * 0.6, this.z + fx2 * sg * 0.6, sim2);
+        if (p2.hurt(T3.zombieDamage * 1.3 * this.K.dmg, this.x, this.z, sim2) && !p2.dead) p2.knockDown(this.x - fz * sg * 0.6, this.z + fx2 * sg * 0.6, sim2);
         sim2.emit({ type: "sprinterHit", id: this.id });
       }
       if (this.spd > 2.2) {
@@ -46394,7 +46639,7 @@ void main() {
       sim2.emit({ type: "zombieTumble", id: this.id, what });
     }
     update(dt, sim2) {
-      const T2 = sim2.T, p2 = sim2.player, world = sim2.world;
+      const T3 = sim2.T, p2 = sim2.player, world = sim2.world;
       this.t += dt;
       this.hitFlash = Math.max(0, this.hitFlash - dt * 6);
       if (this.bumpT > 0) this.bumpT -= dt;
@@ -46449,7 +46694,7 @@ void main() {
             turnRate = 0;
             break;
           }
-          speed = wantX || wantZ ? T2.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
+          speed = wantX || wantZ ? T3.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : 1) : 0;
           if (speed > 0) {
             const s = this.steer(wantX, wantZ, dist2, los, sim2);
             wantX = s.x;
@@ -46464,7 +46709,7 @@ void main() {
               const e = Math.max(-1, Math.min(1, dist2 - this.holdR));
               wantX = Math.cos(a) * this.repoDir - rx * e * 0.6;
               wantZ = -Math.sin(a) * this.repoDir - rz * e * 0.6;
-              speed = T2.zombieSpeed * this.speedMul * 0.5;
+              speed = T3.zombieSpeed * this.speedMul * 0.5;
             } else {
               wantX = dx / (dist2 || 1);
               wantZ = dz / (dist2 || 1);
@@ -46485,7 +46730,7 @@ void main() {
                 if (ml > 0.04) {
                   wantX = mx / ml;
                   wantZ = mz / ml;
-                  speed = T2.zombieSpeed * this.speedMul * 0.45 * Math.min(1, ml * 2.5);
+                  speed = T3.zombieSpeed * this.speedMul * 0.45 * Math.min(1, ml * 2.5);
                 }
               }
               if ((this.repoWait -= dt) <= 0) {
@@ -46513,15 +46758,15 @@ void main() {
             this.attack = "slam";
             this.set(ZS.WINDUP, ZATTACKS.slam.windup);
             this.slamCd = 4 + sim2.rand() * 2.5;
-            sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * 1.5;
+            sim2.nextAttackT = sim2.time + (T3.zombieAttackGap ?? 0.75) * 1.5;
             sim2.emit({ type: "zombieWindup", id: this.id, attack: "slam" });
             break;
           }
           if (!this.passive && slot && sim2.time >= (sim2.nextAttackT || 0) && dist2 < ZATTACKS.lunge.from && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5)) {
             const armed = this.armsLost < 2 && !this.crawling;
             this.attack = armed && (dist2 < 0.85 || dist2 < ZATTACKS.scratch.from && sim2.rand() < 0.25) ? "scratch" : "lunge";
-            this.set(ZS.WINDUP, this.attack === "scratch" ? T2.scratchWindup ?? 0.42 : T2.zombieWindup ?? 0.62);
-            sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * (0.8 + sim2.rand() * 0.5);
+            this.set(ZS.WINDUP, this.attack === "scratch" ? T3.scratchWindup ?? 0.42 : T3.zombieWindup ?? 0.62);
+            sim2.nextAttackT = sim2.time + (T3.zombieAttackGap ?? 0.75) * (0.8 + sim2.rand() * 0.5);
             sim2.emit({ type: "zombieWindup", id: this.id, attack: this.attack });
           }
           break;
@@ -46549,7 +46794,7 @@ void main() {
             const along = dx * fx2 + dz * fz;
             const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
             const hit = !p2.dead && dist2 < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p2.x, p2.z, 0.5);
-            const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage) * this.K.dmg;
+            const dmg = (this.attack === "scratch" ? T3.scratchDamage ?? 8 : this.attack === "slam" ? T3.zombieDamage * 1.3 : T3.zombieDamage) * this.K.dmg;
             if (hit && p2.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2) && this.attack === "slam" && !p2.dead) p2.knockDown(this.x, this.z, sim2);
             if (this.attack === "slam") sim2.emit({ type: "zombieSlam", id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1 });
             sim2.emit({ type: hit ? "zombieStrikeHit" : "zombieStrikeMiss", id: this.id, attack: this.attack });
@@ -46785,7 +47030,7 @@ void main() {
     }
     get label() {
       if (this.mode === "calm") return "Practice";
-      if (this.mode === "room1") return "Floor 3";
+      if (this.mode === "room1") return "Floor " + (this.sim?.level?.floor || 7);
       if (this.mode === "arena") return this.arenaLabel || "Weapon test";
       if (this.mode === "bench") return `Bench ${this.benchCount}`;
       if (this.cleared) return "Cleared";
@@ -46797,66 +47042,96 @@ void main() {
   var LIFT_DOOR_TIME = 1;
   var BRACE_TIME = 2.5;
   var DOOR_OPEN_TIME = 1.5;
+  var ONE_HANDED = ["bat", "pistol"];
+  var CASE_R = 1.35;
   var inRect = (r, x, z, m = 0) => x > r.minX + m && x < r.maxX - m && z > r.minZ + m && z < r.maxZ - m;
-  function roomAt(x, z) {
-    for (const r of ROOMS) for (const [x0, x1, z0, z1] of r.rects) if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r.id;
-    return null;
-  }
+  var roomAt2 = roomAt;
   var Level = class {
     constructor(sim2, save = null) {
       this.sim = sim2;
       const s = save || {};
-      this.flags = { lift_power_restored: false, cafeteria_brace_removed: false, ct_return_unbarred: false, ...s.flags || {} };
+      this.floor = s.floor || 7;
+      this.F = FLOORS[this.floor];
+      this.L = LIFTS[this.floor];
+      this.flags = {
+        lift_power_restored: false,
+        or_south_unbarred: false,
+        partition_broken: false,
+        phone_checked: false,
+        radio_heard: false,
+        power_call: false,
+        case_seen: false,
+        case_picked: false,
+        case_secured: false,
+        record_seen: false,
+        sample_matched: false,
+        chapter_complete: false,
+        ...s.flags || {}
+      };
+      this.case = s.case ? { ...s.case } : { state: "home", floor: CASE_HOME.floor, x: CASE_HOME.x, z: CASE_HOME.z, y: CASE_HOME.y };
       this.taken = new Set(s.taken || []);
       this.killed = new Set(s.killed || []);
       this.visited = new Set(s.visited || []);
-      this.objective = s.objective || "maintenance";
+      this.objective = s.objective || "f7_lift";
       this.complete = false;
+      this.ownedFull = s.ownedFull || null;
+      const open = (f) => f ? 1 : 0;
       this.doors = {
-        brace: { brace: this.flags.cafeteria_brace_removed ? 1 : 0, open: this.flags.cafeteria_brace_removed ? 1 : 0, busy: false },
-        ctbar: { brace: this.flags.ct_return_unbarred ? 1 : 0, open: this.flags.ct_return_unbarred ? 1 : 0, busy: false }
+        orbar: { brace: open(this.flags.or_south_unbarred), open: open(this.flags.or_south_unbarred), busy: false },
+        x7door: { brace: 1, open: open(this.flags.lift_power_restored), busy: false },
+        partition: { broken: this.flags.partition_broken }
       };
-      this.lift = { state: this.flags.lift_power_restored ? "ready" : "fault", open: 0, t: 0 };
+      const powered = this.floor !== 7 || this.flags.lift_power_restored;
+      this.lift = { state: !powered ? "fault" : s.arrive ? "arriving" : "ready", open: 0, t: 0, floor: this.floor, choosing: false };
       this.prompt = null;
-      this.bangT = 2;
       this.room = null;
-      this.saveT = 0;
+      this.lines = [];
+      this.ending = null;
       const W3 = sim2.world;
-      if (this.flags.cafeteria_brace_removed) W3.setOff(W3.dyn.brace, true);
-      if (this.flags.ct_return_unbarred) W3.setOff(W3.dyn.ctbar, true);
-      const fresh = !save;
-      for (const g of GROUPS) {
+      if (W3.dyn) {
+        if (this.flags.or_south_unbarred && W3.dyn.orbar) W3.setOff(W3.dyn.orbar, true);
+        if (this.flags.lift_power_restored && W3.dyn.x7door) W3.setOff(W3.dyn.x7door, true);
+        if (this.flags.partition_broken && W3.dyn.partition) W3.setOff(W3.dyn.partition, true);
+      }
+      const fresh = !save || save.floor === 7 && !save.flags?.radio_heard && !this.killed.size && this.floor === 7 && !s.x;
+      for (const g of this.F.groups) {
         g.zombies.forEach((zs, i) => {
-          const key = g.id + ":" + i;
+          const key = this.floor + ":" + g.id + ":" + i;
           if (this.killed.has(key)) return;
-          const z = sim2.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0 });
+          const z = sim2.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0, kind: zs.kind });
           z.set(ZS.CHASE);
           z.spawnKey = key;
           z.group = g.id;
           if (zs.look) z.look = zs.look;
-          const locked = !!g.locked && !(g.trigger === "brace" && this.flags.cafeteria_brace_removed);
           z.dormant = {
             wake: fresh && zs.wake !== void 0 ? zs.wake : Infinity,
             sense: g.sense ?? (zs.wake !== void 0 ? 6 : 0),
-            locked,
+            locked: !!g.locked,
             group: g.id,
             speedMul: 0.85 + 0.1 * (i % 3)
           };
         });
       }
-      this.pickups = PICKUPS.filter((q) => !this.taken.has(q.id)).map((q) => ({ ...q }));
+      this.pickups = this.F.pickups.filter((q) => !this.taken.has(q.id)).map((q) => ({ ...q }));
       const p2 = sim2.player;
       p2.reserve = { pistol: 0, shotgun: 0 };
       if (save) {
-        p2.x = s.x;
-        p2.z = s.z;
-        p2.aimYaw = p2.aimTarget = s.yaw ?? 0;
+        if (s.arrive) {
+          p2.x = this.L.inside.x;
+          p2.z = this.L.inside.z;
+          p2.aimYaw = p2.aimTarget = 0;
+        } else {
+          p2.x = s.x;
+          p2.z = s.z;
+          p2.aimYaw = p2.aimTarget = s.yaw ?? 0;
+        }
         p2.setLoadout(s.owned?.length ? s.owned : ["fists"], s.equipped || s.owned && s.owned[0] || "fists");
         Object.assign(p2.mags, s.mags || {});
         Object.assign(p2.reserve, s.reserve || {});
         p2.hp = s.hp ?? p2.maxHp;
       }
       if (sim2.T.testInfiniteAmmo) p2.reserve = { pistol: Infinity, shotgun: Infinity };
+      if (this.case.state === "carried") this.applyCarry(true);
     }
     emit(e) {
       this.sim.emit(e);
@@ -46867,29 +47142,37 @@ void main() {
       this.emit({ type: "objective", id });
       this.checkpoint();
     }
-    // a checkpoint: everything needed to restore a coherent floor (doors and pickups keep their state; the dead stay dead)
-    snapshot() {
+    say(id) {
+      this.emit({ type: "radio", id });
+    }
+    // a short exchange (captions; the UI plays it while play goes on)
+    // a checkpoint: everything needed to restore a coherent chapter (doors and pickups keep their state; the dead stay dead)
+    snapshot(extra = {}) {
       const p2 = this.sim.player;
+      const owned = this.ownedFull || p2.owned;
       return {
-        v: 1,
-        level: "floor3",
+        v: 2,
+        level: "chapter",
+        floor: this.floor,
         flags: { ...this.flags },
+        case: { ...this.case },
         taken: [...this.taken],
         killed: [...this.killed],
         visited: [...this.visited],
         objective: this.objective,
-        owned: [...p2.owned],
+        owned: [...owned],
         equipped: p2.equipped,
         mags: { ...p2.mags },
         reserve: { ...p2.reserve },
         hp: Math.max(35, p2.hp),
         x: +p2.x.toFixed(2),
         z: +p2.z.toFixed(2),
-        yaw: +p2.aimYaw.toFixed(3)
+        yaw: +p2.aimYaw.toFixed(3),
+        ...extra
       };
     }
     checkpoint() {
-      if (!this.sim.player.dead) this.emit({ type: "checkpoint", save: this.snapshot() });
+      if (!this.sim.player.dead && this.lift.state !== "travel") this.emit({ type: "checkpoint", save: this.snapshot() });
     }
     // a woken zombie rouses the others of its group nearby (a beat apart, never all at once)
     onWake(z) {
@@ -46906,32 +47189,98 @@ void main() {
         o.dormant.wake = Math.min(o.dormant.wake, this.sim.time + 0.4 + 0.45 * k++);
       }
     }
+    // ---- the case: carried in the off hand (one-handed weapons only), set down with one action, picked up again ----
+    applyCarry(on) {
+      const p2 = this.sim.player;
+      if (on) {
+        if (!this.ownedFull) this.ownedFull = [...p2.owned];
+        const allowed = this.ownedFull.filter((w) => ONE_HANDED.includes(w));
+        p2.owned = allowed.length ? allowed : [...this.ownedFull];
+        if (!p2.owned.includes(p2.desired)) p2.desired = p2.owned[0];
+      } else if (this.ownedFull) {
+        const keep = p2.desired;
+        p2.owned = WEAPON_SORT(this.ownedFull.concat(p2.owned.filter((w) => !this.ownedFull.includes(w))));
+        this.ownedFull = null;
+        if (p2.owned.includes(keep)) p2.desired = keep;
+      }
+    }
+    canCarry() {
+      return (this.ownedFull || this.sim.player.owned).some((w) => ONE_HANDED.includes(w));
+    }
+    takeCase() {
+      const c = this.case, first = !this.flags.case_picked;
+      c.state = "carried";
+      c.floor = this.floor;
+      this.flags.case_picked = true;
+      this.applyCarry(true);
+      this.emit({ type: "case", state: "carried", first });
+      if (first) {
+        this.say("f6_pickup");
+        this.setObjective(this.flags.case_secured || this.flags.sample_matched ? "f5_down" : "f5_intake");
+      } else if (this.flags.sample_matched && this.floor === 5) this.setObjective("f5_down");
+      this.checkpoint();
+    }
+    dropCase(x, z) {
+      const c = this.case;
+      c.state = "placed";
+      c.floor = this.floor;
+      c.x = +x.toFixed(2);
+      c.z = +z.toFixed(2);
+      c.y = 0;
+      this.applyCarry(false);
+      this.emit({ type: "case", state: "placed" });
+      this.checkpoint();
+    }
+    secureCase() {
+      const c = this.case;
+      c.state = "stored";
+      c.floor = 5;
+      c.x = INTAKE_SPOT.x;
+      c.z = INTAKE_SPOT.z;
+      c.y = INTAKE_SPOT.y;
+      this.applyCarry(false);
+      const first = !this.flags.case_secured;
+      this.flags.case_secured = true;
+      this.emit({ type: "case", state: "stored", first });
+      if (this.flags.record_seen && !this.flags.sample_matched) this.matchSample();
+      else if (first) {
+        this.say("f5_intake");
+        this.setObjective("f5_record");
+      }
+      this.checkpoint();
+    }
+    matchSample() {
+      this.flags.sample_matched = true;
+      this.say("f5_match");
+      this.emit({ type: "sampleMatch" });
+      this.setObjective(this.case.state === "carried" ? "f5_down" : "f5_retrieve");
+    }
     step(dt, input2) {
-      const sim2 = this.sim, p2 = sim2.player, W3 = sim2.world;
+      const sim2 = this.sim, p2 = sim2.player;
       if (this.complete) return;
       for (const z of sim2.zombies) if (z.spawnKey && !z.alive && !this.killed.has(z.spawnKey)) this.killed.add(z.spawnKey);
-      const room = roomAt(p2.x, p2.z);
+      const room = roomAt2(p2.x, p2.z);
       if (room && room !== this.room) {
         this.room = room;
-        if (!this.visited.has(room)) {
-          this.visited.add(room);
+        const key = this.floor + ":" + room;
+        if (!this.visited.has(key)) {
+          this.visited.add(key);
           this.emit({ type: "roomEnter", room });
+          this.onFirstVisit(room);
         }
         if (!p2.dead) this.checkpoint();
       }
       this.pickupStep(p2);
       this.doorStep(dt);
+      this.partitionStep();
       this.liftStep(dt, p2);
       this.prompt = p2.dead ? null : this.findPrompt(p2);
       if (input2.usePresses > 0 && this.prompt?.usable) this.use(this.prompt.id);
-      if (!this.flags.cafeteria_brace_removed) {
-        this.bangT -= dt;
-        const d = Math.hypot(p2.x + 25.6, p2.z + 14.6);
-        if (this.bangT <= 0) {
-          this.bangT = 1.4 + sim2.rand() * 2.2;
-          if (d < 11) this.emit({ type: "bang", door: "brace", near: d });
-        }
-      }
+    }
+    onFirstVisit(room) {
+      if (room === "k6" && !this.flags.case_seen) this.flags.case_seen = true;
+      if (room === "j6" && !this.flags.case_picked) this.setObjective("f6_case");
+      if (room === "i5" && this.floor === 5 && this.case.state !== "carried" && !this.flags.case_secured) this.say("f5_first");
     }
     pickupStep(p2) {
       if (p2.dead) return;
@@ -46941,82 +47290,175 @@ void main() {
         this.pickups.splice(this.pickups.indexOf(q), 1);
         this.taken.add(q.id);
         if (q.kind === "weapon") {
-          if (!p2.owned.includes(q.weapon)) p2.owned.push(q.weapon);
+          const list = this.ownedFull || p2.owned;
+          if (!list.includes(q.weapon)) {
+            list.push(q.weapon);
+            if (this.ownedFull) this.applyCarry(true);
+          }
           if (q.mag !== void 0) p2.mags[q.weapon] = q.mag;
-          p2.desired = q.weapon;
+          if (!this.ownedFull || ONE_HANDED.includes(q.weapon)) p2.desired = q.weapon;
         } else if (q.kind === "ammo") p2.reserve[q.weapon] = (p2.reserve[q.weapon] || 0) + q.rounds;
         else if (q.kind === "health") p2.hp = Math.min(p2.maxHp, p2.hp + q.amount);
-        this.emit({ type: "pickup", id: q.id, kind: q.kind, weapon: q.weapon });
-        if (q.id === "bat") this.wakeGroup("supply");
+        this.emit({ type: "pickup", id: q.id, kind: q.kind, weapon: q.weapon, label: q.label });
         this.checkpoint();
         break;
       }
     }
     findPrompt(p2) {
       const near = (o, r) => Math.hypot(p2.x - o.x, p2.z - o.z) < r;
-      for (const it of INTERACT) {
+      const c = this.case, carrying = c.state === "carried", f = this.floor;
+      for (const it of this.F.interact) {
         if (!near(it, it.r)) continue;
-        const okSide = !it.side || (it.side.axis === "x" ? p2.x < it.side.max : p2.z < it.side.max);
+        const okSide = !it.side || (it.side.min !== void 0 ? it.side.axis === "x" ? p2.x > it.side.min : p2.z > it.side.min : it.side.axis === "x" ? p2.x < it.side.max : p2.z < it.side.max);
+        if (it.id === "radio" && !this.flags.radio_heard) return { id: it.id, label: it.label, usable: true };
         if (it.id === "liftReset" && !this.flags.lift_power_restored) return { id: it.id, label: it.label, usable: true };
-        if (it.id === "brace" && !this.flags.cafeteria_brace_removed && !this.doors.brace.busy && okSide) return { id: it.id, label: it.label, usable: true };
-        if (it.id === "ctBar" && !this.flags.ct_return_unbarred && !this.doors.ctbar.busy && okSide) return { id: it.id, label: it.label, usable: true };
+        if (it.id === "orBar" && !this.flags.or_south_unbarred && !this.doors.orbar.busy && okSide) return { id: it.id, label: it.label, usable: true };
+        if (it.id === "intake") {
+          if (carrying) return { id: "intake", label: "Secure the case", usable: true };
+          if (c.state === "stored" && this.flags.record_seen && !this.flags.sample_matched) return { id: "match", label: "Compare the record with the case", usable: true };
+        }
+        if (it.id === "record" && !this.flags.record_seen) return { id: "record", label: it.label, usable: true };
       }
-      if (!this.flags.ct_return_unbarred && p2.z > -11.15 && near({ x: -4.5, z: -10.3 }, 1.9)) return { id: "ctBarred", label: "Barred from the other side", usable: false };
-      if (!this.flags.cafeteria_brace_removed && p2.x > -25.6 && near({ x: -24.9, z: -14.6 }, 1.6)) return { id: "braceOther", label: "Braced shut from the other side", usable: false };
-      if (this.lift.state === "fault" && near(LIFT.call, 2.4)) return { id: "liftFault", label: "Lift: power fault \u2014 reset it in Maintenance", usable: false };
+      if (!carrying && c.floor === f && near(c, CASE_R)) {
+        if (!this.canCarry()) return { id: "caseNoHand", label: "Needs a free hand: a one-handed weapon", usable: false };
+        return { id: "takeCase", label: c.state === "home" ? "Take the sealed case" : "Pick up the case", usable: true };
+      }
+      if (f === 7) {
+        if (!this.flags.or_south_unbarred && p2.z < 1.05 && near({ x: -1.35, z: 0.2 }, 2)) return { id: "orBarred", label: "Barred from the other side", usable: false };
+        if (this.lift.state === "fault" && near(this.L.call, 2.6)) return { id: "liftFault", label: "Lift: no power", usable: false };
+        if (!this.flags.lift_power_restored && near({ x: -15.05, z: 16.4 }, 1.8)) return { id: "x7Locked", label: "Powered door: no power", usable: false };
+      }
+      if (f === 6 && !this.flags.partition_broken && near({ x: -16.6, z: -56.05 }, 1.6)) return { id: "partitionWeak", label: "A weak partition \u2014 too solid to push", usable: false };
+      if (f === 5 && this.case.state === "stored" && near(INTAKE_SPOT, 2.2) && !this.flags.sample_matched && !this.flags.record_seen) return { id: "caseHeld", label: "The case is secured here", usable: false };
       for (const q of this.pickups) if (q.kind === "health" && near(q, q.r + 0.6) && p2.hp >= p2.maxHp) return { id: "healthFull", label: "Health full \u2014 leave the first-aid case", usable: false };
-      if (this.taken.has("ammo") && near({ x: -14.85, z: 3.25 }, 1)) return { id: "bagEmpty", label: "The bag is empty", usable: false };
+      if (carrying && !this.lift.choosing) return { id: "dropCase", label: "Set the case down", usable: true, quiet: true };
       return null;
     }
     use(id) {
-      const W3 = this.sim.world;
-      if (id === "liftReset" && !this.flags.lift_power_restored) {
+      const p2 = this.sim.player;
+      if (id === "radio" && !this.flags.radio_heard) {
+        this.flags.radio_heard = true;
+        this.say("f7_radio");
+        this.setObjective("f7_power");
+      } else if (id === "liftReset" && !this.flags.lift_power_restored) {
         this.flags.lift_power_restored = true;
         if (this.lift.state === "fault") this.lift.state = "ready";
+        this.doors.x7door.busy = true;
+        this.doors.x7door.t = 0;
         this.emit({ type: "liftPower" });
-        this.setObjective("elevator");
-        this.checkpoint();
-      } else if (id === "brace" || id === "ctBar") {
-        const key = id === "brace" ? "brace" : "ctbar", d = this.doors[key];
+        this.say("f7_power");
+        this.setObjective(this.flags.or_south_unbarred ? "f7_board" : "f7_return");
+      } else if (id === "orBar") {
+        const d = this.doors.orbar;
         if (d.busy) return;
         d.busy = true;
         d.t = 0;
-        this.emit({ type: "unbrace", door: key });
+        this.emit({ type: "unbrace", door: "orbar" });
+      } else if (id === "takeCase") this.takeCase();
+      else if (id === "dropCase") this.dropCase(p2.x + Math.sin(p2.aimYaw) * 0.55, p2.z + Math.cos(p2.aimYaw) * 0.55);
+      else if (id === "intake") this.secureCase();
+      else if (id === "match") this.matchSample();
+      else if (id === "record") {
+        this.flags.record_seen = true;
+        this.emit({ type: "record" });
+        const atHand = this.case.state === "stored" || this.case.state === "carried";
+        if (this.flags.case_secured && this.case.state === "stored") {
+          this.say("f5_record");
+          this.setObjective("f5_match");
+        } else {
+          this.say(atHand ? "f5_record" : "f5_record_first");
+          this.setObjective(atHand ? "f5_match" : "f5_record_case");
+        }
+        this.checkpoint();
       }
     }
-    // brace / bar removal, then the leaves swing open; the doorway only becomes passable once they are open
+    // the bar comes off, then the leaves swing open; the doorway only becomes passable once they are open.
+    // The contractor store's powered door slides open when the circuit comes back.
     doorStep(dt) {
       const W3 = this.sim.world;
-      for (const key of ["brace", "ctbar"]) {
-        const d = this.doors[key];
-        if (!d.busy) continue;
+      const d = this.doors.orbar;
+      if (d.busy) {
         d.t += dt;
         d.brace = Math.min(1, d.t / BRACE_TIME);
         d.open = Math.min(1, Math.max(0, (d.t - BRACE_TIME) / DOOR_OPEN_TIME));
-        if (d.open >= 0.6 && W3.dyn[key] && !W3.dyn[key].off) W3.setOff(W3.dyn[key], true);
+        if (d.open >= 0.6 && W3.dyn?.orbar && !W3.dyn.orbar.off) W3.setOff(W3.dyn.orbar, true);
         if (d.open >= 1) {
           d.busy = false;
-          if (key === "brace") {
-            this.flags.cafeteria_brace_removed = true;
-            this.wakeGroup("cafe");
-            this.emit({ type: "doorOpened", door: key });
-          } else {
-            this.flags.ct_return_unbarred = true;
-            this.emit({ type: "doorOpened", door: key });
-          }
+          this.flags.or_south_unbarred = true;
+          this.emit({ type: "doorOpened", door: "orbar" });
+          if (this.flags.lift_power_restored) this.setObjective("f7_board");
           this.checkpoint();
         }
       }
+      const x = this.doors.x7door;
+      if (x.busy) {
+        x.t += dt;
+        x.open = Math.min(1, x.t / DOOR_OPEN_TIME);
+        if (x.open >= 0.6 && W3.dyn?.x7door && !W3.dyn.x7door.off) W3.setOff(W3.dyn.x7door, true);
+        if (x.open >= 1) {
+          x.busy = false;
+          if (this.floor === 7) this.emit({ type: "doorOpened", door: "x7door" });
+        }
+      }
     }
-    // the lift: fault -> ready (power) -> opening (Yola at the call panel) -> open -> closing (Yola fully in the cab) -> gone.
-    // Leaving the cab, or standing in the threshold, while the doors close sends them back open.
+    // Floor 6: the charger's committed run into the weak partition breaks it for good (the ward route never depends on it)
+    partitionStep() {
+      if (this.floor !== 6 || this.flags.partition_broken) return;
+      const W3 = this.sim.world, b = W3.dyn?.partition;
+      if (!b) return;
+      for (const e of this.sim.events) {
+        if (e.type !== "zombieTumble" || e.what !== "wall") continue;
+        const z = this.sim.zombies.find((q) => q.id === e.id);
+        if (!z || z.kind !== "sprinter") continue;
+        const cx = Math.max(b.minX, Math.min(z.x, b.maxX)), cz = Math.max(b.minZ, Math.min(z.z, b.maxZ));
+        if (Math.hypot(z.x - cx, z.z - cz) > z.r + 0.6) continue;
+        this.flags.partition_broken = true;
+        this.doors.partition.broken = true;
+        W3.setOff(b, true);
+        this.emit({ type: "partitionBreak", x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2, dirX: Math.sin(z.yaw), dirZ: Math.cos(z.yaw) });
+        this.checkpoint();
+        break;
+      }
+    }
+    // the lift: fault -> ready (power) -> opening (Yola at the doors) -> open (a floor picker while she stands in the cab) ->
+    // closing (a floor chosen; never on her) -> travel (the ride: the game rebuilds the next floor) ... arriving -> open.
+    floorsFrom() {
+      const list = [];
+      for (const f of [7, 6, 5]) if (f !== this.floor) list.push({ floor: f, label: "Floor " + f });
+      if (this.floor === 5 && this.flags.sample_matched && this.case.state === "carried") list.push({ floor: 4, label: "Floor 4 \u2014 continue", end: true });
+      return list;
+    }
+    chooseFloor(f) {
+      const L2 = this.lift;
+      if (L2.state !== "open" || !L2.choosing) return;
+      if (f === 4 && !(this.floor === 5 && this.flags.sample_matched && this.case.state === "carried")) return;
+      L2.target = f;
+      L2.state = "closing";
+      L2.choosing = false;
+      this.emit({ type: "liftDoors", open: false });
+    }
     liftStep(dt, p2) {
-      const L2 = this.lift, W3 = this.sim.world;
-      const inCab = inRect(LIFT.cab, p2.x, p2.z, p2.r), atDoor = p2.x > 5.2 && p2.z > LIFT.z - 2.6 && p2.z < LIFT.z + 2.6;
-      const inThreshold = inRect(LIFT.threshold, p2.x, p2.z, -p2.r);
+      const L2 = this.lift, W3 = this.sim.world, LF = this.L;
+      const inCab = inRect(LF.cab, p2.x, p2.z, p2.r * 0.6), atDoor = Math.abs(p2.x - LF.x) < 2.8 && p2.z < LF.z + 2.8 && p2.z > LF.z - 3.6;
+      const inThreshold = inRect(LF.threshold, p2.x, p2.z, -p2.r);
       switch (L2.state) {
+        case "fault":
+          if (this.floor === 7 && !this.flags.phone_checked && !p2.dead && Math.hypot(p2.x - LF.call.x, p2.z - LF.call.z) < 2.2 && !this.sim.zombies.some((z) => z.alive && !z.dormant && Math.hypot(z.x - p2.x, z.z - p2.z) < 7)) {
+            this.flags.phone_checked = true;
+            this.emit({ type: "liftFault" });
+            this.say("f7_phone");
+            this.setObjective("f7_find");
+          }
+          break;
         case "ready":
           if (atDoor && !p2.dead) {
+            L2.state = "opening";
+            this.emit({ type: "liftDoors", open: true });
+          }
+          break;
+        case "arriving":
+          L2.t += dt;
+          if (L2.t > 0.55) {
             L2.state = "opening";
             this.emit({ type: "liftDoors", open: true });
           }
@@ -47024,35 +47466,62 @@ void main() {
         case "opening":
           L2.open = Math.min(1, L2.open + dt / LIFT_DOOR_TIME);
           if (L2.open >= 0.7) W3.setOff(W3.dyn.liftDoors, true);
-          if (L2.open >= 1) {
-            L2.state = "open";
-            this.setObjective("board");
-          }
+          if (L2.open >= 1) L2.state = "open";
           break;
         case "open":
-          if (inCab && !p2.dead) {
-            L2.state = "closing";
-            L2.t = 0;
-            this.emit({ type: "liftDoors", open: false });
+          L2.choosing = inCab && !p2.dead;
+          if (!atDoor && !inCab && p2.z > LF.z + 3.4) {
+            L2.state = "closingIdle";
+            L2.choosing = false;
           }
+          break;
+        case "closingIdle":
+          if (atDoor) {
+            L2.state = "opening";
+            break;
+          }
+          L2.open = Math.max(0, L2.open - dt / LIFT_DOOR_TIME);
+          if (L2.open < 0.3) W3.setOff(W3.dyn.liftDoors, false);
+          if (L2.open <= 0) L2.state = "ready";
           break;
         case "closing":
           if (!inCab || inThreshold || p2.dead) {
             L2.state = "opening";
+            L2.target = null;
             this.emit({ type: "liftDoors", open: true });
             break;
           }
           L2.open = Math.max(0, L2.open - dt / LIFT_DOOR_TIME);
           if (L2.open <= 0) {
             W3.setOff(W3.dyn.liftDoors, false);
-            L2.state = "gone";
-            this.complete = true;
-            this.emit({ type: "levelComplete" });
+            if (L2.target === 4) {
+              L2.state = "gone";
+              this.complete = true;
+              this.flags.chapter_complete = true;
+              this.emit({ type: "chapterComplete" });
+            } else {
+              L2.state = "travel";
+              this.emit({ type: "liftTravel", from: this.floor, to: L2.target, save: this.snapshot({ floor: L2.target, arrive: true, objective: this.arrivalObjective(L2.target) }) });
+            }
           }
           break;
       }
     }
+    // the objective on arriving at a floor (the chapter's goals, wherever they stand)
+    arrivalObjective(f) {
+      const F = this.flags, c = this.case;
+      if (F.sample_matched) return c.state === "carried" ? f === 5 ? "f5_down" : "f5_back" : c.floor === f ? "f5_retrieve" : "f5_fetch";
+      if (c.state === "carried") return f === 5 ? "f5_intake" : "f5_go";
+      if (f === 6 && !F.case_picked) return "f6_case";
+      if (f === 5) return F.record_seen ? F.case_secured ? "f5_match" : "f5_record_case" : F.case_secured ? "f5_record" : "f5_explore";
+      if (f === 7) return "f7_explore";
+      return this.objective;
+    }
   };
+  var ORDER = ["pistol", "shotgun", "axe", "bat", "fists"];
+  function WEAPON_SORT(list) {
+    return [...new Set(list)].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  }
 
   // src/core/sim.js
   var STEP = 1 / 60;
@@ -47089,7 +47558,7 @@ void main() {
       this.pickups = [];
       this.flow = { objective: "" };
       if ((opts.mode || "") === "room1") {
-        if (LAYOUT.name === "floor3") this.level = new Level(this, opts.save || null);
+        if (LAYOUT.story) this.level = new Level(this, opts.save || null);
         else this.setupRoom1();
       }
     }
@@ -47162,10 +47631,10 @@ void main() {
       const d = (typeof door === "string" ? LAYOUT.doors.find((x) => x.id === door) : door) || { id: "placed", x: opts.x, z: opts.z, axis: "x", spawn: { x: opts.x, z: opts.z }, yaw: opts.yaw ?? 0 };
       const jitter = (this.rand() - 0.5) * 0.8;
       const sx = d.spawn.x + (d.axis === "x" ? jitter : 0), sz = d.spawn.z + (d.axis === "z" ? jitter : 0);
-      const K2 = KINDS[opts.kind] || KINDS.normal;
+      const K3 = KINDS[opts.kind] || KINDS.normal;
       const z = new Zombie(sx, sz, d.yaw, {
-        hp: (opts.hp ?? this.T.zombieHp) * K2.hp,
-        speedMul: (opts.speedMul ?? 0.85 + this.rand() * 0.3) * K2.speed,
+        hp: (opts.hp ?? this.T.zombieHp) * K3.hp,
+        speedMul: (opts.speedMul ?? 0.85 + this.rand() * 0.3) * K3.speed,
         passive: opts.passive,
         phase: this.rand(),
         kind: opts.kind
@@ -47254,7 +47723,7 @@ void main() {
     // a push along the average pellet direction, and each pellet's body part (several limbs can go).
     fireShotgun(p2) {
       this.stats.shots++;
-      const S2 = SHOTGUN_SPEC, T2 = this.T, m = p2.muzzleWorld(_m);
+      const S2 = SHOTGUN_SPEC, T3 = this.T, m = p2.muzzleWorld(_m);
       p2.vx -= Math.sin(p2.aimYaw) * 1.1;
       p2.vz -= Math.cos(p2.aimYaw) * 1.1;
       const block = this.world.raycast(p2.x, p2.z, m.x, m.z, BULLET_MIN_H);
@@ -47273,10 +47742,10 @@ void main() {
           const fall = r.t <= S2.falloffFrom ? 1 : Math.max(0.33, 1 - (r.t - S2.falloffFrom) / (S2.range - S2.falloffFrom) * 0.67);
           let h = hits.get(r.zombie);
           if (!h) hits.set(r.zombie, h = { dmg: 0, px: 0, pz: 0, parts: [] });
-          h.dmg += T2.shotgunDamage * fall;
+          h.dmg += T3.shotgunDamage * fall;
           h.px += dx * fall;
           h.pz += dz * fall;
-          h.parts.push([this.bulletPart(r.zombie, m.x, m.z, dx, dz, true), T2.shotgunDamage * fall]);
+          h.parts.push([this.bulletPart(r.zombie, m.x, m.z, dx, dz, true), T3.shotgunDamage * fall]);
           pellets.push({ ex, ez, hit: "zombie", id: r.zombie.id });
         } else pellets.push({ ex, ez, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz });
       }
@@ -47284,7 +47753,7 @@ void main() {
       for (const [z, h] of hits) {
         this.stats.shotHits++;
         const pl = Math.hypot(h.px, h.pz) || 1;
-        if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T2.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
+        if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T3.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
         if (!z.alive) killed.push(z.id);
       }
       let closest = 99, closestId = -1;
@@ -47363,7 +47832,7 @@ void main() {
     // ---------------- axe: swept between simulation steps ----------------
     resolveMelee(p2, t0, t1, act) {
       if (t1 <= t0) return;
-      const SUB = 4, T2 = this.T, A = p2.atk(act), G2 = A.geom || AXE_GEOM, fist = p2.equipped === FISTS || A.kind === "fist";
+      const SUB = 4, T3 = this.T, A = p2.atk(act), G2 = A.geom || AXE_GEOM, fist = p2.equipped === FISTS || A.kind === "fist";
       let prev = meleeWorldSegment(p2, A, t0, _a);
       let px2 = prev.tx, pz2 = prev.tz;
       {
@@ -47433,21 +47902,21 @@ void main() {
             dz /= l2;
           }
           if (fist) {
-            const dmgF = T2.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
-            z.takeHit(dmgF, dx, dz, T2.fistKnockback * A.knock, "fist", this, "torso", A.style);
+            const dmgF = T3.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
+            z.takeHit(dmgF, dx, dz, T3.fistKnockback * A.knock, "fist", this, "torso", A.style);
             this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true, shield: blk });
-            if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
+            if (T3.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T3.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
             continue;
           }
-          const dmg = T2.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
+          const dmg = T3.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
           const side = this.rand() < 0.5 ? "_L" : "_R", shielded = z.shieldBlocks(dx, dz);
           const part = shielded ? "torso" : lethal && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
           if (part !== "torso" && !z.severed.has(part)) z.limbHp[part] = 0;
           const last2 = act.ground || act.combo === p2.attacks.length - 1, holding = !last2 && p2.attackHeld;
           const kind = A.kind || (p2.equipped === BAT ? "bat" : "axe");
-          z.takeHit(dmg, dx, dz, T2.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? "combo" : A.style);
+          z.takeHit(dmg, dx, dz, T3.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? "combo" : A.style);
           this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p2.equipped, shield: shielded });
-          if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
+          if (T3.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T3.meleeHitPause * (z.alive ? 1 : 1.3) * (last2 ? 1.25 : 0.8) });
         }
         px2 = tipX;
         pz2 = tipZ;
@@ -47954,7 +48423,1267 @@ void main() {
     return material;
   }
 
+  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  function clone(source) {
+    const sourceLookup = /* @__PURE__ */ new Map();
+    const cloneLookup = /* @__PURE__ */ new Map();
+    const clone2 = source.clone();
+    parallelTraverse(source, clone2, function(sourceNode, clonedNode) {
+      sourceLookup.set(clonedNode, sourceNode);
+      cloneLookup.set(sourceNode, clonedNode);
+    });
+    clone2.traverse(function(node) {
+      if (!node.isSkinnedMesh) return;
+      const clonedMesh = node;
+      const sourceMesh = sourceLookup.get(node);
+      const sourceBones = sourceMesh.skeleton.bones;
+      clonedMesh.skeleton = sourceMesh.skeleton.clone();
+      clonedMesh.bindMatrix.copy(sourceMesh.bindMatrix);
+      clonedMesh.skeleton.bones = sourceBones.map(function(bone) {
+        return cloneLookup.get(bone);
+      });
+      clonedMesh.bind(clonedMesh.skeleton, clonedMesh.bindMatrix);
+    });
+    return clone2;
+  }
+  function parallelTraverse(a, b, callback) {
+    callback(a, b);
+    for (let i = 0; i < a.children.length; i++) {
+      parallelTraverse(a.children[i], b.children[i], callback);
+    }
+  }
+
+  // src/opening/actors.js
+  var blobTex = null;
+  function blobMaterial() {
+    if (!blobTex) {
+      const c = document.createElement("canvas");
+      c.width = c.height = 64;
+      const g = c.getContext("2d");
+      const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+      gr.addColorStop(0, "rgba(20,30,34,.5)");
+      gr.addColorStop(1, "rgba(20,30,34,0)");
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+      blobTex = new CanvasTexture(c);
+    }
+    return new MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false });
+  }
+  var clamp3 = (v, a, b) => Math.min(b, Math.max(a, v));
+  var angDiff = (a, b) => {
+    let d = (b - a) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2;
+    if (d < -Math.PI) d += Math.PI * 2;
+    return d;
+  };
+  var Actor = class {
+    // gltf: loaded glTF; opts.height: metres (scales the model); opts.walkSpeed: m/s the walk clip is tuned for
+    constructor(gltf, { height = 0, walkSpeed = 1.15, name = "actor", walkClip = "Walk_InPlace", idleClip = "Idle" } = {}) {
+      this.name = name;
+      this.root = new Group();
+      this.root.name = name;
+      this.model = clone(gltf.scene);
+      this.root.add(this.model);
+      this.model.traverse((o) => {
+        if (o.isMesh) {
+          o.frustumCulled = false;
+          o.castShadow = false;
+          o.receiveShadow = false;
+        }
+      });
+      this.blob = new Mesh(new PlaneGeometry(0.9, 0.9), blobMaterial());
+      this.blob.rotation.x = -Math.PI / 2;
+      this.blob.position.y = 0.012;
+      this.blob.renderOrder = 1;
+      this.root.add(this.blob);
+      if (height) {
+        this.root.updateMatrixWorld(true);
+        const box = new Box3().setFromObject(this.model);
+        const k = height / (box.max.y - box.min.y);
+        this.model.scale.multiplyScalar(k);
+        this.model.position.y -= box.min.y * k;
+      }
+      this.mixer = new AnimationMixer(this.model);
+      this.actions = {};
+      for (const c of gltf.animations) this.actions[c.name] = this.mixer.clipAction(c);
+      this.bones = {};
+      this.model.traverse((o) => {
+        if (o.isBone) this.bones[o.name] = o;
+      });
+      this.cur = null;
+      this.curName = "";
+      this.walkSpeed = walkSpeed;
+      this.walkClip = walkClip;
+      this.idleClip = idleClip;
+      this.yaw = 0;
+      this.targetYaw = null;
+      this.path = [];
+      this.speed = 0;
+      this.moving = false;
+      this.onArrive = null;
+      this.timeScale = 1;
+      this.seated = false;
+      this.sitState = "stand";
+      this.seat = null;
+      this.adj = {};
+      this._undo = [];
+      this.lying = null;
+    }
+    place(x, z, yaw = this.yaw) {
+      this.root.position.set(x, 0, z);
+      this.yaw = yaw;
+      this.root.rotation.y = yaw;
+      return this;
+    }
+    get x() {
+      return this.root.position.x;
+    }
+    get z() {
+      return this.root.position.z;
+    }
+    play(name, { fade = 0.25, once = false, rate = 1, from = 0 } = {}) {
+      const a = this.actions[name];
+      if (!a) return null;
+      if (this.cur === a && !once) return a;
+      a.reset();
+      a.enabled = true;
+      a.setEffectiveWeight(1);
+      a.timeScale = rate;
+      a.setLoop(once ? LoopOnce : LoopRepeat, Infinity);
+      a.clampWhenFinished = once;
+      if (from) a.time = from;
+      if (this.cur && this.cur !== a) a.crossFadeFrom(this.cur, fade, false);
+      a.play();
+      this.cur = a;
+      this.curName = name;
+      return a;
+    }
+    duration(name) {
+      return this.actions[name]?.getClip().duration ?? 0;
+    }
+    // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle. clip / idle: what plays while
+    // moving and on arrival (a seated rider: SeatedIdle for both); keepSeat: a rider stays seated (no stand-up state change)
+    walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null, clip = null, idle = null, keepSeat = false } = {}) {
+      this.path = points.map((p2) => ({ x: p2[0], z: p2[1] }));
+      this.speed = speed;
+      this.endYaw = endYaw;
+      this.onArrive = onArrive;
+      this.moving = this.path.length > 0;
+      if (!keepSeat) this.seated = false;
+      this.arriveClip = idle || this.idleClip;
+      if (this.moving) this.play(clip || this.walkClip, { rate: clip ? 1 : speed / this.walkSpeed });
+    }
+    stop() {
+      this.path = [];
+      this.moving = false;
+    }
+    update(dt) {
+      if (this.frozen) return;
+      const d = dt * this.timeScale;
+      for (const u of this._undo) u.bone.quaternion.copy(u.base);
+      this._undo.length = 0;
+      if (this.moving && this.path.length) {
+        const t = this.path[0], dx = t.x - this.x, dz = t.z - this.z, L2 = Math.hypot(dx, dz), step = this.speed * d;
+        if (L2 <= step + 1e-4) {
+          this.root.position.x = t.x;
+          this.root.position.z = t.z;
+          this.path.shift();
+          if (!this.path.length) {
+            this.moving = false;
+            if (this.endYaw != null) this.targetYaw = this.endYaw;
+            this.play(this.arriveClip || this.idleClip);
+            const cb = this.onArrive;
+            this.onArrive = null;
+            cb?.();
+          }
+        } else {
+          this.root.position.x += dx / L2 * step;
+          this.root.position.z += dz / L2 * step;
+          this.targetYaw = Math.atan2(dx, dz);
+        }
+      }
+      if (this.targetYaw != null) {
+        const e = angDiff(this.yaw, this.targetYaw);
+        this.yaw += clamp3(e, -d * (this.turnRate || 7), d * (this.turnRate || 7));
+        if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
+      }
+      if (this.lying) this.root.rotation.set(-Math.PI / 2, this.yaw, 0, "YXZ");
+      else this.root.rotation.y = this.yaw;
+      if (this.seat && (this.sitState === "sitting" || this.sitState === "seated")) {
+        this.root.position.x = this.seat.x + Math.sin(this.yaw) * this.seat.behind;
+        this.root.position.z = this.seat.z + Math.cos(this.yaw) * this.seat.behind;
+      }
+      this.mixer.update(d);
+      for (const k in this.adj) {
+        const a = this.adj[k], b = this.bones[a.bone];
+        if (!b || !(a.w > 0)) continue;
+        this._undo.push({ bone: b, base: b.quaternion.clone() });
+        b.quaternion.multiply(new Quaternion().setFromEuler(new Euler(a.x * a.w, a.y * a.w, a.z * a.w, "XYZ")));
+      }
+    }
+    adjust(key, bone, x, y, z, w = 1) {
+      this.adj[key] = { bone, x, y, z, w };
+    }
+    // lie supine on a surface: feet at (x, y, z), the body's long axis (head direction) along yawHead (0 = +z)
+    lie(x, y, z, yawHead) {
+      this.stop();
+      this.lying = { x, y, z, yawHead };
+      this.root.rotation.order = "YXZ";
+      this.root.position.set(x, y, z);
+      this.yaw = yawHead;
+      this.root.rotation.set(-Math.PI / 2, yawHead, 0, "YXZ");
+      if (this.blob) this.blob.visible = false;
+    }
+    unlie() {
+      this.lying = null;
+      this.root.rotation.set(0, this.yaw, 0, "XYZ");
+      this.root.rotation.order = "XYZ";
+      if (this.blob) this.blob.visible = true;
+    }
+    get busy() {
+      return this.moving || this.targetYaw != null;
+    }
+    turnTo(yaw) {
+      this.targetYaw = yaw;
+    }
+    // Sit on a chair whose seat centre is (cx, cz) with the character facing yaw. The visitor rigs' SitDown clip
+    // expects the seat 0.45 m behind the standing origin (the source Blender contract), so stand 0.45 m in front.
+    // The origin is placed by the caller's route (the sit anchor); this only plays the clip (instant = already seated).
+    sitAt(cx, cz, yaw, { instant = false, behind = 0.45, seatTop = 0.47 } = {}) {
+      this.stop();
+      this.targetYaw = null;
+      this.seat = { x: cx, z: cz, behind };
+      this.yaw = yaw;
+      this.root.position.set(cx + Math.sin(yaw) * behind, Math.max(0, seatTop - 0.47), cz + Math.cos(yaw) * behind);
+      this.seated = true;
+      if (instant) {
+        this.sitState = "seated";
+        this.play("SeatedIdle", { fade: 0 });
+        return;
+      }
+      this.sitState = "sitting";
+      const a = this.play("SitDown", { once: true, fade: 0.1 });
+      if (a) {
+        const done = (e) => {
+          if (e.action === a) {
+            this.mixer.removeEventListener("finished", done);
+            if (this.seated) {
+              this.sitState = "seated";
+              this.play("SeatedIdle", { fade: 0.15 });
+            }
+          }
+        };
+        this.mixer.addEventListener("finished", done);
+      }
+    }
+    standUp() {
+      if (this.sitState === "stand" || this.sitState === "rising") return;
+      this.seated = false;
+      this.sitState = "rising";
+      const a = this.play("StandUp", { once: true, fade: 0.1 });
+      if (a) {
+        const done = (e) => {
+          if (e.action === a) {
+            this.mixer.removeEventListener("finished", done);
+            this.sitState = "stand";
+            this.seat = null;
+            this.root.position.y = 0;
+            this.play(this.idleClip, { fade: 0.15 });
+          }
+        };
+        this.mixer.addEventListener("finished", done);
+      }
+    }
+    get settled() {
+      return this.sitState === "seated";
+    }
+    get upright() {
+      return this.sitState === "stand";
+    }
+    setVisible(v) {
+      this.root.visible = v;
+    }
+    // swap clothing materials by name (map: material name -> colour), keeping the originals to restore
+    setOutfit(map) {
+      this._outfit || (this._outfit = []);
+      this.model.traverse((o) => {
+        if (!o.isMesh) return;
+        const one = (m) => {
+          const c = map && m && map[m.name];
+          if (c === void 0) return m;
+          const n = m.clone();
+          n.color.set(c);
+          n.map = null;
+          n.userData.outfitOf = m;
+          return n;
+        };
+        if (!o.userData.matOrig) o.userData.matOrig = o.material;
+        o.material = map ? Array.isArray(o.userData.matOrig) ? o.userData.matOrig.map(one) : one(o.userData.matOrig) : o.userData.matOrig;
+      });
+    }
+  };
+  var _v = new Vector3();
+  var _q = new Quaternion();
+  var _q2 = new Quaternion();
+  var _id3 = new Quaternion();
+  var OriginalYola = class extends Actor {
+    constructor(gltf, opts = {}) {
+      super(gltf, { walkClip: "walk", idleClip: "idle", ...opts });
+      this.waveT = -1;
+      this.rest = {};
+      this.pose = null;
+      this.root.traverse((o) => {
+        if (o.name === "carry_tray" || o.isMesh && !o.isSkinnedMesh && !o.name && o.parent === this.root.children[0]) o.visible = false;
+      });
+      this.keyed = /* @__PURE__ */ new Set();
+      for (const c of gltf.animations) for (const tr of c.tracks) this.keyed.add(tr.name.split(".")[0]);
+      for (const n of ["upperarm_r", "forearm_r", "upperarm_l", "forearm_l", "head", "torso", "thigh_l", "thigh_r", "shin_l", "shin_r"]) if (this.bones[n]) this.rest[n] = this.bones[n].quaternion.clone();
+      this.root.updateMatrixWorld(true);
+      const B = this.bones, pos = (b) => b.getWorldPosition(new Vector3());
+      this.armDir = {};
+      for (const [n, c] of [["upperarm_r", "forearm_r"], ["upperarm_l", "forearm_l"], ["thigh_l", "shin_l"], ["thigh_r", "shin_r"]]) {
+        if (!B[n] || !B[c]) continue;
+        const dir = pos(B[c]).sub(pos(B[n])).normalize();
+        this.armDir[n] = dir.clone().applyQuaternion(B[n].getWorldQuaternion(new Quaternion()).invert());
+        this.armDir[c] = dir.clone().applyQuaternion(B[c].getWorldQuaternion(new Quaternion()).invert());
+      }
+      this.pelvisY0 = B.pelvis.getWorldPosition(new Vector3()).y - this.root.position.y;
+      this.baseY = this.model.position.y;
+      this.sitW = 0;
+      this.sitTarget = 0;
+      this.sitSeatTop = 0.5;
+      this.sitDrop = 0;
+    }
+    startWave(rate = 1) {
+      this.waveT = 0;
+      this.waveRate = rate;
+    }
+    // rate > 1: the same awkward wave, compressed to fit the phrase
+    update(dt) {
+      if (this.frozen) return;
+      super.update(dt);
+      if (this.waveT >= 0) this.waveT += dt * this.timeScale * (this.waveRate || 1);
+      const sd = dt * this.timeScale / 0.7;
+      this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
+      this.applyProcedural();
+    }
+    // sit on a seat of the given top height (m): lowers the pelvis onto it and folds the legs. The caller places root.
+    sitDown(seatTop) {
+      this.sitSeatTop = seatTop;
+      this.sitTarget = 1;
+      this.pose = "sit";
+      this.seated = true;
+      this.sitState = "sitting";
+    }
+    riseUp() {
+      this.sitTarget = 0;
+      this.seated = false;
+      this.sitState = "rising";
+    }
+    get settled() {
+      return this.sitTarget === 1 && this.sitW >= 1;
+    }
+    get upright() {
+      return this.sitTarget === 0 && this.sitW <= 0;
+    }
+    // rotate the bone (in world space) so that its length axis points along 'target', by weight w
+    aim(name, target, w) {
+      const b = this.bones[name];
+      if (!b || w <= 1e-4) return;
+      b.updateWorldMatrix(true, false);
+      b.getWorldQuaternion(_q);
+      const cur = _v.copy(this.armDir[name]).applyQuaternion(_q);
+      const rot = _q2.setFromUnitVectors(cur, target);
+      rot.premultiply(_id3.identity());
+      const part = new Quaternion().identity().slerp(rot, w);
+      const world = part.multiply(_q.clone());
+      b.parent.getWorldQuaternion(_q2);
+      b.quaternion.copy(_q2.invert().multiply(world));
+      b.updateMatrixWorld(true);
+    }
+    // rotate a bone about a world axis
+    rotW(name, axis, angle) {
+      const b = this.bones[name];
+      if (!b || !angle) return;
+      b.updateWorldMatrix(true, false);
+      b.getWorldQuaternion(_q);
+      const world = _id3.setFromAxisAngle(axis, angle).multiply(_q.clone());
+      b.parent.getWorldQuaternion(_q2);
+      b.quaternion.copy(_q2.invert().multiply(world));
+      b.updateMatrixWorld(true);
+    }
+    applySit() {
+      const w = this.sitW, B = this.bones, R = this.rest;
+      if (w > 1e-3 || this._wasSit) {
+        for (const n of ["thigh_l", "thigh_r", "shin_l", "shin_r"]) if (R[n]) B[n].quaternion.copy(R[n]);
+      }
+      this._wasSit = w > 1e-3;
+      if (w <= 1e-3) {
+        this.model.position.y = this.baseY;
+        this.sitDrop = 0;
+        if (this.sitState === "rising" && this.sitTarget === 0) {
+          this.sitState = "stand";
+          this.seated = false;
+          this.pose = null;
+        }
+        return;
+      }
+      if (this.sitTarget === 1 && this.sitW >= 1) this.sitState = "seated";
+      this.root.updateMatrixWorld(true);
+      const U3 = new Vector3(0, 1, 0), yawF = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+      const drop = (this.pelvisY0 - (this.sitSeatTop + 0.04)) * w;
+      this.sitDrop = drop;
+      const th = yawF.clone().multiplyScalar(0.82).add(U3.clone().multiplyScalar(-0.57)).normalize();
+      const sh = U3.clone().multiplyScalar(-0.96).add(yawF.clone().multiplyScalar(0.18)).normalize();
+      for (const side of ["l", "r"]) {
+        this.aim("thigh_" + side, th, w);
+        this.aim("shin_" + side, sh, w);
+      }
+      this.model.position.y = this.baseY - drop;
+      this.model.updateMatrixWorld(true);
+    }
+    applyProcedural() {
+      const t = this.waveT, B = this.bones, R = this.rest;
+      for (const n of ["head", "upperarm_r", "forearm_r"]) if (R[n]) B[n].quaternion.copy(R[n]);
+      for (const n in R) if (!this.keyed.has(n)) B[n].quaternion.copy(R[n]);
+      const rot = (n, x, y, z) => {
+        const b = B[n];
+        if (!b) return;
+        if (!this.keyed.has(n)) b.quaternion.copy(R[n]);
+        b.quaternion.multiply(_q.setFromEuler(new Euler(x, y, z, "XYZ")));
+      };
+      this.applySit();
+      if (t < 0) return;
+      this.root.updateMatrixWorld(true);
+      const ease2 = (u) => {
+        u = Math.min(1, Math.max(0, u));
+        return u * u * (3 - 2 * u);
+      };
+      const lift = t < 0.5 ? ease2(t / 0.5) * 0.35 : 0.35 + ease2((t - 0.5) / 0.5) * 0.65;
+      const up = lift * (1 - ease2((t - 3.9) / 0.8));
+      const wig = Math.sin(t * 16) * ease2((t - 0.9) / 0.3) * (1 - ease2((t - 3.7) / 0.5));
+      const U3 = new Vector3(0, 1, 0);
+      const right = _v.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
+      right.y = 0;
+      right.normalize();
+      const R3 = right.clone(), F3 = new Vector3().crossVectors(U3, R3).normalize();
+      const du = R3.clone().multiplyScalar(0.78).add(U3.clone().multiplyScalar(0.42)).add(F3.clone().multiplyScalar(0.22)).normalize();
+      this.aim("upperarm_r", du, up);
+      const df = U3.clone().add(R3.clone().multiplyScalar(0.1 + wig * 0.85)).add(F3.clone().multiplyScalar(0.3)).normalize();
+      this.aim("forearm_r", df, up);
+      const shy = ease2((t - 0.9) / 0.5) * (1 - ease2((t - 3.9) / 0.6));
+      this.rotW("head", F3, -0.13 * shy);
+    }
+  };
+
+  // src/opening/stage.js
+  var CLINIC = { x: 60, z: 0 };
+  var M3 = "../assets/models/";
+  var LIFT_KIT = "assets/kit/Hospital_Elevator_Outbreak.glb";
+  var RECL = "assets/opening/recliners/TreatmentRecliner_";
+  var CLINIC_LIFT = { x: -2.3, z: -6 };
+  function liftDisplay(root) {
+    const c = document.createElement("canvas");
+    c.width = 256;
+    c.height = 96;
+    const g = c.getContext("2d");
+    const tex = new CanvasTexture(c);
+    tex.colorSpace = SRGBColorSpace;
+    const m = new Mesh(new PlaneGeometry(0.56, 0.21), new MeshBasicMaterial({ map: tex, toneMapped: false }));
+    m.position.set(0, 2.65, 0.272);
+    root.add(m);
+    root.traverse((o) => {
+      if (/^Indicator_/.test(o.name)) o.visible = false;
+    });
+    const set = (text, arrow = "") => {
+      g.fillStyle = "#120c06";
+      g.fillRect(0, 0, 256, 96);
+      g.fillStyle = "#ffb648";
+      g.font = "800 70px ui-monospace, Menlo, Consolas, monospace";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.shadowColor = "#ff8a00";
+      g.shadowBlur = 14;
+      g.fillText(text, arrow ? 104 : 128, 52);
+      if (arrow) {
+        g.font = "800 46px system-ui, sans-serif";
+        g.fillText(arrow, 186, 50);
+      }
+      tex.needsUpdate = true;
+    };
+    set("G");
+    return { mesh: m, set };
+  }
+  var PAL = { wall: 16051420, band: 8109496, cap: 16775402, floorA: "#f2e6cc", floorB: "#cfe6dc", grout: "#e1d4b8", glass: 13626092, frame: 9421252 };
+  function checkerTexture() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 256;
+    const g = c.getContext("2d"), s = 128;
+    for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+      g.fillStyle = (i + j) % 2 ? PAL.floorB : PAL.floorA;
+      g.fillRect(i * s, j * s, s, s);
+    }
+    g.strokeStyle = PAL.grout;
+    g.lineWidth = 3;
+    for (let i = 0; i <= 2; i++) {
+      g.beginPath();
+      g.moveTo(i * s, 0);
+      g.lineTo(i * s, 256);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(0, i * s);
+      g.lineTo(256, i * s);
+      g.stroke();
+    }
+    const t = new CanvasTexture(c);
+    t.wrapS = t.wrapT = RepeatWrapping;
+    t.colorSpace = SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  }
+  var ClinicStage = class {
+    constructor(scene2, loader2) {
+      this.scene = scene2;
+      this.loader = loader2;
+      this.root = new Group();
+      this.root.position.set(CLINIC.x, 0, CLINIC.z);
+      this.root.visible = false;
+      scene2.add(this.root);
+      this.cache = /* @__PURE__ */ new Map();
+      this.tiers = [];
+      this.tier = "starter";
+      this.actors = {};
+      this.anchors = {};
+      this.byName = {};
+      this.pops = [];
+      this.rings = [];
+      this.onPop = null;
+    }
+    gltf(url) {
+      if (!this.cache.has(url)) this.cache.set(url, this.loader.loadAsync(url));
+      return this.cache.get(url);
+    }
+    // place a static prop: centred on x/z, standing on the floor, rotated about Y (degrees); fit scales to a target height
+    async prop(url, { x = 0, z = 0, y = 0, rot = 0, s = 1, h = 0, parent = this.root, name = "", wall = "" } = {}) {
+      const g = await this.gltf(url);
+      if (wall) rot = { s: 0, n: 180, e: 90, w: 270 }[wall];
+      const obj = g.scene.clone(true);
+      obj.rotation.y = rot * Math.PI / 180;
+      const holder = new Group();
+      holder.add(obj);
+      holder.updateMatrixWorld(true);
+      let box = new Box3().setFromObject(obj);
+      let k = s;
+      if (h) k = h / (box.max.y - box.min.y);
+      if (k !== 1) {
+        obj.scale.multiplyScalar(k);
+        holder.updateMatrixWorld(true);
+        box = new Box3().setFromObject(obj);
+      }
+      const c = box.getCenter(new Vector3());
+      obj.position.x -= c.x;
+      obj.position.z -= c.z;
+      obj.position.y -= box.min.y;
+      holder.position.set(x, y, z);
+      holder.name = name;
+      if (wall) {
+        const sz = box.getSize(new Vector3());
+        if (wall === "s") holder.position.z = z + sz.z / 2 + 5e-3;
+        if (wall === "n") holder.position.z = z - sz.z / 2 - 5e-3;
+        if (wall === "e") holder.position.x = x + sz.x / 2 + 5e-3;
+        if (wall === "w") holder.position.x = x - sz.x / 2 - 5e-3;
+      }
+      obj.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      parent.add(holder);
+      if (name) this.byName[name] = holder;
+      return holder;
+    }
+    box(w, h, d, x, y, z, color, { r = 0.04, shadow = true, rough = 0.8 } = {}) {
+      const m = new Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.2, d / 2.2, h / 2.2)), new MeshStandardMaterial({ color, roughness: rough }));
+      m.position.set(x, y, z);
+      m.castShadow = shadow;
+      m.receiveShadow = true;
+      this.root.add(m);
+      return m;
+    }
+    wall(x0, x1, z0, z1, h, style = "full") {
+      const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      if (style === "glass") {
+        this.box(w, 0.7, d + 0.04, cx, 0.35, cz, PAL.wall);
+        const gm = new Mesh(new BoxGeometry(w - 0.06, h - 0.78, 0.03), new MeshStandardMaterial({ color: PAL.glass, roughness: 0.1, transparent: true, opacity: 0.24, depthWrite: false }));
+        gm.position.set(cx, 0.72 + (h - 0.78) / 2, cz);
+        this.root.add(gm);
+        this.box(w + 0.02, 0.07, Math.max(d, 0.1), cx, h, cz, PAL.frame, { shadow: false });
+        return;
+      }
+      this.box(w, h, d, cx, h / 2, cz, PAL.wall, { r: 0.05 });
+      const bh = Math.min(0.34, h * 0.35);
+      this.box(w + 0.02, bh, d + 0.02, cx, bh / 2 + 0.05, cz, PAL.band, { r: 0.02, shadow: false });
+      this.box(w + 0.04, 0.05, d + 0.04, cx, h, cz, PAL.cap, { r: 0.02, shadow: false });
+    }
+    sign(id, x, y, z, w, ry = 0) {
+      if (!this.signTex) this.signTex = new TextureLoader();
+      const t = this.signTex.load(`assets/opening/signs/${id}.png`);
+      t.colorSpace = SRGBColorSpace;
+      t.anisotropy = 4;
+      const m = new Mesh(new PlaneGeometry(w, w * 0.3), new MeshBasicMaterial({ map: t }));
+      m.position.set(x, y, z);
+      m.rotation.y = ry;
+      this.root.add(m);
+      this.signs[id] = m;
+      return m;
+    }
+    async build() {
+      const W3 = 9.2, Zn = -6, Zs = 5;
+      const tex = checkerTexture();
+      tex.repeat.set((W3 * 2 + 1) / 1.2, (Zs - Zn + 1) / 1.2);
+      const floor = new Mesh(new PlaneGeometry(W3 * 2 + 1, Zs - Zn + 1), new MeshStandardMaterial({ map: tex, roughness: 0.5 }));
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(0, 0, (Zn + Zs) / 2);
+      floor.receiveShadow = true;
+      this.root.add(floor);
+      const out = new Mesh(new PlaneGeometry(90, 90), new MeshBasicMaterial({ color: 13624287 }));
+      out.rotation.x = -Math.PI / 2;
+      out.position.set(0, -0.03, 0);
+      this.root.add(out);
+      const rug = new Mesh(new CircleGeometry(1.7, 40), new MeshStandardMaterial({ color: 15317156, roughness: 0.95 }));
+      rug.rotation.x = -Math.PI / 2;
+      rug.position.set(-5.2, 6e-3, 1.4);
+      rug.receiveShadow = true;
+      this.root.add(rug);
+      const inlay = new Mesh(new PlaneGeometry(W3 + 0.2, 0.3), new MeshStandardMaterial({ color: 10474700 }));
+      inlay.rotation.x = -Math.PI / 2;
+      inlay.position.set(-W3 / 2 + 0.1, 5e-3, -3.5);
+      this.root.add(inlay);
+      this.wall(-W3, W3, Zn - 0.3, Zn, 4, "full");
+      this.wall(-W3 - 0.3, -W3, Zn - 0.3, -0.2, 4, "full");
+      this.wall(-W3 - 0.3, -W3, 2, Zs, 4, "full");
+      this.wall(-W3, W3, Zs, Zs + 0.3, 0.95, "low");
+      this.wall(W3, W3 + 0.3, Zn - 0.3, Zs + 0.3, 0.95, "low");
+      this.wall(0.2, 0.45, Zn, -1.6, 2.3, "glass");
+      this.wall(0.2, 0.45, -0.4, 2, 2.3, "glass");
+      this.wall(0.2, 0.45, 3.4, Zs, 2.3, "glass");
+      this.wall(0.45, W3, -0.05, 0.2, 3, "full");
+      this.wall(3.05, 3.3, Zn, -1.9, 3, "full");
+      this.wall(3.05, 3.3, -0.6, -0.05, 3, "full");
+      const tasks = [];
+      tasks.push(this.prop(M3 + "upgrades/01_reception/reception_T1_desk.glb", { x: -5.2, z: -4.7, rot: 180, name: "desk" }));
+      tasks.push(this.prop(M3 + "upgrades/01_reception/reception_T1_chair.glb", { x: -5.2, z: -5.55, rot: 0 }));
+      tasks.push(this.prop(M3 + "uploaded/waiting-chair.glb", { x: -7.3, z: 3.4, rot: 180, name: "wchair1" }));
+      tasks.push(this.prop(M3 + "uploaded/staff-chair.glb", { x: -6.2, z: 3.45, rot: 0, name: "wchair2" }));
+      tasks.push(this.prop(M3 + "furnishings/Lounge_Break_Chair.glb", { x: -5, z: 3.4, rot: 180, name: "wchair3" }));
+      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.65, z: -5.4 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: -7.6, z: -5.45 }));
+      tasks.push(this.buildLift());
+      tasks.push(this.prop(M3 + "decor/Reception_Round_Side_Table.glb", { x: -3.2, z: 3.6 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Magazine_Rack.glb", { x: -1.2, z: 3.7, rot: 0 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Poster_Heart.glb", { x: -6.75, y: 1.35, z: -5.88 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: -9.2, y: 1.2, z: 3.1, wall: "e" }));
+      tasks.push(this.prop(M3 + "entrance/Entrance_Double_Doorway.glb", { x: -9.05, z: 0.9, rot: 90, name: "door" }));
+      this.signs = {};
+      this.sign("reception", -5.2, 2.15, -5.94, 1.9);
+      this.sign("assessment", 0.15, 2.05, -1, 1, -Math.PI / 2);
+      this.sign("recovery", 0.15, 2.05, 2.7, 1, -Math.PI / 2);
+      this.sign("elevator", CLINIC_LIFT.x, 3.25, -5.94, 1.3);
+      tasks.push(this.prop(M3 + "furnishings/Assessment_Board.glb", { x: 1.75, y: 1, z: Zn, wall: "s" }));
+      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: 2.65, z: -5.55 }));
+      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 0.9, z: -5.45 }));
+      const AF = M3 + "upgrades/09_assessment_furniture/runtime/";
+      tasks.push(this.prop(AF + "consultation_desk_standard.glb", { x: 6.3, z: -3.2, rot: 180, name: "officeDesk" }));
+      tasks.push(this.prop(AF + "clinician_chair_standard.glb", { x: 6.3, z: -3.95, rot: 0, name: "chairYola" }));
+      tasks.push(this.prop(AF + "visitor_chair_standard.glb", { x: 5.72, z: -2.15, rot: 180, name: "chairPatient" }));
+      tasks.push(this.prop(AF + "visitor_chair_standard.glb", { x: 6.88, z: -2.15, rot: 180, name: "chairGuard" }));
+      tasks.push(this.prop(M3 + "furnishings/Clinical_Storage_Cabinet.glb", { x: 7.85, z: Zn, wall: "s" }));
+      tasks.push(this.prop(M3 + "furnishings/Clinical_Wall_Cupboard.glb", { x: 7.85, y: 1.45, z: Zn, wall: "s" }));
+      tasks.push(this.prop(M3 + "furnishings/Endoscopy_Glove_Dispenser.glb", { x: 6.55, y: 1.05, z: Zn, wall: "s" }));
+      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 6.05, y: 1.1, z: Zn, wall: "s" }));
+      tasks.push(this.prop(M3 + "furnishings/Clinical_Lidded_Waste_Bin.glb", { x: 8.95, z: -5.65 }));
+      tasks.push(this.prop(M3 + "decor3/Clinical_Sharps_Container.glb", { x: 7.05, y: 1.05, z: Zn, wall: "s" }));
+      tasks.push(this.prop(M3 + "furnishings/Assessment_Poster_Body.glb", { x: 3.3, y: 1, z: -4.6, wall: "e" }));
+      tasks.push(this.prop(M3 + "furnishings/Assessment_Poster_Lungs.glb", { x: 3.3, y: 1, z: -3.75, wall: "e" }));
+      tasks.push(this.prop(M3 + "decor/Recovery_Wall_Clock.glb", { x: 3.3, y: 2, z: -4.18, wall: "e" }));
+      this.sign("assessment", 3.32, 2.35, -2.75, 1.05, Math.PI / 2);
+      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 3.85, z: -5.5 }));
+      tasks.push(this.prop(M3 + "decor2/Clinical_Art_Heart.glb", { x: 4.75, y: 1.25, z: Zn, wall: "s" }));
+      this.deskTop(6.3, 0.81, -3.2);
+      const U3 = M3 + "upgrades/";
+      const T3 = (dir, name) => ({ starter: U3 + dir + name.replace("#", "starter"), standard: U3 + dir + name.replace("#", "standard"), advanced: U3 + dir + name.replace("#", "advanced") });
+      const slot = (key, files, opts) => {
+        const sl = { key, files, opts, holder: null };
+        this.tiers.push(sl);
+        return sl;
+      };
+      const BZ = 0.2;
+      const slots = [];
+      for (const [k, cx] of [["A", 3.4], ["B", 6.6]]) {
+        slots.push(slot("head" + k, T3("05_recovery_bay/", "RecoveryHeadwall_#.glb"), { x: cx, z: BZ, wall: "s" }));
+        slots.push(slot("bed" + k, { starter: RECL + "starter.glb", standard: RECL + "standard.glb", advanced: RECL + "advanced.glb" }, { x: cx, z: 1.2, rot: 0 }));
+        slots.push(slot("mon" + k, T3("02_anesthesia_monitoring/", "patient_monitor_#.glb"), { x: cx - 0.98, z: 0.75, rot: 0 }));
+        slots.push(slot("iv" + k, T3("08_support_equipment/runtime/", "iv_stand_#.glb"), { x: cx + 0.86, z: 0.8, rot: 0 }));
+        slots.push(slot("cab" + k, T3("05_recovery_bay/", "BedsideCabinet_#.glb"), { x: cx - 0.95, z: 2.15, rot: 90 }));
+      }
+      slots.push(slot("curtain", T3("05_recovery_bay/", "PrivacyCurtain_#.glb"), { x: 5, z: 1.6, rot: 0 }));
+      slots.push(slot("cart", T3("08_support_equipment/runtime/", "supply_cart_#.glb"), { x: 8.55, z: 0.72, rot: 0 }));
+      slots.push(slot("prep", T3("09_assessment_furniture/runtime/", "prep_storage_#.glb"), { x: 1.35, z: BZ, wall: "s" }));
+      for (const sl of slots) for (const tier of ["starter", "standard", "advanced"]) tasks.push(this.prop(sl.files[tier], { ...sl.opts, name: sl.key + "_" + tier }).then((h) => {
+        sl.layers || (sl.layers = {});
+        sl.layers[tier] = h;
+        this.fadeable(h);
+        h.visible = tier === "starter";
+        this.setOpacity(h, 1);
+      }));
+      tasks.push(this.prop(U3 + "04_surgery/surgical_light_starter.glb", { x: 4.42, z: 2.45, rot: 180, name: "lightA" }));
+      tasks.push(this.prop(U3 + "04_surgery/surgical_light_starter.glb", { x: 7.62, z: 2.45, rot: 180, name: "lightB" }));
+      tasks.push(this.prop(M3 + "furnishings/Endoscopy_Glove_Dispenser.glb", { x: 0.95, y: 1.3, z: BZ, wall: "s", name: "glovesR" }));
+      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 1.75, y: 1.35, z: BZ, wall: "s", name: "saniR" }));
+      tasks.push(this.prop(M3 + "furnishings/Clinical_Lidded_Waste_Bin.glb", { x: 2.3, z: 0.5, name: "binR" }));
+      tasks.push(this.prop(M3 + "decor3/Clinical_Sharps_Container.glb", { x: 2.35, y: 1.2, z: BZ, wall: "s", name: "sharpsR" }));
+      tasks.push(this.prop(M3 + "decor/Recovery_Wall_Clock.glb", { x: 5, y: 2.25, z: BZ, wall: "s", name: "clockR" }));
+      tasks.push(this.prop(M3 + "decor2/Clinical_Art_Lungs.glb", { x: 8.55, y: 1.45, z: BZ, wall: "s", name: "artR" }));
+      this.sign("recovery", 2, 2.45, BZ + 0.012, 1);
+      tasks.push(this.buildExterior());
+      await Promise.all(tasks);
+      Object.assign(this.anchors, {
+        queue: { x: -5.9, z: -3.55 },
+        guardQueue: { x: -4.6, z: -2.7 },
+        // public side of the reception desk (athlete, guard behind-right)
+        doorway: { x: 0.33, z: -1 },
+        // reception -> the staff corridor
+        officeDoor: { x: 3.18, z: -1.25 },
+        // corridor -> the assessment office
+        bayDoor: { x: 0.33, z: 2.7 },
+        // reception -> the two-bay room
+        chairPatient: { x: 5.72, z: -2.15, yaw: Math.PI, seatTop: 0.53 },
+        // faces north, toward Yola
+        chairGuard: { x: 6.88, z: -2.15, yaw: Math.PI, seatTop: 0.53 },
+        chairYola: { x: 6.3, z: -3.95, yaw: 0, seatTop: 0.53 },
+        // faces south, across the desk
+        guardChair: { x: -5, z: 3.4, yaw: Math.PI, seatTop: 0.47 },
+        // a waiting chair near reception
+        receptionChair: { x: -5.2, z: -5.5, yaw: 0, seatTop: 0.5 },
+        orDoor: { x: -1.4, z: -5 },
+        liftFront: { x: CLINIC_LIFT.x, z: -4.75 },
+        // the call point in front of the ground-floor elevator
+        yolaTour: { x: 5, z: 3.7, yaw: 0.45 }
+        // original Yola in the two-bay room for the tour
+      });
+    }
+    // ---- the outside of the medical center (the opening's first shot): the clinic's own front entrance in the west wall,
+    //      dressed as a building front - cream stucco, the teal name sign over a canopy with downlights, teal-framed glass
+    //      sliding doors (the real reception shows through them), planters, hedges, a sidewalk with leaf shadows, trees
+    //      behind the roofline and a painted sky. Facade face at x = -9.5 (local); the doorway is z -0.2..2.0.
+    async buildExterior() {
+      const g = new Group();
+      g.name = "exterior";
+      this.root.add(g);
+      this.exterior = g;
+      const std = (c, r = 0.85, o = {}) => new MeshStandardMaterial({ color: c, roughness: r, ...o });
+      const box = (w, h, d, x, y, z, m, { r = 0.04, shadow = true, parent = g } = {}) => {
+        const b = new Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), m);
+        b.position.set(x, y, z);
+        b.castShadow = shadow;
+        b.receiveShadow = true;
+        parent.add(b);
+        return b;
+      };
+      const bx = (x0, x1, y0, y1, z0, z1, m, o) => box(x1 - x0, y1 - y0, z1 - z0, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, m, o);
+      const stucco = std(15853004), stucco2 = std(15260091), capM = std(16314590), teal = std(2792086, 0.55), tealDk = std(2064252, 0.5);
+      const glassM = new MeshStandardMaterial({ color: 13627118, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false });
+      const winM = std(8369339, 0.15, { metalness: 0.3 }), steel = std(14212576, 0.3, { metalness: 0.7 });
+      for (const [z0, z1] of [[-8.6, -0.75], [2.55, 8.4]]) {
+        bx(-9.85, -9.5, 0, 4.25, z0, z1, stucco, { r: 0.05 });
+        bx(-9.9, -9.5, 0, 0.16, z0, z1, stucco2, { r: 0.02 });
+        bx(-9.92, -9.5, 4.2, 4.32, z0 - 0.02, z1 + 0.02, capM, { r: 0.03 });
+        bx(-9.88, -9.84, 3, 3.18, z0, z1, teal, { r: 0.01, shadow: false });
+      }
+      for (const zc of [-5.3, 5.3]) {
+        bx(-9.9, -9.84, 0.85, 2.65, zc - 1.3, zc + 1.3, tealDk, { r: 0.02, shadow: false });
+        bx(-9.93, -9.88, 0.93, 2.57, zc - 1.22, zc + 1.22, winM, { r: 0.01, shadow: false });
+        bx(-9.95, -9.88, 0.93, 2.57, zc - 0.03, zc + 0.03, tealDk, { r: 0.01, shadow: false });
+        bx(-10.02, -9.84, 0.8, 0.88, zc - 1.36, zc + 1.36, capM, { r: 0.02 });
+      }
+      bx(-10.55, -9.5, 0, 3, -0.78, -0.2, stucco2, { r: 0.06 });
+      bx(-10.55, -9.5, 0, 3, 2, 2.58, stucco2, { r: 0.06 });
+      bx(-10.8, -9.5, 2.95, 3.32, -1, 2.8, capM, { r: 0.06 });
+      const lampM = new MeshBasicMaterial({ color: 16774102 });
+      for (const zc of [-0.1, 0.9, 1.9]) {
+        const d = new Mesh(new CircleGeometry(0.11, 20), lampM);
+        d.rotation.x = Math.PI / 2;
+        d.position.set(-10.25, 2.945, zc);
+        g.add(d);
+      }
+      bx(-10.2, -9.5, 3.32, 4.8, -3, 4.8, stucco, { r: 0.06 });
+      bx(-10.24, -9.5, 4.75, 4.86, -3.04, 4.84, capM, { r: 0.03 });
+      bx(-10.32, -10.18, 3.5, 4.58, -2.55, 4.35, teal, { r: 0.08 });
+      const sc = document.createElement("canvas");
+      sc.width = 1400;
+      sc.height = 220;
+      const sg = sc.getContext("2d");
+      let fs0 = 150;
+      do {
+        sg.font = "800 " + fs0 + 'px system-ui, "Segoe UI", sans-serif';
+        fs0 -= 4;
+      } while (sg.measureText("Yola\u2019s Medical Center").width > 1300 && fs0 > 60);
+      sg.textAlign = "center";
+      sg.textBaseline = "middle";
+      sg.fillStyle = "rgba(0,0,0,0.18)";
+      sg.fillText("Yola\u2019s Medical Center", 706, 118);
+      sg.fillStyle = "#ffffff";
+      sg.fillText("Yola\u2019s Medical Center", 700, 110);
+      const stx = new CanvasTexture(sc);
+      stx.colorSpace = SRGBColorSpace;
+      stx.anisotropy = 4;
+      const sign2 = new Mesh(new PlaneGeometry(6.6, 6.6 * 220 / 1400), new MeshBasicMaterial({ map: stx, transparent: true }));
+      sign2.position.set(-10.33, 4.04, 0.9);
+      sign2.rotation.y = -Math.PI / 2;
+      g.add(sign2);
+      bx(-9.64, -9.52, 2.42, 2.95, -0.2, 2, tealDk, { r: 0.02 });
+      for (const [z0, z1] of [[-0.2, -0.12], [1.92, 2]]) bx(-9.64, -9.52, 0, 2.45, z0, z1, tealDk, { r: 0.01 });
+      this.extDoors = [];
+      for (const [zc, dir] of [[0.47, -1], [1.33, 1]]) {
+        const leaf = new Group();
+        leaf.position.set(-9.6, 0, zc);
+        g.add(leaf);
+        const W3 = 0.84;
+        bx(-0.035, 0.035, 0.02, 2.4, -W3 / 2, -W3 / 2 + 0.06, teal, { parent: leaf, r: 0.01 });
+        bx(-0.035, 0.035, 0.02, 2.4, W3 / 2 - 0.06, W3 / 2, teal, { parent: leaf, r: 0.01 });
+        bx(-0.035, 0.035, 2.34, 2.4, -W3 / 2, W3 / 2, teal, { parent: leaf, r: 0.01 });
+        bx(-0.035, 0.035, 0.02, 0.14, -W3 / 2, W3 / 2, teal, { parent: leaf, r: 0.01 });
+        bx(-0.01, 0.01, 0.14, 2.34, -W3 / 2 + 0.06, W3 / 2 - 0.06, glassM, { parent: leaf, r: 2e-3, shadow: false });
+        bx(-0.09, -0.05, 0.75, 1.6, -dir * (W3 / 2 - 0.14) - 0.02, -dir * (W3 / 2 - 0.14) + 0.02, steel, { parent: leaf, r: 0.015 });
+        this.extDoors.push({ leaf, z0: zc, dir });
+      }
+      const leafCols = [6266442, 5213246, 7648090, 4160053];
+      const leafMats = leafCols.map((c) => std(c, 0.9, { flatShading: true }));
+      const shrub = (x, y, z, r, k = 0, parent = g) => {
+        const m = new Mesh(new IcosahedronGeometry(r, 1), leafMats[k % 4]);
+        m.position.set(x, y, z);
+        m.scale.y = 0.8;
+        m.castShadow = true;
+        m.receiveShadow = true;
+        parent.add(m);
+        return m;
+      };
+      const jobs = [];
+      for (const zc of [-2.05, 3.85]) {
+        bx(-11.55, -10.6, 0, 0.82, zc - 0.62, zc + 0.62, capM, { r: 0.08 });
+        bx(-11.5, -10.65, 0.8, 0.83, zc - 0.57, zc + 0.57, std(5916214, 1), { r: 0.01, shadow: false });
+        jobs.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -11.08, y: 0.55, z: zc, rot: 90, s: 1.15, parent: g }));
+        for (let i = 0; i < 5; i++) {
+          const a = i / 5 * Math.PI * 2;
+          shrub(-11.08 + Math.cos(a) * 0.38, 0.95, zc + Math.sin(a) * 0.42, 0.2 + i % 2 * 0.05, i);
+        }
+      }
+      for (const zc of [-5.3, 5.3]) jobs.push(this.prop(M3 + "campus/hedge.glb", { x: -10.4, z: zc, rot: 90, parent: g }));
+      jobs.push(this.prop(M3 + "campus/flowerbed.glb", { x: -15.6, z: -4.8, rot: 75, parent: g }));
+      const tree = (x, z, h, r) => {
+        const t = new Group();
+        t.position.set(x, 0, z);
+        g.add(t);
+        const tr = new Mesh(new CylinderGeometry(0.12, 0.18, h * 0.55, 8), std(8018496, 0.9));
+        tr.position.y = h * 0.27;
+        tr.castShadow = true;
+        t.add(tr);
+        for (let i = 0; i < 7; i++) {
+          const a = i * 2.39, d = i ? r * 0.55 : 0;
+          shrub(Math.cos(a) * d, h * 0.62 + i % 3 * r * 0.28, Math.sin(a) * d, r * (i ? 0.62 : 0.8), i, t);
+        }
+      };
+      tree(-8.1, -4.3, 7.4, 1.6);
+      tree(-7.9, 6.1, 7.8, 1.7);
+      tree(-7.6, -10.6, 6.6, 1.7);
+      const pc = document.createElement("canvas");
+      pc.width = pc.height = 256;
+      const pg = pc.getContext("2d");
+      pg.fillStyle = "#ebe4d6";
+      pg.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 900; i++) {
+        pg.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.18)" : "rgba(150,135,110,0.08)";
+        pg.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+      }
+      pg.strokeStyle = "rgba(160,145,120,0.55)";
+      pg.lineWidth = 3;
+      pg.strokeRect(1.5, 1.5, 253, 253);
+      const pt = new CanvasTexture(pc);
+      pt.wrapS = pt.wrapT = RepeatWrapping;
+      pt.colorSpace = SRGBColorSpace;
+      pt.anisotropy = 8;
+      const walk = new Mesh(new PlaneGeometry(15.5, 34), new MeshStandardMaterial({ map: pt, roughness: 0.9 }));
+      pt.repeat.set(15.5 / 1.8, 34 / 1.8);
+      walk.rotation.x = -Math.PI / 2;
+      walk.position.set(-9.5 - 7.75, 6e-3, 0);
+      walk.receiveShadow = true;
+      g.add(walk);
+      const lawn = new Mesh(new PlaneGeometry(120, 160), std(10273900, 1));
+      lawn.rotation.x = -Math.PI / 2;
+      lawn.position.set(-25.2 - 60, 4e-3, 0);
+      lawn.receiveShadow = true;
+      g.add(lawn);
+      bx(-25.25, -24.95, 0, 0.12, -17, 17, std(14275268), { r: 0.03 });
+      const dc = document.createElement("canvas");
+      dc.width = dc.height = 256;
+      const dg = dc.getContext("2d");
+      for (let i = 0; i < 70; i++) {
+        const x = Math.random() * 256, y = Math.random() * 256, r = 6 + Math.random() * 22, gr = dg.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, "rgba(40,60,40,0.32)");
+        gr.addColorStop(1, "rgba(40,60,40,0)");
+        dg.fillStyle = gr;
+        dg.beginPath();
+        dg.arc(x, y, r, 0, Math.PI * 2);
+        dg.fill();
+      }
+      const dtex = new CanvasTexture(dc);
+      for (const [zc, w] of [[-8, 6], [8.6, 6.5]]) {
+        const d = new Mesh(new PlaneGeometry(6, w), new MeshBasicMaterial({ map: dtex, transparent: true, depthWrite: false }));
+        d.rotation.x = -Math.PI / 2;
+        d.position.set(-13.2, 0.012, zc);
+        g.add(d);
+      }
+      const kc = document.createElement("canvas");
+      kc.width = 512;
+      kc.height = 512;
+      const kg = kc.getContext("2d");
+      const sky = kg.createLinearGradient(0, 0, 0, 512);
+      sky.addColorStop(0, "#4f9fe6");
+      sky.addColorStop(0.55, "#8cc4f0");
+      sky.addColorStop(1, "#d8eef8");
+      kg.fillStyle = sky;
+      kg.fillRect(0, 0, 512, 512);
+      const cloud = (x, y, w) => {
+        for (let i = 0; i < 7; i++) {
+          const cx = x + (i - 3) * w * 0.16, cy = y - Math.sin(i / 6 * Math.PI) * w * 0.12, r = w * (0.14 + 0.1 * Math.sin(i / 6 * Math.PI)), gr = kg.createRadialGradient(cx, cy, 0, cx, cy, r);
+          gr.addColorStop(0, "rgba(255,255,255,0.95)");
+          gr.addColorStop(0.7, "rgba(255,255,255,0.75)");
+          gr.addColorStop(1, "rgba(255,255,255,0)");
+          kg.fillStyle = gr;
+          kg.beginPath();
+          kg.arc(cx, cy, r, 0, Math.PI * 2);
+          kg.fill();
+        }
+      };
+      cloud(390, 120, 190);
+      cloud(120, 210, 150);
+      cloud(300, 300, 120);
+      this.skyTex = new CanvasTexture(kc);
+      this.skyTex.colorSpace = SRGBColorSpace;
+      const ceil = new Mesh(new PlaneGeometry(9.8, 11.2), std(16051420, 0.9, { side: DoubleSide }));
+      ceil.rotation.x = Math.PI / 2;
+      ceil.position.set(-4.4, 3.05, -0.5);
+      g.add(ceil);
+      const panelM = new MeshBasicMaterial({ color: 16774882 });
+      for (const [x, z] of [[-7.2, -1.8], [-7.2, 2.4], [-4.4, -1.8], [-4.4, 2.4], [-1.6, -1.8], [-1.6, 2.4]]) {
+        const p2 = new Mesh(new PlaneGeometry(1.1, 0.55), panelM);
+        p2.rotation.x = Math.PI / 2;
+        p2.position.set(x, 3.04, z);
+        g.add(p2);
+      }
+      bx(0.25, 0.45, 0, 3.05, -6, 5, std(16051420), { r: 0.02, shadow: false });
+      bx(0.2, 0.25, 0.05, 0.4, -6, 5, std(8109496), { r: 0.01, shadow: false });
+      await Promise.all(jobs);
+      g.traverse((o) => {
+        if (o.isMesh && o.material?.transparent) o.castShadow = false;
+      });
+    }
+    // the sliding doors: k 0 shut .. 1 open
+    setEntranceOpen(k) {
+      for (const d of this.extDoors || []) d.leaf.position.z = d.z0 + d.dir * 0.82 * k;
+    }
+    // the ground-floor elevator: the Floor 3 kit, its doors driven by the kit's own Doors_Open clip (0 shut .. 1 open)
+    async buildLift() {
+      const g = await this.gltf(LIFT_KIT);
+      const root = g.scene.clone(true);
+      root.position.set(CLINIC_LIFT.x, 0, CLINIC_LIFT.z);
+      root.name = "clinicLift";
+      root.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      this.root.add(root);
+      const mixer = new AnimationMixer(root), clip = AnimationClip.findByName(g.animations, "Doors_Open");
+      const open = clip ? mixer.clipAction(clip) : null;
+      if (open) {
+        open.play();
+        open.paused = true;
+        open.time = 0;
+        mixer.update(0);
+      }
+      this.lift = { root, mixer, open, k: 0, display: liftDisplay(root) };
+    }
+    setLiftOpen(k) {
+      const L2 = this.lift;
+      if (!L2?.open) return;
+      L2.k = k;
+      L2.open.time = Math.max(0, Math.min(0.999, k)) * L2.open.getClip().duration;
+      L2.mixer.update(0);
+    }
+    // the wheelchair the colleague brings: a prop that travels with whoever sits in it (seat centre at the group's origin)
+    async buildWheelchair() {
+      const g = await this.gltf("assets/hospital/wheelchair.glb");
+      const obj = g.scene.clone(true);
+      obj.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      const holder = new Group();
+      holder.add(obj);
+      holder.updateMatrixWorld(true);
+      const box = new Box3().setFromObject(obj), c = box.getCenter(new Vector3());
+      obj.position.set(-c.x, -box.min.y, -c.z);
+      const wc = new Group();
+      wc.name = "wheelchair";
+      wc.add(holder);
+      wc.visible = false;
+      this.root.add(wc);
+      this.wheelchair = wc;
+      this.wheelchairSize = box.getSize(new Vector3());
+      return wc;
+    }
+    // procedural desk-top dressing (the kit has no desk accessories): monitor and keyboard, a phone, a clipboard, paperwork
+    deskTop(cx, y, cz) {
+      const g = new Group();
+      g.position.set(cx, y, cz);
+      this.root.add(g);
+      this.byName.deskTop = g;
+      const mat2 = (c, r = 0.6, m = 0) => new MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+      const add = (geo, m, x, yy, z, ry = 0) => {
+        const o = new Mesh(geo, m);
+        o.position.set(x, yy, z);
+        o.rotation.y = ry;
+        o.castShadow = true;
+        o.receiveShadow = true;
+        g.add(o);
+        return o;
+      };
+      const dark = mat2(2765368, 0.45), cream = mat2(15919832), teal = mat2(3121056, 0.5);
+      const scr = mat2(8370121, 0.3);
+      scr.emissive = new Color(1916232);
+      const MX = 0.6, MZ = -0.12, MR = 0.66;
+      add(new RoundedBoxGeometry(0.5, 0.32, 0.035, 2, 0.012), dark, MX, 0.3, MZ, MR);
+      add(new BoxGeometry(0.44, 0.26, 4e-3), scr, MX - Math.sin(MR) * 0.019, 0.3, MZ - Math.cos(MR) * 0.019, MR);
+      add(new CylinderGeometry(0.02, 0.02, 0.14, 10), dark, MX + Math.sin(MR) * 0.02, 0.08, MZ + Math.cos(MR) * 0.02);
+      add(new RoundedBoxGeometry(0.2, 0.012, 0.14, 2, 5e-3), dark, MX + Math.sin(MR) * 0.02, 6e-3, MZ + Math.cos(MR) * 0.02, MR);
+      add(new RoundedBoxGeometry(0.42, 0.018, 0.14, 2, 6e-3), cream, 0.12, 9e-3, -0.17, 0.12);
+      add(new RoundedBoxGeometry(0.07, 0.02, 0.1, 2, 8e-3), cream, 0.42, 0.01, -0.2);
+      add(new RoundedBoxGeometry(0.18, 0.06, 0.2, 2, 0.02), teal, -0.55, 0.03, -0.05, 0.4);
+      add(new RoundedBoxGeometry(0.2, 0.035, 0.055, 2, 0.015), dark, -0.55, 0.075, -0.05, 0.4);
+      add(new RoundedBoxGeometry(0.24, 0.012, 0.32, 2, 4e-3), mat2(10120004, 0.7), -0.18, 6e-3, 0.16, -0.15);
+      add(new BoxGeometry(0.21, 4e-3, 0.28), mat2(16513780, 0.9), -0.18, 0.014, 0.17, -0.15);
+      add(new RoundedBoxGeometry(0.08, 0.02, 0.03, 2, 6e-3), mat2(12107972, 0.3, 0.6), -0.18 + Math.sin(-0.15) * -0.13, 0.02, 0.17 - 0.13, -0.15);
+      for (let i = 0; i < 5; i++) add(new BoxGeometry(0.21, 6e-3, 0.29), mat2(i % 2 ? 16184298 : 16645366, 0.9), -0.52, 4e-3 + i * 6e-3, 0.2, 0.03 * (i % 3 - 1));
+    }
+    // equipment tiers crossfade in place (same footprint, never stacked solid): materials are cloned per layer so
+    // fading one tier never touches another
+    fadeable(h) {
+      h.traverse((o) => {
+        if (o.isMesh && o.name !== "liveScreen") {
+          o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
+          for (const m of [].concat(o.material)) m.transparent = true;
+        }
+      });
+    }
+    setOpacity(h, a) {
+      h.traverse((o) => {
+        if (o.name === "liveScreen") {
+          o.visible = a > 0.5;
+          return;
+        }
+        if (o.isMesh) for (const m of [].concat(o.material)) m.opacity = a;
+      });
+    }
+    // (a live screen face is shared by every monitor: it switches with the monitor instead of fading)
+    setTier(tier, fade = 1) {
+      const prev = this.tier;
+      this.tier = tier;
+      for (const s of this.tiers) {
+        if (!s.layers) continue;
+        const from = s.layers[prev], to = s.layers[tier];
+        if (from === to) continue;
+        s.fx = { from, to, t: 0, dur: Math.max(1e-3, fade) };
+        to.visible = true;
+        this.setOpacity(to, 0);
+      }
+    }
+    tickTiers(dt) {
+      for (const s of this.tiers) {
+        const f = s.fx;
+        if (!f) continue;
+        f.t = Math.min(f.dur, f.t + dt);
+        const u = f.t / f.dur, e = u * u * (3 - 2 * u);
+        this.setOpacity(f.to, e);
+        this.setOpacity(f.from, 1 - e);
+        if (u >= 1) {
+          f.from.visible = false;
+          this.setOpacity(f.to, 1);
+          s.fx = null;
+        }
+      }
+    }
+    // ---- an empty room that gets furnished: quick, satisfying placements of the room's existing furniture ----
+    // the two-bay room's equipment arrives in groups: both headwalls, each bed, each station's monitor and IV pole,
+    // each cabinet and light, the screen and clock, then the supply corner
+    furnishGroups() {
+      const t = (k) => this.tiers.find((sl) => sl.key === k)?.layers?.starter, n = this.byName;
+      return [[t("headA"), t("headB")], [t("bedA")], [t("bedB")], [t("monA"), t("ivA")], [t("monB"), t("ivB")], [t("cabA"), n.lightA], [t("cabB"), n.lightB], [t("curtain"), n.clockR], [t("prep"), t("cart"), n.glovesR, n.saniR, n.binR, n.sharpsR, n.artR]].map((g) => g.filter(Boolean));
+    }
+    furnishList() {
+      return this.furnishGroups().flat();
+    }
+    setRoomEmpty(on) {
+      for (const h of this.furnishList()) {
+        h.visible = !on;
+        h.scale.setScalar(1);
+      }
+      this.clearPops();
+    }
+    clearPops() {
+      this.pops.length = 0;
+      for (const r of this.rings) this.root.remove(r.m);
+      this.rings.length = 0;
+      for (const h of this.furnishList()) h.scale.setScalar(1);
+    }
+    popIn(h, delay = 0) {
+      h.visible = false;
+      h.scale.setScalar(1e-3);
+      this.pops.push({ h, t: -delay, dur: 0.4, started: false });
+    }
+    tickPops(dt) {
+      for (let i = this.pops.length - 1; i >= 0; i--) {
+        const p2 = this.pops[i];
+        p2.t += dt;
+        if (p2.t < 0) continue;
+        if (!p2.started) {
+          p2.started = true;
+          p2.h.visible = true;
+          this.onPop?.();
+          const m = new Mesh(new RingGeometry(0.28, 0.36, 40), new MeshBasicMaterial({ color: 16774089, transparent: true, opacity: 0.75, depthWrite: false }));
+          m.rotation.x = -Math.PI / 2;
+          m.position.set(p2.h.position.x, 0.03, p2.h.position.z);
+          m.renderOrder = 2;
+          this.root.add(m);
+          this.rings.push({ m, t: 0 });
+        }
+        const u = Math.min(1, p2.t / p2.dur), k = u < 1 ? 1 + Math.sin(u * Math.PI) * 0.13 * (1 - u) : 1;
+        p2.h.scale.setScalar(Math.max(1e-3, k * Math.min(1, u * 1.25)));
+        if (u >= 1) {
+          p2.h.scale.setScalar(1);
+          this.pops.splice(i, 1);
+        }
+      }
+      for (let i = this.rings.length - 1; i >= 0; i--) {
+        const r = this.rings[i];
+        r.t += dt;
+        const u = Math.min(1, r.t / 0.55);
+        r.m.scale.setScalar(1 + u * 2.6);
+        r.m.material.opacity = 0.75 * (1 - u);
+        if (u >= 1) {
+          this.root.remove(r.m);
+          this.rings.splice(i, 1);
+        }
+      }
+    }
+    // ---- cast ----
+    async buildCast() {
+      const load2 = (f) => this.loader.loadAsync(f);
+      const [yolaOld, bb, sec, pat5, patOld, staff, staffB, staffC, staffL] = await Promise.all([
+        load2(M3 + "blender/yola.glb"),
+        load2("assets/opening/Baseball_Visitor.glb"),
+        load2("assets/opening/Security_Visitor.glb"),
+        load2(M3 + "people/patient-05.glb"),
+        load2(M3 + "people/patient-older.glb"),
+        load2(M3 + "people/staff-teal.glb"),
+        load2(M3 + "people/staff-blue.glb"),
+        load2(M3 + "people/staff-coral.glb"),
+        load2(M3 + "people/staff-lilac.glb")
+      ]);
+      const batStatic = await load2("assets/opening/Baseball_Bat_Static.glb");
+      await this.buildWheelchair();
+      this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
+      const A = this.actors;
+      A.yola = new OriginalYola(yolaOld, { height: 1.62, name: "yolaOld", walkSpeed: 1 });
+      A.baseball = new Actor(bb, { name: "baseball" });
+      A.security = new Actor(sec, { name: "security" });
+      A.waiting1 = new Actor(pat5, { name: "waiting1" });
+      A.waiting2 = new Actor(patOld, { name: "waiting2" });
+      A.staff = new Actor(staff, { name: "staff" });
+      A.teamA = new Actor(staffB, { name: "teamA" });
+      A.teamB = new Actor(staffC, { name: "teamB" });
+      A.surgeon = new Actor(staffL, { name: "surgeon" });
+      for (const a of Object.values(A)) {
+        this.root.add(a.root);
+        a.root.visible = false;
+      }
+      A.baseball.bat = A.baseball.model.getObjectByName("Baseball_Bat");
+      A.baseball.bat0 = A.baseball.bat ? A.baseball.bat.visible : false;
+      this.batStatic = batStatic.scene;
+      this.batStatic.visible = false;
+      this.root.add(this.batStatic);
+      this.batStatic.traverse((o) => {
+        if (o.isMesh) o.castShadow = true;
+      });
+      this.guardBat = batStatic.scene.clone(true);
+      this.guardBat.visible = false;
+      {
+        const b = new Box3().setFromObject(this.guardBat);
+        this.batLen = b.getSize(new Vector3());
+        this.batBox = b;
+      }
+      const capSkin = A.baseball.model.getObjectByName("Baseball_Cap");
+      this.cap = null;
+      A.baseball.capSkin = capSkin;
+      if (capSkin) {
+        const parts = [];
+        capSkin.traverse((o) => {
+          if (o.isMesh) parts.push(o);
+        });
+        const g = new Group(), box = new Box3();
+        for (const p2 of parts) {
+          p2.geometry.computeBoundingBox();
+          box.union(p2.geometry.boundingBox);
+          g.add(new Mesh(p2.geometry, p2.material));
+        }
+        const c = box.getCenter(new Vector3());
+        for (const m of g.children) m.position.set(-c.x, -box.min.y, -c.z);
+        g.visible = false;
+        this.cap = g;
+      }
+    }
+    // move an actor's root between the clinic group and the world (the OR lives in the world scene)
+    actorToWorld(a, x, z, yaw) {
+      this.scene.add(a.root);
+      a.root.position.set(x, 0, z);
+      if (yaw != null) {
+        a.yaw = yaw;
+        a.root.rotation.y = yaw;
+      }
+    }
+    toClinic(a) {
+      this.root.add(a.root);
+    }
+    setActive(v) {
+      this.root.visible = v;
+    }
+    update(dt) {
+      for (const a of Object.values(this.actors)) if (a.root.visible) a.update(dt);
+      this.tickTiers(dt);
+      this.tickPops(dt);
+    }
+    // clinic-local -> world
+    toWorld(x, z) {
+      return new Vector3(x + CLINIC.x, 0, z + CLINIC.z);
+    }
+  };
+
   // src/render/arena.js
+  var CH = () => LAYOUT.chapter || LAYOUT;
   var isUnder = (o, name) => {
     for (let p2 = o.parent; p2; p2 = p2.parent) if (p2.name === name) return true;
     return false;
@@ -47992,7 +49721,7 @@ void main() {
     }
     return out;
   }
-  var PAL = {
+  var PAL2 = {
     floorA: "#e4d8bf",
     floorB: "#b9d3c8",
     grout: "#cdbfa3",
@@ -48006,48 +49735,8 @@ void main() {
   };
   var LOW_H = 1;
   var OB_TILE = 0.75;
-  var OB_ROOMS = {
-    or: ["clinical", "clinical"],
-    ct: ["clinical", "clinical"],
-    waiting: ["corridor", "clinical"],
-    preop: ["corridor", "clinical"],
-    recovery: ["corridor", "clinical"],
-    supply: ["corridor", "maintenance"],
-    cafe: ["corridor", "maintenance"],
-    maint: ["maintenance", "maintenance"]
-  };
-  var OB_BLOOD = [
-    // operating room: a handprint by each door at hand height, a drag from the stretcher toward the shut north door, cut short
-    { kind: "hand", x: -7, z: -3.15, wall: "e", y: 1.2, size: 0.34, tilt: -6 },
-    { kind: "hand", x: 6.75, z: -11, wall: "s", y: 1.12, size: 0.32, tilt: 8 },
-    { kind: "drag", x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
-    { kind: "drag", x: 3.75, z: -7.55, w: 0.6, l: 1.1, rot: 30 },
-    { kind: "splat", x: 5.7, z: -10.25, w: 1.05, l: 1.05, rot: 15 },
-    // where the patient turned: under the head of the table, a drag toward the Supply Hall door, a hand on the dead lift
-    { kind: "splat", x: -0.35, z: -9.05, w: 0.95, l: 0.95, rot: -35 },
-    { kind: "drag", x: -3.7, z: -5.75, w: 0.7, l: 1.7, rot: -55 },
-    { kind: "hand", x: 6.99, z: -2.35, wall: "w", y: 1.25, size: 0.33, tilt: 12 },
-    { kind: "hand", x: 6.99, z: -1.95, wall: "w", y: 1.02, size: 0.28, tilt: -9 },
-    // supply hall (storage): one smear at the exit to the waiting area
-    { kind: "drag", x: -12.05, z: -3.75, w: 0.6, l: 1, rot: -60 },
-    { kind: "hand", x: -8.4, z: -6.05, wall: "s", y: 1.15, size: 0.3, tilt: 7 },
-    // by the belongings table: where the guard waited
-    // waiting area (circulation): small marks in a corner, one handprint, the travel lane clear
-    { kind: "splat", x: -24.9, z: -6.45, w: 0.65, l: 0.65, rot: 40 },
-    { kind: "hand", x: -24.3, z: -7.05, wall: "s", y: 1, size: 0.3, tilt: -4 },
-    // pre-op: a smear beside the first bed
-    { kind: "drag", x: -34.75, z: -8, w: 0.55, l: 1, rot: 75 },
-    // maintenance: one concentrated splatter where the encounter is
-    { kind: "splat", x: -31.4, z: -15.4, w: 1.35, l: 1.35, rot: -20 },
-    { kind: "drag", x: -29.2, z: -20.3, w: 0.7, l: 1.4, rot: 110 },
-    // cafeteria (staff): light, a single smear at the braced exit
-    { kind: "drag", x: -24.65, z: -14, w: 0.6, l: 1, rot: -100 },
-    // CT: a handprint on the barred door's CT side, a little spatter by the scanner
-    { kind: "hand", x: -2.55, z: -11.3, wall: "n", y: 1.22, size: 0.33, tilt: 5 },
-    { kind: "splat", x: -7.6, z: -13.2, w: 0.7, l: 0.7, rot: 70 },
-    // recovery: a smear beside the bed by the east door
-    { kind: "drag", x: -17.7, z: 6.1, w: 0.55, l: 0.95, rot: 10 }
-  ];
+  var OB_ROOMS = { or: ["clinical", "clinical"], waiting: ["corridor", "clinical"] };
+  var obRecipe = (r) => r?.ob || OB_ROOMS[r?.id];
   var OB_WING_ROOMS = [{ id: "or", floor: true, rects: [[-7.3, 7.3, -11.3, -5.05]] }, { id: "waiting", floor: true, rects: [[-7.3, 7.3, -5.05, 11.3]] }];
   var OB_BLOOD_WING = [
     { kind: "hand", x: 5.6, z: -11, wall: "s", y: 1.15, size: 0.32, tilt: 6 },
@@ -48060,7 +49749,7 @@ void main() {
   var OB_FLAT = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   var OB_UPRIGHT = new PlaneGeometry(1, 1);
   var FACE_ROT = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 };
-  function floorTexture(a = PAL.floorA, b = PAL.floorB, grout = PAL.grout) {
+  function floorTexture(a = PAL2.floorA, b = PAL2.floorB, grout = PAL2.grout) {
     const c = document.createElement("canvas");
     c.width = c.height = 256;
     const g = c.getContext("2d");
@@ -48147,7 +49836,7 @@ void main() {
       this.walls = [];
       this.doorKits = {};
       this.cutObjs = [];
-      this.f3 = LAYOUT.name === "floor3";
+      this.f3 = !!LAYOUT.story;
       this.buildFloor();
       this.buildWalls();
       this.buildDoors();
@@ -48156,7 +49845,7 @@ void main() {
     }
     buildFloor() {
       if (this.f3) {
-        for (const r of LAYOUT.rooms) {
+        for (const r of CH().rooms) {
           if (!r.floor) continue;
           for (const [x0, x1, z0, z1] of r.rects) {
             const w2 = x1 - x0, d2 = z1 - z0, tex2 = floorTexture(r.floor[0], r.floor[1]);
@@ -48171,7 +49860,7 @@ void main() {
           }
         }
         const thMat = new MeshStandardMaterial({ color: 13222576, roughness: 0.6 });
-        for (const d2 of LAYOUT.doors) {
+        for (const d2 of CH().doors) {
           if (d2.kind === "lift") continue;
           const [a, b, c, e] = doorBox(d2);
           const m = new Mesh(new PlaneGeometry(b - a + (d2.axis === "z" ? 0.3 : 0), e - c + (d2.axis === "x" ? 0.3 : 0)), thMat);
@@ -48180,11 +49869,14 @@ void main() {
           m.receiveShadow = true;
           this.group.add(m);
         }
-        const out2 = new Mesh(new PlaneGeometry(80, 60), new MeshBasicMaterial({ color: 1910316 }));
-        out2.rotation.x = -Math.PI / 2;
-        out2.position.set(-13, -0.02, -6);
-        this.group.add(out2);
-        this.outPlane = out2;
+        const outMat = new MeshBasicMaterial({ color: 1910316 });
+        for (const oz of [8, -72, -152]) {
+          const out2 = new Mesh(new PlaneGeometry(76, 64), outMat);
+          out2.rotation.x = -Math.PI / 2;
+          out2.position.set(-17, -0.02, oz);
+          this.group.add(out2);
+          this.outPlane = out2;
+        }
         return;
       }
       const w = 14.6, d = 22.6;
@@ -48213,34 +49905,34 @@ void main() {
     }
     wallMats() {
       if (!this._wm) this._wm = {
-        wall: new MeshStandardMaterial({ color: PAL.wall, roughness: 0.85 }),
-        band: new MeshStandardMaterial({ color: PAL.band, roughness: 0.8 }),
-        cap: new MeshStandardMaterial({ color: PAL.cap, roughness: 0.7 }),
-        frame: new MeshStandardMaterial({ color: PAL.frame, roughness: 0.6 }),
-        glass: new MeshStandardMaterial({ color: PAL.glass, roughness: 0.15, metalness: 0, transparent: true, opacity: 0.28, depthWrite: false })
+        wall: new MeshStandardMaterial({ color: PAL2.wall, roughness: 0.85 }),
+        band: new MeshStandardMaterial({ color: PAL2.band, roughness: 0.8 }),
+        cap: new MeshStandardMaterial({ color: PAL2.cap, roughness: 0.7 }),
+        frame: new MeshStandardMaterial({ color: PAL2.frame, roughness: 0.6 }),
+        glass: new MeshStandardMaterial({ color: PAL2.glass, roughness: 0.15, metalness: 0, transparent: true, opacity: 0.28, depthWrite: false })
       };
       return this._wm;
     }
     // one wall: body, teal wainscot band and a soft cap (as its own group when it can be cut away)
     addWall(x0, x1, z0, z1, h, style, y0 = 0) {
-      const M4 = this.wallMats();
+      const M5 = this.wallMats();
       const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
       const g = new Group();
       this.group.add(g);
       if (style === "glass") {
-        const base = new Mesh(new RoundedBoxGeometry(w, 0.75, d + 0.06, 2, 0.04), M4.wall);
+        const base = new Mesh(new RoundedBoxGeometry(w, 0.75, d + 0.06, 2, 0.04), M5.wall);
         base.position.set(cx, 0.375, cz);
         base.castShadow = base.receiveShadow = true;
         g.add(base);
-        const glass = new Mesh(new BoxGeometry(w - 0.1, h - 0.8, 0.03), M4.glass);
+        const glass = new Mesh(new BoxGeometry(w - 0.1, h - 0.8, 0.03), M5.glass);
         glass.position.set(cx, 0.75 + (h - 0.8) / 2, cz);
         g.add(glass);
-        const top = new Mesh(new RoundedBoxGeometry(w, 0.06, 0.1, 2, 0.025), M4.frame);
+        const top = new Mesh(new RoundedBoxGeometry(w, 0.06, 0.1, 2, 0.025), M5.frame);
         top.position.set(cx, h, cz);
         g.add(top);
         const n = Math.max(1, Math.round(w / 1.6));
         for (let i = 0; i <= n; i++) {
-          const p2 = new Mesh(new BoxGeometry(0.06, h - 0.75, 0.08), M4.frame);
+          const p2 = new Mesh(new BoxGeometry(0.06, h - 0.75, 0.08), M5.frame);
           p2.position.set(x0 + w * i / n, 0.75 + (h - 0.75) / 2, cz);
           g.add(p2);
         }
@@ -48260,41 +49952,41 @@ void main() {
           q.deleteAttribute("uv");
           return q;
         };
-        const parts = [part(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), cx, y0 + (h - y0) / 2, cz, PAL.wall)];
+        const parts = [part(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), cx, y0 + (h - y0) / 2, cz, PAL2.wall)];
         if (!y0) {
           const bh = Math.min(0.32, h * 0.35);
-          parts.push(part(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), cx, bh / 2 + 0.06, cz, PAL.band));
+          parts.push(part(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), cx, bh / 2 + 0.06, cz, PAL2.band));
         }
-        parts.push(part(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), cx, h, cz, PAL.cap));
+        parts.push(part(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), cx, h, cz, PAL2.cap));
         if (!this._wallVC) this._wallVC = new MeshStandardMaterial({ vertexColors: true, roughness: 0.82 });
         const m2 = new Mesh(mergeGeometries(parts, false), this._wallVC);
         m2.receiveShadow = true;
         g.add(m2);
         return g;
       }
-      const m = new Mesh(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), M4.wall);
+      const m = new Mesh(new RoundedBoxGeometry(w, h - y0, d, 2, Math.min(0.06, d / 2.2, (h - y0) / 2.2)), M5.wall);
       m.position.set(cx, y0 + (h - y0) / 2, cz);
       m.castShadow = style === "full" && !this.f3;
       m.receiveShadow = true;
       g.add(m);
       if (!y0) {
         const bh = Math.min(0.32, h * 0.35);
-        const bandM = new Mesh(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), M4.band);
+        const bandM = new Mesh(new RoundedBoxGeometry(w + 0.02, bh, d + 0.02, 2, 0.02), M5.band);
         bandM.position.set(cx, bh / 2 + 0.06, cz);
         g.add(bandM);
       }
-      const cap = new Mesh(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), M4.cap);
+      const cap = new Mesh(new RoundedBoxGeometry(w + 0.04, 0.05, d + 0.04, 2, 0.02), M5.cap);
       cap.position.set(cx, h, cz);
       g.add(cap);
       return g;
     }
     buildWalls() {
-      for (const [x0, x1, z0, z1, h, style] of LAYOUT.walls) {
+      for (const [x0, x1, z0, z1, h, style] of CH().walls) {
         const g = this.addWall(x0, x1, z0, z1, h, style);
         this.walls.push({ group: g, box: { minX: x0, maxX: x1, minZ: z0, maxZ: z1 }, h, y0: 0, k: 1, target: 1, attach: [], style });
       }
       if (!this.f3) return;
-      for (const d of LAYOUT.doors) {
+      for (const d of CH().doors) {
         if (d.kind !== "open") continue;
         const [a, b, c, e] = doorBox(d);
         const g = this.addWall(a, b, c, e, 2.7, "full", 2.48);
@@ -48309,7 +50001,7 @@ void main() {
       const darkMat = new MeshBasicMaterial({ color: 1712936 });
       const frameMat = new MeshStandardMaterial({ color: 7249827, roughness: 0.6 });
       const leafMat = new MeshStandardMaterial({ color: 8368307, roughness: 0.55 });
-      const lampMat = new MeshStandardMaterial({ color: 16767392, emissive: PAL.amber, emissiveIntensity: 2.2 });
+      const lampMat = new MeshStandardMaterial({ color: 16767392, emissive: PAL2.amber, emissiveIntensity: 2.2 });
       this.doorLamps = [];
       for (const d of LAYOUT.doors) {
         const g = new Group();
@@ -48349,7 +50041,7 @@ void main() {
     // floor 3's open doorways: a teal frame (jambs and head), cut away with its wall
     buildOpenFrames() {
       const frameMat = new MeshStandardMaterial({ color: 7249827, roughness: 0.6 });
-      for (const d of LAYOUT.doors) {
+      for (const d of CH().doors) {
         if (d.kind !== "open") continue;
         const g = new Group();
         g.position.set(d.x, 0, d.z);
@@ -48409,9 +50101,9 @@ void main() {
         return;
       }
       if (this.quality !== "low") {
-        const spots = this.f3 ? LAYOUT.lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
+        const spots = this.f3 ? CH().lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
         for (const p2 of spots) {
-          const l = new PointLight(PAL.amber, this.f3 ? 2.6 : 3.2, this.f3 ? 6.5 : 5.5, 1.6);
+          const l = new PointLight(PAL2.amber, this.f3 ? 2.6 : 3.2, this.f3 ? 6.5 : 5.5, 1.6);
           l.position.set(p2.x, p2.y, p2.z);
           s.add(l);
           this.lights.push(l);
@@ -48426,8 +50118,9 @@ void main() {
         return cache.get(m);
       };
       let done = 0;
-      const total = LAYOUT.props.length + (this.f3 ? 4 : 0);
-      const jobs = LAYOUT.props.map(async (p2) => {
+      const props2 = CH().props;
+      const total = props2.length + (this.f3 ? 4 : 0);
+      const jobs = props2.map(async (p2) => {
         if (p2.kind) {
           this.procProp(p2);
           onProgress?.(++done / total);
@@ -48490,8 +50183,8 @@ void main() {
       const rooms = /* @__PURE__ */ new Map();
       for (const h of [...this.group.children]) {
         if (!h.userData.prop || h.userData.keep) continue;
-        const id = roomAt(h.position.x, h.position.z);
-        if (!id || id === "or") continue;
+        const id = roomAt2(h.position.x, h.position.z);
+        if (!id || id === "or" || h.name === "partition") continue;
         if (!rooms.has(id)) rooms.set(id, []);
         rooms.get(id).push(h);
       }
@@ -48510,6 +50203,7 @@ void main() {
     // procedural maintenance dressing (the kit has none): a workbench with tools, pipework along a wall, hazard striping
     procProp(p2) {
       if (p2.kind === "box") return this.boxProp(p2);
+      if (p2.kind === "radio" || p2.kind === "screen" || p2.kind === "partition") return this.storyProp(p2);
       const g = new Group();
       g.position.set(p2.x, 0, p2.z);
       g.userData.prop = true;
@@ -48564,6 +50258,79 @@ void main() {
         g.add(o);
       }
     }
+    // blockout story objects (no kit asset): the nurse station's radio, the records docket's screen, the weak partition
+    storyProp(p2) {
+      const g = new Group();
+      g.position.set(p2.x, p2.y || 0, p2.z);
+      g.userData.prop = true;
+      g.userData.keep = true;
+      if (p2.name) g.name = p2.name;
+      const mat2 = (c, r = 0.6, m = 0, e) => new MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...e ? { emissive: e, emissiveIntensity: 1.4 } : {} });
+      const add = (geo, m, x, y, z) => {
+        const o = new Mesh(geo, m);
+        o.position.set(x, y, z);
+        o.castShadow = true;
+        o.receiveShadow = true;
+        g.add(o);
+        return o;
+      };
+      if (p2.kind === "radio") {
+        add(new RoundedBoxGeometry(0.34, 0.16, 0.22, 2, 0.02), mat2(2830902, 0.5, 0.2), 0, 0.08, 0);
+        add(new BoxGeometry(0.14, 0.09, 5e-3), mat2(1382683, 0.8), -0.07, 0.085, 0.112);
+        add(new CylinderGeometry(8e-3, 8e-3, 0.34, 6), mat2(1711391, 0.4, 0.4), 0.12, 0.33, -0.05);
+        this.radioLed = add(new BoxGeometry(0.03, 0.03, 6e-3), mat2(1063440, 0.4, 0, 2948938), 0.1, 0.11, 0.112);
+      } else if (p2.kind === "screen") {
+        add(new RoundedBoxGeometry(0.62, 0.4, 0.04, 2, 0.01), mat2(2304300, 0.5), 0, 0.42, 0);
+        const c = document.createElement("canvas");
+        c.width = 256;
+        c.height = 160;
+        const x = c.getContext("2d");
+        x.fillStyle = "#0f2a30";
+        x.fillRect(0, 0, 256, 160);
+        x.fillStyle = "#7fe0d0";
+        x.font = "700 22px system-ui";
+        x.fillText("DISPATCH RECORD", 16, 34);
+        x.font = "16px system-ui";
+        x.fillStyle = "#cfeee8";
+        ["ACC 7-0419 \xB7 PRE-PROCEDURE", "Collected: before OR 7 case", "Sent: cold dispatch, Floor 6"].forEach((t2, i) => x.fillText(t2, 16, 70 + i * 26));
+        const t = new CanvasTexture(c);
+        t.colorSpace = SRGBColorSpace;
+        const face = new Mesh(new PlaneGeometry(0.56, 0.35), new MeshBasicMaterial({ map: t, toneMapped: false }));
+        face.position.set(0, 0.42, 0.022);
+        g.add(face);
+        add(new BoxGeometry(0.06, 0.2, 0.06), mat2(3093816, 0.5), 0, 0.12, -0.02);
+      } else if (p2.kind === "partition") {
+        const n = 2, w = p2.w / n;
+        for (let i = 0; i < n; i++) {
+          const z0 = -p2.w / 2 + w * (i + 0.5);
+          add(new BoxGeometry(0.1, 2.3, w - 0.04), mat2(14275264, 0.85), 0, 1.15, z0);
+          add(new BoxGeometry(0.11, 0.7, w * 0.6), new MeshStandardMaterial({ color: 12574946, roughness: 0.15, transparent: true, opacity: 0.45 }), 0, 1.55, z0);
+        }
+        for (const z0 of [-p2.w / 2, 0, p2.w / 2]) add(new BoxGeometry(0.14, 2.42, 0.08), mat2(10123858, 0.8), 0, 1.21, z0);
+        add(new BoxGeometry(0.14, 0.08, p2.w + 0.08), mat2(10123858, 0.8), 0, 2.42, 0);
+        const c = document.createElement("canvas");
+        c.width = 256;
+        c.height = 64;
+        const x = c.getContext("2d");
+        x.fillStyle = "#f2b134";
+        x.fillRect(0, 0, 256, 64);
+        x.fillStyle = "#23292c";
+        for (let k = -4; k < 12; k++) {
+          x.beginPath();
+          x.moveTo(k * 32, 0);
+          x.lineTo(k * 32 + 16, 0);
+          x.lineTo(k * 32 - 16, 64);
+          x.lineTo(k * 32 - 32, 64);
+          x.fill();
+        }
+        const tape = new MeshStandardMaterial({ map: new CanvasTexture(c), roughness: 0.7 });
+        tape.map.colorSpace = SRGBColorSpace;
+        add(new BoxGeometry(0.12, 0.12, p2.w), tape, 0.02, 1, 0);
+        this.partitionObj = g;
+      }
+      this.group.add(g);
+      if (p2.kind === "partition") this.cutable(g, { minX: p2.x - 0.2, maxX: p2.x + 0.2, minZ: p2.z - p2.w / 2, maxZ: p2.z + p2.w / 2 });
+    }
     boxProp(p2) {
       const [w, d, h] = p2.size, g = new Group();
       g.position.set(p2.x, 0, p2.z);
@@ -48606,12 +50373,13 @@ void main() {
         });
         return root;
       };
-      for (const d of LAYOUT.doors) {
-        if (d.kind === "open") continue;
+      for (const d of CH().doors) {
+        if (d.kind === "open" || d.kind === "partition") continue;
         if (d.kind === "lift") {
+          const LF = CH().lifts[d.floor];
           const root2 = own(liftG.scene.clone(true));
-          root2.position.set(LIFT.x, 0, LIFT.z);
-          root2.rotation.y = LIFT.yaw;
+          root2.position.set(LF.x, 0, LF.z);
+          root2.rotation.y = LF.yaw;
           const roof = root2.getObjectByName("Cab_Roof");
           if (roof) roof.visible = false;
           this.group.add(root2);
@@ -48620,8 +50388,11 @@ void main() {
           open.paused = true;
           open.time = 0;
           mixer.update(0);
-          this.doorKits.lift = { root: root2, mixer, open, last: -1, rect: { minX: 6.9, maxX: 10.7, minZ: LIFT.z - 2.64, maxZ: LIFT.z + 2.64 } };
-          this.cutable(root2, this.doorKits.lift.rect, 1.5);
+          this.doorKits["lift" + d.floor] = { root: root2, mixer, open, last: -1, rect: LF.rect, floor: d.floor };
+          if (d.floor === 7) this.doorKits.lift = this.doorKits.lift7;
+          this.doorKits["lift" + d.floor].display = liftDisplay(root2);
+          this.doorKits["lift" + d.floor].display.set(String(d.floor));
+          this.cutable(root2, LF.rect, 1.5);
           continue;
         }
         if (d.kind === "closed") {
@@ -48644,6 +50415,10 @@ void main() {
         root.rotation.y = FACE_ROT[d.face];
         this.group.add(root);
         const kit = { root, kind: d.kind, last: -1, lastB: -1, shake: 0, L: root.getObjectByName("Door_L_HINGE"), R: root.getObjectByName("Door_R_HINGE") };
+        if (d.kind === "powered") {
+          const b2 = root.getObjectByName("Brace_REMOVABLE");
+          if (b2) b2.visible = false;
+        }
         {
           kit.mixer = new AnimationMixer(root);
           kit.brace = kit.mixer.clipAction(AnimationClip.findByName(doorG.animations, "Brace_Remove"));
@@ -48661,8 +50436,9 @@ void main() {
         const [a, b, c, e] = doorBox(d);
         this.cutable(root, { minX: a, maxX: b, minZ: c, maxZ: e });
       }
+      const RP = { x: -1, z: 15.8 };
       const panel = own(resetG.scene.clone(true));
-      panel.position.set(-29.5, 0.95, -22.75);
+      panel.position.set(RP.x, 0.95, RP.z);
       panel.rotation.y = 0;
       this.group.add(panel);
       const pm = new AnimationMixer(panel);
@@ -48671,17 +50447,23 @@ void main() {
       this.reset.up.clampWhenFinished = true;
       for (const n of [this.reset.fault, this.reset.ready]) if (n) n.scale.setScalar(1);
       if (this.reset.ready) this.reset.ready.visible = false;
-      this.attachToWall(panel, -29.5, -22.75, "s", 1.6);
-      const f = own(faultG.scene.clone(true)), r = own(readyG.scene.clone(true));
-      for (const o of [f, r]) {
-        o.position.set(6.99, 1.62, LIFT.z + 2.95);
-        o.rotation.y = FACE_ROT.w;
-        this.group.add(o);
+      this.attachToWall(panel, RP.x, RP.z, "s", 1.6);
+      this.liftStatus = {};
+      for (const [fl, LF] of Object.entries(CH().lifts)) {
+        const f = own(faultG.scene.clone(true)), r = own(readyG.scene.clone(true));
+        for (const o of [f, r]) {
+          o.position.set(LF.status.x, LF.status.y, LF.status.z + 0.17);
+          o.rotation.y = FACE_ROT.s;
+          this.group.add(o);
+          this.attachToWall(o, LF.status.x, LF.status.z + 0.15, "s", LF.status.y + 0.2);
+        }
+        f.visible = fl === "7";
+        r.visible = fl !== "7";
+        this.liftStatus[fl] = { fault: f, ready: r };
       }
-      r.visible = false;
-      this.liftStatus = { fault: f, ready: r };
     }
     // the pickups that belong in this floor: the guard's pistol beside him, his open bag (spare rounds), the first-aid case
+    // the chapter's pickups (each floor's, chapter.js) and the sealed specimen case (moved by the level's case state)
     async loadPickups(get) {
       this.pickupViz = {};
       const ring = (x, z) => {
@@ -48692,38 +50474,107 @@ void main() {
         this.group.add(m);
         return m;
       };
-      const [pistolG, bagG, magG, aidG] = await Promise.all(["zombie/assets/pistol.glb", "zombie/assets/kit/guard_duffel_open.glb", "zombie/assets/kit/pistol_magazine_loaded.glb", "zombie/assets/kit/first_aid_case_closed.glb"].map(get));
-      const P = Object.fromEntries(PICKUPS.map((q) => [q.id, q]));
-      const pistol = pistolG.scene.clone(true);
-      pistol.position.set(P.pistol.x + 0.1, 0.03, P.pistol.z);
-      pistol.rotation.set(0, 0.7, Math.PI / 2);
-      pistol.scale.setScalar(1);
-      this.group.add(pistol);
-      const bag = bagG.scene.clone(true);
-      bag.position.set(P.ammo.x, 0, P.ammo.z);
-      bag.rotation.y = -0.3;
-      this.group.add(bag);
-      const mags = new Group();
-      for (let i = 0; i < 2; i++) {
-        const m = magG.scene.clone(true);
-        m.position.set(0.36 + i * 0.07, 4e-3, -0.06 + i * 0.03);
-        m.rotation.set(-Math.PI / 2, 0, 0.3 * i);
-        mags.add(m);
+      const [pistolG, bagG, magG, aidG, axeG] = await Promise.all(["zombie/assets/pistol.glb", "zombie/assets/kit/guard_duffel_open.glb", "zombie/assets/kit/pistol_magazine_loaded.glb", "zombie/assets/kit/first_aid_case_closed.glb", "zombie/assets/weapons/fire_axe.glb"].map(get));
+      for (const q of CH().pickups || []) {
+        const objs = [];
+        if (q.model === "pistol") {
+          const o = pistolG.scene.clone(true);
+          o.position.set(q.x + 0.1, 0.03, q.z);
+          o.rotation.set(0, 0.7, Math.PI / 2);
+          objs.push(o);
+        } else if (q.model === "bag") {
+          const bag = bagG.scene.clone(true);
+          bag.position.set(q.x, 0, q.z);
+          bag.rotation.y = -0.3;
+          objs.push(bag);
+          const mags = new Group();
+          for (let i = 0; i < 2; i++) {
+            const m = magG.scene.clone(true);
+            m.position.set(0.36 + i * 0.07, 4e-3, -0.06 + i * 0.03);
+            m.rotation.set(-Math.PI / 2, 0, 0.3 * i);
+            mags.add(m);
+          }
+          mags.position.copy(bag.position);
+          mags.rotation.y = bag.rotation.y;
+          objs.push(mags);
+        } else if (q.model === "mag") {
+          const o = magG.scene.clone(true);
+          o.position.set(q.x, 0.01, q.z);
+          o.rotation.set(-Math.PI / 2, 0, 0.4);
+          objs.push(o);
+        } else if (q.model === "aid") {
+          const o = aidG.scene.clone(true);
+          o.position.set(q.x, q.y ?? 0.81, q.z);
+          o.rotation.y = -Math.PI / 2;
+          objs.push(o);
+        } else if (q.model === "axe") {
+          const o = axeG.scene.clone(true);
+          const b = new Box3().setFromObject(o), sz = b.getSize(new Vector3());
+          o.scale.setScalar(0.9 / Math.max(sz.x, sz.y, sz.z));
+          o.rotation.set(0, 0, Math.PI / 2);
+          o.updateMatrixWorld(true);
+          const b2 = new Box3().setFromObject(o), c = b2.getCenter(new Vector3());
+          o.position.set(q.x - c.x, (q.y ?? 0.92) - b2.min.y, q.z - c.z);
+          objs.push(o);
+        }
+        for (const o of objs) {
+          o.traverse((m) => {
+            if (m.isMesh) {
+              m.castShadow = true;
+              m.receiveShadow = true;
+            }
+          });
+          this.group.add(o);
+        }
+        objs.push(ring(q.x, q.z));
+        this.pickupViz[q.id] = objs;
       }
-      mags.position.copy(bag.position);
-      mags.rotation.y = bag.rotation.y;
-      this.group.add(mags);
-      const aid = aidG.scene.clone(true);
-      aid.position.set(P.health.x, 0.81, P.health.z);
-      aid.rotation.y = -Math.PI / 2;
-      this.group.add(aid);
-      for (const o of [pistol, bag, mags, aid]) o.traverse((m) => {
+      const cs = aidG.scene.clone(true);
+      cs.traverse((m) => {
         if (m.isMesh) {
+          m.material = m.material.clone();
+          if (m.material.color) m.material.color.lerp(new Color(6266808), 0.55);
           m.castShadow = true;
           m.receiveShadow = true;
         }
       });
-      this.pickupViz = { pistol: [pistol, ring(P.pistol.x, P.pistol.z)], ammo: [mags, ring(P.ammo.x, P.ammo.z)], health: [aid, ring(P.health.x, P.health.z)], bat: [ring(P.bat.x, P.bat.z)] };
+      const cb = new Box3().setFromObject(cs), csz = cb.getSize(new Vector3());
+      const holder = new Group();
+      cs.position.set(-(cb.min.x + cb.max.x) / 2, -cb.min.y, -(cb.min.z + cb.max.z) / 2);
+      holder.add(cs);
+      const lc = document.createElement("canvas");
+      lc.width = 256;
+      lc.height = 128;
+      const lx = lc.getContext("2d");
+      lx.fillStyle = "#f7f3e8";
+      lx.fillRect(0, 0, 256, 128);
+      lx.fillStyle = "#1d6f8a";
+      lx.fillRect(0, 0, 256, 30);
+      lx.fillStyle = "#fff";
+      lx.font = "800 20px system-ui";
+      lx.fillText("SPECIMEN \xB7 SEALED", 12, 22);
+      lx.fillStyle = "#20262a";
+      lx.font = "700 22px system-ui";
+      lx.fillText("ACC 7-0419", 12, 62);
+      lx.font = "600 17px system-ui";
+      lx.fillText("PRE-PROCEDURE COLLECTION", 12, 90);
+      lx.fillStyle = "#c7553f";
+      lx.fillText("KEEP COLD \xB7 DO NOT OPEN", 12, 116);
+      const lt = new CanvasTexture(lc);
+      lt.colorSpace = SRGBColorSpace;
+      const lw = Math.max(csz.x, csz.z) * 0.8;
+      const label = new Mesh(new PlaneGeometry(lw, lw / 2), new MeshBasicMaterial({ map: lt }));
+      label.rotation.x = -Math.PI / 2;
+      if (csz.z > csz.x) label.rotation.z = Math.PI / 2;
+      label.position.y = csz.y + 4e-3;
+      holder.add(label);
+      this.caseObj = holder;
+      this.caseSize = csz.clone();
+      holder.name = "specimenCase";
+      this.group.add(holder);
+      this.caseRing = ring(0, 0);
+      this.caseRing.material = this.caseRing.material.clone();
+      this.caseRing.material.color.set(9431295);
     }
     takePickup(id) {
       for (const o of this.pickupViz?.[id] || []) o.visible = false;
@@ -48742,13 +50593,14 @@ void main() {
         return m;
       };
       this.signMeshes = [];
-      for (const s of SIGNS) {
+      for (const s of CH().signs || []) {
         const m = add(new MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024);
         m.userData.sign = s.text;
+        m.userData.lift = s.lift;
         this.signMeshes.push(m);
       }
       const tl = new TextureLoader();
-      for (const s of ROOM_SIGNS) {
+      for (const s of CH().roomSigns || []) {
         const t = tl.load(`assets/opening/signs/${s.id}.png`);
         t.colorSpace = SRGBColorSpace;
         t.anisotropy = 4;
@@ -48786,15 +50638,18 @@ void main() {
       this.buildOutbreak();
     }
     roomAt(x, z) {
-      for (const r of this.obRooms) for (const [x0, x1, z0, z1] of r.rects) if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r.id;
+      return this.roomObjAt(x, z)?.id ?? null;
+    }
+    roomObjAt(x, z) {
+      for (const r of this.obRooms) for (const [x0, x1, z0, z1] of r.rects) if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r;
       return null;
     }
     buildOutbreak() {
-      const O = this.ob, S2 = OB_TILE * 4, H4 = 2.7;
-      this.obRooms = LAYOUT.rooms || OB_WING_ROOMS;
+      const O = this.ob, S2 = OB_TILE * 4, H5 = 2.7;
+      this.obRooms = this.f3 ? CH().rooms : OB_WING_ROOMS;
       for (const r of this.obRooms) {
         if (!r.floor) continue;
-        const mat2 = O.floor[OB_ROOMS[r.id]?.[0] || "clinical"];
+        const mat2 = O.floor[obRecipe(r)?.[0] || "clinical"];
         for (const [x0, x1, z0, z1] of r.rects) {
           const g = new PlaneGeometry(x1 - x0, z1 - z0);
           g.rotateX(-Math.PI / 2);
@@ -48814,8 +50669,8 @@ void main() {
         const { minX: x0, maxX: x1, minZ: z0, maxZ: z1 } = w.box, y0 = w.y0 || 0, h = w.h;
         const buf = [[], [], []];
         const quad = (mi, BL, BR, TR, TL, n, u0, u1) => {
-          const P = [BL, BR, TR, BL, TR, TL], U2 = [[u0, BL[1] / H4], [u1, BR[1] / H4], [u1, TR[1] / H4], [u0, BL[1] / H4], [u1, TR[1] / H4], [u0, TL[1] / H4]];
-          for (let k = 0; k < 6; k++) buf[mi].push(P[k], n, U2[k]);
+          const P = [BL, BR, TR, BL, TR, TL], U3 = [[u0, BL[1] / H5], [u1, BR[1] / H5], [u1, TR[1] / H5], [u0, BL[1] / H5], [u1, TR[1] / H5], [u0, TL[1] / H5]];
+          for (let k = 0; k < 6; k++) buf[mi].push(P[k], n, U3[k]);
         };
         const faces = [
           { n: [0, 0, 1], at: z1, r: [1, 0], a0: x0, a1: x1 },
@@ -48828,12 +50683,12 @@ void main() {
           for (let s = 0; s < nSeg; s++) {
             let a = F.a0 + len * s / nSeg, b = F.a0 + len * (s + 1) / nSeg, c = (a + b) / 2;
             const sx = alongX ? c : F.at + F.n[0] * 0.25, sz = alongX ? F.at + F.n[2] * 0.25 : c;
-            const room = this.roomAt(sx, sz);
-            const mi = key[OB_ROOMS[room]?.[1] || "clinical"];
+            const room = this.roomObjAt(sx, sz);
+            const mi = key[obRecipe(room)?.[1] || "clinical"];
             const pt = (t, y) => alongX ? [t, y, F.at] : [F.at, y, t];
             const rs = alongX ? F.r[0] : F.r[1];
             if (rs < 0) [a, b] = [b, a];
-            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F.n, a * rs / H4, b * rs / H4);
+            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F.n, a * rs / H5, b * rs / H5);
           }
         }
         buf[2].push([x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z1], [0, 1, 0], [1, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z0], [0, 1, 0], [0, 1]);
@@ -48881,7 +50736,7 @@ void main() {
         D.add(m);
         this.attachToWall(m, x, z, face, y + size / 2);
       };
-      for (const d of this.f3 ? OB_BLOOD : OB_BLOOD_WING) d.wall ? onWall(d.kind, d.x, d.z, d.wall, d.y, d.size, d.tilt) : flat(d.kind, d.x, d.z, d.w, d.l, d.rot);
+      for (const d of this.f3 ? CH().blood : OB_BLOOD_WING) d.wall ? onWall(d.kind, d.x, d.z, d.wall, d.y, d.size, d.tilt) : flat(d.kind, d.x, d.z, d.w, d.l, d.rot);
       O.built = true;
       if (O.on) this.setOutbreak(true);
     }
@@ -48993,9 +50848,9 @@ void main() {
         p2.renderOrder = 2;
         grp.add(p2);
       };
-      for (const l of LAYOUT.lights || []) put(e.redMat, l.x, l.z, 5.5);
-      for (const d of LAYOUT.doors || []) if (d.kind !== "lift") put(e.redMat, d.x, d.z, 2.6);
-      for (const r of LAYOUT.rooms || []) for (const [x0, x1, z0, z1] of r.rects) {
+      for (const l of CH().lights || []) put(e.redMat, l.x, l.z, 5.5);
+      for (const d of CH().doors || []) if (d.kind !== "lift") put(e.redMat, d.x, d.z, 2.6);
+      for (const r of CH().rooms || []) for (const [x0, x1, z0, z1] of r.rects) {
         const w = x1 - x0, dd = z1 - z0;
         if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8);
       }
@@ -49063,7 +50918,12 @@ void main() {
       }
       if (!level) return;
       let moved = false;
-      for (const key of ["brace", "ctbar"]) {
+      this.caseStep(level);
+      if (this.partitionObj && level.doors.partition && this.partitionObj.visible === !!level.doors.partition.broken) {
+        this.partitionObj.visible = !level.doors.partition.broken;
+        moved = true;
+      }
+      for (const key of ["orbar", "x7door"]) {
         const k = this.doorKits[key], d = level.doors[key];
         if (!k || !d) continue;
         if (d.brace !== k.lastB || d.open !== k.last) {
@@ -49086,7 +50946,7 @@ void main() {
           }
         }
       }
-      const L2 = this.doorKits.lift;
+      const L2 = this.doorKits["lift" + (level.floor || 7)];
       if (L2 && level.lift.open !== L2.last) {
         L2.last = level.lift.open;
         L2.open.time = level.lift.open * 0.999;
@@ -49118,10 +50978,28 @@ void main() {
       }
       if (r.fault) r.fault.visible = !on;
       if (r.ready) r.ready.visible = on;
-      if (this.liftStatus) {
-        this.liftStatus.fault.visible = !on;
-        this.liftStatus.ready.visible = on;
+      const s7 = this.liftStatus?.["7"];
+      if (s7) {
+        s7.fault.visible = !on;
+        s7.ready.visible = on;
       }
+      for (const m of this.signMeshes || []) if (m.userData.sign === "LIFT" && m.userData.lift === 7) m.visible = !on;
+    }
+    // the specimen case: where the level says it is (carried: the game holds it in Yola's hand, see chapterui.js)
+    caseStep(level) {
+      const o = this.caseObj, c = level.case;
+      if (!o || !c) return;
+      if (c.state === "carried") {
+        this.caseRing.visible = false;
+        return;
+      }
+      if (o.parent !== this.group) this.group.add(o);
+      o.position.set(c.x, c.y || 0, c.z);
+      o.rotation.set(0, c.state === "stored" ? 0 : 0.35, 0);
+      o.scale.setScalar(1);
+      o.visible = true;
+      this.caseRing.visible = c.state !== "stored";
+      this.caseRing.position.set(c.x, 0.02, c.z);
     }
     // restore every door and the lift to a level's state (a fresh floor, a retry)
     syncLevel(level) {
@@ -49130,8 +51008,9 @@ void main() {
         k.last = -1;
         k.lastB = -1;
         const b = k.root.getObjectByName("Brace_REMOVABLE");
-        if (b && k.kind !== "closed") b.visible = true;
+        if (b && k.kind !== "closed" && k.kind !== "powered") b.visible = true;
       }
+      if (this.partitionObj) this.partitionObj.visible = !level?.doors.partition?.broken;
       this.liftPowered(!!level?.flags.lift_power_restored);
       if (level?.flags.lift_power_restored && this.reset) {
         this.reset.up.reset();
@@ -49143,36 +51022,6 @@ void main() {
       this.resetPickups(level ? [...level.taken] : []);
     }
   };
-
-  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
-  function clone(source) {
-    const sourceLookup = /* @__PURE__ */ new Map();
-    const cloneLookup = /* @__PURE__ */ new Map();
-    const clone2 = source.clone();
-    parallelTraverse(source, clone2, function(sourceNode, clonedNode) {
-      sourceLookup.set(clonedNode, sourceNode);
-      cloneLookup.set(sourceNode, clonedNode);
-    });
-    clone2.traverse(function(node) {
-      if (!node.isSkinnedMesh) return;
-      const clonedMesh = node;
-      const sourceMesh = sourceLookup.get(node);
-      const sourceBones = sourceMesh.skeleton.bones;
-      clonedMesh.skeleton = sourceMesh.skeleton.clone();
-      clonedMesh.bindMatrix.copy(sourceMesh.bindMatrix);
-      clonedMesh.skeleton.bones = sourceBones.map(function(bone) {
-        return cloneLookup.get(bone);
-      });
-      clonedMesh.bind(clonedMesh.skeleton, clonedMesh.bindMatrix);
-    });
-    return clone2;
-  }
-  function parallelTraverse(a, b, callback) {
-    callback(a, b);
-    for (let i = 0; i < a.children.length; i++) {
-      parallelTraverse(a.children[i], b.children[i], callback);
-    }
-  }
 
   // src/render/weaponModels.js
   var mat = (color, rough = 0.62, metal = 0.1) => new MeshStandardMaterial({ color, roughness: rough, metalness: metal });
@@ -49304,8 +51153,8 @@ void main() {
   }
 
   // src/render/ik.js
-  var clamp3 = (v, a, b) => v < a ? a : v > b ? b : v;
-  var acos = (x) => Math.acos(clamp3(x, -1, 1));
+  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var acos = (x) => Math.acos(clamp4(x, -1, 1));
   var _a2 = new Vector3();
   var _b2 = new Vector3();
   var _c = new Vector3();
@@ -49326,7 +51175,7 @@ void main() {
     const t = _t.copy(c).lerp(target, w).clone();
     hand.getWorldQuaternion(_hq);
     const handQ = _hq.clone();
-    const lab = b.distanceTo(a), lcb = c.distanceTo(b), lat = clamp3(t.distanceTo(a), 0.01, lab + lcb - 1e-3);
+    const lab = b.distanceTo(a), lcb = c.distanceTo(b), lat = clamp4(t.distanceTo(a), 0.01, lab + lcb - 1e-3);
     const ac = c.clone().sub(a).normalize(), ab = b.clone().sub(a).normalize(), ba = a.clone().sub(b).normalize(), bc = c.clone().sub(b).normalize(), at = t.clone().sub(a).normalize();
     const ac_ab0 = acos(ac.dot(ab)), ba_bc0 = acos(ba.dot(bc)), ac_at0 = acos(ac.dot(at));
     const ac_ab1 = acos((lcb * lcb - lab * lab - lat * lat) / (-2 * lab * lat)), ba_bc1 = acos((lat * lat - lab * lab - lcb * lcb) / (-2 * lab * lcb));
@@ -49344,10 +51193,10 @@ void main() {
   }
 
   // src/render/physics/ragdoll.js
-  var _v = new Vector3();
+  var _v4 = new Vector3();
   var _v22 = new Vector3();
-  var _q = new Quaternion();
-  var _q2 = new Quaternion();
+  var _q3 = new Quaternion();
+  var _q22 = new Quaternion();
   var _m2 = new Matrix4();
   var PARTS = [
     ["pelvis", "Hips", "Hips", "Spine1", 0.075, 12, null],
@@ -49392,7 +51241,7 @@ void main() {
     return out.add(d.multiplyScalar(1.6));
   }
   function frameQuat(dir, ref, out) {
-    const y = _v.copy(dir).normalize();
+    const y = _v4.copy(dir).normalize();
     let x = _v22.copy(ref).addScaledVector(y, -ref.dot(y));
     if (x.lengthSq() < 1e-8) x.set(1, 0, 0).addScaledVector(y, -y.x);
     x.normalize();
@@ -49435,7 +51284,7 @@ void main() {
     }
     return { parts, joints, idx };
   }
-  var ORDER = ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head", "LeftShoulder", "LeftArm", "LeftForeArm", "RightShoulder", "RightArm", "RightForeArm", "LeftUpLeg", "LeftLeg", "RightUpLeg", "RightLeg"];
+  var ORDER2 = ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head", "LeftShoulder", "LeftArm", "LeftForeArm", "RightShoulder", "RightArm", "RightForeArm", "LeftUpLeg", "LeftLeg", "RightUpLeg", "RightLeg"];
   var RagdollDriver = class {
     constructor(bones, desc) {
       this.bones = bones;
@@ -49463,7 +51312,7 @@ void main() {
       if (ch && W3.Head) W3.Neck = ch.clone().slerp(W3.Head, 0.5);
       const ps = states[this.desc.idx.pelvis];
       const hipW = this.hipsLocal.clone().applyQuaternion(ps.quat).add(ps.pos);
-      for (const name of ORDER) {
+      for (const name of ORDER2) {
         const b = B[name];
         if (!b) continue;
         const parent = b.parent;
@@ -49472,8 +51321,8 @@ void main() {
           b.position.copy(parent.worldToLocal(hipW.clone()));
         }
         if (W3[name]) {
-          parent.getWorldQuaternion(_q);
-          b.quaternion.copy(_q.invert().multiply(W3[name]));
+          parent.getWorldQuaternion(_q3);
+          b.quaternion.copy(_q3.invert().multiply(W3[name]));
         }
         b.updateWorldMatrix(false, false);
       }
@@ -49765,8 +51614,8 @@ void main() {
   var _c3 = new Vector3();
   var _d = new Vector3();
   var _e = new Vector3();
-  var _q3 = new Quaternion();
-  var _q22 = new Quaternion();
+  var _q4 = new Quaternion();
+  var _q23 = new Quaternion();
   var _q32 = new Quaternion();
   var HairSway = class {
     // bones: name -> Bone with the 'mixamorig' prefix stripped (Hair1..3, Head, ...)
@@ -49797,11 +51646,11 @@ void main() {
       parent.updateWorldMatrix(true, false);
       c[0].updateWorldMatrix(false, false);
       c[0].getWorldPosition(this.root1);
-      parent.getWorldQuaternion(_q3);
+      parent.getWorldQuaternion(_q4);
       const s = _a3.setFromMatrixColumn(parent.matrixWorld, 0).length();
       for (let i = 0; i < 3; i++) {
-        _q3.multiply(this.restQ[i]);
-        this.dir1[i].copy(Y).applyQuaternion(_q3);
+        _q4.multiply(this.restQ[i]);
+        this.dir1[i].copy(Y).applyQuaternion(_q4);
         this.len[i] = this.restLen[i] * s;
       }
       for (const k of this.cols) {
@@ -49875,11 +51724,11 @@ void main() {
             else w.divideScalar(pl).multiplyScalar(Math.sqrt(1 - cmax * cmax)).addScaledVector(dir, cmax);
           }
           p2.copy(head).addScaledVector(w, L2);
-          for (const K2 of this.cols) {
-            const dx = p2.x - K2.cs.x, dy = p2.y - K2.cs.y, dz = p2.z - K2.cs.z, d2 = dx * dx + dy * dy + dz * dz;
-            if (d2 < K2.rw * K2.rw && d2 > 1e-12) {
-              const f = K2.rw / Math.sqrt(d2);
-              p2.set(K2.cs.x + dx * f, K2.cs.y + dy * f, K2.cs.z + dz * f);
+          for (const K3 of this.cols) {
+            const dx = p2.x - K3.cs.x, dy = p2.y - K3.cs.y, dz = p2.z - K3.cs.z, d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 < K3.rw * K3.rw && d2 > 1e-12) {
+              const f = K3.rw / Math.sqrt(d2);
+              p2.set(K3.cs.x + dx * f, K3.cs.y + dy * f, K3.cs.z + dz * f);
             }
           }
           w.copy(p2).sub(head);
@@ -49900,13 +51749,13 @@ void main() {
           continue;
         }
         b.parent.updateWorldMatrix(false, false);
-        b.parent.getWorldQuaternion(_q3);
-        _q22.copy(_q3).multiply(this.restQ[i]);
-        const from = _a3.copy(Y).applyQuaternion(_q22);
+        b.parent.getWorldQuaternion(_q4);
+        _q23.copy(_q4).multiply(this.restQ[i]);
+        const from = _a3.copy(Y).applyQuaternion(_q23);
         const bp = _c3.copy(b.position).applyMatrix4(b.parent.matrixWorld);
         const to = _d.copy(this.p[i]).sub(bp).normalize();
-        _q32.setFromUnitVectors(from, to).multiply(_q22);
-        b.quaternion.copy(_q3.invert().multiply(_q32));
+        _q32.setFromUnitVectors(from, to).multiply(_q23);
+        b.quaternion.copy(_q4.invert().multiply(_q32));
         b.updateWorldMatrix(false, false);
       }
       this.chain[2].updateMatrixWorld(true);
@@ -49914,20 +51763,20 @@ void main() {
   };
 
   // src/render/clipchars.js
-  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var clamp5 = (v, a, b) => v < a ? a : v > b ? b : v;
   var smooth2 = (u) => u * u * (3 - 2 * u);
-  var _v4 = new Vector3();
+  var _v5 = new Vector3();
   var _v23 = new Vector3();
   var _v32 = new Vector3();
   var _v43 = new Vector3();
-  var _v5 = new Vector3();
+  var _v52 = new Vector3();
   var _v6 = new Vector3();
   var _v7 = new Vector3();
   var _ik = new Vector3();
   var _ikg = new Vector3();
   var _ikh = new Vector3();
-  var _q4 = new Quaternion();
-  var _q23 = new Quaternion();
+  var _q5 = new Quaternion();
+  var _q24 = new Quaternion();
   var _q33 = new Quaternion();
   var _q42 = new Quaternion();
   var UP = new Vector3(0, 1, 0);
@@ -50059,16 +51908,16 @@ void main() {
     rotateC(n, D) {
       const b = this.bones[n];
       if (!b) return;
-      this.container.getWorldQuaternion(_q23);
+      this.container.getWorldQuaternion(_q24);
       b.getWorldQuaternion(_q33);
-      const W3 = _q23.invert().multiply(_q33);
-      _q4.copy(W3).invert().multiply(D).multiply(W3);
-      b.quaternion.multiply(_q4);
+      const W3 = _q24.invert().multiply(_q33);
+      _q5.copy(W3).invert().multiply(D).multiply(W3);
+      b.quaternion.multiply(_q5);
       b.updateMatrixWorld(true);
     }
     rotateEulerC(n, x, y, z) {
-      _q4.setFromEuler(new Euler(x, y, z, "YXZ"));
-      this.rotateC(n, _q4.clone());
+      _q5.setFromEuler(new Euler(x, y, z, "YXZ"));
+      this.rotateC(n, _q5.clone());
     }
     worldPos(n, out) {
       return this.bones[n].getWorldPosition(out);
@@ -50097,7 +51946,7 @@ void main() {
   var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
     constructor(scene2, gltf, clipdata, weapons) {
-      const H4 = 1.62;
+      const H5 = 1.62;
       const clips = [];
       const rest = hipsRest(gltf.scene);
       const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
@@ -50131,8 +51980,8 @@ void main() {
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
       const scriptNames = ["t_greet_01", "t_greet_04"].filter((n) => byName[n]);
       for (const n of scriptNames) clips.push(byName[n]);
-      super(scene2, gltf.scene, H4, clips);
-      this.H = H4;
+      super(scene2, gltf.scene, H5, clips);
+      this.H = H5;
       this.scriptNames = scriptNames;
       this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
@@ -50240,9 +52089,9 @@ void main() {
         this.outer.position.set(0, 0, 0);
         this.mixer.update(0);
         this.container.updateMatrixWorld(true);
-        this.container.getWorldQuaternion(_q23);
+        this.container.getWorldQuaternion(_q24);
         this.bones[(A.hand || "Right") + "Hand"].getWorldQuaternion(_q33);
-        const handC = _q23.invert().multiply(_q33);
+        const handC = _q24.invert().multiply(_q33);
         this.meleeSocket[A.sock || A.name] = new Vector3(...smp.d).applyQuaternion(handC.invert()).normalize();
         act.setEffectiveWeight(0);
       }
@@ -50260,13 +52109,13 @@ void main() {
       this.outer.position.set(0, 0, 0);
       this.mixer.update(0);
       this.outer.updateMatrixWorld(true);
-      this.grip("Right", _v4);
+      this.grip("Right", _v5);
       this.grip("Left", _v23);
-      const barrel = _v23.clone().sub(_v4).normalize();
-      this.shotgunQ(barrel, _q4);
-      this.bones.RightHand.getWorldQuaternion(_q23);
-      this.shotgunSocket = _q23.invert().multiply(_q4).clone();
-      this.shotgunHoldSpan = _v23.distanceTo(_v4);
+      const barrel = _v23.clone().sub(_v5).normalize();
+      this.shotgunQ(barrel, _q5);
+      this.bones.RightHand.getWorldQuaternion(_q24);
+      this.shotgunSocket = _q24.invert().multiply(_q5).clone();
+      this.shotgunHoldSpan = _v23.distanceTo(_v5);
       h.setEffectiveWeight(0);
       id.setEffectiveWeight(0);
     }
@@ -50299,10 +52148,10 @@ void main() {
       const axis = new Vector3().crossVectors(ca, ct);
       if (axis.lengthSq() < 1e-10) return;
       const ang = Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180);
-      _q4.setFromAxisAngle(axis.normalize(), ang);
-      cl.getWorldQuaternion(_q23);
+      _q5.setFromAxisAngle(axis.normalize(), ang);
+      cl.getWorldQuaternion(_q24);
       cl.parent.getWorldQuaternion(_q33);
-      cl.quaternion.copy(_q33.invert().multiply(_q4).multiply(_q23));
+      cl.quaternion.copy(_q33.invert().multiply(_q5).multiply(_q24));
       cl.updateMatrixWorld(true);
     }
     // Pistol socket on the right hand: the gun's orientation in the aiming pose (barrel along the
@@ -50317,20 +52166,20 @@ void main() {
       this.outer.position.set(0, 0, 0);
       this.mixer.update(0);
       this.outer.updateMatrixWorld(true);
-      this.aimQuat(_q4);
-      this.bones.RightHand.getWorldQuaternion(_q23);
-      this.pistolSocket = _q23.invert().multiply(_q4).clone();
+      this.aimQuat(_q5);
+      this.bones.RightHand.getWorldQuaternion(_q24);
+      this.pistolSocket = _q24.invert().multiply(_q5).clone();
       id.setEffectiveWeight(0);
     }
     // pistol orientation from the arms: barrel along shoulders -> hands, slide upright (no roll)
     aimQuat(out) {
-      this.grip("Right", _v4);
+      this.grip("Right", _v5);
       this.grip("Left", _v23);
       this.bones.RightArm.getWorldPosition(_v32);
       this.bones.LeftArm.getWorldPosition(_v43);
       const mid = _v32.add(_v43).multiplyScalar(0.5);
-      const dir = _v43.copy(_v4).add(_v23).multiplyScalar(0.5).sub(mid).normalize();
-      const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp4(dir.y, -1, 1));
+      const dir = _v43.copy(_v5).add(_v23).multiplyScalar(0.5).sub(mid).normalize();
+      const yawOnly = Math.atan2(dir.x, dir.z), pitch = -Math.asin(clamp5(dir.y, -1, 1));
       return out.setFromEuler(_e2.set(pitch, yawOnly, 0, "YXZ"));
     }
     // Weapon socket on the right hand: the bat direction measured on the Mixamo reference skeleton
@@ -50348,9 +52197,9 @@ void main() {
       this.container.rotation.y = 0;
       this.mixer.update(0);
       this.container.updateMatrixWorld(true);
-      this.container.getWorldQuaternion(_q23);
+      this.container.getWorldQuaternion(_q24);
       this.bones.RightHand.getWorldQuaternion(_q33);
-      const handC = _q23.invert().multiply(_q33);
+      const handC = _q24.invert().multiply(_q33);
       this.batSocket = new Vector3(...s0.d).applyQuaternion(handC.invert()).normalize();
       cal.stop();
       cal.setEffectiveWeight(0);
@@ -50462,23 +52311,23 @@ void main() {
       const spS = this.spS, vF = (dx * sn + dz * cs) * spS, vL = (dx * cs - dz * sn) * spS;
       const w = { pistol_idle: 0 };
       for (const n in LOCO) w[n] = 0;
-      const move = clamp4(spS / 0.35, 0, 1);
+      const move = clamp5(spS / 0.35, 0, 1);
       w.pistol_idle = 1 - move;
       let hipYaw = 0;
       if (move > 0) {
         const th = Math.atan2(vL, vF), ath = Math.abs(th);
         if (!this.backMode && ath > 1.95) this.backMode = true;
         else if (this.backMode && ath < 1.2) this.backMode = false;
-        this.backBlend = clamp4((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
+        this.backBlend = clamp5((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
         const mb = smooth2(this.backBlend);
         const put = (key, kk) => {
           const [walk, run] = GAIT[key], g0 = this.gait[walk], g1 = this.gait[run];
-          const r = smooth2(clamp4((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
+          const r = smooth2(clamp5((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
           w[walk] += kk * (1 - r);
           w[run] += kk * r;
         };
         if (mb < 1) {
-          const tf = clamp4(th, -Math.PI / 2, Math.PI / 2);
+          const tf = clamp5(th, -Math.PI / 2, Math.PI / 2);
           const [a0, k0, a1, k1] = tf >= 0 ? [0, "f", Math.PI / 2, "l"] : [0, "f", -Math.PI / 2, "r"];
           const u = smooth2((tf - a0) / (a1 - a0));
           put(k0, (1 - u) * move * (1 - mb));
@@ -50492,7 +52341,7 @@ void main() {
       const lw = this.lw || (this.lw = {}), maxW = dt / 0.12;
       let ws = 0, stride = 0;
       for (const n in w) {
-        lw[n] = (lw[n] ?? w[n]) + clamp4(w[n] - (lw[n] ?? w[n]), -maxW, maxW);
+        lw[n] = (lw[n] ?? w[n]) + clamp5(w[n] - (lw[n] ?? w[n]), -maxW, maxW);
         if (LOCO[n] && lw[n] > 0) {
           ws += lw[n];
           stride += lw[n] * this.gait[n].stride;
@@ -50500,7 +52349,7 @@ void main() {
       }
       const tot = Object.values(lw).reduce((a, b) => a + b, 0) || 1;
       for (const n in lw) lw[n] /= tot;
-      this.hipYaw = (this.hipYaw || 0) + clamp4(hipYaw - (this.hipYaw || 0), -dt * 9, dt * 9);
+      this.hipYaw = (this.hipYaw || 0) + clamp5(hipYaw - (this.hipYaw || 0), -dt * 9, dt * 9);
       if (ws > 1e-3) this.phase = (this.phase + sp * dt / (stride / ws)) % 1;
       for (const n in LOCO) {
         if (!lw[n]) continue;
@@ -50527,7 +52376,7 @@ void main() {
       const rate = dt / Math.max(0.05, s.swapDur * 0.6);
       const eqKey = s.equipped === "bat" ? this.batLib ? "sword" : "axe" : s.equipped === "test" ? this.test?.two ? "axe" : "fists" : s.equipped;
       this.batMode = s.equipped === "bat";
-      for (const k2 in this.up) this.up[k2] += clamp4((eqKey === k2 ? 1 : 0) - this.up[k2], -rate, rate);
+      for (const k2 in this.up) this.up[k2] += clamp5((eqKey === k2 ? 1 : 0) - this.up[k2], -rate, rate);
       const uP0 = smooth2(this.up.pistol), uS0 = smooth2(this.up.shotgun), uA0 = smooth2(this.up.axe), uF0 = smooth2(this.up.fists), uW0 = smooth2(this.up.sword || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 || 1;
       const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un;
       let sW = 0, turn = 0;
@@ -50551,10 +52400,10 @@ void main() {
         this.clipF = attackFrame(A, Math.min(t, tEnd));
         act.time = this.clipF / A.fps + (this.swJit ^= 1) * 1e-6;
         const cont = A.continuous && s.combo > 0;
-        const ramp = cont ? this.chainW0 >= 0.999 ? 1 : this.chainW0 + (1 - this.chainW0) * smooth2(clamp4(t / 0.12, 0, 1)) : smooth2(clamp4(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
-        const out = t <= tEnd ? 1 : smooth2(clamp4(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
+        const ramp = cont ? this.chainW0 >= 0.999 ? 1 : this.chainW0 + (1 - this.chainW0) * smooth2(clamp5(t / 0.12, 0, 1)) : smooth2(clamp5(t / (this.prevSwing ? this.swingBlend : A.enterBlend || 0.05), 0, 1));
+        const out = t <= tEnd ? 1 : smooth2(clamp5(1 - (t - tEnd) / (A.duration - tEnd), 0, 1));
         sW = ramp * out;
-        turn = A.yawOffset * smooth2(clamp4(t / 0.1, 0, 1)) * out;
+        turn = A.yawOffset * smooth2(clamp5(t / 0.1, 0, 1)) * out;
         if (this.prevSwing) {
           const pw = this.prevSwingW * (1 - ramp);
           this.prevSwing.setEffectiveWeight(pw);
@@ -50585,11 +52434,11 @@ void main() {
       let rW = 0;
       this.reloadFrame = -1;
       if (s.action === "reload") {
-        const sg = s.equipped === "shotgun", u = clamp4(s.actionT / s.reloadDur, 0, 1);
+        const sg = s.equipped === "shotgun", u = clamp5(s.actionT / s.reloadDur, 0, 1);
         const rl = this.act(sg ? "shotgun_reload_upper" : "pistol_reload_upper");
         rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + (this.rlJit ^= 1) * 1e-6;
         if (sg) this.reloadFrame = rl.time * 30;
-        rW = smooth2(clamp4(s.actionT / 0.08, 0, 1)) * smooth2(clamp4((1 - u) / 0.12, 0, 1));
+        rW = smooth2(clamp5(s.actionT / 0.08, 0, 1)) * smooth2(clamp5((1 - u) / 0.12, 0, 1));
       }
       this.reloadW = rW;
       const rP = s.equipped === "pistol" ? rW : 0, rS = s.equipped === "shotgun" ? rW : 0;
@@ -50611,11 +52460,11 @@ void main() {
       }
       let scW = 0, sact = null;
       if (s.action === "down" && this.act("yola_knockdown")) {
-        const F = s.downFall || 1.15, U2 = s.downUp || 1.7, t = s.actionT, up = t >= F;
+        const F = s.downFall || 1.15, U3 = s.downUp || 1.7, t = s.actionT, up = t >= F;
         const a = this.act(up ? "yola_getup" : "yola_knockdown");
         this.act(up ? "yola_knockdown" : "yola_getup").setEffectiveWeight(0);
-        a.time = (up ? 20 + Math.min(1, (t - F) / U2) * 161 : 1 + Math.min(1, t / F) * 58) / 30 + (this.dnJit ^= 1) * 1e-6;
-        scW = smooth2(clamp4(t / 0.08, 0, 1)) * smooth2(clamp4((F + U2 - t) / 0.25, 0, 1));
+        a.time = (up ? 20 + Math.min(1, (t - F) / U3) * 161 : 1 + Math.min(1, t / F) * 58) / 30 + (this.dnJit ^= 1) * 1e-6;
+        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F + U3 - t) / 0.25, 0, 1));
         sact = a;
         a.setEffectiveWeight(scW);
       } else if (this.act("yola_knockdown")) {
@@ -50625,7 +52474,7 @@ void main() {
       if (this.script && !sact) {
         const S2 = this.script;
         S2.t += dt;
-        const len = S2.len / S2.rate, inW = clamp4(S2.t / S2.fadeIn, 0, 1), outW = clamp4((len - S2.t) / S2.fadeOut, 0, 1);
+        const len = S2.len / S2.rate, inW = clamp5(S2.t / S2.fadeIn, 0, 1), outW = clamp5((len - S2.t) / S2.fadeOut, 0, 1);
         scW = smooth2(inW) * smooth2(outW);
         sact = S2.act;
         S2.act.time = S2.t0 + Math.min(S2.t * S2.rate, S2.len - 1e-3);
@@ -50688,7 +52537,7 @@ void main() {
       });
       const STEP_AT = 0.1, LIFT2 = 0.05;
       const C = A && this.contacts?.[A.path];
-      if (FL.at.distanceToSquared(_v4.set(s.x, 0, s.z)) > 0.25) for (const k of ["L", "R"]) {
+      if (FL.at.distanceToSquared(_v5.set(s.x, 0, s.z)) > 0.25) for (const k of ["L", "R"]) {
         FL[k].mode = "free";
         FL[k].off.set(0, 0, 0);
       }
@@ -50705,7 +52554,7 @@ void main() {
         const anim = foot.getWorldPosition(_v6);
         let plant = 0;
         if (on) {
-          const f = clamp4(this.clipF ?? 0, C ? C.f0 : 0, C ? C.f0 + C[k].length - 1 : 0);
+          const f = clamp5(this.clipF ?? 0, C ? C.f0 : 0, C ? C.f0 + C[k].length - 1 : 0);
           let c = C ? C[k][Math.round(f) - C.f0] : 0;
           if (!C) {
             const toe = this.bones[side + "ToeBase"]?.getWorldPosition(this._toeV || (this._toeV = new Vector3())).y ?? anim.y;
@@ -50725,7 +52574,7 @@ void main() {
               st.mode = "step";
               st.from.copy(st.lock);
               st.t = 0;
-              st.dur = clamp4(d / 1.4, 0.12, 0.22);
+              st.dur = clamp5(d / 1.4, 0.12, 0.22);
             }
           }
         } else if (st.mode === "free") {
@@ -50739,7 +52588,7 @@ void main() {
         const tgt = _v7;
         if (st.mode === "step") {
           st.t += dt;
-          const u = smooth2(clamp4(st.t / st.dur, 0, 1));
+          const u = smooth2(clamp5(st.t / st.dur, 0, 1));
           tgt.set(st.from.x + (anim.x - st.from.x) * u, anim.y + Math.sin(Math.PI * u) * LIFT2, st.from.z + (anim.z - st.from.z) * u);
           if (st.t >= st.dur) {
             st.mode = plant >= 0.5 ? "locked" : "free";
@@ -50757,20 +52606,20 @@ void main() {
     // e.g. the rifle stance ~130 degrees; the turn onto the aim is done by the aim correction). Blended
     // by the layer's weight. (Hips' parent is static, so local hip rotations compare directly.)
     rebaseUpper() {
-      const H4 = this.bones.Hips, S2 = this.bones.Spine;
-      if (!H4 || !S2) return;
-      const inv = _q23.copy(H4.quaternion).invert();
+      const H5 = this.bones.Hips, S2 = this.bones.Spine;
+      if (!H5 || !S2) return;
+      const inv = _q24.copy(H5.quaternion).invert();
       for (const n in this.upperHips) {
         const a = this.act(n), w = a.getEffectiveWeight();
         if (w < 1e-3) continue;
         const v = this.upperHips[n].evaluate(a.time);
         _q33.set(v[0], v[1], v[2], v[3]);
-        const fc = _v4.set(0, 0, 1).applyQuaternion(_q33), fn = _v23.set(0, 0, 1).applyQuaternion(H4.quaternion);
+        const fc = _v5.set(0, 0, 1).applyQuaternion(_q33), fn = _v23.set(0, 0, 1).applyQuaternion(H5.quaternion);
         _q42.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
         _q33.premultiply(_q42);
         _q42.copy(inv).multiply(_q33);
-        _q4.identity().slerp(_q42, Math.min(1, w));
-        S2.quaternion.premultiply(_q4);
+        _q5.identity().slerp(_q42, Math.min(1, w));
+        S2.quaternion.premultiply(_q5);
       }
       S2.updateMatrixWorld(true);
     }
@@ -50787,12 +52636,12 @@ void main() {
     // During a reload the hands leave the aim, so the last aiming correction is held instead.
     aimPistol(s, ub) {
       const k = 1 - ub, rW = this.reloadW || 0;
-      this.grip("Right", _v4);
+      this.grip("Right", _v5);
       this.grip("Left", _v23);
       this.bones.RightArm.getWorldPosition(_v32);
       this.bones.LeftArm.getWorldPosition(_v43);
-      const hx = (_v4.x + _v23.x) / 2 - (_v32.x + _v43.x) / 2, hz = (_v4.z + _v23.z) / 2 - (_v32.z + _v43.z) / 2;
-      const live = clamp4(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
+      const hx = (_v5.x + _v23.x) / 2 - (_v32.x + _v43.x) / 2, hz = (_v5.z + _v23.z) / 2 - (_v32.z + _v43.z) / 2;
+      const live = clamp5(angleDiff2(Math.atan2(hx, hz), s.aimYaw), -0.6, 0.6);
       if (rW === 0) this.aimErr = live;
       const err = live * (1 - rW) + (this.aimErr || 0) * rW;
       const kick = s.recoil * s.recoil * s.recoilScale;
@@ -50805,16 +52654,16 @@ void main() {
     // Shotgun barrel direction in character (container) space, from the right-hand socket.
     shotgunBarrel(out) {
       this.container.getWorldQuaternion(_q33).invert();
-      this.bones.RightHand.getWorldQuaternion(_q4).multiply(this.shotgunSocket);
-      return out.set(1, 0, 0).applyQuaternion(_q4).applyQuaternion(_q33);
+      this.bones.RightHand.getWorldQuaternion(_q5).multiply(this.shotgunSocket);
+      return out.set(1, 0, 0).applyQuaternion(_q5).applyQuaternion(_q33);
     }
     // Shotgun: the hold is baked in Blender so the barrel points along the pelvis' heading (blender: sg_reload);
     // what is left here is the small error when the running strafes turn the pelvis toward travel, turned out
     // over the spine (held through a reload), and the kick: chest and arms thrown up and back.
     aimShotgun(s, ub) {
       const k = 1 - ub, rW = this.reloadW || 0;
-      const b = this.shotgunBarrel(_v4);
-      const live = clamp4(angleDiff2(Math.atan2(b.x, b.z), 0), -0.8, 0.8);
+      const b = this.shotgunBarrel(_v5);
+      const live = clamp5(angleDiff2(Math.atan2(b.x, b.z), 0), -0.8, 0.8);
       if (rW === 0) this.sgYaw = live;
       const ey = (live * (1 - rW) + (this.sgYaw || 0) * rW) * k;
       if (Math.abs(ey) > 1e-4) for (const n of ["Spine", "Spine1", "Spine2"]) {
@@ -50833,32 +52682,32 @@ void main() {
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
     shotgunLeftHand(rf, G2) {
-      const U2 = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
+      const U3 = G2.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp5(u, 0, 1));
       const shellOn = rf >= SH.from && rf <= SH.to;
-      this.grip("Left", _v4);
+      this.grip("Left", _v5);
       let wPort = 0;
       if (shellOn) {
-        _v32.copy(U2.port.position).add(_v43.set(0, -SH.portDown, 0));
+        _v32.copy(U3.port.position).add(_v43.set(0, -SH.portDown, 0));
         G2.localToWorld(_v32);
-        wPort = smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
+        wPort = smooth01(1 - (_v5.distanceTo(_v32) - 0.05) / 0.2);
         if (wPort > 0) {
           this.ikArm("Left", _v32, wPort);
-          this.grip("Left", _v4);
+          this.grip("Left", _v5);
         }
       }
-      _v23.set(U2.pumpX, U2.pump.position.y, U2.pump.position.z);
+      _v23.set(U3.pumpX, U3.pump.position.y, U3.pump.position.z);
       G2.localToWorld(_v23);
-      const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
-      if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
+      const wHold = smooth01(1 - (_v5.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
+      if (wHold > 0) this.ikArm("Left", U3.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
       S2.visible = shellOn;
       if (shellOn) {
-        this.bones.LeftHand.getWorldQuaternion(_q4);
-        _q23.setFromEuler(_e2.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, "XYZ"));
-        _q4.multiply(_q23);
-        S2.quaternion.copy(_q4);
-        this.grip("Left", _v4);
-        S2.position.copy(_v4).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q4));
+        this.bones.LeftHand.getWorldQuaternion(_q5);
+        _q24.setFromEuler(_e2.set(SH.rx * Math.PI / 180, SH.ry * Math.PI / 180, SH.rz * Math.PI / 180, "XYZ"));
+        _q5.multiply(_q24);
+        S2.quaternion.copy(_q5);
+        this.grip("Left", _v5);
+        S2.position.copy(_v5).add(_v23.set(SH.x, SH.y, SH.z).applyQuaternion(_q5));
       }
     }
     // ---- the weapon test arena (src/arena/testarena.js) ----
@@ -50882,18 +52731,18 @@ void main() {
     }
     // fist centre, grip axis (pinky -> index) and knuckle direction from her finger joints (as in the move library)
     fistFrame(side, out) {
-      const H4 = side + "Hand", c = out.c.set(0, 0, 0);
+      const H5 = side + "Hand", c = out.c.set(0, 0, 0);
       let n = 0;
       for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
-        const b = this.bones[H4 + f + i];
+        const b = this.bones[H5 + f + i];
         if (b) {
-          c.add(b.getWorldPosition(_v4));
+          c.add(b.getWorldPosition(_v5));
           n++;
         }
       }
       c.multiplyScalar(1 / n);
-      out.a.copy(this.bones[H4 + "Index1"].getWorldPosition(_v4)).sub(this.bones[H4 + "Pinky1"].getWorldPosition(_v23)).normalize();
-      out.k.copy(this.bones[H4 + "Middle1"].getWorldPosition(_v4)).sub(c);
+      out.a.copy(this.bones[H5 + "Index1"].getWorldPosition(_v5)).sub(this.bones[H5 + "Pinky1"].getWorldPosition(_v23)).normalize();
+      out.k.copy(this.bones[H5 + "Middle1"].getWorldPosition(_v5)).sub(c);
       out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
       c.addScaledVector(out.k, -0.01);
       return out;
@@ -50904,22 +52753,22 @@ void main() {
     placeTest() {
       this.placeHeld(this.test);
     }
-    placeHeld(T2) {
+    placeHeld(T3) {
       const F = this._ff || (this._ff = { c: new Vector3(), a: new Vector3(), k: new Vector3() });
-      if (T2.fingers) {
-        for (const [n, q] of T2.fingers) if (T2.two || n.startsWith(T2.hand)) this.bones[n].quaternion.copy(q);
-        for (const side of T2.two ? ["Left", "Right"] : [T2.hand]) this.bones[side + "Hand"].updateMatrixWorld(true);
+      if (T3.fingers) {
+        for (const [n, q] of T3.fingers) if (T3.two || n.startsWith(T3.hand)) this.bones[n].quaternion.copy(q);
+        for (const side of T3.two ? ["Left", "Right"] : [T3.hand]) this.bones[side + "Hand"].updateMatrixWorld(true);
       }
-      const o = T2.obj;
+      const o = T3.obj;
       if (!o) return;
-      this.fistFrame(T2.hand, F);
-      const A = _v32.copy(F.a).multiplyScalar(T2.flip ? -1 : 1), K2 = _v43.copy(F.k).applyAxisAngle(A, MathUtils.degToRad(T2.roll || 0));
-      const w = T2.w, s = _v5.set(...w.shaft_axis).normalize(), r = _v6.set(...w.ref_axis);
+      this.fistFrame(T3.hand, F);
+      const A = _v32.copy(F.a).multiplyScalar(T3.flip ? -1 : 1), K3 = _v43.copy(F.k).applyAxisAngle(A, MathUtils.degToRad(T3.roll || 0));
+      const w = T3.w, s = _v52.set(...w.shaft_axis).normalize(), r = _v6.set(...w.ref_axis);
       r.addScaledVector(s, -r.dot(s)).normalize();
       const M1 = (this._m1 || (this._m1 = new Matrix4())).makeBasis(s, r, _v7.crossVectors(s, r));
-      const M22 = (this._m2 || (this._m2 = new Matrix4())).makeBasis(A, K2, _v4.crossVectors(A, K2));
+      const M22 = (this._m2 || (this._m2 = new Matrix4())).makeBasis(A, K3, _v5.crossVectors(A, K3));
       o.quaternion.setFromRotationMatrix(M22.multiply(M1.transpose()));
-      o.position.copy(F.c).sub(_v23.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T2.slide || 0);
+      o.position.copy(F.c).sub(_v23.set(...w.grip_primary).applyQuaternion(o.quaternion)).addScaledVector(A, T3.slide || 0);
       o.visible = true;
       o.updateMatrixWorld(true);
       (this.heldGrip || (this.heldGrip = new Vector3())).set(...w.grip_primary).applyQuaternion(o.quaternion).add(o.position);
@@ -50970,23 +52819,23 @@ void main() {
         this.batModel.visible = !!this.batMode;
       }
       if (shown === "pistol") {
-        this.aimQuat(_q4);
+        this.aimQuat(_q5);
         const rW = this.reloadW || 0;
         if (rW > 0 && this.pistolSocket) {
-          this.bones.RightHand.getWorldQuaternion(_q23);
-          _q4.slerp(_q23.multiply(this.pistolSocket), rW);
+          this.bones.RightHand.getWorldQuaternion(_q24);
+          _q5.slerp(_q24.multiply(this.pistolSocket), rW);
         }
-        this.grip("Right", _v4);
-        this.pistol.position.copy(_v4);
-        this.pistol.quaternion.copy(_q4);
+        this.grip("Right", _v5);
+        this.pistol.position.copy(_v5);
+        this.pistol.quaternion.copy(_q5);
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
-        const G2 = this.shotgun, U2 = G2.userData, SP = SHOTGUN_SPEC;
-        this.bones.RightHand.getWorldQuaternion(_q4).multiply(this.shotgunSocket);
-        this.grip("Right", _v4);
-        G2.position.copy(_v4);
-        G2.quaternion.copy(_q4);
+        const G2 = this.shotgun, U3 = G2.userData, SP = SHOTGUN_SPEC;
+        this.bones.RightHand.getWorldQuaternion(_q5).multiply(this.shotgunSocket);
+        this.grip("Right", _v5);
+        G2.position.copy(_v5);
+        G2.quaternion.copy(_q5);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -50994,52 +52843,52 @@ void main() {
         }
         const rf = this.reloadFrame;
         if (rf >= SP.rackFrom && rf <= SP.rackTo) slide = Math.max(slide, Math.sin(Math.PI * (rf - SP.rackFrom) / (SP.rackTo - SP.rackFrom)));
-        U2.pump.position.x = U2.pumpX - SP.pumpStroke * slide;
+        U3.pump.position.x = U3.pumpX - SP.pumpStroke * slide;
         G2.updateMatrixWorld(true);
-        U2.muzzle.getWorldPosition(this.muzzleWorld);
+        U3.muzzle.getWorldPosition(this.muzzleWorld);
         this.shotgunLeftHand(rf, G2);
       } else {
-        this.grip("Right", _v4);
+        this.grip("Right", _v5);
         this.grip("Left", _v23);
         let dir;
         if (this.batSocket) {
           const wA = this.swingAct ? this.swingW : 0, wP = this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0, wI = Math.max(0, 1 - wA - wP);
           const ms = this.meleeSocket || {};
           const inHand = (v, hand) => {
-            this.bones[(hand || "Right") + "Hand"].getWorldQuaternion(_q4);
-            return _v5.copy(v).applyQuaternion(_q4);
+            this.bones[(hand || "Right") + "Hand"].getWorldQuaternion(_q5);
+            return _v52.copy(v).applyQuaternion(_q5);
           };
           dir = _v32.set(0, 0, 0).addScaledVector(inHand(this.batSocket, "Right"), wI);
           if (wA) dir.addScaledVector(inHand(ms[this.swingName] || this.batSocket, ms[this.swingName] ? this.swingHand : "Right"), wA);
           if (wP) dir.addScaledVector(inHand(ms[this.prevSwingName] || this.batSocket, ms[this.prevSwingName] ? this.prevSwingHand : "Right"), wP);
           dir.normalize();
-        } else dir = _v32.copy(_v4).sub(_v23).normalize();
-        const M4 = this.melee;
+        } else dir = _v32.copy(_v5).sub(_v23).normalize();
+        const M5 = this.melee;
         if (this.batMode) {
-          const span = clamp4(_v6.copy(_v4).sub(_v23).dot(dir), 0.07, 0.16);
-          _v7.copy(_v4).addScaledVector(dir, -span);
+          const span = clamp5(_v6.copy(_v5).sub(_v23).dot(dir), 0.07, 0.16);
+          _v7.copy(_v5).addScaledVector(dir, -span);
           this.reachClavicle("Left", _v7);
           this.ikArm("Left", _v7, 1);
           this.grip("Left", _v23);
-          M4.position.copy(_v4).addScaledVector(dir, -span / 2);
-        } else M4.position.copy(_v4).add(_v23).multiplyScalar(0.5);
-        const tip = _v43.copy(M4.position).addScaledVector(dir, 0.7);
+          M5.position.copy(_v5).addScaledVector(dir, -span / 2);
+        } else M5.position.copy(_v5).add(_v23).multiplyScalar(0.5);
+        const tip = _v43.copy(M5.position).addScaledVector(dir, 0.7);
         const vel = this.bladeInit && dt > 0 ? tip.clone().sub(this.prevTip).divideScalar(dt) : new Vector3();
         this.prevTip.copy(tip);
         const fwd = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
         const sp = vel.length();
-        const want = vel.multiplyScalar(clamp4((sp - 1) / 3, 0, 1)).addScaledVector(fwd, 0.8);
+        const want = vel.multiplyScalar(clamp5((sp - 1) / 3, 0, 1)).addScaledVector(fwd, 0.8);
         want.addScaledVector(dir, -want.dot(dir));
         if (want.lengthSq() < 1e-6) want.set(1, 0, 0).addScaledVector(dir, -dir.x);
         want.normalize();
         const x = want.clone().negate(), y = new Vector3().crossVectors(dir, x);
-        const target = _q23.setFromRotationMatrix(new Matrix4().makeBasis(x, y, dir));
+        const target = _q24.setFromRotationMatrix(new Matrix4().makeBasis(x, y, dir));
         if (!this.bladeInit || this.batMode) {
           this.bladeQ.copy(target);
           this.bladeInit = true;
         } else this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
-        M4.quaternion.copy(this.bladeQ);
-        M4.updateMatrixWorld(true);
+        M5.quaternion.copy(this.bladeQ);
+        M5.updateMatrixWorld(true);
       }
     }
     die(dt, s) {
@@ -51562,18 +53411,18 @@ void main() {
       if (this.deathYaw != null) this.container.rotation.y += angleDiff2(this.container.rotation.y, this.deathYaw) * Math.min(1, dt * 14);
       else this.container.rotation.y = z.yaw;
       const sp = Math.hypot(z.vx, z.vz);
-      const move = clamp4(sp / 0.25, 0, 1);
+      const move = clamp5(sp / 0.25, 0, 1);
       const one = this.oneShot ? this.oneShot.getEffectiveWeight() : 0;
       const crawl = z.crawling && this.hasCrawl ? 1 : 0;
-      const sprint = this.act("sprint") ? clamp4((sp - 1.3) / 1.2, 0, 1) : 0;
+      const sprint = this.act("sprint") ? clamp5((sp - 1.3) / 1.2, 0, 1) : 0;
       if (sprint || this.act("sprint")) {
         const a = this.act("sprint");
         a.setEffectiveWeight(move * sprint * (1 - one) * (1 - crawl));
-        a.timeScale = clamp4(sp / this.sprintNative, 0.5, 1.6);
+        a.timeScale = clamp5(sp / this.sprintNative, 0.5, 1.6);
       }
       this.act("walk").setEffectiveWeight(move * (1 - sprint) * (1 - one) * (1 - crawl));
       this.act("idle").setEffectiveWeight((1 - move) * (1 - one) * (1 - crawl));
-      this.act("walk").timeScale = clamp4(sp / this.nativeWalk, 0.5, 3.2);
+      this.act("walk").timeScale = clamp5(sp / this.nativeWalk, 0.5, 3.2);
       if (this.act("shield_upper")) {
         const own = z.state === "windup" || z.state === "strike" || z.state === "recover";
         this.act("shield_upper").setEffectiveWeight(this.shieldUp ? (own ? 1 - one : 3) * (1 - crawl) : 0);
@@ -51581,7 +53430,7 @@ void main() {
       if (this.hasCrawl) {
         const c = this.act("crawl");
         c.setEffectiveWeight(crawl * (1 - one));
-        c.timeScale = clamp4(sp / (0.22 * this.height), 0.45, 2.5);
+        c.timeScale = clamp5(sp / (0.22 * this.height), 0.45, 2.5);
         if (crawl) {
           if (z.state === "windup") c.timeScale = 0.25;
           else if (z.state === "strike") c.timeScale = 2.6;
@@ -51623,9 +53472,9 @@ void main() {
         S2.visible = false;
         return;
       }
-      h.getWorldPosition(_v4);
+      h.getWorldPosition(_v5);
       const yaw = this.container.rotation.y;
-      S2.position.set(_v4.x + Math.sin(yaw) * 0.12, Math.max(0.35, _v4.y), _v4.z + Math.cos(yaw) * 0.12);
+      S2.position.set(_v5.x + Math.sin(yaw) * 0.12, Math.max(0.35, _v5.y), _v5.z + Math.cos(yaw) * 0.12);
       S2.rotation.set(0, yaw, 0);
       S2.visible = this.outer.visible;
     }
@@ -55742,7 +57591,7 @@ void main() {
   var CELL = 0.3;
   var _a4 = new Vector3();
   var _b4 = new Vector3();
-  var _q5 = new Quaternion();
+  var _q6 = new Quaternion();
   var Particle = class {
     constructor(p2, r, invMass) {
       this.x = p2.clone();
@@ -55811,9 +57660,9 @@ void main() {
         this._link(body, P.top, P.spine1, 0.85, Infinity);
       }
       const limb = (up, lo, a, mid, end) => {
-        const U2 = part(up);
-        if (!U2) return;
-        pt(mid, U2.b, U2.r, U2.mass);
+        const U3 = part(up);
+        if (!U3) return;
+        pt(mid, U3.b, U3.r, U3.mass);
         this._link(body, P[a], P[mid]);
         const L2 = part(lo);
         if (L2) {
@@ -55945,8 +57794,8 @@ void main() {
             const [L2, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
             frameQuat(axis, _b4.subVectors(L2.x, R.x), body.q[i]);
           } else {
-            _q5.setFromUnitVectors(body.prevAxis[i], axis);
-            body.q[i].premultiply(_q5).normalize();
+            _q6.setFromUnitVectors(body.prevAxis[i], axis);
+            body.q[i].premultiply(_q6).normalize();
           }
           body.prevAxis[i].copy(axis);
         });
@@ -56041,7 +57890,7 @@ void main() {
     await RAPIER.init();
     return RAPIER;
   }
-  var _q6 = new Quaternion();
+  var _q7 = new Quaternion();
   var _v8 = new Vector3();
   var GROUP_WORLD = 1;
   var GROUP_BODY = 2;
@@ -56333,1235 +58182,6 @@ void main() {
     return { log: log.join(" "), zombie: { state: z.state, hp: Math.round(z.hp), severed: [...z.severed] }, stats: sim2.stats };
   }
 
-  // src/opening/actors.js
-  var blobTex = null;
-  function blobMaterial() {
-    if (!blobTex) {
-      const c = document.createElement("canvas");
-      c.width = c.height = 64;
-      const g = c.getContext("2d");
-      const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32);
-      gr.addColorStop(0, "rgba(20,30,34,.5)");
-      gr.addColorStop(1, "rgba(20,30,34,0)");
-      g.fillStyle = gr;
-      g.fillRect(0, 0, 64, 64);
-      blobTex = new CanvasTexture(c);
-    }
-    return new MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false });
-  }
-  var clamp5 = (v, a, b) => Math.min(b, Math.max(a, v));
-  var angDiff = (a, b) => {
-    let d = (b - a) % (Math.PI * 2);
-    if (d > Math.PI) d -= Math.PI * 2;
-    if (d < -Math.PI) d += Math.PI * 2;
-    return d;
-  };
-  var Actor = class {
-    // gltf: loaded glTF; opts.height: metres (scales the model); opts.walkSpeed: m/s the walk clip is tuned for
-    constructor(gltf, { height = 0, walkSpeed = 1.15, name = "actor", walkClip = "Walk_InPlace", idleClip = "Idle" } = {}) {
-      this.name = name;
-      this.root = new Group();
-      this.root.name = name;
-      this.model = clone(gltf.scene);
-      this.root.add(this.model);
-      this.model.traverse((o) => {
-        if (o.isMesh) {
-          o.frustumCulled = false;
-          o.castShadow = false;
-          o.receiveShadow = false;
-        }
-      });
-      this.blob = new Mesh(new PlaneGeometry(0.9, 0.9), blobMaterial());
-      this.blob.rotation.x = -Math.PI / 2;
-      this.blob.position.y = 0.012;
-      this.blob.renderOrder = 1;
-      this.root.add(this.blob);
-      if (height) {
-        this.root.updateMatrixWorld(true);
-        const box = new Box3().setFromObject(this.model);
-        const k = height / (box.max.y - box.min.y);
-        this.model.scale.multiplyScalar(k);
-        this.model.position.y -= box.min.y * k;
-      }
-      this.mixer = new AnimationMixer(this.model);
-      this.actions = {};
-      for (const c of gltf.animations) this.actions[c.name] = this.mixer.clipAction(c);
-      this.bones = {};
-      this.model.traverse((o) => {
-        if (o.isBone) this.bones[o.name] = o;
-      });
-      this.cur = null;
-      this.curName = "";
-      this.walkSpeed = walkSpeed;
-      this.walkClip = walkClip;
-      this.idleClip = idleClip;
-      this.yaw = 0;
-      this.targetYaw = null;
-      this.path = [];
-      this.speed = 0;
-      this.moving = false;
-      this.onArrive = null;
-      this.timeScale = 1;
-      this.seated = false;
-      this.sitState = "stand";
-      this.seat = null;
-      this.adj = {};
-      this._undo = [];
-      this.lying = null;
-    }
-    place(x, z, yaw = this.yaw) {
-      this.root.position.set(x, 0, z);
-      this.yaw = yaw;
-      this.root.rotation.y = yaw;
-      return this;
-    }
-    get x() {
-      return this.root.position.x;
-    }
-    get z() {
-      return this.root.position.z;
-    }
-    play(name, { fade = 0.25, once = false, rate = 1, from = 0 } = {}) {
-      const a = this.actions[name];
-      if (!a) return null;
-      if (this.cur === a && !once) return a;
-      a.reset();
-      a.enabled = true;
-      a.setEffectiveWeight(1);
-      a.timeScale = rate;
-      a.setLoop(once ? LoopOnce : LoopRepeat, Infinity);
-      a.clampWhenFinished = once;
-      if (from) a.time = from;
-      if (this.cur && this.cur !== a) a.crossFadeFrom(this.cur, fade, false);
-      a.play();
-      this.cur = a;
-      this.curName = name;
-      return a;
-    }
-    duration(name) {
-      return this.actions[name]?.getClip().duration ?? 0;
-    }
-    // Walk along waypoints [[x,z],...] at speed m/s; then face endYaw (if given) and idle. clip / idle: what plays while
-    // moving and on arrival (a seated rider: SeatedIdle for both); keepSeat: a rider stays seated (no stand-up state change)
-    walk(points, { speed = this.walkSpeed, endYaw = null, onArrive = null, clip = null, idle = null, keepSeat = false } = {}) {
-      this.path = points.map((p2) => ({ x: p2[0], z: p2[1] }));
-      this.speed = speed;
-      this.endYaw = endYaw;
-      this.onArrive = onArrive;
-      this.moving = this.path.length > 0;
-      if (!keepSeat) this.seated = false;
-      this.arriveClip = idle || this.idleClip;
-      if (this.moving) this.play(clip || this.walkClip, { rate: clip ? 1 : speed / this.walkSpeed });
-    }
-    stop() {
-      this.path = [];
-      this.moving = false;
-    }
-    update(dt) {
-      if (this.frozen) return;
-      const d = dt * this.timeScale;
-      for (const u of this._undo) u.bone.quaternion.copy(u.base);
-      this._undo.length = 0;
-      if (this.moving && this.path.length) {
-        const t = this.path[0], dx = t.x - this.x, dz = t.z - this.z, L2 = Math.hypot(dx, dz), step = this.speed * d;
-        if (L2 <= step + 1e-4) {
-          this.root.position.x = t.x;
-          this.root.position.z = t.z;
-          this.path.shift();
-          if (!this.path.length) {
-            this.moving = false;
-            if (this.endYaw != null) this.targetYaw = this.endYaw;
-            this.play(this.arriveClip || this.idleClip);
-            const cb = this.onArrive;
-            this.onArrive = null;
-            cb?.();
-          }
-        } else {
-          this.root.position.x += dx / L2 * step;
-          this.root.position.z += dz / L2 * step;
-          this.targetYaw = Math.atan2(dx, dz);
-        }
-      }
-      if (this.targetYaw != null) {
-        const e = angDiff(this.yaw, this.targetYaw);
-        this.yaw += clamp5(e, -d * (this.turnRate || 7), d * (this.turnRate || 7));
-        if (Math.abs(angDiff(this.yaw, this.targetYaw)) < 1e-3 && !this.moving) this.targetYaw = null;
-      }
-      if (this.lying) this.root.rotation.set(-Math.PI / 2, this.yaw, 0, "YXZ");
-      else this.root.rotation.y = this.yaw;
-      if (this.seat && (this.sitState === "sitting" || this.sitState === "seated")) {
-        this.root.position.x = this.seat.x + Math.sin(this.yaw) * this.seat.behind;
-        this.root.position.z = this.seat.z + Math.cos(this.yaw) * this.seat.behind;
-      }
-      this.mixer.update(d);
-      for (const k in this.adj) {
-        const a = this.adj[k], b = this.bones[a.bone];
-        if (!b || !(a.w > 0)) continue;
-        this._undo.push({ bone: b, base: b.quaternion.clone() });
-        b.quaternion.multiply(new Quaternion().setFromEuler(new Euler(a.x * a.w, a.y * a.w, a.z * a.w, "XYZ")));
-      }
-    }
-    adjust(key, bone, x, y, z, w = 1) {
-      this.adj[key] = { bone, x, y, z, w };
-    }
-    // lie supine on a surface: feet at (x, y, z), the body's long axis (head direction) along yawHead (0 = +z)
-    lie(x, y, z, yawHead) {
-      this.stop();
-      this.lying = { x, y, z, yawHead };
-      this.root.rotation.order = "YXZ";
-      this.root.position.set(x, y, z);
-      this.yaw = yawHead;
-      this.root.rotation.set(-Math.PI / 2, yawHead, 0, "YXZ");
-      if (this.blob) this.blob.visible = false;
-    }
-    unlie() {
-      this.lying = null;
-      this.root.rotation.set(0, this.yaw, 0, "XYZ");
-      this.root.rotation.order = "XYZ";
-      if (this.blob) this.blob.visible = true;
-    }
-    get busy() {
-      return this.moving || this.targetYaw != null;
-    }
-    turnTo(yaw) {
-      this.targetYaw = yaw;
-    }
-    // Sit on a chair whose seat centre is (cx, cz) with the character facing yaw. The visitor rigs' SitDown clip
-    // expects the seat 0.45 m behind the standing origin (the source Blender contract), so stand 0.45 m in front.
-    // The origin is placed by the caller's route (the sit anchor); this only plays the clip (instant = already seated).
-    sitAt(cx, cz, yaw, { instant = false, behind = 0.45, seatTop = 0.47 } = {}) {
-      this.stop();
-      this.targetYaw = null;
-      this.seat = { x: cx, z: cz, behind };
-      this.yaw = yaw;
-      this.root.position.set(cx + Math.sin(yaw) * behind, Math.max(0, seatTop - 0.47), cz + Math.cos(yaw) * behind);
-      this.seated = true;
-      if (instant) {
-        this.sitState = "seated";
-        this.play("SeatedIdle", { fade: 0 });
-        return;
-      }
-      this.sitState = "sitting";
-      const a = this.play("SitDown", { once: true, fade: 0.1 });
-      if (a) {
-        const done = (e) => {
-          if (e.action === a) {
-            this.mixer.removeEventListener("finished", done);
-            if (this.seated) {
-              this.sitState = "seated";
-              this.play("SeatedIdle", { fade: 0.15 });
-            }
-          }
-        };
-        this.mixer.addEventListener("finished", done);
-      }
-    }
-    standUp() {
-      if (this.sitState === "stand" || this.sitState === "rising") return;
-      this.seated = false;
-      this.sitState = "rising";
-      const a = this.play("StandUp", { once: true, fade: 0.1 });
-      if (a) {
-        const done = (e) => {
-          if (e.action === a) {
-            this.mixer.removeEventListener("finished", done);
-            this.sitState = "stand";
-            this.seat = null;
-            this.root.position.y = 0;
-            this.play(this.idleClip, { fade: 0.15 });
-          }
-        };
-        this.mixer.addEventListener("finished", done);
-      }
-    }
-    get settled() {
-      return this.sitState === "seated";
-    }
-    get upright() {
-      return this.sitState === "stand";
-    }
-    setVisible(v) {
-      this.root.visible = v;
-    }
-    // swap clothing materials by name (map: material name -> colour), keeping the originals to restore
-    setOutfit(map) {
-      this._outfit || (this._outfit = []);
-      this.model.traverse((o) => {
-        if (!o.isMesh) return;
-        const one = (m) => {
-          const c = map && m && map[m.name];
-          if (c === void 0) return m;
-          const n = m.clone();
-          n.color.set(c);
-          n.map = null;
-          n.userData.outfitOf = m;
-          return n;
-        };
-        if (!o.userData.matOrig) o.userData.matOrig = o.material;
-        o.material = map ? Array.isArray(o.userData.matOrig) ? o.userData.matOrig.map(one) : one(o.userData.matOrig) : o.userData.matOrig;
-      });
-    }
-  };
-  var _v9 = new Vector3();
-  var _q7 = new Quaternion();
-  var _q24 = new Quaternion();
-  var _id3 = new Quaternion();
-  var OriginalYola = class extends Actor {
-    constructor(gltf, opts = {}) {
-      super(gltf, { walkClip: "walk", idleClip: "idle", ...opts });
-      this.waveT = -1;
-      this.rest = {};
-      this.pose = null;
-      this.root.traverse((o) => {
-        if (o.name === "carry_tray" || o.isMesh && !o.isSkinnedMesh && !o.name && o.parent === this.root.children[0]) o.visible = false;
-      });
-      this.keyed = /* @__PURE__ */ new Set();
-      for (const c of gltf.animations) for (const tr of c.tracks) this.keyed.add(tr.name.split(".")[0]);
-      for (const n of ["upperarm_r", "forearm_r", "upperarm_l", "forearm_l", "head", "torso", "thigh_l", "thigh_r", "shin_l", "shin_r"]) if (this.bones[n]) this.rest[n] = this.bones[n].quaternion.clone();
-      this.root.updateMatrixWorld(true);
-      const B = this.bones, pos = (b) => b.getWorldPosition(new Vector3());
-      this.armDir = {};
-      for (const [n, c] of [["upperarm_r", "forearm_r"], ["upperarm_l", "forearm_l"], ["thigh_l", "shin_l"], ["thigh_r", "shin_r"]]) {
-        if (!B[n] || !B[c]) continue;
-        const dir = pos(B[c]).sub(pos(B[n])).normalize();
-        this.armDir[n] = dir.clone().applyQuaternion(B[n].getWorldQuaternion(new Quaternion()).invert());
-        this.armDir[c] = dir.clone().applyQuaternion(B[c].getWorldQuaternion(new Quaternion()).invert());
-      }
-      this.pelvisY0 = B.pelvis.getWorldPosition(new Vector3()).y - this.root.position.y;
-      this.baseY = this.model.position.y;
-      this.sitW = 0;
-      this.sitTarget = 0;
-      this.sitSeatTop = 0.5;
-      this.sitDrop = 0;
-    }
-    startWave(rate = 1) {
-      this.waveT = 0;
-      this.waveRate = rate;
-    }
-    // rate > 1: the same awkward wave, compressed to fit the phrase
-    update(dt) {
-      if (this.frozen) return;
-      super.update(dt);
-      if (this.waveT >= 0) this.waveT += dt * this.timeScale * (this.waveRate || 1);
-      const sd = dt * this.timeScale / 0.7;
-      this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
-      this.applyProcedural();
-    }
-    // sit on a seat of the given top height (m): lowers the pelvis onto it and folds the legs. The caller places root.
-    sitDown(seatTop) {
-      this.sitSeatTop = seatTop;
-      this.sitTarget = 1;
-      this.pose = "sit";
-      this.seated = true;
-      this.sitState = "sitting";
-    }
-    riseUp() {
-      this.sitTarget = 0;
-      this.seated = false;
-      this.sitState = "rising";
-    }
-    get settled() {
-      return this.sitTarget === 1 && this.sitW >= 1;
-    }
-    get upright() {
-      return this.sitTarget === 0 && this.sitW <= 0;
-    }
-    // rotate the bone (in world space) so that its length axis points along 'target', by weight w
-    aim(name, target, w) {
-      const b = this.bones[name];
-      if (!b || w <= 1e-4) return;
-      b.updateWorldMatrix(true, false);
-      b.getWorldQuaternion(_q7);
-      const cur = _v9.copy(this.armDir[name]).applyQuaternion(_q7);
-      const rot = _q24.setFromUnitVectors(cur, target);
-      rot.premultiply(_id3.identity());
-      const part = new Quaternion().identity().slerp(rot, w);
-      const world = part.multiply(_q7.clone());
-      b.parent.getWorldQuaternion(_q24);
-      b.quaternion.copy(_q24.invert().multiply(world));
-      b.updateMatrixWorld(true);
-    }
-    // rotate a bone about a world axis
-    rotW(name, axis, angle) {
-      const b = this.bones[name];
-      if (!b || !angle) return;
-      b.updateWorldMatrix(true, false);
-      b.getWorldQuaternion(_q7);
-      const world = _id3.setFromAxisAngle(axis, angle).multiply(_q7.clone());
-      b.parent.getWorldQuaternion(_q24);
-      b.quaternion.copy(_q24.invert().multiply(world));
-      b.updateMatrixWorld(true);
-    }
-    applySit() {
-      const w = this.sitW, B = this.bones, R = this.rest;
-      if (w > 1e-3 || this._wasSit) {
-        for (const n of ["thigh_l", "thigh_r", "shin_l", "shin_r"]) if (R[n]) B[n].quaternion.copy(R[n]);
-      }
-      this._wasSit = w > 1e-3;
-      if (w <= 1e-3) {
-        this.model.position.y = this.baseY;
-        this.sitDrop = 0;
-        if (this.sitState === "rising" && this.sitTarget === 0) {
-          this.sitState = "stand";
-          this.seated = false;
-          this.pose = null;
-        }
-        return;
-      }
-      if (this.sitTarget === 1 && this.sitW >= 1) this.sitState = "seated";
-      this.root.updateMatrixWorld(true);
-      const U2 = new Vector3(0, 1, 0), yawF = new Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
-      const drop = (this.pelvisY0 - (this.sitSeatTop + 0.04)) * w;
-      this.sitDrop = drop;
-      const th = yawF.clone().multiplyScalar(0.82).add(U2.clone().multiplyScalar(-0.57)).normalize();
-      const sh = U2.clone().multiplyScalar(-0.96).add(yawF.clone().multiplyScalar(0.18)).normalize();
-      for (const side of ["l", "r"]) {
-        this.aim("thigh_" + side, th, w);
-        this.aim("shin_" + side, sh, w);
-      }
-      this.model.position.y = this.baseY - drop;
-      this.model.updateMatrixWorld(true);
-    }
-    applyProcedural() {
-      const t = this.waveT, B = this.bones, R = this.rest;
-      for (const n of ["head", "upperarm_r", "forearm_r"]) if (R[n]) B[n].quaternion.copy(R[n]);
-      for (const n in R) if (!this.keyed.has(n)) B[n].quaternion.copy(R[n]);
-      const rot = (n, x, y, z) => {
-        const b = B[n];
-        if (!b) return;
-        if (!this.keyed.has(n)) b.quaternion.copy(R[n]);
-        b.quaternion.multiply(_q7.setFromEuler(new Euler(x, y, z, "XYZ")));
-      };
-      this.applySit();
-      if (t < 0) return;
-      this.root.updateMatrixWorld(true);
-      const ease2 = (u) => {
-        u = Math.min(1, Math.max(0, u));
-        return u * u * (3 - 2 * u);
-      };
-      const lift = t < 0.5 ? ease2(t / 0.5) * 0.35 : 0.35 + ease2((t - 0.5) / 0.5) * 0.65;
-      const up = lift * (1 - ease2((t - 3.9) / 0.8));
-      const wig = Math.sin(t * 16) * ease2((t - 0.9) / 0.3) * (1 - ease2((t - 3.7) / 0.5));
-      const U2 = new Vector3(0, 1, 0);
-      const right = _v9.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
-      right.y = 0;
-      right.normalize();
-      const R3 = right.clone(), F3 = new Vector3().crossVectors(U2, R3).normalize();
-      const du = R3.clone().multiplyScalar(0.78).add(U2.clone().multiplyScalar(0.42)).add(F3.clone().multiplyScalar(0.22)).normalize();
-      this.aim("upperarm_r", du, up);
-      const df = U2.clone().add(R3.clone().multiplyScalar(0.1 + wig * 0.85)).add(F3.clone().multiplyScalar(0.3)).normalize();
-      this.aim("forearm_r", df, up);
-      const shy = ease2((t - 0.9) / 0.5) * (1 - ease2((t - 3.9) / 0.6));
-      this.rotW("head", F3, -0.13 * shy);
-    }
-  };
-
-  // src/opening/stage.js
-  var CLINIC = { x: 60, z: 0 };
-  var M3 = "../assets/models/";
-  var LIFT_KIT = "assets/kit/Hospital_Elevator_Outbreak.glb";
-  var RECL = "assets/opening/recliners/TreatmentRecliner_";
-  var CLINIC_LIFT = { x: -2.3, z: -6 };
-  function liftDisplay(root) {
-    const c = document.createElement("canvas");
-    c.width = 256;
-    c.height = 96;
-    const g = c.getContext("2d");
-    const tex = new CanvasTexture(c);
-    tex.colorSpace = SRGBColorSpace;
-    const m = new Mesh(new PlaneGeometry(0.56, 0.21), new MeshBasicMaterial({ map: tex, toneMapped: false }));
-    m.position.set(0, 2.65, 0.272);
-    root.add(m);
-    root.traverse((o) => {
-      if (/^Indicator_/.test(o.name)) o.visible = false;
-    });
-    const set = (text, arrow = "") => {
-      g.fillStyle = "#120c06";
-      g.fillRect(0, 0, 256, 96);
-      g.fillStyle = "#ffb648";
-      g.font = "800 70px ui-monospace, Menlo, Consolas, monospace";
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      g.shadowColor = "#ff8a00";
-      g.shadowBlur = 14;
-      g.fillText(text, arrow ? 104 : 128, 52);
-      if (arrow) {
-        g.font = "800 46px system-ui, sans-serif";
-        g.fillText(arrow, 186, 50);
-      }
-      tex.needsUpdate = true;
-    };
-    set("G");
-    return { mesh: m, set };
-  }
-  var PAL2 = { wall: 16051420, band: 8109496, cap: 16775402, floorA: "#f2e6cc", floorB: "#cfe6dc", grout: "#e1d4b8", glass: 13626092, frame: 9421252 };
-  function checkerTexture() {
-    const c = document.createElement("canvas");
-    c.width = c.height = 256;
-    const g = c.getContext("2d"), s = 128;
-    for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
-      g.fillStyle = (i + j) % 2 ? PAL2.floorB : PAL2.floorA;
-      g.fillRect(i * s, j * s, s, s);
-    }
-    g.strokeStyle = PAL2.grout;
-    g.lineWidth = 3;
-    for (let i = 0; i <= 2; i++) {
-      g.beginPath();
-      g.moveTo(i * s, 0);
-      g.lineTo(i * s, 256);
-      g.stroke();
-      g.beginPath();
-      g.moveTo(0, i * s);
-      g.lineTo(256, i * s);
-      g.stroke();
-    }
-    const t = new CanvasTexture(c);
-    t.wrapS = t.wrapT = RepeatWrapping;
-    t.colorSpace = SRGBColorSpace;
-    t.anisotropy = 4;
-    return t;
-  }
-  var ClinicStage = class {
-    constructor(scene2, loader2) {
-      this.scene = scene2;
-      this.loader = loader2;
-      this.root = new Group();
-      this.root.position.set(CLINIC.x, 0, CLINIC.z);
-      this.root.visible = false;
-      scene2.add(this.root);
-      this.cache = /* @__PURE__ */ new Map();
-      this.tiers = [];
-      this.tier = "starter";
-      this.actors = {};
-      this.anchors = {};
-      this.byName = {};
-      this.pops = [];
-      this.rings = [];
-      this.onPop = null;
-    }
-    gltf(url) {
-      if (!this.cache.has(url)) this.cache.set(url, this.loader.loadAsync(url));
-      return this.cache.get(url);
-    }
-    // place a static prop: centred on x/z, standing on the floor, rotated about Y (degrees); fit scales to a target height
-    async prop(url, { x = 0, z = 0, y = 0, rot = 0, s = 1, h = 0, parent = this.root, name = "", wall = "" } = {}) {
-      const g = await this.gltf(url);
-      if (wall) rot = { s: 0, n: 180, e: 90, w: 270 }[wall];
-      const obj = g.scene.clone(true);
-      obj.rotation.y = rot * Math.PI / 180;
-      const holder = new Group();
-      holder.add(obj);
-      holder.updateMatrixWorld(true);
-      let box = new Box3().setFromObject(obj);
-      let k = s;
-      if (h) k = h / (box.max.y - box.min.y);
-      if (k !== 1) {
-        obj.scale.multiplyScalar(k);
-        holder.updateMatrixWorld(true);
-        box = new Box3().setFromObject(obj);
-      }
-      const c = box.getCenter(new Vector3());
-      obj.position.x -= c.x;
-      obj.position.z -= c.z;
-      obj.position.y -= box.min.y;
-      holder.position.set(x, y, z);
-      holder.name = name;
-      if (wall) {
-        const sz = box.getSize(new Vector3());
-        if (wall === "s") holder.position.z = z + sz.z / 2 + 5e-3;
-        if (wall === "n") holder.position.z = z - sz.z / 2 - 5e-3;
-        if (wall === "e") holder.position.x = x + sz.x / 2 + 5e-3;
-        if (wall === "w") holder.position.x = x - sz.x / 2 - 5e-3;
-      }
-      obj.traverse((o) => {
-        if (o.isMesh) {
-          o.castShadow = true;
-          o.receiveShadow = true;
-        }
-      });
-      parent.add(holder);
-      if (name) this.byName[name] = holder;
-      return holder;
-    }
-    box(w, h, d, x, y, z, color, { r = 0.04, shadow = true, rough = 0.8 } = {}) {
-      const m = new Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.2, d / 2.2, h / 2.2)), new MeshStandardMaterial({ color, roughness: rough }));
-      m.position.set(x, y, z);
-      m.castShadow = shadow;
-      m.receiveShadow = true;
-      this.root.add(m);
-      return m;
-    }
-    wall(x0, x1, z0, z1, h, style = "full") {
-      const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
-      if (style === "glass") {
-        this.box(w, 0.7, d + 0.04, cx, 0.35, cz, PAL2.wall);
-        const gm = new Mesh(new BoxGeometry(w - 0.06, h - 0.78, 0.03), new MeshStandardMaterial({ color: PAL2.glass, roughness: 0.1, transparent: true, opacity: 0.24, depthWrite: false }));
-        gm.position.set(cx, 0.72 + (h - 0.78) / 2, cz);
-        this.root.add(gm);
-        this.box(w + 0.02, 0.07, Math.max(d, 0.1), cx, h, cz, PAL2.frame, { shadow: false });
-        return;
-      }
-      this.box(w, h, d, cx, h / 2, cz, PAL2.wall, { r: 0.05 });
-      const bh = Math.min(0.34, h * 0.35);
-      this.box(w + 0.02, bh, d + 0.02, cx, bh / 2 + 0.05, cz, PAL2.band, { r: 0.02, shadow: false });
-      this.box(w + 0.04, 0.05, d + 0.04, cx, h, cz, PAL2.cap, { r: 0.02, shadow: false });
-    }
-    sign(id, x, y, z, w, ry = 0) {
-      if (!this.signTex) this.signTex = new TextureLoader();
-      const t = this.signTex.load(`assets/opening/signs/${id}.png`);
-      t.colorSpace = SRGBColorSpace;
-      t.anisotropy = 4;
-      const m = new Mesh(new PlaneGeometry(w, w * 0.3), new MeshBasicMaterial({ map: t }));
-      m.position.set(x, y, z);
-      m.rotation.y = ry;
-      this.root.add(m);
-      this.signs[id] = m;
-      return m;
-    }
-    async build() {
-      const W3 = 9.2, Zn = -6, Zs = 5;
-      const tex = checkerTexture();
-      tex.repeat.set((W3 * 2 + 1) / 1.2, (Zs - Zn + 1) / 1.2);
-      const floor = new Mesh(new PlaneGeometry(W3 * 2 + 1, Zs - Zn + 1), new MeshStandardMaterial({ map: tex, roughness: 0.5 }));
-      floor.rotation.x = -Math.PI / 2;
-      floor.position.set(0, 0, (Zn + Zs) / 2);
-      floor.receiveShadow = true;
-      this.root.add(floor);
-      const out = new Mesh(new PlaneGeometry(90, 90), new MeshBasicMaterial({ color: 13624287 }));
-      out.rotation.x = -Math.PI / 2;
-      out.position.set(0, -0.03, 0);
-      this.root.add(out);
-      const rug = new Mesh(new CircleGeometry(1.7, 40), new MeshStandardMaterial({ color: 15317156, roughness: 0.95 }));
-      rug.rotation.x = -Math.PI / 2;
-      rug.position.set(-5.2, 6e-3, 1.4);
-      rug.receiveShadow = true;
-      this.root.add(rug);
-      const inlay = new Mesh(new PlaneGeometry(W3 + 0.2, 0.3), new MeshStandardMaterial({ color: 10474700 }));
-      inlay.rotation.x = -Math.PI / 2;
-      inlay.position.set(-W3 / 2 + 0.1, 5e-3, -3.5);
-      this.root.add(inlay);
-      this.wall(-W3, W3, Zn - 0.3, Zn, 4, "full");
-      this.wall(-W3 - 0.3, -W3, Zn - 0.3, -0.2, 4, "full");
-      this.wall(-W3 - 0.3, -W3, 2, Zs, 4, "full");
-      this.wall(-W3, W3, Zs, Zs + 0.3, 0.95, "low");
-      this.wall(W3, W3 + 0.3, Zn - 0.3, Zs + 0.3, 0.95, "low");
-      this.wall(0.2, 0.45, Zn, -1.6, 2.3, "glass");
-      this.wall(0.2, 0.45, -0.4, 2, 2.3, "glass");
-      this.wall(0.2, 0.45, 3.4, Zs, 2.3, "glass");
-      this.wall(0.45, W3, -0.05, 0.2, 3, "full");
-      this.wall(3.05, 3.3, Zn, -1.9, 3, "full");
-      this.wall(3.05, 3.3, -0.6, -0.05, 3, "full");
-      const tasks = [];
-      tasks.push(this.prop(M3 + "upgrades/01_reception/reception_T1_desk.glb", { x: -5.2, z: -4.7, rot: 180, name: "desk" }));
-      tasks.push(this.prop(M3 + "upgrades/01_reception/reception_T1_chair.glb", { x: -5.2, z: -5.55, rot: 0 }));
-      tasks.push(this.prop(M3 + "uploaded/waiting-chair.glb", { x: -7.3, z: 3.4, rot: 180, name: "wchair1" }));
-      tasks.push(this.prop(M3 + "uploaded/staff-chair.glb", { x: -6.2, z: 3.45, rot: 0, name: "wchair2" }));
-      tasks.push(this.prop(M3 + "furnishings/Lounge_Break_Chair.glb", { x: -5, z: 3.4, rot: 180, name: "wchair3" }));
-      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -8.65, z: -5.4 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: -7.6, z: -5.45 }));
-      tasks.push(this.buildLift());
-      tasks.push(this.prop(M3 + "decor/Reception_Round_Side_Table.glb", { x: -3.2, z: 3.6 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Magazine_Rack.glb", { x: -1.2, z: 3.7, rot: 0 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Poster_Heart.glb", { x: -6.75, y: 1.35, z: -5.88 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: -9.2, y: 1.2, z: 3.1, wall: "e" }));
-      tasks.push(this.prop(M3 + "entrance/Entrance_Double_Doorway.glb", { x: -9.05, z: 0.9, rot: 90, name: "door" }));
-      this.signs = {};
-      this.sign("reception", -5.2, 2.15, -5.94, 1.9);
-      this.sign("assessment", 0.15, 2.05, -1, 1, -Math.PI / 2);
-      this.sign("recovery", 0.15, 2.05, 2.7, 1, -Math.PI / 2);
-      this.sign("elevator", CLINIC_LIFT.x, 3.25, -5.94, 1.3);
-      tasks.push(this.prop(M3 + "furnishings/Assessment_Board.glb", { x: 1.75, y: 1, z: Zn, wall: "s" }));
-      tasks.push(this.prop(M3 + "decor/Reception_Water_Cooler.glb", { x: 2.65, z: -5.55 }));
-      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 0.9, z: -5.45 }));
-      const AF = M3 + "upgrades/09_assessment_furniture/runtime/";
-      tasks.push(this.prop(AF + "consultation_desk_standard.glb", { x: 6.3, z: -3.2, rot: 180, name: "officeDesk" }));
-      tasks.push(this.prop(AF + "clinician_chair_standard.glb", { x: 6.3, z: -3.95, rot: 0, name: "chairYola" }));
-      tasks.push(this.prop(AF + "visitor_chair_standard.glb", { x: 5.72, z: -2.15, rot: 180, name: "chairPatient" }));
-      tasks.push(this.prop(AF + "visitor_chair_standard.glb", { x: 6.88, z: -2.15, rot: 180, name: "chairGuard" }));
-      tasks.push(this.prop(M3 + "furnishings/Clinical_Storage_Cabinet.glb", { x: 7.85, z: Zn, wall: "s" }));
-      tasks.push(this.prop(M3 + "furnishings/Clinical_Wall_Cupboard.glb", { x: 7.85, y: 1.45, z: Zn, wall: "s" }));
-      tasks.push(this.prop(M3 + "furnishings/Endoscopy_Glove_Dispenser.glb", { x: 6.55, y: 1.05, z: Zn, wall: "s" }));
-      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 6.05, y: 1.1, z: Zn, wall: "s" }));
-      tasks.push(this.prop(M3 + "furnishings/Clinical_Lidded_Waste_Bin.glb", { x: 8.95, z: -5.65 }));
-      tasks.push(this.prop(M3 + "decor3/Clinical_Sharps_Container.glb", { x: 7.05, y: 1.05, z: Zn, wall: "s" }));
-      tasks.push(this.prop(M3 + "furnishings/Assessment_Poster_Body.glb", { x: 3.3, y: 1, z: -4.6, wall: "e" }));
-      tasks.push(this.prop(M3 + "furnishings/Assessment_Poster_Lungs.glb", { x: 3.3, y: 1, z: -3.75, wall: "e" }));
-      tasks.push(this.prop(M3 + "decor/Recovery_Wall_Clock.glb", { x: 3.3, y: 2, z: -4.18, wall: "e" }));
-      this.sign("assessment", 3.32, 2.35, -2.75, 1.05, Math.PI / 2);
-      tasks.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: 3.85, z: -5.5 }));
-      tasks.push(this.prop(M3 + "decor2/Clinical_Art_Heart.glb", { x: 4.75, y: 1.25, z: Zn, wall: "s" }));
-      this.deskTop(6.3, 0.81, -3.2);
-      const U2 = M3 + "upgrades/";
-      const T3 = (dir, name) => ({ starter: U2 + dir + name.replace("#", "starter"), standard: U2 + dir + name.replace("#", "standard"), advanced: U2 + dir + name.replace("#", "advanced") });
-      const slot = (key, files, opts) => {
-        const sl = { key, files, opts, holder: null };
-        this.tiers.push(sl);
-        return sl;
-      };
-      const BZ = 0.2;
-      const slots = [];
-      for (const [k, cx] of [["A", 3.4], ["B", 6.6]]) {
-        slots.push(slot("head" + k, T3("05_recovery_bay/", "RecoveryHeadwall_#.glb"), { x: cx, z: BZ, wall: "s" }));
-        slots.push(slot("bed" + k, { starter: RECL + "starter.glb", standard: RECL + "standard.glb", advanced: RECL + "advanced.glb" }, { x: cx, z: 1.2, rot: 0 }));
-        slots.push(slot("mon" + k, T3("02_anesthesia_monitoring/", "patient_monitor_#.glb"), { x: cx - 0.98, z: 0.75, rot: 0 }));
-        slots.push(slot("iv" + k, T3("08_support_equipment/runtime/", "iv_stand_#.glb"), { x: cx + 0.86, z: 0.8, rot: 0 }));
-        slots.push(slot("cab" + k, T3("05_recovery_bay/", "BedsideCabinet_#.glb"), { x: cx - 0.95, z: 2.15, rot: 90 }));
-      }
-      slots.push(slot("curtain", T3("05_recovery_bay/", "PrivacyCurtain_#.glb"), { x: 5, z: 1.6, rot: 0 }));
-      slots.push(slot("cart", T3("08_support_equipment/runtime/", "supply_cart_#.glb"), { x: 8.55, z: 0.72, rot: 0 }));
-      slots.push(slot("prep", T3("09_assessment_furniture/runtime/", "prep_storage_#.glb"), { x: 1.35, z: BZ, wall: "s" }));
-      for (const sl of slots) for (const tier of ["starter", "standard", "advanced"]) tasks.push(this.prop(sl.files[tier], { ...sl.opts, name: sl.key + "_" + tier }).then((h) => {
-        sl.layers || (sl.layers = {});
-        sl.layers[tier] = h;
-        this.fadeable(h);
-        h.visible = tier === "starter";
-        this.setOpacity(h, 1);
-      }));
-      tasks.push(this.prop(U2 + "04_surgery/surgical_light_starter.glb", { x: 4.42, z: 2.45, rot: 180, name: "lightA" }));
-      tasks.push(this.prop(U2 + "04_surgery/surgical_light_starter.glb", { x: 7.62, z: 2.45, rot: 180, name: "lightB" }));
-      tasks.push(this.prop(M3 + "furnishings/Endoscopy_Glove_Dispenser.glb", { x: 0.95, y: 1.3, z: BZ, wall: "s", name: "glovesR" }));
-      tasks.push(this.prop(M3 + "decor/Reception_Wall_Sanitizer.glb", { x: 1.75, y: 1.35, z: BZ, wall: "s", name: "saniR" }));
-      tasks.push(this.prop(M3 + "furnishings/Clinical_Lidded_Waste_Bin.glb", { x: 2.3, z: 0.5, name: "binR" }));
-      tasks.push(this.prop(M3 + "decor3/Clinical_Sharps_Container.glb", { x: 2.35, y: 1.2, z: BZ, wall: "s", name: "sharpsR" }));
-      tasks.push(this.prop(M3 + "decor/Recovery_Wall_Clock.glb", { x: 5, y: 2.25, z: BZ, wall: "s", name: "clockR" }));
-      tasks.push(this.prop(M3 + "decor2/Clinical_Art_Lungs.glb", { x: 8.55, y: 1.45, z: BZ, wall: "s", name: "artR" }));
-      this.sign("recovery", 2, 2.45, BZ + 0.012, 1);
-      tasks.push(this.buildExterior());
-      await Promise.all(tasks);
-      Object.assign(this.anchors, {
-        queue: { x: -5.9, z: -3.55 },
-        guardQueue: { x: -4.6, z: -2.7 },
-        // public side of the reception desk (athlete, guard behind-right)
-        doorway: { x: 0.33, z: -1 },
-        // reception -> the staff corridor
-        officeDoor: { x: 3.18, z: -1.25 },
-        // corridor -> the assessment office
-        bayDoor: { x: 0.33, z: 2.7 },
-        // reception -> the two-bay room
-        chairPatient: { x: 5.72, z: -2.15, yaw: Math.PI, seatTop: 0.53 },
-        // faces north, toward Yola
-        chairGuard: { x: 6.88, z: -2.15, yaw: Math.PI, seatTop: 0.53 },
-        chairYola: { x: 6.3, z: -3.95, yaw: 0, seatTop: 0.53 },
-        // faces south, across the desk
-        guardChair: { x: -5, z: 3.4, yaw: Math.PI, seatTop: 0.47 },
-        // a waiting chair near reception
-        receptionChair: { x: -5.2, z: -5.5, yaw: 0, seatTop: 0.5 },
-        orDoor: { x: -1.4, z: -5 },
-        liftFront: { x: CLINIC_LIFT.x, z: -4.75 },
-        // the call point in front of the ground-floor elevator
-        yolaTour: { x: 5, z: 3.7, yaw: 0.45 }
-        // original Yola in the two-bay room for the tour
-      });
-    }
-    // ---- the outside of the medical center (the opening's first shot): the clinic's own front entrance in the west wall,
-    //      dressed as a building front - cream stucco, the teal name sign over a canopy with downlights, teal-framed glass
-    //      sliding doors (the real reception shows through them), planters, hedges, a sidewalk with leaf shadows, trees
-    //      behind the roofline and a painted sky. Facade face at x = -9.5 (local); the doorway is z -0.2..2.0.
-    async buildExterior() {
-      const g = new Group();
-      g.name = "exterior";
-      this.root.add(g);
-      this.exterior = g;
-      const std = (c, r = 0.85, o = {}) => new MeshStandardMaterial({ color: c, roughness: r, ...o });
-      const box = (w, h, d, x, y, z, m, { r = 0.04, shadow = true, parent = g } = {}) => {
-        const b = new Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), m);
-        b.position.set(x, y, z);
-        b.castShadow = shadow;
-        b.receiveShadow = true;
-        parent.add(b);
-        return b;
-      };
-      const bx = (x0, x1, y0, y1, z0, z1, m, o) => box(x1 - x0, y1 - y0, z1 - z0, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, m, o);
-      const stucco = std(15853004), stucco2 = std(15260091), capM = std(16314590), teal = std(2792086, 0.55), tealDk = std(2064252, 0.5);
-      const glassM = new MeshStandardMaterial({ color: 13627118, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false });
-      const winM = std(8369339, 0.15, { metalness: 0.3 }), steel = std(14212576, 0.3, { metalness: 0.7 });
-      for (const [z0, z1] of [[-8.6, -0.75], [2.55, 8.4]]) {
-        bx(-9.85, -9.5, 0, 4.25, z0, z1, stucco, { r: 0.05 });
-        bx(-9.9, -9.5, 0, 0.16, z0, z1, stucco2, { r: 0.02 });
-        bx(-9.92, -9.5, 4.2, 4.32, z0 - 0.02, z1 + 0.02, capM, { r: 0.03 });
-        bx(-9.88, -9.84, 3, 3.18, z0, z1, teal, { r: 0.01, shadow: false });
-      }
-      for (const zc of [-5.3, 5.3]) {
-        bx(-9.9, -9.84, 0.85, 2.65, zc - 1.3, zc + 1.3, tealDk, { r: 0.02, shadow: false });
-        bx(-9.93, -9.88, 0.93, 2.57, zc - 1.22, zc + 1.22, winM, { r: 0.01, shadow: false });
-        bx(-9.95, -9.88, 0.93, 2.57, zc - 0.03, zc + 0.03, tealDk, { r: 0.01, shadow: false });
-        bx(-10.02, -9.84, 0.8, 0.88, zc - 1.36, zc + 1.36, capM, { r: 0.02 });
-      }
-      bx(-10.55, -9.5, 0, 3, -0.78, -0.2, stucco2, { r: 0.06 });
-      bx(-10.55, -9.5, 0, 3, 2, 2.58, stucco2, { r: 0.06 });
-      bx(-10.8, -9.5, 2.95, 3.32, -1, 2.8, capM, { r: 0.06 });
-      const lampM = new MeshBasicMaterial({ color: 16774102 });
-      for (const zc of [-0.1, 0.9, 1.9]) {
-        const d = new Mesh(new CircleGeometry(0.11, 20), lampM);
-        d.rotation.x = Math.PI / 2;
-        d.position.set(-10.25, 2.945, zc);
-        g.add(d);
-      }
-      bx(-10.2, -9.5, 3.32, 4.8, -3, 4.8, stucco, { r: 0.06 });
-      bx(-10.24, -9.5, 4.75, 4.86, -3.04, 4.84, capM, { r: 0.03 });
-      bx(-10.32, -10.18, 3.5, 4.58, -2.55, 4.35, teal, { r: 0.08 });
-      const sc = document.createElement("canvas");
-      sc.width = 1400;
-      sc.height = 220;
-      const sg = sc.getContext("2d");
-      let fs0 = 150;
-      do {
-        sg.font = "800 " + fs0 + 'px system-ui, "Segoe UI", sans-serif';
-        fs0 -= 4;
-      } while (sg.measureText("Yola\u2019s Medical Center").width > 1300 && fs0 > 60);
-      sg.textAlign = "center";
-      sg.textBaseline = "middle";
-      sg.fillStyle = "rgba(0,0,0,0.18)";
-      sg.fillText("Yola\u2019s Medical Center", 706, 118);
-      sg.fillStyle = "#ffffff";
-      sg.fillText("Yola\u2019s Medical Center", 700, 110);
-      const stx = new CanvasTexture(sc);
-      stx.colorSpace = SRGBColorSpace;
-      stx.anisotropy = 4;
-      const sign2 = new Mesh(new PlaneGeometry(6.6, 6.6 * 220 / 1400), new MeshBasicMaterial({ map: stx, transparent: true }));
-      sign2.position.set(-10.33, 4.04, 0.9);
-      sign2.rotation.y = -Math.PI / 2;
-      g.add(sign2);
-      bx(-9.64, -9.52, 2.42, 2.95, -0.2, 2, tealDk, { r: 0.02 });
-      for (const [z0, z1] of [[-0.2, -0.12], [1.92, 2]]) bx(-9.64, -9.52, 0, 2.45, z0, z1, tealDk, { r: 0.01 });
-      this.extDoors = [];
-      for (const [zc, dir] of [[0.47, -1], [1.33, 1]]) {
-        const leaf = new Group();
-        leaf.position.set(-9.6, 0, zc);
-        g.add(leaf);
-        const W3 = 0.84;
-        bx(-0.035, 0.035, 0.02, 2.4, -W3 / 2, -W3 / 2 + 0.06, teal, { parent: leaf, r: 0.01 });
-        bx(-0.035, 0.035, 0.02, 2.4, W3 / 2 - 0.06, W3 / 2, teal, { parent: leaf, r: 0.01 });
-        bx(-0.035, 0.035, 2.34, 2.4, -W3 / 2, W3 / 2, teal, { parent: leaf, r: 0.01 });
-        bx(-0.035, 0.035, 0.02, 0.14, -W3 / 2, W3 / 2, teal, { parent: leaf, r: 0.01 });
-        bx(-0.01, 0.01, 0.14, 2.34, -W3 / 2 + 0.06, W3 / 2 - 0.06, glassM, { parent: leaf, r: 2e-3, shadow: false });
-        bx(-0.09, -0.05, 0.75, 1.6, -dir * (W3 / 2 - 0.14) - 0.02, -dir * (W3 / 2 - 0.14) + 0.02, steel, { parent: leaf, r: 0.015 });
-        this.extDoors.push({ leaf, z0: zc, dir });
-      }
-      const leafCols = [6266442, 5213246, 7648090, 4160053];
-      const leafMats = leafCols.map((c) => std(c, 0.9, { flatShading: true }));
-      const shrub = (x, y, z, r, k = 0, parent = g) => {
-        const m = new Mesh(new IcosahedronGeometry(r, 1), leafMats[k % 4]);
-        m.position.set(x, y, z);
-        m.scale.y = 0.8;
-        m.castShadow = true;
-        m.receiveShadow = true;
-        parent.add(m);
-        return m;
-      };
-      const jobs = [];
-      for (const zc of [-2.05, 3.85]) {
-        bx(-11.55, -10.6, 0, 0.82, zc - 0.62, zc + 0.62, capM, { r: 0.08 });
-        bx(-11.5, -10.65, 0.8, 0.83, zc - 0.57, zc + 0.57, std(5916214, 1), { r: 0.01, shadow: false });
-        jobs.push(this.prop(M3 + "decor/Reception_Tall_Broadleaf_Plant.glb", { x: -11.08, y: 0.55, z: zc, rot: 90, s: 1.15, parent: g }));
-        for (let i = 0; i < 5; i++) {
-          const a = i / 5 * Math.PI * 2;
-          shrub(-11.08 + Math.cos(a) * 0.38, 0.95, zc + Math.sin(a) * 0.42, 0.2 + i % 2 * 0.05, i);
-        }
-      }
-      for (const zc of [-5.3, 5.3]) jobs.push(this.prop(M3 + "campus/hedge.glb", { x: -10.4, z: zc, rot: 90, parent: g }));
-      jobs.push(this.prop(M3 + "campus/flowerbed.glb", { x: -15.6, z: -4.8, rot: 75, parent: g }));
-      const tree = (x, z, h, r) => {
-        const t = new Group();
-        t.position.set(x, 0, z);
-        g.add(t);
-        const tr = new Mesh(new CylinderGeometry(0.12, 0.18, h * 0.55, 8), std(8018496, 0.9));
-        tr.position.y = h * 0.27;
-        tr.castShadow = true;
-        t.add(tr);
-        for (let i = 0; i < 7; i++) {
-          const a = i * 2.39, d = i ? r * 0.55 : 0;
-          shrub(Math.cos(a) * d, h * 0.62 + i % 3 * r * 0.28, Math.sin(a) * d, r * (i ? 0.62 : 0.8), i, t);
-        }
-      };
-      tree(-8.1, -4.3, 7.4, 1.6);
-      tree(-7.9, 6.1, 7.8, 1.7);
-      tree(-7.6, -10.6, 6.6, 1.7);
-      const pc = document.createElement("canvas");
-      pc.width = pc.height = 256;
-      const pg = pc.getContext("2d");
-      pg.fillStyle = "#ebe4d6";
-      pg.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < 900; i++) {
-        pg.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.18)" : "rgba(150,135,110,0.08)";
-        pg.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
-      }
-      pg.strokeStyle = "rgba(160,145,120,0.55)";
-      pg.lineWidth = 3;
-      pg.strokeRect(1.5, 1.5, 253, 253);
-      const pt = new CanvasTexture(pc);
-      pt.wrapS = pt.wrapT = RepeatWrapping;
-      pt.colorSpace = SRGBColorSpace;
-      pt.anisotropy = 8;
-      const walk = new Mesh(new PlaneGeometry(15.5, 34), new MeshStandardMaterial({ map: pt, roughness: 0.9 }));
-      pt.repeat.set(15.5 / 1.8, 34 / 1.8);
-      walk.rotation.x = -Math.PI / 2;
-      walk.position.set(-9.5 - 7.75, 6e-3, 0);
-      walk.receiveShadow = true;
-      g.add(walk);
-      const lawn = new Mesh(new PlaneGeometry(120, 160), std(10273900, 1));
-      lawn.rotation.x = -Math.PI / 2;
-      lawn.position.set(-25.2 - 60, 4e-3, 0);
-      lawn.receiveShadow = true;
-      g.add(lawn);
-      bx(-25.25, -24.95, 0, 0.12, -17, 17, std(14275268), { r: 0.03 });
-      const dc = document.createElement("canvas");
-      dc.width = dc.height = 256;
-      const dg = dc.getContext("2d");
-      for (let i = 0; i < 70; i++) {
-        const x = Math.random() * 256, y = Math.random() * 256, r = 6 + Math.random() * 22, gr = dg.createRadialGradient(x, y, 0, x, y, r);
-        gr.addColorStop(0, "rgba(40,60,40,0.32)");
-        gr.addColorStop(1, "rgba(40,60,40,0)");
-        dg.fillStyle = gr;
-        dg.beginPath();
-        dg.arc(x, y, r, 0, Math.PI * 2);
-        dg.fill();
-      }
-      const dtex = new CanvasTexture(dc);
-      for (const [zc, w] of [[-8, 6], [8.6, 6.5]]) {
-        const d = new Mesh(new PlaneGeometry(6, w), new MeshBasicMaterial({ map: dtex, transparent: true, depthWrite: false }));
-        d.rotation.x = -Math.PI / 2;
-        d.position.set(-13.2, 0.012, zc);
-        g.add(d);
-      }
-      const kc = document.createElement("canvas");
-      kc.width = 512;
-      kc.height = 512;
-      const kg = kc.getContext("2d");
-      const sky = kg.createLinearGradient(0, 0, 0, 512);
-      sky.addColorStop(0, "#4f9fe6");
-      sky.addColorStop(0.55, "#8cc4f0");
-      sky.addColorStop(1, "#d8eef8");
-      kg.fillStyle = sky;
-      kg.fillRect(0, 0, 512, 512);
-      const cloud = (x, y, w) => {
-        for (let i = 0; i < 7; i++) {
-          const cx = x + (i - 3) * w * 0.16, cy = y - Math.sin(i / 6 * Math.PI) * w * 0.12, r = w * (0.14 + 0.1 * Math.sin(i / 6 * Math.PI)), gr = kg.createRadialGradient(cx, cy, 0, cx, cy, r);
-          gr.addColorStop(0, "rgba(255,255,255,0.95)");
-          gr.addColorStop(0.7, "rgba(255,255,255,0.75)");
-          gr.addColorStop(1, "rgba(255,255,255,0)");
-          kg.fillStyle = gr;
-          kg.beginPath();
-          kg.arc(cx, cy, r, 0, Math.PI * 2);
-          kg.fill();
-        }
-      };
-      cloud(390, 120, 190);
-      cloud(120, 210, 150);
-      cloud(300, 300, 120);
-      this.skyTex = new CanvasTexture(kc);
-      this.skyTex.colorSpace = SRGBColorSpace;
-      const ceil = new Mesh(new PlaneGeometry(9.8, 11.2), std(16051420, 0.9, { side: DoubleSide }));
-      ceil.rotation.x = Math.PI / 2;
-      ceil.position.set(-4.4, 3.05, -0.5);
-      g.add(ceil);
-      const panelM = new MeshBasicMaterial({ color: 16774882 });
-      for (const [x, z] of [[-7.2, -1.8], [-7.2, 2.4], [-4.4, -1.8], [-4.4, 2.4], [-1.6, -1.8], [-1.6, 2.4]]) {
-        const p2 = new Mesh(new PlaneGeometry(1.1, 0.55), panelM);
-        p2.rotation.x = Math.PI / 2;
-        p2.position.set(x, 3.04, z);
-        g.add(p2);
-      }
-      bx(0.25, 0.45, 0, 3.05, -6, 5, std(16051420), { r: 0.02, shadow: false });
-      bx(0.2, 0.25, 0.05, 0.4, -6, 5, std(8109496), { r: 0.01, shadow: false });
-      await Promise.all(jobs);
-      g.traverse((o) => {
-        if (o.isMesh && o.material?.transparent) o.castShadow = false;
-      });
-    }
-    // the sliding doors: k 0 shut .. 1 open
-    setEntranceOpen(k) {
-      for (const d of this.extDoors || []) d.leaf.position.z = d.z0 + d.dir * 0.82 * k;
-    }
-    // the ground-floor elevator: the Floor 3 kit, its doors driven by the kit's own Doors_Open clip (0 shut .. 1 open)
-    async buildLift() {
-      const g = await this.gltf(LIFT_KIT);
-      const root = g.scene.clone(true);
-      root.position.set(CLINIC_LIFT.x, 0, CLINIC_LIFT.z);
-      root.name = "clinicLift";
-      root.traverse((o) => {
-        if (o.isMesh) {
-          o.castShadow = true;
-          o.receiveShadow = true;
-        }
-      });
-      this.root.add(root);
-      const mixer = new AnimationMixer(root), clip = AnimationClip.findByName(g.animations, "Doors_Open");
-      const open = clip ? mixer.clipAction(clip) : null;
-      if (open) {
-        open.play();
-        open.paused = true;
-        open.time = 0;
-        mixer.update(0);
-      }
-      this.lift = { root, mixer, open, k: 0, display: liftDisplay(root) };
-    }
-    setLiftOpen(k) {
-      const L2 = this.lift;
-      if (!L2?.open) return;
-      L2.k = k;
-      L2.open.time = Math.max(0, Math.min(0.999, k)) * L2.open.getClip().duration;
-      L2.mixer.update(0);
-    }
-    // the wheelchair the colleague brings: a prop that travels with whoever sits in it (seat centre at the group's origin)
-    async buildWheelchair() {
-      const g = await this.gltf("assets/hospital/wheelchair.glb");
-      const obj = g.scene.clone(true);
-      obj.traverse((o) => {
-        if (o.isMesh) {
-          o.castShadow = true;
-          o.receiveShadow = true;
-        }
-      });
-      const holder = new Group();
-      holder.add(obj);
-      holder.updateMatrixWorld(true);
-      const box = new Box3().setFromObject(obj), c = box.getCenter(new Vector3());
-      obj.position.set(-c.x, -box.min.y, -c.z);
-      const wc = new Group();
-      wc.name = "wheelchair";
-      wc.add(holder);
-      wc.visible = false;
-      this.root.add(wc);
-      this.wheelchair = wc;
-      this.wheelchairSize = box.getSize(new Vector3());
-      return wc;
-    }
-    // procedural desk-top dressing (the kit has no desk accessories): monitor and keyboard, a phone, a clipboard, paperwork
-    deskTop(cx, y, cz) {
-      const g = new Group();
-      g.position.set(cx, y, cz);
-      this.root.add(g);
-      this.byName.deskTop = g;
-      const mat2 = (c, r = 0.6, m = 0) => new MeshStandardMaterial({ color: c, roughness: r, metalness: m });
-      const add = (geo, m, x, yy, z, ry = 0) => {
-        const o = new Mesh(geo, m);
-        o.position.set(x, yy, z);
-        o.rotation.y = ry;
-        o.castShadow = true;
-        o.receiveShadow = true;
-        g.add(o);
-        return o;
-      };
-      const dark = mat2(2765368, 0.45), cream = mat2(15919832), teal = mat2(3121056, 0.5);
-      const scr = mat2(8370121, 0.3);
-      scr.emissive = new Color(1916232);
-      const MX = 0.6, MZ = -0.12, MR = 0.66;
-      add(new RoundedBoxGeometry(0.5, 0.32, 0.035, 2, 0.012), dark, MX, 0.3, MZ, MR);
-      add(new BoxGeometry(0.44, 0.26, 4e-3), scr, MX - Math.sin(MR) * 0.019, 0.3, MZ - Math.cos(MR) * 0.019, MR);
-      add(new CylinderGeometry(0.02, 0.02, 0.14, 10), dark, MX + Math.sin(MR) * 0.02, 0.08, MZ + Math.cos(MR) * 0.02);
-      add(new RoundedBoxGeometry(0.2, 0.012, 0.14, 2, 5e-3), dark, MX + Math.sin(MR) * 0.02, 6e-3, MZ + Math.cos(MR) * 0.02, MR);
-      add(new RoundedBoxGeometry(0.42, 0.018, 0.14, 2, 6e-3), cream, 0.12, 9e-3, -0.17, 0.12);
-      add(new RoundedBoxGeometry(0.07, 0.02, 0.1, 2, 8e-3), cream, 0.42, 0.01, -0.2);
-      add(new RoundedBoxGeometry(0.18, 0.06, 0.2, 2, 0.02), teal, -0.55, 0.03, -0.05, 0.4);
-      add(new RoundedBoxGeometry(0.2, 0.035, 0.055, 2, 0.015), dark, -0.55, 0.075, -0.05, 0.4);
-      add(new RoundedBoxGeometry(0.24, 0.012, 0.32, 2, 4e-3), mat2(10120004, 0.7), -0.18, 6e-3, 0.16, -0.15);
-      add(new BoxGeometry(0.21, 4e-3, 0.28), mat2(16513780, 0.9), -0.18, 0.014, 0.17, -0.15);
-      add(new RoundedBoxGeometry(0.08, 0.02, 0.03, 2, 6e-3), mat2(12107972, 0.3, 0.6), -0.18 + Math.sin(-0.15) * -0.13, 0.02, 0.17 - 0.13, -0.15);
-      for (let i = 0; i < 5; i++) add(new BoxGeometry(0.21, 6e-3, 0.29), mat2(i % 2 ? 16184298 : 16645366, 0.9), -0.52, 4e-3 + i * 6e-3, 0.2, 0.03 * (i % 3 - 1));
-    }
-    // equipment tiers crossfade in place (same footprint, never stacked solid): materials are cloned per layer so
-    // fading one tier never touches another
-    fadeable(h) {
-      h.traverse((o) => {
-        if (o.isMesh && o.name !== "liveScreen") {
-          o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
-          for (const m of [].concat(o.material)) m.transparent = true;
-        }
-      });
-    }
-    setOpacity(h, a) {
-      h.traverse((o) => {
-        if (o.name === "liveScreen") {
-          o.visible = a > 0.5;
-          return;
-        }
-        if (o.isMesh) for (const m of [].concat(o.material)) m.opacity = a;
-      });
-    }
-    // (a live screen face is shared by every monitor: it switches with the monitor instead of fading)
-    setTier(tier, fade = 1) {
-      const prev = this.tier;
-      this.tier = tier;
-      for (const s of this.tiers) {
-        if (!s.layers) continue;
-        const from = s.layers[prev], to = s.layers[tier];
-        if (from === to) continue;
-        s.fx = { from, to, t: 0, dur: Math.max(1e-3, fade) };
-        to.visible = true;
-        this.setOpacity(to, 0);
-      }
-    }
-    tickTiers(dt) {
-      for (const s of this.tiers) {
-        const f = s.fx;
-        if (!f) continue;
-        f.t = Math.min(f.dur, f.t + dt);
-        const u = f.t / f.dur, e = u * u * (3 - 2 * u);
-        this.setOpacity(f.to, e);
-        this.setOpacity(f.from, 1 - e);
-        if (u >= 1) {
-          f.from.visible = false;
-          this.setOpacity(f.to, 1);
-          s.fx = null;
-        }
-      }
-    }
-    // ---- an empty room that gets furnished: quick, satisfying placements of the room's existing furniture ----
-    // the two-bay room's equipment arrives in groups: both headwalls, each bed, each station's monitor and IV pole,
-    // each cabinet and light, the screen and clock, then the supply corner
-    furnishGroups() {
-      const t = (k) => this.tiers.find((sl) => sl.key === k)?.layers?.starter, n = this.byName;
-      return [[t("headA"), t("headB")], [t("bedA")], [t("bedB")], [t("monA"), t("ivA")], [t("monB"), t("ivB")], [t("cabA"), n.lightA], [t("cabB"), n.lightB], [t("curtain"), n.clockR], [t("prep"), t("cart"), n.glovesR, n.saniR, n.binR, n.sharpsR, n.artR]].map((g) => g.filter(Boolean));
-    }
-    furnishList() {
-      return this.furnishGroups().flat();
-    }
-    setRoomEmpty(on) {
-      for (const h of this.furnishList()) {
-        h.visible = !on;
-        h.scale.setScalar(1);
-      }
-      this.clearPops();
-    }
-    clearPops() {
-      this.pops.length = 0;
-      for (const r of this.rings) this.root.remove(r.m);
-      this.rings.length = 0;
-      for (const h of this.furnishList()) h.scale.setScalar(1);
-    }
-    popIn(h, delay = 0) {
-      h.visible = false;
-      h.scale.setScalar(1e-3);
-      this.pops.push({ h, t: -delay, dur: 0.4, started: false });
-    }
-    tickPops(dt) {
-      for (let i = this.pops.length - 1; i >= 0; i--) {
-        const p2 = this.pops[i];
-        p2.t += dt;
-        if (p2.t < 0) continue;
-        if (!p2.started) {
-          p2.started = true;
-          p2.h.visible = true;
-          this.onPop?.();
-          const m = new Mesh(new RingGeometry(0.28, 0.36, 40), new MeshBasicMaterial({ color: 16774089, transparent: true, opacity: 0.75, depthWrite: false }));
-          m.rotation.x = -Math.PI / 2;
-          m.position.set(p2.h.position.x, 0.03, p2.h.position.z);
-          m.renderOrder = 2;
-          this.root.add(m);
-          this.rings.push({ m, t: 0 });
-        }
-        const u = Math.min(1, p2.t / p2.dur), k = u < 1 ? 1 + Math.sin(u * Math.PI) * 0.13 * (1 - u) : 1;
-        p2.h.scale.setScalar(Math.max(1e-3, k * Math.min(1, u * 1.25)));
-        if (u >= 1) {
-          p2.h.scale.setScalar(1);
-          this.pops.splice(i, 1);
-        }
-      }
-      for (let i = this.rings.length - 1; i >= 0; i--) {
-        const r = this.rings[i];
-        r.t += dt;
-        const u = Math.min(1, r.t / 0.55);
-        r.m.scale.setScalar(1 + u * 2.6);
-        r.m.material.opacity = 0.75 * (1 - u);
-        if (u >= 1) {
-          this.root.remove(r.m);
-          this.rings.splice(i, 1);
-        }
-      }
-    }
-    // ---- cast ----
-    async buildCast() {
-      const load2 = (f) => this.loader.loadAsync(f);
-      const [yolaOld, bb, sec, pat5, patOld, staff, staffB, staffC, staffL] = await Promise.all([
-        load2(M3 + "blender/yola.glb"),
-        load2("assets/opening/Baseball_Visitor.glb"),
-        load2("assets/opening/Security_Visitor.glb"),
-        load2(M3 + "people/patient-05.glb"),
-        load2(M3 + "people/patient-older.glb"),
-        load2(M3 + "people/staff-teal.glb"),
-        load2(M3 + "people/staff-blue.glb"),
-        load2(M3 + "people/staff-coral.glb"),
-        load2(M3 + "people/staff-lilac.glb")
-      ]);
-      const batStatic = await load2("assets/opening/Baseball_Bat_Static.glb");
-      await this.buildWheelchair();
-      this.gltfs = { yolaOld, bb, sec, pat5, patOld, staff, batStatic };
-      const A = this.actors;
-      A.yola = new OriginalYola(yolaOld, { height: 1.62, name: "yolaOld", walkSpeed: 1 });
-      A.baseball = new Actor(bb, { name: "baseball" });
-      A.security = new Actor(sec, { name: "security" });
-      A.waiting1 = new Actor(pat5, { name: "waiting1" });
-      A.waiting2 = new Actor(patOld, { name: "waiting2" });
-      A.staff = new Actor(staff, { name: "staff" });
-      A.teamA = new Actor(staffB, { name: "teamA" });
-      A.teamB = new Actor(staffC, { name: "teamB" });
-      A.surgeon = new Actor(staffL, { name: "surgeon" });
-      for (const a of Object.values(A)) {
-        this.root.add(a.root);
-        a.root.visible = false;
-      }
-      A.baseball.bat = A.baseball.model.getObjectByName("Baseball_Bat");
-      A.baseball.bat0 = A.baseball.bat ? A.baseball.bat.visible : false;
-      this.batStatic = batStatic.scene;
-      this.batStatic.visible = false;
-      this.root.add(this.batStatic);
-      this.batStatic.traverse((o) => {
-        if (o.isMesh) o.castShadow = true;
-      });
-      this.guardBat = batStatic.scene.clone(true);
-      this.guardBat.visible = false;
-      {
-        const b = new Box3().setFromObject(this.guardBat);
-        this.batLen = b.getSize(new Vector3());
-        this.batBox = b;
-      }
-      const capSkin = A.baseball.model.getObjectByName("Baseball_Cap");
-      this.cap = null;
-      A.baseball.capSkin = capSkin;
-      if (capSkin) {
-        const parts = [];
-        capSkin.traverse((o) => {
-          if (o.isMesh) parts.push(o);
-        });
-        const g = new Group(), box = new Box3();
-        for (const p2 of parts) {
-          p2.geometry.computeBoundingBox();
-          box.union(p2.geometry.boundingBox);
-          g.add(new Mesh(p2.geometry, p2.material));
-        }
-        const c = box.getCenter(new Vector3());
-        for (const m of g.children) m.position.set(-c.x, -box.min.y, -c.z);
-        g.visible = false;
-        this.cap = g;
-      }
-    }
-    // move an actor's root between the clinic group and the world (the OR lives in the world scene)
-    actorToWorld(a, x, z, yaw) {
-      this.scene.add(a.root);
-      a.root.position.set(x, 0, z);
-      if (yaw != null) {
-        a.yaw = yaw;
-        a.root.rotation.y = yaw;
-      }
-    }
-    toClinic(a) {
-      this.root.add(a.root);
-    }
-    setActive(v) {
-      this.root.visible = v;
-    }
-    update(dt) {
-      for (const a of Object.values(this.actors)) if (a.root.visible) a.update(dt);
-      this.tickTiers(dt);
-      this.tickPops(dt);
-    }
-    // clinic-local -> world
-    toWorld(x, z) {
-      return new Vector3(x + CLINIC.x, 0, z + CLINIC.z);
-    }
-  };
-
   // src/opening/content.js
   var TOUR = {
     audio: "assets/opening/audio/narration.mp3",
@@ -57632,10 +58252,64 @@ void main() {
   };
   var OBJECTIVES = {
     chart: "Review the patient\u2019s chart.",
-    room1: "Find the lift reset in Maintenance.",
+    // Chapter 1 (Floors 7, 6, 5: core/level.js)
+    room1: "Get to the lift.",
+    f7_lift: "Get to the lift.",
+    f7_find: "Find another way down: west, through Supply.",
+    f7_power: "Restore the lift circuit: the service room past the cafeteria.",
+    f7_return: "Back to the lift: north through the prep room.",
+    f7_board: "Take the lift down.",
+    f7_explore: "Take the lift down.",
+    f6_case: "Cold dispatch: find the sealed pre-op case.",
+    f5_intake: "Take the case to diagnostic intake on 5.",
+    f5_go: "Take the case to diagnostic intake on 5.",
+    f5_explore: "Diagnostic intake is beside the lift. The records are further in.",
+    f5_record: "Find the dispatch record.",
+    f5_record_case: "The record is read. Bring the case to intake to compare.",
+    f5_match: "Compare the record with the case at intake.",
+    f5_retrieve: "Take the case back.",
+    f5_fetch: "Bring the case: it is where you left it.",
+    f5_down: "Take the case to the lift: Floor 4, then TECH on 3.",
+    f5_back: "Floor 5\u2019s lift: Floor 4, then TECH on 3.",
     maintenance: "Find the lift reset in Maintenance.",
     elevator: "Return to the elevator.",
     board: "Step into the lift."
+  };
+  var RADIO = {
+    f7_phone: [{ who: "Yola", text: "No service. Of course." }],
+    f7_radio: [
+      { who: "TECH", text: "Yola? Can you hear me?" },
+      { who: "Yola", text: "I know that voice. Tell me you\u2019re somewhere safe." },
+      { who: "TECH", text: "The lab on three. I can\u2019t get through the ward. Where are you?" },
+      { who: "Yola", text: "Seven. The lift\u2019s dead." },
+      { who: "TECH", text: "Service room, past the cafeteria. Try the panel there." }
+    ],
+    f7_power: [
+      { who: "Yola", text: "It\u2019s running. I\u2019m coming down." },
+      { who: "TECH", text: "Check cold dispatch on six, if you can. A sealed pre-op case. A sample from before this might tell us something." }
+    ],
+    f6_pickup: [
+      { who: "Yola", text: "I\u2019ve got it. Still sealed." },
+      { who: "TECH", text: "Keep it that way. Diagnostic intake on five can hold it safely. The dispatch record is there too." }
+    ],
+    f5_first: [{ who: "TECH", text: "Intake\u2019s right by the lift. Leave the case there while you look for the record." }],
+    f5_intake: [{ who: "TECH", text: "Good. It\u2019s held. The accession-to-patient record should be in transfer records." }],
+    f5_record_first: [{ who: "Yola", text: "Here\u2019s the docket. I need the case beside it." }],
+    f5_record: [{ who: "Yola", text: "Here\u2019s the docket. Back to intake." }],
+    f5_match: [
+      { who: "Yola", text: "This number matches. It\u2019s his. The patient from upstairs." },
+      { who: "TECH", text: "Collected before the procedure." },
+      { who: "Yola", text: "I was in that room." },
+      { who: "TECH", text: "Then we need to look at this properly. Bring it when you come down." },
+      { who: "Yola", text: "You\u2019re still on three?" },
+      { who: "TECH", text: "I\u2019m here." },
+      { who: "Yola", text: "Keep talking. I\u2019m coming." }
+    ]
+  };
+  var DOCKET = {
+    title: "DISPATCH RECORD",
+    rows: [["Accession", "ACC 7-0419"], ["Specimen", "Pre-procedure collection"], ["Patient", "Scheduled knee procedure \xB7 OR 7"], ["Chart note", "Documented pseudocholinesterase deficiency"], ["Dispatched", "Cold dispatch, Floor 6 \u2014 before the case began"]],
+    note: "Matches the label on the sealed case."
   };
   var VOICE_DIR = "assets/opening/voice/";
   var LINES = [
@@ -58141,8 +58815,8 @@ void main() {
       }
     }
     drawMonitor(t) {
-      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H4 = c.height, mode2 = this.monMode || "normal";
-      g.clearRect(0, 0, W3, H4);
+      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H5 = c.height, mode2 = this.monMode || "normal";
+      g.clearRect(0, 0, W3, H5);
       g.strokeStyle = mode2 === "normal" ? "#59f0a0" : "#ff7a6a";
       g.lineWidth = 3;
       g.lineJoin = "round";
@@ -58157,7 +58831,7 @@ void main() {
           else if (p2 > 0.235 && p2 < 0.27) y = 9;
           else if (p2 > 0.4 && p2 < 0.5) y = -6 * Math.sin((p2 - 0.4) / 0.1 * Math.PI);
         } else if (mode2 === "irregular") y = Math.sin(x * 0.09 + t * 9) * 9 + Math.sin(x * 0.23 - t * 5) * 6;
-        const yy = H4 / 2 + y + (mode2 === "flat" ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
+        const yy = H5 / 2 + y + (mode2 === "flat" ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
         x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
       }
       g.stroke();
@@ -58720,6 +59394,181 @@ void main() {
     }
   };
 
+  // src/core/floor3.js
+  var M4 = "assets/models/";
+  var U2 = M4 + "upgrades/";
+  var H4 = "zombie/assets/hospital/";
+  var K2 = "zombie/assets/kit/";
+  var T2 = 0.3;
+  var WH2 = 2.7;
+  var walls = [];
+  var hseg = (z, x0, x1, gaps = [], h = WH2) => {
+    let a = x0 - T2 / 2;
+    for (const [g0, g1] of [...gaps].sort((p2, q) => p2[0] - q[0])) {
+      if (g0 > a) walls.push([a, g0, z - T2 / 2, z + T2 / 2, h, "full"]);
+      a = g1;
+    }
+    if (x1 + T2 / 2 > a) walls.push([a, x1 + T2 / 2, z - T2 / 2, z + T2 / 2, h, "full"]);
+  };
+  var vseg = (x, z0, z1, gaps = [], h = WH2) => {
+    let a = z0 - T2 / 2;
+    for (const [g0, g1] of [...gaps].sort((p2, q) => p2[0] - q[0])) {
+      if (g0 > a) walls.push([x - T2 / 2, x + T2 / 2, a, g0, h, "full"]);
+      a = g1;
+    }
+    if (z1 + T2 / 2 > a) walls.push([x - T2 / 2, x + T2 / 2, a, z1 + T2 / 2, h, "full"]);
+  };
+  hseg(-11.15, -10.93, 7.15, [[-6, -3], [3.3, 6.3]]);
+  vseg(7.15, -11.15, -1.35, [[-7.84, -2.56]]);
+  hseg(-1.35, 3.8, 7.15);
+  vseg(3.8, -1.35, 0.65);
+  hseg(0.65, -7.15, 3.8);
+  vseg(-7.15, -11.15, 1.65, [[-5.6, -3.6]]);
+  hseg(-6.2, -12.85, -7.15);
+  hseg(1.65, -27.6, -7.15, [[-24.8, -23], [-16.2, -14.4]]);
+  vseg(-12.85, -7.2, 11.45, [[-5.6, -3.6], [-1.4, 0.4]]);
+  hseg(-7.2, -25.6, -12.85);
+  vseg(-25.6, -22.9, 1.65, [[-20.9, -17.9], [-16.1, -13.1], [-6.6, -4.8], [-2.8, -0.8]]);
+  hseg(-11.15, -37.4, -25.6, [[-33, -31.2], [-28.2, -26.4]]);
+  vseg(-37.4, -19, 0.6);
+  hseg(0.6, -37.4, -25.6);
+  hseg(-19, -37.4, -33.5);
+  vseg(-33.5, -22.9, -19);
+  hseg(-22.9, -33.5, 0.89);
+  hseg(-10.15, -25.6, -14.8);
+  vseg(-14.8, -12.1, -10.15);
+  hseg(-12.1, -14.8, -10.93);
+  vseg(-10.93, -22.9, -11.15, [[-21, -19.2], [-15.6, -13.6]]);
+  vseg(0.89, -22.9, -11.15, [[-20.8, -17.8], [-16.9, -13.9]]);
+  vseg(-27.6, 1.65, 11.45, [[3.57, 6.57], [7.46, 10.46]]);
+  hseg(11.45, -27.6, -12.85);
+  var LIFT = {
+    x: 7.2,
+    z: -5.2,
+    yaw: -Math.PI / 2,
+    cab: { minX: 7.5, maxX: 10.45, minZ: -6.66, maxZ: -3.74 },
+    // finished cab floor (world)
+    threshold: { minX: 6.55, maxX: 7.55, minZ: -6.4, maxZ: -4 },
+    call: { x: 6.75, z: -3.9 }
+    // the call panel by the doors (the approach trigger)
+  };
+  var props = [];
+  var p = (m, x, z, rot, size, h, extra = {}) => {
+    const sw = rot % 180 === 90;
+    props.push({ m, x, z, rot, fp: sw ? [size[1], size[0]] : [size[0], size[1]], h, ...extra });
+  };
+  var wp = (m, x, z, face, y, extra = {}) => props.push({ m, x, z, rot: { s: 0, n: 180, e: 90, w: 270 }[face], wall: face, y, fp: [0.1, 0.1], h: 0, noCollide: true, ...extra });
+  p(U2 + "04_surgery/operating_table_standard.glb", 0, -8.2, 90, [0.78, 1.65], 0.94);
+  p(U2 + "04_surgery/surgical_light_standard.glb", 0.75, -8.25, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
+  p(U2 + "02_anesthesia_monitoring/anesthesia_workstation_standard.glb", -2.25, -7.75, 90, [1.1, 0.7], 1.55, { name: "orAnesthesia" });
+  p(U2 + "02_anesthesia_monitoring/patient_monitor_standard.glb", -0.7, -10, 0, [0.62, 0.71], 1.46, { name: "orMonitor" });
+  p(U2 + "08_support_equipment/runtime/iv_stand_standard.glb", -1.25, -7.25, 0, [0.73, 0.7], 2.03, { noCollide: true });
+  p(U2 + "08_support_equipment/runtime/supply_cart_standard.glb", 2.35, -10.6, 0, [0.88, 0.65], 1.21);
+  p(H4 + "supply_cart.glb", -5.9, -7.4, 90, [1.16, 1.1], 1.23);
+  p(H4 + "biohazard_bin.glb", -2.95, -10.7, 0, [0.39, 0.39], 0.69);
+  p(H4 + "lidded_waste_bin.glb", 1.45, -10.75, 0, [0.36, 0.4], 0.58);
+  wp(M4 + "furnishings/Endoscopy_Glove_Dispenser.glb", 0.35, -11, "s", 1.05);
+  wp(M4 + "decor/Reception_Wall_Sanitizer.glb", 0.95, -11, "s", 1.1);
+  wp(M4 + "decor3/Clinical_Sharps_Container.glb", -1, -11, "s", 1.1);
+  wp(M4 + "decor/Recovery_Wall_Clock.glb", -0.3, -11, "s", 2);
+  p(M4 + "furnishings/Clinical_Storage_Cabinet.glb", -6.75, -1.4, 90, [1.4, 0.62], 0.88);
+  p(H4 + "procedure_stretcher.glb", 1.8, -2.6, 90, [0.9, 1.66], 1.22);
+  p(H4 + "wheelchair.glb", -4, -0.3, 0, [0.76, 0.91], 0.97);
+  p(H4 + "lidded_waste_bin.glb", 3.4, 0.2, 0, [0.36, 0.4], 0.58);
+  wp(M4 + "furnishings/Clinical_Wall_Cupboard.glb", -6.75 - 0.25, -1.4, "e", 1.45);
+  wp(M4 + "decor3/Clinical_Sharps_Container.glb", -7, -2.9, "e", 1.1);
+  wp(M4 + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -6.6, "e", 1);
+  p(M4 + "furnishings/Lounge_Break_Table.glb", -9.6, -5.55, 0, [0.9, 0.9], 0.74, { name: "belongings" });
+  p(M4 + "utility/Utility_Supply_Shelf.glb", -7.6, -0.9, 270, [1.39, 0.53], 2);
+  p(M4 + "utility/Utility_Supply_Shelf.glb", -11.3, -5.75, 0, [1.39, 0.53], 2);
+  p(U2 + "08_support_equipment/runtime/supply_cart_starter.glb", -11, 1.05, 180, [0.78, 0.52], 1.01);
+  p(M4 + "utility/Utility_Laundry_Hamper.glb", -8, 1.2, 0, [0.6, 0.54], 0.97);
+  p(H4 + "lidded_waste_bin.glb", -7.6, -2.75, 0, [0.36, 0.4], 0.58);
+  p(M4 + "utility/Utility_Wet_Floor_Sign.glb", -10.3, -2.2, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
+  p(U2 + "01_reception/reception_T2_desk.glb", -20.2, -5.3, 180, [2.2, 0.9], 1.1);
+  p(U2 + "01_reception/reception_T2_chair.glb", -20.2, -6.35, 0, [0.63, 0.62], 0.99, { noCollide: true });
+  p(M4 + "decor/Reception_Linked_Seats_3.glb", -19.6, -2.45, 180, [2.61, 0.62], 0.92);
+  p(M4 + "decor/Reception_Linked_Seats_3.glb", -19.6, -1.75, 0, [2.61, 0.62], 0.92);
+  p(U2 + "12_lobby/lobby_T2_floor_planter.glb", -21.35, -2.1, 0, [0.55, 0.86], 1.2, { fit: true });
+  p(U2 + "12_lobby/lobby_T2_floor_planter.glb", -17.85, -2.1, 0, [0.55, 0.86], 1.2, { fit: true });
+  p(M4 + "decor/Reception_Linked_Seats_3.glb", -23.4, -6.65, 0, [2.61, 0.62], 0.92);
+  p(M4 + "decor/Reception_Water_Cooler.glb", -13.45, -6.7, 0, [0.44, 0.49], 1.47);
+  p(M4 + "decor/Reception_Magazine_Rack.glb", -14.6, -6.75, 0, [0.55, 0.43], 1.05);
+  p(M4 + "decor/Reception_Linked_Seats_3.glb", -21, 1.2, 180, [2.61, 0.62], 0.92);
+  wp(U2 + "12_lobby/lobby_T2_health_poster.glb", -17.4, -7.05, "s", 1.15);
+  wp(M4 + "decor/Reception_Poster_Clinician.glb", -22.8, -7.05, "s", 1.15);
+  for (const [i, bz] of [-9.4, -6.4, -3.4].entries()) {
+    p(H4 + "recovery_bed.glb", -36.1, bz, 90, [1.25, 2.11], 0.87);
+    p(H4 + "bedside_cabinet.glb", -36.9, bz + 1.05, 90, [0.52, 0.63], 0.81);
+    if (i < 2) p(H4 + "privacy_screen.glb", -35.9, bz + 1.5, 90, [0.14, 1.84], 1.97);
+    p(U2 + "08_support_equipment/runtime/iv_stand_starter.glb", -35, bz - 0.9, 0, [0.68, 0.65], 1.99, { noCollide: true });
+  }
+  p(H4 + "procedure_stretcher.glb", -31.4, -6.6, 0, [0.9, 1.66], 1.22);
+  p(H4 + "procedure_stretcher.glb", -30, -1.4, 90, [0.9, 1.66], 1.22);
+  p(H4 + "patient_monitor.glb", -33.6, -10.55, 0, [0.62, 0.71], 1.49);
+  p(H4 + "supply_cart.glb", -36.6, -0.1, 90, [1.16, 1.1], 1.23);
+  p(M4 + "decor/Recovery_Linen_Cabinet.glb", -29.3, -10.7, 0, [0.95, 0.59], 1.84);
+  wp(M4 + "decor3/Clinical_Sign_PreOp.glb", -35.4, -11, "s", 2.2);
+  p(U2 + "10_janitor_utility/starter/10_starter_rack.glb", -36.9, -12.6, 90, [0.82, 0.51], 1.82);
+  p(U2 + "10_janitor_utility/starter/10_starter_rack.glb", -36.9, -14, 90, [0.82, 0.51], 1.82);
+  p(M4 + "utility/Utility_Janitor_Cart.glb", -35, -17.8, 0, [0.83, 0.94], 1.24);
+  p(M4 + "utility/Utility_Mop_Bucket.glb", -33.9, -18.2, 0, [0.43, 0.51], 0.66);
+  p(U2 + "10_janitor_utility/starter/10_starter_steel_sink.glb", -27.5, -22.4, 0, [0.87, 0.63], 1.16);
+  p(M4 + "utility/Utility_Supply_Shelf.glb", -26.05, -22, 270, [1.39, 0.53], 2);
+  p(M4 + "utility/Utility_Laundry_Hamper.glb", -26.05, -12.9, 0, [0.6, 0.54], 0.97);
+  wp(M4 + "utility/Utility_Toolboard.glb", -35.6, -18.85, "s", 1);
+  props.push({ kind: "bench", x: -32.55, z: -22.35, size: [1.8, 0.65, 0.92], color: 9206364, fp: [1.8, 0.65], h: 0.92, name: "workbench" });
+  props.push({ kind: "pipes", x: -29.6, z: -22.75, len: 7.6, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
+  props.push({ kind: "hazard", x: -29.5, z: -21.95, size: [1.6, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
+  p(M4 + "utility/Utility_Supply_Shelf.glb", -36.95, -17.9, 90, [1.39, 0.53], 2);
+  p(U2 + "10_janitor_utility/starter/10_starter_mop_bucket.glb", -36.6, -11.9, 0, [0.63, 0.54], 1.55);
+  p(M4 + "utility/Utility_Mop.glb", -36, -11.6, 0, [0.21, 0.21], 1.5, { noCollide: true });
+  props.push({ kind: "box", x: -30.2, z: -16.4, size: [1.4, 0.7, 1.9], face: "s", color: 9410715, fp: [1.4, 0.7], h: 1.9, name: "switchgear" });
+  props.push({ kind: "box", x: -36.95, z: -16.2, size: [1.6, 0.6, 2.1], face: "e", color: 8226698, fp: [0.6, 1.6], h: 2.1, name: "panelboard" });
+  p(K2 + "cafeteria_serving_counter.glb", -17.5, -22.25, 0, [2.46, 0.96], 1.53);
+  p(K2 + "cafeteria_tray_return.glb", -15.6, -22.4, 0, [0.68, 0.56], 1);
+  p(K2 + "cafeteria_vending_machine.glb", -12, -22.25, 0, [0.93, 0.87], 1.9);
+  p(K2 + "cafeteria_vending_machine.glb", -13, -22.25, 0, [0.93, 0.87], 1.9);
+  for (const [tx, tz] of [[-22.3, -18.4], [-19, -18.8], [-22, -14.8], [-18.6, -15.2], [-15.6, -17]]) {
+    p(H4 + "break_table.glb", tx, tz, 0, [0.95, 0.86], 0.85);
+    p(H4 + "break_chair.glb", tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
+    p(H4 + "break_chair.glb", tx + 0.85, tz, 270, [0.72, 0.62], 0.92, { noCollide: true });
+    props.push({ m: K2 + "cafeteria_meal_tray_set.glb", x: tx, z: tz, rot: 0, y: 0.85, fp: [0.1, 0.1], h: 0, noCollide: true });
+  }
+  p(K2 + "ct_scanner_gantry.glb", -5.5, -18, 0, [2.13, 0.87], 2.26);
+  p(K2 + "ct_sliding_patient_table.glb", -5.5, -16.45, 0, [0.71, 2.05], 1.11);
+  p(K2 + "ct_control_pedestal.glb", -2, -20.6, 0, [0.53, 0.49], 1.16);
+  p(K2 + "isolation_windowed_partition.glb", -1.3, -19.6, 0, [2, 0.15], 2.4);
+  p(K2 + "pharmacy_medicine_shelf.glb", -9.6, -22.45, 0, [1.39, 0.53], 1.95);
+  p(M4 + "furnishings/Lounge_Break_Table.glb", -0.2, -21.9, 0, [0.9, 0.9], 0.74);
+  props.push({ m: K2 + "lab_microscope.glb", x: -0.35, z: -21.95, rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
+  props.push({ m: K2 + "lab_centrifuge.glb", x: 0.05, z: -21.8, rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
+  p(H4 + "procedure_stretcher.glb", -9, -12.3, 90, [0.9, 1.66], 1.22);
+  for (const bx of [-21.4, -18.4]) {
+    wp(U2 + "05_recovery_bay/RecoveryHeadwall_standard.glb", bx, 1.8, "s", 0);
+    p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", bx, 3.15, 0, [1.1, 2.11], 0.87);
+    p(U2 + "05_recovery_bay/BedsideCabinet_standard.glb", bx + 0.9, 2.3, 0, [0.52, 0.5], 0.81);
+  }
+  p(U2 + "05_recovery_bay/PrivacyCurtain_standard.glb", -19.9, 3.15, 0, [0.14, 1.84], 1.97);
+  p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", -16.6, 7.2, 90, [1.1, 2.11], 0.87);
+  p(U2 + "05_recovery_bay/BedsideCabinet_standard.glb", -14.75, 7.2, 270, [0.52, 0.5], 0.81, { name: "healthCab" });
+  p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", -24.6, 9.9, 180, [1.1, 2.11], 0.87);
+  p(U2 + "05_recovery_bay/RecoveryBed_standard.glb", -21.8, 9.9, 180, [1.1, 2.11], 0.87);
+  p(U2 + "05_recovery_bay/PrivacyCurtain_standard.glb", -23.2, 9.9, 0, [0.14, 1.84], 1.97);
+  p(U2 + "02_anesthesia_monitoring/patient_monitor_standard.glb", -26.9, 2.3, 90, [0.62, 0.71], 1.46);
+  p(M4 + "decor/Recovery_Linen_Cabinet.glb", -13.4, 10.7, 270, [0.95, 0.59], 1.84);
+  wp(M4 + "decor/Recovery_Wall_Clock.glb", -19.9, 1.8, "s", 2.15);
+  var GROUPS = [
+    { id: "or", zombies: [{ x: -1.75, z: -9.05, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 1.45, z: -9.7, yaw: -0.2, wake: 3.4, look: "nurse" }, { x: -4.5, z: -6.4, yaw: 0.9, wake: 5.5 }, { x: 4.6, z: -9.2, yaw: -1.2, wake: 8 }] },
+    { id: "supply", trigger: "bat", sense: 4.5, zombies: [{ x: -14, z: -4.6, yaw: Math.PI / 2 }, { x: -15, z: -4, yaw: Math.PI / 2 }, { x: -14.2, z: -0.4, yaw: Math.PI / 2 }] },
+    { id: "waiting", sense: 6.5, zombies: [{ x: -21.6, z: -0.6, yaw: 1.2 }, { x: -16.8, z: -5.4, yaw: 2.4 }, { x: -23.6, z: -4.2, yaw: 1.6 }, { x: -14.4, z: -2.7, yaw: 0.4 }] },
+    { id: "preop", sense: 6, zombies: [{ x: -33.4, z: -8, yaw: 0.3 }, { x: -31.6, z: -3.2, yaw: 2 }, { x: -27.9, z: -8.6, yaw: -2.6 }] },
+    { id: "maint", sense: 5.5, zombies: [{ x: -34.6, z: -13.4, yaw: 1.4 }, { x: -28.2, z: -18.4, yaw: -0.6 }] },
+    { id: "cafe", locked: true, trigger: "brace", sense: 6.5, zombies: [{ x: -23.2, z: -20.5, yaw: 1 }, { x: -17.3, z: -20.5, yaw: -1 }, { x: -21.7, z: -17, yaw: -1.6 }, { x: -22.9, z: -13.4, yaw: -1.4 }] },
+    { id: "ct", sense: 6, zombies: [{ x: -8.6, z: -14.4, yaw: 2.6 }, { x: -2.2, z: -15.8, yaw: -2.2 }] },
+    { id: "recovery", sense: 4.5, zombies: [{ x: -20.2, z: 6.4, yaw: 0.6 }] }
+  ];
+
   // src/opening/breakthrough.js
   var PaintShader = {
     uniforms: { tSrc: { value: null }, k: { value: 0 }, texel: { value: new Vector2(1 / 512, 1 / 512) }, seed: { value: 0.37 }, exposure: { value: 0.92 }, display: { value: 1 } },
@@ -59146,7 +59995,7 @@ void main() {
     // ------------------------------------------------------------------ the cue list
     buildCues() {
       const c = this.cues, at = (t, name, fn) => c.push({ t, name, fn });
-      const st = this.stage, A = st.actors, K2 = TOUR.cues, P = TOUR.phrases;
+      const st = this.stage, A = st.actors, K3 = TOUR.cues, P = TOUR.phrases;
       for (const p2 of P) {
         at(p2.t0, "sub:" + p2.id, () => this.setSub(p2.text));
         at(p2.t1 + 0.25, "subOff:" + p2.id, () => {
@@ -59168,77 +60017,77 @@ void main() {
       });
       at(EXT_END + 0.4, "title", () => this.ui.title("Yola\u2019s Medical Center", "Starter clinic"));
       at(10.6, "title-off", () => this.ui.title(""));
-      at(K2.furnishCut, "dip-furnish", () => this.dip(0.22, 0.26));
-      at(K2.furnishCut + 0.24, "room-empty", () => {
+      at(K3.furnishCut, "dip-furnish", () => this.dip(0.22, 0.26));
+      at(K3.furnishCut + 0.24, "room-empty", () => {
         this.showRoom("empty");
         this.camTo(S(4.5, 0.8, 2.45, 50, 30, 8.8), 0.01);
       });
-      at(K2.furnishCut + 0.5, "room-push", () => this.camTo(S(4.8, 0.8, 2.35, 49, 30, 8), 3.4));
-      for (let i = 0; i < 9; i++) at(K2.furnishFrom + i * K2.furnishStep, "pop" + i, () => {
+      at(K3.furnishCut + 0.5, "room-push", () => this.camTo(S(4.8, 0.8, 2.35, 49, 30, 8), 3.4));
+      for (let i = 0; i < 9; i++) at(K3.furnishFrom + i * K3.furnishStep, "pop" + i, () => {
         for (const h of st.furnishGroups()[i] || []) st.popIn(h);
       });
-      at(K2.teamCut, "dip-team", () => this.dip(0.2, 0.22));
-      at(K2.teamCut + 0.2, "team", () => {
+      at(K3.teamCut, "dip-team", () => this.dip(0.2, 0.22));
+      at(K3.teamCut + 0.2, "team", () => {
         this.showRoom("team");
         this.camTo(S(4.6, 1, 2.3, 42, 26, 6.4), 0.01);
         this.camTo(S(4.7, 1, 2.3, 42, 26, 6), 2.2);
       });
-      at(K2.receptionCut, "dip-greet", () => this.dip(0.2, 0.22));
-      at(K2.receptionCut + 0.2, "greet", () => {
+      at(K3.receptionCut, "dip-greet", () => this.dip(0.2, 0.22));
+      at(K3.receptionCut + 0.2, "greet", () => {
         this.showRoom("greet");
         this.camTo(S(-5.4, 0.9, -3.2, 46, 26, 5.6), 0.01);
       });
-      at(K2.seatedCut, "dip-seated", () => this.dip(0.15, 0.2));
-      at(K2.seatedCut + 0.18, "seated", () => {
+      at(K3.seatedCut, "dip-seated", () => this.dip(0.15, 0.2));
+      at(K3.seatedCut + 0.18, "seated", () => {
         this.showRoom("seated");
         this.camTo(OFFICE_SHOT, 0.01);
       });
-      at(K2.chartCut, "dip-chart", () => this.dip(0.2, 0.25));
-      at(K2.chartCut + 0.2, "chart-room", () => {
+      at(K3.chartCut, "dip-chart", () => this.dip(0.2, 0.25));
+      at(K3.chartCut + 0.2, "chart-room", () => {
         this.showRoom("room");
         this.camTo(S(4.6, 0.8, 2.4, 46, 30, 7.6), 0.01);
         this.camTo(S(4.7, 0.8, 2.4, 46, 30, 7.2), 5);
       });
-      at(K2.chartOn, "chart-on", () => this.ui.preview("chart"));
-      at(K2.chartOff, "chart-off", () => this.ui.preview(null));
-      at(K2.decisionOn, "card-on", () => this.ui.preview("card"));
-      at(K2.decisionOff, "card-off", () => this.ui.preview(null));
-      at(K2.equipmentCut, "equipment", () => this.camTo(S(4.2, 1, 1.4, 34, 24, 5), 1.5));
-      at(K2.holdCut, "hold", () => {
+      at(K3.chartOn, "chart-on", () => this.ui.preview("chart"));
+      at(K3.chartOff, "chart-off", () => this.ui.preview(null));
+      at(K3.decisionOn, "card-on", () => this.ui.preview("card"));
+      at(K3.decisionOff, "card-off", () => this.ui.preview(null));
+      at(K3.equipmentCut, "equipment", () => this.camTo(S(4.2, 1, 1.4, 34, 24, 5), 1.5));
+      at(K3.holdCut, "hold", () => {
         this.camTo(S(4.8, 0.8, 2.35, 49, 30, 7.8), 1.3);
         this.ui.chip(UPGRADE_PREVIEW.heading);
       });
-      at(K2.midTier, "tier-mid", () => {
+      at(K3.midTier, "tier-mid", () => {
         st.setTier("standard", 0.9);
         this.chime(0);
         this.tierLabel(UPGRADE_PREVIEW.tiers[0].label, UPGRADE_PREVIEW.tiers[0].name);
       });
-      at(K2.advTier, "tier-adv", () => {
+      at(K3.advTier, "tier-adv", () => {
         st.setTier("advanced", 0.9);
         this.chime(1);
         this.tierLabel(UPGRADE_PREVIEW.tiers[1].label, UPGRADE_PREVIEW.tiers[1].name);
       });
-      at(K2.restoreCut, "dip-yola", () => this.dip(0.2, 0.22));
-      at(K2.restoreCut + 0.22, "yola", () => {
+      at(K3.restoreCut, "dip-yola", () => this.dip(0.2, 0.22));
+      at(K3.restoreCut + 0.22, "yola", () => {
         this.restoreStarter();
         this.showRoom("yola");
         this.camTo(S(5, 1.2, 3.7, 30, 16, 3), 0.01);
         this.camTo(S(5, 1.22, 3.7, 30, 16, 2.7), 6);
       });
-      at(K2.waveStart, "wave", () => A.yola.startWave(2.2));
-      at(K2.waveStart + 2.3, "wave-end", () => {
+      at(K3.waveStart, "wave", () => A.yola.startWave(2.2));
+      at(K3.waveStart + 2.3, "wave-end", () => {
         A.yola.waveT = -1;
         A.yola.play("idle", { fade: 0.2 });
       });
-      at(K2.arrivalCut, "dip-arrival", () => this.dip(0.2, 0.3));
-      at(K2.arrivalCut + 0.25, "arrival", () => {
+      at(K3.arrivalCut, "dip-arrival", () => this.dip(0.2, 0.3));
+      at(K3.arrivalCut + 0.25, "arrival", () => {
         this.showRoom("arrival");
         this.camTo(S(-6.6, 0.6, 0.9, 52, 30, 7.4), 0.01);
       });
-      at(K2.objective - 0.4, "push", () => this.camTo(S(-6.5, 0.7, 0.85, 50, 30, 6.4), 3.6));
-      at(K2.objective, "objective", () => this.ui.objective(OBJECTIVES.chart));
-      at(K2.settle, "settle", () => this.camTo(S(-6, 0.5, 0, 52, 30, 9.4), 1.2));
-      at(K2.handoff, "act2", () => {
+      at(K3.objective - 0.4, "push", () => this.camTo(S(-6.5, 0.7, 0.85, 50, 30, 6.4), 3.6));
+      at(K3.objective, "objective", () => this.ui.objective(OBJECTIVES.chart));
+      at(K3.settle, "settle", () => this.camTo(S(-6, 0.5, 0, 52, 30, 9.4), 1.2));
+      at(K3.handoff, "act2", () => {
         this.mode = "co";
         this.co = this.act2();
       });
@@ -60142,8 +60991,8 @@ void main() {
       sg.play("Idle", { fade: 0 });
       for (const a of [su, ta]) a.setVisible(false);
       A.staff.setVisible(false);
-      this.liftDisp3 || (this.liftDisp3 = liftDisplay(this.arena.doorKits.lift.root));
-      this.liftDisp3.set("3");
+      this.liftDisp3 || (this.liftDisp3 = this.arena.doorKits.lift.display || liftDisplay(this.arena.doorKits.lift.root));
+      this.liftDisp3.set("7");
       this.setLift3(0);
       this.camTo(W2(7.3, 1, -5.2, 30, -78, 6, 42), 0.01);
       yield 0.45;
@@ -60966,7 +61815,7 @@ void main() {
   var EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32]];
   var CAMS = { game: null, side: { target: "yola", yaw: 90, pitch: 6, dist: 4.2, h: 0.95 }, front: { target: "yola", yaw: 0, pitch: 8, dist: 4.2, h: 0.95 }, top: { target: "yola", yaw: 0, pitch: 80, dist: 5, h: 0.4 } };
   function startLab(game, weapon = "bat") {
-    const g = game, scene2 = g.scene, T2 = three_module_exports;
+    const g = game, scene2 = g.scene, T3 = three_module_exports;
     const S2 = { playing: false, speed: 0.25, frame: 0, scen: "still", input: "hold", cam: "side", skel: true, marks: true, rings: true, ref: true, weapon, log: [], contact: [] };
     const css = document.createElement("style");
     css.textContent = `#lab{position:fixed;left:6px;bottom:6px;z-index:50;background:rgba(14,20,24,.88);color:#e8eef0;font:12px/1.35 system-ui,sans-serif;padding:8px;border-radius:10px;max-width:min(560px,96vw)}
@@ -61076,30 +61925,30 @@ void main() {
       return refImgs[f];
     };
     for (let f = REF.first; f <= REF.last; f += 1) refImg(f);
-    const ov = new T2.Group();
+    const ov = new T3.Group();
     ov.name = "labOverlay";
     scene2.add(ov);
-    const skel = new T2.SkeletonHelper(g.yola.outer);
+    const skel = new T3.SkeletonHelper(g.yola.outer);
     skel.material.depthTest = false;
     skel.renderOrder = 10;
     scene2.add(skel);
     const dot = (c, r = 0.035) => {
-      const m = new T2.Mesh(new T2.SphereGeometry(r, 12, 8), new T2.MeshBasicMaterial({ color: c, depthTest: false }));
+      const m = new T3.Mesh(new T3.SphereGeometry(r, 12, 8), new T3.MeshBasicMaterial({ color: c, depthTest: false }));
       m.renderOrder = 11;
       ov.add(m);
       return m;
     };
     const gripR = dot(16724821), gripL = dot(3386111), tip = dot(16772659, 0.04), hipsDot = dot(16738047, 0.03);
-    const segGeo = new T2.BufferGeometry().setFromPoints([new T2.Vector3(), new T2.Vector3()]);
-    const seg = new T2.Line(segGeo, new T2.LineBasicMaterial({ color: 16720418, depthTest: false }));
+    const segGeo = new T3.BufferGeometry().setFromPoints([new T3.Vector3(), new T3.Vector3()]);
+    const seg = new T3.Line(segGeo, new T3.LineBasicMaterial({ color: 16720418, depthTest: false }));
     seg.renderOrder = 12;
     ov.add(seg);
     const trailPts = [];
-    const trail = new T2.Line(new T2.BufferGeometry(), new T2.LineBasicMaterial({ color: 16746564, depthTest: false }));
+    const trail = new T3.Line(new T3.BufferGeometry(), new T3.LineBasicMaterial({ color: 16746564, depthTest: false }));
     trail.renderOrder = 12;
     ov.add(trail);
     const ring = (r, c) => {
-      const m = new T2.Mesh(new T2.RingGeometry(r - 0.012, r, 40), new T2.MeshBasicMaterial({ color: c, side: T2.DoubleSide, depthTest: false, transparent: true, opacity: 0.8 }));
+      const m = new T3.Mesh(new T3.RingGeometry(r - 0.012, r, 40), new T3.MeshBasicMaterial({ color: c, side: T3.DoubleSide, depthTest: false, transparent: true, opacity: 0.8 }));
       m.rotation.x = -Math.PI / 2;
       m.renderOrder = 9;
       ov.add(m);
@@ -61173,7 +62022,7 @@ void main() {
     function collect() {
       if (S2.log.length > 14) S2.log.splice(0, S2.log.length - 14);
     }
-    const _a5 = {}, v = new T2.Vector3(), v2 = new T2.Vector3();
+    const _a5 = {}, v = new T3.Vector3(), v2 = new T3.Vector3();
     function redraw() {
       const sim2 = g.sim, p2 = sim2.player, y = g.yola, a = p2.action, A = a.type === "swing" ? attacksOf(p2.equipped)[a.combo] : null;
       skel.visible = S2.skel;
@@ -61185,7 +62034,7 @@ void main() {
       gripL.position.copy(v2);
       let offL = NaN, offR = NaN;
       if (y.melee) {
-        const d = new T2.Vector3(0, 0, 1).applyQuaternion(y.melee.quaternion);
+        const d = new T3.Vector3(0, 0, 1).applyQuaternion(y.melee.quaternion);
         tip.position.copy(y.melee.position).addScaledVector(d, 0.74);
         const off = (q) => {
           const w = q.clone().sub(y.melee.position);
@@ -61201,11 +62050,11 @@ void main() {
       if (A && A.PATH) {
         const s = meleeWorldSegment(p2, A, a.st, _a5);
         active = a.st >= A.activeStart && a.st <= a.activeEnd;
-        segGeo.setFromPoints([new T2.Vector3(s.hx, s.hy, s.hz), new T2.Vector3(s.tx, s.ty, s.tz)]);
+        segGeo.setFromPoints([new T3.Vector3(s.hx, s.hy, s.hz), new T3.Vector3(s.tx, s.ty, s.tz)]);
         seg.visible = S2.marks;
         seg.material.color.set(active ? 16720418 : 7829367);
         if (active) {
-          trailPts.push(new T2.Vector3(s.tx, s.ty, s.tz));
+          trailPts.push(new T3.Vector3(s.tx, s.ty, s.tz));
           trail.geometry.setFromPoints(trailPts);
         }
       } else seg.visible = false;
@@ -61280,7 +62129,7 @@ void main() {
   var _ray2 = new Ray();
   var _plane = new Plane();
   var _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
-  var _v10 = new Vector3();
+  var _v9 = new Vector3();
   var _twoPI = 2 * Math.PI;
   var _STATE = {
     NONE: -1,
@@ -61468,9 +62317,9 @@ void main() {
     }
     update(deltaTime = null) {
       const position = this.object.position;
-      _v10.copy(position).sub(this.target);
-      _v10.applyQuaternion(this._quat);
-      this._spherical.setFromVector3(_v10);
+      _v9.copy(position).sub(this.target);
+      _v9.applyQuaternion(this._quat);
+      this._spherical.setFromVector3(_v9);
       if (this.autoRotate && this.state === _STATE.NONE) {
         this._rotateLeft(this._getAutoRotationAngle(deltaTime));
       }
@@ -61512,9 +62361,9 @@ void main() {
         this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
         zoomChanged = prevRadius != this._spherical.radius;
       }
-      _v10.setFromSpherical(this._spherical);
-      _v10.applyQuaternion(this._quatInverse);
-      position.copy(this.target).add(_v10);
+      _v9.setFromSpherical(this._spherical);
+      _v9.applyQuaternion(this._quatInverse);
+      position.copy(this.target).add(_v9);
       this.object.lookAt(this.target);
       if (this.enableDamping === true) {
         this._sphericalDelta.theta *= 1 - this.dampingFactor;
@@ -61527,7 +62376,7 @@ void main() {
       if (this.zoomToCursor && this._performCursorZoom) {
         let newRadius = null;
         if (this.object.isPerspectiveCamera) {
-          const prevRadius = _v10.length();
+          const prevRadius = _v9.length();
           newRadius = this._clampDistance(prevRadius * this._scale);
           const radiusDelta = prevRadius - newRadius;
           this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
@@ -61544,7 +62393,7 @@ void main() {
           mouseAfter.unproject(this.object);
           this.object.position.sub(mouseAfter).add(mouseBefore);
           this.object.updateMatrixWorld();
-          newRadius = _v10.length();
+          newRadius = _v9.length();
         } else {
           console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
           this.zoomToCursor = false;
@@ -61600,27 +62449,27 @@ void main() {
       this._sphericalDelta.phi -= angle;
     }
     _panLeft(distance, objectMatrix) {
-      _v10.setFromMatrixColumn(objectMatrix, 0);
-      _v10.multiplyScalar(-distance);
-      this._panOffset.add(_v10);
+      _v9.setFromMatrixColumn(objectMatrix, 0);
+      _v9.multiplyScalar(-distance);
+      this._panOffset.add(_v9);
     }
     _panUp(distance, objectMatrix) {
       if (this.screenSpacePanning === true) {
-        _v10.setFromMatrixColumn(objectMatrix, 1);
+        _v9.setFromMatrixColumn(objectMatrix, 1);
       } else {
-        _v10.setFromMatrixColumn(objectMatrix, 0);
-        _v10.crossVectors(this.object.up, _v10);
+        _v9.setFromMatrixColumn(objectMatrix, 0);
+        _v9.crossVectors(this.object.up, _v9);
       }
-      _v10.multiplyScalar(distance);
-      this._panOffset.add(_v10);
+      _v9.multiplyScalar(distance);
+      this._panOffset.add(_v9);
     }
     // deltaX and deltaY are in pixels; right and down are positive
     _pan(deltaX, deltaY) {
       const element = this.domElement;
       if (this.object.isPerspectiveCamera) {
         const position = this.object.position;
-        _v10.copy(position).sub(this.target);
-        let targetDistance = _v10.length();
+        _v9.copy(position).sub(this.target);
+        let targetDistance = _v9.length();
         targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
         this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
         this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
@@ -62219,7 +63068,7 @@ void main() {
   }
 
   // src/arena/testarena.js
-  var ORDER2 = ["bat", "sledgehammer", "axe", "crowbar", "chainsaw", "knife", "none", "pistol", "shotgun"];
+  var ORDER3 = ["bat", "sledgehammer", "axe", "crowbar", "chainsaw", "knife", "none", "pistol", "shotgun"];
   var LABEL = { bat: "Bat", sledgehammer: "Sledgehammer", axe: "Axe", crowbar: "Crowbar", chainsaw: "Chainsaw", knife: "Knife", none: "Unarmed", pistol: "Pistol", shotgun: "Shotgun" };
   var PROFILE = {
     bat: { kind: "bat", dmg: 0.75, knock: 1, style: "swing", sever: {}, hitFrom: 0.45, radius: 0.1, reach: "tip" },
@@ -62309,7 +63158,7 @@ void main() {
       }
       return models[key] = o;
     }
-    await Promise.all(ORDER2.filter((k) => WDEF[k] && k !== "pistol" && k !== "shotgun").map(model));
+    await Promise.all(ORDER3.filter((k) => WDEF[k] && k !== "pistol" && k !== "shotgun").map(model));
     const entries = [];
     for (const [clip, m] of Object.entries(SEL.moves || {})) {
       if (m.verdict === "no" || !clips[clip]) continue;
@@ -62463,7 +63312,7 @@ void main() {
       const list = [...GAME[S2.weapon] ? [{ id: "game|" + S2.weapon, game: true, label: GAME[S2.weapon][1] }] : [], ...entries.filter((e) => e.weapon === S2.weapon)];
       const cur = current?.e, f = current && feel[current.id];
       panel.innerHTML = `
-      <div class="chips">${ORDER2.map((k) => `<button data-w="${k}" class="${k === S2.weapon ? "on" : ""}">${LABEL[k]}<small>${count(k)}</small></button>`).join("")}</div>
+      <div class="chips">${ORDER3.map((k) => `<button data-w="${k}" class="${k === S2.weapon ? "on" : ""}">${LABEL[k]}<small>${count(k)}</small></button>`).join("")}</div>
       <h4>Attacks for the ${LABEL[S2.weapon].toLowerCase()}</h4>
       ${list.length ? list.map((e) => `<button class="att ${S2.pick === e.id ? "on" : ""}" data-id="${esc(e.id)}"><span class="dot ${e.game ? "game" : e.verdict}"></span>${esc(e.label)}${feel[e.id] ? `<span class="feelTag ${feel[e.id].feel}">${feel[e.id].feel}</span>` : ""}${e.game ? "" : `<br><i>${e.verdict === "good" ? "Good" : "Maybe"} \xB7 ${e.speed}x${e.why ? " \xB7 " + esc(e.why) : ""}</i>`}</button>`).join("") : '<div class="muted">No attack picked for this weapon yet (Move Library).</div>'}
       ${cur ? `<h4>Speed</h4><div class="chips">${SPEEDS.map((v) => `<button data-sp="${v}" class="${v === S2.speed ? "on" : ""}">${v}x</button>`).join("")}</div>
@@ -62531,6 +63380,291 @@ void main() {
       return current;
     } };
   }
+
+  // src/ui/chapter.js
+  var CSS2 = `
+#chRadio{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(92vw,520px);z-index:30;pointer-events:none;display:flex;flex-direction:column;gap:4px;align-items:center}
+#chRadio .ln{background:rgba(12,20,24,.82);color:#eef6f4;font:600 15px/1.3 system-ui,sans-serif;padding:7px 12px;border-radius:10px;border-left:3px solid #7fd6c8;opacity:0;transition:opacity .25s;text-align:left}
+#chRadio .ln.show{opacity:1}#chRadio .ln b{color:#7fd6c8;font-weight:800;margin-right:6px}#chRadio .ln.yola{border-left-color:#ffc27a}#chRadio .ln.yola b{color:#ffc27a}
+#chRadio .ln i{display:block;font:500 10px system-ui;color:#9fb3b0;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+#chLift{position:fixed;left:50%;top:calc(132px + env(safe-area-inset-top));transform:translateX(-50%);z-index:31;display:none;gap:8px;flex-wrap:wrap;justify-content:center;max-width:94vw}
+#chLift.show{display:flex}#chLift .hd{width:100%;text-align:center;font:700 12px system-ui;color:#dfe9e7;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 2px #000}
+#chLift button{font:800 17px system-ui;padding:12px 18px;border-radius:12px;border:2px solid #7fd6c8;background:rgba(14,30,34,.88);color:#eaf7f4;min-width:104px}
+#chLift button.end{border-color:#ffc27a;color:#ffe2bd}
+#chFade{position:fixed;inset:0;background:#0b1013;opacity:0;pointer-events:none;z-index:40;transition:opacity .45s;display:flex;align-items:center;justify-content:center}
+#chFade.on{opacity:1}#chFade .ind{font:800 44px system-ui;color:#ffb347;letter-spacing:.06em;text-shadow:0 0 18px rgba(255,150,40,.55)}
+#chCase{position:fixed;z-index:29;pointer-events:none;display:none;font:700 12px system-ui;color:#e8fbff;background:rgba(18,52,64,.85);border:1px solid #8fe8ff;border-radius:9px;padding:4px 8px;white-space:nowrap;transform:translate(-50%,-50%)}
+#chCase .ar{display:inline-block;margin-right:5px;transition:transform .1s}
+#chDocket{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:35;width:min(88vw,380px);background:#f7f3e8;color:#20262a;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.5);font:14px/1.35 system-ui;display:none;overflow:hidden}
+#chDocket.show{display:block}#chDocket h3{margin:0;background:#1d6f8a;color:#fff;font:800 15px system-ui;padding:10px 14px;letter-spacing:.05em}
+#chDocket table{width:100%;border-collapse:collapse;margin:6px 0}#chDocket td{padding:5px 14px;vertical-align:top}#chDocket td:first-child{color:#5b6a70;font-weight:700;width:36%}
+#chDocket p{margin:4px 14px 10px;color:#1d6f8a;font-weight:700}#chDocket button{display:block;margin:0 14px 14px auto;font:800 14px system-ui;padding:8px 16px;border-radius:9px;border:0;background:#1d6f8a;color:#fff}
+#chEnd{position:fixed;inset:0;z-index:45;display:none;align-items:center;justify-content:center;background:rgba(8,12,14,.82)}
+#chEnd.show{display:flex}#chEnd .card{max-width:min(88vw,420px);text-align:center;color:#eef6f4;font:15px/1.45 system-ui}
+#chEnd h2{font:800 26px system-ui;margin:0 0 6px;color:#ffc27a}#chEnd button{margin:14px 6px 0;font:800 15px system-ui;padding:11px 18px;border-radius:11px;border:2px solid #7fd6c8;background:#10262b;color:#eaf7f4}
+`;
+  var ChapterUI = class {
+    constructor(o) {
+      Object.assign(this, o);
+      const st = document.createElement("style");
+      st.textContent = CSS2;
+      document.head.appendChild(st);
+      const el = (id, html = "") => {
+        const d = document.createElement("div");
+        d.id = id;
+        d.innerHTML = html;
+        document.body.appendChild(d);
+        return d;
+      };
+      this.radioEl = el("chRadio");
+      this.liftEl = el("chLift");
+      this.fadeEl = el("chFade", '<div class="ind"></div>');
+      this.caseEl = el("chCase", '<span class="ar">\u25C6</span><span class="tx"></span>');
+      this.docketEl = el("chDocket");
+      this.endEl = el("chEnd");
+      this.queue = [];
+      this.cur = null;
+      this.liftKey = "";
+      this.busy = false;
+      this.blink = 0;
+    }
+    get level() {
+      return this.sim()?.level || null;
+    }
+    // ---- events from the simulation (main.js passes the ones it does not handle itself) ----
+    onEvent(e) {
+      switch (e.type) {
+        case "radio":
+          this.playLines(e.id);
+          break;
+        case "liftTravel":
+          this.ride(e);
+          break;
+        case "case":
+          if (e.state === "carried") {
+            this.audio.play("reloadDone");
+            this.hud.toast(e.first ? "The sealed case \u2014 carried in your other hand" : "Case picked up");
+          } else if (e.state === "placed") {
+            this.audio.play("swap");
+            this.hud.toast("Case set down");
+          } else if (e.state === "stored") {
+            this.audio.play("power");
+            this.hud.toast("Case secured at intake");
+          }
+          break;
+        case "partitionBreak":
+          this.audio.play("shieldBreak");
+          this.audio.play("knockdown", 1.2);
+          this.fx?.burst(e.x, 1.2, e.z, 26, 14275264, 3, 1, 0.8);
+          this.fx?.burst(e.x, 0.4, e.z, 14, 10123858, 2.4, 0.8, 0.7);
+          this.hud.toast("The partition gave way");
+          break;
+        case "record":
+          this.showDocket();
+          break;
+        case "sampleMatch":
+          this.audio.play("clear");
+          break;
+        case "liftFault":
+          this.audio.play("dry");
+          break;
+        case "chapterComplete":
+          this.showEnd();
+          break;
+        case "doorOpened":
+          if (e.door === "x7door") this.hud.toast("The contractor store\u2019s door is open");
+          break;
+      }
+    }
+    // ---- the draft radio lines: one caption at a time, timed by length; movement and combat go on ----
+    playLines(id) {
+      const lines = RADIO[id];
+      if (!lines) return;
+      for (const l of lines) this.queue.push(l);
+      if (id.startsWith("f7_radio")) this.blink = 0;
+    }
+    tickLines(dt) {
+      if (this.cur) {
+        this.cur.t -= dt;
+        if (this.cur.t <= 0) {
+          const n2 = this.cur.node;
+          n2.classList.remove("show");
+          setTimeout(() => n2.remove(), 300);
+          this.cur = null;
+        }
+        return;
+      }
+      const l = this.queue.shift();
+      if (!l) return;
+      const n = document.createElement("div");
+      n.className = "ln" + (l.who === "Yola" ? " yola" : "");
+      n.innerHTML = `<b>${l.who}</b>${l.text}<i>${l.who === "TECH" ? "radio \xB7 " : ""}draft line \u2014 not recorded</i>`;
+      this.radioEl.appendChild(n);
+      requestAnimationFrame(() => n.classList.add("show"));
+      if (l.who === "TECH") this.audio.play("swap", 0.6);
+      this.cur = { node: n, t: 1.1 + l.text.split(/\s+/).length * 0.32 };
+    }
+    // ---- the lift: a floor picker while Yola stands in the open cab; the ride rebuilds the next floor behind a fade ----
+    tickLift() {
+      const L2 = this.level?.lift, show = !!L2?.choosing && !this.busy;
+      const list = show ? this.level.floorsFrom() : [];
+      const key = show ? list.map((f) => f.floor).join(",") : "";
+      if (key !== this.liftKey) {
+        this.liftKey = key;
+        this.liftEl.innerHTML = show ? `<div class="hd">Lift \xB7 Floor ${this.level.floor}</div>` + list.map((f) => `<button data-f="${f.floor}" class="${f.end ? "end" : ""}">${f.end ? "\u25BC " : f.floor > this.level.floor ? "\u25B2 " : "\u25BC "}${f.label}</button>`).join("") : "";
+        for (const b of this.liftEl.querySelectorAll("button")) b.addEventListener("pointerdown", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          this.level?.chooseFloor(+b.dataset.f);
+          this.audio.play("swap");
+        });
+      }
+      this.liftEl.classList.toggle("show", show);
+    }
+    ride(e) {
+      if (this.busy) return;
+      this.busy = true;
+      const ind = this.fadeEl.querySelector(".ind");
+      ind.textContent = `${e.from}`;
+      this.fadeEl.classList.add("on");
+      this.input?.clearAll?.();
+      this.onSave?.(e.save);
+      const steps = [];
+      for (let f = e.from; f !== e.to; f += e.to > e.from ? 1 : -1) steps.push(f + (e.to > e.from ? 1 : -1));
+      let i = 0;
+      const next = () => {
+        if (i < steps.length) {
+          ind.textContent = `${e.from > e.to ? "\u25BC" : "\u25B2"} ${steps[i++]}`;
+          setTimeout(next, 650);
+          return;
+        }
+        this.audio.play("liftDing");
+        this.applyLevel(e.save);
+        setTimeout(() => {
+          this.fadeEl.classList.remove("on");
+          this.busy = false;
+        }, 120);
+      };
+      setTimeout(next, 500);
+    }
+    // ---- the specimen case: in Yola's off hand while carried; a marker when it lies out of sight ----
+    tickCase() {
+      const lv = this.level, A = this.arena, o = A?.caseObj;
+      if (!lv || !o) {
+        this.caseEl.style.display = "none";
+        return;
+      }
+      const c = lv.case, Y2 = this.yola();
+      if (c.state === "carried") {
+        const hand = Y2?.bones?.LeftHand;
+        if (hand && o.parent !== hand) {
+          hand.add(o);
+          o.position.set(0, 0, 0);
+          o.rotation.set(0, 0, 0);
+        }
+        if (hand) {
+          hand.updateMatrixWorld(true);
+          const s = hand.getWorldScale(new Vector3()).x || 1, hp = hand.getWorldPosition(new Vector3());
+          const want = new Vector3(hp.x, hp.y - 0.06 - (A.caseSize?.y || 0.2), hp.z);
+          o.position.copy(hand.worldToLocal(want));
+          o.scale.setScalar(1 / s);
+          const pq = hand.getWorldQuaternion(new Quaternion()).invert(), yaw = this.sim().player.aimYaw;
+          o.quaternion.copy(pq.multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), yaw + Math.PI / 2)));
+          o.visible = Y2.root ? Y2.root.visible !== false : true;
+        }
+        this.caseEl.style.display = "none";
+        return;
+      }
+      if (o.parent !== A.group) {
+        A.group.add(o);
+        o.scale.setScalar(1);
+      }
+      const p2 = this.sim().player, tx = this.caseEl.querySelector(".tx"), ar = this.caseEl.querySelector(".ar");
+      if (!lv.flags.case_picked && c.state === "home" && lv.floor !== 6) {
+        this.caseEl.style.display = "none";
+        return;
+      }
+      if (c.floor !== lv.floor) {
+        this.caseEl.style.display = "block";
+        ar.style.transform = "none";
+        ar.textContent = "\u25C6";
+        tx.textContent = `Case: Floor ${c.floor}` + (c.state === "stored" ? " \xB7 intake" : "");
+        this.caseEl.style.left = "50%";
+        this.caseEl.style.top = "calc(118px + env(safe-area-inset-top))";
+        return;
+      }
+      if (c.state === "home" && !lv.flags.case_seen) {
+        this.caseEl.style.display = "none";
+        return;
+      }
+      const v = new Vector3(c.x, (c.y || 0) + 0.3, c.z).project(this.camera);
+      const on = v.z < 1 && Math.abs(v.x) < 0.92 && Math.abs(v.y) < 0.88;
+      if (on || Math.hypot(p2.x - c.x, p2.z - c.z) < 2.5) {
+        this.caseEl.style.display = "none";
+        return;
+      }
+      let dx = v.x, dy = v.y;
+      if (v.z > 1) {
+        dx = -dx;
+        dy = -dy;
+      }
+      const k = 1 / Math.max(Math.abs(dx) / 0.86, Math.abs(dy) / 0.8, 1e-3);
+      const sx = (dx * k * 0.5 + 0.5) * innerWidth, sy = (-dy * k * 0.5 + 0.5) * innerHeight;
+      this.caseEl.style.display = "block";
+      this.caseEl.style.left = sx + "px";
+      this.caseEl.style.top = sy + "px";
+      ar.textContent = "\u27A4";
+      ar.style.transform = `rotate(${Math.atan2(-dy, dx)}rad)`;
+      tx.textContent = "Case";
+    }
+    showDocket() {
+      this.docketEl.innerHTML = `<h3>${DOCKET.title}</h3><table>${DOCKET.rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("")}</table><p>${DOCKET.note}</p><button>Close</button>`;
+      this.docketEl.classList.add("show");
+      const close = () => this.docketEl.classList.remove("show");
+      this.docketEl.querySelector("button").addEventListener("pointerdown", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        close();
+      });
+      clearTimeout(this.docketT);
+      this.docketT = setTimeout(close, 9e3);
+    }
+    showEnd() {
+      this.endEl.innerHTML = `<div class="card"><h2>Chapter 1 complete</h2><div>The sealed sample is with Yola: a pre-procedure specimen from the patient upstairs. What it means is still unknown.</div><div style="margin-top:8px;color:#9fd8ce">Next: Floor 4 \u2014 then TECH, on three.</div><button data-a="replay">Play the chapter again</button></div>`;
+      this.endEl.classList.add("show");
+      this.endEl.querySelector("[data-a=replay]").addEventListener("click", () => {
+        this.endEl.classList.remove("show");
+        this.onReplay?.();
+      });
+    }
+    update(dt) {
+      const lv = this.level;
+      if (!lv) {
+        this.liftEl.classList.remove("show");
+        this.caseEl.style.display = "none";
+        return;
+      }
+      this.tickLines(dt);
+      this.tickLift();
+      this.tickCase();
+      const led = this.arena?.radioLed;
+      if (led && lv.floor === 7) {
+        this.blink += dt;
+        led.material.emissiveIntensity = lv.flags.radio_heard ? 0.6 : lv.flags.phone_checked ? Math.sin(this.blink * 9) > 0 ? 3.2 : 0.2 : 0.6;
+      }
+    }
+    reset() {
+      this.queue.length = 0;
+      if (this.cur) {
+        this.cur.node.remove();
+        this.cur = null;
+      }
+      this.radioEl.innerHTML = "";
+      this.endEl.classList.remove("show");
+      this.docketEl.classList.remove("show");
+      this.liftKey = "-";
+    }
+  };
 
   // src/main.js
   var params = new URLSearchParams(location.search);
@@ -62639,7 +63773,8 @@ void main() {
   var mode = storyStart ? "room1" : params.get("mode") || "encounter";
   var benchN = +(params.get("n") || 10);
   useLevel(levelForMode(mode));
-  var levelSave = store2.get("floor3save", null);
+  var levelSave = store2.get("chapter1save", null);
+  if (levelSave && levelSave.v !== 2) levelSave = null;
   var HIT_SLOW = 0.2;
   var paused = false;
   var hitPauseT = 0;
@@ -62660,7 +63795,7 @@ void main() {
   ];
   var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.look === "nurse" ? 0 : z.look === "patient" ? 1 : z.id % 2;
   var YOLA_HEIGHT = 1.62;
-  var YOLA_MODEL = params.get("yola") || store2.get("yolaModel", "1");
+  var YOLA_MODEL = params.get("yola") || store2.get("yolaModel", "2");
   var YOLA_FILES = YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: [], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
   var loader = new GLTFLoader();
   async function load() {
@@ -62709,6 +63844,7 @@ void main() {
     renderer.shadowMap.needsUpdate = true;
     screens.scan(scene);
     restart();
+    startChapterUI();
     hud.loading(1);
     if (params.has("intro") || params.has("reveal") || params.has("room1")) await startOpening();
     if (mode === "arena") window.game.testArena = await startTestArena({ game: window.game, scene, loader, telegraphs });
@@ -62789,6 +63925,20 @@ void main() {
   }
   var opening = null;
   var screens = new LiveScreens();
+  var chapterUI = null;
+  function startChapterUI() {
+    if (chapterUI || !LAYOUT.story) return;
+    chapterUI = new ChapterUI({ scene, camera, arena, audio, hud, fx, input, yola: () => yola, sim: () => sim, applyLevel: (s) => {
+      levelSave = s;
+      applyLevel(s);
+    }, onSave: (s) => {
+      levelSave = s;
+      store2.set("chapter1save", s);
+    }, onReplay: () => {
+      applyRoom1();
+    } });
+    window.chapterUI = chapterUI;
+  }
   async function startOpening() {
     opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, screens, getSim: () => sim, tuning, game: () => window.game });
     window.opening = opening;
@@ -62824,10 +63974,11 @@ void main() {
   }
   function applyRoom1() {
     levelSave = null;
-    store2.set("floor3save", null);
+    store2.set("chapter1save", null);
     return applyLevel(null);
   }
   function applyLevel(save) {
+    if (LAYOUT.story) useFloor(save?.floor || 7);
     restart("room1", benchN, save);
     const p2 = sim.player, A = ROOM1.player;
     if (!save) {
@@ -63016,7 +64167,7 @@ void main() {
   var dbgCircle = new Mesh(new RingGeometry(0.3, 0.33, 24), new MeshBasicMaterial({ color: 65450, side: DoubleSide }));
   dbgCircle.rotation.x = -Math.PI / 2;
   var dbgBat = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), new LineBasicMaterial({ color: 16776960 }));
-  var _v11 = new Vector3();
+  var _v10 = new Vector3();
   var _seg2 = {};
   var groanT = 2;
   function frame(now) {
@@ -63104,7 +64255,7 @@ void main() {
       const A = p2.atk(), wins = A.windows || [[A.activeStart, a.activeEnd]];
       if (wins.some(([w0, w1]) => a.st > w0 - 0.07 && a.st < w1 + 0.05)) {
         if (p2.equipped === "test" && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
-        else if (yola.melee.visible) fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v11), true);
+        else if (yola.melee.visible) fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v10), true);
       }
     }
     fx.setAim(ix, iz, iyaw, !p2.dead, p2.aiming ? p2.attackHeld ? 1 : 0.5 : 0.2);
@@ -63158,10 +64309,11 @@ void main() {
     arena.update(dt, ix, iz, MathUtils.degToRad(tuning.camYaw), sim.level);
     hud.setEmergency(!!arena.em && arena.em.target > 0);
     hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
+    chapterUI?.update(paused ? 0 : dt);
     if (camOverride) applyCamOverride();
     else if (!window.game.camFree) updateCamera(dt, ix, iz, iyaw, p2);
-    _v11.set(ix, 1, iz).project(camera);
-    playerScreen = { x: (_v11.x * 0.5 + 0.5) * innerWidth, y: (-_v11.y * 0.5 + 0.5) * innerHeight };
+    _v10.set(ix, 1, iz).project(camera);
+    playerScreen = { x: (_v10.x * 0.5 + 0.5) * innerWidth, y: (-_v10.y * 0.5 + 0.5) * innerHeight };
     if (debugOn) updateDebug(p2);
     hud.update(sim, dt);
     if (doRender) looks.render();
@@ -63261,12 +64413,12 @@ void main() {
           hud.flash("reload");
           if (e.id === "bat") opening?.takeBat?.();
           else arena.takePickup(e.id);
-          hud.toast(e.kind === "weapon" ? e.weapon === "pistol" ? "Pistol \u2014 the guard\u2019s sidearm" : "Baseball bat" : e.kind === "ammo" ? "Spare pistol rounds" : "First aid: health restored");
+          hud.toast(e.kind === "weapon" ? e.weapon === "pistol" ? "Pistol \u2014 the guard\u2019s sidearm" : e.weapon === "axe" ? "Fire axe" : "Baseball bat" : e.kind === "ammo" ? "Spare pistol rounds" : "First aid: health restored");
           break;
         }
         case "checkpoint":
           levelSave = e.save;
-          store2.set("floor3save", e.save);
+          store2.set("chapter1save", e.save);
           break;
         case "liftPower":
           arena.liftPowered(true);
@@ -63278,6 +64430,7 @@ void main() {
           break;
         case "doorOpened":
           audio.play("doorOpen");
+          chapterUI?.onEvent(e);
           break;
         case "bang":
           if (e.near < 11) {
@@ -63292,10 +64445,27 @@ void main() {
         case "levelComplete":
           input.clearAll();
           input.enabled = false;
-          store2.set("floor3save", null);
+          store2.set("chapter1save", null);
           levelSave = null;
           hud.levelDone(sim);
           audio.play("clear");
+          break;
+        case "chapterComplete":
+          input.clearAll();
+          input.enabled = false;
+          store2.set("chapter1save", null);
+          levelSave = null;
+          audio.play("clear");
+          chapterUI?.onEvent(e);
+          break;
+        case "radio":
+        case "liftTravel":
+        case "case":
+        case "partitionBreak":
+        case "record":
+        case "sampleMatch":
+        case "liftFault":
+          chapterUI?.onEvent(e);
           break;
         case "roomEnter": {
           const r = LAYOUT.rooms?.find((q) => q.id === e.room);

@@ -1,19 +1,21 @@
 // Level layouts. Plain data shared by the simulation (colliders, spawns) and the renderer (models).
-// Two layouts: the original combat wing (practice, waves and benchmarks) and Floor 3, the hospital loop (the story level
-// that follows the opening). LAYOUT is a live object: useLevel() fills it before the world or the arena is built.
+// Two layouts: the original combat wing (practice, waves and benchmarks) and the chapter (Floors 7, 6 and 5: the story that
+// follows the opening, core/chapter.js). LAYOUT is a live object: useLevel() fills it before the world or the arena is built;
+// in the chapter it holds the current floor (the simulation's world), and LAYOUT.chapter all three (the renderer's).
 // Props use 0/90/180/270 degree rotations only so their footprints stay axis-aligned.
 // fp = collision footprint [w (x), d (z)] AFTER rotation; h = height (shots pass over anything below ~1.25 m).
-import { FLOOR3, DOORS as F3_DOORS, LIFT, GROUPS } from './floor3.js';
+import { FLOORS, CHAPTER, liftBoxes } from './chapter.js';
 
 const M = 'assets/models/';
 const H = 'zombie/assets/hospital/'; // Outbreak hospital runtime set (metres, true scale)
 
 // Room 1 (the operating room): the canonical hand-off state used by normal completion, skip and direct start
 export const ROOM1 = {
-  player: { x: 0.75, z: -6.05, yaw: 0.61 }, // where Yola breaks through the painted picture: the table behind her, facing the camera (south-east)
-  zombies: GROUPS[0].zombies, // standard zombies preplaced around the OR perimeter, waking (and so attacking) one at a time
-  belongings: { x: -9.6, z: -5.55 }, // the patient-belongings table in the Supply Hall (bat and cap)
-  bat: { x: -9.6, z: -5.45 },
+  player: { x: 2.9, z: -8.85, yaw: 0.35 }, // where Yola stands when control returns: two steps out of the lift (Floor 7's back wall), the bat in hand
+  zombies: FLOORS[7].groups[0].zombies, // the OR's zombies (the patient and three of the team), waking one at a time
+  lift: { x: FLOORS[7].lift.x, z: FLOORS[7].lift.z }, // the reveal's elevator
+  belongings: { x: -15.6, z: -1.0 }, // (the opening's belongings table: no longer in the playable floor)
+  bat: { x: -15.6, z: -1.0 },
 };
 
 // ---- the original combat wing (Ground plane: x -7..7, z -11..11; the camera looks toward -z) ----
@@ -73,13 +75,16 @@ const WING = {
 };
 
 export const LAYOUT = {};
-export function useLevel(name) {
+export function useLevel(name, floor = 7) {
   for (const k of Object.keys(LAYOUT)) delete LAYOUT[k];
-  Object.assign(LAYOUT, name === 'floor3' ? FLOOR3 : WING);
+  if (name === 'chapter') Object.assign(LAYOUT, FLOORS[floor] || FLOORS[7], { chapter: CHAPTER, story: true });
+  else Object.assign(LAYOUT, WING);
   return LAYOUT;
 }
+// the chapter's floor for the simulation (the renderer keeps all three built)
+export function useFloor(floor) { if (LAYOUT.story && LAYOUT.floor !== floor) useLevel('chapter', floor); return LAYOUT; }
 useLevel('wing');
-export const levelForMode = (mode) => (mode === 'room1' ? 'floor3' : 'wing');
+export const levelForMode = (mode) => (mode === 'room1' ? 'chapter' : 'wing');
 
 // the box a kit door fills in its wall gap (axis 'x': the wall runs along x)
 export function doorBox(d) {
@@ -93,22 +98,20 @@ export function buildWorld(World) {
     if (p.noCollide || !p.h) continue;
     w.addBox(p.x - p.fp[0] / 2, p.x + p.fp[0] / 2, p.z - p.fp[1] / 2, p.z + p.fp[1] / 2, p.h, 'prop');
   }
-  if (LAYOUT.name === 'floor3') {
-    // doors: shut ones block their gap; the braced and barred doors are dynamic (switched off when they open)
+  if (LAYOUT.story) {
+    // doors: shut ones block their gap; the barred, powered and partition doors are dynamic (switched off when they open)
     w.dyn = {};
-    for (const d of F3_DOORS) {
+    for (const d of LAYOUT.doors) {
       if (d.kind === 'open' || d.kind === 'lift') continue;
       const [a, b, c, e] = doorBox(d);
-      const dyn = d.kind === 'braced' || d.kind === 'barred';
+      const dyn = d.kind !== 'closed';
       const box = w.addBox(a, b, c, e, 2.7, dyn ? 'door' : 'wall');
       if (dyn) w.dyn[d.id] = box;
     }
     // the lift: pocket housings either side of the aperture, the cab walls, and the closed leaves (dynamic)
-    const L = LIFT;
-    w.addBox(6.99, 7.5, L.z - 2.64, L.z - 1.2, 2.7, 'wall'); w.addBox(6.99, 7.5, L.z + 1.2, L.z + 2.64, 2.7, 'wall');
-    w.addBox(7.5, 10.66, L.z - 1.66, L.z - 1.5, 2.7, 'wall'); w.addBox(7.5, 10.66, L.z + 1.5, L.z + 1.66, 2.7, 'wall');
-    w.addBox(10.5, 10.66, L.z - 1.66, L.z + 1.66, 2.7, 'wall');
-    w.dyn.liftDoors = w.addBox(7.1, 7.34, L.z - 1.2, L.z + 1.2, 2.7, 'door');
+    const LB = liftBoxes(LAYOUT.lift);
+    for (const [a, b, c, e] of LB.walls) w.addBox(a, b, c, e, 2.7, 'wall');
+    w.dyn.liftDoors = w.addBox(...LB.doors, 2.7, 'door');
   } else {
     // seal the doorways so nothing walks out (zombies enter from just inside them)
     for (const d of LAYOUT.doors) {

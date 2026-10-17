@@ -1,13 +1,15 @@
 // Hospital presentation built from LAYOUT: tiled floors, rounded cream/teal walls, glass partitions, doorways with
 // amber emergency lamps, and the hospital-kit props. Two layouts share it: the combat wing (fixed low camera-side
-// walls) and Floor 3 (every room walled on all sides: walls between the camera and Yola lower themselves, kit doors
-// are cut at the same height, and the braced door, the CT bar and the lift animate from the level's state).
+// walls) and the chapter (Floors 7, 6 and 5, all built once in one world: every room walled on all sides, walls between
+// the camera and Yola lower themselves, kit doors are cut at the same height, and the OR's barred door, the contractor
+// store's powered door, the weak partition and the three lifts animate from the level's state).
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { LAYOUT, doorBox } from '../core/layout.js';
-import { SIGNS, ROOM_SIGNS, LIFT, PICKUPS } from '../core/floor3.js';
 import { BRACE_TIME, DOOR_OPEN_TIME, roomAt } from '../core/level.js';
+import { liftDisplay } from '../opening/stage.js';
+const CH = () => LAYOUT.chapter || LAYOUT; // the chapter's three floors (the renderer builds them all)
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const isUnder = (o, name) => { for (let p = o.parent; p; p = p.parent) if (p.name === name) return true; return false; };
@@ -50,42 +52,9 @@ const LOW_H = 1.0; // a cut-away wall's height (m)
 const OB_TILE = 0.75; // one floor tile (m): the kit's floor images hold 4 x 4 tiles
 // room -> [floor, wall] (the kit's START_HERE recipes): treatment rooms clinical, circulation the warmer corridor tiles,
 // the service area concrete and petrol-blue paint, staff / storage rooms corridor tiles with the maintenance wall
-const OB_ROOMS = {
-  or: ['clinical', 'clinical'], ct: ['clinical', 'clinical'], waiting: ['corridor', 'clinical'], preop: ['corridor', 'clinical'],
-  recovery: ['corridor', 'clinical'], supply: ['corridor', 'maintenance'], cafe: ['corridor', 'maintenance'], maint: ['maintenance', 'maintenance'],
-};
-// blood (floor: centre, width, length, turn in degrees; wall: point on the face, face, height of the mark's centre, size)
-const OB_BLOOD = [
-  // operating room: a handprint by each door at hand height, a drag from the stretcher toward the shut north door, cut short
-  { kind: 'hand', x: -7.0, z: -3.15, wall: 'e', y: 1.2, size: 0.34, tilt: -6 },
-  { kind: 'hand', x: 6.75, z: -11.0, wall: 's', y: 1.12, size: 0.32, tilt: 8 },
-  { kind: 'drag', x: 2.55, z: -4.35, w: 0.9, l: 1.9, rot: 20 },
-  { kind: 'drag', x: 3.75, z: -7.55, w: 0.6, l: 1.1, rot: 30 },
-  { kind: 'splat', x: 5.7, z: -10.25, w: 1.05, l: 1.05, rot: 15 },
-  // where the patient turned: under the head of the table, a drag toward the Supply Hall door, a hand on the dead lift
-  { kind: 'splat', x: -0.35, z: -9.05, w: 0.95, l: 0.95, rot: -35 },
-  { kind: 'drag', x: -3.7, z: -5.75, w: 0.7, l: 1.7, rot: -55 },
-  { kind: 'hand', x: 6.99, z: -2.35, wall: 'w', y: 1.25, size: 0.33, tilt: 12 },
-  { kind: 'hand', x: 6.99, z: -1.95, wall: 'w', y: 1.02, size: 0.28, tilt: -9 },
-  // supply hall (storage): one smear at the exit to the waiting area
-  { kind: 'drag', x: -12.05, z: -3.75, w: 0.6, l: 1.0, rot: -60 },
-  { kind: 'hand', x: -8.4, z: -6.05, wall: 's', y: 1.15, size: 0.3, tilt: 7 }, // by the belongings table: where the guard waited
-  // waiting area (circulation): small marks in a corner, one handprint, the travel lane clear
-  { kind: 'splat', x: -24.9, z: -6.45, w: 0.65, l: 0.65, rot: 40 },
-  { kind: 'hand', x: -24.3, z: -7.05, wall: 's', y: 1.0, size: 0.3, tilt: -4 },
-  // pre-op: a smear beside the first bed
-  { kind: 'drag', x: -34.75, z: -8.0, w: 0.55, l: 1.0, rot: 75 },
-  // maintenance: one concentrated splatter where the encounter is
-  { kind: 'splat', x: -31.4, z: -15.4, w: 1.35, l: 1.35, rot: -20 },
-  { kind: 'drag', x: -29.2, z: -20.3, w: 0.7, l: 1.4, rot: 110 },
-  // cafeteria (staff): light, a single smear at the braced exit
-  { kind: 'drag', x: -24.65, z: -14.0, w: 0.6, l: 1.0, rot: -100 },
-  // CT: a handprint on the barred door's CT side, a little spatter by the scanner
-  { kind: 'hand', x: -2.55, z: -11.3, wall: 'n', y: 1.22, size: 0.33, tilt: 5 },
-  { kind: 'splat', x: -7.6, z: -13.2, w: 0.7, l: 0.7, rot: 70 },
-  // recovery: a smear beside the bed by the east door
-  { kind: 'drag', x: -17.7, z: 6.1, w: 0.55, l: 0.95, rot: 10 },
-];
+const OB_ROOMS = { or: ['clinical', 'clinical'], waiting: ['corridor', 'clinical'] }; // (the wing; the chapter's rooms carry their own recipe: room.ob)
+const obRecipe = (r) => r?.ob || OB_ROOMS[r?.id];
+// blood: the chapter's marks live with each floor (chapter.js blood: floor marks w/l/rot, wall marks face/y/size)
 // the combat wing (the weapon test arena): its operating room and its hall, a few marks clear of the dummies
 const OB_WING_ROOMS = [{ id: 'or', floor: true, rects: [[-7.3, 7.3, -11.3, -5.05]] }, { id: 'waiting', floor: true, rects: [[-7.3, 7.3, -5.05, 11.3]] }];
 const OB_BLOOD_WING = [
@@ -143,7 +112,7 @@ export class Arena {
     this.walls = []; // floor 3: { group, box, h, k, target, attach: [] }
     this.doorKits = {}; // floor 3: id -> { root, mixer, actions, clip plane, rect }
     this.cutObjs = []; // objects cut by a clipping plane when on the camera side
-    this.f3 = LAYOUT.name === 'floor3';
+    this.f3 = !!LAYOUT.story; // (the chapter: named f3 for its Floor 3 origin)
     this.buildFloor();
     this.buildWalls();
     this.buildDoors();
@@ -153,7 +122,7 @@ export class Arena {
 
   buildFloor() {
     if (this.f3) {
-      for (const r of LAYOUT.rooms) {
+      for (const r of CH().rooms) {
         if (!r.floor) continue;
         for (const [x0, x1, z0, z1] of r.rects) {
           const w = x1 - x0, d = z1 - z0, tex = floorTexture(r.floor[0], r.floor[1]); tex.repeat.set(w / 1.2, d / 1.2); tex.offset.set(x0 / 1.2, z0 / 1.2);
@@ -164,14 +133,14 @@ export class Arena {
       }
       // door thresholds: the floor carries through every doorway (the wall gap sits between two rooms' floors)
       const thMat = new THREE.MeshStandardMaterial({ color: 0xc9c2b0, roughness: 0.6 });
-      for (const d of LAYOUT.doors) {
+      for (const d of CH().doors) {
         if (d.kind === 'lift') continue;
         const [a, b, c, e] = doorBox(d);
         const m = new THREE.Mesh(new THREE.PlaneGeometry(b - a + (d.axis === 'z' ? 0.3 : 0), e - c + (d.axis === 'x' ? 0.3 : 0)), thMat);
         m.rotation.x = -Math.PI / 2; m.position.set((a + b) / 2, 0.003, (c + e) / 2); m.receiveShadow = true; this.group.add(m);
       }
-      const out = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), new THREE.MeshBasicMaterial({ color: 0x1d262c })); // (stops short of the opening's clinic set at x 60)
-      out.rotation.x = -Math.PI / 2; out.position.set(-13, -0.02, -6); this.group.add(out); this.outPlane = out;
+      const outMat = new THREE.MeshBasicMaterial({ color: 0x1d262c }); // the dark ground beyond the walls, one plane per floor (stops short of the opening's clinic set at x 60)
+      for (const oz of [8, -72, -152]) { const out = new THREE.Mesh(new THREE.PlaneGeometry(76, 64), outMat); out.rotation.x = -Math.PI / 2; out.position.set(-17, -0.02, oz); this.group.add(out); this.outPlane = out; }
       return;
     }
     const w = 14.6, d = 22.6;
@@ -235,13 +204,13 @@ export class Arena {
   }
 
   buildWalls() {
-    for (const [x0, x1, z0, z1, h, style] of LAYOUT.walls) {
+    for (const [x0, x1, z0, z1, h, style] of CH().walls) {
       const g = this.addWall(x0, x1, z0, z1, h, style);
       this.walls.push({ group: g, box: { minX: x0, maxX: x1, minZ: z0, maxZ: z1 }, h, y0: 0, k: 1, target: 1, attach: [], style }); // (the wing's are only used by the outbreak surfaces)
     }
     if (!this.f3) return;
     // lintels over the open doorways (signs and the cut-away read like real walls)
-    for (const d of LAYOUT.doors) {
+    for (const d of CH().doors) {
       if (d.kind !== 'open') continue;
       const [a, b, c, e] = doorBox(d);
       const g = this.addWall(a, b, c, e, 2.7, 'full', 2.48);
@@ -286,7 +255,7 @@ export class Arena {
   // floor 3's open doorways: a teal frame (jambs and head), cut away with its wall
   buildOpenFrames() {
     const frameMat = new THREE.MeshStandardMaterial({ color: 0x6e9fa3, roughness: 0.6 });
-    for (const d of LAYOUT.doors) {
+    for (const d of CH().doors) {
       if (d.kind !== 'open') continue;
       const g = new THREE.Group(); g.position.set(d.x, 0, d.z); g.rotation.y = d.axis === 'z' ? Math.PI / 2 : 0;
       for (const sx of [-1, 1]) { const p = new THREE.Mesh(new RoundedBoxGeometry(0.1, 2.45, 0.38, 2, 0.03), frameMat); p.position.set((sx * (d.width - 0.1)) / 2, 1.225, 0); p.castShadow = true; g.add(p); }
@@ -315,7 +284,7 @@ export class Arena {
     if (this.f3) { this.redHemi = new THREE.HemisphereLight(0xff3a24, 0x2a0000, 0); s.add(this.redHemi); return; } // (Floor 3: emergency look, see setEmergency)
     // selective amber emergency light (the rooms themselves stay readable)
     if (this.quality !== 'low') {
-      const spots = this.f3 ? LAYOUT.lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
+      const spots = this.f3 ? CH().lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
       for (const p of spots) {
         const l = new THREE.PointLight(PAL.amber, this.f3 ? 2.6 : 3.2, this.f3 ? 6.5 : 5.5, 1.6);
         l.position.set(p.x, p.y, p.z);
@@ -329,8 +298,9 @@ export class Arena {
     const cache = new Map();
     const get = (m) => { if (!cache.has(m)) cache.set(m, loader.loadAsync('../' + m)); return cache.get(m); };
     let done = 0;
-    const total = LAYOUT.props.length + (this.f3 ? 4 : 0);
-    const jobs = LAYOUT.props.map(async (p) => {
+    const props = CH().props;
+    const total = props.length + (this.f3 ? 4 : 0);
+    const jobs = props.map(async (p) => {
       if (p.kind) { this.procProp(p); onProgress?.(++done / total); return; }
       const gltf = await get(p.m);
       const obj = gltf.scene.clone(true);
@@ -375,7 +345,7 @@ export class Arena {
     for (const h of [...this.group.children]) {
       if (!h.userData.prop || h.userData.keep) continue;
       const id = roomAt(h.position.x, h.position.z);
-      if (!id || id === 'or') continue;
+      if (!id || id === 'or' || h.name === 'partition') continue;
       if (!rooms.has(id)) rooms.set(id, []);
       rooms.get(id).push(h);
     }
@@ -390,6 +360,7 @@ export class Arena {
   // procedural maintenance dressing (the kit has none): a workbench with tools, pipework along a wall, hazard striping
   procProp(p) {
     if (p.kind === 'box') return this.boxProp(p);
+    if (p.kind === 'radio' || p.kind === 'screen' || p.kind === 'partition') return this.storyProp(p);
     const g = new THREE.Group(); g.position.set(p.x, 0, p.z); g.userData.prop = true; this.group.add(g);
     const mat = (c, r = 0.6, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
     const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
@@ -416,6 +387,43 @@ export class Arena {
     }
   }
 
+  // blockout story objects (no kit asset): the nurse station's radio, the records docket's screen, the weak partition
+  storyProp(p) {
+    const g = new THREE.Group(); g.position.set(p.x, p.y || 0, p.z); g.userData.prop = true; g.userData.keep = true; if (p.name) g.name = p.name;
+    const mat = (c, r = 0.6, m = 0, e) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...(e ? { emissive: e, emissiveIntensity: 1.4 } : {}) });
+    const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
+    if (p.kind === 'radio') { // a base-station radio on the desk: body, speaker grille, antenna, a green power light (blinks when it calls)
+      add(new RoundedBoxGeometry(0.34, 0.16, 0.22, 2, 0.02), mat(0x2b3236, 0.5, 0.2), 0, 0.08, 0);
+      add(new THREE.BoxGeometry(0.14, 0.09, 0.005), mat(0x15191b, 0.8), -0.07, 0.085, 0.112);
+      add(new THREE.CylinderGeometry(0.008, 0.008, 0.34, 6), mat(0x1a1d1f, 0.4, 0.4), 0.12, 0.33, -0.05);
+      this.radioLed = add(new THREE.BoxGeometry(0.03, 0.03, 0.006), mat(0x103a10, 0.4, 0, 0x2cff4a), 0.1, 0.11, 0.112);
+    } else if (p.kind === 'screen') { // the docket screen on the records desk (lit: it is the one thing to read here)
+      add(new RoundedBoxGeometry(0.62, 0.4, 0.04, 2, 0.01), mat(0x23292c, 0.5), 0, 0.42, 0);
+      const c = document.createElement('canvas'); c.width = 256; c.height = 160; const x = c.getContext('2d');
+      x.fillStyle = '#0f2a30'; x.fillRect(0, 0, 256, 160); x.fillStyle = '#7fe0d0'; x.font = '700 22px system-ui'; x.fillText('DISPATCH RECORD', 16, 34);
+      x.font = '16px system-ui'; x.fillStyle = '#cfeee8'; ['ACC 7-0419 · PRE-PROCEDURE', 'Collected: before OR 7 case', 'Sent: cold dispatch, Floor 6'].forEach((t, i) => x.fillText(t, 16, 70 + i * 26));
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.35), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); face.position.set(0, 0.42, 0.022); g.add(face);
+      add(new THREE.BoxGeometry(0.06, 0.2, 0.06), mat(0x2f3538, 0.5), 0, 0.12, -0.02);
+    } else if (p.kind === 'partition') { // the renovation partition: two windowed panels on a timber frame across the opening (it faces east, toward the bay)
+      const n = 2, w = p.w / n;
+      for (let i = 0; i < n; i++) {
+        const z0 = -p.w / 2 + w * (i + 0.5);
+        add(new THREE.BoxGeometry(0.1, 2.3, w - 0.04), mat(0xd9d2c0, 0.85), 0, 1.15, z0);
+        add(new THREE.BoxGeometry(0.11, 0.7, w * 0.6), new THREE.MeshStandardMaterial({ color: 0xbfe0e2, roughness: 0.15, transparent: true, opacity: 0.45 }), 0, 1.55, z0);
+      }
+      for (const z0 of [-p.w / 2, 0, p.w / 2]) add(new THREE.BoxGeometry(0.14, 2.42, 0.08), mat(0x9a7a52, 0.8), 0, 1.21, z0);
+      add(new THREE.BoxGeometry(0.14, 0.08, p.w + 0.08), mat(0x9a7a52, 0.8), 0, 2.42, 0);
+      const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d');
+      x.fillStyle = '#f2b134'; x.fillRect(0, 0, 256, 64); x.fillStyle = '#23292c'; for (let k = -4; k < 12; k++) { x.beginPath(); x.moveTo(k * 32, 0); x.lineTo(k * 32 + 16, 0); x.lineTo(k * 32 - 16, 64); x.lineTo(k * 32 - 32, 64); x.fill(); }
+      const tape = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(c), roughness: 0.7 }); tape.map.colorSpace = THREE.SRGBColorSpace;
+      add(new THREE.BoxGeometry(0.12, 0.12, p.w), tape, 0.02, 1.0, 0);
+      this.partitionObj = g;
+    }
+    this.group.add(g);
+    if (p.kind === 'partition') this.cutable(g, { minX: p.x - 0.2, maxX: p.x + 0.2, minZ: p.z - p.w / 2, maxZ: p.z + p.w / 2 });
+  }
+
   boxProp(p) { // procedural electrical cabinets (no kit asset): a body with vents and a warning stripe
     const [w, d, h] = p.size, g = new THREE.Group(); g.position.set(p.x, 0, p.z); g.userData.prop = true;
     const body = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.03), new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.55, metalness: 0.25 }));
@@ -435,16 +443,19 @@ export class Arena {
     const [doorG, liftG, resetG, faultG, readyG] = await Promise.all(['zombie/assets/kit/Hospital_Braced_DoubleDoor.glb', 'zombie/assets/kit/Hospital_Elevator_Outbreak.glb',
       'zombie/assets/kit/Lift_Reset.glb', 'zombie/assets/kit/status_amber_fault.glb', 'zombie/assets/kit/status_green_ready.glb'].map(get));
     const own = (root) => { root.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.castShadow = true; o.receiveShadow = true; } }); return root; };
-    for (const d of LAYOUT.doors) {
-      if (d.kind === 'open') continue;
-      if (d.kind === 'lift') {
-        const root = own(liftG.scene.clone(true)); root.position.set(LIFT.x, 0, LIFT.z); root.rotation.y = LIFT.yaw;
+    for (const d of CH().doors) {
+      if (d.kind === 'open' || d.kind === 'partition') continue;
+      if (d.kind === 'lift') { // one elevator kit per floor, on the arrival room's back wall
+        const LF = CH().lifts[d.floor];
+        const root = own(liftG.scene.clone(true)); root.position.set(LF.x, 0, LF.z); root.rotation.y = LF.yaw;
         const roof = root.getObjectByName('Cab_Roof'); if (roof) roof.visible = false; // a cut-away cab (the camera looks down into it)
         this.group.add(root);
         const mixer = new THREE.AnimationMixer(root), open = mixer.clipAction(THREE.AnimationClip.findByName(liftG.animations, 'Doors_Open'));
         open.play(); open.paused = true; open.time = 0; mixer.update(0);
-        this.doorKits.lift = { root, mixer, open, last: -1, rect: { minX: 6.9, maxX: 10.7, minZ: LIFT.z - 2.64, maxZ: LIFT.z + 2.64 } };
-        this.cutable(root, this.doorKits.lift.rect, 1.5);
+        this.doorKits['lift' + d.floor] = { root, mixer, open, last: -1, rect: LF.rect, floor: d.floor };
+        if (d.floor === 7) this.doorKits.lift = this.doorKits.lift7; // (the opening stages Floor 7's)
+        this.doorKits['lift' + d.floor].display = liftDisplay(root); this.doorKits['lift' + d.floor].display.set(String(d.floor)); // the floor number over the doors
+        this.cutable(root, LF.rect, 1.5);
         continue;
       }
       if (d.kind === 'closed') { // a shut door, no brace: one merged mesh per material (it never moves), its own materials
@@ -459,6 +470,7 @@ export class Arena {
       const root = own(doorG.scene.clone(true)); root.position.set(d.x, 0, d.z); root.rotation.y = FACE_ROT[d.face];
       this.group.add(root);
       const kit = { root, kind: d.kind, last: -1, lastB: -1, shake: 0, L: root.getObjectByName('Door_L_HINGE'), R: root.getObjectByName('Door_R_HINGE') };
+      if (d.kind === 'powered') { const b = root.getObjectByName('Brace_REMOVABLE'); if (b) b.visible = false; } // (a powered door: no brace, it opens on the circuit)
       {
         kit.mixer = new THREE.AnimationMixer(root);
         kit.brace = kit.mixer.clipAction(THREE.AnimationClip.findByName(doorG.animations, 'Brace_Remove'));
@@ -470,31 +482,56 @@ export class Arena {
       const [a, b, c, e] = doorBox(d);
       this.cutable(root, { minX: a, maxX: b, minZ: c, maxZ: e });
     }
-    // the lift-reset panel on Maintenance's north wall, and the lift's FAULT / READY light by its call panel
-    const panel = own(resetG.scene.clone(true)); panel.position.set(-29.5, 0.95, -22.75); panel.rotation.y = 0; this.group.add(panel);
+    // the lift-reset panel on lift service's back wall (Floor 7), and each lift's FAULT / READY light by its call panel
+    const RP = { x: -1.0, z: 15.8 };
+    const panel = own(resetG.scene.clone(true)); panel.position.set(RP.x, 0.95, RP.z); panel.rotation.y = 0; this.group.add(panel);
     const pm = new THREE.AnimationMixer(panel);
     this.reset = { root: panel, mixer: pm, up: pm.clipAction(THREE.AnimationClip.findByName(resetG.animations, 'Reset_Handle_Up')), fault: panel.getObjectByName('Status_FAULT'), ready: panel.getObjectByName('Status_READY'), t: -1 };
     this.reset.up.setLoop(THREE.LoopOnce, 1); this.reset.up.clampWhenFinished = true;
     for (const n of [this.reset.fault, this.reset.ready]) if (n) n.scale.setScalar(1);
     if (this.reset.ready) this.reset.ready.visible = false;
-    this.attachToWall(panel, -29.5, -22.75, 's', 1.6);
-    const f = own(faultG.scene.clone(true)), r = own(readyG.scene.clone(true));
-    for (const o of [f, r]) { o.position.set(6.99, 1.62, LIFT.z + 2.95); o.rotation.y = FACE_ROT.w; this.group.add(o); }
-    r.visible = false; this.liftStatus = { fault: f, ready: r };
+    this.attachToWall(panel, RP.x, RP.z, 's', 1.6);
+    this.liftStatus = {};
+    for (const [fl, LF] of Object.entries(CH().lifts)) {
+      const f = own(faultG.scene.clone(true)), r = own(readyG.scene.clone(true));
+      for (const o of [f, r]) { o.position.set(LF.status.x, LF.status.y, LF.status.z + 0.17); o.rotation.y = FACE_ROT.s; this.group.add(o); this.attachToWall(o, LF.status.x, LF.status.z + 0.15, 's', LF.status.y + 0.2); }
+      f.visible = fl === '7'; r.visible = fl !== '7'; this.liftStatus[fl] = { fault: f, ready: r };
+    }
   }
 
   // the pickups that belong in this floor: the guard's pistol beside him, his open bag (spare rounds), the first-aid case
+  // the chapter's pickups (each floor's, chapter.js) and the sealed specimen case (moved by the level's case state)
   async loadPickups(get) {
     this.pickupViz = {};
     const ring = (x, z) => { const m = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.42, 36), new THREE.MeshBasicMaterial({ color: 0xfff1b8, transparent: true, opacity: 0.55, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.02, z); m.renderOrder = 2; this.group.add(m); return m; };
-    const [pistolG, bagG, magG, aidG] = await Promise.all(['zombie/assets/pistol.glb', 'zombie/assets/kit/guard_duffel_open.glb', 'zombie/assets/kit/pistol_magazine_loaded.glb', 'zombie/assets/kit/first_aid_case_closed.glb'].map(get));
-    const P = Object.fromEntries(PICKUPS.map((q) => [q.id, q]));
-    const pistol = pistolG.scene.clone(true); pistol.position.set(P.pistol.x + 0.1, 0.03, P.pistol.z); pistol.rotation.set(0, 0.7, Math.PI / 2); pistol.scale.setScalar(1); this.group.add(pistol);
-    const bag = bagG.scene.clone(true); bag.position.set(P.ammo.x, 0, P.ammo.z); bag.rotation.y = -0.3; this.group.add(bag);
-    const mags = new THREE.Group(); for (let i = 0; i < 2; i++) { const m = magG.scene.clone(true); m.position.set(0.36 + i * 0.07, 0.004, -0.06 + i * 0.03); m.rotation.set(-Math.PI / 2, 0, 0.3 * i); mags.add(m); } mags.position.copy(bag.position); mags.rotation.y = bag.rotation.y; this.group.add(mags);
-    const aid = aidG.scene.clone(true); aid.position.set(P.health.x, 0.81, P.health.z); aid.rotation.y = -Math.PI / 2; this.group.add(aid);
-    for (const o of [pistol, bag, mags, aid]) o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
-    this.pickupViz = { pistol: [pistol, ring(P.pistol.x, P.pistol.z)], ammo: [mags, ring(P.ammo.x, P.ammo.z)], health: [aid, ring(P.health.x, P.health.z)], bat: [ring(P.bat.x, P.bat.z)] };
+    const [pistolG, bagG, magG, aidG, axeG] = await Promise.all(['zombie/assets/pistol.glb', 'zombie/assets/kit/guard_duffel_open.glb', 'zombie/assets/kit/pistol_magazine_loaded.glb', 'zombie/assets/kit/first_aid_case_closed.glb', 'zombie/assets/weapons/fire_axe.glb'].map(get));
+    for (const q of CH().pickups || []) {
+      const objs = [];
+      if (q.model === 'pistol') { const o = pistolG.scene.clone(true); o.position.set(q.x + 0.1, 0.03, q.z); o.rotation.set(0, 0.7, Math.PI / 2); objs.push(o); }
+      else if (q.model === 'bag') {
+        const bag = bagG.scene.clone(true); bag.position.set(q.x, 0, q.z); bag.rotation.y = -0.3; objs.push(bag);
+        const mags = new THREE.Group(); for (let i = 0; i < 2; i++) { const m = magG.scene.clone(true); m.position.set(0.36 + i * 0.07, 0.004, -0.06 + i * 0.03); m.rotation.set(-Math.PI / 2, 0, 0.3 * i); mags.add(m); } mags.position.copy(bag.position); mags.rotation.y = bag.rotation.y; objs.push(mags);
+      } else if (q.model === 'mag') { const o = magG.scene.clone(true); o.position.set(q.x, 0.01, q.z); o.rotation.set(-Math.PI / 2, 0, 0.4); objs.push(o); }
+      else if (q.model === 'aid') { const o = aidG.scene.clone(true); o.position.set(q.x, q.y ?? 0.81, q.z); o.rotation.y = -Math.PI / 2; objs.push(o); }
+      else if (q.model === 'axe') { const o = axeG.scene.clone(true); const b = new THREE.Box3().setFromObject(o), sz = b.getSize(new THREE.Vector3()); o.scale.setScalar(0.9 / Math.max(sz.x, sz.y, sz.z)); o.rotation.set(0, 0, Math.PI / 2); o.updateMatrixWorld(true); const b2 = new THREE.Box3().setFromObject(o), c = b2.getCenter(new THREE.Vector3()); o.position.set(q.x - c.x, (q.y ?? 0.92) - b2.min.y, q.z - c.z); objs.push(o); }
+      for (const o of objs) { o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); this.group.add(o); }
+      objs.push(ring(q.x, q.z));
+      this.pickupViz[q.id] = objs;
+    }
+    // the sealed pre-procedure case: the kit's closed case, tinted cold blue, a specimen label on its lid
+    const cs = aidG.scene.clone(true);
+    cs.traverse((m) => { if (m.isMesh) { m.material = m.material.clone(); if (m.material.color) m.material.color.lerp(new THREE.Color(0x5f9fb8), 0.55); m.castShadow = true; m.receiveShadow = true; } });
+    const cb = new THREE.Box3().setFromObject(cs), csz = cb.getSize(new THREE.Vector3());
+    const holder = new THREE.Group(); cs.position.set(-(cb.min.x + cb.max.x) / 2, -cb.min.y, -(cb.min.z + cb.max.z) / 2); holder.add(cs);
+    const lc = document.createElement('canvas'); lc.width = 256; lc.height = 128; const lx = lc.getContext('2d');
+    lx.fillStyle = '#f7f3e8'; lx.fillRect(0, 0, 256, 128); lx.fillStyle = '#1d6f8a'; lx.fillRect(0, 0, 256, 30); lx.fillStyle = '#fff'; lx.font = '800 20px system-ui'; lx.fillText('SPECIMEN · SEALED', 12, 22);
+    lx.fillStyle = '#20262a'; lx.font = '700 22px system-ui'; lx.fillText('ACC 7-0419', 12, 62); lx.font = '600 17px system-ui'; lx.fillText('PRE-PROCEDURE COLLECTION', 12, 90); lx.fillStyle = '#c7553f'; lx.fillText('KEEP COLD · DO NOT OPEN', 12, 116);
+    const lt = new THREE.CanvasTexture(lc); lt.colorSpace = THREE.SRGBColorSpace;
+    const lw = Math.max(csz.x, csz.z) * 0.8;
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(lw, lw / 2), new THREE.MeshBasicMaterial({ map: lt }));
+    label.rotation.x = -Math.PI / 2; if (csz.z > csz.x) label.rotation.z = Math.PI / 2; label.position.y = csz.y + 0.004; holder.add(label);
+    this.caseObj = holder; this.caseSize = csz.clone(); holder.name = 'specimenCase'; this.group.add(holder);
+    this.caseRing = ring(0, 0); this.caseRing.material = this.caseRing.material.clone(); this.caseRing.material.color.set(0x8fe8ff);
   }
   takePickup(id) { for (const o of this.pickupViz?.[id] || []) o.visible = false; }
   resetPickups(taken = []) { for (const [id, list] of Object.entries(this.pickupViz || {})) for (const o of list) o.visible = !taken.includes(id); }
@@ -508,9 +545,9 @@ export class Arena {
       return m;
     };
     this.signMeshes = [];
-    for (const s of SIGNS) { const m = add(new THREE.MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024); m.userData.sign = s.text; this.signMeshes.push(m); }
+    for (const s of CH().signs || []) { const m = add(new THREE.MeshBasicMaterial({ map: signTexture(s.text, s.sub) }), s.x, s.y, s.z, s.face, s.w, 300 / 1024); m.userData.sign = s.text; m.userData.lift = s.lift; this.signMeshes.push(m); }
     const tl = new THREE.TextureLoader();
-    for (const s of ROOM_SIGNS) { const t = tl.load(`assets/opening/signs/${s.id}.png`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; add(new THREE.MeshBasicMaterial({ map: t }), s.x, s.y, s.z, s.face, s.w, 0.3); }
+    for (const s of CH().roomSigns || []) { const t = tl.load(`assets/opening/signs/${s.id}.png`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; add(new THREE.MeshBasicMaterial({ map: t }), s.x, s.y, s.z, s.face, s.w, 0.3); }
   }
 
   // ---- Floor 3 after the reveal: the Hospital Outbreak surface kit (v1) ----
@@ -535,14 +572,15 @@ export class Arena {
     for (const m of Object.values(this.ob.blood)) m.map.colorSpace = THREE.SRGBColorSpace;
     this.buildOutbreak();
   }
-  roomAt(x, z) { for (const r of this.obRooms) for (const [x0, x1, z0, z1] of r.rects) if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r.id; return null; }
+  roomAt(x, z) { return this.roomObjAt(x, z)?.id ?? null; }
+  roomObjAt(x, z) { for (const r of this.obRooms) for (const [x0, x1, z0, z1] of r.rects) if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r; return null; }
   buildOutbreak() {
     const O = this.ob, S = OB_TILE * 4, H = 2.7;
-    this.obRooms = LAYOUT.rooms || OB_WING_ROOMS; // (the combat wing has no rooms: its operating room and its hall)
+    this.obRooms = this.f3 ? CH().rooms : OB_WING_ROOMS; // (the combat wing has no rooms: its operating room and its hall)
     // floors: the room's recipe, UVs from world position (one continuous grid across rooms)
     for (const r of this.obRooms) {
       if (!r.floor) continue;
-      const mat = O.floor[OB_ROOMS[r.id]?.[0] || 'clinical'];
+      const mat = O.floor[obRecipe(r)?.[0] || 'clinical'];
       for (const [x0, x1, z0, z1] of r.rects) {
         const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0); g.rotateX(-Math.PI / 2); g.translate((x0 + x1) / 2, 0.001, (z0 + z1) / 2);
         const p = g.attributes.position, uv = g.attributes.uv;
@@ -571,8 +609,8 @@ export class Arena {
         for (let s = 0; s < nSeg; s++) {
           let a = F.a0 + (len * s) / nSeg, b = F.a0 + (len * (s + 1)) / nSeg, c = (a + b) / 2;
           const sx = alongX ? c : F.at + F.n[0] * 0.25, sz = alongX ? F.at + F.n[2] * 0.25 : c;
-          const room = this.roomAt(sx, sz);
-          const mi = key[OB_ROOMS[room]?.[1] || 'clinical'];
+          const room = this.roomObjAt(sx, sz);
+          const mi = key[obRecipe(room)?.[1] || 'clinical'];
           const pt = (t, y) => (alongX ? [t, y, F.at] : [F.at, y, t]);
           const rs = alongX ? F.r[0] : F.r[1]; // +1: right runs with the axis
           if (rs < 0) [a, b] = [b, a];
@@ -593,7 +631,7 @@ export class Arena {
       const o = { s: [0, 0.012], n: [0, -0.012], e: [0.012, 0], w: [-0.012, 0] }[face]; m.position.set(x + o[0], y, z + o[1]); m.renderOrder = 1; D.add(m);
       this.attachToWall(m, x, z, face, y + size / 2);
     };
-    for (const d of this.f3 ? OB_BLOOD : OB_BLOOD_WING) d.wall ? onWall(d.kind, d.x, d.z, d.wall, d.y, d.size, d.tilt) : flat(d.kind, d.x, d.z, d.w, d.l, d.rot);
+    for (const d of this.f3 ? CH().blood : OB_BLOOD_WING) d.wall ? onWall(d.kind, d.x, d.z, d.wall, d.y, d.size, d.tilt) : flat(d.kind, d.x, d.z, d.w, d.l, d.rot);
     O.built = true;
     if (O.on) this.setOutbreak(true);
   }
@@ -673,9 +711,9 @@ export class Arena {
     const grp = new THREE.Group(); grp.name = 'emergency'; grp.visible = false; s.add(grp); e.group = grp;
     const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
     const put = (m, x, z, size) => { const p = new THREE.Mesh(geo, m); p.position.set(x, 0.02, z); p.scale.set(size, 1, size); p.renderOrder = 2; grp.add(p); };
-    for (const l of LAYOUT.lights || []) put(e.redMat, l.x, l.z, 5.5);
-    for (const d of LAYOUT.doors || []) if (d.kind !== 'lift') put(e.redMat, d.x, d.z, 2.6);
-    for (const r of LAYOUT.rooms || []) for (const [x0, x1, z0, z1] of r.rects) { const w = x1 - x0, dd = z1 - z0; if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8); }
+    for (const l of CH().lights || []) put(e.redMat, l.x, l.z, 5.5);
+    for (const d of CH().doors || []) if (d.kind !== 'lift') put(e.redMat, d.x, d.z, 2.6);
+    for (const r of CH().rooms || []) for (const [x0, x1, z0, z1] of r.rects) { const w = x1 - x0, dd = z1 - z0; if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8); }
   }
   tickEmergency(dt) {
     const e = this.em; if (!e) return;
@@ -728,7 +766,9 @@ export class Arena {
     }
     if (!level) return;
     let moved = false;
-    for (const key of ['brace', 'ctbar']) {
+    this.caseStep(level);
+    if (this.partitionObj && level.doors.partition && this.partitionObj.visible === !!level.doors.partition.broken) { this.partitionObj.visible = !level.doors.partition.broken; moved = true; }
+    for (const key of ['orbar', 'x7door']) {
       const k = this.doorKits[key], d = level.doors[key]; if (!k || !d) continue;
       if (d.brace !== k.lastB || d.open !== k.last) {
         k.lastB = d.brace; k.last = d.open; moved = true;
@@ -738,7 +778,7 @@ export class Arena {
       }
       if (k.shake > 0) { k.shake = Math.max(0, k.shake - dt); const a = Math.sin(k.shake * 60) * 0.025 * (k.shake / 0.35); if (k.L) k.L.rotation.z = a; if (k.R) k.R.rotation.z = -a; if (!k.shake) { k.L && (k.L.rotation.z = 0); k.R && (k.R.rotation.z = 0); } }
     }
-    const L = this.doorKits.lift;
+    const L = this.doorKits['lift' + (level.floor || 7)];
     if (L && level.lift.open !== L.last) { L.last = level.lift.open; L.open.time = level.lift.open * 0.999; L.mixer.update(0); moved = true; }
     if (this.reset && this.reset.t >= 0) { this.reset.t += dt; this.reset.mixer.update(dt); if (this.reset.t > 0.7) this.reset.t = -1; }
     if (moved) this.renderer.shadowMap.needsUpdate = true;
@@ -749,12 +789,22 @@ export class Arena {
     const r = this.reset; if (!r) return;
     if (on) { r.up.reset(); r.up.play(); r.t = 0; } else { r.up.stop(); r.mixer.update(0); }
     if (r.fault) r.fault.visible = !on; if (r.ready) r.ready.visible = on;
-    if (this.liftStatus) { this.liftStatus.fault.visible = !on; this.liftStatus.ready.visible = on; }
+    const s7 = this.liftStatus?.['7']; if (s7) { s7.fault.visible = !on; s7.ready.visible = on; }
+    for (const m of this.signMeshes || []) if (m.userData.sign === 'LIFT' && m.userData.lift === 7) m.visible = !on; // (the "power fault" notice comes down)
+  }
+  // the specimen case: where the level says it is (carried: the game holds it in Yola's hand, see chapterui.js)
+  caseStep(level) {
+    const o = this.caseObj, c = level.case; if (!o || !c) return;
+    if (c.state === 'carried') { this.caseRing.visible = false; return; }
+    if (o.parent !== this.group) this.group.add(o);
+    o.position.set(c.x, c.y || 0, c.z); o.rotation.set(0, c.state === 'stored' ? 0 : 0.35, 0); o.scale.setScalar(1); o.visible = true;
+    this.caseRing.visible = c.state !== 'stored'; this.caseRing.position.set(c.x, 0.02, c.z);
   }
   // restore every door and the lift to a level's state (a fresh floor, a retry)
   syncLevel(level) {
     if (!this.f3) return;
-    for (const k of Object.values(this.doorKits)) { k.last = -1; k.lastB = -1; const b = k.root.getObjectByName('Brace_REMOVABLE'); if (b && k.kind !== 'closed') b.visible = true; }
+    for (const k of Object.values(this.doorKits)) { k.last = -1; k.lastB = -1; const b = k.root.getObjectByName('Brace_REMOVABLE'); if (b && k.kind !== 'closed' && k.kind !== 'powered') b.visible = true; }
+    if (this.partitionObj) this.partitionObj.visible = !level?.doors.partition?.broken;
     this.liftPowered(!!level?.flags.lift_power_restored);
     if (level?.flags.lift_power_restored && this.reset) { this.reset.up.reset(); this.reset.up.play(); this.reset.up.time = this.reset.up.getClip().duration; this.reset.mixer.update(0); this.reset.t = -1; }
     this.resetPickups(level ? [...level.taken] : []);

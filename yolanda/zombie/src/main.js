@@ -5,7 +5,7 @@ import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
 import { setMeleePaths, meleeSegment, BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
-import { LAYOUT, ROOM1, useLevel, levelForMode } from './core/layout.js';
+import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
@@ -28,6 +28,7 @@ import { startLab } from './lab.js';
 import { startInspect } from './inspect.js';
 import { startTestArena } from './arena/testarena.js';
 import { makeBat } from './render/weaponModels.js';
+import { ChapterUI } from './ui/chapter.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -110,8 +111,9 @@ let arena, yola, sim;
 const zviews = new Map(); const zpool = [[], [], [], []];
 const storyStart = params.has('intro') || params.has('reveal') || params.has('room1');
 let mode = storyStart ? 'room1' : params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
-useLevel(levelForMode(mode)); // the story's Floor 3, or the combat wing for practice, waves and benchmarks
-let levelSave = store.get('floor3save', null); // the latest Floor 3 checkpoint (retry restores it)
+useLevel(levelForMode(mode)); // the story's chapter (Floors 7, 6, 5), or the combat wing for practice, waves and benchmarks
+let levelSave = store.get('chapter1save', null); // the latest chapter checkpoint (retry restores it)
+if (levelSave && levelSave.v !== 2) levelSave = null; // (an old Floor 3 save does not fit the new floors)
 const HIT_SLOW = 0.2; // time runs at this rate through a hit-stop
 let paused = false, hitPauseT = 0, acc = 0, last = performance.now(), playerScreen = null;
 const camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new THREE.Vector2() };
@@ -132,7 +134,7 @@ const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.
 const YOLA_HEIGHT = 1.62;
 // which Yola plays (2026-10-16): 1 = the original model, 2 = the user's new Tripo model (testing; tools/anim/yola2_build.py).
 // The pause menu's Yola choice (remembered), or ?yola=2. The opening keeps its own Yola either way.
-const YOLA_MODEL = params.get('yola') || store.get('yolaModel', '1');
+const YOLA_MODEL = params.get('yola') || store.get('yolaModel', '2'); // (2026-10-16 brief: Yola 3.0, the new model, is the hero by default)
 const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: [], data: 'assets/clipdata_yola2.json' }
   : { model: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_extra.glb', 'assets/yola_sword.glb'], data: 'assets/clipdata.json' };
 const loader = new GLTFLoader();
@@ -166,6 +168,7 @@ async function load() {
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
   restart();
+  startChapterUI();
   hud.loading(1);
   if (params.has('intro') || params.has('reveal') || params.has('room1')) await startOpening();
   if (mode === 'arena') window.game.testArena = await startTestArena({ game: window.game, scene, loader, telegraphs }); // the weapon test arena (combat.html?mode=arena)
@@ -220,6 +223,13 @@ function warmPrograms() {
 }
 let opening = null;
 const screens = new LiveScreens();
+// the chapter's on-screen layer (radio captions, the lift's floor picker, the case): story mode only
+let chapterUI = null;
+function startChapterUI() {
+  if (chapterUI || !LAYOUT.story) return;
+  chapterUI = new ChapterUI({ scene, camera, arena, audio, hud, fx, input, yola: () => yola, sim: () => sim, applyLevel: (s) => { levelSave = s; applyLevel(s); }, onSave: (s) => { levelSave = s; store.set('chapter1save', s); }, onReplay: () => { applyRoom1(); } });
+  window.chapterUI = chapterUI;
+}
 async function startOpening() {
   opening = new Opening({ scene, camera, renderer, loader, audio, params, arena, yola, screens, getSim: () => sim, tuning, game: () => window.game });
   window.opening = opening;
@@ -251,9 +261,10 @@ function cameraPose(x, z, yaw) {
   p.x = sx; p.z = sz; p.aimYaw = sy;
   return pose;
 }
-function applyRoom1() { levelSave = null; store.set('floor3save', null); return applyLevel(null); }
-// Floor 3 from its start (save null: Room 1, three dormant standard zombies, Yola unarmed) or from a checkpoint
+function applyRoom1() { levelSave = null; store.set('chapter1save', null); return applyLevel(null); }
+// The chapter from its start (save null: Floor 7's OR, its dormant zombies, Yola with the bat) or from a checkpoint (any floor)
 function applyLevel(save) {
+  if (LAYOUT.story) useFloor(save?.floor || 7); // (the simulation's world is the save's floor)
   restart('room1', benchN, save);
   const p = sim.player, A = ROOM1.player;
   if (!save) {
@@ -457,6 +468,7 @@ function runFrame(dt, doRender = true) {
   arena.update(dt, ix, iz, THREE.MathUtils.degToRad(tuning.camYaw), sim.level);
   hud.setEmergency(!!arena.em && arena.em.target > 0);
   hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
+  chapterUI?.update(paused ? 0 : dt);
   if (camOverride) applyCamOverride(); else if (!window.game.camFree) updateCamera(dt, ix, iz, iyaw, p); // (camFree: inspect mode moves the camera)
   // player screen position (mouse aiming)
   _v.set(ix, 1.0, iz).project(camera);
@@ -525,16 +537,18 @@ function handleEvents() {
       case 'pickup': {
         audio.play(e.kind === 'health' ? 'heal' : 'reloadDone'); hud.flash('reload');
         if (e.id === 'bat') opening?.takeBat?.(); else arena.takePickup(e.id);
-        hud.toast(e.kind === 'weapon' ? (e.weapon === 'pistol' ? 'Pistol — the guard’s sidearm' : 'Baseball bat') : e.kind === 'ammo' ? 'Spare pistol rounds' : 'First aid: health restored');
+        hud.toast(e.kind === 'weapon' ? (e.weapon === 'pistol' ? 'Pistol — the guard’s sidearm' : e.weapon === 'axe' ? 'Fire axe' : 'Baseball bat') : e.kind === 'ammo' ? 'Spare pistol rounds' : 'First aid: health restored');
         break;
       }
-      case 'checkpoint': levelSave = e.save; store.set('floor3save', e.save); break;
+      case 'checkpoint': levelSave = e.save; store.set('chapter1save', e.save); break;
       case 'liftPower': arena.liftPowered(true); audio.play('power'); hud.toast('Lift power restored'); break;
       case 'unbrace': audio.play('unbrace'); break;
-      case 'doorOpened': audio.play('doorOpen'); break;
+      case 'doorOpened': audio.play('doorOpen'); chapterUI?.onEvent(e); break;
       case 'bang': if (e.near < 11) { audio.play('bang', Math.max(0.25, 1 - e.near / 12)); arena.bang(e.door); if (Math.random() < 0.6) setTimeout(() => audio.play('groan', 0.7), 200); } break;
       case 'liftDoors': audio.play(e.open ? 'liftDing' : 'liftClose'); break;
-      case 'levelComplete': input.clearAll(); input.enabled = false; store.set('floor3save', null); levelSave = null; hud.levelDone(sim); audio.play('clear'); break;
+      case 'levelComplete': input.clearAll(); input.enabled = false; store.set('chapter1save', null); levelSave = null; hud.levelDone(sim); audio.play('clear'); break;
+      case 'chapterComplete': input.clearAll(); input.enabled = false; store.set('chapter1save', null); levelSave = null; audio.play('clear'); chapterUI?.onEvent(e); break;
+      case 'radio': case 'liftTravel': case 'case': case 'partitionBreak': case 'record': case 'sampleMatch': case 'liftFault': chapterUI?.onEvent(e); break;
       case 'roomEnter': { const r = LAYOUT.rooms?.find((q) => q.id === e.room); if (r && r.id !== 'or') hud.banner(r.name); break; }
       case 'zombieWake': if (Math.random() < 0.6 && dist(e.id) < 12) audio.play('groan', 0.9); break;
       case 'dryFire': audio.play('dry'); hud.toast('Out of rounds'); break;

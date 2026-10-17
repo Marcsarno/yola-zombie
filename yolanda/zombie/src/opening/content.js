@@ -67,10 +67,72 @@ export const UPGRADE_PREVIEW = {
 
 export const OBJECTIVES = {
   chart: 'Review the patient’s chart.',
-  room1: 'Find the lift reset in Maintenance.',
+  // Chapter 1 (Floors 7, 6, 5: core/level.js)
+  room1: 'Get to the lift.',
+  f7_lift: 'Get to the lift.',
+  f7_find: 'Find another way down: west, through Supply.',
+  f7_power: 'Restore the lift circuit: the service room past the cafeteria.',
+  f7_return: 'Back to the lift: north through the prep room.',
+  f7_board: 'Take the lift down.',
+  f7_explore: 'Take the lift down.',
+  f6_case: 'Cold dispatch: find the sealed pre-op case.',
+  f5_intake: 'Take the case to diagnostic intake on 5.',
+  f5_go: 'Take the case to diagnostic intake on 5.',
+  f5_explore: 'Diagnostic intake is beside the lift. The records are further in.',
+  f5_record: 'Find the dispatch record.',
+  f5_record_case: 'The record is read. Bring the case to intake to compare.',
+  f5_match: 'Compare the record with the case at intake.',
+  f5_retrieve: 'Take the case back.',
+  f5_fetch: 'Bring the case: it is where you left it.',
+  f5_down: 'Take the case to the lift: Floor 4, then TECH on 3.',
+  f5_back: 'Floor 5’s lift: Floor 4, then TECH on 3.',
   maintenance: 'Find the lift reset in Maintenance.',
   elevator: 'Return to the elevator.',
   board: 'Step into the lift.',
+};
+
+// ---------------------------------------------------------------------------------------------
+// CHAPTER 1 RADIO AND PHONE LINES (the floor plans' draft script, Yola_Floors_7_6_5 v3 section 8). DRAFT TEXT, NOT
+// RECORDED: no audio exists for these, so they play as captions marked as draft (the UI labels them) and movement goes
+// on. TECH is the colleague Yola recognises on three, named TECH until an existing name is confirmed.
+// ---------------------------------------------------------------------------------------------
+export const RADIO = {
+  f7_phone: [{ who: 'Yola', text: 'No service. Of course.' }],
+  f7_radio: [
+    { who: 'TECH', text: 'Yola? Can you hear me?' },
+    { who: 'Yola', text: 'I know that voice. Tell me you’re somewhere safe.' },
+    { who: 'TECH', text: 'The lab on three. I can’t get through the ward. Where are you?' },
+    { who: 'Yola', text: 'Seven. The lift’s dead.' },
+    { who: 'TECH', text: 'Service room, past the cafeteria. Try the panel there.' },
+  ],
+  f7_power: [
+    { who: 'Yola', text: 'It’s running. I’m coming down.' },
+    { who: 'TECH', text: 'Check cold dispatch on six, if you can. A sealed pre-op case. A sample from before this might tell us something.' },
+  ],
+  f6_pickup: [
+    { who: 'Yola', text: 'I’ve got it. Still sealed.' },
+    { who: 'TECH', text: 'Keep it that way. Diagnostic intake on five can hold it safely. The dispatch record is there too.' },
+  ],
+  f5_first: [{ who: 'TECH', text: 'Intake’s right by the lift. Leave the case there while you look for the record.' }],
+  f5_intake: [{ who: 'TECH', text: 'Good. It’s held. The accession-to-patient record should be in transfer records.' }],
+  f5_record_first: [{ who: 'Yola', text: 'Here’s the docket. I need the case beside it.' }],
+  f5_record: [{ who: 'Yola', text: 'Here’s the docket. Back to intake.' }],
+  f5_match: [
+    { who: 'Yola', text: 'This number matches. It’s his. The patient from upstairs.' },
+    { who: 'TECH', text: 'Collected before the procedure.' },
+    { who: 'Yola', text: 'I was in that room.' },
+    { who: 'TECH', text: 'Then we need to look at this properly. Bring it when you come down.' },
+    { who: 'Yola', text: 'You’re still on three?' },
+    { who: 'TECH', text: 'I’m here.' },
+    { who: 'Yola', text: 'Keep talking. I’m coming.' },
+  ],
+};
+// the dispatch record (R5): the accession number on the case's lid, matched to the opening's patient by his chart (the
+// project has no name for him: his scheduled knee procedure and documented anesthesia history identify him)
+export const DOCKET = {
+  title: 'DISPATCH RECORD',
+  rows: [['Accession', 'ACC 7-0419'], ['Specimen', 'Pre-procedure collection'], ['Patient', 'Scheduled knee procedure · OR 7'], ['Chart note', 'Documented pseudocholinesterase deficiency'], ['Dispatched', 'Cold dispatch, Floor 6 — before the case began']],
+  note: 'Matches the label on the sealed case.',
 };
 
 // ---------------------------------------------------------------------------------------------

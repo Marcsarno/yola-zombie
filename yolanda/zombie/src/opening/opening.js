@@ -674,7 +674,7 @@ export class Opening {
     toWorld(yo, 8.05, L.z - 1.0, -Math.PI / 2); yo.play('idle', { fade: 0 });
     toWorld(sg, 8.05, L.z + 1.0, -Math.PI / 2); sg.play('Idle', { fade: 0 });
     for (const a of [su, ta]) a.setVisible(false); A.staff.setVisible(false);
-    this.liftDisp3 ||= liftDisplay(this.arena.doorKits.lift.root); this.liftDisp3.set('3');
+    this.liftDisp3 ||= this.arena.doorKits.lift.display || liftDisplay(this.arena.doorKits.lift.root); this.liftDisp3.set('7');
     this.setLift3(0);
     this.camTo(W(7.3, 1.0, -5.2, 30, -78, 6.0, 42), 0.01); // from the OR, toward the lift doors (high enough that no open sky shows over the walls)
     yield 0.45;

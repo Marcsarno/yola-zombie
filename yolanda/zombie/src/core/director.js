@@ -79,7 +79,7 @@ export class Director {
 
   get label() {
     if (this.mode === 'calm') return 'Practice';
-    if (this.mode === 'room1') return 'Floor 3';
+    if (this.mode === 'room1') return 'Floor ' + (this.sim?.level?.floor || 7);
     if (this.mode === 'arena') return this.arenaLabel || 'Weapon test';
     if (this.mode === 'bench') return `Bench ${this.benchCount}`;
     if (this.cleared) return 'Cleared';
