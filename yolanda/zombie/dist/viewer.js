@@ -38168,7 +38168,7 @@ void main() {
     // twist bones pinches the wrist if it takes all of it, the elbow if the forearm does)
   };
   var V = () => new Vector3();
-  var _t2 = Array.from({ length: 24 }, V);
+  var _t2 = Array.from({ length: 24 }, () => new Vector3());
   var _q4 = new Quaternion();
   var _q22 = new Quaternion();
   var _q32 = new Quaternion();
@@ -38180,15 +38180,26 @@ void main() {
     bone.updateMatrixWorld(true);
   }
   var perp = (out, v, n) => out.copy(v).addScaledVector(n, -v.dot(n));
+  var _qb = new Quaternion();
   function wristBend(hd, f, palm, aw, out = {}) {
-    const c = hd.dot(f), P = perp(_t2[20], palm, f).normalize(), A = perp(_t2[21], aw, f).normalize();
-    out.flex = Math.atan2(hd.dot(P), c) / D;
-    out.dev = Math.atan2(hd.dot(A), c) / D;
+    const th = Math.acos(clamp3(hd.dot(f), -1, 1)) / D;
+    _qb.setFromUnitVectors(hd, f);
+    const a0 = (out.a0 || (out.a0 = V())).copy(perp(_t2[21], aw, hd).normalize()).applyQuaternion(_qb), p0 = _t2[20].copy(perp(_t2[20], palm, hd).normalize()).applyQuaternion(_qb);
+    const b = perp(_t2[19], hd, f), bl = b.length();
+    if (bl < 1e-6) {
+      out.flex = 0;
+      out.dev = 0;
+    } else {
+      b.multiplyScalar(1 / bl);
+      out.flex = th * b.dot(p0);
+      out.dev = th * b.dot(a0);
+    }
+    out.bend = th;
     const W = ANATOMY.wrist, lf = out.flex > 0 ? W.flex : W.ext, ld = out.dev > 0 ? W.radial : W.ulnar;
     out.r = Math.hypot(out.flex / lf, out.dev / ld);
     return out;
   }
-  function forearmRoll(ud, f, aw, sgn, out = {}) {
+  function forearmRoll(ud, f, a0, sgn, out = {}) {
     const h = _t2[22].crossVectors(ud, f), s = h.length();
     out.k = Math.min(1, s / 0.3);
     if (s < 1e-4) {
@@ -38197,7 +38208,7 @@ void main() {
       return out;
     }
     h.multiplyScalar(1 / s);
-    const n0 = _t2[23].crossVectors(h, f), A = perp(_t2[20], aw, f).normalize();
+    const n0 = _t2[23].crossVectors(h, f), A = perp(_t2[20], a0, f).normalize();
     out.roll = Math.atan2(A.dot(h) * sgn, A.dot(n0)) / D;
     out.r = Math.abs(out.roll) / (out.roll > 0 ? ANATOMY.forearm.sup : ANATOMY.forearm.pro);
     return out;
@@ -38215,8 +38226,8 @@ void main() {
     const a = U.getWorldPosition(V()), e = L.getWorldPosition(V()), w = H.getWorldPosition(V());
     const ud = e.clone().sub(a).normalize(), f = w.clone().sub(e).normalize(), hd = M.getWorldPosition(V()).sub(w).normalize();
     const aw = I2.getWorldPosition(V()).sub(P.getWorldPosition(V())).normalize(), palm = V().crossVectors(aw, hd).normalize().multiplyScalar(side === "Right" ? 1 : -1);
-    const wb = wristBend(hd, f, palm, aw), fr = forearmRoll(ud, f, aw, side === "Right" ? 1 : -1);
-    return { flex: wb.flex, dev: wb.dev, wristR: wb.r, roll: fr.roll, rollR: fr.r * fr.k, elbow: Math.acos(clamp3(ud.dot(f), -1, 1)) / D };
+    const wb = wristBend(hd, f, palm, aw), fr = forearmRoll(ud, f, wb.a0, side === "Right" ? 1 : -1);
+    return { bend: wb.bend, flex: wb.flex, dev: wb.dev, wristR: wb.r, roll: fr.roll, rollR: fr.r * fr.k, elbow: Math.acos(clamp3(ud.dot(f), -1, 1)) / D };
   }
   function armToGrip(bones, side, point, axis, o = {}) {
     const w = o.w ?? 1;
@@ -38263,7 +38274,7 @@ void main() {
       let c = 400 * miss * miss;
       wristBend(hd, f, palm, ax, WB);
       c += 0.8 * WB.r * WB.r + (WB.r > 1 ? 60 * (WB.r - 1) ** 2 : 0);
-      forearmRoll(ud, f, ax, sgn, FR);
+      forearmRoll(ud, f, WB.a0, sgn, FR);
       c += FR.k * (0.4 * FR.r * FR.r + (FR.r > 1 ? 60 * (FR.r - 1) ** 2 : 0));
       const bend = Math.acos(clamp3(ud.dot(f), -1, 1)), bmax = ANATOMY.elbow.max * D;
       if (bend > bmax) c += 60 * (bend - bmax) ** 2;
@@ -38312,6 +38323,7 @@ void main() {
         if (!moved) break;
       }
     }
+    const predC = cost(bp, bf), pred = { r: WB.r, flex: WB.flex, dev: WB.dev, roll: FR.roll, c: predC };
     pose(bp, bf);
     const Qbest = Qh.clone(), eB = e.clone(), wB = a.clone().addScaledVector(u, clamp3(a.distanceTo(wp), Lmin, Lmax));
     const qU = U.quaternion.clone(), qL = L.quaternion.clone(), qH = H.quaternion.clone();
@@ -38338,9 +38350,16 @@ void main() {
       H.quaternion.slerpQuaternions(qH, H.quaternion.clone(), w);
       U.updateMatrixWorld(true);
     }
+    let an = armAnatomy(bones, side);
+    if (an.wristR > 1) {
+      const w1 = H.getWorldPosition(V()), hd1 = M.getWorldPosition(V()).sub(w1).normalize(), f1 = w1.clone().sub(L.getWorldPosition(V())).normalize(), ax1 = V().crossVectors(hd1, f1);
+      if (ax1.lengthSq() > 1e-10) {
+        worldRot2(H, _q4.setFromAxisAngle(ax1.normalize(), an.bend * D * (1 - 1 / an.wristR)));
+        an = armAnatomy(bones, side);
+      }
+    }
     const gp = H.getWorldPosition(V()).add(M.getWorldPosition(V())).multiplyScalar(0.5);
-    const an = armAnatomy(bones, side);
-    return { psi: bp, phi: bf, flex: an.flex, dev: an.dev, r: an.wristR, roll: an.roll, rollR: an.rollR, elbow: an.elbow, gap: gp.distanceTo(point) };
+    return { pred, psi: bp, phi: bf, flex: an.flex, dev: an.dev, r: an.wristR, roll: an.roll, rollR: an.rollR, elbow: an.elbow, gap: gp.distanceTo(point) };
   }
 
   // src/render/holdfit.js
@@ -38429,21 +38448,23 @@ void main() {
     return true;
   }
   var GRIP_HANDS = {
-    chainsaw: { primary: { back: [0, 1, 0], backTol: 45 }, secondary: { axis: [0, 0, 1], back: [0, 1, 0], backTol: 70 } },
+    chainsaw: { primary: {}, secondary: { at: [0.285, 0.105, -0.078], axis: [-0.52, 0.85, 0], back: [0, 0, -1], backTol: 70 } },
     sledgehammer: { primary: {}, secondary: {} }
   };
   function gripOpts(key, def, which, o) {
-    const G = GRIP_HANDS[key]?.[which], ax = new Vector3(...G?.axis || which === "secondary" && def.secondary_grip_axis || def.shaft_axis).transformDirection(o.matrixWorld);
-    return { axis: ax, signFree: !G, back: G?.back ? new Vector3(...G.back).transformDirection(o.matrixWorld) : null, backTol: G?.backTol, elbow: G?.elbow };
+    const G = GRIP_HANDS[key]?.[which], at = G?.at || def[which === "secondary" ? "grip_secondary" : "grip_primary"];
+    const point = at ? o.localToWorld(new Vector3(...at)) : null, ax = new Vector3(...G?.axis || which === "secondary" && def.secondary_grip_axis || def.shaft_axis).transformDirection(o.matrixWorld);
+    return { point, axis: ax, signFree: !G, back: G?.back ? new Vector3(...G.back).transformDirection(o.matrixWorld) : null, backTol: G?.backTol, elbow: G?.elbow };
   }
   var CARRY = {
     // port arms: the handle's end by her right hip, the head up by her left shoulder, in front of her
     sledgehammer: { clip: "kk_Melee_2H_Idle", grip: [-0.15, 0.98, 0.3], dir: [0.55, 0.8, 0.18], ref: [0, 0, 1] },
-    // at her waist as in the user's reference photo (2026-10-17): the saw in front of her belly, the rear handle palm down
-    // in her right hand from above, the bar out 40 deg to her left and a little up, her left hand over the front handle;
-    // picked in the Rig Lab by armfit.js's anatomy (right wrist 19% of its range, both forearms near thumb-up, nothing
-    // through her body)
-    chainsaw: { clip: "kk_Melee_2H_Idle", grip: [-0.14, 1.02, 0.24], dir: [0.637, 0.139, 0.759], ref: [0, 1, 0] }
+    // at her waist after the user's reference photo (2026-10-17): the saw in front of her belly, the bar 55 deg to her left
+    // and tilted 15 deg, her right hand over the rear handle, her left on the front handle's left post (GRIP_HANDS); found by
+    // a search in the Rig Lab with the wrist measured in the forearm's frame: right wrist 50% / left 20% of their ranges,
+    // forearms 48 deg palm down / near thumb-up, nothing through her body. (The first photo try, grip [-0.14, 1.02, 0.24],
+    // broke both wrists: the old measure read them as straight.)
+    chainsaw: { clip: "kk_Melee_2H_Idle", grip: [-0.22, 0.95, 0.32], dir: [0.811, 0.139, 0.568], ref: [-0.148, 0.966, 0.212] }
   };
   var _cm1 = new Matrix4();
   var _cm2 = new Matrix4();
@@ -39805,7 +39826,7 @@ void main() {
         otherHandOn(a, "Right", P.grip, g1.axis, 1, g1);
         o.updateMatrixWorld(true);
         const g2 = gripOpts(w, LD, "secondary", o);
-        otherHandOn(a, "Left", o.localToWorld(new Vector3(...LD.grip_secondary)), g2.axis, 1, g2);
+        otherHandOn(a, "Left", g2.point, g2.axis, 1, g2);
         return;
       }
     }
@@ -39815,7 +39836,7 @@ void main() {
         if (LD.hands === "two" && LD.grip_secondary) {
           o.updateMatrixWorld(true);
           const g2 = gripOpts(w, LD, "secondary", o);
-          otherHandOn(a, pk.hand === "Left" ? "Right" : "Left", o.localToWorld(new Vector3(...LD.grip_secondary)), g2.axis, 1, g2);
+          otherHandOn(a, pk.hand === "Left" ? "Right" : "Left", g2.point, g2.axis, 1, g2);
         }
         return;
       }
@@ -40510,7 +40531,7 @@ void main() {
       controls.update();
       renderer.render(scene, camera);
     });
-    window.__lab = { CARRY, resetCarry: () => {
+    window.__lab = { CARRY, GRIP_HANDS, resetCarry: () => {
       main.carryCal = {};
       ref && (ref.carryCal = {});
     }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
