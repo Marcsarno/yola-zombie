@@ -1,7 +1,7 @@
 // Player: one authoritative movement controller + one weapon action state machine.
 // Yaw convention: forward = (sin yaw, cos yaw) on (x, z).
 import { clamp, angleDiff, approachAngle, segPointDist2, rayCircle } from './world.js';
-import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack } from './weapons.js';
+import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack, legAttack } from './weapons.js';
 
 const AIM_DEADZONE = 0.18;
 // knocked flat (the sprinter's charge): thrown back onto the floor, rolls onto her front, gets up (assets/yola_extra.glb:
@@ -17,6 +17,30 @@ function rootAt(R, t) {
   const a = R[i], b = R[i + 1], u = Math.min(1, (t - a.t) / (b.t - a.t || 1)); return a.z + (b.z - a.z) * u;
 }
 const smooth = (u) => { u = u < 0 ? 0 : u > 1 ? 1 : u; return u * u * (3 - 2 * u); };
+// The dodge and the vault (2026-10-17, Quaternius UAL1 Dodge_Left / Dodge_Right / Roll, UAL2 SafetyVault; played by
+// render/clipchars.js YolaView over everything else). The dodge goes the way the move stick points (no stick: straight
+// back from the aim): across her aim a side dodge (she keeps facing the aim), along it a roll (she turns into it).
+// dur (s), dist (m: the clips' own root travel, scaled to her and shortened for the roll), iframes [from, to] (s: blows
+// pass through her), cancel: from when an attack or a shot may cut it short. out: how its travel eases (the side dodge
+// bursts out, as its clip: most of 2 m in the first third).
+export const DODGE = {
+  side: { dur: 0.72, dist: 1.9, iframes: [0.03, 0.42], cancel: 0.5, out: (u) => 1 - Math.pow(1 - u, 2.6) },
+  roll: { dur: 0.8, dist: 3.0, iframes: [0.03, 0.5], cancel: 0.62, out: (u) => smooth(u) * 0.35 + u * 0.65 },
+  cooldown: 0.25,
+};
+// the vault: a prop she runs into that is low (0.35-1.1 m) and thin (at most 1.3 m through along her run), with room to
+// land on the far side. She clears it in VAULT.dur, untouched by that prop; the zombies have to go round.
+export const VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, push: 0.6 };
+// ray (x,z)+(dx,dz)t against a box: [tEnter, tExit] or null
+function rayBox(b, x, z, dx, dz) {
+  let t0 = -1e9, t1 = 1e9;
+  for (const [p, d, lo, hi] of [[x, dx, b.minX, b.maxX], [z, dz, b.minZ, b.maxZ]]) {
+    if (Math.abs(d) < 1e-9) { if (p < lo || p > hi) return null; continue; }
+    let a = (lo - p) / d, c = (hi - p) / d; if (a > c) [a, c] = [c, a];
+    t0 = Math.max(t0, a); t1 = Math.min(t1, c); if (t0 > t1) return null;
+  }
+  return [t0, t1];
+}
 
 export class Player {
   constructor(x, z, tuning) {
@@ -34,6 +58,62 @@ export class Player {
     this.recoil = 0; // 0..1 visual recoil envelope
     this.shotCount = 0; this.swingId = 0;
     this.moveIntent = 0; // stick magnitude (for animation)
+    this.dodgeCd = 0;
+  }
+
+  // ---------------- the dodge, the vault, the leg attack ----------------
+  // a dodge press: along the move stick (in world directions), or straight back from the aim
+  tryDodge(mx, mz, sim) {
+    if (this.dead || this.dodgeCd > 0) return false;
+    const a = this.action, t = a.type;
+    const free = t === 'ready' || t === 'reload' || t === 'shot' || (t === 'swing' && a.st >= this.atk(a).activeEnd) || (t === 'dodge' && a.t >= DODGE[a.kind === 'roll' ? 'roll' : 'side'].dur * 0.85);
+    if (!free) return false; // (not mid-strike, knocked down, swapping or vaulting)
+    let l = Math.hypot(mx, mz);
+    if (l < 0.2) { mx = -Math.sin(this.aimYaw); mz = -Math.cos(this.aimYaw); l = 1; } // no stick: back from the aim
+    mx /= l; mz /= l;
+    const dirYaw = Math.atan2(mx, mz), rel = angleDiff(this.aimYaw, dirYaw), side = Math.abs(rel) > Math.PI * 0.25 && Math.abs(rel) < Math.PI * 0.75;
+    const D = side ? DODGE.side : DODGE.roll;
+    // (a side dodge: rel > 0 = toward her left, angleDiff measured from the aim)
+    const kind = side ? (rel > 0 ? 'left' : 'right') : 'roll';
+    if (kind === 'roll') { this.aimYaw = this.aimTarget = dirYaw; }
+    this.setAction('dodge', { kind, dirX: mx, dirZ: mz, dur: D.dur, dist: D.dist, done: 0 });
+    this.attackHeld = false; this.vx *= 0.3; this.vz *= 0.3;
+    sim.emit({ type: 'dodge', kind });
+    return true;
+  }
+  // the leg attack of the weapon in hand (Legs button): a low strike at the shins
+  tryLegs(sim) {
+    const L = legAttack(this.equipped); if (!L || this.dead) return false;
+    const a = this.action, t = a.type;
+    if (!(t === 'ready' || (t === 'swing' && a.st >= this.atk(a).swapPoint) || (t === 'dodge' && a.t >= DODGE[a.kind === 'roll' ? 'roll' : 'side'].cancel))) return false;
+    this.startSwing(sim, 0, false, 'legs');
+    return true;
+  }
+  // a vault over the low prop she is running into (from move: stick direction mx, mz, unit)
+  tryVault(mx, mz, world, sim) {
+    const V = VAULT, ahead = this.r + V.reach;
+    for (const b of world.boxes) {
+      if (b.off || b.kind !== 'prop' || b.h < V.minH || b.h > V.maxH) continue;
+      const tt = rayBox(b, this.x, this.z, mx, mz);
+      if (!tt || tt[0] < 0 || tt[0] > ahead || tt[1] - tt[0] > V.maxDepth) continue;
+      const land = tt[1] + this.r + 0.12, lx = this.x + mx * land, lz = this.z + mz * land;
+      // room to land: clear of every other box, inside the level
+      const probe = { x: lx, z: lz };
+      let clear = true;
+      for (const o of world.boxes) {
+        if (o === b || o.off) continue;
+        const cx = Math.max(o.minX, Math.min(lx, o.maxX)), cz = Math.max(o.minZ, Math.min(lz, o.maxZ));
+        if ((lx - cx) ** 2 + (lz - cz) ** 2 < this.r * this.r) { clear = false; break; }
+      }
+      const B = world.bounds; if (B && (lx < B.minX || lx > B.maxX || lz < B.minZ || lz > B.maxZ)) clear = false;
+      if (!clear || !world.lineOfSight(this.x, this.z, lx, lz, 1.2)) continue; // (nothing tall in the way either)
+      this.aimYaw = this.aimTarget = Math.atan2(mx, mz);
+      this.setAction('vault', { box: b, x0: this.x, z0: this.z, x1: probe.x, z1: probe.z, dur: V.dur, h: b.h });
+      this.attackHeld = false; this.vx = this.vz = 0;
+      sim.emit({ type: 'vault', h: b.h });
+      return true;
+    }
+    return false;
   }
 
   get ammo() { return this.mags[this.equipped] ?? 0; }
@@ -54,8 +134,8 @@ export class Player {
     this.setAction('ready'); this.attackHeld = false;
   }
   get attacks() { return attacksOf(this.equipped); }
-  // the attack an action plays: the combo's, or the downward strike at a zombie on the floor
-  atk(a = this.action) { return a.ground ? groundAttack(this.equipped) : this.attacks[a.combo]; }
+  // the attack an action plays: the combo's, the downward strike at a zombie on the floor, or the leg attack
+  atk(a = this.action) { return a.ground ? groundAttack(this.equipped) : a.leg ? legAttack(this.equipped) : this.attacks[a.combo]; }
 
   cancelAttacks() {
     const a = this.action.type;
@@ -72,8 +152,11 @@ export class Player {
     const T = this.T;
     let mx = input.moveX, mz = input.moveZ, mag = Math.min(1, Math.hypot(mx, mz));
     this.moveIntent = mag;
-    const down = this.action.type === 'down';
-    if (this.dead || down) { mx = mz = mag = 0; }
+    if (this.dodgeCd > 0) this.dodgeCd -= dt;
+    // running into a low prop: over it (VAULT)
+    { const t = this.action.type; if (!this.dead && mag > 0.6 && (t === 'ready' || t === 'shot' || t === 'reload') && this.tryVault(mx / mag, mz / mag, world, sim)) { /* the vault owns her now */ } }
+    const down = this.action.type === 'down', dodging = this.action.type === 'dodge', vaulting = this.action.type === 'vault';
+    if (this.dead || down || dodging || vaulting) { mx = mz = mag = 0; }
     // aim
     const am = down ? 0 : Math.hypot(input.aimX, input.aimZ);
     this.aiming = !this.dead && am > AIM_DEADZONE;
@@ -83,7 +166,7 @@ export class Player {
     this.attackHeld = held;
     if (this.aiming) this.aimTarget = Math.atan2(input.aimX, input.aimZ);
     else if (mag > 0.15) this.aimTarget = Math.atan2(mx, mz);
-    let turn = down ? 0 : T.turnRate;
+    let turn = down || vaulting || (dodging && this.action.kind === 'roll') ? 0 : T.turnRate;
     if (this.action.type === 'swing') {
       // commit to the swing: facing is locked through windup and contact (an assist turn toward the target eases in
       // over the first part of the windup instead of snapping), then frees up in recovery
@@ -123,18 +206,28 @@ export class Player {
     // the attack's advance (root motion): a bounded step along the attack's heading, eased over the windup, stopping
     // short of the target. It is NOT velocity: it never carries over into the next frame.
     const rm = this.attackAdvance(sim);
+    // the dodge's and the vault's travel: along their curves (like the attack advance, never velocity)
+    const A0 = this.action;
+    if (dodging) {
+      const D = DODGE[A0.kind === 'roll' ? 'roll' : 'side'], want = A0.dist * D.out(Math.min(1, (A0.t + dt) / A0.dur)), step = want - A0.done;
+      A0.done = want; rm.x += A0.dirX * step; rm.z += A0.dirZ * step;
+    } else if (vaulting) {
+      const u = smooth(Math.min(1, (A0.t + dt) / A0.dur));
+      rm.x += A0.x0 + (A0.x1 - A0.x0) * u - this.x; rm.z += A0.z0 + (A0.z1 - A0.z0) * u - this.z;
+    }
     this.x += rm.x; this.z += rm.z;
-    // soft-collide with live zombies, then hard-collide with the world
-    for (const e of sim.zombies) {
+    // soft-collide with live zombies (not through a dodge's untouchable moment, nor over a prop), then the world
+    const through = vaulting || (dodging && this.invuln > 0);
+    if (!through) for (const e of sim.zombies) {
       if (!e.solid) continue;
       const dx = this.x - e.x, dz = this.z - e.z, rr = this.r + e.r, d2 = dx * dx + dz * dz;
       if (d2 < rr * rr && d2 > 1e-8) { const d = Math.sqrt(d2), push = (rr - d) * 0.85; this.x += (dx / d) * push; this.z += (dz / d) * push; }
     }
-    world.resolveCircle(this, this.r);
+    world.resolveCircle(this, this.r, vaulting ? A0.box : null);
     // actual locomotion velocity after collisions (drives animation, stops running into walls); the attack advance
     // is taken back out, so it cannot accumulate into speed
     this.vx = (this.x - px - rm.x - (this.slide ? this.slide.x * dt : 0)) / dt; this.vz = (this.z - pz - rm.z - (this.slide ? this.slide.z * dt : 0)) / dt;
-    if (down) this.vx = this.vz = 0; // (on the floor: no running animation)
+    if (down || dodging || vaulting) this.vx = this.vz = 0; // (on the floor, dodging, vaulting: their own clips, no running animation)
     const vl = Math.hypot(this.vx, this.vz), vmax = T.moveSpeed * 1.05;
     if (vl > vmax) { this.vx *= vmax / vl; this.vz *= vmax / vl; }
 
@@ -194,12 +287,12 @@ export class Player {
         // combo: once the opening attack connects, the rest of the combo follows while the attack is
         // held (or pressed again during the attack)
         if (a.hits > 0 || A.chainAlways) a.unlocked = true; // (the bat's combo flows on input, hit or miss)
-        if (!a.ground && a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
+        if (!a.ground && !a.leg && a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
           this.startSwing(sim, a.combo + 1, true);
           break;
         }
         // the combo again before the last attack has fully settled (A.restartFrom: the bat, core/weapons.js useBuiltBat)
-        if (!a.ground && A.restartFrom != null && st >= A.restartFrom && st < A.duration && (this.attackHeld || this.attackPressT < a.t)) {
+        if (!a.ground && !a.leg && A.restartFrom != null && st >= A.restartFrom && st < A.duration && (this.attackHeld || this.attackPressT < a.t)) {
           this.startSwing(sim, 0);
           break;
         }
@@ -221,6 +314,16 @@ export class Player {
       case 'swap':
         if (!a.mid && a.t >= a.dur * 0.5) { a.mid = true; this.equipped = a.target; sim.emit({ type: 'swapMid', weapon: a.target }); }
         if (a.t >= a.dur) { sim.emit({ type: 'swapDone', weapon: this.equipped }); this.setAction('ready'); }
+        break;
+      case 'dodge': {
+        const D = DODGE[a.kind === 'roll' ? 'roll' : 'side'];
+        if (a.t >= D.iframes[0] && a.t <= D.iframes[1]) this.invuln = Math.max(this.invuln, 0.02); // (untouchable through its middle)
+        if (a.t >= a.dur) { this.setAction('ready'); this.dodgeCd = DODGE.cooldown; }
+        else if (a.t >= D.cancel && this.attackHeld) { this.setAction('ready'); this.dodgeCd = DODGE.cooldown; } // (an attack cuts its end short)
+        break;
+      }
+      case 'vault':
+        if (a.t >= a.dur) this.setAction('ready');
         break;
     }
 
@@ -248,11 +351,12 @@ export class Player {
 
   reloadTime() { return this.equipped === SHOTGUN ? this.T.shotgunReload : this.T.reloadTime; }
 
-  startSwing(sim, combo, unlocked = false) {
+  startSwing(sim, combo, unlocked = false, special = null) {
     this.swingId++;
     // a zombie on the floor in front (and nothing standing nearer): the downward strike instead of the combo's opener
-    const G = combo === 0 ? groundAttack(this.equipped) : null, ground = !!(G && sim.groundTarget?.(this));
-    const A = ground ? G : this.attacks[combo];
+    const leg = special === 'legs';
+    const G = combo === 0 && !leg ? groundAttack(this.equipped) : null, ground = !!(G && sim.groundTarget?.(this));
+    const A = leg ? legAttack(this.equipped) : ground ? G : this.attacks[combo];
     // turn toward a zombie in reach (combo follow-ups look further, and the chop finds bodies on the floor)
     const as = sim.meleeAssist?.(this, A.assist ?? (combo > 0 ? 2.1 : 1.45), A.style === 'chop');
     const tgt = as?.target || null, turnBy = as?.turn || 0;
@@ -263,7 +367,7 @@ export class Player {
       rootScale = tgt && total > 0.01 ? clamp((Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 0.85)) / total, 0, 1) : 1;
       lunge = Math.max(0, total * rootScale);
     }
-    this.setAction('swing', { st: 0, combo, ground, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked,
+    this.setAction('swing', { st: 0, combo, ground, leg, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked,
       target: tgt, heading: this.aimYaw + turnBy, turnFrom: this.aimYaw, turnBy, advanced: 0, rootScale });
     this.attackPressT = 9;
     sim.emit({ type: 'swing', combo });

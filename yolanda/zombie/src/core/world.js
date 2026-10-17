@@ -14,13 +14,13 @@ export class World {
     return b;
   }
 
-  // Push a circle out of all boxes. Returns true if it collided.
-  resolveCircle(p, r) {
+  // Push a circle out of all boxes (but `skip`: the prop Yola is vaulting over). Returns true if it collided.
+  resolveCircle(p, r, skip = null) {
     let hit = false;
     for (let iter = 0; iter < 3; iter++) {
       let moved = false;
       for (const b of this.boxes) {
-        if (b.off) continue;
+        if (b.off || b === skip) continue;
         const cx = Math.max(b.minX, Math.min(p.x, b.maxX));
         const cz = Math.max(b.minZ, Math.min(p.z, b.maxZ));
         let dx = p.x - cx, dz = p.z - cz;

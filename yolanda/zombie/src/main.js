@@ -5,6 +5,7 @@ import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
 import { setMeleePaths, meleeSegment, BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
+import { setupNewMoves } from './render/newmoves.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
@@ -131,19 +132,21 @@ const perf = { frames: [], spikes: 0, t0: performance.now() };
 // Characters: Tripo meshes (mixamorig skeleton) with Mixamo/Tripo clips, exported by blender/export_chars.py.
 // (Yola's locomotion speeds are measured from foot plants at load, see YolaView.measureGaits.)
 const ZOMBIE_TYPES = [
-  { file: 'assets/zombie-nurse-mod.glb', extra: 'assets/zombie-nurse-scratch.glb', height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
-  { file: 'assets/zombie-patient-mod.glb', extra: 'assets/zombie-patient-scratch.glb', height: 1.68, walk: { speed: 0.174 } },
+  { file: 'assets/zombie-nurse-mod.glb', extra: ['assets/zombie-nurse-scratch.glb', 'assets/zombie_moves/nurse-mod.glb'], height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
+  { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb'], height: 1.68, walk: { speed: 0.174 } },
   // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
   // bed-panel shield is modelled). Not modular: no limbs come off them yet.
-  { file: 'assets/zombie-sprinter.glb', height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
-  { file: 'assets/zombie-guard.glb', height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
+  { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
+  { file: 'assets/zombie-guard.glb', extra: ['assets/zombie_moves/guard.glb'], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
 ];
+// (extra: clips retargeted onto each type's own skeleton: the scratch, tools/anim/zombie_clip.py; the Quaternius UAL zombie
+// walks, run, bite and hit flinches, tools/anim/test_zombie_clips.py, UAL_PACKS.md)
 const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.look === 'nurse' ? 0 : z.look === 'patient' ? 1 : z.id % 2);
 const YOLA_HEIGHT = 1.62;
 // which Yola plays (2026-10-16): 1 = the original model, 2 = the user's new Tripo model (testing; tools/anim/yola2_build.py).
 // The pause menu's Yola choice (remembered), or ?yola=2. The opening keeps its own Yola either way.
 const YOLA_MODEL = params.get('yola') || store.get('yolaModel', '2'); // (2026-10-16 brief: Yola 3.0, the new model, is the hero by default)
-const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: [], data: 'assets/clipdata_yola2.json' }
+const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: ['assets/yola2_ual.glb'], data: 'assets/clipdata_yola2.json' } // (yola2_ual: the Quaternius UAL moves, UAL_PACKS.md)
   : { model: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_extra.glb', 'assets/yola_sword.glb'], data: 'assets/clipdata.json' };
 const loader = new GLTFLoader();
 async function load() {
@@ -161,7 +164,7 @@ async function load() {
   // Yola, plus the clips authored outside her model file (the bat combo: skeleton-only, same bone names)
   const yolaP = Promise.all([loader.loadAsync(YOLA_FILES.model), ...YOLA_FILES.extra.map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; });
   // (each type's extra clips, the scratch, are retargeted onto its own skeleton: tools/anim/zombie_clip.py)
-  const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), t.extra ? loader.loadAsync(t.extra).catch(() => null) : null]).then(([g, x]) => { if (x) g.animations.push(...x.animations); return g; })));
+  const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; })));
   const dataP = fetch(YOLA_FILES.data).then((r) => r.json());
   // the guard's shield (the user's v2 package): the GLB and the two damage maps, loaded once and shared by every guard
   const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
@@ -198,7 +201,7 @@ function setupBat(anims, fits = {}) {
   if (YOLA_MODEL !== '2') yola.postureOff = true; // (the posture fix was measured on Yola 3.0's rig: render/posture.js)
   fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {}); // (the Rig Lab Hands settings)
   const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = anims.find((c) => c.name === 'ual1_Sword_Idle');
-  if (!combo) return;
+  if (!combo) { setupNewMoves(yola, anims, null); return; }
   const h = new THREE.Group(), m = makeBat(0.84);
   m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   h.add(m); h.visible = false; scene.add(h);
@@ -207,6 +210,7 @@ function setupBat(anims, fits = {}) {
   yola.setOneHandedBat(hold, idle);
   // (89 of its 91 frames: the last one snaps back to the loop pose; four strikes, the third a slower swing)
   useBuiltBat(buildLibraryAttack(yola, { clip: combo, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: 'bat', sound: 'bat', strikes: 4 }));
+  setupNewMoves(yola, anims, hold); // (the Quaternius UAL moves: the combo strike by strike, leg attacks, dodge, vault; render/newmoves.js)
 }
 // Compile every shader the fight can need before play. A first use mid-fight compiled one and froze that frame (a limb
 // cut off: 70-270 ms; the first hit): severed pieces draw the zombie's materials unskinned, and pooled hidden things
@@ -442,7 +446,7 @@ function runFrame(dt, doRender = true) {
   const a = p.action;
   yola.update(animDt, {
     x: ix, z: iz, vx: p.vx, vz: p.vz, aimYaw: iyaw, equipped: p.equipped, action: a.type, actionT: a.t,
-    swingT: a.type === 'swing' ? a.st : 0, combo: a.combo || 0, ground: !!a.ground, swingId: a.id, downFall: a.fall, downUp: a.up, recoil: p.recoil, recoilScale: tuning.pistolRecoil,
+    swingT: a.type === 'swing' ? a.st : 0, combo: a.combo || 0, ground: !!a.ground, swingId: a.id, atk: a.type === 'swing' ? p.atk(a) : null, act: a, downFall: a.fall, downUp: a.up, recoil: p.recoil, recoilScale: tuning.pistolRecoil,
     dead: p.dead, deathDir: p.deathDir || 0, hurtT: p.hurtT, hurtDirX: p.hurtDirX || 0, hurtDirZ: p.hurtDirZ || 0,
     reloadDur: p.reloadTime(), swapDur: tuning.swapTime,
   });

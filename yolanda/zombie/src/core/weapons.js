@@ -143,6 +143,7 @@ export const TEST_ATTACKS = [];
 // instead of the combo's first attack when the nearest thing in front of her is down (Sim.groundTarget).
 const GROUND = {};
 export function groundAttack(w) {
+  if (GROUND_OWN[w]) return GROUND_OWN[w];
   if (w !== AXE && w !== BAT && w !== TEST) return null;
   const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : null;
   if (!base.PATH || (w === TEST && !T0)) return null;
@@ -155,6 +156,22 @@ export function groundAttack(w) {
   return (GROUND[key] = g);
 }
 export const resetGroundAttacks = () => { for (const k in GROUND) delete GROUND[k]; };
+// A weapon's own downward strike, built at load (render/newmoves.js: the bat's Quaternius Sword_Heavy_D smash into the
+// floor), used by groundAttack in place of the shared chop
+export const GROUND_OWN = {};
+// ---- the leg attacks (2026-10-17, the user: "attacks that would take out their legs ... to get them to crawl") ----
+// Started by their own button (Legs / C, core/player.js startLegs). Low: they hit below the knee (minY 0), never a body
+// on the floor, and always strike the shins (sim.js resolveMelee style 'legs'): a blade cuts the lower leg off, a blunt
+// weapon or a slide breaks it (core/zombies.js cripple); either way the zombie goes down and crawls.
+//   axe:   the Mixamo great-sword low slash (gs_low_slash, two-handed, already on Yola): overhead, down to the ankles
+//   bat:   Quaternius UAL2 Sword_Light_C, a crouched knee-height sweep (built at load, render/newmoves.js)
+//   fists: Quaternius UAL2 Slide_Start + Slide_Exit, a feet-first slide tackle (built at load)
+export const LEG_ATTACKS = {
+  axe: { name: 'leg chop', clip: 'gs_low_slash', path: 'gs_low_slash', f0: 12, f1: 34, rate: 1.25, fps: 30, yawOffset: 0, sock: 'leg chop',
+    duration: 0.95, activeStart: 0.3, activeEnd: 0.5, chainFrom: 9, swapPoint: 0.7, blendIn: 0.12, enterBlend: 0.12, assist: 1.8, lungeMax: 0.5,
+    dmg: 0.9, knock: 0.5, style: 'legs', minY: 0, legs: true, sever: { leg: 1 } },
+};
+export const legAttack = (w) => LEG_ATTACKS[w] || null;
 export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : w === TEST ? TEST_ATTACKS : AXE_ATTACKS);
 export const AXE_GEOM = {
   length: 0.74, // hands (midpoint of the grip) to the blade, metres
@@ -169,7 +186,7 @@ const rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * M
 // hipsRest: the renderer pins the hips' horizontal position, so the clip's hip drift is removed here too.
 export function setMeleePaths(clipdata, scale, hipsRest) {
   _pathArgs = [clipdata, scale, hipsRest];
-  for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS]) {
+  for (const A of [...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS, LEG_ATTACKS.axe]) {
     if (A.built) continue; // (built at load with its own path)
     const samples = clipdata[A.path];
     A.PATH = []; A.ROOT = null;

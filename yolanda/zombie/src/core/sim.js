@@ -71,6 +71,8 @@ export class Sim {
     this.time += dt;
     const p = this.player;
     for (let i = 0; i < input.swapPresses; i++) p.requestSwap();
+    if (input.dodgePresses) p.tryDodge(input.moveX, input.moveZ, this); // (Dodge / Shift: core/player.js DODGE)
+    if (input.legsPresses) p.tryLegs(this); // (Legs / C: the weapon's leg attack, core/weapons.js LEG_ATTACKS)
     p.move(dt, input, this.world, this);
     p.updateAction(dt, this);
     this.flowT -= dt;
@@ -313,20 +315,22 @@ export class Sim {
         if (A.style === 'chop') { dx = dx * 0.5 + rx * 0.5; dz = dz * 0.5 + rz * 0.5; const l2 = Math.hypot(dx, dz) || 1; dx /= l2; dz /= l2; }
         // the blade cuts: a killing blow can take the head; otherwise an arm (or, low, a leg) can come off
         if (fist) { // unarmed: no blade, no severing; a light stagger (the kick can knock them flat)
-          const dmgF = T.fistDamage * A.dmg, blk = z.shieldBlocks(dx, dz);
+          const dmgF = T.fistDamage * A.dmg, blk = !A.legs && z.shieldBlocks(dx, dz);
+          if (A.legs && this.rand() < 0.35) z.cripple(this.rand() < 0.5 ? 'LowerLeg_L' : 'LowerLeg_R', this); // (the slide tackle: sometimes a leg breaks)
           z.takeHit(dmgF, dx, dz, T.fistKnockback * A.knock, 'fist', this, 'torso', A.style);
           this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, fist: true, shield: blk });
           if (T.meleeHitPause > 0) this.emit({ type: 'hitPause', dur: T.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
           continue;
         }
         const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
-        const side = this.rand() < 0.5 ? '_L' : '_R', shielded = z.shieldBlocks(dx, dz); // (a blow on the guard's shield cuts nothing)
-        const part = shielded ? 'torso' : lethal && r < sv.head ? 'Head'
+        // (a leg attack goes in under the guard's shield and always finds the shins)
+        const side = this.rand() < 0.5 ? '_L' : '_R', shielded = !A.legs && z.shieldBlocks(dx, dz); // (a blow on the guard's shield cuts nothing)
+        const kind = A.kind || (p.equipped === BAT ? 'bat' : 'axe'); // (a test-arena attack names its own: bat = blunt, axe = blade)
+        const part = shielded ? 'torso' : A.legs ? 'LowerLeg' + side : lethal && r < sv.head ? 'Head'
           : r < (lethal ? sv.head : 0) + sv.arm ? 'Forearm' + side
           : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? 'LowerLeg' + side : 'torso';
-        if (part !== 'torso' && !z.severed.has(part)) z.limbHp[part] = 0; // the blade goes through
-        const last = act.ground || act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
-        const kind = A.kind || (p.equipped === BAT ? 'bat' : 'axe'); // (a test-arena attack names its own: bat = blunt, axe = blade)
+        if (part !== 'torso' && !z.severed.has(part)) { if (kind === 'bat') z.cripple(part, this); else z.limbHp[part] = 0; } // the blade goes through; a bat breaks the leg
+        const last = act.ground || act.leg || act.combo === p.attacks.length - 1, holding = !last && p.attackHeld;
         z.takeHit(dmg, dx, dz, T.axeKnockback * A.knock * (holding ? 0.45 : 1), kind, this, part, holding ? 'combo' : A.style);
         this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx, dirZ: dz, killed: !z.alive, combo: act.combo, style: A.style, weapon: A.kind ? kind : p.equipped, shield: shielded });
         if (T.meleeHitPause > 0) this.emit({ type: 'hitPause', dur: T.meleeHitPause * (z.alive ? 1 : 1.3) * (last ? 1.25 : 0.8) });

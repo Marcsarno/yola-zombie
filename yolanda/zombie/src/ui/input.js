@@ -1,6 +1,7 @@
 // Two-thumb input. Each stick is owned by exactly one pointer id from touch-down to release;
 // fingers crossing the screen centre never swap sticks. Everything clears on cancel / blur / hide / pause.
-// Desktop fallback: WASD + mouse (hold left button to attack), Space / Q / right-click to swap.
+// Desktop fallback: WASD + mouse (hold left button to attack), Space / Q / right-click to swap, Shift to dodge, C for the
+// leg attack (the Dodge and Legs buttons on a phone).
 
 const STICK_R = 58; // px of travel for full deflection
 
@@ -13,7 +14,7 @@ export class Input {
       move: { id: null, ox: 0, oy: 0, x: 0, y: 0, el: null },
       aim: { id: null, ox: 0, oy: 0, x: 0, y: 0, el: null },
     };
-    this.swapPresses = 0; this.usePresses = 0;
+    this.swapPresses = 0; this.usePresses = 0; this.dodgePresses = 0; this.legsPresses = 0;
     this.keys = new Set();
     this.mouse = { active: false, x: 0, y: 0, down: false };
     this.enabled = true;
@@ -47,6 +48,11 @@ export class Input {
       this.swapButton.classList.add('pressed');
       setTimeout(() => this.swapButton.classList.remove('pressed'), 120);
     });
+    // the dodge and the leg attack (2026-10-17): their own buttons beside the swap button
+    for (const [id, k] of [['dodgeBtn', 'dodgePresses'], ['legsBtn', 'legsPresses']]) {
+      const b = document.getElementById(id); if (!b) continue;
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.enabled) this[k]++; b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 120); });
+    }
     const useBtn = document.getElementById('useBtn');
     if (useBtn) useBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (this.enabled) this.usePresses++; useBtn.classList.add('pressed'); setTimeout(() => useBtn.classList.remove('pressed'), 120); });
     window.addEventListener('keydown', (e) => {
@@ -54,6 +60,8 @@ export class Input {
       this.keys.add(e.code);
       if ((e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') && this.enabled) this.usePresses++;
       if ((e.code === 'Space' || e.code === 'KeyQ') && this.enabled) { this.swapPresses++; e.preventDefault(); }
+      if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && this.enabled) this.dodgePresses++;
+      if (e.code === 'KeyC' && this.enabled) this.legsPresses++;
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => this.clearAll());
@@ -114,7 +122,7 @@ export class Input {
     for (const s of Object.values(this.sticks)) this.release(s);
     this.keys.clear();
     this.mouse.down = false;
-    this.swapPresses = 0; this.usePresses = 0;
+    this.swapPresses = 0; this.usePresses = 0; this.dodgePresses = 0; this.legsPresses = 0;
   }
 
   // Returns world-plane vectors. camYaw rotates screen axes onto the ground (0: screen up = -z).
@@ -139,9 +147,9 @@ export class Input {
     const out = {
       moveX: mx * c + my * s, moveZ: -mx * s + my * c,
       aimX: ax * c + ay * s, aimZ: -ax * s + ay * c,
-      swapPresses: this.swapPresses, usePresses: this.usePresses,
+      swapPresses: this.swapPresses, usePresses: this.usePresses, dodgePresses: this.dodgePresses, legsPresses: this.legsPresses,
     };
-    this.swapPresses = 0; this.usePresses = 0;
+    this.swapPresses = 0; this.usePresses = 0; this.dodgePresses = 0; this.legsPresses = 0;
     return out;
   }
 }

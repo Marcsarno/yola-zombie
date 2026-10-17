@@ -46,7 +46,8 @@ function sample(Y, A, rawClip, hold) {
 // radius, reach }; speed: playback rate; name: shown in the arena; sound: the impact family; strikes: how many strikes the
 // clip has, when known (the threshold for "fast" is lowered until that many windows are found: a slower swing among fast
 // ones, like the Sword Regular Combo's third, is still its own strike)
-export function buildLibraryAttack(Y, { clip, frames = null, hold = null, P, speed = 1, name, sound, recover = 0.3, splitRecover = 0.4, strikes = 0 }) {
+// (split: false keeps the attack whole, whatever its windows: a single strike, render/newmoves.js)
+export function buildLibraryAttack(Y, { clip, frames = null, hold = null, P, speed = 1, name, sound, recover = 0.3, splitRecover = 0.4, strikes = 0, split = true }) {
   const t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
   const play = clip.clone(); play.name = clip.name; Y.addAttackClips([play]);
   const w = hold?.w || null;
@@ -93,7 +94,7 @@ export function buildLibraryAttack(Y, { clip, frames = null, hold = null, P, spe
   const z0 = rows[0].hips.z, R = rows.map((r) => ({ t: attackTime(A, r.f), z: Math.max(0, r.hips.z - z0) }));
   for (let i = 1; i < R.length; i++) R[i].z = Math.max(R[i].z, R[i - 1].z); // never pulled back
   A.ROOT = R[R.length - 1].z > 0.3 ? R : null; // (a small shuffle: the game's own step toward the target instead)
-  return splitCombo(A, splitRecover);
+  return split ? splitCombo(A, splitRecover) : [A];
 }
 
 // A combo clip (several strikes) becomes a chain of attacks, one per strike, cut between strikes, so the combo can stop
