@@ -52011,6 +52011,9 @@ void main() {
         c.name = n + "_u";
         loopClip(c);
         clips.push(c);
+        const cl = subClip(c, (b) => LOWER.test(b), n + "_ul");
+        loopClip(cl);
+        clips.push(cl);
       }
       {
         const tl = subClip(byName.tripo_idle, (b) => LOWER.test(b), "tripo_idle_lower");
@@ -52031,9 +52034,10 @@ void main() {
       this.scriptNames = scriptNames;
       this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
-      const sufs = this.unarmed ? ["", "_lower", "_u"] : ["", "_lower"];
+      const sufs = this.unarmed ? ["", "_lower", "_u", "_ul"] : ["", "_lower"];
+      this.batRun = new URLSearchParams(globalThis.location?.search || "").get("batrun") || "now";
       for (const n of loco) for (const suf of sufs) {
-        if (n === "pistol_idle" && suf === "_u") continue;
+        if (n === "pistol_idle" && (suf === "_u" || suf === "_ul")) continue;
         const a = this.act(n + suf);
         a.play();
         a.setEffectiveWeight(0);
@@ -52404,7 +52408,7 @@ void main() {
         this.act(n + "_lower").time = t;
         if (this.gaitU) {
           const u = this.gaitU[n];
-          this.act(n + "_u").time = (this.phase + u.lead) % 1 * u.dur;
+          this.act(n + "_u").time = this.act(n + "_ul").time = (this.phase + u.lead) % 1 * u.dur;
         }
       }
       return lw;
@@ -52495,14 +52499,23 @@ void main() {
       hold.setEffectiveWeight((1 - rS) * uS * k);
       hold.time = HOLD_T + (this.holdJit ^= 1) * 1e-6;
       this.act("bat_idle_upper").setEffectiveWeight(uA * k);
-      if (this.actions.sword_idle_upper) this.actions.sword_idle_upper.setEffectiveWeight(uW * k);
+      const br = this.batRun, uWp = this.unarmed && (br === "plain" || br === "plainlegs") ? uW : 0;
+      if (this.actions.sword_idle_upper) this.actions.sword_idle_upper.setEffectiveWeight((br === "plain" && uWp ? uW * w.pistol_idle : uW) * k);
+      if (this.swordHips) {
+        if (br === "rebase" || br === "plainlegs") this.upperHips.sword_idle_upper = this.swordHips;
+        else delete this.upperHips.sword_idle_upper;
+      }
       const uni = this.unarmed ? uF : 0;
       this.act("fists_idle_upper").setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
       for (const n in w) {
+        const mv = n !== "pistol_idle";
         this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
-        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uW + uP * rP + (this.unarmed ? 0 : uF)) * k);
+        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uW - (mv ? uWp : 0) + uP * rP + (this.unarmed ? 0 : uF)) * k);
         if (this.unarmed && n === "pistol_idle") this.act("tripo_idle_lower").setEffectiveWeight(w[n] * uF * k);
-        if (this.unarmed && n !== "pistol_idle") this.act(n + "_u").setEffectiveWeight(w[n] * uni * k);
+        if (this.unarmed && mv) {
+          this.act(n + "_u").setEffectiveWeight(w[n] * (uni + (br === "plain" ? uWp : 0)) * k);
+          this.act(n + "_ul").setEffectiveWeight(w[n] * (br === "plainlegs" ? uWp : 0) * k);
+        }
       }
       let scW = 0, sact = null;
       if (s.action === "down" && this.act("yola_knockdown")) {
@@ -52828,7 +52841,9 @@ void main() {
       var _a5;
       this.batLib = hold;
       if (idle && !this.actions.sword_idle_upper) {
-        const c = subClip(stripRoot(idle, hipsRest(this.model)), (b) => !LOWER.test(b), "sword_idle_upper");
+        const full = stripRoot(idle, hipsRest(this.model)), ht = full.tracks.find((t) => /Hips.quaternion$/.test(t.name));
+        if (ht) this.swordHips = ht.createInterpolant(new Float32Array(4));
+        const c = subClip(full, (b) => !LOWER.test(b), "sword_idle_upper");
         loopClip(c);
         const a = this.mixer.clipAction(c);
         this.actions.sword_idle_upper = a;

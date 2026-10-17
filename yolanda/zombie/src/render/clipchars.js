@@ -148,7 +148,10 @@ export class YolaView extends ClipBody {
       clips.push(subClip(byName[n], (b) => LOWER.test(b), n + '_lower')); // legs only (bat held)
     }
     const unarmed = Object.values(UNARMED).every((n) => byName[n]);
-    if (unarmed) for (const n in UNARMED) { const c = byName[UNARMED[n]].clone(); c.name = n + '_u'; loopClip(c); clips.push(c); }
+    if (unarmed) for (const n in UNARMED) {
+      const c = byName[UNARMED[n]].clone(); c.name = n + '_u'; loopClip(c); clips.push(c);
+      const cl = subClip(c, (b) => LOWER.test(b), n + '_ul'); loopClip(cl); clips.push(cl); // (its legs only: the bat run option 'plainlegs')
+    }
     { const tl = subClip(byName.tripo_idle, (b) => LOWER.test(b), 'tripo_idle_lower'); loopClip(tl); clips.push(tl); } // unarmed standing: Yola's own idle legs (front-on, not the pistol stance)
     clips.push(subClip(byName.bat_idle, (b) => !LOWER.test(b), 'bat_idle_upper'));
     clips.push(subClip(byName.pistol_reload, (b) => !LOWER.test(b), 'pistol_reload_upper'));
@@ -168,8 +171,14 @@ export class YolaView extends ClipBody {
     // hip turn, IK) never pile up on bones that the current clips do not key (constant tracks are
     // dropped at export, e.g. a spine bone the shotgun hold never moves)
     this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
-    const sufs = this.unarmed ? ['', '_lower', '_u'] : ['', '_lower'];
-    for (const n of loco) for (const suf of sufs) { if (n === 'pistol_idle' && suf === '_u') continue; const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
+    const sufs = this.unarmed ? ['', '_lower', '_u', '_ul'] : ['', '_lower'];
+    // how she runs with the one-handed bat (2026-10-16, options for the user to compare; ?batrun= or game.yola.batRun):
+    //   'now'       the pistol jog's legs + the sword idle's upper body, as it was
+    //   'rebase'    the same, the sword idle's spine re-based onto the running hips (as the shotgun / reload layers)
+    //   'plain'     moving: the regular run / strafe clips in full (arms swing, the bat in her hand); standing: sword idle
+    //   'plainlegs' the regular runs' legs + the sword idle's upper body, re-based
+    this.batRun = new URLSearchParams(globalThis.location?.search || '').get('batrun') || 'now';
+    for (const n of loco) for (const suf of sufs) { if (n === 'pistol_idle' && (suf === '_u' || suf === '_ul')) continue; const a = this.act(n + suf); a.play(); a.setEffectiveWeight(0); }
     { const tl = this.act('tripo_idle_lower'); tl.play(); tl.setEffectiveWeight(0); }
     this.gait = this.measureGaits();
     this.gaitU = this.unarmed ? this.measureGaits('_u') : null;
@@ -437,7 +446,7 @@ export class YolaView extends ClipBody {
       if (!lw[n]) continue;
       const g = this.gait[n], t = ((this.phase + g.lead) % 1) * g.dur;
       this.act(n).time = t; this.act(n + '_lower').time = t;
-      if (this.gaitU) { const u = this.gaitU[n]; this.act(n + '_u').time = ((this.phase + u.lead) % 1) * u.dur; }
+      if (this.gaitU) { const u = this.gaitU[n]; this.act(n + '_u').time = this.act(n + '_ul').time = ((this.phase + u.lead) % 1) * u.dur; }
     }
     return lw;
   }
@@ -514,15 +523,22 @@ export class YolaView extends ClipBody {
     const hold = this.act('shotgun_hold_upper'); hold.setEffectiveWeight((1 - rS) * uS * k);
     hold.time = HOLD_T + ((this.holdJit ^= 1) * 1e-6); // a static time is only applied every other update, so it alternates
     this.act('bat_idle_upper').setEffectiveWeight(uA * k);
-    if (this.actions.sword_idle_upper) this.actions.sword_idle_upper.setEffectiveWeight(uW * k);
+    // the one-handed bat's run (see batRun): uWp = the bat's weight moved onto the regular runs (full, or legs only)
+    const br = this.batRun, uWp = this.unarmed && (br === 'plain' || br === 'plainlegs') ? uW : 0;
+    if (this.actions.sword_idle_upper) this.actions.sword_idle_upper.setEffectiveWeight((br === 'plain' && uWp ? uW * w.pistol_idle : uW) * k);
+    if (this.swordHips) { if (br === 'rebase' || br === 'plainlegs') this.upperHips.sword_idle_upper = this.swordHips; else delete this.upperHips.sword_idle_upper; }
     // unarmed: the regular full-body run/walk/strafe clips (arms included), not the legs under a static upper-body pose
     const uni = this.unarmed ? uF : 0; // with the gun-free clips, moving unarmed uses them in full; standing still keeps the idle arms
     this.act('fists_idle_upper').setEffectiveWeight(uF * (this.unarmed ? w.pistol_idle : 1) * k);
     for (const n in w) {
+      const mv = n !== 'pistol_idle';
       this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
-      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uW + uP * rP + (this.unarmed ? 0 : uF)) * k);
+      this.act(n + '_lower').setEffectiveWeight(w[n] * (uS + uA + uW - (mv ? uWp : 0) + uP * rP + (this.unarmed ? 0 : uF)) * k);
       if (this.unarmed && n === 'pistol_idle') this.act('tripo_idle_lower').setEffectiveWeight(w[n] * uF * k);
-      if (this.unarmed && n !== 'pistol_idle') this.act(n + '_u').setEffectiveWeight(w[n] * uni * k);
+      if (this.unarmed && mv) {
+        this.act(n + '_u').setEffectiveWeight(w[n] * (uni + (br === 'plain' ? uWp : 0)) * k);
+        this.act(n + '_ul').setEffectiveWeight(w[n] * (br === 'plainlegs' ? uWp : 0) * k);
+      }
     }
     // a scripted full-body clip (the reveal's wave) fades over the normal layers
     let scW = 0, sact = null;
@@ -768,7 +784,9 @@ export class YolaView extends ClipBody {
   setOneHandedBat(hold, idle) {
     this.batLib = hold;
     if (idle && !this.actions.sword_idle_upper) {
-      const c = subClip(stripRoot(idle, hipsRest(this.model)), (b) => !LOWER.test(b), 'sword_idle_upper'); loopClip(c);
+      const full = stripRoot(idle, hipsRest(this.model)), ht = full.tracks.find((t) => /Hips.quaternion$/.test(t.name));
+      if (ht) this.swordHips = ht.createInterpolant(new Float32Array(4)); // (its hip tilt, for the re-based bat run options)
+      const c = subClip(full, (b) => !LOWER.test(b), 'sword_idle_upper'); loopClip(c);
       const a = this.mixer.clipAction(c); this.actions.sword_idle_upper = a; a.play(); a.setEffectiveWeight(0);
     }
     this.up.sword ??= 0;
