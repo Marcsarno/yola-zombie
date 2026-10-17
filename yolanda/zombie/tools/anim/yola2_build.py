@@ -82,7 +82,7 @@ if os.environ.get('YOLA2_FIX_HEM'): fix_hem(Y2, next(o for o in new2 if o.type =
 
 made2, made1, lib2 = [], [], []
 # ---- the retarget, then the contact fixes (tools/anim/contacts.py) while the source is still loaded ----
-LOOP = re.compile(r'run|walk|strafe|idle|_plain|Idle')  # looping gaits and idles: no horizontal foot pin
+LOOP = re.compile(r'run|walk|strafe|idle|_plain|Idle|_Loop')  # looping gaits and idles (library loops: *_Loop): no horizontal foot pin
 HOLD = re.compile(r'bat_|baseball|pistol_|rifle|sg_reload|gs_|melee_horizontal|Heavy_Combo|2H|Polearm')  # two-handed weapon holds
 SHOES = {}
 CLOG = []
@@ -202,6 +202,7 @@ def from_library(rig, path, clips, prefix, targets):
 # the bat: Sword Regular Combo (UAL2, CC0) and Sword Idle (UAL1) on both Yolas; the other arena picks on the new one
 # (test bakes: YOLA2_EXTRA_UAL1="Pistol_Reload,Pistol_Shoot" retargets those UAL1 clips onto the new Yola, as ual1_<name>)
 if os.environ.get('YOLA2_EXTRA_UAL1'): from_library('ue', UAL1, os.environ['YOLA2_EXTRA_UAL1'].split(','), 'ual1_', [(Y2, made2, '')])
+if os.environ.get('YOLA2_EXTRA_UAL2'): from_library('ue', UAL2, os.environ['YOLA2_EXTRA_UAL2'].split(','), 'ual_', [(Y2, made2, '')])  # (the same from UAL2, as ual_<name>)
 if not ONLY: from_library('ue', UAL2, ['Sword_Regular_Combo'], 'ual_', [(Y2, made2, ''), (Y1, made1, 'Y1S_')])
 if not ONLY: from_library('ue', UAL1, ['Sword_Idle'], 'ual1_', [(Y2, made2, ''), (Y1, made1, 'Y1S_')])  # (the bat's idle: the stance the combo starts from)
 if not ONLY: from_library('ue', UAL2, ['Sword_Heavy_Combo', 'Sword_Dash', 'Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_C', 'Melee_Hook'], 'ual_', [(Y2, lib2, '')])

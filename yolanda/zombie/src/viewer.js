@@ -41,7 +41,9 @@ const CHARS = {
   guard: { label: 'Zombie big guard', file: 'assets/zombie-guard.glb', height: 2.05, ref: 'zombie_' },
 };
 // library clips (ual_ / ual1_): the reference is Quaternius's own mannequin playing the clip (assets/source/ual, local only)
-const UAL_FILES = { ual_: 'assets/source/ual/UAL2_Standard.glb', ual1_: 'assets/source/ual/UAL1_Standard.glb' };
+// (2026-10-17: the full Source packs the user bought, 120 + 134 clips; the free Standard files had 43 each, same clips)
+const UAL_FILES = { ual_: 'assets/source/ual/UAL2_Full.glb', ual1_: 'assets/source/ual/UAL1_Full.glb' };
+const UAL_FEMALE = 'assets/source/ual/Mannequin_F.glb'; // (UAL2 Source: the female mannequin, same rig, no clips of its own)
 const UE_MAP = { pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', Head: 'Head' };
 for (const [s, S2] of [['l', 'Left'], ['r', 'Right']]) {
   Object.assign(UE_MAP, { [`clavicle_${s}`]: S2 + 'Shoulder', [`upperarm_${s}`]: S2 + 'Arm', [`lowerarm_${s}`]: S2 + 'ForeArm', [`hand_${s}`]: S2 + 'Hand',
@@ -100,8 +102,11 @@ function pinRoot(clip, on, a) {
   for (const t of clip.tracks) {
     if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
     if (!t.__orig) t.__orig = t.values.slice();
-    const v = t.values, o = t.__orig, r = a?.restPos?.[t.name.split('.')[0].replace(/^mixamorig:?/, '')], rx = r ? r.x : o[0], rz = r ? r.z : o[2];
-    for (let i = 0; i < v.length; i += 3) { v[i] = on ? rx : o[i]; v[i + 2] = on ? rz : o[i + 2]; }
+    // (the mannequin's pelvis / root move in a Z-up frame: their height is z, so pin x / y there; 2026-10-17: pinning z
+    // flattened every mannequin jump and crouch, e.g. the vault's 0.67 m lift, while Yola's stayed)
+    const bn = t.name.split('.')[0], k = /^(pelvis|root)$/.test(bn) ? 1 : 2;
+    const v = t.values, o = t.__orig, r = a?.restPos?.[bn.replace(/^mixamorig:?/, '')], rx = r ? r.x : o[0], rk = r ? (k === 1 ? r.y : r.z) : o[k];
+    for (let i = 0; i < v.length; i += 3) { v[i] = on ? rx : o[i]; v[i + k] = on ? rk : o[i + k]; }
   }
 }
 const clipT0 = (c) => Math.min(...c.tracks.map((t) => t.times[0]));
@@ -220,13 +225,15 @@ const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun
 const weaponOf = () => (S.gun === 'auto' ? autoWeapon(main?.clip?.name || '') : S.gun);
 let main, ref, mainGun, refGun, refX, refGunX;
 const ualCache = {};
-function ualRef(file) { // Quaternius's mannequin and its clips, loaded once per library file
-  if (!ualCache[file]) ualCache[file] = loadG(file).then((g) => {
-    g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
-    const actor = new Actor(g.scene, 1.62); actor.root.visible = false; scene.add(actor.root, actor.helper);
+function ualRef(file, female = $('femref')?.checked) { // Quaternius's mannequin and its clips, loaded once per library file
+  const key = file + (female ? '|F' : '');
+  if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), female ? loadG(UAL_FEMALE) : null]).then(([g, f]) => {
+    const body = f ? f.scene : g.scene; // (the female mannequin plays the library file's clips: the same bone names)
+    body.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+    const actor = new Actor(body, 1.62); actor.root.visible = false; scene.add(actor.root, actor.helper);
     return { actor, clips: g.animations };
   }).catch(() => null);
-  return ualCache[file];
+  return ualCache[key];
 }
 function useRef(a) { // switch the shown reference actor (the X Bot or a mannequin)
   if (ref && ref !== a) { ref.root.visible = false; ref.helper.visible = false; }
@@ -269,7 +276,9 @@ async function setChar(key) {
     const g = await loadG(CHARS[key].file);
     // (&extra=a.glb,b.glb: test bakes of this character's clips, e.g. assets/test_clips; named <clip>_REBAKE_<what>)
     const extraQ = key === new URLSearchParams(location.search).get('char') ? (new URLSearchParams(location.search).get('extra') || '').split(',').filter(Boolean) : [];
-    for (const f of [...(CHARS[key].extra || []), ...extraQ]) { try { const c = await loadG(f); g.animations.push(...c.animations); } catch { /* not built */ } }
+    for (const f of [...(CHARS[key].extra || []), ...extraQ]) {
+      try { const c = await loadG(f); if (extraQ.includes(f)) for (const a of c.animations) a.userData = { ...a.userData, test: f.split('/').pop() }; g.animations.push(...c.animations); } catch { /* not built */ }
+    }
     g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; if (/^GORE_/.test(o.name)) o.visible = false; });
     mainCache[key] = { gltf: g, actor: new Actor(g.scene, CHARS[key].height) };
   }
@@ -797,6 +806,9 @@ function fillClips() {
     sel.appendChild(g);
   };
   group('TEST RE-BAKES (not in the game)', anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
+  // test bakes loaded with &extra= (e.g. the full Quaternius packs' candidates, assets/test_clips/ual*_full_*.glb), by file
+  const tests = {}; for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[c.userData.test] ||= []).push(c.name);
+  for (const [f, list] of Object.entries(tests)) group(`TEST: ${f} (not in the game)`, list.sort());
   const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
   for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === 'None' ? 'Fists / none' : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
   for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
@@ -862,6 +874,7 @@ function buildUI() {
   $('clip').onchange = (e) => setClip(e.target.value);
   $('lay').onclick = () => { S.overlay = !S.overlay; layout(); refresh(); };
   $('match').onchange = () => { layout(); refresh(); };
+  $('femref').onchange = () => setClip($('clip').value);
   $('marks').onchange = refresh; $('posture').onchange = refresh; $('mags').onchange = refresh; buildHandsUI();
   $('batShow').onchange = refresh; $('vidSkel').onchange = refresh;
   $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; };
