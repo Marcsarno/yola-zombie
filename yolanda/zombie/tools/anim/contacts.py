@@ -63,6 +63,39 @@ def _key(a, names, f):
     for n in names:
         p = _pb(a, n); p.keyframe_insert('rotation_quaternion', frame=f)
 
+def _hand_frame(a, side='Right'):
+    """A hand's own frame (world): origin at the wrist, y wrist -> middle knuckle, x pinky -> index knuckle, z = x cross y."""
+    wr, mid = _wp(a, side + 'Hand'), _wp(a, side + 'HandMiddle1')
+    y = (mid - wr).normalized(); x = _wp(a, side + 'HandIndex1') - _wp(a, side + 'HandPinky1'); x = (x - y * x.dot(y)).normalized()
+    return wr, x, y, x.cross(y), (mid - wr).length
+
+def support(src, tgt, act, f0, f1, log=None, on=1.2, off=2.2):
+    """Mode 'support' (test, 2026-10-17, the Quaternius pistol reload): while the source's left hand is on the gun, her left
+    wrist goes where the source's is in the source's GUN HAND's own frame (forward / up the grip / across), scaled by hand
+    size; her gun hand stays where her arm puts it. 'On the gun' = the source's two grip points within `on` hand-lengths
+    (full), fading out by `off`; elsewhere (the belt grab) her own retargeted hand stays. Measured in the gun hand's frame
+    because a plain hand-to-hand distance is blind to which side of the gun the hand is on (WEAPON_HOLD_PROCESS.md 16)."""
+    sc = bpy.context.scene
+    worst = {'bend': 0, 'reach': 0, 'moved_cm': 0, 'contact_frames': 0}
+    for f in range(f0, f1 + 1):
+        sc.frame_set(f)
+        o, x, y, z, hs = _hand_frame(src)
+        gl = (_wp(src, 'LeftHand') + _wp(src, 'LeftHandMiddle1')) * 0.5; gr = o + y * hs * 0.5
+        w = 1 - _ss(((gl - gr).length / hs - on) / (off - on))
+        if w <= 1e-3: continue
+        d = _wp(src, 'LeftHand') - o; c = (d.dot(x) / hs, d.dot(y) / hs, d.dot(z) / hs)
+        to, tx, ty, tz, ths = _hand_frame(tgt)
+        goal = to + (tx * c[0] + ty * c[1] + tz * c[2]) * ths
+        before = _wp(tgt, 'LeftHand'); goal = before.lerp(goal, w)
+        r = two_bone(tgt, 'LeftArm', 'LeftForeArm', 'LeftHand', goal, 1.0)
+        if r:
+            worst['bend'] = max(worst['bend'], r[0]); worst['reach'] = max(worst['reach'], r[1])
+            worst['moved_cm'] = max(worst['moved_cm'], (before - _wp(tgt, 'LeftHand')).length)
+        worst['contact_frames'] += 1
+        _key(tgt, ['LeftArm', 'LeftForeArm', 'LeftHand'], f)
+    if log is not None: log.append(('support', act.name, worst))
+    return worst
+
 def hands(src, tgt, act, f0, f1, log=None, mode='arm', near=0.5, far=1.0):
     # near / far: the source's hand gap (shoulder widths) below which the hands count as together, above which apart
     # (the pistol reload's insert: X Bot's hands 0.45-0.75 apart, so its test bake uses 0.8 / 1.4)

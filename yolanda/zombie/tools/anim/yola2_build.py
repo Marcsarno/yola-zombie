@@ -95,7 +95,9 @@ def bake(src, tgt, name):
     act = retarget(src, tgt, name); act.use_fake_user = True
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     mesh = next((c for c in tgt.children if c.type == 'MESH'), None)
-    if HOLD.search(name) and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts)
+    if os.environ.get('YOLA2_HANDS') == 'support':  # (test: the support hand placed in the gun hand's frame, any clip)
+        contacts.support(src, tgt, act, f0, f1, CLOG, off=float(os.environ.get('YOLA2_SUPPORT_OFF', 2.2)))
+    elif HOLD.search(name) and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts)
         contacts.hands(src, tgt, act, f0, f1, CLOG, mode=os.environ.get('YOLA2_HANDS', 'arm'),  # (YOLA2_HANDS=gunhand: test)
                        near=float(os.environ.get('YOLA2_HANDS_NEAR', 0.5)), far=float(os.environ.get('YOLA2_HANDS_FAR', 1.0)))
     if mesh is not None:
