@@ -48805,6 +48805,11 @@ void main() {
       const sd = dt * this.timeScale / 0.7;
       this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
       this.applyProcedural();
+      for (const k in this.adj) {
+        const j = this.adj[k], b = this.bones[j.bone];
+        if (!b || !(j.w > 0) || !["head", "upperarm_r", "forearm_r"].includes(j.bone)) continue;
+        b.quaternion.multiply(_q.setFromEuler(new Euler(j.x * j.w, j.y * j.w, j.z * j.w, "XYZ")));
+      }
     }
     // sit on a seat of the given top height (m): lowers the pelvis onto it and folds the legs. The caller places root.
     sitDown(seatTop) {
@@ -48951,6 +48956,56 @@ void main() {
       tex.needsUpdate = true;
     };
     set("G");
+    const cc = root.getObjectByName("Cab_Controls");
+    if (cc && !cc.userData.replaced) {
+      cc.userData.replaced = true;
+      cc.visible = false;
+      const pc = document.createElement("canvas");
+      pc.width = 96;
+      pc.height = 288;
+      const p = pc.getContext("2d");
+      p.fillStyle = "#5d676b";
+      p.fillRect(0, 0, 96, 288);
+      p.fillStyle = "#3c4447";
+      p.fillRect(6, 6, 84, 276);
+      ["7", "6", "5", "4", "3", "2", "1", "G"].forEach((t, i) => {
+        const y = 24 + i * 32;
+        p.fillStyle = "#20262a";
+        p.beginPath();
+        p.arc(48, y, 12, 0, Math.PI * 2);
+        p.fill();
+        p.fillStyle = "#e9e2cf";
+        p.font = "700 15px system-ui, sans-serif";
+        p.textAlign = "center";
+        p.textBaseline = "middle";
+        p.fillText(t, 48, y + 1);
+      });
+      const pt = new CanvasTexture(pc);
+      pt.colorSpace = SRGBColorSpace;
+      root.updateMatrixWorld(true);
+      const inv = root.matrixWorld.clone().invert(), box = new Box3();
+      cc.traverse((o) => {
+        if (!o.isMesh) return;
+        o.geometry.computeBoundingBox();
+        box.union(o.geometry.boundingBox.clone().applyMatrix4(inv.clone().multiply(o.matrixWorld)));
+      });
+      const sz = box.getSize(new Vector3()), ctr = box.getCenter(new Vector3());
+      const thin = sz.x < sz.z ? "x" : "z", w = Math.max(0.09, thin === "x" ? sz.z : sz.x), h = Math.max(0.27, sz.y);
+      const panel = new Mesh(new PlaneGeometry(w * 0.9, h * 0.95), new MeshStandardMaterial({ map: pt, roughness: 0.6 }));
+      panel.name = "Cab_Controls_7";
+      root.add(panel);
+      const cc0 = root.getObjectByName("Cab_Center"), local = ctr.clone(), cab = cc0 ? cc0.getWorldPosition(new Vector3()).applyMatrix4(inv) : ctr.clone();
+      panel.position.copy(local);
+      if (thin === "x") {
+        const sgn = Math.sign(cab.x - local.x) || 1;
+        panel.rotation.y = sgn * Math.PI / 2;
+        panel.position.x += sgn * (sz.x / 2 + 4e-3);
+      } else {
+        const sgn = Math.sign(cab.z - local.z) || 1;
+        panel.rotation.y = sgn > 0 ? 0 : Math.PI;
+        panel.position.z += sgn * (sz.z / 2 + 4e-3);
+      }
+    }
     return { mesh: m, set };
   }
   var PAL = { wall: 16051420, band: 8109496, cap: 16775402, floorA: "#f2e6cc", floorB: "#cfe6dc", grout: "#e1d4b8", glass: 13626092, frame: 9421252 };
@@ -59761,6 +59816,10 @@ void main() {
   var OFFICE_SHOT = S(6.3, 0.85, -3, 30, 72, 4.6);
   var OFFICE_CLOSE = S(6.2, 0.9, -2.85, 22, 72, 3.2);
   var OFFICE_GUARD = S(5.8, 0.9, -2.35, 24, 80, 3.8);
+  var ON_PATIENT = { ...S(5.72, 0.95, -2.15, 14, 122, 3), dist: 2.6, fov: 38 };
+  var ON_PATIENT_CLOSE = { ...S(5.72, 1.02, -2.15, 12, 126, 3), dist: 2.15, fov: 38 };
+  var ON_YOLA = { ...S(6.3, 0.98, -3.95, 13, 58, 3), dist: 2.8, fov: 38 };
+  var ON_YOLA_CLOSE = { ...S(6.3, 1.02, -3.95, 11, 62, 3), dist: 2.25, fov: 38 };
   var REVEAL_SHOT = { ...W2(ROOM1.player.x, 1.02, ROOM1.player.z, 4, MathUtils.radToDeg(ROOM1.player.yaw), 3, 42), dist: 3.5 };
   var EXT_A = { ...S(-9.7, 2.2, 0.9, 4, -95, 7, 46), fitH: 7.4 };
   var EXT_B = { ...S(-9.7, 1.8, 0.9, 0, -90, 4, 46), fitH: 4.4 };
@@ -60071,6 +60130,7 @@ void main() {
         this.rfx.smoke = this.rfx.smokeTarget = 0;
       }
       this.setOrLamp(true);
+      this.talkers = null;
       this.silhouette(this.stage.actors.yola?.root, false);
       if (this.yola) {
         this.silhouette(this.yola.outer, false);
@@ -60545,6 +60605,8 @@ void main() {
       this.sub = L2.text;
       this.ui.subtitle(L2.text, { who: SPEAKER[L2.who] || L2.who, alarm });
       const playing = !this.silent && !this.storyClockLines && this.sound.playLine(L2);
+      const talker = this.talkers?.[L2.who];
+      if (talker) this.gesture(talker, L2.end);
       this.lineLog.push({ id, t: +this.t.toFixed(2), audio: playing });
       const t0 = this.t;
       yield () => {
@@ -60730,18 +60792,41 @@ void main() {
       yield 0.5;
       this.mark("both-seated");
       this.substate = "CONVERSATION";
+      this.talkers = { Yola: yo, Patient: bb, Reception: rc };
+      const cut = (a, b, secs = 2.6) => {
+        this.camTo(a, 0.01);
+        if (b) this.camTo(b, secs);
+      };
+      const ON_PATIENT2 = this.headShot(bb, 42, 2.5, 10), ON_PATIENT_CLOSE2 = this.headShot(bb, 38, 2, 8);
+      const ON_YOLA2 = this.headShot(yo, 28, 2.5, 25, -0.05), ON_YOLA_CLOSE2 = this.headShot(yo, 24, 2.1, 23, -0.05);
+      cut(ON_YOLA2, ON_YOLA_CLOSE2);
       yield* this.say("02");
+      cut(ON_PATIENT2, ON_PATIENT_CLOSE2, 3.2);
       yield* this.say("03");
-      this.camTo(OFFICE_CLOSE, 1.6);
+      cut(OFFICE_CLOSE);
       yield* this.say("04", { pause: 0.2 });
+      cut(ON_PATIENT2, ON_PATIENT_CLOSE2, 4);
       yield* this.say("05");
+      cut(ON_YOLA_CLOSE2);
       yield* this.say("06", { pause: 0.2 });
+      cut(ON_PATIENT_CLOSE2);
       yield* this.say("07", { pause: 0.55 });
-      this.camTo(OFFICE_SHOT, 1.4);
+      cut(OFFICE_SHOT, OFFICE_CLOSE, 5);
       yield* this.say("08");
+      cut(ON_PATIENT2, ON_PATIENT_CLOSE2, 4);
       yield* this.say("09");
+      cut(ON_YOLA2, ON_YOLA_CLOSE2, 3);
       yo.play("chart", { fade: 0.2 });
+      yo.adjust("chartLook", "head", 0.38, 0, 0, 0);
+      this.tween(0.5, (k) => {
+        yo.adj.chartLook.w = ease(k);
+      });
       yield* this.say("10", { pause: 0.4 });
+      this.tween(0.6, (k) => {
+        if (yo.adj.chartLook) yo.adj.chartLook.w = 1 - ease(k);
+      });
+      this.later(0.65, () => delete yo.adj.chartLook);
+      this.camTo(OFFICE_SHOT, 0.01);
       this.substate = "CARD_1";
       this.mark("card-open");
       yield* this.card("assess");
@@ -60774,6 +60859,7 @@ void main() {
       yield* this.say("15", { pause: 0.4 });
       delete sg.adj.nod;
       this.substate = "TRANSFER_CUT";
+      this.talkers = null;
       this.dip(0.3, 0.35);
       yield 0.34;
       this.leanBat(false);
@@ -61033,8 +61119,12 @@ void main() {
       this.camTo(W2(-1.2, 0.95, -8, 46, 35, 7.2), 1.6);
       yield () => yo.x < -5.8;
       su.setVisible(false);
+      yo.setVisible(false);
+      A.security.setVisible(false);
+      this.holdBat(null);
+      this.liftDisp3?.set("6");
       this.mark("handoff-done");
-      yield* this.errand();
+      this.mark("errand-done");
       yield* this.act4();
     }
     // Yola's brief absence (2026-10-16 brief A6): with the patient stable and his anesthesia colleague staying at his side, she
@@ -61078,6 +61168,34 @@ void main() {
       yield 0.8;
       this.liftDisp3.set("6");
       this.mark("errand-done");
+    }
+    // a medium shot of someone's face: the camera offDeg off their facing (on the east side), dist metres, a little above
+    headShot(a, offDeg, dist2, pitch, dy = -0.12) {
+      a.root.updateMatrixWorld(true);
+      const h = (a.bones.head || a.root).getWorldPosition(new Vector3()), off = MathUtils.degToRad(offDeg);
+      const yA = a.yaw + off, yB = a.yaw - off, yw = Math.sin(yA) > Math.sin(yB) ? yA : yB;
+      return { x: h.x, y: h.y + dy, z: h.z, pitch, yaw: MathUtils.radToDeg(yw), dist: dist2, fov: 38 };
+    }
+    // a speaker's hand comes up from the lap or desk and moves a little with the words, then settles (seated or standing)
+    gesture(a, secs) {
+      const up = a.bones.upper_armR ? "upper_armR" : "upperarm_r", lo = a.bones.forearmR ? "forearmR" : "forearm_r";
+      if (!a.bones[up] || !a.bones[lo]) return;
+      const key = "talk" + (++this.gestureN || (this.gestureN = 1));
+      for (const k of Object.keys(a.adj)) if (k.startsWith("talk")) delete a.adj[k];
+      a.adjust(key + "U", up, -0.45, 0, -0.12, 0);
+      a.adjust(key + "L", lo, -0.75, 0, 0, 0);
+      const dur = Math.max(1, secs);
+      this.tween(dur, (k) => {
+        const w = Math.sin(Math.min(1, k * 1.25) * Math.PI) * (0.82 + 0.18 * Math.sin(k * dur * 7));
+        if (a.adj[key + "U"]) {
+          a.adj[key + "U"].w = w;
+          a.adj[key + "L"].w = w;
+        }
+        if (k >= 1) {
+          delete a.adj[key + "U"];
+          delete a.adj[key + "L"];
+        }
+      });
     }
     // gentle value animation on the story clock: fn(k) for k 0..1 over secs
     tween(secs, fn) {
@@ -63335,15 +63453,24 @@ void main() {
     if (MOVES[q.get("move")]) move = q.get("move");
     equip(WEAPONS.includes(q.get("w")) ? q.get("w") : "pistol");
     setTimeout(() => setCam(q.get("cam") || "body"), 600);
-    let last2 = performance.now();
+    let last2 = performance.now(), acc2 = 0;
     const loop = (now) => {
       const dt = Math.min(0.05, (now - last2) / 1e3);
       last2 = now;
       controls.enabled = camMode !== "game";
       game.camFree = camMode !== "game";
       if (camMode !== "game") controls.update();
-      if (!paused2) game.tick(1, dt * speed, true);
-      else game.looks.render();
+      if (!paused2) {
+        acc2 += dt * speed;
+        let n = 0;
+        while (acc2 >= 1 / 60 && n < 4) {
+          game.tick(1, 1 / 60, false);
+          acc2 -= 1 / 60;
+          n++;
+        }
+        if (n === 4) acc2 = 0;
+      }
+      game.looks.render();
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);

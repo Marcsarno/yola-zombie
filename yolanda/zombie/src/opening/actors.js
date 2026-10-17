@@ -177,6 +177,9 @@ export class OriginalYola extends Actor {
     const sd = (dt * this.timeScale) / 0.7;
     this.sitW = this.sitTarget > this.sitW ? Math.min(this.sitTarget, this.sitW + sd) : Math.max(this.sitTarget, this.sitW - sd);
     this.applyProcedural();
+    // the procedure resets head and right arm to rest every frame: the scene's additive adjustments (a look down at the
+    // chart, a talking gesture) go back on top of it
+    for (const k in this.adj) { const j = this.adj[k], b = this.bones[j.bone]; if (!b || !(j.w > 0) || !['head', 'upperarm_r', 'forearm_r'].includes(j.bone)) continue; b.quaternion.multiply(_q.setFromEuler(new THREE.Euler(j.x * j.w, j.y * j.w, j.z * j.w, 'XYZ'))); }
   }
   // sit on a seat of the given top height (m): lowers the pelvis onto it and folds the legs. The caller places root.
   sitDown(seatTop) { this.sitSeatTop = seatTop; this.sitTarget = 1; this.pose = 'sit'; this.seated = true; this.sitState = 'sitting'; }

@@ -28,6 +28,26 @@ export function liftDisplay(root) {
     tex.needsUpdate = true;
   };
   set('G');
+  // the cab's button panel: the kit's has only floors 1-3; a panel for this building (G and 1-7) takes its place
+  const cc = root.getObjectByName('Cab_Controls');
+  if (cc && !cc.userData.replaced) {
+    cc.userData.replaced = true; cc.visible = false;
+    const pc = document.createElement('canvas'); pc.width = 96; pc.height = 288; const p = pc.getContext('2d');
+    p.fillStyle = '#5d676b'; p.fillRect(0, 0, 96, 288); p.fillStyle = '#3c4447'; p.fillRect(6, 6, 84, 276);
+    ['7', '6', '5', '4', '3', '2', '1', 'G'].forEach((t, i) => { const y = 24 + i * 32; p.fillStyle = '#20262a'; p.beginPath(); p.arc(48, y, 12, 0, Math.PI * 2); p.fill(); p.fillStyle = '#e9e2cf'; p.font = '700 15px system-ui, sans-serif'; p.textAlign = 'center'; p.textBaseline = 'middle'; p.fillText(t, 48, y + 1); });
+    const pt = new THREE.CanvasTexture(pc); pt.colorSpace = THREE.SRGBColorSpace;
+    // (measured in the lift's own space: the set it stands in may not have its final transform yet)
+    root.updateMatrixWorld(true); const inv = root.matrixWorld.clone().invert(), box = new THREE.Box3();
+    cc.traverse((o) => { if (!o.isMesh) return; o.geometry.computeBoundingBox(); box.union(o.geometry.boundingBox.clone().applyMatrix4(inv.clone().multiply(o.matrixWorld))); });
+    const sz = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+    const thin = sz.x < sz.z ? 'x' : 'z', w = Math.max(0.09, thin === 'x' ? sz.z : sz.x), h = Math.max(0.27, sz.y);
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.9, h * 0.95), new THREE.MeshStandardMaterial({ map: pt, roughness: 0.6 }));
+    panel.name = 'Cab_Controls_7'; root.add(panel);
+    const cc0 = root.getObjectByName('Cab_Center'), local = ctr.clone(), cab = cc0 ? cc0.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv) : ctr.clone();
+    panel.position.copy(local);
+    if (thin === 'x') { const sgn = Math.sign(cab.x - local.x) || 1; panel.rotation.y = sgn * Math.PI / 2; panel.position.x += sgn * (sz.x / 2 + 0.004); }
+    else { const sgn = Math.sign(cab.z - local.z) || 1; panel.rotation.y = sgn > 0 ? 0 : Math.PI; panel.position.z += sgn * (sz.z / 2 + 0.004); }
+  }
   return { mesh: m, set };
 }
 

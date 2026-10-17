@@ -31,7 +31,11 @@ const S = (x, y, z, pitch, yaw, width, fov = 34) => ({ x: x + CLINIC.x, y, z: z 
 const W = (x, y, z, pitch, yaw, width, fov = 34) => ({ x, y, z, pitch, yaw, width, fov }); // world-space shot (the operating room)
 const OFFICE_SHOT = S(6.3, 0.85, -3.0, 30, 72, 4.6); // the assessment office from the east: Yola and both visitors in profile across the desk
 const OFFICE_CLOSE = S(6.2, 0.9, -2.85, 22, 72, 3.2); // closer on the three of them for the bat talk
-const OFFICE_GUARD = S(5.8, 0.9, -2.35, 24, 80, 3.8); // Yola turned to the guard (line 15): "he" is clear (from the east: the office's south wall would block a view from the south)
+const OFFICE_GUARD = S(5.8, 0.9, -2.35, 24, 80, 3.8);
+// the conversation's reverse angles (2026-10-16): over Yola's shoulder onto the patient, over the visitors onto Yola
+// (from the east side of the desk: the sightlines clear every head)
+const ON_PATIENT = { ...S(5.72, 0.95, -2.15, 14, 122, 3), dist: 2.6, fov: 38 }, ON_PATIENT_CLOSE = { ...S(5.72, 1.02, -2.15, 12, 126, 3), dist: 2.15, fov: 38 };
+const ON_YOLA = { ...S(6.3, 0.98, -3.95, 13, 58, 3), dist: 2.8, fov: 38 }, ON_YOLA_CLOSE = { ...S(6.3, 1.02, -3.95, 11, 62, 3), dist: 2.25, fov: 38 }; // Yola turned to the guard (line 15): "he" is clear (from the east: the office's south wall would block a view from the south)
 // the reveal: front-on to Yola's spot in the operating room (ROOM1.player), the table with the patient behind her. The
 // old hospital's last frame is captured from exactly this camera, so the picture lines up with the room behind it.
 const REVEAL_SHOT = { ...W(ROOM1.player.x, 1.02, ROOM1.player.z, 4, THREE.MathUtils.radToDeg(ROOM1.player.yaw), 3, 42), dist: 3.5 };
@@ -213,7 +217,7 @@ export class Opening {
     this.leaveOR(); this.alarmFx = null; this.ecg = null; this.tweens = []; this.tagPoints = null; this.urgencyTimer = 0; this.sound.alarmOff(); this.sound.flatlineOff(0.05);
     this.sound.stopLine(); this.line = null; this.lineLog.length = 0; this.cardDone = null;
     this.endRide(); this.stopEmptyChair(); if (this.leanedBat) this.leanedBat.visible = false; this.holdBat(null); this.cpr = null; this.revealSwing = null;
-    this.revealPose = null; this.sweepT = null; if (this.rfx) { this.backlight(0); this.rfx.g.visible = false; this.rfx.smoke = this.rfx.smokeTarget = 0; } this.setOrLamp(true);
+    this.revealPose = null; this.sweepT = null; if (this.rfx) { this.backlight(0); this.rfx.g.visible = false; this.rfx.smoke = this.rfx.smokeTarget = 0; } this.setOrLamp(true); this.talkers = null;
     this.silhouette(this.stage.actors.yola?.root, false); if (this.yola) { this.silhouette(this.yola.outer, false); this.silhouette(this.yola.batLib?.obj, false); }
     if (this.bt.state !== 'idle') this.bt.finish(); this.bt.state = 'idle';
     this.monitorOn = false; this.ui.showMonitor(false); this.ui.readiness(null); this.ui.timeCard(''); this.ui.monitor({ mode: 'normal', alarm: false, tof: null, bp: 'BP 118/74' });
@@ -446,6 +450,7 @@ export class Opening {
     this.line = L; this.cueLog.push([+this.t.toFixed(2), 'line:' + id]);
     this.sub = L.text; this.ui.subtitle(L.text, { who: SPEAKER[L.who] || L.who, alarm });
     const playing = !this.silent && !this.storyClockLines && this.sound.playLine(L); // (storyClockLines: a test stepping frames faster than real time)
+    const talker = this.talkers?.[L.who]; if (talker) this.gesture(talker, L.end);
     this.lineLog.push({ id, t: +this.t.toFixed(2), audio: playing });
     const t0 = this.t;
     yield () => { const pos = playing ? this.sound.linePos() : null; return pos !== null ? pos >= L.end : this.t - t0 >= L.end; };
@@ -577,13 +582,25 @@ export class Opening {
     yield 0.5; this.mark('both-seated');
     // 4. the conversation (02-10): the office from the east, all three in profile across the desk
     this.substate = 'CONVERSATION';
-    yield* this.say('02'); yield* this.say('03');
-    this.camTo(OFFICE_CLOSE, 1.6);
-    yield* this.say('04', { pause: 0.2 }); yield* this.say('05'); yield* this.say('06', { pause: 0.2 }); yield* this.say('07', { pause: 0.55 });
-    this.camTo(OFFICE_SHOT, 1.4);
-    yield* this.say('08'); yield* this.say('09');
-    yo.play('chart', { fade: 0.2 }); // (her eyes on the chart: the results are on screen)
+    this.talkers = { Yola: yo, Patient: bb, Reception: rc };
+    const cut = (a, b, secs = 2.6) => { this.camTo(a, 0.01); if (b) this.camTo(b, secs); }; // a hard cut, then a slow push through the line
+    // the reverse angles, from each speaker's head and facing (always from the east side of the desk, where no head is in the way)
+    const ON_PATIENT = this.headShot(bb, 42, 2.5, 10), ON_PATIENT_CLOSE = this.headShot(bb, 38, 2.0, 8);
+    const ON_YOLA = this.headShot(yo, 28, 2.5, 25, -0.05), ON_YOLA_CLOSE = this.headShot(yo, 24, 2.1, 23, -0.05); // (from above the desk monitor)
+    cut(ON_YOLA, ON_YOLA_CLOSE); yield* this.say('02');
+    cut(ON_PATIENT, ON_PATIENT_CLOSE, 3.2); yield* this.say('03');
+    cut(OFFICE_CLOSE); yield* this.say('04', { pause: 0.2 });
+    cut(ON_PATIENT, ON_PATIENT_CLOSE, 4.0); yield* this.say('05');
+    cut(ON_YOLA_CLOSE); yield* this.say('06', { pause: 0.2 });
+    cut(ON_PATIENT_CLOSE); yield* this.say('07', { pause: 0.55 });
+    cut(OFFICE_SHOT, OFFICE_CLOSE, 5.0); yield* this.say('08');
+    cut(ON_PATIENT, ON_PATIENT_CLOSE, 4.0); yield* this.say('09');
+    // "I see the test results here": her eyes go down to the chart
+    cut(ON_YOLA, ON_YOLA_CLOSE, 3.0);
+    yo.play('chart', { fade: 0.2 }); yo.adjust('chartLook', 'head', 0.38, 0, 0, 0); this.tween(0.5, (k) => { yo.adj.chartLook.w = ease(k); });
     yield* this.say('10', { pause: 0.4 });
+    this.tween(0.6, (k) => { if (yo.adj.chartLook) yo.adj.chartLook.w = 1 - ease(k); }); this.later(0.65, () => delete yo.adj.chartLook);
+    this.camTo(OFFICE_SHOT, 0.01);
     // 5. Card 1: the history changes the plan (the scene waits)
     this.substate = 'CARD_1'; this.mark('card-open');
     yield* this.card('assess');
@@ -609,7 +626,7 @@ export class Opening {
     yield* this.say('15', { pause: 0.4 });
     delete sg.adj.nod;
     // 7. a clean cut: the athlete is in the wheelchair, the guard is carrying the bat (no transfer animation is faked)
-    this.substate = 'TRANSFER_CUT';
+    this.substate = 'TRANSFER_CUT'; this.talkers = null;
     this.dip(0.3, 0.35); yield 0.34;
     this.leanBat(false); this.stopEmptyChair();
     // the chair turned for the way out (facing west, the seat at 5.0, -1.25), the colleague behind it
@@ -776,9 +793,11 @@ export class Opening {
     ta.walk([[0.55, -9.1]], { endYaw: 0 });
     this.camTo(W(-1.2, 0.95, -8.0, 46, 35, 7.2), 1.6);
     yield () => yo.x < -5.8;
-    su.setVisible(false);
-    this.mark('handoff-done');
-    yield* this.errand();
+    su.setVisible(false); yo.setVisible(false);
+    // her brief absence happens off screen: she leaves with the guard (and the athlete's bat) and goes down to six; the
+    // anesthesia colleague stays with the patient. The OR's lift sits at six, where she will call it from.
+    A.security.setVisible(false); this.holdBat(null); this.liftDisp3?.set('6');
+    this.mark('handoff-done'); this.mark('errand-done');
     yield* this.act4();
   }
 
@@ -810,6 +829,23 @@ export class Opening {
     this.mark('errand-done');
   }
 
+  // a medium shot of someone's face: the camera offDeg off their facing (on the east side), dist metres, a little above
+  headShot(a, offDeg, dist, pitch, dy = -0.12) {
+    a.root.updateMatrixWorld(true);
+    const h = (a.bones.head || a.root).getWorldPosition(new THREE.Vector3()), off = THREE.MathUtils.degToRad(offDeg);
+    const yA = a.yaw + off, yB = a.yaw - off, yw = Math.sin(yA) > Math.sin(yB) ? yA : yB; // (the east side)
+    return { x: h.x, y: h.y + dy, z: h.z, pitch, yaw: THREE.MathUtils.radToDeg(yw), dist, fov: 38 };
+  }
+  // a speaker's hand comes up from the lap or desk and moves a little with the words, then settles (seated or standing)
+  gesture(a, secs) {
+    const up = a.bones.upper_armR ? 'upper_armR' : 'upperarm_r', lo = a.bones.forearmR ? 'forearmR' : 'forearm_r';
+    if (!a.bones[up] || !a.bones[lo]) return;
+    const key = 'talk' + (++this.gestureN || (this.gestureN = 1));
+    for (const k of Object.keys(a.adj)) if (k.startsWith('talk')) delete a.adj[k];
+    a.adjust(key + 'U', up, -0.45, 0, -0.12, 0); a.adjust(key + 'L', lo, -0.75, 0, 0, 0);
+    const dur = Math.max(1.0, secs);
+    this.tween(dur, (k) => { const w = Math.sin(Math.min(1, k * 1.25) * Math.PI) * (0.82 + 0.18 * Math.sin(k * dur * 7)); if (a.adj[key + 'U']) { a.adj[key + 'U'].w = w; a.adj[key + 'L'].w = w; } if (k >= 1) { delete a.adj[key + 'U']; delete a.adj[key + 'L']; } });
+  }
   // gentle value animation on the story clock: fn(k) for k 0..1 over secs
   tween(secs, fn) { const o = { t: 0 }; fn(0); const tick = (d) => { o.t += d; const k = Math.min(1, o.t / secs); fn(k); return k >= 1; }; (this.tweens ||= []).push(tick); }
   tickTweens(d) { if (!this.tweens) return; this.tweens = this.tweens.filter((t) => !t(d)); }

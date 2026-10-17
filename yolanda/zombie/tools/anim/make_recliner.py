@@ -62,15 +62,23 @@ def build(tier):
     # seat
     seatm = cream if tier == 'advanced' else vin
     box('Seat', (0.6, 0.56, 0.14), (0, 0.02, seat_h), seatm, 0.06)
-    # backrest: reclined about 20 degrees, against the headwall side (-Y)
-    tilt = math.radians(20)
-    bh = 0.78
-    back_c = Vector((0, -0.28 - math.sin(tilt) * bh / 2, seat_h + 0.05 + math.cos(tilt) * bh / 2))
-    box('Back', (0.58, 0.14, bh), back_c, vin, 0.06, rot=(-tilt, 0, 0))
-    if tier == 'advanced':  # a cream back panel and a head pillow
-        box('BackPanel', (0.44, 0.04, bh * 0.7), back_c + Vector((0, 0.075 * math.cos(tilt), 0.075 * math.sin(tilt) - 0.04)), cream, 0.03, rot=(-tilt, 0, 0))
-        top = Vector((0, -0.28 - math.sin(tilt) * bh, seat_h + 0.05 + math.cos(tilt) * bh))
-        box('Pillow', (0.34, 0.12, 0.16), top + Vector((0, 0.12, -0.09)), cream, 0.06, rot=(-tilt, 0, 0))
+    # backrest: hinged at the back edge of the seat, reclined 15 degrees toward the headwall side (-Y), its foot meeting the
+    # seat; a steel support from the column, and a separate padded headrest on every tier (2026-10-16: the old back was
+    # rotated against its own placement and floated loose behind the seat, reading as a bent head piece)
+    tilt = math.radians(15)
+    bh, bt = 0.72, 0.13
+    up_dir = Vector((0, -math.sin(tilt), math.cos(tilt)))      # along the back, upward
+    fwd_n = Vector((0, math.cos(tilt), math.sin(tilt)))        # the back's front face normal
+    hinge = Vector((0, -0.24, seat_h + 0.03))
+    back_c = hinge + up_dir * (bh / 2) - fwd_n * (bt / 2)
+    box('Back', (0.56, bt, bh), back_c, vin, 0.05, rot=(tilt, 0, 0))
+    box('BackSupport', (0.08, 0.05, 0.42), hinge + up_dir * 0.2 - fwd_n * (bt + 0.02), frame, 0.015, rot=(tilt, 0, 0))
+    top = hinge + up_dir * bh
+    head_c = top + up_dir * 0.07 - fwd_n * (bt / 2 - 0.035)
+    box('Headrest', (0.34, 0.13, 0.2), head_c, cream if tier != 'starter' else vin, 0.06, rot=(tilt, 0, 0))
+    box('HeadPost', (0.05, 0.03, 0.12), top - fwd_n * (bt / 2 + 0.01), frame, 0.01, rot=(tilt, 0, 0))
+    if tier == 'advanced':  # a cream back panel
+        box('BackPanel', (0.42, 0.03, bh * 0.68), back_c + fwd_n * (bt / 2 + 0.008), cream, 0.02, rot=(tilt, 0, 0))
     # leg rest: the starter has a short fixed footrest, the others an extended, angled leg rest
     if tier == 'starter':
         box('Footrest', (0.5, 0.26, 0.1), (0, 0.38, seat_h - 0.14), vin, 0.04, rot=(math.radians(-35), 0, 0))
