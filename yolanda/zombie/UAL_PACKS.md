@@ -7,10 +7,13 @@ CC0, same skeleton as the mannequin we already compare against. Local copies (gi
 - the free Standard files (43 clips each) are still there; every clip they share with the Source files is identical
 
 ## How to look at them (Rig Lab, beside the mannequin)
-- Yola: `viewer.html?char=yola2&extra=assets/test_clips/ual1_full_yola2.glb,assets/test_clips/ual2_full_yola2.glb,assets/test_clips/ual2_full_yola2_b.glb`
-- patient zombie: `viewer.html?char=patient&extra=assets/test_clips/ual1_full_patient.glb,assets/test_clips/ual2_full_patient.glb`
-- big guard: `viewer.html?char=guard&extra=assets/test_clips/ual2_full_guard.glb`
-- test clips list first, grouped by file ("TEST: ... (not in the game)"); the "female mannequin" box swaps the reference body
+- just open the Rig Lab and pick Yola 2, Zombie patient or Zombie big guard: their test bakes load by themselves
+  (viewer.js CHARS[].newPacks, assets/test_clips/ual*_full_*.glb, local files)
+- the clip list is a side panel on the left (always open; "Clip list" button / H hides it): "★ NEW PACKS: <kind>" groups
+  first (zombie moves & attacks, jump/slam/shield, run/walk/turn, dodge/vault/climb, fists & kicks, weapon strikes &
+  chains, hits/falls/deaths, pick up/use/react), then the game's own groups; a find box; "only clips the game uses"
+- "(currently used)" = the game plays that clip (read from dist/combat.js, so it follows the game)
+- the "female mannequin" box swaps the reference body
 - test bakes: Yola `YOLA2_ONLY=none YOLA2_EXTRA_UAL1=a,b` / `YOLA2_EXTRA_UAL2=a,b` with tools/anim/yola2_build.py, then
   tools/anim/test_export_clips.py; zombies `tools/anim/test_zombie_clips.py -- <zombie.glb> <ual.glb> <out.glb> <prefix> <a,b>`
 - Rig Lab fix found on the way: "in place" pinned the mannequin's HEIGHT (its pelvis moves in a Z-up frame), so every

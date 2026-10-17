@@ -40,6 +40,22 @@ const CHARS = {
   sprinter: { label: 'Zombie sprinter (big lady)', file: 'assets/zombie-sprinter.glb', height: 2.0, ref: 'zombie_' },
   guard: { label: 'Zombie big guard', file: 'assets/zombie-guard.glb', height: 2.05, ref: 'zombie_' },
 };
+// the new Quaternius packs' test bakes (UAL_PACKS.md; tools/anim/yola2_build.py YOLA2_EXTRA_UAL1/2, test_zombie_clips.py)
+const TC = 'assets/test_clips/';
+CHARS.yola2.newPacks = [TC + 'ual1_full_yola2.glb', TC + 'ual2_full_yola2.glb', TC + 'ual2_full_yola2_b.glb'];
+CHARS.patient.newPacks = [TC + 'ual1_full_patient.glb', TC + 'ual2_full_patient.glb'];
+CHARS.guard.newPacks = [TC + 'ual2_full_guard.glb'];
+// their kinds in the clip list (first match wins; the name without its ual_ / ual1_ prefix)
+const NEW_KINDS = [
+  ['Zombie moves & attacks', /^Zombie_|^MonsterTransformation/],
+  ['Jump, slam & shield (the guard)', /^NinjaJump|^DoubleJump|^Sword_GroundPound|^Shield_|^Idle_Shield|^Sprint_Shield|^LiftAir/],
+  ['Run, walk & turn', /^Jog_|^Walk_|^Sprint_|^Turn\d|^Idle_Loop$|^Idle_Tired|^Idle_LookAround/],
+  ['Dodge, vault & climb', /^Dodge|^Roll$|^Slide_|^SafetyVault|^Climb|^StepUp|^GetOffWall|^JogToFlip/],
+  ['Fists & kicks', /^Punch|^Kick$|^Melee_|^PunchKick/],
+  ['Weapon strikes & chains', /^Sword_|^TreeChopping|^Mining/],
+  ['Hits, falls & deaths', /^Hit_|^Death|^KipUp|^LayToIdle|^IdleToLay|^Crawl_/],
+  ['Pick up, use & react', /^PickUp|^Interact|^Drink|^Consume|^Bandage|^Chest_Open|^OverhandThrow|^Celebration|^Surprise|^Push_|^Fixing/],
+];
 // library clips (ual_ / ual1_): the reference is Quaternius's own mannequin playing the clip (assets/source/ual, local only)
 // (2026-10-17: the full Source packs the user bought, 120 + 134 clips; the free Standard files had 43 each, same clips)
 const UAL_FILES = { ual_: 'assets/source/ual/UAL2_Full.glb', ual1_: 'assets/source/ual/UAL1_Full.glb' };
@@ -276,8 +292,18 @@ async function setChar(key) {
     const g = await loadG(CHARS[key].file);
     // (&extra=a.glb,b.glb: test bakes of this character's clips, e.g. assets/test_clips; named <clip>_REBAKE_<what>)
     const extraQ = key === new URLSearchParams(location.search).get('char') ? (new URLSearchParams(location.search).get('extra') || '').split(',').filter(Boolean) : [];
-    for (const f of [...(CHARS[key].extra || []), ...extraQ]) {
-      try { const c = await loadG(f); if (extraQ.includes(f)) for (const a of c.animations) a.userData = { ...a.userData, test: f.split('/').pop() }; g.animations.push(...c.animations); } catch { /* not built */ }
+    // (CHARS[].newPacks: the new Quaternius packs' test bakes, always loaded when they exist: assets/test_clips is local)
+    const packs = CHARS[key].newPacks || [];
+    for (const f of [...(CHARS[key].extra || []), ...packs, ...extraQ]) {
+      try {
+        const c = await loadG(f), have = Object.fromEntries(g.animations.map((a) => [a.name, a]));
+        for (const a of c.animations) {
+          const tag = packs.includes(f) ? { pack: /ual1_/.test(a.name) ? 'UAL1' : 'UAL2' } : extraQ.includes(f) ? { test: f.split('/').pop() } : {};
+          // (a pack clip the character already has, e.g. a library pick, keeps the one it has, listed with the pack)
+          if (tag.pack && have[a.name]) { have[a.name].userData = { ...have[a.name].userData, ...tag }; continue; }
+          a.userData = { ...a.userData, ...tag }; g.animations.push(a);
+        }
+      } catch { /* not built */ }
     }
     g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; if (/^GORE_/.test(o.name)) o.visible = false; });
     mainCache[key] = { gltf: g, actor: new Actor(g.scene, CHARS[key].height) };
@@ -319,6 +345,7 @@ async function setClip(name) {
   S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
   $('scrub').max = S.frames; S.frame = 1;
   layout(); refresh(); mainGun.calibrate(); refGun?.calibrate(); refresh();
+  markClipPanel(); // (setChar picks its first clip without a change event)
 }
 function layout() {
   const sep = S.overlay ? 0 : 0.55;
@@ -796,24 +823,72 @@ const GAME_CLIPS = {
   none: { 'Idle (fists)': ['tripo_idle'], Move: PLAIN, 'Attack (jab, cross, kick)': ['t_box_01', 't_box_02', 't_kick_02'] },
 };
 const EVERYONE = { 'Everyone: hit, knockdown, death': ['hit_body', 'yola_knockdown', 'yola_getup', 'death_fall', 'death_defeat'], 'Everyone: scripted (the opening)': ['t_greet_01', 't_greet_04'] };
+// "(currently used)": a clip the game plays. Read from the game's own bundle (dist/combat.js names every clip it plays as
+// a string), so the mark follows the game as it changes, never a list kept by hand here
+let GAME_JS = null;
+fetch('dist/combat.js').then((r) => r.text()).then((t) => { GAME_JS = t; if (mainCache[S.char]) fillClips(); }).catch(() => {});
+const inGame = (n) => !!GAME_JS && GAME_JS.includes(`"${n}"`);
+const usedTag = (n) => (inGame(n) ? '  (currently used)' : '');
 function fillClips() {
   const sel = $('clip'), keep = sel.value, anims = mainCache[S.char].gltf.animations, byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = new Set();
   sel.innerHTML = '';
   const group = (label, list) => {
     const ok = list.filter((n) => byN[n]); if (!ok.length) return;
     const g = document.createElement('optgroup'); g.label = label;
-    for (const n of ok) { g.appendChild(new Option(`${n}  (${clipFrames(byN[n])}f)`, n)); used.add(n); }
+    for (const n of ok) { g.appendChild(new Option(`${n}  (${clipFrames(byN[n])}f)${usedTag(n)}`, n)); used.add(n); }
     sel.appendChild(g);
   };
+  // the new Quaternius packs (UAL_PACKS.md): their own section at the top, by kind, whatever weapon is picked (test bakes,
+  // not in the game; each plays beside the mannequin)
+  const fresh = {}; for (const c of anims) if (c.userData?.pack && !used.has(c.name)) { const k = NEW_KINDS.find(([, re]) => re.test(c.name.replace(/^ual1?_/, '')))?.[0] || 'Other'; (fresh[k] ||= []).push(c.name); }
+  for (const [k] of [...NEW_KINDS, ['Other']]) {
+    const list = (fresh[k] || []).sort(); if (!list.length) continue;
+    const g = document.createElement('optgroup'); g.label = `★ NEW PACKS: ${k} (${list.length})`;
+    for (const n of list) { g.appendChild(new Option(`${n.replace(/^ual1?_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ')}  [${byN[n].userData.pack}, ${clipFrames(byN[n])}f]${usedTag(n)}`, n)); used.add(n); }
+    sel.appendChild(g);
+  }
   group('TEST RE-BAKES (not in the game)', anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
-  // test bakes loaded with &extra= (e.g. the full Quaternius packs' candidates, assets/test_clips/ual*_full_*.glb), by file
+  // other test bakes loaded with &extra=, by file
   const tests = {}; for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[c.userData.test] ||= []).push(c.name);
   for (const [f, list] of Object.entries(tests)) group(`TEST: ${f} (not in the game)`, list.sort());
   const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
   for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === 'None' ? 'Fists / none' : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
   for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
-  group(ws.length === 1 ? 'Other clips (other weapons, library picks, unused)' : 'Other clips (library picks, unused)', anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
+  group(!/^yola/.test(S.char) ? 'This character\'s clips' : ws.length === 1 ? 'Other clips (other weapons, library picks, unused)' : 'Other clips (library picks, unused)', anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
   if (byN[keep]) sel.value = keep;
+  buildClipPanel();
+}
+// the clip list on the left (mirrors the #clip select, which stays the one source: a click picks the clip there): every
+// group, foldable (remembered), a find box, "only clips the game uses"; the playing clip highlighted and kept in view
+const SHUT_KEY = 'riglab.clipGroupsShut';
+let shut = {}; try { shut = JSON.parse(localStorage.getItem(SHUT_KEY) || '{}'); } catch { /* storage off */ }
+function buildClipPanel() {
+  const list = $('clipList'); if (!list) return;
+  const q = ($('clipFind').value || '').trim().toLowerCase(), usedOnly = $('clipUsedOnly').checked;
+  list.innerHTML = '';
+  for (const g of $('clip').querySelectorAll('optgroup')) {
+    const key = g.label.replace(/\s*\(\d+\)$/, '');
+    const items = [...g.children].filter((o) => (!usedOnly || inGame(o.value)) && (!q || (o.text + ' ' + o.value + ' ' + g.label).toLowerCase().includes(q)));
+    if (!items.length) continue;
+    const h = document.createElement('div'); h.className = 'cgh' + (/NEW PACKS/.test(key) ? ' new' : '') + (shut[key] && !q ? ' shut' : '');
+    h.textContent = `${key} (${items.length})`;
+    const box = document.createElement('div'); box.hidden = !!shut[key] && !q;
+    h.onclick = () => { shut[key] = !shut[key]; try { localStorage.setItem(SHUT_KEY, JSON.stringify(shut)); } catch { /* storage off */ } h.classList.toggle('shut', shut[key]); box.hidden = shut[key]; };
+    for (const o of items) {
+      const d = document.createElement('div'); d.className = 'ci'; d.dataset.v = o.value; d.title = o.value;
+      const m = /^(.*?)\s+(\(\d+f\)|\[[^\]]*\])(\s+\(currently used\))?$/.exec(o.text);
+      if (m) { d.append(m[1] + ' '); const s = document.createElement('span'); s.className = 'meta'; s.textContent = m[2]; d.append(s); if (m[3]) { const u = document.createElement('span'); u.className = 'used'; u.textContent = ' (currently used)'; d.append(u); } } else d.textContent = o.text;
+      d.onclick = () => pickClip(o.value);
+      box.appendChild(d);
+    }
+    list.append(h, box);
+  }
+  markClipPanel();
+}
+function markClipPanel() {
+  const v = $('clip').value; let on = null;
+  for (const d of $('clipList').children) for (const c of d.children || []) { const hit = c.dataset?.v === v; c.classList.toggle('on', hit); if (hit && !on) on = c; }
+  if (on && !on.parentElement.hidden) on.scrollIntoView({ block: 'nearest' });
 }
 function pickClip(name) {
   const sel = $('clip'); if (!name || ![...sel.options].some((o) => o.value === name)) return;
@@ -881,7 +956,14 @@ function buildUI() {
   $('inplace').onchange = () => setClip($('clip').value);
   $('speed').onchange = (e) => { S.speed = +e.target.value; };
   $('toggleSide').onclick = () => $('side').classList.toggle('open');
-  const ui = () => { for (const id of ['top', 'bottom', 'side']) { const el = $(id); el.hidden = !el.hidden; } };
+  $('toggleClips').onclick = () => { const p = $('clipPanel'); p.hidden = !p.hidden; $('toggleClips').classList.toggle('on', !p.hidden); };
+  $('clipFind').oninput = buildClipPanel; $('clipUsedOnly').onchange = buildClipPanel;
+  $('clipFind').addEventListener('keydown', (e) => e.stopPropagation()); // (typing a name: no frame steps / play toggles)
+  $('clip').addEventListener('change', markClipPanel);
+  // the list starts below the top bar, however many rows it wraps to
+  const fitClipPanel = () => { $('clipPanel').style.top = ($('top').hidden ? 6 : $('top').offsetTop + $('top').offsetHeight + 6) + 'px'; };
+  new ResizeObserver(fitClipPanel).observe($('top')); fitClipPanel();
+  const ui = () => { for (const id of ['top', 'bottom', 'side', 'clipPanel']) { const el = $(id); el.hidden = !el.hidden; } };
   $('hideUI').onclick = ui;
   addEventListener('keydown', (e) => { if (e.code === 'KeyH' && e.target.tagName !== 'TEXTAREA') ui(); });
   const step = (d) => { pausedUI(true); S.frame = ((Math.round(S.frame) - 1 + d + S.frames * 100) % S.frames) + 1; refresh(); };

@@ -28,6 +28,16 @@
   h4 { margin:8px 0 4px; font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
   #note { color:var(--amber); font-size:12px; }
   label.chk { display:flex; gap:6px; align-items:center; }
+  /* the clip list, always open on the left (the user 2026-10-17: see the list while watching) */
+  #clipPanel { left:6px; top:64px; bottom:92px; width:282px; display:flex; flex-direction:column; gap:5px; padding:7px; }
+  #clipFind { font:inherit; color:var(--ink); background:#1a2328; border:1px solid var(--line); border-radius:7px; padding:4px 8px; width:100%; }
+  #clipList { overflow:auto; flex:1; margin:0 -3px; padding:0 3px; }
+  .cgh { position:sticky; top:0; z-index:1; background:#2c3a42; color:var(--dim); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; padding:4px 6px; margin:6px 0 2px; border-radius:6px; cursor:pointer; user-select:none; }
+  .cgh.new { color:var(--amber); } .cgh::before { content:'\25BE  '; } .cgh.shut::before { content:'\25B8  '; }
+  .ci { padding:3px 7px; border-radius:6px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ci:hover { background:#33434c; } .ci.on { background:var(--teal); color:#06201f; font-weight:700; }
+  .ci .used { color:var(--amber); font-size:10.5px; } .ci.on .used { color:#06201f; }
+  .ci .meta { color:var(--dim); font-size:10.5px; } .ci.on .meta { color:#0b3433; }
   textarea { width:100%; height:92px; background:#1a2328; color:#cfe; border:1px solid var(--line); border-radius:8px; font:11px/1.3 ui-monospace,Consolas,monospace; }
 </style>
 </head>
@@ -45,8 +55,13 @@
   <div class="grp" id="handsGrp" title="Yola's hands for this clip: open = the clip's own fingers, closed = her fist (the reference keeps its own)"></div>
   <div class="grp"><span class="lbl">Camera</span>
     <button data-cam="face">Face</button><button data-cam="front">Front</button><button data-cam="side">Side (her right)</button><button data-cam="back">Back</button><button data-cam="top">Top</button><button data-cam="three">3/4</button><button id="camYolaHands">Yola hands</button><button id="camRefHands">Ref hands</button></div>
-  <div class="grp"><button id="toggleSide">Fit panel</button><button id="hideUI">Hide UI (H)</button></div>
+  <div class="grp"><button id="toggleClips" class="on">Clip list</button><button id="toggleSide">Fit panel</button><button id="hideUI">Hide UI (H)</button></div>
   <div id="note"></div>
+</div>
+<div id="clipPanel" class="panel">
+  <input id="clipFind" type="search" placeholder="find a clip (e.g. dodge, zombie, used)">
+  <label class="chk"><input type="checkbox" id="clipUsedOnly"> only clips the game uses</label>
+  <div id="clipList"></div>
 </div>
 <div id="side" class="panel">
   <label class="chk"><input type="checkbox" id="bones"> bones</label>
