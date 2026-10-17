@@ -45230,7 +45230,7 @@ void main() {
     },
     groups: (Z) => [
       // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
-      { id: "or", zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1, yaw: 0.75, wake: 1.8, look: "patient" }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: "nurse" }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.3, z: -7.6, yaw: -1.2, wake: 8 }] },
+      { id: "or", zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1, yaw: 0.75, wake: 1.8, look: "patient" }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: "nurse" }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8 }] },
       // supply: one straggler (a short orientation pocket, not another big fight)
       { id: "s7", sense: 5, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: "patient" }] },
       // nurse station: two at the far end of the room, by the beds' door
@@ -51898,6 +51898,10 @@ void main() {
   var _e2 = new Euler();
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
   var HOLD_T = 1 / 30 + 2e-4;
+  var PISTOL_MAGS = { drop: 6, grab: 13, insert: 23, seat: 28 };
+  var MAG_SEAT = new Vector3(-8e-3, -0.039, 0);
+  var _m4 = new Matrix4();
+  var _m4b = new Matrix4();
   function angleDiff2(a, b) {
     let d = (b - a) % (Math.PI * 2);
     if (d > Math.PI) d -= Math.PI * 2;
@@ -52158,6 +52162,23 @@ void main() {
         if (t) this.upperHips[n] = t.createInterpolant(new Float32Array(4));
       }
       this.pistol = weapons.pistol ? prepPistolCore(weapons.pistol) : makePistol(1);
+      const prepMag = (g) => {
+        const o = g.scene;
+        o.traverse((m) => {
+          if (m.isMesh) {
+            m.castShadow = false;
+            m.frustumCulled = false;
+          }
+        });
+        o.visible = false;
+        return o;
+      };
+      this.magEmpty = weapons.magEmpty ? prepMag(weapons.magEmpty) : null;
+      if (this.magEmpty) scene2.add(this.magEmpty);
+      this.magLoaded = weapons.magLoaded ? prepMag(weapons.magLoaded) : null;
+      this.magArt = this.pistol.children[0]?.getObjectByName?.("Pistol_Magazine_Art") || null;
+      this.magFall = null;
+      this.pistolReloadFrame = -1;
       this.shotgun = prepPumpShort(weapons.shotgun);
       this.shell = prepShell(weapons.shell);
       this.shell.visible = false;
@@ -52555,11 +52576,13 @@ void main() {
       this.container.rotation.y = this.yaw + turn;
       let rW = 0;
       this.reloadFrame = -1;
+      this.pistolReloadFrame = -1;
       if (s.action === "reload") {
         const sg = s.equipped === "shotgun", u = clamp5(s.actionT / s.reloadDur, 0, 1);
         const rl = this.act(sg ? "shotgun_reload_upper" : "pistol_reload_upper");
         rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + (this.rlJit ^= 1) * 1e-6;
         if (sg) this.reloadFrame = rl.time * 30;
+        else this.pistolReloadFrame = rl.time * 30;
         rW = smooth2(clamp5(s.actionT / 0.08, 0, 1)) * smooth2(clamp5((1 - u) / 0.12, 0, 1));
       }
       this.reloadW = rW;
@@ -52659,6 +52682,7 @@ void main() {
       if (this.weaponShown === "pistol") this.aimPistol(s, 1 - uP);
       else if (this.weaponShown === "shotgun") this.aimShotgun(s, 1 - uS);
       this.placeWeapons(s, dt);
+      this.placeMags(dt);
     }
     // Foot lock (melee clips with planted-foot data: clipdata cL/cR, measured on her posed shoes in Blender). A planted
     // foot holds its spot on the floor while the body moves over it (leg IK after the blend), so it cannot skate when the
@@ -52942,6 +52966,49 @@ void main() {
         ha.setEffectiveWeight(0);
       }
       (_a5 = this.up).sword ?? (_a5.sword = 0);
+    }
+    // Pistol reload magazines. Frames of pistol_reload (Quaternius Pistol_Reload with the support hand placed on the gun;
+    // measured on her: gun tips up 4-7, left hand at the hip pouch 13-15, at the grip 28-37). The empty one leaves the grip
+    // at `drop` and falls to the floor; the loaded one is held by its base between her left thumb and index finger from
+    // `grab`, eases to its seat (MAG_SEAT, in the pistol model's own frame: its base plate over Pistol_Magazine_Art) from
+    // `insert` and is seated at `seat`. The Rig Lab (viewer.js updateMags) plays the same rules.
+    placeMags(dt) {
+      const E = PISTOL_MAGS, f = this.pistolReloadFrame, inner = this.pistol.children[0];
+      const playing = f >= 0 && this.pistol.visible && inner;
+      if (this.magArt) this.magArt.visible = !(playing && f >= E.drop && f < E.seat);
+      if (this.magLoaded && inner) {
+        const on = playing && f >= E.grab && f < E.seat;
+        if (on) {
+          if (this.magLoaded.parent !== inner) inner.add(this.magLoaded);
+          inner.updateWorldMatrix(true, false);
+          this.bones.LeftHandThumb2.getWorldPosition(_v43).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v32), 0.5);
+          const u = f <= E.insert ? 0 : clamp5((f - E.insert) / (E.seat - E.insert), 0, 1);
+          this.magLoaded.position.copy(inner.worldToLocal(_v43)).lerp(MAG_SEAT, smooth2(u));
+          this.magLoaded.quaternion.identity();
+        }
+        this.magLoaded.visible = on;
+      }
+      if (this.magEmpty) {
+        if (playing && f >= E.drop && (this.prevMagF ?? -1) < E.drop) {
+          inner.updateWorldMatrix(true, false);
+          const M4 = _m4.copy(inner.matrixWorld).multiply(_m4b.makeTranslation(MAG_SEAT.x, MAG_SEAT.y, MAG_SEAT.z));
+          this.magFall = { p: new Vector3(), q: new Quaternion(), s: new Vector3(), t: 0 };
+          M4.decompose(this.magFall.p, this.magFall.q, this.magFall.s);
+        }
+        const F = this.magFall;
+        if (F) {
+          F.t += dt;
+          const tHit = Math.sqrt(Math.max(0, 2 * (F.p.y - 0.02) / 9.8)), t = Math.min(F.t, tHit);
+          this.magEmpty.position.copy(F.p);
+          this.magEmpty.position.y -= 4.9 * t * t;
+          _q33.setFromAxisAngle(_v32.set(0, 0, 1).applyQuaternion(F.q), 5 * t);
+          this.magEmpty.quaternion.copy(_q33).multiply(F.q);
+          this.magEmpty.scale.copy(F.s);
+          this.magEmpty.visible = this.outer.visible && F.t < tHit + 4;
+          if (!this.magEmpty.visible) this.magFall = null;
+        } else this.magEmpty.visible = false;
+      }
+      this.prevMagF = playing ? f : -1;
     }
     placeWeapons(s, dt) {
       if (s.equipped === "test" && this.test) {
@@ -59825,38 +59892,6 @@ void main() {
   };
 
   // src/opening/comiccard.js
-  function comicFrame(source) {
-    const w = source.width, h = source.height;
-    const c = document.createElement("canvas");
-    c.width = w;
-    c.height = h;
-    const g = c.getContext("2d", { willReadFrequently: true });
-    g.drawImage(source, 0, 0, w, h);
-    const img = g.getImageData(0, 0, w, h), d = img.data, n = w * h;
-    const lum = new Float32Array(n);
-    for (let i = 0; i < n; i++) lum[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255;
-    const edge = new Uint8Array(n), T2 = 0.3;
-    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const gx = lum[i - w + 1] + 2 * lum[i + 1] + lum[i + w + 1] - lum[i - w - 1] - 2 * lum[i - 1] - lum[i + w - 1];
-      const gy = lum[i + w - 1] + 2 * lum[i + w] + lum[i + w + 1] - lum[i - w - 1] - 2 * lum[i - w] - lum[i - w + 1];
-      if (gx * gx + gy * gy > T2 * T2) edge[i] = 1;
-    }
-    const ink = new Uint8Array(n);
-    for (let i = 0; i < n; i++) if (edge[i]) ink[i] = 1;
-    for (let i = 0; i < n; i++) {
-      const o = i * 4;
-      if (ink[i]) {
-        d[o] = d[o] * 0.35;
-        d[o + 1] = d[o + 1] * 0.32;
-        d[o + 2] = d[o + 2] * 0.34;
-        continue;
-      }
-      for (let k = 0; k < 3; k++) d[o + k] = Math.max(0, Math.min(255, (d[o + k] - 128) * 1.08 + 128));
-    }
-    g.putImageData(img, 0, 0);
-    return c;
-  }
   function nameCard(w, h, name, tagline) {
     const c = document.createElement("canvas");
     c.width = w;
@@ -60099,7 +60134,7 @@ void main() {
   var TX = OR_TABLE.x;
   var TZ = OR_TABLE.z;
   var LIFT7 = LIFTS[7];
-  var SLOW = 0.42;
+  var HR = { stance: 0.8, freeze: 1.62, yaw: 0.35, camYaw: 34 };
   var BELONG = ROOM1.belongings;
   var PATIENT_OUTFIT = { Jersey_Cream: 15921644, Trousers_Gray: 15461092, Uniform_Navy: 15000541, Markings_OffWhite: 15921644 };
   var clamp6 = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -60201,6 +60236,12 @@ void main() {
       onProgress?.(0.85);
       this.voicesLoaded = await this.sound.loadVoices(LINES, VOICE_DIR, (n) => onProgress?.(0.85 + 0.1 * n / LINES.length));
       onProgress?.(0.95);
+      try {
+        const rc = await this.loader.loadAsync("assets/opening/yola2_reveal.glb");
+        this.revClips = { homerun: rc.animations.find((a) => a.name === "reveal_homerun"), walk: rc.animations.find((a) => a.name === "reveal_walk") };
+      } catch (e) {
+        console.warn("reveal clips", e);
+      }
       this.stage.setActive(true);
       this.setupScene();
       this.resetTour();
@@ -60257,6 +60298,7 @@ void main() {
       this.yola?.setShown?.(false);
       this.ensureLights();
       this.ensureSmoke();
+      this.ensureDoorSweep();
       this.ensureBelongings();
       this.belongings.visible = false;
       for (const l of A.lights) l.visible = false;
@@ -60438,6 +60480,7 @@ void main() {
       }
       this.rs?.stopAll(0.2);
       this.slowmo = 0;
+      this.revBat?.(false);
       if (this.bt.state !== "idle") this.bt.finish();
       this.bt.state = "idle";
       this.monitorOn = false;
@@ -60891,6 +60934,52 @@ void main() {
     }
     setSmoke(on) {
       if (this.smoke) this.smoke.target = on ? 1 : 0;
+    }
+    // the car's light passing the crack under the shut doors, left to right: a bright line along the gap and a soft pool
+    // spilling onto the floor in front of it (built at load with zero opacity; run once as the car arrives)
+    ensureDoorSweep() {
+      if (this.sweepFx) return;
+      const L2 = LIFT7, add = (mat2) => {
+        mat2.transparent = true;
+        mat2.opacity = 0;
+        mat2.depthWrite = false;
+        mat2.blending = AdditiveBlending;
+        mat2.toneMapped = false;
+        return mat2;
+      };
+      const c = document.createElement("canvas");
+      c.width = c.height = 64;
+      const x = c.getContext("2d"), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, "rgba(255,236,200,1)");
+      gr.addColorStop(0.4, "rgba(255,220,170,0.45)");
+      gr.addColorStop(1, "rgba(255,210,160,0)");
+      x.fillStyle = gr;
+      x.fillRect(0, 0, 64, 64);
+      const glowTex = new CanvasTexture(c);
+      const line = new Mesh(new PlaneGeometry(0.55, 0.022), add(new MeshBasicMaterial({ color: 16774108, map: glowTex })));
+      line.position.set(L2.x, 0.011, -11.085);
+      const pool = new Mesh(new PlaneGeometry(0.9, 0.5), add(new MeshBasicMaterial({ color: 16769720, map: glowTex })));
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(L2.x, 6e-3, -10.9);
+      this.scene.add(line, pool);
+      this.sweepFx = { line, pool, t: -1, dur: 1.5 };
+    }
+    doorSweep() {
+      if (this.sweepFx) this.sweepFx.t = 0;
+    }
+    tickDoorSweep(d) {
+      const S2 = this.sweepFx;
+      if (!S2 || S2.t < 0) return;
+      S2.t += d;
+      const u = S2.t / S2.dur, a = u < 1 ? Math.sin(Math.min(1, u) * Math.PI) : 0, x = LIFT7.x - 1.15 + 2.3 * Math.min(1, u);
+      S2.line.position.x = x;
+      S2.pool.position.x = x;
+      S2.line.material.opacity = a;
+      S2.pool.material.opacity = a * 0.55;
+      if (u >= 1) {
+        S2.t = -1;
+        S2.line.material.opacity = S2.pool.material.opacity = 0;
+      }
     }
     ensureBelongings() {
       const st = this.stage;
@@ -61786,6 +61875,7 @@ void main() {
       this.scene.background = new Color(329738);
       this.revLight({ amb: 0, red: 0.5, tube: 0, cab: 0, redAt: "doors", spotAt: "flash" });
       this.camTo({ x: L2.x, y: 0.4, z: -11, pitch: 6, yaw: 0, dist: 1.9, fov: 40 }, 0.01);
+      this.later(0.25, () => this.doorSweep());
       if (!this.silent) {
         this.ui.setFade(0, 600);
         this.rs.liftArrive();
@@ -61829,50 +61919,64 @@ void main() {
       this.revealWorld();
       old.setVisible(false);
       this.setOutbreakLook(true);
-      this.substate = "B9_BAT";
+      this.substate = "B9_FEET";
       this.mark("beat9");
       this.revealPose = { stand: true, x: cabX, z: cabZ };
       this.standVisible(true);
-      this.standWalk({ x: an.x, z: an.z, yaw: an.yaw }, SLOW);
-      this.slowmo = SLOW;
+      this.stand.bat = "none";
+      this.standClipWalk(this.revClips?.walk, { x: cabX, z: -9.75 }, 0.7, 0.8);
+      this.slowmo = 0.7;
       if (!this.silent) {
         this.rs.slowWhoosh();
         this.rs.bedStop(1.6);
-        this.rs.cueStart(5.5);
+        this.rs.cueStart(7);
       }
       this.revLight({ amb: 0.06, red: 0.75, redAt: "doors", em: true });
       this.camTrack = () => {
-        const b = this.batCentre();
-        return { x: b.x, y: b.y, z: b.z, pitch: 8, yaw: -38, dist: 1.2, fov: 38 };
-      };
-      yield 1.7;
-      this.substate = "B10_FEET";
-      this.camTrack = () => {
         const f = this.feetCentre();
-        return { x: f.x, y: 0.18, z: f.z + 0.1, pitch: 7, yaw: 28, dist: 1.55, fov: 40 };
+        return { x: f.x, y: 0.17, z: f.z, pitch: 6, yaw: 22, dist: 1.45, fov: 40 };
       };
-      yield 1.5;
-      this.substate = "B11_FULL";
+      yield 2.7;
+      this.substate = "B10_BAT";
       this.camTrack = null;
-      this.camTo({ x: an.x, y: 1, z: an.z, pitch: 9, yaw: 12, dist: 3.6, fov: 40 }, 0.01);
-      yield () => !this.stand?.walk;
-      yield 0.7;
+      this.slowmo = 0;
+      this.revBat(true);
+      this.camTo({ x: LIFT7.x + 1.55, y: 0.5, z: -10.8, pitch: 4, yaw: -28, dist: 1.5, fov: 40 }, 0.01);
+      this.camTo({ x: LIFT7.x + 1.55, y: 0.55, z: -10.8, pitch: 3, yaw: -24, dist: 1.2, fov: 40 }, 1.7);
+      this.standHomerun(an, HR.stance);
+      yield 1.7;
+      this.substate = "B11_SWING";
+      this.mark("beat11");
+      this.revBat(false);
+      {
+        const p = this.stand;
+        this.camTo({ x: p.x - 0.2, y: 1.1, z: p.z + 0.25, pitch: 7, yaw: HR.camYaw, dist: 4, fov: 40 }, 0.01);
+      }
+      this.revLight({ amb: 0.16, red: 0.55, key: 0.45, spotAt: "key" });
+      yield 1;
+      this.stand.clip.paused = false;
+      this.stand.clip.timeScale = 1;
+      if (!this.silent) this.rs.drum(1.2);
+      {
+        const p = this.stand;
+        this.camTo({ x: p.x - 0.35, y: 1.2, z: p.z + 0.35, pitch: 6, yaw: HR.camYaw - 6, dist: 3.7, fov: 40 }, 0.6);
+      }
+      yield () => this.stand.clip.time >= HR.freeze;
       this.substate = "B12_CARD";
       this.mark("beat12");
-      this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: "key" }, 0.45);
-      yield 0.5;
+      this.stand.clip.paused = true;
+      this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: "key" });
+      this.tickRevLight(0);
       if (!this.silent) {
         this.showCard();
         this.rs.cueHit();
       }
-      this.slowmo = 0;
       this.setSmoke(false);
-      this.animScale = 0;
-      yield 2.7;
+      yield 2.6;
       this.state = "COMBAT_READY";
       this.substate = "B13_RETURN";
-      this.animScale = 1;
       this.hideCard();
+      this.stand.clip.paused = false;
       if (!this.silent) g.musicStart?.("combat");
       this.revLight({ amb: 1, red: 0, tube: 0, key: 0, em: true, exposure: 1 });
       this.setCamera();
@@ -61882,8 +61986,9 @@ void main() {
       this.camera.quaternion.copy(fromQuat);
       this.camera.fov = fromFov;
       this.camera.updateProjectionMatrix();
-      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 1.5 };
-      yield 1.6;
+      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 1.8 };
+      yield () => this.stand.clip.time >= this.stand.clip.getClip().duration - 0.05;
+      yield 0.1;
       this.finalize("normal");
     }
     // ---- the reveal's light: one controller, real lights only ----
@@ -61911,7 +62016,7 @@ void main() {
       if (p.spotAt && this.spot) {
         const sp = this.spot;
         if (p.spotAt === "key") {
-          const a = ROOM1.player;
+          const a = this.stand ? { x: this.stand.x, z: this.stand.z } : ROOM1.player;
           sp.position.set(a.x + 1.1, 2.5, a.z + 2.4);
           sp.target.position.set(a.x, 0.95, a.z);
           sp.angle = 0.3;
@@ -62028,6 +62133,68 @@ void main() {
       s.yaw = Math.atan2(dx, dz);
       s.turn = void 0;
     }
+    // the walk-out on her natural walk (UAL Walk_Loop on her rig: arms swinging, hands empty), at timeScale with the clip's
+    // measured ground speed (speed1: metres a second at full speed), so her feet do not slide
+    standClipWalk(clip, goal, timeScale, speed1) {
+      const s = this.stand;
+      if (!s || !clip) return;
+      const act = s.mixer.clipAction(clip);
+      act.timeScale = timeScale;
+      act.reset().play();
+      if (s.idle) act.crossFadeFrom(s.idle, 0.2, false);
+      const sp = speed1 * timeScale, dx = goal.x - s.x, dz = goal.z - s.z, d = Math.hypot(dx, dz) || 1;
+      s.cw = { act, goal, vx: dx / d * sp, vz: dz / d * sp, dur: clip.duration, last: 0 };
+      s.yaw = Math.atan2(dx, dz);
+      s.turn = void 0;
+    }
+    // the home run (Mixamo's, retargeted onto her for the opening: tools/opening/make_reveal_clips.py), paused at the stance.
+    // Her root is set so the swing's own walk-off ends with her hips on the gameplay mark.
+    standHomerun(mark, t0) {
+      const s = this.stand, Y2 = this.yola, clip = this.revClips?.homerun;
+      if (!s || !clip) return;
+      s.cw?.act.stop();
+      s.cw = null;
+      s.idle?.stop();
+      s.mixer.stopAllAction();
+      const act = s.mixer.clipAction(clip);
+      act.setLoop(LoopOnce, 1);
+      act.clampWhenFinished = true;
+      act.reset().play();
+      s.yaw = HR.yaw;
+      s.turn = void 0;
+      s.x = 0;
+      s.z = 0;
+      const hipsAt = (t) => {
+        act.time = t;
+        s.mixer.update(0);
+        Y2.outer.position.set(0, 0, 0);
+        Y2.container.rotation.y = s.yaw;
+        Y2.outer.updateMatrixWorld(true);
+        return Y2.bones.Hips.getWorldPosition(new Vector3());
+      };
+      const end = hipsAt(clip.duration - 0.02);
+      s.x = mark.x - end.x;
+      s.z = mark.z - end.z;
+      act.time = t0;
+      act.paused = true;
+      s.mixer.update(0);
+      s.clip = act;
+      s.bat = "held";
+      this.tickStand(0);
+    }
+    // the athlete's bat leaning against the lift's frame, beside the doors (the opening's static bat: barrel down, knob up)
+    revBat(on) {
+      if (!this.revBatObj) {
+        this.revBatObj = this.stage.guardBat.clone(true);
+        this.scene.add(this.revBatObj);
+      }
+      const b = this.revBatObj;
+      b.visible = on;
+      if (!on) return;
+      b.scale.setScalar(1);
+      b.position.set(LIFT7.x + 1.55, 0.01, -10.86);
+      b.rotation.set(-0.3, 0.4, 0.06);
+    }
     standVisible(v) {
       if (!this.stand) return;
       this.stand.shown = v;
@@ -62062,6 +62229,25 @@ void main() {
           s.walk = null;
         }
       }
+      if (s.cw) {
+        const w = s.cw;
+        s.x += w.vx * dt;
+        s.z += w.vz * dt;
+        const ph = w.act.time % w.dur / w.dur;
+        if (w.last < 0.5 && ph >= 0.5 || ph < w.last) {
+          if (!this.silent) {
+            this.rs.footstep();
+            this.rs.drum(0.8);
+          }
+          this.smokeKick(s.x, s.z, 0.9);
+        }
+        w.last = ph;
+        if ((w.goal.x - s.x) * w.vx + (w.goal.z - s.z) * w.vz <= 0) {
+          s.x = w.goal.x;
+          s.z = w.goal.z;
+          w.vx = w.vz = 0;
+        }
+      }
       if (s.turn !== void 0 && dt > 0) {
         const e = Math.atan2(Math.sin(s.turn - s.yaw), Math.cos(s.turn - s.yaw));
         s.yaw += e * Math.min(1, dt * 2.5);
@@ -62074,7 +62260,12 @@ void main() {
       Y2.container.rotation.y = s.yaw;
       s.mixer.update(dt);
       const bat = Y2.batLib?.obj, hand = Y2.bones.RightHand;
-      if (bat && hand) {
+      if (bat && s.bat === "none") bat.visible = false;
+      else if (bat && s.bat === "held") {
+        Y2.outer.updateMatrixWorld(true);
+        Y2.placeHeld(Y2.batLib);
+        bat.visible = s.shown;
+      } else if (bat && hand) {
         Y2.outer.updateMatrixWorld(true);
         const hp = hand.getWorldPosition(new Vector3()), fwd = new Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw));
         const dir = new Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();
@@ -62097,7 +62288,11 @@ void main() {
       this.hideCard();
       this.tickRevLight(0);
       this.game().looks?.render ? this.game().looks.render() : this.renderer.render(this.scene, this.camera);
-      const src = this.renderer.domElement, base = comicFrame(src), name = nameCard(src.width, src.height, "YOLA", "Anesthesiologist. Off shift.");
+      const src = this.renderer.domElement, base = document.createElement("canvas");
+      base.width = src.width;
+      base.height = src.height;
+      base.getContext("2d").drawImage(src, 0, 0);
+      const name = nameCard(src.width, src.height, "YOLA", "Anesthesiologist. Off shift.");
       const wrap = document.createElement("div");
       wrap.className = "opCard";
       wrap.style.cssText = "position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden;background:#000";
@@ -62301,6 +62496,7 @@ void main() {
       }
       this.rs?.stopAll(0.2);
       this.slowmo = 0;
+      this.revBat?.(false);
       for (const k of ["yola", "baseball", "teamA", "teamB", "surgeon", "staff"]) A[k].setVisible(false);
       if (this.guardPool) this.guardPool.visible = true;
       else this.placeGuardPool();
@@ -62649,6 +62845,7 @@ void main() {
       this.tickStand(da);
       this.tickRevLight(d);
       this.tickSmoke(d);
+      this.tickDoorSweep(d);
       if (this.camTrack) {
         this.rig = this.camTrack();
         this.camAnim = null;
@@ -63861,7 +64058,7 @@ void main() {
     park();
     game.hudShow(false);
     const cam = game.camera, p = game.sim.player, Y2 = game.yola, V2 = game.THREE.Vector3;
-    const MOVES = { stand: [0, 0, 0], walk: [0, 1, 0.4], run: [0, 1, 1], back: [0, -1, 1], "strafe L": [1, 0, 1], "strafe R": [-1, 0, 1], attack: [0, 0, 0] };
+    const MOVES = { stand: [0, 0, 0], walk: [0, 1, 0.4], run: [0, 1, 1], back: [0, -1, 1], "strafe L": [1, 0, 1], "strafe R": [-1, 0, 1], attack: [0, 0, 0], reload: [0, 0, 0] };
     let move = "stand", speed = 1, paused2 = false;
     const x0 = p.x, z0 = p.z;
     game.scriptInput = () => {
@@ -63869,6 +64066,7 @@ void main() {
       p.x = p.px = x0;
       p.z = p.pz = z0;
       const [mx, mz, m] = MOVES[move];
+      if (move === "reload" && p.action.type === "ready" && p.equipped in p.mags) p.ammo = 0;
       return { moveX: mx * m, moveZ: mz * m, aimX: 0, aimZ: move === "attack" ? 1 : 0.3, swapPresses: 0, usePresses: 0 };
     };
     game.camFree = true;
@@ -64807,13 +65005,15 @@ void main() {
       loader.loadAsync("assets/weapons/pump_short.glb"),
       loader.loadAsync("assets/weapons/fire_axe.glb"),
       loader.loadAsync("assets/weapons/shell.glb"),
-      loader.loadAsync("assets/weapons/pistol_core.glb").catch(() => null)
+      loader.loadAsync("assets/weapons/pistol_core.glb").catch(() => null),
+      loader.loadAsync("assets/weapons/pistol_mag_empty.glb").catch(() => null),
+      loader.loadAsync("assets/weapons/pistol_mag_loaded.glb").catch(() => null)
     ]);
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
+    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG });
+    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG });
     yola.addAttackClips(yg.animations.filter((c) => c.name === "yola_knockdown" || c.name === "yola_getup"));
     setupBat(yg.animations);
     window.game.yolaClips = yg.animations;

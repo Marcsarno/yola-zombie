@@ -290,7 +290,7 @@ const F7 = buildFloor(7, {
   },
   groups: (Z) => [
     // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
-    { id: 'or', zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1.0, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: 'nurse' }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.3, z: -7.6, yaw: -1.2, wake: 8.0 }] },
+    { id: 'or', zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1.0, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: 'nurse' }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8.0 }] },
     // supply: one straggler (a short orientation pocket, not another big fight)
     { id: 's7', sense: 5.0, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: 'patient' }] },
     // nurse station: two at the far end of the room, by the beds' door
