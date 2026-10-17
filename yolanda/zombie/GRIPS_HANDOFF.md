@@ -25,15 +25,17 @@ Lab ready for adjustments. Everything below is committed (commits 761161a .. tod
    Rig Lab drew the bat between both hands while the game held it one-handed; the axe handle passed 3-12 cm behind her
    fists in the game (now through both fists, 1 cm; no end-over-end flip); the shotgun calibrates the same way in both.
 6. **Reload magazine** rises with her fingers along the grip (within 2.4 cm of her pinch; was 3.5 cm ahead).
-7. **Fists:** Tripo's jab / cross / kick had flat open hands (palms together in the jab): punching fists now (1.3 =
-   tighter than her bat grip, which left a handle-shaped hole), in assets/hold/hand_poses.json (the game reads the Rig
+7. **Fists:** Tripo's jab / cross / kick had flat open hands (palms together in the jab): punching fists now (1.5 =
+   the tightest, past her bat grip, which left a handle-shaped hole; her thumb still lies along the side), in assets/hold/hand_poses.json (the game reads the Rig
    Lab Hands settings). Also closed: the axe swing (the source's release fingers hung off the handle); the shotgun's
    pump hand at 'support' (it was flat against the pump; X Bot's curls over it).
 8. **Shotgun shell:** the user's prop (assets/weapons/shotgun_shell.glb) replaces the stand-in, held in her thumb-index
-   pinch pointing at the loading port (the stand-in floated 5-8 cm behind her fingers).
+   pinch pointing at the loading port (the stand-in floated 5-8 cm behind her fingers), and she pushes it into the port
+   over the last 6 frames (it used to vanish ~10 cm short while her hand snapped back 14 cm).
 9. **An independent checker agent** (read-only, shots/chk_*.png) re-checked everything: it found the axe handle going
-   through her head in the batting idle (2.3 cm from her head's centre; now 12.4, X Bot 13.7: the handle leans toward
-   the fists' grip axes), plus items 7's hands; fixed and re-checked.
+   through her head in the batting idle (2.3 cm from her head's centre; now clear: the handle runs along the fists' grip
+   axes; at most ~20 hair vertices at the ponytail base, and a brief brush as the axe swings back up after the swing),
+   plus item 7's hands; fixed and re-checked twice (shots/chk2_*.png).
 
 **Rig Lab controls for the user (viewer.html?char=yola2):** pick a weapon (top bar) and the fit panel on the right
 follows it: Pistol / Bat / Axe / Shotgun, each with size, three moves (mm) and three turns (deg), "editing" Yola or the
