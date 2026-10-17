@@ -49377,11 +49377,44 @@ void main() {
     solveArm(bones[side + "Arm"], bones[side + "ForeArm"], H4, _hb.copy(point).sub(off), w);
     return true;
   }
+  var CARRY = {
+    // port arms: the handle's end by her right hip, the head up by her left shoulder, in front of her
+    sledgehammer: { clip: "kk_Melee_2H_Idle", grip: [-0.15, 0.98, 0.3], dir: [0.55, 0.8, 0.18], ref: [0, 0, 1] },
+    // at the waist: the rear handle by her right hip, the bar forward and a little down, the top handle for the left hand
+    chainsaw: { clip: "kk_Melee_2H_Idle", grip: [-0.15, 0.95, 0.22], dir: [0.3, -0.12, 0.95], ref: [0, 1, 0] }
+  };
+  var _cm1 = new Matrix4();
+  var _cm2 = new Matrix4();
+  var _cq = new Quaternion();
+  var _cs = new Vector3(1, 1, 1);
+  function carryCalibrate(bones, charW, def, C, k = 1) {
+    const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
+    r.addScaledVector(s, -r.dot(s)).normalize();
+    const d = new Vector3(...C.dir).normalize(), r22 = new Vector3(...C.ref);
+    r22.addScaledVector(d, -r22.dot(d)).normalize();
+    _cm1.makeBasis(s, r, new Vector3().crossVectors(s, r));
+    _cm2.makeBasis(d, r22, new Vector3().crossVectors(d, r22));
+    _cq.setFromRotationMatrix(_cm2.multiply(_cm1.transpose()));
+    const F = new Matrix4().compose(new Vector3(...C.grip).multiplyScalar(k), _cq, _cs).premultiply(charW);
+    bones.Spine2.updateWorldMatrix(true, false);
+    return new Matrix4().copy(bones.Spine2.matrixWorld).invert().multiply(F);
+  }
+  var _cp = new Vector3();
+  var _cs2 = new Vector3();
+  function carryPlace(bones, o, def, cal, fit, k, out) {
+    bones.Spine2.updateWorldMatrix(true, false);
+    _cm1.copy(bones.Spine2.matrixWorld).multiply(cal).decompose(_cp, _cq, _cs2);
+    applyFit(o, _cp, _cq, fit, new Vector3(...def.grip_primary), 1, k);
+    o.updateMatrixWorld(true);
+    out.grip.copy(o.localToWorld(new Vector3(...def.grip_primary)));
+    out.dir.set(...def.shaft_axis).transformDirection(o.matrixWorld);
+    return out;
+  }
   var _rc = [0, 0, 0, 0, 0, 0].map(() => new Vector3());
   var _rq = new Quaternion();
   var _rq2 = new Quaternion();
   var _rq3 = new Quaternion();
-  function reachShoulder(bones, side, target) {
+  function reachShoulder(bones, side, target, maxDeg = 15) {
     const cl = bones[side + "Shoulder"], up = bones[side + "Arm"], lo = bones[side + "ForeArm"], hand = bones[side + "Hand"], mid = bones[side + "HandMiddle1"];
     if (!cl || !up || !lo || !hand || !mid) return;
     const R = _rc, c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]);
@@ -49390,7 +49423,7 @@ void main() {
     if (need <= 0) return;
     const ca = R[1].sub(c), ct = R[5].copy(target).sub(c), axis = new Vector3().crossVectors(ca, ct);
     if (axis.lengthSq() < 1e-10) return;
-    _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180));
+    _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), maxDeg * Math.PI / 180));
     cl.getWorldQuaternion(_rq2);
     cl.parent.getWorldQuaternion(_rq3);
     cl.quaternion.copy(_rq3.invert().multiply(_rq).multiply(_rq2));
@@ -49704,6 +49737,7 @@ void main() {
       const scriptNames = ["t_greet_01", "t_greet_04"].filter((n) => byName[n]);
       for (const n of scriptNames) clips.push(byName[n]);
       super(scene2, gltf.scene, H4, clips);
+      this.byName = byName;
       this.H = H4;
       this.scriptNames = scriptNames;
       this.unarmed = unarmed;
@@ -49801,7 +49835,7 @@ void main() {
         a.timeScale = 0;
       }
       this.script = null;
-      this.up = { pistol: 1, shotgun: 0, axe: 0, fists: 0 };
+      this.up = { pistol: 1, shotgun: 0, axe: 0, fists: 0, carry: 0 };
       this.flinch = new Spring2(120, 13);
       this.prevHurt = 99;
       this.deathT = -1;
@@ -50109,11 +50143,11 @@ void main() {
       this.container.rotation.y = this.yaw;
       const w = this.locoWeights(s, dt);
       const rate = dt / Math.max(0.05, s.swapDur * 0.6);
-      const eqKey = s.equipped === "bat" ? this.batLib ? "sword" : "axe" : s.equipped === "test" ? this.test?.two ? "axe" : "fists" : s.equipped;
+      const eqKey = s.equipped === "bat" ? this.batLib ? "sword" : "axe" : s.equipped === "test" ? this.test?.carry && this.carryCal?.[this.test.carry] ? "carry" : this.test?.two ? "axe" : "fists" : s.equipped;
       this.batMode = s.equipped === "bat";
       for (const k2 in this.up) this.up[k2] += clamp4((eqKey === k2 ? 1 : 0) - this.up[k2], -rate, rate);
-      const uP0 = smooth2(this.up.pistol), uS0 = smooth2(this.up.shotgun), uA0 = smooth2(this.up.axe), uF0 = smooth2(this.up.fists), uW0 = smooth2(this.up.sword || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 || 1;
-      const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un;
+      const uP0 = smooth2(this.up.pistol), uS0 = smooth2(this.up.shotgun), uA0 = smooth2(this.up.axe), uF0 = smooth2(this.up.fists), uW0 = smooth2(this.up.sword || 0), uC0 = smooth2(this.up.carry || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 + uC0 || 1;
+      const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un, uC = uC0 / un;
       let sW = 0, turn = 0, prevW = 0;
       const A = s.action === "swing" ? s.atk || (s.ground ? groundAttack(s.equipped) : attacksOf(s.equipped)[s.combo]) : null;
       let swingActW = -1, R = this.recCur;
@@ -50227,6 +50261,7 @@ void main() {
       hold.setEffectiveWeight((1 - rS) * uS * k);
       hold.time = HOLD_T + (this.holdJit ^= 1) * 1e-6;
       this.act("bat_idle_upper").setEffectiveWeight(uA * k);
+      this.actions.carry_upper?.setEffectiveWeight(uC * k);
       const br = this.batRun, uWp = this.unarmed && (br === "plain" || br === "plainlegs") ? uW : 0;
       if (this.actions.sword_idle_upper) this.actions.sword_idle_upper.setEffectiveWeight((br === "plain" && uWp ? uW * w.pistol_idle : uW) * k);
       if (this.swordHips) {
@@ -50245,7 +50280,7 @@ void main() {
       for (const n in w) {
         const mv = n !== "pistol_idle";
         this.act(n).setEffectiveWeight(w[n] * (uP * (1 - rP) + (this.unarmed ? 0 : uF)) * k);
-        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uW - (mv ? uWp : 0) + uP * rP + (this.unarmed ? 0 : uF)) * k);
+        this.act(n + "_lower").setEffectiveWeight(w[n] * (uS + uA + uW + uC - (mv ? uWp : 0) + uP * rP + (this.unarmed ? 0 : uF)) * k);
         if (this.unarmed && n === "pistol_idle") this.act("tripo_idle_lower").setEffectiveWeight(w[n] * uF * k);
         if (this.unarmed && mv) {
           this.act(n + "_u").setEffectiveWeight(w[n] * (uni + (br === "plain" ? uWp : 0)) * k);
@@ -50704,6 +50739,43 @@ void main() {
     setTestWeapon(test) {
       if (this.test?.obj && this.test.obj !== test?.obj) this.test.obj.visible = false;
       this.test = test;
+      if (test?.carry) this.setupCarry(test);
+    }
+    // A two-handed weapon carried at rest (render/holdfit.js CARRY): its idle's upper body as the hold layer, and the carry's
+    // frame in her chest's frame, measured once on the idle's first frame
+    setupCarry(T2) {
+      const C = CARRY[T2.carry], clip = C && this.byName?.[C.clip];
+      if (!clip) return;
+      if (!this.actions.carry_upper) {
+        const up = subClip(clip, (b) => !LOWER.test(b), "carry_upper");
+        loopClip(up);
+        const a = this.mixer.clipAction(up);
+        this.actions.carry_upper = a;
+        a.play();
+        a.setEffectiveWeight(0);
+      }
+      if ((this.carryCal || (this.carryCal = {}))[T2.carry]) return;
+      const acts = Object.values(this.actions), saved = acts.map((x) => [x, x.getEffectiveWeight(), x.time]), op = this.outer.position.clone(), ry = this.container.rotation.y;
+      this.outer.position.set(0, 0, 0);
+      this.container.rotation.y = 0;
+      for (const x of acts) x.setEffectiveWeight(0);
+      const full = clip.clone(), m = this.mixer.clipAction(full);
+      m.play();
+      m.setEffectiveWeight(1);
+      m.time = Math.min(...full.tracks.map((t) => t.times[0]));
+      for (const [b, q] of this.restQ) b.quaternion.copy(q);
+      mixerWritesAll(this.mixer);
+      this.mixer.update(0);
+      this.outer.updateMatrixWorld(true);
+      this.carryCal[T2.carry] = carryCalibrate(this.bones, new Matrix4().copy(this.container.matrixWorld), T2.w, C, 1);
+      m.stop();
+      this.mixer.uncacheAction(full);
+      for (const [x, w, t] of saved) {
+        x.setEffectiveWeight(w);
+        x.time = t;
+      }
+      this.outer.position.copy(op);
+      this.container.rotation.y = ry;
     }
     // fist centre, grip axis (pinky -> index) and knuckle direction from her finger joints (as in the move library)
     fistFrame(side, out) {
@@ -50727,7 +50799,27 @@ void main() {
     // along the grip axis, its face toward the knuckles turned by roll, slid along the grip by slide. Sets heldGrip / heldTip
     // (world) for the attack builder's path sampling (src/render/libattack.js).
     placeTest() {
-      this.placeHeld(this.test);
+      const T2 = this.test;
+      this.placeHeld(T2);
+      const C = T2.carry && this.carryCal?.[T2.carry], o = T2.obj;
+      const cw = C && o ? smooth2(clamp4(this.up.carry || 0, 0, 1)) * (1 - Math.min(1, (this.swingW || 0) + (this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0))) : 0;
+      if (cw <= 1e-3) return;
+      const p0 = o.position.clone(), q0 = o.quaternion.clone(), w = T2.w;
+      carryPlace(this.bones, o, w, C, T2.fit, 1, this._cpo || (this._cpo = { grip: new Vector3(), dir: new Vector3() }));
+      const q1 = o.quaternion.clone();
+      o.position.lerpVectors(p0, o.position, cw);
+      o.quaternion.slerpQuaternions(q0, q1, cw);
+      o.updateMatrixWorld(true);
+      const g = o.localToWorld(new Vector3(...w.grip_primary)), d = new Vector3(...w.shaft_axis).transformDirection(o.matrixWorld);
+      reachShoulder(this.bones, "Right", g);
+      handOnto(this.bones, "Right", g, d, cw, ikArm);
+      this.closeFist("Right", cw);
+      if (w.grip_secondary) {
+        const g2 = o.localToWorld(new Vector3(...w.grip_secondary));
+        reachShoulder(this.bones, "Left", g2, 25);
+        handOnto(this.bones, "Left", g2, d, 1, ikArm);
+        this.closeFist("Left", 1);
+      }
     }
     placeHeld(T2) {
       if (T2.fingers) {
@@ -50742,7 +50834,7 @@ void main() {
         const other = T2.hand === "Left" ? "Right" : "Left";
         o.updateMatrixWorld(true);
         const pt = o.localToWorld(_v6.set(...w.grip_secondary)), dir = _v7.set(...w.shaft_axis).transformDirection(o.matrixWorld);
-        this.reachClavicle(other, pt);
+        reachShoulder(this.bones, other, pt, 25);
         if (handOnto(this.bones, other, pt, dir, 1, ikArm)) this.closeFist(other, 1);
       }
       o.visible = true;
@@ -67169,6 +67261,8 @@ void main() {
     const either = async (f) => await json("assets/moves/" + f) || json("assets/arena/" + f);
     const [catalog, wj, SEL, lib2] = await Promise.all([either("catalog.json"), either("weapons.json"), loadSelection(), loader2.loadAsync(game.yolaModel === "2" ? "assets/moves/yola2_moves.glb" : "assets/moves/yola_moves.glb").catch(() => null)]);
     const WDEF = wj?.weapons || {};
+    const fitsJ = await json("assets/hold/weapon_fit.json"), who = game.yolaModel === "2" ? "yola2" : "yola", fits = {};
+    for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === "object" && v[who]) fits[k] = v[who];
     const clips = Object.fromEntries([...game.yolaClips || [], ...lib2?.animations || []].map((c) => [c.name, c]));
     const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
     let fingers = null;
@@ -67243,7 +67337,7 @@ void main() {
     async function buildAttack(e, speed) {
       const P = PROFILE[e.weapon], w = WDEF[e.weapon] && e.weapon !== "none" ? WDEF[e.weapon] : null;
       const obj = w ? await model(e.weapon) : null;
-      const hold = { obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === "two", fingers: w ? fingers : null };
+      const hold = { obj, w, hand: e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === "two", fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, fit: fits[e.weapon] || null };
       yola2.setTestWeapon(hold);
       return buildLibraryAttack(yola2, { clip: clips[e.clip], frames: meta[e.clip]?.frames, hold: w ? hold : null, P, speed, name: e.label, sound: e.weapon });
     }

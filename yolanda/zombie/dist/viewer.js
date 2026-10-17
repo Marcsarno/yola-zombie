@@ -38255,11 +38255,44 @@ void main() {
     solveArm(bones[side + "Arm"], bones[side + "ForeArm"], H, _hb.copy(point).sub(off), w);
     return true;
   }
+  var CARRY = {
+    // port arms: the handle's end by her right hip, the head up by her left shoulder, in front of her
+    sledgehammer: { clip: "kk_Melee_2H_Idle", grip: [-0.15, 0.98, 0.3], dir: [0.55, 0.8, 0.18], ref: [0, 0, 1] },
+    // at the waist: the rear handle by her right hip, the bar forward and a little down, the top handle for the left hand
+    chainsaw: { clip: "kk_Melee_2H_Idle", grip: [-0.15, 0.95, 0.22], dir: [0.3, -0.12, 0.95], ref: [0, 1, 0] }
+  };
+  var _cm1 = new Matrix4();
+  var _cm2 = new Matrix4();
+  var _cq = new Quaternion();
+  var _cs = new Vector3(1, 1, 1);
+  function carryCalibrate(bones, charW, def, C, k = 1) {
+    const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
+    r.addScaledVector(s, -r.dot(s)).normalize();
+    const d = new Vector3(...C.dir).normalize(), r2 = new Vector3(...C.ref);
+    r2.addScaledVector(d, -r2.dot(d)).normalize();
+    _cm1.makeBasis(s, r, new Vector3().crossVectors(s, r));
+    _cm2.makeBasis(d, r2, new Vector3().crossVectors(d, r2));
+    _cq.setFromRotationMatrix(_cm2.multiply(_cm1.transpose()));
+    const F = new Matrix4().compose(new Vector3(...C.grip).multiplyScalar(k), _cq, _cs).premultiply(charW);
+    bones.Spine2.updateWorldMatrix(true, false);
+    return new Matrix4().copy(bones.Spine2.matrixWorld).invert().multiply(F);
+  }
+  var _cp = new Vector3();
+  var _cs2 = new Vector3();
+  function carryPlace(bones, o, def, cal, fit2, k, out) {
+    bones.Spine2.updateWorldMatrix(true, false);
+    _cm1.copy(bones.Spine2.matrixWorld).multiply(cal).decompose(_cp, _cq, _cs2);
+    applyFit(o, _cp, _cq, fit2, new Vector3(...def.grip_primary), 1, k);
+    o.updateMatrixWorld(true);
+    out.grip.copy(o.localToWorld(new Vector3(...def.grip_primary)));
+    out.dir.set(...def.shaft_axis).transformDirection(o.matrixWorld);
+    return out;
+  }
   var _rc = [0, 0, 0, 0, 0, 0].map(() => new Vector3());
   var _rq = new Quaternion();
   var _rq2 = new Quaternion();
   var _rq3 = new Quaternion();
-  function reachShoulder(bones, side, target) {
+  function reachShoulder(bones, side, target, maxDeg = 15) {
     const cl = bones[side + "Shoulder"], up = bones[side + "Arm"], lo = bones[side + "ForeArm"], hand = bones[side + "Hand"], mid = bones[side + "HandMiddle1"];
     if (!cl || !up || !lo || !hand || !mid) return;
     const R = _rc, c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]);
@@ -38268,7 +38301,7 @@ void main() {
     if (need <= 0) return;
     const ca = R[1].sub(c), ct = R[5].copy(target).sub(c), axis = new Vector3().crossVectors(ca, ct);
     if (axis.lengthSq() < 1e-10) return;
-    _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), 15 * Math.PI / 180));
+    _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), maxDeg * Math.PI / 180));
     cl.getWorldQuaternion(_rq2);
     cl.parent.getWorldQuaternion(_rq3);
     cl.quaternion.copy(_rq3.invert().multiply(_rq).multiply(_rq2));
@@ -39535,7 +39568,7 @@ void main() {
   }
   function otherHandOn(a, side, point, dir, w) {
     const chain = Object.entries(a.bones).filter(([n]) => n.startsWith(side) && /(Shoulder|Arm|ForeArm|Hand)/.test(n)).map(([, b]) => b), before = chain.map((b) => b.quaternion.clone());
-    if (w >= 0.5) reachShoulder(a.bones, side, point);
+    if (w >= 0.5) reachShoulder(a.bones, side, point, 25);
     if (!handOnto(a.bones, side, point, dir, w, ikArm)) return;
     const after = chain.map((b) => b.quaternion.clone());
     chain.forEach((b, i) => {
@@ -39548,6 +39581,23 @@ void main() {
     }
     a.root.updateMatrixWorld(true);
   }
+  function carryCalOf(a, w, LD, CY, k) {
+    const C = a.carryCal || (a.carryCal = {});
+    if (C[w]) return C[w];
+    const saved = [];
+    a.obj.traverse((b) => {
+      if (b.isBone) saved.push([b, b.quaternion.clone(), b.position.clone()]);
+    });
+    a.setFrame(1);
+    a.root.updateMatrixWorld(true);
+    C[w] = carryCalibrate(a.bones, new Matrix4().compose(a.root.position, a.root.quaternion, new Vector3(1, 1, 1)), LD, CY, k);
+    for (const [b, q, p2] of saved) {
+      b.quaternion.copy(q);
+      b.position.copy(p2);
+    }
+    a.root.updateMatrixWorld(true);
+    return C[w];
+  }
   function placeHeldOn(a, o) {
     const w = weaponOf(), k = a.height / 1.62;
     o.visible = true;
@@ -39559,6 +39609,17 @@ void main() {
       if (mid("Right").distanceTo(mid("Left")) > 0.32 * k && placeOneHanded(B, "Right", o, WDEFS[w], fitW(w, a), {}, k)) return;
     }
     const LD = LIB_WEAPONS[w] && WDEFS[w];
+    const CY = LD && CARRY[w];
+    if (CY && a === main && main.clip?.name === CY.clip) {
+      const cal = carryCalOf(a, w, LD, CY, k);
+      if (cal) {
+        const P = carryPlace(a.bones, o, LD, cal, fitW(w, a), k, { grip: new Vector3(), dir: new Vector3() });
+        otherHandOn(a, "Right", P.grip, P.dir, 1);
+        o.updateMatrixWorld(true);
+        otherHandOn(a, "Left", o.localToWorld(new Vector3(...LD.grip_secondary)), P.dir, 1);
+        return;
+      }
+    }
     if (LD) {
       const pk = PICKS[(main?.clip?.name || "").replace(/_REBAKE_.*$/, "") + "|" + w] || { hand: LD.primary_hand || "Right" };
       if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
@@ -39687,8 +39748,9 @@ void main() {
     // (its combo: bat_swing, then t_chop)
     bat: { label: "Bat", idle: "ual1_Sword_Idle", attack: "ual_Sword_Regular_Combo" },
     // (the arena's weapons: their first "good" pick in the Move Library as the attack)
-    sledgehammer: { label: "Sledgehammer", idle: "bat_idle", attack: "ual_Sword_Heavy_Combo" },
-    chainsaw: { label: "Chainsaw", idle: "bat_idle", attack: "melee_horizontal" },
+    sledgehammer: { label: "Sledgehammer", idle: "kk_Melee_2H_Idle", attack: "ual_Sword_Heavy_Combo" },
+    // (its carry: render/holdfit.js CARRY)
+    chainsaw: { label: "Chainsaw", idle: "kk_Melee_2H_Idle", attack: "melee_horizontal" },
     knife: { label: "Knife", idle: "ual1_Sword_Idle", attack: "ual_Sword_Dash" },
     none: { label: "None", idle: null, attack: null }
   };
