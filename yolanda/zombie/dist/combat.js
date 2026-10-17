@@ -46212,8 +46212,8 @@ void main() {
     }
     startSwing(sim2, combo2, unlocked = false) {
       this.swingId++;
-      const G3 = combo2 === 0 ? groundAttack(this.equipped) : null, ground = !!(G3 && sim2.groundTarget?.(this));
-      const A = ground ? G3 : this.attacks[combo2];
+      const G4 = combo2 === 0 ? groundAttack(this.equipped) : null, ground = !!(G4 && sim2.groundTarget?.(this));
+      const A = ground ? G4 : this.attacks[combo2];
       const as = sim2.meleeAssist?.(this, A.assist ?? (combo2 > 0 ? 2.1 : 1.45), A.style === "chop");
       const tgt = as?.target || null, turnBy = as?.turn || 0;
       let lunge = tgt ? clamp2(Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 1.05), 0, A.lungeMax ?? (combo2 > 0 ? 0.75 : 0.5)) : 0;
@@ -47876,7 +47876,7 @@ void main() {
     // ---------------- axe: swept between simulation steps ----------------
     resolveMelee(p, t0, t1, act) {
       if (t1 <= t0) return;
-      const SUB = 4, T2 = this.T, A = p.atk(act), G3 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
+      const SUB = 4, T2 = this.T, A = p.atk(act), G4 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
       let prev = meleeWorldSegment(p, A, t0, _a);
       let px2 = prev.tx, pz2 = prev.tz;
       {
@@ -47902,14 +47902,14 @@ void main() {
             this.emit({ type: "batClank", x: tipX, z: tipZ, nx: wall.nx, nz: wall.nz });
           }
         }
-        const f = G3.hitFrom / G3.length;
+        const f = G4.hitFrom / G4.length;
         const ax = seg.hx + (tipX - seg.hx) * f, az = seg.hz + (tipZ - seg.hz) * f;
         const ay = seg.hy + (seg.ty - seg.hy) * f;
         const chop = A.style === "chop";
         for (const z of this.zombies) {
           if (!z.alive || act.hitSet.has(z.id)) continue;
           if (z.down && !chop) continue;
-          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G3.radius : 0);
+          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G4.radius : 0);
           const minY = z.down || z.crawling ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y);
           const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
           const y1 = ay + (seg.ty - ay) * h1.t;
@@ -47917,7 +47917,7 @@ void main() {
           const d2 = seg.ty >= minY ? segPointDist2(px2, pz2, tipX, tipZ, z.x, z.z).d2 : 1e9;
           let near = Math.min(d1, d2) <= rr * rr;
           if (!near && !z.down && !z.crawling && z.armsLost < 2) {
-            const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G3.radius : 0);
+            const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G4.radius : 0);
             const e1 = segPointDist2(ax, az, tipX, tipZ, ox, oz), ey = ay + (seg.ty - ay) * e1.t;
             near = ey >= minY && e1.d2 <= ar * ar || seg.ty >= minY && segPointDist2(px2, pz2, tipX, tipZ, ox, oz).d2 <= ar * ar;
           }
@@ -50199,21 +50199,21 @@ void main() {
     // Left hand on the shotgun: reaches the shell's loading port while it carries a shell, otherwise stays on
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
-    shotgunLeftHand(rf, G3) {
-      const U2 = G3.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
+    shotgunLeftHand(rf, G4) {
+      const U2 = G4.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp4(u, 0, 1));
       const shellOn = rf >= SH.from && rf <= SH.to;
       this.grip("Left", _v4);
       let wPort = 0;
       const tail = rf > SH.to && rf < SH.to + 5;
       if (shellOn || tail) {
         _v32.copy(U2.port.position).add(_v43.set(0, -SH.portDown, 0));
-        G3.localToWorld(_v32);
+        G4.localToWorld(_v32);
         wPort = tail ? 0 : smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
         const ins = tail ? smooth01(1 - (rf - SH.to) / 5) : smooth01((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT);
         if (ins > 0) {
           this.bones.LeftHandThumb2.getWorldPosition(_v43).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v6), 0.5).sub(_v4);
           _v6.copy(U2.port.position);
-          G3.localToWorld(_v6);
+          G4.localToWorld(_v6);
           _v6.sub(_v43);
           _v32.lerp(_v6, ins);
           wPort = Math.max(wPort, ins);
@@ -50224,7 +50224,7 @@ void main() {
         }
       }
       _v23.set(U2.pumpX, U2.pump.position.y, U2.pump.position.z);
-      G3.localToWorld(_v23);
+      G4.localToWorld(_v23);
       const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
       if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
@@ -50434,12 +50434,12 @@ void main() {
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
-        const G3 = this.shotgun, U2 = G3.userData, SP = SHOTGUN_SPEC;
+        const G4 = this.shotgun, U2 = G4.userData, SP = SHOTGUN_SPEC;
         this.bones.RightHand.getWorldQuaternion(_q5).multiply(this.shotgunSocket);
         this.grip("Right", _v4);
-        G3.position.copy(_v4);
-        G3.quaternion.copy(_q5);
-        if (this.shotgunFit) applyFit(G3, _v4, _q5, this.shotgunFit, AXE_AT);
+        G4.position.copy(_v4);
+        G4.quaternion.copy(_q5);
+        if (this.shotgunFit) applyFit(G4, _v4, _q5, this.shotgunFit, AXE_AT);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -50448,9 +50448,9 @@ void main() {
         const rf = this.reloadFrame;
         if (rf >= SP.rackFrom && rf <= SP.rackTo) slide = Math.max(slide, Math.sin(Math.PI * (rf - SP.rackFrom) / (SP.rackTo - SP.rackFrom)));
         U2.pump.position.x = U2.pumpX - SP.pumpStroke * slide;
-        G3.updateMatrixWorld(true);
+        G4.updateMatrixWorld(true);
         U2.muzzle.getWorldPosition(this.muzzleWorld);
-        this.shotgunLeftHand(rf, G3);
+        this.shotgunLeftHand(rf, G4);
       } else {
         this.grip("Right", _v4);
         this.grip("Left", _v23);
@@ -54400,6 +54400,189 @@ void main() {
     }
   };
 
+  // src/render/gibburst.js
+  var G = 9;
+  var MAX_KEEP = 4;
+  var SEVERED_CHUNK = { Head: "Head", Forearm_L: "Forearm_L", Forearm_R: "Forearm_R", LowerLeg_L: "Shin_L", LowerLeg_R: "Shin_R" };
+  var GibBurst = class {
+    constructor(scene2, loader2, fx2) {
+      this.scene = scene2;
+      this.loader = loader2;
+      this.fx = fx2;
+      this.tpl = {};
+      this.bursts = [];
+      this.world = null;
+    }
+    // files: { viewType: url } (the game's zombie types that have a burst model)
+    async load(files) {
+      await Promise.all(Object.entries(files).map(async ([type, url]) => {
+        try {
+          const g = await this.loader.loadAsync(url), root = g.scene, byChunk = /* @__PURE__ */ new Map(), bones = {};
+          root.traverse((o) => {
+            if (o.isBone) bones[o.name.replace(/^mixamorig:?/, "")] = o;
+            if (!o.isMesh) return;
+            const geo = o.geometry;
+            if (geo.attributes.color_1) {
+              geo.setAttribute("color", geo.attributes.color_1);
+              geo.deleteAttribute("color_1");
+            }
+            if (geo.attributes.color) {
+              o.material = o.material.clone();
+              o.material.vertexColors = true;
+            }
+            if (!o.isSkinnedMesh) return;
+            let n = o;
+            while (n && !/^B__/.test(n.name)) n = n.parent;
+            const chunk = n ? n.name.split("__")[1] : "Chest";
+            if (!byChunk.has(chunk)) byChunk.set(chunk, []);
+            byChunk.get(chunk).push(o);
+          });
+          this.tpl[type] = { root, byChunk, bones };
+        } catch (e) {
+          console.warn("gib burst model", url, e);
+        }
+      }));
+    }
+    has(type) {
+      return !!this.tpl[type];
+    }
+    // the view (a ZombieView in its last living pose) bursts along (dx, dz); power 1 = the bat, more for the shotgun
+    burst(view, dx, dz, power = 1) {
+      const T2 = this.tpl[view.type];
+      if (!T2) return false;
+      view.container.updateMatrixWorld(true);
+      for (const [n, b2] of Object.entries(T2.bones)) {
+        const s = view.bones[n];
+        if (s) {
+          b2.position.copy(s.position);
+          b2.quaternion.copy(s.quaternion);
+          b2.scale.copy(s.scale);
+        }
+      }
+      view.model.matrixWorld.decompose(T2.root.position, T2.root.quaternion, T2.root.scale);
+      T2.root.updateMatrixWorld(true);
+      const gone = new Set([...view.severed || []].map((p) => SEVERED_CHUNK[p]).filter(Boolean));
+      const centre = (view.bones.Spine2 || view.bones.Hips).getWorldPosition(new Vector3());
+      const dir = new Vector3(dx, 0, dz).normalize(), side = new Vector3(-dz, 0, dx);
+      const b = { chunks: [], t: 0 }, v = new Vector3();
+      const R = (a, c) => a + Math.random() * (c - a);
+      for (const [name, meshes] of T2.byChunk) {
+        if (gone.has(name)) continue;
+        const baked = [];
+        const c = new Vector3();
+        let n = 0;
+        for (const m of meshes) {
+          m.skeleton.update();
+          const pos = m.geometry.attributes.position, out2 = new Float32Array(pos.count * 3);
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i);
+            m.applyBoneTransform(i, v);
+            v.applyMatrix4(m.matrixWorld);
+            out2[i * 3] = v.x;
+            out2[i * 3 + 1] = v.y;
+            out2[i * 3 + 2] = v.z;
+            c.add(v);
+            n++;
+          }
+          baked.push({ m, out: out2 });
+        }
+        c.divideScalar(Math.max(1, n));
+        const grp = new Group();
+        let rad = 0;
+        for (const { m, out: out2 } of baked) {
+          for (let i = 0; i < out2.length; i += 3) {
+            out2[i] -= c.x;
+            out2[i + 1] -= c.y;
+            out2[i + 2] -= c.z;
+            rad = Math.max(rad, Math.hypot(out2[i], out2[i + 1], out2[i + 2]));
+          }
+          const geo = new BufferGeometry();
+          geo.setAttribute("position", new BufferAttribute(out2, 3));
+          for (const k2 of ["uv", "color"]) if (m.geometry.attributes[k2]) geo.setAttribute(k2, m.geometry.attributes[k2]);
+          if (m.geometry.index) geo.setIndex(m.geometry.index);
+          for (const gr of m.geometry.groups) geo.addGroup(gr.start, gr.count, gr.materialIndex);
+          geo.computeVertexNormals();
+          const mesh = new Mesh(geo, m.material);
+          mesh.castShadow = true;
+          grp.add(mesh);
+        }
+        grp.position.copy(c);
+        this.scene.add(grp);
+        const out = c.clone().sub(centre).setY(0);
+        if (out.lengthSq() < 1e-4) out.copy(dir);
+        out.normalize();
+        const ch = { name, grp, rad: Math.min(rad, 0.35), vel: new Vector3(), spin: new Vector3(R(-9, 9), R(-9, 9), R(-9, 9)), rest: false, bleed: /Gib/.test(name) ? 0.3 : 1.2 };
+        const k = power * (/Gut|Gib/.test(name) ? R(1.2, 2) : name === "Head" ? R(1.1, 1.4) : /Thigh|Shin/.test(name) ? R(0.3, 0.6) : name === "Pelvis" ? 0.5 : R(0.7, 1.1));
+        ch.vel.copy(dir).multiplyScalar(3.2 * k).addScaledVector(side, R(-2.2, 2.2) * k).addScaledVector(out, 1.2 * k).setY((/Thigh|Shin|Pelvis/.test(name) ? R(0.5, 1.5) : R(1.8, 3.6)) * Math.sqrt(power));
+        b.chunks.push(ch);
+      }
+      if (!b.chunks.length) return false;
+      const fx2 = this.fx;
+      if (fx2) {
+        fx2.bloodSpray(centre.x, centre.y, centre.z, dir.x, 0.5, dir.z, 46, 4.2 * Math.sqrt(power));
+        fx2.bloodSpray(centre.x, centre.y, centre.z, -dir.x * 0.3, 0.9, -dir.z * 0.3, 18, 2.4);
+        fx2.bloodPool(centre.x, centre.z, 1.1);
+        fx2.bloodPool(centre.x + dir.x * 0.9, centre.z + dir.z * 0.9, 0.8);
+      }
+      this.bursts.push(b);
+      while (this.bursts.length > MAX_KEEP) this.remove(this.bursts.shift());
+      return true;
+    }
+    update(dt) {
+      if (!dt) return;
+      const W3 = this.world, fx2 = this.fx, e = new Euler(), dq = new Quaternion();
+      for (const b of this.bursts) {
+        b.t += dt;
+        if (b.t > 4 && b.chunks.every((c) => c.rest)) continue;
+        for (const c of b.chunks) {
+          if (c.rest) continue;
+          const p = c.grp.position, ox = p.x, oz = p.z;
+          c.vel.y -= G * dt;
+          p.addScaledVector(c.vel, dt);
+          if (W3) {
+            const h = W3.raycast(ox, oz, p.x, p.z, Math.max(0.2, p.y));
+            if (h) {
+              p.x = ox + (p.x - ox) * Math.max(0, h.t - 0.05);
+              p.z = oz + (p.z - oz) * Math.max(0, h.t - 0.05);
+              if (h.nx) c.vel.x = -c.vel.x * 0.3;
+              if (h.nz) c.vel.z = -c.vel.z * 0.3;
+              if (fx2 && b.t < 1.5 && Math.random() < 0.5) fx2.bloodPool(p.x, p.z, 0.3);
+            }
+          }
+          e.set(c.spin.x * dt, c.spin.y * dt, c.spin.z * dt);
+          dq.setFromEuler(e);
+          c.grp.quaternion.premultiply(dq);
+          const floor = Math.max(0.05, c.rad * 0.45);
+          if (p.y < floor) {
+            p.y = floor;
+            if (c.vel.y < -1.2) {
+              if (fx2) fx2.bloodPool(p.x, p.z, 0.3 + c.rad);
+              c.vel.y *= -0.28;
+              c.vel.x *= 0.55;
+              c.vel.z *= 0.55;
+              c.spin.multiplyScalar(0.5);
+            } else {
+              c.vel.set(0, 0, 0);
+              c.spin.set(0, 0, 0);
+              c.rest = true;
+            }
+          }
+          if (fx2 && c.bleed && b.t < 0.9 && Math.random() < c.bleed * dt * 12) fx2.bloodSpray(p.x, p.y, p.z, c.vel.x * 0.1, 0.2, c.vel.z * 0.1, 2, 0.8);
+        }
+      }
+    }
+    remove(b) {
+      for (const c of b.chunks) {
+        this.scene.remove(c.grp);
+        c.grp.traverse((o) => o.geometry?.dispose());
+      }
+    }
+    clear() {
+      for (const b of this.bursts) this.remove(b);
+      this.bursts = [];
+    }
+  };
+
   // src/render/telegraph.js
   function sector(arc) {
     const g = new CircleGeometry(1, 28, -Math.PI / 2 - arc, arc * 2);
@@ -55800,8 +55983,8 @@ void main() {
       const i = Math.floor(xin + s);
       const j = Math.floor(yin + s);
       const k = Math.floor(zin + s);
-      const G3 = 1 / 6;
-      const t = (i + j + k) * G3;
+      const G32 = 1 / 6;
+      const t = (i + j + k) * G32;
       const X0 = i - t;
       const Y0 = j - t;
       const Z0 = k - t;
@@ -55861,15 +56044,15 @@ void main() {
           k2 = 0;
         }
       }
-      const x1 = x0 - i1 + G3;
-      const y1 = y0 - j1 + G3;
-      const z1 = z0 - k1 + G3;
-      const x2 = x0 - i2 + 2 * G3;
-      const y2 = y0 - j2 + 2 * G3;
-      const z2 = z0 - k2 + 2 * G3;
-      const x3 = x0 - 1 + 3 * G3;
-      const y3 = y0 - 1 + 3 * G3;
-      const z3 = z0 - 1 + 3 * G3;
+      const x1 = x0 - i1 + G32;
+      const y1 = y0 - j1 + G32;
+      const z1 = z0 - k1 + G32;
+      const x2 = x0 - i2 + 2 * G32;
+      const y2 = y0 - j2 + 2 * G32;
+      const z2 = z0 - k2 + 2 * G32;
+      const x3 = x0 - 1 + 3 * G32;
+      const y3 = y0 - 1 + 3 * G32;
+      const z3 = z0 - 1 + 3 * G32;
       const ii = i & 255;
       const jj = j & 255;
       const kk = k & 255;
@@ -58118,7 +58301,7 @@ void main() {
   };
 
   // src/render/physics/custom.js
-  var G = -9.81;
+  var G2 = -9.81;
   var ITER = 6;
   var DAMP = 0.996;
   var FRICTION = 0.55;
@@ -58280,7 +58463,7 @@ void main() {
         const vx = (p.x.x - p.p.x) * DAMP, vy = (p.x.y - p.p.y) * DAMP, vz = (p.x.z - p.p.z) * DAMP;
         p.p.copy(p.x);
         p.x.x += vx;
-        p.x.y += vy + G * dt * dt;
+        p.x.y += vy + G2 * dt * dt;
         p.x.z += vz;
         const c = p.cand || (p.cand = []);
         c.length = 0;
@@ -60484,7 +60667,7 @@ void main() {
 
   // src/opening/burst.js
   var HEIGHT = 1.68;
-  var G2 = 9;
+  var G3 = 9;
   function blobTexture(soft) {
     const c = document.createElement("canvas");
     c.width = c.height = 64;
@@ -60526,7 +60709,7 @@ void main() {
       this.bounds = null;
     }
     async load() {
-      const [g, mod] = await Promise.all([this.loader.loadAsync("assets/opening/zombie-patient-burst.glb"), this.loader.loadAsync("assets/zombie-patient-mod.glb")]);
+      const [g, mod] = await Promise.all([this.loader.loadAsync("assets/zombie-patient-burst.glb"), this.loader.loadAsync("assets/zombie-patient-mod.glb")]);
       const root = this.root = g.scene;
       root.traverse((o) => {
         if (!o.isMesh) return;
@@ -60750,7 +60933,7 @@ void main() {
             continue;
           }
           if (c.rest) continue;
-          c.vel.y -= G2 * dt;
+          c.vel.y -= G3 * dt;
           p.addScaledVector(c.vel, dt);
           e.set(c.spin.x * dt, c.spin.y * dt, c.spin.z * dt);
           dq.setFromEuler(e);
@@ -60874,7 +61057,7 @@ void main() {
       for (const d of this.drops) {
         if (d.life <= 0) continue;
         d.life -= dt;
-        d.v.y -= G2 * dt;
+        d.v.y -= G3 * dt;
         d.p.addScaledVector(d.v, dt);
         const B = this.bounds;
         if (B && (d.p.x < B.x0 || d.p.x > B.x1 || d.p.z < B.z0 || d.p.z > B.z1)) {
@@ -62091,12 +62274,12 @@ void main() {
     }
     // the pusher's hands on the chair's push grips (a two-bone reach after the clip, every frame the chair is pushed)
     handsToGrips(p, wc) {
-      const G3 = wc.userData.grips;
-      if (!G3?.L || !G3?.R) return;
+      const G4 = wc.userData.grips;
+      if (!G4?.L || !G4?.R) return;
       wc.updateMatrixWorld(true);
       p.root.updateMatrixWorld(true);
       const B = p.bones;
-      for (const [side, grip] of [["L", G3.L], ["R", G3.R]]) {
+      for (const [side, grip] of [["L", G4.L], ["R", G4.R]]) {
         const up = B["upper_arm" + side], lo = B["forearm" + side], hand = B["hand" + side];
         if (up && lo && hand) ikArm(up, lo, hand, grip.getWorldPosition(new Vector3()), 1);
       }
@@ -65993,6 +66176,7 @@ void main() {
   }
   var music = new GameMusic(audio);
   var fx = new FX(scene);
+  var gibs = new GibBurst(scene, new GLTFLoader(), fx);
   var telegraphs = new Telegraphs(scene);
   fx.gore = store2.get("gore", true);
   var shakeOn = true;
@@ -66070,6 +66254,7 @@ void main() {
   var YOLA_FILES = YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: [], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
   var loader = new GLTFLoader();
   async function load() {
+    gibs.load({ 0: "assets/zombie-nurse-burst.glb", 1: "assets/zombie-patient-burst.glb" });
     hud.loading(0);
     arena = new Arena(scene, resolvedQuality(), renderer);
     looks = new Looks(renderer, scene, camera);
@@ -66355,6 +66540,7 @@ void main() {
     }
     zviews.clear();
     ZombieView.clearPieces();
+    gibs.clear();
     resetPhysics();
     const p = sim.player;
     p.px = p.x;
@@ -66544,6 +66730,8 @@ void main() {
     stepPhysics(animDt);
     ZombieView.updatePieces(animDt);
     ZombieView.updateShields(animDt);
+    gibs.world = sim.world;
+    gibs.update(animDt);
     const seen = /* @__PURE__ */ new Set();
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
@@ -66556,6 +66744,10 @@ void main() {
         z.pz ?? (z.pz = z.z);
       }
       seen.add(z.id);
+      if (z.gibbed) {
+        if (v.outer.visible) v.hide();
+        continue;
+      }
       if (sim.level && z.dormant && (z.x - ix) * (z.x - ix) + (z.z - iz) * (z.z - iz) > 15 * 15) {
         if (v.outer.visible) {
           v.outer.visible = false;
@@ -66603,6 +66795,17 @@ void main() {
   var impactFrame = -1;
   var frameNo = 0;
   var impactN = 0;
+  var GIB_SHOTGUN_RANGE = 2.6;
+  function gib(id, dx, dz, power) {
+    const z = sim.zombies.find((q) => q.id === id), v = zviews.get(id);
+    if (!z || z.gibbed || !v || !v.outer.visible || v.farHidden || !gibs.has(v.type)) return false;
+    if (!gibs.burst(v, dx, dz, power)) return false;
+    z.gibbed = true;
+    v.hide();
+    audio.play("sever", 1.4);
+    shake(0.55);
+    return true;
+  }
   function handleEvents() {
     frameNo++;
     const p = sim.player;
@@ -66636,6 +66839,10 @@ void main() {
           }
           if (flesh) audio.play("bulletHit", 1.3);
           const near = e.hits && e.closest < 2.6;
+          for (const id of e.killed || []) {
+            const zk = sim.zombies.find((q) => q.id === id);
+            if (zk && Math.hypot(zk.x - p.x, zk.z - p.z) < GIB_SHOTGUN_RANGE) gib(id, Math.sin(e.yaw), Math.cos(e.yaw), 1.4);
+          }
           if (near) {
             audio.play("shotgunClose");
             const zc = sim.zombies.find((q) => q.id === e.closestId);
@@ -66684,6 +66891,7 @@ void main() {
               camState.vz += e.dirZ * k;
             }
           } else if (impactN === 2) shake(0.12);
+          if (e.killed && !e.fist && e.style === "heavy") gib(e.id, e.dirX, e.dirZ, 1);
           break;
         }
         case "objective":
