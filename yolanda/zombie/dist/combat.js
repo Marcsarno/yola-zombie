@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // node_modules/three/build/three.core.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -48247,7 +48247,7 @@ void main() {
     });
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -48368,7 +48368,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -48467,7 +48467,7 @@ void main() {
     return material;
   }
 
-  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -54183,7 +54183,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -54223,7 +54223,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -54314,7 +54314,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -54379,7 +54379,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -54467,7 +54467,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -54651,7 +54651,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -54723,7 +54723,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -55076,7 +55076,7 @@ void main() {
     return magicSquare;
   }
 
-  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -55275,7 +55275,7 @@ void main() {
     return samples;
   }
 
-  // node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -55709,7 +55709,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -56136,7 +56136,7 @@ void main() {
     "Denoise": 5
   };
 
-  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -56188,7 +56188,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -56472,7 +56472,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -56560,7 +56560,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -60134,7 +60134,7 @@ void main() {
   var TX = OR_TABLE.x;
   var TZ = OR_TABLE.z;
   var LIFT7 = LIFTS[7];
-  var HR = { stance: 0.8, freeze: 1.62, yaw: 0.35, camYaw: 34 };
+  var HR = { stance: 0.2, freeze: 1.62, yaw: 0.35, camYaw: 34 };
   var BELONG = ROOM1.belongings;
   var PATIENT_OUTFIT = { Jersey_Cream: 15921644, Trousers_Gray: 15461092, Uniform_Navy: 15000541, Markings_OffWhite: 15921644 };
   var clamp6 = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -61904,9 +61904,23 @@ void main() {
       this.setSmoke(true);
       yield 1.7;
       this.revLight({ red: 0.28 });
-      const seq = [[0, "old", 1], [1.15, "old", 0.55], [2, "new", 0.85], [2.55, "old", 0.6], [3.05, "new", 1], [3.55, "new", 0.6]];
-      for (const [t, who, k] of seq) this.later(t, () => this.flashOn(who, k));
-      yield 4.4;
+      const seq = [
+        [0, "old", 1],
+        [1.15, "old", 0.55],
+        [2, "new", 0.85],
+        [2.55, "old", 0.6],
+        // the first exchanges
+        [3.75, "old", 0.7],
+        [4, "new", 0.75],
+        [4.2, "old", 0.8],
+        [4.37, "new", 0.85],
+        [4.51, "old", 0.9],
+        [4.63, "new", 0.95],
+        [4.74, "old", 0.95],
+        [4.84, "new", 1.15, 0.7]
+      ];
+      for (const [t, who, k, decay] of seq) this.later(t, () => this.flashOn(who, k, decay));
+      yield 6;
       this.substate = "B8_THREAT";
       this.revLight({ amb: 0, red: 0.9, redAt: "or" });
       this.camTo({ x: TX, y: 1.5, z: TZ - 0.4, pitch: 12, yaw: 14, dist: 4.2, fov: 40 }, 0.01);
@@ -61953,7 +61967,7 @@ void main() {
         this.camTo({ x: p.x - 0.2, y: 1.1, z: p.z + 0.25, pitch: 7, yaw: HR.camYaw, dist: 4, fov: 40 }, 0.01);
       }
       this.revLight({ amb: 0.16, red: 0.55, key: 0.45, spotAt: "key" });
-      yield 1;
+      yield 0.5;
       this.stand.clip.paused = false;
       this.stand.clip.timeScale = 1;
       if (!this.silent) this.rs.drum(1.2);
@@ -61965,6 +61979,14 @@ void main() {
       this.substate = "B12_CARD";
       this.mark("beat12");
       this.stand.clip.paused = true;
+      {
+        const b = this.batCentre(), p = this.stand, bb = this.yola?.batLib?.obj ? new Box3().setFromObject(this.yola.batLib.obj) : null;
+        const tx = bb ? (p.x + (bb.min.x + bb.max.x) / 2) / 2 : p.x, tz = bb ? (p.z + (bb.min.z + bb.max.z) / 2) / 2 : p.z;
+        void b;
+        this.camAnim = null;
+        this.rig = { x: tx, y: 1.2, z: tz, pitch: 6, yaw: HR.camYaw - 6, dist: 4.8, fov: 40 };
+        this.setCamera();
+      }
       this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: "key" });
       this.tickRevLight(0);
       if (!this.silent) {
@@ -62047,7 +62069,7 @@ void main() {
       if (this.redLight) this.redLight.intensity = r.red * soft * (1.2 + 7 * pulse);
       if (A.redHemi) A.redHemi.intensity = r.red * 0.045 * pulse;
       this.ui.setVignette(r.red * 0.35 * (0.4 + 0.6 * pulse));
-      if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : 0.16));
+      if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : r.flashDecay || 0.16));
       const tube = r.tube > 0 ? r.tube * (Math.sin(r.t * 31) * Math.sin(r.t * 7.3) > 0.55 ? 0 : 6 + 3 * Math.sin(r.t * 53)) * soft : 0;
       const flash = 70 * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
       if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 16;
@@ -62079,12 +62101,15 @@ void main() {
       this.rl = null;
     }
     // a flash from the failing light outside the doors: one silhouette or the other, the surfaces clean or outbreak with it
-    flashOn(who, k) {
+    flashOn(who, k, decay) {
       const old = this.stage.actors.yola;
       old.setVisible(who === "old");
       this.standVisible(who === "new");
       this.setOutbreakLook(who === "new");
-      if (this.rl) this.rl.flash = k;
+      if (this.rl) {
+        this.rl.flash = k;
+        this.rl.flashDecay = decay || 0.16;
+      }
       if (!this.silent) {
         this.sound.flicker?.(true);
         this.rs.flash(k);
@@ -62179,7 +62204,7 @@ void main() {
       act.paused = true;
       s.mixer.update(0);
       s.clip = act;
-      s.bat = "held";
+      s.bat = "heldL";
       this.tickStand(0);
     }
     // the athlete's bat leaning against the lift's frame, beside the doors (the opening's static bat: barrel down, knob up)
@@ -62261,9 +62286,9 @@ void main() {
       s.mixer.update(dt);
       const bat = Y2.batLib?.obj, hand = Y2.bones.RightHand;
       if (bat && s.bat === "none") bat.visible = false;
-      else if (bat && s.bat === "held") {
+      else if (bat && (s.bat === "held" || s.bat === "heldL")) {
         Y2.outer.updateMatrixWorld(true);
-        Y2.placeHeld(Y2.batLib);
+        Y2.placeHeld(s.bat === "heldL" ? this.leftBat || (this.leftBat = { ...Y2.batLib, hand: "Left" }) : Y2.batLib);
         bat.visible = s.shown;
       } else if (bat && hand) {
         Y2.outer.updateMatrixWorld(true);
@@ -63197,7 +63222,7 @@ void main() {
     return S2;
   }
 
-  // node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
