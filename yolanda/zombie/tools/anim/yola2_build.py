@@ -178,6 +178,8 @@ def from_library(rig, path, clips, prefix, targets):
             print('LIB', tgt.name, act.name, tuple(int(x) for x in act.frame_range))
     drop(objs, acts)
 # the bat: Sword Regular Combo (UAL2, CC0) and Sword Idle (UAL1) on both Yolas; the other arena picks on the new one
+# (test bakes: YOLA2_EXTRA_UAL1="Pistol_Reload,Pistol_Shoot" retargets those UAL1 clips onto the new Yola, as ual1_<name>)
+if os.environ.get('YOLA2_EXTRA_UAL1'): from_library('ue', UAL1, os.environ['YOLA2_EXTRA_UAL1'].split(','), 'ual1_', [(Y2, made2, '')])
 if not ONLY: from_library('ue', UAL2, ['Sword_Regular_Combo'], 'ual_', [(Y2, made2, ''), (Y1, made1, 'Y1S_')])
 if not ONLY: from_library('ue', UAL1, ['Sword_Idle'], 'ual1_', [(Y2, made2, ''), (Y1, made1, 'Y1S_')])  # (the bat's idle: the stance the combo starts from)
 if not ONLY: from_library('ue', UAL2, ['Sword_Heavy_Combo', 'Sword_Dash', 'Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_C', 'Melee_Hook'], 'ual_', [(Y2, lib2, '')])

@@ -42,7 +42,9 @@ const UAL_FILES = { ual_: 'assets/source/ual/UAL2_Standard.glb', ual1_: 'assets/
 const UE_MAP = { pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', Head: 'Head' };
 for (const [s, S2] of [['l', 'Left'], ['r', 'Right']]) {
   Object.assign(UE_MAP, { [`clavicle_${s}`]: S2 + 'Shoulder', [`upperarm_${s}`]: S2 + 'Arm', [`lowerarm_${s}`]: S2 + 'ForeArm', [`hand_${s}`]: S2 + 'Hand',
-    [`thigh_${s}`]: S2 + 'UpLeg', [`calf_${s}`]: S2 + 'Leg', [`foot_${s}`]: S2 + 'Foot', [`ball_${s}`]: S2 + 'ToeBase', [`middle_01_${s}`]: S2 + 'HandMiddle1' });
+    [`thigh_${s}`]: S2 + 'UpLeg', [`calf_${s}`]: S2 + 'Leg', [`foot_${s}`]: S2 + 'Foot', [`ball_${s}`]: S2 + 'ToeBase' });
+  // every finger (the pistol in the mannequin's fist needs the index and pinky knuckles; finger bones overlay too)
+  for (const [f, F] of [['thumb', 'Thumb'], ['index', 'Index'], ['middle', 'Middle'], ['ring', 'Ring'], ['pinky', 'Pinky']]) for (const i of [1, 2, 3]) UE_MAP[`${f}_0${i}_${s}`] = `${S2}Hand${F}${i}`;
 }
 // clips whose Mixamo source file is named differently
 const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand' };
@@ -88,14 +90,15 @@ function refClip(file) { // Mixamo source clip (skeleton-only FBX)
   if (!refCache.has(file)) refCache.set(file, loadF(file).then((o) => o.animations[0] || null).catch(() => null));
   return refCache.get(file);
 }
-function pinRoot(clip, on) {
-  // keep the vertical bob, pin horizontal hips motion to the rig's own centre (0, as the game strips to the rest hips;
-  // pinning to the first frame left a clip cut from mid-walk, e.g. the reload from X Bot frame 38, a step forward)
+function pinRoot(clip, on, a) {
+  // keep the vertical bob, pin horizontal hips motion to the rig's own rest spot (as the game strips to the rest hips;
+  // pinning to the first frame left a clip cut from mid-walk, e.g. the reload from X Bot frame 38, a step forward).
+  // (a: the actor, for its bones' rest positions; the Quaternius rig is Z-up, so "0" would have sunk it)
   for (const t of clip.tracks) {
     if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
     if (!t.__orig) t.__orig = t.values.slice();
-    const v = t.values, o = t.__orig;
-    for (let i = 0; i < v.length; i += 3) { v[i] = on ? 0 : o[i]; v[i + 2] = on ? 0 : o[i + 2]; }
+    const v = t.values, o = t.__orig, r = a?.restPos?.[t.name.split('.')[0].replace(/^mixamorig:?/, '')], rx = r ? r.x : o[0], rz = r ? r.z : o[2];
+    for (let i = 0; i < v.length; i += 3) { v[i] = on ? rx : o[i]; v[i + 2] = on ? rz : o[i + 2]; }
   }
 }
 const clipT0 = (c) => Math.min(...c.tracks.map((t) => t.times[0]));
@@ -145,6 +148,7 @@ class Actor {
     this.setHeight(height);
     this.mixer = new THREE.AnimationMixer(obj);
     this.bones = {}; obj.traverse((o) => { if (o.isBone) { const n = o.name.replace(/^mixamorig:?/, ''); this.bones[UE_MAP[n] || n] = o; } });
+    this.restPos = {}; obj.traverse((o) => { if (o.isBone) this.restPos[o.name.replace(/^mixamorig:?/, '')] ||= o.position.clone(); }); // (by the file's own names)
     this.helper = new THREE.SkeletonHelper(obj); this.helper.visible = false; this.helper.material.depthTest = false;
     this.clip = null; this.action = null; this.frames = 1; this.t0 = 0;
     this.hair = new HairSway(this.bones); // the ponytail sway (the new Yola), stepped by the render loop
@@ -270,14 +274,14 @@ async function setChar(key) {
 }
 async function setClip(name) {
   const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
-  pinRoot(c, $('inplace').checked); main.play(c); main.hair?.reset?.(); FPS = fpsOf(c); vidRef(name);
+  pinRoot(c, $('inplace').checked, main); main.play(c); main.hair?.reset?.(); FPS = fpsOf(c); vidRef(name);
   // the reference: the clip's own source rig. Mixamo clips: Mixamo's X Bot; library clips: Quaternius's mannequin
   const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => name.startsWith(p));
   let rc = null, file = '';
   if (lib) {
     const u = await ualRef(UAL_FILES[lib]);
     useRef(u ? u.actor : refX);
-    rc = u?.clips.find((c) => c.name === name.slice(lib.length)) || null; file = UAL_FILES[lib];
+    rc = u?.clips.find((c) => c.name === name.replace(/_REBAKE_.*$/, '').slice(lib.length)) || null; file = UAL_FILES[lib];
   } else {
     useRef(refX);
     const nm = name.replace(/_REBAKE_.*$/, ''); // (a test re-bake: the clip it re-bakes has the reference)
@@ -289,7 +293,7 @@ async function setClip(name) {
   if (rc) { rsel.add(new Option(lib ? `Quaternius mannequin: ${rc.name}` : file.split('/').pop(), file)); $('note').textContent = ''; }
   else { rsel.add(new Option('no source rig for this clip', '')); $('note').textContent = 'No reference for this clip (Tripo or custom clip).'; }
   ref.root.visible = !!rc; ref.helper.visible = !!rc && $('bones').checked;
-  if (rc) { pinRoot(rc, $('inplace').checked); ref.play(rc); }
+  if (rc) { pinRoot(rc, $('inplace').checked, ref); ref.play(rc); }
   S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, '')] || 0 : 0;
   S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
   $('scrub').max = S.frames; S.frame = 1;
@@ -410,7 +414,7 @@ const PG = { at: new THREE.Vector3(0, 0.005, 0.0026), axis: new THREE.Vector3(0,
 function pistolInFist(a, o) {
   const B = a.bones, c = new THREE.Vector3(); let n = 0;
   for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (const i of [1, 2, 3]) { const b = B['RightHand' + f + i]; if (b) { c.add(b.getWorldPosition(_v3)); n++; } }
-  if (!n) return false; c.multiplyScalar(1 / n);
+  if (!n || !B.RightHandIndex1 || !B.RightHandPinky1) return false; c.multiplyScalar(1 / n);
   const A = B.RightHandIndex1.getWorldPosition(new THREE.Vector3()).sub(B.RightHandPinky1.getWorldPosition(_v3)).normalize();
   const F = B.RightHand.getWorldPosition(new THREE.Vector3()).sub(B.RightForeArm.getWorldPosition(_v3)); F.addScaledVector(A, -F.dot(A)).normalize();
   const zb = new THREE.Vector3(0, 0, 1).addScaledVector(PG.axis, -PG.axis.z).normalize(); // the barrel, square to the grip axis

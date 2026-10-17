@@ -38175,9 +38175,9 @@ void main() {
       [`thigh_${s}`]: S2 + "UpLeg",
       [`calf_${s}`]: S2 + "Leg",
       [`foot_${s}`]: S2 + "Foot",
-      [`ball_${s}`]: S2 + "ToeBase",
-      [`middle_01_${s}`]: S2 + "HandMiddle1"
+      [`ball_${s}`]: S2 + "ToeBase"
     });
+    for (const [f, F] of [["thumb", "Thumb"], ["index", "Index"], ["middle", "Middle"], ["ring", "Ring"], ["pinky", "Pinky"]]) for (const i of [1, 2, 3]) UE_MAP[`${f}_0${i}_${s}`] = `${S2}Hand${F}${i}`;
   }
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var REF_OFFSET = { pistol_reload: 37 };
@@ -38237,14 +38237,14 @@ void main() {
     if (!refCache.has(file)) refCache.set(file, loadF(file).then((o) => o.animations[0] || null).catch(() => null));
     return refCache.get(file);
   }
-  function pinRoot(clip, on) {
+  function pinRoot(clip, on, a) {
     for (const t of clip.tracks) {
       if (!/(Hips|pelvis|root)\.position$/.test(t.name)) continue;
       if (!t.__orig) t.__orig = t.values.slice();
-      const v = t.values, o = t.__orig;
+      const v = t.values, o = t.__orig, r = a?.restPos?.[t.name.split(".")[0].replace(/^mixamorig:?/, "")], rx = r ? r.x : o[0], rz = r ? r.z : o[2];
       for (let i = 0; i < v.length; i += 3) {
-        v[i] = on ? 0 : o[i];
-        v[i + 2] = on ? 0 : o[i + 2];
+        v[i] = on ? rx : o[i];
+        v[i + 2] = on ? rz : o[i + 2];
       }
     }
   }
@@ -38326,6 +38326,11 @@ void main() {
           const n = o.name.replace(/^mixamorig:?/, "");
           this.bones[UE_MAP[n] || n] = o;
         }
+      });
+      this.restPos = {};
+      obj.traverse((o) => {
+        var _a4, _b4;
+        if (o.isBone) (_a4 = this.restPos)[_b4 = o.name.replace(/^mixamorig:?/, "")] || (_a4[_b4] = o.position.clone());
       });
       this.helper = new SkeletonHelper(obj);
       this.helper.visible = false;
@@ -38514,7 +38519,7 @@ void main() {
   }
   async function setClip(name) {
     const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
-    pinRoot(c, $("inplace").checked);
+    pinRoot(c, $("inplace").checked, main);
     main.play(c);
     main.hair?.reset?.();
     FPS = fpsOf(c);
@@ -38524,7 +38529,7 @@ void main() {
     if (lib) {
       const u = await ualRef(UAL_FILES[lib]);
       useRef(u ? u.actor : refX);
-      rc = u?.clips.find((c2) => c2.name === name.slice(lib.length)) || null;
+      rc = u?.clips.find((c2) => c2.name === name.replace(/_REBAKE_.*$/, "").slice(lib.length)) || null;
       file = UAL_FILES[lib];
     } else {
       useRef(refX);
@@ -38545,7 +38550,7 @@ void main() {
     ref.root.visible = !!rc;
     ref.helper.visible = !!rc && $("bones").checked;
     if (rc) {
-      pinRoot(rc, $("inplace").checked);
+      pinRoot(rc, $("inplace").checked, ref);
       ref.play(rc);
     }
     S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, "")] || 0 : 0;
@@ -38753,7 +38758,7 @@ void main() {
         n++;
       }
     }
-    if (!n) return false;
+    if (!n || !B.RightHandIndex1 || !B.RightHandPinky1) return false;
     c.multiplyScalar(1 / n);
     const A = B.RightHandIndex1.getWorldPosition(new Vector3()).sub(B.RightHandPinky1.getWorldPosition(_v3)).normalize();
     const F = B.RightHand.getWorldPosition(new Vector3()).sub(B.RightForeArm.getWorldPosition(_v3));
