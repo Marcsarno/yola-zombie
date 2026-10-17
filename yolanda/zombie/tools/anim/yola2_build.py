@@ -107,16 +107,15 @@ def bake(src, tgt, name):
     act = retarget(src, tgt, name); act.use_fake_user = True
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     mesh = next((c for c in tgt.children if c.type == 'MESH'), None)
-    if name == 'sg_reload' and 'YOLA2_HANDS' not in os.environ:  # (the shotgun: the support hand where X Bot's is on the gun,
-        # in the gun hand's frame; on the pump at ~2.9 hand-lengths, eased off between 3.2 and 4.5 for the shell fetch)
-        contacts.support(src, tgt, act, f0, f1, CLOG, on=3.2, off=4.5)
-    elif os.environ.get('YOLA2_HANDS') == 'support':  # (test: the support hand placed in the gun hand's frame, any clip)
+    if os.environ.get('YOLA2_HANDS') == 'support':  # (test: the support hand placed in the gun hand's frame, any clip)
         contacts.support(src, tgt, act, f0, f1, CLOG, on=float(os.environ.get('YOLA2_SUPPORT_ON', 1.2)), off=float(os.environ.get('YOLA2_SUPPORT_OFF', 2.2)))
     elif name in COMPOSITE and not os.environ.get('YOLA2_NO_HANDS') and 'YOLA2_HANDS' not in os.environ:
         contacts.support_rel(tgt, act, f0, f1, grip_ref(), CLOG)  # (built from several clips: X Bot's pistol_idle grip)
     elif HOLD.search(name) and not os.environ.get('YOLA2_NO_HANDS'):  # (YOLA2_NO_HANDS: test bakes without the hand contacts)
         # pistol clips: 'gunhand' (2026-10-17: the gun arm bends as X Bot's, no locked shoulder); the other holds as built
-        contacts.hands(src, tgt, act, f0, f1, CLOG, mode=os.environ.get('YOLA2_HANDS', 'gunhand' if name.startswith('pistol_') else 'arm'),
+        # (the shotgun too: 'support' placed her left hand by X Bot's offset scaled by her bigger hands: out of reach, the
+        # left arm locked straight in the hold itself, 99% vs X Bot's 84%; 'gunhand' 91%, never locked, gap within 2-6 cm)
+        contacts.hands(src, tgt, act, f0, f1, CLOG, mode=os.environ.get('YOLA2_HANDS', 'gunhand' if name.startswith('pistol_') or name == 'sg_reload' else 'arm'),
                        near=float(os.environ.get('YOLA2_HANDS_NEAR', 0.5)), far=float(os.environ.get('YOLA2_HANDS_FAR', 1.0)))
     if mesh is not None:
         if tgt.name not in SHOES: SHOES[tgt.name] = contacts.shoe_vertices(mesh)
