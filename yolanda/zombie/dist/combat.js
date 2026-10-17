@@ -49033,6 +49033,45 @@ void main() {
     return out;
   }
 
+  // src/render/posture.js
+  var POSTURE_C = {
+    xbot: { Hips: [0, 0, -0.035646, 0.999364], Spine2: [-1196e-6, 0, 0.014208, 0.999898], Neck: [-0.043254, 0, -0.140575, 0.989125], Head: [-0.065594, 0, -0.213182, 0.974808] },
+    mannequin: { Hips: [0, 0, -0.035646, 0.999364], Spine2: [-1196e-6, 0, 0.014208, 0.999898] }
+  };
+  var POSTURE_BONES = ["Hips", "Spine2", "Neck", "Head"];
+  var TURNS_CHILDREN = { Hips: true, Spine2: true, Neck: true, Head: false };
+  var Q = {};
+  for (const [f, m] of Object.entries(POSTURE_C)) {
+    Q[f] = {};
+    for (const [n, v] of Object.entries(m)) Q[f][n] = new Quaternion(...v);
+  }
+  var I = new Quaternion();
+  var _c5 = new Quaternion();
+  var _c22 = new Quaternion();
+  var _ci = new Quaternion();
+  function postureFamily(clip) {
+    if (!clip) return null;
+    if (/^ual1?_|^pistol_reload$/.test(clip)) return "mannequin";
+    if (/^t_|^tripo_/.test(clip)) return null;
+    return "xbot";
+  }
+  function applyPosture(bones, w, rot = (b, fn) => fn(b.quaternion)) {
+    for (const n of POSTURE_BONES) {
+      const b = bones[n], s = w[n];
+      if (!b || !s) continue;
+      _c5.identity();
+      for (const f of ["xbot", "mannequin"]) if (s[f] > 1e-3 && Q[f][n]) _c5.multiply(_c22.copy(I).slerp(Q[f][n], Math.min(1, s[f])));
+      if (Math.abs(_c5.w) > 0.9999999) continue;
+      const c = _c5.clone();
+      rot(b, (q) => q.multiply(c));
+      if (TURNS_CHILDREN[n]) {
+        _ci.copy(c).invert();
+        const ci = _ci.clone();
+        for (const k of b.children) if (k.isBone) rot(k, (q) => q.premultiply(ci));
+      }
+    }
+  }
+
   // src/render/clipchars.js
   var AXE_AT = new Vector3();
   var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -49351,6 +49390,7 @@ void main() {
       this.pistolReloadFrame = -1;
       this.pistolFit = weapons.pistolFit || null;
       this.pistolPlace = new URLSearchParams(globalThis.location?.search || "").get("pistolplace") || "fist";
+      this.postureOff = new URLSearchParams(globalThis.location?.search || "").get("posture") === "0";
       this.shotgun = prepPumpShort(weapons.shotgun);
       this.shell = prepShell(weapons.shell);
       this.shell.visible = false;
@@ -49851,10 +49891,12 @@ void main() {
         this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
         if (this.test?.obj) this.test.obj.visible = false;
         if (this.batLib?.obj) this.batLib.obj.visible = false;
+        this.posture();
         return;
       }
       if (this.weaponShown === "pistol") this.aimPistol(s, 1 - uP);
       else if (this.weaponShown === "shotgun") this.aimShotgun(s, 1 - uS);
+      this.posture();
       this.placeWeapons(s, dt);
       this.placeMags(dt);
     }
@@ -49877,22 +49919,60 @@ void main() {
         const v = t.createInterpolant(new Float32Array(4)).evaluate(bi.tracks[0].times[0]);
         this.fist.push([b, new Quaternion(v[0], v[1], v[2], v[3]), /Right/.test(bn) ? "Right" : "Left"]);
       }
+      this.handActs = [];
+      for (const [n, a] of Object.entries(this.actions)) {
+        if (!a.getClip().tracks.some((t) => FING.test(t.name.split(".")[0].replace(/^mixamorig:?/, "")))) continue;
+        const base = this.baseClip(n);
+        if (base) this.handActs.push([a, base]);
+      }
+    }
+    // the game clip an action plays (the derived layers: legs-only, upper-only, the unarmed copies)
+    baseClip(n) {
       const BASE = {
         shotgun_hold_upper: "sg_reload",
         shotgun_reload_upper: "sg_reload",
         pistol_reload_upper: "pistol_reload",
         bat_idle_upper: "bat_idle",
+        bat_calib: "bat_idle",
         fists_idle_upper: "tripo_idle",
         sword_idle_upper: "ual1_Sword_Idle",
+        sword_idle_rarm: "ual1_Sword_Idle",
         sword_idle_rhand: "ual1_Sword_Idle",
-        tripo_idle_lower: null
+        tripo_idle_lower: "tripo_idle"
       };
-      this.handActs = [];
-      for (const [n, a] of Object.entries(this.actions)) {
-        if (!a.getClip().tracks.some((t) => FING.test(t.name.split(".")[0].replace(/^mixamorig:?/, "")))) continue;
-        const base = n in BASE ? BASE[n] : n.endsWith("_u") ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, "");
-        if (base) this.handActs.push([a, base]);
+      return n in BASE ? BASE[n] : n.endsWith("_u") ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, "");
+    }
+    // the posture fix (render/posture.js), after the body's corrections, before the weapons: each bone turned by the shares of the clips driving
+    // it, per source family (only her pelvis / chest / neck / head meshes change; arms, hands, weapons and feet stay put)
+    posture() {
+      if (this.postureOff) return;
+      if (!this.postureActs) {
+        this.postureActs = [];
+        for (const [n, a] of Object.entries(this.actions)) {
+          const keyed = new Set(a.getClip().tracks.filter((t) => /quaternion$/.test(t.name)).map((t) => t.name.split(".")[0].replace(/^mixamorig:?/, "")));
+          const bones = POSTURE_BONES.filter((b) => keyed.has(b));
+          if (bones.length) this.postureActs.push([a, postureFamily(this.baseClip(n)), bones]);
+        }
+        this.postureW = Object.fromEntries(POSTURE_BONES.map((b) => [b, { xbot: 0, mannequin: 0, all: 0 }]));
       }
+      const W3 = this.postureW;
+      for (const b of POSTURE_BONES) {
+        W3[b].xbot = W3[b].mannequin = W3[b].all = 0;
+      }
+      for (const [a, fam, bones] of this.postureActs) {
+        const w = a.getEffectiveWeight();
+        if (w <= 1e-3) continue;
+        for (const b of bones) {
+          W3[b].all += w;
+          if (fam) W3[b][fam] += w;
+        }
+      }
+      for (const b of POSTURE_BONES) if (W3[b].all > 1e-3) {
+        W3[b].xbot /= W3[b].all;
+        W3[b].mannequin /= W3[b].all;
+      }
+      applyPosture(this.bones, W3);
+      this.container.updateMatrixWorld(true);
     }
     handPoses() {
       if (!this.handSet) return;
@@ -50400,7 +50480,11 @@ void main() {
         if (this.test?.obj) this.test.obj.visible = false;
       }
       this.deathT += dt;
+      for (const [b, q] of this.restQ) b.quaternion.copy(q);
+      mixerWritesAll(this.mixer);
       this.mixer.update(dt);
+      this.container.updateMatrixWorld(true);
+      this.posture();
       this.hair.update(dt);
     }
   };
@@ -50748,8 +50832,8 @@ void main() {
       if (!c || !hand) return;
       this.container.updateMatrixWorld(true);
       const B = this.bones, wp = (n) => B[n]?.getWorldPosition(new Vector3());
-      const I = wp("LeftHandIndex1"), Pk = wp("LeftHandPinky1"), M32 = wp("LeftHandMiddle3");
-      const palm = I && Pk && M32 ? I.add(Pk).multiplyScalar(0.25).addScaledVector(M32, 0.5) : hand.getWorldPosition(new Vector3()).lerp(mid.getWorldPosition(new Vector3()), 0.55);
+      const I2 = wp("LeftHandIndex1"), Pk = wp("LeftHandPinky1"), M32 = wp("LeftHandMiddle3");
+      const palm = I2 && Pk && M32 ? I2.add(Pk).multiplyScalar(0.25).addScaledVector(M32, 0.5) : hand.getWorldPosition(new Vector3()).lerp(mid.getWorldPosition(new Vector3()), 0.55);
       const qh = hand.getWorldQuaternion(new Quaternion()), qd = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), this.container.rotation.y);
       const ws = hand.getWorldScale(new Vector3()).x;
       c.object3D.position.set(0, 0, 0);
@@ -65252,6 +65336,7 @@ void main() {
     const who = YOLA_MODEL === "2" ? "yola2" : "yola";
     yola.axeFit = fits.axe?.[who] || null;
     yola.shotgunFit = fits.short?.[who] || null;
+    if (YOLA_MODEL !== "2") yola.postureOff = true;
     fetch("assets/hold/hand_poses.json").then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {
     });
     const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = anims.find((c) => c.name === "ual1_Sword_Idle");

@@ -35946,12 +35946,12 @@ void main() {
           }
           const initialTime = curvex.times[i - 1];
           const timeSpan = curvex.times[i] - initialTime;
-          const Q = new Quaternion();
+          const Q3 = new Quaternion();
           const E = new Euler();
           for (let t = 0; t < 1; t += 1 / numSubIntervals) {
-            Q.copy(Q1.clone().slerp(Q2.clone(), t));
+            Q3.copy(Q1.clone().slerp(Q2.clone(), t));
             times.push(initialTime + t * timeSpan);
-            E.setFromQuaternion(Q, eulerOrder);
+            E.setFromQuaternion(Q3, eulerOrder);
             values.push(E.x);
             values.push(E.y);
             values.push(E.z);
@@ -38206,6 +38206,45 @@ void main() {
     return out;
   }
 
+  // src/render/posture.js
+  var POSTURE_C = {
+    xbot: { Hips: [0, 0, -0.035646, 0.999364], Spine2: [-1196e-6, 0, 0.014208, 0.999898], Neck: [-0.043254, 0, -0.140575, 0.989125], Head: [-0.065594, 0, -0.213182, 0.974808] },
+    mannequin: { Hips: [0, 0, -0.035646, 0.999364], Spine2: [-1196e-6, 0, 0.014208, 0.999898] }
+  };
+  var POSTURE_BONES = ["Hips", "Spine2", "Neck", "Head"];
+  var TURNS_CHILDREN = { Hips: true, Spine2: true, Neck: true, Head: false };
+  var Q = {};
+  for (const [f, m] of Object.entries(POSTURE_C)) {
+    Q[f] = {};
+    for (const [n, v] of Object.entries(m)) Q[f][n] = new Quaternion(...v);
+  }
+  var I = new Quaternion();
+  var _c4 = new Quaternion();
+  var _c22 = new Quaternion();
+  var _ci = new Quaternion();
+  function postureFamily(clip) {
+    if (!clip) return null;
+    if (/^ual1?_|^pistol_reload$/.test(clip)) return "mannequin";
+    if (/^t_|^tripo_/.test(clip)) return null;
+    return "xbot";
+  }
+  function applyPosture(bones, w, rot = (b, fn) => fn(b.quaternion)) {
+    for (const n of POSTURE_BONES) {
+      const b = bones[n], s = w[n];
+      if (!b || !s) continue;
+      _c4.identity();
+      for (const f of ["xbot", "mannequin"]) if (s[f] > 1e-3 && Q[f][n]) _c4.multiply(_c22.copy(I).slerp(Q[f][n], Math.min(1, s[f])));
+      if (Math.abs(_c4.w) > 0.9999999) continue;
+      const c = _c4.clone();
+      rot(b, (q) => q.multiply(c));
+      if (TURNS_CHILDREN[n]) {
+        _ci.copy(c).invert();
+        const ci = _ci.clone();
+        for (const k of b.children) if (k.isBone) rot(k, (q) => q.premultiply(ci));
+      }
+    }
+  }
+
   // src/viewer.js
   var FPS = 30;
   var CLIP_FPS = { bat_combo_mc: 60 };
@@ -38976,7 +39015,7 @@ void main() {
   }
   var POSTURE = [["Hips", "Spine"], ["Spine2", "Neck"], ["Neck", "Head"], ["Head", "HeadTop_End"], ["LeftHand", "LeftHandMiddle1"], ["RightHand", "RightHandMiddle1"]];
   var outerBone = (b) => {
-    while (b?.parent?.name === b.name) b = b.parent;
+    while (b && b.parent?.name === b.name) b = b.parent;
     return b;
   };
   function restFrames(a) {
@@ -39015,15 +39054,11 @@ void main() {
     return C;
   }
   function postureFix(a, src) {
-    if (!$("posture")?.checked || !a?.action || !src?.root.visible || !src.action) return;
-    const C = postureC(a, src);
-    for (const [n] of POSTURE) {
-      const b = outerBone(a.bones[n]), c = C[n];
-      if (!b || !c) continue;
-      postRot(a, b, (q) => q.multiply(c));
-      const ci = c.clone().invert();
-      for (const k of b.children) if (k.isBone) postRot(a, k, (q) => q.premultiply(ci));
-    }
+    if (!$("posture")?.checked || a !== main || !a?.action || S.char !== "yola2") return;
+    const fam = postureFamily((CHARS[S.char].libRef || {})[a.clip.name.replace(/_REBAKE_.*$/, "")] || a.clip.name.replace(/_REBAKE_.*$/, ""));
+    if (!fam) return;
+    const one = { [fam]: 1 };
+    applyPosture(a.bones, Object.fromEntries(POSTURE_BONES.map((n) => [n, one])), (b, fn) => postRot(a, outerBone(b), fn));
     a.root.updateMatrixWorld(true);
   }
   var FINGER = /Hand(Thumb|Index|Middle|Ring|Pinky)\d$/;
@@ -39638,7 +39673,7 @@ void main() {
       else if (e.code === "ArrowRight") step(e.shiftKey ? 10 : 1);
     });
   }
-  async function capView({ who = "main", dir = [1, 0.3, 1], dist = 0.5, target = "hands", w = 600, h = 450 }) {
+  async function capView({ who = "main", dir = [1, 0.3, 1], dist = 0.5, target = "hands", w = 600, h = 450, solo = false }) {
     const a = who === "ref" ? ref : main, cam = camera, c = new Vector3();
     if (target === "hands") {
       a.grip("Right", _v2);
@@ -39650,7 +39685,8 @@ void main() {
       ref.bones.Hips.getWorldPosition(_v22);
       c.copy(_v2).lerp(_v22, 0.5);
       c.y = 0.9;
-    } else {
+    } else if (target === "head") a.bones.Neck.getWorldPosition(c);
+    else {
       a.bones.Hips.getWorldPosition(c);
       c.y = 0.9 * a.height / 1.62;
     }
@@ -39659,10 +39695,16 @@ void main() {
     cam.lookAt(c);
     cam.aspect = w / h;
     cam.updateProjectionMatrix();
+    const other = solo ? a === main ? ref : main : null, vis = other?.root.visible;
+    const hidden = other ? [other.root, other === ref ? refGun?.obj : mainGun?.obj, ...Object.values(other === ref ? heldRef : held)].filter((o) => o && o.visible) : [];
+    updateFingers();
+    for (const o of hidden) o.visible = false;
+    if (other) other.fing.g.visible = false;
     renderer.setPixelRatio(1);
     renderer.setSize(w, h, false);
-    updateFingers();
     renderer.render(scene, cam);
+    for (const o of hidden) o.visible = true;
+    if (other) other.root.visible = vis;
     const bmp = await createImageBitmap(renderer.domElement);
     renderer.setPixelRatio(keep.pr);
     renderer.setSize(innerWidth, innerHeight, false);
@@ -39760,7 +39802,7 @@ void main() {
       controls.update();
       renderer.render(scene, camera);
     });
-    window.__lab = { view: capView, sheet: capSheet, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
+    window.__lab = { view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
       Object.assign(shellFit, o);
       for (const r of $("fit2").children) r._set(shellFit[r.dataset.k]);
       refresh();
