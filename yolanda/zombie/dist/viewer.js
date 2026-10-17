@@ -38484,6 +38484,14 @@ void main() {
       P.needsUpdate = true;
     }
   };
+  function applyMesh() {
+    const on = $("meshOn")?.checked !== false;
+    for (const a of ACTORS) a.obj.traverse((o) => {
+      if (!o.isMesh) return;
+      if (!("__vis" in o)) o.__vis = o.visible;
+      o.visible = on && o.__vis;
+    });
+  }
   function updateFingers() {
     const on = $("fingerBones")?.checked !== false;
     for (const a of ACTORS) a.fing.update(on && (a === main || a === ref && ref.root.visible) && a.root.parent === scene);
@@ -38512,6 +38520,7 @@ void main() {
       this.helper = new SkeletonHelper(obj);
       this.helper.visible = false;
       this.helper.material.depthTest = false;
+      this.helper.bones = this.helper.bones.filter((b) => !fingerKind(b.name));
       this.clip = null;
       this.action = null;
       this.frames = 1;
@@ -38758,6 +38767,10 @@ void main() {
     refGun?.calibrate();
     refresh();
     markClipPanel();
+    if (!$("meshOn").checked) {
+      applyMesh();
+      refresh();
+    }
   }
   function layout() {
     const sep = S.overlay ? 0 : 0.55;
@@ -39759,8 +39772,31 @@ void main() {
       host2.appendChild(row);
     }
     $("alignShell").onclick = alignShell;
-    $("camYolaHands").onclick = () => camHands("main");
-    $("camRefHands").onclick = () => camHands("ref");
+    $("camPick").onchange = (e) => {
+      const v = e.target.value;
+      e.target.value = "";
+      if (v === "yolaHands") camHands("main");
+      else if (v === "refHands") camHands("ref");
+      else if (v) setCam(v);
+    };
+    const skelUI = () => {
+      const b = $("bones").checked, h = $("fingerBones").checked;
+      const k = b && h ? "both" : b ? "body" : h ? "hands" : "off";
+      for (const x of $("skelPick").children) x.classList.toggle("on", x.dataset.skel === k);
+    };
+    for (const x of $("skelPick").children) x.onclick = () => {
+      const k = x.dataset.skel;
+      $("bones").checked = k === "body" || k === "both";
+      $("fingerBones").checked = k === "hands" || k === "both";
+      $("bones").onchange();
+      updateFingers();
+      skelUI();
+      refresh();
+    };
+    $("meshOn").onchange = () => {
+      applyMesh();
+      refresh();
+    };
     $("fingerBones").onchange = () => updateFingers();
     $("pistolFist").onchange = refresh;
     $("fitReset").onclick = () => {
@@ -39793,7 +39829,10 @@ void main() {
     $("bones").onchange = () => {
       main.helper.visible = $("bones").checked;
       ref.helper.visible = $("bones").checked && ref.root.visible;
+      skelUI();
     };
+    $("fingerBones").addEventListener("change", skelUI);
+    skelUI();
     $("inplace").onchange = () => setClip($("clip").value);
     $("speed").onchange = (e) => {
       S.speed = +e.target.value;
