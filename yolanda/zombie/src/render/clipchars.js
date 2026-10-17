@@ -12,6 +12,7 @@ import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
 import { placeOneHanded, twoHandLine, applyFit } from './holdfit.js';
+import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -231,6 +232,7 @@ export class YolaView extends ClipBody {
     this.magFall = null; this.pistolReloadFrame = -1;
     this.pistolFit = weapons.pistolFit || null; // (the user's Rig Lab fit for this Yola; see pistolInFist)
     this.pistolPlace = new URLSearchParams(globalThis.location?.search || '').get('pistolplace') || 'fist';
+    this.postureOff = new URLSearchParams(globalThis.location?.search || '').get('posture') === '0'; // (?posture=0: without the posture fix)
     this.shotgun = prepPumpShort(weapons.shotgun);
     this.shell = prepShell(weapons.shell); this.shell.visible = false; scene.add(this.shell);
     this.melee = prepAxe(weapons.axe);
@@ -614,9 +616,10 @@ export class YolaView extends ClipBody {
     this.footLock(dt, s, A, sW, w);
     this.hair.update(dt);
     this.weaponShown = uF > 0.5 ? 'fists' : uW > 0.5 ? 'bat1' : uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
-    if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; return; } // (on the floor: weapons away)
+    if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; this.posture(); return; } // (on the floor: weapons away)
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
+    this.posture(); // (before the weapons are placed: turning the pelvis shifts the arms ~4 mm, the weapons follow)
     this.placeWeapons(s, dt); this.placeMags(dt);
   }
 
@@ -637,14 +640,39 @@ export class YolaView extends ClipBody {
       this.fist.push([b, new THREE.Quaternion(v[0], v[1], v[2], v[3]), /Right/.test(bn) ? 'Right' : 'Left']);
     }
     // each action's source clip (for its setting) and whether it moves the fingers
-    const BASE = { shotgun_hold_upper: 'sg_reload', shotgun_reload_upper: 'sg_reload', pistol_reload_upper: 'pistol_reload', bat_idle_upper: 'bat_idle',
-      fists_idle_upper: 'tripo_idle', sword_idle_upper: 'ual1_Sword_Idle', sword_idle_rhand: 'ual1_Sword_Idle', tripo_idle_lower: null };
     this.handActs = [];
     for (const [n, a] of Object.entries(this.actions)) {
       if (!a.getClip().tracks.some((t) => FING.test(t.name.split('.')[0].replace(/^mixamorig:?/, '')))) continue;
-      const base = n in BASE ? BASE[n] : n.endsWith('_u') ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, '');
-      if (base) this.handActs.push([a, base]);
+      const base = this.baseClip(n); if (base) this.handActs.push([a, base]);
     }
+  }
+  // the game clip an action plays (the derived layers: legs-only, upper-only, the unarmed copies)
+  baseClip(n) {
+    const BASE = { shotgun_hold_upper: 'sg_reload', shotgun_reload_upper: 'sg_reload', pistol_reload_upper: 'pistol_reload', bat_idle_upper: 'bat_idle', bat_calib: 'bat_idle',
+      fists_idle_upper: 'tripo_idle', sword_idle_upper: 'ual1_Sword_Idle', sword_idle_rarm: 'ual1_Sword_Idle', sword_idle_rhand: 'ual1_Sword_Idle', tripo_idle_lower: 'tripo_idle' };
+    return n in BASE ? BASE[n] : n.endsWith('_u') ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, '');
+  }
+  // the posture fix (render/posture.js), after the body's corrections, before the weapons: each bone turned by the shares of the clips driving
+  // it, per source family (only her pelvis / chest / neck / head meshes change; arms, hands, weapons and feet stay put)
+  posture() {
+    if (this.postureOff) return;
+    if (!this.postureActs) {
+      this.postureActs = [];
+      for (const [n, a] of Object.entries(this.actions)) {
+        const keyed = new Set(a.getClip().tracks.filter((t) => /quaternion$/.test(t.name)).map((t) => t.name.split('.')[0].replace(/^mixamorig:?/, '')));
+        const bones = POSTURE_BONES.filter((b) => keyed.has(b)); if (bones.length) this.postureActs.push([a, postureFamily(this.baseClip(n)), bones]);
+      }
+      this.postureW = Object.fromEntries(POSTURE_BONES.map((b) => [b, { xbot: 0, mannequin: 0, all: 0 }]));
+    }
+    const W = this.postureW;
+    for (const b of POSTURE_BONES) { W[b].xbot = W[b].mannequin = W[b].all = 0; }
+    for (const [a, fam, bones] of this.postureActs) {
+      const w = a.getEffectiveWeight(); if (w <= 1e-3) continue;
+      for (const b of bones) { W[b].all += w; if (fam) W[b][fam] += w; }
+    }
+    for (const b of POSTURE_BONES) if (W[b].all > 1e-3) { W[b].xbot /= W[b].all; W[b].mannequin /= W[b].all; }
+    applyPosture(this.bones, W);
+    this.container.updateMatrixWorld(true);
   }
   handPoses() {
     if (!this.handSet) return;
@@ -1043,7 +1071,9 @@ export class YolaView extends ClipBody {
       if (this.test?.obj) this.test.obj.visible = false;
     }
     this.deathT += dt;
+    for (const [b, q] of this.restQ) b.quaternion.copy(q); mixerWritesAll(this.mixer); // (as update: so the posture fix never piles up)
     this.mixer.update(dt);
+    this.container.updateMatrixWorld(true); this.posture();
     this.hair.update(dt);
   }
 }

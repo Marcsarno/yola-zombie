@@ -9,6 +9,7 @@ import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
 import { placeOneHanded, twoHandLine, applyFit } from './render/holdfit.js';
+import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
 const CLIP_FPS = { bat_combo_mc: 60 };
@@ -518,7 +519,7 @@ function undoPost(a) {
 // tucked in every Mixamo clip. The fix is a constant turn per bone (what the retarget gives when it matches the lines):
 // C = Rt^-1 A^-1 A' Rt  (Rt her rest rotation, A axis->axis, A' line->line); her children keep their own rotations.
 const POSTURE = [['Hips', 'Spine'], ['Spine2', 'Neck'], ['Neck', 'Head'], ['Head', 'HeadTop_End'], ['LeftHand', 'LeftHandMiddle1'], ['RightHand', 'RightHandMiddle1']];
-const outerBone = (b) => { while (b?.parent?.name === b.name) b = b.parent; return b; };
+const outerBone = (b) => { while (b && b.parent?.name === b.name) b = b.parent; return b; };
 function restFrames(a) { // each bone's world rotation, +Y axis and line to its child at the bind pose
   const t = a.action?.time; a.action?.stop(); a.obj.traverse((o) => { if (o.isSkinnedMesh) o.skeleton.pose(); }); a.root.updateMatrixWorld(true);
   const out = {};
@@ -542,14 +543,12 @@ function postureC(a, src) { // per (character, source rig): the constant turn fo
   postureCache.set(key, C); return C;
 }
 function postureFix(a, src) {
-  if (!$('posture')?.checked || !a?.action || !src?.root.visible || !src.action) return;
-  const C = postureC(a, src);
-  for (const [n] of POSTURE) {
-    const b = outerBone(a.bones[n]), c = C[n]; if (!b || !c) continue;
-    postRot(a, b, (q) => q.multiply(c));
-    const ci = c.clone().invert();
-    for (const k of b.children) if (k.isBone) postRot(a, k, (q) => q.premultiply(ci)); // (children keep their own rotations)
-  }
+  // the game's posture fix (render/posture.js: the turns measured by postureC above, the hands left out, the head's
+  // children turning with it), on Yola for the shown clip's source family
+  if (!$('posture')?.checked || a !== main || !a?.action || S.char !== 'yola2') return; // (measured on Yola 3.0's rig)
+  const fam = postureFamily((CHARS[S.char].libRef || {})[a.clip.name.replace(/_REBAKE_.*$/, '')] || a.clip.name.replace(/_REBAKE_.*$/, ''));
+  if (!fam) return;
+  const one = { [fam]: 1 }; applyPosture(a.bones, Object.fromEntries(POSTURE_BONES.map((n) => [n, one])), (b, fn) => postRot(a, outerBone(b), fn));
   a.root.updateMatrixWorld(true);
 }
 // ---- HANDS (the user, 2026-10-17: "choose hands open, hands closed, what hand the weapon's supposed to be in"; the Move
@@ -882,18 +881,23 @@ function buildUI() {
 }
 
 // ---------------- review captures (full-size close-ups without the window: WEAPON_HOLD_PROCESS.md 16) ----------------
-// capView: one rig (who 'main' / 'ref'), looking at target ('hands', 'rhand', 'lhand', 'body', 'pair') from dir (world:
+// capView: one rig (who 'main' / 'ref'), looking at target ('hands', 'rhand', 'lhand', 'head', 'body', 'pair') from dir (world:
 // she faces +Z, her right is +X) at dist metres. capSheet: a grid of such views (each cell may set clip / frame / gun /
 // pre()) saved as shots/<name>.png through the dev server.
-async function capView({ who = 'main', dir = [1, 0.3, 1], dist = 0.5, target = 'hands', w = 600, h = 450 }) {
+async function capView({ who = 'main', dir = [1, 0.3, 1], dist = 0.5, target = 'hands', w = 600, h = 450, solo = false }) {
   const a = who === 'ref' ? ref : main, cam = camera, c = new THREE.Vector3();
   if (target === 'hands') { a.grip('Right', _v); a.grip('Left', _v2); c.copy(_v).lerp(_v2, 0.5); }
   else if (target === 'rhand' || target === 'lhand') a.grip(target === 'rhand' ? 'Right' : 'Left', c);
   else if (target === 'pair') { main.bones.Hips.getWorldPosition(_v); ref.bones.Hips.getWorldPosition(_v2); c.copy(_v).lerp(_v2, 0.5); c.y = 0.9; }
+  else if (target === 'head') a.bones.Neck.getWorldPosition(c);
   else { a.bones.Hips.getWorldPosition(c); c.y = 0.9 * a.height / 1.62; }
   const keep = { p: cam.position.clone(), t: controls.target.clone(), asp: cam.aspect, pr: renderer.getPixelRatio() };
   cam.position.copy(c).addScaledVector(_v3.set(...dir).normalize(), dist); cam.lookAt(c); cam.aspect = w / h; cam.updateProjectionMatrix();
-  renderer.setPixelRatio(1); renderer.setSize(w, h, false); updateFingers(); renderer.render(scene, cam);
+  const other = solo ? (a === main ? ref : main) : null, vis = other?.root.visible; // (solo: the other rig hidden)
+  const hidden = other ? [other.root, other === ref ? refGun?.obj : mainGun?.obj, ...Object.values(other === ref ? heldRef : held)].filter((o) => o && o.visible) : [];
+  updateFingers(); for (const o of hidden) o.visible = false; if (other) other.fing.g.visible = false;
+  renderer.setPixelRatio(1); renderer.setSize(w, h, false); renderer.render(scene, cam);
+  for (const o of hidden) o.visible = true; if (other) other.root.visible = vis;
   const bmp = await createImageBitmap(renderer.domElement);
   renderer.setPixelRatio(keep.pr); renderer.setSize(innerWidth, innerHeight, false); cam.aspect = keep.asp; cam.updateProjectionMatrix();
   cam.position.copy(keep.p); controls.target.copy(keep.t); controls.update();
@@ -947,5 +951,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { view: capView, sheet: capSheet, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();
