@@ -99,21 +99,24 @@ export function handOnto(bones, side, point, dir, w, solveArm, o = {}) {
   H.userData.gripSeed = { psi: r.psi, phi: r.phi }; H.userData.gripDiag = r;
   return true;
 }
-// how each hand takes a weapon's grips, beyond its data sheet (weapon model frame): axis (the hand's pinky -> index way,
-// fixed sign), back (where the back of the hand faces), backTol (deg) and elbow (where the elbow points from the
-// shoulder-wrist line, in her frame: out to her side, down, back). The chainsaw's rear grasp bar is the top of a
-// closed loop: her right hand palm down on it from above (the user's reference photo, 2026-10-17: a woman holding a
-// running saw at her waist, the bar out to her left, both hands over the top). Its front handle is a
-// tube over the top: the left hand from above or in front, never from inside the saw. The hammer's handle is round (any
-// turn), both index fingers toward the head.
+// how each hand takes a weapon's grips, beyond its data sheet (weapon model frame): at (the spot on the handle, if not the
+// data sheet's grip), axis (the hand's pinky -> index way, fixed sign), back (where the back of the hand faces), backTol
+// (deg) and elbow (where the elbow points from the shoulder-wrist line, in her frame: out to her side, down, back). With
+// none, render/armfit.js turns the hand around the handle wherever the wrist and forearm are most natural.
+// The chainsaw (2026-10-17): the rear handle is left to the anatomy (forcing the back of the right hand up needed ~100 deg
+// of forearm turn, past its 80). The left hand takes the front handle's LEFT POST (the hoop's side, running up and back
+// at x 0.26-0.34), thumb up along it, the back of the hand outward: on the hoop's top bar (the data sheet's grip) the left
+// forearm needed ~100 deg palm down. The hammer's handle is round, both index fingers toward the head.
 export const GRIP_HANDS = {
-  chainsaw: { primary: { back: [0, 1, 0], backTol: 45 }, secondary: { axis: [0, 0, 1], back: [0, 1, 0], backTol: 70 } },
+  chainsaw: { primary: {}, secondary: { at: [0.285, 0.105, -0.078], axis: [-0.52, 0.85, 0], back: [0, 0, -1], backTol: 70 } },
   sledgehammer: { primary: {}, secondary: {} },
 };
-// world-space options for handOnto from a placed weapon holder o: { axis, back?, backTol?, signFree }
+// world-space options for handOnto from a placed weapon holder o: { point (the grip: the data sheet's, or the rule's own
+// spot `at` on that handle), axis, back?, backTol?, elbow?, signFree }
 export function gripOpts(key, def, which, o) {
-  const G = GRIP_HANDS[key]?.[which], ax = new THREE.Vector3(...(G?.axis || (which === 'secondary' && def.secondary_grip_axis) || def.shaft_axis)).transformDirection(o.matrixWorld);
-  return { axis: ax, signFree: !G, back: G?.back ? new THREE.Vector3(...G.back).transformDirection(o.matrixWorld) : null, backTol: G?.backTol, elbow: G?.elbow };
+  const G = GRIP_HANDS[key]?.[which], at = G?.at || def[which === 'secondary' ? 'grip_secondary' : 'grip_primary'];
+  const point = at ? o.localToWorld(new THREE.Vector3(...at)) : null, ax = new THREE.Vector3(...(G?.axis || (which === 'secondary' && def.secondary_grip_axis) || def.shaft_axis)).transformDirection(o.matrixWorld);
+  return { point, axis: ax, signFree: !G, back: G?.back ? new THREE.Vector3(...G.back).transformDirection(o.matrixWorld) : null, backTol: G?.backTol, elbow: G?.elbow };
 }
 // ---- carrying a two-handed weapon at rest (2026-10-17, the user: "create custom idle for the sledge hammer and chainsaw
 // that make more sense ... I'm pretty sure old version of the game had better idle"): the first Yola's Move Library
@@ -126,11 +129,12 @@ export function gripOpts(key, def, which, o) {
 export const CARRY = {
   // port arms: the handle's end by her right hip, the head up by her left shoulder, in front of her
   sledgehammer: { clip: 'kk_Melee_2H_Idle', grip: [-0.15, 0.98, 0.3], dir: [0.55, 0.8, 0.18], ref: [0, 0, 1] },
-  // at her waist as in the user's reference photo (2026-10-17): the saw in front of her belly, the rear handle palm down
-  // in her right hand from above, the bar out 40 deg to her left and a little up, her left hand over the front handle;
-  // picked in the Rig Lab by armfit.js's anatomy (right wrist 19% of its range, both forearms near thumb-up, nothing
-  // through her body)
-  chainsaw: { clip: 'kk_Melee_2H_Idle', grip: [-0.14, 1.02, 0.24], dir: [0.637, 0.139, 0.759], ref: [0, 1, 0] },
+  // at her waist after the user's reference photo (2026-10-17): the saw in front of her belly, the bar 55 deg to her left
+  // and tilted 15 deg, her right hand over the rear handle, her left on the front handle's left post (GRIP_HANDS); found by
+  // a search in the Rig Lab with the wrist measured in the forearm's frame: right wrist 50% / left 20% of their ranges,
+  // forearms 48 deg palm down / near thumb-up, nothing through her body. (The first photo try, grip [-0.14, 1.02, 0.24],
+  // broke both wrists: the old measure read them as straight.)
+  chainsaw: { clip: 'kk_Melee_2H_Idle', grip: [-0.22, 0.95, 0.32], dir: [0.811, 0.139, 0.568], ref: [-0.148, 0.966, 0.212] },
 };
 const _cm1 = new THREE.Matrix4(), _cm2 = new THREE.Matrix4(), _cq = new THREE.Quaternion(), _cs = new THREE.Vector3(1, 1, 1);
 // the carry's frame (at the main grip, oriented as the weapon) in her chest bone's frame, measured once in the idle's

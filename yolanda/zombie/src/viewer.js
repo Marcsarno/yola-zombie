@@ -8,7 +8,7 @@ import { prepShotgun, prepPumpShort, prepShell, makePistol, makeBat, makeKnife, 
 import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './render/holdfit.js';
+import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -818,14 +818,14 @@ function placeHeldOn(a, o) {
     if (cal) {
       const P = carryPlace(a.bones, o, LD, cal, fitW(w, a), k, { grip: new THREE.Vector3(), dir: new THREE.Vector3() });
       const g1 = gripOpts(w, LD, 'primary', o); otherHandOn(a, 'Right', P.grip, g1.axis, 1, g1); o.updateMatrixWorld(true);
-      const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), g2.axis, 1, g2);
+      const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, 'Left', g2.point, g2.axis, 1, g2);
       return;
     }
   }
   if (LD) {
     const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' };
     if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
-      if (LD.hands === 'two' && LD.grip_secondary) { o.updateMatrixWorld(true); const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', o.localToWorld(new THREE.Vector3(...LD.grip_secondary)), g2.axis, 1, g2); }
+      if (LD.hands === 'two' && LD.grip_secondary) { o.updateMatrixWorld(true); const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', g2.point, g2.axis, 1, g2); }
       return;
     }
   }
@@ -1204,5 +1204,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { CARRY, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { CARRY, GRIP_HANDS, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();

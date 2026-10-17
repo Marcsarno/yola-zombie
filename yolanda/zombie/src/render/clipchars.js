@@ -971,7 +971,7 @@ export class YolaView extends ClipBody {
     const q1 = o.quaternion.clone(); o.position.lerpVectors(p0, o.position, cw); o.quaternion.slerpQuaternions(q0, q1, cw); o.updateMatrixWorld(true); // (q1: slerpQuaternions overwrites the quaternion it writes into first)
     const g = o.localToWorld(new THREE.Vector3(...w.grip_primary)), d = new THREE.Vector3(...w.shaft_axis).transformDirection(o.matrixWorld);
     const o1 = gripOpts(T.key, w, 'primary', o); reachShoulder(this.bones, 'Right', g); handOnto(this.bones, 'Right', g, o1.axis, cw, solveArm, o1); this.closeFist('Right', cw);
-    if (w.grip_secondary) { const g2 = o.localToWorld(new THREE.Vector3(...w.grip_secondary)), o2 = gripOpts(T.key, w, 'secondary', o); reachShoulder(this.bones, 'Left', g2, 25); handOnto(this.bones, 'Left', g2, o2.axis, 1, solveArm, o2); this.closeFist('Left', 1); }
+    if (w.grip_secondary) { const o2 = gripOpts(T.key, w, 'secondary', o), g2 = o2.point; reachShoulder(this.bones, 'Left', g2, 25); handOnto(this.bones, 'Left', g2, o2.axis, 1, solveArm, o2); this.closeFist('Left', 1); }
   }
   placeHeld(T) {
     if (T.fingers) {
@@ -986,7 +986,7 @@ export class YolaView extends ClipBody {
     // a two-handed weapon: the other hand on its second grip (the data sheet's grip_secondary; render/holdfit.js handOnto)
     if (T.two && w.grip_secondary) {
       const other = T.hand === 'Left' ? 'Right' : 'Left'; o.updateMatrixWorld(true);
-      const pt = o.localToWorld(_v6.set(...w.grip_secondary)), go = gripOpts(T.key, w, 'secondary', o);
+      const go = gripOpts(T.key, w, 'secondary', o), pt = go.point;
       reachShoulder(this.bones, other, pt, 25); if (handOnto(this.bones, other, pt, go.axis, 1, solveArm, go)) this.closeFist(other, 1); // (25 deg: a second grip sits further out than the bat's)
     }
     o.visible = true; o.updateMatrixWorld(true);
