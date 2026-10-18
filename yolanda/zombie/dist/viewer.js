@@ -1,5 +1,5 @@
 (() => {
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -20826,7 +20826,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -30932,7 +30932,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function toTrianglesDrawMode(geometry, drawMode) {
     if (drawMode === TrianglesDrawMode) {
       console.warn("THREE.BufferGeometryUtils.toTrianglesDrawMode(): Geometry already defined as triangles.");
@@ -30988,7 +30988,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -33555,7 +33555,7 @@ void main() {
     });
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
+  // node_modules/three/examples/jsm/libs/fflate.module.js
   var u8 = Uint8Array;
   var u16 = Uint16Array;
   var i32 = Int32Array;
@@ -33927,7 +33927,7 @@ void main() {
   } catch (e) {
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
+  // node_modules/three/examples/jsm/curves/NURBSUtils.js
   function findSpan(p, u, U) {
     const n = U.length - p - 1;
     if (u >= U[n]) {
@@ -34119,7 +34119,7 @@ void main() {
     return calcRationalCurveDerivatives(Pders);
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
+  // node_modules/three/examples/jsm/curves/NURBSCurve.js
   var NURBSCurve = class extends Curve {
     /**
      * Constructs a new NURBS curve.
@@ -34194,7 +34194,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
+  // node_modules/three/examples/jsm/loaders/FBXLoader.js
   var fbxTree;
   var connections;
   var sceneGraph;
@@ -36645,7 +36645,7 @@ void main() {
     return a;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -37485,7 +37485,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -39049,6 +39049,7 @@ void main() {
     ["Hits, falls & deaths", /^Hit_|^Death|^KipUp|^LayToIdle|^IdleToLay|^Crawl_/],
     ["Pick up, use & react", /^PickUp|^Interact|^Drink|^Consume|^Bandage|^Chest_Open|^OverhandThrow|^Celebration|^Surprise|^Push_|^Fixing/]
   ];
+  var FINISHER_TESTS = ["B_uppercut", "C_uppercut_mirrored"].flatMap((k) => ["", "_2_4m", "_3_4m"].map((d) => "assets/test_clips/hub_hub_execution_" + k + d + ".glb"));
   var UAL_FILES = { ual_: "assets/source/ual/UAL2_Full.glb", ual1_: "assets/source/ual/UAL1_Full.glb" };
   var UAL_FEMALE = "assets/source/ual/Mannequin_F.glb";
   var UE_MAP = { pelvis: "Hips", spine_01: "Spine", spine_02: "Spine1", spine_03: "Spine2", neck_01: "Neck", Head: "Head" };
@@ -39437,12 +39438,12 @@ void main() {
     if (!mainCache[key]) {
       const g = await loadG(CHARS[key].file);
       const extraQ = key === new URLSearchParams(location.search).get("char") ? (new URLSearchParams(location.search).get("extra") || "").split(",").filter(Boolean) : [];
-      const packs = CHARS[key].newPacks || [];
-      for (const f of [...CHARS[key].extra || [], ...packs, ...extraQ]) {
+      const packs = CHARS[key].newPacks || [], fins = key === "yola2" ? FINISHER_TESTS.filter((f) => !extraQ.includes(f)) : [];
+      for (const f of [...CHARS[key].extra || [], ...packs, ...extraQ, ...fins]) {
         try {
           const c = await loadG(f), have = Object.fromEntries(g.animations.map((a) => [a.name, a]));
           for (const a of c.animations) {
-            const tag = packs.includes(f) ? { pack: /^kk_/.test(a.name) ? "KayKit" : /ual1_/.test(a.name) ? "UAL1" : "UAL2" } : extraQ.includes(f) ? { test: f.split("/").pop() } : {};
+            const tag = FINISHER_TESTS.includes(f) ? { fin: true, test: f.split("/").pop() } : packs.includes(f) ? { pack: /^kk_/.test(a.name) ? "KayKit" : /ual1_/.test(a.name) ? "UAL1" : "UAL2" } : extraQ.includes(f) ? { test: f.split("/").pop() } : {};
             if (tag.pack && have[a.name]) {
               have[a.name].userData = { ...have[a.name].userData, ...tag };
               continue;
@@ -39475,7 +39476,7 @@ void main() {
   }
   async function setClip(name) {
     const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
-    pinRoot(c, $("inplace").checked, main);
+    pinRoot(c, $("inplace").checked && !c.userData?.fin, main);
     main.play(c);
     main.hair?.reset?.();
     FPS = fpsOf(c);
@@ -40637,6 +40638,7 @@ void main() {
     return [.../* @__PURE__ */ new Set([...GAME_ATTACKS[S.gun] || [], ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
   }
   function editClips() {
+    if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin).map((c) => c.name).sort();
     if (S.mode === "attack" && ARENA_KEY[S.gun]) {
       const g = gameAttacks();
       if (g.length) return g;
@@ -40644,12 +40646,17 @@ void main() {
     const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === "idle" ? EDIT_IDLE : EDIT_ATTACK);
     return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
   }
-  var prettyClip = (n) => S.gun === "pistol" && S.mode === "attack" && n === "pistol_idle" ? "Firing (the idle with the shot kick)  \xB7 Mixamo" : n.replace(/^(ual1?|kev)_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (/^ual/.test(n) ? "  \xB7 Quaternius" : /^kev_/.test(n) ? "  \xB7 Kevin Iglesias" : "  \xB7 Mixamo") + (S.mode === "attack" && gameAttack(n) ? "  \xB7 " + gameAttack(n) : "");
+  var finLabel = (n) => {
+    const m = n.match(/_(\d)_(\d)m$/);
+    return n.replace(/^hub_execution_/, "").replace(/_\d_\dm$/, "").replace(/_/g, " ") + "  \xB7  jump " + (m ? m[1] + "." + m[2] : "1.4") + " m";
+  };
+  var prettyClip = (n) => /^hub_execution_/.test(n) ? finLabel(n) + "  \xB7 Animation Hub test" : S.gun === "pistol" && S.mode === "attack" && n === "pistol_idle" ? "Firing (the idle with the shot kick)  \xB7 Mixamo" : n.replace(/^(ual1?|kev)_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (/^ual/.test(n) ? "  \xB7 Quaternius" : /^kev_/.test(n) ? "  \xB7 Kevin Iglesias" : "  \xB7 Mixamo") + (S.mode === "attack" && gameAttack(n) ? "  \xB7 " + gameAttack(n) : "");
   function editSync() {
     if (!$("edit") || !main) return;
     for (const b of $("eWeapons").children) b.classList.toggle("on", b.dataset.k === S.gun);
     $("eIdle").classList.toggle("on", S.mode === "idle");
     $("eAttack").classList.toggle("on", S.mode === "attack");
+    $("eFin").classList.toggle("on", S.mode === "finisher");
     const sel = $("eClip"), list = editClips(), cur = main.clip?.name || "";
     sel.innerHTML = "";
     for (const n of list) sel.add(new Option(prettyClip(n), n));
@@ -41098,6 +41105,10 @@ void main() {
     };
     $("eAttack").onclick = () => {
       S.mode = "attack";
+      editPick(editFirst());
+    };
+    $("eFin").onclick = () => {
+      S.mode = "finisher";
       editPick(editFirst());
     };
     $("eClip").onchange = (e) => editPick(e.target.value);
