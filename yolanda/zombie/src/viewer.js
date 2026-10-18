@@ -1310,7 +1310,7 @@ function editAngle(k) {
 function buildEditUI(ui, fitClipPanel) {
   for (const [k, label] of Object.entries(EDIT_WEAPONS)) {
     const b = document.createElement('button'); b.textContent = label; b.dataset.k = k;
-    b.onclick = () => { S.gun = k; $('gun').value = k; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); };
+    b.onclick = () => { S.gun = k; $('gun').value = k; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); refresh(); sidebarSync(); }; // (refresh: paused on the same clip nothing else redraws, and the new weapon sat at the floor's centre)
     $('eWeapons').appendChild(b);
   }
   $('eIdle').onclick = () => { S.mode = 'idle'; editPick(editFirst()); };
