@@ -1,5 +1,5 @@
 (() => {
-  // node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -20826,7 +20826,7 @@
     }
   }
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -30932,7 +30932,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function toTrianglesDrawMode(geometry, drawMode) {
     if (drawMode === TrianglesDrawMode) {
       console.warn("THREE.BufferGeometryUtils.toTrianglesDrawMode(): Geometry already defined as triangles.");
@@ -30988,7 +30988,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -33555,7 +33555,7 @@ void main() {
     });
   }
 
-  // node_modules/three/examples/jsm/libs/fflate.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
   var u8 = Uint8Array;
   var u16 = Uint16Array;
   var i32 = Int32Array;
@@ -33927,7 +33927,7 @@ void main() {
   } catch (e) {
   }
 
-  // node_modules/three/examples/jsm/curves/NURBSUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
   function findSpan(p, u, U) {
     const n = U.length - p - 1;
     if (u >= U[n]) {
@@ -34119,7 +34119,7 @@ void main() {
     return calcRationalCurveDerivatives(Pders);
   }
 
-  // node_modules/three/examples/jsm/curves/NURBSCurve.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
   var NURBSCurve = class extends Curve {
     /**
      * Constructs a new NURBS curve.
@@ -34194,7 +34194,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/loaders/FBXLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
   var fbxTree;
   var connections;
   var sceneGraph;
@@ -36645,7 +36645,7 @@ void main() {
     return a;
   }
 
-  // node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -37485,7 +37485,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -37982,6 +37982,13 @@ void main() {
   };
 
   // src/core/weapons.js
+  var PISTOL = "pistol";
+  var SHOTGUN = "shotgun";
+  var AXE = "axe";
+  var FISTS = "fists";
+  var BAT = "bat";
+  var LIB_WEAPONS = ["sledgehammer", "crowbar", "knife"];
+  var WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, BAT, ...LIB_WEAPONS, FISTS];
   var SHOTGUN_SPEC = {
     pellets: 9,
     spread: 0.15,
@@ -39058,7 +39065,7 @@ void main() {
   var REF_OFFSET = { pistol_reload: 37 };
   var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (hospital pack, full stock)", draft: "shotgun (first draft)", axe: "fire axe", bat: "baseball bat", alubat: "bat (wood)", packaxe: "axe (hospital pack)", packcrowbar: "crowbar (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
   var HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
-  var LIB_WEAPONS = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
+  var LIB_WEAPONS2 = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
   var PACK = { alubat: 1, packaxe: 1, packcrowbar: 1 };
   var WDEFS = {};
   var PICKS = {};
@@ -39782,7 +39789,7 @@ void main() {
   });
   fetch("assets/arena/weapons.json").then((r) => r.json()).then(async (j) => {
     WDEFS = j.weapons || {};
-    for (const k in LIB_WEAPONS) {
+    for (const k in LIB_WEAPONS2) {
       const D3 = WDEFS[k];
       if (!D3) continue;
       const make = async () => {
@@ -40294,7 +40301,7 @@ void main() {
       const B = a.bones, mid = (sd) => B[sd + "HandIndex1"].getWorldPosition(new Vector3()).lerp(B[sd + "HandPinky1"].getWorldPosition(new Vector3()), 0.5);
       if (mid("Right").distanceTo(mid("Left")) > 0.32 * k && placeOneHanded(B, "Right", o, WDEFS[w], fitW(w, a), {}, k)) return;
     }
-    const LD = LIB_WEAPONS[w] && WDEFS[w];
+    const LD = LIB_WEAPONS2[w] && WDEFS[w];
     if (PACK[w] && LD && (holdHand(w, a) === "Left" ? placeOneHanded(a.bones, "Left", o, LD, fitW(w, a), {}, k) : placeBat(a.bones, o, LD, fitW(w, a), k))) return;
     const CY = LD && CARRY[w];
     if (CY && HOLD_LAYERS.carry && a === main && main.clip?.name === CY.clip) {
@@ -40994,8 +41001,8 @@ void main() {
       b.classList.toggle("on", b.dataset.v === (clipOwn ? "clip" : "all"));
       b.disabled = w === "pistol";
     }
-    SB.hand.hidden = !LIB_WEAPONS[w];
-    if (LIB_WEAPONS[w]) {
+    SB.hand.hidden = !LIB_WEAPONS2[w];
+    if (LIB_WEAPONS2[w]) {
       const h = holdHand(w, a);
       for (const b of SB.hand.children) b.classList.toggle("on", b.dataset.v === h);
     }

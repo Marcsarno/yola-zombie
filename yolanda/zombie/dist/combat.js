@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -5954,9 +5954,9 @@
      * @param {Object} json - The serialized json to set the box from.
      * @return {Box3} A reference to this bounding box.
      */
-    fromJSON(json2) {
-      this.min.fromArray(json2.min);
-      this.max.fromArray(json2.max);
+    fromJSON(json3) {
+      this.min.fromArray(json3.min);
+      this.max.fromArray(json3.max);
       return this;
     }
   };
@@ -6260,9 +6260,9 @@
      * @param {Object} json - The serialized json to set the sphere from.
      * @return {Box3} A reference to this bounding sphere.
      */
-    fromJSON(json2) {
-      this.radius = json2.radius;
-      this.center.fromArray(json2.center);
+    fromJSON(json3) {
+      this.radius = json3.radius;
+      this.center.fromArray(json3.center);
       return this;
     }
   };
@@ -14730,17 +14730,17 @@
      * @param {Object<string, Bone>} bones - An array of bones.
      * @return {Skeleton} A reference of this instance.
      */
-    fromJSON(json2, bones) {
-      this.uuid = json2.uuid;
-      for (let i = 0, l = json2.bones.length; i < l; i++) {
-        const uuid = json2.bones[i];
+    fromJSON(json3, bones) {
+      this.uuid = json3.uuid;
+      for (let i = 0, l = json3.bones.length; i < l; i++) {
+        const uuid = json3.bones[i];
         let bone = bones[uuid];
         if (bone === void 0) {
           console.warn("THREE.Skeleton: No bone found with UUID:", uuid);
           bone = new Bone();
         }
         this.bones.push(bone);
-        this.boneInverses.push(new Matrix4().fromArray(json2.boneInverses[i]));
+        this.boneInverses.push(new Matrix4().fromArray(json3.boneInverses[i]));
       }
       this.init();
       return this;
@@ -18329,8 +18329,8 @@
      * @param {Object} json - The JSON holding the serialized curve.
      * @return {Curve} A reference to this curve.
      */
-    fromJSON(json2) {
-      this.arcLengthDivisions = json2.arcLengthDivisions;
+    fromJSON(json3) {
+      this.arcLengthDivisions = json3.arcLengthDivisions;
       return this;
     }
   };
@@ -18425,16 +18425,16 @@
       data.aRotation = this.aRotation;
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.aX = json2.aX;
-      this.aY = json2.aY;
-      this.xRadius = json2.xRadius;
-      this.yRadius = json2.yRadius;
-      this.aStartAngle = json2.aStartAngle;
-      this.aEndAngle = json2.aEndAngle;
-      this.aClockwise = json2.aClockwise;
-      this.aRotation = json2.aRotation;
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.aX = json3.aX;
+      this.aY = json3.aY;
+      this.xRadius = json3.xRadius;
+      this.yRadius = json3.yRadius;
+      this.aStartAngle = json3.aStartAngle;
+      this.aEndAngle = json3.aEndAngle;
+      this.aClockwise = json3.aClockwise;
+      this.aRotation = json3.aRotation;
       return this;
     }
   };
@@ -18585,16 +18585,16 @@
       data.tension = this.tension;
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
+    fromJSON(json3) {
+      super.fromJSON(json3);
       this.points = [];
-      for (let i = 0, l = json2.points.length; i < l; i++) {
-        const point = json2.points[i];
+      for (let i = 0, l = json3.points.length; i < l; i++) {
+        const point = json3.points[i];
         this.points.push(new Vector3().fromArray(point));
       }
-      this.closed = json2.closed;
-      this.curveType = json2.curveType;
-      this.tension = json2.tension;
+      this.closed = json3.closed;
+      this.curveType = json3.curveType;
+      this.tension = json3.tension;
       return this;
     }
   };
@@ -18685,12 +18685,12 @@
       data.v3 = this.v3.toArray();
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.v0.fromArray(json2.v0);
-      this.v1.fromArray(json2.v1);
-      this.v2.fromArray(json2.v2);
-      this.v3.fromArray(json2.v3);
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.v0.fromArray(json3.v0);
+      this.v1.fromArray(json3.v1);
+      this.v2.fromArray(json3.v2);
+      this.v3.fromArray(json3.v3);
       return this;
     }
   };
@@ -18745,12 +18745,12 @@
       data.v3 = this.v3.toArray();
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.v0.fromArray(json2.v0);
-      this.v1.fromArray(json2.v1);
-      this.v2.fromArray(json2.v2);
-      this.v3.fromArray(json2.v3);
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.v0.fromArray(json3.v0);
+      this.v1.fromArray(json3.v1);
+      this.v2.fromArray(json3.v2);
+      this.v3.fromArray(json3.v3);
       return this;
     }
   };
@@ -18807,10 +18807,10 @@
       data.v2 = this.v2.toArray();
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.v1.fromArray(json2.v1);
-      this.v2.fromArray(json2.v2);
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.v1.fromArray(json3.v1);
+      this.v2.fromArray(json3.v2);
       return this;
     }
   };
@@ -18867,10 +18867,10 @@
       data.v2 = this.v2.toArray();
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.v1.fromArray(json2.v1);
-      this.v2.fromArray(json2.v2);
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.v1.fromArray(json3.v1);
+      this.v2.fromArray(json3.v2);
       return this;
     }
   };
@@ -18920,11 +18920,11 @@
       data.v2 = this.v2.toArray();
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.v0.fromArray(json2.v0);
-      this.v1.fromArray(json2.v1);
-      this.v2.fromArray(json2.v2);
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.v0.fromArray(json3.v0);
+      this.v1.fromArray(json3.v1);
+      this.v2.fromArray(json3.v2);
       return this;
     }
   };
@@ -18975,11 +18975,11 @@
       data.v2 = this.v2.toArray();
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.v0.fromArray(json2.v0);
-      this.v1.fromArray(json2.v1);
-      this.v2.fromArray(json2.v2);
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.v0.fromArray(json3.v0);
+      this.v1.fromArray(json3.v1);
+      this.v2.fromArray(json3.v2);
       return this;
     }
   };
@@ -19036,11 +19036,11 @@
       }
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
+    fromJSON(json3) {
+      super.fromJSON(json3);
       this.points = [];
-      for (let i = 0, l = json2.points.length; i < l; i++) {
-        const point = json2.points[i];
+      for (let i = 0, l = json3.points.length; i < l; i++) {
+        const point = json3.points[i];
         this.points.push(new Vector2().fromArray(point));
       }
       return this;
@@ -19191,12 +19191,12 @@
       }
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.autoClose = json2.autoClose;
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.autoClose = json3.autoClose;
       this.curves = [];
-      for (let i = 0, l = json2.curves.length; i < l; i++) {
-        const curve = json2.curves[i];
+      for (let i = 0, l = json3.curves.length; i < l; i++) {
+        const curve = json3.curves[i];
         this.curves.push(new Curves[curve.type]().fromJSON(curve));
       }
       return this;
@@ -19408,9 +19408,9 @@
       data.currentPoint = this.currentPoint.toArray();
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.currentPoint.fromArray(json2.currentPoint);
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.currentPoint.fromArray(json3.currentPoint);
       return this;
     }
   };
@@ -19473,12 +19473,12 @@
       }
       return data;
     }
-    fromJSON(json2) {
-      super.fromJSON(json2);
-      this.uuid = json2.uuid;
+    fromJSON(json3) {
+      super.fromJSON(json3);
+      this.uuid = json3.uuid;
       this.holes = [];
-      for (let i = 0, l = json2.holes.length; i < l; i++) {
-        const hole = json2.holes[i];
+      for (let i = 0, l = json3.holes.length; i < l; i++) {
+        const hole = json3.holes[i];
         this.holes.push(new Path().fromJSON(hole));
       }
       return this;
@@ -22799,22 +22799,22 @@
      */
     static toJSON(track) {
       const trackType = track.constructor;
-      let json2;
+      let json3;
       if (trackType.toJSON !== this.toJSON) {
-        json2 = trackType.toJSON(track);
+        json3 = trackType.toJSON(track);
       } else {
-        json2 = {
+        json3 = {
           "name": track.name,
           "times": convertArray(track.times, Array),
           "values": convertArray(track.values, Array)
         };
         const interpolation = track.getInterpolation();
         if (interpolation !== track.DefaultInterpolation) {
-          json2.interpolation = interpolation;
+          json3.interpolation = interpolation;
         }
       }
-      json2.type = track.ValueTypeName;
-      return json2;
+      json3.type = track.ValueTypeName;
+      return json3;
     }
     /**
      * Factory method for creating a new discrete interpolant.
@@ -23244,14 +23244,14 @@
      * @param {Object} json - The serialized animation clip.
      * @return {AnimationClip} The new animation clip.
      */
-    static parse(json2) {
-      const tracks = [], jsonTracks = json2.tracks, frameTime = 1 / (json2.fps || 1);
+    static parse(json3) {
+      const tracks = [], jsonTracks = json3.tracks, frameTime = 1 / (json3.fps || 1);
       for (let i = 0, n = jsonTracks.length; i !== n; ++i) {
         tracks.push(parseKeyframeTrack(jsonTracks[i]).scale(frameTime));
       }
-      const clip = new this(json2.name, json2.duration, tracks, json2.blendMode);
-      clip.uuid = json2.uuid;
-      clip.userData = JSON.parse(json2.userData || "{}");
+      const clip = new this(json3.name, json3.duration, tracks, json3.blendMode);
+      clip.uuid = json3.uuid;
+      clip.userData = JSON.parse(json3.userData || "{}");
       return clip;
     }
     /**
@@ -23263,7 +23263,7 @@
      */
     static toJSON(clip) {
       const tracks = [], clipTracks = clip.tracks;
-      const json2 = {
+      const json3 = {
         "name": clip.name,
         "duration": clip.duration,
         "tracks": tracks,
@@ -23274,7 +23274,7 @@
       for (let i = 0, n = clipTracks.length; i !== n; ++i) {
         tracks.push(KeyframeTrack.toJSON(clipTracks[i]));
       }
-      return json2;
+      return json3;
     }
     /**
      * Returns a new animation clip from the passed morph targets array of a
@@ -23561,21 +23561,21 @@
     }
     throw new Error("THREE.KeyframeTrack: Unsupported typeName: " + typeName);
   }
-  function parseKeyframeTrack(json2) {
-    if (json2.type === void 0) {
+  function parseKeyframeTrack(json3) {
+    if (json3.type === void 0) {
       throw new Error("THREE.KeyframeTrack: track type undefined, can not parse");
     }
-    const trackType = getTrackTypeForValueTypeName(json2.type);
-    if (json2.times === void 0) {
+    const trackType = getTrackTypeForValueTypeName(json3.type);
+    if (json3.times === void 0) {
       const times = [], values = [];
-      flattenJSON(json2.keys, times, values, "value");
-      json2.times = times;
-      json2.values = values;
+      flattenJSON(json3.keys, times, values, "value");
+      json3.times = times;
+      json3.values = values;
     }
     if (trackType.parse !== void 0) {
-      return trackType.parse(json2);
+      return trackType.parse(json3);
     } else {
-      return new trackType(json2.name, json2.times, json2.values, json2.interpolation);
+      return new trackType(json3.name, json3.times, json3.values, json3.interpolation);
     }
   }
   var Cache = {
@@ -24061,10 +24061,10 @@
      * @param {Object} json - The serialized animation clips.
      * @return {Array<AnimationClip>} The parsed animation clips.
      */
-    parse(json2) {
+    parse(json3) {
       const animations = [];
-      for (let i = 0; i < json2.length; i++) {
-        const clip = AnimationClip.parse(json2[i]);
+      for (let i = 0; i < json3.length; i++) {
+        const clip = AnimationClip.parse(json3[i]);
         animations.push(clip);
       }
       return animations;
@@ -25278,9 +25278,9 @@
      * @param {Object} json - The JSON holding the serialized light probe.
      * @return {LightProbe} A reference to this light probe.
      */
-    fromJSON(json2) {
-      this.intensity = json2.intensity;
-      this.sh.fromArray(json2.sh);
+    fromJSON(json3) {
+      this.intensity = json3.intensity;
+      this.sh.fromArray(json3.sh);
       return this;
     }
     toJSON(meta) {
@@ -25332,7 +25332,7 @@
      * @param {Object} json - The serialized material.
      * @return {Material} The parsed material.
      */
-    parse(json2) {
+    parse(json3) {
       const textures = this.textures;
       function getTexture(name) {
         if (textures[name] === void 0) {
@@ -25340,91 +25340,91 @@
         }
         return textures[name];
       }
-      const material = this.createMaterialFromType(json2.type);
-      if (json2.uuid !== void 0) material.uuid = json2.uuid;
-      if (json2.name !== void 0) material.name = json2.name;
-      if (json2.color !== void 0 && material.color !== void 0) material.color.setHex(json2.color);
-      if (json2.roughness !== void 0) material.roughness = json2.roughness;
-      if (json2.metalness !== void 0) material.metalness = json2.metalness;
-      if (json2.sheen !== void 0) material.sheen = json2.sheen;
-      if (json2.sheenColor !== void 0) material.sheenColor = new Color().setHex(json2.sheenColor);
-      if (json2.sheenRoughness !== void 0) material.sheenRoughness = json2.sheenRoughness;
-      if (json2.emissive !== void 0 && material.emissive !== void 0) material.emissive.setHex(json2.emissive);
-      if (json2.specular !== void 0 && material.specular !== void 0) material.specular.setHex(json2.specular);
-      if (json2.specularIntensity !== void 0) material.specularIntensity = json2.specularIntensity;
-      if (json2.specularColor !== void 0 && material.specularColor !== void 0) material.specularColor.setHex(json2.specularColor);
-      if (json2.shininess !== void 0) material.shininess = json2.shininess;
-      if (json2.clearcoat !== void 0) material.clearcoat = json2.clearcoat;
-      if (json2.clearcoatRoughness !== void 0) material.clearcoatRoughness = json2.clearcoatRoughness;
-      if (json2.dispersion !== void 0) material.dispersion = json2.dispersion;
-      if (json2.iridescence !== void 0) material.iridescence = json2.iridescence;
-      if (json2.iridescenceIOR !== void 0) material.iridescenceIOR = json2.iridescenceIOR;
-      if (json2.iridescenceThicknessRange !== void 0) material.iridescenceThicknessRange = json2.iridescenceThicknessRange;
-      if (json2.transmission !== void 0) material.transmission = json2.transmission;
-      if (json2.thickness !== void 0) material.thickness = json2.thickness;
-      if (json2.attenuationDistance !== void 0) material.attenuationDistance = json2.attenuationDistance;
-      if (json2.attenuationColor !== void 0 && material.attenuationColor !== void 0) material.attenuationColor.setHex(json2.attenuationColor);
-      if (json2.anisotropy !== void 0) material.anisotropy = json2.anisotropy;
-      if (json2.anisotropyRotation !== void 0) material.anisotropyRotation = json2.anisotropyRotation;
-      if (json2.fog !== void 0) material.fog = json2.fog;
-      if (json2.flatShading !== void 0) material.flatShading = json2.flatShading;
-      if (json2.blending !== void 0) material.blending = json2.blending;
-      if (json2.combine !== void 0) material.combine = json2.combine;
-      if (json2.side !== void 0) material.side = json2.side;
-      if (json2.shadowSide !== void 0) material.shadowSide = json2.shadowSide;
-      if (json2.opacity !== void 0) material.opacity = json2.opacity;
-      if (json2.transparent !== void 0) material.transparent = json2.transparent;
-      if (json2.alphaTest !== void 0) material.alphaTest = json2.alphaTest;
-      if (json2.alphaHash !== void 0) material.alphaHash = json2.alphaHash;
-      if (json2.depthFunc !== void 0) material.depthFunc = json2.depthFunc;
-      if (json2.depthTest !== void 0) material.depthTest = json2.depthTest;
-      if (json2.depthWrite !== void 0) material.depthWrite = json2.depthWrite;
-      if (json2.colorWrite !== void 0) material.colorWrite = json2.colorWrite;
-      if (json2.blendSrc !== void 0) material.blendSrc = json2.blendSrc;
-      if (json2.blendDst !== void 0) material.blendDst = json2.blendDst;
-      if (json2.blendEquation !== void 0) material.blendEquation = json2.blendEquation;
-      if (json2.blendSrcAlpha !== void 0) material.blendSrcAlpha = json2.blendSrcAlpha;
-      if (json2.blendDstAlpha !== void 0) material.blendDstAlpha = json2.blendDstAlpha;
-      if (json2.blendEquationAlpha !== void 0) material.blendEquationAlpha = json2.blendEquationAlpha;
-      if (json2.blendColor !== void 0 && material.blendColor !== void 0) material.blendColor.setHex(json2.blendColor);
-      if (json2.blendAlpha !== void 0) material.blendAlpha = json2.blendAlpha;
-      if (json2.stencilWriteMask !== void 0) material.stencilWriteMask = json2.stencilWriteMask;
-      if (json2.stencilFunc !== void 0) material.stencilFunc = json2.stencilFunc;
-      if (json2.stencilRef !== void 0) material.stencilRef = json2.stencilRef;
-      if (json2.stencilFuncMask !== void 0) material.stencilFuncMask = json2.stencilFuncMask;
-      if (json2.stencilFail !== void 0) material.stencilFail = json2.stencilFail;
-      if (json2.stencilZFail !== void 0) material.stencilZFail = json2.stencilZFail;
-      if (json2.stencilZPass !== void 0) material.stencilZPass = json2.stencilZPass;
-      if (json2.stencilWrite !== void 0) material.stencilWrite = json2.stencilWrite;
-      if (json2.wireframe !== void 0) material.wireframe = json2.wireframe;
-      if (json2.wireframeLinewidth !== void 0) material.wireframeLinewidth = json2.wireframeLinewidth;
-      if (json2.wireframeLinecap !== void 0) material.wireframeLinecap = json2.wireframeLinecap;
-      if (json2.wireframeLinejoin !== void 0) material.wireframeLinejoin = json2.wireframeLinejoin;
-      if (json2.rotation !== void 0) material.rotation = json2.rotation;
-      if (json2.linewidth !== void 0) material.linewidth = json2.linewidth;
-      if (json2.dashSize !== void 0) material.dashSize = json2.dashSize;
-      if (json2.gapSize !== void 0) material.gapSize = json2.gapSize;
-      if (json2.scale !== void 0) material.scale = json2.scale;
-      if (json2.polygonOffset !== void 0) material.polygonOffset = json2.polygonOffset;
-      if (json2.polygonOffsetFactor !== void 0) material.polygonOffsetFactor = json2.polygonOffsetFactor;
-      if (json2.polygonOffsetUnits !== void 0) material.polygonOffsetUnits = json2.polygonOffsetUnits;
-      if (json2.dithering !== void 0) material.dithering = json2.dithering;
-      if (json2.alphaToCoverage !== void 0) material.alphaToCoverage = json2.alphaToCoverage;
-      if (json2.premultipliedAlpha !== void 0) material.premultipliedAlpha = json2.premultipliedAlpha;
-      if (json2.forceSinglePass !== void 0) material.forceSinglePass = json2.forceSinglePass;
-      if (json2.visible !== void 0) material.visible = json2.visible;
-      if (json2.toneMapped !== void 0) material.toneMapped = json2.toneMapped;
-      if (json2.userData !== void 0) material.userData = json2.userData;
-      if (json2.vertexColors !== void 0) {
-        if (typeof json2.vertexColors === "number") {
-          material.vertexColors = json2.vertexColors > 0 ? true : false;
+      const material = this.createMaterialFromType(json3.type);
+      if (json3.uuid !== void 0) material.uuid = json3.uuid;
+      if (json3.name !== void 0) material.name = json3.name;
+      if (json3.color !== void 0 && material.color !== void 0) material.color.setHex(json3.color);
+      if (json3.roughness !== void 0) material.roughness = json3.roughness;
+      if (json3.metalness !== void 0) material.metalness = json3.metalness;
+      if (json3.sheen !== void 0) material.sheen = json3.sheen;
+      if (json3.sheenColor !== void 0) material.sheenColor = new Color().setHex(json3.sheenColor);
+      if (json3.sheenRoughness !== void 0) material.sheenRoughness = json3.sheenRoughness;
+      if (json3.emissive !== void 0 && material.emissive !== void 0) material.emissive.setHex(json3.emissive);
+      if (json3.specular !== void 0 && material.specular !== void 0) material.specular.setHex(json3.specular);
+      if (json3.specularIntensity !== void 0) material.specularIntensity = json3.specularIntensity;
+      if (json3.specularColor !== void 0 && material.specularColor !== void 0) material.specularColor.setHex(json3.specularColor);
+      if (json3.shininess !== void 0) material.shininess = json3.shininess;
+      if (json3.clearcoat !== void 0) material.clearcoat = json3.clearcoat;
+      if (json3.clearcoatRoughness !== void 0) material.clearcoatRoughness = json3.clearcoatRoughness;
+      if (json3.dispersion !== void 0) material.dispersion = json3.dispersion;
+      if (json3.iridescence !== void 0) material.iridescence = json3.iridescence;
+      if (json3.iridescenceIOR !== void 0) material.iridescenceIOR = json3.iridescenceIOR;
+      if (json3.iridescenceThicknessRange !== void 0) material.iridescenceThicknessRange = json3.iridescenceThicknessRange;
+      if (json3.transmission !== void 0) material.transmission = json3.transmission;
+      if (json3.thickness !== void 0) material.thickness = json3.thickness;
+      if (json3.attenuationDistance !== void 0) material.attenuationDistance = json3.attenuationDistance;
+      if (json3.attenuationColor !== void 0 && material.attenuationColor !== void 0) material.attenuationColor.setHex(json3.attenuationColor);
+      if (json3.anisotropy !== void 0) material.anisotropy = json3.anisotropy;
+      if (json3.anisotropyRotation !== void 0) material.anisotropyRotation = json3.anisotropyRotation;
+      if (json3.fog !== void 0) material.fog = json3.fog;
+      if (json3.flatShading !== void 0) material.flatShading = json3.flatShading;
+      if (json3.blending !== void 0) material.blending = json3.blending;
+      if (json3.combine !== void 0) material.combine = json3.combine;
+      if (json3.side !== void 0) material.side = json3.side;
+      if (json3.shadowSide !== void 0) material.shadowSide = json3.shadowSide;
+      if (json3.opacity !== void 0) material.opacity = json3.opacity;
+      if (json3.transparent !== void 0) material.transparent = json3.transparent;
+      if (json3.alphaTest !== void 0) material.alphaTest = json3.alphaTest;
+      if (json3.alphaHash !== void 0) material.alphaHash = json3.alphaHash;
+      if (json3.depthFunc !== void 0) material.depthFunc = json3.depthFunc;
+      if (json3.depthTest !== void 0) material.depthTest = json3.depthTest;
+      if (json3.depthWrite !== void 0) material.depthWrite = json3.depthWrite;
+      if (json3.colorWrite !== void 0) material.colorWrite = json3.colorWrite;
+      if (json3.blendSrc !== void 0) material.blendSrc = json3.blendSrc;
+      if (json3.blendDst !== void 0) material.blendDst = json3.blendDst;
+      if (json3.blendEquation !== void 0) material.blendEquation = json3.blendEquation;
+      if (json3.blendSrcAlpha !== void 0) material.blendSrcAlpha = json3.blendSrcAlpha;
+      if (json3.blendDstAlpha !== void 0) material.blendDstAlpha = json3.blendDstAlpha;
+      if (json3.blendEquationAlpha !== void 0) material.blendEquationAlpha = json3.blendEquationAlpha;
+      if (json3.blendColor !== void 0 && material.blendColor !== void 0) material.blendColor.setHex(json3.blendColor);
+      if (json3.blendAlpha !== void 0) material.blendAlpha = json3.blendAlpha;
+      if (json3.stencilWriteMask !== void 0) material.stencilWriteMask = json3.stencilWriteMask;
+      if (json3.stencilFunc !== void 0) material.stencilFunc = json3.stencilFunc;
+      if (json3.stencilRef !== void 0) material.stencilRef = json3.stencilRef;
+      if (json3.stencilFuncMask !== void 0) material.stencilFuncMask = json3.stencilFuncMask;
+      if (json3.stencilFail !== void 0) material.stencilFail = json3.stencilFail;
+      if (json3.stencilZFail !== void 0) material.stencilZFail = json3.stencilZFail;
+      if (json3.stencilZPass !== void 0) material.stencilZPass = json3.stencilZPass;
+      if (json3.stencilWrite !== void 0) material.stencilWrite = json3.stencilWrite;
+      if (json3.wireframe !== void 0) material.wireframe = json3.wireframe;
+      if (json3.wireframeLinewidth !== void 0) material.wireframeLinewidth = json3.wireframeLinewidth;
+      if (json3.wireframeLinecap !== void 0) material.wireframeLinecap = json3.wireframeLinecap;
+      if (json3.wireframeLinejoin !== void 0) material.wireframeLinejoin = json3.wireframeLinejoin;
+      if (json3.rotation !== void 0) material.rotation = json3.rotation;
+      if (json3.linewidth !== void 0) material.linewidth = json3.linewidth;
+      if (json3.dashSize !== void 0) material.dashSize = json3.dashSize;
+      if (json3.gapSize !== void 0) material.gapSize = json3.gapSize;
+      if (json3.scale !== void 0) material.scale = json3.scale;
+      if (json3.polygonOffset !== void 0) material.polygonOffset = json3.polygonOffset;
+      if (json3.polygonOffsetFactor !== void 0) material.polygonOffsetFactor = json3.polygonOffsetFactor;
+      if (json3.polygonOffsetUnits !== void 0) material.polygonOffsetUnits = json3.polygonOffsetUnits;
+      if (json3.dithering !== void 0) material.dithering = json3.dithering;
+      if (json3.alphaToCoverage !== void 0) material.alphaToCoverage = json3.alphaToCoverage;
+      if (json3.premultipliedAlpha !== void 0) material.premultipliedAlpha = json3.premultipliedAlpha;
+      if (json3.forceSinglePass !== void 0) material.forceSinglePass = json3.forceSinglePass;
+      if (json3.visible !== void 0) material.visible = json3.visible;
+      if (json3.toneMapped !== void 0) material.toneMapped = json3.toneMapped;
+      if (json3.userData !== void 0) material.userData = json3.userData;
+      if (json3.vertexColors !== void 0) {
+        if (typeof json3.vertexColors === "number") {
+          material.vertexColors = json3.vertexColors > 0 ? true : false;
         } else {
-          material.vertexColors = json2.vertexColors;
+          material.vertexColors = json3.vertexColors;
         }
       }
-      if (json2.uniforms !== void 0) {
-        for (const name in json2.uniforms) {
-          const uniform = json2.uniforms[name];
+      if (json3.uniforms !== void 0) {
+        for (const name in json3.uniforms) {
+          const uniform = json3.uniforms[name];
           material.uniforms[name] = {};
           switch (uniform.type) {
             case "t":
@@ -25453,64 +25453,64 @@
           }
         }
       }
-      if (json2.defines !== void 0) material.defines = json2.defines;
-      if (json2.vertexShader !== void 0) material.vertexShader = json2.vertexShader;
-      if (json2.fragmentShader !== void 0) material.fragmentShader = json2.fragmentShader;
-      if (json2.glslVersion !== void 0) material.glslVersion = json2.glslVersion;
-      if (json2.extensions !== void 0) {
-        for (const key in json2.extensions) {
-          material.extensions[key] = json2.extensions[key];
+      if (json3.defines !== void 0) material.defines = json3.defines;
+      if (json3.vertexShader !== void 0) material.vertexShader = json3.vertexShader;
+      if (json3.fragmentShader !== void 0) material.fragmentShader = json3.fragmentShader;
+      if (json3.glslVersion !== void 0) material.glslVersion = json3.glslVersion;
+      if (json3.extensions !== void 0) {
+        for (const key in json3.extensions) {
+          material.extensions[key] = json3.extensions[key];
         }
       }
-      if (json2.lights !== void 0) material.lights = json2.lights;
-      if (json2.clipping !== void 0) material.clipping = json2.clipping;
-      if (json2.size !== void 0) material.size = json2.size;
-      if (json2.sizeAttenuation !== void 0) material.sizeAttenuation = json2.sizeAttenuation;
-      if (json2.map !== void 0) material.map = getTexture(json2.map);
-      if (json2.matcap !== void 0) material.matcap = getTexture(json2.matcap);
-      if (json2.alphaMap !== void 0) material.alphaMap = getTexture(json2.alphaMap);
-      if (json2.bumpMap !== void 0) material.bumpMap = getTexture(json2.bumpMap);
-      if (json2.bumpScale !== void 0) material.bumpScale = json2.bumpScale;
-      if (json2.normalMap !== void 0) material.normalMap = getTexture(json2.normalMap);
-      if (json2.normalMapType !== void 0) material.normalMapType = json2.normalMapType;
-      if (json2.normalScale !== void 0) {
-        let normalScale = json2.normalScale;
+      if (json3.lights !== void 0) material.lights = json3.lights;
+      if (json3.clipping !== void 0) material.clipping = json3.clipping;
+      if (json3.size !== void 0) material.size = json3.size;
+      if (json3.sizeAttenuation !== void 0) material.sizeAttenuation = json3.sizeAttenuation;
+      if (json3.map !== void 0) material.map = getTexture(json3.map);
+      if (json3.matcap !== void 0) material.matcap = getTexture(json3.matcap);
+      if (json3.alphaMap !== void 0) material.alphaMap = getTexture(json3.alphaMap);
+      if (json3.bumpMap !== void 0) material.bumpMap = getTexture(json3.bumpMap);
+      if (json3.bumpScale !== void 0) material.bumpScale = json3.bumpScale;
+      if (json3.normalMap !== void 0) material.normalMap = getTexture(json3.normalMap);
+      if (json3.normalMapType !== void 0) material.normalMapType = json3.normalMapType;
+      if (json3.normalScale !== void 0) {
+        let normalScale = json3.normalScale;
         if (Array.isArray(normalScale) === false) {
           normalScale = [normalScale, normalScale];
         }
         material.normalScale = new Vector2().fromArray(normalScale);
       }
-      if (json2.displacementMap !== void 0) material.displacementMap = getTexture(json2.displacementMap);
-      if (json2.displacementScale !== void 0) material.displacementScale = json2.displacementScale;
-      if (json2.displacementBias !== void 0) material.displacementBias = json2.displacementBias;
-      if (json2.roughnessMap !== void 0) material.roughnessMap = getTexture(json2.roughnessMap);
-      if (json2.metalnessMap !== void 0) material.metalnessMap = getTexture(json2.metalnessMap);
-      if (json2.emissiveMap !== void 0) material.emissiveMap = getTexture(json2.emissiveMap);
-      if (json2.emissiveIntensity !== void 0) material.emissiveIntensity = json2.emissiveIntensity;
-      if (json2.specularMap !== void 0) material.specularMap = getTexture(json2.specularMap);
-      if (json2.specularIntensityMap !== void 0) material.specularIntensityMap = getTexture(json2.specularIntensityMap);
-      if (json2.specularColorMap !== void 0) material.specularColorMap = getTexture(json2.specularColorMap);
-      if (json2.envMap !== void 0) material.envMap = getTexture(json2.envMap);
-      if (json2.envMapRotation !== void 0) material.envMapRotation.fromArray(json2.envMapRotation);
-      if (json2.envMapIntensity !== void 0) material.envMapIntensity = json2.envMapIntensity;
-      if (json2.reflectivity !== void 0) material.reflectivity = json2.reflectivity;
-      if (json2.refractionRatio !== void 0) material.refractionRatio = json2.refractionRatio;
-      if (json2.lightMap !== void 0) material.lightMap = getTexture(json2.lightMap);
-      if (json2.lightMapIntensity !== void 0) material.lightMapIntensity = json2.lightMapIntensity;
-      if (json2.aoMap !== void 0) material.aoMap = getTexture(json2.aoMap);
-      if (json2.aoMapIntensity !== void 0) material.aoMapIntensity = json2.aoMapIntensity;
-      if (json2.gradientMap !== void 0) material.gradientMap = getTexture(json2.gradientMap);
-      if (json2.clearcoatMap !== void 0) material.clearcoatMap = getTexture(json2.clearcoatMap);
-      if (json2.clearcoatRoughnessMap !== void 0) material.clearcoatRoughnessMap = getTexture(json2.clearcoatRoughnessMap);
-      if (json2.clearcoatNormalMap !== void 0) material.clearcoatNormalMap = getTexture(json2.clearcoatNormalMap);
-      if (json2.clearcoatNormalScale !== void 0) material.clearcoatNormalScale = new Vector2().fromArray(json2.clearcoatNormalScale);
-      if (json2.iridescenceMap !== void 0) material.iridescenceMap = getTexture(json2.iridescenceMap);
-      if (json2.iridescenceThicknessMap !== void 0) material.iridescenceThicknessMap = getTexture(json2.iridescenceThicknessMap);
-      if (json2.transmissionMap !== void 0) material.transmissionMap = getTexture(json2.transmissionMap);
-      if (json2.thicknessMap !== void 0) material.thicknessMap = getTexture(json2.thicknessMap);
-      if (json2.anisotropyMap !== void 0) material.anisotropyMap = getTexture(json2.anisotropyMap);
-      if (json2.sheenColorMap !== void 0) material.sheenColorMap = getTexture(json2.sheenColorMap);
-      if (json2.sheenRoughnessMap !== void 0) material.sheenRoughnessMap = getTexture(json2.sheenRoughnessMap);
+      if (json3.displacementMap !== void 0) material.displacementMap = getTexture(json3.displacementMap);
+      if (json3.displacementScale !== void 0) material.displacementScale = json3.displacementScale;
+      if (json3.displacementBias !== void 0) material.displacementBias = json3.displacementBias;
+      if (json3.roughnessMap !== void 0) material.roughnessMap = getTexture(json3.roughnessMap);
+      if (json3.metalnessMap !== void 0) material.metalnessMap = getTexture(json3.metalnessMap);
+      if (json3.emissiveMap !== void 0) material.emissiveMap = getTexture(json3.emissiveMap);
+      if (json3.emissiveIntensity !== void 0) material.emissiveIntensity = json3.emissiveIntensity;
+      if (json3.specularMap !== void 0) material.specularMap = getTexture(json3.specularMap);
+      if (json3.specularIntensityMap !== void 0) material.specularIntensityMap = getTexture(json3.specularIntensityMap);
+      if (json3.specularColorMap !== void 0) material.specularColorMap = getTexture(json3.specularColorMap);
+      if (json3.envMap !== void 0) material.envMap = getTexture(json3.envMap);
+      if (json3.envMapRotation !== void 0) material.envMapRotation.fromArray(json3.envMapRotation);
+      if (json3.envMapIntensity !== void 0) material.envMapIntensity = json3.envMapIntensity;
+      if (json3.reflectivity !== void 0) material.reflectivity = json3.reflectivity;
+      if (json3.refractionRatio !== void 0) material.refractionRatio = json3.refractionRatio;
+      if (json3.lightMap !== void 0) material.lightMap = getTexture(json3.lightMap);
+      if (json3.lightMapIntensity !== void 0) material.lightMapIntensity = json3.lightMapIntensity;
+      if (json3.aoMap !== void 0) material.aoMap = getTexture(json3.aoMap);
+      if (json3.aoMapIntensity !== void 0) material.aoMapIntensity = json3.aoMapIntensity;
+      if (json3.gradientMap !== void 0) material.gradientMap = getTexture(json3.gradientMap);
+      if (json3.clearcoatMap !== void 0) material.clearcoatMap = getTexture(json3.clearcoatMap);
+      if (json3.clearcoatRoughnessMap !== void 0) material.clearcoatRoughnessMap = getTexture(json3.clearcoatRoughnessMap);
+      if (json3.clearcoatNormalMap !== void 0) material.clearcoatNormalMap = getTexture(json3.clearcoatNormalMap);
+      if (json3.clearcoatNormalScale !== void 0) material.clearcoatNormalScale = new Vector2().fromArray(json3.clearcoatNormalScale);
+      if (json3.iridescenceMap !== void 0) material.iridescenceMap = getTexture(json3.iridescenceMap);
+      if (json3.iridescenceThicknessMap !== void 0) material.iridescenceThicknessMap = getTexture(json3.iridescenceThicknessMap);
+      if (json3.transmissionMap !== void 0) material.transmissionMap = getTexture(json3.transmissionMap);
+      if (json3.thicknessMap !== void 0) material.thicknessMap = getTexture(json3.thicknessMap);
+      if (json3.anisotropyMap !== void 0) material.anisotropyMap = getTexture(json3.anisotropyMap);
+      if (json3.sheenColorMap !== void 0) material.sheenColorMap = getTexture(json3.sheenColorMap);
+      if (json3.sheenRoughnessMap !== void 0) material.sheenRoughnessMap = getTexture(json3.sheenRoughnessMap);
       return material;
     }
     /**
@@ -25660,40 +25660,40 @@
      * @param {Object} json - The serialized geometry.
      * @return {BufferGeometry} The parsed geometry.
      */
-    parse(json2) {
+    parse(json3) {
       const interleavedBufferMap = {};
       const arrayBufferMap = {};
-      function getInterleavedBuffer(json3, uuid) {
+      function getInterleavedBuffer(json4, uuid) {
         if (interleavedBufferMap[uuid] !== void 0) return interleavedBufferMap[uuid];
-        const interleavedBuffers = json3.interleavedBuffers;
+        const interleavedBuffers = json4.interleavedBuffers;
         const interleavedBuffer = interleavedBuffers[uuid];
-        const buffer = getArrayBuffer(json3, interleavedBuffer.buffer);
+        const buffer = getArrayBuffer(json4, interleavedBuffer.buffer);
         const array = getTypedArray(interleavedBuffer.type, buffer);
         const ib = new InterleavedBuffer(array, interleavedBuffer.stride);
         ib.uuid = interleavedBuffer.uuid;
         interleavedBufferMap[uuid] = ib;
         return ib;
       }
-      function getArrayBuffer(json3, uuid) {
+      function getArrayBuffer(json4, uuid) {
         if (arrayBufferMap[uuid] !== void 0) return arrayBufferMap[uuid];
-        const arrayBuffers = json3.arrayBuffers;
+        const arrayBuffers = json4.arrayBuffers;
         const arrayBuffer = arrayBuffers[uuid];
         const ab = new Uint32Array(arrayBuffer).buffer;
         arrayBufferMap[uuid] = ab;
         return ab;
       }
-      const geometry = json2.isInstancedBufferGeometry ? new InstancedBufferGeometry() : new BufferGeometry();
-      const index = json2.data.index;
+      const geometry = json3.isInstancedBufferGeometry ? new InstancedBufferGeometry() : new BufferGeometry();
+      const index = json3.data.index;
       if (index !== void 0) {
         const typedArray = getTypedArray(index.type, index.array);
         geometry.setIndex(new BufferAttribute(typedArray, 1));
       }
-      const attributes = json2.data.attributes;
+      const attributes = json3.data.attributes;
       for (const key in attributes) {
         const attribute = attributes[key];
         let bufferAttribute;
         if (attribute.isInterleavedBufferAttribute) {
-          const interleavedBuffer = getInterleavedBuffer(json2.data, attribute.data);
+          const interleavedBuffer = getInterleavedBuffer(json3.data, attribute.data);
           bufferAttribute = new InterleavedBufferAttribute(interleavedBuffer, attribute.itemSize, attribute.offset, attribute.normalized);
         } else {
           const typedArray = getTypedArray(attribute.type, attribute.array);
@@ -25704,7 +25704,7 @@
         if (attribute.usage !== void 0) bufferAttribute.setUsage(attribute.usage);
         geometry.setAttribute(key, bufferAttribute);
       }
-      const morphAttributes = json2.data.morphAttributes;
+      const morphAttributes = json3.data.morphAttributes;
       if (morphAttributes) {
         for (const key in morphAttributes) {
           const attributeArray = morphAttributes[key];
@@ -25713,7 +25713,7 @@
             const attribute = attributeArray[i];
             let bufferAttribute;
             if (attribute.isInterleavedBufferAttribute) {
-              const interleavedBuffer = getInterleavedBuffer(json2.data, attribute.data);
+              const interleavedBuffer = getInterleavedBuffer(json3.data, attribute.data);
               bufferAttribute = new InterleavedBufferAttribute(interleavedBuffer, attribute.itemSize, attribute.offset, attribute.normalized);
             } else {
               const typedArray = getTypedArray(attribute.type, attribute.array);
@@ -25725,23 +25725,23 @@
           geometry.morphAttributes[key] = array;
         }
       }
-      const morphTargetsRelative = json2.data.morphTargetsRelative;
+      const morphTargetsRelative = json3.data.morphTargetsRelative;
       if (morphTargetsRelative) {
         geometry.morphTargetsRelative = true;
       }
-      const groups2 = json2.data.groups || json2.data.drawcalls || json2.data.offsets;
+      const groups2 = json3.data.groups || json3.data.drawcalls || json3.data.offsets;
       if (groups2 !== void 0) {
         for (let i = 0, n = groups2.length; i !== n; ++i) {
           const group = groups2[i];
           geometry.addGroup(group.start, group.count, group.materialIndex);
         }
       }
-      const boundingSphere = json2.data.boundingSphere;
+      const boundingSphere = json3.data.boundingSphere;
       if (boundingSphere !== void 0) {
         geometry.boundingSphere = new Sphere().fromJSON(boundingSphere);
       }
-      if (json2.name) geometry.name = json2.name;
-      if (json2.userData) geometry.userData = json2.userData;
+      if (json3.name) geometry.name = json3.name;
+      if (json3.userData) geometry.userData = json3.userData;
       return geometry;
     }
   };
@@ -25771,21 +25771,21 @@
       loader2.setRequestHeader(this.requestHeader);
       loader2.setWithCredentials(this.withCredentials);
       loader2.load(url, function(text) {
-        let json2 = null;
+        let json3 = null;
         try {
-          json2 = JSON.parse(text);
+          json3 = JSON.parse(text);
         } catch (error) {
           if (onError !== void 0) onError(error);
           console.error("THREE:ObjectLoader: Can't parse " + url + ".", error.message);
           return;
         }
-        const metadata = json2.metadata;
+        const metadata = json3.metadata;
         if (metadata === void 0 || metadata.type === void 0 || metadata.type.toLowerCase() === "geometry") {
           if (onError !== void 0) onError(new Error("THREE.ObjectLoader: Can't load " + url));
           console.error("THREE.ObjectLoader: Can't load " + url);
           return;
         }
-        scope.parse(json2, onLoad);
+        scope.parse(json3, onLoad);
       }, onProgress, onError);
     }
     /**
@@ -25805,12 +25805,12 @@
       loader2.setRequestHeader(this.requestHeader);
       loader2.setWithCredentials(this.withCredentials);
       const text = await loader2.loadAsync(url, onProgress);
-      const json2 = JSON.parse(text);
-      const metadata = json2.metadata;
+      const json3 = JSON.parse(text);
+      const metadata = json3.metadata;
       if (metadata === void 0 || metadata.type === void 0 || metadata.type.toLowerCase() === "geometry") {
         throw new Error("THREE.ObjectLoader: Can't load " + url);
       }
-      return await scope.parseAsync(json2);
+      return await scope.parseAsync(json3);
     }
     /**
      * Parses the given JSON. This is used internally by {@link ObjectLoader#load}
@@ -25820,17 +25820,17 @@
      * @param {onLoad} onLoad - Executed when all resources (e.g. textures) have been fully loaded.
      * @return {Object3D} The parsed 3D object.
      */
-    parse(json2, onLoad) {
-      const animations = this.parseAnimations(json2.animations);
-      const shapes = this.parseShapes(json2.shapes);
-      const geometries = this.parseGeometries(json2.geometries, shapes);
-      const images = this.parseImages(json2.images, function() {
+    parse(json3, onLoad) {
+      const animations = this.parseAnimations(json3.animations);
+      const shapes = this.parseShapes(json3.shapes);
+      const geometries = this.parseGeometries(json3.geometries, shapes);
+      const images = this.parseImages(json3.images, function() {
         if (onLoad !== void 0) onLoad(object);
       });
-      const textures = this.parseTextures(json2.textures, images);
-      const materials = this.parseMaterials(json2.materials, textures);
-      const object = this.parseObject(json2.object, geometries, materials, textures, animations);
-      const skeletons = this.parseSkeletons(json2.skeletons, object);
+      const textures = this.parseTextures(json3.textures, images);
+      const materials = this.parseMaterials(json3.materials, textures);
+      const object = this.parseObject(json3.object, geometries, materials, textures, animations);
+      const skeletons = this.parseSkeletons(json3.skeletons, object);
       this.bindSkeletons(object, skeletons);
       this.bindLightTargets(object);
       if (onLoad !== void 0) {
@@ -25851,51 +25851,51 @@
      * @param {Object} json - The serialized 3D object.
      * @return {Promise<Object3D>} A Promise that resolves with the parsed 3D object.
      */
-    async parseAsync(json2) {
-      const animations = this.parseAnimations(json2.animations);
-      const shapes = this.parseShapes(json2.shapes);
-      const geometries = this.parseGeometries(json2.geometries, shapes);
-      const images = await this.parseImagesAsync(json2.images);
-      const textures = this.parseTextures(json2.textures, images);
-      const materials = this.parseMaterials(json2.materials, textures);
-      const object = this.parseObject(json2.object, geometries, materials, textures, animations);
-      const skeletons = this.parseSkeletons(json2.skeletons, object);
+    async parseAsync(json3) {
+      const animations = this.parseAnimations(json3.animations);
+      const shapes = this.parseShapes(json3.shapes);
+      const geometries = this.parseGeometries(json3.geometries, shapes);
+      const images = await this.parseImagesAsync(json3.images);
+      const textures = this.parseTextures(json3.textures, images);
+      const materials = this.parseMaterials(json3.materials, textures);
+      const object = this.parseObject(json3.object, geometries, materials, textures, animations);
+      const skeletons = this.parseSkeletons(json3.skeletons, object);
       this.bindSkeletons(object, skeletons);
       this.bindLightTargets(object);
       return object;
     }
     // internals
-    parseShapes(json2) {
+    parseShapes(json3) {
       const shapes = {};
-      if (json2 !== void 0) {
-        for (let i = 0, l = json2.length; i < l; i++) {
-          const shape = new Shape().fromJSON(json2[i]);
+      if (json3 !== void 0) {
+        for (let i = 0, l = json3.length; i < l; i++) {
+          const shape = new Shape().fromJSON(json3[i]);
           shapes[shape.uuid] = shape;
         }
       }
       return shapes;
     }
-    parseSkeletons(json2, object) {
+    parseSkeletons(json3, object) {
       const skeletons = {};
       const bones = {};
       object.traverse(function(child) {
         if (child.isBone) bones[child.uuid] = child;
       });
-      if (json2 !== void 0) {
-        for (let i = 0, l = json2.length; i < l; i++) {
-          const skeleton = new Skeleton().fromJSON(json2[i], bones);
+      if (json3 !== void 0) {
+        for (let i = 0, l = json3.length; i < l; i++) {
+          const skeleton = new Skeleton().fromJSON(json3[i], bones);
           skeletons[skeleton.uuid] = skeleton;
         }
       }
       return skeletons;
     }
-    parseGeometries(json2, shapes) {
+    parseGeometries(json3, shapes) {
       const geometries = {};
-      if (json2 !== void 0) {
+      if (json3 !== void 0) {
         const bufferGeometryLoader = new BufferGeometryLoader();
-        for (let i = 0, l = json2.length; i < l; i++) {
+        for (let i = 0, l = json3.length; i < l; i++) {
           let geometry;
-          const data = json2[i];
+          const data = json3[i];
           switch (data.type) {
             case "BufferGeometry":
             case "InstancedBufferGeometry":
@@ -25916,14 +25916,14 @@
       }
       return geometries;
     }
-    parseMaterials(json2, textures) {
+    parseMaterials(json3, textures) {
       const cache = {};
       const materials = {};
-      if (json2 !== void 0) {
+      if (json3 !== void 0) {
         const loader2 = new MaterialLoader();
         loader2.setTextures(textures);
-        for (let i = 0, l = json2.length; i < l; i++) {
-          const data = json2[i];
+        for (let i = 0, l = json3.length; i < l; i++) {
+          const data = json3[i];
           if (cache[data.uuid] === void 0) {
             cache[data.uuid] = loader2.parse(data);
           }
@@ -25932,18 +25932,18 @@
       }
       return materials;
     }
-    parseAnimations(json2) {
+    parseAnimations(json3) {
       const animations = {};
-      if (json2 !== void 0) {
-        for (let i = 0; i < json2.length; i++) {
-          const data = json2[i];
+      if (json3 !== void 0) {
+        for (let i = 0; i < json3.length; i++) {
+          const data = json3[i];
           const clip = AnimationClip.parse(data);
           animations[clip.uuid] = clip;
         }
       }
       return animations;
     }
-    parseImages(json2, onLoad) {
+    parseImages(json3, onLoad) {
       const scope = this;
       const images = {};
       let loader2;
@@ -25973,12 +25973,12 @@
           }
         }
       }
-      if (json2 !== void 0 && json2.length > 0) {
+      if (json3 !== void 0 && json3.length > 0) {
         const manager = new LoadingManager(onLoad);
         loader2 = new ImageLoader(manager);
         loader2.setCrossOrigin(this.crossOrigin);
-        for (let i = 0, il = json2.length; i < il; i++) {
-          const image = json2[i];
+        for (let i = 0, il = json3.length; i < il; i++) {
+          const image = json3[i];
           const url = image.url;
           if (Array.isArray(url)) {
             const imageArray = [];
@@ -26002,7 +26002,7 @@
       }
       return images;
     }
-    async parseImagesAsync(json2) {
+    async parseImagesAsync(json3) {
       const scope = this;
       const images = {};
       let loader2;
@@ -26023,11 +26023,11 @@
           }
         }
       }
-      if (json2 !== void 0 && json2.length > 0) {
+      if (json3 !== void 0 && json3.length > 0) {
         loader2 = new ImageLoader(this.manager);
         loader2.setCrossOrigin(this.crossOrigin);
-        for (let i = 0, il = json2.length; i < il; i++) {
-          const image = json2[i];
+        for (let i = 0, il = json3.length; i < il; i++) {
+          const image = json3[i];
           const url = image.url;
           if (Array.isArray(url)) {
             const imageArray = [];
@@ -26051,16 +26051,16 @@
       }
       return images;
     }
-    parseTextures(json2, images) {
+    parseTextures(json3, images) {
       function parseConstant(value, type) {
         if (typeof value === "number") return value;
         console.warn("THREE.ObjectLoader.parseTexture: Constant should be in numeric form.", value);
         return type[value];
       }
       const textures = {};
-      if (json2 !== void 0) {
-        for (let i = 0, l = json2.length; i < l; i++) {
-          const data = json2[i];
+      if (json3 !== void 0) {
+        for (let i = 0, l = json3.length; i < l; i++) {
+          const data = json3[i];
           if (data.image === void 0) {
             console.warn('THREE.ObjectLoader: No "image" specified for', data.uuid);
           }
@@ -29279,10 +29279,10 @@
       return ib;
     }
     toJSON(data) {
-      const json2 = super.toJSON(data);
-      json2.isInstancedInterleavedBuffer = true;
-      json2.meshPerAttribute = this.meshPerAttribute;
-      return json2;
+      const json3 = super.toJSON(data);
+      json3.isInstancedInterleavedBuffer = true;
+      json3.meshPerAttribute = this.meshPerAttribute;
+      return json3;
     }
   };
   var GLBufferAttribute = class {
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -42269,12 +42269,12 @@ void main() {
      * @param {onErrorCallback} onError - Executed when errors occur.
      */
     parse(data, path, onLoad, onError) {
-      let json2;
+      let json3;
       const extensions = {};
       const plugins = {};
       const textDecoder = new TextDecoder();
       if (typeof data === "string") {
-        json2 = JSON.parse(data);
+        json3 = JSON.parse(data);
       } else if (data instanceof ArrayBuffer) {
         const magic = textDecoder.decode(new Uint8Array(data, 0, 4));
         if (magic === BINARY_EXTENSION_HEADER_MAGIC) {
@@ -42284,18 +42284,18 @@ void main() {
             if (onError) onError(error);
             return;
           }
-          json2 = JSON.parse(extensions[EXTENSIONS.KHR_BINARY_GLTF].content);
+          json3 = JSON.parse(extensions[EXTENSIONS.KHR_BINARY_GLTF].content);
         } else {
-          json2 = JSON.parse(textDecoder.decode(data));
+          json3 = JSON.parse(textDecoder.decode(data));
         }
       } else {
-        json2 = data;
+        json3 = data;
       }
-      if (json2.asset === void 0 || json2.asset.version[0] < 2) {
+      if (json3.asset === void 0 || json3.asset.version[0] < 2) {
         if (onError) onError(new Error("THREE.GLTFLoader: Unsupported asset. glTF versions >=2.0 are supported."));
         return;
       }
-      const parser = new GLTFParser(json2, {
+      const parser = new GLTFParser(json3, {
         path: path || this.resourcePath || "",
         crossOrigin: this.crossOrigin,
         requestHeader: this.requestHeader,
@@ -42310,16 +42310,16 @@ void main() {
         plugins[plugin.name] = plugin;
         extensions[plugin.name] = true;
       }
-      if (json2.extensionsUsed) {
-        for (let i = 0; i < json2.extensionsUsed.length; ++i) {
-          const extensionName = json2.extensionsUsed[i];
-          const extensionsRequired = json2.extensionsRequired || [];
+      if (json3.extensionsUsed) {
+        for (let i = 0; i < json3.extensionsUsed.length; ++i) {
+          const extensionName = json3.extensionsUsed[i];
+          const extensionsRequired = json3.extensionsRequired || [];
           switch (extensionName) {
             case EXTENSIONS.KHR_MATERIALS_UNLIT:
               extensions[extensionName] = new GLTFMaterialsUnlitExtension();
               break;
             case EXTENSIONS.KHR_DRACO_MESH_COMPRESSION:
-              extensions[extensionName] = new GLTFDracoMeshCompressionExtension(json2, this.dracoLoader);
+              extensions[extensionName] = new GLTFDracoMeshCompressionExtension(json3, this.dracoLoader);
               break;
             case EXTENSIONS.KHR_TEXTURE_TRANSFORM:
               extensions[extensionName] = new GLTFTextureTransformExtension();
@@ -42415,8 +42415,8 @@ void main() {
       const cacheKey = "light:" + lightIndex;
       let dependency = parser.cache.get(cacheKey);
       if (dependency) return dependency;
-      const json2 = parser.json;
-      const extensions = json2.extensions && json2.extensions[this.name] || {};
+      const json3 = parser.json;
+      const extensions = json3.extensions && json3.extensions[this.name] || {};
       const lightDefs = extensions.lights || [];
       const lightDef = lightDefs[lightIndex];
       let lightNode;
@@ -42462,8 +42462,8 @@ void main() {
     createNodeAttachment(nodeIndex) {
       const self2 = this;
       const parser = this.parser;
-      const json2 = parser.json;
-      const nodeDef = json2.nodes[nodeIndex];
+      const json3 = parser.json;
+      const nodeDef = json3.nodes[nodeIndex];
       const lightDef = nodeDef.extensions && nodeDef.extensions[this.name] || {};
       const lightIndex = lightDef.light;
       if (lightIndex === void 0) return null;
@@ -42833,15 +42833,15 @@ void main() {
     }
     loadTexture(textureIndex) {
       const parser = this.parser;
-      const json2 = parser.json;
-      const textureDef = json2.textures[textureIndex];
+      const json3 = parser.json;
+      const textureDef = json3.textures[textureIndex];
       if (!textureDef.extensions || !textureDef.extensions[this.name]) {
         return null;
       }
       const extension = textureDef.extensions[this.name];
       const loader2 = parser.options.ktx2Loader;
       if (!loader2) {
-        if (json2.extensionsRequired && json2.extensionsRequired.indexOf(this.name) >= 0) {
+        if (json3.extensionsRequired && json3.extensionsRequired.indexOf(this.name) >= 0) {
           throw new Error("THREE.GLTFLoader: setKTX2Loader must be called before loading KTX2 textures");
         } else {
           return null;
@@ -42858,13 +42858,13 @@ void main() {
     loadTexture(textureIndex) {
       const name = this.name;
       const parser = this.parser;
-      const json2 = parser.json;
-      const textureDef = json2.textures[textureIndex];
+      const json3 = parser.json;
+      const textureDef = json3.textures[textureIndex];
       if (!textureDef.extensions || !textureDef.extensions[name]) {
         return null;
       }
       const extension = textureDef.extensions[name];
-      const source = json2.images[extension.source];
+      const source = json3.images[extension.source];
       let loader2 = parser.textureLoader;
       if (source.uri) {
         const handler = parser.options.manager.getHandler(source.uri);
@@ -42881,13 +42881,13 @@ void main() {
     loadTexture(textureIndex) {
       const name = this.name;
       const parser = this.parser;
-      const json2 = parser.json;
-      const textureDef = json2.textures[textureIndex];
+      const json3 = parser.json;
+      const textureDef = json3.textures[textureIndex];
       if (!textureDef.extensions || !textureDef.extensions[name]) {
         return null;
       }
       const extension = textureDef.extensions[name];
-      const source = json2.images[extension.source];
+      const source = json3.images[extension.source];
       let loader2 = parser.textureLoader;
       if (source.uri) {
         const handler = parser.options.manager.getHandler(source.uri);
@@ -42902,14 +42902,14 @@ void main() {
       this.parser = parser;
     }
     loadBufferView(index) {
-      const json2 = this.parser.json;
-      const bufferView = json2.bufferViews[index];
+      const json3 = this.parser.json;
+      const bufferView = json3.bufferViews[index];
       if (bufferView.extensions && bufferView.extensions[this.name]) {
         const extensionDef = bufferView.extensions[this.name];
         const buffer = this.parser.getDependency("buffer", extensionDef.buffer);
         const decoder = this.parser.options.meshoptDecoder;
         if (!decoder || !decoder.supported) {
-          if (json2.extensionsRequired && json2.extensionsRequired.indexOf(this.name) >= 0) {
+          if (json3.extensionsRequired && json3.extensionsRequired.indexOf(this.name) >= 0) {
             throw new Error("THREE.GLTFLoader: setMeshoptDecoder must be called before loading compressed files");
           } else {
             return null;
@@ -42944,12 +42944,12 @@ void main() {
       this.parser = parser;
     }
     createNodeMesh(nodeIndex) {
-      const json2 = this.parser.json;
-      const nodeDef = json2.nodes[nodeIndex];
+      const json3 = this.parser.json;
+      const nodeDef = json3.nodes[nodeIndex];
       if (!nodeDef.extensions || !nodeDef.extensions[this.name] || nodeDef.mesh === void 0) {
         return null;
       }
-      const meshDef = json2.meshes[nodeDef.mesh];
+      const meshDef = json3.meshes[nodeDef.mesh];
       for (const primitive of meshDef.primitives) {
         if (primitive.mode !== WEBGL_CONSTANTS.TRIANGLES && primitive.mode !== WEBGL_CONSTANTS.TRIANGLE_STRIP && primitive.mode !== WEBGL_CONSTANTS.TRIANGLE_FAN && primitive.mode !== void 0) {
           return null;
@@ -43056,17 +43056,17 @@ void main() {
     }
   };
   var GLTFDracoMeshCompressionExtension = class {
-    constructor(json2, dracoLoader) {
+    constructor(json3, dracoLoader) {
       if (!dracoLoader) {
         throw new Error("THREE.GLTFLoader: No DRACOLoader instance provided.");
       }
       this.name = EXTENSIONS.KHR_DRACO_MESH_COMPRESSION;
-      this.json = json2;
+      this.json = json3;
       this.dracoLoader = dracoLoader;
       this.dracoLoader.preload();
     }
     decodePrimitive(primitive, parser) {
-      const json2 = this.json;
+      const json3 = this.json;
       const dracoLoader = this.dracoLoader;
       const bufferViewIndex = primitive.extensions[this.name].bufferView;
       const gltfAttributeMap = primitive.extensions[this.name].attributes;
@@ -43080,7 +43080,7 @@ void main() {
       for (const attributeName in primitive.attributes) {
         const threeAttributeName = ATTRIBUTES[attributeName] || attributeName.toLowerCase();
         if (gltfAttributeMap[attributeName] !== void 0) {
-          const accessorDef = json2.accessors[primitive.attributes[attributeName]];
+          const accessorDef = json3.accessors[primitive.attributes[attributeName]];
           const componentType = WEBGL_COMPONENT_TYPES[accessorDef.componentType];
           attributeTypeMap[threeAttributeName] = componentType.name;
           attributeNormalizedMap[threeAttributeName] = accessorDef.normalized === true;
@@ -43396,8 +43396,8 @@ void main() {
   }
   var _identityMatrix2 = new Matrix4();
   var GLTFParser = class {
-    constructor(json2 = {}, options = {}) {
-      this.json = json2;
+    constructor(json3 = {}, options = {}) {
+      this.json = json3;
       this.extensions = {};
       this.plugins = {};
       this.options = options;
@@ -43444,7 +43444,7 @@ void main() {
     }
     parse(onLoad, onError) {
       const parser = this;
-      const json2 = this.json;
+      const json3 = this.json;
       const extensions = this.extensions;
       this.cache.removeAll();
       this.nodeCache = {};
@@ -43461,16 +43461,16 @@ void main() {
         ]);
       }).then(function(dependencies) {
         const result = {
-          scene: dependencies[0][json2.scene || 0],
+          scene: dependencies[0][json3.scene || 0],
           scenes: dependencies[0],
           animations: dependencies[1],
           cameras: dependencies[2],
-          asset: json2.asset,
+          asset: json3.asset,
           parser,
           userData: {}
         };
-        addUnknownExtensionsToUserData(extensions, result, json2);
-        assignExtrasToUserData(result, json2);
+        addUnknownExtensionsToUserData(extensions, result, json3);
+        assignExtrasToUserData(result, json3);
         return Promise.all(parser._invokeAll(function(ext) {
           return ext.afterRoot && ext.afterRoot(result);
         })).then(function() {
@@ -43710,7 +43710,7 @@ void main() {
      */
     loadAccessor(accessorIndex) {
       const parser = this;
-      const json2 = this.json;
+      const json3 = this.json;
       const accessorDef = this.json.accessors[accessorIndex];
       if (accessorDef.bufferView === void 0 && accessorDef.sparse === void 0) {
         const itemSize = WEBGL_TYPE_SIZES[accessorDef.type];
@@ -43736,7 +43736,7 @@ void main() {
         const elementBytes = TypedArray.BYTES_PER_ELEMENT;
         const itemBytes = elementBytes * itemSize;
         const byteOffset = accessorDef.byteOffset || 0;
-        const byteStride = accessorDef.bufferView !== void 0 ? json2.bufferViews[accessorDef.bufferView].byteStride : void 0;
+        const byteStride = accessorDef.bufferView !== void 0 ? json3.bufferViews[accessorDef.bufferView].byteStride : void 0;
         const normalized = accessorDef.normalized === true;
         let array, bufferAttribute;
         if (byteStride && byteStride !== itemBytes) {
@@ -43789,11 +43789,11 @@ void main() {
      * @return {Promise<?Texture>}
      */
     loadTexture(textureIndex) {
-      const json2 = this.json;
+      const json3 = this.json;
       const options = this.options;
-      const textureDef = json2.textures[textureIndex];
+      const textureDef = json3.textures[textureIndex];
       const sourceIndex = textureDef.source;
-      const sourceDef = json2.images[sourceIndex];
+      const sourceDef = json3.images[sourceIndex];
       let loader2 = this.textureLoader;
       if (sourceDef.uri) {
         const handler = options.manager.getHandler(sourceDef.uri);
@@ -43803,9 +43803,9 @@ void main() {
     }
     loadTextureImage(textureIndex, sourceIndex, loader2) {
       const parser = this;
-      const json2 = this.json;
-      const textureDef = json2.textures[textureIndex];
-      const sourceDef = json2.images[sourceIndex];
+      const json3 = this.json;
+      const textureDef = json3.textures[textureIndex];
+      const sourceDef = json3.images[sourceIndex];
       const cacheKey = (sourceDef.uri || sourceDef.bufferView) + ":" + textureDef.sampler;
       if (this.textureCache[cacheKey]) {
         return this.textureCache[cacheKey];
@@ -43816,7 +43816,7 @@ void main() {
         if (texture.name === "" && typeof sourceDef.uri === "string" && sourceDef.uri.startsWith("data:image/") === false) {
           texture.name = sourceDef.uri;
         }
-        const samplers = json2.samplers || {};
+        const samplers = json3.samplers || {};
         const sampler = samplers[textureDef.sampler] || {};
         texture.magFilter = WEBGL_FILTERS[sampler.magFilter] || LinearFilter;
         texture.minFilter = WEBGL_FILTERS[sampler.minFilter] || LinearMipmapLinearFilter;
@@ -43833,12 +43833,12 @@ void main() {
     }
     loadImageSource(sourceIndex, loader2) {
       const parser = this;
-      const json2 = this.json;
+      const json3 = this.json;
       const options = this.options;
       if (this.sourceCache[sourceIndex] !== void 0) {
         return this.sourceCache[sourceIndex].then((texture) => texture.clone());
       }
-      const sourceDef = json2.images[sourceIndex];
+      const sourceDef = json3.images[sourceIndex];
       const URL2 = self.URL || self.webkitURL;
       let sourceURI = sourceDef.uri || "";
       let isObjectURL = false;
@@ -43984,9 +43984,9 @@ void main() {
      */
     loadMaterial(materialIndex) {
       const parser = this;
-      const json2 = this.json;
+      const json3 = this.json;
       const extensions = this.extensions;
-      const materialDef = json2.materials[materialIndex];
+      const materialDef = json3.materials[materialIndex];
       let materialType;
       const materialParams = {};
       const materialExtensions = materialDef.extensions || {};
@@ -44126,9 +44126,9 @@ void main() {
      */
     loadMesh(meshIndex) {
       const parser = this;
-      const json2 = this.json;
+      const json3 = this.json;
       const extensions = this.extensions;
-      const meshDef = json2.meshes[meshIndex];
+      const meshDef = json3.meshes[meshIndex];
       const primitives = meshDef.primitives;
       const pending = [];
       for (let i = 0, il = primitives.length; i < il; i++) {
@@ -44265,9 +44265,9 @@ void main() {
      * @return {Promise<AnimationClip>}
      */
     loadAnimation(animationIndex) {
-      const json2 = this.json;
+      const json3 = this.json;
       const parser = this;
-      const animationDef = json2.animations[animationIndex];
+      const animationDef = json3.animations[animationIndex];
       const animationName = animationDef.name ? animationDef.name : "animation_" + animationIndex;
       const pendingNodes = [];
       const pendingInputAccessors = [];
@@ -44324,9 +44324,9 @@ void main() {
       });
     }
     createNodeMesh(nodeIndex) {
-      const json2 = this.json;
+      const json3 = this.json;
       const parser = this;
-      const nodeDef = json2.nodes[nodeIndex];
+      const nodeDef = json3.nodes[nodeIndex];
       if (nodeDef.mesh === void 0) return null;
       return parser.getDependency("mesh", nodeDef.mesh).then(function(mesh) {
         const node = parser._getNodeRef(parser.meshCache, nodeDef.mesh, mesh);
@@ -44349,9 +44349,9 @@ void main() {
      * @return {Promise<Object3D>}
      */
     loadNode(nodeIndex) {
-      const json2 = this.json;
+      const json3 = this.json;
       const parser = this;
-      const nodeDef = json2.nodes[nodeIndex];
+      const nodeDef = json3.nodes[nodeIndex];
       const nodePending = parser._loadNodeShallow(nodeIndex);
       const childPending = [];
       const childrenDef = nodeDef.children || [];
@@ -44382,13 +44382,13 @@ void main() {
     // ._loadNodeShallow() parses a single node.
     // skin and child nodes are created and added in .loadNode() (no '_' prefix).
     _loadNodeShallow(nodeIndex) {
-      const json2 = this.json;
+      const json3 = this.json;
       const extensions = this.extensions;
       const parser = this;
       if (this.nodeCache[nodeIndex] !== void 0) {
         return this.nodeCache[nodeIndex];
       }
-      const nodeDef = json2.nodes[nodeIndex];
+      const nodeDef = json3.nodes[nodeIndex];
       const nodeName = nodeDef.name ? parser.createUniqueName(nodeDef.name) : "";
       const pending = [];
       const meshPromise = parser._invokeOne(function(ext) {
@@ -45119,43 +45119,55 @@ void main() {
       p(H + "lidded_waste_bin.glb", 6.6, -1.4, 0, [0.36, 0.4], 0.58);
       wp(M + "decor3/Clinical_Sharps_Container.glb", -7, -6.9, "e", 1.1);
       wp(M + "furnishings/Endoscopy_Glove_Dispenser.glb", -7, -7.6, "e", 1);
-      p(M + "utility/Utility_Supply_Shelf.glb", -20.6, -10.6, 0, [1.39, 0.53], 2);
-      p(M + "utility/Utility_Supply_Shelf.glb", -18.9, -10.6, 0, [1.39, 0.53], 2);
+      p(H + "supply_shelf.glb", -20.6, -10.6, 0, [1.39, 0.56], 2);
+      p(H + "supply_shelf.glb", -18.9, -10.6, 0, [1.39, 0.56], 2);
       p(K + "pharmacy_medicine_shelf.glb", -12.2, -10.6, 0, [1.39, 0.53], 1.95);
-      p(M + "utility/Utility_Supply_Shelf.glb", -10.2, -10.6, 0, [1.39, 0.53], 2);
-      p(M + "decor/Recovery_Linen_Cabinet.glb", -25, -9.6, 90, [0.95, 0.59], 1.84);
+      p(H + "supply_shelf.glb", -10.2, -10.6, 0, [1.39, 0.56], 2);
+      p(H + "linen_cabinet.glb", -25, -9.6, 90, [0.95, 0.65], 1.84);
       p(U + "08_support_equipment/runtime/supply_cart_starter.glb", -15.6, -1, 0, [0.78, 0.52], 1.01, { name: "s7cart" });
-      p(M + "utility/Utility_Laundry_Hamper.glb", -8, 0.4, 0, [0.6, 0.54], 0.97);
+      p(H + "laundry_hamper.glb", -8, 0.4, 0, [0.6, 0.57], 1.15);
       p(H + "wheelchair.glb", -21.6, 0.1, 270, [0.76, 0.91], 0.97);
-      p(M + "utility/Utility_Wet_Floor_Sign.glb", -17.4, -4.6, 0, [0.36, 0.66], 0.67, { noCollide: true });
-      p(M + "utility/Utility_Supply_Shelf.glb", -14.2, -6.9, 90, [1.39, 0.53], 2);
-      p(M + "utility/Utility_Supply_Shelf.glb", -13.65, -6.9, 270, [1.39, 0.53], 2);
+      p(H + "wet_floor_sign.glb", -17.4, -4.6, 0, [0.48, 0.66], 0.64, { noCollide: true });
+      p(H + "supply_shelf.glb", -14.2, -6.9, 90, [1.39, 0.56], 2);
+      p(H + "supply_shelf.glb", -13.65, -6.9, 270, [1.39, 0.56], 2);
       p(H + "supply_cart.glb", -10.4, -3.6, 0, [1.16, 1.1], 1.23);
-      p(U + "08_support_equipment/runtime/supply_cart_standard.glb", -22.8, -4.8, 90, [0.88, 0.65], 1.21);
-      p(M + "utility/Utility_Laundry_Hamper.glb", -24.9, 0.3, 0, [0.6, 0.54], 0.97);
+      p(H + "supply_cart.glb", -22.8, -4.8, 90, [1.16, 1.1], 1.23);
+      p(H + "laundry_hamper.glb", -24.9, 0.3, 0, [0.6, 0.57], 1.15);
       p(H + "lidded_waste_bin.glb", -19.6, 0.55, 0, [0.36, 0.4], 0.58);
-      wp(M + "furnishings/Clinical_Wall_Cupboard.glb", -16.2, -11, "s", 1.45);
+      wp(H + "wall_cupboard.glb", -16.2, -11, "s", 1.45);
+      p(H + "storage_bins.glb", -23.6, -8.9, 15, [1.05, 0.3], 0.28, { noCollide: true });
+      p(H + "storage_bins.glb", -11.4, -8.6, -10, [1.05, 0.3], 0.28, { noCollide: true });
+      p(H + "biohazard_bin.glb", -8, -2.2, 0, [0.39, 0.39], 0.69);
       p(U + "01_reception/reception_T2_desk.glb", -37.2, -9.9, 180, [2.2, 0.9], 1.1, { name: "n7desk" });
       p(U + "01_reception/reception_T2_chair.glb", -37.2, -10.75, 0, [0.63, 0.62], 0.99, { noCollide: true });
       raw({ kind: "radio", x: -36.6, z: -9.75, y: 1.1, fp: [0.1, 0.1], h: 0, noCollide: true, name: "radio" });
       p(M + "decor/Reception_Linked_Seats_3.glb", -30.4, -10.65, 0, [2.61, 0.62], 0.92);
-      p(M + "decor/Reception_Water_Cooler.glb", -26.4, -10.7, 0, [0.44, 0.49], 1.47);
-      p(M + "decor/Recovery_Linen_Cabinet.glb", -40.2, -0.4, 90, [0.95, 0.59], 1.84);
+      p(H + "water_cooler.glb", -26.4, -10.7, 0, [0.44, 0.49], 1.47);
+      p(H + "linen_cabinet.glb", -40.2, -0.4, 90, [0.95, 0.65], 1.84);
       p(H + "patient_monitor.glb", -40.2, -2.6, 90, [0.62, 0.71], 1.49);
-      p(U + "12_lobby/lobby_T2_floor_planter.glb", -28.2, -10.6, 0, [0.55, 0.86], 1.2, { fit: true });
-      wp(M + "decor/Reception_Poster_Clinician.glb", -33.6, -11, "s", 1.15);
-      p(U + "07_warmth_teamwork/TeamDesk_standard.glb", -33, -4.6, 0, [1.13, 0.66], 1.15);
-      p(U + "09_assessment_furniture/runtime/clinician_chair_standard.glb", -33, -5.4, 180, [0.6, 0.6], 1, { noCollide: true });
-      p(U + "07_warmth_teamwork/TeamDesk_standard.glb", -31.6, -4.6, 0, [1.13, 0.66], 1.15);
+      p(H + "floor_planter.glb", -28, -10.65, 0, [1.12, 0.5], 1.52);
+      wp(H + "reception_poster_clinician.glb", -33.6, -11, "s", 1.15);
+      p(H + "team_desk.glb", -33, -4.6, 0, [1.13, 0.74], 1.16);
+      p(H + "clinician_chair.glb", -33, -5.4, 180, [0.65, 0.61], 0.99, { noCollide: true });
+      p(H + "team_desk.glb", -31.6, -4.6, 0, [1.13, 0.74], 1.16);
       p(H + "patient_monitor.glb", -29.2, -6.2, 0, [0.62, 0.71], 1.49);
       p(M + "decor/Reception_Linked_Seats_3.glb", -36.6, 1.45, 180, [2.61, 0.62], 0.92);
-      p(U + "12_lobby/lobby_T2_floor_planter.glb", -40.2, -10.6, 0, [0.55, 0.86], 1.2, { fit: true });
-      wp(M + "furnishings/Assessment_Board.glb", -40.7, -5.6, "e", 1);
+      wp(H + "assessment_status_board.glb", -40.7, -5.6, "e", 1);
+      wp(H + "wall_sanitizer.glb", -26, -11, "s", 1.05);
+      wp(H + "glove_dispenser.glb", -35.4, -11, "s", 1.2);
+      wp(H + "medical_poster_family.glb", -38.6, -11, "s", 1.6);
+      p(H + "biohazard_bin.glb", -40.3, -8.9, 0, [0.39, 0.39], 0.69);
       for (const [bx, bz, rot] of [[-39.2, 5, 90], [-39.2, 9, 90], [-39.2, 13, 90], [-27.3, 6.2, 270], [-27.3, 10.6, 270]]) {
         p(H + "recovery_bed.glb", bx, bz, rot, [1.25, 2.11], 0.87);
         p(H + "bedside_cabinet.glb", bx + (rot === 90 ? -0.55 : 0.55), bz - 1.35, rot, [0.52, 0.63], 0.81);
-        p(U + "08_support_equipment/runtime/iv_stand_starter.glb", bx + (rot === 90 ? 1 : -1), bz - 1.1, 0, [0.68, 0.65], 1.99, { noCollide: true });
+        p(H + "iv_stand.glb", bx + (rot === 90 ? 1 : -1), bz - 1.1, 0, [0.73, 0.7], 2.03, { noCollide: true });
+        wp(H + "service_headwall.glb", rot === 90 ? -40.75 : -25.75, bz, rot === 90 ? "e" : "w", 1.24);
       }
+      wp(H + "wall_exam_set.glb", -36.2, 2.15, "s", 0.9);
+      wp(H + "wall_sanitizer.glb", -29.4, 2.15, "s", 1.05);
+      wp(H + "glove_dispenser.glb", -28.6, 2.15, "s", 1.2);
+      wp(H + "sharps_container.glb", -34.6, 2.15, "s", 1.09);
+      p(H + "biohazard_bin.glb", -26.2, 3, 0, [0.39, 0.39], 0.69);
       p(H + "privacy_screen.glb", -38.1, 7, 90, [0.14, 1.84], 1.97);
       p(H + "privacy_screen.glb", -38.1, 11, 90, [0.14, 1.84], 1.97);
       p(H + "procedure_stretcher.glb", -33.4, 8.4, 0, [0.9, 1.66], 1.22);
@@ -45165,21 +45177,28 @@ void main() {
       raw({ kind: "pipes", x: -32, z: 15.8, len: 9, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
       p(K + "isolation_windowed_partition.glb", -36, 23.2, 90, [2, 0.15], 2.4);
       p(K + "isolation_windowed_partition.glb", -36, 25.4, 90, [2, 0.15], 2.4);
-      p(M + "utility/Utility_Supply_Shelf.glb", -40.25, 20.4, 90, [1.39, 0.53], 2);
-      p(M + "utility/Utility_Janitor_Cart.glb", -26.2, 26.8, 0, [0.83, 0.94], 1.24);
-      p(M + "utility/Utility_Mop_Bucket.glb", -27.3, 27.3, 0, [0.43, 0.51], 0.66);
-      p(M + "utility/Utility_Wet_Floor_Sign.glb", -30.2, 18.9, 0, [0.36, 0.66], 0.67, { noCollide: true });
-      p(M + "utility/Utility_Wet_Floor_Sign.glb", -28.9, 18.6, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
+      p(H + "supply_shelf.glb", -40.25, 20.4, 90, [1.39, 0.56], 2);
+      p(H + "janitor_cart.glb", -26.2, 26.8, 0, [0.83, 0.99], 1.23);
+      p(H + "mop_bucket.glb", -27.3, 27.3, 0, [0.46, 0.51], 0.65);
+      p(H + "wet_floor_sign.glb", -30.2, 18.9, 0, [0.48, 0.66], 0.64, { noCollide: true });
+      p(H + "wet_floor_sign.glb", -28.9, 18.6, 0, [0.48, 0.66], 0.64, { noCollide: true });
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", -40.3, 26.6, 90, [0.82, 0.51], 1.82);
-      wp(M + "utility/Utility_Toolboard.glb", -38, 15.8, "s", 1);
+      wp(H + "toolboard.glb", -38, 15.8, "s", 1);
       raw({ kind: "box", x: -27.2, z: 16.7, size: [1.6, 0.9, 1.1], face: "s", color: 10719084, fp: [1.6, 0.9], h: 1.1 });
       raw({ kind: "box", x: -25.4, z: 16.7, size: [1.2, 0.9, 0.8], face: "s", color: 10259050, fp: [1.2, 0.9], h: 0.8 });
       raw({ kind: "bench", x: -33.6, z: 27.2, size: [2, 0.7, 0.92], color: 9206364, fp: [2, 0.7], h: 0.92 });
-      p(M + "utility/Utility_Laundry_Hamper.glb", -40.2, 23.6, 0, [0.6, 0.54], 0.97);
+      p(H + "laundry_hamper.glb", -40.2, 23.6, 0, [0.6, 0.57], 1.15);
+      p("zombie/assets/props/sawhorse_barrier.glb", -26.4, 23.4, 90, [1.9, 0.73], 1.04);
+      p("zombie/assets/props/drywall_pallet.glb", -39.6, 18.9, 90, [1.41, 1.69], 0.45);
       p(K + "cafeteria_serving_counter.glb", -20.3, 16.25, 0, [2.46, 0.96], 1.53);
       p(K + "cafeteria_tray_return.glb", -18.3, 16.1, 0, [0.68, 0.56], 1);
       p(K + "cafeteria_vending_machine.glb", -11.2, 16.25, 0, [0.93, 0.87], 1.9);
       p(K + "cafeteria_vending_machine.glb", -10.1, 16.25, 0, [0.93, 0.87], 1.9);
+      p(H + "coffee_counter.glb", -8.6, 16.35, 0, [1.33, 0.81], 1);
+      raw({ m: H + "coffee_machine.glb", x: -8.95, z: 16.2, rot: 0, y: 1, fp: [0.1, 0.1], h: 0, noCollide: true });
+      raw({ m: H + "mug.glb", x: -8.2, z: 16.45, rot: 40, y: 1, fp: [0.1, 0.1], h: 0, noCollide: true });
+      p(H + "locker_bank.glb", -7.75, 25.6, 270, [1.48, 0.66], 1.95);
+      p(H + "water_cooler.glb", -22.4, 17.4, 90, [0.44, 0.49], 1.47);
       for (const [tx, tz] of [[-19.6, 20.6], [-15, 22.4], [-10.6, 20.6], [-19, 25.8], [-11.2, 25.8]]) {
         p(H + "break_table.glb", tx, tz, 0, [0.95, 0.86], 0.85);
         p(H + "break_chair.glb", tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
@@ -45193,27 +45212,32 @@ void main() {
       raw({ kind: "hazard", x: -1, z: 16.9, size: [1.8, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
       raw({ kind: "box", x: -6.55, z: 20.6, size: [1.5, 0.6, 2], face: "e", color: 9082007, fp: [0.6, 1.5], h: 2 });
       raw({ kind: "box", x: -6.55, z: 23.2, size: [1.2, 0.6, 1.7], face: "e", color: 8358284, fp: [0.6, 1.2], h: 1.7 });
-      p(M + "utility/Utility_Janitor_Cart.glb", 4.6, 27.2, 0, [0.83, 0.94], 1.24);
-      p(U + "10_janitor_utility/standard/10_standard_utility_sink.glb", 6.5, 17.2, 270, [0.9, 0.6], 1.1);
-      wp(M + "utility/Utility_Toolboard.glb", -3.6, 15.8, "s", 1);
+      p(H + "janitor_cart.glb", 4.6, 27.2, 0, [0.83, 0.99], 1.23);
+      p(H + "utility_sink.glb", 6.55, 17.2, 270, [0.88, 0.51], 1.64);
+      wp(H + "toolboard.glb", -3.6, 15.8, "s", 1);
+      p(H + "floor_scrubber.glb", 2.6, 26.9, 90, [0.86, 1.52], 1.17);
+      p(H + "mop_bucket.glb", 5.6, 18.6, 30, [0.46, 0.51], 0.65);
       p(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -5.4, 1.55, 0, [0.87, 0.63], 1.16);
       p(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", -4.3, 1.55, 0, [0.87, 0.63], 1.16);
-      p(M + "decor/Recovery_Linen_Cabinet.glb", -6.55, 8, 90, [0.95, 0.59], 1.84);
-      p(U + "08_support_equipment/runtime/supply_cart_standard.glb", 6.5, 6.2, 270, [0.88, 0.65], 1.21);
+      p(H + "linen_cabinet.glb", -6.55, 8, 90, [0.95, 0.65], 1.84);
+      p(H + "supply_cart.glb", 6.5, 6.2, 270, [1.16, 1.1], 1.23);
       p(H + "procedure_stretcher.glb", -5.6, 12.6, 90, [0.9, 1.66], 1.22);
-      wp(M + "decor3/Clinical_Sign_PreOp.glb", 4.6, 1.2, "s", 2.2);
-      p(U + "06_prep_airway/SedaPrep_standard.glb", 6.3, 10.6, 270, [1, 0.6], 1.1);
+      wp(H + "clinical_sign_preop.glb", 4.6, 1.2, "s", 2.23);
+      p(H + "sedaprep.glb", 6.3, 10.6, 270, [1.12, 0.72], 0.98);
       p(H + "supply_cart.glb", -6.3, 4.4, 90, [1.16, 1.1], 1.23);
-      p(U + "08_support_equipment/runtime/iv_stand_starter.glb", -4.6, 11.8, 0, [0.68, 0.65], 1.99, { noCollide: true });
-      wp(M + "furnishings/Clinical_Handwash_Basin.glb", -2.9, 1.2, "s", 0.85);
-      p(M + "utility/Utility_Supply_Shelf.glb", -22.25, 7.4, 90, [1.39, 0.53], 2);
-      p(M + "utility/Utility_Supply_Shelf.glb", -22.25, 10.4, 90, [1.39, 0.53], 2);
-      p(M + "utility/Utility_Supply_Shelf.glb", -7.75, 7.4, 270, [1.39, 0.53], 2);
-      p(M + "utility/Utility_Supply_Shelf.glb", -7.75, 10.4, 270, [1.39, 0.53], 2);
+      p(H + "iv_stand.glb", -4.6, 11.8, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      wp(H + "handwash_basin.glb", -2.9, 1.2, "s", 0.85);
+      wp(H + "wall_sanitizer.glb", 0.6, 1.2, "s", 1.05);
+      p(H + "supply_shelf.glb", -22.25, 7.4, 90, [1.39, 0.56], 2);
+      p(H + "supply_shelf.glb", -22.25, 10.4, 90, [1.39, 0.56], 2);
+      p(H + "supply_shelf.glb", -7.75, 7.4, 270, [1.39, 0.56], 2);
+      p(H + "supply_shelf.glb", -7.75, 10.4, 270, [1.39, 0.56], 2);
+      p(H + "storage_bins.glb", -9.2, 13.8, 0, [1.05, 0.3], 0.28, { noCollide: true });
       raw({ kind: "bench", x: -15, z: 9.4, size: [2, 0.75, 0.92], color: 9206364, fp: [2, 0.75], h: 0.92, name: "x7bench" });
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", -12.4, 5, 0, [0.82, 0.51], 1.82);
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", -17.8, 5, 0, [0.82, 0.51], 1.82);
       raw({ kind: "box", x: -19.6, z: 12.4, size: [1.2, 0.8, 0.9], face: "s", color: 10719084, fp: [1.2, 0.8], h: 0.9 });
+      p("zombie/assets/props/sawhorse_barrier.glb", -19, 6.6, 0, [1.9, 0.73], 1.04);
       sign2("LIFT SERVICE \u2192", "Lift power \xB7 past the cafeteria", -25.8, 1.95, -1.4, "w", 1.5);
       sign2("LIFT", "Power fault", X2(1214) + 3.65, 2.3, -11, "s", 0.8, { lift: 7 });
       sign2("BARRED", "From the prep room side", 1, 1.75, 0.9, "n", 0.86, { id: "orbarSign" });
@@ -45231,24 +45255,63 @@ void main() {
     groups: (Z) => [
       // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
       { id: "or", zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1, yaw: 0.75, wake: 1.8, look: "patient" }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: "nurse" }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8 }] },
-      // supply: one straggler (a short orientation pocket, not another big fight)
-      { id: "s7", sense: 5, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: "patient" }] },
-      // nurse station: two at the far end of the room, by the beds' door
-      { id: "n7", sense: 6, zombies: [{ x: -38.6, z: -3.2, yaw: 1.2, look: "nurse" }, { x: -31, z: 0.6, yaw: -2.6 }] },
-      // treatment ward: spread down both lanes, waking a beat apart (flank around the beds, never a doorway queue)
-      { id: "t7", sense: 6.5, zombies: [{ x: -36.2, z: 6.8, yaw: 0.4, look: "patient" }, { x: -30.2, z: 8.6, yaw: -0.8 }, { x: -33, z: 12.6, yaw: 2.6, look: "nurse" }, { x: -28.6, z: 13.8, yaw: -2.2 }] },
-      // renovation: two in the quiet corner
-      { id: "v7", sense: 5.5, zombies: [{ x: -33.2, z: 26.2, yaw: 0.2 }, { x: -25, z: 21.4, yaw: -1.6, look: "nurse" }] },
-      // cafeteria: the shield carrier's introduction, with two walkers to read his front against
+      // (2026-10-18, the user's part 3: "more enemies ... treat each room as a small combat arena with its own flavor ... avoid
+      // repeating the same crowd in every room". Floor spawns (from: 'floor') break up out of the floor a delay after their
+      // group wakes (core/level.js floorStep: never right under Yola), the hole stays.)
+      // supply: one straggler, then the first one through the floor, while she picks up the pistol (its first targets)
+      { id: "s7", sense: 5, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: "patient" }, { x: -20, z: -2.6, look: "nurse", from: "floor", delay: 2.4 }] },
+      // nurse station: a crowd of walkers spread through the room (the ring that waits its turn and pounces), the shotgun on
+      // the team desk in the middle of them
+      { id: "n7", sense: 6, zombies: [{ x: -38.6, z: -3.2, yaw: 1.2, look: "nurse" }, { x: -31, z: 0.6, yaw: -2.6 }, { x: -35.6, z: -7.4, yaw: 0.6, look: "patient" }, { x: -28.4, z: -2.2, yaw: -1.4 }, { x: -39.2, z: 0.6, yaw: 2.2, look: "nurse" }] },
+      // treatment ward: the crawlers' ward: two already down between the beds (crawl), one walker in each lane, and the floor
+      // of the middle lane gives way behind her once it starts
+      { id: "t7", sense: 6.5, zombies: [
+        { x: -36.2, z: 6.8, yaw: 0.4, look: "patient" },
+        { x: -30.2, z: 8.6, yaw: -0.8 },
+        { x: -33, z: 12.6, yaw: 2.6, look: "nurse" },
+        { x: -28.6, z: 13.8, yaw: -2.2 },
+        { x: -36.8, z: 10.4, yaw: 0.3, look: "patient", crawl: true },
+        { x: -29.6, z: 4, yaw: -2.8, crawl: true },
+        { x: -33.6, z: 4.6, look: "nurse", from: "floor", delay: 3.5 }
+      ] },
+      // renovation: the runners' room: wide and open, two orange runners and a walker, and the half-built floor breaks under two more
+      { id: "v7", sense: 7, zombies: [
+        { x: -33.2, z: 26.2, yaw: 0.2 },
+        { x: -25, z: 21.4, yaw: -1.6, kind: "runner" },
+        { x: -38.2, z: 25.6, yaw: 1, kind: "runner" },
+        { x: -29.4, z: 20.6, look: "patient", from: "floor", delay: 2 },
+        { x: -34.6, z: 19.6, kind: "runner", from: "floor", delay: 5.5 }
+      ] },
+      // cafeteria: the shield carrier's introduction, with two walkers to read his front against (tables to circle him round)
       { id: "c7", sense: 7, zombies: [{ x: -15, z: 24.6, yaw: Math.PI, kind: "guard" }, { x: -19.6, z: 23.4, yaw: 1 }, { x: -10.4, z: 23.2, yaw: -1, look: "nurse" }] },
-      // lift service: one by the switchgear
-      { id: "p7", sense: 5, zombies: [{ x: 2.2, z: 24.6, yaw: -2, look: "patient" }] }
+      // lift service: the big lady across the open bay from the cafeteria door (her lane runs at the door; switchgear and racks
+      // along the walls to trip her into), one walker by the switchgear
+      { id: "p7", sense: 9, zombies: [{ x: 4.6, z: 21, yaw: -Math.PI / 2, kind: "sprinter" }, { x: -4.4, z: 24.6, yaw: 0.6, look: "patient" }] },
+      // the contractor store (behind its powered door): two lurking by the shelves, roused when the door opens on them
+      { id: "x7", sense: 4, locked: true, zombies: [{ x: -20.2, z: 9, yaw: 0.8, look: "nurse" }, { x: -10, z: 11.6, yaw: -2.2 }] },
+      // the prep room, the way back to the OR: once the lift has power, the floor's last push: a runner, two walkers, one
+      // through the floor
+      { id: "r7", sense: 6, locked: true, zombies: [{ x: 4.6, z: 12.6, yaw: -2.6, kind: "runner" }, { x: -3, z: 8.2, yaw: 2.6, look: "nurse" }, { x: 3.4, z: 4, yaw: -1.2 }, { x: 0.4, z: 10.4, look: "patient", from: "floor", delay: 3 }] }
     ],
+    // (2026-10-18, the user: "on Floor 7, place every available usable weapon around the level for testing. Leave out the
+    // chainsaw ... include suitable ammunition ... keep the early pistol pickup". A test arrangement, not the final
+    // progression: the bat in her hands, the pistol in Supply as before, the shotgun on the nurse station's desk, the crowbar
+    // by the ward's stretcher, the sledgehammer in the renovation, the knife on a cafeteria table, the axe in the contractor
+    // store as before; magazines and shells where those guns get used. file / builder + len: a weapon lying where it is
+    // (render/arena.js loadPickups))
     pickups: () => [
       { id: "s7aid", kind: "health", amount: 40, x: -15.6, z: -1, r: 1, label: "First-aid case", model: "aid", y: 1.01 },
       { id: "s7pistol", kind: "weapon", weapon: "pistol", x: -15.56, z: -1, r: 1, mag: 12, label: "Pistol", model: "pistol", y: 1.21 },
       // (the user, 2026-10-17: a pistol with the first med pack, lying on the case's lid; the guard's on Floor 6 then refills it)
+      { id: "s7mags", kind: "ammo", weapon: "pistol", rounds: 24, x: -12.8, z: -0.4, r: 1, label: "Pistol magazines", model: "mag" },
+      { id: "n7shotgun", kind: "weapon", weapon: "shotgun", x: -32.3, z: -4.6, r: 1.1, mag: 6, label: "Pump shotgun", file: "zombie/assets/weapons/pump_short.glb", len: 0.9, rot: 0.3, y: 1.15 },
+      { id: "n7shells", kind: "ammo", weapon: "shotgun", rounds: 12, x: -27.2, z: -9.6, r: 1, label: "Shotgun shells", model: "shells" },
+      { id: "t7crowbar", kind: "weapon", weapon: "crowbar", x: -32.2, z: 10.2, r: 1.1, label: "Crowbar", file: "zombie/assets/weapons/hospital/crowbar.glb", len: 0.8, rot: 1.1 },
       { id: "v7ammo", kind: "health", amount: 50, x: -37.4, z: 17, r: 1.1, label: "First-aid case", model: "aid", y: 0.92 },
+      { id: "v7sledge", kind: "weapon", weapon: "sledgehammer", x: -30.6, z: 22.6, r: 1.2, label: "Sledgehammer", file: "zombie/assets/weapons/sledgehammer.glb", len: 0.95, rot: -0.6 },
+      { id: "c7knife", kind: "weapon", weapon: "knife", x: -10.6, z: 20.6, r: 1.1, label: "Knife", builder: "knife", len: 0.3, rot: 0.8, y: 0.85 },
+      { id: "c7shells", kind: "ammo", weapon: "shotgun", rounds: 12, x: -12.4, z: 17.4, r: 1, label: "Shotgun shells", model: "shells" },
+      { id: "p7mags", kind: "ammo", weapon: "pistol", rounds: 24, x: 0.6, z: 17.2, r: 1, label: "Pistol magazines", model: "mag" },
       { id: "axe", kind: "weapon", weapon: "axe", x: -15, z: 9.4, r: 1.2, label: "Fire axe", model: "axe", y: 0.95 }
     ],
     interact: () => [
@@ -45312,10 +45375,10 @@ void main() {
       p(H + "privacy_screen.glb", (X2(242) + X2(397)) / 2, z(378), 0, [0.14, 1.84], 1.97);
       p(H + "recovery_bed.glb", X2(367), z(577), 90, [1.25, 2.11], 0.87);
       p(H + "recovery_bed.glb", X2(557), z(620), 0, [1.25, 2.11], 0.87);
-      p(U + "08_support_equipment/runtime/iv_stand_starter.glb", X2(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
+      p(H + "iv_stand.glb", X2(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
       p(H + "patient_monitor.glb", X2(200), z(690), 90, [0.62, 0.71], 1.49);
-      p(M + "decor/Recovery_Linen_Cabinet.glb", X2(270), z(790), 0, [0.95, 0.59], 1.84);
-      p(U + "06_prep_airway/SedaPrep_standard.glb", X2(530), z(920), 0, [1, 0.6], 1.1);
+      p(H + "linen_cabinet.glb", X2(270), z(790), 0, [0.95, 0.59], 1.84);
+      p(H + "sedaprep.glb", X2(530), z(920), 0, [1, 0.6], 1.1);
       p(H + "supply_cart.glb", X2(260), z(895), 90, [1.16, 1.1], 1.23);
       p(U + "10_janitor_utility/starter/10_starter_steel_sink.glb", X2(560), z(785), 0, [0.87, 0.63], 1.16);
       p(K + "pharmacy_locked_cupboard.glb", X2(260), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
@@ -45324,13 +45387,13 @@ void main() {
       p(M + "furnishings/Lounge_Break_Table.glb", X2(305), z(1077), 0, [0.9, 0.9], 0.74, { name: "k6table" });
       raw({ m: K + "lab_sample_rack.glb", x: X2(560), z: z(1077), rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
       p(M + "furnishings/Lounge_Break_Table.glb", X2(560), z(1077), 0, [0.9, 0.9], 0.74);
-      p(U + "07_warmth_teamwork/ThermaNest_standard.glb", X2(500), z(1260) - 0.35, 180, [0.81, 0.69], 1.26);
+      p(H + "thermanest.glb", X2(500), z(1260) - 0.35, 180, [0.81, 0.69], 1.26);
       p(H + "supply_cart.glb", X2(200), z(1180), 90, [1.16, 1.1], 1.23);
-      p(M + "utility/Utility_Supply_Shelf.glb", X2(1110), z(880), 270, [1.39, 0.53], 2);
+      p(H + "supply_shelf.glb", X2(1110), z(880), 270, [1.39, 0.53], 2);
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1110), z(1180), 270, [0.82, 0.51], 1.82);
       raw({ kind: "hazard", x: X2(710) + 1, z: (z(1095) + z(1180)) / 2, size: [1.3, 3.2], noCollide: true, fp: [0.1, 0.1], h: 0 });
       raw({ kind: "bench", x: X2(1e3), z: z(1250), size: [1.8, 0.65, 0.92], color: 9206364, fp: [1.8, 0.65], h: 0.92 });
-      p(M + "utility/Utility_Wet_Floor_Sign.glb", X2(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
+      p(H + "wet_floor_sign.glb", X2(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
       raw({ kind: "box", x: X2(1100), z: z(1010), size: [1.4, 0.8, 1.1], face: "w", color: 10719084, fp: [0.8, 1.4], h: 1.1 });
       p(K + "isolation_windowed_partition.glb", X2(1110), z(1090), 90, [2, 0.15], 2.4);
       raw({ kind: "partition", x: X2(710), z: (z(1095) + z(1180)) / 2, w: 3, fp: [0.1, 0.1], h: 0, noCollide: true, name: "partition" });
@@ -45387,7 +45450,7 @@ void main() {
     dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
       const z = Z;
       p(M + "decor/Reception_Linked_Seats_3.glb", 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
-      p(U + "07_warmth_teamwork/ThermaNest_standard.glb", X2(830), z(300) + 0.45, 0, [1, 0.7], 1.6, { name: "intake" });
+      p(H + "thermanest.glb", X2(830), z(300) + 0.45, 0, [1, 0.7], 1.6, { name: "intake" });
       p(K + "pharmacy_locked_cupboard.glb", X2(760), z(300) + 0.4, 0, [0.95, 0.55], 1.95);
       p(U + "07_warmth_teamwork/TeamDesk_standard.glb", X2(785), z(525), 0, [1.6, 0.8], 1);
       p(U + "12_lobby/lobby_T2_floor_planter.glb", X2(1085), z(527), 0, [0.55, 0.86], 1.2, { fit: true });
@@ -45402,14 +45465,14 @@ void main() {
       p(H + "bedside_cabinet.glb", X2(627), z(930), 0, [0.52, 0.63], 0.81);
       p(U + "09_assessment_furniture/runtime/consultation_desk_standard.glb", X2(340), z(1255) - 0.45, 180, [1.5, 0.75], 0.78, { name: "docket" });
       p(K + "pharmacy_medicine_shelf.glb", X2(620), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
-      p(M + "decor/Recovery_Linen_Cabinet.glb", X2(280), z(1050), 90, [0.95, 0.59], 1.84);
+      p(H + "linen_cabinet.glb", X2(280), z(1050), 90, [0.95, 0.59], 1.84);
       raw({ kind: "screen", x: X2(340), z: z(1255) - 0.55, y: 0.78, fp: [0.1, 0.1], h: 0, noCollide: true, name: "docketScreen" });
       p(K + "pharmacy_medicine_shelf.glb", X2(470), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
       p(U + "09_assessment_furniture/runtime/clinician_chair_standard.glb", X2(340), z(1255) - 1.05, 0, [0.6, 0.6], 1, { noCollide: true });
       p(K + "ct_scanner_gantry.glb", X2(970), z(1075), 0, [2.13, 0.87], 2.26);
       p(H + "procedure_stretcher.glb", X2(780), z(955), 90, [0.9, 1.66], 1.22);
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1218), z(1005), 270, [0.82, 0.51], 1.82);
-      p(M + "utility/Utility_Supply_Shelf.glb", X2(1218), z(1200), 270, [1.39, 0.53], 2);
+      p(H + "supply_shelf.glb", X2(1218), z(1200), 270, [1.39, 0.53], 2);
       p(U + "03_endoscopy/endoscopy_tower_standard.glb", X2(760), z(1250), 0, [0.7, 0.6], 1.6);
       sign2("DIAGNOSTIC INTAKE", "Specimen hold", X2(920), 2.3, z(300) + 0.15, "s", 1.4);
       sign2("\u2190 RECORDS", "Short ward", X2(700) + 0.16, 2.3, z(745) - 1.8, "e", 1.3);
@@ -45595,7 +45658,10 @@ void main() {
   var AXE = "axe";
   var FISTS = "fists";
   var BAT = "bat";
-  var WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, BAT, FISTS];
+  var LIB_WEAPONS = ["sledgehammer", "crowbar", "knife"];
+  var LIB_ATTACKS = {};
+  var WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, BAT, ...LIB_WEAPONS, FISTS];
+  var usableWeapons = (list) => list.filter((w) => !LIB_WEAPONS.includes(w) || LIB_ATTACKS[w]);
   var isMelee = (kind) => kind === AXE || kind === "bat";
   var PISTOL_HOLD = {
     grip: { x: -0.066, y: 1.16, z: 0.43 },
@@ -45824,9 +45890,9 @@ void main() {
   var GROUND = {};
   function groundAttack(w) {
     if (GROUND_OWN[w]) return GROUND_OWN[w];
-    if (w !== AXE && w !== BAT && w !== TEST) return null;
-    const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : null;
-    if (!base.PATH || w === TEST && !T0) return null;
+    if (w !== AXE && w !== BAT && w !== TEST && !LIB_ATTACKS[w]) return null;
+    const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : LIB_ATTACKS[w]?.[0] || null;
+    if (!base.PATH || (w === TEST || LIB_ATTACKS[w]) && !T0) return null;
     const key = w + (T0 ? "|" + T0.clip + T0.kind : "");
     if (GROUND[key]) return GROUND[key];
     const g = { ...base, name: "ground", sock: "chop", chainFrom: 9, blendIn: 0.12, enterBlend: 0.14, assist: 2, ground: true };
@@ -45874,7 +45940,7 @@ void main() {
     }
   };
   var legAttack = (w) => LEG_ATTACKS[w] || null;
-  var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : w === TEST ? TEST_ATTACKS : AXE_ATTACKS;
+  var attacksOf = (w) => w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : w === TEST ? TEST_ATTACKS : LIB_ATTACKS[w] || AXE_ATTACKS;
   var AXE_GEOM = {
     length: 0.74,
     // hands (midpoint of the grip) to the blade, metres
@@ -45942,6 +46008,16 @@ void main() {
     out.dz = dz / dl;
     return out;
   }
+  function strikeReach(A) {
+    if (A._reach != null) return A._reach;
+    const [w0, w1] = A.windows?.[0] || [A.activeStart, A.activeEnd], o = {};
+    let best = null;
+    for (let i = 0; i <= 12; i++) {
+      const s = meleeSegment(A, w0 + (w1 - w0) * i / 12, o);
+      if (!best || s.ty < best.ty) best = { ty: s.ty, d: Math.hypot(s.tx, s.tz) };
+    }
+    return A._reach = best ? best.d * 0.9 : A.stand ?? 1;
+  }
   function meleeSegment(A, t, out = {}) {
     meleePose(A, t, out);
     const L2 = (A.geom || AXE_GEOM).length;
@@ -45956,6 +46032,7 @@ void main() {
   var DOWN_FALL = 1.15;
   var DOWN_UP = 1.7;
   var DOWN_YAW = -2.705;
+  var KIP = { fall: 0.95, up: 1.05 };
   var FIRE_ALIGN = 0.38;
   var _seg = {};
   var _mz = {};
@@ -46012,7 +46089,7 @@ void main() {
       this.dead = false;
       this.invuln = 0;
       this.hurtT = 9;
-      this.owned = [...WEAPON_ORDER];
+      this.owned = usableWeapons(WEAPON_ORDER);
       this.equipped = PISTOL;
       this.desired = PISTOL;
       this.mags = { [PISTOL]: tuning2.magSize, [SHOTGUN]: tuning2.shotgunMag };
@@ -46025,12 +46102,25 @@ void main() {
       this.dodgeCd = 0;
     }
     // ---------------- the dodge, the vault, the leg attack ----------------
-    // a dodge press: along the move stick (in world directions), or straight back from the aim
-    tryDodge(mx, mz, sim2) {
+    // a dodge press: along the move stick (in world directions), or straight back from the aim. auto (sim.autoDodge, a
+    // special attack): the escape it chose: (mx, mz) its direction, dist (shortened where a wall comes first), roll (the
+    // slam: rolled out of), or kind left / right with face (the charge: squared up to the charger, a side step)
+    tryDodge(mx, mz, sim2, auto = null) {
       if (this.dead || this.dodgeCd > 0) return false;
       const a = this.action, t = a.type;
       const free = t === "ready" || t === "reload" || t === "shot" || t === "swing" && a.st >= this.atk(a).activeEnd || t === "dodge" && a.t >= DODGE[a.kind === "roll" ? "roll" : "side"].dur * 0.85;
       if (!free) return false;
+      if (auto) {
+        const kind2 = auto.roll ? "roll" : auto.kind, D4 = auto.roll ? DODGE.roll : DODGE.side;
+        if (kind2 === "roll") this.aimYaw = this.aimTarget = Math.atan2(mx, mz);
+        else if (auto.face != null) this.aimYaw = this.aimTarget = auto.face;
+        this.setAction("dodge", { kind: kind2, dirX: mx, dirZ: mz, dur: D4.dur, dist: Math.min(D4.dist, auto.dist ?? D4.dist), done: 0, auto: true });
+        this.attackHeld = false;
+        this.vx *= 0.3;
+        this.vz *= 0.3;
+        sim2.emit({ type: "dodge", kind: kind2, auto: true });
+        return true;
+      }
       let l = Math.hypot(mx, mz);
       if (l < 0.2) {
         mx = -Math.sin(this.aimYaw);
@@ -46177,7 +46267,10 @@ void main() {
         speed *= k;
       }
       if (this.action.type === "swing") speed *= this.attackMoveScale();
-      else if (this.equipped === SHOTGUN) speed *= 0.92;
+      if (this.grabT > 0) {
+        this.grabT -= dt;
+        speed *= 0.3;
+      } else if (this.equipped === SHOTGUN) speed *= 0.92;
       const dl = mag > 1e-4 ? speed / mag : 0;
       const dvx = mx * dl - this.vx, dvz = mz * dl - this.vz;
       const dvl = Math.hypot(dvx, dvz);
@@ -46217,7 +46310,7 @@ void main() {
       this.z += rm.z;
       const through = vaulting || dodging && this.invuln > 0;
       if (!through) for (const e of sim2.zombies) {
-        if (!e.solid) continue;
+        if (!e.solid || e.state === "strike" && e.attack === "dash") continue;
         const dx = this.x - e.x, dz = this.z - e.z, rr = this.r + e.r, d2 = dx * dx + dz * dz;
         if (d2 < rr * rr && d2 > 1e-8) {
           const d = Math.sqrt(d2), push = (rr - d) * 0.85;
@@ -46251,7 +46344,14 @@ void main() {
       const out = _rm;
       out.x = out.z = 0;
       const a = this.action;
-      if (a.type !== "swing" || !(a.lunge > 0)) return out;
+      if (a.type !== "swing") return out;
+      if (a.back > 0) {
+        const want2 = a.back * smooth(a.st / Math.max(0.05, this.atk(a).activeStart * 0.75)), step2 = want2 - (a.backed || 0);
+        a.backed = want2;
+        out.x -= Math.sin(a.heading) * step2;
+        out.z -= Math.cos(a.heading) * step2;
+      }
+      if (!(a.lunge > 0)) return out;
       const A = this.atk(a), dur = Math.max(0.05, A.activeStart);
       const want = A.ROOT ? rootAt(A.ROOT, a.st) * a.rootScale : a.lunge * smooth(a.st / dur), step = want - (a.advanced || 0);
       if (step <= 0) return out;
@@ -46262,8 +46362,8 @@ void main() {
         d = Math.max(0, Math.min(d, gap));
       }
       a.advanced = (a.advanced || 0) + step;
-      out.x = Math.sin(a.heading) * d;
-      out.z = Math.cos(a.heading) * d;
+      out.x += Math.sin(a.heading) * d;
+      out.z += Math.cos(a.heading) * d;
       return out;
     }
     // ---------------- actions ----------------
@@ -46299,7 +46399,8 @@ void main() {
           }
           if (a.hits > 0 || A.chainAlways) a.unlocked = true;
           if (!a.ground && !a.leg && a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
-            this.startSwing(sim2, a.combo + 1, true);
+            if (groundAttack(this.equipped) && sim2.groundTarget?.(this)) this.startSwing(sim2, 0);
+            else this.startSwing(sim2, a.combo + 1, true);
             break;
           }
           if (!a.ground && !a.leg && A.restartFrom != null && st >= A.restartFrom && st < A.duration && (this.attackHeld || this.attackPressT < a.t)) {
@@ -46407,6 +46508,14 @@ void main() {
         rootScale = tgt && total > 0.01 ? clamp2((Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 0.85)) / total, 0, 1) : 1;
         lunge = Math.max(0, total * rootScale);
       }
+      let back = 0;
+      if (ground) {
+        const gt = sim2.groundTarget?.(this);
+        if (gt) {
+          const gd = Math.hypot(gt.x - this.x, gt.z - this.z), reach = strikeReach(A);
+          if (gd < reach - 0.15) back = Math.min(0.85, reach - 0.1 - gd);
+        }
+      }
       this.setAction("swing", {
         st: 0,
         combo: combo2,
@@ -46424,7 +46533,8 @@ void main() {
         turnFrom: this.aimYaw,
         turnBy,
         advanced: 0,
-        rootScale
+        rootScale,
+        back
       });
       this.attackPressT = 9;
       sim2.emit({ type: "swing", combo: combo2 });
@@ -46459,8 +46569,9 @@ void main() {
       this.aimYaw = this.aimTarget = Math.atan2(-dx, -dz);
       this.slide = { x: dx / d * 3.4, z: dz / d * 3.4 };
       this.attackHeld = false;
-      this.setAction("down", { fall: DOWN_FALL, up: DOWN_UP, turned: false });
-      this.invuln = DOWN_FALL + DOWN_UP;
+      const kip = this.T.kipUp !== false;
+      this.setAction("down", kip ? { fall: KIP.fall, up: KIP.up, turned: true, kip: true } : { fall: DOWN_FALL, up: DOWN_UP, turned: false });
+      this.invuln = kip ? KIP.fall + KIP.up : DOWN_FALL + DOWN_UP;
       sim2.emit({ type: "playerDown", dirX: dx / d, dirZ: dz / d });
     }
     hurt(dmg, fromX, fromZ, sim2) {
@@ -46502,7 +46613,7 @@ void main() {
   var nextId = 1;
   var _flow = { x: 0, z: 0 };
   var _steer = { x: 0, z: 0, k: 1 };
-  var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", KNOCKDOWN: "knockdown", GETUP: "getup", DYING: "dying", DEAD: "dead" };
+  var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", KNOCKDOWN: "knockdown", GETUP: "getup", DYING: "dying", DEAD: "dead", STUCK: "stuck" };
   var KNOCKDOWN_FALL = 1.3;
   var KNOCKDOWN_GETUP = 2;
   var GETUP_YAW = -2.705;
@@ -46517,22 +46628,34 @@ void main() {
     // standing zombie rears back (the wind-up, a long narrow wedge on the floor; it stops turning after `lock` of it), then
     // leaps along that line and bites whatever it reaches. Committed: a side-step or Yola's dodge beats it, and a miss
     // leaves it stumbling (the long recovery is the opening). range: the wedge (the leap plus the bite's reach).
-    pounce: { min: 1.7, from: 3.2, range: 3.3, arc: 0.32, windup: 0.75, lock: 0.6, strike: 0.32, leapMax: 2.5, bite: 0.55, recover: 0.95, cd: 5, chance: 0.4, step: 0 }
+    // (2026-10-18, the user: walkers "more interesting than zombies that simply shamble into me ... short, readable lunging
+    // attacks with anticipation, commitment, and recovery"): the pounce is also how a zombie waiting its turn in the ring
+    // attacks (no attack slot needed, one pounce at a time, still in the floor's turn order), so the pressure comes from
+    // different sides rather than from the two in front
+    pounce: { min: 1.3, from: 3.2, range: 3.3, arc: 0.32, windup: 0.75, lock: 0.6, strike: 0.32, leapMax: 2.5, bite: 0.55, recover: 0.95, cd: 4.5, chance: 0.45, step: 0 },
+    // the runner's dash rake (2026-10-18, the user's fast orange variant: "a different attack ... a distinct feel beyond
+    // simply speeding up the ordinary walker"): from min-from m it plants for the wind-up (arms up behind it, turning to her
+    // until lock of it, a long narrow wedge on the floor), then sprints straight through where she stood (dist m in strike
+    // s), raking with both arms as it passes (the scratch over its running legs); it overshoots and skids (recover). Hit and
+    // run: a side step beats it, and the skid is the opening.
+    dash: { min: 2, from: 4.6, range: 3.6, arc: 0.2, windup: 0.45, lock: 0.7, strike: 0.5, dist: 3.6, reach: 0.5, recover: 0.85, cd: 2.6, step: 0 }
   };
-  var GUARD = { armHp: 130, headHp: 35, rageSpeed: 1.7 };
+  var GUARD = { armHp: Infinity, headHp: 35, rageSpeed: 1.6, stuck: 2.6, reel: 1.7, floor: 0.3, broken: 0.55, stages: [0.36, 0.18], stageGap: 0.35, turn: 1.7, front: 0.42 };
   var LADY = { swell: 0.3, knock: 2, stagger: 3.5, acid: { r: 1.5, dur: 5, dps: 6 } };
-  var GAITS = { runnerShare: 0.15, ualShare: 0.45 };
+  var GAITS = { runnerShare: 0.1, ualShare: 0.65 };
   var RUNNER_SPEED = 2.5;
   var KINDS = {
     normal: { hp: 1, speed: 1, dmg: 1, knock: 1, kd: 1, stagger: 1, r: 0.32 },
+    runner: { hp: 0.75, speed: 1.2, dmg: 0.9, knock: 1.1, kd: 1.1, stagger: 1, r: 0.32 },
+    // the orange runner: quicker, lighter, frailer (its run: RUNNER_SPEED)
     sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
     guard: { hp: 2.6, speed: 0.6, dmg: 1.8, knock: 0.4, kd: 0.25, stagger: 0.55, r: 0.42 }
   };
   var SHIELD_HP = 270;
-  var SHIELD_MUL = { melee: 1.5, fist: 0.8, shotgun: 0.9, pistol: 0.7 };
   var shieldState = (z) => !z.shieldMax ? "none" : z.shieldHp <= 0 ? "break" : z.shieldHp / z.shieldMax > 0.78 ? "intact" : z.shieldHp / z.shieldMax > 0.4 ? "hairline" : "heavy";
   var TUMBLE_FALL = 1.3;
   var TUMBLE_GETUP = 1.9;
+  var FLOOR_EMERGE = { rumble: 1.3, climb: 2.5, buriedFor: 0.3, solidAt: 0.55 };
   var PERSONAL = 1.05;
   var Zombie = class {
     constructor(x, z, yaw, opts) {
@@ -46572,6 +46695,8 @@ void main() {
       this.struck = false;
       this.limbHp = { Head: 45, Forearm_L: 30, Forearm_R: 30, LowerLeg_L: 40, LowerLeg_R: 40 };
       if (this.kind === "guard") Object.assign(this.limbHp, { Forearm_L: GUARD.armHp, Forearm_R: GUARD.armHp, Head: Infinity });
+      this.slams = 0;
+      this.stageT = -9;
       this.enraged = false;
       this.burst = false;
       this.severed = /* @__PURE__ */ new Set();
@@ -46581,7 +46706,7 @@ void main() {
       this.hitStyle = "";
       this.bumpT = 0;
       this.attack = "lunge";
-      this.holdR = 2 + this.phase * 5.17 % 1 * 0.7;
+      this.holdR = 1.5 + this.phase * 5.17 % 1 * 0.6;
       this.repoT = 0;
       this.repoDir = 0;
       this.repoWait = 1 + this.phase * 2.3 % 1 * 1.5;
@@ -46595,8 +46720,9 @@ void main() {
       this.pounceCd = 1 + this.phase * 9.13 % 1 * 2;
       {
         const g = opts.gait || (this.phase * 13.7 % 1 < GAITS.runnerShare ? "run" : this.phase * 13.7 % 1 < GAITS.runnerShare + GAITS.ualShare ? "ual" : "shamble");
-        this.gait = this.kind === "normal" ? g : "shamble";
+        this.gait = this.kind === "runner" ? "run" : this.kind === "normal" ? g : "shamble";
       }
+      this.dashCd = 0.8 + this.phase * 4.7 % 1 * 1.2;
       this.shieldHp = this.shieldMax = this.kind === "guard" ? SHIELD_HP : 0;
     }
     get armsLost() {
@@ -46635,14 +46761,54 @@ void main() {
       this.t = 0;
       this.stateDur = dur;
     }
+    // nothing standing between it and her (a pounce never leaps through another zombie)
+    clearLine(sim2, dx, dz, dist2) {
+      const ux = dx / (dist2 || 1), uz = dz / (dist2 || 1);
+      for (const o of sim2.zombies) {
+        if (o === this || !o.alive || !o.solid) continue;
+        const rx = o.x - this.x, rz = o.z - this.z, along = rx * ux + rz * uz;
+        if (along > 0.2 && along < dist2 - 0.3 && Math.abs(rx * uz - rz * ux) < this.r + o.r) return false;
+      }
+      return true;
+    }
     // does his shield take a blow travelling along (dirX, dirZ)? Only from the front, only while he holds it up
+    // (stuck: it is down in the floor in front of him, his body above it is open)
     shieldBlocks(dirX, dirZ) {
-      if (!(this.shieldHp > 0) || !this.alive || this.down) return false;
-      return -(dirX * Math.sin(this.yaw) + dirZ * Math.cos(this.yaw)) > 0.34;
+      if (!(this.shieldHp > 0) || !this.alive || this.down || this.state === ZS.STUCK) return false;
+      return -(dirX * Math.sin(this.yaw) + dirZ * Math.cos(this.yaw)) > GUARD.front;
+    }
+    // his shield takes his own slam (the only thing that damages it): the first lodges it in the floor, cracked; the second
+    // shatters it, every piece of it
+    slamShield(sim2) {
+      if (!(this.shieldHp > 0)) return;
+      this.slams++;
+      const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), x = this.x + fx2 * 0.75, z = this.z + fz * 0.75;
+      if (this.slams === 1) {
+        this.shieldHp = this.shieldMax * 0.3;
+        this.set(ZS.STUCK, GUARD.stuck);
+        this.vx = this.vz = 0;
+        sim2.emit({ type: "shieldCrack", id: this.id, x, z, dirX: -fx2, dirZ: -fz, state: "heavy", slam: true });
+        sim2.emit({ type: "shieldStuck", id: this.id, x, z, dur: GUARD.stuck });
+      } else {
+        this.shieldHp = 0;
+        this.hp = Math.min(this.hp, this.maxHp * GUARD.broken);
+        this.hitDirX = -fx2 * 0.3;
+        this.hitDirZ = -fz * 0.3;
+        this.set(ZS.STAGGER, GUARD.reel);
+        this.attackCd = Math.max(this.attackCd, GUARD.reel + 0.4);
+        this.hitKind = "slam";
+        this.hitStyle = "shield";
+        sim2.emit({ type: "shieldBreak", id: this.id, x, z, dirX: fx2, dirZ: fz, kind: "slam" });
+      }
     }
     get alive() {
       return this.state !== ZS.DYING && this.state !== ZS.DEAD;
     }
+    get buried() {
+      const F = this.floorSpawn;
+      return !!F && this.state === ZS.EMERGE && this.t < F.rumble + F.climb * F.buriedFor;
+    }
+    // (under the floor still)
     get down() {
       return this.state === ZS.KNOCKDOWN || this.state === ZS.GETUP;
     }
@@ -46653,11 +46819,8 @@ void main() {
       const wasDown = this.down, melee = isMelee(kind);
       const parts = Array.isArray(part) ? part : [[part, dmg]];
       if (this.shieldBlocks(dirX, dirZ)) {
-        const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1, was = shieldState(this);
-        this.shieldHp = Math.max(0, this.shieldHp - total * mul);
-        if (this.shieldHp > 0 && shieldState(this) !== was) sim2.emit({ type: "shieldCrack", id: this.id, x: this.x, z: this.z, dirX, dirZ, state: shieldState(this) });
-        this.kx += dirX * impulse * 0.35 * this.K.knock;
-        this.kz += dirZ * impulse * 0.35 * this.K.knock;
+        this.kx += dirX * impulse * 0.3 * this.K.knock;
+        this.kz += dirZ * impulse * 0.3 * this.K.knock;
         this.hitDirX = dirX;
         this.hitDirZ = dirZ;
         this.hitStrength = impulse * 0.4;
@@ -46665,15 +46828,8 @@ void main() {
         this.hitKind = kind;
         this.hitStyle = "shield";
         this.hitFlash = 0.25;
-        if (this.shieldHp <= 0) {
-          this.set(ZS.STAGGER, 1.1);
-          this.attackCd = Math.max(this.attackCd, 1.3);
-          sim2.emit({ type: "shieldBreak", id: this.id, x: this.x, z: this.z, dirX, dirZ, kind });
-        } else {
-          if (melee && this.state !== ZS.STAGGER) this.set(ZS.STAGGER, 0.28);
-          if (this.state === ZS.WINDUP && melee) this.set(ZS.STAGGER, 0.35);
-          sim2.emit({ type: "shieldHit", id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
-        }
+        if (melee && this.state === ZS.WINDUP && this.attack !== "slam") this.set(ZS.STAGGER, 0.35);
+        sim2.emit({ type: "shieldHit", id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
         return "blocked";
       }
       const limbMul = kind === "shotgun" ? 1.35 : melee ? 1.2 : 1;
@@ -46681,7 +46837,7 @@ void main() {
       for (let [pt, d] of parts) {
         if (pt !== "torso" && this.severed.has(pt)) pt = "torso";
         if (pt.startsWith("LowerLeg") && this.kind !== "normal") pt = "torso";
-        if (pt.startsWith("LowerLeg") && (kind === "pistol" || kind === "shotgun") && this.limbHp[pt] > 0 && sim2.rand() < (sim2.T.legShotChance ?? 0.5)) this.limbHp[pt] = Math.min(this.limbHp[pt], d * limbMul * 0.99);
+        if (pt.startsWith("LowerLeg") && (kind === "pistol" || kind === "shotgun") && this.limbHp[pt] > 0 && sim2.rand() < (sim2.T.legShotChance ?? 0.5) * (kind === "shotgun" ? 0.45 : 1.2)) this.limbHp[pt] = Math.min(this.limbHp[pt], d * limbMul * 0.99);
         if (pt !== "torso" && this.broken !== pt) {
           this.limbHp[pt] -= d * limbMul;
           if (this.limbHp[pt] <= 0) this.sever(pt, dirX, dirZ, sim2);
@@ -46693,7 +46849,36 @@ void main() {
         }
       }
       this.lastHitPart = main;
+      let cut = null;
+      if (this.kind === "guard") {
+        const M4 = this.maxHp, after = this.hp - loss;
+        if (this.shieldHp > 0) {
+          if (after <= M4 * GUARD.floor) {
+            loss = Math.max(0, this.hp - M4 * GUARD.floor);
+            this.slamCd = Math.min(this.slamCd, 0.4);
+          }
+        } else {
+          const next = GUARD.stages[this.armsLost], soon = sim2.time - this.stageT < GUARD.stageGap;
+          if (next != null && after < M4 * next) {
+            if (soon) loss = Math.max(0, this.hp - M4 * next);
+            else {
+              const nn = GUARD.stages[this.armsLost + 1];
+              loss = Math.min(loss, this.hp - (nn != null ? M4 * nn + 1 : 1));
+              const fromLeft = -(dirX * Math.cos(this.yaw) - dirZ * Math.sin(this.yaw)) > 0;
+              cut = main.startsWith("Forearm") ? main : fromLeft ? "Forearm_L" : "Forearm_R";
+              if (this.severed.has(cut)) cut = cut === "Forearm_L" ? "Forearm_R" : "Forearm_L";
+              this.stageT = sim2.time;
+            }
+          } else if (after <= 0 && soon) loss = this.hp - 1;
+        }
+      }
       this.hp -= loss;
+      if (cut) this.sever(cut, dirX, dirZ, sim2);
+      if (this.kind === "guard" && this.hp <= 0 && !(this.shieldHp > 0) && !this.severed.has("Head")) {
+        this.lastHitPart = "Head";
+        this.sever("Head", dirX, dirZ, sim2);
+        sim2.emit({ type: "guardFinished", id: this.id, x: this.x, z: this.z });
+      }
       const push = (wasDown ? 0.3 : 1) * this.K.knock;
       this.kx += dirX * impulse * push;
       this.kz += dirZ * impulse * push;
@@ -46713,7 +46898,7 @@ void main() {
         sim2.emit({ type: "zombieDeath", id: this.id, kind, x: this.x, z: this.z });
         return;
       }
-      if (wasDown) {
+      if (wasDown || this.state === ZS.STUCK) {
         sim2.emit({ type: "zombieHit", id: this.id, kind });
         return;
       }
@@ -46852,7 +47037,10 @@ void main() {
         this.spd = 0;
         return false;
       }
-      if (!this.braking && off > 1.4 && dist2 < 3.5) this.braking = true;
+      if (!this.braking && off > 1.4 && dist2 < 3.5) {
+        this.braking = true;
+        if (!this.chargeHit) sim2.specialMiss?.(this, "charge");
+      }
       let turn;
       if (this.braking) {
         this.spd = Math.max(0, this.spd - 6 * dt);
@@ -46904,6 +47092,7 @@ void main() {
         sim2.emit({ type: "zombieBump", id: this.id, speed: 2 });
         return;
       }
+      if (what === "wall" && !this.chargeHit) sim2.specialMiss?.(this, "charge");
       this.fall = "tumble";
       this.solid = false;
       this.set(ZS.KNOCKDOWN, TUMBLE_FALL);
@@ -46932,6 +47121,26 @@ void main() {
       let wantX = 0, wantZ = 0, speed = 0, turnRate = 5;
       switch (this.state) {
         case ZS.EMERGE:
+          if (this.floorSpawn) {
+            const F = this.floorSpawn;
+            this.vx = this.vz = 0;
+            if (!F.breached && this.t >= F.rumble) {
+              F.breached = true;
+              sim2.emit({ type: "floorBreach", id: this.id, x: this.x, z: this.z });
+            }
+            if (F.breached) {
+              turnRate = 1.2;
+              wantX = dx;
+              wantZ = dz;
+            }
+            this.solid = this.t >= F.rumble + F.climb * F.solidAt;
+            if (this.t >= this.stateDur) {
+              this.set(ZS.CHASE);
+              this.solid = true;
+              this.attackCd = Math.max(this.attackCd, 0.7);
+            }
+            break;
+          }
           if (this.emergeTo) {
             const ex = this.emergeTo.x - this.x, ez = this.emergeTo.z - this.z, el = Math.hypot(ex, ez);
             const sp = Math.min(el / Math.max(0.05, this.stateDur - this.t), 1.6);
@@ -46965,6 +47174,7 @@ void main() {
             turnRate = 0;
             break;
           }
+          if (this.kind === "guard" && !this.enraged) turnRate = GUARD.turn;
           speed = wantX || wantZ ? T2.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === "run" ? RUNNER_SPEED : 1) : 0;
           if (speed > 0) {
             const s = this.steer(wantX, wantZ, dist2, los, sim2);
@@ -46973,18 +47183,26 @@ void main() {
             speed *= s.k;
           }
           const waiting = !this.passive && los && sim2.engaged && !sim2.engaged.has(this.id) && !this.crawling && this.kind !== "sprinter";
-          if (waiting && dist2 < this.holdR + 0.5 && speed > 0) {
+          const holdR = this.holdR + Math.sin(sim2.time * 0.9 * this.swayRate + this.phase * 6.283) * 0.3;
+          this.backing = false;
+          const sidestep = this.gait === "ual" || this.gait === "run";
+          if (waiting && sidestep && dist2 < holdR - 0.35 && los) {
+            wantX = -dx / (dist2 || 1);
+            wantZ = -dz / (dist2 || 1);
+            speed = T2.zombieSpeed * this.speedMul * 0.4;
+            this.backing = true;
+          } else if (waiting && dist2 < holdR + 0.5 && speed > 0) {
             const a = Math.atan2(this.x - p.x, this.z - p.z), rx = Math.sin(a), rz = Math.cos(a);
             if (this.repoT > 0) {
               this.repoT -= dt;
-              const e = Math.max(-1, Math.min(1, dist2 - this.holdR));
+              const e = Math.max(-1, Math.min(1, dist2 - holdR));
               wantX = Math.cos(a) * this.repoDir - rx * e * 0.6;
               wantZ = -Math.sin(a) * this.repoDir - rz * e * 0.6;
               speed = T2.zombieSpeed * this.speedMul * 0.5;
             } else {
               wantX = dx / (dist2 || 1);
               wantZ = dz / (dist2 || 1);
-              speed *= Math.max(0, Math.min(1, (dist2 - this.holdR) / 0.5));
+              speed *= Math.max(0, Math.min(1, (dist2 - holdR) / 0.5));
               let sx = 0, sz = 0;
               for (const o of sim2.zombies) {
                 if (o === this || !o.alive || !o.solid) continue;
@@ -47022,10 +47240,29 @@ void main() {
           } else {
             this.repoT = 0;
             if (dist2 < 1.25) speed *= 0.5;
-            if (dist2 < 0.8) speed = 0;
+            if (sidestep && dist2 < 1.5 && !this.crawling) {
+              let sx = 0, sz = 0;
+              for (const o of sim2.zombies) {
+                if (o === this || !o.alive || !o.solid) continue;
+                const ox = this.x - o.x, oz = this.z - o.z, d = Math.hypot(ox, oz);
+                if (d < 0.95 && d > 1e-4) {
+                  const w = (0.95 - d) / 0.95;
+                  sx += ox / d * w;
+                  sz += oz / d * w;
+                }
+              }
+              const a = Math.atan2(this.x - p.x, this.z - p.z), tx = Math.cos(a), tz = -Math.sin(a), tang = sx * tx + sz * tz;
+              if (Math.abs(tang) > 0.08) {
+                wantX = tx * Math.sign(tang);
+                wantZ = tz * Math.sign(tang);
+                speed = T2.zombieSpeed * this.speedMul * 0.4;
+                this.backing = true;
+              }
+            }
+            if (dist2 < (this.kind === "normal" && !this.crawling ? 0.95 : 0.8) && !this.backing) speed = 0;
           }
           const slot = !sim2.engaged || sim2.engaged.has(this.id) || this.crawling || this.kind === "sprinter";
-          if (this.kind === "guard" && !this.enraged && this.armsLost < 1 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 1.3 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          if (this.kind === "guard" && !this.enraged && this.shieldHp > 0 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 0.6 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             this.attack = "slam";
             this.set(ZS.WINDUP, ZATTACKS.slam.windup);
             this.slamCd = 4 + sim2.rand() * 2.5;
@@ -47033,8 +47270,17 @@ void main() {
             sim2.emit({ type: "zombieWindup", id: this.id, attack: "slam" });
             break;
           }
+          const DA = ZATTACKS.dash;
+          if (this.kind === "runner" && !this.crawling && !this.passive && (this.dashCd -= dt) <= 0 && dist2 > DA.min && dist2 < DA.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.6 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5) && this.clearLine(sim2, dx, dz, dist2) && !sim2.zombies.some((o) => o !== this && o.attack === "dash" && (o.state === ZS.WINDUP || o.state === ZS.STRIKE))) {
+            this.attack = "dash";
+            this.set(ZS.WINDUP, T2.dashWindup ?? DA.windup);
+            this.dashCd = DA.cd + sim2.rand() * 1.6;
+            sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * 1.2;
+            sim2.emit({ type: "zombieWindup", id: this.id, attack: "dash" });
+            break;
+          }
           const PO = ZATTACKS.pounce;
-          if (this.kind === "normal" && !this.crawling && !this.passive && slot && (this.pounceCd -= dt) <= 0 && dist2 > PO.min && dist2 < PO.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          if (this.kind === "normal" && !this.crawling && !this.passive && (slot || !sim2.zombies.some((o) => o !== this && o.attack === "pounce" && (o.state === ZS.WINDUP || o.state === ZS.STRIKE))) && (this.pounceCd -= dt) <= 0 && dist2 > PO.min && dist2 < PO.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5) && this.clearLine(sim2, dx, dz, dist2)) {
             if (sim2.rand() < (T2.pounceChance ?? PO.chance)) {
               this.attack = "pounce";
               this.set(ZS.WINDUP, T2.pounceWindup ?? PO.windup);
@@ -47047,7 +47293,7 @@ void main() {
           }
           if (!this.passive && slot && sim2.time >= (sim2.nextAttackT || 0) && dist2 < ZATTACKS.lunge.from && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             const armed = this.armsLost < 2 && !this.crawling;
-            this.attack = armed && (dist2 < 0.85 || dist2 < ZATTACKS.scratch.from && sim2.rand() < 0.25) ? "scratch" : "lunge";
+            this.attack = armed && (dist2 < 0.97 || dist2 < ZATTACKS.scratch.from && sim2.rand() < 0.25) ? "scratch" : "lunge";
             this.set(ZS.WINDUP, this.attack === "scratch" ? T2.scratchWindup ?? 0.42 : T2.zombieWindup ?? 0.62);
             sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * (0.8 + sim2.rand() * 0.5);
             sim2.emit({ type: "zombieWindup", id: this.id, attack: this.attack });
@@ -47055,17 +47301,24 @@ void main() {
           break;
         }
         case ZS.WINDUP:
-          turnRate = this.attack === "slam" ? this.t < this.stateDur * ZATTACKS.slam.takeoff ? 1.6 : 0 : this.attack === "pounce" ? this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0 : 2.5;
+          turnRate = this.attack === "slam" ? this.t < this.stateDur * ZATTACKS.slam.takeoff ? 1.6 : 0 : this.attack === "pounce" ? this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0 : this.attack === "dash" ? this.t < this.stateDur * ZATTACKS.dash.lock ? 6 : 0 : 2.5;
           wantX = dx;
           wantZ = dz;
           if (this.attack === "slam" && this.t > this.stateDur * ZATTACKS.slam.takeoff) {
-            const L2 = ZATTACKS.slam.leap / (this.stateDur * (1 - ZATTACKS.slam.takeoff));
+            if (this.leapL == null) this.leapL = Math.max(0, Math.min(ZATTACKS.slam.leap, dist2 - 1.05));
+            const L2 = this.leapL / (this.stateDur * (1 - ZATTACKS.slam.takeoff));
             this.vx = Math.sin(this.yaw) * L2;
             this.vz = Math.cos(this.yaw) * L2;
-          }
+          } else if (this.attack === "slam") this.leapL = null;
           if (this.t >= this.stateDur) {
             this.set(ZS.STRIKE, ZATTACKS[this.attack].strike);
             this.struck = false;
+            if (this.attack === "dash") {
+              const L2 = ZATTACKS.dash.dist / ZATTACKS.dash.strike;
+              this.vx = Math.sin(this.yaw) * L2;
+              this.vz = Math.cos(this.yaw) * L2;
+              sim2.emit({ type: "zombieDash", id: this.id });
+            }
             if (this.attack === "pounce") {
               const PO = ZATTACKS.pounce, L2 = Math.max(1, Math.min(PO.leapMax, dist2 - 0.45)) / PO.strike;
               this.vx = Math.sin(this.yaw) * L2;
@@ -47077,6 +47330,22 @@ void main() {
         case ZS.STRIKE: {
           turnRate = 0;
           const Z = ZATTACKS[this.attack];
+          if (this.attack === "dash") {
+            if (!this.struck && !p.dead) {
+              const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx2 + dz * fz, lat = Math.abs(dx * fz - dz * fx2);
+              if (along > -0.25 && along < Z.reach + p.r && lat < this.r + p.r + 0.15) {
+                this.struck = true;
+                const sg = dx * fz - dz * fx2 >= 0 ? 1 : -1;
+                const hit = p.hurt((T2.scratchDamage ?? 8) * 1.4 * this.K.dmg * (1 - 0.3 * this.armsLost), this.x - fz * sg * 0.8, this.z + fx2 * sg * 0.8, sim2);
+                sim2.emit({ type: hit ? "zombieStrikeHit" : "zombieStrikeMiss", id: this.id, attack: "dash" });
+              }
+            }
+            if (this.t >= this.stateDur) {
+              if (!this.struck) sim2.emit({ type: "zombieStrikeMiss", id: this.id, attack: "dash" });
+              this.set(ZS.RECOVER, Z.recover * (this.struck ? 0.85 : 1.1));
+            }
+            break;
+          }
           if (this.attack === "pounce") {
             if (!this.struck && !p.dead) {
               const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx2 + dz * fz, lat = Math.abs(dx * fz - dz * fx2);
@@ -47101,15 +47370,35 @@ void main() {
             const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
             const hit = !p.dead && dist2 < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
             const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage) * this.K.dmg;
-            if (hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2) && this.attack === "slam" && !p.dead) p.knockDown(this.x, this.z, sim2);
-            if (this.attack === "slam") sim2.emit({ type: "zombieSlam", id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1 });
+            const hurt = hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2);
+            if (hurt && this.attack === "slam" && !p.dead) p.knockDown(this.x, this.z, sim2);
+            if (hurt && this.crawling && this.armsLost < 2) {
+              p.grabT = 0.75;
+              sim2.emit({ type: "grabbed", id: this.id });
+            }
+            if (this.attack === "slam") sim2.emit({ type: "zombieSlam", id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1, hit, second: this.slams >= 1 });
             sim2.emit({ type: hit ? "zombieStrikeHit" : "zombieStrikeMiss", id: this.id, attack: this.attack });
+            if (this.attack === "slam" && !hit) sim2.specialMiss?.(this, "slam");
+            if (this.attack === "slam" && this.shieldHp > 0) {
+              this.slamShield(sim2);
+              break;
+            }
           }
           this.vx = Math.sin(this.yaw) * Z.step;
           this.vz = Math.cos(this.yaw) * Z.step;
           if (this.t >= this.stateDur) this.set(ZS.RECOVER, Z.recover);
           break;
         }
+        case ZS.STUCK:
+          turnRate = 0;
+          this.vx = this.vz = 0;
+          if (this.t >= this.stateDur) {
+            this.set(ZS.RECOVER, 0.95);
+            this.attackCd = Math.max(this.attackCd, 1.4);
+            this.slamCd = Math.max(this.slamCd, 3.5);
+            sim2.emit({ type: "shieldFree", id: this.id });
+          }
+          break;
         case ZS.RECOVER:
           turnRate = 2;
           if (this.t >= this.stateDur) {
@@ -47167,11 +47456,16 @@ void main() {
           this.corpseT += dt;
           break;
       }
-      if (turnRate > 0 && (wantX || wantZ)) this.yaw = approachAngle(this.yaw, Math.atan2(wantX, wantZ), turnRate * dt);
+      if (turnRate > 0 && (wantX || wantZ) && !(this.state === ZS.CHASE && this.backing)) this.yaw = approachAngle(this.yaw, Math.atan2(wantX, wantZ), turnRate * dt);
       if (this.state === ZS.CHASE && (this.sprinting || this.spotT > 0)) {
         const k = Math.min(1, dt * 10), sp = this.sprinting ? this.spd : 0, tx = Math.sin(this.yaw) * sp, tz = Math.cos(this.yaw) * sp;
         this.vx += (tx - this.vx) * k;
         this.vz += (tz - this.vz) * k;
+      } else if (this.state === ZS.CHASE && this.backing) {
+        this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
+        const k = Math.min(1, dt * 6);
+        this.vx += (wantX * speed - this.vx) * k;
+        this.vz += (wantZ * speed - this.vz) * k;
       } else if (this.state === ZS.CHASE) {
         const face = Math.max(0, Math.cos(angleDiff(this.yaw, Math.atan2(wantX, wantZ))));
         const s = speed * (0.35 + 0.65 * face);
@@ -47180,7 +47474,7 @@ void main() {
         this.vx += (tx - this.vx) * k;
         this.vz += (tz - this.vz) * k;
       } else if (this.state !== ZS.STRIKE && this.state !== ZS.EMERGE && !(this.state === ZS.WINDUP && this.attack === "slam")) {
-        const k = Math.min(1, dt * 10);
+        const k = Math.min(1, dt * (this.state === ZS.RECOVER && this.attack === "dash" ? 4.5 : 10));
         this.vx -= this.vx * k;
         this.vz -= this.vz * k;
       }
@@ -47243,7 +47537,7 @@ void main() {
         b.z += uz * push;
       }
       const dx = a.x - player.x, dz = a.z - player.z, rr = a.r + player.r, d2 = dx * dx + dz * dz;
-      if (!player.dead && d2 < rr * rr && d2 > 1e-8) {
+      if (!player.dead && d2 < rr * rr && d2 > 1e-8 && !(a.state === ZS.STRIKE && a.attack === "dash")) {
         const d = Math.sqrt(d2), push = (rr - d) * 0.6;
         a.x += dx / d * push;
         a.z += dz / d * push;
@@ -47352,7 +47646,7 @@ void main() {
   var LIFT_DOOR_TIME = 1;
   var BRACE_TIME = 2.5;
   var DOOR_OPEN_TIME = 1.5;
-  var ONE_HANDED = ["bat", "pistol"];
+  var ONE_HANDED = ["bat", "pistol", "crowbar", "knife"];
   var CASE_R = 1.35;
   var inRect = (r, x, z, m = 0) => x > r.minX + m && x < r.maxX - m && z > r.minZ + m && z < r.maxZ - m;
   var roomAt2 = roomAt;
@@ -47404,15 +47698,24 @@ void main() {
         if (this.flags.partition_broken && W3.dyn.partition) W3.setOff(W3.dyn.partition, true);
       }
       const fresh = !save || save.floor === 7 && !save.flags?.radio_heard && !this.killed.size && this.floor === 7 && !s.x;
+      this.floorPending = [];
       for (const g of this.F.groups) {
         g.zombies.forEach((zs, i) => {
           const key = this.floor + ":" + g.id + ":" + i;
           if (this.killed.has(key)) return;
+          if (zs.from === "floor") {
+            this.floorPending.push({ key, group: g.id, sense: g.sense ?? 6, zs, at: null });
+            return;
+          }
           const z = sim2.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0, kind: zs.kind });
           z.set(ZS.CHASE);
           z.spawnKey = key;
           z.group = g.id;
           if (zs.look) z.look = zs.look;
+          if (zs.crawl) {
+            z.crawling = true;
+            z.broken = "LowerLeg_L";
+          }
           z.dormant = {
             wake: fresh && zs.wake !== void 0 ? zs.wake : Infinity,
             sense: g.sense ?? (zs.wake !== void 0 ? 6 : 0),
@@ -47581,11 +47884,32 @@ void main() {
         if (!p.dead) this.checkpoint();
       }
       this.pickupStep(p);
+      this.floorStep(p);
       this.doorStep(dt);
       this.partitionStep();
       this.liftStep(dt, p);
       this.prompt = p.dead ? null : this.findPrompt(p);
       if (input2.usePresses > 0 && this.prompt?.usable) this.use(this.prompt.id);
+    }
+    // out of the floor (2026-10-18; core/sim.js spawnFromFloor): a floor spawn waits for its group: once any of the group is
+    // awake (or Yola comes within its sense of the hole, with no wall between), it breaks through `delay` s later. Never
+    // under her or right beside her: a hole within 2.8 m of her waits (the rumble and the crack give her warning anyway).
+    floorStep(p) {
+      const sim2 = this.sim;
+      for (let i = this.floorPending.length - 1; i >= 0; i--) {
+        const f = this.floorPending[i], zs = f.zs;
+        if (f.at == null) {
+          const woke = sim2.zombies.some((z2) => z2.group === f.group && !z2.dormant && z2.alive);
+          const near = !p.dead && Math.hypot(p.x - zs.x, p.z - zs.z) < f.sense && sim2.world.lineOfSight(p.x, p.z, zs.x, zs.z, 1);
+          if (woke || near) f.at = sim2.time + (zs.delay ?? 1.5);
+          continue;
+        }
+        if (sim2.time < f.at || p.dead || Math.hypot(p.x - zs.x, p.z - zs.z) < 2.8) continue;
+        const z = sim2.spawnFromFloor(zs.x, zs.z, { kind: zs.kind, look: zs.look });
+        z.spawnKey = f.key;
+        z.group = f.group;
+        this.floorPending.splice(i, 1);
+      }
     }
     onFirstVisit(room) {
       if (room === "k6" && !this.flags.case_seen) this.flags.case_seen = true;
@@ -47656,6 +47980,7 @@ void main() {
         this.doors.x7door.busy = true;
         this.doors.x7door.t = 0;
         this.emit({ type: "liftPower" });
+        this.wakeGroup("r7");
         this.say("f7_power");
         this.setObjective(this.flags.or_south_unbarred ? "f7_board" : "f7_return");
       } else if (id === "orBar") {
@@ -47707,7 +48032,10 @@ void main() {
         if (x.open >= 0.6 && W3.dyn?.x7door && !W3.dyn.x7door.off) W3.setOff(W3.dyn.x7door, true);
         if (x.open >= 1) {
           x.busy = false;
-          if (this.floor === 7) this.emit({ type: "doorOpened", door: "x7door" });
+          if (this.floor === 7) {
+            this.emit({ type: "doorOpened", door: "x7door" });
+            this.wakeGroup("x7");
+          }
         }
       }
     }
@@ -47828,7 +48156,7 @@ void main() {
       return this.objective;
     }
   };
-  var ORDER = ["pistol", "shotgun", "axe", "bat", "fists"];
+  var ORDER = ["pistol", "shotgun", "axe", "bat", "sledgehammer", "crowbar", "knife", "fists"];
   function WEAPON_SORT(list) {
     return [...new Set(list)].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
   }
@@ -47919,8 +48247,16 @@ void main() {
       this.time += dt;
       const p = this.player;
       for (let i = 0; i < input2.swapPresses; i++) p.requestSwap();
-      p.dodgeOpen = this.dodgeThreat() ? 0.3 : Math.max(0, (p.dodgeOpen || 0) - dt);
-      if (input2.dodgePresses && p.dodgeOpen > 0) p.tryDodge(input2.moveX, input2.moveZ, this);
+      const th = this.dodgeThreat();
+      p.threat = th && th.special ? th : null;
+      p.dodgeOpen = th ? 0.3 : Math.max(0, (p.dodgeOpen || 0) - dt);
+      if (p.critT > 0) p.critT -= dt;
+      if (input2.dodgePresses && p.dodgeOpen > 0) {
+        const auto = p.threat ? this.autoDodge(p, p.threat, input2.moveX, input2.moveZ) : null;
+        if (auto ? p.tryDodge(auto.x, auto.z, this, auto) : p.tryDodge(input2.moveX, input2.moveZ, this)) {
+          if (p.threat) this.lastDodge = { t: this.time, id: p.threat.z.id, kind: p.threat.kind, perfect: p.threat.now && p.threat.soon };
+        }
+      }
       p.move(dt, input2, this.world, this);
       p.updateAction(dt, this);
       this.flowT -= dt;
@@ -47967,6 +48303,20 @@ void main() {
       this.emit({ type: "zombieSpawn", id: z.id, door: d.id });
       return z;
     }
+    // A zombie out of the floor (core/zombies.js FLOOR_EMERGE): placed at the hole, under the floor until it breaks through.
+    // The level never calls this right under Yola (core/level.js floorStep keeps her a few metres off).
+    spawnFromFloor(x, z, opts = {}) {
+      const p = this.player, yaw = opts.yaw ?? Math.atan2(p.x - x, p.z - z);
+      const zb = this.spawnZombie(null, { x, z, yaw, kind: opts.kind, hp: opts.hp });
+      const F = { ...FLOOR_EMERGE, breached: false };
+      zb.floorSpawn = F;
+      zb.set(ZS.EMERGE, F.rumble + F.climb);
+      zb.solid = false;
+      zb.emergeTo = null;
+      if (opts.look) zb.look = opts.look;
+      this.emit({ type: "floorRumble", id: zb.id, x, z, dur: F.rumble });
+      return zb;
+    }
     // The lady bursts (core/zombies.js LADY): her burst knocks Yola flat close by and staggers her further out; an acid pool
     // stays where she was. (Her death momentum carries the burst forward: the gore flies along it.)
     ladyBurst(z) {
@@ -47996,18 +48346,122 @@ void main() {
       this.hazards = this.hazards.filter((h) => h.t < h.dur);
     }
     // Something she can dodge is coming: a zombie winding up its lunge or pounce at her (or in the pounce's leap), the big
-    // guard winding up his jump slam, the big lady squaring up for her charge or running it at her
+    // guard winding up his jump slam, the big lady (or the enraged guard) squaring up for her charge or running it at her.
+    // Returns { z, kind, special, u (the wind-up's progress 0..1), now (the moment to dodge: the slam once he has leapt, the
+    // charge once it is running), soon (well timed: close to landing) } or null; a special threat outranks a walker's.
     dodgeThreat() {
       const p = this.player;
-      if (p.dead) return false;
+      if (p.dead) return null;
+      let best = null;
       for (const z of this.zombies) {
-        if (!z.alive || z.down) continue;
+        if (!z.alive || z.down || z.passive || z.dormant) continue;
         const d = Math.hypot(z.x - p.x, z.z - p.z);
-        if (z.state === ZS.WINDUP && (z.attack === "lunge" || z.attack === "pounce" || z.attack === "slam") && d < ZATTACKS[z.attack].range + 1.2) return true;
-        if (z.state === ZS.STRIKE && z.attack === "pounce") return true;
-        if (z.kind === "sprinter" && d < 8 && (z.spotT > 0 && !z.sprinting || z.sprinting && !z.braking)) return true;
+        if (z.state === ZS.WINDUP && z.attack === "slam" && d < 7.5) {
+          const S2 = ZATTACKS.slam, u = z.t / Math.max(0.05, z.stateDur), left = z.stateDur - z.t;
+          return { z, kind: "slam", special: true, u, now: u >= S2.takeoff, soon: left < 0.8, left };
+        }
+        const charger = z.kind === "sprinter" || z.enraged;
+        if (charger && d < 9 && !z.crawling && (z.spotT > 0 && !z.sprinting || z.sprinting && !z.braking)) {
+          const fx2 = Math.sin(z.yaw), fz = Math.cos(z.yaw), along = (p.x - z.x) * fx2 + (p.z - z.z) * fz;
+          const T2 = this.T, u = z.sprinting ? 1 : Math.min(1, z.spotT / (T2.sprinterWindup ?? 0.7));
+          return { z, kind: "charge", special: true, u, now: z.sprinting && along > -0.2, soon: z.sprinting && along > -0.2 && along < 3.8, left: z.sprinting ? Math.max(0, along) / Math.max(1, z.spd) : 1 };
+        }
+        if (!best && z.state === ZS.WINDUP && (z.attack === "lunge" || z.attack === "pounce") && d < ZATTACKS[z.attack].range + 1.2) best = { z, kind: z.attack, special: false, u: z.t / Math.max(0.05, z.stateDur), now: true, soon: false };
+        if (!best && (z.state === ZS.STRIKE || z.state === ZS.WINDUP) && (z.attack === "pounce" || z.attack === "dash") && d < 5) best = { z, kind: z.attack, special: false, u: 1, now: true, soon: false };
       }
-      return false;
+      return best;
+    }
+    // Which way a dodge from a special attack goes (the user: "choose a sensible escape direction based on the attack and
+    // surrounding space ... without rolling into walls, props, or an obviously worse position"). Sixteen directions are tried
+    // (and the stick's own, which wins any near tie): each path is walked against the world (it may end early at a wall; too
+    // short and it is dropped), the end scored for how far it is outside the attack (the slam's landing wedge; the charge's
+    // lane), room around it, no zombie waiting there, not back toward the attacker. The slam is rolled out of; the charge is
+    // side-stepped, Yola squared up to the charger so the step is truly to her left or right.
+    autoDodge(p, th, sx, sz) {
+      const z = th.z, W3 = this.world, fx2 = Math.sin(z.yaw), fz = Math.cos(z.yaw), slam = th.kind === "slam";
+      const D3 = slam ? 3 : 1.9, sl = Math.hypot(sx, sz), r = p.r;
+      let cx = z.x, cz = z.z;
+      if (slam) {
+        const S2 = ZATTACKS.slam, rem = Math.max(0, Math.min(1, (1 - Math.max(th.u, S2.takeoff)) / (1 - S2.takeoff))) * (z.leapL ?? Math.min(S2.leap, Math.max(0, Math.hypot(p.x - z.x, p.z - z.z) - 1.05)));
+        cx += fx2 * rem;
+        cz += fz * rem;
+      }
+      const blocked = (x, y) => {
+        const B = W3.bounds;
+        if (B && (x < B.minX + r || x > B.maxX - r || y < B.minZ + r || y > B.maxZ - r)) return true;
+        for (const b of W3.boxes) {
+          if (b.off || (b.h ?? 1) < 0.25) continue;
+          const qx = Math.max(b.minX, Math.min(x, b.maxX)), qz = Math.max(b.minZ, Math.min(y, b.maxZ));
+          if ((x - qx) ** 2 + (y - qz) ** 2 < r * r * 0.95) return true;
+        }
+        return false;
+      };
+      const outside = (x, y) => {
+        const rx = x - cx, rz = y - cz, d = Math.hypot(rx, rz);
+        if (slam) {
+          const along = rx * fx2 + rz * fz, ang = Math.acos(Math.max(-1, Math.min(1, along / (d || 1))));
+          const radial = d - (ZATTACKS.slam.range + r + 0.25), angular = along <= 0 ? 1.5 : (ang - ZATTACKS.slam.arc) * Math.max(0.6, d);
+          return Math.max(radial, angular);
+        }
+        const ax = x - z.x, az = y - z.z, lat = Math.abs(ax * fz - az * fx2), al = ax * fx2 + az * fz;
+        return al < -0.5 ? 1.5 : lat - (z.r + r + 0.35);
+      };
+      let best = null;
+      const tries = [];
+      for (let i = 0; i < 16; i++) {
+        const a = i / 16 * Math.PI * 2;
+        tries.push([Math.sin(a), Math.cos(a), 0]);
+      }
+      if (sl > 0.3) tries.push([sx / sl, sz / sl, 1]);
+      for (const [dx, dz, stick] of tries) {
+        let len = 0;
+        for (let s = 0.25; s <= D3 + 1e-6; s += 0.25) {
+          if (blocked(p.x + dx * s, p.z + dz * s)) break;
+          len = s;
+        }
+        if (len < D3 * 0.55) continue;
+        const ex = p.x + dx * len, ez = p.z + dz * len, out2 = outside(ex, ez);
+        let score = Math.min(1.6, out2) * 3;
+        if (out2 < 0) score -= 6;
+        let room = 0;
+        for (let k = 0; k < 8; k++) {
+          const a = k / 8 * Math.PI * 2;
+          if (!blocked(ex + Math.sin(a) * 1, ez + Math.cos(a) * 1)) room++;
+        }
+        score += room * 0.18 + len / D3 * 0.8;
+        for (const o of this.zombies) {
+          if (o === z || !o.alive || !o.solid) continue;
+          const d = Math.hypot(o.x - ex, o.z - ez);
+          if (d < 1.4) score -= (1.4 - d) * 2.2;
+        }
+        const tx = z.x - p.x, tz = z.z - p.z, tl = Math.hypot(tx, tz) || 1;
+        score -= Math.max(0, (dx * tx + dz * tz) / tl) * 1.2;
+        if (sl > 0.3) score += Math.max(0, (dx * sx + dz * sz) / sl) * 0.9 + stick * 0.3;
+        if (!best || score > best.score) best = { score, x: dx, z: dz, len };
+      }
+      if (!best) return null;
+      const out = { x: best.x, z: best.z, dist: best.len, roll: slam };
+      if (!slam) {
+        out.face = Math.atan2(z.x - p.x, z.z - p.z);
+        out.kind = angleDiff(out.face, Math.atan2(best.x, best.z)) > 0 ? "left" : "right";
+      }
+      return out;
+    }
+    // a special attack has missed (the slam landed without her, the charge ran past): a dodge that beat it is a success, and
+    // a well-timed one (pressed close to the moment) is perfect: the slow-motion beat, and her next blow or shot is critical
+    specialMiss(z, kind) {
+      const d = this.lastDodge, p = this.player;
+      if (!d || d.id !== z.id || this.time - d.t > 2.6 || d.used) return;
+      d.used = true;
+      if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
+      this.emit({ type: "dodgeSuccess", id: z.id, kind, perfect: d.perfect, x: z.x, z: z.z });
+    }
+    // a critical blow or shot (a perfect dodge's reward): the multiplier once, then gone
+    takeCrit() {
+      const p = this.player;
+      if (!(p.critT > 0)) return 1;
+      p.critT = 0;
+      return this.T.critMul ?? 3;
     }
     aliveCount() {
       let n = 0;
@@ -48020,7 +48474,7 @@ void main() {
     updateEngagement() {
       const p = this.player, n = Math.max(1, Math.round(this.T.zombieEngage ?? 2)), cand = [];
       for (const z of this.zombies) {
-        if (!z.alive || z.passive || z.dormant || z.down) continue;
+        if (!z.alive || z.passive || z.dormant || z.down || z.state === ZS.EMERGE) continue;
         const d = Math.hypot(z.x - p.x, z.z - p.z);
         if (d < 7) cand.push([d - (this.engaged.has(z.id) ? 0.7 : 0), z.id]);
       }
@@ -48045,7 +48499,7 @@ void main() {
         for (const z of this.zombies) {
           if (!z.alive) continue;
           const dx2 = z.x - m.x, dz2 = z.z - m.z, d = Math.hypot(dx2, dz2);
-          if (d > 12 || d < 0.2) continue;
+          if (d > 12 || d < 0.2 || z.buried) continue;
           const a = Math.abs(angleDiff(yaw, Math.atan2(dx2, dz2))) - Math.atan(ZR_HIT / d);
           if (a < maxBend && a < bestA && this.world.lineOfSight(m.x, m.z, z.x, z.z, BULLET_MIN_H)) {
             best = z;
@@ -48060,15 +48514,17 @@ void main() {
         this.stats.shotHits++;
         const z = r.zombie, along = (z.x - m.x) * dx + (z.z - m.z) * dz;
         const off = Math.hypot(m.x + dx * along - z.x, m.z + dz * along - z.z);
-        const perfect = !z.down && !z.crawling && !z.severed.has("Head") && !z.shieldBlocks(dx, dz) && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
+        const crit = z.shieldBlocks(dx, dz) ? 1 : this.takeCrit();
+        const perfect = z.kind !== "guard" && !z.down && !z.crawling && !z.severed.has("Head") && !z.shieldBlocks(dx, dz) && (off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0) || crit > 1);
         if (perfect) z.limbHp.Head = 0;
-        const res = z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), "pistol", this, perfect ? "Head" : this.bulletPart(z, m.x, m.z, dx, dz));
+        if (crit > 1) this.emit({ type: "crit", id: z.id, x: z.x, z: z.z, weapon: "pistol" });
+        const res = z.takeHit(this.T.pistolDamage * crit, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1) * (crit > 1 ? 1.8 : 1), "pistol", this, perfect ? "Head" : this.bulletPart(z, m.x, m.z, dx, dz));
         if (perfect) {
           this.stats.headshots = (this.stats.headshots || 0) + 1;
           this.emit({ type: "headshot", id: z.id, x: z.x, z: z.z });
           if (this.T.hitPause > 0) this.emit({ type: "hitPause", dur: this.T.hitPause * 1.6 });
         }
-        this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: "zombie", id: z.id, yaw, killed: !z.alive, blocked: res === "blocked" });
+        this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, ey: z.down || z.crawling ? 0.25 : void 0, hit: "zombie", id: z.id, yaw, killed: !z.alive, blocked: res === "blocked" });
       } else {
         this.emit({ type: "shot", ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz, yaw });
       }
@@ -48102,14 +48558,24 @@ void main() {
           h.px += dx * fall;
           h.pz += dz * fall;
           h.parts.push([this.bulletPart(r.zombie, m.x, m.z, dx, dz, true), T2.shotgunDamage * fall]);
-          pellets.push({ ex, ez, hit: "zombie", id: r.zombie.id });
+          pellets.push({ ex, ez, ey: r.zombie.down || r.zombie.crawling ? 0.25 : void 0, hit: "zombie", id: r.zombie.id });
         } else pellets.push({ ex, ez, hit: r.wall ? "wall" : "none", nx: r.nx, nz: r.nz });
       }
       const killed = [], blocked = [];
+      let crit = 1;
+      if (hits.size && [...hits.keys()].some((z) => {
+        const h = hits.get(z), pl = Math.hypot(h.px, h.pz) || 1;
+        return !z.shieldBlocks(h.px / pl, h.pz / pl);
+      })) crit = this.takeCrit();
       for (const [z, h] of hits) {
         this.stats.shotHits++;
         const pl = Math.hypot(h.px, h.pz) || 1;
-        if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T2.shotgunKnockback * pl / S2.pellets, SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
+        if (crit > 1) {
+          h.dmg *= crit * 0.7;
+          for (const q of h.parts) q[1] *= crit * 0.7;
+          this.emit({ type: "crit", id: z.id, x: z.x, z: z.z, weapon: "shotgun" });
+        }
+        if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, T2.shotgunKnockback * pl / S2.pellets * (crit > 1 ? 1.4 : 1), SHOTGUN, this, h.parts) === "blocked") blocked.push(z.id);
         if (!z.alive) killed.push(z.id);
       }
       let closest = 99, closestId = -1;
@@ -48140,7 +48606,7 @@ void main() {
       const w = this.world.raycast(ox, oz, ox + dx * range, oz + dz * range, BULLET_MIN_H);
       let t = w ? w.t * range : range, zombie = null;
       for (const z of this.zombies) {
-        if (!z.alive) continue;
+        if (!z.alive || z.buried) continue;
         const h = rayCircle(ox, oz, dx, dz, t, z.x, z.z, ZR_HIT);
         if (h >= 0 && h < t) {
           t = h;
@@ -48155,7 +48621,7 @@ void main() {
     meleeAssist(p, reach = 1.45, downToo = false) {
       let best = null, bestA = 0.87;
       for (const z of this.zombies) {
-        if (!z.alive || z.down && !downToo) continue;
+        if (!z.alive || z.buried || z.down && !downToo) continue;
         const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
         if (d > reach || d < 0.2) continue;
         const a = Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz)));
@@ -48219,15 +48685,23 @@ void main() {
         const ay = seg.hy + (seg.ty - seg.hy) * f;
         const chop = A.style === "chop";
         for (const z of this.zombies) {
-          if (!z.alive || act.hitSet.has(z.id)) continue;
+          if (!z.alive || z.buried || act.hitSet.has(z.id)) continue;
           if (z.down && !chop) continue;
-          const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G5.radius : 0);
-          const minY = z.down || z.crawling ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y);
-          const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
-          const y1 = ay + (seg.ty - ay) * h1.t;
-          const d1 = y1 >= minY ? h1.d2 : 1e9;
-          const d2 = seg.ty >= minY ? segPointDist2(px2, pz2, tipX, tipZ, z.x, z.z).d2 : 1e9;
-          let near = Math.min(d1, d2) <= rr * rr;
+          const low = z.down || z.crawling;
+          const rr = low ? 0.42 : BAT_BODY_R + (fist ? G5.radius : 0);
+          const minY = low ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y);
+          const fwd = z.crawling ? 0.45 : z.down ? -0.55 : 0, bx = z.x + Math.sin(z.yaw) * fwd, bz = z.z + Math.cos(z.yaw) * fwd;
+          let near = false;
+          for (const [cx, cz] of fwd ? [[z.x, z.z], [bx, bz]] : [[z.x, z.z]]) {
+            const h1 = segPointDist2(ax, az, tipX, tipZ, cx, cz);
+            const y1 = ay + (seg.ty - ay) * h1.t;
+            const d1 = y1 >= minY && (!low || y1 < 0.75) ? h1.d2 : 1e9;
+            const d2 = seg.ty >= minY && (!low || seg.ty < 0.75) ? segPointDist2(px2, pz2, tipX, tipZ, cx, cz).d2 : 1e9;
+            if (Math.min(d1, d2) <= rr * rr) {
+              near = true;
+              break;
+            }
+          }
           if (!near && !z.down && !z.crawling && z.armsLost < 2) {
             const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G5.radius : 0);
             const e1 = segPointDist2(ax, az, tipX, tipZ, ox, oz), ey = ay + (seg.ty - ay) * e1.t;
@@ -48265,8 +48739,10 @@ void main() {
             if (T2.meleeHitPause > 0) this.emit({ type: "hitPause", dur: T2.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
             continue;
           }
-          const dmg = T2.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
-          const side = this.rand() < 0.5 ? "_L" : "_R", shielded = !A.legs && z.shieldBlocks(dx, dz);
+          const critM = z.shieldBlocks(dx, dz) ? 1 : this.takeCrit();
+          if (critM > 1) this.emit({ type: "crit", id: z.id, x: z.x, z: z.z, weapon: "melee" });
+          const dmg = T2.axeDamage * A.dmg * critM, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
+          const side = this.rand() < 0.5 ? "_L" : "_R", shielded = z.shieldBlocks(dx, dz);
           const kind = A.kind || (p.equipped === BAT ? "bat" : "axe");
           const headOk = z.kind !== "guard" || z.enraged;
           const part = shielded ? "torso" : A.legs ? "LowerLeg" + side : lethal && headOk && r < sv.head ? "Head" : r < (lethal ? sv.head : 0) + sv.arm ? "Forearm" + side : sv.leg && r < (lethal ? sv.head : 0) + sv.arm + sv.leg ? "LowerLeg" + side : "torso";
@@ -48327,7 +48803,7 @@ void main() {
     // s between shots (the pump)
     shotgunMag: 6,
     shotgunReload: 1.9,
-    legStrikeChance: 0.25,
+    legStrikeChance: 0.13,
     // a melee opener at a standing walker goes in low for its legs (core/player.js startSwing)
     legShotChance: 0.5,
     // a bullet in a walker's lower leg takes it off (core/zombies.js takeHit)
@@ -48377,8 +48853,8 @@ void main() {
     camWidth: 7.2
     // metres of floor across a portrait screen at the player
   };
-  var TUNING_VERSION = 4;
-  var CHANGED = { 3: ["sprinterTurn"], 4: ["meleeHitPause", "sprinterTurn", "sprinterWindup"] };
+  var TUNING_VERSION = 5;
+  var CHANGED = { 3: ["sprinterTurn"], 4: ["meleeHitPause", "sprinterTurn", "sprinterWindup"], 5: ["legStrikeChance"] };
   function makeTuning(saved) {
     if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) {
       saved = { ...saved };
@@ -48389,7 +48865,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -48419,7 +48895,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -48558,10 +49034,10 @@ void main() {
     const sight = new Mesh(new BoxGeometry(6e-3, 8e-3, 0.012), accent);
     sight.position.set(0, 0.076, 0.145);
     g.add(sight);
-    const guard = new Mesh(new TorusGeometry(0.02, 4e-3, 6, 14, Math.PI), dark);
-    guard.rotation.set(0, Math.PI / 2, Math.PI);
-    guard.position.set(0, 0.014, 0.03);
-    g.add(guard);
+    const guard2 = new Mesh(new TorusGeometry(0.02, 4e-3, 6, 14, Math.PI), dark);
+    guard2.rotation.set(0, Math.PI / 2, Math.PI);
+    guard2.position.set(0, 0.014, 0.03);
+    g.add(guard2);
     const muzzle = new Object3D();
     muzzle.position.set(0, 0.058, 0.157);
     g.add(muzzle);
@@ -48668,9 +49144,9 @@ void main() {
     const handle = new Mesh(new CylinderGeometry(0.014, 0.016, 0.11, 12), m(2829102, 0.8, 0));
     handle.rotation.x = Math.PI / 2;
     g.add(handle);
-    const guard = new Mesh(new BoxGeometry(0.05, 0.012, 8e-3), m(7830656, 0.4, 0.6));
-    guard.position.z = 0.058;
-    g.add(guard);
+    const guard2 = new Mesh(new BoxGeometry(0.05, 0.012, 8e-3), m(7830656, 0.4, 0.6));
+    guard2.position.z = 0.058;
+    g.add(guard2);
     const blade = new Mesh(new BoxGeometry(4e-3, 0.03, 0.15), m(13225682, 0.25, 0.85));
     blade.position.set(0, -3e-3, 0.137);
     g.add(blade);
@@ -50516,7 +50992,7 @@ void main() {
         else if (this.backMode && ath < 1.2) this.backMode = false;
         this.backBlend = clamp5((this.backBlend || 0) + (this.backMode ? dt : -dt) / 0.15, 0, 1);
         const mb = smooth2(this.backBlend);
-        const put = (key, kk) => {
+        const put2 = (key, kk) => {
           const [walk, run] = GAIT[key], g0 = this.gait[walk], g1 = this.gait[run];
           const r = smooth2(clamp5((spS - g0.speed) / Math.max(0.3, g1.speed - g0.speed), 0, 1));
           w[walk] += kk * (1 - r);
@@ -50526,11 +51002,11 @@ void main() {
           const tf = clamp5(th, -Math.PI / 2, Math.PI / 2);
           const [a0, k0, a1, k1] = tf >= 0 ? [0, "f", Math.PI / 2, "l"] : [0, "f", -Math.PI / 2, "r"];
           const u = smooth2((tf - a0) / (a1 - a0));
-          put(k0, (1 - u) * move * (1 - mb));
-          put(k1, u * move * (1 - mb));
+          put2(k0, (1 - u) * move * (1 - mb));
+          put2(k1, u * move * (1 - mb));
         }
         if (mb > 0) {
-          put("b", move * mb);
+          put2("b", move * mb);
           hipYaw = angleDiff2(Math.PI, th) * mb;
         }
       }
@@ -50567,6 +51043,9 @@ void main() {
         this.die(dt, s);
         return;
       }
+      const lib2 = this.libHolds?.[s.equipped];
+      if (lib2 && this.test !== lib2) this.setTestWeapon(lib2);
+      if (lib2) s = Object.assign({}, s, { equipped: "test" });
       this.yaw = s.aimYaw;
       this.container.rotation.y = this.yaw;
       const w = this.locoWeights(s, dt);
@@ -50715,8 +51194,19 @@ void main() {
           this.act(n + "_ul").setEffectiveWeight(w[n] * (br === "plainlegs" ? uWp : 0) * k);
         }
       }
-      let scW = 0, sact = null;
-      if (s.action === "down" && this.act("yola_knockdown")) {
+      let scW = 0, sact = null, sact2 = null;
+      if (s.action === "down" && s.act?.kip && this.act("yola_knockdown") && this.act("ual_KipUp")) {
+        const F = s.downFall, U2 = s.downUp, t = s.actionT, fa = this.act("yola_knockdown"), ka = this.act("ual_KipUp");
+        this.act("yola_getup").setEffectiveWeight(0);
+        const kw = smooth2(clamp5((t - F + 0.06) / 0.12, 0, 1));
+        fa.time = (1 + Math.min(1, t / F) * 43) / 30 + (this.dnJit ^= 1) * 1e-6;
+        ka.time = (1 + clamp5((t - F + 0.06) / U2, 0, 1) * 35) / 30 + this.dnJit * 1e-6;
+        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F + U2 - t) / 0.12, 0, 1));
+        fa.setEffectiveWeight(scW * (1 - kw));
+        ka.setEffectiveWeight(scW * kw);
+        sact = kw > 0.5 ? ka : fa;
+        sact2 = kw > 0.5 ? fa : ka;
+      } else if (s.action === "down" && this.act("yola_knockdown")) {
         const F = s.downFall || 1.15, U2 = s.downUp || 1.7, t = s.actionT, up = t >= F;
         const a = this.act(up ? "yola_getup" : "yola_knockdown");
         this.act(up ? "yola_knockdown" : "yola_getup").setEffectiveWeight(0);
@@ -50727,6 +51217,7 @@ void main() {
       } else if (this.act("yola_knockdown")) {
         this.act("yola_knockdown").setEffectiveWeight(0);
         this.act("yola_getup").setEffectiveWeight(0);
+        this.act("ual_KipUp")?.setEffectiveWeight(0);
       }
       const OV = this.ov || (this.ov = { act: null, w: 0 });
       if (!sact && (s.action === "dodge" || s.action === "vault") && s.act) {
@@ -50793,7 +51284,7 @@ void main() {
         }
       }
       if (scW > 0) {
-        for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
+        for (const a of Object.values(this.actions)) if (a !== sact && a !== sact2) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
       }
       for (const [b, q] of this.restQ) b.quaternion.copy(q);
       mixerWritesAll(this.mixer);
@@ -50837,9 +51328,9 @@ void main() {
     // clip's own fingers to 1 = her closed fist, her bat_idle frame 1 grip, as viewer.js handPose): each hand's curl is the
     // blend of the playing clips' settings, by their weights (only clips that carry finger keys count: a legs-only layer has
     // none). Nothing saved for a clip = 0.
-    setHandPoses(json2, who) {
+    setHandPoses(json3, who) {
       this.handSet = {};
-      for (const [k, v] of Object.entries(json2 || {})) if (k.startsWith(who + ":") && typeof v === "object") this.handSet[k.slice(who.length + 1)] = v;
+      for (const [k, v] of Object.entries(json3 || {})) if (k.startsWith(who + ":") && typeof v === "object") this.handSet[k.slice(who.length + 1)] = v;
       if (!Object.keys(this.handSet).length) {
         this.handSet = null;
         return;
@@ -50925,9 +51416,9 @@ void main() {
     }
     // ARM ADJUSTMENTS (render/armpose.js; the Rig Lab sidebar's Arms section per clip, assets/hold/arm_pose.json
     // "<yola>:<clip>": { Right: {...}, Left: {...} }): blended by the weights of the clips playing
-    setArmPose(json2, who) {
+    setArmPose(json3, who) {
       this.poseSet = {};
-      for (const [k, v] of Object.entries(json2 || {})) if (k.startsWith(who + ":") && typeof v === "object") this.poseSet[k.slice(who.length + 1)] = v;
+      for (const [k, v] of Object.entries(json3 || {})) if (k.startsWith(who + ":") && typeof v === "object") this.poseSet[k.slice(who.length + 1)] = v;
       if (!Object.keys(this.poseSet).length) this.poseSet = null;
       this.poseActs = null;
     }
@@ -51676,10 +52167,12 @@ void main() {
     "standup_back"
   ];
   var TUMBLE = { f0: 40, f1: 90, up0: 1, up1: 94 };
+  var KIPUP = 1.05;
   var SCRATCH = { f0: 1, hit: 17, hitEnd: 21, end: 45 };
   var SLAM = { f0: 1, hit: 77, hitEnd: 81, end: 114, lift: 1, clip: "guard_leap_slam" };
   var POUNCE = { f0: 1, hit: 10, hitEnd: 19, end: 46, clip: "ual_Zombie_Bite" };
   var ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM, pounce: POUNCE };
+  var EXTRA_ONCE = ["ual_KipUp", "ual_Zombie_Spawn", "ual_Hit_Knockback", "ual1_Crawl_Enter", "ual_Zombie_Scratch", "ual_LayToIdle"];
   var GAIT_SETS = {
     ual: { idle: "ual_Zombie_Idle_Loop", dur: 1.333, dirs: [["Fwd", 0, 1, 1.05], ["Fwd_L", 0.707, 0.707, 1.06], ["L", 1, 0, 0.75], ["Bwd_L", 0.707, -0.707, 1.06], ["Bwd", 0, -1, 1.2], ["Bwd_R", -0.707, -0.707, 1.06], ["R", -1, 0, 0.75], ["Fwd_R", -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
     run: { idle: "ual_Zombie_Idle_Loop", dur: 0.733, dirs: [["Fwd", 0, 1, 4.1], ["L", 1, 0, 2.05], ["Bwd", 0, -1, 4.1], ["R", -1, 0, 2.05]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Run_${k}_Loop`, x, z, s })) }
@@ -51835,7 +52328,7 @@ void main() {
     };
   }
   var _ZombieView = class _ZombieView extends ClipBody {
-    // shields in pieces: their controllers run the 5 s lifetime and the fade, then free themselves
+    // (the lady's kip-up experiment: off = her old get-up from her back)
     constructor(scene2, gltf, height, speeds, opts = {}) {
       const model = clone(gltf.scene);
       const mats = [];
@@ -51849,6 +52342,14 @@ void main() {
       if (!clips) {
         const rest = hipsRest(gltf.scene);
         clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
+        if (!clips.some((c) => c.name === "scratch")) {
+          const a = clips.find((c) => c.name === "Animation");
+          if (a) a.name = "scratch";
+        }
+        {
+          const s = clips.find((c) => c.name === "ual_Zombie_Scratch");
+          if (s) clips.push(subClip(s, (b) => !LOWER.test(b), "scratch_upper"));
+        }
         for (const c of clips) if (["walk", "idle", "crawl", "sprint", "shield_idle"].includes(c.name) || /_Loop$/.test(c.name)) loopClip(c);
         {
           const b = clips.find((c) => c.name === POUNCE.clip);
@@ -51895,7 +52396,7 @@ void main() {
         this.act(n).play();
         this.act(n).setEffectiveWeight(0);
       }
-      for (const n of [...ONE_SHOTS, "pounce", ...Object.values(HIT_CLIPS).flat()]) {
+      for (const n of [...ONE_SHOTS, "pounce", ...Object.values(HIT_CLIPS).flat(), ...EXTRA_ONCE]) {
         const a = this.act(n);
         if (!a) continue;
         a.setLoop(LoopOnce);
@@ -52106,6 +52607,7 @@ void main() {
       this.lastSeq = z.hitSeq;
       this.lastState = "";
       this.outer.visible = this.blob.visible = true;
+      this.spawnPlayed = false;
       this.outer.position.y = 0;
       this.oneShot = null;
       this.deathYaw = null;
@@ -52160,6 +52662,7 @@ void main() {
       if (this.shieldC && this.shieldC.state !== "break" && !this.shieldC.disposed) this.shieldC.dispose();
       this.shieldC = null;
       this.shieldFit = false;
+      this.split = false;
       if (!S2) {
         this.shield || (this.shield = makeStandInShield(_ZombieView.scene));
         this.shield.visible = true;
@@ -52200,6 +52703,27 @@ void main() {
       c.object3D.position.copy(hand.worldToLocal(palm.clone().sub(grip.applyQuaternion(qd))));
       c.object3D.visible = true;
       this.shieldFit = true;
+    }
+    // his first slam (core/zombies.js slamShield): the panel splits along its own break lines but holds together, the
+    // user's "large, unmistakable crack": the five pieces (the package's fragments, whose edges are the painted cracks)
+    // shift apart a few centimetres in the panel's plane and turn a little, so the seams open dark across the frame and
+    // the teal face; the heavy crack map goes on with it
+    splitShield() {
+      const c = this.shieldC;
+      if (!c || c.state === "break") return;
+      this.split = true;
+      c.root.updateWorldMatrix(true, true);
+      const inv = new Matrix4().copy(c.root.matrixWorld).invert();
+      const cs = c.fragments.map((f) => new Box3().setFromObject(f).getCenter(new Vector3()).applyMatrix4(inv));
+      const mid = cs.reduce((a, b) => a.clone().add(b), new Vector3()).multiplyScalar(1 / cs.length);
+      c.fragments.forEach((f, i) => {
+        const d = cs[i].clone().sub(mid);
+        d.z = 0;
+        const l = d.length() || 1;
+        f.position.addScaledVector(d, 0.05 / l);
+        f.position.z += i % 2 ? 0.015 : -0.015;
+        f.rotateZ(Math.sign(d.x || 1) * Math.sign(d.y || 1) * -0.075);
+      });
     }
     // the panel in pieces: the five fragments become capsules in the game's custom physics (thrown off along the blow),
     // never the baked clip at the same time; the hold stops at once
@@ -52294,6 +52818,21 @@ void main() {
       }
       this.outer.position.x = x;
       this.outer.position.z = zz;
+      if (z.floorSpawn && z.state === "emerge") {
+        const F = z.floorSpawn, sp2 = this.act("ual_Zombie_Spawn");
+        if (z.t < F.rumble || !sp2) {
+          this.outer.visible = this.blob.visible = false;
+          this.lastState = "emerge";
+          return;
+        }
+        if (!this.spawnPlayed) {
+          this.spawnPlayed = true;
+          this.outer.visible = true;
+          this.blob.visible = false;
+          const c = sp2.getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0]));
+          this.playOnce("ual_Zombie_Spawn", t0, (c.duration - t0) / F.climb, 0);
+        }
+      } else if (this.spawnPlayed && !this.blob.visible && z.state !== "dead") this.blob.visible = true;
       if (z.crawling && this.hasCrawl && (z.state === "strike" || z.state === "recover")) {
         const u = Math.min(1, z.t / Math.max(0.05, z.stateDur)), k = Math.sin((z.state === "strike" ? u : 1 - u) * Math.PI / 2) * 0.3;
         this.outer.position.x += Math.sin(z.yaw) * k;
@@ -52312,6 +52851,20 @@ void main() {
         const AC = ATTACK_CLIPS[z.attack], scr = AC && this.act(z.attack);
         const crawler = z.crawling && this.hasCrawl;
         if (crawler && (S2 === "windup" || S2 === "strike" || S2 === "recover" || S2 === "stagger")) {
+        } else if (z.attack === "dash" && this.act("scratch_upper") && (S2 === "windup" || S2 === "strike" || S2 === "recover")) {
+          const a = this.act("scratch_upper"), t0 = this.scrT0 ?? (this.scrT0 = Math.min(...a.getClip().tracks.map((q) => q.times[0])));
+          const [f0, f1] = S2 === "windup" ? [1, 16] : S2 === "strike" ? [16, 30] : [30, 45];
+          if (S2 === "windup") {
+            a.reset();
+            a.setLoop(LoopOnce);
+            a.clampWhenFinished = true;
+            a.play();
+          }
+          a.time = t0 + (f0 - 1) / 30;
+          a.timeScale = (f1 - f0) / 30 / Math.max(0.05, z.stateDur);
+          a.setEffectiveWeight(S2 === "recover" ? 2 : 3);
+          if (S2 === "recover") a.fadeOut(z.stateDur);
+          this.upperShot = a;
         } else if (S2 === "windup") {
           if (scr) {
             const t0 = Math.min(...scr.getClip().tracks.map((t) => t.times[0]));
@@ -52321,6 +52874,9 @@ void main() {
         } else if ((S2 === "strike" || S2 === "recover") && scr && this.oneShot === scr) {
           scr.time = this.acT0 + ((S2 === "strike" ? AC.hit : AC.hitEnd) - 1) / 30;
           scr.timeScale = (S2 === "strike" ? AC.hitEnd - AC.hit : AC.end - AC.hitEnd) / 30 / Math.max(0.05, z.stateDur);
+        } else if (S2 === "stagger" && z.hitKind === "slam" && this.act("hit_stumble")) {
+          const len = this.act("hit_stumble").getClip().duration;
+          this.playOnce("hit_stumble", 0.1, (len - 0.3) / Math.max(0.3, z.stateDur), 0.1);
         } else if (S2 === "stagger") {
           if (isMelee(z.hitKind) || z.hitKind === "shotgun" || z.hitKind === "bump") {
             const n = this.reactClip(z), len = this.act(n).getClip().duration;
@@ -52335,6 +52891,9 @@ void main() {
         } else if (S2 === "knockdown" && z.fall === "tumble" && this.act("stumble_fall")) {
           this.deathYaw = null;
           this.playOnce("stumble_fall", TUMBLE.f0 / 30, (TUMBLE.f1 - TUMBLE.f0) / 30 / z.stateDur, 0.08);
+        } else if (S2 === "getup" && z.fall === "tumble" && z.kind === "sprinter" && this.act("ual_KipUp") && _ZombieView.ladyKipUp) {
+          this.playOnce("standup_back", TUMBLE.up0 / 30, 19 / 30 / Math.max(0.2, z.stateDur - KIPUP), 0.15);
+          this.kipAt = z.stateDur - KIPUP;
         } else if (S2 === "getup" && z.fall === "tumble" && this.act("standup_back")) {
           this.playOnce("standup_back", TUMBLE.up0 / 30, (TUMBLE.up1 - TUMBLE.up0) / 30 / z.stateDur, 0.15);
         } else if (S2 === "knockdown") {
@@ -52359,7 +52918,27 @@ void main() {
           this.oneShot.fadeOut(0.25);
           this.oneShot = null;
         }
+        if (this.upperShot && S2 !== "windup" && S2 !== "strike" && S2 !== "recover") {
+          this.upperShot.fadeOut(0.15);
+          this.upperShot = null;
+        }
         this.lastState = S2;
+      }
+      if (this.kipAt != null && (z.state !== "getup" || z.t >= this.kipAt)) {
+        if (z.state === "getup") {
+          const k = this.act("ual_KipUp"), t0 = Math.min(...k.getClip().tracks.map((q) => q.times[0]));
+          this.playOnce("ual_KipUp", t0, 35 / 30 / KIPUP, 0.14);
+        }
+        this.kipAt = null;
+      }
+      if (z.state === "stuck" && this.oneShot && this.oneShot === this.act("slam")) {
+        const a = this.oneShot, ph = (z.t + 0.2) / 0.55, k = ph % 1, pull = Math.sin(Math.min(1, k / 0.4) * Math.PI);
+        a.timeScale = 0;
+        a.time = (this.acT0 || 0) + (78.5 + pull * 3.2 - 1) / 30;
+        if (Math.floor(ph) !== this.heaveN) {
+          this.heaveN = Math.floor(ph);
+          this.react.kick(0, -0.55);
+        }
       }
       if (this.deathYaw != null) this.container.rotation.y += angleDiff2(this.container.rotation.y, this.deathYaw) * Math.min(1, dt * 14);
       else this.container.rotation.y = z.yaw;
@@ -52401,7 +52980,7 @@ void main() {
         this.act(G5.idle).setEffectiveWeight((1 - move) * base);
       }
       if (this.act("shield_upper")) {
-        const own = z.state === "windup" || z.state === "strike" || z.state === "recover";
+        const own = z.state === "windup" || z.state === "strike" || z.state === "recover" || z.state === "stuck";
         this.act("shield_upper").setEffectiveWeight(this.shieldUp ? (own ? 1 - one2 : 3) * (1 - crawl) : 0);
       }
       if (this.hasCrawl) {
@@ -52431,6 +53010,7 @@ void main() {
         else {
           if (!this.shieldFit) this.fitShield();
           if (st !== this.shieldC.state && st !== "none") this.shieldC.setDamageState(st);
+          if (st === "heavy" && z.slams >= 1 && !this.split) this.splitShield();
           this.shieldC.object3D.visible = this.outer.visible;
         }
       } else if (this.shield) this.placeShield(z);
@@ -52503,6 +53083,8 @@ void main() {
   __publicField(_ZombieView, "shieldAsset", null);
   // { gltf, damageTextures }: the guard's bed-panel shield (loaded once, shared by every guard)
   __publicField(_ZombieView, "brokenShields", []);
+  // shields in pieces: their controllers run the 5 s lifetime and the fade, then free themselves
+  __publicField(_ZombieView, "ladyKipUp", true);
   var ZombieView = _ZombieView;
 
   // src/render/libattack.js
@@ -52904,7 +53486,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -54306,7 +54888,7 @@ void main() {
   };
   function mergeStatic(roots, keep = () => true) {
     const byKey = /* @__PURE__ */ new Map();
-    const put = (material, g) => {
+    const put2 = (material, g) => {
       for (const n of Object.keys(g.attributes)) if (!["position", "normal", "uv", "color"].includes(n)) g.deleteAttribute(n);
       const key = material.uuid + "|" + Object.keys(g.attributes).sort().join(",");
       if (!byKey.has(key)) byKey.set(key, { material, geos: [] });
@@ -54320,13 +54902,13 @@ void main() {
         const mats = [].concat(o.material);
         const g0 = o.geometry.clone().applyMatrix4(o.matrixWorld), g = g0.index ? g0.toNonIndexed() : g0;
         if (mats.length === 1 || !g0.groups.length) {
-          put(mats[0], g);
+          put2(mats[0], g);
           return;
         }
         for (const gr of g0.groups) {
           const sub = new BufferGeometry();
           for (const [n, a] of Object.entries(g.attributes)) sub.setAttribute(n, new BufferAttribute(a.array.slice(gr.start * a.itemSize, (gr.start + gr.count) * a.itemSize), a.itemSize, a.normalized));
-          put(mats[gr.materialIndex], sub);
+          put2(mats[gr.materialIndex], sub);
         }
       });
     }
@@ -55135,6 +55717,29 @@ void main() {
           const b2 = new Box3().setFromObject(o), c = b2.getCenter(new Vector3());
           o.position.set(q.x - c.x, (q.y ?? 0.92) - b2.min.y, q.z - c.z);
           objs.push(o);
+        } else if (q.model === "shells") {
+          const sh = await get("zombie/assets/weapons/shotgun_shell.glb").catch(() => null);
+          if (sh) for (let i = 0; i < 6; i++) {
+            const o = sh.scene.clone(true);
+            o.rotation.set(Math.PI / 2, 0, i * 1.1);
+            o.position.set(q.x + Math.cos(i * 2.3) * 0.12, 0.012, q.z + Math.sin(i * 2.3) * 0.12);
+            objs.push(o);
+          }
+        } else if (q.file || q.builder) {
+          const g = q.builder === "knife" ? { scene: makeKnife() } : await get(q.file).catch(() => null);
+          if (g) {
+            const inner = g.scene.clone(true), o = new Group();
+            o.add(inner);
+            const b = new Box3().setFromObject(inner), sz = b.getSize(new Vector3()), ax = ["x", "y", "z"].sort((u, v) => sz[v] - sz[u]);
+            const basis = { x: new Vector3(1, 0, 0), y: new Vector3(0, 1, 0), z: new Vector3(0, 0, 1) }, ex = basis[ax[0]], ey = basis[ax[2]], ez = new Vector3().crossVectors(ex, ey);
+            inner.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(ex, ey, ez).invert());
+            inner.scale.setScalar((q.len || 0.8) / Math.max(sz.x, sz.y, sz.z));
+            o.rotation.y = q.rot || 0;
+            o.updateMatrixWorld(true);
+            const b2 = new Box3().setFromObject(o), c = b2.getCenter(new Vector3());
+            o.position.set(q.x - c.x, (q.y ?? 0) - b2.min.y + 4e-3, q.z - c.z);
+            objs.push(o);
+          }
         }
         for (const o of objs) {
           o.traverse((m) => {
@@ -55460,18 +56065,18 @@ void main() {
       e.group = grp;
       const geo = new PlaneGeometry(1, 1);
       geo.rotateX(-Math.PI / 2);
-      const put = (m, x, z, size) => {
+      const put2 = (m, x, z, size) => {
         const p = new Mesh(geo, m);
         p.position.set(x, 0.02, z);
         p.scale.set(size, 1, size);
         p.renderOrder = 2;
         grp.add(p);
       };
-      for (const l of CH().lights || []) put(e.redMat, l.x, l.z, 5.5);
-      for (const d of CH().doors || []) if (d.kind !== "lift") put(e.redMat, d.x, d.z, 2.6);
+      for (const l of CH().lights || []) put2(e.redMat, l.x, l.z, 5.5);
+      for (const d of CH().doors || []) if (d.kind !== "lift") put2(e.redMat, d.x, d.z, 2.6);
       for (const r of CH().rooms || []) for (const [x0, x1, z0, z1] of r.rects) {
         const w = x1 - x0, dd = z1 - z0;
-        if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8);
+        if (w * dd > 12) put2(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8);
       }
     }
     tickEmergency(dt) {
@@ -55690,6 +56295,59 @@ void main() {
     }
     return new CanvasTexture(c);
   }
+  function crackTexture() {
+    const s = 512, c = document.createElement("canvas");
+    c.width = c.height = s;
+    const g = c.getContext("2d"), h = s / 2;
+    const grd = g.createRadialGradient(h, h, 6, h, h, s * 0.17);
+    grd.addColorStop(0, "rgba(46,40,34,.85)");
+    grd.addColorStop(0.6, "rgba(70,62,52,.45)");
+    grd.addColorStop(1, "rgba(90,82,70,0)");
+    g.fillStyle = grd;
+    g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 9; i++) {
+      const a = Math.random() * Math.PI * 2, d = 8 + Math.random() * s * 0.09, x = h + Math.cos(a) * d, y = h + Math.sin(a) * d, r = 6 + Math.random() * 10;
+      g.beginPath();
+      for (let k = 0; k < 4; k++) {
+        const b = a + k * 1.6 + Math.random() * 0.5;
+        g.lineTo(x + Math.cos(b) * r, y + Math.sin(b) * r);
+      }
+      g.closePath();
+      g.fillStyle = Math.random() < 0.5 ? "rgba(226,216,196,.9)" : "rgba(186,208,200,.9)";
+      g.fill();
+      g.lineWidth = 1.5;
+      g.strokeStyle = "rgba(30,26,22,.8)";
+      g.stroke();
+    }
+    g.lineCap = "round";
+    g.lineJoin = "miter";
+    const crack = (x, y, a, len, w, depth) => {
+      const pts = [[x, y]];
+      const n = 3 + (Math.random() * 3 | 0);
+      for (let i = 0; i < n; i++) {
+        a += (Math.random() - 0.5) * 0.55;
+        x += Math.cos(a) * len / n;
+        y += Math.sin(a) * len / n;
+        pts.push([x, y]);
+      }
+      g.beginPath();
+      pts.forEach(([px2, py2], i) => i ? g.lineTo(px2, py2) : g.moveTo(px2, py2));
+      g.lineWidth = w + 1.6;
+      g.strokeStyle = "rgba(240,232,214,.32)";
+      g.stroke();
+      g.lineWidth = w;
+      g.strokeStyle = "rgba(28,24,20,.9)";
+      g.stroke();
+      if (depth > 0) {
+        for (let i = 1; i < pts.length - 1; i++) if (Math.random() < 0.3) crack(pts[i][0], pts[i][1], a + (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.6), len * 0.35, w * 0.6, depth - 1);
+      }
+    };
+    for (let i = 0; i < 9; i++) crack(h + (Math.random() - 0.5) * 16, h + (Math.random() - 0.5) * 16, i / 9 * Math.PI * 2 + Math.random() * 0.5, s * (0.2 + Math.random() * 0.22), 2.4, 1);
+    const t = new CanvasTexture(c);
+    t.colorSpace = SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  }
   var FX = class {
     constructor(scene2) {
       this.scene = scene2;
@@ -55783,6 +56441,16 @@ void main() {
         this.pools.push({ m, t: 99, size: 1 });
       }
       this.poolNext = 0;
+      const crackTex = crackTexture();
+      this.cracks = [];
+      for (let i = 0; i < 4; i++) {
+        const m = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: crackTex, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+        m.rotation.x = -Math.PI / 2;
+        m.visible = false;
+        m.renderOrder = 1;
+        scene2.add(m);
+        this.cracks.push({ m, t: 99 });
+      }
       const star = starTexture();
       this.hits = [];
       for (let i = 0; i < 6; i++) {
@@ -55834,6 +56502,21 @@ void main() {
       q.m.rotation.z = Math.random() * Math.PI * 2;
       q.m.visible = true;
     }
+    floorCrack(x, z, size = 1.2) {
+      const q = this.cracks.find((c) => c.t > 40) || this.cracks.reduce((a, b) => a.t > b.t ? a : b);
+      q.t = 0;
+      q.m.position.set(x, 0.013, z);
+      q.m.rotation.z = Math.random() * Math.PI * 2;
+      q.m.scale.set(size * 2, size * 2, 1);
+      q.m.visible = true;
+    }
+    clearCrackAt(x, z) {
+      for (const q of this.cracks) if (q.t < 40 && Math.hypot(q.m.position.x - x, q.m.position.z - z) < 0.3) {
+        q.t = 99;
+        q.m.visible = false;
+      }
+    }
+    // (a breach opened over it)
     muzzle(pos, k = 1) {
       this.flash.position.copy(pos);
       this.flash.visible = true;
@@ -55844,12 +56527,13 @@ void main() {
       this.flashLight.intensity = 6 * k;
       if (k > 1.2) this.burst(pos.x, pos.y, pos.z, 6, 12104876, 0.9, 0.4, 0.5);
     }
-    tracer(ox, oy, oz, ex, ez, op = 0.5) {
+    // ey: where it ends in height (a body on the floor: the round goes down into it); none: level with the muzzle
+    tracer(ox, oy, oz, ex, ez, op = 0.5, ey = oy) {
       const t = this.tracers.find((q) => q.t <= 0) || this.tracers[0];
-      const dx = ex - ox, dz = ez - oz, l = Math.hypot(dx, dz);
+      const dx = ex - ox, dz = ez - oz, l = Math.hypot(dx, dz), dy = (ey ?? oy) - oy;
       t.m.position.set(ox, oy, oz);
-      t.m.scale.set(l, 1, 1);
-      t.m.rotation.y = Math.atan2(-dz, dx);
+      t.m.scale.set(Math.hypot(l, dy), 1, 1);
+      t.m.rotation.set(0, Math.atan2(-dz, dx), Math.atan2(dy, l), "YZX");
       t.m.visible = true;
       t.t = 0.07;
       t.m.material.opacity = op;
@@ -55956,6 +56640,15 @@ void main() {
         q.m.scale.set(s, s, 1);
         q.m.material.opacity = 0.85 * (q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6));
         if (q.t > 31) {
+          q.m.visible = false;
+          q.t = 99;
+        }
+      }
+      for (const q of this.cracks) {
+        if (q.t > 40) continue;
+        q.t += dt;
+        q.m.material.opacity = Math.min(1, q.t / 0.08) * (q.t < 30 ? 0.9 : Math.max(0, 0.9 - (q.t - 30) / 6));
+        if (q.t > 36) {
           q.m.visible = false;
           q.t = 99;
         }
@@ -56270,7 +56963,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -56310,7 +57003,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -56401,7 +57094,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -56466,7 +57159,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -56554,7 +57247,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -56738,7 +57431,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -56810,7 +57503,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -57163,7 +57856,7 @@ void main() {
     return magicSquare;
   }
 
-  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -57362,7 +58055,7 @@ void main() {
     return samples;
   }
 
-  // node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -57796,7 +58489,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -58223,7 +58916,7 @@ void main() {
     "Denoise": 5
   };
 
-  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -58275,7 +58968,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -58559,7 +59252,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -58647,7 +59340,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -63669,9 +64362,9 @@ void main() {
       this.scene.background = v && st.skyTex ? st.skyTex : new Color(13624287);
       this.renderer.shadowMap.needsUpdate = true;
     }
-    fire(cue) {
-      this.cueLog.push([+this.t.toFixed(2), cue.name]);
-      cue.fn();
+    fire(cue2) {
+      this.cueLog.push([+this.t.toFixed(2), cue2.name]);
+      cue2.fn();
     }
     // ------------------------------------------------------------------ staging
     resetTour() {
@@ -64058,8 +64751,8 @@ void main() {
     }
     // coroutine runner: act functions yield seconds (wait) or a predicate (wait until true)
     runCo(d) {
-      let left = d, guard = 0;
-      while (this.co && guard++ < 64 && !this.frozen) {
+      let left = d, guard2 = 0;
+      while (this.co && guard2++ < 64 && !this.frozen) {
         const w = this.wait;
         if (w) {
           if (w.sec !== void 0) {
@@ -66237,8 +66930,8 @@ void main() {
     runTo(label, { stopAtLabel = true, maxSec = 400 } = {}) {
       this.beginSilent();
       this.runLabel = stopAtLabel ? label : null;
-      let guard = 0;
-      while (!(label in this.marks) && this.t < maxSec && guard++ < 4e4) this.step(1 / 20);
+      let guard2 = 0;
+      while (!(label in this.marks) && this.t < maxSec && guard2++ < 4e4) this.step(1 / 20);
       const keep = stopAtLabel;
       this.endSilent(keep);
       return this.marks[label];
@@ -66658,7 +67351,7 @@ void main() {
     return S2;
   }
 
-  // node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -68311,6 +69004,443 @@ void main() {
     }
   };
 
+  // src/render/threatcue.js
+  function canvasTex(draw, size = 128) {
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d");
+    draw(g, size);
+    const t = new CanvasTexture(c);
+    t.colorSpace = SRGBColorSpace;
+    return { tex: t, canvas: c, g };
+  }
+  function drawWarn(g, s) {
+    g.clearRect(0, 0, s, s);
+    const m = s * 0.12, top = s * 0.14, bot = s * 0.86;
+    g.beginPath();
+    g.moveTo(s / 2, top);
+    g.lineTo(s - m, bot);
+    g.lineTo(m, bot);
+    g.closePath();
+    g.lineJoin = "round";
+    g.lineWidth = s * 0.09;
+    g.strokeStyle = "#1b1208";
+    g.stroke();
+    g.fillStyle = "#ffb21f";
+    g.fill();
+    g.fillStyle = "#1b1208";
+    g.font = `900 ${s * 0.5}px system-ui, sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText("!", s / 2, s * 0.6);
+  }
+  function drawNow(g, s) {
+    g.clearRect(0, 0, s, s);
+    g.beginPath();
+    g.arc(s / 2, s / 2, s * 0.42, 0, Math.PI * 2);
+    g.fillStyle = "#e8261a";
+    g.fill();
+    g.lineWidth = s * 0.06;
+    g.strokeStyle = "#fff";
+    g.stroke();
+    g.fillStyle = "#fff";
+    const arrow = (dir) => {
+      const cx = s / 2 + dir * s * 0.06, tip = s / 2 + dir * s * 0.33, y = s / 2, h = s * 0.17, w = s * 0.07;
+      g.beginPath();
+      g.moveTo(tip, y);
+      g.lineTo(cx + dir * s * 0.12, y - h);
+      g.lineTo(cx + dir * s * 0.12, y - w);
+      g.lineTo(cx, y - w);
+      g.lineTo(cx, y + w);
+      g.lineTo(cx + dir * s * 0.12, y + w);
+      g.lineTo(cx + dir * s * 0.12, y + h);
+      g.closePath();
+      g.fill();
+    };
+    arrow(-1);
+    arrow(1);
+  }
+  var ThreatCue = class {
+    constructor(scene2) {
+      this.warn = canvasTex(drawWarn);
+      this.now = canvasTex(drawNow);
+      this.ringC = canvasTex(() => {
+      }, 128);
+      const mat2 = (map) => new SpriteMaterial({ map, transparent: true, depthTest: false, depthWrite: false, toneMapped: false });
+      this.icon = new Sprite(mat2(this.warn.tex));
+      this.icon.renderOrder = 50;
+      this.ring = new Sprite(mat2(this.ringC.tex));
+      this.ring.renderOrder = 49;
+      this.group = new Group();
+      this.group.add(this.ring, this.icon);
+      this.group.visible = false;
+      scene2.add(this.group);
+      this.lastP = -1;
+      this.lastNow = null;
+      this.t = 0;
+      this.fade = 0;
+    }
+    // the ring: an arc closing clockwise from the top (p 0..1); full and white when it is time
+    drawRing(p, now) {
+      const { g, canvas: c, tex } = this.ringC, s = c.width;
+      g.clearRect(0, 0, s, s);
+      g.lineCap = "round";
+      g.beginPath();
+      g.arc(s / 2, s / 2, s * 0.44, 0, Math.PI * 2);
+      g.lineWidth = s * 0.07;
+      g.strokeStyle = "rgba(20,12,6,.55)";
+      g.stroke();
+      g.beginPath();
+      g.arc(s / 2, s / 2, s * 0.44, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(1e-3, p));
+      g.lineWidth = s * 0.07;
+      g.strokeStyle = now ? "#ffffff" : "#ffb21f";
+      g.stroke();
+      tex.needsUpdate = true;
+    }
+    // threat: core/sim.js dodgeThreat (special) or null; pos: the attacker's drawn position; h: its height (m)
+    update(dt, threat, pos, h) {
+      this.t += dt;
+      this.fade = Math.max(0, Math.min(1, this.fade + (threat ? dt / 0.12 : -dt / 0.2)));
+      if (!threat && this.fade <= 0) {
+        this.group.visible = false;
+        return;
+      }
+      this.group.visible = true;
+      if (threat) {
+        this.pos = pos;
+        this.h = h;
+      }
+      const now = threat ? !!threat.now : !!this.lastNow, p = threat ? Math.min(1, now ? 1 : threat.u / (threat.kind === "slam" ? 0.58 : 1)) : 1;
+      if (now !== this.lastNow) {
+        this.icon.material.map = now ? this.now.tex : this.warn.tex;
+        this.icon.material.needsUpdate = true;
+        this.lastNow = now;
+      }
+      if (Math.abs(p - this.lastP) > 0.015 || now && Math.floor(this.t * 10) !== Math.floor((this.t - dt) * 10)) {
+        this.drawRing(p, now);
+        this.lastP = p;
+      }
+      const bob = now ? 0 : Math.sin(this.t * 4) * 0.06, shake2 = now ? Math.sin(this.t * 55) * 0.05 : 0, beat = now ? 1 + 0.16 * Math.abs(Math.sin(this.t * 12)) : 1;
+      const P = this.pos || { x: 0, z: 0 }, yT = P.y != null ? P.y + 0.62 : (this.h || 1.8) + 0.55;
+      this.y = this.y == null || !this.group.visible ? yT : this.y + (yT - this.y) * Math.min(1, dt * 10);
+      this.group.position.set(P.x + shake2, this.y + bob, P.z);
+      const s = 0.62 * beat * (0.6 + 0.4 * this.fade);
+      this.icon.scale.set(s * 0.82, s * 0.82, 1);
+      this.ring.scale.set(s * 1.25, s * 1.25, 1);
+      this.icon.material.opacity = this.ring.material.opacity = this.fade * (now && Math.sin(this.t * 24) < -0.6 ? 0.65 : 1);
+    }
+  };
+
+  // src/sfx/cues.js
+  function cue(audio2, name, k = 1) {
+    if (!audio2?.ok) return;
+    const t = audio2.ctx.currentTime;
+    audio2.out = null;
+    const T2 = (...a) => audio2.tone(...a), N = (...a) => audio2.noise(...a);
+    switch (name) {
+      case "warn":
+        T2(t, 0.22, 196, { type: "sawtooth", gain: 0.07 * k, f2: 185, attack: 0.02 });
+        T2(t + 0.24, 0.3, 147, { type: "sawtooth", gain: 0.08 * k, f2: 140, attack: 0.02 });
+        break;
+      case "now":
+        T2(t, 0.09, 880, { type: "square", gain: 0.07 * k, f2: 1320 });
+        T2(t + 0.1, 0.12, 1320, { type: "square", gain: 0.07 * k, f2: 1760 });
+        break;
+      case "slowIn":
+        T2(t, 0.7, 140, { type: "sine", gain: 0.32 * k, f2: 45, attack: 0.05 });
+        N(t, 0.6, { type: "bandpass", f: 1600, f2: 260, q: 0.9, gain: 0.16 * k, attack: 0.08 });
+        break;
+      case "slowOut":
+        N(t, 0.25, { type: "bandpass", f: 300, f2: 2400, q: 1.2, gain: 0.12 * k, attack: 0.03 });
+        break;
+      case "perfect":
+        [1046, 1568, 2093].forEach((f, i) => T2(t + i * 0.05, 0.5, f, { type: "triangle", gain: 0.06 * k }));
+        N(t, 0.4, { type: "highpass", f: 5e3, gain: 0.05 * k, attack: 0.02 });
+        break;
+      case "crit":
+        T2(t, 0.35, 70, { type: "sine", gain: 0.6 * k, f2: 32, attack: 2e-3 });
+        N(t, 0.2, { type: "lowpass", f: 1400, f2: 200, gain: 0.5 * k });
+        T2(t + 0.01, 0.6, 1760, { type: "triangle", gain: 0.05 * k });
+        T2(t + 0.01, 0.5, 2637, { type: "sine", gain: 0.035 * k });
+        break;
+      case "lodge":
+        N(t, 0.05, { type: "highpass", f: 2e3, gain: 0.6 * k });
+        N(t + 0.02, 0.5, { type: "bandpass", f: 900, f2: 300, q: 1.1, gain: 0.35 * k, attack: 0.01 });
+        T2(t, 0.4, 90, { type: "triangle", gain: 0.5 * k, f2: 40 });
+        break;
+      case "heave":
+        N(t, 0.32, { type: "bandpass", f: 520, f2: 760, q: 6, gain: 0.16 * k, attack: 0.06 });
+        T2(t, 0.3, 120, { type: "sawtooth", gain: 0.04 * k, f2: 150, attack: 0.05 });
+        break;
+      case "free":
+        N(t, 0.18, { type: "bandpass", f: 700, f2: 1800, q: 1.4, gain: 0.3 * k, attack: 0.01 });
+        [0.12, 0.22].forEach((d) => N(t + d, 0.08, { type: "lowpass", f: 600, gain: 0.25 * k }));
+        break;
+      case "rumble":
+        T2(t, 1.1, 42, { type: "sawtooth", gain: 0.07 * k, f2: 55, attack: 0.3 });
+        N(t, 1.1, { type: "lowpass", f: 260, gain: 0.22 * k, attack: 0.3 });
+        N(t + 0.3, 0.8, { type: "bandpass", f: 3200, q: 3, gain: 0.03 * k, attack: 0.2 });
+        break;
+      case "breach":
+        N(t, 0.06, { type: "highpass", f: 1800, gain: 0.45 * k });
+        N(t + 0.02, 0.35, { type: "lowpass", f: 900, f2: 200, gain: 0.45 * k });
+        [0.18, 0.3, 0.41].forEach((d) => N(t + d, 0.05, { type: "bandpass", f: 2600, q: 3, gain: 0.12 * k }));
+        break;
+    }
+  }
+
+  // src/render/slowmo.js
+  var SLOW = { PEAK: 0.3, COOL: 1.2 };
+  var SlowMotion = class _SlowMotion {
+    constructor(audio2) {
+      this.audio = audio2;
+      this.k = 1;
+      this.beatS = null;
+      this.cool = 0;
+      this.shown = 0;
+      this.inCue = false;
+    }
+    beat(scale, dur) {
+      const B = this.beatS;
+      if (B) {
+        B.scale = Math.min(B.scale, scale);
+        B.dur = Math.max(B.dur, B.t + dur * 0.5);
+        return;
+      }
+      if (this.cool > 0) return;
+      this.beatS = { scale, dur, t: 0 };
+    }
+    end() {
+      if (this.beatS) {
+        this.beatS = null;
+        this.cool = SLOW.COOL;
+      }
+    }
+    static leap(f) {
+      const ease2 = (a, b, x) => {
+        const u = Math.min(1, Math.max(0, (x - a) / (b - a)));
+        return u * u * (3 - 2 * u);
+      };
+      if (f < 50 || f > 72) return 1;
+      return f < 57 ? 1 - (1 - SLOW.PEAK) * ease2(50, 57, f) : f <= 66 ? SLOW.PEAK : SLOW.PEAK + (1 - SLOW.PEAK) * ease2(66, 72, f);
+    }
+    // the time scale for this frame (dt: real seconds); off: an opening scene or Yola dead
+    update(dt, sim2, off) {
+      let want = 1;
+      const p = sim2.player;
+      if (!off && !p.dead) {
+        for (const z of sim2.zombies) {
+          if (z.kind !== "guard" || z.state !== "windup" || z.attack !== "slam" || Math.hypot(z.x - p.x, z.z - p.z) > 9) continue;
+          want = Math.min(want, _SlowMotion.leap(1 + z.t / Math.max(0.05, z.stateDur) * 76));
+        }
+        const B = this.beatS;
+        if (B) {
+          B.t += dt;
+          const k = Math.min(1, B.t / 0.07) * Math.min(1, Math.max(0, (B.dur - B.t) / 0.18));
+          want = Math.min(want, 1 - (1 - B.scale) * k);
+          if (B.t >= B.dur) {
+            this.beatS = null;
+            this.cool = SLOW.COOL;
+          }
+        } else if (this.cool > 0) this.cool -= dt;
+      } else this.beatS = null;
+      this.k += (want - this.k) * Math.min(1, dt * (want < this.k ? 18 : 10));
+      if (Math.abs(this.k - want) < 3e-3) this.k = want;
+      const shown = Math.round(Math.max(0, Math.min(1, (1 - this.k) / (1 - SLOW.PEAK))) * 50) / 50;
+      if (shown !== this.shown) {
+        this.shown = shown;
+        document.documentElement.style.setProperty("--slow", shown);
+      }
+      if (!this.inCue && this.k < 0.7) {
+        this.inCue = true;
+        cue(this.audio, "slowIn");
+      } else if (this.inCue && this.k > 0.92) {
+        this.inCue = false;
+        cue(this.audio, "slowOut");
+      }
+      return this.k;
+    }
+  };
+
+  // src/render/libweapons.js
+  var LIB_PICKS = { sledgehammer: "ual_Sword_Heavy_Combo", crowbar: "ual_Sword_Regular_Combo", knife: "ual_Sword_Regular_Combo" };
+  var LIB_LABEL = { sledgehammer: "Sledgehammer", crowbar: "Crowbar", knife: "Knife" };
+  async function json2(url) {
+    try {
+      const r = await fetch(url);
+      return r.ok ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  }
+  async function setupLibWeapons({ yola: yola2, loader: loader2, scene: scene2, clips, who }) {
+    const [wj, catalog, sel, fitsJ] = await Promise.all([json2("assets/arena/weapons.json"), json2("assets/arena/catalog.json"), json2("assets/arena/selection.json"), json2("assets/hold/weapon_fit.json")]);
+    const WDEF = wj?.weapons || {}, meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
+    const byName = Object.fromEntries(clips.map((c) => [c.name, c]));
+    const fits = {};
+    for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === "object" && v[who]) fits[k] = v[who];
+    const holds = {};
+    for (const [w, clip] of Object.entries(LIB_PICKS)) {
+      const def = WDEF[w], c = byName[clip], P = PROFILE[w];
+      if (!def || !c || !P) continue;
+      let o = null;
+      try {
+        o = def.builder === "knife" ? makeKnife() : def.file ? (await loader2.loadAsync(def.file)).scene : null;
+      } catch (e) {
+        console.warn("lib weapon", w, e);
+      }
+      if (!o) continue;
+      o.traverse((m) => {
+        if (m.isMesh) {
+          m.frustumCulled = false;
+          m.castShadow = true;
+        }
+      });
+      const obj = new Group();
+      obj.add(o);
+      obj.visible = false;
+      scene2.add(obj);
+      const use = (sel?.moves?.[clip]?.uses || []).find((u) => u.weapon === w) || {};
+      const fit = fits[w + "@" + clip] || fits[w] || null;
+      const hold = { key: w, obj, w: def, hand: fit?.hand || use.hand || "Right", roll: +use.roll || 0, slide: +use.slide || 0, flip: !!use.flip, two: def.hands === "two", fingers: null, carry: CARRY[w] ? w : null, pack: false, fit };
+      yola2.setTestWeapon(hold);
+      const As = buildLibraryAttack(yola2, { clip: c, frames: meta[clip]?.frames, hold, P, speed: +use.speed || 1, name: LIB_LABEL[w], sound: w });
+      if (!As?.length) continue;
+      LIB_ATTACKS[w] = As;
+      holds[w] = hold;
+    }
+    yola2.setTestWeapon(null);
+    yola2.libHolds = holds;
+    return Object.keys(holds);
+  }
+
+  // src/demos.js
+  var DEMOS = {
+    slam1: { label: "Guard: the first slam (dodge: the shield sticks, cracked)", weapon: "bat", setup(sim2) {
+      const z = guard(sim2, -0.4);
+      z.slamCd = 0;
+    } },
+    slam2: { label: "Guard: the second slam (the shield shatters)", weapon: "pistol", setup(sim2) {
+      const z = guard(sim2, -0.4);
+      z.slamCd = 0;
+      z.slams = 1;
+      z.shieldHp = z.shieldMax * 0.3;
+      z.hp = z.maxHp * 0.3;
+    } },
+    dismember: { label: "Guard after the break: arm, arm, head", weapon: "pistol", setup(sim2) {
+      const z = guard(sim2, -2);
+      z.slams = 2;
+      z.shieldHp = 0;
+      z.hp = z.maxHp * 0.55;
+      z.attackCd = 2;
+    } },
+    charger: { label: "The big lady charges (dodge left/right)", weapon: "pistol", setup(sim2) {
+      const z = put(sim2, 0.4, -5.6, "sprinter");
+      z.attackCd = 0;
+    } },
+    kipup: { label: "Yola knocked flat: the kip-up", weapon: "bat", setup(sim2) {
+      const z = guard(sim2, -0.2);
+      z.slamCd = 0;
+      sim2.demoNoDodge = true;
+    } },
+    ladykip: { label: "The lady trips into the wall: her kip-up", weapon: "pistol", setup(sim2) {
+      const p = sim2.player;
+      p.z = 10.05;
+      const z = put(sim2, 0.4, 2.6, "sprinter");
+      z.attackCd = 0;
+    } },
+    walkers: { label: "Walkers: the ring, its pounces, the scratch", weapon: "bat", setup(sim2) {
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI + (i / 5 - 0.5) * 2.4;
+        put(sim2, 0.4 + Math.sin(a) * 6, 1 + Math.cos(a) * 6, "normal", a + Math.PI);
+      }
+      sim2.player.z = 1;
+    } },
+    runner: { label: "The orange runner: the dash rake", weapon: "bat", setup(sim2) {
+      put(sim2, 0.4, -5.5, "runner");
+    } },
+    floor: { label: "Out of the floor: the breach", weapon: "pistol", setup(sim2) {
+      sim2.spawnFromFloor(-0.8, -1.6, { look: "patient" });
+      sim2.spawnFromFloor(2.2, -0.6, { kind: "runner" });
+    } },
+    low: { label: "Low targets: a crawler, a floored walker", weapon: "axe", setup(sim2) {
+      const c = put(sim2, 0.4, 0.6, "normal");
+      c.crawling = true;
+      c.broken = "LowerLeg_L";
+      const k = put(sim2, 1.6, 0.4, "normal");
+      k.knockDown(0, 1, sim2);
+    } }
+  };
+  function put(sim2, x, z, kind = "normal", yaw = 0) {
+    const q = sim2.spawnZombie("placed", { x, z, yaw, kind });
+    q.set("chase");
+    return q;
+  }
+  function guard(sim2, z) {
+    const g = put(sim2, 0.4, z, "guard");
+    g.attackCd = 0;
+    return g;
+  }
+  function startDemos(game, name, auto) {
+    const D3 = DEMOS[name] || DEMOS.slam1;
+    const el = document.createElement("div");
+    el.style.cssText = "position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top));transform:translateX(-50%);z-index:30;display:flex;gap:8px;align-items:center;font:600 13px system-ui;color:#fff;background:rgba(20,26,30,.78);padding:6px 10px;border-radius:12px;max-width:92vw";
+    el.innerHTML = `<span>${D3.label}</span><button style="font:700 15px system-ui;border:0;border-radius:8px;padding:4px 10px">\u21BA</button>`;
+    document.body.appendChild(el);
+    const setup = () => {
+      game.restart("calm");
+      const sim2 = game.sim, p = sim2.player;
+      sim2.director.update = () => {
+      };
+      sim2.zombies = [];
+      sim2.T.testInfiniteHealth = true;
+      p.x = 0.4;
+      p.z = 2.2;
+      p.aimYaw = p.aimTarget = Math.PI;
+      p.setLoadout([D3.weapon, "pistol", "shotgun", "bat", "axe", "fists"].filter((w, i, a) => a.indexOf(w) === i), D3.weapon);
+      D3.setup(sim2);
+      p.px = p.x;
+      p.pz = p.z;
+      game.yola.reset(p.x, p.z, p.aimYaw);
+      if (auto) game.scriptInput = (s) => autoplay(s, game);
+    };
+    el.querySelector("button").onclick = setup;
+    addEventListener("keydown", (e) => {
+      if (e.code === "KeyR") setup();
+    });
+    setup();
+  }
+  function autoplay(sim2) {
+    const p = sim2.player, r = { moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0, usePresses: 0, dodgePresses: 0 };
+    if (sim2.demoNoDodge) return r;
+    const th = p.threat;
+    if (th && th.now && th.soon) {
+      r.dodgePresses = 1;
+      return r;
+    }
+    let best = null, bd = 9;
+    for (const z of sim2.zombies) {
+      if (!z.alive || z.buried) continue;
+      const d = Math.hypot(z.x - p.x, z.z - p.z);
+      if (d < bd) {
+        bd = d;
+        best = z;
+      }
+    }
+    if (!best || th && !th.now) return r;
+    const dx = best.x - p.x, dz = best.z - p.z, l = Math.hypot(dx, dz) || 1;
+    const shielded = best.kind === "guard" && best.shieldBlocks(dx / l, dz / l);
+    if (!shielded) {
+      r.aimX = dx / l;
+      r.aimZ = dz / l;
+    }
+    if (shielded) {
+      r.moveX = -dz / l;
+      r.moveZ = dx / l;
+    }
+    return r;
+  }
+
   // src/main.js
   var params = new URLSearchParams(location.search);
   var store2 = {
@@ -68375,6 +69505,7 @@ void main() {
   var fx = new FX(scene);
   var gibs = new GibBurst(scene, new GLTFLoader(), fx);
   var telegraphs = new Telegraphs(scene);
+  var threatCue = new ThreatCue(scene);
   var acid = new AcidPools(scene, fx);
   fx.gore = store2.get("gore", true);
   var shakeOn = true;
@@ -68421,7 +69552,7 @@ void main() {
   var yola;
   var sim;
   var zviews = /* @__PURE__ */ new Map();
-  var zpool = [[], [], [], []];
+  var zpool = [[], [], [], [], []];
   var storyStart = params.has("intro") || params.has("reveal") || params.has("room1");
   var mode = storyStart ? "room1" : params.get("mode") || "encounter";
   var benchN = +(params.get("n") || 10);
@@ -68437,16 +69568,48 @@ void main() {
   var camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new Vector2() };
   var perf = { frames: [], spikes: 0, t0: performance.now() };
   var ZOMBIE_TYPES = [
-    { file: "assets/zombie-nurse-mod.glb", extra: ["assets/zombie-nurse-scratch.glb", "assets/zombie_moves/nurse-mod.glb"], height: 1.78, walk: { speed: 0.168 } },
+    { file: "assets/zombie-nurse-mod.glb", extra: ["assets/zombie-nurse-scratch.glb", "assets/zombie_moves/nurse-mod.glb", "assets/zombie_moves/nurse-mod-b.glb"], height: 1.78, walk: { speed: 0.168 } },
     // modular: severable head, forearms, lower legs
-    { file: "assets/zombie-patient-mod.glb", extra: ["assets/zombie-patient-scratch.glb", "assets/zombie_moves/patient-mod.glb"], height: 1.68, walk: { speed: 0.174 } },
+    { file: "assets/zombie-patient-mod.glb", extra: ["assets/zombie-patient-scratch.glb", "assets/zombie_moves/patient-mod.glb", "assets/zombie_moves/patient-mod-b.glb"], height: 1.68, walk: { speed: 0.174 } },
     // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
     // bed-panel shield is modelled). Not modular: no limbs come off them yet.
-    { file: "assets/zombie-sprinter.glb", extra: ["assets/zombie_moves/sprinter.glb"], height: 2, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 },
+    { file: "assets/zombie-sprinter.glb", extra: ["assets/zombie_moves/sprinter.glb", "assets/zombie_moves/sprinter-b.glb"], height: 2, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 },
     // (15% bigger than first built: she has to feel big)
-    { file: "assets/zombie-guard.glb", extra: ["assets/zombie_moves/guard.glb"], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 }
+    { file: "assets/zombie-guard.glb", extra: ["assets/zombie_moves/guard.glb"], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
+    // the runner (2026-10-18, the user: "an orange-clothed variant of the existing nurse zombie ... the faster enemy"): the
+    // nurse's own model and clips, her blue scrubs turned orange at load (orangeScrubs), core/zombies.js KINDS.runner
+    { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true }
   ];
-  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.look === "nurse" ? 0 : z.look === "patient" ? 1 : z.id % 2;
+  var _orangeMaps = /* @__PURE__ */ new Map();
+  function orangeScrubs(tex) {
+    if (!tex?.image) return tex;
+    if (_orangeMaps.has(tex)) return _orangeMaps.get(tex);
+    const img = tex.image, c = document.createElement("canvas");
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext("2d");
+    g.drawImage(img, 0, 0);
+    const id = g.getImageData(0, 0, c.width, c.height), d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), dl = mx - mn;
+      if (dl < 0.06 || mx < 0.06) continue;
+      let h = mx === r ? (gg - b) / dl % 6 : mx === gg ? (b - r) / dl + 2 : (r - gg) / dl + 4;
+      h = (h * 60 + 360) % 360;
+      if (h < 165 || h > 250) continue;
+      const l = (mx + mn) / 2, s = Math.min(1, dl / (1 - Math.abs(2 * l - 1) || 1) * 1.6 + 0.2), H4 = 22 + (h - 205) * 0.12, L2 = Math.min(0.62, l * 0.92 + 0.04);
+      const C = (1 - Math.abs(2 * L2 - 1)) * s, X2 = C * (1 - Math.abs(H4 / 60 % 2 - 1)), m = L2 - C / 2;
+      d[i] = (C + m) * 255;
+      d[i + 1] = (X2 + m) * 255;
+      d[i + 2] = m * 255;
+    }
+    g.putImageData(id, 0, 0);
+    const t = new CanvasTexture(c);
+    for (const k of ["flipY", "colorSpace", "wrapS", "wrapT", "channel", "anisotropy"]) t[k] = tex[k];
+    t.needsUpdate = true;
+    _orangeMaps.set(tex, t);
+    return t;
+  }
+  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.kind === "runner" ? 4 : z.look === "nurse" ? 0 : z.look === "patient" ? 1 : z.id % 2;
   var YOLA_HEIGHT = 1.62;
   var YOLA_MODEL = params.get("yola") || store2.get("yolaModel", "2");
   var YOLA_FILES = YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: ["assets/yola2_ual.glb"], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
@@ -68474,7 +69637,7 @@ void main() {
       for (const x of xs) if (x) g.animations.push(...x.animations);
       return g;
     });
-    const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => {
+    const zomP = Promise.all(ZOMBIE_TYPES.map((t) => t.same != null ? null : Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => {
       for (const x of xs) if (x) g.animations.push(...x.animations);
       return g;
     })));
@@ -68494,16 +69657,27 @@ void main() {
       // (the user's pistol fit per character, set in the Rig Lab)
       loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)
     ]);
+    const breachP = loader.loadAsync("assets/props/floor_breach.glb").then((g) => {
+      breaches.src = g.scene;
+      g.scene.traverse((o) => {
+        if (o.isMesh) {
+          o.receiveShadow = true;
+          o.castShadow = false;
+        }
+      });
+    }).catch(() => {
+    });
     loadHoldLayers();
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
     const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
     yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === "2" ? "yola2" : "yola"] });
-    yola.addAttackClips(yg.animations.filter((c) => c.name === "yola_knockdown" || c.name === "yola_getup"));
+    yola.addAttackClips(yg.animations.filter((c) => c.name === "yola_knockdown" || c.name === "yola_getup" || c.name === "ual_KipUp"));
     setupBat(yg.animations, await fetch("assets/hold/weapon_fit.json").then((r) => r.json()).catch(() => ({})), woodBatG);
     window.game.yolaClips = yg.animations;
-    ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[i]);
+    await setupLibWeapons({ yola, loader, scene, clips: yg.animations, who: YOLA_MODEL === "2" ? "yola2" : "yola" }).catch((e) => console.warn("library weapons", e));
+    ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[t.same ?? i]);
     renderer.shadowMap.needsUpdate = true;
     screens.scan(scene);
     restart();
@@ -68511,10 +69685,19 @@ void main() {
     hud.loading(1);
     if (params.has("intro") || params.has("reveal") || params.has("room1")) await startOpening();
     if (mode === "arena") window.game.testArena = await startTestArena({ game: window.game, scene, loader, telegraphs });
+    prepViews();
+    await breachP;
+    if (breaches.src) {
+      const w = breaches.src.clone(true);
+      w.visible = false;
+      w.position.y = -50;
+      scene.add(w);
+    }
     warmPrograms();
     requestAnimationFrame(frame);
     if (params.has("lab")) startLab(window.game, params.get("lab") || "bat");
     if (params.has("inspect")) window.game.inspect = startInspect(window.game);
+    if (params.has("demo")) startDemos(window.game, params.get("demo"), params.get("auto") === "1");
   }
   function holdFrame(clip, name) {
     const tracks = clip.tracks.map((t) => {
@@ -68701,6 +69884,7 @@ void main() {
     if (sim.level?.taken.has("bat")) opening?.takeBat?.();
     else opening?.restoreBat?.();
     hud.setObjective(OBJECTIVES[sim.level ? sim.level.objective : "room1"] || "");
+    prepViews();
     return sim;
   }
   function previewRoom1(dt) {
@@ -68733,10 +69917,26 @@ void main() {
     camera.fov = sv.fov;
     camera.updateProjectionMatrix();
   }
+  function prepViews() {
+    if (!sim) return;
+    for (const z of sim.zombies) if (!zviews.has(z.id)) {
+      const type = viewType(z), v = zpool[type].pop() || newZombieView(type);
+      v.bind(z);
+      zviews.set(z.id, v);
+    }
+    for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
+      const v = newZombieView(type);
+      v.hide();
+      zpool[type].push(v);
+    }
+  }
   function newZombieView(type) {
     const t = ZOMBIE_TYPES[type];
     const v = new ZombieView(scene, t.gltf, t.height, t.walk, t);
     v.type = type;
+    if (t.orange) v.model.traverse((o) => {
+      if (o.isMesh && o.material?.map) o.material.map = orangeScrubs(o.material.map);
+    });
     return v;
   }
   function restart(newMode = mode, n = benchN, save = null) {
@@ -68759,6 +69959,7 @@ void main() {
     zviews.clear();
     ZombieView.clearPieces();
     gibs.clear();
+    clearBreaches();
     resetPhysics();
     const p = sim.player;
     p.px = p.x;
@@ -68882,6 +70083,7 @@ void main() {
     const p = sim.player;
     let simDt = dt;
     if (paused) simDt = 0;
+    if (!paused) simDt *= slowmo.update(dt, sim, !!opening?.active);
     if (hitPauseT > 0) {
       const h = Math.min(hitPauseT, simDt);
       hitPauseT -= h;
@@ -68909,7 +70111,33 @@ void main() {
     handleEvents();
     if (steps) window.game.arenaTick?.(steps * STEP);
     const animDt = paused ? 0 : simDt;
-    (window.__dodgeBtn ?? (window.__dodgeBtn = document.getElementById("dodgeBtn")))?.classList.toggle("show", p.dodgeOpen > 0 && !p.dead);
+    {
+      const b = window.__dodgeBtn ?? (window.__dodgeBtn = document.getElementById("dodgeBtn")), th = p.threat;
+      if (b) {
+        b.classList.toggle("show", p.dodgeOpen > 0 && !p.dead);
+        b.classList.toggle("threat", !!th && !th.now && !p.dead);
+        b.classList.toggle("now", !!th && th.now && !p.dead);
+        const pr = th ? th.now ? 1 : Math.min(1, th.u / (th.kind === "slam" ? 0.58 : 1)) : 0;
+        if (Math.abs(pr - (b.__p ?? -1)) > 0.02) {
+          b.style.setProperty("--p", pr.toFixed(3));
+          b.__p = pr;
+        }
+      }
+      const tz = th?.z, tv = tz && zviews.get(tz.id);
+      const hb = tv?.bones?.Head?.getWorldPosition(_v11);
+      threatCue.update(dt, th, tz ? { x: hb ? hb.x : tz.px + (tz.x - tz.px) * alpha, y: hb ? hb.y : null, z: hb ? hb.z : tz.pz + (tz.z - tz.pz) * alpha } : null, tv ? tv.height : 2);
+      const key = th ? th.z.id + th.kind : "";
+      if (key && key !== cueState.key) cue(audio, "warn");
+      if (th?.now && !(cueState.now === key)) {
+        cue(audio, "now");
+        cueState.now = key;
+      }
+      cueState.key = key;
+    }
+    for (const z of sim.zombies) if (z.state === "stuck" && Math.floor((z.t + 0.2) / 0.55) !== Math.floor((z.t + 0.2 - animDt) / 0.55)) {
+      cue(audio, "heave", 0.9);
+      shake(0.06);
+    }
     const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
     const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
     const a = p.action;
@@ -68944,7 +70172,7 @@ void main() {
     if (a.type === "swing" && p.equipped !== "fists") {
       const A = p.atk(), wins = A.windows || [[A.activeStart, a.activeEnd]];
       if (wins.some(([w0, w1]) => a.st > w0 - 0.07 && a.st < w1 + 0.05)) {
-        if (p.equipped === "test" && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
+        if ((p.equipped === "test" || yola.libHolds?.[p.equipped]) && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
         else if (yola.melee.visible) fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v11), true);
       }
     }
@@ -69037,9 +70265,10 @@ void main() {
         case "shot": {
           audio.play("shot");
           fx.muzzle(yola.muzzleWorld);
-          fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez);
+          fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez, 0.5, e.ey);
           if (e.hit === "zombie" && !e.blocked) {
-            fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false);
+            if (e.ey != null) fx.burst(e.ex, e.ey, e.ez, 8, 7158330, 1.8, 0.8, 0.45);
+            else fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false);
             audio.play("bulletHit", 1, { x: e.ex, z: e.ez });
             if (!e.killed) audio.play("zombieHurt", 1, { x: e.ex, z: e.ez });
           } else if (e.hit === "wall") {
@@ -69055,7 +70284,7 @@ void main() {
           fx.muzzle(mw, 1.8);
           let flesh = 0;
           for (const pl of e.pellets) {
-            fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6);
+            fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6, pl.ey);
             if (pl.hit === "zombie") {
               if (!e.blocked?.includes(pl.id) && flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false);
             } else if (pl.hit === "wall" && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
@@ -69126,7 +70355,7 @@ void main() {
           hud.flash("reload");
           if (e.id === "bat") opening?.takeBat?.();
           else arena.takePickup(e.id);
-          hud.toast(e.kind === "weapon" ? e.weapon === "pistol" ? e.id === "pistol" ? "Pistol \u2014 the guard\u2019s sidearm" : "Pistol" : e.weapon === "axe" ? "Fire axe" : "Baseball bat" : e.kind === "ammo" ? "Spare pistol rounds" : "First aid: health restored");
+          hud.toast(e.kind === "weapon" ? e.weapon === "pistol" ? e.id === "pistol" ? "Pistol \u2014 the guard\u2019s sidearm" : "Pistol" : e.label || (e.weapon === "axe" ? "Fire axe" : "Baseball bat") : e.kind === "ammo" ? e.label || "Spare pistol rounds" : "First aid: health restored");
           break;
         }
         case "checkpoint":
@@ -69201,7 +70430,7 @@ void main() {
         case "sprinterSpot":
           if (dist(e.id) < 14) audio.play("groan", 1.5);
           break;
-        // her scream before the charge
+        // her scream before the charge (the warning cue: the threat sign)
         case "zombieTumble":
           audio.play("knockdown");
           if (dist(e.id) < 8) shake(0.15);
@@ -69215,11 +70444,73 @@ void main() {
           const d = Math.hypot(e.x - p.x, e.z - p.z);
           audio.play("knockdown", 1.4, e);
           fx.ring(e.x, e.z, 14208959);
-          fx.burst(e.x, 0.1, e.z, 16, 13616820, 2.2, 0.8, 0.6);
-          if (d < 7) shake(0.9 - d * 0.1);
+          fx.burst(e.x, 0.1, e.z, 22, 13616820, 2.6, 0.9, 0.7);
+          fx.burst(e.x, 0.05, e.z, 10, 7300696, 3.2, 0.5, 0.5);
+          if (d < 8) shake(1 - d * 0.1);
+          if (shakeOn) camState.vz += 1.2 * tuning.shake;
           break;
         }
-        // the guard's smash: dust, a ring, the floor shakes
+        // the guard's smash: dust, grit, a ring, the floor shakes and the view drops
+        case "floorRumble": {
+          const d = Math.hypot(e.x - p.x, e.z - p.z);
+          cue(audio, "rumble", Math.max(0.3, 1 - d / 14));
+          fx.floorCrack?.(e.x, e.z, 0.75);
+          fx.burst(e.x, 0.05, e.z, 8, 10130570, 0.8, 0.4, 0.9);
+          if (d < 9) shake(0.12);
+          break;
+        }
+        // the floor about to break: a crack, grit, a rumble (an emerging zombie: core/sim.js spawnFromFloor)
+        case "floorBreach": {
+          const d = Math.hypot(e.x - p.x, e.z - p.z);
+          cue(audio, "breach", Math.max(0.35, 1 - d / 14));
+          fx.clearCrackAt(e.x, e.z);
+          placeBreach(e.x, e.z);
+          fx.burst(e.x, 0.15, e.z, 18, 14273970, 2.6, 1.6, 0.7);
+          fx.burst(e.x, 0.1, e.z, 14, 7301730, 2, 1.2, 0.9);
+          if (d < 9) shake(0.3);
+          break;
+        }
+        case "shieldStuck":
+          cue(audio, "lodge");
+          fx.burst(e.x, 0.08, e.z, 18, 9077106, 2, 0.6, 0.6);
+          fx.floorCrack?.(e.x, e.z, 1);
+          hud.popup("SHIELD CRACKED");
+          break;
+        // (his shield driven into the floor: render/fx.js floorCrack)
+        case "shieldFree": {
+          const z = sim.zombies.find((q) => q.id === e.id);
+          cue(audio, "free");
+          if (z) fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.1, z.z + Math.cos(z.yaw) * 0.75, 14, 9077106, 2.4, 0.9, 0.5);
+          break;
+        }
+        case "guardFinished":
+          slowBeat(0.3, 0.7);
+          shake(0.6);
+          break;
+        // (his head: the finishing blow)
+        case "dodge":
+          audio.play("swing", 0.75);
+          break;
+        case "grabbed":
+          audio.play("bump", 0.8);
+          break;
+        // (a crawler has her ankle: she is held back, core/player.js grabT)
+        case "dodgeSuccess":
+          if (e.perfect) {
+            slowBeat(0.26, 0.9);
+            cue(audio, "perfect");
+            hud.popup("PERFECT DODGE");
+          }
+          break;
+        // (core/sim.js specialMiss: her next blow is critical)
+        case "crit": {
+          slowEnd();
+          cue(audio, "crit");
+          hud.popup("CRITICAL");
+          shake(0.7);
+          fx.hitFlash(e.x, 1.1, e.z, 0, 0, 2);
+          break;
+        }
         case "playerDown":
           audio.play("knockdown");
           shake(0.7);
@@ -69252,16 +70543,21 @@ void main() {
           if (e.kind !== "pistol") shake(0.25);
           break;
         case "shieldCrack":
-          fx.burst(e.x - e.dirX * 0.45, 1.15, e.z - e.dirZ * 0.45, e.state === "heavy" ? 12 : 8, 14149602, 2, 0.7, 0.4);
-          shake(e.state === "heavy" ? 0.4 : 0.3);
+          audio.play("shieldHit", 1.4, e);
+          fx.burst(e.x, 0.6, e.z, 20, 15327695, 2.6, 1, 0.5);
+          fx.burst(e.x, 0.5, e.z, 8, 3116946, 2.2, 0.8, 0.45);
+          shake(0.55);
           break;
-        // (a new crack stage: chips off the panel)
+        // (his first slam: the big crack, chips of the cream frame and the teal panel)
         case "shieldBreak":
           audio.play("shieldBreak");
-          fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 14149602, 2.4, 0.9, 0.55);
-          shake(0.55);
-          hud.popup("SHIELD BROKEN");
+          cue(audio, "lodge", 0.8);
+          fx.burst(e.x, 0.6, e.z, 26, 15327695, 3.2, 1.2, 0.6);
+          fx.burst(e.x, 0.4, e.z, 12, 3116946, 2.8, 1, 0.5);
+          shake(0.8);
+          hud.popup("SHIELD SHATTERED");
           break;
+        // (his second slam: in pieces, frame and all)
         case "headshot":
           audio.play("bulletHit", 1.5);
           shake(0.35);
@@ -69332,6 +70628,37 @@ void main() {
     const z = sim.zombies.find((q) => q.id === id);
     return z ? Math.hypot(z.x - sim.player.x, z.z - sim.player.z) : 99;
   };
+  var cueState = { key: "", now: "" };
+  var breaches = { src: null, list: [] };
+  function placeBreach(x, z) {
+    if (!breaches.src) return;
+    if (LAYOUT.story && !breaches.grey) {
+      breaches.grey = breaches.src.clone(true);
+      breaches.grey.traverse((m) => {
+        if (m.isMesh) {
+          const f = (mt) => {
+            const c = mt.clone();
+            if (/TileCream/.test(mt.name)) c.color.setRGB(0.42, 0.41, 0.39);
+            else if (/TileTeal/.test(mt.name)) c.color.setRGB(0.3, 0.3, 0.29);
+            return c;
+          };
+          m.material = Array.isArray(m.material) ? m.material.map(f) : f(m.material);
+        }
+      });
+    }
+    const o = (LAYOUT.story ? breaches.grey : breaches.src).clone(true);
+    o.position.set(x, 0, z);
+    scene.add(o);
+    breaches.list.push(o);
+    if (breaches.list.length > 10) breaches.list.shift().removeFromParent();
+  }
+  function clearBreaches() {
+    for (const o of breaches.list) o.removeFromParent();
+    breaches.list.length = 0;
+  }
+  var slowmo = new SlowMotion(audio);
+  var slowBeat = (k, d) => slowmo.beat(k, d);
+  var slowEnd = () => slowmo.end();
   function shake(k) {
     if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake);
   }
