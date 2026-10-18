@@ -195,12 +195,13 @@ export class Zombie {
     const wasDown = this.down, melee = isMelee(kind);
     const parts = Array.isArray(part) ? part : [[part, dmg]];
     // the guard's shield takes a frontal blow: it stops it completely (no harm to it or to him: only his slams damage it);
-    // he is shoved a little and flinches behind it. A hard blow rocks him back a step, but nothing stops a slam once begun.
+    // he is shoved a little and flinches behind it, never more.
     if (this.shieldBlocks(dirX, dirZ)) {
       this.kx += dirX * impulse * 0.3 * this.K.knock; this.kz += dirZ * impulse * 0.3 * this.K.knock;
       this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse * 0.4; this.hitSeq++; this.hitKind = kind; this.hitStyle = 'shield'; this.hitFlash = 0.25;
-      if (melee && this.state === ZS.CHASE) this.set(ZS.STAGGER, 0.28);
-      else if (melee && this.state === ZS.WINDUP && this.attack !== 'slam') this.set(ZS.STAGGER, 0.35);
+      // (no stagger: a blow on the panel only jolts him behind it, so hammering at the shield never stun-locks him out of
+      // his advance or his slam; only his lunge's wind-up breaks on a hard blow)
+      if (melee && this.state === ZS.WINDUP && this.attack !== 'slam') this.set(ZS.STAGGER, 0.35);
       sim.emit({ type: 'shieldHit', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
       return 'blocked';
     }
@@ -210,7 +211,7 @@ export class Zombie {
       if (pt !== 'torso' && this.severed.has(pt)) pt = 'torso';
       if (pt.startsWith('LowerLeg') && this.kind !== 'normal') pt = 'torso'; // (the big two never lose a leg: PROGRESS.md gore plan)
       // a bullet in a walker's leg takes it off half the time (the user, 2026-10-17: "randomly shoot a leg off")
-      if (pt.startsWith('LowerLeg') && (kind === 'pistol' || kind === 'shotgun') && this.limbHp[pt] > 0 && sim.rand() < (sim.T.legShotChance ?? 0.5)) this.limbHp[pt] = Math.min(this.limbHp[pt], d * limbMul * 0.99);
+      if (pt.startsWith('LowerLeg') && (kind === 'pistol' || kind === 'shotgun') && this.limbHp[pt] > 0 && sim.rand() < (sim.T.legShotChance ?? 0.5) * (kind === 'shotgun' ? 0.45 : 1.2)) this.limbHp[pt] = Math.min(this.limbHp[pt], d * limbMul * 0.99); // (2026-10-18: a blast puts several pellets in the legs: each less likely to take one; measured crawlers per kill ~25-35%)
       if (pt !== 'torso' && this.broken !== pt) { // (a broken leg stays on: a blunt blow never cuts)
         this.limbHp[pt] -= d * limbMul;
         if (this.limbHp[pt] <= 0) this.sever(pt, dirX, dirZ, sim);

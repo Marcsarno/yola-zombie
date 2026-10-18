@@ -37,6 +37,7 @@ import { ThreatCue } from './render/threatcue.js';
 import { cue } from './sfx/cues.js';
 import { SlowMotion } from './render/slowmo.js';
 import { setupLibWeapons } from './render/libweapons.js';
+import { startDemos } from './demos.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -234,6 +235,7 @@ async function load() {
   requestAnimationFrame(frame);
   if (params.has('lab')) startLab(window.game, params.get('lab') || 'bat'); // the combat lab (frame-by-frame melee against the reference)
   if (params.has('inspect')) window.game.inspect = startInspect(window.game); // free camera on Yola's weapon holds (src/inspect.js)
+  if (params.has('demo')) startDemos(window.game, params.get('demo'), params.get('auto') === '1'); // repeatable examples (src/demos.js)
 }
 // The bat: Quaternius's Sword Regular Combo (one-handed, four strikes), built on the Yola that plays, the bat in her right
 // fist and the matching Sword Idle as its stance (src/render/libattack.js). Without the clip the older bat combo stays.

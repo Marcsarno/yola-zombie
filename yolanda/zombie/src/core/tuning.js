@@ -23,7 +23,7 @@ export const TUNING_DEFAULTS = {
   shotgunInterval: 0.85, // s between shots (the pump)
   shotgunMag: 6,
   shotgunReload: 1.9,
-  legStrikeChance: 0.25, // a melee opener at a standing walker goes in low for its legs (core/player.js startSwing)
+  legStrikeChance: 0.13, // a melee opener at a standing walker goes in low for its legs (core/player.js startSwing)
   legShotChance: 0.5, // a bullet in a walker's lower leg takes it off (core/zombies.js takeHit)
   axeDamage: 62, // first attack; the combo's later attacks hit harder (weapons.js AXE_ATTACKS)
   axeKnockback: 5.0, // m/s impulse
@@ -52,11 +52,11 @@ export const TUNING_DEFAULTS = {
 };
 
 // bumped when defaults change, so tuning saved by an older build does not hide the new values
-export const TUNING_VERSION = 4;
+export const TUNING_VERSION = 5;
 // defaults changed since an older version: on load those keys go back to the new default (each version's list applies to
 // everything saved before it). 4: the melee hit-stop is off by default (a panel save from before round 16 kept 0.07: the
 // stutter the user felt on multi-target axe hits), the orderly's charge no longer steers.
-const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'] };
+const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'], 5: ['legStrikeChance'] }; // (5: leg strikes a little rarer, 2026-10-18)
 export function makeTuning(saved) {
   if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) { saved = { ...saved }; for (let v = saved._v + 1; v <= TUNING_VERSION; v++) for (const k of CHANGED[v] || []) delete saved[k]; saved._v = TUNING_VERSION; }
   if (!saved || saved._v !== TUNING_VERSION) saved = null;
