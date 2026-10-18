@@ -45047,9 +45047,20 @@ void main() {
       Z
     };
     def.dress(P);
-    const bedPatients = props.filter((q) => /recovery_bed.glb$/.test(q.m)).map((q, i) => {
-      const yaw = q.rot * Math.PI / 180;
-      return { id: "bed" + i, sense: 3, zombies: [{ x: q.x, z: q.z, yaw: yaw + Math.PI, look: "patient", prop: "bed", bed: { x: q.x, z: q.z, yaw } }] };
+    const blocked = (x, z, r, self2) => walls.some((w) => x > w[0] - r && x < w[1] + r && z > w[2] - r && z < w[3] + r) || props.some((o) => o !== self2 && !o.noCollide && !o.wall && o.fp && Math.abs(x - o.x) < o.fp[0] / 2 + r && Math.abs(z - o.z) < o.fp[1] / 2 + r);
+    const bedPatients = props.filter((q) => /recovery_bed\.glb$/.test(q.m)).map((q, i) => {
+      const yaw = q.rot * Math.PI / 180, out = (s, d) => [q.x - s * Math.cos(yaw) * d, q.z + s * Math.sin(yaw) * d];
+      const free = (s) => !blocked(...out(s, 1), 0.3, q) && !blocked(...out(s, 1.6), 0.3, q);
+      const side = free(1) || !free(-1) ? 1 : -1;
+      q.m = q.m.replace(/recovery_bed\.glb$/, side > 0 ? "recovery_bed_open_nx.glb" : "recovery_bed_open_px.glb");
+      {
+        const [ex, ez] = out(side, 0.85), fx2 = Math.sin(yaw), fz = Math.cos(yaw);
+        for (const o of props) if (o !== q && o.noCollide && !o.wall && !(o.y > 1) && Math.hypot(o.x - (ex + fx2 * 0.35), o.z - (ez + fz * 0.35)) < 0.6) {
+          o.x -= fx2 * 0.75;
+          o.z -= fz * 0.75;
+        }
+      }
+      return { id: "bed" + i, sense: 3, zombies: [{ x: q.x, z: q.z, yaw: 0, look: "patient", prop: "bed", bed: { x: q.x, z: q.z, yaw, side } }] };
     });
     const xs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[0], q[1]])), zs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[2], q[3]]));
     const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs, L2.cab.minZ), maxZ = Math.max(...zs);
@@ -46940,7 +46951,51 @@ void main() {
   var shieldState = (z) => !z.shieldMax ? "none" : z.shieldHp <= 0 ? "break" : z.shieldHp / z.shieldMax > 0.78 ? "intact" : z.shieldHp / z.shieldMax > 0.4 ? "hairline" : "heavy";
   var TUMBLE_FALL = 1.3;
   var TUMBLE_GETUP = 1.9;
-  var BED_RISE = 2.2;
+  var BED_RISE = 7.4;
+  var BED_AT = { x: -0.05, z: -0.29 };
+  var BED_PATH = [
+    [0, 1e-3, -0.252],
+    [3.8, 5e-3, -0.252],
+    [3.9, 0.015, -0.25],
+    [4, 0.032, -0.243],
+    [4.1, 0.056, -0.229],
+    [4.2, 0.084, -0.211],
+    [4.3, 0.115, -0.189],
+    [4.4, 0.15, -0.165],
+    [4.5, 0.185, -0.139],
+    [4.6, 0.22, -0.113],
+    [4.7, 0.254, -0.086],
+    [4.8, 0.285, -0.059],
+    [4.9, 0.312, -0.034],
+    [5, 0.334, -0.012],
+    [5.1, 0.35, 5e-3],
+    [5.2, 0.359, 0.015],
+    [5.3, 0.36, 0.018],
+    [6.1, 0.36, 0.026],
+    [6.2, 0.36, 0.107],
+    [6.3, 0.36, 0.215],
+    [6.4, 0.36, 0.272],
+    [6.5, 0.36, 0.278],
+    [6.6, 0.359, 0.297],
+    [6.7, 0.36, 0.341],
+    [6.8, 0.36, 0.401],
+    [6.9, 0.361, 0.459],
+    [7, 0.361, 0.504],
+    [7.1, 0.362, 0.517],
+    [7.4, 0.368, 0.526]
+  ];
+  function bedRoot(B) {
+    const s = B.side || 1, yaw = B.yaw - s * Math.PI / 2, ax = s * BED_AT.x, az = BED_AT.z;
+    return [B.x - (ax * Math.cos(yaw) + az * Math.sin(yaw)), B.z - (-ax * Math.sin(yaw) + az * Math.cos(yaw)), yaw];
+  }
+  function bedPathAt(B, t) {
+    const s = B.side || 1, [rx, rz, yaw] = bedRoot(B);
+    let i = 0;
+    while (i < BED_PATH.length - 2 && BED_PATH[i + 1][0] <= t) i++;
+    const a = BED_PATH[i], b = BED_PATH[i + 1], u = Math.max(0, Math.min(1, (t - a[0]) / (b[0] - a[0])));
+    const px2 = s * (a[1] + (b[1] - a[1]) * u), pz2 = a[2] + (b[2] - a[2]) * u;
+    return [rx + px2 * Math.cos(yaw) + pz2 * Math.sin(yaw), rz - px2 * Math.sin(yaw) + pz2 * Math.cos(yaw)];
+  }
   var FLOOR_EMERGE = { rumble: 1.1, climb: 2, buriedFor: 0.18, solidAt: 0.45, shudder: 0.32 };
   var PERSONAL = 1.05;
   var Zombie = class {
@@ -47017,8 +47072,10 @@ void main() {
       this.prop = opts.prop || "";
       this.bed = opts.bed || null;
       this.chair = this.prop === "chair";
+      this.layInBed();
       if (this.prop) this.pouncer = false;
-      if (this.prop === "iv" || this.chair) this.gait = "shamble";
+      if (this.prop === "iv" || this.prop === "bed") this.gait = "ual";
+      else if (this.chair) this.gait = "shamble";
       if (this.chair) {
         this.severed.add("LowerLeg_L");
         this.severed.add("LowerLeg_R");
@@ -47057,6 +47114,13 @@ void main() {
       this.broken = part;
       sim2.emit({ type: "legBreak", id: this.id, part, x: this.x, z: this.z });
     }
+    layInBed() {
+      if (this.bed) {
+        [this.x, this.z] = bedPathAt(this.bed, 0);
+        this.yaw = bedRoot(this.bed)[2];
+      }
+    }
+    // (lying in it as the hub laid it)
     set(state, dur = 0) {
       this.state = state;
       this.t = 0;
@@ -47431,10 +47495,8 @@ void main() {
           sim2.level?.onWake(this);
           sim2.emit({ type: "zombieWake", id: this.id });
           if (this.bed) {
-            const B = this.bed, sx = Math.cos(B.yaw), sz = -Math.sin(B.yaw), s = (p.x - B.x) * sx + (p.z - B.z) * sz >= 0 ? 1 : -1;
-            this.bedRise = { x0: this.x, z0: this.z, x1: B.x + sx * s * 0.95, z1: B.z + sz * s * 0.95, side: s };
+            this.bedRise = true;
             this.set(ZS.EMERGE, BED_RISE);
-            this.solid = false;
             sim2.emit({ type: "bedRise", id: this.id });
           }
         }
@@ -47443,22 +47505,17 @@ void main() {
       switch (this.state) {
         case ZS.EMERGE:
           if (this.bedRise) {
-            const B = this.bedRise, u = Math.min(1, this.t / this.stateDur), e = u * u * (3 - 2 * u);
-            this.x = B.x0 + (B.x1 - B.x0) * e;
-            this.z = B.z0 + (B.z1 - B.z0) * e;
+            [this.x, this.z] = bedPathAt(this.bed, this.t);
             this.vx = this.vz = 0;
-            this.solid = u > 0.5;
-            if (u > 0.7) {
-              turnRate = 2.5;
-              wantX = dx;
-              wantZ = dz;
-            }
+            this.kx = this.kz = 0;
+            turnRate = 0;
+            this.yawV = 0;
             if (this.t >= this.stateDur) {
-              this.bedRise = null;
+              this.bedRise = false;
               this.bed = null;
               this.set(ZS.CHASE);
-              this.solid = true;
               this.attackCd = Math.max(this.attackCd, 0.6);
+              this.rGrow = 1;
             }
             break;
           }
@@ -47881,7 +47938,9 @@ void main() {
           this.corpseT += dt;
           break;
       }
-      if (this.kind === "guard") {
+      if (this.bed) {
+        this.yaw = bedRoot(this.bed)[2];
+      } else if (this.kind === "guard") {
         const on = turnRate > 0 && (wantX || wantZ) && !(this.state === ZS.CHASE && this.backing);
         const want = on ? Math.max(-turnRate, Math.min(turnRate, angleDiff(this.yaw, Math.atan2(wantX, wantZ)) * GUARD.spin)) : 0;
         this.yawV = (this.yawV || 0) + (want - (this.yawV || 0)) * Math.min(1, dt * (on ? 7 : 12));
@@ -47907,6 +47966,10 @@ void main() {
         const k = Math.min(1, dt * (this.state === ZS.RECOVER && this.attack === "dash" ? 4.5 : 10));
         this.vx -= this.vx * k;
         this.vz -= this.vz * k;
+      }
+      if (this.rGrow > 0) {
+        this.rGrow = Math.max(0, this.rGrow - dt);
+        this.r = this.K.r * (1 - 0.6 * this.rGrow);
       }
       const fr = Math.exp(-dt * (this.state === ZS.DYING ? 5 : 7));
       this.x += (this.vx + this.kx) * dt;
@@ -48728,6 +48791,7 @@ void main() {
         z.z = opts.z;
         z.yaw = opts.yaw ?? z.yaw;
         z.stateDur = 0.3;
+        z.layInBed();
       } else {
         z.emergeTo = { x: sx, z: sz };
         z.x = d.axis === "x" ? sx : d.x + (d.x < 0 ? 0.35 : -0.35);
@@ -52664,10 +52728,9 @@ void main() {
   var attackClip = (z) => z.attack === "flail" ? SWINGS[["hook", "slashB", "slashA"][(z.swingN || 0) % 3]] : z.attack === "club" ? SWINGS[(z.swingN || 0) % 2 ? "slashA" : "slashB"] : ATTACK_CLIPS[z.attack];
   var HEAVE = 0.5;
   var LOOK_MAX = 1.1;
-  var EXTRA_ONCE = ["ual_IdleToLay", "ual1_Sitting_Exit", "ual_KipUp", "ual_Zombie_Spawn", "ual_Hit_Knockback", "ual1_Crawl_Enter", "ual_Zombie_Scratch", "ual_LayToIdle", "ual_Melee_Hook", "ual_Sword_Regular_A", "ual_Sword_Regular_B", "ual1_PickUp_Table", "ual_Farm_Harvest"];
+  var EXTRA_ONCE = ["patient_bed_rise", "ual_IdleToLay", "ual1_Sitting_Exit", "ual_KipUp", "ual_Zombie_Spawn", "ual_Hit_Knockback", "ual1_Crawl_Enter", "ual_Zombie_Scratch", "ual_LayToIdle", "ual_Melee_Hook", "ual_Sword_Regular_A", "ual_Sword_Regular_B", "ual1_PickUp_Table", "ual_Farm_Harvest"];
   var IV = { fwd: 0.32, side: 0.36, grip: 1.08, k: 16, damp: 7, tilt: 0.05, maxTilt: 0.2, reach: 0.75, h: 2.03 };
   var CHAIR = { seat: 0.62, fwd: 0.06, yaw: 0, rim: [-0.04, 0.36, 0.3], rimR: 0.27, rimArc: 1.6, h: 0.97 };
-  var BED = { top: 0.66, h: 0.87 };
   var GAIT_SETS = {
     ual: { idle: "ual_Zombie_Idle_Loop", dur: 1.333, dirs: [["Fwd", 0, 1, 1.05], ["Fwd_L", 0.707, 0.707, 1.06], ["L", 1, 0, 0.75], ["Bwd_L", 0.707, -0.707, 1.06], ["Bwd", 0, -1, 1.2], ["Bwd_R", -0.707, -0.707, 1.06], ["R", -1, 0, 0.75], ["Fwd_R", -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
     run: { idle: "ual_Zombie_Idle_Loop", dur: 0.733, dirs: [["Fwd", 0, 1, 4.1], ["L", 1, 0, 2.05], ["Bwd", 0, -1, 4.1], ["R", -1, 0, 2.05]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Run_${k}_Loop`, x, z, s })) }
@@ -53244,41 +53307,43 @@ void main() {
       new Matrix4().copy(rest).invert().multiply(capW).decompose(cap.position, cap.quaternion, cap.scale);
       hb.add(cap);
       cap.visible = false;
-      cap.traverse((o) => {
-        if (o.isMesh) o.castShadow = true;
-      });
       this.cap = cap;
     }
     // before the mixer: the seated legs under the wheelchair, the lying pose in a bed
     propPose(z, dt) {
       if (this.chairO) this.act("sit_lower")?.setEffectiveWeight(z.chair && !z.crawling ? 8 : 0);
-      if (z.bed && this.act("ual_LayToIdle")) {
-        const a = this.act("ual_LayToIdle"), c = a.getClip(), t0 = this.lieT0 ?? (this.lieT0 = Math.min(...c.tracks.map((q) => q.times[0])));
+      const bedA = this.act("patient_bed_rise");
+      if (z.bed && bedA) {
         if (!this.lying) {
-          this.lying = true;
-          this.playOnce("ual_LayToIdle", t0, 0, 0);
+          this.lying = bedA;
+          bedA.reset();
+          bedA.setLoop(LoopOnce);
+          bedA.clampWhenFinished = true;
+          bedA.play();
         }
-        a.timeScale = 0;
-        a.setEffectiveWeight(10);
-        const u = z.bedRise && z.state === "emerge" ? clamp5(z.t / Math.max(0.1, z.stateDur), 0, 1) : 0;
-        a.time = t0 + (c.duration - t0 - 0.02) * clamp5((u - 0.12) / 0.8, 0, 1);
-      } else if (this.lying) {
-        this.lying = null;
-        const a = this.act("ual_LayToIdle");
-        if (this.oneShot === a) {
-          a.fadeOut(0.25);
+        bedA.timeScale = 0;
+        bedA.time = z.bedRise && z.state === "emerge" ? Math.min(z.t, bedA.getClip().duration - 0.01) : 0;
+        bedA.setEffectiveWeight(1);
+        for (const n of ["walk", "idle", "attack", "scratch"]) this.act(n)?.setEffectiveWeight(0);
+        if (this.gaitSet) for (const n of [this.gaitSet.idle, ...this.gaitSet.dirs.map((d) => d.n)]) this.act(n).setEffectiveWeight(0);
+        if (this.oneShot) {
+          this.oneShot.stop();
+          this.oneShot.setEffectiveWeight(0);
           this.oneShot = null;
         }
+      } else if (this.lying) {
+        this.lying.fadeOut(0.35);
+        this.lying = null;
       }
     }
     // after the mixer: where the stand / the chair are, the hands on them, the body's height
     propPlace(z, dt) {
       const B = this.bones, y = z.yaw, f = _v5.set(Math.sin(y), 0, Math.cos(y)), l = _v6.set(Math.cos(y), 0, -Math.sin(y));
       const busy = z.state === "windup" || z.state === "strike" || z.state === "recover" || z.state === "stagger" || z.state === "knockdown" || z.state === "getup" || z.state === "dying" || z.state === "dead" || z.crawling;
-      if (z.bed) {
-        const u = z.bedRise && z.state === "emerge" ? clamp5((z.t / Math.max(0.1, z.stateDur) - 0.25) / 0.4, 0, 1) : 0;
-        this.outer.position.y = BED.top * (1 - u * u * (3 - 2 * u));
-        this.outer.updateMatrixWorld(true);
+      {
+        const m = z.bed && (z.bed.side || 1) < 0 ? -1 : 1;
+        if (this.outer.scale.x !== m) this.outer.scale.x = m;
+        if (m < 0) this.container.rotation.y = -z.yaw;
       }
       if (this.chairO) {
         const o = this.chairO;
@@ -53705,7 +53770,7 @@ void main() {
         this.act("idle").setEffectiveWeight(1 - one2);
       }
       this.mixer.update(dt);
-      if (this.iv || this.chairO || z.bed) this.propPlace(z, dt);
+      if (this.iv || this.chairO || z.bed || this.outer.scale.x < 0) this.propPlace(z, dt);
       if (this.plantedP && (z.state === "stuck" || z.state === "pickup" && !this.clubArm)) this.gripPlanted(z);
       if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
       if (this.clubArm) {
@@ -53824,7 +53889,7 @@ void main() {
       root.add(wrist, elbow);
       root.traverse((o) => {
         if (o.isMesh) {
-          o.castShadow = true;
+          o.castShadow = false;
           o.receiveShadow = true;
         }
       });
@@ -70421,10 +70486,10 @@ void main() {
       put(sim2, -2.6, -4.2, "normal", 0, "iv");
       put(sim2, 0.4, -5, "normal", 0, "chair");
       put(sim2, 3, -4.4, "normal", 0, "surgeon");
-      const B = { x: 4.4, z: -1.8, yaw: 0, y: 0.66 }, b = sim2.spawnZombie("placed", { x: B.x, z: B.z, yaw: Math.PI, passive: true, speedMul: 0, prop: "bed", bed: B });
+      const B = { x: 4.4, z: -1.8, yaw: 0, side: 1 }, b = sim2.spawnZombie("placed", { x: B.x, z: B.z, yaw: 0, passive: true, speedMul: 0, prop: "bed", bed: B });
       b.set("chase");
       b.dormant = { wake: Infinity, sense: 3.2, speedMul: 0.9 };
-      const S2 = game.propSrc?.bed;
+      const S2 = game.propSrc?.bedOpen;
       if (S2) {
         const o = S2.clone();
         o.position.set(B.x, 0, B.z);
@@ -70641,7 +70706,7 @@ void main() {
   var ZOMBIE_TYPES = [
     { file: "assets/zombie-nurse-mod.glb", extra: ["assets/zombie-nurse-scratch.glb", "assets/zombie_moves/nurse-mod.glb", "assets/zombie_moves/nurse-mod-b.glb", "assets/zombie_moves/nurse-mod-c.glb"], height: 1.78, walk: { speed: 0.168 } },
     // modular: severable head, forearms, lower legs
-    { file: "assets/zombie-patient-mod.glb", extra: ["assets/zombie-patient-scratch.glb", "assets/zombie_moves/patient-mod.glb", "assets/zombie_moves/patient-mod-b.glb", "assets/zombie_moves/patient-mod-c.glb"], height: 1.68, walk: { speed: 0.174 } },
+    { file: "assets/zombie-patient-mod.glb", extra: ["assets/zombie-patient-scratch.glb", "assets/zombie_moves/patient-mod.glb", "assets/zombie_moves/patient-mod-b.glb", "assets/zombie_moves/patient-mod-c.glb", "assets/zombie_moves/patient-bedrise.glb"], height: 1.68, walk: { speed: 0.174 } },
     // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
     // bed-panel shield is modelled). Not modular: no limbs come off them yet.
     { file: "assets/zombie-sprinter.glb", extra: ["assets/zombie_moves/sprinter.glb", "assets/zombie_moves/sprinter-b.glb"], height: 2, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 },
@@ -70765,7 +70830,7 @@ void main() {
       w.add(o);
       w.traverse((m) => {
         if (m.isMesh) {
-          m.castShadow = true;
+          m.castShadow = false;
           m.receiveShadow = true;
         }
       });
@@ -70778,9 +70843,10 @@ void main() {
       loader.loadAsync("assets/hospital/wheelchair.glb").then((g) => {
         ZombieView.propSrc.chair = fitProp(g, 0.97);
       }),
-      loader.loadAsync("assets/hospital/recovery_bed.glb").then((g) => {
-        ZombieView.propSrc.bed = fitProp(g, 0.87);
+      loader.loadAsync("assets/hospital/recovery_bed_open_nx.glb").then((g) => {
+        ZombieView.propSrc.bedOpen = fitProp(g, 0.87);
       }),
+      // (the demo's bed)
       loader.loadAsync("assets/props/surgeon_cap.glb").then((g) => {
         ZombieView.propSrc.cap = g.scene;
       })
