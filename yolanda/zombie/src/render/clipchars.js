@@ -1295,9 +1295,12 @@ const TUMBLE = { f0: 40, f1: 90, up0: 1, up1: 94 };
 // the scratch (Quaternius UAL2 Zombie_Scratch, retargeted by tools/anim/zombie_clip.py): arms up over frames 1-16 (played
 // over the wind-up), the rake 17-21 (the strike), back down 22-45 (the recovery; the clip's long settle is skipped)
 const SCRATCH = { f0: 1, hit: 17, hitEnd: 21, end: 45 };
-// the guard's slam (KayKit Melee_1H_Attack_Jump_Chop): crouch and leap over the wind-up (frames 1-18), the smash 18-23,
-// landing and rising 23-41 (the recovery). Its hips rise is halved at load: a heavy man's hop, not an acrobat's leap.
-const SLAM = { f0: 1, hit: 18, hitEnd: 23, end: 41, lift: 0.5 };
+// the guard's leap-slam (2026-10-18, built in the Animation Hub from Quaternius clips, assets/zombie_moves/guard.glb
+// guard_leap_slam; replaces the KayKit jump chop): over the wind-up (frames 1-77) he sinks behind his shield and holds the
+// crouch (the tell), drives up (takeoff at 45), rises slowing to a float at the top, and drops; the shield hits the floor
+// at 77; braced over it 77-81 (the strike), then rises back into his hold 81-114 (the recovery). The leap's height is in
+// the clip (lift 1); it jumps in place: the sim moves him forward.
+const SLAM = { f0: 1, hit: 77, hitEnd: 81, end: 114, lift: 1, clip: 'guard_leap_slam' };
 // the pounce (core/zombies.js; Quaternius UAL2 Zombie_Bite, assets/zombie_moves): rears up over the wind-up (frames 1-10),
 // the lunge and bite over the leap (10-19), down and back up over the recovery (19-46)
 const POUNCE = { f0: 1, hit: 10, hitEnd: 19, end: 46, clip: 'ual_Zombie_Bite' };
@@ -1426,7 +1429,8 @@ export class ZombieView extends ClipBody {
       clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
       for (const c of clips) if (['walk', 'idle', 'crawl', 'sprint', 'shield_idle'].includes(c.name) || /_Loop$/.test(c.name)) loopClip(c);
       { const b = clips.find((c) => c.name === POUNCE.clip); if (b) { const p = b.clone(); p.name = 'pounce'; clips.push(p); } } // (attack clips are played by the attack's name)
-      for (const c of clips) if (c.name === 'slam') for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) { const v = t.values, y0 = v[1]; for (let i = 1; i < v.length; i += 3) v[i] = y0 + (v[i] - y0) * SLAM.lift; }
+      { const s = clips.find((c) => c.name === SLAM.clip); if (s) { const p = s.clone(), i = clips.findIndex((c) => c.name === 'slam'); p.name = 'slam'; if (i >= 0) clips[i] = p; else clips.push(p); } } // (the leap-slam plays as 'slam')
+      if (SLAM.lift !== 1) for (const c of clips) if (c.name === 'slam') for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) { const v = t.values, y0 = v[1]; for (let i = 1; i < v.length; i += 3) v[i] = y0 + (v[i] - y0) * SLAM.lift; }
       // the guard holds his shield up: walk and idle on the legs only, the shield hold on the upper body
       if (opts.shield && clips.some((c) => c.name === 'shield_idle')) {
         const by = Object.fromEntries(clips.map((c) => [c.name, c]));

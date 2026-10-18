@@ -16,9 +16,10 @@ export const KNOCKDOWN_FALL = 1.3, KNOCKDOWN_GETUP = 2.0, GETUP_YAW = -2.705;
 export const ZATTACKS = {
   lunge: { from: 1.0, range: 1.12, arc: 0.95, strike: 0.14, recover: 0.55, step: 0.9 },
   scratch: { from: 0.92, range: 0.98, arc: 1.25, strike: 0.13, recover: 0.62, step: 0.35 },
-  // the big guard's slam (KayKit Melee_1H_Attack_Jump_Chop): a long wind-up (he crouches and leaps), the smash lands a
-  // wide area in front of him and knocks Yola flat; then a slow recovery (the opening to hit him)
-  slam: { from: 2.4, range: 2.1, arc: 1.0, strike: 0.15, recover: 1.0, step: 0, windup: 0.95, leap: 1.4 },
+  // the big guard's leap-slam (render/clipchars.js SLAM, 2026-10-18): a long wind-up, the tell to dodge (he sinks behind
+  // his shield and holds the crouch, then leaps at 'takeoff' of it, floats and drops); the smash lands a wide area in front
+  // of him and knocks Yola flat; then a slow recovery (the opening to hit him). windup = the clip's frames 1-77 at 30 fps
+  slam: { from: 2.4, range: 2.1, arc: 1.0, strike: 0.15, recover: 1.1, step: 0, windup: 2.53, leap: 1.4, takeoff: 0.58 },
   // the pounce (2026-10-17, the user: "a lunge attack you can dodge"; Quaternius UAL2 Zombie_Bite): from 1.7-3.2 m a
   // standing zombie rears back (the wind-up, a long narrow wedge on the floor; it stops turning after `lock` of it), then
   // leaps along that line and bites whatever it reaches. Committed: a side-step or Yola's dodge beats it, and a miss
@@ -443,8 +444,8 @@ export class Zombie {
         break;
       }
       case ZS.WINDUP:
-        turnRate = this.attack === 'slam' ? (this.t < 0.45 ? 1.6 : 0) : this.attack === 'pounce' ? (this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0) : 2.5; wantX = dx; wantZ = dz; // keep tracking slowly: stepping aside works (the slam commits once he leaps, the pounce a moment before it leaps)
-        if (this.attack === 'slam' && this.t > this.stateDur * 0.45) { const L = ZATTACKS.slam.leap / (this.stateDur * 0.55); this.vx = Math.sin(this.yaw) * L; this.vz = Math.cos(this.yaw) * L; } // the leap forward
+        turnRate = this.attack === 'slam' ? (this.t < this.stateDur * ZATTACKS.slam.takeoff ? 1.6 : 0) : this.attack === 'pounce' ? (this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0) : 2.5; wantX = dx; wantZ = dz; // keep tracking slowly: stepping aside works (the slam commits once he leaps, the pounce a moment before it leaps)
+        if (this.attack === 'slam' && this.t > this.stateDur * ZATTACKS.slam.takeoff) { const L = ZATTACKS.slam.leap / (this.stateDur * (1 - ZATTACKS.slam.takeoff)); this.vx = Math.sin(this.yaw) * L; this.vz = Math.cos(this.yaw) * L; } // the leap forward
         if (this.t >= this.stateDur) {
           this.set(ZS.STRIKE, ZATTACKS[this.attack].strike); this.struck = false;
           if (this.attack === 'pounce') { // the leap: as far as she was (a body short of her), never further than leapMax
