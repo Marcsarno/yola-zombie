@@ -302,7 +302,10 @@ function renderMain() {
     ${where}
     <div class="hd" style="margin-top:8px">${trimHtml('sound', ss.db)}<span class="help">level of the whole sound</span></div>
     <textarea data-note placeholder="Notes for Claude about this sound (what's wrong, what you want instead)…">${esc(ss.note)}</textarea>
-    <div class="tabs">${tab('all', 'All', c.all)}${tab('review', 'To review', c.review)}${tab('game', b.pending ? 'Picked' : 'In the game', c.game)}${tab('later', 'Saved for later', c.later)}${tab('out', 'Rejected', c.out)}</div></div>`;
+    <div class="tabs">${tab('all', 'All', c.all)}${tab('review', 'To review', c.review)}${tab('game', b.pending ? 'Picked' : 'In the game', c.game)}${tab('later', 'Saved for later', c.later)}${tab('out', 'Rejected', c.out)}</div>
+    <div class="help how">${b.layers.length > 1
+      ? `<b>${b.layers.length} layers below play together</b>, each adding its own part of the sound. Inside a layer your kept takes <b>take turns</b>: one per play, never stacked.`
+      : 'Your kept takes <b>take turns</b>: one per play, at random, never the same twice running and never stacked.'}</div></div>`;
   const seen = new Set();
   b.layers.forEach((l, li) => {
     const ls = layerSel(name, li), key = name + '#' + li;
@@ -321,10 +324,22 @@ function renderMain() {
       ${trimHtml('layer:' + li, ls.db)}
       <label class="trim"><input type="checkbox" data-off="${li}" ${ls.off ? '' : 'checked'}> layer on</label>
       ${left ? `<span class="bulk">the ${left} left: <button data-bulk="no" data-li="${li}">✗ reject</button><button data-bulk="later" data-li="${li}">★ later</button></span>` : ''}</div>
+      <div class="help how">${layerHow(name, l, li)}</div>
       ${l.synth ? '' : `<div class="takes">${rows}</div>`}</div>`;
   });
   $('main').innerHTML = h;
   bindMain(); bindRows(); drawWaves();
+}
+
+// what this layer does on each play, in plain words
+function layerHow(name, l, li) {
+  if (layerSel(name, li).off) return 'Switched off: this layer adds nothing.';
+  const at = Array.isArray(l.at) ? l.at[0] : l.at || 0, when = at >= 0.1 ? `, ${at.toFixed(1)} s after the start` : '';
+  if (l.synth) return `Always plays${when} (switch it off with “layer on”).`;
+  const n = S.active(name, l).length;
+  return !n ? 'Nothing kept yet: this layer is silent.'
+    : n === 1 ? `Plays your 1 kept take${when}. Keep more for variety: they take turns, one per play.`
+      : `Plays <b>one</b> of your ${n} kept takes each time${when}, taking turns. They never stack.`;
 }
 
 function renderLater() {
@@ -350,7 +365,7 @@ function bindMain() {
   for (const el of m.querySelectorAll('[data-act=layer]')) el.onclick = () => layerOnce(name, +el.dataset.li);
   for (const el of m.querySelectorAll('[data-act=all]')) el.onclick = () => audition(visibleRows(`.lyr[data-key="${name}#${el.dataset.li}"] .take`));
   for (const el of m.querySelectorAll('[data-fold]')) el.onclick = () => { const key = el.closest('.lyr').dataset.key, s = store.get('shut', {}); s[key] = !s[key]; store.set('shut', s); renderMain(); };
-  for (const el of m.querySelectorAll('[data-off]')) el.onchange = () => { snapshot(); layerSel(name, +el.dataset.off).off = !el.checked; touch(); el.closest('.lyr').classList.toggle('off', !el.checked); };
+  for (const el of m.querySelectorAll('[data-off]')) el.onchange = () => { snapshot(); layerSel(name, +el.dataset.off).off = !el.checked; touch(); renderMain(); };
   for (const el of m.querySelectorAll('[data-bulk]')) el.onclick = () => {
     snapshot(); const li = +el.dataset.li, l = BANKS[name].layers[li];
     for (const f of filesOf(l)) if (!reviewed(kind(name, l, f))) takeSel(name, f).v = el.dataset.bulk;
