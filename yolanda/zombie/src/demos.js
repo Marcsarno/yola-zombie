@@ -14,9 +14,9 @@ const DEMOS = {
   floor: { label: 'Out of the floor: the breach', weapon: 'pistol', setup(sim) { sim.spawnFromFloor(-0.8, -1.6, { look: 'patient' }); sim.spawnFromFloor(2.2, -0.6, { kind: 'runner' }); } },
   // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") a
   // lineup, left to right: her own blue, the runner's orange, then the new colours (main.js SCRUBS)
-  nurses: { label: 'Nurse scrubs: blue · orange · navy · wine · surgical green · plum · charcoal', weapon: 'bat', setup(sim, game) {
-    const keys = [null, 'orange', 'navy', 'wine', 'surgical', 'plum', 'charcoal'];
-    const zs = keys.map((k, i) => { const z = sim.spawnZombie('placed', { x: -3.3 + i * 1.1, z: -0.4, yaw: 0, passive: true, speedMul: 0 }); z.look = 'nurse'; z.scrubs = k; return z; });
+  nurses: { label: 'Nurse scrubs: blue · navy · charcoal (and the runner\'s orange)', weapon: 'bat', setup(sim, game) {
+    const keys = [null, 'navy', 'charcoal', 'orange'];
+    const zs = keys.map((k, i) => { const z = sim.spawnZombie('placed', { x: -1.65 + i * 1.1, z: -0.4, yaw: 0, passive: true, speedMul: 0 }); z.look = 'nurse'; z.scrubs = k; return z; });
     sim.player.z = 3.6;
     const paint = () => { let ok = true; for (const z of zs) { const v = game.zviews.get(z.id); if (v) game.scrubs(v, z.scrubs); else ok = false; } if (!ok) setTimeout(paint, 100); };
     setTimeout(paint, 100);

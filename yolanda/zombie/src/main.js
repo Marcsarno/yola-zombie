@@ -153,16 +153,17 @@ const ZOMBIE_TYPES = [
   { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true },
 ];
 // her scrubs' blue (hue ~165-250) recoloured, the rest of the texture (skin, hair, blood) untouched; once per map and recipe.
-// (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") H: the new
-// hue, s: saturation (null: the original's, boosted), l: [scale, add, max] on the lightness (folds and shading survive)
+// (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look"; of the
+// lineup they kept her own blue, navy and charcoal for the nurses, orange for the runner: "i don't want the purple.. or the
+// green or the red"). H: the new hue, s: saturation (null: the original's, boosted), l: [scale, add, max] on the lightness
 const SCRUBS = {
   orange: { H: 22, s: null, l: [0.92, 0.04, 0.62] },   // the runner's safety orange
   navy: { H: 224, s: 0.55, l: [0.42, 0.02, 0.32] },     // charge nurse navy
-  wine: { H: 346, s: 0.58, l: [0.55, 0.03, 0.40] },     // theatre wine
-  surgical: { H: 158, s: 0.32, l: [0.78, 0.06, 0.55] }, // surgical green
-  plum: { H: 286, s: 0.28, l: [0.72, 0.06, 0.50] },     // paediatric plum
   charcoal: { H: 210, s: 0.06, l: [0.40, 0.03, 0.30] }, // agency charcoal
 };
+const NURSE_SCRUBS = [null, 'navy', 'charcoal']; // (null: her own blue) one each in turn, by the zombie's id
+const nurseScrubs = (z) => (z.scrubs !== undefined ? z.scrubs : NURSE_SCRUBS[z.id % NURSE_SCRUBS.length]);
+function bindView(v, z) { v.bind(z); if (v.type === 0) setScrubs(v, nurseScrubs(z)); } // (a pooled nurse view takes the colour of the zombie it shows)
 const _scrubMaps = new Map();
 function scrubsTexture(tex, key) {
   const R = SCRUBS[key];
@@ -381,7 +382,7 @@ function previewRoom1(dt) {
   if (!opening?.revealSwing && !opening?.revealPose) yola.update(dt, stillState(sim.player.x, sim.player.z, sim.player.aimYaw)); // (the reveal poses Yola itself)
   for (const z of sim.zombies) {
     let v = zviews.get(z.id);
-    if (!v) { const type = viewType(z); v = zpool[type].pop() || newZombieView(type); v.bind(z); zviews.set(z.id, v); }
+    if (!v) { const type = viewType(z); v = zpool[type].pop() || newZombieView(type); bindView(v, z); zviews.set(z.id, v); }
     v.update(dt, z, z.x, z.z, sim.time);
   }
 }
@@ -398,7 +399,7 @@ function warmRoom1() {
 // mid-fight (out of the floor, through a door): building a view then cost ~100 ms, a visible hitch (2026-10-18)
 function prepViews() {
   if (!sim) return;
-  for (const z of sim.zombies) if (!zviews.has(z.id)) { const type = viewType(z), v = zpool[type].pop() || newZombieView(type); v.bind(z); zviews.set(z.id, v); }
+  for (const z of sim.zombies) if (!zviews.has(z.id)) { const type = viewType(z), v = zpool[type].pop() || newZombieView(type); bindView(v, z); zviews.set(z.id, v); }
   for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) { const v = newZombieView(type); v.hide(); zpool[type].push(v); }
 }
 function newZombieView(type) {
@@ -575,7 +576,7 @@ function runFrame(dt, doRender = true) {
     if (!v) {
       const type = viewType(z);
       v = zpool[type].pop() || newZombieView(type);
-      v.bind(z); zviews.set(z.id, v);
+      bindView(v, z); zviews.set(z.id, v);
       z.px ??= z.x; z.pz ??= z.z;
     }
     seen.add(z.id);
