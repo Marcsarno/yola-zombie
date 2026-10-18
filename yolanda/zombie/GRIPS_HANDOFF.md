@@ -273,3 +273,10 @@ shots/blender_holds_*.png).
   NEXT: the user keeps tuning idles and attacks per weapon in the Rig Lab; then wire the pack weapons + their chosen
   idle / attack into the game; the mid-combo strike ends that still clip get per-clip arm adjustments. The animation
   editor is being built in Unity in another chat (ANIMATION_HANDOFF.md).
+- 2026-10-17 (after the save point): SHOTGUN AS THE LIVE GAME. The user: the live game's animation and grip were already
+  perfect. render/holdlayers.js AS_LIVE { sg_reload }: its hand curls always on, no arm adjustments, no hands-at-hips rule;
+  its fit on Yola 2 back to zero. Arm adjustments no longer follow legs-only layers (pistol_idle_lower carried the pistol's
+  onto the shotgun). Matched joint for joint against yola-zombie.vercel.app (inspect=1, key 2). The user's browser edits
+  for it are backed up in shots/browser_shotgun_backup.json. Rig Lab: "Shotgun · pack" (hospital full stock, its pump grip
+  41 cm up the barrel, her left arm cannot reach it fully) and "Shotgun · draft" (assets/shotgun.glb) to compare.
+  Other weapons may want the same treatment if the user finds the live game's hold better (add the clip to AS_LIVE).
