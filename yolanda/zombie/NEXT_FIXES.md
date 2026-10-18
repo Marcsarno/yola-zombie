@@ -1,6 +1,6 @@
 # Next fixes (the user's notes, 2026-10-18, after playing the combat pass)
 
-STATUS 2026-10-18 (later the same day, commits fedf28e..3a5131c, local, not pushed or deployed):
+STATUS 2026-10-18 (later the same day, commits fedf28e..3a5131c; pushed to GitHub and deployed to production at 20b51e4):
 - DONE 1 (ponytail: the UAL attack clips have no hair tracks; the mixer wrote NaN into Hair1's position: render/hairsway.js
   now restores the hair bones' rest place each frame), 2 (render/clipchars.js YolaView.headLook), 4 + 5 (the guard
   reworked by the user's new brief: the shield planted in the world, his hands IK-held on it, his arm tears off on it, he
