@@ -18,7 +18,7 @@ import * as THREE from 'three';
 
 export const LIGHTKIT = [ // [key, label, what it is, what it costs] (the lighting lab's switches)
   ['baked', 'A · Baked floor light', 'The fittings\' light baked once in Blender (blender/bake_wing_floor.py): soft pools, furniture shadows, the dead corner dark. Replaces C\'s floor glows (no flicker on the floor).', 'one 123 KB texture, free to draw'],
-  ['fixtures', 'C · Light fittings as data', 'Every fitting draws its light on the floor: two in the theatre, the hall, the reception (failing), the lounge (warm, buzzing), the beds (dead).', 'one draw call for every floor glow'],
+  ['fixtures', 'C · Light fittings as data', 'Every fitting draws its light on the floor: two in the theatre, the hall, the reception (failing), the lounge (warm, buzzing), the beds (dead). With A on, the bake draws the floor light instead; the tubes themselves show only with "Show the tubes".', 'one draw call for every floor glow'],
   ['halos', 'F · Halos', 'A soft halo on every bright thing: tubes, monitors, EXIT signs (the glow look without a bloom pass).', '~15 sprites'],
   ['exit', 'EXIT signs', 'Green EXIT signs over the doors, one failing; green spilling on the floor under them.', '3 boxes + 3 halos'],
   ['polish', 'D · Polished floor', 'Each lit fitting\'s reflection streaks on the floor toward the camera, and the floor gets a little glossier.', 'glows in the same draw call + material'],
@@ -113,15 +113,21 @@ export class LightKit {
   }
 
   // ---- C: the fittings ----
-  build_fixtures() {
-    this.fix = WING_LIGHTS.fixtures.map((f, i) => {
+  // the fittings themselves (2026-10-18, the user: keep the polished floor, "we don't need to actually show the light fixtures
+  // on the ceiling"): their places and flicker always run once anything uses them (C's pools, D's streaks, the halos, the
+  // eyes); the tube bars show only with the lab's "Show the tubes" (this.tubes)
+  fittings() {
+    if (this.fix) return this.fix;
+    return (this.fix = WING_LIGHTS.fixtures.map((f, i) => {
       const bar = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.04, 0.16), new THREE.MeshBasicMaterial({ color: f.col, transparent: true, toneMapped: false }));
-      bar.position.set(f.x, 2.6, f.z); this.root.add(bar);
+      bar.position.set(f.x, 2.6, f.z); bar.visible = !!this.tubes; this.root.add(bar);
       return { ...f, bar, pool: this.addGlow(f.x, f.z, 4.6, 4.6, 0, f.col, 'fixtures'), seed: i * 13.7, S: { off: 0 }, b: 1 };
-    });
+    }));
   }
+  setTubes(v) { this.tubes = !!v; for (const F of this.fittings()) F.bar.visible = this.tubes; }
+  build_fixtures() { this.fittings(); }
   // the fittings carry the room's light: the general fill and the sun come down (arena.lightScale), the pools stand out
-  toggle_fixtures(v) { for (const F of this.fix || []) F.bar.visible = v; this.fill(); }
+  toggle_fixtures() { this.fill(); }
   fill() { if (this.arena) this.arena.lightScale = this.on.baked ? BAKE.fill : this.on.fixtures ? DIM : 1; }
 
   // ---- A: the baked floor light: a lightMap on the wing's floors, uv1 from world x / z across the bake's bounds ----
@@ -212,7 +218,7 @@ export class LightKit {
   halo(col, size, x, y, z) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: col, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })); s.scale.set(size, size, 1); s.position.set(x, y, z); this.root.add(s); return s; }
   build_halos() {
     this.halos = [];
-    for (const F of this.fix || WING_LIGHTS.fixtures) { const s = this.halo(F.col, 1.1, F.x, 2.58, F.z); s.scale.set(1.9, 0.55, 1); this.halos.push({ s, F, base: 0.6 }); }
+    for (const F of this.fittings()) { const s = this.halo(F.col, 1.1, F.x, 2.58, F.z); s.scale.set(1.9, 0.55, 1); this.halos.push({ s, F, base: 0.6 }); }
     this.monSeen = new Set(); this.scanMonitors();
   }
   scanMonitors() { // the live screens' faces (render/screens.js): they appear once their models have loaded, so looked for again now and then
@@ -237,7 +243,7 @@ export class LightKit {
   // ---- D: polished floor ----
   build_polish() { // a reflection streak per fitting: from below it toward the camera, long and thin
     const cy = (this.camYaw * Math.PI) / 180, tx = Math.sin(cy), tz = Math.cos(cy);
-    this.streaks = (this.fix || WING_LIGHTS.fixtures).map((F) => ({ F, g: this.addGlow(F.x + tx * 1.1, F.z + tz * 1.1, 0.75, 3.4, cy, F.col, 'polish') }));
+    this.streaks = this.fittings().map((F) => ({ F, g: this.addGlow(F.x + tx * 1.1, F.z + tz * 1.1, 0.75, 3.4, cy, F.col, 'polish') }));
   }
   toggle_polish(v) {
     const O = this.arena?.ob; if (!O?.floor) return;
@@ -269,7 +275,7 @@ export class LightKit {
   // the light at a point (for the zombies' eyes): the fittings' pools, the shot's flash, the torch if Yola's is on
   lightAt(x, z) {
     let L = 0;
-    if (this.on.fixtures) for (const F of this.fix) { const d = Math.hypot(x - F.x, z - F.z); if (d < 2.6) L += F.b * (1 - d / 2.6) * 0.9; }
+    if ((this.on.fixtures || this.on.baked) && this.fix) for (const F of this.fix) { const d = Math.hypot(x - F.x, z - F.z); if (d < 2.6) L += F.b * (1 - d / 2.6) * 0.9; }
     if (this.flashK > 0) { const d = Math.hypot(x - this.flashX, z - this.flashZ); if (d < this.flashR) L += this.flashK * (1 - d / this.flashR) * 1.6; }
     if (this.torch) { const t = this.torch, dx = x - t.x, dz = z - t.z, d = Math.hypot(dx, dz); if (d > 0.3 && d < 6.5 && (dx * t.fx + dz * t.fz) / d > 0.9) L += 1.4 * (1 - d / 6.5) + 0.4; }
     return Math.min(1.6, L);
@@ -295,9 +301,9 @@ export class LightKit {
 
   update(dt, sim, views, yolaView) {
     this.t += dt;
-    if (this.fix) for (const F of this.fix) { const k = this.on.fixtures ? flick(F.state, this.t, F.seed, F.S) : 0; F.b = k; F.pool.k = this.on.baked ? 0 : F.k * k; /* (A on: the bake is the pool) */ F.bar.material.opacity = 0.15 + 0.85 * k; }
+    if (this.fix) for (const F of this.fix) { const k = flick(F.state, this.t, F.seed, F.S); F.b = k; F.pool.k = this.on.fixtures && !this.on.baked ? F.k * k : 0; /* (A on: the bake is the pool) */ F.bar.material.opacity = 0.15 + 0.85 * k; }
     if (this.halos && this.on.halos && (this.monScanT = (this.monScanT ?? 0) - dt) <= 0) { this.monScanT = 2; this.scanMonitors(); }
-    if (this.halos) for (const H of this.halos) H.s.material.opacity = H.mon ? H.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H.s.position.x)) : H.base * (H.F?.b ?? 1);
+    if (this.halos) for (const H of this.halos) H.s.material.opacity = H.mon ? H.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H.s.position.x)) : H.F ? (this.tubes ? H.base * H.F.b : 0) : H.base; // (a fitting's halo needs its tube on show)
     if (this.exits) for (const E of this.exits) { const k = flick(E.state, this.t, E.seed, E.S); E.halo.material.opacity = 0.5 * k; E.spill.k = 0.22 * k; for (const m of [].concat(E.m.material)) if (m.map) m.opacity = 0.35 + 0.65 * k; }
     if (this.streaks) for (const S of this.streaks) S.g.k = 0.16 * (S.F.b ?? 1);
     // the shot's light dies fast

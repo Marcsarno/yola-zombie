@@ -84,6 +84,7 @@ function lightingLab(sim, game) {
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">G · Floor mood <select id="labMood"><option value="">off</option>' + Object.keys(MOODS).filter((k) => k !== 'none').map((k) => '<option>' + k + '</option>').join('') + '</select></label>'
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H · Film finish (grain, vignette, colour drains with health)</span></label>'
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label>'
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labTubes"><span>Show the tubes on the ceiling (and their halos)</span></label>'
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747"><input type="checkbox" id="labShadows" checked><span>Real shadows (off = phone low tier)</span></label>'
     + '<div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>'
     + ATMOS.filter((a) => a[0] !== 'tubes').map(row).join('')
@@ -99,6 +100,7 @@ function lightingLab(sim, game) {
     if (id === 'labRoom') { roomView(game, e.target.checked); return; }
     if (id === 'labMood' || id === 'labFilm') { mood(); return; }
     if (id === 'labEye') { game.ZombieView.eyeCfg.col = parseInt(e.target.value, 16); return; }
+    if (id === 'labTubes') { K?.setTubes(e.target.checked); return; }
     if (id === 'labShadows') { game.looks?.set(e.target.checked ? 'standard' : 'lite'); return; }
     const k = e.target.dataset?.k; if (!k) return;
     if (LK.has(k)) { K?.set(k, e.target.checked); if (k === 'eyes') game.ZombieView.eyeCfg.on = e.target.checked; } else A?.set(k, e.target.checked);
