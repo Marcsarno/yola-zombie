@@ -47262,7 +47262,7 @@ void main() {
             if (dist2 < (this.kind === "normal" && !this.crawling ? 0.95 : 0.8) && !this.backing) speed = 0;
           }
           const slot = !sim2.engaged || sim2.engaged.has(this.id) || this.crawling || this.kind === "sprinter";
-          if (this.kind === "guard" && !this.enraged && this.shieldHp > 0 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 0.6 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          if (this.kind === "guard" && !this.enraged && this.shieldHp > 0 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 0.6 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             this.attack = "slam";
             this.set(ZS.WINDUP, ZATTACKS.slam.windup);
             this.slamCd = 4 + sim2.rand() * 2.5;
