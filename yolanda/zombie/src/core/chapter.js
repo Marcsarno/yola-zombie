@@ -9,6 +9,7 @@ const M = 'assets/models/';
 const U = M + 'upgrades/';
 const H = 'zombie/assets/hospital/';
 const K = 'zombie/assets/kit/';
+const SI = 'zombie/assets/props/'; // (the stand-in construction props, blender/make_standin_props.py)
 const T = 0.3; // wall thickness (walls are given by their centre lines)
 const WH = 2.7; // wall height
 export const FLOOR_Z = { 7: 0, 6: -80, 5: -160 }; // each floor's z offset in the shared world
@@ -232,7 +233,10 @@ const F7 = buildFloor(7, {
     p(H + 'procedure_stretcher.glb', -33.4, 8.4, 0, [0.9, 1.66], 1.22);
     p(H + 'supply_cart.glb', -26.3, 14.4, 0, [1.16, 1.1], 1.23);
     // V7 | the renovation area (lower left): a quiet turn, a bench of tools, stacked partitions, a reward on the bench
-    raw({ kind: 'bench', x: -38.0, z: 17.0, size: [2.4, 0.7, 0.92], color: 0x8c7a5c, fp: [2.4, 0.7], h: 0.92, name: 'v7bench' });
+    // (2026-10-18) STAND-INS for the user's painted construction props, which are missing from this machine (assets/props/standin_*,
+    // blender/make_standin_props.py): swap in the user's own files when they turn up (same spots, same footprints)
+    p(SI + 'standin_cable_workbench.glb', -38.0, 17.0, 0, [1.8, 0.76], 0.92, { name: 'v7bench' });
+    p(SI + 'standin_tool_pegboard.glb', -34.4, 15.89, 180, [1.26, 0.06], 0.94, { y: 1.0, noCollide: true });
     raw({ kind: 'hazard', x: -31.5, z: 24.0, size: [3.4, 1.4], noCollide: true, fp: [0.1, 0.1], h: 0 });
     raw({ kind: 'pipes', x: -32.0, z: 15.8, len: 9.0, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
     p(K + 'isolation_windowed_partition.glb', -36.0, 23.2, 90, [2.0, 0.15], 2.4);
@@ -245,9 +249,9 @@ const F7 = buildFloor(7, {
     p(U + '10_janitor_utility/starter/10_starter_rack.glb', -40.3, 26.6, 90, [0.82, 0.51], 1.82);
     wp(H + 'toolboard.glb', -38.0, 15.8, 's', 1.0);
     // stacked renovation stock: boxed materials on pallets, a second bench, a laundry hamper of dust sheets
-    raw({ kind: 'box', x: -27.2, z: 16.7, size: [1.6, 0.9, 1.1], face: 's', color: 0xa38f6c, fp: [1.6, 0.9], h: 1.1 });
+    p(SI + 'standin_renovation_pallet.glb', -27.2, 16.75, 0, [1.25, 1.02], 0.61);
     raw({ kind: 'box', x: -25.4, z: 16.7, size: [1.2, 0.9, 0.8], face: 's', color: 0x9c8a6a, fp: [1.2, 0.9], h: 0.8 });
-    raw({ kind: 'bench', x: -33.6, z: 27.2, size: [2.0, 0.7, 0.92], color: 0x8c7a5c, fp: [2.0, 0.7], h: 0.92 });
+    p(SI + 'standin_paint_shelf.glb', -33.6, 27.7, 180, [1.19, 0.44], 1.81);
     p(H + 'laundry_hamper.glb', -40.2, 23.6, 0, [0.6, 0.57], 1.15);
     // (2026-10-18) the works themselves, modelled in Blender (blender/make_construction_props.py; new pieces, not the user's
     // painted construction props, which are missing): a sawhorse barrier cordoning the open floor by the east wall, plasterboard
@@ -279,7 +283,7 @@ const F7 = buildFloor(7, {
     p(U + '10_janitor_utility/starter/10_starter_rack.glb', 6.55, 26.4, 270, [0.82, 0.51], 1.82);
     raw({ kind: 'hazard', x: -1.0, z: 16.9, size: [1.8, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
     raw({ kind: 'box', x: -6.55, z: 20.6, size: [1.5, 0.6, 2.0], face: 'e', color: 0x8a9497, fp: [0.6, 1.5], h: 2.0 });
-    raw({ kind: 'box', x: -6.55, z: 23.2, size: [1.2, 0.6, 1.7], face: 'e', color: 0x7f898c, fp: [0.6, 1.2], h: 1.7 });
+    p(SI + 'standin_janitor_cabinet.glb', -6.6, 23.2, 90, [0.9, 0.5], 1.9); // (stand-in: the user's painted janitor cabinet is missing)
     p(H + 'janitor_cart.glb', 4.6, 27.2, 0, [0.83, 0.99], 1.23);
     p(H + 'utility_sink.glb', 6.55, 17.2, 270, [0.88, 0.51], 1.64);
     wp(H + 'toolboard.glb', -3.6, 15.8, 's', 1.0);
