@@ -246,3 +246,30 @@ shots/blender_holds_*.png).
   to stop on custom grips. Old idles (Kevin Iglesias CombatIdle*) shown on the first Yola: shots/old_idles.png.
   NEXT: ARM_TOOL_PLAN.md (arm fit sliders + mouse dragging with joint locks + motion/jump check + interface clean-up),
   waiting for the user's go and two answers. The frame-to-frame jump test is part of its phase 1.
+- 2026-10-17 (end of this chat): BACK TO BASICS. The user: holds looked good out of the box; overcorrected. Now:
+  - Weapons: the HOSPITAL PACK as delivered (assets/weapons/hospital: aluminum_bat, fire_axe, crowbar, pistol,
+    pump_shotgun; GameGrip_R / GameGrip_L markers, positions only). Rig Lab weapons alubat / packaxe / packcrowbar
+    (data sheets in assets/arena/weapons.json + assets/moves/weapons.json), held by holdfit.js placeBat (through both
+    fists or in the right fist, the pack's grip marker in the fist), no IK. The game's arena does not use them yet.
+  - Dummies: ONLY Mixamo X Bot or the Quaternius mannequin. KayKit removed everywhere (never use it, the user's rule).
+  - Bat idle: the user's pick is Quaternius Sword_Block (frame 1, the rest stance), also Sword Idle and the Mixamo
+    bat_idle (baseball) to compare. Attacks one-handed. Not yet wired into the game (the game's bat is still makeBat +
+    Sword Idle).
+  - Layer switches (render/holdlayers.js, assets/hold/hold_layers.json): posture fix ON, hand curls / second hand /
+    carry idles OFF, arm adjustments ON. The posture fix is needed (Mixamo clips tipped her head back; with it the
+    bat clears her head in bat_idle; arm clipping unchanged on 41 clips).
+  - Arm adjustments (render/armpose.js, assets/hold/arm_pose.json, game + Rig Lab): per clip and arm: shoulder raise /
+    forward, upper arm out / forward / twist, elbow, forearm twist, wrist toward palm / thumb (kept inside the joint
+    limits), plus the HANDS-AT-HIPS rule "yola2:*hips" (R 5.5 / L 4 cm out, applied only while an arm hangs beside
+    her hip: clears every attack's neutral start and end, swings untouched).
+  - Rig Lab: edit bar (weapon, Idle / Attack, Show both / Yola / dummy, angles) + right SIDEBAR (Weapon position:
+    Yola or dummy, all clips or this clip only; Arms; Joint check; Layers; Save all). Old controls under Advanced.
+    Every redraw starts from scratch (the arm adjustments used to pile up on the shotgun).
+  - Saved from the user's Rig Lab session into the game files: fits for the pack bat (yola2 / mannequin / xbot, and
+    Sword Block's own), pack axe, knife, sledgehammer, shotgun (yola2); arm adjustments for bat_idle, sg_reload,
+    pistol_idle and the hips rule.
+  - Tools: render/bodyclip.js (arm through her body, __lab.bodyClipScan; ARM_CLIP_REVIEW.md: 49 cases),
+    zombie_r18/ (the Oct 16 round-18 game, untracked, /zombie_r18/combat.html?yola=2).
+  NEXT: the user keeps tuning idles and attacks per weapon in the Rig Lab; then wire the pack weapons + their chosen
+  idle / attack into the game; the mid-combo strike ends that still clip get per-clip arm adjustments. The animation
+  editor is being built in Unity in another chat (ANIMATION_HANDOFF.md).

@@ -11,5 +11,21 @@
   "Left": {
    "out": 4
   }
+ },
+ "yola2:sg_reload": {
+  "Left": {
+   "shFwd": 4.5,
+   "out": 2.5
+  }
+ },
+ "yola2:pistol_idle": {
+  "Right": {
+   "shUp": 0.5,
+   "out": -1,
+   "fwd": -1.5,
+   "twist": 10,
+   "elbow": 1,
+   "fore": -3
+  }
  }
 }

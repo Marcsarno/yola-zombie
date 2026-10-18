@@ -41,12 +41,12 @@
  "short": {
   "yola2": {
    "size": 100,
-   "fwd": 0,
+   "fwd": -15,
    "up": 0,
    "side": 0,
-   "tilt": 0,
+   "tilt": -2,
    "turn": 0,
-   "roll": 0
+   "roll": 4
   },
   "xbot": {
    "size": 100,
@@ -105,6 +105,77 @@
    "tilt": 17,
    "turn": 26,
    "roll": 30
+  }
+ },
+ "knife": {
+  "yola2": {
+   "size": 100,
+   "fwd": 0,
+   "up": 13,
+   "side": 16,
+   "tilt": 7,
+   "turn": 11,
+   "roll": -45
+  },
+  "mannequin": {
+   "size": 100,
+   "fwd": 3,
+   "up": 17,
+   "side": 14,
+   "tilt": 1,
+   "turn": 0,
+   "roll": -45
+  }
+ },
+ "packaxe": {
+  "yola2": {
+   "size": 100,
+   "fwd": -21,
+   "up": 60,
+   "side": -5,
+   "tilt": 9,
+   "turn": 90,
+   "roll": -7
+  },
+  "mannequin": {
+   "size": 100,
+   "fwd": -19,
+   "up": 53,
+   "side": 0,
+   "tilt": 7,
+   "turn": 90,
+   "roll": 0
+  }
+ },
+ "alubat@ual_Sword_Block": {
+  "yola2": {
+   "size": 100,
+   "fwd": 20,
+   "up": 15,
+   "side": 9,
+   "tilt": 11,
+   "turn": -12,
+   "roll": -1
+  }
+ },
+ "sledgehammer": {
+  "yola2": {
+   "size": 100,
+   "fwd": 22,
+   "up": 70,
+   "side": 9,
+   "tilt": -5,
+   "turn": 90,
+   "roll": 0
+  },
+  "mannequin": {
+   "size": 100,
+   "fwd": 26,
+   "up": 70,
+   "side": 0,
+   "tilt": 0,
+   "turn": 90,
+   "roll": 0
   }
  }
 }

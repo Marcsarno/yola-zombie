@@ -1,19 +1,86 @@
 {
  "_doc": "Weapon frames for the move viewer (moves.html). All vectors are in the model's own frame in metres: the GLB frame (glTF, +Y up) for files without prep, the prepAxe wrapper frame for the axe, the builder's frame for procedural weapons. grip_primary = where the primary hand's fist centre goes; shaft_axis = the primary hand's grip axis (pinky->index), unit; for melee weapons it points from the primary grip toward the business end; ref_axis = unit, perpendicular to shaft_axis: the striking face / edge for melee weapons, the saw top for the chainsaw, and toward the muzzle side for guns (guns also carry barrel_axis / up_axis, because their grip axis is not the barrel). The viewer puts ref_axis toward the fist's knuckle direction. Note: fistFrame's knuckle vector (Middle1 minus the finger-joint centroid) points mostly to the BACK of the hand, while a hammer or axe face in a natural one-handed chop points along the forearm (the punch direction), about 90 deg away; expect to need roll +/-90 for those (and per-clip roll for two-handed swings). primary_hand = which hand sits at grip_primary in the hold data sheets (tools/hold/weapons_hold.json). Measured from the GLBs by parsing the glTF node tree and mesh (2026-10-15).",
  "weapons": {
+  "packaxe": {
+   "label": "Axe (hospital pack)",
+   "file": "assets/weapons/hospital/fire_axe.glb",
+   "hands": "one",
+   "primary_hand": "Right",
+   "grip_primary": [0.0, 0.0, 0.0],
+   "grip_secondary": [0.02, 0.22, 0.0],
+   "shaft_axis": [0.0, 1.0, 0.0],
+   "ref_axis": [-1.0, 0.0, 0.0],
+   "length_m": 0.92,
+   "impact_point": [-0.135, 0.694, 0.0],
+   "notes": "The Hospital Survivor Weapons pack's fire axe as delivered (assets/weapons/hospital, unchanged, no prepAxe). Its own markers: GameGrip_R at the origin, GameGrip_L 22 cm up the handle, ImpactPoint on the blade at (-0.135, 0.694). GLB +Y along the handle; the blade projects toward -X (ref_axis = the blade side)."
+  },
+  "packcrowbar": {
+   "label": "Crowbar (hospital pack)",
+   "file": "assets/weapons/hospital/crowbar.glb",
+   "hands": "one",
+   "primary_hand": "Right",
+   "grip_primary": [0.0, 0.0, 0.0],
+   "grip_secondary": [0.0, 0.14, 0.0],
+   "shaft_axis": [0.0, 1.0, 0.0],
+   "ref_axis": [-1.0, 0.0, 0.0],
+   "length_m": 0.73,
+   "impact_point": [-0.082, 0.423, 0.0],
+   "notes": "The Hospital Survivor Weapons pack's crowbar as delivered (assets/weapons/hospital, unchanged; the arena's own crowbar entry is a modified copy). Its own markers: GameGrip_R at the origin, GameGrip_L 14 cm up, ImpactPoint at the hook (-0.082, 0.423). GLB +Y along the shaft; the hook toward -X."
+  },
+  "alubat": {
+   "label": "Bat (hospital pack)",
+   "file": "assets/weapons/hospital/aluminum_bat.glb",
+   "hands": "one",
+   "primary_hand": "Right",
+   "grip_primary": [0.0, 0.0, 0.0],
+   "grip_secondary": [0.0, 0.093, 0.0],
+   "shaft_axis": [0.0, 1.0, 0.0],
+   "ref_axis": [1.0, 0.0, 0.0],
+   "length_m": 0.843,
+   "impact_point": [0.0, 0.655, 0.0],
+   "notes": "The Hospital Survivor Weapons pack's aluminum bat as delivered (assets/source/weapons_in, the user's pack from ChatGPT; copied unchanged to assets/weapons/hospital). Its own markers: GameGrip_R at the origin (the knob end of the grip), GameGrip_L 9.3 cm up the grip, ImpactPoint 65.5 cm up. GLB +Y runs along the bat; it is round, so ref_axis is free. Body -7.5..76.8 cm along Y, 6.2 cm across."
+  },
   "bat": {
    "label": "Bat",
    "builder": "makeBat",
    "hands": "two",
    "primary_hand": "Left",
-   "grip_primary": [0.0, 0.0, -0.065],
-   "grip_secondary": [0.0, 0.0, 0.01],
-   "shaft_axis": [0.0, 0.0, 1.0],
-   "ref_axis": [1.0, 0.0, 0.0],
+   "grip_primary": [
+    0,
+    0,
+    -0.065
+   ],
+   "grip_secondary": [
+    0,
+    0,
+    0.01
+   ],
+   "shaft_axis": [
+    0,
+    0,
+    1
+   ],
+   "ref_axis": [
+    1,
+    0,
+    0
+   ],
    "length_m": 0.84,
-   "impact_point": [0.0, 0.0, 0.55],
-   "tip": [0.0, 0.0, 0.71],
-   "knob": [0.0, 0.0, -0.13],
+   "impact_point": [
+    0,
+    0,
+    0.55
+   ],
+   "tip": [
+    0,
+    0,
+    0.71
+   ],
+   "knob": [
+    0,
+    0,
+    -0.13
+   ],
    "notes": "makeBat(0.84): lathe along +Z, origin 0.13 m from the knob (knob z=-0.13, tip z=0.71). Grips from the bat hold data sheet (weapons_hold.json: Left 0.065, Right 0.14 from the knob -> z=-0.065 and z=+0.01). The game's makeBat userData.handOffset puts the hands at z=+/-0.045 instead (0.085 / 0.175 from the knob). Round: ref_axis is arbitrary (no logo/feature). impact_point = sweet spot ~0.16 m from the end (0.68 from the knob); hit zone 0.42-0.84 from the knob. Handle r 14.5 mm (tape 15.8 mm), barrel r 34 mm."
   },
   "sledgehammer": {
@@ -21,18 +88,54 @@
    "file": "assets/weapons/sledgehammer.glb",
    "hands": "two",
    "primary_hand": "Left",
-   "grip_primary": [0.0, 0.0, 0.0],
-   "grip_secondary": [0.0, 0.31, 0.0],
-   "shaft_axis": [0.0, 1.0, 0.0],
-   "ref_axis": [1.0, 0.0, 0.0],
+   "grip_primary": [
+    0,
+    0,
+    0
+   ],
+   "grip_secondary": [
+    0,
+    0.31,
+    0
+   ],
+   "shaft_axis": [
+    0,
+    1,
+    0
+   ],
+   "ref_axis": [
+    1,
+    0,
+    0
+   ],
    "length_m": 0.85,
-   "impact_point": [0.137, 0.632, 0.0],
+   "impact_point": [
+    0.137,
+    0.632,
+    0
+   ],
    "bbox": {
-    "min": [-0.137, -0.145, -0.0525],
-    "max": [0.1369, 0.705, 0.0525],
-    "size": [0.2739, 0.85, 0.105]
+    "min": [
+     -0.137,
+     -0.145,
+     -0.0525
+    ],
+    "max": [
+     0.1369,
+     0.705,
+     0.0525
+    ],
+    "size": [
+     0.2739,
+     0.85,
+     0.105
+    ]
    },
-   "butt": [0.0, -0.145, 0.0],
+   "butt": [
+    0,
+    -0.145,
+    0
+   ],
    "notes": "GLB frame: shaft +Y (butt y=-0.145, head top y=0.705), head faces +/-X (double-faced; ref_axis = the +X face, where the GLB impact_point sits; flip for the -X face), head thickness along Z (0.105 m). Head block 0.274 x 0.147 (along shaft) x 0.105 m, centre y=0.632. Rubber grip y -0.145..0.145 (outline ~38 x 43 mm, r~20 mm at grip_primary); tan wood handle above it (~27 x 30 mm, r~14.7 mm at grip_secondary). grip_primary/GameGrip_R is 0.145 m from the butt, grip_secondary/GameGrip_L 0.310 m above it (hands far apart: a choked/sliding grip; for bat-style swings with the hands together put the second hand ~0.075 m above the first). The GLB names the back grip GameGrip_R, but primary_hand is Left here to match the bat data sheet (right-handed swing: left hand at the butt). The GLB axis_note says \"local +Z follows shaft\": that is the Blender empty axis; in glTF the empties have identity rotation and the shaft is +Y."
   },
   "crowbar": {
@@ -40,21 +143,69 @@
    "file": "assets/weapons/crowbar.glb",
    "hands": "one",
    "primary_hand": "Right",
-   "grip_primary": [0.0, 0.0, 0.0],
-   "grip_secondary": [0.0, 0.1722, 0.0],
-   "shaft_axis": [0.0, 1.0, 0.0],
-   "ref_axis": [-1.0, 0.0, 0.0],
+   "grip_primary": [
+    0,
+    0,
+    0
+   ],
+   "grip_secondary": [
+    0,
+    0.1722,
+    0
+   ],
+   "shaft_axis": [
+    0,
+    1,
+    0
+   ],
+   "ref_axis": [
+    -1,
+    0,
+    0
+   ],
    "length_m": 0.7,
-   "impact_point": [-0.097, 0.4484, 0.0],
+   "impact_point": [
+    -0.097,
+    0.4484,
+    0
+   ],
    "bbox": {
-    "min": [-0.097, -0.1997, -0.0203],
-    "max": [0.0496, 0.5003, 0.0203],
-    "size": [0.1466, 0.7, 0.0405]
+    "min": [
+     -0.097,
+     -0.1997,
+     -0.0203
+    ],
+    "max": [
+     0.0496,
+     0.5003,
+     0.0203
+    ],
+    "size": [
+     0.1466,
+     0.7,
+     0.0405
+    ]
    },
-   "butt": [0.0, -0.1997, 0.0],
-   "hook_top": [-0.0447, 0.5003, 0.0],
-   "claw_tips": [-0.0748, 0.3826, 0.0],
-   "chisel_tip": [0.048, -0.1997, 0.0],
+   "butt": [
+    0,
+    -0.1997,
+    0
+   ],
+   "hook_top": [
+    -0.0447,
+    0.5003,
+    0
+   ],
+   "claw_tips": [
+    -0.0748,
+    0.3826,
+    0
+   ],
+   "chisel_tip": [
+    0.048,
+    -0.1997,
+    0
+   ],
    "notes": "GLB frame: straight octagonal shaft along +Y (24.4 mm across Z, 22.2 mm across X, r~12.7 mm), chisel foot at the bottom (y=-0.200, bent toward +X, 38 mm wide across Z), gooseneck hook at the top (shaft rises to y=0.500 and curls over toward -X; the claw arm comes back DOWN to its tips at about (-0.075, 0.383), pointing -Y). The V-slot splits the claw into two prongs side by side along Z; the hook curls in the X-Y plane. ref_axis = -X = the side the hook projects to; impact_point = the outermost point of the curl (x=-0.097, y=0.448), which leads in an axe-style swing with the hook forward. Secondary business end: the chisel tip (0.048, -0.200) for butt strikes/stabs. grip_primary/GameGrip_R is 0.200 m above the chisel tip; grip_secondary/GameGrip_L 0.172 m above it (optional second hand; the catalog files the crowbar as one-handed)."
   },
   "chainsaw": {
@@ -62,21 +213,69 @@
    "file": "assets/weapons/chainsaw.glb",
    "hands": "two",
    "primary_hand": "Right",
-   "grip_primary": [0.0, 0.0, 0.0],
-   "grip_secondary": [0.253, 0.152, 0.0],
-   "shaft_axis": [0.9703, 0.2418, 0.0],
-   "ref_axis": [-0.2418, 0.9703, 0.0],
+   "grip_primary": [
+    0,
+    0,
+    0
+   ],
+   "grip_secondary": [
+    0.253,
+    0.152,
+    0
+   ],
+   "shaft_axis": [
+    0.9703,
+    0.2418,
+    0
+   ],
+   "ref_axis": [
+    -0.2418,
+    0.9703,
+    0
+   ],
    "length_m": 0.8175,
-   "impact_point": [0.52, -0.119, 0.047],
+   "impact_point": [
+    0.52,
+    -0.119,
+    0.047
+   ],
    "bbox": {
-    "min": [-0.08, -0.151, -0.1255],
-    "max": [0.7376, 0.205, 0.1365],
-    "size": [0.8175, 0.356, 0.262]
+    "min": [
+     -0.08,
+     -0.151,
+     -0.1255
+    ],
+    "max": [
+     0.7376,
+     0.205,
+     0.1365
+    ],
+    "size": [
+     0.8175,
+     0.356,
+     0.262
+    ]
    },
-   "bar_axis": [1.0, 0.0, 0.0],
-   "up_axis": [0.0, 1.0, 0.0],
-   "secondary_grip_axis": [0.0, 0.0, 1.0],
-   "bar_tip": [0.7376, -0.0692, 0.0475],
+   "bar_axis": [
+    1,
+    0,
+    0
+   ],
+   "up_axis": [
+    0,
+    1,
+    0
+   ],
+   "secondary_grip_axis": [
+    0,
+    0,
+    1
+   ],
+   "bar_tip": [
+    0.7376,
+    -0.0692,
+    0.0475
+   ],
    "bar_centreline_y": -0.075,
    "bar_side_z": 0.047,
    "notes": "GLB frame: forward +X (bar), up +Y, operator's right = +Z (bar, chain and clutch cover are on the +Z side). grip_primary (GameGrip_R, origin) = centre of the upper rear grasp bar; that bar is NOT horizontal: its centreline rises 14.0 deg toward the front (y = 0.249 x), so shaft_axis = the rear-handle axis [0.970, 0.242, 0] = the right hand's pinky->index direction (index finger forward on the trigger, which is inside the front of the rear opening). Rear grasp section ~44 mm (Z) x 31 mm, r~21 mm. ref_axis = saw top (+Y) made perpendicular to the shaft axis; in the natural hold the back of the right hand is on top of the rear bar. grip_secondary (GameGrip_L) = centre of the raised transverse front handle (round tube r~14.2 mm) at (0.253, 0.152): the left hand wraps it with its grip axis along +Z (secondary_grip_axis), i.e. at 90 deg to the right hand. Guidebar: x 0.317..0.725, centreline y=-0.075, plane z~0.047; chain to x=0.738; the cutting run is the chain's lower edge (y~-0.119). impact_point = middle of that lower run. The bar is horizontal (bar_axis +X), 14 deg below shaft_axis."
@@ -87,28 +286,92 @@
    "prep": "axe",
    "hands": "two",
    "primary_hand": "Left",
-   "grip_primary": [0.0, 0.0, -0.06],
-   "grip_secondary": [0.02, 0.0, 0.16],
-   "shaft_axis": [0.0905, 0.0, 0.9959],
-   "ref_axis": [-0.9959, 0.0, 0.0905],
+   "grip_primary": [
+    0,
+    0,
+    -0.06
+   ],
+   "grip_secondary": [
+    0.02,
+    0,
+    0.16
+   ],
+   "shaft_axis": [
+    0.0905,
+    0,
+    0.9959
+   ],
+   "ref_axis": [
+    -0.9959,
+    0,
+    0.0905
+   ],
    "length_m": 0.9225,
-   "impact_point": [-0.135, 0.0, 0.634],
+   "impact_point": [
+    -0.135,
+    0,
+    0.634
+   ],
    "bbox": {
-    "min": [-0.137, -0.019, -0.1828],
-    "max": [0.1326, 0.019, 0.7398],
-    "size": [0.2696, 0.038, 0.9225]
+    "min": [
+     -0.137,
+     -0.019,
+     -0.1828
+    ],
+    "max": [
+     0.1326,
+     0.019,
+     0.7398
+    ],
+    "size": [
+     0.2696,
+     0.038,
+     0.9225
+    ]
    },
    "frame": "prepAxe wrapper (what the viewer loads with prep \"axe\"): GLB (x,y,z) -> (x, -z, y - 0.06)",
    "glb_frame": {
-    "grip_primary": [0.0, 0.0, 0.0],
-    "grip_secondary": [0.02, 0.22, 0.0],
-    "shaft_axis": [0.0905, 0.9959, 0.0],
-    "ref_axis": [-0.9959, 0.0905, 0.0],
-    "impact_point": [-0.135, 0.694, 0.0],
+    "grip_primary": [
+     0,
+     0,
+     0
+    ],
+    "grip_secondary": [
+     0.02,
+     0.22,
+     0
+    ],
+    "shaft_axis": [
+     0.0905,
+     0.9959,
+     0
+    ],
+    "ref_axis": [
+     -0.9959,
+     0.0905,
+     0
+    ],
+    "impact_point": [
+     -0.135,
+     0.694,
+     0
+    ],
     "bbox": {
-     "min": [-0.137, -0.1228, -0.019],
-     "max": [0.1326, 0.7998, 0.019],
-     "size": [0.2696, 0.9225, 0.038]
+     "min": [
+      -0.137,
+      -0.1228,
+      -0.019
+     ],
+     "max": [
+      0.1326,
+      0.7998,
+      0.019
+     ],
+     "size": [
+      0.2696,
+      0.9225,
+      0.038
+     ]
     }
    },
    "notes": "Numbers are in the prepAxe frame (handle along +Z, blade toward -X, origin = GLB (0, 0.06, 0), the game's \"hands\" point 6 cm up the grip); glb_frame has the raw GLB values (handle +Y). grip_primary = GameGrip_R (0.123 m above the butt), grip_secondary = GameGrip_L (0.22 m further, 2 cm toward the poll). The handle is curved (centreline x: -0.008 at the butt, +0.022 at GLB y=0.28, +0.006 under the head), so shaft_axis is the R->L grip chord, 5.2 deg off the prepAxe +Z. Handle oval ~26 x 30 mm (r~14.7) at GameGrip_R, ~20 x 27 mm (r~11.3) at GameGrip_L. Blade edge toward -X reaches x=-0.137 (blade y 0.62-0.80 in the GLB); a pick/poll points +X. impact_point = the GLB ImpactPoint (blade edge centre)."
@@ -118,36 +381,76 @@
    "builder": "knife",
    "hands": "one",
    "primary_hand": "Right",
-   "grip_primary": [0.0, 0.0, 0.0],
+   "grip_primary": [
+    0,
+    0,
+    0
+   ],
    "grip_secondary": null,
-   "shaft_axis": [0.0, 0.0, 1.0],
-   "ref_axis": [0.0, 1.0, 0.0],
+   "shaft_axis": [
+    0,
+    0,
+    1
+   ],
+   "ref_axis": [
+    0,
+    1,
+    0
+   ],
    "length_m": 0.266,
-   "impact_point": [0.0, 0.0, 0.211],
+   "impact_point": [
+    0,
+    0,
+    0.211
+   ],
    "bbox": {
-    "min": [-0.016, -0.016, -0.055],
-    "max": [0.016, 0.016, 0.211]
+    "min": [
+     -0.016,
+     -0.016,
+     -0.055
+    ],
+    "max": [
+     0.016,
+     0.016,
+     0.211
+    ]
    },
    "spec": {
     "handle": {
-     "z": [-0.055, 0.055],
+     "z": [
+      -0.055,
+      0.055
+     ],
      "section": "oval",
      "half_width_x": 0.0125,
      "half_height_y": 0.015,
      "note": "11 cm; grip radius ~14 mm"
     },
     "guard": {
-     "z": [0.055, 0.061],
-     "size_xy": [0.016, 0.044],
+     "z": [
+      0.055,
+      0.061
+     ],
+     "size_xy": [
+      0.016,
+      0.044
+     ],
      "note": "small cross guard, 6 mm thick"
     },
     "blade": {
-     "z": [0.061, 0.211],
+     "z": [
+      0.061,
+      0.211
+     ],
      "thickness_x": 0.004,
      "width_y_at_guard": 0.028,
      "spine_y": -0.012,
      "edge_y": 0.016,
-     "tip": [0.0, 0.0, 0.211],
+     "tip": [
+      0,
+      0,
+      0.211
+     ],
      "note": "15 cm drop-point: straight spine along y=-0.012 to z=0.17, then curving to the tip on y=0; edge along +Y"
     }
    },
@@ -158,17 +461,49 @@
    "builder": "makePistol",
    "hands": "one",
    "primary_hand": "Right",
-   "grip_primary": [0.0, -0.03, -0.012],
+   "grip_primary": [
+    0,
+    -0.03,
+    -0.012
+   ],
    "grip_secondary": null,
-   "shaft_axis": [0.0, 0.9611, -0.2764],
-   "ref_axis": [0.0, 0.2764, 0.9611],
-   "barrel_axis": [0.0, 0.0, 1.0],
-   "up_axis": [0.0, 1.0, 0.0],
+   "shaft_axis": [
+    0,
+    0.9611,
+    -0.2764
+   ],
+   "ref_axis": [
+    0,
+    0.2764,
+    0.9611
+   ],
+   "barrel_axis": [
+    0,
+    0,
+    1
+   ],
+   "up_axis": [
+    0,
+    1,
+    0
+   ],
    "length_m": 0.204,
-   "impact_point": [0.0, 0.058, 0.157],
+   "impact_point": [
+    0,
+    0.058,
+    0.157
+   ],
    "bbox": {
-    "min": [-0.017, -0.087, -0.049],
-    "max": [0.017, 0.08, 0.157]
+    "min": [
+     -0.017,
+     -0.087,
+     -0.049
+    ],
+    "max": [
+     0.017,
+     0.08,
+     0.157
+    ]
    },
    "notes": "makePistol(1): barrel +Z, top +Y, muzzle (0, 0.058, 0.157). HAND-PLACEMENT FRAME, not barrel/up: shaft_axis = the grip's long axis bottom->top (pinky->index), ref_axis = toward the muzzle side, perpendicular to the grip (the fist's knuckles face forward); the barrel and up directions are in barrel_axis / up_axis. grip_primary = centre of the grip block (fist centre). Grip block 30 x 105 x 46 mm, rotation.x = -0.28 rad: its top leans BACK (-Z) and its bottom FORWARD (bottom z=+0.003, top z=-0.027), which is the opposite rake to a real pistol (real grips sweep the butt backward); worth checking in weaponModels.js."
   },
@@ -178,37 +513,146 @@
    "prep": "shotgun",
    "hands": "two",
    "primary_hand": "Right",
-   "grip_primary": [-0.015, 0.01, 0.0],
-   "grip_secondary": [0.412, 0.011, 0.0],
-   "shaft_axis": [0.5664, 0.8241, 0.0],
-   "ref_axis": [0.8241, -0.5664, 0.0],
-   "barrel_axis": [1.0, 0.0, 0.0],
-   "up_axis": [0.0, 1.0, 0.0],
-   "secondary_grip_axis": [1.0, 0.0, 0.0],
+   "grip_primary": [
+    -0.015,
+    0.01,
+    0
+   ],
+   "grip_secondary": [
+    0.412,
+    0.011,
+    0
+   ],
+   "shaft_axis": [
+    0.5664,
+    0.8241,
+    0
+   ],
+   "ref_axis": [
+    0.8241,
+    -0.5664,
+    0
+   ],
+   "barrel_axis": [
+    1,
+    0,
+    0
+   ],
+   "up_axis": [
+    0,
+    1,
+    0
+   ],
+   "secondary_grip_axis": [
+    1,
+    0,
+    0
+   ],
    "length_m": 1.0283,
-   "impact_point": [0.756, 0.047, 0.0],
+   "impact_point": [
+    0.756,
+    0.047,
+    0
+   ],
    "bbox": {
-    "min": [-0.2753, -0.1161, -0.0235],
-    "max": [0.753, 0.0695, 0.0235],
-    "size": [1.0283, 0.1856, 0.047]
+    "min": [
+     -0.2753,
+     -0.1161,
+     -0.0235
+    ],
+    "max": [
+     0.753,
+     0.0695,
+     0.0235
+    ],
+    "size": [
+     1.0283,
+     0.1856,
+     0.047
+    ]
    },
-   "GameGrip_R": [0.0, 0.0, 0.0],
+   "GameGrip_R": [
+    0,
+    0,
+    0
+   ],
    "alt_pump_short": {
     "file": "assets/weapons/pump_short.glb",
     "prep": "pumpShort",
-    "grip_primary": [0.006, -0.066, 0.0],
-    "grip_secondary": [0.2669, 0.0106, 0.0],
-    "shaft_axis": [0.1, 0.995, 0.0],
-    "ref_axis": [0.995, -0.1, 0.0],
-    "impact_point": [0.6559, 0.05, 0.0],
+    "grip_primary": [
+     0.006,
+     -0.066,
+     0
+    ],
+    "grip_secondary": [
+     0.2669,
+     0.0106,
+     0
+    ],
+    "shaft_axis": [
+     0.1,
+     0.995,
+     0
+    ],
+    "ref_axis": [
+     0.995,
+     -0.1,
+     0
+    ],
+    "impact_point": [
+     0.6559,
+     0.05,
+     0
+    ],
     "length_m": 0.68,
     "bbox": {
-     "min": [-0.0281, -0.1047, -0.0328],
-     "max": [0.6519, 0.071, 0.0328]
+     "min": [
+      -0.0281,
+      -0.1047,
+      -0.0328
+     ],
+     "max": [
+      0.6519,
+      0.071,
+      0.0328
+     ]
     },
     "notes": "Used by the game (main.js). Origin (no GameGrip_R node) is at the TOP of the pistol grip, under the receiver; the grip runs y -0.105..-0.03, 37 mm wide (Z) x ~68 mm front-back, raked 5.7 deg (butt back), so the fist centre is ~(0.006, -0.066, 0)."
    },
    "notes": "pump_shotgun.glb (what the viewer loads; the game uses pump_short.glb, see alt_pump_short). GLB frame: barrel +X, up +Y, muzzle (0.756, 0.047, 0); 1.03 m overall with the full stock (butt at x=-0.275). HAND-PLACEMENT FRAME, not barrel/up: shaft_axis = the right hand's pinky->index along the semi-pistol stock wrist (raked ~34 deg forward of vertical, estimated from the rubber grip panel edges at 27 and 42 deg, +/-8 deg), ref_axis = perpendicular to it toward the muzzle. GameGrip_R (origin) lies ON the underside surface of the wrist, so grip_primary here is an estimated fist centre inside the wrist, (-0.015, 0.010, 0), +/-1 cm. grip_secondary = GameGrip_L on the pump (child of Shotgun_Pump, pump at rest; the pump tube is centred on y=0.011), left hand grip axis along +X."
+  },
+  "alubat": {
+   "label": "Bat (hospital pack)",
+   "file": "assets/weapons/hospital/aluminum_bat.glb",
+   "hands": "one",
+   "primary_hand": "Right",
+   "grip_primary": [
+    0,
+    0,
+    0
+   ],
+   "grip_secondary": [
+    0,
+    0.093,
+    0
+   ],
+   "shaft_axis": [
+    0,
+    1,
+    0
+   ],
+   "ref_axis": [
+    1,
+    0,
+    0
+   ],
+   "impact_point": [
+    0,
+    0.655,
+    0
+   ],
+   "length_m": 0.843,
+   "notes": "The Hospital Survivor Weapons pack's aluminum bat as delivered (assets/source/weapons_in, the user's pack from ChatGPT; copied unchanged to assets/weapons/hospital). Its own markers: GameGrip_R at the origin (the knob end of the grip), GameGrip_L 9.3 cm up the grip, ImpactPoint 65.5 cm up. GLB +Y runs along the bat; it is round, so ref_axis is free. Body -7.5..76.8 cm along Y, 6.2 cm across."
   }
  }
 }
