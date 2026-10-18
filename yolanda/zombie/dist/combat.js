@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -49718,7 +49718,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -49748,7 +49748,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -54906,7 +54906,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -58505,7 +58505,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -58545,7 +58545,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -58636,7 +58636,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -58701,7 +58701,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -58789,7 +58789,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -58973,7 +58973,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -59045,7 +59045,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -59398,7 +59398,7 @@ void main() {
     return magicSquare;
   }
 
-  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -59597,7 +59597,7 @@ void main() {
     return samples;
   }
 
-  // node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -60031,7 +60031,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -60458,7 +60458,7 @@ void main() {
     "Denoise": 5
   };
 
-  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -60510,7 +60510,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -60794,7 +60794,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -60882,7 +60882,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -69389,7 +69389,7 @@ void main() {
     return S2;
   }
 
-  // node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -71840,6 +71840,7 @@ void main() {
     ["contact", "E \xB7 Contact shadows", "Soft shadows under every piece of furniture and every body, pushed away from the nearest light.", "one draw call"],
     ["room", "B \xB7 Room light on characters", "Yola and the zombies take on the room's light: cold in the theatre, warm in the lounge, teal by the beds.", "free (a colour each)"],
     ["muzzle", "Muzzle flash light", "A shot lights the wall it hits and the floor at her feet; the shotgun lights the room.", "only on shots"],
+    ["yshadow", "Yola's shadow", "Yola alone casts a real shadow from one light that follows her (a small 512 map, redrawn each frame with only her and her weapon in it). Nothing else casts: the room's shadows are baked.", "1 small shadow pass (her mesh only)"],
     ["eyes", "Zombie eyes", "Their eyes catch the light: an ember in the dark, bright in a light pool, in the torch, in a shot's flash.", "2 sprites per zombie"]
   ];
   var WING_LIGHTS = {
@@ -71918,6 +71919,7 @@ void main() {
   };
   var FLAT2 = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   var BAKE = { url: "assets/hospital/wing_floor_light.jpg", x0: -7.6, x1: 7.6, z0: -11.6, z1: 11.6, k: 2.2, fill: 0.3 };
+  var YSH = { map: 512, half: 1.6, off: [-2.8, 5.5, -0.8], dark: 0.5 };
   var DIM = 0.55;
   var flick = (state, t, seed, S2) => {
     if (state === "buzz") return 0.88 + 0.12 * Math.sin(t * 120 + seed) * Math.sin(t * 7.3 + seed);
@@ -72093,6 +72095,84 @@ void main() {
       };
       const r = await fetch("/__shot/wing_bake_scene.json", { method: "POST", body: JSON.stringify(data) });
       return { status: r.status, meshes: out.length };
+    }
+    // ---- Yola's shadow: one light, one small map, only her (and what she holds) in it ----
+    build_yshadow() {
+      const L2 = this.ysh = new DirectionalLight(16777215, 1e-4);
+      L2.castShadow = true;
+      L2.shadow.mapSize.set(YSH.map, YSH.map);
+      const c = L2.shadow.camera;
+      c.left = c.bottom = -YSH.half;
+      c.right = c.top = YSH.half;
+      c.near = 0.5;
+      c.far = 12;
+      L2.shadow.bias = -15e-4;
+      L2.shadow.normalBias = 0.03;
+      L2.shadow.radius = 4;
+      L2.visible = false;
+      this.scene.add(L2, L2.target);
+      const C = this.yshCatch = new Mesh(new PlaneGeometry(YSH.half * 2, YSH.half * 2).rotateX(-Math.PI / 2), new ShadowMaterial({ color: 395275, opacity: YSH.dark, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+      C.receiveShadow = true;
+      C.renderOrder = 1;
+      C.visible = false;
+      this.root.add(C);
+    }
+    toggle_yshadow(v) {
+      const r = this.arena?.renderer, sun = this.arena?.sun;
+      if (!r) return;
+      this.ysh.visible = v;
+      this.yshCatch.visible = v;
+      if (v) {
+        this.yshWas = { sun: sun?.castShadow, enabled: r.shadowMap.enabled };
+        if (sun) sun.castShadow = false;
+        if (!r.shadowMap.enabled) r.shadowMap.enabled = true;
+        this.yshScanT = 0;
+      } else {
+        for (const o of this.yshOff || []) o.castShadow = true;
+        this.yshOff = null;
+        if (sun && this.yshWas) sun.castShadow = this.yshWas.sun;
+        if (this.yshWas) r.shadowMap.enabled = this.yshWas.enabled;
+        if (this.yolaBlob) this.yolaBlob.visible = true;
+      }
+      this.scene.traverse((o) => {
+        if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true;
+      });
+      r.shadowMap.needsUpdate = true;
+    }
+    yshGear(yv) {
+      return [yv.outer, yv.pistol, yv.shotgun, yv.melee, yv.shell, yv.test?.obj, yv.batLib?.obj, ...Object.values(yv.libHolds || {}).map((h) => h?.obj)].filter(Boolean);
+    }
+    tickYShadow(dt, p, yv) {
+      const r = this.arena.renderer;
+      if ((this.yshScanT -= dt) <= 0) {
+        this.yshScanT = 1;
+        const mine = /* @__PURE__ */ new Set();
+        for (const g of this.yshGear(yv)) g.traverse((o) => mine.add(o));
+        this.yshOff ?? (this.yshOff = []);
+        this.scene.traverse((o) => {
+          if (!o.isMesh && !o.isSkinnedMesh) return;
+          if (mine.has(o)) {
+            o.castShadow = true;
+            return;
+          }
+          if (o.castShadow) {
+            o.castShadow = false;
+            this.yshOff.push(o);
+          }
+        });
+      }
+      const L2 = this.ysh, t = YSH.half * 2 / YSH.map, x = Math.round(p.x / t) * t, z = Math.round(p.z / t) * t;
+      L2.target.position.set(x, 0, z);
+      L2.position.set(x + YSH.off[0], YSH.off[1], z + YSH.off[2]);
+      L2.target.updateMatrixWorld();
+      L2.updateMatrixWorld();
+      this.yshCatch.position.set(x, 0.014, z);
+      this.yshCatch.material.opacity = YSH.dark;
+      if (yv.blob) {
+        this.yolaBlob = yv.blob;
+        yv.blob.visible = false;
+      }
+      r.shadowMap.needsUpdate = true;
     }
     // ---- F: halos on bright things ----
     halo(col, size, x, y, z) {
@@ -72307,6 +72387,7 @@ void main() {
         if (this.on.room && v.view) this.tint(v.view, z.x, z.z, dt);
       }
       if (yolaView && p) {
+        if (this.on.yshadow && this.ysh) this.tickYShadow(dt, p, yolaView);
         if (this.on.contact && yolaView.blob) {
           const [dx, dz] = this.awayFromLight(p.x, p.z);
           yolaView.blob.position.x = p.x + dx * 0.16;
