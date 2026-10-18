@@ -1,6 +1,6 @@
 {
  "version": 2,
- "savedAt": "2026-10-17T17:47:50.548Z",
+ "savedAt": "2026-10-18T23:43:24.971Z",
  "takes": {
   "shot:assets/sfx/guns/pistol_01.mp3": {
    "v": "yes"
@@ -128,12 +128,9 @@
    "v": "yes"
   },
   "pistolReload:assets/sfx/guns/mag_out.mp3": {
-   "v": "no"
-  },
-  "pistolReloadDone:assets/sfx/guns/slide.mp3": {
    "v": "yes"
   },
-  "shotgunReload:assets/sfx/guns/mag_in.mp3": {
+  "pistolReloadDone:assets/sfx/guns/slide.mp3": {
    "v": "yes"
   },
   "pump:assets/sfx/lib/rack_02.mp3": {
@@ -145,15 +142,6 @@
   "pump:assets/sfx/lib/rack_04.mp3": {
    "v": "yes"
   },
-  "shotgunReload:assets/sfx/lib/shellin_01.mp3": {
-   "v": "yes"
-  },
-  "shotgunReload:assets/sfx/lib/shellin_07.mp3": {
-   "v": "yes"
-  },
-  "shotgunReload:assets/sfx/lib/shellin_09.mp3": {
-   "v": "yes"
-  },
   "fistHit:assets/sfx/lib/punch_01.mp3": {
    "v": "no"
   },
@@ -161,9 +149,6 @@
    "v": "yes"
   },
   "pickupItem:assets/sfx/lib/cloth_04.mp3": {
-   "v": "yes"
-  },
-  "weaponSwap:assets/sfx/lib/cloth_01.mp3": {
    "v": "yes"
   },
   "doorClose:assets/sfx/lib/doorshut_01.mp3": {
@@ -190,9 +175,6 @@
   "axeHit:assets/sfx/lib/blade_05.mp3": {
    "v": "yes"
   },
-  "axeHit:assets/sfx/lib/blade_02.mp3": {
-   "v": "yes"
-  },
   "batHit:assets/sfx/lib/thwack_02.mp3": {
    "v": "yes"
   },
@@ -215,6 +197,168 @@
    "v": "yes"
   },
   "sever:assets/sfx/lib/squish_07.mp3": {
+   "v": "yes"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_02.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_03.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_04.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_05.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_10.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_01.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_06.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_07.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_08.mp3": {
+   "v": "no"
+  },
+  "pistolReload:assets/sfx/lib/magdrop_09.mp3": {
+   "v": "no"
+  },
+  "batHit:assets/sfx/lib/wood_02.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/wood_06.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/wood_10.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/thwack_03.mp3": {
+   "v": "yes"
+  },
+  "clank:assets/sfx/lib/metal_03.mp3": {
+   "v": "yes"
+  },
+  "clank:assets/sfx/lib/metal_07.mp3": {
+   "v": "yes"
+  },
+  "clank:assets/sfx/lib/metal_08.mp3": {
+   "v": "yes"
+  },
+  "groan:assets/sfx/zombie/idle_01.mp3": {
+   "v": "yes"
+  },
+  "groan:assets/sfx/zombie/idle_02.mp3": {
+   "v": "yes"
+  },
+  "groan:assets/sfx/zombie/idle_05.mp3": {
+   "v": "yes"
+  },
+  "zombieAlert:assets/sfx/zombie/alert_03.mp3": {
+   "v": "yes"
+  },
+  "zombieAlert:assets/sfx/zombie/alert_12.mp3": {
+   "v": "yes"
+  },
+  "windup:assets/sfx/zombie/attack_01.mp3": {
+   "v": "yes"
+  },
+  "windup:assets/sfx/zombie/attack_02.mp3": {
+   "v": "yes"
+  },
+  "windup:assets/sfx/zombie/attack_03.mp3": {
+   "v": "yes"
+  },
+  "windup:assets/sfx/zombie/attack_06.mp3": {
+   "v": "yes"
+  },
+  "windup:assets/sfx/zombie/attack_07.mp3": {
+   "v": "yes"
+  },
+  "guardDeath:assets/sfx/zombie/gdeath_02.mp3": {
+   "v": "yes"
+  },
+  "guardEnraged:assets/sfx/zombie/groar_06.mp3": {
+   "v": "yes"
+  },
+  "guardEnraged:assets/sfx/zombie/groar_13.mp3": {
+   "v": "yes"
+  },
+  "guardEnraged:assets/sfx/zombie/groar_14.mp3": {
+   "v": "yes"
+  },
+  "guardPain:assets/sfx/zombie/gpain_07.mp3": {
+   "v": "yes"
+  },
+  "guardSlam:assets/sfx/zombie/gattack_14.mp3": {
+   "v": "yes"
+  },
+  "guardSlam:assets/sfx/zombie/stomp_11.mp3": {
+   "v": "yes"
+  },
+  "guardSlam:assets/sfx/zombie/debris_02.mp3": {
+   "v": "yes",
+   "db": 4.5
+  },
+  "guardSlam:assets/sfx/zombie/stomp_12.mp3": {
+   "db": 6
+  },
+  "guardAttack:assets/sfx/zombie/gattack_01.mp3": {
+   "v": "yes"
+  },
+  "guardAttack:assets/sfx/zombie/gattack_02.mp3": {
+   "v": "yes"
+  },
+  "guardRoar:assets/sfx/zombie/groar_14.mp3": {
+   "v": "yes"
+  },
+  "sprinterDeath:assets/sfx/zombie/sdeath_02.mp3": {
+   "v": "yes"
+  },
+  "sprinterDeath:assets/sfx/lib/soft_02.mp3": {
+   "v": "yes",
+   "db": 6
+  },
+  "sprinterCharge:assets/sfx/zombie/charge_07.mp3": {
+   "v": "yes"
+  },
+  "sprinterScream:assets/sfx/zombie/scream_02.mp3": {
+   "v": "yes"
+  },
+  "zombieDeath:assets/sfx/zombie/death_05.mp3": {
+   "v": "yes"
+  },
+  "zombieDeath:assets/sfx/zombie/death_07.mp3": {
+   "v": "yes"
+  },
+  "zombieDeath:assets/sfx/zombie/death_08.mp3": {
+   "v": "yes"
+  },
+  "zombieDeath:assets/sfx/lib/soft_01.mp3": {
+   "db": 5.5,
+   "v": "yes"
+  },
+  "knockdown:assets/sfx/lib/soft_01.mp3": {
+   "v": "yes"
+  },
+  "bump:assets/sfx/lib/soft_03.mp3": {
+   "v": "yes"
+  },
+  "zombieBite:assets/sfx/zombie/bite_04.mp3": {
+   "v": "yes"
+  },
+  "guardDeath:assets/sfx/zombie/stomp_02.mp3": {
+   "v": "yes"
+  },
+  "guardDeath:assets/sfx/zombie/stomp_01.mp3": {
+   "v": "yes"
+  },
+  "weaponSwap:assets/sfx/lib/cloth_02.mp3": {
    "v": "yes"
   }
  },
