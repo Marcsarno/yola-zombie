@@ -18,9 +18,10 @@ Old clips kept in yola2_work.blend: sg_reload_twisted_OLD, sg_reload_support_OLD
 weapons.js useBuiltBat restartFrom, player.js, clipchars.js ghostOf (the clip's last pose fades out on a copy over 0.2
 s; a fading attack counts in the layer weights).
 **Deployed** to https://yola-zombie.vercel.app (the bare address now redirects to /zombie/combat.html: yolanda/vercel.json)
-from a clean worktree build of HEAD (the other chat also deploys). NOT pushed to GitHub: 115+ local commits, and the
-history from 402d424 still holds the Kevin Iglesias yola_moves.glb; the repo is public, so scrub that file from history
-(with the user's OK: it rewrites commits) before any push.
+from a clean worktree build of HEAD (the other chat also deploys). PUSHED to GitHub 2026-10-18 (opening-reveal, db7294d):
+the Kevin Iglesias yola_moves.glb was scrubbed from the 184 unpushed commits first (the user's OK; filter-branch, every
+commit's files otherwise identical; local backup tag backup/pre-kevin-scrub-2026-10-18, never push it). Kevin clips stay
+local only (assets/moves is gitignored and out of deploys).
 **Open:** the shotgun left-strafe waist twist; the punch thumbs lie along the fist; bat fingers vs the handle around combo
 frame 40; the pistol reload's left hand ~1 hand-length higher than the mannequin's at the hip pouch; Yola 2.0 unchecked.
 
@@ -290,4 +291,4 @@ shots/blender_holds_*.png).
   tools/anim/glb_copy_clip.mjs). Checked: grip and shaft in her hand identical to the Rig Lab. Arena: its bat = the wood
   bat (alubat sheet and fits). The user's Rig Lab edits saved: the shotgun's new fit (they re-tuned it after the live
   restore), the sledgehammer's right hand, the crowbar fit, two arm adjustments. Posture fix kept ON (their browser had
-  it off; set back on). Deployed; NOT pushed (the Kevin history rewrite still needs the user's OK).
+  it off; set back on). Deployed and pushed (after the Kevin history scrub).
