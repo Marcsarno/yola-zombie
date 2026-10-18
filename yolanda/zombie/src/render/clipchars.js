@@ -203,6 +203,9 @@ export class YolaView extends ClipBody {
     // hip turn, IK) never pile up on bones that the current clips do not key (constant tracks are
     // dropped at export, e.g. a spine bone the shotgun hold never moves)
     this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
+    // her face's forward in the Head bone's own frame, from the bind pose (the model faces +Z): headLook turns it onto the aim
+    if (this.bones.Head) { this.outer.updateMatrixWorld(true); this.container.getWorldQuaternion(_q2); this.bones.Head.getWorldQuaternion(_q3); this.faceFwd = new THREE.Vector3(0, 0, 1).applyQuaternion(_q2.invert().multiply(_q3).invert()); }
+    this.lookW = 0;
     const sufs = this.unarmed ? ['', '_lower', '_u', '_ul'] : ['', '_lower'];
     // how she runs with the one-handed bat (2026-10-16, options for the user to compare; ?batrun= or game.yola.batRun):
     //   'now'       the pistol jog's legs + the sword idle's upper body, as it was
@@ -694,6 +697,7 @@ export class YolaView extends ClipBody {
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.posture(); // (before the weapons are placed: turning the pelvis shifts the arms ~4 mm, the weapons follow)
+    this.headLook(s, dt);
     this.armPose(); // (the per-clip arm adjustments: before the weapons, which follow her hands)
     this.placeWeapons(s, dt); this.placeMags(dt);
   }
@@ -736,6 +740,23 @@ export class YolaView extends ClipBody {
   }
   // the posture fix (render/posture.js), after the body's corrections, before the weapons: each bone turned by the shares of the clips driving
   // it, per source family (only her pelvis / chest / neck / head meshes change; arms, hands, weapons and feet stay put)
+  // (2026-10-18, the user: "her head doesn't face where she is looking it's weird"): her body turns onto the aim, but the head
+  // kept each clip's own (the gun clips look down the sight to one side, the strafes along the run). After the clip and the
+  // posture fix, the neck (40%) and the head (60%) turn so her face points along the aim, up to LOOK_MAX either way; eased in
+  // and out, half-weight through a swing, off for the dodge, the vault, a fall and on the floor
+  headLook(s, dt) {
+    if (!this.faceFwd || !this.bones.Neck) return;
+    const off = s.action === 'down' || s.action === 'dodge' || s.action === 'vault' || s.dead || (this.ov?.w > 0) || this.script;
+    const want = off ? 0 : s.action === 'swing' ? 0.5 : 1;
+    this.lookW += (want - this.lookW) * Math.min(1, dt * (want > this.lookW ? 6 : 12));
+    if (this.lookW < 0.01) return;
+    this.container.getWorldQuaternion(_q2); this.bones.Head.getWorldQuaternion(_q3);
+    const f = _v.copy(this.faceFwd).applyQuaternion(_q2.invert().multiply(_q3)); // her face's direction in the character's space (aim: +Z)
+    if (f.x * f.x + f.z * f.z < 1e-4) return;
+    const err = clamp(Math.atan2(f.x, f.z), -LOOK_MAX, LOOK_MAX) * this.lookW;
+    _q4.setFromAxisAngle(UP, -err * 0.4); this.rotateC('Neck', _q4);
+    _q4.setFromAxisAngle(UP, -err * 0.6); this.rotateC('Head', _q4);
+  }
   posture() {
     if (this.postureOff || !HOLD_LAYERS.posture) return; // (the user's layer toggle, render/holdlayers.js)
     if (!this.postureActs) {
@@ -1327,7 +1348,8 @@ const SWINGS = {
   slashB: { f0: 1, hit: 7, hitEnd: 11, end: 17, act: 'ual_Sword_Regular_B' },
 };
 const attackClip = (z) => z.attack === 'flail' ? SWINGS[['hook', 'slashB', 'slashA'][(z.swingN || 0) % 3]] : z.attack === 'club' ? SWINGS[(z.swingN || 0) % 2 ? 'slashA' : 'slashB'] : ATTACK_CLIPS[z.attack];
-const HEAVE = 0.5; // s per heave at his planted shield (core/zombies.js GUARD.heave; main.js times the creak to it)
+const HEAVE = 0.5;
+const LOOK_MAX = 1.1; // rad: the most her head is turned back onto the aim (YolaView.headLook) // s per heave at his planted shield (core/zombies.js GUARD.heave; main.js times the creak to it)
 // the add-on one-shots (assets/zombie_moves/*-b.glb, 2026-10-18): the kip-up, the climb out of the floor, the knockback,
 // the crawl's start, the scratch on the run
 const EXTRA_ONCE = ['ual_KipUp', 'ual_Zombie_Spawn', 'ual_Hit_Knockback', 'ual1_Crawl_Enter', 'ual_Zombie_Scratch', 'ual_LayToIdle', 'ual_Melee_Hook', 'ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual1_PickUp_Table', 'ual_Farm_Harvest'];

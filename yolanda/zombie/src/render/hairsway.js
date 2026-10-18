@@ -42,6 +42,7 @@ export class HairSway {
     this.cfg = { ...HAIR_DEFAULTS, ...opt };
     this.on = true;
     this.restQ = this.chain.map((b) => b.quaternion.clone()); // the clips only ever hold the hair at its rest pose
+    this.restP = this.chain.map((b) => b.position.clone()); this.restS = this.chain.map((b) => b.scale.clone()); // (and at its rest place: see update)
     this.restLen = [this.chain[1].position.length(), this.chain[2].position.length(), this.chain[2].position.length() * HAIR3_RATIO];
     this.cols = COLLIDERS.filter((c) => bones[c.bone]).map((c) => ({ b: bones[c.bone], at: new THREE.Vector3(...c.at), r: c.r, c0: new THREE.Vector3(), c1: new THREE.Vector3(), rw: 0, cs: new THREE.Vector3() }));
     this.p = [0, 1, 2].map(() => new THREE.Vector3());
@@ -73,6 +74,11 @@ export class HairSway {
 
   update(dt) {
     if (!this.ok) return;
+    // (2026-10-18, the user: 'Yola's pony tail disappears during many melee attacks'): the Quaternius attack clips (the bat's
+    // combo, the sledgehammer's, the crowbar's) carry no hair tracks, and with no hair track playing the mixer's blend wrote
+    // NaN into Hair1's position: the whole ponytail had nowhere to be drawn. Every clip holds the hair bones at their rest
+    // place, so they are put back there each frame before the sway turns them.
+    for (let i = 0; i < 3; i++) { this.chain[i].position.copy(this.restP[i]); this.chain[i].scale.copy(this.restS[i]); }
     this.sampleAnimated();
     if (!this.on) { this.apply(true); this.ready = false; return; }
     // a paused game steps with dt 0 (the pause menu, a lost focus): hold the hair where it is. (A 0 step divided by 0 and
