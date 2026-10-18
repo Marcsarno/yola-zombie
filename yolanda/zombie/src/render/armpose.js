@@ -54,9 +54,33 @@ function moveHand(bones, side, bone, axis, toward, cm) {
   worldRot(bone, axis, (cm / 100) / r * (_m.dot(toward) >= 0 ? 1 : -1));
 }
 
-// p: { Right: {params}, Left: {params} }; opts.limit (default true)
+// HANDS AT HER HIPS (2026-10-17, the user: the attacks start and end in the same stance as Sword Block, hands in her hips
+// again): a rule for every clip, its settings applied in the share an arm is "hanging at her hip" on the clip's own pose:
+// the upper arm within 30 deg of straight down (none past 60) and the hand within 16 cm of her hip joint across the floor
+// (none past 30 cm). Both ease in and out, so the arm moves smoothly; a swing that lifts the arm is left untouched.
+const sm = (u) => { u = Math.min(1, Math.max(0, u)); return u * u * (3 - 2 * u); };
+const COS30 = Math.cos(30 * D), COS60 = Math.cos(60 * D);
+export function hipWeight(bones, side) {
+  const U = bones[side + 'Arm'], L = bones[side + 'ForeArm'], H = bones[side + 'Hand'], Hip = bones[side + 'UpLeg'];
+  if (!U || !L || !H || !Hip) return 0;
+  const ud = L.getWorldPosition(_a).sub(U.getWorldPosition(_b)).normalize(), wa = sm((-ud.y - COS60) / (COS30 - COS60));
+  const h = H.getWorldPosition(_a), hp = Hip.getWorldPosition(_b), d = Math.hypot(h.x - hp.x, h.z - hp.z);
+  return wa * (1 - sm((d - 0.16) / (0.30 - 0.16)));
+}
+// p: { Right: {params}, Left: {params} } (this clip's); opts.hip: the hands-at-hips rule's { Right, Left } (weighted per arm
+// by hipWeight on the clip's pose); opts.limit (default true)
 export function adjustArms(bones, p, opts = {}) {
-  if (!p || !bones.LeftArm || !bones.RightArm) return;
+  if (!bones.LeftArm || !bones.RightArm) return;
+  if (opts.hip) {
+    const q = { Right: { ...(p?.Right || {}) }, Left: { ...(p?.Left || {}) } };
+    for (const side of ['Right', 'Left']) {
+      const h = opts.hip[side]; if (!h) continue;
+      const w = hipWeight(bones, side); if (opts.weights) opts.weights[side] = w; if (w <= 1e-3) continue;
+      for (const k in h) if (typeof h[k] === 'number') q[side][k] = (q[side][k] || 0) + w * h[k];
+    }
+    p = q;
+  }
+  if (!p) return;
   _l.copy(bones.LeftArm.getWorldPosition(_a)).sub(bones.RightArm.getWorldPosition(_b)); _l.y = 0; _l.normalize(); // (her left)
   _f.crossVectors(_l, UP); // (her front)
   const limit = opts.limit !== false;

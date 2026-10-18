@@ -1071,7 +1071,9 @@ function editSync() {
 // ---- ARM ADJUSTMENTS (render/armpose.js): per character and clip, per arm; kept in this browser, the sidebar's "Save all"
 // writes shots/arm_pose.json (copied to assets/hold/arm_pose.json, which the game reads, when the user says so) ----
 const ARMP = {};
-const armKey = () => S.char + ':' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
+const clipArmKey = () => S.char + ':' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
+const hipArmKey = () => S.char + ':*hips'; // (the hands-at-her-hips rule: every clip, render/armpose.js hipWeight)
+const armKey = () => (S.armScope === 'hips' ? hipArmKey() : clipArmKey()); // (what the sidebar edits)
 const armOf = (side) => ({ ...ARM0, ...(ARMP[armKey()]?.[side] || {}) });
 const keepArms = () => { try { localStorage.setItem('armPose', JSON.stringify(ARMP)); } catch { /* private window */ } };
 function setArm(side, k, v) { const e = (ARMP[armKey()] ||= {}); (e[side] ||= {})[k] = v; keepArms(); }
@@ -1082,10 +1084,10 @@ fetch('assets/hold/arm_pose.json', { cache: 'reload' }).then((r) => r.json()).ca
 });
 function armPoseOn(a) {
   if (a !== main || !HOLD_LAYERS.armPose) return;
-  const p = ARMP[armKey()]; if (!p) return;
+  const p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()]; if (!p && !hip) return;
   a.root.updateMatrixWorld(true);
   const chain = ['Shoulder', 'Arm', 'ForeArm', 'Hand'].flatMap((n) => ['Right', 'Left'].map((s) => a.bones[s + n])).filter(Boolean), before = chain.map((b) => b.quaternion.clone());
-  adjustArms(a.bones, p, { limit: S.armLimit !== false });
+  S.hipW = {}; adjustArms(a.bones, p || null, { limit: S.armLimit !== false, hip, weights: S.hipW });
   const after = chain.map((b) => b.quaternion.clone());
   chain.forEach((b, i) => { if (!after[i].equals(before[i])) { b.quaternion.copy(before[i]); postRot(a, b, (cur) => cur.copy(after[i])); } });
   a.root.updateMatrixWorld(true);
@@ -1159,6 +1161,8 @@ function buildSidebar() {
   const fitRows = ups.slice();
   // ---- Arms ----
   const A1 = section('arms', 'Arms (Yola, this clip)');
+  const ascope = seg(A1.body, [['clip', 'This clip'], ['hips', 'Hands at hips (all clips)']], (v) => { S.armScope = v; sidebarSync(); });
+  ascope.title = 'This clip: settings for this clip only. Hands at hips: one rule for every clip, applied only while an arm hangs beside her hip (it fades out as the arm lifts into a swing)';
   const side = seg(A1.body, [['Right', 'Right arm'], ['Left', 'Left arm']], (v) => { S.armSide = v; sidebarSync(); });
   let grp = '';
   const armRows = [];
@@ -1206,7 +1210,7 @@ function buildSidebar() {
     $('sbSaved').textContent = ok ? 'saved to shots/ (tell Claude to put it in the game)' : 'save failed';
   };
   V1.body.appendChild(sv);
-  SB = { wHead, who, scope, fitRows, side, armRows, layerBoxes, A1 };
+  SB = { wHead, who, scope, fitRows, side, ascope, armRows, layerBoxes, A1 };
   sidebarSync();
 }
 function layerSyncAll() {
@@ -1224,6 +1228,8 @@ function sidebarSync() {
   const labels = FIT_LABELS[w] || PFIT_ROWS.map((r) => r[1]);
   for (const up of SB.fitRows) { up(); up.row.querySelector('label').textContent = labels[up.idx] || PFIT_ROWS[up.idx][1]; }
   for (const b of SB.side.children) b.classList.toggle('on', b.dataset.v === (S.armSide || 'Right'));
+  for (const b of SB.ascope.children) b.classList.toggle('on', b.dataset.v === (S.armScope || 'clip'));
+  SB.A1.h.textContent = S.armScope === 'hips' ? 'Arms (Yola, hands at hips: every clip)' : 'Arms (Yola, this clip)';
   for (const up of SB.armRows) up();
   layerSyncAll();
 }
@@ -1240,6 +1246,7 @@ function jointReadout() {
     <tr><td>wrist</td><td class="${c(R.wrist)}">${R.wrist}%</td><td class="${c(L.wrist)}">${L.wrist}%</td></tr>
     <tr><td>&nbsp; palm / thumb</td><td>${R.flex}&deg; / ${R.dev}&deg;</td><td>${L.flex}&deg; / ${L.dev}&deg;</td></tr>
     <tr><td>forearm turn</td><td class="${c(R.fore)}">${R.fore}%</td><td class="${c(L.fore)}">${L.fore}%</td></tr>
+    <tr><td>hands-at-hips rule</td><td>${Math.round((S.hipW?.Right || 0) * 100)}%</td><td>${Math.round((S.hipW?.Left || 0) * 100)}%</td></tr>
     <tr><td>elbow</td><td class="${R.elbow > 150 ? 'bad' : 'ok'}">${R.elbow}&deg;</td><td class="${L.elbow > 150 ? 'bad' : 'ok'}">${L.elbow}&deg;</td></tr></table>`;
 }
 function editPick(name) {

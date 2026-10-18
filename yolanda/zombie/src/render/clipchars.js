@@ -754,8 +754,8 @@ export class YolaView extends ClipBody {
     }
     const list = [];
     for (const [a, base] of this.poseActs) { const w = Math.min(1, a.getEffectiveWeight()); if (w > 1e-3) list.push([w, this.poseSet[base]]); }
-    const p = list.length && blendArms(list);
-    if (p) { adjustArms(this.bones, p); this.container.updateMatrixWorld(true); }
+    const p = list.length ? blendArms(list) : null, hip = this.poseSet['*hips']; // (*hips: the hands-at-her-hips rule, every clip)
+    if (p || hip) { adjustArms(this.bones, p, { hip }); this.container.updateMatrixWorld(true); }
   }
   handPoses() {
     if (!this.handSet || !HOLD_LAYERS.handPoses) return;
