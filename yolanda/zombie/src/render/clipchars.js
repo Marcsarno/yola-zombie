@@ -1441,6 +1441,11 @@ export class ZombieView extends ClipBody {
     if (!clips) {
       const rest = hipsRest(gltf.scene);
       clips = gltf.animations.map((c) => stripRoot(c.clone(), rest));
+      // (2026-10-18 fix: the nurse's and patient's scratch file names its one clip 'Animation', so the scratch was never found
+      // and the close-in attack played the Mixamo lunge instead; it is the scratch)
+      if (!clips.some((c) => c.name === 'scratch')) { const a = clips.find((c) => c.name === 'Animation'); if (a) a.name = 'scratch'; }
+      // the runner's rake on the run (core/zombies.js dash): the scratch's upper body over its running legs
+      { const s = clips.find((c) => c.name === 'ual_Zombie_Scratch'); if (s) clips.push(subClip(s, (b) => !LOWER.test(b), 'scratch_upper')); }
       for (const c of clips) if (['walk', 'idle', 'crawl', 'sprint', 'shield_idle'].includes(c.name) || /_Loop$/.test(c.name)) loopClip(c);
       { const b = clips.find((c) => c.name === POUNCE.clip); if (b) { const p = b.clone(); p.name = 'pounce'; clips.push(p); } } // (attack clips are played by the attack's name)
       { const s = clips.find((c) => c.name === SLAM.clip); if (s) { const p = s.clone(), i = clips.findIndex((c) => c.name === 'slam'); p.name = 'slam'; if (i >= 0) clips[i] = p; else clips.push(p); } } // (the leap-slam plays as 'slam')
@@ -1612,7 +1617,7 @@ export class ZombieView extends ClipBody {
   static clearPieces() { for (const pc of [...ZombieView.pieces]) ZombieView.dropPiece(pc); }
 
   bind(z) {
-    this.id = z.id; this.lastSeq = z.hitSeq; this.lastState = ''; this.outer.visible = this.blob.visible = true;
+    this.id = z.id; this.lastSeq = z.hitSeq; this.lastState = ''; this.outer.visible = this.blob.visible = true; this.spawnPlayed = false;
     this.outer.position.y = 0; this.oneShot = null; this.deathYaw = null;
     this.endRagdoll();
     this.severed.clear();
@@ -1753,6 +1758,17 @@ export class ZombieView extends ClipBody {
     if (this.popped) { this.outer.visible = this.blob.visible = false; return; }
     if (z.burst) { this.burstLady(z, { vx: z.vx + z.kx, vz: z.vz + z.kz }); return; }
     this.outer.position.x = x; this.outer.position.z = zz;
+    // out of the floor (core/zombies.js FLOOR_EMERGE): nothing while the floor rumbles; when it breaks it claws its way out
+    // of the breach (Quaternius UAL2 Zombie_Spawn: it starts with its hips 0.45 m under the floor, which hides the rest)
+    if (z.floorSpawn && z.state === 'emerge') {
+      const F = z.floorSpawn, sp = this.act('ual_Zombie_Spawn');
+      if (z.t < F.rumble || !sp) { this.outer.visible = this.blob.visible = false; this.lastState = 'emerge'; return; }
+      if (!this.spawnPlayed) {
+        this.spawnPlayed = true; this.outer.visible = true; this.blob.visible = false;
+        const c = sp.getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0]));
+        this.playOnce('ual_Zombie_Spawn', t0, (c.duration - t0) / F.climb, 0);
+      }
+    } else if (this.spawnPlayed && !this.blob.visible && z.state !== 'dead') this.blob.visible = true;
     // a crawler's lunge: the body lurches forward along the floor through the strike and draws back in the recovery
     if (z.crawling && this.hasCrawl && (z.state === 'strike' || z.state === 'recover')) {
       const u = Math.min(1, z.t / Math.max(0.05, z.stateDur)), k = Math.sin((z.state === 'strike' ? u : 1 - u) * Math.PI / 2) * 0.3;
@@ -1769,6 +1785,16 @@ export class ZombieView extends ClipBody {
       const AC = ATTACK_CLIPS[z.attack], scr = AC && this.act(z.attack);
       const crawler = z.crawling && this.hasCrawl; // (a legless zombie never plays a standing clip: its attacks and flinches stay in the crawl)
       if (crawler && (S === 'windup' || S === 'strike' || S === 'recover' || S === 'stagger')) { /* the crawl itself coils and lunges (below) */ }
+      else if (z.attack === 'dash' && this.act('scratch_upper') && (S === 'windup' || S === 'strike' || S === 'recover')) {
+        // the runner's dash rake: the arms only (its legs keep their run, the gait below): up over the wind-up (frames 1-16),
+        // the rake through the dash (16-30), down through the skid (30-45)
+        const a = this.act('scratch_upper'), t0 = this.scrT0 ??= Math.min(...a.getClip().tracks.map((q) => q.times[0]));
+        const [f0, f1] = S === 'windup' ? [1, 16] : S === 'strike' ? [16, 30] : [30, 45];
+        if (S === 'windup') { a.reset(); a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.play(); }
+        a.time = t0 + (f0 - 1) / 30; a.timeScale = (f1 - f0) / 30 / Math.max(0.05, z.stateDur); a.setEffectiveWeight(S === 'recover' ? 2 : 3);
+        if (S === 'recover') a.fadeOut(z.stateDur);
+        this.upperShot = a;
+      }
       else if (S === 'windup') {
         if (scr) { const t0 = Math.min(...scr.getClip().tracks.map((t) => t.times[0])); this.playOnce(z.attack, t0 + (AC.f0 - 1) / 30, (AC.hit - AC.f0) / 30 / Math.max(0.2, z.stateDur)); this.acT0 = t0; }
         else this.playOnce('attack', 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
@@ -1816,6 +1842,7 @@ export class ZombieView extends ClipBody {
         }
       } else if ((S === 'chase' || S === 'emerge') && this.oneShot && this.lastState !== 'strike' && this.lastState !== 'windup') { this.oneShot.fadeOut(0.2); this.oneShot = null; }
       else if (S === 'chase' && this.oneShot) { this.oneShot.fadeOut(0.25); this.oneShot = null; }
+      if (this.upperShot && S !== 'windup' && S !== 'strike' && S !== 'recover') { this.upperShot.fadeOut(0.15); this.upperShot = null; }
       this.lastState = S;
     }
     if (this.kipAt != null && (z.state !== 'getup' || z.t >= this.kipAt)) { // the lady's kip-up

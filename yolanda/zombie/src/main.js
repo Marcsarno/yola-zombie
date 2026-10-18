@@ -124,7 +124,7 @@ function stepPhysics(dt) {
 }
 
 let arena, yola, sim;
-const zviews = new Map(); const zpool = [[], [], [], []];
+const zviews = new Map(); const zpool = [[], [], [], [], []]; // (one pool per ZOMBIE_TYPES entry)
 const storyStart = params.has('intro') || params.has('reveal') || params.has('room1');
 let mode = storyStart ? 'room1' : params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
 useLevel(levelForMode(mode)); // the story's chapter (Floors 7, 6, 5), or the combat wing for practice, waves and benchmarks
@@ -145,10 +145,36 @@ const ZOMBIE_TYPES = [
   // bed-panel shield is modelled). Not modular: no limbs come off them yet.
   { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb', 'assets/zombie_moves/sprinter-b.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
   { file: 'assets/zombie-guard.glb', extra: ['assets/zombie_moves/guard.glb'], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
+  // the runner (2026-10-18, the user: "an orange-clothed variant of the existing nurse zombie ... the faster enemy"): the
+  // nurse's own model and clips, her blue scrubs turned orange at load (orangeScrubs), core/zombies.js KINDS.runner
+  { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true },
 ];
+// her scrubs' blue (hue ~165-250) turned safety orange, the rest of the texture (skin, hair, blood) untouched; once per map
+const _orangeMaps = new Map();
+function orangeScrubs(tex) {
+  if (!tex?.image) return tex;
+  if (_orangeMaps.has(tex)) return _orangeMaps.get(tex);
+  const img = tex.image, c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  const id = g.getImageData(0, 0, c.width, c.height), d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), dl = mx - mn;
+    if (dl < 0.06 || mx < 0.06) continue;
+    let h = mx === r ? ((gg - b) / dl) % 6 : mx === gg ? (b - r) / dl + 2 : (r - gg) / dl + 4; h = (h * 60 + 360) % 360;
+    if (h < 165 || h > 250) continue;
+    const l = (mx + mn) / 2, s = Math.min(1, (dl / (1 - Math.abs(2 * l - 1) || 1)) * 1.6 + 0.2), H = 22 + (h - 205) * 0.12, L = Math.min(0.62, l * 0.92 + 0.04);
+    const C = (1 - Math.abs(2 * L - 1)) * s, X = C * (1 - Math.abs(((H / 60) % 2) - 1)), m = L - C / 2; // (H stays within 0-60: red-orange)
+    d[i] = (C + m) * 255; d[i + 1] = (X + m) * 255; d[i + 2] = m * 255;
+  }
+  g.putImageData(id, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  for (const k of ['flipY', 'colorSpace', 'wrapS', 'wrapT', 'channel', 'anisotropy']) t[k] = tex[k];
+  t.needsUpdate = true; _orangeMaps.set(tex, t);
+  return t;
+}
 // (extra: clips retargeted onto each type's own skeleton: the scratch, tools/anim/zombie_clip.py; the Quaternius UAL zombie
 // walks, run, bite and hit flinches, tools/anim/test_zombie_clips.py, UAL_PACKS.md)
-const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.look === 'nurse' ? 0 : z.look === 'patient' ? 1 : z.id % 2);
+const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.kind === 'runner' ? 4 : z.look === 'nurse' ? 0 : z.look === 'patient' ? 1 : z.id % 2);
 const YOLA_HEIGHT = 1.62;
 // which Yola plays (2026-10-16): 1 = the original model, 2 = the user's new Tripo model (testing; tools/anim/yola2_build.py).
 // The pause menu's Yola choice (remembered), or ?yola=2. The opening keeps its own Yola either way.
@@ -171,7 +197,7 @@ async function load() {
   // Yola, plus the clips authored outside her model file (the bat combo: skeleton-only, same bone names)
   const yolaP = Promise.all([loader.loadAsync(YOLA_FILES.model), ...YOLA_FILES.extra.map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; });
   // (each type's extra clips, the scratch, are retargeted onto its own skeleton: tools/anim/zombie_clip.py)
-  const zomP = Promise.all(ZOMBIE_TYPES.map((t) => Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; })));
+  const zomP = Promise.all(ZOMBIE_TYPES.map((t) => t.same != null ? null : Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; })));
   const dataP = fetch(YOLA_FILES.data).then((r) => r.json());
   // the guard's shield (the user's v2 package): the GLB and the two damage maps, loaded once and shared by every guard
   const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
@@ -181,6 +207,7 @@ async function load() {
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
     fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({})), // (the user's pistol fit per character, set in the Rig Lab)
     loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)]); // (the wood bat: setupBat)
+  loader.loadAsync('assets/props/floor_breach.glb').then((g) => { breaches.src = g.scene; g.scene.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = false; } }); }).catch(() => {}); // (blender/make_floor_breach.py)
   loadHoldLayers(); // (the user's hold-layer switches, render/holdlayers.js)
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
   const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
@@ -189,7 +216,7 @@ async function load() {
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup' || c.name === 'ual_KipUp')); // (tools/anim/yola_clips.py: knocked flat, getting up)
   setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({})), woodBatG); window.game.yolaClips = yg.animations;
-  ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
+  ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[t.same ?? i]));
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
   restart();
@@ -346,6 +373,7 @@ function newZombieView(type) {
   const t = ZOMBIE_TYPES[type];
   const v = new ZombieView(scene, t.gltf, t.height, t.walk, t);
   v.type = type;
+  if (t.orange) v.model.traverse((o) => { if (o.isMesh && o.material?.map) o.material.map = orangeScrubs(o.material.map); }); // (the runner)
   return v;
 }
 
@@ -360,7 +388,7 @@ function restart(newMode = mode, n = benchN, save = null) {
   window.game.sim = sim;
   for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); }
   zviews.clear();
-  ZombieView.clearPieces(); gibs.clear();
+  ZombieView.clearPieces(); gibs.clear(); clearBreaches();
   resetPhysics();
   const p = sim.player;
   p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;
@@ -635,6 +663,8 @@ function handleEvents() {
       case 'zombieTumble': audio.play('knockdown'); if (dist(e.id) < 8) shake(0.15); break;
       case 'sprinterHit': audio.play('bump', 1.2); shake(0.5); break; // her charge ran into Yola
       case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 22, 0xcfc6b4, 2.6, 0.9, 0.7); fx.burst(e.x, 0.05, e.z, 10, 0x6f6658, 3.2, 0.5, 0.5); if (d < 8) shake(1.0 - d * 0.1); if (shakeOn) camState.vz += 1.2 * tuning.shake; break; } // the guard's smash: dust, grit, a ring, the floor shakes and the view drops
+      case 'floorRumble': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'rumble', Math.max(0.3, 1 - d / 14)); fx.floorCrack?.(e.x, e.z, 0.75); fx.burst(e.x, 0.05, e.z, 8, 0x9a948a, 0.8, 0.4, 0.9); if (d < 9) shake(0.12); break; } // the floor about to break: a crack, grit, a rumble (an emerging zombie: core/sim.js spawnFromFloor)
+      case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 18, 0xd9cdb2, 2.6, 1.6, 0.7); fx.burst(e.x, 0.1, e.z, 14, 0x6f6a62, 2.0, 1.2, 0.9); if (d < 9) shake(0.3); break; }
       case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.0); hud.popup('SHIELD CRACKED'); break; // (his shield driven into the floor: render/fx.js floorCrack)
       case 'shieldFree': { const z = sim.zombies.find((q) => q.id === e.id); cue(audio, 'free'); if (z) fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.1, z.z + Math.cos(z.yaw) * 0.75, 14, 0x8a8172, 2.4, 0.9, 0.5); break; }
       case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
@@ -670,6 +700,15 @@ function handleEvents() {
 }
 const dist = (id) => { const z = sim.zombies.find((q) => q.id === id); return z ? Math.hypot(z.x - sim.player.x, z.z - sim.player.z) : 99; };
 const cueState = { key: '', now: '' };
+// the floor breaches (core/sim.js spawnFromFloor; assets/props/floor_breach.glb): one stays wherever a zombie broke through,
+// for this level (restart clears them); its far inner wall is painted for the game's fixed view, so it is never turned
+const breaches = { src: null, list: [] };
+function placeBreach(x, z) {
+  if (!breaches.src) return;
+  const o = breaches.src.clone(true); o.position.set(x, 0, z); scene.add(o); breaches.list.push(o);
+  if (breaches.list.length > 10) breaches.list.shift().removeFromParent();
+}
+function clearBreaches() { for (const o of breaches.list) o.removeFromParent(); breaches.list.length = 0; }
 
 const slowmo = new SlowMotion(audio); // (render/slowmo.js: the guard's leap, a perfect dodge, a finishing blow)
 const slowBeat = (k, d) => slowmo.beat(k, d), slowEnd = () => slowmo.end();

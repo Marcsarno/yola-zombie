@@ -242,7 +242,7 @@ export class Player {
     // soft-collide with live zombies (not through a dodge's untouchable moment, nor over a prop), then the world
     const through = vaulting || (dodging && this.invuln > 0);
     if (!through) for (const e of sim.zombies) {
-      if (!e.solid) continue;
+      if (!e.solid || (e.state === 'strike' && e.attack === 'dash')) continue; // (the runner's dash brushes past her)
       const dx = this.x - e.x, dz = this.z - e.z, rr = this.r + e.r, d2 = dx * dx + dz * dz;
       if (d2 < rr * rr && d2 > 1e-8) { const d = Math.sqrt(d2), push = (rr - d) * 0.85; this.x += (dx / d) * push; this.z += (dz / d) * push; }
     }

@@ -2,7 +2,7 @@
 import { World, rng, rayCircle, segPointDist2, angleDiff } from './world.js';
 import { LAYOUT, buildWorld } from './layout.js';
 import { Player, meleeWorldSegment } from './player.js';
-import { Zombie, ZS, KINDS, ZATTACKS, LADY, separate, bump } from './zombies.js';
+import { Zombie, ZS, KINDS, ZATTACKS, LADY, FLOOR_EMERGE, separate, bump } from './zombies.js';
 import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.js';
 import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
@@ -119,6 +119,18 @@ export class Sim {
     return z;
   }
 
+  // A zombie out of the floor (core/zombies.js FLOOR_EMERGE): placed at the hole, under the floor until it breaks through.
+  // The level never calls this right under Yola (core/level.js floorStep keeps her a few metres off).
+  spawnFromFloor(x, z, opts = {}) {
+    const p = this.player, yaw = opts.yaw ?? Math.atan2(p.x - x, p.z - z);
+    const zb = this.spawnZombie(null, { x, z, yaw, kind: opts.kind, hp: opts.hp });
+    const F = { ...FLOOR_EMERGE, breached: false };
+    zb.floorSpawn = F; zb.set(ZS.EMERGE, F.rumble + F.climb); zb.solid = false; zb.emergeTo = null;
+    if (opts.look) zb.look = opts.look;
+    this.emit({ type: 'floorRumble', id: zb.id, x, z, dur: F.rumble });
+    return zb;
+  }
+
   // The lady bursts (core/zombies.js LADY): her burst knocks Yola flat close by and staggers her further out; an acid pool
   // stays where she was. (Her death momentum carries the burst forward: the gore flies along it.)
   ladyBurst(z) {
@@ -163,7 +175,7 @@ export class Sim {
         return { z, kind: 'charge', special: true, u, now: z.sprinting && along > -0.2, soon: z.sprinting && along > -0.2 && along < 3.8, left: z.sprinting ? Math.max(0, along) / Math.max(1, z.spd) : 1 };
       }
       if (!best && z.state === ZS.WINDUP && (z.attack === 'lunge' || z.attack === 'pounce') && d < ZATTACKS[z.attack].range + 1.2) best = { z, kind: z.attack, special: false, u: z.t / Math.max(0.05, z.stateDur), now: true, soon: false };
-      if (!best && z.state === ZS.STRIKE && z.attack === 'pounce') best = { z, kind: 'pounce', special: false, u: 1, now: true, soon: false };
+      if (!best && (z.state === ZS.STRIKE || z.state === ZS.WINDUP) && (z.attack === 'pounce' || z.attack === 'dash') && d < 5) best = { z, kind: z.attack, special: false, u: 1, now: true, soon: false };
     }
     return best;
   }
@@ -240,7 +252,7 @@ export class Sim {
   updateEngagement() {
     const p = this.player, n = Math.max(1, Math.round(this.T.zombieEngage ?? 2)), cand = [];
     for (const z of this.zombies) {
-      if (!z.alive || z.passive || z.dormant || z.down) continue;
+      if (!z.alive || z.passive || z.dormant || z.down || z.state === ZS.EMERGE) continue;
       const d = Math.hypot(z.x - p.x, z.z - p.z);
       if (d < 7) cand.push([d - (this.engaged.has(z.id) ? 0.7 : 0), z.id]);
     }
@@ -268,7 +280,7 @@ export class Sim {
       for (const z of this.zombies) {
         if (!z.alive) continue;
         const dx = z.x - m.x, dz = z.z - m.z, d = Math.hypot(dx, dz);
-        if (d > 12 || d < 0.2) continue;
+        if (d > 12 || d < 0.2 || z.buried) continue;
         const a = Math.abs(angleDiff(yaw, Math.atan2(dx, dz))) - Math.atan(ZR_HIT / d);
         if (a < maxBend && a < bestA && this.world.lineOfSight(m.x, m.z, z.x, z.z, BULLET_MIN_H)) { best = z; bestA = a; }
       }
@@ -354,7 +366,7 @@ export class Sim {
     const w = this.world.raycast(ox, oz, ox + dx * range, oz + dz * range, BULLET_MIN_H);
     let t = w ? w.t * range : range, zombie = null;
     for (const z of this.zombies) {
-      if (!z.alive) continue;
+      if (!z.alive || z.buried) continue;
       const h = rayCircle(ox, oz, dx, dz, t, z.x, z.z, ZR_HIT);
       if (h >= 0 && h < t) { t = h; zombie = z; }
     }
@@ -367,7 +379,7 @@ export class Sim {
   meleeAssist(p, reach = 1.45, downToo = false) {
     let best = null, bestA = 0.87;
     for (const z of this.zombies) {
-      if (!z.alive || (z.down && !downToo)) continue;
+      if (!z.alive || z.buried || (z.down && !downToo)) continue;
       const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
       if (d > reach || d < 0.2) continue;
       const a = Math.abs(angleDiff(p.aimYaw, Math.atan2(dx, dz)));
@@ -418,7 +430,7 @@ export class Sim {
       // Only a bat at body height counts: the swing's low dip past the knees does not land a blow.
       const chop = A.style === 'chop';
       for (const z of this.zombies) {
-        if (!z.alive || act.hitSet.has(z.id)) continue;
+        if (!z.alive || z.buried || act.hitSet.has(z.id)) continue;
         if (z.down && !chop) continue; // only the chop comes down far enough to hit a body on the floor
         const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G.radius : 0); // the visible torso (a lying body is longer)
         const minY = z.down || z.crawling ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y); // (a test-arena attack sets its own) // (a crawler is struck as it rises at her)

@@ -166,6 +166,8 @@ export class FX {
     q.t = 0; q.m.position.set(x, 0.013, z); q.m.rotation.z = Math.random() * Math.PI * 2; q.m.scale.set(size * 2, size * 2, 1); q.m.visible = true;
   }
 
+  clearCrackAt(x, z) { for (const q of this.cracks) if (q.t < 40 && Math.hypot(q.m.position.x - x, q.m.position.z - z) < 0.3) { q.t = 99; q.m.visible = false; } } // (a breach opened over it)
+
   muzzle(pos, k = 1) {
     this.flash.position.copy(pos); this.flash.visible = true; this.flashT = 0.055 * Math.sqrt(k);
     this.flash.scale.setScalar(0.42 * k);
