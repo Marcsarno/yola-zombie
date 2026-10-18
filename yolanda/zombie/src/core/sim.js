@@ -113,6 +113,7 @@ export class Sim {
       passive: opts.passive,
       phase: this.rand(),
       kind: opts.kind,
+      prop: opts.prop, bed: opts.bed,
     });
     if (opts.x !== undefined) { z.x = opts.x; z.z = opts.z; z.yaw = opts.yaw ?? z.yaw; z.stateDur = 0.3; }
     else { z.emergeTo = { x: sx, z: sz }; z.x = d.axis === 'x' ? sx : d.x + (d.x < 0 ? 0.35 : -0.35); z.z = d.axis === 'x' ? d.z + 0.35 : sz; }

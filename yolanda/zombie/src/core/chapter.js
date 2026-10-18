@@ -103,13 +103,18 @@ function buildFloor(n, def) {
     room(id, x, y, z, face, w) { roomSigns.push({ id, x, y, z, face, w }); },
     X, Z };
   def.dress(P);
+  // (2026-10-18, the user: "every bed in the hospital should have one of those old patients in it... they start from the laying
+  // down position until you get close"): an old patient lying in each ward bed (core/zombies.js prop 'bed'), each on its own,
+  // up out of it when Yola comes within sense m (the spare beds in store, RecoveryBed_standard, stay empty)
+  const bedPatients = props.filter((q) => /recovery_bed.glb$/.test(q.m)).map((q, i) => { const yaw = (q.rot * Math.PI) / 180;
+    return { id: 'bed' + i, sense: 3.0, zombies: [{ x: q.x, z: q.z, yaw: yaw + Math.PI, look: 'patient', prop: 'bed', bed: { x: q.x, z: q.z, yaw } }] }; });
   const xs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[0], q[1]])), zs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[2], q[3]]));
   const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs, L.cab.minZ), maxZ = Math.max(...zs);
   return {
     name: 'chapter', floor: n, oz, rooms, walls, doors, props, signs, roomSigns, lift: L,
     bounds: { minX: minX - 0.6, maxX: maxX + 0.6, minZ: minZ - 0.6, maxZ: maxZ + 0.6 },
     camBounds: { minX: minX + 1.2, maxX: maxX - 1.0, minZ: minZ + 1.6, maxZ: maxZ - 0.6 },
-    groups: def.groups(Z), pickups: def.pickups(Z), interact: def.interact(Z), lights: def.lights(Z), blood: def.blood?.(Z) || [],
+    groups: [...def.groups(Z), ...bedPatients], pickups: def.pickups(Z), interact: def.interact(Z), lights: def.lights(Z), blood: def.blood?.(Z) || [],
     playerStart: def.start(Z), cutaway: true,
   };
 }
@@ -406,6 +411,7 @@ const F7 = buildFloor(7, {
     room('maintenance', -3.4, 2.3, 15.8, 's', 1.4);
     room('elevator', X(1214) - 3.3, 2.75, -11.0, 's', 1.1);
   },
+  // (2026-10-18, the user: the IV pole walker, the one in a wheelchair, a surgeon: prop on a group's zombie; core/zombies.js)
   groups: (Z) => [
     // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
     { id: 'or', zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1.0, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: 'nurse' }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8.0 }] },
@@ -416,10 +422,10 @@ const F7 = buildFloor(7, {
     { id: 's7', sense: 5.0, zombies: [{ x: -21.0, z: -5.5, yaw: 1.6, look: 'patient' }, { x: -20.0, z: -2.6, look: 'nurse', from: 'floor', delay: 2.4 }] },
     // nurse station: a crowd of walkers spread through the room (the ring that waits its turn and pounces), the shotgun on
     // the team desk in the middle of them
-    { id: 'n7', sense: 6.0, zombies: [{ x: -38.6, z: -3.2, yaw: 1.2, look: 'nurse' }, { x: -31.0, z: 0.6, yaw: -2.6 }, { x: -35.6, z: -7.4, yaw: 0.6, look: 'patient' }, { x: -28.4, z: -2.2, yaw: -1.4 }, { x: -39.2, z: 0.6, yaw: 2.2, look: 'nurse' }] },
+    { id: 'n7', sense: 6.0, zombies: [{ x: -38.6, z: -3.2, yaw: 1.2, look: 'nurse', prop: 'surgeon' }, { x: -31.0, z: 0.6, yaw: -2.6 }, { x: -35.6, z: -7.4, yaw: 0.6, look: 'patient' }, { x: -28.4, z: -2.2, yaw: -1.4 }, { x: -39.2, z: 0.6, yaw: 2.2, look: 'nurse' }] },
     // treatment ward: the crawlers' ward: two already down between the beds (crawl), one walker in each lane, and the floor
     // of the middle lane gives way behind her once it starts
-    { id: 't7', sense: 6.5, zombies: [{ x: -36.2, z: 6.8, yaw: 0.4, look: 'patient' }, { x: -30.2, z: 8.6, yaw: -0.8 }, { x: -33.0, z: 12.6, yaw: 2.6, look: 'nurse' }, { x: -28.6, z: 13.8, yaw: -2.2 },
+    { id: 't7', sense: 6.5, zombies: [{ x: -36.2, z: 6.8, yaw: 0.4, look: 'patient', prop: 'iv' }, { x: -30.2, z: 8.6, yaw: -0.8 }, { x: -33.0, z: 12.6, yaw: 2.6, look: 'nurse' }, { x: -28.6, z: 13.8, yaw: -2.2 },
       { x: -35.0, z: 7.6, yaw: 0.3, look: 'patient', crawl: true }, { x: -29.6, z: 4.0, yaw: -2.8, crawl: true }, { x: -31.4, z: 6.0, look: 'nurse', from: 'floor', delay: 3.5 }] },
     // renovation: the runners' room: wide and open, two orange runners and a walker, and the half-built floor breaks under two more
     { id: 'v7', sense: 7.0, zombies: [{ x: -33.2, z: 26.2, yaw: 0.2 }, { x: -25.0, z: 21.4, yaw: -1.6, kind: 'runner' }, { x: -38.2, z: 25.6, yaw: 1.0, kind: 'runner' },
@@ -656,9 +662,9 @@ const F6 = buildFloor(6, {
   },
   groups: (Z) => [
     // W6: a broad ward, four spread between the beds (a worthwhile regular route, not padded)
-    { id: 'w6', sense: 6.5, zombies: [{ x: X(300), z: Z(470), yaw: 0.8, look: 'patient' }, { x: X(520), z: Z(500), yaw: -0.6 }, { x: X(260), z: Z(660), yaw: 2.4, look: 'nurse' }, { x: X(470), z: Z(700), yaw: -2.0 }] },
+    { id: 'w6', sense: 6.5, zombies: [{ x: X(300), z: Z(470), yaw: 0.8, look: 'patient', prop: 'iv' }, { x: X(520), z: Z(500), yaw: -0.6, look: 'patient', prop: 'chair' }, { x: X(260), z: Z(660), yaw: 2.4, look: 'nurse' }, { x: X(470), z: Z(700), yaw: -2.0 }] },
     // P6: two in the preparation room
-    { id: 'p6', sense: 5.5, zombies: [{ x: X(300), z: Z(840), yaw: 0.4, look: 'nurse' }, { x: X(480), z: Z(980), yaw: -2.4 }] },
+    { id: 'p6', sense: 5.5, zombies: [{ x: X(300), z: Z(840), yaw: 0.4, look: 'nurse', prop: 'surgeon' }, { x: X(480), z: Z(980), yaw: -2.4 }] },
     // A6: the big lady straight charger, at the far east of the bay: her lane runs west at the weak partition
     { id: 'a6', sense: 9.0, zombies: [{ x: X(1060), z: Z(1150), yaw: -Math.PI / 2, kind: 'sprinter' }] },
   ],
@@ -823,7 +829,7 @@ const F5 = buildFloor(5, {
     room('lab', X(830), 2.62, Z(300) + 0.15, 's', 1.1);
   },
   groups: (Z) => [
-    { id: 'd5', sense: 5.0, zombies: [{ x: X(950), z: Z(780), yaw: 2.6, look: 'patient' }] },
+    { id: 'd5', sense: 5.0, zombies: [{ x: X(950), z: Z(780), yaw: 2.6, look: 'patient', prop: 'chair' }] },
     // W5: the shield carrier with two walkers (the shorter, contained way)
     { id: 'w5', sense: 6.0, zombies: [{ x: X(560), z: Z(820), yaw: Math.PI / 2, kind: 'guard' }, { x: X(330), z: Z(760), yaw: 1.2, look: 'nurse' }, { x: X(470), z: Z(950), yaw: 0.4 }] },
     // T5: the charger at the east end (her lane runs the bay's length), two walkers by the scanner

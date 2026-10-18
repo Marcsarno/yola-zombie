@@ -1352,11 +1352,21 @@ const HEAVE = 0.5;
 const LOOK_MAX = 1.1; // rad: the most her head is turned back onto the aim (YolaView.headLook) // s per heave at his planted shield (core/zombies.js GUARD.heave; main.js times the creak to it)
 // the add-on one-shots (assets/zombie_moves/*-b.glb, 2026-10-18): the kip-up, the climb out of the floor, the knockback,
 // the crawl's start, the scratch on the run
-const EXTRA_ONCE = ['ual_KipUp', 'ual_Zombie_Spawn', 'ual_Hit_Knockback', 'ual1_Crawl_Enter', 'ual_Zombie_Scratch', 'ual_LayToIdle', 'ual_Melee_Hook', 'ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual1_PickUp_Table', 'ual_Farm_Harvest'];
+const EXTRA_ONCE = ['ual_IdleToLay', 'ual1_Sitting_Exit', 'ual_KipUp', 'ual_Zombie_Spawn', 'ual_Hit_Knockback', 'ual1_Crawl_Enter', 'ual_Zombie_Scratch', 'ual_LayToIdle', 'ual_Melee_Hook', 'ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual1_PickUp_Table', 'ual_Farm_Harvest'];
 // how a standing zombie walks (core/zombies.js GAITS): Quaternius's zombie walk in eight directions / run in four, all
 // played from one shared phase (the clips of a set are the same length, so the feet stay in step through a blend) at the
 // rate that matches its travel. dir: [left, forward] travel; speed: the clip's own (m/s, its root motion, the mannequin at
 // 1.69 m: scaled by the zombie's height)
+// The hospital's own zombies (core/zombies.js prop; 2026-10-18, the user). IV: its drip stand rolls beside it on its castors,
+// the stand's base on a spring to a spot ahead of its left hip (it lags and swings round, the pole tips against its
+// motion), its left hand on the pole at grip (m up the pole): held by IK, let go through an attack or a fall and taken
+// again if it is still in reach. CHAIR: the wheelchair under its hips (seat: the hips' height, m; fwd: the chair's centre
+// ahead of the hips; yaw: the model's own front), its hands on the hand rims pushing (rim: centre ahead of the hips /
+// up / out to the side, radius) one push each rimArc of wheel turn. BED: lying on the mattress (top, m) until it wakes,
+// then up off it (LayToIdle over BED_RISE)
+const IV = { fwd: 0.32, side: 0.36, grip: 1.08, k: 16, damp: 7, tilt: 0.05, maxTilt: 0.2, reach: 0.75, h: 2.03 };
+const CHAIR = { seat: 0.62, fwd: 0.06, yaw: 0, rim: [-0.04, 0.36, 0.3], rimR: 0.27, rimArc: 1.6, h: 0.97 };
+const BED = { top: 0.66, h: 0.87 };
 const GAIT_SETS = {
   ual: { idle: 'ual_Zombie_Idle_Loop', dur: 1.333, dirs: [['Fwd', 0, 1, 1.05], ['Fwd_L', 0.707, 0.707, 1.06], ['L', 1, 0, 0.75], ['Bwd_L', 0.707, -0.707, 1.06], ['Bwd', 0, -1, 1.2], ['Bwd_R', -0.707, -0.707, 1.06], ['R', -1, 0, 0.75], ['Fwd_R', -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
   run: { idle: 'ual_Zombie_Idle_Loop', dur: 0.733, dirs: [['Fwd', 0, 1, 4.1], ['L', 1, 0, 2.05], ['Bwd', 0, -1, 4.1], ['R', -1, 0, 2.05]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Run_${k}_Loop`, x, z, s })) },
@@ -1425,6 +1435,23 @@ function bakeChunks(model, roots, frames) {
   return out;
 }
 const _bv = new THREE.Vector3(), _bq = new THREE.Quaternion();
+// The guard's torn arm, limp (ZombieView.buildLimpArm): its frame is the forearm's (Y from the wrist to the elbow, X the
+// elbow's hinge); the upper arm's turn off it is limpQ(psi, th): th the elbow's bend (0 straight: the stop it whips against,
+// only ever the way an elbow folds), psi a little twist about the forearm. LIMP: the joints' limits (rad), the upper arm's
+// swinging mass (L: of its length from the elbow), damping (1/s), and the hand's flop off the wrist
+const LIMP = { flex: 2.45, twist: 0.7, L: 0.72, damp: 1.3, handCone: 0.95, handL: 0.1, handDamp: 2.5, flick: 3.2 };
+const _lx = new THREE.Vector3(1, 0, 0), _ly = new THREE.Vector3(0, 1, 0), _lqa = new THREE.Quaternion(), _lqb = new THREE.Quaternion();
+const limpQ = (psi, th, out) => out.multiplyQuaternions(_lqa.setFromAxisAngle(_ly, psi), _lqb.setFromAxisAngle(_lx, -th));
+const limpDir = (psi, th, out) => out.set(-Math.sin(th) * Math.sin(psi), Math.cos(th), -Math.sin(th) * Math.cos(psi));
+function limpSolve(v, A) { // v: the upper arm's direction in the forearm's frame (unit) -> [psi, th] inside the elbow's limits
+  let th = Math.acos(clamp(v.y, -1, 1)), psi = th > 1e-3 ? Math.atan2(-v.x, -v.z) : A.psi;
+  if (Math.abs(psi) > LIMP.twist) { // bent the wrong way (or twisted past the joint): the nearest it can be; straight at worst
+    const hh = Math.sin(th) * Math.cos(Math.abs(psi) - LIMP.twist);
+    th = hh <= 0 ? 0 : Math.atan2(hh, v.y); psi = Math.sign(psi) * LIMP.twist;
+  }
+  return [psi, Math.min(th, LIMP.flex)];
+}
+const _lq = new THREE.Quaternion(), _lqi = new THREE.Quaternion(), _lE = new THREE.Vector3(), _lEi = new THREE.Vector3(), _lv = new THREE.Vector3(), _lw = new THREE.Vector3(), _lg = new THREE.Vector3();
 
 // Stand-in for the guard's shield: a broken-off hospital-bed end panel (teal board in a grey frame, ~0.8 x 0.6 m).
 // Replaced by the real model when it is ready.
@@ -1467,6 +1494,10 @@ export class ZombieView extends ClipBody {
   static brokenShields = []; // shields in pieces: their controllers run the 5 s lifetime and the fade, then free themselves
   static ladyKipUp = true; // (the lady's kip-up experiment: off = her old get-up from her back)
   static planted = [];
+  static propSrc = {}; // (main.js: the drip stand, the wheelchair, the surgeon's cap and mask)
+  static props = []; // (drip stands and wheelchairs left in the world: until the level resets)
+  static clubGrip = new THREE.Vector3(0, 0.075, 0); // (his palm, in his RightHand bone's frame, m: where his fist closes round the torn wrist)
+  static clubRoll = 0; // (rad about clubAxis: which way the torn elbow can fold as he swings)
   static clubAxis = new THREE.Vector3(0, 0, 1); // (in his RightHand bone's frame: the club's direction out of the fist, across it: he holds the arm by its own hand, the shoulder end out) // the guards' shields stuck in the floor for good, and the arms torn off on them ({ shield, arm }): they stay until the level resets
   constructor(scene, gltf, height, speeds, opts = {}) {
     const model = skClone(gltf.scene);
@@ -1494,6 +1525,7 @@ export class ZombieView extends ClipBody {
         lower('walk'); lower('idle');
         clips.push(subClip(by.shield_idle, (b) => !LOWER.test(b), 'shield_upper'));
       }
+      { const s = clips.find((c) => c.name === 'ual1_Sitting_Idle_Loop'); if (s) clips.push(subClip(s, (b) => LOWER.test(b), 'sit_lower')); } // (the wheelchair: seated legs under any upper body)
       SHARED_CLIPS.set(gltf, clips);
     }
     ZombieView.scene = scene;
@@ -1654,6 +1686,7 @@ export class ZombieView extends ClipBody {
   static clearPieces() {
     for (const pc of [...ZombieView.pieces]) ZombieView.dropPiece(pc);
     for (const P of ZombieView.planted) { P.shield?.dispose?.(); P.arm?.parent?.remove(P.arm); }
+    for (const o of ZombieView.props) o.parent?.remove(o); ZombieView.props = [];
     ZombieView.planted = [];
   }
 
@@ -1677,6 +1710,91 @@ export class ZombieView extends ClipBody {
     if (this.wantShield) this.freshShield();
     this.react.x = this.react.z = this.react.vx = this.react.vz = 0;
     this.bleed = {};
+    this.bindProp(z);
+  }
+  tipChair(e) { const o = this.chairO; if (!o) return; o.rotation.set(0, o.rotation.y, (Math.random() < 0.5 ? -1 : 1) * 1.45); o.position.y = 0.3; o.position.x += e.dirX * 0.4; o.position.z += e.dirZ * 0.4; this.chairO = null; this.act('sit_lower')?.setEffectiveWeight(0); }
+  // ---- the hospital's own zombies (IV, CHAIR, BED; core/zombies.js prop) ----
+  bindProp(z) {
+    const S = ZombieView.propSrc, f = new THREE.Vector3(Math.sin(z.yaw), 0, Math.cos(z.yaw)), l = new THREE.Vector3(Math.cos(z.yaw), 0, -Math.sin(z.yaw));
+    this.iv = null; this.chairO = null; this.lying = null;
+    if (this.cap) this.cap.visible = z.prop === 'surgeon';
+    if (z.prop === 'iv' && S.iv) {
+      const o = S.iv.clone(); ZombieView.scene.add(o); ZombieView.props.push(o);
+      this.iv = { o, x: z.x + f.x * IV.fwd + l.x * IV.side, z: z.z + f.z * IV.fwd + l.z * IV.side, vx: 0, vz: 0, tx: 0, tz: 0, held: 1 };
+    }
+    if (z.prop === 'chair' && S.chair) {
+      const o = S.chair.clone(); ZombieView.scene.add(o); ZombieView.props.push(o); this.chairO = o; this.wheel = 0;
+      for (const k of ['LowerLeg_L', 'LowerLeg_R']) { this.severed.add(k); if (this.modules[k]) this.modules[k].visible = false; if (this.gore[k]?.stump) this.gore[k].stump.visible = true; } // (no legs below the knee: its stumps)
+      if (this.act('sit_lower')) { const a = this.act('sit_lower'); a.reset(); a.play(); a.setEffectiveWeight(0); }
+    }
+  }
+  // the surgeon's cap and mask (blender/make_surgeon_cap.py, built in the nurse's own model space): on her Head bone as it
+  // sits at rest (from the skin's bind matrices: the pose on screen does not matter)
+  wearSurgeonKit(src) {
+    const hb = this.bones.Head; let sk = null; this.model.traverse((o) => { if (!sk && o.isSkinnedMesh) sk = o; });
+    if (!hb || !sk || !src) return;
+    const i = sk.skeleton.bones.indexOf(hb); if (i < 0) return;
+    this.model.updateMatrixWorld(true);
+    const rest = new THREE.Matrix4().multiplyMatrices(sk.matrixWorld, sk.bindMatrix).multiply(sk.skeleton.boneInverses[i].clone().invert()); // (the Head bone at rest, world)
+    const cap = src.clone(); cap.matrixAutoUpdate = true;
+    const capW = this.model.matrixWorld.clone(); // (the kit is in the model's own space)
+    new THREE.Matrix4().copy(rest).invert().multiply(capW).decompose(cap.position, cap.quaternion, cap.scale);
+    hb.add(cap); cap.visible = false; cap.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    this.cap = cap;
+  }
+  // before the mixer: the seated legs under the wheelchair, the lying pose in a bed
+  propPose(z, dt) {
+    if (this.chairO) this.act('sit_lower')?.setEffectiveWeight(z.chair && !z.crawling ? 8 : 0);
+    if (z.bed && this.act('ual_LayToIdle')) {
+      const a = this.act('ual_LayToIdle'), c = a.getClip(), t0 = this.lieT0 ??= Math.min(...c.tracks.map((q) => q.times[0]));
+      if (!this.lying) { this.lying = true; this.playOnce('ual_LayToIdle', t0, 0, 0); }
+      a.timeScale = 0; a.setEffectiveWeight(10);
+      const u = z.bedRise && z.state === 'emerge' ? clamp(z.t / Math.max(0.1, z.stateDur), 0, 1) : 0;
+      a.time = t0 + (c.duration - t0 - 0.02) * clamp((u - 0.12) / 0.8, 0, 1); // (a beat still, then up)
+    } else if (this.lying) { this.lying = null; const a = this.act('ual_LayToIdle'); if (this.oneShot === a) { a.fadeOut(0.25); this.oneShot = null; } }
+  }
+  // after the mixer: where the stand / the chair are, the hands on them, the body's height
+  propPlace(z, dt) {
+    const B = this.bones, y = z.yaw, f = _v5.set(Math.sin(y), 0, Math.cos(y)), l = _v6.set(Math.cos(y), 0, -Math.sin(y));
+    const busy = z.state === 'windup' || z.state === 'strike' || z.state === 'recover' || z.state === 'stagger' || z.state === 'knockdown' || z.state === 'getup' || z.state === 'dying' || z.state === 'dead' || z.crawling;
+    if (z.bed) { // on the mattress, and down off it on the way up
+      const u = z.bedRise && z.state === 'emerge' ? clamp((z.t / Math.max(0.1, z.stateDur) - 0.25) / 0.4, 0, 1) : 0;
+      this.outer.position.y = BED.top * (1 - u * u * (3 - 2 * u)); this.outer.updateMatrixWorld(true);
+    }
+    if (this.chairO) {
+      const o = this.chairO;
+      if (z.chair && !z.crawling) {
+        o.position.set(this.outer.position.x + f.x * CHAIR.fwd, 0, this.outer.position.z + f.z * CHAIR.fwd); o.rotation.set(0, y + CHAIR.yaw, 0);
+        const hips = B.Hips?.getWorldPosition(_v7); if (hips) { this.outer.position.y += CHAIR.seat - hips.y; this.outer.updateMatrixWorld(true); }
+        this.wheel += Math.hypot(z.vx, z.vz) * dt / CHAIR.rimR;
+        const w = busy ? 0 : 1; this.rimW = (this.rimW ?? w) + (w - (this.rimW ?? w)) * Math.min(1, dt * 8);
+        if (this.rimW > 0.01) for (const [s, side] of [[1, 'Left'], [-1, 'Right']]) { // (one push each rimArc of wheel turn: back to front along the rim, then back through the air)
+          const ph = (this.wheel / CHAIR.rimArc + (s < 0 ? 0.08 : 0)) % 1, push = ph < 0.62, k = push ? ph / 0.62 : (ph - 0.62) / 0.38;
+          const ang = push ? -0.75 + 1.5 * k : 0.75 - 1.5 * k, lift = push ? 0 : Math.sin(k * Math.PI) * 0.07; // (rim angle from the top: - back, + front)
+          const R = CHAIR.rimR + (push ? 0 : 0.03), cx = o.position.x + f.x * CHAIR.rim[0] + l.x * s * CHAIR.rim[2], cz = o.position.z + f.z * CHAIR.rim[0] + l.z * s * CHAIR.rim[2];
+          _v4.set(cx + f.x * Math.sin(ang) * R + l.x * s * lift * 0.5, CHAIR.rim[1] + Math.cos(ang) * R + lift, cz + f.z * Math.sin(ang) * R + l.z * s * lift * 0.5);
+          if (B[side + 'Arm']) solveArm(B[side + 'Arm'], B[side + 'ForeArm'], B[side + 'Hand'], _v4, this.rimW);
+        }
+      }
+    }
+    const I = this.iv;
+    if (I) {
+      if (!z.alive || z.crawling) I.held = 0;
+      const want = I.held > 0 && !busy;
+      if (I.held > 0 || want) { // (it follows its spot beside the hip: a spring, so it lags, swings and rolls on)
+        I.tx = this.outer.position.x + f.x * IV.fwd + l.x * IV.side; I.tz = this.outer.position.z + f.z * IV.fwd + l.z * IV.side;
+      }
+      const pull = want ? IV.k : 0, ax = (I.tx - I.x) * pull - I.vx * (want ? IV.damp : 2.5), az = (I.tz - I.z) * pull - I.vz * (want ? IV.damp : 2.5);
+      I.vx += ax * dt; I.vz += az * dt; I.x += I.vx * dt; I.z += I.vz * dt;
+      if (want) { const dx = I.x - I.tx, dz = I.z - I.tz, d = Math.hypot(dx, dz); if (d > 0.35) { I.x = I.tx + dx / d * 0.35; I.z = I.tz + dz / d * 0.35; } } // (never further than its arm)
+      // the pole tips against its acceleration (the top lags), back upright as it rolls steady
+      I.lx = clamp(-(ax) * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt); I.lz = clamp(-(az) * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
+      I.rx = (I.rx || 0) + (I.lz - (I.rx || 0)) * Math.min(1, dt * 6); I.rz = (I.rz || 0) + (-I.lx - (I.rz || 0)) * Math.min(1, dt * 6);
+      I.o.position.set(I.x, 0, I.z); I.o.rotation.set(I.rx, 0, I.rz);
+      const w = want ? 1 : 0; I.held = I.held + (w - I.held) * Math.min(1, dt * (want ? 5 : 10));
+      if (!want && z.alive && !busy && Math.hypot(I.x - this.outer.position.x, I.z - this.outer.position.z) > IV.reach) this.iv = null; // (left behind: it walks on without it)
+      if (I.held > 0.01 && B.LeftArm) { I.o.updateMatrixWorld(true); _v4.set(0, IV.grip, 0); I.o.localToWorld(_v4); solveArm(B.LeftArm, B.LeftForeArm, B.LeftHand, _v4, I.held); }
+    }
   }
   hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); this.endRagdoll(); if (this.shieldC && this.shieldC.state !== 'break') this.shieldC.object3D.visible = false; }
 
@@ -1821,7 +1939,7 @@ export class ZombieView extends ClipBody {
       this.outer.position.x += Math.sin(z.yaw) * k; this.outer.position.z += Math.cos(z.yaw) * k;
     }
     // the pounce's leap: off the floor along an arc (the bite clip itself lunges in place)
-    if (z.state !== 'dead') this.outer.position.y = z.attack === 'pounce' && z.state === 'strike' ? Math.sin(Math.PI * Math.min(1, z.t / Math.max(0.05, z.stateDur))) * 0.22 * (this.height / 1.7) : 0;
+    if (z.state !== 'dead' && !z.bed && !(z.chair && !z.crawling)) this.outer.position.y = z.attack === 'pounce' && z.state === 'strike' ? Math.sin(Math.PI * Math.min(1, z.t / Math.max(0.05, z.stateDur))) * 0.22 * (this.height / 1.7) : 0;
     this.blob.position.set(x, 0.012, zz);
     const dying = z.state === 'dying' || z.state === 'dead';
     if (z.state === 'dying' && this.lastState !== 'dying' && z.kind !== 'sprinter' && this.startRagdoll(z)) { this.lastState = 'dying'; this.updateRagdoll(z); return; }
@@ -1946,9 +2064,13 @@ export class ZombieView extends ClipBody {
       const c = this.act('crawl'); c.setEffectiveWeight(crawl * (1 - one)); c.timeScale = clamp(sp / (0.22 * this.height), 0.45, 2.5);
       if (crawl) { if (z.state === 'windup') c.timeScale = 0.25; else if (z.state === 'strike') c.timeScale = 2.6; else if (z.state === 'stagger') c.timeScale = 0.15; } // coils, lunges, flinches: still on the floor
     }
+    if (this.chairO || z.bed || this.lying) this.propPose(z, dt);
+    if (this.chairO && z.chair && !z.crawling) { this.act('walk').setEffectiveWeight(0); this.act('idle').setEffectiveWeight(1 - one); } // (seated: the arms' own idle; the hands go to the rims below)
     this.mixer.update(dt);
+    if (this.iv || this.chairO || z.bed) this.propPlace(z, dt);
     if (this.plantedP && (z.state === 'stuck' || (z.state === 'pickup' && !this.clubArm))) this.gripPlanted(z);
     if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
+    if (this.clubArm) { if (z.armGone && !z.club) this.breakClub(z); else this.stepLimp(dt); }
     for (const b of this.collapsed || []) b.scale.setScalar(1e-4); // (a limb cut from a zombie without a cut model stays collapsed into its joint)
     // the lady swells as her health runs out (and in the beat before she pops): her belly (Spine1, its child turned back)
     const sw = z.kind === 'sprinter' ? (z.state === 'dying' ? 1 + Math.min(1, z.t / 0.3) : clamp(1 - z.hp / Math.max(1, z.maxHp) / 0.35, 0, 1)) : 0;
@@ -2005,7 +2127,7 @@ export class ZombieView extends ClipBody {
       if (!this.severed.has('Forearm_L') && B.LeftArm) solveArm(B.LeftArm, B.LeftForeArm, B.LeftHand, P.grip, 1);
       if (B.RightArm) solveArm(B.RightArm, B.RightForeArm, B.RightHand, P.gripR, 0.85);
     } else if (z.state === 'pickup' && P.arm && B.RightArm) {
-      const w = Math.min(1, z.t / Math.max(0.1, z.stateDur * 0.45)), tgt = P.arm.localToWorld(new THREE.Vector3(0, P.armL * 0.5 - 0.1, 0));
+      const w = Math.min(1, z.t / Math.max(0.1, z.stateDur * 0.45)), tgt = P.arm.localToWorld(new THREE.Vector3(0, 0.06, 0)); // (round the torn arm's wrist)
       solveArm(B.RightArm, B.RightForeArm, B.RightHand, tgt, w);
     }
   }
@@ -2015,11 +2137,7 @@ export class ZombieView extends ClipBody {
     const R = CUT_ROOTS.Forearm_L, B = this.bones; if (!B[R[0]]) return;
     this.container.updateMatrixWorld(true);
     const a = B[R[0]].getWorldPosition(new THREE.Vector3()), b = B[R[1]].getWorldPosition(new THREE.Vector3());
-    const q0 = frameQuat(b.clone().sub(a), new THREE.Vector3(1, 0, 0).applyQuaternion(B[R[0]].getWorldQuaternion(_bq)), new THREE.Quaternion());
-    const F = { c: a.clone().add(b).multiplyScalar(0.5), q0, qi: q0.clone().invert() };
-    const obj = bakeChunks(this.model, { [R[0]]: 'arm' }, { arm: F }).arm;
-    if (obj) { obj.position.copy(F.c); obj.quaternion.copy(q0); obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); ZombieView.scene.add(obj); }
-    this.plantedP.arm = obj; this.plantedP.armL = a.distanceTo(b);
+    this.plantedP.arm = this.buildLimpArm(); this.plantedP.armL = a.distanceTo(b);
     (this.collapsed ||= []).push(B[R[0]]);
     const s = B.LeftShoulder?.getWorldPosition(new THREE.Vector3()) || a, fx = ZombieView.fx, back = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
     if (fx) {
@@ -2029,17 +2147,102 @@ export class ZombieView extends ClipBody {
     }
     (this.stumpOf ||= {}).Forearm_L = CUT_STUMP.Forearm_L; this.bleed.Forearm_L = 4;
   }
-  // he has his torn arm: off the shield's grip and into his right fist, held near its wrist, the shoulder end out as the club's head
+  // the torn arm in three pieces cut at its joints, as it is now (buildLimpArm: LIMP): a group at the wrist in the forearm's
+  // frame holding the forearm, the hand on its wrist pivot and the upper arm on its elbow pivot; it stays as it tore,
+  // gripping the shield, until he takes it (takeClub), then swings (stepLimp)
+  buildLimpArm() {
+    const B = this.bones, wp = (b) => b.getWorldPosition(new THREE.Vector3());
+    const S = wp(B.LeftArm), E = wp(B.LeftForeArm), W = wp(B.LeftHand);
+    const u = E.clone().sub(W).normalize(), s0 = S.clone().sub(E).normalize();
+    // the elbow's hinge from the way it is bent now (an elbow only ever folds one way); nearly straight: the forearm's own axis
+    let n = s0.clone().addScaledVector(u, -s0.dot(u));
+    if (n.lengthSq() < 4e-3) n = new THREE.Vector3(0, 0, 1).applyQuaternion(B.LeftForeArm.getWorldQuaternion(_bq)).addScaledVector(u, -1e-9);
+    n.addScaledVector(u, -n.dot(u)).normalize();
+    const hinge = new THREE.Vector3().crossVectors(n, u).normalize();
+    const qRoot = frameQuat(u, hinge, new THREE.Quaternion()), qRi = qRoot.clone().invert();
+    const th0 = Math.acos(clamp(s0.dot(u), -1, 1)), qUp = qRoot.clone().multiply(limpQ(0, th0, new THREE.Quaternion()));
+    const parts = bakeChunks(this.model, { LeftArm: 'upper', LeftForeArm: 'fore', LeftHand: 'hand' },
+      { fore: { c: W, qi: qRi }, hand: { c: W, qi: qRi }, upper: { c: E, qi: qUp.clone().invert() } });
+    const root = new THREE.Group(), elbow = new THREE.Group(), wrist = new THREE.Group();
+    root.position.copy(W); root.quaternion.copy(qRoot);
+    elbow.position.copy(E.clone().sub(W).applyQuaternion(qRi)); limpQ(0, th0, elbow.quaternion);
+    if (parts.fore) root.add(parts.fore); if (parts.hand) wrist.add(parts.hand); if (parts.upper) elbow.add(parts.upper);
+    root.add(wrist, elbow);
+    root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    ZombieView.scene.add(root);
+    const tipB = B.LeftHandMiddle1 || B.LeftHandIndex1, tip = tipB ? wp(tipB) : W.clone().addScaledVector(u, -0.1);
+    root.userData.limp = { elbow, wrist, parts, psi: 0, th: th0, thLast: th0, Lu: S.distanceTo(E), Lf: E.distanceTo(W),
+      h0: tip.sub(W).applyQuaternion(qRi).normalize(), P: null, Pp: null, H: null, Hp: null, E0: null, flickT: 0 };
+    return root;
+  }
+  // he has his torn arm: off the shield's grip and into his right fist round its wrist (2026-10-18, the user: "grab it by the
+  // hand.. or wrist"), the forearm out of his fist along clubAxis, the elbow beyond it and the upper arm swinging off that
   takeClub() {
     const P = this.plantedP, arm = P.arm, hand = this.bones.RightHand; if (!arm || !hand) return;
     this.container.updateMatrixWorld(true);
     hand.attach(arm);
-    // its long axis (+Y, shoulder -> hand) along his forearm, the hand end in his fist and the shoulder end beyond it
     const ws = hand.getWorldScale(new THREE.Vector3()).x, fwd = ZombieView.clubAxis.clone();
-    arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), fwd);
+    arm.quaternion.setFromUnitVectors(_ly, fwd).premultiply(_q.setFromAxisAngle(fwd, ZombieView.clubRoll));
     arm.scale.setScalar(1 / ws);
-    arm.position.copy(fwd.clone().multiplyScalar((P.armL * 0.5 - 0.06) / ws));
+    arm.position.copy(ZombieView.clubGrip).addScaledVector(fwd, -0.035).divideScalar(ws); // (the wrist just through his fist: the hand hangs out of its far side)
+    arm.userData.limp.P = null;
     this.clubArm = arm; P.arm = null;
+  }
+  // the torn arm swinging in his fist (LIMP): the upper arm a weight on the elbow, the hand on the wrist, each moved by
+  // gravity and by his fist's motion (a few substeps a frame, the elbow's travel shared out over them), each kept inside its
+  // joint's limits. An elbow that slams straight at speed (the whip at the end of a swing) flicks blood off the torn end
+  stepLimp(dt) {
+    const R = this.clubArm, A = R.userData.limp; if (!A || dt <= 0) return;
+    R.updateMatrixWorld(true); R.getWorldQuaternion(_lq); _lqi.copy(_lq).invert();
+    const E = A.elbow.getWorldPosition(_lE), Wr = R.getWorldPosition(_lw.set(0, 0, 0)).clone(), Lc = A.Lu * LIMP.L;
+    if (!A.P) {
+      A.P = E.clone().add(limpDir(A.psi, A.th, _lv).applyQuaternion(_lq).multiplyScalar(Lc)); A.Pp = A.P.clone(); A.E0 = E.clone();
+      A.H = Wr.clone().add(_lv.copy(A.h0).applyQuaternion(_lq).multiplyScalar(LIMP.handL)); A.Hp = A.H.clone(); A.W0 = Wr.clone();
+    }
+    const N = 3, st = Math.min(dt, 1 / 20) / N, damp = Math.exp(-st * LIMP.damp), dampH = Math.exp(-st * LIMP.handDamp), g = 9.8 * st * st;
+    let sp = 0;
+    for (let i = 1; i <= N; i++) {
+      _lEi.lerpVectors(A.E0, E, i / N);
+      _lv.subVectors(A.P, A.Pp).multiplyScalar(damp); A.Pp.copy(A.P); A.P.add(_lv); A.P.y -= g;
+      _lv.subVectors(A.P, _lEi).applyQuaternion(_lqi).normalize();
+      [A.psi, A.th] = limpSolve(_lv, A);
+      A.P.copy(_lEi).add(limpDir(A.psi, A.th, _lv).applyQuaternion(_lq).multiplyScalar(Lc));
+      sp = A.P.distanceTo(A.Pp) / st;
+      // the hand off the wrist: a cone round the way it hung when it tore
+      _lg.lerpVectors(A.W0, Wr, i / N);
+      _lv.subVectors(A.H, A.Hp).multiplyScalar(dampH); A.Hp.copy(A.H); A.H.add(_lv); A.H.y -= g;
+      _lv.subVectors(A.H, _lg).applyQuaternion(_lqi).normalize();
+      const off = Math.acos(clamp(_lv.dot(A.h0), -1, 1));
+      if (off > LIMP.handCone) { _lv.lerp(A.h0, 1 - LIMP.handCone / off).normalize(); }
+      A.H.copy(_lg).add(_lv.applyQuaternion(_lq).multiplyScalar(LIMP.handL));
+    }
+    A.E0.copy(E); A.W0.copy(Wr);
+    limpQ(A.psi, A.th, A.elbow.quaternion);
+    _lv.subVectors(A.H, Wr).applyQuaternion(_lqi).normalize(); A.wrist.quaternion.setFromUnitVectors(A.h0, _lv);
+    A.flickT -= dt;
+    if (A.th < 0.08 && A.thLast > 0.3 && sp > LIMP.flick && A.flickT <= 0 && ZombieView.fx) { // (the whip: blood off the torn shoulder end, along its swing)
+      const end = E.clone().add(limpDir(A.psi, A.th, _lv).applyQuaternion(_lq).multiplyScalar(A.Lu)), d = A.P.clone().sub(A.Pp).normalize();
+      ZombieView.fx.bloodSpray(end.x, end.y, end.z, d.x, d.y + 0.2, d.z, 10 + Math.round(Math.min(10, sp * 1.5)), 2.2 + sp * 0.3);
+      A.flickT = 0.25;
+    }
+    A.thLast = A.th;
+  }
+  // his torn arm comes apart on a blow (core/zombies.js guardClubBreak): its three pieces thrown on along the swing, blood
+  breakClub(z) {
+    const R = this.clubArm, A = R?.userData.limp; if (!A) return;
+    this.container.updateMatrixWorld(true);
+    const P = ZombieView.physics, fx = ZombieView.fx, dir = new THREE.Vector3(Math.sin(z.yaw), 0, Math.cos(z.yaw)), wp = (o, v) => o.localToWorld(v);
+    const W = wp(R, new THREE.Vector3()), E = A.elbow.getWorldPosition(new THREE.Vector3()), S = wp(A.elbow, new THREE.Vector3(0, A.Lu, 0)), T = wp(A.wrist, A.h0.clone().multiplyScalar(0.16));
+    for (const [k, a, b, r] of [['upper', E, S, 0.07], ['fore', W, E, 0.06], ['hand', W, T, 0.05]]) {
+      const obj = A.parts[k]; if (!obj) continue;
+      const q0 = frameQuat(b.clone().sub(a), new THREE.Vector3(1, 0, 0).applyQuaternion(R.getWorldQuaternion(_bq)), new THREE.Quaternion());
+      const G = new THREE.Group(); G.position.copy(a).add(b).multiplyScalar(0.5); G.quaternion.copy(q0); ZombieView.scene.add(G); G.updateMatrixWorld(true); G.attach(obj);
+      const vel = dir.clone().multiplyScalar(2.5 + Math.random() * 2).add(new THREE.Vector3((Math.random() - 0.5) * 2, 1.8 + Math.random() * 1.5, (Math.random() - 0.5) * 2));
+      const rr = r * (this.height / 1.7), piece = { obj: G, t: 0, id: P && P.ready ? P.addPiece(a, b, rr, vel, q0) : 0, P: P && P.ready ? P : null, vel, r: rr, states: [] };
+      ZombieView.pieces.push(piece); if (ZombieView.pieces.length > MAX_PIECES) ZombieView.dropPiece(ZombieView.pieces[0]);
+    }
+    if (fx) { fx.bloodSpray(E.x, E.y, E.z, dir.x, 0.4, dir.z, 30, 3.6); fx.burst(E.x, E.y, E.z, 12, 0x5a1414, 3.2, 1.0, 0.6, dir.x, dir.z); fx.bloodPool(E.x + dir.x * 0.5, E.z + dir.z * 0.5, 0.9); }
+    R.parent?.remove(R); this.clubArm = null;
   }
   // the guard's stand-in shield: in front of him at his left hand, upright and square to his facing (dropped when he dies)
   placeShield(z) {

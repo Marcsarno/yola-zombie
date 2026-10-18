@@ -19,8 +19,9 @@ function dotTexture() {
   return new THREE.CanvasTexture(c);
 }
 
-const MAX_P = 320;
-const MAX_POOLS = 32;
+const MAX_P = 420;
+const BLOOD = { zombie: [0.36, 0.02, 0.02], yola: [0.62, 0.03, 0.03] }; // (spray colours: theirs dark, hers bright)
+const MAX_POOLS = 48;
 
 function splatTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 128;
@@ -159,14 +160,49 @@ export class FX {
   }
 
   // Blood: dark particles thrown along (dx, dy, dz) and a pool spreading on the floor.
-  bloodSpray(x, y, z, dx, dy, dz, n = 22, speed = 3.0) {
+  bloodSpray(x, y, z, dx, dy, dz, n = 22, speed = 3.0, col = BLOOD.zombie) {
     if (!this.gore) return;
     for (let i = 0; i < n; i++) {
       const p = this.parts[this.pNext]; this.pNext = (this.pNext + 1) % MAX_P;
       const s = speed * (0.35 + Math.random() * 0.75);
       p.x = x; p.y = y; p.z = z;
       p.vx = dx * s + (Math.random() - 0.5) * 1.4; p.vy = dy * s + Math.random() * 1.2; p.vz = dz * s + (Math.random() - 0.5) * 1.4;
-      p.life = p.max = 0.5 + Math.random() * 0.5; p.r = 0.42; p.g = 0.02; p.b = 0.02; p.dark = true;
+      p.life = p.max = 0.5 + Math.random() * 0.5; p.r = col[0]; p.g = col[1]; p.b = col[2]; p.dark = true;
+    }
+  }
+  // (2026-10-18, the user: "blood particle effects with every gun, melee, or attack ... slightly different depending on which
+  // weapon is used"). One call per body struck: how is what the blow did to it, (dx, dz) the way the blow travelled, k how
+  // hard (a kill, a heavy blow: more). Zombie blood dark and thick, Yola's (who: 'yola') brighter.
+  //  pistol: a tight spurt out the back and a fine mist; shotgun: a wide wet cone, a thick mist, spatter on the floor behind;
+  //  blunt (bat, crowbar, sledgehammer, fists, a zombie's club or smash): a splash thrown up and out from the impact;
+  //  blade (axe, knife, a scratch): a streak flung sideways across the cut; bite (a lunge, a pounce): a spurt and a mist
+  bloodHit(how, x, y, z, dx, dz, k = 1, who = 'zombie') {
+    if (!this.gore) return;
+    const col = who === 'yola' ? BLOOD.yola : BLOOD.zombie, l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    const lx = -dz, lz = dx, side = Math.random() < 0.5 ? -1 : 1; // (across the blow)
+    const mist = (n, size, life) => this.smoke(x + dx * 0.15, z + dz * 0.15, n, 0.12, size, 2.2, life, col === BLOOD.yola ? 0x8e1010 : 0x5c0a0a, y);
+    if (how === 'pistol') {
+      this.bloodSpray(x + dx * 0.12, y, z + dz * 0.12, dx * 1.1, 0.15, dz * 1.1, Math.round(9 * k), 3.6, col);
+      mist(1, 0.22, 0.4);
+      if (Math.random() < 0.45 * k) this.bloodPool(x + dx * (0.7 + Math.random() * 0.5), z + dz * (0.7 + Math.random() * 0.5), 0.3);
+    } else if (how === 'shotgun') {
+      for (let i = 0; i < 3; i++) { const a = (i - 1) * 0.45; this.bloodSpray(x + dx * 0.15, y + (Math.random() - 0.5) * 0.3, z + dz * 0.15, dx + lx * a, 0.25, dz + lz * a, Math.round(7 * k), 4.2, col); }
+      mist(2, 0.32, 0.55);
+      this.bloodPool(x + dx * (0.9 + Math.random() * 0.4), z + dz * (0.9 + Math.random() * 0.4), 0.45 + 0.2 * k);
+    } else if (how === 'blade') {
+      for (let i = -2; i <= 2; i++) { // a line of droplets flung off the edge, sideways along the cut
+        const o = i * 0.07; this.bloodSpray(x + lx * o * side, y + i * 0.04, z + lz * o * side, lx * side * 0.9 + dx * 0.5, 0.35, lz * side * 0.9 + dz * 0.5, Math.round(4 * k), 3.4 + Math.random(), col);
+      }
+      this.bloodSpray(x, y, z, dx * 0.4, 0.9, dz * 0.4, Math.round(5 * k), 2.6, col); // (a spurt up from the cut)
+      for (let i = 1; i <= 2 + Math.round(k); i++) this.bloodPool(x + (lx * side * 0.45 + dx * 0.2) * i, z + (lz * side * 0.45 + dz * 0.2) * i, 0.22 + 0.06 * k); // (a streak across the floor)
+    } else if (how === 'bite') {
+      this.bloodSpray(x, y, z, dx * 0.5, 1.0, dz * 0.5, Math.round(10 * k), 2.8, col);
+      mist(1, 0.25, 0.5);
+      if (Math.random() < 0.6) this.bloodPool(x + dx * 0.3, z + dz * 0.3, 0.35);
+    } else { // blunt: a splash up and out round the impact
+      for (let i = 0; i < 4; i++) { const a = Math.random() * Math.PI * 2; this.bloodSpray(x + dx * 0.1, y, z + dz * 0.1, dx * 0.7 + Math.cos(a) * 0.5, 0.75, dz * 0.7 + Math.sin(a) * 0.5, Math.round(3.5 * k), 2.3 + k * 0.6, col); }
+      if (k >= 1.3) { this.burst(x, y, z, Math.round(6 * k), 0x4a0c0c, 2.4 * k, 1.0, 0.6, dx, dz); mist(1, 0.3, 0.5); } // (a heavy blow: wet bits and a mist)
+      if (Math.random() < 0.35 + 0.3 * k) this.bloodPool(x + dx * (0.4 + Math.random() * 0.4), z + dz * (0.4 + Math.random() * 0.4), 0.28 + 0.12 * k);
     }
   }
   bloodPool(x, z, size = 0.8) {
@@ -213,7 +249,7 @@ export class FX {
   }
 
   impactZombie(x, z, dirX, dirZ, heavy) {
-    if (this.gore) this.burst(x, 1.1, z, heavy ? 12 : 6, 0x6d3a3a, heavy ? 3.2 : 2.2, 1.2, 0.5, dirX, dirZ);
+    if (this.gore) this.burst(x, 1.1, z, heavy ? 6 : 3, 0x5a1414, heavy ? 3.2 : 2.2, 1.2, 0.5, dirX, dirZ);
     this.burst(x, 1.15, z, heavy ? 6 : 3, 0xfff0d0, 1.5, 0.6, 0.18, dirX, dirZ);
     if (heavy) this.ring(x, z, 0xffffff);
   }

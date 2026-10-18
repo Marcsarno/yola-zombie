@@ -66,7 +66,7 @@ export class Level {
         const key = this.floor + ':' + g.id + ':' + i;
         if (this.killed.has(key)) return;
         if (zs.from === 'floor') { this.floorPending.push({ key, group: g.id, sense: g.sense ?? 6, zs, at: null }); return; }
-        const z = sim.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0, kind: zs.kind });
+        const z = sim.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0, kind: zs.kind, prop: zs.prop, bed: zs.bed });
         z.set(ZS.CHASE); z.spawnKey = key; z.group = g.id; if (zs.look) z.look = zs.look;
         if (zs.crawl) { z.crawling = true; z.broken = 'LowerLeg_L'; } // (already down: a crawler from the start)
         z.dormant = {

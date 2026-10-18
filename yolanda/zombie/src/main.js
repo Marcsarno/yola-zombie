@@ -142,8 +142,8 @@ const perf = { frames: [], spikes: 0, t0: performance.now() };
 // Characters: Tripo meshes (mixamorig skeleton) with Mixamo/Tripo clips, exported by blender/export_chars.py.
 // (Yola's locomotion speeds are measured from foot plants at load, see YolaView.measureGaits.)
 const ZOMBIE_TYPES = [
-  { file: 'assets/zombie-nurse-mod.glb', extra: ['assets/zombie-nurse-scratch.glb', 'assets/zombie_moves/nurse-mod.glb', 'assets/zombie_moves/nurse-mod-b.glb'], height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
-  { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb', 'assets/zombie_moves/patient-mod-b.glb'], height: 1.68, walk: { speed: 0.174 } },
+  { file: 'assets/zombie-nurse-mod.glb', extra: ['assets/zombie-nurse-scratch.glb', 'assets/zombie_moves/nurse-mod.glb', 'assets/zombie_moves/nurse-mod-b.glb', 'assets/zombie_moves/nurse-mod-c.glb'], height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
+  { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb', 'assets/zombie_moves/patient-mod-b.glb', 'assets/zombie_moves/patient-mod-c.glb'], height: 1.68, walk: { speed: 0.174 } },
   // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
   // bed-panel shield is modelled). Not modular: no limbs come off them yet.
   { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb', 'assets/zombie_moves/sprinter-b.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
@@ -162,7 +162,7 @@ const SCRUBS = {
   charcoal: { H: 210, s: 0.06, l: [0.40, 0.03, 0.30] }, // agency charcoal
 };
 const NURSE_SCRUBS = [null, 'navy', 'charcoal']; // (null: her own blue) one each in turn, by the zombie's id
-const nurseScrubs = (z) => (z.scrubs !== undefined ? z.scrubs : NURSE_SCRUBS[z.id % NURSE_SCRUBS.length]);
+const nurseScrubs = (z) => (z.scrubs !== undefined ? z.scrubs : z.prop === 'surgeon' ? 'navy' : NURSE_SCRUBS[z.id % NURSE_SCRUBS.length]); // (the surgeon: theatre navy under the cap)
 function bindView(v, z) { v.bind(z); if (v.type === 0) setScrubs(v, nurseScrubs(z)); } // (a pooled nurse view takes the colour of the zombie it shows)
 const _scrubMaps = new Map();
 function scrubsTexture(tex, key) {
@@ -193,7 +193,7 @@ const orangeScrubs = (tex) => scrubsTexture(tex, 'orange');
 function setScrubs(view, key) { view.model.traverse((o) => { if (o.isMesh && o.material?.map) { o.userData.baseMap ??= o.material.map; o.material.map = key ? scrubsTexture(o.userData.baseMap, key) : o.userData.baseMap; o.material.needsUpdate = true; } }); }
 // (extra: clips retargeted onto each type's own skeleton: the scratch, tools/anim/zombie_clip.py; the Quaternius UAL zombie
 // walks, run, bite and hit flinches, tools/anim/test_zombie_clips.py, UAL_PACKS.md)
-const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.kind === 'runner' ? 4 : z.look === 'nurse' ? 0 : z.look === 'patient' ? 1 : z.id % 2);
+const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.kind === 'runner' ? 4 : z.prop === 'surgeon' || z.look === 'nurse' ? 0 : z.prop === 'bed' || z.look === 'patient' ? 1 : z.id % 2);
 const YOLA_HEIGHT = 1.62;
 // which Yola plays (2026-10-16): 1 = the original model, 2 = the user's new Tripo model (testing; tools/anim/yola2_build.py).
 // The pause menu's Yola choice (remembered), or ?yola=2. The opening keeps its own Yola either way.
@@ -226,10 +226,17 @@ async function load() {
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
     fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({})), // (the user's pistol fit per character, set in the Rig Lab)
     loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)]); // (the wood bat: setupBat)
+  // the hospital's own zombies' things (render/clipchars.js IV / CHAIR / wearSurgeonKit): the stand and the chair at the
+  // level's sizes (prop footprints in core/chapter.js), the cap and mask as built
+  const fitProp = (g, hgt) => { const o = g.scene, b = new THREE.Box3().setFromObject(o), s = hgt / (b.max.y - b.min.y), c = b.getCenter(new THREE.Vector3()); const w = new THREE.Group(); o.scale.setScalar(s); o.position.set(-c.x * s, -b.min.y * s, -c.z * s); w.add(o); w.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); return w; };
+  const propP = Promise.all([loader.loadAsync('assets/hospital/iv_stand.glb').then((g) => { ZombieView.propSrc.iv = fitProp(g, 2.03); }),
+    loader.loadAsync('assets/hospital/wheelchair.glb').then((g) => { ZombieView.propSrc.chair = fitProp(g, 0.97); }),
+    loader.loadAsync('assets/hospital/recovery_bed.glb').then((g) => { ZombieView.propSrc.bed = fitProp(g, 0.87); }),
+    loader.loadAsync('assets/props/surgeon_cap.glb').then((g) => { ZombieView.propSrc.cap = g.scene; })].map((q) => q.catch((e) => console.warn('prop', e))));
   const breachP = loader.loadAsync('assets/props/floor_breach.glb').then((g) => { breaches.src = g.scene; g.scene.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = false; } }); }).catch(() => {}); // (blender/make_floor_breach.py)
   loadHoldLayers(); // (the user's hold-layer switches, render/holdlayers.js)
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
+  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
@@ -406,6 +413,7 @@ function newZombieView(type) {
   const t = ZOMBIE_TYPES[type];
   const v = new ZombieView(scene, t.gltf, t.height, t.walk, t);
   v.type = type;
+  if (type === 0) v.wearSurgeonKit(ZombieView.propSrc.cap); // (the nurse: a surgeon when it is one)
   if (t.orange) v.model.traverse((o) => { if (o.isMesh && o.material?.map) o.material.map = orangeScrubs(o.material.map); }); // (the runner)
   return v;
 }
@@ -619,6 +627,10 @@ function gib(id, dx, dz, power) {
   z.gibbed = true; v.hide(); audio.play('sever', 1.4); shake(0.55);
   return true;
 }
+// how each weapon / zombie attack bleeds (render/fx.js bloodHit)
+const MELEE_BLOOD = { axe: 'blade', knife: 'blade', bat: 'blunt', crowbar: 'blunt', sledgehammer: 'blunt' };
+const STRIKE_BLOOD = { scratch: 'blade', flail: 'blade', dash: 'blade', lunge: 'bite', pounce: 'bite', bite: 'bite', club: 'blunt', smash: 'blunt', slam: 'blunt' };
+let hurtFrame = -1;
 function handleEvents() {
   frameNo++;
   const p = sim.player;
@@ -628,7 +640,7 @@ function handleEvents() {
         audio.play('shot');
         fx.muzzle(yola.muzzleWorld);
         fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez, 0.5, e.ey);
-        if (e.hit === 'zombie' && !e.blocked) { if (e.ey != null) fx.burst(e.ex, e.ey, e.ez, 8, 0x6d3a3a, 1.8, 0.8, 0.45); else fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); audio.play('bulletHit', 1, { x: e.ex, z: e.ez }); if (!e.killed) audio.play('zombieHurt', 1, { x: e.ex, z: e.ez }); } // (a round on the guard's shield: its own knock, no blood)
+        if (e.hit === 'zombie' && !e.blocked) { if (e.ey != null) fx.burst(e.ex, e.ey, e.ez, 4, 0x5a1414, 1.8, 0.8, 0.45); else fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); fx.bloodHit('pistol', e.ex, e.ey ?? 1.15, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), e.killed ? 1.4 : 1); audio.play('bulletHit', 1, { x: e.ex, z: e.ez }); if (!e.killed) audio.play('zombieHurt', 1, { x: e.ex, z: e.ez }); } // (a round on the guard's shield: its own knock, no blood)
         else if (e.hit === 'wall') { fx.impactWall(e.ex, e.ez, e.nx, e.nz); audio.play('ricochet', 1, { x: e.ex, z: e.ez }); }
         shake(0.12);
         break;
@@ -637,10 +649,10 @@ function handleEvents() {
         audio.play('shotgun');
         const mw = yola.muzzleWorld;
         fx.muzzle(mw, 1.8);
-        let flesh = 0;
+        let flesh = 0; const bled = new Set(); // (one wet cone per body, however many pellets)
         for (const pl of e.pellets) {
           fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6, pl.ey);
-          if (pl.hit === 'zombie') { if (!e.blocked?.includes(pl.id) && flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); }
+          if (pl.hit === 'zombie') { if (!e.blocked?.includes(pl.id) && flesh++ < 4) { fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); if (!bled.has(pl.id)) { bled.add(pl.id); fx.bloodHit('shotgun', pl.ex, pl.ey ?? 1.1, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), e.closest < 2.6 ? 1.5 : 1); } } }
           else if (pl.hit === 'wall' && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
         }
         if (flesh) audio.play('bulletHit', 1.3);
@@ -665,6 +677,7 @@ function handleEvents() {
         if (first) { impactFrame = frameNo; impactN = 0; audio.play(e.fist ? 'fistHit' : e.weapon === 'bat' ? 'batHit' : 'axeHit', chop || e.style === 'kick' || e.style === 'heavy' ? 1.3 : 1); }
         impactN++;
         fx.impactZombie(e.x, e.z, e.dirX, e.dirZ, impactN <= 3);
+        fx.bloodHit(e.fist ? 'blunt' : MELEE_BLOOD[e.weapon] || 'blunt', e.x - e.dirX * 0.15, chop ? 0.5 : 1.15, e.z - e.dirZ * 0.15, e.dirX, e.dirZ, (e.fist ? 0.6 : e.weapon === 'sledgehammer' ? 1.6 : 1) * (e.killed ? 1.3 : 1) * (e.style === 'heavy' || chop ? 1.2 : 1));
         fx.hitFlash(e.x - e.dirX * 0.18, chop ? 0.45 : 1.15, e.z - e.dirZ * 0.18, e.dirX, e.dirZ, (e.killed ? 1.3 : 1) * (e.style === 'heavy' || chop ? 1.2 : 1) * (e.fist ? 0.7 : 1));
         if (first) {
           shake(e.killed || chop ? 0.6 : 0.45);
@@ -698,7 +711,6 @@ function handleEvents() {
       case 'sprinterSpot': if (dist(e.id) < 14) audio.play('groan', 1.5); break; // her scream before the charge (the warning cue: the threat sign)
       case 'sprinterLock': if (dist(e.id) < 14) { cue(audio, 'warn', 1.2); const z = sim.zombies.find((q) => q.id === e.id); if (z) fx.burst(z.x, 0.05, z.z, 10, 0xcfc6b4, 1.6, 0.3, 0.4, -Math.sin(z.yaw), -Math.cos(z.yaw)); } break; // (her line is fixed: she paws the floor, a kick of dust behind her)
       case 'zombieTumble': audio.play('knockdown'); if (dist(e.id) < 8) shake(0.15); break;
-      case 'sprinterHit': audio.play('bump', 1.2); shake(0.5); break; // her charge ran into Yola
       // the guard's slam (2026-10-18, the user: "a visual effect of the guard on launch, and a strong visual effect for when he
       // impacts the ground.. and small screen shake.. cracks on the ground around him and the shield... and impact smoke"):
       // the launch kicks up a ring of dust at his feet; the impact throws a shockwave ring, tile grit and dust, a cloud of smoke
@@ -719,7 +731,17 @@ function handleEvents() {
       case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 24, 0xd9cdb2, 3.2, 2.4, 0.8); fx.burst(e.x, 0.1, e.z, 18, 0x6f6a62, 2.4, 2.0, 1.0); fx.ring(e.x, e.z, 0xd8cfbf, 1.0); fx.smoke(e.x, e.z, 8, 0.6, 0.7, 2.6, 1.8); audio.play('knockdown', 0.9, e); if (d < 9) shake(0.35); break; } // (it bursts up through the tiles: debris high, a dust cloud, a thump)
       case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.5); hud.popup('SHIELD STUCK'); break; // (his shield driven into the floor for good: render/fx.js floorCrack)
       case 'guardArmTorn': cue(audio, 'free'); audio.play('sever'); shake(0.45); hitPauseT = Math.max(hitPauseT, 0.09); hud.popup('ARM TORN OFF'); break; // (the last heave: his arm stays on the shield)
-      case 'guardClub': cue(audio, 'heave', 1.2); break; // (he pulls his arm off the shield's grip: a club now)
+      case 'guardClub': cue(audio, 'heave', 1.2); break;
+      case 'chairTip': { const v = zviews.get(e.id); v?.tipChair(e); audio.play('bump', 1.3); break; } // (out of its wheelchair: render/clipchars.js tipChair)
+      case 'bedRise': if (dist(e.id) < 12) audio.play('groan', 1.1); break;
+      case 'guardClubBreak': audio.play('sever'); audio.play('bump', 1.3); shake(0.3); break; // (his torn arm comes apart on the blow: render/clipchars.js breakClub)
+      case 'zombieStrikeHit': if (hurtFrame === frameNo) { // (it drew blood: hers, by what it was)
+        const z = sim.zombies.find((q) => q.id === e.id), how = STRIKE_BLOOD[e.attack] || 'blunt';
+        const dx = z ? p.x - z.x : 0, dz = z ? p.z - z.z : 1;
+        fx.bloodHit(how, p.x - dx * 0.1, how === 'bite' ? 1.35 : 1.15, p.z - dz * 0.1, dx, dz, how === 'blunt' ? 1.3 : 0.8, 'yola');
+        if (e.attack === 'club') { audio.play('bump', 1.4); if (z) fx.bloodHit('blunt', p.x, 1.25, p.z, dx, dz, 1.2); } // (his torn arm: a wet thud, its own blood off it too)
+      } break;
+      case 'sprinterHit': fx.bloodHit('blunt', p.x, 1.1, p.z, Math.sin(p.aimYaw || 0), Math.cos(p.aimYaw || 0), 1.5, 'yola'); audio.play('bump', 1.2); shake(0.5); break; // her charge ran into Yola // (he pulls his arm off the shield's grip: a club now)
       case 'shieldFree': { const z = sim.zombies.find((q) => q.id === e.id); cue(audio, 'free'); if (z) fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.1, z.z + Math.cos(z.yaw) * 0.75, 14, 0x8a8172, 2.4, 0.9, 0.5); break; }
       case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
       case 'dodge': audio.play('swing', 0.75); break;
@@ -750,7 +772,7 @@ function handleEvents() {
       case 'reloadDone': audio.play(e.weapon === 'shotgun' ? 'pump' : 'pistolReloadDone'); break;
       case 'swapStart': audio.play('swap'); break;
       case 'zombieWindup': if (dist(e.id) < 8) audio.play('windup'); break;
-      case 'playerHurt': audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;
+      case 'playerHurt': hurtFrame = frameNo; audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;
       case 'playerDeath': audio.play('death'); input.clearAll(); input.enabled = false; hud.death(sim); break;
       case 'zombieDeath': { sim.stats.kills++; audio.play('zombieDeath'); const zx = sim.zombies.find((q) => q.id === e.id); if (zx?.executed) { if (gib(e.id, zx.hitDirX, zx.hitDirZ, 1.7)) { slowBeat(0.3, 0.6); hud.popup('EXECUTED'); } } break; } // (a perfect dodge's execute: the full burst)
       case 'zombieSpawn': if (Math.random() < 0.5) audio.play('groan', 0.8); break;
@@ -932,6 +954,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });
