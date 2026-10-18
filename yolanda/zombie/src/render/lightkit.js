@@ -10,11 +10,13 @@
 //   contact   E  soft contact shadows under every piece of furniture and every body, pushed away from the nearest light
 //   room      B  each character takes on the light of the room it stands in (blended as it crosses a doorway)
 //   muzzle       a shot lights the wall it hits and the floor at her feet; the shotgun lights the whole room for a moment
+//   baked     A  the fittings' light on the floor, baked in Cycles (assets/hospital/wing_floor_light.jpg, stored at half range)
 //   eyes         zombies' eyes catch the light: a dim ember in the dark, bright in a pool of light, in the torch, in a shot's flash
 // The mood grade and the film finish (G, H) are a screen pass: render/looks.js setMood. Baked light (A): bakeFloor.
 import * as THREE from 'three';
 
 export const LIGHTKIT = [ // [key, label, what it is, what it costs] (the lighting lab's switches)
+  ['baked', 'A · Baked floor light', 'The fittings\' light baked once in Blender (blender/bake_wing_floor.py): soft pools, furniture shadows, the dead corner dark. Replaces C\'s floor glows (no flicker on the floor).', 'one 123 KB texture, free to draw'],
   ['fixtures', 'C · Light fittings as data', 'Every fitting draws its light on the floor: two in the theatre, the hall, the reception (failing), the lounge (warm, buzzing), the beds (dead).', 'one draw call for every floor glow'],
   ['halos', 'F · Halos', 'A soft halo on every bright thing: tubes, monitors, EXIT signs (the glow look without a bloom pass).', '~15 sprites'],
   ['exit', 'EXIT signs', 'Green EXIT signs over the doors, one failing; green spilling on the floor under them.', '3 boxes + 3 halos'],
@@ -64,6 +66,7 @@ const exitTex = () => {
   return new THREE.CanvasTexture(c);
 };
 const FLAT = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+const BAKE = { url: 'assets/hospital/wing_floor_light.jpg', x0: -7.6, x1: 7.6, z0: -11.6, z1: 11.6, k: 2.2, fill: 0.3 }; // (the bake's bounds: blender/bake_wing_floor.py; k: its strength, fill: the room's general light with it on, tuned by eye in the lab)
 const DIM = 0.55; // the room's general light with the fittings on (they light the floor themselves)
 const flick = (state, t, seed, S) => { // a fitting's brightness this frame (S: its own failing state)
   if (state === 'buzz') return 0.88 + 0.12 * Math.sin(t * 120 + seed) * Math.sin(t * 7.3 + seed);
@@ -115,7 +118,50 @@ export class LightKit {
     });
   }
   // the fittings carry the room's light: the general fill and the sun come down (arena.lightScale), the pools stand out
-  toggle_fixtures(v) { for (const F of this.fix || []) F.bar.visible = v; if (this.arena) this.arena.lightScale = v ? DIM : 1; }
+  toggle_fixtures(v) { for (const F of this.fix || []) F.bar.visible = v; this.fill(); }
+  fill() { if (this.arena) this.arena.lightScale = this.on.baked ? BAKE.fill : this.on.fixtures ? DIM : 1; }
+
+  // ---- A: the baked floor light: a lightMap on the wing's floors, uv1 from world x / z across the bake's bounds ----
+  build_baked() {
+    const O = this.arena?.ob; if (!O) return;
+    this.bakeTex = new THREE.TextureLoader().load(BAKE.url); this.bakeTex.colorSpace = THREE.SRGBColorSpace; this.bakeTex.channel = 1;
+    this.bakeFloors = [];
+    for (const m of O.meshes) {
+      const g = m.geometry, p = g.attributes.position; if (!g.isBufferGeometry || m.userData.bakeMat || Math.abs(p.getY(0)) > 0.01 || g.boundingBox?.max.y > 0.01) continue;
+      let flat = true; for (let i = 0; i < p.count; i++) if (Math.abs(p.getY(i)) > 0.01) { flat = false; break; } if (!flat) continue;
+      const uv1 = new Float32Array(p.count * 2);
+      for (let i = 0; i < p.count; i++) { uv1[i * 2] = (p.getX(i) - BAKE.x0) / (BAKE.x1 - BAKE.x0); uv1[i * 2 + 1] = 1 - (p.getZ(i) - BAKE.z0) / (BAKE.z1 - BAKE.z0); }
+      g.setAttribute('uv1', new THREE.BufferAttribute(uv1, 2));
+      const bm = m.material.clone(); bm.lightMap = this.bakeTex; bm.lightMapIntensity = BAKE.k;
+      m.userData.bakeMat = bm; m.userData.liveMat = m.material; this.bakeFloors.push(m);
+    }
+  }
+  toggle_baked(v) {
+    for (const m of this.bakeFloors || []) { const L = m.userData.liveMat, B = m.userData.bakeMat; if (v) { B.roughness = L.roughness; B.envMapIntensity = L.envMapIntensity; } m.material = v ? B : L; }
+    this.fill(); // (the bake carries the floor's light: the fill comes down further)
+  }
+
+  // the bake's input (dev only): every static opaque mesh over the wing as world triangles, the bounds, the fittings and the
+  // EXIT signs, posted to shots/wing_bake_scene.json for blender/bake_wing_floor.py. Run game.lightkit.exportBake() in the lab
+  // with no characters' props near (the wheelchair and the drip stand would bake in)
+  async exportBake() {
+    const out = [], V = new THREE.Vector3(); this.scene.updateMatrixWorld(true);
+    this.scene.traverse((o) => {
+      if (!o.isMesh || o.isSkinnedMesh || o.isInstancedMesh) return;
+      for (let q = o; q; q = q.parent) if (!q.visible) return;
+      if ([].concat(o.material).some((m) => m.transparent || m.blending !== THREE.NormalBlending || m.isMeshBasicMaterial)) return;
+      const g = o.geometry; g.computeBoundingBox(); const bb = g.boundingBox.clone().applyMatrix4(o.matrixWorld);
+      if (bb.max.x < BAKE.x0 || bb.min.x > BAKE.x1 || bb.max.z < BAKE.z0 || bb.min.z > BAKE.z1) return;
+      const P = g.attributes.position, I = g.index, n = I ? I.count : P.count, f = new Float32Array(n * 3);
+      for (let k = 0; k < n; k++) { V.fromBufferAttribute(P, I ? I.getX(k) : k).applyMatrix4(o.matrixWorld); f[k * 3] = V.x; f[k * 3 + 1] = V.y; f[k * 3 + 2] = V.z; }
+      const u8 = new Uint8Array(f.buffer); let str = ''; for (let k = 0; k < u8.length; k += 8192) str += String.fromCharCode.apply(null, u8.subarray(k, k + 8192));
+      out.push({ name: o.name || o.parent?.name || 'mesh', floor: bb.max.y < 0.02, tris: btoa(str) });
+    });
+    const data = { bounds: { x0: BAKE.x0, x1: BAKE.x1, z0: BAKE.z0, z1: BAKE.z1 }, meshes: out,
+      fixtures: WING_LIGHTS.fixtures.map(({ x, z, k, state, col }) => ({ x, z, k, state, col })), exits: WING_LIGHTS.exits.map(({ x, z }) => ({ x, z })) };
+    const r = await fetch('/__shot/wing_bake_scene.json', { method: 'POST', body: JSON.stringify(data) });
+    return { status: r.status, meshes: out.length };
+  }
 
   // ---- F: halos on bright things ----
   halo(col, size, x, y, z) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: col, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })); s.scale.set(size, size, 1); s.position.set(x, y, z); this.root.add(s); return s; }
@@ -204,7 +250,7 @@ export class LightKit {
 
   update(dt, sim, views, yolaView) {
     this.t += dt;
-    if (this.fix) for (const F of this.fix) { const k = this.on.fixtures ? flick(F.state, this.t, F.seed, F.S) : 0; F.b = k; F.pool.k = F.k * k; F.bar.material.opacity = 0.15 + 0.85 * k; }
+    if (this.fix) for (const F of this.fix) { const k = this.on.fixtures ? flick(F.state, this.t, F.seed, F.S) : 0; F.b = k; F.pool.k = this.on.baked ? 0 : F.k * k; /* (A on: the bake is the pool) */ F.bar.material.opacity = 0.15 + 0.85 * k; }
     if (this.halos && this.on.halos && (this.monScanT = (this.monScanT ?? 0) - dt) <= 0) { this.monScanT = 2; this.scanMonitors(); }
     if (this.halos) for (const H of this.halos) H.s.material.opacity = H.mon ? H.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H.s.position.x)) : H.base * (H.F?.b ?? 1);
     if (this.exits) for (const E of this.exits) { const k = flick(E.state, this.t, E.seed, E.S); E.halo.material.opacity = 0.5 * k; E.spill.k = 0.22 * k; for (const m of [].concat(E.m.material)) if (m.map) m.opacity = 0.35 + 0.65 * k; }
