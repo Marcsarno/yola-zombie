@@ -49530,6 +49530,8 @@ void main() {
     applyFit(o, c, q0, fit, new Vector3(...def.grip_primary), 1, k);
     return true;
   }
+  var FB1 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
+  var FB2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var HOLD_TUNE = { axeAxis: 1 };
   var F2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var _cr = new Vector3();
@@ -49700,6 +49702,32 @@ void main() {
         for (const k of b.children) if (k.isBone) rot(k, (q) => q.premultiply(ci));
       }
     }
+  }
+
+  // src/render/holdlayers.js
+  var LAYERS = [
+    ["posture", "posture fix", "her head, neck, chest and pelvis turned onto the source rig's own lines (render/posture.js)"],
+    ["handPoses", "hand curls", "the saved R / L hand curl per clip (assets/hold/hand_poses.json, the Rig Lab Hands controls)"],
+    ["secondHand", "second hand on handle", "the other hand pulled onto a two-handed weapon's second grip, and the axe's free fist kept on its handle (render/holdfit.js handOnto)"],
+    ["carry", "carry idles", "the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)"]
+  ];
+  var HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
+  var local = () => {
+    try {
+      return JSON.parse(globalThis.localStorage?.getItem("holdLayers") || "{}");
+    } catch {
+      return {};
+    }
+  };
+  Object.assign(HOLD_LAYERS, local());
+  async function loadHoldLayers() {
+    try {
+      const j = await (await fetch("assets/hold/hold_layers.json", { cache: "reload" })).json();
+      for (const [k] of LAYERS) if (typeof j[k] === "boolean") HOLD_LAYERS[k] = j[k];
+    } catch {
+    }
+    Object.assign(HOLD_LAYERS, local());
+    return HOLD_LAYERS;
   }
 
   // src/render/clipchars.js
@@ -50350,7 +50378,7 @@ void main() {
       this.container.rotation.y = this.yaw;
       const w = this.locoWeights(s, dt);
       const rate = dt / Math.max(0.05, s.swapDur * 0.6);
-      const eqKey = s.equipped === "bat" ? this.batLib ? "sword" : "axe" : s.equipped === "test" ? this.test?.carry && this.carryCal?.[this.test.carry] ? "carry" : this.test?.two ? "axe" : "fists" : s.equipped;
+      const eqKey = s.equipped === "bat" ? this.batLib ? "sword" : "axe" : s.equipped === "test" ? HOLD_LAYERS.carry && this.test?.carry && this.carryCal?.[this.test.carry] ? "carry" : this.test?.two ? "axe" : "fists" : s.equipped;
       this.batMode = s.equipped === "bat";
       for (const k2 in this.up) this.up[k2] += clamp5((eqKey === k2 ? 1 : 0) - this.up[k2], -rate, rate);
       const uP0 = smooth2(this.up.pistol), uS0 = smooth2(this.up.shotgun), uA0 = smooth2(this.up.axe), uF0 = smooth2(this.up.fists), uW0 = smooth2(this.up.sword || 0), uC0 = smooth2(this.up.carry || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 + uC0 || 1;
@@ -50671,7 +50699,7 @@ void main() {
     // the posture fix (render/posture.js), after the body's corrections, before the weapons: each bone turned by the shares of the clips driving
     // it, per source family (only her pelvis / chest / neck / head meshes change; arms, hands, weapons and feet stay put)
     posture() {
-      if (this.postureOff) return;
+      if (this.postureOff || !HOLD_LAYERS.posture) return;
       if (!this.postureActs) {
         this.postureActs = [];
         for (const [n, a] of Object.entries(this.actions)) {
@@ -50701,7 +50729,7 @@ void main() {
       this.container.updateMatrixWorld(true);
     }
     handPoses() {
-      if (!this.handSet) return;
+      if (!this.handSet || !HOLD_LAYERS.handPoses) return;
       const k = { Right: 0, Left: 0 };
       let W3 = 0;
       for (const [a, base] of this.handActs) {
@@ -51008,7 +51036,7 @@ void main() {
     placeTest() {
       const T2 = this.test;
       this.placeHeld(T2);
-      const C = T2.carry && this.carryCal?.[T2.carry], o = T2.obj;
+      const C = HOLD_LAYERS.carry && T2.carry && this.carryCal?.[T2.carry], o = T2.obj;
       const cw = C && o ? smooth2(clamp5(this.up.carry || 0, 0, 1)) * (1 - Math.min(1, (this.swingW || 0) + (this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0))) : 0;
       if (cw <= 1e-3) return;
       const p0 = o.position.clone(), q0 = o.quaternion.clone(), w = T2.w;
@@ -51038,7 +51066,7 @@ void main() {
       if (!o) return;
       placeOneHanded(this.bones, T2.hand, o, T2.w, T2.fit, T2);
       const w = T2.w;
-      if (T2.two && w.grip_secondary) {
+      if (T2.two && w.grip_secondary && HOLD_LAYERS.secondHand) {
         const other = T2.hand === "Left" ? "Right" : "Left";
         o.updateMatrixWorld(true);
         const go = gripOpts(T2.key, w, "secondary", o), pt = go.point;
@@ -51359,7 +51387,7 @@ void main() {
           const off = (this.swingAct ? this.swingHand : "Right") === "Right" ? "Left" : "Right", hd = _v5.set(0, 0, 1).applyQuaternion(M4.quaternion);
           const gap = handleSpot(this.bones, off, M4.position, hd, -0.12, 0.5, _v6), span = this._l2?.span ?? 0;
           const wOn = smooth2(clamp5((gap - 0.012) / 0.04, 0, 1)) * (1 - smooth2(clamp5((span - 0.45) / 0.15, 0, 1)));
-          if (wOn > 0.01) {
+          if (wOn > 0.01 && HOLD_LAYERS.secondHand) {
             this.reachClavicle(off, _v6);
             handOnto(this.bones, off, _v6, hd, wOn, ikArm);
             this.closeFist(off, wOn);
@@ -53231,14 +53259,14 @@ void main() {
       const panel = new Mesh(new PlaneGeometry(w * 0.9, h * 0.95), new MeshStandardMaterial({ map: pt, roughness: 0.6 }));
       panel.name = "Cab_Controls_7";
       root.add(panel);
-      const cc0 = root.getObjectByName("Cab_Center"), local = ctr.clone(), cab = cc0 ? cc0.getWorldPosition(new Vector3()).applyMatrix4(inv) : ctr.clone();
-      panel.position.copy(local);
+      const cc0 = root.getObjectByName("Cab_Center"), local2 = ctr.clone(), cab = cc0 ? cc0.getWorldPosition(new Vector3()).applyMatrix4(inv) : ctr.clone();
+      panel.position.copy(local2);
       if (thin === "x") {
-        const sgn = Math.sign(cab.x - local.x) || 1;
+        const sgn = Math.sign(cab.x - local2.x) || 1;
         panel.rotation.y = sgn * Math.PI / 2;
         panel.position.x += sgn * (sz.x / 2 + 4e-3);
       } else {
-        const sgn = Math.sign(cab.z - local.z) || 1;
+        const sgn = Math.sign(cab.z - local2.z) || 1;
         panel.rotation.y = sgn > 0 ? 0 : Math.PI;
         panel.position.z += sgn * (sz.z / 2 + 4e-3);
       }
@@ -68208,6 +68236,7 @@ void main() {
       // (the reload's magazines)
       fetch("assets/hold/pistol_fit.json").then((r) => r.json()).catch(() => ({}))
     ]);
+    loadHoldLayers();
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
     const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
     hud.loading(0.95);

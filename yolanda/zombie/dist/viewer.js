@@ -38600,6 +38600,36 @@ void main() {
     applyFit(o, c, q0, fit2, new Vector3(...def.grip_primary), 1, k);
     return true;
   }
+  var FB1 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
+  var FB2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
+  function placeBat(bones, o, def, fit2, k = 1, apart = 0.2) {
+    const R = fistFrame(bones, "Right", FB1);
+    if (!R) return false;
+    const L = fistFrame(bones, "Left", FB2);
+    if (!L || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit2, {}, k);
+    const d = new Vector3().subVectors(L.c, R.c).normalize();
+    if (d.dot(_a5.copy(R.a).add(L.a)) < 0) d.negate();
+    const low = R.c.dot(d) < L.c.dot(d) ? R : L, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
+    const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
+    r.addScaledVector(s, -r.dot(s)).normalize();
+    _m13.makeBasis(s, r, new Vector3().crossVectors(s, r));
+    _m2.makeBasis(d, kn, new Vector3().crossVectors(d, kn));
+    applyFit(o, low.c, new Quaternion().setFromRotationMatrix(_m2.multiply(_m13.transpose())), fit2, new Vector3(...def.grip_primary), 1, k);
+    return true;
+  }
+  var SLOT_AXES = { along: [0, 1, 0], across: [0, 0, 1] };
+  function placeOnSlot(slot, o, def, fit2, k = 1, axes = SLOT_AXES) {
+    if (!slot) return false;
+    slot.updateWorldMatrix(true, false);
+    const q = slot.getWorldQuaternion(new Quaternion()), d = new Vector3(...axes.along).applyQuaternion(q).normalize(), kn = new Vector3(...axes.across).applyQuaternion(q);
+    kn.addScaledVector(d, -kn.dot(d)).normalize();
+    const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
+    r.addScaledVector(s, -r.dot(s)).normalize();
+    _m13.makeBasis(s, r, new Vector3().crossVectors(s, r));
+    _m2.makeBasis(d, kn, new Vector3().crossVectors(d, kn));
+    applyFit(o, slot.getWorldPosition(new Vector3()), new Quaternion().setFromRotationMatrix(_m2.multiply(_m13.transpose())), fit2, new Vector3(...def.grip_primary), 1, k);
+    return true;
+  }
   var HOLD_TUNE = { axeAxis: 1 };
   var F2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var _cr = new Vector3();
@@ -38772,6 +38802,38 @@ void main() {
     }
   }
 
+  // src/render/holdlayers.js
+  var LAYERS = [
+    ["posture", "posture fix", "her head, neck, chest and pelvis turned onto the source rig's own lines (render/posture.js)"],
+    ["handPoses", "hand curls", "the saved R / L hand curl per clip (assets/hold/hand_poses.json, the Rig Lab Hands controls)"],
+    ["secondHand", "second hand on handle", "the other hand pulled onto a two-handed weapon's second grip, and the axe's free fist kept on its handle (render/holdfit.js handOnto)"],
+    ["carry", "carry idles", "the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)"]
+  ];
+  var HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
+  var local = () => {
+    try {
+      return JSON.parse(globalThis.localStorage?.getItem("holdLayers") || "{}");
+    } catch {
+      return {};
+    }
+  };
+  Object.assign(HOLD_LAYERS, local());
+  async function loadHoldLayers() {
+    try {
+      const j = await (await fetch("assets/hold/hold_layers.json", { cache: "reload" })).json();
+      for (const [k] of LAYERS) if (typeof j[k] === "boolean") HOLD_LAYERS[k] = j[k];
+    } catch {
+    }
+    Object.assign(HOLD_LAYERS, local());
+    return HOLD_LAYERS;
+  }
+  function keepHoldLayers() {
+    try {
+      globalThis.localStorage?.setItem("holdLayers", JSON.stringify(HOLD_LAYERS));
+    } catch {
+    }
+  }
+
   // src/viewer.js
   var FPS = 30;
   var CLIP_FPS = { bat_combo_mc: 60 };
@@ -38857,9 +38919,9 @@ void main() {
   var KK_FILES = ["Rig_Medium_CombatMelee", "Rig_Medium_General", "Rig_Medium_Tools", "Rig_Medium_CombatRanged"].map((n) => `assets/source/kaykit/${n}.glb`);
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var REF_OFFSET = { pistol_reload: 37 };
-  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
-  var HELD = { pistol: 1, axe: 1, bat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
-  var LIB_WEAPONS = { sledgehammer: 1, chainsaw: 1, knife: 1 };
+  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat", alubat: "bat (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
+  var HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
+  var LIB_WEAPONS = { alubat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
   var WDEFS = {};
   var PICKS = {};
   var autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? "bat" : /chop|gs_|slash|axe/.test(name) ? "axe" : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? "short" : /pistol|t_shoot/.test(name) ? "pistol" : "none";
@@ -39240,6 +39302,7 @@ void main() {
         const u = await ualRef(f, false);
         const c2 = u?.clips.find((q) => q.name === libName.slice(3));
         if (c2) {
+          u.actor.fitKey = "kaykit";
           useRef(u.actor);
           rc = c2;
           file = f;
@@ -39754,6 +39817,7 @@ void main() {
     refresh?.();
   });
   function handPose(a) {
+    if (!HOLD_LAYERS.handPoses) return;
     const H = handsOf(), P = fistPose(a);
     if (!P) return;
     for (const side of ["Right", "Left"]) {
@@ -39810,6 +39874,45 @@ void main() {
     };
     handsUI();
   }
+  function buildLayersUI() {
+    const pc = $("posture"), grp = pc?.closest(".grp");
+    if (!grp) return;
+    pc.checked = HOLD_LAYERS.posture;
+    pc.onchange = () => {
+      HOLD_LAYERS.posture = pc.checked;
+      keepHoldLayers();
+      refresh();
+    };
+    for (const [k, label, why] of LAYERS) {
+      if (k === "posture") continue;
+      const l = document.createElement("label");
+      l.className = "chk";
+      l.title = why;
+      l.innerHTML = `<input type="checkbox" data-layer="${k}"> ${label}`;
+      grp.appendChild(l);
+      const i = l.querySelector("input");
+      i.checked = HOLD_LAYERS[k];
+      i.onchange = () => {
+        HOLD_LAYERS[k] = i.checked;
+        keepHoldLayers();
+        refresh();
+      };
+    }
+    const b = document.createElement("button");
+    b.textContent = "save layers";
+    b.title = "writes shots/hold_layers.json (the game ships assets/hold/hold_layers.json)";
+    grp.appendChild(b);
+    b.onclick = async () => {
+      const r = await fetch("/__shot/hold_layers.json", { method: "POST", body: JSON.stringify(HOLD_LAYERS, null, 1) });
+      b.textContent = r.ok ? "saved" : "save failed";
+      setTimeout(() => b.textContent = "save layers", 1500);
+    };
+    loadHoldLayers().then(() => {
+      pc.checked = HOLD_LAYERS.posture;
+      for (const i of grp.querySelectorAll("input[data-layer]")) i.checked = HOLD_LAYERS[i.dataset.layer];
+      refresh();
+    });
+  }
   function shotKick(a) {
     if (!a || weaponOf() !== "pistol" || !a.action) return;
     const r = Math.max(SHOT.hold, SHOT.recoil), kick = r * r;
@@ -39822,13 +39925,13 @@ void main() {
   }
   var PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
   var FITS = {};
-  var fitKey = (a) => a === main ? S.char : a === refX ? "xbot" : "mannequin";
+  var fitKey = (a) => a === main ? S.char : a === refX ? "xbot" : a?.fitKey || "mannequin";
   var fitOf = (a) => {
     var _a6;
     return FITS[_a6 = fitKey(a)] || (FITS[_a6] = { ...PFIT0 });
   };
   var WFITS = {};
-  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", axe: "Axe", short: "Shotgun", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
+  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (hospital pack)", axe: "Axe", short: "Shotgun", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
   var fitW = (w, a) => {
     var _a6, _b6;
     return w === "pistol" ? fitOf(a) : (_a6 = WFITS[w] || (WFITS[w] = {}))[_b6 = fitKey(a)] || (_a6[_b6] = { ...PFIT0 });
@@ -40009,8 +40112,10 @@ void main() {
       if (mid("Right").distanceTo(mid("Left")) > 0.32 * k && placeOneHanded(B, "Right", o, WDEFS[w], fitW(w, a), {}, k)) return;
     }
     const LD = LIB_WEAPONS[w] && WDEFS[w];
+    if (w === "alubat" && LD && !a.bones.RightHandIndex1 && placeOnSlot(a.obj.getObjectByName("handslotr"), o, LD, fitW(w, a), k)) return;
+    if (w === "alubat" && LD && placeBat(a.bones, o, LD, fitW(w, a), k)) return;
     const CY = LD && CARRY[w];
-    if (CY && a === main && main.clip?.name === CY.clip) {
+    if (CY && HOLD_LAYERS.carry && a === main && main.clip?.name === CY.clip) {
       const cal = carryCalOf(a, w, LD, CY, k);
       if (cal) {
         const P = carryPlace(a.bones, o, LD, cal, fitW(w, a), k, { grip: new Vector3(), dir: new Vector3() });
@@ -40025,7 +40130,7 @@ void main() {
     if (LD) {
       const pk = PICKS[(main?.clip?.name || "").replace(/_REBAKE_.*$/, "") + "|" + w] || { hand: LD.primary_hand || "Right" };
       if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
-        if (LD.hands === "two" && LD.grip_secondary) {
+        if (LD.hands === "two" && LD.grip_secondary && HOLD_LAYERS.secondHand) {
           o.updateMatrixWorld(true);
           const g2 = gripOpts(w, LD, "secondary", o);
           otherHandOn(a, pk.hand === "Left" ? "Right" : "Left", g2.point, g2.axis, 1, g2);
@@ -40059,7 +40164,7 @@ void main() {
         const hd = new Vector3(0, 0, 1).applyQuaternion(o.quaternion), pt = new Vector3();
         const pt2 = new Vector3(), gL = handleSpot(B, "Left", o.position, hd, -0.12, 0.5, pt), gR = handleSpot(B, "Right", o.position, hd, -0.12, 0.5, pt2);
         const off = gR > gL ? "Right" : "Left", gap = Math.max(gL, gR), wOn = smooth01((gap - 0.012) / 0.04) * (1 - smooth01((L2.span - 0.45) / 0.15));
-        if (wOn > 0.01) otherHandOn(a, off, off === "Right" ? pt2 : pt, hd, wOn);
+        if (wOn > 0.01 && HOLD_LAYERS.secondHand) otherHandOn(a, off, off === "Right" ? pt2 : pt, hd, wOn);
         return;
       }
     }
@@ -40151,6 +40256,8 @@ void main() {
     // (its combo: bat_swing, then t_chop)
     bat: { label: "Bat", idle: "ual1_Sword_Idle", attack: "ual_Sword_Regular_Combo" },
     // (the arena's weapons: their first "good" pick in the Move Library as the attack)
+    alubat: { label: "Bat (pack)", idle: "bat_idle", attack: "ual_Sword_Regular_Combo" },
+    // (the hospital pack's bat, 2026-10-17)
     sledgehammer: { label: "Sledgehammer", idle: "kk_Melee_2H_Idle", attack: "ual_Sword_Heavy_Combo" },
     // (its carry: render/holdfit.js CARRY)
     chainsaw: { label: "Chainsaw", idle: "kk_Melee_2H_Idle", attack: "melee_horizontal" },
@@ -40453,9 +40560,9 @@ void main() {
     };
     $("femref").onchange = () => setClip($("clip").value);
     $("marks").onchange = refresh;
-    $("posture").onchange = refresh;
     $("mags").onchange = refresh;
     buildHandsUI();
+    buildLayersUI();
     $("batShow").onchange = refresh;
     $("vidSkel").onchange = refresh;
     $("bones").onchange = () => {
@@ -40759,7 +40866,7 @@ void main() {
       controls.update();
       renderer.render(scene, camera);
     });
-    window.__lab = { bodyClipScan, bodyClipProbe: (w, via) => bodyClipProbe(bodyClipC || (bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char })), w, via), CARRY, GRIP_HANDS, resetCarry: () => {
+    window.__lab = { SLOT_AXES, bodyClipScan, bodyClipProbe: (w, via) => bodyClipProbe(bodyClipC || (bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char })), w, via), CARRY, GRIP_HANDS, resetCarry: () => {
       main.carryCal = {};
       ref && (ref.carryCal = {});
     }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => {
