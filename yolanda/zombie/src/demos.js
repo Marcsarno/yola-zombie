@@ -106,6 +106,15 @@ function lightingLab(sim, game) {
     if (LK.has(k)) { K?.set(k, e.target.checked); if (k === 'eyes') game.ZombieView.eyeCfg.on = e.target.checked; } else A?.set(k, e.target.checked);
     if (e.target.checked) what(k);
   });
+  // the user's picks survive a reload (this browser only): every switch and list but the room view, saved on each change
+  const SAVE = 'yola.lightLab.v1';
+  const fields = () => [...el.querySelectorAll('input[type=checkbox], select')].filter((c) => c.id !== 'labRoom');
+  const keyOf = (c) => c.dataset?.k || c.id;
+  el.addEventListener('change', () => { try { const o = {}; for (const c of fields()) o[keyOf(c)] = c.type === 'checkbox' ? c.checked : c.value; localStorage.setItem(SAVE, JSON.stringify(o)); } catch {} });
+  try {
+    const o = JSON.parse(localStorage.getItem(SAVE) || 'null');
+    if (o) for (const c of fields()) { const v = o[keyOf(c)]; if (v === undefined) continue; const cur = c.type === 'checkbox' ? c.checked : c.value; if (cur === v) continue; if (c.type === 'checkbox') c.checked = v; else c.value = v; c.dispatchEvent(new Event('change', { bubbles: true })); }
+  } catch {}
   el.addEventListener('click', (e) => {
     const a = e.target.dataset?.a; if (!a) return;
     if (a === 'all' || a === 'none') for (const c of el.querySelectorAll('input[data-k]')) { c.checked = a === 'all'; c.dispatchEvent(new Event('change', { bubbles: true })); }

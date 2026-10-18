@@ -12,7 +12,8 @@ ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, 'shots', 'wing_bake_scene.json')
 OUT = os.path.join(ROOT, 'assets', 'hospital', 'wing_floor_light.jpg')
 RES = (768, 1152)          # (about 2 cm a pixel across the 15.2 x 23.2 m bounds)
-SAMPLES = 64                # (about 26 s on the GPU)
+SAMPLES = 384               # (about 2.5 min on the GPU)
+SMOOTH = 2                  # passes of a 5-tap blur over the result (about 4 cm): the last grain out, the furniture shadows kept
 CEIL = 2.7                 # the wing's wall height (arena.js H): a ceiling to hold the bounce in
 TUBE_W = 160.0             # watts for a fitting at k 0.55 (scaled by its k); 'dead' ones stay off
 EXIT_W = 6.0
@@ -92,7 +93,14 @@ with bpy.context.temp_override(window=win, scene=sc, view_layer=sc.view_layers[0
     bpy.ops.object.bake(type='DIFFUSE')
 
 # stored at half range (the game's BAKE.k takes it back up) as an 8-bit sRGB JPEG, ~120 KB (a PNG of the noise is 4 MB)
-px = list(img.pixels); r = sorted(px[0::4]); print('light p50', round(r[len(r) // 2], 3), 'p99', round(r[int(len(r) * 0.99)], 3))
+import numpy as np
+a = np.array(img.pixels[:], dtype=np.float32).reshape(RES[1], RES[0], 4)
+k = np.array([1, 4, 6, 4, 1], np.float32) / 16
+for _ in range(SMOOTH):
+    for ax in (0, 1):
+        p = np.pad(a, [(2, 2) if i == ax else (0, 0) for i in range(3)], mode='edge')
+        a = sum(k[j] * np.take(p, range(j, j + a.shape[ax]), axis=ax) for j in range(5))
+px = a.ravel().tolist(); r = sorted(px[0::4]); print('light p50', round(r[len(r) // 2], 3), 'p99', round(r[int(len(r) * 0.99)], 3))
 out = bpy.data.images.new('wing_floor_light_out', RES[0], RES[1], float_buffer=True)
 out.pixels = [min(1.0, v * 0.5) if (i % 4) != 3 else 1.0 for i, v in enumerate(px)]
 st = sc.render.image_settings; st.file_format = 'JPEG'; st.quality = 88; st.color_mode = 'RGB'

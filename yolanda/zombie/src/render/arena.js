@@ -733,11 +733,19 @@ export class Arena {
       return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
     };
     e.redMat = pool('255,40,24'); e.coldMat = pool('190,220,255');
+    { // the wing's door lamps: half a glow, its flat edge on the door line, spilling into the room only (a whole disc ran out through the wall)
+      const c = document.createElement('canvas'); c.width = 128; c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 0, 0, 64, 0, 64);
+      gr.addColorStop(0, 'rgba(255,40,24,1)'); gr.addColorStop(0.4, 'rgba(255,40,24,0.42)'); gr.addColorStop(1, 'rgba(255,40,24,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 64);
+      e.redHalf = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    }
     const grp = new THREE.Group(); grp.name = 'emergency'; grp.visible = false; s.add(grp); e.group = grp;
     const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
     const put = (m, x, z, size) => { const p = new THREE.Mesh(geo, m); p.position.set(x, 0.02, z); p.scale.set(size, 1, size); p.renderOrder = 2; grp.add(p); };
-    for (const l of this.f3 ? CH().lights || [] : LAYOUT.doors.map((d) => ({ x: d.spawn.x, z: d.spawn.z }))) put(e.redMat, l.x, l.z, 5.5); // (the wing: over its doorways, where its fittings are)
-    for (const d of CH().doors || []) if (d.kind !== 'lift') put(e.redMat, d.x, d.z, 2.6);
+    if (this.f3) { for (const l of CH().lights || []) put(e.redMat, l.x, l.z, 5.5); for (const d of CH().doors || []) if (d.kind !== 'lift') put(e.redMat, d.x, d.z, 2.6); }
+    else for (const d of LAYOUT.doors) { // (the wing: one half glow inside each doorway; the chapter's doors are another map's)
+      const ix = Math.sin(d.yaw), iz = Math.cos(d.yaw), W = 4.2, D = 3.0;
+      const p = new THREE.Mesh(geo, e.redHalf); p.scale.set(W, 1, D); p.rotation.y = d.yaw; p.position.set(d.x + ix * (D / 2 + 0.05), 0.02, d.z + iz * (D / 2 + 0.05)); p.renderOrder = 2; grp.add(p);
+    }
     for (const r of this.f3 ? CH().rooms || [] : OB_WING_ROOMS) for (const [x0, x1, z0, z1] of r.rects) { const w = x1 - x0, dd = z1 - z0; if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8); }
   }
   tickEmergency(dt) {
@@ -752,7 +760,7 @@ export class Arena {
     if (this.redHemi) this.redHemi.intensity = k * (0.05 + 0.13 * beacon);
     const ls = this.lightScale ?? 1; if (ls !== 1) { this.hemi.intensity *= ls; this.sun.intensity *= ls; this.scene.environmentIntensity *= ls; } // (render/lightkit.js: the fittings carry the room's light)
     e.group.visible = k > 0.005;
-    e.redMat.opacity = k * (0.3 + 0.38 * beacon); e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3)); // (a tube that hums)
+    e.redMat.opacity = e.redHalf.opacity = k * (0.3 + 0.38 * beacon); e.coldMat.opacity = this.coldOff ? 0 : k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3)); // (a tube that hums; coldOff: render/lightkit.js's baked light draws the rooms' light instead)
   }
 
   update(dt, px, pz, camYaw, level) {
