@@ -21,6 +21,7 @@ const I = new THREE.Quaternion(), _c = new THREE.Quaternion(), _c2 = new THREE.Q
 
 export function postureFamily(clip) {
   if (!clip) return null;
+  if (/^hub_/.test(clip)) return null; // (built in the Animation Hub: Unity Humanoid retargets keep her own bone axes; the X Bot head fix tipped her head 26 deg down)
   if (/^ual1?_|^pistol_reload$/.test(clip)) return 'mannequin'; // (her reload is Quaternius Pistol_Reload since 2026-10-17)
   if (/^t_|^tripo_/.test(clip)) return null; // (authored on the Tripo rig itself)
   return 'xbot';

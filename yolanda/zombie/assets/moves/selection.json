@@ -590,6 +590,21 @@
    "verdict": "good",
    "note": "",
    "uses": []
+  },
+  "hub_crowbar_combo": {
+   "verdict": "good",
+   "note": "the crowbar combo (2026-10-18): a quick strike, a backhand sweep, a low rising strike",
+   "uses": [
+    {
+     "weapon": "crowbar",
+     "why": "",
+     "speed": 1,
+     "hand": "Right",
+     "roll": 100,
+     "slide": 0,
+     "flip": false
+    }
+   ]
   }
  },
  "updated": "2026-10-16T00:51:12.231Z"

@@ -884,6 +884,15 @@
    "license": "CC0",
    "frames": 55,
    "fps": 30
+  },
+  {
+   "clip": "hub_crowbar_combo",
+   "label": "Crowbar light combo (hub)",
+   "group": "Combos (built)",
+   "source": "Built in the Animation Hub (Unity) from Quaternius - Universal Animation Library 2: Sword_Light_Combo A, B, C + Sword_Light_C_Rec",
+   "license": "CC0",
+   "frames": 69,
+   "fps": 30
   }
  ],
  "fps": 30

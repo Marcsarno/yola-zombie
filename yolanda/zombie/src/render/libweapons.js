@@ -13,8 +13,10 @@ import { CARRY } from './holdfit.js';
 import { PROFILE } from '../arena/testarena.js';
 
 // which of the user's picks each weapon swings in the story (all "good" in assets/arena/selection.json, all in the game's
-// own clip files): the sledgehammer the heavy combo, the crowbar and the knife the regular combo
-export const LIB_PICKS = { sledgehammer: 'ual_Sword_Heavy_Combo', crowbar: 'ual_Sword_Regular_Combo', knife: 'ual_Sword_Regular_Combo' };
+// own clip files): the sledgehammer the heavy combo, the knife the regular combo, the crowbar its own fast three-hit light
+// combo (2026-10-18, the user: "different from the bat's, fast"; built in the Animation Hub from Quaternius's light sword
+// combo A, B, C: a quick strike, a backhand sweep, a low rising strike; assets/yola2_ual.glb)
+export const LIB_PICKS = { sledgehammer: 'ual_Sword_Heavy_Combo', crowbar: 'hub_crowbar_combo', knife: 'ual_Sword_Regular_Combo' };
 export const LIB_LABEL = { sledgehammer: 'Sledgehammer', crowbar: 'Crowbar', knife: 'Knife' };
 
 async function json(url) { try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch { return null; } }
