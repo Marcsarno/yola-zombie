@@ -56713,6 +56713,7 @@ void main() {
         sun.shadow.radius = 3;
       }
       this.sun = sun;
+      sun.userData.isSun = true;
       this.redHemi = new HemisphereLight(16726564, 2752512, 0);
       s.add(this.redHemi);
       return;
@@ -61092,10 +61093,11 @@ void main() {
     findSun() {
       let s = null;
       this.scene.traverse((o) => {
-        if (!s && o.isDirectionalLight && o.castShadow) s = o;
+        if (!s && o.isDirectionalLight && !o.userData.notSun && (o.castShadow || o.userData.isSun)) s = o;
       });
       return s;
     }
+    // (notSun: render/lightkit.js's shadow light for Yola; isSun: the arena's, even while that kit has its shadow off)
     // the mood pass (MoodShader): a preset (MOODS key or null: off) and the film finish (grain, vignette); drain: 0..1 health lost
     setMood(key, film) {
       this.moodKey = key;
@@ -71958,7 +71960,8 @@ void main() {
   };
   var FLAT2 = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   var BAKE = { url: "assets/hospital/wing_floor_light.jpg", x0: -7.6, x1: 7.6, z0: -11.6, z1: 11.6, k: 2.2, fill: 0.3 };
-  var YSH = { map: 512, half: 1.6, off: [-2.8, 5.5, -0.8], dark: 0.5 };
+  var YSH = { map: 512, half: 1.6, off: [-2.8, 5.5, -0.8], dark: 0.55, min: 0.55 };
+  var CHAR = { base: 0.9, floor: 0.4 };
   var DIM = 0.55;
   var flick = (state, t, seed, S2) => {
     if (state === "buzz") return 0.88 + 0.12 * Math.sin(t * 120 + seed) * Math.sin(t * 7.3 + seed);
@@ -72119,7 +72122,71 @@ void main() {
       });
       return this.dips;
     }
+    // the bake's light at a point (0 dark .. ~2 under a tube), read from the image itself (stored at half range, sRGB)
+    bakeAt(x, z) {
+      const im = this.bakeTex?.image;
+      if (!im || !im.width) return 0.5;
+      if (!this.bakePx) {
+        const c = document.createElement("canvas");
+        c.width = im.width;
+        c.height = im.height;
+        const g = c.getContext("2d");
+        g.drawImage(im, 0, 0);
+        this.bakePx = { d: g.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height };
+      }
+      const B = this.bakePx, u = Math.min(B.w - 1, Math.max(0, Math.round((x - BAKE.x0) / (BAKE.x1 - BAKE.x0) * (B.w - 1)))), v = Math.min(B.h - 1, Math.max(0, Math.round((z - BAKE.z0) / (BAKE.z1 - BAKE.z0) * (B.h - 1))));
+      return Math.pow(B.d[(v * B.w + u) * 4] / 255, 2.2) * 2;
+    }
+    // the characters under A: the bake lights the floor, not them, and A turns the room's fill down to 0.3; each one takes its
+    // own share of the room's soft ambient light (its materials hold the scene's environment map, so their intensity is
+    // their own) from the lab's "Character light" slider and the baked light where it stands
+    setCharLight(v) {
+      this.charK = v;
+    }
+    charMats(root) {
+      this.charCache ?? (this.charCache = /* @__PURE__ */ new WeakMap());
+      let L2 = this.charCache.get(root);
+      if (!L2) {
+        L2 = [];
+        root.traverse((o) => {
+          if (o.isMesh) {
+            for (const m of [].concat(o.material)) if (m.isMeshStandardMaterial && !L2.includes(m)) L2.push(m);
+          }
+        });
+        this.charCache.set(root, L2);
+      }
+      return L2;
+    }
+    lightChars(views, yv, p) {
+      const env = this.scene.environment, k = this.charK ?? 1;
+      if (!env) return;
+      this.charLit ?? (this.charLit = /* @__PURE__ */ new Set());
+      const put2 = (root, x, z) => {
+        if (!root) return;
+        const I2 = k * CHAR.base * (CHAR.floor + Math.min(1.3, this.bakeAt(x, z)));
+        for (const m of this.charMats(root)) {
+          if (m.envMap !== env) {
+            m.userData.env0 = m.envMap;
+            m.envMap = env;
+            m.needsUpdate = true;
+            this.charLit.add(m);
+          }
+          m.envMapIntensity = I2;
+        }
+      };
+      for (const v of views) if (v.view?.outer) put2(v.view.outer, v.z.x, v.z.z);
+      if (yv && p) for (const g of this.yshGear(yv)) put2(g, p.x, p.z);
+    }
+    unlightChars() {
+      for (const m of this.charLit || []) {
+        m.envMap = m.userData.env0 ?? null;
+        m.envMapIntensity = 1;
+        m.needsUpdate = true;
+      }
+      this.charLit?.clear();
+    }
     toggle_baked(v) {
+      if (!v) this.unlightChars();
       for (const d of this.bakeDips()) d.m.visible = v;
       for (const m of this.bakeFloors || []) {
         const L2 = m.userData.liveMat, B = m.userData.bakeMat;
@@ -72172,6 +72239,7 @@ void main() {
     build_yshadow() {
       const L2 = this.ysh = new DirectionalLight(16777215, 1e-4);
       L2.castShadow = true;
+      L2.userData.notSun = true;
       L2.shadow.mapSize.set(YSH.map, YSH.map);
       const c = L2.shadow.camera;
       c.left = c.bottom = -YSH.half;
@@ -72216,6 +72284,12 @@ void main() {
     }
     tickYShadow(dt, p, yv) {
       const r = this.arena.renderer;
+      if (!r.shadowMap.enabled) {
+        this.yshCatch.visible = false;
+        if (yv.blob) yv.blob.visible = true;
+        return;
+      }
+      this.yshCatch.visible = true;
       if ((this.yshScanT -= dt) <= 0) {
         this.yshScanT = 1;
         const mine = /* @__PURE__ */ new Set();
@@ -72242,13 +72316,13 @@ void main() {
           best = F;
         }
       }
-      let ox = YSH.off[0], oz = YSH.off[2], oy = YSH.off[1], k = 0.35;
+      let ox = YSH.off[0], oz = YSH.off[2], oy = YSH.off[1], k = YSH.min;
       if (best && bd < 6.5) {
         const d = Math.max(0.45, Math.min(2.4, bd)), ux = (best.x - p.x) / (bd || 1), uz = (best.z - p.z) / (bd || 1);
         ox = ux * d;
         oz = uz * d;
         oy = 2.6 - 0.1;
-        k = best.b * Math.max(0.35, Math.min(1, 1 - (bd - 2.2) / 4.3));
+        k = Math.max(YSH.min, best.b * Math.min(1, 1 - (bd - 2.2) / 4.3));
       }
       const S2 = this.yshS ?? (this.yshS = { x: ox, y: oy, z: oz, k }), e = Math.min(1, dt * 3);
       S2.x += (ox - S2.x) * e;
@@ -72456,6 +72530,7 @@ void main() {
     update(dt, sim2, views, yolaView) {
       this.lastViews = views;
       this.lastYola = yolaView;
+      if (this.on.baked) this.lightChars(views, yolaView, sim2?.player);
       this.t += dt;
       if (this.fix) for (const F of this.fix) {
         const k = flick(F.state, this.t, F.seed, F.S);
@@ -72743,7 +72818,7 @@ void main() {
     el.id = "lightLab";
     el.style.cssText = "position:fixed;left:max(8px,env(safe-area-inset-left));top:calc(100px + env(safe-area-inset-top));z-index:30;width:250px;max-height:calc(100vh - 120px);overflow:auto;font:12px/1.35 system-ui;color:#eef3f2;background:rgba(18,24,26,.86);border-radius:10px;padding:8px 10px";
     const row = ([k, label]) => `<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" data-k="${k}" ${A?.on[k] ? "checked" : ""}><span>${label}</span></label>`;
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">\u2026</span></div><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label><div style="font-weight:700;margin:2px 0 2px;color:#ffcf8a">Plan upgrades</div>' + LIGHTKIT.map(row).join("") + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">G \xB7 Floor mood <select id="labMood"><option value="">off</option>' + Object.keys(MOODS).filter((k) => k !== "none").map((k) => "<option>" + k + "</option>").join("") + '</select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H \xB7 Film finish (grain, vignette, colour drains with health)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labTubes"><span>Show the tubes on the ceiling (and their halos)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747"><input type="checkbox" id="labShadows" checked><span>Real shadows (off = phone low tier)</span></label><div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>' + ATMOS.filter((a) => a[0] !== "tubes").map(row).join("") + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div><div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">\u2026</span></div><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label><div style="font-weight:700;margin:2px 0 2px;color:#ffcf8a">Plan upgrades</div>' + LIGHTKIT.map(row).join("") + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">G \xB7 Floor mood <select id="labMood"><option value="">off</option>' + Object.keys(MOODS).filter((k) => k !== "none").map((k) => "<option>" + k + "</option>").join("") + '</select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H \xB7 Film finish (grain, vignette, colour drains with health)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labTubes"><span>Show the tubes on the ceiling (and their halos)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0">Look <select id="labLook">' + LOOKS.map(([k, l]) => '<option value="' + k + '">' + l + "</option>").join("") + '</select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;border-bottom:1px solid #3a4747">Character light <input type="range" id="labChar" min="0" max="2" step="0.05" value="1" style="flex:1"><span id="labCharV" style="width:30px;text-align:right">1.00</span></label><div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>' + ATMOS.filter((a) => a[0] !== "tubes").map(row).join("") + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div><div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
     for (const b of el.querySelectorAll("button")) b.style.cssText = "font:600 11.5px system-ui;border:0;border-radius:6px;padding:4px 7px;cursor:pointer;background:#e8ecec;color:#1b2222";
     document.body.appendChild(el);
     const what = (k) => {
@@ -72770,8 +72845,13 @@ void main() {
         K2?.setTubes(e.target.checked);
         return;
       }
-      if (id === "labShadows") {
-        game.looks?.set(e.target.checked ? "standard" : "lite");
+      if (id === "labLook") {
+        game.looks?.set(e.target.value);
+        return;
+      }
+      if (id === "labChar") {
+        K2?.setCharLight(+e.target.value);
+        el.querySelector("#labCharV").textContent = (+e.target.value).toFixed(2);
         return;
       }
       const k = e.target.dataset?.k;
@@ -72783,7 +72863,13 @@ void main() {
       if (e.target.checked) what(k);
     });
     const SAVE = "yola.lightLab.v1";
-    const fields = () => [...el.querySelectorAll("input[type=checkbox], select")].filter((c) => c.id !== "labRoom");
+    const fields = () => [...el.querySelectorAll("input[type=checkbox], input[type=range], select")].filter((c) => c.id !== "labRoom");
+    el.querySelector("#labLook").value = game.looks?.key || "standard";
+    el.addEventListener("input", (e) => {
+      if (e.target.id === "labChar") e.target.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const sunBtn = document.getElementById("lookBtn");
+    if (sunBtn) sunBtn.style.display = "none";
     const keyOf = (c) => c.dataset?.k || c.id;
     el.addEventListener("change", () => {
       try {
