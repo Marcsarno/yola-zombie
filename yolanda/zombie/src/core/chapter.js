@@ -487,12 +487,12 @@ const F7 = buildFloor(7, {
 const F6 = buildFloor(6, {
   rooms: [
     { id: 'e6', name: 'Lift Lobby', poly: [[1140, 260], [1319, 260], [1319, 580], [1140, 580]], floor: ['#e4d8bf', '#cfc4ab'], ob: ['corridor', 'clinical'] },
-    { id: 'j6', name: 'Junction', poly: [[700, 300], [1140, 300], [1140, 580], [700, 580]], floor: ['#efe2c8', '#d9c9a8'], ob: ['corridor', 'clinical'] },
-    { id: 'w6', name: 'Recovery Ward', poly: [[180, 300], [700, 300], [700, 580], [620, 580], [620, 760], [180, 760]], floor: ['#e9eedf', '#c8dcc4'], ob: ['corridor', 'clinical'] },
-    { id: 'p6', name: 'Preparation', poly: [[180, 760], [620, 760], [620, 1030], [180, 1030]], floor: ['#e2e8ea', '#bfd2da'], ob: ['clinical', 'clinical'] },
+    { id: 'j6', name: 'Ward Junction', poly: [[700, 300], [1140, 300], [1140, 580], [700, 580]], floor: ['#efe2c8', '#d9c9a8'], ob: ['corridor', 'clinical'] },
+    { id: 'w6', name: 'Ward 6B', poly: [[180, 300], [700, 300], [700, 580], [620, 580], [620, 760], [180, 760]], floor: ['#e9eedf', '#c8dcc4'], ob: ['corridor', 'clinical'] },
+    { id: 'p6', name: 'Sample Prep Lab', poly: [[180, 760], [620, 760], [620, 1030], [180, 1030]], floor: ['#e2e8ea', '#bfd2da'], ob: ['clinical', 'clinical'] },
     { id: 'k6', name: 'Cold Dispatch', poly: [[180, 1030], [710, 1030], [710, 1280], [180, 1280]], floor: ['#e6eef2', '#c4d6e2'], ob: ['clinical', 'clinical'] },
-    { id: 'sp6', name: 'Service Passage', poly: [[830, 580], [1000, 580], [1000, 800], [830, 800]], floor: ['#c9c4b8', '#b3ad9f'], ob: ['maintenance', 'maintenance'] },
-    { id: 'a6', name: 'Partition Works', poly: [[710, 800], [1140, 800], [1140, 1280], [710, 1280]], floor: ['#c4c2b6', '#aeab9d'], ob: ['maintenance', 'maintenance'] },
+    { id: 'sp6', name: 'Service Corridor', poly: [[830, 580], [1000, 580], [1000, 800], [830, 800]], floor: ['#c9c4b8', '#b3ad9f'], ob: ['maintenance', 'maintenance'] },
+    { id: 'a6', name: 'Ward 6C Works', poly: [[710, 800], [1140, 800], [1140, 1280], [710, 1280]], floor: ['#c4c2b6', '#aeab9d'], ob: ['maintenance', 'maintenance'] },
   ],
   doors: [
     { id: 'e6_j6', o: 'v', c: 1140, a: 420, b: 500 },
@@ -504,53 +504,155 @@ const F6 = buildFloor(6, {
     { id: 'partition', o: 'v', c: 710, a: 1095, b: 1180, kind: 'partition' }, // the weak renovation partition (A6 | K6)
   ],
   dress({ p, wp, raw, sign, room, X, Z }) {
-    const z = Z;
-    // E6 | the lift lobby: a bench and a planter, the lift on the back wall
-    p(M + 'decor/Reception_Linked_Seats_3.glb', 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
-    p(U + '12_lobby/lobby_T2_floor_planter.glb', 6.5, z(270) + 0.6, 0, [0.55, 0.86], 1.2, { fit: true });
-    // J6 | the junction: a parked gurney, the two ways signed on the back wall
-    p(H + 'procedure_stretcher.glb', X(780), z(330) + 0.3, 90, [0.9, 1.66], 1.22);
-    p(H + 'wheelchair.glb', X(1100), z(330), 0, [0.76, 0.91], 0.97);
-    p(M + 'decor/Reception_Linked_Seats_3.glb', X(900), z(300) + 0.4, 0, [2.61, 0.62], 0.92);
-    p(U + '12_lobby/lobby_T2_floor_planter.glb', X(720), z(320), 0, [0.55, 0.86], 1.2, { fit: true });
-    // W6 | the recovery ward: beds in a row on the back wall, two more mid-room (flanking choices)
-    for (const bx of [X(242), X(397), X(577)]) { p(H + 'recovery_bed.glb', bx, z(378), 0, [1.25, 2.11], 0.87); p(H + 'bedside_cabinet.glb', bx + 0.95, z(320), 0, [0.52, 0.63], 0.81); }
-    p(H + 'privacy_screen.glb', (X(242) + X(397)) / 2, z(378), 0, [0.14, 1.84], 1.97);
-    p(H + 'recovery_bed.glb', X(367), z(577), 90, [1.25, 2.11], 0.87);
-    p(H + 'recovery_bed.glb', X(557), z(620), 0, [1.25, 2.11], 0.87);
-    p(H + 'iv_stand.glb', X(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
-    p(H + 'patient_monitor.glb', X(200), z(690), 90, [0.62, 0.71], 1.49);
-    // P6 | preparation: counters along the walls, a prep trolley
-    p(H + 'linen_cabinet.glb', X(270), z(790), 0, [0.95, 0.59], 1.84);
-    p(H + 'sedaprep.glb', X(530), z(920), 0, [1.0, 0.6], 1.1);
-    p(H + 'supply_cart.glb', X(260), z(895), 90, [1.16, 1.1], 1.23);
-    p(U + '10_janitor_utility/starter/10_starter_steel_sink.glb', X(560), z(785), 0, [0.87, 0.63], 1.16);
-    // K6 | cold dispatch: the specimen fridge cabinets on the back wall, the counter with the sealed case
-    p(K + 'pharmacy_locked_cupboard.glb', X(260), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
-    p(K + 'pharmacy_locked_cupboard.glb', X(370), z(1260) - 0.2, 180, [0.95, 0.55], 1.95);
-    p(K + 'pharmacy_medicine_shelf.glb', X(640), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
-    p(M + 'furnishings/Lounge_Break_Table.glb', X(305), z(1077), 0, [0.9, 0.9], 0.74, { name: 'k6table' });
-    raw({ m: K + 'lab_sample_rack.glb', x: X(560), z: z(1077), rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
-    p(M + 'furnishings/Lounge_Break_Table.glb', X(560), z(1077), 0, [0.9, 0.9], 0.74);
-    p(H + 'thermanest.glb', X(500), z(1260) - 0.35, 180, [0.81, 0.69], 1.26);
-    p(H + 'supply_cart.glb', X(200), z(1180), 90, [1.16, 1.1], 1.23);
-    // SP6 / A6 | the service passage and the partition works: shelving on the east wall, stacked boards, open floor for a charge
-    p(H + 'supply_shelf.glb', X(1110), z(880), 270, [1.39, 0.53], 2.0);
-    p(U + '10_janitor_utility/starter/10_starter_rack.glb', X(1110), z(1180), 270, [0.82, 0.51], 1.82);
-    raw({ kind: 'hazard', x: X(710) + 1.0, z: (z(1095) + z(1180)) / 2, size: [1.3, 3.2], noCollide: true, fp: [0.1, 0.1], h: 0 }); // (where a dodge sends her charge into the partition: about a metre out)
-    raw({ kind: 'bench', x: X(1000), z: z(1250), size: [1.8, 0.65, 0.92], color: 0x8c7a5c, fp: [1.8, 0.65], h: 0.92 });
-    p(H + 'wet_floor_sign.glb', X(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
-    raw({ kind: 'box', x: X(1100), z: z(1010), size: [1.4, 0.8, 1.1], face: 'w', color: 0xa38f6c, fp: [0.8, 1.4], h: 1.1 });
-    p(K + 'isolation_windowed_partition.glb', X(1110), z(1090), 90, [2.0, 0.15], 2.4);
+    // (2026-10-18, the user's layout pass, FLOORS_6_5_LAYOUT_PROPOSAL.html, approved: every room a purpose, its identity on
+    // the north wall the locked camera sees, low things in the near band, nothing in front of a doorway. The route, the
+    // rooms and the story beats are unchanged. NP = props modelled for these floors in Blender, blender/make_ward_gap_props.py)
+    const C = { visitor: U + '09_assessment_furniture/runtime/visitor_chair_standard.glb', shelf: M + 'utility/Utility_Supply_Shelf.glb', cart: U + '08_support_equipment/runtime/supply_cart_standard.glb',
+      counter: U + '09_assessment_furniture/runtime/prep_storage_standard.glb' };
+    const NP = SI, bed = (x, z, rot) => p(H + 'recovery_bed.glb', x, z, rot, [1.25, 2.11], 0.87);
+    // E6 | LIFT LOBBY 6: a floor directory beside the lift, seats along the east wall facing the doors, a cooler
+    wp(H + 'lobby_t2_wayfinding.glb', 6.55, -91.0, 's', 1.45);
+    wp(NP + 'fire_extinguisher.glb', 0.25, -91.0, 's', 0.6);
+    p(H + 'floor_planter.glb', 6.7, -89.6, 270, [1.12, 0.5], 1.52);
+    p(H + 'waiting_chair_section.glb', 6.45, -86.5, 270, [2.69, 0.97], 0.99);
+    wp(H + 'reception_poster_clinician.glb', 6.95, -86.5, 'w', 1.3);
+    p(H + 'water_cooler.glb', 6.7, -83.6, 270, [0.45, 0.49], 1.47);
+    wp(H + 'wall_sanitizer.glb', 6.95, -84.6, 'w', 1.05);
+    p(H + 'wheelchair.glb', 1.6, -80.0, 200, [0.76, 0.91], 0.97); // (abandoned by the lift)
+    // J6 | WARD JUNCTION: the two ways signed on the camera wall over a parked trolley, seats, a charting station, wheelchairs;
+    // the guard's bag and pistol where he and Yola parted (pickups)
+    p(H + 'linen_cabinet.glb', -16.6, -89.08, 0, [0.95, 0.65], 1.84);
+    p(H + 'procedure_stretcher.glb', -14.4, -88.95, 90, [0.9, 1.66], 1.22);
+    wp(H + 'lobby_t2_health_poster.glb', -12.9, -89.4, 's', 1.2);
+    wp(H + 'wall_sanitizer.glb', -12.2, -89.4, 's', 1.05);
+    p(H + 'waiting_chair_section.glb', -9.65, -88.9, 0, [2.69, 0.97], 0.99);
+    wp(H + 'wall_clock.glb', -7.4, -89.4, 's', 1.95);
+    p(H + 'charting_workstation.glb', -5.9, -89.09, 0, [0.83, 0.62], 1.47);
+    wp(H + 'team_wall_station.glb', -4.6, -89.4, 's', 0.75);
+    p(H + 'wheelchair.glb', -1.6, -88.9, 0, [0.76, 0.91], 0.97);
+    p(H + 'wheelchair.glb', -0.85, -88.9, 0, [0.76, 0.91], 0.97);
+    wp(NP + 'fire_extinguisher.glb', -17.5, -86.6, 'e', 0.6);
+    p(H + 'wheelchair.glb', -15.0, -79.6, 120, [0.76, 0.91], 0.97); // (tipped aside)
+    // W6 | WARD 6B (SURGICAL): five beds heads-on to the camera (headwall, cabinet, a relative's chair), two dragged into the
+    // aisle in the panic (cover), two more on the L's west wall, the nurse base and the ward sink in the L
+    for (const [i, bx] of [-36.0, -32.4, -28.8, -25.2, -21.6].entries()) {
+      bed(bx, -88.35, 0);
+      wp(H + 'service_headwall.glb', bx, -89.4, 's', 1.24);
+      p(H + 'bedside_cabinet.glb', bx - 0.95, -88.95, 0, [0.52, 0.63], 0.81);
+      p(C.visitor, bx + 0.95, -88.4, 270, [0.47, 0.47], 0.98, { noCollide: true });
+      if (i < 2) wp(H + (i ? 'recovery_bay_sign_02.glb' : 'recovery_bay_sign_01.glb'), bx, -89.4, 's', 2.05);
+    }
+    p(NP + 'over_bed_table.glb', -32.4, -86.7, 0, [0.8, 0.44], 1.08);
+    p(NP + 'over_bed_table.glb', -25.2, -86.7, 0, [0.8, 0.44], 1.08);
+    wp(H + 'wall_exam_set.glb', -34.6, -89.4, 's', 1.25);
+    wp(H + 'sharps_container.glb', -31.0, -89.4, 's', 1.2);
+    wp(H + 'glove_dispenser.glb', -27.4, -89.4, 's', 1.25);
+    wp(H + 'wall_sanitizer.glb', -23.8, -89.4, 's', 1.1);
+    wp(H + 'wall_clock.glb', -19.6, -89.4, 's', 1.95);
+    bed(-30.4, -82.6, 25); bed(-23.0, -80.6, -15); // (dragged out of their bays)
+    p(H + 'iv_stand.glb', -29.0, -84.4, 0, [0.73, 0.7], 2.03, { noCollide: true });
+    bed(-37.25, -76.6, 90); bed(-37.25, -73.4, 90);
+    wp(H + 'service_headwall.glb', -38.3, -76.6, 'e', 1.24);
+    wp(H + 'service_headwall.glb', -38.3, -73.4, 'e', 1.24);
+    p(H + 'team_desk.glb', -25.6, -76.4, 0, [1.13, 0.74], 1.16);
+    p(H + 'charting_workstation.glb', -24.0, -76.5, 0, [0.83, 0.62], 1.47);
+    p(H + 'clinician_chair.glb', -25.6, -75.6, 180, [0.65, 0.61], 0.98, { noCollide: true });
+    p(H + 'handwash_cabinet_base.glb', -21.35, -74.0, 270, [0.51, 0.7], 0.77);
+    wp(H + 'handwash_basin.glb', -21.0, -74.0, 'w', 0.77);
+    wp(H + 'towel_dispenser.glb', -21.0, -74.7, 'w', 1.1);
+    wp(H + 'soap_dispenser.glb', -21.0, -73.4, 'w', 1.2);
+    p(H + 'laundry_hamper.glb', -21.3, -72.0, 0, [0.6, 0.57], 1.15);
+    wp(NP + 'fire_extinguisher.glb', -17.8, -87.0, 'w', 0.6);
+    // P6 | SAMPLE PREP LAB (why the route runs ward -> lab -> dispatch): benches with a centrifuge, a microscope and sample
+    // racks on the camera wall, the sink, two islands for cover, the first-aid case on the cart by the west wall
+    p(H + 'prep_counter.glb', -36.9, -70.65, 0, [1.51, 0.69], 1.06);
+    raw({ m: K + 'lab_centrifuge.glb', x: -37.25, z: -70.65, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+    raw({ m: K + 'lab_microscope.glb', x: -36.5, z: -70.65, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+    p(H + 'prep_counter.glb', -35.3, -70.65, 0, [1.51, 0.69], 1.06);
+    raw({ m: K + 'lab_sample_rack.glb', x: -35.3, z: -70.6, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+    wp(H + 'wall_cupboard.glb', -36.9, -71.0, 's', 1.45);
+    wp(H + 'wall_cupboard.glb', -35.3, -71.0, 's', 1.45);
+    p(H + 'handwash_cabinet_base.glb', -33.8, -70.65, 0, [0.51, 0.7], 0.77);
+    wp(H + 'handwash_basin.glb', -33.8, -71.0, 's', 0.77);
+    wp(H + 'soap_dispenser.glb', -33.3, -71.0, 's', 1.2);
+    wp(H + 'clinical_art_preparation_checklist.glb', -32.6, -71.0, 's', 1.0);
+    p(H + 'prep_storage.glb', -26.2, -70.64, 0, [1.51, 0.72], 1.09);
+    wp(H + 'glove_dispenser.glb', -26.6, -71.0, 's', 1.25);
+    wp(H + 'sharps_container.glb', -25.8, -71.0, 's', 1.15);
+    p(H + 'prep_counter.glb', -24.5, -70.65, 0, [1.51, 0.69], 1.06);
+    raw({ m: K + 'lab_sample_rack.glb', x: -24.5, z: -70.6, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+    p(H + 'charting_workstation.glb', -22.8, -70.69, 0, [0.83, 0.62], 1.47);
+    wp(H + 'wall_clock.glb', -22.0, -71.0, 's', 1.95);
+    p(H + 'supply_cart.glb', -37.75, -66.4, 90, [1.16, 1.1], 1.23);
+    p(H + 'linen_cabinet.glb', -37.97, -63.8, 90, [0.95, 0.65], 1.84);
+    p(H + 'prep_counter.glb', -34.5, -65.8, 0, [1.51, 0.69], 1.06);
+    p(H + 'prep_counter.glb', -34.5, -65.11, 180, [1.51, 0.69], 1.06);
+    p(H + 'team_stool.glb', -35.4, -64.4, 0, [0.36, 0.34], 0.5, { noCollide: true });
+    p(H + 'team_stool.glb', -33.6, -64.4, 0, [0.36, 0.34], 0.5, { noCollide: true });
+    p(H + 'consultation_desk.glb', -24.8, -65.5, 0, [1.5, 0.73], 0.81);
+    raw({ m: H + 'desktop_computer.glb', x: -24.8, z: -65.6, rot: 0, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+    p(H + 'clinician_chair.glb', -24.8, -64.7, 180, [0.65, 0.61], 0.98, { noCollide: true });
+    p(H + 'sedaprep.glb', -21.36, -66.5, 270, [1.12, 0.72], 0.98);
+    wp(H + 'wall_sanitizer.glb', -21.0, -64.5, 'w', 1.05);
+    p(H + 'biohazard_bin.glb', -21.25, -62.0, 0, [0.39, 0.39], 0.69);
+    p(H + 'biohazard_bin.glb', -21.25, -62.5, 0, [0.39, 0.39], 0.69);
+    // K6 | COLD DISPATCH (calm): specimen fridges, the dispatch counter with the sealed case on the camera wall (CASE_HOME),
+    // the tube station, courier coolers and transport stock; the weak partition and its approach stay clear
+    p(NP + 'specimen_fridge.glb', -37.7, -59.82, 0, [0.75, 0.76], 1.9);
+    p(NP + 'specimen_fridge.glb', -36.85, -59.82, 0, [0.75, 0.76], 1.9);
+    p(C.counter, -34.6, -59.84, 0, [1.51, 0.72], 1.09, { name: 'k6table' });
+    wp(H + 'assessment_status_board.glb', -34.6, -60.2, 's', 1.5);
+    wp(NP + 'pneumatic_tube_station.glb', -33.3, -60.2, 's', 0.75);
+    p(NP + 'courier_coolers.glb', -26.6, -59.98, 0, [0.64, 0.44], 0.94);
+    p(C.shelf, -24.6, -59.92, 0, [1.39, 0.56], 2.0);
+    p(C.shelf, -23.1, -59.92, 0, [1.39, 0.56], 2.0);
+    p(NP + 'specimen_fridge.glb', -21.4, -59.82, 0, [0.75, 0.76], 1.9);
+    wp(H + 'wall_clock.glb', -19.5, -60.2, 's', 1.95);
+    wp(NP + 'fire_extinguisher.glb', -18.6, -60.2, 's', 0.6);
+    p(C.shelf, -38.02, -56.5, 90, [1.39, 0.56], 2.0);
+    p(C.cart, -26.0, -51.4, 0, [1.16, 1.1], 1.21);
+    // SP6 | SERVICE CORRIDOR: the cylinder store and the cleaners' sink against its walls; the doorways span it, so nothing
+    // stands more than about 0.6 m off a wall
+    for (const z of [-75.8, -75.35, -74.9, -74.45]) p(H + 'medical_gas_cylinder.glb', -12.08, z, 0, [0.39, 0.43], 1.15);
+    p(H + 'supply_shelf.glb', -12.02, -72.6, 90, [1.39, 0.56], 2.0);
+    wp(NP + 'fire_extinguisher.glb', -12.3, -77.0, 'e', 0.6);
+    p(H + 'utility_sink.glb', -6.055, -75.4, 270, [0.88, 0.51], 1.64);
+    p(H + 'mop.glb', -5.93, -74.6, 270, [0.34, 0.25], 1.5, { noCollide: true });
+    wp(H + 'wall_shelf.glb', -5.8, -73.8, 'w', 1.2);
+    p(H + 'janitor_cart.glb', -6.4, -72.4, 0, [0.83, 0.99], 1.23);
+    // A6 | WARD 6C CONVERSION WORKS: an old ward being turned into something new; furniture under dust sheets, stud framing
+    // either side of the weak partition, a scaffold tower, the user's painted bench; the clutter keeps to the north half and the
+    // walls, the charger's run west to the partition (z -59 to -51) and its dodge space stay open
+    p(NP + 'dust_sheet_furniture.glb', -15.6, -68.75, 0, [1.88, 1.23], 1.07);
+    p(NP + 'dust_sheet_small.glb', -13.2, -68.9, 0, [1.39, 0.92], 0.94);
+    p('zombie/assets/props/drywall_pallet.glb', -16.25, -66.0, 90, [1.41, 1.69], 0.45);
+    p(NP + 'scaffold_tower.glb', -4.0, -68.95, 0, [1.82, 0.77], 2.4);
+    p(SI + 'standin_cable_workbench.glb', -1.6, -68.95, 0, [1.8, 0.76], 0.92);
+    p(SI + 'standin_tool_pegboard.glb', -1.6, -69.36, 180, [1.26, 0.06], 0.94, { y: 1.05, noCollide: true });
+    p('zombie/assets/props/sawhorse_barrier.glb', -5.0, -63.0, 0, [1.9, 0.73], 1.04);
+    raw({ kind: 'hazard', x: -5.0, z: -64.3, size: [2.6, 1.4], noCollide: true, fp: [0.1, 0.1], h: 0 });
+    p(H + 'wet_floor_sign.glb', -6.6, -63.4, 0, [0.48, 0.66], 0.64, { noCollide: true });
+    p(NP + 'stud_wall_frame.glb', -17.04, -60.1, 0, [0.12, 3.6], 2.6);
+    p(NP + 'stud_wall_frame.glb', -17.04, -52.3, 0, [0.12, 3.6], 2.6);
+    p(H + 'supply_shelf.glb', -0.48, -66.4, 270, [1.39, 0.56], 2.0);
+    p(NP + 'dust_sheet_furniture.glb', -0.82, -63.6, 90, [1.88, 1.23], 1.07);
+    p(SI + 'standin_paint_shelf.glb', -0.42, -61.2, 270, [1.19, 0.44], 1.81);
+    p(K + 'isolation_windowed_partition.glb', -0.6, -58.0, 90, [2.0, 0.15], 2.4);
+    p(U + '10_janitor_utility/starter/10_starter_rack.glb', -0.46, -54.35, 270, [0.82, 0.51], 1.82);
+    raw({ kind: 'bench', x: X(1000), z: Z(1250), size: [1.8, 0.65, 0.92], color: 0x8c7a5c, fp: [1.8, 0.65], h: 0.92 });
+    p(SI + 'standin_renovation_pallet.glb', -10.5, -51.4, 0, [1.25, 1.02], 0.61);
+    raw({ kind: 'hazard', x: X(710) + 1.0, z: (Z(1095) + Z(1180)) / 2, size: [1.3, 3.2], noCollide: true, fp: [0.1, 0.1], h: 0 }); // (where a dodge sends her charge into the partition: about a metre out)
     // the weak partition itself (two windowed panels filling the opening; the level breaks them)
-    raw({ kind: 'partition', x: X(710), z: (z(1095) + z(1180)) / 2, w: 3.0, fp: [0.1, 0.1], h: 0, noCollide: true, name: 'partition' });
-    sign('← COLD DISPATCH', 'via Recovery Ward', X(920) - 0.6, 2.3, z(300) + 0.15, 's', 1.5);
-    sign('SERVICE ↓', 'Partition works', X(1060), 2.3, z(300) + 0.15, 's', 1.3);
-    sign('RENOVATION', 'Temporary partition — weak', X(710) + 0.16, 2.35, (z(1095) + z(1180)) / 2 + 2.2, 'e', 1.2);
-    sign('COLD DISPATCH ↓', 'Specimen hold', X(530), 2.3, z(760) + 0.15, 's', 1.3);
-    room('elevator', X(1214) + 3.5, 2.75, z(260) + 0.15, 's', 1.1);
-    room('recovery', X(445), 2.3, z(300) + 0.15, 's', 1.3);
-    room('lab', X(530), 2.3, z(1030) + 0.15, 's', 1.3);
+    raw({ kind: 'partition', x: X(710), z: (Z(1095) + Z(1180)) / 2, w: 3.0, fp: [0.1, 0.1], h: 0, noCollide: true, name: 'partition' });
+    // wayfinding
+    sign('← COLD DISPATCH', 'via the ward and the lab', X(920) - 0.6, 2.3, Z(300) + 0.15, 's', 1.5);
+    sign('SERVICE ↓', 'Ward 6C works', X(1060), 2.3, Z(300) + 0.15, 's', 1.3);
+    sign('WARD 6B', 'Surgical inpatients', -30.0, 2.35, -89.4, 's', 1.4);
+    sign('RENOVATION', 'Temporary partition — weak', X(710) + 0.16, 2.35, (Z(1095) + Z(1180)) / 2 + 2.2, 'e', 1.2);
+    sign('COLD DISPATCH ↓', 'Specimen hold', X(530), 2.3, Z(760) + 0.15, 's', 1.3);
+    sign('WARD 6C · CONVERSION', 'Contractors only', -14.4, 2.2, -69.4, 's', 1.5);
+    room('elevator', X(1214) + 3.5, 2.75, Z(260) + 0.15, 's', 1.1);
+    room('lab', -36.1, 2.38, -71.0, 's', 1.3);
   },
   groups: (Z) => [
     // W6: a broad ward, four spread between the beds (a worthwhile regular route, not padded)
@@ -561,7 +663,7 @@ const F6 = buildFloor(6, {
     { id: 'a6', sense: 9.0, zombies: [{ x: X(1060), z: Z(1150), yaw: -Math.PI / 2, kind: 'sprinter' }] },
   ],
   pickups: (Z) => [
-    { id: 'p6aid', kind: 'health', amount: 40, x: X(260), z: Z(895), r: 1.0, label: 'First-aid case', model: 'aid', y: 1.23 },
+    { id: 'p6aid', kind: 'health', amount: 40, x: -34.9, z: -65.8, r: 1.0, label: 'First-aid case', model: 'aid', y: 1.06 },
     // the guard's pistol and his open bag in the junction, where he and Yola parted before the call (no body: he went on down)
     { id: 'pistol', kind: 'weapon', weapon: 'pistol', x: X(1010), z: Z(545), r: 1.1, mag: 12, label: 'The guard’s pistol', model: 'pistol' },
     { id: 'ammo', kind: 'ammo', weapon: 'pistol', rounds: 24, x: X(1060), z: Z(540), r: 1.0, label: 'Guard’s bag: spare rounds', model: 'bag' },
@@ -585,10 +687,10 @@ const F5 = buildFloor(5, {
   rooms: [
     { id: 'e5', name: 'Lift Lobby', poly: [[1140, 260], [1319, 260], [1319, 580], [1140, 580]], floor: ['#e4d8bf', '#cfc4ab'], ob: ['corridor', 'clinical'] },
     { id: 'i5', name: 'Diagnostic Intake', poly: [[700, 300], [1140, 300], [1140, 580], [700, 580]], floor: ['#e6eef2', '#c4d6e2'], ob: ['clinical', 'clinical'] },
-    { id: 'd5', name: 'Transfer Hub', poly: [[700, 580], [1140, 580], [1140, 900], [700, 900]], floor: ['#efe2c8', '#d9c9a8'], ob: ['corridor', 'clinical'] },
-    { id: 'w5', name: 'Short Ward', poly: [[250, 580], [700, 580], [700, 1000], [250, 1000]], floor: ['#e9eedf', '#c8dcc4'], ob: ['corridor', 'clinical'] },
-    { id: 'r5', name: 'Transfer Records', poly: [[250, 1000], [700, 1000], [700, 1280], [250, 1280]], floor: ['#e2e8ea', '#bfd2da'], ob: ['clinical', 'clinical'] },
-    { id: 't5', name: 'Equipment Bay', poly: [[700, 900], [1250, 900], [1250, 1280], [700, 1280]], floor: ['#c9c4b8', '#b3ad9f'], ob: ['maintenance', 'maintenance'] },
+    { id: 'd5', name: 'Porters’ Transfer Hub', poly: [[700, 580], [1140, 580], [1140, 900], [700, 900]], floor: ['#efe2c8', '#d9c9a8'], ob: ['corridor', 'clinical'] },
+    { id: 'w5', name: 'Isolation Ward', poly: [[250, 580], [700, 580], [700, 1000], [250, 1000]], floor: ['#e9eedf', '#c8dcc4'], ob: ['corridor', 'clinical'] },
+    { id: 'r5', name: 'Medical Records', poly: [[250, 1000], [700, 1000], [700, 1280], [250, 1280]], floor: ['#e2e8ea', '#bfd2da'], ob: ['clinical', 'clinical'] },
+    { id: 't5', name: 'Imaging and Equipment Bay', poly: [[700, 900], [1250, 900], [1250, 1280], [700, 1280]], floor: ['#c9c4b8', '#b3ad9f'], ob: ['maintenance', 'maintenance'] },
   ],
   doors: [
     { id: 'e5_i5', o: 'v', c: 1140, a: 420, b: 500 },
@@ -599,45 +701,126 @@ const F5 = buildFloor(5, {
     { id: 't5_r5', o: 'v', c: 700, a: 1100, b: 1190 },
   ],
   dress({ p, wp, raw, sign, room, X, Z }) {
-    const z = Z;
-    // E5 | the lift lobby
-    p(M + 'decor/Reception_Linked_Seats_3.glb', 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
-    // I5 | the secured intake: the preservation cabinet on the back wall (where the case is held), a counter, a plant
-    p(H + 'thermanest.glb', X(830), z(300) + 0.45, 0, [1.0, 0.7], 1.6, { name: 'intake' });
-    p(K + 'pharmacy_locked_cupboard.glb', X(760), z(300) + 0.4, 0, [0.95, 0.55], 1.95);
-    p(U + '07_warmth_teamwork/TeamDesk_standard.glb', X(785), z(525), 0, [1.6, 0.8], 1.0);
-    p(U + '12_lobby/lobby_T2_floor_planter.glb', X(1085), z(527), 0, [0.55, 0.86], 1.2, { fit: true });
-    // D5 | the transfer hub: a parked bed and counter; both ways visible from here
-    p(H + 'procedure_stretcher.glb', X(790), z(630), 90, [0.9, 1.66], 1.22);
-    p(H + 'supply_cart.glb', X(1065), z(650), 0, [1.16, 1.1], 1.23);
-    p(M + 'decor/Reception_Linked_Seats_3.glb', X(1110) - 0.2, z(780), 270, [2.61, 0.62], 0.92);
-    p(U + '12_lobby/lobby_T2_floor_planter.glb', X(720), z(880), 0, [0.55, 0.86], 1.2, { fit: true });
-    // W5 | the short ward: beds and a table for controlled flanking, width kept for touch movement
-    p(H + 'recovery_bed.glb', X(330), z(650), 90, [1.25, 2.11], 0.87);
-    p(H + 'recovery_bed.glb', X(325), z(895), 90, [1.25, 2.11], 0.87);
-    p(H + 'break_table.glb', X(435), z(810), 0, [0.95, 0.86], 0.85);
-    p(H + 'privacy_screen.glb', X(390), z(770), 0, [0.14, 1.84], 1.97);
-    p(H + 'bedside_cabinet.glb', X(627), z(930), 0, [0.52, 0.63], 0.81);
-    // R5 | transfer records: the docket station (a desk with its screen) on the back wall, shelving
-    p(U + '09_assessment_furniture/runtime/consultation_desk_standard.glb', X(340), z(1255) - 0.45, 180, [1.5, 0.75], 0.78, { name: 'docket' });
-    p(K + 'pharmacy_medicine_shelf.glb', X(620), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
-    p(H + 'linen_cabinet.glb', X(280), z(1050), 90, [0.95, 0.59], 1.84);
-    raw({ kind: 'screen', x: X(340), z: z(1255) - 0.55, y: 0.78, fp: [0.1, 0.1], h: 0, noCollide: true, name: 'docketScreen' });
-    p(K + 'pharmacy_medicine_shelf.glb', X(470), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
-    p(U + '09_assessment_furniture/runtime/clinician_chair_standard.glb', X(340), z(1255) - 1.05, 0, [0.6, 0.6], 1.0, { noCollide: true });
-    // T5 | the broad equipment bay: long and open (lateral dodge room), a solid impact wall to the east, equipment at the edges
-    p(K + 'ct_scanner_gantry.glb', X(970), z(1075), 0, [2.13, 0.87], 2.26);
-    p(H + 'procedure_stretcher.glb', X(780), z(955), 90, [0.9, 1.66], 1.22);
-    p(U + '10_janitor_utility/starter/10_starter_rack.glb', X(1218), z(1005), 270, [0.82, 0.51], 1.82);
-    p(H + 'supply_shelf.glb', X(1218), z(1200), 270, [1.39, 0.53], 2.0);
-    p(U + '03_endoscopy/endoscopy_tower_standard.glb', X(760), z(1250), 0, [0.7, 0.6], 1.6);
-    sign('DIAGNOSTIC INTAKE', 'Specimen hold', X(920), 2.3, z(300) + 0.15, 's', 1.4);
-    sign('← RECORDS', 'Short ward', X(700) + 0.16, 2.3, z(745) - 1.8, 'e', 1.3);
-    sign('RECORDS ↓', 'Equipment bay', X(975) + 2.0, 2.3, z(580) + 0.15, 's', 1.3);
-    sign('TRANSFER RECORDS', 'Dispatch dockets', X(330), 2.3, z(1000) + 0.15, 's', 1.4);
-    room('elevator', X(1214) + 3.5, 2.75, z(260) + 0.15, 's', 1.1);
-    room('lab', X(830), 2.62, z(300) + 0.15, 's', 1.1);
-    room('recovery', X(420), 2.3, z(580) + 0.15, 's', 1.3);
+    // (2026-10-18, the user's layout pass, FLOORS_6_5_LAYOUT_PROPOSAL.html, approved: as Floor 6. NP = the props modelled for
+    // these floors in Blender, blender/make_ward_gap_props.py. The intake station and the docket desk are story anchors:
+    // INTAKE_SPOT follows the station's tray, the record interaction follows the desk.)
+    const NP = SI, C = { shelf: M + 'utility/Utility_Supply_Shelf.glb', counter: U + '09_assessment_furniture/runtime/prep_storage_standard.glb',
+      desk: U + '09_assessment_furniture/runtime/consultation_desk_standard.glb', chair: U + '09_assessment_furniture/runtime/clinician_chair_standard.glb',
+      station: U + '08_support_equipment/runtime/workstation_standard.glb' };
+    // E5 | LIFT LOBBY 5: the floor directory, seats and a cooler on the east wall
+    wp(H + 'lobby_t2_wayfinding.glb', 6.55, -171.0, 's', 1.45);
+    p(H + 'floor_planter.glb', 6.7, -169.6, 270, [1.12, 0.5], 1.52);
+    p(H + 'waiting_chair_section.glb', 6.45, -166.5, 270, [2.69, 0.97], 0.99);
+    p(H + 'water_cooler.glb', 6.7, -163.4, 270, [0.45, 0.49], 1.47);
+    wp(NP + 'fire_extinguisher.glb', 6.95, -161.2, 'w', 0.6);
+    wp(H + 'wall_sanitizer.glb', 6.95, -164.4, 'w', 1.05);
+    // I5 | DIAGNOSTIC INTAKE (the safe pocket): the intake station that takes the case (its lamp material IntakeLampAmber /
+    // IntakeLampGreen) between specimen fridges, the lab benches, the tube station; a low sample-reception desk near the camera
+    p(NP + 'specimen_fridge.glb', -15.25, -169.02, 0, [0.75, 0.76], 1.9);
+    p(NP + 'specimen_fridge.glb', -14.4, -169.02, 0, [0.75, 0.76], 1.9);
+    p(NP + 'intake_station.glb', X(830), -169.05, 0, [1.04, 0.7], 1.55, { name: 'intake' });
+    wp(H + 'glove_dispenser.glb', -11.4, -169.4, 's', 1.3);
+    wp(H + 'wall_sanitizer.glb', -10.75, -169.4, 's', 1.05);
+    p(C.counter, -9.6, -169.07, 0, [1.51, 0.66], 1.09);
+    raw({ m: K + 'lab_centrifuge.glb', x: -9.95, z: -169.07, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
+    raw({ m: K + 'lab_microscope.glb', x: -9.2, z: -169.07, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
+    wp(NP + 'pneumatic_tube_station.glb', -7.9, -169.4, 's', 0.75);
+    p(C.counter, -6.2, -169.07, 0, [1.51, 0.66], 1.09);
+    raw({ m: K + 'lab_sample_rack.glb', x: -6.2, z: -169.0, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
+    p(C.station, -4.4, -169.09, 0, [0.83, 0.62], 1.47);
+    wp(H + 'wall_clock.glb', -3.0, -169.4, 's', 1.95);
+    p(H + 'biohazard_bin.glb', -1.0, -169.1, 0, [0.39, 0.39], 0.69);
+    p(K + 'pharmacy_medicine_shelf.glb', -17.24, -165.6, 90, [1.39, 0.53], 1.95);
+    wp(H + 'clinical_art_digestive.glb', -17.5, -163.4, 'e', 1.3);
+    p(C.desk, -13.5, -160.6, 0, [1.5, 0.72], 0.81);
+    p(C.chair, -13.5, -161.4, 180, [0.6, 0.6], 1.0, { noCollide: true });
+    p(U + '12_lobby/lobby_T2_floor_planter.glb', X(1085), Z(527), 0, [0.55, 0.86], 1.2, { fit: true });
+    // D5 | PORTERS' TRANSFER HUB: the porters' desk and jobs board, wheelchairs and trolleys parked, a wayfinding sign: both ways
+    // to the records read from the north door before the choice
+    p(H + 'team_desk.glb', -15.0, -157.83, 0, [1.13, 0.74], 1.16);
+    wp(H + 'assessment_status_board.glb', -15.0, -158.2, 's', 1.45);
+    wp(H + 'team_wall_station.glb', -13.6, -158.2, 's', 0.75);
+    p(H + 'charting_workstation.glb', -12.6, -157.89, 0, [0.83, 0.62], 1.47);
+    wp(H + 'wall_clock.glb', -11.2, -158.2, 's', 1.95);
+    for (const x of [-4.6, -3.85, -3.1]) p(H + 'wheelchair.glb', x, -157.7, 0, [0.76, 0.91], 0.97);
+    wp(H + 'lobby_t2_wayfinding.glb', -1.4, -158.2, 's', 1.6);
+    p(H + 'procedure_stretcher.glb', -0.7, -154.8, 0, [0.9, 1.66], 1.22);
+    p(H + 'procedure_stretcher.glb', -0.7, -152.6, 0, [0.9, 1.66], 1.22);
+    p(H + 'waiting_chair_section.glb', -0.69, -149.6, 270, [2.69, 0.97], 0.99);
+    p(H + 'laundry_hamper.glb', -17.0, -156.0, 0, [0.6, 0.57], 1.15);
+    p(H + 'lidded_waste_bin.glb', -17.3, -147.2, 0, [0.36, 0.4], 0.58);
+    wp(NP + 'fire_extinguisher.glb', -17.5, -155.2, 'e', 0.6);
+    p(U + '12_lobby/lobby_T2_floor_planter.glb', X(720), Z(880), 0, [0.55, 0.86], 1.2, { fit: true });
+    // W5 | ISOLATION WARD (the shield carrier): three glass-divided isolation bays on the camera wall with PPE signs, the PPE
+    // station; the open half south of them keeps its width, with a shoved bed and a trolley for controlled flanking
+    for (const bc of [-33.4, -29.4, -25.4]) {
+      p(H + 'recovery_bed.glb', bc, -157.14, 0, [1.25, 2.11], 0.87);
+      wp(H + 'service_headwall.glb', bc, -158.2, 's', 1.24);
+      p(H + 'patient_monitor.glb', bc + 1.1, -157.85, 0, [0.62, 0.71], 1.49);
+      p(H + 'bedside_cabinet.glb', bc - 1.05, -157.88, 0, [0.52, 0.63], 0.81);
+      wp(K + 'isolation_ppe_sign.glb', bc, -158.2, 's', 2.15);
+    }
+    for (const x of [-31.4, -27.4, -23.4]) for (const z of [-157.2, -155.2]) p(K + 'isolation_windowed_partition.glb', x, z, 90, [2.0, 0.15], 2.4);
+    p(H + 'laundry_hamper.glb', -22.8, -157.8, 0, [0.6, 0.57], 1.15);
+    p(NP + 'ppe_trolley.glb', -21.4, -157.9, 0, [0.87, 0.57], 1.26);
+    wp(H + 'glove_dispenser.glb', -20.5, -158.2, 's', 1.25);
+    wp(H + 'glove_dispenser.glb', -20.0, -158.2, 's', 1.25);
+    wp(H + 'wall_sanitizer.glb', -19.5, -158.2, 's', 1.05);
+    p(H + 'biohazard_bin.glb', -19.0, -157.9, 0, [0.39, 0.39], 0.69);
+    p(H + 'biohazard_bin.glb', -18.5, -157.9, 0, [0.39, 0.39], 0.69);
+    p(H + 'recovery_bed.glb', -30.0, -148.0, 90, [1.25, 2.11], 0.87);
+    p(H + 'procedure_stretcher.glb', -22.5, -147.0, 0, [0.9, 1.66], 1.22);
+    p(H + 'supply_cart.glb', -33.5, -145.5, 0, [1.16, 1.1], 1.23);
+    p(H + 'linen_cabinet.glb', -35.17, -149.5, 90, [0.95, 0.65], 1.84);
+    p(H + 'bedside_cabinet.glb', X(627), Z(930), 0, [0.52, 0.63], 0.81);
+    // R5 | MEDICAL RECORDS (calm): the docket desk on the camera wall, its lit screen facing the player; filing cabinets,
+    // archive shelving, two office desks
+    p(C.desk, -32.05, -141.04, 0, [1.5, 0.72], 0.81, { name: 'docket' });
+    raw({ kind: 'screen', x: -32.05, z: -141.1, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true, name: 'docketScreen' });
+    p(C.chair, -32.05, -140.1, 180, [0.6, 0.6], 1.0, { noCollide: true });
+    wp(H + 'assessment_status_board.glb', -33.6, -141.4, 's', 1.4);
+    wp(H + 'wall_clock.glb', -30.4, -141.4, 's', 1.95);
+    for (const x of [-29.9, -29.35, -28.8, -19.2, -18.65]) p(NP + 'filing_cabinet.glb', x, -140.96, 0, [0.47, 0.88], 1.32);
+    p(C.shelf, -22.2, -141.13, 0, [1.39, 0.53], 2.0);
+    p(C.shelf, -20.75, -141.13, 0, [1.39, 0.53], 2.0);
+    p(K + 'pharmacy_medicine_shelf.glb', -35.24, -138.0, 90, [1.39, 0.53], 1.95);
+    p(K + 'pharmacy_medicine_shelf.glb', -35.24, -136.5, 90, [1.39, 0.53], 1.95);
+    p(H + 'water_cooler.glb', -35.25, -133.4, 90, [0.45, 0.49], 1.47);
+    for (const x of [-30.5, -27.8]) {
+      p(C.desk, x, -135.8, 0, [1.5, 0.72], 0.81);
+      raw({ m: H + 'desktop_computer.glb', x, z: -135.9, rot: 0, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+    }
+    p(C.chair, -30.5, -135.0, 180, [0.6, 0.6], 1.0, { noCollide: true });
+    wp(NP + 'fire_extinguisher.glb', -17.8, -139.6, 'w', 0.6);
+    // T5 | IMAGING AND EQUIPMENT BAY (the charger): the CT scanner on the camera wall with its table, controls, sign and a
+    // lead-apron rack; parked anaesthesia, endoscopy, airway and X-ray kit along the wall; the long open floor stays her lane
+    p(K + 'ct_scanner_gantry.glb', -13.0, -144.96, 0, [2.13, 0.87], 2.26);
+    p(K + 'ct_sliding_patient_table.glb', -13.0, -143.5, 0, [0.71, 2.05], 1.11);
+    p(K + 'ct_control_pedestal.glb', -15.9, -145.1, 0, [0.53, 0.49], 1.16);
+    wp(K + 'sign_ct_imaging.glb', -13.0, -145.4, 's', 2.36);
+    wp(NP + 'lead_apron_rack.glb', -10.6, -145.4, 's', 0.95);
+    wp(H + 'wall_clock.glb', -9.0, -145.4, 's', 1.95);
+    p(H + 'anesthesia_workstation.glb', -3.6, -145.05, 0, [1.1, 0.7], 1.55);
+    p(H + 'endoscopy_tower.glb', -2.4, -145.1, 0, [0.74, 0.6], 1.65);
+    p(H + 'airready.glb', -1.2, -145.03, 0, [0.94, 0.74], 1.37);
+    p(H + 'patient_monitor.glb', 0.0, -145.05, 0, [0.62, 0.71], 1.49);
+    p(NP + 'mobile_xray.glb', 1.6, -144.7, 0, [0.67, 1.39], 1.68);
+    for (const x of [3.3, 3.75]) p(H + 'medical_gas_cylinder.glb', x, -145.18, 0, [0.39, 0.43], 1.15);
+    p(U + '10_janitor_utility/starter/10_starter_rack.glb', X(1218), Z(1005), 270, [0.82, 0.51], 1.82);
+    p(H + 'wheelchair.glb', 3.75, -139.0, 270, [0.76, 0.91], 0.97);
+    p(H + 'wheelchair.glb', 3.75, -138.2, 270, [0.76, 0.91], 0.97);
+    p(H + 'supply_shelf.glb', X(1218), Z(1200), 270, [1.39, 0.53], 2.0);
+    wp(NP + 'fire_extinguisher.glb', 4.2, -136.5, 'w', 0.6);
+    p(H + 'procedure_stretcher.glb', -12.5, -131.2, 90, [0.9, 1.66], 1.22);
+    // wayfinding
+    sign('DIAGNOSTIC INTAKE', 'Specimen hold', X(920), 2.3, Z(300) + 0.15, 's', 1.4);
+    sign('← RECORDS', 'via the isolation ward', X(700) + 0.16, 2.3, Z(745) - 1.8, 'e', 1.3);
+    sign('RECORDS ↓', 'via the imaging bay', X(975) + 2.0, 2.3, Z(580) + 0.15, 's', 1.3);
+    sign('TRANSFER RECORDS', 'Dispatch dockets', X(330), 2.3, Z(1000) + 0.15, 's', 1.4);
+    sign('ISOLATION', 'Gown and glove', -21.0, 2.35, -158.2, 's', 1.3);
+    sign('IMAGING · EQUIPMENT', '', -1.0, 2.35, -145.4, 's', 1.4);
+    room('elevator', X(1214) + 3.5, 2.75, Z(260) + 0.15, 's', 1.1);
+    room('lab', X(830), 2.62, Z(300) + 0.15, 's', 1.1);
   },
   groups: (Z) => [
     { id: 'd5', sense: 5.0, zombies: [{ x: X(950), z: Z(780), yaw: 2.6, look: 'patient' }] },
@@ -652,7 +835,7 @@ const F5 = buildFloor(5, {
   ],
   interact: (Z) => [
     { id: 'intake', x: X(830), z: Z(300) + 1.35, r: 1.6, label: 'Secure the case' },
-    { id: 'record', x: X(340), z: Z(1255) - 1.4, r: 1.6, label: 'Read the dispatch record' },
+    { id: 'record', x: -32.05, z: -139.7, r: 1.6, label: 'Read the dispatch record' },
   ],
   lights: (Z) => [{ x: X(1214), y: 2.3, z: Z(300) }, { x: X(830), y: 2.4, z: Z(330) }, { x: X(340), y: 2.4, z: Z(1200) }],
   blood: (Z) => [
@@ -666,8 +849,8 @@ const F5 = buildFloor(5, {
 
 export const FLOORS = { 7: F7, 6: F6, 5: F5 };
 // the case's home (cold dispatch, on the counter) and the intake's hold position
-export const CASE_HOME = { floor: 6, x: X(305), z: Zf(FLOOR_Z[6])(1077), y: 0.74 };
-export const INTAKE_SPOT = { floor: 5, x: X(830), z: Zf(FLOOR_Z[5])(300) + 0.45, y: 1.6 };
+export const CASE_HOME = { floor: 6, x: -34.6, z: -59.84, y: 1.09 }; // (on the dispatch counter, on K6's camera wall; was a café table mid-room)
+export const INTAKE_SPOT = { floor: 5, x: X(830), z: -169.1, y: 1.23 }; // (the intake station's tray, assets/props/intake_station.glb)
 // everything the renderer builds once: all three floors in one world
 export const CHAPTER = {
   name: 'chapter',

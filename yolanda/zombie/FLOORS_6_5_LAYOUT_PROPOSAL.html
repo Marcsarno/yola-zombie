@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floors 6 and 5 layout proposal</title>
+<style>
+  :root { --bg:#f6f4ef; --card:#fff; --ink:#24231f; --mut:#6b6a63; --line:#c9c6bc; --wall:#3d3c37; --cam:#b8322b;
+    --ob:#e8866a; --ob-s:#9b3a1f; --clean:#8fb8e6; --clean-s:#1f5a96; --build:#efb04a; --build-s:#8a5a0c; --box:#b4b2a9; --box-s:#55544f;
+    --gap:#7fd3a8; --gap-s:#0d6b46; --wallitem:#7f77dd; --clear:rgba(70,170,110,.18); --clear-s:rgba(40,130,80,.55); --bad:#d62f2f; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#1d1d1b; --card:#262624; --ink:#ecebe6; --mut:#a3a29b; --line:#4a4944; --wall:#d8d6cf; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui, sans-serif; }
+  header, main { max-width: 1240px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 4px 0; } h2 { font-size: 17px; font-weight: 600; margin: 24px 0 8px; }
+  .sub { color: var(--mut); margin: 0; }
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin: 12px 0; }
+  .bar button { font:inherit; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+  .bar button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .bar label { display:flex; gap:6px; align-items:center; color:var(--mut); }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--mut); }
+  .sw { display:inline-block; width:14px; height:10px; border-radius:2px; vertical-align:middle; margin-right:5px; border:1px solid; }
+  .mapwrap { overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+  svg text { font-family: system-ui, sans-serif; }
+  #tip { position: fixed; pointer-events:none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 6px; font-size: 12px; max-width: 320px; display:none; z-index:5; }
+  .rooms { display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-top: 16px; }
+  .room { background: var(--card); border:1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .room h3 { margin: 0 0 2px; font-size: 15px; } .room .was { color: var(--mut); font-size: 12px; margin: 0 0 6px; }
+  .room ul { margin: 4px 0 0 18px; padding: 0; } .room li { margin: 2px 0; }
+  .flag { color: var(--bad); font-weight: 600; } .new { color: var(--gap-s); font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; background: var(--card); border:1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; } th { color: var(--mut); font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Floors 6 and 5: furniture layout proposal</h1>
+  <p class="sub">Same top-down plan as Floor 7 (north at the top = the wall the locked camera sees). Route, room shapes, doors and every story beat from your brief stay; names, purposes and furniture change. Green items are gaps: new props to model in Blender. Hover anything for its file and notes.</p>
+  <div class="bar">
+    <button id="b6" class="on">Floor 6</button><button id="b5">Floor 5</button>
+    <span style="width:12px"></span>
+    <button id="bProp" class="on">Proposed</button><button id="bCur">Current (in game now)</button>
+    <label><input type="checkbox" id="cLab" checked> Labels</label>
+    <label><input type="checkbox" id="cClear" checked> Doorway keep-clear zones</label>
+    <label><input type="checkbox" id="cGame" checked> Story, pickups and zombies</label>
+    <label>Zoom <input type="range" id="zoom" min="0.5" max="1.8" step="0.1" value="1"></label>
+  </div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--ob);border-color:var(--ob-s)"></i>Outbreak (damaged) prop</span>
+    <span><i class="sw" style="background:var(--clean);border-color:var(--clean-s)"></i>Clean prop (calm rooms)</span>
+    <span><i class="sw" style="background:var(--build);border-color:var(--build-s)"></i>Construction / your painted props</span>
+    <span><i class="sw" style="background:var(--gap);border-color:var(--gap-s)"></i>GAP: new prop to build in Blender</span>
+    <span><i class="sw" style="background:var(--box);border-color:var(--box-s)"></i>Engine box / story object</span>
+    <span><i class="sw" style="background:transparent;border:2px solid var(--wallitem)"></i>Wall-mounted</span>
+    <span><i class="sw" style="background:var(--clear);border-color:var(--clear-s)"></i>Keep clear (doorway)</span>
+    <span><i class="sw" style="background:transparent;border:2px solid var(--cam)"></i>Camera-facing wall</span>
+    <span><i class="sw" style="background:transparent;border:2px solid var(--bad)"></i>Blocks a doorway</span>
+  </div>
+</header>
+<main>
+  <div class="mapwrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div id="tip"></div>
+  <div class="rooms" id="rooms"></div>
+  <h2>Gaps: new props to build in Blender (after you approve the layout)</h2>
+  <p class="sub" style="margin-bottom:8px">Modelled in your open Blender session, in the Outbreak palette (ivory, teal, navy, satin metal), with sources in blender/ and exports in assets/props. Calm rooms get clean versions; fight rooms get a damaged pass. No paid generators.</p>
+  <table id="gaps"></table>
+</main>
+<script>
+const CURRENT = { 6: {"oz":-80,"rooms":[{"id":"e6","name":"Lift Lobby","rects":[[-0.05,7.1,-91.15,-78.35]]},{"id":"j6","name":"Junction","rects":[[-17.65,-0.05,-89.55,-78.35]]},{"id":"w6","name":"Recovery Ward","rects":[[-38.45,-17.65,-89.55,-78.35],[-38.45,-20.85,-78.35,-71.15]]},{"id":"p6","name":"Preparation","rects":[[-38.45,-20.85,-71.15,-60.35]]},{"id":"k6","name":"Cold Dispatch","rects":[[-38.45,-17.25,-60.35,-50.35]]},{"id":"sp6","name":"Service Passage","rects":[[-12.45,-5.65,-78.35,-69.55]]},{"id":"a6","name":"Partition Works","rects":[[-17.25,-0.05,-69.55,-50.35]]}],"doors":[{"id":"e6_j6","kind":"open","axis":"z","x":-0.05,"z":-83.15,"w":3.2},{"id":"j6_w6","kind":"open","axis":"z","x":-17.65,"z":-83.15,"w":3.2},{"id":"w6_p6","kind":"open","axis":"x","x":-29.85,"z":-71.15,"w":3.6},{"id":"p6_k6","kind":"open","axis":"x","x":-29.85,"z":-60.35,"w":3.6},{"id":"j6_sp6","kind":"open","axis":"x","x":-9.25,"z":-78.35,"w":4.8},{"id":"sp6_a6","kind":"open","axis":"x","x":-9.25,"z":-69.55,"w":4.8},{"id":"partition","kind":"partition","axis":"z","x":-17.25,"z":-56.05,"w":3},{"id":"lift6","kind":"lift","axis":"x","x":2.9,"z":-91.2,"w":5.28}],"props":[["Reception_Linked_Seats_3",4.9,-79.55,180,2.61,0.62,"","clean"],["lobby_T2_floor_planter",6.5,-90.15,0,0.55,0.86,"","clean"],["procedure_stretcher",-14.45,-88.05,90,1.66,0.9,"","ob"],["wheelchair",-1.65,-88.35,0,0.76,0.91,"","ob"],["Reception_Linked_Seats_3",-9.65,-89.15,0,2.61,0.62,"","clean"],["lobby_T2_floor_planter",-16.85,-88.75,0,0.55,0.86,"","clean"],["recovery_bed",-35.95,-86.45,0,1.25,2.11,"","ob"],["bedside_cabinet",-35,-88.75,0,0.52,0.63,"","ob"],["recovery_bed",-29.75,-86.45,0,1.25,2.11,"","ob"],["bedside_cabinet",-28.8,-88.75,0,0.52,0.63,"","ob"],["recovery_bed",-22.55,-86.45,0,1.25,2.11,"","ob"],["bedside_cabinet",-21.6,-88.75,0,0.52,0.63,"","ob"],["privacy_screen",-32.85,-86.45,0,0.14,1.84,"","ob"],["recovery_bed",-30.95,-78.45,90,2.11,1.25,"","ob"],["recovery_bed",-23.35,-76.75,0,1.25,2.11,"","ob"],["iv_stand",-28.05,-79.15,0,0.68,0.65,"","ob"],["patient_monitor",-37.65,-73.95,90,0.71,0.62,"","ob"],["linen_cabinet",-34.85,-69.95,0,0.95,0.59,"","ob"],["sedaprep",-24.45,-64.75,0,1,0.6,"","ob"],["supply_cart",-35.25,-65.75,90,1.1,1.16,"","ob"],["10_starter_steel_sink",-23.25,-70.15,0,0.87,0.63,"","clean"],["pharmacy_locked_cupboard",-35.25,-51.35,180,0.95,0.55,"","clean"],["pharmacy_locked_cupboard",-30.85,-51.35,180,0.95,0.55,"","clean"],["pharmacy_medicine_shelf",-20.05,-51.35,180,1.39,0.53,"","clean"],["Lounge_Break_Table",-33.45,-58.45,0,0.9,0.9,"","clean"],["lab_sample_rack",-23.25,-58.45,0,0.1,0.1,"","clean"],["Lounge_Break_Table",-23.25,-58.45,0,0.9,0.9,"","clean"],["thermanest",-25.65,-51.5,180,0.81,0.69,"","ob"],["supply_cart",-37.65,-54.35,90,1.1,1.16,"","ob"],["supply_shelf",-1.25,-66.35,270,0.53,1.39,"","ob"],["10_starter_rack",-1.25,-54.35,270,0.51,0.82,"","clean"],["hazard",-16.25,-56.05,0,0.1,0.1,"","box"],["bench",-5.65,-51.55,0,1.8,0.65,"","box"],["wet_floor_sign",-15.25,-67.15,0,0.36,0.66,"","ob"],["box",-1.65,-61.15,0,0.8,1.4,"","box"],["isolation_windowed_partition",-1.25,-57.95,90,0.15,2,"","clean"],["partition",-17.25,-56.05,0,0.1,0.1,"","box"]],"pickups":[["First-aid case",-35.25,-65.75],["The guard’s pistol",-5.25,-79.75],["Guard’s bag: spare rounds",-3.25,-79.95]],"interact":[],"groups":[["w6",[[-33.65,-82.75,""],[-24.85,-81.55,""],[-35.25,-75.15,""],[-26.85,-73.55,""]]],["p6",[[-33.65,-67.95,""],[-26.45,-62.35,""]]],["a6",[[-3.25,-55.55,"sprinter"]]]],"start":{"x":2.9,"z":-90,"yaw":0},"lift":{"x":2.9,"z":-91.2}}, 5: {"oz":-160,"rooms":[{"id":"e5","name":"Lift Lobby","rects":[[-0.05,7.1,-171.15,-158.35]]},{"id":"i5","name":"Diagnostic Intake","rects":[[-17.65,-0.05,-169.55,-158.35]]},{"id":"d5","name":"Transfer Hub","rects":[[-17.65,-0.05,-158.35,-145.55]]},{"id":"w5","name":"Short Ward","rects":[[-35.65,-17.65,-158.35,-141.55]]},{"id":"r5","name":"Transfer Records","rects":[[-35.65,-17.65,-141.55,-130.35]]},{"id":"t5","name":"Equipment Bay","rects":[[-17.65,4.35,-145.55,-130.35]]}],"doors":[{"id":"e5_i5","kind":"open","axis":"z","x":-0.05,"z":-163.15,"w":3.2},{"id":"i5_d5","kind":"open","axis":"x","x":-7.85,"z":-158.35,"w":3.6},{"id":"d5_w5","kind":"open","axis":"z","x":-17.65,"z":-151.75,"w":3.6},{"id":"d5_t5","kind":"open","axis":"x","x":-6.65,"z":-145.55,"w":3.6},{"id":"w5_r5","kind":"open","axis":"x","x":-25.85,"z":-141.55,"w":3.6},{"id":"t5_r5","kind":"open","axis":"z","x":-17.65,"z":-135.75,"w":3.6},{"id":"lift5","kind":"lift","axis":"x","x":2.9,"z":-171.2,"w":5.28}],"props":[["Reception_Linked_Seats_3",4.9,-159.55,180,2.61,0.62,"","clean"],["thermanest",-12.45,-169.1,0,1,0.7,"","ob"],["pharmacy_locked_cupboard",-15.25,-169.15,0,0.95,0.55,"","clean"],["TeamDesk_standard",-14.25,-160.55,0,1.6,0.8,"","clean"],["lobby_T2_floor_planter",-2.25,-160.45,0,0.55,0.86,"","clean"],["procedure_stretcher",-14.05,-156.35,90,1.66,0.9,"","ob"],["supply_cart",-3.05,-155.55,0,1.16,1.1,"","ob"],["Reception_Linked_Seats_3",-1.45,-150.35,270,0.62,2.61,"","clean"],["lobby_T2_floor_planter",-16.85,-146.35,0,0.55,0.86,"","clean"],["recovery_bed",-32.45,-155.55,90,2.11,1.25,"","ob"],["recovery_bed",-32.65,-145.75,90,2.11,1.25,"","ob"],["break_table",-28.25,-149.15,0,0.95,0.86,"","ob"],["privacy_screen",-30.05,-150.75,0,0.14,1.84,"","ob"],["bedside_cabinet",-20.55,-144.35,0,0.52,0.63,"","ob"],["consultation_desk_standard",-32.05,-131.8,180,1.5,0.75,"","clean"],["pharmacy_medicine_shelf",-20.85,-131.35,180,1.39,0.53,"","clean"],["linen_cabinet",-34.45,-139.55,90,0.59,0.95,"","ob"],["screen",-32.05,-131.9,0,0.1,0.1,"","box"],["pharmacy_medicine_shelf",-26.85,-131.35,180,1.39,0.53,"","clean"],["clinician_chair_standard",-32.05,-132.4,0,0.6,0.6,"","clean"],["ct_scanner_gantry",-6.85,-138.55,0,2.13,0.87,"","clean"],["procedure_stretcher",-14.45,-143.35,90,1.66,0.9,"","ob"],["10_starter_rack",3.1,-141.35,270,0.51,0.82,"","clean"],["supply_shelf",3.1,-133.55,270,0.53,1.39,"","ob"],["endoscopy_tower_standard",-15.25,-131.55,0,0.7,0.6,"","clean"]],"pickups":[["First-aid case",-20.55,-144.35],["Spare pistol rounds",1.55,-135.95]],"interact":[["Secure the case",-12.45,-168.2],["Read the dispatch record",-32.05,-132.75]],"groups":[["d5",[[-7.65,-150.35,""]]],["w5",[[-23.25,-148.75,"guard"],[-32.45,-151.15,""],[-26.85,-143.55,""]]],["t5",[[0.35,-133.55,"sprinter"],[-10.45,-134.35,""],[-2.45,-143.15,""]]]],"start":{"x":2.9,"z":-170,"yaw":0},"lift":{"x":2.9,"z":-171.2}} };
+
+const PX = (px) => Math.round((px - 1141) / 25 * 20) / 20;
+const PZ = (oz) => (py) => Math.round(((py - 260) / 25 - 11.15 + oz) * 20) / 20;
+const POLYS = {
+  6: { e6: [[1140,260],[1319,260],[1319,580],[1140,580]], j6: [[700,300],[1140,300],[1140,580],[700,580]], w6: [[180,300],[700,300],[700,580],[620,580],[620,760],[180,760]],
+    p6: [[180,760],[620,760],[620,1030],[180,1030]], k6: [[180,1030],[710,1030],[710,1280],[180,1280]], sp6: [[830,580],[1000,580],[1000,800],[830,800]], a6: [[710,800],[1140,800],[1140,1280],[710,1280]] },
+  5: { e5: [[1140,260],[1319,260],[1319,580],[1140,580]], i5: [[700,300],[1140,300],[1140,580],[700,580]], d5: [[700,580],[1140,580],[1140,900],[700,900]],
+    w5: [[250,580],[700,580],[700,1000],[250,1000]], r5: [[250,1000],[700,1000],[700,1280],[250,1280]], t5: [[700,900],[1250,900],[1250,1280],[700,1280]] },
+};
+const OZ = { 6: -80, 5: -160 };
+const ROOMFILL = { e6:'#e9e1cf', j6:'#efe5d2', w6:'#e6ece0', p6:'#e2e9ec', k6:'#e3ecf0', sp6:'#d5d0c4', a6:'#d3d1c7', e5:'#e9e1cf', i5:'#e3ecf0', d5:'#efe5d2', w5:'#e6ece0', r5:'#e2e9ec', t5:'#d5d0c4' };
+
+const DIM = {
+  reception_desk:[2.2,.9], supply_cart:[1.16,1.1], waiting_chair_section:[2.69,.97], bedside_cabinet:[.52,.63], patient_monitor:[.62,.71],
+  recovery_bed:[1.25,2.11], endoscopy_tower:[.74,.6], iv_stand:[.73,.7], medical_gas_cylinder:[.39,.43], procedure_stretcher:[.9,1.66],
+  wheelchair:[.76,.91], biohazard_bin:[.39,.39], lidded_waste_bin:[.36,.4], handwash_cabinet_base:[.51,.7], linen_cabinet:[.95,.65], prep_storage:[1.51,.72],
+  charting_workstation:[.83,.62], clinician_chair:[.65,.61], consultation_desk:[1.5,.73], visitor_chair:[.47,.47], janitor_cart:[.83,.99], laundry_hamper:[.6,.57],
+  mop:[.34,.25], wet_floor_sign:[.48,.66], supply_shelf:[1.39,.56], utility_sink:[.88,.51], water_cooler:[.45,.49], airready:[.94,.74], sedaprep:[1.12,.72],
+  team_desk:[1.13,.74], team_stool:[.36,.34], prep_counter:[1.51,.69], floor_planter:[1.12,.5], anesthesia_workstation:[1.1,.7], desktop_computer:[.5,.42],
+  check_in_kiosk:[.39,.36], ct_scanner_gantry:[2.13,.87], ct_sliding_patient_table:[.71,2.05], ct_control_pedestal:[.53,.49], lab_centrifuge:[.44,.4], lab_microscope:[.27,.37], lab_sample_rack:[.32,.1],
+  pharmacy_medicine_shelf:[1.39,.53], isolation_windowed_partition:[2.0,.15], sawhorse_barrier:[1.9,.73], drywall_pallet:[1.41,1.69],
+  standin_cable_workbench:[1.8,.76], standin_paint_shelf:[1.19,.44], standin_renovation_pallet:[1.25,1.02], bench:[1.8,.65], box:[1.4,.8], partition:[.3,3.0],
+  hazard_floor:[2.6,1.4], case:[.42,.32], docket_screen:[.6,.1], guard_bag:[.6,.4], starter_rack:[.82,.51],
+  // gaps (to build)
+  specimen_fridge:[.75,.7], intake_station:[1.0,.7], courier_coolers:[.6,.42], pneumatic_tube_station:[.5,.25], filing_cabinet:[.47,.62], ppe_trolley:[.9,.55],
+  mobile_xray:[.8,1.3], lead_apron_rack:[.9,.2], fire_extinguisher:[.3,.18], dust_sheet_furniture:[1.6,1.0], dust_sheet_small:[1.2,.8], stud_wall_frame:[.12,3.6], scaffold_tower:[1.8,.8], over_bed_table:[.8,.45],
+  // wall
+  service_headwall:[1.72,.26], sharps_container:[.26,.21], handwash_basin:[.55,.46], soap_dispenser:[.16,.13], towel_dispenser:[.28,.3], wall_cupboard:[1.1,.48],
+  glove_dispenser:[.34,.18], wall_sanitizer:[.17,.14], toolboard:[1.16,.21], wall_shelf:[1.08,.31], assessment_status_board:[.77,.14], wall_clock:[.48,.13],
+  team_wall_station:[.8,.32], lobby_t2_health_poster:[.66,.08], lobby_t2_wayfinding:[.9,.07], reception_poster_clinician:[.59,.07], wall_exam_set:[.5,.24],
+  clinical_art_preparation_checklist:[.64,.15], clinical_art_digestive:[.76,.15], recovery_bay_sign_01:[.37,.07], recovery_bay_sign_02:[.37,.07],
+  isolation_ppe_sign:[1.48,.12], sign_ct_imaging:[.9,.07], printed_sign:[1.4,.05], room_png:[1.3,.05], standin_tool_pegboard:[1.2,.06],
+};
+const GAPS = {
+  specimen_fridge: ['Specimen fridge', '0.75 × 0.70 × 1.90 m', 'Cold Dispatch ×3, Diagnostic Intake ×2', 'High (story)', 'Upright lab fridge, glass door, wire racks of sample tubes and bagged specimens, a digital temperature display, a lock. Replaces the wall cupboards that currently stand in on the floor. Clean version.'],
+  intake_station: ['Intake preservation station', '1.00 × 0.70 × 1.25 m', 'Diagnostic Intake ×1', 'High (story)', 'The station that accepts the case: a stainless cabinet with a recessed tray on top for the case, a small status panel (amber "awaiting", green "secured") the game can switch. Replaces the warming cabinet stand-in; the case’s hold height follows its top.'],
+  pneumatic_tube_station: ['Pneumatic tube station', '0.50 × 0.25 × 0.90 m (wall)', 'Cold Dispatch, Diagnostic Intake', 'Medium', 'Wall-mounted sender/receiver with a carrier in the cradle and the pipe running up into the ceiling: says "samples move between floors" at a glance.'],
+  courier_coolers: ['Courier cooler stack', '0.60 × 0.42 × 0.95 m', 'Cold Dispatch', 'Medium', 'Three stacked insulated transport boxes with biohazard / UN3373 labels and handles; the dispatch room’s outgoing stock.'],
+  filing_cabinet: ['Filing cabinet', '0.47 × 0.62 × 1.32 m', 'Medical Records ×5', 'Medium', 'Four-drawer steel cabinet, one drawer pulled out with folders in it; the clean version for the records office.'],
+  ppe_trolley: ['PPE donning trolley', '0.90 × 0.55 × 1.30 m', 'Isolation Ward', 'Medium', 'A wire trolley with gown packs, glove boxes, masks and visors, apron roll on top: the isolation ward’s entry station.'],
+  mobile_xray: ['Mobile X-ray unit', '0.80 × 1.30 × 1.80 m', 'Imaging Bay', 'Medium', 'Wheeled base, column, folded arm and tube head: the classic shape that reads as imaging from the fixed camera.'],
+  lead_apron_rack: ['Lead apron rack', '0.90 × 0.20 × 1.00 m (wall)', 'Imaging Bay', 'Low', 'A wall rail with three hanging lead aprons and a thyroid collar.'],
+  fire_extinguisher: ['Fire extinguisher point', '0.30 × 0.18 × 0.80 m (wall)', 'Every floor, corridors and lobbies', 'Medium (cheap, very "hospital")', 'Red extinguisher on a bracket with the square fire-point sign above it.'],
+  dust_sheet_furniture: ['Dust-sheeted furniture', '1.6 × 1.0 × 1.1 m, plus a small variant', 'Conversion Works (and Floor 7’s refurbishment)', 'Medium', 'Old furniture pushed together under draped dust sheets: lumpy silhouettes of a bed end, a cabinet, a chair.'],
+  stud_wall_frame: ['Metal stud frame', '3.6 m long × 0.12 × 2.6 m', 'Conversion Works', 'Medium', 'Galvanised stud-and-track framing of the new wall going up either side of the weak partition, so the partition reads as the unfinished bit.'],
+  scaffold_tower: ['Mobile scaffold tower', '1.8 × 0.8 × 2.4 m', 'Conversion Works', 'Low', 'Aluminium access tower with a platform, braces and locking castors.'],
+  over_bed_table: ['Over-bed table', '0.80 × 0.45 × 0.90 m', 'Surgical Ward (and Floor 7’s wards)', 'Low', 'The wheeled C-base table that sits over every hospital bed: a jug, a cup and a get-well card on it.'],
+};
+
+// ------------------------------------------------------------------ proposals
+const P = { 6: [], 5: [] };
+let FL = 6, ROOM = '';
+const F = (a, x, z, rot = 0, cat = 'ob', note = '', o = {}) => P[FL].push({ room: ROOM, a, x, z, rot, cat: GAPS[a] ? 'gap' : cat, note, ...o });
+const W = (a, x, z, face, y, cat = 'ob', note = '') => P[FL].push({ room: ROOM, a, x, z, face, y, cat: GAPS[a] ? 'gap' : cat, note, wall: true });
+const G = (a, x, z, note, o = {}) => P[FL].push({ room: ROOM, a, x, z, rot: 0, cat: 'story', note, ghost: false, game: true, ...o });
+
+// ============ FLOOR 6
+FL = 6;
+ROOM = 'e6'; // Lift lobby
+W('lobby_t2_wayfinding', 6.55, -91.0, 's', 1.45, 'ob', 'floor directory beside the lift: Wards 6B / 6C, Cold Dispatch');
+W('fire_extinguisher', 0.25, -91.0, 's', 0.6);
+F('floor_planter', 6.7, -89.6, 270); F('waiting_chair_section', 6.45, -86.5, 270, 'ob', 'lobby seats along the east wall, facing the lift doors');
+W('reception_poster_clinician', 6.95, -86.5, 'w', 1.3); F('water_cooler', 6.7, -83.6, 270); W('wall_sanitizer', 6.95, -84.6, 'w', 1.05);
+F('wheelchair', 1.6, -80.0, 200, 'ob', 'abandoned by the lift');
+ROOM = 'j6'; // Ward junction
+F('linen_cabinet', -16.6, -89.08); F('procedure_stretcher', -14.4, -88.95, 90, 'ob', 'a trolley parked along the wall');
+W('lobby_t2_health_poster', -12.9, -89.4, 's', 1.2); W('wall_sanitizer', -12.2, -89.4, 's', 1.05);
+F('waiting_chair_section', -9.65, -88.9, 0, 'ob', 'seats under the "← COLD DISPATCH via the ward" sign');
+W('printed_sign', -9.65, -89.4, 's', 2.3, 'box', '← COLD DISPATCH · via the ward (kept)'); W('wall_clock', -7.4, -89.4, 's', 2.05);
+F('charting_workstation', -5.9, -89.09); W('team_wall_station', -4.6, -89.4, 's', 0.75); W('printed_sign', -3.25, -89.4, 's', 2.3, 'box', 'SERVICE ↓ · Partition works (kept)');
+F('wheelchair', -1.6, -88.9); F('wheelchair', -0.85, -88.9);
+W('fire_extinguisher', -17.5, -86.6, 'e', 0.6);
+F('wheelchair', -15.0, -79.6, 120, 'ob', 'tipped over');
+G('guard_bag', -3.25, -79.95, "the guard's open bag and pistol, where he and Yola parted (kept)", { a: 'guard_bag' });
+ROOM = 'w6'; // Surgical ward 6B
+for (const [i, bx] of [-36.0, -32.4, -28.8, -25.2, -21.6].entries()) {
+  F('recovery_bed', bx, -88.35, 0, 'ob', 'ward bed: head on the camera wall'); W('service_headwall', bx, -89.4, 's', 1.24);
+  F('bedside_cabinet', bx - 0.95, -88.95); F('visitor_chair', bx + 0.95, -88.4, 270, 'clean', "a relative's chair");
+  if (i < 2) W(i ? 'recovery_bay_sign_02' : 'recovery_bay_sign_01', bx, -89.4, 's', 2.05);
+}
+F('over_bed_table', -32.4, -86.7, 0); F('over_bed_table', -25.2, -86.7, 0);
+W('wall_exam_set', -34.6, -89.4, 's', 1.25); W('sharps_container', -31.0, -89.4, 's', 1.2); W('glove_dispenser', -27.4, -89.4, 's', 1.25); W('wall_sanitizer', -23.8, -89.4, 's', 1.1);
+W('printed_sign', -30.0, -89.4, 's', 2.35, 'box', 'WARD 6B · Surgical inpatients'); W('wall_clock', -19.6, -89.4, 's', 2.0);
+F('recovery_bed', -30.4, -82.6, 25, 'ob', 'a bed dragged out of its bay in the panic: cover in the aisle');
+F('recovery_bed', -23.0, -80.6, -15, 'ob', 'another one pulled out'); F('iv_stand', -29.0, -84.4, 0, 'ob', '', { noCollide: true });
+F('recovery_bed', -37.25, -76.6, 90); F('recovery_bed', -37.25, -73.4, 90); W('service_headwall', -38.3, -76.6, 'e', 1.24); W('service_headwall', -38.3, -73.4, 'e', 1.24);
+F('team_desk', -25.6, -76.4, 0, 'ob', "the ward's nurse base, facing the beds"); F('charting_workstation', -24.0, -76.5); F('clinician_chair', -25.6, -75.6, 180, 'ob', '', { noCollide: true });
+F('handwash_cabinet_base', -21.35, -74.0, 270, 'ob', 'ward sink'); W('handwash_basin', -21.0, -74.0, 'w', 0.77); W('towel_dispenser', -21.0, -74.7, 'w', 1.1); W('soap_dispenser', -21.0, -73.4, 'w', 1.2);
+F('laundry_hamper', -21.3, -72.0); W('fire_extinguisher', -17.8, -87.0, 'w', 0.6);
+ROOM = 'p6'; // Sample prep lab
+F('prep_counter', -36.9, -70.65, 0, 'ob', 'lab bench: centrifuge, microscope'); F('lab_centrifuge', -37.25, -70.65, 0, 'clean', 'on the bench', { top: true }); F('lab_microscope', -36.5, -70.65, 0, 'clean', '', { top: true });
+F('prep_counter', -35.3, -70.65, 0, 'ob', 'bench: sample racks'); F('lab_sample_rack', -35.3, -70.6, 0, 'clean', '', { top: true });
+W('wall_cupboard', -36.9, -71.0, 's', 1.45); W('wall_cupboard', -35.3, -71.0, 's', 1.45); W('room_png', -36.1, -71.0, 's', 2.38, 'box', 'LAB room sign (moved here from Cold Dispatch)');
+F('handwash_cabinet_base', -33.8, -70.65); W('handwash_basin', -33.8, -71.0, 's', 0.77); W('soap_dispenser', -33.3, -71.0, 's', 1.2); W('clinical_art_preparation_checklist', -32.6, -71.0, 's', 1.0);
+F('prep_storage', -26.2, -70.64); W('glove_dispenser', -26.6, -71.0, 's', 1.25); W('sharps_container', -25.8, -71.0, 's', 1.15);
+F('prep_counter', -24.5, -70.65, 0, 'ob', 'specimen labelling bench'); F('lab_sample_rack', -24.5, -70.6, 0, 'clean', '', { top: true }); W('printed_sign', -24.45, -71.0, 's', 2.3, 'box', 'COLD DISPATCH ↓ (kept)');
+F('charting_workstation', -22.8, -70.69); W('wall_clock', -22.0, -71.0, 's', 2.05);
+F('supply_cart', -37.75, -66.4, 90, 'ob', 'the first-aid case on it'); F('linen_cabinet', -37.97, -63.8, 90);
+F('prep_counter', -34.5, -65.8, 0, 'ob', 'island bench (back to back): stools, flanking cover'); F('prep_counter', -34.5, -65.11, 180); F('team_stool', -35.4, -64.4); F('team_stool', -33.6, -64.4);
+F('consultation_desk', -24.8, -65.5, 0, 'ob', 'a labelling desk with its computer'); F('desktop_computer', -24.8, -65.6, 0, 'ob', '', { top: true }); F('clinician_chair', -24.8, -64.7, 180, 'ob', '', { noCollide: true });
+F('sedaprep', -21.36, -66.5, 270); W('wall_sanitizer', -21.0, -64.5, 'w', 1.05); F('biohazard_bin', -21.25, -62.0); F('biohazard_bin', -21.25, -62.5);
+ROOM = 'k6'; // Cold dispatch (calm)
+F('specimen_fridge', -37.7, -59.85, 0, 'gap', 'specimen fridge'); F('specimen_fridge', -36.85, -59.85, 0, 'gap');
+F('prep_storage', -34.6, -59.84, 0, 'clean', 'the dispatch counter: the sealed case sits here, on the camera wall (was a café table)');
+G('case', -34.6, -59.84, 'THE SEALED CASE (CASE_HOME moves onto the counter)', { a: 'case' });
+W('assessment_status_board', -34.6, -60.2, 's', 1.5, 'clean', 'dispatch schedule board'); W('pneumatic_tube_station', -33.3, -60.2, 's', 1.15);
+F('courier_coolers', -26.6, -59.85); F('supply_shelf', -24.6, -59.92, 0, 'clean', 'transport boxes'); F('supply_shelf', -23.1, -59.92, 0, 'clean');
+F('specimen_fridge', -21.4, -59.85, 0, 'gap'); W('wall_clock', -19.5, -60.2, 's', 2.0); W('fire_extinguisher', -18.6, -60.2, 's', 0.6);
+F('supply_shelf', -38.02, -56.5, 90, 'clean', 'more transport stock'); F('supply_cart', -26.0, -51.4, 0, 'clean', 'a cart of coolers waiting to go');
+F('partition', -17.25, -56.05, 0, 'box', 'THE WEAK PARTITION (unchanged)', { noCollide: true });
+ROOM = 'sp6'; // Service corridor
+for (const z of [-75.8, -75.35, -74.9, -74.45]) F('medical_gas_cylinder', -12.08, z, 0, 'ob', 'gas cylinder store');
+F('supply_shelf', -12.02, -72.6, 90); W('fire_extinguisher', -12.3, -77.0, 'e', 0.6);
+F('utility_sink', -6.055, -75.4, 270); F('mop', -5.93, -74.6, 270, 'ob', '', { noCollide: true }); W('wall_shelf', -5.8, -73.8, 'w', 1.2); F('janitor_cart', -6.4, -72.4);
+ROOM = 'a6'; // Ward conversion works
+F('dust_sheet_furniture', -15.6, -68.8); F('dust_sheet_small', -13.2, -68.9); F('drywall_pallet', -16.25, -66.0, 90, 'build');
+W('printed_sign', -14.4, -69.4, 's', 2.2, 'box', 'WARD 6C · CONVERSION · contractors only');
+F('scaffold_tower', -4.0, -68.6); F('standin_cable_workbench', -1.6, -68.95, 0, 'build', 'your painted workbench (second copy)'); W('standin_tool_pegboard', -1.6, -69.4, 's', 1.05, 'build');
+F('sawhorse_barrier', -5.0, -63.0, 0, 'build', 'fresh screed cordoned off (north half: the charge lane stays clear)'); F('hazard_floor', -5.0, -64.3, 0, 'build', '', { ghost: true }); F('wet_floor_sign', -6.6, -63.4, 0, 'ob', '', { noCollide: true });
+F('stud_wall_frame', -17.04, -60.1); F('stud_wall_frame', -17.04, -52.3);
+F('supply_shelf', -0.48, -66.4, 270); F('dust_sheet_furniture', -0.9, -63.4, 90); F('standin_paint_shelf', -0.42, -61.2, 270, 'build');
+F('isolation_windowed_partition', -0.6, -58.0, 90, 'clean', 'plastic sheeting (kept)'); F('bench', -5.65, -51.55, 0, 'box', 'bench (kept)'); F('standin_renovation_pallet', -10.5, -51.4, 0, 'build');
+
+// ============ FLOOR 5
+FL = 5;
+ROOM = 'e5';
+W('lobby_t2_wayfinding', 6.55, -171.0, 's', 1.45, 'ob', 'floor directory: Diagnostics, Records, Imaging');
+F('floor_planter', 6.7, -169.6, 270); F('waiting_chair_section', 6.45, -166.5, 270); F('water_cooler', 6.7, -163.4, 270);
+W('fire_extinguisher', 6.95, -161.2, 'w', 0.6); W('wall_sanitizer', 6.95, -164.4, 'w', 1.05);
+ROOM = 'i5'; // Diagnostic intake (safe pocket)
+F('specimen_fridge', -15.25, -169.05, 0, 'gap'); F('specimen_fridge', -14.4, -169.05, 0, 'gap');
+F('intake_station', -12.45, -169.05, 0, 'gap', 'THE INTAKE STATION: accepts the case; status lamp amber → green');
+G('intake', -12.45, -168.1, 'secure the case here (interaction unchanged)', { a: 'case' });
+W('room_png', -12.45, -169.4, 's', 2.62, 'box', 'LAB room sign (kept)'); W('glove_dispenser', -11.4, -169.4, 's', 1.3); W('wall_sanitizer', -10.75, -169.4, 's', 1.05);
+F('prep_storage', -9.6, -169.04, 0, 'clean', 'lab bench: centrifuge, microscope'); F('lab_centrifuge', -9.95, -169.04, 0, 'clean', '', { top: true }); F('lab_microscope', -9.2, -169.04, 0, 'clean', '', { top: true });
+W('printed_sign', -8.85, -169.4, 's', 2.3, 'box', 'DIAGNOSTIC INTAKE (kept)'); W('pneumatic_tube_station', -7.9, -169.4, 's', 1.15);
+F('prep_storage', -6.2, -169.04, 0, 'clean', 'bench: sample racks'); F('lab_sample_rack', -6.2, -169.0, 0, 'clean', '', { top: true }); F('charting_workstation', -4.4, -169.09, 0, 'clean');
+W('wall_clock', -3.0, -169.4, 's', 2.0); F('biohazard_bin', -1.0, -169.1);
+F('pharmacy_medicine_shelf', -17.24, -165.6, 90, 'clean', 'sample stock'); W('clinical_art_digestive', -17.5, -163.4, 'e', 1.3);
+F('consultation_desk', -13.5, -160.6, 0, 'clean', 'sample reception desk (low, near the camera)'); F('clinician_chair', -13.5, -161.4, 180, 'clean', '', { noCollide: true });
+F('floor_planter', -2.25, -160.87);
+ROOM = 'd5'; // Porters' transfer hub
+F('team_desk', -15.0, -157.83, 0, 'ob', "the porters' desk"); W('assessment_status_board', -15.0, -158.2, 's', 1.45, 'ob', 'porter jobs board'); W('team_wall_station', -13.6, -158.2, 's', 0.75);
+F('charting_workstation', -12.6, -157.89); W('wall_clock', -11.2, -158.2, 's', 2.0);
+F('wheelchair', -4.6, -157.7); F('wheelchair', -3.85, -157.7); F('wheelchair', -3.1, -157.7); W('printed_sign', -4.65, -158.2, 's', 2.3, 'box', 'RECORDS ↓ · Equipment bay (kept)');
+W('lobby_t2_wayfinding', -1.4, -158.2, 's', 1.6, 'ob', 'which way: records via the ward, or via the equipment bay');
+F('procedure_stretcher', -0.7, -154.8, 0, 'ob', 'trolleys parked along the east wall'); F('procedure_stretcher', -0.7, -152.6, 0);
+F('waiting_chair_section', -0.69, -149.6, 270); F('laundry_hamper', -17.0, -156.0); F('lidded_waste_bin', -17.3, -147.2);
+W('printed_sign', -17.49, -153.55, 'e', 2.3, 'box', '← RECORDS · Short ward (kept)'); W('fire_extinguisher', -17.5, -155.2, 'e', 0.6);
+F('floor_planter', -16.85, -146.35);
+ROOM = 'w5'; // Isolation ward (the shield guard)
+for (const bc of [-33.4, -29.4, -25.4]) {
+  F('recovery_bed', bc, -157.14, 0, 'ob', 'isolation bay: a bed behind glass dividers, open to the room'); W('service_headwall', bc, -158.2, 's', 1.24);
+  F('patient_monitor', bc + 1.1, -157.85); F('bedside_cabinet', bc - 1.05, -157.88); W('isolation_ppe_sign', bc, -158.2, 's', 2.3, 'clean', 'PPE REQUIRED sign over the bay');
+}
+for (const x of [-31.4, -27.4, -23.4]) { F('isolation_windowed_partition', x, -157.2, 90, 'clean', 'glass divider'); F('isolation_windowed_partition', x, -155.2, 90, 'clean'); }
+F('laundry_hamper', -22.8, -157.8, 0, 'ob', 'soiled linen'); F('ppe_trolley', -21.4, -157.85); W('glove_dispenser', -20.5, -158.2, 's', 1.25); W('glove_dispenser', -20.0, -158.2, 's', 1.25);
+W('wall_sanitizer', -19.5, -158.2, 's', 1.05); F('biohazard_bin', -19.0, -157.9); F('biohazard_bin', -18.5, -157.9); W('printed_sign', -21.0, -158.2, 's', 2.35, 'box', 'ISOLATION · gown and glove');
+F('recovery_bed', -30.0, -148.0, 90, 'ob', 'a bed shoved out into the ward: cover against the guard'); F('procedure_stretcher', -22.5, -147.0, 0, 'ob', 'a trolley left mid-room');
+F('supply_cart', -33.5, -145.5); F('linen_cabinet', -35.17, -149.5, 90); F('bedside_cabinet', -20.55, -144.35, 0, 'ob', 'the first-aid case on it');
+ROOM = 'r5'; // Medical records office (calm)
+F('consultation_desk', -32.05, -141.03, 0, 'clean', 'THE DOCKET DESK, moved from the bottom wall to the camera wall; its screen faces the player');
+G('docket', -32.05, -139.7, 'read the dispatch record here (interaction moves with the desk)', { a: 'docket_screen' });
+F('clinician_chair', -32.05, -140.2, 180, 'clean', '', { noCollide: true }); W('assessment_status_board', -33.6, -141.4, 's', 1.4, 'clean', 'dispatch board');
+W('printed_sign', -32.45, -141.4, 's', 2.3, 'box', 'TRANSFER RECORDS (kept)'); W('wall_clock', -30.4, -141.4, 's', 2.0);
+for (const x of [-29.9, -29.35, -28.8]) F('filing_cabinet', x, -141.09);
+F('supply_shelf', -22.2, -141.12, 0, 'clean', 'records shelving (archive boxes)'); F('supply_shelf', -20.75, -141.12, 0, 'clean');
+for (const x of [-19.2, -18.65]) F('filing_cabinet', x, -141.09);
+F('pharmacy_medicine_shelf', -35.24, -138.0, 90, 'clean', 'archive shelving'); F('pharmacy_medicine_shelf', -35.24, -136.5, 90, 'clean'); F('water_cooler', -35.25, -133.4, 90, 'clean');
+F('consultation_desk', -30.5, -135.8, 0, 'clean', 'office desks'); F('desktop_computer', -30.5, -135.9, 0, 'clean', '', { top: true }); F('clinician_chair', -30.5, -135.0, 180, 'clean', '', { noCollide: true });
+F('consultation_desk', -27.8, -135.8, 0, 'clean'); F('desktop_computer', -27.8, -135.9, 0, 'clean', '', { top: true });
+W('fire_extinguisher', -17.8, -139.6, 'w', 0.6);
+ROOM = 't5'; // Imaging and equipment bay (the charger)
+F('ct_scanner_gantry', -13.0, -144.96, 0, 'clean', 'CT scanner on the camera wall (was mid-room)'); F('ct_sliding_patient_table', -13.0, -143.5, 0, 'clean'); F('ct_control_pedestal', -15.9, -145.1, 0, 'clean');
+W('sign_ct_imaging', -13.0, -145.4, 's', 2.45, 'clean'); W('lead_apron_rack', -10.6, -145.4, 's', 1.0); W('wall_clock', -9.0, -145.4, 's', 2.1);
+F('anesthesia_workstation', -3.6, -145.05, 0, 'ob', 'parked equipment along the camera wall'); F('endoscopy_tower', -2.4, -145.1); F('airready', -1.2, -145.03); F('patient_monitor', 0.0, -145.05);
+F('mobile_xray', 1.6, -144.75); for (const x of [3.3, 3.75]) F('medical_gas_cylinder', x, -145.1); W('printed_sign', -1.0, -145.4, 's', 2.35, 'box', 'IMAGING · EQUIPMENT BAY');
+F('starter_rack', 3.57, -141.35, 270, 'clean', 'rack (kept)'); F('wheelchair', 3.75, -139.0, 270); F('wheelchair', 3.75, -138.2, 270); F('supply_shelf', 3.57, -133.55, 270, 'ob', 'shelf (kept)');
+W('fire_extinguisher', 4.2, -136.5, 'w', 0.6); F('procedure_stretcher', -12.5, -131.2, 90, 'ob', 'a trolley in the near band (low)');
+
+const PICK = {
+  6: [['First-aid case (on the lab cart)', -37.75, -66.4], ["The guard's pistol", -5.25, -79.75], ["Guard's bag: rounds", -3.25, -79.95]],
+  5: [['First-aid case (bedside cabinet)', -20.55, -144.35], ['Spare pistol rounds', 1.56, -135.95]],
+};
+
+const NAMES = {
+  e6: ['Lift Lobby 6', 'Lift Lobby', 'The lift, a floor directory, seats along the east wall, a water cooler; nothing on the bottom wall now.'],
+  j6: ['Ward Junction', 'Junction', 'Where the guard and Yola parted. The two ways are signed on the camera wall over parked trolleys, seats, a charting station and wheelchairs.'],
+  w6: ['Ward 6B (Surgical)', 'Recovery Ward', "A real inpatient ward, not a second recovery room: five beds heads-on to the camera with headwalls, cabinets and relatives' chairs; two beds dragged into the aisle as cover; the nurse base and the ward sink in the L."],
+  p6: ['Sample Prep Lab', 'Preparation', 'Why the route goes through here: samples from the ward get spun, racked and labelled before they go to dispatch. Benches, centrifuge, microscope and sample racks on the camera wall; two islands for cover.'],
+  k6: ['Cold Dispatch', 'Cold Dispatch', "Calm. Specimen fridges, the dispatch counter with the sealed case ON THE CAMERA WALL, the tube station, courier coolers, transport stock. The case was on a café table; it's now on the counter."],
+  sp6: ['Service Corridor', 'Service Passage', 'The cylinder store and the cleaners’ sink along its walls; the whole width between the doors stays open.'],
+  a6: ['Ward 6C Conversion Works', 'Partition Works', "An old ward being turned into something new: furniture under dust sheets, stud framing either side of the weak partition, a scaffold tower, your painted bench. The north half has the clutter; the charge lane and the dodge space stay open."],
+  e5: ['Lift Lobby 5', 'Lift Lobby', 'A directory (Diagnostics, Records, Imaging), seats and a cooler on the east wall.'],
+  i5: ['Diagnostic Intake', 'Diagnostic Intake', "The safe pocket: a proper intake station for the case (a new prop with a status lamp) between specimen fridges, the lab benches, the tube station. The case's hold height follows the new station."],
+  d5: ["Porters' Transfer Hub", 'Transfer Hub', "The porters' desk and jobs board, wheelchairs and trolleys parked, and a wayfinding sign showing both ways to records, so both approaches read before you choose."],
+  w5: ['Isolation Ward', 'Short Ward', "Three glass-divided isolation bays with PPE signs, and a PPE station: a ward that looks nothing like 6B or Floor 7's recovery. The shield guard fights in the open half, with a shoved bed and a trolley for controlled flanking."],
+  r5: ['Medical Records', 'Transfer Records', "Calm. The docket desk moves from the bottom wall to the camera wall with its screen facing you, plus filing cabinets, archive shelving and two office desks. The record beat is unchanged."],
+  t5: ['Imaging and Equipment Bay', 'Equipment Bay', "The CT scanner goes from mid-room to the camera wall with its table, controls, sign and a lead-apron rack. Parked anaesthesia, endoscopy, airway and X-ray kit line the wall; the long open floor stays the charger's lane."],
+};
+const NOTES = {
+  e6: ['<span class="flag">Now:</span> the lobby seats sit on the bottom wall facing away from the camera.'],
+  j6: ['The pistol and the guard’s bag stay where they are (story).'],
+  w6: ['<span class="new">New:</span> two over-bed tables (a gap prop).', 'Spawns: all four walkers keep their places, and they clear the beds.'],
+  p6: ['The LAB room sign moves here from Cold Dispatch.', 'The first-aid case moves onto the lab cart on the west wall.'],
+  k6: ['<span class="flag">Now:</span> the fridge cabinets and shelving are on the bottom wall facing north (hidden), and the "fridges" are wall cupboards standing on the floor.', '<span class="new">Story change:</span> CASE_HOME moves from the café table (-33.45, -58.47) to the counter (-34.6, -59.84, top about 1.09 m). Old saves keep the case wherever they left it.', 'The weak partition and its approach stay clear on both sides.'],
+  sp6: ['Nothing deeper than about 0.6 m off either wall: the doorways span almost the whole corridor.'],
+  a6: ["The charger's start (-3.25, -55.55) and the run west to the partition stay open, z -59 to -51.", '<span class="new">New:</span> dust-sheeted furniture, stud framing and a scaffold tower (gap props).'],
+  e5: ['<span class="flag">Now:</span> the lobby seats sit on the bottom wall facing away from the camera.'],
+  i5: ['<span class="new">Story change:</span> the intake station replaces the warming-cabinet stand-in; INTAKE_SPOT keeps its x and z, and its y follows the new top (about 1.25 m).'],
+  d5: ['Both routes stay in view from the north door: the west door to the ward and the south door to the bay.'],
+  w5: ['The guard’s spawn and both walkers clear the new furniture.', 'Room width for touch movement: 18 m × 12 m of open floor south of the bays.'],
+  r5: ['<span class="new">Story change:</span> the docket desk, its lit screen and the record interaction move to the north wall (-32.05, -139.7).', 'The pharmacy shelves move off the bottom wall onto the west wall.'],
+  t5: ['<span class="flag">Now:</span> the CT gantry stands alone mid-room and an endoscopy tower sits on the bottom edge.', '<span class="new">New:</span> a mobile X-ray and a lead-apron rack (gap props).'],
+};
+
+// ------------------------------------------------------------------ drawing
+const S0 = 30; let S = S0, mode = 'prop';
+const svg = document.getElementById('map'), tip = document.getElementById('tip'), NS = 'http://www.w3.org/2000/svg';
+const el = (t, a, parent) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); (parent || svg).appendChild(e); return e; };
+let OX = 0, OZv = 0;
+const sx = (x) => (x + OX) * S, sz = (z) => (z + OZv) * S;
+const CATC = { ob: ['var(--ob)', 'var(--ob-s)'], clean: ['var(--clean)', 'var(--clean-s)'], build: ['var(--build)', 'var(--build-s)'], box: ['var(--box)', 'var(--box-s)'], gap: ['var(--gap)', 'var(--gap-s)'], story: ['#ffd84a', '#7a5b00'] };
+const short = (a) => a.replace(/^standin_/, '').replace(/_standard|_starter|_advanced/g, '').replace(/^10_starter_/, '').replace(/_/g, ' ');
+const hover = (e, html) => { e.addEventListener('mousemove', (ev) => { tip.style.display = 'block'; tip.innerHTML = html; tip.style.left = Math.min(ev.clientX + 14, innerWidth - 330) + 'px'; tip.style.top = ev.clientY + 14 + 'px'; }); e.addEventListener('mouseleave', () => { tip.style.display = 'none'; }); };
+const clearZone = (d) => { const hw = d.w / 2, dep = 1.6; return d.axis === 'x' ? [d.x - hw, d.x + hw, d.z - dep, d.z + dep] : [d.x - dep, d.x + dep, d.z - hw, d.z + hw]; };
+function blocks(p) {
+  if (p.wall || p.ghost || p.noCollide || p.top || p.game || p.a === 'partition') return null;
+  const sw = ((p.rot % 180) + 180) % 180 === 90, w = sw ? p.d : p.w, dd = sw ? p.w : p.d;
+  const r = [p.x - w / 2, p.x + w / 2, p.z - dd / 2, p.z + dd / 2];
+  for (const d of CURRENT[FLOOR].doors) { if (d.kind === 'lift' || d.kind === 'partition') continue; const zz = clearZone(d); if (r[0] < zz[1] && r[1] > zz[0] && r[2] < zz[3] && r[3] > zz[2]) return d.id; }
+  return null;
+}
+let FLOOR = 6;
+function itemsFor() {
+  if (mode === 'cur') return CURRENT[FLOOR].props.map(([a, x, z, rot, fw, fd, wall, cat]) => { const sw = ((rot % 180) + 180) % 180 === 90; return { a, x, z, rot, w: sw ? fd : fw, d: sw ? fw : fd, cat, wall: !!wall, face: wall, note: '', noCollide: ['iv_stand', 'wet_floor', 'hazard', 'partition', 'clinician_chair', 'lab_sample', 'screen'].some((k) => a.startsWith(k)), ghost: a === 'hazard' }; });
+  return P[FLOOR].map((p) => { const [w, d] = DIM[p.a] || [0.6, 0.6]; return { ...p, w, d }; });
+}
+const PLACED = [];
+function label(text, x, y, anchor, color, size = 10) {
+  const w = text.length * size * 0.52, hgt = size + 2;
+  for (const dy of [0, 11, -11, 22, -22]) {
+    const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x, y0 = y + dy - size;
+    if (PLACED.some((b) => x0 < b[2] && x0 + w > b[0] && y0 < b[3] && y0 + hgt > b[1])) continue;
+    PLACED.push([x0, y0, x0 + w, y0 + hgt]);
+    const t = el('text', { x, y: y + dy, 'font-size': size, 'text-anchor': anchor, fill: color, 'paint-order': 'stroke', stroke: 'var(--card)', 'stroke-width': 3 }); t.textContent = text; return;
+  }
+}
+function inPoly(pts, x, z) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, zi] = pts[i], [xj, zj] = pts[j]; if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) c = !c; } return c; }
+function draw() {
+  svg.innerHTML = ''; PLACED.length = 0;
+  const C = CURRENT[FLOOR], Zp = PZ(OZ[FLOOR]);
+  const polys = Object.fromEntries(Object.entries(POLYS[FLOOR]).map(([id, p]) => [id, p.map(([px, py]) => [PX(px), Zp(py)])]));
+  const all = Object.values(polys).flat(), minX = Math.min(...all.map((p) => p[0])), maxX = Math.max(...all.map((p) => p[0])), minZ = Math.min(...all.map((p) => p[1])) - 1.5, maxZ = Math.max(...all.map((p) => p[1]));
+  OX = -minX + 1.2; OZv = -minZ + 0.6;
+  const Wd = (maxX - minX + 2.4) * S, H = (maxZ - minZ + 3.2) * S;
+  svg.setAttribute('viewBox', `0 0 ${Wd} ${H}`); svg.setAttribute('width', Wd); svg.setAttribute('height', H);
+  const showLab = document.getElementById('cLab').checked, showClear = document.getElementById('cClear').checked, showGame = document.getElementById('cGame').checked;
+  for (const [id, pts] of Object.entries(polys)) el('polygon', { points: pts.map(([x, z]) => `${sx(x)},${sz(z)}`).join(' '), fill: ROOMFILL[id], stroke: 'var(--wall)', 'stroke-width': 3 });
+  for (const pts of Object.values(polys)) for (let i = 0; i < pts.length; i++) { const [ax, az] = pts[i], [bx, bz] = pts[(i + 1) % pts.length]; if (az !== bz) continue; if (inPoly(pts, (ax + bx) / 2, az + 0.3)) el('line', { x1: sx(ax), y1: sz(az) + 3, x2: sx(bx), y2: sz(az) + 3, stroke: 'var(--cam)', 'stroke-width': 2.5, 'stroke-dasharray': '7 4', opacity: 0.75 }); }
+  for (const d of C.doors) {
+    const hw = d.w / 2;
+    if (showClear && d.kind !== 'lift' && d.kind !== 'partition') { const z = clearZone(d); el('rect', { x: sx(z[0]), y: sz(z[2]), width: (z[1] - z[0]) * S, height: (z[3] - z[2]) * S, fill: 'var(--clear)', stroke: 'var(--clear-s)', 'stroke-dasharray': '4 3' }); }
+    const col = { open: '#ffffff', partition: '#fa8b99', lift: '#5aa0d8' }[d.kind] || '#fff';
+    const L = d.axis === 'x' ? el('line', { x1: sx(d.x - hw), y1: sz(d.z), x2: sx(d.x + hw), y2: sz(d.z), stroke: col, 'stroke-width': 6 }) : el('line', { x1: sx(d.x), y1: sz(d.z - hw), x2: sx(d.x), y2: sz(d.z + hw), stroke: col, 'stroke-width': 6 });
+    hover(L, `<b>${d.id}</b> (${d.kind}) ${d.w} m`);
+  }
+  const items = itemsFor(), floorLabs = [], wallLabs = [];
+  for (const p of items) {
+    if (p.game && !showGame) continue;
+    const [fill, stroke] = CATC[p.cat] || CATC.ob;
+    const g = el('g', { transform: `translate(${sx(p.x)},${sz(p.z)})` }), bad = blocks(p);
+    if (p.wall) {
+      const horiz = p.face === 's' || p.face === 'n', w = Math.max(p.w, 0.22) * S, t = 0.22 * S;
+      const off = { s: [0, t / 2], n: [0, -t / 2], e: [t / 2, 0], w: [-t / 2, 0] }[p.face] || [0, 0];
+      const r = horiz ? el('rect', { x: -w / 2 + off[0], y: -t / 2 + off[1], width: w, height: t, fill, stroke: 'var(--wallitem)', 'stroke-width': 2, rx: 2 }, g) : el('rect', { x: -t / 2 + off[0], y: -w / 2 + off[1], width: t, height: w, fill, stroke: 'var(--wallitem)', 'stroke-width': 2, rx: 2 }, g);
+      hover(r, `<b>${short(p.a)}</b>${p.cat === 'gap' ? ' <span style="color:#7fd3a8">NEW (gap)</span>' : ''} (wall${p.y ? `, ${p.y} m up` : ''})${p.note ? '<br>' + p.note : ''}`);
+      if (showLab) wallLabs.push([p.cat === 'box' && p.note ? p.note.split(' (')[0].slice(0, 30) : short(p.a), sx(p.x) + (horiz ? 0 : (p.face === 'e' ? 10 : -10)), sz(p.z) + (horiz ? t + 11 : 4), horiz ? 'middle' : (p.face === 'e' ? 'start' : 'end')]);
+      continue;
+    }
+    const inner = el('g', { transform: `rotate(${-p.rot})` }, g);
+    const r = el('rect', { x: -p.w / 2 * S, y: -p.d / 2 * S, width: p.w * S, height: p.d * S, fill: p.ghost ? 'none' : fill, 'fill-opacity': p.top ? 1 : 0.85, stroke: bad ? 'var(--bad)' : stroke, 'stroke-width': bad ? 3 : (p.cat === 'gap' || p.game ? 2 : 1), 'stroke-dasharray': p.ghost ? '4 3' : p.cat === 'gap' ? '5 2' : 'none', rx: 1.5 }, inner);
+    if (!p.ghost && !p.top) el('line', { x1: -p.w / 2 * S + 2, y1: p.d / 2 * S - 1.5, x2: p.w / 2 * S - 2, y2: p.d / 2 * S - 1.5, stroke, 'stroke-width': 2 }, inner);
+    hover(r, `<b>${short(p.a)}</b>${p.cat === 'gap' ? ' <span style="color:#7fd3a8">NEW (gap)</span>' : ''}${bad ? ` <span style="color:#ff8a8a">blocks ${bad}</span>` : ''}<br>rot ${p.rot}° · ${p.w}×${p.d} m${p.note ? '<br>' + p.note : ''}`);
+    if (showLab && !p.top && p.w * p.d > 0.08) floorLabs.push([p.game ? p.note.split(' (')[0].slice(0, 34) : short(p.a), sx(p.x), sz(p.z) + 4, 'middle']);
+  }
+  for (const l of floorLabs) label(l[0], l[1], l[2], l[3], 'var(--ink)');
+  for (const l of wallLabs) label(l[0], l[1], l[2], l[3], '#5b4fc4', 9.5);
+  if (showGame) {
+    const picks = mode === 'cur' ? C.pickups : PICK[FLOOR];
+    for (const [lab, x, z] of picks) { const c = el('path', { d: `M${sx(x)} ${sz(z) - 6}l6 6l-6 6l-6-6z`, fill: '#2e9e5b', stroke: '#fff', 'stroke-width': 1.2 }); hover(c, `<b>Pickup</b>: ${lab}`); }
+    for (const [gid, zs] of C.groups) for (const [x, z, kind] of zs) { const c = el('circle', { cx: sx(x), cy: sz(z), r: kind ? 7 : 5, fill: kind === 'guard' ? '#5a4fcf' : kind === 'sprinter' ? '#c0392b' : '#777', stroke: '#fff', 'stroke-width': 1.2 }); hover(c, `<b>Zombie</b> (${gid}) ${kind || 'walker'}`); }
+    if (mode === 'cur') for (const [lab, x, z] of C.interact) { const c = el('circle', { cx: sx(x), cy: sz(z), r: 6, fill: '#f2c14e', stroke: '#6b4c00', 'stroke-width': 1.5 }); hover(c, `<b>Interaction</b>: ${lab}`); }
+  }
+  for (const [id, pts] of Object.entries(polys)) {
+    const r = C.rooms.find((q) => q.id === id), big = r.rects.reduce((a, b) => ((b[1] - b[0]) * (b[3] - b[2]) > (a[1] - a[0]) * (a[3] - a[2]) ? b : a));
+    const t = el('text', { x: sx((big[0] + big[1]) / 2), y: sz(big[3]) - 10, 'font-size': 14, 'font-weight': 700, 'text-anchor': 'middle', fill: 'var(--wall)', opacity: 0.8 }); t.textContent = (mode === 'cur' ? NAMES[id][1] : NAMES[id][0]).toUpperCase();
+  }
+  const cy = sz(maxZ) + 26, cx = sx((minX + maxX) / 2) - 300;
+  el('path', { d: `M${cx} ${cy + 8}l0 -22m-7 8l7 -8l7 8`, stroke: 'var(--cam)', 'stroke-width': 2.5, fill: 'none' });
+  const ct = el('text', { x: cx + 14, y: cy, 'font-size': 12, fill: 'var(--cam)' }); ct.textContent = 'Camera south (bottom) looking north: the top wall of each room is the one you see.';
+  drawCards();
+}
+function drawCards() {
+  const rc = document.getElementById('rooms'); rc.innerHTML = '';
+  for (const id of Object.keys(POLYS[FLOOR])) {
+    const d = document.createElement('div'); d.className = 'room';
+    const wallList = [...new Set(P[FLOOR].filter((p) => p.room === id && p.wall).sort((a, b) => a.x - b.x).map((p) => p.cat === 'box' ? p.note.split(' (')[0] : short(p.a)))];
+    d.innerHTML = `<h3>${NAMES[id][0]}</h3><p class="was">Was: ${NAMES[id][1]}.</p><ul><li>${NAMES[id][2]}</li>${(NOTES[id] || []).map((n) => `<li>${n}</li>`).join('')}${wallList.length ? `<li><i>On the walls:</i> ${wallList.join(', ')}</li>` : ''}</ul>`;
+    rc.appendChild(d);
+  }
+}
+const gt = document.getElementById('gaps');
+gt.innerHTML = '<tr><th>Prop</th><th>Size</th><th>Where</th><th>Priority</th><th>What it is</th></tr>' + Object.values(GAPS).map((g) => `<tr><td><b>${g[0]}</b></td><td>${g[1]}</td><td>${g[2]}</td><td>${g[3]}</td><td>${g[4]}</td></tr>`).join('');
+const btn = (id, f) => { document.getElementById(id).onclick = f; };
+const setF = (n) => { FLOOR = n; document.getElementById('b6').classList.toggle('on', n === 6); document.getElementById('b5').classList.toggle('on', n === 5); draw(); };
+btn('b6', () => setF(6)); btn('b5', () => setF(5));
+btn('bProp', () => { mode = 'prop'; document.getElementById('bProp').classList.add('on'); document.getElementById('bCur').classList.remove('on'); draw(); });
+btn('bCur', () => { mode = 'cur'; document.getElementById('bCur').classList.add('on'); document.getElementById('bProp').classList.remove('on'); draw(); });
+for (const id of ['cLab', 'cClear', 'cGame']) document.getElementById(id).onchange = draw;
+document.getElementById('zoom').oninput = (e) => { S = S0 * +e.target.value; draw(); };
+draw();
+</script>
+</body>
+</html>

@@ -4,7 +4,22 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
-## FROM THE COMBAT CHAT (2026-10-18, later): Floor 7 refurnished as a hospital — read this first
+## FROM THE COMBAT CHAT (2026-10-18, latest): Floors 6 and 5 refurnished too — read this first
+
+Same pass as Floor 7 below, approved by the user from FLOORS_6_5_LAYOUT_PROPOSAL.html. In core/chapter.js:
+- Floor 6 rooms: Lift Lobby, Ward Junction, Ward 6B (surgical), Sample Prep Lab, Cold Dispatch, Service Corridor, Ward 6C
+  Works. Floor 5: Lift Lobby, Diagnostic Intake, Porters' Transfer Hub, Isolation Ward, Medical Records, Imaging and
+  Equipment Bay. The route, doors, partition, groups and story beats are unchanged.
+- **Story anchors moved:** CASE_HOME is now on the dispatch counter on K6's camera wall (-34.6, -59.84, y 1.09; it was a
+  café table mid-room). INTAKE_SPOT keeps x/z, y 1.23 (the new intake station's tray). The docket desk, its screen and the
+  'record' interaction moved from R5's bottom wall to its camera wall (-32.05, -139.7). Checked in the sim: take the case →
+  secure at intake → read the record → the match prompt.
+- New props modelled in Blender (blender/make_ward_gap_props.py, blender/props/ward_gap_props.blend → assets/props/*.glb):
+  specimen_fridge, intake_station (materials IntakeLampAmber / IntakeLampGreen, ready for a secured-state switch, not wired
+  yet), pneumatic_tube_station, courier_coolers, filing_cabinet, ppe_trolley, mobile_xray, lead_apron_rack,
+  fire_extinguisher, dust_sheet_furniture / _small, stud_wall_frame, scaffold_tower, over_bed_table.
+
+## FROM THE COMBAT CHAT (2026-10-18, later): Floor 7 refurnished as a hospital
 
 The user asked for Floor 7's rooms to mean something ("it no longer feels like a hospital"), furniture never in front of a
 door, wall decorations on the walls the locked camera sees. The approved plan: FLOOR7_LAYOUT_PROPOSAL.html (open it in the
