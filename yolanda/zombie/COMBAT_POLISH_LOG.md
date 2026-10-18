@@ -2,7 +2,7 @@
 
 The user's four prompts (shield enemy and dodge; charger, get-ups, walkers and feel; enemy variety, spawns and test
 encounters; contextual attacks, assets and polish). Recoverable version before any of it: git tag
-`backup/pre-combat-pass-2026-10-18` (f37b13b, local). Commits dbdfef9..67badba.
+`backup/pre-combat-pass-2026-10-18` (f37b13b, local). Commits dbdfef9..832fecc.
 
 **Watch any of it again:** `combat.html?mode=calm&demo=<name>` (src/demos.js), ↺ or R to set it up again, `&auto=1` to
 let Yola play it: `slam1`, `slam2`, `dismember`, `charger`, `kipup`, `ladykip`, `walkers`, `runner`, `floor`, `low`.
