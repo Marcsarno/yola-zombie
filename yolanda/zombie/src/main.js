@@ -208,7 +208,7 @@ async function load() {
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
     fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({})), // (the user's pistol fit per character, set in the Rig Lab)
     loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)]); // (the wood bat: setupBat)
-  loader.loadAsync('assets/props/floor_breach.glb').then((g) => { breaches.src = g.scene; g.scene.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = false; } }); }).catch(() => {}); // (blender/make_floor_breach.py)
+  const breachP = loader.loadAsync('assets/props/floor_breach.glb').then((g) => { breaches.src = g.scene; g.scene.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = false; } }); }).catch(() => {}); // (blender/make_floor_breach.py)
   loadHoldLayers(); // (the user's hold-layer switches, render/holdlayers.js)
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
   const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
@@ -226,6 +226,10 @@ async function load() {
   hud.loading(1);
   if (params.has('intro') || params.has('reveal') || params.has('room1')) await startOpening();
   if (mode === 'arena') window.game.testArena = await startTestArena({ game: window.game, scene, loader, telegraphs }); // the weapon test arena (combat.html?mode=arena)
+  // spare zombie views, built now (behind the loading screen): a zombie that arrives mid-fight (out of the floor, through a
+  // door) takes one from the pool; building one then cost ~100 ms, a visible hitch (2026-10-18)
+  prepViews();
+  await breachP; if (breaches.src) { const w = breaches.src.clone(true); w.visible = false; w.position.y = -50; scene.add(w); } // (compiled with the rest: its first breach mid-fight froze a frame)
   warmPrograms();
   requestAnimationFrame(frame);
   if (params.has('lab')) startLab(window.game, params.get('lab') || 'bat'); // the combat lab (frame-by-frame melee against the reference)
@@ -351,6 +355,7 @@ function applyLevel(save) {
   arena.syncLevel(sim.level);
   if (sim.level?.taken.has('bat')) opening?.takeBat?.(); else opening?.restoreBat?.();
   hud.setObjective(OBJECTIVES[sim.level ? sim.level.objective : 'room1'] || '');
+  prepViews();
   return sim;
 }
 // show the zombies and Yola without stepping the simulation (the reveal, before control is handed over)
@@ -370,6 +375,13 @@ function warmRoom1() {
   renderer.render(scene, camera);
   for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); yola.setShown(false);
   camera.position.set(sv.x, sv.y, sv.z); camera.quaternion.copy(sv.q); camera.fov = sv.fov; camera.updateProjectionMatrix();
+}
+// every zombie of the level with its view now (not on its first drawn frame), and spares in the pool for those that arrive
+// mid-fight (out of the floor, through a door): building a view then cost ~100 ms, a visible hitch (2026-10-18)
+function prepViews() {
+  if (!sim) return;
+  for (const z of sim.zombies) if (!zviews.has(z.id)) { const type = viewType(z), v = zpool[type].pop() || newZombieView(type); v.bind(z); zviews.set(z.id, v); }
+  for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) { const v = newZombieView(type); v.hide(); zpool[type].push(v); }
 }
 function newZombieView(type) {
   const t = ZOMBIE_TYPES[type];

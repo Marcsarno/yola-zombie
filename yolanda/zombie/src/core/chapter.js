@@ -168,47 +168,65 @@ const F7 = buildFloor(7, {
     wp(M + 'decor3/Clinical_Sharps_Container.glb', -7.0, -6.9, 'e', 1.1);
     wp(M + 'furnishings/Endoscopy_Glove_Dispenser.glb', -7.0, -7.6, 'e', 1.0);
     // S7 | supply: shelving along the back wall, carts, a first-aid case on a cart; the western exit is obvious
-    p(M + 'utility/Utility_Supply_Shelf.glb', -20.6, -10.6, 0, [1.39, 0.53], 2.0);
-    p(M + 'utility/Utility_Supply_Shelf.glb', -18.9, -10.6, 0, [1.39, 0.53], 2.0);
+    // (2026-10-18, the user's part 4: the Outbreak versions of the supplied props in every playable room except the opening's
+    // operating room, which stays clean; assets/hospital/<name>.glb from the Outbreak runtime set, assets/source/hospital_123)
+    p(H + 'supply_shelf.glb', -20.6, -10.6, 0, [1.39, 0.56], 2.0);
+    p(H + 'supply_shelf.glb', -18.9, -10.6, 0, [1.39, 0.56], 2.0);
     p(K + 'pharmacy_medicine_shelf.glb', -12.2, -10.6, 0, [1.39, 0.53], 1.95);
-    p(M + 'utility/Utility_Supply_Shelf.glb', -10.2, -10.6, 0, [1.39, 0.53], 2.0);
-    p(M + 'decor/Recovery_Linen_Cabinet.glb', -25.0, -9.6, 90, [0.95, 0.59], 1.84);
+    p(H + 'supply_shelf.glb', -10.2, -10.6, 0, [1.39, 0.56], 2.0);
+    p(H + 'linen_cabinet.glb', -25.0, -9.6, 90, [0.95, 0.65], 1.84);
     p(U + '08_support_equipment/runtime/supply_cart_starter.glb', -15.6, -1.0, 0, [0.78, 0.52], 1.01, { name: 's7cart' });
-    p(M + 'utility/Utility_Laundry_Hamper.glb', -8.0, 0.4, 0, [0.6, 0.54], 0.97);
+    p(H + 'laundry_hamper.glb', -8.0, 0.4, 0, [0.6, 0.57], 1.15);
     p(H + 'wheelchair.glb', -21.6, 0.1, 270, [0.76, 0.91], 0.97);
-    p(M + 'utility/Utility_Wet_Floor_Sign.glb', -17.4, -4.6, 0, [0.36, 0.66], 0.67, { noCollide: true });
+    p(H + 'wet_floor_sign.glb', -17.4, -4.6, 0, [0.48, 0.66], 0.64, { noCollide: true });
     // a back-to-back shelving island mid-room (a loop to move around) and the carts of a store room
-    p(M + 'utility/Utility_Supply_Shelf.glb', -14.2, -6.9, 90, [1.39, 0.53], 2.0);
-    p(M + 'utility/Utility_Supply_Shelf.glb', -13.65, -6.9, 270, [1.39, 0.53], 2.0);
+    p(H + 'supply_shelf.glb', -14.2, -6.9, 90, [1.39, 0.56], 2.0);
+    p(H + 'supply_shelf.glb', -13.65, -6.9, 270, [1.39, 0.56], 2.0);
     p(H + 'supply_cart.glb', -10.4, -3.6, 0, [1.16, 1.1], 1.23);
-    p(U + '08_support_equipment/runtime/supply_cart_standard.glb', -22.8, -4.8, 90, [0.88, 0.65], 1.21);
-    p(M + 'utility/Utility_Laundry_Hamper.glb', -24.9, 0.3, 0, [0.6, 0.54], 0.97);
+    p(H + 'supply_cart.glb', -22.8, -4.8, 90, [1.16, 1.1], 1.23);
+    p(H + 'laundry_hamper.glb', -24.9, 0.3, 0, [0.6, 0.57], 1.15);
     p(H + 'lidded_waste_bin.glb', -19.6, 0.55, 0, [0.36, 0.4], 0.58);
-    wp(M + 'furnishings/Clinical_Wall_Cupboard.glb', -16.2, -11.0, 's', 1.45);
+    wp(H + 'wall_cupboard.glb', -16.2, -11.0, 's', 1.45);
+    // a store room's floor: tubs of stock pulled off the shelves, a biohazard bin by the door
+    p(H + 'storage_bins.glb', -23.6, -8.9, 15, [1.05, 0.3], 0.28, { noCollide: true });
+    p(H + 'storage_bins.glb', -11.4, -8.6, -10, [1.05, 0.3], 0.28, { noCollide: true });
+    p(H + 'biohazard_bin.glb', -8.0, -2.2, 0, [0.39, 0.39], 0.69);
     // N7 | the nurse station: the desk on the back wall with the radio on it, the team desk, a few waiting chairs
     p(U + '01_reception/reception_T2_desk.glb', -37.2, -9.9, 180, [2.2, 0.9], 1.1, { name: 'n7desk' });
     p(U + '01_reception/reception_T2_chair.glb', -37.2, -10.75, 0, [0.63, 0.62], 0.99, { noCollide: true });
     raw({ kind: 'radio', x: -36.6, z: -9.75, y: 1.1, fp: [0.1, 0.1], h: 0, noCollide: true, name: 'radio' });
     p(M + 'decor/Reception_Linked_Seats_3.glb', -30.4, -10.65, 0, [2.61, 0.62], 0.92);
-    p(M + 'decor/Reception_Water_Cooler.glb', -26.4, -10.7, 0, [0.44, 0.49], 1.47);
-    p(M + 'decor/Recovery_Linen_Cabinet.glb', -40.2, -0.4, 90, [0.95, 0.59], 1.84);
+    p(H + 'water_cooler.glb', -26.4, -10.7, 0, [0.44, 0.49], 1.47);
+    p(H + 'linen_cabinet.glb', -40.2, -0.4, 90, [0.95, 0.65], 1.84);
     p(H + 'patient_monitor.glb', -40.2, -2.6, 90, [0.62, 0.71], 1.49);
-    p(U + '12_lobby/lobby_T2_floor_planter.glb', -28.2, -10.6, 0, [0.55, 0.86], 1.2, { fit: true });
-    wp(M + 'decor/Reception_Poster_Clinician.glb', -33.6, -11.0, 's', 1.15);
+    p(H + 'floor_planter.glb', -28.0, -10.65, 0, [1.12, 0.5], 1.52);
+    wp(H + 'reception_poster_clinician.glb', -33.6, -11.0, 's', 1.15);
     // the station's working island: a team desk with chairs, a monitor cart, the board on the west wall
-    p(U + '07_warmth_teamwork/TeamDesk_standard.glb', -33.0, -4.6, 0, [1.13, 0.66], 1.15);
-    p(U + '09_assessment_furniture/runtime/clinician_chair_standard.glb', -33.0, -5.4, 180, [0.6, 0.6], 1.0, { noCollide: true });
-    p(U + '07_warmth_teamwork/TeamDesk_standard.glb', -31.6, -4.6, 0, [1.13, 0.66], 1.15);
+    p(H + 'team_desk.glb', -33.0, -4.6, 0, [1.13, 0.74], 1.16);
+    p(H + 'clinician_chair.glb', -33.0, -5.4, 180, [0.65, 0.61], 0.99, { noCollide: true });
+    p(H + 'team_desk.glb', -31.6, -4.6, 0, [1.13, 0.74], 1.16);
     p(H + 'patient_monitor.glb', -29.2, -6.2, 0, [0.62, 0.71], 1.49);
     p(M + 'decor/Reception_Linked_Seats_3.glb', -36.6, 1.45, 180, [2.61, 0.62], 0.92);
-    p(U + '12_lobby/lobby_T2_floor_planter.glb', -40.2, -10.6, 0, [0.55, 0.86], 1.2, { fit: true });
-    wp(M + 'furnishings/Assessment_Board.glb', -40.7, -5.6, 'e', 1.0);
+    wp(H + 'assessment_status_board.glb', -40.7, -5.6, 'e', 1.0);
+    // a station that was working when it fell: hand gel and gloves by the door, a notice board of the outbreak's posters
+    wp(H + 'wall_sanitizer.glb', -26.0, -11.0, 's', 1.05);
+    wp(H + 'glove_dispenser.glb', -35.4, -11.0, 's', 1.2);
+    wp(H + 'medical_poster_family.glb', -38.6, -11.0, 's', 1.6);
+    p(H + 'biohazard_bin.glb', -40.3, -8.9, 0, [0.39, 0.39], 0.69);
     // T7 | the treatment ward: two rows of beds with screens and IV stands, two clear lanes north-south (flanking, lane changes)
     for (const [bx, bz, rot] of [[-39.2, 5.0, 90], [-39.2, 9.0, 90], [-39.2, 13.0, 90], [-27.3, 6.2, 270], [-27.3, 10.6, 270]]) {
       p(H + 'recovery_bed.glb', bx, bz, rot, [1.25, 2.11], 0.87);
       p(H + 'bedside_cabinet.glb', bx + (rot === 90 ? -0.55 : 0.55), bz - 1.35, rot, [0.52, 0.63], 0.81);
-      p(U + '08_support_equipment/runtime/iv_stand_starter.glb', bx + (rot === 90 ? 1.0 : -1.0), bz - 1.1, 0, [0.68, 0.65], 1.99, { noCollide: true });
+      p(H + 'iv_stand.glb', bx + (rot === 90 ? 1.0 : -1.0), bz - 1.1, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      // each bed's service headwall (oxygen, suction, the call light) on the wall at its head: a ward, not a store room
+      wp(H + 'service_headwall.glb', rot === 90 ? -40.75 : -25.75, bz, rot === 90 ? 'e' : 'w', 1.24);
     }
+    // the ward's north wall (the one the camera sees): an exam set, hand gel and gloves by the door, a sharps bin
+    wp(H + 'wall_exam_set.glb', -36.2, 2.15, 's', 0.9);
+    wp(H + 'wall_sanitizer.glb', -29.4, 2.15, 's', 1.05);
+    wp(H + 'glove_dispenser.glb', -28.6, 2.15, 's', 1.2);
+    wp(H + 'sharps_container.glb', -34.6, 2.15, 's', 1.09);
+    p(H + 'biohazard_bin.glb', -26.2, 3.0, 0, [0.39, 0.39], 0.69);
     p(H + 'privacy_screen.glb', -38.1, 7.0, 90, [0.14, 1.84], 1.97);
     p(H + 'privacy_screen.glb', -38.1, 11.0, 90, [0.14, 1.84], 1.97);
     p(H + 'procedure_stretcher.glb', -33.4, 8.4, 0, [0.9, 1.66], 1.22);
@@ -219,23 +237,35 @@ const F7 = buildFloor(7, {
     raw({ kind: 'pipes', x: -32.0, z: 15.8, len: 9.0, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
     p(K + 'isolation_windowed_partition.glb', -36.0, 23.2, 90, [2.0, 0.15], 2.4);
     p(K + 'isolation_windowed_partition.glb', -36.0, 25.4, 90, [2.0, 0.15], 2.4);
-    p(M + 'utility/Utility_Supply_Shelf.glb', -40.25, 20.4, 90, [1.39, 0.53], 2.0);
-    p(M + 'utility/Utility_Janitor_Cart.glb', -26.2, 26.8, 0, [0.83, 0.94], 1.24);
-    p(M + 'utility/Utility_Mop_Bucket.glb', -27.3, 27.3, 0, [0.43, 0.51], 0.66);
-    p(M + 'utility/Utility_Wet_Floor_Sign.glb', -30.2, 18.9, 0, [0.36, 0.66], 0.67, { noCollide: true });
-    p(M + 'utility/Utility_Wet_Floor_Sign.glb', -28.9, 18.6, 30 - 30, [0.36, 0.66], 0.67, { noCollide: true });
+    p(H + 'supply_shelf.glb', -40.25, 20.4, 90, [1.39, 0.56], 2.0);
+    p(H + 'janitor_cart.glb', -26.2, 26.8, 0, [0.83, 0.99], 1.23);
+    p(H + 'mop_bucket.glb', -27.3, 27.3, 0, [0.46, 0.51], 0.65);
+    p(H + 'wet_floor_sign.glb', -30.2, 18.9, 0, [0.48, 0.66], 0.64, { noCollide: true });
+    p(H + 'wet_floor_sign.glb', -28.9, 18.6, 0, [0.48, 0.66], 0.64, { noCollide: true });
     p(U + '10_janitor_utility/starter/10_starter_rack.glb', -40.3, 26.6, 90, [0.82, 0.51], 1.82);
-    wp(M + 'utility/Utility_Toolboard.glb', -38.0, 15.8, 's', 1.0);
+    wp(H + 'toolboard.glb', -38.0, 15.8, 's', 1.0);
     // stacked renovation stock: boxed materials on pallets, a second bench, a laundry hamper of dust sheets
     raw({ kind: 'box', x: -27.2, z: 16.7, size: [1.6, 0.9, 1.1], face: 's', color: 0xa38f6c, fp: [1.6, 0.9], h: 1.1 });
     raw({ kind: 'box', x: -25.4, z: 16.7, size: [1.2, 0.9, 0.8], face: 's', color: 0x9c8a6a, fp: [1.2, 0.9], h: 0.8 });
     raw({ kind: 'bench', x: -33.6, z: 27.2, size: [2.0, 0.7, 0.92], color: 0x8c7a5c, fp: [2.0, 0.7], h: 0.92 });
-    p(M + 'utility/Utility_Laundry_Hamper.glb', -40.2, 23.6, 0, [0.6, 0.54], 0.97);
+    p(H + 'laundry_hamper.glb', -40.2, 23.6, 0, [0.6, 0.57], 1.15);
+    // (2026-10-18) the works themselves, modelled in Blender (blender/make_construction_props.py; new pieces, not the user's
+    // painted construction props, which are missing): a sawhorse barrier cordoning the open floor by the east wall, plasterboard
+    // on a pallet with cement sacks and a paint pail by the west wall
+    p('zombie/assets/props/sawhorse_barrier.glb', -26.4, 23.4, 90, [1.9, 0.73], 1.04);
+    p('zombie/assets/props/drywall_pallet.glb', -39.6, 18.9, 90, [1.41, 1.69], 0.45);
     // C7 | the staff cafeteria: counters either side of the store door on the back wall, tables to circle around
     p(K + 'cafeteria_serving_counter.glb', -20.3, 16.25, 0, [2.46, 0.96], 1.53);
     p(K + 'cafeteria_tray_return.glb', -18.3, 16.1, 0, [0.68, 0.56], 1.0);
     p(K + 'cafeteria_vending_machine.glb', -11.2, 16.25, 0, [0.93, 0.87], 1.9);
     p(K + 'cafeteria_vending_machine.glb', -10.1, 16.25, 0, [0.93, 0.87], 1.9);
+    // the staff side of it: a coffee counter with its machine in the corner by the lift-service door, the staff lockers on
+    // the east wall, a water cooler and a pedal bin by the renovation door
+    p(H + 'coffee_counter.glb', -8.6, 16.35, 0, [1.33, 0.81], 1.0);
+    raw({ m: H + 'coffee_machine.glb', x: -8.95, z: 16.2, rot: 0, y: 1.0, fp: [0.1, 0.1], h: 0, noCollide: true });
+    raw({ m: H + 'mug.glb', x: -8.2, z: 16.45, rot: 40, y: 1.0, fp: [0.1, 0.1], h: 0, noCollide: true });
+    p(H + 'locker_bank.glb', -7.75, 25.6, 270, [1.48, 0.66], 1.95);
+    p(H + 'water_cooler.glb', -22.4, 17.4, 90, [0.44, 0.49], 1.47);
     for (const [tx, tz] of [[-19.6, 20.6], [-15.0, 22.4], [-10.6, 20.6], [-19.0, 25.8], [-11.2, 25.8]]) {
       p(H + 'break_table.glb', tx, tz, 0, [0.95, 0.86], 0.85);
       p(H + 'break_chair.glb', tx - 0.85, tz, 90, [0.72, 0.62], 0.92, { noCollide: true });
@@ -250,29 +280,35 @@ const F7 = buildFloor(7, {
     raw({ kind: 'hazard', x: -1.0, z: 16.9, size: [1.8, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
     raw({ kind: 'box', x: -6.55, z: 20.6, size: [1.5, 0.6, 2.0], face: 'e', color: 0x8a9497, fp: [0.6, 1.5], h: 2.0 });
     raw({ kind: 'box', x: -6.55, z: 23.2, size: [1.2, 0.6, 1.7], face: 'e', color: 0x7f898c, fp: [0.6, 1.2], h: 1.7 });
-    p(M + 'utility/Utility_Janitor_Cart.glb', 4.6, 27.2, 0, [0.83, 0.94], 1.24);
-    p(U + '10_janitor_utility/standard/10_standard_utility_sink.glb', 6.5, 17.2, 270, [0.9, 0.6], 1.1);
-    wp(M + 'utility/Utility_Toolboard.glb', -3.6, 15.8, 's', 1.0);
+    p(H + 'janitor_cart.glb', 4.6, 27.2, 0, [0.83, 0.99], 1.23);
+    p(H + 'utility_sink.glb', 6.55, 17.2, 270, [0.88, 0.51], 1.64);
+    wp(H + 'toolboard.glb', -3.6, 15.8, 's', 1.0);
+    // a maintenance bay: the floor scrubber parked by the racks, a mop bucket left out
+    p(H + 'floor_scrubber.glb', 2.6, 26.9, 90, [0.86, 1.52], 1.17);
+    p(H + 'mop_bucket.glb', 5.6, 18.6, 30, [0.46, 0.51], 0.65);
     // R7 | the prep room under the OR: scrub sinks and linen along the walls, a clear walk from P7 to the barred door
     p(U + '10_janitor_utility/starter/10_starter_steel_sink.glb', -5.4, 1.55, 0, [0.87, 0.63], 1.16);
     p(U + '10_janitor_utility/starter/10_starter_steel_sink.glb', -4.3, 1.55, 0, [0.87, 0.63], 1.16);
-    p(M + 'decor/Recovery_Linen_Cabinet.glb', -6.55, 8.0, 90, [0.95, 0.59], 1.84);
-    p(U + '08_support_equipment/runtime/supply_cart_standard.glb', 6.5, 6.2, 270, [0.88, 0.65], 1.21);
+    p(H + 'linen_cabinet.glb', -6.55, 8.0, 90, [0.95, 0.65], 1.84);
+    p(H + 'supply_cart.glb', 6.5, 6.2, 270, [1.16, 1.1], 1.23);
     p(H + 'procedure_stretcher.glb', -5.6, 12.6, 90, [0.9, 1.66], 1.22);
-    wp(M + 'decor3/Clinical_Sign_PreOp.glb', 4.6, 1.2, 's', 2.2);
-    p(U + '06_prep_airway/SedaPrep_standard.glb', 6.3, 10.6, 270, [1.0, 0.6], 1.1);
+    wp(H + 'clinical_sign_preop.glb', 4.6, 1.2, 's', 2.23);
+    p(H + 'sedaprep.glb', 6.3, 10.6, 270, [1.12, 0.72], 0.98);
     p(H + 'supply_cart.glb', -6.3, 4.4, 90, [1.16, 1.1], 1.23);
-    p(U + '08_support_equipment/runtime/iv_stand_starter.glb', -4.6, 11.8, 0, [0.68, 0.65], 1.99, { noCollide: true });
-    wp(M + 'furnishings/Clinical_Handwash_Basin.glb', -2.9, 1.2, 's', 0.85);
+    p(H + 'iv_stand.glb', -4.6, 11.8, 0, [0.73, 0.7], 2.03, { noCollide: true });
+    wp(H + 'handwash_basin.glb', -2.9, 1.2, 's', 0.85);
+    wp(H + 'wall_sanitizer.glb', 0.6, 1.2, 's', 1.05);
     // X7 | the contractor store: shelving on both side walls, the bench with the reward on it (seen through the door)
-    p(M + 'utility/Utility_Supply_Shelf.glb', -22.25, 7.4, 90, [1.39, 0.53], 2.0);
-    p(M + 'utility/Utility_Supply_Shelf.glb', -22.25, 10.4, 90, [1.39, 0.53], 2.0);
-    p(M + 'utility/Utility_Supply_Shelf.glb', -7.75, 7.4, 270, [1.39, 0.53], 2.0);
-    p(M + 'utility/Utility_Supply_Shelf.glb', -7.75, 10.4, 270, [1.39, 0.53], 2.0);
+    p(H + 'supply_shelf.glb', -22.25, 7.4, 90, [1.39, 0.56], 2.0);
+    p(H + 'supply_shelf.glb', -22.25, 10.4, 90, [1.39, 0.56], 2.0);
+    p(H + 'supply_shelf.glb', -7.75, 7.4, 270, [1.39, 0.56], 2.0);
+    p(H + 'supply_shelf.glb', -7.75, 10.4, 270, [1.39, 0.56], 2.0);
+    p(H + 'storage_bins.glb', -9.2, 13.8, 0, [1.05, 0.3], 0.28, { noCollide: true });
     raw({ kind: 'bench', x: -15.0, z: 9.4, size: [2.0, 0.75, 0.92], color: 0x8c7a5c, fp: [2.0, 0.75], h: 0.92, name: 'x7bench' });
     p(U + '10_janitor_utility/starter/10_starter_rack.glb', -12.4, 5.0, 0, [0.82, 0.51], 1.82);
     p(U + '10_janitor_utility/starter/10_starter_rack.glb', -17.8, 5.0, 0, [0.82, 0.51], 1.82);
     raw({ kind: 'box', x: -19.6, z: 12.4, size: [1.2, 0.8, 0.9], face: 's', color: 0xa38f6c, fp: [1.2, 0.8], h: 0.9 });
+    p('zombie/assets/props/sawhorse_barrier.glb', -19.0, 6.6, 0, [1.9, 0.73], 1.04); // (the store's stock of the works)
     // wayfinding: printed signs on the back/left walls the camera sees
     sign('LIFT SERVICE →', 'Lift power · past the cafeteria', -25.8, 1.95, -1.4, 'w', 1.5);
     sign('LIFT', 'Power fault', X(1214) + 3.65, 2.3, -11.0, 's', 0.8, { lift: 7 });
@@ -400,11 +436,11 @@ const F6 = buildFloor(6, {
     p(H + 'privacy_screen.glb', (X(242) + X(397)) / 2, z(378), 0, [0.14, 1.84], 1.97);
     p(H + 'recovery_bed.glb', X(367), z(577), 90, [1.25, 2.11], 0.87);
     p(H + 'recovery_bed.glb', X(557), z(620), 0, [1.25, 2.11], 0.87);
-    p(U + '08_support_equipment/runtime/iv_stand_starter.glb', X(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
+    p(H + 'iv_stand.glb', X(440), z(560), 0, [0.68, 0.65], 1.99, { noCollide: true });
     p(H + 'patient_monitor.glb', X(200), z(690), 90, [0.62, 0.71], 1.49);
     // P6 | preparation: counters along the walls, a prep trolley
-    p(M + 'decor/Recovery_Linen_Cabinet.glb', X(270), z(790), 0, [0.95, 0.59], 1.84);
-    p(U + '06_prep_airway/SedaPrep_standard.glb', X(530), z(920), 0, [1.0, 0.6], 1.1);
+    p(H + 'linen_cabinet.glb', X(270), z(790), 0, [0.95, 0.59], 1.84);
+    p(H + 'sedaprep.glb', X(530), z(920), 0, [1.0, 0.6], 1.1);
     p(H + 'supply_cart.glb', X(260), z(895), 90, [1.16, 1.1], 1.23);
     p(U + '10_janitor_utility/starter/10_starter_steel_sink.glb', X(560), z(785), 0, [0.87, 0.63], 1.16);
     // K6 | cold dispatch: the specimen fridge cabinets on the back wall, the counter with the sealed case
@@ -414,14 +450,14 @@ const F6 = buildFloor(6, {
     p(M + 'furnishings/Lounge_Break_Table.glb', X(305), z(1077), 0, [0.9, 0.9], 0.74, { name: 'k6table' });
     raw({ m: K + 'lab_sample_rack.glb', x: X(560), z: z(1077), rot: 0, y: 0.74, fp: [0.1, 0.1], h: 0, noCollide: true });
     p(M + 'furnishings/Lounge_Break_Table.glb', X(560), z(1077), 0, [0.9, 0.9], 0.74);
-    p(U + '07_warmth_teamwork/ThermaNest_standard.glb', X(500), z(1260) - 0.35, 180, [0.81, 0.69], 1.26);
+    p(H + 'thermanest.glb', X(500), z(1260) - 0.35, 180, [0.81, 0.69], 1.26);
     p(H + 'supply_cart.glb', X(200), z(1180), 90, [1.16, 1.1], 1.23);
     // SP6 / A6 | the service passage and the partition works: shelving on the east wall, stacked boards, open floor for a charge
-    p(M + 'utility/Utility_Supply_Shelf.glb', X(1110), z(880), 270, [1.39, 0.53], 2.0);
+    p(H + 'supply_shelf.glb', X(1110), z(880), 270, [1.39, 0.53], 2.0);
     p(U + '10_janitor_utility/starter/10_starter_rack.glb', X(1110), z(1180), 270, [0.82, 0.51], 1.82);
     raw({ kind: 'hazard', x: X(710) + 1.0, z: (z(1095) + z(1180)) / 2, size: [1.3, 3.2], noCollide: true, fp: [0.1, 0.1], h: 0 }); // (where a dodge sends her charge into the partition: about a metre out)
     raw({ kind: 'bench', x: X(1000), z: z(1250), size: [1.8, 0.65, 0.92], color: 0x8c7a5c, fp: [1.8, 0.65], h: 0.92 });
-    p(M + 'utility/Utility_Wet_Floor_Sign.glb', X(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
+    p(H + 'wet_floor_sign.glb', X(760), z(860), 0, [0.36, 0.66], 0.67, { noCollide: true });
     raw({ kind: 'box', x: X(1100), z: z(1010), size: [1.4, 0.8, 1.1], face: 'w', color: 0xa38f6c, fp: [0.8, 1.4], h: 1.1 });
     p(K + 'isolation_windowed_partition.glb', X(1110), z(1090), 90, [2.0, 0.15], 2.4);
     // the weak partition itself (two windowed panels filling the opening; the level breaks them)
@@ -485,7 +521,7 @@ const F5 = buildFloor(5, {
     // E5 | the lift lobby
     p(M + 'decor/Reception_Linked_Seats_3.glb', 4.9, z(560) - 0.4, 180, [2.61, 0.62], 0.92);
     // I5 | the secured intake: the preservation cabinet on the back wall (where the case is held), a counter, a plant
-    p(U + '07_warmth_teamwork/ThermaNest_standard.glb', X(830), z(300) + 0.45, 0, [1.0, 0.7], 1.6, { name: 'intake' });
+    p(H + 'thermanest.glb', X(830), z(300) + 0.45, 0, [1.0, 0.7], 1.6, { name: 'intake' });
     p(K + 'pharmacy_locked_cupboard.glb', X(760), z(300) + 0.4, 0, [0.95, 0.55], 1.95);
     p(U + '07_warmth_teamwork/TeamDesk_standard.glb', X(785), z(525), 0, [1.6, 0.8], 1.0);
     p(U + '12_lobby/lobby_T2_floor_planter.glb', X(1085), z(527), 0, [0.55, 0.86], 1.2, { fit: true });
@@ -503,7 +539,7 @@ const F5 = buildFloor(5, {
     // R5 | transfer records: the docket station (a desk with its screen) on the back wall, shelving
     p(U + '09_assessment_furniture/runtime/consultation_desk_standard.glb', X(340), z(1255) - 0.45, 180, [1.5, 0.75], 0.78, { name: 'docket' });
     p(K + 'pharmacy_medicine_shelf.glb', X(620), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
-    p(M + 'decor/Recovery_Linen_Cabinet.glb', X(280), z(1050), 90, [0.95, 0.59], 1.84);
+    p(H + 'linen_cabinet.glb', X(280), z(1050), 90, [0.95, 0.59], 1.84);
     raw({ kind: 'screen', x: X(340), z: z(1255) - 0.55, y: 0.78, fp: [0.1, 0.1], h: 0, noCollide: true, name: 'docketScreen' });
     p(K + 'pharmacy_medicine_shelf.glb', X(470), z(1260) - 0.2, 180, [1.39, 0.53], 1.95);
     p(U + '09_assessment_furniture/runtime/clinician_chair_standard.glb', X(340), z(1255) - 1.05, 0, [0.6, 0.6], 1.0, { noCollide: true });
@@ -511,7 +547,7 @@ const F5 = buildFloor(5, {
     p(K + 'ct_scanner_gantry.glb', X(970), z(1075), 0, [2.13, 0.87], 2.26);
     p(H + 'procedure_stretcher.glb', X(780), z(955), 90, [0.9, 1.66], 1.22);
     p(U + '10_janitor_utility/starter/10_starter_rack.glb', X(1218), z(1005), 270, [0.82, 0.51], 1.82);
-    p(M + 'utility/Utility_Supply_Shelf.glb', X(1218), z(1200), 270, [1.39, 0.53], 2.0);
+    p(H + 'supply_shelf.glb', X(1218), z(1200), 270, [1.39, 0.53], 2.0);
     p(U + '03_endoscopy/endoscopy_tower_standard.glb', X(760), z(1250), 0, [0.7, 0.6], 1.6);
     sign('DIAGNOSTIC INTAKE', 'Specimen hold', X(920), 2.3, z(300) + 0.15, 's', 1.4);
     sign('← RECORDS', 'Short ward', X(700) + 0.16, 2.3, z(745) - 1.8, 'e', 1.3);
