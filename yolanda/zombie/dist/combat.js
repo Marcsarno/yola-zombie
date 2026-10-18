@@ -57482,6 +57482,18 @@ void main() {
       };
       e.redMat = pool("255,40,24");
       e.coldMat = pool("190,220,255");
+      {
+        const c = document.createElement("canvas");
+        c.width = 128;
+        c.height = 64;
+        const g = c.getContext("2d"), gr = g.createRadialGradient(64, 0, 0, 64, 0, 64);
+        gr.addColorStop(0, "rgba(255,40,24,1)");
+        gr.addColorStop(0.4, "rgba(255,40,24,0.42)");
+        gr.addColorStop(1, "rgba(255,40,24,0)");
+        g.fillStyle = gr;
+        g.fillRect(0, 0, 128, 64);
+        e.redHalf = new MeshBasicMaterial({ map: new CanvasTexture(c), transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
+      }
       const grp = new Group();
       grp.name = "emergency";
       grp.visible = false;
@@ -57496,8 +57508,18 @@ void main() {
         p.renderOrder = 2;
         grp.add(p);
       };
-      for (const l of this.f3 ? CH().lights || [] : LAYOUT.doors.map((d) => ({ x: d.spawn.x, z: d.spawn.z }))) put2(e.redMat, l.x, l.z, 5.5);
-      for (const d of CH().doors || []) if (d.kind !== "lift") put2(e.redMat, d.x, d.z, 2.6);
+      if (this.f3) {
+        for (const l of CH().lights || []) put2(e.redMat, l.x, l.z, 5.5);
+        for (const d of CH().doors || []) if (d.kind !== "lift") put2(e.redMat, d.x, d.z, 2.6);
+      } else for (const d of LAYOUT.doors) {
+        const ix = Math.sin(d.yaw), iz = Math.cos(d.yaw), W3 = 4.2, D3 = 3;
+        const p = new Mesh(geo, e.redHalf);
+        p.scale.set(W3, 1, D3);
+        p.rotation.y = d.yaw;
+        p.position.set(d.x + ix * (D3 / 2 + 0.05), 0.02, d.z + iz * (D3 / 2 + 0.05));
+        p.renderOrder = 2;
+        grp.add(p);
+      }
       for (const r of this.f3 ? CH().rooms || [] : OB_WING_ROOMS) for (const [x0, x1, z0, z1] of r.rects) {
         const w = x1 - x0, dd = z1 - z0;
         if (w * dd > 12) put2(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8);
@@ -57525,8 +57547,8 @@ void main() {
         this.scene.environmentIntensity *= ls;
       }
       e.group.visible = k > 5e-3;
-      e.redMat.opacity = k * (0.3 + 0.38 * beacon);
-      e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3));
+      e.redMat.opacity = e.redHalf.opacity = k * (0.3 + 0.38 * beacon);
+      e.coldMat.opacity = this.coldOff ? 0 : k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3));
     }
     update(dt, px2, pz2, camYaw, level) {
       this.tickEmergency(dt);
@@ -71897,6 +71919,23 @@ void main() {
       return t = new CanvasTexture(c);
     };
   })();
+  var streakTex = /* @__PURE__ */ (() => {
+    let t = null;
+    return () => {
+      if (t) return t;
+      const c = document.createElement("canvas");
+      c.width = 32;
+      c.height = 128;
+      const g = c.getContext("2d"), im = g.createImageData(32, 128);
+      for (let y = 0; y < 128; y++) for (let x = 0; x < 32; x++) {
+        const a = y / 127, u = (x - 15.5) / 15.5, along = Math.min(1, a / 0.08) * Math.pow(1 - a, 1.05), across = Math.exp(-u * u * 4 * (1 + 0.6 * a)), i = (y * 32 + x) * 4;
+        im.data[i] = im.data[i + 1] = im.data[i + 2] = 255;
+        im.data[i + 3] = Math.round(255 * along * across);
+      }
+      g.putImageData(im, 0, 0);
+      return t = new CanvasTexture(c);
+    };
+  })();
   var exitTex = () => {
     const c = document.createElement("canvas");
     c.width = 128;
@@ -72028,8 +72067,12 @@ void main() {
       this.fill();
     }
     fill() {
-      if (this.arena) this.arena.lightScale = this.on.baked ? BAKE.fill : this.on.fixtures ? DIM : 1;
+      if (this.arena) {
+        this.arena.lightScale = this.on.baked ? BAKE.fill : this.on.fixtures ? DIM : 1;
+        this.arena.coldOff = !!this.on.baked;
+      }
     }
+    // (A: the bake draws the rooms' light; the emergency look's cold pools would double it)
     // ---- A: the baked floor light: a lightMap on the wing's floors, uv1 from world x / z across the bake's bounds ----
     build_baked() {
       const O = this.arena?.ob;
@@ -72061,7 +72104,23 @@ void main() {
         this.bakeFloors.push(m);
       }
     }
+    // the bake cannot flicker: under each buzzing / failing fitting a soft dark patch takes the light back off the floor
+    // as the tube dips (normal blending, black, opacity = the light lost)
+    bakeDips() {
+      if (this.dips) return this.dips;
+      this.dips = this.fittings().filter((F) => F.state === "buzz" || F.state === "failing").map((F) => {
+        const m = new Mesh(FLAT2, new MeshBasicMaterial({ map: glowTex2(), color: 0, transparent: true, opacity: 0, depthWrite: false }));
+        m.position.set(F.x, 0.022, F.z);
+        m.scale.set(6.2, 1, 6.2);
+        m.renderOrder = 1;
+        m.visible = false;
+        this.root.add(m);
+        return { F, m };
+      });
+      return this.dips;
+    }
     toggle_baked(v) {
+      for (const d of this.bakeDips()) d.m.visible = v;
       for (const m of this.bakeFloors || []) {
         const L2 = m.userData.liveMat, B = m.userData.bakeMat;
         if (v) {
@@ -72075,11 +72134,13 @@ void main() {
     // the bake's input (dev only): every static opaque mesh over the wing as world triangles, the bounds, the fittings and the
     // EXIT signs, posted to shots/wing_bake_scene.json for blender/bake_wing_floor.py. Run game.lightkit.exportBake() in the lab
     // with no characters' props near (the wheelchair and the drip stand would bake in)
-    async exportBake() {
+    async exportBake(extra = []) {
+      const skip = /* @__PURE__ */ new Set();
+      for (const r3 of [...this.lastYola ? this.yshGear(this.lastYola) : [], ...(this.lastViews || []).map((v) => v.view?.outer), ...extra]) r3?.traverse?.((o) => skip.add(o));
       const out = [], V3 = new Vector3();
       this.scene.updateMatrixWorld(true);
       this.scene.traverse((o) => {
-        if (!o.isMesh || o.isSkinnedMesh || o.isInstancedMesh) return;
+        if (!o.isMesh || o.isSkinnedMesh || o.isInstancedMesh || skip.has(o)) return;
         for (let q = o; q; q = q.parent) if (!q.visible) return;
         if ([].concat(o.material).some((m) => m.transparent || m.blending !== NormalBlending || m.isMeshBasicMaterial)) return;
         const g = o.geometry;
@@ -72172,13 +72233,37 @@ void main() {
           }
         });
       }
-      const L2 = this.ysh, t = YSH.half * 2 / YSH.map, x = Math.round(p.x / t) * t, z = Math.round(p.z / t) * t;
+      let best = null, bd = 1e9;
+      for (const F of this.fittings()) {
+        if (F.b < 0.2) continue;
+        const d = Math.hypot(F.x - p.x, F.z - p.z);
+        if (d < bd) {
+          bd = d;
+          best = F;
+        }
+      }
+      let ox = YSH.off[0], oz = YSH.off[2], oy = YSH.off[1], k = 0.35;
+      if (best && bd < 6.5) {
+        const d = Math.max(0.45, Math.min(2.4, bd)), ux = (best.x - p.x) / (bd || 1), uz = (best.z - p.z) / (bd || 1);
+        ox = ux * d;
+        oz = uz * d;
+        oy = 2.6 - 0.1;
+        k = best.b * Math.max(0.35, Math.min(1, 1 - (bd - 2.2) / 4.3));
+      }
+      const S2 = this.yshS ?? (this.yshS = { x: ox, y: oy, z: oz, k }), e = Math.min(1, dt * 3);
+      S2.x += (ox - S2.x) * e;
+      S2.y += (oy - S2.y) * e;
+      S2.z += (oz - S2.z) * e;
+      S2.k += (k - S2.k) * Math.min(1, dt * 6);
+      const len = Math.hypot(S2.x, S2.z) || 1, cx = p.x - S2.x / len * Math.min(0.7, len * 0.3), cz = p.z - S2.z / len * Math.min(0.7, len * 0.3);
+      const L2 = this.ysh, t = YSH.half * 2 / YSH.map, x = Math.round(cx / t) * t, z = Math.round(cz / t) * t;
+      const sc = 5.5 / Math.hypot(S2.x, S2.y, S2.z);
       L2.target.position.set(x, 0, z);
-      L2.position.set(x + YSH.off[0], YSH.off[1], z + YSH.off[2]);
+      L2.position.set(x + S2.x * sc, S2.y * sc, z + S2.z * sc);
       L2.target.updateMatrixWorld();
       L2.updateMatrixWorld();
       this.yshCatch.position.set(x, 0.014, z);
-      this.yshCatch.material.opacity = YSH.dark;
+      this.yshCatch.material.opacity = YSH.dark * S2.k;
       if (yv.blob) {
         this.yolaBlob = yv.blob;
         yv.blob.visible = false;
@@ -72239,8 +72324,18 @@ void main() {
     }
     // ---- D: polished floor ----
     build_polish() {
-      const cy = this.camYaw * Math.PI / 180, tx = Math.sin(cy), tz = Math.cos(cy);
-      this.streaks = this.fittings().map((F) => ({ F, g: this.addGlow(F.x + tx * 1.1, F.z + tz * 1.1, 0.75, 3.4, cy, F.col, "polish") }));
+      const cy = this.camYaw * Math.PI / 180, tx = Math.sin(cy), tz = Math.cos(cy), fix = this.fittings();
+      const mesh = this.streakMesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ map: streakTex(), transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), fix.length);
+      const M4 = new Matrix4(), q = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), cy);
+      fix.forEach((F, i) => {
+        M4.compose(new Vector3(F.x + tx * 1.2, 0.027, F.z + tz * 1.2), q, new Vector3(0.62, 1, 3.8));
+        mesh.setMatrixAt(i, M4);
+        mesh.setColorAt(i, new Color(0));
+      });
+      mesh.renderOrder = 2;
+      mesh.frustumCulled = false;
+      this.root.add(mesh);
+      this.streaks = fix.map((F, i) => ({ F, i }));
     }
     toggle_polish(v) {
       const O = this.arena?.ob;
@@ -72251,6 +72346,12 @@ void main() {
         m.envMapIntensity = v ? 1.6 : 1;
         m.needsUpdate = true;
       }
+      for (const fm of this.bakeFloors || []) {
+        const B = fm.userData.bakeMat, L2 = fm.userData.liveMat;
+        B.roughness = L2.roughness;
+        B.envMapIntensity = L2.envMapIntensity;
+      }
+      if (this.streakMesh) this.streakMesh.visible = v;
     }
     // ---- E: contact shadows ----
     build_contact() {
@@ -72353,6 +72454,8 @@ void main() {
       }
     }
     update(dt, sim2, views, yolaView) {
+      this.lastViews = views;
+      this.lastYola = yolaView;
       this.t += dt;
       if (this.fix) for (const F of this.fix) {
         const k = flick(F.state, this.t, F.seed, F.S);
@@ -72371,7 +72474,12 @@ void main() {
         E.spill.k = 0.22 * k;
         for (const m of [].concat(E.m.material)) if (m.map) m.opacity = 0.35 + 0.65 * k;
       }
-      if (this.streaks) for (const S2 of this.streaks) S2.g.k = 0.16 * (S2.F.b ?? 1);
+      if (this.streakMesh) {
+        const c = new Color();
+        for (const S2 of this.streaks) this.streakMesh.setColorAt(S2.i, c.set(S2.F.col).multiplyScalar(0.27 * (S2.F.b ?? 1)));
+        this.streakMesh.instanceColor.needsUpdate = true;
+      }
+      if (this.dips && this.on.baked) for (const d of this.dips) d.m.material.opacity = Math.min(0.75, (1 - d.F.b) * 0.8);
       this.flashK = Math.max(0, this.flashK - dt * 9);
       if (this.feetFlash) {
         this.feetK = Math.max(0, (this.feetK || 0) - dt * 10);
@@ -72674,6 +72782,30 @@ void main() {
       } else A?.set(k, e.target.checked);
       if (e.target.checked) what(k);
     });
+    const SAVE = "yola.lightLab.v1";
+    const fields = () => [...el.querySelectorAll("input[type=checkbox], select")].filter((c) => c.id !== "labRoom");
+    const keyOf = (c) => c.dataset?.k || c.id;
+    el.addEventListener("change", () => {
+      try {
+        const o = {};
+        for (const c of fields()) o[keyOf(c)] = c.type === "checkbox" ? c.checked : c.value;
+        localStorage.setItem(SAVE, JSON.stringify(o));
+      } catch {
+      }
+    });
+    try {
+      const o = JSON.parse(localStorage.getItem(SAVE) || "null");
+      if (o) for (const c of fields()) {
+        const v = o[keyOf(c)];
+        if (v === void 0) continue;
+        const cur = c.type === "checkbox" ? c.checked : c.value;
+        if (cur === v) continue;
+        if (c.type === "checkbox") c.checked = v;
+        else c.value = v;
+        c.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    } catch {
+    }
     el.addEventListener("click", (e) => {
       const a = e.target.dataset?.a;
       if (!a) return;
