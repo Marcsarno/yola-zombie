@@ -41058,6 +41058,8 @@ void main() {
         applyGun();
         weaponUI();
         editPick(editFirst());
+        refresh();
+        sidebarSync();
       };
       $("eWeapons").appendChild(b);
     }
