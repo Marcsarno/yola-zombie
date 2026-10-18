@@ -72,9 +72,19 @@ export class Sim {
     this.time += dt;
     const p = this.player;
     for (let i = 0; i < input.swapPresses; i++) p.requestSwap();
-    // the dodge is there only while something dodgeable is coming at her (the user, 2026-10-17): its button shows then
-    p.dodgeOpen = this.dodgeThreat() ? 0.3 : Math.max(0, (p.dodgeOpen || 0) - dt);
-    if (input.dodgePresses && p.dodgeOpen > 0) p.tryDodge(input.moveX, input.moveZ, this); // (Dodge / Shift: core/player.js DODGE)
+    // the dodge is there only while something dodgeable is coming at her (the user, 2026-10-17): its button shows then.
+    // A special enemy's big attack (the guard's leap-slam, the lady's charge) is its own: p.threat drives the cue over the
+    // attacker and the button's pulse, and the press dodges the way that gets her clear (autoDodge), not along the stick
+    const th = this.dodgeThreat();
+    p.threat = th && th.special ? th : null;
+    p.dodgeOpen = th ? 0.3 : Math.max(0, (p.dodgeOpen || 0) - dt);
+    if (p.critT > 0) p.critT -= dt;
+    if (input.dodgePresses && p.dodgeOpen > 0) {
+      const auto = p.threat ? this.autoDodge(p, p.threat, input.moveX, input.moveZ) : null;
+      if (auto ? p.tryDodge(auto.x, auto.z, this, auto) : p.tryDodge(input.moveX, input.moveZ, this)) { // (Dodge / Shift: core/player.js DODGE)
+        if (p.threat) this.lastDodge = { t: this.time, id: p.threat.z.id, kind: p.threat.kind, perfect: p.threat.now && p.threat.soon };
+      }
+    }
     p.move(dt, input, this.world, this);
     p.updateAction(dt, this);
     this.flowT -= dt;
@@ -133,18 +143,94 @@ export class Sim {
   }
 
   // Something she can dodge is coming: a zombie winding up its lunge or pounce at her (or in the pounce's leap), the big
-  // guard winding up his jump slam, the big lady squaring up for her charge or running it at her
+  // guard winding up his jump slam, the big lady (or the enraged guard) squaring up for her charge or running it at her.
+  // Returns { z, kind, special, u (the wind-up's progress 0..1), now (the moment to dodge: the slam once he has leapt, the
+  // charge once it is running), soon (well timed: close to landing) } or null; a special threat outranks a walker's.
   dodgeThreat() {
-    const p = this.player; if (p.dead) return false;
+    const p = this.player; if (p.dead) return null;
+    let best = null;
     for (const z of this.zombies) {
-      if (!z.alive || z.down) continue;
+      if (!z.alive || z.down || z.passive || z.dormant) continue;
       const d = Math.hypot(z.x - p.x, z.z - p.z);
-      if (z.state === ZS.WINDUP && (z.attack === 'lunge' || z.attack === 'pounce' || z.attack === 'slam') && d < ZATTACKS[z.attack].range + 1.2) return true;
-      if (z.state === ZS.STRIKE && z.attack === 'pounce') return true;
-      if (z.kind === 'sprinter' && d < 8 && ((z.spotT > 0 && !z.sprinting) || (z.sprinting && !z.braking))) return true;
+      if (z.state === ZS.WINDUP && z.attack === 'slam' && d < 7.5) {
+        const S = ZATTACKS.slam, u = z.t / Math.max(0.05, z.stateDur), left = z.stateDur - z.t;
+        return { z, kind: 'slam', special: true, u, now: u >= S.takeoff, soon: left < 0.8, left };
+      }
+      const charger = z.kind === 'sprinter' || z.enraged;
+      if (charger && d < 9 && !z.crawling && ((z.spotT > 0 && !z.sprinting) || (z.sprinting && !z.braking))) {
+        const fx = Math.sin(z.yaw), fz = Math.cos(z.yaw), along = (p.x - z.x) * fx + (p.z - z.z) * fz;
+        const T = this.T, u = z.sprinting ? 1 : Math.min(1, z.spotT / (T.sprinterWindup ?? 0.7));
+        return { z, kind: 'charge', special: true, u, now: z.sprinting && along > -0.2, soon: z.sprinting && along > -0.2 && along < 3.8, left: z.sprinting ? Math.max(0, along) / Math.max(1, z.spd) : 1 };
+      }
+      if (!best && z.state === ZS.WINDUP && (z.attack === 'lunge' || z.attack === 'pounce') && d < ZATTACKS[z.attack].range + 1.2) best = { z, kind: z.attack, special: false, u: z.t / Math.max(0.05, z.stateDur), now: true, soon: false };
+      if (!best && z.state === ZS.STRIKE && z.attack === 'pounce') best = { z, kind: 'pounce', special: false, u: 1, now: true, soon: false };
     }
-    return false;
+    return best;
   }
+
+  // Which way a dodge from a special attack goes (the user: "choose a sensible escape direction based on the attack and
+  // surrounding space ... without rolling into walls, props, or an obviously worse position"). Sixteen directions are tried
+  // (and the stick's own, which wins any near tie): each path is walked against the world (it may end early at a wall; too
+  // short and it is dropped), the end scored for how far it is outside the attack (the slam's landing wedge; the charge's
+  // lane), room around it, no zombie waiting there, not back toward the attacker. The slam is rolled out of; the charge is
+  // side-stepped, Yola squared up to the charger so the step is truly to her left or right.
+  autoDodge(p, th, sx, sz) {
+    const z = th.z, W = this.world, fx = Math.sin(z.yaw), fz = Math.cos(z.yaw), slam = th.kind === 'slam';
+    const D = slam ? 3.0 : 1.9, sl = Math.hypot(sx, sz), r = p.r;
+    let cx = z.x, cz = z.z; // the slam lands where his leap ends: his remaining travel ahead of him
+    if (slam) { const S = ZATTACKS.slam, rem = Math.max(0, Math.min(1, (1 - Math.max(th.u, S.takeoff)) / (1 - S.takeoff))) * (z.leapL ?? Math.min(S.leap, Math.max(0, Math.hypot(p.x - z.x, p.z - z.z) - 1.05))); cx += fx * rem; cz += fz * rem; }
+    const blocked = (x, y) => {
+      const B = W.bounds; if (B && (x < B.minX + r || x > B.maxX - r || y < B.minZ + r || y > B.maxZ - r)) return true;
+      for (const b of W.boxes) { if (b.off || (b.h ?? 1) < 0.25) continue; const qx = Math.max(b.minX, Math.min(x, b.maxX)), qz = Math.max(b.minZ, Math.min(y, b.maxZ)); if ((x - qx) ** 2 + (y - qz) ** 2 < r * r * 0.95) return true; }
+      return false;
+    };
+    const outside = (x, y) => { // metres clear of the attack (negative: inside it)
+      const rx = x - cx, rz = y - cz, d = Math.hypot(rx, rz);
+      if (slam) {
+        const along = rx * fx + rz * fz, ang = Math.acos(Math.max(-1, Math.min(1, along / (d || 1))));
+        const radial = d - (ZATTACKS.slam.range + r + 0.25), angular = along <= 0 ? 1.5 : (ang - ZATTACKS.slam.arc) * Math.max(0.6, d);
+        return Math.max(radial, angular);
+      }
+      const ax = x - z.x, az = y - z.z, lat = Math.abs(ax * fz - az * fx), al = ax * fx + az * fz;
+      return al < -0.5 ? 1.5 : lat - (z.r + r + 0.35);
+    };
+    let best = null;
+    const tries = [];
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; tries.push([Math.sin(a), Math.cos(a), 0]); }
+    if (sl > 0.3) tries.push([sx / sl, sz / sl, 1]);
+    for (const [dx, dz, stick] of tries) {
+      let len = 0;
+      for (let s = 0.25; s <= D + 1e-6; s += 0.25) { if (blocked(p.x + dx * s, p.z + dz * s)) break; len = s; }
+      if (len < D * 0.55) continue; // (a wall too close that way)
+      const ex = p.x + dx * len, ez = p.z + dz * len, out = outside(ex, ez);
+      let score = Math.min(1.6, out) * 3;
+      if (out < 0) score -= 6; // (still under it)
+      let room = 0; for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; if (!blocked(ex + Math.sin(a) * 1.0, ez + Math.cos(a) * 1.0)) room++; }
+      score += room * 0.18 + (len / D) * 0.8;
+      for (const o of this.zombies) { if (o === z || !o.alive || !o.solid) continue; const d = Math.hypot(o.x - ex, o.z - ez); if (d < 1.4) score -= (1.4 - d) * 2.2; }
+      const tx = z.x - p.x, tz = z.z - p.z, tl = Math.hypot(tx, tz) || 1; score -= Math.max(0, (dx * tx + dz * tz) / tl) * 1.2; // (not back into him)
+      if (sl > 0.3) score += Math.max(0, (dx * sx + dz * sz) / sl) * 0.9 + stick * 0.3; // (the stick, where it is safe)
+      if (!best || score > best.score) best = { score, x: dx, z: dz, len };
+    }
+    if (!best) return null; // (boxed in: the plain dodge along the stick)
+    const out = { x: best.x, z: best.z, dist: best.len, roll: slam };
+    if (!slam) { // square up to the charger; the step is then to her left or right
+      out.face = Math.atan2(z.x - p.x, z.z - p.z);
+      out.kind = angleDiff(out.face, Math.atan2(best.x, best.z)) > 0 ? 'left' : 'right';
+    }
+    return out;
+  }
+  // a special attack has missed (the slam landed without her, the charge ran past): a dodge that beat it is a success, and
+  // a well-timed one (pressed close to the moment) is perfect: the slow-motion beat, and her next blow or shot is critical
+  specialMiss(z, kind) {
+    const d = this.lastDodge, p = this.player;
+    if (!d || d.id !== z.id || this.time - d.t > 2.6 || d.used) return;
+    d.used = true;
+    if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
+    this.emit({ type: 'dodgeSuccess', id: z.id, kind, perfect: d.perfect, x: z.x, z: z.z });
+  }
+  // a critical blow or shot (a perfect dodge's reward): the multiplier once, then gone
+  takeCrit() { const p = this.player; if (!(p.critT > 0)) return 1; p.critT = 0; return this.T.critMul ?? 3; }
 
   aliveCount() { let n = 0; for (const z of this.zombies) if (z.alive) n++; return n; }
 
@@ -196,9 +282,11 @@ export class Sim {
       const off = Math.hypot(m.x + dx * along - z.x, m.z + dz * along - z.z);
       // a perfect shot: through the middle of a standing zombie, not too far off, and every once in a while the
       // head comes clean off (one hit, one kill)
-      const perfect = !z.down && !z.crawling && !z.severed.has('Head') && !z.shieldBlocks(dx, dz) && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
+      const crit = z.shieldBlocks(dx, dz) ? 1 : this.takeCrit(); // (a perfect dodge's critical round; never spent on his shield)
+      const perfect = z.kind !== 'guard' && !z.down && !z.crawling && !z.severed.has('Head') && !z.shieldBlocks(dx, dz) && ((off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0)) || crit > 1);
       if (perfect) z.limbHp.Head = 0;
-      const res = z.takeHit(this.T.pistolDamage, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1), 'pistol', this, perfect ? 'Head' : this.bulletPart(z, m.x, m.z, dx, dz));
+      if (crit > 1) this.emit({ type: 'crit', id: z.id, x: z.x, z: z.z, weapon: 'pistol' });
+      const res = z.takeHit(this.T.pistolDamage * crit, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1) * (crit > 1 ? 1.8 : 1), 'pistol', this, perfect ? 'Head' : this.bulletPart(z, m.x, m.z, dx, dz));
       if (perfect) { this.stats.headshots = (this.stats.headshots || 0) + 1; this.emit({ type: 'headshot', id: z.id, x: z.x, z: z.z }); if (this.T.hitPause > 0) this.emit({ type: 'hitPause', dur: this.T.hitPause * 1.6 }); }
       this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'zombie', id: z.id, yaw, killed: !z.alive, blocked: res === 'blocked' });
     } else {
@@ -233,10 +321,13 @@ export class Sim {
       } else pellets.push({ ex, ez, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz });
     }
     const killed = [], blocked = [];
+    let crit = 1;
+    if (hits.size && [...hits.keys()].some((z) => { const h = hits.get(z), pl = Math.hypot(h.px, h.pz) || 1; return !z.shieldBlocks(h.px / pl, h.pz / pl); })) crit = this.takeCrit();
     for (const [z, h] of hits) {
       this.stats.shotHits++;
       const pl = Math.hypot(h.px, h.pz) || 1;
-      if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, (T.shotgunKnockback * pl) / S.pellets, SHOTGUN, this, h.parts) === 'blocked') blocked.push(z.id);
+      if (crit > 1) { h.dmg *= crit * 0.7; for (const q of h.parts) q[1] *= crit * 0.7; this.emit({ type: 'crit', id: z.id, x: z.x, z: z.z, weapon: 'shotgun' }); }
+      if (z.takeHit(h.dmg, h.px / pl, h.pz / pl, (T.shotgunKnockback * pl) / S.pellets * (crit > 1 ? 1.4 : 1), SHOTGUN, this, h.parts) === 'blocked') blocked.push(z.id);
       if (!z.alive) killed.push(z.id);
     }
     let closest = 99, closestId = -1; for (const z of hits.keys()) { const d = Math.hypot(z.x - p.x, z.z - p.z); if (d < closest) { closest = d; closestId = z.id; } }
@@ -362,9 +453,11 @@ export class Sim {
           if (T.meleeHitPause > 0) this.emit({ type: 'hitPause', dur: T.meleeHitPause * 0.5 * (z.alive ? 1 : 1.3) });
           continue;
         }
-        const dmg = T.axeDamage * A.dmg, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
+        const critM = z.shieldBlocks(dx, dz) ? 1 : this.takeCrit(); // (a perfect dodge's critical blow)
+        if (critM > 1) this.emit({ type: 'crit', id: z.id, x: z.x, z: z.z, weapon: 'melee' });
+        const dmg = T.axeDamage * A.dmg * critM, lethal = z.hp <= dmg, r = this.rand(), sv = A.sever;
         // (a leg attack goes in under the guard's shield and always finds the shins)
-        const side = this.rand() < 0.5 ? '_L' : '_R', shielded = !A.legs && z.shieldBlocks(dx, dz); // (a blow on the guard's shield cuts nothing)
+        const side = this.rand() < 0.5 ? '_L' : '_R', shielded = z.shieldBlocks(dx, dz); // (a blow on the guard's shield cuts nothing; a low one too: the panel reaches the floor)
         const kind = A.kind || (p.equipped === BAT ? 'bat' : 'axe'); // (a test-arena attack names its own: bat = blunt, axe = blade)
         const headOk = z.kind !== 'guard' || z.enraged; // (the guard's head only once both arms are gone)
         const part = shielded ? 'torso' : A.legs ? 'LowerLeg' + side : lethal && headOk && r < sv.head ? 'Head'

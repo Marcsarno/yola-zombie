@@ -32,6 +32,32 @@ function splatTexture() {
   return new THREE.CanvasTexture(c);
 }
 
+// a smashed floor (the guard's shield driven in): a dark crushed centre and cracks radiating out, branching
+// tiles shattered by a heavy blow: a crushed, dusty centre with loose broken tile, and a few straight-ish fractures running
+// out across the grout (glass-hard tile breaks in long, nearly straight runs with sharp turns, never organic branches)
+function crackTexture() {
+  const s = 512, c = document.createElement('canvas'); c.width = c.height = s;
+  const g = c.getContext('2d'), h = s / 2;
+  const grd = g.createRadialGradient(h, h, 6, h, h, s * 0.17); grd.addColorStop(0, 'rgba(46,40,34,.85)'); grd.addColorStop(0.6, 'rgba(70,62,52,.45)'); grd.addColorStop(1, 'rgba(90,82,70,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+  for (let i = 0; i < 9; i++) { // loose shards: small tilted polygons, pale tile tops with dark edges
+    const a = Math.random() * Math.PI * 2, d = 8 + Math.random() * s * 0.09, x = h + Math.cos(a) * d, y = h + Math.sin(a) * d, r = 6 + Math.random() * 10;
+    g.beginPath(); for (let k = 0; k < 4; k++) { const b = a + k * 1.6 + Math.random() * 0.5; g.lineTo(x + Math.cos(b) * r, y + Math.sin(b) * r); } g.closePath();
+    g.fillStyle = Math.random() < 0.5 ? 'rgba(226,216,196,.9)' : 'rgba(186,208,200,.9)'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = 'rgba(30,26,22,.8)'; g.stroke();
+  }
+  g.lineCap = 'round'; g.lineJoin = 'miter';
+  const crack = (x, y, a, len, w, depth) => {
+    const pts = [[x, y]]; const n = 3 + (Math.random() * 3 | 0);
+    for (let i = 0; i < n; i++) { a += (Math.random() - 0.5) * 0.55; x += Math.cos(a) * len / n; y += Math.sin(a) * len / n; pts.push([x, y]); }
+    g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py)));
+    g.lineWidth = w + 1.6; g.strokeStyle = 'rgba(240,232,214,.32)'; g.stroke(); // (a chipped pale lip along it)
+    g.lineWidth = w; g.strokeStyle = 'rgba(28,24,20,.9)'; g.stroke();
+    if (depth > 0) for (let i = 1; i < pts.length - 1; i++) if (Math.random() < 0.3) crack(pts[i][0], pts[i][1], a + (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.6), len * 0.35, w * 0.6, depth - 1);
+  };
+  for (let i = 0; i < 9; i++) crack(h + (Math.random() - 0.5) * 16, h + (Math.random() - 0.5) * 16, (i / 9) * Math.PI * 2 + Math.random() * 0.5, s * (0.2 + Math.random() * 0.22), 2.4, 1);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+
 export class FX {
   constructor(scene) {
     this.scene = scene;
@@ -96,6 +122,13 @@ export class FX {
       this.pools.push({ m, t: 99, size: 1 });
     }
     this.poolNext = 0;
+    // floor cracks (the guard's slam): pooled decals that stay a while, then fade
+    const crackTex = crackTexture();
+    this.cracks = [];
+    for (let i = 0; i < 4; i++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: crackTex, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+      m.rotation.x = -Math.PI / 2; m.visible = false; m.renderOrder = 1; scene.add(m); this.cracks.push({ m, t: 99 });
+    }
     // hit flashes: a quick bright star where a blow lands (pooled sprites)
     const star = starTexture();
     this.hits = [];
@@ -126,6 +159,11 @@ export class FX {
     q.t = 0; q.size = size * (0.8 + Math.random() * 0.4);
     q.m.position.set(x, 0.015 + this.poolNext * 0.0004, z); q.m.rotation.z = Math.random() * Math.PI * 2;
     q.m.visible = true;
+  }
+
+  floorCrack(x, z, size = 1.2) {
+    const q = this.cracks.find((c) => c.t > 40) || this.cracks.reduce((a, b) => (a.t > b.t ? a : b));
+    q.t = 0; q.m.position.set(x, 0.013, z); q.m.rotation.z = Math.random() * Math.PI * 2; q.m.scale.set(size * 2, size * 2, 1); q.m.visible = true;
   }
 
   muzzle(pos, k = 1) {
@@ -208,6 +246,7 @@ export class FX {
       q.m.material.opacity = 0.85 * (q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6));
       if (q.t > 31) { q.m.visible = false; q.t = 99; }
     }
+    for (const q of this.cracks) { if (q.t > 40) continue; q.t += dt; q.m.material.opacity = Math.min(1, q.t / 0.08) * (q.t < 30 ? 0.9 : Math.max(0, 0.9 - (q.t - 30) / 6)); if (q.t > 36) { q.m.visible = false; q.t = 99; } }
     this.pGeo.attributes.position.needsUpdate = true; this.pGeo.attributes.color.needsUpdate = true;
     for (const h of this.hits) if (h.t < 1) { h.t += dt / 0.11; const u = Math.min(1, h.t); h.s.scale.setScalar((0.35 + 0.55 * u) * h.k); h.s.material.opacity = (1 - u) * 0.95; if (h.t >= 1) h.s.visible = false; }
     // swing arc

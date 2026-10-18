@@ -65,12 +65,22 @@ export class Player {
   }
 
   // ---------------- the dodge, the vault, the leg attack ----------------
-  // a dodge press: along the move stick (in world directions), or straight back from the aim
-  tryDodge(mx, mz, sim) {
+  // a dodge press: along the move stick (in world directions), or straight back from the aim. auto (sim.autoDodge, a
+  // special attack): the escape it chose: (mx, mz) its direction, dist (shortened where a wall comes first), roll (the
+  // slam: rolled out of), or kind left / right with face (the charge: squared up to the charger, a side step)
+  tryDodge(mx, mz, sim, auto = null) {
     if (this.dead || this.dodgeCd > 0) return false;
     const a = this.action, t = a.type;
     const free = t === 'ready' || t === 'reload' || t === 'shot' || (t === 'swing' && a.st >= this.atk(a).activeEnd) || (t === 'dodge' && a.t >= DODGE[a.kind === 'roll' ? 'roll' : 'side'].dur * 0.85);
     if (!free) return false; // (not mid-strike, knocked down, swapping or vaulting)
+    if (auto) {
+      const kind = auto.roll ? 'roll' : auto.kind, D = auto.roll ? DODGE.roll : DODGE.side;
+      if (kind === 'roll') this.aimYaw = this.aimTarget = Math.atan2(mx, mz); else if (auto.face != null) this.aimYaw = this.aimTarget = auto.face;
+      this.setAction('dodge', { kind, dirX: mx, dirZ: mz, dur: D.dur, dist: Math.min(D.dist, auto.dist ?? D.dist), done: 0, auto: true });
+      this.attackHeld = false; this.vx *= 0.3; this.vz *= 0.3;
+      sim.emit({ type: 'dodge', kind, auto: true });
+      return true;
+    }
     let l = Math.hypot(mx, mz);
     if (l < 0.2) { mx = -Math.sin(this.aimYaw); mz = -Math.cos(this.aimYaw); l = 1; } // no stick: back from the aim
     mx /= l; mz /= l;

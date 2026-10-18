@@ -6,7 +6,7 @@ import { isMelee } from './weapons.js';
 let nextId = 1;
 const _flow = { x: 0, z: 0 }, _steer = { x: 0, z: 0, k: 1 };
 
-export const ZS = { EMERGE: 'emerge', CHASE: 'chase', WINDUP: 'windup', STRIKE: 'strike', RECOVER: 'recover', STAGGER: 'stagger', KNOCKDOWN: 'knockdown', GETUP: 'getup', DYING: 'dying', DEAD: 'dead' };
+export const ZS = { EMERGE: 'emerge', CHASE: 'chase', WINDUP: 'windup', STRIKE: 'strike', RECOVER: 'recover', STAGGER: 'stagger', KNOCKDOWN: 'knockdown', GETUP: 'getup', DYING: 'dying', DEAD: 'dead', STUCK: 'stuck' };
 // Knocked flat by the bat: fall (thrown back, rolls onto the stomach), then get up. The get-up clip
 // starts turned ~155 degrees from where the fall ends, so the facing turns with it.
 export const KNOCKDOWN_FALL = 1.3, KNOCKDOWN_GETUP = 2.0, GETUP_YAW = -2.705;
@@ -29,9 +29,15 @@ export const ZATTACKS = {
 // how a standing zombie walks (render/clipchars.js ZombieView): 'shamble' the Mixamo zombie walk, 'ual' Quaternius's
 // zombie walk in eight directions (it side-steps when it circles her), 'run' Quaternius's zombie run, a runner (faster:
 // RUNNER_SPEED). Picked from each zombie's phase; the sprinter and the guard keep their own.
-// the guard's gore (PROGRESS.md plan): arms off at the shoulder (armHp each: ~4 pistol rounds, an axe blow can take one),
-// both gone: enraged (speed x, the lady's charge, no slam), the head now only headHp (it goes quickly)
-export const GUARD = { armHp: 130, headHp: 35, rageSpeed: 1.7 };
+// The big guard's fight (2026-10-18, the user: "his shield should completely block attacks that strike it ... the slam
+// damages his shield; my positioning lets me damage him"). Nothing that strikes the shield hurts it or him; only his own
+// leap-slams do: the first drives it into the floor, a big crack, and it sticks there (stuck s: he heaves at it, his body
+// open above it); the second shatters it, frame and all (reel s: he reels, open). Before it breaks his body cannot be
+// taken below floor x his health (a flank or the stuck window wears him down to there; at the floor he goes for the slam).
+// Broken, the shatter leaves him at most broken x his health, and every hit after that moves him one stage on, never two
+// (stages: an arm at the shoulder below each fraction, at least stageGap s apart; both gone: enraged, he charges as the
+// lady does), and the killing blow takes his head. turn: rad/s he turns to face her (slow: strafing round him works).
+export const GUARD = { armHp: Infinity, headHp: 35, rageSpeed: 1.6, stuck: 2.6, reel: 1.7, floor: 0.3, broken: 0.55, stages: [0.36, 0.18], stageGap: 0.35, turn: 1.7, front: 0.42 };
 // the lady's burst (PROGRESS.md plan): however she dies, she swells for a beat (swell, s into her dying) and pops: Yola
 // knocked down inside knock m, staggered to stagger m; an acid pool (radius r) that hurts Yola dps for dur s, then dissolves.
 // Zombies walk through it (it only steams around their feet).
@@ -87,6 +93,7 @@ export class Zombie {
     // the big guard's progression (PROGRESS.md gore plan, the user 2026-10-15): the shield, then one arm (at the shoulder),
     // the other arm, then ENRAGED (faster, charges like the lady), and only then the head, quickly
     if (this.kind === 'guard') Object.assign(this.limbHp, { Forearm_L: GUARD.armHp, Forearm_R: GUARD.armHp, Head: Infinity });
+    this.slams = 0; this.stageT = -9; // (the guard: slams landed, when his last gore stage came)
     this.enraged = false; this.burst = false; // (burst: the lady has popped)
     this.severed = new Set(); this.crawling = false; this.lastHitPart = 'torso'; this.toCrawl = false;
     this.hitStyle = ''; this.bumpT = 0;
@@ -126,9 +133,29 @@ export class Zombie {
   }
   set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
   // does his shield take a blow travelling along (dirX, dirZ)? Only from the front, only while he holds it up
+  // (stuck: it is down in the floor in front of him, his body above it is open)
   shieldBlocks(dirX, dirZ) {
-    if (!(this.shieldHp > 0) || !this.alive || this.down) return false;
-    return -(dirX * Math.sin(this.yaw) + dirZ * Math.cos(this.yaw)) > 0.34;
+    if (!(this.shieldHp > 0) || !this.alive || this.down || this.state === ZS.STUCK) return false;
+    return -(dirX * Math.sin(this.yaw) + dirZ * Math.cos(this.yaw)) > GUARD.front;
+  }
+  // his shield takes his own slam (the only thing that damages it): the first lodges it in the floor, cracked; the second
+  // shatters it, every piece of it
+  slamShield(sim) {
+    if (!(this.shieldHp > 0)) return;
+    this.slams++;
+    const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw), x = this.x + fx * 0.75, z = this.z + fz * 0.75;
+    if (this.slams === 1) {
+      this.shieldHp = this.shieldMax * 0.3; // (heavy: the big crack)
+      this.set(ZS.STUCK, GUARD.stuck); this.vx = this.vz = 0;
+      sim.emit({ type: 'shieldCrack', id: this.id, x, z, dirX: -fx, dirZ: -fz, state: 'heavy', slam: true });
+      sim.emit({ type: 'shieldStuck', id: this.id, x, z, dur: GUARD.stuck });
+    } else {
+      this.shieldHp = 0;
+      this.hp = Math.min(this.hp, this.maxHp * GUARD.broken);
+      this.hitDirX = -fx * 0.3; this.hitDirZ = -fz * 0.3; // (the pieces burst out where it struck)
+      this.set(ZS.STAGGER, GUARD.reel); this.attackCd = Math.max(this.attackCd, GUARD.reel + 0.4); this.hitKind = 'slam'; this.hitStyle = 'shield';
+      sim.emit({ type: 'shieldBreak', id: this.id, x, z, dirX: fx, dirZ: fz, kind: 'slam' });
+    }
   }
   get alive() { return this.state !== ZS.DYING && this.state !== ZS.DEAD; }
   get down() { return this.state === ZS.KNOCKDOWN || this.state === ZS.GETUP; }
@@ -139,21 +166,14 @@ export class Zombie {
     if (!this.alive) return;
     const wasDown = this.down, melee = isMelee(kind);
     const parts = Array.isArray(part) ? part : [[part, dmg]];
-    // the guard's shield takes a frontal blow: the panel is damaged, he is shoved a little and flinches, nothing else
+    // the guard's shield takes a frontal blow: it stops it completely (no harm to it or to him: only his slams damage it);
+    // he is shoved a little and flinches behind it. A hard blow rocks him back a step, but nothing stops a slam once begun.
     if (this.shieldBlocks(dirX, dirZ)) {
-      const total = parts.reduce((s, [, d]) => s + d, 0), mul = melee ? SHIELD_MUL.melee : SHIELD_MUL[kind] ?? 1, was = shieldState(this);
-      this.shieldHp = Math.max(0, this.shieldHp - total * mul);
-      if (this.shieldHp > 0 && shieldState(this) !== was) sim.emit({ type: 'shieldCrack', id: this.id, x: this.x, z: this.z, dirX, dirZ, state: shieldState(this) });
-      this.kx += dirX * impulse * 0.35 * this.K.knock; this.kz += dirZ * impulse * 0.35 * this.K.knock;
+      this.kx += dirX * impulse * 0.3 * this.K.knock; this.kz += dirZ * impulse * 0.3 * this.K.knock;
       this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse * 0.4; this.hitSeq++; this.hitKind = kind; this.hitStyle = 'shield'; this.hitFlash = 0.25;
-      if (this.shieldHp <= 0) { // broken: the pieces fall away and he reels, open
-        this.set(ZS.STAGGER, 1.1); this.attackCd = Math.max(this.attackCd, 1.3);
-        sim.emit({ type: 'shieldBreak', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind });
-      } else {
-        if (melee && this.state !== ZS.STAGGER) this.set(ZS.STAGGER, 0.28); // a hard blow on the panel rocks him back a step
-        if (this.state === ZS.WINDUP && melee) this.set(ZS.STAGGER, 0.35); // and breaks his wind-up
-        sim.emit({ type: 'shieldHit', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
-      }
+      if (melee && this.state === ZS.CHASE) this.set(ZS.STAGGER, 0.28);
+      else if (melee && this.state === ZS.WINDUP && this.attack !== 'slam') this.set(ZS.STAGGER, 0.35);
+      sim.emit({ type: 'shieldHit', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
       return 'blocked';
     }
     const limbMul = kind === 'shotgun' ? 1.35 : melee ? 1.2 : 1;
@@ -171,7 +191,29 @@ export class Zombie {
       if (d > mainD) { mainD = d; main = pt; }
     }
     this.lastHitPart = main;
+    let cut = null; // (the guard: the arm this hit takes)
+    if (this.kind === 'guard') { // his fight's stages (GUARD)
+      const M = this.maxHp, after = this.hp - loss;
+      if (this.shieldHp > 0) { // shield up: his body only down to the floor, and there he goes for his slam
+        if (after <= M * GUARD.floor) { loss = Math.max(0, this.hp - M * GUARD.floor); this.slamCd = Math.min(this.slamCd, 0.4); }
+      } else {
+        const next = GUARD.stages[this.armsLost], soon = sim.time - this.stageT < GUARD.stageGap;
+        if (next != null && after < M * next) { // this hit crosses a stage: an arm (never two in one hit)
+          if (soon) loss = Math.max(0, this.hp - M * next);
+          else {
+            const nn = GUARD.stages[this.armsLost + 1];
+            loss = Math.min(loss, this.hp - (nn != null ? M * nn + 1 : 1));
+            const fromLeft = -(dirX * Math.cos(this.yaw) - dirZ * Math.sin(this.yaw)) > 0;
+            cut = main.startsWith('Forearm') ? main : fromLeft ? 'Forearm_L' : 'Forearm_R';
+            if (this.severed.has(cut)) cut = cut === 'Forearm_L' ? 'Forearm_R' : 'Forearm_L';
+            this.stageT = sim.time;
+          }
+        } else if (after <= 0 && soon) loss = this.hp - 1; // (the killing blow waits for the last stage to be seen)
+      }
+    }
     this.hp -= loss;
+    if (cut) this.sever(cut, dirX, dirZ, sim);
+    if (this.kind === 'guard' && this.hp <= 0 && !(this.shieldHp > 0) && !this.severed.has('Head')) { this.lastHitPart = 'Head'; this.sever('Head', dirX, dirZ, sim); sim.emit({ type: 'guardFinished', id: this.id, x: this.x, z: this.z }); } // the finishing blow: his head
     const push = (wasDown ? 0.3 : 1) * this.K.knock; // a body on the floor barely slides (a heavy one barely moves)
     this.kx += dirX * impulse * push; this.kz += dirZ * impulse * push;
     this.hitDirX = dirX; this.hitDirZ = dirZ; this.hitStrength = impulse; this.hitSeq++; this.hitKind = kind; this.hitStyle = style;
@@ -185,7 +227,7 @@ export class Zombie {
       sim.emit({ type: 'zombieDeath', id: this.id, kind, x: this.x, z: this.z });
       return;
     }
-    if (wasDown) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
+    if (wasDown || this.state === ZS.STUCK) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; } // (stuck: he takes it, heaving at the shield)
     // the sprinter caught mid-charge by a melee blow or a shotgun blast: her own speed takes her down (the trip)
     if (this.sprinting && this.spd > 2.0 && (melee || kind === 'fist' || kind === 'shotgun')) { this.tumble(sim, 'hit'); sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
     // knocked flat: the axe (the chop most of all), or a close shotgun blast that lifts them off their feet
@@ -292,7 +334,7 @@ export class Zombie {
     }
     const off = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
     if (p.dead || dist > 14 || (!sees && dist > 3)) { this.sprinting = false; this.spotT = 0; this.spd = 0; return false; } // lost her
-    if (!this.braking && off > 1.4 && dist < 3.5) this.braking = true; // ran past her
+    if (!this.braking && off > 1.4 && dist < 3.5) { this.braking = true; if (!this.chargeHit) sim.specialMiss?.(this, 'charge'); } // ran past her
     let turn;
     if (this.braking) {
       this.spd = Math.max(0, this.spd - 6 * dt); turn = this.spd < 1.2 ? 1.3 : 0; // brakes hard in a straight line, then comes round slowly
@@ -328,6 +370,7 @@ export class Zombie {
     if (!this.alive || this.down) return;
     this.sprinting = false; this.spd = 0; this.vx = this.vz = 0; this.spotT = 0;
     if (what === 'zombie' && sim.rand() < 0.5) { this.set(ZS.STAGGER, 0.6); sim.emit({ type: 'zombieBump', id: this.id, speed: 2 }); return; }
+    if (what === 'wall' && !this.chargeHit) sim.specialMiss?.(this, 'charge'); // (dodged into a wall)
     this.fall = 'tumble'; this.solid = false;
     this.set(ZS.KNOCKDOWN, TUMBLE_FALL);
     sim.emit({ type: 'zombieTumble', id: this.id, what });
@@ -367,6 +410,7 @@ export class Zombie {
         if (los) { wantX = dx / (dist || 1); wantZ = dz / (dist || 1); }
         else { const rem = world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; if (rem > 1e7) { wantX = wantZ = 0; } } // no way through (a shut door): it stands and waits
         if ((this.kind === 'sprinter' || this.enraged) && !this.crawling && !this.passive && this.sprinterChase(dt, sim, dx, dz, dist)) { turnRate = 0; break; } // (the enraged guard charges as she does)
+        if (this.kind === 'guard' && !this.enraged) turnRate = GUARD.turn; // (slow to turn: strafing round his shield works)
         speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === 'run' ? RUNNER_SPEED : 1) : 0;
         if (speed > 0) { const s = this.steer(wantX, wantZ, dist, los, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
         // Waiting its turn (spacing): a zombie without an attack slot stops a step back from her (at its own distance),
@@ -414,7 +458,7 @@ export class Zombie {
         // Attack (pacing): only a zombie with a slot, in reach, facing her, and only once the floor's attack turn comes
         // round (each attack started holds the next one off by zombieAttackGap). Inside ~0.9 m it scratches.
         const slot = !sim.engaged || sim.engaged.has(this.id) || this.crawling || this.kind === 'sprinter';
-        if (this.kind === 'guard' && !this.enraged && this.armsLost < 1 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist > 1.3 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
+        if (this.kind === 'guard' && !this.enraged && this.shieldHp > 0 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist > 0.6 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
             sim.time >= (sim.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
           this.attack = 'slam'; this.set(ZS.WINDUP, ZATTACKS.slam.windup); this.slamCd = 4 + sim.rand() * 2.5;
           sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * 1.5;
@@ -445,7 +489,10 @@ export class Zombie {
       }
       case ZS.WINDUP:
         turnRate = this.attack === 'slam' ? (this.t < this.stateDur * ZATTACKS.slam.takeoff ? 1.6 : 0) : this.attack === 'pounce' ? (this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0) : 2.5; wantX = dx; wantZ = dz; // keep tracking slowly: stepping aside works (the slam commits once he leaps, the pounce a moment before it leaps)
-        if (this.attack === 'slam' && this.t > this.stateDur * ZATTACKS.slam.takeoff) { const L = ZATTACKS.slam.leap / (this.stateDur * (1 - ZATTACKS.slam.takeoff)); this.vx = Math.sin(this.yaw) * L; this.vz = Math.cos(this.yaw) * L; } // the leap forward
+        if (this.attack === 'slam' && this.t > this.stateDur * ZATTACKS.slam.takeoff) { // the leap forward: as far as she was when he left the floor (the shield lands a step short of her), at most leap
+          if (this.leapL == null) this.leapL = Math.max(0, Math.min(ZATTACKS.slam.leap, dist - 1.05));
+          const L = this.leapL / (this.stateDur * (1 - ZATTACKS.slam.takeoff)); this.vx = Math.sin(this.yaw) * L; this.vz = Math.cos(this.yaw) * L;
+        } else if (this.attack === 'slam') this.leapL = null;
         if (this.t >= this.stateDur) {
           this.set(ZS.STRIKE, ZATTACKS[this.attack].strike); this.struck = false;
           if (this.attack === 'pounce') { // the leap: as far as she was (a body short of her), never further than leapMax
@@ -482,13 +529,19 @@ export class Zombie {
           // losing arms leaves a weaker claw (both gone: a bite); crawlers hit low and weaker
           const dmg = (this.attack === 'scratch' ? T.scratchDamage ?? 8 : this.attack === 'slam' ? T.zombieDamage * 1.3 : T.zombieDamage) * this.K.dmg;
           if (hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim) && this.attack === 'slam' && !p.dead) p.knockDown(this.x, this.z, sim);
-          if (this.attack === 'slam') sim.emit({ type: 'zombieSlam', id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1 });
+          if (this.attack === 'slam') sim.emit({ type: 'zombieSlam', id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1, hit, second: this.slams >= 1 });
           sim.emit({ type: hit ? 'zombieStrikeHit' : 'zombieStrikeMiss', id: this.id, attack: this.attack });
+          if (this.attack === 'slam' && !hit) sim.specialMiss?.(this, 'slam'); // (dodged: core/sim.js specialMiss)
+          if (this.attack === 'slam' && this.shieldHp > 0) { this.slamShield(sim); break; } // (his shield into the floor: stuck, or in pieces)
         }
         this.vx = Math.sin(this.yaw) * Z.step; this.vz = Math.cos(this.yaw) * Z.step; // steps into it
         if (this.t >= this.stateDur) this.set(ZS.RECOVER, Z.recover);
         break;
       }
+      case ZS.STUCK: // the guard heaving at his shield, lodged in the floor (slamShield): then he wrenches it free
+        turnRate = 0; this.vx = this.vz = 0;
+        if (this.t >= this.stateDur) { this.set(ZS.RECOVER, 0.95); this.attackCd = Math.max(this.attackCd, 1.4); this.slamCd = Math.max(this.slamCd, 3.5); sim.emit({ type: 'shieldFree', id: this.id }); }
+        break;
       case ZS.RECOVER:
         turnRate = 2;
         if (this.t >= this.stateDur) { this.set(ZS.CHASE); this.attackCd = 0.6 + sim.rand() * 0.6; }

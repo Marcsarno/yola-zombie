@@ -1624,7 +1624,7 @@ export class ZombieView extends ClipBody {
   freshShield() {
     const S = ZombieView.shieldAsset;
     if (this.shieldC && this.shieldC.state !== 'break' && !this.shieldC.disposed) this.shieldC.dispose();
-    this.shieldC = null; this.shieldFit = false;
+    this.shieldC = null; this.shieldFit = false; this.split = false;
     if (!S) { this.shield ||= makeStandInShield(ZombieView.scene); this.shield.visible = true; return; } // (the asset failed to load: the stand-in)
     const c = new ShieldController({ gltf: S.gltf, scene: ZombieView.scene, damageTextures: S.damageTextures });
     c.object3D.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -1650,6 +1650,23 @@ export class ZombieView extends ClipBody {
     c.object3D.quaternion.copy(qh.clone().invert().multiply(qd));
     c.object3D.position.copy(hand.worldToLocal(palm.clone().sub(grip.applyQuaternion(qd))));
     c.object3D.visible = true; this.shieldFit = true;
+  }
+  // his first slam (core/zombies.js slamShield): the panel splits along its own break lines but holds together, the
+  // user's "large, unmistakable crack": the five pieces (the package's fragments, whose edges are the painted cracks)
+  // shift apart a few centimetres in the panel's plane and turn a little, so the seams open dark across the frame and
+  // the teal face; the heavy crack map goes on with it
+  splitShield() {
+    const c = this.shieldC; if (!c || c.state === 'break') return;
+    this.split = true;
+    c.root.updateWorldMatrix(true, true);
+    const inv = new THREE.Matrix4().copy(c.root.matrixWorld).invert();
+    const cs = c.fragments.map((f) => new THREE.Box3().setFromObject(f).getCenter(new THREE.Vector3()).applyMatrix4(inv));
+    const mid = cs.reduce((a, b) => a.clone().add(b), new THREE.Vector3()).multiplyScalar(1 / cs.length);
+    c.fragments.forEach((f, i) => {
+      const d = cs[i].clone().sub(mid); d.z = 0; const l = d.length() || 1;
+      f.position.addScaledVector(d, 0.05 / l); f.position.z += i % 2 ? 0.015 : -0.015;
+      f.rotateZ(Math.sign(d.x || 1) * Math.sign(d.y || 1) * -0.075); // (the corners droop outward)
+    });
   }
   // the panel in pieces: the five fragments become capsules in the game's custom physics (thrown off along the blow),
   // never the baked clip at the same time; the hold stops at once
@@ -1744,6 +1761,8 @@ export class ZombieView extends ClipBody {
       } else if ((S === 'strike' || S === 'recover') && scr && this.oneShot === scr) { // the strike at its own pace, then back down
         scr.time = this.acT0 + ((S === 'strike' ? AC.hit : AC.hitEnd) - 1) / 30;
         scr.timeScale = (S === 'strike' ? AC.hitEnd - AC.hit : AC.end - AC.hitEnd) / 30 / Math.max(0.05, z.stateDur);
+      } else if (S === 'stagger' && z.hitKind === 'slam' && this.act('hit_stumble')) { // the guard's shield shattered under him: he reels back, open
+        const len = this.act('hit_stumble').getClip().duration; this.playOnce('hit_stumble', 0.1, (len - 0.3) / Math.max(0.3, z.stateDur), 0.1);
       } else if (S === 'stagger') {
         if (isMelee(z.hitKind) || z.hitKind === 'shotgun' || z.hitKind === 'bump') {
           const n = this.reactClip(z), len = this.act(n).getClip().duration;
@@ -1780,6 +1799,13 @@ export class ZombieView extends ClipBody {
       else if (S === 'chase' && this.oneShot) { this.oneShot.fadeOut(0.25); this.oneShot = null; }
       this.lastState = S;
     }
+    // the guard's shield lodged in the floor (core/zombies.js STUCK): held braced over it (slam frames 79-82), heaving at it
+    // every 0.55 s (each heave a pull up and a lean back, in time with the creak: main.js), then the recovery wrenches it out
+    if (z.state === 'stuck' && this.oneShot && this.oneShot === this.act('slam')) {
+      const a = this.oneShot, ph = (z.t + 0.2) / 0.55, k = ph % 1, pull = Math.sin(Math.min(1, k / 0.4) * Math.PI);
+      a.timeScale = 0; a.time = (this.acT0 || 0) + (78.5 + pull * 3.2 - 1) / 30;
+      if (Math.floor(ph) !== this.heaveN) { this.heaveN = Math.floor(ph); this.react.kick(0, -0.55); }
+    }
     // facing (deaths turn quickly to align the fall with the hit)
     if (this.deathYaw != null) this.container.rotation.y += angleDiff(this.container.rotation.y, this.deathYaw) * Math.min(1, dt * 14);
     else this.container.rotation.y = z.yaw;
@@ -1813,7 +1839,7 @@ export class ZombieView extends ClipBody {
     }
     // the guard's shield hold over the legs, while he has it: it outweighs a hit reaction (the panel stays up and square while
     // he flinches behind it) but yields to his own attacks (the slam swings it)
-    if (this.act('shield_upper')) { const own = z.state === 'windup' || z.state === 'strike' || z.state === 'recover'; this.act('shield_upper').setEffectiveWeight(this.shieldUp ? (own ? 1 - one : 3) * (1 - crawl) : 0); }
+    if (this.act('shield_upper')) { const own = z.state === 'windup' || z.state === 'strike' || z.state === 'recover' || z.state === 'stuck'; this.act('shield_upper').setEffectiveWeight(this.shieldUp ? (own ? 1 - one : 3) * (1 - crawl) : 0); }
     if (this.hasCrawl) {
       const c = this.act('crawl'); c.setEffectiveWeight(crawl * (1 - one)); c.timeScale = clamp(sp / (0.22 * this.height), 0.45, 2.5);
       if (crawl) { if (z.state === 'windup') c.timeScale = 0.25; else if (z.state === 'strike') c.timeScale = 2.6; else if (z.state === 'stagger') c.timeScale = 0.15; } // coils, lunges, flinches: still on the floor
@@ -1831,7 +1857,7 @@ export class ZombieView extends ClipBody {
     if (this.shieldC) {
       const st = shieldState(z);
       if (st === 'break' || !z.alive) this.breakShield(z); // (dead with it intact: it falls apart with him)
-      else { if (!this.shieldFit) this.fitShield(); if (st !== this.shieldC.state && st !== 'none') this.shieldC.setDamageState(st); this.shieldC.object3D.visible = this.outer.visible; }
+      else { if (!this.shieldFit) this.fitShield(); if (st !== this.shieldC.state && st !== 'none') this.shieldC.setDamageState(st); if (st === 'heavy' && z.slams >= 1 && !this.split) this.splitShield(); this.shieldC.object3D.visible = this.outer.visible; }
     } else if (this.shield) this.placeShield(z);
 
     // small directional jolt on every hit (the clip gives the body reaction; this gives direction)

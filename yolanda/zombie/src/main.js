@@ -33,6 +33,9 @@ import { startTestArena } from './arena/testarena.js';
 import { makeBat } from './render/weaponModels.js';
 import { loadHoldLayers } from './render/holdlayers.js';
 import { ChapterUI } from './ui/chapter.js';
+import { ThreatCue } from './render/threatcue.js';
+import { cue } from './sfx/cues.js';
+import { SlowMotion } from './render/slowmo.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -84,6 +87,7 @@ const fx = new FX(scene);
 // the full burst on big finishing blows (render/gibburst.js): one model per zombie type that has one (0 nurse, 1 patient)
 const gibs = new GibBurst(scene, new GLTFLoader(), fx);
 const telegraphs = new Telegraphs(scene); // zombie attack wedges on the floor
+const threatCue = new ThreatCue(scene); // the sign over a special enemy's big attack (render/threatcue.js)
 const acid = new AcidPools(scene, fx); // the lady's acid pools (render/acid.js)
 fx.gore = store.get('gore', true);
 let shakeOn = true;
@@ -436,6 +440,8 @@ function runFrame(dt, doRender = true) {
   const p = sim.player;
   let simDt = dt;
   if (paused) simDt = 0;
+  // cinematic slow motion (the guard's leap at its peak, a perfect dodge, a finishing blow: slowMotion below)
+  if (!paused) simDt *= slowmo.update(dt, sim, !!opening?.active);
   // hit-stop: a short dip into slow motion (never a full freeze: a freeze reads as a stutter, and combo hits stacked them)
   if (hitPauseT > 0) { const h = Math.min(hitPauseT, simDt); hitPauseT -= h; simDt -= h * (1 - HIT_SLOW); }
   // fixed-step simulation (input sampled once per frame; a swap press is delivered exactly once)
@@ -457,7 +463,26 @@ function runFrame(dt, doRender = true) {
   const animDt = paused ? 0 : simDt;
 
   // ---- Yola ----
-  (window.__dodgeBtn ??= document.getElementById('dodgeBtn'))?.classList.toggle('show', p.dodgeOpen > 0 && !p.dead); // (only while a dodgeable attack is coming: sim.dodgeThreat)
+  { // the dodge button: shown while a dodgeable attack is coming (sim.dodgeThreat); a special enemy's big attack makes it
+    // pulse (amber while it winds up, red and fast at the moment), its ring filling toward that moment
+    const b = (window.__dodgeBtn ??= document.getElementById('dodgeBtn')), th = p.threat;
+    if (b) {
+      b.classList.toggle('show', p.dodgeOpen > 0 && !p.dead);
+      b.classList.toggle('threat', !!th && !th.now && !p.dead); b.classList.toggle('now', !!th && th.now && !p.dead);
+      const pr = th ? (th.now ? 1 : Math.min(1, th.u / (th.kind === 'slam' ? 0.58 : 1))) : 0;
+      if (Math.abs(pr - (b.__p ?? -1)) > 0.02) { b.style.setProperty('--p', pr.toFixed(3)); b.__p = pr; }
+    }
+    // the sign over the attacker, and its sounds: the warning when it starts, the ping when it is time
+    const tz = th?.z, tv = tz && zviews.get(tz.id);
+    const hb = tv?.bones?.Head?.getWorldPosition(_v); // (over his head, wherever it is: crouched, in the air)
+    threatCue.update(dt, th, tz ? { x: hb ? hb.x : tz.px + (tz.x - tz.px) * alpha, y: hb ? hb.y : null, z: hb ? hb.z : tz.pz + (tz.z - tz.pz) * alpha } : null, tv ? tv.height : 2);
+    const key = th ? th.z.id + th.kind : '';
+    if (key && key !== cueState.key) cue(audio, 'warn');
+    if (th?.now && !(cueState.now === key)) { cue(audio, 'now'); cueState.now = key; }
+    cueState.key = key;
+  }
+  // the guard heaving at his shield, lodged in the floor: a grinding creak every heave
+  for (const z of sim.zombies) if (z.state === 'stuck' && Math.floor((z.t + 0.2) / 0.55) !== Math.floor((z.t + 0.2 - animDt) / 0.55)) { cue(audio, 'heave', 0.9); shake(0.06); }
   const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
   const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
   const a = p.action;
@@ -606,18 +631,24 @@ function handleEvents() {
       case 'dryFire': audio.play('dry'); hud.toast('Out of rounds'); break;
       case 'zombieBump': audio.play('bump', Math.min(1.2, e.speed / 3)); break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
-      case 'sprinterSpot': if (dist(e.id) < 14) audio.play('groan', 1.5); break; // her scream before the charge
+      case 'sprinterSpot': if (dist(e.id) < 14) audio.play('groan', 1.5); break; // her scream before the charge (the warning cue: the threat sign)
       case 'zombieTumble': audio.play('knockdown'); if (dist(e.id) < 8) shake(0.15); break;
       case 'sprinterHit': audio.play('bump', 1.2); shake(0.5); break; // her charge ran into Yola
-      case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 16, 0xcfc6b4, 2.2, 0.8, 0.6); if (d < 7) shake(0.9 - d * 0.1); break; } // the guard's smash: dust, a ring, the floor shakes
+      case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 22, 0xcfc6b4, 2.6, 0.9, 0.7); fx.burst(e.x, 0.05, e.z, 10, 0x6f6658, 3.2, 0.5, 0.5); if (d < 8) shake(1.0 - d * 0.1); if (shakeOn) camState.vz += 1.2 * tuning.shake; break; } // the guard's smash: dust, grit, a ring, the floor shakes and the view drops
+      case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.0); hud.popup('SHIELD CRACKED'); break; // (his shield driven into the floor: render/fx.js floorCrack)
+      case 'shieldFree': { const z = sim.zombies.find((q) => q.id === e.id); cue(audio, 'free'); if (z) fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.1, z.z + Math.cos(z.yaw) * 0.75, 14, 0x8a8172, 2.4, 0.9, 0.5); break; }
+      case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
+      case 'dodge': audio.play('swing', 0.75); break;
+      case 'dodgeSuccess': if (e.perfect) { slowBeat(0.26, 0.9); cue(audio, 'perfect'); hud.popup('PERFECT DODGE'); } break; // (core/sim.js specialMiss: her next blow is critical)
+      case 'crit': { slowEnd(); cue(audio, 'crit'); hud.popup('CRITICAL'); shake(0.7); fx.hitFlash(e.x, 1.1, e.z, 0, 0, 2.0); break; }
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
       case 'ladyBurst': audio.play('sever'); audio.play('zombieDeath'); shake(0.85); break; // (the lady pops: core/sim.js ladyBurst)
       case 'guardEnraged': hud.popup('ENRAGED'); shake(0.4); break; // (the guard, both arms gone)
       case 'acidBurn': fx.burst(e.x, 0.1, e.z, 3, 0xd9f25a, 0.6, 1.8, 0.45); break;
       case 'shieldHit': audio.play('shieldHit', e.kind === 'pistol' ? 0.7 : 1, e); fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ); if (e.kind !== 'pistol') shake(0.25); break;
-      case 'shieldCrack': fx.burst(e.x - e.dirX * 0.45, 1.15, e.z - e.dirZ * 0.45, e.state === 'heavy' ? 12 : 8, 0xd7e7e2, 2.0, 0.7, 0.4); shake(e.state === 'heavy' ? 0.4 : 0.3); break; // (a new crack stage: chips off the panel)
-      case 'shieldBreak': audio.play('shieldBreak'); fx.burst(e.x - e.dirX * 0.4, 1.1, e.z - e.dirZ * 0.4, 14, 0xd7e7e2, 2.4, 0.9, 0.55); shake(0.55); hud.popup('SHIELD BROKEN'); break;
+      case 'shieldCrack': audio.play('shieldHit', 1.4, e); fx.burst(e.x, 0.6, e.z, 20, 0xe9e1cf, 2.6, 1.0, 0.5); fx.burst(e.x, 0.5, e.z, 8, 0x2f8f92, 2.2, 0.8, 0.45); shake(0.55); break; // (his first slam: the big crack, chips of the cream frame and the teal panel)
+      case 'shieldBreak': audio.play('shieldBreak'); cue(audio, 'lodge', 0.8); fx.burst(e.x, 0.6, e.z, 26, 0xe9e1cf, 3.2, 1.2, 0.6); fx.burst(e.x, 0.4, e.z, 12, 0x2f8f92, 2.8, 1.0, 0.5); shake(0.8); hud.popup('SHIELD SHATTERED'); break; // (his second slam: in pieces, frame and all)
       case 'headshot': audio.play('bulletHit', 1.5); shake(0.35); hud.popup('HEADSHOT'); break;
       case 'batMiss': audio.play('batMiss'); break;
       case 'batClank': audio.play('clank', 1, e); fx.impactWall(e.x, e.z, e.nx, e.nz); shake(0.2); break;
@@ -638,6 +669,10 @@ function handleEvents() {
   sim.events.length = 0;
 }
 const dist = (id) => { const z = sim.zombies.find((q) => q.id === id); return z ? Math.hypot(z.x - sim.player.x, z.z - sim.player.z) : 99; };
+const cueState = { key: '', now: '' };
+
+const slowmo = new SlowMotion(audio); // (render/slowmo.js: the guard's leap, a perfect dodge, a finishing blow)
+const slowBeat = (k, d) => slowmo.beat(k, d), slowEnd = () => slowmo.end();
 function shake(k) { if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake); }
 
 function updateCamera(dt, px, pz, yaw, p) {
