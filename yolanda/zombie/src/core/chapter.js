@@ -106,8 +106,18 @@ function buildFloor(n, def) {
   // (2026-10-18, the user: "every bed in the hospital should have one of those old patients in it... they start from the laying
   // down position until you get close"): an old patient lying in each ward bed (core/zombies.js prop 'bed'), each on its own,
   // up out of it when Yola comes within sense m (the spare beds in store, RecoveryBed_standard, stay empty)
-  const bedPatients = props.filter((q) => /recovery_bed.glb$/.test(q.m)).map((q, i) => { const yaw = (q.rot * Math.PI) / 180;
-    return { id: 'bed' + i, sense: 3.0, zombies: [{ x: q.x, z: q.z, yaw: yaw + Math.PI, look: 'patient', prop: 'bed', bed: { x: q.x, z: q.z, yaw } }] }; });
+  // It gets off the side it faces (core/zombies.js BED_AT): the side with floor beside it, else mirrored (side -1) off the
+  // other; that side's rail is off (blender/make_open_beds.py: _nx open on the bed's own -X side, _px on +X)
+  const blocked = (x, z, r, self) => walls.some((w) => x > w[0] - r && x < w[1] + r && z > w[2] - r && z < w[3] + r)
+    || props.some((o) => o !== self && !o.noCollide && !o.wall && o.fp && Math.abs(x - o.x) < o.fp[0] / 2 + r && Math.abs(z - o.z) < o.fp[1] / 2 + r);
+  const bedPatients = props.filter((q) => /recovery_bed\.glb$/.test(q.m)).map((q, i) => {
+    const yaw = (q.rot * Math.PI) / 180, out = (s, d) => [q.x - s * Math.cos(yaw) * d, q.z + s * Math.sin(yaw) * d]; // (side 1 gets off the bed's -X side)
+    const free = (s) => !blocked(...out(s, 1.0), 0.3, q) && !blocked(...out(s, 1.6), 0.3, q);
+    const side = free(1) || !free(-1) ? 1 : -1;
+    q.m = q.m.replace(/recovery_bed\.glb$/, side > 0 ? 'recovery_bed_open_nx.glb' : 'recovery_bed_open_px.glb');
+    { const [ex, ez] = out(side, 0.85), fx = Math.sin(yaw), fz = Math.cos(yaw); // (a loose chair where it slides down: moved up beside the bed's head end)
+      for (const o of props) if (o !== q && o.noCollide && !o.wall && !(o.y > 1) && Math.hypot(o.x - (ex + fx * 0.35), o.z - (ez + fz * 0.35)) < 0.6) { o.x -= fx * 0.75; o.z -= fz * 0.75; } }
+    return { id: 'bed' + i, sense: 3.0, zombies: [{ x: q.x, z: q.z, yaw: 0, look: 'patient', prop: 'bed', bed: { x: q.x, z: q.z, yaw, side } }] }; });
   const xs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[0], q[1]])), zs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[2], q[3]]));
   const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs, L.cab.minZ), maxZ = Math.max(...zs);
   return {

@@ -143,7 +143,7 @@ const perf = { frames: [], spikes: 0, t0: performance.now() };
 // (Yola's locomotion speeds are measured from foot plants at load, see YolaView.measureGaits.)
 const ZOMBIE_TYPES = [
   { file: 'assets/zombie-nurse-mod.glb', extra: ['assets/zombie-nurse-scratch.glb', 'assets/zombie_moves/nurse-mod.glb', 'assets/zombie_moves/nurse-mod-b.glb', 'assets/zombie_moves/nurse-mod-c.glb'], height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
-  { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb', 'assets/zombie_moves/patient-mod-b.glb', 'assets/zombie_moves/patient-mod-c.glb'], height: 1.68, walk: { speed: 0.174 } },
+  { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb', 'assets/zombie_moves/patient-mod-b.glb', 'assets/zombie_moves/patient-mod-c.glb', 'assets/zombie_moves/patient-bedrise.glb'], height: 1.68, walk: { speed: 0.174 } },
   // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
   // bed-panel shield is modelled). Not modular: no limbs come off them yet.
   { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb', 'assets/zombie_moves/sprinter-b.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
@@ -228,10 +228,10 @@ async function load() {
     loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)]); // (the wood bat: setupBat)
   // the hospital's own zombies' things (render/clipchars.js IV / CHAIR / wearSurgeonKit): the stand and the chair at the
   // level's sizes (prop footprints in core/chapter.js), the cap and mask as built
-  const fitProp = (g, hgt) => { const o = g.scene, b = new THREE.Box3().setFromObject(o), s = hgt / (b.max.y - b.min.y), c = b.getCenter(new THREE.Vector3()); const w = new THREE.Group(); o.scale.setScalar(s); o.position.set(-c.x * s, -b.min.y * s, -c.z * s); w.add(o); w.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); return w; };
+  const fitProp = (g, hgt) => { const o = g.scene, b = new THREE.Box3().setFromObject(o), s = hgt / (b.max.y - b.min.y), c = b.getCenter(new THREE.Vector3()); const w = new THREE.Group(); o.scale.setScalar(s); o.position.set(-c.x * s, -b.min.y * s, -c.z * s); w.add(o); w.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.receiveShadow = true; } }); return w; }; // (they move: the shadow map is drawn once for the still scenery, so a cast shadow stayed where they started)
   const propP = Promise.all([loader.loadAsync('assets/hospital/iv_stand.glb').then((g) => { ZombieView.propSrc.iv = fitProp(g, 2.03); }),
     loader.loadAsync('assets/hospital/wheelchair.glb').then((g) => { ZombieView.propSrc.chair = fitProp(g, 0.97); }),
-    loader.loadAsync('assets/hospital/recovery_bed.glb').then((g) => { ZombieView.propSrc.bed = fitProp(g, 0.87); }),
+    loader.loadAsync('assets/hospital/recovery_bed_open_nx.glb').then((g) => { ZombieView.propSrc.bedOpen = fitProp(g, 0.87); }), // (the demo's bed)
     loader.loadAsync('assets/props/surgeon_cap.glb').then((g) => { ZombieView.propSrc.cap = g.scene; })].map((q) => q.catch((e) => console.warn('prop', e))));
   const breachP = loader.loadAsync('assets/props/floor_breach.glb').then((g) => { breaches.src = g.scene; g.scene.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = false; } }); }).catch(() => {}); // (blender/make_floor_breach.py)
   loadHoldLayers(); // (the user's hold-layer switches, render/holdlayers.js)

@@ -115,7 +115,7 @@ export class Sim {
       kind: opts.kind,
       prop: opts.prop, bed: opts.bed,
     });
-    if (opts.x !== undefined) { z.x = opts.x; z.z = opts.z; z.yaw = opts.yaw ?? z.yaw; z.stateDur = 0.3; }
+    if (opts.x !== undefined) { z.x = opts.x; z.z = opts.z; z.yaw = opts.yaw ?? z.yaw; z.stateDur = 0.3; z.layInBed(); }
     else { z.emergeTo = { x: sx, z: sz }; z.x = d.axis === 'x' ? sx : d.x + (d.x < 0 ? 0.35 : -0.35); z.z = d.axis === 'x' ? d.z + 0.35 : sz; }
     this.zombies.push(z);
     this.emit({ type: 'zombieSpawn', id: z.id, door: d.id });

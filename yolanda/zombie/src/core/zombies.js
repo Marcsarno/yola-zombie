@@ -96,8 +96,33 @@ export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9;
 // (2026-10-18, the user: "the zombies crawling out of the ground don't feel good just yet"): a shorter, building rumble (the crack
 // grows, the floor shudders and puffs dust, shudder s apart), then it bursts up through the tiles at once (render: the climb's
 // first part played fast) and hauls itself out quicker
-// a bed patient getting up out of its bed (render: lying, then up off the mattress onto the floor beside it): s
-export const BED_RISE = 2.2;
+// A bed patient getting up out of its bed: the Animation Hub's patient_bed_rise (assets/zombie_moves/patient-bedrise.glb,
+// AnimationHub/HUB_GUIDE.md "Patient bed rise"): lying on its back, a noise jolts its head up, it sits up, turns on its
+// backside to the bed's side, scoots to the edge, perches, slides down to the floor (BED_RISE s, the clip's own walk after
+// that is the game's). Its root never turns; its hips travel BED_PATH ([s, m to its right, m ahead], measured from the
+// clip, from its rest hips) and the game moves the zombie along it, so the body and the zombie stay together. The bed
+// stands where the hub had it: its centre BED_AT from the zombie's root (in the root's frame), turned a quarter left of
+// it; it gets off on the side it faces. side -1: the whole thing mirrored (off the bed's other side, render mirrors it)
+export const BED_RISE = 7.4;
+export const BED_AT = { x: -0.05, z: -0.29 };
+export const BED_PATH = [[0, 0.001, -0.252], [3.8, 0.005, -0.252], [3.9, 0.015, -0.25], [4.0, 0.032, -0.243], [4.1, 0.056, -0.229], [4.2, 0.084, -0.211],
+  [4.3, 0.115, -0.189], [4.4, 0.15, -0.165], [4.5, 0.185, -0.139], [4.6, 0.22, -0.113], [4.7, 0.254, -0.086], [4.8, 0.285, -0.059], [4.9, 0.312, -0.034],
+  [5.0, 0.334, -0.012], [5.1, 0.35, 0.005], [5.2, 0.359, 0.015], [5.3, 0.36, 0.018], [6.1, 0.36, 0.026], [6.2, 0.36, 0.107], [6.3, 0.36, 0.215],
+  [6.4, 0.36, 0.272], [6.5, 0.36, 0.278], [6.6, 0.359, 0.297], [6.7, 0.36, 0.341], [6.8, 0.36, 0.401], [6.9, 0.361, 0.459], [7.0, 0.361, 0.504],
+  [7.1, 0.362, 0.517], [7.4, 0.368, 0.526]];
+// where a bed patient's root is for its bed { x, z, yaw, side }: [x, z, yaw]
+export function bedRoot(B) {
+  const s = B.side || 1, yaw = B.yaw - s * Math.PI / 2, ax = s * BED_AT.x, az = BED_AT.z;
+  return [B.x - (ax * Math.cos(yaw) + az * Math.sin(yaw)), B.z - (-ax * Math.sin(yaw) + az * Math.cos(yaw)), yaw];
+}
+// its hips' place along BED_PATH at t s, from its root
+export function bedPathAt(B, t) {
+  const s = B.side || 1, [rx, rz, yaw] = bedRoot(B);
+  let i = 0; while (i < BED_PATH.length - 2 && BED_PATH[i + 1][0] <= t) i++;
+  const a = BED_PATH[i], b = BED_PATH[i + 1], u = Math.max(0, Math.min(1, (t - a[0]) / (b[0] - a[0])));
+  const px = s * (a[1] + (b[1] - a[1]) * u), pz = a[2] + (b[2] - a[2]) * u;
+  return [rx + px * Math.cos(yaw) + pz * Math.sin(yaw), rz - px * Math.sin(yaw) + pz * Math.cos(yaw)];
+}
 export const FLOOR_EMERGE = { rumble: 1.1, climb: 2.0, buriedFor: 0.18, solidAt: 0.45, shudder: 0.32 };
 const PERSONAL = 1.05; // m a waiting zombie keeps between itself and its neighbours // the sprinter's trip: down onto her back, then up (no turn)
 
@@ -147,8 +172,9 @@ export class Zombie {
     // then), 'surgeon' wears a theatre cap and mask, 'bed' lies in a bed until she comes close, then gets up out of it (bed:
     // { x, z, y, yaw } where it lies; the get-up: BED_RISE)
     this.prop = opts.prop || ''; this.bed = opts.bed || null; this.chair = this.prop === 'chair';
+    this.layInBed();
     if (this.prop) this.pouncer = false;
-    if (this.prop === 'iv' || this.chair) this.gait = 'shamble';
+    if (this.prop === 'iv' || this.prop === 'bed') this.gait = 'ual'; else if (this.chair) this.gait = 'shamble'; // (the shamble at their pace played ~3x its own: the user, 'does not correctly walk'; the 8-way walk at its own pace)
     if (this.chair) { this.severed.add('LowerLeg_L'); this.severed.add('LowerLeg_R'); this.limbHp.LowerLeg_L = this.limbHp.LowerLeg_R = 0; }
     this.shieldHp = this.shieldMax = this.kind === 'guard' ? SHIELD_HP : 0; // the sprinter's charge (sprinterChase); fall: 'tumble' when she trips
   }
@@ -176,6 +202,7 @@ export class Zombie {
     this.crawling = this.toCrawl = true; this.broken = part;
     sim.emit({ type: 'legBreak', id: this.id, part, x: this.x, z: this.z });
   }
+  layInBed() { if (this.bed) { [this.x, this.z] = bedPathAt(this.bed, 0); this.yaw = bedRoot(this.bed)[2]; } } // (lying in it as the hub laid it)
   set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
   // nothing standing between it and her (a pounce never leaps through another zombie)
   clearLine(sim, dx, dz, dist) {
@@ -444,22 +471,16 @@ export class Zombie {
       if (wake) { // a normal zombie now, its first attack a beat away
         this.speedMul = D.speedMul; this.passive = false; this.dormant = null; this.attackCd = Math.max(this.attackCd, 1.1);
         sim.level?.onWake(this); sim.emit({ type: 'zombieWake', id: this.id });
-        if (this.bed) { // (out of its bed: the side of it nearer her)
-          const B = this.bed, sx = Math.cos(B.yaw), sz = -Math.sin(B.yaw), s = (p.x - B.x) * sx + (p.z - B.z) * sz >= 0 ? 1 : -1;
-          this.bedRise = { x0: this.x, z0: this.z, x1: B.x + sx * s * 0.95, z1: B.z + sz * s * 0.95, side: s };
-          this.set(ZS.EMERGE, BED_RISE); this.solid = false; sim.emit({ type: 'bedRise', id: this.id });
-        }
+        if (this.bed) { this.bedRise = true; this.set(ZS.EMERGE, BED_RISE); sim.emit({ type: 'bedRise', id: this.id }); } // (out of its bed: patient_bed_rise)
       }
     }
     let wantX = 0, wantZ = 0, speed = 0, turnRate = 5;
 
     switch (this.state) {
       case ZS.EMERGE:
-        if (this.bedRise) { // up off the mattress onto the floor beside the bed, turning to her once on its feet
-          const B = this.bedRise, u = Math.min(1, this.t / this.stateDur), e = u * u * (3 - 2 * u);
-          this.x = B.x0 + (B.x1 - B.x0) * e; this.z = B.z0 + (B.z1 - B.z0) * e; this.vx = this.vz = 0; this.solid = u > 0.5;
-          if (u > 0.7) { turnRate = 2.5; wantX = dx; wantZ = dz; }
-          if (this.t >= this.stateDur) { this.bedRise = null; this.bed = null; this.set(ZS.CHASE); this.solid = true; this.attackCd = Math.max(this.attackCd, 0.6); }
+        if (this.bedRise) { // out of the bed along the clip's own path (BED_PATH), its root's facing held
+          [this.x, this.z] = bedPathAt(this.bed, this.t); this.vx = this.vz = 0; this.kx = this.kz = 0; turnRate = 0; this.yawV = 0;
+          if (this.t >= this.stateDur) { this.bedRise = false; this.bed = null; this.set(ZS.CHASE); this.attackCd = Math.max(this.attackCd, 0.6); this.rGrow = 1; }
           break;
         }
         if (this.floorSpawn) { // out of the floor: in place, turning to face her as it climbs
@@ -735,7 +756,8 @@ export class Zombie {
     }
 
     // facing
-    if (this.kind === 'guard') { // (his turn builds and settles: no fixed-rate snap, no dead stop)
+    if (this.bed) { this.yaw = bedRoot(this.bed)[2]; } // (in its bed, and getting out: the clip's own facing, never turned to her)
+    else if (this.kind === 'guard') { // (his turn builds and settles: no fixed-rate snap, no dead stop)
       const on = turnRate > 0 && (wantX || wantZ) && !(this.state === ZS.CHASE && this.backing);
       const want = on ? Math.max(-turnRate, Math.min(turnRate, angleDiff(this.yaw, Math.atan2(wantX, wantZ)) * GUARD.spin)) : 0;
       this.yawV = (this.yawV || 0) + (want - (this.yawV || 0)) * Math.min(1, dt * (on ? 7 : 12));
@@ -761,6 +783,7 @@ export class Zombie {
       this.vx -= this.vx * k; this.vz -= this.vz * k;
     }
 
+    if (this.rGrow > 0) { this.rGrow = Math.max(0, this.rGrow - dt); this.r = this.K.r * (1 - 0.6 * this.rGrow); }
     // integrate: locomotion + knockback (knockback decays with friction; dying bodies slide less far)
     const fr = Math.exp(-dt * (this.state === ZS.DYING ? 5 : 7));
     this.x += (this.vx + this.kx) * dt; this.z += (this.vz + this.kz) * dt;

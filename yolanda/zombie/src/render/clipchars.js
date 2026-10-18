@@ -1352,7 +1352,7 @@ const HEAVE = 0.5;
 const LOOK_MAX = 1.1; // rad: the most her head is turned back onto the aim (YolaView.headLook) // s per heave at his planted shield (core/zombies.js GUARD.heave; main.js times the creak to it)
 // the add-on one-shots (assets/zombie_moves/*-b.glb, 2026-10-18): the kip-up, the climb out of the floor, the knockback,
 // the crawl's start, the scratch on the run
-const EXTRA_ONCE = ['ual_IdleToLay', 'ual1_Sitting_Exit', 'ual_KipUp', 'ual_Zombie_Spawn', 'ual_Hit_Knockback', 'ual1_Crawl_Enter', 'ual_Zombie_Scratch', 'ual_LayToIdle', 'ual_Melee_Hook', 'ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual1_PickUp_Table', 'ual_Farm_Harvest'];
+const EXTRA_ONCE = ['patient_bed_rise', 'ual_IdleToLay', 'ual1_Sitting_Exit', 'ual_KipUp', 'ual_Zombie_Spawn', 'ual_Hit_Knockback', 'ual1_Crawl_Enter', 'ual_Zombie_Scratch', 'ual_LayToIdle', 'ual_Melee_Hook', 'ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual1_PickUp_Table', 'ual_Farm_Harvest'];
 // how a standing zombie walks (core/zombies.js GAITS): Quaternius's zombie walk in eight directions / run in four, all
 // played from one shared phase (the clips of a set are the same length, so the feet stay in step through a blend) at the
 // rate that matches its travel. dir: [left, forward] travel; speed: the clip's own (m/s, its root motion, the mannequin at
@@ -1362,11 +1362,9 @@ const EXTRA_ONCE = ['ual_IdleToLay', 'ual1_Sitting_Exit', 'ual_KipUp', 'ual_Zomb
 // motion), its left hand on the pole at grip (m up the pole): held by IK, let go through an attack or a fall and taken
 // again if it is still in reach. CHAIR: the wheelchair under its hips (seat: the hips' height, m; fwd: the chair's centre
 // ahead of the hips; yaw: the model's own front), its hands on the hand rims pushing (rim: centre ahead of the hips /
-// up / out to the side, radius) one push each rimArc of wheel turn. BED: lying on the mattress (top, m) until it wakes,
-// then up off it (LayToIdle over BED_RISE)
+// up / out to the side, radius) one push each rimArc of wheel turn
 const IV = { fwd: 0.32, side: 0.36, grip: 1.08, k: 16, damp: 7, tilt: 0.05, maxTilt: 0.2, reach: 0.75, h: 2.03 };
 const CHAIR = { seat: 0.62, fwd: 0.06, yaw: 0, rim: [-0.04, 0.36, 0.3], rimR: 0.27, rimArc: 1.6, h: 0.97 };
-const BED = { top: 0.66, h: 0.87 };
 const GAIT_SETS = {
   ual: { idle: 'ual_Zombie_Idle_Loop', dur: 1.333, dirs: [['Fwd', 0, 1, 1.05], ['Fwd_L', 0.707, 0.707, 1.06], ['L', 1, 0, 0.75], ['Bwd_L', 0.707, -0.707, 1.06], ['Bwd', 0, -1, 1.2], ['Bwd_R', -0.707, -0.707, 1.06], ['R', -1, 0, 0.75], ['Fwd_R', -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
   run: { idle: 'ual_Zombie_Idle_Loop', dur: 0.733, dirs: [['Fwd', 0, 1, 4.1], ['L', 1, 0, 2.05], ['Bwd', 0, -1, 4.1], ['R', -1, 0, 2.05]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Run_${k}_Loop`, x, z, s })) },
@@ -1739,28 +1737,30 @@ export class ZombieView extends ClipBody {
     const cap = src.clone(); cap.matrixAutoUpdate = true;
     const capW = this.model.matrixWorld.clone(); // (the kit is in the model's own space)
     new THREE.Matrix4().copy(rest).invert().multiply(capW).decompose(cap.position, cap.quaternion, cap.scale);
-    hb.add(cap); cap.visible = false; cap.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    hb.add(cap); cap.visible = false; // (no shadow: the shadow map is drawn once, for the still scenery: main.js)
     this.cap = cap;
   }
   // before the mixer: the seated legs under the wheelchair, the lying pose in a bed
   propPose(z, dt) {
     if (this.chairO) this.act('sit_lower')?.setEffectiveWeight(z.chair && !z.crawling ? 8 : 0);
-    if (z.bed && this.act('ual_LayToIdle')) {
-      const a = this.act('ual_LayToIdle'), c = a.getClip(), t0 = this.lieT0 ??= Math.min(...c.tracks.map((q) => q.times[0]));
-      if (!this.lying) { this.lying = true; this.playOnce('ual_LayToIdle', t0, 0, 0); }
-      a.timeScale = 0; a.setEffectiveWeight(10);
-      const u = z.bedRise && z.state === 'emerge' ? clamp(z.t / Math.max(0.1, z.stateDur), 0, 1) : 0;
-      a.time = t0 + (c.duration - t0 - 0.02) * clamp((u - 0.12) / 0.8, 0, 1); // (a beat still, then up)
-    } else if (this.lying) { this.lying = null; const a = this.act('ual_LayToIdle'); if (this.oneShot === a) { a.fadeOut(0.25); this.oneShot = null; } }
+    // the bed patient: the hub's patient_bed_rise held on its first frame while it lies there, then played through its rise
+    // in step with the sim (z.t); its own action (never the one-shot the state changes fade), the walk off under it
+    const bedA = this.act('patient_bed_rise');
+    if (z.bed && bedA) {
+      if (!this.lying) { this.lying = bedA; bedA.reset(); bedA.setLoop(THREE.LoopOnce); bedA.clampWhenFinished = true; bedA.play(); }
+      bedA.timeScale = 0; bedA.time = z.bedRise && z.state === 'emerge' ? Math.min(z.t, bedA.getClip().duration - 0.01) : 0; bedA.setEffectiveWeight(1);
+      for (const n of ['walk', 'idle', 'attack', 'scratch']) this.act(n)?.setEffectiveWeight(0);
+      if (this.gaitSet) for (const n of [this.gaitSet.idle, ...this.gaitSet.dirs.map((d) => d.n)]) this.act(n).setEffectiveWeight(0);
+      if (this.oneShot) { this.oneShot.stop(); this.oneShot.setEffectiveWeight(0); this.oneShot = null; }
+    } else if (this.lying) { this.lying.fadeOut(0.35); this.lying = null; }
   }
   // after the mixer: where the stand / the chair are, the hands on them, the body's height
   propPlace(z, dt) {
     const B = this.bones, y = z.yaw, f = _v5.set(Math.sin(y), 0, Math.cos(y)), l = _v6.set(Math.cos(y), 0, -Math.sin(y));
     const busy = z.state === 'windup' || z.state === 'strike' || z.state === 'recover' || z.state === 'stagger' || z.state === 'knockdown' || z.state === 'getup' || z.state === 'dying' || z.state === 'dead' || z.crawling;
-    if (z.bed) { // on the mattress, and down off it on the way up
-      const u = z.bedRise && z.state === 'emerge' ? clamp((z.t / Math.max(0.1, z.stateDur) - 0.25) / 0.4, 0, 1) : 0;
-      this.outer.position.y = BED.top * (1 - u * u * (3 - 2 * u)); this.outer.updateMatrixWorld(true);
-    }
+    { const m = z.bed && (z.bed.side || 1) < 0 ? -1 : 1; // (the clip lifts it onto the mattress itself)
+      if (this.outer.scale.x !== m) this.outer.scale.x = m;
+      if (m < 0) this.container.rotation.y = -z.yaw; }
     if (this.chairO) {
       const o = this.chairO;
       if (z.chair && !z.crawling) {
@@ -2067,7 +2067,7 @@ export class ZombieView extends ClipBody {
     if (this.chairO || z.bed || this.lying) this.propPose(z, dt);
     if (this.chairO && z.chair && !z.crawling) { this.act('walk').setEffectiveWeight(0); this.act('idle').setEffectiveWeight(1 - one); } // (seated: the arms' own idle; the hands go to the rims below)
     this.mixer.update(dt);
-    if (this.iv || this.chairO || z.bed) this.propPlace(z, dt);
+    if (this.iv || this.chairO || z.bed || this.outer.scale.x < 0) this.propPlace(z, dt);
     if (this.plantedP && (z.state === 'stuck' || (z.state === 'pickup' && !this.clubArm))) this.gripPlanted(z);
     if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
     if (this.clubArm) { if (z.armGone && !z.club) this.breakClub(z); else this.stepLimp(dt); }
@@ -2168,7 +2168,7 @@ export class ZombieView extends ClipBody {
     elbow.position.copy(E.clone().sub(W).applyQuaternion(qRi)); limpQ(0, th0, elbow.quaternion);
     if (parts.fore) root.add(parts.fore); if (parts.hand) wrist.add(parts.hand); if (parts.upper) elbow.add(parts.upper);
     root.add(wrist, elbow);
-    root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    root.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; } }); // (it moves: no shadow in the once-drawn shadow map)
     ZombieView.scene.add(root);
     const tipB = B.LeftHandMiddle1 || B.LeftHandIndex1, tip = tipB ? wp(tipB) : W.clone().addScaledVector(u, -0.1);
     root.userData.limp = { elbow, wrist, parts, psi: 0, th: th0, thLast: th0, Lu: S.distanceTo(E), Lf: E.distanceTo(W),

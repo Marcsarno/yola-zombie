@@ -24,9 +24,9 @@ const DEMOS = {
   // (2026-10-18, the user: the IV pole walker, the legless one in a wheelchair, a surgeon, an old patient in every bed)
   hospital: { label: 'The hospital\'s own: drip stand, wheelchair, surgeon, a patient in bed (walk up to the bed)', weapon: 'bat', setup(sim, game) {
     put(sim, -2.6, -4.2, 'normal', 0, 'iv'); put(sim, 0.4, -5.0, 'normal', 0, 'chair'); put(sim, 3.0, -4.4, 'normal', 0, 'surgeon');
-    const B = { x: 4.4, z: -1.8, yaw: 0, y: 0.66 }, b = sim.spawnZombie('placed', { x: B.x, z: B.z, yaw: Math.PI, passive: true, speedMul: 0, prop: 'bed', bed: B });
+    const B = { x: 4.4, z: -1.8, yaw: 0, side: 1 }, b = sim.spawnZombie('placed', { x: B.x, z: B.z, yaw: 0, passive: true, speedMul: 0, prop: 'bed', bed: B });
     b.set('chase'); b.dormant = { wake: Infinity, sense: 3.2, speedMul: 0.9 };
-    const S = game.propSrc?.bed; if (S) { const o = S.clone(); o.position.set(B.x, 0, B.z); o.rotation.y = B.yaw; game.scene.add(o); game.propsAdd(o); }
+    const S = game.propSrc?.bedOpen; if (S) { const o = S.clone(); o.position.set(B.x, 0, B.z); o.rotation.y = B.yaw; game.scene.add(o); game.propsAdd(o); }
   } },
   low: { label: 'Low targets: a crawler, a floored walker', weapon: 'axe', setup(sim) { const c = put(sim, 0.4, 0.6, 'normal'); c.crawling = true; c.broken = 'LowerLeg_L'; const k = put(sim, 1.6, 0.4, 'normal'); k.knockDown(0, 1, sim); } },
 };
