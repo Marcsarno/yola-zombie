@@ -3,5 +3,5 @@
  "handPoses": false,
  "secondHand": false,
  "carry": false,
- "armSpread": true
+ "armPose": true
 }

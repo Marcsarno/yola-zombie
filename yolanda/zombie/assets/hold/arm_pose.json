@@ -1,0 +1,15 @@
+{
+ "yola2:ual_Sword_Block": {
+  "Right": {
+   "out": 5.5
+  },
+  "Left": {
+   "out": 4
+  }
+ },
+ "yola2:bat_idle": {
+  "Right": {
+   "out": 3
+  }
+ }
+}

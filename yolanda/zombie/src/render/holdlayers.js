@@ -9,7 +9,7 @@ export const LAYERS = [
   ['handPoses', 'hand curls', 'the saved R / L hand curl per clip (assets/hold/hand_poses.json, the Rig Lab Hands controls)'],
   ['secondHand', 'second hand on handle', "the other hand pulled onto a two-handed weapon's second grip, and the axe's free fist kept on its handle (render/holdfit.js handOnto)"],
   ['carry', 'carry idles', 'the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)'],
-  ['armSpread', 'arms out', 'her arms swung out from her body by the cm set per clip, so her hands clear her hips (render/armspread.js, assets/hold/arm_spread.json)'],
+  ['armPose', 'arm adjustments', 'the per-clip arm, wrist and shoulder adjustments set in the Rig Lab sidebar (render/armpose.js, assets/hold/arm_pose.json)'],
 ];
 export const HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
 const local = () => { try { return JSON.parse(globalThis.localStorage?.getItem('holdLayers') || '{}'); } catch { return {}; } };

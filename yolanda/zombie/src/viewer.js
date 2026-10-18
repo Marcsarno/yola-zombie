@@ -12,7 +12,7 @@ import { buildBodyClip, bodyClipFrame, bodyClipProbe } from './render/bodyclip.j
 import { placeBat, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 import { LAYERS, HOLD_LAYERS, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
-import { spreadArms } from './render/armspread.js';
+import { adjustArms, armReadout, ARM_PARAMS, ARM0 } from './render/armpose.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
 const CLIP_FPS = { bat_combo_mc: 60 };
@@ -263,7 +263,7 @@ class Gun {
 }
 
 // ---------------- state ----------------
-const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'auto', frames: 1, show: 'both', mode: 'idle', fitOn: true };
+const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'auto', frames: 1, show: 'both', mode: 'idle', fitOn: true, fitWho: 'main', armSide: 'Right', armLimit: true };
 const weaponOf = () => (S.gun === 'auto' ? autoWeapon(main?.clip?.name || '') : S.gun);
 let main, ref, mainGun, refGun, refX, refGunX;
 const ualCache = {};
@@ -459,7 +459,7 @@ function refresh() {
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
-  undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main); armSpreadOn(main);
+  undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main); armPoseOn(main);
   if (handsUI && handsSeen !== handKey()) { handsSeen = handKey(); handsUI(); }
   shotKick(main); if (ref.root.visible) shotKick(ref);
   mainGun?.update(1); leftHand(f);
@@ -467,7 +467,7 @@ function refresh() {
   updateMarks(); updateShell(f);
   $('scrub').value = f;
   $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)` + (S.refOff ? `  ·  reference frame ${f + S.refOff}` : '');
-  drawVidRef(f); updateBat(); updateMags(); updateFingers(); updatePistolFitUI(); if (!S.playing) clipReadout();
+  drawVidRef(f); updateBat(); updateMags(); updateFingers(); updatePistolFitUI(); if (!S.playing || (readT = (readT + 1) % 10) === 0) jointReadout();
   if (!main.root.visible) { for (const o of Object.values(held)) if (o) o.visible = false; if (mainGun?.obj) mainGun.obj.visible = false; }
   if (!ref.root.visible) { for (const o of Object.values(heldRef)) if (o) o.visible = false; if (refGun?.obj) refGun.obj.visible = false; }
   const lines = [];
@@ -731,7 +731,8 @@ const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
 const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (hospital pack)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
-const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
+// (a weapon's fit for this rig: this clip's own when it has one, the sidebar's "This clip only", else the weapon's)
+const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : WFITS[w + '@' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '')]?.[fitKey(a)] || ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
   for (const [w, v] of Object.entries(j)) if (typeof v === 'object') for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f };
   try { for (const [w, v] of Object.entries(JSON.parse(localStorage.getItem('weaponFits') || '{}'))) for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f }; } catch { /* none */ }
@@ -797,7 +798,7 @@ let pfitBox = null;
 let pfitRefWas = null;
 function updatePistolFitUI() {
   pfitBox ||= buildPistolFit(); const w = weaponOf();
-  pfitBox.style.display = S.fitOn && !S.uiHidden && ((w === 'pistol' && $('pistolFist')?.checked) || (FIT_WEAPONS[w] && w !== 'pistol')) ? '' : 'none';
+  pfitBox.style.display = S.fitOn && !S.uiHidden && !EDIT_WEAPONS[w] && ((w === 'pistol' && $('pistolFist')?.checked) || (FIT_WEAPONS[w] && w !== 'pistol')) ? '' : 'none';
   if (w !== pfitBox.dataset.w) { pfitBox.dataset.w = w; pfitSync(); }
   const top = barsBottom() + 8; // (below the bars, scrolling in a short window)
   pfitBox.style.top = top + 'px'; pfitBox.style.maxHeight = `calc(100vh - ${top + 8}px)`; pfitBox.style.overflowY = 'auto';
@@ -1042,16 +1043,18 @@ function barsBottom() { let b = 0; for (const id of ['edit', 'top']) { const el 
 // Quaternius and Mixamo dummy ... right now I only want to edit the idle, and the attacks"). Pick a weapon, its idle or
 // attack (Mixamo and Quaternius clips only: each plays beside its own dummy), show both / Yola / the dummy, the angle,
 // the fit. ----
-const EDIT_WEAPONS = { alubat: 'Bat', packaxe: 'Axe', packcrowbar: 'Crowbar', sledgehammer: 'Sledgehammer' };
+const EDIT_WEAPONS = { alubat: 'Bat', packaxe: 'Axe', packcrowbar: 'Crowbar', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife', pistol: 'Pistol', short: 'Shotgun' };
+// the guns' own idles and attacks (the pistol's attack: its idle with the game's shot kick, firing every 0.24 s)
+const EDIT_LISTS = { pistol: { idle: /^(pistol_idle|ual1_Pistol_Idle_Loop)$/, attack: /^(pistol_idle|pistol_reload)$/ }, short: { idle: /^(sg_reload)$/, attack: /^(sg_reload|reload_rifle_stand|rifle_aim_idle)$/ } };
 const EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
-const EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|ual1?_Melee_(?!Idle).+)$/;
+const EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|melee_horizontal|ual1?_Melee_(?!Idle).+)$/;
 const editKey = () => 'riglab.edit.' + S.gun + '.' + S.mode;
 function editClips() {
-  const re = S.mode === 'idle' ? EDIT_IDLE : EDIT_ATTACK;
+  const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === 'idle' ? EDIT_IDLE : EDIT_ATTACK);
   return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n))
     .sort((a, b) => (a === 'ual_Sword_Block' ? -1 : b === 'ual_Sword_Block' ? 1 : a.localeCompare(b)));
 }
-const prettyClip = (n) => n.replace(/^ual1?_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : '  · Mixamo');
+const prettyClip = (n) => S.gun === 'pistol' && S.mode === 'attack' && n === 'pistol_idle' ? 'Firing (the idle with the shot kick)  · Mixamo' : n.replace(/^ual1?_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : '  · Mixamo');
 function editSync() {
   if (!$('edit') || !main) return;
   for (const b of $('eWeapons').children) b.classList.toggle('on', b.dataset.k === S.gun);
@@ -1063,58 +1066,185 @@ function editSync() {
   $('eDummy').textContent = !S.refHas ? 'none for this clip' : ref === refX ? 'Mixamo X Bot' : 'Quaternius mannequin';
   for (const b of $('eShow').children) b.classList.toggle('on', b.dataset.show === S.show);
   $('eFit').classList.toggle('on', S.fitOn); $('eAdv').classList.toggle('on', !$('top').hidden);
-  const sp = spreadOf(); $('eArmR').value = sp.Right; $('eArmL').value = sp.Left; $('eArmRv').textContent = sp.Right + ' cm'; $('eArmLv').textContent = sp.Left + ' cm';
-  $('eArms').style.opacity = HOLD_LAYERS.armSpread ? 1 : 0.5;
+  sidebarSync();
 }
-// ---- ARMS OUT (render/armspread.js): per character and clip, cm at each hand; kept in this browser, "Save" writes
-// shots/arm_spread.json (copied to assets/hold/arm_spread.json, which the game reads, when the user says so) ----
-const SPREAD = {};
-const spreadKey = () => S.char + ':' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
-const spreadOf = () => SPREAD[spreadKey()] || { Right: 0, Left: 0 };
-fetch('assets/hold/arm_spread.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
-  for (const [k, v] of Object.entries(j)) if (typeof v === 'object') SPREAD[k] = { Right: 0, Left: 0, ...v };
-  try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('armSpread') || '{}'))) SPREAD[k] = { Right: 0, Left: 0, ...v }; } catch { /* none */ }
-  editSync(); refresh?.();
+// ---- ARM ADJUSTMENTS (render/armpose.js): per character and clip, per arm; kept in this browser, the sidebar's "Save all"
+// writes shots/arm_pose.json (copied to assets/hold/arm_pose.json, which the game reads, when the user says so) ----
+const ARMP = {};
+const armKey = () => S.char + ':' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
+const armOf = (side) => ({ ...ARM0, ...(ARMP[armKey()]?.[side] || {}) });
+const keepArms = () => { try { localStorage.setItem('armPose', JSON.stringify(ARMP)); } catch { /* private window */ } };
+function setArm(side, k, v) { const e = (ARMP[armKey()] ||= {}); (e[side] ||= {})[k] = v; keepArms(); }
+fetch('assets/hold/arm_pose.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
+  for (const [k, v] of Object.entries(j)) if (typeof v === 'object') ARMP[k] = v;
+  try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('armPose') || '{}'))) ARMP[k] = v; } catch { /* none */ }
+  sidebarSync(); refresh?.();
 });
-const keepSpread = () => { try { localStorage.setItem('armSpread', JSON.stringify(SPREAD)); } catch { /* private window */ } };
-function armSpreadOn(a) {
-  if (a !== main || !HOLD_LAYERS.armSpread) return;
-  const sp = spreadOf(); if (!sp.Right && !sp.Left) return;
+function armPoseOn(a) {
+  if (a !== main || !HOLD_LAYERS.armPose) return;
+  const p = ARMP[armKey()]; if (!p) return;
   a.root.updateMatrixWorld(true);
-  const chain = [a.bones.RightArm, a.bones.LeftArm], before = chain.map((b) => b.quaternion.clone());
-  spreadArms(a.bones, sp);
+  const chain = ['Shoulder', 'Arm', 'ForeArm', 'Hand'].flatMap((n) => ['Right', 'Left'].map((s) => a.bones[s + n])).filter(Boolean), before = chain.map((b) => b.quaternion.clone());
+  adjustArms(a.bones, p, { limit: S.armLimit !== false });
   const after = chain.map((b) => b.quaternion.clone());
-  chain.forEach((b, i) => { b.quaternion.copy(before[i]); postRot(a, b, (cur) => cur.copy(after[i])); });
+  chain.forEach((b, i) => { if (!after[i].equals(before[i])) { b.quaternion.copy(before[i]); postRot(a, b, (cur) => cur.copy(after[i])); } });
   a.root.updateMatrixWorld(true);
 }
-// how deep each arm goes into her body on this frame (cm), for the readout
-function clipReadout() {
-  if (!$('eClipRead') || !main?.action) return;
-  if (bodyClipC?.char !== S.char) bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char });
-  const h = bodyClipFrame(bodyClipC, 0.003), d = { Right: 0, Left: 0 };
-  for (const x of h) d[x.side] = Math.max(d[x.side], x.depth);
-  $('eClipRead').textContent = d.Right || d.Left ? `inside her body: R ${(d.Right * 100).toFixed(1)} cm, L ${(d.Left * 100).toFixed(1)} cm` : 'clear of her body';
-}
-// Auto: per arm, the least spread (0.5 cm steps) that clears whatever spreading can clear, on every frame of this clip,
-// plus 1 cm; under 1 cm deep counts as skin touching. (A contact the swing cannot fix, e.g. a passing touch mid-move, is measured at the widest spread first and
-// left alone: chasing it ran the arm out to the 15 cm limit, 2026-10-17)
-async function autoSpread() {
-  const keep = { frame: S.frame, playing: S.playing }; pausedUI(true);
-  if (bodyClipC?.char !== S.char) bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char });
-  const k = spreadKey(), sp = SPREAD[k] = { ...spreadOf() };
+const ensureBodyClip = () => { if (bodyClipC?.char !== S.char) bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char }); return bodyClipC; };
+// Auto (clear her hips): per arm, the least "out" (0.5 cm steps) that clears whatever spreading can clear on every frame of
+// this clip, plus 1 cm; under 1 cm deep counts as skin touching. (A contact the swing cannot fix, a passing touch
+// mid-move, is measured at the widest spread first and left alone: chasing it ran the arm out to 15 cm, 2026-10-17)
+async function autoOut() {
+  const keep = { frame: S.frame, playing: S.playing }; pausedUI(true); ensureBodyClip();
   const depths = (side) => { const d = []; for (let f = 1; f <= S.frames; f++) { S.frame = f; refresh(); main.root.updateMatrixWorld(true); d.push(Math.max(0, ...bodyClipFrame(bodyClipC, 0.003).filter((x) => x.side === side).map((x) => x.depth))); } return d; };
   for (const side of ['Right', 'Left']) {
-    sp[side] = 0; const d0 = depths(side); if (!d0.some((x) => x > 0)) continue;
-    sp[side] = 15; const floor = depths(side);
-    const ok = (c) => { sp[side] = c; const d = depths(side); return d.every((x, i) => x <= Math.max(floor[i], 0.01) + 0.002); }; // (under 1 cm: skin touching, not a clip)
+    setArm(side, 'out', 0); const d0 = depths(side); if (!d0.some((x) => x > 0)) continue;
+    setArm(side, 'out', 15); const floor = depths(side);
+    const ok = (c) => { setArm(side, 'out', c); return depths(side).every((x, i) => x <= Math.max(floor[i], 0.01) + 0.002); };
     let lo = 0, hi = 15;
     while (hi - lo > 0.5) { const mid = Math.round(lo + hi) / 2; if (ok(mid)) hi = mid; else lo = mid; }
-    sp[side] = Math.min(15, hi + 1);
+    setArm(side, 'out', Math.min(15, hi + 1));
   }
-  keepSpread(); S.frame = keep.frame; pausedUI(!keep.playing); refresh(); editSync();
+  S.frame = keep.frame; pausedUI(!keep.playing); refresh(); sidebarSync();
+}
+
+// ---- THE SIDEBAR (viewer.html #sidebar; the user, 2026-10-17: "I need more control for arms, wrists, hands.. everything..
+// move a lot of these controls to a side bar and organize the controls in a more professional set up"): Weapon position,
+// Arms, Joint check, Layers, Save. Each section folds (remembered). ----
+let SB = null;
+const SB_SHUT = 'riglab.sb.shut';
+function fitTarget() { return S.fitWho === 'ref' ? ref : main; }
+function fitScopeKey(w) { return w + '@' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, ''); }
+// the fit being edited: this clip's own (when it has one for this rig) or the weapon's
+function fitEditing() {
+  if (S.gun === 'pistol') return fitOf(fitTarget());
+  const w = S.gun, a = fitTarget(), k = fitKey(a), c = WFITS[fitScopeKey(w)];
+  return c?.[k] || ((WFITS[w] ||= {})[k] ||= { ...PFIT0 });
+}
+const keepFits = () => { try { localStorage.setItem('weaponFits', JSON.stringify(WFITS)); localStorage.setItem('pistolFits', JSON.stringify(FITS)); } catch { /* private window */ } };
+function buildSidebar() {
+  const root = $('sidebar'); if (!root) return;
+  let shut = {}; try { shut = JSON.parse(localStorage.getItem(SB_SHUT) || '{}'); } catch { /* storage off */ }
+  const section = (id, title) => {
+    const h = document.createElement('div'); h.className = 'sbh' + (shut[id] ? ' shut' : ''); h.textContent = title;
+    const body = document.createElement('div'); body.className = 'sbb'; body.hidden = !!shut[id];
+    h.onclick = () => { shut[id] = !shut[id]; body.hidden = shut[id]; h.classList.toggle('shut', shut[id]); try { localStorage.setItem(SB_SHUT, JSON.stringify(shut)); } catch { /* storage off */ } };
+    root.append(h, body); return { h, body };
+  };
+  const seg = (parent, items, on) => { const d = document.createElement('div'); d.className = 'seg'; for (const [v, t] of items) { const b = document.createElement('button'); b.textContent = t; b.dataset.v = v; b.onclick = () => on(v); d.appendChild(b); } parent.appendChild(d); return d; };
+  const slider = (parent, label, unit, min, max, step, get, set, def = 0) => {
+    const r = document.createElement('div'); r.className = 'sbr';
+    r.innerHTML = `<label>${label}</label><input type="number" step="${step}"><span class="u">${unit}</span><button class="rz" title="reset">&#8634;</button><input type="range" min="${min}" max="${max}" step="${step}">`;
+    const [num, rng] = r.querySelectorAll('input'), rz = r.querySelector('.rz');
+    const put = (v) => { set(+v); num.value = +(+v).toFixed(2); rng.value = v; r.classList.toggle('changed', Math.abs(+v - def) > 1e-6); refresh(); jointReadout(); };
+    rng.oninput = () => put(rng.value); num.onchange = () => put(num.value); rz.onclick = () => put(def);
+    num.addEventListener('keydown', (e) => e.stopPropagation());
+    parent.appendChild(r);
+    return () => { const v = get(); num.value = +(+v).toFixed(2); rng.value = v; r.classList.toggle('changed', Math.abs(+v - def) > 1e-6); };
+  };
+  const ups = [];
+  // ---- Weapon position ----
+  const W1 = section('weapon', 'Weapon position');
+  const wHead = document.createElement('div'); wHead.className = 'sbnote'; W1.body.appendChild(wHead);
+  const who = seg(W1.body, [['main', 'Yola'], ['ref', 'Dummy']], (v) => { S.fitWho = v; sidebarSync(); });
+  const scope = seg(W1.body, [['all', 'All clips'], ['clip', 'This clip only']], (v) => {
+    const w = S.gun, k = fitKey(fitTarget()), key = fitScopeKey(w);
+    if (v === 'clip') { const base = fitEditing(); ((WFITS[key] ||= {})[k] = { ...base }); } else if (WFITS[key]) delete WFITS[key][k];
+    keepFits(); refresh(); sidebarSync();
+  });
+  for (const [i, [k, lbl, lo, hi, st]] of PFIT_ROWS.entries()) {
+    const up = slider(W1.body, lbl, '', lo, hi, st, () => fitEditing()[k], (v) => { fitEditing()[k] = v; keepFits(); }, k === 'size' ? 100 : 0);
+    ups.push(up); up.row = W1.body.lastChild; up.idx = i;
+  }
+  const fitRows = ups.slice();
+  // ---- Arms ----
+  const A1 = section('arms', 'Arms (Yola, this clip)');
+  const side = seg(A1.body, [['Right', 'Right arm'], ['Left', 'Left arm']], (v) => { S.armSide = v; sidebarSync(); });
+  let grp = '';
+  const armRows = [];
+  for (const [k, g, lbl, unit, lo, hi, st] of ARM_PARAMS) {
+    if (g !== grp) { grp = g; const t = document.createElement('div'); t.className = 'sbg'; t.textContent = g; A1.body.appendChild(t); }
+    armRows.push(slider(A1.body, lbl, unit, lo, hi, st, () => armOf(S.armSide || 'Right')[k], (v) => setArm(S.armSide || 'Right', k, v)));
+  }
+  { const t = document.createElement('div'); t.className = 'sbg'; t.textContent = 'Hand'; A1.body.appendChild(t); }
+  armRows.push(slider(A1.body, 'curl (open / fist)', '%', 0, 150, 5, () => Math.round((handsOf()[S.armSide || 'Right'] || 0) * 100), (v) => {
+    handsOf()[S.armSide || 'Right'] = v / 100; try { localStorage.setItem('handPoses', JSON.stringify(HANDS)); } catch { /* private window */ }
+    if (!HOLD_LAYERS.handPoses && v > 0) { HOLD_LAYERS.handPoses = true; keepHoldLayers(); layerSyncAll(); } // (a curl set here shows at once)
+  }));
+  const lim = document.createElement('label'); lim.className = 'chk'; lim.innerHTML = '<input type="checkbox"> keep inside the joint limits'; lim.title = 'an adjustment never takes the wrist past its real range (the clip\'s own pose is left alone)';
+  const limC = lim.querySelector('input'); limC.checked = S.armLimit !== false; limC.onchange = () => { S.armLimit = limC.checked; refresh(); jointReadout(); };
+  A1.body.appendChild(lim);
+  const btns = document.createElement('div'); btns.className = 'sbbtns';
+  btns.innerHTML = '<button data-a="auto" title="both arms: the least out that clears her body on every frame of this clip, plus 1 cm">Auto: clear her hips</button><button data-a="copy">Copy to other arm</button><button data-a="reset">Reset this arm</button>';
+  btns.onclick = async (e) => {
+    const a = e.target.dataset.a, s0 = S.armSide || 'Right', s1 = s0 === 'Right' ? 'Left' : 'Right';
+    if (a === 'auto') { e.target.textContent = 'working...'; await autoOut(); e.target.textContent = 'Auto: clear her hips'; }
+    if (a === 'copy') { const e2 = (ARMP[armKey()] ||= {}); e2[s1] = { ...armOf(s0) }; handsOf()[s1] = handsOf()[s0]; keepArms(); }
+    if (a === 'reset') { const e2 = ARMP[armKey()]; if (e2) delete e2[s0]; handsOf()[s0] = 0; keepArms(); }
+    refresh(); sidebarSync(); jointReadout();
+  };
+  A1.body.appendChild(btns);
+  // ---- Joint check ----
+  const C1 = section('check', 'Joint check (this frame)');
+  const chk = document.createElement('div'); chk.id = 'sbCheck'; C1.body.appendChild(chk);
+  const ck2 = document.createElement('div'); ck2.className = 'sbnote'; ck2.textContent = 'Wrist and forearm: % of their real range (green under 75, amber to 100, red past it). Inside: how deep an arm is inside her body.'; C1.body.appendChild(ck2);
+  // ---- Layers ----
+  const L1 = section('layers', 'Layers');
+  const layerBoxes = [];
+  for (const [k, label, why] of LAYERS) {
+    const l = document.createElement('label'); l.className = 'chk'; l.title = why; l.innerHTML = `<input type="checkbox"> ${label}`;
+    const i = l.querySelector('input'); i.onchange = () => { HOLD_LAYERS[k] = i.checked; keepHoldLayers(); layerSyncAll(); refresh(); jointReadout(); };
+    layerBoxes.push([k, i]); L1.body.appendChild(l);
+  }
+  // ---- Save ----
+  const V1 = section('save', 'Save');
+  const sv = document.createElement('div'); sv.className = 'sbbtns';
+  sv.innerHTML = '<button data-a="save" class="primary">Save all</button><span class="sbnote" id="sbSaved"></span>';
+  sv.querySelector('button').onclick = async () => {
+    const files = { 'weapon_fit.json': WFITS, 'arm_pose.json': ARMP, 'hand_poses.json': HANDS, 'hold_layers.json': HOLD_LAYERS, 'pistol_fit.json': FITS };
+    let ok = true; for (const [f, j] of Object.entries(files)) { const r = await fetch('/__shot/' + f, { method: 'POST', body: JSON.stringify(j, null, 1) }); ok &&= r.ok; }
+    $('sbSaved').textContent = ok ? 'saved to shots/ (tell Claude to put it in the game)' : 'save failed';
+  };
+  V1.body.appendChild(sv);
+  SB = { wHead, who, scope, fitRows, side, armRows, layerBoxes, A1 };
+  sidebarSync();
+}
+function layerSyncAll() {
+  if (SB) for (const [k, i] of SB.layerBoxes) i.checked = !!HOLD_LAYERS[k];
+  const pc = $('posture'); if (pc) pc.checked = HOLD_LAYERS.posture;
+  for (const i of document.querySelectorAll('#top input[data-layer]')) i.checked = !!HOLD_LAYERS[i.dataset.layer];
+}
+function sidebarSync() {
+  if (!SB || !main) return;
+  const w = S.gun, a = fitTarget();
+  SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? (CHARS[S.char]?.label || S.char) : ref === refX ? 'X Bot' : 'the mannequin'}`;
+  for (const b of SB.who.children) b.classList.toggle('on', b.dataset.v === (S.fitWho || 'main'));
+  const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
+  for (const b of SB.scope.children) { b.classList.toggle('on', b.dataset.v === (clipOwn ? 'clip' : 'all')); b.disabled = w === 'pistol'; }
+  const labels = FIT_LABELS[w] || PFIT_ROWS.map((r) => r[1]);
+  for (const up of SB.fitRows) { up(); up.row.querySelector('label').textContent = labels[up.idx] || PFIT_ROWS[up.idx][1]; }
+  for (const b of SB.side.children) b.classList.toggle('on', b.dataset.v === (S.armSide || 'Right'));
+  for (const up of SB.armRows) up();
+  layerSyncAll();
+}
+let readT = 0;
+function jointReadout() {
+  const el = $('sbCheck'); if (!el || !main?.action || $('sidebar')?.hidden) return;
+  ensureBodyClip();
+  const hits = bodyClipFrame(bodyClipC, 0.003), inside = { Right: 0, Left: 0 };
+  for (const x of hits) inside[x.side] = Math.max(inside[x.side], x.depth);
+  const r = armReadout(main.bones), c = (p) => (p >= 100 ? 'bad' : p >= 75 ? 'warn' : 'ok'), cm = (d) => (d > 0.01 ? 'bad' : d > 0.003 ? 'warn' : 'ok');
+  const R = r.Right || {}, L = r.Left || {};
+  el.innerHTML = `<table><tr><th></th><th>Right</th><th>Left</th></tr>
+    <tr><td>inside her body</td><td class="${cm(inside.Right)}">${(inside.Right * 100).toFixed(1)} cm</td><td class="${cm(inside.Left)}">${(inside.Left * 100).toFixed(1)} cm</td></tr>
+    <tr><td>wrist</td><td class="${c(R.wrist)}">${R.wrist}%</td><td class="${c(L.wrist)}">${L.wrist}%</td></tr>
+    <tr><td>&nbsp; palm / thumb</td><td>${R.flex}&deg; / ${R.dev}&deg;</td><td>${L.flex}&deg; / ${L.dev}&deg;</td></tr>
+    <tr><td>forearm turn</td><td class="${c(R.fore)}">${R.fore}%</td><td class="${c(L.fore)}">${L.fore}%</td></tr>
+    <tr><td>elbow</td><td class="${R.elbow > 150 ? 'bad' : 'ok'}">${R.elbow}&deg;</td><td class="${L.elbow > 150 ? 'bad' : 'ok'}">${L.elbow}&deg;</td></tr></table>`;
 }
 function editPick(name) {
   if (!name) return;
+  stopFiring(); if (S.gun === 'pistol' && S.mode === 'attack' && name === 'pistol_idle') { SHOT.auto = true; SHOT.next = 0; } // (the pistol's attack: firing)
   try { localStorage.setItem(editKey(), name); } catch { /* storage off */ }
   pickClip(name); editSync();
 }
@@ -1140,12 +1270,10 @@ function buildEditUI(ui, fitClipPanel) {
   $('eClip').onchange = (e) => editPick(e.target.value);
   for (const b of $('eShow').children) b.onclick = () => { S.show = b.dataset.show; refresh(); editSync(); };
   for (const b of $('eAngles').children) b.onclick = () => editAngle(b.dataset.a);
-  $('eFit').onclick = () => { S.fitOn = !S.fitOn; updatePistolFitUI(); editSync(); };
+  $('eFit').onclick = () => { S.fitOn = !S.fitOn; $('sidebar').hidden = !S.fitOn; fitClipPanel(); updatePistolFitUI(); editSync(); jointReadout(); };
   $('eAdv').onclick = () => { const on = $('top').hidden; $('top').hidden = $('clipPanel').hidden = !on; $('toggleClips').classList.toggle('on', on); fitClipPanel(); updatePistolFitUI(); editSync(); };
   $('eHide').onclick = ui;
-  for (const [id, side] of [['eArmR', 'Right'], ['eArmL', 'Left']]) $(id).oninput = (e) => { const k = spreadKey(); (SPREAD[k] ||= { Right: 0, Left: 0 })[side] = +e.target.value; keepSpread(); refresh(); editSync(); };
-  $('eArmAuto').onclick = async () => { $('eArmAuto').textContent = '...'; await autoSpread(); $('eArmAuto').textContent = 'Auto'; };
-  $('eArmSave').onclick = async () => { const r = await fetch('/__shot/arm_spread.json', { method: 'POST', body: JSON.stringify(SPREAD, null, 1) }); $('eArmSave').textContent = r.ok ? 'saved' : 'save failed'; setTimeout(() => ($('eArmSave').textContent = 'Save'), 1500); };
+  buildSidebar();
 }
 // start where the edit bar works: Yola 2, the pack's bat, its idle
 async function editStart() {
@@ -1220,12 +1348,12 @@ function buildUI() {
   $('clipFind').addEventListener('keydown', (e) => e.stopPropagation()); // (typing a name: no frame steps / play toggles)
   $('clip').addEventListener('change', markClipPanel);
   // the list starts below the top bar, however many rows it wraps to
-  const fitClipPanel = () => { if (!$('top').hidden) $('top').style.top = ($('edit').getBoundingClientRect().bottom + 6) + 'px'; $('clipPanel').style.top = (barsBottom() + 6) + 'px'; };
-  new ResizeObserver(fitClipPanel).observe($('top')); new ResizeObserver(fitClipPanel).observe($('edit')); fitClipPanel();
+  const fitClipPanel = () => { if (!$('top').hidden) $('top').style.top = ($('edit').getBoundingClientRect().bottom + 6) + 'px'; $('clipPanel').style.top = (barsBottom() + 6) + 'px'; const sb = $('sidebar'); sb.style.top = (barsBottom() + 6) + 'px'; sb.style.bottom = ($('bottom').offsetHeight + 12) + 'px'; };
+  new ResizeObserver(fitClipPanel).observe($('top')); new ResizeObserver(fitClipPanel).observe($('edit')); new ResizeObserver(fitClipPanel).observe($('bottom')); fitClipPanel();
   // Hide (H): everything off, then back exactly as it was
   let shown = null;
   const ui = () => {
-    const ids = ['edit', 'top', 'bottom', 'side', 'clipPanel'];
+    const ids = ['edit', 'top', 'bottom', 'side', 'clipPanel', 'sidebar'];
     if (!shown) { shown = ids.filter((id) => !$(id).hidden); for (const id of ids) $(id).hidden = true; S.uiHidden = true; }
     else { for (const id of shown) $(id).hidden = false; shown = null; S.uiHidden = false; }
     updatePistolFitUI();

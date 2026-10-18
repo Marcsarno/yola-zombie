@@ -39,6 +39,23 @@
   .ci:hover { background:#33434c; } .ci.on { background:var(--teal); color:#06201f; font-weight:700; }
   .ci .used { color:var(--amber); font-size:10.5px; } .ci.on .used { color:#06201f; }
   .ci .meta { color:var(--dim); font-size:10.5px; } .ci.on .meta { color:#0b3433; }
+  /* the sidebar (2026-10-17): sections that fold, slider rows with a number, a unit and a reset */
+  #sidebar { right:6px; width:340px; overflow:auto; padding:0; }
+  .sbh { padding:7px 10px; background:#2c3a42; color:var(--ink); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; border-bottom:1px solid var(--line); user-select:none; }
+  .sbh::before { content:'\25BE  '; color:var(--dim); } .sbh.shut::before { content:'\25B8  '; }
+  .sbb { padding:8px 10px 10px; }
+  .sbg { margin:9px 0 2px; color:var(--teal); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; border-top:1px solid var(--line); padding-top:6px; }
+  .sbr { display:grid; grid-template-columns: 1fr 58px 26px 24px; gap:2px 4px; align-items:center; margin:3px 0 6px; }
+  .sbr label { font-size:11.5px; } .sbr.changed label { color:var(--amber); }
+  .sbr input[type=number] { width:58px; background:#1a2328; color:var(--ink); border:1px solid var(--line); border-radius:5px; padding:1px 4px; font:inherit; text-align:right; }
+  .sbr .u { color:var(--dim); font-size:10.5px; } .sbr .rz { padding:0 5px; font-size:11px; }
+  .sbr input[type=range] { grid-column:1/5; width:100%; accent-color:var(--teal); margin:0; }
+  .seg { display:flex; margin:4px 0 8px; } .seg button { flex:1; border-radius:0; } .seg button:first-child { border-radius:7px 0 0 7px; } .seg button:last-child { border-radius:0 7px 7px 0; }
+  .sbbtns { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; align-items:center; } .sbnote { color:var(--dim); font-size:11px; margin:2px 0 4px; }
+  button.primary { background:var(--amber); color:#2a1a00; font-weight:700; border-color:var(--amber); }
+  #sbCheck table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; } #sbCheck td, #sbCheck th { padding:2px 4px; text-align:right; }
+  #sbCheck td:first-child, #sbCheck th:first-child { text-align:left; color:var(--dim); font-weight:500; }
+  #sbCheck .ok { color:#7fdc9a; } #sbCheck .warn { color:var(--amber); } #sbCheck .bad { color:#ff6b6b; font-weight:700; }
   textarea { width:100%; height:92px; background:#1a2328; color:#cfe; border:1px solid var(--line); border-radius:8px; font:11px/1.3 ui-monospace,Consolas,monospace; }
 </style>
 </head>
@@ -53,8 +70,7 @@
   <div class="grp"><span class="lbl">Dummy</span><span id="eDummy" style="color:var(--dim)"></span></div>
   <div class="grp"><span class="lbl">Show</span><span id="eShow"><button data-show="both">Both</button><button data-show="main">Yola</button><button data-show="ref">Dummy</button></span></div>
   <div class="grp"><span class="lbl">Angle</span><span id="eAngles"><button data-a="front">Front</button><button data-a="back">Back</button><button data-a="right">Her right</button><button data-a="left">Her left</button><button data-a="three">3/4</button><button data-a="above">Above</button><button data-a="below">Below</button><button data-a="hands">Hands</button></span></div>
-  <div class="grp" id="eArms" title="her arms swung out from her body by this many cm at the hand (this clip, render/armspread.js): her hips are wider than the dummy's"><span class="lbl">Arms out</span>R <input type="range" id="eArmR" min="0" max="12" step="0.5" style="width:80px"><span id="eArmRv" style="width:42px;display:inline-block"></span>L <input type="range" id="eArmL" min="0" max="12" step="0.5" style="width:80px"><span id="eArmLv" style="width:42px;display:inline-block"></span><button id="eArmAuto" title="the least that clears her body on every frame of this clip, plus 1 cm">Auto</button><button id="eArmSave" title="writes shots/arm_spread.json (copied to assets/hold/arm_spread.json when you say)">Save</button><span id="eClipRead" style="color:var(--amber)"></span></div>
-  <div class="grp"><button id="eFit" class="on">Fit</button><button id="eAdv">Advanced</button><button id="eHide" title="hide everything (H)">Hide (H)</button></div>
+  <div class="grp"><button id="eFit" class="on" title="the sidebar: weapon position, arms, joint check, layers, save">Panel</button><button id="eAdv">Advanced</button><button id="eHide" title="hide everything (H)">Hide (H)</button></div>
 </div>
 <div id="top" class="panel" hidden>
   <div class="grp"><span class="lbl">Character</span><span id="chars"></span></div>
@@ -79,6 +95,7 @@
   <label class="chk"><input type="checkbox" id="clipUsedOnly"> only clips the game uses</label>
   <div id="clipList"></div>
 </div>
+<div id="sidebar" class="panel"></div>
 <div id="side" class="panel">
   <label class="chk"><input type="checkbox" id="bones"> bones</label>
   <label class="chk"><input type="checkbox" id="fingerBones" checked> finger bones (both rigs)</label>

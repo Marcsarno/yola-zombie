@@ -14,7 +14,7 @@ import { HairSway } from './hairsway.js';
 import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 import { HOLD_LAYERS } from './holdlayers.js';
-import { spreadArms } from './armspread.js';
+import { adjustArms, blendArms } from './armpose.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -676,7 +676,7 @@ export class YolaView extends ClipBody {
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.posture(); // (before the weapons are placed: turning the pelvis shifts the arms ~4 mm, the weapons follow)
-    this.armSpread(); // (her arms out from her hips, per clip: before the weapons, which follow her hands)
+    this.armPose(); // (the per-clip arm adjustments: before the weapons, which follow her hands)
     this.placeWeapons(s, dt); this.placeMags(dt);
   }
 
@@ -737,27 +737,25 @@ export class YolaView extends ClipBody {
     applyPosture(this.bones, W);
     this.container.updateMatrixWorld(true);
   }
-  // ARMS OUT (render/armspread.js; the Rig Lab's "arms out" per clip, assets/hold/arm_spread.json "<yola>:<clip>": { Right, Left }
-  // cm): blended by the weights of the clips playing
-  setArmSpread(json, who) {
-    this.spreadSet = {};
-    for (const [k, v] of Object.entries(json || {})) if (k.startsWith(who + ':') && typeof v === 'object') this.spreadSet[k.slice(who.length + 1)] = v;
-    if (!Object.keys(this.spreadSet).length) this.spreadSet = null;
-    this.spreadActs = null;
+  // ARM ADJUSTMENTS (render/armpose.js; the Rig Lab sidebar's Arms section per clip, assets/hold/arm_pose.json
+  // "<yola>:<clip>": { Right: {...}, Left: {...} }): blended by the weights of the clips playing
+  setArmPose(json, who) {
+    this.poseSet = {};
+    for (const [k, v] of Object.entries(json || {})) if (k.startsWith(who + ':') && typeof v === 'object') this.poseSet[k.slice(who.length + 1)] = v;
+    if (!Object.keys(this.poseSet).length) this.poseSet = null;
+    this.poseActs = null;
   }
-  armSpread() {
-    if (!this.spreadSet || !HOLD_LAYERS.armSpread) return;
+  armPose() {
+    if (!this.poseSet || !HOLD_LAYERS.armPose) return;
     const n = Object.keys(this.actions).length;
-    if (!this.spreadActs || this.spreadN !== n) {
-      this.spreadN = n; this.spreadActs = [];
-      for (const [name, a] of Object.entries(this.actions)) { const base = this.baseClip(name); if (base && this.spreadSet[base]) this.spreadActs.push([a, base]); }
+    if (!this.poseActs || this.poseN !== n) {
+      this.poseN = n; this.poseActs = [];
+      for (const [name, a] of Object.entries(this.actions)) { const base = this.baseClip(name); if (base && this.poseSet[base]) this.poseActs.push([a, base]); }
     }
-    const k = { Right: 0, Left: 0 }; let any = false;
-    for (const [a, base] of this.spreadActs) {
-      const w = Math.min(1, a.getEffectiveWeight()); if (w <= 1e-3) continue;
-      const h = this.spreadSet[base]; k.Right += w * (h.Right || 0); k.Left += w * (h.Left || 0); any = true;
-    }
-    if (any) { spreadArms(this.bones, k); this.container.updateMatrixWorld(true); }
+    const list = [];
+    for (const [a, base] of this.poseActs) { const w = Math.min(1, a.getEffectiveWeight()); if (w > 1e-3) list.push([w, this.poseSet[base]]); }
+    const p = list.length && blendArms(list);
+    if (p) { adjustArms(this.bones, p); this.container.updateMatrixWorld(true); }
   }
   handPoses() {
     if (!this.handSet || !HOLD_LAYERS.handPoses) return;
