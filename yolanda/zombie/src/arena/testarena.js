@@ -51,6 +51,9 @@ export async function startTestArena({ game, scene, loader, telegraphs }) {
   // the user's fits for these weapons on this Yola (the Rig Lab's fit panel, assets/hold/weapon_fit.json)
   const fitsJ = await json('assets/hold/weapon_fit.json'), who = game.yolaModel === '2' ? 'yola2' : 'yola', fits = {};
   for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === 'object' && v[who]) fits[k] = v[who];
+  // the bat is the wood bat (2026-10-18): the Rig Lab's Bat (alubat), its data sheet and the user's fits for it
+  const woodBat = !!WDEF.alubat;
+  if (woodBat) { WDEF.bat = WDEF.alubat; for (const k of Object.keys(fits)) if (k === 'alubat' || k.startsWith('alubat@')) fits['bat' + k.slice(6)] = fits[k]; }
   // (the library picks, plus the clips in her own file: the new Yola carries the Mixamo and Tripo ones there)
   const clips = Object.fromEntries([...(game.yolaClips || []), ...(lib?.animations || [])].map((c) => [c.name, c]));
   const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
@@ -99,7 +102,7 @@ export async function startTestArena({ game, scene, loader, telegraphs }) {
     const P = PROFILE[e.weapon], w = WDEF[e.weapon] && e.weapon !== 'none' ? WDEF[e.weapon] : null;
     const obj = w ? await model(e.weapon) : null;
     const fitE = fits[e.weapon + '@' + e.clip] || fits[e.weapon] || null; // (its hand: the Rig Lab's Holding hand when set)
-    const hold = { key: e.weapon, obj, w, hand: fitE?.hand || e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, fit: fits[e.weapon + '@' + e.clip] || fits[e.weapon] || null }; // (fit: this clip's own when the Rig Lab set one, "This clip only") // (carry: how it is held at rest, render/holdfit.js CARRY; fit: the user's Rig Lab fit)
+    const hold = { key: e.weapon, obj, w, hand: fitE?.hand || e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === 'two', fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, pack: woodBat && e.weapon === 'bat', fit: fits[e.weapon + '@' + e.clip] || fits[e.weapon] || null }; // (fit: this clip's own when the Rig Lab set one, "This clip only") // (carry: how it is held at rest, render/holdfit.js CARRY; fit: the user's Rig Lab fit)
     yola.setTestWeapon(hold);
     return buildLibraryAttack(yola, { clip: clips[e.clip], frames: meta[e.clip]?.frames, hold: w ? hold : null, P, speed, name: e.label, sound: e.weapon });
   }

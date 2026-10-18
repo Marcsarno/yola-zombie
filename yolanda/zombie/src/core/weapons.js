@@ -95,6 +95,12 @@ export const BAT_ATTACKS = [
 // The bat model's frame (makeBat(0.84), the Move Library's data sheet) and how it hits.
 export const BAT_DEF = { builder: 'makeBat', hands: 'one', grip_primary: [0, 0, -0.065], shaft_axis: [0, 0, 1], ref_axis: [1, 0, 0],
   length_m: 0.84, impact_point: [0, 0, 0.55], tip: [0, 0, 0.71], knob: [0, 0, -0.13] };
+// The wood bat (2026-10-18, the user: "swap the bat ... retexture to look like a wood bat ... a good wood bat"): the hospital
+// pack's bat mesh with its own markers (GameGrip_R at the origin, the knob end of the grip; GameGrip_L 9.3 cm up; ImpactPoint
+// 65.5 cm up; the bat along +Y), refinished as lacquered ash with black grip tape (blender/make_wood_bat.py). Held as the
+// Rig Lab holds the pack's bat (render/holdfit.js placeBat), with the user's alubat fits.
+export const WOOD_BAT_DEF = { file: 'assets/weapons/wood_bat.glb', hands: 'one', grip_primary: [0, 0, 0], grip_secondary: [0, 0.093, 0], shaft_axis: [0, 1, 0], ref_axis: [1, 0, 0],
+  length_m: 0.843, impact_point: [0, 0.655, 0], tip: [0, 0.768, 0], knob: [0, -0.075, 0] };
 export const BAT_PROFILE = { kind: 'bat', dmg: 0.75, knock: 1.0, style: 'swing', sever: {}, hitFrom: 0.45, radius: 0.1, reach: 'tip' };
 export function useBuiltBat(strikes) {
   BAT_ATTACKS.length = 0; BAT_ATTACKS.push(...strikes);

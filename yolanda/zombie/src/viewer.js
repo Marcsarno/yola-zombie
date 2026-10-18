@@ -82,7 +82,7 @@ const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand
 // clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
 // frames 38-99, measured by matching both hands over the clip, 2026-10-16; before this the two were shown out of step)
 const REF_OFFSET = { pistol_reload: 37 };
-const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (hospital pack, full stock)', draft: 'shotgun (first draft)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (hospital pack)', packaxe: 'axe (hospital pack)', packcrowbar: 'crowbar (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
+const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (hospital pack, full stock)', draft: 'shotgun (first draft)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (wood)', packaxe: 'axe (hospital pack)', packcrowbar: 'crowbar (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
 const HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
 // the weapon test arena's other weapons (2026-10-17, the user: "add the axe, chainsaw, sledge hammer back to ... the rig lab
 // .. and the knife"): their frames from the Move Library's data sheet (assets/arena/weapons.json: grip point, shaft and
@@ -752,7 +752,7 @@ const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
-const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (hospital pack)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', old: 'Shotgun (hospital pack)', draft: 'Shotgun (first draft)', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (wood)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', old: 'Shotgun (hospital pack)', draft: 'Shotgun (first draft)', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
 // (a weapon's fit for this rig: this clip's own when it has one, the sidebar's "This clip only", else the weapon's)
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : WFITS[w + '@' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '')]?.[fitKey(a)] || ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {

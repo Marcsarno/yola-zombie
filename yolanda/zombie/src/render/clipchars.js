@@ -11,10 +11,15 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
+import { placeOneHanded, placeBat, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 import { HOLD_LAYERS, AS_LIVE } from './holdlayers.js';
 import { adjustArms, blendArms } from './armpose.js';
+const FIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
+function lerpFit(a, b, t) { // two weapon fits blended (the stance's own and the attacks')
+  a ||= FIT0; b ||= FIT0; if (t <= 0) return a; if (t >= 1) return b;
+  const o = { ...a }; for (const k in FIT0) o[k] = (a[k] ?? FIT0[k]) + ((b[k] ?? FIT0[k]) - (a[k] ?? FIT0[k])) * t; return o;
+}
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -711,6 +716,7 @@ export class YolaView extends ClipBody {
   }
   // the game clip an action plays (the derived layers: legs-only, upper-only, the unarmed copies)
   baseClip(n) {
+    if (n.startsWith('sword_idle_')) return this.swordIdleBase || 'ual1_Sword_Idle'; // (the bat's stance clip: setOneHandedBat)
     const BASE = { shotgun_hold_upper: 'sg_reload', shotgun_reload_upper: 'sg_reload', pistol_reload_upper: 'pistol_reload', bat_idle_upper: 'bat_idle', bat_calib: 'bat_idle',
       fists_idle_upper: 'tripo_idle', sword_idle_upper: 'ual1_Sword_Idle', sword_idle_rarm: 'ual1_Sword_Idle', sword_idle_rhand: 'ual1_Sword_Idle', tripo_idle_lower: 'tripo_idle' };
     return n in BASE ? BASE[n] : n.endsWith('_u') ? UNARMED[n.slice(0, -2)] : n.replace(/_(lower|ul)$/, '').replace(/__ghost$/, '');
@@ -1010,7 +1016,11 @@ export class YolaView extends ClipBody {
     const o = T.obj; if (!o) return;
     // (render/holdfit.js, the same math as the Rig Lab: grip in the fist, shaft along the knuckles, then T.fit, the user's
     // fit for this weapon on this Yola from assets/hold/weapon_fit.json)
-    placeOneHanded(this.bones, T.hand, o, T.w, T.fit, T);
+    if (T.pack) { // (the wood bat, as the Rig Lab holds the pack's bat: through both fists or in the right one; its stance's own fit while she stands)
+      const wi = Math.min(1, this.actions.sword_idle_upper?.getEffectiveWeight() || 0), ws = Math.min(1, this.swingAct?.getEffectiveWeight() || 0);
+      const f = T.fitIdle ? lerpFit(T.fit, T.fitIdle, wi + ws > 1e-3 ? wi / (wi + ws) : 0) : T.fit;
+      if (f?.hand === 'Left') placeOneHanded(this.bones, 'Left', o, T.w, f, {}); else placeBat(this.bones, o, T.w, f);
+    } else placeOneHanded(this.bones, T.hand, o, T.w, T.fit, T);
     const w = T.w;
     // a two-handed weapon: the other hand on its second grip (the data sheet's grip_secondary; render/holdfit.js handOnto)
     if (T.two && w.grip_secondary && HOLD_LAYERS.secondHand) {
@@ -1028,7 +1038,7 @@ export class YolaView extends ClipBody {
   // her closed fist (the bat idle's grip, setHandPoses) on one hand, by w
   closeFist(side, w) { for (const [b, q, sd] of this.fist || []) if (sd === side) b.quaternion.slerp(q, Math.min(1, w)); this.bones[side + 'Hand']?.updateMatrixWorld(true); }
   setOneHandedBat(hold, idle) {
-    this.batLib = hold;
+    this.batLib = hold; if (idle) this.swordIdleBase = idle.name;
     if (idle && !this.actions.sword_idle_upper) {
       const full = stripRoot(idle, hipsRest(this.model)), ht = full.tracks.find((t) => /Hips.quaternion$/.test(t.name));
       if (ht) this.swordHips = ht.createInterpolant(new Float32Array(4)); // (its hip tilt, for the re-based bat run options)

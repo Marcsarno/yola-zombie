@@ -41,12 +41,12 @@
  "short": {
   "yola2": {
    "size": 100,
-   "fwd": 0,
-   "up": 0,
-   "side": 0,
-   "tilt": 0,
-   "turn": 0,
-   "roll": 0
+   "fwd": -17,
+   "up": 28,
+   "side": 40,
+   "tilt": -2,
+   "turn": -8,
+   "roll": -5
   },
   "xbot": {
    "size": 100,
@@ -166,7 +166,8 @@
    "side": 9,
    "tilt": -5,
    "turn": 90,
-   "roll": 0
+   "roll": 0,
+   "hand": "Right"
   },
   "mannequin": {
    "size": 100,
@@ -176,6 +177,17 @@
    "tilt": 0,
    "turn": 90,
    "roll": 0
+  }
+ },
+ "packcrowbar": {
+  "yola2": {
+   "size": 100,
+   "fwd": -21,
+   "up": -16,
+   "side": -17,
+   "tilt": -1,
+   "turn": -1,
+   "roll": -14
   }
  }
 }

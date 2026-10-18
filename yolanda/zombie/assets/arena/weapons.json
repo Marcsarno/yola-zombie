@@ -28,8 +28,8 @@
    "notes": "The Hospital Survivor Weapons pack's crowbar as delivered (assets/weapons/hospital, unchanged; the arena's own crowbar entry is a modified copy). Its own markers: GameGrip_R at the origin, GameGrip_L 14 cm up, ImpactPoint at the hook (-0.082, 0.423). GLB +Y along the shaft; the hook toward -X."
   },
   "alubat": {
-   "label": "Bat (hospital pack)",
-   "file": "assets/weapons/hospital/aluminum_bat.glb",
+   "label": "Bat (wood)",
+   "file": "assets/weapons/wood_bat.glb",
    "hands": "one",
    "primary_hand": "Right",
    "grip_primary": [0.0, 0.0, 0.0],

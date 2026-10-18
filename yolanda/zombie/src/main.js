@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sim, STEP } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
-import { setMeleePaths, meleeSegment, BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
+import { setMeleePaths, meleeSegment, BAT_DEF, WOOD_BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
 import { setupNewMoves } from './render/newmoves.js';
 import { AcidPools } from './render/acid.js';
@@ -175,15 +175,16 @@ async function load() {
   const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shotgun_shell.glb'),
     loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null),
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
-    fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({}))]); // (the user's pistol fit per character, set in the Rig Lab)
+    fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({})), // (the user's pistol fit per character, set in the Rig Lab)
+    loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)]); // (the wood bat: setupBat)
   loadHoldLayers(); // (the user's hold-layer switches, render/holdlayers.js)
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
+  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup')); // (tools/anim/yola_clips.py: knocked flat, getting up)
-  setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({}))); window.game.yolaClips = yg.animations;
+  setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({})), woodBatG); window.game.yolaClips = yg.animations;
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
@@ -199,19 +200,29 @@ async function load() {
 }
 // The bat: Quaternius's Sword Regular Combo (one-handed, four strikes), built on the Yola that plays, the bat in her right
 // fist and the matching Sword Idle as its stance (src/render/libattack.js). Without the clip the older bat combo stays.
-function setupBat(anims, fits = {}) {
+// a clip held on its first frame (two keys, the same pose): an idle stance taken from one frame of a clip
+function holdFrame(clip, name) {
+  const tracks = clip.tracks.map((t) => { const n = t.getValueSize(), v = Array.from(t.values.slice(0, n)); return new t.constructor(t.name, [0, 1], [...v, ...v]); });
+  return new THREE.AnimationClip(name, 1, tracks);
+}
+function setupBat(anims, fits = {}, woodG = null) {
   const who = YOLA_MODEL === '2' ? 'yola2' : 'yola';
   yola.axeFit = fits.axe?.[who] || null; yola.shotgunFit = fits.short?.[who] || null; // (the axe's and shotgun's fits, same Rig Lab file)
   if (YOLA_MODEL !== '2') yola.postureOff = true; // (the posture fix was measured on Yola 3.0's rig: render/posture.js)
   fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {}); // (the Rig Lab Hands settings)
   fetch('assets/hold/arm_pose.json').then((r) => r.json()).then((j) => yola.setArmPose(j, who)).catch(() => {}); // (the Rig Lab's arm adjustments)
-  const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = anims.find((c) => c.name === 'ual1_Sword_Idle');
+  // the stance (2026-10-18, the user's pick in the Rig Lab): Quaternius UAL2 Sword_Block held on its first frame, the rest
+  // stance, bat level (assets/yola2_ual.glb; without it the Sword Idle as before)
+  const block = anims.find((c) => c.name === 'ual_Sword_Block');
+  const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = block ? holdFrame(block, 'ual_Sword_Block') : anims.find((c) => c.name === 'ual1_Sword_Idle');
   if (!combo) { setupNewMoves(yola, anims, null); return; }
-  const h = new THREE.Group(), m = makeBat(0.84);
+  const h = new THREE.Group(), m = woodG ? woodG.scene : makeBat(0.84); // (the wood bat; the built one if its file failed)
   m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   h.add(m); h.visible = false; scene.add(h);
-  const hold = { obj: h, w: BAT_DEF, hand: 'Right', roll: 0, slide: 0, flip: false, two: false, fingers: null };
-  hold.fit = fits.bat?.[YOLA_MODEL === '2' ? 'yola2' : 'yola'] || null; // (the user's bat fit, set in the Rig Lab: render/holdfit.js)
+  const hold = { obj: h, w: woodG ? WOOD_BAT_DEF : BAT_DEF, hand: 'Right', roll: 0, slide: 0, flip: false, two: false, fingers: null, pack: !!woodG };
+  // (the user's fits, set in the Rig Lab: the wood bat is the Rig Lab's Bat, alubat: its own for the stance, alubat@ual_Sword_Block)
+  hold.fit = (woodG ? fits.alubat : fits.bat)?.[who] || null;
+  if (woodG && block) hold.fitIdle = fits['alubat@ual_Sword_Block']?.[who] || null;
   yola.setOneHandedBat(hold, idle);
   // (89 of its 91 frames: the last one snaps back to the loop pose; four strikes, the third a slower swing)
   useBuiltBat(buildLibraryAttack(yola, { clip: combo, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: 'bat', sound: 'bat', strikes: 4 }));

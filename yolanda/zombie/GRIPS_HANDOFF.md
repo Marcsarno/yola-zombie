@@ -280,3 +280,14 @@ shots/blender_holds_*.png).
   for it are backed up in shots/browser_shotgun_backup.json. Rig Lab: "Shotgun · pack" (hospital full stock, its pump grip
   41 cm up the barrel, her left arm cannot reach it fully) and "Shotgun · draft" (assets/shotgun.glb) to compare.
   Other weapons may want the same treatment if the user finds the live game's hold better (add the clip to AS_LIVE).
+- 2026-10-18: THE WOOD BAT IN THE GAME. The user: perfect, add it to the game, swap the bat, retextured in Blender as a
+  good wood bat. assets/weapons/wood_bat.glb = the hospital pack's bat mesh and markers, refinished as lacquered ash (ring-
+  porous grain, cathedral arches, pores, tone drift, scuffs) with black cloth tape on the modelled grip; procedural in
+  Blender, baked to 2048 colour / 1024 roughness + normal (blender/make_wood_bat.py, run headless with the pack GLB).
+  Story game (main.js setupBat): the wood bat (core/weapons.js WOOD_BAT_DEF), held as the Rig Lab holds it (holdfit.js
+  placeBat; hold.pack), the user's alubat fits, the stance's own fit (alubat@ual_Sword_Block) blended in by the stance's
+  weight; the stance is Quaternius Sword_Block held on frame 1 (copied into assets/yola2_ual.glb with
+  tools/anim/glb_copy_clip.mjs). Checked: grip and shaft in her hand identical to the Rig Lab. Arena: its bat = the wood
+  bat (alubat sheet and fits). The user's Rig Lab edits saved: the shotgun's new fit (they re-tuned it after the live
+  restore), the sledgehammer's right hand, the crowbar fit, two arm adjustments. Posture fix kept ON (their browser had
+  it off; set back on). Deployed; NOT pushed (the Kevin history rewrite still needs the user's OK).

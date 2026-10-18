@@ -21,5 +21,24 @@
    "elbow": 1,
    "fore": -3
   }
+ },
+ "yola2:ual_Sword_Regular_Combo": {
+  "Right": {
+   "shUp": -0.5
+  }
+ },
+ "yola2:reload_rifle_stand": {
+  "Right": {
+   "shUp": -1.5,
+   "wristUp": 40,
+   "wristSide": 6,
+   "elbow": -20,
+   "fore": 16,
+   "shFwd": -20
+  },
+  "Left": {
+   "shUp": -3,
+   "shFwd": -7
+  }
  }
 }
