@@ -270,8 +270,10 @@ export class Arena {
     const s = this.scene;
     // soft image-based fill so matte sculpted materials read with gentle shading in every direction
     if (renderer) { const pm = new THREE.PMREMGenerator(renderer); s.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; s.environmentIntensity = 0.32; pm.dispose(); }
-    const hemi = new THREE.HemisphereLight(0xfff4e3, 0x7c9a96, this.f3 ? 0.8 : 0.85); s.add(hemi); this.hemi = hemi;
-    const sun = new THREE.DirectionalLight(0xfff1dc, this.f3 ? 1.35 : 1.45);
+    // (2026-10-18, the user: the practice room should "truly use actual game lighting.. actual floor and wall textures" so
+    // it judges looks and performance fairly: the wing is lit exactly as the chapter's floors, its amber door lights gone)
+    const hemi = new THREE.HemisphereLight(0xfff4e3, 0x7c9a96, 0.8); s.add(hemi); this.hemi = hemi;
+    const sun = new THREE.DirectionalLight(0xfff1dc, 1.35);
     sun.position.set(-6, 14, 7); sun.target.position.set(0, 0, 0);
     s.add(sun, sun.target);
     if (this.quality !== 'low') {
@@ -282,7 +284,7 @@ export class Arena {
       sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02; sun.shadow.radius = 3;
     }
     this.sun = sun;
-    if (this.f3) { this.redHemi = new THREE.HemisphereLight(0xff3a24, 0x2a0000, 0); s.add(this.redHemi); return; } // (Floor 3: emergency look, see setEmergency)
+    this.redHemi = new THREE.HemisphereLight(0xff3a24, 0x2a0000, 0); s.add(this.redHemi); return; // (the emergency look, see setEmergency; the wing's old amber door lights below are unused)
     // selective amber emergency light (the rooms themselves stay readable)
     if (this.quality !== 'low') {
       const spots = this.f3 ? CH().lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
@@ -657,6 +659,8 @@ export class Arena {
     if (O.on) this.setOutbreak(true);
   }
   // the reveal: the worn surfaces and the blood on (the opening calls this with its own blood; false restores the clean look)
+  // the practice wing as the floors are in play: worn surfaces and the emergency grade from the start
+  playLook() { if (this.f3) return; this.setOutbreak(true); this.setEmergency(true, 0); }
   setOutbreak(on) {
     if (!this.ob && on) this.loadOutbreak(); // (built on first use outside Floor 3: the weapon test arena)
     const O = this.ob; if (!O) return;
@@ -715,7 +719,7 @@ export class Arena {
   //      hemisphere light breathes like a rotating beacon, and glow pools lie on the floor under the fittings and at the
   //      doorways (unlit additive decals: red, and a few cold white tubes still working). No extra lights or shadows.
   setEmergency(on, fade = 1.6) {
-    if (!this.f3 || !this.hemi) return;
+    if (!this.hemi) return;
     if (!this.em) this.buildEmergency();
     this.em.target = on ? 1 : 0; this.em.rate = fade > 0 ? 1 / fade : 1e9;
     if (fade <= 0) this.tickEmergency(0);
@@ -732,9 +736,9 @@ export class Arena {
     const grp = new THREE.Group(); grp.name = 'emergency'; grp.visible = false; s.add(grp); e.group = grp;
     const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
     const put = (m, x, z, size) => { const p = new THREE.Mesh(geo, m); p.position.set(x, 0.02, z); p.scale.set(size, 1, size); p.renderOrder = 2; grp.add(p); };
-    for (const l of CH().lights || []) put(e.redMat, l.x, l.z, 5.5);
+    for (const l of this.f3 ? CH().lights || [] : LAYOUT.doors.map((d) => ({ x: d.spawn.x, z: d.spawn.z }))) put(e.redMat, l.x, l.z, 5.5); // (the wing: over its doorways, where its fittings are)
     for (const d of CH().doors || []) if (d.kind !== 'lift') put(e.redMat, d.x, d.z, 2.6);
-    for (const r of CH().rooms || []) for (const [x0, x1, z0, z1] of r.rects) { const w = x1 - x0, dd = z1 - z0; if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8); }
+    for (const r of this.f3 ? CH().rooms || [] : OB_WING_ROOMS) for (const [x0, x1, z0, z1] of r.rects) { const w = x1 - x0, dd = z1 - z0; if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8); }
   }
   tickEmergency(dt) {
     const e = this.em; if (!e) return;
@@ -751,8 +755,8 @@ export class Arena {
   }
 
   update(dt, px, pz, camYaw, level) {
-    if (!this.f3) return;
     this.tickEmergency(dt);
+    if (!this.f3) return;
     const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw); // screen-up on the floor
     const side = (b) => { // signed screen-up distance of a rectangle's nearest point from Yola (negative: camera side)
       const nx = Math.max(b.minX, Math.min(px, b.maxX)), nz = Math.max(b.minZ, Math.min(pz, b.maxZ));
