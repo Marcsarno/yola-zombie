@@ -86,6 +86,9 @@ the cafeteria's staff corner of coffee counter, lockers and water cooler; the ma
 construction details modelled in Blender (blender/make_construction_props.py: a sawhorse barrier, a plasterboard pallet).
 
 **Not done, missing, or for the user:**
+- (later the same day) Openly labelled STAND-INS of the five missing painted construction props were modelled in Blender
+  (blender/make_standin_props.py, assets/props/standin_*.glb) and placed in the renovation and the lift service bay
+  (core/chapter.js SI): swap in the user's own files at the same spots when they turn up.
 - The user's five painted construction props (cable workbench, paint shelf, tool pegboard, renovation pallet, janitor
   cabinet) are nowhere on this machine (searched the project, Downloads, Desktop, Documents, the other projects): not
   recreated. The named Outbreak files (OB_RecoveryBed_01.glb etc.) are the runtime set's plain names (index:
