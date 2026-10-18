@@ -184,6 +184,9 @@ sound says when the game plays it ("hook") and whether an old synth version exis
 
 ## Log
 (newest at top)
+- 2026-10-18: the user asked for simpler layering: each sound now shows **How it's built** — one row per part (layers
+  sharing takes, like the 4 shells, are one part) on a shared timeline, with its state in words (N kept, take turns /
+  always / silent / off), On, level and ▶; tap a part to see only its takes below. "Layer" is now "part" on the board.
 - 2026-10-18: zombie round: 258 CC0 zombie / creature takes in 17 new sounds — Every zombie (idle moan, spots Yola,
   attack wind-up, bite lands, hurt, death + body fall), Sprinter (scream, charge, death), Guard boss (roar, attack
   grunt, ground slam = boom + debris + roar + sub, arm-torn pain, ENRAGED = roar + boss stinger, death + huge fall),

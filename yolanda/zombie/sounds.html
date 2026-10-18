@@ -63,9 +63,24 @@
   .vd button { min-width:40px; padding:6px 9px; white-space:nowrap; }
   .vd .yes { color:var(--green); border-color:#3f7a57; } .vd .no { color:var(--red); border-color:#7a3f3a; } .vd .lat { color:#d9c2ff; border-color:#5b4a80; }
   .play { width:40px; height:34px; padding:0; font-size:15px; }
-  .lyr { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; }
-  .lyr .hd h3 { color:var(--amber); font-size:12px; cursor:pointer; user-select:none; }
-  .lyr.off .takes { opacity:.4; } .lyr.shut .takes { display:none; }
+  h3.pt { color:var(--amber); font-size:12px; }
+  /* the recipe: one row per part, its takes' place and length on a shared timeline */
+  .recipe .lane { display:grid; grid-template-columns:230px 1fr auto; gap:10px; align-items:center; padding:7px 8px; border-radius:9px; border:1px solid transparent; margin-top:4px; cursor:pointer; }
+  .recipe .lane:hover { background:rgba(255,255,255,.03); }
+  .recipe .lane.sel { border-color:var(--amber); background:rgba(255,179,71,.07); }
+  .recipe .lane.ruler { cursor:default; padding-top:0; padding-bottom:0; margin-top:8px; } .recipe .lane.ruler:hover { background:none; }
+  .lane .ln b { display:block; } .lane .ln small { color:var(--dim); font-size:11.5px; }
+  .lane .track { position:relative; height:26px; background:#1a2329; border-radius:6px; }
+  .lane.ruler .track { height:16px; background:none; }
+  .ticks span { position:absolute; top:0; height:16px; border-left:1px solid #3a4a52; padding-left:3px; font-size:10px; color:var(--dim); white-space:nowrap; }
+  .lane .track i { position:absolute; top:4px; bottom:4px; border-radius:4px; }
+  .lane.st-on .track i { background:var(--teal); }
+  .lane.st-synth .track i { background:#8d78c8; }
+  .lane.st-silent .track i { background:none; border:1px dashed #6d7f86; }
+  .lane.st-off .track i { background:#3a4a52; } .lane.st-off .ln { opacity:.5; }
+  .lane.st-silent .ln small { color:#ffd99a; }
+  .lane .lc { display:flex; gap:8px; align-items:center; } .lane .lc .trim input { width:90px; }
+  .sw { display:flex; gap:4px; align-items:center; color:var(--dim); }
   .bulk { color:var(--dim); font-size:12px; display:flex; gap:5px; align-items:center; } .bulk button { padding:3px 8px; font-size:12px; }
   .snd .todo { color:var(--amber); font-weight:600; }
   .prog1 { color:var(--dim); font-variant-numeric:tabular-nums; }
@@ -90,6 +105,7 @@
     .take .vd { grid-column:1 / -1; max-width:none; justify-content:flex-start; } .vd button { flex:1 0 auto; }
     #top { padding:8px 12px; gap:8px 12px; }
     .keys { display:none; }
+    .recipe .lane { grid-template-columns:1fr; gap:6px; } .recipe .lane.ruler { display:none; }
   }
 </style>
 </head>

@@ -285,61 +285,95 @@ function rowHtml(name, li, f, k, showFrom = false) {
   </div>`;
 }
 
-// ---------- a sound ----------
+// ---------- a sound: its recipe (the parts that play together, drawn on a timeline), then the takes of one part ----------
 let filter = store.get('filter', 'all');
+// a sound's parts: its layers, where layers sharing the same takes (the four shells) are one part played several times
+function parts(name) {
+  const out = [];
+  BANKS[name].layers.forEach((l, li) => {
+    const key = l.synth ? `synth:${l.synth}:${li}` : filesOf(l).join('|');
+    let p = out.find((q) => q.key === key);
+    if (!p) out.push((p = { key, l, lis: [] }));
+    p.lis.push(li);
+  });
+  for (const p of out) p.label = p.lis.length > 1 ? `${(p.l.label || 'Part').replace(/\s*\d+$/, '')} ×${p.lis.length}` : p.l.label || 'Part';
+  return out;
+}
+const atOf = (l) => (Array.isArray(l.at) ? (l.at[0] + l.at[1]) / 2 : l.at || 0);
+// a part right now, in plain words
+function partState(name, p) {
+  if (p.lis.every((li) => layerSel(name, li).off)) return { cls: 'off', text: 'Off: left out of the sound' };
+  if (p.l.synth) return { cls: 'synth', text: 'Always plays (synthesised, no takes to pick)' };
+  const n = S.active(name, p.l).length, all = filesOf(p.l).length;
+  if (!n) return { cls: 'silent', text: `Silent until you keep one of its ${all} takes` };
+  return { cls: 'on', text: n === 1 ? '1 take kept: plays every time' : `${n} takes kept: one plays each time, taking turns` };
+}
+function partDur(name, p) {
+  if (p.l.synth) return 0.3;
+  const fs = S.active(name, p.l).length ? S.active(name, p.l) : filesOf(p.l);
+  const d = fs.map((f) => S.buf.get(f)?.duration || 0).filter(Boolean);
+  return d.length ? d.reduce((a, x) => a + x, 0) / d.length : 0.4;
+}
+const partOf = store.get('part', {}); // which part's takes are shown, per sound
+function partCounts(name, p) {
+  const c = { all: 0, review: 0, game: 0, later: 0, out: 0 };
+  for (const f of filesOf(p.l)) { const k = kind(name, p.l, f); c.all++; if (!reviewed(k)) c.review++; if (inGameKind(k)) c.game++; if (k === 'later') c.later++; if (k === 'out') c.out++; }
+  return c;
+}
+function currentPart(name, ps) {
+  if (partOf[name] !== undefined && ps[partOf[name]]) return partOf[name];
+  const todo = ps.findIndex((p) => !p.l.synth && partCounts(name, p).review);
+  return todo >= 0 ? todo : Math.max(0, ps.findIndex((p) => !p.l.synth));
+}
+function pickPart(name, i) { partOf[name] = i; store.set('part', partOf); renderMain(); }
+
 function renderMain() {
   if (cur === '@later') return renderLater();
-  const name = cur, b = BANKS[name], ss = soundSel(name), c = counts(name), shut = store.get('shut', {});
-  const tab = (id, label, n) => `<button class="tab${filter === id ? ' on' : ''}" data-filter="${id}">${label} <span>${n}</span></button>`;
+  const name = cur, b = BANKS[name], ss = soundSel(name), c = counts(name), ps = parts(name), pi = currentPart(name, ps), p = ps[pi];
   const where = b.pending ? '<div class="help pend">Not in the game yet: pick the takes you like now, and they go in when this sound is wired.</div>'
-    : `<div class="help hook">In the game: plays when ${esc(b.hook || 'it happens')}.${!b.layers.some((l) => (l.files || []).length) ? (hasClassic(name) ? ' Until you add takes, the game plays its old synthesised version.' : ' Nothing plays here until you add takes.') : ''}</div>`;
+    : `<div class="help hook">In the game: plays when ${esc(b.hook || 'it happens')}.${!b.layers.some((l) => (l.files || []).length) && !ps.some((q) => !q.l.synth && S.active(name, q.l).length) ? (hasClassic(name) ? ' Until you keep takes, the game plays its old synthesised version.' : ' Nothing plays here until you keep takes.') : ''}</div>`;
+  // the sound: what it is, play it, its level and notes
   let h = `<div class="card"><div class="crumb">${esc(b.group || '')}${b.sub ? ' › ' + esc(b.sub) : ''}</div>
-    <div class="hd"><h2>${b.label}</h2><span class="prog1">${c.all - c.review} of ${c.all} reviewed</span><span class="sp"></span>
+    <div class="hd"><h2>${b.label}</h2><span class="prog1">${c.all - c.review} of ${c.all} takes reviewed</span><span class="sp"></span>
     <button class="big primary" data-act="full" title="Space">▶ Play in game</button>
-    <button class="big" data-act="burst">Repeat ×6</button>
-    ${b.pending || !hasClassic(name) ? '' : '<button class="big" data-act="classic">Old version</button>'}
-    ${c.review ? '<button class="big next" data-act="aud" title="A: play every take still to review, one after another">▶▶ Audition the rest</button>' : ''}</div>
+    <button class="big" data-act="burst" title="Six times in a row: hear the takes take turns">Repeat ×6</button>
+    ${b.pending || !hasClassic(name) ? '' : '<button class="big" data-act="classic">Old version</button>'}</div>
     ${where}
     <div class="hd" style="margin-top:8px">${trimHtml('sound', ss.db)}<span class="help">level of the whole sound</span></div>
-    <textarea data-note placeholder="Notes for Claude about this sound (what's wrong, what you want instead)…">${esc(ss.note)}</textarea>
-    <div class="tabs">${tab('all', 'All', c.all)}${tab('review', 'To review', c.review)}${tab('game', b.pending ? 'Picked' : 'In the game', c.game)}${tab('later', 'Saved for later', c.later)}${tab('out', 'Rejected', c.out)}</div>
-    <div class="help how">${b.layers.length > 1
-      ? `<b>${b.layers.length} layers below play together</b>, each adding its own part of the sound. Inside a layer your kept takes <b>take turns</b>: one per play, never stacked.`
-      : 'Your kept takes <b>take turns</b>: one per play, at random, never the same twice running and never stacked.'}</div></div>`;
-  const seen = new Set();
-  b.layers.forEach((l, li) => {
-    const ls = layerSel(name, li), key = name + '#' + li;
-    let rows = '', fresh = [];
-    if (!l.synth) {
-      fresh = filesOf(l).filter((f) => !seen.has(f)); fresh.forEach((f) => seen.add(f));
-      const shown = fresh.map((f) => [f, kind(name, l, f)]).filter(([f, k]) => (!query || hit(takeLabel(f)) || hit(b.label) || hit(l.label || '')) &&
-        (filter === 'all' || (filter === 'review' && !reviewed(k)) || (filter === 'game' && inGameKind(k)) || (filter === 'later' && k === 'later') || (filter === 'out' && k === 'out')));
-      rows = !fresh.length ? '<div class="help">Same takes as above (one choice covers both).</div>'
-        : shown.map(([f, k]) => rowHtml(name, li, f, k)).join('') || '<div class="help">Nothing here in this view.</div>';
-    }
-    const left = fresh.filter((f) => !reviewed(kind(name, l, f))).length;
-    h += `<div class="card lyr${ls.off ? ' off' : ''}${shut[key] ? ' shut' : ''}" data-key="${key}"><div class="hd"><h3 data-fold title="Fold / unfold">${shut[key] ? '▸' : '▾'} ${l.label || 'Layer ' + (li + 1)}</h3><span class="chip ${l.synth ? 'cand' : 'in'}">${l.synth ? 'synthesised' : fresh.length + ' takes'}</span><span class="sp"></span>
-      ${!l.synth && fresh.length ? `<button data-act="all" data-li="${li}" title="Play every take shown, one after another">▶▶ Play all</button>` : ''}
-      <button data-act="layer" data-li="${li}">▶ ${l.synth ? 'Play' : 'Random take'}</button>
-      ${trimHtml('layer:' + li, ls.db)}
-      <label class="trim"><input type="checkbox" data-off="${li}" ${ls.off ? '' : 'checked'}> layer on</label>
-      ${left ? `<span class="bulk">the ${left} left: <button data-bulk="no" data-li="${li}">✗ reject</button><button data-bulk="later" data-li="${li}">★ later</button></span>` : ''}</div>
-      <div class="help how">${layerHow(name, l, li)}</div>
-      ${l.synth ? '' : `<div class="takes">${rows}</div>`}</div>`;
+    <textarea data-note placeholder="Notes for Claude about this sound (what's wrong, what you want instead)…">${esc(ss.note)}</textarea></div>`;
+  // the recipe: every part on one timeline
+  const total = Math.max(0.75, Math.ceil(Math.max(...ps.map((q) => Math.max(...q.lis.map((li) => atOf(BANKS[name].layers[li]))) + partDur(name, q))) * 4) / 4);
+  const ticks = []; for (let t = 0; t <= total + 1e-6; t += 0.25) ticks.push(`<span style="left:${(t / total) * 100}%">${Math.abs(t * 2 - Math.round(t * 2)) < 1e-6 ? t.toFixed(1) + ' s' : ''}</span>`);
+  h += `<div class="card recipe"><div class="hd"><h3>How it's built</h3><span class="help" style="margin:0">${ps.length > 1 ? `<b>${ps.length} parts play together</b>, each at the moment shown.` : 'One part.'} In a part, your kept takes take turns: one per play, never stacked. Tap a part to pick its takes.</span></div>
+    <div class="lane ruler"><div></div><div class="track"><div class="ticks">${ticks.join('')}</div></div><div></div></div>`;
+  ps.forEach((q, i) => {
+    const st = partState(name, q), dur = partDur(name, q), ls = layerSel(name, q.lis[0]);
+    const blocks = q.lis.map((li) => { const at = atOf(BANKS[name].layers[li]); return `<i style="left:${(at / total) * 100}%;width:${Math.max(1.5, (dur / total) * 100)}%"></i>`; }).join('');
+    h += `<div class="lane st-${st.cls}${i === pi ? ' sel' : ''}" data-part="${i}" title="Tap to pick this part's takes">
+      <div class="ln"><b>${i + 1}. ${esc(q.label)}</b><small>${st.text}</small></div>
+      <div class="track">${blocks}</div>
+      <div class="lc"><button data-act="ppart" data-part="${i}" title="This part on its own">▶</button>
+        <label class="sw"><input type="checkbox" data-poff="${i}" ${st.cls === 'off' ? '' : 'checked'}> On</label>
+        ${trimHtml('part:' + i, ls.db)}</div></div>`;
   });
+  h += '</div>';
+  // the takes of the chosen part
+  if (p.l.synth) {
+    h += `<div class="card"><div class="hd"><h3 class="pt">Part ${pi + 1}: ${esc(p.label)}</h3></div><div class="help">This part is synthesised: there are no takes to pick. Switch it on or off, or change its level, in the recipe above.</div></div>`;
+  } else {
+    const pc = partCounts(name, p);
+    const tab = (id, label, n) => `<button class="tab${filter === id ? ' on' : ''}" data-filter="${id}">${label} <span>${n}</span></button>`;
+    const shown = filesOf(p.l).map((f) => [f, kind(name, p.l, f)]).filter(([f, k]) => (!query || hit(takeLabel(f)) || hit(b.label) || hit(p.label)) &&
+      (filter === 'all' || (filter === 'review' && !reviewed(k)) || (filter === 'game' && inGameKind(k)) || (filter === 'later' && k === 'later') || (filter === 'out' && k === 'out')));
+    h += `<div class="card"><div class="hd"><h3 class="pt">Part ${pi + 1} of ${ps.length}: ${esc(p.label)} — its takes</h3><span class="prog1">${pc.all - pc.review} of ${pc.all} reviewed</span><span class="sp"></span>
+      <button data-act="all" title="Play every take shown, one after another">▶▶ Play all</button>
+      ${pc.review ? '<button class="next" data-act="aud" title="A: every take still to review, one after another (decide with the keys as each plays)">▶▶ Audition the rest</button>' : ''}
+      ${pc.review ? `<span class="bulk">the ${pc.review} left: <button data-bulk="no">✗ reject</button><button data-bulk="later">★ later</button></span>` : ''}</div>
+      <div class="tabs">${tab('all', 'All', pc.all)}${tab('review', 'To review', pc.review)}${tab('game', b.pending ? 'Picked' : 'In the game', pc.game)}${tab('later', 'Saved for later', pc.later)}${tab('out', 'Rejected', pc.out)}</div>
+      <div class="takes">${shown.map(([f, k]) => rowHtml(name, p.lis[0], f, k)).join('') || '<div class="help">Nothing here in this view.</div>'}</div></div>`;
+  }
   $('main').innerHTML = h;
-  bindMain(); bindRows(); drawWaves();
-}
-
-// what this layer does on each play, in plain words
-function layerHow(name, l, li) {
-  if (layerSel(name, li).off) return 'Switched off: this layer adds nothing.';
-  const at = Array.isArray(l.at) ? l.at[0] : l.at || 0, when = at >= 0.1 ? `, ${at.toFixed(1)} s after the start` : '';
-  if (l.synth) return `Always plays${when} (switch it off with “layer on”).`;
-  const n = S.active(name, l).length;
-  return !n ? 'Nothing kept yet: this layer is silent.'
-    : n === 1 ? `Plays your 1 kept take${when}. Keep more for variety: they take turns, one per play.`
-      : `Plays <b>one</b> of your ${n} kept takes each time${when}, taking turns. They never stack.`;
+  bindMain(ps, pi); bindRows(); drawWaves();
 }
 
 function renderLater() {
@@ -349,41 +383,54 @@ function renderLater() {
   let h = `<div class="card"><div class="hd"><h2>★ Saved for future weapons</h2><span class="prog1">${list.length} take${list.length === 1 ? '' : 's'}</span></div>
     <div class="help">Takes you liked that don't fit their current gun. They're not in the game. Pick which weapon each is for; when that weapon is built, Claude starts from these.</div></div>`;
   if (!list.length) h += '<div class="card help">Nothing saved yet. On any take, press ★ Save for later.</div>';
-  for (const [t, items] of Object.entries(byType)) h += `<div class="card lyr"><div class="hd"><h3>${esc(t)}</h3></div><div class="takes">${items.map((it) => rowHtml(it.name, it.li, it.f, 'later', true)).join('')}</div></div>`;
+  for (const [t, items] of Object.entries(byType)) h += `<div class="card"><div class="hd"><h3 class="pt">${esc(t)}</h3></div><div class="takes">${items.map((it) => rowHtml(it.name, it.li, it.f, 'later', true)).join('')}</div></div>`;
   $('main').innerHTML = h;
   bindRows(); drawWaves();
 }
 
-function bindMain() {
-  const name = cur, m = $('main');
+function bindMain(ps, pi) {
+  const name = cur, m = $('main'), p = ps[pi];
   m.querySelector('[data-act=full]').onclick = () => playFull(name);
   m.querySelector('[data-act=burst]').onclick = () => burst(name);
   m.querySelector('[data-act=classic]')?.addEventListener('click', () => classic(name));
   m.querySelector('[data-act=aud]')?.addEventListener('click', () => audition(visibleRows('.take.k-review-in, .take.k-review-new')));
+  m.querySelector('[data-act=all]')?.addEventListener('click', () => audition(visibleRows('.take')));
   const note = m.querySelector('[data-note]'); note.onfocus = snapshot; note.oninput = (e) => { soundSel(name).note = e.target.value; touch(); };
   for (const el of m.querySelectorAll('[data-filter]')) el.onclick = () => { filter = el.dataset.filter; store.set('filter', filter); renderMain(); };
-  for (const el of m.querySelectorAll('[data-act=layer]')) el.onclick = () => layerOnce(name, +el.dataset.li);
-  for (const el of m.querySelectorAll('[data-act=all]')) el.onclick = () => audition(visibleRows(`.lyr[data-key="${name}#${el.dataset.li}"] .take`));
-  for (const el of m.querySelectorAll('[data-fold]')) el.onclick = () => { const key = el.closest('.lyr').dataset.key, s = store.get('shut', {}); s[key] = !s[key]; store.set('shut', s); renderMain(); };
-  for (const el of m.querySelectorAll('[data-off]')) el.onchange = () => { snapshot(); layerSel(name, +el.dataset.off).off = !el.checked; touch(); renderMain(); };
+  // the recipe: tap a part to pick its takes; ▶ plays it alone; On and level act on every layer of the part
+  for (const lane of m.querySelectorAll('.lane[data-part]')) lane.onclick = (e) => { if (!e.target.closest('button, input, label')) pickPart(name, +lane.dataset.part); };
+  for (const el of m.querySelectorAll('[data-act=ppart]')) el.onclick = () => layerOnce(name, ps[+el.dataset.part].lis[0]);
+  for (const el of m.querySelectorAll('[data-poff]')) el.onchange = () => { snapshot(); for (const li of ps[+el.dataset.poff].lis) layerSel(name, li).off = !el.checked; touch(); renderMain(); };
   for (const el of m.querySelectorAll('[data-bulk]')) el.onclick = () => {
-    snapshot(); const li = +el.dataset.li, l = BANKS[name].layers[li];
-    for (const f of filesOf(l)) if (!reviewed(kind(name, l, f))) takeSel(name, f).v = el.dataset.bulk;
+    snapshot();
+    for (const f of filesOf(p.l)) if (!reviewed(kind(name, p.l, f))) takeSel(name, f).v = el.dataset.bulk;
     touch(); renderMain();
   };
-  for (const el of m.querySelectorAll('.card > .hd [data-trim]')) {
+  for (const el of m.querySelectorAll('[data-trim]')) {
+    if (el.closest('.take')) continue; // (a take's own level: bindRows)
+    const key = el.dataset.trim;
     el.onpointerdown = snapshot;
-    el.oninput = () => { const key = el.dataset.trim, v = +el.value; if (key === 'sound') soundSel(name).db = v; else layerSel(name, +key.slice(6)).db = v; el.nextElementSibling.textContent = dbText(v); touch(); };
-    el.onchange = () => (el.dataset.trim === 'sound' ? playFull(name) : layerOnce(name, +el.dataset.trim.slice(6)));
+    el.oninput = () => {
+      const v = +el.value;
+      if (key === 'sound') soundSel(name).db = v; else for (const li of ps[+key.slice(5)].lis) layerSel(name, li).db = v;
+      el.nextElementSibling.textContent = dbText(v); touch();
+    };
+    el.onchange = () => (key === 'sound' ? playFull(name) : layerOnce(name, ps[+key.slice(5)].lis[0]));
   }
 }
 
-// the next take nobody has judged yet (after `from`, or from the top): focus it, bring it into view, play it
+// the next take nobody has judged yet (after `from`, or from the top): focus it, bring it into view, play it; when this
+// part has none left, the next part that has some is opened
 function nextToReview(from, play) {
   const rows = [...$('main').querySelectorAll('.take')];
   const i0 = from ? rows.indexOf(from) + 1 : 0;
   const nx = [...rows.slice(i0), ...rows.slice(0, i0)].find((r) => r.className.includes('k-review'));
-  if (!nx) return false;
+  if (!nx) {
+    if (cur === '@later') return false;
+    const ps = parts(cur), pi = currentPart(cur, ps), n = ps.length;
+    for (let d = 1; d < n; d++) { const j = (pi + d) % n; if (!ps[j].l.synth && partCounts(cur, ps[j]).review) { pickPart(cur, j); return nextToReview(null, play); } }
+    return false;
+  }
   nx.focus({ preventScroll: true }); nx.scrollIntoView({ block: 'center', behavior: 'smooth' });
   if (play) solo(nx.dataset.name, +nx.dataset.li, nx.dataset.f);
   return true;
