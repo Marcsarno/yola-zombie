@@ -50,6 +50,7 @@ function rayBox(b, x, z, dx, dz) {
   return [t0, t1, face];
 }
 
+const ZS_STAGGER = 'stagger';
 export class Player {
   constructor(x, z, tuning) {
     this.T = tuning;
@@ -179,7 +180,8 @@ export class Player {
     // running into a low prop: over it (VAULT)
     { const t = this.action.type; if (!this.dead && mag > 0.6 && (t === 'ready' || t === 'shot' || t === 'reload') && this.tryVault(mx / mag, mz / mag, world, sim)) { /* the vault owns her now */ } }
     const down = this.action.type === 'down', dodging = this.action.type === 'dodge', vaulting = this.action.type === 'vault';
-    if (this.dead || down || dodging || vaulting) { mx = mz = mag = 0; }
+    const exec = this.action.type === 'execDash' || this.action.type === 'execAim'; // (an execution moves her itself: updateAction)
+    if (this.dead || down || dodging || vaulting || exec) { mx = mz = mag = 0; }
     // aim
     const am = down ? 0 : Math.hypot(input.aimX, input.aimZ);
     this.aiming = !this.dead && am > AIM_DEADZONE;
@@ -241,7 +243,7 @@ export class Player {
     }
     this.x += rm.x; this.z += rm.z;
     // soft-collide with live zombies (not through a dodge's untouchable moment, nor over a prop), then the world
-    const through = vaulting || (dodging && this.invuln > 0);
+    const through = vaulting || exec || (dodging && this.invuln > 0);
     if (!through) for (const e of sim.zombies) {
       if (!e.solid || (e.state === 'strike' && e.attack === 'dash')) continue; // (the runner's dash brushes past her)
       const dx = this.x - e.x, dz = this.z - e.z, rr = this.r + e.r, d2 = dx * dx + dz * dz;
@@ -251,7 +253,7 @@ export class Player {
     // actual locomotion velocity after collisions (drives animation, stops running into walls); the attack advance
     // is taken back out, so it cannot accumulate into speed
     this.vx = (this.x - px - rm.x - (this.slide ? this.slide.x * dt : 0)) / dt; this.vz = (this.z - pz - rm.z - (this.slide ? this.slide.z * dt : 0)) / dt;
-    if (down || dodging || vaulting) this.vx = this.vz = 0; // (on the floor, dodging, vaulting: their own clips, no running animation)
+    if (down || dodging || vaulting || exec) this.vx = this.vz = 0; // (on the floor, dodging, vaulting: their own clips, no running animation)
     const vl = Math.hypot(this.vx, this.vz), vmax = T.moveSpeed * 1.05;
     if (vl > vmax) { this.vx *= vmax / vl; this.vz *= vmax / vl; }
 
@@ -293,6 +295,30 @@ export class Player {
     if (this.dead) return;
     a.t += dt;
     switch (a.type) {
+      case 'execDash': {
+        const u = Math.min(1, a.t / a.dur), e = u * u * (3 - 2 * u);
+        this.x = a.x0 + (a.x1 - a.x0) * e; this.z = a.z0 + (a.z1 - a.z0) * e; this.vx = this.vz = 0;
+        const z = sim.zombies.find((q) => q.id === a.id);
+        if (z) this.aimYaw = this.aimTarget = Math.atan2(z.x - this.x, z.z - this.z);
+        if (u < 1) break;
+        if (!z || !z.alive) { this.setAction('ready'); this.execId = 0; break; }
+        if (this.equipped === PISTOL || this.equipped === SHOTGUN) { this.setAction('execAim', { dur: 0.2, id: z.id }); this.execHitIn = 0.2; break; } // (a beat with the muzzle on it, then the shot)
+        { const A = this.attacks[this.attacks.length - 1]; this.execHitIn = (A.windows ? A.windows[A.windows.length - 1][0] : A.activeStart) / (this.T.axeSpeed || 1); } // (when her strike lands: render/execution.js paces the wind-up to it)
+        this.startSwing(sim, this.attacks.length - 1, true, 'execute'); this.action.execId = z.id;
+        break;
+      }
+      case 'execAim': {
+        const z = sim.zombies.find((q) => q.id === a.id);
+        if (z) this.aimYaw = this.aimTarget = Math.atan2(z.x - this.x, z.z - this.z);
+        if (a.t < a.dur) break;
+        if (!z || !z.alive) { this.setAction('ready'); this.execId = 0; break; }
+        { // point-blank
+          this.setAction('shot', { execId: z.id }); if (this.ammo > 0) this.ammo--; this.shotCount++; this.recoil = 1;
+          if (this.equipped === SHOTGUN) sim.fireShotgun(this); else sim.firePistol(this);
+          if (z.alive) sim.forceExec(z);
+        }
+        break;
+      }
       case 'shot':
         if (a.t >= (this.equipped === SHOTGUN ? T.shotgunInterval : T.pistolInterval)) this.setAction('ready');
         break;
@@ -326,7 +352,12 @@ export class Player {
           this.startSwing(sim, 0);
           break;
         }
-        if (st >= A.duration) this.setAction('ready');
+        if (a.execId) { // (the execution's strike: it never misses)
+          const end = A.windows ? A.windows[A.windows.length - 1][1] : a.activeEnd, z = sim.zombies.find((q) => q.id === a.execId);
+          if (z && z.alive && st >= end) sim.forceExec(z);
+          if (!z || !z.alive) { if (st >= end) this.execId = 0; }
+        }
+        if (st >= A.duration) { this.setAction('ready'); this.execId = 0; }
         break;
       }
       case 'reload':
@@ -370,6 +401,9 @@ export class Player {
       return;
     }
     if (!this.attackHeld) return;
+    // an execution (2026-10-18, the user: the perfect dodge's execute made epic): a fresh press with a zombie open to it in
+    // front and in reach takes it over the plain attack (sim.execTarget)
+    if (this.attackPressT < 0.25) { const ez = sim.execTarget?.(this); if (ez) { this.startExecution(ez, sim); return; } }
     if (Math.abs(angleDiff(this.aimYaw, this.aimTarget)) > FIRE_ALIGN) return;
     if (this.equipped === PISTOL || this.equipped === SHOTGUN) {
       this.setAction('shot');
@@ -379,6 +413,21 @@ export class Player {
     } else this.startSwing(sim, 0);
   }
 
+  // The execution: she locks on, lunges in to her strike's own distance (a fraction of a second, real time: the world is
+  // slowed, render/execution.js), then plays her weapon's strongest move (its last combo strike, the kick, a point-blank
+  // shot). The zombie stands frozen and dies to it whatever lands (zombies.js executed; sim.forceExec if the swing misses).
+  startExecution(z, sim) {
+    const dx = z.x - this.x, dz = z.z - this.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
+    const gun = this.equipped === PISTOL || this.equipped === SHOTGUN, fin = this.attacks[this.attacks.length - 1];
+    const stand = gun ? 1.0 : Math.max(0.75, fin?.stand ?? 0.95);
+    z.executed = true; z.execWeapon = this.equipped; z.executable = 0; z.execLock = true;
+    z.set(ZS_STAGGER, 9); z.vx = z.vz = 0; z.kx = z.kz = 0; z.hitFlash = 1;
+    this.aimYaw = this.aimTarget = Math.atan2(dx, dz); this.vx = this.vz = 0;
+    const go = Math.max(0, d - stand);
+    this.setAction('execDash', { dur: Math.max(0.05, Math.min(0.16, go / 16)), x0: this.x, z0: this.z, x1: this.x + ux * go, z1: this.z + uz * go, id: z.id });
+    this.invuln = Math.max(this.invuln, 3); this.execId = z.id;
+    sim.emit({ type: 'execStart', id: z.id, weapon: this.equipped, x: z.x, z: z.z });
+  }
   reloadTime() { return this.equipped === SHOTGUN ? this.T.shotgunReload : this.T.reloadTime; }
 
   startSwing(sim, combo, unlocked = false, special = null) {

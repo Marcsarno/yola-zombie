@@ -51,6 +51,22 @@ export const TUNING_DEFAULTS = {
   sprinterSpeed: 6.2, // m/s: her charge at full speed (Yola runs 3.3)
   sprinterAccel: 4.3, // m/s2: how fast she builds up to it (from a slow start)
   sprinterTurn: 0.9, // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
+  // executions (render/execution.js; 2026-10-18, the user: "use one of the already in game animations that is strong.. zoom the
+  // camera... slow motion.. make it feel epic"): time on the press, through the wind-up, the freeze on the hit, the hang
+  // after it; the camera's distance (x the game camera's), its angle down, how long it takes to get there (0: a hard cut)
+  execReach: 3.6, // m: how far a press reaches for a zombie open to it
+  execSlowLock: 0.2, // x time on the press (she lunges in at full speed regardless)
+  execSlowWind: 0.45, // x time through her wind-up
+  execWindTime: 0.55, // s (real): her wind-up, press to blow, the same for every weapon (her pace through it is set to fit)
+  execFreeze: 0.08, // s (real) frozen on the hit
+  execHang: 0.55, // s (real) after the hit, pieces flying (at 0.15x the burst barely opened: the shot was lost)
+  execSlowHang: 0.4, // x time through the hang
+  execRelease: 0.3, // s (real) back to full speed and the camera back
+  execCamDist: 0.42, // x the game camera's distance
+  execCamPitch: 24, // degrees down from horizontal
+  execCamPush: 0, // s: 0 = a hard cut to the execution camera, more = a push-in over that time
+  execCamFov: 0.9, // x the field of view (a little tighter: heavier)
+  execHeal: 5, // health back for an execution
   lookAhead: 1.3, // camera look-ahead toward aim (m)
   camPitch: 42, // degrees down from horizontal (Zombieville USA 3D-like diorama view)
   camYaw: 35, // degrees the view is turned (positive: camera to the right, looking up-left)
@@ -58,11 +74,11 @@ export const TUNING_DEFAULTS = {
 };
 
 // bumped when defaults change, so tuning saved by an older build does not hide the new values
-export const TUNING_VERSION = 6;
+export const TUNING_VERSION = 7;
 // defaults changed since an older version: on load those keys go back to the new default (each version's list applies to
 // everything saved before it). 4: the melee hit-stop is off by default (a panel save from before round 16 kept 0.07: the
 // stutter the user felt on multi-target axe hits), the orderly's charge no longer steers.
-const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'], 5: ['legStrikeChance'], 6: ['sprinterWindup', 'sprinterSpeed'] }; // (5: leg strikes a little rarer, 2026-10-18)
+const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'], 5: ['legStrikeChance'], 6: ['sprinterWindup', 'sprinterSpeed'], 7: [] }; // (5: leg strikes a little rarer, 2026-10-18)
 export function makeTuning(saved) {
   if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) { saved = { ...saved }; for (let v = saved._v + 1; v <= TUNING_VERSION; v++) for (const k of CHANGED[v] || []) delete saved[k]; saved._v = TUNING_VERSION; }
   if (!saved || saved._v !== TUNING_VERSION) saved = null;

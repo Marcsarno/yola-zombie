@@ -36,6 +36,7 @@ import { ChapterUI } from './ui/chapter.js';
 import { ThreatCue } from './render/threatcue.js';
 import { cue } from './sfx/cues.js';
 import { SlowMotion } from './render/slowmo.js';
+import { ExecDirector } from './render/execution.js';
 import { setupLibWeapons } from './render/libweapons.js';
 import { startDemos } from './demos.js';
 
@@ -422,6 +423,7 @@ function newZombieView(type) {
 
 // ---------- lifecycle ----------
 function restart(newMode = mode, n = benchN, save = null) {
+  execDir.cancel(); // (an execution never outlives its level)
   if (levelForMode(newMode) !== LAYOUT.name) { // the other layout: load it fresh
     const q = new URLSearchParams(); if (newMode !== 'room1') q.set('mode', newMode); else q.set('room1', '1'); if (newMode === 'bench') q.set('n', n);
     location.search = q.toString(); return;
@@ -515,7 +517,12 @@ function runFrame(dt, doRender = true) {
   // (2026-10-18, the user: "the slow motion doesn't feel good. I think our character needs to ability to move slightly faster
   // than the rest of the world during that slow motion"): the world runs at k, Yola at k + YOLA_AHEAD of what it loses (her
   // steps, swings, shots and her animation: sim.yolaBoost in core/sim.js step, the same factor on her view below)
-  if (!paused) { const k = slowmo.update(dt, sim, !!opening?.active); simDt *= k; sim.yolaBoost = k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1; }
+  if (!paused) {
+    execNow = execDir.update(dt, tuning, sim.player.execHitIn);
+    if (execBanner && (!execNow || execNow.phase === 'release' || execNow.done)) { execBanner = false; hud.popup('EXECUTION +' + (tuning.execHeal ?? 5)); } // (an execution: it sets time and Yola's pace itself)
+    const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : null); simDt *= k;
+    sim.yolaBoost = execNow ? execNow.boost : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
+  }
   // hit-stop: a short dip into slow motion (never a full freeze: a freeze reads as a stutter, and combo hits stacked them)
   if (hitPauseT > 0) { const h = Math.min(hitPauseT, simDt); hitPauseT -= h; simDt -= h * (1 - HIT_SLOW); }
   // fixed-step simulation (input sampled once per frame; a swap press is delivered exactly once)
@@ -581,6 +588,7 @@ function runFrame(dt, doRender = true) {
   acid.update(sim.hazards, sim.zombies, animDt);
   ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
   ZombieView.syncLoose(sim.loose, alpha, animDt); // (the drip stands and wheelchairs: core/loose.js)
+  if ((execRingT -= animDt) <= 0) { execRingT = 0.32; for (const z of sim.zombies) if (z.alive && z.executable > sim.time) fx.ring(z.x, z.z, 0xffb347, 0.8); } // (open to an execution: a pulsing ring)
   // ---- zombies (pooled views) ----
   const seen = new Set();
   for (const z of sim.zombies) {
@@ -635,6 +643,8 @@ function gib(id, dx, dz, power) {
 const MELEE_BLOOD = { axe: 'blade', knife: 'blade', bat: 'blunt', crowbar: 'blunt', sledgehammer: 'blunt' };
 const STRIKE_BLOOD = { scratch: 'blade', flail: 'blade', dash: 'blade', lunge: 'bite', pounce: 'bite', bite: 'bite', club: 'blunt', smash: 'blunt', slam: 'blunt' };
 let hurtFrame = -1;
+// an execution's full-body burst by weapon (the power of the throw); the rest take parts off (core/zombies.js EXEC_GORE)
+const EXEC_BURST = { bat: 1.8, shotgun: 2.2, sledgehammer: 1.3 };
 function handleEvents() {
   frameNo++;
   const p = sim.player;
@@ -778,7 +788,17 @@ function handleEvents() {
       case 'zombieWindup': if (dist(e.id) < 8) audio.play('windup'); break;
       case 'playerHurt': hurtFrame = frameNo; audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;
       case 'playerDeath': audio.play('death'); input.clearAll(); input.enabled = false; hud.death(sim); break;
-      case 'zombieDeath': { sim.stats.kills++; audio.play('zombieDeath'); const zx = sim.zombies.find((q) => q.id === e.id); if (zx?.executed) { if (gib(e.id, zx.hitDirX, zx.hitDirZ, 1.7)) { slowBeat(0.3, 0.6); hud.popup('EXECUTED'); } } break; } // (a perfect dodge's execute: the full burst)
+      case 'zombieDeath': { sim.stats.kills++; audio.play('zombieDeath'); const zx = sim.zombies.find((q) => q.id === e.id);
+        if (zx?.executed && EXEC_BURST[zx.execWeapon]) gib(e.id, zx.hitDirX, zx.hitDirZ, EXEC_BURST[zx.execWeapon]); // (the bat, the shotgun, the sledgehammer: the full burst)
+        break; }
+      case 'execStart': execDir.start(e); fx.ring(e.x, e.z, 0xffffff, 1.4); audio.play('swing', 0.7); break; // (render/execution.js: time and the camera)
+      case 'execHit': { // the finisher lands: freeze, flash, kick, the boom
+        execDir.hit(e); shake(0.8); execBanner = true; // (its banner once the camera pulls back: over the hang it would cover the shot)
+        fx.hitFlash(e.x - (e.dirX || 0) * 0.2, 1.15, e.z - (e.dirZ || 0) * 0.2, e.dirX || 0, e.dirZ || 0, 2.4); fx.ring(e.x, e.z, 0xfff1d0, 1.8);
+        audio.play('shotgunClose', 0.9); audio.play('sever');
+        if (shakeOn) { camState.vx += (e.dirX || 0) * 2.4 * tuning.shake; camState.vz += (e.dirZ || 0) * 2.4 * tuning.shake; }
+        if (e.weapon === 'sledgehammer') { fx.floorCrack(e.x, e.z, 1.6); fx.smoke(e.x, e.z, 7, 0.7, 0.6, 2.6, 1.6); fx.ring(e.x, e.z, 0xd8cfbf, 1.4); } // (flattened into the floor)
+        break; }
       case 'zombieSpawn': if (Math.random() < 0.5) audio.play('groan', 0.8); break;
       case 'beatStart': hud.banner(`Wave ${e.beat}`); audio.play('wave'); break;
       case 'breather': hud.banner('Breather', 'Next wave incoming'); break;
@@ -803,8 +823,10 @@ function clearBreaches() { for (const o of breaches.list) o.removeFromParent(); 
 
 const slowmo = new SlowMotion(audio); // (render/slowmo.js: the guard's leap, a perfect dodge, a finishing blow)
 const slowBeat = (k, d) => slowmo.beat(k, d), slowEnd = () => slowmo.end();
+const execDir = new ExecDirector(); let execNow = null, execRingT = 0, execBanner = false; // (render/execution.js: the execution beat; execNow: this frame's)
 function shake(k) { if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake); }
 
+const _ex = new THREE.Vector3();
 function updateCamera(dt, px, pz, yaw, p) {
   const aspect = camera.aspect;
   const vfov = THREE.MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
@@ -834,6 +856,18 @@ function updateCamera(dt, px, pz, yaw, p) {
   const pitch = THREE.MathUtils.degToRad(tuning.camPitch);
   camera.position.set(camState.x - fx * Math.cos(pitch) * D, Math.sin(pitch) * D, camState.z - fz * Math.cos(pitch) * D);
   camera.lookAt(camState.x, 0.6, camState.z);
+  // the execution camera (render/execution.js): the game camera's own direction, nearer and lower, on Yola and her target
+  // (a little toward her side), a touch tighter; a cut in or a push-in (execCamPush), eased back out
+  const X = execNow, b = X ? X.cam * X.cam * (3 - 2 * X.cam) : 0;
+  if (b > 0.001) {
+    const tz = sim.zombies.find((q) => q.id === execDir.s?.id), zx = tz ? tz.x : px, zz = tz ? tz.z : pz;
+    const mx = (px + zx) / 2, mz = (pz + zz) / 2, rx = -fz, rz = fx, ep = THREE.MathUtils.degToRad(tuning.execCamPitch);
+    const ed = D * tuning.execCamDist * (1 - 0.1 * (X.creep || 0)), side = 0.25;
+    _ex.set(mx - fx * Math.cos(ep) * ed + rx * side, 1.0 + Math.sin(ep) * ed, mz - fz * Math.cos(ep) * ed + rz * side);
+    camera.position.lerp(_ex, b);
+    camera.lookAt(camState.x + (mx - camState.x) * b, 0.6 + 0.4 * b, camState.z + (mz - camState.z) * b);
+  }
+  { const fov = GAME_FOV * (1 + (tuning.execCamFov - 1) * b); if (Math.abs(camera.fov - fov) > 1e-3) { camera.fov = fov; camera.updateProjectionMatrix(); } }
   // bounded shake
   camState.trauma = Math.max(0, camState.trauma - dt * 2.2);
   const s = camState.trauma * camState.trauma * 0.18;

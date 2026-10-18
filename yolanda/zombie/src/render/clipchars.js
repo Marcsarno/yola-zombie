@@ -1911,7 +1911,7 @@ export class ZombieView extends ClipBody {
     return left < 0 ? 'react_large_left' : 'react_large_right';
   }
 
-  update(dt, z, x, zz) {
+  update(dt, z, x, zz, now = 0) {
     if (this.rag) { if (this.shield) this.shield.visible = false; this.updateRagdoll(z); return; }
     // limbs the simulation took off this step: cut them from the pose that is on screen now
     if (z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part)) { if (this.modular) this.sever(part, z); else if (part === 'Forearm_L' && this.plantedP) { this.severed.add(part); this.tearOff(z); } else { this.severed.add(part); this.cutByWeights(part, z); } } // (no cut model: from its skin weights)
@@ -2101,7 +2101,8 @@ export class ZombieView extends ClipBody {
     // the attack tell: the body warms to red through the wind-up (with the floor wedge, render/telegraph.js)
     const tell = z.state === 'windup' ? Math.min(1, z.t / Math.max(0.05, z.stateDur)) : 0, tk = tell * tell * 0.3;
     const sg = (this.swell || 0) * (0.06 + 0.06 * Math.sin(performance.now() * 0.009)); // (swollen: a sickly green-yellow pulse)
-    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5, fl * 0.33 + tk * 0.05 + sg, fl * 0.27 + tk * 0.03);
+    const ex = z.alive && z.executable > now ? (0.5 + 0.5 * Math.sin(performance.now() * 0.018)) * 0.45 : 0; // (open to an execution: a warm white pulse)
+    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5 + ex, fl * 0.33 + tk * 0.05 + sg + ex * 0.62, fl * 0.27 + tk * 0.03 + ex * 0.3);
     // corpse sinks away after a while
     if (z.state === 'dead' && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
     this.blob.visible = z.state !== 'dead' || z.corpseT < 4.5;

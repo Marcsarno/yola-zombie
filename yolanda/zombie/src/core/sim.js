@@ -262,6 +262,26 @@ export class Sim {
     else if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
     this.emit({ type: 'dodgeSuccess', id: z.id, kind, perfect: d.perfect, x: z.x, z: z.z });
   }
+  // a zombie open to an execution in front of her and in reach (the nearest to her aim): render/execution.js plays the beat
+  execTarget(p) {
+    let best = null, bs = 1e9;
+    for (const z of this.zombies) {
+      if (!z.alive || !(z.executable > this.time) || z.down || z.execLock) continue;
+      const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
+      if (d > (this.T.execReach ?? 3.6)) continue;
+      const off = Math.abs(angleDiff(p.aimTarget, Math.atan2(dx, dz)));
+      if (off > 1.25) continue;
+      const s = d + off * 1.5; if (s < bs) { bs = s; best = z; }
+    }
+    return best;
+  }
+  // the execution's blow lands whatever the swing did (the zombie dies to it: zombies.js executed)
+  forceExec(z) {
+    const p = this.player, dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1, w = p.equipped;
+    const kind = w === PISTOL || w === SHOTGUN ? w : w === 'fists' ? 'fist' : w === BAT || w === 'crowbar' || w === 'sledgehammer' ? 'bat' : 'axe';
+    z.takeHit(9999, dx / d, dz / d, 6, kind, this, 'torso', 'heavy');
+    if (kind !== PISTOL && kind !== SHOTGUN) this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx / d, dirZ: dz / d, killed: !z.alive, combo: 2, style: 'heavy', weapon: w, fist: kind === 'fist' });
+  }
   // a critical blow or shot (a perfect dodge's reward): the multiplier once, then gone
   takeCrit() { const p = this.player; if (!(p.critT > 0)) return 1; p.critT = 0; return this.T.critMul ?? 3; }
 

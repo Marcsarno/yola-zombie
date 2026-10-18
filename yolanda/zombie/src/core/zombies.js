@@ -105,6 +105,9 @@ export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9;
 // stands where the hub had it: its centre BED_AT from the zombie's root (in the root's frame), turned a quarter left of
 // it; it gets off on the side it faces. side -1: the whole thing mirrored (off the bed's other side, render mirrors it)
 export const BED_RISE = 7.4;
+// an execution's gore by weapon (core/player.js startExecution): the parts it takes off; the bat, the shotgun and the
+// sledgehammer burst the whole body instead (main.js zombieDeath), the kick throws it (an impulse, above)
+export const EXEC_GORE = { axe: ['Head', 'Forearm_L'], crowbar: ['Head'], knife: ['Head'], pistol: ['Head'] };
 export const BED_AT = { x: -0.05, z: -0.29 };
 export const BED_PATH = [[0, 0.001, -0.252], [3.8, 0.005, -0.252], [3.9, 0.015, -0.25], [4.0, 0.032, -0.243], [4.1, 0.056, -0.229], [4.2, 0.084, -0.211],
   [4.3, 0.115, -0.189], [4.4, 0.15, -0.165], [4.5, 0.185, -0.139], [4.6, 0.22, -0.113], [4.7, 0.254, -0.086], [4.8, 0.285, -0.059], [4.9, 0.312, -0.034],
@@ -306,8 +309,12 @@ export class Zombie {
         if (after <= M * GUARD.floor) { loss = Math.max(0, this.hp - M * GUARD.floor); this.slamCd = Math.min(this.slamCd, 0.4); }
       }
     }
-    if (this.executed) loss = this.hp + 1;
+    if (this.executed) { loss = this.hp + 1; if (this.execWeapon === 'fists') impulse = Math.max(impulse, 15); } // (the kick: across the room)
     this.hp -= loss;
+    if (this.executed && !this.execDone) { // the finisher's own gore by her weapon (EXEC_GORE); the bursts are the renderer's (main.js)
+      this.execDone = true;
+      for (const part of EXEC_GORE[this.execWeapon] || []) if (!this.severed.has(part)) this.sever(part, dirX, dirZ, sim);
+    }
     if (cut) this.sever(cut, dirX, dirZ, sim);
     if (this.kind === 'guard' && this.hp <= 0 && !(this.shieldHp > 0) && !this.severed.has('Head')) { this.lastHitPart = 'Head'; this.sever('Head', dirX, dirZ, sim); sim.emit({ type: 'guardFinished', id: this.id, x: this.x, z: this.z }); } // the finishing blow: his head
     const push = (wasDown ? 0.3 : 1) * this.K.knock * (this.bed ? 0 : 1); // a body on the floor barely slides (a heavy one barely moves)
@@ -321,6 +328,7 @@ export class Zombie {
       this.deathYaw = Math.atan2(dirX, dirZ); // fall along the hit
       this.deathSpeed = impulse;
       sim.emit({ type: 'zombieDeath', id: this.id, kind, x: this.x, z: this.z });
+      if (this.executed) { const p = sim.player; p.hp = Math.min(p.maxHp, p.hp + (sim.T.execHeal ?? 5)); sim.emit({ type: 'execHit', id: this.id, weapon: this.execWeapon, x: this.x, z: this.z, dirX, dirZ }); }
       return;
     }
     if (wasDown || this.state === ZS.STUCK || this.bed) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; } // (in its bed or getting out of it: it takes the blow and keeps coming) // (stuck: he takes it, heaving at the shield)

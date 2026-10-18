@@ -28,7 +28,8 @@ export class SlowMotion {
     return f < 57 ? 1 - (1 - SLOW.PEAK) * ease(50, 57, f) : f <= 66 ? SLOW.PEAK : SLOW.PEAK + (1 - SLOW.PEAK) * ease(66, 72, f);
   }
   // the time scale for this frame (dt: real seconds); off: an opening scene or Yola dead
-  update(dt, sim, off) {
+  update(dt, sim, off, forced = null) {
+    if (forced != null) { this.beatS = null; this.k = forced; return this.show(); } // (the execution sets time itself: render/execution.js)
     let want = 1;
     const p = sim.player;
     if (!off && !p.dead) {
@@ -39,13 +40,16 @@ export class SlowMotion {
       const B = this.beatS;
       if (B) {
         B.t += dt; // (real time: a beat lasts the same however slow it runs)
-        const k = Math.min(1, B.t / 0.07) * Math.min(1, Math.max(0, (B.dur - B.t) / 0.18));
+        const k = Math.min(1, Math.max(0, (B.dur - B.t) / 0.18)); // (2026-10-18, the user: the slow down "should be instant": no ease in, only out)
         want = Math.min(want, 1 - (1 - B.scale) * k);
         if (B.t >= B.dur) { this.beatS = null; this.cool = SLOW.COOL; }
       } else if (this.cool > 0) this.cool -= dt;
     } else this.beatS = null;
-    this.k += (want - this.k) * Math.min(1, dt * (want < this.k ? 18 : 10));
+    if (want < this.k) this.k = want; else this.k += (want - this.k) * Math.min(1, dt * 10); // (down at once, back up eased)
     if (Math.abs(this.k - want) < 0.003) this.k = want;
+    return this.show();
+  }
+  show() {
     const shown = Math.round(Math.max(0, Math.min(1, (1 - this.k) / (1 - SLOW.PEAK))) * 50) / 50;
     if (shown !== this.shown) { this.shown = shown; document.documentElement.style.setProperty('--slow', shown); }
     if (!this.inCue && this.k < 0.7) { this.inCue = true; cue(this.audio, 'slowIn'); }
