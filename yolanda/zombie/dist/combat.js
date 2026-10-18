@@ -49712,6 +49712,7 @@ void main() {
     ["carry", "carry idles", "the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)"],
     ["armPose", "arm adjustments", "the per-clip arm, wrist and shoulder adjustments set in the Rig Lab sidebar (render/armpose.js, assets/hold/arm_pose.json)"]
   ];
+  var AS_LIVE = { sg_reload: 1 };
   var HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
   var local = () => {
     try {
@@ -50897,24 +50898,32 @@ void main() {
       if (!this.poseActs || this.poseN !== n) {
         this.poseN = n;
         this.poseActs = [];
+        this.liveActs = [];
+        const arms = (act) => act.getClip().tracks.some((t) => /(Shoulder|Arm|ForeArm|Hand).quaternion$/.test(t.name));
         for (const [name, a] of Object.entries(this.actions)) {
           const base = this.baseClip(name);
-          if (base && this.poseSet[base]) this.poseActs.push([a, base]);
+          if (!base || !arms(a)) continue;
+          if (AS_LIVE[base]) this.liveActs.push(a);
+          else if (this.poseSet[base]) this.poseActs.push([a, base]);
         }
       }
       const list = [];
+      let live = 0;
       for (const [a, base] of this.poseActs) {
         const w = Math.min(1, a.getEffectiveWeight());
         if (w > 1e-3) list.push([w, this.poseSet[base]]);
       }
-      const p = list.length ? blendArms(list) : null, hip = this.poseSet["*hips"];
+      for (const a of this.liveActs) live += Math.min(1, a.getEffectiveWeight());
+      const p = list.length ? blendArms(list) : null, h0 = this.poseSet["*hips"], hk = Math.max(0, 1 - live);
+      const hip = h0 && hk > 1e-3 ? Object.fromEntries(Object.entries(h0).map(([sd, P]) => [sd, Object.fromEntries(Object.entries(P).map(([q, v]) => [q, typeof v === "number" ? v * hk : v]))])) : null;
       if (p || hip) {
         adjustArms(this.bones, p, { hip });
         this.container.updateMatrixWorld(true);
       }
     }
     handPoses() {
-      if (!this.handSet || !HOLD_LAYERS.handPoses) return;
+      if (!this.handSet) return;
+      const all = HOLD_LAYERS.handPoses;
       const k = { Right: 0, Left: 0 };
       let W3 = 0;
       for (const [a, base] of this.handActs) {
@@ -50922,7 +50931,7 @@ void main() {
         if (w <= 1e-3) continue;
         const h = this.handSet[base];
         W3 += w;
-        if (h) {
+        if (h && (all || AS_LIVE[base])) {
           k.Right += w * (h.Right || 0);
           k.Left += w * (h.Left || 0);
         }

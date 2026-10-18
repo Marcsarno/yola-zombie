@@ -38797,6 +38797,7 @@ void main() {
     ["carry", "carry idles", "the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)"],
     ["armPose", "arm adjustments", "the per-clip arm, wrist and shoulder adjustments set in the Rig Lab sidebar (render/armpose.js, assets/hold/arm_pose.json)"]
   ];
+  var AS_LIVE = { sg_reload: 1 };
   var HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
   var local = () => {
     try {
@@ -39055,14 +39056,29 @@ void main() {
   var NO_KK = (n) => !/^kk_/.test(n);
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var REF_OFFSET = { pistol_reload: 37 };
-  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (old, too long)", axe: "fire axe", bat: "baseball bat", alubat: "bat (hospital pack)", packaxe: "axe (hospital pack)", packcrowbar: "crowbar (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
+  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (hospital pack, full stock)", draft: "shotgun (first draft)", axe: "fire axe", bat: "baseball bat", alubat: "bat (hospital pack)", packaxe: "axe (hospital pack)", packcrowbar: "crowbar (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
   var HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
   var LIB_WEAPONS = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
   var PACK = { alubat: 1, packaxe: 1, packcrowbar: 1 };
   var WDEFS = {};
   var PICKS = {};
   var autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? "bat" : /chop|gs_|slash|axe/.test(name) ? "axe" : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? "short" : /pistol|t_shoot/.test(name) ? "pistol" : "none";
-  var GUN_FILES = { old: "assets/weapons/pump_shotgun.glb", short: "assets/weapons/pump_short.glb" };
+  var GUN_FILES = { old: "assets/weapons/pump_shotgun.glb", short: "assets/weapons/pump_short.glb", draft: "assets/shotgun.glb" };
+  var SHOTGUNS = { short: 1, old: 1, draft: 1 };
+  function prepDraftShotgun(gltf) {
+    const inner = gltf.scene, g = new Group();
+    inner.rotation.y = Math.PI / 2;
+    inner.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = false;
+        o.frustumCulled = false;
+      }
+    });
+    g.add(inner);
+    g.updateMatrixWorld(true);
+    g.userData = { gripL: inner.getObjectByName("grip2"), muzzle: inner.getObjectByName("muzzle") };
+    return g;
+  }
   var canvas = $("view");
   var renderer = new WebGLRenderer({ canvas, antialias: true });
   renderer.outputColorSpace = SRGBColorSpace;
@@ -39324,7 +39340,7 @@ void main() {
       a.bones.RightHand.getWorldQuaternion(_q7);
       const gq = _q7.multiply(this.socket);
       a.grip("Right", _v3);
-      applyFit(this.obj, _v3, gq, fitW("short", a), new Vector3(), k, k);
+      applyFit(this.obj, _v3, gq, fitW(SHOTGUNS[weaponOf()] ? weaponOf() : "short", a), new Vector3(), k, k);
       this.obj.updateMatrixWorld(true);
     }
   };
@@ -39356,6 +39372,7 @@ void main() {
       ref.root.visible = false;
       ref.helper.visible = false;
     }
+    if (refGun && refGun.actor !== a) refGun.setObject(null);
     ref = a;
     refGun = a === refX ? refGunX : new Gun(a);
   }
@@ -39552,8 +39569,8 @@ void main() {
         main.grip("Left", _m14);
       }
     }
-    const rest = g.localToWorld(new Vector3(U.pumpX, 0, 0).add(U.gripL.position.clone().setX(0)));
-    const wHold = smooth01(1 - (_m14.distanceTo(rest) - 0.03) / 0.12) * (1 - wPort);
+    const rest = g.localToWorld(new Vector3(U.pumpX, 0, 0).add(U.gripL.position.clone().setX(S.gun === "short" ? 0 : U.gripL.position.x)));
+    const wHold = smooth01(1 - (_m14.distanceTo(rest) - (S.gun === "short" ? 0.03 : 0.2)) / 0.12) * (1 - wPort);
     if (wHold > 0) ik(U.gripL.getWorldPosition(_m22), wHold);
   }
   function alignShell() {
@@ -39591,7 +39608,7 @@ void main() {
     if (w === "none" || HELD[w] || !t) return;
     const mk = () => {
       const o = t.clone(true);
-      o.userData = { ...t.userData, gripL: o.getObjectByName("GameGrip_L"), port: o.getObjectByName("LoadPort"), pump: o.getObjectByName("Pump") };
+      o.userData = { ...t.userData, gripL: o.getObjectByName("GameGrip_L"), port: o.getObjectByName("LoadPort"), pump: o.getObjectByName("Pump") || o.getObjectByName("Shotgun_Pump") };
       return o;
     };
     mainGun.setObject(mk());
@@ -39974,7 +39991,7 @@ void main() {
     refresh?.();
   });
   function handPose(a) {
-    if (!HOLD_LAYERS.handPoses) return;
+    if (!HOLD_LAYERS.handPoses && !AS_LIVE[clipBase()]) return;
     const H = handsOf(), P = fistPose(a);
     if (!P) return;
     for (const side of ["Right", "Left"]) {
@@ -40088,7 +40105,7 @@ void main() {
     return FITS[_a7 = fitKey(a)] || (FITS[_a7] = { ...PFIT0 });
   };
   var WFITS = {};
-  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (hospital pack)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
+  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (hospital pack)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", old: "Shotgun (hospital pack)", draft: "Shotgun (first draft)", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
   var fitW = (w, a) => {
     var _a7, _b7;
     return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }));
@@ -40123,6 +40140,7 @@ void main() {
   var pfitWho = "main";
   var pfitSync = null;
   var FIT_LABELS = { short: ["size %", "move sideways (mm)", "move up / down (mm)", "slide along the barrel (mm)", "roll (deg)", "turn muzzle left / right (deg)", "tip muzzle up / down (deg)"], axe: ["size %", "slide along the handle (mm)", "move sideways (mm)", "move toward the blade side (mm)", "tilt (deg)", "turn (deg)", "roll the blade (deg)"], bat: ["size %", "slide along the bat (mm)", "move toward wrist / fingertips (mm)", "move toward knuckles / palm (mm)", "tip toward wrist / fingertips (deg)", "tip toward knuckles / palm (deg)", "roll the bat (deg)"] };
+  FIT_LABELS.old = FIT_LABELS.draft = FIT_LABELS.short;
   function buildPistolFit() {
     const box = document.createElement("div");
     box.id = "pfit";
@@ -40408,6 +40426,8 @@ void main() {
     pistol: { label: "Pistol", idle: "pistol_idle", attack: "kick" },
     short: { label: "Shotgun", idle: "sg_reload", attack: null },
     // (the game holds sg_reload's hold frame; its kick is not in the Rig Lab yet)
+    old: { label: "Shotgun (pack)", idle: "sg_reload", attack: null },
+    draft: { label: "Shotgun (draft)", idle: "sg_reload", attack: null },
     axe: { label: "Axe", idle: "bat_idle", attack: "bat_swing" },
     // (its combo: bat_swing, then t_chop)
     bat: { label: "Bat", idle: "ual1_Sword_Idle", attack: "ual_Sword_Regular_Combo" },
@@ -40431,6 +40451,7 @@ void main() {
     bat: { Idle: ["ual1_Sword_Idle"], 'Move, run "now" / "rebase" (legs only)': PMOVE, 'Move, run "plain"': PLAIN, "Attack (4 strikes)": ["ual_Sword_Regular_Combo"] },
     none: { "Idle (fists)": ["tripo_idle"], Move: PLAIN, "Attack (jab, cross, kick)": ["t_box_01", "t_box_02", "t_kick_02"] }
   };
+  for (const k of ["old", "draft"]) Object.defineProperty(GAME_CLIPS, k, { value: GAME_CLIPS.short });
   var EVERYONE = { "Everyone: hit, knockdown, death": ["hit_body", "yola_knockdown", "yola_getup", "death_fall", "death_defeat"], "Everyone: scripted (the opening)": ["t_greet_01", "t_greet_04"] };
   var GAME_JS = null;
   fetch("dist/combat.js").then((r) => r.text()).then((t) => {
@@ -40576,8 +40597,9 @@ void main() {
     }
     return b;
   }
-  var EDIT_WEAPONS = { alubat: "Bat", packaxe: "Axe", packcrowbar: "Crowbar", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife", pistol: "Pistol", short: "Shotgun" };
+  var EDIT_WEAPONS = { alubat: "Bat", packaxe: "Axe", packcrowbar: "Crowbar", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife", pistol: "Pistol", short: "Shotgun", old: "Shotgun \xB7 pack", draft: "Shotgun \xB7 draft" };
   var EDIT_LISTS = { pistol: { idle: /^(pistol_idle|ual1_Pistol_Idle_Loop)$/, attack: /^(pistol_idle|pistol_reload)$/ }, short: { idle: /^(sg_reload)$/, attack: /^(sg_reload|reload_rifle_stand|rifle_aim_idle)$/ } };
+  EDIT_LISTS.old = EDIT_LISTS.draft = EDIT_LISTS.short;
   var EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
   var EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|melee_horizontal|ual1?_Melee_(?!Idle).+)$/;
   var editKey = () => "riglab.edit." + S.gun + "." + S.mode;
@@ -40603,7 +40625,8 @@ void main() {
     sidebarSync();
   }
   var ARMP = {};
-  var clipArmKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
+  var clipBase = () => (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
+  var clipArmKey = () => S.char + ":" + clipBase();
   var hipArmKey = () => S.char + ":*hips";
   var armKey = () => S.armScope === "hips" ? hipArmKey() : clipArmKey();
   var armOf = (side) => ({ ...ARM0, ...ARMP[armKey()]?.[side] || {} });
@@ -40629,7 +40652,7 @@ void main() {
     refresh?.();
   });
   function armPoseOn(a) {
-    if (a !== main || !HOLD_LAYERS.armPose) return;
+    if (a !== main || !HOLD_LAYERS.armPose || AS_LIVE[clipBase()]) return;
     const p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()];
     if (!p && !hip) return;
     a.root.updateMatrixWorld(true);
@@ -41494,11 +41517,11 @@ void main() {
     for (const [k, f] of Object.entries(GUN_FILES)) {
       try {
         const g = await loadG(f);
-        gunTemplates[k] = k === "short" ? prepPumpShort(g) : prepShotgun(g);
+        gunTemplates[k] = k === "short" ? prepPumpShort(g) : k === "draft" ? prepDraftShotgun(g) : prepShotgun(g);
       } catch {
       }
     }
-    for (const k of ["short", "old"]) if (!gunTemplates[k]) $("gun").querySelector(`option[value=${k}]`).textContent += " (not built yet)";
+    for (const k of ["short", "old", "draft"]) if (!gunTemplates[k]) $("gun").querySelector(`option[value=${k}]`).textContent += " (not built yet)";
     try {
       const g = await loadG("assets/weapons/shotgun_shell.glb");
       shellTemplate = prepShell(g);
