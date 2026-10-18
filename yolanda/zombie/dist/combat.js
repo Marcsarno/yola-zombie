@@ -49709,7 +49709,8 @@ void main() {
     ["posture", "posture fix", "her head, neck, chest and pelvis turned onto the source rig's own lines (render/posture.js)"],
     ["handPoses", "hand curls", "the saved R / L hand curl per clip (assets/hold/hand_poses.json, the Rig Lab Hands controls)"],
     ["secondHand", "second hand on handle", "the other hand pulled onto a two-handed weapon's second grip, and the axe's free fist kept on its handle (render/holdfit.js handOnto)"],
-    ["carry", "carry idles", "the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)"]
+    ["carry", "carry idles", "the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)"],
+    ["armSpread", "arms out", "her arms swung out from her body by the cm set per clip, so her hands clear her hips (render/armspread.js, assets/hold/arm_spread.json)"]
   ];
   var HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
   var local = () => {
@@ -49730,6 +49731,46 @@ void main() {
     return HOLD_LAYERS;
   }
 
+  // src/render/armspread.js
+  var _l = new Vector3();
+  var _s = new Vector3();
+  var _h = new Vector3();
+  var _d3 = new Vector3();
+  var _f = new Vector3();
+  var _o = new Vector3();
+  var _m4 = new Vector3();
+  var _q6 = new Quaternion();
+  var _qw = new Quaternion();
+  var _qp = new Quaternion();
+  var UP = new Vector3(0, 1, 0);
+  function spreadArms(bones, cm) {
+    if (!cm || !bones.LeftArm || !bones.RightArm) return;
+    _l.copy(bones.LeftArm.getWorldPosition(_s)).sub(bones.RightArm.getWorldPosition(_h));
+    _l.y = 0;
+    _l.normalize();
+    _f.crossVectors(_l, UP);
+    for (const side of ["Right", "Left"]) {
+      const c = cm[side];
+      if (!(Math.abs(c) > 1e-3)) continue;
+      const U2 = bones[side + "Arm"], H4 = bones[side + "Hand"];
+      if (!U2 || !H4) continue;
+      U2.getWorldPosition(_s);
+      H4.getWorldPosition(_h);
+      _d3.copy(_h).sub(_s);
+      _d3.addScaledVector(_f, -_d3.dot(_f));
+      const r = _d3.length();
+      if (r < 0.05) continue;
+      _m4.crossVectors(_f, _d3);
+      _o.copy(_l).multiplyScalar(side === "Right" ? -1 : 1);
+      const ang = c / 100 / r * (_m4.dot(_o) >= 0 ? 1 : -1);
+      _q6.setFromAxisAngle(_f, ang);
+      U2.getWorldQuaternion(_qw);
+      U2.parent.getWorldQuaternion(_qp);
+      U2.quaternion.copy(_qp.invert().multiply(_q6).multiply(_qw));
+      U2.updateMatrixWorld(true);
+    }
+  }
+
   // src/render/clipchars.js
   var AXE_AT = new Vector3();
   var clamp5 = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -49744,17 +49785,17 @@ void main() {
   var _ik = new Vector3();
   var _ikg = new Vector3();
   var _ikh = new Vector3();
-  var _q6 = new Quaternion();
+  var _q7 = new Quaternion();
   var _q24 = new Quaternion();
   var _q34 = new Quaternion();
   var _q42 = new Quaternion();
-  var UP = new Vector3(0, 1, 0);
+  var UP2 = new Vector3(0, 1, 0);
   var _e3 = new Euler();
   var LOWER = /Hips|UpLeg|Leg|Foot|Toe/;
   var HOLD_T = 1 / 30 + 2e-4;
   var PISTOL_MAGS = { drop: 6, grab: 13, insert: 23, seat: 28 };
   var MAG_SEAT2 = new Vector3(-8e-3, -0.039, 0);
-  var _m4 = new Matrix4();
+  var _m42 = new Matrix4();
   var _m4b = new Matrix4();
   var PG_AT = new Vector3(0, 5e-3, 26e-4);
   var PG_AXIS = new Vector3(0, 0.9509, 0.3094).normalize();
@@ -49897,13 +49938,13 @@ void main() {
       this.container.getWorldQuaternion(_q24);
       b.getWorldQuaternion(_q34);
       const W3 = _q24.invert().multiply(_q34);
-      _q6.copy(W3).invert().multiply(D2).multiply(W3);
-      b.quaternion.multiply(_q6);
+      _q7.copy(W3).invert().multiply(D2).multiply(W3);
+      b.quaternion.multiply(_q7);
       b.updateMatrixWorld(true);
     }
     rotateEulerC(n, x, y, z) {
-      _q6.setFromEuler(new Euler(x, y, z, "YXZ"));
-      this.rotateC(n, _q6.clone());
+      _q7.setFromEuler(new Euler(x, y, z, "YXZ"));
+      this.rotateC(n, _q7.clone());
     }
     worldPos(n, out) {
       return this.bones[n].getWorldPosition(out);
@@ -50129,9 +50170,9 @@ void main() {
       this.grip("Right", _v4);
       this.grip("Left", _v23);
       const barrel = _v23.clone().sub(_v4).normalize();
-      this.shotgunQ(barrel, _q6);
+      this.shotgunQ(barrel, _q7);
       this.bones.RightHand.getWorldQuaternion(_q24);
-      this.shotgunSocket = _q24.invert().multiply(_q6).clone();
+      this.shotgunSocket = _q24.invert().multiply(_q7).clone();
       this.shotgunHoldSpan = _v23.distanceTo(_v4);
       h.setEffectiveWeight(0);
       id.setEffectiveWeight(0);
@@ -50139,7 +50180,7 @@ void main() {
     // gun frame: local +X along the barrel, +Y up (no roll)
     shotgunQ(barrel, out) {
       const x = _v32.copy(barrel).normalize();
-      const z = _v43.crossVectors(x, UP).normalize(), y = new Vector3().crossVectors(z, x);
+      const z = _v43.crossVectors(x, UP2).normalize(), y = new Vector3().crossVectors(z, x);
       return out.setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
     }
     // Two-bone arm IK (render/ik.js): the hand reaches the world-space target, weight w
@@ -50169,9 +50210,9 @@ void main() {
       this.outer.position.set(0, 0, 0);
       this.mixer.update(0);
       this.outer.updateMatrixWorld(true);
-      this.aimQuat(_q6);
+      this.aimQuat(_q7);
       this.bones.RightHand.getWorldQuaternion(_q24);
-      this.pistolSocket = _q24.invert().multiply(_q6).clone();
+      this.pistolSocket = _q24.invert().multiply(_q7).clone();
       id.setEffectiveWeight(0);
     }
     // pistol orientation from the arms: barrel along shoulders -> hands, slide upright (no roll)
@@ -50610,9 +50651,9 @@ void main() {
       this.rebaseUpper();
       const hy = this.hipYaw * (1 - sW);
       if (Math.abs(hy) > 1e-3) {
-        _q42.setFromAxisAngle(UP, hy);
+        _q42.setFromAxisAngle(UP2, hy);
         this.rotateC("Hips", _q42);
-        _q42.setFromAxisAngle(UP, -hy);
+        _q42.setFromAxisAngle(UP2, -hy);
         this.rotateC("Spine", _q42);
       }
       if (s.hurtT < this.prevHurt) {
@@ -50636,6 +50677,7 @@ void main() {
       if (this.weaponShown === "pistol") this.aimPistol(s, 1 - uP);
       else if (this.weaponShown === "shotgun") this.aimShotgun(s, 1 - uS);
       this.posture();
+      this.armSpread();
       this.placeWeapons(s, dt);
       this.placeMags(dt);
     }
@@ -50727,6 +50769,40 @@ void main() {
       }
       applyPosture(this.bones, W3);
       this.container.updateMatrixWorld(true);
+    }
+    // ARMS OUT (render/armspread.js; the Rig Lab's "arms out" per clip, assets/hold/arm_spread.json "<yola>:<clip>": { Right, Left }
+    // cm): blended by the weights of the clips playing
+    setArmSpread(json2, who) {
+      this.spreadSet = {};
+      for (const [k, v] of Object.entries(json2 || {})) if (k.startsWith(who + ":") && typeof v === "object") this.spreadSet[k.slice(who.length + 1)] = v;
+      if (!Object.keys(this.spreadSet).length) this.spreadSet = null;
+      this.spreadActs = null;
+    }
+    armSpread() {
+      if (!this.spreadSet || !HOLD_LAYERS.armSpread) return;
+      const n = Object.keys(this.actions).length;
+      if (!this.spreadActs || this.spreadN !== n) {
+        this.spreadN = n;
+        this.spreadActs = [];
+        for (const [name, a] of Object.entries(this.actions)) {
+          const base = this.baseClip(name);
+          if (base && this.spreadSet[base]) this.spreadActs.push([a, base]);
+        }
+      }
+      const k = { Right: 0, Left: 0 };
+      let any = false;
+      for (const [a, base] of this.spreadActs) {
+        const w = Math.min(1, a.getEffectiveWeight());
+        if (w <= 1e-3) continue;
+        const h = this.spreadSet[base];
+        k.Right += w * (h.Right || 0);
+        k.Left += w * (h.Left || 0);
+        any = true;
+      }
+      if (any) {
+        spreadArms(this.bones, k);
+        this.container.updateMatrixWorld(true);
+      }
     }
     handPoses() {
       if (!this.handSet || !HOLD_LAYERS.handPoses) return;
@@ -50842,12 +50918,12 @@ void main() {
         _q34.set(v[0], v[1], v[2], v[3]);
         if (!(this.sgOwnHeading && /^shotgun_/.test(n))) {
           const fc = _v4.set(0, 0, 1).applyQuaternion(_q34), fn = _v23.set(0, 0, 1).applyQuaternion(H4.quaternion);
-          _q42.setFromAxisAngle(UP, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
+          _q42.setFromAxisAngle(UP2, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
           _q34.premultiply(_q42);
         }
         _q42.copy(inv).multiply(_q34);
-        _q6.identity().slerp(_q42, Math.min(1, w));
-        S2.quaternion.premultiply(_q6);
+        _q7.identity().slerp(_q42, Math.min(1, w));
+        S2.quaternion.premultiply(_q7);
       }
       S2.updateMatrixWorld(true);
     }
@@ -50895,10 +50971,10 @@ void main() {
     // Shotgun barrel direction in character (container) space, from the right-hand socket.
     shotgunBarrel(out) {
       this.container.getWorldQuaternion(_q34).invert();
-      this.bones.RightHand.getWorldQuaternion(_q6).multiply(this.shotgunSocket);
+      this.bones.RightHand.getWorldQuaternion(_q7).multiply(this.shotgunSocket);
       const F = this.shotgunFit;
-      if (F) _q6.multiply(_q24.setFromEuler(_e3.set((F.tilt || 0) * Math.PI / 180, (F.turn || 0) * Math.PI / 180, (F.roll || 0) * Math.PI / 180, "YXZ")));
-      return out.set(1, 0, 0).applyQuaternion(_q6).applyQuaternion(_q34);
+      if (F) _q7.multiply(_q24.setFromEuler(_e3.set((F.tilt || 0) * Math.PI / 180, (F.turn || 0) * Math.PI / 180, (F.roll || 0) * Math.PI / 180, "YXZ")));
+      return out.set(1, 0, 0).applyQuaternion(_q7).applyQuaternion(_q34);
     }
     // Shotgun: the upper body keeps its clip's own heading (rebaseUpper), so the barrel already points near the aim in every
     // move; what is left here is the small residual and the user's grip turn, turned out over the spine (held through a
@@ -50910,7 +50986,7 @@ void main() {
       if (rW === 0) this.sgYaw = live;
       const ey = (live * (1 - rW) + (this.sgYaw || 0) * rW) * k;
       if (Math.abs(ey) > 1e-4) for (const n of ["Spine", "Spine1", "Spine2"]) {
-        _q42.setFromAxisAngle(UP, ey / 3);
+        _q42.setFromAxisAngle(UP2, ey / 3);
         this.rotateC(n, _q42);
       }
       const kick = s.recoil * s.recoil * s.recoilScale;
@@ -51186,8 +51262,8 @@ void main() {
     placeBatBack() {
       const o = this.batLib.obj;
       this.bones.Spine2.updateWorldMatrix(true, false);
-      _m4.copy(this.bones.Spine2.matrixWorld).multiply(this.batBack);
-      _m4.decompose(o.position, o.quaternion, o.scale);
+      _m42.copy(this.bones.Spine2.matrixWorld).multiply(this.batBack);
+      _m42.decompose(o.position, o.quaternion, o.scale);
       o.visible = this.outer.visible;
       o.updateMatrixWorld(true);
     }
@@ -51215,7 +51291,7 @@ void main() {
       if (this.magEmpty) {
         if (playing && f >= E.drop && (this.prevMagF ?? -1) < E.drop) {
           inner.updateWorldMatrix(true, false);
-          const M4 = _m4.copy(inner.matrixWorld).multiply(_m4b.makeTranslation(MAG_SEAT2.x, MAG_SEAT2.y, MAG_SEAT2.z));
+          const M4 = _m42.copy(inner.matrixWorld).multiply(_m4b.makeTranslation(MAG_SEAT2.x, MAG_SEAT2.y, MAG_SEAT2.z));
           this.magFall = { p: new Vector3(), q: new Quaternion(), s: new Vector3(), t: 0 };
           M4.decompose(this.magFall.p, this.magFall.q, this.magFall.s);
         }
@@ -51254,13 +51330,13 @@ void main() {
       const A = B.RightHandIndex1.getWorldPosition(_pf2).sub(B.RightHandPinky1.getWorldPosition(_pf3)).normalize();
       const F = B.RightHand.getWorldPosition(_pf3).sub(B.RightForeArm.getWorldPosition(_pf4));
       F.addScaledVector(A, -F.dot(A)).normalize();
-      _m4.makeBasis(PG_AXIS, PG_BARREL, _pf4.crossVectors(PG_AXIS, PG_BARREL));
-      _m4b.makeBasis(A, F, _pf4.crossVectors(A, F)).multiply(_m4.transpose());
-      _q6.setFromRotationMatrix(_m4b);
+      _m42.makeBasis(PG_AXIS, PG_BARREL, _pf4.crossVectors(PG_AXIS, PG_BARREL));
+      _m4b.makeBasis(A, F, _pf4.crossVectors(A, F)).multiply(_m42.transpose());
+      _q7.setFromRotationMatrix(_m4b);
       const d2r = Math.PI / 180, size = (P.size ?? 100) / 100;
       o.scale.setScalar(size);
-      o.quaternion.copy(_q6).multiply(_q24.setFromEuler(_e3.set((P.tilt || 0) * d2r, (P.turn || 0) * d2r, (P.roll || 0) * d2r, "YXZ")));
-      o.position.copy(c).add(_pf2.set(P.side || 0, P.up || 0, P.fwd || 0).multiplyScalar(1e-3).applyQuaternion(_q6)).sub(_pf3.copy(PG_AT).multiplyScalar(size * PISTOL_CORE_SCALE).applyQuaternion(o.quaternion));
+      o.quaternion.copy(_q7).multiply(_q24.setFromEuler(_e3.set((P.tilt || 0) * d2r, (P.turn || 0) * d2r, (P.roll || 0) * d2r, "YXZ")));
+      o.position.copy(c).add(_pf2.set(P.side || 0, P.up || 0, P.fwd || 0).multiplyScalar(1e-3).applyQuaternion(_q7)).sub(_pf3.copy(PG_AT).multiplyScalar(size * PISTOL_CORE_SCALE).applyQuaternion(o.quaternion));
       return true;
     }
     placeWeapons(s, dt) {
@@ -51298,26 +51374,26 @@ void main() {
       }
       if (shown === "pistol") {
         if (this.pistolPlace === "old" || !this.pistolInFist()) {
-          this.aimQuat(_q6);
+          this.aimQuat(_q7);
           const rW = this.reloadW || 0;
           if (rW > 0 && this.pistolSocket) {
             this.bones.RightHand.getWorldQuaternion(_q24);
-            _q6.slerp(_q24.multiply(this.pistolSocket), rW);
+            _q7.slerp(_q24.multiply(this.pistolSocket), rW);
           }
           this.grip("Right", _v4);
           this.pistol.position.copy(_v4);
-          this.pistol.quaternion.copy(_q6);
+          this.pistol.quaternion.copy(_q7);
           this.pistol.scale.setScalar(1);
         }
         this.pistol.updateMatrixWorld(true);
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
         const G5 = this.shotgun, U2 = G5.userData, SP = SHOTGUN_SPEC;
-        this.bones.RightHand.getWorldQuaternion(_q6).multiply(this.shotgunSocket);
+        this.bones.RightHand.getWorldQuaternion(_q7).multiply(this.shotgunSocket);
         this.grip("Right", _v4);
         G5.position.copy(_v4);
-        G5.quaternion.copy(_q6);
-        if (this.shotgunFit) applyFit(G5, _v4, _q6, this.shotgunFit, AXE_AT);
+        G5.quaternion.copy(_q7);
+        if (this.shotgunFit) applyFit(G5, _v4, _q7, this.shotgunFit, AXE_AT);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -51337,8 +51413,8 @@ void main() {
           const wA = this.swingAct ? this.swingW : 0, wP = this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0, wI = Math.max(0, 1 - wA - wP);
           const ms = this.meleeSocket || {};
           const inHand = (v, hand) => {
-            this.bones[(hand || "Right") + "Hand"].getWorldQuaternion(_q6);
-            return _v5.copy(v).applyQuaternion(_q6);
+            this.bones[(hand || "Right") + "Hand"].getWorldQuaternion(_q7);
+            return _v5.copy(v).applyQuaternion(_q7);
           };
           dir = _v32.set(0, 0, 0).addScaledVector(inHand(this.batSocket, "Right"), wI);
           if (wA) dir.addScaledVector(inHand(ms[this.swingName] || this.batSocket, ms[this.swingName] ? this.swingHand : "Right"), wA);
@@ -51377,8 +51453,8 @@ void main() {
           this.bladeInit = true;
         } else {
           this.bladeQ.slerp(target, 1 - Math.exp(-dt * (sp > 2 ? 30 : 10)));
-          _q6.setFromUnitVectors(_v5.set(0, 0, 1).applyQuaternion(this.bladeQ), dir);
-          this.bladeQ.premultiply(_q6);
+          _q7.setFromUnitVectors(_v5.set(0, 0, 1).applyQuaternion(this.bladeQ), dir);
+          this.bladeQ.premultiply(_q7);
         }
         M4.quaternion.copy(this.bladeQ);
         if (!this.batMode && this.axeFit) applyFit(M4, _v5.copy(M4.position), this.bladeQ, this.axeFit, AXE_AT);
@@ -53023,7 +53099,7 @@ void main() {
     }
   };
   var _v8 = new Vector3();
-  var _q7 = new Quaternion();
+  var _q8 = new Quaternion();
   var _q25 = new Quaternion();
   var _id3 = new Quaternion();
   var OriginalYola = class extends Actor {
@@ -53069,7 +53145,7 @@ void main() {
       for (const k in this.adj) {
         const j = this.adj[k], b = this.bones[j.bone];
         if (!b || !(j.w > 0) || !["head", "upperarm_r", "forearm_r"].includes(j.bone)) continue;
-        b.quaternion.multiply(_q7.setFromEuler(new Euler(j.x * j.w, j.y * j.w, j.z * j.w, "XYZ")));
+        b.quaternion.multiply(_q8.setFromEuler(new Euler(j.x * j.w, j.y * j.w, j.z * j.w, "XYZ")));
       }
     }
     // sit on a seat of the given top height (m): lowers the pelvis onto it and folds the legs. The caller places root.
@@ -53096,12 +53172,12 @@ void main() {
       const b = this.bones[name];
       if (!b || w <= 1e-4) return;
       b.updateWorldMatrix(true, false);
-      b.getWorldQuaternion(_q7);
-      const cur = _v8.copy(this.armDir[name]).applyQuaternion(_q7);
+      b.getWorldQuaternion(_q8);
+      const cur = _v8.copy(this.armDir[name]).applyQuaternion(_q8);
       const rot = _q25.setFromUnitVectors(cur, target);
       rot.premultiply(_id3.identity());
       const part = new Quaternion().identity().slerp(rot, w);
-      const world = part.multiply(_q7.clone());
+      const world = part.multiply(_q8.clone());
       b.parent.getWorldQuaternion(_q25);
       b.quaternion.copy(_q25.invert().multiply(world));
       b.updateMatrixWorld(true);
@@ -53111,8 +53187,8 @@ void main() {
       const b = this.bones[name];
       if (!b || !angle) return;
       b.updateWorldMatrix(true, false);
-      b.getWorldQuaternion(_q7);
-      const world = _id3.setFromAxisAngle(axis, angle).multiply(_q7.clone());
+      b.getWorldQuaternion(_q8);
+      const world = _id3.setFromAxisAngle(axis, angle).multiply(_q8.clone());
       b.parent.getWorldQuaternion(_q25);
       b.quaternion.copy(_q25.invert().multiply(world));
       b.updateMatrixWorld(true);
@@ -53159,7 +53235,7 @@ void main() {
         const b = B[n];
         if (!b) return;
         if (!this.keyed.has(n)) b.quaternion.copy(R[n]);
-        b.quaternion.multiply(_q7.setFromEuler(new Euler(x, y, z, "XYZ")));
+        b.quaternion.multiply(_q8.setFromEuler(new Euler(x, y, z, "XYZ")));
       };
       this.applySit();
       if (t < 0) return;
@@ -60241,7 +60317,7 @@ void main() {
   var CELL = 0.3;
   var _a5 = new Vector3();
   var _b5 = new Vector3();
-  var _q8 = new Quaternion();
+  var _q9 = new Quaternion();
   var Particle = class {
     constructor(p, r, invMass) {
       this.x = p.clone();
@@ -60444,8 +60520,8 @@ void main() {
             const [L2, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
             frameQuat(axis, _b5.subVectors(L2.x, R.x), body.q[i]);
           } else {
-            _q8.setFromUnitVectors(body.prevAxis[i], axis);
-            body.q[i].premultiply(_q8).normalize();
+            _q9.setFromUnitVectors(body.prevAxis[i], axis);
+            body.q[i].premultiply(_q9).normalize();
           }
           body.prevAxis[i].copy(axis);
         });
@@ -60540,7 +60616,7 @@ void main() {
     await RAPIER.init();
     return RAPIER;
   }
-  var _q9 = new Quaternion();
+  var _q10 = new Quaternion();
   var _v9 = new Vector3();
   var GROUP_WORLD = 1;
   var GROUP_BODY = 2;
@@ -68264,6 +68340,8 @@ void main() {
     yola.shotgunFit = fits.short?.[who] || null;
     if (YOLA_MODEL !== "2") yola.postureOff = true;
     fetch("assets/hold/hand_poses.json").then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {
+    });
+    fetch("assets/hold/arm_spread.json").then((r) => r.json()).then((j) => yola.setArmSpread(j, who)).catch(() => {
     });
     const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = anims.find((c) => c.name === "ual1_Sword_Idle");
     if (!combo2) {
