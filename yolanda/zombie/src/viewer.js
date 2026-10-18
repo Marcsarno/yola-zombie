@@ -11,7 +11,7 @@ import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
 import { buildBodyClip, bodyClipFrame, bodyClipProbe } from './render/bodyclip.js';
 import { placeBat, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
-import { LAYERS, HOLD_LAYERS, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
+import { LAYERS, HOLD_LAYERS, AS_LIVE, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
 import { adjustArms, armReadout, ARM_PARAMS, ARM0 } from './render/armpose.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -82,7 +82,7 @@ const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand
 // clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
 // frames 38-99, measured by matching both hands over the clip, 2026-10-16; before this the two were shown out of step)
 const REF_OFFSET = { pistol_reload: 37 };
-const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (hospital pack)', packaxe: 'axe (hospital pack)', packcrowbar: 'crowbar (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
+const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (hospital pack, full stock)', draft: 'shotgun (first draft)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (hospital pack)', packaxe: 'axe (hospital pack)', packcrowbar: 'crowbar (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
 const HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
 // the weapon test arena's other weapons (2026-10-17, the user: "add the axe, chainsaw, sledge hammer back to ... the rig lab
 // .. and the knife"): their frames from the Move Library's data sheet (assets/arena/weapons.json: grip point, shaft and
@@ -92,7 +92,18 @@ const LIB_WEAPONS = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, ch
 const PACK = { alubat: 1, packaxe: 1, packcrowbar: 1 };
 let WDEFS = {}, PICKS = {}; // PICKS: "<clip>|<weapon>" -> the Move Library pick's hold (hand, roll, slide, flip), as the arena uses it
 const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
-const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb' };
+const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb', draft: 'assets/shotgun.glb' };
+// the three shotgun models, to compare (the user, 2026-10-17): short = the game's (pump_short.glb), old = the hospital pack's
+// full-stock pump (pump_shotgun.glb), draft = the first stand-in (assets/shotgun.glb, blender/make_weapons.py). Each has its
+// own fit; the hold is the same (the Gun class: sg_reload's hold frame, right fist on the grip, barrel toward the left hand)
+const SHOTGUNS = { short: 1, old: 1, draft: 1 };
+function prepDraftShotgun(gltf) { // (barrel along +Z, origin at the right hand, 'grip2' the left hand) -> barrel +X, as the others
+  const inner = gltf.scene, g = new THREE.Group();
+  inner.rotation.y = Math.PI / 2; inner.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+  g.add(inner); g.updateMatrixWorld(true);
+  g.userData = { gripL: inner.getObjectByName('grip2'), muzzle: inner.getObjectByName('muzzle') };
+  return g;
+}
 
 // ---------------- scene ----------------
 const canvas = $('view');
@@ -265,7 +276,7 @@ class Gun {
     const a = this.actor; a.bones.RightHand.getWorldQuaternion(_q);
     const gq = _q.multiply(this.socket);
     a.grip('Right', _v);
-    applyFit(this.obj, _v, gq, fitW('short', a), new THREE.Vector3(), k, k);
+    applyFit(this.obj, _v, gq, fitW(SHOTGUNS[weaponOf()] ? weaponOf() : 'short', a), new THREE.Vector3(), k, k); // (each shotgun its own fit)
     this.obj.updateMatrixWorld(true);
   }
 }
@@ -287,6 +298,7 @@ function ualRef(file, female = $('femref')?.checked) { // Quaternius's mannequin
 }
 function useRef(a) { // switch the shown reference actor (the X Bot or a mannequin)
   if (ref && ref !== a) { ref.root.visible = false; ref.helper.visible = false; }
+  if (refGun && refGun.actor !== a) refGun.setObject(null); // (the old dummy's gun would stay behind, lying at the origin)
   ref = a; refGun = a === refX ? refGunX : new Gun(a);
 }
 const gunTemplates = {}, marks = {}, mainCache = {};
@@ -428,8 +440,10 @@ function leftHand(f) {
     if (wPort > 0) { ik(target, wPort); main.grip('Left', _m1); }
   }
   // otherwise the hand stays on the pump wherever it slides
-  const rest = g.localToWorld(new THREE.Vector3(U.pumpX, 0, 0).add(U.gripL.position.clone().setX(0)));
-  const wHold = smooth01(1 - (_m1.distanceTo(rest) - 0.03) / 0.12) * (1 - wPort);
+  // (the pack shotgun's left grip sits off its pump's origin, 41 cm up the barrel against the game gun's 27: her hand
+  // reaches further to get there)
+  const rest = g.localToWorld(new THREE.Vector3(U.pumpX, 0, 0).add(U.gripL.position.clone().setX(S.gun === 'short' ? 0 : U.gripL.position.x)));
+  const wHold = smooth01(1 - (_m1.distanceTo(rest) - (S.gun === 'short' ? 0.03 : 0.2)) / 0.12) * (1 - wPort);
   if (wHold > 0) ik(U.gripL.getWorldPosition(_m2), wHold);
 }
 function alignShell() { // the shell's axis points from the hand to the loading port, its tip at the port
@@ -457,7 +471,7 @@ function applyGun() {
   for (const k in held) held[k].visible = false;
   const t = gunTemplates[w];
   if (w === 'none' || HELD[w] || !t) return;
-  const mk = () => { const o = t.clone(true); o.userData = { ...t.userData, gripL: o.getObjectByName('GameGrip_L'), port: o.getObjectByName('LoadPort'), pump: o.getObjectByName('Pump') }; return o; };
+  const mk = () => { const o = t.clone(true); o.userData = { ...t.userData, gripL: o.getObjectByName('GameGrip_L'), port: o.getObjectByName('LoadPort'), pump: o.getObjectByName('Pump') || o.getObjectByName('Shotgun_Pump') }; return o; }; // (the pack shotgun's pump: Shotgun_Pump)
   mainGun.setObject(mk());
   if ($('gunref').checked) refGun.setObject(mk());
 }
@@ -677,7 +691,7 @@ fetch('assets/hold/hand_poses.json', { cache: 'reload' }).then((r) => r.json()).
   handsUI?.(); refresh?.();
 });
 function handPose(a) {
-  if (!HOLD_LAYERS.handPoses) return; // (the layer toggle, render/holdlayers.js)
+  if (!HOLD_LAYERS.handPoses && !AS_LIVE[clipBase()]) return; // (the layer toggle, render/holdlayers.js; AS_LIVE: always, as the live game)
   const H = handsOf(), P = fistPose(a); if (!P) return;
   for (const side of ['Right', 'Left']) {
     const k = H[side]; if (!(k > 0)) continue;
@@ -738,7 +752,7 @@ const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
-const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (hospital pack)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (hospital pack)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', old: 'Shotgun (hospital pack)', draft: 'Shotgun (first draft)', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
 // (a weapon's fit for this rig: this clip's own when it has one, the sidebar's "This clip only", else the weapon's)
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : WFITS[w + '@' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '')]?.[fitKey(a)] || ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
@@ -757,6 +771,7 @@ let pfitWho = 'main', pfitSync = null;
 // slider labels per weapon (the bat: its long axis runs through her fist from the little finger to the index knuckle;
 // model +X points to the knuckles, +Y toward the wrist or the fingertips)
 const FIT_LABELS = { short: ['size %', 'move sideways (mm)', 'move up / down (mm)', 'slide along the barrel (mm)', 'roll (deg)', 'turn muzzle left / right (deg)', 'tip muzzle up / down (deg)'], axe: ['size %', 'slide along the handle (mm)', 'move sideways (mm)', 'move toward the blade side (mm)', 'tilt (deg)', 'turn (deg)', 'roll the blade (deg)'], bat: ['size %', 'slide along the bat (mm)', 'move toward wrist / fingertips (mm)', 'move toward knuckles / palm (mm)', 'tip toward wrist / fingertips (deg)', 'tip toward knuckles / palm (deg)', 'roll the bat (deg)'] };
+FIT_LABELS.old = FIT_LABELS.draft = FIT_LABELS.short;
 function buildPistolFit() {
   const box = document.createElement('div'); box.id = 'pfit';
   box.style.cssText = 'position:fixed;right:8px;top:200px;z-index:30;background:rgba(20,26,30,.85);color:#ddd;font:11px system-ui;padding:6px 8px;border-radius:8px;width:210px';
@@ -943,6 +958,7 @@ function drawVidRef(f) {
 const WEAPON_CLIPS = {
   pistol: { label: 'Pistol', idle: 'pistol_idle', attack: 'kick' },
   short: { label: 'Shotgun', idle: 'sg_reload', attack: null }, // (the game holds sg_reload's hold frame; its kick is not in the Rig Lab yet)
+  old: { label: 'Shotgun (pack)', idle: 'sg_reload', attack: null }, draft: { label: 'Shotgun (draft)', idle: 'sg_reload', attack: null },
   axe: { label: 'Axe', idle: 'bat_idle', attack: 'bat_swing' }, // (its combo: bat_swing, then t_chop)
   bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
   // (the arena's weapons: their first "good" pick in the Move Library as the attack)
@@ -966,6 +982,7 @@ const GAME_CLIPS = {
   bat: { Idle: ['ual1_Sword_Idle'], 'Move, run "now" / "rebase" (legs only)': PMOVE, 'Move, run "plain"': PLAIN, 'Attack (4 strikes)': ['ual_Sword_Regular_Combo'] },
   none: { 'Idle (fists)': ['tripo_idle'], Move: PLAIN, 'Attack (jab, cross, kick)': ['t_box_01', 't_box_02', 't_kick_02'] },
 };
+for (const k of ['old', 'draft']) Object.defineProperty(GAME_CLIPS, k, { value: GAME_CLIPS.short }); // (the other shotguns: the same clips, not listed twice)
 const EVERYONE = { 'Everyone: hit, knockdown, death': ['hit_body', 'yola_knockdown', 'yola_getup', 'death_fall', 'death_defeat'], 'Everyone: scripted (the opening)': ['t_greet_01', 't_greet_04'] };
 // "(currently used)": a clip the game plays. Read from the game's own bundle (dist/combat.js names every clip it plays as
 // a string), so the mark follows the game as it changes, never a list kept by hand here
@@ -1051,9 +1068,10 @@ function barsBottom() { let b = 0; for (const id of ['edit', 'top']) { const el 
 // Quaternius and Mixamo dummy ... right now I only want to edit the idle, and the attacks"). Pick a weapon, its idle or
 // attack (Mixamo and Quaternius clips only: each plays beside its own dummy), show both / Yola / the dummy, the angle,
 // the fit. ----
-const EDIT_WEAPONS = { alubat: 'Bat', packaxe: 'Axe', packcrowbar: 'Crowbar', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife', pistol: 'Pistol', short: 'Shotgun' };
+const EDIT_WEAPONS = { alubat: 'Bat', packaxe: 'Axe', packcrowbar: 'Crowbar', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife', pistol: 'Pistol', short: 'Shotgun', old: 'Shotgun · pack', draft: 'Shotgun · draft' };
 // the guns' own idles and attacks (the pistol's attack: its idle with the game's shot kick, firing every 0.24 s)
 const EDIT_LISTS = { pistol: { idle: /^(pistol_idle|ual1_Pistol_Idle_Loop)$/, attack: /^(pistol_idle|pistol_reload)$/ }, short: { idle: /^(sg_reload)$/, attack: /^(sg_reload|reload_rifle_stand|rifle_aim_idle)$/ } };
+EDIT_LISTS.old = EDIT_LISTS.draft = EDIT_LISTS.short;
 const EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
 const EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|melee_horizontal|ual1?_Melee_(?!Idle).+)$/;
 const editKey = () => 'riglab.edit.' + S.gun + '.' + S.mode;
@@ -1079,7 +1097,8 @@ function editSync() {
 // ---- ARM ADJUSTMENTS (render/armpose.js): per character and clip, per arm; kept in this browser, the sidebar's "Save all"
 // writes shots/arm_pose.json (copied to assets/hold/arm_pose.json, which the game reads, when the user says so) ----
 const ARMP = {};
-const clipArmKey = () => S.char + ':' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
+const clipBase = () => (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
+const clipArmKey = () => S.char + ':' + clipBase();
 const hipArmKey = () => S.char + ':*hips'; // (the hands-at-her-hips rule: every clip, render/armpose.js hipWeight)
 const armKey = () => (S.armScope === 'hips' ? hipArmKey() : clipArmKey()); // (what the sidebar edits)
 const armOf = (side) => ({ ...ARM0, ...(ARMP[armKey()]?.[side] || {}) });
@@ -1091,7 +1110,7 @@ fetch('assets/hold/arm_pose.json', { cache: 'reload' }).then((r) => r.json()).ca
   sidebarSync(); refresh?.();
 });
 function armPoseOn(a) {
-  if (a !== main || !HOLD_LAYERS.armPose) return;
+  if (a !== main || !HOLD_LAYERS.armPose || AS_LIVE[clipBase()]) return; // (AS_LIVE: held as the live game, no adjustments)
   const p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()]; if (!p && !hip) return;
   a.root.updateMatrixWorld(true);
   const chain = ['Shoulder', 'Arm', 'ForeArm', 'Hand'].flatMap((n) => ['Right', 'Left'].map((s) => a.bones[s + n])).filter(Boolean), before = chain.map((b) => b.quaternion.clone());
@@ -1505,9 +1524,9 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
   ref = refX = new Actor(xb, 1.62); ref.root.visible = false; scene.add(ref.root, ref.helper);
   refGun = refGunX = new Gun(ref);
   for (const [k, f] of Object.entries(GUN_FILES)) {
-    try { const g = await loadG(f); gunTemplates[k] = k === 'short' ? prepPumpShort(g) : prepShotgun(g); } catch { /* not built yet */ }
+    try { const g = await loadG(f); gunTemplates[k] = k === 'short' ? prepPumpShort(g) : k === 'draft' ? prepDraftShotgun(g) : prepShotgun(g); } catch { /* not built yet */ }
   }
-  for (const k of ['short', 'old']) if (!gunTemplates[k]) $('gun').querySelector(`option[value=${k}]`).textContent += ' (not built yet)';
+  for (const k of ['short', 'old', 'draft']) if (!gunTemplates[k]) $('gun').querySelector(`option[value=${k}]`).textContent += ' (not built yet)';
   try { const g = await loadG('assets/weapons/shotgun_shell.glb'); shellTemplate = prepShell(g); shellObj = shellTemplate; shellObj.visible = false; scene.add(shellObj); } catch { /* not built yet */ }
   const want = new URLSearchParams(location.search).get('char');
   await setChar(want in CHARS ? want : 'yola2');

@@ -13,7 +13,7 @@ import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
 import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
-import { HOLD_LAYERS } from './holdlayers.js';
+import { HOLD_LAYERS, AS_LIVE } from './holdlayers.js';
 import { adjustArms, blendArms } from './armpose.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
@@ -749,20 +749,26 @@ export class YolaView extends ClipBody {
     if (!this.poseSet || !HOLD_LAYERS.armPose) return;
     const n = Object.keys(this.actions).length;
     if (!this.poseActs || this.poseN !== n) {
-      this.poseN = n; this.poseActs = [];
-      for (const [name, a] of Object.entries(this.actions)) { const base = this.baseClip(name); if (base && this.poseSet[base]) this.poseActs.push([a, base]); }
+      this.poseN = n; this.poseActs = []; this.liveActs = [];
+      // (only actions that move her arms: a legs-only layer such as pistol_idle_lower, under the shotgun's hold, would carry the
+      // pistol's arm adjustments onto the shotgun)
+      const arms = (act) => act.getClip().tracks.some((t) => /(Shoulder|Arm|ForeArm|Hand).quaternion$/.test(t.name));
+      for (const [name, a] of Object.entries(this.actions)) { const base = this.baseClip(name); if (!base || !arms(a)) continue; if (AS_LIVE[base]) this.liveActs.push(a); else if (this.poseSet[base]) this.poseActs.push([a, base]); }
     }
-    const list = [];
+    const list = []; let live = 0;
     for (const [a, base] of this.poseActs) { const w = Math.min(1, a.getEffectiveWeight()); if (w > 1e-3) list.push([w, this.poseSet[base]]); }
-    const p = list.length ? blendArms(list) : null, hip = this.poseSet['*hips']; // (*hips: the hands-at-her-hips rule, every clip)
+    for (const a of this.liveActs) live += Math.min(1, a.getEffectiveWeight()); // (held as the live game: no adjustments)
+    const p = list.length ? blendArms(list) : null, h0 = this.poseSet['*hips'], hk = Math.max(0, 1 - live); // (*hips: the hands-at-her-hips rule, every clip)
+    const hip = h0 && hk > 1e-3 ? Object.fromEntries(Object.entries(h0).map(([sd, P]) => [sd, Object.fromEntries(Object.entries(P).map(([q, v]) => [q, typeof v === 'number' ? v * hk : v]))])) : null;
     if (p || hip) { adjustArms(this.bones, p, { hip }); this.container.updateMatrixWorld(true); }
   }
   handPoses() {
-    if (!this.handSet || !HOLD_LAYERS.handPoses) return;
+    if (!this.handSet) return;
+    const all = HOLD_LAYERS.handPoses; // (off: only the clips held as the live game, AS_LIVE)
     const k = { Right: 0, Left: 0 }; let W = 0;
     for (const [a, base] of this.handActs) {
       const w = a.getEffectiveWeight(); if (w <= 1e-3) continue;
-      const h = this.handSet[base]; W += w; if (h) { k.Right += w * (h.Right || 0); k.Left += w * (h.Left || 0); }
+      const h = this.handSet[base]; W += w; if (h && (all || AS_LIVE[base])) { k.Right += w * (h.Right || 0); k.Left += w * (h.Left || 0); }
     }
     if (W <= 1e-3) return;
     for (const [b, q, side] of this.fist) { const c = k[side] / W; if (c > 1e-3) b.quaternion.slerp(q, Math.min(1.5, c)); } // (> 1: a tighter fist than the grip)

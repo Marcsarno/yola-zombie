@@ -11,6 +11,10 @@ export const LAYERS = [
   ['carry', 'carry idles', 'the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)'],
   ['armPose', 'arm adjustments', 'the per-clip arm, wrist and shoulder adjustments set in the Rig Lab sidebar (render/armpose.js, assets/hold/arm_pose.json)'],
 ];
+// AS THE LIVE GAME (2026-10-17, the user: "the animation and grip in the live game was already perfect" ... "put the
+// shotgun's position and arm back the way the game had it before today"): these clips are held as the deployed game held
+// them that morning, whatever the switches say: their hand curls always on, no arm adjustments, no hands-at-hips rule
+export const AS_LIVE = { sg_reload: 1 };
 export const HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
 const local = () => { try { return JSON.parse(globalThis.localStorage?.getItem('holdLayers') || '{}'); } catch { return {}; } };
 Object.assign(HOLD_LAYERS, local());

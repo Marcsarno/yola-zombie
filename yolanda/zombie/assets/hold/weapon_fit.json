@@ -41,12 +41,12 @@
  "short": {
   "yola2": {
    "size": 100,
-   "fwd": -15,
+   "fwd": 0,
    "up": 0,
    "side": 0,
-   "tilt": -2,
+   "tilt": 0,
    "turn": 0,
-   "roll": 4
+   "roll": 0
   },
   "xbot": {
    "size": 100,

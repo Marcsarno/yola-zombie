@@ -12,12 +12,6 @@
    "out": 4
   }
  },
- "yola2:sg_reload": {
-  "Left": {
-   "shFwd": 4.5,
-   "out": 2.5
-  }
- },
  "yola2:pistol_idle": {
   "Right": {
    "shUp": 0.5,
