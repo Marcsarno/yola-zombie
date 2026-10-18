@@ -46868,7 +46868,7 @@ void main() {
   var nextId = 1;
   var _flow = { x: 0, z: 0 };
   var _steer = { x: 0, z: 0, k: 1 };
-  var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", KNOCKDOWN: "knockdown", GETUP: "getup", DYING: "dying", DEAD: "dead", STUCK: "stuck" };
+  var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", KNOCKDOWN: "knockdown", GETUP: "getup", DYING: "dying", DEAD: "dead", STUCK: "stuck", PICKUP: "pickup" };
   var KNOCKDOWN_FALL = 1.3;
   var KNOCKDOWN_GETUP = 2;
   var GETUP_YAW = -2.705;
@@ -46893,9 +46893,16 @@ void main() {
     // until lock of it, a long narrow wedge on the floor), then sprints straight through where she stood (dist m in strike
     // s), raking with both arms as it passes (the scratch over its running legs); it overshoots and skids (recover). Hit and
     // run: a side step beats it, and the skid is the opening.
-    dash: { min: 2, from: 4.6, range: 3.6, arc: 0.2, windup: 0.45, lock: 0.7, strike: 0.5, dist: 3.6, reach: 0.5, recover: 0.85, cd: 2.6, step: 0 }
+    dash: { min: 2, from: 4.6, range: 3.6, arc: 0.2, windup: 0.45, lock: 0.7, strike: 0.5, dist: 3.6, reach: 0.5, recover: 0.85, cd: 2.6, step: 0 },
+    // the guard after his arm tore off (GUARD): 'flail' his one arm swung wildly, wide and quick, chained (UAL Sword_Regular
+    // A / B, empty-handed); 'club' the torn arm swung as a weapon, longer and harder, a heavy one floors her
+    // the big lady close in (2026-10-18, the Butcher brief: "she has some attacks when you're close"): a heavy two-handed smash
+    // that throws Yola back out of reach (often floored), where her charge is the threat again
+    smash: { from: 2.1, range: 1.75, arc: 1.3, windup: 0.62, strike: 0.18, recover: 0.75, step: 0.8, dmg: 1.35, kd: 0.5 },
+    flail: { from: 1.55, range: 1.65, arc: 1.5, windup: 0.36, strike: 0.16, recover: 0.32, step: 0.6, dmg: 0.75 },
+    club: { from: 2, range: 2.15, arc: 1.15, windup: 0.5, strike: 0.18, recover: 0.55, step: 0.7, dmg: 1.25, kd: 0.4 }
   };
-  var GUARD = { armHp: Infinity, headHp: 35, rageSpeed: 1.6, stuck: 2.6, reel: 1.7, floor: 0.3, broken: 0.55, stages: [0.36, 0.18], stageGap: 0.35, turn: 1.7, front: 0.42 };
+  var GUARD = { headHp: 35, stuck: 3.4, heave: 0.5, reel: 1.25, floor: 0.3, tear: 0.62, pickupAfter: 5.5, pickupHp: 0.42, pickup: 1.3, grab: 0.55, turn: 1.7, front: 0.42, armHp: Infinity };
   var LADY = { swell: 0.3, knock: 2, stagger: 3.5, acid: { r: 1.5, dur: 5, dps: 6 } };
   var GAITS = { runnerShare: 0.1, ualShare: 0.65 };
   var RUNNER_SPEED = 2.5;
@@ -46910,7 +46917,7 @@ void main() {
   var shieldState = (z) => !z.shieldMax ? "none" : z.shieldHp <= 0 ? "break" : z.shieldHp / z.shieldMax > 0.78 ? "intact" : z.shieldHp / z.shieldMax > 0.4 ? "hairline" : "heavy";
   var TUMBLE_FALL = 1.3;
   var TUMBLE_GETUP = 1.9;
-  var FLOOR_EMERGE = { rumble: 1.3, climb: 2.5, buriedFor: 0.3, solidAt: 0.55 };
+  var FLOOR_EMERGE = { rumble: 1.1, climb: 2, buriedFor: 0.18, solidAt: 0.45, shudder: 0.32 };
   var PERSONAL = 1.05;
   var Zombie = class {
     constructor(x, z, yaw, opts) {
@@ -46952,6 +46959,10 @@ void main() {
       if (this.kind === "guard") Object.assign(this.limbHp, { Forearm_L: GUARD.armHp, Forearm_R: GUARD.armHp, Head: Infinity });
       this.slams = 0;
       this.stageT = -9;
+      this.gstage = this.kind === "guard" ? "shield" : "";
+      this.planted = null;
+      this.tearT = 0;
+      this.club = false;
       this.enraged = false;
       this.burst = false;
       this.severed = /* @__PURE__ */ new Set();
@@ -46978,6 +46989,7 @@ void main() {
         this.gait = this.kind === "runner" ? "run" : this.kind === "normal" ? g : "shamble";
       }
       this.dashCd = 0.8 + this.phase * 4.7 % 1 * 1.2;
+      this.pouncer = this.phase * 17.3 % 1 < 0.35;
       this.shieldHp = this.shieldMax = this.kind === "guard" ? SHIELD_HP : 0;
     }
     get armsLost() {
@@ -47032,29 +47044,38 @@ void main() {
       if (!(this.shieldHp > 0) || !this.alive || this.down || this.state === ZS.STUCK) return false;
       return -(dirX * Math.sin(this.yaw) + dirZ * Math.cos(this.yaw)) > GUARD.front;
     }
-    // his shield takes his own slam (the only thing that damages it): the first lodges it in the floor, cracked; the second
-    // shatters it, every piece of it
+    // his slam drives his shield into the floor for good (GUARD): it stays there, planted, and he heaves at it
     slamShield(sim2) {
-      if (!(this.shieldHp > 0)) return;
+      if (!(this.shieldHp > 0) || this.planted) return;
       this.slams++;
       const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), x = this.x + fx2 * 0.75, z = this.z + fz * 0.75;
-      if (this.slams === 1) {
-        this.shieldHp = this.shieldMax * 0.3;
-        this.set(ZS.STUCK, GUARD.stuck);
-        this.vx = this.vz = 0;
-        sim2.emit({ type: "shieldCrack", id: this.id, x, z, dirX: -fx2, dirZ: -fz, state: "heavy", slam: true });
-        sim2.emit({ type: "shieldStuck", id: this.id, x, z, dur: GUARD.stuck });
-      } else {
-        this.shieldHp = 0;
-        this.hp = Math.min(this.hp, this.maxHp * GUARD.broken);
-        this.hitDirX = -fx2 * 0.3;
-        this.hitDirZ = -fz * 0.3;
-        this.set(ZS.STAGGER, GUARD.reel);
-        this.attackCd = Math.max(this.attackCd, GUARD.reel + 0.4);
-        this.hitKind = "slam";
-        this.hitStyle = "shield";
-        sim2.emit({ type: "shieldBreak", id: this.id, x, z, dirX: fx2, dirZ: fz, kind: "slam" });
-      }
+      this.planted = { x, z, yaw: this.yaw, gx: this.x + fx2 * 0.42, gz: this.z + fz * 0.42 };
+      this.shieldHp = this.shieldMax * 0.3;
+      this.set(ZS.STUCK, GUARD.stuck);
+      this.vx = this.vz = 0;
+      sim2.emit({ type: "shieldCrack", id: this.id, x, z, dirX: -fx2, dirZ: -fz, state: "heavy", slam: true });
+      sim2.emit({ type: "shieldStuck", id: this.id, x, z, dur: GUARD.stuck });
+    }
+    // the last heave: his shield arm comes off at the shoulder, still gripping the planted shield; he reels back from it
+    tearArm(sim2) {
+      const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw);
+      this.shieldHp = 0;
+      this.gstage = "onearm";
+      this.tearT = sim2.time;
+      this.hp = Math.min(this.hp, this.maxHp * GUARD.tear);
+      this.hitDirX = -fx2;
+      this.hitDirZ = -fz;
+      this.hitKind = "tear";
+      this.hitStyle = "tear";
+      this.hitStrength = 2;
+      this.hitSeq++;
+      this.lastHitPart = "Forearm_L";
+      this.sever("Forearm_L", -fx2, -fz, sim2);
+      this.set(ZS.STAGGER, GUARD.reel);
+      this.attackCd = Math.max(this.attackCd, GUARD.reel + 0.3);
+      this.kx -= fx2 * 1.6;
+      this.kz -= fz * 1.6;
+      sim2.emit({ type: "guardArmTorn", id: this.id, x: this.planted.x, z: this.planted.z });
     }
     get alive() {
       return this.state !== ZS.DYING && this.state !== ZS.DEAD;
@@ -47087,6 +47108,10 @@ void main() {
         sim2.emit({ type: "shieldHit", id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
         return "blocked";
       }
+      if (this.executable && sim2.time < this.executable && (melee || kind === "pistol" || kind === "shotgun" || kind === "fist")) {
+        this.executed = true;
+        this.executable = 0;
+      }
       const limbMul = kind === "shotgun" ? 1.35 : melee ? 1.2 : 1;
       let loss = 0, main = "torso", mainD = 0;
       for (let [pt, d] of parts) {
@@ -47112,21 +47137,9 @@ void main() {
             loss = Math.max(0, this.hp - M4 * GUARD.floor);
             this.slamCd = Math.min(this.slamCd, 0.4);
           }
-        } else {
-          const next = GUARD.stages[this.armsLost], soon = sim2.time - this.stageT < GUARD.stageGap;
-          if (next != null && after < M4 * next) {
-            if (soon) loss = Math.max(0, this.hp - M4 * next);
-            else {
-              const nn = GUARD.stages[this.armsLost + 1];
-              loss = Math.min(loss, this.hp - (nn != null ? M4 * nn + 1 : 1));
-              const fromLeft = -(dirX * Math.cos(this.yaw) - dirZ * Math.sin(this.yaw)) > 0;
-              cut = main.startsWith("Forearm") ? main : fromLeft ? "Forearm_L" : "Forearm_R";
-              if (this.severed.has(cut)) cut = cut === "Forearm_L" ? "Forearm_R" : "Forearm_L";
-              this.stageT = sim2.time;
-            }
-          } else if (after <= 0 && soon) loss = this.hp - 1;
         }
       }
+      if (this.executed) loss = this.hp + 1;
       this.hp -= loss;
       if (cut) this.sever(cut, dirX, dirZ, sim2);
       if (this.kind === "guard" && this.hp <= 0 && !(this.shieldHp > 0) && !this.severed.has("Head")) {
@@ -47268,22 +47281,29 @@ void main() {
     // round slowly (the opening to hit her), then charges again, or, close in, falls back on the normal attacks. Running into
     // a wall or a prop at speed trips her (update: tumble); another zombie in her path is bowled over.
     sprinterChase(dt, sim2, dx, dz, dist2) {
-      const T2 = sim2.T, p = sim2.player, top = (T2.sprinterSpeed ?? 3.9) * this.speedMul;
+      const T2 = sim2.T, p = sim2.player, top = (T2.sprinterSpeed ?? 6.2) * this.speedMul;
       const sees = !p.dead && dist2 < 12 && sim2.world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
       if (!this.sprinting) {
-        if (!sees || dist2 < 2.4 || this.attackCd > 0.3) {
+        if (!sees || dist2 < 2.6 || this.attackCd > 0.3) {
           this.spotT = 0;
+          this.aimLocked = false;
           return false;
         }
         if (this.spotT === 0) sim2.emit({ type: "sprinterSpot", id: this.id });
         this.spotT += dt;
-        this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
-        if (this.spotT < (T2.sprinterWindup ?? 0.7)) return true;
+        const W3 = T2.sprinterWindup ?? 1.35, lockAt = W3 - (T2.sprinterLock ?? 0.42);
+        this.windupT = W3;
+        if (this.spotT < lockAt) this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 2.6 * dt);
+        else if (!this.aimLocked) {
+          this.aimLocked = true;
+          sim2.emit({ type: "sprinterLock", id: this.id });
+        }
+        if (this.spotT < W3) return true;
         this.sprinting = true;
-        this.spd = Math.max(this.spd, 1);
+        this.spd = Math.max(this.spd, 0.8);
         this.braking = false;
         this.chargeHit = false;
-        this.yaw = Math.atan2(dx, dz);
+        this.aimLocked = false;
       }
       const off = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
       if (p.dead || dist2 > 14 || !sees && dist2 > 3) {
@@ -47310,7 +47330,7 @@ void main() {
           return false;
         }
       } else {
-        this.spd = Math.min(top, this.spd + 5.5 * dt);
+        this.spd = Math.min(top, this.spd + (T2.sprinterAccel ?? 4.3) * dt);
         turn = 0;
       }
       this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), turn * dt);
@@ -47379,6 +47399,7 @@ void main() {
           if (this.floorSpawn) {
             const F = this.floorSpawn;
             this.vx = this.vz = 0;
+            if (!F.breached && Math.floor(this.t / FLOOR_EMERGE.shudder) !== Math.floor((this.t - dt) / FLOOR_EMERGE.shudder) && this.t < F.rumble) sim2.emit({ type: "floorShudder", id: this.id, x: this.x, z: this.z, k: this.t / F.rumble });
             if (!F.breached && this.t >= F.rumble) {
               F.breached = true;
               sim2.emit({ type: "floorBreach", id: this.id, x: this.x, z: this.z });
@@ -47429,7 +47450,27 @@ void main() {
             turnRate = 0;
             break;
           }
-          if (this.kind === "guard" && !this.enraged) turnRate = GUARD.turn;
+          if (this.kind === "guard" && !this.enraged) turnRate = this.gstage === "shield" ? GUARD.turn : 3.2;
+          if (this.kind === "guard" && this.gstage === "onearm" && this.planted && !this.passive && (sim2.time - this.tearT > GUARD.pickupAfter || this.hp < this.maxHp * GUARD.pickupHp)) {
+            const P = this.planted, gx = P.gx - Math.sin(P.yaw) * 0.55 - this.x, gz = P.gz - Math.cos(P.yaw) * 0.55 - this.z, gd = Math.hypot(gx, gz);
+            if (gd < 0.3) {
+              this.set(ZS.PICKUP, GUARD.pickup);
+              this.vx = this.vz = 0;
+              sim2.emit({ type: "guardPickup", id: this.id });
+              break;
+            }
+            wantX = gx / gd;
+            wantZ = gz / gd;
+            speed = T2.zombieSpeed * this.speedMul * 1.15;
+            {
+              const s = this.steer(wantX, wantZ, gd, true, sim2);
+              wantX = s.x;
+              wantZ = s.z;
+              speed *= s.k;
+            }
+            turnRate = 4;
+            break;
+          }
           speed = wantX || wantZ ? T2.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === "run" ? RUNNER_SPEED : 1) : 0;
           if (speed > 0) {
             const s = this.steer(wantX, wantZ, dist2, los, sim2);
@@ -47517,7 +47558,7 @@ void main() {
             if (dist2 < (this.kind === "normal" && !this.crawling ? 0.95 : 0.8) && !this.backing) speed = 0;
           }
           const slot = !sim2.engaged || sim2.engaged.has(this.id) || this.crawling || this.kind === "sprinter";
-          if (this.kind === "guard" && !this.enraged && this.shieldHp > 0 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 0.6 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          if (this.kind === "guard" && !this.enraged && this.shieldHp > 0 && !this.planted && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 0.6 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             this.attack = "slam";
             this.set(ZS.WINDUP, ZATTACKS.slam.windup);
             this.slamCd = 4 + sim2.rand() * 2.5;
@@ -47535,7 +47576,7 @@ void main() {
             break;
           }
           const PO = ZATTACKS.pounce;
-          if (this.kind === "normal" && !this.crawling && !this.passive && (slot || !sim2.zombies.some((o) => o !== this && o.attack === "pounce" && (o.state === ZS.WINDUP || o.state === ZS.STRIKE))) && (this.pounceCd -= dt) <= 0 && dist2 > PO.min && dist2 < PO.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5) && this.clearLine(sim2, dx, dz, dist2)) {
+          if (this.kind === "normal" && this.pouncer && !this.crawling && !this.passive && (slot || !sim2.zombies.some((o) => o !== this && o.attack === "pounce" && (o.state === ZS.WINDUP || o.state === ZS.STRIKE))) && (this.pounceCd -= dt) <= 0 && dist2 > PO.min && dist2 < PO.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5) && this.clearLine(sim2, dx, dz, dist2)) {
             if (sim2.rand() < (T2.pounceChance ?? PO.chance)) {
               this.attack = "pounce";
               this.set(ZS.WINDUP, T2.pounceWindup ?? PO.windup);
@@ -47545,6 +47586,24 @@ void main() {
               break;
             }
             this.pounceCd = 1.5 + sim2.rand() * 1.5;
+          }
+          if (this.kind === "sprinter" && !this.crawling && !this.passive && dist2 < ZATTACKS.smash.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.8 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+            this.attack = "smash";
+            this.set(ZS.WINDUP, ZATTACKS.smash.windup);
+            sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75);
+            sim2.emit({ type: "zombieWindup", id: this.id, attack: "smash" });
+            break;
+          }
+          if (this.kind === "guard" && this.gstage !== "shield" && !this.passive && slot && sim2.time >= (sim2.nextAttackT || 0) && this.attackCd <= 0) {
+            const A = this.club ? ZATTACKS.club : ZATTACKS.flail;
+            if (dist2 < A.from && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.9 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+              this.attack = this.club ? "club" : "flail";
+              this.set(ZS.WINDUP, A.windup);
+              this.swingN = (this.swingN || 0) + 1;
+              sim2.nextAttackT = sim2.time + (T2.zombieAttackGap ?? 0.75) * (this.club ? 0.9 : 0.5);
+              sim2.emit({ type: "zombieWindup", id: this.id, attack: this.attack });
+            }
+            break;
           }
           if (!this.passive && slot && sim2.time >= (sim2.nextAttackT || 0) && dist2 < ZATTACKS.lunge.from && this.attackCd <= 0 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             const armed = this.armsLost < 2 && !this.crawling;
@@ -47560,6 +47619,7 @@ void main() {
           wantX = dx;
           wantZ = dz;
           if (this.attack === "slam" && this.t > this.stateDur * ZATTACKS.slam.takeoff) {
+            if (this.leapL == null) sim2.emit({ type: "guardLaunch", id: this.id, x: this.x, z: this.z });
             if (this.leapL == null) this.leapL = Math.max(0, Math.min(ZATTACKS.slam.leap, dist2 - 1.05));
             const L2 = this.leapL / (this.stateDur * (1 - ZATTACKS.slam.takeoff));
             this.vx = Math.sin(this.yaw) * L2;
@@ -47613,7 +47673,10 @@ void main() {
               }
             }
             if (this.t >= this.stateDur) {
-              if (!this.struck) sim2.emit({ type: "zombieStrikeMiss", id: this.id, attack: "pounce" });
+              if (!this.struck) {
+                sim2.emit({ type: "zombieStrikeMiss", id: this.id, attack: "pounce" });
+                sim2.specialMiss?.(this, "pounce");
+              }
               this.set(ZS.RECOVER, Z.recover * (this.struck ? 0.8 : 1.15));
             }
             break;
@@ -47624,8 +47687,14 @@ void main() {
             const along = dx * fx2 + dz * fz;
             const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
             const hit = !p.dead && dist2 < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
-            const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage) * this.K.dmg;
-            const hurt = hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2);
+            const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage * (Z.dmg ?? 1)) * this.K.dmg;
+            const hurt = hit && p.hurt(dmg * (this.kind === "guard" ? 1 : 1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2);
+            if (hurt && (this.attack === "club" || this.attack === "smash") && !p.dead && sim2.rand() < Z.kd) p.knockDown(this.x, this.z, sim2);
+            if (hurt && this.attack === "smash" && !p.dead && !p.down) {
+              const l = dist2 || 1;
+              p.vx += dx / l * 3.5;
+              p.vz += dz / l * 3.5;
+            }
             if (hurt && this.attack === "slam" && !p.dead) p.knockDown(this.x, this.z, sim2);
             if (hurt && this.crawling && this.armsLost < 2) {
               p.grabT = 0.75;
@@ -47641,19 +47710,36 @@ void main() {
           }
           this.vx = Math.sin(this.yaw) * Z.step;
           this.vz = Math.cos(this.yaw) * Z.step;
-          if (this.t >= this.stateDur) this.set(ZS.RECOVER, Z.recover);
+          if (this.t >= this.stateDur) {
+            this.set(ZS.RECOVER, Z.recover);
+            if (this.attack === "flail" && this.swingN % 3) {
+              this.attackCd = 0;
+              sim2.nextAttackT = Math.min(sim2.nextAttackT || 0, sim2.time);
+            }
+          }
           break;
         }
         case ZS.STUCK:
           turnRate = 0;
           this.vx = this.vz = 0;
+          if (this.t >= this.stateDur) this.tearArm(sim2);
+          break;
+        case ZS.PICKUP: {
+          turnRate = 6;
+          wantX = Math.sin(this.planted.yaw);
+          wantZ = Math.cos(this.planted.yaw);
+          this.vx = this.vz = 0;
+          if (!this.club && this.t >= this.stateDur * GUARD.grab) {
+            this.club = true;
+            this.gstage = "club";
+            sim2.emit({ type: "guardClub", id: this.id });
+          }
           if (this.t >= this.stateDur) {
-            this.set(ZS.RECOVER, 0.95);
-            this.attackCd = Math.max(this.attackCd, 1.4);
-            this.slamCd = Math.max(this.slamCd, 3.5);
-            sim2.emit({ type: "shieldFree", id: this.id });
+            this.set(ZS.CHASE);
+            this.attackCd = 0.35;
           }
           break;
+        }
         case ZS.RECOVER:
           turnRate = 2;
           if (this.t >= this.stateDur) {
@@ -48509,11 +48595,13 @@ void main() {
       if (input2.dodgePresses && p.dodgeOpen > 0) {
         const auto = p.threat ? this.autoDodge(p, p.threat, input2.moveX, input2.moveZ) : null;
         if (auto ? p.tryDodge(auto.x, auto.z, this, auto) : p.tryDodge(input2.moveX, input2.moveZ, this)) {
-          if (p.threat) this.lastDodge = { t: this.time, id: p.threat.z.id, kind: p.threat.kind, perfect: p.threat.now && p.threat.soon };
+          const tt = p.threat || (th && th.kind === "pounce" ? th : null);
+          if (tt) this.lastDodge = { t: this.time, id: tt.z.id, kind: tt.kind, perfect: tt.now && tt.soon };
         }
       }
-      p.move(dt, input2, this.world, this);
-      p.updateAction(dt, this);
+      const yb = this.yolaBoost || 1;
+      p.move(dt * yb, input2, this.world, this);
+      p.updateAction(dt * yb, this);
       this.flowT -= dt;
       if (this.flowT <= 0) {
         this.world.updateFlow(p.x, p.z);
@@ -48621,8 +48709,14 @@ void main() {
           const T2 = this.T, u = z.sprinting ? 1 : Math.min(1, z.spotT / (T2.sprinterWindup ?? 0.7));
           return { z, kind: "charge", special: true, u, now: z.sprinting && along > -0.2, soon: z.sprinting && along > -0.2 && along < 3.8, left: z.sprinting ? Math.max(0, along) / Math.max(1, z.spd) : 1 };
         }
-        if (!best && z.state === ZS.WINDUP && (z.attack === "lunge" || z.attack === "pounce") && d < ZATTACKS[z.attack].range + 1.2) best = { z, kind: z.attack, special: false, u: z.t / Math.max(0.05, z.stateDur), now: true, soon: false };
-        if (!best && (z.state === ZS.STRIKE || z.state === ZS.WINDUP) && (z.attack === "pounce" || z.attack === "dash") && d < 5) best = { z, kind: z.attack, special: false, u: 1, now: true, soon: false };
+        if (!best && z.attack === "pounce" && (z.state === ZS.WINDUP || z.state === ZS.STRIKE) && d < ZATTACKS.pounce.range + 1.2) {
+          const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur);
+          best = { z, kind: "pounce", special: false, u, now: u >= 0.6, soon: true };
+        }
+        if (!best && z.attack === "dash" && (z.state === ZS.WINDUP || z.state === ZS.STRIKE) && d < 5.5) {
+          const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur);
+          best = { z, kind: "dash", special: true, u, now: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, soon: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, left: z.state === ZS.STRIKE ? 0.1 : (1 - u) * z.stateDur };
+        }
       }
       return best;
     }
@@ -48708,7 +48802,8 @@ void main() {
       const d = this.lastDodge, p = this.player;
       if (!d || d.id !== z.id || this.time - d.t > 2.6 || d.used) return;
       d.used = true;
-      if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
+      if (d.perfect && kind === "pounce") z.executable = this.time + 2.4;
+      else if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
       this.emit({ type: "dodgeSuccess", id: z.id, kind, perfect: d.perfect, x: z.x, z: z.z });
     }
     // a critical blow or shot (a perfect dodge's reward): the multiplier once, then gone
@@ -49093,10 +49188,18 @@ void main() {
     scratchWindup: 0.42,
     // s: the scratch's quicker wind-up (used close in: under ~0.9 m)
     scratchDamage: 8,
-    sprinterWindup: 0.7,
-    // s: the orderly plants, roars and squares up before a charge (the lane shows on the floor)
-    sprinterSpeed: 3.9,
-    // m/s: the sprinter's charge (Yola runs 3.3)
+    // (2026-10-18, the user: "she doesn't run fast enough... it doesn't look like she builds up speed and charges. you need a
+    // moment to set up where you want her to charge... like the butcher in diablo 3"): a longer wind-up in which she tracks
+    // Yola, her line fixed sprinterLock s before she goes (the moment to place her charge), then a run that starts slow and
+    // builds (sprinterAccel m/s2) to sprinterSpeed, far faster than Yola
+    sprinterWindup: 1.35,
+    // s: the big lady plants, roars and aims before a charge (the lane shows on the floor)
+    sprinterLock: 0.42,
+    // s: the end of her wind-up with her line fixed (no more tracking: she goes where she aimed)
+    sprinterSpeed: 6.2,
+    // m/s: her charge at full speed (Yola runs 3.3)
+    sprinterAccel: 4.3,
+    // m/s2: how fast she builds up to it (from a slow start)
     sprinterTurn: 0.9,
     // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
     lookAhead: 1.3,
@@ -49108,8 +49211,8 @@ void main() {
     camWidth: 7.2
     // metres of floor across a portrait screen at the player
   };
-  var TUNING_VERSION = 5;
-  var CHANGED = { 3: ["sprinterTurn"], 4: ["meleeHitPause", "sprinterTurn", "sprinterWindup"], 5: ["legStrikeChance"] };
+  var TUNING_VERSION = 6;
+  var CHANGED = { 3: ["sprinterTurn"], 4: ["meleeHitPause", "sprinterTurn", "sprinterWindup"], 5: ["legStrikeChance"], 6: ["sprinterWindup", "sprinterSpeed"] };
   function makeTuning(saved) {
     if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) {
       saved = { ...saved };
@@ -49882,6 +49985,8 @@ void main() {
       this.cfg = { ...HAIR_DEFAULTS, ...opt };
       this.on = true;
       this.restQ = this.chain.map((b) => b.quaternion.clone());
+      this.restP = this.chain.map((b) => b.position.clone());
+      this.restS = this.chain.map((b) => b.scale.clone());
       this.restLen = [this.chain[1].position.length(), this.chain[2].position.length(), this.chain[2].position.length() * HAIR3_RATIO];
       this.cols = COLLIDERS.filter((c) => bones[c.bone]).map((c) => ({ b: bones[c.bone], at: new Vector3(...c.at), r: c.r, c0: new Vector3(), c1: new Vector3(), rw: 0, cs: new Vector3() }));
       this.p = [0, 1, 2].map(() => new Vector3());
@@ -49917,6 +50022,10 @@ void main() {
     }
     update(dt) {
       if (!this.ok) return;
+      for (let i = 0; i < 3; i++) {
+        this.chain[i].position.copy(this.restP[i]);
+        this.chain[i].scale.copy(this.restS[i]);
+      }
       this.sampleAnimated();
       if (!this.on) {
         this.apply(true);
@@ -50901,6 +51010,13 @@ void main() {
       this.scriptNames = scriptNames;
       this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
+      if (this.bones.Head) {
+        this.outer.updateMatrixWorld(true);
+        this.container.getWorldQuaternion(_q24);
+        this.bones.Head.getWorldQuaternion(_q34);
+        this.faceFwd = new Vector3(0, 0, 1).applyQuaternion(_q24.invert().multiply(_q34).invert());
+      }
+      this.lookW = 0;
       const sufs = this.unarmed ? ["", "_lower", "_u", "_ul"] : ["", "_lower"];
       const q = new URLSearchParams(globalThis.location?.search || "");
       this.batRun = q.get("batrun") || "plain";
@@ -51575,6 +51691,7 @@ void main() {
       if (this.weaponShown === "pistol") this.aimPistol(s, 1 - uP);
       else if (this.weaponShown === "shotgun") this.aimShotgun(s, 1 - uS);
       this.posture();
+      this.headLook(s, dt);
       this.armPose();
       this.placeWeapons(s, dt);
       this.placeMags(dt);
@@ -51639,6 +51756,26 @@ void main() {
     }
     // the posture fix (render/posture.js), after the body's corrections, before the weapons: each bone turned by the shares of the clips driving
     // it, per source family (only her pelvis / chest / neck / head meshes change; arms, hands, weapons and feet stay put)
+    // (2026-10-18, the user: "her head doesn't face where she is looking it's weird"): her body turns onto the aim, but the head
+    // kept each clip's own (the gun clips look down the sight to one side, the strafes along the run). After the clip and the
+    // posture fix, the neck (40%) and the head (60%) turn so her face points along the aim, up to LOOK_MAX either way; eased in
+    // and out, half-weight through a swing, off for the dodge, the vault, a fall and on the floor
+    headLook(s, dt) {
+      if (!this.faceFwd || !this.bones.Neck) return;
+      const off = s.action === "down" || s.action === "dodge" || s.action === "vault" || s.dead || this.ov?.w > 0 || this.script;
+      const want = off ? 0 : s.action === "swing" ? 0.5 : 1;
+      this.lookW += (want - this.lookW) * Math.min(1, dt * (want > this.lookW ? 6 : 12));
+      if (this.lookW < 0.01) return;
+      this.container.getWorldQuaternion(_q24);
+      this.bones.Head.getWorldQuaternion(_q34);
+      const f = _v4.copy(this.faceFwd).applyQuaternion(_q24.invert().multiply(_q34));
+      if (f.x * f.x + f.z * f.z < 1e-4) return;
+      const err = clamp5(Math.atan2(f.x, f.z), -LOOK_MAX, LOOK_MAX) * this.lookW;
+      _q42.setFromAxisAngle(UP2, -err * 0.4);
+      this.rotateC("Neck", _q42);
+      _q42.setFromAxisAngle(UP2, -err * 0.6);
+      this.rotateC("Head", _q42);
+    }
     posture() {
       if (this.postureOff || !HOLD_LAYERS.posture) return;
       if (!this.postureActs) {
@@ -52426,8 +52563,16 @@ void main() {
   var SCRATCH = { f0: 1, hit: 17, hitEnd: 21, end: 45 };
   var SLAM = { f0: 1, hit: 77, hitEnd: 81, end: 114, lift: 1, clip: "guard_leap_slam" };
   var POUNCE = { f0: 1, hit: 10, hitEnd: 19, end: 46, clip: "ual_Zombie_Bite" };
-  var ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM, pounce: POUNCE };
-  var EXTRA_ONCE = ["ual_KipUp", "ual_Zombie_Spawn", "ual_Hit_Knockback", "ual1_Crawl_Enter", "ual_Zombie_Scratch", "ual_LayToIdle"];
+  var ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM, pounce: POUNCE, smash: { f0: 8, hit: 33, hitEnd: 40, end: 62, act: "attack" } };
+  var SWINGS = {
+    hook: { f0: 1, hit: 7, hitEnd: 10, end: 15, act: "ual_Melee_Hook" },
+    slashA: { f0: 1, hit: 6, hitEnd: 9, end: 14, act: "ual_Sword_Regular_A" },
+    slashB: { f0: 1, hit: 7, hitEnd: 11, end: 17, act: "ual_Sword_Regular_B" }
+  };
+  var attackClip = (z) => z.attack === "flail" ? SWINGS[["hook", "slashB", "slashA"][(z.swingN || 0) % 3]] : z.attack === "club" ? SWINGS[(z.swingN || 0) % 2 ? "slashA" : "slashB"] : ATTACK_CLIPS[z.attack];
+  var HEAVE = 0.5;
+  var LOOK_MAX = 1.1;
+  var EXTRA_ONCE = ["ual_KipUp", "ual_Zombie_Spawn", "ual_Hit_Knockback", "ual1_Crawl_Enter", "ual_Zombie_Scratch", "ual_LayToIdle", "ual_Melee_Hook", "ual_Sword_Regular_A", "ual_Sword_Regular_B", "ual1_PickUp_Table", "ual_Farm_Harvest"];
   var GAIT_SETS = {
     ual: { idle: "ual_Zombie_Idle_Loop", dur: 1.333, dirs: [["Fwd", 0, 1, 1.05], ["Fwd_L", 0.707, 0.707, 1.06], ["L", 1, 0, 0.75], ["Bwd_L", 0.707, -0.707, 1.06], ["Bwd", 0, -1, 1.2], ["Bwd_R", -0.707, -0.707, 1.06], ["R", -1, 0, 0.75], ["Fwd_R", -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
     run: { idle: "ual_Zombie_Idle_Loop", dur: 0.733, dirs: [["Fwd", 0, 1, 4.1], ["L", 1, 0, 2.05], ["Bwd", 0, -1, 4.1], ["R", -1, 0, 2.05]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Run_${k}_Loop`, x, z, s })) }
@@ -52583,7 +52728,7 @@ void main() {
     };
   }
   var _ZombieView = class _ZombieView extends ClipBody {
-    // (the lady's kip-up experiment: off = her old get-up from her back)
+    // (in his RightHand bone's frame: the club's direction out of the fist, across it: he holds the arm by its own hand, the shoulder end out) // the guards' shields stuck in the floor for good, and the arms torn off on them ({ shield, arm }): they stay until the level resets
     constructor(scene2, gltf, height, speeds, opts = {}) {
       const model = clone(gltf.scene);
       const mats = [];
@@ -52856,6 +53001,11 @@ void main() {
     }
     static clearPieces() {
       for (const pc of [..._ZombieView.pieces]) _ZombieView.dropPiece(pc);
+      for (const P of _ZombieView.planted) {
+        P.shield?.dispose?.();
+        P.arm?.parent?.remove(P.arm);
+      }
+      _ZombieView.planted = [];
     }
     bind(z) {
       this.id = z.id;
@@ -52873,6 +53023,12 @@ void main() {
       this.stumpOf = {};
       this.popped = false;
       this.kindOf = z.kind;
+      if (this.clubArm) {
+        this.clubArm.parent?.remove(this.clubArm);
+        this.clubArm = null;
+      }
+      this.plantedP = null;
+      this.heaveN = -1;
       for (const m of Object.values(this.modules)) m.visible = true;
       for (const g of Object.values(this.gore)) {
         if (g.stump) g.stump.visible = false;
@@ -53057,7 +53213,10 @@ void main() {
       if (z.severed.size !== this.severed.size) {
         for (const part of z.severed) if (!this.severed.has(part)) {
           if (this.modular) this.sever(part, z);
-          else {
+          else if (part === "Forearm_L" && this.plantedP) {
+            this.severed.add(part);
+            this.tearOff(z);
+          } else {
             this.severed.add(part);
             this.cutByWeights(part, z);
           }
@@ -53085,7 +53244,14 @@ void main() {
           this.outer.visible = true;
           this.blob.visible = false;
           const c = sp2.getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0]));
-          this.playOnce("ual_Zombie_Spawn", t0, (c.duration - t0) / F.climb, 0);
+          this.playOnce("ual_Zombie_Spawn", t0, 0, 0);
+          this.spT0 = t0;
+          this.spLen = c.duration - t0;
+        }
+        {
+          const u = clamp5((z.t - F.rumble) / F.climb, 0, 1), c = u < 0.15 ? u / 0.15 * 0.38 : 0.38 + 0.62 * (1 - Math.pow(1 - (u - 0.15) / 0.85, 1.6));
+          sp2.timeScale = 0;
+          sp2.time = this.spT0 + this.spLen * Math.min(0.999, c);
         }
       } else if (this.spawnPlayed && !this.blob.visible && z.state !== "dead") this.blob.visible = true;
       if (z.crawling && this.hasCrawl && (z.state === "strike" || z.state === "recover")) {
@@ -53103,7 +53269,7 @@ void main() {
       }
       if (z.state !== this.lastState) {
         const S2 = z.state;
-        const AC = ATTACK_CLIPS[z.attack], scr = AC && this.act(z.attack);
+        const AC = attackClip(z), scr = AC && this.act(AC.act || z.attack);
         const crawler = z.crawling && this.hasCrawl;
         if (crawler && (S2 === "windup" || S2 === "strike" || S2 === "recover" || S2 === "stagger")) {
         } else if (z.attack === "dash" && this.act("scratch_upper") && (S2 === "windup" || S2 === "strike" || S2 === "recover")) {
@@ -53123,13 +53289,16 @@ void main() {
         } else if (S2 === "windup") {
           if (scr) {
             const t0 = Math.min(...scr.getClip().tracks.map((t) => t.times[0]));
-            this.playOnce(z.attack, t0 + (AC.f0 - 1) / 30, (AC.hit - AC.f0) / 30 / Math.max(0.2, z.stateDur));
+            this.playOnce(AC.act || z.attack, t0 + (AC.f0 - 1) / 30, (AC.hit - AC.f0) / 30 / Math.max(0.2, z.stateDur));
             this.acT0 = t0;
           } else this.playOnce("attack", 8 / 30, (33 - 8) / 30 / Math.max(0.2, z.stateDur));
         } else if ((S2 === "strike" || S2 === "recover") && scr && this.oneShot === scr) {
           scr.time = this.acT0 + ((S2 === "strike" ? AC.hit : AC.hitEnd) - 1) / 30;
           scr.timeScale = (S2 === "strike" ? AC.hitEnd - AC.hit : AC.end - AC.hitEnd) / 30 / Math.max(0.05, z.stateDur);
-        } else if (S2 === "stagger" && z.hitKind === "slam" && this.act("hit_stumble")) {
+        } else if (S2 === "pickup" && this.act("ual1_PickUp_Table")) {
+          const c = this.act("ual1_PickUp_Table").getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0]));
+          this.playOnce("ual1_PickUp_Table", t0, (c.duration - t0) / Math.max(0.3, z.stateDur), 0.15);
+        } else if (S2 === "stagger" && (z.hitKind === "slam" || z.hitKind === "tear") && this.act("hit_stumble")) {
           const len = this.act("hit_stumble").getClip().duration;
           this.playOnce("hit_stumble", 0.1, (len - 0.3) / Math.max(0.3, z.stateDur), 0.1);
         } else if (S2 === "stagger") {
@@ -53186,13 +53355,14 @@ void main() {
         }
         this.kipAt = null;
       }
+      if (z.state === "stuck" && !this.plantedP && this.shieldC) this.plantShield(z);
       if (z.state === "stuck" && this.oneShot && this.oneShot === this.act("slam")) {
-        const a = this.oneShot, ph = (z.t + 0.2) / 0.55, k = ph % 1, pull = Math.sin(Math.min(1, k / 0.4) * Math.PI);
+        const a = this.oneShot, ph = (z.t + 0.2) / HEAVE, k = ph % 1, grow = Math.min(1, z.t / Math.max(0.5, z.stateDur)), pull = Math.sin(Math.min(1, k / 0.45) * Math.PI);
         a.timeScale = 0;
-        a.time = (this.acT0 || 0) + (78.5 + pull * 3.2 - 1) / 30;
+        a.time = (this.acT0 || 0) + (78.5 + pull * (3.2 + grow * 5) - 1) / 30;
         if (Math.floor(ph) !== this.heaveN) {
           this.heaveN = Math.floor(ph);
-          this.react.kick(0, -0.55);
+          this.react.kick(0, -0.6 - grow * 0.9);
         }
       }
       if (this.deathYaw != null) this.container.rotation.y += angleDiff2(this.container.rotation.y, this.deathYaw) * Math.min(1, dt * 14);
@@ -53205,7 +53375,7 @@ void main() {
       if (sprint || this.act("sprint")) {
         const a = this.act("sprint");
         a.setEffectiveWeight(move * sprint * (1 - one2) * (1 - crawl));
-        a.timeScale = clamp5(sp / this.sprintNative, 0.5, 1.6);
+        a.timeScale = clamp5(sp / this.sprintNative, 0.5, 2.2);
       }
       const G5 = this.gaitSet;
       this.act("walk").setEffectiveWeight(G5 ? 0 : move * (1 - sprint) * (1 - one2) * (1 - crawl));
@@ -53249,6 +53419,8 @@ void main() {
         }
       }
       this.mixer.update(dt);
+      if (this.plantedP && (z.state === "stuck" || z.state === "pickup" && !this.clubArm)) this.gripPlanted(z);
+      if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
       for (const b of this.collapsed || []) b.scale.setScalar(1e-4);
       const sw = z.kind === "sprinter" ? z.state === "dying" ? 1 + Math.min(1, z.t / 0.3) : clamp5(1 - z.hp / Math.max(1, z.maxHp) / 0.35, 0, 1) : 0;
       if (z.kind === "sprinter" && this.bones.Spine1 && this.bones.Spine2) {
@@ -53284,6 +53456,80 @@ void main() {
       for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5, fl * 0.33 + tk * 0.05 + sg, fl * 0.27 + tk * 0.03);
       if (z.state === "dead" && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
       this.blob.visible = z.state !== "dead" || z.corpseT < 4.5;
+    }
+    // his slam has driven the shield into the floor for good: it leaves his hand for the world where it is (never moved again)
+    plantShield(z) {
+      const c = this.shieldC;
+      if (!c) return;
+      if (!this.shieldFit) this.fitShield();
+      this.container.updateMatrixWorld(true);
+      _ZombieView.scene.attach(c.object3D);
+      c.object3D.updateMatrixWorld(true);
+      const grip = c.grips.center.getWorldPosition(new Vector3());
+      const up = new Vector3(0, 1, 0), side = new Vector3(Math.cos(z.yaw), 0, -Math.sin(z.yaw));
+      this.plantedP = { shield: c, grip, gripR: grip.clone().addScaledVector(up, 0.16).addScaledVector(side, -0.2), arm: null };
+      _ZombieView.planted.push(this.plantedP);
+      this.shieldC = null;
+      this.shieldFit = false;
+    }
+    // both hands on the planted shield's grip, whatever the heave does with his body (two-bone IK after the clip); while he
+    // reaches back down for his torn arm (the pick-up's first half), his right hand goes to it
+    gripPlanted(z) {
+      const B = this.bones, P = this.plantedP;
+      if (z.state === "stuck") {
+        if (!this.severed.has("Forearm_L") && B.LeftArm) ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, P.grip, 1);
+        if (B.RightArm) ikArm(B.RightArm, B.RightForeArm, B.RightHand, P.gripR, 0.85);
+      } else if (z.state === "pickup" && P.arm && B.RightArm) {
+        const w = Math.min(1, z.t / Math.max(0.1, z.stateDur * 0.45)), tgt = P.arm.localToWorld(new Vector3(0, P.armL * 0.5 - 0.1, 0));
+        ikArm(B.RightArm, B.RightForeArm, B.RightHand, tgt, w);
+      }
+    }
+    // the last heave: his shield arm tears off at the shoulder and stays as it was, gripping the shield (baked from his pose
+    // now: the hand is on the grip), blood from the shoulder as he reels back off it, and from the arm's torn end
+    tearOff(z) {
+      const R = CUT_ROOTS.Forearm_L, B = this.bones;
+      if (!B[R[0]]) return;
+      this.container.updateMatrixWorld(true);
+      const a = B[R[0]].getWorldPosition(new Vector3()), b = B[R[1]].getWorldPosition(new Vector3());
+      const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(B[R[0]].getWorldQuaternion(_bq)), new Quaternion());
+      const F = { c: a.clone().add(b).multiplyScalar(0.5), q0, qi: q0.clone().invert() };
+      const obj = bakeChunks(this.model, { [R[0]]: "arm" }, { arm: F }).arm;
+      if (obj) {
+        obj.position.copy(F.c);
+        obj.quaternion.copy(q0);
+        obj.traverse((o) => {
+          if (o.isMesh) {
+            o.castShadow = true;
+            o.receiveShadow = true;
+          }
+        });
+        _ZombieView.scene.add(obj);
+      }
+      this.plantedP.arm = obj;
+      this.plantedP.armL = a.distanceTo(b);
+      (this.collapsed || (this.collapsed = [])).push(B[R[0]]);
+      const s = B.LeftShoulder?.getWorldPosition(new Vector3()) || a, fx2 = _ZombieView.fx, back = new Vector3(z.hitDirX, 0, z.hitDirZ);
+      if (fx2) {
+        fx2.bloodSpray(s.x, s.y, s.z, -back.x * 0.6, 0.8, -back.z * 0.6, 40, 3.8);
+        fx2.bloodSpray(a.x, a.y, a.z, back.x * 0.3, -0.2, back.z * 0.3, 18, 1.6);
+        fx2.bloodPool(a.x, a.z, 1);
+        fx2.bloodPool(s.x + back.x * 0.5, s.z + back.z * 0.5, 0.8);
+      }
+      (this.stumpOf || (this.stumpOf = {})).Forearm_L = CUT_STUMP.Forearm_L;
+      this.bleed.Forearm_L = 4;
+    }
+    // he has his torn arm: off the shield's grip and into his right fist, held near its wrist, the shoulder end out as the club's head
+    takeClub() {
+      const P = this.plantedP, arm = P.arm, hand = this.bones.RightHand;
+      if (!arm || !hand) return;
+      this.container.updateMatrixWorld(true);
+      hand.attach(arm);
+      const ws = hand.getWorldScale(new Vector3()).x, fwd = _ZombieView.clubAxis.clone();
+      arm.quaternion.setFromUnitVectors(new Vector3(0, -1, 0), fwd);
+      arm.scale.setScalar(1 / ws);
+      arm.position.copy(fwd.clone().multiplyScalar((P.armL * 0.5 - 0.06) / ws));
+      this.clubArm = arm;
+      P.arm = null;
     }
     // the guard's stand-in shield: in front of him at his left hand, upright and square to his facing (dropped when he dies)
     placeShield(z) {
@@ -53340,6 +53586,9 @@ void main() {
   __publicField(_ZombieView, "brokenShields", []);
   // shields in pieces: their controllers run the 5 s lifetime and the fade, then free themselves
   __publicField(_ZombieView, "ladyKipUp", true);
+  // (the lady's kip-up experiment: off = her old get-up from her back)
+  __publicField(_ZombieView, "planted", []);
+  __publicField(_ZombieView, "clubAxis", new Vector3(0, 0, 1));
   var ZombieView = _ZombieView;
 
   // src/render/libattack.js
@@ -56603,6 +56852,22 @@ void main() {
     t.anisotropy = 4;
     return t;
   }
+  function puffTexture() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    for (let i = 0; i < 7; i++) {
+      const x = 32 + (Math.random() - 0.5) * 18, y = 32 + (Math.random() - 0.5) * 18, r = 14 + Math.random() * 12;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, "rgba(255,255,255,0.9)");
+      gr.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+    }
+    const t = new CanvasTexture(c);
+    t.colorSpace = SRGBColorSpace;
+    return t;
+  }
   var FX = class {
     constructor(scene2) {
       this.scene = scene2;
@@ -56706,6 +56971,14 @@ void main() {
         scene2.add(m);
         this.cracks.push({ m, t: 99 });
       }
+      const puff = puffTexture();
+      this.puffs = [];
+      for (let i = 0; i < 28; i++) {
+        const s = new Sprite(new SpriteMaterial({ map: puff, color: 12432290, transparent: true, depthWrite: false, opacity: 0 }));
+        s.visible = false;
+        scene2.add(s);
+        this.puffs.push({ s, t: 1, life: 1, vx: 0, vy: 0, vz: 0, s0: 1, s1: 2 });
+      }
       const star = starTexture();
       this.hits = [];
       for (let i = 0; i < 6; i++) {
@@ -56765,6 +57038,13 @@ void main() {
       q.m.scale.set(size * 2, size * 2, 1);
       q.m.visible = true;
     }
+    growCrack(x, z, size) {
+      for (const q of this.cracks) if (q.t < 40 && Math.hypot(q.m.position.x - x, q.m.position.z - z) < 0.3) {
+        q.m.scale.set(size * 2, size * 2, 1);
+        q.m.rotation.z += 0.08;
+      }
+    }
+    // (a floor breach building)
     clearCrackAt(x, z) {
       for (const q of this.cracks) if (q.t < 40 && Math.hypot(q.m.position.x - x, q.m.position.z - z) < 0.3) {
         q.t = 99;
@@ -56821,12 +57101,31 @@ void main() {
       this.burst(x + (nx || 0) * 0.05, 1.3, z + (nz || 0) * 0.05, 7, 15261900, 1.6, 1, 0.35, nx || 0, nz || 0);
       this.burst(x, 1.3, z, 3, 16767120, 2.4, 0.8, 0.12, nx || 0, nz || 0);
     }
-    ring(x, z, color) {
+    ring(x, z, color, k = 1) {
       const r = this.rings.find((q) => q.t >= 1) || this.rings[0];
       r.m.position.set(x, 0.03, z);
       r.m.material.color.set(color);
       r.t = 0;
+      r.k = k;
       r.m.visible = true;
+    }
+    // n billows of smoke / dust around (x, z), out to spread m, each size m across at the start and grow x as big, over life s
+    smoke(x, z, n, spread = 0.8, size = 0.7, grow = 2.6, life = 1.6, color = 8748142, y = 0.45) {
+      for (let i = 0; i < n; i++) {
+        const p = this.puffs.find((q) => q.t >= 1) || this.puffs.reduce((a2, b) => a2.t > b.t ? a2 : b);
+        const a = Math.random() * Math.PI * 2, r = spread * Math.sqrt(Math.random()), out = 0.5 + Math.random() * 0.8;
+        p.s.position.set(x + Math.cos(a) * r, y + size * 0.3 + Math.random() * 0.25, z + Math.sin(a) * r);
+        p.vx = Math.cos(a) * out;
+        p.vz = Math.sin(a) * out;
+        p.vy = 0.25 + Math.random() * 0.35;
+        p.s0 = size * (0.7 + Math.random() * 0.6);
+        p.s1 = p.s0 * grow;
+        p.life = life * (0.7 + Math.random() * 0.6);
+        p.t = 0;
+        p.s.material.color.set(color);
+        p.s.material.rotation = Math.random() * Math.PI * 2;
+        p.s.visible = true;
+      }
     }
     trailPush(hands, tip, active) {
       const prev = this.trailPts[0], sp = prev ? tip.distanceTo(prev.b) / Math.max(1e-3, 1 / 60) : 0;
@@ -56856,11 +57155,21 @@ void main() {
         if (t.t <= 0) t.m.visible = false;
       }
       for (const r of this.rings) if (r.t < 1) {
-        r.t += dt / 0.28;
-        const s = 0.6 + r.t * 1.6;
+        r.t += dt / (0.28 * Math.sqrt(r.k || 1));
+        const s = (0.6 + r.t * 1.6) * (r.k || 1);
         r.m.scale.set(s, s, s);
         r.m.material.opacity = (1 - r.t) * 0.7;
         if (r.t >= 1) r.m.visible = false;
+      }
+      for (const p of this.puffs) if (p.t < 1) {
+        p.t += dt / p.life;
+        const u = Math.min(1, p.t), slow = Math.exp(-u * 3);
+        p.s.position.x += p.vx * slow * dt;
+        p.s.position.y += p.vy * dt;
+        p.s.position.z += p.vz * slow * dt;
+        p.s.scale.setScalar(p.s0 + (p.s1 - p.s0) * (1 - (1 - u) * (1 - u)));
+        p.s.material.opacity = Math.min(1, u / 0.06) * Math.pow(1 - u, 1.2) * 0.8;
+        if (p.t >= 1) p.s.visible = false;
       }
       let k = 0;
       for (let i = 0; i < MAX_P; i++) {
@@ -57125,6 +57434,7 @@ void main() {
     g.rotateX(-Math.PI / 2);
     return g;
   }
+  var SPECIAL = /* @__PURE__ */ new Set(["slam", "dash"]);
   var Telegraphs = class {
     constructor(scene2) {
       this.scene = scene2;
@@ -57155,6 +57465,7 @@ void main() {
       if (this.enabled) for (const z of zombies) {
         const s = z.state;
         if (s !== "windup" && s !== "strike" && !(s === "recover" && z.t < 0.25)) continue;
+        if (!SPECIAL.has(z.attack)) continue;
         seen.add(z.id);
         let g = this.used.get(z.id);
         if (!g) {
@@ -57171,18 +57482,18 @@ void main() {
         g.scale.setScalar(r);
         if (s === "windup") {
           const u = Math.min(1, z.t / Math.max(0.05, z.stateDur));
-          base.material.opacity = 0.16 + 0.1 * u;
+          base.material.opacity = 0.07 + 0.05 * u;
           fill2.scale.setScalar(0.15 + 0.85 * u);
-          fill2.material.opacity = 0.18 + 0.32 * u * u;
+          fill2.material.opacity = 0.06 + 0.16 * u * u;
         } else if (s === "strike") {
-          base.material.opacity = 0.3;
+          base.material.opacity = 0.14;
           fill2.scale.setScalar(1);
-          fill2.material.opacity = 0.75;
+          fill2.material.opacity = 0.3;
         } else {
           const k = 1 - z.t / 0.25;
-          base.material.opacity = 0.2 * k;
+          base.material.opacity = 0.1 * k;
           fill2.scale.setScalar(1);
-          fill2.material.opacity = 0.5 * k;
+          fill2.material.opacity = 0.2 * k;
         }
       }
       for (const [id, g] of this.used) if (!seen.has(id)) {
@@ -57206,9 +57517,9 @@ void main() {
         m.visible = true;
         m.position.set(px2 + (z.x - px2) * alpha, 0.025, pz2 + (z.z - pz2) * alpha);
         m.rotation.y = z.yaw;
-        const u = winding ? Math.min(1, z.spotT / 0.7) : 1;
-        m.scale.set(0.9, 1, 1 + 5 * u);
-        m.material.opacity = winding ? 0.12 + 0.25 * u : 0.16;
+        const u = winding ? Math.min(1, z.spotT / ((z.windupT || 1.35) * 0.6)) : 1, locked = winding && z.aimLocked;
+        m.scale.set(0.9, 1, 1 + 7 * u);
+        m.material.opacity = locked ? 0.22 : winding ? 0.04 + 0.1 * u : 0.07;
       }
       for (const [id, m] of this.lanes) if (!lseen.has(id)) {
         m.visible = false;
@@ -69571,23 +69882,14 @@ void main() {
 
   // src/demos.js
   var DEMOS = {
-    slam1: { label: "Guard: the first slam (dodge: the shield sticks, cracked)", weapon: "bat", setup(sim2) {
+    slam1: { label: "Guard: the slam (dodge it: the shield sticks for good)", weapon: "bat", setup(sim2) {
       const z = guard(sim2, -0.4);
       z.slamCd = 0;
     } },
-    slam2: { label: "Guard: the second slam (the shield shatters)", weapon: "pistol", setup(sim2) {
-      const z = guard(sim2, -0.4);
-      z.slamCd = 0;
-      z.slams = 1;
-      z.shieldHp = z.shieldMax * 0.3;
-      z.hp = z.maxHp * 0.3;
-    } },
-    dismember: { label: "Guard after the break: arm, arm, head", weapon: "pistol", setup(sim2) {
-      const z = guard(sim2, -2);
-      z.slams = 2;
-      z.shieldHp = 0;
-      z.hp = z.maxHp * 0.55;
-      z.attackCd = 2;
+    tear: { label: "Guard: stuck shield, his arm tears off, the flail, then his arm as a club", weapon: "pistol", setup(sim2) {
+      const z = put(sim2, -1.2, -0.4, "guard", Math.PI / 2);
+      z.attackCd = 0;
+      z.slamShield(sim2);
     } },
     charger: { label: "The big lady charges (dodge left/right)", weapon: "pistol", setup(sim2) {
       const z = put(sim2, 0.4, -5.6, "sprinter");
@@ -69617,6 +69919,28 @@ void main() {
     floor: { label: "Out of the floor: the breach", weapon: "pistol", setup(sim2) {
       sim2.spawnFromFloor(-0.8, -1.6, { look: "patient" });
       sim2.spawnFromFloor(2.2, -0.6, { kind: "runner" });
+    } },
+    // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") a
+    // lineup, left to right: her own blue, the runner's orange, then the new colours (main.js SCRUBS)
+    nurses: { label: "Nurse scrubs: blue \xB7 orange \xB7 navy \xB7 wine \xB7 surgical green \xB7 plum \xB7 charcoal", weapon: "bat", setup(sim2, game) {
+      const keys = [null, "orange", "navy", "wine", "surgical", "plum", "charcoal"];
+      const zs = keys.map((k, i) => {
+        const z = sim2.spawnZombie("placed", { x: -3.3 + i * 1.1, z: -0.4, yaw: 0, passive: true, speedMul: 0 });
+        z.look = "nurse";
+        z.scrubs = k;
+        return z;
+      });
+      sim2.player.z = 3.6;
+      const paint = () => {
+        let ok = true;
+        for (const z of zs) {
+          const v = game.zviews.get(z.id);
+          if (v) game.scrubs(v, z.scrubs);
+          else ok = false;
+        }
+        if (!ok) setTimeout(paint, 100);
+      };
+      setTimeout(paint, 100);
     } },
     low: { label: "Low targets: a crawler, a floored walker", weapon: "axe", setup(sim2) {
       const c = put(sim2, 0.4, 0.6, "normal");
@@ -69653,7 +69977,7 @@ void main() {
       p.z = 2.2;
       p.aimYaw = p.aimTarget = Math.PI;
       p.setLoadout([D3.weapon, "pistol", "shotgun", "bat", "axe", "fists"].filter((w, i, a) => a.indexOf(w) === i), D3.weapon);
-      D3.setup(sim2);
+      D3.setup(sim2, game);
       p.px = p.x;
       p.pz = p.z;
       game.yola.reset(p.x, p.z, p.aimYaw);
@@ -69815,6 +70139,7 @@ void main() {
   var levelSave = store2.get("chapter1save", null);
   if (levelSave && levelSave.v !== 2) levelSave = null;
   var HIT_SLOW = 0.2;
+  var YOLA_AHEAD = 0.38;
   var paused = false;
   var hitPauseT = 0;
   var acc = 0;
@@ -69830,15 +70155,31 @@ void main() {
     // bed-panel shield is modelled). Not modular: no limbs come off them yet.
     { file: "assets/zombie-sprinter.glb", extra: ["assets/zombie_moves/sprinter.glb", "assets/zombie_moves/sprinter-b.glb"], height: 2, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 },
     // (15% bigger than first built: she has to feel big)
-    { file: "assets/zombie-guard.glb", extra: ["assets/zombie_moves/guard.glb"], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
+    { file: "assets/zombie-guard.glb", extra: ["assets/zombie_moves/guard.glb", "assets/zombie_moves/guard-b.glb"], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
     // the runner (2026-10-18, the user: "an orange-clothed variant of the existing nurse zombie ... the faster enemy"): the
     // nurse's own model and clips, her blue scrubs turned orange at load (orangeScrubs), core/zombies.js KINDS.runner
     { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true }
   ];
-  var _orangeMaps = /* @__PURE__ */ new Map();
-  function orangeScrubs(tex) {
-    if (!tex?.image) return tex;
-    if (_orangeMaps.has(tex)) return _orangeMaps.get(tex);
+  var SCRUBS = {
+    orange: { H: 22, s: null, l: [0.92, 0.04, 0.62] },
+    // the runner's safety orange
+    navy: { H: 224, s: 0.55, l: [0.42, 0.02, 0.32] },
+    // charge nurse navy
+    wine: { H: 346, s: 0.58, l: [0.55, 0.03, 0.4] },
+    // theatre wine
+    surgical: { H: 158, s: 0.32, l: [0.78, 0.06, 0.55] },
+    // surgical green
+    plum: { H: 286, s: 0.28, l: [0.72, 0.06, 0.5] },
+    // paediatric plum
+    charcoal: { H: 210, s: 0.06, l: [0.4, 0.03, 0.3] }
+    // agency charcoal
+  };
+  var _scrubMaps = /* @__PURE__ */ new Map();
+  function scrubsTexture(tex, key) {
+    const R = SCRUBS[key];
+    if (!tex?.image || !R) return tex;
+    const ck = key + ":" + tex.uuid;
+    if (_scrubMaps.has(ck)) return _scrubMaps.get(ck);
     const img = tex.image, c = document.createElement("canvas");
     c.width = img.width;
     c.height = img.height;
@@ -69851,18 +70192,31 @@ void main() {
       let h = mx === r ? (gg - b) / dl % 6 : mx === gg ? (b - r) / dl + 2 : (r - gg) / dl + 4;
       h = (h * 60 + 360) % 360;
       if (h < 165 || h > 250) continue;
-      const l = (mx + mn) / 2, s = Math.min(1, dl / (1 - Math.abs(2 * l - 1) || 1) * 1.6 + 0.2), H4 = 22 + (h - 205) * 0.12, L2 = Math.min(0.62, l * 0.92 + 0.04);
-      const C = (1 - Math.abs(2 * L2 - 1)) * s, X2 = C * (1 - Math.abs(H4 / 60 % 2 - 1)), m = L2 - C / 2;
-      d[i] = (C + m) * 255;
-      d[i + 1] = (X2 + m) * 255;
-      d[i + 2] = m * 255;
+      const l = (mx + mn) / 2, s = R.s ?? Math.min(1, dl / (1 - Math.abs(2 * l - 1) || 1) * 1.6 + 0.2);
+      const H4 = (R.H + (h - 205) * 0.12 + 360) % 360, L2 = Math.min(R.l[2], l * R.l[0] + R.l[1]);
+      const C = (1 - Math.abs(2 * L2 - 1)) * s, X2 = C * (1 - Math.abs(H4 / 60 % 2 - 1)), m = L2 - C / 2, k6 = Math.floor(H4 / 60) % 6;
+      const [rr, g2, bb] = [[C, X2, 0], [X2, C, 0], [0, C, X2], [0, X2, C], [X2, 0, C], [C, 0, X2]][k6];
+      d[i] = (rr + m) * 255;
+      d[i + 1] = (g2 + m) * 255;
+      d[i + 2] = (bb + m) * 255;
     }
     g.putImageData(id, 0, 0);
     const t = new CanvasTexture(c);
     for (const k of ["flipY", "colorSpace", "wrapS", "wrapT", "channel", "anisotropy"]) t[k] = tex[k];
     t.needsUpdate = true;
-    _orangeMaps.set(tex, t);
+    _scrubMaps.set(ck, t);
     return t;
+  }
+  var orangeScrubs = (tex) => scrubsTexture(tex, "orange");
+  function setScrubs(view, key) {
+    view.model.traverse((o) => {
+      var _a7;
+      if (o.isMesh && o.material?.map) {
+        (_a7 = o.userData).baseMap ?? (_a7.baseMap = o.material.map);
+        o.material.map = key ? scrubsTexture(o.userData.baseMap, key) : o.userData.baseMap;
+        o.material.needsUpdate = true;
+      }
+    });
   }
   var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.kind === "runner" ? 4 : z.look === "nurse" ? 0 : z.look === "patient" ? 1 : z.id % 2;
   var YOLA_HEIGHT = 1.62;
@@ -70338,7 +70692,11 @@ void main() {
     const p = sim.player;
     let simDt = dt;
     if (paused) simDt = 0;
-    if (!paused) simDt *= slowmo.update(dt, sim, !!opening?.active);
+    if (!paused) {
+      const k = slowmo.update(dt, sim, !!opening?.active);
+      simDt *= k;
+      sim.yolaBoost = k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
+    }
     if (hitPauseT > 0) {
       const h = Math.min(hitPauseT, simDt);
       hitPauseT -= h;
@@ -70389,14 +70747,16 @@ void main() {
       }
       cueState.key = key;
     }
-    for (const z of sim.zombies) if (z.state === "stuck" && Math.floor((z.t + 0.2) / 0.55) !== Math.floor((z.t + 0.2 - animDt) / 0.55)) {
-      cue(audio, "heave", 0.9);
-      shake(0.06);
+    for (const z of sim.zombies) if (z.state === "stuck" && Math.floor((z.t + 0.2) / 0.5) !== Math.floor((z.t + 0.2 - animDt) / 0.5)) {
+      const g = Math.min(1, z.t / Math.max(0.5, z.stateDur));
+      cue(audio, "heave", 0.7 + g * 0.5);
+      shake(0.05 + g * 0.08);
+      fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.06, z.z + Math.cos(z.yaw) * 0.75, 5 + Math.round(g * 8), 9077106, 1.2, 0.5, 0.35);
     }
     const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
     const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
     const a = p.action;
-    yola.update(animDt, {
+    yola.update(animDt * (sim.yolaBoost || 1), {
       x: ix,
       z: iz,
       vx: p.vx,
@@ -70686,6 +71046,14 @@ void main() {
           if (dist(e.id) < 14) audio.play("groan", 1.5);
           break;
         // her scream before the charge (the warning cue: the threat sign)
+        case "sprinterLock":
+          if (dist(e.id) < 14) {
+            cue(audio, "warn", 1.2);
+            const z = sim.zombies.find((q) => q.id === e.id);
+            if (z) fx.burst(z.x, 0.05, z.z, 10, 13616820, 1.6, 0.3, 0.4, -Math.sin(z.yaw), -Math.cos(z.yaw));
+          }
+          break;
+        // (her line is fixed: she paws the floor, a kick of dust behind her)
         case "zombieTumble":
           audio.play("knockdown");
           if (dist(e.id) < 8) shake(0.15);
@@ -70695,17 +71063,32 @@ void main() {
           shake(0.5);
           break;
         // her charge ran into Yola
-        case "zombieSlam": {
-          const d = Math.hypot(e.x - p.x, e.z - p.z);
-          audio.play("knockdown", 1.4, e);
-          fx.ring(e.x, e.z, 14208959);
-          fx.burst(e.x, 0.1, e.z, 22, 13616820, 2.6, 0.9, 0.7);
-          fx.burst(e.x, 0.05, e.z, 10, 7300696, 3.2, 0.5, 0.5);
-          if (d < 8) shake(1 - d * 0.1);
-          if (shakeOn) camState.vz += 1.2 * tuning.shake;
+        // the guard's slam (2026-10-18, the user: "a visual effect of the guard on launch, and a strong visual effect for when he
+        // impacts the ground.. and small screen shake.. cracks on the ground around him and the shield... and impact smoke"):
+        // the launch kicks up a ring of dust at his feet; the impact throws a shockwave ring, tile grit and dust, a cloud of smoke
+        // that billows out and hangs, cracks round the shield and under his feet, a short hit-pause and a small shake
+        case "guardLaunch": {
+          audio.play("swing", 0.8, e);
+          fx.burst(e.x, 0.06, e.z, 16, 13616820, 2.2, 0.35, 0.45);
+          fx.smoke(e.x, e.z, 5, 0.35, 0.45, 2.2, 0.9);
+          fx.ring(e.x, e.z, 14208959, 0.6);
           break;
         }
-        // the guard's smash: dust, grit, a ring, the floor shakes and the view drops
+        case "zombieSlam": {
+          const d = Math.hypot(e.x - p.x, e.z - p.z), gz = sim.zombies.find((q) => q.id === e.id);
+          audio.play("knockdown", 1.4, e);
+          fx.ring(e.x, e.z, 16777215, 1.7);
+          fx.ring(e.x, e.z, 14208959, 1.1);
+          fx.burst(e.x, 0.1, e.z, 30, 13616820, 3.2, 1.1, 0.8);
+          fx.burst(e.x, 0.05, e.z, 16, 7300696, 3.8, 0.9, 0.6);
+          fx.burst(e.x, 0.3, e.z, 8, 15327954, 4.5, 2.2, 0.55);
+          fx.smoke(e.x, e.z, 11, 1, 1, 3.2, 2.4);
+          if (gz) fx.floorCrack(gz.x, gz.z, 0.9);
+          hitPauseT = Math.max(hitPauseT, 0.06);
+          if (d < 8) shake(Math.max(0.15, 0.45 - d * 0.04));
+          if (shakeOn) camState.vz += 0.5 * tuning.shake;
+          break;
+        }
         case "floorRumble": {
           const d = Math.hypot(e.x - p.x, e.z - p.z);
           cue(audio, "rumble", Math.max(0.3, 1 - d / 14));
@@ -70715,23 +71098,48 @@ void main() {
           break;
         }
         // the floor about to break: a crack, grit, a rumble (an emerging zombie: core/sim.js spawnFromFloor)
+        case "floorShudder": {
+          const d = Math.hypot(e.x - p.x, e.z - p.z);
+          fx.growCrack(e.x, e.z, 0.75 + e.k * 0.55);
+          fx.burst(e.x, 0.05, e.z, 4 + Math.round(e.k * 8), 10130570, 0.9 + e.k, 0.5 + e.k * 0.6, 0.6);
+          fx.smoke(e.x, e.z, 1 + Math.round(e.k * 2), 0.35, 0.3, 2, 0.9, 10327171, 0.2);
+          if (d < 9) shake(0.05 + e.k * 0.1);
+          break;
+        }
+        // (the breach building: the crack grows, dust)
         case "floorBreach": {
           const d = Math.hypot(e.x - p.x, e.z - p.z);
           cue(audio, "breach", Math.max(0.35, 1 - d / 14));
           fx.clearCrackAt(e.x, e.z);
           placeBreach(e.x, e.z);
-          fx.burst(e.x, 0.15, e.z, 18, 14273970, 2.6, 1.6, 0.7);
-          fx.burst(e.x, 0.1, e.z, 14, 7301730, 2, 1.2, 0.9);
-          if (d < 9) shake(0.3);
+          fx.burst(e.x, 0.15, e.z, 24, 14273970, 3.2, 2.4, 0.8);
+          fx.burst(e.x, 0.1, e.z, 18, 7301730, 2.4, 2, 1);
+          fx.ring(e.x, e.z, 14208959, 1);
+          fx.smoke(e.x, e.z, 8, 0.6, 0.7, 2.6, 1.8);
+          audio.play("knockdown", 0.9, e);
+          if (d < 9) shake(0.35);
           break;
         }
+        // (it bursts up through the tiles: debris high, a dust cloud, a thump)
         case "shieldStuck":
           cue(audio, "lodge");
           fx.burst(e.x, 0.08, e.z, 18, 9077106, 2, 0.6, 0.6);
-          fx.floorCrack?.(e.x, e.z, 1);
-          hud.popup("SHIELD CRACKED");
+          fx.floorCrack?.(e.x, e.z, 1.5);
+          hud.popup("SHIELD STUCK");
           break;
-        // (his shield driven into the floor: render/fx.js floorCrack)
+        // (his shield driven into the floor for good: render/fx.js floorCrack)
+        case "guardArmTorn":
+          cue(audio, "free");
+          audio.play("sever");
+          shake(0.45);
+          hitPauseT = Math.max(hitPauseT, 0.09);
+          hud.popup("ARM TORN OFF");
+          break;
+        // (the last heave: his arm stays on the shield)
+        case "guardClub":
+          cue(audio, "heave", 1.2);
+          break;
+        // (he pulls his arm off the shield's grip: a club now)
         case "shieldFree": {
           const z = sim.zombies.find((q) => q.id === e.id);
           cue(audio, "free");
@@ -70754,16 +71162,29 @@ void main() {
           if (e.perfect) {
             slowBeat(0.26, 0.9);
             cue(audio, "perfect");
-            hud.popup("PERFECT DODGE");
+            hud.popup(e.kind === "pounce" ? "PERFECT DODGE \xB7 EXECUTE" : "PERFECT DODGE");
           }
           break;
         // (core/sim.js specialMiss: her next blow is critical)
+        // (2026-10-18, the user: "better visual effects for weapon crits when we hit during slow motion"): the snap out of slow
+        // motion on a white screen flash, a big star, a white and a gold shockwave, a fan of gold sparks and blood, a beat of hit-stop
         case "crit": {
           slowEnd();
           cue(audio, "crit");
           hud.popup("CRITICAL");
-          shake(0.7);
-          fx.hitFlash(e.x, 1.1, e.z, 0, 0, 2);
+          shake(0.6);
+          hitPauseT = Math.max(hitPauseT, 0.1);
+          fx.hitFlash(e.x, 1.15, e.z, e.dirX || 0, e.dirZ || 0, 3.4);
+          fx.ring(e.x, e.z, 16777215, 1.5);
+          fx.ring(e.x, e.z, 16761415, 0.9);
+          fx.burst(e.x, 1.15, e.z, 26, 16765562, 5, 1.4, 0.4, (e.dirX || 0) * 0.6, (e.dirZ || 0) * 0.6);
+          fx.bloodSpray(e.x, 1.2, e.z, e.dirX || 0, 0.4, e.dirZ || 0, 26, 4);
+          const cf = document.getElementById("critFlash");
+          if (cf) {
+            cf.classList.remove("go");
+            void cf.offsetWidth;
+            cf.classList.add("go");
+          }
           break;
         }
         case "playerDown":
@@ -70856,10 +71277,19 @@ void main() {
           input.enabled = false;
           hud.death(sim);
           break;
-        case "zombieDeath":
+        case "zombieDeath": {
           sim.stats.kills++;
           audio.play("zombieDeath");
+          const zx = sim.zombies.find((q) => q.id === e.id);
+          if (zx?.executed) {
+            if (gib(e.id, zx.hitDirX, zx.hitDirZ, 1.7)) {
+              slowBeat(0.3, 0.6);
+              hud.popup("EXECUTED");
+            }
+          }
           break;
+        }
+        // (a perfect dodge's execute: the full burst)
         case "zombieSpawn":
           if (Math.random() < 0.5) audio.play("groan", 0.8);
           break;
@@ -71164,7 +71594,7 @@ void main() {
     return physics;
   }, zviews, lab: { kill: (...a) => kill(window.game, ...a), pile: (...a) => pile(window.game, ...a), sever: (...a) => sever(window.game, ...a), blast: (...a) => blast(window.game, ...a), combo: (...a) => combo(window.game, ...a) }, get pieces() {
     return ZombieView.pieces;
-  }, THREE: three_module_exports, camera, renderer, scene };
+  }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE: three_module_exports, camera, renderer, scene };
   hud.perfReport = perfReport;
   load().catch((e) => {
     console.error(e);

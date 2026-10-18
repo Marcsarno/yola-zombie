@@ -37840,6 +37840,8 @@ void main() {
       this.cfg = { ...HAIR_DEFAULTS, ...opt };
       this.on = true;
       this.restQ = this.chain.map((b) => b.quaternion.clone());
+      this.restP = this.chain.map((b) => b.position.clone());
+      this.restS = this.chain.map((b) => b.scale.clone());
       this.restLen = [this.chain[1].position.length(), this.chain[2].position.length(), this.chain[2].position.length() * HAIR3_RATIO];
       this.cols = COLLIDERS.filter((c) => bones[c.bone]).map((c) => ({ b: bones[c.bone], at: new Vector3(...c.at), r: c.r, c0: new Vector3(), c1: new Vector3(), rw: 0, cs: new Vector3() }));
       this.p = [0, 1, 2].map(() => new Vector3());
@@ -37875,6 +37877,10 @@ void main() {
     }
     update(dt) {
       if (!this.ok) return;
+      for (let i = 0; i < 3; i++) {
+        this.chain[i].position.copy(this.restP[i]);
+        this.chain[i].scale.copy(this.restS[i]);
+      }
       this.sampleAnimated();
       if (!this.on) {
         this.apply(true);
