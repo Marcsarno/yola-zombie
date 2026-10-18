@@ -14,6 +14,7 @@ import { HairSway } from './hairsway.js';
 import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 import { HOLD_LAYERS } from './holdlayers.js';
+import { spreadArms } from './armspread.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -675,6 +676,7 @@ export class YolaView extends ClipBody {
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.posture(); // (before the weapons are placed: turning the pelvis shifts the arms ~4 mm, the weapons follow)
+    this.armSpread(); // (her arms out from her hips, per clip: before the weapons, which follow her hands)
     this.placeWeapons(s, dt); this.placeMags(dt);
   }
 
@@ -734,6 +736,28 @@ export class YolaView extends ClipBody {
     for (const b of POSTURE_BONES) if (W[b].all > 1e-3) { W[b].xbot /= W[b].all; W[b].mannequin /= W[b].all; }
     applyPosture(this.bones, W);
     this.container.updateMatrixWorld(true);
+  }
+  // ARMS OUT (render/armspread.js; the Rig Lab's "arms out" per clip, assets/hold/arm_spread.json "<yola>:<clip>": { Right, Left }
+  // cm): blended by the weights of the clips playing
+  setArmSpread(json, who) {
+    this.spreadSet = {};
+    for (const [k, v] of Object.entries(json || {})) if (k.startsWith(who + ':') && typeof v === 'object') this.spreadSet[k.slice(who.length + 1)] = v;
+    if (!Object.keys(this.spreadSet).length) this.spreadSet = null;
+    this.spreadActs = null;
+  }
+  armSpread() {
+    if (!this.spreadSet || !HOLD_LAYERS.armSpread) return;
+    const n = Object.keys(this.actions).length;
+    if (!this.spreadActs || this.spreadN !== n) {
+      this.spreadN = n; this.spreadActs = [];
+      for (const [name, a] of Object.entries(this.actions)) { const base = this.baseClip(name); if (base && this.spreadSet[base]) this.spreadActs.push([a, base]); }
+    }
+    const k = { Right: 0, Left: 0 }; let any = false;
+    for (const [a, base] of this.spreadActs) {
+      const w = Math.min(1, a.getEffectiveWeight()); if (w <= 1e-3) continue;
+      const h = this.spreadSet[base]; k.Right += w * (h.Right || 0); k.Left += w * (h.Left || 0); any = true;
+    }
+    if (any) { spreadArms(this.bones, k); this.container.updateMatrixWorld(true); }
   }
   handPoses() {
     if (!this.handSet || !HOLD_LAYERS.handPoses) return;

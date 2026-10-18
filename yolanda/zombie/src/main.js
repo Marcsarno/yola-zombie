@@ -204,6 +204,7 @@ function setupBat(anims, fits = {}) {
   yola.axeFit = fits.axe?.[who] || null; yola.shotgunFit = fits.short?.[who] || null; // (the axe's and shotgun's fits, same Rig Lab file)
   if (YOLA_MODEL !== '2') yola.postureOff = true; // (the posture fix was measured on Yola 3.0's rig: render/posture.js)
   fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {}); // (the Rig Lab Hands settings)
+  fetch('assets/hold/arm_spread.json').then((r) => r.json()).then((j) => yola.setArmSpread(j, who)).catch(() => {}); // (the Rig Lab's arms out)
   const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = anims.find((c) => c.name === 'ual1_Sword_Idle');
   if (!combo) { setupNewMoves(yola, anims, null); return; }
   const h = new THREE.Group(), m = makeBat(0.84);

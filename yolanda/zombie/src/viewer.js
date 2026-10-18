@@ -12,6 +12,7 @@ import { buildBodyClip, bodyClipFrame, bodyClipProbe } from './render/bodyclip.j
 import { placeBat, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 import { LAYERS, HOLD_LAYERS, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
+import { spreadArms } from './render/armspread.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
 const CLIP_FPS = { bat_combo_mc: 60 };
@@ -458,7 +459,7 @@ function refresh() {
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
-  undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main);
+  undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main); armSpreadOn(main);
   if (handsUI && handsSeen !== handKey()) { handsSeen = handKey(); handsUI(); }
   shotKick(main); if (ref.root.visible) shotKick(ref);
   mainGun?.update(1); leftHand(f);
@@ -466,7 +467,7 @@ function refresh() {
   updateMarks(); updateShell(f);
   $('scrub').value = f;
   $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)` + (S.refOff ? `  ·  reference frame ${f + S.refOff}` : '');
-  drawVidRef(f); updateBat(); updateMags(); updateFingers(); updatePistolFitUI();
+  drawVidRef(f); updateBat(); updateMags(); updateFingers(); updatePistolFitUI(); if (!S.playing) clipReadout();
   if (!main.root.visible) { for (const o of Object.values(held)) if (o) o.visible = false; if (mainGun?.obj) mainGun.obj.visible = false; }
   if (!ref.root.visible) { for (const o of Object.values(heldRef)) if (o) o.visible = false; if (refGun?.obj) refGun.obj.visible = false; }
   const lines = [];
@@ -1062,6 +1063,55 @@ function editSync() {
   $('eDummy').textContent = !S.refHas ? 'none for this clip' : ref === refX ? 'Mixamo X Bot' : 'Quaternius mannequin';
   for (const b of $('eShow').children) b.classList.toggle('on', b.dataset.show === S.show);
   $('eFit').classList.toggle('on', S.fitOn); $('eAdv').classList.toggle('on', !$('top').hidden);
+  const sp = spreadOf(); $('eArmR').value = sp.Right; $('eArmL').value = sp.Left; $('eArmRv').textContent = sp.Right + ' cm'; $('eArmLv').textContent = sp.Left + ' cm';
+  $('eArms').style.opacity = HOLD_LAYERS.armSpread ? 1 : 0.5;
+}
+// ---- ARMS OUT (render/armspread.js): per character and clip, cm at each hand; kept in this browser, "Save" writes
+// shots/arm_spread.json (copied to assets/hold/arm_spread.json, which the game reads, when the user says so) ----
+const SPREAD = {};
+const spreadKey = () => S.char + ':' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '');
+const spreadOf = () => SPREAD[spreadKey()] || { Right: 0, Left: 0 };
+fetch('assets/hold/arm_spread.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
+  for (const [k, v] of Object.entries(j)) if (typeof v === 'object') SPREAD[k] = { Right: 0, Left: 0, ...v };
+  try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('armSpread') || '{}'))) SPREAD[k] = { Right: 0, Left: 0, ...v }; } catch { /* none */ }
+  editSync(); refresh?.();
+});
+const keepSpread = () => { try { localStorage.setItem('armSpread', JSON.stringify(SPREAD)); } catch { /* private window */ } };
+function armSpreadOn(a) {
+  if (a !== main || !HOLD_LAYERS.armSpread) return;
+  const sp = spreadOf(); if (!sp.Right && !sp.Left) return;
+  a.root.updateMatrixWorld(true);
+  const chain = [a.bones.RightArm, a.bones.LeftArm], before = chain.map((b) => b.quaternion.clone());
+  spreadArms(a.bones, sp);
+  const after = chain.map((b) => b.quaternion.clone());
+  chain.forEach((b, i) => { b.quaternion.copy(before[i]); postRot(a, b, (cur) => cur.copy(after[i])); });
+  a.root.updateMatrixWorld(true);
+}
+// how deep each arm goes into her body on this frame (cm), for the readout
+function clipReadout() {
+  if (!$('eClipRead') || !main?.action) return;
+  if (bodyClipC?.char !== S.char) bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char });
+  const h = bodyClipFrame(bodyClipC, 0.003), d = { Right: 0, Left: 0 };
+  for (const x of h) d[x.side] = Math.max(d[x.side], x.depth);
+  $('eClipRead').textContent = d.Right || d.Left ? `inside her body: R ${(d.Right * 100).toFixed(1)} cm, L ${(d.Left * 100).toFixed(1)} cm` : 'clear of her body';
+}
+// Auto: per arm, the least spread (0.5 cm steps) that clears whatever spreading can clear, on every frame of this clip,
+// plus 1 cm; under 1 cm deep counts as skin touching. (A contact the swing cannot fix, e.g. a passing touch mid-move, is measured at the widest spread first and
+// left alone: chasing it ran the arm out to the 15 cm limit, 2026-10-17)
+async function autoSpread() {
+  const keep = { frame: S.frame, playing: S.playing }; pausedUI(true);
+  if (bodyClipC?.char !== S.char) bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char });
+  const k = spreadKey(), sp = SPREAD[k] = { ...spreadOf() };
+  const depths = (side) => { const d = []; for (let f = 1; f <= S.frames; f++) { S.frame = f; refresh(); main.root.updateMatrixWorld(true); d.push(Math.max(0, ...bodyClipFrame(bodyClipC, 0.003).filter((x) => x.side === side).map((x) => x.depth))); } return d; };
+  for (const side of ['Right', 'Left']) {
+    sp[side] = 0; const d0 = depths(side); if (!d0.some((x) => x > 0)) continue;
+    sp[side] = 15; const floor = depths(side);
+    const ok = (c) => { sp[side] = c; const d = depths(side); return d.every((x, i) => x <= Math.max(floor[i], 0.01) + 0.002); }; // (under 1 cm: skin touching, not a clip)
+    let lo = 0, hi = 15;
+    while (hi - lo > 0.5) { const mid = Math.round(lo + hi) / 2; if (ok(mid)) hi = mid; else lo = mid; }
+    sp[side] = Math.min(15, hi + 1);
+  }
+  keepSpread(); S.frame = keep.frame; pausedUI(!keep.playing); refresh(); editSync();
 }
 function editPick(name) {
   if (!name) return;
@@ -1093,6 +1143,9 @@ function buildEditUI(ui, fitClipPanel) {
   $('eFit').onclick = () => { S.fitOn = !S.fitOn; updatePistolFitUI(); editSync(); };
   $('eAdv').onclick = () => { const on = $('top').hidden; $('top').hidden = $('clipPanel').hidden = !on; $('toggleClips').classList.toggle('on', on); fitClipPanel(); updatePistolFitUI(); editSync(); };
   $('eHide').onclick = ui;
+  for (const [id, side] of [['eArmR', 'Right'], ['eArmL', 'Left']]) $(id).oninput = (e) => { const k = spreadKey(); (SPREAD[k] ||= { Right: 0, Left: 0 })[side] = +e.target.value; keepSpread(); refresh(); editSync(); };
+  $('eArmAuto').onclick = async () => { $('eArmAuto').textContent = '...'; await autoSpread(); $('eArmAuto').textContent = 'Auto'; };
+  $('eArmSave').onclick = async () => { const r = await fetch('/__shot/arm_spread.json', { method: 'POST', body: JSON.stringify(SPREAD, null, 1) }); $('eArmSave').textContent = r.ok ? 'saved' : 'save failed'; setTimeout(() => ($('eArmSave').textContent = 'Save'), 1500); };
 }
 // start where the edit bar works: Yola 2, the pack's bat, its idle
 async function editStart() {
