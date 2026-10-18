@@ -62315,7 +62315,7 @@ void main() {
       ["sprinterSpeed", "Sprinter charge speed", 2, 6, 0.1, "m/s"],
       ["sprinterWindup", "Orderly charge wind-up", 0.3, 1.5, 0.05, "s"]
     ]],
-    ["Executions", [
+    ["Finishers", [
       ["execCamPush", "Camera in (0 = hard cut)", 0, 0.4, 0.01, "s"],
       ["execCamDist", "Camera distance", 0.2, 1, 0.02, "\xD7"],
       ["execCamPitch", "Camera angle (down)", 8, 60, 1, "\xB0"],
@@ -70605,90 +70605,10 @@ void main() {
     }
   }
 
-  // src/render/slowmo.js
-  var SLOW = { PEAK: 0.3, COOL: 1.2 };
-  var SlowMotion = class _SlowMotion {
-    constructor(audio2) {
-      this.audio = audio2;
-      this.k = 1;
-      this.beatS = null;
-      this.cool = 0;
-      this.shown = 0;
-      this.inCue = false;
-    }
-    beat(scale, dur) {
-      const B = this.beatS;
-      if (B) {
-        B.scale = Math.min(B.scale, scale);
-        B.dur = Math.max(B.dur, B.t + dur * 0.5);
-        return;
-      }
-      if (this.cool > 0) return;
-      this.beatS = { scale, dur, t: 0 };
-    }
-    end() {
-      if (this.beatS) {
-        this.beatS = null;
-        this.cool = SLOW.COOL;
-      }
-    }
-    static leap(f) {
-      const ease2 = (a, b, x) => {
-        const u = Math.min(1, Math.max(0, (x - a) / (b - a)));
-        return u * u * (3 - 2 * u);
-      };
-      if (f < 50 || f > 72) return 1;
-      return f < 57 ? 1 - (1 - SLOW.PEAK) * ease2(50, 57, f) : f <= 66 ? SLOW.PEAK : SLOW.PEAK + (1 - SLOW.PEAK) * ease2(66, 72, f);
-    }
-    // the time scale for this frame (dt: real seconds); off: an opening scene or Yola dead
-    update(dt, sim2, off, forced = null) {
-      if (forced != null) {
-        this.beatS = null;
-        this.k = forced;
-        return this.show();
-      }
-      let want = 1;
-      const p = sim2.player;
-      if (!off && !p.dead) {
-        for (const z of sim2.zombies) {
-          if (z.kind !== "guard" || z.state !== "windup" || z.attack !== "slam" || Math.hypot(z.x - p.x, z.z - p.z) > 9) continue;
-          want = Math.min(want, _SlowMotion.leap(1 + z.t / Math.max(0.05, z.stateDur) * 76));
-        }
-        const B = this.beatS;
-        if (B) {
-          B.t += dt;
-          const k = Math.min(1, Math.max(0, (B.dur - B.t) / 0.18));
-          want = Math.min(want, 1 - (1 - B.scale) * k);
-          if (B.t >= B.dur) {
-            this.beatS = null;
-            this.cool = SLOW.COOL;
-          }
-        } else if (this.cool > 0) this.cool -= dt;
-      } else this.beatS = null;
-      if (want < this.k) this.k = want;
-      else this.k += (want - this.k) * Math.min(1, dt * 10);
-      if (Math.abs(this.k - want) < 3e-3) this.k = want;
-      return this.show();
-    }
-    show() {
-      const shown = Math.round(Math.max(0, Math.min(1, (1 - this.k) / (1 - SLOW.PEAK))) * 50) / 50;
-      if (shown !== this.shown) {
-        this.shown = shown;
-        document.documentElement.style.setProperty("--slow", shown);
-      }
-      if (!this.inCue && this.k < 0.7) {
-        this.inCue = true;
-        cue(this.audio, "slowIn");
-      } else if (this.inCue && this.k > 0.92) {
-        this.inCue = false;
-        cue(this.audio, "slowOut");
-      }
-      return this.k;
-    }
-  };
-
   // src/render/execution.js
   var MAX_WAIT = 2.2;
+  var EXP_UP_A = 4.5;
+  var expUp = (u) => (Math.exp(EXP_UP_A * u) - 1) / (Math.exp(EXP_UP_A) - 1);
   var ExecDirector = class {
     constructor() {
       this.s = null;
@@ -70756,9 +70676,9 @@ void main() {
           }
           break;
         case "release": {
-          const u = Math.min(1, s.pt / Math.max(0.05, T2.execRelease)), e = u * u * (3 - 2 * u);
+          const u = Math.min(1, s.pt / Math.max(0.05, T2.execRelease)), e = expUp(u), ce = u * u * (3 - 2 * u);
           k = (s.k0 ?? T2.execSlowWind) + (1 - (s.k0 ?? T2.execSlowWind)) * e;
-          s.cam = 1 - e;
+          s.cam = 1 - ce;
           if (u >= 1) {
             this.s = null;
             return { k: 1, boost: 1, cam: 0, creep: 0, done: true };
@@ -70768,6 +70688,90 @@ void main() {
       }
       const creep = s.phase === "windup" ? Math.min(1, s.pt / 0.5) : s.phase === "lock" ? 0 : 1;
       return { k, boost, cam: s.cam, creep, phase: s.phase };
+    }
+  };
+
+  // src/render/slowmo.js
+  var SLOW = { PEAK: 0.3, COOL: 1.2, OUT: 0.3 };
+  var SlowMotion = class _SlowMotion {
+    constructor(audio2) {
+      this.audio = audio2;
+      this.k = 1;
+      this.beatS = null;
+      this.cool = 0;
+      this.shown = 0;
+      this.inCue = false;
+    }
+    beat(scale, dur) {
+      const B = this.beatS;
+      if (B) {
+        B.scale = Math.min(B.scale, scale);
+        B.dur = Math.max(B.dur, B.t + dur * 0.5);
+        return;
+      }
+      if (this.cool > 0) return;
+      this.beatS = { scale, dur, t: 0 };
+    }
+    end() {
+      if (this.beatS) {
+        this.beatS = null;
+        this.cool = SLOW.COOL;
+      }
+    }
+    static leap(f) {
+      const ease2 = (a, b, x) => {
+        const u = Math.min(1, Math.max(0, (x - a) / (b - a)));
+        return u * u * (3 - 2 * u);
+      };
+      if (f < 50 || f > 72) return 1;
+      return f < 57 ? 1 - (1 - SLOW.PEAK) * ease2(50, 57, f) : f <= 66 ? SLOW.PEAK : SLOW.PEAK + (1 - SLOW.PEAK) * ease2(66, 72, f);
+    }
+    // the time scale for this frame (dt: real seconds); off: an opening scene or Yola dead
+    update(dt, sim2, off, forced = null) {
+      if (forced != null) {
+        this.beatS = null;
+        this.k = forced;
+        return this.show();
+      }
+      let want = 1;
+      this.leapK = false;
+      const p = sim2.player;
+      if (!off && !p.dead) {
+        for (const z of sim2.zombies) {
+          if (z.kind !== "guard" || z.state !== "windup" || z.attack !== "slam" || Math.hypot(z.x - p.x, z.z - p.z) > 9) continue;
+          want = Math.min(want, _SlowMotion.leap(1 + z.t / Math.max(0.05, z.stateDur) * 76));
+          this.leapK = true;
+        }
+        const B = this.beatS;
+        if (B) {
+          B.t += dt;
+          const r = Math.min(1, Math.max(0, 1 - (B.dur - B.t) / SLOW.OUT));
+          want = Math.min(want, B.scale + (1 - B.scale) * expUp(r));
+          if (B.t >= B.dur) {
+            this.beatS = null;
+            this.cool = SLOW.COOL;
+          }
+        } else if (this.cool > 0) this.cool -= dt;
+      } else this.beatS = null;
+      if (want < this.k || this.beatS || !this.leapK) this.k = want;
+      else this.k += (want - this.k) * Math.min(1, dt * 10);
+      if (Math.abs(this.k - want) < 3e-3) this.k = want;
+      return this.show();
+    }
+    show() {
+      const shown = Math.round(Math.max(0, Math.min(1, (1 - this.k) / (1 - SLOW.PEAK))) * 50) / 50;
+      if (shown !== this.shown) {
+        this.shown = shown;
+        document.documentElement.style.setProperty("--slow", shown);
+      }
+      if (!this.inCue && this.k < 0.7) {
+        this.inCue = true;
+        cue(this.audio, "slowIn");
+      } else if (this.inCue && this.k > 0.92) {
+        this.inCue = false;
+        cue(this.audio, "slowOut");
+      }
+      return this.k;
     }
   };
 
@@ -70904,7 +70908,7 @@ void main() {
     } },
     // (2026-10-18) the execution: a walker that pounces; dodge it at the last moment (Dodge / Shift), then attack it while it
     // glows (render/execution.js). Change weapons with Swap to see each finisher
-    execute: { label: "Execution: perfect-dodge the pounce, then attack the glowing walker (Swap: each weapon)", weapon: "bat", setup(sim2) {
+    execute: { label: "Finisher: perfect-dodge the pounce, then attack the glowing walker (Swap: each weapon)", weapon: "bat", setup(sim2) {
       for (const [x, z] of [[-1.6, -4.6], [2.4, -5.2]]) {
         const q = put(sim2, x, z, "normal", 0);
         q.pouncer = true;
@@ -71699,10 +71703,6 @@ void main() {
     if (paused) simDt = 0;
     if (!paused) {
       execNow = execDir.update(dt, tuning, sim.player.execHitIn);
-      if (execBanner && (!execNow || execNow.phase === "release" || execNow.done)) {
-        execBanner = false;
-        hud.popup("EXECUTION +" + (tuning.execHeal ?? 5));
-      }
       const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : null);
       simDt *= k;
       sim.yolaBoost = execNow ? execNow.boost : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
@@ -71875,6 +71875,7 @@ void main() {
     playerScreen = { x: (_v11.x * 0.5 + 0.5) * innerWidth, y: (-_v11.y * 0.5 + 0.5) * innerHeight };
     if (debugOn) updateDebug(p);
     hud.update(sim, dt);
+    execLook(animDt, dt);
     if (doRender) looks.render();
   }
   var impactFrame = -1;
@@ -71895,6 +71896,7 @@ void main() {
   var STRIKE_BLOOD = { scratch: "blade", flail: "blade", dash: "blade", lunge: "bite", pounce: "bite", bite: "bite", club: "blunt", smash: "blunt", slam: "blunt" };
   var hurtFrame = -1;
   var EXEC_BURST = { bat: 1.8, shotgun: 2.2, sledgehammer: 1.3 };
+  var EXEC_BLOOD = { axe: "blade", knife: "blade", pistol: "pistol", shotgun: "shotgun" };
   function handleEvents() {
     frameNo++;
     const p = sim.player;
@@ -72218,7 +72220,7 @@ void main() {
           if (e.perfect) {
             slowBeat(0.26, 0.9);
             cue(audio, "perfect");
-            hud.popup(e.kind === "pounce" ? "PERFECT DODGE \xB7 EXECUTE" : "PERFECT DODGE");
+            hud.popup("PERFECT DODGE");
           }
           break;
         // (core/sim.js specialMiss: her next blow is critical)
@@ -72344,13 +72346,30 @@ void main() {
         case "execStart":
           execDir.start(e);
           fx.ring(e.x, e.z, 16777215, 1.4);
+          fx.ring(e.x, e.z, 16757575, 2.2);
           audio.play("swing", 0.7);
           break;
         // (render/execution.js: time and the camera)
         case "execHit": {
           execDir.hit(e);
           shake(0.8);
-          execBanner = true;
+          execFlash = 1;
+          {
+            const dx = e.dirX || 0, dz = e.dirZ || 0;
+            fx.bloodHit(EXEC_BLOOD[e.weapon] || "blunt", e.x, 1.2, e.z, dx, dz, 2.6);
+            fx.burst(e.x, 1.2, e.z, 34, 16765562, 5.5, 1.6, 0.45, dx * 0.7, dz * 0.7);
+            fx.burst(e.x, 1.1, e.z, 16, 16774888, 3.2, 1, 0.25, dx, dz);
+            fx.ring(e.x, e.z, 16777215, 2.6);
+            fx.ring(e.x, e.z, 16734778, 1.7);
+            fx.smoke(e.x, e.z, 5, 0.5, 0.45, 2.4, 1.2, 9071970, 0.6);
+            fx.bloodPool(e.x + dx * 0.6, e.z + dz * 0.6, 1.4);
+            const cf = document.getElementById("critFlash");
+            if (cf) {
+              cf.classList.remove("go");
+              void cf.offsetWidth;
+              cf.classList.add("go");
+            }
+          }
           fx.hitFlash(e.x - (e.dirX || 0) * 0.2, 1.15, e.z - (e.dirZ || 0) * 0.2, e.dirX || 0, e.dirZ || 0, 2.4);
           fx.ring(e.x, e.z, 16773584, 1.8);
           audio.play("shotgunClose", 0.9);
@@ -72423,11 +72442,32 @@ void main() {
   var execDir = new ExecDirector();
   var execNow = null;
   var execRingT = 0;
-  var execBanner = false;
+  var execFlash = 0;
+  var execGrade = 0;
+  var execEmberT = 0;
   function shake(k) {
     if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake);
   }
   var _ex = new Vector3();
+  function execLook(animDt, dt) {
+    const X2 = execNow, on = X2 ? X2.cam : 0;
+    execGrade += (on - execGrade) * Math.min(1, dt * 14);
+    execFlash = Math.max(0, execFlash - dt * 4.5);
+    const g = execGrade, fl = execFlash;
+    renderer.domElement.style.filter = g > 0.01 || fl > 0.01 ? `saturate(${(1 - 0.6 * g + 0.4 * fl).toFixed(3)}) contrast(${(1 + 0.22 * g).toFixed(3)}) brightness(${(1 - 0.12 * g + 0.4 * fl).toFixed(3)})` : "";
+    const tz = X2 && sim.zombies.find((q) => q.id === execDir.s?.id);
+    if (X2 && tz) {
+      const p = sim.player, mx = (p.x + tz.x) / 2, mz = (p.z + tz.z) / 2;
+      fx.flashLight.color.setHex(fl > 0.3 ? 16773592 : 16756838);
+      fx.flashLight.distance = 6.5;
+      fx.flashLight.position.set(mx, 2.3, mz);
+      fx.flashLight.intensity = 7 * g + 24 * fl;
+      if (X2.phase === "hang" && (execEmberT -= dt) <= 0) {
+        execEmberT = 0.04;
+        fx.burst(tz.x + (Math.random() - 0.5) * 0.8, 0.9 + Math.random() * 0.8, tz.z + (Math.random() - 0.5) * 0.8, 2, Math.random() < 0.5 ? 16760944 : 10099220, 0.5, 0.9, 1.1);
+      }
+    }
+  }
   function updateCamera(dt, px2, pz2, yaw, p) {
     const aspect2 = camera.aspect;
     const vfov = MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect2);
