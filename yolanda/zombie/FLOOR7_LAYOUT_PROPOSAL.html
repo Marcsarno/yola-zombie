@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floor 7 layout proposal</title>
+<style>
+  :root { --bg:#f6f4ef; --card:#fff; --ink:#24231f; --mut:#6b6a63; --line:#c9c6bc; --wall:#3d3c37; --cam:#b8322b;
+    --ob:#e8866a; --ob-s:#9b3a1f; --clean:#8fb8e6; --clean-s:#1f5a96; --build:#efb04a; --build-s:#8a5a0c; --box:#b4b2a9; --box-s:#55544f;
+    --wallitem:#7f77dd; --clear:rgba(70,170,110,.18); --clear-s:rgba(40,130,80,.55); --bad:#d62f2f; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#1d1d1b; --card:#262624; --ink:#ecebe6; --mut:#a3a29b; --line:#4a4944; --wall:#d8d6cf; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui, sans-serif; }
+  header, main { max-width: 1240px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 4px 0; }
+  .sub { color: var(--mut); margin: 0; }
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin: 12px 0; }
+  .bar button { font:inherit; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+  .bar button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .bar label { display:flex; gap:6px; align-items:center; color:var(--mut); }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--mut); }
+  .sw { display:inline-block; width:14px; height:10px; border-radius:2px; vertical-align:middle; margin-right:5px; border:1px solid; }
+  .mapwrap { overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+  svg text { font-family: system-ui, sans-serif; }
+  #tip { position: fixed; pointer-events:none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 6px; font-size: 12px; max-width: 320px; display:none; z-index:5; }
+  .rooms { display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-top: 16px; }
+  .room { background: var(--card); border:1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .room h3 { margin: 0 0 2px; font-size: 15px; }
+  .room .was { color: var(--mut); font-size: 12px; margin: 0 0 6px; }
+  .room ul { margin: 4px 0 0 18px; padding: 0; }
+  .room li { margin: 2px 0; }
+  .flag { color: var(--bad); font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Floor 7: furniture layout proposal</h1>
+  <p class="sub">Top-down plan in world metres (north at the top, which is the wall the locked camera sees). The route and room shapes are unchanged; only the names, purposes and furniture change. Hover over anything for its asset file and notes.</p>
+  <div class="bar">
+    <button id="bProp" class="on">Proposed</button>
+    <button id="bCur">Current (in game now)</button>
+    <label><input type="checkbox" id="cLab" checked> Labels</label>
+    <label><input type="checkbox" id="cClear" checked> Doorway keep-clear zones</label>
+    <label><input type="checkbox" id="cGame" checked> Pickups and interactions</label>
+    <label>Zoom <input type="range" id="zoom" min="0.5" max="1.8" step="0.1" value="1"></label>
+  </div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--ob);border-color:var(--ob-s)"></i>Outbreak (damaged, bloody) prop</span>
+    <span><i class="sw" style="background:var(--clean);border-color:var(--clean-s)"></i>Clean prop (untouched, or retexture later)</span>
+    <span><i class="sw" style="background:var(--build);border-color:var(--build-s)"></i>Construction / your painted props / Blender-built</span>
+    <span><i class="sw" style="background:var(--box);border-color:var(--box-s)"></i>Engine box (switchgear and similar)</span>
+    <span><i class="sw" style="background:transparent;border:2px solid var(--wallitem)"></i>Wall-mounted (sign, poster, dispenser)</span>
+    <span><i class="sw" style="background:var(--clear);border-color:var(--clear-s)"></i>Keep clear (1.6 m each side of a doorway)</span>
+    <span><i class="sw" style="background:transparent;border:2px solid var(--cam)"></i>Camera-facing wall (north walls: decorate these)</span>
+    <span><i class="sw" style="background:transparent;border:2px solid var(--bad)"></i>Blocks a doorway</span>
+  </div>
+</header>
+<main>
+  <div class="mapwrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div id="tip"></div>
+  <div class="rooms" id="rooms"></div>
+</main>
+<script>
+const CURRENT = {"rooms":[{"id":"or","name":"Operating Room","rects":[[-7.1,7.1,-11.15,-0.9],[-7.1,4.1,-0.9,1.05]]},{"id":"s7","name":"Supply","rects":[[-25.65,-7.1,-11.15,1.05]]},{"id":"n7","name":"Nurse Station","rects":[[-40.85,-25.65,-11.15,2.05]]},{"id":"t7","name":"Treatment Ward","rects":[[-40.85,-25.65,2.05,15.65]]},{"id":"v7","name":"Renovation","rects":[[-40.85,-22.85,15.65,28.05]]},{"id":"c7","name":"Staff Cafeteria","rects":[[-22.85,-7.1,15.65,28.05]]},{"id":"p7","name":"Lift Service","rects":[[-7.1,7.1,15.65,28.05]]},{"id":"x7","name":"Contractor Store","rects":[[-22.85,-7.1,4.45,15.65]]},{"id":"r7","name":"Prep Room","rects":[[4.1,7.1,-0.9,1.05],[-7.1,7.1,1.05,15.65]]}],"doors":[{"id":"or_s7","kind":"open","axis":"z","x":-7.1,"z":-4.05,"w":4.2},{"id":"s7_n7","kind":"open","axis":"z","x":-25.65,"z":-4.15,"w":3.2},{"id":"n7_t7","kind":"open","axis":"x","x":-31.45,"z":2.05,"w":3.6},{"id":"t7_v7","kind":"open","axis":"x","x":-31.45,"z":15.65,"w":3.6},{"id":"v7_c7","kind":"open","axis":"z","x":-22.85,"z":20.75,"w":3.4},{"id":"c7_p7","kind":"open","axis":"z","x":-7.1,"z":20.75,"w":3.4},{"id":"p7_r7","kind":"open","axis":"x","x":3.65,"z":15.65,"w":3.4},{"id":"x7door","kind":"powered","axis":"x","x":-15.05,"z":15.65,"w":3},{"id":"orbar","kind":"barred","axis":"x","x":-1.35,"z":1.05,"w":3},{"id":"lift7","kind":"lift","axis":"x","x":2.9,"z":-11.2,"w":5.28}],"props":[["operating_table_standard",-3.4,-8.75,0,0.78,1.65,"","clean"],["RecoveryHeadwall_standard",-3.4,-11,0,0.1,0.1,"s","clean"],["surgical_light_standard",-3.25,-8.2,0,0.91,0.85,"","clean"],["anesthesia_workstation_standard",-5.1,-9.7,90,0.7,1.1,"","clean"],["patient_monitor_standard",-1.95,-10.25,0,0.62,0.71,"","clean"],["iv_stand_standard",-2.4,-9.3,0,0.73,0.7,"","clean"],["supply_cart_standard",-6.5,-7.4,90,0.65,0.88,"","clean"],["supply_cart",-6.3,-5.3,90,1.1,1.16,"","ob"],["biohazard_bin",-6.6,-10.65,0,0.39,0.39,"","ob"],["lidded_waste_bin",-6.1,-10.7,0,0.36,0.4,"","ob"],["PrivacyCurtain_standard",-0.85,-9.75,90,1.84,0.14,"","clean"],["PrivacyCurtain_standard",-0.85,-7.85,90,1.84,0.14,"","clean"],["Endoscopy_Glove_Dispenser",-5.6,-11,0,0.1,0.1,"s","clean"],["Reception_Wall_Sanitizer",-1.45,-11,0,0.1,0.1,"s","clean"],["Clinical_Sharps_Container",-1,-11,0,0.1,0.1,"s","clean"],["Recovery_Wall_Clock",-0.4,-11,0,0.1,0.1,"s","clean"],["Clinical_Sign_OR",-5.6,-11,0,0.1,0.1,"s","clean"],["Clinical_Storage_Cabinet",-6.75,-1.4,90,0.62,1.4,"","clean"],["Clinical_Wall_Cupboard",-7,-1.4,90,0.1,0.1,"e","clean"],["procedure_stretcher",5.4,-4.6,0,0.9,1.66,"","ob"],["lidded_waste_bin",6.6,-1.4,0,0.36,0.4,"","ob"],["Clinical_Sharps_Container",-7,-6.9,90,0.1,0.1,"e","clean"],["Endoscopy_Glove_Dispenser",-7,-7.6,90,0.1,0.1,"e","clean"],["supply_shelf",-20.6,-10.6,0,1.39,0.56,"","ob"],["supply_shelf",-18.9,-10.6,0,1.39,0.56,"","ob"],["pharmacy_medicine_shelf",-12.2,-10.6,0,1.39,0.53,"","clean"],["supply_shelf",-10.2,-10.6,0,1.39,0.56,"","ob"],["linen_cabinet",-25,-9.6,90,0.65,0.95,"","ob"],["supply_cart_starter",-15.6,-1,0,0.78,0.52,"","clean"],["laundry_hamper",-8,0.4,0,0.6,0.57,"","ob"],["wheelchair",-21.6,0.1,270,0.91,0.76,"","ob"],["wet_floor_sign",-17.4,-4.6,0,0.48,0.66,"","ob"],["supply_shelf",-14.2,-6.9,90,0.56,1.39,"","ob"],["supply_shelf",-13.65,-6.9,270,0.56,1.39,"","ob"],["supply_cart",-10.4,-3.6,0,1.16,1.1,"","ob"],["supply_cart",-22.8,-4.8,90,1.1,1.16,"","ob"],["laundry_hamper",-24.9,0.3,0,0.6,0.57,"","ob"],["lidded_waste_bin",-19.6,0.55,0,0.36,0.4,"","ob"],["wall_cupboard",-16.2,-11,0,0.1,0.1,"s","ob"],["storage_bins",-23.6,-8.9,15,1.05,0.3,"","ob"],["storage_bins",-11.4,-8.6,-10,1.05,0.3,"","ob"],["biohazard_bin",-8,-2.2,0,0.39,0.39,"","ob"],["reception_T2_desk",-37.2,-9.9,180,2.2,0.9,"","clean"],["reception_T2_chair",-37.2,-10.75,0,0.63,0.62,"","clean"],["radio",-36.6,-9.75,0,0.1,0.1,"","box"],["Reception_Linked_Seats_3",-30.4,-10.65,0,2.61,0.62,"","clean"],["water_cooler",-26.4,-10.7,0,0.44,0.49,"","ob"],["linen_cabinet",-40.2,-0.4,90,0.65,0.95,"","ob"],["patient_monitor",-40.2,-2.6,90,0.71,0.62,"","ob"],["floor_planter",-28,-10.65,0,1.12,0.5,"","ob"],["reception_poster_clinician",-33.6,-11,0,0.1,0.1,"s","ob"],["team_desk",-33,-4.6,0,1.13,0.74,"","ob"],["clinician_chair",-33,-5.4,180,0.65,0.61,"","ob"],["team_desk",-31.6,-4.6,0,1.13,0.74,"","ob"],["patient_monitor",-29.2,-6.2,0,0.62,0.71,"","ob"],["Reception_Linked_Seats_3",-36.6,1.45,180,2.61,0.62,"","clean"],["assessment_status_board",-40.7,-5.6,90,0.1,0.1,"e","ob"],["wall_sanitizer",-26,-11,0,0.1,0.1,"s","ob"],["glove_dispenser",-35.4,-11,0,0.1,0.1,"s","ob"],["medical_poster_family",-38.6,-11,0,0.1,0.1,"s","ob"],["biohazard_bin",-40.3,-8.9,0,0.39,0.39,"","ob"],["recovery_bed",-39.2,5,90,2.11,1.25,"","ob"],["bedside_cabinet",-39.75,3.65,90,0.63,0.52,"","ob"],["iv_stand",-38.2,3.9,0,0.73,0.7,"","ob"],["service_headwall",-40.75,5,90,0.1,0.1,"e","ob"],["recovery_bed",-39.2,9,90,2.11,1.25,"","ob"],["bedside_cabinet",-39.75,7.65,90,0.63,0.52,"","ob"],["iv_stand",-38.2,7.9,0,0.73,0.7,"","ob"],["service_headwall",-40.75,9,90,0.1,0.1,"e","ob"],["recovery_bed",-39.2,13,90,2.11,1.25,"","ob"],["bedside_cabinet",-39.75,11.65,90,0.63,0.52,"","ob"],["iv_stand",-38.2,11.9,0,0.73,0.7,"","ob"],["service_headwall",-40.75,13,90,0.1,0.1,"e","ob"],["recovery_bed",-27.3,6.2,270,2.11,1.25,"","ob"],["bedside_cabinet",-26.75,4.85,270,0.63,0.52,"","ob"],["iv_stand",-28.3,5.1,0,0.73,0.7,"","ob"],["service_headwall",-25.75,6.2,270,0.1,0.1,"w","ob"],["recovery_bed",-27.3,10.6,270,2.11,1.25,"","ob"],["bedside_cabinet",-26.75,9.25,270,0.63,0.52,"","ob"],["iv_stand",-28.3,9.5,0,0.73,0.7,"","ob"],["service_headwall",-25.75,10.6,270,0.1,0.1,"w","ob"],["wall_exam_set",-36.2,2.15,0,0.1,0.1,"s","ob"],["wall_sanitizer",-29.4,2.15,0,0.1,0.1,"s","ob"],["glove_dispenser",-28.6,2.15,0,0.1,0.1,"s","ob"],["sharps_container",-34.6,2.15,0,0.1,0.1,"s","ob"],["biohazard_bin",-26.2,3,0,0.39,0.39,"","ob"],["privacy_screen",-38.1,7,90,1.84,0.14,"","ob"],["privacy_screen",-38.1,11,90,1.84,0.14,"","ob"],["procedure_stretcher",-33.4,8.4,0,0.9,1.66,"","ob"],["supply_cart",-26.3,14.4,0,1.16,1.1,"","ob"],["standin_cable_workbench",-38,17,0,1.8,0.76,"","build"],["standin_tool_pegboard",-34.4,15.89,180,1.26,0.06,"","build"],["hazard",-31.5,24,0,0.1,0.1,"","box"],["pipes",-32,15.8,0,0.1,0.1,"","box"],["isolation_windowed_partition",-36,23.2,90,0.15,2,"","clean"],["isolation_windowed_partition",-36,25.4,90,0.15,2,"","clean"],["supply_shelf",-40.25,20.4,90,0.56,1.39,"","ob"],["janitor_cart",-26.2,26.8,0,0.83,0.99,"","ob"],["mop_bucket",-27.3,27.3,0,0.46,0.51,"","ob"],["wet_floor_sign",-30.2,18.9,0,0.48,0.66,"","ob"],["wet_floor_sign",-28.9,18.6,0,0.48,0.66,"","ob"],["10_starter_rack",-40.3,26.6,90,0.51,0.82,"","clean"],["toolboard",-38,15.8,0,0.1,0.1,"s","ob"],["standin_renovation_pallet",-27.2,16.75,0,1.25,1.02,"","build"],["box",-25.4,16.7,0,1.2,0.9,"","box"],["standin_paint_shelf",-33.6,27.7,180,1.19,0.44,"","build"],["laundry_hamper",-40.2,23.6,0,0.6,0.57,"","ob"],["sawhorse_barrier",-26.4,23.4,90,0.73,1.9,"","build"],["drywall_pallet",-39.6,18.9,90,1.69,1.41,"","build"],["cafeteria_serving_counter",-20.3,16.25,0,2.46,0.96,"","clean"],["cafeteria_tray_return",-18.3,16.1,0,0.68,0.56,"","clean"],["cafeteria_vending_machine",-11.2,16.25,0,0.93,0.87,"","clean"],["cafeteria_vending_machine",-10.1,16.25,0,0.93,0.87,"","clean"],["coffee_counter",-8.6,16.35,0,1.33,0.81,"","ob"],["coffee_machine",-8.95,16.2,0,0.1,0.1,"","ob"],["mug",-8.2,16.45,40,0.1,0.1,"","ob"],["locker_bank",-7.75,25.6,270,0.66,1.48,"","ob"],["water_cooler",-22.4,17.4,90,0.49,0.44,"","ob"],["break_table",-19.6,20.6,0,0.95,0.86,"","ob"],["break_chair",-20.45,20.6,90,0.62,0.72,"","ob"],["break_chair",-18.75,20.6,270,0.62,0.72,"","ob"],["cafeteria_meal_tray_set",-19.6,20.6,0,0.1,0.1,"","clean"],["break_table",-15,22.4,0,0.95,0.86,"","ob"],["break_chair",-15.85,22.4,90,0.62,0.72,"","ob"],["break_chair",-14.15,22.4,270,0.62,0.72,"","ob"],["cafeteria_meal_tray_set",-15,22.4,0,0.1,0.1,"","clean"],["break_table",-10.6,20.6,0,0.95,0.86,"","ob"],["break_chair",-11.45,20.6,90,0.62,0.72,"","ob"],["break_chair",-9.75,20.6,270,0.62,0.72,"","ob"],["cafeteria_meal_tray_set",-10.6,20.6,0,0.1,0.1,"","clean"],["break_table",-19,25.8,0,0.95,0.86,"","ob"],["break_chair",-19.85,25.8,90,0.62,0.72,"","ob"],["break_chair",-18.15,25.8,270,0.62,0.72,"","ob"],["cafeteria_meal_tray_set",-19,25.8,0,0.1,0.1,"","clean"],["break_table",-11.2,25.8,0,0.95,0.86,"","ob"],["break_chair",-12.05,25.8,90,0.62,0.72,"","ob"],["break_chair",-10.35,25.8,270,0.62,0.72,"","ob"],["cafeteria_meal_tray_set",-11.2,25.8,0,0.1,0.1,"","clean"],["box",-5.2,16.3,0,1.4,0.7,"","box"],["box",6.55,21.5,0,0.6,1.6,"","box"],["10_starter_rack",-6.55,26.6,90,0.51,0.82,"","clean"],["10_starter_rack",6.55,26.4,270,0.51,0.82,"","clean"],["hazard",-1,16.9,0,0.1,0.1,"","box"],["box",-6.55,20.6,0,0.6,1.5,"","box"],["standin_janitor_cabinet",-6.6,23.2,90,0.5,0.9,"","build"],["janitor_cart",4.6,27.2,0,0.83,0.99,"","ob"],["utility_sink",6.55,17.2,270,0.51,0.88,"","ob"],["toolboard",-3.6,15.8,0,0.1,0.1,"s","ob"],["floor_scrubber",2.6,26.9,90,1.52,0.86,"","ob"],["mop_bucket",5.6,18.6,30,0.46,0.51,"","ob"],["10_starter_steel_sink",-5.4,1.55,0,0.87,0.63,"","clean"],["10_starter_steel_sink",-4.3,1.55,0,0.87,0.63,"","clean"],["linen_cabinet",-6.55,8,90,0.65,0.95,"","ob"],["supply_cart",6.5,6.2,270,1.1,1.16,"","ob"],["procedure_stretcher",-5.6,12.6,90,1.66,0.9,"","ob"],["clinical_sign_preop",4.6,1.2,0,0.1,0.1,"s","ob"],["sedaprep",6.3,10.6,270,0.72,1.12,"","ob"],["supply_cart",-6.3,4.4,90,1.1,1.16,"","ob"],["iv_stand",-4.6,11.8,0,0.73,0.7,"","ob"],["handwash_basin",-2.9,1.2,0,0.1,0.1,"s","ob"],["wall_sanitizer",0.6,1.2,0,0.1,0.1,"s","ob"],["supply_shelf",-22.25,7.4,90,0.56,1.39,"","ob"],["supply_shelf",-22.25,10.4,90,0.56,1.39,"","ob"],["supply_shelf",-7.75,7.4,270,0.56,1.39,"","ob"],["supply_shelf",-7.75,10.4,270,0.56,1.39,"","ob"],["storage_bins",-9.2,13.8,0,1.05,0.3,"","ob"],["bench",-15,9.4,0,2,0.75,"","box"],["10_starter_rack",-12.4,5,0,0.82,0.51,"","clean"],["10_starter_rack",-17.8,5,0,0.82,0.51,"","clean"],["box",-19.6,12.4,0,1.2,0.8,"","box"],["sawhorse_barrier",-19,6.6,0,1.9,0.73,"","build"]],"pickups":[["First-aid case",-15.6,-1],["Pistol",-15.56,-1],["Pistol magazines",-12.8,-0.4],["Pump shotgun",-32.3,-4.6],["Shotgun shells",-27.2,-9.6],["Crowbar",-32.2,10.2],["First-aid case",-37.4,17],["Sledgehammer",-30.6,22.6],["Knife",-10.6,20.6],["Shotgun shells",-12.4,17.4],["Pistol magazines",0.6,17.2],["Fire axe",-15,9.4]],"interact":[["Answer the radio",-36.6,-8.9],["Restore the lift circuit",-1,16.5],["Lift the bar",-1.35,1.8]]};
+
+// ------------------------------------------------------------------ geometry (the plans' px -> world metres, as in core/chapter.js)
+const PX = (px) => Math.round((px - 1141) / 25 * 20) / 20, PZ = (py) => Math.round(((py - 260) / 25 - 11.15) * 20) / 20;
+const POLY = {
+  or: [[963,260],[1319,260],[1319,516],[1243,516],[1243,565],[963,565]], s7: [[500,260],[963,260],[963,565],[500,565]],
+  n7: [[120,260],[500,260],[500,590],[120,590]], t7: [[120,590],[500,590],[500,930],[120,930]], v7: [[120,930],[570,930],[570,1240],[120,1240]],
+  c7: [[570,930],[963,930],[963,1240],[570,1240]], p7: [[963,930],[1319,930],[1319,1240],[963,1240]], x7: [[570,650],[963,650],[963,930],[570,930]],
+  r7: [[963,565],[1243,565],[1243,516],[1319,516],[1319,930],[963,930]],
+};
+const ROOMFILL = { or:'#e9e1cf', s7:'#dfdcd3', n7:'#efe5d2', t7:'#e2e9ec', v7:'#d5d0c4', c7:'#efe0d2', p7:'#cfcec8', x7:'#d3d1c7', r7:'#e3ecf0' };
+
+// footprints (w x d before rotation, metres) from the Outbreak manifest / the stand-in scripts
+const DIM = {
+  reception_desk:[2.2,.9], supply_cart:[1.16,1.1], waiting_chair_section:[2.69,.97], bedside_cabinet:[.52,.63], patient_monitor:[.62,.71],
+  recovery_bed:[1.25,2.11], endoscopy_tower:[.74,.6], iv_stand:[.73,.7], medical_gas_cylinder:[.39,.43], procedure_stretcher:[.9,1.66],
+  wheelchair:[.76,.91], biohazard_bin:[.39,.39], lidded_waste_bin:[.36,.4], handwash_cabinet_base:[.51,.7], clinical_storage_cabinet:[1.4,.74],
+  linen_cabinet:[.95,.65], prep_storage:[1.51,.72], storage_bins:[1.05,.3], charting_workstation:[.83,.62], clinician_chair:[.65,.61],
+  consultation_desk:[1.5,.73], visitor_chair:[.47,.47], janitor_cart:[.83,.99], laundry_hamper:[.6,.57], mop:[.34,.25], mop_bucket:[.46,.51],
+  wet_floor_sign:[.48,.66], floor_scrubber:[.86,1.52], supply_shelf:[1.39,.56], utility_sink:[.88,.51], break_chair:[.72,.62],
+  break_table:[.95,.86], coffee_counter:[1.33,.81], coffee_machine:[.31,.39], mug:[.11,.08], locker_bank:[1.48,.66], armchair:[1.01,.65], pedal_bin:[.37,.41],
+  sofa:[2.05,.6], check_in_kiosk:[.39,.36], magazine_rack:[.55,.43], side_table:[.74,.74], water_cooler:[.45,.49], airready:[.94,.74],
+  sedaprep:[1.12,.72], team_desk:[1.13,.74], team_stool:[.36,.34], thermanest:[.86,.74], pacu_station:[.75,.6], prep_counter:[1.51,.69],
+  scopeair_vitadock:[.98,.6], floor_planter:[1.12,.5], curtain_rail:[2.48,2.28], curtain_panel:[.22,1.75], desktop_computer:[.5,.42],
+  standin_cable_workbench:[1.8,.75], standin_paint_shelf:[1.19,.44], standin_renovation_pallet:[1.25,1.02], standin_janitor_cabinet:[.9,.5],
+  sawhorse_barrier:[1.9,.73], drywall_pallet:[1.41,1.69], isolation_windowed_partition:[2.0,.15], cafeteria_serving_counter:[2.46,.96],
+  cafeteria_tray_return:[.68,.56], cafeteria_vending_machine:[.93,.87], starter_rack:[.82,.51], first_aid_cart:[.78,.52],
+  contractor_bench:[2.0,.75], switchgear:[1.4,.7], electrical_cabinet:[1.5,.6], panelboard:[1.6,.6], crates:[1.2,.8], leaning_sign:[1.48,.12],
+  hazard_floor:[3.4,1.4], hazard_small:[1.8,.9],
+  // wall-mounted widths
+  service_headwall:[1.72,.26], sharps_container:[.26,.21], handwash_basin:[.55,.46], soap_dispenser:[.16,.13], towel_dispenser:[.28,.3],
+  wall_cupboard:[1.1,.48], glove_dispenser:[.34,.18], wall_sanitizer:[.17,.14], toolboard:[1.16,.21], wall_shelf:[1.08,.31],
+  assessment_status_board:[.77,.14], wall_clock:[.48,.13], team_wall_station:[.8,.32], identity_nameplate_family:[1.94,.07],
+  reception_poster_heart:[.59,.07], lobby_t2_health_poster:[.66,.08], lobby_t2_wayfinding:[.9,.07], clinical_art_lungs:[.72,.14],
+  clinical_art_airway:[.72,.15], clinical_art_preparation_checklist:[.64,.15], clinical_sign_endoscopy:[1.55,.09], clinical_sign_preop:[1.48,.12],
+  room_sign_family:[1.48,.12], recovery_bay_sign_01:[.37,.07], recovery_bay_sign_02:[.37,.07], lounge_staff_room_sign:[1.58,.08],
+  standin_tool_pegboard:[1.2,.06], endoscopy_readiness_board:[.8,.06], lift_reset:[.9,.2], printed_sign:[1.6,.05], wall_exam_set:[.5,.24],
+};
+
+// ------------------------------------------------------------------ the proposal
+// F(asset, x, z, rot, cat, note): a floor item, rot 0 = front faces south (toward the camera); 90 faces east, 180 north, 270 west.
+// W(asset, x, z, face, y, cat, note): a wall item on the wall face it looks out of (s = on a north wall, facing the camera).
+const P = [];
+let ROOM = '';
+const F = (a, x, z, rot = 0, cat = 'ob', note = '', o = {}) => P.push({ room: ROOM, a, x, z, rot, cat, note, ...o });
+const W = (a, x, z, face, y, cat = 'ob', note = '') => P.push({ room: ROOM, a, x, z, face, y, cat, note, wall: true });
+
+ROOM = 's7'; // Endoscopy and sterile supply
+F('supply_shelf', -8.9, -10.57, 0, 'ob', 'sterile stock, pulled about'); F('supply_shelf', -10.4, -10.57);
+F('clinical_storage_cabinet', -12.3, -10.63); W('wall_cupboard', -12.3, -11.0, 's', 1.45);
+F('linen_cabinet', -14.0, -10.68);
+W('glove_dispenser', -15.8, -11.0, 's', 1.25); W('wall_sanitizer', -15.2, -11.0, 's', 1.05); W('wall_clock', -16.6, -11.0, 's', 2.1);
+F('medical_gas_cylinder', -7.5, -9.7); F('medical_gas_cylinder', -7.5, -9.2); F('medical_gas_cylinder', -7.5, -8.7);
+F('supply_cart', -10.2, -7.6, 0, 'clean', 'case cart laid out for the next list (clean: nobody got to it)'); F('supply_cart', -11.6, -7.6, 0, 'ob', 'case cart, ransacked');
+F('endoscopy_tower', -24.6, -10.7, 0, 'ob', 'scope stack'); F('scopeair_vitadock', -23.2, -10.7, 0, 'ob', 'scope drying cabinet');
+F('utility_sink', -21.6, -10.84, 0, 'ob', 'scope wash sink'); W('towel_dispenser', -20.9, -11.0, 's', 1.2); W('soap_dispenser', -22.3, -11.0, 's', 1.3);
+W('clinical_sign_endoscopy', -23.2, -11.0, 's', 2.25); W('endoscopy_readiness_board', -19.4, -11.0, 's', 1.3, 'clean', 'Endoscopy_Readiness_Board (assets/models/furnishings)');
+F('procedure_stretcher', -21.4, -7.4, 0, 'ob', 'the procedure bay: a stretcher, a second scope stack, the charting cart'); F('endoscopy_tower', -22.6, -7.7); F('charting_workstation', -19.9, -7.7); F('clinician_chair', -19.9, -6.9, 180);
+F('prep_storage', -16.6, -4.45, 0, 'ob', 'waist-high sterile-pack island: a loop to fight round'); F('prep_storage', -16.6, -3.7, 180);
+F('first_aid_cart', -15.6, -1.0, 0, 'clean', 'supply_cart_starter: the first-aid case and the pistol on its lid (unchanged)');
+F('storage_bins', -23.0, 0.6); F('laundry_hamper', -24.9, 0.4); F('wheelchair', -19.8, 0.3, 270); F('lidded_waste_bin', -9.2, 0.65); F('biohazard_bin', -8.6, 0.65);
+
+ROOM = 'n7'; // Reception and nurse station
+F('reception_desk', -36.6, -9.4, 0, 'ob', 'the nurse station counter pulled off the wall, its front to the camera, staff side behind; the radio stays on it');
+F('desktop_computer', -36.0, -9.45, 0, 'ob', 'on the counter'); F('clinician_chair', -37.3, -10.45, 180); F('clinician_chair', -35.9, -10.45, 180);
+W('team_wall_station', -39.0, -11.0, 's', 0.9); W('identity_nameplate_family', -36.6, -11.0, 's', 2.2, 'ob', 'RECEPTION identity sign over the station');
+F('biohazard_bin', -40.0, -10.75); F('lidded_waste_bin', -40.5, -10.75);
+W('wall_clock', -34.4, -11.0, 's', 2.2); W('reception_poster_heart', -33.3, -11.0, 's', 1.5);
+F('waiting_chair_section', -31.2, -10.5, 0, 'ob', 'waiting seats on the camera wall, facing the room'); W('lobby_t2_health_poster', -31.2, -11.0, 's', 1.65);
+F('floor_planter', -28.7, -10.75); F('water_cooler', -27.6, -10.75); W('lobby_t2_wayfinding', -26.6, -11.0, 's', 1.7, 'ob', 'wayfinding: Recovery down, Theatres right');
+W('assessment_status_board', -40.7, -6.2, 'e', 1.2, 'ob', 'bed board on the west wall'); F('magazine_rack', -40.4, -4.0, 90);
+F('waiting_chair_section', -40.27, -1.0, 90, 'ob', 'second row of waiting seats along the west wall'); F('side_table', -40.4, 1.15);
+F('check_in_kiosk', -26.0, -7.6, 270);
+F('team_desk', -32.4, -5.0, 0, 'ob', 'team desk island in the middle (the shotgun on it): something to fight round'); F('team_stool', -32.9, -4.3); F('team_stool', -31.9, -4.3);
+F('consultation_desk', -27.4, 0.6, 0, 'ob', 'pre-assessment desk in the corner'); F('visitor_chair', -27.9, -0.2, 180); F('visitor_chair', -26.9, -0.2, 180);
+
+ROOM = 't7'; // Recovery ward (PACU)
+for (const bx of [-39.2, -35.9, -27.6]) {
+  F('recovery_bed', bx, 3.3, 0, 'ob', 'recovery bay: head on the camera wall, foot toward the camera'); F('curtain_rail', bx, 3.4, 0, 'ob', 'U curtain rail overhead (no collision)', { ghost: true });
+  W('service_headwall', bx, 2.2, 's', 1.24); F('bedside_cabinet', bx - 1.0, 2.6); F('patient_monitor', bx + 1.0, 2.6); F('iv_stand', bx + 0.9, 4.2);
+}
+W('recovery_bay_sign_01', -39.2, 2.2, 's', 2.3); W('recovery_bay_sign_02', -35.9, 2.2, 's', 2.3); W('recovery_bay_sign_01', -27.6, 2.2, 's', 2.3, 'ob', 'bay 3 sign');
+W('room_sign_family', -31.45, 2.2, 's', 2.42, 'ob', 'RECOVERY sign over the door'); W('wall_clock', -33.7, 2.2, 's', 2.2);
+W('sharps_container', -37.55, 2.2, 's', 1.1); W('glove_dispenser', -34.3, 2.2, 's', 1.25); W('wall_sanitizer', -29.1, 2.2, 's', 1.05);
+for (const bz of [8.4, 12.2]) {
+  F('recovery_bed', -26.85, bz, 270, 'ob', 'bays 4-5 on the east wall: heads east, feet to the lane'); F('curtain_rail', -26.85, bz, 270, 'ob', 'curtain rail overhead', { ghost: true });
+  W('service_headwall', -25.8, bz, 'w', 1.24); F('bedside_cabinet', -26.1, bz - 1.05, 270); F('patient_monitor', -26.1, bz + 1.1, 270);
+}
+F('pacu_station', -37.4, 9.4, 90, 'ob', 'PACU nurse station watching the bays'); F('charting_workstation', -37.4, 10.6, 90); F('team_stool', -36.5, 10.0);
+F('thermanest', -40.4, 7.0, 90, 'ob', 'warming cabinet'); F('airready', -34.5, 5.6, 0, 'ob', 'airway cart');
+W('clinical_art_lungs', -40.7, 5.0, 'e', 1.5); W('clinical_art_airway', -40.7, 9.4, 'e', 1.5);
+F('linen_cabinet', -40.5, 11.9, 90); F('medical_gas_cylinder', -40.55, 13.1); F('medical_gas_cylinder', -40.55, 13.55);
+F('procedure_stretcher', -39.0, 14.6, 90, 'ob', 'a trolley parked by the door (the crowbar beside it)');
+
+ROOM = 'v7'; // Ward refurbishment, closed for works
+F('standin_cable_workbench', -38.2, 16.2, 0, 'build', 'your painted cable workbench (stand-in until your file turns up)'); W('standin_tool_pegboard', -38.2, 15.8, 's', 1.05, 'build', 'your painted tool pegboard over the bench');
+W('toolboard', -35.6, 15.8, 's', 1.0); F('leaning_sign', -35.0, 16.0, 0, 'ob', 'the old ward sign, taken down and leaning on the wall');
+W('printed_sign', -31.45, 15.8, 's', 2.42, 'build', 'WARD CLOSED · REFURBISHMENT, printed and taped over the door');
+F('standin_paint_shelf', -27.4, 16.05, 0, 'build', 'your painted paint shelf'); F('standin_renovation_pallet', -25.3, 16.4, 0, 'build', 'your painted renovation pallet');
+F('laundry_hamper', -23.5, 17.0, 0, 'ob', 'dust sheets');
+F('recovery_bed', -39.75, 19.6, 90, 'ob', 'the old ward beds pushed against the wall under dust sheets'); F('recovery_bed', -39.75, 20.95, 90); F('bedside_cabinet', -40.4, 22.35, 90);
+F('drywall_pallet', -35.6, 19.6, 0, 'build', 'plasterboard on a pallet');
+F('sawhorse_barrier', -31.4, 22.0, 0, 'build', 'barriers round the opened-up floor'); F('sawhorse_barrier', -33.9, 23.9, 90, 'build'); F('sawhorse_barrier', -28.9, 23.9, 90, 'build');
+F('hazard_floor', -31.4, 24.2, 0, 'build', 'the floor taken up for the works: where they break through from below', { ghost: true });
+F('isolation_windowed_partition', -36.6, 25.5, 90, 'clean', 'plastic-sheeted bay, unfinished'); F('isolation_windowed_partition', -38.7, 24.45, 0, 'clean');
+F('janitor_cart', -24.6, 26.8); F('mop_bucket', -25.8, 27.3); F('wet_floor_sign', -24.4, 24.3);
+
+ROOM = 'c7'; // Staff lounge and canteen
+F('cafeteria_serving_counter', -20.4, 16.28, 0, 'clean'); F('cafeteria_tray_return', -18.4, 16.08, 0, 'clean');
+W('lounge_staff_room_sign', -19.6, 15.8, 's', 2.35, 'ob', 'STAFF LOUNGE sign'); W('assessment_status_board', -17.5, 15.8, 's', 1.5, 'ob', 'staff notice board');
+F('cafeteria_vending_machine', -12.0, 16.24, 0, 'clean'); F('cafeteria_vending_machine', -10.95, 16.24, 0, 'clean'); W('wall_clock', -11.5, 15.8, 's', 2.3);
+F('coffee_counter', -8.55, 16.21); F('coffee_machine', -8.9, 16.15); F('mug', -8.2, 16.35);
+F('water_cooler', -7.5, 17.6, 270); F('pedal_bin', -7.5, 23.3, 270); F('locker_bank', -7.62, 24.6, 270, 'ob', 'staff lockers'); F('locker_bank', -7.62, 26.1, 270);
+F('floor_planter', -22.35, 17.2, 90); F('magazine_rack', -22.4, 23.6, 90);
+F('sofa', -22.4, 25.4, 90, 'ob', 'the lounge corner: sofa, armchair, side table (low, near the camera)'); F('side_table', -22.3, 27.3); F('armchair', -20.6, 26.9, 270);
+for (const [tx, tz] of [[-17.4, 23.9], [-13.2, 23.9], [-15.3, 26.7], [-11.1, 26.7]]) {
+  F('break_table', tx, tz, 0, 'ob', 'canteen tables: the guard is circled round these; the west-east lane stays open'); F('break_chair', tx - 0.85, tz, 90); F('break_chair', tx + 0.85, tz, 270);
+}
+
+ROOM = 'x7'; // Equipment store (locked)
+F('supply_shelf', -21.6, 4.88, 0, 'clean'); F('supply_shelf', -20.15, 4.88, 0, 'clean'); F('starter_rack', -17.6, 4.86, 0, 'clean'); W('wall_shelf', -15.0, 4.6, 's', 1.3, 'clean');
+W('printed_sign', -15.0, 4.6, 's', 2.35, 'build', 'EQUIPMENT STORE'); F('starter_rack', -12.4, 4.86, 0, 'clean'); F('supply_shelf', -9.9, 4.88, 0, 'clean'); F('supply_shelf', -8.45, 4.88, 0, 'clean');
+F('recovery_bed', -21.7, 8.3, 90, 'clean', 'spare beds, still wrapped (clean: this room was locked)'); F('recovery_bed', -21.7, 9.65, 90, 'clean');
+F('iv_stand', -22.2, 11.6, 0, 'clean', 'spare IV stands'); F('iv_stand', -21.6, 11.95, 0, 'clean'); F('iv_stand', -22.1, 12.4, 0, 'clean');
+F('wheelchair', -7.85, 7.4, 270, 'clean', 'spare wheelchairs, nested'); F('wheelchair', -7.85, 8.2, 270, 'clean'); F('wheelchair', -7.85, 9.0, 270, 'clean');
+F('medical_gas_cylinder', -7.5, 11.2, 0, 'clean', 'gas cylinder store'); F('medical_gas_cylinder', -7.5, 11.7, 0, 'clean'); F('medical_gas_cylinder', -7.5, 12.2, 0, 'clean'); F('medical_gas_cylinder', -7.95, 11.45, 0, 'clean');
+F('contractor_bench', -15.0, 9.4, 0, 'build', "the contractors' bench, the fire axe on it"); F('sawhorse_barrier', -19.0, 6.6, 0, 'build', "the works' spare barriers");
+F('crates', -19.6, 12.6, 0, 'build'); F('storage_bins', -9.2, 13.8, 0, 'clean');
+
+ROOM = 'p7'; // Lift plant and janitor
+F('switchgear', -5.2, 16.15, 0, 'box', 'switchgear on the camera wall'); W('lift_reset', -1.0, 15.8, 's', 1.2, 'clean', 'lift reset panel (interaction, unchanged)'); W('toolboard', -3.4, 15.8, 's', 1.0);
+F('hazard_small', -1.0, 16.9, 0, 'build', 'hazard floor marking', { ghost: true });
+F('utility_sink', 6.6, 17.2, 270); W('wall_shelf', 6.97, 18.6, 'w', 1.4); F('mop', 6.85, 19.5, 270);
+F('panelboard', 6.55, 21.5, 270, 'box'); F('starter_rack', 6.55, 26.4, 270, 'clean');
+F('standin_janitor_cabinet', -6.6, 23.7, 90, 'build', 'your painted janitor cabinet');
+F('electrical_cabinet', -6.8, 25.3, 90, 'box', 'MOVED here: it stood right in front of the cafeteria doorway');
+F('starter_rack', -6.55, 27.35, 90, 'clean'); F('floor_scrubber', 2.6, 26.9, 90); F('janitor_cart', 4.6, 27.2); F('mop_bucket', 5.6, 18.6, 30); F('wet_floor_sign', 0.6, 25.6);
+
+ROOM = 'r7'; // Pre-op holding and scrub
+F('handwash_cabinet_base', -5.6, 1.55, 0, 'ob', 'scrub sinks (basin on a cabinet base) on the camera wall'); F('handwash_cabinet_base', -4.5, 1.55);
+W('towel_dispenser', -6.5, 1.2, 's', 1.2); W('soap_dispenser', -5.05, 1.2, 's', 1.25); W('clinical_art_preparation_checklist', -3.5, 1.2, 's', 1.4);
+F('prep_counter', 1.5, 1.55, 0, 'ob', 'specialty prep counter'); W('wall_sanitizer', 0.5, 1.2, 's', 1.05); W('clinical_sign_preop', 1.6, 1.2, 's', 2.25); W('wall_clock', 3.3, 1.2, 's', 2.1);
+F('prep_storage', 5.6, -0.4, 0, 'ob', 'prep storage in the alcove');
+F('procedure_stretcher', -6.2, 5.6, 90, 'ob', 'pre-op holding: trolleys, a curtain, a chair for the relative'); F('procedure_stretcher', -6.2, 9.4, 90); F('curtain_panel', -6.1, 7.5, 90);
+F('visitor_chair', -4.8, 5.6, 270, 'clean'); F('visitor_chair', -4.8, 9.4, 270, 'clean'); F('iv_stand', -5.0, 4.5); F('iv_stand', -5.0, 10.6);
+F('sedaprep', 6.55, 5.6, 270); F('airready', 6.6, 7.4, 270); F('thermanest', 6.6, 9.2, 270, 'ob', 'blanket warmer'); F('linen_cabinet', 6.75, 11.4, 270);
+F('supply_cart', -6.4, 13.4, 90); F('medical_gas_cylinder', -6.85, 14.9); F('lidded_waste_bin', -5.9, 15.2);
+
+const PICK_PROP = [['First-aid case + pistol', -15.6, -1.0], ['Pistol magazines', -12.8, -0.4], ['Shotgun (on the team desk)', -32.4, -5.0], ['Shotgun shells', -27.6, -9.9],
+  ['Crowbar (by the trolley)', -38.0, 14.0], ['First-aid case (on the workbench)', -38.2, 16.2], ['Sledgehammer (inside the barriers)', -30.6, 23.0], ['Knife (on a table)', -13.2, 23.9],
+  ['Shotgun shells', -10.4, 17.4], ['Pistol magazines', 0.6, 17.2], ['Fire axe (on the bench)', -15.0, 9.4]];
+
+const NAMES = {
+  or: ['Operating Room', 'Operating Room', 'Unchanged: the opening is signed off.'],
+  s7: ['Endoscopy and Sterile Supply', 'Supply', "Right off the theatre: sterile stock and case carts on the near side, the scope room and its procedure bay on the far side."],
+  n7: ['Reception and Nurse Station', 'Nurse Station', "The floor's front desk: the station counter (radio), waiting seats, the bed board, a pre-assessment desk."],
+  t7: ['Recovery Ward (PACU)', 'Treatment Ward', 'Five curtained recovery bays with headwalls, monitors and IVs, a PACU station watching them; the middle lane stays clear door to door.'],
+  v7: ['Ward Refurbishment (closed)', 'Renovation', "An old ward being stripped and rebuilt: the beds pushed aside under dust sheets, your painted construction props, the floor taken up behind barriers (the breaches)."],
+  c7: ['Staff Lounge and Canteen', 'Staff Cafeteria', 'The serving counter and vending on the camera wall, a coffee corner, lockers, a sofa corner and the tables the guard is circled round.'],
+  x7: ['Equipment Store (locked)', 'Contractor Store', "Locked when it fell, so it's clean: spare beds, wheelchairs, IV stands, gas cylinders, and the contractors' bench with the axe."],
+  p7: ['Lift Plant and Janitor', 'Lift Service', 'Switchgear and the lift reset on the camera wall, the janitor closet along the walls, the floor scrubber; the open bay is the charger lane.'],
+  r7: ['Pre-op Holding and Scrub', 'Prep Room', 'Scrub sinks by the barred theatre door, a prep counter, pre-op trolleys with a curtain and relatives’ chairs, the warming and airway carts.'],
+};
+
+// ------------------------------------------------------------------ drawing
+const S0 = 30, OX = 41.6, OZ = 12.2;
+let S = S0, mode = 'prop';
+const svg = document.getElementById('map'), tip = document.getElementById('tip');
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, a, parent) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); (parent || svg).appendChild(e); return e; };
+const sx = (x) => (x + OX) * S, sz = (z) => (z + OZ) * S;
+const CATC = { ob: ['var(--ob)', 'var(--ob-s)'], clean: ['var(--clean)', 'var(--clean-s)'], build: ['var(--build)', 'var(--build-s)'], box: ['var(--box)', 'var(--box-s)'] };
+const short = (a) => a.replace(/^standin_/, '').replace(/_standard|_starter|_advanced/g, '').replace(/^10_starter_/, '').replace(/_/g, ' ');
+const hover = (e, html) => { e.addEventListener('mousemove', (ev) => { tip.style.display = 'block'; tip.innerHTML = html; tip.style.left = Math.min(ev.clientX + 14, innerWidth - 330) + 'px'; tip.style.top = ev.clientY + 14 + 'px'; }); e.addEventListener('mouseleave', () => { tip.style.display = 'none'; }); };
+
+function clearZone(d) {
+  const hw = d.w / 2, dep = 1.6;
+  return d.axis === 'x' ? [d.x - hw, d.x + hw, d.z - dep, d.z + dep] : [d.x - dep, d.x + dep, d.z - hw, d.z + hw];
+}
+function blocks(p) {
+  if (p.wall || p.ghost || p.noCollide) return null;
+  const sw = ((p.rot % 180) + 180) % 180 === 90, w = sw ? p.d : p.w, dd = sw ? p.w : p.d;
+  const r = [p.x - w / 2, p.x + w / 2, p.z - dd / 2, p.z + dd / 2];
+  for (const d of CURRENT.doors) {
+    if (d.kind === 'lift') continue;
+    const zz = clearZone(d);
+    if (r[0] < zz[1] && r[1] > zz[0] && r[2] < zz[3] && r[3] > zz[2]) return d.id;
+  }
+  return null;
+}
+
+function itemsFor() {
+  if (mode === 'cur') {
+    return CURRENT.props.map(([a, x, z, rot, fw, fd, wall, cat]) => {
+      // the dump's fp is already rotated: store it unrotated so drawing is the same as the proposal's
+      const sw = ((rot % 180) + 180) % 180 === 90;
+      const nc = ['iv_stand', 'privacy', 'wet_floor', 'storage_bins', 'surgical_light', 'clinician_chair', 'break_chair', 'reception_T2_chair', 'standin_tool_pegboard', 'hazard', 'pipes', 'radio', 'coffee_machine', 'mug', 'cafeteria_meal'].some((k) => a.startsWith(k));
+      return { room: '', a, x, z, rot, w: sw ? fd : fw, d: sw ? fw : fd, cat: cat === 'box' ? 'box' : cat, wall: !!wall, face: wall, y: 0, note: '', noCollide: nc, ghost: a === 'pipes' || a === 'hazard' };
+    });
+  }
+  const orItems = itemsCur().filter((p) => inRoom(p, 'or'));
+  return [...orItems, ...P.map((p) => { const [w, d] = DIM[p.a] || [0.6, 0.6]; return { ...p, w, d }; })];
+}
+let _cur = null;
+function itemsCur() { const m = mode; mode = 'cur'; const r = itemsFor(); mode = m; return r; }
+function inRoom(p, id) { const r = CURRENT.rooms.find((q) => q.id === id); return r.rects.some(([a, b, c, d]) => p.x >= a - 0.2 && p.x <= b + 0.2 && p.z >= c - 0.2 && p.z <= d + 0.2); }
+
+const PLACED = [];
+function label(text, x, y, anchor, color, size = 10) {
+  const w = text.length * size * 0.52, hgt = size + 2;
+  for (const dy of [0, 11, -11, 22, -22]) {
+    const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x, y0 = y + dy - size;
+    if (PLACED.some((b) => x0 < b[2] && x0 + w > b[0] && y0 < b[3] && y0 + hgt > b[1])) continue;
+    PLACED.push([x0, y0, x0 + w, y0 + hgt]);
+    const t = el('text', { x, y: y + dy, 'font-size': size, 'text-anchor': anchor, fill: color, 'paint-order': 'stroke', stroke: 'var(--card)', 'stroke-width': 3 }); t.textContent = text; return;
+  }
+}
+function draw() {
+  svg.innerHTML = ''; PLACED.length = 0;
+  const W = (7.12 + OX + 0.8) * S, H = (28.05 + OZ + 1.6) * S;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
+  const showLab = document.getElementById('cLab').checked, showClear = document.getElementById('cClear').checked, showGame = document.getElementById('cGame').checked;
+  // rooms
+  for (const [id, poly] of Object.entries(POLY)) {
+    const pts = poly.map(([px, py]) => [PX(px), PZ(py)]);
+    el('polygon', { points: pts.map(([x, z]) => `${sx(x)},${sz(z)}`).join(' '), fill: ROOMFILL[id], stroke: 'var(--wall)', 'stroke-width': 3 });
+  }
+  // camera-facing walls: horizontal edges with the room below them
+  for (const [id, poly] of Object.entries(POLY)) {
+    const pts = poly.map(([px, py]) => [PX(px), PZ(py)]);
+    for (let i = 0; i < pts.length; i++) {
+      const [ax, az] = pts[i], [bx, bz] = pts[(i + 1) % pts.length];
+      if (az !== bz) continue;
+      const mx = (ax + bx) / 2, below = inPoly(pts, mx, az + 0.3);
+      if (below) el('line', { x1: sx(ax), y1: sz(az) + 3, x2: sx(bx), y2: sz(az) + 3, stroke: 'var(--cam)', 'stroke-width': 2.5, 'stroke-dasharray': '7 4', opacity: 0.75 });
+    }
+  }
+  // doors
+  for (const d of CURRENT.doors) {
+    const hw = d.w / 2;
+    if (showClear && d.kind !== 'lift') { const z = clearZone(d); el('rect', { x: sx(z[0]), y: sz(z[2]), width: (z[1] - z[0]) * S, height: (z[3] - z[2]) * S, fill: 'var(--clear)', stroke: 'var(--clear-s)', 'stroke-dasharray': '4 3' }); }
+    const col = { open: '#ffffff', powered: '#f2c14e', barred: '#c0392b', lift: '#5aa0d8' }[d.kind] || '#fff';
+    const L = d.axis === 'x' ? el('line', { x1: sx(d.x - hw), y1: sz(d.z), x2: sx(d.x + hw), y2: sz(d.z), stroke: col, 'stroke-width': 6 }) : el('line', { x1: sx(d.x), y1: sz(d.z - hw), x2: sx(d.x), y2: sz(d.z + hw), stroke: col, 'stroke-width': 6 });
+    hover(L, `<b>${d.id}</b> (${d.kind}) ${d.w} m`);
+  }
+  // items
+  const items = itemsFor(), floorLabs = [], wallLabs = [];
+  for (const p of items) {
+    const [fill, stroke] = CATC[p.cat] || CATC.ob;
+    const g = el('g', { transform: `translate(${sx(p.x)},${sz(p.z)})` });
+    const bad = mode === 'cur' ? blocks(p) : blocks(p);
+    if (p.wall) {
+      // a strip on the wall face it hangs on
+      const horiz = p.face === 's' || p.face === 'n';
+      const w = Math.max(p.w, 0.22) * S, t = 0.22 * S;
+      const off = { s: [0, t / 2], n: [0, -t / 2], e: [t / 2, 0], w: [-t / 2, 0] }[p.face] || [0, 0];
+      const r = horiz ? el('rect', { x: -w / 2 + off[0], y: -t / 2 + off[1], width: w, height: t, fill, stroke: 'var(--wallitem)', 'stroke-width': 2, rx: 2 }, g)
+        : el('rect', { x: -t / 2 + off[0], y: -w / 2 + off[1], width: t, height: w, fill, stroke: 'var(--wallitem)', 'stroke-width': 2, rx: 2 }, g);
+      hover(r, `<b>${short(p.a)}</b> (wall, ${p.face === 's' ? 'on a north wall, facing the camera' : 'side wall'}${p.y ? `, ${p.y} m up` : ''})<br>${p.a}.glb${p.note ? '<br>' + p.note : ''}`);
+      if (showLab) wallLabs.push([short(p.a), sx(p.x) + (horiz ? 0 : (p.face === 'e' ? 10 : -10)), sz(p.z) + (horiz ? t + 11 : 4), horiz ? 'middle' : (p.face === 'e' ? 'start' : 'end')]);
+      continue;
+    }
+    const inner = el('g', { transform: `rotate(${-p.rot})` }, g);
+    const r = el('rect', { x: -p.w / 2 * S, y: -p.d / 2 * S, width: p.w * S, height: p.d * S, fill: p.ghost ? 'none' : fill, 'fill-opacity': 0.85, stroke: bad ? 'var(--bad)' : stroke, 'stroke-width': bad ? 3 : 1, 'stroke-dasharray': p.ghost ? '4 3' : 'none', rx: 1.5 }, inner);
+    if (!p.ghost) el('line', { x1: -p.w / 2 * S + 2, y1: p.d / 2 * S - 1.5, x2: p.w / 2 * S - 2, y2: p.d / 2 * S - 1.5, stroke, 'stroke-width': 2 }, inner); // its front edge
+    hover(r, `<b>${short(p.a)}</b>${bad ? ` <span style="color:#ff8a8a">blocks ${bad}</span>` : ''}<br>${p.a}${p.cat === 'box' ? ' (engine box)' : '.glb'} · rot ${p.rot}° · ${p.w}×${p.d} m${p.note ? '<br>' + p.note : ''}`);
+    if (showLab && p.w * p.d > 0.08 && !(p.ghost && p.a === 'curtain_rail')) floorLabs.push([short(p.a), sx(p.x), sz(p.z) + 4, 'middle']);
+  }
+  for (const l of floorLabs) label(l[0], l[1], l[2], l[3], 'var(--ink)');
+  for (const l of wallLabs) label(l[0], l[1], l[2], l[3], '#5b4fc4', 9.5);
+  // pickups / interactions
+  if (showGame) {
+    const picks = mode === 'cur' ? CURRENT.pickups : PICK_PROP;
+    for (const [lab, x, z] of picks) { const c = el('path', { d: `M${sx(x)} ${sz(z) - 6}l6 6l-6 6l-6-6z`, fill: '#2e9e5b', stroke: '#fff', 'stroke-width': 1.2 }); hover(c, `<b>Pickup</b>: ${lab}`); }
+    for (const [lab, x, z] of CURRENT.interact) { const c = el('circle', { cx: sx(x), cy: sz(z), r: 6, fill: '#f2c14e', stroke: '#6b4c00', 'stroke-width': 1.5 }); hover(c, `<b>Interaction</b>: ${lab}`); }
+  }
+  // room names
+  for (const [id, poly] of Object.entries(POLY)) {
+    const r = CURRENT.rooms.find((q) => q.id === id), big = r.rects.reduce((a, b) => ((b[1] - b[0]) * (b[3] - b[2]) > (a[1] - a[0]) * (a[3] - a[2]) ? b : a));
+    const cx = sx((big[0] + big[1]) / 2), cy = sz(big[3]) - 10;
+    const name = mode === 'cur' ? NAMES[id][1] : NAMES[id][0];
+    const t = el('text', { x: cx, y: cy, 'font-size': 14, 'font-weight': 700, 'text-anchor': 'middle', fill: 'var(--wall)', opacity: 0.8 }); t.textContent = name.toUpperCase();
+  }
+  // camera
+  const cy = sz(28.05) + 22, cx = sx(-17);
+  el('path', { d: `M${cx} ${cy + 8}l0 -22m-7 8l7 -8l7 8`, stroke: 'var(--cam)', 'stroke-width': 2.5, fill: 'none' });
+  const ct = el('text', { x: cx + 14, y: cy, 'font-size': 12, fill: 'var(--cam)' }); ct.textContent = 'The locked camera sits south (bottom) looking north: the top wall of each room is the one you see; the bottom walls are cut away.';
+}
+function inPoly(pts, x, z) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, zi] = pts[i], [xj, zj] = pts[j]; if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) c = !c; } return c; }
+
+// ------------------------------------------------------------------ room cards
+const NOTES = {
+  or: ['Nothing changes here.', '<span class="flag">Near the Supply doorway (4.2 m wide)</span>: a supply cart stands about 1 m in from the opening on the theatre side, and a storage cabinet touches its far edge. Both are left alone because the opening is signed off; they can be nudged 0.6 m if you want.'],
+  s7: ['Camera wall: shelving, a cabinet with a wall cupboard over it, linen, the endoscopy stack, the scope drying cabinet, the scope sink with its dispensers, the ENDOSCOPY sign, the readiness board and a clock.', 'A waist-high island of sterile packs in the middle replaces the tall shelf island, so you can still run loops round it without it hiding Yola.', 'The pistol and first-aid cart stay exactly where they are.'],
+  n7: ['The counter moves off the wall: its front faces the camera, the staff chairs sit behind it, and the team station and RECEPTION sign hang on the wall above. The radio beat still works.', 'Camera wall: waiting seats, posters, a clock, the planter, the water cooler and a wayfinding sign.', 'The middle stays open for the walker ring, with the team desk (and the shotgun) as the one island.'],
+  t7: ['Three bays have their heads on the camera wall, so you see headwalls, monitors and curtain rails from the front. Two more bays sit on the east wall.', 'The 3.6 m lane from door to door stays empty.', 'Crawlers on the floor between the bays read as the patients who fell out of bed.'],
+  v7: ["Your five painted props (stand-ins until your files turn up) go where the camera sees them: the bench and pegboard, the paint shelf and the pallet, plus the janitor cabinet in Lift Service.", 'The old ward beds are pushed aside under dust sheets, the old bay sign leans on the wall, and plastic sheeting closes off an unfinished bay.', 'The floor is taken up behind sawhorse barriers, so the floor breaches now have a reason.'],
+  c7: ['Camera wall: the serving counter, tray return, STAFF LOUNGE sign, notice board, vending machines and the coffee corner. The powered store door in the middle is still seen through.', 'Lockers and the water cooler go on the east wall, and a low sofa corner sits in the south-west.', 'Four tables to circle the guard round, with the west-to-east lane kept open.'],
+  x7: ['It was locked when everything fell, so the stock is clean: spare beds still wrapped, nested wheelchairs, IV stands, gas cylinders and shelving on the camera wall.', "The contractors' bench and spare barriers tie it to the works next door; the axe stays on the bench."],
+  p7: ['<span class="flag">Fixed: the electrical cabinet stood right in front of the cafeteria doorway</span>. It moves to the west wall, south of the door.', 'Camera wall: switchgear, the tool board and the lift reset (unchanged). The janitor closet (sink, wall shelf, mop, your janitor cabinet, racks) goes on the side walls.', "The open middle is still the big lady's charge lane."],
+  r7: ['Camera wall: scrub sinks with soap and towel dispensers, the prep checklist poster, the PRE-OP sign, a prep counter and a clock, all either side of the barred theatre door, which stays clear.', 'Pre-op holding along the west wall: trolleys, a curtain and visitor chairs. The warming, airway and sedation carts go along the east wall.', 'The centre stays open for the last push.'],
+};
+const rc = document.getElementById('rooms');
+for (const id of ['or', 's7', 'n7', 't7', 'v7', 'c7', 'x7', 'p7', 'r7']) {
+  const d = document.createElement('div'); d.className = 'room';
+  const wallList = P.filter((p) => p.room === id && p.wall).sort((a, b) => a.x - b.x || a.z - b.z).map((p) => short(p.a) + (p.face === 's' ? '' : ' (side wall)'));
+  d.innerHTML = `<h3>${NAMES[id][0]}</h3><p class="was">Was: ${NAMES[id][1]}. ${NAMES[id][2]}</p><ul>${NOTES[id].map((n) => `<li>${n}</li>`).join('')}${wallList.length ? `<li><i>Wall-mounted, west to east:</i> ${[...new Set(wallList)].join(', ')}</li>` : ''}</ul>`;
+  rc.appendChild(d);
+}
+
+// ------------------------------------------------------------------ controls
+const bP = document.getElementById('bProp'), bC = document.getElementById('bCur');
+bP.onclick = () => { mode = 'prop'; bP.classList.add('on'); bC.classList.remove('on'); draw(); };
+bC.onclick = () => { mode = 'cur'; bC.classList.add('on'); bP.classList.remove('on'); draw(); };
+for (const id of ['cLab', 'cClear', 'cGame']) document.getElementById(id).onchange = draw;
+document.getElementById('zoom').oninput = (e) => { S = S0 * +e.target.value; draw(); };
+draw();
+</script>
+</body>
+</html>

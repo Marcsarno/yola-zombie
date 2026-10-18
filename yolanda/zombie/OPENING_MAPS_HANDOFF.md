@@ -4,6 +4,20 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
+## FROM THE COMBAT CHAT (2026-10-18, later): Floor 7 refurnished as a hospital — read this first
+
+The user asked for Floor 7's rooms to mean something ("it no longer feels like a hospital"), furniture never in front of a
+door, wall decorations on the walls the locked camera sees. The approved plan: FLOOR7_LAYOUT_PROPOSAL.html (open it in the
+dev server: Proposed / Current, hover for files). Same route, same room shapes; in core/chapter.js Floor 7 only (the OR untouched):
+- Rooms renamed (the HUD banner on entering): Endoscopy and Sterile Supply, Reception and Nurse Station, Recovery Ward, Ward
+  Refurbishment, Staff Lounge, Equipment Store, Lift Plant, Pre-op Holding. The dressing of those rooms is rewritten; 41 more
+  Outbreak runtime GLBs copied into assets/hospital. The electrical cabinet that blocked the lounge → lift plant doorway moved.
+- Moved to fit: the radio's interaction point (-37.2, -8.4; the counter is off the wall now), the shotgun, shells, the
+  sledgehammer (on the plasterboard pallet), the knife, the first-aid case, five spawns that landed in furniture. The crowbar
+  pickup was left alone (another chat is working on the crowbar).
+- Printed signs reworded/moved (LIFT PLANT, WARD CLOSED, EQUIPMENT STORE); the png room signs 'reception' and 'cafeteria' removed
+  (Outbreak sign props there now). Floors 6 and 5 not touched yet: the user wants the same treatment after Floor 7 is signed off.
+
 ## FROM THE COMBAT CHAT (2026-10-18): what changed in your files — read this first
 
 The user asked the combat chat for Floor 7 encounters, test weapons and room dressing (their parts 3 and 4), so it edited
