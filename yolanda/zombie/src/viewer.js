@@ -1086,12 +1086,28 @@ EDIT_LISTS.old = EDIT_LISTS.draft = EDIT_LISTS.short;
 const EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
 const EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|melee_horizontal|ual1?_Melee_(?!Idle).+)$/;
 const editKey = () => 'riglab.edit.' + S.gun + '.' + S.mode;
+// THE GAME'S ATTACKS (the user, 2026-10-17: "just show the attacks in the game ... so i can finish this check quickly"): the
+// Attack list holds only what the game plays with the weapon. The story game's own (core/weapons.js, render/newmoves.js):
+// the bat's combo strike by strike, its low strike and its floor strike; the axe's swing, chop and low slash. Then the
+// arena's picks for it (assets/arena/selection.json "uses", the PICKS). Every other clip is still in Advanced's list.
+const GAME_ATTACKS = {
+  alubat: ['ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual_Sword_Regular_C', 'ual1_Sword_Attack', 'ual_Sword_Heavy_D'],
+  packaxe: ['bat_swing', 't_chop', 'gs_low_slash'],
+};
+const ARENA_KEY = { alubat: 'bat', packaxe: 'axe', packcrowbar: 'crowbar', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
+const gameAttack = (n) => (GAME_ATTACKS[S.gun] || []).includes(n) ? 'story game' : PICKS[n + '|' + ARENA_KEY[S.gun]] ? 'arena' : '';
+function gameAttacks() {
+  const have = new Set([...mainCache[S.char].gltf.animations.map((c) => c.name), ...[...($('clip')?.options || [])].map((o) => o.value)]);
+  const arena = Object.keys(PICKS).filter((k) => k.endsWith('|' + ARENA_KEY[S.gun])).map((k) => k.slice(0, k.lastIndexOf('|')));
+  return [...new Set([...(GAME_ATTACKS[S.gun] || []), ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
+}
 function editClips() {
+  if (S.mode === 'attack' && ARENA_KEY[S.gun]) { const g = gameAttacks(); if (g.length) return g; }
   const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === 'idle' ? EDIT_IDLE : EDIT_ATTACK);
   return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n))
     .sort((a, b) => (a === 'ual_Sword_Block' ? -1 : b === 'ual_Sword_Block' ? 1 : a.localeCompare(b)));
 }
-const prettyClip = (n) => S.gun === 'pistol' && S.mode === 'attack' && n === 'pistol_idle' ? 'Firing (the idle with the shot kick)  · Mixamo' : n.replace(/^ual1?_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : '  · Mixamo');
+const prettyClip = (n) => S.gun === 'pistol' && S.mode === 'attack' && n === 'pistol_idle' ? 'Firing (the idle with the shot kick)  · Mixamo' : n.replace(/^(ual1?|kev)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : /^kev_/.test(n) ? '  · Kevin Iglesias' : '  · Mixamo') + (S.mode === 'attack' && gameAttack(n) ? '  · ' + gameAttack(n) : '');
 function editSync() {
   if (!$('edit') || !main) return;
   for (const b of $('eWeapons').children) b.classList.toggle('on', b.dataset.k === S.gun);
