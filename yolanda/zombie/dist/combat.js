@@ -44921,6 +44921,7 @@ void main() {
   var U = M + "upgrades/";
   var H = "zombie/assets/hospital/";
   var K = "zombie/assets/kit/";
+  var SI = "zombie/assets/props/";
   var T = 0.3;
   var WH = 2.7;
   var FLOOR_Z = { 7: 0, 6: -80, 5: -160 };
@@ -45172,7 +45173,8 @@ void main() {
       p(H + "privacy_screen.glb", -38.1, 11, 90, [0.14, 1.84], 1.97);
       p(H + "procedure_stretcher.glb", -33.4, 8.4, 0, [0.9, 1.66], 1.22);
       p(H + "supply_cart.glb", -26.3, 14.4, 0, [1.16, 1.1], 1.23);
-      raw({ kind: "bench", x: -38, z: 17, size: [2.4, 0.7, 0.92], color: 9206364, fp: [2.4, 0.7], h: 0.92, name: "v7bench" });
+      p(SI + "standin_cable_workbench.glb", -38, 17, 0, [1.8, 0.76], 0.92, { name: "v7bench" });
+      p(SI + "standin_tool_pegboard.glb", -34.4, 15.89, 180, [1.26, 0.06], 0.94, { y: 1, noCollide: true });
       raw({ kind: "hazard", x: -31.5, z: 24, size: [3.4, 1.4], noCollide: true, fp: [0.1, 0.1], h: 0 });
       raw({ kind: "pipes", x: -32, z: 15.8, len: 9, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
       p(K + "isolation_windowed_partition.glb", -36, 23.2, 90, [2, 0.15], 2.4);
@@ -45184,9 +45186,9 @@ void main() {
       p(H + "wet_floor_sign.glb", -28.9, 18.6, 0, [0.48, 0.66], 0.64, { noCollide: true });
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", -40.3, 26.6, 90, [0.82, 0.51], 1.82);
       wp(H + "toolboard.glb", -38, 15.8, "s", 1);
-      raw({ kind: "box", x: -27.2, z: 16.7, size: [1.6, 0.9, 1.1], face: "s", color: 10719084, fp: [1.6, 0.9], h: 1.1 });
+      p(SI + "standin_renovation_pallet.glb", -27.2, 16.75, 0, [1.25, 1.02], 0.61);
       raw({ kind: "box", x: -25.4, z: 16.7, size: [1.2, 0.9, 0.8], face: "s", color: 10259050, fp: [1.2, 0.9], h: 0.8 });
-      raw({ kind: "bench", x: -33.6, z: 27.2, size: [2, 0.7, 0.92], color: 9206364, fp: [2, 0.7], h: 0.92 });
+      p(SI + "standin_paint_shelf.glb", -33.6, 27.7, 180, [1.19, 0.44], 1.81);
       p(H + "laundry_hamper.glb", -40.2, 23.6, 0, [0.6, 0.57], 1.15);
       p("zombie/assets/props/sawhorse_barrier.glb", -26.4, 23.4, 90, [1.9, 0.73], 1.04);
       p("zombie/assets/props/drywall_pallet.glb", -39.6, 18.9, 90, [1.41, 1.69], 0.45);
@@ -45211,7 +45213,7 @@ void main() {
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", 6.55, 26.4, 270, [0.82, 0.51], 1.82);
       raw({ kind: "hazard", x: -1, z: 16.9, size: [1.8, 0.9], noCollide: true, fp: [0.1, 0.1], h: 0 });
       raw({ kind: "box", x: -6.55, z: 20.6, size: [1.5, 0.6, 2], face: "e", color: 9082007, fp: [0.6, 1.5], h: 2 });
-      raw({ kind: "box", x: -6.55, z: 23.2, size: [1.2, 0.6, 1.7], face: "e", color: 8358284, fp: [0.6, 1.2], h: 1.7 });
+      p(SI + "standin_janitor_cabinet.glb", -6.6, 23.2, 90, [0.9, 0.5], 1.9);
       p(H + "janitor_cart.glb", 4.6, 27.2, 0, [0.83, 0.99], 1.23);
       p(H + "utility_sink.glb", 6.55, 17.2, 270, [0.88, 0.51], 1.64);
       wp(H + "toolboard.glb", -3.6, 15.8, "s", 1);
