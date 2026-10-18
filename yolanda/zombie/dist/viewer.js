@@ -39219,6 +39219,10 @@ void main() {
         var _a7, _b7;
         if (o.isBone) (_a7 = this.restPos)[_b7 = o.name.replace(/^mixamorig:?/, "")] || (_a7[_b7] = o.position.clone());
       });
+      this.rest = [];
+      obj.traverse((o) => {
+        if (o.isBone) this.rest.push([o, o.quaternion.clone(), o.position.clone(), o.scale.clone()]);
+      });
       this.helper = new SkeletonHelper(obj);
       this.helper.visible = false;
       this.helper.material.depthTest = false;
@@ -39246,8 +39250,22 @@ void main() {
       this.action.play();
       this.action.timeScale = 0;
     }
+    // every redraw starts from scratch, as the game does: every bone back at rest, then the clip writes every bone it drives
+    // again (three's mixer skips a value that has not changed since it last wrote it, so a bone kept whatever the last redraw
+    // did to it: with anything turning a bone after the arm adjustments, e.g. the shotgun's left hand on the pump, they piled
+    // up redraw after redraw, 2026-10-17)
     setFrame(f) {
       if (!this.action) return;
+      for (const [b, q, p, sc] of this.rest) {
+        b.quaternion.copy(q);
+        b.position.copy(p);
+        b.scale.copy(sc);
+      }
+      this.post = [];
+      for (const b of this.mixer._bindings) {
+        const n = b.valueSize, buf = b.buffer;
+        for (let i = n; i < 3 * n; i++) buf[i] = NaN;
+      }
       this.action.time = clamp4(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
       this.mixer.update(0);
       this.root.updateMatrixWorld(true);
