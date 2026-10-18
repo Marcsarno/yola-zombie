@@ -378,6 +378,7 @@ function applyLevel(save) {
   yola.reset(p.x, p.z, p.aimYaw); yola.setShown(true);
   cameraPose(p.x, p.z, p.aimYaw); // the follow camera starts exactly at the pose
   for (const z of sim.zombies) { z.px = z.x; z.pz = z.z; z.pyaw = z.yaw; }
+  for (const L of sim.loose) { L.px = L.x; L.pz = L.z; }
   input.clearAll(); input.enabled = true; acc = 0; hitPauseT = 0; last = performance.now();
   arena.syncLevel(sim.level);
   if (sim.level?.taken.has('bat')) opening?.takeBat?.(); else opening?.restoreBat?.();
@@ -526,6 +527,7 @@ function runFrame(dt, doRender = true) {
   while (acc >= STEP) {
     p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;
     for (const z of sim.zombies) { z.px = z.x; z.pz = z.z; z.pyaw = z.yaw; }
+    for (const L of sim.loose) { L.px = L.x; L.pz = L.z; }
     sim.step(inp);
     if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
     acc -= STEP; steps++;
@@ -578,6 +580,7 @@ function runFrame(dt, doRender = true) {
   stepPhysics(animDt);
   acid.update(sim.hazards, sim.zombies, animDt);
   ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
+  ZombieView.syncLoose(sim.loose, alpha, animDt); // (the drip stands and wheelchairs: core/loose.js)
   // ---- zombies (pooled views) ----
   const seen = new Set();
   for (const z of sim.zombies) {
@@ -733,7 +736,7 @@ function handleEvents() {
       case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.5); hud.popup('SHIELD STUCK'); break; // (his shield driven into the floor for good: render/fx.js floorCrack)
       case 'guardArmTorn': cue(audio, 'free'); audio.play('sever'); shake(0.45); hitPauseT = Math.max(hitPauseT, 0.09); hud.popup('ARM TORN OFF'); break; // (the last heave: his arm stays on the shield)
       case 'guardClub': cue(audio, 'heave', 1.2); break;
-      case 'chairTip': { const v = zviews.get(e.id); v?.tipChair(e); audio.play('bump', 1.3); break; } // (out of its wheelchair: render/clipchars.js tipChair)
+      case 'chairTip': audio.play('bump', 1.3); break; // (out of its wheelchair: the chair on its side, core/loose.js)
       case 'bedRise': if (dist(e.id) < 12) audio.play('groan', 1.1); break;
       case 'guardClubBreak': audio.play('sever'); audio.play('bump', 1.3); shake(0.3); break; // (his torn arm comes apart on the blow: render/clipchars.js breakClub)
       case 'zombieStrikeHit': if (hurtFrame === frameNo) { // (it drew blood: hers, by what it was)
@@ -955,6 +958,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get looseMeshes() { return ZombieView.looseMeshes; }, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

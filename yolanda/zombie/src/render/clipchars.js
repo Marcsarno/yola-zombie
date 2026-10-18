@@ -1363,7 +1363,7 @@ const EXTRA_ONCE = ['patient_bed_rise', 'ual_IdleToLay', 'ual1_Sitting_Exit', 'u
 // again if it is still in reach. CHAIR: the wheelchair under its hips (seat: the hips' height, m; fwd: the chair's centre
 // ahead of the hips; yaw: the model's own front), its hands on the hand rims pushing (rim: centre ahead of the hips /
 // up / out to the side, radius) one push each rimArc of wheel turn
-const IV = { fwd: 0.32, side: 0.36, grip: 1.08, k: 16, damp: 7, tilt: 0.05, maxTilt: 0.2, reach: 0.75, h: 2.03 };
+const IV = { grip: 1.08, tilt: 0.05, maxTilt: 0.2 }; // (where it is and who holds it: core/loose.js)
 const CHAIR = { seat: 0.62, fwd: 0.06, yaw: 0, rim: [-0.04, 0.36, 0.3], rimR: 0.27, rimArc: 1.6, h: 0.97 };
 const GAIT_SETS = {
   ual: { idle: 'ual_Zombie_Idle_Loop', dur: 1.333, dirs: [['Fwd', 0, 1, 1.05], ['Fwd_L', 0.707, 0.707, 1.06], ['L', 1, 0, 0.75], ['Bwd_L', 0.707, -0.707, 1.06], ['Bwd', 0, -1, 1.2], ['Bwd_R', -0.707, -0.707, 1.06], ['R', -1, 0, 0.75], ['Fwd_R', -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
@@ -1493,7 +1493,8 @@ export class ZombieView extends ClipBody {
   static ladyKipUp = true; // (the lady's kip-up experiment: off = her old get-up from her back)
   static planted = [];
   static propSrc = {}; // (main.js: the drip stand, the wheelchair, the surgeon's cap and mask)
-  static props = []; // (drip stands and wheelchairs left in the world: until the level resets)
+  static props = []; // (the demo's bed)
+  static looseMeshes = new Map(); // (core/loose.js id -> its drip stand / wheelchair on screen)
   static clubGrip = new THREE.Vector3(0, 0.075, 0); // (his palm, in his RightHand bone's frame, m: where his fist closes round the torn wrist)
   static clubRoll = 0; // (rad about clubAxis: which way the torn elbow can fold as he swings)
   static clubAxis = new THREE.Vector3(0, 0, 1); // (in his RightHand bone's frame: the club's direction out of the fist, across it: he holds the arm by its own hand, the shoulder end out) // the guards' shields stuck in the floor for good, and the arms torn off on them ({ shield, arm }): they stay until the level resets
@@ -1685,6 +1686,7 @@ export class ZombieView extends ClipBody {
     for (const pc of [...ZombieView.pieces]) ZombieView.dropPiece(pc);
     for (const P of ZombieView.planted) { P.shield?.dispose?.(); P.arm?.parent?.remove(P.arm); }
     for (const o of ZombieView.props) o.parent?.remove(o); ZombieView.props = [];
+    for (const o of ZombieView.looseMeshes.values()) o.parent?.remove(o); ZombieView.looseMeshes.clear();
     ZombieView.planted = [];
   }
 
@@ -1710,21 +1712,34 @@ export class ZombieView extends ClipBody {
     this.bleed = {};
     this.bindProp(z);
   }
-  tipChair(e) { const o = this.chairO; if (!o) return; o.rotation.set(0, o.rotation.y, (Math.random() < 0.5 ? -1 : 1) * 1.45); o.position.y = 0.3; o.position.x += e.dirX * 0.4; o.position.z += e.dirZ * 0.4; this.chairO = null; this.act('sit_lower')?.setEffectiveWeight(0); }
   // ---- the hospital's own zombies (IV, CHAIR, BED; core/zombies.js prop) ----
   bindProp(z) {
-    const S = ZombieView.propSrc, f = new THREE.Vector3(Math.sin(z.yaw), 0, Math.cos(z.yaw)), l = new THREE.Vector3(Math.cos(z.yaw), 0, -Math.sin(z.yaw));
-    this.iv = null; this.chairO = null; this.lying = null;
+    this.iv = z.prop === 'iv'; this.chairO = z.prop === 'chair'; this.lying = null; this.ivW = 0;
     if (this.cap) this.cap.visible = z.prop === 'surgeon';
-    if (z.prop === 'iv' && S.iv) {
-      const o = S.iv.clone(); ZombieView.scene.add(o); ZombieView.props.push(o);
-      this.iv = { o, x: z.x + f.x * IV.fwd + l.x * IV.side, z: z.z + f.z * IV.fwd + l.z * IV.side, vx: 0, vz: 0, tx: 0, tz: 0, held: 1 };
-    }
-    if (z.prop === 'chair' && S.chair) {
-      const o = S.chair.clone(); ZombieView.scene.add(o); ZombieView.props.push(o); this.chairO = o; this.wheel = 0;
+    if (this.chairO) {
+      this.wheel = 0;
       for (const k of ['LowerLeg_L', 'LowerLeg_R']) { this.severed.add(k); if (this.modules[k]) this.modules[k].visible = false; if (this.gore[k]?.stump) this.gore[k].stump.visible = true; } // (no legs below the knee: its stumps)
       if (this.act('sit_lower')) { const a = this.act('sit_lower'); a.reset(); a.play(); a.setEffectiveWeight(0); }
     }
+  }
+  // the drip stands and wheelchairs (core/loose.js), drawn where the sim has them: the stand tips against its acceleration,
+  // a tipped chair lies on its side
+  static syncLoose(list, alpha, dt) {
+    const S = ZombieView.propSrc, M = ZombieView.looseMeshes, seen = new Set();
+    for (const L of list) {
+      seen.add(L.id);
+      let o = M.get(L.id);
+      if (!o) { const src = L.kind === 'iv' ? S.iv : S.chair; if (!src) continue; o = src.clone(); o.userData.l = { vx: 0, vz: 0, rx: 0, rz: 0 }; ZombieView.scene.add(o); M.set(L.id, o); }
+      const x = L.px + (L.x - L.px) * alpha, z = L.pz + (L.z - L.pz) * alpha, u = o.userData.l;
+      if (L.kind === 'iv') {
+        const ax = dt > 0 ? (L.vx - u.vx) / dt : 0, az = dt > 0 ? (L.vz - u.vz) / dt : 0; u.vx = L.vx; u.vz = L.vz;
+        const tx = clamp(az * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt), tz = clamp(-ax * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
+        u.rx += (-tx - u.rx) * Math.min(1, dt * 6); u.rz += (-tz - u.rz) * Math.min(1, dt * 6);
+        o.position.set(x, 0, z); o.rotation.set(u.rx, 0, u.rz);
+      } else if (L.tipped) { o.position.set(x, 0.3, z); o.rotation.set(0, L.yaw + CHAIR.yaw, L.tipSide * 1.45); }
+      else { o.position.set(x, 0, z); o.rotation.set(0, L.yaw + CHAIR.yaw, 0); }
+    }
+    for (const [id, o] of M) if (!seen.has(id)) { o.parent?.remove(o); M.delete(id); } // (a new level: gone)
   }
   // the surgeon's cap and mask (blender/make_surgeon_cap.py, built in the nurse's own model space): on her Head bone as it
   // sits at rest (from the skin's bind matrices: the pose on screen does not matter)
@@ -1762,9 +1777,8 @@ export class ZombieView extends ClipBody {
       if (this.outer.scale.x !== m) this.outer.scale.x = m;
       if (m < 0) this.container.rotation.y = -z.yaw; }
     if (this.chairO) {
-      const o = this.chairO;
-      if (z.chair && !z.crawling) {
-        o.position.set(this.outer.position.x + f.x * CHAIR.fwd, 0, this.outer.position.z + f.z * CHAIR.fwd); o.rotation.set(0, y + CHAIR.yaw, 0);
+      const o = z.loose && ZombieView.looseMeshes.get(z.loose.id);
+      if (o && z.chair && !z.crawling) {
         const hips = B.Hips?.getWorldPosition(_v7); if (hips) { this.outer.position.y += CHAIR.seat - hips.y; this.outer.updateMatrixWorld(true); }
         this.wheel += Math.hypot(z.vx, z.vz) * dt / CHAIR.rimR;
         const w = busy ? 0 : 1; this.rimW = (this.rimW ?? w) + (w - (this.rimW ?? w)) * Math.min(1, dt * 8);
@@ -1777,23 +1791,10 @@ export class ZombieView extends ClipBody {
         }
       }
     }
-    const I = this.iv;
-    if (I) {
-      if (!z.alive || z.crawling) I.held = 0;
-      const want = I.held > 0 && !busy;
-      if (I.held > 0 || want) { // (it follows its spot beside the hip: a spring, so it lags, swings and rolls on)
-        I.tx = this.outer.position.x + f.x * IV.fwd + l.x * IV.side; I.tz = this.outer.position.z + f.z * IV.fwd + l.z * IV.side;
-      }
-      const pull = want ? IV.k : 0, ax = (I.tx - I.x) * pull - I.vx * (want ? IV.damp : 2.5), az = (I.tz - I.z) * pull - I.vz * (want ? IV.damp : 2.5);
-      I.vx += ax * dt; I.vz += az * dt; I.x += I.vx * dt; I.z += I.vz * dt;
-      if (want) { const dx = I.x - I.tx, dz = I.z - I.tz, d = Math.hypot(dx, dz); if (d > 0.35) { I.x = I.tx + dx / d * 0.35; I.z = I.tz + dz / d * 0.35; } } // (never further than its arm)
-      // the pole tips against its acceleration (the top lags), back upright as it rolls steady
-      I.lx = clamp(-(ax) * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt); I.lz = clamp(-(az) * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
-      I.rx = (I.rx || 0) + (I.lz - (I.rx || 0)) * Math.min(1, dt * 6); I.rz = (I.rz || 0) + (-I.lx - (I.rz || 0)) * Math.min(1, dt * 6);
-      I.o.position.set(I.x, 0, I.z); I.o.rotation.set(I.rx, 0, I.rz);
-      const w = want ? 1 : 0; I.held = I.held + (w - I.held) * Math.min(1, dt * (want ? 5 : 10));
-      if (!want && z.alive && !busy && Math.hypot(I.x - this.outer.position.x, I.z - this.outer.position.z) > IV.reach) this.iv = null; // (left behind: it walks on without it)
-      if (I.held > 0.01 && B.LeftArm) { I.o.updateMatrixWorld(true); _v4.set(0, IV.grip, 0); I.o.localToWorld(_v4); solveArm(B.LeftArm, B.LeftForeArm, B.LeftHand, _v4, I.held); }
+    if (this.iv) { // its left hand on the stand's pole while it holds it (the sim moves the stand: core/zombies.js carryLoose)
+      const L = z.loose, o = L && ZombieView.looseMeshes.get(L.id), want = !!(o && L.owner === z.id && L.held && !busy) ? 1 : 0;
+      this.ivW += (want - this.ivW) * Math.min(1, dt * (want ? 5 : 10));
+      if (o && this.ivW > 0.01 && B.LeftArm) { o.updateMatrixWorld(true); _v4.set(0, IV.grip, 0); o.localToWorld(_v4); solveArm(B.LeftArm, B.LeftForeArm, B.LeftHand, _v4, this.ivW); }
     }
   }
   hide() { this.outer.visible = false; this.blob.visible = false; this.id = -1; this.mixer.stopAllAction(); this.endRagdoll(); if (this.shieldC && this.shieldC.state !== 'break') this.shieldC.object3D.visible = false; }

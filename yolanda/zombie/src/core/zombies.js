@@ -1,6 +1,7 @@
 // Zombie behaviour: emerge -> chase (flow field + separation) -> telegraphed attack -> recover.
 // Hits put them in stagger with collision-aware knockback that navigation does not override.
 import { approachAngle, angleDiff } from './world.js';
+import { IV_CARRY, LOOSE } from './loose.js';
 import { isMelee } from './weapons.js';
 
 let nextId = 1;
@@ -175,7 +176,7 @@ export class Zombie {
     this.layInBed();
     if (this.prop) this.pouncer = false;
     if (this.prop === 'iv' || this.prop === 'bed') this.gait = 'ual'; else if (this.chair) this.gait = 'shamble'; // (the shamble at their pace played ~3x its own: the user, 'does not correctly walk'; the 8-way walk at its own pace)
-    if (this.chair) { this.severed.add('LowerLeg_L'); this.severed.add('LowerLeg_R'); this.limbHp.LowerLeg_L = this.limbHp.LowerLeg_R = 0; }
+    if (this.chair) { this.r = LOOSE.chair.r; this.severed.add('LowerLeg_L'); this.severed.add('LowerLeg_R'); this.limbHp.LowerLeg_L = this.limbHp.LowerLeg_R = 0; }
     this.shieldHp = this.shieldMax = this.kind === 'guard' ? SHIELD_HP : 0; // the sprinter's charge (sprinterChase); fall: 'tumble' when she trips
   }
   get armsLost() { return (this.severed.has('Forearm_L') ? 1 : 0) + (this.severed.has('Forearm_R') ? 1 : 0); }
@@ -201,6 +202,25 @@ export class Zombie {
     this.limbHp[part] = Math.max(1, this.limbHp[part]); // (kept: nothing to cut off)
     this.crawling = this.toCrawl = true; this.broken = part;
     sim.emit({ type: 'legBreak', id: this.id, part, x: this.x, z: this.z });
+  }
+  // its drip stand or wheelchair (core/loose.js), while it has it: the chair under it; the stand on its spring beside it,
+  // let go through a fight, a flinch or a fall and taken again if still in reach, else left behind. Dead: it stays put.
+  carryLoose(dt, sim) {
+    const L = this.loose; if (!L || L.owner !== this.id) return;
+    if (!this.alive || this.state === ZS.DYING || this.state === ZS.DEAD) { L.owner = 0; L.held = false; return; }
+    const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw), lx = Math.cos(this.yaw), lz = -Math.sin(this.yaw);
+    if (L.kind === 'chair') {
+      if (!this.chair) { L.owner = 0; L.held = false; return; }
+      L.x = this.x + fx * 0.06; L.z = this.z + fz * 0.06; L.yaw = this.yaw; L.vx = this.vx; L.vz = this.vz; L.held = true; return;
+    }
+    const C = IV_CARRY, s = this.state, busy = s === ZS.WINDUP || s === ZS.STRIKE || s === ZS.RECOVER || s === ZS.STAGGER || s === ZS.KNOCKDOWN || s === ZS.GETUP || this.crawling;
+    const sx = this.x + fx * C.fwd + lx * C.side, sz = this.z + fz * C.fwd + lz * C.side;
+    if (busy) { L.held = false; return; }
+    if (!L.held && Math.hypot(L.x - sx, L.z - sz) > C.reach) { L.owner = 0; return; } // (left behind: it walks on without it)
+    L.held = true;
+    L.vx += ((sx - L.x) * C.k - L.vx * C.damp) * dt; L.vz += ((sz - L.z) * C.k - L.vz * C.damp) * dt; L.x += L.vx * dt; L.z += L.vz * dt;
+    const dx = L.x - sx, dz = L.z - sz, d = Math.hypot(dx, dz); if (d > C.arm) { L.x = sx + (dx / d) * C.arm; L.z = sz + (dz / d) * C.arm; }
+    sim.world.resolveCircle(L, L.r);
   }
   layInBed() { if (this.bed) { [this.x, this.z] = bedPathAt(this.bed, 0); this.yaw = bedRoot(this.bed)[2]; } } // (lying in it as the hub laid it)
   set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
@@ -322,7 +342,11 @@ export class Zombie {
 
   knockDown(dirX, dirZ, sim) {
     this.fall = ''; this.sprinting = false; this.spd = 0;
-    if (this.chair) { this.chair = false; this.crawling = this.toCrawl = true; sim.emit({ type: 'chairTip', id: this.id, x: this.x, z: this.z, dirX, dirZ }); } // (out of its wheelchair onto the floor)
+    if (this.chair) { // (out of its wheelchair onto the floor; the chair goes over on its side and stays)
+      this.chair = false; this.crawling = this.toCrawl = true; this.r = this.K.r;
+      const L = this.loose; if (L) { L.owner = 0; L.held = false; L.tipped = true; L.r = LOOSE.tipped.r; L.x += dirX * 0.4; L.z += dirZ * 0.4; L.vx = dirX * 1.2; L.vz = dirZ * 1.2; L.tipSide = sim.rand() < 0.5 ? -1 : 1; }
+      sim.emit({ type: 'chairTip', id: this.id, x: this.x, z: this.z, dirX, dirZ });
+    }
     this.set(ZS.KNOCKDOWN, KNOCKDOWN_FALL);
     this.solid = false;
     this.yaw = Math.atan2(-dirX, -dirZ); // face the blow, thrown onto the back
@@ -784,6 +808,7 @@ export class Zombie {
     }
 
     if (this.rGrow > 0) { this.rGrow = Math.max(0, this.rGrow - dt); this.r = this.K.r * (1 - 0.6 * this.rGrow); }
+    this.carryLoose(dt, sim);
     // integrate: locomotion + knockback (knockback decays with friction; dying bodies slide less far)
     const fr = Math.exp(-dt * (this.state === ZS.DYING ? 5 : 7));
     this.x += (this.vx + this.kx) * dt; this.z += (this.vz + this.kz) * dt;

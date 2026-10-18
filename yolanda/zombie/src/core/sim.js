@@ -7,6 +7,7 @@ import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.j
 import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
 import { Level } from './level.js';
+import { addLoose, looseStep, IV_CARRY } from './loose.js';
 
 export const STEP = 1 / 60;
 const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.3;
@@ -24,6 +25,7 @@ export class Sim {
     this.player = new Player(s.x, s.z, this.T);
     this.player.aimYaw = this.player.aimTarget = s.yaw;
     this.zombies = [];
+    this.loose = []; // the drip stands and wheelchairs in the world (core/loose.js)
     this.events = [];
     this.hazards = []; // acid pools: { x, z, r, t, dur, dps } (the lady's burst)
     this.time = 0;
@@ -96,6 +98,7 @@ export class Sim {
     this.updateHazards(dt);
     bump(this.zombies, this);
     separate(this.zombies, p);
+    looseStep(this, dt); // (the drip stands and wheelchairs: nobody walks through them)
     this.director.update(dt);
     if (this.level) this.level.step(dt, input); else this.updateFlow();
     // remove old corpses (renderer fades them first)
@@ -118,6 +121,10 @@ export class Sim {
     if (opts.x !== undefined) { z.x = opts.x; z.z = opts.z; z.yaw = opts.yaw ?? z.yaw; z.stateDur = 0.3; z.layInBed(); }
     else { z.emergeTo = { x: sx, z: sz }; z.x = d.axis === 'x' ? sx : d.x + (d.x < 0 ? 0.35 : -0.35); z.z = d.axis === 'x' ? d.z + 0.35 : sz; }
     this.zombies.push(z);
+    if (z.prop === 'iv' || z.prop === 'chair') { // (its drip stand / wheelchair: core/loose.js)
+      const fx = Math.sin(z.yaw), fz = Math.cos(z.yaw), lx = Math.cos(z.yaw), lz = -Math.sin(z.yaw), iv = z.prop === 'iv';
+      z.loose = addLoose(this, z.prop, iv ? z.x + fx * IV_CARRY.fwd + lx * IV_CARRY.side : z.x + fx * 0.06, iv ? z.z + fz * IV_CARRY.fwd + lz * IV_CARRY.side : z.z + fz * 0.06, z.yaw, z.id);
+    }
     this.emit({ type: 'zombieSpawn', id: z.id, door: d.id });
     return z;
   }
