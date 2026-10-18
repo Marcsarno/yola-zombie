@@ -61444,90 +61444,454 @@ void main() {
     ]
   };
 
+  // src/sfx/zombies.gen.js
+  var ZLIB = {
+    "idle": [
+      "assets/sfx/zombie/idle_01.mp3",
+      "assets/sfx/zombie/idle_02.mp3",
+      "assets/sfx/zombie/idle_03.mp3",
+      "assets/sfx/zombie/idle_04.mp3",
+      "assets/sfx/zombie/idle_05.mp3",
+      "assets/sfx/zombie/idle_06.mp3",
+      "assets/sfx/zombie/idle_07.mp3",
+      "assets/sfx/zombie/idle_08.mp3",
+      "assets/sfx/zombie/idle_09.mp3",
+      "assets/sfx/zombie/idle_10.mp3",
+      "assets/sfx/zombie/idle_11.mp3",
+      "assets/sfx/zombie/idle_12.mp3",
+      "assets/sfx/zombie/idle_13.mp3",
+      "assets/sfx/zombie/idle_14.mp3",
+      "assets/sfx/zombie/idle_15.mp3",
+      "assets/sfx/zombie/idle_16.mp3",
+      "assets/sfx/zombie/idle_17.mp3",
+      "assets/sfx/zombie/idle_18.mp3",
+      "assets/sfx/zombie/idle_19.mp3",
+      "assets/sfx/zombie/idle_20.mp3"
+    ],
+    "alert": [
+      "assets/sfx/zombie/alert_01.mp3",
+      "assets/sfx/zombie/alert_02.mp3",
+      "assets/sfx/zombie/alert_03.mp3",
+      "assets/sfx/zombie/alert_04.mp3",
+      "assets/sfx/zombie/alert_05.mp3",
+      "assets/sfx/zombie/alert_06.mp3",
+      "assets/sfx/zombie/alert_07.mp3",
+      "assets/sfx/zombie/alert_08.mp3",
+      "assets/sfx/zombie/alert_09.mp3",
+      "assets/sfx/zombie/alert_10.mp3",
+      "assets/sfx/zombie/alert_11.mp3",
+      "assets/sfx/zombie/alert_12.mp3",
+      "assets/sfx/zombie/alert_13.mp3",
+      "assets/sfx/zombie/alert_14.mp3",
+      "assets/sfx/zombie/alert_15.mp3",
+      "assets/sfx/zombie/alert_16.mp3",
+      "assets/sfx/zombie/alert_17.mp3",
+      "assets/sfx/zombie/alert_18.mp3",
+      "assets/sfx/zombie/alert_19.mp3",
+      "assets/sfx/zombie/alert_20.mp3",
+      "assets/sfx/zombie/alert_21.mp3",
+      "assets/sfx/zombie/alert_22.mp3",
+      "assets/sfx/zombie/alert_23.mp3",
+      "assets/sfx/zombie/alert_24.mp3",
+      "assets/sfx/zombie/alert_25.mp3",
+      "assets/sfx/zombie/alert_26.mp3",
+      "assets/sfx/zombie/alert_27.mp3",
+      "assets/sfx/zombie/alert_28.mp3",
+      "assets/sfx/zombie/alert_29.mp3",
+      "assets/sfx/zombie/alert_30.mp3",
+      "assets/sfx/zombie/alert_31.mp3"
+    ],
+    "attack": [
+      "assets/sfx/zombie/attack_01.mp3",
+      "assets/sfx/zombie/attack_02.mp3",
+      "assets/sfx/zombie/attack_03.mp3",
+      "assets/sfx/zombie/attack_04.mp3",
+      "assets/sfx/zombie/attack_05.mp3",
+      "assets/sfx/zombie/attack_06.mp3",
+      "assets/sfx/zombie/attack_07.mp3",
+      "assets/sfx/zombie/attack_08.mp3",
+      "assets/sfx/zombie/attack_09.mp3",
+      "assets/sfx/zombie/attack_10.mp3",
+      "assets/sfx/zombie/attack_11.mp3",
+      "assets/sfx/zombie/attack_12.mp3",
+      "assets/sfx/zombie/attack_13.mp3",
+      "assets/sfx/zombie/attack_14.mp3",
+      "assets/sfx/zombie/attack_15.mp3",
+      "assets/sfx/zombie/attack_16.mp3",
+      "assets/sfx/zombie/attack_17.mp3",
+      "assets/sfx/zombie/attack_18.mp3",
+      "assets/sfx/zombie/attack_19.mp3",
+      "assets/sfx/zombie/attack_20.mp3",
+      "assets/sfx/zombie/attack_21.mp3",
+      "assets/sfx/zombie/attack_22.mp3",
+      "assets/sfx/zombie/attack_23.mp3",
+      "assets/sfx/zombie/attack_24.mp3",
+      "assets/sfx/zombie/attack_25.mp3",
+      "assets/sfx/zombie/attack_26.mp3",
+      "assets/sfx/zombie/attack_27.mp3",
+      "assets/sfx/zombie/attack_28.mp3",
+      "assets/sfx/zombie/attack_29.mp3",
+      "assets/sfx/zombie/attack_30.mp3",
+      "assets/sfx/zombie/attack_31.mp3",
+      "assets/sfx/zombie/attack_32.mp3",
+      "assets/sfx/zombie/attack_33.mp3"
+    ],
+    "bite": [
+      "assets/sfx/zombie/bite_01.mp3",
+      "assets/sfx/zombie/bite_02.mp3",
+      "assets/sfx/zombie/bite_03.mp3",
+      "assets/sfx/zombie/bite_04.mp3",
+      "assets/sfx/zombie/bite_05.mp3",
+      "assets/sfx/zombie/bite_06.mp3",
+      "assets/sfx/zombie/bite_07.mp3",
+      "assets/sfx/zombie/bite_08.mp3",
+      "assets/sfx/zombie/bite_09.mp3",
+      "assets/sfx/zombie/bite_10.mp3",
+      "assets/sfx/zombie/bite_11.mp3",
+      "assets/sfx/zombie/bite_12.mp3",
+      "assets/sfx/zombie/bite_13.mp3",
+      "assets/sfx/zombie/bite_14.mp3",
+      "assets/sfx/zombie/bite_15.mp3"
+    ],
+    "hurt": [
+      "assets/sfx/zombie/hurt_01.mp3",
+      "assets/sfx/zombie/hurt_02.mp3",
+      "assets/sfx/zombie/hurt_03.mp3",
+      "assets/sfx/zombie/hurt_04.mp3",
+      "assets/sfx/zombie/hurt_05.mp3",
+      "assets/sfx/zombie/hurt_06.mp3",
+      "assets/sfx/zombie/hurt_07.mp3",
+      "assets/sfx/zombie/hurt_08.mp3",
+      "assets/sfx/zombie/hurt_09.mp3",
+      "assets/sfx/zombie/hurt_10.mp3",
+      "assets/sfx/zombie/hurt_11.mp3",
+      "assets/sfx/zombie/hurt_12.mp3",
+      "assets/sfx/zombie/hurt_13.mp3",
+      "assets/sfx/zombie/hurt_14.mp3",
+      "assets/sfx/zombie/hurt_15.mp3",
+      "assets/sfx/zombie/hurt_16.mp3"
+    ],
+    "death": [
+      "assets/sfx/zombie/death_01.mp3",
+      "assets/sfx/zombie/death_02.mp3",
+      "assets/sfx/zombie/death_03.mp3",
+      "assets/sfx/zombie/death_04.mp3",
+      "assets/sfx/zombie/death_05.mp3",
+      "assets/sfx/zombie/death_06.mp3",
+      "assets/sfx/zombie/death_07.mp3",
+      "assets/sfx/zombie/death_08.mp3",
+      "assets/sfx/zombie/death_09.mp3",
+      "assets/sfx/zombie/death_10.mp3",
+      "assets/sfx/zombie/death_11.mp3",
+      "assets/sfx/zombie/death_12.mp3",
+      "assets/sfx/zombie/death_13.mp3",
+      "assets/sfx/zombie/death_14.mp3"
+    ],
+    "scream": [
+      "assets/sfx/zombie/scream_01.mp3",
+      "assets/sfx/zombie/scream_02.mp3",
+      "assets/sfx/zombie/scream_03.mp3",
+      "assets/sfx/zombie/scream_04.mp3",
+      "assets/sfx/zombie/scream_05.mp3",
+      "assets/sfx/zombie/scream_06.mp3",
+      "assets/sfx/zombie/scream_07.mp3",
+      "assets/sfx/zombie/scream_08.mp3",
+      "assets/sfx/zombie/scream_09.mp3",
+      "assets/sfx/zombie/scream_10.mp3",
+      "assets/sfx/zombie/scream_11.mp3",
+      "assets/sfx/zombie/scream_12.mp3"
+    ],
+    "charge": [
+      "assets/sfx/zombie/charge_01.mp3",
+      "assets/sfx/zombie/charge_02.mp3",
+      "assets/sfx/zombie/charge_03.mp3",
+      "assets/sfx/zombie/charge_04.mp3",
+      "assets/sfx/zombie/charge_05.mp3",
+      "assets/sfx/zombie/charge_06.mp3",
+      "assets/sfx/zombie/charge_07.mp3",
+      "assets/sfx/zombie/charge_08.mp3",
+      "assets/sfx/zombie/charge_09.mp3",
+      "assets/sfx/zombie/charge_10.mp3",
+      "assets/sfx/zombie/charge_11.mp3",
+      "assets/sfx/zombie/charge_12.mp3",
+      "assets/sfx/zombie/charge_13.mp3",
+      "assets/sfx/zombie/charge_14.mp3"
+    ],
+    "sdeath": [
+      "assets/sfx/zombie/sdeath_01.mp3",
+      "assets/sfx/zombie/sdeath_02.mp3",
+      "assets/sfx/zombie/sdeath_03.mp3",
+      "assets/sfx/zombie/sdeath_04.mp3",
+      "assets/sfx/zombie/sdeath_05.mp3",
+      "assets/sfx/zombie/sdeath_06.mp3",
+      "assets/sfx/zombie/sdeath_07.mp3"
+    ],
+    "groar": [
+      "assets/sfx/zombie/groar_01.mp3",
+      "assets/sfx/zombie/groar_02.mp3",
+      "assets/sfx/zombie/groar_03.mp3",
+      "assets/sfx/zombie/groar_04.mp3",
+      "assets/sfx/zombie/groar_05.mp3",
+      "assets/sfx/zombie/groar_06.mp3",
+      "assets/sfx/zombie/groar_07.mp3",
+      "assets/sfx/zombie/groar_08.mp3",
+      "assets/sfx/zombie/groar_09.mp3",
+      "assets/sfx/zombie/groar_10.mp3",
+      "assets/sfx/zombie/groar_11.mp3",
+      "assets/sfx/zombie/groar_12.mp3",
+      "assets/sfx/zombie/groar_13.mp3",
+      "assets/sfx/zombie/groar_14.mp3",
+      "assets/sfx/zombie/groar_15.mp3",
+      "assets/sfx/zombie/groar_16.mp3"
+    ],
+    "gattack": [
+      "assets/sfx/zombie/gattack_01.mp3",
+      "assets/sfx/zombie/gattack_02.mp3",
+      "assets/sfx/zombie/gattack_03.mp3",
+      "assets/sfx/zombie/gattack_04.mp3",
+      "assets/sfx/zombie/gattack_05.mp3",
+      "assets/sfx/zombie/gattack_06.mp3",
+      "assets/sfx/zombie/gattack_07.mp3",
+      "assets/sfx/zombie/gattack_08.mp3",
+      "assets/sfx/zombie/gattack_09.mp3",
+      "assets/sfx/zombie/gattack_10.mp3",
+      "assets/sfx/zombie/gattack_11.mp3",
+      "assets/sfx/zombie/gattack_12.mp3",
+      "assets/sfx/zombie/gattack_13.mp3",
+      "assets/sfx/zombie/gattack_14.mp3"
+    ],
+    "gpain": [
+      "assets/sfx/zombie/gpain_01.mp3",
+      "assets/sfx/zombie/gpain_02.mp3",
+      "assets/sfx/zombie/gpain_03.mp3",
+      "assets/sfx/zombie/gpain_04.mp3",
+      "assets/sfx/zombie/gpain_05.mp3",
+      "assets/sfx/zombie/gpain_06.mp3",
+      "assets/sfx/zombie/gpain_07.mp3",
+      "assets/sfx/zombie/gpain_08.mp3",
+      "assets/sfx/zombie/gpain_09.mp3",
+      "assets/sfx/zombie/gpain_10.mp3",
+      "assets/sfx/zombie/gpain_11.mp3"
+    ],
+    "gdeath": [
+      "assets/sfx/zombie/gdeath_01.mp3",
+      "assets/sfx/zombie/gdeath_02.mp3",
+      "assets/sfx/zombie/gdeath_03.mp3",
+      "assets/sfx/zombie/gdeath_04.mp3",
+      "assets/sfx/zombie/gdeath_05.mp3",
+      "assets/sfx/zombie/gdeath_06.mp3",
+      "assets/sfx/zombie/gdeath_07.mp3",
+      "assets/sfx/zombie/gdeath_08.mp3",
+      "assets/sfx/zombie/gdeath_09.mp3",
+      "assets/sfx/zombie/gdeath_10.mp3",
+      "assets/sfx/zombie/gdeath_11.mp3",
+      "assets/sfx/zombie/gdeath_12.mp3"
+    ],
+    "stomp": [
+      "assets/sfx/zombie/stomp_01.mp3",
+      "assets/sfx/zombie/stomp_02.mp3",
+      "assets/sfx/zombie/stomp_03.mp3",
+      "assets/sfx/zombie/stomp_04.mp3",
+      "assets/sfx/zombie/stomp_05.mp3",
+      "assets/sfx/zombie/stomp_06.mp3",
+      "assets/sfx/zombie/stomp_07.mp3",
+      "assets/sfx/zombie/stomp_08.mp3",
+      "assets/sfx/zombie/stomp_09.mp3",
+      "assets/sfx/zombie/stomp_10.mp3",
+      "assets/sfx/zombie/stomp_11.mp3",
+      "assets/sfx/zombie/stomp_12.mp3"
+    ],
+    "debris": [
+      "assets/sfx/zombie/debris_01.mp3",
+      "assets/sfx/zombie/debris_02.mp3",
+      "assets/sfx/zombie/debris_03.mp3",
+      "assets/sfx/zombie/debris_04.mp3",
+      "assets/sfx/zombie/debris_05.mp3",
+      "assets/sfx/zombie/debris_06.mp3",
+      "assets/sfx/zombie/debris_07.mp3",
+      "assets/sfx/zombie/debris_08.mp3",
+      "assets/sfx/zombie/debris_09.mp3",
+      "assets/sfx/zombie/debris_10.mp3"
+    ],
+    "sting": [
+      "assets/sfx/zombie/sting_01.mp3",
+      "assets/sfx/zombie/sting_02.mp3",
+      "assets/sfx/zombie/sting_03.mp3",
+      "assets/sfx/zombie/sting_04.mp3",
+      "assets/sfx/zombie/sting_05.mp3",
+      "assets/sfx/zombie/sting_06.mp3"
+    ],
+    "horde": [
+      "assets/sfx/zombie/horde_01.mp3",
+      "assets/sfx/zombie/horde_02.mp3",
+      "assets/sfx/zombie/horde_03.mp3",
+      "assets/sfx/zombie/horde_04.mp3",
+      "assets/sfx/zombie/horde_05.mp3",
+      "assets/sfx/zombie/horde_06.mp3",
+      "assets/sfx/zombie/horde_07.mp3",
+      "assets/sfx/zombie/horde_08.mp3",
+      "assets/sfx/zombie/horde_09.mp3",
+      "assets/sfx/zombie/horde_10.mp3",
+      "assets/sfx/zombie/horde_11.mp3"
+    ],
+    "breach": [
+      "assets/sfx/zombie/breach_01.mp3",
+      "assets/sfx/zombie/breach_02.mp3",
+      "assets/sfx/zombie/breach_03.mp3",
+      "assets/sfx/zombie/breach_04.mp3"
+    ]
+  };
+
   // src/sfx/banks.js
   var G2 = "assets/sfx/guns/";
   var lib = (...keys) => keys.flatMap((k) => LIB[k] || []);
+  var zl = (...keys) => keys.flatMap((k) => ZLIB[k] || []);
   var take = (name, i) => `${G2}${name}_${String(i).padStart(2, "0")}.mp3`;
   var takes = (name, from, to) => Array.from({ length: to - from + 1 }, (_, i) => take(name, from + i));
   var one = (name) => [`${G2}${name}.mp3`];
   var BANKS = {
     // the pistol: a close 9 mm / .45 crack + a sub thump for headphones + the corridor answering + brass on the tile
-    shot: { label: "Pistol shot", group: "Guns", cadence: 0.26, layers: [
+    shot: { label: "Pistol shot", group: "Weapons", sub: "Guns", cadence: 0.26, layers: [
       { label: "Shot", files: takes("pistol", 1, 5), extra: takes("pistol", 6, 14), gain: 0.8, pitch: [-0.7, 0.5], wet: 0.34 },
       { label: "Sub thump (headphones)", synth: "subPistol", gain: 1, wet: 0 },
       { label: "Brass casing", files: takes("brass", 1, 4), extra: lib("brass"), gain: 0.2, pitch: [-1.5, 1.5], at: [0.34, 0.52], wet: 0.1, side: true }
     ] },
     // the shotgun: a 12 gauge pump blast + a deep sub + a long room (the pump follows as its own sound)
-    shotgun: { label: "Shotgun blast", group: "Guns", cadence: 0.85, then: { name: "pump", at: 0.24 }, layers: [
+    shotgun: { label: "Shotgun blast", group: "Weapons", sub: "Guns", cadence: 0.85, then: { name: "pump", at: 0.24 }, layers: [
       { label: "Blast", files: takes("shotgun", 1, 8), extra: takes("shotgun", 9, 12), gain: 1, pitch: [-0.9, 0.4], wet: 0.45 },
       { label: "Sub boom (headphones)", synth: "subShotgun", gain: 1, wet: 0 }
     ] },
     // the Model 12's own rack: back, forward, and the spent hull bouncing off the floor
-    pump: { label: "Shotgun pump", group: "Guns", cadence: 0.85, layers: [
+    pump: { label: "Shotgun pump", group: "Weapons", sub: "Guns", cadence: 0.85, layers: [
       { label: "Rack back", files: one("pump_back"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.16 },
       { label: "Rack forward", files: one("pump_fwd"), gain: 0.5, pitch: [-0.4, 0.4], at: 0.19, wet: 0.16 },
       { label: "Full rack (one real recording)", files: [], extra: lib("rack"), gain: 0.55, pitch: [-0.4, 0.4], wet: 0.16 },
       { label: "Spent hull", files: takes("hull", 1, 3), extra: lib("hull"), gain: 0.32, pitch: [-1, 1], at: [0.38, 0.5], wet: 0.1, side: true }
     ] },
     // the pistol reload (1.05 s): the empty magazine drops, the new one seats; the slide is reloadDone
-    pistolReload: { label: "Pistol reload", group: "Reloads", layers: [
+    pistolReload: { label: "Pistol reload", group: "Weapons", sub: "Reloads", layers: [
       { label: "Magazine out", files: one("mag_out"), extra: lib("magdrop"), gain: 0.35, pitch: [-0.5, 0.5], at: 0.06, wet: 0.12 },
       { label: "Magazine in", files: one("mag_in"), gain: 0.45, pitch: [-0.5, 0.5], at: 0.5, wet: 0.12 }
     ] },
-    pistolReloadDone: { label: "Pistol slide (reload done)", group: "Reloads", layers: [{ label: "Slide", files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
+    pistolReloadDone: { label: "Pistol slide (reload done)", group: "Weapons", sub: "Reloads", layers: [{ label: "Slide", files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
     // the shotgun reload (1.9 s): four shells thumbed into the tube; the pump closes it (reloadDone)
-    shotgunReload: { label: "Shotgun reload (4 shells)", group: "Reloads", layers: [0.12, 0.52, 0.92, 1.32].map((at, i) => ({ label: `Shell ${i + 1}`, files: one("mag_in"), extra: lib("shellin"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
-    dry: { label: "Dry fire (empty)", group: "Guns", layers: [{ label: "Click", files: one("dry_click"), extra: lib("click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] },
+    shotgunReload: { label: "Shotgun reload (4 shells)", group: "Weapons", sub: "Reloads", layers: [0.12, 0.52, 0.92, 1.32].map((at, i) => ({ label: `Shell ${i + 1}`, files: one("mag_in"), extra: lib("shellin"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
+    dry: { label: "Dry fire (empty)", group: "Weapons", sub: "Guns", layers: [{ label: "Click", files: one("dry_click"), extra: lib("click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] },
     // ---- melee hits: the game already plays these (synthesised); the first takes the user adds replace the synth,
     // which stays as a quiet "classic" layer underneath until switched off on the board ----
-    fistHit: { label: "Fist / kick hit", group: "Melee hits", layers: [
+    fistHit: { label: "Fist / kick hit", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Punch", files: [], extra: lib("punch", "punchheavy"), gain: 0.9, pitch: [-1, 1], wet: 0.12 },
       { label: "Classic synth thump (under it)", synth: "fistHit", gain: 0.6 }
     ] },
-    batHit: { label: "Bat hit", group: "Melee hits", layers: [
+    batHit: { label: "Bat hit", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Crack", files: [], extra: lib("wood", "thwack"), gain: 0.9, pitch: [-1, 0.8], wet: 0.2 },
       { label: "Body", files: [], extra: lib("soft", "punchheavy"), gain: 0.8, pitch: [-1.5, 0.5], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "batHit", gain: 0.5 }
     ] },
-    axeHit: { label: "Axe hit", group: "Melee hits", layers: [
+    axeHit: { label: "Axe hit", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Blade bite", files: [], extra: lib("blade", "thwack"), gain: 0.85, pitch: [-1, 1], wet: 0.15 },
       { label: "Wet", files: [], extra: lib("squish"), gain: 0.5, pitch: [-1.5, 0.5], wet: 0.08 },
       { label: "Body", files: [], extra: lib("soft", "punchheavy"), gain: 0.7, pitch: [-1.5, 0.5], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "axeHit", gain: 0.5 }
     ] },
-    sever: { label: "Limb severed / gore", group: "Melee hits", layers: [
+    sever: { label: "Limb severed / gore", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Wet", files: [], extra: lib("squish"), gain: 0.85, pitch: [-2, 0.5], wet: 0.15 },
       { label: "Snap", files: [], extra: lib("thwack", "wood"), gain: 0.5, pitch: [0, 2], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "sever", gain: 0.5 }
     ] },
-    knockdown: { label: "Body hits the floor", group: "Melee hits", layers: [
+    knockdown: { label: "Body hits the floor", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Thud (as the fall lands)", files: [], extra: lib("soft", "punchheavy"), gain: 0.85, pitch: [-2, 0], at: 0.55, wet: 0.25 },
       { label: "Classic synth (under it)", synth: "knockdown", gain: 0.5 }
     ] },
-    bump: { label: "Zombie bumps into Yola", group: "Melee hits", layers: [
+    bump: { label: "Zombie bumps into Yola", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Thud", files: [], extra: lib("soft"), gain: 0.7, pitch: [-1, 1], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "bump", gain: 0.5 }
     ] },
-    clank: { label: "Bat hits a wall / metal", group: "Melee hits", layers: [
+    clank: { label: "Bat hits a wall / metal", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Metal", files: [], extra: lib("metal"), gain: 0.8, pitch: [-1, 1], wet: 0.25 },
       { label: "Classic synth (under it)", synth: "clank", gain: 0.4 }
     ] },
-    shieldHit: { label: "Hit on the guard's shield", group: "Melee hits", layers: [
+    shieldHit: { label: "Hit on the guard's shield", group: "Weapons", sub: "Melee hits", layers: [
       { label: "Board knock", files: [], extra: lib("wood", "thwack"), gain: 0.85, pitch: [-2, 0], wet: 0.2 },
       { label: "Classic synth (under it)", synth: "shieldHit", gain: 0.5 }
     ] },
-    doorOpen: { label: "Door opens", group: "World", layers: [
+    doorOpen: { label: "Door opens", group: "World", sub: "Doors", layers: [
       { label: "Door", files: [], extra: lib("door"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
       { label: "Classic synth (under it)", synth: "doorOpen", gain: 0.4 }
     ] },
+    // ---- zombies (2026-10-18): each type's moments. The game hooks pass the zombie's place (pan + distance) ----
+    groan: { label: "Idle moan (near Yola)", group: "Zombies", sub: "Every zombie", hook: "a zombie near Yola, every few seconds", layers: [
+      { label: "Moan", files: [], extra: zl("idle"), gain: 0.55, pitch: [-1.5, 1], wet: 0.3 },
+      { label: "Classic synth (under it)", synth: "groan", gain: 0.6 }
+    ] },
+    zombieAlert: { label: "Spots Yola / wakes up", group: "Zombies", sub: "Every zombie", hook: "a zombie wakes or appears", layers: [
+      { label: "Growl", files: [], extra: zl("alert"), gain: 0.7, pitch: [-1, 1], wet: 0.25 }
+    ] },
+    windup: { label: "Attack wind-up (your dodge cue)", group: "Zombies", sub: "Every zombie", hook: "a zombie starts its attack (the red floor wedge)", layers: [
+      { label: "Attack cry", files: [], extra: zl("attack"), gain: 0.75, pitch: [-1, 1], wet: 0.2 },
+      { label: "Classic synth (under it)", synth: "windup", gain: 0.5 }
+    ] },
+    zombieBite: { label: "Its attack lands on Yola", group: "Zombies", sub: "Every zombie", hook: "a zombie hits Yola", layers: [
+      { label: "Bite / claw (wet)", files: [], extra: [...zl("bite"), ...lib("squish")], gain: 0.7, pitch: [-1.5, 1], wet: 0.12 },
+      { label: "Snarl", files: [], extra: zl("attack"), gain: 0.55, pitch: [-1, 1], wet: 0.15 }
+    ] },
+    zombieHurt: { label: "Hurt (shot, not killed)", group: "Zombies", sub: "Every zombie", hook: "a bullet hits a zombie", layers: [
+      { label: "Pain", files: [], extra: zl("hurt"), gain: 0.6, pitch: [-1.5, 1.5], wet: 0.15 },
+      { label: "Classic synth (under it)", synth: "zombieHurt", gain: 0.5 }
+    ] },
+    zombieDeath: { label: "Death", group: "Zombies", sub: "Every zombie", hook: "a zombie dies", layers: [
+      { label: "Death cry", files: [], extra: zl("death"), gain: 0.75, pitch: [-1.5, 1], wet: 0.25 },
+      { label: "Body hits the floor", files: [], extra: lib("soft", "punchheavy"), gain: 0.6, pitch: [-2, 0], at: [0.4, 0.55], wet: 0.2 },
+      { label: "Classic synth (under it)", synth: "zombieDeath", gain: 0.5 }
+    ] },
+    sprinterScream: { label: "Her scream before the charge", group: "Zombies", sub: "Sprinter (big lady)", hook: "the sprinter spots Yola", layers: [
+      { label: "Scream", files: [], extra: zl("scream"), gain: 0.9, pitch: [-1, 0.5], wet: 0.35 }
+    ] },
+    sprinterCharge: { label: "She locks on and runs", group: "Zombies", sub: "Sprinter (big lady)", hook: "the sprinter starts her charge", layers: [
+      { label: "Effort", files: [], extra: zl("charge"), gain: 0.8, pitch: [-1.5, 0.5], wet: 0.2 }
+    ] },
+    sprinterDeath: { label: "Her death", group: "Zombies", sub: "Sprinter (big lady)", hook: "the sprinter dies", layers: [
+      { label: "Death cry", files: [], extra: zl("sdeath"), gain: 0.85, pitch: [-1, 0.5], wet: 0.3 },
+      { label: "Heavy body falls", files: [], extra: [...lib("soft", "punchheavy"), ...zl("stomp")], gain: 0.75, pitch: [-3, 0], at: [0.45, 0.6], wet: 0.25 }
+    ] },
+    guardRoar: { label: "Roar (he sees you)", group: "Zombies", sub: "Guard (boss)", hook: "the guard wakes or appears", layers: [
+      { label: "Roar", files: [], extra: zl("groar"), gain: 1, pitch: [-0.5, 0.5], wet: 0.4 }
+    ] },
+    guardAttack: { label: "Attack grunt", group: "Zombies", sub: "Guard (boss)", hook: "the guard winds up a swing", layers: [
+      { label: "Grunt", files: [], extra: zl("gattack"), gain: 0.9, pitch: [-1, 0.5], wet: 0.25 }
+    ] },
+    guardSlam: { label: "Ground slam", group: "Zombies", sub: "Guard (boss)", hook: "the guard leap-slam lands", layers: [
+      { label: "Boom", files: [], extra: zl("stomp"), gain: 1, pitch: [-1, 0.5], wet: 0.35 },
+      { label: "Debris", files: [], extra: zl("debris"), gain: 0.5, pitch: [-1, 1], at: [0.05, 0.12], wet: 0.2 },
+      { label: "Roar with it", files: [], extra: zl("gattack", "groar"), gain: 0.7, pitch: [-1, 0], wet: 0.3 },
+      { label: "Sub boom (headphones)", synth: "subShotgun", gain: 1 }
+    ] },
+    guardPain: { label: "Arm torn off (pain)", group: "Zombies", sub: "Guard (boss)", hook: "the guard loses an arm", layers: [
+      { label: "Pain roar", files: [], extra: zl("gpain"), gain: 1, pitch: [-0.5, 0.5], wet: 0.35 }
+    ] },
+    guardEnraged: { label: "ENRAGED", group: "Zombies", sub: "Guard (boss)", hook: "both arms gone: he enrages", layers: [
+      { label: "Roar", files: [], extra: zl("groar"), gain: 1, pitch: [-1, 0], wet: 0.4 },
+      { label: "Boss stinger", files: [], extra: zl("sting"), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 }
+    ] },
+    guardDeath: { label: "His death", group: "Zombies", sub: "Guard (boss)", hook: "the finishing blow on the guard", layers: [
+      { label: "Death roar", files: [], extra: zl("gdeath"), gain: 1, pitch: [-0.5, 0.5], wet: 0.45 },
+      { label: "Huge body falls", files: [], extra: zl("stomp"), gain: 0.9, pitch: [-1, 0], at: [0.6, 0.8], wet: 0.3 }
+    ] },
+    hordeDistant: { label: "The horde, far off", group: "Zombies", sub: "Horde & atmosphere", pending: true, cadence: 4, layers: [
+      { label: "Distant moan", files: [], extra: zl("horde"), gain: 0.4, pitch: [-1, 1], wet: 0.6 }
+    ] },
+    floorBreach: { label: "Bursting up through the floor", group: "Zombies", sub: "Horde & atmosphere", hook: "a zombie bursts up through the tiles", layers: [
+      { label: "Rumble + crack", files: [], extra: zl("breach"), gain: 0.9, pitch: [-1, 0.5], wet: 0.3 },
+      { label: "Debris", files: [], extra: zl("debris"), gain: 0.5, pitch: [-1, 1], at: [0.35, 0.45], wet: 0.2 }
+    ] },
     // ---- coming next: no game hook yet (Phase 2-5); pick now, they go in when wired ----
-    footstep: { label: "Yola footstep", group: "Coming next (not in the game yet)", pending: true, cadence: 0.32, layers: [
+    footstep: { label: "Yola footstep", group: "Coming next", sub: "Not in the game yet", pending: true, cadence: 0.32, layers: [
       { label: "Step", files: [], extra: lib("step", "stepsoft"), gain: 0.5, pitch: [-1, 1], wet: 0.08 }
     ] },
-    doorClose: { label: "Door closes", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Door", files: [], extra: lib("doorshut"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }] },
-    glassBreak: { label: "Glass breaks", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Glass", files: [], extra: lib("glass"), gain: 0.85, pitch: [-1, 1], wet: 0.3 }] },
-    weaponSwap: { label: "Weapon swap (handling)", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Handling", files: [], extra: lib("cloth", "click"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] },
-    pickupItem: { label: "Pick up an item", group: "Coming next (not in the game yet)", pending: true, layers: [{ label: "Item", files: [], extra: lib("pickup", "cloth"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] }
+    doorClose: { label: "Door closes", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Door", files: [], extra: lib("doorshut"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }] },
+    glassBreak: { label: "Glass breaks", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Glass", files: [], extra: lib("glass"), gain: 0.85, pitch: [-1, 1], wet: 0.3 }] },
+    weaponSwap: { label: "Weapon swap (handling)", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Handling", files: [], extra: lib("cloth", "click"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] },
+    pickupItem: { label: "Pick up an item", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Item", files: [], extra: lib("pickup", "cloth"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] }
   };
 
   // src/sfx/samples.js
@@ -61674,7 +62038,19 @@ void main() {
     return "data:audio/wav;base64," + btoa(str);
   })();
   var MINOR = /* @__PURE__ */ new Set(["groan", "zombieHurt", "bump", "ricochet", "batMiss", "windup", "empty", "dry"]);
-  var SYNTH_ALIAS = { pistolReload: "reload", pistolReloadDone: "reloadDone", shotgunReload: "shellsStart" };
+  var SYNTH_ALIAS = {
+    pistolReload: "reload",
+    pistolReloadDone: "reloadDone",
+    shotgunReload: "shellsStart",
+    // the zombie voices (2026-10-18) play the old sounds they replaced until the user picks takes; the rest are silent until then
+    zombieAlert: "groan",
+    guardRoar: "groan",
+    sprinterScream: "groan",
+    guardAttack: "windup",
+    sprinterDeath: "zombieDeath",
+    guardDeath: "zombieDeath",
+    guardSlam: "knockdown"
+  };
   var SYNTH_WET = { heal: 0.05, swap: 0.04, wave: 0.03, clear: 0.03, death: 0.05, liftDing: 0.2, power: 0.2, bang: 0.3, groan: 0.3, zombieDeath: 0.2, knockdown: 0.22, shieldBreak: 0.3 };
   function makeRoomIR(ctx, secs = 1.05, pre = 9e-3) {
     const sr = ctx.sampleRate, n = Math.floor(sr * (secs + pre)), ir = ctx.createBuffer(2, n, sr);
@@ -61738,7 +62114,7 @@ void main() {
         try {
           this.reverbIn = c.createGain();
           const conv = c.createConvolver();
-          conv.buffer = makeRoomIR(c);
+          conv.buffer = this.irBuf = makeRoomIR(c);
           this.reverbIn.connect(conv);
           conv.connect(this.sfx);
         } catch {
@@ -61936,6 +62312,27 @@ void main() {
         s.connect(this.reverbIn);
       }
       return g;
+    }
+    // cut every effect now playing or still scheduled (the Sound Board's Stop): fresh effects + reverb buses, the old ones
+    // disconnected with everything still feeding them
+    resetVoices() {
+      if (!this.ctx) return;
+      const c = this.ctx, old = this.sfx, oldRev = this.reverbIn;
+      this.sfx = c.createGain();
+      this.sfx.gain.value = old.gain.value;
+      this.sfx.connect(this.modern ? this.sfxComp : this.master);
+      old.disconnect();
+      if (oldRev) {
+        this.reverbIn = c.createGain();
+        this.reverbIn.gain.value = oldRev.gain.value;
+        const conv = c.createConvolver();
+        conv.buffer = this.irBuf;
+        this.reverbIn.connect(conv);
+        conv.connect(this.sfx);
+        oldRev.disconnect();
+      }
+      this.recent.clear();
+      this.active.length = 0;
     }
     // the classic (synthesised only) sounds or the new ones: recorded banks, panning, the room, the bus compressor
     setModern(on) {
@@ -73063,8 +73460,8 @@ void main() {
     groanT -= animDt;
     if (groanT <= 0) {
       groanT = 1.6 + Math.random() * 2;
-      const n = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < 9).length;
-      if (n) audio.play("groan", Math.min(1, 0.5 + n * 0.1));
+      const near = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < 9);
+      if (near.length) audio.play("groan", Math.min(1, 0.5 + near.length * 0.1), near[Math.floor(Math.random() * near.length)]);
     }
     fx.update(animDt);
     if (music.state !== "off") {
@@ -73298,9 +73695,13 @@ void main() {
           if (r && r.id !== "or") hud.banner(r.name);
           break;
         }
-        case "zombieWake":
-          if (Math.random() < 0.6 && dist(e.id) < 12) audio.play("groan", 0.9);
+        case "zombieWake": {
+          const z = zat(e.id);
+          if (z?.kind === "guard") audio.play("guardRoar", 1, z);
+          else if (Math.random() < 0.6 && dist(e.id) < 12) audio.play("zombieAlert", 0.9, z);
           break;
+        }
+        // (sound board: Zombies)
         case "dryFire":
           audio.play("dry");
           hud.toast("Out of rounds");
@@ -73312,12 +73713,13 @@ void main() {
           audio.play("knockdown");
           break;
         case "sprinterSpot":
-          if (dist(e.id) < 14) audio.play("groan", 1.5);
+          if (dist(e.id) < 14) audio.play("sprinterScream", 1.5, zat(e.id));
           break;
         // her scream before the charge (the warning cue: the threat sign)
         case "sprinterLock":
           if (dist(e.id) < 14) {
             cue(audio, "warn", 1.2);
+            audio.play("sprinterCharge", 1, zat(e.id));
             const z = sim.zombies.find((q) => q.id === e.id);
             if (z) fx.burst(z.x, 0.05, z.z, 10, 13616820, 1.6, 0.3, 0.4, -Math.sin(z.yaw), -Math.cos(z.yaw));
           }
@@ -73340,7 +73742,7 @@ void main() {
         }
         case "zombieSlam": {
           const d = Math.hypot(e.x - p.x, e.z - p.z), gz = sim.zombies.find((q) => q.id === e.id);
-          audio.play("knockdown", 1.4, e);
+          audio.play("guardSlam", 1.4, e);
           fx.ring(e.x, e.z, 16777215, 1.7);
           fx.ring(e.x, e.z, 14208959, 1.1);
           fx.burst(e.x, 0.1, e.z, 30, 13616820, 3.2, 1.1, 0.8);
@@ -73374,6 +73776,7 @@ void main() {
         case "floorBreach": {
           const d = Math.hypot(e.x - p.x, e.z - p.z);
           cue(audio, "breach", Math.max(0.35, 1 - d / 14));
+          audio.play("floorBreach", 1, e);
           fx.clearCrackAt(e.x, e.z);
           placeBreach(e.x, e.z);
           fx.burst(e.x, 0.15, e.z, 24, 14273970, 3.2, 2.4, 0.8);
@@ -73395,6 +73798,7 @@ void main() {
         case "guardArmTorn":
           cue(audio, "free");
           audio.play("sever");
+          audio.play("guardPain", 1, zat(e.id) || e);
           shake(0.45);
           hitPauseT = Math.max(hitPauseT, 0.09);
           hud.popup("ARM TORN OFF");
@@ -73419,6 +73823,7 @@ void main() {
         case "zombieStrikeHit":
           if (hurtFrame === frameNo) {
             const z = sim.zombies.find((q) => q.id === e.id), how = STRIKE_BLOOD[e.attack] || "blunt";
+            audio.play("zombieBite", 1, z || p);
             const dx = z ? p.x - z.x : 0, dz = z ? p.z - z.z : 1;
             fx.bloodHit(how, p.x - dx * 0.1, how === "bite" ? 1.35 : 1.15, p.z - dz * 0.1, dx, dz, how === "blunt" ? 1.3 : 0.8, "yola");
             if (e.attack === "club") {
@@ -73499,6 +73904,7 @@ void main() {
           break;
         // (the lady pops: core/sim.js ladyBurst)
         case "guardEnraged":
+          audio.play("guardEnraged", 1, e);
           hud.popup("ENRAGED");
           shake(0.4);
           break;
@@ -73553,9 +73959,13 @@ void main() {
         case "swapStart":
           audio.play("swap");
           break;
-        case "zombieWindup":
-          if (dist(e.id) < 8) audio.play("windup");
+        case "zombieWindup": {
+          const z = zat(e.id);
+          if (z?.kind === "guard") {
+            if (dist(e.id) < 16) audio.play("guardAttack", 1, z);
+          } else if (dist(e.id) < 8) audio.play("windup", 1, z);
           break;
+        }
         case "playerHurt":
           hurtFrame = frameNo;
           audio.play("playerHurt");
@@ -73573,8 +73983,8 @@ void main() {
           break;
         case "zombieDeath": {
           sim.stats.kills++;
-          audio.play("zombieDeath");
           const zx = sim.zombies.find((q) => q.id === e.id);
+          audio.play(zx?.kind === "sprinter" ? "sprinterDeath" : zx?.kind === "guard" ? "guardDeath" : "zombieDeath", 1, zx || e);
           if (zx?.executed && EXEC_BURST[zx.execWeapon]) gib(e.id, zx.hitDirX, zx.hitDirZ, EXEC_BURST[zx.execWeapon]);
           if (zx) atmos?.onKill(e.x, e.z, zx.hitDirX || 0, zx.hitDirZ || 0);
           break;
@@ -73622,9 +74032,12 @@ void main() {
           }
           break;
         }
-        case "zombieSpawn":
-          if (Math.random() < 0.5) audio.play("groan", 0.8);
+        case "zombieSpawn": {
+          const z = zat(e.id);
+          if (z?.kind === "guard") audio.play("guardRoar", 1, z);
+          else if (Math.random() < 0.5) audio.play("zombieAlert", 0.8, z);
           break;
+        }
         case "beatStart":
           hud.banner(`Wave ${e.beat}`);
           audio.play("wave");
@@ -73641,6 +74054,7 @@ void main() {
     }
     sim.events.length = 0;
   }
+  var zat = (id) => sim.zombies.find((q) => q.id === id);
   var dist = (id) => {
     const z = sim.zombies.find((q) => q.id === id);
     return z ? Math.hypot(z.x - sim.player.x, z.z - sim.player.z) : 99;
