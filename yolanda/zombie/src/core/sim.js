@@ -82,11 +82,13 @@ export class Sim {
     if (input.dodgePresses && p.dodgeOpen > 0) {
       const auto = p.threat ? this.autoDodge(p, p.threat, input.moveX, input.moveZ) : null;
       if (auto ? p.tryDodge(auto.x, auto.z, this, auto) : p.tryDodge(input.moveX, input.moveZ, this)) { // (Dodge / Shift: core/player.js DODGE)
-        if (p.threat) this.lastDodge = { t: this.time, id: p.threat.z.id, kind: p.threat.kind, perfect: p.threat.now && p.threat.soon };
+        const tt = p.threat || (th && th.kind === 'pounce' ? th : null); // (a walker's pounce: no sign, but a perfect dodge of it is an execute)
+        if (tt) this.lastDodge = { t: this.time, id: tt.z.id, kind: tt.kind, perfect: tt.now && tt.soon };
       }
     }
-    p.move(dt, input, this.world, this);
-    p.updateAction(dt, this);
+    const yb = this.yolaBoost || 1; // (slow motion: Yola a little ahead of the world, main.js YOLA_AHEAD)
+    p.move(dt * yb, input, this.world, this);
+    p.updateAction(dt * yb, this);
     this.flowT -= dt;
     if (this.flowT <= 0) { this.world.updateFlow(p.x, p.z); this.flowT = 0.2; }
     if ((this.engageT -= dt) <= 0) { this.engageT = 0.2; this.updateEngagement(); }
@@ -176,6 +178,12 @@ export class Sim {
       }
       // (2026-10-18, the user: "I don't think all the basic zombies need attacks that need to be dodged.. they can just have
       // basic attacks too"): a walker's lunge, scratch or pounce never brings up the dodge; the runner's dash rake does
+      // a walker's pounce (about a third of them pounce): the dodge is there, quietly (no sign, no pulse); dodged late (its
+      // last stretch or in the air) it is perfect: that walker can be executed (specialMiss)
+      if (!best && z.attack === 'pounce' && (z.state === ZS.WINDUP || z.state === ZS.STRIKE) && d < ZATTACKS.pounce.range + 1.2) {
+        const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur);
+        best = { z, kind: 'pounce', special: false, u, now: u >= 0.6, soon: true };
+      }
       if (!best && z.attack === 'dash' && (z.state === ZS.WINDUP || z.state === ZS.STRIKE) && d < 5.5) {
         const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur);
         best = { z, kind: 'dash', special: true, u, now: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, soon: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, left: z.state === ZS.STRIKE ? 0.1 : (1 - u) * z.stateDur };
@@ -242,7 +250,8 @@ export class Sim {
     const d = this.lastDodge, p = this.player;
     if (!d || d.id !== z.id || this.time - d.t > 2.6 || d.used) return;
     d.used = true;
-    if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
+    if (d.perfect && kind === 'pounce') z.executable = this.time + 2.4; // (2026-10-18, the user's idea: a perfect dodge on a basic zombie is an execute: her next blow bursts it)
+    else if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
     this.emit({ type: 'dodgeSuccess', id: z.id, kind, perfect: d.perfect, x: z.x, z: z.z });
   }
   // a critical blow or shot (a perfect dodge's reward): the multiplier once, then gone

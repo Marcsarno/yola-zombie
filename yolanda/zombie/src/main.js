@@ -133,6 +133,7 @@ useLevel(levelForMode(mode)); // the story's chapter (Floors 7, 6, 5), or the co
 let levelSave = store.get('chapter1save', null); // the latest chapter checkpoint (retry restores it)
 if (levelSave && levelSave.v !== 2) levelSave = null; // (an old Floor 3 save does not fit the new floors)
 const HIT_SLOW = 0.2; // time runs at this rate through a hit-stop
+const YOLA_AHEAD = 0.38; // in slow motion Yola gets back this share of the speed the world loses (world 0.3: her 0.57)
 let paused = false, hitPauseT = 0, acc = 0, last = performance.now(), playerScreen = null;
 const camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new THREE.Vector2() };
 const perf = { frames: [], spikes: 0, t0: performance.now() };
@@ -500,7 +501,10 @@ function runFrame(dt, doRender = true) {
   let simDt = dt;
   if (paused) simDt = 0;
   // cinematic slow motion (the guard's leap at its peak, a perfect dodge, a finishing blow: slowMotion below)
-  if (!paused) simDt *= slowmo.update(dt, sim, !!opening?.active);
+  // (2026-10-18, the user: "the slow motion doesn't feel good. I think our character needs to ability to move slightly faster
+  // than the rest of the world during that slow motion"): the world runs at k, Yola at k + YOLA_AHEAD of what it loses (her
+  // steps, swings, shots and her animation: sim.yolaBoost in core/sim.js step, the same factor on her view below)
+  if (!paused) { const k = slowmo.update(dt, sim, !!opening?.active); simDt *= k; sim.yolaBoost = k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1; }
   // hit-stop: a short dip into slow motion (never a full freeze: a freeze reads as a stutter, and combo hits stacked them)
   if (hitPauseT > 0) { const h = Math.min(hitPauseT, simDt); hitPauseT -= h; simDt -= h * (1 - HIT_SLOW); }
   // fixed-step simulation (input sampled once per frame; a swap press is delivered exactly once)
@@ -545,7 +549,7 @@ function runFrame(dt, doRender = true) {
   const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
   const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
   const a = p.action;
-  yola.update(animDt, {
+  yola.update(animDt * (sim.yolaBoost || 1), {
     x: ix, z: iz, vx: p.vx, vz: p.vz, aimYaw: iyaw, equipped: p.equipped, action: a.type, actionT: a.t,
     swingT: a.type === 'swing' ? a.st : 0, combo: a.combo || 0, ground: !!a.ground, swingId: a.id, atk: a.type === 'swing' ? p.atk(a) : null, act: a, owned: p.owned, downFall: a.fall, downUp: a.up, recoil: p.recoil, recoilScale: tuning.pistolRecoil,
     dead: p.dead, deathDir: p.deathDir || 0, hurtT: p.hurtT, hurtDirX: p.hurtDirX || 0, hurtDirZ: p.hurtDirZ || 0,
@@ -718,8 +722,16 @@ function handleEvents() {
       case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
       case 'dodge': audio.play('swing', 0.75); break;
       case 'grabbed': audio.play('bump', 0.8); break; // (a crawler has her ankle: she is held back, core/player.js grabT)
-      case 'dodgeSuccess': if (e.perfect) { slowBeat(0.26, 0.9); cue(audio, 'perfect'); hud.popup('PERFECT DODGE'); } break; // (core/sim.js specialMiss: her next blow is critical)
-      case 'crit': { slowEnd(); cue(audio, 'crit'); hud.popup('CRITICAL'); shake(0.7); fx.hitFlash(e.x, 1.1, e.z, 0, 0, 2.0); break; }
+      case 'dodgeSuccess': if (e.perfect) { slowBeat(0.26, 0.9); cue(audio, 'perfect'); hud.popup(e.kind === 'pounce' ? 'PERFECT DODGE · EXECUTE' : 'PERFECT DODGE'); } break; // (core/sim.js specialMiss: her next blow is critical)
+      // (2026-10-18, the user: "better visual effects for weapon crits when we hit during slow motion"): the snap out of slow
+      // motion on a white screen flash, a big star, a white and a gold shockwave, a fan of gold sparks and blood, a beat of hit-stop
+      case 'crit': {
+        slowEnd(); cue(audio, 'crit'); hud.popup('CRITICAL'); shake(0.6); hitPauseT = Math.max(hitPauseT, 0.1);
+        fx.hitFlash(e.x, 1.15, e.z, e.dirX || 0, e.dirZ || 0, 3.4); fx.ring(e.x, e.z, 0xffffff, 1.5); fx.ring(e.x, e.z, 0xffc247, 0.9);
+        fx.burst(e.x, 1.15, e.z, 26, 0xffd27a, 5.0, 1.4, 0.4, (e.dirX || 0) * 0.6, (e.dirZ || 0) * 0.6); fx.bloodSpray(e.x, 1.2, e.z, e.dirX || 0, 0.4, e.dirZ || 0, 26, 4);
+        const cf = document.getElementById('critFlash'); if (cf) { cf.classList.remove('go'); void cf.offsetWidth; cf.classList.add('go'); }
+        break;
+      }
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
       case 'ladyBurst': audio.play('sever'); audio.play('zombieDeath'); shake(0.85); break; // (the lady pops: core/sim.js ladyBurst)
@@ -738,7 +750,7 @@ function handleEvents() {
       case 'zombieWindup': if (dist(e.id) < 8) audio.play('windup'); break;
       case 'playerHurt': audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;
       case 'playerDeath': audio.play('death'); input.clearAll(); input.enabled = false; hud.death(sim); break;
-      case 'zombieDeath': sim.stats.kills++; audio.play('zombieDeath'); break;
+      case 'zombieDeath': { sim.stats.kills++; audio.play('zombieDeath'); const zx = sim.zombies.find((q) => q.id === e.id); if (zx?.executed) { if (gib(e.id, zx.hitDirX, zx.hitDirZ, 1.7)) { slowBeat(0.3, 0.6); hud.popup('EXECUTED'); } } break; } // (a perfect dodge's execute: the full burst)
       case 'zombieSpawn': if (Math.random() < 0.5) audio.play('groan', 0.8); break;
       case 'beatStart': hud.banner(`Wave ${e.beat}`); audio.play('wave'); break;
       case 'breather': hud.banner('Breather', 'Next wave incoming'); break;

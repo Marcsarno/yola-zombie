@@ -218,6 +218,7 @@ export class Zombie {
       sim.emit({ type: 'shieldHit', id: this.id, x: this.x, z: this.z, dirX, dirZ, kind, state: shieldState(this) });
       return 'blocked';
     }
+    if (this.executable && sim.time < this.executable && (melee || kind === 'pistol' || kind === 'shotgun' || kind === 'fist')) { this.executed = true; this.executable = 0; } // (the execute: whatever she hits it with, it bursts: main.js zombieDeath)
     const limbMul = kind === 'shotgun' ? 1.35 : melee ? 1.2 : 1;
     let loss = 0, main = 'torso', mainD = 0;
     for (let [pt, d] of parts) {
@@ -240,6 +241,7 @@ export class Zombie {
         if (after <= M * GUARD.floor) { loss = Math.max(0, this.hp - M * GUARD.floor); this.slamCd = Math.min(this.slamCd, 0.4); }
       }
     }
+    if (this.executed) loss = this.hp + 1;
     this.hp -= loss;
     if (cut) this.sever(cut, dirX, dirZ, sim);
     if (this.kind === 'guard' && this.hp <= 0 && !(this.shieldHp > 0) && !this.severed.has('Head')) { this.lastHitPart = 'Head'; this.sever('Head', dirX, dirZ, sim); sim.emit({ type: 'guardFinished', id: this.id, x: this.x, z: this.z }); } // the finishing blow: his head
@@ -615,7 +617,7 @@ export class Zombie {
             }
           }
           if (this.t >= this.stateDur) {
-            if (!this.struck) sim.emit({ type: 'zombieStrikeMiss', id: this.id, attack: 'pounce' });
+            if (!this.struck) { sim.emit({ type: 'zombieStrikeMiss', id: this.id, attack: 'pounce' }); sim.specialMiss?.(this, 'pounce'); } // (dodged: a perfect one is an execute)
             this.set(ZS.RECOVER, Z.recover * (this.struck ? 0.8 : 1.15)); // (a miss stumbles longer: the opening)
           }
           break;

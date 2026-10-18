@@ -119,6 +119,10 @@
   #slowmo::before { top: 0; transform: translateY(calc((1 - var(--slow, 0)) * -100%)); }
   #slowmo::after { bottom: 0; transform: translateY(calc((1 - var(--slow, 0)) * 100%)); }
   #slowmo i { position: absolute; inset: 0; box-shadow: inset 0 0 120px 30px rgba(40,70,95,.45); }
+  /* a critical blow (main.js 'crit'): a white flash that bleeds to gold at the edges and is gone in a fifth of a second */
+  #critFlash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255,255,255,.75) 0, rgba(255,236,190,.45) 45%, rgba(255,184,60,.5) 100%); }
+  #critFlash.go { animation: critFlash .22s ease-out; }
+  @keyframes critFlash { from { opacity: 1; } to { opacity: 0; } }
   .actBtn.pressed { transform: scale(.92); }
   #useBtn { position: absolute; right: calc(14px + var(--sar)); bottom: calc(31vh + 100px + var(--sab)); min-width: 86px; max-width: 46vw; padding: 12px 16px; border-radius: 18px;
     background: #ffb347; color: #2a1d08; font-weight: 800; font-size: 15px; box-shadow: 0 4px 0 #b97a22, 0 8px 18px rgba(0,0,0,.35); display: none; text-align: center; line-height: 1.15; }
@@ -155,6 +159,7 @@
   <div id="objective"><div id="objectiveText"></div></div>
   <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
   <div id="slowmo"><i></i></div>
+  <div id="critFlash"></div>
   <div id="popup"></div>
   <button id="swapBtn" data-weapon="pistol" data-next="shotgun" aria-label="Swap weapon">
     <svg id="ringSvg" viewBox="0 0 64 64"><circle id="ring" cx="32" cy="32" r="28"/></svg>
