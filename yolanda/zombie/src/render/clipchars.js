@@ -13,6 +13,7 @@ import { shieldState } from '../core/zombies.js';
 import { HairSway } from './hairsway.js';
 import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
+import { HOLD_LAYERS } from './holdlayers.js';
 const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin is their grip point)
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -489,7 +490,7 @@ export class YolaView extends ClipBody {
     const rate = dt / Math.max(0.05, s.swapDur * 0.6);
     // the bat is held like the axe (bat idle), with its own model; a test-arena weapon like the axe (two hands) or empty-handed
     // (the one-handed bat has its own stance: the sword idle)
-    const eqKey = s.equipped === 'bat' ? (this.batLib ? 'sword' : 'axe') : s.equipped === 'test' ? (this.test?.carry && this.carryCal?.[this.test.carry] ? 'carry' : this.test?.two ? 'axe' : 'fists') : s.equipped;
+    const eqKey = s.equipped === 'bat' ? (this.batLib ? 'sword' : 'axe') : s.equipped === 'test' ? (HOLD_LAYERS.carry && this.test?.carry && this.carryCal?.[this.test.carry] ? 'carry' : this.test?.two ? 'axe' : 'fists') : s.equipped;
     this.batMode = s.equipped === 'bat';
     for (const k in this.up) this.up[k] += clamp((eqKey === k ? 1 : 0) - this.up[k], -rate, rate);
     const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), uW0 = smooth(this.up.sword || 0), uC0 = smooth(this.up.carry || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 + uC0 || 1;
@@ -715,7 +716,7 @@ export class YolaView extends ClipBody {
   // the posture fix (render/posture.js), after the body's corrections, before the weapons: each bone turned by the shares of the clips driving
   // it, per source family (only her pelvis / chest / neck / head meshes change; arms, hands, weapons and feet stay put)
   posture() {
-    if (this.postureOff) return;
+    if (this.postureOff || !HOLD_LAYERS.posture) return; // (the user's layer toggle, render/holdlayers.js)
     if (!this.postureActs) {
       this.postureActs = [];
       for (const [n, a] of Object.entries(this.actions)) {
@@ -735,7 +736,7 @@ export class YolaView extends ClipBody {
     this.container.updateMatrixWorld(true);
   }
   handPoses() {
-    if (!this.handSet) return;
+    if (!this.handSet || !HOLD_LAYERS.handPoses) return;
     const k = { Right: 0, Left: 0 }; let W = 0;
     for (const [a, base] of this.handActs) {
       const w = a.getEffectiveWeight(); if (w <= 1e-3) continue;
@@ -963,7 +964,7 @@ export class YolaView extends ClipBody {
   placeTest() {
     const T = this.test; this.placeHeld(T); // (the hold in the hand: the attacks)
     // at rest: carried (CARRY), both fists closed on its grips; through an attack the carry gives way to the hand's hold
-    const C = T.carry && this.carryCal?.[T.carry], o = T.obj;
+    const C = HOLD_LAYERS.carry && T.carry && this.carryCal?.[T.carry], o = T.obj;
     const cw = C && o ? smooth(clamp(this.up.carry || 0, 0, 1)) * (1 - Math.min(1, (this.swingW || 0) + (this.prevSwing ? this.prevSwing.getEffectiveWeight() : 0))) : 0;
     if (cw <= 1e-3) return;
     const p0 = o.position.clone(), q0 = o.quaternion.clone(), w = T.w;
@@ -984,7 +985,7 @@ export class YolaView extends ClipBody {
     placeOneHanded(this.bones, T.hand, o, T.w, T.fit, T);
     const w = T.w;
     // a two-handed weapon: the other hand on its second grip (the data sheet's grip_secondary; render/holdfit.js handOnto)
-    if (T.two && w.grip_secondary) {
+    if (T.two && w.grip_secondary && HOLD_LAYERS.secondHand) {
       const other = T.hand === 'Left' ? 'Right' : 'Left'; o.updateMatrixWorld(true);
       const go = gripOpts(T.key, w, 'secondary', o), pt = go.point;
       reachShoulder(this.bones, other, pt, 25); if (handOnto(this.bones, other, pt, go.axis, 1, solveArm, go)) this.closeFist(other, 1); // (25 deg: a second grip sits further out than the bat's)
@@ -1224,7 +1225,7 @@ export class YolaView extends ClipBody {
         const off = (this.swingAct ? this.swingHand : 'Right') === 'Right' ? 'Left' : 'Right', hd = _v5.set(0, 0, 1).applyQuaternion(M.quaternion);
         const gap = handleSpot(this.bones, off, M.position, hd, -0.12, 0.5, _v6), span = this._l2?.span ?? 0;
         const wOn = smooth(clamp((gap - 0.012) / 0.04, 0, 1)) * (1 - smooth(clamp((span - 0.45) / 0.15, 0, 1)));
-        if (wOn > 0.01) { this.reachClavicle(off, _v6); handOnto(this.bones, off, _v6, hd, wOn, solveArm); this.closeFist(off, wOn); }
+        if (wOn > 0.01 && HOLD_LAYERS.secondHand) { this.reachClavicle(off, _v6); handOnto(this.bones, off, _v6, hd, wOn, solveArm); this.closeFist(off, wOn); }
       }
     }
   }

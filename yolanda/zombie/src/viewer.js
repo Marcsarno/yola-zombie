@@ -11,6 +11,7 @@ import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
 import { buildBodyClip, bodyClipFrame, bodyClipProbe } from './render/bodyclip.js';
 import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
+import { LAYERS, HOLD_LAYERS, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
 const CLIP_FPS = { bat_combo_mc: 60 };
@@ -662,6 +663,7 @@ fetch('assets/hold/hand_poses.json', { cache: 'reload' }).then((r) => r.json()).
   handsUI?.(); refresh?.();
 });
 function handPose(a) {
+  if (!HOLD_LAYERS.handPoses) return; // (the layer toggle, render/holdlayers.js)
   const H = handsOf(), P = fistPose(a); if (!P) return;
   for (const side of ['Right', 'Left']) {
     const k = H[side]; if (!(k > 0)) continue;
@@ -688,6 +690,24 @@ function buildHandsUI() {
   for (const b of box.querySelectorAll('button[data-g]')) b.onclick = () => { handsOf().gunHand = b.dataset.g; keep(); handsUI(); refresh(); };
   $('handsSave').onclick = async () => { const r = await fetch('/__shot/hand_poses.json', { method: 'POST', body: JSON.stringify(HANDS, null, 1) }); $('handsSave').textContent = r.ok ? 'saved' : 'save failed'; setTimeout(() => { $('handsSave').textContent = 'save hands'; }, 1500); };
   handsUI();
+}
+// ---- LAYERS (render/holdlayers.js): every correction laid over the clips, each with its own switch (the posture fix's
+// checkbox is one of them), kept in this browser and shared with the game on this address; "save layers" writes
+// shots/hold_layers.json (copied to assets/hold/hold_layers.json when the user says so)
+function buildLayersUI() {
+  const pc = $('posture'), grp = pc?.closest('.grp'); if (!grp) return;
+  pc.checked = HOLD_LAYERS.posture;
+  pc.onchange = () => { HOLD_LAYERS.posture = pc.checked; keepHoldLayers(); refresh(); };
+  for (const [k, label, why] of LAYERS) {
+    if (k === 'posture') continue;
+    const l = document.createElement('label'); l.className = 'chk'; l.title = why;
+    l.innerHTML = `<input type="checkbox" data-layer="${k}"> ${label}`; grp.appendChild(l);
+    const i = l.querySelector('input'); i.checked = HOLD_LAYERS[k];
+    i.onchange = () => { HOLD_LAYERS[k] = i.checked; keepHoldLayers(); refresh(); };
+  }
+  const b = document.createElement('button'); b.textContent = 'save layers'; b.title = 'writes shots/hold_layers.json (the game ships assets/hold/hold_layers.json)'; grp.appendChild(b);
+  b.onclick = async () => { const r = await fetch('/__shot/hold_layers.json', { method: 'POST', body: JSON.stringify(HOLD_LAYERS, null, 1) }); b.textContent = r.ok ? 'saved' : 'save failed'; setTimeout(() => (b.textContent = 'save layers'), 1500); };
+  loadHoldLayers().then(() => { pc.checked = HOLD_LAYERS.posture; for (const i of grp.querySelectorAll('input[data-layer]')) i.checked = HOLD_LAYERS[i.dataset.layer]; refresh(); });
 }
 function shotKick(a) {
   if (!a || weaponOf() !== 'pistol' || !a.action) return;
@@ -814,7 +834,7 @@ function placeHeldOn(a, o) {
   // carried at rest (render/holdfit.js CARRY: the sledgehammer, the chainsaw on KayKit's two-handed idle): in front of her,
   // riding her chest, both fists on its grips; measured once on the idle's first frame, as the game does
   const CY = LD && CARRY[w];
-  if (CY && a === main && main.clip?.name === CY.clip) {
+  if (CY && HOLD_LAYERS.carry && a === main && main.clip?.name === CY.clip) {
     const cal = carryCalOf(a, w, LD, CY, k);
     if (cal) {
       const P = carryPlace(a.bones, o, LD, cal, fitW(w, a), k, { grip: new THREE.Vector3(), dir: new THREE.Vector3() });
@@ -826,7 +846,7 @@ function placeHeldOn(a, o) {
   if (LD) {
     const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' };
     if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
-      if (LD.hands === 'two' && LD.grip_secondary) { o.updateMatrixWorld(true); const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', g2.point, g2.axis, 1, g2); }
+      if (LD.hands === 'two' && LD.grip_secondary && HOLD_LAYERS.secondHand) { o.updateMatrixWorld(true); const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', g2.point, g2.axis, 1, g2); }
       return;
     }
   }
@@ -856,7 +876,7 @@ function placeHeldOn(a, o) {
       o.updateMatrixWorld(true); const hd = new THREE.Vector3(0, 0, 1).applyQuaternion(o.quaternion), pt = new THREE.Vector3();
       const pt2 = new THREE.Vector3(), gL = handleSpot(B, 'Left', o.position, hd, -0.12, 0.5, pt), gR = handleSpot(B, 'Right', o.position, hd, -0.12, 0.5, pt2);
       const off = gR > gL ? 'Right' : 'Left', gap = Math.max(gL, gR), wOn = smooth01((gap - 0.012) / 0.04) * (1 - smooth01((L2.span - 0.45) / 0.15)); // (the Rig Lab's own holding hand: whichever stays on)
-      if (wOn > 0.01) otherHandOn(a, off, off === 'Right' ? pt2 : pt, hd, wOn);
+      if (wOn > 0.01 && HOLD_LAYERS.secondHand) otherHandOn(a, off, off === 'Right' ? pt2 : pt, hd, wOn);
       return;
     }
   }
@@ -1062,7 +1082,7 @@ function buildUI() {
   $('lay').onclick = () => { S.overlay = !S.overlay; layout(); refresh(); };
   $('match').onchange = () => { layout(); refresh(); };
   $('femref').onchange = () => setClip($('clip').value);
-  $('marks').onchange = refresh; $('posture').onchange = refresh; $('mags').onchange = refresh; buildHandsUI();
+  $('marks').onchange = refresh; $('mags').onchange = refresh; buildHandsUI(); buildLayersUI();
   $('batShow').onchange = refresh; $('vidSkel').onchange = refresh;
   $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; skelUI(); };
   $('fingerBones').addEventListener('change', skelUI); skelUI();

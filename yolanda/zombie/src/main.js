@@ -31,6 +31,7 @@ import { startLab } from './lab.js';
 import { startInspect } from './inspect.js';
 import { startTestArena } from './arena/testarena.js';
 import { makeBat } from './render/weaponModels.js';
+import { loadHoldLayers } from './render/holdlayers.js';
 import { ChapterUI } from './ui/chapter.js';
 
 const params = new URLSearchParams(location.search);
@@ -175,6 +176,7 @@ async function load() {
     loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null),
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
     fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({}))]); // (the user's pistol fit per character, set in the Rig Lab)
+  loadHoldLayers(); // (the user's hold-layer switches, render/holdlayers.js)
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
   const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
   hud.loading(0.95);

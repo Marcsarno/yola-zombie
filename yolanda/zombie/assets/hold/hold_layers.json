@@ -1,0 +1,6 @@
+{
+ "posture": true,
+ "handPoses": true,
+ "secondHand": true,
+ "carry": true
+}
