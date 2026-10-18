@@ -56260,10 +56260,10 @@ void main() {
         s.environmentIntensity = 0.32;
         pm.dispose();
       }
-      const hemi = new HemisphereLight(16774371, 8166038, this.f3 ? 0.8 : 0.85);
+      const hemi = new HemisphereLight(16774371, 8166038, 0.8);
       s.add(hemi);
       this.hemi = hemi;
-      const sun = new DirectionalLight(16773596, this.f3 ? 1.35 : 1.45);
+      const sun = new DirectionalLight(16773596, 1.35);
       sun.position.set(-6, 14, 7);
       sun.target.position.set(0, 0, 0);
       s.add(sun, sun.target);
@@ -56288,11 +56288,9 @@ void main() {
         sun.shadow.radius = 3;
       }
       this.sun = sun;
-      if (this.f3) {
-        this.redHemi = new HemisphereLight(16726564, 2752512, 0);
-        s.add(this.redHemi);
-        return;
-      }
+      this.redHemi = new HemisphereLight(16726564, 2752512, 0);
+      s.add(this.redHemi);
+      return;
       if (this.quality !== "low") {
         const spots = this.f3 ? CH().lights : LAYOUT.doors.map((d) => ({ x: d.spawn.x, y: 2.2, z: d.spawn.z }));
         for (const p of spots) {
@@ -56960,6 +56958,12 @@ void main() {
       if (O.on) this.setOutbreak(true);
     }
     // the reveal: the worn surfaces and the blood on (the opening calls this with its own blood; false restores the clean look)
+    // the practice wing as the floors are in play: worn surfaces and the emergency grade from the start
+    playLook() {
+      if (this.f3) return;
+      this.setOutbreak(true);
+      this.setEmergency(true, 0);
+    }
     setOutbreak(on) {
       if (!this.ob && on) this.loadOutbreak();
       const O = this.ob;
@@ -57031,7 +57035,7 @@ void main() {
     //      hemisphere light breathes like a rotating beacon, and glow pools lie on the floor under the fittings and at the
     //      doorways (unlit additive decals: red, and a few cold white tubes still working). No extra lights or shadows.
     setEmergency(on, fade = 1.6) {
-      if (!this.f3 || !this.hemi) return;
+      if (!this.hemi) return;
       if (!this.em) this.buildEmergency();
       this.em.target = on ? 1 : 0;
       this.em.rate = fade > 0 ? 1 / fade : 1e9;
@@ -57067,9 +57071,9 @@ void main() {
         p.renderOrder = 2;
         grp.add(p);
       };
-      for (const l of CH().lights || []) put2(e.redMat, l.x, l.z, 5.5);
+      for (const l of this.f3 ? CH().lights || [] : LAYOUT.doors.map((d) => ({ x: d.spawn.x, z: d.spawn.z }))) put2(e.redMat, l.x, l.z, 5.5);
       for (const d of CH().doors || []) if (d.kind !== "lift") put2(e.redMat, d.x, d.z, 2.6);
-      for (const r of CH().rooms || []) for (const [x0, x1, z0, z1] of r.rects) {
+      for (const r of this.f3 ? CH().rooms || [] : OB_WING_ROOMS) for (const [x0, x1, z0, z1] of r.rects) {
         const w = x1 - x0, dd = z1 - z0;
         if (w * dd > 12) put2(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8);
       }
@@ -57094,8 +57098,8 @@ void main() {
       e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3));
     }
     update(dt, px2, pz2, camYaw, level) {
-      if (!this.f3) return;
       this.tickEmergency(dt);
+      if (!this.f3) return;
       const fx2 = -Math.sin(camYaw), fz = -Math.cos(camYaw);
       const side = (b) => {
         const nx = Math.max(b.minX, Math.min(px2, b.maxX)), nz = Math.max(b.minZ, Math.min(pz2, b.maxZ));
@@ -70863,6 +70867,7 @@ void main() {
     });
     loadHoldLayers();
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
+    arena.playLook();
     const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
