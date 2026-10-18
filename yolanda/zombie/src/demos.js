@@ -69,6 +69,9 @@ export function startDemos(game, name, auto) {
 
 // the lighting lab: a panel of switches (render/atmos.js ATMOS), a few blood pools to walk through, walkers by the walls
 // to kill (wall splatter), a Big hit button (dust and the impact frame), the frame time
+// the user's picks (2026-10-18, "i like this"): what the lab opens with on a browser that has saved nothing
+const LAB_PICKS = { baked: true, fixtures: true, exit: true, polish: true, muzzle: true, yshadow: true, labLook: 'standard', labChar: '0.45', labTubes: false, labMood: '', labFilm: false,
+  zones: true, shafts: true, splatter: true, sparks: true, haze: true, impact: true };
 function lightingLab(sim, game) {
   const fx = game.fx, A = game.atmos;
   for (const [x, z, s] of [[0.4, 0.4, 1.3], [-1.6, -2.4, 1.0], [2.0, 3.6, 1.1]]) fx?.bloodPool(x, z, s);
@@ -117,7 +120,7 @@ function lightingLab(sim, game) {
   const keyOf = (c) => c.dataset?.k || c.id;
   el.addEventListener('change', () => { try { const o = {}; for (const c of fields()) o[keyOf(c)] = c.type === 'checkbox' ? c.checked : c.value; localStorage.setItem(SAVE, JSON.stringify(o)); } catch {} });
   try {
-    const o = JSON.parse(localStorage.getItem(SAVE) || 'null');
+    const o = JSON.parse(localStorage.getItem(SAVE) || 'null') || LAB_PICKS; // (nothing saved here yet: the user's picks)
     if (o) for (const c of fields()) { const v = o[keyOf(c)]; if (v === undefined) continue; const cur = c.type === 'checkbox' ? c.checked : c.value; if (cur === v) continue; if (c.type === 'checkbox') c.checked = v; else c.value = v; c.dispatchEvent(new Event('change', { bubbles: true })); }
   } catch {}
   el.addEventListener('click', (e) => {
