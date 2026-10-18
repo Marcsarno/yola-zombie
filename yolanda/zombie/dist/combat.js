@@ -69922,10 +69922,10 @@ void main() {
     } },
     // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") a
     // lineup, left to right: her own blue, the runner's orange, then the new colours (main.js SCRUBS)
-    nurses: { label: "Nurse scrubs: blue \xB7 orange \xB7 navy \xB7 wine \xB7 surgical green \xB7 plum \xB7 charcoal", weapon: "bat", setup(sim2, game) {
-      const keys = [null, "orange", "navy", "wine", "surgical", "plum", "charcoal"];
+    nurses: { label: "Nurse scrubs: blue \xB7 navy \xB7 charcoal (and the runner's orange)", weapon: "bat", setup(sim2, game) {
+      const keys = [null, "navy", "charcoal", "orange"];
       const zs = keys.map((k, i) => {
-        const z = sim2.spawnZombie("placed", { x: -3.3 + i * 1.1, z: -0.4, yaw: 0, passive: true, speedMul: 0 });
+        const z = sim2.spawnZombie("placed", { x: -1.65 + i * 1.1, z: -0.4, yaw: 0, passive: true, speedMul: 0 });
         z.look = "nurse";
         z.scrubs = k;
         return z;
@@ -70165,15 +70165,15 @@ void main() {
     // the runner's safety orange
     navy: { H: 224, s: 0.55, l: [0.42, 0.02, 0.32] },
     // charge nurse navy
-    wine: { H: 346, s: 0.58, l: [0.55, 0.03, 0.4] },
-    // theatre wine
-    surgical: { H: 158, s: 0.32, l: [0.78, 0.06, 0.55] },
-    // surgical green
-    plum: { H: 286, s: 0.28, l: [0.72, 0.06, 0.5] },
-    // paediatric plum
     charcoal: { H: 210, s: 0.06, l: [0.4, 0.03, 0.3] }
     // agency charcoal
   };
+  var NURSE_SCRUBS = [null, "navy", "charcoal"];
+  var nurseScrubs = (z) => z.scrubs !== void 0 ? z.scrubs : NURSE_SCRUBS[z.id % NURSE_SCRUBS.length];
+  function bindView(v, z) {
+    v.bind(z);
+    if (v.type === 0) setScrubs(v, nurseScrubs(z));
+  }
   var _scrubMaps = /* @__PURE__ */ new Map();
   function scrubsTexture(tex, key) {
     const R = SCRUBS[key];
@@ -70503,7 +70503,7 @@ void main() {
       if (!v) {
         const type = viewType(z);
         v = zpool[type].pop() || newZombieView(type);
-        v.bind(z);
+        bindView(v, z);
         zviews.set(z.id, v);
       }
       v.update(dt, z, z.x, z.z, sim.time);
@@ -70530,7 +70530,7 @@ void main() {
     if (!sim) return;
     for (const z of sim.zombies) if (!zviews.has(z.id)) {
       const type = viewType(z), v = zpool[type].pop() || newZombieView(type);
-      v.bind(z);
+      bindView(v, z);
       zviews.set(z.id, v);
     }
     for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
@@ -70804,7 +70804,7 @@ void main() {
       if (!v) {
         const type = viewType(z);
         v = zpool[type].pop() || newZombieView(type);
-        v.bind(z);
+        bindView(v, z);
         zviews.set(z.id, v);
         z.px ?? (z.px = z.x);
         z.pz ?? (z.pz = z.z);
