@@ -61811,71 +61811,71 @@ void main() {
   var one = (name) => [`${G2}${name}.mp3`];
   var BANKS = {
     // the pistol: a close 9 mm / .45 crack + a sub thump for headphones + the corridor answering + brass on the tile
-    shot: { label: "Pistol shot", group: "Weapons", sub: "Guns", cadence: 0.26, layers: [
+    shot: { label: "Pistol shot", group: "Weapons", sub: "Guns", cadence: 0.26, hook: "Yola fires the pistol", layers: [
       { label: "Shot", files: takes("pistol", 1, 5), extra: takes("pistol", 6, 14), gain: 0.8, pitch: [-0.7, 0.5], wet: 0.34 },
       { label: "Sub thump (headphones)", synth: "subPistol", gain: 1, wet: 0 },
       { label: "Brass casing", files: takes("brass", 1, 4), extra: lib("brass"), gain: 0.2, pitch: [-1.5, 1.5], at: [0.34, 0.52], wet: 0.1, side: true }
     ] },
     // the shotgun: a 12 gauge pump blast + a deep sub + a long room (the pump follows as its own sound)
-    shotgun: { label: "Shotgun blast", group: "Weapons", sub: "Guns", cadence: 0.85, then: { name: "pump", at: 0.24 }, layers: [
+    shotgun: { label: "Shotgun blast", group: "Weapons", sub: "Guns", cadence: 0.85, then: { name: "pump", at: 0.24 }, hook: "Yola fires the shotgun", layers: [
       { label: "Blast", files: takes("shotgun", 1, 8), extra: takes("shotgun", 9, 12), gain: 1, pitch: [-0.9, 0.4], wet: 0.45 },
       { label: "Sub boom (headphones)", synth: "subShotgun", gain: 1, wet: 0 }
     ] },
     // the Model 12's own rack: back, forward, and the spent hull bouncing off the floor
-    pump: { label: "Shotgun pump", group: "Weapons", sub: "Guns", cadence: 0.85, layers: [
+    pump: { label: "Shotgun pump", group: "Weapons", sub: "Guns", cadence: 0.85, hook: "the shotgun pumps after each blast (and closes after a reload)", layers: [
       { label: "Rack back", files: one("pump_back"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.16 },
       { label: "Rack forward", files: one("pump_fwd"), gain: 0.5, pitch: [-0.4, 0.4], at: 0.19, wet: 0.16 },
       { label: "Full rack (one real recording)", files: [], extra: lib("rack"), gain: 0.55, pitch: [-0.4, 0.4], wet: 0.16 },
       { label: "Spent hull", files: takes("hull", 1, 3), extra: lib("hull"), gain: 0.32, pitch: [-1, 1], at: [0.38, 0.5], wet: 0.1, side: true }
     ] },
     // the pistol reload (1.05 s): the empty magazine drops, the new one seats; the slide is reloadDone
-    pistolReload: { label: "Pistol reload", group: "Weapons", sub: "Reloads", layers: [
+    pistolReload: { label: "Pistol reload", group: "Weapons", sub: "Reloads", hook: "a pistol reload starts", layers: [
       { label: "Magazine out", files: one("mag_out"), extra: lib("magdrop"), gain: 0.35, pitch: [-0.5, 0.5], at: 0.06, wet: 0.12 },
       { label: "Magazine in", files: one("mag_in"), gain: 0.45, pitch: [-0.5, 0.5], at: 0.5, wet: 0.12 }
     ] },
-    pistolReloadDone: { label: "Pistol slide (reload done)", group: "Weapons", sub: "Reloads", layers: [{ label: "Slide", files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
+    pistolReloadDone: { label: "Pistol slide (reload done)", group: "Weapons", sub: "Reloads", hook: "a pistol reload finishes", layers: [{ label: "Slide", files: one("slide"), gain: 0.45, pitch: [-0.4, 0.4], wet: 0.14 }] },
     // the shotgun reload (1.9 s): four shells thumbed into the tube; the pump closes it (reloadDone)
-    shotgunReload: { label: "Shotgun reload (4 shells)", group: "Weapons", sub: "Reloads", layers: [0.12, 0.52, 0.92, 1.32].map((at, i) => ({ label: `Shell ${i + 1}`, files: one("mag_in"), extra: lib("shellin"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
-    dry: { label: "Dry fire (empty)", group: "Weapons", sub: "Guns", layers: [{ label: "Click", files: one("dry_click"), extra: lib("click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] },
+    shotgunReload: { label: "Shotgun reload (4 shells)", group: "Weapons", sub: "Reloads", hook: "a shotgun reload starts", layers: [0.12, 0.52, 0.92, 1.32].map((at, i) => ({ label: `Shell ${i + 1}`, files: one("mag_in"), extra: lib("shellin"), gain: 0.28, pitch: [3.5, 5], at, wet: 0.1 })) },
+    dry: { label: "Dry fire (empty)", group: "Weapons", sub: "Guns", hook: "Yola pulls the trigger on an empty gun", layers: [{ label: "Click", files: one("dry_click"), extra: lib("click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] },
     // ---- melee hits: the game already plays these (synthesised); the first takes the user adds replace the synth,
     // which stays as a quiet "classic" layer underneath until switched off on the board ----
-    fistHit: { label: "Fist / kick hit", group: "Weapons", sub: "Melee hits", layers: [
+    fistHit: { label: "Fist / kick hit", group: "Weapons", sub: "Melee hits", hook: "a fist or kick lands", layers: [
       { label: "Punch", files: [], extra: lib("punch", "punchheavy"), gain: 0.9, pitch: [-1, 1], wet: 0.12 },
       { label: "Classic synth thump (under it)", synth: "fistHit", gain: 0.6 }
     ] },
-    batHit: { label: "Bat hit", group: "Weapons", sub: "Melee hits", layers: [
+    batHit: { label: "Bat hit", group: "Weapons", sub: "Melee hits", hook: "the bat lands", layers: [
       { label: "Crack", files: [], extra: lib("wood", "thwack"), gain: 0.9, pitch: [-1, 0.8], wet: 0.2 },
       { label: "Body", files: [], extra: lib("soft", "punchheavy"), gain: 0.8, pitch: [-1.5, 0.5], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "batHit", gain: 0.5 }
     ] },
-    axeHit: { label: "Axe hit", group: "Weapons", sub: "Melee hits", layers: [
+    axeHit: { label: "Axe hit", group: "Weapons", sub: "Melee hits", hook: "the axe lands", layers: [
       { label: "Blade bite", files: [], extra: lib("blade", "thwack"), gain: 0.85, pitch: [-1, 1], wet: 0.15 },
       { label: "Wet", files: [], extra: lib("squish"), gain: 0.5, pitch: [-1.5, 0.5], wet: 0.08 },
       { label: "Body", files: [], extra: lib("soft", "punchheavy"), gain: 0.7, pitch: [-1.5, 0.5], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "axeHit", gain: 0.5 }
     ] },
-    sever: { label: "Limb severed / gore", group: "Weapons", sub: "Melee hits", layers: [
+    sever: { label: "Limb severed / gore", group: "Weapons", sub: "Melee hits", hook: "a limb comes off", layers: [
       { label: "Wet", files: [], extra: lib("squish"), gain: 0.85, pitch: [-2, 0.5], wet: 0.15 },
       { label: "Snap", files: [], extra: lib("thwack", "wood"), gain: 0.5, pitch: [0, 2], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "sever", gain: 0.5 }
     ] },
-    knockdown: { label: "Body hits the floor", group: "Weapons", sub: "Melee hits", layers: [
+    knockdown: { label: "Body hits the floor", group: "Weapons", sub: "Melee hits", hook: "a zombie is knocked to the floor", layers: [
       { label: "Thud (as the fall lands)", files: [], extra: lib("soft", "punchheavy"), gain: 0.85, pitch: [-2, 0], at: 0.55, wet: 0.25 },
       { label: "Classic synth (under it)", synth: "knockdown", gain: 0.5 }
     ] },
-    bump: { label: "Zombie bumps into Yola", group: "Weapons", sub: "Melee hits", layers: [
+    bump: { label: "Zombie bumps into Yola", group: "Weapons", sub: "Melee hits", hook: "a zombie bumps into Yola", layers: [
       { label: "Thud", files: [], extra: lib("soft"), gain: 0.7, pitch: [-1, 1], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "bump", gain: 0.5 }
     ] },
-    clank: { label: "Bat hits a wall / metal", group: "Weapons", sub: "Melee hits", layers: [
+    clank: { label: "Bat hits a wall / metal", group: "Weapons", sub: "Melee hits", hook: "the bat hits a wall", layers: [
       { label: "Metal", files: [], extra: lib("metal"), gain: 0.8, pitch: [-1, 1], wet: 0.25 },
       { label: "Classic synth (under it)", synth: "clank", gain: 0.4 }
     ] },
-    shieldHit: { label: "Hit on the guard's shield", group: "Weapons", sub: "Melee hits", layers: [
+    shieldHit: { label: "Hit on the guard's shield", group: "Weapons", sub: "Melee hits", hook: "a hit lands on the guard's shield", layers: [
       { label: "Board knock", files: [], extra: lib("wood", "thwack"), gain: 0.85, pitch: [-2, 0], wet: 0.2 },
       { label: "Classic synth (under it)", synth: "shieldHit", gain: 0.5 }
     ] },
-    doorOpen: { label: "Door opens", group: "World", sub: "Doors", layers: [
+    doorOpen: { label: "Door opens", group: "World", sub: "Doors", hook: "a door opens", layers: [
       { label: "Door", files: [], extra: lib("door"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
       { label: "Classic synth (under it)", synth: "doorOpen", gain: 0.4 }
     ] },
