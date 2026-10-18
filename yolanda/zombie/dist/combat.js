@@ -53606,6 +53606,69 @@ void main() {
         M4.delete(id);
       }
     }
+    // the eyes' glints (eyeCfg): two additive dots on the Head bone, placed from the head's rest pose (up the bone, out along the
+    // face, either side), shown while it stands alive and lit by lightAt where its face is
+    addEyes() {
+      const hb = this.bones.Head, ht = this.bones.HeadTop_End;
+      let sk = null;
+      this.model.traverse((o) => {
+        if (!sk && o.isSkinnedMesh) sk = o;
+      });
+      if (!hb || !ht || !sk) return;
+      const rest = (b) => {
+        const i = sk.skeleton.bones.indexOf(b);
+        return i < 0 ? null : new Matrix4().multiplyMatrices(sk.matrixWorld, sk.bindMatrix).multiply(sk.skeleton.boneInverses[i].clone().invert());
+      };
+      this.model.updateMatrixWorld(true);
+      const RH = rest(hb), RT = rest(ht);
+      if (!RH || !RT) return;
+      const H4 = new Vector3().setFromMatrixPosition(RH), T2 = new Vector3().setFromMatrixPosition(RT), U2 = T2.clone().sub(H4), L2 = U2.length();
+      U2.normalize();
+      const F = new Vector3(0, 0, 1).applyQuaternion(this.model.getWorldQuaternion(new Quaternion()));
+      F.addScaledVector(U2, -F.dot(U2)).normalize();
+      const R = new Vector3().crossVectors(U2, F), [up, fw, sp] = _ZombieView.EYE_AT[this.type] || _ZombieView.EYE_AT[0], inv = RH.clone().invert();
+      const ws = hb.getWorldScale(new Vector3()).x || 1;
+      if (!_ZombieView.eyeTex) {
+        const c = document.createElement("canvas");
+        c.width = c.height = 32;
+        const g = c.getContext("2d"), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+        gr.addColorStop(0, "rgba(255,255,255,1)");
+        gr.addColorStop(0.25, "rgba(255,255,255,0.8)");
+        gr.addColorStop(1, "rgba(255,255,255,0)");
+        g.fillStyle = gr;
+        g.fillRect(0, 0, 32, 32);
+        _ZombieView.eyeTex = new CanvasTexture(c);
+      }
+      const mat2 = new SpriteMaterial({ map: _ZombieView.eyeTex, color: _ZombieView.eyeCfg.col, transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
+      this.eyes = [-1, 1].map((s) => {
+        const e = new Sprite(mat2);
+        e.position.copy(H4.clone().addScaledVector(U2, up * L2).addScaledVector(F, fw * L2).addScaledVector(R, s * sp * L2).applyMatrix4(inv));
+        e.scale.setScalar(_ZombieView.eyeCfg.size / ws);
+        e.visible = false;
+        e.renderOrder = 4;
+        hb.add(e);
+        return e;
+      });
+      this.eyeMat = mat2;
+      this.eyeWs = ws;
+    }
+    updateEyes(z, x, zz) {
+      const C = _ZombieView.eyeCfg;
+      if (!C.on || !this.outer.visible) {
+        if (this.eyes) for (const e of this.eyes) e.visible = false;
+        return;
+      }
+      if (!this.eyes) this.addEyes();
+      if (!this.eyes) return;
+      const on = z.alive && !this.severed.has("Head") && z.state !== "emerge";
+      for (const e of this.eyes) e.visible = on;
+      if (!on) return;
+      const L2 = C.light ? C.light(x, zz) : 0, k = Math.min(1, C.base + L2 * C.gain);
+      this.eyeMat.opacity = k;
+      this.eyeMat.color.setHex(C.col);
+      const s = C.size * (0.75 + 0.6 * k) / this.eyeWs;
+      for (const e of this.eyes) e.scale.setScalar(s);
+    }
     // the surgeon's cap and mask (blender/make_surgeon_cap.py, built in the nurse's own model space): on her Head bone as it
     // sits at rest (from the skin's bind matrices: the pose on screen does not matter)
     wearSurgeonKit(src) {
@@ -54100,7 +54163,9 @@ void main() {
       const tell = z.state === "windup" ? Math.min(1, z.t / Math.max(0.05, z.stateDur)) : 0, tk = tell * tell * 0.3;
       const sg = (this.swell || 0) * (0.06 + 0.06 * Math.sin(performance.now() * 9e-3));
       const ex = z.alive && z.executable > now ? (0.5 + 0.5 * Math.sin(performance.now() * 0.018)) * 0.45 : 0;
-      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5 + ex, fl * 0.33 + tk * 0.05 + sg + ex * 0.62, fl * 0.27 + tk * 0.03 + ex * 0.3);
+      const rt = this.roomTint && this.roomTintOn ? this.roomTint : null;
+      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5 + ex + (rt ? rt.r : 0), fl * 0.33 + tk * 0.05 + sg + ex * 0.62 + (rt ? rt.g : 0), fl * 0.27 + tk * 0.03 + ex * 0.3 + (rt ? rt.b : 0));
+      this.updateEyes(z, x, zz);
       if (z.state === "dead" && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
       this.blob.visible = z.state !== "dead" || z.corpseT < 4.5;
     }
@@ -54364,6 +54429,13 @@ void main() {
   __publicField(_ZombieView, "planted", []);
   __publicField(_ZombieView, "propSrc", {});
   // (main.js: the drip stand, the wheelchair, the surgeon's cap and mask)
+  // (2026-10-18, the user: "what i really like is also testing the light on the zombies eyes"): two tiny glints at the eyes,
+  // a dim ember in the dark, bright where light falls on the face (render/lightkit.js lightAt: the fittings' pools, a shot's
+  // flash, Yola's torch). col: their colour; base: in the dark; gain: how much light lifts them; at: eye height / depth /
+  // spread as fractions of the head bone's length, per zombie type (tuned by eye)
+  __publicField(_ZombieView, "eyeCfg", { on: false, col: 16767120, base: 0.25, gain: 0.85, size: 0.075, light: null });
+  __publicField(_ZombieView, "EYE_AT", { 0: [0.75, 0.58, 0.1], 1: [0.75, 0.58, 0.1], 2: [0.02, 0.55, 0.12], 3: [0.66, 0.55, 0.15], 4: [0.75, 0.58, 0.1] });
+  // (fitted on each face in the lab, 2026-10-18: nurse, patient, the lady, the guard; the runner is the nurse) // (main.js: the drip stand, the wheelchair, the surgeon's cap and mask)
   __publicField(_ZombieView, "props", []);
   // (the demo's bed)
   __publicField(_ZombieView, "looseMeshes", /* @__PURE__ */ new Map());
@@ -57374,7 +57446,7 @@ void main() {
     tickEmergency(dt) {
       const e = this.em;
       if (!e) return;
-      if (e.k === e.target && e.k === 0) return;
+      if (e.k === e.target && e.k === 0 && (this.lightScale ?? 1) === 1) return;
       e.k += Math.max(-dt * e.rate, Math.min(dt * e.rate, e.target - e.k));
       if (dt === 0) e.k = e.target;
       e.t += dt;
@@ -57386,6 +57458,12 @@ void main() {
       this.sun.intensity = e.base.sunI + (0.72 - e.base.sunI) * k;
       this.scene.environmentIntensity = e.base.env + (0.17 - e.base.env) * k;
       if (this.redHemi) this.redHemi.intensity = k * (0.05 + 0.13 * beacon);
+      const ls = this.lightScale ?? 1;
+      if (ls !== 1) {
+        this.hemi.intensity *= ls;
+        this.sun.intensity *= ls;
+        this.scene.environmentIntensity *= ls;
+      }
       e.group.visible = k > 5e-3;
       e.redMat.opacity = k * (0.3 + 0.38 * beacon);
       e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3));
@@ -57895,6 +57973,8 @@ void main() {
       this.flash.scale.setScalar(0.42 * k);
       this.flash.material.rotation = Math.random() * Math.PI;
       this.flashLight.position.copy(pos);
+      this.flashLight.distance = 4;
+      this.flashLight.color.setHex(16760944);
       this.flashLight.intensity = 6 * k;
       if (k > 1.2) this.burst(pos.x, pos.y, pos.z, 6, 12104876, 0.9, 0.4, 0.5);
     }
@@ -60830,6 +60910,38 @@ void main() {
       gl_FragColor = vec4(g * v, c.a);
     }`
   };
+  var MOODS = {
+    teal: { lift: [-0.012, 0.012, 0.018], gain: [0.95, 1.03, 1.04], sat: 0.88, con: 1.07 },
+    sodium: { lift: [0.012, 8e-3, -0.012], gain: [1.08, 1, 0.82], sat: 0.8, con: 1.06 },
+    red: { lift: [0.02, -6e-3, -6e-3], gain: [1.1, 0.9, 0.88], sat: 0.92, con: 1.1 },
+    none: { lift: [0, 0, 0], gain: [1, 1, 1], sat: 1, con: 1 }
+  };
+  var MoodShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      lift: { value: new Vector3() },
+      gain: { value: new Vector3(1, 1, 1) },
+      sat: { value: 1 },
+      con: { value: 1 },
+      vig: { value: 0 },
+      grain: { value: 0 },
+      time: { value: 0 },
+      drain: { value: 0 }
+    },
+    vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: `uniform sampler2D tDiffuse; uniform vec3 lift; uniform vec3 gain; uniform float sat; uniform float con; uniform float vig; uniform float grain; uniform float time; uniform float drain; varying vec2 vUv;
+    float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec3 g = c.rgb * gain + lift * (1.0 - clamp(c.rgb, 0.0, 1.0));
+      float l = dot(g, vec3(0.2126, 0.7152, 0.0722));
+      g = mix(vec3(l), g, sat * (1.0 - 0.75 * drain));
+      g = max(g, 0.0); g = pow(g, vec3(con)) * pow(0.4, 1.0 - con);
+      vec2 d = vUv - 0.5; g *= 1.0 - vig * smoothstep(0.3, 0.8, length(d * vec2(1.0, 0.85)));
+      g += (h(vUv * 917.0 + time) - 0.5) * grain * (0.6 + 0.4 * (1.0 - l));
+      gl_FragColor = vec4(g, c.a);
+    }`
+  };
   var Looks = class {
     constructor(renderer2, scene2, camera2) {
       this.renderer = renderer2;
@@ -60854,6 +60966,9 @@ void main() {
       c.addPass(this.bloom);
       this.grade = new ShaderPass(GradeShader);
       c.addPass(this.grade);
+      this.moodPass2 = new ShaderPass(MoodShader);
+      c.addPass(this.moodPass2);
+      this.applyMood();
       c.addPass(new OutputPass());
     }
     setSize() {
@@ -60899,7 +61014,57 @@ void main() {
       });
       return s;
     }
+    // the mood pass (MoodShader): a preset (MOODS key or null: off) and the film finish (grain, vignette); drain: 0..1 health lost
+    setMood(key, film) {
+      this.moodKey = key;
+      this.film = film;
+      if (!key && !film) {
+        this.moodOn = false;
+        this.applyMood();
+        return;
+      }
+      if (!this.moodComposer) {
+        const r = this.renderer, size = r.getDrawingBufferSize(new Vector2()), c = this.moodComposer = new EffectComposer(r);
+        c.setPixelRatio(1);
+        c.setSize(size.x, size.y);
+        c.addPass(new RenderPass(this.scene, this.camera));
+        this.moodPass = new ShaderPass(MoodShader);
+        c.addPass(this.moodPass);
+        c.addPass(new OutputPass());
+      }
+      this.moodOn = true;
+      this.applyMood();
+    }
+    applyMood() {
+      const M4 = MOODS[this.moodKey || "none"];
+      for (const P of [this.moodPass, this.moodPass2]) {
+        if (!P) continue;
+        const u = P.uniforms;
+        u.lift.value.fromArray(M4.lift);
+        u.gain.value.fromArray(M4.gain);
+        u.sat.value = M4.sat;
+        u.con.value = M4.con;
+        u.vig.value = this.film ? 0.32 : 0;
+        u.grain.value = this.film ? 0.035 : 0;
+      }
+      if (this.moodPass2) this.moodPass2.enabled = !!this.moodOn;
+    }
+    setDrain(k) {
+      for (const P of [this.moodPass, this.moodPass2]) if (P) P.uniforms.drain.value = this.film ? k : 0;
+    }
     render() {
+      if (this.moodOn && !this.post) {
+        const s = this.renderer.getDrawingBufferSize(new Vector2());
+        if (s.x !== this.mw || s.y !== this.mh) {
+          this.mw = s.x;
+          this.mh = s.y;
+          this.moodComposer.setSize(s.x, s.y);
+        }
+        this.moodPass.uniforms.time.value = performance.now() % 1e5 / 1e3;
+        this.moodComposer.render();
+        return;
+      }
+      if (this.moodPass2) this.moodPass2.uniforms.time.value = performance.now() % 1e5 / 1e3;
       if (this.post) this.composer.render();
       else this.renderer.render(this.scene, this.camera);
     }
@@ -66344,10 +66509,10 @@ void main() {
       gr.addColorStop(1, "rgba(255,210,160,0)");
       x.fillStyle = gr;
       x.fillRect(0, 0, 64, 64);
-      const glowTex2 = new CanvasTexture(c);
-      const line = new Mesh(new PlaneGeometry(0.55, 0.022), add(new MeshBasicMaterial({ color: 16774108, map: glowTex2 })));
+      const glowTex3 = new CanvasTexture(c);
+      const line = new Mesh(new PlaneGeometry(0.55, 0.022), add(new MeshBasicMaterial({ color: 16774108, map: glowTex3 })));
       line.position.set(L2.x, 0.011, -11.085);
-      const pool = new Mesh(new PlaneGeometry(0.9, 0.5), add(new MeshBasicMaterial({ color: 16769720, map: glowTex2 })));
+      const pool = new Mesh(new PlaneGeometry(0.9, 0.5), add(new MeshBasicMaterial({ color: 16769720, map: glowTex3 })));
       pool.rotation.x = -Math.PI / 2;
       pool.position.set(L2.x, 6e-3, -10.9);
       this.scene.add(line, pool);
@@ -70863,6 +71028,7 @@ void main() {
       v = !!v;
       if (this.on[key] === v) return;
       this.on[key] = v;
+      if (!v && !this.built[key]) return;
       if (v && !this.built[key]) {
         this.built[key] = true;
         this["build_" + key]?.();
@@ -71206,6 +71372,425 @@ void main() {
     }
   };
 
+  // src/render/lightkit.js
+  var LIGHTKIT = [
+    // [key, label, what it is, what it costs] (the lighting lab's switches)
+    ["fixtures", "C \xB7 Light fittings as data", "Every fitting draws its light on the floor: two in the theatre, the hall, the reception (failing), the lounge (warm, buzzing), the beds (dead).", "one draw call for every floor glow"],
+    ["halos", "F \xB7 Halos", "A soft halo on every bright thing: tubes, monitors, EXIT signs (the glow look without a bloom pass).", "~15 sprites"],
+    ["exit", "EXIT signs", "Green EXIT signs over the doors, one failing; green spilling on the floor under them.", "3 boxes + 3 halos"],
+    ["polish", "D \xB7 Polished floor", "Each lit fitting's reflection streaks on the floor toward the camera, and the floor gets a little glossier.", "glows in the same draw call + material"],
+    ["contact", "E \xB7 Contact shadows", "Soft shadows under every piece of furniture and every body, pushed away from the nearest light.", "one draw call"],
+    ["room", "B \xB7 Room light on characters", "Yola and the zombies take on the room's light: cold in the theatre, warm in the lounge, teal by the beds.", "free (a colour each)"],
+    ["muzzle", "Muzzle flash light", "A shot lights the wall it hits and the floor at her feet; the shotgun lights the room.", "only on shots"],
+    ["eyes", "Zombie eyes", "Their eyes catch the light: an ember in the dark, bright in a light pool, in the torch, in a shot's flash.", "2 sprites per zombie"]
+  ];
+  var WING_LIGHTS = {
+    rooms: [
+      // the light a character takes on in each area (B); the first that contains it wins
+      { id: "theatre", rect: [-7.3, 7.3, -11.3, -5.05], col: 10273023, k: 0.16 },
+      { id: "lounge", rect: [-7.3, -1.6, 4.6, 11.3], col: 16756842, k: 0.17 },
+      { id: "beds", rect: [3.2, 7.3, 3, 11.3], col: 8382672, k: 0.14 },
+      { id: "hall", rect: [-7.3, 7.3, -5.05, 11.3], col: 12897494, k: 0.07 }
+    ],
+    fixtures: [
+      // tube: a ceiling tube (bar + floor glow + halo + floor streak); state: steady | buzz | failing | dead
+      { kind: "tube", x: -3.2, z: -8.2, col: 14412031, k: 0.55, state: "steady" },
+      { kind: "tube", x: 3.2, z: -8.2, col: 14412031, k: 0.55, state: "buzz" },
+      { kind: "tube", x: 2.9, z: -0.6, col: 15134975, k: 0.5, state: "failing" },
+      { kind: "tube", x: -0.6, z: 4.4, col: 15134975, k: 0.48, state: "steady" },
+      { kind: "tube", x: -4.6, z: 8.4, col: 16767400, k: 0.55, state: "buzz" },
+      { kind: "tube", x: 5.4, z: 6.8, col: 14412031, k: 0.48, state: "dead" }
+    ],
+    exits: [
+      // over the doors, on the wall's room face; dir: the way the sign faces
+      { x: -4.4, z: -10.95, yaw: 0, state: "steady" },
+      { x: 4.2, z: -10.95, yaw: 0, state: "failing" },
+      { x: -6.95, z: 1.8, yaw: Math.PI / 2, state: "steady" }
+    ]
+  };
+  var glowTex2 = /* @__PURE__ */ (() => {
+    let t = null;
+    return () => {
+      if (t) return t;
+      const c = document.createElement("canvas");
+      c.width = c.height = 128;
+      const g = c.getContext("2d"), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      gr.addColorStop(0, "rgba(255,255,255,1)");
+      gr.addColorStop(0.4, "rgba(255,255,255,0.45)");
+      gr.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 128, 128);
+      return t = new CanvasTexture(c);
+    };
+  })();
+  var shadowTex = /* @__PURE__ */ (() => {
+    let t = null;
+    return () => {
+      if (t) return t;
+      const c = document.createElement("canvas");
+      c.width = c.height = 64;
+      const g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, "rgba(255,255,255,1)");
+      gr.addColorStop(0.55, "rgba(255,255,255,0.55)");
+      gr.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+      return t = new CanvasTexture(c);
+    };
+  })();
+  var exitTex = () => {
+    const c = document.createElement("canvas");
+    c.width = 128;
+    c.height = 48;
+    const g = c.getContext("2d");
+    g.fillStyle = "#0d6b2c";
+    g.fillRect(0, 0, 128, 48);
+    g.fillStyle = "#d9ffe4";
+    g.font = "bold 30px Arial";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText("EXIT", 58, 25);
+    g.beginPath();
+    g.moveTo(104, 16);
+    g.lineTo(118, 24);
+    g.lineTo(104, 32);
+    g.closePath();
+    g.fill();
+    return new CanvasTexture(c);
+  };
+  var FLAT2 = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  var DIM = 0.55;
+  var flick = (state, t, seed, S2) => {
+    if (state === "buzz") return 0.88 + 0.12 * Math.sin(t * 120 + seed) * Math.sin(t * 7.3 + seed);
+    if (state === "dead") return Math.random() < 6e-3 ? 0.5 : 0;
+    if (state === "failing") {
+      if (S2.off > 0) {
+        S2.off -= 1 / 60;
+        return Math.random() < 0.15 ? 0.6 : 0.02;
+      }
+      if (Math.random() < 0.015) S2.off = Math.random() < 0.25 ? 0.6 + Math.random() * 1.2 : 0.08 + Math.random() * 0.18;
+      return 1;
+    }
+    return 1;
+  };
+  var LightKit = class {
+    constructor(scene2, fx2, arena2, camYaw) {
+      this.scene = scene2;
+      this.fx = fx2;
+      this.arena = arena2;
+      this.camYaw = camYaw;
+      this.on = {};
+      this.t = 0;
+      this.built = {};
+      this.root = new Group();
+      this.root.name = "lightkit";
+      scene2.add(this.root);
+      this.flashK = 0;
+      this.flashX = 0;
+      this.flashZ = 0;
+      this.flashR = 0;
+    }
+    set(key, v) {
+      v = !!v;
+      if (this.on[key] === v) return;
+      this.on[key] = v;
+      if (!v && !this.built[key]) return;
+      if (v && !this.built[key]) {
+        this.built[key] = true;
+        this["build_" + key]?.();
+      }
+      this["toggle_" + key]?.(v);
+    }
+    // ---- the shared floor glows: one instanced mesh for every fitting's pool, every streak, every sign's spill ----
+    glows() {
+      if (this.G) return this.G;
+      const max = 64, mesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ map: glowTex2(), transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), max);
+      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+      mesh.count = 0;
+      mesh.renderOrder = 2;
+      mesh.frustumCulled = false;
+      mesh.setColorAt(0, new Color(0));
+      this.root.add(mesh);
+      this.G = { mesh, items: [], m: new Matrix4(), q: new Quaternion(), s: new Vector3(), p: new Vector3(), c: new Color() };
+      return this.G;
+    }
+    addGlow(x, z, sx, sz, yaw, col, owner) {
+      const G5 = this.glows();
+      const it = { x, z, sx, sz, yaw, col: new Color(col), k: 0, owner, i: G5.items.length };
+      G5.items.push(it);
+      G5.mesh.count = G5.items.length;
+      this.placeGlow(it);
+      return it;
+    }
+    placeGlow(it) {
+      const G5 = this.G;
+      G5.p.set(it.x, 0.026, it.z);
+      G5.q.setFromAxisAngle(new Vector3(0, 1, 0), it.yaw);
+      G5.s.set(it.sx, 1, it.sz);
+      G5.m.compose(G5.p, G5.q, G5.s);
+      G5.mesh.setMatrixAt(it.i, G5.m);
+      G5.mesh.instanceMatrix.needsUpdate = true;
+    }
+    tickGlows() {
+      const G5 = this.G;
+      if (!G5) return;
+      for (const it of G5.items) {
+        const on = this.on[it.owner];
+        G5.c.copy(it.col).multiplyScalar(on ? it.k : 0);
+        G5.mesh.setColorAt(it.i, G5.c);
+      }
+      if (G5.mesh.instanceColor) G5.mesh.instanceColor.needsUpdate = true;
+    }
+    // ---- C: the fittings ----
+    build_fixtures() {
+      this.fix = WING_LIGHTS.fixtures.map((f, i) => {
+        const bar = new Mesh(new BoxGeometry(1.25, 0.04, 0.16), new MeshBasicMaterial({ color: f.col, transparent: true, toneMapped: false }));
+        bar.position.set(f.x, 2.6, f.z);
+        this.root.add(bar);
+        return { ...f, bar, pool: this.addGlow(f.x, f.z, 4.6, 4.6, 0, f.col, "fixtures"), seed: i * 13.7, S: { off: 0 }, b: 1 };
+      });
+    }
+    // the fittings carry the room's light: the general fill and the sun come down (arena.lightScale), the pools stand out
+    toggle_fixtures(v) {
+      for (const F of this.fix || []) F.bar.visible = v;
+      if (this.arena) this.arena.lightScale = v ? DIM : 1;
+    }
+    // ---- F: halos on bright things ----
+    halo(col, size, x, y, z) {
+      const s = new Sprite(new SpriteMaterial({ map: glowTex2(), color: col, transparent: true, opacity: 0.55, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
+      s.scale.set(size, size, 1);
+      s.position.set(x, y, z);
+      this.root.add(s);
+      return s;
+    }
+    build_halos() {
+      this.halos = [];
+      for (const F of this.fix || WING_LIGHTS.fixtures) {
+        const s = this.halo(F.col, 1.1, F.x, 2.58, F.z);
+        s.scale.set(1.9, 0.55, 1);
+        this.halos.push({ s, F, base: 0.6 });
+      }
+      this.monSeen = /* @__PURE__ */ new Set();
+      this.scanMonitors();
+    }
+    scanMonitors() {
+      if (!this.screensMat) return;
+      const faces = [];
+      this.scene.traverse((o) => {
+        if (o.isMesh && o.material === this.screensMat && !this.monSeen.has(o)) faces.push(o);
+      });
+      for (const f of faces) {
+        this.monSeen.add(f);
+        const p = f.getWorldPosition(new Vector3());
+        const H4 = { s: this.halo(9431295, 0.7, p.x, p.y, p.z), base: 0.32, mon: true };
+        H4.s.visible = !!this.on.halos;
+        this.halos.push(H4);
+      }
+    }
+    toggle_halos(v) {
+      for (const H4 of this.halos || []) H4.s.visible = v;
+    }
+    // ---- EXIT signs ----
+    build_exit() {
+      const tex = exitTex();
+      this.exits = WING_LIGHTS.exits.map((e, i) => {
+        const m = new Mesh(new BoxGeometry(0.46, 0.17, 0.05), [0, 0, 0, 0, 1, 1].map((k) => k ? new MeshBasicMaterial({ map: tex, toneMapped: false, transparent: true }) : new MeshBasicMaterial({ color: 1911330 })));
+        m.position.set(e.x, 2.36, e.z);
+        m.rotation.y = e.yaw;
+        this.root.add(m);
+        const fx2 = Math.sin(e.yaw), fz = Math.cos(e.yaw);
+        const halo = this.halo(3997562, 0.9, e.x + fx2 * 0.05, 2.36, e.z + fz * 0.05);
+        halo.scale.set(1.1, 0.55, 1);
+        return { ...e, m, halo, spill: this.addGlow(e.x + fx2 * 0.9, e.z + fz * 0.9, 2.4, 2.4, 0, 2883434, "exit"), seed: i * 5.1, S: { off: 0 } };
+      });
+    }
+    toggle_exit(v) {
+      for (const E of this.exits || []) E.m.visible = E.halo.visible = v;
+    }
+    // ---- D: polished floor ----
+    build_polish() {
+      const cy = this.camYaw * Math.PI / 180, tx = Math.sin(cy), tz = Math.cos(cy);
+      this.streaks = (this.fix || WING_LIGHTS.fixtures).map((F) => ({ F, g: this.addGlow(F.x + tx * 1.1, F.z + tz * 1.1, 0.75, 3.4, cy, F.col, "polish") }));
+    }
+    toggle_polish(v) {
+      const O = this.arena?.ob;
+      if (!O?.floor) return;
+      for (const m of Object.values(O.floor)) {
+        if (m.userData.r0 == null) m.userData.r0 = m.roughness;
+        m.roughness = v ? Math.max(0.28, m.userData.r0 - 0.3) : m.userData.r0;
+        m.envMapIntensity = v ? 1.6 : 1;
+        m.needsUpdate = true;
+      }
+    }
+    // ---- E: contact shadows ----
+    build_contact() {
+      const props = [];
+      this.arena?.group?.traverse((o) => {
+        if (o.userData?.prop && o.parent?.userData?.prop !== true) props.push(o);
+      });
+      const boxes = [];
+      for (const o of props) {
+        const b = new Box3().setFromObject(o);
+        if (!isFinite(b.min.x) || b.min.y > 0.35 || b.max.y - b.min.y < 0.25) continue;
+        boxes.push(b);
+      }
+      const mesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ color: 0, alphaMap: shadowTex(), transparent: true, opacity: 0.5, depthWrite: false }), Math.max(1, boxes.length));
+      const m4 = new Matrix4(), q = new Quaternion(), s = new Vector3(), p = new Vector3();
+      boxes.forEach((b, i) => {
+        const cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2, h = b.max.y - b.min.y, [dx, dz] = this.awayFromLight(cx, cz);
+        p.set(cx + dx * h * 0.12, 0.014, cz + dz * h * 0.12);
+        s.set((b.max.x - b.min.x) * 1.25 + 0.2, 1, (b.max.z - b.min.z) * 1.25 + 0.2);
+        m4.compose(p, q, s);
+        mesh.setMatrixAt(i, m4);
+      });
+      mesh.renderOrder = 1;
+      this.root.add(mesh);
+      this.contact = mesh;
+    }
+    toggle_contact(v) {
+      if (this.contact) this.contact.visible = v;
+      if (!v) for (const b of this.blobs || []) b.blob.scale.set(1, 1, 1);
+    }
+    awayFromLight(x, z) {
+      let best = null, bd = 1e9;
+      for (const F of WING_LIGHTS.fixtures) {
+        if (F.state === "dead") continue;
+        const d = Math.hypot(x - F.x, z - F.z);
+        if (d < bd) {
+          bd = d;
+          best = F;
+        }
+      }
+      if (!best || bd < 1e-3) return [0, 0];
+      return [(x - best.x) / bd, (z - best.z) / bd];
+    }
+    // ---- B: the room's light on the characters ----
+    roomAt(x, z) {
+      for (const r of WING_LIGHTS.rooms) {
+        const [x0, x1, z0, z1] = r.rect;
+        if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r;
+      }
+      return null;
+    }
+    // the light at a point (for the zombies' eyes): the fittings' pools, the shot's flash, the torch if Yola's is on
+    lightAt(x, z) {
+      let L2 = 0;
+      if (this.on.fixtures) for (const F of this.fix) {
+        const d = Math.hypot(x - F.x, z - F.z);
+        if (d < 2.6) L2 += F.b * (1 - d / 2.6) * 0.9;
+      }
+      if (this.flashK > 0) {
+        const d = Math.hypot(x - this.flashX, z - this.flashZ);
+        if (d < this.flashR) L2 += this.flashK * (1 - d / this.flashR) * 1.6;
+      }
+      if (this.torch) {
+        const t = this.torch, dx = x - t.x, dz = z - t.z, d = Math.hypot(dx, dz);
+        if (d > 0.3 && d < 6.5 && (dx * t.fx + dz * t.fz) / d > 0.9) L2 += 1.4 * (1 - d / 6.5) + 0.4;
+      }
+      return Math.min(1.6, L2);
+    }
+    // ---- muzzle: the shot lights the wall it hits and the floor at her feet; the shotgun, the room ----
+    build_muzzle() {
+      this.wallFlash = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: glowTex2(), color: 16760944, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
+      this.wallFlash.visible = false;
+      this.root.add(this.wallFlash);
+      this.feetFlash = this.addGlow(0, 0, 3.2, 3.2, 0, 16756832, "muzzle");
+      this.feetFlash.k = 0;
+    }
+    onShot(e, p, shotgun) {
+      const yaw = e.yaw ?? p.aimYaw;
+      this.flashK = 1;
+      this.flashX = p.x + Math.sin(yaw) * 1.5;
+      this.flashZ = p.z + Math.cos(yaw) * 1.5;
+      this.flashR = shotgun ? 9 : 5;
+      if (!this.on.muzzle) return;
+      this.feetFlash.x = p.x + Math.sin(yaw) * 0.6;
+      this.feetFlash.z = p.z + Math.cos(yaw) * 0.6;
+      this.feetFlash.sx = this.feetFlash.sz = shotgun ? 12 : 4;
+      this.placeGlow(this.feetFlash);
+      this.feetK = shotgun ? 0.9 : 0.55;
+      if (e.hit === "wall" || e.nx != null) {
+        const ex = e.ex, ez = e.ez, nx = e.nx || 0, nz = e.nz || 0;
+        this.wallFlash.position.set(ex + nx * 0.03, 1.35, ez + nz * 0.03);
+        this.wallFlash.lookAt(ex + nx, 1.35, ez + nz);
+        this.wallFlash.scale.setScalar(shotgun ? 3.2 : 1.8);
+        this.wallFlash.visible = true;
+        this.wallK = 1;
+      }
+      if (this.fx?.flashLight && shotgun) {
+        this.fx.flashLight.distance = 11;
+        this.fx.flashLight.intensity = 30;
+      }
+    }
+    update(dt, sim2, views, yolaView) {
+      this.t += dt;
+      if (this.fix) for (const F of this.fix) {
+        const k = this.on.fixtures ? flick(F.state, this.t, F.seed, F.S) : 0;
+        F.b = k;
+        F.pool.k = F.k * k;
+        F.bar.material.opacity = 0.15 + 0.85 * k;
+      }
+      if (this.halos && this.on.halos && (this.monScanT = (this.monScanT ?? 0) - dt) <= 0) {
+        this.monScanT = 2;
+        this.scanMonitors();
+      }
+      if (this.halos) for (const H4 of this.halos) H4.s.material.opacity = H4.mon ? H4.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H4.s.position.x)) : H4.base * (H4.F?.b ?? 1);
+      if (this.exits) for (const E of this.exits) {
+        const k = flick(E.state, this.t, E.seed, E.S);
+        E.halo.material.opacity = 0.5 * k;
+        E.spill.k = 0.22 * k;
+        for (const m of [].concat(E.m.material)) if (m.map) m.opacity = 0.35 + 0.65 * k;
+      }
+      if (this.streaks) for (const S2 of this.streaks) S2.g.k = 0.16 * (S2.F.b ?? 1);
+      this.flashK = Math.max(0, this.flashK - dt * 9);
+      if (this.feetFlash) {
+        this.feetK = Math.max(0, (this.feetK || 0) - dt * 10);
+        this.feetFlash.k = this.feetK;
+      }
+      if (this.wallFlash?.visible) {
+        this.wallK -= dt * 9;
+        this.wallFlash.material.opacity = Math.max(0, this.wallK) * 0.85;
+        if (this.wallK <= 0) this.wallFlash.visible = false;
+      }
+      this.tickGlows();
+      const p = sim2?.player;
+      if (this.on.contact || this.on.room) for (const v of views) {
+        const z = v.z;
+        if (!z) continue;
+        if (this.on.contact && v.blob) {
+          const [dx, dz] = this.awayFromLight(z.x, z.z);
+          v.blob.position.x = z.x + dx * 0.18;
+          v.blob.position.z = z.z + dz * 0.18;
+          v.blob.rotation.z = Math.atan2(dx, dz);
+          v.blob.scale.set(1.05, 1.45, 1);
+          v.blob.material.opacity = 1;
+        }
+        if (this.on.room && v.view) this.tint(v.view, z.x, z.z, dt);
+      }
+      if (yolaView && p) {
+        if (this.on.contact && yolaView.blob) {
+          const [dx, dz] = this.awayFromLight(p.x, p.z);
+          yolaView.blob.position.x = p.x + dx * 0.16;
+          yolaView.blob.position.z = p.z + dz * 0.16;
+          yolaView.blob.rotation.z = Math.atan2(dx, dz);
+          yolaView.blob.scale.set(1.05, 1.45, 1);
+        }
+        if (this.on.room) this.tint(yolaView, p.x, p.z, dt);
+        else if (yolaView.roomTint) this.clearTint(yolaView);
+      }
+    }
+    tint(view, x, z, dt) {
+      const r = this.roomAt(x, z), want = new Color(r ? r.col : 0).multiplyScalar(r ? r.k : 0);
+      view.roomTint ?? (view.roomTint = new Color(0));
+      view.roomTint.lerp(want, Math.min(1, dt * 3));
+      view.roomTintOn = true;
+    }
+    clearTint(view) {
+      view.roomTint = null;
+      view.roomTintOn = false;
+    }
+  };
+
   // src/render/libweapons.js
   var LIB_PICKS = { sledgehammer: "ual_Sword_Heavy_Combo", crowbar: "hub_crowbar_combo", knife: "ual_Sword_Regular_Combo" };
   var LIB_LABEL = { sledgehammer: "Sledgehammer", crowbar: "Crowbar", knife: "Knife" };
@@ -71419,29 +72004,47 @@ void main() {
     el.id = "lightLab";
     el.style.cssText = "position:fixed;left:max(8px,env(safe-area-inset-left));top:calc(100px + env(safe-area-inset-top));z-index:30;width:250px;max-height:calc(100vh - 120px);overflow:auto;font:12px/1.35 system-ui;color:#eef3f2;background:rgba(18,24,26,.86);border-radius:10px;padding:8px 10px";
     const row = ([k, label]) => `<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" data-k="${k}" ${A?.on[k] ? "checked" : ""}><span>${label}</span></label>`;
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">\u2026</span></div><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label>' + ATMOS.map(row).join("") + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div><div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">\u2026</span></div><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label><div style="font-weight:700;margin:2px 0 2px;color:#ffcf8a">Plan upgrades</div>' + LIGHTKIT.map(row).join("") + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">G \xB7 Floor mood <select id="labMood"><option value="">off</option>' + Object.keys(MOODS).filter((k) => k !== "none").map((k) => "<option>" + k + "</option>").join("") + '</select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H \xB7 Film finish (grain, vignette, colour drains with health)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747"><input type="checkbox" id="labShadows" checked><span>Real shadows (off = phone low tier)</span></label><div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>' + ATMOS.filter((a) => a[0] !== "tubes").map(row).join("") + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div><div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
     for (const b of el.querySelectorAll("button")) b.style.cssText = "font:600 11.5px system-ui;border:0;border-radius:6px;padding:4px 7px;cursor:pointer;background:#e8ecec;color:#1b2222";
     document.body.appendChild(el);
     const what = (k) => {
-      const a = ATMOS.find((q) => q[0] === k);
+      const a = ATMOS.find((q) => q[0] === k) || LIGHTKIT.find((q) => q[0] === k);
       if (a) el.querySelector("#labWhat").innerHTML = `<b>${a[1]}</b><br>${a[2]}<br><span style="color:#9fb2af">Cost: ${a[3]}</span>`;
     };
+    const K2 = game.lightkit, LK = new Set(LIGHTKIT.map((q) => q[0]));
+    const mood = () => game.looks?.setMood(el.querySelector("#labMood").value || null, el.querySelector("#labFilm").checked);
     el.addEventListener("change", (e) => {
-      if (e.target.id === "labRoom") {
+      const id = e.target.id;
+      if (id === "labRoom") {
         roomView(game, e.target.checked);
+        return;
+      }
+      if (id === "labMood" || id === "labFilm") {
+        mood();
+        return;
+      }
+      if (id === "labEye") {
+        game.ZombieView.eyeCfg.col = parseInt(e.target.value, 16);
+        return;
+      }
+      if (id === "labShadows") {
+        game.looks?.set(e.target.checked ? "standard" : "lite");
         return;
       }
       const k = e.target.dataset?.k;
       if (!k) return;
-      A?.set(k, e.target.checked);
+      if (LK.has(k)) {
+        K2?.set(k, e.target.checked);
+        if (k === "eyes") game.ZombieView.eyeCfg.on = e.target.checked;
+      } else A?.set(k, e.target.checked);
       if (e.target.checked) what(k);
     });
     el.addEventListener("click", (e) => {
       const a = e.target.dataset?.a;
       if (!a) return;
-      if (a === "all" || a === "none") for (const c of el.querySelectorAll("input")) {
+      if (a === "all" || a === "none") for (const c of el.querySelectorAll("input[data-k]")) {
         c.checked = a === "all";
-        A?.set(c.dataset.k, c.checked);
+        c.dispatchEvent(new Event("change", { bubbles: true }));
       }
       if (a === "hit") {
         const p = game.sim.player;
@@ -71636,6 +72239,7 @@ void main() {
   }
   var looks = null;
   var atmos = null;
+  var lightkit = null;
   addEventListener("resize", resize);
   resize();
   var tuning = makeTuning(store2.get("tuning", null));
@@ -71802,6 +72406,8 @@ void main() {
     hud.loading(0);
     arena = new Arena(scene, resolvedQuality(), renderer);
     atmos = new Atmos(scene, fx, arena);
+    lightkit = new LightKit(scene, fx, arena, tuning.camYaw);
+    ZombieView.eyeCfg.light = (x, z) => lightkit.lightAt(x, z);
     looks = new Looks(renderer, scene, camera);
     looks.set(store2.get("look", "standard"));
     document.getElementById("lookBtn")?.addEventListener("click", () => {
@@ -72476,6 +73082,29 @@ void main() {
     if (debugOn) updateDebug(p);
     hud.update(sim, dt);
     atmos?.update(dt, sim, ix, iz, iyaw);
+    if (lightkit) {
+      lightkit.screensMat = screens.mat;
+      lightkit.torch = atmos?.on.torch ? { x: ix, z: iz, fx: Math.sin(iyaw), fz: Math.cos(iyaw) } : null;
+      const kv = [];
+      for (const [id, v] of zviews) {
+        const z = sim.zombies.find((q) => q.id === id);
+        if (z) kv.push({ z, view: v, blob: v.blob });
+      }
+      lightkit.update(dt, sim, kv, yola);
+      if (lightkit.on.room || yola.roomTintWas) {
+        const t = lightkit.on.room ? yola.roomTint : null;
+        yola.roomTintWas = !!t;
+        yola.model.traverse((o) => {
+          if (o.isMesh) {
+            for (const m of [].concat(o.material)) if (m.emissive) {
+              if (t) m.emissive.copy(t);
+              else m.emissive.setRGB(0, 0, 0);
+            }
+          }
+        });
+      }
+      looks.setDrain?.(1 - p.hp / Math.max(1, p.maxHp));
+    }
     execLook(animDt, dt);
     if (doRender) looks.render();
   }
@@ -72506,6 +73135,7 @@ void main() {
         case "shot": {
           audio.play("shot");
           fx.muzzle(yola.muzzleWorld);
+          lightkit?.onShot(e, p, false);
           fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez, 0.5, e.ey);
           if (e.hit === "zombie" && !e.blocked) {
             if (e.ey != null) fx.burst(e.ex, e.ey, e.ez, 4, 5903380, 1.8, 0.8, 0.45);
@@ -72524,6 +73154,10 @@ void main() {
           audio.play("shotgun");
           const mw = yola.muzzleWorld;
           fx.muzzle(mw, 1.8);
+          {
+            const mid = e.pellets?.[e.pellets.length >> 1];
+            lightkit?.onShot({ ...mid || {}, yaw: e.yaw }, p, true);
+          }
           let flesh = 0;
           const bled = /* @__PURE__ */ new Set();
           for (const pl of e.pellets) {
@@ -73334,7 +73968,9 @@ void main() {
     return physics;
   }, zviews, get atmos() {
     return atmos;
-  }, get fx() {
+  }, get lightkit() {
+    return lightkit;
+  }, ZombieView, get fx() {
     return fx;
   }, get execActive() {
     return execDir.active;
