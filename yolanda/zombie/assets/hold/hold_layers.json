@@ -1,5 +1,5 @@
 {
- "posture": false,
+ "posture": true,
  "handPoses": false,
  "secondHand": false,
  "carry": false,

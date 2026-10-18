@@ -2,5 +2,9 @@
  "yola2:ual_Sword_Block": {
   "Right": 5.5,
   "Left": 4
+ },
+ "yola2:bat_idle": {
+  "Right": 3,
+  "Left": 0
  }
 }
