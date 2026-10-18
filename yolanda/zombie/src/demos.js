@@ -1,3 +1,4 @@
+import { ATMOS } from './render/atmos.js';
 // Repeatable examples (2026-10-18, the user: "show short, repeatable examples of the first shield slam, second-slam break,
 // post-break dismemberment, charger dodge, get-ups, and walker lunges ... check them in the actual Three.js game").
 // combat.html?mode=calm&demo=<name>: the practice room with only that scene in it, set up the same way every time; the
@@ -36,6 +37,9 @@ const DEMOS = {
   // (2026-10-18, the user: "show me a player of the executions and the camera"): every weapon's finisher in turn, played by
   // itself (the real beat: render/execution.js); the buttons pick one to repeat, or all of them again
   finishers: { label: 'Finishers: every weapon in turn', weapon: 'bat', setup(sim, game) { showcase(sim, game); } },
+  // (2026-10-18, the user: "find a room that you can apply those different lighting upgrades so i can view them and
+  // understand them"): every upgrade switchable on its own, what it is and what it costs, the frame time live
+  lighting: { label: 'Lighting lab: switch each upgrade on and off', weapon: 'bat', setup(sim, game) { lightingLab(sim, game); } },
   low: { label: 'Low targets: a crawler, a floored walker', weapon: 'axe', setup(sim) { const c = put(sim, 0.4, 0.6, 'normal'); c.crawling = true; c.broken = 'LowerLeg_L'; const k = put(sim, 1.6, 0.4, 'normal'); k.knockDown(0, 1, sim); } },
 };
 function put(sim, x, z, kind = 'normal', yaw = 0, prop) { const q = sim.spawnZombie('placed', { x, z, yaw, kind, prop }); q.set('chase'); return q; }
@@ -61,6 +65,42 @@ export function startDemos(game, name, auto) {
   setup();
 }
 
+// the lighting lab: a panel of switches (render/atmos.js ATMOS), a few blood pools to walk through, walkers by the walls
+// to kill (wall splatter), a Big hit button (dust and the impact frame), the frame time
+function lightingLab(sim, game) {
+  const fx = game.fx, A = game.atmos;
+  for (const [x, z, s] of [[0.4, 0.4, 1.3], [-1.6, -2.4, 1.0], [2.0, 3.6, 1.1]]) fx?.bloodPool(x, z, s);
+  for (const [x, z, yaw] of [[-6.2, 4.2, -Math.PI / 2], [0.6, -4.4, Math.PI], [-6.1, -1.2, -Math.PI / 2]]) { const q = put(sim, x, z, 'normal', yaw); q.passive = true; q.speedMul = 0; }
+  sim.player.x = 0.4; sim.player.z = 2.6;
+  let el = document.getElementById('lightLab'); if (el) el.remove();
+  el = document.createElement('div'); el.id = 'lightLab';
+  el.style.cssText = 'position:fixed;left:max(8px,env(safe-area-inset-left));top:calc(100px + env(safe-area-inset-top));z-index:30;width:250px;max-height:calc(100vh - 120px);overflow:auto;font:12px/1.35 system-ui;color:#eef3f2;background:rgba(18,24,26,.86);border-radius:10px;padding:8px 10px';
+  const row = ([k, label]) => `<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" data-k="${k}" ${A?.on[k] ? 'checked' : ''}><span>${label}</span></label>`;
+  el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">…</span></div>'
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label>'
+    + ATMOS.map(row).join('')
+    + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div>'
+    + '<div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
+  for (const b of el.querySelectorAll('button')) b.style.cssText = 'font:600 11.5px system-ui;border:0;border-radius:6px;padding:4px 7px;cursor:pointer;background:#e8ecec;color:#1b2222';
+  document.body.appendChild(el);
+  const what = (k) => { const a = ATMOS.find((q) => q[0] === k); if (a) el.querySelector('#labWhat').innerHTML = `<b>${a[1]}</b><br>${a[2]}<br><span style="color:#9fb2af">Cost: ${a[3]}</span>`; };
+  el.addEventListener('change', (e) => { if (e.target.id === 'labRoom') { roomView(game, e.target.checked); return; } const k = e.target.dataset?.k; if (!k) return; A?.set(k, e.target.checked); if (e.target.checked) what(k); });
+  el.addEventListener('click', (e) => {
+    const a = e.target.dataset?.a; if (!a) return;
+    if (a === 'all' || a === 'none') for (const c of el.querySelectorAll('input')) { c.checked = a === 'all'; A?.set(c.dataset.k, c.checked); }
+    if (a === 'hit') { const p = game.sim.player; A?.onBigHit(p.x, p.z); A?.onKill(p.x, p.z, Math.sin(p.aimYaw), Math.cos(p.aimYaw), 8); fx?.ring(p.x, p.z, 0xffffff, 2); }
+  });
+  // the frame time, averaged over the last second of real frames
+  let n = 0, sum = 0, last = performance.now();
+  const tick = () => { if (!document.body.contains(el)) return; const now = performance.now(); sum += now - last; last = now; if (++n >= 30) { el.querySelector('#labMs').textContent = (sum / n).toFixed(1) + ' ms'; n = 0; sum = 0; } requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+}
+// the whole practice room from above, the game camera's own angle and turn (the lighting lab); off: the game camera again
+function roomView(game, on) {
+  game.camFree = on; if (!on) return;
+  const T = game.tuning, cy = (T.camYaw * Math.PI) / 180, p = (Math.max(48, T.camPitch) * Math.PI) / 180, D = 23, fx = -Math.sin(cy), fz = -Math.cos(cy);
+  game.camera.position.set(-fx * Math.cos(p) * D, Math.sin(p) * D, 0.5 - fz * Math.cos(p) * D); game.camera.lookAt(0, 0, 0.5);
+}
 // the finisher player: a walker stands in front of her glowing; she presses; the beat plays; the next weapon (SHOW order)
 const SHOW = ['bat', 'axe', 'crowbar', 'knife', 'sledgehammer', 'fists', 'pistol', 'shotgun'];
 const SHOW_LABEL = { bat: 'Bat', axe: 'Axe', crowbar: 'Crowbar', knife: 'Knife', sledgehammer: 'Sledgehammer', fists: 'Kick', pistol: 'Pistol', shotgun: 'Shotgun' };
