@@ -196,6 +196,7 @@ class Actor {
     this.mixer = new THREE.AnimationMixer(obj);
     this.bones = {}; obj.traverse((o) => { if (o.isBone) { const n = o.name.replace(/^mixamorig:?/, ''); this.bones[UE_MAP[n] || n] = o; } });
     this.restPos = {}; obj.traverse((o) => { if (o.isBone) this.restPos[o.name.replace(/^mixamorig:?/, '')] ||= o.position.clone(); }); // (by the file's own names)
+    this.rest = []; obj.traverse((o) => { if (o.isBone) this.rest.push([o, o.quaternion.clone(), o.position.clone(), o.scale.clone()]); }); // (every bone at rest: each redraw starts from here)
     this.helper = new THREE.SkeletonHelper(obj); this.helper.visible = false; this.helper.material.depthTest = false;
     // (the body bones only: the fingers have their own coloured overlay, FingerSkel; the helper's unused line ends stay at
     // 0,0,0 both, so they draw nothing)
@@ -211,8 +212,15 @@ class Actor {
     this.clip = clip; this.t0 = clipT0(clip); this.frames = clipFrames(clip);
     this.action = this.mixer.clipAction(clip); this.action.play(); this.action.timeScale = 0;
   }
+  // every redraw starts from scratch, as the game does: every bone back at rest, then the clip writes every bone it drives
+  // again (three's mixer skips a value that has not changed since it last wrote it, so a bone kept whatever the last redraw
+  // did to it: with anything turning a bone after the arm adjustments, e.g. the shotgun's left hand on the pump, they piled
+  // up redraw after redraw, 2026-10-17)
   setFrame(f) {
     if (!this.action) return;
+    for (const [b, q, p, sc] of this.rest) { b.quaternion.copy(q); b.position.copy(p); b.scale.copy(sc); }
+    this.post = []; // (the last redraw's own turns are gone with it)
+    for (const b of this.mixer._bindings) { const n = b.valueSize, buf = b.buffer; for (let i = n; i < 3 * n; i++) buf[i] = NaN; }
     this.action.time = clamp(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
     this.mixer.update(0); this.root.updateMatrixWorld(true);
   }
