@@ -72802,6 +72802,25 @@ void main() {
     });
     setup();
   }
+  var LAB_PICKS = {
+    baked: true,
+    fixtures: true,
+    exit: true,
+    polish: true,
+    muzzle: true,
+    yshadow: true,
+    labLook: "standard",
+    labChar: "0.45",
+    labTubes: false,
+    labMood: "",
+    labFilm: false,
+    zones: true,
+    shafts: true,
+    splatter: true,
+    sparks: true,
+    haze: true,
+    impact: true
+  };
   function lightingLab(sim2, game) {
     const fx2 = game.fx, A = game.atmos;
     for (const [x, z, s] of [[0.4, 0.4, 1.3], [-1.6, -2.4, 1], [2, 3.6, 1.1]]) fx2?.bloodPool(x, z, s);
@@ -72880,7 +72899,7 @@ void main() {
       }
     });
     try {
-      const o = JSON.parse(localStorage.getItem(SAVE) || "null");
+      const o = JSON.parse(localStorage.getItem(SAVE) || "null") || LAB_PICKS;
       if (o) for (const c of fields()) {
         const v = o[keyOf(c)];
         if (v === void 0) continue;
