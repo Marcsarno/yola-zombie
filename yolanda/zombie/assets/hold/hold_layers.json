@@ -1,6 +1,6 @@
 {
- "posture": true,
- "handPoses": true,
- "secondHand": true,
- "carry": true
+ "posture": false,
+ "handPoses": false,
+ "secondHand": false,
+ "carry": false
 }
