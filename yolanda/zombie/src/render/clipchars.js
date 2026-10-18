@@ -48,6 +48,8 @@ function stripRoot(clip, rest) {
   for (const t of clip.tracks) {
     if (!/Hips\.position$/.test(t.name)) continue;
     const v = t.values, x0 = rest ? rest.x : v[0], z0 = rest ? rest.z : v[2];
+    // (the jump finishers keep their forward travel aside, in the hips' own units: the game moves her by it, render/newmoves.js)
+    if (/^hub_execution_/.test(clip.name) && !clip.travel) clip.travel = { times: Array.from(t.times), z: Array.from({ length: v.length / 3 }, (_, i) => v[i * 3 + 2]) };
     for (let i = 0; i < v.length; i += 3) { v[i] = x0; v[i + 2] = z0; }
   }
   return clip;

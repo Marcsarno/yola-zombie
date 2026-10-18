@@ -62,6 +62,11 @@ const NEW_KINDS = [
 ];
 // library clips (ual_ / ual1_): the reference is Quaternius's own mannequin playing the clip (assets/source/ual, local only)
 // (2026-10-17: the full Source packs the user bought, 120 + 134 clips; the free Standard files had 43 each, same clips)
+// Finisher tests from the Animation Hub (2026-10-18, the user: "add next to idle, attack, another option for finishers so i
+// can find it easy"): her launch-into-strike executions, always loaded for her when they exist (assets/test_clips is local),
+// listed under the edit bar's Finishers button and played with their forward launch (never pinned in place).
+// (each at three jump lengths: 1.4, 2.4 and 3.4 m; the game's finisher reaches up to 3.6 m)
+const FINISHER_TESTS = ["B_uppercut", "C_uppercut_mirrored"].flatMap((k) => ["", "_2_4m", "_3_4m"].map((d) => "assets/test_clips/hub_hub_execution_" + k + d + ".glb"));
 const UAL_FILES = { ual_: 'assets/source/ual/UAL2_Full.glb', ual1_: 'assets/source/ual/UAL1_Full.glb' };
 const UAL_FEMALE = 'assets/source/ual/Mannequin_F.glb'; // (UAL2 Source: the female mannequin, same rig, no clips of its own)
 const UE_MAP = { pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', Head: 'Head' };
@@ -339,12 +344,12 @@ async function setChar(key) {
     // (&extra=a.glb,b.glb: test bakes of this character's clips, e.g. assets/test_clips; named <clip>_REBAKE_<what>)
     const extraQ = key === new URLSearchParams(location.search).get('char') ? (new URLSearchParams(location.search).get('extra') || '').split(',').filter(Boolean) : [];
     // (CHARS[].newPacks: the new Quaternius packs' test bakes, always loaded when they exist: assets/test_clips is local)
-    const packs = CHARS[key].newPacks || [];
-    for (const f of [...(CHARS[key].extra || []), ...packs, ...extraQ]) {
+    const packs = CHARS[key].newPacks || [], fins = key === "yola2" ? FINISHER_TESTS.filter((f) => !extraQ.includes(f)) : [];
+    for (const f of [...(CHARS[key].extra || []), ...packs, ...extraQ, ...fins]) {
       try {
         const c = await loadG(f), have = Object.fromEntries(g.animations.map((a) => [a.name, a]));
         for (const a of c.animations) {
-          const tag = packs.includes(f) ? { pack: /^kk_/.test(a.name) ? 'KayKit' : /ual1_/.test(a.name) ? 'UAL1' : 'UAL2' } : extraQ.includes(f) ? { test: f.split('/').pop() } : {};
+          const tag = FINISHER_TESTS.includes(f) ? { fin: true, test: f.split("/").pop() } : packs.includes(f) ? { pack: /^kk_/.test(a.name) ? 'KayKit' : /ual1_/.test(a.name) ? 'UAL1' : 'UAL2' } : extraQ.includes(f) ? { test: f.split('/').pop() } : {};
           // (a pack clip the character already has, e.g. a library pick, keeps the one it has, listed with the pack)
           if (tag.pack && have[a.name]) { have[a.name].userData = { ...have[a.name].userData, ...tag }; continue; }
           if (have[a.name] && !extraQ.includes(f)) continue; // (a clip in two of her files, e.g. yola2_ual and the Move Library bake: the first one)
@@ -366,7 +371,7 @@ async function setChar(key) {
 }
 async function setClip(name) {
   const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
-  pinRoot(c, $('inplace').checked, main); main.play(c); main.hair?.reset?.(); FPS = fpsOf(c); vidRef(name);
+  pinRoot(c, $('inplace').checked && !c.userData?.fin, main); main.play(c); main.hair?.reset?.(); FPS = fpsOf(c); vidRef(name);
   // the reference: the clip's own source rig. Mixamo clips: Mixamo's X Bot; library clips: Quaternius's mannequin
   // (a game clip made from a library move is shown against that move: CHARS[].libRef)
   const libName = (CHARS[S.char].libRef || {})[name.replace(/_REBAKE_.*$/, '')] || name;
@@ -1102,16 +1107,18 @@ function gameAttacks() {
   return [...new Set([...(GAME_ATTACKS[S.gun] || []), ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
 }
 function editClips() {
+  if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin).map((c) => c.name).sort();
   if (S.mode === 'attack' && ARENA_KEY[S.gun]) { const g = gameAttacks(); if (g.length) return g; }
   const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === 'idle' ? EDIT_IDLE : EDIT_ATTACK);
   return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n))
     .sort((a, b) => (a === 'ual_Sword_Block' ? -1 : b === 'ual_Sword_Block' ? 1 : a.localeCompare(b)));
 }
-const prettyClip = (n) => S.gun === 'pistol' && S.mode === 'attack' && n === 'pistol_idle' ? 'Firing (the idle with the shot kick)  · Mixamo' : n.replace(/^(ual1?|kev)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : /^kev_/.test(n) ? '  · Kevin Iglesias' : '  · Mixamo') + (S.mode === 'attack' && gameAttack(n) ? '  · ' + gameAttack(n) : '');
+const finLabel = (n) => { const m = n.match(/_(\d)_(\d)m$/); return n.replace(/^hub_execution_/, "").replace(/_\d_\dm$/, "").replace(/_/g, " ") + "  ·  jump " + (m ? m[1] + "." + m[2] : "1.4") + " m"; };
+const prettyClip = (n) => /^hub_execution_/.test(n) ? finLabel(n) + "  · Animation Hub test" : S.gun === 'pistol' && S.mode === 'attack' && n === 'pistol_idle' ? 'Firing (the idle with the shot kick)  · Mixamo' : n.replace(/^(ual1?|kev)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : /^kev_/.test(n) ? '  · Kevin Iglesias' : '  · Mixamo') + (S.mode === 'attack' && gameAttack(n) ? '  · ' + gameAttack(n) : '');
 function editSync() {
   if (!$('edit') || !main) return;
   for (const b of $('eWeapons').children) b.classList.toggle('on', b.dataset.k === S.gun);
-  $('eIdle').classList.toggle('on', S.mode === 'idle'); $('eAttack').classList.toggle('on', S.mode === 'attack');
+  $('eIdle').classList.toggle('on', S.mode === 'idle'); $('eAttack').classList.toggle('on', S.mode === 'attack'); $('eFin').classList.toggle('on', S.mode === 'finisher');
   const sel = $('eClip'), list = editClips(), cur = main.clip?.name || '';
   sel.innerHTML = ''; for (const n of list) sel.add(new Option(prettyClip(n), n));
   if (!list.includes(cur)) sel.add(new Option('(' + (cur || 'none') + ')', cur), 0);
@@ -1331,6 +1338,7 @@ function buildEditUI(ui, fitClipPanel) {
   }
   $('eIdle').onclick = () => { S.mode = 'idle'; editPick(editFirst()); };
   $('eAttack').onclick = () => { S.mode = 'attack'; editPick(editFirst()); };
+  $('eFin').onclick = () => { S.mode = 'finisher'; editPick(editFirst()); };
   $('eClip').onchange = (e) => editPick(e.target.value);
   for (const b of $('eShow').children) b.onclick = () => { S.show = b.dataset.show; refresh(); editSync(); };
   for (const b of $('eAngles').children) b.onclick = () => editAngle(b.dataset.a);

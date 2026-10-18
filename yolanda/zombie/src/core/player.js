@@ -1,7 +1,7 @@
 // Player: one authoritative movement controller + one weapon action state machine.
 // Yaw convention: forward = (sin yaw, cos yaw) on (x, z).
 import { clamp, angleDiff, approachAngle, segPointDist2, rayCircle } from './world.js';
-import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, usableWeapons, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack, legAttack, strikeReach } from './weapons.js';
+import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, usableWeapons, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack, legAttack, strikeReach, EXEC_LAUNCH } from './weapons.js';
 
 const AIM_DEADZONE = 0.18;
 // knocked flat (the sprinter's charge): thrown back onto the floor, rolls onto her front, gets up (assets/yola_extra.glb:
@@ -159,7 +159,7 @@ export class Player {
   }
   get attacks() { return attacksOf(this.equipped); }
   // the attack an action plays: the combo's, the downward strike at a zombie on the floor, or the leg attack
-  atk(a = this.action) { return a.ground ? groundAttack(this.equipped) : a.leg ? legAttack(this.equipped) : this.attacks[a.combo]; }
+  atk(a = this.action) { return a.execA ? a.execA : a.ground ? groundAttack(this.equipped) : a.leg ? legAttack(this.equipped) : this.attacks[a.combo]; }
 
   cancelAttacks() {
     const a = this.action.type;
@@ -180,7 +180,7 @@ export class Player {
     // running into a low prop: over it (VAULT)
     { const t = this.action.type; if (!this.dead && mag > 0.6 && (t === 'ready' || t === 'shot' || t === 'reload') && this.tryVault(mx / mag, mz / mag, world, sim)) { /* the vault owns her now */ } }
     const down = this.action.type === 'down', dodging = this.action.type === 'dodge', vaulting = this.action.type === 'vault';
-    const exec = this.action.type === 'execDash' || this.action.type === 'execAim'; // (an execution moves her itself: updateAction)
+    const exec = this.action.type === 'execDash' || this.action.type === 'execAim' || !!this.action.execA; // (an execution moves her itself: updateAction)
     if (this.dead || down || dodging || vaulting || exec) { mx = mz = mag = 0; }
     // aim
     const am = down ? 0 : Math.hypot(input.aimX, input.aimZ);
@@ -423,10 +423,28 @@ export class Player {
     z.executed = true; z.execWeapon = this.equipped; z.executable = 0; z.execLock = true;
     z.set(ZS_STAGGER, 9); z.vx = z.vz = 0; z.kx = z.kz = 0; z.hitFlash = 1;
     this.aimYaw = this.aimTarget = Math.atan2(dx, dz); this.vx = this.vz = 0;
-    const go = Math.max(0, d - stand);
-    this.setAction('execDash', { dur: Math.max(0.05, Math.min(0.16, go / 16)), x0: this.x, z0: this.z, x1: this.x + ux * go, z1: this.z + uz * go, id: z.id });
     this.invuln = Math.max(this.invuln, 3); this.execId = z.id;
     sim.emit({ type: 'execStart', id: z.id, weapon: this.equipped, x: z.x, z: z.z });
+    if (!gun && this.equipped !== FISTS && this.equipped !== 'chainsaw' && EXEC_LAUNCH.length) { this.startLaunch(z, d, fin, sim); return; } // (the melee weapons leap in: startLaunch)
+    const go = Math.max(0, d - stand);
+    this.setAction('execDash', { dur: Math.max(0.05, Math.min(0.16, go / 16)), x0: this.x, z0: this.z, x1: this.x + ux * go, z1: this.z + uz * go, id: z.id });
+  }
+  // A melee finisher as a jump (core/weapons.js EXEC_LAUNCH): B or C at random, the shortest jump that covers the gap,
+  // its travel (the clip's own, in the air) scaled to stop her a strike short of the zombie; the weapon's own finisher
+  // profile (what it does to the body, its sound). No dash first: she coils and leaps from where she is.
+  startLaunch(z, d, fin, sim) {
+    const v = sim.rand() < 0.5 ? 'B_uppercut' : 'C_uppercut_mirrored';
+    const list = EXEC_LAUNCH.filter((e) => e.variant === v).sort((a, b) => a.dist - b.dist);
+    const gap = Math.max(0, d - list[0].A.stand), far = (e) => (e.A.ROOT ? e.A.ROOT[e.A.ROOT.length - 1].z : 0);
+    const E = list.find((e) => far(e) >= gap) || list[list.length - 1], L = E.A, total = far(E);
+    const A = { ...L, kind: fin?.kind ?? L.kind, sound: fin?.sound ?? L.sound, sever: fin?.sever ?? L.sever, dmg: Math.max(L.dmg, fin?.dmg ?? 0), knock: fin?.knock ?? L.knock };
+    const rootScale = total > 0.01 ? Math.min(1, gap / total) : 0;
+    this.swingId++;
+    this.setAction('swing', { st: 0, combo: this.attacks.length - 1, ground: false, leg: false, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId,
+      lunge: total * rootScale, unlocked: true, target: z, heading: this.aimYaw, turnFrom: this.aimYaw, turnBy: 0, advanced: 0, rootScale, back: 0, execA: A, execId: z.id });
+    this.execHitIn = A.activeStart / (this.T.axeSpeed || 1); // (when her strike lands: render/execution.js paces her to it)
+    this.attackPressT = 9;
+    sim.emit({ type: 'swing', combo: this.attacks.length - 1 });
   }
   reloadTime() { return this.equipped === SHOTGUN ? this.T.shotgunReload : this.T.reloadTime; }
 

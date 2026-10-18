@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 import { buildLibraryAttack } from './libattack.js';
 import { mixerWritesAll, OVERLAY_NAMES } from './clipchars.js';
-import { BAT_PROFILE, useBuiltBat, LEG_ATTACKS, GROUND_OWN, attackTime, attackEnd } from '../core/weapons.js';
+import { BAT_PROFILE, useBuiltBat, LEG_ATTACKS, GROUND_OWN, EXEC_LAUNCH, attackTime, attackEnd } from '../core/weapons.js';
 
 const SETTLE = 0.45; // s after a strike before she is free again (the recovery clip plays on as the settle, clipchars.js)
 const REC = ['ual_Sword_Regular_A_Rec', 'ual_Sword_Regular_B_Rec'];
@@ -94,6 +94,25 @@ export function setupNewMoves(yola, anims, hold) {
       Object.assign(S, { ground: true, style: 'chop', minY: 0.05, chainFrom: 9, assist: 2.0, stand: 1.0, kind: 'bat', dmg: 1.4, knock: 0.6 });
       GROUND_OWN.bat = S; made.push('bat ground');
     }
+  }
+  // ---- the jump finishers (core/weapons.js EXEC_LAUNCH): sampled with the bat in her hand; every melee weapon's finisher
+  // plays them with its own profile (core/player.js startExecution) ----
+  if (hold) {
+    EXEC_LAUNCH.length = 0;
+    for (const v of ['B_uppercut', 'C_uppercut_mirrored']) for (const [dist, sfx] of [[1.4, ''], [2.4, '_2_4m'], [3.4, '_3_4m']]) {
+      const clip = by['hub_execution_' + v + sfx]; if (!clip) continue;
+      const [S] = buildLibraryAttack(yola, { clip, hold, P: { ...BAT_PROFILE, style: 'heavy' }, name: 'finisher ' + v, sound: 'bat', strikes: 1, recover: 0.3, split: false });
+      // her travel (the game strips it from the clip at load: clipchars.js stripRoot keeps it aside), hips units to metres
+      if (clip.travel) {
+        const k = yola.bones.Hips.parent.getWorldScale(new THREE.Vector3()).z, z0 = clip.travel.z[0];
+        let m = 0; S.ROOT = clip.travel.times.map((t, i) => ({ t: attackTime(S, Math.round(t * 30)), z: (m = Math.max(m, (clip.travel.z[i] - z0) * k)) }));
+      }
+      // the blow only (the coil and the jump move the bat fast too): the clip's last fast window
+      const win = S.windows[S.windows.length - 1];
+      Object.assign(S, { windows: [win], activeStart: win[0], activeEnd: win[1], stand: 0.9, chainFrom: 9, launch: true });
+      EXEC_LAUNCH.push({ variant: v, dist, A: S });
+    }
+    if (EXEC_LAUNCH.length) made.push(`jump finishers: ${EXEC_LAUNCH.map((e) => e.variant[0] + e.dist + (e.A.ROOT ? ' ' + e.A.ROOT[e.A.ROOT.length - 1].z.toFixed(2) + 'm@' + e.A.activeStart.toFixed(2) : ' no ROOT')).join(', ')}`);
   }
   // ---- the bat on her back, drawn with Sword_Enter (clipchars.js setupBatBack) ----
   if (hold && by.ual1_Sword_Enter) { const g = yola.setupBatBack(by.ual1_Sword_Enter); if (g) made.push(`bat on the back (grab at frame ${g})`); }

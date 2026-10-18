@@ -170,6 +170,13 @@ export const resetGroundAttacks = () => { for (const k in GROUND) delete GROUND[
 // A weapon's own downward strike, built at load (render/newmoves.js: the bat's Quaternius Sword_Heavy_D smash into the
 // floor), used by groundAttack in place of the shared chop
 export const GROUND_OWN = {};
+// The jump finishers (2026-10-18, the user: "lunge forward... the attack to begin during the lunge, not after"; both kept
+// "for random and 2 options"): Animation Hub clips in assets/yola2_ual.glb, built at load (render/newmoves.js). B: from
+// the Uppercut's low crouch she springs into the bat finisher's strike (Quaternius Sword_Regular_C), its wind-up rising
+// in the air, the blow as she lands; C: the same from the mirrored crouch (side-on, weapon low across her body). Each at
+// three jump lengths (1.4, 2.4, 3.4 m: a longer jump hangs longer and hops higher); every melee finisher picks one
+// (core/player.js startExecution). { variant, dist, A }
+export const EXEC_LAUNCH = [];
 // ---- the leg attacks (2026-10-17, the user: "attacks that would take out their legs ... to get them to crawl") ----
 // Started by their own button (Legs / C, core/player.js startLegs). Low: they hit below the knee (minY 0), never a body
 // on the floor, and always strike the shins (sim.js resolveMelee style 'legs'): a blade cuts the lower leg off, a blunt
