@@ -71833,7 +71833,7 @@ void main() {
   var LIGHTKIT = [
     // [key, label, what it is, what it costs] (the lighting lab's switches)
     ["baked", "A \xB7 Baked floor light", "The fittings' light baked once in Blender (blender/bake_wing_floor.py): soft pools, furniture shadows, the dead corner dark. Replaces C's floor glows (no flicker on the floor).", "one 123 KB texture, free to draw"],
-    ["fixtures", "C \xB7 Light fittings as data", "Every fitting draws its light on the floor: two in the theatre, the hall, the reception (failing), the lounge (warm, buzzing), the beds (dead).", "one draw call for every floor glow"],
+    ["fixtures", "C \xB7 Light fittings as data", 'Every fitting draws its light on the floor: two in the theatre, the hall, the reception (failing), the lounge (warm, buzzing), the beds (dead). With A on, the bake draws the floor light instead; the tubes themselves show only with "Show the tubes".', "one draw call for every floor glow"],
     ["halos", "F \xB7 Halos", "A soft halo on every bright thing: tubes, monitors, EXIT signs (the glow look without a bloom pass).", "~15 sprites"],
     ["exit", "EXIT signs", "Green EXIT signs over the doors, one failing; green spilling on the floor under them.", "3 boxes + 3 halos"],
     ["polish", "D \xB7 Polished floor", "Each lit fitting's reflection streaks on the floor toward the camera, and the floor gets a little glossier.", "glows in the same draw call + material"],
@@ -72003,17 +72003,28 @@ void main() {
       if (G5.mesh.instanceColor) G5.mesh.instanceColor.needsUpdate = true;
     }
     // ---- C: the fittings ----
-    build_fixtures() {
-      this.fix = WING_LIGHTS.fixtures.map((f, i) => {
+    // the fittings themselves (2026-10-18, the user: keep the polished floor, "we don't need to actually show the light fixtures
+    // on the ceiling"): their places and flicker always run once anything uses them (C's pools, D's streaks, the halos, the
+    // eyes); the tube bars show only with the lab's "Show the tubes" (this.tubes)
+    fittings() {
+      if (this.fix) return this.fix;
+      return this.fix = WING_LIGHTS.fixtures.map((f, i) => {
         const bar = new Mesh(new BoxGeometry(1.25, 0.04, 0.16), new MeshBasicMaterial({ color: f.col, transparent: true, toneMapped: false }));
         bar.position.set(f.x, 2.6, f.z);
+        bar.visible = !!this.tubes;
         this.root.add(bar);
         return { ...f, bar, pool: this.addGlow(f.x, f.z, 4.6, 4.6, 0, f.col, "fixtures"), seed: i * 13.7, S: { off: 0 }, b: 1 };
       });
     }
+    setTubes(v) {
+      this.tubes = !!v;
+      for (const F of this.fittings()) F.bar.visible = this.tubes;
+    }
+    build_fixtures() {
+      this.fittings();
+    }
     // the fittings carry the room's light: the general fill and the sun come down (arena.lightScale), the pools stand out
-    toggle_fixtures(v) {
-      for (const F of this.fix || []) F.bar.visible = v;
+    toggle_fixtures() {
       this.fill();
     }
     fill() {
@@ -72184,7 +72195,7 @@ void main() {
     }
     build_halos() {
       this.halos = [];
-      for (const F of this.fix || WING_LIGHTS.fixtures) {
+      for (const F of this.fittings()) {
         const s = this.halo(F.col, 1.1, F.x, 2.58, F.z);
         s.scale.set(1.9, 0.55, 1);
         this.halos.push({ s, F, base: 0.6 });
@@ -72229,7 +72240,7 @@ void main() {
     // ---- D: polished floor ----
     build_polish() {
       const cy = this.camYaw * Math.PI / 180, tx = Math.sin(cy), tz = Math.cos(cy);
-      this.streaks = (this.fix || WING_LIGHTS.fixtures).map((F) => ({ F, g: this.addGlow(F.x + tx * 1.1, F.z + tz * 1.1, 0.75, 3.4, cy, F.col, "polish") }));
+      this.streaks = this.fittings().map((F) => ({ F, g: this.addGlow(F.x + tx * 1.1, F.z + tz * 1.1, 0.75, 3.4, cy, F.col, "polish") }));
     }
     toggle_polish(v) {
       const O = this.arena?.ob;
@@ -72294,7 +72305,7 @@ void main() {
     // the light at a point (for the zombies' eyes): the fittings' pools, the shot's flash, the torch if Yola's is on
     lightAt(x, z) {
       let L2 = 0;
-      if (this.on.fixtures) for (const F of this.fix) {
+      if ((this.on.fixtures || this.on.baked) && this.fix) for (const F of this.fix) {
         const d = Math.hypot(x - F.x, z - F.z);
         if (d < 2.6) L2 += F.b * (1 - d / 2.6) * 0.9;
       }
@@ -72344,16 +72355,16 @@ void main() {
     update(dt, sim2, views, yolaView) {
       this.t += dt;
       if (this.fix) for (const F of this.fix) {
-        const k = this.on.fixtures ? flick(F.state, this.t, F.seed, F.S) : 0;
+        const k = flick(F.state, this.t, F.seed, F.S);
         F.b = k;
-        F.pool.k = this.on.baked ? 0 : F.k * k;
+        F.pool.k = this.on.fixtures && !this.on.baked ? F.k * k : 0;
         F.bar.material.opacity = 0.15 + 0.85 * k;
       }
       if (this.halos && this.on.halos && (this.monScanT = (this.monScanT ?? 0) - dt) <= 0) {
         this.monScanT = 2;
         this.scanMonitors();
       }
-      if (this.halos) for (const H4 of this.halos) H4.s.material.opacity = H4.mon ? H4.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H4.s.position.x)) : H4.base * (H4.F?.b ?? 1);
+      if (this.halos) for (const H4 of this.halos) H4.s.material.opacity = H4.mon ? H4.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H4.s.position.x)) : H4.F ? this.tubes ? H4.base * H4.F.b : 0 : H4.base;
       if (this.exits) for (const E of this.exits) {
         const k = flick(E.state, this.t, E.seed, E.S);
         E.halo.material.opacity = 0.5 * k;
@@ -72624,7 +72635,7 @@ void main() {
     el.id = "lightLab";
     el.style.cssText = "position:fixed;left:max(8px,env(safe-area-inset-left));top:calc(100px + env(safe-area-inset-top));z-index:30;width:250px;max-height:calc(100vh - 120px);overflow:auto;font:12px/1.35 system-ui;color:#eef3f2;background:rgba(18,24,26,.86);border-radius:10px;padding:8px 10px";
     const row = ([k, label]) => `<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" data-k="${k}" ${A?.on[k] ? "checked" : ""}><span>${label}</span></label>`;
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">\u2026</span></div><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label><div style="font-weight:700;margin:2px 0 2px;color:#ffcf8a">Plan upgrades</div>' + LIGHTKIT.map(row).join("") + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">G \xB7 Floor mood <select id="labMood"><option value="">off</option>' + Object.keys(MOODS).filter((k) => k !== "none").map((k) => "<option>" + k + "</option>").join("") + '</select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H \xB7 Film finish (grain, vignette, colour drains with health)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747"><input type="checkbox" id="labShadows" checked><span>Real shadows (off = phone low tier)</span></label><div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>' + ATMOS.filter((a) => a[0] !== "tubes").map(row).join("") + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div><div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">\u2026</span></div><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label><div style="font-weight:700;margin:2px 0 2px;color:#ffcf8a">Plan upgrades</div>' + LIGHTKIT.map(row).join("") + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">G \xB7 Floor mood <select id="labMood"><option value="">off</option>' + Object.keys(MOODS).filter((k) => k !== "none").map((k) => "<option>" + k + "</option>").join("") + '</select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H \xB7 Film finish (grain, vignette, colour drains with health)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labTubes"><span>Show the tubes on the ceiling (and their halos)</span></label><label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747"><input type="checkbox" id="labShadows" checked><span>Real shadows (off = phone low tier)</span></label><div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>' + ATMOS.filter((a) => a[0] !== "tubes").map(row).join("") + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div><div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
     for (const b of el.querySelectorAll("button")) b.style.cssText = "font:600 11.5px system-ui;border:0;border-radius:6px;padding:4px 7px;cursor:pointer;background:#e8ecec;color:#1b2222";
     document.body.appendChild(el);
     const what = (k) => {
@@ -72645,6 +72656,10 @@ void main() {
       }
       if (id === "labEye") {
         game.ZombieView.eyeCfg.col = parseInt(e.target.value, 16);
+        return;
+      }
+      if (id === "labTubes") {
+        K2?.setTubes(e.target.checked);
         return;
       }
       if (id === "labShadows") {
