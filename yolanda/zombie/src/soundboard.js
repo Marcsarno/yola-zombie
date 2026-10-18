@@ -1,19 +1,24 @@
-// The Sound Board (sounds.html): every recorded sound the game plays, layer by layer and take by take. Listen solo or
-// in the full in-game mix; per take: keep it, add a new option to the game, save it for a future weapon, or reject it;
-// trim levels; compare with the old synthesised version. Choices are per sound ("also used by" shows a file shared by
-// two sounds). "Save choices" writes assets/sfx/selection.json (tools/serve.mjs), which the game reads
-// (src/sfx/samples.js). It plays through the game's own engine (src/audio.js): what you hear here is what the game plays.
-import { CombatAudio } from './audio.js';
+// The Sound Board (sounds.html): every recorded sound the game plays, grouped (Weapons, Zombies, World, Coming next),
+// layer by layer and take by take. Listen solo or in the full in-game mix, or audition a whole layer in a row; per take:
+// keep it, add a new option to the game, save it for a future weapon, or reject it; trim levels; compare with the old
+// synthesised version. Choices are per sound ("also used by" shows a file shared by two sounds). Choices save to
+// assets/sfx/selection.json (tools/serve.mjs; autosave on by default), which the game reads (src/sfx/samples.js). It plays
+// through the game's own engine (src/audio.js): what you hear here is what the game plays.
+import { CombatAudio, SYNTH_ALIAS } from './audio.js';
 import { BANKS, takeLabel } from './sfx/banks.js';
 import { SELECTION_URL } from './sfx/samples.js';
 
 const $ = (id) => document.getElementById(id);
+const store = { get(k, d) { try { const v = localStorage.getItem('soundboard_' + k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('soundboard_' + k, JSON.stringify(v)); } catch { /* private window */ } } };
 const audio = new CombatAudio();
+// the sounds with an old synthesised version (audio.js synth cases, or an alias to one): the rest are silent until picked
+const CLASSIC = new Set([...String(audio.synth).matchAll(/case '(\w+)'/g)].map((m) => m[1]));
+const hasClassic = (n) => CLASSIC.has(SYNTH_ALIAS[n] || n);
 const S = audio.samples;
 audio.setVolume(0.9);
 S.preload({ selection: false }); // (the board loads the saved selection itself, below, so a restored draft is not overwritten)
-const DRAFT = 'soundboard_draft';
-let cur = Object.keys(BANKS)[0], dirty = false;
+let cur = BANKS[store.get('cur', '')] || store.get('cur', '') === '@later' ? store.get('cur', '') : Object.keys(BANKS)[0];
+let dirty = false, query = '';
 let pan = 0, dist = 0, phoneOn = false;
 
 // ---------- audio plumbing ----------
@@ -47,22 +52,69 @@ function withAudio(fn) {
   unlock(); audio.ctx?.resume().then(() => { if (audio.ok) fn(); }).catch(() => {});
 }
 
+let timers = [];
+const later = (fn, ms) => { const id = setTimeout(() => { timers = timers.filter((x) => x !== id); fn(); }, ms); timers.push(id); return id; };
 function playFull(name, opts) { withAudio(() => playFullNow(name, opts)); }
 function playFullNow(name, opts) {
   audio.recent.clear(); audio.active.length = 0;
   if (opts) audio.playBank(name, 1, audio.ctx.currentTime, sp(), opts);
   else audio.play(name, 1, pos());
   const then = BANKS[name].then;
-  if (then) setTimeout(() => { audio.recent.clear(); audio.play(then.name, 1, pos()); }, then.at * 1000);
+  if (then) later(() => { audio.recent.clear(); audio.play(then.name, 1, pos()); }, then.at * 1000);
 }
 function burst(name) {
   const gap = (BANKS[name].cadence || 0.5) * 1000;
-  for (let i = 0; i < 6; i++) setTimeout(() => playFull(name), i * gap);
+  for (let i = 0; i < 6; i++) later(() => playFull(name), i * gap);
 }
 function classic(name) { withAudio(() => { audio.recent.clear(); audio.setModern(false); audio.play(name, 1, pos()); audio.setModern(true); }); }
-function solo(name, li, f) { withAudio(() => audio.playBank(name, 1, audio.ctx.currentTime, sp(), { only: li, forceLayer: li, force: f })); }
+function solo(name, li, f) { withAudio(() => { audio.playBank(name, 1, audio.ctx.currentTime, sp(), { only: li, forceLayer: li, force: f }); playhead(name, li, f); }); }
 function layerOnce(name, li) { withAudio(() => audio.playBank(name, 1, audio.ctx.currentTime, sp(), { only: li })); }
+// Stop (Esc): every sound now playing or scheduled, any audition in progress
+function stopAll() {
+  for (const id of timers) clearTimeout(id); timers = [];
+  queue = null; document.querySelectorAll('.take.now').forEach((r) => r.classList.remove('now'));
+  head = null; audio.resetVoices?.();
+  if (audio.reverbIn) applyRoom();
+  $('stop').classList.remove('live');
+}
 
+// ---------- the playhead: a line across the waveform of the take playing ----------
+let head = null;
+function playhead(name, li, f) {
+  const b = S.buf.get(f); if (!b) return;
+  head = { name, li, f, t0: performance.now(), dur: b.duration - (S.lead.get(f) || 0) };
+  $('stop').classList.add('live');
+  requestAnimationFrame(drawHead);
+}
+function drawHead() {
+  document.querySelectorAll('.ph').forEach((e) => (e.style.opacity = 0));
+  if (!head) return;
+  const el = (performance.now() - head.t0) / 1000;
+  if (el > head.dur + 0.05) { head = null; if (!queue) $('stop').classList.remove('live'); return; }
+  const row = rowEl(head.name, head.li, head.f), cv = row?.querySelector('canvas');
+  if (cv) { const ph = row.querySelector('.ph'); ph.style.opacity = 1; ph.style.left = Math.min(100, (el / +cv.dataset.span) * 100) + '%'; }
+  requestAnimationFrame(drawHead);
+}
+const rowEl = (name, li, f) => $('main').querySelector(`.take[data-name="${name}"][data-li="${li}"][data-f="${CSS.escape(f)}"]`);
+
+// ---------- audition: play the takes one after another (decide on each with the keys while it plays) ----------
+let queue = null;
+function audition(items) {
+  stopAll(); if (!items.length) return;
+  queue = { items, i: 0 }; $('stop').classList.add('live');
+  const step = () => {
+    if (!queue) return;
+    if (queue.i >= queue.items.length) { stopAll(); return; }
+    const it = queue.items[queue.i++], row = rowEl(it.name, it.li, it.f);
+    document.querySelectorAll('.take.now').forEach((r) => r.classList.remove('now'));
+    if (row) { row.classList.add('now'); row.focus({ preventScroll: true }); row.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    solo(it.name, it.li, it.f);
+    const b = S.buf.get(it.f);
+    later(step, Math.max(700, ((b?.duration || 0.5) + 0.45) * 1000));
+  };
+  withAudio(step);
+}
+const visibleRows = (sel) => [...$('main').querySelectorAll(sel || '.take')].map((r) => ({ name: r.dataset.name, li: +r.dataset.li, f: r.dataset.f }));
 
 // ---------- the selection (S.sel is what the engine plays from: edits are heard at once) ----------
 // a take's choice is per sound: takes['<sound>:<file>'] = { v: 'yes' | 'no' | 'later', for, note, db }
@@ -71,22 +123,32 @@ const takeSel = (name, f) => (sel().takes[name + ':' + f] ||= {});
 const layerSel = (name, li) => (sel().layers[name + '#' + li] ||= {});
 const soundSel = (name) => (sel().sounds[name] ||= {});
 const FUTURE = ['Rifle', 'Revolver', 'Heavy pistol (.45 / .50)', 'Small pistol (.22 / .380)', 'SMG', 'Assault rifle', 'Hunting / bolt rifle', 'Double-barrel shotgun', 'Sawn-off shotgun', 'Something else (see note)'];
+// undo: a snapshot before every change (Ctrl+Z or the Undo button)
+const history = [];
+function snapshot() { history.push(JSON.stringify(sel())); if (history.length > 80) history.shift(); $('undo').disabled = false; }
+function undo() {
+  const s = history.pop(); if (!s) return;
+  S.setSelection(JSON.parse(s)); $('undo').disabled = !history.length; touch(); renderMain();
+}
+let saveTimer = 0;
 function touch() {
   dirty = true; $('saveState').textContent = 'unsaved changes'; $('saveState').className = 'dirty';
-  try { localStorage.setItem(DRAFT, JSON.stringify(pruned())); } catch { /* private window */ }
-  renderSide();
+  store.set('draft', pruned());
+  renderSide(); renderProgress();
+  if ($('autosave').checked) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 1200); }
 }
 function pruned() {
   const clean = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined && x !== 0 && x !== '' && x !== false))]).filter(([, v]) => Object.keys(v).length));
   return { version: 2, savedAt: new Date().toISOString(), takes: clean(sel().takes), layers: clean(sel().layers), sounds: clean(sel().sounds) };
 }
 async function save() {
+  clearTimeout(saveTimer);
   $('saveState').textContent = 'saving…';
   try {
     const r = await fetch('/__sfx/selection.json', { method: 'POST', body: JSON.stringify(pruned(), null, 1) });
     if (!r.ok) throw new Error(r.status);
     dirty = false; $('saveState').textContent = 'saved ✓'; $('saveState').className = 'ok';
-    try { localStorage.removeItem(DRAFT); } catch { /* ignore */ }
+    store.set('draft', null);
   } catch (e) { $('saveState').textContent = 'save failed (' + e.message + ')'; $('saveState').className = 'dirty'; }
 }
 addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
@@ -112,7 +174,6 @@ const KIND = {
 };
 const reviewed = (k) => !k.startsWith('review');
 const inGameKind = (k) => k === 'review-in' || k === 'kept' || k === 'added';
-// every other sound that uses this file, and whether it plays there
 function alsoUsed(name, f) {
   const out = [];
   for (const [n, b] of Object.entries(BANKS)) {
@@ -136,18 +197,50 @@ function laterList() {
   for (const [n, b] of Object.entries(BANKS)) b.layers.forEach((l, li) => { for (const f of filesOf(l)) if (S.verdict(n, f) === 'later') out.push({ name: n, li, f }); });
   return out;
 }
+const hit = (s) => !query || String(s).toLowerCase().includes(query);
+const soundHit = (n) => { const b = BANKS[n]; return hit(b.label) || hit(b.sub || '') || hit(b.group || '') || hit(b.hook || '') || b.layers.some((l) => hit(l.label || '') || filesOf(l).some((f) => hit(takeLabel(f)))); };
 
-// ---------- the sound list ----------
-let filter = (() => { try { return localStorage.getItem('soundboard_filter') || 'all'; } catch { return 'all'; } })();
+// ---------- the sound list: groups > sub-groups > sounds, with progress; the phone gets a picker ----------
+const ORDER = ['Weapons', 'Zombies', 'World', 'Coming next'];
+function tree() {
+  const t = {};
+  for (const [n, b] of Object.entries(BANKS)) ((t[b.group || 'Other'] ||= {})[b.sub || ''] ||= []).push(n);
+  return Object.entries(t).sort(([a], [b]) => (ORDER.indexOf(a) + 99 * (ORDER.indexOf(a) < 0)) - (ORDER.indexOf(b) + 99 * (ORDER.indexOf(b) < 0)));
+}
+const bar = (done, all) => `<span class="bar"><i style="width:${all ? (100 * done) / all : 0}%"></i></span>`;
 function renderSide() {
-  const groups = {};
-  for (const [name, b] of Object.entries(BANKS)) (groups[b.group || 'Other'] ||= []).push(name);
-  const nl = laterList().length;
-  $('side').innerHTML = Object.entries(groups).map(([g, names]) => `<div class="g"><h3>${g}</h3>${names.map((n) => {
-    const c = counts(n);
-    return `<button class="snd${n === cur ? ' cur' : ''}" data-snd="${n}">${BANKS[n].label}<small>${c.game} ${BANKS[n].pending ? 'picked' : 'in game'}${c.review ? ` · <b class="todo">${c.review} to review</b>` : ' · all reviewed ✓'}</small></button>`;
-  }).join('')}</div>`).join('') + `<div class="g"><h3>Library</h3><button class="snd${cur === '@later' ? ' cur' : ''}" data-snd="@later">★ Saved for future weapons<small>${nl} take${nl === 1 ? '' : 's'}</small></button></div>`;
-  for (const b of $('side').querySelectorAll('.snd')) b.onclick = () => { cur = b.dataset.snd; renderSide(); renderMain(); scrollTo(0, 0); };
+  const open = store.get('open', {}), nl = laterList().length;
+  let h = '', opts = '';
+  for (const [g, subs] of tree()) {
+    const names = Object.values(subs).flat(), shown = names.filter(soundHit);
+    if (!shown.length) continue;
+    let all = 0, rev = 0; for (const n of names) { const c = counts(n); all += c.all; rev += c.all - c.review; }
+    h += `<details class="grp" data-g="${g}"${open[g] !== false || query ? ' open' : ''}><summary><b>${g}</b><span class="gp">${rev}/${all}</span>${bar(rev, all)}</summary>`;
+    for (const [sub, ns] of Object.entries(subs)) {
+      const sh = ns.filter(soundHit); if (!sh.length) continue;
+      if (sub) h += `<h4>${sub}</h4>`;
+      opts += `<optgroup label="${g}${sub ? ' › ' + sub : ''}">`;
+      for (const n of sh) {
+        const c = counts(n), b = BANKS[n];
+        h += `<button class="snd${n === cur ? ' cur' : ''}" data-snd="${n}">${b.label}<small>${c.game} ${b.pending ? 'picked' : 'in game'}${c.review ? ` · <b class="todo">${c.review} to review</b>` : ' · all reviewed ✓'}</small></button>`;
+        opts += `<option value="${n}"${n === cur ? ' selected' : ''}>${b.label}${c.review ? ` (${c.review} to review)` : ' ✓'}</option>`;
+      }
+      opts += '</optgroup>';
+    }
+    h += '</details>';
+  }
+  h += `<details class="grp" open><summary><b>Library</b></summary><button class="snd${cur === '@later' ? ' cur' : ''}" data-snd="@later">★ Saved for future weapons<small>${nl} take${nl === 1 ? '' : 's'}</small></button></details>`;
+  opts += `<option value="@later"${cur === '@later' ? ' selected' : ''}>★ Saved for future weapons (${nl})</option>`;
+  $('list').innerHTML = h || '<div class="help">No sound matches.</div>';
+  $('pick').innerHTML = opts;
+  for (const b of $('list').querySelectorAll('.snd')) b.onclick = () => go(b.dataset.snd);
+  for (const d of $('list').querySelectorAll('details[data-g]')) d.ontoggle = () => { if (query) return; const o = store.get('open', {}); o[d.dataset.g] = d.open; store.set('open', o); };
+}
+function go(name) { stopAll(); cur = name; store.set('cur', cur); renderSide(); renderMain(); scrollTo(0, 0); }
+function step(d) { const all = [...$('pick').options].map((o) => o.value), i = all.indexOf(cur); if (all.length) go(all[(i + d + all.length) % all.length]); }
+function renderProgress() {
+  let all = 0, rev = 0; for (const n of Object.keys(BANKS)) { const c = counts(n); all += c.all; rev += c.all - c.review; }
+  $('prog').innerHTML = `${rev} of ${all} takes reviewed ${bar(rev, all)}`;
 }
 const dbText = (v) => `${v > 0 ? '+' : ''}${(+v || 0).toFixed(1)} dB`;
 const trimHtml = (key, v) => `<span class="trim">level <input type="range" min="-12" max="6" step="0.5" value="${v || 0}" data-trim="${key}"><b>${dbText(v)}</b></span>`;
@@ -155,56 +248,64 @@ const esc = (s) => String(s || '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '
 
 // ---------- one take row ----------
 function rowHtml(name, li, f, k, showFrom = false) {
-  const ts = sel().takes[name + ':' + f] || {}, [cls, text] = KIND[k];
+  const ts = sel().takes[name + ':' + f] || {}, [cls, text] = KIND[k], b = BANKS[name];
   const also = alsoUsed(name, f);
-  const where = BANKS[name].pending ? (inGameKind(k) ? 'Picked: used as soon as this sound is wired into the game' : '')
-    : inGameKind(k) ? `Part of the ${BANKS[name].label.toLowerCase()} you hear in the game` : k === 'review-new' ? 'Try “Hear in mix” to hear it in the full sound' : '';
+  const where = b.pending ? (inGameKind(k) ? 'Picked: used as soon as this sound is wired into the game' : '')
+    : inGameKind(k) ? `Part of the ${b.label.toLowerCase()} you hear in the game` : k === 'review-new' ? 'Try “Hear in mix” to hear it in the full sound' : '';
   let acts;
   if (k === 'review-in') acts = `<button class="yes" data-act="yes" title="K">✓ Keep</button><button class="lat" data-act="later" title="L">★ Save for later</button><button class="no" data-act="no" title="R">✗ Take out</button>`;
   else if (k === 'review-new') acts = `<button class="yes" data-act="yes" title="K">+ Add to game</button><button class="lat" data-act="later" title="L">★ Save for later</button><button class="no" data-act="no" title="R">✗ Reject</button>`;
   else acts = `<button data-act="undo" title="U">↺ Undo</button>${k === 'later' ? '<button class="yes" data-act="yes" title="K">+ Use it here after all</button>' : ''}`;
-  const later = k === 'later' ? `<div class="later"><select data-for>${['<option value="">For which weapon?</option>', ...FUTURE.map((t) => `<option${ts.for === t ? ' selected' : ''}>${t}</option>`)].join('')}</select><input type="text" data-lnote placeholder="note (optional)" value="${esc(ts.note)}"></div>` : '';
+  const lat = k === 'later' ? `<div class="later"><select data-for>${['<option value="">For which weapon?</option>', ...FUTURE.map((t) => `<option${ts.for === t ? ' selected' : ''}>${t}</option>`)].join('')}</select><input type="text" data-lnote placeholder="note (optional)" value="${esc(ts.note)}"></div>` : '';
+  const dur = S.buf.get(f)?.duration;
   return `<div class="take k-${k}" tabindex="0" data-name="${name}" data-li="${li}" data-f="${f}">
     <button class="play" data-act="solo" title="Play alone (Enter)">▶</button>
-    <canvas data-wave="${f}" data-kind="${cls}" width="440" height="68" title="Play alone"></canvas>
-    <div class="nm"><div class="lbl">${takeLabel(f)}</div>
-      <div><span class="chip ${cls}">${text}</span>${showFrom ? `<span class="from">from ${BANKS[name].label}</span>` : ''}</div>
+    <div class="wv"><canvas data-wave="${f}" data-kind="${cls}" width="440" height="68" title="Play alone"></canvas><i class="ph"></i></div>
+    <div class="nm"><div class="lbl">${esc(takeLabel(f))}</div>
+      <div><span class="chip ${cls}">${text}</span><span class="len" data-len="${f}">${dur ? dur.toFixed(1) + ' s' : ''}</span>${showFrom ? `<span class="from">from ${b.label}</span>` : ''}</div>
       ${where ? `<div class="use">${where}</div>` : ''}${also.length ? `<div class="use also">Also used by: ${also.join(', ')}</div>` : ''}
-      ${later}${showFrom ? '' : trimHtml('take:' + f, ts.db)}</div>
+      ${lat}${showFrom ? '' : trimHtml('take:' + f, ts.db)}</div>
     <div class="vd">${acts}<button class="mix" data-act="mix" title="The whole sound with this take (M)">▶ Hear in mix</button></div>
   </div>`;
 }
 
 // ---------- a sound ----------
+let filter = store.get('filter', 'all');
 function renderMain() {
   if (cur === '@later') return renderLater();
-  const name = cur, b = BANKS[name], ss = soundSel(name), c = counts(name);
+  const name = cur, b = BANKS[name], ss = soundSel(name), c = counts(name), shut = store.get('shut', {});
   const tab = (id, label, n) => `<button class="tab${filter === id ? ' on' : ''}" data-filter="${id}">${label} <span>${n}</span></button>`;
-  let h = `<div class="card"><div class="hd"><h2>${b.label}</h2><span class="prog">${c.all - c.review} of ${c.all} takes reviewed</span><span class="sp"></span>
+  const where = b.pending ? '<div class="help pend">Not in the game yet: pick the takes you like now, and they go in when this sound is wired.</div>'
+    : `<div class="help hook">In the game: plays when ${esc(b.hook || 'it happens')}.${!b.layers.some((l) => (l.files || []).length) ? (hasClassic(name) ? ' Until you add takes, the game plays its old synthesised version.' : ' Nothing plays here until you add takes.') : ''}</div>`;
+  let h = `<div class="card"><div class="crumb">${esc(b.group || '')}${b.sub ? ' › ' + esc(b.sub) : ''}</div>
+    <div class="hd"><h2>${b.label}</h2><span class="prog1">${c.all - c.review} of ${c.all} reviewed</span><span class="sp"></span>
     <button class="big primary" data-act="full" title="Space">▶ Play in game</button>
     <button class="big" data-act="burst">Repeat ×6</button>
-    ${b.pending ? '' : '<button class="big" data-act="classic">Old version</button>'}
-    ${c.review ? '<button class="big next" data-act="next" title="N">Next to review ▶</button>' : ''}</div>
-    ${b.pending ? '<div class="help pend">Not in the game yet: pick the takes you like now, and they go in when this sound is wired (the next phases).</div>' : !b.layers[0].files?.length ? '<div class="help pend">The game plays its old synthesised version of this until you add takes here.</div>' : ''}
+    ${b.pending || !hasClassic(name) ? '' : '<button class="big" data-act="classic">Old version</button>'}
+    ${c.review ? '<button class="big next" data-act="aud" title="A: play every take still to review, one after another">▶▶ Audition the rest</button>' : ''}</div>
+    ${where}
     <div class="hd" style="margin-top:8px">${trimHtml('sound', ss.db)}<span class="help">level of the whole sound</span></div>
     <textarea data-note placeholder="Notes for Claude about this sound (what's wrong, what you want instead)…">${esc(ss.note)}</textarea>
-    <div class="tabs">${tab('all', 'All', c.all)}${tab('review', 'To review', c.review)}${tab('game', 'In the game', c.game)}${tab('later', 'Saved for later', c.later)}${tab('out', 'Rejected', c.out)}</div>
-    <div class="help">Keys on a take: Enter play · M hear in mix · K keep/add · L save for later · R reject · U undo · N next to review · ↑↓ move</div></div>`;
+    <div class="tabs">${tab('all', 'All', c.all)}${tab('review', 'To review', c.review)}${tab('game', b.pending ? 'Picked' : 'In the game', c.game)}${tab('later', 'Saved for later', c.later)}${tab('out', 'Rejected', c.out)}</div></div>`;
   const seen = new Set();
   b.layers.forEach((l, li) => {
-    const ls = layerSel(name, li);
-    h += `<div class="card lyr${ls.off ? ' off' : ''}"><div class="hd"><h3>${l.label || 'Layer ' + (li + 1)}</h3><span class="chip ${l.synth ? 'cand' : 'in'}">${l.synth ? 'synthesised' : filesOf(l).length + ' takes'}</span><span class="sp"></span>
+    const ls = layerSel(name, li), key = name + '#' + li;
+    let rows = '', fresh = [];
+    if (!l.synth) {
+      fresh = filesOf(l).filter((f) => !seen.has(f)); fresh.forEach((f) => seen.add(f));
+      const shown = fresh.map((f) => [f, kind(name, l, f)]).filter(([f, k]) => (!query || hit(takeLabel(f)) || hit(b.label) || hit(l.label || '')) &&
+        (filter === 'all' || (filter === 'review' && !reviewed(k)) || (filter === 'game' && inGameKind(k)) || (filter === 'later' && k === 'later') || (filter === 'out' && k === 'out')));
+      rows = !fresh.length ? '<div class="help">Same takes as above (one choice covers both).</div>'
+        : shown.map(([f, k]) => rowHtml(name, li, f, k)).join('') || '<div class="help">Nothing here in this view.</div>';
+    }
+    const left = fresh.filter((f) => !reviewed(kind(name, l, f))).length;
+    h += `<div class="card lyr${ls.off ? ' off' : ''}${shut[key] ? ' shut' : ''}" data-key="${key}"><div class="hd"><h3 data-fold title="Fold / unfold">${shut[key] ? '▸' : '▾'} ${l.label || 'Layer ' + (li + 1)}</h3><span class="chip ${l.synth ? 'cand' : 'in'}">${l.synth ? 'synthesised' : fresh.length + ' takes'}</span><span class="sp"></span>
+      ${!l.synth && fresh.length ? `<button data-act="all" data-li="${li}" title="Play every take shown, one after another">▶▶ Play all</button>` : ''}
       <button data-act="layer" data-li="${li}">▶ ${l.synth ? 'Play' : 'Random take'}</button>
       ${trimHtml('layer:' + li, ls.db)}
-      <label class="trim"><input type="checkbox" data-off="${li}" ${ls.off ? '' : 'checked'}> layer on</label></div>`;
-    if (!l.synth) {
-      const fresh = filesOf(l).filter((f) => !seen.has(f)); fresh.forEach((f) => seen.add(f));
-      if (!fresh.length) { h += '<div class="help">Same take as above (one choice covers both).</div></div>'; return; }
-      const rows = fresh.map((f) => [f, kind(name, l, f)]).filter(([, k]) =>
-        filter === 'all' || (filter === 'review' && !reviewed(k)) || (filter === 'game' && inGameKind(k)) || (filter === 'later' && k === 'later') || (filter === 'out' && k === 'out'));
-      h += `<div class="takes">${rows.map(([f, k]) => rowHtml(name, li, f, k)).join('') || '<div class="help">Nothing here in this view.</div>'}</div>`;
-    }
-    h += '</div>';
+      <label class="trim"><input type="checkbox" data-off="${li}" ${ls.off ? '' : 'checked'}> layer on</label>
+      ${left ? `<span class="bulk">the ${left} left: <button data-bulk="no" data-li="${li}">✗ reject</button><button data-bulk="later" data-li="${li}">★ later</button></span>` : ''}</div>
+      ${l.synth ? '' : `<div class="takes">${rows}</div>`}</div>`;
   });
   $('main').innerHTML = h;
   bindMain(); bindRows(); drawWaves();
@@ -214,7 +315,7 @@ function renderLater() {
   const list = laterList();
   const byType = {};
   for (const it of list) (byType[sel().takes[it.name + ':' + it.f]?.for || 'Weapon not picked yet'] ||= []).push(it);
-  let h = `<div class="card"><div class="hd"><h2>★ Saved for future weapons</h2><span class="prog">${list.length} take${list.length === 1 ? '' : 's'}</span></div>
+  let h = `<div class="card"><div class="hd"><h2>★ Saved for future weapons</h2><span class="prog1">${list.length} take${list.length === 1 ? '' : 's'}</span></div>
     <div class="help">Takes you liked that don't fit their current gun. They're not in the game. Pick which weapon each is for; when that weapon is built, Claude starts from these.</div></div>`;
   if (!list.length) h += '<div class="card help">Nothing saved yet. On any take, press ★ Save for later.</div>';
   for (const [t, items] of Object.entries(byType)) h += `<div class="card lyr"><div class="hd"><h3>${esc(t)}</h3></div><div class="takes">${items.map((it) => rowHtml(it.name, it.li, it.f, 'later', true)).join('')}</div></div>`;
@@ -227,12 +328,20 @@ function bindMain() {
   m.querySelector('[data-act=full]').onclick = () => playFull(name);
   m.querySelector('[data-act=burst]').onclick = () => burst(name);
   m.querySelector('[data-act=classic]')?.addEventListener('click', () => classic(name));
-  m.querySelector('[data-act=next]')?.addEventListener('click', () => nextToReview(null, true));
-  m.querySelector('[data-note]').oninput = (e) => { soundSel(name).note = e.target.value; touch(); };
-  for (const el of m.querySelectorAll('[data-filter]')) el.onclick = () => { filter = el.dataset.filter; try { localStorage.setItem('soundboard_filter', filter); } catch { /* ignore */ } renderMain(); };
+  m.querySelector('[data-act=aud]')?.addEventListener('click', () => audition(visibleRows('.take.k-review-in, .take.k-review-new')));
+  const note = m.querySelector('[data-note]'); note.onfocus = snapshot; note.oninput = (e) => { soundSel(name).note = e.target.value; touch(); };
+  for (const el of m.querySelectorAll('[data-filter]')) el.onclick = () => { filter = el.dataset.filter; store.set('filter', filter); renderMain(); };
   for (const el of m.querySelectorAll('[data-act=layer]')) el.onclick = () => layerOnce(name, +el.dataset.li);
-  for (const el of m.querySelectorAll('[data-off]')) el.onchange = () => { layerSel(name, +el.dataset.off).off = !el.checked; touch(); el.closest('.lyr').classList.toggle('off', !el.checked); };
+  for (const el of m.querySelectorAll('[data-act=all]')) el.onclick = () => audition(visibleRows(`.lyr[data-key="${name}#${el.dataset.li}"] .take`));
+  for (const el of m.querySelectorAll('[data-fold]')) el.onclick = () => { const key = el.closest('.lyr').dataset.key, s = store.get('shut', {}); s[key] = !s[key]; store.set('shut', s); renderMain(); };
+  for (const el of m.querySelectorAll('[data-off]')) el.onchange = () => { snapshot(); layerSel(name, +el.dataset.off).off = !el.checked; touch(); el.closest('.lyr').classList.toggle('off', !el.checked); };
+  for (const el of m.querySelectorAll('[data-bulk]')) el.onclick = () => {
+    snapshot(); const li = +el.dataset.li, l = BANKS[name].layers[li];
+    for (const f of filesOf(l)) if (!reviewed(kind(name, l, f))) takeSel(name, f).v = el.dataset.bulk;
+    touch(); renderMain();
+  };
   for (const el of m.querySelectorAll('.card > .hd [data-trim]')) {
+    el.onpointerdown = snapshot;
     el.oninput = () => { const key = el.dataset.trim, v = +el.value; if (key === 'sound') soundSel(name).db = v; else layerSel(name, +key.slice(6)).db = v; el.nextElementSibling.textContent = dbText(v); touch(); };
     el.onchange = () => (el.dataset.trim === 'sound' ? playFull(name) : layerOnce(name, +el.dataset.trim.slice(6)));
   }
@@ -253,10 +362,12 @@ function bindRows() {
   for (const row of $('main').querySelectorAll('.take')) {
     const name = row.dataset.name, li = +row.dataset.li, f = row.dataset.f;
     const decide = (v) => {
+      snapshot();
       const t = takeSel(name, f);
       if (v === 'undo') { t.v = undefined; t.for = undefined; t.note = undefined; } else t.v = v;
       touch(); renderMain();
-      const again = $('main').querySelector(`.take[data-name="${name}"][data-li="${li}"][data-f="${CSS.escape(f)}"]`);
+      const again = rowEl(name, li, f);
+      if (queue) { again?.classList.add('done'); return; } // (an audition carries on to the next take by itself)
       if (v === 'later' && again) again.querySelector('[data-for]')?.focus(); // say which weapon
       else if (v !== 'undo' && cur !== '@later' && nextToReview(again, false)) { /* moved on to the next one to judge */ }
       else again?.focus();
@@ -268,10 +379,10 @@ function bindRows() {
     };
     for (const btn of row.querySelectorAll('[data-act]')) btn.onclick = (e) => { e.stopPropagation(); act(btn.dataset.act); };
     row.querySelector('canvas').onclick = () => act('solo');
-    row.querySelector('[data-for]')?.addEventListener('change', (e) => { takeSel(name, f).for = e.target.value || undefined; touch(); if (cur === '@later') renderMain(); });
-    row.querySelector('[data-lnote]')?.addEventListener('input', (e) => { takeSel(name, f).note = e.target.value; touch(); });
+    row.querySelector('[data-for]')?.addEventListener('change', (e) => { snapshot(); takeSel(name, f).for = e.target.value || undefined; touch(); if (cur === '@later') renderMain(); });
+    const ln = row.querySelector('[data-lnote]'); if (ln) { ln.onfocus = snapshot; ln.oninput = (e) => { takeSel(name, f).note = e.target.value; touch(); }; }
     const tr = row.querySelector('[data-trim]');
-    if (tr) { tr.oninput = () => { takeSel(name, f).db = +tr.value; tr.nextElementSibling.textContent = dbText(+tr.value); touch(); }; tr.onchange = () => solo(name, li, f); }
+    if (tr) { tr.onpointerdown = snapshot; tr.oninput = () => { takeSel(name, f).db = +tr.value; tr.nextElementSibling.textContent = dbText(+tr.value); touch(); }; tr.onchange = () => solo(name, li, f); }
     row.onkeydown = (e) => {
       if (e.target.closest('select, input, textarea')) return;
       const k = e.key.toLowerCase(), rk = row.className.match(/k-([\w-]+)/)[1];
@@ -281,9 +392,10 @@ function bindRows() {
       else if (k === 'n') nextToReview(row, true);
       else if (k === 'arrowdown' || k === 'arrowup') { const rows = [...$('main').querySelectorAll('.take')], i = rows.indexOf(row); rows[i + (k === 'arrowdown' ? 1 : -1)]?.focus(); }
       else return;
-      e.preventDefault();
+      e.preventDefault(); e.stopPropagation();
     };
   }
+  if (queue) { const it = queue.items[queue.i - 1]; it && rowEl(it.name, it.li, it.f)?.classList.add('now'); }
 }
 
 function drawWaves() {
@@ -295,13 +407,15 @@ function drawWaves() {
     const row = cv.closest('.take'), l = BANKS[row.dataset.name].layers[+row.dataset.li];
     g.clearRect(0, 0, W, H); g.fillStyle = { in: '#2fb1b4', cand: '#ffb347', later: '#c9a4ff', out: '#ff6b5e' }[cv.dataset.kind];
     const longest = Math.max(...filesOf(l).map((q) => S.buf.get(q)?.duration || 0));
-    const lead = Math.floor((S.lead.get(f) || 0) * b.sampleRate), span = Math.max(0.3, longest) * b.sampleRate; // one time scale per layer (its longest take), so lengths compare
+    const spanS = Math.max(0.3, longest); cv.dataset.span = spanS; // one time scale per layer (its longest take), so lengths compare
+    const lead = Math.floor((S.lead.get(f) || 0) * b.sampleRate), span = spanS * b.sampleRate;
     for (let x = 0; x < W; x++) {
       const a = lead + Math.floor(x / W * span), e = Math.min(d.length, lead + Math.floor((x + 1) / W * span)); let mx = 0;
       for (let i = a; i < e; i++) { const v = Math.abs(d[i]); if (v > mx) mx = v; }
       const hh = Math.max(1, Math.sqrt(mx) * H * 0.48); g.fillRect(x, H / 2 - hh, 1, hh * 2);
     }
     cv.dataset.drawn = 1;
+    const len = row.querySelector('[data-len]'); if (len && !len.textContent) len.textContent = b.duration.toFixed(1) + ' s';
   }
   if (missing) setTimeout(drawWaves, 400);
 }
@@ -313,14 +427,29 @@ $('pan').oninput = (e) => { pan = +e.target.value; };
 $('dist').oninput = (e) => { dist = +e.target.value; $('distV').textContent = dist + ' m'; };
 $('vol').oninput = (e) => audio.setVolume(+e.target.value);
 $('save').onclick = save;
+$('stop').onclick = stopAll;
+$('undo').onclick = undo; $('undo').disabled = true;
+$('autosave').checked = store.get('autosave', true);
+$('autosave').onchange = (e) => { store.set('autosave', e.target.checked); if (e.target.checked && dirty) save(); };
+$('pick').onchange = (e) => go(e.target.value);
+$('prev').onclick = () => step(-1); $('next').onclick = () => step(1);
+const onSearch = (e) => { query = e.target.value.trim().toLowerCase(); $('q').value = $('q2').value = e.target.value; renderSide(); renderMain(); };
+$('q').oninput = onSearch; $('q2').oninput = onSearch;
 addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); save(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.target.closest?.('input[type=text], textarea')) { e.preventDefault(); undo(); return; }
+  if (e.key === 'Escape') { stopAll(); return; }
   if (e.target.closest?.('select, input, textarea, .take, button')) return;
-  if (e.key === ' ' && cur !== '@later') { e.preventDefault(); playFull(cur); } else if (e.key.toLowerCase() === 'n' && cur !== '@later') nextToReview(null, true);
+  const k = e.key.toLowerCase();
+  if (k === ' ' && cur !== '@later') { e.preventDefault(); playFull(cur); }
+  else if (k === 'n' && cur !== '@later') nextToReview(null, true);
+  else if (k === 'a' && cur !== '@later') audition(visibleRows('.take.k-review-in, .take.k-review-new'));
+  else if (k === '/') { e.preventDefault(); (innerWidth < 760 ? $('q2') : $('q')).focus(); }
+  else if (k === '[' || k === ']') step(k === ']' ? 1 : -1);
 });
 setInterval(() => {
   const all = S.files().length, have = S.buf.size;
-  $('status').textContent = !audio.ctx || audio.ctx.state !== 'running' ? 'tap anywhere to turn sound on' : have < all ? `loading sounds ${have}/${all}` : `${all} takes loaded`;
+  $('status').textContent = !audio.ctx || audio.ctx.state !== 'running' ? 'tap anywhere to turn sound on' : have < all ? `loading ${have}/${all}` : `${all} takes loaded`;
 }, 300);
 
 // ---------- start: the saved selection, then any unsaved draft from this browser ----------
@@ -334,9 +463,9 @@ function upgrade(j) {
 (async () => {
   try { const r = await fetch(SELECTION_URL + '?' + Date.now(), { cache: 'no-store' }); if (r.ok) S.setSelection(upgrade(await r.json())); } catch { /* none saved yet */ }
   try {
-    const d = JSON.parse(localStorage.getItem(DRAFT) || 'null');
-    if (d && confirm('You have unsaved Sound Board changes from before. Restore them?')) { S.setSelection(upgrade(d)); dirty = true; $('saveState').textContent = 'unsaved changes'; $('saveState').className = 'dirty'; }
-    else localStorage.removeItem(DRAFT);
+    const d = store.get('draft', null) || JSON.parse(localStorage.getItem('soundboard_draft') || 'null');
+    if (d && confirm('You have unsaved Sound Board changes from before. Restore them?')) { S.setSelection(upgrade(d)); touch(); }
+    else store.set('draft', null);
   } catch { /* ignore */ }
-  renderSide(); renderMain();
+  renderSide(); renderMain(); renderProgress();
 })();

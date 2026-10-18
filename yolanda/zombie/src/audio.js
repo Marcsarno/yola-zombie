@@ -20,7 +20,9 @@ const SILENT_WAV = (() => {
 
 const MINOR = new Set(['groan', 'zombieHurt', 'bump', 'ricochet', 'batMiss', 'windup', 'empty', 'dry']); // dropped first when crowded
 // names the game asks for that only the recorded banks know: the synth plays its older equivalent
-const SYNTH_ALIAS = { pistolReload: 'reload', pistolReloadDone: 'reloadDone', shotgunReload: 'shellsStart' };
+export const SYNTH_ALIAS = { pistolReload: 'reload', pistolReloadDone: 'reloadDone', shotgunReload: 'shellsStart',
+  // the zombie voices (2026-10-18) play the old sounds they replaced until the user picks takes; the rest are silent until then
+  zombieAlert: 'groan', guardRoar: 'groan', sprinterScream: 'groan', guardAttack: 'windup', sprinterDeath: 'zombieDeath', guardDeath: 'zombieDeath', guardSlam: 'knockdown' };
 // the room's share of a synthesised sound in the new mix (the rest get 0.14)
 const SYNTH_WET = { heal: 0.05, swap: 0.04, wave: 0.03, clear: 0.03, death: 0.05, liftDing: 0.2, power: 0.2, bang: 0.3, groan: 0.3, zombieDeath: 0.2, knockdown: 0.22, shieldBreak: 0.3 };
 
@@ -71,7 +73,7 @@ export class CombatAudio {
       this.sfx.connect(this.modern ? this.sfxComp : this.master);
       // the room: one shared convolution reverb fed by each voice's send, returned into the effects bus
       try {
-        this.reverbIn = c.createGain(); const conv = c.createConvolver(); conv.buffer = makeRoomIR(c);
+        this.reverbIn = c.createGain(); const conv = c.createConvolver(); conv.buffer = this.irBuf = makeRoomIR(c);
         this.reverbIn.connect(conv); conv.connect(this.sfx);
       } catch { this.reverbIn = null; }
       this.samples.attach(c);
@@ -190,6 +192,20 @@ export class CombatAudio {
     tail.connect(this.sfx);
     if (wet > 0 && this.reverbIn) { const s = c.createGain(); s.gain.value = wet * (1 + Math.min(1.2, d / 12)); g.connect(s); s.connect(this.reverbIn); }
     return g;
+  }
+
+  // cut every effect now playing or still scheduled (the Sound Board's Stop): fresh effects + reverb buses, the old ones
+  // disconnected with everything still feeding them
+  resetVoices() {
+    if (!this.ctx) return;
+    const c = this.ctx, old = this.sfx, oldRev = this.reverbIn;
+    this.sfx = c.createGain(); this.sfx.gain.value = old.gain.value; this.sfx.connect(this.modern ? this.sfxComp : this.master);
+    old.disconnect();
+    if (oldRev) {
+      this.reverbIn = c.createGain(); this.reverbIn.gain.value = oldRev.gain.value;
+      const conv = c.createConvolver(); conv.buffer = this.irBuf; this.reverbIn.connect(conv); conv.connect(this.sfx); oldRev.disconnect();
+    }
+    this.recent.clear(); this.active.length = 0;
   }
 
   // the classic (synthesised only) sounds or the new ones: recorded banks, panning, the room, the bus compressor

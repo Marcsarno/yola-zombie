@@ -615,7 +615,7 @@ function runFrame(dt, doRender = true) {
 
   // ambient groans (rate-limited, nearest zombies)
   groanT -= animDt;
-  if (groanT <= 0) { groanT = 1.6 + Math.random() * 2; const n = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < 9).length; if (n) audio.play('groan', Math.min(1, 0.5 + n * 0.1)); }
+  if (groanT <= 0) { groanT = 1.6 + Math.random() * 2; const near = sim.zombies.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < 9); if (near.length) audio.play('groan', Math.min(1, 0.5 + near.length * 0.1), near[Math.floor(Math.random() * near.length)]); } // (from one of them: its side, its distance)
 
   fx.update(animDt);
   if (music.state !== 'off') { const R = music.state === 'combat' ? 11 : 7; music.update(dt, sim.zombies.some((z) => z.alive && !z.dormant && !z.passive && (Math.hypot(z.x - p.x, z.z - p.z) < R || z.state === 'windup' || z.state === 'strike')), paused || p.dead); }
@@ -733,12 +733,12 @@ function handleEvents() {
       case 'chapterComplete': input.clearAll(); input.enabled = false; store.set('chapter1save', null); levelSave = null; audio.play('clear'); chapterUI?.onEvent(e); break;
       case 'radio': case 'liftTravel': case 'case': case 'partitionBreak': case 'record': case 'sampleMatch': case 'liftFault': chapterUI?.onEvent(e); break;
       case 'roomEnter': { const r = LAYOUT.rooms?.find((q) => q.id === e.room); if (r && r.id !== 'or') hud.banner(r.name); break; }
-      case 'zombieWake': if (Math.random() < 0.6 && dist(e.id) < 12) audio.play('groan', 0.9); break;
+      case 'zombieWake': { const z = zat(e.id); if (z?.kind === 'guard') audio.play('guardRoar', 1, z); else if (Math.random() < 0.6 && dist(e.id) < 12) audio.play('zombieAlert', 0.9, z); break; } // (sound board: Zombies)
       case 'dryFire': audio.play('dry'); hud.toast('Out of rounds'); break;
       case 'zombieBump': audio.play('bump', Math.min(1.2, e.speed / 3)); break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
-      case 'sprinterSpot': if (dist(e.id) < 14) audio.play('groan', 1.5); break; // her scream before the charge (the warning cue: the threat sign)
-      case 'sprinterLock': if (dist(e.id) < 14) { cue(audio, 'warn', 1.2); const z = sim.zombies.find((q) => q.id === e.id); if (z) fx.burst(z.x, 0.05, z.z, 10, 0xcfc6b4, 1.6, 0.3, 0.4, -Math.sin(z.yaw), -Math.cos(z.yaw)); } break; // (her line is fixed: she paws the floor, a kick of dust behind her)
+      case 'sprinterSpot': if (dist(e.id) < 14) audio.play('sprinterScream', 1.5, zat(e.id)); break; // her scream before the charge (the warning cue: the threat sign)
+      case 'sprinterLock': if (dist(e.id) < 14) { cue(audio, 'warn', 1.2); audio.play('sprinterCharge', 1, zat(e.id)); const z = sim.zombies.find((q) => q.id === e.id); if (z) fx.burst(z.x, 0.05, z.z, 10, 0xcfc6b4, 1.6, 0.3, 0.4, -Math.sin(z.yaw), -Math.cos(z.yaw)); } break; // (her line is fixed: she paws the floor, a kick of dust behind her)
       case 'zombieTumble': audio.play('knockdown'); if (dist(e.id) < 8) shake(0.15); break;
       // the guard's slam (2026-10-18, the user: "a visual effect of the guard on launch, and a strong visual effect for when he
       // impacts the ground.. and small screen shake.. cracks on the ground around him and the shield... and impact smoke"):
@@ -747,7 +747,7 @@ function handleEvents() {
       case 'guardLaunch': { audio.play('swing', 0.8, e); fx.burst(e.x, 0.06, e.z, 16, 0xcfc6b4, 2.2, 0.35, 0.45); fx.smoke(e.x, e.z, 5, 0.35, 0.45, 2.2, 0.9); fx.ring(e.x, e.z, 0xd8cfbf, 0.6); break; }
       case 'zombieSlam': {
         const d = Math.hypot(e.x - p.x, e.z - p.z), gz = sim.zombies.find((q) => q.id === e.id);
-        audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xffffff, 1.7); fx.ring(e.x, e.z, 0xd8cfbf, 1.1);
+        audio.play('guardSlam', 1.4, e); fx.ring(e.x, e.z, 0xffffff, 1.7); fx.ring(e.x, e.z, 0xd8cfbf, 1.1);
         fx.burst(e.x, 0.1, e.z, 30, 0xcfc6b4, 3.2, 1.1, 0.8); fx.burst(e.x, 0.05, e.z, 16, 0x6f6658, 3.8, 0.9, 0.6); fx.burst(e.x, 0.3, e.z, 8, 0xe9e2d2, 4.5, 2.2, 0.55);
         fx.smoke(e.x, e.z, 11, 1.0, 1.0, 3.2, 2.4);
         if (gz) fx.floorCrack(gz.x, gz.z, 0.9); // (under his feet: the leap's landing)
@@ -757,15 +757,16 @@ function handleEvents() {
       }
       case 'floorRumble': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'rumble', Math.max(0.3, 1 - d / 14)); fx.floorCrack?.(e.x, e.z, 0.75); fx.burst(e.x, 0.05, e.z, 8, 0x9a948a, 0.8, 0.4, 0.9); if (d < 9) shake(0.12); break; } // the floor about to break: a crack, grit, a rumble (an emerging zombie: core/sim.js spawnFromFloor)
       case 'floorShudder': { const d = Math.hypot(e.x - p.x, e.z - p.z); fx.growCrack(e.x, e.z, 0.75 + e.k * 0.55); fx.burst(e.x, 0.05, e.z, 4 + Math.round(e.k * 8), 0x9a948a, 0.9 + e.k, 0.5 + e.k * 0.6, 0.6); fx.smoke(e.x, e.z, 1 + Math.round(e.k * 2), 0.35, 0.3, 2.0, 0.9, 0x9d9483, 0.2); if (d < 9) shake(0.05 + e.k * 0.1); break; } // (the breach building: the crack grows, dust)
-      case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 24, 0xd9cdb2, 3.2, 2.4, 0.8); fx.burst(e.x, 0.1, e.z, 18, 0x6f6a62, 2.4, 2.0, 1.0); fx.ring(e.x, e.z, 0xd8cfbf, 1.0); fx.smoke(e.x, e.z, 8, 0.6, 0.7, 2.6, 1.8); audio.play('knockdown', 0.9, e); if (d < 9) shake(0.35); break; } // (it bursts up through the tiles: debris high, a dust cloud, a thump)
+      case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); audio.play('floorBreach', 1, e); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 24, 0xd9cdb2, 3.2, 2.4, 0.8); fx.burst(e.x, 0.1, e.z, 18, 0x6f6a62, 2.4, 2.0, 1.0); fx.ring(e.x, e.z, 0xd8cfbf, 1.0); fx.smoke(e.x, e.z, 8, 0.6, 0.7, 2.6, 1.8); audio.play('knockdown', 0.9, e); if (d < 9) shake(0.35); break; } // (it bursts up through the tiles: debris high, a dust cloud, a thump)
       case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.5); hud.popup('SHIELD STUCK'); break; // (his shield driven into the floor for good: render/fx.js floorCrack)
-      case 'guardArmTorn': cue(audio, 'free'); audio.play('sever'); shake(0.45); hitPauseT = Math.max(hitPauseT, 0.09); hud.popup('ARM TORN OFF'); break; // (the last heave: his arm stays on the shield)
+      case 'guardArmTorn': cue(audio, 'free'); audio.play('sever'); audio.play('guardPain', 1, zat(e.id) || e); shake(0.45); hitPauseT = Math.max(hitPauseT, 0.09); hud.popup('ARM TORN OFF'); break; // (the last heave: his arm stays on the shield)
       case 'guardClub': cue(audio, 'heave', 1.2); break;
       case 'chairTip': audio.play('bump', 1.3); break; // (out of its wheelchair: the chair on its side, core/loose.js)
       case 'bedRise': if (dist(e.id) < 12) audio.play('groan', 1.1); break;
       case 'guardClubBreak': audio.play('sever'); audio.play('bump', 1.3); shake(0.3); break; // (his torn arm comes apart on the blow: render/clipchars.js breakClub)
       case 'zombieStrikeHit': if (hurtFrame === frameNo) { // (it drew blood: hers, by what it was)
         const z = sim.zombies.find((q) => q.id === e.id), how = STRIKE_BLOOD[e.attack] || 'blunt';
+        audio.play('zombieBite', 1, z || p); // (its bite / claw: sound board, Zombies)
         const dx = z ? p.x - z.x : 0, dz = z ? p.z - z.z : 1;
         fx.bloodHit(how, p.x - dx * 0.1, how === 'bite' ? 1.35 : 1.15, p.z - dz * 0.1, dx, dz, how === 'blunt' ? 1.3 : 0.8, 'yola');
         if (e.attack === 'club') { audio.play('bump', 1.4); if (z) fx.bloodHit('blunt', p.x, 1.25, p.z, dx, dz, 1.2); } // (his torn arm: a wet thud, its own blood off it too)
@@ -788,7 +789,7 @@ function handleEvents() {
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
       case 'ladyBurst': audio.play('sever'); audio.play('zombieDeath'); shake(0.85); break; // (the lady pops: core/sim.js ladyBurst)
-      case 'guardEnraged': hud.popup('ENRAGED'); shake(0.4); break; // (the guard, both arms gone)
+      case 'guardEnraged': audio.play('guardEnraged', 1, e); hud.popup('ENRAGED'); shake(0.4); break; // (the guard, both arms gone)
       case 'acidBurn': fx.burst(e.x, 0.1, e.z, 3, 0xd9f25a, 0.6, 1.8, 0.45); break;
       case 'shieldHit': audio.play('shieldHit', e.kind === 'pistol' ? 0.7 : 1, e); fx.impactWall(e.x - e.dirX * 0.45, e.z - e.dirZ * 0.45, -e.dirX, -e.dirZ); if (e.kind !== 'pistol') shake(0.25); break;
       case 'shieldCrack': audio.play('shieldHit', 1.4, e); fx.burst(e.x, 0.6, e.z, 20, 0xe9e1cf, 2.6, 1.0, 0.5); fx.burst(e.x, 0.5, e.z, 8, 0x2f8f92, 2.2, 0.8, 0.45); shake(0.55); break; // (his first slam: the big crack, chips of the cream frame and the teal panel)
@@ -800,10 +801,10 @@ function handleEvents() {
       case 'reloadStart': audio.play(e.weapon === 'shotgun' ? 'shotgunReload' : 'pistolReload'); hud.flash('reload'); break;
       case 'reloadDone': audio.play(e.weapon === 'shotgun' ? 'pump' : 'pistolReloadDone'); break;
       case 'swapStart': audio.play('swap'); break;
-      case 'zombieWindup': if (dist(e.id) < 8) audio.play('windup'); break;
+      case 'zombieWindup': { const z = zat(e.id); if (z?.kind === 'guard') { if (dist(e.id) < 16) audio.play('guardAttack', 1, z); } else if (dist(e.id) < 8) audio.play('windup', 1, z); break; }
       case 'playerHurt': hurtFrame = frameNo; audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;
       case 'playerDeath': audio.play('death'); input.clearAll(); input.enabled = false; hud.death(sim); break;
-      case 'zombieDeath': { sim.stats.kills++; audio.play('zombieDeath'); const zx = sim.zombies.find((q) => q.id === e.id);
+      case 'zombieDeath': { sim.stats.kills++; const zx = sim.zombies.find((q) => q.id === e.id); audio.play(zx?.kind === 'sprinter' ? 'sprinterDeath' : zx?.kind === 'guard' ? 'guardDeath' : 'zombieDeath', 1, zx || e);
         if (zx?.executed && EXEC_BURST[zx.execWeapon]) gib(e.id, zx.hitDirX, zx.hitDirZ, EXEC_BURST[zx.execWeapon]); // (the bat, the shotgun, the sledgehammer: the full burst)
         if (zx) atmos?.onKill(e.x, e.z, zx.hitDirX || 0, zx.hitDirZ || 0); // (by a wall: its blood up the wall)
         break; }
@@ -820,7 +821,7 @@ function handleEvents() {
         if (shakeOn) { camState.vx += (e.dirX || 0) * 2.4 * tuning.shake; camState.vz += (e.dirZ || 0) * 2.4 * tuning.shake; }
         if (e.weapon === 'sledgehammer') { fx.floorCrack(e.x, e.z, 1.6); fx.smoke(e.x, e.z, 7, 0.7, 0.6, 2.6, 1.6); fx.ring(e.x, e.z, 0xd8cfbf, 1.4); } // (flattened into the floor)
         break; }
-      case 'zombieSpawn': if (Math.random() < 0.5) audio.play('groan', 0.8); break;
+      case 'zombieSpawn': { const z = zat(e.id); if (z?.kind === 'guard') audio.play('guardRoar', 1, z); else if (Math.random() < 0.5) audio.play('zombieAlert', 0.8, z); break; }
       case 'beatStart': hud.banner(`Wave ${e.beat}`); audio.play('wave'); break;
       case 'breather': hud.banner('Breather', 'Next wave incoming'); break;
       case 'encounterCleared': hud.cleared(sim); audio.play('clear'); input.clearAll(); break;
@@ -828,6 +829,7 @@ function handleEvents() {
   }
   sim.events.length = 0;
 }
+const zat = (id) => sim.zombies.find((q) => q.id === id); // (a zombie's place and kind: where its sounds come from, which voice)
 const dist = (id) => { const z = sim.zombies.find((q) => q.id === id); return z ? Math.hypot(z.x - sim.player.x, z.z - sim.player.z) : 99; };
 const cueState = { key: '', now: '' };
 // the floor breaches (core/sim.js spawnFromFloor; assets/props/floor_breach.glb): one stays wherever a zombie broke through,

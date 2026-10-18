@@ -1,6 +1,6 @@
 {
  "version": 2,
- "savedAt": "2026-10-17T16:41:13.260Z",
+ "savedAt": "2026-10-17T17:47:50.548Z",
  "takes": {
   "shot:assets/sfx/guns/pistol_01.mp3": {
    "v": "yes"
@@ -134,6 +134,87 @@
    "v": "yes"
   },
   "shotgunReload:assets/sfx/guns/mag_in.mp3": {
+   "v": "yes"
+  },
+  "pump:assets/sfx/lib/rack_02.mp3": {
+   "v": "no"
+  },
+  "pump:assets/sfx/lib/rack_03.mp3": {
+   "v": "no"
+  },
+  "pump:assets/sfx/lib/rack_04.mp3": {
+   "v": "yes"
+  },
+  "shotgunReload:assets/sfx/lib/shellin_01.mp3": {
+   "v": "yes"
+  },
+  "shotgunReload:assets/sfx/lib/shellin_07.mp3": {
+   "v": "yes"
+  },
+  "shotgunReload:assets/sfx/lib/shellin_09.mp3": {
+   "v": "yes"
+  },
+  "fistHit:assets/sfx/lib/punch_01.mp3": {
+   "v": "no"
+  },
+  "pickupItem:assets/sfx/lib/cloth_01.mp3": {
+   "v": "yes"
+  },
+  "pickupItem:assets/sfx/lib/cloth_04.mp3": {
+   "v": "yes"
+  },
+  "weaponSwap:assets/sfx/lib/cloth_01.mp3": {
+   "v": "yes"
+  },
+  "doorClose:assets/sfx/lib/doorshut_01.mp3": {
+   "v": "yes"
+  },
+  "footstep:assets/sfx/lib/step_12.mp3": {
+   "v": "yes"
+  },
+  "doorOpen:assets/sfx/lib/door_01.mp3": {
+   "v": "yes"
+  },
+  "shieldHit:assets/sfx/lib/thwack_10.mp3": {
+   "v": "yes"
+  },
+  "shieldHit:assets/sfx/lib/thwack_07.mp3": {
+   "v": "yes"
+  },
+  "sever:assets/sfx/lib/thwack_02.mp3": {
+   "v": "yes"
+  },
+  "axeHit:assets/sfx/lib/blade_04.mp3": {
+   "v": "yes"
+  },
+  "axeHit:assets/sfx/lib/blade_05.mp3": {
+   "v": "yes"
+  },
+  "axeHit:assets/sfx/lib/blade_02.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/thwack_02.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/thwack_05.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/punchheavy_01.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/punchheavy_02.mp3": {
+   "v": "yes"
+  },
+  "batHit:assets/sfx/lib/punchheavy_03.mp3": {
+   "v": "yes"
+  },
+  "fistHit:assets/sfx/lib/punch_02.mp3": {
+   "v": "yes"
+  },
+  "fistHit:assets/sfx/lib/punch_03.mp3": {
+   "v": "yes"
+  },
+  "sever:assets/sfx/lib/squish_07.mp3": {
    "v": "yes"
   }
  },

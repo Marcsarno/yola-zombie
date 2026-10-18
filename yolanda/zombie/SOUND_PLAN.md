@@ -103,6 +103,17 @@ Final loudness and priorities, checked on the phone speaker AND headphones.
 | "Punch" qubodupPunch.7z by qubodup (opengameart.org) | CC0 | body punches |
 | "thwack sounds" thwack-1.0.zip by AntumDeluge (opengameart.org) | CC0 | hard thwacks/cracks |
 | "Squish Sounds Effects" by EZduzziteh (opengameart.org) | CC0 | 8 small wet squish/splat MP3s (low bitrate) |
+| "Zombies Sound Pack" zombies.zip by artisticdude (opengameart.org) | CC0 | 24 zombie vocals: moans, attacks, pain, deaths |
+| "Monster Sound Pack, Volume 1" monster-sounds-volume-2.zip by Ogrebane (opengameart.org) | CC0 | 18 bright monster yelps/screeches |
+| "Monster Sound Effects Pack" monster_sfx_pack.zip by Ogrebane (opengameart.org) | CC0 | 10 dark beast growls/grunts/deaths |
+| "monster snarls" (5 OGG reels) by Darsycho (opengameart.org) | CC0 | snarls, split one take per cry |
+| "80 CC0 creature SFX" 1 + 2 by rubberduck (opengameart.org) | CC0 | roars, screams, hurt, attack, die, grunts, breath, eat, slime, stomp |
+| "Ghost Monster Voice Moaning & Growling" qubodup-GhostMoans.zip (opengameart.org) | CC0 | long moans, pitched down for zombie moans, the far horde, the guard's death |
+
+Zombie library: `tools/sfx/build_zombies.py <scratch with the unpacked packs> .` -> assets/sfx/zombie/*.mp3 (258
+takes, ~3.8 MB) + src/sfx/zombies.gen.js. Unnamed clips are sorted by what they measure as (length, dark/bright,
+builds/dies away) and labelled that way; the guard's versions are the same recordings pitched down; boss stingers are
+real roars reversed into themselves; the floor breach is Kenney thuds slowed -14 st + a wood crack.
 
 Candidate library: `tools/sfx/build_library.py <scratch with the unpacked packs> .` -> assets/sfx/lib/*.mp3 (173
 takes, ~0.9 MB) + src/sfx/library.gen.js (groups + labels). The game downloads only the takes in use (selection.json);
@@ -137,8 +148,23 @@ there when building a new weapon's sounds. "Save choices" writes
 assets/sfx/selection.json, which the game reads on load (src/sfx/samples.js). Read the user's notes there before
 changing a sound. Works from a phone on the home network too (the save accepts private LAN addresses).
 
+Board upgrades (2026-10-18): sidebar grouped Weapons / Zombies / World / Coming next with sub-groups and progress
+bars, a search box ( / ), a sound picker with ◀ ▶ on the phone; overall "N of M takes reviewed"; ■ Stop (Esc) cuts
+everything (audio.resetVoices); ▶▶ Play all per layer and ▶▶ Audition the rest (A) play takes one after another —
+decide with the keys as each plays; bulk "the N left: reject / later" per layer; Undo (Ctrl+Z); autosave (default
+on); a playhead on the waveform; take lengths; folding layers; it remembers the open sound, filter and folds; each
+sound says when the game plays it ("hook") and whether an old synth version exists.
+
 ## Log
 (newest at top)
+- 2026-10-18: zombie round: 258 CC0 zombie / creature takes in 17 new sounds — Every zombie (idle moan, spots Yola,
+  attack wind-up, bite lands, hurt, death + body fall), Sprinter (scream, charge, death), Guard boss (roar, attack
+  grunt, ground slam = boom + debris + roar + sub, arm-torn pain, ENRAGED = roar + boss stinger, death + huge fall),
+  Horde (far moans: not wired), floor breach (wired to floorBreach). main.js hooks pass each zombie's place; the
+  guard / sprinter get their own voices by kind; new names fall back to the old synth (SYNTH_ALIAS) until picked.
+  Another chat added src/sfx/cues.js (synthesised combat cues: warn, dodge, slow-mo, crit, rumble...): left as is.
+  The user's picks so far: bat 5, axe 3, gore 2, fist 2, shield 2, door open/close 1 each, footstep 1, swap 1,
+  pickup 2. Not yet tested in a real fight: the sprinter / guard sounds (practice room has only normal zombies).
 - 2026-10-17: the user's first picks: pistol 01-06 in; pistol 07, 09-14 saved for a future **rifle** (the user's
   words); 08 and every synthesised casing/hull/dry click rejected; ALL close shotguns rejected, the 4 distant
   long-echo shotguns in (they want the big wild blast); pump: forward kept, back rejected; mag out rejected.
