@@ -846,6 +846,17 @@ function carryCalOf(a, w, LD, CY, k) {
   for (const [b, q, p2] of saved) { b.quaternion.copy(q); b.position.copy(p2); } a.root.updateMatrixWorld(true);
   return C[w];
 }
+// the hand that holds an arena weapon (the user, 2026-10-17: "where is my option to switch weapon hands? ... the sledge hammer
+// switch hands by mistake"): the sidebar's Holding hand (saved in the fit, so "This clip only" works too, and the game reads
+// it: arena/testarena.js), else this clip's arena pick, else any arena pick of the weapon, else her right. (Not the data
+// sheet's primary_hand: for the bat-style two-handed weapons that names the hand at the butt, Left, which put the
+// sledgehammer in her left hand on every clip without a pick)
+function holdHand(w, a) {
+  const f = fitW(w, a); if (f?.hand) return f.hand;
+  const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w]; if (pk) return pk.hand;
+  for (const [k, v] of Object.entries(PICKS)) if (k.endsWith('|' + w)) return v.hand;
+  return 'Right';
+}
 function placeHeldOn(a, o) {
   const w = weaponOf(), k = a.height / 1.62; o.visible = true; o.scale.setScalar(k);
   if (w === 'pistol' && $('pistolFist')?.checked && pistolInFist(a, o)) return;
@@ -861,7 +872,7 @@ function placeHeldOn(a, o) {
   // hand (else the data sheet's primary hand), turned by its roll, slid by its slide, flipped (2026-10-17: the Rig Lab ran the
   // two-handed ones through both fists, which the game never does)
   const LD = LIB_WEAPONS[w] && WDEFS[w];
-  if (PACK[w] && LD && placeBat(a.bones, o, LD, fitW(w, a), k)) return; // (the hospital pack's weapons, as the clip holds them: holdfit.js placeBat) // (as the clip holds it, on the dummy and on Yola: holdfit.js placeBat)
+  if (PACK[w] && LD && (holdHand(w, a) === 'Left' ? placeOneHanded(a.bones, 'Left', o, LD, fitW(w, a), {}, k) : placeBat(a.bones, o, LD, fitW(w, a), k))) return; // (the hospital pack's weapons, as the clip holds them: holdfit.js placeBat) // (as the clip holds it, on the dummy and on Yola: holdfit.js placeBat)
   // carried at rest (render/holdfit.js CARRY: the sledgehammer, the chainsaw on KayKit's two-handed idle): in front of her,
   // riding her chest, both fists on its grips; measured once on the idle's first frame, as the game does
   const CY = LD && CARRY[w];
@@ -875,7 +886,7 @@ function placeHeldOn(a, o) {
     }
   }
   if (LD) {
-    const pk = PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || { hand: LD.primary_hand || 'Right' };
+    const pk = { ...(PICKS[(main?.clip?.name || '').replace(/_REBAKE_.*$/, '') + '|' + w] || {}), hand: holdHand(w, a) };
     if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
       if (LD.hands === 'two' && LD.grip_secondary && HOLD_LAYERS.secondHand) { o.updateMatrixWorld(true); const g2 = gripOpts(w, LD, 'secondary', o); otherHandOn(a, pk.hand === 'Left' ? 'Right' : 'Left', g2.point, g2.axis, 1, g2); }
       return;
@@ -1181,6 +1192,8 @@ function buildSidebar() {
     if (v === 'clip') { const base = fitEditing(); ((WFITS[key] ||= {})[k] = { ...base }); } else if (WFITS[key]) delete WFITS[key][k];
     keepFits(); refresh(); sidebarSync();
   });
+  const hand = seg(W1.body, [['Right', 'Right hand'], ['Left', 'Left hand']], (v) => { fitEditing().hand = v; keepFits(); refresh(); sidebarSync(); jointReadout(); });
+  hand.title = 'the hand that holds the weapon (saved with the weapon position: All clips, or This clip only)';
   for (const [i, [k, lbl, lo, hi, st]] of PFIT_ROWS.entries()) {
     const up = slider(W1.body, lbl, '', lo, hi, st, () => fitEditing()[k], (v) => { fitEditing()[k] = v; keepFits(); }, k === 'size' ? 100 : 0);
     ups.push(up); up.row = W1.body.lastChild; up.idx = i;
@@ -1237,7 +1250,7 @@ function buildSidebar() {
     $('sbSaved').textContent = ok ? 'saved to shots/ (tell Claude to put it in the game)' : 'save failed';
   };
   V1.body.appendChild(sv);
-  SB = { wHead, who, scope, fitRows, side, ascope, armRows, layerBoxes, A1 };
+  SB = { wHead, who, scope, hand, fitRows, side, ascope, armRows, layerBoxes, A1 };
   sidebarSync();
 }
 function layerSyncAll() {
@@ -1252,6 +1265,7 @@ function sidebarSync() {
   for (const b of SB.who.children) b.classList.toggle('on', b.dataset.v === (S.fitWho || 'main'));
   const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
   for (const b of SB.scope.children) { b.classList.toggle('on', b.dataset.v === (clipOwn ? 'clip' : 'all')); b.disabled = w === 'pistol'; }
+  SB.hand.hidden = !LIB_WEAPONS[w]; if (LIB_WEAPONS[w]) { const h = holdHand(w, a); for (const b of SB.hand.children) b.classList.toggle('on', b.dataset.v === h); }
   const labels = FIT_LABELS[w] || PFIT_ROWS.map((r) => r[1]);
   for (const up of SB.fitRows) { up(); up.row.querySelector('label').textContent = labels[up.idx] || PFIT_ROWS[up.idx][1]; }
   for (const b of SB.side.children) b.classList.toggle('on', b.dataset.v === (S.armSide || 'Right'));
