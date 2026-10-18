@@ -507,7 +507,7 @@ export class Zombie {
         // round (each attack started holds the next one off by zombieAttackGap). Inside ~0.9 m it scratches.
         const slot = !sim.engaged || sim.engaged.has(this.id) || this.crawling || this.kind === 'sprinter';
         if (this.kind === 'guard' && !this.enraged && this.shieldHp > 0 && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist > 0.6 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
-            sim.time >= (sim.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+            sim.time >= (sim.nextAttackT || 0) && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) { // (any facing: his wind-up turns him to her until he leaps, so circling him never switches his slam off)
           this.attack = 'slam'; this.set(ZS.WINDUP, ZATTACKS.slam.windup); this.slamCd = 4 + sim.rand() * 2.5;
           sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * 1.5;
           sim.emit({ type: 'zombieWindup', id: this.id, attack: 'slam' });
