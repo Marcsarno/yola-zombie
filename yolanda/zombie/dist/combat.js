@@ -46509,9 +46509,10 @@ void main() {
   var ZATTACKS = {
     lunge: { from: 1, range: 1.12, arc: 0.95, strike: 0.14, recover: 0.55, step: 0.9 },
     scratch: { from: 0.92, range: 0.98, arc: 1.25, strike: 0.13, recover: 0.62, step: 0.35 },
-    // the big guard's slam (KayKit Melee_1H_Attack_Jump_Chop): a long wind-up (he crouches and leaps), the smash lands a
-    // wide area in front of him and knocks Yola flat; then a slow recovery (the opening to hit him)
-    slam: { from: 2.4, range: 2.1, arc: 1, strike: 0.15, recover: 1, step: 0, windup: 0.95, leap: 1.4 },
+    // the big guard's leap-slam (render/clipchars.js SLAM, 2026-10-18): a long wind-up, the tell to dodge (he sinks behind
+    // his shield and holds the crouch, then leaps at 'takeoff' of it, floats and drops); the smash lands a wide area in front
+    // of him and knocks Yola flat; then a slow recovery (the opening to hit him). windup = the clip's frames 1-77 at 30 fps
+    slam: { from: 2.4, range: 2.1, arc: 1, strike: 0.15, recover: 1.1, step: 0, windup: 2.53, leap: 1.4, takeoff: 0.58 },
     // the pounce (2026-10-17, the user: "a lunge attack you can dodge"; Quaternius UAL2 Zombie_Bite): from 1.7-3.2 m a
     // standing zombie rears back (the wind-up, a long narrow wedge on the floor; it stops turning after `lock` of it), then
     // leaps along that line and bites whatever it reaches. Committed: a side-step or Yola's dodge beats it, and a miss
@@ -47054,11 +47055,11 @@ void main() {
           break;
         }
         case ZS.WINDUP:
-          turnRate = this.attack === "slam" ? this.t < 0.45 ? 1.6 : 0 : this.attack === "pounce" ? this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0 : 2.5;
+          turnRate = this.attack === "slam" ? this.t < this.stateDur * ZATTACKS.slam.takeoff ? 1.6 : 0 : this.attack === "pounce" ? this.t < this.stateDur * ZATTACKS.pounce.lock ? 3 : 0 : 2.5;
           wantX = dx;
           wantZ = dz;
-          if (this.attack === "slam" && this.t > this.stateDur * 0.45) {
-            const L2 = ZATTACKS.slam.leap / (this.stateDur * 0.55);
+          if (this.attack === "slam" && this.t > this.stateDur * ZATTACKS.slam.takeoff) {
+            const L2 = ZATTACKS.slam.leap / (this.stateDur * (1 - ZATTACKS.slam.takeoff));
             this.vx = Math.sin(this.yaw) * L2;
             this.vz = Math.cos(this.yaw) * L2;
           }
@@ -51676,7 +51677,7 @@ void main() {
   ];
   var TUMBLE = { f0: 40, f1: 90, up0: 1, up1: 94 };
   var SCRATCH = { f0: 1, hit: 17, hitEnd: 21, end: 45 };
-  var SLAM = { f0: 1, hit: 18, hitEnd: 23, end: 41, lift: 0.5 };
+  var SLAM = { f0: 1, hit: 77, hitEnd: 81, end: 114, lift: 1, clip: "guard_leap_slam" };
   var POUNCE = { f0: 1, hit: 10, hitEnd: 19, end: 46, clip: "ual_Zombie_Bite" };
   var ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM, pounce: POUNCE };
   var GAIT_SETS = {
@@ -51857,10 +51858,21 @@ void main() {
             clips.push(p);
           }
         }
-        for (const c of clips) if (c.name === "slam") {
-          for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) {
-            const v = t.values, y0 = v[1];
-            for (let i = 1; i < v.length; i += 3) v[i] = y0 + (v[i] - y0) * SLAM.lift;
+        {
+          const s = clips.find((c) => c.name === SLAM.clip);
+          if (s) {
+            const p = s.clone(), i = clips.findIndex((c) => c.name === "slam");
+            p.name = "slam";
+            if (i >= 0) clips[i] = p;
+            else clips.push(p);
+          }
+        }
+        if (SLAM.lift !== 1) {
+          for (const c of clips) if (c.name === "slam") {
+            for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) {
+              const v = t.values, y0 = v[1];
+              for (let i = 1; i < v.length; i += 3) v[i] = y0 + (v[i] - y0) * SLAM.lift;
+            }
           }
         }
         if (opts.shield && clips.some((c) => c.name === "shield_idle")) {
