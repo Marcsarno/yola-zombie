@@ -24,7 +24,11 @@ export const ZATTACKS = {
   // standing zombie rears back (the wind-up, a long narrow wedge on the floor; it stops turning after `lock` of it), then
   // leaps along that line and bites whatever it reaches. Committed: a side-step or Yola's dodge beats it, and a miss
   // leaves it stumbling (the long recovery is the opening). range: the wedge (the leap plus the bite's reach).
-  pounce: { min: 1.7, from: 3.2, range: 3.3, arc: 0.32, windup: 0.75, lock: 0.6, strike: 0.32, leapMax: 2.5, bite: 0.55, recover: 0.95, cd: 5, chance: 0.4, step: 0 },
+  // (2026-10-18, the user: walkers "more interesting than zombies that simply shamble into me ... short, readable lunging
+  // attacks with anticipation, commitment, and recovery"): the pounce is also how a zombie waiting its turn in the ring
+  // attacks (no attack slot needed, one pounce at a time, still in the floor's turn order), so the pressure comes from
+  // different sides rather than from the two in front
+  pounce: { min: 1.3, from: 3.2, range: 3.3, arc: 0.32, windup: 0.75, lock: 0.6, strike: 0.32, leapMax: 2.5, bite: 0.55, recover: 0.95, cd: 4.5, chance: 0.45, step: 0 },
 };
 // how a standing zombie walks (render/clipchars.js ZombieView): 'shamble' the Mixamo zombie walk, 'ual' Quaternius's
 // zombie walk in eight directions (it side-steps when it circles her), 'run' Quaternius's zombie run, a runner (faster:
@@ -42,7 +46,7 @@ export const GUARD = { armHp: Infinity, headHp: 35, rageSpeed: 1.6, stuck: 2.6, 
 // knocked down inside knock m, staggered to stagger m; an acid pool (radius r) that hurts Yola dps for dur s, then dissolves.
 // Zombies walk through it (it only steams around their feet).
 export const LADY = { swell: 0.3, knock: 2.0, stagger: 3.5, acid: { r: 1.5, dur: 5, dps: 6 } };
-export const GAITS = { runnerShare: 0.15, ualShare: 0.45 };
+export const GAITS = { runnerShare: 0.1, ualShare: 0.65 }; // (2026-10-18: most walk the 8-way walk, which can step aside and back off facing her)
 export const RUNNER_SPEED = 2.5; // (x zombieSpeed: ~2.5 m/s, Yola runs 3.3; the run clip's own pace is ~4 m/s, slower looked like slow motion)
 // Zombie kinds (multipliers on the tuning values; r: body radius in metres).
 //  sprinter (the big lady): once she sees Yola she charges, faster than Yola can run, but she turns slowly at speed, so a
@@ -98,7 +102,7 @@ export class Zombie {
     this.severed = new Set(); this.crawling = false; this.lastHitPart = 'torso'; this.toCrawl = false;
     this.hitStyle = ''; this.bumpT = 0;
     this.attack = 'lunge'; // the attack being wound up / struck
-    this.holdR = 2.0 + ((this.phase * 5.17) % 1) * 0.7; // waiting its turn: how far back it stands
+    this.holdR = 1.5 + ((this.phase * 5.17) % 1) * 0.6; // waiting its turn: how far back it stands (2026-10-18: closer, within a swing that steps in, not a queue at 2-2.7 m)
     this.repoT = 0; this.repoDir = 0; this.repoWait = 1 + ((this.phase * 2.3) % 1) * 1.5; // waiting: short walks along the ring
     this.sprinting = false; this.spd = 0; this.spotT = 0; this.braking = false; this.chargeHit = false; this.fall = '';
     this.slamCd = 1.5; // the guard's slam cooldown
@@ -132,6 +136,16 @@ export class Zombie {
     sim.emit({ type: 'legBreak', id: this.id, part, x: this.x, z: this.z });
   }
   set(state, dur = 0) { this.state = state; this.t = 0; this.stateDur = dur; }
+  // nothing standing between it and her (a pounce never leaps through another zombie)
+  clearLine(sim, dx, dz, dist) {
+    const ux = dx / (dist || 1), uz = dz / (dist || 1);
+    for (const o of sim.zombies) {
+      if (o === this || !o.alive || !o.solid) continue;
+      const rx = o.x - this.x, rz = o.z - this.z, along = rx * ux + rz * uz;
+      if (along > 0.2 && along < dist - 0.3 && Math.abs(rx * uz - rz * ux) < this.r + o.r) return false;
+    }
+    return true;
+  }
   // does his shield take a blow travelling along (dirX, dirZ)? Only from the front, only while he holds it up
   // (stuck: it is down in the floor in front of him, his body above it is open)
   shieldBlocks(dirX, dirZ) {
@@ -417,16 +431,21 @@ export class Zombie {
         // facing her, and now and then takes a few steps along the ring away from the nearest other zombie, so a group
         // spreads around her instead of piling in. It closes in when a slot frees (one ahead of it falls or is floored).
         const waiting = !this.passive && los && sim.engaged && !sim.engaged.has(this.id) && !this.crawling && this.kind !== 'sprinter'; // (a sprinter never waits)
-        if (waiting && dist < this.holdR + 0.5 && speed > 0) {
+        const holdR = this.holdR + Math.sin(sim.time * 0.9 * this.swayRate + this.phase * 6.283) * 0.3; // (the ring breathes: it edges in and backs off)
+        this.backing = false;
+        const sidestep = this.gait === 'ual' || this.gait === 'run'; // (the 8-way walk can step aside or back facing her; the shamble only walks forward)
+        if (waiting && sidestep && dist < holdR - 0.35 && los) { // too close for a zombie waiting its turn (it landed a pounce): it backs off to its ring, facing her
+          wantX = -dx / (dist || 1); wantZ = -dz / (dist || 1); speed = T.zombieSpeed * this.speedMul * 0.4; this.backing = true;
+        } else if (waiting && dist < holdR + 0.5 && speed > 0) {
           const a = Math.atan2(this.x - p.x, this.z - p.z), rx = Math.sin(a), rz = Math.cos(a); // rx, rz: away from her
           if (this.repoT > 0) {
             this.repoT -= dt;
-            const e = Math.max(-1, Math.min(1, dist - this.holdR)); // keep to its ring while it walks
+            const e = Math.max(-1, Math.min(1, dist - holdR)); // keep to its ring while it walks
             wantX = Math.cos(a) * this.repoDir - rx * e * 0.6; wantZ = -Math.sin(a) * this.repoDir - rz * e * 0.6;
             speed = T.zombieSpeed * this.speedMul * 0.5;
           } else {
             wantX = dx / (dist || 1); wantZ = dz / (dist || 1);
-            speed *= Math.max(0, Math.min(1, (dist - this.holdR) / 0.5)); // eases to a stop at its spot
+            speed *= Math.max(0, Math.min(1, (dist - holdR) / 0.5)); // eases to a stop at its spot
             // personal space (2026-10-16: waiting zombies stood shoulder to shoulder, 0.65 m apart, and read as one mass): it
             // keeps about a metre from its neighbours by sliding along its ring (and a little back), never toward her
             let sx = 0, sz = 0;
@@ -453,7 +472,13 @@ export class Zombie {
         } else {
           this.repoT = 0;
           if (dist < 1.25) speed *= 0.5; // close in carefully, no jitter at contact
-          if (dist < 0.8) speed = 0; // in reach: it stands and waits for its turn rather than pushing into her
+          if (sidestep && dist < 1.5 && !this.crawling) { // the two in front: never shoulder to shoulder; a short shuffle round her away from the other
+            let sx = 0, sz = 0;
+            for (const o of sim.zombies) { if (o === this || !o.alive || !o.solid) continue; const ox = this.x - o.x, oz = this.z - o.z, d = Math.hypot(ox, oz); if (d < 0.95 && d > 1e-4) { const w = (0.95 - d) / 0.95; sx += (ox / d) * w; sz += (oz / d) * w; } }
+            const a = Math.atan2(this.x - p.x, this.z - p.z), tx = Math.cos(a), tz = -Math.sin(a), tang = sx * tx + sz * tz;
+            if (Math.abs(tang) > 0.08) { wantX = tx * Math.sign(tang); wantZ = tz * Math.sign(tang); speed = T.zombieSpeed * this.speedMul * 0.4; this.backing = true; }
+          }
+          if (dist < (this.kind === 'normal' && !this.crawling ? 0.95 : 0.8) && !this.backing) speed = 0; // in reach: it stands and waits for its turn rather than pushing into her (a walker a body's width off, not hugging her)
         }
         // Attack (pacing): only a zombie with a slot, in reach, facing her, and only once the floor's attack turn comes
         // round (each attack started holds the next one off by zombieAttackGap). Inside ~0.9 m it scratches.
@@ -467,8 +492,8 @@ export class Zombie {
         }
         // the pounce: from further out, now and then (it decides once per cooldown; declined, it closes in as usual)
         const PO = ZATTACKS.pounce;
-        if (this.kind === 'normal' && !this.crawling && !this.passive && slot && (this.pounceCd -= dt) <= 0 && dist > PO.min && dist < PO.from && this.attackCd <= 0 &&
-            sim.time >= (sim.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+        if (this.kind === 'normal' && !this.crawling && !this.passive && (slot || !sim.zombies.some((o) => o !== this && o.attack === 'pounce' && (o.state === ZS.WINDUP || o.state === ZS.STRIKE))) && (this.pounceCd -= dt) <= 0 && dist > PO.min && dist < PO.from && this.attackCd <= 0 &&
+            sim.time >= (sim.nextAttackT || 0) && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.5 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5) && this.clearLine(sim, dx, dz, dist)) {
           if (sim.rand() < (T.pounceChance ?? PO.chance)) {
             this.attack = 'pounce'; this.set(ZS.WINDUP, T.pounceWindup ?? PO.windup); this.pounceCd = PO.cd + sim.rand() * 4;
             sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * 1.4;
@@ -480,7 +505,7 @@ export class Zombie {
         if (!this.passive && slot && sim.time >= (sim.nextAttackT || 0) && dist < ZATTACKS.lunge.from && this.attackCd <= 0 &&
             Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) < 0.7 && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
           const armed = this.armsLost < 2 && !this.crawling; // no arms (a bite) or crawling: the plain lunge
-          this.attack = armed && (dist < 0.85 || (dist < ZATTACKS.scratch.from && sim.rand() < 0.25)) ? 'scratch' : 'lunge';
+          this.attack = armed && (dist < 0.97 || (dist < ZATTACKS.scratch.from && sim.rand() < 0.25)) ? 'scratch' : 'lunge';
           this.set(ZS.WINDUP, this.attack === 'scratch' ? T.scratchWindup ?? 0.42 : T.zombieWindup ?? 0.62);
           sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * (0.8 + sim.rand() * 0.5);
           sim.emit({ type: 'zombieWindup', id: this.id, attack: this.attack });
@@ -577,12 +602,15 @@ export class Zombie {
     }
 
     // facing
-    if (turnRate > 0 && (wantX || wantZ)) this.yaw = approachAngle(this.yaw, Math.atan2(wantX, wantZ), turnRate * dt);
+    if (turnRate > 0 && (wantX || wantZ) && !(this.state === ZS.CHASE && this.backing)) this.yaw = approachAngle(this.yaw, Math.atan2(wantX, wantZ), turnRate * dt);
 
     // locomotion velocity (only in states that walk)
     if (this.state === ZS.CHASE && (this.sprinting || this.spotT > 0)) { // the charge: along her facing at her own speed
       const k = Math.min(1, dt * 10), sp = this.sprinting ? this.spd : 0, tx = Math.sin(this.yaw) * sp, tz = Math.cos(this.yaw) * sp;
       this.vx += (tx - this.vx) * k; this.vz += (tz - this.vz) * k;
+    } else if (this.state === ZS.CHASE && this.backing) { // stepping back or aside, still facing her (the 8-way walk plays the step)
+      this.yaw = approachAngle(this.yaw, Math.atan2(dx, dz), 4 * dt);
+      const k = Math.min(1, dt * 6); this.vx += (wantX * speed - this.vx) * k; this.vz += (wantZ * speed - this.vz) * k;
     } else if (this.state === ZS.CHASE) {
       // walk mostly where we face: turning zombies slow down instead of sliding sideways
       const face = Math.max(0, Math.cos(angleDiff(this.yaw, Math.atan2(wantX, wantZ))));
