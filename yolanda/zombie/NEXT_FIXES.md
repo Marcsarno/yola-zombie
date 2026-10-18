@@ -1,7 +1,17 @@
 # Next fixes (the user's notes, 2026-10-18, after playing the combat pass)
 
-Not started. Context: COMBAT_POLISH_LOG.md round 20 (what was built). Latest commit 32305b9 (local); production and
-GitHub are at 5e95f76 (the construction stand-ins d67d9ef..32305b9 are not deployed or pushed yet).
+STATUS 2026-10-18 (later the same day, commits fedf28e..3a5131c, local, not pushed or deployed):
+- DONE 1 (ponytail: the UAL attack clips have no hair tracks; the mixer wrote NaN into Hair1's position: render/hairsway.js
+  now restores the hair bones' rest place each frame), 2 (render/clipchars.js YolaView.headLook), 4 + 5 (the guard
+  reworked by the user's new brief: the shield planted in the world, his hands IK-held on it, his arm tears off on it, he
+  flails one-armed, then clubs with the torn arm; slam launch / impact / smoke / cracks / small shake), 6, 7, 8, 9, 10 (the
+  lady: aim, lock, build-up to 6.2 m/s, close smash), 11, 12, 15, 16 (a perfect dodge of a walker's pounce: execute).
+- 13, 14: done by another chat (the crowbar's own hub combo, uncommitted in that chat's files).
+- OPEN 3: the sledgehammer swings with a one-handed sword combo (its free arm flies off the handle, GRIPS_HANDOFF.md OPEN):
+  needs a two-handed heavy attack, picked by the user and checked in the Rig Lab (never KayKit).
+- Also new: nurse scrub variations to choose from (combat.html?mode=calm&demo=nurses; main.js SCRUBS).
+
+Context: COMBAT_POLISH_LOG.md round 20 (what was built).
 
 ## Yola
 1. **Ponytail disappears during many melee attacks.** Find which attack clips / layers hide or collapse the hair bones
