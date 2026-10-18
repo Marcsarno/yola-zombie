@@ -39056,7 +39056,7 @@ void main() {
   var NO_KK = (n) => !/^kk_/.test(n);
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var REF_OFFSET = { pistol_reload: 37 };
-  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (hospital pack, full stock)", draft: "shotgun (first draft)", axe: "fire axe", bat: "baseball bat", alubat: "bat (hospital pack)", packaxe: "axe (hospital pack)", packcrowbar: "crowbar (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
+  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (hospital pack, full stock)", draft: "shotgun (first draft)", axe: "fire axe", bat: "baseball bat", alubat: "bat (wood)", packaxe: "axe (hospital pack)", packcrowbar: "crowbar (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
   var HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
   var LIB_WEAPONS = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
   var PACK = { alubat: 1, packaxe: 1, packcrowbar: 1 };
@@ -40105,7 +40105,7 @@ void main() {
     return FITS[_a7 = fitKey(a)] || (FITS[_a7] = { ...PFIT0 });
   };
   var WFITS = {};
-  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (hospital pack)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", old: "Shotgun (hospital pack)", draft: "Shotgun (first draft)", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
+  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (wood)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", old: "Shotgun (hospital pack)", draft: "Shotgun (first draft)", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
   var fitW = (w, a) => {
     var _a7, _b7;
     return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }));

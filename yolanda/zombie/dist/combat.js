@@ -45770,6 +45770,18 @@ void main() {
     tip: [0, 0, 0.71],
     knob: [0, 0, -0.13]
   };
+  var WOOD_BAT_DEF = {
+    file: "assets/weapons/wood_bat.glb",
+    hands: "one",
+    grip_primary: [0, 0, 0],
+    grip_secondary: [0, 0.093, 0],
+    shaft_axis: [0, 1, 0],
+    ref_axis: [1, 0, 0],
+    length_m: 0.843,
+    impact_point: [0, 0.655, 0],
+    tip: [0, 0.768, 0],
+    knob: [0, -0.075, 0]
+  };
   var BAT_PROFILE = { kind: "bat", dmg: 0.75, knock: 1, style: "swing", sever: {}, hitFrom: 0.45, radius: 0.1, reach: "tip" };
   function useBuiltBat(strikes) {
     BAT_ATTACKS.length = 0;
@@ -49532,6 +49544,21 @@ void main() {
   }
   var FB1 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var FB2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
+  function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
+    const R = fistFrame(bones, "Right", FB1);
+    if (!R) return false;
+    const L2 = fistFrame(bones, "Left", FB2);
+    if (!L2 || R.c.distanceTo(L2.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
+    const d = new Vector3().subVectors(L2.c, R.c).normalize();
+    if (d.dot(_a4.copy(R.a).add(L2.a)) < 0) d.negate();
+    const low = R.c.dot(d) < L2.c.dot(d) ? R : L2, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
+    const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
+    r.addScaledVector(s, -r.dot(s)).normalize();
+    _m13.makeBasis(s, r, new Vector3().crossVectors(s, r));
+    _m22.makeBasis(d, kn, new Vector3().crossVectors(d, kn));
+    applyFit(o, low.c, new Quaternion().setFromRotationMatrix(_m22.multiply(_m13.transpose())), fit, new Vector3(...def.grip_primary), 1, k);
+    return true;
+  }
   var HOLD_TUNE = { axeAxis: 1 };
   var F2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var _cr = new Vector3();
@@ -49886,6 +49913,16 @@ void main() {
   }
 
   // src/render/clipchars.js
+  var FIT02 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
+  function lerpFit(a, b, t) {
+    a || (a = FIT02);
+    b || (b = FIT02);
+    if (t <= 0) return a;
+    if (t >= 1) return b;
+    const o = { ...a };
+    for (const k in FIT02) o[k] = (a[k] ?? FIT02[k]) + ((b[k] ?? FIT02[k]) - (a[k] ?? FIT02[k])) * t;
+    return o;
+  }
   var AXE_AT = new Vector3();
   var clamp5 = (v, a, b) => v < a ? a : v > b ? b : v;
   var smooth2 = (u) => u * u * (3 - 2 * u);
@@ -50838,6 +50875,7 @@ void main() {
     }
     // the game clip an action plays (the derived layers: legs-only, upper-only, the unarmed copies)
     baseClip(n) {
+      if (n.startsWith("sword_idle_")) return this.swordIdleBase || "ual1_Sword_Idle";
       const BASE = {
         shotgun_hold_upper: "sg_reload",
         shotgun_reload_upper: "sg_reload",
@@ -51258,7 +51296,12 @@ void main() {
       }
       const o = T2.obj;
       if (!o) return;
-      placeOneHanded(this.bones, T2.hand, o, T2.w, T2.fit, T2);
+      if (T2.pack) {
+        const wi = Math.min(1, this.actions.sword_idle_upper?.getEffectiveWeight() || 0), ws = Math.min(1, this.swingAct?.getEffectiveWeight() || 0);
+        const f = T2.fitIdle ? lerpFit(T2.fit, T2.fitIdle, wi + ws > 1e-3 ? wi / (wi + ws) : 0) : T2.fit;
+        if (f?.hand === "Left") placeOneHanded(this.bones, "Left", o, T2.w, f, {});
+        else placeBat(this.bones, o, T2.w, f);
+      } else placeOneHanded(this.bones, T2.hand, o, T2.w, T2.fit, T2);
       const w = T2.w;
       if (T2.two && w.grip_secondary && HOLD_LAYERS.secondHand) {
         const other = T2.hand === "Left" ? "Right" : "Left";
@@ -51284,6 +51327,7 @@ void main() {
     setOneHandedBat(hold, idle) {
       var _a7;
       this.batLib = hold;
+      if (idle) this.swordIdleBase = idle.name;
       if (idle && !this.actions.sword_idle_upper) {
         const full = stripRoot(idle, hipsRest(this.model)), ht = full.tracks.find((t) => /Hips.quaternion$/.test(t.name));
         if (ht) this.swordHips = ht.createInterpolant(new Float32Array(4));
@@ -67693,6 +67737,11 @@ void main() {
     const WDEF = wj?.weapons || {};
     const fitsJ = await json("assets/hold/weapon_fit.json"), who = game.yolaModel === "2" ? "yola2" : "yola", fits = {};
     for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === "object" && v[who]) fits[k] = v[who];
+    const woodBat = !!WDEF.alubat;
+    if (woodBat) {
+      WDEF.bat = WDEF.alubat;
+      for (const k of Object.keys(fits)) if (k === "alubat" || k.startsWith("alubat@")) fits["bat" + k.slice(6)] = fits[k];
+    }
     const clips = Object.fromEntries([...game.yolaClips || [], ...lib2?.animations || []].map((c) => [c.name, c]));
     const meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
     let fingers = null;
@@ -67768,7 +67817,7 @@ void main() {
       const P = PROFILE[e.weapon], w = WDEF[e.weapon] && e.weapon !== "none" ? WDEF[e.weapon] : null;
       const obj = w ? await model(e.weapon) : null;
       const fitE = fits[e.weapon + "@" + e.clip] || fits[e.weapon] || null;
-      const hold = { key: e.weapon, obj, w, hand: fitE?.hand || e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === "two", fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, fit: fits[e.weapon + "@" + e.clip] || fits[e.weapon] || null };
+      const hold = { key: e.weapon, obj, w, hand: fitE?.hand || e.hand, roll: e.roll, slide: e.slide, flip: e.flip, two: w?.hands === "two", fingers: w ? fingers : null, carry: CARRY[e.weapon] ? e.weapon : null, pack: woodBat && e.weapon === "bat", fit: fits[e.weapon + "@" + e.clip] || fits[e.weapon] || null };
       yola2.setTestWeapon(hold);
       return buildLibraryAttack(yola2, { clip: clips[e.clip], frames: meta[e.clip]?.frames, hold: w ? hold : null, P, speed, name: e.label, sound: e.weapon });
     }
@@ -68429,16 +68478,18 @@ void main() {
       loader.loadAsync("assets/weapons/pistol_mag_empty.glb").catch(() => null),
       loader.loadAsync("assets/weapons/pistol_mag_loaded.glb").catch(() => null),
       // (the reload's magazines)
-      fetch("assets/hold/pistol_fit.json").then((r) => r.json()).catch(() => ({}))
+      fetch("assets/hold/pistol_fit.json").then((r) => r.json()).catch(() => ({})),
+      // (the user's pistol fit per character, set in the Rig Lab)
+      loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)
     ]);
     loadHoldLayers();
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
-    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
+    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
     yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === "2" ? "yola2" : "yola"] });
     yola.addAttackClips(yg.animations.filter((c) => c.name === "yola_knockdown" || c.name === "yola_getup"));
-    setupBat(yg.animations, await fetch("assets/hold/weapon_fit.json").then((r) => r.json()).catch(() => ({})));
+    setupBat(yg.animations, await fetch("assets/hold/weapon_fit.json").then((r) => r.json()).catch(() => ({})), woodBatG);
     window.game.yolaClips = yg.animations;
     ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[i]);
     renderer.shadowMap.needsUpdate = true;
@@ -68453,7 +68504,14 @@ void main() {
     if (params.has("lab")) startLab(window.game, params.get("lab") || "bat");
     if (params.has("inspect")) window.game.inspect = startInspect(window.game);
   }
-  function setupBat(anims, fits = {}) {
+  function holdFrame(clip, name) {
+    const tracks = clip.tracks.map((t) => {
+      const n = t.getValueSize(), v = Array.from(t.values.slice(0, n));
+      return new t.constructor(t.name, [0, 1], [...v, ...v]);
+    });
+    return new AnimationClip(name, 1, tracks);
+  }
+  function setupBat(anims, fits = {}, woodG = null) {
     const who = YOLA_MODEL === "2" ? "yola2" : "yola";
     yola.axeFit = fits.axe?.[who] || null;
     yola.shotgunFit = fits.short?.[who] || null;
@@ -68462,12 +68520,13 @@ void main() {
     });
     fetch("assets/hold/arm_pose.json").then((r) => r.json()).then((j) => yola.setArmPose(j, who)).catch(() => {
     });
-    const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = anims.find((c) => c.name === "ual1_Sword_Idle");
+    const block = anims.find((c) => c.name === "ual_Sword_Block");
+    const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = block ? holdFrame(block, "ual_Sword_Block") : anims.find((c) => c.name === "ual1_Sword_Idle");
     if (!combo2) {
       setupNewMoves(yola, anims, null);
       return;
     }
-    const h = new Group(), m = makeBat(0.84);
+    const h = new Group(), m = woodG ? woodG.scene : makeBat(0.84);
     m.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = true;
@@ -68477,8 +68536,9 @@ void main() {
     h.add(m);
     h.visible = false;
     scene.add(h);
-    const hold = { obj: h, w: BAT_DEF, hand: "Right", roll: 0, slide: 0, flip: false, two: false, fingers: null };
-    hold.fit = fits.bat?.[YOLA_MODEL === "2" ? "yola2" : "yola"] || null;
+    const hold = { obj: h, w: woodG ? WOOD_BAT_DEF : BAT_DEF, hand: "Right", roll: 0, slide: 0, flip: false, two: false, fingers: null, pack: !!woodG };
+    hold.fit = (woodG ? fits.alubat : fits.bat)?.[who] || null;
+    if (woodG && block) hold.fitIdle = fits["alubat@ual_Sword_Block"]?.[who] || null;
     yola.setOneHandedBat(hold, idle);
     useBuiltBat(buildLibraryAttack(yola, { clip: combo2, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: "bat", sound: "bat", strikes: 4 }));
     setupNewMoves(yola, anims, hold);
