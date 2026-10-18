@@ -46343,6 +46343,7 @@ void main() {
     }
     return [t0, t1, face];
   }
+  var ZS_STAGGER = "stagger";
   var Player = class {
     constructor(x, z, tuning2) {
       this.T = tuning2;
@@ -46506,7 +46507,8 @@ void main() {
         }
       }
       const down = this.action.type === "down", dodging = this.action.type === "dodge", vaulting = this.action.type === "vault";
-      if (this.dead || down || dodging || vaulting) {
+      const exec = this.action.type === "execDash" || this.action.type === "execAim";
+      if (this.dead || down || dodging || vaulting || exec) {
         mx = mz = mag = 0;
       }
       const am = down ? 0 : Math.hypot(input2.aimX, input2.aimZ);
@@ -46579,7 +46581,7 @@ void main() {
       }
       this.x += rm.x;
       this.z += rm.z;
-      const through = vaulting || dodging && this.invuln > 0;
+      const through = vaulting || exec || dodging && this.invuln > 0;
       if (!through) for (const e of sim2.zombies) {
         if (!e.solid || e.state === "strike" && e.attack === "dash") continue;
         const dx = this.x - e.x, dz = this.z - e.z, rr = this.r + e.r, d2 = dx * dx + dz * dz;
@@ -46592,7 +46594,7 @@ void main() {
       world.resolveCircle(this, this.r, vaulting ? A0.box : null);
       this.vx = (this.x - px2 - rm.x - (this.slide ? this.slide.x * dt : 0)) / dt;
       this.vz = (this.z - pz2 - rm.z - (this.slide ? this.slide.z * dt : 0)) / dt;
-      if (down || dodging || vaulting) this.vx = this.vz = 0;
+      if (down || dodging || vaulting || exec) this.vx = this.vz = 0;
       const vl = Math.hypot(this.vx, this.vz), vmax = T2.moveSpeed * 1.05;
       if (vl > vmax) {
         this.vx *= vmax / vl;
@@ -46643,6 +46645,52 @@ void main() {
       if (this.dead) return;
       a.t += dt;
       switch (a.type) {
+        case "execDash": {
+          const u = Math.min(1, a.t / a.dur), e = u * u * (3 - 2 * u);
+          this.x = a.x0 + (a.x1 - a.x0) * e;
+          this.z = a.z0 + (a.z1 - a.z0) * e;
+          this.vx = this.vz = 0;
+          const z = sim2.zombies.find((q) => q.id === a.id);
+          if (z) this.aimYaw = this.aimTarget = Math.atan2(z.x - this.x, z.z - this.z);
+          if (u < 1) break;
+          if (!z || !z.alive) {
+            this.setAction("ready");
+            this.execId = 0;
+            break;
+          }
+          if (this.equipped === PISTOL || this.equipped === SHOTGUN) {
+            this.setAction("execAim", { dur: 0.2, id: z.id });
+            this.execHitIn = 0.2;
+            break;
+          }
+          {
+            const A = this.attacks[this.attacks.length - 1];
+            this.execHitIn = (A.windows ? A.windows[A.windows.length - 1][0] : A.activeStart) / (this.T.axeSpeed || 1);
+          }
+          this.startSwing(sim2, this.attacks.length - 1, true, "execute");
+          this.action.execId = z.id;
+          break;
+        }
+        case "execAim": {
+          const z = sim2.zombies.find((q) => q.id === a.id);
+          if (z) this.aimYaw = this.aimTarget = Math.atan2(z.x - this.x, z.z - this.z);
+          if (a.t < a.dur) break;
+          if (!z || !z.alive) {
+            this.setAction("ready");
+            this.execId = 0;
+            break;
+          }
+          {
+            this.setAction("shot", { execId: z.id });
+            if (this.ammo > 0) this.ammo--;
+            this.shotCount++;
+            this.recoil = 1;
+            if (this.equipped === SHOTGUN) sim2.fireShotgun(this);
+            else sim2.firePistol(this);
+            if (z.alive) sim2.forceExec(z);
+          }
+          break;
+        }
         case "shot":
           if (a.t >= (this.equipped === SHOTGUN ? T2.shotgunInterval : T2.pistolInterval)) this.setAction("ready");
           break;
@@ -46678,7 +46726,17 @@ void main() {
             this.startSwing(sim2, 0);
             break;
           }
-          if (st >= A.duration) this.setAction("ready");
+          if (a.execId) {
+            const end = A.windows ? A.windows[A.windows.length - 1][1] : a.activeEnd, z = sim2.zombies.find((q) => q.id === a.execId);
+            if (z && z.alive && st >= end) sim2.forceExec(z);
+            if (!z || !z.alive) {
+              if (st >= end) this.execId = 0;
+            }
+          }
+          if (st >= A.duration) {
+            this.setAction("ready");
+            this.execId = 0;
+          }
           break;
         }
         case "reload":
@@ -46748,6 +46806,13 @@ void main() {
         return;
       }
       if (!this.attackHeld) return;
+      if (this.attackPressT < 0.25) {
+        const ez = sim2.execTarget?.(this);
+        if (ez) {
+          this.startExecution(ez, sim2);
+          return;
+        }
+      }
       if (Math.abs(angleDiff(this.aimYaw, this.aimTarget)) > FIRE_ALIGN) return;
       if (this.equipped === PISTOL || this.equipped === SHOTGUN) {
         this.setAction("shot");
@@ -46757,6 +46822,29 @@ void main() {
         if (this.equipped === SHOTGUN) sim2.fireShotgun(this);
         else sim2.firePistol(this);
       } else this.startSwing(sim2, 0);
+    }
+    // The execution: she locks on, lunges in to her strike's own distance (a fraction of a second, real time: the world is
+    // slowed, render/execution.js), then plays her weapon's strongest move (its last combo strike, the kick, a point-blank
+    // shot). The zombie stands frozen and dies to it whatever lands (zombies.js executed; sim.forceExec if the swing misses).
+    startExecution(z, sim2) {
+      const dx = z.x - this.x, dz = z.z - this.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
+      const gun = this.equipped === PISTOL || this.equipped === SHOTGUN, fin = this.attacks[this.attacks.length - 1];
+      const stand = gun ? 1 : Math.max(0.75, fin?.stand ?? 0.95);
+      z.executed = true;
+      z.execWeapon = this.equipped;
+      z.executable = 0;
+      z.execLock = true;
+      z.set(ZS_STAGGER, 9);
+      z.vx = z.vz = 0;
+      z.kx = z.kz = 0;
+      z.hitFlash = 1;
+      this.aimYaw = this.aimTarget = Math.atan2(dx, dz);
+      this.vx = this.vz = 0;
+      const go = Math.max(0, d - stand);
+      this.setAction("execDash", { dur: Math.max(0.05, Math.min(0.16, go / 16)), x0: this.x, z0: this.z, x1: this.x + ux * go, z1: this.z + uz * go, id: z.id });
+      this.invuln = Math.max(this.invuln, 3);
+      this.execId = z.id;
+      sim2.emit({ type: "execStart", id: z.id, weapon: this.equipped, x: z.x, z: z.z });
     }
     reloadTime() {
       return this.equipped === SHOTGUN ? this.T.shotgunReload : this.T.reloadTime;
@@ -47028,6 +47116,7 @@ void main() {
   var TUMBLE_FALL = 1.3;
   var TUMBLE_GETUP = 1.9;
   var BED_RISE = 7.4;
+  var EXEC_GORE = { axe: ["Head", "Forearm_L"], crowbar: ["Head"], knife: ["Head"], pistol: ["Head"] };
   var BED_AT = { x: -0.05, z: -0.29 };
   var BED_PATH = [
     [0, 1e-3, -0.252],
@@ -47361,8 +47450,15 @@ void main() {
           }
         }
       }
-      if (this.executed) loss = this.hp + 1;
+      if (this.executed) {
+        loss = this.hp + 1;
+        if (this.execWeapon === "fists") impulse = Math.max(impulse, 15);
+      }
       this.hp -= loss;
+      if (this.executed && !this.execDone) {
+        this.execDone = true;
+        for (const part2 of EXEC_GORE[this.execWeapon] || []) if (!this.severed.has(part2)) this.sever(part2, dirX, dirZ, sim2);
+      }
       if (cut) this.sever(cut, dirX, dirZ, sim2);
       if (this.kind === "guard" && this.hp <= 0 && !(this.shieldHp > 0) && !this.severed.has("Head")) {
         this.lastHitPart = "Head";
@@ -47386,6 +47482,11 @@ void main() {
         this.deathYaw = Math.atan2(dirX, dirZ);
         this.deathSpeed = impulse;
         sim2.emit({ type: "zombieDeath", id: this.id, kind, x: this.x, z: this.z });
+        if (this.executed) {
+          const p = sim2.player;
+          p.hp = Math.min(p.maxHp, p.hp + (sim2.T.execHeal ?? 5));
+          sim2.emit({ type: "execHit", id: this.id, weapon: this.execWeapon, x: this.x, z: this.z, dirX, dirZ });
+        }
         return;
       }
       if (wasDown || this.state === ZS.STUCK || this.bed) {
@@ -49105,6 +49206,30 @@ void main() {
       else if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
       this.emit({ type: "dodgeSuccess", id: z.id, kind, perfect: d.perfect, x: z.x, z: z.z });
     }
+    // a zombie open to an execution in front of her and in reach (the nearest to her aim): render/execution.js plays the beat
+    execTarget(p) {
+      let best = null, bs = 1e9;
+      for (const z of this.zombies) {
+        if (!z.alive || !(z.executable > this.time) || z.down || z.execLock) continue;
+        const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
+        if (d > (this.T.execReach ?? 3.6)) continue;
+        const off = Math.abs(angleDiff(p.aimTarget, Math.atan2(dx, dz)));
+        if (off > 1.25) continue;
+        const s = d + off * 1.5;
+        if (s < bs) {
+          bs = s;
+          best = z;
+        }
+      }
+      return best;
+    }
+    // the execution's blow lands whatever the swing did (the zombie dies to it: zombies.js executed)
+    forceExec(z) {
+      const p = this.player, dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1, w = p.equipped;
+      const kind = w === PISTOL || w === SHOTGUN ? w : w === "fists" ? "fist" : w === BAT || w === "crowbar" || w === "sledgehammer" ? "bat" : "axe";
+      z.takeHit(9999, dx / d, dz / d, 6, kind, this, "torso", "heavy");
+      if (kind !== PISTOL && kind !== SHOTGUN) this.emit({ type: "batHit", id: z.id, x: z.x, z: z.z, dirX: dx / d, dirZ: dz / d, killed: !z.alive, combo: 2, style: "heavy", weapon: w, fist: kind === "fist" });
+    }
     // a critical blow or shot (a perfect dodge's reward): the multiplier once, then gone
     takeCrit() {
       const p = this.player;
@@ -49501,6 +49626,35 @@ void main() {
     // m/s2: how fast she builds up to it (from a slow start)
     sprinterTurn: 0.9,
     // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
+    // executions (render/execution.js; 2026-10-18, the user: "use one of the already in game animations that is strong.. zoom the
+    // camera... slow motion.. make it feel epic"): time on the press, through the wind-up, the freeze on the hit, the hang
+    // after it; the camera's distance (x the game camera's), its angle down, how long it takes to get there (0: a hard cut)
+    execReach: 3.6,
+    // m: how far a press reaches for a zombie open to it
+    execSlowLock: 0.2,
+    // x time on the press (she lunges in at full speed regardless)
+    execSlowWind: 0.45,
+    // x time through her wind-up
+    execWindTime: 0.55,
+    // s (real): her wind-up, press to blow, the same for every weapon (her pace through it is set to fit)
+    execFreeze: 0.08,
+    // s (real) frozen on the hit
+    execHang: 0.55,
+    // s (real) after the hit, pieces flying (at 0.15x the burst barely opened: the shot was lost)
+    execSlowHang: 0.4,
+    // x time through the hang
+    execRelease: 0.3,
+    // s (real) back to full speed and the camera back
+    execCamDist: 0.42,
+    // x the game camera's distance
+    execCamPitch: 24,
+    // degrees down from horizontal
+    execCamPush: 0,
+    // s: 0 = a hard cut to the execution camera, more = a push-in over that time
+    execCamFov: 0.9,
+    // x the field of view (a little tighter: heavier)
+    execHeal: 5,
+    // health back for an execution
     lookAhead: 1.3,
     // camera look-ahead toward aim (m)
     camPitch: 42,
@@ -49510,8 +49664,8 @@ void main() {
     camWidth: 7.2
     // metres of floor across a portrait screen at the player
   };
-  var TUNING_VERSION = 6;
-  var CHANGED = { 3: ["sprinterTurn"], 4: ["meleeHitPause", "sprinterTurn", "sprinterWindup"], 5: ["legStrikeChance"], 6: ["sprinterWindup", "sprinterSpeed"] };
+  var TUNING_VERSION = 7;
+  var CHANGED = { 3: ["sprinterTurn"], 4: ["meleeHitPause", "sprinterTurn", "sprinterWindup"], 5: ["legStrikeChance"], 6: ["sprinterWindup", "sprinterSpeed"], 7: [] };
   function makeTuning(saved) {
     if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) {
       saved = { ...saved };
@@ -53686,7 +53840,7 @@ void main() {
       if (Math.abs(fwd) >= Math.abs(left)) return fwd < 0 ? "react_large_front" : "react_large_back";
       return left < 0 ? "react_large_left" : "react_large_right";
     }
-    update(dt, z, x, zz) {
+    update(dt, z, x, zz, now = 0) {
       if (this.rag) {
         if (this.shield) this.shield.visible = false;
         this.updateRagdoll(z);
@@ -53945,7 +54099,8 @@ void main() {
       const fl = z.hitFlash * z.hitFlash;
       const tell = z.state === "windup" ? Math.min(1, z.t / Math.max(0.05, z.stateDur)) : 0, tk = tell * tell * 0.3;
       const sg = (this.swell || 0) * (0.06 + 0.06 * Math.sin(performance.now() * 9e-3));
-      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5, fl * 0.33 + tk * 0.05 + sg, fl * 0.27 + tk * 0.03);
+      const ex = z.alive && z.executable > now ? (0.5 + 0.5 * Math.sin(performance.now() * 0.018)) * 0.45 : 0;
+      for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5 + ex, fl * 0.33 + tk * 0.05 + sg + ex * 0.62, fl * 0.27 + tk * 0.03 + ex * 0.3);
       if (z.state === "dead" && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
       this.blob.visible = z.state !== "dead" || z.corpseT < 4.5;
     }
@@ -62159,6 +62314,20 @@ void main() {
       ["scratchWindup", "Scratch wind-up", 0.2, 1, 0.02, "s"],
       ["sprinterSpeed", "Sprinter charge speed", 2, 6, 0.1, "m/s"],
       ["sprinterWindup", "Orderly charge wind-up", 0.3, 1.5, 0.05, "s"]
+    ]],
+    ["Executions", [
+      ["execCamPush", "Camera in (0 = hard cut)", 0, 0.4, 0.01, "s"],
+      ["execCamDist", "Camera distance", 0.2, 1, 0.02, "\xD7"],
+      ["execCamPitch", "Camera angle (down)", 8, 60, 1, "\xB0"],
+      ["execCamFov", "Camera field of view", 0.6, 1.1, 0.01, "\xD7"],
+      ["execSlowLock", "Time on the press", 0.05, 1, 0.01, "\xD7"],
+      ["execSlowWind", "Time through the wind-up", 0.1, 1, 0.01, "\xD7"],
+      ["execWindTime", "Wind-up length", 0.2, 1.5, 0.05, "s"],
+      ["execFreeze", "Freeze on the hit", 0, 0.3, 0.01, "s"],
+      ["execHang", "Hang after the hit", 0, 1.2, 0.05, "s"],
+      ["execSlowHang", "Time through the hang", 0.05, 1, 0.01, "\xD7"],
+      ["execRelease", "Back to normal", 0.05, 1, 0.05, "s"],
+      ["execReach", "Reach", 1.5, 6, 0.1, "m"]
     ]],
     ["Camera", [
       ["lookAhead", "Look-ahead", 0, 3, 0.1, "m"],
@@ -70472,7 +70641,12 @@ void main() {
       return f < 57 ? 1 - (1 - SLOW.PEAK) * ease2(50, 57, f) : f <= 66 ? SLOW.PEAK : SLOW.PEAK + (1 - SLOW.PEAK) * ease2(66, 72, f);
     }
     // the time scale for this frame (dt: real seconds); off: an opening scene or Yola dead
-    update(dt, sim2, off) {
+    update(dt, sim2, off, forced = null) {
+      if (forced != null) {
+        this.beatS = null;
+        this.k = forced;
+        return this.show();
+      }
       let want = 1;
       const p = sim2.player;
       if (!off && !p.dead) {
@@ -70483,7 +70657,7 @@ void main() {
         const B = this.beatS;
         if (B) {
           B.t += dt;
-          const k = Math.min(1, B.t / 0.07) * Math.min(1, Math.max(0, (B.dur - B.t) / 0.18));
+          const k = Math.min(1, Math.max(0, (B.dur - B.t) / 0.18));
           want = Math.min(want, 1 - (1 - B.scale) * k);
           if (B.t >= B.dur) {
             this.beatS = null;
@@ -70491,8 +70665,12 @@ void main() {
           }
         } else if (this.cool > 0) this.cool -= dt;
       } else this.beatS = null;
-      this.k += (want - this.k) * Math.min(1, dt * (want < this.k ? 18 : 10));
+      if (want < this.k) this.k = want;
+      else this.k += (want - this.k) * Math.min(1, dt * 10);
       if (Math.abs(this.k - want) < 3e-3) this.k = want;
+      return this.show();
+    }
+    show() {
       const shown = Math.round(Math.max(0, Math.min(1, (1 - this.k) / (1 - SLOW.PEAK))) * 50) / 50;
       if (shown !== this.shown) {
         this.shown = shown;
@@ -70506,6 +70684,90 @@ void main() {
         cue(this.audio, "slowOut");
       }
       return this.k;
+    }
+  };
+
+  // src/render/execution.js
+  var MAX_WAIT = 2.2;
+  var ExecDirector = class {
+    constructor() {
+      this.s = null;
+    }
+    get active() {
+      return !!this.s;
+    }
+    start(e) {
+      this.s = { id: e.id, weapon: e.weapon, x: e.x, z: e.z, phase: "lock", t: 0, pt: 0, cam: 0 };
+    }
+    hit(e) {
+      const s = this.s;
+      if (s && e.id === s.id && (s.phase === "lock" || s.phase === "windup")) {
+        s.phase = "impact";
+        s.pt = 0;
+      }
+    }
+    cancel() {
+      this.s = null;
+    }
+    // per real frame: { k: the world's time scale, boost: Yola's on top of it, cam: 0..1 how far into the execution camera,
+    // creep: 0..1 the wind-up's slow push closer }
+    update(dt, T2, hitIn = 0) {
+      const s = this.s;
+      if (!s) return null;
+      s.t += dt;
+      s.pt += dt;
+      let k = 1, boost = 1;
+      const push = T2.execCamPush ?? 0, camIn = push > 0 ? Math.min(1, s.t / push) : 1;
+      switch (s.phase) {
+        case "lock":
+          k = T2.execSlowLock;
+          boost = 1 / Math.max(0.05, k);
+          s.cam = camIn;
+          if (s.pt >= 0.12) {
+            s.phase = "windup";
+            s.pt = 0;
+            s.wb = Math.max(1, (hitIn || 0) / (Math.max(0.05, T2.execSlowWind) * (T2.execWindTime ?? 0.55)));
+          }
+          break;
+        case "windup":
+          k = T2.execSlowWind;
+          boost = s.wb || 1;
+          s.cam = camIn;
+          if (s.t > MAX_WAIT) {
+            s.phase = "release";
+            s.pt = 0;
+          }
+          break;
+        case "impact":
+          k = 1e-4;
+          s.cam = 1;
+          if (s.pt >= T2.execFreeze) {
+            s.phase = "hang";
+            s.pt = 0;
+          }
+          break;
+        case "hang":
+          k = T2.execSlowHang;
+          s.cam = 1;
+          if (s.pt >= T2.execHang) {
+            s.phase = "release";
+            s.pt = 0;
+            s.k0 = k;
+          }
+          break;
+        case "release": {
+          const u = Math.min(1, s.pt / Math.max(0.05, T2.execRelease)), e = u * u * (3 - 2 * u);
+          k = (s.k0 ?? T2.execSlowWind) + (1 - (s.k0 ?? T2.execSlowWind)) * e;
+          s.cam = 1 - e;
+          if (u >= 1) {
+            this.s = null;
+            return { k: 1, boost: 1, cam: 0, creep: 0, done: true };
+          }
+          break;
+        }
+      }
+      const creep = s.phase === "windup" ? Math.min(1, s.pt / 0.5) : s.phase === "lock" ? 0 : 1;
+      return { k, boost, cam: s.cam, creep, phase: s.phase };
     }
   };
 
@@ -70638,6 +70900,15 @@ void main() {
         o.rotation.y = B.yaw;
         game.scene.add(o);
         game.propsAdd(o);
+      }
+    } },
+    // (2026-10-18) the execution: a walker that pounces; dodge it at the last moment (Dodge / Shift), then attack it while it
+    // glows (render/execution.js). Change weapons with Swap to see each finisher
+    execute: { label: "Execution: perfect-dodge the pounce, then attack the glowing walker (Swap: each weapon)", weapon: "bat", setup(sim2) {
+      for (const [x, z] of [[-1.6, -4.6], [2.4, -5.2]]) {
+        const q = put(sim2, x, z, "normal", 0);
+        q.pouncer = true;
+        q.pounceCd = 0.5;
       }
     } },
     low: { label: "Low targets: a crawler, a floored walker", weapon: "axe", setup(sim2) {
@@ -71282,6 +71553,7 @@ void main() {
     return v;
   }
   function restart(newMode = mode, n = benchN, save = null) {
+    execDir.cancel();
     if (levelForMode(newMode) !== LAYOUT.name) {
       const q = new URLSearchParams();
       if (newMode !== "room1") q.set("mode", newMode);
@@ -71426,9 +71698,14 @@ void main() {
     let simDt = dt;
     if (paused) simDt = 0;
     if (!paused) {
-      const k = slowmo.update(dt, sim, !!opening?.active);
+      execNow = execDir.update(dt, tuning, sim.player.execHitIn);
+      if (execBanner && (!execNow || execNow.phase === "release" || execNow.done)) {
+        execBanner = false;
+        hud.popup("EXECUTION +" + (tuning.execHeal ?? 5));
+      }
+      const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : null);
       simDt *= k;
-      sim.yolaBoost = k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
+      sim.yolaBoost = execNow ? execNow.boost : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
     }
     if (hitPauseT > 0) {
       const h = Math.min(hitPauseT, simDt);
@@ -71536,6 +71813,10 @@ void main() {
     gibs.world = sim.world;
     gibs.update(animDt);
     ZombieView.syncLoose(sim.loose, alpha, animDt);
+    if ((execRingT -= animDt) <= 0) {
+      execRingT = 0.32;
+      for (const z of sim.zombies) if (z.alive && z.executable > sim.time) fx.ring(z.x, z.z, 16757575, 0.8);
+    }
     const seen = /* @__PURE__ */ new Set();
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
@@ -71613,6 +71894,7 @@ void main() {
   var MELEE_BLOOD = { axe: "blade", knife: "blade", bat: "blunt", crowbar: "blunt", sledgehammer: "blunt" };
   var STRIKE_BLOOD = { scratch: "blade", flail: "blade", dash: "blade", lunge: "bite", pounce: "bite", bite: "bite", club: "blunt", smash: "blunt", slam: "blunt" };
   var hurtFrame = -1;
+  var EXEC_BURST = { bat: 1.8, shotgun: 2.2, sledgehammer: 1.3 };
   function handleEvents() {
     frameNo++;
     const p = sim.player;
@@ -72056,15 +72338,34 @@ void main() {
           sim.stats.kills++;
           audio.play("zombieDeath");
           const zx = sim.zombies.find((q) => q.id === e.id);
-          if (zx?.executed) {
-            if (gib(e.id, zx.hitDirX, zx.hitDirZ, 1.7)) {
-              slowBeat(0.3, 0.6);
-              hud.popup("EXECUTED");
-            }
+          if (zx?.executed && EXEC_BURST[zx.execWeapon]) gib(e.id, zx.hitDirX, zx.hitDirZ, EXEC_BURST[zx.execWeapon]);
+          break;
+        }
+        case "execStart":
+          execDir.start(e);
+          fx.ring(e.x, e.z, 16777215, 1.4);
+          audio.play("swing", 0.7);
+          break;
+        // (render/execution.js: time and the camera)
+        case "execHit": {
+          execDir.hit(e);
+          shake(0.8);
+          execBanner = true;
+          fx.hitFlash(e.x - (e.dirX || 0) * 0.2, 1.15, e.z - (e.dirZ || 0) * 0.2, e.dirX || 0, e.dirZ || 0, 2.4);
+          fx.ring(e.x, e.z, 16773584, 1.8);
+          audio.play("shotgunClose", 0.9);
+          audio.play("sever");
+          if (shakeOn) {
+            camState.vx += (e.dirX || 0) * 2.4 * tuning.shake;
+            camState.vz += (e.dirZ || 0) * 2.4 * tuning.shake;
+          }
+          if (e.weapon === "sledgehammer") {
+            fx.floorCrack(e.x, e.z, 1.6);
+            fx.smoke(e.x, e.z, 7, 0.7, 0.6, 2.6, 1.6);
+            fx.ring(e.x, e.z, 14208959, 1.4);
           }
           break;
         }
-        // (a perfect dodge's execute: the full burst)
         case "zombieSpawn":
           if (Math.random() < 0.5) audio.play("groan", 0.8);
           break;
@@ -72119,9 +72420,14 @@ void main() {
   var slowmo = new SlowMotion(audio);
   var slowBeat = (k, d) => slowmo.beat(k, d);
   var slowEnd = () => slowmo.end();
+  var execDir = new ExecDirector();
+  var execNow = null;
+  var execRingT = 0;
+  var execBanner = false;
   function shake(k) {
     if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake);
   }
+  var _ex = new Vector3();
   function updateCamera(dt, px2, pz2, yaw, p) {
     const aspect2 = camera.aspect;
     const vfov = MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect2);
@@ -72152,6 +72458,22 @@ void main() {
     const pitch = MathUtils.degToRad(tuning.camPitch);
     camera.position.set(camState.x - fx2 * Math.cos(pitch) * D3, Math.sin(pitch) * D3, camState.z - fz * Math.cos(pitch) * D3);
     camera.lookAt(camState.x, 0.6, camState.z);
+    const X2 = execNow, b = X2 ? X2.cam * X2.cam * (3 - 2 * X2.cam) : 0;
+    if (b > 1e-3) {
+      const tz2 = sim.zombies.find((q) => q.id === execDir.s?.id), zx = tz2 ? tz2.x : px2, zz = tz2 ? tz2.z : pz2;
+      const mx = (px2 + zx) / 2, mz = (pz2 + zz) / 2, rx = -fz, rz = fx2, ep = MathUtils.degToRad(tuning.execCamPitch);
+      const ed = D3 * tuning.execCamDist * (1 - 0.1 * (X2.creep || 0)), side = 0.25;
+      _ex.set(mx - fx2 * Math.cos(ep) * ed + rx * side, 1 + Math.sin(ep) * ed, mz - fz * Math.cos(ep) * ed + rz * side);
+      camera.position.lerp(_ex, b);
+      camera.lookAt(camState.x + (mx - camState.x) * b, 0.6 + 0.4 * b, camState.z + (mz - camState.z) * b);
+    }
+    {
+      const fov2 = GAME_FOV * (1 + (tuning.execCamFov - 1) * b);
+      if (Math.abs(camera.fov - fov2) > 1e-3) {
+        camera.fov = fov2;
+        camera.updateProjectionMatrix();
+      }
+    }
     camState.trauma = Math.max(0, camState.trauma - dt * 2.2);
     const s = camState.trauma * camState.trauma * 0.18;
     if (s > 0) {
