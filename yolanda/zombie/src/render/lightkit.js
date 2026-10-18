@@ -11,6 +11,7 @@
 //   room      B  each character takes on the light of the room it stands in (blended as it crosses a doorway)
 //   muzzle       a shot lights the wall it hits and the floor at her feet; the shotgun lights the whole room for a moment
 //   baked     A  the fittings' light on the floor, baked in Cycles (assets/hospital/wing_floor_light.jpg, stored at half range)
+//   yshadow      Yola alone casts a real shadow from one light that follows her; every other caster is switched off
 //   eyes         zombies' eyes catch the light: a dim ember in the dark, bright in a pool of light, in the torch, in a shot's flash
 // The mood grade and the film finish (G, H) are a screen pass: render/looks.js setMood. Baked light (A): bakeFloor.
 import * as THREE from 'three';
@@ -24,6 +25,7 @@ export const LIGHTKIT = [ // [key, label, what it is, what it costs] (the lighti
   ['contact', 'E · Contact shadows', 'Soft shadows under every piece of furniture and every body, pushed away from the nearest light.', 'one draw call'],
   ['room', 'B · Room light on characters', 'Yola and the zombies take on the room\'s light: cold in the theatre, warm in the lounge, teal by the beds.', 'free (a colour each)'],
   ['muzzle', 'Muzzle flash light', 'A shot lights the wall it hits and the floor at her feet; the shotgun lights the room.', 'only on shots'],
+  ['yshadow', 'Yola\'s shadow', 'Yola alone casts a real shadow from one light that follows her (a small 512 map, redrawn each frame with only her and her weapon in it). Nothing else casts: the room\'s shadows are baked.', '1 small shadow pass (her mesh only)'],
   ['eyes', 'Zombie eyes', 'Their eyes catch the light: an ember in the dark, bright in a light pool, in the torch, in a shot\'s flash.', '2 sprites per zombie'],
 ];
 // the practice room's light brief (core/layout.js wing: the theatre z -11..-5, the hall below it). k: brightness on the floor
@@ -67,6 +69,7 @@ const exitTex = () => {
 };
 const FLAT = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
 const BAKE = { url: 'assets/hospital/wing_floor_light.jpg', x0: -7.6, x1: 7.6, z0: -11.6, z1: 11.6, k: 2.2, fill: 0.3 }; // (the bake's bounds: blender/bake_wing_floor.py; k: its strength, fill: the room's general light with it on, tuned by eye in the lab)
+const YSH = { map: 512, half: 1.6, off: [-2.8, 5.5, -0.8], dark: 0.5 }; // (Yola's shadow: map size, the window's half width (m), the light's place from her (the shadow falls the other way: to her right, a little toward the camera), how dark it is)
 const DIM = 0.55; // the room's general light with the fittings on (they light the floor themselves)
 const flick = (state, t, seed, S) => { // a fitting's brightness this frame (S: its own failing state)
   if (state === 'buzz') return 0.88 + 0.12 * Math.sin(t * 120 + seed) * Math.sin(t * 7.3 + seed);
@@ -161,6 +164,48 @@ export class LightKit {
       fixtures: WING_LIGHTS.fixtures.map(({ x, z, k, state, col }) => ({ x, z, k, state, col })), exits: WING_LIGHTS.exits.map(({ x, z }) => ({ x, z })) };
     const r = await fetch('/__shot/wing_bake_scene.json', { method: 'POST', body: JSON.stringify(data) });
     return { status: r.status, meshes: out.length };
+  }
+
+  // ---- Yola's shadow: one light, one small map, only her (and what she holds) in it ----
+  build_yshadow() {
+    // the light gives no light (the room keeps its look; a shadow could not darken the baked floor anyway): it only casts,
+    // and a shadow catcher under her (ShadowMaterial: transparent but for the shadow) shows it at YSH.dark
+    const L = (this.ysh = new THREE.DirectionalLight(0xffffff, 1e-4)); L.castShadow = true;
+    L.shadow.mapSize.set(YSH.map, YSH.map); const c = L.shadow.camera; c.left = c.bottom = -YSH.half; c.right = c.top = YSH.half; c.near = 0.5; c.far = 12;
+    L.shadow.bias = -0.0015; L.shadow.normalBias = 0.03; L.shadow.radius = 4; L.visible = false;
+    this.scene.add(L, L.target);
+    const C = (this.yshCatch = new THREE.Mesh(new THREE.PlaneGeometry(YSH.half * 2, YSH.half * 2).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ color: 0x06080b, opacity: YSH.dark, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })));
+    C.receiveShadow = true; C.renderOrder = 1; C.visible = false; this.root.add(C);
+  }
+  toggle_yshadow(v) {
+    const r = this.arena?.renderer, sun = this.arena?.sun; if (!r) return;
+    this.ysh.visible = v; this.yshCatch.visible = v;
+    if (v) { // (the sun stops casting; the renderer's shadows come on if the lab's "Real shadows" had them off)
+      this.yshWas = { sun: sun?.castShadow, enabled: r.shadowMap.enabled };
+      if (sun) sun.castShadow = false;
+      if (!r.shadowMap.enabled) r.shadowMap.enabled = true;
+      this.yshScanT = 0;
+    } else {
+      for (const o of this.yshOff || []) o.castShadow = true; this.yshOff = null;
+      if (sun && this.yshWas) sun.castShadow = this.yshWas.sun;
+      if (this.yshWas) r.shadowMap.enabled = this.yshWas.enabled;
+      if (this.yolaBlob) this.yolaBlob.visible = true;
+    }
+    this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); // (one light more or less: the shaders rebuild once)
+    r.shadowMap.needsUpdate = true;
+  }
+  yshGear(yv) { return [yv.outer, yv.pistol, yv.shotgun, yv.melee, yv.shell, yv.test?.obj, yv.batLib?.obj, ...Object.values(yv.libHolds || {}).map((h) => h?.obj)].filter(Boolean); }
+  tickYShadow(dt, p, yv) {
+    const r = this.arena.renderer;
+    if ((this.yshScanT -= dt) <= 0) { // (every second: anything new that casts (zombies, gibs, props) is switched off; hers on)
+      this.yshScanT = 1; const mine = new Set(); for (const g of this.yshGear(yv)) g.traverse((o) => mine.add(o));
+      this.yshOff ??= [];
+      this.scene.traverse((o) => { if (!o.isMesh && !o.isSkinnedMesh) return; if (mine.has(o)) { o.castShadow = true; return; } if (o.castShadow) { o.castShadow = false; this.yshOff.push(o); } });
+    }
+    const L = this.ysh, t = YSH.half * 2 / YSH.map, x = Math.round(p.x / t) * t, z = Math.round(p.z / t) * t; // (snapped to the map's texels: no shimmer as she walks)
+    L.target.position.set(x, 0, z); L.position.set(x + YSH.off[0], YSH.off[1], z + YSH.off[2]); L.target.updateMatrixWorld(); L.updateMatrixWorld(); this.yshCatch.position.set(x, 0.014, z); this.yshCatch.material.opacity = YSH.dark;
+    if (yv.blob) { this.yolaBlob = yv.blob; yv.blob.visible = false; } // (the real shadow replaces her blob)
+    r.shadowMap.needsUpdate = true;
   }
 
   // ---- F: halos on bright things ----
@@ -268,6 +313,7 @@ export class LightKit {
       if (this.on.room && v.view) this.tint(v.view, z.x, z.z, dt);
     }
     if (yolaView && p) {
+      if (this.on.yshadow && this.ysh) this.tickYShadow(dt, p, yolaView);
       if (this.on.contact && yolaView.blob) { const [dx, dz] = this.awayFromLight(p.x, p.z); yolaView.blob.position.x = p.x + dx * 0.16; yolaView.blob.position.z = p.z + dz * 0.16; yolaView.blob.rotation.z = Math.atan2(dx, dz); yolaView.blob.scale.set(1.05, 1.45, 1); }
       if (this.on.room) this.tint(yolaView, p.x, p.z, dt); else if (yolaView.roomTint) this.clearTint(yolaView);
     }
