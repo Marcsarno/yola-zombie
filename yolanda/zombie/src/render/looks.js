@@ -111,7 +111,7 @@ export class Looks {
     if (this.composer) { this.gtao.enabled = !!post?.[0]; this.bloom.enabled = !!post?.[1]; this.grade.enabled = !!post?.[2]; }
     this.post = !!post;
   }
-  findSun() { let s = null; this.scene.traverse((o) => { if (!s && o.isDirectionalLight && o.castShadow) s = o; }); return s; }
+  findSun() { let s = null; this.scene.traverse((o) => { if (!s && o.isDirectionalLight && !o.userData.notSun && (o.castShadow || o.userData.isSun)) s = o; }); return s; } // (notSun: render/lightkit.js's shadow light for Yola; isSun: the arena's, even while that kit has its shadow off)
   // the mood pass (MoodShader): a preset (MOODS key or null: off) and the film finish (grain, vignette); drain: 0..1 health lost
   setMood(key, film) {
     this.moodKey = key; this.film = film;

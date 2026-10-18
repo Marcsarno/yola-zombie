@@ -78,7 +78,8 @@ const exitTex = () => {
 };
 const FLAT = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
 const BAKE = { url: 'assets/hospital/wing_floor_light.jpg', x0: -7.6, x1: 7.6, z0: -11.6, z1: 11.6, k: 2.2, fill: 0.3 }; // (the bake's bounds: blender/bake_wing_floor.py; k: its strength, fill: the room's general light with it on, tuned by eye in the lab)
-const YSH = { map: 512, half: 1.6, off: [-2.8, 5.5, -0.8], dark: 0.5 }; // (Yola's shadow: map size, the window's half width (m), the light's place from her (the shadow falls the other way: to her right, a little toward the camera), how dark it is)
+const YSH = { map: 512, half: 1.6, off: [-2.8, 5.5, -0.8], dark: 0.55, min: 0.55 }; // (Yola's shadow: map size, the window's half width (m), the light's place from her (the shadow falls the other way: to her right, a little toward the camera), how dark it is)
+const CHAR = { base: 0.9, floor: 0.4 }; // (characters under A: their own ambient light = slider x base x (floor + the bake's light where they stand))
 const DIM = 0.55; // the room's general light with the fittings on (they light the floor themselves)
 const flick = (state, t, seed, S) => { // a fitting's brightness this frame (S: its own failing state)
   if (state === 'buzz') return 0.88 + 0.12 * Math.sin(t * 120 + seed) * Math.sin(t * 7.3 + seed);
@@ -164,7 +165,32 @@ export class LightKit {
     });
     return this.dips;
   }
+  // the bake's light at a point (0 dark .. ~2 under a tube), read from the image itself (stored at half range, sRGB)
+  bakeAt(x, z) {
+    const im = this.bakeTex?.image; if (!im || !im.width) return 0.5;
+    if (!this.bakePx) { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); this.bakePx = { d: g.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height }; }
+    const B = this.bakePx, u = Math.min(B.w - 1, Math.max(0, Math.round(((x - BAKE.x0) / (BAKE.x1 - BAKE.x0)) * (B.w - 1)))), v = Math.min(B.h - 1, Math.max(0, Math.round(((z - BAKE.z0) / (BAKE.z1 - BAKE.z0)) * (B.h - 1))));
+    return Math.pow(B.d[(v * B.w + u) * 4] / 255, 2.2) * 2;
+  }
+  // the characters under A: the bake lights the floor, not them, and A turns the room's fill down to 0.3; each one takes its
+  // own share of the room's soft ambient light (its materials hold the scene's environment map, so their intensity is
+  // their own) from the lab's "Character light" slider and the baked light where it stands
+  setCharLight(v) { this.charK = v; }
+  charMats(root) {
+    this.charCache ??= new WeakMap(); let L = this.charCache.get(root);
+    if (!L) { L = []; root.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.isMeshStandardMaterial && !L.includes(m)) L.push(m); }); this.charCache.set(root, L); }
+    return L;
+  }
+  lightChars(views, yv, p) {
+    const env = this.scene.environment, k = this.charK ?? 1; if (!env) return;
+    this.charLit ??= new Set();
+    const put = (root, x, z) => { if (!root) return; const I = k * CHAR.base * (CHAR.floor + Math.min(1.3, this.bakeAt(x, z))); for (const m of this.charMats(root)) { if (m.envMap !== env) { m.userData.env0 = m.envMap; m.envMap = env; m.needsUpdate = true; this.charLit.add(m); } m.envMapIntensity = I; } };
+    for (const v of views) if (v.view?.outer) put(v.view.outer, v.z.x, v.z.z);
+    if (yv && p) for (const g of this.yshGear(yv)) put(g, p.x, p.z);
+  }
+  unlightChars() { for (const m of this.charLit || []) { m.envMap = m.userData.env0 ?? null; m.envMapIntensity = 1; m.needsUpdate = true; } this.charLit?.clear(); }
   toggle_baked(v) {
+    if (!v) this.unlightChars();
     for (const d of this.bakeDips()) d.m.visible = v;
     for (const m of this.bakeFloors || []) { const L = m.userData.liveMat, B = m.userData.bakeMat; if (v) { B.roughness = L.roughness; B.envMapIntensity = L.envMapIntensity; } m.material = v ? B : L; }
     this.fill(); // (the bake carries the floor's light: the fill comes down further)
@@ -197,7 +223,7 @@ export class LightKit {
   build_yshadow() {
     // the light gives no light (the room keeps its look; a shadow could not darken the baked floor anyway): it only casts,
     // and a shadow catcher under her (ShadowMaterial: transparent but for the shadow) shows it at YSH.dark
-    const L = (this.ysh = new THREE.DirectionalLight(0xffffff, 1e-4)); L.castShadow = true;
+    const L = (this.ysh = new THREE.DirectionalLight(0xffffff, 1e-4)); L.castShadow = true; L.userData.notSun = true; // (the lab's looks leave it alone: they resize the sun's map)
     L.shadow.mapSize.set(YSH.map, YSH.map); const c = L.shadow.camera; c.left = c.bottom = -YSH.half; c.right = c.top = YSH.half; c.near = 0.5; c.far = 12;
     L.shadow.bias = -0.0015; L.shadow.normalBias = 0.03; L.shadow.radius = 4; L.visible = false;
     this.scene.add(L, L.target);
@@ -224,6 +250,8 @@ export class LightKit {
   yshGear(yv) { return [yv.outer, yv.pistol, yv.shotgun, yv.melee, yv.shell, yv.test?.obj, yv.batLib?.obj, ...Object.values(yv.libHolds || {}).map((h) => h?.obj)].filter(Boolean); }
   tickYShadow(dt, p, yv) {
     const r = this.arena.renderer;
+    if (!r.shadowMap.enabled) { this.yshCatch.visible = false; if (yv.blob) yv.blob.visible = true; return; } // (the Performance look: no shadows at all; her blob comes back)
+    this.yshCatch.visible = true;
     if ((this.yshScanT -= dt) <= 0) { // (every second: anything new that casts (zombies, gibs, props) is switched off; hers on)
       this.yshScanT = 1; const mine = new Set(); for (const g of this.yshGear(yv)) g.traverse((o) => mine.add(o));
       this.yshOff ??= [];
@@ -232,10 +260,10 @@ export class LightKit {
     // the light it falls from: the nearest lit fitting (as if the tube itself cast it: short right under one, longer away from
     // it), eased so it swings round as she walks; out of every fitting's reach, a faint one from the fixed direction
     let best = null, bd = 1e9; for (const F of this.fittings()) { if (F.b < 0.2) continue; const d = Math.hypot(F.x - p.x, F.z - p.z); if (d < bd) { bd = d; best = F; } }
-    let ox = YSH.off[0], oz = YSH.off[2], oy = YSH.off[1], k = 0.35;
+    let ox = YSH.off[0], oz = YSH.off[2], oy = YSH.off[1], k = YSH.min; // (never fainter than YSH.min: a faint one reads as no shadow at all)
     if (best && bd < 6.5) {
       const d = Math.max(0.45, Math.min(2.4, bd)), ux = (best.x - p.x) / (bd || 1), uz = (best.z - p.z) / (bd || 1);
-      ox = ux * d; oz = uz * d; oy = 2.6 - 0.1; k = best.b * Math.max(0.35, Math.min(1, 1 - (bd - 2.2) / 4.3));
+      ox = ux * d; oz = uz * d; oy = 2.6 - 0.1; k = Math.max(YSH.min, best.b * Math.min(1, 1 - (bd - 2.2) / 4.3));
     }
     const S = (this.yshS ??= { x: ox, y: oy, z: oz, k }), e = Math.min(1, dt * 3);
     S.x += (ox - S.x) * e; S.y += (oy - S.y) * e; S.z += (oz - S.z) * e; S.k += (k - S.k) * Math.min(1, dt * 6);
@@ -341,6 +369,7 @@ export class LightKit {
 
   update(dt, sim, views, yolaView) {
     this.lastViews = views; this.lastYola = yolaView;
+    if (this.on.baked) this.lightChars(views, yolaView, sim?.player);
     this.t += dt;
     if (this.fix) for (const F of this.fix) { const k = flick(F.state, this.t, F.seed, F.S); F.b = k; F.pool.k = this.on.fixtures && !this.on.baked ? F.k * k : 0; /* (A on: the bake is the pool) */ F.bar.material.opacity = 0.15 + 0.85 * k; }
     if (this.halos && this.on.halos && (this.monScanT = (this.monScanT ?? 0) - dt) <= 0) { this.monScanT = 2; this.scanMonitors(); }

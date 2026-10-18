@@ -1,6 +1,6 @@
 import { ATMOS } from './render/atmos.js';
 import { LIGHTKIT } from './render/lightkit.js';
-import { MOODS } from './render/looks.js';
+import { MOODS, LOOKS } from './render/looks.js';
 // Repeatable examples (2026-10-18, the user: "show short, repeatable examples of the first shield slam, second-slam break,
 // post-break dismemberment, charger dodge, get-ups, and walker lunges ... check them in the actual Three.js game").
 // combat.html?mode=calm&demo=<name>: the practice room with only that scene in it, set up the same way every time; the
@@ -85,7 +85,8 @@ function lightingLab(sim, game) {
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H · Film finish (grain, vignette, colour drains with health)</span></label>'
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label>'
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labTubes"><span>Show the tubes on the ceiling (and their halos)</span></label>'
-    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747"><input type="checkbox" id="labShadows" checked><span>Real shadows (off = phone low tier)</span></label>'
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">Look <select id="labLook">' + LOOKS.map(([k, l]) => '<option value="' + k + '">' + l + '</option>').join('') + '</select></label>'
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;border-bottom:1px solid #3a4747">Character light <input type="range" id="labChar" min="0" max="2" step="0.05" value="1" style="flex:1"><span id="labCharV" style="width:30px;text-align:right">1.00</span></label>'
     + '<div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>'
     + ATMOS.filter((a) => a[0] !== 'tubes').map(row).join('')
     + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div>'
@@ -101,14 +102,18 @@ function lightingLab(sim, game) {
     if (id === 'labMood' || id === 'labFilm') { mood(); return; }
     if (id === 'labEye') { game.ZombieView.eyeCfg.col = parseInt(e.target.value, 16); return; }
     if (id === 'labTubes') { K?.setTubes(e.target.checked); return; }
-    if (id === 'labShadows') { game.looks?.set(e.target.checked ? 'standard' : 'lite'); return; }
+    if (id === 'labLook') { game.looks?.set(e.target.value); return; } // (the ☀ button's looks, here instead: the button hides while the lab is open)
+    if (id === 'labChar') { K?.setCharLight(+e.target.value); el.querySelector('#labCharV').textContent = (+e.target.value).toFixed(2); return; }
     const k = e.target.dataset?.k; if (!k) return;
     if (LK.has(k)) { K?.set(k, e.target.checked); if (k === 'eyes') game.ZombieView.eyeCfg.on = e.target.checked; } else A?.set(k, e.target.checked);
     if (e.target.checked) what(k);
   });
   // the user's picks survive a reload (this browser only): every switch and list but the room view, saved on each change
   const SAVE = 'yola.lightLab.v1';
-  const fields = () => [...el.querySelectorAll('input[type=checkbox], select')].filter((c) => c.id !== 'labRoom');
+  const fields = () => [...el.querySelectorAll('input[type=checkbox], input[type=range], select')].filter((c) => c.id !== 'labRoom');
+  el.querySelector('#labLook').value = game.looks?.key || 'standard';
+  el.addEventListener('input', (e) => { if (e.target.id === 'labChar') e.target.dispatchEvent(new Event('change', { bubbles: true })); }); // (the slider applies as it moves)
+  const sunBtn = document.getElementById('lookBtn'); if (sunBtn) sunBtn.style.display = 'none';
   const keyOf = (c) => c.dataset?.k || c.id;
   el.addEventListener('change', () => { try { const o = {}; for (const c of fields()) o[keyOf(c)] = c.type === 'checkbox' ? c.checked : c.value; localStorage.setItem(SAVE, JSON.stringify(o)); } catch {} });
   try {

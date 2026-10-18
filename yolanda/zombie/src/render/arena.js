@@ -283,7 +283,7 @@ export class Arena {
       if (this.f3) { c.left = -13; c.right = 13; c.top = 13; c.bottom = -13; }
       sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02; sun.shadow.radius = 3;
     }
-    this.sun = sun;
+    this.sun = sun; sun.userData.isSun = true;
     this.redHemi = new THREE.HemisphereLight(0xff3a24, 0x2a0000, 0); s.add(this.redHemi); return; // (the emergency look, see setEmergency; the wing's old amber door lights below are unused)
     // selective amber emergency light (the rooms themselves stay readable)
     if (this.quality !== 'low') {
