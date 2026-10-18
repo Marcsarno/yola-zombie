@@ -46880,8 +46880,84 @@ void main() {
     return out;
   }
 
-  // src/core/zombies.js
+  // src/core/loose.js
+  var LOOSE = {
+    iv: { r: 0.26, roll: 2.2, give: 0.7 },
+    // r: m; roll: 1/s its speed dies away; give: how much of an overlap it takes
+    chair: { r: 0.42, roll: 3, give: 0.6 },
+    tipped: { r: 0.46, roll: 9, give: 0.25 }
+    // (a wheelchair on its side: it scrapes, barely moves)
+  };
+  var IV_CARRY = { fwd: 0.32, side: 0.36, k: 16, damp: 7, arm: 0.35, reach: 0.75 };
   var nextId = 1;
+  function addLoose(sim2, kind, x, z, yaw, owner) {
+    const L2 = { id: nextId++, kind, x, z, px: x, pz: z, yaw, vx: 0, vz: 0, owner, held: true, tipped: false, tipSide: 1, r: LOOSE[kind].r };
+    (sim2.loose || (sim2.loose = [])).push(L2);
+    return L2;
+  }
+  function looseStep(sim2, dt) {
+    const list = sim2.loose;
+    if (!list?.length) return;
+    const p = sim2.player;
+    for (const L2 of list) {
+      const P = L2.tipped ? LOOSE.tipped : LOOSE[L2.kind];
+      const owned = L2.owner && L2.held;
+      if (!owned) {
+        const f = Math.exp(-dt * P.roll);
+        L2.vx *= f;
+        L2.vz *= f;
+        L2.x += L2.vx * dt;
+        L2.z += L2.vz * dt;
+        const bx = L2.x, bz = L2.z;
+        if (sim2.world.resolveCircle(L2, L2.r)) {
+          const nx = L2.x - bx, nz = L2.z - bz, n = Math.hypot(nx, nz);
+          if (n > 1e-6) {
+            const vn = (L2.vx * nx + L2.vz * nz) / n;
+            if (vn < 0) {
+              L2.vx -= vn * nx / n;
+              L2.vz -= vn * nz / n;
+            }
+          }
+        }
+      }
+      const give = owned ? 0 : P.give;
+      const push = (b, r, heavy) => {
+        const dx = b.x - L2.x, dz = b.z - L2.z, d = Math.hypot(dx, dz), rr = r + L2.r;
+        if (d >= rr || d < 1e-6) return;
+        const o = rr - d, ux = dx / d, uz = dz / d, g = heavy ? give * 0.5 : give;
+        b.x += ux * o * (1 - g);
+        b.z += uz * o * (1 - g);
+        sim2.world.resolveCircle(b, r);
+        if (g > 0) {
+          L2.x -= ux * o * g;
+          L2.z -= uz * o * g;
+          const want = Math.min(2.5, o * g / dt * 0.6), away = -(L2.vx * ux + L2.vz * uz);
+          if (away < want) {
+            L2.vx -= ux * (want - away);
+            L2.vz -= uz * (want - away);
+          }
+        }
+      };
+      if (!p.dead) push(p, p.r, false);
+      for (const z of sim2.zombies) {
+        if (z.id === L2.owner || !z.alive || !z.solid) continue;
+        push(z, z.r, z.kind === "guard" || z.kind === "sprinter");
+      }
+    }
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], b = list[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz), rr = a.r + b.r;
+      if (d >= rr || d < 1e-6) continue;
+      const o = (rr - d) / 2, ux = dx / d, uz = dz / d, fa = a.owner && a.held ? 0 : 1, fb = b.owner && b.held ? 0 : 1;
+      if (!fa && !fb) continue;
+      a.x -= ux * o * fa * (fb ? 1 : 2);
+      a.z -= uz * o * fa * (fb ? 1 : 2);
+      b.x += ux * o * fb * (fa ? 1 : 2);
+      b.z += uz * o * fb * (fa ? 1 : 2);
+    }
+  }
+
+  // src/core/zombies.js
+  var nextId2 = 1;
   var _flow = { x: 0, z: 0 };
   var _steer = { x: 0, z: 0, k: 1 };
   var ZS = { EMERGE: "emerge", CHASE: "chase", WINDUP: "windup", STRIKE: "strike", RECOVER: "recover", STAGGER: "stagger", KNOCKDOWN: "knockdown", GETUP: "getup", DYING: "dying", DEAD: "dead", STUCK: "stuck", PICKUP: "pickup" };
@@ -47000,7 +47076,7 @@ void main() {
   var PERSONAL = 1.05;
   var Zombie = class {
     constructor(x, z, yaw, opts) {
-      this.id = nextId++;
+      this.id = nextId2++;
       this.kind = opts.kind || "normal";
       this.K = KINDS[this.kind] || KINDS.normal;
       this.x = x;
@@ -47077,6 +47153,7 @@ void main() {
       if (this.prop === "iv" || this.prop === "bed") this.gait = "ual";
       else if (this.chair) this.gait = "shamble";
       if (this.chair) {
+        this.r = LOOSE.chair.r;
         this.severed.add("LowerLeg_L");
         this.severed.add("LowerLeg_R");
         this.limbHp.LowerLeg_L = this.limbHp.LowerLeg_R = 0;
@@ -47113,6 +47190,53 @@ void main() {
       this.crawling = this.toCrawl = true;
       this.broken = part;
       sim2.emit({ type: "legBreak", id: this.id, part, x: this.x, z: this.z });
+    }
+    // its drip stand or wheelchair (core/loose.js), while it has it: the chair under it; the stand on its spring beside it,
+    // let go through a fight, a flinch or a fall and taken again if still in reach, else left behind. Dead: it stays put.
+    carryLoose(dt, sim2) {
+      const L2 = this.loose;
+      if (!L2 || L2.owner !== this.id) return;
+      if (!this.alive || this.state === ZS.DYING || this.state === ZS.DEAD) {
+        L2.owner = 0;
+        L2.held = false;
+        return;
+      }
+      const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), lx = Math.cos(this.yaw), lz = -Math.sin(this.yaw);
+      if (L2.kind === "chair") {
+        if (!this.chair) {
+          L2.owner = 0;
+          L2.held = false;
+          return;
+        }
+        L2.x = this.x + fx2 * 0.06;
+        L2.z = this.z + fz * 0.06;
+        L2.yaw = this.yaw;
+        L2.vx = this.vx;
+        L2.vz = this.vz;
+        L2.held = true;
+        return;
+      }
+      const C = IV_CARRY, s = this.state, busy = s === ZS.WINDUP || s === ZS.STRIKE || s === ZS.RECOVER || s === ZS.STAGGER || s === ZS.KNOCKDOWN || s === ZS.GETUP || this.crawling;
+      const sx = this.x + fx2 * C.fwd + lx * C.side, sz = this.z + fz * C.fwd + lz * C.side;
+      if (busy) {
+        L2.held = false;
+        return;
+      }
+      if (!L2.held && Math.hypot(L2.x - sx, L2.z - sz) > C.reach) {
+        L2.owner = 0;
+        return;
+      }
+      L2.held = true;
+      L2.vx += ((sx - L2.x) * C.k - L2.vx * C.damp) * dt;
+      L2.vz += ((sz - L2.z) * C.k - L2.vz * C.damp) * dt;
+      L2.x += L2.vx * dt;
+      L2.z += L2.vz * dt;
+      const dx = L2.x - sx, dz = L2.z - sz, d = Math.hypot(dx, dz);
+      if (d > C.arm) {
+        L2.x = sx + dx / d * C.arm;
+        L2.z = sz + dz / d * C.arm;
+      }
+      sim2.world.resolveCircle(L2, L2.r);
     }
     layInBed() {
       if (this.bed) {
@@ -47294,6 +47418,19 @@ void main() {
       if (this.chair) {
         this.chair = false;
         this.crawling = this.toCrawl = true;
+        this.r = this.K.r;
+        const L2 = this.loose;
+        if (L2) {
+          L2.owner = 0;
+          L2.held = false;
+          L2.tipped = true;
+          L2.r = LOOSE.tipped.r;
+          L2.x += dirX * 0.4;
+          L2.z += dirZ * 0.4;
+          L2.vx = dirX * 1.2;
+          L2.vz = dirZ * 1.2;
+          L2.tipSide = sim2.rand() < 0.5 ? -1 : 1;
+        }
         sim2.emit({ type: "chairTip", id: this.id, x: this.x, z: this.z, dirX, dirZ });
       }
       this.set(ZS.KNOCKDOWN, KNOCKDOWN_FALL);
@@ -47971,6 +48108,7 @@ void main() {
         this.rGrow = Math.max(0, this.rGrow - dt);
         this.r = this.K.r * (1 - 0.6 * this.rGrow);
       }
+      this.carryLoose(dt, sim2);
       const fr = Math.exp(-dt * (this.state === ZS.DYING ? 5 : 7));
       this.x += (this.vx + this.kx) * dt;
       this.z += (this.vz + this.kz) * dt;
@@ -48677,6 +48815,7 @@ void main() {
       this.player = new Player(s.x, s.z, this.T);
       this.player.aimYaw = this.player.aimTarget = s.yaw;
       this.zombies = [];
+      this.loose = [];
       this.events = [];
       this.hazards = [];
       this.time = 0;
@@ -48767,6 +48906,7 @@ void main() {
       this.updateHazards(dt);
       bump(this.zombies, this);
       separate(this.zombies, p);
+      looseStep(this, dt);
       this.director.update(dt);
       if (this.level) this.level.step(dt, input2);
       else this.updateFlow();
@@ -48798,6 +48938,10 @@ void main() {
         z.z = d.axis === "x" ? d.z + 0.35 : sz;
       }
       this.zombies.push(z);
+      if (z.prop === "iv" || z.prop === "chair") {
+        const fx2 = Math.sin(z.yaw), fz = Math.cos(z.yaw), lx = Math.cos(z.yaw), lz = -Math.sin(z.yaw), iv = z.prop === "iv";
+        z.loose = addLoose(this, z.prop, iv ? z.x + fx2 * IV_CARRY.fwd + lx * IV_CARRY.side : z.x + fx2 * 0.06, iv ? z.z + fz * IV_CARRY.fwd + lz * IV_CARRY.side : z.z + fz * 0.06, z.yaw, z.id);
+      }
       this.emit({ type: "zombieSpawn", id: z.id, door: d.id });
       return z;
     }
@@ -52729,7 +52873,7 @@ void main() {
   var HEAVE = 0.5;
   var LOOK_MAX = 1.1;
   var EXTRA_ONCE = ["patient_bed_rise", "ual_IdleToLay", "ual1_Sitting_Exit", "ual_KipUp", "ual_Zombie_Spawn", "ual_Hit_Knockback", "ual1_Crawl_Enter", "ual_Zombie_Scratch", "ual_LayToIdle", "ual_Melee_Hook", "ual_Sword_Regular_A", "ual_Sword_Regular_B", "ual1_PickUp_Table", "ual_Farm_Harvest"];
-  var IV = { fwd: 0.32, side: 0.36, grip: 1.08, k: 16, damp: 7, tilt: 0.05, maxTilt: 0.2, reach: 0.75, h: 2.03 };
+  var IV = { grip: 1.08, tilt: 0.05, maxTilt: 0.2 };
   var CHAIR = { seat: 0.62, fwd: 0.06, yaw: 0, rim: [-0.04, 0.36, 0.3], rimR: 0.27, rimArc: 1.6, h: 0.97 };
   var GAIT_SETS = {
     ual: { idle: "ual_Zombie_Idle_Loop", dur: 1.333, dirs: [["Fwd", 0, 1, 1.05], ["Fwd_L", 0.707, 0.707, 1.06], ["L", 1, 0, 0.75], ["Bwd_L", 0.707, -0.707, 1.06], ["Bwd", 0, -1, 1.2], ["Bwd_R", -0.707, -0.707, 1.06], ["R", -1, 0, 0.75], ["Fwd_R", -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
@@ -53192,6 +53336,8 @@ void main() {
       }
       for (const o of _ZombieView.props) o.parent?.remove(o);
       _ZombieView.props = [];
+      for (const o of _ZombieView.looseMeshes.values()) o.parent?.remove(o);
+      _ZombieView.looseMeshes.clear();
       _ZombieView.planted = [];
     }
     bind(z) {
@@ -53246,34 +53392,14 @@ void main() {
       this.bleed = {};
       this.bindProp(z);
     }
-    tipChair(e) {
-      const o = this.chairO;
-      if (!o) return;
-      o.rotation.set(0, o.rotation.y, (Math.random() < 0.5 ? -1 : 1) * 1.45);
-      o.position.y = 0.3;
-      o.position.x += e.dirX * 0.4;
-      o.position.z += e.dirZ * 0.4;
-      this.chairO = null;
-      this.act("sit_lower")?.setEffectiveWeight(0);
-    }
     // ---- the hospital's own zombies (IV, CHAIR, BED; core/zombies.js prop) ----
     bindProp(z) {
-      const S2 = _ZombieView.propSrc, f = new Vector3(Math.sin(z.yaw), 0, Math.cos(z.yaw)), l = new Vector3(Math.cos(z.yaw), 0, -Math.sin(z.yaw));
-      this.iv = null;
-      this.chairO = null;
+      this.iv = z.prop === "iv";
+      this.chairO = z.prop === "chair";
       this.lying = null;
+      this.ivW = 0;
       if (this.cap) this.cap.visible = z.prop === "surgeon";
-      if (z.prop === "iv" && S2.iv) {
-        const o = S2.iv.clone();
-        _ZombieView.scene.add(o);
-        _ZombieView.props.push(o);
-        this.iv = { o, x: z.x + f.x * IV.fwd + l.x * IV.side, z: z.z + f.z * IV.fwd + l.z * IV.side, vx: 0, vz: 0, tx: 0, tz: 0, held: 1 };
-      }
-      if (z.prop === "chair" && S2.chair) {
-        const o = S2.chair.clone();
-        _ZombieView.scene.add(o);
-        _ZombieView.props.push(o);
-        this.chairO = o;
+      if (this.chairO) {
         this.wheel = 0;
         for (const k of ["LowerLeg_L", "LowerLeg_R"]) {
           this.severed.add(k);
@@ -53286,6 +53412,44 @@ void main() {
           a.play();
           a.setEffectiveWeight(0);
         }
+      }
+    }
+    // the drip stands and wheelchairs (core/loose.js), drawn where the sim has them: the stand tips against its acceleration,
+    // a tipped chair lies on its side
+    static syncLoose(list, alpha, dt) {
+      const S2 = _ZombieView.propSrc, M4 = _ZombieView.looseMeshes, seen = /* @__PURE__ */ new Set();
+      for (const L2 of list) {
+        seen.add(L2.id);
+        let o = M4.get(L2.id);
+        if (!o) {
+          const src = L2.kind === "iv" ? S2.iv : S2.chair;
+          if (!src) continue;
+          o = src.clone();
+          o.userData.l = { vx: 0, vz: 0, rx: 0, rz: 0 };
+          _ZombieView.scene.add(o);
+          M4.set(L2.id, o);
+        }
+        const x = L2.px + (L2.x - L2.px) * alpha, z = L2.pz + (L2.z - L2.pz) * alpha, u = o.userData.l;
+        if (L2.kind === "iv") {
+          const ax = dt > 0 ? (L2.vx - u.vx) / dt : 0, az = dt > 0 ? (L2.vz - u.vz) / dt : 0;
+          u.vx = L2.vx;
+          u.vz = L2.vz;
+          const tx = clamp5(az * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt), tz = clamp5(-ax * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
+          u.rx += (-tx - u.rx) * Math.min(1, dt * 6);
+          u.rz += (-tz - u.rz) * Math.min(1, dt * 6);
+          o.position.set(x, 0, z);
+          o.rotation.set(u.rx, 0, u.rz);
+        } else if (L2.tipped) {
+          o.position.set(x, 0.3, z);
+          o.rotation.set(0, L2.yaw + CHAIR.yaw, L2.tipSide * 1.45);
+        } else {
+          o.position.set(x, 0, z);
+          o.rotation.set(0, L2.yaw + CHAIR.yaw, 0);
+        }
+      }
+      for (const [id, o] of M4) if (!seen.has(id)) {
+        o.parent?.remove(o);
+        M4.delete(id);
       }
     }
     // the surgeon's cap and mask (blender/make_surgeon_cap.py, built in the nurse's own model space): on her Head bone as it
@@ -53346,10 +53510,8 @@ void main() {
         if (m < 0) this.container.rotation.y = -z.yaw;
       }
       if (this.chairO) {
-        const o = this.chairO;
-        if (z.chair && !z.crawling) {
-          o.position.set(this.outer.position.x + f.x * CHAIR.fwd, 0, this.outer.position.z + f.z * CHAIR.fwd);
-          o.rotation.set(0, y + CHAIR.yaw, 0);
+        const o = z.loose && _ZombieView.looseMeshes.get(z.loose.id);
+        if (o && z.chair && !z.crawling) {
           const hips = B.Hips?.getWorldPosition(_v7);
           if (hips) {
             this.outer.position.y += CHAIR.seat - hips.y;
@@ -53367,40 +53529,14 @@ void main() {
           }
         }
       }
-      const I2 = this.iv;
-      if (I2) {
-        if (!z.alive || z.crawling) I2.held = 0;
-        const want = I2.held > 0 && !busy;
-        if (I2.held > 0 || want) {
-          I2.tx = this.outer.position.x + f.x * IV.fwd + l.x * IV.side;
-          I2.tz = this.outer.position.z + f.z * IV.fwd + l.z * IV.side;
-        }
-        const pull = want ? IV.k : 0, ax = (I2.tx - I2.x) * pull - I2.vx * (want ? IV.damp : 2.5), az = (I2.tz - I2.z) * pull - I2.vz * (want ? IV.damp : 2.5);
-        I2.vx += ax * dt;
-        I2.vz += az * dt;
-        I2.x += I2.vx * dt;
-        I2.z += I2.vz * dt;
-        if (want) {
-          const dx = I2.x - I2.tx, dz = I2.z - I2.tz, d = Math.hypot(dx, dz);
-          if (d > 0.35) {
-            I2.x = I2.tx + dx / d * 0.35;
-            I2.z = I2.tz + dz / d * 0.35;
-          }
-        }
-        I2.lx = clamp5(-ax * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
-        I2.lz = clamp5(-az * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
-        I2.rx = (I2.rx || 0) + (I2.lz - (I2.rx || 0)) * Math.min(1, dt * 6);
-        I2.rz = (I2.rz || 0) + (-I2.lx - (I2.rz || 0)) * Math.min(1, dt * 6);
-        I2.o.position.set(I2.x, 0, I2.z);
-        I2.o.rotation.set(I2.rx, 0, I2.rz);
-        const w = want ? 1 : 0;
-        I2.held = I2.held + (w - I2.held) * Math.min(1, dt * (want ? 5 : 10));
-        if (!want && z.alive && !busy && Math.hypot(I2.x - this.outer.position.x, I2.z - this.outer.position.z) > IV.reach) this.iv = null;
-        if (I2.held > 0.01 && B.LeftArm) {
-          I2.o.updateMatrixWorld(true);
+      if (this.iv) {
+        const L2 = z.loose, o = L2 && _ZombieView.looseMeshes.get(L2.id), want = !!(o && L2.owner === z.id && L2.held && !busy) ? 1 : 0;
+        this.ivW += (want - this.ivW) * Math.min(1, dt * (want ? 5 : 10));
+        if (o && this.ivW > 0.01 && B.LeftArm) {
+          o.updateMatrixWorld(true);
           _v43.set(0, IV.grip, 0);
-          I2.o.localToWorld(_v43);
-          ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, _v43, I2.held);
+          o.localToWorld(_v43);
+          ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, _v43, this.ivW);
         }
       }
     }
@@ -54074,7 +54210,9 @@ void main() {
   __publicField(_ZombieView, "propSrc", {});
   // (main.js: the drip stand, the wheelchair, the surgeon's cap and mask)
   __publicField(_ZombieView, "props", []);
-  // (drip stands and wheelchairs left in the world: until the level resets)
+  // (the demo's bed)
+  __publicField(_ZombieView, "looseMeshes", /* @__PURE__ */ new Map());
+  // (core/loose.js id -> its drip stand / wheelchair on screen)
   __publicField(_ZombieView, "clubGrip", new Vector3(0, 0.075, 0));
   // (his palm, in his RightHand bone's frame, m: where his fist closes round the torn wrist)
   __publicField(_ZombieView, "clubRoll", 0);
@@ -71074,6 +71212,10 @@ void main() {
       z.pz = z.z;
       z.pyaw = z.yaw;
     }
+    for (const L2 of sim.loose) {
+      L2.px = L2.x;
+      L2.pz = L2.z;
+    }
     input.clearAll();
     input.enabled = true;
     acc = 0;
@@ -71306,6 +71448,10 @@ void main() {
         z.pz = z.z;
         z.pyaw = z.yaw;
       }
+      for (const L2 of sim.loose) {
+        L2.px = L2.x;
+        L2.pz = L2.z;
+      }
       sim.step(inp);
       if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
       acc -= STEP;
@@ -71389,6 +71535,7 @@ void main() {
     ZombieView.updateShields(animDt);
     gibs.world = sim.world;
     gibs.update(animDt);
+    ZombieView.syncLoose(sim.loose, alpha, animDt);
     const seen = /* @__PURE__ */ new Set();
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
@@ -71737,13 +71884,10 @@ void main() {
         case "guardClub":
           cue(audio, "heave", 1.2);
           break;
-        case "chairTip": {
-          const v = zviews.get(e.id);
-          v?.tipChair(e);
+        case "chairTip":
           audio.play("bump", 1.3);
           break;
-        }
-        // (out of its wheelchair: render/clipchars.js tipChair)
+        // (out of its wheelchair: the chair on its side, core/loose.js)
         case "bedRise":
           if (dist(e.id) < 12) audio.play("groan", 1.1);
           break;
@@ -72223,7 +72367,9 @@ void main() {
     return yola;
   }, get physics() {
     return physics;
-  }, zviews, get propSrc() {
+  }, zviews, get looseMeshes() {
+    return ZombieView.looseMeshes;
+  }, get propSrc() {
     return ZombieView.propSrc;
   }, propsAdd(o) {
     ZombieView.props.push(o);
