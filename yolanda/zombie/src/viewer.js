@@ -9,7 +9,7 @@ import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
 import { buildBodyClip, bodyClipFrame, bodyClipProbe } from './render/bodyclip.js';
-import { placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
+import { placeBat, placeOnSlot, SLOT_AXES, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 import { LAYERS, HOLD_LAYERS, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
 
@@ -80,12 +80,12 @@ const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand
 // clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
 // frames 38-99, measured by matching both hands over the clip, 2026-10-16; before this the two were shown out of step)
 const REF_OFFSET = { pistol_reload: 37 };
-const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
-const HELD = { pistol: 1, axe: 1, bat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
+const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
+const HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
 // the weapon test arena's other weapons (2026-10-17, the user: "add the axe, chainsaw, sledge hammer back to ... the rig lab
 // .. and the knife"): their frames from the Move Library's data sheet (assets/arena/weapons.json: grip point, shaft and
 // reference axes, one or two hands), held as the bat (one hand) or the axe (two hands) is
-const LIB_WEAPONS = { sledgehammer: 1, chainsaw: 1, knife: 1 };
+const LIB_WEAPONS = { alubat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // (alubat: the hospital pack's bat, 2026-10-17)
 let WDEFS = {}, PICKS = {}; // PICKS: "<clip>|<weapon>" -> the Move Library pick's hold (hand, roll, slide, flip), as the arena uses it
 const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
 const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb' };
@@ -349,7 +349,7 @@ async function setClip(name) {
   const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => libName.startsWith(p));
   let rc = null, file = '';
   if (libName.startsWith('kk_')) { // (a KayKit clip: the file that has it, its mannequin as the reference)
-    for (const f of KK_FILES) { const u = await ualRef(f, false); const c = u?.clips.find((q) => q.name === libName.slice(3)); if (c) { useRef(u.actor); rc = c; file = f; break; } }
+    for (const f of KK_FILES) { const u = await ualRef(f, false); const c = u?.clips.find((q) => q.name === libName.slice(3)); if (c) { u.actor.fitKey = 'kaykit'; useRef(u.actor); rc = c; file = f; break; } }
     if (!rc) useRef(refX);
   } else if (lib) {
     const u = await ualRef(UAL_FILES[lib]);
@@ -720,11 +720,11 @@ function shotKick(a) {
 // (copied into assets/hold by Claude when the user says so)
 const PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
 const FITS = {};
-const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
+const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : a?.fitKey || 'mannequin'); // (fitKey 'kaykit': KayKit's mannequin, a different rig from Quaternius's)
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
-const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', axe: 'Axe', short: 'Shotgun', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (hospital pack)', axe: 'Axe', short: 'Shotgun', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
   for (const [w, v] of Object.entries(j)) if (typeof v === 'object') for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f };
@@ -831,6 +831,8 @@ function placeHeldOn(a, o) {
   // hand (else the data sheet's primary hand), turned by its roll, slid by its slide, flipped (2026-10-17: the Rig Lab ran the
   // two-handed ones through both fists, which the game never does)
   const LD = LIB_WEAPONS[w] && WDEFS[w];
+  if (w === 'alubat' && LD && !a.bones.RightHandIndex1 && placeOnSlot(a.obj.getObjectByName('handslotr'), o, LD, fitW(w, a), k)) return; // (KayKit's mannequin: no fingers, its own weapon slot)
+  if (w === 'alubat' && LD && placeBat(a.bones, o, LD, fitW(w, a), k)) return; // (as the clip holds it, on the dummy and on Yola: holdfit.js placeBat)
   // carried at rest (render/holdfit.js CARRY: the sledgehammer, the chainsaw on KayKit's two-handed idle): in front of her,
   // riding her chest, both fists on its grips; measured once on the idle's first frame, as the game does
   const CY = LD && CARRY[w];
@@ -930,6 +932,7 @@ const WEAPON_CLIPS = {
   axe: { label: 'Axe', idle: 'bat_idle', attack: 'bat_swing' }, // (its combo: bat_swing, then t_chop)
   bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
   // (the arena's weapons: their first "good" pick in the Move Library as the attack)
+  alubat: { label: 'Bat (pack)', idle: 'bat_idle', attack: 'ual_Sword_Regular_Combo' }, // (the hospital pack's bat, 2026-10-17)
   sledgehammer: { label: 'Sledgehammer', idle: 'kk_Melee_2H_Idle', attack: 'ual_Sword_Heavy_Combo' }, // (its carry: render/holdfit.js CARRY)
   chainsaw: { label: 'Chainsaw', idle: 'kk_Melee_2H_Idle', attack: 'melee_horizontal' },
   knife: { label: 'Knife', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Dash' },
@@ -1249,5 +1252,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { bodyClipScan, bodyClipProbe: (w, via) => bodyClipProbe(bodyClipC ||= Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char }), w, via), CARRY, GRIP_HANDS, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { SLOT_AXES, bodyClipScan, bodyClipProbe: (w, via) => bodyClipProbe(bodyClipC ||= Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char }), w, via), CARRY, GRIP_HANDS, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();

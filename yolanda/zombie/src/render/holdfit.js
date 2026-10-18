@@ -49,6 +49,40 @@ export function placeOneHanded(bones, side, o, def, fit, T = {}, k = 1) {
   return true;
 }
 
+// The hospital pack's bat (2026-10-17, the user: back to basics, the pack's own weapons and markers, the dummy first): held
+// as the clip holds it. Both fists together (an idle with both hands on the grip): the bat runs through the two fist
+// centres, its barrel toward the index knuckles, the pack's GameGrip_R (grip_primary) in the fist nearer the knob. One fist:
+// in the right fist along its grip axis (placeOneHanded). Then the fit for this rig. Nothing else: no IK, no second hand
+// pulled anywhere. apart: the fists' distance (m at 1.62 m) above which it counts as one-handed.
+const FB1 = { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() }, FB2 = { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vector3() };
+export function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
+  const R = fistFrame(bones, 'Right', FB1); if (!R) return false;
+  const L = fistFrame(bones, 'Left', FB2);
+  if (!L || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, 'Right', o, def, fit, {}, k);
+  const d = new THREE.Vector3().subVectors(L.c, R.c).normalize();
+  if (d.dot(_a.copy(R.a).add(L.a)) < 0) d.negate(); // (the barrel: the index-knuckle end of both fists)
+  const low = R.c.dot(d) < L.c.dot(d) ? R : L, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
+  const s = new THREE.Vector3(...def.shaft_axis).normalize(), r = new THREE.Vector3(...def.ref_axis); r.addScaledVector(s, -r.dot(s)).normalize();
+  _m1.makeBasis(s, r, new THREE.Vector3().crossVectors(s, r)); _m2.makeBasis(d, kn, new THREE.Vector3().crossVectors(d, kn));
+  applyFit(o, low.c, new THREE.Quaternion().setFromRotationMatrix(_m2.multiply(_m1.transpose())), fit, new THREE.Vector3(...def.grip_primary), 1, k);
+  return true;
+}
+
+// a rig with a weapon slot bone and no finger joints (KayKit's mannequin: handslotr / handslotl, where KayKit hangs its own
+// weapons): the weapon's grip_primary on the slot, its shaft along the slot's axis `along` (local, e.g. [0, 1, 0]), its
+// reference axis along `across`; then the fit
+export const SLOT_AXES = { along: [0, 1, 0], across: [0, 0, 1] };
+export function placeOnSlot(slot, o, def, fit, k = 1, axes = SLOT_AXES) {
+  if (!slot) return false;
+  slot.updateWorldMatrix(true, false);
+  const q = slot.getWorldQuaternion(new THREE.Quaternion()), d = new THREE.Vector3(...axes.along).applyQuaternion(q).normalize(), kn = new THREE.Vector3(...axes.across).applyQuaternion(q);
+  kn.addScaledVector(d, -kn.dot(d)).normalize();
+  const s = new THREE.Vector3(...def.shaft_axis).normalize(), r = new THREE.Vector3(...def.ref_axis); r.addScaledVector(s, -r.dot(s)).normalize();
+  _m1.makeBasis(s, r, new THREE.Vector3().crossVectors(s, r)); _m2.makeBasis(d, kn, new THREE.Vector3().crossVectors(d, kn));
+  applyFit(o, slot.getWorldPosition(new THREE.Vector3()), new THREE.Quaternion().setFromRotationMatrix(_m2.multiply(_m1.transpose())), fit, new THREE.Vector3(...def.grip_primary), 1, k);
+  return true;
+}
+
 // A two-handed handle (the fire axe): through the centres of BOTH fists, its head end chosen by `toward` (the game's
 // measured handle direction, render/clipchars.js batSocket / meleeSocket: which way the head points). When the hands part
 // (a one-handed follow-through) or the fists' line turns across `toward`, the handle eases onto `toward` and stays in

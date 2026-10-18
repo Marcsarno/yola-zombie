@@ -1,6 +1,19 @@
 {
  "_doc": "Weapon frames for the move viewer (moves.html). All vectors are in the model's own frame in metres: the GLB frame (glTF, +Y up) for files without prep, the prepAxe wrapper frame for the axe, the builder's frame for procedural weapons. grip_primary = where the primary hand's fist centre goes; shaft_axis = the primary hand's grip axis (pinky->index), unit; for melee weapons it points from the primary grip toward the business end; ref_axis = unit, perpendicular to shaft_axis: the striking face / edge for melee weapons, the saw top for the chainsaw, and toward the muzzle side for guns (guns also carry barrel_axis / up_axis, because their grip axis is not the barrel). The viewer puts ref_axis toward the fist's knuckle direction. Note: fistFrame's knuckle vector (Middle1 minus the finger-joint centroid) points mostly to the BACK of the hand, while a hammer or axe face in a natural one-handed chop points along the forearm (the punch direction), about 90 deg away; expect to need roll +/-90 for those (and per-clip roll for two-handed swings). primary_hand = which hand sits at grip_primary in the hold data sheets (tools/hold/weapons_hold.json). Measured from the GLBs by parsing the glTF node tree and mesh (2026-10-15).",
  "weapons": {
+  "alubat": {
+   "label": "Bat (hospital pack)",
+   "file": "assets/weapons/hospital/aluminum_bat.glb",
+   "hands": "one",
+   "primary_hand": "Right",
+   "grip_primary": [0.0, 0.0, 0.0],
+   "grip_secondary": [0.0, 0.093, 0.0],
+   "shaft_axis": [0.0, 1.0, 0.0],
+   "ref_axis": [1.0, 0.0, 0.0],
+   "length_m": 0.843,
+   "impact_point": [0.0, 0.655, 0.0],
+   "notes": "The Hospital Survivor Weapons pack's aluminum bat as delivered (assets/source/weapons_in, the user's pack from ChatGPT; copied unchanged to assets/weapons/hospital). Its own markers: GameGrip_R at the origin (the knob end of the grip), GameGrip_L 9.3 cm up the grip, ImpactPoint 65.5 cm up. GLB +Y runs along the bat; it is round, so ref_axis is free. Body -7.5..76.8 cm along Y, 6.2 cm across."
+  },
   "bat": {
    "label": "Bat",
    "builder": "makeBat",
