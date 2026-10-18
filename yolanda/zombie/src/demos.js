@@ -33,6 +33,9 @@ const DEMOS = {
   execute: { label: 'Finisher: perfect-dodge the pounce, then attack the glowing walker (Swap: each weapon)', weapon: 'bat', setup(sim) {
     for (const [x, z] of [[-1.6, -4.6], [2.4, -5.2]]) { const q = put(sim, x, z, 'normal', 0); q.pouncer = true; q.pounceCd = 0.5; }
   } },
+  // (2026-10-18, the user: "show me a player of the executions and the camera"): every weapon's finisher in turn, played by
+  // itself (the real beat: render/execution.js); the buttons pick one to repeat, or all of them again
+  finishers: { label: 'Finishers: every weapon in turn', weapon: 'bat', setup(sim, game) { showcase(sim, game); } },
   low: { label: 'Low targets: a crawler, a floored walker', weapon: 'axe', setup(sim) { const c = put(sim, 0.4, 0.6, 'normal'); c.crawling = true; c.broken = 'LowerLeg_L'; const k = put(sim, 1.6, 0.4, 'normal'); k.knockDown(0, 1, sim); } },
 };
 function put(sim, x, z, kind = 'normal', yaw = 0, prop) { const q = sim.spawnZombie('placed', { x, z, yaw, kind, prop }); q.set('chase'); return q; }
@@ -58,6 +61,49 @@ export function startDemos(game, name, auto) {
   setup();
 }
 
+// the finisher player: a walker stands in front of her glowing; she presses; the beat plays; the next weapon (SHOW order)
+const SHOW = ['bat', 'axe', 'crowbar', 'knife', 'sledgehammer', 'fists', 'pistol', 'shotgun'];
+const SHOW_LABEL = { bat: 'Bat', axe: 'Axe', crowbar: 'Crowbar', knife: 'Knife', sledgehammer: 'Sledgehammer', fists: 'Kick', pistol: 'Pistol', shotgun: 'Shotgun' };
+let showOnly = null, SH = null; // (SH: the player's state; the buttons reach the current one after a restart)
+function showcase(sim, game) {
+  let bar = document.getElementById('showBar');
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'showBar';
+    bar.style.cssText = 'position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:calc(100vw - 32px);font:600 12.5px system-ui;color:#fff;background:rgba(20,26,30,.8);padding:7px 9px;border-radius:10px';
+    const b = (k, t) => `<button data-w="${k}" style="font:600 12.5px system-ui;border:0;border-radius:7px;padding:5px 9px;cursor:pointer">${t}</button>`;
+    bar.innerHTML = '<span id="showNow" style="min-width:96px">…</span>' + b('all', 'All') + SHOW.map((w) => b(w, SHOW_LABEL[w])).join('');
+    bar.onclick = (e) => { const w = e.target.dataset?.w; if (!w) return; showOnly = w === 'all' ? null : w; if (SH) { SH.i = w === 'all' ? 0 : SHOW.indexOf(w); SH.state = 'next'; SH.t = 0; } };
+    document.body.appendChild(bar);
+  }
+  const S = (SH = { i: 0, state: 'next', t: 0, z: null });
+  const mark = () => { for (const el of bar.querySelectorAll('button')) { const on = el.dataset.w === (showOnly || 'all'); el.style.background = on ? '#ffb347' : '#e8ecec'; el.style.color = '#1b2222'; } };
+  mark();
+  game.scriptInput = (s, dt) => {
+    const r = { moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0, usePresses: 0, dodgePresses: 0 };
+    const sim = game.sim, p = sim.player;
+    S.t += dt;
+    if (S.state === 'next') { // a fresh walker 2.7 m in front of her, glowing; her weapon for this one
+      mark();
+      game.clearPieces?.(); sim.zombies = [];
+      const w = showOnly || SHOW[S.i % SHOW.length];
+      p.setLoadout([w, 'fists'], w); p.x = 0.4; p.z = 1.6; p.aimYaw = p.aimTarget = Math.PI; p.vx = p.vz = 0; p.px = p.x; p.pz = p.z;
+      const z = sim.spawnZombie('placed', { x: 0.55, z: -1.1, yaw: 0, passive: true, speedMul: 0 }); z.set('chase'); z.executable = sim.time + 99;
+      S.z = z; S.state = 'wait'; S.t = 0;
+      const now = document.getElementById('showNow'); if (now) now.textContent = SHOW_LABEL[w];
+      return r;
+    }
+    if (S.state === 'wait' && S.t > 0.9) { S.state = 'press'; S.t = 0; }
+    if (S.state === 'press') { // hold the attack toward it for a moment
+      const dx = S.z.x - p.x, dz = S.z.z - p.z, l = Math.hypot(dx, dz) || 1; r.aimX = dx / l; r.aimZ = dz / l;
+      if (S.t > 0.15) { S.state = 'play'; S.t = 0; }
+      return r;
+    }
+    if (S.state === 'play' && !S.z.alive && !game.execActive && S.t > 0.3) { S.state = 'rest'; S.t = 0; }
+    if (S.state === 'play' && S.t > 6) { S.state = 'next'; S.i++; } // (never stuck)
+    if (S.state === 'rest' && S.t > 1.1) { S.state = 'next'; S.i++; }
+    return r;
+  };
+}
 // &auto=1: she dodges a special attack at its moment and fights whatever is nearest (to watch a scene play out)
 function autoplay(sim) {
   const p = sim.player, r = { moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0, usePresses: 0, dodgePresses: 0 };
