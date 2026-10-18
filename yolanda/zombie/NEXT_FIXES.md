@@ -1,5 +1,12 @@
 # Next fixes (the user's notes, 2026-10-18, after playing the combat pass)
 
+STATUS 2026-10-18 evening (combat chat): deployed at fb7ff11; local commits since (not pushed): finishers (ed954a1..9702184).
+- Done: guard walk/turns + elbow-hinged torn arm, per-weapon blood, hospital zombies (IV, wheelchair, surgeon, bed patients with the
+  Animation Hub bed rise), solid shovable drip stands/wheelchairs, practice room on real surfaces + emergency light, finishers for
+  walkers (combat.html?mode=calm&demo=execute; Tuning > Finishers; no on-screen word "execution").
+- Next: guard and lady finishers; the pacing plan (https://claude.ai/artifact/6CPnvBMzobo6qKCQPjWxh7): mixed beds, objective-room
+  pressure, WC + janitor rooms, motivated spawns, acid rework, cheap lighting; shamblers at ~3x speed; deaths in chair/bed.
+
 STATUS 2026-10-18 (later the same day, commits fedf28e..3a5131c; pushed to GitHub and deployed to production at 20b51e4):
 - DONE 1 (ponytail: the UAL attack clips have no hair tracks; the mixer wrote NaN into Hair1's position: render/hairsway.js
   now restores the hair bones' rest place each frame), 2 (render/clipchars.js YolaView.headLook), 4 + 5 (the guard
