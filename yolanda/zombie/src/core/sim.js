@@ -174,8 +174,12 @@ export class Sim {
         const T = this.T, u = z.sprinting ? 1 : Math.min(1, z.spotT / (T.sprinterWindup ?? 0.7));
         return { z, kind: 'charge', special: true, u, now: z.sprinting && along > -0.2, soon: z.sprinting && along > -0.2 && along < 3.8, left: z.sprinting ? Math.max(0, along) / Math.max(1, z.spd) : 1 };
       }
-      if (!best && z.state === ZS.WINDUP && (z.attack === 'lunge' || z.attack === 'pounce') && d < ZATTACKS[z.attack].range + 1.2) best = { z, kind: z.attack, special: false, u: z.t / Math.max(0.05, z.stateDur), now: true, soon: false };
-      if (!best && (z.state === ZS.STRIKE || z.state === ZS.WINDUP) && (z.attack === 'pounce' || z.attack === 'dash') && d < 5) best = { z, kind: z.attack, special: false, u: 1, now: true, soon: false };
+      // (2026-10-18, the user: "I don't think all the basic zombies need attacks that need to be dodged.. they can just have
+      // basic attacks too"): a walker's lunge, scratch or pounce never brings up the dodge; the runner's dash rake does
+      if (!best && z.attack === 'dash' && (z.state === ZS.WINDUP || z.state === ZS.STRIKE) && d < 5.5) {
+        const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur);
+        best = { z, kind: 'dash', special: true, u, now: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, soon: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, left: z.state === ZS.STRIKE ? 0.1 : (1 - u) * z.stateDur };
+      }
     }
     return best;
   }

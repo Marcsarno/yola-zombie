@@ -99,13 +99,14 @@
   /* the dodge (2026-10-17), beside the swap button: shown (and pulsing) only while something dodgeable is coming */
   .actBtn { display: none; position: absolute; right: calc(112px + var(--sar)); width: 64px; height: 64px; border-radius: 50%; background: var(--panel); color: var(--ink, #fff);
     font: 800 12px/1 system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; box-shadow: 0 3px 10px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.12); touch-action: none; border: 0; }
-  #dodgeBtn { bottom: calc(31vh + 11px + var(--sab)); }
+  /* (2026-10-18, the user: "the dodge button needs to be more of an action button.. larger and center button on the phone") */
+  #dodgeBtn { width: 96px; height: 96px; right: auto; left: 50%; margin-left: -48px; bottom: calc(9vh + var(--sab)); font-size: 15px; }
   .actBtn.show { display: block; }
   /* (2026-10-18) a special enemy's big attack: the button pulses amber while it winds up, its ring filling toward the
      moment (--p), then flashes red and beats fast at the moment to dodge; the arrows are the sign over the attacker */
-  #dodgeBtn .dg { display: block; width: 30px; height: 16px; margin: 0 auto 3px; }
+  #dodgeBtn .dg { display: block; width: 44px; height: 24px; margin: 0 auto 4px; }
   #dodgeBtn::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; pointer-events: none; opacity: 0;
-    background: conic-gradient(#ffb21f calc(var(--p, 0) * 360deg), rgba(0,0,0,.35) 0); -webkit-mask: radial-gradient(circle, transparent 36px, #000 37px); mask: radial-gradient(circle, transparent 36px, #000 37px); }
+    background: conic-gradient(#ffb21f calc(var(--p, 0) * 360deg), rgba(0,0,0,.35) 0); -webkit-mask: radial-gradient(circle, transparent 52px, #000 53px); mask: radial-gradient(circle, transparent 52px, #000 53px); }
   #dodgeBtn.threat::before, #dodgeBtn.now::before { opacity: 1; }
   #dodgeBtn.now::before { background: conic-gradient(#fff 360deg, #fff 0); }
   .actBtn.show.threat { animation: actPulse .5s ease-in-out infinite alternate; }

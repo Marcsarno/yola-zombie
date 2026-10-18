@@ -42,8 +42,14 @@ export const TUNING_DEFAULTS = {
   zombieWindup: 0.62, // s: the lunge's wind-up (its telegraph: arms back, red wedge on the floor)
   scratchWindup: 0.42, // s: the scratch's quicker wind-up (used close in: under ~0.9 m)
   scratchDamage: 8,
-  sprinterWindup: 0.7, // s: the orderly plants, roars and squares up before a charge (the lane shows on the floor)
-  sprinterSpeed: 3.9, // m/s: the sprinter's charge (Yola runs 3.3)
+  // (2026-10-18, the user: "she doesn't run fast enough... it doesn't look like she builds up speed and charges. you need a
+  // moment to set up where you want her to charge... like the butcher in diablo 3"): a longer wind-up in which she tracks
+  // Yola, her line fixed sprinterLock s before she goes (the moment to place her charge), then a run that starts slow and
+  // builds (sprinterAccel m/s2) to sprinterSpeed, far faster than Yola
+  sprinterWindup: 1.35, // s: the big lady plants, roars and aims before a charge (the lane shows on the floor)
+  sprinterLock: 0.42, // s: the end of her wind-up with her line fixed (no more tracking: she goes where she aimed)
+  sprinterSpeed: 6.2, // m/s: her charge at full speed (Yola runs 3.3)
+  sprinterAccel: 4.3, // m/s2: how fast she builds up to it (from a slow start)
   sprinterTurn: 0.9, // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
   lookAhead: 1.3, // camera look-ahead toward aim (m)
   camPitch: 42, // degrees down from horizontal (Zombieville USA 3D-like diorama view)
@@ -52,11 +58,11 @@ export const TUNING_DEFAULTS = {
 };
 
 // bumped when defaults change, so tuning saved by an older build does not hide the new values
-export const TUNING_VERSION = 5;
+export const TUNING_VERSION = 6;
 // defaults changed since an older version: on load those keys go back to the new default (each version's list applies to
 // everything saved before it). 4: the melee hit-stop is off by default (a panel save from before round 16 kept 0.07: the
 // stutter the user felt on multi-target axe hits), the orderly's charge no longer steers.
-const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'], 5: ['legStrikeChance'] }; // (5: leg strikes a little rarer, 2026-10-18)
+const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'], 5: ['legStrikeChance'], 6: ['sprinterWindup', 'sprinterSpeed'] }; // (5: leg strikes a little rarer, 2026-10-18)
 export function makeTuning(saved) {
   if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) { saved = { ...saved }; for (let v = saved._v + 1; v <= TUNING_VERSION; v++) for (const k of CHANGED[v] || []) delete saved[k]; saved._v = TUNING_VERSION; }
   if (!saved || saved._v !== TUNING_VERSION) saved = null;

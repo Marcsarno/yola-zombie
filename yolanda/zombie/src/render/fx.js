@@ -58,6 +58,17 @@ function crackTexture() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
 
+// a soft round billow for the smoke sprites (lumpy edge, transparent falloff)
+function puffTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  for (let i = 0; i < 7; i++) {
+    const x = 32 + (Math.random() - 0.5) * 18, y = 32 + (Math.random() - 0.5) * 18, r = 14 + Math.random() * 12;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
 export class FX {
   constructor(scene) {
     this.scene = scene;
@@ -129,6 +140,11 @@ export class FX {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: crackTex, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
       m.rotation.x = -Math.PI / 2; m.visible = false; m.renderOrder = 1; scene.add(m); this.cracks.push({ m, t: 99 });
     }
+    // smoke / dust clouds (the guard's slam, 2026-10-18 the user: "impact smoke"): soft billows that rise a little, swell and
+    // thin out over a second or two (pooled sprites)
+    const puff = puffTexture();
+    this.puffs = [];
+    for (let i = 0; i < 28; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puff, color: 0xbdb3a2, transparent: true, depthWrite: false, opacity: 0 })); s.visible = false; scene.add(s); this.puffs.push({ s, t: 1, life: 1, vx: 0, vy: 0, vz: 0, s0: 1, s1: 2 }); }
     // hit flashes: a quick bright star where a blow lands (pooled sprites)
     const star = starTexture();
     this.hits = [];
@@ -204,9 +220,20 @@ export class FX {
     this.burst(x + (nx || 0) * 0.05, 1.3, z + (nz || 0) * 0.05, 7, 0xe8e0cc, 1.6, 1.0, 0.35, nx || 0, nz || 0);
     this.burst(x, 1.3, z, 3, 0xffd890, 2.4, 0.8, 0.12, nx || 0, nz || 0);
   }
-  ring(x, z, color) {
+  ring(x, z, color, k = 1) {
     const r = this.rings.find((q) => q.t >= 1) || this.rings[0];
-    r.m.position.set(x, 0.03, z); r.m.material.color.set(color); r.t = 0; r.m.visible = true;
+    r.m.position.set(x, 0.03, z); r.m.material.color.set(color); r.t = 0; r.k = k; r.m.visible = true;
+  }
+  // n billows of smoke / dust around (x, z), out to spread m, each size m across at the start and grow x as big, over life s
+  smoke(x, z, n, spread = 0.8, size = 0.7, grow = 2.6, life = 1.6, color = 0x857c6e, y = 0.45) {
+    for (let i = 0; i < n; i++) {
+      const p = this.puffs.find((q) => q.t >= 1) || this.puffs.reduce((a, b) => (a.t > b.t ? a : b));
+      const a = Math.random() * Math.PI * 2, r = spread * Math.sqrt(Math.random()), out = 0.5 + Math.random() * 0.8;
+      p.s.position.set(x + Math.cos(a) * r, y + size * 0.3 + Math.random() * 0.25, z + Math.sin(a) * r);
+      p.vx = Math.cos(a) * out; p.vz = Math.sin(a) * out; p.vy = 0.25 + Math.random() * 0.35;
+      p.s0 = size * (0.7 + Math.random() * 0.6); p.s1 = p.s0 * grow; p.life = life * (0.7 + Math.random() * 0.6); p.t = 0;
+      p.s.material.color.set(color); p.s.material.rotation = Math.random() * Math.PI * 2; p.s.visible = true;
+    }
   }
 
   trailPush(hands, tip, active) {
@@ -226,7 +253,13 @@ export class FX {
     if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.flash.visible = false; }
     this.flashLight.intensity = Math.max(0, this.flashLight.intensity - dt * 120);
     for (const t of this.tracers) if (t.t > 0) { t.t -= dt; t.m.material.opacity = Math.max(0, t.t / 0.07) * 0.5; if (t.t <= 0) t.m.visible = false; }
-    for (const r of this.rings) if (r.t < 1) { r.t += dt / 0.28; const s = 0.6 + r.t * 1.6; r.m.scale.set(s, s, s); r.m.material.opacity = (1 - r.t) * 0.7; if (r.t >= 1) r.m.visible = false; }
+    for (const r of this.rings) if (r.t < 1) { r.t += dt / (0.28 * Math.sqrt(r.k || 1)); const s = (0.6 + r.t * 1.6) * (r.k || 1); r.m.scale.set(s, s, s); r.m.material.opacity = (1 - r.t) * 0.7; if (r.t >= 1) r.m.visible = false; }
+    for (const p of this.puffs) if (p.t < 1) {
+      p.t += dt / p.life; const u = Math.min(1, p.t), slow = Math.exp(-u * 3);
+      p.s.position.x += p.vx * slow * dt; p.s.position.y += p.vy * dt; p.s.position.z += p.vz * slow * dt;
+      p.s.scale.setScalar(p.s0 + (p.s1 - p.s0) * (1 - (1 - u) * (1 - u))); p.s.material.opacity = Math.min(1, u / 0.06) * Math.pow(1 - u, 1.2) * 0.8;
+      if (p.t >= 1) p.s.visible = false;
+    }
     // particles
     let k = 0;
     for (let i = 0; i < MAX_P; i++) {

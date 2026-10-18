@@ -4,15 +4,23 @@
 // ↺ button (or R) sets it up again. You play it yourself; &auto=1 lets Yola dodge on her own at the moment and fight
 // back, to watch it. Names: slam1, slam2, dismember, charger, kipup, ladykip, walkers, runner, floor, low.
 const DEMOS = {
-  slam1: { label: 'Guard: the first slam (dodge: the shield sticks, cracked)', weapon: 'bat', setup(sim) { const z = guard(sim, -0.4); z.slamCd = 0; } },
-  slam2: { label: 'Guard: the second slam (the shield shatters)', weapon: 'pistol', setup(sim) { const z = guard(sim, -0.4); z.slamCd = 0; z.slams = 1; z.shieldHp = z.shieldMax * 0.3; z.hp = z.maxHp * 0.3; } },
-  dismember: { label: 'Guard after the break: arm, arm, head', weapon: 'pistol', setup(sim) { const z = guard(sim, -2.0); z.slams = 2; z.shieldHp = 0; z.hp = z.maxHp * 0.55; z.attackCd = 2; } },
+  slam1: { label: 'Guard: the slam (dodge it: the shield sticks for good)', weapon: 'bat', setup(sim) { const z = guard(sim, -0.4); z.slamCd = 0; } },
+  tear: { label: 'Guard: stuck shield, his arm tears off, the flail, then his arm as a club', weapon: 'pistol', setup(sim) { const z = put(sim, -1.2, -0.4, 'guard', Math.PI / 2); z.attackCd = 0; z.slamShield(sim); } },
   charger: { label: 'The big lady charges (dodge left/right)', weapon: 'pistol', setup(sim) { const z = put(sim, 0.4, -5.6, 'sprinter'); z.attackCd = 0; } },
   kipup: { label: 'Yola knocked flat: the kip-up', weapon: 'bat', setup(sim) { const z = guard(sim, -0.2); z.slamCd = 0; sim.demoNoDodge = true; } },
   ladykip: { label: 'The lady trips into the wall: her kip-up', weapon: 'pistol', setup(sim) { const p = sim.player; p.z = 10.05; const z = put(sim, 0.4, 2.6, 'sprinter'); z.attackCd = 0; } },
   walkers: { label: 'Walkers: the ring, its pounces, the scratch', weapon: 'bat', setup(sim) { for (let i = 0; i < 6; i++) { const a = Math.PI + (i / 5 - 0.5) * 2.4; put(sim, 0.4 + Math.sin(a) * 6, 1.0 + Math.cos(a) * 6, 'normal', a + Math.PI); } sim.player.z = 1.0; } },
   runner: { label: 'The orange runner: the dash rake', weapon: 'bat', setup(sim) { put(sim, 0.4, -5.5, 'runner'); } },
   floor: { label: 'Out of the floor: the breach', weapon: 'pistol', setup(sim) { sim.spawnFromFloor(-0.8, -1.6, { look: 'patient' }); sim.spawnFromFloor(2.2, -0.6, { kind: 'runner' }); } },
+  // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") a
+  // lineup, left to right: her own blue, the runner's orange, then the new colours (main.js SCRUBS)
+  nurses: { label: 'Nurse scrubs: blue · orange · navy · wine · surgical green · plum · charcoal', weapon: 'bat', setup(sim, game) {
+    const keys = [null, 'orange', 'navy', 'wine', 'surgical', 'plum', 'charcoal'];
+    const zs = keys.map((k, i) => { const z = sim.spawnZombie('placed', { x: -3.3 + i * 1.1, z: -0.4, yaw: 0, passive: true, speedMul: 0 }); z.look = 'nurse'; z.scrubs = k; return z; });
+    sim.player.z = 3.6;
+    const paint = () => { let ok = true; for (const z of zs) { const v = game.zviews.get(z.id); if (v) game.scrubs(v, z.scrubs); else ok = false; } if (!ok) setTimeout(paint, 100); };
+    setTimeout(paint, 100);
+  } },
   low: { label: 'Low targets: a crawler, a floored walker', weapon: 'axe', setup(sim) { const c = put(sim, 0.4, 0.6, 'normal'); c.crawling = true; c.broken = 'LowerLeg_L'; const k = put(sim, 1.6, 0.4, 'normal'); k.knockDown(0, 1, sim); } },
 };
 function put(sim, x, z, kind = 'normal', yaw = 0) { const q = sim.spawnZombie('placed', { x, z, yaw, kind }); q.set('chase'); return q; }
@@ -29,7 +37,7 @@ export function startDemos(game, name, auto) {
     const sim = game.sim, p = sim.player;
     sim.director.update = () => {}; sim.zombies = []; sim.T.testInfiniteHealth = true;
     p.x = 0.4; p.z = 2.2; p.aimYaw = p.aimTarget = Math.PI; p.setLoadout([D.weapon, 'pistol', 'shotgun', 'bat', 'axe', 'fists'].filter((w, i, a) => a.indexOf(w) === i), D.weapon);
-    D.setup(sim);
+    D.setup(sim, game);
     p.px = p.x; p.pz = p.z; game.yola.reset(p.x, p.z, p.aimYaw);
     if (auto) game.scriptInput = (s) => autoplay(s, game);
   };

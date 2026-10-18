@@ -146,16 +146,27 @@ const ZOMBIE_TYPES = [
   // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
   // bed-panel shield is modelled). Not modular: no limbs come off them yet.
   { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb', 'assets/zombie_moves/sprinter-b.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
-  { file: 'assets/zombie-guard.glb', extra: ['assets/zombie_moves/guard.glb'], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
+  { file: 'assets/zombie-guard.glb', extra: ['assets/zombie_moves/guard.glb', 'assets/zombie_moves/guard-b.glb'], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
   // the runner (2026-10-18, the user: "an orange-clothed variant of the existing nurse zombie ... the faster enemy"): the
   // nurse's own model and clips, her blue scrubs turned orange at load (orangeScrubs), core/zombies.js KINDS.runner
   { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true },
 ];
-// her scrubs' blue (hue ~165-250) turned safety orange, the rest of the texture (skin, hair, blood) untouched; once per map
-const _orangeMaps = new Map();
-function orangeScrubs(tex) {
-  if (!tex?.image) return tex;
-  if (_orangeMaps.has(tex)) return _orangeMaps.get(tex);
+// her scrubs' blue (hue ~165-250) recoloured, the rest of the texture (skin, hair, blood) untouched; once per map and recipe.
+// (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") H: the new
+// hue, s: saturation (null: the original's, boosted), l: [scale, add, max] on the lightness (folds and shading survive)
+const SCRUBS = {
+  orange: { H: 22, s: null, l: [0.92, 0.04, 0.62] },   // the runner's safety orange
+  navy: { H: 224, s: 0.55, l: [0.42, 0.02, 0.32] },     // charge nurse navy
+  wine: { H: 346, s: 0.58, l: [0.55, 0.03, 0.40] },     // theatre wine
+  surgical: { H: 158, s: 0.32, l: [0.78, 0.06, 0.55] }, // surgical green
+  plum: { H: 286, s: 0.28, l: [0.72, 0.06, 0.50] },     // paediatric plum
+  charcoal: { H: 210, s: 0.06, l: [0.40, 0.03, 0.30] }, // agency charcoal
+};
+const _scrubMaps = new Map();
+function scrubsTexture(tex, key) {
+  const R = SCRUBS[key];
+  if (!tex?.image || !R) return tex;
+  const ck = key + ':' + tex.uuid; if (_scrubMaps.has(ck)) return _scrubMaps.get(ck);
   const img = tex.image, c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
   const g = c.getContext('2d'); g.drawImage(img, 0, 0);
   const id = g.getImageData(0, 0, c.width, c.height), d = id.data;
@@ -164,16 +175,20 @@ function orangeScrubs(tex) {
     if (dl < 0.06 || mx < 0.06) continue;
     let h = mx === r ? ((gg - b) / dl) % 6 : mx === gg ? (b - r) / dl + 2 : (r - gg) / dl + 4; h = (h * 60 + 360) % 360;
     if (h < 165 || h > 250) continue;
-    const l = (mx + mn) / 2, s = Math.min(1, (dl / (1 - Math.abs(2 * l - 1) || 1)) * 1.6 + 0.2), H = 22 + (h - 205) * 0.12, L = Math.min(0.62, l * 0.92 + 0.04);
-    const C = (1 - Math.abs(2 * L - 1)) * s, X = C * (1 - Math.abs(((H / 60) % 2) - 1)), m = L - C / 2; // (H stays within 0-60: red-orange)
-    d[i] = (C + m) * 255; d[i + 1] = (X + m) * 255; d[i + 2] = m * 255;
+    const l = (mx + mn) / 2, s = R.s ?? Math.min(1, (dl / (1 - Math.abs(2 * l - 1) || 1)) * 1.6 + 0.2);
+    const H = (R.H + (h - 205) * 0.12 + 360) % 360, L = Math.min(R.l[2], l * R.l[0] + R.l[1]);
+    const C = (1 - Math.abs(2 * L - 1)) * s, X = C * (1 - Math.abs(((H / 60) % 2) - 1)), m = L - C / 2, k6 = Math.floor(H / 60) % 6;
+    const [rr, g2, bb] = [[C, X, 0], [X, C, 0], [0, C, X], [0, X, C], [X, 0, C], [C, 0, X]][k6];
+    d[i] = (rr + m) * 255; d[i + 1] = (g2 + m) * 255; d[i + 2] = (bb + m) * 255;
   }
   g.putImageData(id, 0, 0);
   const t = new THREE.CanvasTexture(c);
   for (const k of ['flipY', 'colorSpace', 'wrapS', 'wrapT', 'channel', 'anisotropy']) t[k] = tex[k];
-  t.needsUpdate = true; _orangeMaps.set(tex, t);
+  t.needsUpdate = true; _scrubMaps.set(ck, t);
   return t;
 }
+const orangeScrubs = (tex) => scrubsTexture(tex, 'orange');
+function setScrubs(view, key) { view.model.traverse((o) => { if (o.isMesh && o.material?.map) { o.userData.baseMap ??= o.material.map; o.material.map = key ? scrubsTexture(o.userData.baseMap, key) : o.userData.baseMap; o.material.needsUpdate = true; } }); }
 // (extra: clips retargeted onto each type's own skeleton: the scratch, tools/anim/zombie_clip.py; the Quaternius UAL zombie
 // walks, run, bite and hit flinches, tools/anim/test_zombie_clips.py, UAL_PACKS.md)
 const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.kind === 'runner' ? 4 : z.look === 'nurse' ? 0 : z.look === 'patient' ? 1 : z.id % 2);
@@ -526,7 +541,7 @@ function runFrame(dt, doRender = true) {
     cueState.key = key;
   }
   // the guard heaving at his shield, lodged in the floor: a grinding creak every heave
-  for (const z of sim.zombies) if (z.state === 'stuck' && Math.floor((z.t + 0.2) / 0.55) !== Math.floor((z.t + 0.2 - animDt) / 0.55)) { cue(audio, 'heave', 0.9); shake(0.06); }
+  for (const z of sim.zombies) if (z.state === 'stuck' && Math.floor((z.t + 0.2) / 0.5) !== Math.floor((z.t + 0.2 - animDt) / 0.5)) { const g = Math.min(1, z.t / Math.max(0.5, z.stateDur)); cue(audio, 'heave', 0.7 + g * 0.5); shake(0.05 + g * 0.08); fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.06, z.z + Math.cos(z.yaw) * 0.75, 5 + Math.round(g * 8), 0x8a8172, 1.2, 0.5, 0.35); } // (each heave at his planted shield: the floor creaks and puffs, harder each time)
   const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
   const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
   const a = p.action;
@@ -676,12 +691,29 @@ function handleEvents() {
       case 'zombieBump': audio.play('bump', Math.min(1.2, e.speed / 3)); break;
       case 'zombieKnockdown': audio.play('knockdown'); break;
       case 'sprinterSpot': if (dist(e.id) < 14) audio.play('groan', 1.5); break; // her scream before the charge (the warning cue: the threat sign)
+      case 'sprinterLock': if (dist(e.id) < 14) { cue(audio, 'warn', 1.2); const z = sim.zombies.find((q) => q.id === e.id); if (z) fx.burst(z.x, 0.05, z.z, 10, 0xcfc6b4, 1.6, 0.3, 0.4, -Math.sin(z.yaw), -Math.cos(z.yaw)); } break; // (her line is fixed: she paws the floor, a kick of dust behind her)
       case 'zombieTumble': audio.play('knockdown'); if (dist(e.id) < 8) shake(0.15); break;
       case 'sprinterHit': audio.play('bump', 1.2); shake(0.5); break; // her charge ran into Yola
-      case 'zombieSlam': { const d = Math.hypot(e.x - p.x, e.z - p.z); audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xd8cfbf); fx.burst(e.x, 0.1, e.z, 22, 0xcfc6b4, 2.6, 0.9, 0.7); fx.burst(e.x, 0.05, e.z, 10, 0x6f6658, 3.2, 0.5, 0.5); if (d < 8) shake(1.0 - d * 0.1); if (shakeOn) camState.vz += 1.2 * tuning.shake; break; } // the guard's smash: dust, grit, a ring, the floor shakes and the view drops
+      // the guard's slam (2026-10-18, the user: "a visual effect of the guard on launch, and a strong visual effect for when he
+      // impacts the ground.. and small screen shake.. cracks on the ground around him and the shield... and impact smoke"):
+      // the launch kicks up a ring of dust at his feet; the impact throws a shockwave ring, tile grit and dust, a cloud of smoke
+      // that billows out and hangs, cracks round the shield and under his feet, a short hit-pause and a small shake
+      case 'guardLaunch': { audio.play('swing', 0.8, e); fx.burst(e.x, 0.06, e.z, 16, 0xcfc6b4, 2.2, 0.35, 0.45); fx.smoke(e.x, e.z, 5, 0.35, 0.45, 2.2, 0.9); fx.ring(e.x, e.z, 0xd8cfbf, 0.6); break; }
+      case 'zombieSlam': {
+        const d = Math.hypot(e.x - p.x, e.z - p.z), gz = sim.zombies.find((q) => q.id === e.id);
+        audio.play('knockdown', 1.4, e); fx.ring(e.x, e.z, 0xffffff, 1.7); fx.ring(e.x, e.z, 0xd8cfbf, 1.1);
+        fx.burst(e.x, 0.1, e.z, 30, 0xcfc6b4, 3.2, 1.1, 0.8); fx.burst(e.x, 0.05, e.z, 16, 0x6f6658, 3.8, 0.9, 0.6); fx.burst(e.x, 0.3, e.z, 8, 0xe9e2d2, 4.5, 2.2, 0.55);
+        fx.smoke(e.x, e.z, 11, 1.0, 1.0, 3.2, 2.4);
+        if (gz) fx.floorCrack(gz.x, gz.z, 0.9); // (under his feet: the leap's landing)
+        hitPauseT = Math.max(hitPauseT, 0.06);
+        if (d < 8) shake(Math.max(0.15, 0.45 - d * 0.04)); if (shakeOn) camState.vz += 0.5 * tuning.shake;
+        break;
+      }
       case 'floorRumble': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'rumble', Math.max(0.3, 1 - d / 14)); fx.floorCrack?.(e.x, e.z, 0.75); fx.burst(e.x, 0.05, e.z, 8, 0x9a948a, 0.8, 0.4, 0.9); if (d < 9) shake(0.12); break; } // the floor about to break: a crack, grit, a rumble (an emerging zombie: core/sim.js spawnFromFloor)
       case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 18, 0xd9cdb2, 2.6, 1.6, 0.7); fx.burst(e.x, 0.1, e.z, 14, 0x6f6a62, 2.0, 1.2, 0.9); if (d < 9) shake(0.3); break; }
-      case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.0); hud.popup('SHIELD CRACKED'); break; // (his shield driven into the floor: render/fx.js floorCrack)
+      case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.5); hud.popup('SHIELD STUCK'); break; // (his shield driven into the floor for good: render/fx.js floorCrack)
+      case 'guardArmTorn': cue(audio, 'free'); audio.play('sever'); shake(0.45); hitPauseT = Math.max(hitPauseT, 0.09); hud.popup('ARM TORN OFF'); break; // (the last heave: his arm stays on the shield)
+      case 'guardClub': cue(audio, 'heave', 1.2); break; // (he pulls his arm off the shield's grip: a club now)
       case 'shieldFree': { const z = sim.zombies.find((q) => q.id === e.id); cue(audio, 'free'); if (z) fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.1, z.z + Math.cos(z.yaw) * 0.75, 14, 0x8a8172, 2.4, 0.9, 0.5); break; }
       case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
       case 'dodge': audio.play('swing', 0.75); break;
@@ -886,6 +918,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });
