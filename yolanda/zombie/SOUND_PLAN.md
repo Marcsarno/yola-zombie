@@ -5,6 +5,33 @@ This chat (started 2026-10-17) works ONLY on game sound and sound effects. Files
 (commit bundles via `sh tools/clean_dist.sh`). The opening's own audio (`src/opening/opaudio.js`) belongs to the
 opening chat; `src/music.js` stays as it is (the user: one steady music level).
 
+## START HERE (saved 2026-10-18, paused by the user — "save our progress and continue later")
+
+**Where it stands:** Phase 0 (engine) and Phase 1 (guns) are done; the Sound Board (`/zombie/sounds.html`) holds
+470 takes across Weapons / Zombies / World / Coming next; 67 of 737 choices reviewed so far. Everything is committed
+on `opening-reveal` (last sound commit f9aa234); NOT deployed, NOT pushed (the push needs the user's OK to scrub the
+Kevin Iglesias file from history first — see the grips/opening handoffs).
+
+**Open the board:** start this chat's server (`.claude/launch.json` "yolanda-sound", port 5177; if 5177 is already
+taken, an old copy of the same server is running and works), then http://localhost:5177/zombie/sounds.html — or on
+the phone http://<PC's LAN IP>:5177/zombie/sounds.html (it printed 10.0.0.131). The user's choices live in
+`assets/sfx/selection.json` (autosaved by the board): read it, notes included, before touching any sound.
+
+**Waiting on the user (first thing to ask when they're back):**
+1. Does ■ Stop / Esc now stop for them? (f9aa234 made it stop every voice, swap the buses, pause the context briefly
+   and stop other board tabs; it always worked in our Chrome tests, so if not: ask which browser / phone and what
+   was playing.)
+2. Their review of the zombie round (idle, alert, wind-up, bite, hurt, death; sprinter; guard boss; horde; floor
+   breach) and the remaining gun / melee / foley candidates.
+3. Whether to download the Sonniss GDC 2026 bundle (5 parts, ~7.5 GB, royalty-free) for pro-grade boss/impact/gore
+   sounds — declined twice so far ("not yet").
+
+**Next after their review:** rework what they rejected or noted; check the sprinter + guard sounds in a real fight
+(the practice room only has normal zombies — find the mode/level with them); wire the "Coming next" sounds
+(footsteps, door close, glass, weapon swap, pickup, far horde) to game events (Phase 2-5); later phases: Yola's
+efforts/pain voice (Runway/ElevenLabs Niki rules below), ambience beds per floor, the final mix pass on phone +
+headphones.
+
 ## Why it sounds weak today (diagnosis)
 
 1. **Every effect is synthesised** from white noise and sine/saw oscillators (`src/audio.js`, ~40 sounds). No recorded
