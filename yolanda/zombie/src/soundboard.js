@@ -11,6 +11,7 @@ import { SELECTION_URL } from './sfx/samples.js';
 const $ = (id) => document.getElementById(id);
 const store = { get(k, d) { try { const v = localStorage.getItem('soundboard_' + k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('soundboard_' + k, JSON.stringify(v)); } catch { /* private window */ } } };
 const audio = new CombatAudio();
+window.soundBoard = { audio }; // (for checking the board from the console)
 // the sounds with an old synthesised version (audio.js synth cases, or an alias to one): the rest are silent until picked
 const CLASSIC = new Set([...String(audio.synth).matchAll(/case '(\w+)'/g)].map((m) => m[1]));
 const hasClassic = (n) => CLASSIC.has(SYNTH_ALIAS[n] || n);
@@ -36,6 +37,11 @@ function setupBoardAudio() {
   hp1.connect(hp2); hp2.connect(pk); pk.connect(lp); lp.connect(c.destination);
   audio._phone = hp1;
   audio.spatial = () => ({ pan, d: dist });
+  // every voice the board starts (recorded takes, synth tones and noise), so Stop can end each one by name
+  for (const m of ['createBufferSource', 'createOscillator']) {
+    const make = c[m].bind(c);
+    c[m] = (...a) => { const n = make(...a); live.add(n); n.addEventListener('ended', () => live.delete(n)); return n; };
+  }
   applyPhone(); applyRoom();
 }
 function applyPhone() {
@@ -70,12 +76,22 @@ function classic(name) { withAudio(() => { audio.recent.clear(); audio.setModern
 function solo(name, li, f) { withAudio(() => { audio.playBank(name, 1, audio.ctx.currentTime, sp(), { only: li, forceLayer: li, force: f }); playhead(name, li, f); }); }
 function layerOnce(name, li) { withAudio(() => audio.playBank(name, 1, audio.ctx.currentTime, sp(), { only: li })); }
 // Stop (Esc): every sound now playing or scheduled, any audition in progress
-function stopAll() {
+// (three ways at once, so it holds on every browser: each voice stopped, the buses swapped out from under anything left,
+// and a brief pause of the whole context as a backstop; then every other open board tab is told to stop too)
+const live = new Set();
+let bc = null; try { bc = new BroadcastChannel('soundboard'); bc.onmessage = (e) => { if (e.data === 'stop') stopAll(false); }; } catch { /* old browser */ }
+function stopAll(tell = true) {
   for (const id of timers) clearTimeout(id); timers = [];
   queue = null; document.querySelectorAll('.take.now').forEach((r) => r.classList.remove('now'));
-  head = null; audio.resetVoices?.();
+  head = null;
+  for (const n of live) { try { n.stop(); } catch { /* not started yet or already ended */ } try { n.disconnect(); } catch { /* ignore */ } }
+  live.clear();
+  audio.resetVoices?.();
   if (audio.reverbIn) applyRoom();
+  const c = audio.ctx;
+  if (c && c.state === 'running') c.suspend().then(() => setTimeout(() => c.resume().catch(() => {}), 60)).catch(() => {});
   $('stop').classList.remove('live');
+  if (tell) bc?.postMessage('stop');
 }
 
 // ---------- the playhead: a line across the waveform of the take playing ----------
@@ -427,7 +443,7 @@ $('pan').oninput = (e) => { pan = +e.target.value; };
 $('dist').oninput = (e) => { dist = +e.target.value; $('distV').textContent = dist + ' m'; };
 $('vol').oninput = (e) => audio.setVolume(+e.target.value);
 $('save').onclick = save;
-$('stop').onclick = stopAll;
+$('stop').onclick = () => stopAll();
 $('undo').onclick = undo; $('undo').disabled = true;
 $('autosave').checked = store.get('autosave', true);
 $('autosave').onchange = (e) => { store.set('autosave', e.target.checked); if (e.target.checked && dirty) save(); };
