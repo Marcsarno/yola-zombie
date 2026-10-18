@@ -225,7 +225,7 @@ export class FX {
     this.flash.position.copy(pos); this.flash.visible = true; this.flashT = 0.055 * Math.sqrt(k);
     this.flash.scale.setScalar(0.42 * k);
     this.flash.material.rotation = Math.random() * Math.PI;
-    this.flashLight.position.copy(pos); this.flashLight.intensity = 6 * k;
+    this.flashLight.position.copy(pos); this.flashLight.distance = 4; this.flashLight.color.setHex(0xffc070); this.flashLight.intensity = 6 * k; // (reach and colour back: the shotgun and the finishers change them)
     if (k > 1.2) this.burst(pos.x, pos.y, pos.z, 6, 0xb8b4ac, 0.9, 0.4, 0.5); // smoke
   }
 

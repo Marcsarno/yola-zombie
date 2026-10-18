@@ -38,6 +38,7 @@ import { cue } from './sfx/cues.js';
 import { SlowMotion } from './render/slowmo.js';
 import { ExecDirector } from './render/execution.js';
 import { Atmos } from './render/atmos.js';
+import { LightKit } from './render/lightkit.js';
 import { setupLibWeapons } from './render/libweapons.js';
 import { startDemos } from './demos.js';
 
@@ -73,7 +74,7 @@ function resize() {
   camera.aspect = w / h; camera.updateProjectionMatrix();
   looks?.setSize();
 }
-let looks = null, atmos = null; // lighting looks (render/looks.js): the ☀ button cycles them
+let looks = null, atmos = null, lightkit = null; // lighting looks (render/looks.js): the ☀ button cycles them
 addEventListener('resize', resize); resize();
 
 // ---------- systems ----------
@@ -210,6 +211,8 @@ async function load() {
   hud.loading(0);
   arena = new Arena(scene, resolvedQuality(), renderer);
   atmos = new Atmos(scene, fx, arena); // (the lighting upgrades, each switchable: render/atmos.js, demo=lighting)
+  lightkit = new LightKit(scene, fx, arena, tuning.camYaw); // (the plan's picked upgrades: render/lightkit.js)
+  ZombieView.eyeCfg.light = (x, z) => lightkit.lightAt(x, z);
   looks = new Looks(renderer, scene, camera); looks.set(store.get('look', 'standard'));
   document.getElementById('lookBtn')?.addEventListener('click', () => {
     const i = (LOOKS.findIndex(([k]) => k === looks.key) + 1) % LOOKS.length, [k, label] = LOOKS[i];
@@ -628,6 +631,14 @@ function runFrame(dt, doRender = true) {
   if (debugOn) updateDebug(p);
   hud.update(sim, dt);
   atmos?.update(dt, sim, ix, iz, iyaw);
+  if (lightkit) {
+    lightkit.screensMat = screens.mat;
+    lightkit.torch = atmos?.on.torch ? { x: ix, z: iz, fx: Math.sin(iyaw), fz: Math.cos(iyaw) } : null;
+    const kv = []; for (const [id, v] of zviews) { const z = sim.zombies.find((q) => q.id === id); if (z) kv.push({ z, view: v, blob: v.blob }); }
+    lightkit.update(dt, sim, kv, yola);
+    if (lightkit.on.room || yola.roomTintWas) { const t = lightkit.on.room ? yola.roomTint : null; yola.roomTintWas = !!t; yola.model.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.emissive) { if (t) m.emissive.copy(t); else m.emissive.setRGB(0, 0, 0); } }); }
+    looks.setDrain?.(1 - p.hp / Math.max(1, p.maxHp));
+  }
   execLook(animDt, dt);
   if (doRender) looks.render();
 }
@@ -656,7 +667,7 @@ function handleEvents() {
     switch (e.type) {
       case 'shot': {
         audio.play('shot');
-        fx.muzzle(yola.muzzleWorld);
+        fx.muzzle(yola.muzzleWorld); lightkit?.onShot(e, p, false); // (after the muzzle: the kit may push the flash further)
         fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez, 0.5, e.ey);
         if (e.hit === 'zombie' && !e.blocked) { if (e.ey != null) fx.burst(e.ex, e.ey, e.ez, 4, 0x5a1414, 1.8, 0.8, 0.45); else fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); fx.bloodHit('pistol', e.ex, e.ey ?? 1.15, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), e.killed ? 1.4 : 1); audio.play('bulletHit', 1, { x: e.ex, z: e.ez }); if (!e.killed) audio.play('zombieHurt', 1, { x: e.ex, z: e.ez }); } // (a round on the guard's shield: its own knock, no blood)
         else if (e.hit === 'wall') { fx.impactWall(e.ex, e.ez, e.nx, e.nz); audio.play('ricochet', 1, { x: e.ex, z: e.ez }); }
@@ -666,7 +677,7 @@ function handleEvents() {
       case 'shotgun': {
         audio.play('shotgun');
         const mw = yola.muzzleWorld;
-        fx.muzzle(mw, 1.8);
+        fx.muzzle(mw, 1.8); { const mid = e.pellets?.[e.pellets.length >> 1]; lightkit?.onShot({ ...(mid || {}), yaw: e.yaw }, p, true); }
         let flesh = 0; const bled = new Set(); // (one wet cone per body, however many pellets)
         for (const pl of e.pellets) {
           fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6, pl.ey);
@@ -1019,6 +1030,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get atmos() { return atmos; }, get fx() { return fx; }, get execActive() { return execDir.active; }, clearPieces() { ZombieView.clearPieces(); gibs.clear(); }, get looseMeshes() { return ZombieView.looseMeshes; }, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get atmos() { return atmos; }, get lightkit() { return lightkit; }, ZombieView, get fx() { return fx; }, get execActive() { return execDir.active; }, clearPieces() { ZombieView.clearPieces(); gibs.clear(); }, get looseMeshes() { return ZombieView.looseMeshes; }, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });

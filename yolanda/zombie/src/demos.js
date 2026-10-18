@@ -1,4 +1,6 @@
 import { ATMOS } from './render/atmos.js';
+import { LIGHTKIT } from './render/lightkit.js';
+import { MOODS } from './render/looks.js';
 // Repeatable examples (2026-10-18, the user: "show short, repeatable examples of the first shield slam, second-slam break,
 // post-break dismemberment, charger dodge, get-ups, and walker lunges ... check them in the actual Three.js game").
 // combat.html?mode=calm&demo=<name>: the practice room with only that scene in it, set up the same way every time; the
@@ -78,16 +80,33 @@ function lightingLab(sim, game) {
   const row = ([k, label]) => `<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" data-k="${k}" ${A?.on[k] ? 'checked' : ''}><span>${label}</span></label>`;
   el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px"><span>Lighting</span><span id="labMs" style="font:600 11.5px ui-monospace,monospace;color:#ffcf8a">…</span></div>'
     + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747;margin-bottom:3px"><input type="checkbox" id="labRoom"><span><b>Whole room view</b></span></label>'
-    + ATMOS.map(row).join('')
+    + '<div style="font-weight:700;margin:2px 0 2px;color:#ffcf8a">Plan upgrades</div>' + LIGHTKIT.map(row).join('')
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">G · Floor mood <select id="labMood"><option value="">off</option>' + Object.keys(MOODS).filter((k) => k !== 'none').map((k) => '<option>' + k + '</option>').join('') + '</select></label>'
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer"><input type="checkbox" id="labFilm"><span>H · Film finish (grain, vignette, colour drains with health)</span></label>'
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0">Eye colour <select id="labEye"><option value="ffd890">gold</option><option value="ff3a2a">red</option><option value="b8ff6a">green</option><option value="e8f4ff">white</option></select></label>'
+    + '<label style="display:flex;gap:7px;align-items:center;padding:3px 0 6px;cursor:pointer;border-bottom:1px solid #3a4747"><input type="checkbox" id="labShadows" checked><span>Real shadows (off = phone low tier)</span></label>'
+    + '<div style="font-weight:700;margin:4px 0 2px;color:#ffcf8a">Lab effects</div>'
+    + ATMOS.filter((a) => a[0] !== 'tubes').map(row).join('')
     + '<div style="display:flex;gap:6px;margin:6px 0"><button data-a="all">All on</button><button data-a="none">All off</button><button data-a="hit">Big hit</button></div>'
     + '<div id="labWhat" style="color:#c9d6d4;border-top:1px solid #3a4747;padding-top:6px">Tick one to see it. Walk Yola through the blood, kill the walkers by the walls, try Big hit.</div>';
   for (const b of el.querySelectorAll('button')) b.style.cssText = 'font:600 11.5px system-ui;border:0;border-radius:6px;padding:4px 7px;cursor:pointer;background:#e8ecec;color:#1b2222';
   document.body.appendChild(el);
-  const what = (k) => { const a = ATMOS.find((q) => q[0] === k); if (a) el.querySelector('#labWhat').innerHTML = `<b>${a[1]}</b><br>${a[2]}<br><span style="color:#9fb2af">Cost: ${a[3]}</span>`; };
-  el.addEventListener('change', (e) => { if (e.target.id === 'labRoom') { roomView(game, e.target.checked); return; } const k = e.target.dataset?.k; if (!k) return; A?.set(k, e.target.checked); if (e.target.checked) what(k); });
+  const what = (k) => { const a = ATMOS.find((q) => q[0] === k) || LIGHTKIT.find((q) => q[0] === k); if (a) el.querySelector('#labWhat').innerHTML = `<b>${a[1]}</b><br>${a[2]}<br><span style="color:#9fb2af">Cost: ${a[3]}</span>`; };
+  const K = game.lightkit, LK = new Set(LIGHTKIT.map((q) => q[0]));
+  const mood = () => game.looks?.setMood(el.querySelector('#labMood').value || null, el.querySelector('#labFilm').checked);
+  el.addEventListener('change', (e) => {
+    const id = e.target.id;
+    if (id === 'labRoom') { roomView(game, e.target.checked); return; }
+    if (id === 'labMood' || id === 'labFilm') { mood(); return; }
+    if (id === 'labEye') { game.ZombieView.eyeCfg.col = parseInt(e.target.value, 16); return; }
+    if (id === 'labShadows') { game.looks?.set(e.target.checked ? 'standard' : 'lite'); return; }
+    const k = e.target.dataset?.k; if (!k) return;
+    if (LK.has(k)) { K?.set(k, e.target.checked); if (k === 'eyes') game.ZombieView.eyeCfg.on = e.target.checked; } else A?.set(k, e.target.checked);
+    if (e.target.checked) what(k);
+  });
   el.addEventListener('click', (e) => {
     const a = e.target.dataset?.a; if (!a) return;
-    if (a === 'all' || a === 'none') for (const c of el.querySelectorAll('input')) { c.checked = a === 'all'; A?.set(c.dataset.k, c.checked); }
+    if (a === 'all' || a === 'none') for (const c of el.querySelectorAll('input[data-k]')) { c.checked = a === 'all'; c.dispatchEvent(new Event('change', { bubbles: true })); }
     if (a === 'hit') { const p = game.sim.player; A?.onBigHit(p.x, p.z); A?.onKill(p.x, p.z, Math.sin(p.aimYaw), Math.cos(p.aimYaw), 8); fx?.ring(p.x, p.z, 0xffffff, 2); }
   });
   // the frame time, averaged over the last second of real frames

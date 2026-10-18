@@ -742,7 +742,7 @@ export class Arena {
   }
   tickEmergency(dt) {
     const e = this.em; if (!e) return;
-    if (e.k === e.target && e.k === 0) return;
+    if (e.k === e.target && e.k === 0 && (this.lightScale ?? 1) === 1) return;
     e.k += Math.max(-dt * e.rate, Math.min(dt * e.rate, e.target - e.k)); if (dt === 0) e.k = e.target; e.t += dt;
     const k = e.k, beacon = 0.5 + 0.5 * Math.sin((e.t * Math.PI * 2) / 1.9); // one slow sweep of a rotating beacon
     this.hemi.color.copy(e.base.sky).lerp(EM_SKY, k); this.hemi.groundColor.copy(e.base.ground).lerp(EM_GROUND, k);
@@ -750,6 +750,7 @@ export class Arena {
     this.sun.color.copy(e.base.sunC).lerp(EM_SUN, k); this.sun.intensity = e.base.sunI + (0.72 - e.base.sunI) * k;
     this.scene.environmentIntensity = e.base.env + (0.17 - e.base.env) * k;
     if (this.redHemi) this.redHemi.intensity = k * (0.05 + 0.13 * beacon);
+    const ls = this.lightScale ?? 1; if (ls !== 1) { this.hemi.intensity *= ls; this.sun.intensity *= ls; this.scene.environmentIntensity *= ls; } // (render/lightkit.js: the fittings carry the room's light)
     e.group.visible = k > 0.005;
     e.redMat.opacity = k * (0.3 + 0.38 * beacon); e.coldMat.opacity = k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3)); // (a tube that hums)
   }

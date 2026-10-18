@@ -51,6 +51,7 @@ export class Atmos {
   }
   set(key, v) {
     v = !!v; if (this.on[key] === v) return; this.on[key] = v;
+    if (!v && !this.built[key]) return; // (never built: nothing to switch off)
     if (v && !this.built[key]) { this.built[key] = true; this['build_' + key]?.(); }
     this['toggle_' + key]?.(v);
   }

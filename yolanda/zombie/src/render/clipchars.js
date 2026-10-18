@@ -1493,6 +1493,12 @@ export class ZombieView extends ClipBody {
   static ladyKipUp = true; // (the lady's kip-up experiment: off = her old get-up from her back)
   static planted = [];
   static propSrc = {}; // (main.js: the drip stand, the wheelchair, the surgeon's cap and mask)
+  // (2026-10-18, the user: "what i really like is also testing the light on the zombies eyes"): two tiny glints at the eyes,
+  // a dim ember in the dark, bright where light falls on the face (render/lightkit.js lightAt: the fittings' pools, a shot's
+  // flash, Yola's torch). col: their colour; base: in the dark; gain: how much light lifts them; at: eye height / depth /
+  // spread as fractions of the head bone's length, per zombie type (tuned by eye)
+  static eyeCfg = { on: false, col: 0xffd890, base: 0.25, gain: 0.85, size: 0.075, light: null };
+  static EYE_AT = { 0: [0.75, 0.58, 0.1], 1: [0.75, 0.58, 0.1], 2: [0.02, 0.55, 0.12], 3: [0.66, 0.55, 0.15], 4: [0.75, 0.58, 0.1] }; // (fitted on each face in the lab, 2026-10-18: nurse, patient, the lady, the guard; the runner is the nurse) // (main.js: the drip stand, the wheelchair, the surgeon's cap and mask)
   static props = []; // (the demo's bed)
   static looseMeshes = new Map(); // (core/loose.js id -> its drip stand / wheelchair on screen)
   static clubGrip = new THREE.Vector3(0, 0.075, 0); // (his palm, in his RightHand bone's frame, m: where his fist closes round the torn wrist)
@@ -1740,6 +1746,36 @@ export class ZombieView extends ClipBody {
       else { o.position.set(x, 0, z); o.rotation.set(0, L.yaw + CHAIR.yaw, 0); }
     }
     for (const [id, o] of M) if (!seen.has(id)) { o.parent?.remove(o); M.delete(id); } // (a new level: gone)
+  }
+  // the eyes' glints (eyeCfg): two additive dots on the Head bone, placed from the head's rest pose (up the bone, out along the
+  // face, either side), shown while it stands alive and lit by lightAt where its face is
+  addEyes() {
+    const hb = this.bones.Head, ht = this.bones.HeadTop_End; let sk = null; this.model.traverse((o) => { if (!sk && o.isSkinnedMesh) sk = o; });
+    if (!hb || !ht || !sk) return;
+    const rest = (b) => { const i = sk.skeleton.bones.indexOf(b); return i < 0 ? null : new THREE.Matrix4().multiplyMatrices(sk.matrixWorld, sk.bindMatrix).multiply(sk.skeleton.boneInverses[i].clone().invert()); };
+    this.model.updateMatrixWorld(true);
+    const RH = rest(hb), RT = rest(ht); if (!RH || !RT) return;
+    const H = new THREE.Vector3().setFromMatrixPosition(RH), T = new THREE.Vector3().setFromMatrixPosition(RT), U = T.clone().sub(H), L = U.length(); U.normalize();
+    const F = new THREE.Vector3(0, 0, 1).applyQuaternion(this.model.getWorldQuaternion(new THREE.Quaternion())); F.addScaledVector(U, -F.dot(U)).normalize();
+    const R = new THREE.Vector3().crossVectors(U, F), [up, fw, sp] = ZombieView.EYE_AT[this.type] || ZombieView.EYE_AT[0], inv = RH.clone().invert();
+    const ws = hb.getWorldScale(new THREE.Vector3()).x || 1;
+    if (!ZombieView.eyeTex) { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); ZombieView.eyeTex = new THREE.CanvasTexture(c); }
+    const mat = new THREE.SpriteMaterial({ map: ZombieView.eyeTex, color: ZombieView.eyeCfg.col, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    this.eyes = [-1, 1].map((s) => {
+      const e = new THREE.Sprite(mat); e.position.copy(H.clone().addScaledVector(U, up * L).addScaledVector(F, fw * L).addScaledVector(R, s * sp * L).applyMatrix4(inv));
+      e.scale.setScalar(ZombieView.eyeCfg.size / ws); e.visible = false; e.renderOrder = 4; hb.add(e); return e;
+    });
+    this.eyeMat = mat; this.eyeWs = ws;
+  }
+  updateEyes(z, x, zz) {
+    const C = ZombieView.eyeCfg;
+    if (!C.on || !this.outer.visible) { if (this.eyes) for (const e of this.eyes) e.visible = false; return; }
+    if (!this.eyes) this.addEyes(); if (!this.eyes) return;
+    const on = z.alive && !this.severed.has('Head') && z.state !== 'emerge';
+    for (const e of this.eyes) e.visible = on; if (!on) return;
+    const L = C.light ? C.light(x, zz) : 0, k = Math.min(1, C.base + L * C.gain);
+    this.eyeMat.opacity = k; this.eyeMat.color.setHex(C.col);
+    const s = (C.size * (0.75 + 0.6 * k)) / this.eyeWs; for (const e of this.eyes) e.scale.setScalar(s);
   }
   // the surgeon's cap and mask (blender/make_surgeon_cap.py, built in the nurse's own model space): on her Head bone as it
   // sits at rest (from the skin's bind matrices: the pose on screen does not matter)
@@ -2102,7 +2138,9 @@ export class ZombieView extends ClipBody {
     const tell = z.state === 'windup' ? Math.min(1, z.t / Math.max(0.05, z.stateDur)) : 0, tk = tell * tell * 0.3;
     const sg = (this.swell || 0) * (0.06 + 0.06 * Math.sin(performance.now() * 0.009)); // (swollen: a sickly green-yellow pulse)
     const ex = z.alive && z.executable > now ? (0.5 + 0.5 * Math.sin(performance.now() * 0.018)) * 0.45 : 0; // (open to an execution: a warm white pulse)
-    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5 + ex, fl * 0.33 + tk * 0.05 + sg + ex * 0.62, fl * 0.27 + tk * 0.03 + ex * 0.3);
+    const rt = this.roomTint && this.roomTintOn ? this.roomTint : null; // (the room's light: render/lightkit.js B)
+    for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4 + tk + sg * 0.5 + ex + (rt ? rt.r : 0), fl * 0.33 + tk * 0.05 + sg + ex * 0.62 + (rt ? rt.g : 0), fl * 0.27 + tk * 0.03 + ex * 0.3 + (rt ? rt.b : 0));
+    this.updateEyes(z, x, zz);
     // corpse sinks away after a while
     if (z.state === 'dead' && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
     this.blob.visible = z.state !== 'dead' || z.corpseT < 4.5;
