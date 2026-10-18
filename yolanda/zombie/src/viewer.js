@@ -9,7 +9,7 @@ import { ikArm } from './render/ik.js';
 import { HairSway } from './render/hairsway.js';
 import { SHOTGUN_SPEC, BAT_DEF } from './core/weapons.js';
 import { buildBodyClip, bodyClipFrame, bodyClipProbe } from './render/bodyclip.js';
-import { placeBat, placeOnSlot, SLOT_AXES, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
+import { placeBat, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell, HOLD_TUNE, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts, GRIP_HANDS } from './render/holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 import { LAYERS, HOLD_LAYERS, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
 
@@ -73,19 +73,22 @@ for (const [s, S2] of [['l', 'Left'], ['r', 'Right']]) {
   Object.assign(UE_MAP, { [`upperarm${s}`]: S2 + 'Arm', [`lowerarm${s}`]: S2 + 'ForeArm', [`wrist${s}`]: S2 + 'Hand', [`hand${s}`]: S2 + 'HandMiddle1', [`upperleg${s}`]: S2 + 'UpLeg', [`lowerleg${s}`]: S2 + 'Leg', [`foot${s}`]: S2 + 'Foot', [`toes${s}`]: S2 + 'ToeBase' });
 }
 Object.assign(UE_MAP, { hips: 'Hips', spine: 'Spine', chest: 'Spine2', head: 'Head' });
-// KayKit Character Animations 1.1 (CC0, local copies in assets/source/kaykit): kk_ clips are shown beside its own mannequin (in each file)
-const KK_FILES = ['Rig_Medium_CombatMelee', 'Rig_Medium_General', 'Rig_Medium_Tools', 'Rig_Medium_CombatRanged'].map((n) => `assets/source/kaykit/${n}.glb`);
+// (KayKit: removed 2026-10-17 at the user's word: "Never the KitKat robot ever for anything". Its clips are not listed and
+// it is never a reference: the dummies are Mixamo's X Bot and Quaternius's mannequin only.)
+const NO_KK = (n) => !/^kk_/.test(n);
 // clips whose Mixamo source file is named differently
 const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand' };
 // clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
 // frames 38-99, measured by matching both hands over the clip, 2026-10-16; before this the two were shown out of step)
 const REF_OFFSET = { pistol_reload: 37 };
-const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
-const HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
+const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (old, too long)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (hospital pack)', packaxe: 'axe (hospital pack)', packcrowbar: 'crowbar (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
+const HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
 // the weapon test arena's other weapons (2026-10-17, the user: "add the axe, chainsaw, sledge hammer back to ... the rig lab
 // .. and the knife"): their frames from the Move Library's data sheet (assets/arena/weapons.json: grip point, shaft and
 // reference axes, one or two hands), held as the bat (one hand) or the axe (two hands) is
-const LIB_WEAPONS = { alubat: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // (alubat: the hospital pack's bat, 2026-10-17)
+const LIB_WEAPONS = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
+// the hospital pack's weapons (2026-10-17: the user's pack from ChatGPT, as delivered, with its own grip markers)
+const PACK = { alubat: 1, packaxe: 1, packcrowbar: 1 };
 let WDEFS = {}, PICKS = {}; // PICKS: "<clip>|<weapon>" -> the Move Library pick's hold (hand, roll, slide, flip), as the arena uses it
 const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
 const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb' };
@@ -181,7 +184,7 @@ function applyMesh() {
 }
 function updateFingers() {
   const on = $('fingerBones')?.checked !== false;
-  for (const a of ACTORS) a.fing.update(on && (a === main || (a === ref && ref.root.visible)) && a.root.parent === scene);
+  for (const a of ACTORS) a.fing.update(on && (a === main || a === ref) && a.root.visible && a.root.parent === scene);
 }
 
 class Actor {
@@ -259,7 +262,7 @@ class Gun {
 }
 
 // ---------------- state ----------------
-const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'auto', frames: 1 };
+const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'auto', frames: 1, show: 'both', mode: 'idle', fitOn: true };
 const weaponOf = () => (S.gun === 'auto' ? autoWeapon(main?.clip?.name || '') : S.gun);
 let main, ref, mainGun, refGun, refX, refGunX;
 const ualCache = {};
@@ -297,7 +300,7 @@ function updateMarks() {
   const on = $('marks').checked;
   for (const [k, a] of [['main', main], ['ref', ref]]) {
     const m = marks[k]; if (!m || !a) continue;
-    const vis = on && (k === 'main' || a.root.visible);
+    const vis = on && a.root.visible;
     for (const o of Object.values(m)) o.visible = vis;
     if (!vis || !a.action) continue;
     a.grip('Right', _v); a.grip('Left', _v2);
@@ -348,10 +351,8 @@ async function setClip(name) {
   const libName = (CHARS[S.char].libRef || {})[name.replace(/_REBAKE_.*$/, '')] || name;
   const lib = Object.keys(UAL_FILES).sort((a, b) => b.length - a.length).find((p) => libName.startsWith(p));
   let rc = null, file = '';
-  if (libName.startsWith('kk_')) { // (a KayKit clip: the file that has it, its mannequin as the reference)
-    for (const f of KK_FILES) { const u = await ualRef(f, false); const c = u?.clips.find((q) => q.name === libName.slice(3)); if (c) { u.actor.fitKey = 'kaykit'; useRef(u.actor); rc = c; file = f; break; } }
-    if (!rc) useRef(refX);
-  } else if (lib) {
+  if (!NO_KK(libName)) useRef(refX); // (no KayKit reference, ever)
+  else if (lib) {
     const u = await ualRef(UAL_FILES[lib]);
     useRef(u ? u.actor : refX);
     rc = u?.clips.find((c) => c.name === libName.replace(/_REBAKE_.*$/, '').slice(lib.length)) || null; file = UAL_FILES[lib];
@@ -363,15 +364,16 @@ async function setClip(name) {
     rc = file ? await refClip(file) : null;
   }
   const rsel = $('refclip'); rsel.innerHTML = '';
-  if (rc) { rsel.add(new Option(libName.startsWith('kk_') ? `KayKit mannequin: ${rc.name}` : lib ? `Quaternius mannequin: ${rc.name}` : file.split('/').pop(), file)); $('note').textContent = ''; }
+  if (rc) { rsel.add(new Option(lib ? `Quaternius mannequin: ${rc.name}` : file.split('/').pop(), file)); $('note').textContent = ''; }
   else { rsel.add(new Option('no source rig for this clip', '')); $('note').textContent = 'No reference for this clip (Tripo or custom clip).'; }
-  ref.root.visible = !!rc; ref.helper.visible = !!rc && $('bones').checked;
+  S.refHas = !!rc; ref.root.visible = !!rc && S.show !== 'main'; ref.helper.visible = ref.root.visible && $('bones').checked;
   if (rc) { pinRoot(rc, $('inplace').checked, ref); ref.play(rc); }
-  S.refOff = rc && !lib && !libName.startsWith('kk_') ? REF_OFFSET[name.replace(/_REBAKE_.*$/, '')] || 0 : 0;
+  S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, '')] || 0 : 0;
   S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
   $('scrub').max = S.frames; S.frame = 1;
   layout(); refresh(); mainGun.calibrate(); refGun?.calibrate(); refresh();
   markClipPanel(); // (setChar picks its first clip without a change event)
+  editSync();
   if (!$('meshOn').checked) { applyMesh(); refresh(); } // (a reference or character loaded since keeps the mesh choice)
 }
 function layout() {
@@ -452,6 +454,7 @@ function applyGun() {
 }
 function refresh() {
   if (!main) return;
+  main.root.visible = S.show !== 'ref'; if (S.refHas !== undefined) ref.root.visible = S.refHas && S.show !== 'main'; // (the edit bar's Show)
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
@@ -464,6 +467,8 @@ function refresh() {
   $('scrub').value = f;
   $('frameInfo').textContent = `frame ${f} / ${S.frames}  (${(f / FPS).toFixed(2)} s at ${FPS} fps)` + (S.refOff ? `  ·  reference frame ${f + S.refOff}` : '');
   drawVidRef(f); updateBat(); updateMags(); updateFingers(); updatePistolFitUI();
+  if (!main.root.visible) { for (const o of Object.values(held)) if (o) o.visible = false; if (mainGun?.obj) mainGun.obj.visible = false; }
+  if (!ref.root.visible) { for (const o of Object.values(heldRef)) if (o) o.visible = false; if (refGun?.obj) refGun.obj.visible = false; }
   const lines = [];
   if (main.action) { main.grip('Right', _v); main.grip('Left', _v2); lines.push(`${CHARS[S.char].label}   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
   if (ref.root.visible && ref.action) { ref.grip('Right', _v); ref.grip('Left', _v2); lines.push(`Reference   hand span ${_v.distanceTo(_v2).toFixed(3)} m`); }
@@ -720,11 +725,11 @@ function shotKick(a) {
 // (copied into assets/hold by Claude when the user says so)
 const PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
 const FITS = {};
-const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : a?.fitKey || 'mannequin'); // (fitKey 'kaykit': KayKit's mannequin, a different rig from Quaternius's)
+const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
-const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (hospital pack)', axe: 'Axe', short: 'Shotgun', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (hospital pack)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
   for (const [w, v] of Object.entries(j)) if (typeof v === 'object') for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f };
@@ -791,9 +796,9 @@ let pfitBox = null;
 let pfitRefWas = null;
 function updatePistolFitUI() {
   pfitBox ||= buildPistolFit(); const w = weaponOf();
-  pfitBox.style.display = (w === 'pistol' && $('pistolFist')?.checked) || (FIT_WEAPONS[w] && w !== 'pistol') ? '' : 'none';
+  pfitBox.style.display = S.fitOn && !S.uiHidden && ((w === 'pistol' && $('pistolFist')?.checked) || (FIT_WEAPONS[w] && w !== 'pistol')) ? '' : 'none';
   if (w !== pfitBox.dataset.w) { pfitBox.dataset.w = w; pfitSync(); }
-  const top = $('top').hidden ? 8 : $('top').getBoundingClientRect().bottom + 8; // (below the top bar, scrolling in a short window)
+  const top = barsBottom() + 8; // (below the bars, scrolling in a short window)
   pfitBox.style.top = top + 'px'; pfitBox.style.maxHeight = `calc(100vh - ${top + 8}px)`; pfitBox.style.overflowY = 'auto';
   if (ref !== pfitRefWas) { pfitRefWas = ref; pfitSync(); } // (the reference changes with the clip: X Bot / mannequin)
 }
@@ -831,8 +836,7 @@ function placeHeldOn(a, o) {
   // hand (else the data sheet's primary hand), turned by its roll, slid by its slide, flipped (2026-10-17: the Rig Lab ran the
   // two-handed ones through both fists, which the game never does)
   const LD = LIB_WEAPONS[w] && WDEFS[w];
-  if (w === 'alubat' && LD && !a.bones.RightHandIndex1 && placeOnSlot(a.obj.getObjectByName('handslotr'), o, LD, fitW(w, a), k)) return; // (KayKit's mannequin: no fingers, its own weapon slot)
-  if (w === 'alubat' && LD && placeBat(a.bones, o, LD, fitW(w, a), k)) return; // (as the clip holds it, on the dummy and on Yola: holdfit.js placeBat)
+  if (PACK[w] && LD && placeBat(a.bones, o, LD, fitW(w, a), k)) return; // (the hospital pack's weapons, as the clip holds them: holdfit.js placeBat) // (as the clip holds it, on the dummy and on Yola: holdfit.js placeBat)
   // carried at rest (render/holdfit.js CARRY: the sledgehammer, the chainsaw on KayKit's two-handed idle): in front of her,
   // riding her chest, both fists on its grips; measured once on the idle's first frame, as the game does
   const CY = LD && CARRY[w];
@@ -932,9 +936,11 @@ const WEAPON_CLIPS = {
   axe: { label: 'Axe', idle: 'bat_idle', attack: 'bat_swing' }, // (its combo: bat_swing, then t_chop)
   bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
   // (the arena's weapons: their first "good" pick in the Move Library as the attack)
-  alubat: { label: 'Bat (pack)', idle: 'bat_idle', attack: 'ual_Sword_Regular_Combo' }, // (the hospital pack's bat, 2026-10-17)
-  sledgehammer: { label: 'Sledgehammer', idle: 'kk_Melee_2H_Idle', attack: 'ual_Sword_Heavy_Combo' }, // (its carry: render/holdfit.js CARRY)
-  chainsaw: { label: 'Chainsaw', idle: 'kk_Melee_2H_Idle', attack: 'melee_horizontal' },
+  alubat: { label: 'Bat (pack)', idle: 'ual_Sword_Block', attack: 'ual_Sword_Regular_Combo' }, // (the hospital pack's bat, 2026-10-17)
+  packaxe: { label: 'Axe (pack)', idle: 'ual_Sword_Block', attack: 'ual_Sword_Heavy_Combo' },
+  packcrowbar: { label: 'Crowbar (pack)', idle: 'ual_Sword_Block', attack: 'ual_Sword_Regular_Combo' },
+  sledgehammer: { label: 'Sledgehammer', idle: 'ual_Sword_Block', attack: 'ual_Sword_Heavy_Combo' }, // (its carry: render/holdfit.js CARRY)
+  chainsaw: { label: 'Chainsaw', idle: 'ual1_Sword_Idle', attack: 'melee_horizontal' },
   knife: { label: 'Knife', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Dash' },
   none: { label: 'None', idle: null, attack: null },
 };
@@ -958,7 +964,7 @@ fetch('dist/combat.js').then((r) => r.text()).then((t) => { GAME_JS = t; if (mai
 const inGame = (n) => !!GAME_JS && GAME_JS.includes(`"${n}"`);
 const usedTag = (n) => (inGame(n) ? '  (currently used)' : '');
 function fillClips() {
-  const sel = $('clip'), keep = sel.value, anims = mainCache[S.char].gltf.animations, byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = new Set();
+  const sel = $('clip'), keep = sel.value, anims = mainCache[S.char].gltf.animations.filter((c) => NO_KK(c.name)), byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = new Set();
   sel.innerHTML = '';
   const group = (label, list) => {
     const ok = list.filter((n) => byN[n]); if (!ok.length) return;
@@ -1029,6 +1035,70 @@ function weaponUI() {
   $('wIdle').disabled = !W?.idle; $('wAttack').disabled = !W?.attack;
   $('wAttack').title = W?.attack === 'kick' ? 'the idle with the game\'s shot kick, firing every 0.24 s' : W?.attack || 'not in the Rig Lab yet';
 }
+// the bottom of whichever top bars are showing
+function barsBottom() { let b = 0; for (const id of ['edit', 'top']) { const el = $(id); if (el && !el.hidden) b = Math.max(b, el.getBoundingClientRect().bottom); } return b; }
+// ---- the edit bar (viewer.html #edit; the user, 2026-10-17: "clean up the interface to make this easier ... only the
+// Quaternius and Mixamo dummy ... right now I only want to edit the idle, and the attacks"). Pick a weapon, its idle or
+// attack (Mixamo and Quaternius clips only: each plays beside its own dummy), show both / Yola / the dummy, the angle,
+// the fit. ----
+const EDIT_WEAPONS = { alubat: 'Bat', packaxe: 'Axe', packcrowbar: 'Crowbar', sledgehammer: 'Sledgehammer' };
+const EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
+const EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|ual1?_Melee_(?!Idle).+)$/;
+const editKey = () => 'riglab.edit.' + S.gun + '.' + S.mode;
+function editClips() {
+  const re = S.mode === 'idle' ? EDIT_IDLE : EDIT_ATTACK;
+  return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n))
+    .sort((a, b) => (a === 'ual_Sword_Block' ? -1 : b === 'ual_Sword_Block' ? 1 : a.localeCompare(b)));
+}
+const prettyClip = (n) => n.replace(/^ual1?_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : '  · Mixamo');
+function editSync() {
+  if (!$('edit') || !main) return;
+  for (const b of $('eWeapons').children) b.classList.toggle('on', b.dataset.k === S.gun);
+  $('eIdle').classList.toggle('on', S.mode === 'idle'); $('eAttack').classList.toggle('on', S.mode === 'attack');
+  const sel = $('eClip'), list = editClips(), cur = main.clip?.name || '';
+  sel.innerHTML = ''; for (const n of list) sel.add(new Option(prettyClip(n), n));
+  if (!list.includes(cur)) sel.add(new Option('(' + (cur || 'none') + ')', cur), 0);
+  sel.value = cur;
+  $('eDummy').textContent = !S.refHas ? 'none for this clip' : ref === refX ? 'Mixamo X Bot' : 'Quaternius mannequin';
+  for (const b of $('eShow').children) b.classList.toggle('on', b.dataset.show === S.show);
+  $('eFit').classList.toggle('on', S.fitOn); $('eAdv').classList.toggle('on', !$('top').hidden);
+}
+function editPick(name) {
+  if (!name) return;
+  try { localStorage.setItem(editKey(), name); } catch { /* storage off */ }
+  pickClip(name); editSync();
+}
+function editFirst() { // this weapon's last clip in this mode, else its own idle / attack, else the first
+  let n = null; try { n = localStorage.getItem(editKey()); } catch { /* storage off */ }
+  const list = editClips(), W = WEAPON_CLIPS[S.gun], own = S.mode === 'idle' ? W?.idle : W?.attack;
+  return list.includes(n) ? n : list.includes(own) ? own : list[0];
+}
+function editAngle(k) {
+  if (k === 'hands') { camHands(S.show === 'ref' ? 'ref' : 'main'); return; }
+  const x = S.show === 'main' ? main.root.position.x : S.show === 'ref' ? ref.root.position.x : 0, c = new THREE.Vector3(x, 0.95, 0);
+  const D = { front: [0, 0.1, 1], back: [0, 0.1, -1], right: [-1, 0.1, 0], left: [1, 0.1, 0], three: [-0.7, 0.35, 0.75], above: [0, 1, 0.03], below: [0, -0.5, 0.85] }[k];
+  camera.position.copy(c).addScaledVector(new THREE.Vector3(...D).normalize(), S.show === 'both' ? 3.6 : 2.6); controls.target.copy(c); controls.update();
+}
+function buildEditUI(ui, fitClipPanel) {
+  for (const [k, label] of Object.entries(EDIT_WEAPONS)) {
+    const b = document.createElement('button'); b.textContent = label; b.dataset.k = k;
+    b.onclick = () => { S.gun = k; $('gun').value = k; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); };
+    $('eWeapons').appendChild(b);
+  }
+  $('eIdle').onclick = () => { S.mode = 'idle'; editPick(editFirst()); };
+  $('eAttack').onclick = () => { S.mode = 'attack'; editPick(editFirst()); };
+  $('eClip').onchange = (e) => editPick(e.target.value);
+  for (const b of $('eShow').children) b.onclick = () => { S.show = b.dataset.show; refresh(); editSync(); };
+  for (const b of $('eAngles').children) b.onclick = () => editAngle(b.dataset.a);
+  $('eFit').onclick = () => { S.fitOn = !S.fitOn; updatePistolFitUI(); editSync(); };
+  $('eAdv').onclick = () => { const on = $('top').hidden; $('top').hidden = $('clipPanel').hidden = !on; $('toggleClips').classList.toggle('on', on); fitClipPanel(); updatePistolFitUI(); editSync(); };
+  $('eHide').onclick = ui;
+}
+// start where the edit bar works: Yola 2, the pack's bat, its idle
+async function editStart() {
+  if (S.char !== 'yola2') await setChar('yola2');
+  S.gun = 'alubat'; $('gun').value = 'alubat'; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); editAngle('three');
+}
 function pausedUI(p) { S.playing = !p; $('play').textContent = S.playing ? 'Pause' : 'Play'; $('play').classList.toggle('on', S.playing); }
 function buildUI() {
   for (const k in CHARS) { const b = document.createElement('button'); b.textContent = CHARS[k].label; b.dataset.k = k; b.onclick = () => setChar(k); $('chars').appendChild(b); }
@@ -1097,9 +1167,17 @@ function buildUI() {
   $('clipFind').addEventListener('keydown', (e) => e.stopPropagation()); // (typing a name: no frame steps / play toggles)
   $('clip').addEventListener('change', markClipPanel);
   // the list starts below the top bar, however many rows it wraps to
-  const fitClipPanel = () => { $('clipPanel').style.top = ($('top').hidden ? 6 : $('top').offsetTop + $('top').offsetHeight + 6) + 'px'; };
-  new ResizeObserver(fitClipPanel).observe($('top')); fitClipPanel();
-  const ui = () => { for (const id of ['top', 'bottom', 'side', 'clipPanel']) { const el = $(id); el.hidden = !el.hidden; } };
+  const fitClipPanel = () => { if (!$('top').hidden) $('top').style.top = ($('edit').getBoundingClientRect().bottom + 6) + 'px'; $('clipPanel').style.top = (barsBottom() + 6) + 'px'; };
+  new ResizeObserver(fitClipPanel).observe($('top')); new ResizeObserver(fitClipPanel).observe($('edit')); fitClipPanel();
+  // Hide (H): everything off, then back exactly as it was
+  let shown = null;
+  const ui = () => {
+    const ids = ['edit', 'top', 'bottom', 'side', 'clipPanel'];
+    if (!shown) { shown = ids.filter((id) => !$(id).hidden); for (const id of ids) $(id).hidden = true; S.uiHidden = true; }
+    else { for (const id of shown) $(id).hidden = false; shown = null; S.uiHidden = false; }
+    updatePistolFitUI();
+  };
+  buildEditUI(ui, fitClipPanel);
   $('hideUI').onclick = ui;
   addEventListener('keydown', (e) => { if (e.code === 'KeyH' && e.target.tagName !== 'TEXTAREA') ui(); });
   const step = (d) => { pausedUI(true); S.frame = ((Math.round(S.frame) - 1 + d + S.frames * 100) % S.frames) + 1; refresh(); };
@@ -1236,7 +1314,8 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
   for (const k of ['short', 'old']) if (!gunTemplates[k]) $('gun').querySelector(`option[value=${k}]`).textContent += ' (not built yet)';
   try { const g = await loadG('assets/weapons/shotgun_shell.glb'); shellTemplate = prepShell(g); shellObj = shellTemplate; shellObj.visible = false; scene.add(shellObj); } catch { /* not built yet */ }
   const want = new URLSearchParams(location.search).get('char');
-  await setChar(want in CHARS ? want : 'yola');
+  await setChar(want in CHARS ? want : 'yola2');
+  await editStart();
   let last = performance.now();
   renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
@@ -1252,5 +1331,5 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     updateFingers();
     controls.update(); renderer.render(scene, camera);
   });
-  window.__lab = { SLOT_AXES, bodyClipScan, bodyClipProbe: (w, via) => bodyClipProbe(bodyClipC ||= Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char }), w, via), CARRY, GRIP_HANDS, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
+  window.__lab = { bodyClipScan, bodyClipProbe: (w, via) => bodyClipProbe(bodyClipC ||= Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char }), w, via), CARRY, GRIP_HANDS, resetCarry: () => { main.carryCal = {}; ref && (ref.carryCal = {}); }, HOLD_TUNE, HANDS, exportHolds, view: capView, sheet: capSheet, postureC, ualRef, UAL_FILES, camHands, updateFingers, held, heldRef, renderer, PUMP, alignShell, gunObj: () => mainGun?.obj, shellFit, setShell: (o) => { Object.assign(shellFit, o); for (const r of $('fit2').children) r._set(shellFit[r.dataset.k]); refresh(); }, camera, controls, setCam, S, fit, get main() { return main; }, get ref() { return ref; }, scene, refresh, setChar, setClip, applyGun, setFrame: (f) => { pausedUI(true); S.frame = f; refresh(); } };
 })();
