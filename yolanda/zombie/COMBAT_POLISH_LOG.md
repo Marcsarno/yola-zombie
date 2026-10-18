@@ -1,3 +1,102 @@
+# Combat pass, round 20 (2026-10-18): the shield guard, dodging, slow motion, the runner, floor breaches, Floor 7
+
+The user's four prompts (shield enemy and dodge; charger, get-ups, walkers and feel; enemy variety, spawns and test
+encounters; contextual attacks, assets and polish). Recoverable version before any of it: git tag
+`backup/pre-combat-pass-2026-10-18` (f37b13b, local). Commits dbdfef9..67badba.
+
+**Watch any of it again:** `combat.html?mode=calm&demo=<name>` (src/demos.js), ↺ or R to set it up again, `&auto=1` to
+let Yola play it: `slam1`, `slam2`, `dismember`, `charger`, `kipup`, `ladykip`, `walkers`, `runner`, `floor`, `low`.
+The whole of Floor 7: `combat.html?room1=1`.
+
+**The shield guard (core/zombies.js GUARD, slamShield):**
+- His shield stops everything that strikes it from the front (bullets, blows, low strikes too). It is never damaged by
+  them and neither is he; a blow only jolts him behind it (no stagger: hammering at it cannot stop his slam).
+- The front is ±65° of his facing and he turns slowly (1.7 rad/s): strafe round him and his sides and back are open.
+- Only his own leap-slam hurts the shield. The first drives it into the floor: the panel splits along its own five break
+  lines (the package's fragments shifted apart: clipchars.js splitShield), the floor cracks, "SHIELD CRACKED", and he heaves
+  at it for 2.6 s with his body open above it. The second shatters it, every piece, frame and all (the package's
+  physics break; the pieces fade after 5 s); he reels back for 1.7 s.
+- Before it breaks his body cannot be taken below 30% (from the flank or in the stuck window); at that floor he goes for
+  his slam. After the break: every hit takes him one stage, never two, at least 0.35 s apart: an arm at the shoulder
+  (below 36%), the other arm (below 18%, enraged: he charges like the lady), then the killing blow takes his head (blood,
+  0.7 s of slow motion). Four pistol rounds from break to head.
+- He slams from close in too (the leap shortens to the gap), so standing next to him does not switch the slam off.
+
+**The dodge (core/sim.js dodgeThreat / autoDodge, render/threatcue.js, combat.html #dodgeBtn):**
+- A special enemy's big attack (the guard's slam, the lady's or the enraged guard's charge) shows a sign over its head: an
+  amber hazard triangle with "!" that bobs while it winds up, a ring closing round it; at the moment it turns into red
+  arrows pointing apart, shaking, and the Dodge button turns red and beats. Its own warning and "now" sounds.
+- The press dodges the way that gets her clear, not along the stick: sixteen directions are walked against walls, props
+  and the level edge, the end scored for being out of the attack, room around it, no zombie waiting there, not back toward
+  the attacker (the stick's own direction wins a near tie). The slam: rolled out of. The charge: she squares up to the
+  charger and side-steps left or right (Quaternius Dodge_Left / Dodge_Right).
+- A walker's lunge or pounce still lets her dodge (the button shows, calm), but gets no sign and no pulse.
+- A dodge pressed close to the moment (the slam under 0.8 s from landing; the charge inside 3.8 m) that beats the attack is
+  PERFECT: 0.9 s of slow motion and her next blow or shot is CRITICAL (x3: a pistol round takes a walker's head).
+
+**Slow motion (render/slowmo.js):** the guard's leap eases into 0.3x just before its peak and back to full speed before the
+drop (his clip's frames 50-72: the crouch, the drive up and the smash stay full speed); a perfect dodge (0.9 s) and the
+guard's finishing blow (0.7 s). One at a time, 1.2 s apart; a critical blow cuts it off. On screen: letterbox bars and a
+cold edge with it, a low whoosh in and a lift out. Measured: frames in slow motion cost the same as the others (18.5 ms vs
+19 ms here), so it never reads as a dropped frame rate.
+
+**The big lady:** her charge has the same sign and button; a successful side-step makes her overshoot and brake, coming
+round slowly (the opening); dodged into a wall or a prop she trips onto her back. There she stays down as long as before,
+stirring, then KIPS UP (Quaternius KipUp on her own skeleton: the experiment; it fits her and has personality, she springs
+into a crouch with her arms out). Off switch: ZombieView.ladyKipUp = false.
+
+**Yola's kip-up:** every knockdown throws her onto her back first, so she now kips up from there (KipUp copied into
+assets/yola2_ual.glb): down 2.0 s instead of 2.85 s, facing the attacker.
+
+**Walkers:** the ring that waits its turn stands closer (1.5-2.1 m) and breathes in and out, and pounces from there, one
+at a time, along a clear line, in the floor's turn order. The two in front keep a body's width off her and shuffle apart;
+one that lands too close backs off facing her. Most walk the 8-way Quaternius walk. Measured on six: four different
+attackers, never two hits within 0.5 s, a bat opener catches 2-3. Fixed on the way: the nurse and patient scratch clip is
+named "Animation" in its file, so their close-in scratch never played.
+
+**The orange runner (kind 'runner'):** the nurse in safety-orange scrubs (recoloured at load), the zombie run at ~3 m/s,
+its own dash rake: it plants (arms up, a narrow wedge), sprints straight through where she stood raking with both arms (the
+scratch over its running legs), brushes past shoving her aside, overshoots and skids.
+
+**Out of the floor:** the floor rumbles and cracks (1.3 s; untouchable underneath), bursts into a breach and the zombie
+claws out (Quaternius Zombie_Spawn). The breach is modelled in Blender (blender/make_floor_breach.py, assets/props/
+floor_breach.glb: a jagged pit whose far inner wall is painted for the fixed view, heaved tiles, a concrete lip, rebar); it
+stays. Never within 2.8 m of Yola.
+
+**Floor 7 as a test floor (core/chapter.js, core/level.js):** every usable weapon (not the chainsaw): the bat in her hands,
+the pistol in Supply (as before) with magazines, the shotgun on the nurse station desk with shells (and more in the
+cafeteria), the crowbar by the ward's stretcher, the sledgehammer in the renovation, the knife on a cafeteria table, the
+axe in the contractor store (as before), magazines in lift service. The sledgehammer, crowbar and knife are built in the
+story game exactly as the weapon arena builds them (render/libweapons.js: the user's picks and Rig Lab fits). 34 zombies
+(was 17), each room its own: a floor breach in Supply as the pistol is picked up; a walker crowd at the nurse station;
+the crawlers' ward (two already down, a breach mid-fight); runners and breaches in the renovation; the shield guard in the
+cafeteria; the big lady's charge across lift service; two lurkers behind the store's powered door (roused when it opens);
+the prep room's last push once the power is back.
+
+**Low attacks:** a strike at a body on the floor has her step back into its reach first (weapons.js strikeReach); the hit
+test follows the body's length (a crawler's arms ahead of it, a floored body behind) and only counts a weapon that comes
+down to it (under 0.75 m); a combo that floors its target goes down after it; a round into a body on the floor goes down
+into it. Every melee weapon now lands every swing on a crawler at 0.6 and 1.3 m. Crawlers: a crawler that gets hold of
+her ankle holds her back (0.75 s at 30% speed). Crawler pacing measured per weapon: 12-25% of zombies end up crawling.
+
+**Assets and rooms:** the playable rooms use the supplied Outbreak props (assets/source/hospital_123 runtime copied to
+assets/hospital: 29 more), the opening's operating room stays clean. Each room shows its purpose (the ward's service
+headwalls, exam set, gel, gloves and sharps bin on its camera-side wall; the station's notices; the store room's stock;
+the cafeteria's staff corner of coffee counter, lockers and water cooler; the maintenance bay's floor scrubber). Two
+construction details modelled in Blender (blender/make_construction_props.py: a sawhorse barrier, a plasterboard pallet).
+
+**Not done, missing, or for the user:**
+- The user's five painted construction props (cable workbench, paint shelf, tool pegboard, renovation pallet, janitor
+  cabinet) are nowhere on this machine (searched the project, Downloads, Desktop, Documents, the other projects): not
+  recreated. The named Outbreak files (OB_RecoveryBed_01.glb etc.) are the runtime set's plain names (index:
+  assets/source/hospital_123/Asset_Index.txt).
+- The opening was checked, not changed (signed off): the clean wheelchair, pushed from behind, the lift doors open before
+  they go in, the chair turned to face the doors inside, the crisis beats.
+- Performance: the Outbreak props add ~35% draw calls per room (each prop's own materials); measured render time per room
+  is unchanged on this machine. A burst of point-blank multi-kills showed rising frame times in the hidden test pane that
+  could not be pinned down there: needs a check on a visible screen / a phone.
+- Never seen in motion at real speed by a person: everything here was stepped frame by frame and played by a script.
+
 # Bat combo, round 11 (2026-10-15): grounded feet, grip, no skating
 
 Checked the newest bat clip against your clip 13 frame by frame, measured it, and fixed what was off. Bat only.

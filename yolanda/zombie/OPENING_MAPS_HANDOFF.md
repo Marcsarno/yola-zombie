@@ -4,6 +4,21 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
+## FROM THE COMBAT CHAT (2026-10-18): what changed in your files — read this first
+
+The user asked the combat chat for Floor 7 encounters, test weapons and room dressing (their parts 3 and 4), so it edited
+some of this chat's files. Full record: COMBAT_POLISH_LOG.md round 20. In your files:
+- core/chapter.js, Floor 7: the groups (34 zombies, was 17; new kind 'runner'; `crawl: true` = already down; `from: 'floor'`
+  + `delay` = out of the floor; groups x7 and r7 `locked`), the pickups (every test weapon: file / builder + len for a weapon lying where
+  it is), the dressing of every room but the OR (the Outbreak runtime props in assets/hospital, wall fixtures at their own
+  installation heights; a sawhorse barrier and a plasterboard pallet from assets/props). Floors 6 and 5: one-for-one
+  Outbreak swaps only. The OR is untouched.
+- core/level.js: floorStep (floor spawns), crawlers placed down, ONE_HANDED + the sort order know the crowbar / knife /
+  sledgehammer, wakeGroup('x7') when the store door is open, wakeGroup('r7') when the lift power returns.
+- render/arena.js: loadPickups draws 'shells' and any weapon file lying flat.
+- main.js: small hooks (slow motion, the threat sign, floor breaches, library weapons, demos, zombie views built at level
+  start). The opening was only watched, not changed.
+
 ## NEWEST (2026-10-17, round 2 of the reveal polish): the home-run burst — read this first, then LATEST below
 
 The user's next pass, built and checked in the browser (NOT yet committed or deployed when written, ask first):
