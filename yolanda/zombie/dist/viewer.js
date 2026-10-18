@@ -38273,13 +38273,13 @@ void main() {
     if (!list) return [0, 0];
     let pos = 0, neg = 0;
     for (const t of list) {
-      const A = T[t] * 3, B = T[t + 1] * 3, D2 = T[t + 2] * 3;
-      const ax = P[A + a1], ay = P[A + a2], bx = P[B + a1], by = P[B + a2], dx = P[D2 + a1], dy = P[D2 + a2], px = s[a1], py = s[a2];
+      const A = T[t] * 3, B = T[t + 1] * 3, D3 = T[t + 2] * 3;
+      const ax = P[A + a1], ay = P[A + a2], bx = P[B + a1], by = P[B + a2], dx = P[D3 + a1], dy = P[D3 + a2], px = s[a1], py = s[a2];
       const den = (by - dy) * (ax - dx) + (dx - bx) * (ay - dy);
       if (Math.abs(den) < 1e-14) continue;
       const l1 = ((by - dy) * (px - dx) + (dx - bx) * (py - dy)) / den, l2 = ((dy - ay) * (px - dx) + (ax - dx) * (py - dy)) / den, l3 = 1 - l1 - l2;
       if (l1 < 0 || l2 < 0 || l3 < 0) continue;
-      const hit = l1 * P[A + u] + l2 * P[B + u] + l3 * P[D2 + u];
+      const hit = l1 * P[A + u] + l2 * P[B + u] + l3 * P[D3 + u];
       if (hit > s[u]) pos++;
       else neg++;
     }
@@ -38795,7 +38795,7 @@ void main() {
     ["handPoses", "hand curls", "the saved R / L hand curl per clip (assets/hold/hand_poses.json, the Rig Lab Hands controls)"],
     ["secondHand", "second hand on handle", "the other hand pulled onto a two-handed weapon's second grip, and the axe's free fist kept on its handle (render/holdfit.js handOnto)"],
     ["carry", "carry idles", "the sledgehammer and chainsaw carried in front of her at rest (render/holdfit.js CARRY)"],
-    ["armSpread", "arms out", "her arms swung out from her body by the cm set per clip, so her hands clear her hips (render/armspread.js, assets/hold/arm_spread.json)"]
+    ["armPose", "arm adjustments", "the per-clip arm, wrist and shoulder adjustments set in the Rig Lab sidebar (render/armpose.js, assets/hold/arm_pose.json)"]
   ];
   var HOLD_LAYERS = Object.fromEntries(LAYERS.map(([k]) => [k, true]));
   var local = () => {
@@ -38822,44 +38822,126 @@ void main() {
     }
   }
 
-  // src/render/armspread.js
+  // src/render/armpose.js
+  var ARM_PARAMS = [
+    ["shUp", "Shoulder", "raise / lower", "deg", -20, 25, 0.5],
+    ["shFwd", "Shoulder", "forward / back", "deg", -20, 20, 0.5],
+    ["out", "Upper arm", "out / in", "cm", -6, 15, 0.5],
+    ["fwd", "Upper arm", "forward / back", "cm", -15, 15, 0.5],
+    ["twist", "Upper arm", "twist (hand swings out / in)", "deg", -45, 45, 1],
+    ["elbow", "Elbow", "bend more / less", "deg", -45, 45, 1],
+    ["fore", "Forearm", "twist (palm up / down)", "deg", -60, 60, 1],
+    ["wristUp", "Wrist", "toward palm / back of hand", "deg", -45, 45, 1],
+    ["wristSide", "Wrist", "toward thumb / little finger", "deg", -30, 30, 1]
+  ];
+  var ARM0 = Object.fromEntries(ARM_PARAMS.map(([k]) => [k, 0]));
+  var D2 = Math.PI / 180;
+  var UP = new Vector3(0, 1, 0);
   var _l = new Vector3();
-  var _s = new Vector3();
-  var _h = new Vector3();
-  var _d2 = new Vector3();
   var _f = new Vector3();
-  var _o = new Vector3();
+  var _a6 = new Vector3();
+  var _b6 = new Vector3();
+  var _c5 = new Vector3();
+  var _d2 = new Vector3();
   var _m4 = new Vector3();
+  var _o = new Vector3();
   var _q6 = new Quaternion();
   var _qw = new Quaternion();
   var _qp = new Quaternion();
-  var UP = new Vector3(0, 1, 0);
-  function spreadArms(bones, cm) {
-    if (!cm || !bones.LeftArm || !bones.RightArm) return;
-    _l.copy(bones.LeftArm.getWorldPosition(_s)).sub(bones.RightArm.getWorldPosition(_h));
+  function worldRot3(bone, axis, ang) {
+    _q6.setFromAxisAngle(axis, ang);
+    bone.getWorldQuaternion(_qw);
+    bone.parent.getWorldQuaternion(_qp);
+    bone.quaternion.copy(_qp.invert().multiply(_q6).multiply(_qw));
+    bone.updateMatrixWorld(true);
+  }
+  function signedTurn(bone, axis, ang, pick) {
+    if (!(Math.abs(ang) > 1e-6)) return;
+    const q0 = bone.quaternion.clone(), m0 = pick();
+    worldRot3(bone, axis, 0.02);
+    const m1 = pick();
+    bone.quaternion.copy(q0);
+    bone.updateMatrixWorld(true);
+    worldRot3(bone, axis, (m1 >= m0 ? 1 : -1) * ang);
+  }
+  function moveHand(bones, side, bone, axis, toward, cm) {
+    if (!(Math.abs(cm) > 1e-3)) return;
+    const s = bone.getWorldPosition(_a6), h = bones[side + "Hand"].getWorldPosition(_b6);
+    _d2.copy(h).sub(s);
+    _d2.addScaledVector(axis, -_d2.dot(axis));
+    const r = _d2.length();
+    if (r < 0.05) return;
+    _m4.crossVectors(axis, _d2);
+    worldRot3(bone, axis, cm / 100 / r * (_m4.dot(toward) >= 0 ? 1 : -1));
+  }
+  function adjustArms(bones, p, opts = {}) {
+    if (!p || !bones.LeftArm || !bones.RightArm) return;
+    _l.copy(bones.LeftArm.getWorldPosition(_a6)).sub(bones.RightArm.getWorldPosition(_b6));
     _l.y = 0;
     _l.normalize();
     _f.crossVectors(_l, UP);
+    const limit = opts.limit !== false;
     for (const side of ["Right", "Left"]) {
-      const c = cm[side];
-      if (!(Math.abs(c) > 1e-3)) continue;
-      const U = bones[side + "Arm"], H = bones[side + "Hand"];
-      if (!U || !H) continue;
-      U.getWorldPosition(_s);
-      H.getWorldPosition(_h);
-      _d2.copy(_h).sub(_s);
-      _d2.addScaledVector(_f, -_d2.dot(_f));
-      const r = _d2.length();
-      if (r < 0.05) continue;
-      _m4.crossVectors(_f, _d2);
-      _o.copy(_l).multiplyScalar(side === "Right" ? -1 : 1);
-      const ang = c / 100 / r * (_m4.dot(_o) >= 0 ? 1 : -1);
-      _q6.setFromAxisAngle(_f, ang);
-      U.getWorldQuaternion(_qw);
-      U.parent.getWorldQuaternion(_qp);
-      U.quaternion.copy(_qp.invert().multiply(_q6).multiply(_qw));
-      U.updateMatrixWorld(true);
+      const P = p[side];
+      if (!P) continue;
+      const S2 = bones[side + "Shoulder"], U = bones[side + "Arm"], L = bones[side + "ForeArm"], H = bones[side + "Hand"];
+      if (!U || !L || !H) continue;
+      const out = _o.copy(_l).multiplyScalar(side === "Right" ? -1 : 1).clone();
+      if (S2) {
+        if (P.shUp) signedTurn(S2, _f.clone(), P.shUp * D2, () => U.getWorldPosition(_c5).y);
+        if (P.shFwd) signedTurn(S2, UP, P.shFwd * D2, () => U.getWorldPosition(_c5).dot(_f));
+      }
+      if (P.out) moveHand(bones, side, U, _f.clone(), out, P.out);
+      if (P.fwd) moveHand(bones, side, U, _l.clone(), _f.clone(), P.fwd);
+      if (P.twist) {
+        const ax = L.getWorldPosition(_c5).sub(U.getWorldPosition(_a6)).normalize().clone();
+        signedTurn(U, ax, P.twist * D2, () => H.getWorldPosition(_d2).sub(U.getWorldPosition(_a6)).dot(out));
+      }
+      if (P.elbow) {
+        const e = L.getWorldPosition(_a6).clone(), ud = e.clone().sub(U.getWorldPosition(_b6)).normalize(), fd2 = H.getWorldPosition(_c5).sub(e).normalize();
+        const hinge = new Vector3().crossVectors(ud, fd2);
+        if (hinge.lengthSq() > 1e-6) signedTurn(L, hinge.normalize(), P.elbow * D2, () => -H.getWorldPosition(_d2).sub(e).normalize().dot(ud));
+      }
+      const before = limit && (P.fore || P.wristUp || P.wristSide) ? armAnatomy(bones, side) : null;
+      if (P.fore) {
+        const fd2 = H.getWorldPosition(_a6).sub(L.getWorldPosition(_b6)).normalize().clone();
+        signedTurn(L, fd2, P.fore * D2, () => armAnatomy(bones, side).roll);
+      }
+      const hq = H.quaternion.clone();
+      if (P.wristUp || P.wristSide) {
+        const I2 = bones[side + "HandIndex1"], K = bones[side + "HandPinky1"], M = bones[side + "HandMiddle1"];
+        if (I2 && K && M) {
+          const w = H.getWorldPosition(_a6).clone(), aw = I2.getWorldPosition(_b6).sub(K.getWorldPosition(_c5)).normalize().clone(), hd = M.getWorldPosition(_c5).sub(w).normalize().clone();
+          const palm = new Vector3().crossVectors(aw, hd).normalize();
+          if (P.wristUp) signedTurn(H, aw, P.wristUp * D2, () => armAnatomy(bones, side).flex);
+          if (P.wristSide) signedTurn(H, palm, P.wristSide * D2, () => armAnatomy(bones, side).dev);
+        }
+      }
+      if (before && before.wristR <= 1) {
+        let after = armAnatomy(bones, side);
+        if (after.wristR > 1) {
+          const hq1 = H.quaternion.clone();
+          let lo = 0, hi = 1;
+          for (let i = 0; i < 12; i++) {
+            const m = (lo + hi) / 2;
+            H.quaternion.slerpQuaternions(hq, hq1, m);
+            H.updateMatrixWorld(true);
+            if (armAnatomy(bones, side).wristR <= 1) lo = m;
+            else hi = m;
+          }
+          H.quaternion.slerpQuaternions(hq, hq1, lo);
+          H.updateMatrixWorld(true);
+        }
+      }
     }
+  }
+  function armReadout(bones) {
+    const o = {};
+    for (const side of ["Right", "Left"]) {
+      const a = armAnatomy(bones, side);
+      if (a) o[side] = { wrist: Math.round(a.wristR * 100), flex: Math.round(a.flex), dev: Math.round(a.dev), fore: Math.round(a.rollR * 100), roll: Math.round(a.roll), elbow: Math.round(a.elbow) };
+    }
+    return o;
   }
 
   // src/viewer.js
@@ -39108,8 +39190,8 @@ void main() {
       });
       this.restPos = {};
       obj.traverse((o) => {
-        var _a6, _b6;
-        if (o.isBone) (_a6 = this.restPos)[_b6 = o.name.replace(/^mixamorig:?/, "")] || (_a6[_b6] = o.position.clone());
+        var _a7, _b7;
+        if (o.isBone) (_a7 = this.restPos)[_b7 = o.name.replace(/^mixamorig:?/, "")] || (_a7[_b7] = o.position.clone());
       });
       this.helper = new SkeletonHelper(obj);
       this.helper.visible = false;
@@ -39202,7 +39284,7 @@ void main() {
       this.obj.updateMatrixWorld(true);
     }
   };
-  var S = { char: "yola", playing: true, frame: 1, speed: 1, overlay: false, gun: "auto", frames: 1, show: "both", mode: "idle", fitOn: true };
+  var S = { char: "yola", playing: true, frame: 1, speed: 1, overlay: false, gun: "auto", frames: 1, show: "both", mode: "idle", fitOn: true, fitWho: "main", armSide: "Right", armLimit: true };
   var weaponOf = () => S.gun === "auto" ? autoWeapon(main?.clip?.name || "") : S.gun;
   var main;
   var ref;
@@ -39482,7 +39564,7 @@ void main() {
     undoPost(ref);
     postureFix(main, ref);
     handPose(main);
-    armSpreadOn(main);
+    armPoseOn(main);
     if (handsUI && handsSeen !== handKey()) {
       handsSeen = handKey();
       handsUI();
@@ -39504,7 +39586,7 @@ void main() {
     updateMags();
     updateFingers();
     updatePistolFitUI();
-    if (!S.playing) clipReadout();
+    if (!S.playing || (readT = (readT + 1) % 10) === 0) jointReadout();
     if (!main.root.visible) {
       for (const o of Object.values(held)) if (o) o.visible = false;
       if (mainGun?.obj) mainGun.obj.visible = false;
@@ -39640,10 +39722,10 @@ void main() {
   fetch("assets/arena/weapons.json").then((r) => r.json()).then(async (j) => {
     WDEFS = j.weapons || {};
     for (const k in LIB_WEAPONS) {
-      const D2 = WDEFS[k];
-      if (!D2) continue;
+      const D3 = WDEFS[k];
+      if (!D3) continue;
       const make = async () => {
-        const o = D2.builder === "knife" ? makeKnife() : (await loadG(D2.file)).scene;
+        const o = D3.builder === "knife" ? makeKnife() : (await loadG(D3.file)).scene;
         o.traverse((m) => {
           if (m.isMesh) m.frustumCulled = false;
         });
@@ -39719,8 +39801,8 @@ void main() {
     while (b.parent?.name === b.name) b = b.parent;
     a.root.getWorldQuaternion(_qk);
     b.getWorldQuaternion(_qk2);
-    const W = _qk.invert().multiply(_qk2), D2 = new Quaternion().setFromEuler(new Euler(x, 0, 0, "YXZ"));
-    postRot(a, b, (q) => q.multiply(W.clone().invert().multiply(D2).multiply(W)));
+    const W = _qk.invert().multiply(_qk2), D3 = new Quaternion().setFromEuler(new Euler(x, 0, 0, "YXZ"));
+    postRot(a, b, (q) => q.multiply(W.clone().invert().multiply(D3).multiply(W)));
   }
   function postRot(a, b, fn) {
     const base = b.quaternion.clone();
@@ -39835,8 +39917,8 @@ void main() {
   var HANDS = {};
   var handKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
   var handsOf = () => {
-    var _a6;
-    return HANDS[_a6 = handKey()] || (HANDS[_a6] = { ...HAND0 });
+    var _a7;
+    return HANDS[_a7 = handKey()] || (HANDS[_a7] = { ...HAND0 });
   };
   fetch("assets/hold/hand_poses.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
     for (const [k, v] of Object.entries(j)) if (typeof v === "object") HANDS[k] = { ...HAND0, ...v };
@@ -39958,14 +40040,14 @@ void main() {
   var FITS = {};
   var fitKey = (a) => a === main ? S.char : a === refX ? "xbot" : "mannequin";
   var fitOf = (a) => {
-    var _a6;
-    return FITS[_a6 = fitKey(a)] || (FITS[_a6] = { ...PFIT0 });
+    var _a7;
+    return FITS[_a7 = fitKey(a)] || (FITS[_a7] = { ...PFIT0 });
   };
   var WFITS = {};
   var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (hospital pack)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
   var fitW = (w, a) => {
-    var _a6, _b6;
-    return w === "pistol" ? fitOf(a) : (_a6 = WFITS[w] || (WFITS[w] = {}))[_b6 = fitKey(a)] || (_a6[_b6] = { ...PFIT0 });
+    var _a7, _b7;
+    return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }));
   };
   fetch("assets/hold/weapon_fit.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
     for (const [w, v] of Object.entries(j)) if (typeof v === "object") for (const [k, f] of Object.entries(v)) (WFITS[w] || (WFITS[w] = {}))[k] = { ...PFIT0, ...f };
@@ -40086,7 +40168,7 @@ void main() {
   function updatePistolFitUI() {
     pfitBox || (pfitBox = buildPistolFit());
     const w = weaponOf();
-    pfitBox.style.display = S.fitOn && !S.uiHidden && (w === "pistol" && $("pistolFist")?.checked || FIT_WEAPONS[w] && w !== "pistol") ? "" : "none";
+    pfitBox.style.display = S.fitOn && !S.uiHidden && !EDIT_WEAPONS[w] && (w === "pistol" && $("pistolFist")?.checked || FIT_WEAPONS[w] && w !== "pistol") ? "" : "none";
     if (w !== pfitBox.dataset.w) {
       pfitBox.dataset.w = w;
       pfitSync();
@@ -40315,7 +40397,7 @@ void main() {
   var inGame = (n) => !!GAME_JS && GAME_JS.includes(`"${n}"`);
   var usedTag = (n) => inGame(n) ? "  (currently used)" : "";
   function fillClips() {
-    var _a6;
+    var _a7;
     const sel = $("clip"), keep = sel.value, anims = mainCache[S.char].gltf.animations.filter((c) => NO_KK(c.name)), byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
     sel.innerHTML = "";
     const group = (label, list) => {
@@ -40347,7 +40429,7 @@ void main() {
     }
     group("TEST RE-BAKES (not in the game)", anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
     const tests = {};
-    for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a6 = c.userData.test] || (tests[_a6] = [])).push(c.name);
+    for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a7 = c.userData.test] || (tests[_a7] = [])).push(c.name);
     for (const [f, list] of Object.entries(tests)) group(`TEST: ${f} (not in the game)`, list.sort());
     const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
     for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === "None" ? "Fists / none" : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
@@ -40450,15 +40532,16 @@ void main() {
     }
     return b;
   }
-  var EDIT_WEAPONS = { alubat: "Bat", packaxe: "Axe", packcrowbar: "Crowbar", sledgehammer: "Sledgehammer" };
+  var EDIT_WEAPONS = { alubat: "Bat", packaxe: "Axe", packcrowbar: "Crowbar", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife", pistol: "Pistol", short: "Shotgun" };
+  var EDIT_LISTS = { pistol: { idle: /^(pistol_idle|ual1_Pistol_Idle_Loop)$/, attack: /^(pistol_idle|pistol_reload)$/ }, short: { idle: /^(sg_reload)$/, attack: /^(sg_reload|reload_rifle_stand|rifle_aim_idle)$/ } };
   var EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
-  var EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|ual1?_Melee_(?!Idle).+)$/;
+  var EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|melee_horizontal|ual1?_Melee_(?!Idle).+)$/;
   var editKey = () => "riglab.edit." + S.gun + "." + S.mode;
   function editClips() {
-    const re = S.mode === "idle" ? EDIT_IDLE : EDIT_ATTACK;
+    const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === "idle" ? EDIT_IDLE : EDIT_ATTACK);
     return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
   }
-  var prettyClip = (n) => n.replace(/^ual1?_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (/^ual/.test(n) ? "  \xB7 Quaternius" : "  \xB7 Mixamo");
+  var prettyClip = (n) => S.gun === "pistol" && S.mode === "attack" && n === "pistol_idle" ? "Firing (the idle with the shot kick)  \xB7 Mixamo" : n.replace(/^ual1?_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (/^ual/.test(n) ? "  \xB7 Quaternius" : "  \xB7 Mixamo");
   function editSync() {
     if (!$("edit") || !main) return;
     for (const b of $("eWeapons").children) b.classList.toggle("on", b.dataset.k === S.gun);
@@ -40473,57 +40556,56 @@ void main() {
     for (const b of $("eShow").children) b.classList.toggle("on", b.dataset.show === S.show);
     $("eFit").classList.toggle("on", S.fitOn);
     $("eAdv").classList.toggle("on", !$("top").hidden);
-    const sp = spreadOf();
-    $("eArmR").value = sp.Right;
-    $("eArmL").value = sp.Left;
-    $("eArmRv").textContent = sp.Right + " cm";
-    $("eArmLv").textContent = sp.Left + " cm";
-    $("eArms").style.opacity = HOLD_LAYERS.armSpread ? 1 : 0.5;
+    sidebarSync();
   }
-  var SPREAD = {};
-  var spreadKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
-  var spreadOf = () => SPREAD[spreadKey()] || { Right: 0, Left: 0 };
-  fetch("assets/hold/arm_spread.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
-    for (const [k, v] of Object.entries(j)) if (typeof v === "object") SPREAD[k] = { Right: 0, Left: 0, ...v };
+  var ARMP = {};
+  var armKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
+  var armOf = (side) => ({ ...ARM0, ...ARMP[armKey()]?.[side] || {} });
+  var keepArms = () => {
     try {
-      for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem("armSpread") || "{}"))) SPREAD[k] = { Right: 0, Left: 0, ...v };
-    } catch {
-    }
-    editSync();
-    refresh?.();
-  });
-  var keepSpread = () => {
-    try {
-      localStorage.setItem("armSpread", JSON.stringify(SPREAD));
+      localStorage.setItem("armPose", JSON.stringify(ARMP));
     } catch {
     }
   };
-  function armSpreadOn(a) {
-    if (a !== main || !HOLD_LAYERS.armSpread) return;
-    const sp = spreadOf();
-    if (!sp.Right && !sp.Left) return;
+  function setArm(side, k, v) {
+    var _a7;
+    const e = ARMP[_a7 = armKey()] || (ARMP[_a7] = {});
+    (e[side] || (e[side] = {}))[k] = v;
+    keepArms();
+  }
+  fetch("assets/hold/arm_pose.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
+    for (const [k, v] of Object.entries(j)) if (typeof v === "object") ARMP[k] = v;
+    try {
+      for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem("armPose") || "{}"))) ARMP[k] = v;
+    } catch {
+    }
+    sidebarSync();
+    refresh?.();
+  });
+  function armPoseOn(a) {
+    if (a !== main || !HOLD_LAYERS.armPose) return;
+    const p = ARMP[armKey()];
+    if (!p) return;
     a.root.updateMatrixWorld(true);
-    const chain = [a.bones.RightArm, a.bones.LeftArm], before = chain.map((b) => b.quaternion.clone());
-    spreadArms(a.bones, sp);
+    const chain = ["Shoulder", "Arm", "ForeArm", "Hand"].flatMap((n) => ["Right", "Left"].map((s) => a.bones[s + n])).filter(Boolean), before = chain.map((b) => b.quaternion.clone());
+    adjustArms(a.bones, p, { limit: S.armLimit !== false });
     const after = chain.map((b) => b.quaternion.clone());
     chain.forEach((b, i) => {
-      b.quaternion.copy(before[i]);
-      postRot(a, b, (cur) => cur.copy(after[i]));
+      if (!after[i].equals(before[i])) {
+        b.quaternion.copy(before[i]);
+        postRot(a, b, (cur) => cur.copy(after[i]));
+      }
     });
     a.root.updateMatrixWorld(true);
   }
-  function clipReadout() {
-    if (!$("eClipRead") || !main?.action) return;
+  var ensureBodyClip = () => {
     if (bodyClipC?.char !== S.char) bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char });
-    const h = bodyClipFrame(bodyClipC, 3e-3), d = { Right: 0, Left: 0 };
-    for (const x of h) d[x.side] = Math.max(d[x.side], x.depth);
-    $("eClipRead").textContent = d.Right || d.Left ? `inside her body: R ${(d.Right * 100).toFixed(1)} cm, L ${(d.Left * 100).toFixed(1)} cm` : "clear of her body";
-  }
-  async function autoSpread() {
+    return bodyClipC;
+  };
+  async function autoOut() {
     const keep = { frame: S.frame, playing: S.playing };
     pausedUI(true);
-    if (bodyClipC?.char !== S.char) bodyClipC = Object.assign(buildBodyClip(main.obj, main.bones), { char: S.char });
-    const k = spreadKey(), sp = SPREAD[k] = { ...spreadOf() };
+    ensureBodyClip();
     const depths = (side) => {
       const d = [];
       for (let f = 1; f <= S.frames; f++) {
@@ -40535,15 +40617,14 @@ void main() {
       return d;
     };
     for (const side of ["Right", "Left"]) {
-      sp[side] = 0;
+      setArm(side, "out", 0);
       const d0 = depths(side);
       if (!d0.some((x) => x > 0)) continue;
-      sp[side] = 15;
+      setArm(side, "out", 15);
       const floor = depths(side);
       const ok = (c) => {
-        sp[side] = c;
-        const d = depths(side);
-        return d.every((x, i) => x <= Math.max(floor[i], 0.01) + 2e-3);
+        setArm(side, "out", c);
+        return depths(side).every((x, i) => x <= Math.max(floor[i], 0.01) + 2e-3);
       };
       let lo = 0, hi = 15;
       while (hi - lo > 0.5) {
@@ -40551,16 +40632,294 @@ void main() {
         if (ok(mid)) hi = mid;
         else lo = mid;
       }
-      sp[side] = Math.min(15, hi + 1);
+      setArm(side, "out", Math.min(15, hi + 1));
     }
-    keepSpread();
     S.frame = keep.frame;
     pausedUI(!keep.playing);
     refresh();
-    editSync();
+    sidebarSync();
+  }
+  var SB = null;
+  var SB_SHUT = "riglab.sb.shut";
+  function fitTarget() {
+    return S.fitWho === "ref" ? ref : main;
+  }
+  function fitScopeKey(w) {
+    return w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
+  }
+  function fitEditing() {
+    var _a7;
+    if (S.gun === "pistol") return fitOf(fitTarget());
+    const w = S.gun, a = fitTarget(), k = fitKey(a), c = WFITS[fitScopeKey(w)];
+    return c?.[k] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[k] || (_a7[k] = { ...PFIT0 }));
+  }
+  var keepFits = () => {
+    try {
+      localStorage.setItem("weaponFits", JSON.stringify(WFITS));
+      localStorage.setItem("pistolFits", JSON.stringify(FITS));
+    } catch {
+    }
+  };
+  function buildSidebar() {
+    const root = $("sidebar");
+    if (!root) return;
+    let shut2 = {};
+    try {
+      shut2 = JSON.parse(localStorage.getItem(SB_SHUT) || "{}");
+    } catch {
+    }
+    const section = (id, title) => {
+      const h = document.createElement("div");
+      h.className = "sbh" + (shut2[id] ? " shut" : "");
+      h.textContent = title;
+      const body = document.createElement("div");
+      body.className = "sbb";
+      body.hidden = !!shut2[id];
+      h.onclick = () => {
+        shut2[id] = !shut2[id];
+        body.hidden = shut2[id];
+        h.classList.toggle("shut", shut2[id]);
+        try {
+          localStorage.setItem(SB_SHUT, JSON.stringify(shut2));
+        } catch {
+        }
+      };
+      root.append(h, body);
+      return { h, body };
+    };
+    const seg = (parent, items, on) => {
+      const d = document.createElement("div");
+      d.className = "seg";
+      for (const [v, t] of items) {
+        const b = document.createElement("button");
+        b.textContent = t;
+        b.dataset.v = v;
+        b.onclick = () => on(v);
+        d.appendChild(b);
+      }
+      parent.appendChild(d);
+      return d;
+    };
+    const slider = (parent, label, unit, min, max2, step, get, set, def = 0) => {
+      const r = document.createElement("div");
+      r.className = "sbr";
+      r.innerHTML = `<label>${label}</label><input type="number" step="${step}"><span class="u">${unit}</span><button class="rz" title="reset">&#8634;</button><input type="range" min="${min}" max="${max2}" step="${step}">`;
+      const [num, rng] = r.querySelectorAll("input"), rz = r.querySelector(".rz");
+      const put = (v) => {
+        set(+v);
+        num.value = +(+v).toFixed(2);
+        rng.value = v;
+        r.classList.toggle("changed", Math.abs(+v - def) > 1e-6);
+        refresh();
+        jointReadout();
+      };
+      rng.oninput = () => put(rng.value);
+      num.onchange = () => put(num.value);
+      rz.onclick = () => put(def);
+      num.addEventListener("keydown", (e) => e.stopPropagation());
+      parent.appendChild(r);
+      return () => {
+        const v = get();
+        num.value = +(+v).toFixed(2);
+        rng.value = v;
+        r.classList.toggle("changed", Math.abs(+v - def) > 1e-6);
+      };
+    };
+    const ups = [];
+    const W1 = section("weapon", "Weapon position");
+    const wHead = document.createElement("div");
+    wHead.className = "sbnote";
+    W1.body.appendChild(wHead);
+    const who = seg(W1.body, [["main", "Yola"], ["ref", "Dummy"]], (v) => {
+      S.fitWho = v;
+      sidebarSync();
+    });
+    const scope = seg(W1.body, [["all", "All clips"], ["clip", "This clip only"]], (v) => {
+      const w = S.gun, k = fitKey(fitTarget()), key = fitScopeKey(w);
+      if (v === "clip") {
+        const base = fitEditing();
+        (WFITS[key] || (WFITS[key] = {}))[k] = { ...base };
+      } else if (WFITS[key]) delete WFITS[key][k];
+      keepFits();
+      refresh();
+      sidebarSync();
+    });
+    for (const [i, [k, lbl, lo, hi, st]] of PFIT_ROWS.entries()) {
+      const up = slider(W1.body, lbl, "", lo, hi, st, () => fitEditing()[k], (v) => {
+        fitEditing()[k] = v;
+        keepFits();
+      }, k === "size" ? 100 : 0);
+      ups.push(up);
+      up.row = W1.body.lastChild;
+      up.idx = i;
+    }
+    const fitRows = ups.slice();
+    const A1 = section("arms", "Arms (Yola, this clip)");
+    const side = seg(A1.body, [["Right", "Right arm"], ["Left", "Left arm"]], (v) => {
+      S.armSide = v;
+      sidebarSync();
+    });
+    let grp = "";
+    const armRows = [];
+    for (const [k, g, lbl, unit, lo, hi, st] of ARM_PARAMS) {
+      if (g !== grp) {
+        grp = g;
+        const t = document.createElement("div");
+        t.className = "sbg";
+        t.textContent = g;
+        A1.body.appendChild(t);
+      }
+      armRows.push(slider(A1.body, lbl, unit, lo, hi, st, () => armOf(S.armSide || "Right")[k], (v) => setArm(S.armSide || "Right", k, v)));
+    }
+    {
+      const t = document.createElement("div");
+      t.className = "sbg";
+      t.textContent = "Hand";
+      A1.body.appendChild(t);
+    }
+    armRows.push(slider(A1.body, "curl (open / fist)", "%", 0, 150, 5, () => Math.round((handsOf()[S.armSide || "Right"] || 0) * 100), (v) => {
+      handsOf()[S.armSide || "Right"] = v / 100;
+      try {
+        localStorage.setItem("handPoses", JSON.stringify(HANDS));
+      } catch {
+      }
+      if (!HOLD_LAYERS.handPoses && v > 0) {
+        HOLD_LAYERS.handPoses = true;
+        keepHoldLayers();
+        layerSyncAll();
+      }
+    }));
+    const lim = document.createElement("label");
+    lim.className = "chk";
+    lim.innerHTML = '<input type="checkbox"> keep inside the joint limits';
+    lim.title = "an adjustment never takes the wrist past its real range (the clip's own pose is left alone)";
+    const limC = lim.querySelector("input");
+    limC.checked = S.armLimit !== false;
+    limC.onchange = () => {
+      S.armLimit = limC.checked;
+      refresh();
+      jointReadout();
+    };
+    A1.body.appendChild(lim);
+    const btns = document.createElement("div");
+    btns.className = "sbbtns";
+    btns.innerHTML = '<button data-a="auto" title="both arms: the least out that clears her body on every frame of this clip, plus 1 cm">Auto: clear her hips</button><button data-a="copy">Copy to other arm</button><button data-a="reset">Reset this arm</button>';
+    btns.onclick = async (e) => {
+      var _a7;
+      const a = e.target.dataset.a, s0 = S.armSide || "Right", s1 = s0 === "Right" ? "Left" : "Right";
+      if (a === "auto") {
+        e.target.textContent = "working...";
+        await autoOut();
+        e.target.textContent = "Auto: clear her hips";
+      }
+      if (a === "copy") {
+        const e2 = ARMP[_a7 = armKey()] || (ARMP[_a7] = {});
+        e2[s1] = { ...armOf(s0) };
+        handsOf()[s1] = handsOf()[s0];
+        keepArms();
+      }
+      if (a === "reset") {
+        const e2 = ARMP[armKey()];
+        if (e2) delete e2[s0];
+        handsOf()[s0] = 0;
+        keepArms();
+      }
+      refresh();
+      sidebarSync();
+      jointReadout();
+    };
+    A1.body.appendChild(btns);
+    const C1 = section("check", "Joint check (this frame)");
+    const chk = document.createElement("div");
+    chk.id = "sbCheck";
+    C1.body.appendChild(chk);
+    const ck2 = document.createElement("div");
+    ck2.className = "sbnote";
+    ck2.textContent = "Wrist and forearm: % of their real range (green under 75, amber to 100, red past it). Inside: how deep an arm is inside her body.";
+    C1.body.appendChild(ck2);
+    const L1 = section("layers", "Layers");
+    const layerBoxes = [];
+    for (const [k, label, why] of LAYERS) {
+      const l = document.createElement("label");
+      l.className = "chk";
+      l.title = why;
+      l.innerHTML = `<input type="checkbox"> ${label}`;
+      const i = l.querySelector("input");
+      i.onchange = () => {
+        HOLD_LAYERS[k] = i.checked;
+        keepHoldLayers();
+        layerSyncAll();
+        refresh();
+        jointReadout();
+      };
+      layerBoxes.push([k, i]);
+      L1.body.appendChild(l);
+    }
+    const V1 = section("save", "Save");
+    const sv = document.createElement("div");
+    sv.className = "sbbtns";
+    sv.innerHTML = '<button data-a="save" class="primary">Save all</button><span class="sbnote" id="sbSaved"></span>';
+    sv.querySelector("button").onclick = async () => {
+      const files = { "weapon_fit.json": WFITS, "arm_pose.json": ARMP, "hand_poses.json": HANDS, "hold_layers.json": HOLD_LAYERS, "pistol_fit.json": FITS };
+      let ok = true;
+      for (const [f, j] of Object.entries(files)) {
+        const r = await fetch("/__shot/" + f, { method: "POST", body: JSON.stringify(j, null, 1) });
+        ok && (ok = r.ok);
+      }
+      $("sbSaved").textContent = ok ? "saved to shots/ (tell Claude to put it in the game)" : "save failed";
+    };
+    V1.body.appendChild(sv);
+    SB = { wHead, who, scope, fitRows, side, armRows, layerBoxes, A1 };
+    sidebarSync();
+  }
+  function layerSyncAll() {
+    if (SB) for (const [k, i] of SB.layerBoxes) i.checked = !!HOLD_LAYERS[k];
+    const pc = $("posture");
+    if (pc) pc.checked = HOLD_LAYERS.posture;
+    for (const i of document.querySelectorAll("#top input[data-layer]")) i.checked = !!HOLD_LAYERS[i.dataset.layer];
+  }
+  function sidebarSync() {
+    if (!SB || !main) return;
+    const w = S.gun, a = fitTarget();
+    SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? CHARS[S.char]?.label || S.char : ref === refX ? "X Bot" : "the mannequin"}`;
+    for (const b of SB.who.children) b.classList.toggle("on", b.dataset.v === (S.fitWho || "main"));
+    const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
+    for (const b of SB.scope.children) {
+      b.classList.toggle("on", b.dataset.v === (clipOwn ? "clip" : "all"));
+      b.disabled = w === "pistol";
+    }
+    const labels = FIT_LABELS[w] || PFIT_ROWS.map((r) => r[1]);
+    for (const up of SB.fitRows) {
+      up();
+      up.row.querySelector("label").textContent = labels[up.idx] || PFIT_ROWS[up.idx][1];
+    }
+    for (const b of SB.side.children) b.classList.toggle("on", b.dataset.v === (S.armSide || "Right"));
+    for (const up of SB.armRows) up();
+    layerSyncAll();
+  }
+  var readT = 0;
+  function jointReadout() {
+    const el = $("sbCheck");
+    if (!el || !main?.action || $("sidebar")?.hidden) return;
+    ensureBodyClip();
+    const hits = bodyClipFrame(bodyClipC, 3e-3), inside = { Right: 0, Left: 0 };
+    for (const x of hits) inside[x.side] = Math.max(inside[x.side], x.depth);
+    const r = armReadout(main.bones), c = (p) => p >= 100 ? "bad" : p >= 75 ? "warn" : "ok", cm = (d) => d > 0.01 ? "bad" : d > 3e-3 ? "warn" : "ok";
+    const R = r.Right || {}, L = r.Left || {};
+    el.innerHTML = `<table><tr><th></th><th>Right</th><th>Left</th></tr>
+    <tr><td>inside her body</td><td class="${cm(inside.Right)}">${(inside.Right * 100).toFixed(1)} cm</td><td class="${cm(inside.Left)}">${(inside.Left * 100).toFixed(1)} cm</td></tr>
+    <tr><td>wrist</td><td class="${c(R.wrist)}">${R.wrist}%</td><td class="${c(L.wrist)}">${L.wrist}%</td></tr>
+    <tr><td>&nbsp; palm / thumb</td><td>${R.flex}&deg; / ${R.dev}&deg;</td><td>${L.flex}&deg; / ${L.dev}&deg;</td></tr>
+    <tr><td>forearm turn</td><td class="${c(R.fore)}">${R.fore}%</td><td class="${c(L.fore)}">${L.fore}%</td></tr>
+    <tr><td>elbow</td><td class="${R.elbow > 150 ? "bad" : "ok"}">${R.elbow}&deg;</td><td class="${L.elbow > 150 ? "bad" : "ok"}">${L.elbow}&deg;</td></tr></table>`;
   }
   function editPick(name) {
     if (!name) return;
+    stopFiring();
+    if (S.gun === "pistol" && S.mode === "attack" && name === "pistol_idle") {
+      SHOT.auto = true;
+      SHOT.next = 0;
+    }
     try {
       localStorage.setItem(editKey(), name);
     } catch {
@@ -40583,8 +40942,8 @@ void main() {
       return;
     }
     const x = S.show === "main" ? main.root.position.x : S.show === "ref" ? ref.root.position.x : 0, c = new Vector3(x, 0.95, 0);
-    const D2 = { front: [0, 0.1, 1], back: [0, 0.1, -1], right: [-1, 0.1, 0], left: [1, 0.1, 0], three: [-0.7, 0.35, 0.75], above: [0, 1, 0.03], below: [0, -0.5, 0.85] }[k];
-    camera.position.copy(c).addScaledVector(new Vector3(...D2).normalize(), S.show === "both" ? 3.6 : 2.6);
+    const D3 = { front: [0, 0.1, 1], back: [0, 0.1, -1], right: [-1, 0.1, 0], left: [1, 0.1, 0], three: [-0.7, 0.35, 0.75], above: [0, 1, 0.03], below: [0, -0.5, 0.85] }[k];
+    camera.position.copy(c).addScaledVector(new Vector3(...D3).normalize(), S.show === "both" ? 3.6 : 2.6);
     controls.target.copy(c);
     controls.update();
   }
@@ -40620,8 +40979,11 @@ void main() {
     for (const b of $("eAngles").children) b.onclick = () => editAngle(b.dataset.a);
     $("eFit").onclick = () => {
       S.fitOn = !S.fitOn;
+      $("sidebar").hidden = !S.fitOn;
+      fitClipPanel();
       updatePistolFitUI();
       editSync();
+      jointReadout();
     };
     $("eAdv").onclick = () => {
       const on = $("top").hidden;
@@ -40632,23 +40994,7 @@ void main() {
       editSync();
     };
     $("eHide").onclick = ui;
-    for (const [id, side] of [["eArmR", "Right"], ["eArmL", "Left"]]) $(id).oninput = (e) => {
-      const k = spreadKey();
-      (SPREAD[k] || (SPREAD[k] = { Right: 0, Left: 0 }))[side] = +e.target.value;
-      keepSpread();
-      refresh();
-      editSync();
-    };
-    $("eArmAuto").onclick = async () => {
-      $("eArmAuto").textContent = "...";
-      await autoSpread();
-      $("eArmAuto").textContent = "Auto";
-    };
-    $("eArmSave").onclick = async () => {
-      const r = await fetch("/__shot/arm_spread.json", { method: "POST", body: JSON.stringify(SPREAD, null, 1) });
-      $("eArmSave").textContent = r.ok ? "saved" : "save failed";
-      setTimeout(() => $("eArmSave").textContent = "Save", 1500);
-    };
+    buildSidebar();
   }
   async function editStart() {
     if (S.char !== "yola2") await setChar("yola2");
@@ -40839,13 +41185,17 @@ void main() {
     const fitClipPanel = () => {
       if (!$("top").hidden) $("top").style.top = $("edit").getBoundingClientRect().bottom + 6 + "px";
       $("clipPanel").style.top = barsBottom() + 6 + "px";
+      const sb = $("sidebar");
+      sb.style.top = barsBottom() + 6 + "px";
+      sb.style.bottom = $("bottom").offsetHeight + 12 + "px";
     };
     new ResizeObserver(fitClipPanel).observe($("top"));
     new ResizeObserver(fitClipPanel).observe($("edit"));
+    new ResizeObserver(fitClipPanel).observe($("bottom"));
     fitClipPanel();
     let shown = null;
     const ui = () => {
-      const ids = ["edit", "top", "bottom", "side", "clipPanel"];
+      const ids = ["edit", "top", "bottom", "side", "clipPanel", "sidebar"];
       if (!shown) {
         shown = ids.filter((id) => !$(id).hidden);
         for (const id of ids) $(id).hidden = true;
