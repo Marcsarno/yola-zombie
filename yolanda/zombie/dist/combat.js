@@ -52495,16 +52495,16 @@ void main() {
     // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
     // reach to the belt and back is left alone.
     shotgunLeftHand(rf, G5) {
-      const U2 = G5.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth2(clamp5(u, 0, 1));
-      const shellOn = rf >= SH.from && rf <= SH.to;
+      const U2 = G5.userData, SP = SHOTGUN_SPEC, SH2 = SP.shell, smooth01 = (u) => smooth2(clamp5(u, 0, 1));
+      const shellOn = rf >= SH2.from && rf <= SH2.to;
       this.grip("Left", _v4);
       let wPort = 0;
-      const tail = rf > SH.to && rf < SH.to + 5;
+      const tail = rf > SH2.to && rf < SH2.to + 5;
       if (shellOn || tail) {
-        _v32.copy(U2.port.position).add(_v43.set(0, -SH.portDown, 0));
+        _v32.copy(U2.port.position).add(_v43.set(0, -SH2.portDown, 0));
         G5.localToWorld(_v32);
         wPort = tail ? 0 : smooth01(1 - (_v4.distanceTo(_v32) - 0.05) / 0.2);
-        const ins = tail ? smooth01(1 - (rf - SH.to) / 5) : smooth01((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT);
+        const ins = tail ? smooth01(1 - (rf - SH2.to) / 5) : smooth01((rf - (SH2.to - SHELL_INSERT)) / SHELL_INSERT);
         if (ins > 0) {
           this.bones.LeftHandThumb2.getWorldPosition(_v43).lerp(this.bones.LeftHandIndex2.getWorldPosition(_v6), 0.5).sub(_v4);
           _v6.copy(U2.port.position);
@@ -52524,7 +52524,7 @@ void main() {
       if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32), wHold);
       const S2 = this.shell;
       S2.visible = shellOn;
-      if (shellOn) placeShell(this.bones, S2, U2.port.getWorldPosition(_v32), "Left", smooth2(clamp5((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT, 0, 1)));
+      if (shellOn) placeShell(this.bones, S2, U2.port.getWorldPosition(_v32), "Left", smooth2(clamp5((rf - (SH2.to - SHELL_INSERT)) / SHELL_INSERT, 0, 1)));
     }
     // ---- the weapon test arena (src/arena/testarena.js) ----
     // Library attack clips (skeleton-only GLB, same bones): root pinned like every clip, driven by the attack clock.
@@ -70915,6 +70915,11 @@ void main() {
         q.pounceCd = 0.5;
       }
     } },
+    // (2026-10-18, the user: "show me a player of the executions and the camera"): every weapon's finisher in turn, played by
+    // itself (the real beat: render/execution.js); the buttons pick one to repeat, or all of them again
+    finishers: { label: "Finishers: every weapon in turn", weapon: "bat", setup(sim2, game) {
+      showcase(sim2, game);
+    } },
     low: { label: "Low targets: a crawler, a floored walker", weapon: "axe", setup(sim2) {
       const c = put(sim2, 0.4, 0.6, "normal");
       c.crawling = true;
@@ -70961,6 +70966,94 @@ void main() {
       if (e.code === "KeyR") setup();
     });
     setup();
+  }
+  var SHOW = ["bat", "axe", "crowbar", "knife", "sledgehammer", "fists", "pistol", "shotgun"];
+  var SHOW_LABEL = { bat: "Bat", axe: "Axe", crowbar: "Crowbar", knife: "Knife", sledgehammer: "Sledgehammer", fists: "Kick", pistol: "Pistol", shotgun: "Shotgun" };
+  var showOnly = null;
+  var SH = null;
+  function showcase(sim2, game) {
+    let bar = document.getElementById("showBar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "showBar";
+      bar.style.cssText = "position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:calc(100vw - 32px);font:600 12.5px system-ui;color:#fff;background:rgba(20,26,30,.8);padding:7px 9px;border-radius:10px";
+      const b = (k, t) => `<button data-w="${k}" style="font:600 12.5px system-ui;border:0;border-radius:7px;padding:5px 9px;cursor:pointer">${t}</button>`;
+      bar.innerHTML = '<span id="showNow" style="min-width:96px">\u2026</span>' + b("all", "All") + SHOW.map((w) => b(w, SHOW_LABEL[w])).join("");
+      bar.onclick = (e) => {
+        const w = e.target.dataset?.w;
+        if (!w) return;
+        showOnly = w === "all" ? null : w;
+        if (SH) {
+          SH.i = w === "all" ? 0 : SHOW.indexOf(w);
+          SH.state = "next";
+          SH.t = 0;
+        }
+      };
+      document.body.appendChild(bar);
+    }
+    const S2 = SH = { i: 0, state: "next", t: 0, z: null };
+    const mark = () => {
+      for (const el of bar.querySelectorAll("button")) {
+        const on = el.dataset.w === (showOnly || "all");
+        el.style.background = on ? "#ffb347" : "#e8ecec";
+        el.style.color = "#1b2222";
+      }
+    };
+    mark();
+    game.scriptInput = (s, dt) => {
+      const r = { moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0, usePresses: 0, dodgePresses: 0 };
+      const sim3 = game.sim, p = sim3.player;
+      S2.t += dt;
+      if (S2.state === "next") {
+        mark();
+        game.clearPieces?.();
+        sim3.zombies = [];
+        const w = showOnly || SHOW[S2.i % SHOW.length];
+        p.setLoadout([w, "fists"], w);
+        p.x = 0.4;
+        p.z = 1.6;
+        p.aimYaw = p.aimTarget = Math.PI;
+        p.vx = p.vz = 0;
+        p.px = p.x;
+        p.pz = p.z;
+        const z = sim3.spawnZombie("placed", { x: 0.55, z: -1.1, yaw: 0, passive: true, speedMul: 0 });
+        z.set("chase");
+        z.executable = sim3.time + 99;
+        S2.z = z;
+        S2.state = "wait";
+        S2.t = 0;
+        const now = document.getElementById("showNow");
+        if (now) now.textContent = SHOW_LABEL[w];
+        return r;
+      }
+      if (S2.state === "wait" && S2.t > 0.9) {
+        S2.state = "press";
+        S2.t = 0;
+      }
+      if (S2.state === "press") {
+        const dx = S2.z.x - p.x, dz = S2.z.z - p.z, l = Math.hypot(dx, dz) || 1;
+        r.aimX = dx / l;
+        r.aimZ = dz / l;
+        if (S2.t > 0.15) {
+          S2.state = "play";
+          S2.t = 0;
+        }
+        return r;
+      }
+      if (S2.state === "play" && !S2.z.alive && !game.execActive && S2.t > 0.3) {
+        S2.state = "rest";
+        S2.t = 0;
+      }
+      if (S2.state === "play" && S2.t > 6) {
+        S2.state = "next";
+        S2.i++;
+      }
+      if (S2.state === "rest" && S2.t > 1.1) {
+        S2.state = "next";
+        S2.i++;
+      }
+      return r;
+    };
   }
   function autoplay(sim2) {
     const p = sim2.player, r = { moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0, usePresses: 0, dodgePresses: 0 };
@@ -71649,7 +71742,7 @@ void main() {
     }
   }
   addEventListener("blur", () => {
-    if (sim && !paused && !sim.player.dead) setPaused(true);
+    if (sim && !paused && !sim.player.dead && params.get("demo") !== "finishers") setPaused(true);
   });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && sim && !paused && !sim.player.dead) setPaused(true);
@@ -72729,7 +72822,12 @@ void main() {
     return yola;
   }, get physics() {
     return physics;
-  }, zviews, get looseMeshes() {
+  }, zviews, get execActive() {
+    return execDir.active;
+  }, clearPieces() {
+    ZombieView.clearPieces();
+    gibs.clear();
+  }, get looseMeshes() {
     return ZombieView.looseMeshes;
   }, get propSrc() {
     return ZombieView.propSrc;
