@@ -38874,8 +38874,34 @@ void main() {
     _m4.crossVectors(axis, _d2);
     worldRot3(bone, axis, cm / 100 / r * (_m4.dot(toward) >= 0 ? 1 : -1));
   }
+  var sm2 = (u) => {
+    u = Math.min(1, Math.max(0, u));
+    return u * u * (3 - 2 * u);
+  };
+  var COS30 = Math.cos(30 * D2);
+  var COS60 = Math.cos(60 * D2);
+  function hipWeight(bones, side) {
+    const U = bones[side + "Arm"], L = bones[side + "ForeArm"], H = bones[side + "Hand"], Hip = bones[side + "UpLeg"];
+    if (!U || !L || !H || !Hip) return 0;
+    const ud = L.getWorldPosition(_a6).sub(U.getWorldPosition(_b6)).normalize(), wa = sm2((-ud.y - COS60) / (COS30 - COS60));
+    const h = H.getWorldPosition(_a6), hp = Hip.getWorldPosition(_b6), d = Math.hypot(h.x - hp.x, h.z - hp.z);
+    return wa * (1 - sm2((d - 0.16) / (0.3 - 0.16)));
+  }
   function adjustArms(bones, p, opts = {}) {
-    if (!p || !bones.LeftArm || !bones.RightArm) return;
+    if (!bones.LeftArm || !bones.RightArm) return;
+    if (opts.hip) {
+      const q = { Right: { ...p?.Right || {} }, Left: { ...p?.Left || {} } };
+      for (const side of ["Right", "Left"]) {
+        const h = opts.hip[side];
+        if (!h) continue;
+        const w = hipWeight(bones, side);
+        if (opts.weights) opts.weights[side] = w;
+        if (w <= 1e-3) continue;
+        for (const k in h) if (typeof h[k] === "number") q[side][k] = (q[side][k] || 0) + w * h[k];
+      }
+      p = q;
+    }
+    if (!p) return;
     _l.copy(bones.LeftArm.getWorldPosition(_a6)).sub(bones.RightArm.getWorldPosition(_b6));
     _l.y = 0;
     _l.normalize();
@@ -40559,7 +40585,9 @@ void main() {
     sidebarSync();
   }
   var ARMP = {};
-  var armKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
+  var clipArmKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
+  var hipArmKey = () => S.char + ":*hips";
+  var armKey = () => S.armScope === "hips" ? hipArmKey() : clipArmKey();
   var armOf = (side) => ({ ...ARM0, ...ARMP[armKey()]?.[side] || {} });
   var keepArms = () => {
     try {
@@ -40584,11 +40612,12 @@ void main() {
   });
   function armPoseOn(a) {
     if (a !== main || !HOLD_LAYERS.armPose) return;
-    const p = ARMP[armKey()];
-    if (!p) return;
+    const p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()];
+    if (!p && !hip) return;
     a.root.updateMatrixWorld(true);
     const chain = ["Shoulder", "Arm", "ForeArm", "Hand"].flatMap((n) => ["Right", "Left"].map((s) => a.bones[s + n])).filter(Boolean), before = chain.map((b) => b.quaternion.clone());
-    adjustArms(a.bones, p, { limit: S.armLimit !== false });
+    S.hipW = {};
+    adjustArms(a.bones, p || null, { limit: S.armLimit !== false, hip, weights: S.hipW });
     const after = chain.map((b) => b.quaternion.clone());
     chain.forEach((b, i) => {
       if (!after[i].equals(before[i])) {
@@ -40755,6 +40784,11 @@ void main() {
     }
     const fitRows = ups.slice();
     const A1 = section("arms", "Arms (Yola, this clip)");
+    const ascope = seg(A1.body, [["clip", "This clip"], ["hips", "Hands at hips (all clips)"]], (v) => {
+      S.armScope = v;
+      sidebarSync();
+    });
+    ascope.title = "This clip: settings for this clip only. Hands at hips: one rule for every clip, applied only while an arm hangs beside her hip (it fades out as the arm lifts into a swing)";
     const side = seg(A1.body, [["Right", "Right arm"], ["Left", "Left arm"]], (v) => {
       S.armSide = v;
       sidebarSync();
@@ -40869,7 +40903,7 @@ void main() {
       $("sbSaved").textContent = ok ? "saved to shots/ (tell Claude to put it in the game)" : "save failed";
     };
     V1.body.appendChild(sv);
-    SB = { wHead, who, scope, fitRows, side, armRows, layerBoxes, A1 };
+    SB = { wHead, who, scope, fitRows, side, ascope, armRows, layerBoxes, A1 };
     sidebarSync();
   }
   function layerSyncAll() {
@@ -40894,6 +40928,8 @@ void main() {
       up.row.querySelector("label").textContent = labels[up.idx] || PFIT_ROWS[up.idx][1];
     }
     for (const b of SB.side.children) b.classList.toggle("on", b.dataset.v === (S.armSide || "Right"));
+    for (const b of SB.ascope.children) b.classList.toggle("on", b.dataset.v === (S.armScope || "clip"));
+    SB.A1.h.textContent = S.armScope === "hips" ? "Arms (Yola, hands at hips: every clip)" : "Arms (Yola, this clip)";
     for (const up of SB.armRows) up();
     layerSyncAll();
   }
@@ -40911,6 +40947,7 @@ void main() {
     <tr><td>wrist</td><td class="${c(R.wrist)}">${R.wrist}%</td><td class="${c(L.wrist)}">${L.wrist}%</td></tr>
     <tr><td>&nbsp; palm / thumb</td><td>${R.flex}&deg; / ${R.dev}&deg;</td><td>${L.flex}&deg; / ${L.dev}&deg;</td></tr>
     <tr><td>forearm turn</td><td class="${c(R.fore)}">${R.fore}%</td><td class="${c(L.fore)}">${L.fore}%</td></tr>
+    <tr><td>hands-at-hips rule</td><td>${Math.round((S.hipW?.Right || 0) * 100)}%</td><td>${Math.round((S.hipW?.Left || 0) * 100)}%</td></tr>
     <tr><td>elbow</td><td class="${R.elbow > 150 ? "bad" : "ok"}">${R.elbow}&deg;</td><td class="${L.elbow > 150 ? "bad" : "ok"}">${L.elbow}&deg;</td></tr></table>`;
   }
   function editPick(name) {

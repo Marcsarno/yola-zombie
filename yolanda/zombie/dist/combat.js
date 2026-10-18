@@ -49783,8 +49783,34 @@ void main() {
     _m4.crossVectors(axis, _d3);
     worldRot3(bone, axis, cm / 100 / r * (_m4.dot(toward) >= 0 ? 1 : -1));
   }
+  var sm2 = (u) => {
+    u = Math.min(1, Math.max(0, u));
+    return u * u * (3 - 2 * u);
+  };
+  var COS30 = Math.cos(30 * D2);
+  var COS60 = Math.cos(60 * D2);
+  function hipWeight(bones, side) {
+    const U2 = bones[side + "Arm"], L2 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], Hip = bones[side + "UpLeg"];
+    if (!U2 || !L2 || !H4 || !Hip) return 0;
+    const ud = L2.getWorldPosition(_a5).sub(U2.getWorldPosition(_b5)).normalize(), wa = sm2((-ud.y - COS60) / (COS30 - COS60));
+    const h = H4.getWorldPosition(_a5), hp = Hip.getWorldPosition(_b5), d = Math.hypot(h.x - hp.x, h.z - hp.z);
+    return wa * (1 - sm2((d - 0.16) / (0.3 - 0.16)));
+  }
   function adjustArms(bones, p, opts = {}) {
-    if (!p || !bones.LeftArm || !bones.RightArm) return;
+    if (!bones.LeftArm || !bones.RightArm) return;
+    if (opts.hip) {
+      const q = { Right: { ...p?.Right || {} }, Left: { ...p?.Left || {} } };
+      for (const side of ["Right", "Left"]) {
+        const h = opts.hip[side];
+        if (!h) continue;
+        const w = hipWeight(bones, side);
+        if (opts.weights) opts.weights[side] = w;
+        if (w <= 1e-3) continue;
+        for (const k in h) if (typeof h[k] === "number") q[side][k] = (q[side][k] || 0) + w * h[k];
+      }
+      p = q;
+    }
+    if (!p) return;
     _l.copy(bones.LeftArm.getWorldPosition(_a5)).sub(bones.RightArm.getWorldPosition(_b5));
     _l.y = 0;
     _l.normalize();
@@ -50881,9 +50907,9 @@ void main() {
         const w = Math.min(1, a.getEffectiveWeight());
         if (w > 1e-3) list.push([w, this.poseSet[base]]);
       }
-      const p = list.length && blendArms(list);
-      if (p) {
-        adjustArms(this.bones, p);
+      const p = list.length ? blendArms(list) : null, hip = this.poseSet["*hips"];
+      if (p || hip) {
+        adjustArms(this.bones, p, { hip });
         this.container.updateMatrixWorld(true);
       }
     }
@@ -63958,9 +63984,9 @@ void main() {
         o.x = lerp2(a.from.x, tx, u);
         o.z = lerp2(a.from.z, tz, u);
         if (u >= 1) {
-          const sm2 = Math.min(1, d * 5);
-          o.x = this.rig.x + (tx - this.rig.x) * sm2;
-          o.z = this.rig.z + (tz - this.rig.z) * sm2;
+          const sm3 = Math.min(1, d * 5);
+          o.x = this.rig.x + (tx - this.rig.x) * sm3;
+          o.z = this.rig.z + (tz - this.rig.z) * sm3;
         }
       }
       this.rig = o;
