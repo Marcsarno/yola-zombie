@@ -88,7 +88,10 @@ export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9;
 // (it is still under the floor: nothing can touch it), then the tiles burst up into a breach (assets/props/floor_breach.glb)
 // and it claws its way out (Quaternius UAL2 Zombie_Spawn) over climb s; it can be hit once its body is out (buriedFor of the
 // climb), it is solid from solidAt, and it is a normal zombie when it stands
-export const FLOOR_EMERGE = { rumble: 1.3, climb: 2.5, buriedFor: 0.3, solidAt: 0.55 };
+// (2026-10-18, the user: "the zombies crawling out of the ground don't feel good just yet"): a shorter, building rumble (the crack
+// grows, the floor shudders and puffs dust, shudder s apart), then it bursts up through the tiles at once (render: the climb's
+// first part played fast) and hauls itself out quicker
+export const FLOOR_EMERGE = { rumble: 1.1, climb: 2.0, buriedFor: 0.18, solidAt: 0.45, shudder: 0.32 };
 const PERSONAL = 1.05; // m a waiting zombie keeps between itself and its neighbours // the sprinter's trip: down onto her back, then up (no turn)
 
 export class Zombie {
@@ -433,6 +436,7 @@ export class Zombie {
       case ZS.EMERGE:
         if (this.floorSpawn) { // out of the floor: in place, turning to face her as it climbs
           const F = this.floorSpawn; this.vx = this.vz = 0;
+          if (!F.breached && Math.floor(this.t / FLOOR_EMERGE.shudder) !== Math.floor((this.t - dt) / FLOOR_EMERGE.shudder) && this.t < F.rumble) sim.emit({ type: 'floorShudder', id: this.id, x: this.x, z: this.z, k: this.t / F.rumble }); // (it is coming: harder each time)
           if (!F.breached && this.t >= F.rumble) { F.breached = true; sim.emit({ type: 'floorBreach', id: this.id, x: this.x, z: this.z }); }
           if (F.breached) { turnRate = 1.2; wantX = dx; wantZ = dz; }
           this.solid = this.t >= F.rumble + F.climb * F.solidAt;

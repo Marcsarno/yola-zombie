@@ -1808,8 +1808,12 @@ export class ZombieView extends ClipBody {
       if (!this.spawnPlayed) {
         this.spawnPlayed = true; this.outer.visible = true; this.blob.visible = false;
         const c = sp.getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0]));
-        this.playOnce('ual_Zombie_Spawn', t0, (c.duration - t0) / F.climb, 0);
+        this.playOnce('ual_Zombie_Spawn', t0, 0, 0); this.spT0 = t0; this.spLen = c.duration - t0;
       }
+      // (2026-10-18) the climb paced by hand: its first 38% (the hands and head bursting up) in the first 15% of the time, so it
+      // comes out with the tiles; then the haul out, easing into its stand
+      { const u = clamp((z.t - F.rumble) / F.climb, 0, 1), c = u < 0.15 ? (u / 0.15) * 0.38 : 0.38 + 0.62 * (1 - Math.pow(1 - (u - 0.15) / 0.85, 1.6));
+        sp.timeScale = 0; sp.time = this.spT0 + this.spLen * Math.min(0.999, c); }
     } else if (this.spawnPlayed && !this.blob.visible && z.state !== 'dead') this.blob.visible = true;
     // a crawler's lunge: the body lurches forward along the floor through the strike and draws back in the recovery
     if (z.crawling && this.hasCrawl && (z.state === 'strike' || z.state === 'recover')) {
