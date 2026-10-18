@@ -1,5 +1,14 @@
 # Next fixes (the user's notes, 2026-10-18, after playing the combat pass)
 
+STATUS 2026-10-18 late (combat chat, the lighting test area; committed 9c26e92..c55971b, NOT pushed or deployed):
+- Built: the lighting lab, combat.html?mode=calm&demo=lighting (panel "Plan upgrades"), every upgrade the user picked on its own
+  switch: A baked floor light (blender/bake_wing_floor.py, Cycles; re-export with game.lightkit.exportBake()), B room light on
+  characters, C light fittings as data (flicker states), D polished floor, E contact shadows, F halos, G floor mood (teal / sodium
+  / red), H film finish, muzzle flash light, EXIT signs, zombie eyes (gold / red / green / white). Code: render/lightkit.js,
+  looks.js (MoodShader), clipchars.js (eyes). Nothing is on in the real game yet.
+- WAITING ON THE USER: they are testing the lab. Next, from their verdict: which upgrades go into the game (and per floor), the
+  eyes' size / colour, the bake strength (lightkit.js BAKE.k 2.2, fill 0.3); then deploy on their say-so.
+
 STATUS 2026-10-18 evening (combat chat): deployed at fb7ff11; local commits since (not pushed): finishers (ed954a1..9702184).
 - Done: guard walk/turns + elbow-hinged torn arm, per-weapon blood, hospital zombies (IV, wheelchair, surgeon, bed patients with the
   Animation Hub bed rise), solid shovable drip stands/wheelchairs, practice room on real surfaces + emergency light, finishers for
