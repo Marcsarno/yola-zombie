@@ -40611,11 +40611,26 @@ void main() {
   var EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
   var EDIT_ATTACK = /^(ual1?_Sword_(?!Idle$|Block$|Enter$|Exit$).+|bat_swing|melee_horizontal|ual1?_Melee_(?!Idle).+)$/;
   var editKey = () => "riglab.edit." + S.gun + "." + S.mode;
+  var GAME_ATTACKS = {
+    alubat: ["ual_Sword_Regular_A", "ual_Sword_Regular_B", "ual_Sword_Regular_C", "ual1_Sword_Attack", "ual_Sword_Heavy_D"],
+    packaxe: ["bat_swing", "t_chop", "gs_low_slash"]
+  };
+  var ARENA_KEY = { alubat: "bat", packaxe: "axe", packcrowbar: "crowbar", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
+  var gameAttack = (n) => (GAME_ATTACKS[S.gun] || []).includes(n) ? "story game" : PICKS[n + "|" + ARENA_KEY[S.gun]] ? "arena" : "";
+  function gameAttacks() {
+    const have = /* @__PURE__ */ new Set([...mainCache[S.char].gltf.animations.map((c) => c.name), ...[...$("clip")?.options || []].map((o) => o.value)]);
+    const arena = Object.keys(PICKS).filter((k) => k.endsWith("|" + ARENA_KEY[S.gun])).map((k) => k.slice(0, k.lastIndexOf("|")));
+    return [.../* @__PURE__ */ new Set([...GAME_ATTACKS[S.gun] || [], ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
+  }
   function editClips() {
+    if (S.mode === "attack" && ARENA_KEY[S.gun]) {
+      const g = gameAttacks();
+      if (g.length) return g;
+    }
     const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === "idle" ? EDIT_IDLE : EDIT_ATTACK);
     return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
   }
-  var prettyClip = (n) => S.gun === "pistol" && S.mode === "attack" && n === "pistol_idle" ? "Firing (the idle with the shot kick)  \xB7 Mixamo" : n.replace(/^ual1?_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (/^ual/.test(n) ? "  \xB7 Quaternius" : "  \xB7 Mixamo");
+  var prettyClip = (n) => S.gun === "pistol" && S.mode === "attack" && n === "pistol_idle" ? "Firing (the idle with the shot kick)  \xB7 Mixamo" : n.replace(/^(ual1?|kev)_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (/^ual/.test(n) ? "  \xB7 Quaternius" : /^kev_/.test(n) ? "  \xB7 Kevin Iglesias" : "  \xB7 Mixamo") + (S.mode === "attack" && gameAttack(n) ? "  \xB7 " + gameAttack(n) : "");
   function editSync() {
     if (!$("edit") || !main) return;
     for (const b of $("eWeapons").children) b.classList.toggle("on", b.dataset.k === S.gun);
