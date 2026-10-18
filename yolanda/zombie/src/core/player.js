@@ -7,6 +7,11 @@ const AIM_DEADZONE = 0.18;
 // knocked flat (the sprinter's charge): thrown back onto the floor, rolls onto her front, gets up (assets/yola_extra.glb:
 // the Mixamo knockdown and stomach get-up, as the zombies use them; the get-up clip starts turned GETUP_YAW from the fall)
 export const DOWN_FALL = 1.15, DOWN_UP = 1.7, DOWN_YAW = -2.705;
+// the kip-up (2026-10-18, the user: "a quick get-up ... on their back, throws their legs upward, and springs back onto
+// their feet"): Quaternius UAL2 KipUp (assets/yola2_ual.glb). Every knockdown throws her onto her back first (the fall's
+// frames 1-44: on her back by 38), so she kips straight up from there instead of rolling over onto her front and
+// pushing up (2.85 s down -> 2.0 s): fall s, then up s; she comes up facing the way she fell from (the attacker)
+export const KIP = { fall: 0.95, up: 1.05 };
 const FIRE_ALIGN = 0.38; // rad: the shot waits until the upper body faces within this of the stick
 const _seg = {}, _seg2 = {}, _mz = {};
 const _rm = { x: 0, z: 0 };
@@ -424,8 +429,9 @@ export class Player {
     this.aimYaw = this.aimTarget = Math.atan2(-dx, -dz); // facing the hit: she falls back, away from it
     this.slide = { x: (dx / d) * 3.4, z: (dz / d) * 3.4 };
     this.attackHeld = false;
-    this.setAction('down', { fall: DOWN_FALL, up: DOWN_UP, turned: false });
-    this.invuln = DOWN_FALL + DOWN_UP;
+    const kip = this.T.kipUp !== false;
+    this.setAction('down', kip ? { fall: KIP.fall, up: KIP.up, turned: true, kip: true } : { fall: DOWN_FALL, up: DOWN_UP, turned: false });
+    this.invuln = kip ? KIP.fall + KIP.up : DOWN_FALL + DOWN_UP;
     sim.emit({ type: 'playerDown', dirX: dx / d, dirZ: dz / d });
   }
 

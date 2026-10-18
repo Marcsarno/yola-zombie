@@ -139,11 +139,11 @@ const perf = { frames: [], spikes: 0, t0: performance.now() };
 // Characters: Tripo meshes (mixamorig skeleton) with Mixamo/Tripo clips, exported by blender/export_chars.py.
 // (Yola's locomotion speeds are measured from foot plants at load, see YolaView.measureGaits.)
 const ZOMBIE_TYPES = [
-  { file: 'assets/zombie-nurse-mod.glb', extra: ['assets/zombie-nurse-scratch.glb', 'assets/zombie_moves/nurse-mod.glb'], height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
-  { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb'], height: 1.68, walk: { speed: 0.174 } },
+  { file: 'assets/zombie-nurse-mod.glb', extra: ['assets/zombie-nurse-scratch.glb', 'assets/zombie_moves/nurse-mod.glb', 'assets/zombie_moves/nurse-mod-b.glb'], height: 1.78, walk: { speed: 0.168 } }, // modular: severable head, forearms, lower legs
+  { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb', 'assets/zombie_moves/patient-mod-b.glb'], height: 1.68, walk: { speed: 0.174 } },
   // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
   // bed-panel shield is modelled). Not modular: no limbs come off them yet.
-  { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
+  { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb', 'assets/zombie_moves/sprinter-b.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
   { file: 'assets/zombie-guard.glb', extra: ['assets/zombie_moves/guard.glb'], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
 ];
 // (extra: clips retargeted onto each type's own skeleton: the scratch, tools/anim/zombie_clip.py; the Quaternius UAL zombie
@@ -187,7 +187,7 @@ async function load() {
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
-  yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup')); // (tools/anim/yola_clips.py: knocked flat, getting up)
+  yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup' || c.name === 'ual_KipUp')); // (tools/anim/yola_clips.py: knocked flat, getting up)
   setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({})), woodBatG); window.game.yolaClips = yg.animations;
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[i]));
   renderer.shadowMap.needsUpdate = true;

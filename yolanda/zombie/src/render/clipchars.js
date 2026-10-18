@@ -606,13 +606,22 @@ export class YolaView extends ClipBody {
       }
     }
     // a scripted full-body clip (the reveal's wave) fades over the normal layers
-    let scW = 0, sact = null;
-    if (s.action === 'down' && this.act('yola_knockdown')) { // knocked flat: the fall, then the get-up, over everything else
+    let scW = 0, sact = null, sact2 = null;
+    if (s.action === 'down' && s.act?.kip && this.act('yola_knockdown') && this.act('ual_KipUp')) {
+      // the kip-up (core/player.js KIP): the fall onto her back (frames 1-44), then the kip-up from lying (frames 1-36), a
+      // 0.12 s cross-fade where the two lying poses meet
+      const F = s.downFall, U = s.downUp, t = s.actionT, fa = this.act('yola_knockdown'), ka = this.act('ual_KipUp');
+      this.act('yola_getup').setEffectiveWeight(0);
+      const kw = smooth(clamp((t - F + 0.06) / 0.12, 0, 1));
+      fa.time = (1 + Math.min(1, t / F) * 43) / 30 + ((this.dnJit ^= 1) * 1e-6); ka.time = (1 + clamp((t - F + 0.06) / U, 0, 1) * 35) / 30 + (this.dnJit * 1e-6);
+      scW = smooth(clamp(t / 0.08, 0, 1)) * smooth(clamp((F + U - t) / 0.12, 0, 1));
+      fa.setEffectiveWeight(scW * (1 - kw)); ka.setEffectiveWeight(scW * kw); sact = kw > 0.5 ? ka : fa; sact2 = kw > 0.5 ? fa : ka;
+    } else if (s.action === 'down' && this.act('yola_knockdown')) { // knocked flat: the fall, then the get-up, over everything else
       const F = s.downFall || 1.15, U = s.downUp || 1.7, t = s.actionT, up = t >= F;
       const a = this.act(up ? 'yola_getup' : 'yola_knockdown'); this.act(up ? 'yola_knockdown' : 'yola_getup').setEffectiveWeight(0);
       a.time = (up ? 20 + Math.min(1, (t - F) / U) * 161 : 1 + Math.min(1, t / F) * 58) / 30 + ((this.dnJit ^= 1) * 1e-6);
       scW = smooth(clamp(t / 0.08, 0, 1)) * smooth(clamp((F + U - t) / 0.25, 0, 1)); sact = a; a.setEffectiveWeight(scW);
-    } else if (this.act('yola_knockdown')) { this.act('yola_knockdown').setEffectiveWeight(0); this.act('yola_getup').setEffectiveWeight(0); }
+    } else if (this.act('yola_knockdown')) { this.act('yola_knockdown').setEffectiveWeight(0); this.act('yola_getup').setEffectiveWeight(0); this.act('ual_KipUp')?.setEffectiveWeight(0); }
     // the dodge and the vault (core/player.js DODGE / VAULT; Quaternius clips, OVERLAY_CLIPS): over everything else, as the
     // knockdown; cut short (an attack out of a dodge), the pose fades out over 0.15 s instead of snapping to the next one
     const OV = this.ov ||= { act: null, w: 0 };
@@ -654,7 +663,7 @@ export class YolaView extends ClipBody {
         if (F && F.w > 0) { F.w = Math.max(0, F.w - dt / 0.12); DC.act.time = DC.t0 + (F.f - 1) / 30; DC.act.setEffectiveWeight(F.w * 8); } else DC.act.setEffectiveWeight(0);
       }
     }
-    if (scW > 0) for (const a of Object.values(this.actions)) if (a !== sact) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
+    if (scW > 0) for (const a of Object.values(this.actions)) if (a !== sact && a !== sact2) a.setEffectiveWeight(a.getEffectiveWeight() * (1 - scW));
     for (const [b, q] of this.restQ) b.quaternion.copy(q);
     mixerWritesAll(this.mixer); // (the mixer must rewrite every bone it drives, held values included)
     this.mixer.update(dt);
@@ -1292,6 +1301,7 @@ const ONE_SHOTS = ['attack', 'hit_flinch', 'hit_stumble', 'death_back', 'death_f
 // the sprinter's trip (core/zombies.js tumble): stumble_fall's stagger back and fall (frames 40-90, on her back by ~80),
 // then standup_back from the floor (she sits up onto her backside around frames 30-45, then stands)
 const TUMBLE = { f0: 40, f1: 90, up0: 1, up1: 94 };
+const KIPUP = 1.05; // s: the lady's kip-up at the end of her get-up (ZombieView.ladyKipUp)
 // the scratch (Quaternius UAL2 Zombie_Scratch, retargeted by tools/anim/zombie_clip.py): arms up over frames 1-16 (played
 // over the wind-up), the rake 17-21 (the strike), back down 22-45 (the recovery; the clip's long settle is skipped)
 const SCRATCH = { f0: 1, hit: 17, hitEnd: 21, end: 45 };
@@ -1305,6 +1315,9 @@ const SLAM = { f0: 1, hit: 77, hitEnd: 81, end: 114, lift: 1, clip: 'guard_leap_
 // the lunge and bite over the leap (10-19), down and back up over the recovery (19-46)
 const POUNCE = { f0: 1, hit: 10, hitEnd: 19, end: 46, clip: 'ual_Zombie_Bite' };
 const ATTACK_CLIPS = { scratch: SCRATCH, slam: SLAM, pounce: POUNCE };
+// the add-on one-shots (assets/zombie_moves/*-b.glb, 2026-10-18): the kip-up, the climb out of the floor, the knockback,
+// the crawl's start, the scratch on the run
+const EXTRA_ONCE = ['ual_KipUp', 'ual_Zombie_Spawn', 'ual_Hit_Knockback', 'ual1_Crawl_Enter', 'ual_Zombie_Scratch', 'ual_LayToIdle'];
 // how a standing zombie walks (core/zombies.js GAITS): Quaternius's zombie walk in eight directions / run in four, all
 // played from one shared phase (the clips of a set are the same length, so the feet stay in step through a blend) at the
 // rate that matches its travel. dir: [left, forward] travel; speed: the clip's own (m/s, its root motion, the mannequin at
@@ -1417,6 +1430,7 @@ export class ZombieView extends ClipBody {
   static pieces = [];
   static shieldAsset = null; // { gltf, damageTextures }: the guard's bed-panel shield (loaded once, shared by every guard)
   static brokenShields = []; // shields in pieces: their controllers run the 5 s lifetime and the fade, then free themselves
+  static ladyKipUp = true; // (the lady's kip-up experiment: off = her old get-up from her back)
   constructor(scene, gltf, height, speeds, opts = {}) {
     const model = skClone(gltf.scene);
     const mats = [];
@@ -1445,7 +1459,7 @@ export class ZombieView extends ClipBody {
     this.mats = mats;
     this.nativeWalk = (speeds?.speed || 0.17) * height;
     for (const n of ['walk', 'idle']) { this.act(n).play(); this.act(n).setEffectiveWeight(0); }
-    for (const n of [...ONE_SHOTS, 'pounce', ...Object.values(HIT_CLIPS).flat()]) {
+    for (const n of [...ONE_SHOTS, 'pounce', ...Object.values(HIT_CLIPS).flat(), ...EXTRA_ONCE]) {
       const a = this.act(n); if (!a) continue;
       a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true;
     }
@@ -1777,6 +1791,11 @@ export class ZombieView extends ClipBody {
       } else if (S === 'knockdown' && z.fall === 'tumble' && this.act('stumble_fall')) {
         this.deathYaw = null; // the sprinter tripped: staggers back and goes down on her backside
         this.playOnce('stumble_fall', TUMBLE.f0 / 30, (TUMBLE.f1 - TUMBLE.f0) / 30 / z.stateDur, 0.08);
+      } else if (S === 'getup' && z.fall === 'tumble' && z.kind === 'sprinter' && this.act('ual_KipUp') && ZombieView.ladyKipUp) {
+        // (2026-10-18, the user's experiment: "try that on the large female zombie when she has actually fallen onto her
+        // back"): she stays down as long as before (the opening), stirring on her back (standup_back's lying frames 1-20),
+        // then kips up (Quaternius UAL2 KipUp, on her own skeleton: assets/zombie_moves/sprinter-b.glb) in its last KIPUP s
+        this.playOnce('standup_back', TUMBLE.up0 / 30, 19 / 30 / Math.max(0.2, z.stateDur - KIPUP), 0.15); this.kipAt = z.stateDur - KIPUP;
       } else if (S === 'getup' && z.fall === 'tumble' && this.act('standup_back')) {
         this.playOnce('standup_back', TUMBLE.up0 / 30, (TUMBLE.up1 - TUMBLE.up0) / 30 / z.stateDur, 0.15);
       } else if (S === 'knockdown') {
@@ -1798,6 +1817,10 @@ export class ZombieView extends ClipBody {
       } else if ((S === 'chase' || S === 'emerge') && this.oneShot && this.lastState !== 'strike' && this.lastState !== 'windup') { this.oneShot.fadeOut(0.2); this.oneShot = null; }
       else if (S === 'chase' && this.oneShot) { this.oneShot.fadeOut(0.25); this.oneShot = null; }
       this.lastState = S;
+    }
+    if (this.kipAt != null && (z.state !== 'getup' || z.t >= this.kipAt)) { // the lady's kip-up
+      if (z.state === 'getup') { const k = this.act('ual_KipUp'), t0 = Math.min(...k.getClip().tracks.map((q) => q.times[0])); this.playOnce('ual_KipUp', t0, 35 / 30 / KIPUP, 0.14); }
+      this.kipAt = null;
     }
     // the guard's shield lodged in the floor (core/zombies.js STUCK): held braced over it (slam frames 79-82), heaving at it
     // every 0.55 s (each heave a pull up and a lean back, in time with the creak: main.js), then the recovery wrenches it out
