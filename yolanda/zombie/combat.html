@@ -50,6 +50,8 @@
   #swapBtn svg.w { display: none; }
   #swapBtn[data-weapon="pistol"] .i-pistol.big, #swapBtn[data-weapon="shotgun"] .i-shotgun.big, #swapBtn[data-weapon="axe"] .i-axe.big, #swapBtn[data-weapon="fists"] .i-fists.big, #swapBtn[data-weapon="bat"] .i-bat.big,
   #swapBtn[data-next="pistol"] .i-pistol.small, #swapBtn[data-next="shotgun"] .i-shotgun.small, #swapBtn[data-next="axe"] .i-axe.small, #swapBtn[data-next="fists"] .i-fists.small, #swapBtn[data-next="bat"] .i-bat.small { display: block; }
+  #swapBtn[data-weapon="sledgehammer"] .i-sledge.big, #swapBtn[data-weapon="crowbar"] .i-crowbar.big, #swapBtn[data-weapon="knife"] .i-knife.big,
+  #swapBtn[data-next="sledgehammer"] .i-sledge.small, #swapBtn[data-next="crowbar"] .i-crowbar.small, #swapBtn[data-next="knife"] .i-knife.small { display: block; }
   #objective { position: absolute; top: calc(60px + var(--sat)); left: calc(12px + var(--sal)); right: calc(12px + var(--sar)); display: none; }
   #objective.show { display: block; }
   #objective div { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 248, 234, .94); color: #20474a; padding: 7px 14px; border-radius: 12px; font-weight: 750; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
@@ -165,6 +167,12 @@
     <svg class="w i-fists small" viewBox="0 0 48 48"><path fill="#f3eee2" d="M10 20c0-4 3-6 7-6h13c5 0 8 3 8 8v6c0 5-4 9-9 9H19c-5 0-9-4-9-9z"/><path fill="none" stroke="#27323a" stroke-width="1.6" d="M18 15v9M25 14v10M32 15v9M10 28h26"/></svg>
     <svg class="w i-bat big" viewBox="0 0 48 48"><path fill="#d9a86a" d="M39 6l3 3c1 1 0 3-1 4L16 38l-3 5-6-6 5-3L37 7c1-1 2-2 2-1z"/><path fill="#3a4658" d="M7 37l4 4-3 3-4-4z"/></svg>
     <svg class="w i-bat small" viewBox="0 0 48 48"><path fill="#d9a86a" d="M39 6l3 3c1 1 0 3-1 4L16 38l-3 5-6-6 5-3L37 7c1-1 2-2 2-1z"/><path fill="#3a4658" d="M7 37l4 4-3 3-4-4z"/></svg>
+    <svg class="w i-sledge big" viewBox="0 0 48 48"><path fill="#b98b5a" d="M9 41l20-22 3 3-20 22z"/><path fill="#7d868d" d="M24 9l8-6 13 13-6 8z"/></svg>
+    <svg class="w i-sledge small" viewBox="0 0 48 48"><path fill="#b98b5a" d="M9 41l20-22 3 3-20 22z"/><path fill="#7d868d" d="M24 9l8-6 13 13-6 8z"/></svg>
+    <svg class="w i-crowbar big" viewBox="0 0 48 48"><path fill="none" stroke="#c9483f" stroke-width="4" stroke-linecap="round" d="M10 42L36 10c2-3 6-3 7 0"/><path fill="none" stroke="#c9483f" stroke-width="4" stroke-linecap="round" d="M10 42l-4-2"/></svg>
+    <svg class="w i-crowbar small" viewBox="0 0 48 48"><path fill="none" stroke="#c9483f" stroke-width="4" stroke-linecap="round" d="M10 42L36 10c2-3 6-3 7 0"/><path fill="none" stroke="#c9483f" stroke-width="4" stroke-linecap="round" d="M10 42l-4-2"/></svg>
+    <svg class="w i-knife big" viewBox="0 0 48 48"><path fill="#dfe5ea" d="M40 6L20 30l4 4L42 10c1-2 0-4-2-4z"/><path fill="#3a3f45" d="M20 30l4 4-12 11-4-4z"/></svg>
+    <svg class="w i-knife small" viewBox="0 0 48 48"><path fill="#dfe5ea" d="M40 6L20 30l4 4L42 10c1-2 0-4-2-4z"/><path fill="#3a3f45" d="M20 30l4 4-12 11-4-4z"/></svg>
     <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
     <div id="ammo"></div>
   </button>

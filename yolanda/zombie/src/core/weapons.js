@@ -8,7 +8,12 @@ export const SHOTGUN = 'shotgun';
 export const AXE = 'axe';
 export const FISTS = 'fists';
 export const BAT = 'bat'; // the baseball bat from the Supply Hall: one blunt swing, hold to keep swinging
-export const WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, BAT, FISTS]; // the swap button cycles through these (the ones owned)
+// the library weapons (2026-10-18: render/libweapons.js builds their attacks at load into LIB_ATTACKS; until then, and
+// wherever they could not be built, they are not offered)
+export const LIB_WEAPONS = ['sledgehammer', 'crowbar', 'knife'];
+export const LIB_ATTACKS = {};
+export const WEAPON_ORDER = [PISTOL, SHOTGUN, AXE, BAT, ...LIB_WEAPONS, FISTS]; // the swap button cycles through these (the ones owned)
+export const usableWeapons = (list) => list.filter((w) => !LIB_WEAPONS.includes(w) || LIB_ATTACKS[w]);
 export const isGun = (w) => w === PISTOL || w === SHOTGUN;
 export const isMelee = (kind) => kind === AXE || kind === 'bat'; // kind 'fist' is its own, lighter reaction
 
@@ -150,9 +155,9 @@ export const TEST_ATTACKS = [];
 const GROUND = {};
 export function groundAttack(w) {
   if (GROUND_OWN[w]) return GROUND_OWN[w];
-  if (w !== AXE && w !== BAT && w !== TEST) return null;
-  const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : null;
-  if (!base.PATH || (w === TEST && !T0)) return null;
+  if (w !== AXE && w !== BAT && w !== TEST && !LIB_ATTACKS[w]) return null;
+  const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : LIB_ATTACKS[w]?.[0] || null;
+  if (!base.PATH || ((w === TEST || LIB_ATTACKS[w]) && !T0)) return null;
   const key = w + (T0 ? '|' + T0.clip + T0.kind : '');
   if (GROUND[key]) return GROUND[key];
   const g = { ...base, name: 'ground', sock: 'chop', chainFrom: 9, blendIn: 0.12, enterBlend: 0.14, assist: 2.0, ground: true };
@@ -178,7 +183,7 @@ export const LEG_ATTACKS = {
     dmg: 0.9, knock: 0.5, style: 'legs', minY: 0, legs: true, sever: { leg: 1 } },
 };
 export const legAttack = (w) => LEG_ATTACKS[w] || null;
-export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : w === TEST ? TEST_ATTACKS : AXE_ATTACKS);
+export const attacksOf = (w) => (w === FISTS ? FIST_ATTACKS : w === BAT ? BAT_ATTACKS : w === TEST ? TEST_ATTACKS : LIB_ATTACKS[w] || AXE_ATTACKS);
 export const AXE_GEOM = {
   length: 0.74, // hands (midpoint of the grip) to the blade, metres
   hitFrom: 0.3, // only the outer part of the axe lands a blow
@@ -230,6 +235,16 @@ export function meleePose(A, t, out = {}) {
   const dl = Math.hypot(dx, dy, dz) || 1;
   out.dx = dx / dl; out.dy = dy / dl; out.dz = dz / dl;
   return out;
+}
+
+// How far in front of her a strike's weapon head comes down (m): its lowest point through the (first) damaging window. A
+// strike at something on the floor that is nearer than this has her step back into it first (core/player.js startSwing).
+export function strikeReach(A) {
+  if (A._reach != null) return A._reach;
+  const [w0, w1] = A.windows?.[0] || [A.activeStart, A.activeEnd], o = {};
+  let best = null;
+  for (let i = 0; i <= 12; i++) { const s = meleeSegment(A, w0 + ((w1 - w0) * i) / 12, o); if (!best || s.ty < best.ty) best = { ty: s.ty, d: Math.hypot(s.tx, s.tz) }; }
+  return (A._reach = best ? best.d * 0.9 : A.stand ?? 1);
 }
 
 // Axe segment (hands -> head) in character space at attack time t.

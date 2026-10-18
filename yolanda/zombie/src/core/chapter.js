@@ -291,23 +291,50 @@ const F7 = buildFloor(7, {
   groups: (Z) => [
     // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
     { id: 'or', zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1.0, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: 'nurse' }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8.0 }] },
-    // supply: one straggler (a short orientation pocket, not another big fight)
-    { id: 's7', sense: 5.0, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: 'patient' }] },
-    // nurse station: two at the far end of the room, by the beds' door
-    { id: 'n7', sense: 6.0, zombies: [{ x: -38.6, z: -3.2, yaw: 1.2, look: 'nurse' }, { x: -31.0, z: 0.6, yaw: -2.6 }] },
-    // treatment ward: spread down both lanes, waking a beat apart (flank around the beds, never a doorway queue)
-    { id: 't7', sense: 6.5, zombies: [{ x: -36.2, z: 6.8, yaw: 0.4, look: 'patient' }, { x: -30.2, z: 8.6, yaw: -0.8 }, { x: -33.0, z: 12.6, yaw: 2.6, look: 'nurse' }, { x: -28.6, z: 13.8, yaw: -2.2 }] },
-    // renovation: two in the quiet corner
-    { id: 'v7', sense: 5.5, zombies: [{ x: -33.2, z: 26.2, yaw: 0.2 }, { x: -25.0, z: 21.4, yaw: -1.6, look: 'nurse' }] },
-    // cafeteria: the shield carrier's introduction, with two walkers to read his front against
+    // (2026-10-18, the user's part 3: "more enemies ... treat each room as a small combat arena with its own flavor ... avoid
+    // repeating the same crowd in every room". Floor spawns (from: 'floor') break up out of the floor a delay after their
+    // group wakes (core/level.js floorStep: never right under Yola), the hole stays.)
+    // supply: one straggler, then the first one through the floor, while she picks up the pistol (its first targets)
+    { id: 's7', sense: 5.0, zombies: [{ x: -21.4, z: -6.2, yaw: 1.6, look: 'patient' }, { x: -20.0, z: -2.6, look: 'nurse', from: 'floor', delay: 2.4 }] },
+    // nurse station: a crowd of walkers spread through the room (the ring that waits its turn and pounces), the shotgun on
+    // the team desk in the middle of them
+    { id: 'n7', sense: 6.0, zombies: [{ x: -38.6, z: -3.2, yaw: 1.2, look: 'nurse' }, { x: -31.0, z: 0.6, yaw: -2.6 }, { x: -35.6, z: -7.4, yaw: 0.6, look: 'patient' }, { x: -28.4, z: -2.2, yaw: -1.4 }, { x: -39.2, z: 0.6, yaw: 2.2, look: 'nurse' }] },
+    // treatment ward: the crawlers' ward: two already down between the beds (crawl), one walker in each lane, and the floor
+    // of the middle lane gives way behind her once it starts
+    { id: 't7', sense: 6.5, zombies: [{ x: -36.2, z: 6.8, yaw: 0.4, look: 'patient' }, { x: -30.2, z: 8.6, yaw: -0.8 }, { x: -33.0, z: 12.6, yaw: 2.6, look: 'nurse' }, { x: -28.6, z: 13.8, yaw: -2.2 },
+      { x: -36.8, z: 10.4, yaw: 0.3, look: 'patient', crawl: true }, { x: -29.6, z: 4.0, yaw: -2.8, crawl: true }, { x: -33.6, z: 4.6, look: 'nurse', from: 'floor', delay: 3.5 }] },
+    // renovation: the runners' room: wide and open, two orange runners and a walker, and the half-built floor breaks under two more
+    { id: 'v7', sense: 7.0, zombies: [{ x: -33.2, z: 26.2, yaw: 0.2 }, { x: -25.0, z: 21.4, yaw: -1.6, kind: 'runner' }, { x: -38.2, z: 25.6, yaw: 1.0, kind: 'runner' },
+      { x: -29.4, z: 20.6, look: 'patient', from: 'floor', delay: 2.0 }, { x: -34.6, z: 19.6, kind: 'runner', from: 'floor', delay: 5.5 }] },
+    // cafeteria: the shield carrier's introduction, with two walkers to read his front against (tables to circle him round)
     { id: 'c7', sense: 7.0, zombies: [{ x: -15.0, z: 24.6, yaw: Math.PI, kind: 'guard' }, { x: -19.6, z: 23.4, yaw: 1.0 }, { x: -10.4, z: 23.2, yaw: -1.0, look: 'nurse' }] },
-    // lift service: one by the switchgear
-    { id: 'p7', sense: 5.0, zombies: [{ x: 2.2, z: 24.6, yaw: -2.0, look: 'patient' }] },
+    // lift service: the big lady across the open bay from the cafeteria door (her lane runs at the door; switchgear and racks
+    // along the walls to trip her into), one walker by the switchgear
+    { id: 'p7', sense: 9.0, zombies: [{ x: 4.6, z: 21.0, yaw: -Math.PI / 2, kind: 'sprinter' }, { x: -4.4, z: 24.6, yaw: 0.6, look: 'patient' }] },
+    // the contractor store (behind its powered door): two lurking by the shelves, roused when the door opens on them
+    { id: 'x7', sense: 4.0, locked: true, zombies: [{ x: -20.2, z: 9.0, yaw: 0.8, look: 'nurse' }, { x: -10.0, z: 11.6, yaw: -2.2 }] },
+    // the prep room, the way back to the OR: once the lift has power, the floor's last push: a runner, two walkers, one
+    // through the floor
+    { id: 'r7', sense: 6.0, locked: true, zombies: [{ x: 4.6, z: 12.6, yaw: -2.6, kind: 'runner' }, { x: -3.0, z: 8.2, yaw: 2.6, look: 'nurse' }, { x: 3.4, z: 4.0, yaw: -1.2 }, { x: 0.4, z: 10.4, look: 'patient', from: 'floor', delay: 3.0 }] },
   ],
+  // (2026-10-18, the user: "on Floor 7, place every available usable weapon around the level for testing. Leave out the
+  // chainsaw ... include suitable ammunition ... keep the early pistol pickup". A test arrangement, not the final
+  // progression: the bat in her hands, the pistol in Supply as before, the shotgun on the nurse station's desk, the crowbar
+  // by the ward's stretcher, the sledgehammer in the renovation, the knife on a cafeteria table, the axe in the contractor
+  // store as before; magazines and shells where those guns get used. file / builder + len: a weapon lying where it is
+  // (render/arena.js loadPickups))
   pickups: () => [
     { id: 's7aid', kind: 'health', amount: 40, x: -15.6, z: -1.0, r: 1.0, label: 'First-aid case', model: 'aid', y: 1.01 },
     { id: 's7pistol', kind: 'weapon', weapon: 'pistol', x: -15.56, z: -1.0, r: 1.0, mag: 12, label: 'Pistol', model: 'pistol', y: 1.21 }, // (the user, 2026-10-17: a pistol with the first med pack, lying on the case's lid; the guard's on Floor 6 then refills it)
+    { id: 's7mags', kind: 'ammo', weapon: 'pistol', rounds: 24, x: -12.8, z: -0.4, r: 1.0, label: 'Pistol magazines', model: 'mag' },
+    { id: 'n7shotgun', kind: 'weapon', weapon: 'shotgun', x: -32.3, z: -4.6, r: 1.1, mag: 6, label: 'Pump shotgun', file: 'zombie/assets/weapons/pump_short.glb', len: 0.9, rot: 0.3, y: 1.15 },
+    { id: 'n7shells', kind: 'ammo', weapon: 'shotgun', rounds: 12, x: -27.2, z: -9.6, r: 1.0, label: 'Shotgun shells', model: 'shells' },
+    { id: 't7crowbar', kind: 'weapon', weapon: 'crowbar', x: -32.2, z: 10.2, r: 1.1, label: 'Crowbar', file: 'zombie/assets/weapons/hospital/crowbar.glb', len: 0.8, rot: 1.1 },
     { id: 'v7ammo', kind: 'health', amount: 50, x: -37.4, z: 17.0, r: 1.1, label: 'First-aid case', model: 'aid', y: 0.92 },
+    { id: 'v7sledge', kind: 'weapon', weapon: 'sledgehammer', x: -30.6, z: 22.6, r: 1.2, label: 'Sledgehammer', file: 'zombie/assets/weapons/sledgehammer.glb', len: 0.95, rot: -0.6 },
+    { id: 'c7knife', kind: 'weapon', weapon: 'knife', x: -10.6, z: 20.6, r: 1.1, label: 'Knife', builder: 'knife', len: 0.3, rot: 0.8, y: 0.85 },
+    { id: 'c7shells', kind: 'ammo', weapon: 'shotgun', rounds: 12, x: -12.4, z: 17.4, r: 1.0, label: 'Shotgun shells', model: 'shells' },
+    { id: 'p7mags', kind: 'ammo', weapon: 'pistol', rounds: 24, x: 0.6, z: 17.2, r: 1.0, label: 'Pistol magazines', model: 'mag' },
     { id: 'axe', kind: 'weapon', weapon: 'axe', x: -15.0, z: 9.4, r: 1.2, label: 'Fire axe', model: 'axe', y: 0.95 },
   ],
   interact: () => [

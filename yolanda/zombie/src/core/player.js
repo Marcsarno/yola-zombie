@@ -1,7 +1,7 @@
 // Player: one authoritative movement controller + one weapon action state machine.
 // Yaw convention: forward = (sin yaw, cos yaw) on (x, z).
 import { clamp, angleDiff, approachAngle, segPointDist2, rayCircle } from './world.js';
-import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack, legAttack } from './weapons.js';
+import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, usableWeapons, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack, legAttack, strikeReach } from './weapons.js';
 
 const AIM_DEADZONE = 0.18;
 // knocked flat (the sprinter's charge): thrown back onto the floor, rolls onto her front, gets up (assets/yola_extra.glb:
@@ -58,7 +58,7 @@ export class Player {
     this.aimTarget = this.aimYaw;
     this.aiming = false; this.attackHeld = false;
     this.hp = 100; this.maxHp = 100; this.dead = false; this.invuln = 0; this.hurtT = 9;
-    this.owned = [...WEAPON_ORDER]; // weapons she carries (the swap button cycles through these)
+    this.owned = usableWeapons(WEAPON_ORDER); // weapons she carries (the swap button cycles through these; the library ones once built)
     this.equipped = PISTOL; this.desired = PISTOL;
     this.mags = { [PISTOL]: tuning.magSize, [SHOTGUN]: tuning.shotgunMag };
     this.reserve = { [PISTOL]: Infinity, [SHOTGUN]: Infinity }; // spare rounds (the story level counts them; practice never runs out)
@@ -210,6 +210,7 @@ export class Player {
       speed *= k;
     }
     if (this.action.type === 'swing') speed *= this.attackMoveScale();
+    if (this.grabT > 0) { this.grabT -= dt; speed *= 0.3; } // (a crawler has her by the ankle)
     else if (this.equipped === SHOTGUN) speed *= 0.92;
     const dl = mag > 1e-4 ? speed / mag : 0;
     const dvx = mx * dl - this.vx, dvz = mz * dl - this.vz;
@@ -269,7 +270,12 @@ export class Player {
   // reduced so Yola stops a body short of the target (zombie) she is stepping into
   attackAdvance(sim) {
     const out = _rm; out.x = out.z = 0;
-    const a = this.action; if (a.type !== 'swing' || !(a.lunge > 0)) return out;
+    const a = this.action; if (a.type !== 'swing') return out;
+    if (a.back > 0) { // stepping back into reach of a body on the floor at her feet, as the weapon goes up
+      const want = a.back * smooth(a.st / Math.max(0.05, this.atk(a).activeStart * 0.75)), step = want - (a.backed || 0);
+      a.backed = want; out.x -= Math.sin(a.heading) * step; out.z -= Math.cos(a.heading) * step;
+    }
+    if (!(a.lunge > 0)) return out;
     const A = this.atk(a), dur = Math.max(0.05, A.activeStart);
     const want = A.ROOT ? rootAt(A.ROOT, a.st) * a.rootScale : a.lunge * smooth(a.st / dur), step = want - (a.advanced || 0);
     if (step <= 0) return out;
@@ -277,7 +283,7 @@ export class Player {
     const tg = a.target;
     if (tg && tg.alive) { const gap = Math.hypot(tg.x - this.x, tg.z - this.z) - (A.stand ?? 1.05); d = Math.max(0, Math.min(d, gap)); }
     a.advanced = (a.advanced || 0) + step; // (the curve advances even when blocked: no catch-up burst later)
-    out.x = Math.sin(a.heading) * d; out.z = Math.cos(a.heading) * d;
+    out.x += Math.sin(a.heading) * d; out.z += Math.cos(a.heading) * d;
     return out;
   }
 
@@ -311,7 +317,8 @@ export class Player {
         // held (or pressed again during the attack)
         if (a.hits > 0 || A.chainAlways) a.unlocked = true; // (the bat's combo flows on input, hit or miss)
         if (!a.ground && !a.leg && a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
-          this.startSwing(sim, a.combo + 1, true);
+          // (2026-10-18) the strike floored what it hit: the combo goes down after it instead of swinging on over it
+          if (groundAttack(this.equipped) && sim.groundTarget?.(this)) this.startSwing(sim, 0); else this.startSwing(sim, a.combo + 1, true);
           break;
         }
         // the combo again before the last attack has fully settled (A.restartFrom: the bat, core/weapons.js useBuiltBat)
@@ -396,8 +403,12 @@ export class Player {
       rootScale = tgt && total > 0.01 ? clamp((Math.hypot(tgt.x - this.x, tgt.z - this.z) - (A.stand ?? 0.85)) / total, 0, 1) : 1;
       lunge = Math.max(0, total * rootScale);
     }
+    // (2026-10-18, the user: "the visible strike and the actual hit should agree"): a body on the floor nearer than where this
+    // strike's weapon comes down (strikeReach): she steps back into range as she raises it, so the blow lands on it
+    let back = 0;
+    if (ground) { const gt = sim.groundTarget?.(this); if (gt) { const gd = Math.hypot(gt.x - this.x, gt.z - this.z), reach = strikeReach(A); if (gd < reach - 0.15) back = Math.min(0.85, reach - 0.1 - gd); } }
     this.setAction('swing', { st: 0, combo, ground, leg, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId, lunge, unlocked,
-      target: tgt, heading: this.aimYaw + turnBy, turnFrom: this.aimYaw, turnBy, advanced: 0, rootScale });
+      target: tgt, heading: this.aimYaw + turnBy, turnFrom: this.aimYaw, turnBy, advanced: 0, rootScale, back });
     this.attackPressT = 9;
     sim.emit({ type: 'swing', combo });
   }

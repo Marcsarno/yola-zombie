@@ -15,7 +15,7 @@ import { ZS } from './zombies.js';
 
 export const LIFT_DOOR_TIME = 1.0; // s: the kit's Doors_Open / Doors_Close clips are exactly one second
 export const BRACE_TIME = 2.5, DOOR_OPEN_TIME = 1.5; // the braced double door's Brace_Remove and Doors_Open clips
-export const ONE_HANDED = ['bat', 'pistol']; // what Yola can use with the case in her other hand (the current rig's clips)
+export const ONE_HANDED = ['bat', 'pistol', 'crowbar', 'knife']; // what Yola can use with the case in her other hand (the current rig's clips)
 const CASE_R = 1.35;
 
 const inRect = (r, x, z, m = 0) => x > r.minX + m && x < r.maxX - m && z > r.minZ + m && z < r.maxZ - m;
@@ -60,12 +60,15 @@ export class Level {
     }
     // the zombies of this floor: placed, standing, waiting to sense Yola (the OR's wake on their timers the first time through)
     const fresh = !save || (save.floor === 7 && !save.flags?.radio_heard && !this.killed.size && this.floor === 7 && !s.x);
+    this.floorPending = []; // (out of the floor, 2026-10-18: waiting for their group to wake; floorStep)
     for (const g of this.F.groups) {
       g.zombies.forEach((zs, i) => {
         const key = this.floor + ':' + g.id + ':' + i;
         if (this.killed.has(key)) return;
+        if (zs.from === 'floor') { this.floorPending.push({ key, group: g.id, sense: g.sense ?? 6, zs, at: null }); return; }
         const z = sim.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0, kind: zs.kind });
         z.set(ZS.CHASE); z.spawnKey = key; z.group = g.id; if (zs.look) z.look = zs.look;
+        if (zs.crawl) { z.crawling = true; z.broken = 'LowerLeg_L'; } // (already down: a crawler from the start)
         z.dormant = {
           wake: fresh && zs.wake !== undefined ? zs.wake : Infinity, sense: g.sense ?? (zs.wake !== undefined ? 6 : 0), locked: !!g.locked,
           group: g.id, speedMul: 0.85 + 0.1 * (i % 3),
@@ -179,12 +182,33 @@ export class Level {
       if (!p.dead) this.checkpoint();
     }
     this.pickupStep(p);
+    this.floorStep(p);
     this.doorStep(dt);
     this.partitionStep();
     this.liftStep(dt, p);
     // what Yola can do (or learn) here; a Use press acts on it
     this.prompt = p.dead ? null : this.findPrompt(p);
     if (input.usePresses > 0 && this.prompt?.usable) this.use(this.prompt.id);
+  }
+
+  // out of the floor (2026-10-18; core/sim.js spawnFromFloor): a floor spawn waits for its group: once any of the group is
+  // awake (or Yola comes within its sense of the hole, with no wall between), it breaks through `delay` s later. Never
+  // under her or right beside her: a hole within 2.8 m of her waits (the rumble and the crack give her warning anyway).
+  floorStep(p) {
+    const sim = this.sim;
+    for (let i = this.floorPending.length - 1; i >= 0; i--) {
+      const f = this.floorPending[i], zs = f.zs;
+      if (f.at == null) {
+        const woke = sim.zombies.some((z) => z.group === f.group && !z.dormant && z.alive);
+        const near = !p.dead && Math.hypot(p.x - zs.x, p.z - zs.z) < f.sense && sim.world.lineOfSight(p.x, p.z, zs.x, zs.z, 1.0);
+        if (woke || near) f.at = sim.time + (zs.delay ?? 1.5);
+        continue;
+      }
+      if (sim.time < f.at || p.dead || Math.hypot(p.x - zs.x, p.z - zs.z) < 2.8) continue;
+      const z = sim.spawnFromFloor(zs.x, zs.z, { kind: zs.kind, look: zs.look });
+      z.spawnKey = f.key; z.group = f.group;
+      this.floorPending.splice(i, 1);
+    }
   }
 
   onFirstVisit(room) {
@@ -255,6 +279,7 @@ export class Level {
       if (this.lift.state === 'fault') this.lift.state = 'ready';
       this.doors.x7door.busy = true; this.doors.x7door.t = 0; // the contractor store's door runs on the same circuit
       this.emit({ type: 'liftPower' });
+      this.wakeGroup('r7'); // (the floor's last push, in the prep room on the way back to the OR)
       this.say('f7_power');
       this.setObjective(this.flags.or_south_unbarred ? 'f7_board' : 'f7_return');
     } else if (id === 'orBar') {
@@ -296,7 +321,7 @@ export class Level {
     if (x.busy) {
       x.t += dt; x.open = Math.min(1, x.t / DOOR_OPEN_TIME);
       if (x.open >= 0.6 && W.dyn?.x7door && !W.dyn.x7door.off) W.setOff(W.dyn.x7door, true);
-      if (x.open >= 1) { x.busy = false; if (this.floor === 7) this.emit({ type: 'doorOpened', door: 'x7door' }); }
+      if (x.open >= 1) { x.busy = false; if (this.floor === 7) { this.emit({ type: 'doorOpened', door: 'x7door' }); this.wakeGroup('x7'); } } // (the store's two lurkers come at the open door)
     }
   }
 
@@ -389,5 +414,5 @@ export class Level {
     return this.objective;
   }
 }
-const ORDER = ['pistol', 'shotgun', 'axe', 'bat', 'fists'];
+const ORDER = ['pistol', 'shotgun', 'axe', 'bat', 'sledgehammer', 'crowbar', 'knife', 'fists'];
 function WEAPON_SORT(list) { return [...new Set(list)].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)); }

@@ -4,7 +4,7 @@
 // the camera and Yola lower themselves, kit doors are cut at the same height, and the OR's barred door, the contractor
 // store's powered door, the weak partition and the three lifts animate from the level's state).
 import * as THREE from 'three';
-import { PISTOL_CORE_SCALE } from './weaponModels.js';
+import { PISTOL_CORE_SCALE, makeKnife } from './weaponModels.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { LAYOUT, doorBox } from '../core/layout.js';
@@ -518,6 +518,23 @@ export class Arena {
       } else if (q.model === 'mag') { const o = magG.scene.clone(true); o.position.set(q.x, 0.01, q.z); o.rotation.set(-Math.PI / 2, 0, 0.4); objs.push(o); }
       else if (q.model === 'aid') { const o = aidG.scene.clone(true); o.position.set(q.x, q.y ?? 0.81, q.z); o.rotation.y = -Math.PI / 2; objs.push(o); }
       else if (q.model === 'axe') { const o = axeG.scene.clone(true); const b = new THREE.Box3().setFromObject(o), sz = b.getSize(new THREE.Vector3()); o.scale.setScalar(0.9 / Math.max(sz.x, sz.y, sz.z)); o.rotation.set(0, 0, Math.PI / 2); o.updateMatrixWorld(true); const b2 = new THREE.Box3().setFromObject(o), c = b2.getCenter(new THREE.Vector3()); o.position.set(q.x - c.x, (q.y ?? 0.92) - b2.min.y, q.z - c.z); objs.push(o); }
+      else if (q.model === 'shells') { // (2026-10-18) a handful of shotgun shells on the floor
+        const sh = await get('zombie/assets/weapons/shotgun_shell.glb').catch(() => null);
+        if (sh) for (let i = 0; i < 6; i++) { const o = sh.scene.clone(true); o.rotation.set(Math.PI / 2, 0, i * 1.1); o.position.set(q.x + Math.cos(i * 2.3) * 0.12, 0.012, q.z + Math.sin(i * 2.3) * 0.12); objs.push(o); }
+      } else if (q.file || q.builder) { // (2026-10-18) any weapon lying where it is: its longest side along q.rot, its flattest side down, q.len long, on q.y (else the floor)
+        const g = q.builder === 'knife' ? { scene: makeKnife() } : await get(q.file).catch(() => null);
+        if (g) {
+          const inner = g.scene.clone(true), o = new THREE.Group(); o.add(inner);
+          const b = new THREE.Box3().setFromObject(inner), sz = b.getSize(new THREE.Vector3()), ax = ['x', 'y', 'z'].sort((u, v) => sz[v] - sz[u]); // (longest first)
+          // the longest axis onto x, the shortest onto y (lying flat)
+          const basis = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) }, ex = basis[ax[0]], ey = basis[ax[2]], ez = new THREE.Vector3().crossVectors(ex, ey);
+          inner.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex, ey, ez).invert());
+          inner.scale.setScalar((q.len || 0.8) / Math.max(sz.x, sz.y, sz.z));
+          o.rotation.y = q.rot || 0; o.updateMatrixWorld(true);
+          const b2 = new THREE.Box3().setFromObject(o), c = b2.getCenter(new THREE.Vector3());
+          o.position.set(q.x - c.x, (q.y ?? 0) - b2.min.y + 0.004, q.z - c.z); objs.push(o);
+        }
+      }
       for (const o of objs) { o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); this.group.add(o); }
       objs.push(ring(q.x, q.z));
       this.pickupViz[q.id] = objs;

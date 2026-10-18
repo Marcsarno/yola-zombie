@@ -36,6 +36,7 @@ import { ChapterUI } from './ui/chapter.js';
 import { ThreatCue } from './render/threatcue.js';
 import { cue } from './sfx/cues.js';
 import { SlowMotion } from './render/slowmo.js';
+import { setupLibWeapons } from './render/libweapons.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -216,6 +217,7 @@ async function load() {
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup' || c.name === 'ual_KipUp')); // (tools/anim/yola_clips.py: knocked flat, getting up)
   setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({})), woodBatG); window.game.yolaClips = yg.animations;
+  await setupLibWeapons({ yola, loader, scene, clips: yg.animations, who: YOLA_MODEL === '2' ? 'yola2' : 'yola' }).catch((e) => console.warn('library weapons', e)); // (the sledgehammer, crowbar, knife)
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[t.same ?? i]));
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
@@ -524,7 +526,7 @@ function runFrame(dt, doRender = true) {
   if (a.type === 'swing' && p.equipped !== 'fists') {
     const A = p.atk(), wins = A.windows || [[A.activeStart, a.activeEnd]];
     if (wins.some(([w0, w1]) => a.st > w0 - 0.07 && a.st < w1 + 0.05)) {
-      if (p.equipped === 'test' && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
+      if ((p.equipped === 'test' || yola.libHolds?.[p.equipped]) && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
       else if (yola.melee.visible) fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v), true);
     }
   }
@@ -591,8 +593,8 @@ function handleEvents() {
       case 'shot': {
         audio.play('shot');
         fx.muzzle(yola.muzzleWorld);
-        fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez);
-        if (e.hit === 'zombie' && !e.blocked) { fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); audio.play('bulletHit', 1, { x: e.ex, z: e.ez }); if (!e.killed) audio.play('zombieHurt', 1, { x: e.ex, z: e.ez }); } // (a round on the guard's shield: its own knock, no blood)
+        fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.ex, e.ez, 0.5, e.ey);
+        if (e.hit === 'zombie' && !e.blocked) { if (e.ey != null) fx.burst(e.ex, e.ey, e.ez, 8, 0x6d3a3a, 1.8, 0.8, 0.45); else fx.impactZombie(e.ex, e.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); audio.play('bulletHit', 1, { x: e.ex, z: e.ez }); if (!e.killed) audio.play('zombieHurt', 1, { x: e.ex, z: e.ez }); } // (a round on the guard's shield: its own knock, no blood)
         else if (e.hit === 'wall') { fx.impactWall(e.ex, e.ez, e.nx, e.nz); audio.play('ricochet', 1, { x: e.ex, z: e.ez }); }
         shake(0.12);
         break;
@@ -603,7 +605,7 @@ function handleEvents() {
         fx.muzzle(mw, 1.8);
         let flesh = 0;
         for (const pl of e.pellets) {
-          fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6);
+          fx.tracer(mw.x, mw.y, mw.z, pl.ex, pl.ez, 0.6, pl.ey);
           if (pl.hit === 'zombie') { if (!e.blocked?.includes(pl.id) && flesh++ < 4) fx.impactZombie(pl.ex, pl.ez, Math.sin(e.yaw), Math.cos(e.yaw), false); }
           else if (pl.hit === 'wall' && Math.random() < 0.5) fx.impactWall(pl.ex, pl.ez, pl.nx, pl.nz);
         }
@@ -642,7 +644,7 @@ function handleEvents() {
       case 'pickup': {
         audio.play(e.kind === 'health' ? 'heal' : 'reloadDone'); hud.flash('reload');
         if (e.id === 'bat') opening?.takeBat?.(); else arena.takePickup(e.id);
-        hud.toast(e.kind === 'weapon' ? (e.weapon === 'pistol' ? (e.id === 'pistol' ? 'Pistol — the guard’s sidearm' : 'Pistol') : e.weapon === 'axe' ? 'Fire axe' : 'Baseball bat') : e.kind === 'ammo' ? 'Spare pistol rounds' : 'First aid: health restored');
+        hud.toast(e.kind === 'weapon' ? (e.weapon === 'pistol' ? (e.id === 'pistol' ? 'Pistol — the guard’s sidearm' : 'Pistol') : e.label || (e.weapon === 'axe' ? 'Fire axe' : 'Baseball bat')) : e.kind === 'ammo' ? e.label || 'Spare pistol rounds' : 'First aid: health restored');
         break;
       }
       case 'checkpoint': levelSave = e.save; store.set('chapter1save', e.save); break;
@@ -669,6 +671,7 @@ function handleEvents() {
       case 'shieldFree': { const z = sim.zombies.find((q) => q.id === e.id); cue(audio, 'free'); if (z) fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.1, z.z + Math.cos(z.yaw) * 0.75, 14, 0x8a8172, 2.4, 0.9, 0.5); break; }
       case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
       case 'dodge': audio.play('swing', 0.75); break;
+      case 'grabbed': audio.play('bump', 0.8); break; // (a crawler has her ankle: she is held back, core/player.js grabT)
       case 'dodgeSuccess': if (e.perfect) { slowBeat(0.26, 0.9); cue(audio, 'perfect'); hud.popup('PERFECT DODGE'); } break; // (core/sim.js specialMiss: her next blow is critical)
       case 'crit': { slowEnd(); cue(audio, 'crit'); hud.popup('CRITICAL'); shake(0.7); fx.hitFlash(e.x, 1.1, e.z, 0, 0, 2.0); break; }
       case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
@@ -705,7 +708,9 @@ const cueState = { key: '', now: '' };
 const breaches = { src: null, list: [] };
 function placeBreach(x, z) {
   if (!breaches.src) return;
-  const o = breaches.src.clone(true); o.position.set(x, 0, z); scene.add(o); breaches.list.push(o);
+  // (the story floors are the Outbreak kit's grey tile: the broken tiles take that colour there, cream and teal elsewhere)
+  if (LAYOUT.story && !breaches.grey) { breaches.grey = breaches.src.clone(true); breaches.grey.traverse((m) => { if (m.isMesh) { const f = (mt) => { const c = mt.clone(); if (/TileCream/.test(mt.name)) c.color.setRGB(0.42, 0.41, 0.39); else if (/TileTeal/.test(mt.name)) c.color.setRGB(0.3, 0.3, 0.29); return c; }; m.material = Array.isArray(m.material) ? m.material.map(f) : f(m.material); } }); }
+  const o = (LAYOUT.story ? breaches.grey : breaches.src).clone(true); o.position.set(x, 0, z); scene.add(o); breaches.list.push(o);
   if (breaches.list.length > 10) breaches.list.shift().removeFromParent();
 }
 function clearBreaches() { for (const o of breaches.list) o.removeFromParent(); breaches.list.length = 0; }

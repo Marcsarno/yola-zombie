@@ -176,10 +176,11 @@ export class FX {
     if (k > 1.2) this.burst(pos.x, pos.y, pos.z, 6, 0xb8b4ac, 0.9, 0.4, 0.5); // smoke
   }
 
-  tracer(ox, oy, oz, ex, ez, op = 0.5) {
+  // ey: where it ends in height (a body on the floor: the round goes down into it); none: level with the muzzle
+  tracer(ox, oy, oz, ex, ez, op = 0.5, ey = oy) {
     const t = this.tracers.find((q) => q.t <= 0) || this.tracers[0];
-    const dx = ex - ox, dz = ez - oz, l = Math.hypot(dx, dz);
-    t.m.position.set(ox, oy, oz); t.m.scale.set(l, 1, 1); t.m.rotation.y = Math.atan2(-dz, dx); t.m.visible = true; t.t = 0.07;
+    const dx = ex - ox, dz = ez - oz, l = Math.hypot(dx, dz), dy = (ey ?? oy) - oy;
+    t.m.position.set(ox, oy, oz); t.m.scale.set(Math.hypot(l, dy), 1, 1); t.m.rotation.set(0, Math.atan2(-dz, dx), Math.atan2(dy, l), 'YZX'); t.m.visible = true; t.t = 0.07;
     t.m.material.opacity = op;
   }
 

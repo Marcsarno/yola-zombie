@@ -300,7 +300,7 @@ export class Sim {
       if (crit > 1) this.emit({ type: 'crit', id: z.id, x: z.x, z: z.z, weapon: 'pistol' });
       const res = z.takeHit(this.T.pistolDamage * crit, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1) * (crit > 1 ? 1.8 : 1), 'pistol', this, perfect ? 'Head' : this.bulletPart(z, m.x, m.z, dx, dz));
       if (perfect) { this.stats.headshots = (this.stats.headshots || 0) + 1; this.emit({ type: 'headshot', id: z.id, x: z.x, z: z.z }); if (this.T.hitPause > 0) this.emit({ type: 'hitPause', dur: this.T.hitPause * 1.6 }); }
-      this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'zombie', id: z.id, yaw, killed: !z.alive, blocked: res === 'blocked' });
+      this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, ey: z.down || z.crawling ? 0.25 : undefined, hit: 'zombie', id: z.id, yaw, killed: !z.alive, blocked: res === 'blocked' }); // (ey: a body on the floor, the round goes down into it)
     } else {
       this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz, yaw });
     }
@@ -329,7 +329,7 @@ export class Sim {
         if (!h) hits.set(r.zombie, (h = { dmg: 0, px: 0, pz: 0, parts: [] }));
         h.dmg += T.shotgunDamage * fall; h.px += dx * fall; h.pz += dz * fall;
         h.parts.push([this.bulletPart(r.zombie, m.x, m.z, dx, dz, true), T.shotgunDamage * fall]);
-        pellets.push({ ex, ez, hit: 'zombie', id: r.zombie.id });
+        pellets.push({ ex, ez, ey: r.zombie.down || r.zombie.crawling ? 0.25 : undefined, hit: 'zombie', id: r.zombie.id });
       } else pellets.push({ ex, ez, hit: r.wall ? 'wall' : 'none', nx: r.nx, nz: r.nz });
     }
     const killed = [], blocked = [];
@@ -432,13 +432,20 @@ export class Sim {
       for (const z of this.zombies) {
         if (!z.alive || z.buried || act.hitSet.has(z.id)) continue;
         if (z.down && !chop) continue; // only the chop comes down far enough to hit a body on the floor
-        const rr = z.down ? 0.5 : BAT_BODY_R + (fist ? G.radius : 0); // the visible torso (a lying body is longer)
-        const minY = z.down || z.crawling ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y); // (a test-arena attack sets its own) // (a crawler is struck as it rises at her)
-        const h1 = segPointDist2(ax, az, tipX, tipZ, z.x, z.z);
-        const y1 = ay + (seg.ty - ay) * h1.t;
-        const d1 = y1 >= minY ? h1.d2 : 1e9;
-        const d2 = seg.ty >= minY ? segPointDist2(px, pz, tipX, tipZ, z.x, z.z).d2 : 1e9;
-        let near = Math.min(d1, d2) <= rr * rr;
+        const low = z.down || z.crawling;
+        const rr = low ? 0.42 : BAT_BODY_R + (fist ? G.radius : 0); // the visible torso (a body on the floor: its width)
+        const minY = low ? 0.05 : A.minY ?? (chop ? 0.3 : fist ? 0.25 : BAT_MIN_HIT_Y); // (a test-arena attack sets its own) // (a crawler is struck as it rises at her)
+        // a body on the floor is long (2026-10-18): a crawler's head and arms reach out ahead of it, a floored one lies back
+        // from where it fell; both points count, so a blow coming down on any of it lands
+        const fwd = z.crawling ? 0.45 : z.down ? -0.55 : 0, bx = z.x + Math.sin(z.yaw) * fwd, bz = z.z + Math.cos(z.yaw) * fwd;
+        let near = false;
+        for (const [cx, cz] of fwd ? [[z.x, z.z], [bx, bz]] : [[z.x, z.z]]) {
+          const h1 = segPointDist2(ax, az, tipX, tipZ, cx, cz);
+          const y1 = ay + (seg.ty - ay) * h1.t;
+          const d1 = y1 >= minY && (!low || y1 < 0.75) ? h1.d2 : 1e9; // (low: the weapon has to come down to it)
+          const d2 = seg.ty >= minY && (!low || seg.ty < 0.75) ? segPointDist2(px, pz, tipX, tipZ, cx, cz).d2 : 1e9;
+          if (Math.min(d1, d2) <= rr * rr) { near = true; break; }
+        }
         // the arms: a standing zombie reaches toward her, and a bat through the reaching arms is a hit too
         if (!near && !z.down && !z.crawling && z.armsLost < 2) {
           const ox = z.x + Math.sin(z.yaw) * ARM_REACH, oz = z.z + Math.cos(z.yaw) * ARM_REACH, ar = ARM_R + (fist ? G.radius : 0);

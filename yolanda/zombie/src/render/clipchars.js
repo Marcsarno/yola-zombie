@@ -488,6 +488,10 @@ export class YolaView extends ClipBody {
     this.outer.position.set(s.x, 0, s.z);
     this.blob.position.set(s.x, 0.012, s.z);
     if (s.dead) { this.die(dt, s); return; }
+    // a library weapon in her hand (render/libweapons.js): shown and held through the test-weapon path
+    const lib = this.libHolds?.[s.equipped];
+    if (lib && this.test !== lib) this.setTestWeapon(lib);
+    if (lib) s = Object.assign({}, s, { equipped: 'test' });
     this.yaw = s.aimYaw;
     this.container.rotation.y = this.yaw;
 

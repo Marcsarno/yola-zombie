@@ -599,7 +599,11 @@ export class Zombie {
           const hit = !p.dead && dist < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
           // losing arms leaves a weaker claw (both gone: a bite); crawlers hit low and weaker
           const dmg = (this.attack === 'scratch' ? T.scratchDamage ?? 8 : this.attack === 'slam' ? T.zombieDamage * 1.3 : T.zombieDamage) * this.K.dmg;
-          if (hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim) && this.attack === 'slam' && !p.dead) p.knockDown(this.x, this.z, sim);
+          const hurt = hit && p.hurt(dmg * (1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim);
+          if (hurt && this.attack === 'slam' && !p.dead) p.knockDown(this.x, this.z, sim);
+          // a crawler that gets its hands on her grabs her ankles (2026-10-18, the user: "a surviving crawler should remain a
+          // meaningful threat"): she is held back for a moment (core/player.js grabT), not knocked about
+          if (hurt && this.crawling && this.armsLost < 2) { p.grabT = 0.75; sim.emit({ type: 'grabbed', id: this.id }); }
           if (this.attack === 'slam') sim.emit({ type: 'zombieSlam', id: this.id, x: this.x + Math.sin(this.yaw) * 1.1, z: this.z + Math.cos(this.yaw) * 1.1, hit, second: this.slams >= 1 });
           sim.emit({ type: hit ? 'zombieStrikeHit' : 'zombieStrikeMiss', id: this.id, attack: this.attack });
           if (this.attack === 'slam' && !hit) sim.specialMiss?.(this, 'slam'); // (dodged: core/sim.js specialMiss)

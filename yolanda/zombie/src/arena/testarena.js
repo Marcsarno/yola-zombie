@@ -17,7 +17,7 @@ const LABEL = { bat: 'Bat', sledgehammer: 'Sledgehammer', axe: 'Axe', crowbar: '
 // How each weapon hits. dmg / knock: x the game's axe damage (62) and impact (zombies have 100 hp). kind: bat = blunt,
 // axe = a blade (cuts limbs, by sever chances), fist = unarmed. hitFrom: the part of the weapon past this fraction of its
 // length lands blows; radius: its head's size.
-const PROFILE = {
+export const PROFILE = {
   bat: { kind: 'bat', dmg: 0.75, knock: 1.0, style: 'swing', sever: {}, hitFrom: 0.45, radius: 0.1, reach: 'tip' },
   sledgehammer: { kind: 'bat', dmg: 1.45, knock: 1.6, style: 'heavy', sever: {}, hitFrom: 0.55, radius: 0.14 },
   axe: { kind: 'axe', dmg: 1.0, knock: 1.0, style: 'swing', sever: { head: 0.35, arm: 0.25 }, hitFrom: 0.5, radius: 0.1 },
