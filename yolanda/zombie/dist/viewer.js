@@ -40276,6 +40276,14 @@ void main() {
     a.root.updateMatrixWorld(true);
     return C[w];
   }
+  function holdHand(w, a) {
+    const f = fitW(w, a);
+    if (f?.hand) return f.hand;
+    const pk = PICKS[(main?.clip?.name || "").replace(/_REBAKE_.*$/, "") + "|" + w];
+    if (pk) return pk.hand;
+    for (const [k, v] of Object.entries(PICKS)) if (k.endsWith("|" + w)) return v.hand;
+    return "Right";
+  }
   function placeHeldOn(a, o) {
     const w = weaponOf(), k = a.height / 1.62;
     o.visible = true;
@@ -40287,7 +40295,7 @@ void main() {
       if (mid("Right").distanceTo(mid("Left")) > 0.32 * k && placeOneHanded(B, "Right", o, WDEFS[w], fitW(w, a), {}, k)) return;
     }
     const LD = LIB_WEAPONS[w] && WDEFS[w];
-    if (PACK[w] && LD && placeBat(a.bones, o, LD, fitW(w, a), k)) return;
+    if (PACK[w] && LD && (holdHand(w, a) === "Left" ? placeOneHanded(a.bones, "Left", o, LD, fitW(w, a), {}, k) : placeBat(a.bones, o, LD, fitW(w, a), k))) return;
     const CY = LD && CARRY[w];
     if (CY && HOLD_LAYERS.carry && a === main && main.clip?.name === CY.clip) {
       const cal = carryCalOf(a, w, LD, CY, k);
@@ -40302,7 +40310,7 @@ void main() {
       }
     }
     if (LD) {
-      const pk = PICKS[(main?.clip?.name || "").replace(/_REBAKE_.*$/, "") + "|" + w] || { hand: LD.primary_hand || "Right" };
+      const pk = { ...PICKS[(main?.clip?.name || "").replace(/_REBAKE_.*$/, "") + "|" + w] || {}, hand: holdHand(w, a) };
       if (placeOneHanded(a.bones, pk.hand, o, LD, fitW(w, a), pk, k)) {
         if (LD.hands === "two" && LD.grip_secondary && HOLD_LAYERS.secondHand) {
           o.updateMatrixWorld(true);
@@ -40814,6 +40822,14 @@ void main() {
       refresh();
       sidebarSync();
     });
+    const hand = seg(W1.body, [["Right", "Right hand"], ["Left", "Left hand"]], (v) => {
+      fitEditing().hand = v;
+      keepFits();
+      refresh();
+      sidebarSync();
+      jointReadout();
+    });
+    hand.title = "the hand that holds the weapon (saved with the weapon position: All clips, or This clip only)";
     for (const [i, [k, lbl, lo, hi, st]] of PFIT_ROWS.entries()) {
       const up = slider(W1.body, lbl, "", lo, hi, st, () => fitEditing()[k], (v) => {
         fitEditing()[k] = v;
@@ -40944,7 +40960,7 @@ void main() {
       $("sbSaved").textContent = ok ? "saved to shots/ (tell Claude to put it in the game)" : "save failed";
     };
     V1.body.appendChild(sv);
-    SB = { wHead, who, scope, fitRows, side, ascope, armRows, layerBoxes, A1 };
+    SB = { wHead, who, scope, hand, fitRows, side, ascope, armRows, layerBoxes, A1 };
     sidebarSync();
   }
   function layerSyncAll() {
@@ -40962,6 +40978,11 @@ void main() {
     for (const b of SB.scope.children) {
       b.classList.toggle("on", b.dataset.v === (clipOwn ? "clip" : "all"));
       b.disabled = w === "pistol";
+    }
+    SB.hand.hidden = !LIB_WEAPONS[w];
+    if (LIB_WEAPONS[w]) {
+      const h = holdHand(w, a);
+      for (const b of SB.hand.children) b.classList.toggle("on", b.dataset.v === h);
     }
     const labels = FIT_LABELS[w] || PFIT_ROWS.map((r) => r[1]);
     for (const up of SB.fitRows) {
