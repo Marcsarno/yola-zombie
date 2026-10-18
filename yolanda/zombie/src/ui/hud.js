@@ -25,7 +25,7 @@ const TUNE_SPEC = [
     ['zombieWindup', 'Lunge wind-up', 0.25, 1.2, 0.02, 's'], ['scratchWindup', 'Scratch wind-up', 0.2, 1, 0.02, 's'],
     ['sprinterSpeed', 'Sprinter charge speed', 2, 6, 0.1, 'm/s'], ['sprinterWindup', 'Orderly charge wind-up', 0.3, 1.5, 0.05, 's'],
   ]],
-  ['Executions', [['execCamPush', 'Camera in (0 = hard cut)', 0, 0.4, 0.01, 's'], ['execCamDist', 'Camera distance', 0.2, 1, 0.02, '×'],
+  ['Finishers', [['execCamPush', 'Camera in (0 = hard cut)', 0, 0.4, 0.01, 's'], ['execCamDist', 'Camera distance', 0.2, 1, 0.02, '×'],
     ['execCamPitch', 'Camera angle (down)', 8, 60, 1, '°'], ['execCamFov', 'Camera field of view', 0.6, 1.1, 0.01, '×'],
     ['execSlowLock', 'Time on the press', 0.05, 1, 0.01, '×'], ['execSlowWind', 'Time through the wind-up', 0.1, 1, 0.01, '×'], ['execWindTime', 'Wind-up length', 0.2, 1.5, 0.05, 's'],
     ['execFreeze', 'Freeze on the hit', 0, 0.3, 0.01, 's'], ['execHang', 'Hang after the hit', 0, 1.2, 0.05, 's'], ['execSlowHang', 'Time through the hang', 0.05, 1, 0.01, '×'],

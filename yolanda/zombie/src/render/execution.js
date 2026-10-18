@@ -10,6 +10,8 @@
 //   release  back to full speed and the camera back over execRelease
 // A strike that never comes (an edge case) lets go after MAX_WAIT.
 const MAX_WAIT = 2.2;
+export const EXP_UP_A = 4.5; // how sharp the exponential speed-up is (0: linear)
+export const expUp = (u) => (Math.exp(EXP_UP_A * u) - 1) / (Math.exp(EXP_UP_A) - 1);
 
 export class ExecDirector {
   constructor() { this.s = null; }
@@ -43,8 +45,10 @@ export class ExecDirector {
         if (s.pt >= T.execHang) { s.phase = 'release'; s.pt = 0; s.k0 = k; }
         break;
       case 'release': {
-        const u = Math.min(1, s.pt / Math.max(0.05, T.execRelease)), e = u * u * (3 - 2 * u);
-        k = (s.k0 ?? T.execSlowWind) + (1 - (s.k0 ?? T.execSlowWind)) * e; s.cam = 1 - e;
+        // (2026-10-18, the user: "gradual time speed up that speeds up exponentially not gradually"): time creeps, then
+        // snaps back to full speed (EXP_UP); the camera eases back on its own curve
+        const u = Math.min(1, s.pt / Math.max(0.05, T.execRelease)), e = expUp(u), ce = u * u * (3 - 2 * u);
+        k = (s.k0 ?? T.execSlowWind) + (1 - (s.k0 ?? T.execSlowWind)) * e; s.cam = 1 - ce;
         if (u >= 1) { this.s = null; return { k: 1, boost: 1, cam: 0, creep: 0, done: true }; }
         break;
       }

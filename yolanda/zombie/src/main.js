@@ -519,7 +519,6 @@ function runFrame(dt, doRender = true) {
   // steps, swings, shots and her animation: sim.yolaBoost in core/sim.js step, the same factor on her view below)
   if (!paused) {
     execNow = execDir.update(dt, tuning, sim.player.execHitIn);
-    if (execBanner && (!execNow || execNow.phase === 'release' || execNow.done)) { execBanner = false; hud.popup('EXECUTION +' + (tuning.execHeal ?? 5)); } // (an execution: it sets time and Yola's pace itself)
     const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : null); simDt *= k;
     sim.yolaBoost = execNow ? execNow.boost : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
   }
@@ -626,6 +625,7 @@ function runFrame(dt, doRender = true) {
 
   if (debugOn) updateDebug(p);
   hud.update(sim, dt);
+  execLook(animDt, dt);
   if (doRender) looks.render();
 }
 
@@ -645,6 +645,7 @@ const STRIKE_BLOOD = { scratch: 'blade', flail: 'blade', dash: 'blade', lunge: '
 let hurtFrame = -1;
 // an execution's full-body burst by weapon (the power of the throw); the rest take parts off (core/zombies.js EXEC_GORE)
 const EXEC_BURST = { bat: 1.8, shotgun: 2.2, sledgehammer: 1.3 };
+const EXEC_BLOOD = { axe: 'blade', knife: 'blade', pistol: 'pistol', shotgun: 'shotgun' };
 function handleEvents() {
   frameNo++;
   const p = sim.player;
@@ -760,7 +761,7 @@ function handleEvents() {
       case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
       case 'dodge': audio.play('swing', 0.75); break;
       case 'grabbed': audio.play('bump', 0.8); break; // (a crawler has her ankle: she is held back, core/player.js grabT)
-      case 'dodgeSuccess': if (e.perfect) { slowBeat(0.26, 0.9); cue(audio, 'perfect'); hud.popup(e.kind === 'pounce' ? 'PERFECT DODGE · EXECUTE' : 'PERFECT DODGE'); } break; // (core/sim.js specialMiss: her next blow is critical)
+      case 'dodgeSuccess': if (e.perfect) { slowBeat(0.26, 0.9); cue(audio, 'perfect'); hud.popup('PERFECT DODGE'); } break; // (core/sim.js specialMiss: her next blow is critical)
       // (2026-10-18, the user: "better visual effects for weapon crits when we hit during slow motion"): the snap out of slow
       // motion on a white screen flash, a big star, a white and a gold shockwave, a fan of gold sparks and blood, a beat of hit-stop
       case 'crit': {
@@ -791,9 +792,14 @@ function handleEvents() {
       case 'zombieDeath': { sim.stats.kills++; audio.play('zombieDeath'); const zx = sim.zombies.find((q) => q.id === e.id);
         if (zx?.executed && EXEC_BURST[zx.execWeapon]) gib(e.id, zx.hitDirX, zx.hitDirZ, EXEC_BURST[zx.execWeapon]); // (the bat, the shotgun, the sledgehammer: the full burst)
         break; }
-      case 'execStart': execDir.start(e); fx.ring(e.x, e.z, 0xffffff, 1.4); audio.play('swing', 0.7); break; // (render/execution.js: time and the camera)
+      case 'execStart': execDir.start(e); fx.ring(e.x, e.z, 0xffffff, 1.4); fx.ring(e.x, e.z, 0xffb347, 2.2); audio.play('swing', 0.7); break; // (render/execution.js: time and the camera)
       case 'execHit': { // the finisher lands: freeze, flash, kick, the boom
-        execDir.hit(e); shake(0.8); execBanner = true; // (its banner once the camera pulls back: over the hang it would cover the shot)
+        execDir.hit(e); shake(0.8); execFlash = 1; // (no banner, no word: the user)
+        { const dx = e.dirX || 0, dz = e.dirZ || 0; // the epic hit: a blood blast, a fan of sparks, two shockwaves, dust, the frame flash
+          fx.bloodHit(EXEC_BLOOD[e.weapon] || 'blunt', e.x, 1.2, e.z, dx, dz, 2.6);
+          fx.burst(e.x, 1.2, e.z, 34, 0xffd27a, 5.5, 1.6, 0.45, dx * 0.7, dz * 0.7); fx.burst(e.x, 1.1, e.z, 16, 0xfff6e8, 3.2, 1.0, 0.25, dx, dz);
+          fx.ring(e.x, e.z, 0xffffff, 2.6); fx.ring(e.x, e.z, 0xff5a3a, 1.7); fx.smoke(e.x, e.z, 5, 0.5, 0.45, 2.4, 1.2, 0x8a6d62, 0.6); fx.bloodPool(e.x + dx * 0.6, e.z + dz * 0.6, 1.4);
+          const cf = document.getElementById('critFlash'); if (cf) { cf.classList.remove('go'); void cf.offsetWidth; cf.classList.add('go'); } }
         fx.hitFlash(e.x - (e.dirX || 0) * 0.2, 1.15, e.z - (e.dirZ || 0) * 0.2, e.dirX || 0, e.dirZ || 0, 2.4); fx.ring(e.x, e.z, 0xfff1d0, 1.8);
         audio.play('shotgunClose', 0.9); audio.play('sever');
         if (shakeOn) { camState.vx += (e.dirX || 0) * 2.4 * tuning.shake; camState.vz += (e.dirZ || 0) * 2.4 * tuning.shake; }
@@ -823,10 +829,27 @@ function clearBreaches() { for (const o of breaches.list) o.removeFromParent(); 
 
 const slowmo = new SlowMotion(audio); // (render/slowmo.js: the guard's leap, a perfect dodge, a finishing blow)
 const slowBeat = (k, d) => slowmo.beat(k, d), slowEnd = () => slowmo.end();
-const execDir = new ExecDirector(); let execNow = null, execRingT = 0, execBanner = false; // (render/execution.js: the execution beat; execNow: this frame's)
+const execDir = new ExecDirector(); let execNow = null, execRingT = 0, execFlash = 0, execGrade = 0, execEmberT = 0; // (render/execution.js: the execution beat; execNow: this frame's)
 function shake(k) { if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake); }
 
 const _ex = new THREE.Vector3();
+// The finisher's look (render/execution.js): the world drained and contrasty while it runs (a canvas filter: free), a warm
+// key light above the pair (the muzzle flash's light, borrowed: no extra light in the shaders), a white-hot flash on the
+// hit, embers drifting through the hang
+function execLook(animDt, dt) {
+  const X = execNow, on = X ? X.cam : 0;
+  execGrade += (on - execGrade) * Math.min(1, dt * 14);
+  execFlash = Math.max(0, execFlash - dt * 4.5);
+  const g = execGrade, fl = execFlash;
+  renderer.domElement.style.filter = g > 0.01 || fl > 0.01 ? `saturate(${(1 - 0.6 * g + 0.4 * fl).toFixed(3)}) contrast(${(1 + 0.22 * g).toFixed(3)}) brightness(${(1 - 0.12 * g + 0.4 * fl).toFixed(3)})` : '';
+  const tz = X && sim.zombies.find((q) => q.id === execDir.s?.id);
+  if (X && tz) {
+    const p = sim.player, mx = (p.x + tz.x) / 2, mz = (p.z + tz.z) / 2;
+    fx.flashLight.color.setHex(fl > 0.3 ? 0xfff1d8 : 0xffb066); fx.flashLight.distance = 6.5;
+    fx.flashLight.position.set(mx, 2.3, mz); fx.flashLight.intensity = 7 * g + 24 * fl; // (a hot flash on the hit, not a white-out)
+    if (X.phase === 'hang' && (execEmberT -= dt) <= 0) { execEmberT = 0.04; fx.burst(tz.x + (Math.random() - 0.5) * 0.8, 0.9 + Math.random() * 0.8, tz.z + (Math.random() - 0.5) * 0.8, 2, Math.random() < 0.5 ? 0xffc070 : 0x9a1a14, 0.5, 0.9, 1.1); } // (embers and blood mist hanging in the air)
+  }
+}
 function updateCamera(dt, px, pz, yaw, p) {
   const aspect = camera.aspect;
   const vfov = THREE.MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);

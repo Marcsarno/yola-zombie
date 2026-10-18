@@ -30,7 +30,7 @@ const DEMOS = {
   } },
   // (2026-10-18) the execution: a walker that pounces; dodge it at the last moment (Dodge / Shift), then attack it while it
   // glows (render/execution.js). Change weapons with Swap to see each finisher
-  execute: { label: 'Execution: perfect-dodge the pounce, then attack the glowing walker (Swap: each weapon)', weapon: 'bat', setup(sim) {
+  execute: { label: 'Finisher: perfect-dodge the pounce, then attack the glowing walker (Swap: each weapon)', weapon: 'bat', setup(sim) {
     for (const [x, z] of [[-1.6, -4.6], [2.4, -5.2]]) { const q = put(sim, x, z, 'normal', 0); q.pouncer = true; q.pounceCd = 0.5; }
   } },
   low: { label: 'Low targets: a crawler, a floored walker', weapon: 'axe', setup(sim) { const c = put(sim, 0.4, 0.6, 'normal'); c.crawling = true; c.broken = 'LowerLeg_L'; const k = put(sim, 1.6, 0.4, 'normal'); k.knockDown(0, 1, sim); } },
