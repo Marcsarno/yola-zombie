@@ -12,8 +12,9 @@ STATUS 2026-10-18 night (combat chat) — START HERE. Everything committed, depl
 - The lighting lab is NOT in the real game yet: the wing modes (wave / practice) can take the user's picks quickly (and the
   Look setting replaces ☀); the story floors each need their own lighting data and a bake, best once their layouts are final.
 - NEXT, in order (the user: "continue to push it and clean it up at the same time"):
-  1. Body / blood pile-up: in the recorded run draw calls climbed 190 -> 403 as gore piled up (0 zombies left, 403 calls):
-     keep the gore, stop it costing more as a fight goes on (merge settled pieces / decals, cap the oldest).
+  1. DONE (2026-10-18, later): body / blood pile-up (PERF_AUDIT.md "Gore pile-up"). NEW, the user's: FINISHERS_PLAN.md
+     (finishers Open -> Mark -> Press, the centre button's three looks, the guard's slam finisher, the lady as a bowling
+     ball, Yola getting hurt): the next big build, once the user answers its open decisions.
   2. Merge each zombie's ~12 parts into 1-2 draw calls, dismemberment kept.
   3. The user tests the story floors at High: combat.html?room1=1&perf=1 (36 zombies, the heavier map).
   4. Meter: 'limit gpu' is a guess on iPhones (no GPU timer, capped at 60 fps): label it as unknown there.

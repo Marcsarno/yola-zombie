@@ -4,6 +4,7 @@
 // shadow map: additive floor glows, a few transparent planes, small particle clouds, material tweaks and CSS on the canvas.
 // Placed for the practice room (the operating theatre up top, the hall below it); FX.spots says where.
 import * as THREE from 'three';
+import { poolMat } from './fx.js';
 
 export const ATMOS = [ // [key, label, what it is, what it costs]
   ['tubes', 'Flickering tubes', 'Ceiling tubes that light the floor under them: one steady, one buzzing, one failing, one dead.', '4 glow decals + 4 thin bars'],
@@ -120,15 +121,14 @@ export class Atmos {
   }
   toggle_gloss(v) {
     const fx = this.fx, O = this.arena?.ob;
-    for (const q of fx.pools) { // (fx's pooled floor blood)
-      if (v) { if (!this.wet.has(q)) { const b = q.m.material; this.wet.set(q, { b, s: new THREE.MeshStandardMaterial({ map: b.map, color: 0x7a0a0a, roughness: 0.16, metalness: 0, envMapIntensity: 1.1, transparent: true, opacity: b.opacity, depthWrite: false }) }); } q.m.material = this.wet.get(q).s; }
-      else if (this.wet.has(q)) q.m.material = this.wet.get(q).b;
+    { const P = fx.poolMesh; // (fx's pooled floor blood: one instanced mesh, each pool's fade its own: fx.js poolMat)
+      if (v) { if (!this.wet.has(P)) { const b = P.material; this.wet.set(P, { b, s: poolMat(new THREE.MeshStandardMaterial({ map: b.map, color: 0x7a0a0a, roughness: 0.16, metalness: 0, envMapIntensity: 1.1, transparent: true, opacity: b.opacity, depthWrite: false })) }); } P.material = this.wet.get(P).s; }
+      else if (this.wet.has(P)) P.material = this.wet.get(P).b;
     }
     if (O?.blood) for (const m of Object.values(O.blood)) { m.roughness = v ? 0.16 : 0.45; m.envMapIntensity = v ? 1.1 : 1; m.needsUpdate = true; }
     for (const P of this.prints) if (!v) P.m.visible = false;
   }
   tick_gloss(dt, p) { // footprints: every step after she walks through blood, fading over her next steps; each print fades in time
-    for (const q of this.fx.pools) { const W = this.wet.get(q); if (W && q.m.material === W.s) W.s.opacity = W.b.opacity; } // (fx animates the original's opacity)
     if (this.lastX == null) { this.lastX = p.x; this.lastZ = p.z; }
     const d = Math.hypot(p.x - this.lastX, p.z - this.lastZ); this.walked += d; this.lastX = p.x; this.lastZ = p.z;
     if (this.inBlood(p.x, p.z)) this.bloody = 10;
@@ -143,7 +143,7 @@ export class Atmos {
     for (const P of this.prints) if (P.t < 30) { P.t += dt; P.m.material.opacity = 0.85 * P.k * Math.max(0, 1 - P.t / 30); if (P.t >= 30) P.m.visible = false; }
   }
   inBlood(x, z) {
-    for (const q of this.fx.pools) if (q.t < 30 && q.m.visible && Math.hypot(x - q.m.position.x, z - q.m.position.z) < q.m.scale.x * 0.42) return true;
+    for (const q of this.fx.pools) if (q.t < 30 && q.on && Math.hypot(x - q.x, z - q.z) < q.s * 0.42) return true;
     const D = this.arena?.ob?.decals; if (D) for (const m of D.children) if (m.position.y < 0.05 && Math.hypot(x - m.position.x, z - m.position.z) < Math.max(m.scale.x, m.scale.z) * 0.42) return true;
     return false;
   }

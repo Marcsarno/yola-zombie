@@ -92,3 +92,21 @@ time they cost. They could be dropped only where a loading moment already hides 
   and gives the sharpness back when the CPU is the limit.
 - The speed meter: combat.html?perf=1 (any mode): fps, frame time and its slowest 5%, CPU and GPU ms, which is the
   limit, resolution / scale / DPR / quality, AA, shadows, draw calls, triangles, GPU textures, JS memory, zombies, floor.
+
+## Done (2026-10-18, later): the gore pile-up
+
+The user's iPhone run at High: draw calls 190 -> 403 as bodies and blood piled up (no zombies left). Reproduced with a
+scripted fight in the wave room (phone settings): 143 -> 427 calls with 3 zombies alive. The causes:
+- **Burst bodies** (render/gibburst.js, the 4 kept): each lay on the floor as 22 chunks of 55 meshes, every one drawn
+  again for its shadow: ~45 calls each, for as long as it stayed. Now, once a burst's chunks lie still, they are merged
+  into one mesh per look (4 per body), baked where they lie: every vertex kept in place (checked: same vertex count,
+  centroid within 1e-9 m), the same materials, still casting shadows.
+- **Blood pools** (render/fx.js): 48 separate decals, each its own draw. Now one instanced mesh, each pool's fade its
+  own (fx.js poolMat; the lab's wet blood uses it too). Being one draw, the ring went 48 -> 128 pools, and a chunk
+  splashing against a wall no longer stacks a new pool every frame on the same spot (it was pushing the pools under the
+  other bodies out within seconds): the blood under every body now stays its full ~30 s.
+
+After: the same fight stays 92-168 calls; eight bodies burst in a row in the practice room settle back to 165-200
+(162 with no gore at all). Severed limbs (ZombieView pieces, max 40, gone after 16 s) and corpses (7 s) were left
+alone:
+they clear themselves.

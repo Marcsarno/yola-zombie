@@ -21,7 +21,18 @@ function dotTexture() {
 
 const MAX_P = 420;
 const BLOOD = { zombie: [0.36, 0.02, 0.02], yola: [0.62, 0.03, 0.03] }; // (spray colours: theirs dark, hers bright)
-const MAX_POOLS = 48;
+const MAX_POOLS = 128; // (one draw for all of them: more pools cost no draw calls)
+const _poolM = new THREE.Matrix4(), _poolQ = new THREE.Quaternion(), _poolP = new THREE.Vector3(), _poolS = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
+const _zeroM = new THREE.Matrix4().makeScale(0, 0, 0);
+// a material for the instanced blood pools: each pool's own fade (its aAlpha) on top of the material's opacity
+export function poolMat(m) {
+  m.onBeforeCompile = (s) => {
+    s.vertexShader = 'attribute float aAlpha;\nvarying float vPoolA;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvPoolA = aAlpha;');
+    s.fragmentShader = 'varying float vPoolA;\n' + s.fragmentShader.replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\ndiffuseColor.a *= vPoolA;');
+  };
+  m.customProgramCacheKey = () => 'bloodPool';
+  return m;
+}
 
 function splatTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 128;
@@ -125,14 +136,14 @@ export class FX {
     const arcGeo = new THREE.RingGeometry(0.72, 0.76, 32, 1, -0.45, 0.9); arcGeo.rotateX(-Math.PI / 2); arcGeo.rotateY(-Math.PI / 2);
     this.aim.add(new THREE.Mesh(arcGeo, this.aimMat));
     this.aim.position.y = 0.02; this.aim.renderOrder = 2; scene.add(this.aim);
-    // blood pools: pooled floor decals that spread, then fade after a while
-    const splat = splatTexture();
+    // blood pools: pooled floor decals that spread, then fade after a while. All of them one draw (2026-10-18: each was its
+    // own, up to 48 a frame in a long fight): an instanced plane, each pool's fade in its own aAlpha (poolMat)
+    const splat = splatTexture(), pg = new THREE.PlaneGeometry(1, 1); pg.rotateX(-Math.PI / 2);
+    pg.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(new Float32Array(MAX_POOLS), 1).setUsage(THREE.DynamicDrawUsage));
+    this.poolMesh = new THREE.InstancedMesh(pg, poolMat(new THREE.MeshBasicMaterial({ map: splat, color: 0x4a0606, transparent: true, opacity: 0.85, depthWrite: false })), MAX_POOLS);
+    this.poolMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.poolMesh.frustumCulled = false; this.poolMesh.visible = false; this.poolMesh.renderOrder = 1; scene.add(this.poolMesh);
     this.pools = [];
-    for (let i = 0; i < MAX_POOLS; i++) {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: splat, color: 0x4a0606, transparent: true, opacity: 0, depthWrite: false }));
-      m.rotation.x = -Math.PI / 2; m.visible = false; m.renderOrder = 1; scene.add(m);
-      this.pools.push({ m, t: 99, size: 1 });
-    }
+    for (let i = 0; i < MAX_POOLS; i++) { this.pools.push({ t: 99, size: 1, x: 0, y: 0, z: 0, rot: 0, s: 0, on: false }); this.poolMesh.setMatrixAt(i, _zeroM); }
     this.poolNext = 0;
     // floor cracks (the guard's slam): pooled decals that stay a while, then fade
     const crackTex = crackTexture();
@@ -207,10 +218,12 @@ export class FX {
   }
   bloodPool(x, z, size = 0.8) {
     if (!this.gore) return;
+    // a fresh pool right here already (a chunk against a wall splashes every frame): that one takes it instead of a new one
+    // stacking on it and pushing the older pools (under the other bodies) out of the ring
+    for (const o of this.pools) if (o.on && o.t < 2 && Math.abs(o.x - x) < 0.22 && Math.abs(o.z - z) < 0.22) { o.size = Math.max(o.size, size); return; }
     const q = this.pools[this.poolNext]; this.poolNext = (this.poolNext + 1) % MAX_POOLS;
     q.t = 0; q.size = size * (0.8 + Math.random() * 0.4);
-    q.m.position.set(x, 0.015 + this.poolNext * 0.0004, z); q.m.rotation.z = Math.random() * Math.PI * 2;
-    q.m.visible = true;
+    q.x = x; q.y = 0.015 + this.poolNext * 0.00015; q.z = z; q.rot = Math.random() * Math.PI * 2; q.on = true;
   }
 
   floorCrack(x, z, size = 1.2) {
@@ -311,14 +324,20 @@ export class FX {
       }
     }
     this.pGeo.setDrawRange(0, k);
-    for (const q of this.pools) {
+    let pools = 0; const PA = this.poolMesh.geometry.attributes.aAlpha;
+    for (let i = 0; i < MAX_POOLS; i++) {
+      const q = this.pools[i];
       if (q.t > 40) continue;
       q.t += dt;
-      const grow = Math.min(1, q.t / 0.9), s = q.size * (0.35 + 0.65 * (1 - (1 - grow) * (1 - grow)));
-      q.m.scale.set(s, s, 1);
-      q.m.material.opacity = 0.85 * (q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6));
-      if (q.t > 31) { q.m.visible = false; q.t = 99; }
+      const grow = Math.min(1, q.t / 0.9), s = (q.s = q.size * (0.35 + 0.65 * (1 - (1 - grow) * (1 - grow))));
+      PA.array[i] = q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6);
+      _poolQ.setFromAxisAngle(_up, q.rot); _poolP.set(q.x, q.y, q.z); _poolS.set(s, 1, s);
+      this.poolMesh.setMatrixAt(i, _poolM.compose(_poolP, _poolQ, _poolS));
+      if (q.t > 31) { q.on = false; q.t = 99; PA.array[i] = 0; this.poolMesh.setMatrixAt(i, _zeroM); }
+      pools++;
     }
+    if (pools) { PA.needsUpdate = true; this.poolMesh.instanceMatrix.needsUpdate = true; }
+    this.poolMesh.visible = this.pools.some((q) => q.on);
     for (const q of this.cracks) { if (q.t > 40) continue; q.t += dt; q.m.material.opacity = Math.min(1, q.t / 0.08) * (q.t < 30 ? 0.9 : Math.max(0, 0.9 - (q.t - 30) / 6)); if (q.t > 36) { q.m.visible = false; q.t = 99; } }
     this.pGeo.attributes.position.needsUpdate = true; this.pGeo.attributes.color.needsUpdate = true;
     for (const h of this.hits) if (h.t < 1) { h.t += dt / 0.11; const u = Math.min(1, h.t); h.s.scale.setScalar((0.35 + 0.55 * u) * h.k); h.s.material.opacity = (1 - u) * 0.95; if (h.t >= 1) h.s.visible = false; }

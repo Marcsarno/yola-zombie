@@ -7,6 +7,7 @@
 // pools (the game's own fx). Normal kills keep the ordinary severing (render/clipchars.js); the sprinter and the guard are
 // not cut yet (no burst model: they die as before).
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const G = 9.0;
 const MAX_KEEP = 4; // bursts whose pieces stay on the floor (the oldest is cleared when a fifth goes)
@@ -95,7 +96,7 @@ export class GibBurst {
     if (!dt) return;
     const W = this.world, fx = this.fx, e = new THREE.Euler(), dq = new THREE.Quaternion();
     for (const b of this.bursts) {
-      b.t += dt; if (b.t > 4 && b.chunks.every((c) => c.rest)) continue;
+      b.t += dt; if (b.t > 4 && b.chunks.every((c) => c.rest)) { if (!b.merged) this.settle(b); continue; }
       for (const c of b.chunks) {
         if (c.rest) continue;
         const p = c.grp.position, ox = p.x, oz = p.z;
@@ -113,6 +114,38 @@ export class GibBurst {
       }
     }
   }
-  remove(b) { for (const c of b.chunks) { this.scene.remove(c.grp); c.grp.traverse((o) => o.geometry?.dispose()); } }
+  // (2026-10-18, the user's phone run: draw calls 190 -> 403 as gore piled up) a burst lies still: its 60-90 chunk meshes
+  // (each drawn again for its shadow) become one mesh per look, baked where they lie. Nothing moves or changes on screen.
+  settle(b) {
+    b.merged = true;
+    const by = new Map(), keep = [];
+    for (const c of b.chunks) {
+      c.grp.updateMatrixWorld(true);
+      c.grp.traverse((o) => {
+        if (!o.isMesh) return;
+        const m = o.material, g = o.geometry;
+        if (Array.isArray(m) || g.groups.length > 1) { keep.push(o); return; } // (several looks in one mesh: left as it is)
+        const attrs = Object.keys(g.attributes).sort().map((k) => { const a = g.attributes[k]; return `${k}:${a.array.constructor.name}:${a.itemSize}:${a.normalized}`; }).join();
+        const key = [m.type, m.name, m.map?.uuid, m.vertexColors, m.color?.getHexString(), m.roughness, m.metalness, m.transparent, !!g.index, attrs].join('|');
+        if (!by.has(key)) by.set(key, { m, geos: [], src: [] });
+        const w = g.clone(); w.clearGroups(); w.applyMatrix4(o.matrixWorld); by.get(key).geos.push(w); by.get(key).src.push(o);
+      });
+    }
+    const meshes = [];
+    for (const { m, geos, src } of by.values()) {
+      const merged = geos.length > 1 ? mergeGeometries(geos, false) : geos[0];
+      if (merged !== geos[0]) for (const g of geos) g.dispose();
+      if (!merged) { keep.push(...src); continue; } // (could not be merged: those pieces stay as they were)
+      const mesh = new THREE.Mesh(merged, m); mesh.castShadow = true; mesh.matrixAutoUpdate = false; meshes.push(mesh);
+    }
+    if (!meshes.length) return;
+    for (const c of b.chunks) { const left = []; c.grp.traverse((o) => { if (keep.includes(o)) left.push(o); }); this.scene.remove(c.grp); c.grp.traverse((o) => { if (o.isMesh && !keep.includes(o)) o.geometry.dispose(); }); if (left.length) this.scene.add(c.grp); else c.grp = null; }
+    b.chunks = b.chunks.filter((c) => c.grp);
+    b.merged = meshes; for (const mesh of meshes) this.scene.add(mesh);
+  }
+  remove(b) {
+    for (const c of b.chunks) { this.scene.remove(c.grp); c.grp.traverse((o) => o.geometry?.dispose()); }
+    if (Array.isArray(b.merged)) for (const mesh of b.merged) { this.scene.remove(mesh); mesh.geometry.dispose(); }
+  }
   clear() { for (const b of this.bursts) this.remove(b); this.bursts = []; }
 }
