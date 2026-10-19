@@ -1,7 +1,7 @@
 # The big build (agreed 2026-10-18 night: "we have a game plan ... let it cook tonight")
 
-**Status 2026-10-19: the combat chat's part is built and committed (see NEXT_FIXES.md START HERE). The maps chat's part (the
-floors) has not started: its session stopped. Next: the lighting bake.**
+**Status 2026-10-19 morning: all built, walked through and committed: the combat systems, the floors (Floor 7's additions,
+new Floors 6 and 5) and the lighting bake per floor (NEXT_FIXES.md START HERE). Not deployed.**
 
 One page that ties the plans together, says who builds what, and how the two chats meet. The details live in:
 - **FINISHERS_PLAN.md** (v3, decided): the dodge, finishers, the guard, the lady, Yola getting hurt.

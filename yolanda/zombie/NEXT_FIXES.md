@@ -1,6 +1,32 @@
 # Next fixes (the user's notes, 2026-10-18, after playing the combat pass)
 
-STATUS 2026-10-19 early morning (combat chat) — START HERE. The big build (BUILD_PLAN.md) is built and committed locally
+STATUS 2026-10-19 morning (combat chat, the user's goal: "finish the map rebuild. test everything. full walk through..
+bake it all in and apply the lighting through each level ... find out why the first zombie ... looks like all his bones are
+popping out") — START HERE. All done and committed locally (9f0e907, 2e92bc5, 7ff0054 + dist); NOT pushed or deployed
+(only on the user's word).
+- **The reveal's home-run zombie** (9f0e907): his burst model's inner gore (cut caps with bone stubs, guts, gibs) poked out
+  through his gown as he walked in (since the gown-weight fix 9cec33c): it stays hidden until the hit now.
+- **The map rebuild** (2e92bc5, FLOORS_REDESIGN.html): Floor 7 + toilets, janitor closet, blocked service corridor, the
+  first cracked wall (v7 | c7) with the sledgehammer; Floor 6 (14 rooms: corridor cut by a ceiling collapse and a fire door
+  barred from the middle, the nurse-station hub, Ward 6B's cracked wall, the lady's cracked wall into Cold Dispatch,
+  oxygen chairs / walkers / loose cylinders); Floor 5 (12 rooms: the loop round the Main Reception's round desk, the
+  flooded isolation ward, medical records, imaging, the MRI arena, radiology reading, pathology behind a cracked wall,
+  toilets, janitor). New Blender props: blender/make_floor_props.py (ceiling_collapse, round_reception_desk,
+  traction_frame). Checks: tools/check_floors.mjs (doorways clear, everything reachable; the sealed corridor by design)
+  and tools/walkbot.js: the whole chapter played start to finish twice (7 -> 6 -> 5 -> "Floor 4", chapterComplete), plus
+  the lady breaking Ward 6C's wall with her finisher opening.
+- **The lighting** (7ff0054): the lab's picks on every story floor from the hand-off (render/floorlights.js plans the
+  fittings, EXIT signs and one Cycles bake per floor: blender/bake_floor.py in a background Blender, assets/hospital/
+  floor{7,6,5}_light.jpg). The opening and reveal keep their signed-off look. Rebake after a layout change:
+  in the game (combat.html?room1=1) game.lightkit.exportBake(game.looseMeshes, bake, 'floor<n>_bake_scene.json') per floor,
+  or node tools/bake_fixtures.mjs if only the fittings changed, then
+  blender -b --factory-startup --python blender/bake_floor.py -- <n> 384.
+- For the user to judge on the phone (High): the floors' brightness (bake k 2.2, fill 0.3, character light 0.45, as the
+  lab), Floor 6's busiest view (~600 draw calls on the PC: the props merge per room; a per-floor merge was tried and was
+  worse, it defeats culling).
+- Known small things: the guard's shield sticks edge-on to the MRI; the zombie eyes stay off (rejected).
+
+STATUS (previous) 2026-10-19 early morning (combat chat). The big build (BUILD_PLAN.md) is built and committed locally
 (81cf8b7..aa593f4). NOT deployed, NOT pushed (the user hasn't asked yet).
 - Built, each tested in the practice room (combat.html?mode=calm&demo=...):
   - **The dodge** (FINISHERS_PLAN.md 1): the window opens a fixed 0.45 s before any hit, at half speed; the button grey at
