@@ -8,7 +8,7 @@ import { MOODS, LOOKS } from './render/looks.js';
 // back, to watch it. Names: slam1, slam2, dismember, charger, kipup, ladykip, walkers, runner, floor, low.
 const DEMOS = {
   slam1: { label: 'Guard: the slam (dodge it: the shield sticks for good)', weapon: 'bat', setup(sim) { const z = guard(sim, -0.4); z.slamCd = 0; } },
-  tear: { label: 'Guard: stuck shield, his arm tears off, the flail, then his arm as a club', weapon: 'pistol', setup(sim) { const z = put(sim, -1.2, -0.4, 'guard', Math.PI / 2); z.attackCd = 0; z.slamShield(sim); } },
+  tear: { label: 'Guard: shield stuck, the gold mark: FINISH takes his arm (then the other hand, then his head)', weapon: 'pistol', setup(sim) { const z = put(sim, -1.2, -0.4, 'guard', Math.PI / 2); z.attackCd = 0; z.slamShield(sim); } },
   charger: { label: 'The big lady charges (dodge left/right)', weapon: 'pistol', setup(sim) { const z = put(sim, 0.4, -5.6, 'sprinter'); z.attackCd = 0; } },
   kipup: { label: 'Yola knocked flat: the kip-up', weapon: 'bat', setup(sim) { const z = guard(sim, -0.2); z.slamCd = 0; sim.demoNoDodge = true; } },
   ladykip: { label: 'The lady trips into the wall: her kip-up', weapon: 'pistol', setup(sim) { const p = sim.player; p.z = 10.05; const z = put(sim, 0.4, 2.6, 'sprinter'); z.attackCd = 0; } },

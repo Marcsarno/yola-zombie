@@ -1631,11 +1631,39 @@ export class ZombieView extends ClipBody {
     this.container.updateMatrixWorld(true);
     const a = this.bones[R[0]].getWorldPosition(new THREE.Vector3()), b = (this.bones[R[1]] || this.bones[R[0]]).getWorldPosition(new THREE.Vector3());
     if (b.distanceTo(a) < 0.02) b.y += 0.15;
-    this.throwChunks({ [part]: { a, b, r: R[2], bone: R[0] } }, { [R[0]]: part }, z, isMelee(z.hitKind) ? 4.5 : 3.0);
+    const big = z.kind === 'guard' && z.hitStyle === 'tear' && part.startsWith('Forearm'); // (his finisher: "I want to see that arm go off like crazy")
+    const bd = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
+    this.throwChunks({ [part]: { a, b, r: R[2], bone: R[0] } }, { [R[0]]: part }, z, isMelee(z.hitKind) ? 4.5 : 3.0, big ? () => bd.clone().multiplyScalar(7.5 + Math.random() * 2).add(new THREE.Vector3((Math.random() - 0.5) * 3, 3.2 + Math.random() * 1.5, (Math.random() - 0.5) * 3)) : null);
+    if (big && ZombieView.fx) { const fx = ZombieView.fx, sh = this.bones[CUT_STUMP[part]]?.getWorldPosition(new THREE.Vector3()) || a; for (let i = 0; i < 4; i++) fx.bloodSpray(sh.x, sh.y, sh.z, bd.x * 0.6 + (Math.random() - 0.5) * 0.6, 0.9, bd.z * 0.6 + (Math.random() - 0.5) * 0.6, 26, 4.2); fx.bloodPool(sh.x + bd.x * 1.2, sh.z + bd.z * 1.2, 1.4); }
     (this.collapsed ||= []).push(this.bones[R[0]]);
     const s = this.bones[CUT_STUMP[part]]?.getWorldPosition(new THREE.Vector3()) || a, fx = ZombieView.fx, dir = new THREE.Vector3(z.hitDirX, 0, z.hitDirZ);
     if (fx) { fx.bloodSpray(s.x, s.y, s.z, dir.x * 0.8, 0.5, dir.z * 0.8, part === 'Head' ? 34 : 26, 3.4); fx.bloodPool(s.x + dir.x * 0.4, s.z + dir.z * 0.4, part === 'Head' ? 1.1 : 0.9); }
-    (this.stumpOf ||= {})[part] = CUT_STUMP[part]; this.bleed[part] = 3;
+    (this.stumpOf ||= {})[part] = CUT_STUMP[part]; this.bleed[part] = big ? 6 : 3;
+  }
+  // the guard's shield after his slam (FINISHERS_PLAN.md 3): wrenched back out of the floor (his finisher missed), or taken
+  // in his other hand after the first finisher took his arm (guardSwap)
+  guardShield(z) {
+    if (z.state !== 'pickup' || !this.plantedP) return;
+    if (z.wrenching) { if (z.t >= z.stateDur * 0.45) this.retakeShield(); } // (wrenched free: back in the hand that held it)
+    else if (z.mirrored && !this.mirG) this.guardSwap(z); // (core/zombies.js PICKUP: his other hand has it)
+  }
+  retakeShield() {
+    const P = this.plantedP; if (!P) return;
+    const i = ZombieView.planted.indexOf(P); if (i >= 0) ZombieView.planted.splice(i, 1);
+    this.shieldC = P.shield; this.shieldFit = false; this.plantedP = null;
+    this.container.updateMatrixWorld(true); this.fitShield(); // (back in his hand, from the pose he grabs it in)
+    if (ZombieView.fx) { const g = P.grip; ZombieView.fx.burst(g.x, 0.1, g.z, 16, 0x8a8172, 2.2, 0.8, 0.6); ZombieView.fx.smoke?.(g.x, g.z, 4, 0.4, 0.4, 2.0, 1.0); }
+  }
+  // his other hand takes the shield: the guard is mirrored from now on (outer.scale.x -1) and his data-left arm (the one his
+  // clips hold the shield with) becomes the intact one: the cut arm's collapse moves to his data-right arm, which the
+  // mirror shows on the side the real cut was. His clips then hold, walk and slam left-handed in the mirror: right-handed.
+  guardSwap(z) {
+    const B = this.bones; if (!B.LeftArm || !B.RightArm) return;
+    this.collapsed = (this.collapsed || []).filter((b) => b !== B.LeftArm); B.LeftArm.scale.set(1, 1, 1); this.collapsed.push(B.RightArm);
+    this.severed.delete('Forearm_L'); this.severed.add('Forearm_R');
+    if (this.stumpOf?.Forearm_L) { this.stumpOf.Forearm_R = 'RightShoulder'; delete this.stumpOf.Forearm_L; if (this.bleed.Forearm_L) { this.bleed.Forearm_R = this.bleed.Forearm_L; delete this.bleed.Forearm_L; } }
+    this.mixer.update(0); this.retakeShield(); // (fitted unmirrored, then the whole of him and his shield mirror together)
+    this.mirG = true; this.outer.scale.x = -Math.abs(this.outer.scale.x); this.container.rotation.y = -z.yaw; this.outer.updateMatrixWorld(true);
   }
   // bake and throw chunks: C = { chunk: { a, b (its two ends, world), r (radius at 1.7 m) } }, roots = { bone: chunk }
   throwChunks(C, roots, z, speed, extra = null) {
@@ -1709,6 +1737,7 @@ export class ZombieView extends ClipBody {
 
   bind(z) {
     this.id = z.id; this.lastSeq = z.hitSeq; this.lastState = ''; this.outer.visible = this.blob.visible = true; this.spawnPlayed = false;
+    if (this.mirG) { this.mirG = false; this.outer.scale.x = Math.abs(this.outer.scale.x); }
     this.outer.position.y = 0; this.oneShot = null; this.deathYaw = null;
     this.endRagdoll();
     this.severed.clear();
@@ -1961,7 +1990,8 @@ export class ZombieView extends ClipBody {
   update(dt, z, x, zz, now = 0) {
     if (this.rag) { if (this.shield) this.shield.visible = false; this.updateRagdoll(z); return; }
     // limbs the simulation took off this step: cut them from the pose that is on screen now
-    if (z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part)) { if (this.modular) this.sever(part, z); else if (part === 'Forearm_L' && this.plantedP) { this.severed.add(part); this.tearOff(z); } else { this.severed.add(part); this.cutByWeights(part, z); } } // (no cut model: from its skin weights)
+    if (z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part) && !(this.mirG && part === 'Forearm_L')) { if (this.modular) this.sever(part, z); else { this.severed.add(part); this.cutByWeights(part, z); } } // (no cut model: from its skin weights; the mirrored guard's 'Forearm_L' is his other arm now: guardSwap)
+    if (z.kind === 'guard') this.guardShield(z);
     // the lady has popped (core/sim.js ladyBurst): her chunks are flying, she is gone
     if (this.popped) { this.outer.visible = this.blob.visible = false; return; }
     if (z.burst) { this.burstLady(z, { vx: z.vx + z.kx, vz: z.vz + z.kz }); return; }
@@ -2015,7 +2045,7 @@ export class ZombieView extends ClipBody {
         scr.timeScale = (S === 'strike' ? AC.hitEnd - AC.hit : AC.end - AC.hitEnd) / 30 / Math.max(0.05, z.stateDur);
       } else if (S === 'pickup' && this.act('ual1_PickUp_Table')) { // the guard pulls his torn arm off the shield's grip (UAL1 PickUp_Table)
         const c = this.act('ual1_PickUp_Table').getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0])); this.playOnce('ual1_PickUp_Table', t0, (c.duration - t0) / Math.max(0.3, z.stateDur), 0.15);
-      } else if (S === 'stagger' && (z.hitKind === 'slam' || z.hitKind === 'tear') && this.act('hit_stumble')) { // the guard reels back (his arm torn off on the shield)
+      } else if (S === 'stagger' && (z.hitKind === 'slam' || z.hitKind === 'tear' || z.hitStyle === 'tear') && this.act('hit_stumble')) { // the guard reels back (his arm taken by the finisher)
         const len = this.act('hit_stumble').getClip().duration; this.playOnce('hit_stumble', 0.1, (len - 0.3) / Math.max(0.3, z.stateDur), 0.1);
       } else if (S === 'stagger') {
         if (isMelee(z.hitKind) || z.hitKind === 'shotgun' || z.hitKind === 'bump') {
@@ -2075,8 +2105,9 @@ export class ZombieView extends ClipBody {
       if (Math.floor(ph) !== this.heaveN) { this.heaveN = Math.floor(ph); this.react.kick(0, -0.6 - grow * 0.9); }
     }
     // facing (deaths turn quickly to align the fall with the hit)
-    if (this.deathYaw != null) this.container.rotation.y += angleDiff(this.container.rotation.y, this.deathYaw) * Math.min(1, dt * 14);
-    else this.container.rotation.y = z.yaw;
+    const mz = this.mirG ? -1 : 1; // (the mirrored guard: his container turns the other way inside the mirror)
+    if (this.deathYaw != null) this.container.rotation.y += angleDiff(this.container.rotation.y, mz * this.deathYaw) * Math.min(1, dt * 14);
+    else this.container.rotation.y = mz * z.yaw;
 
     // locomotion: walk at the rate that matches travel, idle when standing
     const sp = Math.hypot(z.vx, z.vz);
@@ -2115,7 +2146,7 @@ export class ZombieView extends ClipBody {
     if (this.chairO || z.bed || this.lying) this.propPose(z, dt);
     if (this.chairO && z.chair && !z.crawling) { this.act('walk').setEffectiveWeight(0); this.act('idle').setEffectiveWeight(1 - one); } // (seated: the arms' own idle; the hands go to the rims below)
     this.mixer.update(dt);
-    if (this.iv || this.chairO || z.bed || this.outer.scale.x < 0) this.propPlace(z, dt);
+    if (this.iv || this.chairO || z.bed || (this.outer.scale.x < 0 && !this.mirG)) this.propPlace(z, dt);
     if (this.plantedP && (z.state === 'stuck' || (z.state === 'pickup' && !this.clubArm))) this.gripPlanted(z);
     if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
     if (this.clubArm) { if (z.armGone && !z.club) this.breakClub(z); else this.stepLimp(dt); }

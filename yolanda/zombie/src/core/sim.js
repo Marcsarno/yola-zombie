@@ -314,6 +314,7 @@ export class Sim {
   }
   // the execution's blow lands whatever the swing did (the zombie dies to it: zombies.js executed)
   forceExec(z) {
+    if (z.kind === 'guard' && !z.executed) return; // (his first finisher already took the arm: he lives on)
     const p = this.player, dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1, w = p.equipped;
     const kind = w === PISTOL || w === SHOTGUN ? w : w === 'fists' ? 'fist' : w === BAT || w === 'crowbar' || w === 'sledgehammer' ? 'bat' : 'axe';
     z.takeHit(9999, dx / d, dz / d, 6, kind, this, 'torso', 'heavy');

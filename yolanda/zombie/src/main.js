@@ -839,13 +839,21 @@ function handleEvents() {
         fx.burst(e.x, 0.1, e.z, 30, 0xcfc6b4, 3.2, 1.1, 0.8); fx.burst(e.x, 0.05, e.z, 16, 0x6f6658, 3.8, 0.9, 0.6); fx.burst(e.x, 0.3, e.z, 8, 0xe9e2d2, 4.5, 2.2, 0.55);
         fx.smoke(e.x, e.z, 11, 1.0, 1.0, 3.2, 2.4);
         if (gz) fx.floorCrack(gz.x, gz.z, 0.9); // (under his feet: the leap's landing)
-        hitPauseT = Math.max(hitPauseT, 0.06);
-        if (d < 8) shake(Math.max(0.15, 0.45 - d * 0.04)); if (shakeOn) camState.vz += 0.5 * tuning.shake;
+        // (2026-10-18 night, the user: "more of an impact ... more particle effects maybe a shake"): a dust wave rolling out in
+        // rings, tile chunks thrown high, a second smoke bank, the ceiling shaken (atmos), a harder shake and a deeper stop
+        fx.ring(e.x, e.z, 0xe8dfcf, 2.6); fx.ring(e.x, e.z, 0xbfb6a4, 3.6); fx.ring(e.x, e.z, 0x9a917f, 4.4);
+        fx.burst(e.x, 0.15, e.z, 26, 0xb9b2a4, 5.5, 3.2, 0.9); fx.burst(e.x, 0.1, e.z, 14, 0x4c463d, 4.5, 2.6, 1.1);
+        fx.smoke(e.x, e.z, 9, 1.6, 0.6, 4.4, 2.8, 0x9d9483, 0.45); atmos?.onBigHit?.(e.x, e.z);
+        hitPauseT = Math.max(hitPauseT, 0.1);
+        if (d < 10) shake(Math.max(0.25, 0.85 - d * 0.06)); if (shakeOn) camState.vz += 0.9 * tuning.shake;
         break;
       }
       case 'floorRumble': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'rumble', Math.max(0.3, 1 - d / 14)); fx.floorCrack?.(e.x, e.z, 0.75); fx.burst(e.x, 0.05, e.z, 8, 0x9a948a, 0.8, 0.4, 0.9); if (d < 9) shake(0.12); break; } // the floor about to break: a crack, grit, a rumble (an emerging zombie: core/sim.js spawnFromFloor)
       case 'floorShudder': { const d = Math.hypot(e.x - p.x, e.z - p.z); fx.growCrack(e.x, e.z, 0.75 + e.k * 0.55); fx.burst(e.x, 0.05, e.z, 4 + Math.round(e.k * 8), 0x9a948a, 0.9 + e.k, 0.5 + e.k * 0.6, 0.6); fx.smoke(e.x, e.z, 1 + Math.round(e.k * 2), 0.35, 0.3, 2.0, 0.9, 0x9d9483, 0.2); if (d < 9) shake(0.05 + e.k * 0.1); break; } // (the breach building: the crack grows, dust)
       case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); audio.play('floorBreach', 1, e); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 24, 0xd9cdb2, 3.2, 2.4, 0.8); fx.burst(e.x, 0.1, e.z, 18, 0x6f6a62, 2.4, 2.0, 1.0); fx.ring(e.x, e.z, 0xd8cfbf, 1.0); fx.smoke(e.x, e.z, 8, 0.6, 0.7, 2.6, 1.8); audio.play('knockdown', 0.9, e); if (d < 9) shake(0.35); break; } // (it bursts up through the tiles: debris high, a dust cloud, a thump)
+      case 'guardArmOff': audio.play('sever'); audio.play('guardPain', 1, zat(e.id) || e); shake(0.6); hud.popup('ARM OFF'); break; // (his first finisher: the arm flies, render/clipchars.js cutByWeights)
+      case 'guardWrench': cue(audio, 'free'); shake(0.3); break; // (the finisher missed: he tears the shield back out of the floor)
+      case 'guardRegrip': cue(audio, 'free'); cue(audio, 'heave', 1.2); break; // (the shield in his other hand)
       case 'shieldStuck': cue(audio, 'lodge'); fx.burst(e.x, 0.08, e.z, 18, 0x8a8172, 2.0, 0.6, 0.6); fx.floorCrack?.(e.x, e.z, 1.5); hud.popup('SHIELD STUCK'); break; // (his shield driven into the floor for good: render/fx.js floorCrack)
       case 'guardArmTorn': cue(audio, 'free'); audio.play('sever'); audio.play('guardPain', 1, zat(e.id) || e); shake(0.45); hitPauseT = Math.max(hitPauseT, 0.09); hud.popup('ARM TORN OFF'); break; // (the last heave: his arm stays on the shield)
       case 'guardClub': cue(audio, 'heave', 1.2); break;
