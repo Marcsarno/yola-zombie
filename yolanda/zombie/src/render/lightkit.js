@@ -101,6 +101,7 @@ export class LightKit {
     this.root = new THREE.Group(); this.root.name = 'lightkit'; scene.add(this.root);
     this.flashK = 0; this.flashX = 0; this.flashZ = 0; this.flashR = 0; // (the last shot's light: muzzle, eyes)
     this.plan = WING_PLAN; this.floor = null;
+    this.dim = { floor: 1, signs: 1 }; // a master over the kit's own light (the opening's reveal dims it beat by beat: src/opening; 1 = as is)
   }
   // the level's light plan (before anything is built: main passes the chapter's on a story start)
   usePlan(plan) { this.plan = plan; }
@@ -283,7 +284,7 @@ export class LightKit {
     this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); // (one light more or less: the shaders rebuild once)
     r.shadowMap.needsUpdate = true;
   }
-  yshGear(yv) { return [yv.outer, yv.pistol, yv.shotgun, yv.melee, yv.shell, yv.test?.obj, yv.batLib?.obj, ...Object.values(yv.libHolds || {}).map((h) => h?.obj)].filter(Boolean); }
+  yshGear(yv) { return [yv.outer, yv.pistol, yv.shotgun, yv.melee, yv.shell, yv.test?.obj, yv.batLib?.obj, ...Object.values(yv.libHolds || {}).map((h) => h?.obj), ...(this.extraCasters || [])].filter(Boolean); } // (extraCasters: the opening's reveal adds the old Yola)
   tickYShadow(dt, p, yv) {
     const r = this.arena.renderer;
     if (!r.shadowMap.enabled) { this.yshCatch.visible = false; if (yv.blob) yv.blob.visible = true; return; } // (the Performance look: no shadows at all; her blob comes back)
@@ -410,8 +411,10 @@ export class LightKit {
     if (this.fix) for (const F of this.fix) { const k = flick(F.state, this.t, F.seed, F.S); F.b = k; F.pool.k = this.on.fixtures && !this.on.baked ? F.k * k : 0; /* (A on: the bake is the pool) */ F.bar.material.opacity = 0.15 + 0.85 * k; }
     if (this.halos && this.on.halos && (this.monScanT = (this.monScanT ?? 0) - dt) <= 0) { this.monScanT = 2; this.scanMonitors(); }
     if (this.halos) for (const H of this.halos) H.s.material.opacity = H.mon ? H.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H.s.position.x)) : H.F ? (this.tubes ? H.base * H.F.b : 0) : H.base; // (a fitting's halo needs its tube on show)
-    if (this.exits) for (const E of this.exits) { const k = flick(E.state, this.t, E.seed, E.S); E.halo.material.opacity = 0.5 * k; E.spill.k = 0.22 * k; for (const m of [].concat(E.m.material)) if (m.map) m.opacity = 0.35 + 0.65 * k; }
-    if (this.streakMesh) { const c = new THREE.Color(); for (const S of this.streaks) this.streakMesh.setColorAt(S.i, c.set(S.F.col).multiplyScalar(0.27 * (S.F.b ?? 1))); this.streakMesh.instanceColor.needsUpdate = true; }
+    const D = this.dim;
+    if (this.exits) for (const E of this.exits) { const k = flick(E.state, this.t, E.seed, E.S); E.halo.material.opacity = 0.5 * k * D.signs; E.spill.k = 0.22 * k * D.signs; for (const m of [].concat(E.m.material)) if (m.map) m.opacity = (0.35 + 0.65 * k) * D.signs; }
+    if (this.streakMesh) { const c = new THREE.Color(); for (const S of this.streaks) this.streakMesh.setColorAt(S.i, c.set(S.F.col).multiplyScalar(0.27 * (S.F.b ?? 1) * D.floor)); this.streakMesh.instanceColor.needsUpdate = true; }
+    if (this.bakeFloors && this.dimFloor !== D.floor) { this.dimFloor = D.floor; for (const m of this.bakeFloors) { const B = m.userData.bakeMat; B.userData.lmk ??= B.lightMapIntensity; B.lightMapIntensity = B.userData.lmk * D.floor; } } // (the baked floor light under the dimmer)
     if (this.dips && this.on.baked) for (const d of this.dips) d.m.material.opacity = Math.min(0.75, (1 - d.F.b) * 0.8);
     // the shot's light dies fast
     this.flashK = Math.max(0, this.flashK - dt * 9);

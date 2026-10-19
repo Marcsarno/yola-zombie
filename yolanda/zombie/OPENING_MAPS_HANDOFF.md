@@ -4,6 +4,84 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
+## NEWEST (2026-10-19): the reveal's new ending + the Reveal Studio — read this first
+
+The user's pass: "the home run should be replaced with the new execute animation", "dials and controls for when it's
+dark, and when it's casting some light to show the silhouette... how many times it flickers and the timing", the
+elevator lighting and floor, the leaning bat, the zombie a touch further back. Built and played through (PC + portrait);
+NOT committed when written.
+- **New ending** (opening.js `reveal()` from BEAT 9): she walks out of the lift in the dark **holding the bat** (the game's
+  own Yola view, bat equipped: its grip and walk, slowed; `RT.walk.bat` off = the old empty-handed clip walk), then
+  **launches at the camera with the jump finisher** (core/weapons.js EXEC_LAUNCH, default B at 2.4 m, driven through the
+  view as the game plays it: `revealPose.launch`, `planLaunch`, `launchAt`, `batTip`). The contact is found by sampling
+  the bat's ImpactPoint through the blow (it is an overhead smash: at the window's start the bat is still behind her
+  head); the patient stands `gap` past it. **Freeze** just before contact (`freezeLead`) → boom → the name card →
+  unfreeze → the burst (unchanged: 21 pieces, the head into the lens, the crack) → the camera rises to the game.
+  **Control starts where she lands** (`this.handoff`, applied in `finalize`), not on ROOM1.player. The home run
+  (standHomerun / planHit / HR) is gone; yola2_reveal.glb is still loaded for the old walk.
+- **Reveal Studio** (src/opening/studio.js): `combat.html?intro=1&studio=1`. Play from a beat (silent replay, then live),
+  pause, 0.1-1x speed; per-phase light dials (room, red, spotlight + where it hangs, car lamps, exposure, fog, light shaft,
+  dust); the flashes (brightness, fade, where the light hangs, sparks, the rhythm generator, an editable list); the
+  walk-out; the launch, freeze, card, slow-mo, head, camera; when the lights come back. **Timeline:** drag to any frame (`studioSeek`: the
+  story replayed silently from its start with a fixed random seed, ~0.2 s; forward steps on), frame buttons, beats to click;
+  Apply / auto-update redraws the held frame with every change; ▶ Play carries on live from it (`studioHold` keeps the window
+  regaining focus from unpausing). In the Studio the reveal holds its last frame (mark `end`) instead of handing over.
+  The walk-out is her original walk clip (reveal_walk) with the bat hanging from her right fist (`stand.bat = 'hang'`): the
+  user wanted "the confident walk out.. not sprint out". **Save** POSTs to the dev server
+  (tools/serve.mjs `/__reveal/tuning.json`) → assets/opening/reveal_tuning.json (ships; `{}` = the defaults in
+  src/opening/revealtune.js). Restart a serve.mjs started before 2026-10-19 to get the endpoint.
+- **The game's lighting in the reveal** (the user: the better lighting "should begin the moment the camera cuts to the
+  elevator"): from BEAT 5 `opening.gameLight` makes main.js keep the story lighting on (lightkit: baked floor, fittings,
+  EXIT signs, polish, Yola's shadow; atmos haze; the arena's emergency look) and tick it (`revealLight`, Yola at `herAt()`).
+  Each phase dims it: `amb` (room, x the game's), `floor` (lightkit.dim.floor: the bake + streaks), `signs`
+  (lightkit.dim.signs), `emRed` (the emergency pools; the beacon also fades with amb), `chars` (the character light x amb:
+  it ignores scene darkness otherwise and lit her front through the silhouettes). Phase `after` = 1s = the game exactly,
+  so the lights-up fades into gameplay. RT.game: on / haze / shadow / impact (the game's impact frame at the hit).
+  Baseline 2026-10-19: red pulse only in the lift and on the patient; the launch onward in the game's palette.
+- **Picture quality, the opening only** (RT.quality, Studio "Picture quality"): from the cut to the lift to the hand-off the
+  opening draws through src/opening/revealpost.js (`renderFrame`; main.js falls back to looks.render): **selective glow**
+  (BLOOM_LAYER 11: the fitting, sparks, the floor number, EXIT signs, `markGlow`) drawn alone and added (a threshold could
+  not work: her badge in the flash measured 12x white, the fitting 3x), then a film finish (grade, vignette, grain). The
+  flash as a **ray-marched volumetric cone** (revealfx.js BEAM_F, WebGL, 12 jittered steps, follows the spotlight). The fog
+  puffs: **rolling noise + soft edges** at the floor and the lens (`fogShader`, onBeforeCompile, uniforms only) and a
+  **backlit glow** (forward-scatter toward the lens). **Her shadow from the flash**: the game's Yola shadow light re-aimed
+  from the flash (`aimFlashShadow`, wider window, 1024 map, the old Yola added as a caster), restored at the hand-off.
+  **No compiles mid-reveal**: the composer draws off-screen, so every material needs a second shader variant;
+  `warmByReplay` plays the reveal silently at load and draws each beat through the chain (a scene compile missed them: one
+  light fewer). Load is ~1-3 s longer on PC. Considered (the user's research brief): Blender-baked smoke flipbooks for the fixed
+  shots would beat sprites; not done.
+- **The DING and the doors** (the user's shot list): a slow creep on the shut doors, then on the DING a hard cut to the
+  floor number close (`dingShot`, held `RT.open.dingHold`), then a low lens on the floor (near 0.05) as the doors part in
+  thick fog (phase `open`, smoke 2.4, the fog pre-filled), tilting up to the old Yola (`camTrack` + `lookRig`: the camera
+  stays, the aim rises; `RT.open`), then the cut to the wide doorway and the flashes (mark `flashes`; `beat6` is now the
+  doors opening, `ding` the DING).
+- **Flash camera cuts** (`flashCuts`): three hidden cuts, each 0.02 s before the flash that starts a phrase (found from the
+  list: the burst, the slowing clicks after its quickest gap, the boom): wide doorway → low three-quarter → closer medium →
+  low hero. No Studio controls (the user: "just try it"). The flash cone narrowed (angle 0.46, penumbra 0.8): the wider one
+  lit the car's side wall as a pale blob once the camera saw it.
+- **The patient is on her clock:** the launch clock starts at -hold; his way in is placed from it every frame
+  (`launch.zombie`, `tickLaunch`), never by his own walk timer (a stalled frame let him get ahead: "on top of her"). His spot
+  falls back to the blow's middle if the contact search misses, and is never nearer her than 0.95 m + gap. Measured with
+  jittered and stalled frames: closest 1.2-1.4 m before the hit.
+- **Polish pass (the user: "do all 3")**: (1) a **speed ramp** into the freeze (`launch.ramp`, `rampAt`/`launchSecs`):
+  full speed through the crouch, slow motion (rampSlow 0.25) from lift-off (her travel past 3 m/s at 0.40 s of the clip)
+  so the spin reads, then the freeze; the unfreeze snaps to full speed for the hit. Launch camera now -30° (her front
+  left: she is clear of him) and stands back on portrait screens (`kd`). (2) **sounds** (revealsound.js): `cutHit` on the
+  three flash cuts, `launchOff` at lift-off, `spinSwish` over the slowed spin, `freezeHit` at the freeze (was flashBoom);
+  the walk-out's footsteps on her measured heel strikes (`heelStrikes`, 0.48 / 0.98 of reveal_walk). (3) **no compiles
+  mid-reveal**: main.js `warmStoryLight` builds and compiles the game lighting over the outbreak floor behind the title;
+  `warmLaunch` runs the contact search then (`contactCache`: it posed her ~60 times in the launch's first frame, 230 ms).
+  Left: one compile at the hit (under the hit-stop) and ~130 ms at the cut into the walk-out (revealWorld → applyRoom1).
+- **The lift's light** (src/opening/revealfx.js): the flash now hangs low at the back of the car (rims her, no top light);
+  a light shaft, dust, the fitting's glow and sparks follow each flash; nothing added to gameplay (hidden at the hand-off).
+  **The car's floor** was one flat navy colour that the flash burned to a white slab: now studded rubber (canvas texture
+  + bump, every lift kit, gameplay too).
+- **Leaning bat:** the bat model's long axis is now +y (the grip refit), the old code assumed +z (it lay sideways inside
+  the housing). `batAxis()` reads it from the model; the bat leans on the right door housing. The cut to it is off by
+  default (`RT.batShot`) since she now walks out holding it.
+- Open with the user: "the bat should end in her left hand" was about the home run; the game's bat is right-handed in
+  every move, including the finisher (a left-hand ending would be a clip change for the animation chat).
+
 ## FROM THE COMBAT CHAT (2026-10-18, latest): Floors 6 and 5 refurnished too — read this first
 
 Same pass as Floor 7 below, approved by the user from FLOORS_6_5_LAYOUT_PROPOSAL.html. In core/chapter.js:

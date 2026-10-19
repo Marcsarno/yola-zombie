@@ -70,6 +70,35 @@ export class RevealSound {
     A.tone(t, 1.3, 60, { type: 'sawtooth', gain: 0.04, f2: 48, attack: 0.2 });
     A.noise(t + 1.2, 0.2, { type: 'lowpass', f: 500, f2: 120, gain: 0.18 });
   }
+  // (2026-10-19, the launch and the cuts) a camera cut in the dark of the flashes: a deep thump under the flash's crack, so
+  // each new angle lands as a beat
+  cutHit(k = 1) {
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.tone(t, 0.7, 44, { type: 'sine', gain: 0.55 * k, f2: 28, attack: 0.003 });
+    A.noise(t, 0.25, { type: 'lowpass', f: 600, f2: 120, gain: 0.25 * k });
+  }
+  // she pushes off: a scuff of rubber on the floor, a short rising rush of air
+  launchOff() {
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.noise(t, 0.12, { type: 'bandpass', f: 1600, q: 1.2, f2: 700, gain: 0.3 });
+    A.tone(t, 0.18, 70, { type: 'sine', gain: 0.4, f2: 45 });
+    A.noise(t + 0.03, 0.45, { type: 'bandpass', f: 350, q: 0.8, f2: 1800, gain: 0.18, attack: 0.2 });
+  }
+  // the spin in slow motion: the bat through the air, stretched (a long, low, turning swish)
+  spinSwish(secs = 0.9) {
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.noise(t, secs, { type: 'bandpass', f: 260, q: 1.4, f2: 1500, gain: 0.3, attack: secs * 0.55 });
+    A.noise(t + secs * 0.5, secs * 0.5, { type: 'bandpass', f: 1500, q: 1.6, f2: 420, gain: 0.2, attack: 0.02 });
+    A.tone(t, secs, 90, { type: 'sine', gain: 0.18, f2: 60, attack: secs * 0.4 });
+  }
+  // the freeze: time stops (a sucked-in swell cut dead, a sub drop, a high ring that hangs over the card)
+  freezeHit() {
+    if (!this.ok) return; const t = this.now(), A = this.audio;
+    A.noise(t, 0.08, { type: 'highpass', f: 2400, gain: 0.55 });
+    A.tone(t, 1.8, 50, { type: 'sine', gain: 0.8, f2: 26, attack: 0.003 });
+    A.noise(t, 1.2, { type: 'lowpass', f: 1400, f2: 80, gain: 0.35, attack: 0.004 });
+    for (const [hz, g] of [[1318.5, 0.035], [1975.5, 0.025]]) A.tone(t + 0.02, 2.4, hz, { type: 'sine', gain: g, attack: 0.01 });
+  }
   heartbeat(k = 1) { if (!this.ok) return; const t = this.now(), A = this.audio; A.tone(t, 0.14, 60, { gain: 0.34 * k, f2: 42 }); A.tone(t + 0.22, 0.14, 56, { gain: 0.26 * k, f2: 40 }); }
   slowWhoosh() { // into slow motion: a reversed swell that sucks in, a sub drop
     if (!this.ok) return; const t = this.now(), A = this.audio;

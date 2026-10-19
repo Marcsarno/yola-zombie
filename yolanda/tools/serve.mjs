@@ -42,6 +42,20 @@ http.createServer((req, res) => {
     });
     return;
   }
+  // the Reveal Studio's save (zombie/combat.html?intro=1&studio=1): POST /__reveal/tuning.json ->
+  // zombie/assets/opening/reveal_tuning.json only, from this machine or the home network
+  if (req.method === 'POST' && p === '/__reveal/tuning.json') {
+    const ra = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+    if (!/^(::1$|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ra)) { res.writeHead(403); return res.end(); }
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      const body = Buffer.concat(chunks).toString('utf8');
+      try { JSON.parse(body); } catch { res.writeHead(400); return res.end('bad json'); }
+      fs.writeFileSync(path.join(root, 'zombie', 'assets', 'opening', 'reveal_tuning.json'), body); res.writeHead(200); res.end('ok');
+    });
+    return;
+  }
   if (p.endsWith('/')) p += 'index.html';
   const file = path.join(root, p);
   if (!file.startsWith(root)) { res.writeHead(403); return res.end(); }

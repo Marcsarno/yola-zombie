@@ -1,0 +1,333 @@
+{
+ "light": {
+  "doors": {
+   "amb": 0.3,
+   "floor": 0.35,
+   "signs": 1,
+   "emRed": 0.8,
+   "chars": 0.4,
+   "red": 0.3,
+   "key": 0,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 0,
+   "beam": 0,
+   "dust": 0,
+   "secs": 0
+  },
+  "open": {
+   "amb": 0.1,
+   "floor": 0.25,
+   "signs": 0.9,
+   "emRed": 0.6,
+   "chars": 0.1,
+   "red": 0.05,
+   "key": 0.14,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 2.4,
+   "beam": 0.35,
+   "dust": 0.5,
+   "secs": 0
+  },
+  "cab": {
+   "amb": 0.1,
+   "floor": 0.25,
+   "signs": 0.9,
+   "emRed": 0.6,
+   "chars": 0.1,
+   "red": 0.03,
+   "key": 0,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 1,
+   "beam": 0.05,
+   "dust": 0.15,
+   "secs": 0
+  },
+  "threat": {
+   "amb": 0.18,
+   "floor": 0.3,
+   "signs": 1,
+   "emRed": 0.9,
+   "chars": 0.5,
+   "red": 0.6,
+   "key": 0,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 1,
+   "beam": 0,
+   "dust": 0,
+   "secs": 0
+  },
+  "walk": {
+   "amb": 0.16,
+   "floor": 0.35,
+   "signs": 1,
+   "emRed": 0.7,
+   "chars": 0.35,
+   "red": 0,
+   "key": 0.28,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 1,
+   "beam": 0.35,
+   "dust": 0.45,
+   "secs": 0
+  },
+  "batShot": {
+   "amb": 0.2,
+   "floor": 0.4,
+   "signs": 1,
+   "emRed": 0.8,
+   "chars": 0.4,
+   "red": 0,
+   "key": 0.15,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 1,
+   "beam": 0.2,
+   "dust": 0.3,
+   "secs": 0
+  },
+  "launch": {
+   "amb": 0.32,
+   "floor": 0.5,
+   "signs": 1,
+   "emRed": 0.8,
+   "chars": 0.6,
+   "red": 0,
+   "key": 0.25,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 1,
+   "beam": 0.3,
+   "dust": 0.3,
+   "secs": 0.2
+  },
+  "card": {
+   "amb": 0.4,
+   "floor": 0.55,
+   "signs": 1,
+   "emRed": 0.8,
+   "chars": 0.8,
+   "red": 0,
+   "key": 0.5,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1.05,
+   "smoke": 1,
+   "beam": 0.3,
+   "dust": 0.3,
+   "secs": 0
+  },
+  "burst": {
+   "amb": 0.38,
+   "floor": 0.55,
+   "signs": 1,
+   "emRed": 0.9,
+   "chars": 0.7,
+   "red": 0,
+   "key": 0.4,
+   "spotAt": "flash",
+   "cab": 0,
+   "exposure": 1,
+   "smoke": 1,
+   "beam": 0.2,
+   "dust": 0.2,
+   "secs": 0
+  },
+  "after": {
+   "amb": 1,
+   "floor": 1,
+   "signs": 1,
+   "emRed": 1,
+   "chars": 1,
+   "red": 0,
+   "key": 0,
+   "spotAt": "flash",
+   "cab": 1,
+   "exposure": 1,
+   "smoke": 0,
+   "beam": 0,
+   "dust": 0,
+   "secs": 1.2
+  }
+ },
+ "game": {
+  "on": true,
+  "haze": true,
+  "shadow": true,
+  "impact": true
+ },
+ "brighten": "return",
+ "flash": {
+  "power": 1,
+  "decay": 0.16,
+  "height": 2.25,
+  "back": -14.45,
+  "angle": 0.46,
+  "penumbra": 0.8,
+  "beam": 0.7,
+  "dust": 0.8,
+  "halo": 0.9,
+  "sparks": 1,
+  "swap": true
+ },
+ "flashes": [
+  [
+   0,
+   "old",
+   1,
+   0,
+   false
+  ],
+  [
+   1.15,
+   "old",
+   0.55,
+   0,
+   false
+  ],
+  [
+   2,
+   "new",
+   0.85,
+   0,
+   false
+  ],
+  [
+   2.55,
+   "old",
+   0.6,
+   0,
+   false
+  ],
+  [
+   3.6,
+   "old",
+   0.8,
+   0,
+   false
+  ],
+  [
+   3.76,
+   "new",
+   0.85,
+   0,
+   false
+  ],
+  [
+   3.89,
+   "old",
+   0.9,
+   0,
+   false
+  ],
+  [
+   4,
+   "new",
+   0.9,
+   0,
+   false
+  ],
+  [
+   4.1,
+   "old",
+   0.95,
+   0,
+   false
+  ],
+  [
+   4.36,
+   "old",
+   0.85,
+   0,
+   false
+  ],
+  [
+   5,
+   "old",
+   0.65,
+   0,
+   false
+  ],
+  [
+   5.95,
+   "new",
+   1.5,
+   1.1,
+   true
+  ]
+ ],
+ "flashTail": 1.25,
+ "open": {
+  "dingHold": 1.1,
+  "dingWidth": 0.85,
+  "camX": 0.12,
+  "camY": 0.2,
+  "camZ": -9.3,
+  "startY": -0.05,
+  "startZ": -10.6,
+  "endY": 1.45,
+  "tiltDelay": 0.9,
+  "tiltSecs": 3.2,
+  "hold": 0.6,
+  "fov": 38
+ },
+ "rhythm": {
+  "first": 4,
+  "firstGap": 0.85,
+  "burst": 6,
+  "burstFrom": 0.16,
+  "burstTo": 0.09,
+  "slow": 3,
+  "slowFrom": 0.16,
+  "slowTo": 0.38,
+  "breath": 0.95
+ },
+ "walk": {
+  "bat": true,
+  "slow": 0.7,
+  "stopZ": -10.15,
+  "secs": 2.7,
+  "stepShake": 0.012
+ },
+ "batShot": false,
+ "launch": {
+  "variant": "B_uppercut",
+  "jump": 2.4,
+  "reach": 1,
+  "turn": 0,
+  "gap": 0.25,
+  "lunge": 1.2,
+  "hold": 0.35,
+  "rampSlow": 1,
+  "rampLen": 0.08,
+  "rampAt": 0,
+  "freezeLead": 0.07,
+  "boomToCard": 0.12,
+  "cardHold": 2.2,
+  "slow": 0.26,
+  "headSecs": 0.42,
+  "lensDist": 0.62,
+  "after": 0.55,
+  "returnSecs": 1.8,
+  "cam": {
+   "yawOff": 12,
+   "dist": 4.3,
+   "height": 1.15,
+   "pitch": 3,
+   "look": 0.35,
+   "fov": 42,
+   "push": 0.35
+  }
+ }
+}

@@ -626,8 +626,9 @@ function runFrame(dt, doRender = true) {
   if (floorQueue.length) for (let i = 0; i < 6 && floorQueue.length; i++) { try { renderer.initTexture(floorQueue.shift()); } catch { /* on first use instead */ } }
   screens.update(dt);
   if (opening && !opening.active) opening.ambient?.(dt); // the seated guard keeps idling after the hand-off
-  if (LAYOUT.story && storyLit === !!opening?.active && lightkit) storyLighting(!opening?.active); // (the story lighting: off for the opening, on from the hand-off)
-  if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (doRender) looks.render(); return; }
+  const wantLit = !opening?.active || !!opening?.gameLight; // (the story lighting: off for the opening, on from the hand-off; the reveal turns it on from the cut to the lift: opening.gameLight)
+  if (LAYOUT.story && lightkit && storyLit !== wantLit) storyLighting(wantLit);
+  if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (opening.gameLight && storyLit) revealLight(opening.paused ? 0 : dt); if (doRender && !opening.renderFrame?.()) looks.render(); return; } // (renderFrame: the reveal's own picture chain, src/opening/revealpost.js)
   const p = sim.player;
   let simDt = dt;
   if (paused) simDt = 0;
@@ -789,6 +790,26 @@ function runFrame(dt, doRender = true) {
   }
   execLook(animDt, dt);
   if (doRender) { gpuTimer?.poll(); const on = gpuTimer?.begin(); looks.render(); gpuTimer?.end(on); }
+}
+
+// the story lighting built, its textures on the GPU and its shaders compiled behind the opening's title screen: the reveal turns
+// it on at the cut to the lift, and building it there (the baked floor's materials, the signs, the haze) hitched the frame
+async function warmStoryLight(during = null) { // (during: the opening's own warm-up, run while the lighting is on)
+  if (!LAYOUT.story || !lightkit || storyLit) return;
+  storyLighting(true);
+  const t0 = performance.now(); while (lightkit.plan.bakes.some((B) => B.tex && !B.tex.image?.width) && performance.now() - t0 < 4000) await new Promise((r) => setTimeout(r, 50)); // (the bakes load in the background)
+  for (const B of lightkit.plan.bakes) if (B.tex?.image?.width) renderer.initTexture(B.tex);
+  lightkit.update(0, sim, [], yola); try { renderer.compile(scene, camera); } catch { /* on first use instead */ } renderer.render(scene, camera);
+  try { during?.(); } catch (e) { console.warn('warm', e); }
+  storyLighting(false);
+}
+// the game's lights during the reveal (render/lightkit.js, render/atmos.js): ticked as in play, Yola where the reveal has her
+// (the opening dims them beat by beat: lightkit.dim, the character light, the emergency look)
+function revealLight(dt) {
+  const her = opening.herAt?.(), P = her ? { player: { x: her.x, z: her.z } } : sim;
+  const kv = []; for (const [id, v] of zviews) { const z = sim.zombies.find((q) => q.id === id); if (z) kv.push({ z, view: v, blob: v.blob }); }
+  lightkit.screensMat = screens.mat; lightkit.update(dt, P, kv, yola); atmos?.update(dt, P, 0, 0, 0);
+  opening.aimFlashShadow?.(); // (her shadow thrown by the flash: the kit's shadow light re-aimed after its own aim)
 }
 
 let impactFrame = -1, frameNo = 0, impactN = 0;
@@ -1260,6 +1281,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get atmos() { return atmos; }, get lightkit() { return lightkit; }, ZombieView, get fx() { return fx; }, get execActive() { return execDir.active; }, clearPieces() { ZombieView.clearPieces(); gibs.clear(); }, get looseMeshes() { return ZombieView.looseMeshes; }, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get atmos() { return atmos; }, get lightkit() { return lightkit; }, warmStoryLight, storyLight(on) { if (LAYOUT.story && lightkit && storyLit !== !!on) storyLighting(!!on); }, revealLight, ZombieView, get fx() { return fx; }, get execActive() { return execDir.active; }, clearPieces() { ZombieView.clearPieces(); gibs.clear(); }, get looseMeshes() { return ZombieView.looseMeshes; }, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });
