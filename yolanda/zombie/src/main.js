@@ -43,6 +43,7 @@ import { SlowMotion } from './render/slowmo.js';
 import { ExecDirector } from './render/execution.js';
 import { Atmos } from './render/atmos.js';
 import { LightKit } from './render/lightkit.js';
+import { chapterLightPlan } from './render/floorlights.js';
 import { shareTextures, texturesOf } from './render/texshare.js';
 import { setupLibWeapons } from './render/libweapons.js';
 import { startDemos } from './demos.js';
@@ -116,6 +117,19 @@ function resize() {
   looks?.setSize();
 }
 let looks = null, atmos = null, lightkit = null; // lighting looks (render/looks.js): the ☀ button cycles them
+// (2026-10-19, the user: "bake it all in and apply the lighting through each level") the lighting lab's picks on the story
+// floors (LAB_PICKS in demos.js: the baked floor light, the fittings with their tubes hidden, EXIT signs, the polished floor,
+// the muzzle flash, Yola's own shadow, character light 0.45; splatter, haze and impact frames), from the hand-off on: the
+// opening and its reveal keep the look they were signed off with
+const STORY_LIGHT = ['fixtures', 'baked', 'exit', 'polish', 'muzzle', 'yshadow'], STORY_ATMOS = ['splatter', 'haze', 'impact'];
+let storyLit = false;
+function storyLighting(on) {
+  storyLit = on;
+  if (on) { lightkit.setTubes(false); lightkit.setCharLight(0.45); }
+  for (const k of STORY_LIGHT) lightkit.set(k, on);
+  for (const k of STORY_ATMOS) atmos.set(k, on);
+  if (on) lightkit.setFloor(LAYOUT.floor);
+}
 addEventListener('resize', resize); resize();
 
 // ---------- systems ----------
@@ -268,6 +282,7 @@ async function load() {
   arena = new Arena(scene, resolvedQuality(), renderer);
   atmos = new Atmos(scene, fx, arena); // (the lighting upgrades, each switchable: render/atmos.js, demo=lighting)
   lightkit = new LightKit(scene, fx, arena, tuning.camYaw); // (the plan's picked upgrades: render/lightkit.js)
+  if (LAYOUT.story) lightkit.usePlan(chapterLightPlan()); // (the chapter's floors: render/floorlights.js)
   ZombieView.eyeCfg.light = (x, z) => lightkit.lightAt(x, z);
   looks = new Looks(renderer, scene, camera); looks.set(store.get('look', 'standard'));
   document.getElementById('lookBtn')?.addEventListener('click', () => {
@@ -319,7 +334,9 @@ async function load() {
   prepViews();
   await breachP; if (breaches.src) { const w = breaches.src.clone(true); w.visible = false; w.position.y = -50; scene.add(w); } // (compiled with the rest: its first breach mid-fight froze a frame)
   window.game.texShare = shareTextures(scene, renderer); // (PERF_AUDIT.md 6: one GPU copy per image, all uploaded now)
+  if (LAYOUT.story) lightkit.prepareYShadow(); // (in the scene from the start: render/lightkit.js)
   warmPrograms();
+  if (LAYOUT.story) { storyLighting(true); warmPrograms(); storyLighting(!opening?.active); } // (the story lighting's shaders too, behind the loading screen: switching it on at the hand-off froze a frame for 2.8 s)
   requestAnimationFrame(frame);
   if (params.has('lab')) startLab(window.game, params.get('lab') || 'bat'); // the combat lab (frame-by-frame melee against the reference)
   if (params.has('inspect')) window.game.inspect = startInspect(window.game); // free camera on Yola's weapon holds (src/inspect.js)
@@ -444,6 +461,7 @@ function prepFloor(n) {
 function settleFloor(n) {
   if (!arena?.floorGroups) return;
   arena.showFloors([n]); floorQueue = [];
+  lightkit?.setFloor(n); // (the floor's own EXIT signs and flicker patches, its bake's fill)
   const keep = new Set(); for (const o of arena.group.children) if (o.visible) for (const t of texturesOf(o)) keep.add(t.source);
   for (const [f, g] of Object.entries(arena.floorGroups)) if (+f !== n) for (const t of texturesOf(g)) if (!keep.has(t.source)) t.dispose();
 }
@@ -597,6 +615,7 @@ function runFrame(dt, doRender = true) {
   if (floorQueue.length) for (let i = 0; i < 6 && floorQueue.length; i++) { try { renderer.initTexture(floorQueue.shift()); } catch { /* on first use instead */ } }
   screens.update(dt);
   if (opening && !opening.active) opening.ambient?.(dt); // the seated guard keeps idling after the hand-off
+  if (LAYOUT.story && storyLit === !!opening?.active && lightkit) storyLighting(!opening?.active); // (the story lighting: off for the opening, on from the hand-off)
   if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (doRender) looks.render(); return; }
   const p = sim.player;
   let simDt = dt;
