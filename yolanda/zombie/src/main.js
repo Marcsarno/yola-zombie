@@ -94,6 +94,11 @@ function visibleMatrixWorld(o, force) {
   if (o.matrixAutoUpdate) o.updateMatrix();
   if (o.matrixWorldNeedsUpdate || force) {
     if (o.matrixWorldAutoUpdate === true) { if (o.parent === null) o.matrixWorld.copy(o.matrix); else o.matrixWorld.multiplyMatrices(o.parent.matrixWorld, o.matrix); }
+    // (what three.js's own updateMatrixWorld overrides add, skipped by doing it inline: an attached skinned mesh's bind
+    // inverse follows it, or a character placed away from where it was built draws off in space: the opening's whole
+    // cast vanished, 2026-10-19; a camera inside the scene keeps its view matrix)
+    if (o.isSkinnedMesh && o.bindMode === 'attached') o.bindMatrixInverse.copy(o.matrixWorld).invert();
+    else if (o.isCamera) o.matrixWorldInverse.copy(o.matrixWorld).invert();
     o.matrixWorldNeedsUpdate = false; force = true;
   }
   const ch = o.children;

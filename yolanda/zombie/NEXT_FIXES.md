@@ -31,14 +31,12 @@ STATUS 2026-10-19 early morning (combat chat) — START HERE. The big build (BUI
     gone; no floor work was committed. Floor 7's additions and the new Floors 6 and 5 still need building (placing
     cracked walls, the flood, the MRI, cylinders and the new zombie kinds with the sim.add* calls in core/rooms.js).
   - The guard's shield on the MRI sticks edge-on to the scanner (works, could face it better).
-- **FIRST, a regression the user found (2026-10-19): the opening scene's characters are missing.** In the opening (the
-  hospital reveal: the original Yola, her staff, the baseball-player patient, the security guard, the nurses) they no longer
-  show up; Yola appears only for a moment. Not investigated yet. Suspects, from this chat's work since the opening was
-  signed off: the performance fixes (main.js visibleMatrixWorld skips hidden groups' transforms; arena.js freezeStatic
-  freezes "static" objects, maybe the opening's actors or their parents; adoptFloors / showFloors / settleFloor switch floor
-  groups on and off, maybe hiding the opening's sets; texshare.js disposes textures not on the current floor; the
-  clipchars.js per-part boundingSphere / frustumCulled (ZombieView only)). Bisect with git (opening worked at 20b51e4 /
-  fb7ff11; perf fixes 009cce2, floors in the lift e4342bf) in the opening (combat.html, the reveal) before anything else.
+- **FIXED 2026-10-19: the opening scene's characters were missing** (the receptionist, the waiting patients, the original
+  Yola, the baseball player, the security guard, the treatment team). Not removed: they were loaded and switched on in
+  their rooms on cue, but drawn off in space. The performance pass's visibleMatrixWorld (main.js, PERF_AUDIT.md 1) worked
+  out world matrices inline and so skipped three.js's SkinnedMesh step that refreshes the bind inverse when a character
+  moves; the opening's actors are placed far from where they were built. It now does that step (and a camera's view
+  matrix). Checked: reception, office, treatment room, the visitors' arrival, the reveal, a fight.
 - **The zombie eyes still don't look good** (the user, after the mesh-placed pass aa593f4): keep them off in the game;
   rethink before using them (maybe emissive eye patches on the face texture instead of sprites).
 - NEXT (the user, 2026-10-19): the user compacts this chat, then the opening fix above, then **the lighting bake**: set up the lighting for the floors
