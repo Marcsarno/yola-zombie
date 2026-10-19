@@ -400,10 +400,17 @@ export class Player {
       if (this.attackHeld && this.attackPressT < 0.05) sim.emit({ type: 'dryFire', weapon: this.equipped }); // empty: a click, no reload
       return;
     }
+    // the FINISH button (the dodge button, gold while an open zombie is in reach: core/sim.js step) takes it
+    if (sim.time < (this.wantFinishUntil || 0)) { const ez = sim.execTarget?.(this, true); if (ez) { this.wantFinishUntil = 0; this.startExecution(ez, sim); return; } }
     if (!this.attackHeld) return;
     // an execution (2026-10-18, the user: the perfect dodge's execute made epic): a fresh press with a zombie open to it in
-    // front and in reach takes it over the plain attack (sim.execTarget)
-    if (this.attackPressT < 0.25) { const ez = sim.execTarget?.(this); if (ez) { this.startExecution(ez, sim); return; } }
+    // front and in reach takes it over the plain attack (sim.execTarget). Else, now and then (the user, 2026-10-18 night:
+    // "5% of the time ... almost like a critical hit"), the attack a fresh press starts on a walker becomes a finisher
+    // with a wide arc that takes its neighbours too (sim.critFinisher, critSweep)
+    if (this.attackPressT < 0.25) {
+      const ez = sim.execTarget?.(this); if (ez) { this.startExecution(ez, sim); return; }
+      const cz = sim.critFinisher?.(this); if (cz) { cz.critFin = true; this.startExecution(cz, sim); return; }
+    }
     if (Math.abs(angleDiff(this.aimYaw, this.aimTarget)) > FIRE_ALIGN) return;
     if (this.equipped === PISTOL || this.equipped === SHOTGUN) {
       this.setAction('shot');

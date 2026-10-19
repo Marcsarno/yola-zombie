@@ -108,6 +108,10 @@ export class Sim {
       }
     }
     if (p.dodgeTh) this.lastTh = p.dodgeTh;
+    // the same button outside a dodge window, with a zombie open to a finisher in reach: FINISH (core/player.js updateAction)
+    p.finishReady = !p.dodgeTh && p.dodgeOpen <= 0 && !!this.execTarget(p, true);
+    if (input.dodgePresses && p.dodgeOpen <= 0 && p.finishReady) p.wantFinishUntil = this.time + 0.3;
+    this.stepChain();
     const yb = this.yolaBoost || 1; // (slow motion: Yola a little ahead of the world, main.js YOLA_AHEAD)
     p.move(dt * yb, input, this.world, this);
     p.updateAction(dt * yb, this);
@@ -292,17 +296,17 @@ export class Sim {
   }
   // a zombie open to a finisher (FINISHERS_PLAN.md 2): the gold mark over it and the FINISH button while it lasts
   openFinisher(z, why, dur = this.T.finisherOpen ?? 2.6) {
-    z.executable = this.time + dur; z.openWhy = why;
+    z.executable = this.time + dur; z.openWhy = why; z.openDur = dur;
     this.emit({ type: 'finisherOpen', id: z.id, why, dur, x: z.x, z: z.z });
   }
   // a zombie open to an execution in front of her and in reach (the nearest to her aim): render/execution.js plays the beat
-  execTarget(p) {
+  execTarget(p, anyDir = false) { // (anyDir: the FINISH button takes the nearest open one in reach, wherever she aims)
     let best = null, bs = 1e9;
     for (const z of this.zombies) {
       if (!z.alive || !(z.executable > this.time) || z.down || z.execLock) continue;
       const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
       if (d > (this.T.execReach ?? 3.6)) continue;
-      const off = Math.abs(angleDiff(p.aimTarget, Math.atan2(dx, dz)));
+      const off = anyDir ? 0 : Math.abs(angleDiff(p.aimTarget, Math.atan2(dx, dz)));
       if (off > 1.25) continue;
       const s = d + off * 1.5; if (s < bs) { bs = s; best = z; }
     }
@@ -314,6 +318,56 @@ export class Sim {
     const kind = w === PISTOL || w === SHOTGUN ? w : w === 'fists' ? 'fist' : w === BAT || w === 'crowbar' || w === 'sledgehammer' ? 'bat' : 'axe';
     z.takeHit(9999, dx / d, dz / d, 6, kind, this, 'torso', 'heavy');
     if (kind !== PISTOL && kind !== SHOTGUN) this.emit({ type: 'batHit', id: z.id, x: z.x, z: z.z, dirX: dx / d, dirZ: dz / d, killed: !z.alive, combo: 2, style: 'heavy', weapon: w, fist: kind === 'fist' });
+  }
+  // the 5% critical finisher (FINISHERS_PLAN.md 2): a fresh attack on a walker in reach and in front becomes a finisher,
+  // T.critFinChance of the time, never sooner than T.critFinCooldown s after the last one
+  critFinisher(p) {
+    if (this.time < (this.critFinNext || 0)) return null;
+    let best = null, bs = 1e9;
+    for (const z of this.zombies) {
+      if (!z.alive || (z.kind !== 'normal' && z.kind !== 'runner') || z.down || z.dormant || z.passive || z.buried || z.execLock || z.bed) continue;
+      const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
+      if (d > (this.T.execReach ?? 3.6)) continue;
+      const off = Math.abs(angleDiff(p.aimTarget, Math.atan2(dx, dz))); if (off > 1.0) continue;
+      const s = d + off * 1.5; if (s < bs) { bs = s; best = z; }
+    }
+    if (!best || this.rand() >= (this.T.critFinChance ?? 0.05)) return null;
+    this.critFinNext = this.time + (this.T.critFinCooldown ?? 12);
+    this.emit({ type: 'critFinisher', id: best.id, x: best.x, z: best.z });
+    return best;
+  }
+  // the critical finisher's wide arc, as its target dies: melee and the shotgun take every walker in a 120-degree arc
+  // round her strike (within 2.4 m of the target, in front of her); the pistol queues a quick chain of headshots on up to
+  // two more within 7 m (stepChain)
+  critSweep(z) {
+    const p = this.player, w = p.equipped, ax = z.x - p.x, az = z.z - p.z, al = Math.hypot(ax, az) || 1;
+    if (w === PISTOL) {
+      const c = this.zombies.filter((o) => o !== z && o.alive && !o.buried && !o.dormant && (o.kind === 'normal' || o.kind === 'runner') && Math.hypot(o.x - p.x, o.z - p.z) < 7)
+        .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)).slice(0, 2);
+      this.chain = c.map((o, i) => ({ id: o.id, at: this.time + 0.12 + i * 0.14 }));
+      return;
+    }
+    for (const o of this.zombies) {
+      if (o === z || !o.alive || o.buried || o.dormant || o.kind === 'guard' || o.kind === 'sprinter') continue;
+      const dx = o.x - p.x, dz = o.z - p.z, d = Math.hypot(dx, dz);
+      if (Math.hypot(o.x - z.x, o.z - z.z) > 2.4 || (dx * ax + dz * az) / (d * al || 1) < 0.5) continue; // (120 degrees round her line)
+      o.executed = true; o.execWeapon = w; o.execDone = true;
+      const kind = w === SHOTGUN ? SHOTGUN : w === FISTS ? 'fist' : w === BAT || w === 'crowbar' || w === 'sledgehammer' ? 'bat' : 'axe';
+      o.takeHit(9999, dx / (d || 1), dz / (d || 1), 7, kind, this, 'torso', 'heavy');
+      this.emit({ type: 'critSweep', id: o.id, x: o.x, z: o.z, weapon: w });
+    }
+  }
+  // the pistol's chain of headshots: Yola snaps to each in turn
+  stepChain() {
+    if (!this.chain?.length) return;
+    const p = this.player;
+    while (this.chain.length && this.time >= this.chain[0].at) {
+      const c = this.chain.shift(), o = this.zombies.find((q) => q.id === c.id); if (!o || !o.alive) continue;
+      const dx = o.x - p.x, dz = o.z - p.z, d = Math.hypot(dx, dz) || 1;
+      p.aimYaw = p.aimTarget = Math.atan2(dx, dz); p.recoil = 1;
+      o.limbHp.Head = 0; o.takeHit(9999, dx / d, dz / d, 4, PISTOL, this, 'Head');
+      this.emit({ type: 'chainShot', id: o.id, x: o.x, z: o.z });
+    }
   }
   // a critical blow or shot (a perfect dodge's reward): the multiplier once, then gone
   takeCrit() { const p = this.player; if (!(p.critT > 0)) return 1; p.critT = 0; return this.T.critMul ?? 3; }

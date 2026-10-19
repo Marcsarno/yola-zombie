@@ -116,6 +116,10 @@
   #dodgeBtn.perfect { background: #fff; color: #111; }
   #dodgeBtn.perfect::before { background: conic-gradient(#fff 360deg, #fff 0); }
   #dodgeBtn.perfect .arw::after { border-bottom-color: #fff; }
+  #dodgeBtn.finish { opacity: 1; filter: none; background: #ffcf3a; color: #2a1a04; animation: finishBeat .4s ease-in-out infinite alternate; }
+  #dodgeBtn.finish .dg { display: none; }
+  #dodgeBtn.finish .lbl { font-size: 17px; }
+  @keyframes finishBeat { from { transform: scale(1); box-shadow: 0 0 0 3px #fff1b8, 0 0 14px 3px rgba(255,207,58,.7); } to { transform: scale(1.08); box-shadow: 0 0 0 5px #fff1b8, 0 0 26px 9px rgba(255,207,58,.9); } }
   @keyframes dodgePulse { from { transform: scale(1); box-shadow: 0 0 0 3px #fff3b0, 0 0 16px 4px rgba(242,192,24,.75); } to { transform: scale(1.12); box-shadow: 0 0 0 5px #fff3b0, 0 0 28px 10px rgba(242,192,24,.9); } }
   /* a perfect dodge: a quick white flash over the whole screen (hud.flash) */
   #flash { position: absolute; inset: 0; pointer-events: none; background: #fff; opacity: 0; }
@@ -191,7 +195,7 @@
     <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
     <div id="ammo"></div>
   </button>
-  <button id="dodgeBtn" class="actBtn" aria-label="Dodge"><i class="arw"></i><svg class="dg" viewBox="0 0 30 16" aria-hidden="true"><path fill="currentColor" d="M0 8 7 1v4h5v6H7v4zM30 8l-7-7v4h-5v6h5v4z"/></svg>Dodge</button>
+  <button id="dodgeBtn" class="actBtn" aria-label="Dodge"><i class="arw"></i><svg class="dg" viewBox="0 0 30 16" aria-hidden="true"><path fill="currentColor" d="M0 8 7 1v4h5v6H7v4zM30 8l-7-7v4h-5v6h5v4z"/></svg><b class="lbl">Dodge</b></button>
   <button id="useBtn" aria-label="Use"><small>Use</small><span id="useLabel"></span></button>
   <div id="prompt"><span></span></div>
   <div id="toast"><span></span></div>

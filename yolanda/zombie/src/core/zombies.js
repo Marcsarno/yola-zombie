@@ -329,6 +329,7 @@ export class Zombie {
       this.deathSpeed = impulse;
       sim.emit({ type: 'zombieDeath', id: this.id, kind, x: this.x, z: this.z });
       if (this.executed) { const p = sim.player; p.hp = Math.min(p.maxHp, p.hp + (sim.T.execHeal ?? 5)); sim.emit({ type: 'execHit', id: this.id, weapon: this.execWeapon, x: this.x, z: this.z, dirX, dirZ }); }
+      if (this.critFin) { this.critFin = false; sim.critSweep?.(this); } // (the critical finisher's wide arc: core/sim.js)
       return;
     }
     if (wasDown || this.state === ZS.STUCK || this.bed) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; } // (in its bed or getting out of it: it takes the blow and keeps coming) // (stuck: he takes it, heaving at the shield)

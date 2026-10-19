@@ -34,6 +34,7 @@ import { makeBat } from './render/weaponModels.js';
 import { loadHoldLayers } from './render/holdlayers.js';
 import { ChapterUI } from './ui/chapter.js';
 import { ThreatCue } from './render/threatcue.js';
+import { FinishMarks } from './render/finishmark.js';
 import { cue } from './sfx/cues.js';
 import { SlowMotion } from './render/slowmo.js';
 import { ExecDirector } from './render/execution.js';
@@ -125,6 +126,7 @@ const fx = new FX(scene);
 const gibs = new GibBurst(scene, new GLTFLoader(), fx);
 const telegraphs = new Telegraphs(scene); // zombie attack wedges on the floor
 const threatCue = new ThreatCue(scene); // the sign over a special enemy's big attack (render/threatcue.js)
+const finishMarks = new FinishMarks(scene); // the gold mark over a zombie open to a finisher (render/finishmark.js)
 const acid = new AcidPools(scene, fx); // the lady's acid pools (render/acid.js)
 fx.gore = store.get('gore', true);
 let shakeOn = true;
@@ -622,6 +624,8 @@ function runFrame(dt, doRender = true) {
     if (b) {
       b.classList.toggle('show', !p.dead && !opening?.active);
       b.classList.toggle('open', p.dodgeOpen > 0 && !p.dead); b.classList.toggle('perfect', !!dt0?.perfect && !p.dead);
+      const fin = !!p.finishReady && !p.dead; // (FINISH: a zombie open to a finisher in reach, no dodge window)
+      if (fin !== b.__fin) { b.__fin = fin; b.classList.toggle('finish', fin); const l = b.querySelector('.lbl'); if (l) l.textContent = fin ? 'Finish' : 'Dodge'; }
       const pr = dt0 ? Math.min(1, Math.max(0, 1 - dt0.eta / DODGE_CUE.lead)) : 0;
       if (Math.abs(pr - (b.__p ?? -1)) > 0.02) { b.style.setProperty('--p', pr.toFixed(3)); b.__p = pr; }
       if (dt0 && p.dodgeDir) { // the arrow: her dodge direction as it looks on screen
@@ -668,7 +672,15 @@ function runFrame(dt, doRender = true) {
   acid.update(sim.hazards, sim.zombies, animDt);
   ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
   ZombieView.syncLoose(sim.loose, alpha, animDt); // (the drip stands and wheelchairs: core/loose.js)
-  if ((execRingT -= animDt) <= 0) { execRingT = 0.32; for (const z of sim.zombies) if (z.alive && z.executable > sim.time) fx.ring(z.x, z.z, 0xffb347, 0.8); } // (open to an execution: a pulsing ring)
+  { // open to a finisher: the gold mark over its head (render/finishmark.js), the one in reach a touch bigger
+    const reach = p.finishReady ? sim.execTarget(p, true) : null, list = [];
+    for (const z of sim.zombies) {
+      if (!z.alive || !(z.executable > sim.time) || z.execLock) continue;
+      const v = zviews.get(z.id), hb = v?.bones?.Head?.getWorldPosition(new THREE.Vector3());
+      list.push({ pos: hb || new THREE.Vector3(z.x, v ? v.height : 1.8, z.z), left: z.executable - sim.time, dur: z.openDur || 2.4, inReach: z === reach });
+    }
+    finishMarks.update(dt, list);
+  }
   // ---- zombies (pooled views) ----
   const seen = new Set();
   for (const z of sim.zombies) {
@@ -888,6 +900,8 @@ function handleEvents() {
         if (zx?.executed && EXEC_BURST[zx.execWeapon]) gib(e.id, zx.hitDirX, zx.hitDirZ, EXEC_BURST[zx.execWeapon]); // (the bat, the shotgun, the sledgehammer: the full burst)
         if (zx) atmos?.onKill(e.x, e.z, zx.hitDirX || 0, zx.hitDirZ || 0); // (by a wall: its blood up the wall)
         break; }
+      case 'critFinisher': cue(audio, 'crit', 0.7); break; // (the 5% critical finisher: core/sim.js critFinisher)
+      case 'chainShot': audio.play('shot'); fx.muzzle(yola.muzzleWorld); fx.tracer(yola.muzzleWorld.x, yola.muzzleWorld.y, yola.muzzleWorld.z, e.x, e.z, 0.5, 1.6); fx.bloodHit('pistol', e.x, 1.6, e.z, 0, 0, 1.6); shake(0.25); break; // (the pistol's chain of headshots)
       case 'execStart': execDir.start(e); fx.ring(e.x, e.z, 0xffffff, 1.4); fx.ring(e.x, e.z, 0xffb347, 2.2); audio.play('swing', 0.7); break; // (render/execution.js: time and the camera)
       case 'execHit': { // the finisher lands: freeze, flash, kick, the boom
         execDir.hit(e); shake(0.8); execFlash = 1; atmos?.onBigHit(e.x, e.z); // (no banner, no word: the user)
