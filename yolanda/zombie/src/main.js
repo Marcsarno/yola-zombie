@@ -490,9 +490,11 @@ function warmRoom1() {
 }
 // every zombie of the level with its view now (not on its first drawn frame), and spares in the pool for those that arrive
 // mid-fight (out of the floor, through a door): building a view then cost ~100 ms, a visible hitch (2026-10-18)
+// (not bound while the opening plays: a bound view is shown, and the floor's zombies stood in the opening's rooms, round
+// the OR table among her crew, 2026-10-19; the reveal binds them from the pool when it shows them, previewRoom1)
 function prepViews() {
   if (!sim) return;
-  for (const z of sim.zombies) if (!zviews.has(z.id)) { const type = viewType(z), v = zpool[type].pop() || newZombieView(type); bindView(v, z); zviews.set(z.id, v); }
+  if (!opening?.active) for (const z of sim.zombies) if (!zviews.has(z.id)) { const type = viewType(z), v = zpool[type].pop() || newZombieView(type); bindView(v, z); zviews.set(z.id, v); }
   for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) { const v = newZombieView(type); v.hide(); zpool[type].push(v); }
 }
 function newZombieView(type) {

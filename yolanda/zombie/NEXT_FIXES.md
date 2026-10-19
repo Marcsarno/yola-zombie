@@ -36,7 +36,11 @@ STATUS 2026-10-19 early morning (combat chat) — START HERE. The big build (BUI
   their rooms on cue, but drawn off in space. The performance pass's visibleMatrixWorld (main.js, PERF_AUDIT.md 1) worked
   out world matrices inline and so skipped three.js's SkinnedMesh step that refreshes the bind inverse when a character
   moves; the opening's actors are placed far from where they were built. It now does that step (and a camera's view
-  matrix). Checked: reception, office, treatment room, the visitors' arrival, the reveal, a fight.
+  matrix). Second cause (the user: "modern zombies next to the guy on the bed"): prepViews (the 2026-10-18
+  mid-fight hitch fix) bound, and so showed, a view for every zombie of the floor at load, after the opening had hidden
+  them: the floor's zombies stood in the opening's rooms, round the OR table among her crew. It binds none while the
+  opening plays (the reveal binds them at B9 from the pool). Checked the whole opening, start to hand-off: no game zombie
+  shown until B9_FEET, the reveal and Floor 7 as before.
 - **The zombie eyes still don't look good** (the user, after the mesh-placed pass aa593f4): keep them off in the game;
   rethink before using them (maybe emissive eye patches on the face texture instead of sprites).
 - NEXT (the user, 2026-10-19): the user compacts this chat, then the opening fix above, then **the lighting bake**: set up the lighting for the floors
