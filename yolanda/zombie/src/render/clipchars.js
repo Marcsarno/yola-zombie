@@ -384,7 +384,7 @@ export class YolaView extends ClipBody {
     return true;
   }
   scriptLength(name) { const c = this.act(name)?.getClip(); return c ? c.duration - Math.min(...c.tracks.map((t) => t.times[0])) : 0; }
-  setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj, this.batLib?.obj]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
+  setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj, this.batLib?.obj, this.axeLib?.obj]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
   reset(x, z, yaw) {
     this.script = null; for (const n of this.scriptNames || []) this.act(n).setEffectiveWeight(0);
     this.yaw = yaw; this.deathT = -1; this.outer.quaternion.identity();
@@ -509,8 +509,8 @@ export class YolaView extends ClipBody {
     const rate = dt / Math.max(0.05, s.swapDur * 0.6);
     // the bat is held like the axe (bat idle), with its own model; a test-arena weapon like the axe (two hands) or empty-handed
     // (the one-handed bat has its own stance: the sword idle)
-    const eqKey = s.equipped === 'bat' ? (this.batLib ? 'sword' : 'axe') : s.equipped === 'test' ? (HOLD_LAYERS.carry && this.test?.carry && this.carryCal?.[this.test.carry] ? 'carry' : this.test?.two ? 'axe' : 'fists') : s.equipped;
-    this.batMode = s.equipped === 'bat';
+    const eqKey = s.equipped === 'bat' ? (this.batLib ? 'sword' : 'axe') : s.equipped === 'axe' && this.axeLib ? 'sword' : s.equipped === 'test' ? (HOLD_LAYERS.carry && this.test?.carry && this.carryCal?.[this.test.carry] ? 'carry' : this.test?.two ? 'axe' : 'fists') : s.equipped;
+    this.batMode = s.equipped === 'bat' || (s.equipped === 'axe' && !!this.axeLib); // (the axe is held and swung as the bat since 2026-10-19)
     for (const k in this.up) this.up[k] += clamp((eqKey === k ? 1 : 0) - this.up[k], -rate, rate);
     const uP0 = smooth(this.up.pistol), uS0 = smooth(this.up.shotgun), uA0 = smooth(this.up.axe), uF0 = smooth(this.up.fists), uW0 = smooth(this.up.sword || 0), uC0 = smooth(this.up.carry || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 + uC0 || 1;
     const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un, uC = uC0 / un;
@@ -699,7 +699,7 @@ export class YolaView extends ClipBody {
     if (!(this.ov?.w > 0)) this.footLock(dt, s, A, sW, w); // (not under a dodge or a vault: their clips place the feet)
     this.hair.update(dt);
     this.weaponShown = uF > 0.5 ? 'fists' : uW > 0.5 ? 'bat1' : uA > 0.5 ? 'axe' : uS > 0.5 ? 'shotgun' : 'pistol';
-    if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; this.posture(); return; } // (on the floor: weapons away)
+    if (s.action === 'down') { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.test?.obj) this.test.obj.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; if (this.axeLib?.obj) this.axeLib.obj.visible = false; this.posture(); return; } // (on the floor: weapons away)
     if (this.weaponShown === 'pistol') this.aimPistol(s, 1 - uP);
     else if (this.weaponShown === 'shotgun') this.aimShotgun(s, 1 - uS);
     this.posture(); // (before the weapons are placed: turning the pelvis shifts the arms ~4 mm, the weapons follow)
@@ -1247,7 +1247,18 @@ export class YolaView extends ClipBody {
   }
 
   placeWeapons(s, dt) {
-    if (s.equipped === 'test' && this.test) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; this.placeTest(); return; }
+    if (s.equipped === 'test' && this.test) { this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false; if (this.batLib?.obj) this.batLib.obj.visible = false; if (this.axeLib?.obj) this.axeLib.obj.visible = false; this.placeTest(); return; }
+    // the axe, held as the bat (2026-10-19): in her right fist with the user's packaxe fit; the bat stays on her back if she has it
+    if (this.axeLib?.obj) {
+      const held = s.equipped === 'axe' && this.weaponShown !== 'fists' && this.weaponShown !== 'pistol' && this.weaponShown !== 'shotgun';
+      if (held) {
+        this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
+        this.placeHeld(this.axeLib); this.batTip.copy(this.heldTip);
+        if (this.batLib?.obj) { if (this.batBack && s.owned?.includes('bat')) this.placeBatBack(); else this.batLib.obj.visible = false; }
+        return;
+      }
+      this.axeLib.obj.visible = false;
+    }
     if (this.test?.obj) this.test.obj.visible = false;
     if (this.batLib?.obj) {
       const one = s.equipped === 'bat' && this.weaponShown !== 'fists' && this.weaponShown !== 'pistol' && this.weaponShown !== 'shotgun';

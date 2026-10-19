@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 import { buildLibraryAttack } from './libattack.js';
 import { mixerWritesAll, OVERLAY_NAMES } from './clipchars.js';
-import { BAT_PROFILE, useBuiltBat, LEG_ATTACKS, GROUND_OWN, EXEC_LAUNCH, attackTime, attackEnd } from '../core/weapons.js';
+import { BAT_PROFILE, AXE_PROFILE, useBuiltAxe, useBuiltBat, LEG_ATTACKS, GROUND_OWN, EXEC_LAUNCH, attackTime, attackEnd } from '../core/weapons.js';
 
 const SETTLE = 0.45; // s after a strike before she is free again (the recovery clip plays on as the settle, clipchars.js)
 const REC = ['ual_Sword_Regular_A_Rec', 'ual_Sword_Regular_B_Rec'];
@@ -65,38 +65,42 @@ function joinClips(a, b, name) {
 export function setupNewMoves(yola, anims, hold) {
   const by = Object.fromEntries(anims.map((c) => [c.name, c])), made = [];
   yola.addAttackClips([...OVERLAY_NAMES, ...REC].map((n) => by[n]).filter(Boolean)); // (played by name: the dodge, the vault, the recoveries)
-  if (hold) {
-    // ---- the bat combo, strike by strike ----
+  // the bat's moves, and the same moves for the axe (2026-10-19, the user: "use the same grip and attack as the bat"), each
+  // built with its own weapon in her hand (the hit path follows that weapon) and its own profile (the axe: edged, harder)
+  const moveSet = (H, P, key) => {
+    // ---- the combo, strike by strike ----
     const A = by.ual_Sword_Regular_A, B = by.ual_Sword_Regular_B, C = by.ual_Sword_Regular_C;
     if (A && B && C) {
       const one = (clip, name, rec) => {
-        const parts = buildLibraryAttack(yola, { clip, hold, P: BAT_PROFILE, name, sound: 'bat', strikes: 1, recover: SETTLE, split: false });
+        const parts = buildLibraryAttack(yola, { clip, hold: H, P, name, sound: key, strikes: 1, recover: SETTLE, split: false });
         for (const S of parts) { const end = attackEnd(S); Object.assign(S, { continuous: true, chainAlways: true, chainFrom: end, last: false, rec, duration: end + SETTLE, swapPoint: end * 0.85 }); }
         return parts;
       };
       const cFrames = Math.round(C.duration * 30) - 2; // (its last frames snap back to the loop pose, as the old combo's)
       // C is two strikes, its spin hit and its final blow, played 1.7x (2026-10-18, the user: the third hit "feels too
       // slow ... maybe it just needs to be faster"; kept as four hits after trying three)
-      const strikes = [...one(A, 'bat 1', REC[0]), ...one(B, 'bat 2', REC[1]), ...buildLibraryAttack(yola, { clip: C, frames: cFrames, hold, P: BAT_PROFILE, name: 'bat 3', sound: 'bat', strikes: 2, speed: 1.7 })];
-      useBuiltBat(strikes); made.push(`bat combo: ${strikes.length} strikes`);
+      const strikes = [...one(A, key + ' 1', REC[0]), ...one(B, key + ' 2', REC[1]), ...buildLibraryAttack(yola, { clip: C, frames: cFrames, hold: H, P, name: key + ' 3', sound: key, strikes: 2, speed: 1.7 })];
+      (key === 'axe' ? useBuiltAxe : useBuiltBat)(strikes); made.push(`${key} combo: ${strikes.length} strikes`);
     }
-    // ---- the bat's low strike at the legs ----
+    // ---- the low strike at the legs ----
     if (by.ual1_Sword_Attack) {
       const clip = cutClip(by.ual1_Sword_Attack, 1, 30, 'ual1_Sword_Attack_legs'); // (to where the bat leaves the floor)
-      const [S] = buildLibraryAttack(yola, { clip, hold, P: { ...BAT_PROFILE, style: 'legs' }, name: 'bat legs', sound: 'bat', recover: 0.4, split: false });
+      const [S] = buildLibraryAttack(yola, { clip, hold: H, P: { ...P, style: 'legs' }, name: key + ' legs', sound: key, recover: 0.4, split: false });
       turnAttack(S, -67 * deg, 0.3);
       lowWindow(S);
-      Object.assign(S, { legs: true, minY: 0, style: 'legs', dmg: 0.8, knock: 0.5, chainFrom: 9, stand: 0.95, kind: 'bat' });
-      LEG_ATTACKS.bat = S; made.push(`bat legs ${S.activeStart.toFixed(2)}-${S.activeEnd.toFixed(2)} s`);
+      Object.assign(S, { legs: true, minY: 0, style: 'legs', dmg: 0.8, knock: 0.5, chainFrom: 9, stand: 0.95, kind: P.kind }, key === 'axe' ? { sever: { leg: 1 } } : {});
+      LEG_ATTACKS[key] = S; made.push(`${key} legs ${S.activeStart.toFixed(2)}-${S.activeEnd.toFixed(2)} s`);
     }
-    // ---- the bat's strike at a body on the floor ----
+    // ---- the strike at a body on the floor ----
     if (by.ual_Sword_Heavy_D) {
       const clip = cutClip(by.ual_Sword_Heavy_D, 10, 34, 'ual_Sword_Heavy_D_ground'); // (into the floor at its frame 20; it rests there ~0.3 s, then blends back)
-      const [S] = buildLibraryAttack(yola, { clip, hold, P: { ...BAT_PROFILE, style: 'chop', dmg: 1.4, knock: 0.6 }, name: 'bat ground', sound: 'bat', recover: 0.3, split: false });
-      Object.assign(S, { ground: true, style: 'chop', minY: 0.05, chainFrom: 9, assist: 2.0, stand: 1.0, kind: 'bat', dmg: 1.4, knock: 0.6 });
-      GROUND_OWN.bat = S; made.push('bat ground');
+      const [S] = buildLibraryAttack(yola, { clip, hold: H, P: { ...P, style: 'chop', dmg: 1.4, knock: 0.6 }, name: key + ' ground', sound: key, recover: 0.3, split: false });
+      Object.assign(S, { ground: true, style: 'chop', minY: 0.05, chainFrom: 9, assist: 2.0, stand: 1.0, kind: P.kind, dmg: 1.4, knock: 0.6 }, key === 'axe' ? { sever: { head: 0.6, arm: 0.35 } } : {});
+      GROUND_OWN[key] = S; made.push(key + ' ground');
     }
-  }
+  };
+  if (hold) moveSet(hold, BAT_PROFILE, 'bat');
+  if (hold && yola.axeLib) moveSet(yola.axeLib, AXE_PROFILE, 'axe');
   // ---- the jump finishers (core/weapons.js EXEC_LAUNCH): sampled with the bat in her hand; every melee weapon's finisher
   // plays them with its own profile (core/player.js startExecution) ----
   if (hold) {
@@ -132,7 +136,7 @@ export function setupNewMoves(yola, anims, hold) {
   }
   // ---- the axe's low chop: its path from the axe as drawn ----
   const L = LEG_ATTACKS.axe;
-  if (L && yola.act(L.clip)) { sampleAxePath(yola, L); made.push(`axe legs ${L.activeStart.toFixed(2)}-${L.activeEnd.toFixed(2)} s`); }
+  if (L && !L.built && yola.act(L.clip)) { sampleAxePath(yola, L); made.push(`axe legs ${L.activeStart.toFixed(2)}-${L.activeEnd.toFixed(2)} s`); }
   console.info('[newmoves]', made.join(', '));
 }
 

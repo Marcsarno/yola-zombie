@@ -1033,7 +1033,7 @@ const WEAPON_CLIPS = {
   bat: { label: 'Bat', idle: 'ual1_Sword_Idle', attack: 'ual_Sword_Regular_Combo' },
   // (the arena's weapons: their first "good" pick in the Move Library as the attack)
   alubat: { label: 'Bat (pack)', idle: 'ual_Sword_Block', attack: 'ual_Sword_Regular_Combo' }, // (the hospital pack's bat, 2026-10-17)
-  packaxe: { label: 'Axe (pack)', idle: 'ual_Sword_Block', attack: 'ual_Sword_Heavy_Combo' },
+  packaxe: { label: 'Axe (pack)', idle: 'ual_Sword_Block', attack: 'ual_Sword_Regular_Combo' }, // (the game's axe since 2026-10-19: the bat's moves)
   packcrowbar: { label: 'Crowbar (pack)', idle: 'ual_Sword_Block', attack: 'ual_Sword_Regular_Combo' },
   sledgehammer: { label: 'Sledgehammer', idle: 'ual_Sword_Block', attack: 'ual_Sword_Heavy_Combo' }, // (its carry: render/holdfit.js CARRY)
   chainsaw: { label: 'Chainsaw', idle: 'ual1_Sword_Idle', attack: 'melee_horizontal' },
@@ -1151,7 +1151,7 @@ const editKey = () => 'riglab.edit.' + S.gun + '.' + S.mode;
 // arena's picks for it (assets/arena/selection.json "uses", the PICKS). Every other clip is still in Advanced's list.
 const GAME_ATTACKS = {
   alubat: ['ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual_Sword_Regular_C', 'ual1_Sword_Attack', 'ual_Sword_Heavy_D'],
-  packaxe: ['bat_swing', 't_chop', 'gs_low_slash'],
+  packaxe: ['ual_Sword_Regular_A', 'ual_Sword_Regular_B', 'ual_Sword_Regular_C', 'ual1_Sword_Attack', 'ual_Sword_Heavy_D'], // (the game's axe plays the bat's moves since 2026-10-19)
 };
 const ARENA_KEY = { alubat: 'bat', packaxe: 'axe', packcrowbar: 'crowbar', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
 const gameAttack = (n) => (GAME_ATTACKS[S.gun] || []).includes(n) ? 'story game' : PICKS[n + '|' + ARENA_KEY[S.gun]] ? 'arena' : '';

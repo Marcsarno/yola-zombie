@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sim, STEP, DODGE_CUE } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
-import { setMeleePaths, meleeSegment, BAT_DEF, WOOD_BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
+import { setMeleePaths, meleeSegment, BAT_DEF, WOOD_BAT_DEF, PACK_AXE_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
 import { setupNewMoves } from './render/newmoves.js';
 import { setupSlideFinisher } from './render/slidefin.js';
@@ -302,7 +302,7 @@ async function load() {
     loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null),
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
     fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({})), // (the user's pistol fit per character, set in the Rig Lab)
-    loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)]); // (the wood bat: setupBat)
+    loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null), loader.loadAsync(PACK_AXE_DEF.file).catch(() => null)]); // (the wood bat and the pack's axe: setupBat)
   // the hospital's own zombies' things (render/clipchars.js IV / CHAIR / wearSurgeonKit): the stand and the chair at the
   // level's sizes (prop footprints in core/chapter.js), the cap and mask as built
   const fitProp = (g, hgt) => { const o = g.scene, b = new THREE.Box3().setFromObject(o), s = hgt / (b.max.y - b.min.y), c = b.getCenter(new THREE.Vector3()); const w = new THREE.Group(); o.scale.setScalar(s); o.position.set(-c.x * s, -b.min.y * s, -c.z * s); w.add(o); w.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.receiveShadow = true; } }); return w; }; // (they move: the shadow map is drawn once for the still scenery, so a cast shadow stayed where they started)
@@ -314,12 +314,12 @@ async function load() {
   loadHoldLayers(); // (the user's hold-layer switches, render/holdlayers.js)
   await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
   arena.playLook(); // (the practice wing: the chapter's surfaces and lighting)
-  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
+  const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG, packAxeG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
   yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup' || c.name === 'ual_KipUp')); // (tools/anim/yola_clips.py: knocked flat, getting up)
-  setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({})), woodBatG); window.game.yolaClips = yg.animations;
+  setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({})), woodBatG, packAxeG); window.game.yolaClips = yg.animations;
   await setupLibWeapons({ yola, loader, scene, clips: yg.animations, who: YOLA_MODEL === '2' ? 'yola2' : 'yola' }).catch((e) => console.warn('library weapons', e)); // (the sledgehammer, crowbar, knife)
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[t.same ?? i]));
   renderer.shadowMap.needsUpdate = true;
@@ -349,7 +349,7 @@ function holdFrame(clip, name) {
   const tracks = clip.tracks.map((t) => { const n = t.getValueSize(), v = Array.from(t.values.slice(0, n)); return new t.constructor(t.name, [0, 1], [...v, ...v]); });
   return new THREE.AnimationClip(name, 1, tracks);
 }
-function setupBat(anims, fits = {}, woodG = null) {
+function setupBat(anims, fits = {}, woodG = null, axeG = null) {
   const who = YOLA_MODEL === '2' ? 'yola2' : 'yola';
   yola.axeFit = fits.axe?.[who] || null; yola.shotgunFit = fits.short?.[who] || null; // (the axe's and shotgun's fits, same Rig Lab file)
   // (a clip's own shotgun fit, "short@<clip>": the shotgun slide finisher's kneel setup, render/clipchars.js shotgunClip)
@@ -370,6 +370,15 @@ function setupBat(anims, fits = {}, woodG = null) {
   hold.fit = (woodG ? fits.alubat : fits.bat)?.[who] || null;
   if (woodG && block) hold.fitIdle = fits['alubat@ual_Sword_Block']?.[who] || null;
   yola.setOneHandedBat(hold, idle);
+  // the axe (2026-10-19, the user: "use the same grip and attack as the bat"): the hospital pack's fire axe in her right fist
+  // as the Rig Lab holds it (its packaxe fits; packaxe@ual_Sword_Block for the stance if set), the bat's stance and moves
+  // (render/newmoves.js builds them with the axe in her hand)
+  if (axeG) {
+    const ha = new THREE.Group(); axeG.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+    ha.add(axeG.scene); ha.visible = false; scene.add(ha);
+    yola.axeLib = { obj: ha, w: PACK_AXE_DEF, hand: 'Right', roll: 0, slide: 0, flip: false, two: false, fingers: null, pack: true,
+      fit: fits.packaxe?.[who] || null, fitIdle: fits['packaxe@ual_Sword_Block']?.[who] || null };
+  }
   // (89 of its 91 frames: the last one snaps back to the loop pose; four strikes, the third a slower swing)
   useBuiltBat(buildLibraryAttack(yola, { clip: combo, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: 'bat', sound: 'bat', strikes: 4 }));
   setupNewMoves(yola, anims, hold); // (the Quaternius UAL moves: the combo strike by strike, leg attacks, dodge, vault; render/newmoves.js)

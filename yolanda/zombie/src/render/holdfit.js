@@ -58,7 +58,10 @@ const FB1 = { c: new THREE.Vector3(), a: new THREE.Vector3(), k: new THREE.Vecto
 export function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
   const R = fistFrame(bones, 'Right', FB1); if (!R) return false;
   const L = fistFrame(bones, 'Left', FB2);
-  if (!L || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, 'Right', o, def, fit, {}, k);
+  // a one-handed weapon always stays in the right fist (2026-10-19, the user: "sometimes randomly change the grip... usually
+  // with the axe"): the bat combo's second strike brings her fists to 22 cm, 2 cm over the switch to the line through both
+  // fists, so now and then the weapon snapped to that line (and to whichever fist was lower) for a few frames
+  if (!L || def.hands === 'one' || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, 'Right', o, def, fit, {}, k);
   const d = new THREE.Vector3().subVectors(L.c, R.c).normalize();
   if (d.dot(_a.copy(R.a).add(L.a)) < 0) d.negate(); // (the barrel: the index-knuckle end of both fists)
   const low = R.c.dot(d) < L.c.dot(d) ? R : L, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();

@@ -57,7 +57,7 @@ const SWING = { // the leveled baseball swing, right to left at chest height (sh
   name: 'swing', clip: 'bat_swing', path: 'bat_swing', f0: 24, f1: 40, rate: 1.5, fps: 30, yawOffset: 40 * deg,
   duration: 0.6, activeStart: 0.14, activeEnd: 0.33, chainFrom: 0.3, swapPoint: 0.48, assist: 1.75,
 };
-export const AXE_ATTACKS = [
+export const AXE_ATTACKS = [ // (the old axe; replaced at load by the bat's moves built with the pack axe: useBuiltAxe)
   { ...SWING, dmg: 1, knock: 1, style: 'swing', sever: { head: 0.35, arm: 0.25 } },
   { // 2: Yola's own overhead chop (Tripo), entered with the axe already raised behind her head so it follows the
     // swing straight away: up, then slammed down on the aim
@@ -107,6 +107,19 @@ export const BAT_DEF = { builder: 'makeBat', hands: 'one', grip_primary: [0, 0, 
 export const WOOD_BAT_DEF = { file: 'assets/weapons/wood_bat.glb', hands: 'one', grip_primary: [0, 0, 0], grip_secondary: [0, 0.093, 0], shaft_axis: [0, 1, 0], ref_axis: [1, 0, 0],
   length_m: 0.843, impact_point: [0, 0.655, 0], tip: [0, 0.768, 0], knob: [0, -0.075, 0] };
 export const BAT_PROFILE = { kind: 'bat', dmg: 0.75, knock: 1.0, style: 'swing', sever: {}, hitFrom: 0.45, radius: 0.1, reach: 'tip' };
+// The axe since 2026-10-19 (the user: "fix yola's axe attack. i guess use the same grip and attack as the bat"): the hospital
+// pack's fire axe (as the wood bat is that pack's bat), held as the Rig Lab holds it (holdfit.js placeBat, the user's
+// packaxe fits, the bat's Sword_Block stance), playing the bat's moves built with the axe in her hand (render/newmoves.js):
+// the combo, the low strike, the floor strike. Edged: it severs.
+export const PACK_AXE_DEF = { file: 'assets/weapons/hospital/fire_axe.glb', hands: 'one', grip_primary: [0, 0, 0], grip_secondary: [0.02, 0.22, 0], shaft_axis: [0, 1, 0], ref_axis: [-1, 0, 0],
+  length_m: 0.92, impact_point: [-0.135, 0.694, 0] };
+export const AXE_PROFILE = { kind: 'axe', dmg: 1.0, knock: 0.9, style: 'swing', sever: { head: 0.35, arm: 0.25 }, hitFrom: 0.45, radius: 0.1, reach: 'tip' };
+export function useBuiltAxe(strikes) {
+  AXE_ATTACKS.length = 0; AXE_ATTACKS.push(...strikes);
+  const last = AXE_ATTACKS[AXE_ATTACKS.length - 1];
+  if (last && AXE_ATTACKS.length > 1) Object.assign(last, { dmg: AXE_PROFILE.dmg * 1.6, knock: 1.4, style: 'heavy', sever: { head: 0.6, arm: 0.35 } });
+  if (last) last.restartFrom = last.activeEnd + 0.25 * (last.duration - last.activeEnd); // (as the bat's)
+}
 export function useBuiltBat(strikes) {
   BAT_ATTACKS.length = 0; BAT_ATTACKS.push(...strikes);
   const last = BAT_ATTACKS[BAT_ATTACKS.length - 1]; // the finisher lands harder
@@ -156,7 +169,7 @@ const GROUND = {};
 export function groundAttack(w) {
   if (GROUND_OWN[w]) return GROUND_OWN[w];
   if (w !== AXE && w !== BAT && w !== TEST && !LIB_ATTACKS[w]) return null;
-  const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : LIB_ATTACKS[w]?.[0] || null;
+  const base = AXE_CHOP, T0 = w === TEST ? TEST_ATTACKS[0] : LIB_ATTACKS[w]?.[0] || null;
   if (!base.PATH || ((w === TEST || LIB_ATTACKS[w]) && !T0)) return null;
   const key = w + (T0 ? '|' + T0.clip + T0.kind : '');
   if (GROUND[key]) return GROUND[key];
@@ -199,6 +212,9 @@ export const AXE_GEOM = {
 };
 // legacy name (physics lab, debug)
 export const BAT_SWING = AXE_ATTACKS[0];
+// the old axe's overhead chop: the template of every weapon's generic floor strike (groundAttack), kept when the axe's
+// own moves are replaced (useBuiltAxe)
+export const AXE_CHOP = AXE_ATTACKS[1];
 
 const rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
 // samples: clipdata[path] ([{f, r:[x,y,z], l:[x,y,z], d, hips}] in model units); scale: model units -> metres
