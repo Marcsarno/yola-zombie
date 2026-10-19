@@ -448,7 +448,7 @@ export class Opening {
       p.sp.material.color.setRGB(Math.min(1, lit + red), Math.min(1, lit * 0.95 + red * 0.08), Math.min(1, lit * 0.98 + red * 0.08));
     }
   }
-  setSmoke(on) { if (this.smoke) this.smoke.target = on ? 1 : 0; }
+  setSmoke(on) { if (this.smoke) { this.smoke.target = on ? 1 : 0; if (on) this.smoke.g.visible = true; } }
   // the car's light passing the crack under the shut doors, left to right: a bright line along the gap and a soft pool
   // spilling onto the floor in front of it (built at load with zero opacity; run once as the car arrives)
   ensureDoorSweep() {
@@ -1442,6 +1442,10 @@ export class Opening {
     // the game: the canonical snapshot
     g.applyRoom1(); if (this.patientDown) this.dropPatient(); g.previewRoom1(0); // (the patient she smashed stays gone)
     this.stillYola = false; this.room1Preview = false; this.active = false; this.state = 'ROOM1_PLAYABLE'; this.substate = via;
+    // (PERF_AUDIT.md 5) the reveal's 72 smoke puffs (opacity 0, still drawn every frame) hide once the game has it; setSmoke
+    // shows them again for a replay. Its spot and red lights stay: taking a light out of the scene rebuilds every shader
+    // (a 2.3 s freeze on the PC, measured), far worse than the ~6% of GPU time they cost at intensity 0
+    if (this.smoke) this.smoke.g.visible = false;
     this.ui.show(false); g.hudShow(true);
     try { localStorage.setItem('zc.introSeen', '1'); } catch { /* storage unavailable: the opening just plays next time */ }
     this.mark('room1-playable');

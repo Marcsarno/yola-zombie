@@ -763,7 +763,37 @@ export class Arena {
     e.redMat.opacity = e.redHalf.opacity = k * (0.3 + 0.38 * beacon); e.coldMat.opacity = this.coldOff ? 0 : k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3)); // (a tube that hums; coldOff: render/lightkit.js's baked light draws the rooms' light instead)
   }
 
+  // (PERF_AUDIT.md 2) the room's static pieces stop recomputing their matrices every frame (4,001 objects on Floor 7). Left
+  // out: the door kits, the lift, the reset panel and the specimen case (they move). Safety net: an eighth of the frozen list
+  // is checked each frame; anything that has moved is thawed for good (at most ~8 frames late). New pieces are frozen as
+  // they appear (a sweep every 2 s).
+  freezeStatic() {
+    const keep = new Set([...Object.values(this.doorKits || {}).map((k) => k.root), this.reset?.root, this.caseObj].filter(Boolean));
+    this.frozenSeen ??= new WeakSet(); this.frozen ??= [];
+    const walk = (o) => {
+      if (keep.has(o)) return;
+      if (!this.frozenSeen.has(o)) {
+        this.frozenSeen.add(o);
+        if (o.matrixAutoUpdate && !o.isBone && !o.isSkinnedMesh && !o.isLight) { o.updateMatrix(); o.matrixAutoUpdate = false; o.matrixWorldNeedsUpdate = true; this.frozen.push({ o, p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone() }); }
+      }
+      for (const c of o.children) walk(c);
+    };
+    walk(this.group);
+  }
+  tickFrozen(dt) {
+    if ((this.freezeT = (this.freezeT ?? 0) - dt) <= 0) { this.freezeT = 2; this.freezeStatic(); }
+    const F = this.frozen; if (!F?.length) return;
+    const n = Math.ceil(F.length / 8); let i = (this.frozenAt ?? 0) % F.length;
+    for (let k = 0; k < n && F.length; k++) {
+      if (i >= F.length) i = 0;
+      const f = F[i], o = f.o;
+      if (!o.position.equals(f.p) || !o.quaternion.equals(f.q) || !o.scale.equals(f.s)) { o.matrixAutoUpdate = true; o.updateMatrix(); F[i] = F[F.length - 1]; F.pop(); continue; }
+      i++;
+    }
+    this.frozenAt = i;
+  }
   update(dt, px, pz, camYaw, level) {
+    this.tickFrozen(dt);
     this.tickEmergency(dt);
     if (!this.f3) return;
     const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw); // screen-up on the floor

@@ -62,3 +62,20 @@ Later, bigger jobs (each its own session):
 There is no on-screen meter yet (?debug=1 draws the collision boxes only). game.perfReport() in a desktop console gives
 the frame-time spread, spikes, resolution, render scale and draw calls. Worth adding with the fixes: a small corner
 readout (frame ms, render scale, calls) behind a URL flag, so the phone can report what it really does.
+
+## Done (2026-10-18, fixes 1-6; same spots, same phone settings on the PC)
+
+| | before | after |
+|---|---|---|
+| per-frame transform update | 6.8 ms | 0.4-0.7 ms (main.js visibleMatrixWorld + arena.js freezeStatic: 3,705 static pieces frozen) |
+| skeletons computed per frame | 81 | 8 (clipchars.js: one Skeleton per zombie) |
+| draw calls at the test spots | 432 | ~340 (off-screen zombies culled; the reveal smoke hidden) |
+| texture images on the GPU | 315 (~566 MB) | 189 (~270 MB) (render/texshare.js; uploaded behind the loading screen) |
+| whole frame, median (story mode) | 24.4 ms | 7.9 ms |
+| shaders | 53 | 53 |
+
+Checked: before/after shots match; dismemberment works; a zombie is drawn at every on-screen spot (141/141) and culled
+only off screen; the lab and wave mode run without errors.
+Not done, on purpose: removing the opening's two dead lights (half of fix 5). Taking a light out of the scene rebuilds
+every shader: measured 2.3 s frozen on the PC at the hand-off (several seconds on a phone), far worse than the ~6% GPU
+time they cost. They could be dropped only where a loading moment already hides a rebuild.

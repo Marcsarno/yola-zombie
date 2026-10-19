@@ -1508,6 +1508,9 @@ export class ZombieView extends ClipBody {
   static clubAxis = new THREE.Vector3(0, 0, 1); // (in his RightHand bone's frame: the club's direction out of the fist, across it: he holds the arm by its own hand, the shoulder end out) // the guards' shields stuck in the floor for good, and the arms torn off on them ({ shield, arm }): they stay until the level resets
   constructor(scene, gltf, height, speeds, opts = {}) {
     const model = skClone(gltf.scene);
+    // (PERF_AUDIT.md 3) SkeletonUtils gives every body part its own Skeleton over the same bones: 12 parts on screen meant the
+    // same 68 bone matrices computed and uploaded 12 times a frame. The parts share bones, inverses and bind matrix: one Skeleton.
+    { let sk0 = null; model.traverse((o) => { if (!o.isSkinnedMesh) return; if (!sk0) { sk0 = o.skeleton; return; } const b = o.skeleton.bones; if (b.length === sk0.bones.length && b.every((x, i) => x === sk0.bones[i])) o.skeleton = sk0; }); }
     const mats = [];
     model.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); mats.push(o.material); } });
     // clips are processed once per zombie type and shared by every view (mixers can share clips;
@@ -1538,6 +1541,12 @@ export class ZombieView extends ClipBody {
     ZombieView.scene = scene;
     super(scene, model, height, clips);
     this.mats = mats;
+    // (PERF_AUDIT.md 4) zombies off screen are not drawn: ClipBody turns frustum culling off (a skinned part's own bounds
+    // are its rest pose), so every part gets one generous sphere round the whole body instead (centre at half height,
+    // radius 1.25 x height: any pose, a pounce, a body on the floor), in that part's own space
+    { this.outer.updateMatrixWorld(true); const C = new THREE.Vector3(0, height * 0.5, 0), ws = new THREE.Vector3();
+      model.traverse((o) => { if (!o.isSkinnedMesh) return; o.getWorldScale(ws); const k = Math.max(Math.abs(ws.x), Math.abs(ws.y), Math.abs(ws.z)) || 1;
+        o.boundingSphere = new THREE.Sphere(o.worldToLocal(C.clone()), (height * 1.25) / k); o.frustumCulled = true; }); }
     this.nativeWalk = (speeds?.speed || 0.17) * height;
     for (const n of ['walk', 'idle']) { this.act(n).play(); this.act(n).setEffectiveWeight(0); }
     for (const n of [...ONE_SHOTS, 'pounce', ...Object.values(HIT_CLIPS).flat(), ...EXTRA_ONCE]) {

@@ -39,6 +39,7 @@ import { SlowMotion } from './render/slowmo.js';
 import { ExecDirector } from './render/execution.js';
 import { Atmos } from './render/atmos.js';
 import { LightKit } from './render/lightkit.js';
+import { shareTextures } from './render/texshare.js';
 import { setupLibWeapons } from './render/libweapons.js';
 import { startDemos } from './demos.js';
 
@@ -63,6 +64,20 @@ renderer.shadowMap.enabled = resolvedQuality() !== 'low';
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false; // the environment is static: render its shadows once
 const scene = new THREE.Scene();
+// (PERF_AUDIT.md 1) the renderer's per-frame transform pass walks only what can be drawn: three.js updates every object,
+// hidden or not, and over half the scene is hidden (pooled zombies, the opening's sets, other floors): 6.7 -> 2.2 ms on
+// the PC at phone settings. A hidden group refreshes when shown (its own matrix update forces its children); explicit
+// calls (getWorldPosition, updateMatrixWorld on an object) are untouched.
+scene.updateMatrixWorld = function (force) { visibleMatrixWorld(this, force); };
+function visibleMatrixWorld(o, force) {
+  if (o.matrixAutoUpdate) o.updateMatrix();
+  if (o.matrixWorldNeedsUpdate || force) {
+    if (o.matrixWorldAutoUpdate === true) { if (o.parent === null) o.matrixWorld.copy(o.matrix); else o.matrixWorld.multiplyMatrices(o.parent.matrixWorld, o.matrix); }
+    o.matrixWorldNeedsUpdate = false; force = true;
+  }
+  const ch = o.children;
+  for (let i = 0, n = ch.length; i < n; i++) { const c = ch[i]; if (c.visible) visibleMatrixWorld(c, force); else if (force) c.matrixWorldNeedsUpdate = true; } // (a skipped child whose parent moved catches up when shown)
+}
 scene.background = new THREE.Color(0x27323a);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 80);
 const GAME_FOV = 50; // the gameplay camera's field of view (the opening uses its own and hands back to this)
@@ -262,6 +277,7 @@ async function load() {
   // door) takes one from the pool; building one then cost ~100 ms, a visible hitch (2026-10-18)
   prepViews();
   await breachP; if (breaches.src) { const w = breaches.src.clone(true); w.visible = false; w.position.y = -50; scene.add(w); } // (compiled with the rest: its first breach mid-fight froze a frame)
+  window.game.texShare = shareTextures(scene, renderer); // (PERF_AUDIT.md 6: one GPU copy per image, all uploaded now)
   warmPrograms();
   requestAnimationFrame(frame);
   if (params.has('lab')) startLab(window.game, params.get('lab') || 'bat'); // the combat lab (frame-by-frame melee against the reference)
@@ -374,6 +390,7 @@ function applyRoom1() { levelSave = null; store.set('chapter1save', null); retur
 function applyLevel(save) {
   if (LAYOUT.story) useFloor(save?.floor || 7); // (the simulation's world is the save's floor)
   restart('room1', benchN, save);
+  shareTextures(scene, renderer); // (a floor's new props: one GPU copy per image)
   const p = sim.player, A = ROOM1.player;
   if (!save) {
     p.x = A.x; p.z = A.z; p.aimYaw = p.aimTarget = A.yaw; p.hp = p.maxHp;
