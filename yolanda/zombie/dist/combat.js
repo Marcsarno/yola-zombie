@@ -68791,7 +68791,7 @@ void main() {
     if (disc > 0.0 && abs(a) > 1e-5) { float sq = sqrt(disc), t1 = (-b - sq) / (2.0 * a), t2 = (-b + sq) / (2.0 * a);
       float tn = min(t1, t2), tf = max(t1, t2);
       if (tn > 0.0 && tn < tEnd && dot(ro + rd * tn - uApex, uAxis) > 0.0) tStart = tn; else if (tf > 0.0 && tf < tEnd && dot(ro + rd * tf - uApex, uAxis) > 0.0) tStart = tf; }
-    float dt = (tEnd - tStart) / 12.0, j = hash(vec3(gl_FragCoord.xy, fract(uTime) * 61.0)), acc = 0.0;
+    float dt = (tEnd - tStart) / 12.0, j = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))) + fract(uTime * 60.0) * 0.6180339), acc = 0.0; // (2026-10-19: interleaved gradient noise, steady on phone GPUs; the old hash of the pixel's place broke into radial streaks on the iPhone)
     for (int i = 0; i < 12; i++) {
       vec3 p = ro + rd * (tStart + (float(i) + j) * dt), q = p - uApex; float h = dot(q, uAxis);
       if (h < 0.0 || h > uLen) continue;
@@ -68997,7 +68997,7 @@ void main() {
     uniforms: { tDiffuse: { value: null }, tGlow: { value: null }, glow: { value: 1 }, time: { value: 0 }, grain: { value: 0.016 }, vig: { value: 0.32 }, film: { value: 1 } },
     vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
     fragmentShader: `uniform sampler2D tDiffuse; uniform sampler2D tGlow; uniform float glow; uniform float time; uniform float grain; uniform float vig; uniform float film; varying vec2 vUv;
-    float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    float h(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); } // (no sin(): its large arguments turn to patterns on phone GPUs)
     void main() {
       vec4 c = texture2D(tDiffuse, vUv);
       vec3 g = c.rgb + texture2D(tGlow, vUv).rgb * glow;
@@ -69747,6 +69747,15 @@ void main() {
       this.voicesLoaded = await this.sound.loadVoices(LINES, VOICE_DIR, (n) => onProgress?.(0.85 + 0.1 * n / LINES.length));
       onProgress?.(0.95);
       await loadTuning();
+      this.offs = new Set((this.params.get("off") || "").split(",").filter(Boolean));
+      if (this.offs.has("shadow")) {
+        RT.game.shadow = false;
+        RT.quality.flashShadow = false;
+      }
+      if (this.offs.has("post")) RT.quality.post = false;
+      if (this.offs.has("beam")) RT.quality.beam = false;
+      if (this.offs.has("fog")) RT.quality.softFog = false;
+      if (this.offs.has("haze")) RT.game.haze = false;
       this.RT = RT;
       try {
         const rc = await this.loader.loadAsync("assets/opening/yola2_reveal.glb");
@@ -71885,7 +71894,7 @@ void main() {
     aimFlashShadow(off = false) {
       const lk = this.game?.().lightkit, L3 = lk?.ysh, C = lk?.yshCatch, sp = this.spot, r = this.rl, her = this.herAt();
       if (!L3 || !C) return;
-      const B = this.yshBase || (this.yshBase = { half: L3.shadow.camera.right, map: L3.shadow.mapSize.x });
+      const B = this.yshBase || (this.yshBase = { half: L3.shadow.camera.right, map: L3.shadow.mapSize.x, bias: L3.shadow.bias, nb: L3.shadow.normalBias });
       const on = !off && !this.launch && !!(this.gameLight && RT.quality.flashShadow && lk.on.yshadow && r?.on && r.spotAt === "flash" && sp && her);
       const H4 = on ? 4.5 : B.half, M4 = on ? 1024 : B.map, cam = L3.shadow.camera;
       if (cam.right !== H4) {
@@ -71898,6 +71907,9 @@ void main() {
         L3.shadow.map?.dispose();
         L3.shadow.map = null;
       }
+      const rev = !off && this.active;
+      L3.shadow.bias = on ? -4e-3 : rev ? -3e-3 : B.bias;
+      L3.shadow.normalBias = on ? 0.09 : rev ? 0.06 : B.nb;
       if (!on) {
         C.scale.set(1, 1, 1);
         return;
@@ -72294,6 +72306,8 @@ void main() {
           if (lk.built.yshadow && lk.on.yshadow !== RT.game.shadow) lk.set("yshadow", RT.game.shadow);
         }
         if (at && !!at.on.haze !== !!RT.game.haze) at.set("haze", RT.game.haze);
+        if (lk && this.offs?.has("polish") && lk.on.polish) lk.set("polish", false);
+        if (lk && this.offs?.has("bake") && lk.on.baked) lk.set("baked", false);
       } else {
         if (A.hemi) A.hemi.intensity = b.hemi * r.amb;
         if (A.sun) A.sun.intensity = b.sun * r.amb;
