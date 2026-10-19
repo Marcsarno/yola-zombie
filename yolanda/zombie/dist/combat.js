@@ -74026,6 +74026,11 @@ void main() {
   var groanT = 2;
   function frame(now) {
     requestAnimationFrame(frame);
+    if (now - last > 500 && last > 0) {
+      perf.stalls = (perf.stalls || 0) + 1;
+      perf.longest = Math.max(perf.longest || 0, now - last);
+    }
+    perf.frameCount = (perf.frameCount || 0) + 1;
     const dt = Math.min(0.1, (now - last) / 1e3);
     last = now;
     if (manualTicks) return;
@@ -74952,7 +74957,8 @@ void main() {
     perf.frames.push(ms);
     if (perf.frames.length > 600) perf.frames.shift();
     if (ms > 34) perf.spikes++;
-    if (perf.frames.length >= 90 && perf.frames.length % 30 === 0 && !paused) {
+    perf.n = (perf.n || 0) + 1;
+    if (perf.frames.length >= 90 && perf.n % 30 === 0 && !paused && performance.now() - (perf.resizedAt || 0) > 1500) {
       const recent = perf.frames.slice(-90), avg = recent.reduce((a, b) => a + b, 0) / recent.length;
       const cpu = perf.cpu.slice(-90), cpuAvg = cpu.reduce((a, b) => a + b, 0) / Math.max(1, cpu.length), gpu = gpuTimer?.avg();
       const gpuBound = gpu != null ? gpu > Math.min(14, avg * 0.7) : cpuAvg < avg * 0.6;
@@ -74960,9 +74966,11 @@ void main() {
       if (avg > 21 && renderScale > 0.6 && gpuBound) {
         renderScale = Math.max(0.6, renderScale - 0.1);
         resize();
+        perf.resizedAt = performance.now();
       } else if ((avg < 14 || !gpuBound) && renderScale < 1) {
         renderScale = Math.min(1, renderScale + 0.05);
         resize();
+        perf.resizedAt = performance.now();
       }
     }
   }
@@ -74983,7 +74991,9 @@ void main() {
         `${renderer.domElement.width}x${renderer.domElement.height}  scale ${renderScale.toFixed(2)}  dpr ${renderer.getPixelRatio().toFixed(2)}  ${resolvedQuality()}`,
         `AA ${aa ? "on" : "off"}  shadows ${shadows}`,
         `calls ${I2.render.calls}  tris ${(I2.render.triangles / 1e3).toFixed(0)}k  tex ${I2.memory.textures}  heap ${heap}`,
-        `zombies ${sim?.aliveCount?.() ?? "-"}  floor ${LAYOUT.story ? LAYOUT.floor : "wing"}`
+        `zombies ${sim?.aliveCount?.() ?? "-"}  floor ${LAYOUT.story ? LAYOUT.floor : "wing"}`,
+        // (the heartbeat: 'clock' counts while the page's JS runs; 'frames' only while the game loop runs)
+        `clock ${((performance.now() - perf.t0) / 1e3).toFixed(1)}s  frames ${perf.frameCount || 0}  stalls ${perf.stalls || 0}${perf.longest ? " (" + (perf.longest / 1e3).toFixed(1) + "s)" : ""}`
       ].join("\n");
     }, 500);
   }
