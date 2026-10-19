@@ -296,8 +296,8 @@
  "walk": {
   "bat": true,
   "slow": 0.7,
-  "stopZ": -10.15,
-  "secs": 2.7,
+  "stopZ": -8.9,
+  "secs": 5,
   "stepShake": 0.012
  },
  "batShot": false,
@@ -308,11 +308,10 @@
   "turn": 0,
   "gap": 0.25,
   "lunge": 1.2,
-  "hold": 0.35,
+  "hold": 0.12,
   "rampSlow": 1,
   "rampLen": 0.08,
   "rampAt": 0,
-  "freezeLead": 0.07,
   "boomToCard": 0.12,
   "cardHold": 2.2,
   "slow": 0.26,

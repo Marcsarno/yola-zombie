@@ -10,7 +10,6 @@ const BEATS = [ // [mark, label]: where "Play from" starts (the reveal plays liv
   ['ding', 'The DING (floor 7)'],
   ['beat6', 'Doors open: fog, tilt up'],
   ['flashes', 'The flashes'],
-  ['beat8', 'The patient, red-lit'],
   ['beat9', 'Walk-out (feet)'],
   ['beat11', 'The launch'],
 ];
@@ -59,7 +58,7 @@ export class RevealStudio {
     this.pauseB = el.querySelector('[data-a=pause]'); this.pauseB.onclick = () => this.togglePause();
     // stop the game's keys and taps reacting to the panel
     for (const ev of ['pointerdown', 'touchstart', 'keydown', 'wheel']) el.addEventListener(ev, (e) => e.stopPropagation());
-    body.append(this.timeline(), this.transport(), this.lights(), this.quality(), this.flashes(), this.walk(), this.launch(), this.save());
+    body.append(this.timeline(), this.transport(), this.lights(), this.quality(), this.flashes(), this.walk(), this.launch(), this.music(), this.save());
     setInterval(() => this.tick(), 200);
   }
   // ---- building blocks ----
@@ -206,8 +205,16 @@ export class RevealStudio {
     const W = () => RT.walk;
     this.check(s, W, 'bat', 'She carries the bat out');
     this.slider(s, W, 'slow', 'Slow motion', 0.2, 1, 0.01, false);
-    this.slider(s, W, 'stopZ', 'Where she stops', -11, -8.5, 0.05, false);
-    this.slider(s, W, 'secs', 'Shot length (s)', 1, 6, 0.05, false);
+    this.slider(s, W, 'stopZ', 'Where she would stop', -11, -8.5, 0.05, false);
+    this.slider(s, W, 'secs', 'Longest the shot holds (s)', 1, 8, 0.05, false);
+    this.slider(s, W, 'empty', 'Empty shot after she has gone (s)', 0, 1.5, 0.05, false);
+    s.insertAdjacentHTML('beforeend', '<div class="note" style="margin-top:8px"><b>Camera</b> (still, on the floor beside her path)</div>');
+    const WC = () => RT.walk.cam;
+    this.slider(s, WC, 'side', 'To her side (m)', 0, 1.5, 0.01, false);
+    this.slider(s, WC, 'height', 'Height', 0.1, 1.5, 0.01, false);
+    this.slider(s, WC, 'z', 'Where it stands (z)', -11.0, -8.5, 0.05, false);
+    this.slider(s, WC, 'lookY', 'Looks at (height)', 0, 2, 0.01, false);
+    this.slider(s, WC, 'fov', 'Lens (fov)', 20, 70, 1, false);
     this.slider(s, W, 'stepShake', 'Step jolt', 0, 0.05, 0.001, false);
     this.check(s, () => RT, 'batShot', 'Cut to the bat leaning by the doors');
     const l = document.createElement('div'); l.className = 'line'; s.appendChild(l);
@@ -215,7 +222,7 @@ export class RevealStudio {
     return d;
   }
   launch() {
-    const [d, s] = this.sec('Launch, freeze, card, burst');
+    const [d, s] = this.sec('Launch, slow-mo card, burst');
     const LA = () => RT.launch, C = () => RT.launch.cam;
     this.choose(s, LA, 'variant', 'Finisher', [['B_uppercut', 'B (uppercut crouch)'], ['C_uppercut_mirrored', 'C (mirrored)']]);
     this.choose(s, LA, 'jump', 'Jump', [['1.4', '1.4 m'], ['2.4', '2.4 m'], ['3.4', '3.4 m']]);
@@ -227,7 +234,14 @@ export class RevealStudio {
     this.slider(s, LA, 'rampSlow', 'Slow-mo in the air', 0.05, 1, 0.01, false);
     this.slider(s, LA, 'rampLen', 'Ease into slow-mo', 0.02, 0.6, 0.01, false);
     this.slider(s, LA, 'rampAt', 'Slow-mo starts (after lift-off)', -0.3, 0.3, 0.01, false);
-    this.slider(s, LA, 'freezeLead', 'Freeze before hit', 0, 0.4, 0.01, false);
+    this.slider(s, LA, 'peakLead', 'Card moment (vs top of jump)', -0.3, 0.3, 0.01, false);
+    this.slider(s, LA, 'cardSlow', 'Speed under the card', 0.01, 0.4, 0.005, false);
+    this.slider(s, LA, 'slowIn', 'Ease into slow-mo (s)', 0.01, 0.6, 0.01, false);
+    this.slider(s, LA, 'slowOut', 'Ease back to speed (s)', 0.01, 0.8, 0.01, false);
+    const D = () => RT.launch.drift;
+    this.slider(s, D, 'push', 'Card: camera pushes in (m)', -1, 1.5, 0.01, false);
+    this.slider(s, D, 'orbit', 'Card: camera turns (°)', -30, 30, 0.5, false);
+    this.slider(s, D, 'rise', 'Card: camera rises (m)', -0.5, 0.5, 0.01, false);
     this.slider(s, LA, 'boomToCard', 'Boom → card (s)', 0, 1, 0.01, false);
     this.slider(s, LA, 'cardHold', 'Card holds (s)', 0.5, 5, 0.05, false);
     this.slider(s, LA, 'slow', 'Slow-mo after hit', 0.05, 1, 0.01, false);
@@ -235,7 +249,18 @@ export class RevealStudio {
     this.slider(s, LA, 'lensDist', 'Head stops at', 0.3, 1.5, 0.01, false);
     this.slider(s, LA, 'after', 'Hold after crack', 0, 2, 0.05, false);
     this.slider(s, LA, 'returnSecs', 'Camera return (s)', 0.5, 4, 0.05, false);
-    s.insertAdjacentHTML('beforeend', '<div class="note" style="margin-top:8px"><b>Camera</b> (in front of her, across him)</div>');
+    s.insertAdjacentHTML('beforeend', '<div class="note" style="margin-top:8px"><b>Coil shot</b> (her getting low, before the cut)</div>');
+    const K = () => RT.launch.coil;
+    this.check(s, K, 'on', 'Show the coil on its own angle');
+    this.slider(s, K, 'from', 'Opens at (s into her clip)', 0, 0.35, 0.01, false);
+    this.slider(s, K, 'side', 'To her side (m)', -5, 5, 0.05, false);
+    this.slider(s, K, 'front', 'Ahead of her (m)', -3, 3, 0.05, false);
+    this.slider(s, K, 'height', 'Camera height', 0.1, 2.5, 0.01, false);
+    this.slider(s, K, 'lookY', 'Looks at (height)', 0.2, 1.8, 0.01, false);
+    this.slider(s, K, 'fov', 'Lens (fov)', 20, 70, 1, false);
+    this.slider(s, K, 'push', 'Push in', 0, 1.5, 0.05, false);
+    this.slider(s, K, 'cutAt', 'Cut (s after lift-off)', -0.3, 0.2, 0.01, false);
+    s.insertAdjacentHTML('beforeend', '<div class="note" style="margin-top:8px"><b>Hit camera</b> (in front of her, across him)</div>');
     this.slider(s, C, 'yawOff', 'Angle off her line', -80, 80, 1, false);
     this.slider(s, C, 'dist', 'Distance', 1.5, 8, 0.05, false);
     this.slider(s, C, 'height', 'Aim height', 0.3, 2, 0.01, false);
@@ -245,6 +270,22 @@ export class RevealStudio {
     this.slider(s, C, 'push', 'Push in', 0, 2, 0.05, false);
     const l = document.createElement('div'); l.className = 'line'; s.appendChild(l);
     this.button(l, '▶ Play the launch', () => this.play('beat11'), 'hot');
+    return d;
+  }
+  music() {
+    const [d, s] = this.sec('Music & heartbeat');
+    const M = () => RT.music;
+    s.insertAdjacentHTML('beforeend', '<div class="note">Low under the shut doors, a hard stop on the DING, a steady heartbeat from the doors opening until the music crashes back in (on her name card, or on the last flash in the lift); a deep boom under each of her steps.</div>');
+    this.slider(s, M, 'preLevel', 'Music under the shut doors', 0, 1.5, 0.05, false);
+    this.slider(s, M, 'heartAt', 'Heartbeat starts (s after doors)', 0, 4, 0.05, false);
+    this.slider(s, M, 'heartEvery', 'Heartbeat every (s)', 0.4, 1.6, 0.01, false);
+    this.slider(s, M, 'heartK', 'Heartbeat loudness', 0, 2, 0.05, false);
+    this.choose(s, M, 'backAt', 'Music back in on', [['card', 'The name card (top of her jump)'], ['flash', 'The last flash in the lift']]);
+    this.slider(s, M, 'cardSecs', 'From the card: swells over (s)', 0.5, 8, 0.25, false);
+    this.slider(s, M, 'buildSecs', 'From the flash: builds over (s)', 2, 14, 0.5, false);
+    this.slider(s, M, 'stepBass', 'Bass boom on her steps', 0, 2.5, 0.05, false);
+    const l = document.createElement('div'); l.className = 'line'; s.appendChild(l);
+    this.button(l, '▶ Play from the shut doors', () => this.play('get-yola-done'), 'hot');
     return d;
   }
   save() {
@@ -301,7 +342,7 @@ export class RevealStudio {
   remeasure() {
     const m = this.op.studioMeasure(); this.measured = m;
     this.tl.max = m.length;
-    const NAMES = { beat5: 'doors', ding: 'ding', beat6: 'open', flashes: 'flashes', beat8: 'patient', beat9: 'walk', beat10: 'bat', beat11: 'launch', beat12: 'freeze', hit: 'hit', return: 'return' };
+    const NAMES = { beat5: 'doors', ding: 'ding', beat6: 'open', flashes: 'flashes', beat9: 'walk', beat10: 'bat', beat11: 'launch', beat12: 'card', hit: 'hit', return: 'return' };
     this.tlBeats.innerHTML = m.beats.filter(([k]) => NAMES[k]).map(([k, t], i) => `<span title="${NAMES[k]}: ${t} s (click to jump)" data-t="${t}" style="position:absolute;left:${(100 * t / m.length).toFixed(2)}%;top:${i % 2 ? 13 : 0}px;transform:translateX(-50%);cursor:pointer;white-space:nowrap">▲${NAMES[k]}</span>`).join(''); // (two rows: the late beats sit close together)
     this.tlBeats.querySelectorAll('[data-t]').forEach((e) => { e.onclick = () => this.seek(+e.dataset.t); });
   }

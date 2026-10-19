@@ -14,10 +14,12 @@ export class RevealSound {
     const nodes = build(g); const h = { g, nodes }; this.live.push(h); return h;
   }
   fade(h, level, secs) { if (!h || !this.ok) return; const g = h.g.gain, t = this.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(level, t + secs); }
+  // (2026-10-19, the user: the music "kept rolling into [the gameplay] and never quit") a stop always stops: it used to give up
+  // when the context was not running (paused, muted, iOS "interrupted"), forgetting the layer while it kept sounding forever
   kill(h, secs = 0.4) {
-    if (!h || !this.ok) return; this.fade(h, 0, secs);
-    setTimeout(() => { for (const n of h.nodes) try { n.stop?.(); n.disconnect?.(); } catch { /* ignore */ } try { h.g.disconnect(); } catch { /* ignore */ } }, secs * 1000 + 80);
-    this.live = this.live.filter((x) => x !== h);
+    if (!h) return; this.live = this.live.filter((x) => x !== h);
+    const off = () => { for (const n of h.nodes) try { n.stop?.(); n.disconnect?.(); } catch { /* ignore */ } try { h.g.disconnect(); } catch { /* ignore */ } };
+    if (this.ok && secs > 0.03) { this.fade(h, 0, secs); setTimeout(off, secs * 1000 + 80); } else off();
   }
   // the user's picks on the Sound Board (src/sfx/banks.js, "Opening reveal"): when they have kept takes for a moment, those
   // play instead of its synthesised version (forceSynth: the board's "Old version" button)
@@ -142,16 +144,19 @@ export class RevealSound {
     for (const [dt, hz] of [[0.02, 4186], [0.06, 5274], [0.11, 6272]]) A.tone(t + dt, 0.5, hz, { type: 'sine', gain: 0.04 });
   }
 
-  // ---- the walk-out cue: a low D-minor chord swelling, war drums on her steps, a string tremolo climbing to the freeze ----
-  cueStart(secs = 4.5) {
+  // ---- the cue: a low D-minor chord swelling, war drums on her steps, a string tremolo climbing to the card ----
+  // (2026-10-19, the user: "it needs to run through the whole clip", a hard stop on the DING, back in on the last flash)
+  // k: its level, attack: seconds to come in (short = it slams in), open: how far the chord's filter opens over secs (Hz),
+  // strings: the tremolo's level at the end of secs
+  cueStart(secs = 4.5, { k = 1, attack = 1.6, open = 1400, strings = 0.065 } = {}) {
     if (!this.ok || this.cue) return;
     const bus = this.audio.musicBus, c = this.ctx;
     this.cue = this.hold((g) => {
       const f = this.lp(420, g, 0.9), nodes = [f];
       for (const [hz, det] of [[36.71, 0], [73.42, 6], [110.0, -5], [146.83, 4], [174.61, -7]]) nodes.push(this.osc('sawtooth', hz, f, det)); // D1 D2 A2 D3 F3
-      f.frequency.setValueAtTime(260, c.currentTime); f.frequency.linearRampToValueAtTime(1400, c.currentTime + secs); // the chord opens up as she walks
+      f.frequency.setValueAtTime(260, c.currentTime); f.frequency.linearRampToValueAtTime(open, c.currentTime + secs); // the chord opens up as she walks
       return nodes;
-    }, bus, 0.16, 1.6);
+    }, bus, 0.16 * k, attack);
     this.strings = this.hold((g) => { // a high tremolo on A and D, getting louder and faster to the freeze
       const trem = c.createGain(); trem.gain.value = 0.5; trem.connect(g);
       const lfo = this.osc('sine', 7, null), lg = c.createGain(); lg.gain.value = 0.5; lfo.connect(lg); lg.connect(trem.gain);
@@ -159,9 +164,20 @@ export class RevealSound {
       const f = this.lp(2600, trem), a = this.osc('sawtooth', 440, f, -4), d = this.osc('sawtooth', 587.33, f, 5);
       return [trem, lfo, lg, f, a, d];
     }, bus, 0.0, 0.1);
-    this.fade(this.strings, 0.065, secs);
-    this.sub = this.hold((g) => [this.osc('sine', 36.71, g)], bus, 0.22, 2.5); // a sub under the chord (felt more than heard)
+    this.fade(this.strings, strings * k, secs);
+    this.sub = this.hold((g) => [this.osc('sine', 36.71, g)], bus, 0.22 * k, Math.max(attack, 0.05) * 1.5); // a sub under the chord (felt more than heard)
   }
+  cueStop(secs = 1.5) { for (const h of [this.cue, this.strings, this.sub]) this.kill(h, secs); this.cue = this.strings = this.sub = null; } // (faded out under the game's own music at the hand-off)
+  // (2026-10-19, the user: "more bass ... boom, boom, like when she walks") a deep boom under each of her steps, on top of the
+  // footstep itself (recorded or synth): a sub drop you feel, a low body thump, a short dark tail
+  stepBoom(k = 1) {
+    if (!this.ok || k <= 0) return; const t = this.now(), A = this.audio;
+    A.tone(t, 1.1, 58, { type: 'sine', gain: 0.95 * k, f2: 30, attack: 0.004 });
+    A.tone(t, 0.32, 92, { type: 'triangle', gain: 0.32 * k, f2: 46, attack: 0.003 });
+    A.noise(t, 0.22, { type: 'lowpass', f: 420, f2: 90, gain: 0.45 * k });
+  }
+  // a hard stop: the cue and the drone cut dead (the DING lands alone)
+  cueCut() { for (const h of [this.cue, this.strings, this.sub, this.bed]) this.kill(h, 0.025); this.cue = this.strings = this.sub = this.bed = null; }
   drum(k = 1) { // a war drum under each footfall
     if (!this.ok || !this.cue || this.rec('revealDrum', k)) return; const t = this.now(), A = this.audio;
     A.tone(t, 0.9, 58, { type: 'sine', gain: 0.6 * k, f2: 34 });

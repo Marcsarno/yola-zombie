@@ -12,11 +12,10 @@ export const PHASES = [
   ['doors', 'Shut doors (6 → 7)'],
   ['open', 'Doors open: fog, tilt up to old Yola'],
   ['cab', 'Lift flashes (between flashes)'],
-  ['threat', 'The patient, red-lit'],
   ['walk', 'Walk-out (feet)'],
   ['batShot', 'Bat on the wall'],
   ['launch', 'Launch at the lens'],
-  ['card', 'Freeze + name card'],
+  ['card', 'Slow-mo + name card (top of the jump)'],
   ['burst', 'The hit and the burst'],
   ['after', 'Lights back (gameplay)'],
 ];
@@ -71,11 +70,22 @@ export const REVEAL_DEFAULTS = {
   walk: {
     bat: true, // she carries the bat out (in her fist, the game's grip); off: empty-handed
     slow: 0.7, // slow motion (1: real time)
-    stopZ: -10.15, // where she stops if the shot runs long: the launch starts where she is (z; the doors are at -11.1)
-    secs: 2.7, // how long the feet shot holds
+    stopZ: -8.9, // where she would stop (past the lens: she walks out of the shot first); the launch starts where she is (z; the doors are at -11.1)
+    secs: 5, // the longest the shot holds (it ends when she has walked out of it, then W.empty)
+    empty: 0.35, // seconds the empty shot holds after she has gone
+    // (2026-10-19, the user: the camera stays still and she walks out of frame) the lens on the floor beside her path, looking
+    // back into the cab: how far to her side (m), its height, where it stands (z), what it looks at (height), its lens
+    cam: { side: 0.75, height: 0.3, z: -9.7, lookY: 0.75, fov: 34 },
     stepShake: 0.012, // the camera jolt on each step
   },
   batShot: false, // the cut to the athlete's bat leaning by the doors (off when she walks out holding it)
+  // (2026-10-19, the user) the music runs through the reveal: low under the shut doors (preLevel), a hard stop on the DING, a
+  // steady heartbeat from the doors opening (heartAt s after they start, every heartEvery s, at heartK) until the music comes
+  // back (backAt): 'card' (the user's pick: the heartbeat on through the walk-out and the jump, the music crashing in with her
+  // name card for cardSecs through the hit, faded at the hand-off) or 'flash' (in on the last flash in the lift, building for
+  // buildSecs through the walk-out to the card)
+  // stepBass: the deep boom under each of her steps in the walk-out (0 = off)
+  music: { preLevel: 0.6, heartAt: 1.0, heartEvery: 0.85, heartK: 0.9, backAt: 'card', cardSecs: 3, buildSecs: 7, stepBass: 1.2 },
   launch: {
     variant: 'B_uppercut', // the jump finisher: 'B_uppercut' (the user's pick, 2026-10-19: the coil, the launch, the spin as she swings) or 'C_uppercut_mirrored' (the same from a deep crouch facing forward)
     jump: 2.4, // 1.4, 2.4 or 3.4 m
@@ -83,10 +93,18 @@ export const REVEAL_DEFAULTS = {
     turn: 0, // her heading, degrees off straight out of the lift (+: to her left)
     gap: 0.25, // the zombie's distance past where the bat lands (m): bigger = further back
     lunge: 1.2, // how far he lurches at her before the hit (m)
-    hold: 0.35, // seconds she stands set before she goes
+    hold: 0.12, // seconds she stands set before she goes (2026-10-19: the coil shot opens on her already getting low)
     rampSlow: 1, rampLen: 0.08, rampAt: 0, // the speed ramp: slow motion in the air (x real speed; 1 = none, the user's pick 2026-10-19: the original timing; 0.25 was the slowed spin), how fast it eases in (s of her clip), from when (s after she leaves the ground)
-    freezeLead: 0.07, // the freeze: this many seconds of her swing before the bat lands
-    boomToCard: 0.12, // seconds from the freeze's boom to the name card
+    // (2026-10-19, the user: no freeze, "slow for that moment.. at the peak of her jump") the card at the top of her jump
+    peakLead: 0, // when the card comes: seconds of her clip after the top of the jump (-: before); the slow-down eases in ahead of it
+    cardSlow: 0.03, // the speed under the card (x real speed; capped so the bat never lands under the card)
+    drift: { push: 0.45, orbit: 7, rise: 0.06 }, // the camera through the card (the user: fake the motion, never frozen): metres in, degrees around her, metres up
+    // the coil shot (her getting low for the jump) before the cut to the hit angle: on/off, the camera's distance to her side,
+    // ahead of her, its height, what it looks at, the lens, a push in, and the cut (seconds of her clip after lift-off); from: where
+    // in her clip the shot opens (s: already going down)
+    coil: { on: true, from: 0.06, side: 1.7, front: 2.0, height: 0.55, lookY: 0.75, fov: 38, push: 0.25, cutAt: 0 },
+    slowIn: 0.15, slowOut: 0.2, // seconds easing into the slow motion and back to full speed when the card goes
+    boomToCard: 0.12, // seconds from the boom to the name card
     cardHold: 2.2, // seconds the card holds
     slow: 0.26, // slow motion after the hit
     headSecs: 0.42, lensDist: 0.62, // the head's flight to the lens: its time and how close it ends

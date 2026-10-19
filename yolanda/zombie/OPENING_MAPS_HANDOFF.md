@@ -4,6 +4,27 @@ For a NEW chat that redoes the opening (story intro) and the maps (levels). Anot
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.
 
+## NEWEST-ER (2026-10-19 evening): the user's phone notes, reshot
+- **No cut back to the patient** (beat 8 removed, its 'threat' light phase too): the flashes go straight to the walk-out.
+- **Walk-out:** a still camera on the floor beside her path (RT.walk.cam), looking back into the cab; the shot holds until
+  she has walked out of it (opening.yolaGone: feet, middle, head, a shoulder either side all off the frame), then RT.walk.empty.
+  The launch starts wherever she is then (stopZ -8.9 is only a far goal).
+- **Coil shot:** her getting low on its own angle (RT.launch.coil: ahead of her, to the hit angle's side, opens `from` 0.06 s
+  into her clip, pose blends settled before it opens), then the cut to the hit angle at lift-off (launch.onCut, on her clip clock).
+- **No freeze:** the card comes at the top of her jump (planLaunch jumpPeak: highest hips between lift-off and the blow, cached
+  with the contact) in slow motion (cardSlow 0.03, capped so the bat never lands under the card), eased in on her clip clock
+  (launch.card ramp, frame-exact); the camera drifts through it (RT.launch.drift: push, orbit, rise: the user's "fake the
+  motion"); the card is the name over the LIVE picture now (no snapshot). Eases back to speed (slowOut) into the hit.
+- Fixed: a failed contact search behind the title screen (bat not in her hand yet) was cached; now never cached. The lens
+  crack skips a zero-size window (a hidden pane crashed the warm-up replay).
+- Sounds: the sound chat owns them (2174cae: Sound Board "Opening reveal", recorded takes play once kept). revealsound.js rec() lines are theirs.
+- **Music (RT.music, Studio "Music & heartbeat"):** the cue low under the shut doors, a hard stop on the DING (cueCut), a
+  steady heartbeat from the doors opening (opening.heart, story time) on through the flashes, walk-out and jump; the music
+  crashes back in with the name card (backAt 'card', the user's pick; 'flash' = in on the last flash) and fades at the
+  hand-off (cueStop). stepBoom: a deep bass boom under each walk-out step (the user: "more bass ... boom, boom").
+- Fixed: the music rolled into gameplay forever: RevealSound.kill gave up when the context was not running (paused, muted,
+  iOS "interrupted") and forgot the layer while it kept sounding. A stop now always stops; the reveal ends with stopAll(0.05).
+
 ## NEWEST (2026-10-19): the reveal's new ending + the Reveal Studio — read this first
 
 The user's pass: "the home run should be replaced with the new execute animation", "dials and controls for when it's
