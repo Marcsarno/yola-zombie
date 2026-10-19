@@ -1,7 +1,7 @@
 // Combat benchmark entry point: loads the hospital wing, Yola and the zombie, runs the fixed-step sim.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { Sim, STEP } from './core/sim.js';
+import { Sim, STEP, DODGE_CUE } from './core/sim.js';
 import { makeTuning } from './core/tuning.js';
 import { setMeleePaths, meleeSegment, BAT_DEF, WOOD_BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
@@ -558,7 +558,7 @@ dbgCircle.rotation.x = -Math.PI / 2;
 const dbgBat = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffff00 }));
 
 // ---------- per-frame ----------
-const _v = new THREE.Vector3(), _seg = {};
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _seg = {};
 let groanT = 2;
 function frame(now) {
   requestAnimationFrame(frame);
@@ -591,7 +591,7 @@ function runFrame(dt, doRender = true) {
   if (!paused) {
     execNow = execDir.update(dt, tuning, sim.player.execHitIn);
     const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : null); simDt *= k;
-    sim.yolaBoost = execNow ? execNow.boost : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
+    sim.yolaBoost = execNow ? execNow.boost : slowmo.full ? 1 / Math.max(0.05, k) : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1; // (Witch Time: Yola at full speed)
   }
   // hit-stop: a short dip into slow motion (never a full freeze: a freeze reads as a stutter, and combo hits stacked them)
   if (hitPauseT > 0) { const h = Math.min(hitPauseT, simDt); hitPauseT -= h; simDt -= h * (1 - HIT_SLOW); }
@@ -615,15 +615,25 @@ function runFrame(dt, doRender = true) {
   const animDt = paused ? 0 : simDt;
 
   // ---- Yola ----
-  { // the dodge button: shown while a dodgeable attack is coming (sim.dodgeThreat); a special enemy's big attack makes it
-    // pulse (amber while it winds up, red and fast at the moment), its ring filling toward that moment
-    const b = (window.__dodgeBtn ??= document.getElementById('dodgeBtn')), th = p.threat;
+  { // the dodge button (2026-10-18 night, FINISHERS_PLAN.md 1): always there in play, grey and dead at rest (no dodge at
+    // will); it pulses yellow only through the window to dodge (sim.dodgeThreat open), its ring closing toward the hit,
+    // white in the perfect moment; an arrow on it shows which way she'll go
+    const b = (window.__dodgeBtn ??= document.getElementById('dodgeBtn')), th = p.threat, dt0 = p.dodgeTh;
     if (b) {
-      b.classList.toggle('show', p.dodgeOpen > 0 && !p.dead);
-      b.classList.toggle('threat', !!th && !th.now && !p.dead); b.classList.toggle('now', !!th && th.now && !p.dead);
-      const pr = th ? (th.now ? 1 : Math.min(1, th.u / (th.kind === 'slam' ? 0.58 : 1))) : 0;
+      b.classList.toggle('show', !p.dead && !opening?.active);
+      b.classList.toggle('open', p.dodgeOpen > 0 && !p.dead); b.classList.toggle('perfect', !!dt0?.perfect && !p.dead);
+      const pr = dt0 ? Math.min(1, Math.max(0, 1 - dt0.eta / DODGE_CUE.lead)) : 0;
       if (Math.abs(pr - (b.__p ?? -1)) > 0.02) { b.style.setProperty('--p', pr.toFixed(3)); b.__p = pr; }
+      if (dt0 && p.dodgeDir) { // the arrow: her dodge direction as it looks on screen
+        _v.set(p.x, 1, p.z).project(camera); const sx = _v.x, sy = _v.y;
+        _v.set(p.x + p.dodgeDir.x, 1, p.z + p.dodgeDir.z).project(camera);
+        const ang = Math.atan2(_v.x - sx, _v.y - sy) * 180 / Math.PI;
+        if (Math.abs(ang - (b.__a ?? 999)) > 2) { b.style.setProperty('--a', ang.toFixed(1) + 'deg'); b.__a = ang; }
+      }
     }
+    // the moment the window opens on a special attack: the spider-sense over Yola's head (render/threatcue.js)
+    if (dt0?.special && !cueState.sense) { cueState.sense = true; threatCue.sense(yola.bones?.Head?.getWorldPosition(_v2) || _v2.set(p.x, 1.9, p.z)); }
+    else if (!dt0) cueState.sense = false;
     // the sign over the attacker, and its sounds: the warning when it starts, the ping when it is time
     const tz = th?.z, tv = tz && zviews.get(tz.id);
     const hb = tv?.bones?.Head?.getWorldPosition(_v); // (over his head, wherever it is: crouched, in the air)
@@ -842,7 +852,11 @@ function handleEvents() {
       case 'guardFinished': slowBeat(0.3, 0.7); shake(0.6); break; // (his head: the finishing blow)
       case 'dodge': audio.play('swing', 0.75); break;
       case 'grabbed': audio.play('bump', 0.8); break; // (a crawler has her ankle: she is held back, core/player.js grabT)
-      case 'dodgeSuccess': if (e.perfect) { slowBeat(0.26, 0.9); cue(audio, 'perfect'); hud.popup('PERFECT DODGE'); } break; // (core/sim.js specialMiss: her next blow is critical)
+      // (2026-10-18 night) the perfect dodge pays at the press: Witch Time (the world crawls, Yola at full speed), a white
+      // flash, the bass; her next blow or shot is critical (core/sim.js step)
+      case 'perfectDodge': slowmo.beat(0.25, 1.2, true); cue(audio, 'perfect'); hud.popup('PERFECT DODGE'); hud.screenFlash(); shake(0.15); break;
+      case 'dodgeSuccess': if (!e.perfect) audio.play('swing', 0.5); break; // (a good dodge: clear, no slowdown)
+      case 'finisherOpen': cue(audio, 'mark'); break; // (the gold mark: render/finishmark.js)
       // (2026-10-18, the user: "better visual effects for weapon crits when we hit during slow motion"): the snap out of slow
       // motion on a white screen flash, a big star, a white and a gold shockwave, a fan of gold sparks and blood, a beat of hit-stop
       case 'crit': {

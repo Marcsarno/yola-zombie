@@ -20,8 +20,34 @@ export function cue(audio, name, k = 1) {
     case 'slowOut': // time snaps back
       N(t, 0.25, { type: 'bandpass', f: 300, f2: 2400, q: 1.2, gain: 0.12 * k, attack: 0.03 });
       break;
-    case 'perfect': // a perfect dodge: a bright shimmer
+    case 'perfect': // a perfect dodge: a bright shimmer over a bass drop (Witch Time)
       [1046, 1568, 2093].forEach((f, i) => T(t + i * 0.05, 0.5, f, { type: 'triangle', gain: 0.06 * k })); N(t, 0.4, { type: 'highpass', f: 5000, gain: 0.05 * k, attack: 0.02 });
+      T(t, 0.9, 92, { type: 'sine', gain: 0.45 * k, f2: 34, attack: 0.004 });
+      break;
+    case 'mark': // an enemy open to a finisher: a low gong and a bright chime
+      T(t, 0.9, 110, { type: 'sine', gain: 0.22 * k, f2: 104, attack: 0.005 }); T(t, 0.7, 1760, { type: 'triangle', gain: 0.05 * k }); T(t + 0.06, 0.6, 2637, { type: 'sine', gain: 0.035 * k });
+      break;
+    case 'hiss': // a cylinder punctured: gas screaming out
+      N(t, 0.5 * k, { type: 'highpass', f: 3500, f2: 5200, gain: 0.22, attack: 0.01 });
+      break;
+    case 'boom': // an oxygen cylinder bursting: a crack, a deep thump and a roll of debris
+      N(t, 0.05, { type: 'highpass', f: 1500, gain: 0.7 * k }); T(t, 0.7, 64, { type: 'sine', gain: 0.8 * k, f2: 26, attack: 0.002 });
+      N(t + 0.01, 0.9, { type: 'lowpass', f: 1200, f2: 120, gain: 0.55 * k, attack: 0.005 }); [0.25, 0.4, 0.58].forEach((d) => N(t + d, 0.07, { type: 'bandpass', f: 2200, q: 2, gain: 0.1 * k }));
+      break;
+    case 'zap': // the flooded floor live: a buzzing crackle
+      T(t, 0.6, 60, { type: 'sawtooth', gain: 0.18 * k, f2: 62 }); T(t, 0.6, 120, { type: 'square', gain: 0.06 * k, f2: 118 });
+      for (let i = 0; i < 7; i++) N(t + i * 0.08 + Math.random() * 0.04, 0.04, { type: 'highpass', f: 2500, gain: 0.3 * k });
+      break;
+    case 'hum': // the MRI magnet waking: a deep rising hum and a whine
+      T(t, 1.6, 48, { type: 'sawtooth', gain: 0.1 * k, f2: 60, attack: 0.4 }); T(t, 1.6, 900, { type: 'sine', gain: 0.025 * k, f2: 1900, attack: 0.6 });
+      break;
+    case 'quench': // the magnet's emergency shutdown: helium blasting out of the vent
+      N(t, 2.4, { type: 'lowpass', f: 2600, f2: 500, gain: 0.5 * k, attack: 0.03 }); N(t, 1.8, { type: 'highpass', f: 4000, f2: 2000, gain: 0.12 * k, attack: 0.05 });
+      T(t, 1.2, 120, { type: 'sine', gain: 0.2 * k, f2: 30 });
+      break;
+    case 'crumble': // a cracked wall giving way
+      N(t, 0.06, { type: 'highpass', f: 1200, gain: 0.6 * k }); N(t + 0.02, 0.8, { type: 'lowpass', f: 700, f2: 150, gain: 0.55 * k, attack: 0.01 });
+      T(t, 0.5, 70, { type: 'sine', gain: 0.5 * k, f2: 35 }); [0.15, 0.3, 0.45, 0.62].forEach((d) => N(t + d, 0.06, { type: 'bandpass', f: 1500 + Math.random() * 1500, q: 2, gain: 0.15 * k }));
       break;
     case 'crit': // the critical blow lands: a deep hit and a metallic ring
       T(t, 0.35, 70, { type: 'sine', gain: 0.6 * k, f2: 32, attack: 0.002 }); N(t, 0.2, { type: 'lowpass', f: 1400, f2: 200, gain: 0.5 * k });

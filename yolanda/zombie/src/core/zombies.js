@@ -334,6 +334,8 @@ export class Zombie {
     if (wasDown || this.state === ZS.STUCK || this.bed) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; } // (in its bed or getting out of it: it takes the blow and keeps coming) // (stuck: he takes it, heaving at the shield)
     // the sprinter caught mid-charge by a melee blow or a shotgun blast: her own speed takes her down (the trip)
     if (this.sprinting && this.spd > 2.0 && (melee || kind === 'fist' || kind === 'shotgun')) { this.tumble(sim, 'hit'); sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
+    // (2026-10-18 night, the user: the bowling ball "doesn't stop"): a pistol round only hurts her mid-charge; she runs on
+    if (this.sprinting && this.spd > 1.0 && kind === 'pistol') { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
     // knocked flat: the axe (the chop most of all), or a close shotgun blast that lifts them off their feet
     const T = sim.T;
     const fist = kind === 'fist';

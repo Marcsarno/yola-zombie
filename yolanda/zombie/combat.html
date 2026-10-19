@@ -102,17 +102,25 @@
   /* (2026-10-18, the user: "the dodge button needs to be more of an action button.. larger and center button on the phone") */
   #dodgeBtn { width: 96px; height: 96px; right: auto; left: 50%; margin-left: -48px; bottom: calc(9vh + var(--sab)); font-size: 15px; }
   .actBtn.show { display: block; }
-  /* (2026-10-18) a special enemy's big attack: the button pulses amber while it winds up, its ring filling toward the
-     moment (--p), then flashes red and beats fast at the moment to dodge; the arrows are the sign over the attacker */
+  /* (2026-10-18 night, FINISHERS_PLAN.md 1, the user: "it should show up but it shouldn't be tappable or show colour until
+     it makes sense ... it blinks and pulses ... yellow"): grey and dim at rest; through the dodge window it pulses yellow,
+     its ring closing toward the hit (--p), an arrow (--a) the way she'll go; white in the perfect moment */
+  #dodgeBtn { opacity: .38; filter: grayscale(1); transition: opacity .08s, filter .08s; }
   #dodgeBtn .dg { display: block; width: 44px; height: 24px; margin: 0 auto 4px; }
+  #dodgeBtn .arw { display: none; position: absolute; inset: 0; pointer-events: none; transform: rotate(var(--a, 0deg)); }
+  #dodgeBtn .arw::after { content: ''; position: absolute; left: 50%; top: -22px; margin-left: -11px; border: 11px solid transparent; border-bottom: 16px solid #ffd21f; border-top: 0; }
   #dodgeBtn::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; pointer-events: none; opacity: 0;
-    background: conic-gradient(#ffb21f calc(var(--p, 0) * 360deg), rgba(0,0,0,.35) 0); -webkit-mask: radial-gradient(circle, transparent 52px, #000 53px); mask: radial-gradient(circle, transparent 52px, #000 53px); }
-  #dodgeBtn.threat::before, #dodgeBtn.now::before { opacity: 1; }
-  #dodgeBtn.now::before { background: conic-gradient(#fff 360deg, #fff 0); }
-  .actBtn.show.threat { animation: actPulse .5s ease-in-out infinite alternate; }
-  .actBtn.show.now { background: #e8261a; animation: nowBeat .16s ease-in-out infinite alternate; }
-  @keyframes actPulse { from { box-shadow: 0 0 0 2px #ffb347, 0 3px 10px rgba(0,0,0,.35); } to { box-shadow: 0 0 0 6px rgba(255,179,71,.55), 0 3px 10px rgba(0,0,0,.35); } }
-  @keyframes nowBeat { from { transform: scale(1); box-shadow: 0 0 0 3px #fff, 0 0 18px 4px rgba(232,38,26,.8); } to { transform: scale(1.14); box-shadow: 0 0 0 5px #fff, 0 0 26px 10px rgba(232,38,26,.9); } }
+    background: conic-gradient(#ffd21f calc(var(--p, 0) * 360deg), rgba(0,0,0,.35) 0); -webkit-mask: radial-gradient(circle, transparent 52px, #000 53px); mask: radial-gradient(circle, transparent 52px, #000 53px); }
+  #dodgeBtn.open { opacity: 1; filter: none; background: #f2c018; color: #1b1406; animation: dodgePulse .18s ease-in-out infinite alternate; }
+  #dodgeBtn.open::before, #dodgeBtn.open .arw { opacity: 1; display: block; }
+  #dodgeBtn.perfect { background: #fff; color: #111; }
+  #dodgeBtn.perfect::before { background: conic-gradient(#fff 360deg, #fff 0); }
+  #dodgeBtn.perfect .arw::after { border-bottom-color: #fff; }
+  @keyframes dodgePulse { from { transform: scale(1); box-shadow: 0 0 0 3px #fff3b0, 0 0 16px 4px rgba(242,192,24,.75); } to { transform: scale(1.12); box-shadow: 0 0 0 5px #fff3b0, 0 0 28px 10px rgba(242,192,24,.9); } }
+  /* a perfect dodge: a quick white flash over the whole screen (hud.flash) */
+  #flash { position: absolute; inset: 0; pointer-events: none; background: #fff; opacity: 0; }
+  #flash.go { animation: flashGo .32s ease-out; }
+  @keyframes flashGo { from { opacity: .55; } to { opacity: 0; } }
   /* cinematic slow motion (main.js slowMotion): letterbox bars and a cold edge, in with time slowing (--slow 0..1) */
   #slowmo { position: absolute; inset: 0; pointer-events: none; opacity: var(--slow, 0); }
   #slowmo::before, #slowmo::after { content: ''; position: absolute; left: 0; right: 0; height: 7vh; background: #000; }
@@ -159,6 +167,7 @@
   <div id="objective"><div id="objectiveText"></div></div>
   <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
   <div id="slowmo"><i></i></div>
+  <div id="flash"></div>
   <div id="critFlash"></div>
   <div id="popup"></div>
   <button id="swapBtn" data-weapon="pistol" data-next="shotgun" aria-label="Swap weapon">
@@ -182,7 +191,7 @@
     <svg class="arrows" viewBox="0 0 24 24"><path fill="none" stroke="#f3eee2" stroke-width="2.2" d="M4 9h14l-4-4M20 15H6l4 4"/></svg>
     <div id="ammo"></div>
   </button>
-  <button id="dodgeBtn" class="actBtn" aria-label="Dodge"><svg class="dg" viewBox="0 0 30 16" aria-hidden="true"><path fill="currentColor" d="M0 8 7 1v4h5v6H7v4zM30 8l-7-7v4h-5v6h5v4z"/></svg>Dodge</button>
+  <button id="dodgeBtn" class="actBtn" aria-label="Dodge"><i class="arw"></i><svg class="dg" viewBox="0 0 30 16" aria-hidden="true"><path fill="currentColor" d="M0 8 7 1v4h5v6H7v4zM30 8l-7-7v4h-5v6h5v4z"/></svg>Dodge</button>
   <button id="useBtn" aria-label="Use"><small>Use</small><span id="useLabel"></span></button>
   <div id="prompt"><span></span></div>
   <div id="toast"><span></span></div>

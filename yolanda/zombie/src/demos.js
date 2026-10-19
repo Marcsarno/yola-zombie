@@ -187,6 +187,7 @@ function autoplay(sim) {
   const p = sim.player, r = { moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0, usePresses: 0, dodgePresses: 0 };
   if (sim.demoNoDodge) return r; // (the kip-up scene: she stands and takes the slam)
   const th = p.threat; if (th && th.now && th.soon) { r.dodgePresses = 1; return r; }
+  if (th && th.now) return r; // (in the window: hold still for the perfect moment)
   let best = null, bd = 9;
   for (const z of sim.zombies) { if (!z.alive || z.buried) continue; const d = Math.hypot(z.x - p.x, z.z - p.z); if (d < bd) { bd = d; best = z; } }
   if (!best || (th && !th.now)) return r;

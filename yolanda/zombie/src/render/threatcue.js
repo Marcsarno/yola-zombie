@@ -37,8 +37,21 @@ function drawNow(g, s) {
   arrow(-1); arrow(1);
 }
 
+// the spider-sense (2026-10-18 night, FINISHERS_PLAN.md 1): short white strokes bursting out round Yola's head the moment
+// the dodge window opens
+function drawSense(g, s) {
+  g.clearRect(0, 0, s, s); g.strokeStyle = '#fff'; g.lineCap = 'round';
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + (i % 2) * 0.12, r0 = s * (i % 2 ? 0.27 : 0.22), r1 = s * (i % 2 ? 0.4 : 0.47);
+    g.lineWidth = s * (i % 2 ? 0.025 : 0.04);
+    g.beginPath(); g.moveTo(s / 2 + Math.cos(a) * r0, s / 2 + Math.sin(a) * r0); g.lineTo(s / 2 + Math.cos(a) * r1, s / 2 + Math.sin(a) * r1); g.stroke();
+  }
+}
+
 export class ThreatCue {
   constructor(scene) {
+    this.senseS = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(drawSense).tex, transparent: true, depthTest: false, depthWrite: false, toneMapped: false }));
+    this.senseS.renderOrder = 51; this.senseS.visible = false; this.senseT = 9; scene.add(this.senseS);
     this.warn = canvasTex(drawWarn); this.now = canvasTex(drawNow);
     this.ringC = canvasTex(() => {}, 128);
     const mat = (map) => new THREE.SpriteMaterial({ map, transparent: true, depthTest: false, depthWrite: false, toneMapped: false });
@@ -58,9 +71,15 @@ export class ThreatCue {
     g.strokeStyle = now ? '#ffffff' : '#ffb21f'; g.stroke();
     tex.needsUpdate = true;
   }
+  sense(pos) { this.senseT = 0; this.senseP = pos.clone(); this.senseS.visible = true; }
   // threat: core/sim.js dodgeThreat (special) or null; pos: the attacker's drawn position; h: its height (m)
   update(dt, threat, pos, h) {
     this.t += dt;
+    if (this.senseT < 0.4) { // the spider-sense: pops out and fades in 0.4 s (real time)
+      this.senseT += dt; const u = Math.min(1, this.senseT / 0.4), S = this.senseS;
+      S.position.set(this.senseP.x, this.senseP.y + 0.15, this.senseP.z); S.scale.setScalar(0.55 + 0.5 * Math.sqrt(u));
+      S.material.opacity = 1 - u * u; if (u >= 1) S.visible = false;
+    }
     this.fade = Math.max(0, Math.min(1, this.fade + (threat ? dt / 0.12 : -dt / 0.2)));
     if (!threat && this.fade <= 0) { this.group.visible = false; return; }
     this.group.visible = true;

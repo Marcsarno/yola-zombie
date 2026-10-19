@@ -13,6 +13,9 @@ export const STEP = 1 / 60;
 const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.3;
 const ARM_REACH = 0.36, ARM_R = 0.2; // a standing zombie's reaching arms: a circle this far ahead of its body
 const _m = {}, _a = {}, _b = {};
+// the dodge's beat (FINISHERS_PLAN.md 1): its window opens lead s (game time) before the hit lands, whatever the attack; a
+// press inside its last perfect s is perfect; grace: the button stays lit this long after the window shuts (touch lag)
+export const DODGE_CUE = { lead: 0.45, perfect: 0.18, grace: 0.1 };
 
 export class Sim {
   constructor(opts) {
@@ -77,17 +80,34 @@ export class Sim {
     // the dodge is there only while something dodgeable is coming at her (the user, 2026-10-17): its button shows then.
     // A special enemy's big attack (the guard's leap-slam, the lady's charge) is its own: p.threat drives the cue over the
     // attacker and the button's pulse, and the press dodges the way that gets her clear (autoDodge), not along the stick
+    // (2026-10-18 night, FINISHERS_PLAN.md 1: "telegraph early, cue late") the window to dodge opens a fixed DODGE_CUE.lead
+    // before the hit lands, the same for every attack: one beat to learn. The button is grey until then (no dodge at will:
+    // the user), pulses yellow through the window; a press in its last DODGE_CUE.perfect is perfect, rewarded at once
+    // (perfectDodge: Witch Time, main.js), not when the attack later misses.
     const th = this.dodgeThreat();
-    p.threat = th && th.special ? th : null;
-    p.dodgeOpen = th ? 0.3 : Math.max(0, (p.dodgeOpen || 0) - dt);
+    p.threat = th && th.special ? th : null; // (the sign over a special attacker: render/threatcue.js)
+    p.dodgeTh = th && th.open ? th : null;
+    p.dodgeOpen = th && th.open ? DODGE_CUE.grace : Math.max(0, (p.dodgeOpen || 0) - dt);
+    if (p.dodgeTh) { // which way she'll go (the button's arrow shows it): the safe way from a special attack, else the stick / back
+      p.dodgeAuto = th.special ? this.autoDodge(p, th, input.moveX, input.moveZ) : null;
+      const sl = Math.hypot(input.moveX, input.moveZ);
+      p.dodgeDir = p.dodgeAuto ? { x: p.dodgeAuto.x, z: p.dodgeAuto.z } : sl > 0.2 ? { x: input.moveX / sl, z: input.moveZ / sl } : { x: -Math.sin(p.aimYaw), z: -Math.cos(p.aimYaw) };
+    }
     if (p.critT > 0) p.critT -= dt;
     if (input.dodgePresses && p.dodgeOpen > 0) {
-      const auto = p.threat ? this.autoDodge(p, p.threat, input.moveX, input.moveZ) : null;
+      const tt = p.dodgeTh || this.lastTh, auto = tt?.special ? (p.dodgeAuto || this.autoDodge(p, tt, input.moveX, input.moveZ)) : null;
       if (auto ? p.tryDodge(auto.x, auto.z, this, auto) : p.tryDodge(input.moveX, input.moveZ, this)) { // (Dodge / Shift: core/player.js DODGE)
-        const tt = p.threat || (th && th.kind === 'pounce' ? th : null); // (a walker's pounce: no sign, but a perfect dodge of it is an execute)
-        if (tt) this.lastDodge = { t: this.time, id: tt.z.id, kind: tt.kind, perfect: tt.now && tt.soon };
+        if (tt) {
+          const perfect = tt.eta <= DODGE_CUE.perfect;
+          this.lastDodge = { t: this.time, id: tt.z.id, kind: tt.kind, perfect };
+          if (perfect) {
+            if (tt.kind !== 'pounce') p.critT = this.T.critWindow ?? 2.2; // (her next blow or shot is critical; a pounce's reward is the execute: specialMiss)
+            this.emit({ type: 'perfectDodge', id: tt.z.id, kind: tt.kind, x: tt.z.x, z: tt.z.z });
+          }
+        }
       }
     }
+    if (p.dodgeTh) this.lastTh = p.dodgeTh;
     const yb = this.yolaBoost || 1; // (slow motion: Yola a little ahead of the world, main.js YOLA_AHEAD)
     p.move(dt * yb, input, this.world, this);
     p.updateAction(dt * yb, this);
@@ -168,33 +188,42 @@ export class Sim {
   // guard winding up his jump slam, the big lady (or the enraged guard) squaring up for her charge or running it at her.
   // Returns { z, kind, special, u (the wind-up's progress 0..1), now (the moment to dodge: the slam once he has leapt, the
   // charge once it is running), soon (well timed: close to landing) } or null; a special threat outranks a walker's.
+  // eta: game seconds until the hit would land; open: inside the dodge window (DODGE_CUE.lead); perfect: inside its last
+  // DODGE_CUE.perfect. now / soon: open / perfect (the older names, still read by the sign and the button).
   dodgeThreat() {
     const p = this.player; if (p.dead) return null;
+    const C = DODGE_CUE, mk = (o) => { o.open = o.eta <= C.lead; o.perfect = o.eta <= C.perfect; o.now = o.open; o.soon = o.perfect; return o; };
     let best = null;
     for (const z of this.zombies) {
       if (!z.alive || z.down || z.passive || z.dormant) continue;
       const d = Math.hypot(z.x - p.x, z.z - p.z);
-      if (z.state === ZS.WINDUP && z.attack === 'slam' && d < 7.5) {
-        const S = ZATTACKS.slam, u = z.t / Math.max(0.05, z.stateDur), left = z.stateDur - z.t;
-        return { z, kind: 'slam', special: true, u, now: u >= S.takeoff, soon: left < 0.8, left };
+      if (z.state === ZS.WINDUP && z.attack === 'slam' && d < 7.5) { // (he lands at the end of his wind-up)
+        const u = z.t / Math.max(0.05, z.stateDur), left = Math.max(0, z.stateDur - z.t);
+        return mk({ z, kind: 'slam', special: true, u, eta: left, left });
       }
       const charger = z.kind === 'sprinter' || z.enraged;
-      if (charger && d < 9 && !z.crawling && ((z.spotT > 0 && !z.sprinting) || (z.sprinting && !z.braking))) {
-        const fx = Math.sin(z.yaw), fz = Math.cos(z.yaw), along = (p.x - z.x) * fx + (p.z - z.z) * fz;
+      if (charger && d < 12 && !z.crawling && ((z.spotT > 0 && !z.sprinting) || (z.sprinting && !z.braking))) {
+        const fx = Math.sin(z.yaw), fz = Math.cos(z.yaw), along = (p.x - z.x) * fx + (p.z - z.z) * fz, lat = Math.abs((p.x - z.x) * fz - (p.z - z.z) * fx);
         const T = this.T, u = z.sprinting ? 1 : Math.min(1, z.spotT / (T.sprinterWindup ?? 0.7));
-        return { z, kind: 'charge', special: true, u, now: z.sprinting && along > -0.2, soon: z.sprinting && along > -0.2 && along < 3.8, left: z.sprinting ? Math.max(0, along) / Math.max(1, z.spd) : 1 };
+        let eta = Infinity; // (winding up, running past, or her line misses Yola: the telegraph only)
+        if (z.sprinting && along > -0.2 && lat < z.r + p.r + 0.35) { // the time to cover the gap, building toward her top speed
+          const gap = Math.max(0, along - (z.r + p.r)), a = T.sprinterAccel ?? 4.3, top = (T.sprinterSpeed ?? 6.2) * z.speedMul, v = Math.max(0.5, z.spd);
+          const tTop = Math.max(0, (top - v) / a), dTop = v * tTop + 0.5 * a * tTop * tTop;
+          eta = gap <= dTop ? (-v + Math.sqrt(v * v + 2 * a * gap)) / a : tTop + (gap - dTop) / top;
+        }
+        return mk({ z, kind: 'charge', special: true, u, eta, left: eta });
       }
       // (2026-10-18, the user: "I don't think all the basic zombies need attacks that need to be dodged.. they can just have
-      // basic attacks too"): a walker's lunge, scratch or pounce never brings up the dodge; the runner's dash rake does
-      // a walker's pounce (about a third of them pounce): the dodge is there, quietly (no sign, no pulse); dodged late (its
-      // last stretch or in the air) it is perfect: that walker can be executed (specialMiss)
+      // basic attacks too"): a walker's lunge, scratch or pounce never brings up the sign; the runner's dash rake does.
+      // A walker's pounce (about a third of them pounce): the button lights for it, no sign over it; a perfect dodge of it
+      // opens that walker to a finisher (specialMiss)
       if (!best && z.attack === 'pounce' && (z.state === ZS.WINDUP || z.state === ZS.STRIKE) && d < ZATTACKS.pounce.range + 1.2) {
         const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur);
-        best = { z, kind: 'pounce', special: false, u, now: u >= 0.6, soon: true };
+        best = mk({ z, kind: 'pounce', special: false, u, eta: z.state === ZS.STRIKE ? 0.05 : Math.max(0, z.stateDur - z.t) + 0.12 });
       }
       if (!best && z.attack === 'dash' && (z.state === ZS.WINDUP || z.state === ZS.STRIKE) && d < 5.5) {
-        const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur);
-        best = { z, kind: 'dash', special: true, u, now: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, soon: z.state === ZS.STRIKE || u >= ZATTACKS.dash.lock, left: z.state === ZS.STRIKE ? 0.1 : (1 - u) * z.stateDur };
+        const u = z.state === ZS.STRIKE ? 1 : z.t / Math.max(0.05, z.stateDur), left = z.state === ZS.STRIKE ? 0.05 : Math.max(0, z.stateDur - z.t) + 0.08;
+        best = mk({ z, kind: 'dash', special: true, u, eta: left, left });
       }
     }
     return best;
@@ -252,15 +281,19 @@ export class Sim {
     }
     return out;
   }
-  // a special attack has missed (the slam landed without her, the charge ran past): a dodge that beat it is a success, and
-  // a well-timed one (pressed close to the moment) is perfect: the slow-motion beat, and her next blow or shot is critical
+  // a special attack has missed (the slam landed without her, the charge ran past) after a dodge of it: a success. A perfect
+  // one was rewarded at the press (step: perfectDodge); a walker's pounce dodged perfectly opens it to a finisher now
   specialMiss(z, kind) {
-    const d = this.lastDodge, p = this.player;
+    const d = this.lastDodge;
     if (!d || d.id !== z.id || this.time - d.t > 2.6 || d.used) return;
     d.used = true;
-    if (d.perfect && kind === 'pounce') z.executable = this.time + 2.4; // (2026-10-18, the user's idea: a perfect dodge on a basic zombie is an execute: her next blow bursts it)
-    else if (d.perfect) p.critT = this.T.critWindow ?? 2.2;
+    if (d.perfect && kind === 'pounce') this.openFinisher(z, 'pounce'); // (2026-10-18, the user's idea: a perfect dodge on a basic zombie is an execute)
     this.emit({ type: 'dodgeSuccess', id: z.id, kind, perfect: d.perfect, x: z.x, z: z.z });
+  }
+  // a zombie open to a finisher (FINISHERS_PLAN.md 2): the gold mark over it and the FINISH button while it lasts
+  openFinisher(z, why, dur = this.T.finisherOpen ?? 2.6) {
+    z.executable = this.time + dur; z.openWhy = why;
+    this.emit({ type: 'finisherOpen', id: z.id, why, dur, x: z.x, z: z.z });
   }
   // a zombie open to an execution in front of her and in reach (the nearest to her aim): render/execution.js plays the beat
   execTarget(p) {

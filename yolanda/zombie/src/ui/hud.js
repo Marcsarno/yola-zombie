@@ -134,6 +134,7 @@ export class Hud {
 
   flash(kind) { const b = $('swapBtn'); b.classList.remove('flash-' + kind); void b.offsetWidth; b.classList.add('flash-' + kind); }
   hurt() { const v = $('vignette'); v.classList.remove('hit'); void v.offsetWidth; v.classList.add('hit'); }
+  screenFlash() { const f = $('flash'); if (!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); } // (a perfect dodge)
   death(sim) { this.deathT = 0; $('deathStats').textContent = this.stats(sim); }
   cleared(sim) { $('clearStats').textContent = this.stats(sim) + ` · ${sim.time.toFixed(0)} s`; setTimeout(() => $('clear').classList.add('show'), 900); }
   stats(sim) {
