@@ -1,8 +1,30 @@
-# Finishers, dodging, the guard, the lady, Yola getting hurt: the game plan (v2)
+# Finishers, dodging, the guard, the lady, Yola getting hurt: the game plan (v3, decided)
 
-(2026-10-18 night, combat chat. v1 was the first planning pass; v2 takes in the user's answers: the guard as a two-part
+(2026-10-18 night, combat chat. v1 was the first planning pass; v2 took in the user's answers: the guard as a two-part
 finisher fight, a 5% critical finisher on walkers with a wide arc, and "think a little harder" about the dodge: Arkham /
-Insomniac Spider-Man / Souls-like timing. Nothing here is built yet. The floor layouts: LAYOUT_REVIEW.md.)
+Insomniac Spider-Man / Souls-like timing. v3: the user's decisions, below. Nothing here is built yet. The floors:
+FLOORS_REDESIGN.html and LAYOUT_REVIEW.md.)
+
+## The user's decisions (v3)
+
+- **No dodge at will** (a phone game): the button is there but grey. It **pulses yellow** only in the window to tap, and
+  flashes white for the perfect moment.
+- **The guard:**
+  - His arm **never tears off on its own**. Missed the finisher: he pulls the shield free and slams again.
+  - **Finisher 1** (after a slam): his arm comes off. **Finisher 2** (after a slam with the other arm): his head comes
+    off, and he's dead.
+  - Both are execute-style, with the camera in, using the finisher moves already in the game.
+- **The lady:**
+  - **Finisher: her head shot off, and no acid.**
+  - Killed any other way: the acid sprays, but **redone so it looks toxic**. Today it's a cartoon perfect circle. It
+    should be an irregular splatter flung along her death, with droplets, a sizzle (bubbles, steam wisps, a hiss), the
+    floor etching darker under it, then fading out.
+- **Finisher moves for the guard and the lady:** the existing ones.
+- **Walkers open to a finisher two ways:** a perfect dodge of their pounce, and the 5% critical. (This is what the v2
+  question "pounce + knockdown + crippled" was about: which situations put the gold mark on a normal zombie. The
+  knocked-down and crippled ones are dropped.)
+- **Win-back health:** parked while testing runs on infinite health. It means getting part of a hit's damage back by
+  hitting back within ~3 s (Bloodborne's rally). Revisit when damage is on.
 
 ## Where it stands today (read from the code)
 
@@ -33,7 +55,7 @@ Insomniac Spider-Man / Souls-like timing. Nothing here is built yet. The floor l
   - The lady: when she's 0.45 s from reaching Yola (worked out from her distance and speed), after she's already ploughed
     through the walkers in her lane.
 - **At the cue:** time dips to half speed for the window (so it's ~0.9 s of real time: room for a thumb on a phone),
-  white spider-sense lines flash around Yola's head, the attacker gets a bright outline, the button lights and its ring
+  white spider-sense lines flash around Yola's head, the attacker gets a bright outline, the button pulses yellow and its ring
   starts closing, and a sharp *ting*.
 
 **The press pays off at once:**
@@ -117,6 +139,8 @@ attack) plays it in slow motion.
 - **Wall crash:** dodge her into a wall -> a hard crash (cracks, dust, a big shake), down ~2.5 s, dazed -> **the mark:
   her finisher.**
 - Never untouchable.
+- **Her finisher shoots her head off: no acid.** Any other death: the acid, redone (irregular splatter along her fall,
+  droplets, bubbles and steam, a hiss, the floor etched darker, fading out).
 
 ## 5. Yola getting hurt: you notice it, it's not unfun
 
@@ -140,7 +164,7 @@ attack) plays it in slow motion.
    - the cue dip and Witch Time (the leap's top-of-jump slow-motion removed);
    - judging at the press;
    - the direction arrow;
-   - the button's three looks.
+   - the button: grey at rest, pulsing yellow in the window, white for perfect, gold for FINISH.
 2. **The open state + the gold mark + finishers by enemy kind; the 5% walker crit with the wide arc.**
 3. **The guard:**
    - shielded except from behind;
@@ -153,11 +177,8 @@ attack) plays it in slow motion.
 5. **Yola getting hurt.**
 6. Check each in the practice room and the wave room; then the user plays on the phone (at High).
 
-## Still open (the user's)
+## Still open
 
-1. **The lady's finisher reward:** she dies without her acid burst (recommended), or the burst stays.
-2. **Win-back health:** in or out.
-3. **The guard's mirrored stage:** a mirror of his existing clips (fast, the plan) is assumed. If it looks wrong, a
-   proper left-handed set from the Animation Hub.
-4. **Finisher moves:** reuse Yola's existing finisher clips aimed at the arm / the head / the body first (fast); new
-   ones from the Animation Hub later where they fall short.
+- **The guard's mirrored stage:** a mirror of his existing clips is assumed. If it looks wrong, a proper left-handed set
+  from the Animation Hub.
+- **Win-back health:** parked (above).
