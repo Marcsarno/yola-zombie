@@ -85,8 +85,12 @@ function mriOn(sim, M) {
   }
   sim.emit({ type: 'mriOn', id: M.id, x: M.magnet.x, z: M.magnet.z, guns: M.pinned.slice() });
   for (const L of sim.loose || []) if (inside(M, L.x, L.z, 1)) { L.owner = 0; L.held = false; L.magnet = M; } // (torn from their zombies)
-  for (const z of sim.zombies) { // the guard's shield, ripped off his arm onto the magnet: he is open at once
-    if (z.kind !== 'guard' || !z.alive || !(z.shieldHp > 0) || z.planted || !inside(M, z.x, z.z, 2)) continue;
+  ripShields(sim, M);
+}
+// the guard's shield, ripped off his arm onto the magnet whenever he holds one in its room while it is alive: he is open at once
+function ripShields(sim, M) {
+  for (const z of sim.zombies) {
+    if (z.kind !== 'guard' || !z.alive || !(z.shieldHp > 0) || z.planted || z.state === ZS.PICKUP || !inside(M, z.x, z.z, 2)) continue;
     const a = Math.atan2(M.magnet.x - z.x, M.magnet.z - z.z);
     z.planted = { x: M.magnet.x - Math.sin(a) * 0.55, z: M.magnet.z - Math.cos(a) * 0.55, yaw: a, gx: M.magnet.x - Math.sin(a) * 0.9, gz: M.magnet.z - Math.cos(a) * 0.9, magnet: true };
     z.set(ZS.STAGGER, 1.1); z.attackCd = 1.4;
@@ -122,6 +126,8 @@ export function roomsStep(sim, dt) {
           sim.emit({ type: 'mriHit', id: z.id, x: z.x, z: z.z });
         }
       }
+      ripShields(sim, M); // (one he takes back off it is torn away again)
+      for (const z of sim.zombies) if (z.kind === 'guard' && z.alive && z.planted?.magnet && (z.gstage === 'shield' || z.gstage === 'shield2') && z.state !== ZS.PICKUP && !z.execLock) { z.executable = Math.max(z.executable || 0, sim.time + 1); z.openDur = 5; } // (his shield on the magnet: he stays open to his finisher)
       const clear = !sim.zombies.some((z) => z.alive && !z.passive && inside(M, z.x, z.z));
       if (Math.hypot(p.x - M.button.x, p.z - M.button.z) < MRI.buttonR && !p.dead) {
         if (clear) mriQuench(sim, M); else if (!M.nagT || sim.time > M.nagT) { M.nagT = sim.time + 2.5; sim.emit({ type: 'mriNotYet', id: M.id, x: M.button.x, z: M.button.z }); }

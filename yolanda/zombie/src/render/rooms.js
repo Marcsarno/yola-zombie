@@ -5,6 +5,7 @@
 // post, lit once the room is clear; the shutdown: helium blasting out of the vent in a white cloud).
 import * as THREE from 'three';
 import { cue } from '../sfx/cues.js';
+import { propClone, findMat } from './roomprops.js';
 
 function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
 function crackTex() {
@@ -34,7 +35,7 @@ export class RoomsView {
     this.sim = sim;
     for (const V of this.walls.values()) this.scene.remove(V.m);
     for (const V of this.floods.values()) this.scene.remove(V.water, V.panel);
-    for (const V of this.mris.values()) this.scene.remove(V.g);
+    for (const V of this.mris.values()) { this.scene.remove(V.g); if (V.stop) this.scene.remove(V.stop, V.ring); }
     this.walls.clear(); this.floods.clear(); this.mris.clear();
   }
   // a cracked wall: the slab, the crack painted on both faces
@@ -47,15 +48,27 @@ export class RoomsView {
     const w = F.maxX - F.minX, d = F.maxZ - F.minZ, tex = waterTex(); tex.repeat.set(w / 2.5, d / 2.5);
     const water = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: tex, color: 0x9fc4c4, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.78, depthWrite: false }));
     water.rotation.x = -Math.PI / 2; water.position.set((F.minX + F.maxX) / 2, 0.035, (F.minZ + F.maxZ) / 2); water.renderOrder = 1; water.receiveShadow = true; this.scene.add(water);
-    const panel = new THREE.Group(); panel.position.set(F.panel.x, 0, F.panel.z);
+    const yaw = F.panel.yaw ?? Math.atan2((F.minX + F.maxX) / 2 - F.panel.x, (F.minZ + F.maxZ) / 2 - F.panel.z); // (facing the water)
+    const model = propClone('flood_panel');
+    if (model) { model.position.set(F.panel.x, 0, F.panel.z); model.rotation.y = yaw; this.scene.add(model); return { water, tex, panel: model, lampG: findMat(model, 'Panel_LampGreen'), lampR: findMat(model, 'Panel_LampRed'), yaw }; }
+    const panel = new THREE.Group(); panel.position.set(F.panel.x, 0, F.panel.z); panel.rotation.y = yaw;
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.0, 0.12), this.mats.steel); post.position.y = 0.5;
     const box = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.75, 0.22), new THREE.MeshStandardMaterial({ color: 0x8c8f78, roughness: 0.6, metalness: 0.4 })); box.position.y = 1.35;
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshBasicMaterial({ color: 0x40ff60, toneMapped: false })); lamp.position.set(0, 1.62, 0.12);
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.26), new THREE.MeshBasicMaterial({ map: canvasTex(64, 56, (g) => { g.fillStyle = '#ffd21f'; g.beginPath(); g.moveTo(32, 2); g.lineTo(62, 54); g.lineTo(2, 54); g.closePath(); g.fill(); g.fillStyle = '#111'; g.font = 'bold 34px sans-serif'; g.textAlign = 'center'; g.fillText('⚡', 32, 48); }), transparent: true })); sign.position.set(0, 1.3, 0.115);
     for (const o of [post, box]) { o.castShadow = true; panel.add(o); } panel.add(lamp, sign); this.scene.add(panel);
-    return { water, tex, panel, lamp };
+    return { water, tex, panel, lamp, yaw };
   }
   makeMRI(M) {
+    const scan = propClone('mri_scanner'), stop = propClone('magnet_stop');
+    if (scan && stop) {
+      scan.position.set(M.magnet.x, 0, M.magnet.z); scan.rotation.y = M.yaw ?? 0; this.scene.add(scan);
+      stop.position.set(M.button.x, 0, M.button.z); stop.rotation.y = Math.atan2(M.magnet.x - M.button.x, M.magnet.z - M.button.z) + Math.PI; this.scene.add(stop); // (its button facing away from the magnet: into the room)
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.38, 28), new THREE.MeshBasicMaterial({ color: 0xff3a2a, transparent: true, opacity: 0, toneMapped: false })); ring.rotation.x = -Math.PI / 2; ring.position.set(M.button.x, 0.03, M.button.z); this.scene.add(ring);
+      const pins = [0, 1].map((i) => { const p = new THREE.Mesh(new THREE.BoxGeometry(i ? 0.75 : 0.24, 0.1, 0.06), this.mats.dark); p.position.set(i ? 0.3 : -0.55, i ? 1.62 : 1.42, 0.62); p.rotation.z = i ? 0.3 : -0.5; p.visible = false; scan.add(p); return p; }); // (her guns, stuck to its face)
+      const drops = [0, 1].map((i) => { const p = new THREE.Mesh(new THREE.BoxGeometry(i ? 0.75 : 0.24, 0.08, 0.1), this.mats.dark); p.position.set(i ? 0.9 : -0.8, 0.05, 0.9); p.rotation.y = i ? 0.6 : -0.3; p.visible = false; scan.add(p); return p; });
+      return { g: scan, stop, glowMat: findMat(scan, 'MRI_Glow'), capMat: findMat(stop, 'Button_Red'), ring, pins, drops, humT: 0 };
+    }
     const g = new THREE.Group(); g.position.set(M.magnet.x, 0, M.magnet.z);
     const housing = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 1.0, 40, 1, true), this.mats.white); housing.rotation.x = Math.PI / 2; housing.position.y = 1.15;
     const face = new THREE.Mesh(new THREE.RingGeometry(0.42, 1.15, 40), this.mats.white); face.position.set(0, 1.15, 0.5);
@@ -86,8 +99,10 @@ export class RoomsView {
     for (const F of sim.floods || []) {
       let V = this.floods.get(F.id); if (!V) { V = this.makeFlood(F); this.floods.set(F.id, V); }
       V.tex.offset.set(Math.sin(this.t * 0.21) * 0.08, this.t * 0.02); // (the ripple drifting)
-      const ready = !(F.recharge > 0); V.lamp.material.color.setHex(ready ? 0x40ff60 : 0xff3020);
-      if (fx && ready && Math.random() < dt * 3) fx.burst(F.panel.x, 1.3 + Math.random() * 0.3, F.panel.z + 0.12, 3, 0xfff1a0, 1.6, 0.4, 0.2); // (live: it spits sparks)
+      const ready = !(F.recharge > 0);
+      if (V.lamp) V.lamp.material.color.setHex(ready ? 0x40ff60 : 0xff3020);
+      if (V.lampG) { V.lampG.emissive.setHex(0x38ff60); V.lampG.emissiveIntensity = ready ? 3 : 0.05; } if (V.lampR) { V.lampR.emissive.setHex(0xff3020); V.lampR.emissiveIntensity = ready ? 0.05 : 3 * (0.6 + 0.4 * Math.sin(this.t * 8)); }
+      if (fx && ready && Math.random() < dt * 3) { const fx0 = Math.sin(V.yaw) * 0.2, fz0 = Math.cos(V.yaw) * 0.2; fx.burst(F.panel.x + fx0 + Math.sin(V.yaw) * 0.45, 0.06, F.panel.z + fz0 + Math.cos(V.yaw) * 0.45, 3, 0xfff1a0, 1.6, 0.6, 0.2); } // (live: the torn cable spits sparks into the water)
       if (fx) for (const b of [sim.player, ...sim.zombies]) { // splashes round anyone moving in it
         if (b.dead || b.alive === false) continue; const sp = Math.hypot(b.vx || 0, b.vz || 0);
         if (sp > 0.4 && b.x > F.minX && b.x < F.maxX && b.z > F.minZ && b.z < F.maxZ && Math.random() < dt * sp * 4) fx.burst(b.x, 0.05, b.z, 3, 0xcfe6ea, 0.9, 1.2, 0.35);
@@ -96,8 +111,10 @@ export class RoomsView {
     for (const M of sim.mris || []) {
       let V = this.mris.get(M.id); if (!V) { V = this.makeMRI(M); this.mris.set(M.id, V); }
       const on = M.state === 'on', clear = on && !sim.zombies.some((z) => z.alive && !z.passive && z.x > M.minX && z.x < M.maxX && z.z > M.minZ && z.z < M.maxZ);
-      V.glow.material.opacity = on ? 0.55 + 0.35 * Math.sin(this.t * 7) : 0; V.bore.material.emissiveIntensity = on ? 1.4 : 0;
-      V.ring.material.opacity = clear ? 0.5 + 0.4 * Math.sin(this.t * 6) : 0; V.cap.material.emissive.setHex(clear ? 0xff2010 : 0x400000);
+      if (V.glowMat) { V.glowMat.emissive.setHex(0x55b8ff); V.glowMat.emissiveIntensity = on ? 2.2 + 1.2 * Math.sin(this.t * 7) : 0; }
+      if (V.glow) { V.glow.material.opacity = on ? 0.55 + 0.35 * Math.sin(this.t * 7) : 0; V.bore.material.emissiveIntensity = on ? 1.4 : 0; }
+      V.ring.material.opacity = clear ? 0.5 + 0.4 * Math.sin(this.t * 6) : 0;
+      if (V.capMat) { V.capMat.emissive.setHex(0xff2010); V.capMat.emissiveIntensity = clear ? 1.5 + Math.sin(this.t * 6) : 0; } else if (V.cap) V.cap.material.emissive.setHex(clear ? 0xff2010 : 0x400000);
       V.pins.forEach((p, i) => { p.visible = on && !!M.pinned[i]; }); V.drops.forEach((p, i) => { p.visible = M.state === 'off' && M.dropped && !!M.pinned[i]; });
       if (on && (V.humT -= dt) <= 0) { V.humT = 1.5; cue(this.audio, 'hum', 0.5); }
     }

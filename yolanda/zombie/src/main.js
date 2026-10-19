@@ -37,6 +37,7 @@ import { ChapterUI } from './ui/chapter.js';
 import { ThreatCue } from './render/threatcue.js';
 import { FinishMarks } from './render/finishmark.js';
 import { RoomsView } from './render/rooms.js';
+import { loadRoomProps } from './render/roomprops.js';
 import { cue } from './sfx/cues.js';
 import { SlowMotion } from './render/slowmo.js';
 import { ExecDirector } from './render/execution.js';
@@ -131,6 +132,7 @@ const threatCue = new ThreatCue(scene); // the sign over a special enemy's big a
 const finishMarks = new FinishMarks(scene); // the gold mark over a zombie open to a finisher (render/finishmark.js)
 const acid = new AcidPools(scene, fx); // the lady's acid pools (render/acid.js)
 const roomsView = new RoomsView(scene, fx, audio); // cracked walls, the flood, the MRI magnet (render/rooms.js)
+loadRoomProps(); // (their Blender models, and the oxygen cylinders': render/roomprops.js)
 fx.gore = store.get('gore', true);
 let shakeOn = true;
 const hud = new Hud({ tuning, audio, store, onAction: (a, v) => uiAction(a, v) });
@@ -328,6 +330,8 @@ function holdFrame(clip, name) {
 function setupBat(anims, fits = {}, woodG = null) {
   const who = YOLA_MODEL === '2' ? 'yola2' : 'yola';
   yola.axeFit = fits.axe?.[who] || null; yola.shotgunFit = fits.short?.[who] || null; // (the axe's and shotgun's fits, same Rig Lab file)
+  // (a clip's own shotgun fit, "short@<clip>": the shotgun slide finisher's kneel setup, render/clipchars.js shotgunClip)
+  yola.shotgunClipFits = Object.fromEntries(Object.entries(fits).filter(([k, v]) => k.startsWith('short@') && v?.[who]).map(([k, v]) => [k.slice(6), v[who]]));
   if (YOLA_MODEL !== '2') yola.postureOff = true; // (the posture fix was measured on Yola 3.0's rig: render/posture.js)
   fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {}); // (the Rig Lab Hands settings)
   fetch('assets/hold/arm_pose.json').then((r) => r.json()).then((j) => yola.setArmPose(j, who)).catch(() => {}); // (the Rig Lab's arm adjustments)

@@ -11,6 +11,7 @@ import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
 import { tankPos } from '../core/loose.js';
+import { propClone } from './roomprops.js';
 import { HairSway } from './hairsway.js';
 import { placeOneHanded, placeBat, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
@@ -1380,6 +1381,7 @@ const o2Mats = () => (O2MAT ||= {
   label: new THREE.MeshStandardMaterial({ color: 0xf0e7c8, roughness: 0.7 }),
 });
 function o2Cylinder(h = 0.95, r = 0.095) {
+  const md = propClone('o2_cylinder'); if (md) return md; // (the Blender model, render/roomprops.js; else built here)
   const M = o2Mats(), g = new THREE.Group(), add = (geo, m, y, x = 0, z = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
   add(new THREE.CylinderGeometry(r, r, h * 0.78, 18), M.body, h * 0.39);
   add(new THREE.CylinderGeometry(r * 1.002, r * 1.002, h * 0.12, 18, 1, true), M.label, h * 0.42); // (the label band)
@@ -1391,6 +1393,7 @@ function o2Cylinder(h = 0.95, r = 0.095) {
   return g;
 }
 function o2Trolley() {
+  const md = propClone('o2_trolley'); if (md) return md; // (the Blender model; its handle at IV.grip on its post)
   const M = o2Mats(), g = new THREE.Group(), add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
   add(new THREE.BoxGeometry(0.26, 0.02, 0.22), M.steel, 0, 0.07, 0.06); // (the foot plate)
   for (const s of [-1, 1]) { const w = add(new THREE.CylinderGeometry(0.07, 0.07, 0.035, 14), M.dark, s * 0.15, 0.07, 0.1); w.rotation.z = Math.PI / 2; }
@@ -1677,6 +1680,13 @@ export class ZombieView extends ClipBody {
   // the guard's shield after his slam (FINISHERS_PLAN.md 3): wrenched back out of the floor (his finisher missed), or taken
   // in his other hand after the first finisher took his arm (guardSwap)
   guardShield(z) {
+    if (z.planted?.magnet && this.shieldC && !this.plantedP) { // (the MRI magnet tore it off his arm: core/rooms.js) it flies to the scanner and sticks
+      this.plantShield(z); const P = this.plantedP, o = P.shield.object3D, q = z.planted;
+      o.position.set(q.x, 1.15, q.z); o.rotation.set(0, q.yaw + Math.PI, 0); o.updateMatrixWorld(true);
+      P.grip = P.shield.grips.center.getWorldPosition(new THREE.Vector3()); P.gripR = P.grip.clone();
+      ZombieView.fx?.burst(q.x, 1.15, q.z, 14, 0xe9e1cf, 2.4, 0.6, 0.45);
+      return;
+    }
     if (z.state !== 'pickup' || !this.plantedP) return;
     if (z.wrenching) { if (z.t >= z.stateDur * 0.45) this.retakeShield(); } // (wrenched free: back in the hand that held it)
     else if (z.mirrored && !this.mirG) this.guardSwap(z); // (core/zombies.js PICKUP: his other hand has it)

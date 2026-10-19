@@ -22,8 +22,8 @@ const DEMOS = {
     sim.addCrackedWall({ x0: 2.2, z0: -1.2, x1: 5.4, z1: -1.2 }); sim.addCrackedWall({ x0: -1.2, z0: 1.7, x1: 2.2, z1: 1.7 });
     const z = put(sim, 0.5, -7.0, 'sprinter'); z.attackCd = 0; sim.player.x = 0.5; sim.player.z = 0.4; } }, // (the one clear 9 m lane in the practice room) // (Yola backed up to the cracked wall: dodge and the lady goes through it)
   flood: { label: 'The flood: lure them into the water, then shoot (or hit) the sparking panel', weapon: 'pistol', setup(sim) {
-    sim.addFlood({ minX: -6.0, maxX: 0.5, minZ: -9.5, maxZ: -2.5, panel: { x: -6.6, z: -6.0 } });
-    for (const [x, z] of [[-4.5, -12], [-2.0, -13], [-3.2, -15], [0.2, -12.5]]) put(sim, x, z, 'normal', 0);
+    sim.addFlood({ minX: -6.0, maxX: 0.5, minZ: -9.5, maxZ: -2.5, panel: { x: 1.2, z: -6.0 } }); // (on the water's open east edge)
+    for (const [x, z] of [[-4.5, -8.5], [-2.0, -9.0], [-3.2, -7.0], [-0.6, -12.5]]) put(sim, x, z, 'normal', 0); // (three wading already, one to come)
     sim.player.x = -2.8; sim.player.z = 2.0; } },
   mri: { label: 'The MRI arena: walk in, the magnet takes your gun; clear the room, then step on the red button', weapon: 'pistol', setup(sim) {
     sim.addMRI({ minX: -7.6, maxX: 7.6, minZ: -15, maxZ: -3.5, magnet: { x: 0.4, z: -10.5 }, button: { x: 6.0, z: -13.2 } });
