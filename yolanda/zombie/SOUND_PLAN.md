@@ -136,6 +136,11 @@ Final loudness and priorities, checked on the phone speaker AND headphones.
 | "monster snarls" (5 OGG reels) by Darsycho (opengameart.org) | CC0 | snarls, split one take per cry |
 | "80 CC0 creature SFX" 1 + 2 by rubberduck (opengameart.org) | CC0 | roars, screams, hurt, attack, die, grunts, breath, eat, slime, stomp |
 | "Ghost Monster Voice Moaning & Growling" qubodup-GhostMoans.zip (opengameart.org) | CC0 | long moans, pitched down for zombie moans, the far horde, the guard's death |
+| BigSoundBank (bigsoundbank.com, 126 files: /UPLOAD/flac|ogg/<id>) | CC0 | the opening reveal: 2 real elevator rides (motor, doors open/close), bells, breakers, transformer/neon hum, welding arcs, explosions, gongs, whooshes, heartbeats, heavy steps, bass toms, punches, bones, apple crunch, splashes, body falls, glass/mirror/ice cracking, ECG, flatline, alarms |
+| "Swishes Sound Pack" swishes.zip by artisticdude; "Glass Break" glass_breaking.wav by Till Behrend; "75 CC0 breaking / falling / hit sfx" by rubberduck (opengameart.org) | CC0 | reveal whooshes, glass breaking/falling, wood breaking |
+
+Reveal library: `tools/sfx/build_reveal.py <scratch> .` -> assets/sfx/reveal/*.mp3 (240 takes, ~4.7 MB) + src/sfx/reveal.gen.js.
+Some BigSoundBank FLACs do not decode with libsndfile: the builder takes the OGG copy when there is one.
 
 Zombie library: `tools/sfx/build_zombies.py <scratch with the unpacked packs> .` -> assets/sfx/zombie/*.mp3 (258
 takes, ~3.8 MB) + src/sfx/zombies.gen.js. Unnamed clips are sorted by what they measure as (length, dark/bright,
@@ -184,6 +189,13 @@ sound says when the game plays it ("hook") and whether an old synth version exis
 
 ## Log
 (newest at top)
+- 2026-10-19: the user: the opening reveal sounds are bad (lift doors, glass...). New board section **Opening reveal**
+  (The lift / Power & flashes / Slow motion / The finisher / Earlier in the opening): 24 sounds, one per moment of
+  src/opening/revealsound.js, 240 real CC0 takes (BigSoundBank + OpenGameArt). Hook: RevealSound.rec(name) at the top of
+  each moment plays the user's kept takes instead of the synth (the synth stays until they keep some); liftDing /
+  liftClose are game-wide names (every lift). "Old version" on the board plays the reveal's synth. revealsound.js is the
+  OPENING CHAT'S file: only the rec() lines are ours. Not wired yet: drum needs the music cue running (board plays it
+  alone fine); "Earlier in the opening" sounds and body falls are pending (opaudio.js loops).
 - 2026-10-18: the user asked for simpler layering: each sound now shows **How it's built** — one row per part (layers
   sharing takes, like the 4 shells, are one part) on a shared timeline, with its state in words (N kept, take turns /
   always / silent / off), On, level and ▶; tap a part to see only its takes below. "Layer" is now "part" on the board.

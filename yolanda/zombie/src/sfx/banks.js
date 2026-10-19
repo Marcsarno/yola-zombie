@@ -8,15 +8,18 @@
 // Per sound: group / sub  where it sits on the board (Weapons > Guns, Zombies > Guard (boss) ...)
 //            pending  true = the game has no hook for it yet (the user's picks wait until it is wired)
 //            hook     what in the game plays it (shown on the board)
+//            old      the opening reveal's synthesised version (src/opening/revealsound.js method), for "Old version"
 // The candidate library (assets/sfx/lib, built by tools/sfx/build_library.py) is listed in library.gen.js.
 // The user's verdicts and level trims from the Sound Board live in assets/sfx/selection.json (samples.js applies them).
 // A sound name with no bank (or not loaded yet, or every take rejected) falls back to the synthesised version in audio.js.
 import { LIB, LIB_LABELS } from './library.gen.js';
 import { ZLIB, ZLIB_LABELS } from './zombies.gen.js';
+import { RLIB, RLIB_LABELS } from './reveal.gen.js';
 
 const G = 'assets/sfx/guns/';
 const lib = (...keys) => keys.flatMap((k) => LIB[k] || []);
 const zl = (...keys) => keys.flatMap((k) => ZLIB[k] || []);
+const rl = (...keys) => keys.flatMap((k) => RLIB[k] || []);
 const take = (name, i) => `${G}${name}_${String(i).padStart(2, '0')}.mp3`;
 const takes = (name, from, to) => Array.from({ length: to - from + 1 }, (_, i) => take(name, from + i));
 const one = (name) => [`${G}${name}.mp3`];
@@ -159,6 +162,88 @@ export const BANKS = {
     { label: 'Debris', files: [], extra: zl('debris'), gain: 0.5, pitch: [-1, 1], at: [0.35, 0.45], wet: 0.2 },
   ] },
 
+  // ---- the opening reveal (2026-10-19): each moment of src/opening/revealsound.js; the user's picks replace its
+  // synthesised version there (RevealSound.rec), which stays until they keep takes ----
+  liftDing: { label: 'Lift ding', group: 'Opening reveal', sub: 'The lift', hook: 'the lift arrives (the opening, and every lift in the game)', layers: [
+    { label: 'Ding', files: [], extra: rl('ding'), gain: 0.8, pitch: [-0.3, 0.3], wet: 0.35 },
+  ] },
+  revealLiftArrive: { label: 'Lift car arriving', group: 'Opening reveal', sub: 'The lift', old: 'liftArrive', hook: 'the car comes up the shaft before the reveal', layers: [
+    { label: 'Motor', files: [], extra: rl('larrive'), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.25 },
+    { label: 'Settling clunk', files: [], extra: rl('clunk'), gain: 0.7, pitch: [-1, 0], at: 2.3, wet: 0.25 },
+  ] },
+  revealDoorsOpen: { label: 'Lift doors open', group: 'Opening reveal', sub: 'The lift', old: 'doorsOpen', hook: 'the doors part on the reveal', layers: [
+    { label: 'Doors', files: [], extra: rl('ldoorsopen'), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 },
+  ] },
+  liftClose: { label: 'Lift doors close', group: 'Opening reveal', sub: 'The lift', hook: 'the lift doors close (the opening, and every lift in the game)', layers: [
+    { label: 'Doors', files: [], extra: rl('ldoorsclose'), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 },
+  ] },
+  revealPowerDown: { label: 'The power dies', group: 'Opening reveal', sub: 'Power & flashes', old: 'powerDown', hook: "the room's power fails before the flashes", layers: [
+    { label: 'Breaker', files: [], extra: rl('breaker', 'clunk'), gain: 0.8, pitch: [-1, 0.5], wet: 0.3 },
+    { label: 'Power draining away', files: [], extra: rl('pdown'), gain: 0.7, pitch: [-0.5, 0.5], at: 0.05, wet: 0.25 },
+  ] },
+  revealFlash: { label: 'A flash (electrical arc)', group: 'Opening reveal', sub: 'Power & flashes', old: 'flash', hook: 'each breaker flash outside the lift', layers: [
+    { label: 'Arc', files: [], extra: rl('arc'), gain: 0.8, pitch: [-1, 1], wet: 0.3 },
+    { label: 'Crack', files: [], extra: rl('crack'), gain: 0.6, pitch: [-1, 1], wet: 0.25 },
+    { label: 'Thump under it', files: [], extra: rl('thump'), gain: 0.6, pitch: [-1, 0.5], wet: 0.2 },
+  ] },
+  revealFlashBoom: { label: 'The last flash (lands on her)', group: 'Opening reveal', sub: 'Power & flashes', old: 'flashBoom', hook: 'the last flash, the one that shows her', layers: [
+    { label: 'Impact', files: [], extra: rl('boom'), gain: 1, pitch: [-0.5, 0.5], wet: 0.35 },
+    { label: 'Crack', files: [], extra: rl('crack', 'arc'), gain: 0.7, pitch: [-1, 0.5], wet: 0.25 },
+    { label: 'Ringing after', files: [], extra: rl('ring'), gain: 0.35, at: 0.1, wet: 0.2 },
+  ] },
+  revealCutHit: { label: 'Camera cut hit', group: 'Opening reveal', sub: 'Power & flashes', old: 'cutHit', hook: 'each camera cut in the dark between flashes', layers: [
+    { label: 'Thump', files: [], extra: rl('thump', 'boom'), gain: 0.9, pitch: [-1, 0.5], wet: 0.25 },
+  ] },
+  revealSlowWhoosh: { label: 'Into slow motion', group: 'Opening reveal', sub: 'Slow motion', old: 'slowWhoosh', hook: 'time slows as she walks out', layers: [
+    { label: 'Suck-in swell + drop', files: [], extra: rl('suck'), gain: 0.9, pitch: [-0.5, 0.5], wet: 0.3 },
+  ] },
+  revealSlowDown: { label: 'Time stretching', group: 'Opening reveal', sub: 'Slow motion', old: 'slowDown', hook: 'time stretches on the finisher', layers: [
+    { label: 'Falling whoosh', files: [], extra: rl('slowdown'), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 },
+  ] },
+  revealHeartbeat: { label: 'Heartbeat', group: 'Opening reveal', sub: 'Slow motion', old: 'heartbeat', hook: 'the heartbeat in the dark', layers: [
+    { label: 'Beat', files: [], extra: rl('heart'), gain: 0.9, pitch: [-1, 0], wet: 0.15 },
+  ] },
+  revealFootstep: { label: 'Her slow-motion footstep', group: 'Opening reveal', sub: 'Slow motion', old: 'footstep', hook: 'each footfall of the slow walk-out', cadence: 0.9, layers: [
+    { label: 'Step', files: [], extra: rl('bigstep'), gain: 0.85, pitch: [-1, 0.5], wet: 0.3 },
+    { label: 'Boom under it', files: [], extra: rl('thump'), gain: 0.6, pitch: [-1, 0], wet: 0.25 },
+  ] },
+  revealDrum: { label: 'War drum (on her steps)', group: 'Opening reveal', sub: 'Slow motion', old: 'drum', hook: 'the drum under each footfall of the walk-out', cadence: 0.9, layers: [
+    { label: 'Drum', files: [], extra: rl('drum', 'thump'), gain: 0.9, pitch: [-0.5, 0.5], wet: 0.35 },
+  ] },
+  revealLaunchOff: { label: 'She pushes off', group: 'Opening reveal', sub: 'Slow motion', old: 'launchOff', hook: 'she launches into the jump finisher', layers: [
+    { label: 'Push-off', files: [], extra: rl('launch'), gain: 0.8, pitch: [-1, 0.5], wet: 0.15 },
+    { label: 'Rush of air', files: [], extra: rl('whoosh'), gain: 0.6, pitch: [-2, 0], at: 0.03, wet: 0.2 },
+  ] },
+  revealSpinSwish: { label: 'The bat through the air (slow motion)', group: 'Opening reveal', sub: 'Slow motion', old: 'spinSwish', hook: 'the slow-motion spin of the swing', layers: [
+    { label: 'Swish', files: [], extra: rl('slowswish', 'whoosh'), gain: 0.85, pitch: [-1, 0.5], wet: 0.25 },
+  ] },
+  revealSmash: { label: 'The smash (bat through him)', group: 'Opening reveal', sub: 'The finisher', old: 'smash', hook: 'the bat lands on the finisher', layers: [
+    { label: 'Crack', files: [], extra: rl('scrack', 'crack'), gain: 0.9, pitch: [-1, 0.5], wet: 0.2 },
+    { label: 'Bone', files: [], extra: rl('sbone'), gain: 0.75, pitch: [-1, 0.5], at: 0.02, wet: 0.15 },
+    { label: 'Wet burst', files: [], extra: [...rl('swet'), ...lib('squish')], gain: 0.7, pitch: [-1.5, 0.5], at: 0.04, wet: 0.2 },
+    { label: 'Huge low hit', files: [], extra: rl('boom'), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
+  ] },
+  revealLensHit: { label: 'Head hits the lens (glass)', group: 'Opening reveal', sub: 'The finisher', old: 'lensHit', hook: 'the head flies into the camera lens', layers: [
+    { label: 'Thunk', files: [], extra: rl('gthunk'), gain: 0.9, pitch: [-1, 0.5], wet: 0.15 },
+    { label: 'Glass cracking', files: [], extra: rl('gcrack'), gain: 0.85, pitch: [-0.5, 0.5], at: 0.01, wet: 0.2 },
+    { label: 'Tiny shards', files: [], extra: rl('gshards'), gain: 0.4, pitch: [0, 2], at: 0.12, wet: 0.2 },
+  ] },
+  revealFreezeHit: { label: 'The freeze (time stops)', group: 'Opening reveal', sub: 'The finisher', old: 'freezeHit', hook: 'the picture freezes on the finisher', layers: [
+    { label: 'Hit', files: [], extra: rl('boom'), gain: 1, pitch: [-0.5, 0.5], wet: 0.35 },
+    { label: 'Ringing after', files: [], extra: rl('ring'), gain: 0.35, wet: 0.2 },
+  ] },
+  revealCueHit: { label: 'The name-card hit', group: 'Opening reveal', sub: 'The finisher', old: 'cueHit', hook: 'the walk-out music cuts on the freeze', layers: [
+    { label: 'Hit', files: [], extra: rl('boom'), gain: 1, pitch: [-0.5, 0.5], wet: 0.35 },
+    { label: 'Gong', files: [], extra: rl('gong'), gain: 0.6, pitch: [-0.5, 0.5], wet: 0.4 },
+  ] },
+  bodyFallReveal: { label: 'Bodies hitting the floor', group: 'Opening reveal', sub: 'The finisher', pending: true, layers: [
+    { label: 'Body fall', files: [], extra: rl('bodyfall'), gain: 0.8, pitch: [-1, 0.5], wet: 0.2 },
+  ] },
+  openingMonitor: { label: 'Heart monitor beep', group: 'Opening reveal', sub: 'Earlier in the opening', pending: true, cadence: 1, layers: [{ label: 'Beep', files: [], extra: rl('ecg'), gain: 0.5, wet: 0.2 }] },
+  openingFlatline: { label: 'Flatline', group: 'Opening reveal', sub: 'Earlier in the opening', pending: true, layers: [{ label: 'Flatline', files: [], extra: rl('flatline'), gain: 0.5, wet: 0.2 }] },
+  openingAlarm: { label: 'Alarm', group: 'Opening reveal', sub: 'Earlier in the opening', pending: true, layers: [{ label: 'Alarm', files: [], extra: rl('alarm'), gain: 0.5, wet: 0.3 }] },
+  openingFlicker: { label: 'Lights flickering', group: 'Opening reveal', sub: 'Earlier in the opening', pending: true, layers: [{ label: 'Flicker', files: [], extra: rl('flicker'), gain: 0.5, wet: 0.2 }] },
+
   // ---- coming next: no game hook yet (Phase 2-5); pick now, they go in when wired ----
   footstep: { label: 'Yola footstep', group: 'Coming next', sub: 'Not in the game yet', pending: true, cadence: 0.32, layers: [
     { label: 'Step', files: [], extra: lib('step', 'stepsoft'), gain: 0.5, pitch: [-1, 1], wet: 0.08 },
@@ -182,6 +267,7 @@ const SRC = {
 export function takeLabel(file) {
   if (LIB_LABELS[file]) return LIB_LABELS[file];
   if (ZLIB_LABELS[file]) return ZLIB_LABELS[file];
+  if (RLIB_LABELS[file]) return RLIB_LABELS[file];
   const m = file.match(/([a-z_]+?)_(\d+)\.mp3$/); const b = file.split('/').pop().replace('.mp3', '');
   if (m && SRC[m[1]]) return `${b} · ${SRC[m[1]][+m[2] - 1] || ''}`;
   return { pump_back: 'pump_back · Winchester Model 12 rack, back', pump_fwd: 'pump_fwd · Winchester Model 12 rack, forward', mag_out: 'mag_out · handgun magazine dropped', mag_in: 'mag_in · handgun magazine seated', slide: 'slide · handgun slide racked', dry_click: 'dry_click · trigger on an empty gun' }[b] || b;

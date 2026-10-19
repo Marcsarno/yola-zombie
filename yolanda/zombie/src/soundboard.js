@@ -6,6 +6,7 @@
 // through the game's own engine (src/audio.js): what you hear here is what the game plays.
 import { CombatAudio, SYNTH_ALIAS } from './audio.js';
 import { BANKS, takeLabel } from './sfx/banks.js';
+import { RevealSound } from './opening/revealsound.js';
 import { SELECTION_URL } from './sfx/samples.js';
 
 const $ = (id) => document.getElementById(id);
@@ -14,7 +15,7 @@ const audio = new CombatAudio();
 window.soundBoard = { audio }; // (for checking the board from the console)
 // the sounds with an old synthesised version (audio.js synth cases, or an alias to one): the rest are silent until picked
 const CLASSIC = new Set([...String(audio.synth).matchAll(/case '(\w+)'/g)].map((m) => m[1]));
-const hasClassic = (n) => CLASSIC.has(SYNTH_ALIAS[n] || n);
+const hasClassic = (n) => !!BANKS[n]?.old || CLASSIC.has(SYNTH_ALIAS[n] || n);
 const S = audio.samples;
 audio.setVolume(0.9);
 S.preload({ selection: false }); // (the board loads the saved selection itself, below, so a restored draft is not overwritten)
@@ -72,7 +73,16 @@ function burst(name) {
   const gap = (BANKS[name].cadence || 0.5) * 1000;
   for (let i = 0; i < 6; i++) later(() => playFull(name), i * gap);
 }
-function classic(name) { withAudio(() => { audio.recent.clear(); audio.setModern(false); audio.play(name, 1, pos()); audio.setModern(true); }); }
+// the old version: the synthesised sound it replaces (an opening reveal moment: that moment of src/opening/revealsound.js)
+let rsOld = null;
+function classic(name) {
+  withAudio(() => {
+    audio.recent.clear();
+    const old = BANKS[name].old;
+    if (old) { rsOld ||= new RevealSound(audio); rsOld.forceSynth = true; rsOld[old](); return; }
+    audio.setModern(false); audio.play(name, 1, pos()); audio.setModern(true);
+  });
+}
 function solo(name, li, f) { withAudio(() => { audio.playBank(name, 1, audio.ctx.currentTime, sp(), { only: li, forceLayer: li, force: f }); playhead(name, li, f); }); }
 function layerOnce(name, li) { withAudio(() => audio.playBank(name, 1, audio.ctx.currentTime, sp(), { only: li })); }
 // Stop (Esc): every sound now playing or scheduled, any audition in progress
@@ -217,7 +227,7 @@ const hit = (s) => !query || String(s).toLowerCase().includes(query);
 const soundHit = (n) => { const b = BANKS[n]; return hit(b.label) || hit(b.sub || '') || hit(b.group || '') || hit(b.hook || '') || b.layers.some((l) => hit(l.label || '') || filesOf(l).some((f) => hit(takeLabel(f)))); };
 
 // ---------- the sound list: groups > sub-groups > sounds, with progress; the phone gets a picker ----------
-const ORDER = ['Weapons', 'Zombies', 'World', 'Coming next'];
+const ORDER = ['Weapons', 'Zombies', 'Opening reveal', 'World', 'Coming next'];
 function tree() {
   const t = {};
   for (const [n, b] of Object.entries(BANKS)) ((t[b.group || 'Other'] ||= {})[b.sub || ''] ||= []).push(n);
