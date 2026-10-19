@@ -72415,14 +72415,7 @@ void main() {
         A.sun.intensity *= r.amb;
         this.scene.environmentIntensity *= r.amb;
         const e = A.em, emRed = RT.noRed ? 0 : r.emRed;
-        if (!this.poolOffset) {
-          this.poolOffset = [e.redMat, e.coldMat, e.redHalf];
-          for (const m of this.poolOffset) {
-            m.polygonOffset = true;
-            m.polygonOffsetFactor = -4;
-            m.polygonOffsetUnits = -16;
-          }
-        }
+        e.group.visible = false;
         e.redMat.opacity *= emRed;
         e.redHalf.opacity *= emRed;
         e.coldMat.opacity *= r.amb;
@@ -72488,8 +72481,6 @@ void main() {
         this.rfx.visible = false;
       }
       this.aimFlashShadow(true);
-      for (const m of this.poolOffset || []) m.polygonOffset = false;
-      this.poolOffset = null;
       {
         const lk = this.game?.().lightkit, at = this.game?.().atmos;
         if (lk) {
