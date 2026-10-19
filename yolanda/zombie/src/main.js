@@ -159,7 +159,7 @@ const input = new Input(document.getElementById('touch'), {
   swapButton: document.getElementById('swapBtn'),
   getPlayerScreen: () => playerScreen,
 });
-const unlockAudio = () => audio.init();
+const unlockAudio = () => { audio.init(); music?.prime?.(); }; // (music.prime: the iPhone lets the gameplay track start later only if it first played inside a tap)
 addEventListener('pointerdown', unlockAudio, { capture: true });
 addEventListener('touchend', unlockAudio, { capture: true }); // (iPhone counts touchend/click, not touchstart, as the audio gesture)
 addEventListener('click', unlockAudio, { capture: true });

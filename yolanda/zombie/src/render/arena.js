@@ -565,6 +565,7 @@ export class Arena {
         }
       }
       for (const o of objs) { o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); this.group.add(o); }
+      if (q.kind === 'weapon') for (const o of objs) outlineWeapon(o); // (2026-10-19, the user: a thin green pulsing outline on weapon pickups only)
       objs.push(ring(q.x, q.z));
       this.pickupViz[q.id] = objs;
     }
@@ -583,6 +584,7 @@ export class Arena {
     this.caseObj = holder; this.caseSize = csz.clone(); holder.name = 'specimenCase'; this.group.add(holder);
     this.caseRing = ring(0, 0); this.caseRing.material = this.caseRing.material.clone(); this.caseRing.material.color.set(0x8fe8ff);
   }
+  // (outlineWeapon, below the class: the pickup's own meshes again, a hair bigger, back faces only, green: only its rim shows)
   takePickup(id) { for (const o of this.pickupViz?.[id] || []) o.visible = false; }
   resetPickups(taken = []) { for (const [id, list] of Object.entries(this.pickupViz || {})) for (const o of list) o.visible = !taken.includes(id); }
 
@@ -904,5 +906,26 @@ export class Arena {
     this.liftPowered(!!level?.flags.lift_power_restored);
     if (level?.flags.lift_power_restored && this.reset) { this.reset.up.reset(); this.reset.up.play(); this.reset.up.time = this.reset.up.getClip().duration; this.reset.mixer.update(0); this.reset.t = -1; }
     this.resetPickups(level ? [...level.taken] : []);
+  }
+}
+
+// (2026-10-19, the user: "an outline around any of the weapon pickups ... pulses green, thin, simple") an inverted hull: each
+// mesh of the weapon drawn again a few millimetres bigger on every side (scaled per axis about its own centre, so a thin knife
+// grows as much as a long shotgun), back faces only, so only a rim shows around it; one shared material whose glow pulses
+const OUTLINE_T = 0.014; // (m added on each side at most: 2.5% of the weapon's length, at least 5 mm; a hand gun gets a thinner rim than a shotgun)
+let outlineMat = null;
+function outlineWeapon(root) {
+  outlineMat ||= new THREE.MeshBasicMaterial({ color: 0x3dff72, side: THREE.BackSide, transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false });
+  const meshes = []; root.traverse((m) => { if (m.isMesh && !m.userData.outline) meshes.push(m); });
+  root.updateMatrixWorld(true);
+  const L = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()), T = Math.min(OUTLINE_T, Math.max(0.005, 0.025 * Math.max(L.x, L.y, L.z)));
+  for (const m of meshes) {
+    m.geometry.computeBoundingBox(); const b = m.geometry.boundingBox, c = b.getCenter(new THREE.Vector3()), sz = b.getSize(new THREE.Vector3());
+    const ws = m.getWorldScale(new THREE.Vector3()); // (the hull's few mm are world mm: the mesh may be scaled)
+    const s = new THREE.Vector3(1 + (2 * T) / Math.max(1e-4, sz.x * Math.abs(ws.x)), 1 + (2 * T) / Math.max(1e-4, sz.y * Math.abs(ws.y)), 1 + (2 * T) / Math.max(1e-4, sz.z * Math.abs(ws.z)));
+    const h = new THREE.Mesh(m.geometry, outlineMat); h.userData.outline = true; h.castShadow = h.receiveShadow = false; h.renderOrder = 1;
+    h.scale.copy(s); h.position.set(c.x * (1 - s.x), c.y * (1 - s.y), c.z * (1 - s.z));
+    h.onBeforeRender = () => { const t = performance.now() / 1000; outlineMat.opacity = 0.35 + 0.55 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 0.9)); }; // (~0.9 pulses a second)
+    m.add(h);
   }
 }

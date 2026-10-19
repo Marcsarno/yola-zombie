@@ -30,6 +30,14 @@ export class GameMusic {
       return true;
     } catch (e) { this.failed = true; console.warn('music unavailable', e); return false; }
   }
+  // (2026-10-19, the user: no music when the level starts, on the iPhone) iOS lets a media element start only inside a tap; the
+  // track's first play() came ~25 s after the last tap (the reveal's hand-off) and was refused. On the first tap it is played
+  // silently (its gain is 0 until start) and paused again: the element is then allowed to play later without a tap
+  prime() {
+    if (this.primed || this.failed || !this.ensure() || !this.el.paused) return;
+    this.primed = true;
+    const p = this.el.play(); p?.then?.(() => { if (this.state === 'off') this.el.pause(); }).catch?.(() => { this.primed = false; }); // (refused: the next tap tries again)
+  }
   start(kind = 'combat', fade = 0.6) {
     if (!this.ensure()) { if (!this.failed) this.state = 'pending'; return; } // (no AudioContext yet: starts on the first frame after the first tap)
     if (this.el.paused) { const p = this.el.play(); p?.catch?.(() => { /* no gesture yet: retried on the next update */ }); }

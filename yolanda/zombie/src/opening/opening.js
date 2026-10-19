@@ -19,6 +19,7 @@ import { Breakthrough } from './breakthrough.js';
 import { ikArm } from '../render/ik.js';
 import { nameCard } from './comiccard.js';
 import { RevealSound } from './revealsound.js';
+import { splashCard } from './splash.js';
 import { ZombieBurst, lensCrack } from './burst.js';
 import { RT, loadTuning } from './revealtune.js';
 import { RevealFx } from './revealfx.js';
@@ -85,6 +86,7 @@ export class Opening {
     this.near0 = this.camera.near; // (the reveal pulls the near plane in for the head at the lens, and puts it back)
     this.stage = new ClinicStage(this.scene, this.loader);
     this.ui = new OpeningUI();
+    if (this.params?.has('splash')) this.splash = splashCard(); // (the test build's splash card: ?splash=1)
     this.sound = new OpeningAudio(this.audio); this.rs = new RevealSound(this.audio);
     this.active = false; this.started = false; this.state = 'PRELOAD'; this.sub = '';
     this.t = 0; this.END = 60; this.timeScale = 1; this.paused = false; this.silent = false;
@@ -1936,6 +1938,7 @@ export class Opening {
     this.ui.goB.disabled = false; this.ui.goB.textContent = 'Start';
     this.ui.bar.style.width = '100%';
     this.ui.goB.onclick = () => { this.sound.unlock(); this.start(); };
+    if (this.splash) { this.splash.ready(() => this.ui.goB.click()); this.splash = null; } // (PLAY on the splash card starts the opening, inside the tap)
     // returning players are never forced through the opening: once seen, the title screen offers to skip it
     let seen = false; try { seen = localStorage.getItem('zc.introSeen') === '1'; } catch { /* storage unavailable */ }
     this.ui.skipGateB.hidden = !seen;
