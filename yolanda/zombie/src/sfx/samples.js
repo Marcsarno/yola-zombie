@@ -7,13 +7,15 @@
 //       a default take plays unless 'no'/'later', a candidate only when 'yes'
 //   layers[key]   = { db, off }                            key = '<sound>#<layer index>'
 //   sounds[name]  = { db, note }
+//   adds['<sound>#<part>'] = [file, ...]   takes the user brought in from another sound ("Try in another sound" on the board):
+//       candidates there like the bank's own extras (they play once kept)
 import { BANKS } from './banks.js';
 
 export const SELECTION_URL = 'assets/sfx/selection.json';
 const dbk = (db) => Math.pow(10, (db || 0) / 20);
 
 export class Samples {
-  constructor() { this.raw = new Map(); this.buf = new Map(); this.lead = new Map(); this.last = new Map(); this.sel = { takes: {}, layers: {}, sounds: {} }; }
+  constructor() { this.raw = new Map(); this.buf = new Map(); this.lead = new Map(); this.last = new Map(); this.sel = { takes: {}, layers: {}, sounds: {}, adds: {} }; }
 
   files() { const s = new Set(); for (const b of Object.values(BANKS)) for (const l of b.layers) for (const f of [...(l.files || []), ...(l.extra || [])]) s.add(f); return [...s]; }
 
@@ -29,7 +31,9 @@ export class Samples {
     for (const f of list) fetch(f).then((r) => (r.ok ? r.arrayBuffer() : null)).then((ab) => { if (ab) { this.raw.set(f, ab); if (this.ctx) this.decode(f); } }).catch(() => {});
   }
   used() { const s = new Set(); for (const [n, b] of Object.entries(BANKS)) for (const l of b.layers) for (const f of this.active(n, l)) s.add(f); return [...s]; }
-  setSelection(j) { this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {} }; }
+  setSelection(j) { this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {}, adds: j.adds || {} }; }
+  // a part's candidate takes: the bank's own extras + any the user brought in from another sound
+  extraOf(l) { const a = this.sel.adds?.[l.sound + '#' + l.li]; return a?.length ? [...(l.extra || []), ...a] : l.extra || []; }
 
   // with the AudioContext: decode everything fetched so far (and anything still arriving, as it lands)
   attach(ctx) {
@@ -45,8 +49,8 @@ export class Samples {
 
   // the takes a layer of a sound plays now: its defaults the user has not taken out + candidates the user added
   verdict(name, f) { return this.sel.takes[name + ':' + f]?.v; }
-  inGame(name, l, f) { const v = this.verdict(name, f); return (l.extra || []).includes(f) && !(l.files || []).includes(f) ? v === 'yes' : v !== 'no' && v !== 'later'; }
-  active(name, l) { return [...new Set([...(l.files || []), ...(l.extra || [])])].filter((f) => this.inGame(name, l, f)); }
+  inGame(name, l, f) { const v = this.verdict(name, f); return this.extraOf(l).includes(f) && !(l.files || []).includes(f) ? v === 'yes' : v !== 'no' && v !== 'later'; }
+  active(name, l) { return [...new Set([...(l.files || []), ...this.extraOf(l)])].filter((f) => this.inGame(name, l, f)); }
   takeGain(name, f) { return dbk(this.sel.takes[name + ':' + f]?.db); }
   layerGain(name, li) { const s = this.sel.layers[name + '#' + li]; return s?.off ? 0 : dbk(s?.db); }
   soundGain(name) { return dbk(this.sel.sounds[name]?.db); }

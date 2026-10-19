@@ -138,6 +138,7 @@ Final loudness and priorities, checked on the phone speaker AND headphones.
 | "Ghost Monster Voice Moaning & Growling" qubodup-GhostMoans.zip (opengameart.org) | CC0 | long moans, pitched down for zombie moans, the far horde, the guard's death |
 | BigSoundBank (bigsoundbank.com, 126 files: /UPLOAD/flac|ogg/<id>) | CC0 | the opening reveal: 2 real elevator rides (motor, doors open/close), bells, breakers, transformer/neon hum, welding arcs, explosions, gongs, whooshes, heartbeats, heavy steps, bass toms, punches, bones, apple crunch, splashes, body falls, glass/mirror/ice cracking, ECG, flatline, alarms |
 | "Swishes Sound Pack" swishes.zip by artisticdude; "Glass Break" glass_breaking.wav by Till Behrend; "75 CC0 breaking / falling / hit sfx" by rubberduck (opengameart.org) | CC0 | reveal whooshes, glass breaking/falling, wood breaking |
+| BigSoundBank glass set (29 files: knocks on a mirror / car window / glass door, glass ball bounces, bulbs bursting, baubles, plates, ice cracking in a glass and off a windscreen) + "100 CC0 SFX #2" sfx_100_v2.zip by rubberduck (opengameart.org) | CC0 | the head against the lens: thunks, cracks without a shatter, ready-mixed complete hits |
 
 Reveal library: `tools/sfx/build_reveal.py <scratch> .` -> assets/sfx/reveal/*.mp3 (240 takes, ~4.7 MB) + src/sfx/reveal.gen.js.
 Some BigSoundBank FLACs do not decode with libsndfile: the builder takes the OGG copy when there is one.
@@ -189,6 +190,14 @@ sound says when the game plays it ("hook") and whether an old synth version exis
 
 ## Log
 (newest at top)
+- 2026-10-19: the user: still no good head-on-glass + crack ("doesn't have to shatter"), and takes sit in the wrong
+  places. Lens: +14 thunks (deep mirror / car-window knocks = a head, not a knuckle), +31 cracks (bulbs, baubles, plates,
+  stressed ice, windscreen ice; no shatters), 8 ready-mixed COMPLETE hits (thunk + crack 18-30 ms later + body weight) as
+  a new first part. Board: "↗ Try in…" (T) copies or moves any take into another sound's part (selection.json adds;
+  as an option or straight into the game; "✕ remove from this sound" undoes). My pass: body falls into deaths /
+  knockdown / guard + sprinter falls; reveal splashes + bones into gore; BSB punches into fist + bat; reveal booms into
+  the guard slam; reversed swells into the boss stinger; real lift doors into the game's doors; glass into glass breaks;
+  new sounds the game already plays: Swing whoosh (melee) and Bullet hits a zombie.
 - 2026-10-19: the user: the opening reveal sounds are bad (lift doors, glass...). New board section **Opening reveal**
   (The lift / Power & flashes / Slow motion / The finisher / Earlier in the opening): 24 sounds, one per moment of
   src/opening/revealsound.js, 240 real CC0 takes (BigSoundBank + OpenGameArt). Hook: RevealSound.rec(name) at the top of

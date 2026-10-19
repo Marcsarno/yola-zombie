@@ -165,7 +165,8 @@ function touch() {
 }
 function pruned() {
   const clean = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined && x !== 0 && x !== '' && x !== false))]).filter(([, v]) => Object.keys(v).length));
-  return { version: 2, savedAt: new Date().toISOString(), takes: clean(sel().takes), layers: clean(sel().layers), sounds: clean(sel().sounds) };
+  const adds = Object.fromEntries(Object.entries(sel().adds || {}).filter(([, v]) => v.length));
+  return { version: 2, savedAt: new Date().toISOString(), takes: clean(sel().takes), layers: clean(sel().layers), sounds: clean(sel().sounds), adds };
 }
 async function save() {
   clearTimeout(saveTimer);
@@ -180,8 +181,12 @@ async function save() {
 addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
 // ---------- what a take is, in plain words ----------
-const filesOf = (l) => [...new Set([...(l.files || []), ...(l.extra || [])])];
-const isCand = (l, f) => (l.extra || []).includes(f) && !(l.files || []).includes(f);
+// a part's takes: its own, its candidates, and any the user brought in from another sound
+const filesOf = (l) => [...new Set([...(l.files || []), ...S.extraOf(l)])];
+const isCand = (l, f) => S.extraOf(l).includes(f) && !(l.files || []).includes(f);
+const broughtIn = (l, f) => (sel().adds?.[l.sound + '#' + l.li] || []).includes(f) && !(l.files || []).includes(f) && !(l.extra || []).includes(f);
+// where a take was first built for (its home sound and part), for "brought here from"
+function homeOf(f) { for (const [n, b] of Object.entries(BANKS)) for (const l of b.layers) if ((l.files || []).includes(f) || (l.extra || []).includes(f)) return `${b.label} › ${l.label}`; return 'another sound'; }
 // kind: review-in (in the game, not reviewed yet), review-new (a new option, not in the game), kept, added, later, out
 function kind(name, l, f) {
   const v = S.verdict(name, f), cand = isCand(l, f);
@@ -289,9 +294,10 @@ function rowHtml(name, li, f, k, showFrom = false) {
     <div class="wv"><canvas data-wave="${f}" data-kind="${cls}" width="440" height="68" title="Play alone"></canvas><i class="ph"></i></div>
     <div class="nm"><div class="lbl">${esc(takeLabel(f))}</div>
       <div><span class="chip ${cls}">${text}</span><span class="len" data-len="${f}">${dur ? dur.toFixed(1) + ' s' : ''}</span>${showFrom ? `<span class="from">from ${b.label}</span>` : ''}</div>
+      ${broughtIn(b.layers[li], f) ? `<div class="use moved">↪ Brought here from ${esc(homeOf(f))} <button class="mini" data-act="unbring" title="Take it back out of this sound">✕ remove from this sound</button></div>` : ''}
       ${where ? `<div class="use">${where}</div>` : ''}${also.length ? `<div class="use also">Also used by: ${also.join(', ')}</div>` : ''}
       ${lat}${showFrom ? '' : trimHtml('take:' + f, ts.db)}</div>
-    <div class="vd">${acts}<button class="mix" data-act="mix" title="The whole sound with this take (M)">▶ Hear in mix</button></div>
+    <div class="vd">${acts}<button class="mix" data-act="mix" title="The whole sound with this take (M)">▶ Hear in mix</button><button class="try" data-act="try" title="Copy or move this take into another sound (T)">↗ Try in…</button></div>
   </div>`;
 }
 
@@ -463,6 +469,8 @@ function bindRows() {
     const act = (a) => {
       if (a === 'solo') { solo(name, li, f); row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
       else if (a === 'mix') playFull(name, { forceLayer: li, force: f });
+      else if (a === 'try') tryElsewhere(name, li, f);
+      else if (a === 'unbring') { snapshot(); const k = name + '#' + li; sel().adds[k] = (sel().adds[k] || []).filter((x) => x !== f); delete sel().takes[name + ':' + f]; touch(); renderMain(); }
       else decide(a);
     };
     for (const btn of row.querySelectorAll('[data-act]')) btn.onclick = (e) => { e.stopPropagation(); act(btn.dataset.act); };
@@ -478,12 +486,59 @@ function bindRows() {
       else if (k === 'k' && rk !== 'kept' && rk !== 'added') act('yes'); else if (k === 'l' && rk.startsWith('review')) act('later');
       else if (k === 'r' && rk.startsWith('review')) act('no'); else if (k === 'u' && !rk.startsWith('review')) act('undo');
       else if (k === 'n') nextToReview(row, true);
+      else if (k === 't') act('try');
       else if (k === 'arrowdown' || k === 'arrowup') { const rows = [...$('main').querySelectorAll('.take')], i = rows.indexOf(row); rows[i + (k === 'arrowdown' ? 1 : -1)]?.focus(); }
       else return;
       e.preventDefault(); e.stopPropagation();
     };
   }
   if (queue) { const it = queue.items[queue.i - 1]; it && rowEl(it.name, it.li, it.f)?.classList.add('now'); }
+}
+
+// ---------- "Try in another sound": pick a sound and part, as an option there or straight into the game, optionally out of here ----------
+function tryElsewhere(name, li, f) {
+  document.getElementById('tryBox')?.remove();
+  const opts = [];
+  for (const [g, subs] of tree()) for (const [sub, ns] of Object.entries(subs)) {
+    let o = '';
+    for (const n of ns) BANKS[n].layers.forEach((l, j) => { if (l.synth || (n === name && j === li)) return; o += `<option value="${n}#${j}">${esc(BANKS[n].label)} › ${esc(l.label || 'Part ' + (j + 1))}</option>`; });
+    if (o) opts.push(`<optgroup label="${esc(g)}${sub ? ' › ' + esc(sub) : ''}">${o}</optgroup>`);
+  }
+  const box = document.createElement('div'); box.id = 'tryBox'; box.className = 'modal';
+  box.innerHTML = `<div class="mcard"><h2>Try this take in another sound</h2>
+    <div class="help">${esc(takeLabel(f))}</div>
+    <input type="search" id="tryQ" placeholder="Filter sounds…">
+    <select id="trySel" size="12">${opts.join('')}</select>
+    <label class="opt"><input type="radio" name="tryMode" value="option" checked> As an option there, to review (amber, like the other new options)</label>
+    <label class="opt"><input type="radio" name="tryMode" value="use"> Straight into the game there (kept)</label>
+    <label class="opt"><input type="checkbox" id="tryOut"> …and take it out of ${esc(BANKS[name].label)} (a move, not a copy)</label>
+    <div class="hd" style="margin-top:10px"><span class="sp"></span><button id="tryCancel">Cancel</button><button id="tryGo" class="primary">Add it there</button></div></div>`;
+  document.body.appendChild(box);
+  const selEl = box.querySelector('#trySel'), all = [...selEl.querySelectorAll('option')];
+  selEl.selectedIndex = 0; selEl.focus();
+  box.querySelector('#tryQ').oninput = (e) => { const q = e.target.value.toLowerCase(); for (const o of all) o.hidden = !!q && !o.textContent.toLowerCase().includes(q) && !o.parentElement.label.toLowerCase().includes(q); const first = all.find((o) => !o.hidden); if (first) first.selected = true; };
+  const close = () => box.remove();
+  box.querySelector('#tryCancel').onclick = close; box.onclick = (e) => { if (e.target === box) close(); };
+  box.onkeydown = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } if (e.key === 'Enter' && e.target.id !== 'tryQ') go(); };
+  const go = () => {
+    const key = selEl.value; if (!key) return;
+    const [tn, tj] = key.split('#'), tl = BANKS[tn].layers[+tj];
+    snapshot();
+    sel().adds ||= {};
+    if (!(tl.files || []).includes(f) && !(tl.extra || []).includes(f)) { const a = (sel().adds[key] ||= []); if (!a.includes(f)) a.push(f); }
+    if (box.querySelector('input[name=tryMode]:checked').value === 'use') takeSel(tn, f).v = 'yes';
+    if (box.querySelector('#tryOut').checked) takeSel(name, f).v = 'no';
+    touch(); close(); renderMain();
+    toast(`Added to ${BANKS[tn].label} › ${tl.label}`, () => { partOf[tn] = parts(tn).findIndex((p) => p.lis.includes(+tj)); store.set('part', partOf); go2(tn); });
+  };
+  const go2 = (n) => { cur = n; store.set('cur', cur); renderSide(); renderMain(); scrollTo(0, 0); };
+  box.querySelector('#tryGo').onclick = go;
+}
+function toast(text, onGo) {
+  document.getElementById('toast')?.remove();
+  const t = document.createElement('div'); t.id = 'toast'; t.innerHTML = `<span>${esc(text)}</span>${onGo ? '<button>Go there</button>' : ''}`;
+  document.body.appendChild(t); if (onGo) t.querySelector('button').onclick = () => { t.remove(); onGo(); };
+  setTimeout(() => t.remove(), 6000);
 }
 
 function drawWaves() {

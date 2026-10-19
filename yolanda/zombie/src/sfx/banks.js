@@ -55,12 +55,21 @@ export const BANKS = {
 
   // ---- melee hits: the game already plays these (synthesised); the first takes the user adds replace the synth,
   // which stays as a quiet "classic" layer underneath until switched off on the board ----
+  swing: { label: 'Swing whoosh (bat, axe, fists)', group: 'Weapons', sub: 'Melee hits', hook: 'a melee swing goes through the air', layers: [
+    { label: 'Whoosh', files: [], extra: rl('whoosh'), gain: 0.6, pitch: [-1.5, 1], wet: 0.12 },
+    { label: 'Classic synth (under it)', synth: 'swing', gain: 0.5 },
+  ] },
+  bulletHit: { label: 'Bullet hits a zombie', group: 'Weapons', sub: 'Guns', hook: 'a bullet or pellet hits a zombie', layers: [
+    { label: 'Flesh impact', files: [], extra: [...lib('punch', 'soft'), ...rl('scrack')], gain: 0.7, pitch: [-1, 1.5], wet: 0.1 },
+    { label: 'Wet', files: [], extra: [...lib('squish'), ...rl('swet')], gain: 0.45, pitch: [-1, 1], wet: 0.08 },
+    { label: 'Classic synth (under it)', synth: 'bulletHit', gain: 0.5 },
+  ] },
   fistHit: { label: 'Fist / kick hit', group: 'Weapons', sub: 'Melee hits', hook: "a fist or kick lands", layers: [
-    { label: 'Punch', files: [], extra: lib('punch', 'punchheavy'), gain: 0.9, pitch: [-1, 1], wet: 0.12 },
+    { label: 'Punch', files: [], extra: [...lib('punch', 'punchheavy'), ...rl('scrack')], gain: 0.9, pitch: [-1, 1], wet: 0.12 },
     { label: 'Classic synth thump (under it)', synth: 'fistHit', gain: 0.6 },
   ] },
   batHit: { label: 'Bat hit', group: 'Weapons', sub: 'Melee hits', hook: "the bat lands", layers: [
-    { label: 'Crack', files: [], extra: lib('wood', 'thwack'), gain: 0.9, pitch: [-1, 0.8], wet: 0.2 },
+    { label: 'Crack', files: [], extra: [...lib('wood', 'thwack'), ...rl('scrack')], gain: 0.9, pitch: [-1, 0.8], wet: 0.2 },
     { label: 'Body', files: [], extra: lib('soft', 'punchheavy'), gain: 0.8, pitch: [-1.5, 0.5], wet: 0.1 },
     { label: 'Classic synth (under it)', synth: 'batHit', gain: 0.5 },
   ] },
@@ -71,12 +80,12 @@ export const BANKS = {
     { label: 'Classic synth (under it)', synth: 'axeHit', gain: 0.5 },
   ] },
   sever: { label: 'Limb severed / gore', group: 'Weapons', sub: 'Melee hits', hook: "a limb comes off", layers: [
-    { label: 'Wet', files: [], extra: lib('squish'), gain: 0.85, pitch: [-2, 0.5], wet: 0.15 },
-    { label: 'Snap', files: [], extra: lib('thwack', 'wood'), gain: 0.5, pitch: [0, 2], wet: 0.1 },
+    { label: 'Wet', files: [], extra: [...lib('squish'), ...rl('swet')], gain: 0.85, pitch: [-2, 0.5], wet: 0.15 },
+    { label: 'Snap', files: [], extra: [...rl('sbone'), ...lib('thwack', 'wood')], gain: 0.5, pitch: [0, 2], wet: 0.1 },
     { label: 'Classic synth (under it)', synth: 'sever', gain: 0.5 },
   ] },
   knockdown: { label: 'Body hits the floor', group: 'Weapons', sub: 'Melee hits', hook: "a zombie is knocked to the floor", layers: [
-    { label: 'Thud (as the fall lands)', files: [], extra: lib('soft', 'punchheavy'), gain: 0.85, pitch: [-2, 0], at: 0.55, wet: 0.25 },
+    { label: 'Thud (as the fall lands)', files: [], extra: [...lib('soft', 'punchheavy'), ...rl('bodyfall')], gain: 0.85, pitch: [-2, 0], at: 0.55, wet: 0.25 },
     { label: 'Classic synth (under it)', synth: 'knockdown', gain: 0.5 },
   ] },
   bump: { label: 'Zombie bumps into Yola', group: 'Weapons', sub: 'Melee hits', hook: "a zombie bumps into Yola", layers: [
@@ -92,7 +101,7 @@ export const BANKS = {
     { label: 'Classic synth (under it)', synth: 'shieldHit', gain: 0.5 },
   ] },
   doorOpen: { label: 'Door opens', group: 'World', sub: 'Doors', hook: "a door opens", layers: [
-    { label: 'Door', files: [], extra: lib('door'), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
+    { label: 'Door', files: [], extra: [...lib('door'), ...rl('ldoorsopen')], gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
     { label: 'Classic synth (under it)', synth: 'doorOpen', gain: 0.4 },
   ] },
 
@@ -118,7 +127,7 @@ export const BANKS = {
   ] },
   zombieDeath: { label: 'Death', group: 'Zombies', sub: 'Every zombie', hook: 'a zombie dies', layers: [
     { label: 'Death cry', files: [], extra: zl('death'), gain: 0.75, pitch: [-1.5, 1], wet: 0.25 },
-    { label: 'Body hits the floor', files: [], extra: lib('soft', 'punchheavy'), gain: 0.6, pitch: [-2, 0], at: [0.4, 0.55], wet: 0.2 },
+    { label: 'Body hits the floor', files: [], extra: [...lib('soft', 'punchheavy'), ...rl('bodyfall')], gain: 0.6, pitch: [-2, 0], at: [0.4, 0.55], wet: 0.2 },
     { label: 'Classic synth (under it)', synth: 'zombieDeath', gain: 0.5 },
   ] },
   sprinterScream: { label: 'Her scream before the charge', group: 'Zombies', sub: 'Sprinter (big lady)', hook: 'the sprinter spots Yola', layers: [
@@ -129,7 +138,7 @@ export const BANKS = {
   ] },
   sprinterDeath: { label: 'Her death', group: 'Zombies', sub: 'Sprinter (big lady)', hook: 'the sprinter dies', layers: [
     { label: 'Death cry', files: [], extra: zl('sdeath'), gain: 0.85, pitch: [-1, 0.5], wet: 0.3 },
-    { label: 'Heavy body falls', files: [], extra: [...lib('soft', 'punchheavy'), ...zl('stomp')], gain: 0.75, pitch: [-3, 0], at: [0.45, 0.6], wet: 0.25 },
+    { label: 'Heavy body falls', files: [], extra: [...lib('soft', 'punchheavy'), ...rl('bodyfall'), ...zl('stomp')], gain: 0.75, pitch: [-3, 0], at: [0.45, 0.6], wet: 0.25 },
   ] },
   guardRoar: { label: 'Roar (he sees you)', group: 'Zombies', sub: 'Guard (boss)', hook: 'the guard wakes or appears', layers: [
     { label: 'Roar', files: [], extra: zl('groar'), gain: 1, pitch: [-0.5, 0.5], wet: 0.4 },
@@ -138,7 +147,7 @@ export const BANKS = {
     { label: 'Grunt', files: [], extra: zl('gattack'), gain: 0.9, pitch: [-1, 0.5], wet: 0.25 },
   ] },
   guardSlam: { label: 'Ground slam', group: 'Zombies', sub: 'Guard (boss)', hook: 'the guard leap-slam lands', layers: [
-    { label: 'Boom', files: [], extra: zl('stomp'), gain: 1, pitch: [-1, 0.5], wet: 0.35 },
+    { label: 'Boom', files: [], extra: [...zl('stomp'), ...rl('boom', 'thump')], gain: 1, pitch: [-1, 0.5], wet: 0.35 },
     { label: 'Debris', files: [], extra: zl('debris'), gain: 0.5, pitch: [-1, 1], at: [0.05, 0.12], wet: 0.2 },
     { label: 'Roar with it', files: [], extra: zl('gattack', 'groar'), gain: 0.7, pitch: [-1, 0], wet: 0.3 },
     { label: 'Sub boom (headphones)', synth: 'subShotgun', gain: 1 },
@@ -148,11 +157,11 @@ export const BANKS = {
   ] },
   guardEnraged: { label: 'ENRAGED', group: 'Zombies', sub: 'Guard (boss)', hook: 'both arms gone: he enrages', layers: [
     { label: 'Roar', files: [], extra: zl('groar'), gain: 1, pitch: [-1, 0], wet: 0.4 },
-    { label: 'Boss stinger', files: [], extra: zl('sting'), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 },
+    { label: 'Boss stinger', files: [], extra: [...zl('sting'), ...rl('suck')], gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 },
   ] },
   guardDeath: { label: 'His death', group: 'Zombies', sub: 'Guard (boss)', hook: 'the finishing blow on the guard', layers: [
     { label: 'Death roar', files: [], extra: zl('gdeath'), gain: 1, pitch: [-0.5, 0.5], wet: 0.45 },
-    { label: 'Huge body falls', files: [], extra: zl('stomp'), gain: 0.9, pitch: [-1, 0], at: [0.6, 0.8], wet: 0.3 },
+    { label: 'Huge body falls', files: [], extra: [...zl('stomp'), ...rl('bodyfall')], gain: 0.9, pitch: [-1, 0], at: [0.6, 0.8], wet: 0.3 },
   ] },
   hordeDistant: { label: 'The horde, far off', group: 'Zombies', sub: 'Horde & atmosphere', pending: true, cadence: 4, layers: [
     { label: 'Distant moan', files: [], extra: zl('horde'), gain: 0.4, pitch: [-1, 1], wet: 0.6 },
@@ -224,6 +233,7 @@ export const BANKS = {
     { label: 'Huge low hit', files: [], extra: rl('boom'), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
   ] },
   revealLensHit: { label: 'Head hits the lens (glass)', group: 'Opening reveal', sub: 'The finisher', old: 'lensHit', hook: 'the head flies into the camera lens', layers: [
+    { label: 'Complete hit (thunk + crack in one take)', files: [], extra: rl('glasshead'), gain: 0.95, pitch: [-0.5, 0.5], wet: 0.15 },
     { label: 'Thunk', files: [], extra: rl('gthunk'), gain: 0.9, pitch: [-1, 0.5], wet: 0.15 },
     { label: 'Glass cracking', files: [], extra: rl('gcrack'), gain: 0.85, pitch: [-0.5, 0.5], at: 0.01, wet: 0.2 },
     { label: 'Tiny shards', files: [], extra: rl('gshards'), gain: 0.4, pitch: [0, 2], at: 0.12, wet: 0.2 },
@@ -248,11 +258,13 @@ export const BANKS = {
   footstep: { label: 'Yola footstep', group: 'Coming next', sub: 'Not in the game yet', pending: true, cadence: 0.32, layers: [
     { label: 'Step', files: [], extra: lib('step', 'stepsoft'), gain: 0.5, pitch: [-1, 1], wet: 0.08 },
   ] },
-  doorClose: { label: 'Door closes', group: 'Coming next', sub: 'Not in the game yet', pending: true, layers: [{ label: 'Door', files: [], extra: lib('doorshut'), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }] },
-  glassBreak: { label: 'Glass breaks', group: 'Coming next', sub: 'Not in the game yet', pending: true, layers: [{ label: 'Glass', files: [], extra: lib('glass'), gain: 0.85, pitch: [-1, 1], wet: 0.3 }] },
+  doorClose: { label: 'Door closes', group: 'Coming next', sub: 'Not in the game yet', pending: true, layers: [{ label: 'Door', files: [], extra: [...lib('doorshut'), ...rl('ldoorsclose')], gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }] },
+  glassBreak: { label: 'Glass breaks', group: 'Coming next', sub: 'Not in the game yet', pending: true, layers: [{ label: 'Glass', files: [], extra: [...lib('glass'), ...rl('gcrack', 'gshards')], gain: 0.85, pitch: [-1, 1], wet: 0.3 }] },
   weaponSwap: { label: 'Weapon swap (handling)', group: 'Coming next', sub: 'Not in the game yet', pending: true, layers: [{ label: 'Handling', files: [], extra: lib('cloth', 'click'), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] },
   pickupItem: { label: 'Pick up an item', group: 'Coming next', sub: 'Not in the game yet', pending: true, layers: [{ label: 'Item', files: [], extra: lib('pickup', 'cloth'), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] },
 };
+
+for (const [name, b] of Object.entries(BANKS)) b.layers.forEach((l, li) => { l.sound = name; l.li = li; });
 
 // what each take is, for the Sound Board
 const SRC = {

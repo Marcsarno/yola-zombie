@@ -47,6 +47,12 @@
   .help { color:var(--dim); font-size:12px; margin-top:6px; }
   .help.hook { color:#bff3f1; margin:8px 0 0; }
   .help.pend { color:#ffd99a; margin:8px 0 0; }
+  .vd .try { color:#bfe0ff; border-color:#3f5d7a; }
+  .use.moved { color:#bfe0ff; } .mini { padding:1px 7px; font-size:11px; margin-left:6px; }
+  .modal { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .mcard { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; width:min(560px, 100%); max-height:90vh; overflow:auto; display:flex; flex-direction:column; gap:8px; }
+  .mcard select { width:100%; } .mcard .opt { display:flex; gap:8px; align-items:flex-start; color:var(--ink); }
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:60; background:#1f5d60; border:1px solid var(--teal); color:#eaffff; padding:10px 14px; border-radius:10px; display:flex; gap:10px; align-items:center; box-shadow:0 6px 20px rgba(0,0,0,.4); }
   .help.how { margin:6px 0 2px; } .help.how b { color:var(--ink); }
   .take { display:grid; grid-template-columns:auto 220px 1fr auto; gap:8px 10px; align-items:center; padding:7px 8px; border-radius:9px; border:1px solid transparent; }
   .take:nth-child(odd) { background:rgba(255,255,255,.025); }
@@ -135,7 +141,7 @@
   <div id="side">
     <input type="search" id="q" placeholder="Search sounds and takes ( / )">
     <div id="list"></div>
-    <div class="keys"><b>Space</b> play in game · <b>A</b> audition the rest · <b>N</b> next to review · <b>Esc</b> stop · <b>[ ]</b> previous / next sound · <b>Ctrl+Z</b> undo<br>On a take: <b>Enter</b> play · <b>M</b> in mix · <b>K</b> keep/add · <b>L</b> later · <b>R</b> reject · <b>U</b> undo</div>
+    <div class="keys"><b>Space</b> play in game · <b>A</b> audition the rest · <b>N</b> next to review · <b>Esc</b> stop · <b>[ ]</b> previous / next sound · <b>Ctrl+Z</b> undo<br>On a take: <b>Enter</b> play · <b>M</b> in mix · <b>K</b> keep/add · <b>L</b> later · <b>R</b> reject · <b>U</b> undo · <b>T</b> try in another sound</div>
   </div>
   <div id="mob">
     <button id="prev" title="Previous sound">◀</button><select id="pick"></select><button id="next" title="Next sound">▶</button>

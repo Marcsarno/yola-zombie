@@ -1,6 +1,6 @@
 {
  "version": 2,
- "savedAt": "2026-10-18T23:43:24.971Z",
+ "savedAt": "2026-10-19T19:21:25.282Z",
  "takes": {
   "shot:assets/sfx/guns/pistol_01.mp3": {
    "v": "yes"
@@ -360,8 +360,85 @@
   },
   "weaponSwap:assets/sfx/lib/cloth_02.mp3": {
    "v": "yes"
+  },
+  "revealDoorsOpen:assets/sfx/reveal/ldoorsopen_04.mp3": {
+   "v": "yes"
+  },
+  "liftClose:assets/sfx/reveal/ldoorsclose_04.mp3": {
+   "v": "yes"
+  },
+  "revealPowerDown:assets/sfx/reveal/breaker_02.mp3": {
+   "v": "yes"
+  },
+  "revealFlash:assets/sfx/reveal/arc_06.mp3": {
+   "v": "yes"
+  },
+  "revealFlash:assets/sfx/reveal/arc_02.mp3": {
+   "v": "yes"
+  },
+  "revealCutHit:assets/sfx/reveal/thump_09.mp3": {
+   "v": "yes"
+  },
+  "revealCutHit:assets/sfx/reveal/boom_08.mp3": {
+   "v": "yes"
+  },
+  "revealHeartbeat:assets/sfx/reveal/heart_02.mp3": {
+   "v": "yes"
+  },
+  "revealSpinSwish:assets/sfx/reveal/slowswish_02.mp3": {
+   "v": "yes"
+  },
+  "revealSmash:assets/sfx/reveal/scrack_03.mp3": {
+   "v": "yes"
+  },
+  "revealSmash:assets/sfx/lib/squish_07.mp3": {
+   "v": "yes"
+  },
+  "revealSmash:assets/sfx/reveal/sbone_01.mp3": {
+   "v": "yes"
+  },
+  "revealSmash:assets/sfx/reveal/boom_08.mp3": {
+   "v": "yes"
+  },
+  "revealFlash:assets/sfx/reveal/arc_01.mp3": {
+   "v": "yes"
+  },
+  "revealFlash:assets/sfx/reveal/arc_03.mp3": {
+   "v": "yes"
+  },
+  "revealFlash:assets/sfx/reveal/crack_03.mp3": {
+   "v": "yes"
+  },
+  "revealFlashBoom:assets/sfx/reveal/arc_11.mp3": {
+   "v": "yes"
+  },
+  "revealFlashBoom:assets/sfx/reveal/boom_08.mp3": {
+   "v": "yes"
+  },
+  "revealFlashBoom:assets/sfx/reveal/arc_01.mp3": {
+   "v": "yes"
+  },
+  "revealLiftArrive:assets/sfx/reveal/clunk_01.mp3": {
+   "db": -8
+  },
+  "revealLiftArrive:assets/sfx/reveal/clunk_02.mp3": {
+   "v": "yes"
+  },
+  "revealLiftArrive:assets/sfx/reveal/larrive_02.mp3": {
+   "v": "yes",
+   "db": -6.5
   }
  },
- "layers": {},
+ "layers": {
+  "revealSmash#3": {
+   "db": -5
+  },
+  "revealLiftArrive#0": {
+   "db": -7
+  },
+  "revealLiftArrive#1": {
+   "db": -9.5
+  }
+ },
  "sounds": {}
 }
