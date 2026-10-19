@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -43541,13 +43541,13 @@ void main() {
     _getNodeRef(cache, index, object) {
       if (cache.refs[index] <= 1) return object;
       const ref = object.clone();
-      const updateMappings = (original, clone2) => {
+      const updateMappings = (original, clone3) => {
         const mappings = this.associations.get(original);
         if (mappings != null) {
-          this.associations.set(clone2, mappings);
+          this.associations.set(clone3, mappings);
         }
         for (const [i, child] of original.children.entries()) {
-          updateMappings(child, clone2.children[i]);
+          updateMappings(child, clone3.children[i]);
         }
       };
       updateMappings(object, ref);
@@ -50655,16 +50655,16 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
-    const clone2 = source.clone();
-    parallelTraverse(source, clone2, function(sourceNode, clonedNode) {
+    const clone3 = source.clone();
+    parallelTraverse(source, clone3, function(sourceNode, clonedNode) {
       sourceLookup.set(clonedNode, sourceNode);
       cloneLookup.set(sourceNode, clonedNode);
     });
-    clone2.traverse(function(node) {
+    clone3.traverse(function(node) {
       if (!node.isSkinnedMesh) return;
       const clonedMesh = node;
       const sourceMesh = sourceLookup.get(node);
@@ -50676,7 +50676,7 @@ void main() {
       });
       clonedMesh.bind(clonedMesh.skeleton, clonedMesh.bindMatrix);
     });
-    return clone2;
+    return clone3;
   }
   function parallelTraverse(a, b, callback) {
     callback(a, b);
@@ -50685,7 +50685,7 @@ void main() {
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -52819,7 +52819,7 @@ void main() {
     // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
     // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
     measureGaits(suf = "") {
-      const out = {}, L3 = new Vector3(), LT = new Vector3(), R = new Vector3(), RT = new Vector3();
+      const out = {}, L3 = new Vector3(), LT = new Vector3(), R = new Vector3(), RT2 = new Vector3();
       const all = Object.values(this.actions);
       this.container.rotation.y = 0;
       this.outer.position.set(0, 0, 0);
@@ -52836,8 +52836,8 @@ void main() {
           this.worldPos("LeftFoot", L3);
           this.worldPos("LeftToeBase", LT);
           this.worldPos("RightFoot", R);
-          this.worldPos("RightToeBase", RT);
-          rows.push({ L: L3.x * dx + L3.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L3.y, LT.y), ry: Math.min(R.y, RT.y) });
+          this.worldPos("RightToeBase", RT2);
+          rows.push({ L: L3.x * dx + L3.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L3.y, LT.y), ry: Math.min(R.y, RT2.y) });
         }
         const vel = [];
         for (const [p, y] of [["L", "ly"], ["R", "ry"]]) {
@@ -54948,9 +54948,9 @@ void main() {
         return i < 0 ? null : new Matrix4().multiplyMatrices(sk.matrixWorld, sk.bindMatrix).multiply(sk.skeleton.boneInverses[i].clone().invert());
       };
       this.model.updateMatrixWorld(true);
-      const RH = rest(hb), RT = rest(ht);
-      if (!RH || !RT) return;
-      const H4 = new Vector3().setFromMatrixPosition(RH), T2 = new Vector3().setFromMatrixPosition(RT), U2 = T2.clone().sub(H4), L3 = U2.length();
+      const RH = rest(hb), RT2 = rest(ht);
+      if (!RH || !RT2) return;
+      const H4 = new Vector3().setFromMatrixPosition(RH), T2 = new Vector3().setFromMatrixPosition(RT2), U2 = T2.clone().sub(H4), L3 = U2.length();
       U2.normalize();
       const F3 = new Vector3(0, 0, 1).applyQuaternion(this.model.getWorldQuaternion(new Quaternion()));
       F3.addScaledVector(U2, -F3.dot(U2)).normalize();
@@ -56498,7 +56498,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -60317,7 +60317,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
+  // node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -60357,7 +60357,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
+  // node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -60448,7 +60448,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -60513,7 +60513,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -60601,7 +60601,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -60785,7 +60785,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -60857,7 +60857,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -61210,7 +61210,7 @@ void main() {
     return magicSquare;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -61409,7 +61409,7 @@ void main() {
     return samples;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
+  // node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -61843,7 +61843,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -62270,7 +62270,7 @@ void main() {
     "Denoise": 5
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -62322,7 +62322,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -62606,7 +62606,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
+  // node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -62694,7 +62694,7 @@ void main() {
     )
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -67320,6 +67320,39 @@ void main() {
       A.tone(t, 1.3, 60, { type: "sawtooth", gain: 0.04, f2: 48, attack: 0.2 });
       A.noise(t + 1.2, 0.2, { type: "lowpass", f: 500, f2: 120, gain: 0.18 });
     }
+    // (2026-10-19, the launch and the cuts) a camera cut in the dark of the flashes: a deep thump under the flash's crack, so
+    // each new angle lands as a beat
+    cutHit(k = 1) {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.tone(t, 0.7, 44, { type: "sine", gain: 0.55 * k, f2: 28, attack: 3e-3 });
+      A.noise(t, 0.25, { type: "lowpass", f: 600, f2: 120, gain: 0.25 * k });
+    }
+    // she pushes off: a scuff of rubber on the floor, a short rising rush of air
+    launchOff() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, 0.12, { type: "bandpass", f: 1600, q: 1.2, f2: 700, gain: 0.3 });
+      A.tone(t, 0.18, 70, { type: "sine", gain: 0.4, f2: 45 });
+      A.noise(t + 0.03, 0.45, { type: "bandpass", f: 350, q: 0.8, f2: 1800, gain: 0.18, attack: 0.2 });
+    }
+    // the spin in slow motion: the bat through the air, stretched (a long, low, turning swish)
+    spinSwish(secs = 0.9) {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, secs, { type: "bandpass", f: 260, q: 1.4, f2: 1500, gain: 0.3, attack: secs * 0.55 });
+      A.noise(t + secs * 0.5, secs * 0.5, { type: "bandpass", f: 1500, q: 1.6, f2: 420, gain: 0.2, attack: 0.02 });
+      A.tone(t, secs, 90, { type: "sine", gain: 0.18, f2: 60, attack: secs * 0.4 });
+    }
+    // the freeze: time stops (a sucked-in swell cut dead, a sub drop, a high ring that hangs over the card)
+    freezeHit() {
+      if (!this.ok) return;
+      const t = this.now(), A = this.audio;
+      A.noise(t, 0.08, { type: "highpass", f: 2400, gain: 0.55 });
+      A.tone(t, 1.8, 50, { type: "sine", gain: 0.8, f2: 26, attack: 3e-3 });
+      A.noise(t, 1.2, { type: "lowpass", f: 1400, f2: 80, gain: 0.35, attack: 4e-3 });
+      for (const [hz, g] of [[1318.5, 0.035], [1975.5, 0.025]]) A.tone(t + 0.02, 2.4, hz, { type: "sine", gain: g, attack: 0.01 });
+    }
     heartbeat(k = 1) {
       if (!this.ok) return;
       const t = this.now(), A = this.audio;
@@ -67948,12 +67981,1095 @@ void main() {
     return c;
   }
 
+  // src/opening/revealtune.js
+  var PHASES = [
+    ["doors", "Shut doors (6 \u2192 7)"],
+    ["open", "Doors open: fog, tilt up to old Yola"],
+    ["cab", "Lift flashes (between flashes)"],
+    ["threat", "The patient, red-lit"],
+    ["walk", "Walk-out (feet)"],
+    ["batShot", "Bat on the wall"],
+    ["launch", "Launch at the lens"],
+    ["card", "Freeze + name card"],
+    ["burst", "The hit and the burst"],
+    ["after", "Lights back (gameplay)"]
+  ];
+  var REVEAL_DEFAULTS = {
+    // From the cut to the lift the reveal runs on the game's own lighting (game.on): the baked floor light, the fittings, EXIT signs,
+    // the polished floor, Yola's shadow, the emergency look, haze. Each phase dims it: amb the room's general light (1 = the
+    // game's), floor the baked floor light and the fittings' reflections, signs the EXIT signs, emRed the emergency red pools and
+    // beacon, chars the light on the characters; red, key, cab, smoke, beam, dust are the reveal's own extras on top.
+    light: {
+      doors: { amb: 0.3, floor: 0.35, signs: 1, emRed: 0.8, chars: 0.4, red: 0.3, key: 0, spotAt: "flash", cab: 0, exposure: 1, smoke: 0, beam: 0, dust: 0, secs: 0 },
+      open: { amb: 0.1, floor: 0.25, signs: 0.9, emRed: 0.6, chars: 0.1, red: 0.05, key: 0.14, spotAt: "flash", cab: 0, exposure: 1, smoke: 2.4, beam: 0.35, dust: 0.5, secs: 0 },
+      cab: { amb: 0.1, floor: 0.25, signs: 0.9, emRed: 0.6, chars: 0.1, red: 0.03, key: 0, spotAt: "flash", cab: 0, exposure: 1, smoke: 1, beam: 0.05, dust: 0.15, secs: 0 },
+      threat: { amb: 0.18, floor: 0.3, signs: 1, emRed: 0.9, chars: 0.5, red: 0.6, key: 0, spotAt: "flash", cab: 0, exposure: 1, smoke: 1, beam: 0, dust: 0, secs: 0 },
+      walk: { amb: 0.16, floor: 0.35, signs: 1, emRed: 0.7, chars: 0.35, red: 0, key: 0.28, spotAt: "flash", cab: 0, exposure: 1, smoke: 1, beam: 0.35, dust: 0.45, secs: 0 },
+      batShot: { amb: 0.2, floor: 0.4, signs: 1, emRed: 0.8, chars: 0.4, red: 0, key: 0.15, spotAt: "flash", cab: 0, exposure: 1, smoke: 1, beam: 0.2, dust: 0.3, secs: 0 },
+      launch: { amb: 0.32, floor: 0.5, signs: 1, emRed: 0.8, chars: 0.6, red: 0, key: 0.25, spotAt: "flash", cab: 0, exposure: 1, smoke: 1, beam: 0.3, dust: 0.3, secs: 0.2 },
+      card: { amb: 0.4, floor: 0.55, signs: 1, emRed: 0.8, chars: 0.8, red: 0, key: 0.5, spotAt: "flash", cab: 0, exposure: 1.05, smoke: 1, beam: 0.3, dust: 0.3, secs: 0 },
+      burst: { amb: 0.38, floor: 0.55, signs: 1, emRed: 0.9, chars: 0.7, red: 0, key: 0.4, spotAt: "flash", cab: 0, exposure: 1, smoke: 1, beam: 0.2, dust: 0.2, secs: 0 },
+      after: { amb: 1, floor: 1, signs: 1, emRed: 1, chars: 1, red: 0, key: 0, spotAt: "flash", cab: 1, exposure: 1, smoke: 0, beam: 0, dust: 0, secs: 1.2 }
+    },
+    // the picture quality of the reveal only (the game's own look is untouched): the opening's picture chain (post: bloom, film
+    // grain and vignette), the flash's light as a real beam through the fog (beam, beamK its strength), the fog puffs' rolling
+    // insides and soft edges (softFog), fog lit from behind glowing toward the lens (glow), her shadow thrown by the flash
+    // across the floor (flashShadow)
+    quality: { post: true, bloom: 0.8, bloomRadius: 0.6, bloomThreshold: 0, film: true, grain: 0.016, vignette: 0.32, beam: true, beamK: 1, softFog: true, glow: 1, flashShadow: true },
+    // the game's lighting in the reveal: on from the cut to the lift; its haze; Yola's own shadow; the impact frame at the hit
+    game: { on: true, haze: true, shadow: true, impact: true },
+    // when the lights come back up: 'return' (as the camera rises back to the game), 'burst' (at the hit), 'card' (with
+    // the name card), 'walk' (as she steps out of the lift)
+    brighten: "return",
+    // the failing light at the back of the lift car: what each flash does
+    flash: {
+      power: 1,
+      // the flash's brightness (x the spotlight's full flash)
+      decay: 0.16,
+      // seconds a flash takes to die (each flash in the list can set its own)
+      height: 2.25,
+      back: -14.45,
+      angle: 0.46,
+      penumbra: 0.8,
+      // where the light hangs (height, z) and its cone
+      beam: 0.7,
+      dust: 0.8,
+      halo: 0.9,
+      sparks: 1,
+      // what each flash adds: the light shaft, the dust in it, the fitting's glow, sparks
+      swap: true
+      // the hall flips clean / outbreak with the flashes (old Yola: clean, Yola 3.0: outbreak)
+    },
+    // the flashes, in seconds from the doors opening: [time, who ('old' / 'new' Yola), brightness, fade (s, 0: the default),
+    // boom (the last one: her, and she stays)]
+    flashes: [
+      [0, "old", 1, 0, false],
+      [1.15, "old", 0.55, 0, false],
+      [2, "new", 0.85, 0, false],
+      [2.55, "old", 0.6, 0, false],
+      [3.6, "old", 0.8, 0, false],
+      [3.76, "new", 0.85, 0, false],
+      [3.89, "old", 0.9, 0, false],
+      [4, "new", 0.9, 0, false],
+      [4.1, "old", 0.95, 0, false],
+      [4.19, "new", 0.95, 0, false],
+      [4.36, "old", 0.85, 0, false],
+      [4.62, "new", 0.75, 0, false],
+      [5, "old", 0.65, 0, false],
+      [5.95, "new", 1.5, 1.1, true]
+    ],
+    flashTail: 1.25,
+    // seconds held after the last flash before the cut
+    // the floor number and the doors opening: the hold on the 7 after the DING, then the low lens at the threshold (camX/Y/Z:
+    // where it stands, x from the doors' centre) tilting up through the fog to the old Yola (endY: where it ends, her face)
+    open: { dingHold: 1.1, dingWidth: 0.85, camX: 0.12, camY: 0.2, camZ: -9.3, startY: -0.05, startZ: -10.6, endY: 1.45, tiltDelay: 0.9, tiltSecs: 3.2, hold: 0.6, fov: 38 },
+    // the rhythm generator's settings (the Studio's "Generate" makes the list above from these)
+    rhythm: { first: 4, firstGap: 0.85, burst: 6, burstFrom: 0.16, burstTo: 0.09, slow: 3, slowFrom: 0.16, slowTo: 0.38, breath: 0.95 },
+    walk: {
+      bat: true,
+      // she carries the bat out (in her fist, the game's grip); off: empty-handed
+      slow: 0.7,
+      // slow motion (1: real time)
+      stopZ: -10.15,
+      // where she stops if the shot runs long: the launch starts where she is (z; the doors are at -11.1)
+      secs: 2.7,
+      // how long the feet shot holds
+      stepShake: 0.012
+      // the camera jolt on each step
+    },
+    batShot: false,
+    // the cut to the athlete's bat leaning by the doors (off when she walks out holding it)
+    launch: {
+      variant: "B_uppercut",
+      // the jump finisher: 'B_uppercut' (the user's pick, 2026-10-19: the coil, the launch, the spin as she swings) or 'C_uppercut_mirrored' (the same from a deep crouch facing forward)
+      jump: 2.4,
+      // 1.4, 2.4 or 3.4 m
+      reach: 1,
+      // how much of the jump's own length she travels (1: all of it)
+      turn: 0,
+      // her heading, degrees off straight out of the lift (+: to her left)
+      gap: 0.25,
+      // the zombie's distance past where the bat lands (m): bigger = further back
+      lunge: 1.2,
+      // how far he lurches at her before the hit (m)
+      hold: 0.35,
+      // seconds she stands set before she goes
+      rampSlow: 1,
+      rampLen: 0.08,
+      rampAt: 0,
+      // the speed ramp: slow motion in the air (x real speed; 1 = none, the user's pick 2026-10-19: the original timing; 0.25 was the slowed spin), how fast it eases in (s of her clip), from when (s after she leaves the ground)
+      freezeLead: 0.07,
+      // the freeze: this many seconds of her swing before the bat lands
+      boomToCard: 0.12,
+      // seconds from the freeze's boom to the name card
+      cardHold: 2.2,
+      // seconds the card holds
+      slow: 0.26,
+      // slow motion after the hit
+      headSecs: 0.42,
+      lensDist: 0.62,
+      // the head's flight to the lens: its time and how close it ends
+      after: 0.55,
+      // seconds after the head hits the lens before the camera starts back
+      returnSecs: 1.8,
+      // the camera's rise back to the game
+      cam: { yawOff: 12, dist: 4.3, height: 1.15, pitch: 3, look: 0.35, fov: 42, push: 0.35 }
+      // the camera on the launch: degrees off her heading, distance, aim height, tilt, aim between her (0) and him (1), lens, push-in
+    }
+  };
+  var clone2 = (o) => JSON.parse(JSON.stringify(o));
+  var RT = clone2(REVEAL_DEFAULTS);
+  function mergeTuning(dst, src) {
+    if (!src || typeof src !== "object") return dst;
+    for (const k of Object.keys(dst)) {
+      if (!(k in src)) continue;
+      const a = dst[k], b = src[k];
+      if (Array.isArray(a)) {
+        if (Array.isArray(b)) dst[k] = clone2(b);
+      } else if (a && typeof a === "object") mergeTuning(a, b);
+      else if (typeof b === typeof a) dst[k] = b;
+    }
+    return dst;
+  }
+  function resetTuning() {
+    const d = clone2(REVEAL_DEFAULTS);
+    for (const k of Object.keys(RT)) RT[k] = d[k];
+  }
+  var TUNING_URL = "assets/opening/reveal_tuning.json";
+  async function loadTuning() {
+    try {
+      const r = await fetch(TUNING_URL, { cache: "no-store" });
+      if (r.ok) mergeTuning(RT, await r.json());
+    } catch {
+    }
+    return RT;
+  }
+  function tuningJSON() {
+    return JSON.stringify(RT, null, 1);
+  }
+  function generateFlashes(R) {
+    const out = [];
+    let t = 0, who = "old";
+    const flip = () => {
+      const w = who;
+      who = who === "old" ? "new" : "old";
+      return w;
+    };
+    for (let i = 0; i < R.first; i++) {
+      out.push([+t.toFixed(2), i % 3 === 2 ? "new" : "old", +(1 - i * 0.12).toFixed(2), 0, false]);
+      t += R.firstGap * (1 + i % 2 * 0.3);
+    }
+    t += 0.25;
+    who = "old";
+    for (let i = 0; i < R.burst; i++) {
+      out.push([+t.toFixed(2), flip(), +(0.8 + 0.15 * i / Math.max(1, R.burst - 1)).toFixed(2), 0, false]);
+      t += R.burstFrom + (R.burstTo - R.burstFrom) * (i / Math.max(1, R.burst - 1));
+    }
+    for (let i = 0; i < R.slow; i++) {
+      t += R.slowFrom + (R.slowTo - R.slowFrom) * (i / Math.max(1, R.slow - 1));
+      out.push([+t.toFixed(2), flip(), +(0.85 - 0.1 * i).toFixed(2), 0, false]);
+    }
+    t += R.breath;
+    out.push([+t.toFixed(2), "new", 1.5, 1.1, true]);
+    return out;
+  }
+
+  // src/opening/revealfx.js
+  var glowTex = () => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const g = c.getContext("2d"), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, "rgba(255,255,255,1)");
+    gr.addColorStop(0.3, "rgba(255,255,255,0.5)");
+    gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 128, 128);
+    return new CanvasTexture(c);
+  };
+  var beamTex = () => {
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 128;
+    const g = c.getContext("2d");
+    const v = g.createLinearGradient(0, 0, 0, 128);
+    v.addColorStop(0, "rgba(255,255,255,1)");
+    v.addColorStop(0.5, "rgba(255,255,255,0.35)");
+    v.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = v;
+    g.fillRect(0, 0, 64, 128);
+    g.globalCompositeOperation = "destination-in";
+    const h = g.createLinearGradient(0, 0, 64, 0);
+    h.addColorStop(0, "rgba(0,0,0,0)");
+    h.addColorStop(0.35, "rgba(0,0,0,1)");
+    h.addColorStop(0.65, "rgba(0,0,0,1)");
+    h.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = h;
+    g.fillRect(0, 0, 64, 128);
+    return new CanvasTexture(c);
+  };
+  function rubberFloor() {
+    const N = 512, c = document.createElement("canvas");
+    c.width = c.height = N;
+    const g = c.getContext("2d");
+    g.fillStyle = "#20262d";
+    g.fillRect(0, 0, N, N);
+    for (let i = 0; i < 2200; i++) {
+      const v = 22 + Math.random() * 22 | 0;
+      g.fillStyle = `rgba(${v},${v + 4},${v + 10},0.5)`;
+      g.fillRect(Math.random() * N, Math.random() * N, 2, 2);
+    }
+    const step = N / 8;
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      const cx = (x + 0.5) * step, cy = (y + 0.5) * step, r = step * 0.3;
+      const gr = g.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 1, cx, cy, r);
+      gr.addColorStop(0, "#4a5560");
+      gr.addColorStop(0.75, "#2c343d");
+      gr.addColorStop(1, "#1a1f25");
+      g.fillStyle = gr;
+      g.beginPath();
+      g.arc(cx, cy, r, 0, Math.PI * 2);
+      g.fill();
+    }
+    for (let i = 0; i < 26; i++) {
+      g.strokeStyle = `rgba(120,130,140,${0.04 + Math.random() * 0.06})`;
+      g.lineWidth = 1 + Math.random() * 3;
+      g.beginPath();
+      const x = Math.random() * N, y = Math.random() * N;
+      g.moveTo(x, y);
+      g.quadraticCurveTo(x + (Math.random() - 0.5) * 120, y + (Math.random() - 0.5) * 60, x + (Math.random() - 0.5) * 200, y + (Math.random() - 0.5) * 80);
+      g.stroke();
+    }
+    const t = new CanvasTexture(c);
+    t.wrapS = t.wrapT = RepeatWrapping;
+    t.colorSpace = SRGBColorSpace;
+    t.anisotropy = 4;
+    const b = new CanvasTexture(c);
+    b.wrapS = b.wrapT = RepeatWrapping;
+    return { map: t, bump: b };
+  }
+  var BEAM_V = "varying vec3 vW; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }";
+  var BEAM_F = `uniform vec3 uApex; uniform vec3 uAxis; uniform float uCos2; uniform float uLen; uniform float uTan; uniform float uK; uniform float uTime; uniform vec3 uColor;
+  varying vec3 vW;
+  float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+  float vnoise(vec3 x) { vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(hash(i), hash(i + vec3(1, 0, 0)), f.x), mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), f.x), f.y),
+               mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), f.x), mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), f.x), f.y), f.z); }
+  void main() {
+    vec3 ro = cameraPosition, rd = normalize(vW - ro); float tEnd = length(vW - ro);
+    vec3 co = ro - uApex; float dv = dot(rd, uAxis), cv = dot(co, uAxis);
+    float a = dv * dv - uCos2, b = 2.0 * (dv * cv - uCos2 * dot(rd, co)), c = cv * cv - uCos2 * dot(co, co);
+    float tStart = 0.0, disc = b * b - 4.0 * a * c;
+    if (disc > 0.0 && abs(a) > 1e-5) { float sq = sqrt(disc), t1 = (-b - sq) / (2.0 * a), t2 = (-b + sq) / (2.0 * a);
+      float tn = min(t1, t2), tf = max(t1, t2);
+      if (tn > 0.0 && tn < tEnd && dot(ro + rd * tn - uApex, uAxis) > 0.0) tStart = tn; else if (tf > 0.0 && tf < tEnd && dot(ro + rd * tf - uApex, uAxis) > 0.0) tStart = tf; }
+    float dt = (tEnd - tStart) / 12.0, j = hash(vec3(gl_FragCoord.xy, fract(uTime) * 61.0)), acc = 0.0;
+    for (int i = 0; i < 12; i++) {
+      vec3 p = ro + rd * (tStart + (float(i) + j) * dt), q = p - uApex; float h = dot(q, uAxis);
+      if (h < 0.0 || h > uLen) continue;
+      float r = length(q - uAxis * h), R = h * uTan + 0.001;
+      float edge = 1.0 - smoothstep(R * 0.45, R, r), fall = 1.0 / (1.0 + h * h * 0.22);
+      float n = vnoise(p * 2.4 + vec3(0.0, -uTime * 0.22, uTime * 0.1)) * 0.75 + vnoise(p * 5.3 + vec3(uTime * 0.18, 0.0, 0.0)) * 0.25;
+      acc += edge * fall * (0.12 + n * n * n * 2.6) * smoothstep(0.0, 0.3, p.y) * dt; // (cubed: the fog in the beam breaks into rays and gaps)
+    }
+    gl_FragColor = vec4(uColor * acc * uK, 1.0);
+  }`;
+  var RevealFx = class {
+    // L: the lift (core/chapter.js LIFTS[7]: x, z of the doors, cab: its car's bounds)
+    constructor(scene2, L3) {
+      this.scene = scene2;
+      this.L = L3;
+      this.t = 0;
+      this.root = new Group();
+      this.root.name = "revealFx";
+      scene2.add(this.root);
+      this.k = { beam: 0, dust: 0, halo: 0 };
+      this.volOn = true;
+      this.volK = 1;
+      this.spot = null;
+      this.src = new Vector3(L3.x, 2.25, -14.35);
+      this.build();
+    }
+    build() {
+      const add = (m) => {
+        m.transparent = true;
+        m.opacity = 0;
+        m.depthWrite = false;
+        m.blending = AdditiveBlending;
+        m.toneMapped = false;
+        return m;
+      };
+      const tex2 = beamTex(), S2 = this.src, end = new Vector3(this.L.x, 0.05, -10.2), w0 = 0.35, w1 = 1.9;
+      this.beams = [];
+      for (const tilt of [0, Math.PI / 2]) {
+        const g = new BufferGeometry(), ax = new Vector3().subVectors(end, S2).normalize();
+        const side = new Vector3(1, 0, 0).applyAxisAngle(ax, tilt);
+        const p = [S2.clone().addScaledVector(side, -w0 / 2), S2.clone().addScaledVector(side, w0 / 2), end.clone().addScaledVector(side, w1 / 2), end.clone().addScaledVector(side, -w1 / 2)];
+        g.setAttribute("position", new Float32BufferAttribute(p.flatMap((v) => v.toArray()), 3));
+        g.setAttribute("uv", new Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
+        g.setIndex([0, 2, 1, 0, 3, 2]);
+        const m = new Mesh(g, add(new MeshBasicMaterial({ map: tex2, color: 16773336, side: DoubleSide })));
+        m.renderOrder = 3;
+        m.frustumCulled = false;
+        this.root.add(m);
+        this.beams.push(m);
+      }
+      const cg = new ConeGeometry(1, 1, 28, 1, true);
+      cg.translate(0, -0.5, 0);
+      this.vol = new Mesh(cg, new ShaderMaterial({
+        vertexShader: BEAM_V,
+        fragmentShader: BEAM_F,
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        side: BackSide,
+        toneMapped: false,
+        uniforms: { uApex: { value: new Vector3() }, uAxis: { value: new Vector3(0, -1, 0) }, uCos2: { value: 0.8 }, uLen: { value: 4 }, uTan: { value: 0.5 }, uK: { value: 0 }, uTime: { value: 0 }, uColor: { value: new Color(16773340) } }
+      }));
+      this.vol.frustumCulled = false;
+      this.vol.renderOrder = 3;
+      this.root.add(this.vol);
+      const n = 90, pts = [];
+      for (let i = 0; i < n; i++) pts.push(this.dustSpot({ ph: Math.random() * 6.28 }, Math.random()));
+      const geo = new BufferGeometry();
+      geo.setAttribute("position", new Float32BufferAttribute(new Float32Array(n * 3), 3));
+      this.dust = { pts, geo, obj: new Points(geo, add(new PointsMaterial({ color: 16774368, size: 0.035, map: glowTex() }))) };
+      this.dust.obj.frustumCulled = false;
+      this.root.add(this.dust.obj);
+      this.halo = new Sprite(add(new SpriteMaterial({ map: glowTex(), color: 16773596 })));
+      this.halo.position.copy(S2);
+      this.halo.scale.set(0.5, 0.5, 1);
+      this.root.add(this.halo);
+      this.halo.material.color.multiplyScalar(2);
+      const sn = 48;
+      this.sparks = { p: Array.from({ length: sn }, () => ({ life: 0 })), geo: new BufferGeometry(), next: 0 };
+      this.sparks.geo.setAttribute("position", new Float32BufferAttribute(new Float32Array(sn * 3), 3));
+      this.sparks.geo.setAttribute("color", new Float32BufferAttribute(new Float32Array(sn * 3), 3));
+      this.sparks.obj = new Points(this.sparks.geo, add(new PointsMaterial({ size: 0.04, vertexColors: true, map: glowTex() })));
+      this.sparks.obj.material.opacity = 1;
+      this.sparks.obj.frustumCulled = false;
+      this.root.add(this.sparks.obj);
+    }
+    // a mote somewhere along the shaft (u: 0 at the fitting .. 1 at the doors), spread with the shaft's width
+    dustSpot(p, u) {
+      const S2 = this.src;
+      p.u = u;
+      p.x = this.L.x + (Math.random() - 0.5) * (0.3 + 1.5 * u);
+      p.y = S2.y * (1 - u) + 0.15 + Math.random() * 0.5 * u;
+      p.z = S2.z + (-10.2 - S2.z) * u;
+      return p;
+    }
+    // the car's floor: studded rubber (every lift kit: the same car on every floor)
+    dressFloor(kits) {
+      const T2 = this.floorTex || (this.floorTex = rubberFloor());
+      for (const k of kits) {
+        const f = k?.root?.getObjectByName("Cab_Floor");
+        if (!f || f.userData.dressed) continue;
+        f.userData.dressed = true;
+        const g = f.geometry, p = g.attributes.position;
+        if (!g.userData.planarUV) {
+          const uv = new Float32Array(p.count * 2);
+          for (let i = 0; i < p.count; i++) {
+            uv[i * 2] = p.getX(i) / 0.42;
+            uv[i * 2 + 1] = p.getZ(i) / 0.42;
+          }
+          g.setAttribute("uv", new BufferAttribute(uv, 2));
+          g.userData.planarUV = true;
+        }
+        const m = f.material;
+        m.map = T2.map;
+        m.bumpMap = T2.bump;
+        m.bumpScale = 1.2;
+        m.color.set(16777215);
+        m.roughness = 0.82;
+        m.metalness = 0;
+        m.needsUpdate = true;
+      }
+    }
+    // a flash: the shaft, the dust and the fitting light up with it; k: its brightness
+    flash(k, sparks) {
+      if (sparks > 0) {
+        const S2 = this.sparks, n = Math.round(6 + 10 * sparks * Math.min(1.5, k));
+        for (let i = 0; i < n; i++) {
+          const q = S2.p[S2.next];
+          S2.next = (S2.next + 1) % S2.p.length;
+          const a = Math.random() * Math.PI * 2, sp = 0.6 + Math.random() * 1.6;
+          Object.assign(q, { x: this.src.x + (Math.random() - 0.5) * 0.3, y: this.src.y - 0.02, z: this.src.z + 0.2, vx: Math.cos(a) * sp * 0.6, vz: Math.abs(Math.sin(a)) * sp + 0.4, vy: Math.random() * 0.8, life: 0.45 + Math.random() * 0.5, hot: Math.random() });
+          q.max = q.life;
+        }
+      }
+    }
+    // per frame: f = the reveal light's current flash level (0..~1.5), F = the flash settings (RT.flash)
+    update(d, f, F3) {
+      this.t += d;
+      const beam = this.k.beam + f * F3.beam * 0.45, dust = this.k.dust + f * F3.dust, halo = this.k.halo + f * F3.halo;
+      const vol = !!(this.volOn && this.spot);
+      for (const b of this.beams) {
+        b.visible = !vol;
+        b.material.opacity = Math.min(0.6, beam * 0.28);
+      }
+      this.vol.visible = vol;
+      if (vol) {
+        const sp2 = this.spot, U2 = this.vol.material.uniforms, A = sp2.position, ax = new Vector3().subVectors(sp2.target.position, A).normalize();
+        const len = Math.min(8, (A.y - 0.02) / Math.max(0.15, -ax.y)) * 1.05, ang = sp2.angle * 0.95, tan = Math.tan(ang);
+        U2.uApex.value.copy(A);
+        U2.uAxis.value.copy(ax);
+        U2.uCos2.value = Math.cos(ang) ** 2;
+        U2.uLen.value = len;
+        U2.uTan.value = tan;
+        U2.uTime.value = this.t;
+        U2.uK.value = beam * this.volK * 1.7;
+        this.vol.position.copy(A);
+        this.vol.quaternion.setFromUnitVectors(new Vector3(0, -1, 0), ax);
+        this.vol.scale.set(len * tan * 1.02, len, len * tan * 1.02);
+      }
+      this.halo.material.opacity = Math.min(1, halo * 0.8);
+      this.halo.scale.setScalar(0.35 + 0.3 * Math.min(1, f));
+      this.halo.position.set(this.L.x + 0.15, F3.height, F3.back + 0.08);
+      this.dust.obj.material.opacity = Math.min(1, dust * 0.7);
+      const a = this.dust.geo.attributes.position;
+      this.dust.pts.forEach((p, i) => {
+        p.y -= d * 0.035;
+        p.x += Math.sin(this.t * 0.5 + p.ph) * d * 0.05;
+        p.z += Math.cos(this.t * 0.37 + p.ph) * d * 0.04;
+        if (p.y < 0.05) this.dustSpot(p, Math.random());
+        a.setXYZ(i, p.x, p.y + Math.sin(this.t * 1.1 + p.ph) * 0.02, p.z);
+      });
+      a.needsUpdate = true;
+      const S2 = this.sparks, sp = S2.geo.attributes.position, sc = S2.geo.attributes.color;
+      S2.p.forEach((q, i) => {
+        if (q.life > 0) {
+          q.life -= d;
+          q.vy -= 9 * d;
+          q.x += q.vx * d;
+          q.y += q.vy * d;
+          q.z += q.vz * d;
+          if (q.y < 0.01) {
+            q.y = 0.01;
+            q.vy *= -0.3;
+            q.vx *= 0.5;
+            q.vz *= 0.5;
+          }
+        }
+        const u = q.life > 0 ? q.life / q.max : 0;
+        sp.setXYZ(i, q.x || 0, q.life > 0 ? q.y : -50, q.z || 0);
+        sc.setXYZ(i, u * 4, u * (2.2 + 1.2 * q.hot), u * 1.1 * q.hot);
+      });
+      sp.needsUpdate = true;
+      sc.needsUpdate = true;
+    }
+    set visible(v) {
+      this.root.visible = v;
+    }
+  };
+
+  // src/opening/revealpost.js
+  var BLOOM_LAYER = 11;
+  var FinishShader = {
+    uniforms: { tDiffuse: { value: null }, tGlow: { value: null }, glow: { value: 1 }, time: { value: 0 }, grain: { value: 0.016 }, vig: { value: 0.32 }, film: { value: 1 } },
+    vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: `uniform sampler2D tDiffuse; uniform sampler2D tGlow; uniform float glow; uniform float time; uniform float grain; uniform float vig; uniform float film; varying vec2 vUv;
+    float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec3 g = c.rgb + texture2D(tGlow, vUv).rgb * glow;
+      float l = dot(g, vec3(0.2126, 0.7152, 0.0722));
+      vec3 f = g * mix(vec3(0.94, 0.99, 1.05), vec3(1.05, 1.0, 0.95), smoothstep(0.04, 0.7, l));
+      vec2 d = vUv - 0.5; f *= 1.0 - vig * smoothstep(0.28, 0.8, length(d * vec2(1.0, 0.85)));
+      f += (h(vUv * 931.0 + fract(time) * 17.0) - 0.5) * grain * (0.5 + 0.5 * (1.0 - clamp(l * 2.0, 0.0, 1.0)));
+      gl_FragColor = vec4(max(mix(g, f, film), 0.0), c.a);
+    }`
+  };
+  var RevealPost = class {
+    constructor(renderer2, scene2, camera2) {
+      this.renderer = renderer2;
+      this.scene = scene2;
+      this.camera = camera2;
+      this.c = null;
+    }
+    build() {
+      const r = this.renderer, s = r.getDrawingBufferSize(new Vector2());
+      const gc = this.gc = new EffectComposer(r);
+      gc.renderToScreen = false;
+      gc.setPixelRatio(1);
+      gc.setSize(s.x / 2, s.y / 2);
+      gc.addPass(new RenderPass(this.scene, this.camera));
+      this.bloom = new UnrealBloomPass(new Vector2(s.x / 2, s.y / 2), 1, 0.55, 0);
+      gc.addPass(this.bloom);
+      const c = this.c = new EffectComposer(r);
+      c.setPixelRatio(1);
+      c.setSize(s.x, s.y);
+      this.w = s.x;
+      this.h = s.y;
+      c.addPass(new RenderPass(this.scene, this.camera));
+      this.finish = new ShaderPass(FinishShader);
+      this.finish.uniforms.tGlow.value = gc.renderTarget2.texture;
+      c.addPass(this.finish);
+      c.addPass(new OutputPass());
+    }
+    // Q: RT.quality (the Studio's dials)
+    render(Q2) {
+      if (!this.c) this.build();
+      const s = this.renderer.getDrawingBufferSize(new Vector2());
+      if (s.x !== this.w || s.y !== this.h) {
+        this.w = s.x;
+        this.h = s.y;
+        this.c.setSize(s.x, s.y);
+        this.gc.setSize(s.x / 2, s.y / 2);
+        this.bloom.setSize(s.x / 2, s.y / 2);
+      }
+      const u = this.finish.uniforms, glow = Q2.bloom > 0;
+      if (glow) {
+        const cam = this.camera, mask = cam.layers.mask, bg = this.scene.background, fog = this.scene.fog;
+        cam.layers.set(BLOOM_LAYER);
+        this.scene.background = null;
+        this.scene.fog = null;
+        this.bloom.strength = 1;
+        this.bloom.radius = Q2.bloomRadius;
+        this.bloom.threshold = 0;
+        this.gc.render();
+        cam.layers.mask = mask;
+        this.scene.background = bg;
+        this.scene.fog = fog;
+        u.tGlow.value = this.gc.readBuffer.texture;
+      }
+      u.glow.value = glow ? Q2.bloom : 0;
+      u.film.value = Q2.film ? 1 : 0;
+      u.time.value = performance.now() % 1e5 / 1e3;
+      u.grain.value = Q2.grain;
+      u.vig.value = Q2.vignette;
+      this.c.render();
+    }
+  };
+
+  // src/opening/studio.js
+  var BEATS2 = [
+    // [mark, label]: where "Play from" starts (the reveal plays live, with sound, from there)
+    ["get-yola-done", "From the top (shut doors)"],
+    ["ding", "The DING (floor 7)"],
+    ["beat6", "Doors open: fog, tilt up"],
+    ["flashes", "The flashes"],
+    ["beat8", "The patient, red-lit"],
+    ["beat9", "Walk-out (feet)"],
+    ["beat11", "The launch"]
+  ];
+  var CSS2 = `
+#revStudio{position:fixed;top:8px;right:8px;width:330px;max-height:calc(100vh - 16px);overflow:auto;z-index:90;background:rgba(14,18,22,.93);color:#dfe6ea;
+ font:12px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;border:1px solid #2c3640;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#revStudio.min{width:auto;max-height:none;overflow:visible}
+#revStudio.min .rsBody{display:none}
+#revStudio header{display:flex;align-items:center;gap:6px;padding:8px 10px;position:sticky;top:0;background:#151b21;border-bottom:1px solid #2c3640;z-index:1}
+#revStudio header b{flex:1;font-size:13px;letter-spacing:.02em}
+#revStudio button{background:#26313a;color:#e8eef2;border:1px solid #3a4752;border-radius:6px;padding:4px 8px;font:inherit;cursor:pointer}
+#revStudio button:hover{background:#31404c}
+#revStudio button.hot{background:#c8562d;border-color:#e0703f}
+#revStudio select,#revStudio input[type=number]{background:#1d252c;color:#e8eef2;border:1px solid #3a4752;border-radius:5px;font:inherit;padding:2px 4px}
+#revStudio details{border-bottom:1px solid #26303a}
+#revStudio summary{padding:8px 10px;cursor:pointer;font-weight:600;color:#f2c48d;list-style:none}
+#revStudio summary::before{content:'\u25B8 ';color:#7d8a95}
+#revStudio details[open] summary::before{content:'\u25BE '}
+#revStudio .rsSec{padding:2px 10px 10px}
+#revStudio .row{display:grid;grid-template-columns:104px 1fr 44px;align-items:center;gap:6px;margin:3px 0}
+#revStudio .row label{color:#aab6bf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#revStudio .row input[type=range]{width:100%;accent-color:#e0703f}
+#revStudio .row output{text-align:right;color:#fff;font-variant-numeric:tabular-nums}
+#revStudio .line{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:5px 0}
+#revStudio .note{color:#8796a1;font-size:11px;margin:4px 0}
+#revStudio .status{padding:6px 10px;color:#9fe0b5;font-variant-numeric:tabular-nums;border-bottom:1px solid #26303a}
+#revStudio table{width:100%;border-collapse:collapse;margin-top:4px}
+#revStudio td{padding:1px 2px}
+#revStudio td input[type=number]{width:52px}
+#revStudio .rsTime{padding:8px 10px 10px;border-bottom:1px solid #26303a;background:#1a2229}
+#revStudio .tl-beats{position:relative;height:28px;font-size:10px;color:#f2c48d;line-height:1.05;margin:0 6px 4px;text-align:center}
+#revStudio .msg{padding:6px 10px;color:#f2c48d;min-height:16px}
+`;
+  var RevealStudio = class {
+    constructor(op) {
+      this.op = op;
+      if (!document.getElementById("revStudioCss")) {
+        const st = document.createElement("style");
+        st.id = "revStudioCss";
+        st.textContent = CSS2;
+        document.head.appendChild(st);
+      }
+      const el = this.el = document.createElement("div");
+      el.id = "revStudio";
+      el.innerHTML = `<header><b>Reveal Studio</b><button data-a="pause">Pause</button><button data-a="min" title="Hide / show">\u2013</button></header>
+      <div class="rsBody"><div class="status">ready</div><div class="msg"></div></div>`;
+      document.body.appendChild(el);
+      const body = el.querySelector(".rsBody");
+      this.statusEl = el.querySelector(".status");
+      this.msgEl = el.querySelector(".msg");
+      el.querySelector("[data-a=min]").onclick = () => el.classList.toggle("min");
+      this.pauseB = el.querySelector("[data-a=pause]");
+      this.pauseB.onclick = () => this.togglePause();
+      for (const ev of ["pointerdown", "touchstart", "keydown", "wheel"]) el.addEventListener(ev, (e) => e.stopPropagation());
+      body.append(this.timeline(), this.transport(), this.lights(), this.quality(), this.flashes(), this.walk(), this.launch(), this.save());
+      setInterval(() => this.tick(), 200);
+    }
+    // ---- building blocks ----
+    sec(title, open = false) {
+      const d = document.createElement("details");
+      d.open = open;
+      d.innerHTML = `<summary>${title}</summary><div class="rsSec"></div>`;
+      return [d, d.querySelector(".rsSec")];
+    }
+    // a dial on obj[key]; live: the current phase's light is applied again at once
+    slider(parent, obj, key, label, min, max, step, live = true) {
+      const r = document.createElement("div");
+      r.className = "row";
+      const fmt = (v) => Math.abs(step) >= 1 ? String(Math.round(v)) : (+v).toFixed(step < 0.01 ? 3 : 2);
+      r.innerHTML = `<label title="${label}">${label}</label><input type="range" min="${min}" max="${max}" step="${step}"><output></output>`;
+      const inp = r.querySelector("input"), out = r.querySelector("output");
+      const sync = () => {
+        inp.value = obj()[key];
+        out.textContent = fmt(obj()[key]);
+      };
+      inp.oninput = () => {
+        obj()[key] = +inp.value;
+        out.textContent = fmt(+inp.value);
+        if (live) this.op.studioApply?.();
+        this.changed();
+      };
+      sync();
+      this.syncs.push(sync);
+      parent.appendChild(r);
+      return r;
+    }
+    check(parent, obj, key, label, live = false) {
+      const l = document.createElement("label");
+      l.className = "line";
+      l.innerHTML = `<input type="checkbox"> ${label}`;
+      const c = l.querySelector("input"), sync = () => {
+        c.checked = !!obj()[key];
+      };
+      c.onchange = () => {
+        obj()[key] = c.checked;
+        if (live) this.op.studioApply?.();
+        this.changed();
+      };
+      sync();
+      this.syncs.push(sync);
+      parent.appendChild(l);
+      return l;
+    }
+    choose(parent, obj, key, label, options, live = false, onChange = null) {
+      const r = document.createElement("div");
+      r.className = "row";
+      r.innerHTML = `<label>${label}</label><select style="grid-column:span 2">${options.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select>`;
+      const s = r.querySelector("select"), sync = () => {
+        s.value = String(obj()[key]);
+      };
+      s.onchange = () => {
+        const v = s.value, cur = obj()[key];
+        obj()[key] = typeof cur === "number" ? +v : v;
+        if (live) this.op.studioApply?.();
+        onChange?.();
+        this.changed();
+      };
+      sync();
+      this.syncs.push(sync);
+      parent.appendChild(r);
+      return r;
+    }
+    button(parent, text, fn, cls = "") {
+      const b = document.createElement("button");
+      b.textContent = text;
+      if (cls) b.className = cls;
+      b.onclick = fn;
+      parent.appendChild(b);
+      return b;
+    }
+    get syncs() {
+      return this._syncs || (this._syncs = []);
+    }
+    // ---- sections ----
+    transport() {
+      const [d, s] = this.sec("Play", true);
+      const line = document.createElement("div");
+      line.className = "line";
+      s.appendChild(line);
+      const sel = document.createElement("select");
+      sel.innerHTML = BEATS2.map(([m, t]) => `<option value="${m}">${t}</option>`).join("");
+      sel.value = "beat6";
+      line.appendChild(sel);
+      this.button(line, "\u25B6 Play from here", () => this.play(sel.value), "hot");
+      const sp = document.createElement("div");
+      sp.className = "line";
+      sp.innerHTML = '<span class="note">Speed</span>';
+      s.appendChild(sp);
+      for (const r of [0.1, 0.25, 0.5, 1]) this.button(sp, r + "\xD7", () => {
+        this.op.studioRate = r;
+        this.msg(`Playing at ${r}\xD7`);
+      });
+      s.insertAdjacentHTML("beforeend", '<div class="note">Play from here replays the story silently up to that beat, then plays it live with sound. In the Studio the reveal holds its last frame instead of handing over to the game.</div>');
+      return d;
+    }
+    lights() {
+      const [d, s] = this.sec("Light (per part of the reveal)", true);
+      this.phaseKey = "cab";
+      const top = document.createElement("div");
+      top.className = "line";
+      s.appendChild(top);
+      const sel = document.createElement("select");
+      sel.innerHTML = PHASES.map(([k, t]) => `<option value="${k}">${t}</option>`).join("");
+      sel.value = this.phaseKey;
+      top.appendChild(sel);
+      const follow = document.createElement("label");
+      follow.innerHTML = '<input type="checkbox" checked> follow the playback';
+      top.appendChild(follow);
+      this.followC = follow.querySelector("input");
+      this.phaseSel = sel;
+      sel.onchange = () => {
+        this.phaseKey = sel.value;
+        this.followC.checked = false;
+        this.resync();
+      };
+      const P = () => RT.light[this.phaseKey];
+      s.insertAdjacentHTML("beforeend", `<div class="note">The game's lighting (1 = exactly as in play)</div>`);
+      this.slider(s, P, "amb", "Room light", 0, 1.5, 0.01);
+      this.slider(s, P, "floor", "Floor light (baked)", 0, 1.5, 0.01);
+      this.slider(s, P, "signs", "EXIT signs", 0, 1.5, 0.01);
+      this.slider(s, P, "emRed", "Emergency red", 0, 1.5, 0.01);
+      this.slider(s, P, "chars", "Light on characters", 0, 2, 0.01);
+      s.insertAdjacentHTML("beforeend", `<div class="note" style="margin-top:6px">The reveal's own extras</div>`);
+      this.slider(s, P, "red", "Red pulse", 0, 2, 0.01);
+      this.slider(s, P, "key", "Spotlight (steady)", 0, 2, 0.01);
+      this.choose(s, P, "spotAt", "Spotlight from", [["flash", "Behind her (rim / silhouette)"], ["key", "In front of her (key)"], ["tube", "Over the table"]], true);
+      this.slider(s, P, "cab", "Lift car lamps", 0, 1, 0.01);
+      this.slider(s, P, "exposure", "Exposure", 0.3, 2, 0.01);
+      this.slider(s, P, "smoke", "Fog", 0, 2, 0.01);
+      this.slider(s, P, "beam", "Light shaft", 0, 2, 0.01);
+      this.slider(s, P, "dust", "Dust in the shaft", 0, 2, 0.01);
+      this.slider(s, P, "secs", "Fade in (s)", 0, 3, 0.05, false);
+      s.insertAdjacentHTML("beforeend", `<div class="note" style="margin-top:8px"><b>The game's lighting</b>: from the cut to the lift (the baked floor light, the fittings, EXIT signs, the polished floor, the emergency look)</div>`);
+      this.check(s, () => RT.game, "on", "Use the game's lighting from the lift cut");
+      this.check(s, () => RT.game, "haze", "Haze", true);
+      this.check(s, () => RT.game, "shadow", "Yola's own shadow", true);
+      this.check(s, () => RT.game, "impact", "Impact frame at the hit");
+      this.choose(s, () => RT, "brighten", "Lights come back", [["walk", "As she steps out"], ["card", "With the name card"], ["burst", "At the hit"], ["return", "As the camera returns"]]);
+      return d;
+    }
+    quality() {
+      const [d, s] = this.sec("Picture quality (opening only)");
+      const Q2 = () => RT.quality;
+      s.insertAdjacentHTML("beforeend", '<div class="note">From the cut to the lift to the hand-off. The game keeps its own look.</div>');
+      this.check(s, Q2, "beam", "Light beam through the fog (3D)", true);
+      this.slider(s, Q2, "beamK", "Beam strength", 0, 3, 0.01);
+      this.check(s, Q2, "softFog", "Fog: rolling inside, soft edges", true);
+      this.slider(s, Q2, "glow", "Fog glowing from behind", 0, 3, 0.01);
+      this.check(s, Q2, "flashShadow", "Her shadow from the flash", true);
+      this.check(s, Q2, "post", "Glow on the lights, film finish", true);
+      this.slider(s, Q2, "bloom", "Glow strength", 0, 2, 0.01);
+      this.slider(s, Q2, "bloomRadius", "Glow spread", 0, 1, 0.01);
+      this.check(s, Q2, "film", "Film grain and vignette", true);
+      this.slider(s, Q2, "grain", "Grain", 0, 0.12, 2e-3);
+      this.slider(s, Q2, "vignette", "Vignette", 0, 0.8, 0.01);
+      return d;
+    }
+    flashes() {
+      const [d, s] = this.sec("Flashes in the lift");
+      const F3 = () => RT.flash;
+      this.slider(s, F3, "power", "Brightness", 0, 3, 0.01);
+      this.slider(s, F3, "decay", "Fade (s)", 0.03, 1.2, 0.01);
+      this.slider(s, F3, "beam", "Shaft per flash", 0, 2, 0.01);
+      this.slider(s, F3, "dust", "Dust per flash", 0, 2, 0.01);
+      this.slider(s, F3, "halo", "Fitting glow", 0, 2, 0.01);
+      this.slider(s, F3, "sparks", "Sparks", 0, 3, 0.05);
+      this.slider(s, F3, "height", "Light height", 2.2, 4.2, 0.05);
+      this.slider(s, F3, "back", "Light depth (z)", -14.6, -11.6, 0.05);
+      this.slider(s, F3, "angle", "Cone width", 0.2, 1.3, 0.01);
+      this.slider(s, F3, "penumbra", "Cone softness", 0, 1, 0.01);
+      this.check(s, F3, "swap", "Hall flips clean / outbreak with each flash");
+      this.slider(s, () => RT, "flashTail", "Hold after last (s)", 0, 4, 0.05, false);
+      s.insertAdjacentHTML("beforeend", '<div class="note" style="margin-top:8px"><b>Rhythm</b>: a few slow flashes, a burst that speeds up, slowing clicks, a held breath, the boom.</div>');
+      const Rh = () => RT.rhythm;
+      this.slider(s, Rh, "first", "Slow flashes", 0, 8, 1, false);
+      this.slider(s, Rh, "firstGap", "Their gap (s)", 0.2, 2, 0.05, false);
+      this.slider(s, Rh, "burst", "Burst flashes", 0, 16, 1, false);
+      this.slider(s, Rh, "burstFrom", "Burst gap start", 0.04, 0.5, 0.01, false);
+      this.slider(s, Rh, "burstTo", "Burst gap end", 0.03, 0.5, 0.01, false);
+      this.slider(s, Rh, "slow", "Slowing clicks", 0, 8, 1, false);
+      this.slider(s, Rh, "slowFrom", "Click gap start", 0.05, 1, 0.01, false);
+      this.slider(s, Rh, "slowTo", "Click gap end", 0.05, 1.5, 0.01, false);
+      this.slider(s, Rh, "breath", "Held breath (s)", 0, 3, 0.05, false);
+      const gl = document.createElement("div");
+      gl.className = "line";
+      s.appendChild(gl);
+      this.button(gl, "Generate the list", () => {
+        RT.flashes = generateFlashes(RT.rhythm);
+        this.drawList();
+        this.msg(`${RT.flashes.length} flashes`);
+      });
+      this.button(gl, "\u25B6 Play the flashes", () => this.play("flashes"), "hot");
+      s.insertAdjacentHTML("beforeend", '<div class="note" style="margin-top:8px"><b>The list</b> (time from the doors opening, who shows, brightness, fade 0 = default, boom = the last, she stays)</div>');
+      this.listEl = document.createElement("div");
+      s.appendChild(this.listEl);
+      this.drawList();
+      return d;
+    }
+    drawList() {
+      const L3 = RT.flashes;
+      this.listEl.innerHTML = `<table><tr class="note"><td>time</td><td>who</td><td>bright</td><td>fade</td><td>boom</td><td></td></tr>${L3.map((f, i) => `<tr data-i="${i}">
+      <td><input type="number" step="0.01" min="0" value="${f[0]}" data-k="0"></td>
+      <td><select data-k="1"><option value="old"${f[1] === "old" ? " selected" : ""}>old</option><option value="new"${f[1] === "new" ? " selected" : ""}>new</option></select></td>
+      <td><input type="number" step="0.05" min="0" value="${f[2]}" data-k="2"></td>
+      <td><input type="number" step="0.05" min="0" value="${f[3] || 0}" data-k="3"></td>
+      <td><input type="checkbox" data-k="4"${f[4] ? " checked" : ""}></td>
+      <td><button data-del>\xD7</button></td></tr>`).join("")}</table>`;
+      this.listEl.querySelectorAll("tr[data-i]").forEach((tr) => {
+        const f = L3[+tr.dataset.i];
+        tr.querySelectorAll("[data-k]").forEach((c) => {
+          c.onchange = () => {
+            const k = +c.dataset.k;
+            f[k] = k === 1 ? c.value : k === 4 ? c.checked : +c.value;
+            this.changed();
+          };
+        });
+        tr.querySelector("[data-del]").onclick = () => {
+          L3.splice(+tr.dataset.i, 1);
+          this.drawList();
+        };
+      });
+      const add = document.createElement("div");
+      add.className = "line";
+      this.listEl.appendChild(add);
+      this.button(add, "+ Add a flash", () => {
+        const t = L3.length ? L3[L3.length - 1][0] + 0.3 : 0;
+        L3.push([+t.toFixed(2), "old", 0.8, 0, false]);
+        this.drawList();
+      });
+      this.button(add, "Sort by time", () => {
+        L3.sort((a, b) => a[0] - b[0]);
+        this.drawList();
+      });
+    }
+    walk() {
+      const [d, s] = this.sec("Walk-out");
+      const W3 = () => RT.walk;
+      this.check(s, W3, "bat", "She carries the bat out");
+      this.slider(s, W3, "slow", "Slow motion", 0.2, 1, 0.01, false);
+      this.slider(s, W3, "stopZ", "Where she stops", -11, -8.5, 0.05, false);
+      this.slider(s, W3, "secs", "Shot length (s)", 1, 6, 0.05, false);
+      this.slider(s, W3, "stepShake", "Step jolt", 0, 0.05, 1e-3, false);
+      this.check(s, () => RT, "batShot", "Cut to the bat leaning by the doors");
+      const l = document.createElement("div");
+      l.className = "line";
+      s.appendChild(l);
+      this.button(l, "\u25B6 Play the walk-out", () => this.play("beat9"), "hot");
+      return d;
+    }
+    launch() {
+      const [d, s] = this.sec("Launch, freeze, card, burst");
+      const LA = () => RT.launch, C = () => RT.launch.cam;
+      this.choose(s, LA, "variant", "Finisher", [["B_uppercut", "B (uppercut crouch)"], ["C_uppercut_mirrored", "C (mirrored)"]]);
+      this.choose(s, LA, "jump", "Jump", [["1.4", "1.4 m"], ["2.4", "2.4 m"], ["3.4", "3.4 m"]]);
+      this.slider(s, LA, "reach", "Travel (x the jump)", 0.3, 1.2, 0.01, false);
+      this.slider(s, LA, "turn", "Her heading (\xB0)", -60, 60, 1, false);
+      this.slider(s, LA, "gap", "Zombie further back", 0, 1, 0.01, false);
+      this.slider(s, LA, "lunge", "His lurch at her", 0, 3, 0.05, false);
+      this.slider(s, LA, "hold", "Set before she goes", 0, 2, 0.05, false);
+      this.slider(s, LA, "rampSlow", "Slow-mo in the air", 0.05, 1, 0.01, false);
+      this.slider(s, LA, "rampLen", "Ease into slow-mo", 0.02, 0.6, 0.01, false);
+      this.slider(s, LA, "rampAt", "Slow-mo starts (after lift-off)", -0.3, 0.3, 0.01, false);
+      this.slider(s, LA, "freezeLead", "Freeze before hit", 0, 0.4, 0.01, false);
+      this.slider(s, LA, "boomToCard", "Boom \u2192 card (s)", 0, 1, 0.01, false);
+      this.slider(s, LA, "cardHold", "Card holds (s)", 0.5, 5, 0.05, false);
+      this.slider(s, LA, "slow", "Slow-mo after hit", 0.05, 1, 0.01, false);
+      this.slider(s, LA, "headSecs", "Head to lens (s)", 0.2, 1.2, 0.01, false);
+      this.slider(s, LA, "lensDist", "Head stops at", 0.3, 1.5, 0.01, false);
+      this.slider(s, LA, "after", "Hold after crack", 0, 2, 0.05, false);
+      this.slider(s, LA, "returnSecs", "Camera return (s)", 0.5, 4, 0.05, false);
+      s.insertAdjacentHTML("beforeend", '<div class="note" style="margin-top:8px"><b>Camera</b> (in front of her, across him)</div>');
+      this.slider(s, C, "yawOff", "Angle off her line", -80, 80, 1, false);
+      this.slider(s, C, "dist", "Distance", 1.5, 8, 0.05, false);
+      this.slider(s, C, "height", "Aim height", 0.3, 2, 0.01, false);
+      this.slider(s, C, "pitch", "Tilt", -15, 30, 0.5, false);
+      this.slider(s, C, "look", "Aim: her \u2194 him", 0, 1, 0.01, false);
+      this.slider(s, C, "fov", "Lens (fov)", 20, 70, 1, false);
+      this.slider(s, C, "push", "Push in", 0, 2, 0.05, false);
+      const l = document.createElement("div");
+      l.className = "line";
+      s.appendChild(l);
+      this.button(l, "\u25B6 Play the launch", () => this.play("beat11"), "hot");
+      return d;
+    }
+    save() {
+      const [d, s] = this.sec("Save", true);
+      const l = document.createElement("div");
+      l.className = "line";
+      s.appendChild(l);
+      this.button(l, "Save to the game", () => this.saveFile(), "hot");
+      this.button(l, "Copy settings", async () => {
+        try {
+          await navigator.clipboard.writeText(tuningJSON());
+          this.msg("Copied");
+        } catch {
+          this.msg("Copy failed");
+        }
+      });
+      this.button(l, "Reset to defaults", () => {
+        if (!confirm("Reset every reveal dial to its default? (The saved file is only changed when you Save.)")) return;
+        resetTuning();
+        this.resync();
+        this.drawList();
+        this.op.studioApply?.();
+        this.msg("Defaults restored (not saved)");
+      });
+      s.insertAdjacentHTML("beforeend", `<div class="note">Save writes assets/opening/reveal_tuning.json: the opening reads it at load (on this machine's dev server).</div>`);
+      return d;
+    }
+    // ---- actions ----
+    async saveFile() {
+      try {
+        const r = await fetch("/__reveal/tuning.json", { method: "POST", body: tuningJSON(), headers: { "Content-Type": "application/json" } });
+        this.msg(r.ok ? "Saved: the game plays these settings now" : `Save failed (${r.status}): use Copy settings`);
+      } catch {
+        this.msg("Save failed: use Copy settings");
+      }
+    }
+    play(mark) {
+      const o = this.op;
+      if (o.paused) this.togglePause();
+      this.msg("Rewinding to that beat\u2026");
+      setTimeout(() => {
+        o.toReveal(mark);
+        this.msg("");
+      }, 30);
+    }
+    togglePause() {
+      const o = this.op;
+      if (o.paused) o.studioPlayOn();
+      else {
+        o.studioHold = true;
+        o.paused = true;
+        o.sound?.suspend?.(true);
+        if (o.revealT0 != null && this.tl) {
+          this.at = o.t - o.revealT0;
+          this.tl.value = this.at;
+          this.tlT.textContent = this.at.toFixed(2) + " s \xB7 " + (o.substate || "");
+        }
+      }
+      this.showPaused();
+    }
+    showPaused() {
+      const p = this.op.paused;
+      this.pauseB.textContent = p ? "\u25B6 Play" : "Pause";
+      this.pauseB.classList.toggle("hot", p);
+    }
+    // ---- the timeline: drag through the reveal frame by frame (each position is the reveal replayed to that exact frame) ----
+    timeline() {
+      const d = document.createElement("div");
+      d.className = "rsTime";
+      d.innerHTML = `<div class="line"><b style="flex:1">Timeline</b><span class="tl-t">\u2013</span></div>
+      <input type="range" class="tl" min="0" max="26" step="0.0333" value="0" style="width:100%;accent-color:#e0703f">
+      <div class="tl-beats"></div>
+      <div class="line"><button data-s="-10">\u25C0\u25C0</button><button data-s="-1">\u25C0 frame</button><button data-s="1">frame \u25B6</button><button data-s="10">\u25B6\u25B6</button>
+        <button data-a="apply" class="hot">Apply</button></div>
+      <label class="line"><input type="checkbox" class="tl-auto" checked> Update the still picture as I change things</label>
+      <div class="note">Drag to any moment: the picture holds there. \u25B6 Play (top) carries on from it, live. Apply redraws the still with every change (the flashes, the timing and the launch too).</div>`;
+      this.tl = d.querySelector(".tl");
+      this.tlT = d.querySelector(".tl-t");
+      this.tlBeats = d.querySelector(".tl-beats");
+      this.tlAuto = d.querySelector(".tl-auto");
+      let pend = null, busy = false;
+      const go = () => {
+        pend = null;
+        if (busy) return;
+        busy = true;
+        try {
+          this.seek(+this.tl.value);
+        } finally {
+          busy = false;
+        }
+      };
+      this.tl.addEventListener("pointerdown", () => this.ensureMeasured());
+      this.tl.oninput = () => {
+        this.ensureMeasured();
+        this.tlT.textContent = (+this.tl.value).toFixed(2) + " s";
+        if (!pend) pend = setTimeout(go, 40);
+      };
+      d.querySelectorAll("[data-s]").forEach((b) => {
+        b.onclick = () => {
+          this.ensureMeasured();
+          this.seek(Math.max(0, Math.min(+this.tl.max, (this.at ?? 0) + +b.dataset.s / 30)));
+        };
+      });
+      d.querySelector("[data-a=apply]").onclick = () => this.apply();
+      return d;
+    }
+    // on load: straight to the reveal, held on its first beat (▶ Play is the tap that lets the sound start)
+    open() {
+      this.ensureMeasured();
+      this.seek(0.5);
+      this.msg("Drag the timeline, or press \u25B6 Play");
+    }
+    // the reveal's length and its beats (replayed once; again after Apply: the timing may have changed)
+    ensureMeasured() {
+      if (this.measured) return;
+      this.remeasure();
+    }
+    remeasure() {
+      const m = this.op.studioMeasure();
+      this.measured = m;
+      this.tl.max = m.length;
+      const NAMES2 = { beat5: "doors", ding: "ding", beat6: "open", flashes: "flashes", beat8: "patient", beat9: "walk", beat10: "bat", beat11: "launch", beat12: "freeze", hit: "hit", return: "return" };
+      this.tlBeats.innerHTML = m.beats.filter(([k]) => NAMES2[k]).map(([k, t], i) => `<span title="${NAMES2[k]}: ${t} s (click to jump)" data-t="${t}" style="position:absolute;left:${(100 * t / m.length).toFixed(2)}%;top:${i % 2 ? 13 : 0}px;transform:translateX(-50%);cursor:pointer;white-space:nowrap">\u25B2${NAMES2[k]}</span>`).join("");
+      this.tlBeats.querySelectorAll("[data-t]").forEach((e) => {
+        e.onclick = () => this.seek(+e.dataset.t);
+      });
+    }
+    seek(t) {
+      const o = this.op;
+      t = Math.max(0, Math.min(+this.tl.max - 1 / 30, t));
+      const at = o.studioSeek(t);
+      this.at = at;
+      this.tl.value = at;
+      this.tlT.textContent = at.toFixed(2) + " s \xB7 " + (o.substate || "");
+      this.showPaused();
+    }
+    // a dial changed: the still picture is out of date (redrawn now when auto is on and the picture is held)
+    changed() {
+      this.op.scrubDirty = true;
+      if (!this.tlAuto?.checked || !this.op.studioHold || this.at == null) return;
+      clearTimeout(this.autoT);
+      this.autoT = setTimeout(() => this.apply(), 350);
+    }
+    apply() {
+      const t = this.at ?? +this.tl.value;
+      this.remeasure();
+      this.op.scrubDirty = true;
+      this.seek(t);
+      this.msg("Applied");
+    }
+    resync() {
+      for (const f of this.syncs) f();
+    }
+    msg(t) {
+      this.msgEl.textContent = t;
+    }
+    tick() {
+      const o = this.op;
+      if (!o.paused && o.revealT0 != null && this.measured && (o.state === "REVEAL" || o.state === "COMBAT_READY")) {
+        const t = o.t - o.revealT0;
+        this.tl.value = t;
+        this.at = null;
+        this.tlT.textContent = t.toFixed(2) + " s \xB7 " + (o.substate || "");
+      }
+      this.showPaused?.();
+      this.statusEl.textContent = `${o.state} \xB7 ${o.substate || ""} \xB7 ${(o.t || 0).toFixed(1)} s${o.paused ? " \xB7 paused" : ""}${(o.studioRate ?? 1) !== 1 ? " \xB7 " + o.studioRate + "\xD7" : ""}`;
+      if (this.followC?.checked && o.curPhase && o.curPhase !== this.phaseKey && RT.light[o.curPhase]) {
+        this.phaseKey = o.curPhase;
+        this.phaseSel.value = o.curPhase;
+        this.resync();
+      }
+    }
+  };
+
   // src/opening/opening.js
   var TX = OR_TABLE.x;
   var TZ = OR_TABLE.z;
   var LIFT7 = LIFTS[7];
-  var HR = { stance: 0.2, freeze: 1.62, yaw: 0.35, camYaw: 34 };
-  var REV_BAT = { x: 4.3, z: -10.86, lean: [-0.1, -0.95, 0.3] };
+  var REV_BAT = { x: 4.62, wallZ: -10.99, lean: [-0.1, -0.95, 0.3] };
   var BELONG = ROOM1.belongings;
   var PATIENT_OUTFIT = { Jersey_Cream: 15921644, Trousers_Gray: 15461092, Uniform_Navy: 15000541, Markings_OffWhite: 15921644 };
   var clamp7 = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -68036,7 +69152,9 @@ void main() {
       this.lineLog = [];
       this.answers = {};
       addEventListener("visibilitychange", () => this.setPaused(document.hidden));
-      addEventListener("blur", () => this.setPaused(true));
+      addEventListener("blur", () => {
+        if (!this.studio) this.setPaused(true);
+      });
       addEventListener("focus", () => {
         if (!document.hidden) this.setPaused(false);
       });
@@ -68056,9 +69174,11 @@ void main() {
       onProgress?.(0.85);
       this.voicesLoaded = await this.sound.loadVoices(LINES, VOICE_DIR, (n) => onProgress?.(0.85 + 0.1 * n / LINES.length));
       onProgress?.(0.95);
+      await loadTuning();
+      this.RT = RT;
       try {
         const rc = await this.loader.loadAsync("assets/opening/yola2_reveal.glb");
-        this.revClips = { homerun: rc.animations.find((a) => a.name === "reveal_homerun"), walk: rc.animations.find((a) => a.name === "reveal_walk") };
+        this.revClips = { walk: rc.animations.find((a) => a.name === "reveal_walk") };
       } catch (e) {
         console.warn("reveal clips", e);
       }
@@ -68091,8 +69211,17 @@ void main() {
       this.belongings.visible = false;
       this.rig = { ...SHOTS[0].a };
       this.setCamera();
+      if (this.game?.().warmStoryLight) {
+        this.setBlood(true);
+        await this.game().warmStoryLight(() => this.warmReveal());
+        this.setBlood(false);
+      }
+      this.warmLaunch();
+      this.markGlow();
+      this.warmByReplay();
       this.yola?.setShown?.(false);
       this.setupDone = true;
+      if (this.params.has("studio")) this.studio = new RevealStudio(this);
       onProgress?.(1);
     }
     // Render every distinct view once (the gate screen covers it), so the timed scene never hitches on first
@@ -68127,6 +69256,7 @@ void main() {
       this.ensureLights();
       this.ensureSmoke();
       this.ensureDoorSweep();
+      this.ensureRevealFx();
       this.ensureBelongings();
       this.belongings.visible = false;
       for (const l of A.lights) l.visible = false;
@@ -68316,6 +69446,10 @@ void main() {
       this.shake = 0;
       this.stepShake = 0;
       this.patientDown = false;
+      this.launch = null;
+      this.handoff = null;
+      this.brightened = false;
+      this.gameLight = false;
       this.camera.near = this.near0 ?? 0.5;
       this.camera.updateProjectionMatrix();
       if (this.bt.state !== "idle") this.bt.finish();
@@ -68720,6 +69854,7 @@ void main() {
       const parts = [];
       for (let i = 0; i < 72; i++) {
         const m = new SpriteMaterial({ map: tex2, transparent: true, opacity: 0, depthWrite: false, color: 16777215, rotation: (Math.random() - 0.5) * 0.3 });
+        this.fogShader(m, i);
         const sp = new Sprite(m);
         sp.position.set(LIFT7.x, 0.2, -12);
         sp.center.set(0.5, 0.3);
@@ -68728,6 +69863,46 @@ void main() {
         parts.push({ sp, life: Math.random(), speed: 0.16 + Math.random() * 0.22, side: (Math.random() - 0.5) * 2.4, h: wisp ? 0.04 : Math.random() * 0.05, size: 0.45 + Math.random() * 0.6, aspect: wisp ? 0.9 : 1.4 + Math.random() * 0.9, flat: wisp ? 0.75 : 0.32 + Math.random() * 0.18, curl: Math.random() * 6.3, spin: (Math.random() - 0.5) * 0.06, wisp });
       }
       this.smoke = { g, parts, k: 0, target: 0 };
+    }
+    // (2026-10-19, the quality pass) each puff's own shader additions: a rolling noise inside it (two layers drifting at their own
+    // speeds: the dry ice churns instead of a still picture sliding about), and soft edges: it fades out where it meets the
+    // floor (the hard line where the floor cut it) and as the lens comes close (no puff popping through the low camera). The
+    // same program for every puff; switched by uniforms (RT.quality.softFog), so turning it off recompiles nothing
+    fogShader(m, i) {
+      const U2 = this.fogU || (this.fogU = { uTime: { value: 0 }, uNoise: { value: this.fogNoise() }, uSoft: { value: 1 } });
+      m.onBeforeCompile = (sh) => {
+        Object.assign(sh.uniforms, U2, { uSeed: { value: i * 0.618 % 1 } });
+        sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vWy; varying float vCamD;").replace("gl_Position = projectionMatrix * mvPosition;", "gl_Position = projectionMatrix * mvPosition; vWy = (inverse(viewMatrix) * mvPosition).y; vCamD = -mvPosition.z;");
+        sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vWy; varying float vCamD; uniform sampler2D uNoise; uniform float uTime; uniform float uSeed; uniform float uSoft;").replace("#include <map_fragment>", `#include <map_fragment>
+          float n1 = texture2D(uNoise, vMapUv * 0.9 + vec2(uTime * 0.035 + uSeed, -uTime * 0.021 + uSeed * 0.7)).r;
+          float n2 = texture2D(uNoise, vMapUv * 1.9 + vec2(-uTime * 0.052, uTime * 0.031 + uSeed * 1.3)).r;
+          float soft = mix(0.45, 1.4, n1 * 0.6 + n2 * 0.4) * smoothstep(0.0, 0.14, vWy) * smoothstep(0.1, 0.85, vCamD);
+          diffuseColor.a *= mix(1.0, soft, uSoft);`);
+      };
+      m.customProgramCacheKey = () => "revealFog";
+    }
+    // a tileable value noise for the puffs' insides
+    fogNoise() {
+      const N = 128, c = document.createElement("canvas");
+      c.width = c.height = N;
+      const g = c.getContext("2d"), im = g.createImageData(N, N);
+      const grid = (cell2) => {
+        const n = N / cell2, v = Array.from({ length: n * n }, () => Math.random());
+        return (x, y) => {
+          const fx2 = x / cell2, fy = y / cell2, x0 = Math.floor(fx2), y0 = Math.floor(fy), tx = fx2 - x0, ty = fy - y0, s = (t2) => t2 * t2 * (3 - 2 * t2), at = (a, b) => v[(b + n) % n * n + (a + n) % n];
+          return at(x0, y0) * (1 - s(tx)) * (1 - s(ty)) + at(x0 + 1, y0) * s(tx) * (1 - s(ty)) + at(x0, y0 + 1) * (1 - s(tx)) * s(ty) + at(x0 + 1, y0 + 1) * s(tx) * s(ty);
+        };
+      };
+      const A = grid(32), B = grid(16), C = grid(8);
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        const v = A(x, y) * 0.55 + B(x, y) * 0.3 + C(x, y) * 0.15, i = (y * N + x) * 4;
+        im.data[i] = im.data[i + 1] = im.data[i + 2] = Math.round(v * 255);
+        im.data[i + 3] = 255;
+      }
+      g.putImageData(im, 0, 0);
+      const t = new CanvasTexture(c);
+      t.wrapS = t.wrapT = RepeatWrapping;
+      return t;
     }
     smokeKick(x, z, k) {
       const S2 = this.smoke;
@@ -68753,6 +69928,13 @@ void main() {
       }
       const r = this.rl || {}, pulse = 0.5 + 0.5 * Math.sin((r.t || 0) * Math.PI * 2 * 0.55 - Math.PI / 2);
       const lit = 0.05 + 0.55 * Math.min(1, r.flash || 0) + 0.2 * (r.amb || 0) + 0.3 * (r.key || 0), red = 0.35 * (r.red || 0) * (0.4 + 0.6 * pulse);
+      const Q2 = RT.quality;
+      if (this.fogU) {
+        this.fogU.uTime.value += d;
+        this.fogU.uSoft.value = Q2.softFog ? 1 : 0;
+      }
+      const sp = this.spot, glowK = Q2.glow * (Math.min(1.5, r.flash || 0) + 0.6 * (r.key || 0)) * (sp && sp.intensity > 0 ? 1 : 0), cam = this.camera.position;
+      const _v12 = this._fv || (this._fv = new Vector3()), _l2 = this._fl || (this._fl = new Vector3());
       const L3 = LIFT7, z0 = L3.cab.minZ + 0.4;
       for (const p of S2.parts) {
         p.life += d * p.speed / 3.2;
@@ -68762,9 +69944,9 @@ void main() {
         }
         const t = p.life, out = t * 3.6;
         const spread = t < 0.42 ? 0.45 : 0.45 + (t - 0.42) * 3.2;
-        const st = this.stand;
+        const st = this.herAt();
         const px2 = L3.x + p.side * spread * 0.5, pz2 = z0 + out;
-        if (st?.shown) {
+        if (st) {
           const dx = px2 + (p.ox || 0) - st.x, dz = pz2 + (p.oz || 0) - st.z, dd = Math.hypot(dx, dz);
           if (dd < 0.75 && dd > 1e-3) {
             p.ox = (p.ox || 0) + dx / dd * (0.75 - dd) * d * 3;
@@ -68783,14 +69965,37 @@ void main() {
         p.sp.material.rotation += p.spin * d;
         const fade = Math.sin(Math.min(1, t * 1.15) * Math.PI);
         p.sp.material.opacity = S2.k * (p.wisp ? 0.18 : 0.3) * fade;
-        p.sp.material.color.setRGB(Math.min(1, lit + red), Math.min(1, lit * 0.95 + red * 0.08), Math.min(1, lit * 0.98 + red * 0.08));
+        let sc = 0;
+        if (glowK > 0) {
+          _v12.subVectors(p.sp.position, cam).normalize();
+          _l2.subVectors(sp.position, p.sp.position);
+          const ld = _l2.length();
+          _l2.divideScalar(ld || 1);
+          const c = Math.max(0, _v12.dot(_l2));
+          sc = 0.22 * glowK * c * c * c * c * c * c / (1 + ld * ld * 0.12);
+        }
+        p.sp.material.color.setRGB(Math.min(1.6, lit + red + sc), Math.min(1.6, lit * 0.95 + red * 0.08 + sc * 0.93), Math.min(1.6, lit * 0.98 + red * 0.08 + sc * 0.82));
+        if (sc > 0) p.sp.material.opacity = Math.min(0.9, p.sp.material.opacity * (1 + sc * 0.6));
       }
     }
     setSmoke(on) {
       if (this.smoke) {
-        this.smoke.target = on ? 1 : 0;
-        if (on) this.smoke.g.visible = true;
+        this.smoke.target = on === true ? 1 : on === false ? 0 : Math.max(0, +on || 0);
+        if (this.smoke.target > 0) this.smoke.g.visible = true;
       }
+    }
+    // (true / false, or a level: the Studio's smoke dial)
+    // Yola 3.0 where the fog should part round her: the standing / flashing model, or the game's view walking out
+    herAt() {
+      const s = this.stand;
+      if (s?.shown) return s;
+      const r = this.revealPose;
+      return r && this.yola?.outer?.visible !== false && r.shown ? r : null;
+    }
+    // the lift's light made visible (revealfx.js): the shaft, dust, the fitting's glow, sparks; and the car's studded floor
+    ensureRevealFx() {
+      if (!this.rfx) this.rfx = new RevealFx(this.scene, LIFT7);
+      this.rfx.dressFloor(Object.entries(this.arena.doorKits || {}).filter(([k]) => /^lift\d/.test(k)).map(([, v]) => v));
     }
     // the car's light passing the crack under the shut doors, left to right: a bright line along the gap and a soft pool
     // spilling onto the floor in front of it (built at load with zero opacity; run once as the car arrives)
@@ -68812,10 +70017,10 @@ void main() {
       gr.addColorStop(1, "rgba(255,210,160,0)");
       x.fillStyle = gr;
       x.fillRect(0, 0, 64, 64);
-      const glowTex3 = new CanvasTexture(c);
-      const line = new Mesh(new PlaneGeometry(0.55, 0.022), add(new MeshBasicMaterial({ color: 16774108, map: glowTex3 })));
+      const glowTex4 = new CanvasTexture(c);
+      const line = new Mesh(new PlaneGeometry(0.55, 0.022), add(new MeshBasicMaterial({ color: 16774108, map: glowTex4 })));
       line.position.set(L3.x, 0.011, -11.085);
-      const pool = new Mesh(new PlaneGeometry(0.9, 0.5), add(new MeshBasicMaterial({ color: 16769720, map: glowTex3 })));
+      const pool = new Mesh(new PlaneGeometry(0.9, 0.5), add(new MeshBasicMaterial({ color: 16769720, map: glowTex4 })));
       pool.rotation.x = -Math.PI / 2;
       pool.position.set(L3.x, 6e-3, -10.9);
       this.scene.add(line, pool);
@@ -69720,17 +70925,22 @@ void main() {
       yield* this.reveal();
     }
     *reveal() {
-      const st = this.stage, A = st.actors, L3 = LIFT7, g = this.game(), Y2 = this.yola, old = A.yola;
+      const st = this.stage, A = st.actors, L3 = LIFT7, g = this.game(), old = A.yola, R = RT;
       const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
-      const cabX = L3.x, cabZ = -12.7, an = ROOM1.player;
+      const cabX = L3.x, cabZ = -12.7;
       const doorShot = (dist2 = 4.6) => ({ x: L3.x, y: 1.15, z: -11.3, pitch: 2, yaw: 0, dist: dist2, fov: 40 });
       this.state = "REVEAL";
+      this.brightened = false;
+      this.handoff = null;
+      this.launch = null;
       this.substate = "B5_DOORS";
       this.mark("beat5");
       this.liftDisp3.set("6", "\u25B2");
       this.setLift3(0);
       this.scene.background = new Color(329738);
-      this.revLight({ amb: 0, red: 0.5, tube: 0, cab: 0, redAt: "doors", spotAt: "flash" });
+      this.gameLight = !!RT.game.on;
+      if (this.gameLight) this.arena.setEmergency?.(true, 0);
+      this.phase("doors", { tube: 0, redAt: "doors" });
       this.camTo({ x: L3.x, y: 0.4, z: -11, pitch: 6, yaw: 0, dist: 1.9, fov: 40 }, 0.01);
       this.later(0.25, () => this.doorSweep());
       if (!this.silent) {
@@ -69739,13 +70949,18 @@ void main() {
         this.rs.bedLevel(0.5);
         for (const t of [1.1, 2.3, 4, 4.9]) this.later(t, () => this.rs.heartbeat(0.85));
       }
-      yield 1.5;
-      this.camTo({ x: L3.x, y: 2.45, z: -11.05, pitch: -12, yaw: 0, dist: 2, fov: 40 }, 1.5);
-      yield 1.6;
+      this.camTo({ x: L3.x, y: 0.45, z: -11, pitch: 5, yaw: 0, dist: 1.75, fov: 40 }, 3.1);
+      yield 3.1;
+      this.substate = "B5_DING";
+      this.mark("ding");
+      this.camTo(this.dingShot(), 0.01);
       this.liftDisp3.set("7");
-      if (!this.silent) this.audio.play("liftDing");
-      yield 1.7;
-      this.substate = "B6_FLASHES";
+      if (!this.silent) {
+        this.audio.play("liftDing");
+        this.rs.cutHit(0.6);
+      }
+      yield RT.open.dingHold;
+      this.substate = "B6_OPEN";
       this.mark("beat6");
       old.stop();
       old.targetYaw = null;
@@ -69755,36 +70970,45 @@ void main() {
       old.setVisible(true);
       this.standYola(cabX, cabZ, 0);
       this.yola.setShown(false);
-      this.camTo(doorShot(), 0.01);
+      {
+        const lk = this.game().lightkit;
+        if (lk) lk.extraCasters = [old.root];
+      }
+      this.phase("open");
+      this.camera.near = 0.05;
+      this.camera.updateProjectionMatrix();
+      if (this.smoke) {
+        this.smoke.g.visible = true;
+        this.smoke.k = Math.max(this.smoke.k, 1.2);
+        for (const q of this.smoke.parts) q.life = Math.random() * 0.8;
+      }
+      this.smokeKick(L3.x, -11.6, 1.2);
       if (!this.silent) this.rs.doorsOpen();
       this.tween(1.4, (k) => this.setLift3(ease(k)));
-      this.setSmoke(true);
-      yield 1.7;
-      this.revLight({ red: 0.28 });
-      const seq = [
-        [0, "old", 1],
-        [1.15, "old", 0.55],
-        [2, "new", 0.85],
-        [2.55, "old", 0.6],
-        // the first exchanges
-        [3.6, "old", 0.8],
-        [3.76, "new", 0.85],
-        [3.89, "old", 0.9],
-        [4, "new", 0.9],
-        [4.1, "old", 0.95],
-        [4.19, "new", 0.95],
-        // (a beat of dark, then the burst, speeding up)
-        [4.36, "old", 0.85],
-        [4.62, "new", 0.75],
-        [5, "old", 0.65],
-        // (then slowing, click by click, the light dying)
-        [5.95, "new", 1.5, 1.1, true]
-      ];
-      for (const [t, who, k, decay, boom] of seq) this.later(t, () => this.flashOn(who, k, decay, boom));
-      if (!this.silent) this.later(5.45, () => this.rs.heartbeat(1));
-      yield 7.2;
+      {
+        const O = RT.open, C = new Vector3(L3.x + O.camX, O.camY, O.camZ), T0 = new Vector3(L3.x, O.startY, O.startZ), T1 = new Vector3(cabX, O.endY, cabZ), t0 = this.t;
+        this.camTrack = () => {
+          const u = ease(Math.min(1, Math.max(0, (this.t - t0 - O.tiltDelay) / O.tiltSecs)));
+          return this.lookRig(C, T0.clone().lerp(T1, u), O.fov);
+        };
+      }
+      yield RT.open.tiltDelay + RT.open.tiltSecs + RT.open.hold;
+      this.camTrack = null;
+      this.substate = "B6_FLASHES";
+      this.mark("flashes");
+      this.camTo(doorShot(), 0.01);
+      this.phase("cab");
+      const seq = R.flashes.slice().sort((a, b) => a[0] - b[0]), last2 = seq[seq.length - 1];
+      for (const [t, who, k, decay, boom] of seq) this.later(t, () => this.flashOn(who, k, decay || 0, boom));
+      for (const [t, shot2] of this.flashCuts(seq, cabX, cabZ)) this.later(t, () => {
+        this.camTo(shot2, 0.01);
+        if (!this.silent) this.rs.cutHit();
+      });
+      if (!this.silent && last2) this.later(Math.max(0, last2[0] - 0.5), () => this.rs.heartbeat(1));
+      yield (last2 ? last2[0] : 0) + R.flashTail;
       this.substate = "B8_THREAT";
-      this.revLight({ amb: 0, red: 0.9, redAt: "or" });
+      this.mark("beat8");
+      this.phase("threat", { redAt: "or" });
       this.camTo({ x: TX, y: 1.5, z: TZ - 0.4, pitch: 12, yaw: 14, dist: 4.2, fov: 40 }, 0.01);
       this.camTo({ x: TX, y: 1.55, z: TZ - 0.45, pitch: 10, yaw: 10, dist: 3.4, fov: 40 }, 1.1);
       if (!this.silent) {
@@ -69797,61 +71021,108 @@ void main() {
       this.setOutbreakLook(true);
       this.substate = "B9_FEET";
       this.mark("beat9");
+      const W3 = R.walk, stopZ = W3.stopZ;
       this.revealPose = { stand: true, x: cabX, z: cabZ };
       this.standVisible(true);
-      this.stand.bat = "none";
-      this.standClipWalk(this.revClips?.walk, { x: cabX, z: -9.75 }, 0.7, 0.8);
-      this.slowmo = 0.7;
-      this.stepShake = 0.012;
+      this.stand.bat = W3.bat ? "hang" : "none";
+      this.standClipWalk(this.revClips?.walk, { x: cabX, z: stopZ }, W3.slow, 0.8);
+      this.slowmo = W3.slow;
+      this.stepShake = W3.stepShake;
       if (!this.silent) {
         this.rs.slowWhoosh();
         this.rs.bedStop(1.6);
         this.rs.cueStart(7);
       }
-      this.revLight({ amb: 0.05, red: 0.42, redAt: "doors", em: true, key: 0.3, spotAt: "flash" });
+      this.phase("walk", { redAt: "doors", em: true });
+      if (R.brighten === "walk") this.brightenNow();
       this.camTo({ x: cabX + 0.15, y: 0.25, z: -11, pitch: -2, yaw: 8, dist: 2.3, fov: 30 }, 0.01);
-      this.camTo({ x: cabX + 0.12, y: 0.23, z: -10.75, pitch: -1.5, yaw: 6, dist: 2.05, fov: 30 }, 2.7);
-      yield 2.7;
-      this.substate = "B10_BAT";
+      this.camTo({ x: cabX + 0.12, y: 0.23, z: -10.75, pitch: -1.5, yaw: 6, dist: 2.05, fov: 30 }, W3.secs);
+      yield W3.secs;
       this.camTrack = null;
-      this.slowmo = 0;
       this.stepShake = 0;
-      this.revBat(true);
-      this.camTo({ x: REV_BAT.x - 0.05, y: 0.5, z: -10.75, pitch: 4, yaw: -28, dist: 1.6, fov: 40 }, 0.01);
-      this.camTo({ x: REV_BAT.x - 0.05, y: 0.55, z: -10.75, pitch: 3, yaw: -24, dist: 1.25, fov: 40 }, 1.7);
-      this.standHomerun(an, HR.stance);
-      yield 1.7;
-      this.substate = "B11_SWING";
+      if (R.batShot) {
+        this.substate = "B10_BAT";
+        this.mark("beat10");
+        this.phase("batShot");
+        this.revBat(true);
+        this.camTo({ x: REV_BAT.x - 0.05, y: 0.5, z: -10.6, pitch: 4, yaw: -28, dist: 1.6, fov: 40 }, 0.01);
+        this.camTo({ x: REV_BAT.x - 0.05, y: 0.55, z: -10.6, pitch: 3, yaw: -24, dist: 1.25, fov: 40 }, 1.7);
+        yield 1.7;
+        this.revBat(false);
+      }
+      this.substate = "B11_LAUNCH";
       this.mark("beat11");
-      this.revBat(false);
-      const hit = this.planHit(), Z = this.burst?.ready ? this.burst : null;
+      this.slowmo = 0;
+      const plan = this.planLaunch(), Z = this.burst?.ready ? this.burst : null;
+      if (!plan) {
+        yield 0.5;
+        this.finalize("normal");
+        return;
+      }
+      const LA = R.launch, Lc = LA.cam, P = plan;
       this.camera.near = 0.05;
       this.camera.updateProjectionMatrix();
-      this.revLight({ amb: 0.16, red: 0.55, key: 0.45, spotAt: "key" });
-      if (Z && hit) {
-        const toC = 0.55 + (hit.tc - HR.stance);
-        Z.place(hit.zx + hit.away.x * 1.5, hit.zz + hit.away.z * 1.5, hit.zyaw);
+      this.phase("launch");
+      this.launch.t = -LA.hold;
+      this.launch.rate = 1;
+      this.launch.ramp = { from: P.liftoff + LA.rampAt, len: Math.max(0.02, LA.rampLen), slow: LA.rampSlow };
+      this.launch.sfx = { off: P.liftoff - 0.04, spin: P.liftoff + LA.rampAt, spinSecs: this.launchSecs(P.liftoff + LA.rampAt, Math.max(0, P.tc - LA.freezeLead)) };
+      if (Z) {
+        const sx = P.zx + P.fwd.x * LA.lunge, sz = P.zz + P.fwd.z * LA.lunge;
+        Z.place(sx, sz, P.zyaw);
+        Z.walkV = null;
         Z.play("walk", { timeScale: 1.7, at: 1.2 });
-        Z.walkTo(hit.zx, hit.zz, toC);
-        this.later(Math.max(0, toC - 0.7), () => Z.play("attack", { fade: 0.25, timeScale: 1.2, loop: false, at: 0.3 }));
+        this.launch.zombie = { Z, sx, sz, ex: P.zx, ez: P.zz, T: LA.hold + P.tc, attackAt: P.tc - 0.7, attacked: false };
+        this.launch.t0c = P.tc;
         this.dropPatient();
-        this.camTo(hit.cam, 0.01);
-        this.camTo({ ...hit.cam, dist: hit.cam.dist - 0.35 }, toC + 0.3);
-      } else {
-        const p = this.stand;
-        this.camTo({ x: p.x - 0.2, y: 1.1, z: p.z + 0.25, pitch: 7, yaw: HR.camYaw, dist: 4, fov: 40 }, 0.01);
       }
+      this.camTo(P.cam, 0.01);
+      this.camTo({ ...P.cam, dist: P.cam.dist - Lc.push }, this.launchSecs(-LA.hold, Math.max(0, P.tc - LA.freezeLead)));
       if (!this.silent) this.rs.drum(1.1);
-      yield 0.55;
-      this.stand.clip.paused = false;
-      this.stand.clip.timeScale = 1;
+      yield () => this.launch.t >= 0;
       if (!this.silent) this.rs.drum(1.3);
-      if (Z && hit) {
-        yield () => this.stand.clip.time >= hit.tc;
-        this.substate = "B11_HIT";
-        this.mark("hit");
-        this.stand.clip.paused = true;
-        this.burstScale = 0;
+      const tf = Math.max(0, P.tc - LA.freezeLead);
+      yield () => this.launch.t >= tf;
+      this.substate = "B12_CARD";
+      this.mark("beat12");
+      this.launch.t = tf;
+      this.launch.rate = 0;
+      this.launch.ramp = null;
+      this.slowmo = 0;
+      this.burstScale = 0;
+      this.camAnim = null;
+      this.shake = 0.05;
+      if (this.rl) {
+        this.rl.flash = 0.5;
+        this.rl.flashDecay = 0.3;
+      }
+      if (!this.silent) this.rs.freezeHit();
+      this.phase("card");
+      if (R.brighten === "card") this.brightenNow();
+      yield LA.boomToCard;
+      this.shake = 0;
+      this.tickRevLight(0);
+      this.cardUp = true;
+      if (!this.silent) {
+        this.showCard();
+        this.rs.cueHit();
+      }
+      yield LA.cardHold;
+      this.hideCard();
+      this.cardUp = false;
+      this.phase("burst");
+      this.launch.rate = 1;
+      this.burstScale = 1;
+      yield () => this.launch.t >= P.tc;
+      this.substate = "B13_HIT";
+      this.mark("hit");
+      if (R.brighten === "burst") this.brightenNow();
+      if (Z) {
+        const tip = this.batTip(), next = this.batTip(P.tc + 1 / 30);
+        const swing = next.clone().sub(tip).setY(0);
+        if (swing.lengthSq() < 1e-6) swing.copy(P.fwd);
+        swing.normalize();
+        const dir = swing.multiplyScalar(0.6).add(P.fwd.clone().multiplyScalar(0.7)).normalize();
         this.shake = 0.07;
         this.camAnim = null;
         if (this.rl) {
@@ -69861,18 +71132,19 @@ void main() {
         if (!this.silent) {
           this.rs.smash();
           this.rs.slowDown();
+          if (RT.game.impact) this.game().atmos?.impactFrame?.();
         }
         this.lensHit = false;
         this.setCamera();
-        Z.burst(hit.tip, hit.dir, this.camera, { headSecs: 0.42, lensDist: 0.62 });
+        Z.burst(tip, dir, this.camera, { headSecs: LA.headSecs, lensDist: LA.lensDist });
         this.patientDown = true;
+        this.launch.rate = 0;
+        this.burstScale = 0;
         yield 0.08;
-        const realHead = 0.42 / 0.26, after = 0.5;
-        this.burstScale = 0.26;
-        this.stand.clip.paused = false;
-        this.stand.clip.timeScale = Math.max(0.05, (HR.freeze - hit.tc) / (realHead + after));
+        this.burstScale = LA.slow;
+        this.launch.rate = LA.slow;
         yield () => this.lensHit;
-        this.substate = "B11_LENS";
+        this.substate = "B13_LENS";
         {
           const sp = this.lensAt.clone().project(this.camera);
           this.crackEl?.remove();
@@ -69884,57 +71156,420 @@ void main() {
         if (!this.silent) this.rs.lensHit();
         yield 0.06;
         this.burstScale = bs;
-        yield after;
-      } else yield () => this.stand.clip.time >= HR.freeze;
-      this.substate = "B12_CARD";
-      this.mark("beat12");
-      this.stand.clip.paused = true;
-      this.burstScale = 0;
-      {
-        const bb = this.yola?.batLib?.obj ? new Box3().setFromObject(this.yola.batLib.obj) : null, p = this.stand;
-        const tx = bb ? (p.x + (bb.min.x + bb.max.x) / 2) / 2 : p.x, tz = bb ? (p.z + (bb.min.z + bb.max.z) / 2) / 2 : p.z;
-        this.camAnim = null;
-        this.shake = 0;
-        this.rig = { x: tx, y: 1.2, z: tz, pitch: 6, yaw: HR.camYaw - 6, dist: 4.8, fov: 40 };
-        this.setCamera();
+        yield LA.after;
       }
-      this.revLight({ key: 1, amb: 0.3, red: 0.18, spotAt: "key" });
-      this.tickRevLight(0);
-      if (!this.silent) {
-        this.showCard();
-        this.rs.cueHit();
-      }
-      this.setSmoke(false);
-      yield 2.6;
       this.state = "COMBAT_READY";
       this.substate = "B13_RETURN";
-      this.hideCard();
-      this.stand.clip.paused = false;
-      this.stand.clip.timeScale = 1;
+      this.mark("return");
+      this.launch.rate = 1;
       this.burstScale = 1;
       this.fadeCrack();
+      this.setSmoke(false);
       if (!this.silent) g.musicStart?.("combat");
-      this.revLight({ amb: 1, red: 0, tube: 0, key: 0, em: true, exposure: 1 });
+      this.brightenNow();
+      this.handoff = { x: P.landX, z: P.landZ, yaw: P.h };
       this.setCamera();
       const fromPos = this.camera.position.clone(), fromQuat = this.camera.quaternion.clone(), fromFov = this.camera.fov;
-      const pose = g.cameraPose(an.x, an.z, an.yaw);
+      const pose = g.cameraPose(P.landX, P.landZ, P.h);
       this.camera.position.copy(fromPos);
       this.camera.quaternion.copy(fromQuat);
       this.camera.fov = fromFov;
       this.camera.near = 0.05;
       this.camera.updateProjectionMatrix();
-      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: 1.8 };
-      yield () => this.stand.clip.time >= this.stand.clip.getClip().duration - 0.05;
-      yield 0.1;
+      this.poseAnim = { from: { pos: fromPos, quat: fromQuat, fov: fromFov }, to: pose, t: 0, dur: LA.returnSecs };
+      yield () => this.launch.t >= P.end && (!this.poseAnim || this.poseAnim.t >= this.poseAnim.dur);
+      if (this.studio) {
+        this.mark("end");
+        yield () => false;
+      }
       this.finalize("normal");
+    }
+    // (2026-10-19, the user: "something more cinematic during the flashes"; "a camera cut for every flash could be jarring")
+    // three cuts, each in the dark just before the flash that starts a new phrase of the rhythm, so the camera is never seen
+    // to move: the wide doorway for the slow exchanges, a low three-quarter for the burst, a closer medium for the slowing
+    // clicks, a low hero angle looking up at her for the boom. Each holds (no push). Found from the list itself, so a retimed
+    // or regenerated rhythm keeps its cuts: the burst = the first flash followed by a gap under 0.2 s; the clicks = the first
+    // gap of 0.15 s or more after the burst at its quickest; the boom = the last flash
+    flashCuts(seq, cx, cz) {
+      const n = seq.length;
+      if (n < 3) return [];
+      const gap = (i) => i + 1 < n ? seq[i + 1][0] - seq[i][0] : 9;
+      let burst = -1;
+      for (let i = 1; i < n - 1; i++) if (gap(i) < 0.2) {
+        burst = i;
+        break;
+      }
+      let fast = burst;
+      if (burst > 0) {
+        for (let i = burst; i < n - 1 && gap(i) < 0.2; i++) if (gap(i) < gap(fast)) fast = i;
+      }
+      let clicks = -1;
+      if (burst > 0) {
+        for (let i = fast + 1; i < n - 1; i++) if (gap(i - 1) >= 0.15) {
+          clicks = i;
+          break;
+        }
+      }
+      const shots = {
+        burst: { x: cx, y: 1, z: cz + 0.2, pitch: -4, yaw: 28, dist: 3.6, fov: 38 },
+        // (low, her front right, through the doorway)
+        clicks: { x: cx, y: 1.15, z: cz + 0.2, pitch: 2, yaw: -16, dist: 2.6, fov: 36 },
+        // (closer, from her front left)
+        boom: { x: cx, y: 1.15, z: cz, pitch: -14, yaw: 8, dist: 2, fov: 40 }
+        // (low and close, looking up at her and the bat)
+      };
+      const at = (i) => Math.max(0, seq[i][0] - 0.02);
+      const out = [];
+      if (burst > 0) out.push([at(burst), shots.burst]);
+      if (clicks > burst && clicks < n - 1) out.push([at(clicks), shots.clicks]);
+      out.push([at(n - 1), shots.boom]);
+      return out;
+    }
+    // a camera at C looking at T (the opening's rig is a target, an angle and a distance)
+    lookRig(C, T2, fov2 = 40) {
+      const d = C.clone().sub(T2), dist2 = d.length();
+      return { x: T2.x, y: T2.y, z: T2.z, yaw: MathUtils.radToDeg(Math.atan2(d.x, d.z)), pitch: MathUtils.radToDeg(Math.asin(d.y / dist2)), dist: dist2, fov: fov2 };
+    }
+    // the floor number, close: the display filling most of the frame's width (further back on a narrow portrait screen)
+    dingShot() {
+      const P = new Vector3(LIFT7.x, 2.65, -10.93), fov2 = 32, asp = this.camera.aspect || 1, half = Math.atan(Math.tan(MathUtils.degToRad(fov2) / 2) * asp);
+      const dist2 = Math.max(0.7, RT.open.dingWidth / 2 / Math.tan(half));
+      return this.lookRig(P.clone().add(new Vector3(0, -dist2 * 0.12, dist2)), P, fov2);
+    }
+    // the lights that glow in the reveal's picture (revealpost.js, selective): the failing fitting, its sparks, the floor number,
+    // the EXIT signs (built by warmStoryLight just before)
+    markGlow() {
+      const R = this.rfx;
+      if (R) for (const o of [R.halo, R.sparks.obj]) o.layers.enable(BLOOM_LAYER);
+      this.arena.doorKits?.lift?.root.traverse((o) => {
+        if (o.isMesh && o.geometry?.parameters?.width === 0.56 && Math.abs(o.position.y - 2.65) < 0.01) o.layers.enable(BLOOM_LAYER);
+      });
+      for (const E of this.game?.().lightkit?.exits || []) {
+        E.m.layers.enable(BLOOM_LAYER);
+        E.halo.layers.enable(BLOOM_LAYER);
+      }
+    }
+    // the reveal's own picture (revealpost.js: bloom, a film finish) from the cut to the lift to the hand-off; false: the game's
+    renderFrame(force = false) {
+      if (!force && !(this.active && this.gameLight && RT.quality.post)) return false;
+      (this.post || (this.post = new RevealPost(this.renderer, this.scene, this.camera))).render(RT.quality);
+      return true;
+    }
+    // (2026-10-19, the quality pass) her shadow thrown by the flash: the game's own shadow light for Yola (render/lightkit.js:
+    // one light that only casts, a catcher under her; no light added, nothing recompiles) swung round to come from the flash
+    // behind her, its window widened along the floor toward the lens, the shadow as dark as the flash is bright
+    aimFlashShadow(off = false) {
+      const lk = this.game?.().lightkit, L3 = lk?.ysh, C = lk?.yshCatch, sp = this.spot, r = this.rl, her = this.herAt();
+      if (!L3 || !C) return;
+      const B = this.yshBase || (this.yshBase = { half: L3.shadow.camera.right, map: L3.shadow.mapSize.x });
+      const on = !off && !!(this.gameLight && RT.quality.flashShadow && lk.on.yshadow && r?.on && r.spotAt === "flash" && sp && her);
+      const H4 = on ? 4.5 : B.half, M4 = on ? 1024 : B.map, cam = L3.shadow.camera;
+      if (cam.right !== H4) {
+        cam.left = cam.bottom = -H4;
+        cam.right = cam.top = H4;
+        cam.updateProjectionMatrix();
+      }
+      if (L3.shadow.mapSize.x !== M4) {
+        L3.shadow.mapSize.set(M4, M4);
+        L3.shadow.map?.dispose();
+        L3.shadow.map = null;
+      }
+      if (!on) {
+        C.scale.set(1, 1, 1);
+        return;
+      }
+      const to = new Vector3(sp.position.x - her.x, sp.position.y, sp.position.z - her.z).normalize(), fall = new Vector3(-to.x, 0, -to.z).normalize();
+      const cx = her.x + fall.x * H4 * 0.7, cz = her.z + fall.z * H4 * 0.7;
+      L3.target.position.set(cx, 0, cz);
+      L3.position.set(cx + to.x * 6, to.y * 6, cz + to.z * 6);
+      L3.target.updateMatrixWorld();
+      L3.updateMatrixWorld();
+      C.position.set(cx, 0.014, cz);
+      C.scale.set(H4 / B.half, 1, H4 / B.half);
+      C.material.opacity = 0.62 * Math.min(1, (r.flash || 0) + (r.key || 0) * 0.8);
+      this.renderer.shadowMap.needsUpdate = true;
+    }
+    // the lights back to the game's (R.brighten says when; once only)
+    brightenNow() {
+      if (this.brightened) return;
+      this.brightened = true;
+      this.phase("after", { tube: 0, em: true });
+    }
+    // a phase's light (revealtune.js RT.light[name]): the room, the red, the spotlight and where it hangs, the car's lamps, the
+    // exposure, the fog, the shaft and its dust. extra: the beat's own (where the red pulse sits, the emergency base)
+    phase(name, extra = {}) {
+      const P = RT.light[name];
+      if (!P) return;
+      this.curPhase = name;
+      this.curExtra = extra;
+      if (name !== "after" && this.brightened) return;
+      const secs = extra.secs ?? P.secs ?? 0;
+      this.revLight({ amb: P.amb, red: P.red, key: P.key, cab: P.cab, exposure: P.exposure, spotAt: P.spotAt, floor: P.floor ?? 1, signs: P.signs ?? 1, emRed: P.emRed ?? 1, chars: P.chars ?? 1, ...extra }, secs);
+      this.setSmoke(P.smoke);
+      if (this.rfx) {
+        this.rfx.k.beam = P.beam;
+        this.rfx.k.dust = P.dust;
+        this.rfx.k.halo = P.beam * 0.5;
+      }
+    }
+    // the Studio changed a dial: the current phase again, at once
+    studioApply() {
+      if (!this.curPhase) return;
+      const b = this.brightened;
+      if (this.curPhase !== "after") this.brightened = false;
+      this.phase(this.curPhase, { ...this.curExtra, secs: 0 });
+      this.brightened = b;
+      this.tickRevLight(0);
+      if (this.paused && this.smoke) {
+        this.smoke.k = this.smoke.target;
+        this.tickSmoke(0);
+      }
+    }
+    // (on a held frame too: the clock is stopped, so the light is applied now)
+    // the reveal played once, silently, behind the loading screen, one frame drawn at each beat through its own picture chain with
+    // the game's lighting as the reveal has it: every shader it will use compiled exactly as it will be used (a separate
+    // compile of the scene missed them: the light count differed by one, ~40 compiles then stalled the reveal itself); then
+    // the story put back at its start
+    warmByReplay() {
+      const g = this.game?.();
+      if (!g?.storyLight || !g.revealLight) return;
+      const was = { active: this.active, started: this.started };
+      this.active = true;
+      this.beginSilent();
+      let n = 0;
+      const draw = () => {
+        g.storyLight(!!this.gameLight);
+        if (g.lightkit) g.lightkit.yshScanT = 0;
+        if (this.gameLight) g.revealLight(0);
+        if (this.room1Preview) g.previewRoom1(0);
+        if (!this.poseAnim) this.setCamera();
+        this.tickRevLight(0);
+        if (!this.renderFrame(!!this.gameLight)) this.renderer.render(this.scene, this.camera);
+      };
+      for (const m of ["beat5", "ding", "beat6", "flashes", "beat8", "beat9", "beat11", "beat12", "hit", "return"]) {
+        while (!(m in this.marks) && n++ < 4e4) this.step(1 / 20);
+        for (let k = 0; k < 6; k++) this.step(1 / 30);
+        draw();
+        for (let k = 0; k < 30; k++) this.step(1 / 30);
+        draw();
+        if (m === "flashes") for (const who of ["old", "new"]) {
+          this.flashOn(who, 1, 0, false);
+          this.tickRevLight(0);
+          draw();
+        }
+      }
+      try {
+        this.runFrameWarmDone = true;
+      } finally {
+        this.endSilent();
+        g.storyLight(false);
+        this.resetTour();
+        this.setupScene();
+        this.active = was.active;
+        this.started = was.started;
+        this.state = "PRELOAD";
+        this.rig = { ...SHOTS[0].a };
+        this.setCamera();
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+    // every material the reveal draws, compiled for the reveal's own picture chain too (revealpost.js draws the scene into an
+    // off-screen image: each material needs a second shader for that, and compiling it on first sight stalled the reveal ~40
+    // times): run while the game's lighting is on (main.js warmStoryLight), with everyone the reveal shows made visible
+    warmReveal() {
+      const R = this.renderer, A = this.stage.actors, Z = this.burst?.root, Y2 = this.yola;
+      const shown = [[A.yola?.root, true], [Z, true], [this.rfx?.vol, true], [this.smoke?.g, true]].filter(([o]) => o).map(([o]) => [o, o.visible]);
+      for (const [o] of shown) o.visible = true;
+      const yWas = Y2?.outer?.visible;
+      Y2?.setShown?.(true);
+      const rt = new WebGLRenderTarget(8, 8, { type: HalfFloatType });
+      try {
+        R.setRenderTarget(rt);
+        R.compile(this.scene, this.camera);
+      } finally {
+        R.setRenderTarget(null);
+        rt.dispose();
+      }
+      for (const [o, v] of shown) o.visible = v;
+      if (!yWas) Y2?.setShown?.(false);
+    }
+    // the launch's contact worked out now (planLaunch keeps it), so the launch's first frame does not pose her ~30 times
+    warmLaunch() {
+      const P = this.revealPose, L3 = this.launch;
+      try {
+        this.planLaunch();
+      } catch (e) {
+        console.warn("warm launch", e);
+      }
+      this.revealPose = P;
+      this.launch = L3;
+      this.yola?.setShown?.(false);
+    }
+    // the launch, worked out where she stands: the finisher (RT.launch variant + jump), her heading (straight out of the lift,
+    // turned by RT.launch.turn), the moment the bat lands (the clip's blow window) and where its sweet spot is then, where the
+    // patient stands to take it (RT.launch.gap further on), where she lands, and the camera in front of her across him
+    planLaunch() {
+      const LA = RT.launch, Y2 = this.yola, r = this.revealPose;
+      const E = EXEC_LAUNCH.find((e) => e.variant === LA.variant && Math.abs(e.dist - LA.jump) < 0.05) || EXEC_LAUNCH.find((e) => e.variant === LA.variant) || EXEC_LAUNCH[0];
+      if (!E || !Y2?.batLib) return null;
+      const A = E.A, total = A.ROOT ? A.ROOT[A.ROOT.length - 1].z : 0;
+      const h = MathUtils.degToRad(LA.turn), fwd = new Vector3(Math.sin(h), 0, Math.cos(h));
+      const x0 = r ? r.x : LIFT7.x, z0 = r ? r.z : RT.walk.stopZ;
+      if (this.stand) this.standYola(null);
+      this.revealPose = { x: x0, z: z0, yaw: h, shown: true };
+      this.yola.setShown(true);
+      this.launch = { A, x0, z0, h, fwd, t: 0, rate: 0, scale: LA.reach, id: 9e3 + (this.launchN = (this.launchN || 0) + 1) };
+      this.revealPose.launch = this.launch;
+      const key = [LA.variant, LA.jump, LA.turn, LA.reach].join("|"), C0 = (this.contactCache || (this.contactCache = {}))[key];
+      let tc, best, tipRel;
+      if (C0) ({ tc, best, tipRel } = C0);
+      else {
+        tc = A.activeStart;
+        best = -1;
+        for (let t = A.activeStart - 0.05; t <= A.activeEnd + 0.05; t += 1 / 120) {
+          const p = this.batTip(t), h0 = this.launchAt(t), reach2 = (p.x - h0.x) * fwd.x + (p.z - h0.z) * fwd.z;
+          if (p.y > 0.95 && p.y < 1.75 && reach2 > best) {
+            best = reach2;
+            tc = t;
+          }
+        }
+        if (best < 0.6) tc = (A.activeStart + A.activeEnd) / 2;
+        const tp = this.batTip(tc);
+        tipRel = { x: tp.x - x0, y: tp.y, z: tp.z - z0 };
+        this.contactCache[key] = { tc, best, tipRel };
+      }
+      const end = attackEnd(A), her = this.launchAt(tc), tip = new Vector3(x0 + tipRel.x, tipRel.y, z0 + tipRel.z);
+      const MIN_GAP = 0.95, reach = Math.max(MIN_GAP, best >= 0.6 ? best : 0) + LA.gap;
+      const side = best >= 0.6 ? (tip.x - her.x) * fwd.z - (tip.z - her.z) * fwd.x : 0;
+      const zx = her.x + fwd.x * reach + fwd.z * side, zz = her.z + fwd.z * reach - fwd.x * side, zyaw = Math.atan2(her.x - zx, her.z - zz);
+      const land = this.launchAt(end);
+      let liftoff = 0;
+      if (A.ROOT) for (let i = 1; i < A.ROOT.length; i++) {
+        const a = A.ROOT[i - 1], b = A.ROOT[i];
+        if ((b.z - a.z) / Math.max(1e-6, b.t - a.t) > 3) {
+          liftoff = a.t;
+          break;
+        }
+      }
+      const C = LA.cam, tx = her.x + (zx - her.x) * C.look, tz = her.z + (zz - her.z) * C.look;
+      const asp = this.camera.aspect || 1, kd = asp < 1 ? Math.min(1.7, 0.72 / asp) : 1;
+      const cam = { x: tx, y: C.height, z: tz, pitch: C.pitch, yaw: MathUtils.radToDeg(h) + C.yawOff, dist: C.dist * kd, fov: C.fov };
+      this.launch.t = 0;
+      this.poseRevealYola(0);
+      return { A, tc, end, fwd, h, zx, zz, zyaw, cam, landX: land.x, landZ: land.z, liftoff };
+    }
+    // where she stands at time t of the launch (its own travel, scaled by reach)
+    launchAt(t) {
+      const L3 = this.launch, R = L3.A.ROOT;
+      let z = 0;
+      if (R) {
+        if (t <= R[0].t) z = R[0].z;
+        else if (t >= R[R.length - 1].t) z = R[R.length - 1].z;
+        else for (let i = 1; i < R.length; i++) if (R[i].t >= t) {
+          const a = R[i - 1], b = R[i], u = (t - a.t) / Math.max(1e-6, b.t - a.t);
+          z = a.z + (b.z - a.z) * u;
+          break;
+        }
+      }
+      z *= L3.scale;
+      return { x: L3.x0 + L3.fwd.x * z, z: L3.z0 + L3.fwd.z * z };
+    }
+    // the bat's sweet spot (its ImpactPoint) at time t of the launch (default: now)
+    batTip(t) {
+      const L3 = this.launch, bat = this.yola?.batLib?.obj;
+      if (!bat) return new Vector3();
+      const t0 = L3.t;
+      if (t !== void 0) {
+        L3.t = t;
+        this.poseRevealYola(0);
+        this.poseRevealYola(0);
+      }
+      bat.updateMatrixWorld(true);
+      const ip = bat.getObjectByName("ImpactPoint"), p = ip ? ip.getWorldPosition(new Vector3()) : (() => {
+        const a = this.batAxis(bat);
+        return a.axis.clone().multiplyScalar(a.len * 0.8).applyMatrix4(bat.matrixWorld);
+      })();
+      if (t !== void 0) {
+        L3.t = t0;
+        this.poseRevealYola(0);
+        this.poseRevealYola(0);
+      }
+      return p;
+    }
+    // a bat model's long axis in its own frame (toward the barrel), its length to the barrel's end and to the knob (the model
+    // changed axis when its grip was refitted: never assume +z)
+    batAxis(obj) {
+      const AX = this.batAxes || (this.batAxes = /* @__PURE__ */ new WeakMap());
+      if (AX.has(obj)) return AX.get(obj);
+      const p = obj.position.clone(), q = obj.quaternion.clone(), s = obj.scale.clone(), par = obj.parent;
+      par?.remove(obj);
+      obj.position.set(0, 0, 0);
+      obj.quaternion.identity();
+      obj.scale.setScalar(1);
+      obj.updateMatrixWorld(true);
+      const b = new Box3().setFromObject(obj, true);
+      obj.position.copy(p);
+      obj.quaternion.copy(q);
+      obj.scale.copy(s);
+      par?.add(obj);
+      obj.updateMatrixWorld(true);
+      const sz = b.getSize(new Vector3()), k = sz.x > sz.y && sz.x > sz.z ? "x" : sz.y > sz.z ? "y" : "z";
+      const lo = b.min[k], hi = b.max[k], sign2 = Math.abs(hi) >= Math.abs(lo) ? 1 : -1, axis = new Vector3();
+      axis[k] = sign2;
+      const out = { axis, len: sign2 > 0 ? hi : -lo, knob: sign2 > 0 ? -lo : hi, radius: Math.max(...["x", "y", "z"].filter((a) => a !== k).map((a) => sz[a])) / 2 };
+      AX.set(obj, out);
+      return out;
+    }
+    // the speed ramp at time t of her clip (1: full speed)
+    rampAt(t) {
+      const R = this.launch?.ramp;
+      if (!R || t <= R.from) return 1;
+      const u = Math.min(1, (t - R.from) / R.len);
+      return 1 - (1 - R.slow) * u * u * (3 - 2 * u);
+    }
+    // real seconds from clip time a to b at the ramp's speeds (the camera's push lands on the freeze)
+    launchSecs(a, b) {
+      let s = 0;
+      for (let t = a; t < b; t += 1 / 240) s += 1 / 240 / this.rampAt(t);
+      return s;
+    }
+    tickLaunch(d) {
+      const L3 = this.launch;
+      if (!L3) return;
+      if (L3.rate > 0) {
+        const k = this.rampAt(L3.t);
+        L3.t = Math.min(attackEnd(L3.A) + 0.5, L3.t + d * L3.rate * k);
+        if (L3.ramp) this.slowmo = k < 0.999 ? k : 0;
+      }
+      const F3 = L3.sfx;
+      if (F3 && !this.silent) {
+        if (F3.off != null && L3.t >= F3.off) {
+          F3.off = null;
+          this.rs.launchOff();
+        }
+        if (F3.spin != null && L3.t >= F3.spin) {
+          F3.spin = null;
+          this.rs.spinSwish(Math.max(0.3, F3.spinSecs));
+        }
+      }
+      const z = L3.zombie;
+      if (z && z.Z.state === "intact") {
+        const u = Math.min(1, Math.max(0, (L3.t + z.T - L3.t0c) / z.T));
+        z.Z.root.position.x = z.sx + (z.ex - z.sx) * u;
+        z.Z.root.position.z = z.sz + (z.ez - z.sz) * u;
+        if (!z.attacked && L3.t >= z.attackAt) {
+          z.attacked = true;
+          z.Z.play("attack", { fade: 0.25, timeScale: 1.2, loop: false, at: 0.3 });
+        }
+      }
     }
     // ---- the reveal's light: one controller, real lights only ----
     // amb: the room's light (0 dark .. 1 the normal look, against the clean or the emergency base), red: the emergency red
     // pulse (at the OR or the lift doors), tube: a dying cold tube over the table, flash: the failing light outside the lift,
     // cab: the cab's own lamps, exposure: the whole picture (unlit signs and screens dim with it)
     revLight(p, secs = 0) {
-      const r = this.rl || (this.rl = { amb: 1, red: 0, tube: 0, cab: 1, exposure: 1, flash: 0, key: 0, em: false, redAt: "or", t: 0 });
-      for (const k of ["amb", "red", "tube", "cab", "exposure", "key"]) if (p[k] !== void 0) {
+      const r = this.rl || (this.rl = { amb: 1, red: 0, tube: 0, cab: 1, exposure: 1, flash: 0, key: 0, em: false, redAt: "or", t: 0, floor: 1, signs: 1, emRed: 1, chars: 1 });
+      for (const k of ["amb", "red", "tube", "cab", "exposure", "key", "floor", "signs", "emRed", "chars"]) if (p[k] !== void 0) {
         if (secs > 0) {
           const a = r[k], b = p[k];
           this.tween(secs, (u) => {
@@ -69950,10 +71585,11 @@ void main() {
           else this.redLight.position.set(TX + 1.2, 2.8, TZ + 1.2);
         }
       }
+      if (p.spotAt) r.spotAt = p.spotAt;
       if (p.spotAt && this.spot) {
-        const sp = this.spot;
+        const sp = this.spot, F3 = RT.flash;
         if (p.spotAt === "key") {
-          const a = this.stand ? { x: this.stand.x, z: this.stand.z } : ROOM1.player;
+          const a = this.stand || this.revealPose || ROOM1.player;
           sp.position.set(a.x + 1.1, 2.5, a.z + 2.4);
           sp.target.position.set(a.x, 0.95, a.z);
           sp.angle = 0.3;
@@ -69963,9 +71599,10 @@ void main() {
           sp.target.position.set(TX, 0.8, TZ - 0.2);
           sp.angle = 0.9;
         } else {
-          sp.position.set(LIFT7.x + 0.15, 3.7, -14.35);
+          sp.position.set(LIFT7.x + 0.15, F3.height, F3.back);
           sp.target.position.set(LIFT7.x, 0.2, -11.1);
-          sp.angle = 0.75;
+          sp.angle = F3.angle;
+          sp.penumbra = F3.penumbra;
         }
         sp.distance = 12;
         sp.target.updateMatrixWorld(true);
@@ -69976,17 +71613,37 @@ void main() {
       const r = this.rl;
       if (!r?.on) return;
       r.t += d;
-      const A = this.arena, b = r.em ? { hemi: 0.52, sun: 0.72, env: 0.17 } : this.lightBase || { hemi: 0.8, sun: 1.35, env: 0.32 };
-      if (A.hemi) A.hemi.intensity = b.hemi * r.amb;
-      if (A.sun) A.sun.intensity = b.sun * r.amb;
-      this.scene.environmentIntensity = b.env * r.amb;
+      const A = this.arena, G5 = this.gameLight && A.em, b = r.em ? { hemi: 0.52, sun: 0.72, env: 0.17 } : this.lightBase || { hemi: 0.8, sun: 1.35, env: 0.32 };
+      if (G5) {
+        A.em.target = 1;
+        A.tickEmergency(d);
+        A.hemi.intensity *= r.amb;
+        A.sun.intensity *= r.amb;
+        this.scene.environmentIntensity *= r.amb;
+        const e = A.em;
+        e.redMat.opacity *= r.emRed;
+        e.redHalf.opacity *= r.emRed;
+        e.coldMat.opacity *= r.amb;
+        const lk = this.game().lightkit, at = this.game().atmos;
+        if (lk) {
+          lk.dim.floor = r.floor;
+          lk.dim.signs = r.signs;
+          lk.setCharLight(0.45 * r.chars * r.amb);
+          if (lk.built.yshadow && lk.on.yshadow !== RT.game.shadow) lk.set("yshadow", RT.game.shadow);
+        }
+        if (at && !!at.on.haze !== !!RT.game.haze) at.set("haze", RT.game.haze);
+      } else {
+        if (A.hemi) A.hemi.intensity = b.hemi * r.amb;
+        if (A.sun) A.sun.intensity = b.sun * r.amb;
+        this.scene.environmentIntensity = b.env * r.amb;
+      }
       const pulse = 0.5 + 0.5 * Math.sin(r.t * Math.PI * 2 * 0.55 - Math.PI / 2), soft = this.reducedFlash ? 0.6 : 1;
       if (this.redLight) this.redLight.intensity = r.red * soft * (1.2 + 7 * pulse);
-      if (A.redHemi) A.redHemi.intensity = r.red * 0.045 * pulse;
+      if (A.redHemi) A.redHemi.intensity = G5 ? A.redHemi.intensity * r.emRed * Math.min(1, r.amb * 2) + r.red * 0.045 * pulse : r.red * 0.045 * pulse;
       this.ui.setVignette(r.red * 0.35 * (0.4 + 0.6 * pulse));
       if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : r.flashDecay || 0.16));
       const tube = r.tube > 0 ? r.tube * (Math.sin(r.t * 31) * Math.sin(r.t * 7.3) > 0.55 ? 0 : 6 + 3 * Math.sin(r.t * 53)) * soft : 0;
-      const flash = 70 * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
+      const flash = 70 * RT.flash.power * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
       if (this.spot) this.spot.intensity = tube + flash + (r.key || 0) * 16;
       this.renderer.toneMappingExposure = (this.baseExposure ?? 0.92) * r.exposure;
       if (!this.cabLamps) {
@@ -70001,6 +71658,13 @@ void main() {
         l.m.emissiveIntensity = l.e * r.cab;
         l.m.color.copy(l.c).multiplyScalar(0.15 + 0.85 * r.cab);
       }
+      if (this.rfx) {
+        this.rfx.visible = true;
+        this.rfx.spot = r.spotAt === "flash" ? this.spot : null;
+        this.rfx.volOn = RT.quality.beam;
+        this.rfx.volK = RT.quality.beamK;
+        this.rfx.update(d, this.reducedFlash ? r.flash * 0.4 : r.flash, RT.flash);
+      }
     }
     revLightOff() {
       const r = this.rl;
@@ -70013,6 +71677,22 @@ void main() {
         l.m.emissiveIntensity = l.e;
         l.m.color.copy(l.c);
       }
+      if (this.rfx) {
+        this.rfx.k.beam = this.rfx.k.dust = this.rfx.k.halo = 0;
+        this.rfx.update(0, 0, RT.flash);
+        this.rfx.visible = false;
+      }
+      this.aimFlashShadow(true);
+      {
+        const lk = this.game?.().lightkit, at = this.game?.().atmos;
+        if (lk) {
+          lk.dim.floor = lk.dim.signs = 1;
+          lk.setCharLight(0.45);
+          lk.extraCasters = [];
+          if (lk.built.yshadow && this.gameLight) lk.set("yshadow", true);
+        }
+        if (at && this.gameLight) at.set("haze", true);
+      }
       this.rl = null;
     }
     // a flash from the failing light outside the doors: one silhouette or the other, the surfaces clean or outbreak with it
@@ -70020,11 +71700,12 @@ void main() {
       const old = this.stage.actors.yola;
       old.setVisible(who === "old");
       this.standVisible(who === "new");
-      this.setOutbreakLook(who === "new");
+      if (RT.flash.swap || boom) this.setOutbreakLook(who === "new");
       if (this.rl) {
         this.rl.flash = k;
-        this.rl.flashDecay = decay || 0.16;
+        this.rl.flashDecay = decay || RT.flash.decay;
       }
+      this.rfx?.flash(k, this.silent ? 0 : RT.flash.sparks);
       if (boom) {
         this.shake = 0.05;
         this.smokeKick(LIFT7.x, -12.2, 1.6);
@@ -70078,6 +71759,35 @@ void main() {
       s.yaw = Math.atan2(dx, dz);
       s.turn = void 0;
     }
+    // where in the walk cycle each heel lands (0..1): the lowest point of each foot, measured once on her rig
+    heelStrikes(clip) {
+      if (clip.userData?.heels) return clip.userData.heels;
+      const Y2 = this.yola, B = Y2?.bones;
+      if (!B?.LeftFoot) return [0, 0.5];
+      const mixer = new AnimationMixer(Y2.model), act = mixer.clipAction(clip);
+      act.play();
+      const N = 60, L3 = [], R = [], v = new Vector3();
+      for (let i = 0; i < N; i++) {
+        act.time = i / N * clip.duration;
+        mixer.update(0);
+        Y2.model.updateMatrixWorld(true);
+        L3.push(B.LeftFoot.getWorldPosition(v).y);
+        R.push(B.RightFoot.getWorldPosition(v).y);
+      }
+      act.stop();
+      mixer.uncacheRoot(Y2.model);
+      const low = (a) => {
+        const mn = Math.min(...a);
+        for (let i = 0; i < N; i++) {
+          const prev = a[(i + N - 1) % N];
+          if (a[i] <= mn + 0.012 && prev > mn + 0.012) return i / N;
+        }
+        return a.indexOf(mn) / N;
+      };
+      const heels = [low(L3), low(R)].sort((a, b) => a - b);
+      (clip.userData || (clip.userData = {})).heels = heels;
+      return heels;
+    }
     // the walk-out on her natural walk (UAL Walk_Loop on her rig: arms swinging, hands empty), at timeScale with the clip's
     // measured ground speed (speed1: metres a second at full speed), so her feet do not slide
     standClipWalk(clip, goal, timeScale, speed1) {
@@ -70088,46 +71798,12 @@ void main() {
       act.reset().play();
       if (s.idle) act.crossFadeFrom(s.idle, 0.2, false);
       const sp = speed1 * timeScale, dx = goal.x - s.x, dz = goal.z - s.z, d = Math.hypot(dx, dz) || 1;
-      s.cw = { act, goal, vx: dx / d * sp, vz: dz / d * sp, dur: clip.duration, last: 0 };
+      s.cw = { act, goal, vx: dx / d * sp, vz: dz / d * sp, dur: clip.duration, last: 0, contacts: this.heelStrikes(clip) };
       s.yaw = Math.atan2(dx, dz);
       s.turn = void 0;
     }
-    // the home run (Mixamo's, retargeted onto her for the opening: tools/opening/make_reveal_clips.py), paused at the stance.
-    // Her root is set so the swing's own walk-off ends with her hips on the gameplay mark.
-    standHomerun(mark, t0) {
-      const s = this.stand, Y2 = this.yola, clip = this.revClips?.homerun;
-      if (!s || !clip) return;
-      s.cw?.act.stop();
-      s.cw = null;
-      s.idle?.stop();
-      s.mixer.stopAllAction();
-      const act = s.mixer.clipAction(clip);
-      act.setLoop(LoopOnce, 1);
-      act.clampWhenFinished = true;
-      act.reset().play();
-      s.yaw = HR.yaw;
-      s.turn = void 0;
-      s.x = 0;
-      s.z = 0;
-      const hipsAt = (t) => {
-        act.time = t;
-        s.mixer.update(0);
-        Y2.outer.position.set(0, 0, 0);
-        Y2.container.rotation.y = s.yaw;
-        Y2.outer.updateMatrixWorld(true);
-        return Y2.bones.Hips.getWorldPosition(new Vector3());
-      };
-      const end = hipsAt(clip.duration - 0.02);
-      s.x = mark.x - end.x;
-      s.z = mark.z - end.z;
-      act.time = t0;
-      act.paused = true;
-      s.mixer.update(0);
-      s.clip = act;
-      s.bat = "heldL";
-      this.tickStand(0);
-    }
-    // the athlete's bat leaning against the lift's frame, beside the doors (the opening's static bat: barrel down, knob up)
+    // the athlete's bat leaning against the lift's right door housing (the opening's static bat: barrel down, knob up, the knob
+    // touching the housing's face)
     revBat(on) {
       const src = this.yola?.batLib?.obj || this.stage.guardBat;
       if (!this.revBatObj && on) {
@@ -70142,58 +71818,11 @@ void main() {
       if (!b) return;
       b.visible = on;
       if (!on) return;
-      const d = new Vector3(...REV_BAT.lean).normalize(), T2 = new Vector3(REV_BAT.x, 0, REV_BAT.z);
-      T2.y = 0.045 - d.y * 0.71;
+      const ax = this.batAxis(b), d = new Vector3(...REV_BAT.lean).normalize();
       b.scale.setScalar(1);
-      b.position.copy(T2);
-      b.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), d);
-    }
-    // the swing's contact, worked out from her own clip where she stands: the moment the bat's barrel sweeps furthest out in
-    // front of her (tc), where it is then (tip), where the zombie must stand to take it, which way he flies, and a camera
-    // across the line between them (on the side nearer the angle the user liked for the swing)
-    planHit() {
-      const s = this.stand, Y2 = this.yola, act = s?.clip, bat = Y2?.batLib?.obj;
-      if (!act || !bat) return null;
-      const t0 = act.time, fwd = new Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)), hips = new Vector3(s.x, 0, s.z);
-      const tipAt = (t) => {
-        act.time = t;
-        s.mixer.update(0);
-        this.tickStand(0);
-        bat.updateMatrixWorld(true);
-        return new Vector3(0, 0, 0.62).applyMatrix4(bat.matrixWorld);
-      };
-      const back = () => {
-        act.time = t0;
-        s.mixer.update(0);
-        this.tickStand(0);
-      };
-      let best = null, prev = null;
-      for (let t = HR.stance + 0.2; t <= HR.freeze; t += 1 / 60) {
-        const p = tipAt(t), out = p.clone().sub(hips).setY(0), reach = out.dot(fwd);
-        const sp = prev ? p.distanceTo(prev) * 60 : 0;
-        prev = p;
-        const score = reach * (1 + sp * 0.02);
-        if (p.y > 0.6 && p.y < 1.5 && reach > 0.3 && (!best || score > best.score)) best = { t, p, score, out };
-      }
-      if (!best) {
-        back();
-        return null;
-      }
-      const after = tipAt(Math.min(HR.freeze, best.t + 1 / 30));
-      back();
-      const swing = after.clone().sub(best.p).setY(0).normalize();
-      const away = best.out.clone().normalize();
-      const dir = swing.clone().multiplyScalar(0.7).add(away.clone().multiplyScalar(0.6)).normalize();
-      const zx = best.p.x + away.x * 0.16, zz = best.p.z + away.z * 0.16, zyaw = Math.atan2(s.x - zx, s.z - zz);
-      const line = Math.atan2(zx - s.x, zz - s.z) * 180 / Math.PI, wrap = (a) => (a % 360 + 540) % 360 - 180;
-      const cx = s.x + (zx - s.x) * 0.42, cz = s.z + (zz - s.z) * 0.42, dist2 = 5.6;
-      const inRoom = (y) => {
-        const a = y * Math.PI / 180, px2 = cx + Math.sin(a) * dist2, pz2 = cz + Math.cos(a) * dist2;
-        return px2 > -6.7 && px2 < 6.7 && pz2 > -10.7 && pz2 < 0.6;
-      };
-      let yaw = [line + 90, line - 90].map((y) => y + wrap(s.yaw * 180 / Math.PI - y) * 0.25).sort((a, b) => inRoom(b) - inRoom(a) || Math.abs(wrap(a - HR.camYaw)) - Math.abs(wrap(b - HR.camYaw)))[0];
-      const cam = { x: cx, y: 1.1, z: cz, pitch: 6, yaw, dist: dist2, fov: 40 };
-      return { tc: best.t, tip: best.p, dir, away, zx, zz, zyaw, cam };
+      b.quaternion.setFromUnitVectors(ax.axis, d);
+      const y = ax.radius + 5e-3 - d.y * ax.len, z = REV_BAT.wallZ + ax.radius + d.z * ax.knob;
+      b.position.set(REV_BAT.x, y, z);
     }
     // the patient zombie on the OR table is the one she smashes: out of the game's room
     dropPatient() {
@@ -70254,8 +71883,8 @@ void main() {
         const w = s.cw;
         s.x += w.vx * dt;
         s.z += w.vz * dt;
-        const ph = w.act.time % w.dur / w.dur;
-        if (w.last < 0.5 && ph >= 0.5 || ph < w.last) {
+        const ph = w.act.time % w.dur / w.dur, C = w.contacts || [0, 0.5], hit = C.some((c) => w.last < c && ph >= c || ph < w.last && (c > w.last || c <= ph));
+        if (hit) {
           if (!this.silent) {
             this.rs.footstep();
             this.rs.drum(0.8);
@@ -70283,9 +71912,9 @@ void main() {
       s.mixer.update(dt);
       const bat = Y2.batLib?.obj, hand = Y2.bones.RightHand;
       if (bat && s.bat === "none") bat.visible = false;
-      else if (bat && (s.bat === "held" || s.bat === "heldL")) {
+      else if (bat && s.bat === "held") {
         Y2.outer.updateMatrixWorld(true);
-        Y2.placeHeld(s.bat === "heldL" ? this.leftBat || (this.leftBat = { ...Y2.batLib, hand: "Left" }) : Y2.batLib);
+        Y2.placeHeld(Y2.batLib);
         bat.visible = s.shown;
       } else if (bat && s.bat === "hang" && Y2.batLib.fitWalk) {
         Y2.outer.updateMatrixWorld(true);
@@ -70295,7 +71924,7 @@ void main() {
         Y2.outer.updateMatrixWorld(true);
         const hp = hand.getWorldPosition(new Vector3()), fwd = new Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw));
         const dir = new Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();
-        bat.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), dir);
+        bat.quaternion.setFromUnitVectors(this.batAxis(bat).axis, dir);
         bat.position.copy(hp).addScaledVector(dir, 0.02).addScaledVector(fwd, 0.015);
         bat.scale.setScalar(1);
         bat.visible = s.shown;
@@ -70313,7 +71942,9 @@ void main() {
     showCard() {
       this.hideCard();
       this.tickRevLight(0);
-      this.game().looks?.render ? this.game().looks.render() : this.renderer.render(this.scene, this.camera);
+      if (!this.renderFrame()) {
+        this.game().looks?.render ? this.game().looks.render() : this.renderer.render(this.scene, this.camera);
+      }
       const src = this.renderer.domElement, base = document.createElement("canvas");
       base.width = src.width;
       base.height = src.height;
@@ -70343,10 +71974,11 @@ void main() {
     poseRevealYola(dt) {
       const r = this.revealPose;
       if (!r || this.stand) return;
-      const g = this.game();
+      const g = this.game(), slow = r.slow || 1, wd = dt * slow;
       if (r.goal && (r.vx || r.vz)) {
-        r.x += r.vx * dt;
-        r.z += r.vz * dt;
+        const sx = r.x, sz = r.z;
+        r.x += r.vx * wd;
+        r.z += r.vz * wd;
         r.yaw = Math.atan2(r.vx, r.vz);
         if ((r.goal.x - r.x) * r.vx + (r.goal.z - r.z) * r.vz <= 0) {
           r.x = r.goal.x;
@@ -70354,16 +71986,34 @@ void main() {
           r.vx = r.vz = 0;
           r.turn = r.goal.yaw;
         }
+        r.stepAt = (r.stepAt || 0) + Math.hypot(r.x - sx, r.z - sz);
+        if (r.stepAt >= 0.62) {
+          r.stepAt -= 0.62;
+          if (!this.silent) {
+            this.rs.footstep();
+            this.rs.drum(0.8);
+          }
+          this.smokeKick(r.x, r.z, 0.9);
+          if (this.stepShake) this.shake = Math.max(this.shake || 0, this.stepShake);
+        }
       }
       if (r.turn !== void 0) {
         const d = Math.atan2(Math.sin(r.turn - r.yaw), Math.cos(r.turn - r.yaw));
-        r.yaw += d * Math.min(1, dt * 5);
+        r.yaw += d * Math.min(1, wd * 5);
+      }
+      const L3 = r.launch;
+      if (L3) {
+        const p = this.launchAt(L3.t);
+        r.x = p.x;
+        r.z = p.z;
+        r.yaw = L3.h;
       }
       const s = g.stillState(r.x, r.z, r.yaw);
       s.equipped = "bat";
-      s.vx = r.vx;
-      s.vz = r.vz;
-      g.yolaPose?.(dt, s);
+      s.vx = r.vx || 0;
+      s.vz = r.vz || 0;
+      if (L3) Object.assign(s, { action: "swing", swingT: Math.max(0, L3.t), swingId: L3.id, atk: L3.A, combo: 0, ground: false, vx: 0, vz: 0 });
+      g.yolaPose?.(wd, s);
     }
     // the hospital after the outbreak, committed behind the patient's cut: the same architecture, worn surfaces, blood, the dead
     // lift sign back; the opening's cast leaves and the floor's zombies stand where they will wake
@@ -70559,6 +72209,17 @@ void main() {
       if (via === "normal") this.later33();
       g.applyRoom1();
       if (this.patientDown) this.dropPatient();
+      const H4 = via === "normal" ? this.handoff : null;
+      if (H4 && g.sim?.player) {
+        const p = g.sim.player;
+        p.x = p.px = H4.x;
+        p.z = p.pz = H4.z;
+        p.aimYaw = p.aimTarget = p.pyaw = H4.yaw;
+        g.yola?.reset?.(H4.x, H4.z, H4.yaw);
+        g.cameraPose(H4.x, H4.z, H4.yaw);
+      }
+      this.handoff = null;
+      this.launch = null;
       g.previewRoom1(0);
       this.stillYola = false;
       this.room1Preview = false;
@@ -70654,9 +72315,113 @@ void main() {
       this.batPicked = true;
       this.stage.batStatic.visible = false;
     }
+    // ---- the Reveal Studio's timeline: the reveal at time tr (seconds from its first beat), replayed silently from the
+    // story's start (about a third of a second), with a fixed random sequence so the same frame looks the same every time;
+    // a later frame with nothing changed just steps on from where it is. Held still there (studioHold) until Play.
+    studioReset() {
+      this.hideCard();
+      this.cardUp = false;
+      this.crackEl?.remove();
+      this.crackEl = null;
+      this.ui.again(false);
+      window.chapterUI?.reset?.();
+      this.finalized = false;
+      this.batPicked = false;
+      this.active = true;
+      this.started = true;
+      this.ui.show(true);
+      this.sound.stopMusic(0.05);
+      this.sound.stopAmbience();
+      this.rs?.stopAll(0.05);
+      this.game?.().music?.stop(0.05);
+      this.game?.().hudShow?.(false);
+      this.setupScene();
+      this.ui.setFade(0, 0);
+    }
+    studioRandom(seed) {
+      let a = seed >>> 0;
+      this.scrubRnd = () => {
+        a = a + 1831565813 >>> 0;
+        let t = a;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+    studioRun(fn) {
+      const r = Math.random;
+      Math.random = this.scrubRnd || r;
+      try {
+        this.silent = true;
+        fn();
+      } finally {
+        Math.random = r;
+        this.silent = false;
+      }
+    }
+    // the reveal's beats on the timeline and its length (it holds its last frame in the Studio: mark 'end')
+    studioMeasure() {
+      this.studioReset();
+      this.studioRandom(7);
+      this.beginSilent();
+      let g = 0;
+      this.studioRun(() => {
+        while (!("get-yola-done" in this.marks) && g++ < 4e4) this.step(1 / 20);
+        const t02 = this.t;
+        let n = 0;
+        while (!("end" in this.marks) && n++ < 4e3) this.step(1 / 30);
+        this.revealT0 = t02;
+      });
+      const t0 = this.revealT0, beats = Object.entries(this.marks).filter(([, t]) => t >= t0).map(([k, t]) => [k, +(t - t0).toFixed(2)]);
+      this.endSilent(false);
+      this.scrubT = null;
+      return { beats, length: +((this.marks.end ?? t0 + 25) - t0).toFixed(2) };
+    }
+    studioSeek(tr) {
+      const fresh = this.scrubT == null || tr < this.scrubT - 1e-4 || this.scrubDirty || !this.active;
+      this.studioHold = true;
+      this.paused = true;
+      this.sound.suspend(true);
+      if (fresh) {
+        this.studioReset();
+        this.studioRandom(7);
+        this.beginSilent();
+        this.cardUp = false;
+        let g = 0;
+        this.studioRun(() => {
+          while (!("get-yola-done" in this.marks) && g++ < 4e4) this.step(1 / 20);
+        });
+        this.revealT0 = this.t;
+        this.scrubT = 0;
+        this.scrubDirty = false;
+      }
+      this.hideCard();
+      this.studioRun(() => {
+        let n = 0;
+        while (this.scrubT < tr - 1e-4 && n++ < 4e3 && !("end" in this.marks)) {
+          const d = Math.min(1 / 30, tr - this.scrubT);
+          this.step(d);
+          this.scrubT += d;
+        }
+      });
+      this.endSilent(false);
+      this.frozen = false;
+      this.paused = true;
+      if (!this.poseAnim) this.setCamera();
+      this.tickRevLight(0);
+      if (this.cardUp) this.showCard();
+      return this.scrubT;
+    }
+    studioPlayOn() {
+      this.scrubT = null;
+      this.studioHold = false;
+      this.paused = false;
+      this.sound.suspend(false);
+      this.sound.unlock?.();
+    }
     // the reveal on demand: replay the story silently to the calm beat before the flatline (the patient on the table, his
     // colleague at his head, Yola gone down to six), then let it play live with its sound. Works from anywhere, any number of times.
-    toReveal() {
+    toReveal(mark = "handoff-done") {
       this.ui.again(false);
       window.chapterUI?.reset?.();
       this.finalized = false;
@@ -70671,7 +72436,7 @@ void main() {
       this.game?.().music?.stop(0.3);
       this.game?.().hudShow?.(false);
       this.setupScene();
-      this.runTo("handoff-done", { stopAtLabel: false, maxSec: 900 });
+      this.runTo(mark, { stopAtLabel: false, maxSec: 900 });
       this.ui.setFadeColor("#000000");
       this.ui.setFade(1, 0);
       requestAnimationFrame(() => this.ui.setFade(0, 700));
@@ -70754,6 +72519,11 @@ void main() {
         this.ui.flashB.classList.toggle("off", !this.reducedFlash);
       };
       this.ui.flashB.classList.toggle("off", !this.reducedFlash);
+      if (this.studio) {
+        this.ui.gate.classList.remove("show");
+        this.studio.open();
+        return;
+      }
       if (this.params.has("room1")) {
         this.started = true;
         this.beginSilent();
@@ -70800,6 +72570,7 @@ void main() {
     }
     setPaused(p) {
       if (!this.started || this.paused === p) return;
+      if (!p && this.studioHold) return;
       this.paused = p;
       this.sound.suspend(p);
     }
@@ -70846,7 +72617,7 @@ void main() {
     }
     update(dt) {
       if (!this.active) return;
-      if (this.started && !this.paused) this.step(dt);
+      if (this.started && !this.paused) this.step(dt * (this.studioRate ?? 1));
       else this.stage.update(0);
       if (!this.active) return;
       if (!this.poseAnim) this.setCamera();
@@ -70877,6 +72648,7 @@ void main() {
         for (const k of ["cprL", "cprR"]) if (this.cpr.a.adj[k]) this.cpr.a.adj[k].w = w;
       }
       if (this.monitorOn) this.ui.drawMonitor(this.t);
+      this.tickLaunch(d);
       if (this.revealPose) this.poseRevealYola(da);
       this.tickStand(da);
       this.tickRevLight(d);
@@ -71240,7 +73012,7 @@ void main() {
     return S2;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -72608,7 +74380,7 @@ void main() {
   }
 
   // src/ui/chapter.js
-  var CSS2 = `
+  var CSS3 = `
 #chRadio{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(92vw,520px);z-index:30;pointer-events:none;display:flex;flex-direction:column;gap:4px;align-items:center}
 #chRadio .ln{background:rgba(12,20,24,.82);color:#eef6f4;font:600 15px/1.3 system-ui,sans-serif;padding:7px 12px;border-radius:10px;border-left:3px solid #7fd6c8;opacity:0;transition:opacity .25s;text-align:left}
 #chRadio .ln.show{opacity:1}#chRadio .ln b{color:#7fd6c8;font-weight:800;margin-right:6px}#chRadio .ln.yola{border-left-color:#ffc27a}#chRadio .ln.yola b{color:#ffc27a}
@@ -72633,7 +74405,7 @@ void main() {
     constructor(o) {
       Object.assign(this, o);
       const st = document.createElement("style");
-      st.textContent = CSS2;
+      st.textContent = CSS3;
       document.head.appendChild(st);
       const el = (id, html = "") => {
         const d = document.createElement("div");
@@ -73718,7 +75490,7 @@ void main() {
     // (the theatre's two doors, beams falling south into it)
     spark: { x: -3.4, z: -1.6, y: 2.45 }
   };
-  var glowTex = /* @__PURE__ */ (() => {
+  var glowTex2 = /* @__PURE__ */ (() => {
     let t = null;
     return () => {
       if (t) return t;
@@ -73733,7 +75505,7 @@ void main() {
       return t = new CanvasTexture(c);
     };
   })();
-  var beamTex = () => {
+  var beamTex2 = () => {
     const c = document.createElement("canvas");
     c.width = 64;
     c.height = 128;
@@ -73767,7 +75539,7 @@ void main() {
     g.fill();
     return new CanvasTexture(c);
   };
-  var additive = (col, op = 0) => new MeshBasicMaterial({ map: glowTex(), color: col, transparent: true, opacity: op, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
+  var additive = (col, op = 0) => new MeshBasicMaterial({ map: glowTex2(), color: col, transparent: true, opacity: op, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
   var FLAT = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   var Atmos = class {
     constructor(scene2, fx2, arena2) {
@@ -73841,7 +75613,7 @@ void main() {
     }
     // ---- light shafts: a slanted beam from each theatre door to the floor, a pool where it lands, dust in it ----
     build_shafts() {
-      const tex2 = beamTex();
+      const tex2 = beamTex2();
       this.shafts = [];
       const pts = [];
       for (const s of SPOT.shafts) {
@@ -74164,7 +75936,7 @@ void main() {
       { x: -6.95, z: 1.8, yaw: Math.PI / 2, state: "steady" }
     ]
   };
-  var glowTex2 = /* @__PURE__ */ (() => {
+  var glowTex3 = /* @__PURE__ */ (() => {
     let t = null;
     return () => {
       if (t) return t;
@@ -74268,6 +76040,7 @@ void main() {
       this.flashR = 0;
       this.plan = WING_PLAN;
       this.floor = null;
+      this.dim = { floor: 1, signs: 1 };
     }
     // the level's light plan (before anything is built: main passes the chapter's on a story start)
     usePlan(plan) {
@@ -74300,7 +76073,7 @@ void main() {
     // ---- the shared floor glows: one instanced mesh for every fitting's pool, every streak, every sign's spill ----
     glows() {
       if (this.G) return this.G;
-      const max = 640, mesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ map: glowTex2(), transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), max);
+      const max = 640, mesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ map: glowTex3(), transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), max);
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
       mesh.count = 0;
       mesh.renderOrder = 2;
@@ -74431,7 +76204,7 @@ void main() {
     bakeDips() {
       if (this.dips) return this.dips;
       this.dips = this.fittings().filter((F3) => F3.state === "buzz" || F3.state === "failing").map((F3) => {
-        const m = new Mesh(FLAT2, new MeshBasicMaterial({ map: glowTex2(), color: 0, transparent: true, opacity: 0, depthWrite: false }));
+        const m = new Mesh(FLAT2, new MeshBasicMaterial({ map: glowTex3(), color: 0, transparent: true, opacity: 0, depthWrite: false }));
         m.position.set(F3.x, 0.022, F3.z);
         m.scale.set(6.2, 1, 6.2);
         m.renderOrder = 1;
@@ -74635,8 +76408,9 @@ void main() {
       r.shadowMap.needsUpdate = true;
     }
     yshGear(yv) {
-      return [yv.outer, yv.pistol, yv.shotgun, yv.melee, yv.shell, yv.test?.obj, yv.batLib?.obj, ...Object.values(yv.libHolds || {}).map((h) => h?.obj)].filter(Boolean);
+      return [yv.outer, yv.pistol, yv.shotgun, yv.melee, yv.shell, yv.test?.obj, yv.batLib?.obj, ...Object.values(yv.libHolds || {}).map((h) => h?.obj), ...this.extraCasters || []].filter(Boolean);
     }
+    // (extraCasters: the opening's reveal adds the old Yola)
     tickYShadow(dt, p, yv) {
       const r = this.arena.renderer;
       if (!r.shadowMap.enabled) {
@@ -74701,7 +76475,7 @@ void main() {
     }
     // ---- F: halos on bright things ----
     halo(col, size, x, y, z) {
-      const s = new Sprite(new SpriteMaterial({ map: glowTex2(), color: col, transparent: true, opacity: 0.55, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
+      const s = new Sprite(new SpriteMaterial({ map: glowTex3(), color: col, transparent: true, opacity: 0.55, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
       s.scale.set(size, size, 1);
       s.position.set(x, y, z);
       this.root.add(s);
@@ -74851,7 +76625,7 @@ void main() {
     }
     // ---- muzzle: the shot lights the wall it hits and the floor at her feet; the shotgun, the room ----
     build_muzzle() {
-      this.wallFlash = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: glowTex2(), color: 16760944, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
+      this.wallFlash = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: glowTex3(), color: 16760944, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
       this.wallFlash.visible = false;
       this.root.add(this.wallFlash);
       this.feetFlash = this.addGlow(0, 0, 3.2, 3.2, 0, 16756832, "muzzle");
@@ -74883,6 +76657,7 @@ void main() {
       }
     }
     update(dt, sim2, views, yolaView) {
+      var _a7;
       this.lastViews = views;
       this.lastYola = yolaView;
       if (this.on.baked) this.lightChars(views, yolaView, sim2?.player);
@@ -74898,16 +76673,25 @@ void main() {
         this.scanMonitors();
       }
       if (this.halos) for (const H4 of this.halos) H4.s.material.opacity = H4.mon ? H4.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H4.s.position.x)) : H4.F ? this.tubes ? H4.base * H4.F.b : 0 : H4.base;
+      const D3 = this.dim;
       if (this.exits) for (const E of this.exits) {
         const k = flick(E.state, this.t, E.seed, E.S);
-        E.halo.material.opacity = 0.5 * k;
-        E.spill.k = 0.22 * k;
-        for (const m of [].concat(E.m.material)) if (m.map) m.opacity = 0.35 + 0.65 * k;
+        E.halo.material.opacity = 0.5 * k * D3.signs;
+        E.spill.k = 0.22 * k * D3.signs;
+        for (const m of [].concat(E.m.material)) if (m.map) m.opacity = (0.35 + 0.65 * k) * D3.signs;
       }
       if (this.streakMesh) {
         const c = new Color();
-        for (const S2 of this.streaks) this.streakMesh.setColorAt(S2.i, c.set(S2.F.col).multiplyScalar(0.27 * (S2.F.b ?? 1)));
+        for (const S2 of this.streaks) this.streakMesh.setColorAt(S2.i, c.set(S2.F.col).multiplyScalar(0.27 * (S2.F.b ?? 1) * D3.floor));
         this.streakMesh.instanceColor.needsUpdate = true;
+      }
+      if (this.bakeFloors && this.dimFloor !== D3.floor) {
+        this.dimFloor = D3.floor;
+        for (const m of this.bakeFloors) {
+          const B = m.userData.bakeMat;
+          (_a7 = B.userData).lmk ?? (_a7.lmk = B.lightMapIntensity);
+          B.lightMapIntensity = B.userData.lmk * D3.floor;
+        }
       }
       if (this.dips && this.on.baked) for (const d of this.dips) d.m.material.opacity = Math.min(0.75, (1 - d.F.b) * 0.8);
       this.flashK = Math.max(0, this.flashK - dt * 9);
@@ -76491,11 +78275,13 @@ void main() {
     }
     screens.update(dt);
     if (opening && !opening.active) opening.ambient?.(dt);
-    if (LAYOUT.story && storyLit === !!opening?.active && lightkit) storyLighting(!opening?.active);
+    const wantLit = !opening?.active || !!opening?.gameLight;
+    if (LAYOUT.story && lightkit && storyLit !== wantLit) storyLighting(wantLit);
     if (opening?.active) {
       opening.update(dt);
       if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1));
-      if (doRender) looks.render();
+      if (opening.gameLight && storyLit) revealLight(opening.paused ? 0 : dt);
+      if (doRender && !opening.renderFrame?.()) looks.render();
       return;
     }
     const p = sim.player;
@@ -76761,6 +78547,37 @@ void main() {
       looks.render();
       gpuTimer?.end(on);
     }
+  }
+  async function warmStoryLight(during = null) {
+    if (!LAYOUT.story || !lightkit || storyLit) return;
+    storyLighting(true);
+    const t0 = performance.now();
+    while (lightkit.plan.bakes.some((B) => B.tex && !B.tex.image?.width) && performance.now() - t0 < 4e3) await new Promise((r) => setTimeout(r, 50));
+    for (const B of lightkit.plan.bakes) if (B.tex?.image?.width) renderer.initTexture(B.tex);
+    lightkit.update(0, sim, [], yola);
+    try {
+      renderer.compile(scene, camera);
+    } catch {
+    }
+    renderer.render(scene, camera);
+    try {
+      during?.();
+    } catch (e) {
+      console.warn("warm", e);
+    }
+    storyLighting(false);
+  }
+  function revealLight(dt) {
+    const her = opening.herAt?.(), P = her ? { player: { x: her.x, z: her.z } } : sim;
+    const kv = [];
+    for (const [id, v] of zviews) {
+      const z = sim.zombies.find((q) => q.id === id);
+      if (z) kv.push({ z, view: v, blob: v.blob });
+    }
+    lightkit.screensMat = screens.mat;
+    lightkit.update(dt, P, kv, yola);
+    atmos?.update(dt, P, 0, 0, 0);
+    opening.aimFlashShadow?.();
   }
   var impactFrame = -1;
   var frameNo = 0;
@@ -77694,7 +79511,7 @@ void main() {
       z.z = 50;
       z.solid = false;
     }
-    const p = sim.player, V3 = Vector3, L3 = new V3(), R = new V3(), LT = new V3(), RT = new V3(), rows = [];
+    const p = sim.player, V3 = Vector3, L3 = new V3(), R = new V3(), LT = new V3(), RT2 = new V3(), rows = [];
     window.game.scriptInput = () => ({ moveX: mx, moveZ: mz, aimX: ax, aimZ: az, swapPresses: 0 });
     for (let i = 0; i < n + 40; i++) {
       p.x = p.px = 0.4;
@@ -77705,8 +79522,8 @@ void main() {
       yola.worldPos("LeftFoot", L3);
       yola.worldPos("RightFoot", R);
       yola.worldPos("LeftToeBase", LT);
-      yola.worldPos("RightToeBase", RT);
-      rows.push({ L: [L3.x - o.x, Math.min(L3.y, LT.y), L3.z - o.z], R: [R.x - o.x, Math.min(R.y, RT.y), R.z - o.z], vx: p.vx, vz: p.vz });
+      yola.worldPos("RightToeBase", RT2);
+      rows.push({ L: [L3.x - o.x, Math.min(L3.y, LT.y), L3.z - o.z], R: [R.x - o.x, Math.min(R.y, RT2.y), R.z - o.z], vx: p.vx, vz: p.vz });
     }
     window.game.scriptInput = null;
     const out = { speed: +Math.hypot(p.vx, p.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
@@ -77793,7 +79610,9 @@ void main() {
     return atmos;
   }, get lightkit() {
     return lightkit;
-  }, ZombieView, get fx() {
+  }, warmStoryLight, storyLight(on) {
+    if (LAYOUT.story && lightkit && storyLit !== !!on) storyLighting(!!on);
+  }, revealLight, ZombieView, get fx() {
     return fx;
   }, get execActive() {
     return execDir.active;
