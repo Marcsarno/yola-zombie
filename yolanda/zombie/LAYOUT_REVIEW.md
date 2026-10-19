@@ -4,6 +4,15 @@
 hallway then room ... if you have a hallway you could just skip rooms. So I do kind of like the way we have it now".
 Nothing changed yet. The maps belong to the maps chat (OPENING_MAPS_HANDOFF.md): building this goes there.)
 
+**Superseded for Floors 6 and 5 by FLOORS_REDESIGN.html.** After this review the user decided:
+- Floors 6 and 5 are too small: nine rooms each, like Floor 7.
+- A blocked corridor, and a reception desk in the middle.
+- A toilet on every floor.
+- A cracked wall broken with the sledgehammer where it's introduced.
+- Floor 7 stays, with additions.
+
+This file stays as the record of which plans are current and why.
+
 ## Which plans are current (checked, because the first version of this review used old pictures)
 
 - **The walls, doors and routes:** the user's own **Tiled v3 plans** (Downloads/Yola_Floors_7_6_5_Tiled_v3.zip, Oct 16;

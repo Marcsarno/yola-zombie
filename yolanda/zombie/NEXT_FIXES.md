@@ -14,7 +14,8 @@ STATUS 2026-10-18 night (combat chat) — START HERE. Everything committed, depl
 - NEXT, in order (the user: "continue to push it and clean it up at the same time"):
   1. DONE (2026-10-18, later): body / blood pile-up (PERF_AUDIT.md "Gore pile-up"). NEW, the user's: FINISHERS_PLAN.md
      (finishers Open -> Mark -> Press, the centre button's three looks, the guard's slam finisher, the lady as a bowling
-     ball, Yola getting hurt): the next big build, once the user answers its open decisions.
+     ball, Yola getting hurt): the next big build (decided: v3). Floors: FLOORS_REDESIGN.html (Floor 7 + additions, new Floors 6 and 5 at
+     Floor 7's size), LAYOUT_REVIEW.md (which plans are current).
   2. Merge each zombie's ~12 parts into 1-2 draw calls, dismemberment kept.
   3. The user tests the story floors at High: combat.html?room1=1&perf=1 (36 zombies, the heavier map).
   4. Meter: 'limit gpu' is a guess on iPhones (no GPU timer, capped at 60 fps): label it as unknown there.
