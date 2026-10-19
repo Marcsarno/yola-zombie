@@ -628,7 +628,7 @@ function runFrame(dt, doRender = true) {
   if (opening && !opening.active) opening.ambient?.(dt); // the seated guard keeps idling after the hand-off
   const wantLit = !opening?.active || !!opening?.gameLight; // (the story lighting: off for the opening, on from the hand-off; the reveal turns it on from the cut to the lift: opening.gameLight)
   if (LAYOUT.story && lightkit && storyLit !== wantLit) storyLighting(wantLit);
-  if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (opening.gameLight && storyLit) revealLight(opening.paused ? 0 : dt); if (doRender && !opening.renderFrame?.()) looks.render(); return; } // (renderFrame: the reveal's own picture chain, src/opening/revealpost.js)
+  if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (opening.gameLight && storyLit) revealLight(opening.paused ? 0 : dt); opening.labApply?.(); if (doRender && !opening.renderFrame?.()) looks.render(); return; } // (renderFrame: the reveal's own picture chain, src/opening/revealpost.js)
   const p = sim.player;
   let simDt = dt;
   if (paused) simDt = 0;

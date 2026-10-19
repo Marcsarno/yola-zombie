@@ -119,7 +119,7 @@ export class Opening {
     if (this.offs.has('beam')) RT.quality.beam = false;
     if (this.offs.has('fog')) RT.quality.softFog = false;
     if (this.offs.has('haze')) RT.game.haze = false;
-    if (this.params.has('red')) RT.noRed = false; // (?red: the red back, to compare)
+
     this.RT = RT; // (dev/test handle: window.opening.RT)
     try { const rc = await this.loader.loadAsync('assets/opening/yola2_reveal.glb'); this.revClips = { walk: rc.animations.find((a) => a.name === 'reveal_walk') }; } catch (e) { console.warn('reveal clips', e); }
     try { this.burst = new ZombieBurst(this.scene, this.loader); this.burst.bounds = { x0: -7.0, x1: 7.0, z0: -11.05, z1: 0.95 }; await this.burst.load(); } /* (bounds: the OR's walls, core/chapter.js 'or' polygon) */ catch (e) { console.warn('zombie burst', e); this.burst = null; }
@@ -1311,6 +1311,25 @@ export class Opening {
     return out;
   }
   // a camera at C looking at T (the opening's rig is a target, an angle and a distance)
+  // (2026-10-19, the user's Floor Lab: combat.html?intro=1&studio=1&lab=1) the layers the user switches off to find what the
+  // iPhone draws wrong on the floor: applied every frame over whatever the reveal set (main.js calls it before each picture)
+  labApply() {
+    const L = this.lab; if (!L) return;
+    const g = this.game(), lk = g.lightkit, at = g.atmos, A = this.arena;
+    if (this.smoke) this.smoke.g.visible = !L.fog;
+    if (this.rfx && L.beam) this.rfx.visible = false;
+    if (lk?.yshCatch && L.catcher) lk.yshCatch.visible = false;
+    if (lk && lk.built?.baked && !!lk.on.baked === !!L.bake) lk.set('baked', !L.bake);
+    if (lk && lk.built?.polish && !!lk.on.polish === !!L.polish) lk.set('polish', !L.polish);
+    if (at && !!at.on.haze === !!L.haze) at.set('haze', !L.haze);
+    if (A.em?.group && L.pools) A.em.group.visible = false;
+    RT.noRed = !!L.red; RT.quality.post = !L.post;
+    if (L.blood !== this.labBlood) { this.labBlood = L.blood; if (L.blood) this.setBlood(false); }
+    if (L.blood) for (const m of this.blood || []) m.visible = false;
+    let near = this.camera.near;
+    if (L.near) { this.labNear0 ??= near; near = 0.5; } else if (this.labNear0 != null) { near = this.labNear0; this.labNear0 = null; } // (back to what the reveal had set)
+    if (this.camera.near !== near) { this.camera.near = near; this.camera.updateProjectionMatrix(); }
+  }
   // has she walked out of the shot? (her feet, middle and head, a shoulder's width either side, all off the rig's frame)
   yolaGone() {
     const s = this.stand, Y = this.yola; if (!s || !Y) return true;
