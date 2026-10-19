@@ -68589,6 +68589,10 @@ void main() {
     },
     batShot: false,
     // the cut to the athlete's bat leaning by the doors (off when she walks out holding it)
+    // (2026-10-19, the user: "let's remove the red light completely" from the reveal: the iPhone's floor artifacts sat where
+    // the red hit) every red off: its own red pulse, the game's red beacon, the red pools on the floor, the fog's red, the
+    // red edge of the screen. ?red puts it back to compare
+    noRed: true,
     // (2026-10-19, the user) the music runs through the reveal: low under the shut doors (preLevel), a hard stop on the DING, a
     // steady heartbeat from the doors opening (heartAt s after they start, every heartEvery s, at heartK) until the music comes
     // back (backAt): 'card' (the user's pick: the heartbeat on through the walk-out and the jump, the music crashing in with her
@@ -69455,6 +69459,7 @@ void main() {
       this.slider(s, M4, "heartAt", "Heartbeat starts (s after doors)", 0, 4, 0.05, false);
       this.slider(s, M4, "heartEvery", "Heartbeat every (s)", 0.4, 1.6, 0.01, false);
       this.slider(s, M4, "heartK", "Heartbeat loudness", 0, 2, 0.05, false);
+      this.check(s, () => RT, "noRed", "No red light in the reveal (iPhone test)", true);
       this.choose(s, M4, "backAt", "Music back in on", [["card", "The name card (top of her jump)"], ["flash", "The last flash in the lift"]]);
       this.slider(s, M4, "cardSecs", "From the card: swells over (s)", 0.5, 8, 0.25, false);
       this.slider(s, M4, "buildSecs", "From the flash: builds over (s)", 2, 14, 0.5, false);
@@ -69756,6 +69761,7 @@ void main() {
       if (this.offs.has("beam")) RT.quality.beam = false;
       if (this.offs.has("fog")) RT.quality.softFog = false;
       if (this.offs.has("haze")) RT.game.haze = false;
+      if (this.params.has("red")) RT.noRed = false;
       this.RT = RT;
       try {
         const rc = await this.loader.loadAsync("assets/opening/yola2_reveal.glb");
@@ -70509,7 +70515,7 @@ void main() {
         return;
       }
       const r = this.rl || {}, pulse = 0.5 + 0.5 * Math.sin((r.t || 0) * Math.PI * 2 * 0.55 - Math.PI / 2);
-      const lit = 0.05 + 0.55 * Math.min(1, r.flash || 0) + 0.2 * (r.amb || 0) + 0.3 * (r.key || 0), red = 0.35 * (r.red || 0) * (0.4 + 0.6 * pulse);
+      const lit = 0.05 + 0.55 * Math.min(1, r.flash || 0) + 0.2 * (r.amb || 0) + 0.3 * (r.key || 0), red = RT.noRed ? 0 : 0.35 * (r.red || 0) * (0.4 + 0.6 * pulse);
       const Q2 = RT.quality;
       if (this.fogU) {
         this.fogU.uTime.value += d;
@@ -72294,9 +72300,9 @@ void main() {
         A.hemi.intensity *= r.amb;
         A.sun.intensity *= r.amb;
         this.scene.environmentIntensity *= r.amb;
-        const e = A.em;
-        e.redMat.opacity *= r.emRed;
-        e.redHalf.opacity *= r.emRed;
+        const e = A.em, emRed = RT.noRed ? 0 : r.emRed;
+        e.redMat.opacity *= emRed;
+        e.redHalf.opacity *= emRed;
         e.coldMat.opacity *= r.amb;
         const lk = this.game().lightkit, at = this.game().atmos;
         if (lk) {
@@ -72314,9 +72320,10 @@ void main() {
         this.scene.environmentIntensity = b.env * r.amb;
       }
       const pulse = 0.5 + 0.5 * Math.sin(r.t * Math.PI * 2 * 0.55 - Math.PI / 2), soft = this.reducedFlash ? 0.6 : 1;
-      if (this.redLight) this.redLight.intensity = r.red * soft * (1.2 + 7 * pulse);
-      if (A.redHemi) A.redHemi.intensity = G5 ? A.redHemi.intensity * r.emRed * Math.min(1, r.amb * 2) + r.red * 0.045 * pulse : r.red * 0.045 * pulse;
-      this.ui.setVignette(r.red * 0.35 * (0.4 + 0.6 * pulse));
+      const red = RT.noRed ? 0 : r.red, emR = RT.noRed ? 0 : r.emRed;
+      if (this.redLight) this.redLight.intensity = red * soft * (1.2 + 7 * pulse);
+      if (A.redHemi) A.redHemi.intensity = G5 ? A.redHemi.intensity * emR * Math.min(1, r.amb * 2) + red * 0.045 * pulse : red * 0.045 * pulse;
+      this.ui.setVignette(red * 0.35 * (0.4 + 0.6 * pulse));
       if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : r.flashDecay || 0.16));
       const tube = r.tube > 0 ? r.tube * (Math.sin(r.t * 31) * Math.sin(r.t * 7.3) > 0.55 ? 0 : 6 + 3 * Math.sin(r.t * 53)) * soft : 0;
       const flash = 70 * RT.flash.power * (this.reducedFlash ? 0.4 * Math.sin(Math.min(1, r.flash) * Math.PI) : r.flash);
