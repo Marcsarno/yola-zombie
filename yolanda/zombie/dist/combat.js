@@ -46037,9 +46037,10 @@ void main() {
     ],
     pickups: (Z) => [
       { id: "i5ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: 5.6, z: -152.6, r: 1, label: "Pistol magazines", model: "mag", y: 0.81 },
-      { id: "h5aid", kind: "health", amount: 40, x: -15.34, z: -149, r: 1.3, label: "First-aid case", model: "aid", y: 1.12 },
+      { id: "h5aid", kind: "health", amount: 40, x: -15.34, z: -148.72, r: 1.3, label: "First-aid case", model: "aid", y: 1.1 },
+      // (on the desk's front ledge)
       { id: "jn5sledge", kind: "weapon", weapon: "sledgehammer", x: -28.9, z: -169.9, r: 1.2, label: "Sledgehammer", file: "zombie/assets/weapons/sledgehammer.glb", len: 0.95, rot: 0.4, y: 0.05 },
-      { id: "pa5shells", kind: "ammo", weapon: "shotgun", rounds: 18, x: -9.6, z: -164.85, r: 1.2, label: "Shotgun shells", model: "shells", y: 1.06 },
+      { id: "pa5shells", kind: "ammo", weapon: "shotgun", rounds: 18, x: -9.6, z: -164.85, r: 1.4, label: "Shotgun shells", model: "shells", y: 1.06 },
       { id: "pa5aid", kind: "health", amount: 60, x: -22.8, z: -170.5, r: 1.1, label: "First-aid case", model: "aid", y: 1.06 },
       { id: "r5aid", kind: "health", amount: 40, x: -28.6, z: -134.4, r: 1, label: "First-aid case", model: "aid", y: 0.81 },
       { id: "x5mags", kind: "ammo", weapon: "pistol", rounds: 18, x: -24, z: -133.4, r: 1, label: "Spare pistol rounds", model: "mag", y: 1 }
@@ -49000,8 +49001,8 @@ void main() {
   function ripShields(sim2, M4) {
     for (const z of sim2.zombies) {
       if (z.kind !== "guard" || !z.alive || !(z.shieldHp > 0) || z.planted || z.state === ZS.PICKUP || !inside(M4, z.x, z.z, 2)) continue;
-      const a = Math.atan2(M4.magnet.x - z.x, M4.magnet.z - z.z);
-      z.planted = { x: M4.magnet.x - Math.sin(a) * 0.55, z: M4.magnet.z - Math.cos(a) * 0.55, yaw: a, gx: M4.magnet.x - Math.sin(a) * 0.9, gz: M4.magnet.z - Math.cos(a) * 0.9, magnet: true };
+      const my = M4.yaw ?? 0, fx2 = Math.sin(my), fz = Math.cos(my);
+      z.planted = { x: M4.magnet.x + fx2 * 0.62, z: M4.magnet.z + fz * 0.62, yaw: my + Math.PI, gx: M4.magnet.x + fx2 * 1 + fz * 0.75, gz: M4.magnet.z + fz * 1 - fx2 * 0.75, magnet: true };
       z.set(ZS.STAGGER, 1.1);
       z.attackCd = 1.4;
       sim2.emit({ type: "mriShield", id: z.id, x: z.planted.x, z: z.planted.z });
@@ -51352,6 +51353,74 @@ void main() {
     }
   };
 
+  // src/render/matpool.js
+  var POOL = /* @__PURE__ */ new Map();
+  var tq = (t) => t ? [t.source?.uuid, t.offset.x, t.offset.y, t.repeat.x, t.repeat.y, t.rotation, t.wrapS, t.wrapT, t.flipY, t.channel].join(",") : "-";
+  function pooled(m, keep = null) {
+    if (!m?.isMeshStandardMaterial || m.transparent || m.alphaTest > 0 || m.userData?.noPool || keep?.test(m.name || "")) return null;
+    const blood = /^Blood_/i.test(m.name || "");
+    const q = (v, k) => Math.round((v ?? 0) / k) * k;
+    const key = [blood, m.type, tq(m.map), tq(m.normalMap), tq(m.emissiveMap), tq(m.roughnessMap), tq(m.metalnessMap), tq(m.aoMap), q(m.roughness, 0.05), q(m.metalness, 0.1), m.emissive?.getHexString(), q(m.emissiveIntensity, 0.05), q(m.envMapIntensity, 0.1), m.side, m.flatShading, m.polygonOffset, m.polygonOffsetFactor, m.polygonOffsetUnits, m.depthWrite, m.depthTest].join("|");
+    let P = POOL.get(key);
+    if (!P) {
+      P = m.clone();
+      P.color.setRGB(1, 1, 1);
+      P.vertexColors = true;
+      P.name = blood ? "Blood_pool" : "pool:" + (m.name || "");
+      POOL.set(key, P);
+    }
+    return P;
+  }
+  function poolPiece(material, g, keep = null) {
+    const P = pooled(material, keep);
+    if (!P) {
+      if (g.attributes.color && !material.vertexColors) g.deleteAttribute("color");
+      return material;
+    }
+    const n = g.attributes.position.count, c = new Float32Array(n * 3), src = material.vertexColors ? g.attributes.color : null, mc = material.color;
+    for (let i = 0; i < n; i++) {
+      c[i * 3] = mc.r * (src ? src.getX(i) : 1);
+      c[i * 3 + 1] = mc.g * (src ? src.getY(i) : 1);
+      c[i * 3 + 2] = mc.b * (src ? src.getZ(i) : 1);
+    }
+    g.setAttribute("color", new BufferAttribute(c, 3));
+    if (!P.map && !P.normalMap && !P.emissiveMap && !P.roughnessMap && !P.metalnessMap && !P.aoMap) g.deleteAttribute("uv");
+    return P;
+  }
+  function mergeModel(root, keep = null) {
+    root.updateMatrixWorld(true);
+    const inv = new Matrix4().copy(root.matrixWorld).invert(), M4 = new Matrix4(), by = /* @__PURE__ */ new Map();
+    root.traverse((o) => {
+      if (!o.isMesh || o.isSkinnedMesh) return;
+      for (let p = o; p; p = p.parent) if (!p.visible) return;
+      const mats = [].concat(o.material);
+      M4.multiplyMatrices(inv, o.matrixWorld);
+      const g0 = o.geometry.clone().applyMatrix4(M4), g = g0.index ? g0.toNonIndexed() : g0;
+      const pieces = mats.length === 1 || !g0.groups.length ? [[mats[0], g]] : g0.groups.map((gr) => {
+        const sub = new BufferGeometry();
+        for (const [n, a] of Object.entries(g.attributes)) sub.setAttribute(n, new BufferAttribute(a.array.slice(gr.start * a.itemSize, (gr.start + gr.count) * a.itemSize), a.itemSize, a.normalized));
+        return [mats[gr.materialIndex], sub];
+      });
+      for (let [m, piece] of pieces) {
+        m = poolPiece(m, piece, keep);
+        for (const n of Object.keys(piece.attributes)) if (!["position", "normal", "uv", "color"].includes(n)) piece.deleteAttribute(n);
+        const key = m.uuid + "|" + Object.keys(piece.attributes).sort().join(",");
+        if (!by.has(key)) by.set(key, { m, geos: [] });
+        by.get(key).geos.push(piece);
+      }
+    });
+    const out = new Group();
+    out.name = root.name;
+    for (const { m, geos } of by.values()) {
+      const g = mergeGeometries(geos, false);
+      if (!g) continue;
+      const mesh = new Mesh(g, m);
+      mesh.castShadow = mesh.receiveShadow = true;
+      out.add(mesh);
+    }
+    return out;
+  }
+
   // src/render/roomprops.js
   var ROOMPROPS = {};
   var NAMES = ["o2_cylinder", "o2_trolley", "flood_panel", "mri_scanner", "magnet_stop"];
@@ -51359,13 +51428,7 @@ void main() {
   function loadRoomProps(base = "assets/props/room_mechanics/") {
     const L3 = new GLTFLoader();
     return Promise.all(NAMES.map((n) => L3.loadAsync(base + n + ".glb").then((g) => {
-      g.scene.traverse((o) => {
-        if (o.isMesh) {
-          o.castShadow = true;
-          o.receiveShadow = true;
-        }
-      });
-      ROOMPROPS[n] = g.scene;
+      ROOMPROPS[n] = mergeModel(g.scene, LIVE);
     }).catch((e) => console.warn("room prop", n, e))));
   }
   function propClone(n) {
@@ -54539,7 +54602,7 @@ void main() {
       if (z.planted?.magnet && this.shieldC && !this.plantedP) {
         this.plantShield(z);
         const P = this.plantedP, o = P.shield.object3D, q = z.planted;
-        o.position.set(q.x, 1.15, q.z);
+        o.position.set(q.x, 1.45, q.z);
         o.rotation.set(0, q.yaw + Math.PI, 0);
         o.updateMatrixWorld(true);
         P.grip = P.shield.grips.center.getWorldPosition(new Vector3());
@@ -57797,9 +57860,10 @@ void main() {
     for (let p = o.parent; p; p = p.parent) if (p.name === name) return true;
     return false;
   };
-  function mergeStatic(roots, keep = () => true) {
+  function mergeStatic(roots, keep = () => true, pool = false) {
     const byKey = /* @__PURE__ */ new Map();
     const put2 = (material, g) => {
+      if (pool) material = poolPiece(material, g);
       for (const n of Object.keys(g.attributes)) if (!["position", "normal", "uv", "color"].includes(n)) g.deleteAttribute(n);
       const key = material.uuid + "|" + Object.keys(g.attributes).sort().join(",");
       if (!byKey.has(key)) byKey.set(key, { material, geos: [] });
@@ -58339,7 +58403,7 @@ void main() {
       for (const [id, hs] of rooms) {
         const g = new Group();
         g.name = "room:" + id;
-        for (const { geometry, material } of mergeStatic(hs)) {
+        for (const { geometry, material } of mergeStatic(hs, () => true, true)) {
           const m = new Mesh(geometry, material);
           m.castShadow = m.receiveShadow = true;
           g.add(m);
@@ -59033,12 +59097,9 @@ void main() {
       e.group = grp;
       const geo = new PlaneGeometry(1, 1);
       geo.rotateX(-Math.PI / 2);
-      const put2 = (m, x, z, size) => {
-        const p = new Mesh(geo, m);
-        p.position.set(x, 0.02, z);
-        p.scale.set(size, 1, size);
-        p.renderOrder = 2;
-        grp.add(p);
+      const inst = /* @__PURE__ */ new Map(), put2 = (m, x, z, size) => {
+        if (!inst.has(m)) inst.set(m, []);
+        inst.get(m).push([x, z, size]);
       };
       if (this.f3) {
         for (const l of CH().lights || []) put2(e.redMat, l.x, l.z, 5.5);
@@ -59056,13 +59117,22 @@ void main() {
         const w = x1 - x0, dd = z1 - z0;
         if (w * dd > 12) put2(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8);
       }
+      for (const [m, list] of inst) {
+        const im = new InstancedMesh(geo, m, list.length), M4 = new Matrix4(), q = new Quaternion();
+        list.forEach(([x, z, size], i) => im.setMatrixAt(i, M4.compose(new Vector3(x, 0.02, z), q, new Vector3(size, 1, size))));
+        im.renderOrder = 2;
+        im.frustumCulled = false;
+        grp.add(im);
+      }
     }
     tickEmergency(dt) {
       const e = this.em;
       if (!e) return;
+      dt = Math.max(0, dt || 0);
       if (e.k === e.target && e.k === 0 && (this.lightScale ?? 1) === 1) return;
       e.k += Math.max(-dt * e.rate, Math.min(dt * e.rate, e.target - e.k));
       if (dt === 0) e.k = e.target;
+      e.k = Math.min(1, Math.max(0, e.k));
       e.t += dt;
       const k = e.k, beacon = 0.5 + 0.5 * Math.sin(e.t * Math.PI * 2 / 1.9);
       this.hemi.color.copy(e.base.sky).lerp(EM_SKY, k);
@@ -73130,7 +73200,11 @@ void main() {
     makeFlood(F3) {
       const w = F3.maxX - F3.minX, d = F3.maxZ - F3.minZ, tex2 = waterTex();
       tex2.repeat.set(w / 2.5, d / 2.5);
-      const water = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: tex2, color: 10470596, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.78, depthWrite: false }));
+      const water = new Mesh(
+        new PlaneGeometry(w, d),
+        new MeshStandardMaterial({ map: tex2, color: 10470596, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.6, depthWrite: false })
+        /* (0.6: the floor's baked light shows through, 2026-10-19: at 0.78 the ward read near-black) */
+      );
       water.rotation.x = -Math.PI / 2;
       water.position.set((F3.minX + F3.maxX) / 2, 0.035, (F3.minZ + F3.maxZ) / 2);
       water.renderOrder = 1;
@@ -74293,6 +74367,23 @@ void main() {
         this.bakeFloors.push(m);
       }
     }
+    // a surface laid over a floor (the flood's water: render/rooms.js) takes that floor's bake too, uv1 from world x / z: without
+    // it the ward under the water read near-black (47% of the screen, 2026-10-19)
+    bakeMesh(mesh) {
+      if (!this.plan.bakes[0].tex || mesh.userData.baked) return;
+      mesh.userData.baked = true;
+      mesh.updateMatrixWorld(true);
+      const g = mesh.geometry, p = g.attributes.position, v = new Vector3(), uv1 = new Float32Array(p.count * 2), c = new Vector3().setFromMatrixPosition(mesh.matrixWorld), B = this.bakeOf(c.x, c.z);
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i).applyMatrix4(mesh.matrixWorld);
+        uv1[i * 2] = (v.x - B.x0) / (B.x1 - B.x0);
+        uv1[i * 2 + 1] = 1 - (v.z - B.z0) / (B.z1 - B.z0);
+      }
+      g.setAttribute("uv1", new BufferAttribute(uv1, 2));
+      mesh.material.lightMap = B.tex;
+      mesh.material.lightMapIntensity = B.k;
+      mesh.material.needsUpdate = true;
+    }
     // the bake cannot flicker: under each buzzing / failing fitting a soft dark patch takes the light back off the floor
     // as the tube dips (normal blending, black, opacity = the light lost)
     bakeDips() {
@@ -74838,7 +74929,8 @@ void main() {
     cold: [13625087, 0.5, [0.8, 0.1, 0.06, 0.04]],
     lab: [14872831, 0.52, [0.75, 0.12, 0.08, 0.05]],
     lounge: [16769720, 0.52, [0.7, 0.18, 0.08, 0.04]],
-    flood: [12575487, 0.4, [0.25, 0.1, 0.3, 0.35]],
+    flood: [12575487, 0.46, [0.45, 0.1, 0.25, 0.2]],
+    // (a fight room: dim and failing, but readable)
     mri: [13624063, 0.55, [0.85, 0.1, 0.05, 0]],
     dim: [13162736, 0.36, [0.6, 0.15, 0.15, 0.1]],
     safe: [15267071, 0.52, [1, 0, 0, 0]]
@@ -74884,6 +74976,7 @@ void main() {
     x5: "clinical",
     m5: "mri"
   };
+  var BAKE_K = { 7: 2.85, 6: 2.2, 5: 2.95 };
   var hash = (x, z) => {
     const v = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
     return v - Math.floor(v);
@@ -74906,7 +74999,7 @@ void main() {
     }
     fixtures.push({ kind: "tube", x: F3.lift.x, z: F3.lift.inside.z, col: 16774112, k: 0.5, state: "steady", floor: n, room: "lift" });
     const B = F3.bounds;
-    return { fixtures, rooms, bake: { floor: n, url: `assets/hospital/floor${n}_light.jpg`, x0: B.minX, x1: B.maxX, z0: B.minZ, z1: B.maxZ, k: 2.2, fill: 0.3 } };
+    return { fixtures, rooms, bake: { floor: n, url: `assets/hospital/floor${n}_light.jpg`, x0: B.minX, x1: B.maxX, z0: B.minZ, z1: B.maxZ, k: BAKE_K[n], fill: 0.3 } };
   }
   var EXITS = [
     { x: -7.27, z: -4.05, yaw: -Math.PI / 2, state: "steady" },
@@ -76305,7 +76398,7 @@ void main() {
       perf.longest = Math.max(perf.longest || 0, now - last);
     }
     perf.frameCount = (perf.frameCount || 0) + 1;
-    const dt = Math.min(0.1, (now - last) / 1e3);
+    const dt = Math.max(0, Math.min(0.1, (now - last) / 1e3));
     last = now;
     if (manualTicks) return;
     const c0 = performance.now();
@@ -76493,6 +76586,9 @@ void main() {
     acid.audio = audio;
     acid.update(sim.hazards, sim.zombies, animDt, p);
     roomsView.update(sim, animDt);
+    if (lightkit?.on.baked) {
+      for (const V3 of roomsView.floods.values()) if (!V3.water.userData.baked) lightkit.bakeMesh(V3.water);
+    }
     ZombieView.updatePieces(animDt);
     ZombieView.updateShields(animDt);
     gibs.world = sim.world;
