@@ -68591,8 +68591,9 @@ void main() {
     // the cut to the athlete's bat leaning by the doors (off when she walks out holding it)
     // (2026-10-19, the user: "let's remove the red light completely" from the reveal: the iPhone's floor artifacts sat where
     // the red hit) every red off: its own red pulse, the game's red beacon, the red pools on the floor, the fog's red, the
-    // red edge of the screen. ?red puts it back to compare
-    noRed: true,
+    // red edge of the screen (the Studio's check; it did not cure the floor)
+    noRed: false,
+    // (the user, after the test: "you got to add the red back")
     // (2026-10-19, the user) the music runs through the reveal: low under the shut doors (preLevel), a hard stop on the DING, a
     // steady heartbeat from the doors opening (heartAt s after they start, every heartEvery s, at heartK) until the music comes
     // back (backAt): 'card' (the user's pick: the heartbeat on through the walk-out and the jump, the music crashing in with her
@@ -69113,6 +69114,13 @@ void main() {
 #revStudio .rsTime{padding:8px 10px 10px;border-bottom:1px solid #26303a;background:#1a2229}
 #revStudio .tl-beats{position:relative;height:28px;font-size:10px;color:#f2c48d;line-height:1.05;margin:0 6px 4px;text-align:center}
 #revStudio .msg{padding:6px 10px;color:#f2c48d;min-height:16px}
+#revStudio.lab{left:6px;right:6px;top:auto;bottom:6px;width:auto;max-height:48vh;font-size:13px}
+#revStudio.lab .rsTime,#revStudio.lab .status{display:none}
+#revStudio .labGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 8px}
+#revStudio .labGrid button{padding:9px 4px;font-size:12px;line-height:1.15}
+#revStudio .labGrid button.off{background:#5a1f1f;border-color:#a33;color:#ffd6d6}
+#revStudio .labGrid button.at{background:#c8562d;border-color:#e0703f}
+#revStudio .labH{padding:6px 10px 0;color:#f2c48d;font-weight:600}
 `;
   var RevealStudio = class {
     constructor(op) {
@@ -69135,7 +69143,12 @@ void main() {
       this.pauseB = el.querySelector("[data-a=pause]");
       this.pauseB.onclick = () => this.togglePause();
       for (const ev of ["pointerdown", "touchstart", "keydown", "wheel"]) el.addEventListener(ev, (e) => e.stopPropagation());
-      body.append(this.timeline(), this.transport(), this.lights(), this.quality(), this.flashes(), this.walk(), this.launch(), this.music(), this.save());
+      if (op.params.has("lab")) {
+        el.classList.add("lab");
+        el.querySelector("header b").textContent = "Floor Lab";
+        this.pauseB.style.display = "none";
+        body.append(this.timeline(), this.labPanel());
+      } else body.append(this.timeline(), this.transport(), this.lights(), this.quality(), this.flashes(), this.walk(), this.launch(), this.music(), this.save());
       setInterval(() => this.tick(), 200);
     }
     // ---- building blocks ----
@@ -69577,8 +69590,77 @@ void main() {
     // on load: straight to the reveal, held on its first beat (▶ Play is the tap that lets the sound start)
     open() {
       this.ensureMeasured();
+      if (this.labMoments) {
+        this.labGo(1);
+        return;
+      }
       this.seek(0.5);
       this.msg("Drag the timeline, or press \u25B6 Play");
+    }
+    // ---- the Floor Lab (?lab, 2026-10-19, the user: "a single maybe five or ten frames where I can adjust the lighting turn
+    // things off"): the reveal frozen on a few moments, a button per layer that touches the floor (red = switched off) ----
+    labPanel() {
+      const d = document.createElement("div"), o = this.op;
+      o.lab = {};
+      const B = () => Object.fromEntries((this.measured?.beats || []).map(([k, t]) => [k, t]));
+      this.labMoments = [
+        ["Shut doors", () => B().beat5 + 1.5],
+        ["Floor shot", () => B().beat6 + 0.5],
+        ["Tilt up", () => B().beat6 + 3.6],
+        ["Flash", () => B().flashes + this.labFlash()],
+        ["Between flashes", () => B().flashes + this.labFlash() + 0.6],
+        ["Walk-out", () => B().beat9 + 1.2],
+        ["Crouch", () => B().beat11 + 0.15],
+        ["Name card", () => B().beat12 + 1],
+        ["The hit", () => B().hit + 0.2]
+      ];
+      const LAYERS2 = [
+        ["fog", "Fog puffs"],
+        ["beam", "Light beam + dust"],
+        ["catcher", "Her shadow"],
+        ["bake", "Baked floor light"],
+        ["polish", "Floor shine"],
+        ["pools", "Light pools on floor"],
+        ["red", "Red light"],
+        ["blood", "Blood + worn floor"],
+        ["haze", "Haze"],
+        ["post", "Glow + grain"],
+        ["near", "Near clip 5 cm \u2192 50 cm"]
+      ];
+      const gl = o.renderer.getContext(), bits = gl.getParameter(gl.DEPTH_BITS);
+      d.innerHTML = `<div class="labH">Moment</div><div class="labGrid" data-m></div><div class="labH">Tap to switch off (red = off)</div><div class="labGrid" data-l></div><div class="note" style="padding:2px 10px 8px">Depth buffer: ${bits} bits \xB7 near clip <span data-n></span> \xB7 ${o.renderer.domElement.width}\xD7${o.renderer.domElement.height}</div>`;
+      const mg = d.querySelector("[data-m]"), lg = d.querySelector("[data-l]"), nEl = d.querySelector("[data-n]");
+      this.labMoments.forEach(([name], i) => {
+        const b = document.createElement("button");
+        b.textContent = name;
+        b.onclick = () => this.labGo(i);
+        mg.appendChild(b);
+      });
+      this.labMB = [...mg.children];
+      for (const [k, name] of LAYERS2) {
+        const b = document.createElement("button");
+        b.textContent = name;
+        b.onclick = () => {
+          o.lab[k] = !o.lab[k];
+          b.classList.toggle("off", !!o.lab[k]);
+        };
+        lg.appendChild(b);
+      }
+      setInterval(() => {
+        nEl.textContent = (o.camera.near * 100).toFixed(0) + " cm";
+      }, 300);
+      return d;
+    }
+    labFlash() {
+      const f = RT.flashes.slice().sort((a, b) => a[0] - b[0]);
+      return (f.find((q) => q[2] >= 1) || f[0] || [0])[0] + 0.05;
+    }
+    // (the first full flash)
+    labGo(i) {
+      this.ensureMeasured();
+      this.labMB?.forEach((b, j) => b.classList.toggle("at", j === i));
+      this.seek(this.labMoments[i][1]());
+      this.op.studioApply?.();
     }
     // the reveal's length and its beats (replayed once; again after Apply: the timing may have changed)
     ensureMeasured() {
@@ -69761,7 +69843,6 @@ void main() {
       if (this.offs.has("beam")) RT.quality.beam = false;
       if (this.offs.has("fog")) RT.quality.softFog = false;
       if (this.offs.has("haze")) RT.game.haze = false;
-      if (this.params.has("red")) RT.noRed = false;
       this.RT = RT;
       try {
         const rc = await this.loader.loadAsync("assets/opening/yola2_reveal.glb");
@@ -71845,6 +71926,39 @@ void main() {
       return out;
     }
     // a camera at C looking at T (the opening's rig is a target, an angle and a distance)
+    // (2026-10-19, the user's Floor Lab: combat.html?intro=1&studio=1&lab=1) the layers the user switches off to find what the
+    // iPhone draws wrong on the floor: applied every frame over whatever the reveal set (main.js calls it before each picture)
+    labApply() {
+      const L3 = this.lab;
+      if (!L3) return;
+      const g = this.game(), lk = g.lightkit, at = g.atmos, A = this.arena;
+      if (this.smoke) this.smoke.g.visible = !L3.fog;
+      if (this.rfx && L3.beam) this.rfx.visible = false;
+      if (lk?.yshCatch && L3.catcher) lk.yshCatch.visible = false;
+      if (lk && lk.built?.baked && !!lk.on.baked === !!L3.bake) lk.set("baked", !L3.bake);
+      if (lk && lk.built?.polish && !!lk.on.polish === !!L3.polish) lk.set("polish", !L3.polish);
+      if (at && !!at.on.haze === !!L3.haze) at.set("haze", !L3.haze);
+      if (A.em?.group && L3.pools) A.em.group.visible = false;
+      RT.noRed = !!L3.red;
+      RT.quality.post = !L3.post;
+      if (L3.blood !== this.labBlood) {
+        this.labBlood = L3.blood;
+        if (L3.blood) this.setBlood(false);
+      }
+      if (L3.blood) for (const m of this.blood || []) m.visible = false;
+      let near = this.camera.near;
+      if (L3.near) {
+        this.labNear0 ?? (this.labNear0 = near);
+        near = 0.5;
+      } else if (this.labNear0 != null) {
+        near = this.labNear0;
+        this.labNear0 = null;
+      }
+      if (this.camera.near !== near) {
+        this.camera.near = near;
+        this.camera.updateProjectionMatrix();
+      }
+    }
     // has she walked out of the shot? (her feet, middle and head, a shoulder's width either side, all off the rig's frame)
     yolaGone() {
       const s = this.stand, Y2 = this.yola;
@@ -78969,6 +79083,7 @@ void main() {
       opening.update(dt);
       if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1));
       if (opening.gameLight && storyLit) revealLight(opening.paused ? 0 : dt);
+      opening.labApply?.();
       if (doRender && !opening.renderFrame?.()) looks.render();
       return;
     }
