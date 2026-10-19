@@ -2,7 +2,7 @@
 
 STATUS 2026-10-19 morning (combat chat, the user's goal: "finish the map rebuild. test everything. full walk through..
 bake it all in and apply the lighting through each level ... find out why the first zombie ... looks like all his bones are
-popping out") — START HERE. All done and committed locally (9f0e907, 2e92bc5, 7ff0054 + dist); NOT pushed or deployed
+popping out") — START HERE. All done and committed locally (9f0e907, 2e92bc5, 7ff0054, e520755 + dist); NOT pushed or deployed
 (only on the user's word).
 - **The reveal's home-run zombie** (9f0e907): his burst model's inner gore (cut caps with bone stubs, guts, gibs) poked out
   through his gown as he walked in (since the gown-weight fix 9cec33c): it stays hidden until the hit now.
@@ -21,10 +21,12 @@ popping out") — START HERE. All done and committed locally (9f0e907, 2e92bc5, 
   in the game (combat.html?room1=1) game.lightkit.exportBake(game.looseMeshes, bake, 'floor<n>_bake_scene.json') per floor,
   or node tools/bake_fixtures.mjs if only the fittings changed, then
   blender -b --factory-startup --python blender/bake_floor.py -- <n> 384.
-- For the user to judge on the phone (High): the floors' brightness (bake k 2.2, fill 0.3, character light 0.45, as the
-  lab), Floor 6's busiest view (~600 draw calls on the PC: the props merge per room; a per-floor merge was tried and was
-  worse, it defeats culling).
-- Known small things: the guard's shield sticks edge-on to the MRI; the zombie eyes stay off (rejected).
+- **Quality pass** (e520755): brightness measured on the play area as the shot hook captures (the lab's room 0.32; Floor 6
+  0.32, 7 and 5 raised to match: render/floorlights.js BAKE_K); the flood water shows the floor's bake; draw calls cut by
+  pooled materials (render/matpool.js; Floor 6's busiest view ~630 -> 435, the rest ~200-390; walls stay one per wall:
+  each carries its own cut-away clipping plane); a light runaway fixed (a negative frame step + the instant emergency
+  fade: white screen); the guard's shield lies flat on the MRI; every pickup checked reachable; every Floor 5 room walked.
+- Still for the user: the feel on the phone at High (the numbers above are the PC). The zombie eyes stay off (rejected).
 
 STATUS (previous) 2026-10-19 early morning (combat chat). The big build (BUILD_PLAN.md) is built and committed locally
 (81cf8b7..aa593f4). NOT deployed, NOT pushed (the user hasn't asked yet).
