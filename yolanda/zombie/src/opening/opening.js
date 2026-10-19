@@ -1568,10 +1568,10 @@ export class Opening {
       A.em.target = 1; A.tickEmergency(d); // (k = 1, the beacon turning: tickEmergency sets the lights from their base each time, never compounding)
       A.hemi.intensity *= r.amb; A.sun.intensity *= r.amb; this.scene.environmentIntensity *= r.amb;
       const e = A.em, emRed = RT.noRed ? 0 : r.emRed;
-      // (2026-10-19, found with the user's Floor Lab: "light pools" off cured the iPhone's floor) the emergency light pools lie 2 cm
-      // over the floor; with the reveal's 5 cm near clip the iPhone's depth could not tell them apart and they dropped out in
-      // patches (the dark blotches). Drawn in front of the floor with a depth offset while the reveal runs (revLightOff undoes it)
-      if (!this.poolOffset) { this.poolOffset = [e.redMat, e.coldMat, e.redHalf]; for (const m of this.poolOffset) { m.polygonOffset = true; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -16; } } e.redMat.opacity *= emRed; e.redHalf.opacity *= emRed; e.coldMat.opacity *= r.amb; // (RT.noRed: every red in the reveal off, the user's iPhone test)
+      // (2026-10-19, found with the user's Floor Lab: "light pools" off cured the iPhone's floor; a depth offset did not) the
+      // emergency light pools painted on the floor are not drawn in the reveal at all (the user: "just remove that ... from the
+      // opening"); the game draws them again from the hand-off (tickEmergency shows the group each frame)
+      e.group.visible = false; e.redMat.opacity *= emRed; e.redHalf.opacity *= emRed; e.coldMat.opacity *= r.amb; // (RT.noRed: every red in the reveal off, the user's iPhone test)
       const lk = this.game().lightkit, at = this.game().atmos;
       if (lk) { lk.dim.floor = r.floor; lk.dim.signs = r.signs; lk.setCharLight(0.45 * r.chars * r.amb); /* (the game's fill on the characters ignores the scene's darkness: it follows the room light here, so a dark beat keeps its silhouettes) */ if (lk.built.yshadow && lk.on.yshadow !== RT.game.shadow) lk.set('yshadow', RT.game.shadow); }
       if (at && !!at.on.haze !== !!RT.game.haze) at.set('haze', RT.game.haze);
@@ -1602,7 +1602,6 @@ export class Opening {
     for (const l of this.cabLamps || []) { l.m.emissiveIntensity = l.e; l.m.color.copy(l.c); }
     if (this.rfx) { this.rfx.k.beam = this.rfx.k.dust = this.rfx.k.halo = 0; this.rfx.update(0, 0, RT.flash); this.rfx.visible = false; } // (nothing of it drawn in the game)
     this.aimFlashShadow(true); // (her shadow light back to the game's window and map)
-    for (const m of this.poolOffset || []) m.polygonOffset = false; this.poolOffset = null; // (the floor's light pools as the game draws them)
     { const lk = this.game?.().lightkit, at = this.game?.().atmos; if (lk) { lk.dim.floor = lk.dim.signs = 1; lk.setCharLight(0.45); lk.extraCasters = []; if (lk.built.yshadow && this.gameLight) lk.set('yshadow', true); } if (at && this.gameLight) at.set('haze', true); } // (the game's lighting as the game has it)
     this.rl = null;
   }
