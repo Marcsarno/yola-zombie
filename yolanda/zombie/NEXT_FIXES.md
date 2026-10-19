@@ -31,7 +31,17 @@ STATUS 2026-10-19 early morning (combat chat) — START HERE. The big build (BUI
     gone; no floor work was committed. Floor 7's additions and the new Floors 6 and 5 still need building (placing
     cracked walls, the flood, the MRI, cylinders and the new zombie kinds with the sim.add* calls in core/rooms.js).
   - The guard's shield on the MRI sticks edge-on to the scanner (works, could face it better).
-- NEXT (the user, 2026-10-19): the user compacts this chat, then **the lighting bake**: set up the lighting for the floors
+- **FIRST, a regression the user found (2026-10-19): the opening scene's characters are missing.** In the opening (the
+  hospital reveal: the original Yola, her staff, the baseball-player patient, the security guard, the nurses) they no longer
+  show up; Yola appears only for a moment. Not investigated yet. Suspects, from this chat's work since the opening was
+  signed off: the performance fixes (main.js visibleMatrixWorld skips hidden groups' transforms; arena.js freezeStatic
+  freezes "static" objects, maybe the opening's actors or their parents; adoptFloors / showFloors / settleFloor switch floor
+  groups on and off, maybe hiding the opening's sets; texshare.js disposes textures not on the current floor; the
+  clipchars.js per-part boundingSphere / frustumCulled (ZombieView only)). Bisect with git (opening worked at 20b51e4 /
+  fb7ff11; perf fixes 009cce2, floors in the lift e4342bf) in the opening (combat.html, the reveal) before anything else.
+- **The zombie eyes still don't look good** (the user, after the mesh-placed pass aa593f4): keep them off in the game;
+  rethink before using them (maybe emissive eye patches on the face texture instead of sprites).
+- NEXT (the user, 2026-10-19): the user compacts this chat, then the opening fix above, then **the lighting bake**: set up the lighting for the floors
   (the lab's picks into the game; bake per floor once its walls are final). Then deploy for a phone test on the user's word.
 - Rules this session added: the animation chat edits src/render/clipchars.js, holdfit.js, hold/*.json, yola2_ual.glb,
   viewer.js in the same checkout: commit only my own hunks of clipchars.js (git diff -U0 + git apply --cached
