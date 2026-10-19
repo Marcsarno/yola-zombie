@@ -63857,7 +63857,21 @@ void main() {
       "assets/sfx/reveal/gthunk_03.mp3",
       "assets/sfx/reveal/gthunk_04.mp3",
       "assets/sfx/reveal/gthunk_05.mp3",
-      "assets/sfx/reveal/gthunk_06.mp3"
+      "assets/sfx/reveal/gthunk_06.mp3",
+      "assets/sfx/reveal/gthunk_07.mp3",
+      "assets/sfx/reveal/gthunk_08.mp3",
+      "assets/sfx/reveal/gthunk_09.mp3",
+      "assets/sfx/reveal/gthunk_10.mp3",
+      "assets/sfx/reveal/gthunk_11.mp3",
+      "assets/sfx/reveal/gthunk_12.mp3",
+      "assets/sfx/reveal/gthunk_13.mp3",
+      "assets/sfx/reveal/gthunk_14.mp3",
+      "assets/sfx/reveal/gthunk_15.mp3",
+      "assets/sfx/reveal/gthunk_16.mp3",
+      "assets/sfx/reveal/gthunk_17.mp3",
+      "assets/sfx/reveal/gthunk_18.mp3",
+      "assets/sfx/reveal/gthunk_19.mp3",
+      "assets/sfx/reveal/gthunk_20.mp3"
     ],
     "gcrack": [
       "assets/sfx/reveal/gcrack_01.mp3",
@@ -63876,7 +63890,38 @@ void main() {
       "assets/sfx/reveal/gcrack_14.mp3",
       "assets/sfx/reveal/gcrack_15.mp3",
       "assets/sfx/reveal/gcrack_16.mp3",
-      "assets/sfx/reveal/gcrack_17.mp3"
+      "assets/sfx/reveal/gcrack_17.mp3",
+      "assets/sfx/reveal/gcrack_18.mp3",
+      "assets/sfx/reveal/gcrack_19.mp3",
+      "assets/sfx/reveal/gcrack_20.mp3",
+      "assets/sfx/reveal/gcrack_21.mp3",
+      "assets/sfx/reveal/gcrack_22.mp3",
+      "assets/sfx/reveal/gcrack_23.mp3",
+      "assets/sfx/reveal/gcrack_24.mp3",
+      "assets/sfx/reveal/gcrack_25.mp3",
+      "assets/sfx/reveal/gcrack_26.mp3",
+      "assets/sfx/reveal/gcrack_27.mp3",
+      "assets/sfx/reveal/gcrack_28.mp3",
+      "assets/sfx/reveal/gcrack_29.mp3",
+      "assets/sfx/reveal/gcrack_30.mp3",
+      "assets/sfx/reveal/gcrack_31.mp3",
+      "assets/sfx/reveal/gcrack_32.mp3",
+      "assets/sfx/reveal/gcrack_33.mp3",
+      "assets/sfx/reveal/gcrack_34.mp3",
+      "assets/sfx/reveal/gcrack_35.mp3",
+      "assets/sfx/reveal/gcrack_36.mp3",
+      "assets/sfx/reveal/gcrack_37.mp3",
+      "assets/sfx/reveal/gcrack_38.mp3",
+      "assets/sfx/reveal/gcrack_39.mp3",
+      "assets/sfx/reveal/gcrack_40.mp3",
+      "assets/sfx/reveal/gcrack_41.mp3",
+      "assets/sfx/reveal/gcrack_42.mp3",
+      "assets/sfx/reveal/gcrack_43.mp3",
+      "assets/sfx/reveal/gcrack_44.mp3",
+      "assets/sfx/reveal/gcrack_45.mp3",
+      "assets/sfx/reveal/gcrack_46.mp3",
+      "assets/sfx/reveal/gcrack_47.mp3",
+      "assets/sfx/reveal/gcrack_48.mp3"
     ],
     "gshards": [
       "assets/sfx/reveal/gshards_01.mp3",
@@ -63920,6 +63965,16 @@ void main() {
       "assets/sfx/reveal/flicker_05.mp3",
       "assets/sfx/reveal/flicker_06.mp3",
       "assets/sfx/reveal/flicker_07.mp3"
+    ],
+    "glasshead": [
+      "assets/sfx/reveal/glasshead_01.mp3",
+      "assets/sfx/reveal/glasshead_02.mp3",
+      "assets/sfx/reveal/glasshead_03.mp3",
+      "assets/sfx/reveal/glasshead_04.mp3",
+      "assets/sfx/reveal/glasshead_05.mp3",
+      "assets/sfx/reveal/glasshead_06.mp3",
+      "assets/sfx/reveal/glasshead_07.mp3",
+      "assets/sfx/reveal/glasshead_08.mp3"
     ]
   };
 
@@ -63961,12 +64016,21 @@ void main() {
     dry: { label: "Dry fire (empty)", group: "Weapons", sub: "Guns", hook: "Yola pulls the trigger on an empty gun", layers: [{ label: "Click", files: one("dry_click"), extra: lib("click"), gain: 0.5, pitch: [-0.5, 0.5], wet: 0.08 }] },
     // ---- melee hits: the game already plays these (synthesised); the first takes the user adds replace the synth,
     // which stays as a quiet "classic" layer underneath until switched off on the board ----
+    swing: { label: "Swing whoosh (bat, axe, fists)", group: "Weapons", sub: "Melee hits", hook: "a melee swing goes through the air", layers: [
+      { label: "Whoosh", files: [], extra: rl("whoosh"), gain: 0.6, pitch: [-1.5, 1], wet: 0.12 },
+      { label: "Classic synth (under it)", synth: "swing", gain: 0.5 }
+    ] },
+    bulletHit: { label: "Bullet hits a zombie", group: "Weapons", sub: "Guns", hook: "a bullet or pellet hits a zombie", layers: [
+      { label: "Flesh impact", files: [], extra: [...lib("punch", "soft"), ...rl("scrack")], gain: 0.7, pitch: [-1, 1.5], wet: 0.1 },
+      { label: "Wet", files: [], extra: [...lib("squish"), ...rl("swet")], gain: 0.45, pitch: [-1, 1], wet: 0.08 },
+      { label: "Classic synth (under it)", synth: "bulletHit", gain: 0.5 }
+    ] },
     fistHit: { label: "Fist / kick hit", group: "Weapons", sub: "Melee hits", hook: "a fist or kick lands", layers: [
-      { label: "Punch", files: [], extra: lib("punch", "punchheavy"), gain: 0.9, pitch: [-1, 1], wet: 0.12 },
+      { label: "Punch", files: [], extra: [...lib("punch", "punchheavy"), ...rl("scrack")], gain: 0.9, pitch: [-1, 1], wet: 0.12 },
       { label: "Classic synth thump (under it)", synth: "fistHit", gain: 0.6 }
     ] },
     batHit: { label: "Bat hit", group: "Weapons", sub: "Melee hits", hook: "the bat lands", layers: [
-      { label: "Crack", files: [], extra: lib("wood", "thwack"), gain: 0.9, pitch: [-1, 0.8], wet: 0.2 },
+      { label: "Crack", files: [], extra: [...lib("wood", "thwack"), ...rl("scrack")], gain: 0.9, pitch: [-1, 0.8], wet: 0.2 },
       { label: "Body", files: [], extra: lib("soft", "punchheavy"), gain: 0.8, pitch: [-1.5, 0.5], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "batHit", gain: 0.5 }
     ] },
@@ -63977,12 +64041,12 @@ void main() {
       { label: "Classic synth (under it)", synth: "axeHit", gain: 0.5 }
     ] },
     sever: { label: "Limb severed / gore", group: "Weapons", sub: "Melee hits", hook: "a limb comes off", layers: [
-      { label: "Wet", files: [], extra: lib("squish"), gain: 0.85, pitch: [-2, 0.5], wet: 0.15 },
-      { label: "Snap", files: [], extra: lib("thwack", "wood"), gain: 0.5, pitch: [0, 2], wet: 0.1 },
+      { label: "Wet", files: [], extra: [...lib("squish"), ...rl("swet")], gain: 0.85, pitch: [-2, 0.5], wet: 0.15 },
+      { label: "Snap", files: [], extra: [...rl("sbone"), ...lib("thwack", "wood")], gain: 0.5, pitch: [0, 2], wet: 0.1 },
       { label: "Classic synth (under it)", synth: "sever", gain: 0.5 }
     ] },
     knockdown: { label: "Body hits the floor", group: "Weapons", sub: "Melee hits", hook: "a zombie is knocked to the floor", layers: [
-      { label: "Thud (as the fall lands)", files: [], extra: lib("soft", "punchheavy"), gain: 0.85, pitch: [-2, 0], at: 0.55, wet: 0.25 },
+      { label: "Thud (as the fall lands)", files: [], extra: [...lib("soft", "punchheavy"), ...rl("bodyfall")], gain: 0.85, pitch: [-2, 0], at: 0.55, wet: 0.25 },
       { label: "Classic synth (under it)", synth: "knockdown", gain: 0.5 }
     ] },
     bump: { label: "Zombie bumps into Yola", group: "Weapons", sub: "Melee hits", hook: "a zombie bumps into Yola", layers: [
@@ -63998,7 +64062,7 @@ void main() {
       { label: "Classic synth (under it)", synth: "shieldHit", gain: 0.5 }
     ] },
     doorOpen: { label: "Door opens", group: "World", sub: "Doors", hook: "a door opens", layers: [
-      { label: "Door", files: [], extra: lib("door"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
+      { label: "Door", files: [], extra: [...lib("door"), ...rl("ldoorsopen")], gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 },
       { label: "Classic synth (under it)", synth: "doorOpen", gain: 0.4 }
     ] },
     // ---- zombies (2026-10-18): each type's moments. The game hooks pass the zombie's place (pan + distance) ----
@@ -64023,7 +64087,7 @@ void main() {
     ] },
     zombieDeath: { label: "Death", group: "Zombies", sub: "Every zombie", hook: "a zombie dies", layers: [
       { label: "Death cry", files: [], extra: zl("death"), gain: 0.75, pitch: [-1.5, 1], wet: 0.25 },
-      { label: "Body hits the floor", files: [], extra: lib("soft", "punchheavy"), gain: 0.6, pitch: [-2, 0], at: [0.4, 0.55], wet: 0.2 },
+      { label: "Body hits the floor", files: [], extra: [...lib("soft", "punchheavy"), ...rl("bodyfall")], gain: 0.6, pitch: [-2, 0], at: [0.4, 0.55], wet: 0.2 },
       { label: "Classic synth (under it)", synth: "zombieDeath", gain: 0.5 }
     ] },
     sprinterScream: { label: "Her scream before the charge", group: "Zombies", sub: "Sprinter (big lady)", hook: "the sprinter spots Yola", layers: [
@@ -64034,7 +64098,7 @@ void main() {
     ] },
     sprinterDeath: { label: "Her death", group: "Zombies", sub: "Sprinter (big lady)", hook: "the sprinter dies", layers: [
       { label: "Death cry", files: [], extra: zl("sdeath"), gain: 0.85, pitch: [-1, 0.5], wet: 0.3 },
-      { label: "Heavy body falls", files: [], extra: [...lib("soft", "punchheavy"), ...zl("stomp")], gain: 0.75, pitch: [-3, 0], at: [0.45, 0.6], wet: 0.25 }
+      { label: "Heavy body falls", files: [], extra: [...lib("soft", "punchheavy"), ...rl("bodyfall"), ...zl("stomp")], gain: 0.75, pitch: [-3, 0], at: [0.45, 0.6], wet: 0.25 }
     ] },
     guardRoar: { label: "Roar (he sees you)", group: "Zombies", sub: "Guard (boss)", hook: "the guard wakes or appears", layers: [
       { label: "Roar", files: [], extra: zl("groar"), gain: 1, pitch: [-0.5, 0.5], wet: 0.4 }
@@ -64043,7 +64107,7 @@ void main() {
       { label: "Grunt", files: [], extra: zl("gattack"), gain: 0.9, pitch: [-1, 0.5], wet: 0.25 }
     ] },
     guardSlam: { label: "Ground slam", group: "Zombies", sub: "Guard (boss)", hook: "the guard leap-slam lands", layers: [
-      { label: "Boom", files: [], extra: zl("stomp"), gain: 1, pitch: [-1, 0.5], wet: 0.35 },
+      { label: "Boom", files: [], extra: [...zl("stomp"), ...rl("boom", "thump")], gain: 1, pitch: [-1, 0.5], wet: 0.35 },
       { label: "Debris", files: [], extra: zl("debris"), gain: 0.5, pitch: [-1, 1], at: [0.05, 0.12], wet: 0.2 },
       { label: "Roar with it", files: [], extra: zl("gattack", "groar"), gain: 0.7, pitch: [-1, 0], wet: 0.3 },
       { label: "Sub boom (headphones)", synth: "subShotgun", gain: 1 }
@@ -64053,11 +64117,11 @@ void main() {
     ] },
     guardEnraged: { label: "ENRAGED", group: "Zombies", sub: "Guard (boss)", hook: "both arms gone: he enrages", layers: [
       { label: "Roar", files: [], extra: zl("groar"), gain: 1, pitch: [-1, 0], wet: 0.4 },
-      { label: "Boss stinger", files: [], extra: zl("sting"), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 }
+      { label: "Boss stinger", files: [], extra: [...zl("sting"), ...rl("suck")], gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 }
     ] },
     guardDeath: { label: "His death", group: "Zombies", sub: "Guard (boss)", hook: "the finishing blow on the guard", layers: [
       { label: "Death roar", files: [], extra: zl("gdeath"), gain: 1, pitch: [-0.5, 0.5], wet: 0.45 },
-      { label: "Huge body falls", files: [], extra: zl("stomp"), gain: 0.9, pitch: [-1, 0], at: [0.6, 0.8], wet: 0.3 }
+      { label: "Huge body falls", files: [], extra: [...zl("stomp"), ...rl("bodyfall")], gain: 0.9, pitch: [-1, 0], at: [0.6, 0.8], wet: 0.3 }
     ] },
     hordeDistant: { label: "The horde, far off", group: "Zombies", sub: "Horde & atmosphere", pending: true, cadence: 4, layers: [
       { label: "Distant moan", files: [], extra: zl("horde"), gain: 0.4, pitch: [-1, 1], wet: 0.6 }
@@ -64128,6 +64192,7 @@ void main() {
       { label: "Huge low hit", files: [], extra: rl("boom"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }
     ] },
     revealLensHit: { label: "Head hits the lens (glass)", group: "Opening reveal", sub: "The finisher", old: "lensHit", hook: "the head flies into the camera lens", layers: [
+      { label: "Complete hit (thunk + crack in one take)", files: [], extra: rl("glasshead"), gain: 0.95, pitch: [-0.5, 0.5], wet: 0.15 },
       { label: "Thunk", files: [], extra: rl("gthunk"), gain: 0.9, pitch: [-1, 0.5], wet: 0.15 },
       { label: "Glass cracking", files: [], extra: rl("gcrack"), gain: 0.85, pitch: [-0.5, 0.5], at: 0.01, wet: 0.2 },
       { label: "Tiny shards", files: [], extra: rl("gshards"), gain: 0.4, pitch: [0, 2], at: 0.12, wet: 0.2 }
@@ -64151,11 +64216,15 @@ void main() {
     footstep: { label: "Yola footstep", group: "Coming next", sub: "Not in the game yet", pending: true, cadence: 0.32, layers: [
       { label: "Step", files: [], extra: lib("step", "stepsoft"), gain: 0.5, pitch: [-1, 1], wet: 0.08 }
     ] },
-    doorClose: { label: "Door closes", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Door", files: [], extra: lib("doorshut"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }] },
-    glassBreak: { label: "Glass breaks", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Glass", files: [], extra: lib("glass"), gain: 0.85, pitch: [-1, 1], wet: 0.3 }] },
+    doorClose: { label: "Door closes", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Door", files: [], extra: [...lib("doorshut"), ...rl("ldoorsclose")], gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }] },
+    glassBreak: { label: "Glass breaks", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Glass", files: [], extra: [...lib("glass"), ...rl("gcrack", "gshards")], gain: 0.85, pitch: [-1, 1], wet: 0.3 }] },
     weaponSwap: { label: "Weapon swap (handling)", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Handling", files: [], extra: lib("cloth", "click"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] },
     pickupItem: { label: "Pick up an item", group: "Coming next", sub: "Not in the game yet", pending: true, layers: [{ label: "Item", files: [], extra: lib("pickup", "cloth"), gain: 0.6, pitch: [-1, 1], wet: 0.06 }] }
   };
+  for (const [name, b] of Object.entries(BANKS)) b.layers.forEach((l, li) => {
+    l.sound = name;
+    l.li = li;
+  });
 
   // src/sfx/samples.js
   var SELECTION_URL = "assets/sfx/selection.json";
@@ -64166,7 +64235,7 @@ void main() {
       this.buf = /* @__PURE__ */ new Map();
       this.lead = /* @__PURE__ */ new Map();
       this.last = /* @__PURE__ */ new Map();
-      this.sel = { takes: {}, layers: {}, sounds: {} };
+      this.sel = { takes: {}, layers: {}, sounds: {}, adds: {} };
     }
     files() {
       const s = /* @__PURE__ */ new Set();
@@ -64202,7 +64271,12 @@ void main() {
       return [...s];
     }
     setSelection(j) {
-      this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {} };
+      this.sel = { takes: j.takes || {}, layers: j.layers || {}, sounds: j.sounds || {}, adds: j.adds || {} };
+    }
+    // a part's candidate takes: the bank's own extras + any the user brought in from another sound
+    extraOf(l) {
+      const a = this.sel.adds?.[l.sound + "#" + l.li];
+      return a?.length ? [...l.extra || [], ...a] : l.extra || [];
     }
     // with the AudioContext: decode everything fetched so far (and anything still arriving, as it lands)
     attach(ctx) {
@@ -64233,10 +64307,10 @@ void main() {
     }
     inGame(name, l, f) {
       const v = this.verdict(name, f);
-      return (l.extra || []).includes(f) && !(l.files || []).includes(f) ? v === "yes" : v !== "no" && v !== "later";
+      return this.extraOf(l).includes(f) && !(l.files || []).includes(f) ? v === "yes" : v !== "no" && v !== "later";
     }
     active(name, l) {
-      return [.../* @__PURE__ */ new Set([...l.files || [], ...l.extra || []])].filter((f) => this.inGame(name, l, f));
+      return [.../* @__PURE__ */ new Set([...l.files || [], ...this.extraOf(l)])].filter((f) => this.inGame(name, l, f));
     }
     takeGain(name, f) {
       return dbk(this.sel.takes[name + ":" + f]?.db);
