@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -46279,6 +46279,7 @@ void main() {
     assist: 1.75
   };
   var AXE_ATTACKS = [
+    // (the old axe; replaced at load by the bat's moves built with the pack axe: useBuiltAxe)
     { ...SWING, dmg: 1, knock: 1, style: "swing", sever: { head: 0.35, arm: 0.25 } },
     {
       // 2: Yola's own overhead chop (Tripo), entered with the axe already raised behind her head so it follows the
@@ -46408,6 +46409,24 @@ void main() {
     knob: [0, -0.075, 0]
   };
   var BAT_PROFILE = { kind: "bat", dmg: 0.75, knock: 1, style: "swing", sever: {}, hitFrom: 0.45, radius: 0.1, reach: "tip" };
+  var PACK_AXE_DEF = {
+    file: "assets/weapons/hospital/fire_axe.glb",
+    hands: "one",
+    grip_primary: [0, 0, 0],
+    grip_secondary: [0.02, 0.22, 0],
+    shaft_axis: [0, 1, 0],
+    ref_axis: [-1, 0, 0],
+    length_m: 0.92,
+    impact_point: [-0.135, 0.694, 0]
+  };
+  var AXE_PROFILE = { kind: "axe", dmg: 1, knock: 0.9, style: "swing", sever: { head: 0.35, arm: 0.25 }, hitFrom: 0.45, radius: 0.1, reach: "tip" };
+  function useBuiltAxe(strikes) {
+    AXE_ATTACKS.length = 0;
+    AXE_ATTACKS.push(...strikes);
+    const last2 = AXE_ATTACKS[AXE_ATTACKS.length - 1];
+    if (last2 && AXE_ATTACKS.length > 1) Object.assign(last2, { dmg: AXE_PROFILE.dmg * 1.6, knock: 1.4, style: "heavy", sever: { head: 0.6, arm: 0.35 } });
+    if (last2) last2.restartFrom = last2.activeEnd + 0.25 * (last2.duration - last2.activeEnd);
+  }
   function useBuiltBat(strikes) {
     BAT_ATTACKS.length = 0;
     BAT_ATTACKS.push(...strikes);
@@ -46450,7 +46469,7 @@ void main() {
   function groundAttack(w) {
     if (GROUND_OWN[w]) return GROUND_OWN[w];
     if (w !== AXE && w !== BAT && w !== TEST && !LIB_ATTACKS[w]) return null;
-    const base = AXE_ATTACKS[1], T0 = w === TEST ? TEST_ATTACKS[0] : LIB_ATTACKS[w]?.[0] || null;
+    const base = AXE_CHOP, T0 = w === TEST ? TEST_ATTACKS[0] : LIB_ATTACKS[w]?.[0] || null;
     if (!base.PATH || (w === TEST || LIB_ATTACKS[w]) && !T0) return null;
     const key = w + (T0 ? "|" + T0.clip + T0.kind : "");
     if (GROUND[key]) return GROUND[key];
@@ -46510,6 +46529,7 @@ void main() {
     radius: 0.09
   };
   var BAT_SWING = AXE_ATTACKS[0];
+  var AXE_CHOP = AXE_ATTACKS[1];
   var rotY = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
   function setMeleePaths(clipdata, scale, hipsRest2) {
     _pathArgs = [clipdata, scale, hipsRest2];
@@ -50635,7 +50655,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -50665,7 +50685,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -51896,7 +51916,7 @@ void main() {
     const R = fistFrame(bones, "Right", FB1);
     if (!R) return false;
     const L3 = fistFrame(bones, "Left", FB2);
-    if (!L3 || R.c.distanceTo(L3.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
+    if (!L3 || def.hands === "one" || R.c.distanceTo(L3.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
     const d = new Vector3().subVectors(L3.c, R.c).normalize();
     if (d.dot(_a4.copy(R.a).add(L3.a)) < 0) d.negate();
     const low = R.c.dot(d) < L3.c.dot(d) ? R : L3, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
@@ -52775,7 +52795,7 @@ void main() {
       this.outer.visible = v;
       this.blob.visible = v;
       if (!v) {
-        for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj, this.batLib?.obj]) if (g) g.visible = false;
+        for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj, this.batLib?.obj, this.axeLib?.obj]) if (g) g.visible = false;
       }
     }
     // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
@@ -52932,8 +52952,8 @@ void main() {
       this.container.rotation.y = this.yaw;
       const w = this.locoWeights(s, dt);
       const rate = dt / Math.max(0.05, s.swapDur * 0.6);
-      const eqKey = s.equipped === "bat" ? this.batLib ? "sword" : "axe" : s.equipped === "test" ? HOLD_LAYERS.carry && this.test?.carry && this.carryCal?.[this.test.carry] ? "carry" : this.test?.two ? "axe" : "fists" : s.equipped;
-      this.batMode = s.equipped === "bat";
+      const eqKey = s.equipped === "bat" ? this.batLib ? "sword" : "axe" : s.equipped === "axe" && this.axeLib ? "sword" : s.equipped === "test" ? HOLD_LAYERS.carry && this.test?.carry && this.carryCal?.[this.test.carry] ? "carry" : this.test?.two ? "axe" : "fists" : s.equipped;
+      this.batMode = s.equipped === "bat" || s.equipped === "axe" && !!this.axeLib;
       for (const k2 in this.up) this.up[k2] += clamp5((eqKey === k2 ? 1 : 0) - this.up[k2], -rate, rate);
       const uP0 = smooth2(this.up.pistol), uS0 = smooth2(this.up.shotgun), uA0 = smooth2(this.up.axe), uF0 = smooth2(this.up.fists), uW0 = smooth2(this.up.sword || 0), uC0 = smooth2(this.up.carry || 0), un = uP0 + uS0 + uA0 + uF0 + uW0 + uC0 || 1;
       const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un, uC = uC0 / un;
@@ -53196,6 +53216,7 @@ void main() {
         this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
         if (this.test?.obj) this.test.obj.visible = false;
         if (this.batLib?.obj) this.batLib.obj.visible = false;
+        if (this.axeLib?.obj) this.axeLib.obj.visible = false;
         this.posture();
         return;
       }
@@ -53962,8 +53983,23 @@ void main() {
       if (s.equipped === "test" && this.test) {
         this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
         if (this.batLib?.obj) this.batLib.obj.visible = false;
+        if (this.axeLib?.obj) this.axeLib.obj.visible = false;
         this.placeTest();
         return;
+      }
+      if (this.axeLib?.obj) {
+        const held = s.equipped === "axe" && this.weaponShown !== "fists" && this.weaponShown !== "pistol" && this.weaponShown !== "shotgun";
+        if (held) {
+          this.pistol.visible = this.shotgun.visible = this.melee.visible = this.shell.visible = false;
+          this.placeHeld(this.axeLib);
+          this.batTip.copy(this.heldTip);
+          if (this.batLib?.obj) {
+            if (this.batBack && s.owned?.includes("bat")) this.placeBatBack();
+            else this.batLib.obj.visible = false;
+          }
+          return;
+        }
+        this.axeLib.obj.visible = false;
       }
       if (this.test?.obj) this.test.obj.visible = false;
       if (this.batLib?.obj) {
@@ -56000,11 +56036,11 @@ void main() {
   function setupNewMoves(yola2, anims, hold) {
     const by = Object.fromEntries(anims.map((c) => [c.name, c])), made = [];
     yola2.addAttackClips([...OVERLAY_NAMES, ...REC].map((n) => by[n]).filter(Boolean));
-    if (hold) {
+    const moveSet = (H4, P, key) => {
       const A = by.ual_Sword_Regular_A, B = by.ual_Sword_Regular_B, C = by.ual_Sword_Regular_C;
       if (A && B && C) {
         const one2 = (clip, name, rec) => {
-          const parts = buildLibraryAttack(yola2, { clip, hold, P: BAT_PROFILE, name, sound: "bat", strikes: 1, recover: SETTLE2, split: false });
+          const parts = buildLibraryAttack(yola2, { clip, hold: H4, P, name, sound: key, strikes: 1, recover: SETTLE2, split: false });
           for (const S2 of parts) {
             const end = attackEnd(S2);
             Object.assign(S2, { continuous: true, chainAlways: true, chainFrom: end, last: false, rec, duration: end + SETTLE2, swapPoint: end * 0.85 });
@@ -56012,27 +56048,29 @@ void main() {
           return parts;
         };
         const cFrames = Math.round(C.duration * 30) - 2;
-        const strikes = [...one2(A, "bat 1", REC[0]), ...one2(B, "bat 2", REC[1]), ...buildLibraryAttack(yola2, { clip: C, frames: cFrames, hold, P: BAT_PROFILE, name: "bat 3", sound: "bat", strikes: 2, speed: 1.7 })];
-        useBuiltBat(strikes);
-        made.push(`bat combo: ${strikes.length} strikes`);
+        const strikes = [...one2(A, key + " 1", REC[0]), ...one2(B, key + " 2", REC[1]), ...buildLibraryAttack(yola2, { clip: C, frames: cFrames, hold: H4, P, name: key + " 3", sound: key, strikes: 2, speed: 1.7 })];
+        (key === "axe" ? useBuiltAxe : useBuiltBat)(strikes);
+        made.push(`${key} combo: ${strikes.length} strikes`);
       }
       if (by.ual1_Sword_Attack) {
         const clip = cutClip(by.ual1_Sword_Attack, 1, 30, "ual1_Sword_Attack_legs");
-        const [S2] = buildLibraryAttack(yola2, { clip, hold, P: { ...BAT_PROFILE, style: "legs" }, name: "bat legs", sound: "bat", recover: 0.4, split: false });
+        const [S2] = buildLibraryAttack(yola2, { clip, hold: H4, P: { ...P, style: "legs" }, name: key + " legs", sound: key, recover: 0.4, split: false });
         turnAttack(S2, -67 * deg2, 0.3);
         lowWindow(S2);
-        Object.assign(S2, { legs: true, minY: 0, style: "legs", dmg: 0.8, knock: 0.5, chainFrom: 9, stand: 0.95, kind: "bat" });
-        LEG_ATTACKS.bat = S2;
-        made.push(`bat legs ${S2.activeStart.toFixed(2)}-${S2.activeEnd.toFixed(2)} s`);
+        Object.assign(S2, { legs: true, minY: 0, style: "legs", dmg: 0.8, knock: 0.5, chainFrom: 9, stand: 0.95, kind: P.kind }, key === "axe" ? { sever: { leg: 1 } } : {});
+        LEG_ATTACKS[key] = S2;
+        made.push(`${key} legs ${S2.activeStart.toFixed(2)}-${S2.activeEnd.toFixed(2)} s`);
       }
       if (by.ual_Sword_Heavy_D) {
         const clip = cutClip(by.ual_Sword_Heavy_D, 10, 34, "ual_Sword_Heavy_D_ground");
-        const [S2] = buildLibraryAttack(yola2, { clip, hold, P: { ...BAT_PROFILE, style: "chop", dmg: 1.4, knock: 0.6 }, name: "bat ground", sound: "bat", recover: 0.3, split: false });
-        Object.assign(S2, { ground: true, style: "chop", minY: 0.05, chainFrom: 9, assist: 2, stand: 1, kind: "bat", dmg: 1.4, knock: 0.6 });
-        GROUND_OWN.bat = S2;
-        made.push("bat ground");
+        const [S2] = buildLibraryAttack(yola2, { clip, hold: H4, P: { ...P, style: "chop", dmg: 1.4, knock: 0.6 }, name: key + " ground", sound: key, recover: 0.3, split: false });
+        Object.assign(S2, { ground: true, style: "chop", minY: 0.05, chainFrom: 9, assist: 2, stand: 1, kind: P.kind, dmg: 1.4, knock: 0.6 }, key === "axe" ? { sever: { head: 0.6, arm: 0.35 } } : {});
+        GROUND_OWN[key] = S2;
+        made.push(key + " ground");
       }
-    }
+    };
+    if (hold) moveSet(hold, BAT_PROFILE, "bat");
+    if (hold && yola2.axeLib) moveSet(yola2.axeLib, AXE_PROFILE, "axe");
     if (hold) {
       EXEC_LAUNCH.length = 0;
       for (const v of ["B_uppercut", "C_uppercut_mirrored"]) for (const [dist2, sfx] of [[1.4, ""], [2.4, "_2_4m"], [3.4, "_3_4m"]]) {
@@ -56065,7 +56103,7 @@ void main() {
       made.push("slide");
     }
     const L3 = LEG_ATTACKS.axe;
-    if (L3 && yola2.act(L3.clip)) {
+    if (L3 && !L3.built && yola2.act(L3.clip)) {
       sampleAxePath(yola2, L3);
       made.push(`axe legs ${L3.activeStart.toFixed(2)}-${L3.activeEnd.toFixed(2)} s`);
     }
@@ -56460,7 +56498,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -60279,7 +60317,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -60319,7 +60357,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -60410,7 +60448,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -60475,7 +60513,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -60563,7 +60601,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -60747,7 +60785,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -60819,7 +60857,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -61172,7 +61210,7 @@ void main() {
     return magicSquare;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -61371,7 +61409,7 @@ void main() {
     return samples;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -61805,7 +61843,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -62232,7 +62270,7 @@ void main() {
     "Denoise": 5
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -62284,7 +62322,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -62568,7 +62606,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -62656,7 +62694,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -71198,7 +71236,7 @@ void main() {
     return S2;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -75922,7 +75960,8 @@ void main() {
       // (the reload's magazines)
       fetch("assets/hold/pistol_fit.json").then((r) => r.json()).catch(() => ({})),
       // (the user's pistol fit per character, set in the Rig Lab)
-      loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null)
+      loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null),
+      loader.loadAsync(PACK_AXE_DEF.file).catch(() => null)
     ]);
     const fitProp = (g, hgt) => {
       const o = g.scene, b = new Box3().setFromObject(o), s = hgt / (b.max.y - b.min.y), c = b.getCenter(new Vector3());
@@ -75966,12 +76005,12 @@ void main() {
     loadHoldLayers();
     await arena.loadProps(loader, (k) => hud.loading(k * 0.7));
     arena.playLook();
-    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
+    const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG, packAxeG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
     yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === "2" ? "yola2" : "yola"] });
     yola.addAttackClips(yg.animations.filter((c) => c.name === "yola_knockdown" || c.name === "yola_getup" || c.name === "ual_KipUp"));
-    setupBat(yg.animations, await fetch("assets/hold/weapon_fit.json").then((r) => r.json()).catch(() => ({})), woodBatG);
+    setupBat(yg.animations, await fetch("assets/hold/weapon_fit.json").then((r) => r.json()).catch(() => ({})), woodBatG, packAxeG);
     window.game.yolaClips = yg.animations;
     await setupLibWeapons({ yola, loader, scene, clips: yg.animations, who: YOLA_MODEL === "2" ? "yola2" : "yola" }).catch((e) => console.warn("library weapons", e));
     ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[t.same ?? i]);
@@ -76010,7 +76049,7 @@ void main() {
     });
     return new AnimationClip(name, 1, tracks);
   }
-  function setupBat(anims, fits = {}, woodG = null) {
+  function setupBat(anims, fits = {}, woodG = null, axeG = null) {
     const who = YOLA_MODEL === "2" ? "yola2" : "yola";
     yola.axeFit = fits.axe?.[who] || null;
     yola.shotgunFit = fits.short?.[who] || null;
@@ -76040,6 +76079,31 @@ void main() {
     hold.fit = (woodG ? fits.alubat : fits.bat)?.[who] || null;
     if (woodG && block) hold.fitIdle = fits["alubat@ual_Sword_Block"]?.[who] || null;
     yola.setOneHandedBat(hold, idle);
+    if (axeG) {
+      const ha = new Group();
+      axeG.scene.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.frustumCulled = false;
+        }
+      });
+      ha.add(axeG.scene);
+      ha.visible = false;
+      scene.add(ha);
+      yola.axeLib = {
+        obj: ha,
+        w: PACK_AXE_DEF,
+        hand: "Right",
+        roll: 0,
+        slide: 0,
+        flip: false,
+        two: false,
+        fingers: null,
+        pack: true,
+        fit: fits.packaxe?.[who] || null,
+        fitIdle: fits["packaxe@ual_Sword_Block"]?.[who] || null
+      };
+    }
     useBuiltBat(buildLibraryAttack(yola, { clip: combo2, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: "bat", sound: "bat", strikes: 4 }));
     setupNewMoves(yola, anims, hold);
     setupSlideFinisher(yola, anims);

@@ -1,5 +1,5 @@
 (() => {
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -20826,7 +20826,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -30932,7 +30932,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function toTrianglesDrawMode(geometry, drawMode) {
     if (drawMode === TrianglesDrawMode) {
       console.warn("THREE.BufferGeometryUtils.toTrianglesDrawMode(): Geometry already defined as triangles.");
@@ -30988,7 +30988,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -33555,7 +33555,7 @@ void main() {
     });
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
   var u8 = Uint8Array;
   var u16 = Uint16Array;
   var i32 = Int32Array;
@@ -33927,7 +33927,7 @@ void main() {
   } catch (e) {
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
   function findSpan(p, u, U) {
     const n = U.length - p - 1;
     if (u >= U[n]) {
@@ -34119,7 +34119,7 @@ void main() {
     return calcRationalCurveDerivatives(Pders);
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
   var NURBSCurve = class extends Curve {
     /**
      * Constructs a new NURBS curve.
@@ -34194,7 +34194,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
   var fbxTree;
   var connections;
   var sceneGraph;
@@ -36645,7 +36645,7 @@ void main() {
     return a;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -37485,7 +37485,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -38034,6 +38034,7 @@ void main() {
     assist: 1.75
   };
   var AXE_ATTACKS = [
+    // (the old axe; replaced at load by the bat's moves built with the pack axe: useBuiltAxe)
     { ...SWING, dmg: 1, knock: 1, style: "swing", sever: { head: 0.35, arm: 0.25 } },
     {
       // 2: Yola's own overhead chop (Tripo), entered with the axe already raised behind her head so it follows the
@@ -38169,6 +38170,7 @@ void main() {
   }
   timeBat();
   var BAT_SWING = AXE_ATTACKS[0];
+  var AXE_CHOP = AXE_ATTACKS[1];
 
   // src/render/bodyclip.js
   var BODY = { Hips: "hips", Spine: "belly", Spine1: "chest", Spine2: "chest", Neck: "neck", Head: "head", LeftUpLeg: "left thigh", RightUpLeg: "right thigh", LeftLeg: "left shin", RightLeg: "right shin" };
@@ -38619,7 +38621,7 @@ void main() {
     const R = fistFrame(bones, "Right", FB1);
     if (!R) return false;
     const L = fistFrame(bones, "Left", FB2);
-    if (!L || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit2, {}, k);
+    if (!L || def.hands === "one" || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit2, {}, k);
     const d = new Vector3().subVectors(L.c, R.c).normalize();
     if (d.dot(_a5.copy(R.a).add(L.a)) < 0) d.negate();
     const low = R.c.dot(d) < L.c.dot(d) ? R : L, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
@@ -40494,7 +40496,8 @@ void main() {
     // (the arena's weapons: their first "good" pick in the Move Library as the attack)
     alubat: { label: "Bat (pack)", idle: "ual_Sword_Block", attack: "ual_Sword_Regular_Combo" },
     // (the hospital pack's bat, 2026-10-17)
-    packaxe: { label: "Axe (pack)", idle: "ual_Sword_Block", attack: "ual_Sword_Heavy_Combo" },
+    packaxe: { label: "Axe (pack)", idle: "ual_Sword_Block", attack: "ual_Sword_Regular_Combo" },
+    // (the game's axe since 2026-10-19: the bat's moves)
     packcrowbar: { label: "Crowbar (pack)", idle: "ual_Sword_Block", attack: "ual_Sword_Regular_Combo" },
     sledgehammer: { label: "Sledgehammer", idle: "ual_Sword_Block", attack: "ual_Sword_Heavy_Combo" },
     // (its carry: render/holdfit.js CARRY)
@@ -40665,7 +40668,8 @@ void main() {
   var editKey = () => "riglab.edit." + S.gun + "." + S.mode;
   var GAME_ATTACKS = {
     alubat: ["ual_Sword_Regular_A", "ual_Sword_Regular_B", "ual_Sword_Regular_C", "ual1_Sword_Attack", "ual_Sword_Heavy_D"],
-    packaxe: ["bat_swing", "t_chop", "gs_low_slash"]
+    packaxe: ["ual_Sword_Regular_A", "ual_Sword_Regular_B", "ual_Sword_Regular_C", "ual1_Sword_Attack", "ual_Sword_Heavy_D"]
+    // (the game's axe plays the bat's moves since 2026-10-19)
   };
   var ARENA_KEY = { alubat: "bat", packaxe: "axe", packcrowbar: "crowbar", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
   var gameAttack = (n) => (GAME_ATTACKS[S.gun] || []).includes(n) ? "story game" : PICKS[n + "|" + ARENA_KEY[S.gun]] ? "arena" : "";
