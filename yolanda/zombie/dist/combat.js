@@ -18000,7 +18000,7 @@
             const vecHash1 = hashes[jNext];
             const v0 = _triangle[vertKeys[j]];
             const v1 = _triangle[vertKeys[jNext]];
-            const hash = `${vecHash0}_${vecHash1}`;
+            const hash2 = `${vecHash0}_${vecHash1}`;
             const reverseHash = `${vecHash1}_${vecHash0}`;
             if (reverseHash in edgeData && edgeData[reverseHash]) {
               if (_normal.dot(edgeData[reverseHash].normal) <= thresholdDot) {
@@ -18008,8 +18008,8 @@
                 vertices.push(v1.x, v1.y, v1.z);
               }
               edgeData[reverseHash] = null;
-            } else if (!(hash in edgeData)) {
-              edgeData[hash] = {
+            } else if (!(hash2 in edgeData)) {
+              edgeData[hash2] = {
                 index0: indexArr[j],
                 index1: indexArr[jNext],
                 normal: _normal.clone()
@@ -36799,8 +36799,8 @@
       state.ambient[0] = r;
       state.ambient[1] = g;
       state.ambient[2] = b;
-      const hash = state.hash;
-      if (hash.directionalLength !== directionalLength || hash.pointLength !== pointLength || hash.spotLength !== spotLength || hash.rectAreaLength !== rectAreaLength || hash.hemiLength !== hemiLength || hash.numDirectionalShadows !== numDirectionalShadows || hash.numPointShadows !== numPointShadows || hash.numSpotShadows !== numSpotShadows || hash.numSpotMaps !== numSpotMaps || hash.numLightProbes !== numLightProbes) {
+      const hash2 = state.hash;
+      if (hash2.directionalLength !== directionalLength || hash2.pointLength !== pointLength || hash2.spotLength !== spotLength || hash2.rectAreaLength !== rectAreaLength || hash2.hemiLength !== hemiLength || hash2.numDirectionalShadows !== numDirectionalShadows || hash2.numPointShadows !== numPointShadows || hash2.numSpotShadows !== numSpotShadows || hash2.numSpotMaps !== numSpotMaps || hash2.numLightProbes !== numLightProbes) {
         state.directional.length = directionalLength;
         state.spot.length = spotLength;
         state.rectArea.length = rectAreaLength;
@@ -36818,16 +36818,16 @@
         state.spotLightMap.length = numSpotMaps;
         state.numSpotLightShadowsWithMaps = numSpotShadowsWithMaps;
         state.numLightProbes = numLightProbes;
-        hash.directionalLength = directionalLength;
-        hash.pointLength = pointLength;
-        hash.spotLength = spotLength;
-        hash.rectAreaLength = rectAreaLength;
-        hash.hemiLength = hemiLength;
-        hash.numDirectionalShadows = numDirectionalShadows;
-        hash.numPointShadows = numPointShadows;
-        hash.numSpotShadows = numSpotShadows;
-        hash.numSpotMaps = numSpotMaps;
-        hash.numLightProbes = numLightProbes;
+        hash2.directionalLength = directionalLength;
+        hash2.pointLength = pointLength;
+        hash2.spotLength = spotLength;
+        hash2.rectAreaLength = rectAreaLength;
+        hash2.hemiLength = hemiLength;
+        hash2.numDirectionalShadows = numDirectionalShadows;
+        hash2.numPointShadows = numPointShadows;
+        hash2.numSpotShadows = numSpotShadows;
+        hash2.numSpotMaps = numSpotMaps;
+        hash2.numLightProbes = numLightProbes;
         state.version = nextVersion++;
       }
     }
@@ -44992,8 +44992,14 @@ void main() {
       if (!gaps[o].has(k)) gaps[o].set(k, []);
       gaps[o].get(k).push([a, b]);
     };
+    const cracked = [];
     for (const d of def.doors) {
       const o = d.o, c = o === "h" ? Z(d.c) : X(d.c), a = o === "h" ? X(d.a) : Z(d.a), b = o === "h" ? X(d.b) : Z(d.b);
+      if (d.kind === "cracked" || d.kind === "blocked" || d.kind === "glass") {
+        addGap(o, c, a, b);
+        if (d.kind === "cracked") cracked.push(o === "h" ? { id: d.id, x0: a, z0: c, x1: b, z1: c } : { id: d.id, x0: c, z0: a, x1: c, z1: b });
+        continue;
+      }
       const mid = r2((a + b) / 2), width = d.kind && d.kind !== "open" ? 3 : r2(b - a);
       const door = { id: d.id, floor: n, kind: d.kind || "open", axis: o === "h" ? "x" : "z", x: o === "h" ? mid : c, z: o === "h" ? c : mid, width, ...d.face ? { face: d.face } : {}, ...d.side ? { side: d.side } : {} };
       doors.push(door);
@@ -45083,7 +45089,11 @@ void main() {
       lights: def.lights(Z),
       blood: def.blood?.(Z) || [],
       playerStart: def.start(Z),
-      cutaway: true
+      cutaway: true,
+      cracked,
+      flood: def.flood?.(Z) || null,
+      mri: def.mri?.(Z) || null,
+      tanks: def.tanks?.(Z) || []
     };
   }
   var F7 = buildFloor(7, {
@@ -45096,14 +45106,25 @@ void main() {
       { id: "c7", name: "Staff Lounge", poly: [[570, 930], [963, 930], [963, 1240], [570, 1240]], floor: ["#f0dccb", "#d8a98c"], ob: ["corridor", "maintenance"] },
       { id: "p7", name: "Lift Plant", poly: [[963, 930], [1319, 930], [1319, 1240], [963, 1240]], floor: ["#b9b8b0", "#a3a39a"], ob: ["maintenance", "maintenance"] },
       { id: "x7", name: "Equipment Store", poly: [[570, 650], [963, 650], [963, 930], [570, 930]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] },
-      { id: "r7", name: "Pre-op Holding", poly: [[963, 565], [1243, 565], [1243, 516], [1319, 516], [1319, 930], [963, 930]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] }
+      { id: "r7", name: "Pre-op Holding", poly: [[963, 565], [1243, 565], [1243, 516], [1319, 516], [1319, 930], [963, 930]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] },
+      // (2026-10-19, FLOORS_REDESIGN.html: the additions) the staff toilets and the janitor closet off Endoscopy and Sterile
+      // Supply (the strip between it and the store), the blocked service corridor between the recovery ward and the store
+      { id: "wc7", name: "Staff Toilets", poly: [[500, 565], [708, 565], [708, 650], [500, 650]], floor: ["#dfe7ea", "#b8c9cf"], ob: ["clinical", "clinical"] },
+      { id: "jn7", name: "Janitor and Linen", poly: [[708, 565], [963, 565], [963, 650], [708, 650]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] },
+      { id: "sc7", name: "Service Corridor", poly: [[500, 650], [570, 650], [570, 930], [500, 930]], floor: ["#c9c4b8", "#b3ad9f"], ob: ["maintenance", "maintenance"] }
     ],
     doors: [
       { id: "or_s7", o: "v", c: 963, a: 385, b: 490 },
       { id: "s7_n7", o: "v", c: 500, a: 395, b: 475 },
       { id: "n7_t7", o: "h", c: 590, a: 310, b: 400 },
       { id: "t7_v7", o: "h", c: 930, a: 310, b: 400 },
-      { id: "v7_c7", o: "v", c: 570, a: 1015, b: 1100 },
+      { id: "v7_c7", o: "v", c: 570, a: 1015, b: 1100, kind: "cracked" },
+      // (the first cracked wall: temporary blockwork, the sledgehammer beside it)
+      { id: "s7_wc7", o: "h", c: 565, a: 570, b: 625 },
+      { id: "s7_jn7", o: "h", c: 565, a: 845, b: 900 },
+      { id: "sc7_top", o: "h", c: 650, a: 500, b: 570, kind: "blocked" },
+      // (a gurney barricade at each end: it reads as a hospital and stays shut)
+      { id: "sc7_bot", o: "h", c: 930, a: 500, b: 570, kind: "blocked" },
       { id: "c7_p7", o: "v", c: 963, a: 1015, b: 1100 },
       { id: "p7_r7", o: "h", c: 930, a: 1190, b: 1275 },
       { id: "x7door", o: "h", c: 930, a: 720, b: 810, kind: "powered", face: "s" },
@@ -45172,7 +45193,7 @@ void main() {
       p(H + "prep_storage.glb", -16.6, -4.45, 0, [1.51, 0.72], 1.09);
       p(H + "prep_storage.glb", -16.6, -3.7, 180, [1.51, 0.72], 1.09);
       p(U + "08_support_equipment/runtime/supply_cart_starter.glb", -15.6, -1, 0, [0.78, 0.52], 1.01, { name: "s7cart" });
-      p(H + "storage_bins.glb", -23, 0.6, 0, [1.05, 0.3], 0.28, { noCollide: true });
+      p(H + "storage_bins.glb", -24.05, 0.6, 0, [1.05, 0.3], 0.28, { noCollide: true });
       p(H + "laundry_hamper.glb", -24.9, 0.4, 0, [0.6, 0.57], 1.15);
       p(H + "wheelchair.glb", -19.8, 0.3, 270, [0.76, 0.91], 0.97);
       p(H + "lidded_waste_bin.glb", -9.2, 0.65, 0, [0.36, 0.4], 0.58);
@@ -45293,9 +45314,6 @@ void main() {
       p(SI + "standin_janitor_cabinet.glb", -6.6, 23.7, 90, [0.9, 0.5], 1.9);
       raw({ kind: "box", x: -6.65, z: 25.3, size: [1.5, 0.6, 2], face: "e", color: 9082007, fp: [0.6, 1.5], h: 2 });
       p(U + "10_janitor_utility/starter/10_starter_rack.glb", -6.55, 27.35, 90, [0.82, 0.51], 1.82);
-      p(H + "floor_scrubber.glb", 2.6, 26.9, 90, [0.86, 1.52], 1.17);
-      p(H + "janitor_cart.glb", 4.6, 27.2, 0, [0.83, 0.99], 1.23);
-      p(H + "mop_bucket.glb", 5.6, 18.6, 30, [0.46, 0.51], 0.65);
       p(H + "wet_floor_sign.glb", 0.6, 25.6, 0, [0.48, 0.66], 0.64, { noCollide: true });
       p(H + "handwash_cabinet_base.glb", -5.6, 1.55, 0, [0.51, 0.7], 0.77);
       p(H + "handwash_cabinet_base.glb", -4.5, 1.55, 0, [0.51, 0.7], 0.77);
@@ -45339,11 +45357,46 @@ void main() {
       p("zombie/assets/props/sawhorse_barrier.glb", -19, 6.6, 0, [1.9, 0.73], 1.04);
       raw({ kind: "box", x: -19.6, z: 12.6, size: [1.2, 0.8, 0.9], face: "s", color: 10719084, fp: [1.2, 0.8], h: 0.9 });
       p(C.bins, -9.2, 13.8, 0, [1.05, 0.3], 0.28, { noCollide: true });
+      const R13 = U + "13_restroom_fixtures/standard/13_standard_";
+      for (const cx of [-19.9, -18.62]) {
+        p(R13 + "cubicle.glb", cx, 1.86, 0, [1.24, 1.87], 2.01, { noCollide: true });
+        if (cx < -19) raw({ kind: "collider", x: cx, z: 2.13, fp: [1.24, 1.82], h: 2 });
+        p(R13 + "toilet.glb", cx, 1.48, 0, [0.5, 0.79], 1.04, { noCollide: true });
+      }
+      p(R13 + "washstand.glb", -24.3, 1.51, 0, [1.18, 0.65], 1.22);
+      wp(R13 + "mirror.glb", -24.3, 1.2, "s", 1.25);
+      wp(R13 + "towel_dispenser.glb", -25.2, 1.2, "s", 1.15);
+      wp(R13 + "soap_dispenser.glb", -23.5, 1.2, "s", 1.15);
+      p(M + "rooms/Restroom_Pedal_Bin.glb", -23.2, 1.45, 0, [0.37, 0.41], 0.66, { noCollide: true });
+      p(H + "wet_floor_sign.glb", -21, 3.3, 20, [0.48, 0.66], 0.64, { noCollide: true });
+      sign2("WC", "Staff", -23.64, 2.3, 1.2, "s", 0.6);
+      p(U + "10_janitor_utility/standard/10_standard_utility_sink.glb", -15.6, 1.56, 0, [1.06, 0.7], 1.32);
+      wp(U + "10_janitor_utility/standard/10_standard_wall_shelf.glb", -14.2, 1.2, "s", 1.45);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", -13.1, 1.46, 0, [0.82, 0.51], 1.82);
+      p(H + "linen_cabinet.glb", -8, 1.53, 0, [0.95, 0.65], 1.84);
+      p(H + "laundry_hamper.glb", -8.9, 3.9, 0, [0.6, 0.57], 1.15);
+      p(H + "janitor_cart.glb", -15.9, 3.6, 90, [0.83, 0.99], 1.23);
+      p(H + "floor_scrubber.glb", -13.4, 3.75, 90, [0.86, 1.52], 1.17);
+      p(H + "mop_bucket.glb", -11.4, 3.7, 30, [0.46, 0.51], 0.65);
+      p(H + "mop.glb", -16.95, 2.3, 90, [0.34, 0.25], 1.5, { noCollide: true });
+      p(SI + "standin_janitor_cabinet.glb", -16.88, 3.1, 90, [0.9, 0.5], 1.9);
+      sign2("JANITOR", "Linen \xB7 cleaning", -12.94, 2.3, 1.2, "s", 0.9);
+      for (const [z, rz] of [[5, 1], [15.1, -1]]) {
+        raw({ kind: "collider", x: -24.24, z: z - rz * 0.2, fp: [2.8, 0.4], h: 2.2 });
+        p(H + "procedure_stretcher.glb", -24.5, z, 90 + rz * 8, [0.9, 1.66], 1.22, { noCollide: true });
+        p("zombie/assets/props/sawhorse_barrier.glb", -24.2, z + rz * 0.75, 0, [1.9, 0.73], 1.04, { noCollide: true });
+      }
+      p(H + "procedure_stretcher.glb", -24.2, 8.6, 0, [0.9, 1.66], 1.22);
+      p(SI + "dust_sheet_small.glb", -24.25, 11.4, 90, [1.39, 0.92], 0.94);
+      p(H + "wheelchair.glb", -24.3, 13.3, 200, [0.76, 0.91], 0.97);
+      sign2("NO ACCESS", "Service corridor", -24.24, 2.2, 4.6, "s", 0.9);
+      raw({ kind: "hazard", x: -23.8, z: 20.75, size: [1.2, 3.4], noCollide: true, fp: [0.1, 0.1], h: 0 });
+      sign2("TEMPORARY WALL", "Cracked: do not lean", -22.99, 1.95, 23.5, "w", 1);
       sign2("LIFT PLANT \u2192", "Lift power \xB7 via the staff lounge", -25.8, 1.95, -1.4, "w", 1.5);
       sign2("LIFT", "Power fault", X2(1214) + 3.65, 2.3, -11, "s", 0.8, { lift: 7 });
       sign2("BARRED", "From the prep room side", 1, 1.75, 0.9, "n", 0.86, { id: "orbarSign" });
       sign2("\u2193 RECOVERY \xB7 WARD WORKS", "Lift plant \u2192", -31.4, 2.3, -11, "s", 1.8);
-      sign2("WARD CLOSED", "Refurbishment \xB7 keep out", -25.3, 1.45, 15.8, "s", 1.5);
+      sign2("WARD CLOSED", "Refurbishment \xB7 keep out", -28.4, 1.45, 15.8, "s", 1.5);
       sign2("LIFT PLANT \u2192", "via the staff lounge", -22.99, 2, 18, "w", 1.3);
       sign2("EQUIPMENT STORE", "Powered door \xB7 lift circuit", -17.4, 2.15, 15.8, "s", 1.3);
       sign2("EQUIPMENT STORE", "", -15, 2.35, 4.6, "s", 1.4);
@@ -45389,6 +45442,9 @@ void main() {
       // lift service: the big lady across the open bay from the cafeteria door (her lane runs at the door; switchgear and racks
       // along the walls to trip her into), one walker by the switchgear
       { id: "p7", sense: 9, zombies: [{ x: 4.6, z: 21, yaw: -Math.PI / 2, kind: "sprinter" }, { x: -4.4, z: 24.6, yaw: 0.6, look: "patient" }] },
+      // (2026-10-19) the staff toilets: one banging in a cubicle; the janitor closet: one among the linen
+      { id: "wc7", sense: 4, zombies: [{ x: -18.62, z: 3.45, yaw: Math.PI, look: "patient" }] },
+      { id: "jn7", sense: 4, zombies: [{ x: -10.2, z: 2.6, yaw: 2.4, look: "nurse" }] },
       // the contractor store (behind its powered door): two lurking by the shelves, roused when the door opens on them
       { id: "x7", sense: 4, locked: true, zombies: [{ x: -19.4, z: 9, yaw: 0.8, look: "nurse" }, { x: -10, z: 11.6, yaw: -2.2 }] },
       // the prep room, the way back to the OR: once the lift has power, the floor's last push: a runner, two walkers, one
@@ -45410,7 +45466,8 @@ void main() {
       { id: "n7shells", kind: "ammo", weapon: "shotgun", rounds: 12, x: -27.6, z: -9.9, r: 1, label: "Shotgun shells", model: "shells" },
       { id: "t7crowbar", kind: "weapon", weapon: "crowbar", x: -32.2, z: 10.2, r: 1.1, label: "Crowbar", file: "zombie/assets/weapons/hospital/crowbar.glb", len: 0.8, rot: 1.1 },
       { id: "v7ammo", kind: "health", amount: 50, x: -37.6, z: 16.25, r: 1.1, label: "First-aid case", model: "aid", y: 0.92 },
-      { id: "v7sledge", kind: "weapon", weapon: "sledgehammer", x: -35.6, z: 19.6, r: 1.2, label: "Sledgehammer", file: "zombie/assets/weapons/sledgehammer.glb", len: 0.95, rot: -0.6, y: 0.47 },
+      { id: "v7sledge", kind: "weapon", weapon: "sledgehammer", x: -24.3, z: 18.3, r: 1.2, label: "Sledgehammer", file: "zombie/assets/weapons/sledgehammer.glb", len: 0.95, rot: 1.2, y: 0.05 },
+      // (beside the cracked wall it breaks)
       { id: "c7knife", kind: "weapon", weapon: "knife", x: -13.2, z: 23.9, r: 1.1, label: "Knife", builder: "knife", len: 0.3, rot: 0.8, y: 0.85 },
       { id: "c7shells", kind: "ammo", weapon: "shotgun", rounds: 12, x: -12.4, z: 17.4, r: 1, label: "Shotgun shells", model: "shells" },
       { id: "p7mags", kind: "ammo", weapon: "pistol", rounds: 24, x: 0.6, z: 17.2, r: 1, label: "Pistol magazines", model: "mag" },
@@ -45444,342 +45501,572 @@ void main() {
   });
   var F6 = buildFloor(6, {
     rooms: [
-      { id: "e6", name: "Lift Lobby", poly: [[1140, 260], [1319, 260], [1319, 580], [1140, 580]], floor: ["#e4d8bf", "#cfc4ab"], ob: ["corridor", "clinical"] },
-      { id: "j6", name: "Ward Junction", poly: [[700, 300], [1140, 300], [1140, 580], [700, 580]], floor: ["#efe2c8", "#d9c9a8"], ob: ["corridor", "clinical"] },
-      { id: "w6", name: "Ward 6B", poly: [[180, 300], [700, 300], [700, 580], [620, 580], [620, 760], [180, 760]], floor: ["#e9eedf", "#c8dcc4"], ob: ["corridor", "clinical"] },
-      { id: "p6", name: "Sample Prep Lab", poly: [[180, 760], [620, 760], [620, 1030], [180, 1030]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
-      { id: "k6", name: "Cold Dispatch", poly: [[180, 1030], [710, 1030], [710, 1280], [180, 1280]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] },
-      { id: "sp6", name: "Service Corridor", poly: [[830, 580], [1e3, 580], [1e3, 800], [830, 800]], floor: ["#c9c4b8", "#b3ad9f"], ob: ["maintenance", "maintenance"] },
-      { id: "a6", name: "Ward 6C Works", poly: [[710, 800], [1140, 800], [1140, 1280], [710, 1280]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] }
+      { id: "o6", name: "On-call and Doctors' Offices", poly: [[120, 260], [470, 260], [470, 535], [120, 535]], floor: ["#efe2c8", "#d9c9a8"], ob: ["corridor", "clinical"] },
+      { id: "w6", name: "Ward 6B Surgical", poly: [[470, 260], [820, 260], [820, 535], [470, 535]], floor: ["#e9eedf", "#c8dcc4"], ob: ["corridor", "clinical"] },
+      { id: "wc6", name: "Toilets", poly: [[820, 260], [920, 260], [920, 535], [820, 535]], floor: ["#dfe7ea", "#b8c9cf"], ob: ["clinical", "clinical"] },
+      { id: "jn6", name: "Janitor and Linen", poly: [[920, 260], [1020, 260], [1020, 535], [920, 535]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] },
+      { id: "e6", name: "Lift Lobby 6", poly: [[1020, 260], [1319, 260], [1319, 535], [1020, 535]], floor: ["#e4d8bf", "#cfc4ab"], ob: ["corridor", "clinical"] },
+      { id: "cw6", name: "Main Corridor (west)", poly: [[120, 535], [470, 535], [470, 610], [120, 610]], floor: ["#e2ded3", "#cbc6b8"], ob: ["corridor", "clinical"] },
+      { id: "cm6", name: "Main Corridor", poly: [[470, 535], [770, 535], [770, 610], [470, 610]], floor: ["#e2ded3", "#cbc6b8"], ob: ["corridor", "clinical"] },
+      { id: "ce6", name: "Main Corridor (east)", poly: [[770, 535], [1319, 535], [1319, 610], [770, 610]], floor: ["#e2ded3", "#cbc6b8"], ob: ["corridor", "clinical"] },
+      { id: "b6", name: "Bay 6A Orthopaedic", poly: [[120, 610], [470, 610], [470, 935], [120, 935]], floor: ["#e2e8ea", "#bfd2da"], ob: ["corridor", "clinical"] },
+      { id: "n6", name: "Nurse Station", poly: [[470, 610], [970, 610], [970, 935], [470, 935]], floor: ["#f3e2bf", "#d9c294"], ob: ["corridor", "clinical"] },
+      { id: "p6", name: "Sample Prep Lab", poly: [[970, 610], [1319, 610], [1319, 935], [970, 935]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
+      { id: "k6", name: "Cold Dispatch", poly: [[120, 935], [470, 935], [470, 1240], [120, 1240]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] },
+      { id: "a6", name: "Ward 6C Conversion Works", poly: [[470, 935], [970, 935], [970, 1240], [470, 1240]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] },
+      { id: "s6", name: "Sterile Services", poly: [[970, 935], [1319, 935], [1319, 1240], [970, 1240]], floor: ["#d9d6cc", "#c2c9c6"], ob: ["clinical", "maintenance"] }
     ],
     doors: [
-      { id: "e6_j6", o: "v", c: 1140, a: 420, b: 500 },
-      { id: "j6_w6", o: "v", c: 700, a: 420, b: 500 },
-      { id: "w6_p6", o: "h", c: 760, a: 350, b: 440 },
-      { id: "p6_k6", o: "h", c: 1030, a: 350, b: 440 },
-      { id: "j6_sp6", o: "h", c: 580, a: 850, b: 970 },
-      { id: "sp6_a6", o: "h", c: 800, a: 850, b: 970 },
-      { id: "partition", o: "v", c: 710, a: 1095, b: 1180, kind: "partition" }
-      // the weak renovation partition (A6 | K6)
+      { id: "e6_ce6", o: "h", c: 535, a: 1095, b: 1195 },
+      { id: "wc6_ce6", o: "h", c: 535, a: 845, b: 895 },
+      { id: "jn6_ce6", o: "h", c: 535, a: 945, b: 995 },
+      { id: "w6_ce6", o: "h", c: 535, a: 775, b: 815 },
+      { id: "firedoor6", o: "v", c: 770, a: 535, b: 610, kind: "barred", face: "w", side: "w" },
+      // the fire door: barred from the middle (the way back)
+      { id: "w6_crack", o: "v", c: 470, a: 322, b: 422, kind: "cracked" },
+      // Ward 6B -> on-call: the wall beside the jammed door
+      { id: "w6_jam", o: "v", c: 470, a: 440, b: 515, kind: "closed", face: "e" },
+      // (jammed shut)
+      { id: "o6_cw6", o: "h", c: 535, a: 245, b: 320 },
+      { id: "collapse6", o: "v", c: 470, a: 535, b: 610, kind: "blocked" },
+      // the collapsed ceiling (west | middle corridor)
+      { id: "cw6_b6", o: "h", c: 610, a: 245, b: 320 },
+      { id: "b6_k6", o: "h", c: 935, a: 245, b: 320 },
+      { id: "b6_n6", o: "v", c: 470, a: 735, b: 810 },
+      { id: "n6_cm6", o: "h", c: 610, a: 595, b: 670 },
+      { id: "n6_glass", o: "v", c: 970, a: 672, b: 872, kind: "glass" },
+      // the lab's glass wall onto the nurse station
+      { id: "ce6_p6", o: "h", c: 610, a: 1120, b: 1195 },
+      { id: "p6_s6", o: "h", c: 935, a: 1120, b: 1195 },
+      { id: "s6_a6", o: "v", c: 970, a: 1047, b: 1122 },
+      { id: "a6_crack", o: "v", c: 470, a: 1010, b: 1135, kind: "cracked" }
+      // Ward 6C -> Cold Dispatch: the lady's wall
     ],
     dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
-      const C = {
+      const NP = SI, R13 = U + "13_restroom_fixtures/standard/13_standard_", C = {
         visitor: U + "09_assessment_furniture/runtime/visitor_chair_standard.glb",
         shelf: M + "utility/Utility_Supply_Shelf.glb",
         cart: U + "08_support_equipment/runtime/supply_cart_standard.glb",
-        counter: U + "09_assessment_furniture/runtime/prep_storage_standard.glb"
+        counter: U + "09_assessment_furniture/runtime/prep_storage_standard.glb",
+        desk: U + "09_assessment_furniture/runtime/consultation_desk_standard.glb",
+        chair: U + "09_assessment_furniture/runtime/clinician_chair_standard.glb",
+        lockers: U + "11_staff_lounge/standard/11_standard_lockers.glb"
       };
-      const NP = SI, bed = (x, z, rot) => p(H + "recovery_bed.glb", x, z, rot, [1.25, 2.11], 0.87);
+      const bed = (x, z, rot) => p(H + "recovery_bed.glb", x, z, rot, [1.25, 2.11], 0.87);
       wp(H + "lobby_t2_wayfinding.glb", 6.55, -91, "s", 1.45);
-      wp(NP + "fire_extinguisher.glb", 0.25, -91, "s", 0.6);
+      wp(NP + "fire_extinguisher.glb", -0.4, -91, "s", 0.6);
       p(H + "floor_planter.glb", 6.7, -89.6, 270, [1.12, 0.5], 1.52);
-      p(H + "waiting_chair_section.glb", 6.45, -86.5, 270, [2.69, 0.97], 0.99);
-      wp(H + "reception_poster_clinician.glb", 6.95, -86.5, "w", 1.3);
-      p(H + "water_cooler.glb", 6.7, -83.6, 270, [0.45, 0.49], 1.47);
-      wp(H + "wall_sanitizer.glb", 6.95, -84.6, "w", 1.05);
-      p(H + "wheelchair.glb", 1.6, -80, 200, [0.76, 0.91], 0.97);
-      p(H + "linen_cabinet.glb", -16.6, -89.08, 0, [0.95, 0.65], 1.84);
-      p(H + "procedure_stretcher.glb", -14.4, -88.95, 90, [0.9, 1.66], 1.22);
-      wp(H + "lobby_t2_health_poster.glb", -12.9, -89.4, "s", 1.2);
-      wp(H + "wall_sanitizer.glb", -12.2, -89.4, "s", 1.05);
-      p(H + "waiting_chair_section.glb", -9.65, -88.9, 0, [2.69, 0.97], 0.99);
-      wp(H + "wall_clock.glb", -7.4, -89.4, "s", 1.95);
-      p(H + "charting_workstation.glb", -5.9, -89.09, 0, [0.83, 0.62], 1.47);
-      wp(H + "team_wall_station.glb", -4.6, -89.4, "s", 0.75);
-      p(H + "wheelchair.glb", -1.6, -88.9, 0, [0.76, 0.91], 0.97);
-      p(H + "wheelchair.glb", -0.85, -88.9, 0, [0.76, 0.91], 0.97);
-      wp(NP + "fire_extinguisher.glb", -17.5, -86.6, "e", 0.6);
-      p(H + "wheelchair.glb", -15, -79.6, 120, [0.76, 0.91], 0.97);
-      for (const [i, bx] of [-36, -32.4, -28.8, -25.2, -21.6].entries()) {
-        bed(bx, -88.35, 0);
-        wp(H + "service_headwall.glb", bx, -89.4, "s", 1.24);
-        p(H + "bedside_cabinet.glb", bx - 0.95, -88.95, 0, [0.52, 0.63], 0.81);
-        p(C.visitor, bx + 0.95, -88.4, 270, [0.47, 0.47], 0.98, { noCollide: true });
-        if (i < 2) wp(H + (i ? "recovery_bay_sign_02.glb" : "recovery_bay_sign_01.glb"), bx, -89.4, "s", 2.05);
+      p(H + "waiting_chair_section.glb", 6.45, -86, 270, [2.69, 0.97], 0.99);
+      wp(H + "reception_poster_clinician.glb", 6.95, -86, "w", 1.3);
+      p(H + "water_cooler.glb", 6.7, -82.6, 270, [0.45, 0.49], 1.47);
+      wp(H + "wall_sanitizer.glb", 6.95, -83.6, "w", 1.05);
+      p(H + "magazine_rack.glb", -4.4, -88.6, 90, [0.55, 0.43], 1.05);
+      p(H + "wheelchair.glb", -2.6, -86.2, 200, [0.76, 0.91], 0.97);
+      p(H + "side_table.glb", -4.3, -84, 0, [0.74, 0.74], 0.55);
+      sign2("WARD 6B \xB7 DISPATCH", "Main corridor \u2193", -2.6, 2.3, -91, "s", 1.3);
+      p(U + "10_janitor_utility/standard/10_standard_utility_sink.glb", -7.75, -90.64, 0, [1.06, 0.7], 1.32);
+      wp(U + "10_janitor_utility/standard/10_standard_wall_shelf.glb", -6, -91, "s", 1.45);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", -5.25, -88.4, 270, [0.82, 0.51], 1.82);
+      p(H + "janitor_cart.glb", -7.9, -87.4, 0, [0.83, 0.99], 1.23);
+      p(H + "linen_cabinet.glb", -8.36, -84.4, 90, [0.95, 0.65], 1.84);
+      p(H + "mop_bucket.glb", -6, -84.6, 30, [0.46, 0.51], 0.65);
+      p(H + "laundry_hamper.glb", -5.3, -82.3, 0, [0.6, 0.57], 1.15);
+      sign2("JANITOR", "", -6.84, 2.3, -80, "s", 0.7);
+      for (const cx of [-12.05, -10.8]) {
+        p(R13 + "cubicle.glb", cx, -90.34, 0, [1.24, 1.87], 2.01, { noCollide: true });
+        raw({ kind: "collider", x: cx, z: -90.07, fp: [1.24, 1.82], h: 2 });
+        p(R13 + "toilet.glb", cx, -90.72, 0, [0.5, 0.79], 1.04, { noCollide: true });
       }
-      p(NP + "over_bed_table.glb", -32.4, -86.7, 0, [0.8, 0.44], 1.08);
-      p(NP + "over_bed_table.glb", -25.2, -86.7, 0, [0.8, 0.44], 1.08);
-      wp(H + "wall_exam_set.glb", -34.6, -89.4, "s", 1.25);
-      wp(H + "sharps_container.glb", -31, -89.4, "s", 1.2);
-      wp(H + "glove_dispenser.glb", -27.4, -89.4, "s", 1.25);
-      wp(H + "wall_sanitizer.glb", -23.8, -89.4, "s", 1.1);
-      wp(H + "wall_clock.glb", -19.6, -89.4, "s", 1.95);
-      bed(-30.4, -82.6, 25);
-      bed(-23, -80.6, -15);
-      p(H + "iv_stand.glb", -29, -84.4, 0, [0.73, 0.7], 2.03, { noCollide: true });
-      bed(-37.25, -76.6, 90);
-      bed(-37.25, -73.4, 90);
-      wp(H + "service_headwall.glb", -38.3, -76.6, "e", 1.24);
-      wp(H + "service_headwall.glb", -38.3, -73.4, "e", 1.24);
-      p(H + "team_desk.glb", -25.6, -76.4, 0, [1.13, 0.74], 1.16);
-      p(H + "charting_workstation.glb", -24, -76.5, 0, [0.83, 0.62], 1.47);
-      p(H + "clinician_chair.glb", -25.6, -75.6, 180, [0.65, 0.61], 0.98, { noCollide: true });
-      p(H + "handwash_cabinet_base.glb", -21.35, -74, 270, [0.51, 0.7], 0.77);
-      wp(H + "handwash_basin.glb", -21, -74, "w", 0.77);
-      wp(H + "towel_dispenser.glb", -21, -74.7, "w", 1.1);
-      wp(H + "soap_dispenser.glb", -21, -73.4, "w", 1.2);
-      p(H + "laundry_hamper.glb", -21.3, -72, 0, [0.6, 0.57], 1.15);
-      wp(NP + "fire_extinguisher.glb", -17.8, -87, "w", 0.6);
-      p(H + "prep_counter.glb", -36.9, -70.65, 0, [1.51, 0.69], 1.06);
-      raw({ m: K + "lab_centrifuge.glb", x: -37.25, z: -70.65, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
-      raw({ m: K + "lab_microscope.glb", x: -36.5, z: -70.65, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
-      p(H + "prep_counter.glb", -35.3, -70.65, 0, [1.51, 0.69], 1.06);
-      raw({ m: K + "lab_sample_rack.glb", x: -35.3, z: -70.6, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
-      wp(H + "wall_cupboard.glb", -36.9, -71, "s", 1.45);
-      wp(H + "wall_cupboard.glb", -35.3, -71, "s", 1.45);
-      p(H + "handwash_cabinet_base.glb", -33.8, -70.65, 0, [0.51, 0.7], 0.77);
-      wp(H + "handwash_basin.glb", -33.8, -71, "s", 0.77);
-      wp(H + "soap_dispenser.glb", -33.3, -71, "s", 1.2);
-      wp(H + "clinical_art_preparation_checklist.glb", -32.6, -71, "s", 1);
-      p(H + "prep_storage.glb", -26.2, -70.64, 0, [1.51, 0.72], 1.09);
-      wp(H + "glove_dispenser.glb", -26.6, -71, "s", 1.25);
-      wp(H + "sharps_container.glb", -25.8, -71, "s", 1.15);
-      p(H + "prep_counter.glb", -24.5, -70.65, 0, [1.51, 0.69], 1.06);
-      raw({ m: K + "lab_sample_rack.glb", x: -24.5, z: -70.6, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
-      p(H + "charting_workstation.glb", -22.8, -70.69, 0, [0.83, 0.62], 1.47);
-      wp(H + "wall_clock.glb", -22, -71, "s", 1.95);
-      p(H + "supply_cart.glb", -37.75, -66.4, 90, [1.16, 1.1], 1.23);
-      p(H + "linen_cabinet.glb", -37.97, -63.8, 90, [0.95, 0.65], 1.84);
-      p(H + "prep_counter.glb", -34.5, -65.8, 0, [1.51, 0.69], 1.06);
-      p(H + "prep_counter.glb", -34.5, -65.11, 180, [1.51, 0.69], 1.06);
-      p(H + "team_stool.glb", -35.4, -64.4, 0, [0.36, 0.34], 0.5, { noCollide: true });
-      p(H + "team_stool.glb", -33.6, -64.4, 0, [0.36, 0.34], 0.5, { noCollide: true });
-      p(H + "consultation_desk.glb", -24.8, -65.5, 0, [1.5, 0.73], 0.81);
-      raw({ m: H + "desktop_computer.glb", x: -24.8, z: -65.6, rot: 0, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
-      p(H + "clinician_chair.glb", -24.8, -64.7, 180, [0.65, 0.61], 0.98, { noCollide: true });
-      p(H + "sedaprep.glb", -21.36, -66.5, 270, [1.12, 0.72], 0.98);
-      wp(H + "wall_sanitizer.glb", -21, -64.5, "w", 1.05);
-      p(H + "biohazard_bin.glb", -21.25, -62, 0, [0.39, 0.39], 0.69);
-      p(H + "biohazard_bin.glb", -21.25, -62.5, 0, [0.39, 0.39], 0.69);
-      p(NP + "specimen_fridge.glb", -37.7, -59.82, 0, [0.75, 0.76], 1.9);
-      p(NP + "specimen_fridge.glb", -36.85, -59.82, 0, [0.75, 0.76], 1.9);
-      p(C.counter, -34.6, -59.84, 0, [1.51, 0.72], 1.09, { name: "k6table" });
-      wp(H + "assessment_status_board.glb", -34.6, -60.2, "s", 1.5);
-      wp(NP + "pneumatic_tube_station.glb", -33.3, -60.2, "s", 0.75);
-      p(NP + "courier_coolers.glb", -26.6, -59.98, 0, [0.64, 0.44], 0.94);
-      p(C.shelf, -24.6, -59.92, 0, [1.39, 0.56], 2);
-      p(C.shelf, -23.1, -59.92, 0, [1.39, 0.56], 2);
-      p(NP + "specimen_fridge.glb", -21.4, -59.82, 0, [0.75, 0.76], 1.9);
-      wp(H + "wall_clock.glb", -19.5, -60.2, "s", 1.95);
-      wp(NP + "fire_extinguisher.glb", -18.6, -60.2, "s", 0.6);
-      p(C.shelf, -38.02, -56.5, 90, [1.39, 0.56], 2);
-      p(C.cart, -26, -51.4, 0, [1.16, 1.1], 1.21);
-      for (const z of [-75.8, -75.35, -74.9, -74.45]) p(H + "medical_gas_cylinder.glb", -12.08, z, 0, [0.39, 0.43], 1.15);
-      p(H + "supply_shelf.glb", -12.02, -72.6, 90, [1.39, 0.56], 2);
-      wp(NP + "fire_extinguisher.glb", -12.3, -77, "e", 0.6);
-      p(H + "utility_sink.glb", -6.055, -75.4, 270, [0.88, 0.51], 1.64);
-      p(H + "mop.glb", -5.93, -74.6, 270, [0.34, 0.25], 1.5, { noCollide: true });
-      wp(H + "wall_shelf.glb", -5.8, -73.8, "w", 1.2);
-      p(H + "janitor_cart.glb", -6.4, -72.4, 0, [0.83, 0.99], 1.23);
-      p(NP + "dust_sheet_furniture.glb", -15.6, -68.75, 0, [1.88, 1.23], 1.07);
-      p(NP + "dust_sheet_small.glb", -13.2, -68.9, 0, [1.39, 0.92], 0.94);
-      p("zombie/assets/props/drywall_pallet.glb", -16.25, -66, 90, [1.41, 1.69], 0.45);
-      p(NP + "scaffold_tower.glb", -4, -68.95, 0, [1.82, 0.77], 2.4);
-      p(SI + "standin_cable_workbench.glb", -1.6, -68.95, 0, [1.8, 0.76], 0.92);
-      p(SI + "standin_tool_pegboard.glb", -1.6, -69.36, 180, [1.26, 0.06], 0.94, { y: 1.05, noCollide: true });
-      p("zombie/assets/props/sawhorse_barrier.glb", -5, -63, 0, [1.9, 0.73], 1.04);
-      raw({ kind: "hazard", x: -5, z: -64.3, size: [2.6, 1.4], noCollide: true, fp: [0.1, 0.1], h: 0 });
-      p(H + "wet_floor_sign.glb", -6.6, -63.4, 0, [0.48, 0.66], 0.64, { noCollide: true });
-      p(NP + "stud_wall_frame.glb", -17.04, -60.1, 0, [0.12, 3.6], 2.6);
-      p(NP + "stud_wall_frame.glb", -17.04, -52.3, 0, [0.12, 3.6], 2.6);
-      p(H + "supply_shelf.glb", -0.48, -66.4, 270, [1.39, 0.56], 2);
-      p(NP + "dust_sheet_furniture.glb", -0.82, -63.6, 90, [1.88, 1.23], 1.07);
-      p(SI + "standin_paint_shelf.glb", -0.42, -61.2, 270, [1.19, 0.44], 1.81);
-      p(K + "isolation_windowed_partition.glb", -0.6, -58, 90, [2, 0.15], 2.4);
-      p(U + "10_janitor_utility/starter/10_starter_rack.glb", -0.46, -54.35, 270, [0.82, 0.51], 1.82);
-      raw({ kind: "bench", x: X2(1e3), z: Z(1250), size: [1.8, 0.65, 0.92], color: 9206364, fp: [1.8, 0.65], h: 0.92 });
-      p(SI + "standin_renovation_pallet.glb", -10.5, -51.4, 0, [1.25, 1.02], 0.61);
-      raw({ kind: "hazard", x: X2(710) + 1, z: (Z(1095) + Z(1180)) / 2, size: [1.3, 3.2], noCollide: true, fp: [0.1, 0.1], h: 0 });
-      raw({ kind: "partition", x: X2(710), z: (Z(1095) + Z(1180)) / 2, w: 3, fp: [0.1, 0.1], h: 0, noCollide: true, name: "partition" });
-      sign2("\u2190 COLD DISPATCH", "via the ward and the lab", X2(920) - 0.6, 2.3, Z(300) + 0.15, "s", 1.5);
-      sign2("SERVICE \u2193", "Ward 6C works", X2(1060), 2.3, Z(300) + 0.15, "s", 1.3);
-      sign2("WARD 6B", "Surgical inpatients", -30, 2.35, -89.4, "s", 1.4);
-      sign2("RENOVATION", "Temporary partition \u2014 weak", X2(710) + 0.16, 2.35, (Z(1095) + Z(1180)) / 2 + 2.2, "e", 1.2);
-      sign2("COLD DISPATCH \u2193", "Specimen hold", X2(530), 2.3, Z(760) + 0.15, "s", 1.3);
-      sign2("WARD 6C \xB7 CONVERSION", "Contractors only", -14.4, 2.2, -69.4, "s", 1.5);
-      room("elevator", X2(1214) + 3.5, 2.75, Z(260) + 0.15, "s", 1.1);
-      room("lab", -36.1, 2.38, -71, "s", 1.3);
+      for (const z of [-86.6, -85.2]) {
+        p(R13 + "washstand.glb", -9.3, z, 270, [1.18, 0.65], 1.22);
+        wp(R13 + "mirror.glb", -8.99, z, "w", 1.25);
+      }
+      p(M + "rooms/Restroom_Pedal_Bin.glb", -9.2, -83.9, 270, [0.37, 0.41], 0.66, { noCollide: true });
+      p(H + "wet_floor_sign.glb", -11, -82.6, -20, [0.48, 0.66], 0.64, { noCollide: true });
+      sign2("WC", "", -10.84, 2.3, -80, "s", 0.5);
+      for (const [i, bx] of [-23.4, -19.8, -16.2].entries()) {
+        bed(bx, -89.95, 0);
+        wp(H + "service_headwall.glb", bx, -91, "s", 1.24);
+        p(H + "bedside_cabinet.glb", bx - 0.95, -90.55, 0, [0.52, 0.63], 0.81);
+        p(C.visitor, bx + 0.95, -89.6, 270, [0.47, 0.47], 0.98, { noCollide: true });
+        wp(H + (i % 2 ? "recovery_bay_sign_02.glb" : "recovery_bay_sign_01.glb"), bx, -91, "s", 2.05);
+      }
+      p(NP + "over_bed_table.glb", -19.8, -88, 0, [0.8, 0.44], 1.08);
+      wp(H + "wall_exam_set.glb", -21.6, -91, "s", 1.25);
+      wp(H + "sharps_container.glb", -18, -91, "s", 1.2);
+      wp(H + "glove_dispenser.glb", -14.6, -91, "s", 1.25);
+      wp(H + "wall_clock.glb", -13.6, -91, "s", 1.95);
+      bed(-19.6, -84.6, 25);
+      p(H + "iv_stand.glb", -21.4, -85.6, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      raw({ kind: "bench", x: -15.2, z: -83, size: [1.8, 0.7, 0.92], color: 9206364, fp: [1.8, 0.7], h: 0.92, name: "w6trolley" });
+      p("zombie/assets/props/sawhorse_barrier.glb", -24.6, -82.4, 90, [1.9, 0.73], 1.04);
+      raw({ kind: "hazard", x: -25.9, z: -86.65, size: [1.4, 4], noCollide: true, fp: [0.1, 0.1], h: 0 });
+      sign2("WARD 6B", "Surgical inpatients", -20, 2.35, -91, "s", 1.3);
+      sign2("DOOR JAMMED", "Use the corridor", -26.69, 2.48, -82.45, "e", 1);
+      for (const dx of [-38.6, -35.2]) {
+        p(C.desk, dx, -90.6, 0, [1.5, 0.72], 0.81);
+        raw({ m: H + "desktop_computer.glb", x: dx, z: -90.7, rot: 0, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+        p(C.chair, dx, -89.7, 180, [0.6, 0.6], 1, { noCollide: true });
+      }
+      wp(H + "assessment_status_board.glb", -36.9, -91, "s", 1.45);
+      p(K + "isolation_windowed_partition.glb", -33.2, -89.9, 90, [2, 0.15], 2.4);
+      p(C.lockers, -31.6, -90.73, 0, [1.4, 0.53], 1.95);
+      p(C.lockers, -30.2, -90.73, 0, [1.4, 0.53], 1.95);
+      wp(H + "wall_clock.glb", -28.8, -91, "s", 1.95);
+      p(H + "coffee_counter.glb", -28.3, -90.6, 0, [1.33, 0.81], 1);
+      raw({ m: H + "coffee_machine.glb", x: -28.6, z: -90.65, rot: 0, y: 1, fp: [0.1, 0.1], h: 0, noCollide: true });
+      p(H + "sofa.glb", -40.38, -86, 90, [2.05, 0.6], 0.92);
+      p(H + "side_table.glb", -40.3, -83.9, 0, [0.74, 0.74], 0.55);
+      p(H + "armchair.glb", -38.4, -83.2, 0, [1.01, 0.65], 0.92);
+      p(U + "09_assessment_furniture/runtime/examination_couch_standard.glb", -30, -84.6, 90, [0.8, 2.34], 0.9);
+      p(H + "laundry_hamper.glb", -27.4, -87.6, 0, [0.6, 0.57], 1.15);
+      sign2("ON-CALL \xB7 DOCTORS", "Staff only", -33.2, 2.35, -91, "s", 1.2);
+      p(H + "wheelchair.glb", -39.6, -79.6, 90, [0.76, 0.91], 0.97);
+      p(H + "waiting_chair_section.glb", -30.4, -79.6, 0, [2.69, 0.97], 0.99);
+      p(NP + "ceiling_collapse.glb", -26.84, -78.65, 90, [3, 2.2], 1.4);
+      p(H + "procedure_stretcher.glb", -22.4, -79.6, 90, [0.9, 1.66], 1.22);
+      wp(NP + "fire_extinguisher.glb", -17.6, -80, "s", 0.6);
+      sign2("FIRE DOOR", "Lift the bar from this side", -16.4, 2.2, -80, "s", 1);
+      p(H + "waiting_chair_section.glb", -3.85, -79.6, 0, [2.69, 0.97], 0.99);
+      p(H + "linen_cabinet.glb", 5.8, -79.73, 0, [0.95, 0.65], 1.84);
+      sign2("\u2190 WARD 6B \xB7 OFFICES", "Dispatch via Bay 6A", 4.6, 2.2, -80, "s", 1.4);
+      for (const bx of [-39.4, -37.4, -30.6, -28.5]) {
+        bed(bx, -75.95, 0);
+        p(NP + "traction_frame.glb", bx, -75.95, 0, [1, 2.2], 2.2, { noCollide: true });
+        wp(H + "service_headwall.glb", bx, -77, "s", 1.24);
+      }
+      p(H + "patient_monitor.glb", -36.3, -76.6, 0, [0.62, 0.71], 1.49);
+      p(H + "iv_stand.glb", -29.5, -74.2, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      wp(H + "clinical_art_lungs.glb", -40.69, -70.4, "e", 1.2);
+      p(H + "wheelchair.glb", -40.2, -67.6, 90, [0.76, 0.91], 0.97);
+      p(H + "procedure_stretcher.glb", -28.6, -66.6, 0, [0.9, 1.66], 1.22);
+      sign2("BAY 6A", "Orthopaedic", -34.3, 2.45, -77, "s", 1);
+      p(H + "reception_desk.glb", -16.84, -71.6, 180, [2.2, 0.9], 1.3, { name: "n6desk" });
+      p(H + "reception_desk.glb", -16.84, -69.7, 0, [2.2, 0.9], 1.3);
+      p(H + "team_desk.glb", -18.6, -70.65, 90, [1.13, 0.74], 1.16);
+      p(H + "team_desk.glb", -15.08, -70.65, 270, [1.13, 0.74], 1.16);
+      raw({ m: H + "desktop_computer.glb", x: -16.4, z: -71.7, rot: 180, y: 1.1, fp: [0.1, 0.1], h: 0, noCollide: true });
+      raw({ m: H + "desktop_computer.glb", x: -17.3, z: -69.6, rot: 0, y: 1.1, fp: [0.1, 0.1], h: 0, noCollide: true });
+      wp(H + "assessment_status_board.glb", -24.6, -77, "s", 1.45);
+      wp(H + "team_wall_station.glb", -16.4, -77, "s", 0.75);
+      wp(H + "wall_clock.glb", -14.6, -77, "s", 1.95);
+      p(H + "linen_cabinet.glb", -12.6, -76.68, 0, [0.95, 0.65], 1.84);
+      p(K + "pharmacy_medicine_shelf.glb", -10.8, -76.73, 0, [1.39, 0.53], 1.95);
+      p(K + "pharmacy_locked_cupboard.glb", -9.2, -76.75, 0, [0.9, 0.5], 1.9);
+      p(H + "charting_workstation.glb", -23.6, -76.69, 0, [0.83, 0.62], 1.47);
+      for (const gz of [-73.65, -71.65, -69.65, -67.65]) p(K + "isolation_windowed_partition.glb", -6.84, gz, 90, [2, 0.15], 2.4);
+      p(H + "wheelchair.glb", -24.6, -65, 160, [0.76, 0.91], 0.97);
+      p(H + "waiting_chair_section.glb", -11.6, -64.7, 180, [2.69, 0.97], 0.99);
+      sign2("NURSE STATION", "Floor 6", -20.6, 2.45, -77, "s", 1.2);
+      p(H + "prep_counter.glb", -5.4, -76.64, 0, [1.51, 0.69], 1.06);
+      raw({ m: K + "lab_centrifuge.glb", x: -5.75, z: -76.64, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      raw({ m: K + "lab_microscope.glb", x: -5, z: -76.64, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      p(H + "prep_counter.glb", -3.8, -76.64, 0, [1.51, 0.69], 1.06);
+      raw({ m: K + "lab_sample_rack.glb", x: -3.8, z: -76.6, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      wp(H + "wall_cupboard.glb", -5.4, -77, "s", 1.45);
+      p(H + "handwash_cabinet_base.glb", 3.4, -76.64, 0, [0.51, 0.7], 0.77);
+      wp(H + "handwash_basin.glb", 3.4, -77, "s", 0.77);
+      p(H + "prep_counter.glb", 5.3, -76.64, 0, [1.51, 0.69], 1.06);
+      raw({ m: K + "lab_sample_rack.glb", x: 5.3, z: -76.6, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      wp(H + "clinical_art_preparation_checklist.glb", 4.4, -77, "s", 1);
+      p(H + "prep_counter.glb", 1.6, -70.4, 0, [1.51, 0.69], 1.06);
+      p(H + "prep_counter.glb", 1.6, -69.71, 180, [1.51, 0.69], 1.06);
+      p(H + "charting_workstation.glb", 6.66, -71, 270, [0.83, 0.62], 1.47);
+      p(H + "biohazard_bin.glb", 6.8, -67, 0, [0.39, 0.39], 0.69);
+      room("lab", -4.6, 2.38, -77, "s", 1.2);
+      p(H + "utility_sink.glb", -5.6, -63.74, 0, [0.88, 0.51], 1.64);
+      p(H + "scopeair_vitadock.glb", -4.4, -63.64, 0, [0.98, 0.6], 1.67);
+      p(H + "scopeair_vitadock.glb", -3.3, -63.64, 0, [0.98, 0.6], 1.67);
+      p(C.shelf, 3.6, -63.72, 0, [1.39, 0.56], 2);
+      p(C.shelf, 5.1, -63.72, 0, [1.39, 0.56], 2);
+      p(H + "prep_storage.glb", -3.4, -54.4, 0, [1.51, 0.72], 1.09);
+      p(H + "prep_storage.glb", -3.4, -53.68, 180, [1.51, 0.72], 1.09);
+      p(H + "storage_bins.glb", -5.9, -52.5, 0, [1.05, 0.3], 0.28, { noCollide: true });
+      p(C.cart, 4.4, -53.2, 0, [1.16, 1.1], 1.21);
+      sign2("STERILE SERVICES", "Decontamination", 0.4, 2.4, -64, "s", 1.4);
+      sign2("O\u2082 STORE", "No naked flames", 6.97, 2.1, -59.8, "w", 0.9);
+      p(NP + "specimen_fridge.glb", -40.1, -63.62, 0, [0.75, 0.76], 1.9);
+      p(NP + "specimen_fridge.glb", -39.25, -63.62, 0, [0.75, 0.76], 1.9);
+      p(C.counter, -30, -63.64, 0, [1.51, 0.72], 1.09, { name: "k6table" });
+      wp(H + "assessment_status_board.glb", -30, -64, "s", 1.5);
+      wp(NP + "pneumatic_tube_station.glb", -31.4, -64, "s", 0.75);
+      p(NP + "courier_coolers.glb", -37.6, -63.8, 0, [0.64, 0.44], 0.94);
+      p(C.shelf, -40.36, -58.4, 90, [1.39, 0.56], 2);
+      p(C.shelf, -40.36, -56.9, 90, [1.39, 0.56], 2);
+      wp(H + "wall_clock.glb", -28.3, -64, "s", 1.95);
+      p(C.cart, -36, -53.2, 0, [1.16, 1.1], 1.21);
+      sign2("COLD DISPATCH", "Specimen hold", -38.4, 2.4, -64, "s", 1.2);
+      p(NP + "dust_sheet_furniture.glb", -23.6, -63.4, 0, [1.88, 1.23], 1.07);
+      p(NP + "scaffold_tower.glb", -19, -63.55, 0, [1.82, 0.77], 2.4);
+      p(SI + "standin_cable_workbench.glb", -15.2, -63.6, 0, [1.8, 0.76], 0.92);
+      p(SI + "standin_tool_pegboard.glb", -15.2, -64, 180, [1.26, 0.06], 0.94, { y: 1.05, noCollide: true });
+      p(SI + "standin_paint_shelf.glb", -11.4, -63.74, 0, [1.19, 0.44], 1.81);
+      p(NP + "dust_sheet_small.glb", -9, -63.4, 0, [1.39, 0.92], 0.94);
+      p(NP + "stud_wall_frame.glb", -21, -54, 0, [0.12, 3.6], 2.6);
+      p("zombie/assets/props/drywall_pallet.glb", -14.6, -53.2, 0, [1.41, 1.69], 0.45);
+      p(SI + "standin_renovation_pallet.glb", -10.6, -53, 0, [1.25, 1.02], 0.61);
+      raw({ kind: "hazard", x: -25.9, z: -58.65, size: [1.4, 5], noCollide: true, fp: [0.1, 0.1], h: 0 });
+      sign2("WARD 6C \xB7 CONVERSION", "Contractors only", -17, 2.45, -64, "s", 1.4);
+      sign2("TEMPORARY WALL", "Weak \xB7 keep clear", -26.69, 2.3, -54.6, "e", 1);
+      const box = (x, z, w, d, h, c = 10719084, face = "s") => raw({ kind: "box", x, z, size: [w, d, h], face, color: c, fp: [w, d], h });
+      p(H + "prep_counter.glb", -34.6, -58.8, 0, [1.51, 0.69], 1.06);
+      p(H + "prep_counter.glb", -34.6, -58.11, 180, [1.51, 0.69], 1.06);
+      raw({ m: K + "lab_sample_rack.glb", x: -34.9, z: -58.8, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      p(NP + "specimen_fridge.glb", -40.3, -61.6, 90, [0.75, 0.76], 1.9);
+      p(NP + "courier_coolers.glb", -38.6, -55, 20, [0.64, 0.44], 0.94);
+      p(NP + "courier_coolers.glb", -31.6, -53, -10, [0.64, 0.44], 0.94);
+      p(C.shelf, -33, -52.38, 0, [1.39, 0.56], 2);
+      box(-29.2, -52.6, 0.8, 0.6, 0.6);
+      box(-29, -53.4, 0.6, 0.5, 0.45, 12100218);
+      p(H + "biohazard_bin.glb", -40.4, -52.4, 0, [0.39, 0.39], 0.69);
+      p(H + "prep_counter.glb", -2.6, -70.4, 0, [1.51, 0.69], 1.06);
+      p(H + "prep_counter.glb", -2.6, -69.71, 180, [1.51, 0.69], 1.06);
+      raw({ m: K + "lab_microscope.glb", x: -2.9, z: -70.4, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      raw({ m: K + "lab_centrifuge.glb", x: 1.3, z: -69.7, rot: 180, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      for (const [x, z] of [[-3.2, -68.9], [-2, -68.9], [1, -68.9], [2.2, -68.9]]) p(H + "team_stool.glb", x, z, 0, [0.36, 0.34], 0.5, { noCollide: true });
+      p(NP + "specimen_fridge.glb", 6.58, -74.4, 270, [0.75, 0.76], 1.9);
+      p(K + "pharmacy_locked_cupboard.glb", 6.7, -72.6, 270, [0.9, 0.5], 1.9);
+      p(C.desk, 4.6, -65, 180, [1.5, 0.72], 0.81);
+      raw({ m: H + "desktop_computer.glb", x: 4.6, z: -64.9, rot: 180, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+      p(H + "laundry_hamper.glb", -6.3, -64.8, 0, [0.6, 0.57], 1.15);
+      for (const z of [-57.4, -55.9, -54.4]) p(C.shelf, 3.8, z, 90, [1.39, 0.56], 2);
+      p(H + "utility_sink.glb", -6.4, -61.4, 90, [0.88, 0.51], 1.64);
+      p(H + "supply_cart.glb", 0.4, -53, 0, [1.16, 1.1], 1.23);
+      p(H + "procedure_stretcher.glb", -5.9, -56, 0, [0.9, 1.66], 1.22);
+      p(H + "biohazard_bin.glb", 6.8, -52.4, 0, [0.39, 0.39], 0.69);
+      p(H + "lidded_waste_bin.glb", 6.3, -52.4, 0, [0.36, 0.4], 0.58);
+      p(NP + "scaffold_tower.glb", -25, -52.85, 0, [1.82, 0.77], 2.4);
+      p("zombie/assets/props/sawhorse_barrier.glb", -17.4, -52.5, 0, [1.9, 0.73], 1.04);
+      p(NP + "dust_sheet_furniture.glb", -7.9, -53, 90, [1.88, 1.23], 1.07);
+      box(-21.6, -63.6, 0.9, 0.7, 0.7);
+      box(-12.8, -52.6, 0.8, 0.6, 0.5, 12100218);
+      box(-12, -52.5, 0.5, 0.5, 0.9, 7305855);
+      raw({ kind: "pipes", x: -16.8, z: -64, len: 14, y: 2.3, noCollide: true, fp: [0.1, 0.1], h: 0 });
+      p(H + "supply_cart.glb", -21.8, -72.6, 90, [1.16, 1.1], 1.23);
+      p(H + "iv_stand.glb", -11.6, -71.8, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      p(H + "iv_stand.glb", -22.2, -68.6, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      p(H + "waiting_chair_section.glb", -26.2, -74.6, 90, [2.69, 0.97], 0.99);
+      p(H + "lidded_waste_bin.glb", -9.4, -64.6, 0, [0.36, 0.4], 0.58);
+      p(H + "procedure_stretcher.glb", -8.2, -69.4, 0, [0.9, 1.66], 1.22);
+      p(H + "magazine_rack.glb", -26.4, -66.4, 90, [0.55, 0.43], 1.05);
+      for (const x of [-38.4, -29.55]) p(H + "bedside_cabinet.glb", x, -76.6, 0, [0.52, 0.63], 0.81);
+      p(H + "supply_cart.glb", -40.2, -71, 90, [1.16, 1.1], 1.23);
+      p(H + "laundry_hamper.glb", -27.3, -73.9, 0, [0.6, 0.57], 1.15);
+      p(H + "bedside_cabinet.glb", -27.3, -66.3, 270, [0.52, 0.63], 0.81);
+      p(H + "waiting_chair_section.glb", -36.6, -79.6, 0, [2.69, 0.97], 0.99);
+      p(H + "janitor_cart.glb", -24, -77.75, 90, [0.83, 0.99], 1.23);
+      p(H + "wheelchair.glb", 2.6, -77.7, 250, [0.76, 0.91], 0.97);
+      room("elevator", X2(1214) - 3.3, 2.75, -91, "s", 1.1);
     },
     groups: (Z) => [
-      // W6: a broad ward, four spread between the beds (a worthwhile regular route, not padded)
-      { id: "w6", sense: 6.5, zombies: [{ x: X(300), z: Z(470), yaw: 0.8, look: "patient", prop: "iv" }, { x: X(520), z: Z(500), yaw: -0.6, look: "patient", prop: "chair" }, { x: X(260), z: Z(660), yaw: 2.4, look: "nurse" }, { x: X(470), z: Z(700), yaw: -2 }] },
-      // P6: two in the preparation room
-      { id: "p6", sense: 5.5, zombies: [{ x: X(300), z: Z(840), yaw: 0.4, look: "nurse", prop: "surgeon" }, { x: X(480), z: Z(980), yaw: -2.4 }] },
-      // A6: the big lady straight charger, at the far east of the bay: her lane runs west at the weak partition
-      { id: "a6", sense: 9, zombies: [{ x: X(1060), z: Z(1150), yaw: -Math.PI / 2, kind: "sprinter" }] }
+      // the corridor's east end: the first wheelchair with a cylinder on its back, and a walker by the store
+      { id: "ce6", sense: 7, zombies: [{ x: -9.6, z: -78.6, yaw: Math.PI / 2, kind: "o2chair", look: "patient" }, { x: 4.6, z: -78.3, yaw: -1.4 }] },
+      // Ward 6B: the first fight (and its bed patients): walkers between the beds, an old one dragging a cylinder
+      { id: "w6", sense: 6.5, zombies: [{ x: -21.6, z: -82.6, yaw: 1, look: "nurse" }, { x: -17.4, z: -86.2, yaw: -0.6, kind: "o2walker", look: "patient" }, { x: -24.4, z: -85, yaw: 0.6 }] },
+      // the offices: three in a tight space
+      { id: "o6", sense: 5.5, zombies: [{ x: -37, z: -86.6, yaw: 0.8, look: "nurse", prop: "surgeon" }, { x: -31.4, z: -86.4, yaw: -0.8 }, { x: -35, z: -82.4, yaw: 2.6, look: "patient" }] },
+      // Bay 6A: a cylinder walker, a crawler between the beds, a walker by the dispatch door
+      { id: "b6", sense: 6, zombies: [{ x: -33.4, z: -71.6, yaw: 0.3, kind: "o2walker", look: "patient" }, { x: -38, z: -71.4, yaw: 1.2, crawl: true }, { x: -30.6, z: -67.6, yaw: -2.2, look: "nurse" }] },
+      // dispatch: one in the cold
+      { id: "k6", sense: 5, zombies: [{ x: -36.6, z: -56.4, yaw: 0.6, look: "nurse" }] },
+      // the nurse station: the heart's fight on the way back: two cylinder chairs either side of the desk, a runner, walkers,
+      // one out of the floor
+      { id: "n6", sense: 7, zombies: [
+        { x: -24.2, z: -66.6, yaw: 0.6, kind: "o2chair", look: "patient" },
+        { x: -9.8, z: -66.2, yaw: -0.8, kind: "o2chair" },
+        { x: -20.8, z: -74.4, yaw: 2, kind: "runner" },
+        { x: -12.6, z: -74, yaw: -2.2, look: "nurse" },
+        { x: -16.8, z: -66.6, yaw: 3, look: "patient" },
+        { x: -13.6, z: -68.4, look: "nurse", from: "floor", delay: 3 }
+      ] },
+      { id: "p6", sense: 5.5, zombies: [{ x: -3.4, z: -72.6, yaw: 0.6, look: "nurse" }, { x: 4.4, z: -67.6, yaw: -2 }] },
+      { id: "s6", sense: 6, zombies: [{ x: 2.6, z: -56.4, yaw: -1.6, kind: "o2walker", look: "patient" }, { x: -3.6, z: -55.2, yaw: 2.2 }] },
+      // Ward 6C works: the big lady at the east end, her lane running west at the cracked wall; one walker by the pallets
+      { id: "a6", sense: 9, zombies: [{ x: -9.4, z: -58.65, yaw: -Math.PI / 2, kind: "sprinter" }, { x: -19.6, z: -54.6, yaw: 1.4 }] },
+      { id: "wc6", sense: 3.5, zombies: [{ x: -10.8, z: -88, yaw: Math.PI, look: "patient" }] },
+      { id: "jn6", sense: 3.5, zombies: [{ x: -6.6, z: -86.2, yaw: 2.6, look: "nurse" }] }
     ],
     pickups: (Z) => [
-      { id: "p6aid", kind: "health", amount: 40, x: -34.9, z: -65.8, r: 1, label: "First-aid case", model: "aid", y: 1.06 },
-      // the guard's pistol and his open bag in the junction, where he and Yola parted before the call (no body: he went on down)
-      { id: "pistol", kind: "weapon", weapon: "pistol", x: X(1010), z: Z(545), r: 1.1, mag: 12, label: "The guard\u2019s pistol", model: "pistol" },
-      { id: "ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: X(1060), z: Z(540), r: 1, label: "Guard\u2019s bag: spare rounds", model: "bag" }
+      // the guard's pistol and his open bag in the lobby, where he and Yola parted before the call (no body: he went on down)
+      { id: "pistol", kind: "weapon", weapon: "pistol", x: -3.2, z: -83.4, r: 1.1, mag: 12, label: "The guard\u2019s pistol", model: "pistol" },
+      { id: "ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: -2.4, z: -82.8, r: 1, label: "Guard\u2019s bag: spare rounds", model: "bag" },
+      { id: "w6sledge", kind: "weapon", weapon: "sledgehammer", x: -15.2, z: -83, r: 1.2, label: "Sledgehammer", file: "zombie/assets/weapons/sledgehammer.glb", len: 0.95, rot: 0.3, y: 0.95 },
+      { id: "p6aid", kind: "health", amount: 40, x: 1.6, z: -70.4, r: 1, label: "First-aid case", model: "aid", y: 1.06 },
+      { id: "n6shells", kind: "ammo", weapon: "shotgun", rounds: 12, x: -16.84, z: -69.7, r: 1.2, label: "Shotgun shells", model: "shells", y: 1.3 },
+      { id: "k6aid", kind: "health", amount: 30, x: -36, z: -53.2, r: 1, label: "First-aid case", model: "aid", y: 1.21 }
     ],
-    interact: (Z) => [],
-    lights: (Z) => [{ x: X(1214), y: 2.3, z: Z(300) }, { x: X(445), y: 2.4, z: Z(1150) }, { x: X(900), y: 2.4, z: Z(1050) }],
+    interact: (Z) => [
+      { id: "bar:firedoor6", x: -15.8, z: -78.65, r: 1.6, side: { axis: "x", max: -14.84 }, label: "Lift the bar" }
+    ],
+    lights: (Z) => [{ x: X(1214), y: 2.3, z: -88.6 }, { x: -16.8, y: 2.4, z: -70.6 }, { x: -33.6, y: 2.4, z: -58 }],
     blood: (Z) => [
-      { kind: "drag", x: X(800), z: Z(450), w: 0.7, l: 1.6, rot: 30 },
-      { kind: "splat", x: X(420), z: Z(520), w: 1, l: 1, rot: -15 },
-      { kind: "hand", x: X(700) + 0.16, z: Z(380), wall: "e", y: 1.15, size: 0.32, tilt: 4 },
-      { kind: "drag", x: X(330), z: Z(900), w: 0.55, l: 1, rot: 80 },
-      { kind: "splat", x: X(950), z: Z(1e3), w: 0.9, l: 0.9, rot: 25 }
+      { kind: "drag", x: -0.4, z: -81.4, w: 0.7, l: 1.6, rot: 30 },
+      { kind: "splat", x: -20.4, z: -86.8, w: 1, l: 1, rot: -15 },
+      { kind: "hand", x: -26.69, z: -87.6, wall: "e", y: 1.15, size: 0.32, tilt: 4 },
+      { kind: "drag", x: -34.3, z: -72, w: 0.55, l: 1, rot: 80 },
+      { kind: "splat", x: -12, z: -67, w: 0.9, l: 0.9, rot: 25 },
+      { kind: "splat", x: 1.8, z: -56, w: 1.1, l: 1.1, rot: 60 }
     ],
+    tanks: (Z) => [[-11, -77.6], [-10.6, -77.7], [-23.4, -65.2], [6.6, -60.6], [6.6, -60.1], [6.62, -59.6], [6.6, -59.1]],
     start: (Z) => ({ x: LIFTS[6].x, z: LIFTS[6].z + 1.2, yaw: 0 })
   });
   var F5 = buildFloor(5, {
     rooms: [
-      { id: "e5", name: "Lift Lobby", poly: [[1140, 260], [1319, 260], [1319, 580], [1140, 580]], floor: ["#e4d8bf", "#cfc4ab"], ob: ["corridor", "clinical"] },
-      { id: "i5", name: "Diagnostic Intake", poly: [[700, 300], [1140, 300], [1140, 580], [700, 580]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] },
-      { id: "d5", name: "Porters\u2019 Transfer Hub", poly: [[700, 580], [1140, 580], [1140, 900], [700, 900]], floor: ["#efe2c8", "#d9c9a8"], ob: ["corridor", "clinical"] },
-      { id: "w5", name: "Isolation Ward", poly: [[250, 580], [700, 580], [700, 1e3], [250, 1e3]], floor: ["#e9eedf", "#c8dcc4"], ob: ["corridor", "clinical"] },
-      { id: "r5", name: "Medical Records", poly: [[250, 1e3], [700, 1e3], [700, 1280], [250, 1280]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
-      { id: "t5", name: "Imaging and Equipment Bay", poly: [[700, 900], [1250, 900], [1250, 1280], [700, 1280]], floor: ["#c9c4b8", "#b3ad9f"], ob: ["maintenance", "maintenance"] }
+      { id: "wt5", name: "Staff Toilets", poly: [[120, 260], [295, 260], [295, 410], [120, 410]], floor: ["#dfe7ea", "#b8c9cf"], ob: ["clinical", "clinical"] },
+      { id: "jn5", name: "Janitor", poly: [[295, 260], [495, 260], [495, 410], [295, 410]], floor: ["#c4c2b6", "#aeab9d"], ob: ["maintenance", "maintenance"] },
+      { id: "pa5", name: "Pathology Lab", poly: [[495, 260], [1020, 260], [1020, 535], [495, 535]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
+      { id: "e5", name: "Lift Lobby 5", poly: [[1020, 260], [1319, 260], [1319, 535], [1020, 535]], floor: ["#e4d8bf", "#cfc4ab"], ob: ["corridor", "clinical"] },
+      { id: "w5", name: "Isolation Ward (flooded)", poly: [[120, 410], [495, 410], [495, 960], [120, 960]], floor: ["#e9eedf", "#c8dcc4"], ob: ["corridor", "clinical"] },
+      { id: "h5", name: "Main Reception", poly: [[495, 535], [1020, 535], [1020, 1035], [495, 1035]], floor: ["#f3e2bf", "#d9c294"], ob: ["corridor", "clinical"] },
+      { id: "i5", name: "Diagnostic Intake", poly: [[1020, 535], [1319, 535], [1319, 785], [1020, 785]], floor: ["#e6eef2", "#c4d6e2"], ob: ["clinical", "clinical"] },
+      { id: "pt5", name: "Public Toilets", poly: [[1020, 785], [1145, 785], [1145, 1010], [1020, 1010]], floor: ["#dfe7ea", "#b8c9cf"], ob: ["clinical", "clinical"] },
+      { id: "rr5", name: "Radiology Reading", poly: [[1145, 785], [1319, 785], [1319, 1010], [1145, 1010]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
+      { id: "r5", name: "Medical Records", poly: [[120, 960], [495, 960], [495, 1240], [120, 1240]], floor: ["#e2e8ea", "#bfd2da"], ob: ["clinical", "clinical"] },
+      { id: "x5", name: "Imaging", poly: [[495, 1035], [1020, 1035], [1020, 1240], [495, 1240]], floor: ["#c9c4b8", "#b3ad9f"], ob: ["maintenance", "clinical"] },
+      { id: "m5", name: "MRI Arena", poly: [[1020, 1010], [1319, 1010], [1319, 1240], [1020, 1240]], floor: ["#dfe6ee", "#b9c7d6"], ob: ["clinical", "clinical"] }
     ],
     doors: [
-      { id: "e5_i5", o: "v", c: 1140, a: 420, b: 500 },
-      { id: "i5_d5", o: "h", c: 580, a: 900, b: 990 },
-      { id: "d5_w5", o: "v", c: 700, a: 700, b: 790 },
-      { id: "d5_t5", o: "h", c: 900, a: 930, b: 1020 },
-      { id: "w5_r5", o: "h", c: 1e3, a: 450, b: 540 },
-      { id: "t5_r5", o: "v", c: 700, a: 1100, b: 1190 }
+      { id: "e5_i5", o: "h", c: 535, a: 1120, b: 1220 },
+      { id: "i5_h5", o: "v", c: 1020, a: 597, b: 685 },
+      { id: "h5_pt5", o: "v", c: 1020, a: 822, b: 885 },
+      { id: "i5_rr5", o: "h", c: 785, a: 1195, b: 1270 },
+      { id: "rr5_m5", o: "h", c: 1010, a: 1195, b: 1270 },
+      { id: "x5_m5", o: "v", c: 1020, a: 1085, b: 1172 },
+      { id: "r5_x5", o: "v", c: 495, a: 1085, b: 1172 },
+      { id: "h5_w5", o: "v", c: 495, a: 747, b: 835 },
+      { id: "w5_r5", o: "h", c: 960, a: 245, b: 332 },
+      { id: "w5_wt5", o: "h", c: 410, a: 170, b: 245 },
+      { id: "w5_jn5", o: "h", c: 410, a: 357, b: 432 },
+      { id: "pa5_crack", o: "v", c: 495, a: 435, b: 510, kind: "cracked" }
+      // the flooded ward -> the pathology lab (optional)
     ],
     dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
-      const NP = SI, C = {
+      const NP = SI, R13 = U + "13_restroom_fixtures/standard/13_standard_", C = {
         shelf: M + "utility/Utility_Supply_Shelf.glb",
         counter: U + "09_assessment_furniture/runtime/prep_storage_standard.glb",
         desk: U + "09_assessment_furniture/runtime/consultation_desk_standard.glb",
         chair: U + "09_assessment_furniture/runtime/clinician_chair_standard.glb",
-        station: U + "08_support_equipment/runtime/workstation_standard.glb"
+        station: U + "08_support_equipment/runtime/workstation_standard.glb",
+        seats: M + "decor/Reception_Linked_Seats_3.glb"
       };
       wp(H + "lobby_t2_wayfinding.glb", 6.55, -171, "s", 1.45);
       p(H + "floor_planter.glb", 6.7, -169.6, 270, [1.12, 0.5], 1.52);
-      p(H + "waiting_chair_section.glb", 6.45, -166.5, 270, [2.69, 0.97], 0.99);
-      p(H + "water_cooler.glb", 6.7, -163.4, 270, [0.45, 0.49], 1.47);
-      wp(NP + "fire_extinguisher.glb", 6.95, -161.2, "w", 0.6);
-      wp(H + "wall_sanitizer.glb", 6.95, -164.4, "w", 1.05);
-      p(NP + "specimen_fridge.glb", -15.25, -169.02, 0, [0.75, 0.76], 1.9);
-      p(NP + "specimen_fridge.glb", -14.4, -169.02, 0, [0.75, 0.76], 1.9);
-      p(NP + "intake_station.glb", X2(830), -169.05, 0, [1.04, 0.7], 1.55, { name: "intake" });
-      wp(H + "glove_dispenser.glb", -11.4, -169.4, "s", 1.3);
-      wp(H + "wall_sanitizer.glb", -10.75, -169.4, "s", 1.05);
-      p(C.counter, -9.6, -169.07, 0, [1.51, 0.66], 1.09);
-      raw({ m: K + "lab_centrifuge.glb", x: -9.95, z: -169.07, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
-      raw({ m: K + "lab_microscope.glb", x: -9.2, z: -169.07, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
-      wp(NP + "pneumatic_tube_station.glb", -7.9, -169.4, "s", 0.75);
-      p(C.counter, -6.2, -169.07, 0, [1.51, 0.66], 1.09);
-      raw({ m: K + "lab_sample_rack.glb", x: -6.2, z: -169, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
-      p(C.station, -4.4, -169.09, 0, [0.83, 0.62], 1.47);
-      wp(H + "wall_clock.glb", -3, -169.4, "s", 1.95);
-      p(H + "biohazard_bin.glb", -1, -169.1, 0, [0.39, 0.39], 0.69);
-      p(K + "pharmacy_medicine_shelf.glb", -17.24, -165.6, 90, [1.39, 0.53], 1.95);
-      wp(H + "clinical_art_digestive.glb", -17.5, -163.4, "e", 1.3);
-      p(C.desk, -13.5, -160.6, 0, [1.5, 0.72], 0.81);
-      p(C.chair, -13.5, -161.4, 180, [0.6, 0.6], 1, { noCollide: true });
-      p(U + "12_lobby/lobby_T2_floor_planter.glb", X2(1085), Z(527), 0, [0.55, 0.86], 1.2, { fit: true });
-      p(H + "team_desk.glb", -15, -157.83, 0, [1.13, 0.74], 1.16);
-      wp(H + "assessment_status_board.glb", -15, -158.2, "s", 1.45);
-      wp(H + "team_wall_station.glb", -13.6, -158.2, "s", 0.75);
-      p(H + "charting_workstation.glb", -12.6, -157.89, 0, [0.83, 0.62], 1.47);
-      wp(H + "wall_clock.glb", -11.2, -158.2, "s", 1.95);
-      for (const x of [-4.6, -3.85, -3.1]) p(H + "wheelchair.glb", x, -157.7, 0, [0.76, 0.91], 0.97);
-      wp(H + "lobby_t2_wayfinding.glb", -1.4, -158.2, "s", 1.6);
-      p(H + "procedure_stretcher.glb", -0.7, -154.8, 0, [0.9, 1.66], 1.22);
-      p(H + "procedure_stretcher.glb", -0.7, -152.6, 0, [0.9, 1.66], 1.22);
-      p(H + "waiting_chair_section.glb", -0.69, -149.6, 270, [2.69, 0.97], 0.99);
-      p(H + "laundry_hamper.glb", -17, -156, 0, [0.6, 0.57], 1.15);
-      p(H + "lidded_waste_bin.glb", -17.3, -147.2, 0, [0.36, 0.4], 0.58);
-      wp(NP + "fire_extinguisher.glb", -17.5, -155.2, "e", 0.6);
-      p(U + "12_lobby/lobby_T2_floor_planter.glb", X2(720), Z(880), 0, [0.55, 0.86], 1.2, { fit: true });
-      for (const bc of [-33.4, -29.4, -25.4]) {
-        p(H + "recovery_bed.glb", bc, -157.14, 0, [1.25, 2.11], 0.87);
-        wp(H + "service_headwall.glb", bc, -158.2, "s", 1.24);
-        p(H + "patient_monitor.glb", bc + 1.1, -157.85, 0, [0.62, 0.71], 1.49);
-        p(H + "bedside_cabinet.glb", bc - 1.05, -157.88, 0, [0.52, 0.63], 0.81);
-        wp(K + "isolation_ppe_sign.glb", bc, -158.2, "s", 2.15);
+      p(H + "waiting_chair_section.glb", 6.45, -166, 270, [2.69, 0.97], 0.99);
+      p(H + "water_cooler.glb", 6.7, -162.6, 270, [0.45, 0.49], 1.47);
+      wp(NP + "fire_extinguisher.glb", -4.69, -166, "e", 0.6);
+      wp(H + "wall_sanitizer.glb", 6.95, -164, "w", 1.05);
+      p(H + "wheelchair.glb", -3, -164, 160, [0.76, 0.91], 0.97);
+      sign2("DIAGNOSTIC INTAKE \u2193", "Main reception \xB7 imaging", -2.6, 2.3, -171, "s", 1.4);
+      p(NP + "specimen_fridge.glb", -4.3, -159.62, 0, [0.75, 0.76], 1.9);
+      p(NP + "intake_station.glb", -3.2, -159.65, 0, [1.04, 0.7], 1.55, { name: "intake" });
+      wp(H + "glove_dispenser.glb", -2.3, -160, "s", 1.3);
+      p(C.counter, 4.6, -159.67, 0, [1.51, 0.66], 1.09);
+      raw({ m: K + "lab_centrifuge.glb", x: 4.25, z: -159.67, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
+      raw({ m: K + "lab_microscope.glb", x: 5, z: -159.67, rot: 0, y: 1.09, fp: [0.1, 0.1], h: 0, noCollide: true });
+      wp(NP + "pneumatic_tube_station.glb", 6.1, -160, "s", 0.75);
+      p(C.station, 6.66, -156.6, 270, [0.83, 0.62], 1.47);
+      p(C.desk, 5.6, -152.6, 270, [1.5, 0.72], 0.81);
+      p(C.chair, 4.7, -152.6, 90, [0.6, 0.6], 1, { noCollide: true });
+      p(K + "pharmacy_medicine_shelf.glb", -4.43, -152.6, 90, [1.39, 0.53], 1.95);
+      wp(H + "wall_clock.glb", 3.4, -160, "s", 1.95);
+      room("lab", 4.6, 2.62, -160, "s", 1.1);
+      for (const [bx, k] of [[-22.8, "lab_microscope"], [-21.2, "lab_sample_rack"], [-16.4, "lab_centrifuge"], [-14.8, "lab_microscope"]]) {
+        p(H + "prep_counter.glb", bx, -170.64, 0, [1.51, 0.69], 1.06);
+        raw({ m: K + k + ".glb", x: bx, z: -170.64, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
       }
-      for (const x of [-31.4, -27.4, -23.4]) for (const z of [-157.2, -155.2]) p(K + "isolation_windowed_partition.glb", x, z, 90, [2, 0.15], 2.4);
-      p(H + "laundry_hamper.glb", -22.8, -157.8, 0, [0.6, 0.57], 1.15);
-      p(NP + "ppe_trolley.glb", -21.4, -157.9, 0, [0.87, 0.57], 1.26);
-      wp(H + "glove_dispenser.glb", -20.5, -158.2, "s", 1.25);
-      wp(H + "glove_dispenser.glb", -20, -158.2, "s", 1.25);
-      wp(H + "wall_sanitizer.glb", -19.5, -158.2, "s", 1.05);
-      p(H + "biohazard_bin.glb", -19, -157.9, 0, [0.39, 0.39], 0.69);
-      p(H + "biohazard_bin.glb", -18.5, -157.9, 0, [0.39, 0.39], 0.69);
-      p(H + "recovery_bed.glb", -30, -148, 90, [1.25, 2.11], 0.87);
-      p(H + "procedure_stretcher.glb", -22.5, -147, 0, [0.9, 1.66], 1.22);
-      p(H + "supply_cart.glb", -33.5, -145.5, 0, [1.16, 1.1], 1.23);
-      p(H + "linen_cabinet.glb", -35.17, -149.5, 90, [0.95, 0.65], 1.84);
-      p(H + "bedside_cabinet.glb", X2(627), Z(930), 0, [0.52, 0.63], 0.81);
-      p(C.desk, -32.05, -141.04, 0, [1.5, 0.72], 0.81, { name: "docket" });
-      raw({ kind: "screen", x: -32.05, z: -141.1, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true, name: "docketScreen" });
-      p(C.chair, -32.05, -140.1, 180, [0.6, 0.6], 1, { noCollide: true });
-      wp(H + "assessment_status_board.glb", -33.6, -141.4, "s", 1.4);
-      wp(H + "wall_clock.glb", -30.4, -141.4, "s", 1.95);
-      for (const x of [-29.9, -29.35, -28.8, -19.2, -18.65]) p(NP + "filing_cabinet.glb", x, -140.96, 0, [0.47, 0.88], 1.32);
-      p(C.shelf, -22.2, -141.13, 0, [1.39, 0.53], 2);
-      p(C.shelf, -20.75, -141.13, 0, [1.39, 0.53], 2);
-      p(K + "pharmacy_medicine_shelf.glb", -35.24, -138, 90, [1.39, 0.53], 1.95);
-      p(K + "pharmacy_medicine_shelf.glb", -35.24, -136.5, 90, [1.39, 0.53], 1.95);
-      p(H + "water_cooler.glb", -35.25, -133.4, 90, [0.45, 0.49], 1.47);
-      for (const x of [-30.5, -27.8]) {
-        p(C.desk, x, -135.8, 0, [1.5, 0.72], 0.81);
-        raw({ m: H + "desktop_computer.glb", x, z: -135.9, rot: 0, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+      wp(H + "wall_cupboard.glb", -22, -171, "s", 1.45);
+      wp(H + "clinical_art_digestive.glb", -18.8, -171, "s", 1.3);
+      p(NP + "specimen_fridge.glb", -12.6, -170.62, 0, [0.75, 0.76], 1.9);
+      p(NP + "specimen_fridge.glb", -11.75, -170.62, 0, [0.75, 0.76], 1.9);
+      p(H + "utility_sink.glb", -9.6, -170.74, 0, [0.88, 0.51], 1.64);
+      wp(H + "wall_clock.glb", -7.6, -171, "s", 1.95);
+      p(H + "operating_table.glb", -15.6, -165.6, 90, [0.78, 1.65], 0.94);
+      p(H + "prep_counter.glb", -9.6, -165.2, 0, [1.51, 0.69], 1.06);
+      p(H + "prep_counter.glb", -9.6, -164.51, 180, [1.51, 0.69], 1.06);
+      p(H + "biohazard_bin.glb", -5.4, -160.6, 0, [0.39, 0.39], 0.69);
+      sign2("PATHOLOGY", "Authorised staff", -18.8, 2.45, -171, "s", 1.2);
+      raw({ kind: "pipes", x: -32, z: -165, len: 12, y: 2.25, noCollide: true, fp: [0.1, 0.1], h: 0 });
+      for (const bz of [-161.4, -156.6, -151.8]) {
+        p(H + "recovery_bed.glb", -39.63, bz, 90, [1.25, 2.11], 0.87);
+        wp(H + "service_headwall.glb", -40.69, bz, "e", 1.24);
+        p(H + "patient_monitor.glb", -40.3, bz - 1.15, 90, [0.62, 0.71], 1.49);
       }
-      p(C.chair, -30.5, -135, 180, [0.6, 0.6], 1, { noCollide: true });
-      wp(NP + "fire_extinguisher.glb", -17.8, -139.6, "w", 0.6);
-      p(K + "ct_scanner_gantry.glb", -13, -144.96, 0, [2.13, 0.87], 2.26);
-      p(K + "ct_sliding_patient_table.glb", -13, -143.5, 0, [0.71, 2.05], 1.11);
-      p(K + "ct_control_pedestal.glb", -15.9, -145.1, 0, [0.53, 0.49], 1.16);
-      wp(K + "sign_ct_imaging.glb", -13, -145.4, "s", 2.36);
-      wp(NP + "lead_apron_rack.glb", -10.6, -145.4, "s", 0.95);
-      wp(H + "wall_clock.glb", -9, -145.4, "s", 1.95);
-      p(H + "anesthesia_workstation.glb", -3.6, -145.05, 0, [1.1, 0.7], 1.55);
-      p(H + "endoscopy_tower.glb", -2.4, -145.1, 0, [0.74, 0.6], 1.65);
-      p(H + "airready.glb", -1.2, -145.03, 0, [0.94, 0.74], 1.37);
-      p(H + "patient_monitor.glb", 0, -145.05, 0, [0.62, 0.71], 1.49);
-      p(NP + "mobile_xray.glb", 1.6, -144.7, 0, [0.67, 1.39], 1.68);
-      for (const x of [3.3, 3.75]) p(H + "medical_gas_cylinder.glb", x, -145.18, 0, [0.39, 0.43], 1.15);
-      p(U + "10_janitor_utility/starter/10_starter_rack.glb", X2(1218), Z(1005), 270, [0.82, 0.51], 1.82);
-      p(H + "wheelchair.glb", 3.75, -139, 270, [0.76, 0.91], 0.97);
-      p(H + "wheelchair.glb", 3.75, -138.2, 270, [0.76, 0.91], 0.97);
-      p(H + "supply_shelf.glb", X2(1218), Z(1200), 270, [1.39, 0.53], 2);
-      wp(NP + "fire_extinguisher.glb", 4.2, -136.5, "w", 0.6);
-      p(H + "procedure_stretcher.glb", -12.5, -131.2, 90, [0.9, 1.66], 1.22);
-      sign2("DIAGNOSTIC INTAKE", "Specimen hold", X2(920), 2.3, Z(300) + 0.15, "s", 1.4);
-      sign2("\u2190 RECORDS", "via the isolation ward", X2(700) + 0.16, 2.3, Z(745) - 1.8, "e", 1.3);
-      sign2("RECORDS \u2193", "via the imaging bay", X2(975) + 2, 2.3, Z(580) + 0.15, "s", 1.3);
-      sign2("TRANSFER RECORDS", "Dispatch dockets", X2(330), 2.3, Z(1e3) + 0.15, "s", 1.4);
-      sign2("ISOLATION", "Gown and glove", -21, 2.35, -158.2, "s", 1.3);
-      sign2("IMAGING \xB7 EQUIPMENT", "", -1, 2.35, -145.4, "s", 1.4);
-      room("elevator", X2(1214) + 3.5, 2.75, Z(260) + 0.15, "s", 1.1);
-      room("lab", X2(830), 2.62, Z(300) + 0.15, "s", 1.1);
+      for (const bz of [-159, -154.2, -149.4]) p(K + "isolation_windowed_partition.glb", -39.3, bz, 0, [2, 0.15], 2.4);
+      wp(K + "isolation_ppe_sign.glb", -40.69, -147, "e", 1.8);
+      p(NP + "ppe_trolley.glb", -30.6, -164.6, 0, [0.87, 0.57], 1.26);
+      p(H + "laundry_hamper.glb", -27.2, -164.6, 0, [0.6, 0.57], 1.15);
+      p(H + "wheelchair.glb", -33, -152.4, 70, [0.76, 0.91], 0.97);
+      p(H + "procedure_stretcher.glb", -30.4, -146.6, 15, [0.9, 1.66], 1.22);
+      p(H + "wet_floor_sign.glb", -27.4, -147, 0, [0.48, 0.66], 0.64, { noCollide: true });
+      p(H + "wet_floor_sign.glb", -27.6, -152.6, 30, [0.48, 0.66], 0.64, { noCollide: true });
+      sign2("ISOLATION", "Gown and glove", -34.6, 2.4, -165, "s", 1.2);
+      sign2("DANGER", "Live panel \xB7 standing water", -25.69, 2, -152.7, "e", 0.9);
+      for (const cx of [-40.05, -38.8]) {
+        p(R13 + "cubicle.glb", cx, -170.34, 0, [1.24, 1.87], 2.01, { noCollide: true });
+        raw({ kind: "collider", x: cx, z: -170.07, fp: [1.24, 1.82], h: 2 });
+        p(R13 + "toilet.glb", cx, -170.72, 0, [0.5, 0.79], 1.04, { noCollide: true });
+      }
+      p(R13 + "washstand.glb", -34.3, -168.6, 270, [1.18, 0.65], 1.22);
+      wp(R13 + "mirror.glb", -33.99, -168.6, "w", 1.25);
+      p(U + "10_janitor_utility/standard/10_standard_utility_sink.glb", -32.6, -170.64, 0, [1.06, 0.7], 1.32);
+      p(U + "10_janitor_utility/starter/10_starter_rack.glb", -30.4, -170.74, 0, [0.82, 0.51], 1.82);
+      p(H + "janitor_cart.glb", -27, -169.6, 0, [0.83, 0.99], 1.23);
+      p(H + "linen_cabinet.glb", -26.3, -167.3, 270, [0.95, 0.65], 1.84);
+      p(NP + "round_reception_desk.glb", -15.34, -150.4, 0, [3.6, 3.6], 1.15, { name: "h5desk" });
+      for (const [sx, sz, r] of [[-21.6, -156.8, 0], [-21.6, -155.2, 0], [-9, -156.8, 0], [-9, -155.2, 0], [-21.6, -144.6, 180], [-9, -144.6, 180]]) p(C.seats, sx, sz, r, [2.6, 0.63], 0.92);
+      p(H + "check_in_kiosk.glb", -19, -159.8, 0, [0.39, 0.36], 1.46);
+      p(H + "check_in_kiosk.glb", -11.6, -159.8, 0, [0.39, 0.36], 1.46);
+      wp(H + "reception_poster_heart.glb", -23.2, -160, "s", 1.2);
+      wp(H + "lobby_t2_health_poster.glb", -7.6, -160, "s", 1.2);
+      wp(H + "wall_clock.glb", -15.34, -160, "s", 2);
+      p(K + "cafeteria_vending_machine.glb", -25.2, -157.4, 90, [0.93, 0.87], 1.9);
+      p(H + "water_cooler.glb", -25.4, -155.6, 90, [0.45, 0.49], 1.47);
+      p(H + "floor_planter.glb", -5.4, -159.4, 270, [1.12, 0.5], 1.52);
+      p(H + "floor_planter.glb", -25.3, -141, 90, [1.12, 0.5], 1.52);
+      p(H + "magazine_rack.glb", -5.3, -142, 270, [0.55, 0.43], 1.05);
+      p(H + "wheelchair.glb", -11, -142.4, 200, [0.76, 0.91], 0.97);
+      sign2("MAIN RECEPTION", "Welcome \xB7 Floor 5", -15.34, 2.45, -160, "s", 1.6);
+      sign2("\u2190 ISOLATION \xB7 RECORDS", "Wards", -25.69, 2.3, -146.6, "e", 1.2);
+      sign2("INTAKE \xB7 READING \u2192", "Imaging", -4.99, 2.3, -152, "w", 1.2);
+      for (const cz of [-149.3, -148.05, -146.8, -145.55]) {
+        p(R13 + "cubicle.glb", -0.65, cz, 270, [1.24, 1.87], 2.01, { noCollide: true });
+        raw({ kind: "collider", x: -0.92, z: cz, fp: [1.82, 1.24], h: 2 });
+      }
+      for (const sx of [-3.8, -2.5]) {
+        p(R13 + "washstand.glb", sx, -149.69, 0, [1.18, 0.65], 1.22);
+        wp(R13 + "mirror.glb", sx, -150, "s", 1.25);
+      }
+      p(M + "rooms/Restroom_Pedal_Bin.glb", -4.4, -142, 0, [0.37, 0.41], 0.66, { noCollide: true });
+      for (const [dx, dz, r] of [[5.6, -149.64, 0], [0.7, -146.6, 90], [0.7, -144, 90]]) {
+        p(C.desk, dx, dz, r, [1.5, 0.72], 0.81);
+        raw({ m: H + "desktop_computer.glb", x: dx + (r ? -0.1 : -0.35), z: dz - (r ? 0.35 : 0.1), rot: r, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+        raw({ m: H + "desktop_computer.glb", x: dx + (r ? -0.1 : 0.35), z: dz + (r ? 0.35 : -0.1), rot: r, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+      }
+      p(C.chair, 5.6, -148.8, 180, [0.6, 0.6], 1, { noCollide: true });
+      p(C.chair, 1.5, -144, 270, [0.6, 0.6], 1, { noCollide: true });
+      wp(H + "assessment_status_board.glb", 6.97, -146, "w", 1.4);
+      sign2("READING", "Radiology", 5.6, 2.4, -150, "s", 0.9);
+      p(C.desk, -29.5, -142.64, 0, [1.5, 0.72], 0.81, { name: "docket" });
+      raw({ kind: "screen", x: -29.5, z: -142.7, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true, name: "docketScreen" });
+      p(C.chair, -29.5, -141.7, 180, [0.6, 0.6], 1, { noCollide: true });
+      wp(H + "assessment_status_board.glb", -31, -143, "s", 1.4);
+      for (const x of [-40.3, -39.75, -39.2, -38.65, -27.3, -26.75]) p(NP + "filing_cabinet.glb", x, -142.56, 0, [0.47, 0.88], 1.32);
+      for (const sx of [-38.6, -35]) {
+        p(C.shelf, sx, -137.6, 90, [1.39, 0.53], 2);
+        p(C.shelf, sx, -136.1, 90, [1.39, 0.53], 2);
+      }
+      for (const x of [-31.6, -28.6]) {
+        p(C.desk, x, -134.4, 0, [1.5, 0.72], 0.81);
+        raw({ m: H + "desktop_computer.glb", x, z: -134.5, rot: 0, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+      }
+      wp(NP + "fire_extinguisher.glb", -25.99, -141, "w", 0.6);
+      sign2("MEDICAL RECORDS", "Transfer dockets", -35, 2.4, -143, "s", 1.4);
+      p(K + "ct_scanner_gantry.glb", -15.3, -139.56, 0, [2.13, 0.87], 2.26);
+      p(K + "ct_control_pedestal.glb", -18.4, -139.8, 0, [0.53, 0.49], 1.16);
+      wp(K + "sign_ct_imaging.glb", -15.3, -140, "s", 2.36);
+      wp(NP + "lead_apron_rack.glb", -12.2, -140, "s", 0.95);
+      p(NP + "mobile_xray.glb", -9.6, -139.3, 0, [0.67, 1.39], 1.68);
+      p(H + "endoscopy_tower.glb", -22.6, -139.7, 0, [0.74, 0.6], 1.65);
+      p(H + "procedure_stretcher.glb", -24, -133.4, 0, [0.9, 1.66], 1.22);
+      p(H + "wheelchair.glb", -6, -132.6, 270, [0.76, 0.91], 0.97);
+      sign2("IMAGING", "X-ray \xB7 CT \xB7 ultrasound", -20.4, 2.45, -140, "s", 1.3);
+      raw({ kind: "collider", x: 1.2, z: -140.36, fp: [2.1, 1.1], h: 2.1 });
+      raw({ kind: "collider", x: 1.2, z: -138.9, fp: [0.7, 1.9], h: 0.9 });
+      p(C.desk, -3.6, -140.6, 0, [1.5, 0.72], 0.81);
+      raw({ m: H + "desktop_computer.glb", x: -3.6, z: -140.7, rot: 0, y: 0.81, fp: [0.1, 0.1], h: 0, noCollide: true });
+      sign2("MRI", "Magnet always on", 5.7, 2.45, -141, "s", 0.9);
+      sign2("DANGER \xB7 STRONG MAGNET", "No metal beyond this point", -4.69, 2.3, -133.2, "e", 1);
+      const box = (x, z, w, d, h, c = 10719084, face = "s") => raw({ kind: "box", x, z, size: [w, d, h], face, color: c, fp: [w, d], h });
+      for (const sx of [-21.6, -9]) p(C.seats, sx, -145.2, 0, [2.6, 0.63], 0.92);
+      p(K + "cafeteria_vending_machine.glb", -5.44, -143, 270, [0.93, 0.87], 1.9);
+      p(K + "cafeteria_vending_machine.glb", -5.44, -141.95, 270, [0.93, 0.87], 1.9);
+      p(H + "floor_planter.glb", -25.3, -159.4, 90, [1.12, 0.5], 1.52);
+      for (const x of [-24.6, -23.8, -23]) p(H + "wheelchair.glb", x, -140.9, 180, [0.76, 0.91], 0.97);
+      p(H + "procedure_stretcher.glb", -11.6, -153.8, 30, [0.9, 1.66], 1.22);
+      p(H + "side_table.glb", -15.34, -144, 0, [0.74, 0.74], 0.55);
+      p(H + "lidded_waste_bin.glb", -5.4, -158.4, 0, [0.36, 0.4], 0.58);
+      p(H + "water_cooler.glb", -16.6, -159.74, 0, [0.45, 0.49], 1.47);
+      p(H + "prep_counter.glb", -20.4, -165.6, 0, [1.51, 0.69], 1.06);
+      p(H + "prep_counter.glb", -20.4, -164.91, 180, [1.51, 0.69], 1.06);
+      raw({ m: K + "lab_microscope.glb", x: -20.7, z: -165.6, rot: 0, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      raw({ m: K + "lab_sample_rack.glb", x: -20, z: -164.9, rot: 180, y: 1.06, fp: [0.1, 0.1], h: 0, noCollide: true });
+      p(NP + "specimen_fridge.glb", -10.9, -170.62, 0, [0.75, 0.76], 1.9);
+      p(H + "procedure_stretcher.glb", -13, -162.4, 90, [0.9, 1.66], 1.22);
+      p(NP + "dust_sheet_small.glb", -13, -162.4, 90, [1.39, 0.92], 0.94, { noCollide: true });
+      for (const x of [-7, -6.45]) p(NP + "filing_cabinet.glb", x, -170.56, 0, [0.47, 0.88], 1.32);
+      box(-36.8, -133.4, 0.6, 0.45, 0.4, 13284490);
+      box(-37.4, -133, 0.6, 0.45, 0.8, 12560250);
+      box(-33, -138.9, 0.6, 0.45, 0.4, 13284490);
+      p(H + "supply_cart.glb", -26.8, -140.6, 90, [1.16, 1.1], 1.23);
+      box(-40.2, -135, 0.9, 0.7, 1.05, 14277854, "e");
+      p(C.shelf, -38.6, -134.6, 90, [1.39, 0.53], 2);
+      p(H + "waiting_chair_section.glb", -15, -132.6, 180, [2.69, 0.97], 0.99);
+      p(H + "lidded_waste_bin.glb", -11.4, -132.4, 0, [0.36, 0.4], 0.58);
+      p(H + "iv_stand.glb", -19.6, -132.6, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      p(U + "11_staff_lounge/standard/11_standard_lockers.glb", -4.43, -138.9, 90, [1.4, 0.53], 1.95);
+      p(H + "clinician_chair.glb", -3.6, -139.8, 180, [0.65, 0.61], 0.98, { noCollide: true });
+      raw({ kind: "hazard", x: 1.2, z: -136.6, size: [3, 0.3], noCollide: true, fp: [0.1, 0.1], h: 0 });
+      p(H + "supply_cart.glb", -33.6, -145.2, 20, [1.16, 1.1], 1.23);
+      p(H + "iv_stand.glb", -36, -155, 0, [0.73, 0.7], 2.03, { noCollide: true });
+      p(H + "biohazard_bin.glb", -26.4, -146.6, 0, [0.39, 0.39], 0.69);
+      room("elevator", X2(1214) - 3.3, 2.75, -171, "s", 1.1);
     },
     groups: (Z) => [
-      { id: "d5", sense: 5, zombies: [{ x: X(950), z: Z(780), yaw: 2.6, look: "patient", prop: "chair" }] },
-      // W5: the shield carrier with two walkers (the shorter, contained way)
-      { id: "w5", sense: 6, zombies: [{ x: X(560), z: Z(820), yaw: Math.PI / 2, kind: "guard" }, { x: X(330), z: Z(760), yaw: 1.2, look: "nurse" }, { x: X(470), z: Z(950), yaw: 0.4 }] },
-      // T5: the charger at the east end (her lane runs the bay's length), two walkers by the scanner
-      { id: "t5", sense: 9, zombies: [{ x: X(1150), z: Z(1200), yaw: -Math.PI / 2, kind: "sprinter" }, { x: X(880), z: Z(1180), yaw: 1.2, look: "nurse" }, { x: X(1080), z: Z(960), yaw: -2.4 }] }
+      // the main reception: the floor's crowd round the desk: walkers, a runner, a cylinder chair from upstairs, one through
+      // the floor
+      { id: "h5", sense: 7, zombies: [
+        { x: -19.6, z: -150.4, yaw: 1.2, look: "nurse" },
+        { x: -11, z: -152.6, yaw: -1.4 },
+        { x: -15.4, z: -145.6, yaw: 2.8, look: "patient" },
+        { x: -22.4, z: -147.6, yaw: 0.8, kind: "runner" },
+        { x: -8.6, z: -146.8, yaw: -2, kind: "o2chair", look: "patient" },
+        { x: -15.2, z: -155.6, look: "nurse", from: "floor", delay: 3 }
+      ] },
+      // the flooded ward: walkers standing in the water (and the isolation beds' patients): lure them in, step out, hit the panel
+      { id: "w5", sense: 7, zombies: [{ x: -34.4, z: -158.4, yaw: 1, look: "patient" }, { x: -30.4, z: -154.6, yaw: 1.6 }, { x: -35.6, z: -148, yaw: 0.6, look: "nurse" }, { x: -29, z: -160.6, yaw: 2.2 }] },
+      { id: "wt5", sense: 3.5, zombies: [{ x: -38.9, z: -168.2, yaw: Math.PI, look: "patient" }] },
+      { id: "jn5", sense: 3.5, zombies: [{ x: -28.6, z: -167.6, yaw: 2, look: "nurse" }] },
+      { id: "pa5", sense: 5.5, zombies: [{ x: -18, z: -165, yaw: -0.6, look: "nurse", prop: "surgeon" }, { x: -11, z: -163, yaw: 2.2, look: "patient" }] },
+      { id: "r5", sense: 6, zombies: [{ x: -36.8, z: -138.6, yaw: 0.6, look: "nurse" }, { x: -30, z: -137.4, yaw: -1 }] },
+      // imaging: the big lady at the east end of her lane, one walker by the scanner
+      { id: "x5", sense: 9, zombies: [{ x: -7, z: -136.2, yaw: -Math.PI / 2, kind: "sprinter" }, { x: -17.6, z: -137.6, yaw: 0.4, look: "patient" }] },
+      // the MRI arena: the guard (the magnet takes his shield), two walkers, an old one with a cylinder trolley (dragged in)
+      { id: "m5", sense: 8, zombies: [{ x: 1.4, z: -134.6, yaw: Math.PI, kind: "guard" }, { x: -2.6, z: -136.6, yaw: 1, look: "nurse" }, { x: 5.4, z: -137, yaw: -1.2 }, { x: 4.2, z: -133.4, yaw: -2.6, kind: "o2walker", look: "patient" }] },
+      { id: "rr5", sense: 5, zombies: [{ x: 3.6, z: -146, yaw: 0.4, look: "nurse" }, { x: 5.6, z: -143, yaw: -2.4 }] },
+      { id: "pt5", sense: 3.5, zombies: [{ x: -2.4, z: -145.4, yaw: 1.6, look: "patient" }] }
     ],
     pickups: (Z) => [
-      { id: "w5aid", kind: "health", amount: 40, x: X(627), z: Z(930), r: 1, label: "First-aid case", model: "aid", y: 0.81 },
-      { id: "t5ammo", kind: "ammo", weapon: "pistol", rounds: 18, x: X(1180), z: Z(1140), r: 1, label: "Spare pistol rounds", model: "mag" }
+      { id: "i5ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: 5.6, z: -152.6, r: 1, label: "Pistol magazines", model: "mag", y: 0.81 },
+      { id: "h5aid", kind: "health", amount: 40, x: -15.34, z: -149, r: 1.3, label: "First-aid case", model: "aid", y: 1.12 },
+      { id: "jn5sledge", kind: "weapon", weapon: "sledgehammer", x: -28.9, z: -169.9, r: 1.2, label: "Sledgehammer", file: "zombie/assets/weapons/sledgehammer.glb", len: 0.95, rot: 0.4, y: 0.05 },
+      { id: "pa5shells", kind: "ammo", weapon: "shotgun", rounds: 18, x: -9.6, z: -164.85, r: 1.2, label: "Shotgun shells", model: "shells", y: 1.06 },
+      { id: "pa5aid", kind: "health", amount: 60, x: -22.8, z: -170.5, r: 1.1, label: "First-aid case", model: "aid", y: 1.06 },
+      { id: "r5aid", kind: "health", amount: 40, x: -28.6, z: -134.4, r: 1, label: "First-aid case", model: "aid", y: 0.81 },
+      { id: "x5mags", kind: "ammo", weapon: "pistol", rounds: 18, x: -24, z: -133.4, r: 1, label: "Spare pistol rounds", model: "mag", y: 1 }
     ],
     interact: (Z) => [
-      { id: "intake", x: X(830), z: Z(300) + 1.35, r: 1.6, label: "Secure the case" },
-      { id: "record", x: -32.05, z: -139.7, r: 1.6, label: "Read the dispatch record" }
+      { id: "intake", x: -3.2, z: -158.3, r: 1.6, label: "Secure the case" },
+      { id: "record", x: -29.5, z: -141.3, r: 1.6, label: "Read the dispatch record" }
     ],
-    lights: (Z) => [{ x: X(1214), y: 2.3, z: Z(300) }, { x: X(830), y: 2.4, z: Z(330) }, { x: X(340), y: 2.4, z: Z(1200) }],
+    lights: (Z) => [{ x: X(1214), y: 2.3, z: -168.6 }, { x: -3.2, y: 2.4, z: -157.6 }, { x: -29.5, y: 2.4, z: -140.6 }],
     blood: (Z) => [
-      { kind: "drag", x: X(900), z: Z(700), w: 0.7, l: 1.5, rot: -30 },
-      { kind: "splat", x: X(450), z: Z(700), w: 0.9, l: 0.9, rot: 10 },
-      { kind: "hand", x: X(1250) - 0.16, z: Z(1100), wall: "w", y: 1.2, size: 0.32, tilt: 6 },
-      { kind: "splat", x: X(1e3), z: Z(1220), w: 1.1, l: 1.1, rot: 40 }
+      { kind: "drag", x: -8.4, z: -155.6, w: 0.7, l: 1.5, rot: -30 },
+      { kind: "splat", x: -18, z: -146.4, w: 0.9, l: 0.9, rot: 10 },
+      { kind: "hand", x: -4.99, z: -137, wall: "w", y: 1.2, size: 0.32, tilt: 6 },
+      { kind: "splat", x: -12.6, z: -134.2, w: 1.1, l: 1.1, rot: 40 },
+      { kind: "drag", x: -33.4, z: -136.8, w: 0.6, l: 1.2, rot: 70 }
     ],
+    // the flood (the whole ward under water; the panel just inside the reception door, so a blow from the dry doorway reaches
+    // it), the magnet (its room is the arena; the button in the near corner)
+    flood: (Z) => ({ minX: -40.7, maxX: -26, minZ: -165, maxZ: -143.3, panel: { x: -26.9, z: -152.3 } }),
+    // (in sight of the dry doorway)
+    mri: (Z) => ({ minX: -4.84, maxX: 7.12, minZ: -141.15, maxZ: -131.95, magnet: { x: 1.2, z: -140.4 }, button: { x: 6.2, z: -133 } }),
+    tanks: (Z) => [[-6, -134], [5.9, -139.6], [-25, -158.8]],
     start: (Z) => ({ x: LIFTS[5].x, z: LIFTS[5].z + 1.2, yaw: 0 })
   });
   var FLOORS = { 7: F7, 6: F6, 5: F5 };
-  var CASE_HOME = { floor: 6, x: -34.6, z: -59.84, y: 1.09 };
-  var INTAKE_SPOT = { floor: 5, x: X(830), z: -169.1, y: 1.23 };
+  var CASE_HOME = { floor: 6, x: -30, z: -63.64, y: 1.09 };
+  var INTAKE_SPOT = { floor: 5, x: -3.2, z: -159.7, y: 1.23 };
   var CHAPTER = {
     name: "chapter",
     rooms: [...F7.rooms, ...F6.rooms, ...F5.rooms],
@@ -48617,525 +48904,6 @@ void main() {
     }
   };
 
-  // src/core/level.js
-  var LIFT_DOOR_TIME = 1;
-  var BRACE_TIME = 2.5;
-  var DOOR_OPEN_TIME = 1.5;
-  var ONE_HANDED = ["bat", "pistol", "crowbar", "knife"];
-  var CASE_R = 1.35;
-  var inRect = (r, x, z, m = 0) => x > r.minX + m && x < r.maxX - m && z > r.minZ + m && z < r.maxZ - m;
-  var roomAt2 = roomAt;
-  var Level = class {
-    constructor(sim2, save = null) {
-      this.sim = sim2;
-      const s = save || {};
-      this.floor = s.floor || 7;
-      this.F = FLOORS[this.floor];
-      this.L = LIFTS[this.floor];
-      this.flags = {
-        lift_power_restored: false,
-        or_south_unbarred: false,
-        partition_broken: false,
-        phone_checked: false,
-        radio_heard: false,
-        power_call: false,
-        case_seen: false,
-        case_picked: false,
-        case_secured: false,
-        record_seen: false,
-        sample_matched: false,
-        chapter_complete: false,
-        ...s.flags || {}
-      };
-      this.case = s.case ? { ...s.case } : { state: "home", floor: CASE_HOME.floor, x: CASE_HOME.x, z: CASE_HOME.z, y: CASE_HOME.y };
-      this.taken = new Set(s.taken || []);
-      this.killed = new Set(s.killed || []);
-      this.visited = new Set(s.visited || []);
-      this.objective = s.objective || "f7_lift";
-      this.complete = false;
-      this.ownedFull = s.ownedFull || null;
-      const open = (f) => f ? 1 : 0;
-      this.doors = {
-        orbar: { brace: open(this.flags.or_south_unbarred), open: open(this.flags.or_south_unbarred), busy: false },
-        x7door: { brace: 1, open: open(this.flags.lift_power_restored), busy: false },
-        partition: { broken: this.flags.partition_broken }
-      };
-      const powered = this.floor !== 7 || this.flags.lift_power_restored;
-      this.lift = { state: !powered ? "fault" : s.arrive ? "arriving" : "ready", open: 0, t: 0, floor: this.floor, choosing: false };
-      this.prompt = null;
-      this.room = null;
-      this.lines = [];
-      this.ending = null;
-      const W3 = sim2.world;
-      if (W3.dyn) {
-        if (this.flags.or_south_unbarred && W3.dyn.orbar) W3.setOff(W3.dyn.orbar, true);
-        if (this.flags.lift_power_restored && W3.dyn.x7door) W3.setOff(W3.dyn.x7door, true);
-        if (this.flags.partition_broken && W3.dyn.partition) W3.setOff(W3.dyn.partition, true);
-      }
-      const fresh = !save || save.floor === 7 && !save.flags?.radio_heard && !this.killed.size && this.floor === 7 && !s.x;
-      this.floorPending = [];
-      for (const g of this.F.groups) {
-        g.zombies.forEach((zs, i) => {
-          const key = this.floor + ":" + g.id + ":" + i;
-          if (this.killed.has(key)) return;
-          if (zs.from === "floor") {
-            this.floorPending.push({ key, group: g.id, sense: g.sense ?? 6, zs, at: null });
-            return;
-          }
-          const z = sim2.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0, kind: zs.kind, prop: zs.prop, bed: zs.bed });
-          z.set(ZS.CHASE);
-          z.spawnKey = key;
-          z.group = g.id;
-          if (zs.look) z.look = zs.look;
-          if (zs.crawl) {
-            z.crawling = true;
-            z.broken = "LowerLeg_L";
-          }
-          z.dormant = {
-            wake: fresh && zs.wake !== void 0 ? zs.wake : Infinity,
-            sense: g.sense ?? (zs.wake !== void 0 ? 6 : 0),
-            locked: !!g.locked,
-            group: g.id,
-            speedMul: 0.85 + 0.1 * (i % 3)
-          };
-        });
-      }
-      this.pickups = this.F.pickups.filter((q) => !this.taken.has(q.id)).map((q) => ({ ...q }));
-      const p = sim2.player;
-      p.reserve = { pistol: 0, shotgun: 0 };
-      if (save) {
-        if (s.arrive) {
-          p.x = this.L.inside.x;
-          p.z = this.L.inside.z;
-          p.aimYaw = p.aimTarget = 0;
-        } else {
-          p.x = s.x;
-          p.z = s.z;
-          p.aimYaw = p.aimTarget = s.yaw ?? 0;
-        }
-        p.setLoadout(s.owned?.length ? s.owned : ["fists"], s.equipped || s.owned && s.owned[0] || "fists");
-        Object.assign(p.mags, s.mags || {});
-        Object.assign(p.reserve, s.reserve || {});
-        p.hp = s.hp ?? p.maxHp;
-      }
-      if (sim2.T.testInfiniteAmmo) p.reserve = { pistol: Infinity, shotgun: Infinity };
-      if (this.case.state === "carried") this.applyCarry(true);
-    }
-    emit(e) {
-      this.sim.emit(e);
-    }
-    setObjective(id) {
-      if (this.objective === id) return;
-      this.objective = id;
-      this.emit({ type: "objective", id });
-      this.checkpoint();
-    }
-    say(id) {
-      this.emit({ type: "radio", id });
-    }
-    // a short exchange (captions; the UI plays it while play goes on)
-    // a checkpoint: everything needed to restore a coherent chapter (doors and pickups keep their state; the dead stay dead)
-    snapshot(extra = {}) {
-      const p = this.sim.player;
-      const owned = this.ownedFull || p.owned;
-      return {
-        v: 2,
-        level: "chapter",
-        floor: this.floor,
-        flags: { ...this.flags },
-        case: { ...this.case },
-        taken: [...this.taken],
-        killed: [...this.killed],
-        visited: [...this.visited],
-        objective: this.objective,
-        owned: [...owned],
-        equipped: p.equipped,
-        mags: { ...p.mags },
-        reserve: { ...p.reserve },
-        hp: Math.max(35, p.hp),
-        x: +p.x.toFixed(2),
-        z: +p.z.toFixed(2),
-        yaw: +p.aimYaw.toFixed(3),
-        ...extra
-      };
-    }
-    checkpoint() {
-      if (!this.sim.player.dead && this.lift.state !== "travel") this.emit({ type: "checkpoint", save: this.snapshot() });
-    }
-    // a woken zombie rouses the others of its group nearby (a beat apart, never all at once)
-    onWake(z) {
-      for (const o of this.sim.zombies) {
-        const d = o.dormant;
-        if (!d || d.locked || o.group !== z.group || o === z) continue;
-        if (Math.hypot(o.x - z.x, o.z - z.z) < 7) d.wake = Math.min(d.wake, this.sim.time + 0.35 + this.sim.rand() * 0.9);
-      }
-    }
-    wakeGroup(id) {
-      let k = 0;
-      for (const o of this.sim.zombies) if (o.dormant && o.group === id) {
-        o.dormant.locked = false;
-        o.dormant.wake = Math.min(o.dormant.wake, this.sim.time + 0.4 + 0.45 * k++);
-      }
-    }
-    // ---- the case: carried in the off hand (one-handed weapons only), set down with one action, picked up again ----
-    applyCarry(on) {
-      const p = this.sim.player;
-      if (on) {
-        if (!this.ownedFull) this.ownedFull = [...p.owned];
-        const allowed = this.ownedFull.filter((w) => ONE_HANDED.includes(w));
-        p.owned = allowed.length ? allowed : [...this.ownedFull];
-        if (!p.owned.includes(p.desired)) p.desired = p.owned[0];
-      } else if (this.ownedFull) {
-        const keep = p.desired;
-        p.owned = WEAPON_SORT(this.ownedFull.concat(p.owned.filter((w) => !this.ownedFull.includes(w))));
-        this.ownedFull = null;
-        if (p.owned.includes(keep)) p.desired = keep;
-      }
-    }
-    canCarry() {
-      return (this.ownedFull || this.sim.player.owned).some((w) => ONE_HANDED.includes(w));
-    }
-    takeCase() {
-      const c = this.case, first = !this.flags.case_picked;
-      c.state = "carried";
-      c.floor = this.floor;
-      this.flags.case_picked = true;
-      this.applyCarry(true);
-      this.emit({ type: "case", state: "carried", first });
-      if (first) {
-        this.say("f6_pickup");
-        this.setObjective(this.flags.case_secured || this.flags.sample_matched ? "f5_down" : "f5_intake");
-      } else if (this.flags.sample_matched && this.floor === 5) this.setObjective("f5_down");
-      this.checkpoint();
-    }
-    dropCase(x, z) {
-      const c = this.case;
-      c.state = "placed";
-      c.floor = this.floor;
-      c.x = +x.toFixed(2);
-      c.z = +z.toFixed(2);
-      c.y = 0;
-      this.applyCarry(false);
-      this.emit({ type: "case", state: "placed" });
-      this.checkpoint();
-    }
-    secureCase() {
-      const c = this.case;
-      c.state = "stored";
-      c.floor = 5;
-      c.x = INTAKE_SPOT.x;
-      c.z = INTAKE_SPOT.z;
-      c.y = INTAKE_SPOT.y;
-      this.applyCarry(false);
-      const first = !this.flags.case_secured;
-      this.flags.case_secured = true;
-      this.emit({ type: "case", state: "stored", first });
-      if (this.flags.record_seen && !this.flags.sample_matched) this.matchSample();
-      else if (first) {
-        this.say("f5_intake");
-        this.setObjective("f5_record");
-      }
-      this.checkpoint();
-    }
-    matchSample() {
-      this.flags.sample_matched = true;
-      this.say("f5_match");
-      this.emit({ type: "sampleMatch" });
-      this.setObjective(this.case.state === "carried" ? "f5_down" : "f5_retrieve");
-    }
-    step(dt, input2) {
-      const sim2 = this.sim, p = sim2.player;
-      if (this.complete) return;
-      for (const z of sim2.zombies) if (z.spawnKey && !z.alive && !this.killed.has(z.spawnKey)) this.killed.add(z.spawnKey);
-      const room = roomAt2(p.x, p.z);
-      if (room && room !== this.room) {
-        this.room = room;
-        const key = this.floor + ":" + room;
-        if (!this.visited.has(key)) {
-          this.visited.add(key);
-          this.emit({ type: "roomEnter", room });
-          this.onFirstVisit(room);
-        }
-        if (!p.dead) this.checkpoint();
-      }
-      this.pickupStep(p);
-      this.floorStep(p);
-      this.doorStep(dt);
-      this.partitionStep();
-      this.liftStep(dt, p);
-      this.prompt = p.dead ? null : this.findPrompt(p);
-      if (input2.usePresses > 0 && this.prompt?.usable) this.use(this.prompt.id);
-    }
-    // out of the floor (2026-10-18; core/sim.js spawnFromFloor): a floor spawn waits for its group: once any of the group is
-    // awake (or Yola comes within its sense of the hole, with no wall between), it breaks through `delay` s later. Never
-    // under her or right beside her: a hole within 2.8 m of her waits (the rumble and the crack give her warning anyway).
-    floorStep(p) {
-      const sim2 = this.sim;
-      for (let i = this.floorPending.length - 1; i >= 0; i--) {
-        const f = this.floorPending[i], zs = f.zs;
-        if (f.at == null) {
-          const woke = sim2.zombies.some((z2) => z2.group === f.group && !z2.dormant && z2.alive);
-          const near = !p.dead && Math.hypot(p.x - zs.x, p.z - zs.z) < f.sense && sim2.world.lineOfSight(p.x, p.z, zs.x, zs.z, 1);
-          if (woke || near) f.at = sim2.time + (zs.delay ?? 1.5);
-          continue;
-        }
-        if (sim2.time < f.at || p.dead || Math.hypot(p.x - zs.x, p.z - zs.z) < 2.8) continue;
-        const z = sim2.spawnFromFloor(zs.x, zs.z, { kind: zs.kind, look: zs.look });
-        z.spawnKey = f.key;
-        z.group = f.group;
-        this.floorPending.splice(i, 1);
-      }
-    }
-    onFirstVisit(room) {
-      if (room === "k6" && !this.flags.case_seen) this.flags.case_seen = true;
-      if (room === "j6" && !this.flags.case_picked) this.setObjective("f6_case");
-      if (room === "i5" && this.floor === 5 && this.case.state !== "carried" && !this.flags.case_secured) this.say("f5_first");
-    }
-    pickupStep(p) {
-      if (p.dead) return;
-      for (const q of this.pickups) {
-        if (Math.hypot(p.x - q.x, p.z - q.z) > q.r) continue;
-        if (q.kind === "health" && p.hp >= p.maxHp) continue;
-        this.pickups.splice(this.pickups.indexOf(q), 1);
-        this.taken.add(q.id);
-        if (q.kind === "weapon") {
-          const list = this.ownedFull || p.owned;
-          if (!list.includes(q.weapon)) {
-            list.push(q.weapon);
-            if (this.ownedFull) this.applyCarry(true);
-          }
-          if (q.mag !== void 0) p.mags[q.weapon] = q.mag;
-          if (!this.ownedFull || ONE_HANDED.includes(q.weapon)) p.desired = q.weapon;
-        } else if (q.kind === "ammo") p.reserve[q.weapon] = (p.reserve[q.weapon] || 0) + q.rounds;
-        else if (q.kind === "health") p.hp = Math.min(p.maxHp, p.hp + q.amount);
-        this.emit({ type: "pickup", id: q.id, kind: q.kind, weapon: q.weapon, label: q.label });
-        this.checkpoint();
-        break;
-      }
-    }
-    findPrompt(p) {
-      const near = (o, r) => Math.hypot(p.x - o.x, p.z - o.z) < r;
-      const c = this.case, carrying = c.state === "carried", f = this.floor;
-      for (const it of this.F.interact) {
-        if (!near(it, it.r)) continue;
-        const okSide = !it.side || (it.side.min !== void 0 ? it.side.axis === "x" ? p.x > it.side.min : p.z > it.side.min : it.side.axis === "x" ? p.x < it.side.max : p.z < it.side.max);
-        if (it.id === "radio" && !this.flags.radio_heard) return { id: it.id, label: it.label, usable: true };
-        if (it.id === "liftReset" && !this.flags.lift_power_restored) return { id: it.id, label: it.label, usable: true };
-        if (it.id === "orBar" && !this.flags.or_south_unbarred && !this.doors.orbar.busy && okSide) return { id: it.id, label: it.label, usable: true };
-        if (it.id === "intake") {
-          if (carrying) return { id: "intake", label: "Secure the case", usable: true };
-          if (c.state === "stored" && this.flags.record_seen && !this.flags.sample_matched) return { id: "match", label: "Compare the record with the case", usable: true };
-        }
-        if (it.id === "record" && !this.flags.record_seen) return { id: "record", label: it.label, usable: true };
-      }
-      if (!carrying && c.floor === f && near(c, CASE_R)) {
-        if (!this.canCarry()) return { id: "caseNoHand", label: "Needs a free hand: a one-handed weapon", usable: false };
-        return { id: "takeCase", label: c.state === "home" ? "Take the sealed case" : "Pick up the case", usable: true };
-      }
-      if (f === 7) {
-        if (!this.flags.or_south_unbarred && p.z < 1.05 && near({ x: -1.35, z: 0.2 }, 2)) return { id: "orBarred", label: "Barred from the other side", usable: false };
-        if (this.lift.state === "fault" && near(this.L.call, 2.6)) return { id: "liftFault", label: "Lift: no power", usable: false };
-        if (!this.flags.lift_power_restored && near({ x: -15.05, z: 16.4 }, 1.8)) return { id: "x7Locked", label: "Powered door: no power", usable: false };
-      }
-      if (f === 6 && !this.flags.partition_broken && near({ x: -16.6, z: -56.05 }, 1.6)) return { id: "partitionWeak", label: "A weak partition \u2014 too solid to push", usable: false };
-      if (f === 5 && this.case.state === "stored" && near(INTAKE_SPOT, 2.2) && !this.flags.sample_matched && !this.flags.record_seen) return { id: "caseHeld", label: "The case is secured here", usable: false };
-      for (const q of this.pickups) if (q.kind === "health" && near(q, q.r + 0.6) && p.hp >= p.maxHp) return { id: "healthFull", label: "Health full \u2014 leave the first-aid case", usable: false };
-      if (carrying && !this.lift.choosing) return { id: "dropCase", label: "Set the case down", usable: true, quiet: true };
-      return null;
-    }
-    use(id) {
-      const p = this.sim.player;
-      if (id === "radio" && !this.flags.radio_heard) {
-        this.flags.radio_heard = true;
-        this.say("f7_radio");
-        this.setObjective("f7_power");
-      } else if (id === "liftReset" && !this.flags.lift_power_restored) {
-        this.flags.lift_power_restored = true;
-        if (this.lift.state === "fault") this.lift.state = "ready";
-        this.doors.x7door.busy = true;
-        this.doors.x7door.t = 0;
-        this.emit({ type: "liftPower" });
-        this.wakeGroup("r7");
-        this.say("f7_power");
-        this.setObjective(this.flags.or_south_unbarred ? "f7_board" : "f7_return");
-      } else if (id === "orBar") {
-        const d = this.doors.orbar;
-        if (d.busy) return;
-        d.busy = true;
-        d.t = 0;
-        this.emit({ type: "unbrace", door: "orbar" });
-      } else if (id === "takeCase") this.takeCase();
-      else if (id === "dropCase") this.dropCase(p.x + Math.sin(p.aimYaw) * 0.55, p.z + Math.cos(p.aimYaw) * 0.55);
-      else if (id === "intake") this.secureCase();
-      else if (id === "match") this.matchSample();
-      else if (id === "record") {
-        this.flags.record_seen = true;
-        this.emit({ type: "record" });
-        const atHand = this.case.state === "stored" || this.case.state === "carried";
-        if (this.flags.case_secured && this.case.state === "stored") {
-          this.say("f5_record");
-          this.setObjective("f5_match");
-        } else {
-          this.say(atHand ? "f5_record" : "f5_record_first");
-          this.setObjective(atHand ? "f5_match" : "f5_record_case");
-        }
-        this.checkpoint();
-      }
-    }
-    // the bar comes off, then the leaves swing open; the doorway only becomes passable once they are open.
-    // The contractor store's powered door slides open when the circuit comes back.
-    doorStep(dt) {
-      const W3 = this.sim.world;
-      const d = this.doors.orbar;
-      if (d.busy) {
-        d.t += dt;
-        d.brace = Math.min(1, d.t / BRACE_TIME);
-        d.open = Math.min(1, Math.max(0, (d.t - BRACE_TIME) / DOOR_OPEN_TIME));
-        if (d.open >= 0.6 && W3.dyn?.orbar && !W3.dyn.orbar.off) W3.setOff(W3.dyn.orbar, true);
-        if (d.open >= 1) {
-          d.busy = false;
-          this.flags.or_south_unbarred = true;
-          this.emit({ type: "doorOpened", door: "orbar" });
-          if (this.flags.lift_power_restored) this.setObjective("f7_board");
-          this.checkpoint();
-        }
-      }
-      const x = this.doors.x7door;
-      if (x.busy) {
-        x.t += dt;
-        x.open = Math.min(1, x.t / DOOR_OPEN_TIME);
-        if (x.open >= 0.6 && W3.dyn?.x7door && !W3.dyn.x7door.off) W3.setOff(W3.dyn.x7door, true);
-        if (x.open >= 1) {
-          x.busy = false;
-          if (this.floor === 7) {
-            this.emit({ type: "doorOpened", door: "x7door" });
-            this.wakeGroup("x7");
-          }
-        }
-      }
-    }
-    // Floor 6: the charger's committed run into the weak partition breaks it for good (the ward route never depends on it)
-    partitionStep() {
-      if (this.floor !== 6 || this.flags.partition_broken) return;
-      const W3 = this.sim.world, b = W3.dyn?.partition;
-      if (!b) return;
-      for (const e of this.sim.events) {
-        if (e.type !== "zombieTumble" || e.what !== "wall") continue;
-        const z = this.sim.zombies.find((q) => q.id === e.id);
-        if (!z || z.kind !== "sprinter") continue;
-        const cx = Math.max(b.minX, Math.min(z.x, b.maxX)), cz = Math.max(b.minZ, Math.min(z.z, b.maxZ));
-        if (Math.hypot(z.x - cx, z.z - cz) > z.r + 0.6) continue;
-        this.flags.partition_broken = true;
-        this.doors.partition.broken = true;
-        W3.setOff(b, true);
-        this.emit({ type: "partitionBreak", x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2, dirX: Math.sin(z.yaw), dirZ: Math.cos(z.yaw) });
-        this.checkpoint();
-        break;
-      }
-    }
-    // the lift: fault -> ready (power) -> opening (Yola at the doors) -> open (a floor picker while she stands in the cab) ->
-    // closing (a floor chosen; never on her) -> travel (the ride: the game rebuilds the next floor) ... arriving -> open.
-    floorsFrom() {
-      const list = [];
-      for (const f of [7, 6, 5]) if (f !== this.floor) list.push({ floor: f, label: "Floor " + f });
-      if (this.floor === 5 && this.flags.sample_matched && this.case.state === "carried") list.push({ floor: 4, label: "Floor 4 \u2014 continue", end: true });
-      return list;
-    }
-    chooseFloor(f) {
-      const L3 = this.lift;
-      if (L3.state !== "open" || !L3.choosing) return;
-      if (f === 4 && !(this.floor === 5 && this.flags.sample_matched && this.case.state === "carried")) return;
-      L3.target = f;
-      L3.state = "closing";
-      L3.choosing = false;
-      this.emit({ type: "liftDoors", open: false });
-    }
-    liftStep(dt, p) {
-      const L3 = this.lift, W3 = this.sim.world, LF = this.L;
-      const inCab = inRect(LF.cab, p.x, p.z, p.r * 0.6), atDoor = Math.abs(p.x - LF.x) < 2.8 && p.z < LF.z + 2.8 && p.z > LF.z - 3.6;
-      const inThreshold = inRect(LF.threshold, p.x, p.z, -p.r);
-      switch (L3.state) {
-        case "fault":
-          if (this.floor === 7 && !this.flags.phone_checked && !p.dead && Math.hypot(p.x - LF.call.x, p.z - LF.call.z) < 2.2 && !this.sim.zombies.some((z) => z.alive && !z.dormant && Math.hypot(z.x - p.x, z.z - p.z) < 7)) {
-            this.flags.phone_checked = true;
-            this.emit({ type: "liftFault" });
-            this.say("f7_phone");
-            this.setObjective("f7_find");
-          }
-          break;
-        case "ready":
-          if (atDoor && !p.dead) {
-            L3.state = "opening";
-            this.emit({ type: "liftDoors", open: true });
-          }
-          break;
-        case "arriving":
-          L3.t += dt;
-          if (L3.t > 0.55) {
-            L3.state = "opening";
-            this.emit({ type: "liftDoors", open: true });
-          }
-          break;
-        case "opening":
-          L3.open = Math.min(1, L3.open + dt / LIFT_DOOR_TIME);
-          if (L3.open >= 0.7) W3.setOff(W3.dyn.liftDoors, true);
-          if (L3.open >= 1) L3.state = "open";
-          break;
-        case "open":
-          L3.choosing = inCab && !p.dead;
-          if (!atDoor && !inCab && p.z > LF.z + 3.4) {
-            L3.state = "closingIdle";
-            L3.choosing = false;
-          }
-          break;
-        case "closingIdle":
-          if (atDoor) {
-            L3.state = "opening";
-            break;
-          }
-          L3.open = Math.max(0, L3.open - dt / LIFT_DOOR_TIME);
-          if (L3.open < 0.3) W3.setOff(W3.dyn.liftDoors, false);
-          if (L3.open <= 0) L3.state = "ready";
-          break;
-        case "closing":
-          if (!inCab || inThreshold || p.dead) {
-            L3.state = "opening";
-            L3.target = null;
-            this.emit({ type: "liftDoors", open: true });
-            break;
-          }
-          L3.open = Math.max(0, L3.open - dt / LIFT_DOOR_TIME);
-          if (L3.open <= 0) {
-            W3.setOff(W3.dyn.liftDoors, false);
-            if (L3.target === 4) {
-              L3.state = "gone";
-              this.complete = true;
-              this.flags.chapter_complete = true;
-              this.emit({ type: "chapterComplete" });
-            } else {
-              L3.state = "travel";
-              this.emit({ type: "liftTravel", from: this.floor, to: L3.target, save: this.snapshot({ floor: L3.target, arrive: true, objective: this.arrivalObjective(L3.target) }) });
-            }
-          }
-          break;
-      }
-    }
-    // the objective on arriving at a floor (the chapter's goals, wherever they stand)
-    arrivalObjective(f) {
-      const F3 = this.flags, c = this.case;
-      if (F3.sample_matched) return c.state === "carried" ? f === 5 ? "f5_down" : "f5_back" : c.floor === f ? "f5_retrieve" : "f5_fetch";
-      if (c.state === "carried") return f === 5 ? "f5_intake" : "f5_go";
-      if (f === 6 && !F3.case_picked) return "f6_case";
-      if (f === 5) return F3.record_seen ? F3.case_secured ? "f5_match" : "f5_record_case" : F3.case_secured ? "f5_record" : "f5_explore";
-      if (f === 7) return "f7_explore";
-      return this.objective;
-    }
-  };
-  var ORDER = ["pistol", "shotgun", "axe", "bat", "sledgehammer", "crowbar", "knife", "fists"];
-  function WEAPON_SORT(list) {
-    return [...new Set(list)].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
-  }
-
   // src/core/rooms.js
   var CRACK = { t: 0.26, h: 2.6, near: 0.45 };
   var FLOOD = { yola: 0.68, zombie: 0.55, recharge: 9, panelR: 0.4, panelReach: 1.1, jolt: 30 };
@@ -49308,6 +49076,598 @@ void main() {
         sim2.emit({ type: "mriGuns", id: M4.id, guns: M4.pinned.slice() });
       }
     }
+  }
+
+  // src/core/level.js
+  var LIFT_DOOR_TIME = 1;
+  var BRACE_TIME = 2.5;
+  var DOOR_OPEN_TIME = 1.5;
+  var ONE_HANDED = ["bat", "pistol", "crowbar", "knife"];
+  var CASE_R = 1.35;
+  var inRect = (r, x, z, m = 0) => x > r.minX + m && x < r.maxX - m && z > r.minZ + m && z < r.maxZ - m;
+  var roomAt2 = roomAt;
+  var Level = class {
+    constructor(sim2, save = null) {
+      this.sim = sim2;
+      const s = save || {};
+      this.floor = s.floor || 7;
+      this.F = FLOORS[this.floor];
+      this.L = LIFTS[this.floor];
+      this.flags = {
+        lift_power_restored: false,
+        or_south_unbarred: false,
+        partition_broken: false,
+        phone_checked: false,
+        radio_heard: false,
+        power_call: false,
+        case_seen: false,
+        case_picked: false,
+        case_secured: false,
+        record_seen: false,
+        sample_matched: false,
+        chapter_complete: false,
+        unbarred: [],
+        broken_walls: [],
+        mri_off: [],
+        // (2026-10-19: the floors' fire doors opened, cracked walls broken, magnets shut down)
+        ...s.flags || {}
+      };
+      this.case = s.case ? { ...s.case } : { state: "home", floor: CASE_HOME.floor, x: CASE_HOME.x, z: CASE_HOME.z, y: CASE_HOME.y };
+      this.taken = new Set(s.taken || []);
+      this.killed = new Set(s.killed || []);
+      this.visited = new Set(s.visited || []);
+      this.objective = s.objective || "f7_lift";
+      this.complete = false;
+      this.ownedFull = s.ownedFull || null;
+      const open = (f) => f ? 1 : 0;
+      this.doors = {
+        orbar: { brace: open(this.flags.or_south_unbarred), open: open(this.flags.or_south_unbarred), busy: false },
+        x7door: { brace: 1, open: open(this.flags.lift_power_restored), busy: false },
+        partition: { broken: this.flags.partition_broken }
+      };
+      for (const d of this.F.doors) if (d.kind === "barred" && d.id !== "orbar") {
+        const o = open(this.flags.unbarred.includes(d.id));
+        this.doors[d.id] = { brace: o, open: o, busy: false, barred: true };
+      }
+      const powered = this.floor !== 7 || this.flags.lift_power_restored;
+      this.lift = { state: !powered ? "fault" : s.arrive ? "arriving" : "ready", open: 0, t: 0, floor: this.floor, choosing: false };
+      this.prompt = null;
+      this.room = null;
+      this.lines = [];
+      this.ending = null;
+      const W3 = sim2.world;
+      if (W3.dyn) {
+        if (this.flags.or_south_unbarred && W3.dyn.orbar) W3.setOff(W3.dyn.orbar, true);
+        if (this.flags.lift_power_restored && W3.dyn.x7door) W3.setOff(W3.dyn.x7door, true);
+        if (this.flags.partition_broken && W3.dyn.partition) W3.setOff(W3.dyn.partition, true);
+        for (const id of this.flags.unbarred) if (W3.dyn[id]) W3.setOff(W3.dyn[id], true);
+      }
+      this.walls = /* @__PURE__ */ new Map();
+      for (const c of this.F.cracked || []) if (!this.flags.broken_walls.includes(this.floor + ":" + c.id)) {
+        const C = sim2.addCrackedWall(c);
+        this.walls.set(C.id, this.floor + ":" + c.id);
+      }
+      if (this.F.flood) sim2.addFlood({ ...this.F.flood });
+      if (this.F.mri) {
+        const M4 = sim2.addMRI({ ...this.F.mri });
+        M4.key = this.floor + ":mri";
+        if (this.flags.mri_off.includes(M4.key)) M4.state = "off";
+      }
+      for (const [x, z] of this.F.tanks || []) sim2.addTank(x, z);
+      const fresh = !save || save.floor === 7 && !save.flags?.radio_heard && !this.killed.size && this.floor === 7 && !s.x;
+      this.floorPending = [];
+      for (const g of this.F.groups) {
+        g.zombies.forEach((zs, i) => {
+          const key = this.floor + ":" + g.id + ":" + i;
+          if (this.killed.has(key)) return;
+          if (zs.from === "floor") {
+            this.floorPending.push({ key, group: g.id, sense: g.sense ?? 6, zs, at: null });
+            return;
+          }
+          const z = sim2.spawnZombie(null, { x: zs.x, z: zs.z, yaw: zs.yaw, passive: true, speedMul: 0, kind: zs.kind, prop: zs.prop, bed: zs.bed });
+          z.set(ZS.CHASE);
+          z.spawnKey = key;
+          z.group = g.id;
+          if (zs.look) z.look = zs.look;
+          if (zs.crawl) {
+            z.crawling = true;
+            z.broken = "LowerLeg_L";
+          }
+          z.dormant = {
+            wake: fresh && zs.wake !== void 0 ? zs.wake : Infinity,
+            sense: g.sense ?? (zs.wake !== void 0 ? 6 : 0),
+            locked: !!g.locked,
+            group: g.id,
+            speedMul: 0.85 + 0.1 * (i % 3)
+          };
+        });
+      }
+      this.pickups = this.F.pickups.filter((q) => !this.taken.has(q.id)).map((q) => ({ ...q }));
+      const p = sim2.player;
+      p.reserve = { pistol: 0, shotgun: 0 };
+      if (save) {
+        if (s.arrive) {
+          p.x = this.L.inside.x;
+          p.z = this.L.inside.z;
+          p.aimYaw = p.aimTarget = 0;
+        } else {
+          p.x = s.x;
+          p.z = s.z;
+          p.aimYaw = p.aimTarget = s.yaw ?? 0;
+        }
+        p.setLoadout(s.owned?.length ? s.owned : ["fists"], s.equipped || s.owned && s.owned[0] || "fists");
+        Object.assign(p.mags, s.mags || {});
+        Object.assign(p.reserve, s.reserve || {});
+        p.hp = s.hp ?? p.maxHp;
+      }
+      if (sim2.T.testInfiniteAmmo) p.reserve = { pistol: Infinity, shotgun: Infinity };
+      if (this.case.state === "carried") this.applyCarry(true);
+    }
+    emit(e) {
+      this.sim.emit(e);
+    }
+    setObjective(id) {
+      if (this.objective === id) return;
+      this.objective = id;
+      this.emit({ type: "objective", id });
+      this.checkpoint();
+    }
+    say(id) {
+      this.emit({ type: "radio", id });
+    }
+    // a short exchange (captions; the UI plays it while play goes on)
+    // a checkpoint: everything needed to restore a coherent chapter (doors and pickups keep their state; the dead stay dead)
+    snapshot(extra = {}) {
+      const p = this.sim.player;
+      let owned = this.ownedFull || p.owned;
+      for (const M4 of this.sim.mris || []) if (M4.state === "on" || M4.dropped) owned = [.../* @__PURE__ */ new Set([...owned, ...M4.pinned])];
+      return {
+        v: 2,
+        level: "chapter",
+        floor: this.floor,
+        flags: { ...this.flags, unbarred: [...this.flags.unbarred], broken_walls: [...this.flags.broken_walls], mri_off: [...this.flags.mri_off] },
+        case: { ...this.case },
+        taken: [...this.taken],
+        killed: [...this.killed],
+        visited: [...this.visited],
+        objective: this.objective,
+        owned: [...owned],
+        equipped: p.equipped,
+        mags: { ...p.mags },
+        reserve: { ...p.reserve },
+        hp: Math.max(35, p.hp),
+        x: +p.x.toFixed(2),
+        z: +p.z.toFixed(2),
+        yaw: +p.aimYaw.toFixed(3),
+        ...extra
+      };
+    }
+    checkpoint() {
+      if (!this.sim.player.dead && this.lift.state !== "travel") this.emit({ type: "checkpoint", save: this.snapshot() });
+    }
+    // a woken zombie rouses the others of its group nearby (a beat apart, never all at once)
+    onWake(z) {
+      for (const o of this.sim.zombies) {
+        const d = o.dormant;
+        if (!d || d.locked || o.group !== z.group || o === z) continue;
+        if (Math.hypot(o.x - z.x, o.z - z.z) < 7) d.wake = Math.min(d.wake, this.sim.time + 0.35 + this.sim.rand() * 0.9);
+      }
+    }
+    wakeGroup(id) {
+      let k = 0;
+      for (const o of this.sim.zombies) if (o.dormant && o.group === id) {
+        o.dormant.locked = false;
+        o.dormant.wake = Math.min(o.dormant.wake, this.sim.time + 0.4 + 0.45 * k++);
+      }
+    }
+    // ---- the case: carried in the off hand (one-handed weapons only), set down with one action, picked up again ----
+    applyCarry(on) {
+      const p = this.sim.player;
+      if (on) {
+        if (!this.ownedFull) this.ownedFull = [...p.owned];
+        const allowed = this.ownedFull.filter((w) => ONE_HANDED.includes(w));
+        p.owned = allowed.length ? allowed : [...this.ownedFull];
+        if (!p.owned.includes(p.desired)) p.desired = p.owned[0];
+      } else if (this.ownedFull) {
+        const keep = p.desired;
+        p.owned = WEAPON_SORT(this.ownedFull.concat(p.owned.filter((w) => !this.ownedFull.includes(w))));
+        this.ownedFull = null;
+        if (p.owned.includes(keep)) p.desired = keep;
+      }
+    }
+    canCarry() {
+      return (this.ownedFull || this.sim.player.owned).some((w) => ONE_HANDED.includes(w));
+    }
+    takeCase() {
+      const c = this.case, first = !this.flags.case_picked;
+      c.state = "carried";
+      c.floor = this.floor;
+      this.flags.case_picked = true;
+      this.applyCarry(true);
+      this.emit({ type: "case", state: "carried", first });
+      if (first) {
+        this.say("f6_pickup");
+        this.setObjective(this.flags.case_secured || this.flags.sample_matched ? "f5_down" : "f5_intake");
+      } else if (this.flags.sample_matched && this.floor === 5) this.setObjective("f5_down");
+      this.checkpoint();
+    }
+    dropCase(x, z) {
+      const c = this.case;
+      c.state = "placed";
+      c.floor = this.floor;
+      c.x = +x.toFixed(2);
+      c.z = +z.toFixed(2);
+      c.y = 0;
+      this.applyCarry(false);
+      this.emit({ type: "case", state: "placed" });
+      this.checkpoint();
+    }
+    secureCase() {
+      const c = this.case;
+      c.state = "stored";
+      c.floor = 5;
+      c.x = INTAKE_SPOT.x;
+      c.z = INTAKE_SPOT.z;
+      c.y = INTAKE_SPOT.y;
+      this.applyCarry(false);
+      const first = !this.flags.case_secured;
+      this.flags.case_secured = true;
+      this.emit({ type: "case", state: "stored", first });
+      if (this.flags.record_seen && !this.flags.sample_matched) this.matchSample();
+      else if (first) {
+        this.say("f5_intake");
+        this.setObjective("f5_record");
+      }
+      this.checkpoint();
+    }
+    matchSample() {
+      this.flags.sample_matched = true;
+      this.say("f5_match");
+      this.emit({ type: "sampleMatch" });
+      this.setObjective(this.case.state === "carried" ? "f5_down" : "f5_retrieve");
+    }
+    step(dt, input2) {
+      const sim2 = this.sim, p = sim2.player;
+      if (this.complete) return;
+      for (const z of sim2.zombies) if (z.spawnKey && !z.alive && !this.killed.has(z.spawnKey)) this.killed.add(z.spawnKey);
+      const room = roomAt2(p.x, p.z);
+      if (room && room !== this.room) {
+        this.room = room;
+        const key = this.floor + ":" + room;
+        if (!this.visited.has(key)) {
+          this.visited.add(key);
+          this.emit({ type: "roomEnter", room });
+          this.onFirstVisit(room);
+        }
+        if (!p.dead) this.checkpoint();
+      }
+      this.pickupStep(p);
+      this.floorStep(p);
+      this.doorStep(dt);
+      this.partitionStep();
+      this.roomsWatch();
+      this.liftStep(dt, p);
+      this.prompt = p.dead ? null : this.findPrompt(p);
+      if (input2.usePresses > 0 && this.prompt?.usable) this.use(this.prompt.id);
+    }
+    // out of the floor (2026-10-18; core/sim.js spawnFromFloor): a floor spawn waits for its group: once any of the group is
+    // awake (or Yola comes within its sense of the hole, with no wall between), it breaks through `delay` s later. Never
+    // under her or right beside her: a hole within 2.8 m of her waits (the rumble and the crack give her warning anyway).
+    floorStep(p) {
+      const sim2 = this.sim;
+      for (let i = this.floorPending.length - 1; i >= 0; i--) {
+        const f = this.floorPending[i], zs = f.zs;
+        if (f.at == null) {
+          const woke = sim2.zombies.some((z2) => z2.group === f.group && !z2.dormant && z2.alive);
+          const near = !p.dead && Math.hypot(p.x - zs.x, p.z - zs.z) < f.sense && sim2.world.lineOfSight(p.x, p.z, zs.x, zs.z, 1);
+          if (woke || near) f.at = sim2.time + (zs.delay ?? 1.5);
+          continue;
+        }
+        if (sim2.time < f.at || p.dead || Math.hypot(p.x - zs.x, p.z - zs.z) < 2.8) continue;
+        const z = sim2.spawnFromFloor(zs.x, zs.z, { kind: zs.kind, look: zs.look });
+        z.spawnKey = f.key;
+        z.group = f.group;
+        this.floorPending.splice(i, 1);
+      }
+    }
+    onFirstVisit(room) {
+      if (room === "k6" && !this.flags.case_seen) this.flags.case_seen = true;
+      if (room === "e6" && !this.flags.case_picked) this.setObjective("f6_case");
+      if (room === "i5" && this.floor === 5 && this.case.state !== "carried" && !this.flags.case_secured) this.say("f5_first");
+    }
+    pickupStep(p) {
+      if (p.dead) return;
+      for (const q of this.pickups) {
+        if (Math.hypot(p.x - q.x, p.z - q.z) > q.r) continue;
+        if (q.kind === "health" && p.hp >= p.maxHp) continue;
+        this.pickups.splice(this.pickups.indexOf(q), 1);
+        this.taken.add(q.id);
+        if (q.kind === "weapon") {
+          const list = this.ownedFull || p.owned;
+          if (!list.includes(q.weapon)) {
+            list.push(q.weapon);
+            if (this.ownedFull) this.applyCarry(true);
+          }
+          if (q.mag !== void 0) p.mags[q.weapon] = q.mag;
+          if (!this.ownedFull || ONE_HANDED.includes(q.weapon)) p.desired = q.weapon;
+        } else if (q.kind === "ammo") p.reserve[q.weapon] = (p.reserve[q.weapon] || 0) + q.rounds;
+        else if (q.kind === "health") p.hp = Math.min(p.maxHp, p.hp + q.amount);
+        this.emit({ type: "pickup", id: q.id, kind: q.kind, weapon: q.weapon, label: q.label });
+        this.checkpoint();
+        break;
+      }
+    }
+    findPrompt(p) {
+      const near = (o, r) => Math.hypot(p.x - o.x, p.z - o.z) < r;
+      const c = this.case, carrying = c.state === "carried", f = this.floor;
+      for (const it of this.F.interact) {
+        if (!near(it, it.r)) continue;
+        const okSide = !it.side || (it.side.min !== void 0 ? it.side.axis === "x" ? p.x > it.side.min : p.z > it.side.min : it.side.axis === "x" ? p.x < it.side.max : p.z < it.side.max);
+        if (it.id === "radio" && !this.flags.radio_heard) return { id: it.id, label: it.label, usable: true };
+        if (it.id === "liftReset" && !this.flags.lift_power_restored) return { id: it.id, label: it.label, usable: true };
+        if (it.id === "orBar" && !this.flags.or_south_unbarred && !this.doors.orbar.busy && okSide) return { id: it.id, label: it.label, usable: true };
+        if (it.id.startsWith("bar:")) {
+          const d = this.doors[it.id.slice(4)];
+          if (d && !d.busy && d.open < 1 && okSide) return { id: it.id, label: it.label, usable: true };
+        }
+        if (it.id === "intake") {
+          if (carrying) return { id: "intake", label: "Secure the case", usable: true };
+          if (c.state === "stored" && this.flags.record_seen && !this.flags.sample_matched) return { id: "match", label: "Compare the record with the case", usable: true };
+        }
+        if (it.id === "record" && !this.flags.record_seen) return { id: "record", label: it.label, usable: true };
+      }
+      if (!carrying && c.floor === f && near(c, CASE_R)) {
+        if (!this.canCarry()) return { id: "caseNoHand", label: "Needs a free hand: a one-handed weapon", usable: false };
+        return { id: "takeCase", label: c.state === "home" ? "Take the sealed case" : "Pick up the case", usable: true };
+      }
+      if (f === 7) {
+        if (!this.flags.or_south_unbarred && p.z < 1.05 && near({ x: -1.35, z: 0.2 }, 2)) return { id: "orBarred", label: "Barred from the other side", usable: false };
+        if (this.lift.state === "fault" && near(this.L.call, 2.6)) return { id: "liftFault", label: "Lift: no power", usable: false };
+        if (!this.flags.lift_power_restored && near({ x: -15.05, z: 16.4 }, 1.8)) return { id: "x7Locked", label: "Powered door: no power", usable: false };
+      }
+      if (crackedNear(this.sim, p.x, p.z, 1.3).length) return p.equipped === "sledgehammer" ? { id: "crackedHit", label: "Cracked wall: swing the sledgehammer", usable: false } : { id: "crackedWall", label: "Cracked wall: something heavy would break it", usable: false };
+      for (const [id, d] of Object.entries(this.doors)) if (d.barred && d.open < 1 && !d.busy && this.F.interact.some((it) => it.id === "bar:" + id && near(it, it.r + 1.5)) && !this.findBarSide(id, p)) return { id: "barredOther", label: "Barred from the other side", usable: false };
+      if (f === 5 && this.case.state === "stored" && near(INTAKE_SPOT, 2.2) && !this.flags.sample_matched && !this.flags.record_seen) return { id: "caseHeld", label: "The case is secured here", usable: false };
+      for (const q of this.pickups) if (q.kind === "health" && near(q, q.r + 0.6) && p.hp >= p.maxHp) return { id: "healthFull", label: "Health full \u2014 leave the first-aid case", usable: false };
+      if (carrying && !this.lift.choosing) return { id: "dropCase", label: "Set the case down", usable: true, quiet: true };
+      return null;
+    }
+    use(id) {
+      const p = this.sim.player;
+      if (id === "radio" && !this.flags.radio_heard) {
+        this.flags.radio_heard = true;
+        this.say("f7_radio");
+        this.setObjective("f7_power");
+      } else if (id === "liftReset" && !this.flags.lift_power_restored) {
+        this.flags.lift_power_restored = true;
+        if (this.lift.state === "fault") this.lift.state = "ready";
+        this.doors.x7door.busy = true;
+        this.doors.x7door.t = 0;
+        this.emit({ type: "liftPower" });
+        this.wakeGroup("r7");
+        this.say("f7_power");
+        this.setObjective(this.flags.or_south_unbarred ? "f7_board" : "f7_return");
+      } else if (id === "orBar") {
+        const d = this.doors.orbar;
+        if (d.busy) return;
+        d.busy = true;
+        d.t = 0;
+        this.emit({ type: "unbrace", door: "orbar" });
+      } else if (id.startsWith("bar:")) {
+        const d = this.doors[id.slice(4)];
+        if (!d || d.busy) return;
+        d.busy = true;
+        d.t = 0;
+        this.emit({ type: "unbrace", door: id.slice(4) });
+      } else if (id === "takeCase") this.takeCase();
+      else if (id === "dropCase") this.dropCase(p.x + Math.sin(p.aimYaw) * 0.55, p.z + Math.cos(p.aimYaw) * 0.55);
+      else if (id === "intake") this.secureCase();
+      else if (id === "match") this.matchSample();
+      else if (id === "record") {
+        this.flags.record_seen = true;
+        this.emit({ type: "record" });
+        const atHand = this.case.state === "stored" || this.case.state === "carried";
+        if (this.flags.case_secured && this.case.state === "stored") {
+          this.say("f5_record");
+          this.setObjective("f5_match");
+        } else {
+          this.say(atHand ? "f5_record" : "f5_record_first");
+          this.setObjective(atHand ? "f5_match" : "f5_record_case");
+        }
+        this.checkpoint();
+      }
+    }
+    // the bar comes off, then the leaves swing open; the doorway only becomes passable once they are open.
+    // The contractor store's powered door slides open when the circuit comes back.
+    doorStep(dt) {
+      const W3 = this.sim.world;
+      const d = this.doors.orbar;
+      if (d.busy) {
+        d.t += dt;
+        d.brace = Math.min(1, d.t / BRACE_TIME);
+        d.open = Math.min(1, Math.max(0, (d.t - BRACE_TIME) / DOOR_OPEN_TIME));
+        if (d.open >= 0.6 && W3.dyn?.orbar && !W3.dyn.orbar.off) W3.setOff(W3.dyn.orbar, true);
+        if (d.open >= 1) {
+          d.busy = false;
+          this.flags.or_south_unbarred = true;
+          this.emit({ type: "doorOpened", door: "orbar" });
+          if (this.flags.lift_power_restored) this.setObjective("f7_board");
+          this.checkpoint();
+        }
+      }
+      for (const [key, g] of Object.entries(this.doors)) {
+        if (!g.barred || !g.busy) continue;
+        g.t += dt;
+        g.brace = Math.min(1, g.t / BRACE_TIME);
+        g.open = Math.min(1, Math.max(0, (g.t - BRACE_TIME) / DOOR_OPEN_TIME));
+        if (g.open >= 0.6 && W3.dyn?.[key] && !W3.dyn[key].off) W3.setOff(W3.dyn[key], true);
+        if (g.open >= 1) {
+          g.busy = false;
+          this.flags.unbarred = [...this.flags.unbarred, key];
+          this.emit({ type: "doorOpened", door: key });
+          this.checkpoint();
+        }
+      }
+      const x = this.doors.x7door;
+      if (x.busy) {
+        x.t += dt;
+        x.open = Math.min(1, x.t / DOOR_OPEN_TIME);
+        if (x.open >= 0.6 && W3.dyn?.x7door && !W3.dyn.x7door.off) W3.setOff(W3.dyn.x7door, true);
+        if (x.open >= 1) {
+          x.busy = false;
+          if (this.floor === 7) {
+            this.emit({ type: "doorOpened", door: "x7door" });
+            this.wakeGroup("x7");
+          }
+        }
+      }
+    }
+    // the side a barred door's bar can be lifted from (its interaction's side rule)
+    findBarSide(id, p) {
+      const it = this.F.interact.find((q) => q.id === "bar:" + id);
+      if (!it?.side) return true;
+      const v = it.side.axis === "x" ? p.x : p.z;
+      return it.side.min !== void 0 ? v > it.side.min : v < it.side.max;
+    }
+    // the room mechanics' lasting changes: a cracked wall broken stays broken (a retry, a lift ride), a magnet shut down stays off
+    roomsWatch() {
+      for (const e of this.sim.events) {
+        if (e.type === "wallBreak" && this.walls.has(e.id)) {
+          const key = this.walls.get(e.id);
+          if (!this.flags.broken_walls.includes(key)) {
+            this.flags.broken_walls = [...this.flags.broken_walls, key];
+            this.checkpoint();
+          }
+        }
+        if (e.type === "mriQuench") {
+          const M4 = (this.sim.mris || []).find((q) => q.id === e.id);
+          if (M4?.key && !this.flags.mri_off.includes(M4.key)) {
+            this.flags.mri_off = [...this.flags.mri_off, M4.key];
+          }
+        }
+        if (e.type === "mriGuns") this.checkpoint();
+      }
+    }
+    // Floor 6: the charger's committed run into the weak partition breaks it for good (the ward route never depends on it)
+    partitionStep() {
+      if (this.floor !== 6 || this.flags.partition_broken) return;
+      const W3 = this.sim.world, b = W3.dyn?.partition;
+      if (!b) return;
+      for (const e of this.sim.events) {
+        if (e.type !== "zombieTumble" || e.what !== "wall") continue;
+        const z = this.sim.zombies.find((q) => q.id === e.id);
+        if (!z || z.kind !== "sprinter") continue;
+        const cx = Math.max(b.minX, Math.min(z.x, b.maxX)), cz = Math.max(b.minZ, Math.min(z.z, b.maxZ));
+        if (Math.hypot(z.x - cx, z.z - cz) > z.r + 0.6) continue;
+        this.flags.partition_broken = true;
+        this.doors.partition.broken = true;
+        W3.setOff(b, true);
+        this.emit({ type: "partitionBreak", x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2, dirX: Math.sin(z.yaw), dirZ: Math.cos(z.yaw) });
+        this.checkpoint();
+        break;
+      }
+    }
+    // the lift: fault -> ready (power) -> opening (Yola at the doors) -> open (a floor picker while she stands in the cab) ->
+    // closing (a floor chosen; never on her) -> travel (the ride: the game rebuilds the next floor) ... arriving -> open.
+    floorsFrom() {
+      const list = [];
+      for (const f of [7, 6, 5]) if (f !== this.floor) list.push({ floor: f, label: "Floor " + f });
+      if (this.floor === 5 && this.flags.sample_matched && this.case.state === "carried") list.push({ floor: 4, label: "Floor 4 \u2014 continue", end: true });
+      return list;
+    }
+    chooseFloor(f) {
+      const L3 = this.lift;
+      if (L3.state !== "open" || !L3.choosing) return;
+      if (f === 4 && !(this.floor === 5 && this.flags.sample_matched && this.case.state === "carried")) return;
+      L3.target = f;
+      L3.state = "closing";
+      L3.choosing = false;
+      this.emit({ type: "liftDoors", open: false });
+    }
+    liftStep(dt, p) {
+      const L3 = this.lift, W3 = this.sim.world, LF = this.L;
+      const inCab = inRect(LF.cab, p.x, p.z, p.r * 0.6), atDoor = Math.abs(p.x - LF.x) < 2.8 && p.z < LF.z + 2.8 && p.z > LF.z - 3.6;
+      const inThreshold = inRect(LF.threshold, p.x, p.z, -p.r);
+      switch (L3.state) {
+        case "fault":
+          if (this.floor === 7 && !this.flags.phone_checked && !p.dead && Math.hypot(p.x - LF.call.x, p.z - LF.call.z) < 2.2 && !this.sim.zombies.some((z) => z.alive && !z.dormant && Math.hypot(z.x - p.x, z.z - p.z) < 7)) {
+            this.flags.phone_checked = true;
+            this.emit({ type: "liftFault" });
+            this.say("f7_phone");
+            this.setObjective("f7_find");
+          }
+          break;
+        case "ready":
+          if (atDoor && !p.dead) {
+            L3.state = "opening";
+            this.emit({ type: "liftDoors", open: true });
+          }
+          break;
+        case "arriving":
+          L3.t += dt;
+          if (L3.t > 0.55) {
+            L3.state = "opening";
+            this.emit({ type: "liftDoors", open: true });
+          }
+          break;
+        case "opening":
+          L3.open = Math.min(1, L3.open + dt / LIFT_DOOR_TIME);
+          if (L3.open >= 0.7) W3.setOff(W3.dyn.liftDoors, true);
+          if (L3.open >= 1) L3.state = "open";
+          break;
+        case "open":
+          L3.choosing = inCab && !p.dead;
+          if (!atDoor && !inCab && p.z > LF.z + 3.4) {
+            L3.state = "closingIdle";
+            L3.choosing = false;
+          }
+          break;
+        case "closingIdle":
+          if (atDoor) {
+            L3.state = "opening";
+            break;
+          }
+          L3.open = Math.max(0, L3.open - dt / LIFT_DOOR_TIME);
+          if (L3.open < 0.3) W3.setOff(W3.dyn.liftDoors, false);
+          if (L3.open <= 0) L3.state = "ready";
+          break;
+        case "closing":
+          if (!inCab || inThreshold || p.dead) {
+            L3.state = "opening";
+            L3.target = null;
+            this.emit({ type: "liftDoors", open: true });
+            break;
+          }
+          L3.open = Math.max(0, L3.open - dt / LIFT_DOOR_TIME);
+          if (L3.open <= 0) {
+            W3.setOff(W3.dyn.liftDoors, false);
+            if (L3.target === 4) {
+              L3.state = "gone";
+              this.complete = true;
+              this.flags.chapter_complete = true;
+              this.emit({ type: "chapterComplete" });
+            } else {
+              L3.state = "travel";
+              this.emit({ type: "liftTravel", from: this.floor, to: L3.target, save: this.snapshot({ floor: L3.target, arrive: true, objective: this.arrivalObjective(L3.target) }) });
+            }
+          }
+          break;
+      }
+    }
+    // the objective on arriving at a floor (the chapter's goals, wherever they stand)
+    arrivalObjective(f) {
+      const F3 = this.flags, c = this.case;
+      if (F3.sample_matched) return c.state === "carried" ? f === 5 ? "f5_down" : "f5_back" : c.floor === f ? "f5_retrieve" : "f5_fetch";
+      if (c.state === "carried") return f === 5 ? "f5_intake" : "f5_go";
+      if (f === 6 && !F3.case_picked) return "f6_case";
+      if (f === 5) return F3.record_seen ? F3.case_secured ? "f5_match" : "f5_record_case" : F3.case_secured ? "f5_record" : "f5_explore";
+      if (f === 7) return "f7_explore";
+      return this.objective;
+    }
+  };
+  var ORDER = ["pistol", "shotgun", "axe", "bat", "sledgehammer", "crowbar", "knife", "fists"];
+  function WEAPON_SORT(list) {
+    return [...new Set(list)].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
   }
 
   // src/core/sim.js
@@ -49810,7 +50170,15 @@ void main() {
         return;
       }
       const first = this.traceBullet(m.x, m.z, yaw);
-      if (!first.zombie && this.T.aimAssist > 0) {
+      let toPanel = false;
+      for (const F3 of this.floods || []) {
+        const px2 = F3.panel.x - m.x, pz2 = F3.panel.z - m.z, d = Math.hypot(px2, pz2);
+        if (d < 14 && Math.abs(angleDiff(yaw, Math.atan2(px2, pz2))) < 0.12 && (!first.zombie || first.t > d) && this.world.lineOfSight(m.x, m.z, F3.panel.x, F3.panel.z, BULLET_MIN_H)) {
+          yaw = Math.atan2(px2, pz2);
+          toPanel = true;
+        }
+      }
+      if (!toPanel && !first.zombie && this.T.aimAssist > 0) {
         const maxBend = 0.087 * this.T.aimAssist;
         let best = null, bestA = 1e9;
         for (const z of this.zombies) {
@@ -58811,9 +59179,9 @@ void main() {
         this.partitionObj.visible = !level.doors.partition.broken;
         moved = true;
       }
-      for (const key of ["orbar", "x7door"]) {
+      for (const key of Object.keys(level.doors)) {
         const k = this.doorKits[key], d = level.doors[key];
-        if (!k || !d) continue;
+        if (!k || !d || d.open === void 0) continue;
         if (d.brace !== k.lastB || d.open !== k.last) {
           k.lastB = d.brace;
           k.last = d.open;
@@ -65253,7 +65621,7 @@ void main() {
     f7_return: "Back to the lift: north through the prep room.",
     f7_board: "Take the lift down.",
     f7_explore: "Take the lift down.",
-    f6_case: "Cold dispatch: find the sealed pre-op case.",
+    f6_case: "Cold dispatch, the far south-west corner: find the sealed pre-op case.",
     f5_intake: "Take the case to diagnostic intake on 5.",
     f5_go: "Take the case to diagnostic intake on 5.",
     f5_explore: "Diagnostic intake is beside the lift. The records are further in.",
@@ -65286,7 +65654,7 @@ void main() {
       { who: "TECH", text: "Keep it that way. Diagnostic intake on five can hold it safely. The dispatch record is there too." }
     ],
     f5_first: [{ who: "TECH", text: "Intake\u2019s right by the lift. Leave the case there while you look for the record." }],
-    f5_intake: [{ who: "TECH", text: "Good. It\u2019s held. The accession-to-patient record should be in transfer records." }],
+    f5_intake: [{ who: "TECH", text: "Good. It\u2019s held. The accession-to-patient record should be in medical records, past the isolation ward." }],
     f5_record_first: [{ who: "Yola", text: "Here\u2019s the docket. I need the case beside it." }],
     f5_record: [{ who: "Yola", text: "Here\u2019s the docket. Back to intake." }],
     f5_match: [
@@ -67017,6 +67385,11 @@ void main() {
         byChunk.get(chunk).push(o);
       });
       this.byChunk = byChunk;
+      this.inner = [];
+      for (const ms of byChunk.values()) for (const m of ms) if (/^B__/.test(m.name)) {
+        m.visible = false;
+        this.inner.push(m);
+      }
       this.headMats = [];
       for (const m of byChunk.get("Head") || []) {
         m.material = m.material.clone();
@@ -73744,6 +74117,7 @@ void main() {
   };
   var FLAT2 = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
   var BAKE = { url: "assets/hospital/wing_floor_light.jpg", x0: -7.6, x1: 7.6, z0: -11.6, z1: 11.6, k: 2.2, fill: 0.3 };
+  var WING_PLAN = { rooms: WING_LIGHTS.rooms, fixtures: WING_LIGHTS.fixtures, exits: WING_LIGHTS.exits, bakes: [BAKE] };
   var YSH = { map: 512, half: 1.6, off: [-2.8, 5.5, -0.8], dark: 0.55, min: 0.55 };
   var CHAR = { base: 0.9, floor: 0.4 };
   var DIM = 0.55;
@@ -73776,6 +74150,25 @@ void main() {
       this.flashX = 0;
       this.flashZ = 0;
       this.flashR = 0;
+      this.plan = WING_PLAN;
+      this.floor = null;
+    }
+    // the level's light plan (before anything is built: main passes the chapter's on a story start)
+    usePlan(plan) {
+      this.plan = plan;
+    }
+    bakeOf(x, z) {
+      for (const B of this.plan.bakes) if (x >= B.x0 && x <= B.x1 && z >= B.z0 && z <= B.z1) return B;
+      return this.plan.bakes[0];
+    }
+    // the floor in play: its own EXIT signs and flicker patches show, the others' hide
+    setFloor(n) {
+      this.floor = n;
+      const mine = (o) => o.floor == null || o.floor === n;
+      for (const E of this.exits || []) E.m.visible = E.halo.visible = !!this.on.exit && mine(E);
+      for (const d of this.dips || []) d.m.visible = !!this.on.baked && mine(d.F);
+      this.curBake = this.plan.bakes.find((B) => B.floor === n) || this.plan.bakes[0];
+      this.fill();
     }
     set(key, v) {
       v = !!v;
@@ -73791,7 +74184,7 @@ void main() {
     // ---- the shared floor glows: one instanced mesh for every fitting's pool, every streak, every sign's spill ----
     glows() {
       if (this.G) return this.G;
-      const max = 64, mesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ map: glowTex2(), transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), max);
+      const max = 640, mesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ map: glowTex2(), transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), max);
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
       mesh.count = 0;
       mesh.renderOrder = 2;
@@ -73834,7 +74227,7 @@ void main() {
     // eyes); the tube bars show only with the lab's "Show the tubes" (this.tubes)
     fittings() {
       if (this.fix) return this.fix;
-      return this.fix = WING_LIGHTS.fixtures.map((f, i) => {
+      return this.fix = this.plan.fixtures.map((f, i) => {
         const bar = new Mesh(new BoxGeometry(1.25, 0.04, 0.16), new MeshBasicMaterial({ color: f.col, transparent: true, toneMapped: false }));
         bar.position.set(f.x, 2.6, f.z);
         bar.visible = !!this.tubes;
@@ -73855,7 +74248,7 @@ void main() {
     }
     fill() {
       if (this.arena) {
-        this.arena.lightScale = this.on.baked ? BAKE.fill : this.on.fixtures ? DIM : 1;
+        this.arena.lightScale = this.on.baked ? (this.curBake || this.plan.bakes[0]).fill : this.on.fixtures ? DIM : 1;
         this.arena.coldOff = !!this.on.baked;
       }
     }
@@ -73864,9 +74257,12 @@ void main() {
     build_baked() {
       const O = this.arena?.ob;
       if (!O) return;
-      this.bakeTex = new TextureLoader().load(BAKE.url);
-      this.bakeTex.colorSpace = SRGBColorSpace;
-      this.bakeTex.channel = 1;
+      for (const B of this.plan.bakes) {
+        B.tex = new TextureLoader().load(B.url);
+        B.tex.colorSpace = SRGBColorSpace;
+        B.tex.channel = 1;
+      }
+      this.bakeTex = this.plan.bakes[0].tex;
       this.bakeFloors = [];
       for (const m of O.meshes) {
         const g = m.geometry, p = g.attributes.position;
@@ -73878,14 +74274,20 @@ void main() {
         }
         if (!flat) continue;
         const uv1 = new Float32Array(p.count * 2);
+        let cx = 0, cz = 0;
         for (let i = 0; i < p.count; i++) {
-          uv1[i * 2] = (p.getX(i) - BAKE.x0) / (BAKE.x1 - BAKE.x0);
-          uv1[i * 2 + 1] = 1 - (p.getZ(i) - BAKE.z0) / (BAKE.z1 - BAKE.z0);
+          cx += p.getX(i);
+          cz += p.getZ(i);
+        }
+        const B = this.bakeOf(cx / p.count, cz / p.count);
+        for (let i = 0; i < p.count; i++) {
+          uv1[i * 2] = (p.getX(i) - B.x0) / (B.x1 - B.x0);
+          uv1[i * 2 + 1] = 1 - (p.getZ(i) - B.z0) / (B.z1 - B.z0);
         }
         g.setAttribute("uv1", new BufferAttribute(uv1, 2));
         const bm = m.material.clone();
-        bm.lightMap = this.bakeTex;
-        bm.lightMapIntensity = BAKE.k;
+        bm.lightMap = B.tex;
+        bm.lightMapIntensity = B.k;
         m.userData.bakeMat = bm;
         m.userData.liveMat = m.material;
         this.bakeFloors.push(m);
@@ -73901,6 +74303,8 @@ void main() {
         m.scale.set(6.2, 1, 6.2);
         m.renderOrder = 1;
         m.visible = false;
+        m.matrixAutoUpdate = false;
+        m.updateMatrix();
         this.root.add(m);
         return { F: F3, m };
       });
@@ -73908,17 +74312,17 @@ void main() {
     }
     // the bake's light at a point (0 dark .. ~2 under a tube), read from the image itself (stored at half range, sRGB)
     bakeAt(x, z) {
-      const im = this.bakeTex?.image;
+      const K2 = this.bakeOf(x, z), im = K2.tex?.image;
       if (!im || !im.width) return 0.5;
-      if (!this.bakePx) {
+      if (!K2.px) {
         const c = document.createElement("canvas");
         c.width = im.width;
         c.height = im.height;
         const g = c.getContext("2d");
         g.drawImage(im, 0, 0);
-        this.bakePx = { d: g.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height };
+        K2.px = { d: g.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height };
       }
-      const B = this.bakePx, u = Math.min(B.w - 1, Math.max(0, Math.round((x - BAKE.x0) / (BAKE.x1 - BAKE.x0) * (B.w - 1)))), v = Math.min(B.h - 1, Math.max(0, Math.round((z - BAKE.z0) / (BAKE.z1 - BAKE.z0) * (B.h - 1))));
+      const B = K2.px, u = Math.min(B.w - 1, Math.max(0, Math.round((x - K2.x0) / (K2.x1 - K2.x0) * (B.w - 1)))), v = Math.min(B.h - 1, Math.max(0, Math.round((z - K2.z0) / (K2.z1 - K2.z0) * (B.h - 1))));
       return Math.pow(B.d[(v * B.w + u) * 4] / 255, 2.2) * 2;
     }
     // the characters under A: the bake lights the floor, not them, and A turns the room's fill down to 0.3; each one takes its
@@ -73971,7 +74375,7 @@ void main() {
     }
     toggle_baked(v) {
       if (!v) this.unlightChars();
-      for (const d of this.bakeDips()) d.m.visible = v;
+      for (const d of this.bakeDips()) d.m.visible = v && (this.floor == null || d.F.floor == null || d.F.floor === this.floor);
       for (const m of this.bakeFloors || []) {
         const L3 = m.userData.liveMat, B = m.userData.bakeMat;
         if (v) {
@@ -73985,7 +74389,7 @@ void main() {
     // the bake's input (dev only): every static opaque mesh over the wing as world triangles, the bounds, the fittings and the
     // EXIT signs, posted to shots/wing_bake_scene.json for blender/bake_wing_floor.py. Run game.lightkit.exportBake() in the lab
     // with no characters' props near (the wheelchair and the drip stand would bake in)
-    async exportBake(extra = []) {
+    async exportBake(extra = [], BK = this.plan.bakes[0], file = "wing_bake_scene.json") {
       const skip = /* @__PURE__ */ new Set();
       for (const r3 of [...this.lastYola ? this.yshGear(this.lastYola) : [], ...(this.lastViews || []).map((v) => v.view?.outer), ...extra]) r3?.traverse?.((o) => skip.add(o));
       const out = [], V3 = new Vector3();
@@ -73997,7 +74401,7 @@ void main() {
         const g = o.geometry;
         g.computeBoundingBox();
         const bb = g.boundingBox.clone().applyMatrix4(o.matrixWorld);
-        if (bb.max.x < BAKE.x0 || bb.min.x > BAKE.x1 || bb.max.z < BAKE.z0 || bb.min.z > BAKE.z1) return;
+        if (bb.max.x < BK.x0 || bb.min.x > BK.x1 || bb.max.z < BK.z0 || bb.min.z > BK.z1) return;
         const P = g.attributes.position, I2 = g.index, n = I2 ? I2.count : P.count, f = new Float32Array(n * 3);
         for (let k = 0; k < n; k++) {
           V3.fromBufferAttribute(P, I2 ? I2.getX(k) : k).applyMatrix4(o.matrixWorld);
@@ -74010,13 +74414,14 @@ void main() {
         for (let k = 0; k < u8.length; k += 8192) str += String.fromCharCode.apply(null, u8.subarray(k, k + 8192));
         out.push({ name: o.name || o.parent?.name || "mesh", floor: bb.max.y < 0.02, tris: btoa(str) });
       });
+      const inB = (o) => o.x >= BK.x0 && o.x <= BK.x1 && o.z >= BK.z0 && o.z <= BK.z1;
       const data = {
-        bounds: { x0: BAKE.x0, x1: BAKE.x1, z0: BAKE.z0, z1: BAKE.z1 },
+        bounds: { x0: BK.x0, x1: BK.x1, z0: BK.z0, z1: BK.z1 },
         meshes: out,
-        fixtures: WING_LIGHTS.fixtures.map(({ x, z, k, state, col }) => ({ x, z, k, state, col })),
-        exits: WING_LIGHTS.exits.map(({ x, z }) => ({ x, z }))
+        fixtures: this.plan.fixtures.filter(inB).map(({ x, z, k, state, col }) => ({ x, z, k, state, col })),
+        exits: this.plan.exits.filter(inB).map(({ x, z }) => ({ x, z }))
       };
-      const r = await fetch("/__shot/wing_bake_scene.json", { method: "POST", body: JSON.stringify(data) });
+      const r = await fetch("/__shot/" + file, { method: "POST", body: JSON.stringify(data) });
       return { status: r.status, meshes: out.length };
     }
     // ---- Yola's shadow: one light, one small map, only her (and what she holds) in it ----
@@ -74041,9 +74446,42 @@ void main() {
       C.visible = false;
       this.root.add(C);
     }
+    // (the story floors, 2026-10-19) the light exists from the start, casting, at no strength: switching Yola's shadow on then
+    // changes no light in the scene (a light more or less made three.js rebuild every shader: the hand-off froze 2.8 s, then
+    // 0.36 s); the sun keeps casting but its shadow fades to nothing and its map stops redrawing (the bake has the shadows)
+    prepareYShadow() {
+      if (!this.built.yshadow) {
+        this.built.yshadow = true;
+        this.build_yshadow();
+      }
+      this.ysh.visible = true;
+      this.yshPre = true;
+    }
     toggle_yshadow(v) {
       const r = this.arena?.renderer, sun = this.arena?.sun;
       if (!r) return;
+      if (this.yshPre) {
+        this.yshCatch.visible = v;
+        if (sun) {
+          if (v) {
+            this.yshWas ?? (this.yshWas = { si: sun.shadow.intensity, au: sun.shadow.autoUpdate });
+            sun.shadow.intensity = 0;
+            sun.shadow.autoUpdate = false;
+          } else if (this.yshWas) {
+            sun.shadow.intensity = this.yshWas.si;
+            sun.shadow.autoUpdate = this.yshWas.au;
+            this.yshWas = null;
+          }
+        }
+        if (v) this.yshScanT = 0;
+        else {
+          for (const o of this.yshOff || []) o.castShadow = true;
+          this.yshOff = null;
+          if (this.yolaBlob) this.yolaBlob.visible = true;
+        }
+        r.shadowMap.needsUpdate = true;
+        return;
+      }
       this.ysh.visible = v;
       this.yshCatch.visible = v;
       if (v) {
@@ -74166,7 +74604,7 @@ void main() {
     // ---- EXIT signs ----
     build_exit() {
       const tex2 = exitTex();
-      this.exits = WING_LIGHTS.exits.map((e, i) => {
+      this.exits = this.plan.exits.map((e, i) => {
         const m = new Mesh(new BoxGeometry(0.46, 0.17, 0.05), [0, 0, 0, 0, 1, 1].map((k) => k ? new MeshBasicMaterial({ map: tex2, toneMapped: false, transparent: true }) : new MeshBasicMaterial({ color: 1911330 })));
         m.position.set(e.x, 2.36, e.z);
         m.rotation.y = e.yaw;
@@ -74178,7 +74616,7 @@ void main() {
       });
     }
     toggle_exit(v) {
-      for (const E of this.exits || []) E.m.visible = E.halo.visible = v;
+      for (const E of this.exits || []) E.m.visible = E.halo.visible = v && (this.floor == null || E.floor == null || E.floor === this.floor);
     }
     // ---- D: polished floor ----
     build_polish() {
@@ -74242,7 +74680,7 @@ void main() {
     }
     awayFromLight(x, z) {
       let best = null, bd = 1e9;
-      for (const F3 of WING_LIGHTS.fixtures) {
+      for (const F3 of this.plan.fixtures) {
         if (F3.state === "dead") continue;
         const d = Math.hypot(x - F3.x, z - F3.z);
         if (d < bd) {
@@ -74255,7 +74693,7 @@ void main() {
     }
     // ---- B: the room's light on the characters ----
     roomAt(x, z) {
-      for (const r of WING_LIGHTS.rooms) {
+      for (const r of this.plan.rooms) {
         const [x0, x1, z0, z1] = r.rect;
         if (x >= x0 && x <= x1 && z >= z0 && z <= z1) return r;
       }
@@ -74388,6 +74826,106 @@ void main() {
       view.roomTintOn = false;
     }
   };
+
+  // src/render/floorlights.js
+  var KIND = {
+    // [colour, brightness on the floor (lightkit's k), steady / buzz / failing / dead shares]
+    clinical: [14412031, 0.5, [0.64, 0.12, 0.12, 0.12]],
+    corridor: [15134975, 0.46, [0.5, 0.15, 0.17, 0.18]],
+    hub: [16773596, 0.56, [0.8, 0.1, 0.06, 0.04]],
+    works: [16767400, 0.48, [0.5, 0.2, 0.15, 0.15]],
+    toilets: [15269876, 0.42, [0.5, 0.2, 0.2, 0.1]],
+    cold: [13625087, 0.5, [0.8, 0.1, 0.06, 0.04]],
+    lab: [14872831, 0.52, [0.75, 0.12, 0.08, 0.05]],
+    lounge: [16769720, 0.52, [0.7, 0.18, 0.08, 0.04]],
+    flood: [12575487, 0.4, [0.25, 0.1, 0.3, 0.35]],
+    mri: [13624063, 0.55, [0.85, 0.1, 0.05, 0]],
+    dim: [13162736, 0.36, [0.6, 0.15, 0.15, 0.1]],
+    safe: [15267071, 0.52, [1, 0, 0, 0]]
+    // (the story's safe rooms: every tube works)
+  };
+  var ROOM_KIND = {
+    or: "clinical",
+    s7: "clinical",
+    n7: "hub",
+    t7: "clinical",
+    v7: "works",
+    c7: "lounge",
+    p7: "works",
+    x7: "works",
+    r7: "clinical",
+    wc7: "toilets",
+    jn7: "works",
+    sc7: "dim",
+    o6: "lounge",
+    w6: "clinical",
+    wc6: "toilets",
+    jn6: "works",
+    e6: "hub",
+    cw6: "corridor",
+    cm6: "corridor",
+    ce6: "corridor",
+    b6: "clinical",
+    n6: "hub",
+    p6: "lab",
+    k6: "safe",
+    a6: "works",
+    s6: "lab",
+    wt5: "toilets",
+    jn5: "works",
+    pa5: "lab",
+    e5: "hub",
+    w5: "flood",
+    h5: "hub",
+    i5: "safe",
+    pt5: "toilets",
+    rr5: "dim",
+    r5: "clinical",
+    x5: "clinical",
+    m5: "mri"
+  };
+  var hash = (x, z) => {
+    const v = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  var stateOf = (w, u) => u < w[0] ? "steady" : u < w[0] + w[1] ? "buzz" : u < w[0] + w[1] + w[2] ? "failing" : "dead";
+  function floorPlan(n) {
+    const F3 = FLOORS[n], fixtures = [], rooms = [];
+    for (const r of F3.rooms) {
+      const kind = ROOM_KIND[r.id] || "clinical", [col, k, wear] = KIND[kind];
+      for (const [x0, x1, z0, z1] of r.rects) {
+        const w = x1 - x0, d = z1 - z0;
+        if (w < 1.5 || d < 1.5) continue;
+        const nx = Math.max(1, Math.floor(w / 6)), nz = Math.max(1, Math.floor(d / 6));
+        for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+          const x = x0 + (i + 0.5) * w / nx, z = z0 + (j + 0.5) * d / nz;
+          fixtures.push({ kind: "tube", x: +x.toFixed(2), z: +z.toFixed(2), col, k, state: stateOf(wear, hash(x, z)), floor: n, room: r.id });
+        }
+        rooms.push({ id: r.id, rect: [x0, x1, z0, z1], col, k: k * 0.3 });
+      }
+    }
+    fixtures.push({ kind: "tube", x: F3.lift.x, z: F3.lift.inside.z, col: 16774112, k: 0.5, state: "steady", floor: n, room: "lift" });
+    const B = F3.bounds;
+    return { fixtures, rooms, bake: { floor: n, url: `assets/hospital/floor${n}_light.jpg`, x0: B.minX, x1: B.maxX, z0: B.minZ, z1: B.maxZ, k: 2.2, fill: 0.3 } };
+  }
+  var EXITS = [
+    { x: -7.27, z: -4.05, yaw: -Math.PI / 2, state: "steady" },
+    { x: -31.56, z: 2.2, yaw: 0, state: "failing" },
+    { x: 3.66, z: 15.8, yaw: 0, state: "steady" },
+    { x: -21.74, z: 1.2, yaw: 0, state: "steady" },
+    { x: 0.16, z: -80, yaw: 0, state: "steady" },
+    { x: -15.7, z: -80, yaw: 0, state: "failing" },
+    { x: -34.34, z: -64, yaw: 0, state: "steady" },
+    { x: 0.66, z: -64, yaw: 0, state: "steady" },
+    { x: 1.16, z: -160, yaw: 0, state: "steady" },
+    { x: -25.69, z: -149.9, yaw: Math.PI / 2, state: "steady" },
+    { x: -4.99, z: -136.4, yaw: -Math.PI / 2, state: "failing" },
+    { x: -34.1, z: -143, yaw: 0, state: "steady" }
+  ].map((e) => ({ ...e, floor: e.z > -40 ? 7 : e.z > -120 ? 6 : 5 }));
+  function chapterLightPlan() {
+    const P = [7, 6, 5].map(floorPlan);
+    return { fixtures: P.flatMap((p) => p.fixtures), rooms: P.flatMap((p) => p.rooms), exits: EXITS, bakes: P.map((p) => p.bake), chapter: CHAPTER.name };
+  }
 
   // src/render/texshare.js
   var seen = /* @__PURE__ */ new WeakSet();
@@ -75042,6 +75580,19 @@ void main() {
   var looks = null;
   var atmos = null;
   var lightkit = null;
+  var STORY_LIGHT = ["fixtures", "baked", "exit", "polish", "muzzle", "yshadow"];
+  var STORY_ATMOS = ["splatter", "haze", "impact"];
+  var storyLit = false;
+  function storyLighting(on) {
+    storyLit = on;
+    if (on) {
+      lightkit.setTubes(false);
+      lightkit.setCharLight(0.45);
+    }
+    for (const k of STORY_LIGHT) lightkit.set(k, on);
+    for (const k of STORY_ATMOS) atmos.set(k, on);
+    if (on) lightkit.setFloor(LAYOUT.floor);
+  }
   addEventListener("resize", resize);
   resize();
   var tuning = makeTuning(store2.get("tuning", null));
@@ -75241,6 +75792,7 @@ void main() {
     arena = new Arena(scene, resolvedQuality(), renderer);
     atmos = new Atmos(scene, fx, arena);
     lightkit = new LightKit(scene, fx, arena, tuning.camYaw);
+    if (LAYOUT.story) lightkit.usePlan(chapterLightPlan());
     ZombieView.eyeCfg.light = (x, z) => lightkit.lightAt(x, z);
     looks = new Looks(renderer, scene, camera);
     looks.set(store2.get("look", "standard"));
@@ -75346,7 +75898,13 @@ void main() {
       scene.add(w);
     }
     window.game.texShare = shareTextures(scene, renderer);
+    if (LAYOUT.story) lightkit.prepareYShadow();
     warmPrograms();
+    if (LAYOUT.story) {
+      storyLighting(true);
+      warmPrograms();
+      storyLighting(!opening?.active);
+    }
     requestAnimationFrame(frame);
     if (params.has("lab")) startLab(window.game, params.get("lab") || "bat");
     if (params.has("inspect")) window.game.inspect = startInspect(window.game);
@@ -75510,6 +76068,7 @@ void main() {
     if (!arena?.floorGroups) return;
     arena.showFloors([n]);
     floorQueue = [];
+    lightkit?.setFloor(n);
     const keep = /* @__PURE__ */ new Set();
     for (const o of arena.group.children) if (o.visible) for (const t of texturesOf(o)) keep.add(t.source);
     for (const [f, g] of Object.entries(arena.floorGroups)) if (+f !== n) {
@@ -75770,6 +76329,7 @@ void main() {
     }
     screens.update(dt);
     if (opening && !opening.active) opening.ambient?.(dt);
+    if (LAYOUT.story && storyLit === !!opening?.active && lightkit) storyLighting(!opening?.active);
     if (opening?.active) {
       opening.update(dt);
       if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1));
