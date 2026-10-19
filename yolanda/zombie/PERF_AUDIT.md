@@ -79,3 +79,16 @@ only off screen; the lab and wave mode run without errors.
 Not done, on purpose: removing the opening's two dead lights (half of fix 5). Taking a light out of the scene rebuilds
 every shader: measured 2.3 s frozen on the PC at the hand-off (several seconds on a phone), far worse than the ~6% GPU
 time they cost. They could be dropped only where a loading moment already hides a rebuild.
+
+## Done (2026-10-18, later): floors in the lift, fix 7, the meter
+
+- Only the floor being played is switched on (arena.js adoptFloors / showFloors: Floor 7 2,018 objects on, Floors 6 and 5
+  1,948 off). The lift ride (screen faded) switches the next floor on and uploads its textures a few a frame
+  (main.js prepFloor); on arrival only that floor stays on and the textures only the others use leave the GPU
+  (settleFloor). Rides 7 -> 6 -> 7 checked: each floor complete on arrival. The floor files still all download at
+  the start (loading them at the lift too would mean rebuilding the room builder per floor).
+- Fix 7: phones with a sharp screen (1.5x or more) get no MSAA; phones use the plain PCF shadow filter; dynamic
+  resolution drops only when the GPU is the limit (its own timer where the phone has one, else the frame's JS time)
+  and gives the sharpness back when the CPU is the limit.
+- The speed meter: combat.html?perf=1 (any mode): fps, frame time and its slowest 5%, CPU and GPU ms, which is the
+  limit, resolution / scale / DPR / quality, AA, shadows, draw calls, triangles, GPU textures, JS memory, zombies, floor.

@@ -338,7 +338,32 @@ export class Arena {
       this.buildSigns(); done += 2;
     }
     await Promise.all(jobs);
-    if (this.f3) this.mergeRooms();
+    if (this.f3) { this.mergeRooms(); this.adoptFloors(); }
+  }
+
+  // (2026-10-18, the user: "load the other floors in the elevator") the chapter's three floors stand 80 m apart in one world;
+  // each floor's pieces go into its own group (by where their bounds sit: z > -40 Floor 7, > -120 Floor 6, else 5) so only
+  // the floor being played is switched on: the others are neither checked nor drawn every frame, and their textures can
+  // leave the GPU (main.js prepFloor / settleFloor: the next floor goes up during the lift ride). Pieces spanning floors
+  // stay shared; the specimen case stays where the case code keeps it. New pieces are sorted as they appear (tickFrozen).
+  floorOf(z) { return z > -40 ? 7 : z > -120 ? 6 : 5; }
+  adoptFloors() {
+    if (!this.f3) return;
+    if (!this.floorGroups) {
+      this.floorGroups = {};
+      for (const n of [7, 6, 5]) { const g = new THREE.Group(); g.name = 'floor' + n; g.visible = this.shownFloors ? this.shownFloors.has(n) : n === (LAYOUT.floor || 7); this.group.add(g); this.floorGroups[n] = g; } // (until a level says which: the layout's floor)
+    }
+    const groups = new Set(Object.values(this.floorGroups)), box = new THREE.Box3(), c = new THREE.Vector3();
+    for (const o of [...this.group.children]) {
+      if (groups.has(o) || o === this.caseObj || o.userData.floorShared) continue;
+      box.setFromObject(o);
+      if (box.isEmpty() || box.max.z - box.min.z > 60) { o.userData.floorShared = true; continue; }
+      box.getCenter(c); this.floorGroups[this.floorOf(c.z)].add(o); o.matrixWorldNeedsUpdate = true;
+    }
+  }
+  showFloors(list) {
+    this.shownFloors = new Set(list);
+    for (const [n, g] of Object.entries(this.floorGroups || {})) g.visible = this.shownFloors.has(+n);
   }
 
   // Floor 3: each room's static props become one mesh per material (draw calls: one per material per room, not one per
@@ -781,7 +806,7 @@ export class Arena {
     walk(this.group);
   }
   tickFrozen(dt) {
-    if ((this.freezeT = (this.freezeT ?? 0) - dt) <= 0) { this.freezeT = 2; this.freezeStatic(); }
+    if ((this.freezeT = (this.freezeT ?? 0) - dt) <= 0) { this.freezeT = 2; this.adoptFloors(); this.freezeStatic(); }
     const F = this.frozen; if (!F?.length) return;
     const n = Math.ceil(F.length / 8); let i = (this.frozenAt ?? 0) % F.length;
     for (let k = 0; k < n && F.length; k++) {

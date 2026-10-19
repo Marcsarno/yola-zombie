@@ -91,6 +91,7 @@ export class ChapterUI {
     const ind = this.fadeEl.querySelector('.ind');
     ind.textContent = `${e.from}`; this.fadeEl.classList.add('on'); this.input?.clearAll?.();
     this.onSave?.(e.save);
+    this.prepFloor?.(e.to); // (the next floor goes up on the GPU behind the fade: main.js)
     const steps = []; for (let f = e.from; f !== e.to; f += e.to > e.from ? 1 : -1) steps.push(f + (e.to > e.from ? 1 : -1));
     let i = 0;
     const next = () => {

@@ -2,8 +2,9 @@
 // atlases (crna_shared_atlas was uploaded 30 times, reception_graphics_atlas 10, the steel / gunmetal / rubber maps several
 // times: ~200 MB of copies). Two textures are the same image when their name, size and a 16x16 thumbnail match; the
 // later one is pointed at the first one's Source (each texture keeps its own wrap / flip / repeat, so no material changes
-// how it looks). Canvas, video, data and render-target textures are left alone (they can change). Then every texture is
-// uploaded now (behind the loading screen) instead of on first sight, where an upload is a hitch.
+// how it looks). Canvas, video, data and render-target textures are left alone (they can change). Then every texture of
+// what is switched on is uploaded now (behind the loading screen) instead of on first sight, where an upload is a hitch;
+// the chapter's other floors go up during the lift ride (main.js prepFloor).
 import * as THREE from 'three';
 
 const seen = new WeakSet(), canon = new Map();
@@ -34,9 +35,15 @@ export function shareTextures(root, renderer) {
         const src = canon.get(key);
         if (!src) canon.set(key, t.source);
         else if (src !== t.source) { t.dispose(); t.source = src; shared++; }
-        try { renderer.initTexture(t); uploaded++; } catch { /* uploads on first use instead */ }
       }
     }
   });
+  for (const t of texturesOf(root, true)) { try { renderer.initTexture(t); uploaded++; } catch { /* uploads on first use instead */ } }
   return { shared, uploaded };
+}
+// every image texture under root (visibleOnly: only what is switched on)
+export function texturesOf(root, visibleOnly = false) {
+  const out = new Set();
+  root[visibleOnly ? 'traverseVisible' : 'traverse']((o) => { for (const m of [].concat(o.material || [])) if (m) for (const k in m) { const t = m[k]; if (t?.isTexture && t.image && !t.isRenderTargetTexture) out.add(t); } });
+  return out;
 }

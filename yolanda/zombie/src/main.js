@@ -39,7 +39,7 @@ import { SlowMotion } from './render/slowmo.js';
 import { ExecDirector } from './render/execution.js';
 import { Atmos } from './render/atmos.js';
 import { LightKit } from './render/lightkit.js';
-import { shareTextures } from './render/texshare.js';
+import { shareTextures, texturesOf } from './render/texshare.js';
 import { setupLibWeapons } from './render/libweapons.js';
 import { startDemos } from './demos.js';
 
@@ -57,11 +57,14 @@ const DPR_CAP = { low: 1, medium: 1.5, high: 2 };
 
 // ---------- renderer / scene ----------
 const canvas = document.getElementById('view');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: resolvedQuality() !== 'low', powerPreference: 'high-performance' });
+// (PERF_AUDIT.md 7, phones) no MSAA on a sharp phone screen (1.5x pixels or more: the density hides the steps, and MSAA
+// multiplies the pixel work), and the plain PCF shadow filter instead of the soft one (fewer samples on every lit pixel)
+const hiDpiPhone = isMobile && devicePixelRatio >= 1.5;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: resolvedQuality() !== 'low' && !hiDpiPhone, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 0.92;
 renderer.shadowMap.enabled = resolvedQuality() !== 'low';
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false; // the environment is static: render its shadows once
 const scene = new THREE.Scene();
 // (PERF_AUDIT.md 1) the renderer's per-frame transform pass walks only what can be drawn: three.js updates every object,
@@ -154,7 +157,19 @@ const HIT_SLOW = 0.2; // time runs at this rate through a hit-stop
 const YOLA_AHEAD = 0.38; // in slow motion Yola gets back this share of the speed the world loses (world 0.3: her 0.57)
 let paused = false, hitPauseT = 0, acc = 0, last = performance.now(), playerScreen = null;
 const camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new THREE.Vector2() };
-const perf = { frames: [], spikes: 0, t0: performance.now() };
+const perf = { frames: [], cpu: [], spikes: 0, t0: performance.now() };
+// the GPU's own time for a frame (EXT_disjoint_timer_query_webgl2: most Android phones and desktops; not iOS): one frame in
+// ten is timed, read back a few frames later. null: unknown (then the frame's JS time decides, see perfSample)
+const gpuTimer = (() => {
+  const gl = renderer.getContext(), ext = gl.getExtension('EXT_disjoint_timer_query_webgl2'); if (!ext) return null;
+  let q = null, n = 0; const out = [];
+  return {
+    begin() { if (q || ++n % 10) return false; q = gl.createQuery(); gl.beginQuery(ext.TIME_ELAPSED_EXT, q); return true; },
+    end(on) { if (on) gl.endQuery(ext.TIME_ELAPSED_EXT); },
+    poll() { if (!q || !gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) return; if (!gl.getParameter(ext.GPU_DISJOINT_EXT)) { out.push(gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6); if (out.length > 20) out.shift(); } gl.deleteQuery(q); q = null; },
+    avg() { return out.length ? out.reduce((a, b) => a + b, 0) / out.length : null; },
+  };
+})();
 
 // ---------- loading ----------
 // Characters: Tripo meshes (mixamorig skeleton) with Mixamo/Tripo clips, exported by blender/export_chars.py.
@@ -351,7 +366,7 @@ const screens = new LiveScreens();
 let chapterUI = null;
 function startChapterUI() {
   if (chapterUI || !LAYOUT.story) return;
-  chapterUI = new ChapterUI({ scene, camera, arena, audio, hud, fx, input, yola: () => yola, sim: () => sim, applyLevel: (s) => { levelSave = s; applyLevel(s); }, onSave: (s) => { levelSave = s; store.set('chapter1save', s); }, onReplay: () => { applyRoom1(); } });
+  chapterUI = new ChapterUI({ scene, camera, arena, audio, hud, fx, input, yola: () => yola, sim: () => sim, applyLevel: (s) => { levelSave = s; applyLevel(s); }, prepFloor, onSave: (s) => { levelSave = s; store.set('chapter1save', s); }, onReplay: () => { applyRoom1(); } });
   window.chapterUI = chapterUI;
 }
 async function startOpening() {
@@ -387,9 +402,26 @@ function cameraPose(x, z, yaw) {
 }
 function applyRoom1() { levelSave = null; store.set('chapter1save', null); return applyLevel(null); }
 // The chapter from its start (save null: Floor 7's OR, its dormant zombies, Yola with the bat) or from a checkpoint (any floor)
+// (2026-10-18, the user: "load the other floors in the elevator") only the floor being played is switched on (arena.js
+// adoptFloors). prepFloor: the lift has started (the screen is faded): the next floor switches on and its textures go up a
+// few a frame through the ride. settleFloor: arrived: only this floor stays on, and the textures only the others use leave
+// the GPU (they go up again on the next ride there).
+let floorQueue = [];
+function prepFloor(n) {
+  if (!arena?.floorGroups?.[n]) return;
+  arena.showFloors([LAYOUT.floor, n]);
+  floorQueue = [...texturesOf(arena.floorGroups[n])];
+}
+function settleFloor(n) {
+  if (!arena?.floorGroups) return;
+  arena.showFloors([n]); floorQueue = [];
+  const keep = new Set(); for (const o of arena.group.children) if (o.visible) for (const t of texturesOf(o)) keep.add(t.source);
+  for (const [f, g] of Object.entries(arena.floorGroups)) if (+f !== n) for (const t of texturesOf(g)) if (!keep.has(t.source)) t.dispose();
+}
 function applyLevel(save) {
   if (LAYOUT.story) useFloor(save?.floor || 7); // (the simulation's world is the save's floor)
   restart('room1', benchN, save);
+  if (LAYOUT.story) settleFloor(LAYOUT.floor);
   shareTextures(scene, renderer); // (a floor's new props: one GPU copy per image)
   const p = sim.player, A = ROOM1.player;
   if (!save) {
@@ -518,7 +550,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (manualTicks) return;
-  runFrame(dt);
+  const c0 = performance.now(); runFrame(dt); perf.cpu.push(performance.now() - c0); if (perf.cpu.length > 600) perf.cpu.shift();
 }
 let manualTicks = false;
 // Test hook: advance n frames of dt seconds (works while the tab is hidden). Renders the last frame.
@@ -529,6 +561,7 @@ function tick(n = 1, dt = 1 / 60, render = true) {
 }
 function runFrame(dt, doRender = true) {
   perfSample(dt);
+  if (floorQueue.length) for (let i = 0; i < 6 && floorQueue.length; i++) { try { renderer.initTexture(floorQueue.shift()); } catch { /* on first use instead */ } }
   screens.update(dt);
   if (opening && !opening.active) opening.ambient?.(dt); // the seated guard keeps idling after the hand-off
   if (opening?.active) { opening.update(dt); if (opening.room1Preview) previewRoom1(Math.min(dt, 0.05) * (opening.timeScale || 1)); if (doRender) looks.render(); return; }
@@ -657,7 +690,7 @@ function runFrame(dt, doRender = true) {
     looks.setDrain?.(1 - p.hp / Math.max(1, p.maxHp));
   }
   execLook(animDt, dt);
-  if (doRender) looks.render();
+  if (doRender) { gpuTimer?.poll(); const on = gpuTimer?.begin(); looks.render(); gpuTimer?.end(on); }
 }
 
 let impactFrame = -1, frameNo = 0, impactN = 0;
@@ -950,9 +983,38 @@ function perfSample(dt) {
   // dynamic resolution: protect frame time before anything else
   if (perf.frames.length >= 90 && perf.frames.length % 30 === 0 && !paused) {
     const recent = perf.frames.slice(-90), avg = recent.reduce((a, b) => a + b, 0) / recent.length;
-    if (avg > 21 && renderScale > 0.6) { renderScale = Math.max(0.6, renderScale - 0.1); resize(); }
-    else if (avg < 14 && renderScale < 1) { renderScale = Math.min(1, renderScale + 0.05); resize(); }
+    // (PERF_AUDIT.md 7) only when the GPU is the limit: a lower resolution saves GPU work, not the CPU's. The GPU's own time
+    // when the phone can tell (gpuTimer); otherwise a frame whose JS took most of it is CPU-bound. CPU-bound: the
+    // sharpness comes back (dropping it would only blur the picture)
+    const cpu = perf.cpu.slice(-90), cpuAvg = cpu.reduce((a, b) => a + b, 0) / Math.max(1, cpu.length), gpu = gpuTimer?.avg();
+    const gpuBound = gpu != null ? gpu > Math.min(14, avg * 0.7) : cpuAvg < avg * 0.6;
+    perf.limit = gpuBound ? 'gpu' : 'cpu';
+    if (avg > 21 && renderScale > 0.6 && gpuBound) { renderScale = Math.max(0.6, renderScale - 0.1); resize(); }
+    else if ((avg < 14 || !gpuBound) && renderScale < 1) { renderScale = Math.min(1, renderScale + 0.05); resize(); }
   }
+}
+// the on-screen speed meter (?perf=1, 2026-10-18: the phone reports what it really does): twice a second, frame rate and
+// frame time (average, slowest 5%), the JS (CPU) and GPU time per frame, which one is the limit, the resolution and its
+// scale, anti-aliasing, shadows, draw calls, triangles, textures on the GPU, JS memory, zombies and the floor
+if (params.get('perf') === '1') {
+  const el = document.createElement('div'); el.id = 'perfMeter';
+  el.style.cssText = 'position:fixed;left:6px;top:215px;z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#d8f5e8;background:rgba(0,0,0,0.62);padding:5px 7px;border-radius:6px;white-space:pre';
+  document.body.appendChild(el);
+  const avgOf = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  setInterval(() => {
+    const f = perf.frames.slice(-60), srt = [...perf.frames.slice(-120)].sort((a, b) => a - b), avg = avgOf(f), p95 = srt.length ? srt[Math.floor(srt.length * 0.95)] : 0;
+    const gpu = gpuTimer?.avg(), I = renderer.info, aa = renderer.getContextAttributes()?.antialias;
+    const heap = performance.memory ? (performance.memory.usedJSHeapSize / 1e6).toFixed(0) + ' MB' : 'n/a';
+    const shadows = renderer.shadowMap.enabled ? (renderer.shadowMap.type === THREE.PCFShadowMap ? 'pcf' : 'soft') : 'off';
+    el.textContent = [
+      `${avg ? (1000 / avg).toFixed(0) : '-'} fps  frame ${avg.toFixed(1)} ms  slow5% ${p95.toFixed(1)}`,
+      `cpu ${avgOf(perf.cpu.slice(-60)).toFixed(1)} ms  gpu ${gpu != null ? gpu.toFixed(1) + ' ms' : 'n/a'}  limit ${perf.limit || '?'}`,
+      `${renderer.domElement.width}x${renderer.domElement.height}  scale ${renderScale.toFixed(2)}  dpr ${renderer.getPixelRatio().toFixed(2)}  ${resolvedQuality()}`,
+      `AA ${aa ? 'on' : 'off'}  shadows ${shadows}`,
+      `calls ${I.render.calls}  tris ${(I.render.triangles / 1000).toFixed(0)}k  tex ${I.memory.textures}  heap ${heap}`,
+      `zombies ${sim?.aliveCount?.() ?? '-'}  floor ${LAYOUT.story ? LAYOUT.floor : 'wing'}`,
+    ].join('\n');
+  }, 500);
 }
 function perfReport() {
   const f = [...perf.frames].sort((a, b) => a - b);
