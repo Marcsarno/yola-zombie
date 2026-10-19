@@ -1,6 +1,6 @@
 {
  "version": 2,
- "savedAt": "2026-10-19T19:21:25.282Z",
+ "savedAt": "2026-10-19T19:44:08.676Z",
  "takes": {
   "shot:assets/sfx/guns/pistol_01.mp3": {
    "v": "yes"
@@ -166,9 +166,6 @@
   "shieldHit:assets/sfx/lib/thwack_07.mp3": {
    "v": "yes"
   },
-  "sever:assets/sfx/lib/thwack_02.mp3": {
-   "v": "yes"
-  },
   "axeHit:assets/sfx/lib/blade_04.mp3": {
    "v": "yes"
   },
@@ -194,9 +191,6 @@
    "v": "yes"
   },
   "fistHit:assets/sfx/lib/punch_03.mp3": {
-   "v": "yes"
-  },
-  "sever:assets/sfx/lib/squish_07.mp3": {
    "v": "yes"
   },
   "pistolReload:assets/sfx/lib/magdrop_02.mp3": {
@@ -427,6 +421,21 @@
   "revealLiftArrive:assets/sfx/reveal/larrive_02.mp3": {
    "v": "yes",
    "db": -6.5
+  },
+  "glassBreak:assets/sfx/reveal/gcrack_10.mp3": {
+   "v": "yes"
+  },
+  "bulletHit:assets/sfx/reveal/scrack_06.mp3": {
+   "v": "yes"
+  },
+  "sever:assets/sfx/reveal/sbone_02.mp3": {
+   "v": "yes"
+  },
+  "revealLensHit:assets/sfx/reveal/gcrack_10.mp3": {
+   "v": "yes"
+  },
+  "revealLensHit:assets/sfx/reveal/gthunk_07.mp3": {
+   "v": "yes"
   }
  },
  "layers": {
@@ -438,7 +447,23 @@
   },
   "revealLiftArrive#1": {
    "db": -9.5
+  },
+  "revealLensHit#3": {
+   "off": true
   }
  },
- "sounds": {}
+ "sounds": {},
+ "adds": {
+  "batHit#1": [
+   "assets/sfx/lib/glass_06.mp3"
+  ],
+  "batHit#0": [
+   "assets/sfx/reveal/gcrack_01.mp3"
+  ],
+  "sever#1": [
+   "assets/sfx/reveal/gcrack_02.mp3",
+   "assets/sfx/reveal/gcrack_03.mp3",
+   "assets/sfx/reveal/gcrack_04.mp3"
+  ]
+ }
 }
