@@ -59,12 +59,12 @@ const DPR_CAP = { low: 1, medium: 1.5, high: 2 };
 const canvas = document.getElementById('view');
 // (PERF_AUDIT.md 7, phones) no MSAA on a sharp phone screen (1.5x pixels or more: the density hides the steps, and MSAA
 // multiplies the pixel work), and the plain PCF shadow filter instead of the soft one (fewer samples on every lit pixel)
-const hiDpiPhone = isMobile && devicePixelRatio >= 1.5;
+const hiDpiPhone = isMobile && devicePixelRatio >= 1.5 && resolvedQuality() !== 'high'; // (quality High: everything on, the user's call on their phone)
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: resolvedQuality() !== 'low' && !hiDpiPhone, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 0.92;
 renderer.shadowMap.enabled = resolvedQuality() !== 'low';
-renderer.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = isMobile && resolvedQuality() !== 'high' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false; // the environment is static: render its shadows once
 const scene = new THREE.Scene();
 // (PERF_AUDIT.md 1) the renderer's per-frame transform pass walks only what can be drawn: three.js updates every object,
