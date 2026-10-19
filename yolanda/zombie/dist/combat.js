@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -49718,7 +49718,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -49748,7 +49748,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -54930,7 +54930,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -57843,7 +57843,21 @@ void main() {
   }
   var MAX_P = 420;
   var BLOOD = { zombie: [0.36, 0.02, 0.02], yola: [0.62, 0.03, 0.03] };
-  var MAX_POOLS = 48;
+  var MAX_POOLS = 128;
+  var _poolM = new Matrix4();
+  var _poolQ = new Quaternion();
+  var _poolP = new Vector3();
+  var _poolS = new Vector3();
+  var _up2 = new Vector3(0, 1, 0);
+  var _zeroM = new Matrix4().makeScale(0, 0, 0);
+  function poolMat(m) {
+    m.onBeforeCompile = (s) => {
+      s.vertexShader = "attribute float aAlpha;\nvarying float vPoolA;\n" + s.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvPoolA = aAlpha;");
+      s.fragmentShader = "varying float vPoolA;\n" + s.fragmentShader.replace("#include <alphamap_fragment>", "#include <alphamap_fragment>\ndiffuseColor.a *= vPoolA;");
+    };
+    m.customProgramCacheKey = () => "bloodPool";
+    return m;
+  }
   function splatTexture() {
     const c = document.createElement("canvas");
     c.width = c.height = 128;
@@ -58012,15 +58026,19 @@ void main() {
       this.aim.position.y = 0.02;
       this.aim.renderOrder = 2;
       scene2.add(this.aim);
-      const splat = splatTexture();
+      const splat = splatTexture(), pg = new PlaneGeometry(1, 1);
+      pg.rotateX(-Math.PI / 2);
+      pg.setAttribute("aAlpha", new InstancedBufferAttribute(new Float32Array(MAX_POOLS), 1).setUsage(DynamicDrawUsage));
+      this.poolMesh = new InstancedMesh(pg, poolMat(new MeshBasicMaterial({ map: splat, color: 4851206, transparent: true, opacity: 0.85, depthWrite: false })), MAX_POOLS);
+      this.poolMesh.instanceMatrix.setUsage(DynamicDrawUsage);
+      this.poolMesh.frustumCulled = false;
+      this.poolMesh.visible = false;
+      this.poolMesh.renderOrder = 1;
+      scene2.add(this.poolMesh);
       this.pools = [];
       for (let i = 0; i < MAX_POOLS; i++) {
-        const m = new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ map: splat, color: 4851206, transparent: true, opacity: 0, depthWrite: false }));
-        m.rotation.x = -Math.PI / 2;
-        m.visible = false;
-        m.renderOrder = 1;
-        scene2.add(m);
-        this.pools.push({ m, t: 99, size: 1 });
+        this.pools.push({ t: 99, size: 1, x: 0, y: 0, z: 0, rot: 0, s: 0, on: false });
+        this.poolMesh.setMatrixAt(i, _zeroM);
       }
       this.poolNext = 0;
       const crackTex = crackTexture();
@@ -58131,13 +58149,19 @@ void main() {
     }
     bloodPool(x, z, size = 0.8) {
       if (!this.gore) return;
+      for (const o of this.pools) if (o.on && o.t < 2 && Math.abs(o.x - x) < 0.22 && Math.abs(o.z - z) < 0.22) {
+        o.size = Math.max(o.size, size);
+        return;
+      }
       const q = this.pools[this.poolNext];
       this.poolNext = (this.poolNext + 1) % MAX_POOLS;
       q.t = 0;
       q.size = size * (0.8 + Math.random() * 0.4);
-      q.m.position.set(x, 0.015 + this.poolNext * 4e-4, z);
-      q.m.rotation.z = Math.random() * Math.PI * 2;
-      q.m.visible = true;
+      q.x = x;
+      q.y = 0.015 + this.poolNext * 15e-5;
+      q.z = z;
+      q.rot = Math.random() * Math.PI * 2;
+      q.on = true;
     }
     floorCrack(x, z, size = 1.2) {
       const q = this.cracks.find((c) => c.t > 40) || this.cracks.reduce((a, b) => a.t > b.t ? a : b);
@@ -58308,17 +58332,31 @@ void main() {
         }
       }
       this.pGeo.setDrawRange(0, k);
-      for (const q of this.pools) {
+      let pools = 0;
+      const PA = this.poolMesh.geometry.attributes.aAlpha;
+      for (let i = 0; i < MAX_POOLS; i++) {
+        const q = this.pools[i];
         if (q.t > 40) continue;
         q.t += dt;
-        const grow = Math.min(1, q.t / 0.9), s = q.size * (0.35 + 0.65 * (1 - (1 - grow) * (1 - grow)));
-        q.m.scale.set(s, s, 1);
-        q.m.material.opacity = 0.85 * (q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6));
+        const grow = Math.min(1, q.t / 0.9), s = q.s = q.size * (0.35 + 0.65 * (1 - (1 - grow) * (1 - grow)));
+        PA.array[i] = q.t < 25 ? 1 : Math.max(0, 1 - (q.t - 25) / 6);
+        _poolQ.setFromAxisAngle(_up2, q.rot);
+        _poolP.set(q.x, q.y, q.z);
+        _poolS.set(s, 1, s);
+        this.poolMesh.setMatrixAt(i, _poolM.compose(_poolP, _poolQ, _poolS));
         if (q.t > 31) {
-          q.m.visible = false;
+          q.on = false;
           q.t = 99;
+          PA.array[i] = 0;
+          this.poolMesh.setMatrixAt(i, _zeroM);
         }
+        pools++;
       }
+      if (pools) {
+        PA.needsUpdate = true;
+        this.poolMesh.instanceMatrix.needsUpdate = true;
+      }
+      this.poolMesh.visible = this.pools.some((q) => q.on);
       for (const q of this.cracks) {
         if (q.t > 40) continue;
         q.t += dt;
@@ -58489,7 +58527,10 @@ void main() {
       const W3 = this.world, fx2 = this.fx, e = new Euler(), dq = new Quaternion();
       for (const b of this.bursts) {
         b.t += dt;
-        if (b.t > 4 && b.chunks.every((c) => c.rest)) continue;
+        if (b.t > 4 && b.chunks.every((c) => c.rest)) {
+          if (!b.merged) this.settle(b);
+          continue;
+        }
         for (const c of b.chunks) {
           if (c.rest) continue;
           const p = c.grp.position, ox = p.x, oz = p.z;
@@ -58527,10 +58568,71 @@ void main() {
         }
       }
     }
+    // (2026-10-18, the user's phone run: draw calls 190 -> 403 as gore piled up) a burst lies still: its 60-90 chunk meshes
+    // (each drawn again for its shadow) become one mesh per look, baked where they lie. Nothing moves or changes on screen.
+    settle(b) {
+      b.merged = true;
+      const by = /* @__PURE__ */ new Map(), keep = [];
+      for (const c of b.chunks) {
+        c.grp.updateMatrixWorld(true);
+        c.grp.traverse((o) => {
+          if (!o.isMesh) return;
+          const m = o.material, g = o.geometry;
+          if (Array.isArray(m) || g.groups.length > 1) {
+            keep.push(o);
+            return;
+          }
+          const attrs = Object.keys(g.attributes).sort().map((k) => {
+            const a = g.attributes[k];
+            return `${k}:${a.array.constructor.name}:${a.itemSize}:${a.normalized}`;
+          }).join();
+          const key = [m.type, m.name, m.map?.uuid, m.vertexColors, m.color?.getHexString(), m.roughness, m.metalness, m.transparent, !!g.index, attrs].join("|");
+          if (!by.has(key)) by.set(key, { m, geos: [], src: [] });
+          const w = g.clone();
+          w.clearGroups();
+          w.applyMatrix4(o.matrixWorld);
+          by.get(key).geos.push(w);
+          by.get(key).src.push(o);
+        });
+      }
+      const meshes = [];
+      for (const { m, geos, src } of by.values()) {
+        const merged = geos.length > 1 ? mergeGeometries(geos, false) : geos[0];
+        if (merged !== geos[0]) for (const g of geos) g.dispose();
+        if (!merged) {
+          keep.push(...src);
+          continue;
+        }
+        const mesh = new Mesh(merged, m);
+        mesh.castShadow = true;
+        mesh.matrixAutoUpdate = false;
+        meshes.push(mesh);
+      }
+      if (!meshes.length) return;
+      for (const c of b.chunks) {
+        const left = [];
+        c.grp.traverse((o) => {
+          if (keep.includes(o)) left.push(o);
+        });
+        this.scene.remove(c.grp);
+        c.grp.traverse((o) => {
+          if (o.isMesh && !keep.includes(o)) o.geometry.dispose();
+        });
+        if (left.length) this.scene.add(c.grp);
+        else c.grp = null;
+      }
+      b.chunks = b.chunks.filter((c) => c.grp);
+      b.merged = meshes;
+      for (const mesh of meshes) this.scene.add(mesh);
+    }
     remove(b) {
       for (const c of b.chunks) {
         this.scene.remove(c.grp);
         c.grp.traverse((o) => o.geometry?.dispose());
+      }
+      if (Array.isArray(b.merged)) for (const mesh of b.merged) {
+        this.scene.remove(mesh);
+        mesh.geometry.dispose();
       }
     }
     clear() {
@@ -58640,7 +58742,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -58680,7 +58782,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -58771,7 +58873,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -58836,7 +58938,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -58924,7 +59026,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -59108,7 +59210,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -59180,7 +59282,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -59533,7 +59635,7 @@ void main() {
     return magicSquare;
   }
 
-  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -59732,7 +59834,7 @@ void main() {
     return samples;
   }
 
-  // node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -60166,7 +60268,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -60593,7 +60695,7 @@ void main() {
     "Denoise": 5
   };
 
-  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -60645,7 +60747,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -60929,7 +61031,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -61017,7 +61119,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -69529,7 +69631,7 @@ void main() {
     return S2;
   }
 
-  // node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -71747,14 +71849,15 @@ void main() {
     }
     toggle_gloss(v) {
       const fx2 = this.fx, O = this.arena?.ob;
-      for (const q of fx2.pools) {
+      {
+        const P = fx2.poolMesh;
         if (v) {
-          if (!this.wet.has(q)) {
-            const b = q.m.material;
-            this.wet.set(q, { b, s: new MeshStandardMaterial({ map: b.map, color: 7997962, roughness: 0.16, metalness: 0, envMapIntensity: 1.1, transparent: true, opacity: b.opacity, depthWrite: false }) });
+          if (!this.wet.has(P)) {
+            const b = P.material;
+            this.wet.set(P, { b, s: poolMat(new MeshStandardMaterial({ map: b.map, color: 7997962, roughness: 0.16, metalness: 0, envMapIntensity: 1.1, transparent: true, opacity: b.opacity, depthWrite: false })) });
           }
-          q.m.material = this.wet.get(q).s;
-        } else if (this.wet.has(q)) q.m.material = this.wet.get(q).b;
+          P.material = this.wet.get(P).s;
+        } else if (this.wet.has(P)) P.material = this.wet.get(P).b;
       }
       if (O?.blood) for (const m of Object.values(O.blood)) {
         m.roughness = v ? 0.16 : 0.45;
@@ -71764,10 +71867,6 @@ void main() {
       for (const P of this.prints) if (!v) P.m.visible = false;
     }
     tick_gloss(dt, p) {
-      for (const q of this.fx.pools) {
-        const W3 = this.wet.get(q);
-        if (W3 && q.m.material === W3.s) W3.s.opacity = W3.b.opacity;
-      }
       if (this.lastX == null) {
         this.lastX = p.x;
         this.lastZ = p.z;
@@ -71799,7 +71898,7 @@ void main() {
       }
     }
     inBlood(x, z) {
-      for (const q of this.fx.pools) if (q.t < 30 && q.m.visible && Math.hypot(x - q.m.position.x, z - q.m.position.z) < q.m.scale.x * 0.42) return true;
+      for (const q of this.fx.pools) if (q.t < 30 && q.on && Math.hypot(x - q.x, z - q.z) < q.s * 0.42) return true;
       const D3 = this.arena?.ob?.decals;
       if (D3) {
         for (const m of D3.children) if (m.position.y < 0.05 && Math.hypot(x - m.position.x, z - m.position.z) < Math.max(m.scale.x, m.scale.z) * 0.42) return true;
