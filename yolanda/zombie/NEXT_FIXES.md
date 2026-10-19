@@ -1,6 +1,43 @@
 # Next fixes (the user's notes, 2026-10-18, after playing the combat pass)
 
-STATUS 2026-10-18 night (combat chat) — START HERE. Everything committed, deployed and pushed (opening-reveal, last 704645e).
+STATUS 2026-10-19 early morning (combat chat) — START HERE. The big build (BUILD_PLAN.md) is built and committed locally
+(81cf8b7..aa593f4). NOT deployed, NOT pushed (the user hasn't asked yet).
+- Built, each tested in the practice room (combat.html?mode=calm&demo=...):
+  - **The dodge** (FINISHERS_PLAN.md 1): the window opens a fixed 0.45 s before any hit, at half speed; the button grey at
+    rest, pulsing yellow in the window, white for perfect, with an arrow the way she'll go; a perfect press pays at once
+    (Witch Time: world 0.25, Yola full speed); the spider-sense over her head (demo slam1, charger).
+  - **Finishers** (2): the gold mark over an open zombie, the centre button turns gold FINISH; the 5% walker critical
+    with its wide arc (melee/shotgun sweep, pistol headshot chain); demo walkers.
+  - **The shotgun slide finisher** from the animation chat (render/slidefin.js; needs their uncommitted clips in
+    assets/yola2_ual.glb and the stripRoot travel.x line in clipchars.js: until then the old point-blank finisher plays).
+  - **The guard** (3): unhurtable but from behind; slam -> stuck -> finisher 1 takes the arm (it flies) -> he takes the
+    shield in his other hand (the view mirrors him) -> finisher 2 takes the head; missed: he wrenches it free. The slam
+    kills walkers right under it, throws those within 4.2 m. Club / flail / enraged stages gone (demo slam1, tear).
+  - **The lady** (4): 7.5 m/s, 10% bigger, bowls walkers like pins, heavy footsteps; a wall crash opens her finisher (head
+    off, no acid); her acid otherwise redone (splatter, froth, hiss, burnt stain) (demo charger, ladykip).
+  - **Yola getting hurt** (5): the red arc from the hit's side, 0.8 s grace, heavy hits drain colour, low-health heartbeat.
+  - **Oxygen cylinders** (Floor 6): o2chair / o2walker zombies, standing cylinders (sim.addTank); shot -> hiss -> burst,
+    chains (demo oxygen).
+  - **Room mechanics** (core/rooms.js, render/rooms.js): cracked walls (sledgehammer, lady, slam, blast break them; demo
+    crack), the flood (wading 55%, the panel's jolt kills everyone in the water; demo flood), the MRI arena (guns pinned,
+    metal dragged, the guard's shield ripped off, red button once clear, guns back; demo mri).
+  - **Props modelled in Blender** (blender/make_room_props.py -> assets/props/room_mechanics/*.glb, loaded by
+    render/roomprops.js): oxygen cylinder, cylinder trolley, flood panel, MRI scanner, magnet stop. The Blender file has
+    them in its own scene "RoomProps" (the floor-bake scene untouched).
+  - **The user's notes**: bed patients wake at 9 m in sight and rise 1.6x faster, with a camera cut on the first one;
+    the zombie eyes now sit on the face mesh (first pass: the user should look at them in the lighting lab).
+- NOT done:
+  - **The floors**: the maps chat was handed FLOORS_REDESIGN.html + BUILD_PLAN.md, but its session was stopped and is
+    gone; no floor work was committed. Floor 7's additions and the new Floors 6 and 5 still need building (placing
+    cracked walls, the flood, the MRI, cylinders and the new zombie kinds with the sim.add* calls in core/rooms.js).
+  - The guard's shield on the MRI sticks edge-on to the scanner (works, could face it better).
+- NEXT (the user, 2026-10-19): the user compacts this chat, then **the lighting bake**: set up the lighting for the floors
+  (the lab's picks into the game; bake per floor once its walls are final). Then deploy for a phone test on the user's word.
+- Rules this session added: the animation chat edits src/render/clipchars.js, holdfit.js, hold/*.json, yola2_ual.glb,
+  viewer.js in the same checkout: commit only my own hunks of clipchars.js (git diff -U0 + git apply --cached
+  --unidiff-zero of my hunks); never theirs. New assets: build them in Blender (the user: "don't just guess").
+
+STATUS 2026-10-18 night (combat chat). Everything committed, deployed and pushed (opening-reveal, last 704645e). Everything committed, deployed and pushed (opening-reveal, last 704645e).
 - Done tonight: the lighting lab finished and polished (user's picks are its defaults: A, C with tubes hidden, EXIT, D, muzzle,
   Yola's shadow, character light 0.45; colour by room, shafts, splatter, sparks, haze, impact; the ☀ looks live in its panel);
   performance fixes 1-7 (PERF_AUDIT.md: hidden groups skipped, static frozen, one skeleton per zombie, off-screen zombies
