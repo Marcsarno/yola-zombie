@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -50467,9 +50467,9 @@ void main() {
           vx /= vl;
           vz /= vl;
           let rx = z.x - p.x, rz = z.z - p.z;
-          const rl = Math.hypot(rx, rz) || 1;
-          rx /= rl;
-          rz /= rl;
+          const rl2 = Math.hypot(rx, rz) || 1;
+          rx /= rl2;
+          rz /= rl2;
           let dx = vx * 0.6 + rx * 0.4, dz = vz * 0.6 + rz * 0.4;
           const dl = Math.hypot(dx, dz) || 1;
           dx /= dl;
@@ -50655,7 +50655,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -50685,7 +50685,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -52576,10 +52576,10 @@ void main() {
         fi.play();
         fi.setEffectiveWeight(0);
       }
-      const rl = this.act("pistol_reload_upper");
-      rl.play();
-      rl.setEffectiveWeight(0);
-      rl.timeScale = 0;
+      const rl2 = this.act("pistol_reload_upper");
+      rl2.play();
+      rl2.setEffectiveWeight(0);
+      rl2.timeScale = 0;
       this.reloadFrames = Math.round(byName.pistol_reload.duration * 30);
       for (const n of melee) {
         const sw = this.act(n);
@@ -53055,10 +53055,10 @@ void main() {
       this.pistolReloadFrame = -1;
       if (s.action === "reload") {
         const sg = s.equipped === "shotgun", u = clamp5(s.actionT / s.reloadDur, 0, 1);
-        const rl = this.act(sg ? "shotgun_reload_upper" : "pistol_reload_upper");
-        rl.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + (this.rlJit ^= 1) * 1e-6;
-        if (sg) this.reloadFrame = rl.time * 30;
-        else this.pistolReloadFrame = rl.time * 30;
+        const rl2 = this.act(sg ? "shotgun_reload_upper" : "pistol_reload_upper");
+        rl2.time = (1 + u * ((sg ? this.shotgunReloadFrames : this.reloadFrames) - 1)) / 30 + (this.rlJit ^= 1) * 1e-6;
+        if (sg) this.reloadFrame = rl2.time * 30;
+        else this.pistolReloadFrame = rl2.time * 30;
         rW = smooth2(clamp5(s.actionT / 0.08, 0, 1)) * smooth2(clamp5((1 - u) / 0.12, 0, 1));
       }
       this.reloadW = rW;
@@ -56498,7 +56498,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -60317,7 +60317,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -60357,7 +60357,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -60448,7 +60448,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -60513,7 +60513,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -60601,7 +60601,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -60785,7 +60785,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -60857,7 +60857,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -61210,7 +61210,7 @@ void main() {
     return magicSquare;
   }
 
-  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -61409,7 +61409,7 @@ void main() {
     return samples;
   }
 
-  // node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -61843,7 +61843,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -62270,7 +62270,7 @@ void main() {
     "Denoise": 5
   };
 
-  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -62322,7 +62322,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -62606,7 +62606,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -62694,7 +62694,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -63615,10 +63615,319 @@ void main() {
     ]
   };
 
+  // src/sfx/reveal.gen.js
+  var RLIB = {
+    "ding": [
+      "assets/sfx/reveal/ding_01.mp3",
+      "assets/sfx/reveal/ding_02.mp3",
+      "assets/sfx/reveal/ding_03.mp3",
+      "assets/sfx/reveal/ding_04.mp3",
+      "assets/sfx/reveal/ding_05.mp3",
+      "assets/sfx/reveal/ding_06.mp3",
+      "assets/sfx/reveal/ding_07.mp3",
+      "assets/sfx/reveal/ding_08.mp3"
+    ],
+    "ldoorsopen": [
+      "assets/sfx/reveal/ldoorsopen_01.mp3",
+      "assets/sfx/reveal/ldoorsopen_02.mp3",
+      "assets/sfx/reveal/ldoorsopen_03.mp3",
+      "assets/sfx/reveal/ldoorsopen_04.mp3",
+      "assets/sfx/reveal/ldoorsopen_05.mp3"
+    ],
+    "ldoorsclose": [
+      "assets/sfx/reveal/ldoorsclose_01.mp3",
+      "assets/sfx/reveal/ldoorsclose_02.mp3",
+      "assets/sfx/reveal/ldoorsclose_03.mp3",
+      "assets/sfx/reveal/ldoorsclose_04.mp3",
+      "assets/sfx/reveal/ldoorsclose_05.mp3",
+      "assets/sfx/reveal/ldoorsclose_06.mp3",
+      "assets/sfx/reveal/ldoorsclose_07.mp3"
+    ],
+    "larrive": [
+      "assets/sfx/reveal/larrive_01.mp3",
+      "assets/sfx/reveal/larrive_02.mp3",
+      "assets/sfx/reveal/larrive_03.mp3",
+      "assets/sfx/reveal/larrive_04.mp3",
+      "assets/sfx/reveal/larrive_05.mp3"
+    ],
+    "clunk": [
+      "assets/sfx/reveal/clunk_01.mp3",
+      "assets/sfx/reveal/clunk_02.mp3",
+      "assets/sfx/reveal/clunk_03.mp3"
+    ],
+    "breaker": [
+      "assets/sfx/reveal/breaker_01.mp3",
+      "assets/sfx/reveal/breaker_02.mp3",
+      "assets/sfx/reveal/breaker_03.mp3",
+      "assets/sfx/reveal/breaker_04.mp3"
+    ],
+    "pdown": [
+      "assets/sfx/reveal/pdown_01.mp3",
+      "assets/sfx/reveal/pdown_02.mp3",
+      "assets/sfx/reveal/pdown_03.mp3",
+      "assets/sfx/reveal/pdown_04.mp3",
+      "assets/sfx/reveal/pdown_05.mp3",
+      "assets/sfx/reveal/pdown_06.mp3"
+    ],
+    "arc": [
+      "assets/sfx/reveal/arc_01.mp3",
+      "assets/sfx/reveal/arc_02.mp3",
+      "assets/sfx/reveal/arc_03.mp3",
+      "assets/sfx/reveal/arc_04.mp3",
+      "assets/sfx/reveal/arc_05.mp3",
+      "assets/sfx/reveal/arc_06.mp3",
+      "assets/sfx/reveal/arc_07.mp3",
+      "assets/sfx/reveal/arc_08.mp3",
+      "assets/sfx/reveal/arc_09.mp3",
+      "assets/sfx/reveal/arc_10.mp3",
+      "assets/sfx/reveal/arc_11.mp3",
+      "assets/sfx/reveal/arc_12.mp3",
+      "assets/sfx/reveal/arc_13.mp3",
+      "assets/sfx/reveal/arc_14.mp3",
+      "assets/sfx/reveal/arc_15.mp3",
+      "assets/sfx/reveal/arc_16.mp3",
+      "assets/sfx/reveal/arc_17.mp3"
+    ],
+    "crack": [
+      "assets/sfx/reveal/crack_01.mp3",
+      "assets/sfx/reveal/crack_02.mp3",
+      "assets/sfx/reveal/crack_03.mp3",
+      "assets/sfx/reveal/crack_04.mp3"
+    ],
+    "ring": [
+      "assets/sfx/reveal/ring_01.mp3",
+      "assets/sfx/reveal/ring_02.mp3",
+      "assets/sfx/reveal/ring_03.mp3"
+    ],
+    "boom": [
+      "assets/sfx/reveal/boom_01.mp3",
+      "assets/sfx/reveal/boom_02.mp3",
+      "assets/sfx/reveal/boom_03.mp3",
+      "assets/sfx/reveal/boom_04.mp3",
+      "assets/sfx/reveal/boom_05.mp3",
+      "assets/sfx/reveal/boom_06.mp3",
+      "assets/sfx/reveal/boom_07.mp3",
+      "assets/sfx/reveal/boom_08.mp3"
+    ],
+    "thump": [
+      "assets/sfx/reveal/thump_01.mp3",
+      "assets/sfx/reveal/thump_02.mp3",
+      "assets/sfx/reveal/thump_03.mp3",
+      "assets/sfx/reveal/thump_04.mp3",
+      "assets/sfx/reveal/thump_05.mp3",
+      "assets/sfx/reveal/thump_06.mp3",
+      "assets/sfx/reveal/thump_07.mp3",
+      "assets/sfx/reveal/thump_08.mp3",
+      "assets/sfx/reveal/thump_09.mp3"
+    ],
+    "whoosh": [
+      "assets/sfx/reveal/whoosh_01.mp3",
+      "assets/sfx/reveal/whoosh_02.mp3",
+      "assets/sfx/reveal/whoosh_03.mp3",
+      "assets/sfx/reveal/whoosh_04.mp3",
+      "assets/sfx/reveal/whoosh_05.mp3",
+      "assets/sfx/reveal/whoosh_06.mp3",
+      "assets/sfx/reveal/whoosh_07.mp3",
+      "assets/sfx/reveal/whoosh_08.mp3",
+      "assets/sfx/reveal/whoosh_09.mp3",
+      "assets/sfx/reveal/whoosh_10.mp3",
+      "assets/sfx/reveal/whoosh_11.mp3",
+      "assets/sfx/reveal/whoosh_12.mp3",
+      "assets/sfx/reveal/whoosh_13.mp3",
+      "assets/sfx/reveal/whoosh_14.mp3",
+      "assets/sfx/reveal/whoosh_15.mp3",
+      "assets/sfx/reveal/whoosh_16.mp3",
+      "assets/sfx/reveal/whoosh_17.mp3",
+      "assets/sfx/reveal/whoosh_18.mp3"
+    ],
+    "slowswish": [
+      "assets/sfx/reveal/slowswish_01.mp3",
+      "assets/sfx/reveal/slowswish_02.mp3",
+      "assets/sfx/reveal/slowswish_03.mp3",
+      "assets/sfx/reveal/slowswish_04.mp3",
+      "assets/sfx/reveal/slowswish_05.mp3",
+      "assets/sfx/reveal/slowswish_06.mp3",
+      "assets/sfx/reveal/slowswish_07.mp3"
+    ],
+    "suck": [
+      "assets/sfx/reveal/suck_01.mp3",
+      "assets/sfx/reveal/suck_02.mp3",
+      "assets/sfx/reveal/suck_03.mp3",
+      "assets/sfx/reveal/suck_04.mp3",
+      "assets/sfx/reveal/suck_05.mp3",
+      "assets/sfx/reveal/suck_06.mp3"
+    ],
+    "slowdown": [
+      "assets/sfx/reveal/slowdown_01.mp3",
+      "assets/sfx/reveal/slowdown_02.mp3",
+      "assets/sfx/reveal/slowdown_03.mp3",
+      "assets/sfx/reveal/slowdown_04.mp3",
+      "assets/sfx/reveal/slowdown_05.mp3"
+    ],
+    "launch": [
+      "assets/sfx/reveal/launch_01.mp3",
+      "assets/sfx/reveal/launch_02.mp3",
+      "assets/sfx/reveal/launch_03.mp3",
+      "assets/sfx/reveal/launch_04.mp3",
+      "assets/sfx/reveal/launch_05.mp3",
+      "assets/sfx/reveal/launch_06.mp3"
+    ],
+    "heart": [
+      "assets/sfx/reveal/heart_01.mp3",
+      "assets/sfx/reveal/heart_02.mp3",
+      "assets/sfx/reveal/heart_03.mp3",
+      "assets/sfx/reveal/heart_04.mp3",
+      "assets/sfx/reveal/heart_05.mp3",
+      "assets/sfx/reveal/heart_06.mp3",
+      "assets/sfx/reveal/heart_07.mp3",
+      "assets/sfx/reveal/heart_08.mp3",
+      "assets/sfx/reveal/heart_09.mp3",
+      "assets/sfx/reveal/heart_10.mp3",
+      "assets/sfx/reveal/heart_11.mp3",
+      "assets/sfx/reveal/heart_12.mp3",
+      "assets/sfx/reveal/heart_13.mp3",
+      "assets/sfx/reveal/heart_14.mp3",
+      "assets/sfx/reveal/heart_15.mp3",
+      "assets/sfx/reveal/heart_16.mp3",
+      "assets/sfx/reveal/heart_17.mp3",
+      "assets/sfx/reveal/heart_18.mp3"
+    ],
+    "bigstep": [
+      "assets/sfx/reveal/bigstep_01.mp3",
+      "assets/sfx/reveal/bigstep_02.mp3",
+      "assets/sfx/reveal/bigstep_03.mp3",
+      "assets/sfx/reveal/bigstep_04.mp3",
+      "assets/sfx/reveal/bigstep_05.mp3",
+      "assets/sfx/reveal/bigstep_06.mp3",
+      "assets/sfx/reveal/bigstep_07.mp3",
+      "assets/sfx/reveal/bigstep_08.mp3"
+    ],
+    "drum": [
+      "assets/sfx/reveal/drum_01.mp3",
+      "assets/sfx/reveal/drum_02.mp3",
+      "assets/sfx/reveal/drum_03.mp3",
+      "assets/sfx/reveal/drum_04.mp3",
+      "assets/sfx/reveal/drum_05.mp3",
+      "assets/sfx/reveal/drum_06.mp3"
+    ],
+    "scrack": [
+      "assets/sfx/reveal/scrack_01.mp3",
+      "assets/sfx/reveal/scrack_02.mp3",
+      "assets/sfx/reveal/scrack_03.mp3",
+      "assets/sfx/reveal/scrack_04.mp3",
+      "assets/sfx/reveal/scrack_05.mp3",
+      "assets/sfx/reveal/scrack_06.mp3",
+      "assets/sfx/reveal/scrack_07.mp3",
+      "assets/sfx/reveal/scrack_08.mp3",
+      "assets/sfx/reveal/scrack_09.mp3",
+      "assets/sfx/reveal/scrack_10.mp3",
+      "assets/sfx/reveal/scrack_11.mp3",
+      "assets/sfx/reveal/scrack_12.mp3",
+      "assets/sfx/reveal/scrack_13.mp3",
+      "assets/sfx/reveal/scrack_14.mp3",
+      "assets/sfx/reveal/scrack_15.mp3"
+    ],
+    "sbone": [
+      "assets/sfx/reveal/sbone_01.mp3",
+      "assets/sfx/reveal/sbone_02.mp3",
+      "assets/sfx/reveal/sbone_03.mp3",
+      "assets/sfx/reveal/sbone_04.mp3",
+      "assets/sfx/reveal/sbone_05.mp3",
+      "assets/sfx/reveal/sbone_06.mp3",
+      "assets/sfx/reveal/sbone_07.mp3",
+      "assets/sfx/reveal/sbone_08.mp3",
+      "assets/sfx/reveal/sbone_09.mp3"
+    ],
+    "swet": [
+      "assets/sfx/reveal/swet_01.mp3",
+      "assets/sfx/reveal/swet_02.mp3",
+      "assets/sfx/reveal/swet_03.mp3",
+      "assets/sfx/reveal/swet_04.mp3"
+    ],
+    "bodyfall": [
+      "assets/sfx/reveal/bodyfall_01.mp3",
+      "assets/sfx/reveal/bodyfall_02.mp3",
+      "assets/sfx/reveal/bodyfall_03.mp3",
+      "assets/sfx/reveal/bodyfall_04.mp3",
+      "assets/sfx/reveal/bodyfall_05.mp3"
+    ],
+    "gthunk": [
+      "assets/sfx/reveal/gthunk_01.mp3",
+      "assets/sfx/reveal/gthunk_02.mp3",
+      "assets/sfx/reveal/gthunk_03.mp3",
+      "assets/sfx/reveal/gthunk_04.mp3",
+      "assets/sfx/reveal/gthunk_05.mp3",
+      "assets/sfx/reveal/gthunk_06.mp3"
+    ],
+    "gcrack": [
+      "assets/sfx/reveal/gcrack_01.mp3",
+      "assets/sfx/reveal/gcrack_02.mp3",
+      "assets/sfx/reveal/gcrack_03.mp3",
+      "assets/sfx/reveal/gcrack_04.mp3",
+      "assets/sfx/reveal/gcrack_05.mp3",
+      "assets/sfx/reveal/gcrack_06.mp3",
+      "assets/sfx/reveal/gcrack_07.mp3",
+      "assets/sfx/reveal/gcrack_08.mp3",
+      "assets/sfx/reveal/gcrack_09.mp3",
+      "assets/sfx/reveal/gcrack_10.mp3",
+      "assets/sfx/reveal/gcrack_11.mp3",
+      "assets/sfx/reveal/gcrack_12.mp3",
+      "assets/sfx/reveal/gcrack_13.mp3",
+      "assets/sfx/reveal/gcrack_14.mp3",
+      "assets/sfx/reveal/gcrack_15.mp3",
+      "assets/sfx/reveal/gcrack_16.mp3",
+      "assets/sfx/reveal/gcrack_17.mp3"
+    ],
+    "gshards": [
+      "assets/sfx/reveal/gshards_01.mp3",
+      "assets/sfx/reveal/gshards_02.mp3",
+      "assets/sfx/reveal/gshards_03.mp3",
+      "assets/sfx/reveal/gshards_04.mp3",
+      "assets/sfx/reveal/gshards_05.mp3",
+      "assets/sfx/reveal/gshards_06.mp3",
+      "assets/sfx/reveal/gshards_07.mp3",
+      "assets/sfx/reveal/gshards_08.mp3"
+    ],
+    "gong": [
+      "assets/sfx/reveal/gong_01.mp3",
+      "assets/sfx/reveal/gong_02.mp3",
+      "assets/sfx/reveal/gong_03.mp3"
+    ],
+    "ecg": [
+      "assets/sfx/reveal/ecg_01.mp3",
+      "assets/sfx/reveal/ecg_02.mp3",
+      "assets/sfx/reveal/ecg_03.mp3",
+      "assets/sfx/reveal/ecg_04.mp3",
+      "assets/sfx/reveal/ecg_05.mp3",
+      "assets/sfx/reveal/ecg_06.mp3"
+    ],
+    "flatline": [
+      "assets/sfx/reveal/flatline_01.mp3",
+      "assets/sfx/reveal/flatline_02.mp3"
+    ],
+    "alarm": [
+      "assets/sfx/reveal/alarm_01.mp3",
+      "assets/sfx/reveal/alarm_02.mp3",
+      "assets/sfx/reveal/alarm_03.mp3",
+      "assets/sfx/reveal/alarm_04.mp3",
+      "assets/sfx/reveal/alarm_05.mp3"
+    ],
+    "flicker": [
+      "assets/sfx/reveal/flicker_01.mp3",
+      "assets/sfx/reveal/flicker_02.mp3",
+      "assets/sfx/reveal/flicker_03.mp3",
+      "assets/sfx/reveal/flicker_04.mp3",
+      "assets/sfx/reveal/flicker_05.mp3",
+      "assets/sfx/reveal/flicker_06.mp3",
+      "assets/sfx/reveal/flicker_07.mp3"
+    ]
+  };
+
   // src/sfx/banks.js
   var G2 = "assets/sfx/guns/";
   var lib = (...keys) => keys.flatMap((k) => LIB[k] || []);
   var zl = (...keys) => keys.flatMap((k) => ZLIB[k] || []);
+  var rl = (...keys) => keys.flatMap((k) => RLIB[k] || []);
   var take = (name, i) => `${G2}${name}_${String(i).padStart(2, "0")}.mp3`;
   var takes = (name, from, to) => Array.from({ length: to - from + 1 }, (_, i) => take(name, from + i));
   var one = (name) => [`${G2}${name}.mp3`];
@@ -63757,6 +64066,87 @@ void main() {
       { label: "Rumble + crack", files: [], extra: zl("breach"), gain: 0.9, pitch: [-1, 0.5], wet: 0.3 },
       { label: "Debris", files: [], extra: zl("debris"), gain: 0.5, pitch: [-1, 1], at: [0.35, 0.45], wet: 0.2 }
     ] },
+    // ---- the opening reveal (2026-10-19): each moment of src/opening/revealsound.js; the user's picks replace its
+    // synthesised version there (RevealSound.rec), which stays until they keep takes ----
+    liftDing: { label: "Lift ding", group: "Opening reveal", sub: "The lift", hook: "the lift arrives (the opening, and every lift in the game)", layers: [
+      { label: "Ding", files: [], extra: rl("ding"), gain: 0.8, pitch: [-0.3, 0.3], wet: 0.35 }
+    ] },
+    revealLiftArrive: { label: "Lift car arriving", group: "Opening reveal", sub: "The lift", old: "liftArrive", hook: "the car comes up the shaft before the reveal", layers: [
+      { label: "Motor", files: [], extra: rl("larrive"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.25 },
+      { label: "Settling clunk", files: [], extra: rl("clunk"), gain: 0.7, pitch: [-1, 0], at: 2.3, wet: 0.25 }
+    ] },
+    revealDoorsOpen: { label: "Lift doors open", group: "Opening reveal", sub: "The lift", old: "doorsOpen", hook: "the doors part on the reveal", layers: [
+      { label: "Doors", files: [], extra: rl("ldoorsopen"), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 }
+    ] },
+    liftClose: { label: "Lift doors close", group: "Opening reveal", sub: "The lift", hook: "the lift doors close (the opening, and every lift in the game)", layers: [
+      { label: "Doors", files: [], extra: rl("ldoorsclose"), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 }
+    ] },
+    revealPowerDown: { label: "The power dies", group: "Opening reveal", sub: "Power & flashes", old: "powerDown", hook: "the room's power fails before the flashes", layers: [
+      { label: "Breaker", files: [], extra: rl("breaker", "clunk"), gain: 0.8, pitch: [-1, 0.5], wet: 0.3 },
+      { label: "Power draining away", files: [], extra: rl("pdown"), gain: 0.7, pitch: [-0.5, 0.5], at: 0.05, wet: 0.25 }
+    ] },
+    revealFlash: { label: "A flash (electrical arc)", group: "Opening reveal", sub: "Power & flashes", old: "flash", hook: "each breaker flash outside the lift", layers: [
+      { label: "Arc", files: [], extra: rl("arc"), gain: 0.8, pitch: [-1, 1], wet: 0.3 },
+      { label: "Crack", files: [], extra: rl("crack"), gain: 0.6, pitch: [-1, 1], wet: 0.25 },
+      { label: "Thump under it", files: [], extra: rl("thump"), gain: 0.6, pitch: [-1, 0.5], wet: 0.2 }
+    ] },
+    revealFlashBoom: { label: "The last flash (lands on her)", group: "Opening reveal", sub: "Power & flashes", old: "flashBoom", hook: "the last flash, the one that shows her", layers: [
+      { label: "Impact", files: [], extra: rl("boom"), gain: 1, pitch: [-0.5, 0.5], wet: 0.35 },
+      { label: "Crack", files: [], extra: rl("crack", "arc"), gain: 0.7, pitch: [-1, 0.5], wet: 0.25 },
+      { label: "Ringing after", files: [], extra: rl("ring"), gain: 0.35, at: 0.1, wet: 0.2 }
+    ] },
+    revealCutHit: { label: "Camera cut hit", group: "Opening reveal", sub: "Power & flashes", old: "cutHit", hook: "each camera cut in the dark between flashes", layers: [
+      { label: "Thump", files: [], extra: rl("thump", "boom"), gain: 0.9, pitch: [-1, 0.5], wet: 0.25 }
+    ] },
+    revealSlowWhoosh: { label: "Into slow motion", group: "Opening reveal", sub: "Slow motion", old: "slowWhoosh", hook: "time slows as she walks out", layers: [
+      { label: "Suck-in swell + drop", files: [], extra: rl("suck"), gain: 0.9, pitch: [-0.5, 0.5], wet: 0.3 }
+    ] },
+    revealSlowDown: { label: "Time stretching", group: "Opening reveal", sub: "Slow motion", old: "slowDown", hook: "time stretches on the finisher", layers: [
+      { label: "Falling whoosh", files: [], extra: rl("slowdown"), gain: 0.85, pitch: [-0.5, 0.5], wet: 0.3 }
+    ] },
+    revealHeartbeat: { label: "Heartbeat", group: "Opening reveal", sub: "Slow motion", old: "heartbeat", hook: "the heartbeat in the dark", layers: [
+      { label: "Beat", files: [], extra: rl("heart"), gain: 0.9, pitch: [-1, 0], wet: 0.15 }
+    ] },
+    revealFootstep: { label: "Her slow-motion footstep", group: "Opening reveal", sub: "Slow motion", old: "footstep", hook: "each footfall of the slow walk-out", cadence: 0.9, layers: [
+      { label: "Step", files: [], extra: rl("bigstep"), gain: 0.85, pitch: [-1, 0.5], wet: 0.3 },
+      { label: "Boom under it", files: [], extra: rl("thump"), gain: 0.6, pitch: [-1, 0], wet: 0.25 }
+    ] },
+    revealDrum: { label: "War drum (on her steps)", group: "Opening reveal", sub: "Slow motion", old: "drum", hook: "the drum under each footfall of the walk-out", cadence: 0.9, layers: [
+      { label: "Drum", files: [], extra: rl("drum", "thump"), gain: 0.9, pitch: [-0.5, 0.5], wet: 0.35 }
+    ] },
+    revealLaunchOff: { label: "She pushes off", group: "Opening reveal", sub: "Slow motion", old: "launchOff", hook: "she launches into the jump finisher", layers: [
+      { label: "Push-off", files: [], extra: rl("launch"), gain: 0.8, pitch: [-1, 0.5], wet: 0.15 },
+      { label: "Rush of air", files: [], extra: rl("whoosh"), gain: 0.6, pitch: [-2, 0], at: 0.03, wet: 0.2 }
+    ] },
+    revealSpinSwish: { label: "The bat through the air (slow motion)", group: "Opening reveal", sub: "Slow motion", old: "spinSwish", hook: "the slow-motion spin of the swing", layers: [
+      { label: "Swish", files: [], extra: rl("slowswish", "whoosh"), gain: 0.85, pitch: [-1, 0.5], wet: 0.25 }
+    ] },
+    revealSmash: { label: "The smash (bat through him)", group: "Opening reveal", sub: "The finisher", old: "smash", hook: "the bat lands on the finisher", layers: [
+      { label: "Crack", files: [], extra: rl("scrack", "crack"), gain: 0.9, pitch: [-1, 0.5], wet: 0.2 },
+      { label: "Bone", files: [], extra: rl("sbone"), gain: 0.75, pitch: [-1, 0.5], at: 0.02, wet: 0.15 },
+      { label: "Wet burst", files: [], extra: [...rl("swet"), ...lib("squish")], gain: 0.7, pitch: [-1.5, 0.5], at: 0.04, wet: 0.2 },
+      { label: "Huge low hit", files: [], extra: rl("boom"), gain: 0.8, pitch: [-0.5, 0.5], wet: 0.3 }
+    ] },
+    revealLensHit: { label: "Head hits the lens (glass)", group: "Opening reveal", sub: "The finisher", old: "lensHit", hook: "the head flies into the camera lens", layers: [
+      { label: "Thunk", files: [], extra: rl("gthunk"), gain: 0.9, pitch: [-1, 0.5], wet: 0.15 },
+      { label: "Glass cracking", files: [], extra: rl("gcrack"), gain: 0.85, pitch: [-0.5, 0.5], at: 0.01, wet: 0.2 },
+      { label: "Tiny shards", files: [], extra: rl("gshards"), gain: 0.4, pitch: [0, 2], at: 0.12, wet: 0.2 }
+    ] },
+    revealFreezeHit: { label: "The freeze (time stops)", group: "Opening reveal", sub: "The finisher", old: "freezeHit", hook: "the picture freezes on the finisher", layers: [
+      { label: "Hit", files: [], extra: rl("boom"), gain: 1, pitch: [-0.5, 0.5], wet: 0.35 },
+      { label: "Ringing after", files: [], extra: rl("ring"), gain: 0.35, wet: 0.2 }
+    ] },
+    revealCueHit: { label: "The name-card hit", group: "Opening reveal", sub: "The finisher", old: "cueHit", hook: "the walk-out music cuts on the freeze", layers: [
+      { label: "Hit", files: [], extra: rl("boom"), gain: 1, pitch: [-0.5, 0.5], wet: 0.35 },
+      { label: "Gong", files: [], extra: rl("gong"), gain: 0.6, pitch: [-0.5, 0.5], wet: 0.4 }
+    ] },
+    bodyFallReveal: { label: "Bodies hitting the floor", group: "Opening reveal", sub: "The finisher", pending: true, layers: [
+      { label: "Body fall", files: [], extra: rl("bodyfall"), gain: 0.8, pitch: [-1, 0.5], wet: 0.2 }
+    ] },
+    openingMonitor: { label: "Heart monitor beep", group: "Opening reveal", sub: "Earlier in the opening", pending: true, cadence: 1, layers: [{ label: "Beep", files: [], extra: rl("ecg"), gain: 0.5, wet: 0.2 }] },
+    openingFlatline: { label: "Flatline", group: "Opening reveal", sub: "Earlier in the opening", pending: true, layers: [{ label: "Flatline", files: [], extra: rl("flatline"), gain: 0.5, wet: 0.2 }] },
+    openingAlarm: { label: "Alarm", group: "Opening reveal", sub: "Earlier in the opening", pending: true, layers: [{ label: "Alarm", files: [], extra: rl("alarm"), gain: 0.5, wet: 0.3 }] },
+    openingFlicker: { label: "Lights flickering", group: "Opening reveal", sub: "Earlier in the opening", pending: true, layers: [{ label: "Flicker", files: [], extra: rl("flicker"), gain: 0.5, wet: 0.2 }] },
     // ---- coming next: no game hook yet (Phase 2-5); pick now, they go in when wired ----
     footstep: { label: "Yola footstep", group: "Coming next", sub: "Not in the game yet", pending: true, cadence: 0.32, layers: [
       { label: "Step", files: [], extra: lib("step", "stepsoft"), gain: 0.5, pitch: [-1, 1], wet: 0.08 }
@@ -67241,6 +67631,14 @@ void main() {
       }, secs * 1e3 + 80);
       this.live = this.live.filter((x) => x !== h);
     }
+    // the user's picks on the Sound Board (src/sfx/banks.js, "Opening reveal"): when they have kept takes for a moment, those
+    // play instead of its synthesised version (forceSynth: the board's "Old version" button)
+    rec(name, k = 1) {
+      const A = this.audio;
+      if (this.forceSynth || !A.modern || !A.samples?.ready?.(name)) return false;
+      A.play(name, k);
+      return true;
+    }
     osc(type, f, dest, detune = 0) {
       const o = this.ctx.createOscillator();
       o.type = type;
@@ -67281,7 +67679,7 @@ void main() {
     }
     // ---- one-shots ----
     powerDown() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealPowerDown")) return;
       const t = this.now(), A = this.audio;
       A.tone(t, 1.3, 190, { type: "sine", gain: 0.18, f2: 32, attack: 0.02 });
       A.tone(t, 1, 380, { type: "triangle", gain: 0.05, f2: 60, attack: 0.02 });
@@ -67289,7 +67687,7 @@ void main() {
       A.tone(t + 0.05, 0.4, 70, { type: "sine", gain: 0.35, f2: 38 });
     }
     flash(k = 1) {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealFlash", k)) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 0.04, { type: "highpass", f: 3200, gain: 0.45 * k });
       A.noise(t + 0.01, 0.28, { type: "bandpass", f: 5200, q: 2, f2: 2600, gain: 0.1 * k, attack: 5e-3 });
@@ -67297,7 +67695,7 @@ void main() {
       A.tone(t, 0.12, 100, { type: "sawtooth", gain: 0.06 * k, attack: 3e-3 });
     }
     flashBoom() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealFlashBoom")) return;
       const t = this.now(), A = this.audio;
       A.tone(t, 2.2, 52, { type: "sine", gain: 0.75, f2: 26, attack: 4e-3 });
       A.tone(t, 0.9, 104, { type: "triangle", gain: 0.28, f2: 40 });
@@ -67306,7 +67704,7 @@ void main() {
       A.noise(t + 0.02, 0.5, { type: "bandpass", f: 4800, q: 2, f2: 1600, gain: 0.12 });
     }
     liftArrive() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealLiftArrive")) return;
       const t = this.now(), A = this.audio;
       A.tone(t, 2.4, 82, { type: "sawtooth", gain: 0.05, f2: 118, attack: 0.9 });
       A.noise(t, 2.4, { type: "bandpass", f: 220, q: 1.2, f2: 360, gain: 0.08, attack: 1 });
@@ -67314,7 +67712,7 @@ void main() {
       A.noise(t + 2.3, 0.18, { type: "lowpass", f: 700, f2: 150, gain: 0.2 });
     }
     doorsOpen() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealDoorsOpen")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 1.3, { type: "bandpass", f: 900, q: 0.9, f2: 380, gain: 0.12, attack: 0.15 });
       A.tone(t, 1.3, 60, { type: "sawtooth", gain: 0.04, f2: 48, attack: 0.2 });
@@ -67323,14 +67721,14 @@ void main() {
     // (2026-10-19, the launch and the cuts) a camera cut in the dark of the flashes: a deep thump under the flash's crack, so
     // each new angle lands as a beat
     cutHit(k = 1) {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealCutHit", k)) return;
       const t = this.now(), A = this.audio;
       A.tone(t, 0.7, 44, { type: "sine", gain: 0.55 * k, f2: 28, attack: 3e-3 });
       A.noise(t, 0.25, { type: "lowpass", f: 600, f2: 120, gain: 0.25 * k });
     }
     // she pushes off: a scuff of rubber on the floor, a short rising rush of air
     launchOff() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealLaunchOff")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 0.12, { type: "bandpass", f: 1600, q: 1.2, f2: 700, gain: 0.3 });
       A.tone(t, 0.18, 70, { type: "sine", gain: 0.4, f2: 45 });
@@ -67338,7 +67736,7 @@ void main() {
     }
     // the spin in slow motion: the bat through the air, stretched (a long, low, turning swish)
     spinSwish(secs = 0.9) {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealSpinSwish")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, secs, { type: "bandpass", f: 260, q: 1.4, f2: 1500, gain: 0.3, attack: secs * 0.55 });
       A.noise(t + secs * 0.5, secs * 0.5, { type: "bandpass", f: 1500, q: 1.6, f2: 420, gain: 0.2, attack: 0.02 });
@@ -67346,7 +67744,7 @@ void main() {
     }
     // the freeze: time stops (a sucked-in swell cut dead, a sub drop, a high ring that hangs over the card)
     freezeHit() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealFreezeHit")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 0.08, { type: "highpass", f: 2400, gain: 0.55 });
       A.tone(t, 1.8, 50, { type: "sine", gain: 0.8, f2: 26, attack: 3e-3 });
@@ -67354,20 +67752,20 @@ void main() {
       for (const [hz, g] of [[1318.5, 0.035], [1975.5, 0.025]]) A.tone(t + 0.02, 2.4, hz, { type: "sine", gain: g, attack: 0.01 });
     }
     heartbeat(k = 1) {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealHeartbeat", k)) return;
       const t = this.now(), A = this.audio;
       A.tone(t, 0.14, 60, { gain: 0.34 * k, f2: 42 });
       A.tone(t + 0.22, 0.14, 56, { gain: 0.26 * k, f2: 40 });
     }
     slowWhoosh() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealSlowWhoosh")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 0.9, { type: "bandpass", f: 400, q: 0.7, f2: 3e3, gain: 0.2, attack: 0.82 });
       A.tone(t + 0.8, 1.4, 62, { type: "sine", gain: 0.38, f2: 28 });
       A.noise(t + 0.8, 1.2, { type: "lowpass", f: 300, f2: 60, gain: 0.25 });
     }
     footstep() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealFootstep")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 0.09, { type: "lowpass", f: 1400, f2: 300, gain: 0.32 });
       A.tone(t, 1.3, 48, { type: "sine", gain: 0.7, f2: 27, attack: 6e-3 });
@@ -67375,7 +67773,7 @@ void main() {
       A.noise(t + 0.03, 1.1, { type: "lowpass", f: 260, f2: 60, gain: 0.22, attack: 0.02 });
     }
     smash() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealSmash")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 0.05, { type: "highpass", f: 1800, gain: 0.7 });
       for (const dt of [0, 0.018, 0.04, 0.07]) A.noise(t + dt, 0.035, { type: "bandpass", f: 2600 + Math.random() * 1800, q: 3, gain: 0.35 });
@@ -67385,13 +67783,13 @@ void main() {
       A.noise(t + 0.15, 1.6, { type: "lowpass", f: 900, f2: 90, gain: 0.25 });
     }
     slowDown() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealSlowDown")) return;
       const t = this.now(), A = this.audio;
       A.noise(t, 1.2, { type: "bandpass", f: 2400, q: 0.8, f2: 220, gain: 0.22, attack: 0.05 });
       A.tone(t, 1.4, 180, { type: "sawtooth", gain: 0.04, f2: 40 });
     }
     lensHit() {
-      if (!this.ok) return;
+      if (!this.ok || this.rec("revealLensHit")) return;
       const t = this.now(), A = this.audio;
       A.tone(t, 0.35, 120, { type: "sine", gain: 0.6, f2: 55 });
       A.noise(t, 0.12, { type: "lowpass", f: 900, f2: 200, gain: 0.5 });
@@ -67425,13 +67823,20 @@ void main() {
       this.sub = this.hold((g) => [this.osc("sine", 36.71, g)], bus, 0.22, 2.5);
     }
     drum(k = 1) {
-      if (!this.ok || !this.cue) return;
+      if (!this.ok || !this.cue || this.rec("revealDrum", k)) return;
       const t = this.now(), A = this.audio;
       A.tone(t, 0.9, 58, { type: "sine", gain: 0.6 * k, f2: 34 });
       A.noise(t, 0.35, { type: "lowpass", f: 1100, f2: 160, gain: 0.32 * k });
     }
     cueHit() {
       if (!this.ok) return;
+      if (this.rec("revealCueHit")) {
+        this.kill(this.cue, 0.08);
+        this.kill(this.strings, 0.08);
+        this.kill(this.sub, 0.08);
+        this.cue = this.strings = this.sub = null;
+        return;
+      }
       const t = this.now(), A = this.audio;
       A.tone(t, 1.6, 55, { type: "sine", gain: 0.6, f2: 30 });
       A.tone(t, 0.7, 110, { type: "triangle", gain: 0.3, f2: 55 });
@@ -73012,7 +73417,7 @@ void main() {
     return S2;
   }
 
-  // node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
