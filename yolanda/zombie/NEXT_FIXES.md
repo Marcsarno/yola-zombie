@@ -16,6 +16,14 @@ STATUS 2026-10-18 night (combat chat) — START HERE. Everything committed, depl
      (finishers Open -> Mark -> Press, the centre button's three looks, the guard's slam finisher, the lady as a bowling
      ball, Yola getting hurt): the next big build (decided: v3). Floors: FLOORS_REDESIGN.html (Floor 7 + additions, new Floors 6 and 5 at
      Floor 7's size), LAYOUT_REVIEW.md (which plans are current).
+     The user's notes for the build (2026-10-18 night):
+     - The zombie eyes (lighting lab, render/clipchars.js eyeCfg) miss the actual eyes: they float in front of the face.
+       Fix their placement before using them anywhere.
+     - Bed patients wake far too close: core/chapter.js bed groups have sense 3.0 m (zombies.js wakes a bed at
+       dist < sense). The user: they should hear Yola once they're on screen (~8-10 m), and get up faster. The first one
+       she meets gets a short camera cut on it sitting up.
+     - Floor 7's every-weapon spread stays for testing (not the story's weapon order).
+     - No timers anywhere. A Floor 6 "lights out" with a flashlight: rejected.
   2. Merge each zombie's ~12 parts into 1-2 draw calls, dismemberment kept.
   3. The user tests the story floors at High: combat.html?room1=1&perf=1 (36 zombies, the heavier map).
   4. Meter: 'limit gpu' is a guess on iPhones (no GPU timer, capped at 60 fps): label it as unknown there.
