@@ -57,7 +57,7 @@ const BEAM_F = `uniform vec3 uApex; uniform vec3 uAxis; uniform float uCos2; uni
     if (disc > 0.0 && abs(a) > 1e-5) { float sq = sqrt(disc), t1 = (-b - sq) / (2.0 * a), t2 = (-b + sq) / (2.0 * a);
       float tn = min(t1, t2), tf = max(t1, t2);
       if (tn > 0.0 && tn < tEnd && dot(ro + rd * tn - uApex, uAxis) > 0.0) tStart = tn; else if (tf > 0.0 && tf < tEnd && dot(ro + rd * tf - uApex, uAxis) > 0.0) tStart = tf; }
-    float dt = (tEnd - tStart) / 12.0, j = hash(vec3(gl_FragCoord.xy, fract(uTime) * 61.0)), acc = 0.0;
+    float dt = (tEnd - tStart) / 12.0, j = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))) + fract(uTime * 60.0) * 0.6180339), acc = 0.0; // (2026-10-19: interleaved gradient noise, steady on phone GPUs; the old hash of the pixel's place broke into radial streaks on the iPhone)
     for (int i = 0; i < 12; i++) {
       vec3 p = ro + rd * (tStart + (float(i) + j) * dt), q = p - uApex; float h = dot(q, uAxis);
       if (h < 0.0 || h > uLen) continue;

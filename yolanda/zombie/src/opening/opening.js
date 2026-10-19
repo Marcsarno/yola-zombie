@@ -111,6 +111,14 @@ export class Opening {
     this.narrLoaded = await this.sound.loadNarration(TOUR.audio); onProgress?.(0.85);
     this.voicesLoaded = await this.sound.loadVoices(LINES, VOICE_DIR, (n) => onProgress?.(0.85 + 0.1 * n / LINES.length)); onProgress?.(0.95);
     await loadTuning(); // (the reveal's numbers: revealtune.js, assets/opening/reveal_tuning.json)
+    // (2026-10-19, phone checks) ?off=shadow,post,beam,fog,polish,bake,haze turns pieces of the reveal's look off, one link per
+    // test on the phone: which one the iPhone draws wrong
+    this.offs = new Set((this.params.get('off') || '').split(',').filter(Boolean));
+    if (this.offs.has('shadow')) { RT.game.shadow = false; RT.quality.flashShadow = false; }
+    if (this.offs.has('post')) RT.quality.post = false;
+    if (this.offs.has('beam')) RT.quality.beam = false;
+    if (this.offs.has('fog')) RT.quality.softFog = false;
+    if (this.offs.has('haze')) RT.game.haze = false;
     this.RT = RT; // (dev/test handle: window.opening.RT)
     try { const rc = await this.loader.loadAsync('assets/opening/yola2_reveal.glb'); this.revClips = { walk: rc.animations.find((a) => a.name === 'reveal_walk') }; } catch (e) { console.warn('reveal clips', e); }
     try { this.burst = new ZombieBurst(this.scene, this.loader); this.burst.bounds = { x0: -7.0, x1: 7.0, z0: -11.05, z1: 0.95 }; await this.burst.load(); } /* (bounds: the OR's walls, core/chapter.js 'or' polygon) */ catch (e) { console.warn('zombie burst', e); this.burst = null; }
@@ -1337,7 +1345,7 @@ export class Opening {
   aimFlashShadow(off = false) {
     const lk = this.game?.().lightkit, L = lk?.ysh, C = lk?.yshCatch, sp = this.spot, r = this.rl, her = this.herAt();
     if (!L || !C) return;
-    const B = this.yshBase ||= { half: L.shadow.camera.right, map: L.shadow.mapSize.x };
+    const B = this.yshBase ||= { half: L.shadow.camera.right, map: L.shadow.mapSize.x, bias: L.shadow.bias, nb: L.shadow.normalBias };
     // (2026-10-19, the user: "why doesn't Yola cast a shadow anymore?") the failing light's shadow only while she is in the lift
     // and walking out of it; from the launch (she is metres out by then: from the back of the car it was a faint streak) the
     // game's own shadow, from the nearest ceiling fitting, short under her (lightkit.tickYShadow)
@@ -1345,6 +1353,9 @@ export class Opening {
     const H = on ? 4.5 : B.half, M = on ? 1024 : B.map, cam = L.shadow.camera;
     if (cam.right !== H) { cam.left = cam.bottom = -H; cam.right = cam.top = H; cam.updateProjectionMatrix(); }
     if (L.shadow.mapSize.x !== M) { L.shadow.mapSize.set(M, M); L.shadow.map?.dispose(); L.shadow.map = null; }
+    // (2026-10-19, the user's iPhone screenshots: dark blotches over the floor) the flash's light skims the floor from the back
+    // of the car: at that angle the phone's shadow depth was not precise enough (shadow acne); a larger bias while it is on
+    const rev = !off && this.active; L.shadow.bias = on ? -0.004 : rev ? -0.003 : B.bias; L.shadow.normalBias = on ? 0.09 : rev ? 0.06 : B.nb; // (the game's light in the reveal too: rev)
     if (!on) { C.scale.set(1, 1, 1); return; }
     const to = new THREE.Vector3(sp.position.x - her.x, sp.position.y, sp.position.z - her.z).normalize(), fall = new THREE.Vector3(-to.x, 0, -to.z).normalize();
     const cx = her.x + fall.x * H * 0.7, cz = her.z + fall.z * H * 0.7;
@@ -1540,6 +1551,8 @@ export class Opening {
       const lk = this.game().lightkit, at = this.game().atmos;
       if (lk) { lk.dim.floor = r.floor; lk.dim.signs = r.signs; lk.setCharLight(0.45 * r.chars * r.amb); /* (the game's fill on the characters ignores the scene's darkness: it follows the room light here, so a dark beat keeps its silhouettes) */ if (lk.built.yshadow && lk.on.yshadow !== RT.game.shadow) lk.set('yshadow', RT.game.shadow); }
       if (at && !!at.on.haze !== !!RT.game.haze) at.set('haze', RT.game.haze);
+      if (lk && this.offs?.has('polish') && lk.on.polish) lk.set('polish', false); // (?off= phone checks: for the session)
+      if (lk && this.offs?.has('bake') && lk.on.baked) lk.set('baked', false);
     } else { if (A.hemi) A.hemi.intensity = b.hemi * r.amb; if (A.sun) A.sun.intensity = b.sun * r.amb; this.scene.environmentIntensity = b.env * r.amb; }
     const pulse = 0.5 + 0.5 * Math.sin(r.t * Math.PI * 2 * 0.55 - Math.PI / 2), soft = this.reducedFlash ? 0.6 : 1;
     if (this.redLight) this.redLight.intensity = r.red * soft * (1.2 + 7 * pulse);

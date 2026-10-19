@@ -21,7 +21,7 @@ const FinishShader = {
   uniforms: { tDiffuse: { value: null }, tGlow: { value: null }, glow: { value: 1 }, time: { value: 0 }, grain: { value: 0.016 }, vig: { value: 0.32 }, film: { value: 1 } },
   vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: `uniform sampler2D tDiffuse; uniform sampler2D tGlow; uniform float glow; uniform float time; uniform float grain; uniform float vig; uniform float film; varying vec2 vUv;
-    float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    float h(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); } // (no sin(): its large arguments turn to patterns on phone GPUs)
     void main() {
       vec4 c = texture2D(tDiffuse, vUv);
       vec3 g = c.rgb + texture2D(tGlow, vUv).rgb * glow;
