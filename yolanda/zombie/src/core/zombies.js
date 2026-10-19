@@ -578,7 +578,7 @@ export class Zombie {
           { const s = this.steer(wantX, wantZ, gd, true, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
           turnRate = 4; break;
         }
-        speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === 'run' ? RUNNER_SPEED : 1) * (this.chair ? (this.o2 ? O2.chairSpeed : 0.72) : this.prop === 'iv' ? 0.8 : 1) * (this.kind === 'guard' && !this.enraged ? GUARD.stageSpeed[this.gstage] || 1 : 1) : 0;
+        speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === 'run' ? RUNNER_SPEED : 1) * (this.chair ? (this.o2 ? O2.chairSpeed : 0.72) : this.prop === 'iv' ? 0.8 : 1) * (this.wade || 1) * (this.kind === 'guard' && !this.enraged ? GUARD.stageSpeed[this.gstage] || 1 : 1) : 0;
         if (speed > 0) { const s = this.steer(wantX, wantZ, dist, los, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
         // Waiting its turn (spacing): a zombie without an attack slot stops a step back from her (at its own distance),
         // facing her, and now and then takes a few steps along the ring away from the nearest other zombie, so a group
@@ -758,6 +758,7 @@ export class Zombie {
           if (this.attack === 'slam') { // the shockwave (2026-10-18 night, the user: "anything near him ... go flying ... they're just fodder"):
             // walkers right under it (SLAM_FODDER.kill m) are killed, thrown; out to SLAM_FODDER.throw m they are knocked flying outward
             const ix = this.x + Math.sin(this.yaw) * 1.1, iz = this.z + Math.cos(this.yaw) * 1.1, F = SLAM_FODDER;
+            sim.heavyImpact?.(ix, iz, 1.7, 'slam'); // (a cracked wall by where it lands gives way: core/rooms.js)
             for (const o of sim.zombies) {
               if (o === this || !o.alive || o.kind === 'guard' || o.kind === 'sprinter' || o.state === ZS.EMERGE || o.buried) continue;
               const ox = o.x - ix, oz = o.z - iz, d = Math.hypot(ox, oz), ux = ox / (d || 1), uz = oz / (d || 1);
@@ -861,7 +862,7 @@ export class Zombie {
       const hitWall = world.resolveCircle(this, this.r);
       if (hitWall && this.sprinting && this.spd > 2.2) { // ran into a wall or a prop at speed: she trips
         const nx = this.x - bx, nz = this.z - bz, nl = Math.hypot(nx, nz);
-        if (nl > 1e-5 && (this.vx * nx + this.vz * nz) / (nl * this.spd) < -0.45) this.tumble(sim, 'wall');
+        if (nl > 1e-5 && (this.vx * nx + this.vz * nz) / (nl * this.spd) < -0.45) { if (this.kind === 'sprinter' && this.spd > 3.5) sim.heavyImpact?.(this.x, this.z, this.r + 0.4, 'lady'); this.tumble(sim, 'wall'); } // (a cracked wall she runs into breaks: core/rooms.js)
       }
       if (hitWall && (this.kx || this.kz)) {
         // knocked into furniture: lose the velocity component into the obstacle

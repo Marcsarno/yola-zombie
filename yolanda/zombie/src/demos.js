@@ -18,6 +18,17 @@ const DEMOS = {
     put(sim, -2.6, -6.0, 'o2chair', 0); put(sim, 3.0, -6.6, 'o2chair', 0); put(sim, 0.4, -7.4, 'o2walker', 0);
     for (const [x, z] of [[-1.6, -5.2], [1.4, -5.6], [-0.4, -6.4], [2.2, -5.0]]) put(sim, x, z, 'normal', 0);
     sim.addTank(-3.6, -2.4); sim.addTank(-3.25, -2.15); sim.player.z = 2.0; } },
+  crack: { label: 'Cracked walls: break one with the sledgehammer; dodge the lady into the other', weapon: 'sledgehammer', setup(sim) {
+    sim.addCrackedWall({ x0: 2.2, z0: -1.2, x1: 5.4, z1: -1.2 }); sim.addCrackedWall({ x0: -1.2, z0: 1.7, x1: 2.2, z1: 1.7 });
+    const z = put(sim, 0.5, -7.0, 'sprinter'); z.attackCd = 0; sim.player.x = 0.5; sim.player.z = 0.4; } }, // (the one clear 9 m lane in the practice room) // (Yola backed up to the cracked wall: dodge and the lady goes through it)
+  flood: { label: 'The flood: lure them into the water, then shoot (or hit) the sparking panel', weapon: 'pistol', setup(sim) {
+    sim.addFlood({ minX: -6.0, maxX: 0.5, minZ: -9.5, maxZ: -2.5, panel: { x: -6.6, z: -6.0 } });
+    for (const [x, z] of [[-4.5, -12], [-2.0, -13], [-3.2, -15], [0.2, -12.5]]) put(sim, x, z, 'normal', 0);
+    sim.player.x = -2.8; sim.player.z = 2.0; } },
+  mri: { label: 'The MRI arena: walk in, the magnet takes your gun; clear the room, then step on the red button', weapon: 'pistol', setup(sim) {
+    sim.addMRI({ minX: -7.6, maxX: 7.6, minZ: -15, maxZ: -3.5, magnet: { x: 0.4, z: -10.5 }, button: { x: 6.0, z: -13.2 } });
+    const g = put(sim, -2.6, -6.5, 'guard', Math.PI); g.attackCd = 1; put(sim, 3.2, -7.2, 'o2walker', Math.PI); put(sim, -5.0, -12.0, 'normal', 0); put(sim, 4.5, -11.0, 'normal', 0);
+    const p = sim.player; for (const w of ['bat', 'pistol', 'shotgun']) if (!p.owned.includes(w)) p.owned.push(w); p.x = 0.4; p.z = 2.0; } },
   floor: { label: 'Out of the floor: the breach', weapon: 'pistol', setup(sim) { sim.spawnFromFloor(-0.8, -1.6, { look: 'patient' }); sim.spawnFromFloor(2.2, -0.6, { kind: 'runner' }); } },
   // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") a
   // lineup, left to right: her own blue, the runner's orange, then the new colours (main.js SCRUBS)

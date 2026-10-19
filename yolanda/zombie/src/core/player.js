@@ -1,7 +1,7 @@
 // Player: one authoritative movement controller + one weapon action state machine.
 // Yaw convention: forward = (sin yaw, cos yaw) on (x, z).
 import { clamp, angleDiff, approachAngle, segPointDist2, rayCircle } from './world.js';
-import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, usableWeapons, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack, legAttack, strikeReach, EXEC_LAUNCH } from './weapons.js';
+import { PISTOL, SHOTGUN, AXE, FISTS, WEAPON_ORDER, usableWeapons, attacksOf, meleeSegment, muzzleLocal, attackEnd, groundAttack, legAttack, strikeReach, EXEC_LAUNCH, EXEC_SLIDE } from './weapons.js';
 
 const AIM_DEADZONE = 0.18;
 // knocked flat (the sprinter's charge): thrown back onto the floor, rolls onto her front, gets up (assets/yola_extra.glb:
@@ -212,6 +212,7 @@ export class Player {
       speed *= k;
     }
     if (this.action.type === 'swing') speed *= this.attackMoveScale();
+    speed *= this.wade || 1; // (wading: core/rooms.js FLOOD)
     if (this.grabT > 0) { this.grabT -= dt; speed *= 0.3; } // (a crawler has her by the ankle)
     else if (this.equipped === SHOTGUN) speed *= 0.92;
     const dl = mag > 1e-4 ? speed / mag : 0;
@@ -286,6 +287,10 @@ export class Player {
     if (tg && tg.alive) { const gap = Math.hypot(tg.x - this.x, tg.z - this.z) - (A.stand ?? 1.05); d = Math.max(0, Math.min(d, gap)); }
     a.advanced = (a.advanced || 0) + step; // (the curve advances even when blocked: no catch-up burst later)
     out.x += Math.sin(a.heading) * d; out.z += Math.cos(a.heading) * d;
+    if (A.ROOTX) { // sideways too (the shotgun slide: to her left, +x in the clip), scaled with the forward travel
+      const wx = rootAt(A.ROOTX, a.st) * a.rootScale, sx = wx - (a.sided || 0); a.sided = wx;
+      out.x += Math.cos(a.heading) * sx; out.z -= Math.sin(a.heading) * sx;
+    }
     return out;
   }
 
@@ -324,6 +329,15 @@ export class Player {
         break;
       case 'swing': {
         const A = this.atk(a);
+        if (A.gunShot != null) { // the shotgun slide finisher (render/slidefin.js): the point-blank shot at its frame, the kill with it
+          const prevT = a.st; a.st = a.t;
+          if (prevT < A.gunShot && a.st >= A.gunShot) {
+            if (this.ammo > 0) this.ammo--; this.shotCount++; this.recoil = 0; // (the kick is in the clip)
+            sim.fireShotgun(this); const z = sim.zombies.find((q) => q.id === a.execId); if (z && z.alive) sim.forceExec(z);
+          }
+          if (a.st >= A.duration) { this.setAction('ready'); this.execId = 0; }
+          break;
+        }
         const prevT = a.st, st = (a.st = a.t * T.axeSpeed);
         if (A.continuous && !A.windows && prevT < A.activeStart - 0.12 && st >= A.activeStart - 0.12) sim.emit({ type: 'whoosh', combo: a.combo }); // the swish peaks on the strike
         if (A.windows) { // several strikes in one clip (library combos): each window hits afresh, with its own swish (one per strike: a split strike's own window)
@@ -433,6 +447,7 @@ export class Player {
     this.invuln = Math.max(this.invuln, 3); this.execId = z.id;
     sim.emit({ type: 'execStart', id: z.id, weapon: this.equipped, x: z.x, z: z.z });
     if (!gun && this.equipped !== FISTS && this.equipped !== 'chainsaw' && EXEC_LAUNCH.length) { this.startLaunch(z, d, fin, sim); return; } // (the melee weapons leap in: startLaunch)
+    if (this.equipped === SHOTGUN && EXEC_SLIDE.length && d > 1.5) { this.startSlide(z, d, sim); return; } // (the shotgun slides in: startSlide)
     const go = Math.max(0, d - stand);
     this.setAction('execDash', { dur: Math.max(0.05, Math.min(0.16, go / 16)), x0: this.x, z0: this.z, x1: this.x + ux * go, z1: this.z + uz * go, id: z.id });
   }
@@ -452,6 +467,19 @@ export class Player {
     this.execHitIn = A.activeStart / (this.T.axeSpeed || 1); // (when her strike lands: render/execution.js paces her to it)
     this.attackPressT = 9;
     sim.emit({ type: 'swing', combo: this.attacks.length - 1 });
+  }
+  // The shotgun's slide finisher (render/slidefin.js EXEC_SLIDE): the shortest slide whose travel covers the gap to her stand
+  // (1 m short of the zombie), its travel scaled down for a shorter gap; she slides along the line to it, bending a little to
+  // her left as the clip does, and fires at the clip's shot frame (updateAction 'swing')
+  startSlide(z, d, sim) {
+    const list = EXEC_SLIDE.slice().sort((a, b) => far(a) - far(b)), gap = Math.max(0, d - 1.0);
+    function far(e) { return e.A.ROOT ? e.A.ROOT[e.A.ROOT.length - 1].z : 0; }
+    const E = list.find((e) => far(e) >= gap) || list[list.length - 1], A = E.A, total = far(E), rootScale = total > 0.01 ? Math.min(1, gap / total) : 0;
+    this.swingId++;
+    this.setAction('swing', { st: 0, combo: this.attacks.length - 1, ground: false, leg: false, hitSet: new Set(), hits: 0, clanked: false, activeEnd: A.activeEnd, id: this.swingId,
+      lunge: total * rootScale, unlocked: true, target: z, heading: this.aimYaw, turnFrom: this.aimYaw, turnBy: 0, advanced: 0, sided: 0, rootScale, back: 0, execA: A, execId: z.id });
+    this.execHitIn = A.gunShot; this.attackPressT = 9; // (render/execution.js paces her to the shot)
+    sim.emit({ type: 'execSlide', id: z.id, variant: E.variant });
   }
   reloadTime() { return this.equipped === SHOTGUN ? this.T.shotgunReload : this.T.reloadTime; }
 

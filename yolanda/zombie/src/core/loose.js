@@ -57,6 +57,7 @@ function tankBurst(sim, L) {
   if (!p.dead && d < O2.yolaHurt && !sim.T.testNoBlast) {
     if (p.hurt(d < O2.yolaKnock ? O2.dmgNear : O2.dmgFar, c.x, c.z, sim) && d < O2.yolaKnock && !p.dead) p.knockDown(c.x, c.z, sim);
   }
+  sim.heavyImpact?.(c.x, c.z, 2.6, 'blast'); // (a cracked wall close by gives way: core/rooms.js)
   for (const o of sim.loose) if (o !== L && o.o2 && !o.gone) { const q = tankPos(o); if (Math.hypot(q.x - c.x, q.z - c.z) < O2.chain) punctureTank(sim, o, O2.chainFuse[0] + sim.rand() * (O2.chainFuse[1] - O2.chainFuse[0])); }
 }
 // the drip stand on its zombie: its base on a spring (k, damp) to a spot ahead of the left hip (fwd, side, m), never further

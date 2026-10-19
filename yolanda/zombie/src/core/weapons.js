@@ -177,6 +177,7 @@ export const GROUND_OWN = {};
 // three jump lengths (1.4, 2.4, 3.4 m: a longer jump hangs longer and hops higher); every melee finisher picks one
 // (core/player.js startExecution). { variant, dist, A }
 export const EXEC_LAUNCH = [];
+export const EXEC_SLIDE = []; // the shotgun's slide finisher (render/slidefin.js; core/player.js startSlide)
 // ---- the leg attacks (2026-10-17, the user: "attacks that would take out their legs ... to get them to crawl") ----
 // Started by their own button (Legs / C, core/player.js startLegs). Low: they hit below the knee (minY 0), never a body
 // on the floor, and always strike the shins (sim.js resolveMelee style 'legs'): a blade cuts the lower leg off, a blunt

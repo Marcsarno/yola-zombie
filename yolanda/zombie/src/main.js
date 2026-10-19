@@ -6,6 +6,7 @@ import { makeTuning } from './core/tuning.js';
 import { setMeleePaths, meleeSegment, BAT_DEF, WOOD_BAT_DEF, BAT_PROFILE, useBuiltBat } from './core/weapons.js';
 import { buildLibraryAttack } from './render/libattack.js';
 import { setupNewMoves } from './render/newmoves.js';
+import { setupSlideFinisher } from './render/slidefin.js';
 import { AcidPools } from './render/acid.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
@@ -35,6 +36,7 @@ import { loadHoldLayers } from './render/holdlayers.js';
 import { ChapterUI } from './ui/chapter.js';
 import { ThreatCue } from './render/threatcue.js';
 import { FinishMarks } from './render/finishmark.js';
+import { RoomsView } from './render/rooms.js';
 import { cue } from './sfx/cues.js';
 import { SlowMotion } from './render/slowmo.js';
 import { ExecDirector } from './render/execution.js';
@@ -128,6 +130,7 @@ const telegraphs = new Telegraphs(scene); // zombie attack wedges on the floor
 const threatCue = new ThreatCue(scene); // the sign over a special enemy's big attack (render/threatcue.js)
 const finishMarks = new FinishMarks(scene); // the gold mark over a zombie open to a finisher (render/finishmark.js)
 const acid = new AcidPools(scene, fx); // the lady's acid pools (render/acid.js)
+const roomsView = new RoomsView(scene, fx, audio); // cracked walls, the flood, the MRI magnet (render/rooms.js)
 fx.gore = store.get('gore', true);
 let shakeOn = true;
 const hud = new Hud({ tuning, audio, store, onAction: (a, v) => uiAction(a, v) });
@@ -344,6 +347,7 @@ function setupBat(anims, fits = {}, woodG = null) {
   // (89 of its 91 frames: the last one snaps back to the loop pose; four strikes, the third a slower swing)
   useBuiltBat(buildLibraryAttack(yola, { clip: combo, frames: 89, hold, P: BAT_PROFILE, speed: 1, name: 'bat', sound: 'bat', strikes: 4 }));
   setupNewMoves(yola, anims, hold); // (the Quaternius UAL moves: the combo strike by strike, leg attacks, dodge, vault; render/newmoves.js)
+  setupSlideFinisher(yola, anims); // (the shotgun's slide finisher: render/slidefin.js)
 }
 // Compile every shader the fight can need before play. A first use mid-fight compiled one and froze that frame (a limb
 // cut off: 70-270 ms; the first hit): severed pieces draw the zombie's materials unskinned, and pooled hidden things
@@ -683,6 +687,7 @@ function runFrame(dt, doRender = true) {
 
   stepPhysics(animDt);
   acid.audio = audio; acid.update(sim.hazards, sim.zombies, animDt, p);
+  roomsView.update(sim, animDt); // (render/rooms.js)
   ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
   ZombieView.syncLoose(sim.loose, alpha, animDt); // (the drip stands and wheelchairs: core/loose.js)
   { // open to a finisher: the gold mark over its head (render/finishmark.js), the one in reach a touch bigger
@@ -765,6 +770,7 @@ function handleEvents() {
   frameNo++;
   const p = sim.player;
   for (const e of sim.events) {
+    { const r = roomsView.onEvent(e, sim); if (r != null) { if (r.startsWith('shake:')) shake(+r.slice(6)); continue; } } // (core/rooms.js events: render/rooms.js)
     switch (e.type) {
       case 'shot': {
         audio.play('shot');

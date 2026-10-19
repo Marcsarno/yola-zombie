@@ -8,6 +8,7 @@ import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
 import { Level } from './level.js';
 import { addLoose, looseStep, IV_CARRY, O2, tankPos, punctureTank, o2Step } from './loose.js';
+import { addCrackedWall, crackedNear, breakWall, heavyImpact, addFlood, joltFlood, panelHit, addMRI, roomsStep, CRACK, FLOOD } from './rooms.js';
 
 export const STEP = 1 / 60;
 const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.3;
@@ -112,6 +113,7 @@ export class Sim {
     p.finishReady = !p.dodgeTh && p.dodgeOpen <= 0 && !!this.execTarget(p, true);
     if (input.dodgePresses && p.dodgeOpen <= 0 && p.finishReady) p.wantFinishUntil = this.time + 0.3;
     this.stepChain();
+    roomsStep(this, dt); // (cracked walls, the flood, the MRI magnet: core/rooms.js)
     const yb = this.yolaBoost || 1; // (slow motion: Yola a little ahead of the world, main.js YOLA_AHEAD)
     p.move(dt * yb, input, this.world, this);
     p.updateAction(dt * yb, this);
@@ -156,6 +158,11 @@ export class Sim {
     return z;
   }
 
+  // the room mechanics (core/rooms.js): placed by the floors, or a practice scene
+  addCrackedWall(o) { return addCrackedWall(this, o); }
+  addFlood(o) { return addFlood(this, o); }
+  addMRI(o) { return addMRI(this, o); }
+  heavyImpact(x, z, r, by) { heavyImpact(this, x, z, r, by); }
   // a standing oxygen cylinder (core/loose.js O2): the floors place them (a cylinder store, a corridor); shoot it
   addTank(x, z) { const L = addLoose(this, 'o2tank', x, z, 0, 0); L.o2 = true; L.held = false; return L; }
 
@@ -425,6 +432,7 @@ export class Sim {
     const r = this.traceBullet(m.x, m.z, yaw);
     const dx = Math.sin(yaw), dz = Math.cos(yaw);
     if (r.tank) { punctureTank(this, r.tank); this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'tank', yaw }); return; }
+    { const ph = panelHit(this, m.x, m.z, dx, dz, r.t); if (ph) { joltFlood(this, ph.F); this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * ph.t, ez: m.z + dz * ph.t, hit: 'wall', nx: -dx, nz: -dz, yaw }); return; } } // (the flood's panel: core/rooms.js)
     if (r.zombie?.o2 && r.zombie.loose?.o2 && this.rand() < O2.through) punctureTank(this, r.zombie.loose); // (through its rider into the cylinder)
     if (r.zombie) {
       this.stats.shotHits++;
@@ -462,6 +470,7 @@ export class Sim {
       const r = this.traceBullet(m.x, m.z, yaw, S.range);
       const ex = m.x + dx * r.t, ez = m.z + dz * r.t;
       if (r.tank) { punctureTank(this, r.tank); pellets.push({ ex, ez, hit: 'tank' }); continue; }
+      { const ph = panelHit(this, m.x, m.z, dx, dz, r.t); if (ph) { joltFlood(this, ph.F); pellets.push({ ex: m.x + dx * ph.t, ez: m.z + dz * ph.t, hit: 'wall', nx: -dx, nz: -dz }); continue; } }
       if (r.zombie?.o2 && r.zombie.loose?.o2 && this.rand() < O2.through * 0.6) punctureTank(this, r.zombie.loose);
       if (r.zombie) {
         const fall = r.t <= S.falloffFrom ? 1 : Math.max(0.33, 1 - ((r.t - S.falloffFrom) / (S.range - S.falloffFrom)) * 0.67);
@@ -550,6 +559,12 @@ export class Sim {
 
   // ---------------- axe: swept between simulation steps ----------------
   resolveMelee(p, t0, t1, act) {
+    if (!act.roomsDone && (this.cracked?.length || this.floods?.length)) { // (once a swing: core/rooms.js)
+      act.roomsDone = true;
+      const sx = p.x + Math.sin(p.aimYaw) * 1.05, sz = p.z + Math.cos(p.aimYaw) * 1.05;
+      for (const C of crackedNear(this, sx, sz, CRACK.near + 0.35)) { if (p.equipped === 'sledgehammer') breakWall(this, C, Math.sin(p.aimYaw), Math.cos(p.aimYaw), 'sledge'); else this.emit({ type: 'wallClank', id: C.id, x: sx, z: sz }); }
+      for (const F of this.floods || []) if (Math.hypot(F.panel.x - sx, F.panel.z - sz) < FLOOD.panelReach) joltFlood(this, F);
+    }
     if (t1 <= t0) return;
     const SUB = 4, T = this.T, A = p.atk(act), G = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === 'fist';
     let prev = meleeWorldSegment(p, A, t0, _a);
