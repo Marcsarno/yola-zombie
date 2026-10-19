@@ -75596,10 +75596,12 @@ void main() {
   }
   function prepViews() {
     if (!sim) return;
-    for (const z of sim.zombies) if (!zviews.has(z.id)) {
-      const type = viewType(z), v = zpool[type].pop() || newZombieView(type);
-      bindView(v, z);
-      zviews.set(z.id, v);
+    if (!opening?.active) {
+      for (const z of sim.zombies) if (!zviews.has(z.id)) {
+        const type = viewType(z), v = zpool[type].pop() || newZombieView(type);
+        bindView(v, z);
+        zviews.set(z.id, v);
+      }
     }
     for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
       const v = newZombieView(type);
