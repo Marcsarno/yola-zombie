@@ -1,6 +1,28 @@
 # Next fixes (the user's notes, 2026-10-18, after playing the combat pass)
 
-STATUS 2026-10-18 late (combat chat, the lighting test area; committed 9c26e92..c55971b, NOT pushed or deployed):
+STATUS 2026-10-18 night (combat chat) — START HERE. Everything committed, deployed and pushed (opening-reveal, last 704645e).
+- Done tonight: the lighting lab finished and polished (user's picks are its defaults: A, C with tubes hidden, EXIT, D, muzzle,
+  Yola's shadow, character light 0.45; colour by room, shafts, splatter, sparks, haze, impact; the ☀ looks live in its panel);
+  performance fixes 1-7 (PERF_AUDIT.md: hidden groups skipped, static frozen, one skeleton per zombie, off-screen zombies
+  culled, reveal smoke hidden, textures shared, only the current floor on with the next loaded in the lift, phone settings);
+  the speed meter (any link + ?perf=1) with a heartbeat line; on-screen red error / graphics-reset strip; the resolution
+  check no longer runs every frame.
+- The user's phone (modern iPhone) at High in the wave room: 55-60 fps, slowest 5% 17-19 ms, CPU ~3 ms per frame. Default
+  graphics stays Medium (players have older phones); the user tests at High as the stand-in (memory: phone-quality-testing).
+- The lighting lab is NOT in the real game yet: the wing modes (wave / practice) can take the user's picks quickly (and the
+  Look setting replaces ☀); the story floors each need their own lighting data and a bake, best once their layouts are final.
+- NEXT, in order (the user: "continue to push it and clean it up at the same time"):
+  1. Body / blood pile-up: in the recorded run draw calls climbed 190 -> 403 as gore piled up (0 zombies left, 403 calls):
+     keep the gore, stop it costing more as a fight goes on (merge settled pieces / decals, cap the oldest).
+  2. Merge each zombie's ~12 parts into 1-2 draw calls, dismemberment kept.
+  3. The user tests the story floors at High: combat.html?room1=1&perf=1 (36 zombies, the heavier map).
+  4. Meter: 'limit gpu' is a guess on iPhones (no GPU timer, capped at 60 fps): label it as unknown there.
+  5. Later: compressed textures (KTX2), free the CPU copies of geometry, floor files loaded at the lift too.
+  6. Lighting into the game: wing modes first, then per floor after layouts are signed off.
+  Still open from before: guard and lady finishers, the ~3x-speed shamble, deaths in chair / bed, the acid rework, the
+  pacing plan (mixed beds, objective pressure, WC + janitor rooms, motivated spawns), intake lamp, painted props.
+
+STATUS 2026-10-18 late (combat chat, the lighting test area; committed 9c26e92..c55971b; since deployed and pushed):
 - Built: the lighting lab, combat.html?mode=calm&demo=lighting (panel "Plan upgrades"), every upgrade the user picked on its own
   switch: A baked floor light (blender/bake_wing_floor.py, Cycles; re-export with game.lightkit.exportBake()), B room light on
   characters, C light fittings as data (flicker states), D polished floor, E contact shadows, F halos, G floor mood (teal / sodium
