@@ -1,5 +1,5 @@
 (() => {
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -20826,7 +20826,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -30932,7 +30932,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function toTrianglesDrawMode(geometry, drawMode) {
     if (drawMode === TrianglesDrawMode) {
       console.warn("THREE.BufferGeometryUtils.toTrianglesDrawMode(): Geometry already defined as triangles.");
@@ -30988,7 +30988,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -33555,7 +33555,7 @@ void main() {
     });
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
   var u8 = Uint8Array;
   var u16 = Uint16Array;
   var i32 = Int32Array;
@@ -33927,7 +33927,7 @@ void main() {
   } catch (e) {
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
   function findSpan(p, u, U) {
     const n = U.length - p - 1;
     if (u >= U[n]) {
@@ -34119,7 +34119,7 @@ void main() {
     return calcRationalCurveDerivatives(Pders);
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
   var NURBSCurve = class extends Curve {
     /**
      * Constructs a new NURBS curve.
@@ -34194,7 +34194,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
   var fbxTree;
   var connections;
   var sceneGraph;
@@ -36645,7 +36645,7 @@ void main() {
     return a;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -37485,7 +37485,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -39050,7 +39050,7 @@ void main() {
     ["Hits, falls & deaths", /^Hit_|^Death|^KipUp|^LayToIdle|^IdleToLay|^Crawl_/],
     ["Pick up, use & react", /^PickUp|^Interact|^Drink|^Consume|^Bandage|^Chest_Open|^OverhandThrow|^Celebration|^Surprise|^Push_|^Fixing/]
   ];
-  var FINISHER_TESTS = ["B_uppercut", "C_uppercut_mirrored"].flatMap((k) => ["", "_2_4m", "_3_4m"].map((d) => "assets/test_clips/hub_hub_execution_" + k + d + ".glb"));
+  var FINISHER_TESTS = ["B_uppercut", "C_uppercut_mirrored"].flatMap((k) => ["", "_2_4m", "_3_4m"].map((d) => "assets/test_clips/hub_hub_execution_" + k + d + ".glb")).concat(["short", "mid", "long"].map((d) => "assets/test_clips/hub_hub_execution_shotgun_slide_" + d + ".glb"));
   var UAL_FILES = { ual_: "assets/source/ual/UAL2_Full.glb", ual1_: "assets/source/ual/UAL1_Full.glb" };
   var UAL_FEMALE = "assets/source/ual/Mannequin_F.glb";
   var UE_MAP = { pelvis: "Hips", spine_01: "Spine", spine_02: "Spine1", spine_03: "Spine2", neck_01: "Neck", Head: "Head" };
@@ -39352,11 +39352,11 @@ void main() {
     }
     update(k) {
       if (!this.obj || !this.has) return;
-      const a = this.actor;
+      const a = this.actor, F = fitAt(SHOTGUNS[weaponOf()] ? weaponOf() : "short", a);
       a.bones.RightHand.getWorldQuaternion(_q7);
       const gq = _q7.multiply(this.socket);
       a.grip("Right", _v3);
-      applyFit(this.obj, _v3, gq, fitW(SHOTGUNS[weaponOf()] ? weaponOf() : "short", a), new Vector3(), k, k);
+      applyFit(this.obj, _v3, gq, F, new Vector3(), k, k);
       this.obj.updateMatrixWorld(true);
     }
   };
@@ -39445,7 +39445,7 @@ void main() {
           const c = await loadG(f), have = Object.fromEntries(g.animations.map((a) => [a.name, a]));
           for (const a of c.animations) {
             const tag = FINISHER_TESTS.includes(f) ? { fin: true, test: f.split("/").pop() } : packs.includes(f) ? { pack: /^kk_/.test(a.name) ? "KayKit" : /ual1_/.test(a.name) ? "UAL1" : "UAL2" } : extraQ.includes(f) ? { test: f.split("/").pop() } : {};
-            if (tag.pack && have[a.name]) {
+            if ((tag.pack || tag.fin) && have[a.name]) {
               have[a.name].userData = { ...have[a.name].userData, ...tag };
               continue;
             }
@@ -39552,6 +39552,20 @@ void main() {
     u = clamp4(u, 0, 1);
     return u * u * (3 - 2 * u);
   };
+  var PUMP_HAND_Q = { short: new Quaternion(0.6878, 0.2306, -0.2638, 0.6357) };
+  function pumpHandOn(g, U, w) {
+    if (!PUMP_HAND_Q[weaponOf()]) return false;
+    const ax = new Vector3(1, 0, 0).transformDirection(g.matrixWorld), pt = U.gripL.getWorldPosition(new Vector3()).addScaledVector(ax, -(S.pumpBack ?? 0)).add(leftNudge());
+    otherHandOn(main, "Left", pt, ax, w, { signFree: true, ...S.pumpOpts || {} });
+    return true;
+  }
+  function leftNudge() {
+    const F = fitAt(SHOTGUNS[weaponOf()] ? weaponOf() : "short", main), d = (F.lDown || 0) / 1e3, sd = (F.lSide || 0) / 1e3;
+    if (!d && !sd) return new Vector3();
+    const B = main.bones, l = B.LeftArm.getWorldPosition(new Vector3()), r = B.RightArm.getWorldPosition(new Vector3());
+    const toLeft = l.sub(r).setY(0).normalize();
+    return toLeft.multiplyScalar(sd).add(new Vector3(0, -d, 0));
+  }
   function leftHand(f) {
     const g = mainGun?.obj;
     if (!g || !main.action) return;
@@ -39559,6 +39573,7 @@ void main() {
     if (!U.pump) return;
     U.pump.position.x = U.pumpX - pumpSlide(f);
     g.updateMatrixWorld(true);
+    if (fitW(weaponOf(), main)?.pumpHand && U.gripL && pumpHandOn(g, U, 1)) return;
     if (!$("ik").checked) return;
     const B = main.bones, ik = (t, w) => {
       const tt = t.clone();
@@ -39587,7 +39602,7 @@ void main() {
     }
     const rest = g.localToWorld(new Vector3(U.pumpX, 0, 0).add(U.gripL.position.clone().setX(S.gun === "short" ? 0 : U.gripL.position.x)));
     const wHold = smooth01(1 - (_m14.distanceTo(rest) - (S.gun === "short" ? 0.03 : 0.2)) / 0.12) * (1 - wPort);
-    if (wHold > 0) ik(U.gripL.getWorldPosition(_m22), wHold);
+    if (wHold > 0) ik(U.gripL.getWorldPosition(_m22).add(leftNudge()), wHold);
   }
   function alignShell() {
     const g = mainGun?.obj;
@@ -39642,6 +39657,7 @@ void main() {
     postureFix(main, ref);
     handPose(main);
     armPoseOn(main);
+    if (SHOTGUNS[weaponOf()]) untwistWrist(main, "Left", S.wristKeep ?? 45);
     if (handsUI && handsSeen !== handKey()) {
       handsSeen = handKey();
       handsUI();
@@ -40113,7 +40129,7 @@ void main() {
       kickC(a, "LeftArm", -0.25 * kick);
     }
   }
-  var PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
+  var PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0, lDown: 0, lSide: 0 };
   var FITS = {};
   var fitKey = (a) => a === main ? S.char : a === refX ? "xbot" : "mannequin";
   var fitOf = (a) => {
@@ -40126,6 +40142,19 @@ void main() {
     var _a7, _b7;
     return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }));
   };
+  function idleShare(fit2) {
+    if (!fit2 || !main?.clip || !fit2.idleIn && !fit2.idleOut) return 0;
+    const f = S.frame, ramp = (r) => clamp4((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1), sm3 = (u) => u * u * (3 - 2 * u);
+    return Math.max(fit2.idleIn ? 1 - sm3(ramp(fit2.idleIn)) : 0, fit2.idleOut ? sm3(ramp(fit2.idleOut)) : 0);
+  }
+  function fitAt(w, a) {
+    var _a7, _b7;
+    const own = fitW(w, a), s = a === main ? idleShare(own) : 0;
+    if (!(s > 0)) return own;
+    const base = (_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }), out = { ...own };
+    for (const k of Object.keys(PFIT0)) out[k] = (own[k] ?? PFIT0[k]) + ((base[k] ?? PFIT0[k]) - (own[k] ?? PFIT0[k])) * s;
+    return out;
+  }
   fetch("assets/hold/weapon_fit.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
     for (const [w, v] of Object.entries(j)) if (typeof v === "object") for (const [k, f] of Object.entries(v)) (WFITS[w] || (WFITS[w] = {}))[k] = { ...PFIT0, ...f };
     try {
@@ -40151,7 +40180,9 @@ void main() {
     ["side", "left / right (mm)", -40, 40, 1],
     ["tilt", "tilt muzzle up/down (deg)", -45, 45, 1],
     ["turn", "turn muzzle left/right (deg)", -45, 45, 1],
-    ["roll", "roll (deg)", -45, 45, 1]
+    ["roll", "roll (deg)", -45, 45, 1],
+    ["lDown", "left hand down / up (mm)", -30, 30, 0.5],
+    ["lSide", "left hand toward her left / right (mm)", -30, 30, 0.5]
   ];
   var pfitWho = "main";
   var pfitSync = null;
@@ -40165,6 +40196,11 @@ void main() {
     document.body.appendChild(box);
     const rows = box.querySelector("#pfitRows"), out = box.querySelector("#pfitOut");
     const cur = () => fitW(weaponOf(), pfitWho === "ref" ? ref : main);
+    const curEdit = () => {
+      const w = weaponOf(), a = pfitWho === "ref" ? ref : main, key = w + "@" + clipBase();
+      if (w !== "pistol" && S.fitAllFor !== key && !WFITS[key]?.[fitKey(a)]) (WFITS[key] || (WFITS[key] = {}))[fitKey(a)] = { ...cur() };
+      return cur();
+    };
     const keep = () => {
       try {
         localStorage.setItem("pistolFits", JSON.stringify(FITS));
@@ -40183,7 +40219,7 @@ void main() {
         sp.textContent = cur()[k];
       });
       inp.oninput = () => {
-        cur()[k] = +inp.value;
+        curEdit()[k] = +inp.value;
         sp.textContent = inp.value;
         keep();
         pfitSync();
@@ -40214,7 +40250,7 @@ void main() {
       pfitSync();
     };
     box.querySelector("#pfitReset").onclick = () => {
-      Object.assign(cur(), PFIT0);
+      Object.assign(curEdit(), PFIT0);
       keep();
       pfitSync();
       refresh();
@@ -40639,7 +40675,7 @@ void main() {
     return [.../* @__PURE__ */ new Set([...GAME_ATTACKS[S.gun] || [], ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
   }
   function editClips() {
-    if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin).map((c) => c.name).sort();
+    if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin && /shotgun/.test(c.name) === !!SHOTGUNS[S.gun]).map((c) => c.name).sort();
     if (S.mode === "attack" && ARENA_KEY[S.gun]) {
       const g = gameAttacks();
       if (g.length) return g;
@@ -40647,7 +40683,10 @@ void main() {
     const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === "idle" ? EDIT_IDLE : EDIT_ATTACK);
     return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
   }
+  var SLIDE_M = { short: "1.4", mid: "2.2", long: "3.0" };
   var finLabel = (n) => {
+    const s = n.match(/^hub_execution_shotgun_slide_(\w+)$/);
+    if (s) return "shotgun slide \xB7 " + s[1] + "  \xB7  " + (SLIDE_M[s[1]] || "?") + " m";
     const m = n.match(/_(\d)_(\d)m$/);
     return n.replace(/^hub_execution_/, "").replace(/_\d_\dm$/, "").replace(/_/g, " ") + "  \xB7  jump " + (m ? m[1] + "." + m[2] : "1.4") + " m";
   };
@@ -40696,10 +40735,35 @@ void main() {
     sidebarSync();
     refresh?.();
   });
+  var _uq = new Quaternion();
+  var _uq2 = new Quaternion();
+  var _ua = new Vector3();
+  function untwistWrist(a, side, keepDeg) {
+    const H = a.bones[side + "Hand"], F = a.bones[side + "ForeArm"], M = a.bones[side + "HandMiddle1"];
+    if (!H || !F || !M) return;
+    const ax = _ua.copy(M.position).normalize(), q = H.quaternion, d = q.x * ax.x + q.y * ax.y + q.z * ax.z;
+    const tw = _uq.set(ax.x * d, ax.y * d, ax.z * d, q.w).normalize();
+    let ang = 2 * Math.acos(Math.min(1, Math.abs(tw.w)));
+    if (d < 0 !== tw.w < 0) ang = -ang;
+    const keep = keepDeg * Math.PI / 180, excess = ang - Math.sign(ang) * Math.min(Math.abs(ang), keep);
+    if (Math.abs(excess) < 1e-3) return;
+    a.root.updateMatrixWorld(true);
+    const hw = H.getWorldQuaternion(new Quaternion());
+    F.quaternion.multiply(_uq2.setFromAxisAngle(_ua.copy(H.position).normalize(), excess));
+    F.updateMatrixWorld(true);
+    H.quaternion.copy(F.getWorldQuaternion(_uq2).invert().multiply(hw));
+    H.updateMatrixWorld(true);
+  }
   function armPoseOn(a) {
     if (a !== main || !HOLD_LAYERS.armPose || AS_LIVE[clipBase()]) return;
-    const p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()];
+    let p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()];
     if (!p && !hip) return;
+    const keepK = 1 - idleShare(SHOTGUNS[weaponOf()] ? fitW(weaponOf(), a) : null);
+    const scale = (P) => P && Object.fromEntries(Object.entries(P).map(([side, v]) => [side, Object.fromEntries(Object.entries(v).map(([k, x]) => [k, typeof x === "number" ? x * keepK : x]))]));
+    if (keepK < 1) {
+      p = scale(p);
+      hip = scale(hip);
+    }
     a.root.updateMatrixWorld(true);
     const chain = ["Shoulder", "Arm", "ForeArm", "Hand"].flatMap((n) => ["Right", "Left"].map((s) => a.bones[s + n])).filter(Boolean), before = chain.map((b) => b.quaternion.clone());
     S.hipW = {};
@@ -40767,6 +40831,14 @@ void main() {
     if (S.gun === "pistol") return fitOf(fitTarget());
     const w = S.gun, a = fitTarget(), k = fitKey(a), c = WFITS[fitScopeKey(w)];
     return c?.[k] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[k] || (_a7[k] = { ...PFIT0 }));
+  }
+  var fitAllOn = () => S.fitAllFor === fitScopeKey(S.gun);
+  function fitForEdit() {
+    if (S.gun !== "pistol" && !fitAllOn()) {
+      const k = fitKey(fitTarget()), key = fitScopeKey(S.gun);
+      if (!WFITS[key]?.[k]) (WFITS[key] || (WFITS[key] = {}))[k] = { ...fitEditing() };
+    }
+    return fitEditing();
   }
   var keepFits = () => {
     try {
@@ -40852,24 +40924,37 @@ void main() {
     const scope = seg(W1.body, [["all", "All clips"], ["clip", "This clip only"]], (v) => {
       const w = S.gun, k = fitKey(fitTarget()), key = fitScopeKey(w);
       if (v === "clip") {
+        S.fitAllFor = null;
         const base = fitEditing();
         (WFITS[key] || (WFITS[key] = {}))[k] = { ...base };
-      } else if (WFITS[key]) delete WFITS[key][k];
+      } else {
+        S.fitAllFor = key;
+        if (WFITS[key]) delete WFITS[key][k];
+      }
       keepFits();
       refresh();
       sidebarSync();
     });
+    scope.title = "This clip only (the default): changes affect this clip alone. All clips: changes the weapon everywhere, only while you stay on this clip and weapon";
     const hand = seg(W1.body, [["Right", "Right hand"], ["Left", "Left hand"]], (v) => {
-      fitEditing().hand = v;
+      fitForEdit().hand = v;
       keepFits();
       refresh();
       sidebarSync();
       jointReadout();
     });
     hand.title = "the hand that holds the weapon (saved with the weapon position: All clips, or This clip only)";
+    const pump = seg(W1.body, [["anim", "Left hand: as animated"], ["pump", "Left hand on the pump"]], (v) => {
+      fitForEdit().pumpHand = v === "pump" ? 1 : 0;
+      keepFits();
+      refresh();
+      sidebarSync();
+      jointReadout();
+    });
+    pump.title = "shotguns: put her left hand on the pump (turned as in her everyday hold), the arm reaching there by itself";
     for (const [i, [k, lbl, lo, hi, st]] of PFIT_ROWS.entries()) {
       const up = slider(W1.body, lbl, "", lo, hi, st, () => fitEditing()[k], (v) => {
-        fitEditing()[k] = v;
+        fitForEdit()[k] = v;
         keepFits();
       }, k === "size" ? 100 : 0);
       ups.push(up);
@@ -40997,7 +41082,7 @@ void main() {
       $("sbSaved").textContent = ok ? "saved to shots/ (tell Claude to put it in the game)" : "save failed";
     };
     V1.body.appendChild(sv);
-    SB = { wHead, who, scope, hand, fitRows, side, ascope, armRows, layerBoxes, A1 };
+    SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1 };
     sidebarSync();
   }
   function layerSyncAll() {
@@ -41013,9 +41098,11 @@ void main() {
     for (const b of SB.who.children) b.classList.toggle("on", b.dataset.v === (S.fitWho || "main"));
     const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
     for (const b of SB.scope.children) {
-      b.classList.toggle("on", b.dataset.v === (clipOwn ? "clip" : "all"));
+      b.classList.toggle("on", b.dataset.v === (clipOwn || !fitAllOn() ? "clip" : "all"));
       b.disabled = w === "pistol";
     }
+    SB.pump.hidden = !PUMP_HAND_Q[w] || a !== main;
+    for (const b of SB.pump.children) b.classList.toggle("on", b.dataset.v === (fitEditing().pumpHand ? "pump" : "anim"));
     SB.hand.hidden = !LIB_WEAPONS2[w];
     if (LIB_WEAPONS2[w]) {
       const h = holdHand(w, a);
@@ -41025,6 +41112,7 @@ void main() {
     for (const up of SB.fitRows) {
       up();
       up.row.querySelector("label").textContent = labels[up.idx] || PFIT_ROWS[up.idx][1];
+      up.row.hidden = /^l(Down|Side)$/.test(PFIT_ROWS[up.idx][0]) && !SHOTGUNS[w];
     }
     for (const b of SB.side.children) b.classList.toggle("on", b.dataset.v === (S.armSide || "Right"));
     for (const b of SB.ascope.children) b.classList.toggle("on", b.dataset.v === (S.armScope || "clip"));
