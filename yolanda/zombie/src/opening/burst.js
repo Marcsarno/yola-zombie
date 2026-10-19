@@ -50,6 +50,11 @@ export class ZombieBurst {
       if (!byChunk.has(chunk)) byChunk.set(chunk, []); byChunk.get(chunk).push(o);
     });
     this.byChunk = byChunk;
+    // the gore inside him (the cut caps with their bone stubs, guts, gibs) stays hidden while he is whole: skinned to single
+    // bones, it poked out through his gown at the shoulders, chest and hip as he walked (the user, 2026-10-19: "all his bones
+    // popping out"); the hit bakes it into the flying pieces as before
+    this.inner = [];
+    for (const ms of byChunk.values()) for (const m of ms) if (/^B__/.test(m.name)) { m.visible = false; this.inner.push(m); }
     // the head's own materials, lit from within as it nears the lens (set up now so nothing recompiles at the hit)
     this.headMats = [];
     for (const m of byChunk.get('Head') || []) { m.material = m.material.clone(); if (m.material.map && 'emissive' in m.material) { m.material.emissive = new THREE.Color(0xffd6c0); m.material.emissiveMap = m.material.map; m.material.emissiveIntensity = 0; this.headMats.push(m.material); } }
