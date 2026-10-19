@@ -72744,7 +72744,7 @@ void main() {
   var shareable = (t) => {
     if (!t?.isTexture || t.isRenderTargetTexture || t.isDataTexture || t.isCompressedTexture || t.isVideoTexture || t.isCanvasTexture || t.isCubeTexture) return false;
     const im = t.image;
-    return !!im && (im instanceof ImageBitmap || im instanceof HTMLImageElement);
+    return !!im && (typeof ImageBitmap !== "undefined" && im instanceof ImageBitmap || im instanceof HTMLImageElement);
   };
   function shareTextures(root, renderer2) {
     let shared = 0, uploaded = 0;
@@ -73280,6 +73280,25 @@ void main() {
   renderer.shadowMap.enabled = resolvedQuality() !== "low";
   renderer.shadowMap.type = isMobile && resolvedQuality() !== "high" ? PCFShadowMap : PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
+  var diag = /* @__PURE__ */ (() => {
+    let el = null;
+    return (msg) => {
+      if (!el) {
+        el = document.createElement("div");
+        el.style.cssText = "position:fixed;left:6px;right:6px;bottom:96px;z-index:10000;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#fff;background:rgba(130,10,10,0.9);padding:6px 8px;border-radius:6px;white-space:pre-wrap";
+        el.onclick = () => location.reload();
+        document.body.appendChild(el);
+      }
+      el.textContent = msg + "\n(tap here to reload)";
+    };
+  })();
+  canvas.addEventListener("webglcontextlost", () => diag("The phone reset the graphics (WebGL context lost): usually out of graphics memory. Quality: " + resolvedQuality() + ", pixel ratio " + renderer.getPixelRatio()));
+  canvas.addEventListener("webglcontextrestored", () => {
+    renderer.shadowMap.needsUpdate = true;
+    diag("The graphics came back (context restored).");
+  });
+  window.addEventListener("error", (e) => diag("Error: " + (e.message || e.error) + "\n" + String(e.filename || "").split("/").pop() + ":" + e.lineno + ":" + e.colno));
+  window.addEventListener("unhandledrejection", (e) => diag("Error (async): " + (e.reason?.message || e.reason) + "\n" + String(e.reason?.stack || "").split("\n").slice(0, 2).join("\n")));
   var scene = new Scene();
   scene.updateMatrixWorld = function(force) {
     visibleMatrixWorld(this, force);
