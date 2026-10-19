@@ -2152,7 +2152,7 @@ export class ZombieView extends ClipBody {
     if (this.clubArm) { if (z.armGone && !z.club) this.breakClub(z); else this.stepLimp(dt); }
     for (const b of this.collapsed || []) b.scale.setScalar(1e-4); // (a limb cut from a zombie without a cut model stays collapsed into its joint)
     // the lady swells as her health runs out (and in the beat before she pops): her belly (Spine1, its child turned back)
-    const sw = z.kind === 'sprinter' ? (z.state === 'dying' ? 1 + Math.min(1, z.t / 0.3) : clamp(1 - z.hp / Math.max(1, z.maxHp) / 0.35, 0, 1)) : 0;
+    const sw = z.kind === 'sprinter' ? (z.state === 'dying' ? (z.noBurst ? 0 : 1 + Math.min(1, z.t / 0.3)) : clamp(1 - z.hp / Math.max(1, z.maxHp) / 0.35, 0, 1)) : 0;
     if (z.kind === 'sprinter' && this.bones.Spine1 && this.bones.Spine2) { // (set, not multiplied: the mixer does not rewrite a scale that holds still)
       const k = sw > 0 ? 1 + 0.2 * sw * (1 + 0.07 * Math.sin(performance.now() * 0.014)) : 1; this.bones.Spine1.scale.setScalar(k); this.bones.Spine2.scale.setScalar(1 / k);
     }

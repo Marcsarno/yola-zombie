@@ -169,7 +169,8 @@ export class Sim {
   // stays where she was. (Her death momentum carries the burst forward: the gore flies along it.)
   ladyBurst(z) {
     const p = this.player, A = LADY.acid, d = Math.hypot(p.x - z.x, p.z - z.z);
-    this.hazards.push({ id: z.id, x: z.x, z: z.z, r: A.r, t: 0, dur: A.dur, dps: A.dps });
+    const mv = Math.hypot(z.vx + z.kx, z.vz + z.kz), hd = Math.hypot(z.hitDirX || 0, z.hitDirZ || 0); // (the splatter flies along her momentum, else along the killing blow)
+    this.hazards.push({ id: z.id, x: z.x, z: z.z, r: A.r, t: 0, dur: A.dur, dps: A.dps, dirX: mv > 0.5 ? (z.vx + z.kx) / mv : hd ? z.hitDirX / hd : 1, dirZ: mv > 0.5 ? (z.vz + z.kz) / mv : hd ? z.hitDirZ / hd : 0, seed: this.rand() });
     this.emit({ type: 'ladyBurst', id: z.id, x: z.x, z: z.z, dirX: z.hitDirX || 0, dirZ: z.hitDirZ || 0, vx: z.vx + z.kx, vz: z.vz + z.kz });
     if (!p.dead && p.invuln <= 0 && p.action.type !== 'vault') {
       if (d < LADY.knock) p.knockDown(z.x, z.z, this);
@@ -303,7 +304,7 @@ export class Sim {
   execTarget(p, anyDir = false) { // (anyDir: the FINISH button takes the nearest open one in reach, wherever she aims)
     let best = null, bs = 1e9;
     for (const z of this.zombies) {
-      if (!z.alive || !(z.executable > this.time) || z.down || z.execLock) continue;
+      if (!z.alive || !(z.executable > this.time) || (z.down && z.openWhy !== 'wall') || z.execLock) continue; // (the lady opened by her crash: on the floor)
       const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
       if (d > (this.T.execReach ?? 3.6)) continue;
       const off = anyDir ? 0 : Math.abs(angleDiff(p.aimTarget, Math.atan2(dx, dz)));

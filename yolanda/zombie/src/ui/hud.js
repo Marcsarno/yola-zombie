@@ -23,7 +23,7 @@ const TUNE_SPEC = [
     ['zombieSpeed', 'Approach speed', 0.5, 3.5, 0.05, 'm/s'], ['zombieHp', 'Zombie health', 30, 300, 5, ''], ['zombieDamage', 'Lunge damage', 0, 40, 1, ''],
     ['scratchDamage', 'Scratch damage', 0, 40, 1, ''], ['zombieEngage', 'Zombies attacking at once', 1, 6, 1, ''], ['zombieAttackGap', 'Gap between attacks', 0, 2, 0.05, 's'],
     ['zombieWindup', 'Lunge wind-up', 0.25, 1.2, 0.02, 's'], ['scratchWindup', 'Scratch wind-up', 0.2, 1, 0.02, 's'],
-    ['sprinterSpeed', 'Sprinter charge speed', 2, 6, 0.1, 'm/s'], ['sprinterWindup', 'Orderly charge wind-up', 0.3, 1.5, 0.05, 's'],
+    ['sprinterSpeed', 'Sprinter charge speed', 2, 9, 0.1, 'm/s'], ['sprinterWindup', 'Orderly charge wind-up', 0.3, 1.5, 0.05, 's'],
   ]],
   ['Finishers', [['execCamPush', 'Camera in (0 = hard cut)', 0, 0.4, 0.01, 's'], ['execCamDist', 'Camera distance', 0.2, 1, 0.02, '×'],
     ['execCamPitch', 'Camera angle (down)', 8, 60, 1, '°'], ['execCamFov', 'Camera field of view', 0.6, 1.1, 0.01, '×'],

@@ -195,7 +195,7 @@ const ZOMBIE_TYPES = [
   { file: 'assets/zombie-patient-mod.glb', extra: ['assets/zombie-patient-scratch.glb', 'assets/zombie_moves/patient-mod.glb', 'assets/zombie_moves/patient-mod-b.glb', 'assets/zombie_moves/patient-mod-c.glb', 'assets/zombie_moves/patient-bedrise.glb'], height: 1.68, walk: { speed: 0.174 } },
   // tools/anim/build_zombie.py: the sprinter (the big lady; hand weights fixed) and the big guard (a stand-in shield until his
   // bed-panel shield is modelled). Not modular: no limbs come off them yet.
-  { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb', 'assets/zombie_moves/sprinter-b.glb'], height: 2.0, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
+  { file: 'assets/zombie-sprinter.glb', extra: ['assets/zombie_moves/sprinter.glb', 'assets/zombie_moves/sprinter-b.glb'], height: 2.2, walk: { speed: 0.168 }, sprint: 4.3, girth: 1.7 }, // (15% bigger than first built: she has to feel big)
   { file: 'assets/zombie-guard.glb', extra: ['assets/zombie_moves/guard.glb', 'assets/zombie_moves/guard-b.glb'], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
   // the runner (2026-10-18, the user: "an orange-clothed variant of the existing nurse zombie ... the faster enemy"): the
   // nurse's own model and clips, her blue scrubs turned orange at load (orangeScrubs), core/zombies.js KINDS.runner
@@ -649,6 +649,15 @@ function runFrame(dt, doRender = true) {
   }
   // the guard heaving at his shield, lodged in the floor: a grinding creak every heave
   for (const z of sim.zombies) if (z.state === 'stuck' && Math.floor((z.t + 0.2) / 0.5) !== Math.floor((z.t + 0.2 - animDt) / 0.5)) { const g = Math.min(1, z.t / Math.max(0.5, z.stateDur)); cue(audio, 'heave', 0.7 + g * 0.5); shake(0.05 + g * 0.08); fx.burst(z.x + Math.sin(z.yaw) * 0.75, 0.06, z.z + Math.cos(z.yaw) * 0.75, 5 + Math.round(g * 8), 0x8a8172, 1.2, 0.5, 0.35); } // (each heave at his planted shield: the floor creaks and puffs, harder each time)
+  // the big lady's charge (2026-10-18 night, the user: "something heavy's moving here"): every stride a thump you feel, a
+  // camera bump that grows as she nears and a puff of dust at her feet
+  for (const z of sim.zombies) {
+    if (z.kind !== 'sprinter' || !z.sprinting || !z.alive || z.spd < 2) { if (z.kind === 'sprinter') z.strideD = 0.6; continue; }
+    if ((z.strideD = (z.strideD ?? 0.6) + z.spd * animDt) < 1.25) continue;
+    z.strideD -= 1.25; const d = Math.hypot(z.x - p.x, z.z - p.z), k = Math.max(0, 1 - d / 14);
+    cue(audio, 'stomp', 0.35 + k * 0.65); if (k > 0) shake(0.04 + k * 0.16);
+    fx.burst(z.x, 0.05, z.z, 5, 0xa39a8a, 1.0, 0.35, 0.5); fx.smoke(z.x, z.z, 1, 0.25, 0.25, 1.6, 0.6, 0x9d9483, 0.25);
+  }
   const ix = p.px + (p.x - p.px) * alpha, iz = p.pz + (p.z - p.pz) * alpha;
   const iyaw = p.pyaw + angleDiff(p.pyaw, p.aimYaw) * alpha;
   const a = p.action;
@@ -669,7 +678,7 @@ function runFrame(dt, doRender = true) {
   fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? (p.attackHeld ? 1 : 0.5) : 0.2);
 
   stepPhysics(animDt);
-  acid.update(sim.hazards, sim.zombies, animDt);
+  acid.audio = audio; acid.update(sim.hazards, sim.zombies, animDt, p);
   ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
   ZombieView.syncLoose(sim.loose, alpha, animDt); // (the drip stands and wheelchairs: core/loose.js)
   { // open to a finisher: the gold mark over its head (render/finishmark.js), the one in reach a touch bigger
@@ -851,6 +860,7 @@ function handleEvents() {
       case 'floorRumble': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'rumble', Math.max(0.3, 1 - d / 14)); fx.floorCrack?.(e.x, e.z, 0.75); fx.burst(e.x, 0.05, e.z, 8, 0x9a948a, 0.8, 0.4, 0.9); if (d < 9) shake(0.12); break; } // the floor about to break: a crack, grit, a rumble (an emerging zombie: core/sim.js spawnFromFloor)
       case 'floorShudder': { const d = Math.hypot(e.x - p.x, e.z - p.z); fx.growCrack(e.x, e.z, 0.75 + e.k * 0.55); fx.burst(e.x, 0.05, e.z, 4 + Math.round(e.k * 8), 0x9a948a, 0.9 + e.k, 0.5 + e.k * 0.6, 0.6); fx.smoke(e.x, e.z, 1 + Math.round(e.k * 2), 0.35, 0.3, 2.0, 0.9, 0x9d9483, 0.2); if (d < 9) shake(0.05 + e.k * 0.1); break; } // (the breach building: the crack grows, dust)
       case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); audio.play('floorBreach', 1, e); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 24, 0xd9cdb2, 3.2, 2.4, 0.8); fx.burst(e.x, 0.1, e.z, 18, 0x6f6a62, 2.4, 2.0, 1.0); fx.ring(e.x, e.z, 0xd8cfbf, 1.0); fx.smoke(e.x, e.z, 8, 0.6, 0.7, 2.6, 1.8); audio.play('knockdown', 0.9, e); if (d < 9) shake(0.35); break; } // (it bursts up through the tiles: debris high, a dust cloud, a thump)
+      case 'ladyPin': { const zz = zat(e.id); audio.play('knockdown', 0.9, zz || e); fx.burst(e.x, 0.6, e.z, 8, 0x5a1414, 2.4, 1.2, 0.5); shake(0.12); break; } // (a walker bowled over by her charge)
       case 'guardArmOff': audio.play('sever'); audio.play('guardPain', 1, zat(e.id) || e); shake(0.6); hud.popup('ARM OFF'); break; // (his first finisher: the arm flies, render/clipchars.js cutByWeights)
       case 'guardWrench': cue(audio, 'free'); shake(0.3); break; // (the finisher missed: he tears the shield back out of the floor)
       case 'guardRegrip': cue(audio, 'free'); cue(audio, 'heave', 1.2); break; // (the shield in his other hand)

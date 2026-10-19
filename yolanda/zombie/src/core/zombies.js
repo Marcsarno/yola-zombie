@@ -73,7 +73,8 @@ export const GUARD = { headHp: 35, stuck: 3.4, heave: 0.5, reel: 1.25, floor: 0.
 // the lady's burst (PROGRESS.md plan): however she dies, she swells for a beat (swell, s into her dying) and pops: Yola
 // knocked down inside knock m, staggered to stagger m; an acid pool (radius r) that hurts Yola dps for dur s, then dissolves.
 // Zombies walk through it (it only steams around their feet).
-export const LADY = { swell: 0.3, knock: 2.0, stagger: 3.5, acid: { r: 1.5, dur: 5, dps: 6 } };
+export const LADY = { swell: 0.3, knock: 2.0, stagger: 3.5, acid: { r: 1.5, dur: 5, dps: 6 },
+  daze: 1.4, pinPush: 4.5, pinSlow: 0.04 }; // (daze: s longer on the floor after she runs into a wall, open to her finisher; pinPush: m/s a walker in her lane is thrown aside; pinSlow: the share of her speed each one costs her)
 export const GAITS = { runnerShare: 0.1, ualShare: 0.65 }; // (2026-10-18: most walk the 8-way walk, which can step aside and back off facing her)
 export const RUNNER_SPEED = 2.5; // (x zombieSpeed: ~2.5 m/s, Yola runs 3.3; the run clip's own pace is ~4 m/s, slower looked like slow motion)
 // Zombie kinds (multipliers on the tuning values; r: body radius in metres).
@@ -88,7 +89,7 @@ export const RUNNER_SPEED = 2.5; // (x zombieSpeed: ~2.5 m/s, Yola runs 3.3; the
 export const KINDS = {
   normal: { hp: 1, speed: 1, dmg: 1, knock: 1, kd: 1, stagger: 1, r: 0.32 },
   runner: { hp: 0.75, speed: 1.2, dmg: 0.9, knock: 1.1, kd: 1.1, stagger: 1, r: 0.32 }, // the orange runner: quicker, lighter, frailer (its run: RUNNER_SPEED)
-  sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.41 },
+  sprinter: { hp: 1.5, speed: 1, dmg: 1.1, knock: 0.85, kd: 1, stagger: 0.85, r: 0.45 }, // (r: 10% bigger, 2026-10-18 night)
   guard: { hp: 2.6, speed: 0.8, dmg: 1.8, knock: 0.4, kd: 0.25, stagger: 0.55, r: 0.42 },
 };
 // (2026-10-17, the user: "more progression of the shield breaking ... I don't get a chance to see the cracks": 190 hp and
@@ -327,6 +328,7 @@ export class Zombie {
     }
     if (this.executed && this.kind === 'guard' && !this.execDone && this.guardFinisher(dirX, dirZ, sim)) { sim.emit({ type: 'execHit', id: this.id, weapon: this.execWeapon || 'bat', x: this.x, z: this.z, dirX, dirZ }); sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
     if (this.executed && this.kind === 'guard' && !this.severed.has('Head')) { this.sever('Head', dirX, dirZ, sim); sim.emit({ type: 'guardFinished', id: this.id, x: this.x, z: this.z }); }
+    if (this.executed && this.kind === 'sprinter') { this.noBurst = true; if (!this.severed.has('Head')) { this.limbHp.Head = 0; this.lastHitPart = 'Head'; this.sever('Head', dirX, dirZ, sim); } } // (her finisher: her head, and no acid: the user)
     if (this.executed) { loss = this.hp + 1; if (this.execWeapon === 'fists') impulse = Math.max(impulse, 15); } // (the kick: across the room)
     this.hp -= loss;
     if (this.executed && !this.execDone) { // the finisher's own gore by her weapon (EXEC_GORE); the bursts are the renderer's (main.js)
@@ -493,7 +495,15 @@ export class Zombie {
       for (const o of sim.zombies) {
         if (o === this || !o.solid || !o.alive) continue;
         const rx = o.x - this.x, rz = o.z - this.z, d = Math.hypot(rx, rz);
-        if (d < this.r + o.r + 0.08 && rx * fx + rz * fz > 0.1) { o.bumped(this.spd * 0.75, rx / (d || 1), rz / (d || 1), sim); this.tumble(sim, 'zombie'); break; }
+        if (d < this.r + o.r + 0.08 && rx * fx + rz * fz > 0.1) {
+          if (o.kind === 'guard') { o.bumped(this.spd * 0.4, rx / (d || 1), rz / (d || 1), sim); this.tumble(sim, 'zombie'); break; } // (only the guard stops her)
+          // (2026-10-18 night, the user: "she's a bowling ball and they're bowling pins ... they should all fall down"): thrown
+          // down and aside off her lane, forward with her; she loses a little speed and runs on
+          const side = (rx * fz - rz * fx) >= 0 ? 1 : -1, sx = fz * side, sz = -fx * side, k = LADY.pinPush * Math.min(1, this.spd / 5);
+          if (!o.down) o.knockDown(sx * 0.7 + fx * 0.7, sz * 0.7 + fz * 0.7, sim);
+          o.kx += sx * k + fx * k * 0.6; o.kz += sz * k + fz * k * 0.6;
+          this.spd *= 1 - LADY.pinSlow; sim.emit({ type: 'ladyPin', id: o.id, x: o.x, z: o.z, by: this.id });
+        }
       }
     }
     return this.sprinting;
@@ -505,8 +515,9 @@ export class Zombie {
     if (what === 'zombie' && sim.rand() < 0.5) { this.set(ZS.STAGGER, 0.6); sim.emit({ type: 'zombieBump', id: this.id, speed: 2 }); return; }
     if (what === 'wall' && !this.chargeHit) sim.specialMiss?.(this, 'charge'); // (dodged into a wall)
     this.fall = 'tumble'; this.solid = false;
-    this.set(ZS.KNOCKDOWN, TUMBLE_FALL);
+    this.set(ZS.KNOCKDOWN, TUMBLE_FALL + (what === 'wall' ? LADY.daze : 0));
     sim.emit({ type: 'zombieTumble', id: this.id, what });
+    if (what === 'wall' && this.kind === 'sprinter') sim.openFinisher?.(this, 'wall', TUMBLE_FALL + LADY.daze + 0.6); // (the crash: the gold mark over her, FINISHERS_PLAN.md 4)
   }
 
   update(dt, sim) {
@@ -801,7 +812,7 @@ export class Zombie {
         break;
       case ZS.DYING:
         // the lady pops: a beat into her death (her swell), wherever and however she died, carrying her momentum
-        if (this.kind === 'sprinter' && !this.burst && this.t >= LADY.swell) { this.burst = true; sim.ladyBurst(this); }
+        if (this.kind === 'sprinter' && !this.burst && !this.noBurst && this.t >= LADY.swell) { this.burst = true; sim.ladyBurst(this); }
         turnRate = 0;
         if (this.t >= this.stateDur) { this.set(ZS.DEAD); this.corpseT = 0; }
         break;

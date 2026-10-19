@@ -48,8 +48,8 @@ export const TUNING_DEFAULTS = {
   // builds (sprinterAccel m/s2) to sprinterSpeed, far faster than Yola
   sprinterWindup: 1.35, // s: the big lady plants, roars and aims before a charge (the lane shows on the floor)
   sprinterLock: 0.42, // s: the end of her wind-up with her line fixed (no more tracking: she goes where she aimed)
-  sprinterSpeed: 6.2, // m/s: her charge at full speed (Yola runs 3.3)
-  sprinterAccel: 4.3, // m/s2: how fast she builds up to it (from a slow start)
+  sprinterSpeed: 7.5, // m/s: her charge at full speed (Yola runs 3.3; 6.2 until 2026-10-18 night: "even faster")
+  sprinterAccel: 6.5, // m/s2: how fast she builds up to it (a lumbering first step, then flying; 4.3 before)
   sprinterTurn: 0.9, // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
   // executions (render/execution.js; 2026-10-18, the user: "use one of the already in game animations that is strong.. zoom the
   // camera... slow motion.. make it feel epic"): time on the press, through the wind-up, the freeze on the hit, the hang
@@ -74,11 +74,11 @@ export const TUNING_DEFAULTS = {
 };
 
 // bumped when defaults change, so tuning saved by an older build does not hide the new values
-export const TUNING_VERSION = 7;
+export const TUNING_VERSION = 8;
 // defaults changed since an older version: on load those keys go back to the new default (each version's list applies to
 // everything saved before it). 4: the melee hit-stop is off by default (a panel save from before round 16 kept 0.07: the
 // stutter the user felt on multi-target axe hits), the orderly's charge no longer steers.
-const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'], 5: ['legStrikeChance'], 6: ['sprinterWindup', 'sprinterSpeed'], 7: [] }; // (5: leg strikes a little rarer, 2026-10-18)
+const CHANGED = { 3: ['sprinterTurn'], 4: ['meleeHitPause', 'sprinterTurn', 'sprinterWindup'], 5: ['legStrikeChance'], 6: ['sprinterWindup', 'sprinterSpeed'], 7: [], 8: ['sprinterSpeed', 'sprinterAccel'] }; // (5: leg strikes a little rarer, 2026-10-18)
 export function makeTuning(saved) {
   if (saved && saved._v >= 2 && saved._v < TUNING_VERSION) { saved = { ...saved }; for (let v = saved._v + 1; v <= TUNING_VERSION; v++) for (const k of CHANGED[v] || []) delete saved[k]; saved._v = TUNING_VERSION; }
   if (!saved || saved._v !== TUNING_VERSION) saved = null;

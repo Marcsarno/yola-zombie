@@ -428,7 +428,7 @@ export class Player {
     const gun = this.equipped === PISTOL || this.equipped === SHOTGUN, fin = this.attacks[this.attacks.length - 1];
     const stand = gun ? 1.0 : Math.max(0.75, fin?.stand ?? 0.95);
     z.executed = true; z.execWeapon = this.equipped; z.executable = 0; z.execLock = true;
-    z.set(ZS_STAGGER, 9); z.vx = z.vz = 0; z.kx = z.kz = 0; z.hitFlash = 1;
+    if (z.down) z.stateDur = 9; else z.set(ZS_STAGGER, 9); z.vx = z.vz = 0; z.kx = z.kz = 0; z.hitFlash = 1; // (one on the floor stays there: the lady after her crash)
     this.aimYaw = this.aimTarget = Math.atan2(dx, dz); this.vx = this.vz = 0;
     this.invuln = Math.max(this.invuln, 3); this.execId = z.id;
     sim.emit({ type: 'execStart', id: z.id, weapon: this.equipped, x: z.x, z: z.z });

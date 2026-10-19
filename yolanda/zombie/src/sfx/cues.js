@@ -45,6 +45,9 @@ export function cue(audio, name, k = 1) {
       N(t, 2.4, { type: 'lowpass', f: 2600, f2: 500, gain: 0.5 * k, attack: 0.03 }); N(t, 1.8, { type: 'highpass', f: 4000, f2: 2000, gain: 0.12 * k, attack: 0.05 });
       T(t, 1.2, 120, { type: 'sine', gain: 0.2 * k, f2: 30 });
       break;
+    case 'stomp': // the big lady's stride at a run: a deep thud through the floor
+      T(t, 0.22, 58, { type: 'sine', gain: 0.55 * k, f2: 34, attack: 0.003 }); N(t, 0.12, { type: 'lowpass', f: 380, gain: 0.3 * k });
+      break;
     case 'crumble': // a cracked wall giving way
       N(t, 0.06, { type: 'highpass', f: 1200, gain: 0.6 * k }); N(t + 0.02, 0.8, { type: 'lowpass', f: 700, f2: 150, gain: 0.55 * k, attack: 0.01 });
       T(t, 0.5, 70, { type: 'sine', gain: 0.5 * k, f2: 35 }); [0.15, 0.3, 0.45, 0.62].forEach((d) => N(t + d, 0.06, { type: 'bandpass', f: 1500 + Math.random() * 1500, q: 2, gain: 0.15 * k }));
