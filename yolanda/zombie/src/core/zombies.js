@@ -116,6 +116,9 @@ export const TUMBLE_FALL = 1.3, TUMBLE_GETUP = 1.9;
 // stands where the hub had it: its centre BED_AT from the zombie's root (in the root's frame), turned a quarter left of
 // it; it gets off on the side it faces. side -1: the whole thing mirrored (off the bed's other side, render mirrors it)
 export const BED_RISE = 7.4;
+// (2026-10-19, the user: bed patients "got to hear you quicker ... as soon as you can see them on the screen ... get up faster"):
+// one wakes once Yola is within BED_WAKE m and in its sight (it was its group's sense, 3 m), and plays its rise BED_SPEED x
+export const BED_WAKE = 9, BED_SPEED = 1.6;
 // an execution's gore by weapon (core/player.js startExecution): the parts it takes off; the bat, the shotgun and the
 // sledgehammer burst the whole body instead (main.js zombieDeath), the kick throws it (an impulse, above)
 export const EXEC_GORE = { axe: ['Head', 'Forearm_L'], crowbar: ['Head'], knife: ['Head'], pistol: ['Head'] };
@@ -531,7 +534,7 @@ export class Zombie {
     if (this.dormant) { // stands where placed until its time, a hit, or (a sensed level zombie) Yola close by and in sight
       const D = this.dormant;
       let wake = sim.time >= D.wake || this.hitSeq > 0;
-      if (!wake && D.sense && !D.locked && !p.dead) wake = dist < D.sense * (this.bed ? 1 : 0.5) || (dist < D.sense && world.lineOfSight(this.x, this.z, p.x, p.z, 1.0));
+      if (!wake && D.sense && !D.locked && !p.dead) wake = this.bed ? dist < Math.max(D.sense, BED_WAKE) && world.lineOfSight(this.x, this.z, p.x, p.z, 1.4) : dist < D.sense * 0.5 || (dist < D.sense && world.lineOfSight(this.x, this.z, p.x, p.z, 1.0));
       if (wake) { // a normal zombie now, its first attack a beat away
         this.speedMul = D.speedMul; this.passive = false; this.dormant = null; this.attackCd = Math.max(this.attackCd, 1.1);
         sim.level?.onWake(this); sim.emit({ type: 'zombieWake', id: this.id });
@@ -542,7 +545,8 @@ export class Zombie {
 
     switch (this.state) {
       case ZS.EMERGE:
-        if (this.bedRise) { // out of the bed along the clip's own path (BED_PATH), its root's facing held
+        if (this.bedRise) { // out of the bed along the clip's own path (BED_PATH), its root's facing held; faster than the clip (BED_SPEED: its t runs ahead)
+          this.t += dt * (BED_SPEED - 1);
           [this.x, this.z] = bedPathAt(this.bed, this.t); this.vx = this.vz = 0; this.kx = this.kz = 0; turnRate = 0; this.yawV = 0;
           if (this.t >= this.stateDur) { this.bedRise = false; this.bed = null; this.set(ZS.CHASE); this.attackCd = Math.max(this.attackCd, 0.6); this.rGrow = 1; }
           break;

@@ -895,7 +895,7 @@ function handleEvents() {
       case 'guardArmTorn': cue(audio, 'free'); audio.play('sever'); audio.play('guardPain', 1, zat(e.id) || e); shake(0.45); hitPauseT = Math.max(hitPauseT, 0.09); hud.popup('ARM TORN OFF'); break; // (the last heave: his arm stays on the shield)
       case 'guardClub': cue(audio, 'heave', 1.2); break;
       case 'chairTip': audio.play('bump', 1.3); break; // (out of its wheelchair: the chair on its side, core/loose.js)
-      case 'bedRise': if (dist(e.id) < 12) audio.play('groan', 1.1); break;
+      case 'bedRise': if (dist(e.id) < 12) audio.play('groan', 1.1); if (sim.__bedCamDone !== true) { sim.__bedCamDone = true; bedCam = { id: e.id, t: 0, dur: 2.0 }; slowBeat(0.55, 1.5); } break; // (the first one she meets: a short cut onto it sitting up)
       case 'guardClubBreak': audio.play('sever'); audio.play('bump', 1.3); shake(0.3); break; // (his torn arm comes apart on the blow: render/clipchars.js breakClub)
       case 'zombieStrikeHit': if (hurtFrame === frameNo) { // (it drew blood: hers, by what it was)
         const z = sim.zombies.find((q) => q.id === e.id), how = STRIKE_BLOOD[e.attack] || 'blunt';
@@ -991,6 +991,7 @@ function clearBreaches() { for (const o of breaches.list) o.removeFromParent(); 
 
 const slowmo = new SlowMotion(audio); // (render/slowmo.js: the guard's leap, a perfect dodge, a finishing blow)
 const slowBeat = (k, d) => slowmo.beat(k, d), slowEnd = () => slowmo.end();
+let bedCam = null; // (the first bed patient's cut: updateCamera)
 const execDir = new ExecDirector(); let execNow = null, execRingT = 0, execFlash = 0, execGrade = 0, execEmberT = 0; // (render/execution.js: the execution beat; execNow: this frame's)
 function shake(k) { if (shakeOn) camState.trauma = Math.min(1, camState.trauma + k * tuning.shake); }
 
@@ -1051,6 +1052,16 @@ function updateCamera(dt, px, pz, yaw, p) {
     _ex.set(mx - fx * Math.cos(ep) * ed + rx * side, 1.0 + Math.sin(ep) * ed, mz - fz * Math.cos(ep) * ed + rz * side);
     camera.position.lerp(_ex, b);
     camera.lookAt(camState.x + (mx - camState.x) * b, 0.6 + 0.4 * b, camState.z + (mz - camState.z) * b);
+  }
+  // the first bed patient sitting up (bedCam): the camera cuts in on it for a beat and eases back
+  if (bedCam) {
+    bedCam.t += dt; const u = bedCam.t / bedCam.dur, bz = sim.zombies.find((q) => q.id === bedCam.id);
+    if (u >= 1 || !bz) bedCam = null;
+    else {
+      const k = u < 0.12 ? u / 0.12 : u > 0.75 ? (1 - u) / 0.25 : 1, e = k * k * (3 - 2 * k), ep = THREE.MathUtils.degToRad(32), ed = D * 0.42;
+      _ex.set(bz.x - fx * Math.cos(ep) * ed, 0.6 + Math.sin(ep) * ed, bz.z - fz * Math.cos(ep) * ed);
+      camera.position.lerp(_ex, e); camera.lookAt(camState.x + (bz.x - camState.x) * e, 0.6 + 0.3 * e, camState.z + (bz.z - camState.z) * e);
+    }
   }
   { const fov = GAME_FOV * (1 + (tuning.execCamFov - 1) * b); if (Math.abs(camera.fov - fov) > 1e-3) { camera.fov = fov; camera.updateProjectionMatrix(); } }
   // bounded shake
