@@ -73272,13 +73272,13 @@ void main() {
   var resolvedQuality = () => quality === "auto" ? isMobile ? "medium" : "high" : quality;
   var DPR_CAP = { low: 1, medium: 1.5, high: 2 };
   var canvas = document.getElementById("view");
-  var hiDpiPhone = isMobile && devicePixelRatio >= 1.5;
+  var hiDpiPhone = isMobile && devicePixelRatio >= 1.5 && resolvedQuality() !== "high";
   var renderer = new WebGLRenderer({ canvas, antialias: resolvedQuality() !== "low" && !hiDpiPhone, powerPreference: "high-performance" });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = NeutralToneMapping;
   renderer.toneMappingExposure = 0.92;
   renderer.shadowMap.enabled = resolvedQuality() !== "low";
-  renderer.shadowMap.type = isMobile ? PCFShadowMap : PCFSoftShadowMap;
+  renderer.shadowMap.type = isMobile && resolvedQuality() !== "high" ? PCFShadowMap : PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
   var scene = new Scene();
   scene.updateMatrixWorld = function(force) {
