@@ -58802,6 +58802,7 @@ void main() {
           });
           this.group.add(o);
         }
+        if (q.kind === "weapon") for (const o of objs) outlineWeapon(o);
         objs.push(ring(q.x, q.z));
         this.pickupViz[q.id] = objs;
       }
@@ -58852,6 +58853,7 @@ void main() {
       this.caseRing.material = this.caseRing.material.clone();
       this.caseRing.material.color.set(9431295);
     }
+    // (outlineWeapon, below the class: the pickup's own meshes again, a hair bigger, back faces only, green: only its rim shows)
     takePickup(id) {
       for (const o of this.pickupViz?.[id] || []) o.visible = false;
     }
@@ -59386,6 +59388,34 @@ void main() {
       this.resetPickups(level ? [...level.taken] : []);
     }
   };
+  var OUTLINE_T = 0.014;
+  var outlineMat = null;
+  function outlineWeapon(root) {
+    outlineMat || (outlineMat = new MeshBasicMaterial({ color: 4063090, side: BackSide, transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false }));
+    const meshes = [];
+    root.traverse((m) => {
+      if (m.isMesh && !m.userData.outline) meshes.push(m);
+    });
+    root.updateMatrixWorld(true);
+    const L3 = new Box3().setFromObject(root).getSize(new Vector3()), T2 = Math.min(OUTLINE_T, Math.max(5e-3, 0.025 * Math.max(L3.x, L3.y, L3.z)));
+    for (const m of meshes) {
+      m.geometry.computeBoundingBox();
+      const b = m.geometry.boundingBox, c = b.getCenter(new Vector3()), sz = b.getSize(new Vector3());
+      const ws = m.getWorldScale(new Vector3());
+      const s = new Vector3(1 + 2 * T2 / Math.max(1e-4, sz.x * Math.abs(ws.x)), 1 + 2 * T2 / Math.max(1e-4, sz.y * Math.abs(ws.y)), 1 + 2 * T2 / Math.max(1e-4, sz.z * Math.abs(ws.z)));
+      const h = new Mesh(m.geometry, outlineMat);
+      h.userData.outline = true;
+      h.castShadow = h.receiveShadow = false;
+      h.renderOrder = 1;
+      h.scale.copy(s);
+      h.position.set(c.x * (1 - s.x), c.y * (1 - s.y), c.z * (1 - s.z));
+      h.onBeforeRender = () => {
+        const t = performance.now() / 1e3;
+        outlineMat.opacity = 0.35 + 0.55 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 0.9));
+      };
+      m.add(h);
+    }
+  }
 
   // src/render/fx.js
   function starTexture() {
@@ -64913,6 +64943,19 @@ void main() {
         return false;
       }
     }
+    // (2026-10-19, the user: no music when the level starts, on the iPhone) iOS lets a media element start only inside a tap; the
+    // track's first play() came ~25 s after the last tap (the reveal's hand-off) and was refused. On the first tap it is played
+    // silently (its gain is 0 until start) and paused again: the element is then allowed to play later without a tap
+    prime() {
+      if (this.primed || this.failed || !this.ensure() || !this.el.paused) return;
+      this.primed = true;
+      const p = this.el.play();
+      p?.then?.(() => {
+        if (this.state === "off") this.el.pause();
+      }).catch?.(() => {
+        this.primed = false;
+      });
+    }
     start(kind = "combat", fade = 0.6) {
       if (!this.ensure()) {
         if (!this.failed) this.state = "pending";
@@ -67955,6 +67998,34 @@ void main() {
     }
   };
 
+  // src/opening/splash.js
+  function splashCard(src = "assets/ui/splash_test.webp") {
+    const el = document.createElement("div");
+    el.style.cssText = "position:fixed;inset:0;z-index:300;background:#c8e0f7;display:flex;align-items:center;justify-content:center;touch-action:manipulation;cursor:default";
+    el.innerHTML = `<img src="${src}" alt="Yolanda's Specialty Medical Center" style="height:100%;width:100%;object-fit:contain;user-select:none;-webkit-user-drag:none" draggable="false">
+    <div data-l style="position:absolute;left:50%;bottom:4%;transform:translateX(-50%);padding:6px 14px;border-radius:14px;background:rgba(255,255,255,.75);color:#1d6f8a;font:600 14px system-ui,sans-serif">Loading\u2026</div>`;
+    document.body.appendChild(el);
+    const load2 = el.querySelector("[data-l]");
+    let go = null;
+    el.addEventListener("click", () => {
+      if (!go) return;
+      const f = go;
+      go = null;
+      el.remove();
+      f();
+    });
+    return {
+      ready(onPlay) {
+        go = onPlay;
+        load2.remove();
+        el.style.cursor = "pointer";
+      },
+      remove() {
+        el.remove();
+      }
+    };
+  }
+
   // src/opening/burst.js
   var HEIGHT = 1.68;
   var G4 = 9;
@@ -69774,6 +69845,7 @@ void main() {
       this.near0 = this.camera.near;
       this.stage = new ClinicStage(this.scene, this.loader);
       this.ui = new OpeningUI();
+      if (this.params?.has("splash")) this.splash = splashCard();
       this.sound = new OpeningAudio(this.audio);
       this.rs = new RevealSound(this.audio);
       this.active = false;
@@ -73274,6 +73346,10 @@ void main() {
         this.sound.unlock();
         this.start();
       };
+      if (this.splash) {
+        this.splash.ready(() => this.ui.goB.click());
+        this.splash = null;
+      }
       let seen2 = false;
       try {
         seen2 = localStorage.getItem("zc.introSeen") === "1";
@@ -78347,7 +78423,10 @@ void main() {
     swapButton: document.getElementById("swapBtn"),
     getPlayerScreen: () => playerScreen
   });
-  var unlockAudio = () => audio.init();
+  var unlockAudio = () => {
+    audio.init();
+    music?.prime?.();
+  };
   addEventListener("pointerdown", unlockAudio, { capture: true });
   addEventListener("touchend", unlockAudio, { capture: true });
   addEventListener("click", unlockAudio, { capture: true });
