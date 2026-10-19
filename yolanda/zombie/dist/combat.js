@@ -53253,6 +53253,18 @@ void main() {
     // (in his RightHand bone's frame: the club's direction out of the fist, across it: he holds the arm by its own hand, the shoulder end out) // the guards' shields stuck in the floor for good, and the arms torn off on them ({ shield, arm }): they stay until the level resets
     constructor(scene2, gltf, height, speeds, opts = {}) {
       const model = clone(gltf.scene);
+      {
+        let sk0 = null;
+        model.traverse((o) => {
+          if (!o.isSkinnedMesh) return;
+          if (!sk0) {
+            sk0 = o.skeleton;
+            return;
+          }
+          const b = o.skeleton.bones;
+          if (b.length === sk0.bones.length && b.every((x, i) => x === sk0.bones[i])) o.skeleton = sk0;
+        });
+      }
       const mats = [];
       model.traverse((o) => {
         if (o.isMesh) {
@@ -53317,6 +53329,17 @@ void main() {
       _ZombieView.scene = scene2;
       super(scene2, model, height, clips);
       this.mats = mats;
+      {
+        this.outer.updateMatrixWorld(true);
+        const C = new Vector3(0, height * 0.5, 0), ws = new Vector3();
+        model.traverse((o) => {
+          if (!o.isSkinnedMesh) return;
+          o.getWorldScale(ws);
+          const k = Math.max(Math.abs(ws.x), Math.abs(ws.y), Math.abs(ws.z)) || 1;
+          o.boundingSphere = new Sphere(o.worldToLocal(C.clone()), height * 1.25 / k);
+          o.frustumCulled = true;
+        });
+      }
       this.nativeWalk = (speeds?.speed || 0.17) * height;
       for (const n of ["walk", "idle"]) {
         this.act(n).play();
@@ -53614,9 +53637,9 @@ void main() {
     // the drip stands and wheelchairs (core/loose.js), drawn where the sim has them: the stand tips against its acceleration,
     // a tipped chair lies on its side
     static syncLoose(list, alpha, dt) {
-      const S2 = _ZombieView.propSrc, M4 = _ZombieView.looseMeshes, seen = /* @__PURE__ */ new Set();
+      const S2 = _ZombieView.propSrc, M4 = _ZombieView.looseMeshes, seen2 = /* @__PURE__ */ new Set();
       for (const L2 of list) {
-        seen.add(L2.id);
+        seen2.add(L2.id);
         let o = M4.get(L2.id);
         if (!o) {
           const src = L2.kind === "iv" ? S2.iv : S2.chair;
@@ -53644,7 +53667,7 @@ void main() {
           o.rotation.set(0, L2.yaw + CHAIR.yaw, 0);
         }
       }
-      for (const [id, o] of M4) if (!seen.has(id)) {
+      for (const [id, o] of M4) if (!seen2.has(id)) {
         o.parent?.remove(o);
         M4.delete(id);
       }
@@ -54872,10 +54895,10 @@ void main() {
       return g;
     }
     update(hazards, zombies, dt) {
-      const seen = /* @__PURE__ */ new Set(), fx2 = this.fx;
+      const seen2 = /* @__PURE__ */ new Set(), fx2 = this.fx;
       for (const h of hazards || []) {
         const key = h.id + ":" + h.x.toFixed(2);
-        seen.add(key);
+        seen2.add(key);
         let g = this.used.get(key);
         if (!g) {
           g = this.pool.pop() || this.make();
@@ -54898,7 +54921,7 @@ void main() {
           if (Math.random() < dt * 10) fx2.burst(z.x + (Math.random() - 0.5) * 0.3, 0.08, z.z + (Math.random() - 0.5) * 0.3, 2, 15660518, 0.5, 2.2, 0.7);
         }
       }
-      for (const [k, g] of this.used) if (!seen.has(k)) {
+      for (const [k, g] of this.used) if (!seen2.has(k)) {
         g.visible = false;
         this.used.delete(k);
         this.pool.push(g);
@@ -57551,7 +57574,54 @@ void main() {
       e.redMat.opacity = e.redHalf.opacity = k * (0.3 + 0.38 * beacon);
       e.coldMat.opacity = this.coldOff ? 0 : k * 0.16 * (0.92 + 0.08 * Math.sin(e.t * 37) * Math.sin(e.t * 5.3));
     }
+    // (PERF_AUDIT.md 2) the room's static pieces stop recomputing their matrices every frame (4,001 objects on Floor 7). Left
+    // out: the door kits, the lift, the reset panel and the specimen case (they move). Safety net: an eighth of the frozen list
+    // is checked each frame; anything that has moved is thawed for good (at most ~8 frames late). New pieces are frozen as
+    // they appear (a sweep every 2 s).
+    freezeStatic() {
+      const keep = new Set([...Object.values(this.doorKits || {}).map((k) => k.root), this.reset?.root, this.caseObj].filter(Boolean));
+      this.frozenSeen ?? (this.frozenSeen = /* @__PURE__ */ new WeakSet());
+      this.frozen ?? (this.frozen = []);
+      const walk = (o) => {
+        if (keep.has(o)) return;
+        if (!this.frozenSeen.has(o)) {
+          this.frozenSeen.add(o);
+          if (o.matrixAutoUpdate && !o.isBone && !o.isSkinnedMesh && !o.isLight) {
+            o.updateMatrix();
+            o.matrixAutoUpdate = false;
+            o.matrixWorldNeedsUpdate = true;
+            this.frozen.push({ o, p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone() });
+          }
+        }
+        for (const c of o.children) walk(c);
+      };
+      walk(this.group);
+    }
+    tickFrozen(dt) {
+      if ((this.freezeT = (this.freezeT ?? 0) - dt) <= 0) {
+        this.freezeT = 2;
+        this.freezeStatic();
+      }
+      const F = this.frozen;
+      if (!F?.length) return;
+      const n = Math.ceil(F.length / 8);
+      let i = (this.frozenAt ?? 0) % F.length;
+      for (let k = 0; k < n && F.length; k++) {
+        if (i >= F.length) i = 0;
+        const f = F[i], o = f.o;
+        if (!o.position.equals(f.p) || !o.quaternion.equals(f.q) || !o.scale.equals(f.s)) {
+          o.matrixAutoUpdate = true;
+          o.updateMatrix();
+          F[i] = F[F.length - 1];
+          F.pop();
+          continue;
+        }
+        i++;
+      }
+      this.frozenAt = i;
+    }
     update(dt, px2, pz2, camYaw, level) {
+      this.tickFrozen(dt);
       this.tickEmergency(dt);
       if (!this.f3) return;
       const fx2 = -Math.sin(camYaw), fz = -Math.cos(camYaw);
@@ -58460,12 +58530,12 @@ void main() {
       return g;
     }
     update(zombies, alpha) {
-      const seen = /* @__PURE__ */ new Set();
+      const seen2 = /* @__PURE__ */ new Set();
       if (this.enabled) for (const z of zombies) {
         const s = z.state;
         if (s !== "windup" && s !== "strike" && !(s === "recover" && z.t < 0.25)) continue;
         if (!SPECIAL.has(z.attack)) continue;
-        seen.add(z.id);
+        seen2.add(z.id);
         let g = this.used.get(z.id);
         if (!g) {
           g = this.pool.pop() || this.make();
@@ -58495,7 +58565,7 @@ void main() {
           fill2.material.opacity = 0.2 * k;
         }
       }
-      for (const [id, g] of this.used) if (!seen.has(id)) {
+      for (const [id, g] of this.used) if (!seen2.has(id)) {
         g.visible = false;
         this.used.delete(id);
         this.pool.push(g);
@@ -66968,7 +67038,10 @@ void main() {
       }
     }
     setSmoke(on) {
-      if (this.smoke) this.smoke.target = on ? 1 : 0;
+      if (this.smoke) {
+        this.smoke.target = on ? 1 : 0;
+        if (on) this.smoke.g.visible = true;
+      }
     }
     // the car's light passing the crack under the shut doors, left to right: a bright line along the gap and a soft pool
     // spilling onto the floor in front of it (built at load with zero opacity; run once as the car arrives)
@@ -68739,6 +68812,7 @@ void main() {
       this.active = false;
       this.state = "ROOM1_PLAYABLE";
       this.substate = via;
+      if (this.smoke) this.smoke.g.visible = false;
       this.ui.show(false);
       g.hudShow(true);
       try {
@@ -68883,12 +68957,12 @@ void main() {
         this.sound.unlock();
         this.start();
       };
-      let seen = false;
+      let seen2 = false;
       try {
-        seen = localStorage.getItem("zc.introSeen") === "1";
+        seen2 = localStorage.getItem("zc.introSeen") === "1";
       } catch {
       }
-      this.ui.skipGateB.hidden = !seen;
+      this.ui.skipGateB.hidden = !seen2;
       this.ui.skipGateB.onclick = () => {
         this.ui.gate.classList.remove("show");
         this.sound.unlock();
@@ -72605,6 +72679,61 @@ void main() {
     }
   };
 
+  // src/render/texshare.js
+  var seen = /* @__PURE__ */ new WeakSet();
+  var canon = /* @__PURE__ */ new Map();
+  var thumb = null;
+  var keyOf = (t) => {
+    const im = t.image, w = im?.width, h = im?.height;
+    if (!w || !h) return null;
+    thumb ?? (thumb = document.createElement("canvas").getContext("2d", { willReadFrequently: true }));
+    thumb.canvas.width = thumb.canvas.height = 16;
+    try {
+      thumb.clearRect(0, 0, 16, 16);
+      thumb.drawImage(im, 0, 0, 16, 16);
+    } catch {
+      return null;
+    }
+    const d = thumb.getImageData(0, 0, 16, 16).data;
+    let a = 2166136261 >>> 0;
+    for (let i = 0; i < d.length; i++) a = Math.imul(a ^ d[i], 16777619) >>> 0;
+    return `${t.name}|${w}x${h}|${a}`;
+  };
+  var shareable = (t) => {
+    if (!t?.isTexture || t.isRenderTargetTexture || t.isDataTexture || t.isCompressedTexture || t.isVideoTexture || t.isCanvasTexture || t.isCubeTexture) return false;
+    const im = t.image;
+    return !!im && (im instanceof ImageBitmap || im instanceof HTMLImageElement);
+  };
+  function shareTextures(root, renderer2) {
+    let shared = 0, uploaded = 0;
+    root.traverse((o) => {
+      for (const m of [].concat(o.material || [])) {
+        if (!m || seen.has(m)) continue;
+        seen.add(m);
+        for (const k in m) {
+          const t = m[k];
+          if (!shareable(t) || seen.has(t)) continue;
+          seen.add(t);
+          const key = keyOf(t);
+          if (!key) continue;
+          const src = canon.get(key);
+          if (!src) canon.set(key, t.source);
+          else if (src !== t.source) {
+            t.dispose();
+            t.source = src;
+            shared++;
+          }
+          try {
+            renderer2.initTexture(t);
+            uploaded++;
+          } catch {
+          }
+        }
+      }
+    });
+    return { shared, uploaded };
+  }
+
   // src/render/libweapons.js
   var LIB_PICKS = { sledgehammer: "ual_Sword_Heavy_Combo", crowbar: "hub_crowbar_combo", knife: "ual_Sword_Regular_Combo" };
   var LIB_LABEL = { sledgehammer: "Sledgehammer", crowbar: "Crowbar", knife: "Knife" };
@@ -72889,11 +73018,11 @@ void main() {
     });
     const sunBtn = document.getElementById("lookBtn");
     if (sunBtn) sunBtn.style.display = "none";
-    const keyOf = (c) => c.dataset?.k || c.id;
+    const keyOf2 = (c) => c.dataset?.k || c.id;
     el.addEventListener("change", () => {
       try {
         const o = {};
-        for (const c of fields()) o[keyOf(c)] = c.type === "checkbox" ? c.checked : c.value;
+        for (const c of fields()) o[keyOf2(c)] = c.type === "checkbox" ? c.checked : c.value;
         localStorage.setItem(SAVE, JSON.stringify(o));
       } catch {
       }
@@ -72901,7 +73030,7 @@ void main() {
     try {
       const o = JSON.parse(localStorage.getItem(SAVE) || "null") || LAB_PICKS;
       if (o) for (const c of fields()) {
-        const v = o[keyOf(c)];
+        const v = o[keyOf2(c)];
         if (v === void 0) continue;
         const cur = c.type === "checkbox" ? c.checked : c.value;
         if (cur === v) continue;
@@ -73097,6 +73226,26 @@ void main() {
   renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
   var scene = new Scene();
+  scene.updateMatrixWorld = function(force) {
+    visibleMatrixWorld(this, force);
+  };
+  function visibleMatrixWorld(o, force) {
+    if (o.matrixAutoUpdate) o.updateMatrix();
+    if (o.matrixWorldNeedsUpdate || force) {
+      if (o.matrixWorldAutoUpdate === true) {
+        if (o.parent === null) o.matrixWorld.copy(o.matrix);
+        else o.matrixWorld.multiplyMatrices(o.parent.matrixWorld, o.matrix);
+      }
+      o.matrixWorldNeedsUpdate = false;
+      force = true;
+    }
+    const ch = o.children;
+    for (let i = 0, n = ch.length; i < n; i++) {
+      const c = ch[i];
+      if (c.visible) visibleMatrixWorld(c, force);
+      else if (force) c.matrixWorldNeedsUpdate = true;
+    }
+  }
   scene.background = new Color(2568762);
   var camera = new PerspectiveCamera(50, 1, 0.5, 80);
   var GAME_FOV = 50;
@@ -73383,6 +73532,7 @@ void main() {
       w.position.y = -50;
       scene.add(w);
     }
+    window.game.texShare = shareTextures(scene, renderer);
     warmPrograms();
     requestAnimationFrame(frame);
     if (params.has("lab")) startLab(window.game, params.get("lab") || "bat");
@@ -73538,6 +73688,7 @@ void main() {
   function applyLevel(save) {
     if (LAYOUT.story) useFloor(save?.floor || 7);
     restart("room1", benchN, save);
+    shareTextures(scene, renderer);
     const p = sim.player, A = ROOM1.player;
     if (!save) {
       p.x = A.x;
@@ -73895,7 +74046,7 @@ void main() {
       execRingT = 0.32;
       for (const z of sim.zombies) if (z.alive && z.executable > sim.time) fx.ring(z.x, z.z, 16757575, 0.8);
     }
-    const seen = /* @__PURE__ */ new Set();
+    const seen2 = /* @__PURE__ */ new Set();
     for (const z of sim.zombies) {
       let v = zviews.get(z.id);
       if (!v) {
@@ -73906,7 +74057,7 @@ void main() {
         z.px ?? (z.px = z.x);
         z.pz ?? (z.pz = z.z);
       }
-      seen.add(z.id);
+      seen2.add(z.id);
       if (z.gibbed) {
         if (v.outer.visible) v.hide();
         continue;
@@ -73926,7 +74077,7 @@ void main() {
       }
       v.update(animDt, z, z.px + (z.x - z.px) * alpha, z.pz + (z.z - z.pz) * alpha, sim.time);
     }
-    for (const [id, v] of zviews) if (!seen.has(id)) {
+    for (const [id, v] of zviews) if (!seen2.has(id)) {
       v.hide();
       zviews.delete(id);
       zpool[v.type].push(v);
