@@ -456,7 +456,7 @@ export class Opening {
           float n1 = texture2D(uNoise, vMapUv * 0.9 + vec2(uTime * 0.035 + uSeed, -uTime * 0.021 + uSeed * 0.7)).r;
           float n2 = texture2D(uNoise, vMapUv * 1.9 + vec2(-uTime * 0.052, uTime * 0.031 + uSeed * 1.3)).r;
           float soft = mix(0.45, 1.4, n1 * 0.6 + n2 * 0.4) * smoothstep(0.0, 0.14, vWy) * smoothstep(0.1, 0.85, vCamD);
-          diffuseColor.a *= mix(1.0, soft, uSoft);`);
+          diffuseColor.a = clamp(diffuseColor.a * mix(1.0, soft, uSoft), 0.0, 1.0);`); // (2026-10-19, the user's iPhone: dark green blotches over the floor under the fog) soft reaches 1.4: an alpha over 1 the PC's GPU clamps, the iPhone's blends with a negative (1 - alpha), subtracting the floor behind the puff
     };
     m.customProgramCacheKey = () => 'revealFog';
   }
