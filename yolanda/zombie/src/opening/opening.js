@@ -119,6 +119,7 @@ export class Opening {
     if (this.offs.has('beam')) RT.quality.beam = false;
     if (this.offs.has('fog')) RT.quality.softFog = false;
     if (this.offs.has('haze')) RT.game.haze = false;
+    if (this.params.has('red')) RT.noRed = false; // (?red: the red back, to compare)
     this.RT = RT; // (dev/test handle: window.opening.RT)
     try { const rc = await this.loader.loadAsync('assets/opening/yola2_reveal.glb'); this.revClips = { walk: rc.animations.find((a) => a.name === 'reveal_walk') }; } catch (e) { console.warn('reveal clips', e); }
     try { this.burst = new ZombieBurst(this.scene, this.loader); this.burst.bounds = { x0: -7.0, x1: 7.0, z0: -11.05, z1: 0.95 }; await this.burst.load(); } /* (bounds: the OR's walls, core/chapter.js 'or' polygon) */ catch (e) { console.warn('zombie burst', e); this.burst = null; }
@@ -476,7 +477,7 @@ export class Opening {
     S.k += (S.target - S.k) * Math.min(1, real * (S.target > S.k ? 0.9 : 0.6));
     if (S.k < 0.003 && S.target === 0) { for (const p of S.parts) p.sp.material.opacity = 0; return; }
     const r = this.rl || {}, pulse = 0.5 + 0.5 * Math.sin((r.t || 0) * Math.PI * 2 * 0.55 - Math.PI / 2);
-    const lit = 0.05 + 0.55 * Math.min(1, r.flash || 0) + 0.2 * (r.amb || 0) + 0.3 * (r.key || 0), red = 0.35 * (r.red || 0) * (0.4 + 0.6 * pulse);
+    const lit = 0.05 + 0.55 * Math.min(1, r.flash || 0) + 0.2 * (r.amb || 0) + 0.3 * (r.key || 0), red = RT.noRed ? 0 : 0.35 * (r.red || 0) * (0.4 + 0.6 * pulse);
     const Q = RT.quality; if (this.fogU) { this.fogU.uTime.value += d; this.fogU.uSoft.value = Q.softFog ? 1 : 0; }
     // the backlit glow: fog lying between the lens and the light (the flash behind her) scatters it toward the camera, as real
     // fog does (a forward-scattering lobe: brightest looking straight into the light)
@@ -1547,7 +1548,7 @@ export class Opening {
     if (G) { // the game's own look (the emergency grade with the bake's fill: render/arena.js), dimmed: amb the room, emRed its red
       A.em.target = 1; A.tickEmergency(d); // (k = 1, the beacon turning: tickEmergency sets the lights from their base each time, never compounding)
       A.hemi.intensity *= r.amb; A.sun.intensity *= r.amb; this.scene.environmentIntensity *= r.amb;
-      const e = A.em; e.redMat.opacity *= r.emRed; e.redHalf.opacity *= r.emRed; e.coldMat.opacity *= r.amb;
+      const e = A.em, emRed = RT.noRed ? 0 : r.emRed; e.redMat.opacity *= emRed; e.redHalf.opacity *= emRed; e.coldMat.opacity *= r.amb; // (RT.noRed: every red in the reveal off, the user's iPhone test)
       const lk = this.game().lightkit, at = this.game().atmos;
       if (lk) { lk.dim.floor = r.floor; lk.dim.signs = r.signs; lk.setCharLight(0.45 * r.chars * r.amb); /* (the game's fill on the characters ignores the scene's darkness: it follows the room light here, so a dark beat keeps its silhouettes) */ if (lk.built.yshadow && lk.on.yshadow !== RT.game.shadow) lk.set('yshadow', RT.game.shadow); }
       if (at && !!at.on.haze !== !!RT.game.haze) at.set('haze', RT.game.haze);
@@ -1555,9 +1556,10 @@ export class Opening {
       if (lk && this.offs?.has('bake') && lk.on.baked) lk.set('baked', false);
     } else { if (A.hemi) A.hemi.intensity = b.hemi * r.amb; if (A.sun) A.sun.intensity = b.sun * r.amb; this.scene.environmentIntensity = b.env * r.amb; }
     const pulse = 0.5 + 0.5 * Math.sin(r.t * Math.PI * 2 * 0.55 - Math.PI / 2), soft = this.reducedFlash ? 0.6 : 1;
-    if (this.redLight) this.redLight.intensity = r.red * soft * (1.2 + 7 * pulse);
-    if (A.redHemi) A.redHemi.intensity = G ? A.redHemi.intensity * r.emRed * Math.min(1, r.amb * 2) + r.red * 0.045 * pulse : r.red * 0.045 * pulse; // (the game's beacon fades with the room light: alone in a dark beat it turned everything red)
-    this.ui.setVignette(r.red * 0.35 * (0.4 + 0.6 * pulse));
+    const red = RT.noRed ? 0 : r.red, emR = RT.noRed ? 0 : r.emRed;
+    if (this.redLight) this.redLight.intensity = red * soft * (1.2 + 7 * pulse);
+    if (A.redHemi) A.redHemi.intensity = G ? A.redHemi.intensity * emR * Math.min(1, r.amb * 2) + red * 0.045 * pulse : red * 0.045 * pulse; // (the game's beacon fades with the room light: alone in a dark beat it turned everything red)
+    this.ui.setVignette(red * 0.35 * (0.4 + 0.6 * pulse));
     // the opening's spotlight is the dying tube over the table, or the failing light outside the lift (re-aimed per beat:
     // no extra lights in the scene, so gameplay pays nothing for the reveal)
     if (r.flash > 0) r.flash = Math.max(0, r.flash - d / (this.reducedFlash ? 0.7 : r.flashDecay || 0.16));

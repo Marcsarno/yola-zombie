@@ -280,6 +280,7 @@ export class RevealStudio {
     this.slider(s, M, 'heartAt', 'Heartbeat starts (s after doors)', 0, 4, 0.05, false);
     this.slider(s, M, 'heartEvery', 'Heartbeat every (s)', 0.4, 1.6, 0.01, false);
     this.slider(s, M, 'heartK', 'Heartbeat loudness', 0, 2, 0.05, false);
+    this.check(s, () => RT, 'noRed', 'No red light in the reveal (iPhone test)', true);
     this.choose(s, M, 'backAt', 'Music back in on', [['card', 'The name card (top of her jump)'], ['flash', 'The last flash in the lift']]);
     this.slider(s, M, 'cardSecs', 'From the card: swells over (s)', 0.5, 8, 0.25, false);
     this.slider(s, M, 'buildSecs', 'From the flash: builds over (s)', 2, 14, 0.5, false);

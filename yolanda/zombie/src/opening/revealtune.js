@@ -79,6 +79,10 @@ export const REVEAL_DEFAULTS = {
     stepShake: 0.012, // the camera jolt on each step
   },
   batShot: false, // the cut to the athlete's bat leaning by the doors (off when she walks out holding it)
+  // (2026-10-19, the user: "let's remove the red light completely" from the reveal: the iPhone's floor artifacts sat where
+  // the red hit) every red off: its own red pulse, the game's red beacon, the red pools on the floor, the fog's red, the
+  // red edge of the screen. ?red puts it back to compare
+  noRed: true,
   // (2026-10-19, the user) the music runs through the reveal: low under the shut doors (preLevel), a hard stop on the DING, a
   // steady heartbeat from the doors opening (heartAt s after they start, every heartEvery s, at heartK) until the music comes
   // back (backAt): 'card' (the user's pick: the heartbeat on through the walk-out and the jump, the music crashing in with her
