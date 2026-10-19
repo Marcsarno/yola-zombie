@@ -75,7 +75,9 @@ export function setupNewMoves(yola, anims, hold) {
         return parts;
       };
       const cFrames = Math.round(C.duration * 30) - 2; // (its last frames snap back to the loop pose, as the old combo's)
-      const strikes = [...one(A, 'bat 1', REC[0]), ...one(B, 'bat 2', REC[1]), ...buildLibraryAttack(yola, { clip: C, frames: cFrames, hold, P: BAT_PROFILE, name: 'bat 3', sound: 'bat', strikes: 2 })];
+      // C is two strikes, its spin hit and its final blow, played 1.7x (2026-10-18, the user: the third hit "feels too
+      // slow ... maybe it just needs to be faster"; kept as four hits after trying three)
+      const strikes = [...one(A, 'bat 1', REC[0]), ...one(B, 'bat 2', REC[1]), ...buildLibraryAttack(yola, { clip: C, frames: cFrames, hold, P: BAT_PROFILE, name: 'bat 3', sound: 'bat', strikes: 2, speed: 1.7 })];
       useBuiltBat(strikes); made.push(`bat combo: ${strikes.length} strikes`);
     }
     // ---- the bat's low strike at the legs ----

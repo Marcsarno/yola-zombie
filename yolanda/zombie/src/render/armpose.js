@@ -46,12 +46,18 @@ function signedTurn(bone, axis, ang, pick) {
   worldRot(bone, axis, (m1 >= m0 ? 1 : -1) * ang);
 }
 // the hand point (wrist) moved along a direction, by turning `bone` about `axis` through the shoulder: cm at the hand
+// (2026-10-18, the user: the pistol idle's aim "ticks" up and down every second): the turn's direction was the sign of how
+// it moves the hand along `toward`; with the hand nearly in line with that (an arm aimed forward, moved "out" about her
+// front axis) the idle's sway flipped the sign and the whole correction jumped to the other side in one frame (4-6 deg).
+// Now the direction fades through zero over the last ~15 deg (and the turn fades in from a 5 cm lever): no jump. Poses
+// clear of that edge come out exactly as before.
 function moveHand(bones, side, bone, axis, toward, cm) {
   if (!(Math.abs(cm) > 1e-3)) return;
   const s = bone.getWorldPosition(_a), h = bones[side + 'Hand'].getWorldPosition(_b);
-  _d.copy(h).sub(s); _d.addScaledVector(axis, -_d.dot(axis)); const r = _d.length(); if (r < 0.05) return;
-  _m.crossVectors(axis, _d); // (how a turn about the axis moves the hand)
-  worldRot(bone, axis, (cm / 100) / r * (_m.dot(toward) >= 0 ? 1 : -1));
+  _d.copy(h).sub(s); _d.addScaledVector(axis, -_d.dot(axis)); const r = _d.length(); if (r < 1e-4) return;
+  _m.crossVectors(axis, _d); // (how a turn about the axis moves the hand; |m| = r)
+  const dir = Math.max(-1, Math.min(1, _m.dot(toward) / r / 0.25)) * sm((r - 0.05) / 0.05);
+  worldRot(bone, axis, (cm / 100) / r * dir);
 }
 
 // HANDS AT HER HIPS (2026-10-17, the user: the attacks start and end in the same stance as Sword Block, hands in her hips
