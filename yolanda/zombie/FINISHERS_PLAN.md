@@ -1,114 +1,163 @@
-# Finishers, the action button, the guard, the lady, Yola getting hurt: the game plan
+# Finishers, dodging, the guard, the lady, Yola getting hurt: the game plan (v2)
 
-(2026-10-18 night, combat chat, a planning session with the user before "a big pass ... a big build". Nothing here is built
-yet; the open decisions at the end are the user's.)
+(2026-10-18 night, combat chat. v1 was the first planning pass; v2 takes in the user's answers: the guard as a two-part
+finisher fight, a 5% critical finisher on walkers with a wide arc, and "think a little harder" about the dodge: Arkham /
+Insomniac Spider-Man / Souls-like timing. Nothing here is built yet. The floor layouts: LAYOUT_REVIEW.md.)
 
 ## Where it stands today (read from the code)
 
-- **Finishers are in the real game, but only one way in:** perfect-dodge a walker's *pounce* (about a third of walkers
-  pounce; the dodge button comes up quietly, no sign over it) -> that walker gets an amber ring on the floor for 2.4 s ->
-  a fresh attack press while facing it within 3.6 m plays the finisher (slow motion, the camera in, the weapon's move;
-  core/sim.js specialMiss / execTarget, core/player.js startExecution, render/execution.js). Rare and nearly invisible:
-  most players will never find it.
-- **The guard has no finisher.** His slam plants the shield; he heaves 3.4 s (his body open, but only from the front of
-  the shield's old spot), then his arm tears off **on its own**. Before the slam, the shield blocks only frontal hits.
-- **The lady has no finisher.** Running into a wall sits her down for 1.3 s. Her "bowling" stops at the first zombie:
-  she trips on it (half the time she only staggers). Top speed 6.2 m/s, building at 4.3 m/s2 (Yola runs 3.3).
-- **The dodge button lights too early (the user's complaint, confirmed):** it shows as soon as anything dodgeable starts
-  winding up (the lady: the moment she spots Yola, up to 9 m away) and turns red "now" the moment she starts running,
-  even 9 m out. The real moment (she's about to reach Yola) gets the same look as "she just started".
-- **Yola getting hurt:** a red full-screen vignette flash, a 0.4 shake, a grunt, a 2.2 m/s shove, a small upper-body
-  flinch, 0.55 s untouchable. Big hits (charge, slam) knock her down. Same "shake" language as hitting an enemy.
+- Finishers are in the game one way only: perfect-dodge a walker's pounce (a third of walkers pounce, no sign) -> an amber
+  floor ring for 2.4 s -> a fresh attack press in reach (core/sim.js specialMiss / execTarget, core/player.js
+  startExecution, render/execution.js). Nearly invisible.
+- The guard: the shield blocks frontal hits; his slam plants it, he heaves 3.4 s, his arm tears off on its own; then he
+  flails, picks up his torn arm and clubs with it; both arms gone -> enraged.
+- The lady: 6.2 m/s, trips on the first zombie in her lane, a wall sits her down 1.3 s. No finisher.
+- **Why the dodge feels off (found in the code):**
+  - The "now" sign fires far too early. The guard: at his takeoff, about 1.1 s of game time before he lands, and his
+    peak slow-motion then stretches that to ~2 s of real time. The lady: the moment she starts running, even 9 m away.
+  - The guard's leap has its own slow-motion at the top of the jump, *before* the moment to dodge, so the slowdown and
+    the cue don't line up.
+  - The reward comes late. The "PERFECT DODGE" slow-motion fires when the attack *misses* (the slam lands, the charge
+    runs past), not when she presses. The press and the payoff are apart, so it feels mushy.
+  - The judging is loose: "perfect" is any press in the last 0.8 s of the slam, or with the lady anywhere inside 3.8 m.
 
-## 1. One rule for every finisher: Open -> Mark -> Press
+## 1. The dodge: one beat, every time (Arkham / Spider-Man / Witch Time)
 
-A finisher only exists when an enemy is **open**: a state the player caused. Every open enemy shows **the same mark over
-its head** (one gold icon, God of War style, not a floor ring), the centre button turns into **FINISH**, and a press
-(the centre button or the attack button) plays it in slow motion. The window is short (2-3 s) and the mark shows it
-running out. One code path for all enemies (sim: `z.open = { until, kind }`; render: the mark; player: startExecution
-picks the move by enemy kind).
+**Telegraph early, cue late.** Two different signals with two different jobs:
+- **The telegraph (early, on the enemy, mostly sound):** the guard's roar and crouch, the lady's scream, her lane on the
+  floor and her footfalls. It says "something big is coming: get ready, move". The button stays grey.
+- **The cue (late, the spider-sense):** fires a **fixed time before the hit lands, the same for every attack**:
+  0.45 s of game time. One beat to learn, like a rhythm game: hear the *ting*, tap.
+  - The guard: at the end of his hang in the air, as he starts to drop (his clip's frame ~64 of 77). No slow-motion at
+    the top of the jump any more: the cue *is* the slowdown.
+  - The lady: when she's 0.45 s from reaching Yola (worked out from her distance and speed), after she's already ploughed
+    through the walkers in her lane.
+- **At the cue:** time dips to half speed for the window (so it's ~0.9 s of real time: room for a thumb on a phone),
+  white spider-sense lines flash around Yola's head, the attacker gets a bright outline, the button lights and its ring
+  starts closing, and a sharp *ting*.
 
-| enemy | how it opens | what the finisher does |
-|---|---|---|
-| walker | perfect-dodge its pounce (as now); knocked down or crippled (legs off) by Yola's blows | the weapon's finisher (as now): the burst / the head off |
-| big guard | **his slam lands** (shield stuck in the floor) | Yola tears / hacks his shield arm off, in slow motion |
-| big lady | **she slams into a wall** at speed and goes down | the kill, without her acid burst (the reward) |
+**The press pays off at once:**
+- Yola dodges on the same frame (untouchable from the first frame).
+- It's judged **at the press**:
+  - **Perfect:** the last ~0.18 s before the hit (plus a little after, for touch lag).
+  - **Good:** earlier in the window.
+- **Perfect = Witch Time:** the world drops to ~0.25 speed for ~1.2 s of real time while **Yola moves at full speed**,
+  with a white flash, a bass drop and "PERFECT". Then it snaps back exponentially. Her next blow or shot is critical.
+  The guard's perfect dodge leads straight into his finisher (below).
+- **Good:** she gets clear, a whoosh, no slowdown.
+- **Too late:** she takes the heavy hit (section 5).
 
-A cooldown between walker finishers (~8-10 s) keeps them special; the guard's and the lady's are always available when
-they open. During a finisher Yola is untouchable (as now) and nearby walkers are shoved back a step, so it's a breather,
-never a trap.
+**Which way she goes:** automatic, by the attack (the safe-direction picker already exists: core/sim.js autoDodge),
+unless the stick is held:
+- **The slam:** she rolls out of the landing wedge.
+- **The charge:** she side-steps across the lane, to the side with more room.
 
-## 2. The centre action button: one button, three looks
+A small arrow on the button (and on her floor ring) shows the way she'll go, so it never surprises.
 
-- **Resting:** always on screen, a dim grey outline, **not tappable**. Taps do nothing (no penalty, no early dodge).
-- **Dodge:** lights only in the real window: from about 0.6 s before the hit lands (the lady: when she's ~1 s from
-  reaching Yola; the guard: once he's in the air; a pounce: its last stretch). Its ring fills toward the moment; the last
-  ~0.25 s it flashes white = **perfect** (slow-motion beat, the crit / the finisher opening). Any press in the lit window
-  dodges clear.
-- **Finish:** gold with the finisher icon while an open enemy is in reach.
+**Taps outside the window do nothing** (the button is grey). No punishment in version 1. If mashing turns out to beat
+it, a short lockout comes later.
 
-The warning still comes early, but **over the enemy** (the sign over its head, the lane on the floor, the scream), not on
-the button: the enemy says "it's coming", the button says "now".
+**Only one cue at a time.** Walkers' normal attacks never cue (they're basic attacks). Their pounce keeps its quiet,
+no-sign perfect dodge that opens a finisher (section 2).
 
-## 3. The big guard (the God of War moment)
+**The three slowdowns, made one family:**
 
-1. **Before the slam he can't be hurt:** the shield turns blows and bullets from any side (sparks, a clank, a "can't
-   hurt him" read). The player's job: stay alive and read the leap.
-2. **The slam:** the sign over him while he coils; the button lights once he's in the air; roll out (the auto-roll that
-   picks a safe way already exists).
-3. **After the slam he's open:** the shield is stuck, he heaves at it, he takes damage now, and **the mark appears over
-   his head**. Press -> slow motion, Yola's finisher on the shield arm: it tears off (the tear, the stuck shield and the
-   one-armed fight after it already exist).
-4. **Missed it:** he wrenches the shield free (or what's left of it) and the cycle starts again: another slam, another
-   chance. The finisher is how the arm comes off, never on its own.
-5. After the arm: one-armed flailing, then the club (as now); his last finisher can take the head when he's low.
+| when | world speed | Yola | how long |
+|---|---|---|---|
+| cue window | 0.5 | 0.5 | until she presses or the hit lands |
+| perfect dodge (Witch Time) | 0.25 | full | ~1.2 s real, then snaps back |
+| finisher | its own camera and timing | (render/execution.js) | |
 
-## 4. The big lady (the bowling ball)
+## 2. Finishers: Open -> Mark -> Press
 
-- **Faster:** top speed 6.2 -> ~7.5 m/s, and she gets there quicker (accel 4.3 -> ~6.5): a lumbering first step, then
-  she's flying.
-- **10% larger** (body radius 0.41 -> 0.45 to match).
-- **Bowling:** every walker in her lane is thrown down and sideways (the pins), and **she doesn't slow or stop** for
-  them. Only a wall, a big prop or the guard stops her.
-- **"Something heavy is moving":** footfall thumps that grow as she nears (a camera bump per step, scaled by distance), dust
-  kicked up per step, loose props / drip stands rattling as she passes, a low rumble under the sound, the lane on the floor.
-- **The wall slam:** at speed into a wall -> a hard crash (cracks, dust, a big shake), she's down longer (~2.5 s), dazed
-  -> **open: the mark over her**. Side-stepping her into a wall becomes the play.
-- **Never untouchable:** bullets and blows always land on her.
+An open enemy shows **one gold mark over its head**, the centre button turns to **FINISH**, and a press (the button or
+attack) plays it in slow motion.
+
+**Walkers:**
+- A **perfect dodge of a pounce** opens that walker (as now, now with the mark).
+- **The 5% critical finisher (the user's idea):** any attack Yola starts on a walker in reach has a 5% chance to become a
+  finisher: the camera cuts in and she does the big move, with a **wider arc**, so a walker or two next to the target
+  go with it:
+  - **Melee:** a wide sweep (the bat's home run, the axe's cleave) that kills everything in a 120° arc within ~2.2 m.
+  - **Shotgun:** a wide blast that blows the target and its neighbours apart.
+  - **Pistol:** a quick chain of headshots, 2-3 targets, the camera following.
+  - Never twice in a row, and at most one every ~12 s, so it stays special.
+- (v1's "knocked down / crippled opens it" is dropped: the 5% crit replaces it.)
+
+**The guard and the lady:** section 3 and section 4.
+
+## 3. The big guard: two finishers, two parts
+
+1. **The shield can't be hurt or broken, ever.** He can only be hurt **from behind** (flanking). From the front:
+   sparks, a clank, a "blocked" read. Getting behind him also shoves his next slam sooner (flanking speeds the fight up),
+   but nothing kills him except the two finishers.
+2. **The slam: make it huge.**
+   - Dust and debris: a dust ring rolling out, tile chunks thrown up, a shockwave ring on the floor, the cracks (exist).
+   - Weight: a strong shake and a camera punch, a low boom with sub-bass, the ceiling lights flicker (the lighting
+     kit's flicker).
+   - Fodder: **every walker within ~4 m knocked flying** outward, and the ones right under it (~1.5 m) killed. Drip
+     stands and wheelchairs shoved away.
+3. **Stuck and open:** the shield is stuck in the floor and he heaves at it (~3.4 s). The mark appears over him.
+   **Finisher 1: his shield arm comes off** (shot off or smashed off), in slow motion:
+   - the arm launches spinning, trailing a long ribbon of blood, bouncing off whatever it hits;
+   - a fountain from the shoulder;
+   - the camera follows the arm for a beat.
+4. **Missed it:** he wrenches the shield out of the floor (a dust burst) and carries on. Another slam, another chance.
+5. **Stage 2:** he picks the shield up with his **other** hand: the hold, the walk and the slam mirrored (left and right
+   swapped: he's ambidextrous). Same pattern. **Finisher 2: his head blown off.** He's dead.
+6. **Removed:** picking up his torn arm and clubbing with it, the one-armed flailing, the enraged stage.
+
+## 4. The big lady: the bowling ball
+
+- Faster (6.2 -> ~7.5 m/s), building speed quicker, **10% larger**.
+- Walkers in her lane are thrown down and aside like pins; **she doesn't slow or stop** for them (only a wall, a big prop
+  or the guard stops her).
+- Heavy: footfall thumps growing as she nears, dust per step, drip stands rattling, a low rumble, her lane on the floor.
+- Her cue comes late: 0.45 s before she reaches Yola (section 1).
+- **Wall crash:** dodge her into a wall -> a hard crash (cracks, dust, a big shake), down ~2.5 s, dazed -> **the mark:
+  her finisher.**
+- Never untouchable.
 
 ## 5. Yola getting hurt: you notice it, it's not unfun
 
-Enemies get **interrupted** (stagger, hit-stop: that's the player's reward). Yola **doesn't lose control** on light hits.
-
-- **Which way it came from:** a red arc on the screen edge toward the attacker instead of the whole-screen flash.
-- **Her own hit:** a small camera kick away from the blow, her flinch and grunt, no world hit-stop (that stays the
-  reward for *her* hits). A light hit never stops her attack or her movement.
-- **Win it back (optional, Bloodborne's "rally"):** part of the lost health shows as a pale chunk on the health bar;
-  hitting back within ~3 s wins it back. Getting hit becomes a push to fight, not a punishment.
-- **Fair:** 0.8 s of grace after a hit (a subtle flicker); two zombies hitting at once count once.
-- **Heavy hits are their own tier** (charge, slam, smash): knocked down, a short hit-stop, a bigger shake, the colour
-  drained for a beat.
-- **Low health (under ~30%):** a heartbeat, the edges darken, the sound muffles a little. Tension, not punishment.
-- Phone buzz on Android (iPhone browsers can't vibrate).
+- **A red arc on the screen edge** toward the attacker, instead of the whole-screen flash.
+- **Light hits:**
+  - Her flinch, a small camera kick away from the blow and her grunt.
+  - She never loses control: her attack and her movement carry on.
+  - No world hit-stop: that stays the reward for *her* hits.
+- **Heavy hits** (slam, charge, smash):
+  - She's knocked down.
+  - A short hit-stop and a bigger shake.
+  - The colour drains for a beat.
+- **Fair:** 0.8 s of grace after a hit; two zombies hitting at once count once.
+- **Low health:** a heartbeat, darker edges, slightly muffled sound.
+- **Optional (open):** win some of the lost health back by hitting back within ~3 s.
 
 ## Build order (the big pass)
 
-1. The centre button: the resting / dodge / finish looks and the real dodge windows per attack.
-2. The open state + the mark + the finisher picking its move by enemy kind.
-3. The lady: speed, size, bowling, the heavy-footstep feel, the wall slam -> open.
-4. The guard: shielded before the slam, the slam -> open -> the arm-tear finisher, missed -> shield free and again.
-5. Walker openings (knocked down, crippled) + the cooldown.
-6. Yola getting hurt (direction arc, tiers, rally if picked, low health).
-7. Check it all in the test rooms (combat.html?mode=calm&demo=execute, the wave room), then the user plays on the phone.
+1. **The dodge:**
+   - the fixed-lead cue;
+   - the cue dip and Witch Time (the leap's top-of-jump slow-motion removed);
+   - judging at the press;
+   - the direction arrow;
+   - the button's three looks.
+2. **The open state + the gold mark + finishers by enemy kind; the 5% walker crit with the wide arc.**
+3. **The guard:**
+   - shielded except from behind;
+   - the slam impact pass, with walkers as fodder;
+   - finisher 1 (the arm flies);
+   - missed -> he pulls the shield free;
+   - the mirrored stage 2, then finisher 2 (the head);
+   - the club / flail / enraged stages removed.
+4. **The lady:** speed, size, bowling, heavy feel, wall crash -> finisher.
+5. **Yola getting hurt.**
+6. Check each in the practice room and the wave room; then the user plays on the phone (at High).
 
-## Open decisions (the user's)
+## Still open (the user's)
 
-1. **Dodge at will?** With the button only lit in the windows, Yola can't dodge whenever she likes (as now: the dodge is
-   reactive only). Recommended: keep it reactive.
-2. **The guard's missed finisher:** he pulls the shield free and slams again (recommended), or the arm tears anyway (as now).
-3. **The lady's finisher reward:** she dies without the acid burst (recommended), or the burst stays.
-4. **Walker openings:** perfect pounce dodge + knocked down + crippled (recommended), or fewer / more (low health, a combo
-   ender).
-5. **Win-it-back health (rally):** in or out.
-6. **Finisher moves for the guard and the lady:** reuse Yola's existing finisher clips aimed at the arm / the body
-   (fast), or new moves from the Animation Hub (better, takes longer).
+1. **The lady's finisher reward:** she dies without her acid burst (recommended), or the burst stays.
+2. **Win-back health:** in or out.
+3. **The guard's mirrored stage:** a mirror of his existing clips (fast, the plan) is assumed. If it looks wrong, a
+   proper left-handed set from the Animation Hub.
+4. **Finisher moves:** reuse Yola's existing finisher clips aimed at the arm / the head / the body first (fast); new
+   ones from the Animation Hub later where they fall short.
