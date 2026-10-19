@@ -562,6 +562,8 @@ const _v = new THREE.Vector3(), _seg = {};
 let groanT = 2;
 function frame(now) {
   requestAnimationFrame(frame);
+  if (now - last > 500 && last > 0) { perf.stalls = (perf.stalls || 0) + 1; perf.longest = Math.max(perf.longest || 0, now - last); } // (a frame that never came: the meter's 'stalls')
+  perf.frameCount = (perf.frameCount || 0) + 1;
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (manualTicks) return;
   const c0 = performance.now(); runFrame(dt); perf.cpu.push(performance.now() - c0); if (perf.cpu.length > 600) perf.cpu.shift();
@@ -995,7 +997,10 @@ function perfSample(dt) {
   perf.frames.push(ms); if (perf.frames.length > 600) perf.frames.shift();
   if (ms > 34) perf.spikes++;
   // dynamic resolution: protect frame time before anything else
-  if (perf.frames.length >= 90 && perf.frames.length % 30 === 0 && !paused) {
+  // (2026-10-18 fix) checked every 30th frame by its own count: the history is capped at 600, so 'length % 30' became true on
+  // every frame after ten seconds; and never twice within 1.5 s (each change reallocates the screen's buffers)
+  perf.n = (perf.n || 0) + 1;
+  if (perf.frames.length >= 90 && perf.n % 30 === 0 && !paused && performance.now() - (perf.resizedAt || 0) > 1500) {
     const recent = perf.frames.slice(-90), avg = recent.reduce((a, b) => a + b, 0) / recent.length;
     // (PERF_AUDIT.md 7) only when the GPU is the limit: a lower resolution saves GPU work, not the CPU's. The GPU's own time
     // when the phone can tell (gpuTimer); otherwise a frame whose JS took most of it is CPU-bound. CPU-bound: the
@@ -1003,8 +1008,8 @@ function perfSample(dt) {
     const cpu = perf.cpu.slice(-90), cpuAvg = cpu.reduce((a, b) => a + b, 0) / Math.max(1, cpu.length), gpu = gpuTimer?.avg();
     const gpuBound = gpu != null ? gpu > Math.min(14, avg * 0.7) : cpuAvg < avg * 0.6;
     perf.limit = gpuBound ? 'gpu' : 'cpu';
-    if (avg > 21 && renderScale > 0.6 && gpuBound) { renderScale = Math.max(0.6, renderScale - 0.1); resize(); }
-    else if ((avg < 14 || !gpuBound) && renderScale < 1) { renderScale = Math.min(1, renderScale + 0.05); resize(); }
+    if (avg > 21 && renderScale > 0.6 && gpuBound) { renderScale = Math.max(0.6, renderScale - 0.1); resize(); perf.resizedAt = performance.now(); }
+    else if ((avg < 14 || !gpuBound) && renderScale < 1) { renderScale = Math.min(1, renderScale + 0.05); resize(); perf.resizedAt = performance.now(); }
   }
 }
 // the on-screen speed meter (?perf=1, 2026-10-18: the phone reports what it really does): twice a second, frame rate and
@@ -1027,6 +1032,8 @@ if (params.get('perf') === '1') {
       `AA ${aa ? 'on' : 'off'}  shadows ${shadows}`,
       `calls ${I.render.calls}  tris ${(I.render.triangles / 1000).toFixed(0)}k  tex ${I.memory.textures}  heap ${heap}`,
       `zombies ${sim?.aliveCount?.() ?? '-'}  floor ${LAYOUT.story ? LAYOUT.floor : 'wing'}`,
+      // (the heartbeat: 'clock' counts while the page's JS runs; 'frames' only while the game loop runs)
+      `clock ${((performance.now() - perf.t0) / 1000).toFixed(1)}s  frames ${perf.frameCount || 0}  stalls ${perf.stalls || 0}${perf.longest ? ' (' + (perf.longest / 1000).toFixed(1) + 's)' : ''}`,
     ].join('\n');
   }, 500);
 }
