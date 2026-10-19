@@ -10,6 +10,7 @@ import { AXE_ATTACKS, BAT_ATTACKS, FIST_ATTACKS, LEG_ATTACKS, attacksOf, attackF
 import { describeRagdoll, RagdollDriver, SEVER_PART, frameQuat } from './physics/ragdoll.js';
 import { ShieldController } from './ShieldController.mjs';
 import { shieldState } from '../core/zombies.js';
+import { tankPos } from '../core/loose.js';
 import { HairSway } from './hairsway.js';
 import { placeOneHanded, placeBat, twoHandLine, applyFit, magInsert, placeShell, SHELL_INSERT, handOnto, handleSpot, reachShoulder, CARRY, carryCalibrate, carryPlace, gripOpts } from './holdfit.js';
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
@@ -1366,6 +1367,39 @@ const EXTRA_ONCE = ['patient_bed_rise', 'ual_IdleToLay', 'ual1_Sitting_Exit', 'u
 // ahead of the hips; yaw: the model's own front), its hands on the hand rims pushing (rim: centre ahead of the hips /
 // up / out to the side, radius) one push each rimArc of wheel turn
 const IV = { grip: 1.08, tilt: 0.05, maxTilt: 0.2 }; // (where it is and who holds it: core/loose.js)
+// oxygen cylinders (core/loose.js O2): a medical cylinder (green body, white shoulder, a black valve and regulator with a
+// gauge) standing on its own, behind a wheelchair, or strapped to a two-wheeled trolley whose handle the walker holds where
+// a drip stand's pole would be (IV.grip: the same hand IK)
+const _tp = {};
+let O2MAT = null;
+const o2Mats = () => (O2MAT ||= {
+  body: new THREE.MeshStandardMaterial({ color: 0x2f7a46, roughness: 0.42, metalness: 0.35 }),
+  collar: new THREE.MeshStandardMaterial({ color: 0xe9ece6, roughness: 0.35, metalness: 0.2 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x1d1f21, roughness: 0.5, metalness: 0.6 }),
+  steel: new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.35, metalness: 0.8 }),
+  label: new THREE.MeshStandardMaterial({ color: 0xf0e7c8, roughness: 0.7 }),
+});
+function o2Cylinder(h = 0.95, r = 0.095) {
+  const M = o2Mats(), g = new THREE.Group(), add = (geo, m, y, x = 0, z = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
+  add(new THREE.CylinderGeometry(r, r, h * 0.78, 18), M.body, h * 0.39);
+  add(new THREE.CylinderGeometry(r * 1.002, r * 1.002, h * 0.12, 18, 1, true), M.label, h * 0.42); // (the label band)
+  const sh = add(new THREE.SphereGeometry(r, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), M.collar, h * 0.78); sh.scale.y = 0.75; // (the white shoulder)
+  add(new THREE.CylinderGeometry(r * 0.28, r * 0.32, h * 0.07, 10), M.dark, h * 0.87);
+  add(new THREE.BoxGeometry(r * 0.9, h * 0.06, r * 0.55), M.dark, h * 0.92);
+  add(new THREE.CylinderGeometry(r * 0.32, r * 0.32, r * 0.18, 14), M.steel, h * 0.92, r * 0.42).rotation.z = Math.PI / 2; // (the gauge)
+  add(new THREE.CylinderGeometry(r * 0.5, r * 0.5, h * 0.025, 14), M.dark, h * 0.975); // (the valve's handwheel)
+  return g;
+}
+function o2Trolley() {
+  const M = o2Mats(), g = new THREE.Group(), add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  add(new THREE.BoxGeometry(0.26, 0.02, 0.22), M.steel, 0, 0.07, 0.06); // (the foot plate)
+  for (const s of [-1, 1]) { const w = add(new THREE.CylinderGeometry(0.07, 0.07, 0.035, 14), M.dark, s * 0.15, 0.07, 0.1); w.rotation.z = Math.PI / 2; }
+  add(new THREE.CylinderGeometry(0.012, 0.012, IV.grip + 0.04, 8), M.steel, 0, (IV.grip + 0.04) / 2, 0); // (the handle post: the grip at IV.grip)
+  add(new THREE.BoxGeometry(0.22, 0.02, 0.02), M.steel, 0, IV.grip, 0);
+  const c = o2Cylinder(0.9, 0.09); c.position.set(0, 0.08, 0.1); c.rotation.x = -0.18; g.add(c); // (leaning back in its cradle)
+  for (const y of [0.35, 0.7]) add(new THREE.TorusGeometry(0.095, 0.008, 6, 16), M.dark, 0, 0.08 + y, 0.1 + y * 0.18).rotation.x = Math.PI / 2 - 0.18; // (its straps)
+  return g;
+}
 const CHAIR = { seat: 0.62, fwd: 0.06, yaw: 0, rim: [-0.04, 0.36, 0.3], rimR: 0.27, rimArc: 1.6, h: 0.97 };
 const GAIT_SETS = {
   ual: { idle: 'ual_Zombie_Idle_Loop', dur: 1.333, dirs: [['Fwd', 0, 1, 1.05], ['Fwd_L', 0.707, 0.707, 1.06], ['L', 1, 0, 0.75], ['Bwd_L', 0.707, -0.707, 1.06], ['Bwd', 0, -1, 1.2], ['Bwd_R', -0.707, -0.707, 1.06], ['R', -1, 0, 0.75], ['Fwd_R', -0.707, 0.707, 1.06]].map(([k, x, z, s]) => ({ n: `ual_Zombie_Walk_${k}_Loop`, x, z, s })) },
@@ -1775,17 +1809,30 @@ export class ZombieView extends ClipBody {
     for (const L of list) {
       seen.add(L.id);
       let o = M.get(L.id);
-      if (!o) { const src = L.kind === 'iv' ? S.iv : S.chair; if (!src) continue; o = src.clone(); o.userData.l = { vx: 0, vz: 0, rx: 0, rz: 0 }; ZombieView.scene.add(o); M.set(L.id, o); }
+      if (!o) {
+        const src = L.kind === 'o2tank' ? o2Cylinder() : L.kind === 'iv' ? (L.o2 ? o2Trolley() : S.iv) : S.chair; if (!src) continue;
+        o = src === S.iv || src === S.chair ? src.clone() : src; o.userData.l = { vx: 0, vz: 0, rx: 0, rz: 0 }; ZombieView.scene.add(o); M.set(L.id, o);
+        if (L.o2 && L.kind === 'chair') { o.userData.tank = o2Cylinder(); ZombieView.scene.add(o.userData.tank); } // (its cylinder behind the backrest: placed below, in the world)
+      }
       const x = L.px + (L.x - L.px) * alpha, z = L.pz + (L.z - L.pz) * alpha, u = o.userData.l;
-      if (L.kind === 'iv') {
+      if (L.kind === 'o2tank') { o.position.set(x, 0, z); o.rotation.set(0, L.yaw, 0); }
+      else if (L.kind === 'iv') {
         const ax = dt > 0 ? (L.vx - u.vx) / dt : 0, az = dt > 0 ? (L.vz - u.vz) / dt : 0; u.vx = L.vx; u.vz = L.vz;
         const tx = clamp(az * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt), tz = clamp(-ax * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
         u.rx += (-tx - u.rx) * Math.min(1, dt * 6); u.rz += (-tz - u.rz) * Math.min(1, dt * 6);
         o.position.set(x, 0, z); o.rotation.set(u.rx, 0, u.rz);
       } else if (L.tipped) { o.position.set(x, 0.3, z); o.rotation.set(0, L.yaw + CHAIR.yaw, L.tipSide * 1.45); }
       else { o.position.set(x, 0, z); o.rotation.set(0, L.yaw + CHAIR.yaw, 0); }
+      // an oxygen cylinder (core/loose.js O2): a chair's rides behind its backrest; punctured, it shudders and screams out a jet of
+      // gas until it bursts
+      const tk = o.userData.tank || (L.o2 ? o : null);
+      if (o.userData.tank) { const tp = tankPos(L, _tp); tk.position.set(tp.x - (L.x - x), L.tipped ? 0.2 : 0.18, tp.z - (L.z - z)); tk.rotation.set(L.tipped ? 1.4 : 0, L.yaw, 0); }
+      if (tk && L.fuse != null && dt > 0) {
+        tk.position.x += (Math.random() - 0.5) * 0.035; tk.position.z += (Math.random() - 0.5) * 0.035;
+        if (ZombieView.fx && Math.random() < dt * 40) { const a = Math.random() * Math.PI * 2, top = L.kind === 'iv' ? 1.05 : tk.position.y + 0.95; ZombieView.fx.burst(tk.position.x, top, tk.position.z, 2, 0xf4f8ff, 2.4, 0.6, 0.25, Math.cos(a), Math.sin(a)); }
+      }
     }
-    for (const [id, o] of M) if (!seen.has(id)) { o.parent?.remove(o); M.delete(id); } // (a new level: gone)
+    for (const [id, o] of M) if (!seen.has(id)) { o.parent?.remove(o); o.userData.tank?.parent?.remove(o.userData.tank); M.delete(id); } // (a new level, or a cylinder that burst: gone)
   }
   // the eyes' glints (eyeCfg): two additive dots on the Head bone, placed from the head's rest pose (up the bone, out along the
   // face, either side), shown while it stands alive and lit by lightAt where its face is

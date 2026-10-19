@@ -1,7 +1,7 @@
 // Zombie behaviour: emerge -> chase (flow field + separation) -> telegraphed attack -> recover.
 // Hits put them in stagger with collision-aware knockback that navigation does not override.
 import { approachAngle, angleDiff } from './world.js';
-import { IV_CARRY, LOOSE } from './loose.js';
+import { IV_CARRY, LOOSE, O2, punctureTank } from './loose.js';
 import { isMelee } from './weapons.js';
 
 let nextId = 1;
@@ -347,7 +347,8 @@ export class Zombie {
       this.deathYaw = Math.atan2(dirX, dirZ); // fall along the hit
       this.deathSpeed = impulse;
       sim.emit({ type: 'zombieDeath', id: this.id, kind, x: this.x, z: this.z });
-      if (this.executed) { const p = sim.player; p.hp = Math.min(p.maxHp, p.hp + (sim.T.execHeal ?? 5)); sim.emit({ type: 'execHit', id: this.id, weapon: this.execWeapon, x: this.x, z: this.z, dirX, dirZ }); }
+      if (this.executed && !this.execNoHeal) { const p = sim.player; p.hp = Math.min(p.maxHp, p.hp + (sim.T.execHeal ?? 5)); sim.emit({ type: 'execHit', id: this.id, weapon: this.execWeapon, x: this.x, z: this.z, dirX, dirZ }); }
+      if (this.o2 && this.loose?.o2 && (kind === 'pistol' || kind === 'shotgun')) punctureTank(sim, this.loose); // (shot dead: its cylinder goes, core/loose.js O2)
       if (this.critFin) { this.critFin = false; sim.critSweep?.(this); } // (the critical finisher's wide arc: core/sim.js)
       return;
     }
@@ -577,7 +578,7 @@ export class Zombie {
           { const s = this.steer(wantX, wantZ, gd, true, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
           turnRate = 4; break;
         }
-        speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === 'run' ? RUNNER_SPEED : 1) * (this.chair ? 0.72 : this.prop === 'iv' ? 0.8 : 1) * (this.kind === 'guard' && !this.enraged ? GUARD.stageSpeed[this.gstage] || 1 : 1) : 0;
+        speed = (wantX || wantZ) ? T.zombieSpeed * this.speedMul * (this.crawling ? 0.32 : this.gait === 'run' ? RUNNER_SPEED : 1) * (this.chair ? (this.o2 ? O2.chairSpeed : 0.72) : this.prop === 'iv' ? 0.8 : 1) * (this.kind === 'guard' && !this.enraged ? GUARD.stageSpeed[this.gstage] || 1 : 1) : 0;
         if (speed > 0) { const s = this.steer(wantX, wantZ, dist, los, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
         // Waiting its turn (spacing): a zombie without an attack slot stops a step back from her (at its own distance),
         // facing her, and now and then takes a few steps along the ring away from the nearest other zombie, so a group

@@ -14,6 +14,10 @@ const DEMOS = {
   ladykip: { label: 'The lady trips into the wall: her kip-up', weapon: 'pistol', setup(sim) { const p = sim.player; p.z = 10.05; const z = put(sim, 0.4, 2.6, 'sprinter'); z.attackCd = 0; } },
   walkers: { label: 'Walkers: the ring, its pounces, the scratch', weapon: 'bat', setup(sim) { for (let i = 0; i < 6; i++) { const a = Math.PI + (i / 5 - 0.5) * 2.4; put(sim, 0.4 + Math.sin(a) * 6, 1.0 + Math.cos(a) * 6, 'normal', a + Math.PI); } sim.player.z = 1.0; } },
   runner: { label: 'The orange runner: the dash rake', weapon: 'bat', setup(sim) { put(sim, 0.4, -5.5, 'runner'); } },
+  oxygen: { label: 'Oxygen tanks: shoot the wheelchairs and the trolley before they reach you (Floor 6)', weapon: 'pistol', setup(sim) {
+    put(sim, -2.6, -6.0, 'o2chair', 0); put(sim, 3.0, -6.6, 'o2chair', 0); put(sim, 0.4, -7.4, 'o2walker', 0);
+    for (const [x, z] of [[-1.6, -5.2], [1.4, -5.6], [-0.4, -6.4], [2.2, -5.0]]) put(sim, x, z, 'normal', 0);
+    sim.addTank(-3.6, -2.4); sim.addTank(-3.25, -2.15); sim.player.z = 2.0; } },
   floor: { label: 'Out of the floor: the breach', weapon: 'pistol', setup(sim) { sim.spawnFromFloor(-0.8, -1.6, { look: 'patient' }); sim.spawnFromFloor(2.2, -0.6, { kind: 'runner' }); } },
   // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look") a
   // lineup, left to right: her own blue, the runner's orange, then the new colours (main.js SCRUBS)

@@ -7,7 +7,7 @@ import { AXE_GEOM, FISTS, BAT, PISTOL, SHOTGUN, SHOTGUN_SPEC } from './weapons.j
 import { Director } from './director.js';
 import { ROOM1 } from './layout.js';
 import { Level } from './level.js';
-import { addLoose, looseStep, IV_CARRY } from './loose.js';
+import { addLoose, looseStep, IV_CARRY, O2, tankPos, punctureTank, o2Step } from './loose.js';
 
 export const STEP = 1 / 60;
 const BULLET_RANGE = 16, BULLET_MIN_H = 1.25, ZR_HIT = 0.36, BAT_MIN_HIT_Y = 0.7, BAT_BODY_R = 0.3;
@@ -123,6 +123,7 @@ export class Sim {
     bump(this.zombies, this);
     separate(this.zombies, p);
     looseStep(this, dt); // (the drip stands and wheelchairs: nobody walks through them)
+    o2Step(this, dt); // (oxygen cylinders: fuses burning down, bursts: core/loose.js O2)
     this.director.update(dt);
     if (this.level) this.level.step(dt, input); else this.updateFlow();
     // remove old corpses (renderer fades them first)
@@ -130,6 +131,7 @@ export class Sim {
   }
 
   spawnZombie(door, opts = {}) {
+    if (opts.kind === 'o2chair' || opts.kind === 'o2walker') opts = { ...opts, kind: 'normal', prop: opts.kind === 'o2chair' ? 'chair' : 'iv', o2: true }; // (an oxygen cylinder on its chair / trolley: core/loose.js O2)
     const d = (typeof door === 'string' ? LAYOUT.doors.find((x) => x.id === door) : door) || { id: 'placed', x: opts.x, z: opts.z, axis: 'x', spawn: { x: opts.x, z: opts.z }, yaw: opts.yaw ?? 0 };
     const jitter = (this.rand() - 0.5) * 0.8;
     const sx = d.spawn.x + (d.axis === 'x' ? jitter : 0), sz = d.spawn.z + (d.axis === 'z' ? jitter : 0);
@@ -148,10 +150,14 @@ export class Sim {
     if (z.prop === 'iv' || z.prop === 'chair') { // (its drip stand / wheelchair: core/loose.js)
       const fx = Math.sin(z.yaw), fz = Math.cos(z.yaw), lx = Math.cos(z.yaw), lz = -Math.sin(z.yaw), iv = z.prop === 'iv';
       z.loose = addLoose(this, z.prop, iv ? z.x + fx * IV_CARRY.fwd + lx * IV_CARRY.side : z.x + fx * 0.06, iv ? z.z + fz * IV_CARRY.fwd + lz * IV_CARRY.side : z.z + fz * 0.06, z.yaw, z.id);
+      if (opts.o2) { z.loose.o2 = true; z.o2 = true; }
     }
     this.emit({ type: 'zombieSpawn', id: z.id, door: d.id });
     return z;
   }
+
+  // a standing oxygen cylinder (core/loose.js O2): the floors place them (a cylinder store, a corridor); shoot it
+  addTank(x, z) { const L = addLoose(this, 'o2tank', x, z, 0, 0); L.o2 = true; L.held = false; return L; }
 
   // A zombie out of the floor (core/zombies.js FLOOR_EMERGE): placed at the hole, under the floor until it breaks through.
   // The level never calls this right under Yola (core/level.js floorStep keeps her a few metres off).
@@ -418,6 +424,8 @@ export class Sim {
     }
     const r = this.traceBullet(m.x, m.z, yaw);
     const dx = Math.sin(yaw), dz = Math.cos(yaw);
+    if (r.tank) { punctureTank(this, r.tank); this.emit({ type: 'shot', ox: m.x, oy: m.y, oz: m.z, ex: m.x + dx * r.t, ez: m.z + dz * r.t, hit: 'tank', yaw }); return; }
+    if (r.zombie?.o2 && r.zombie.loose?.o2 && this.rand() < O2.through) punctureTank(this, r.zombie.loose); // (through its rider into the cylinder)
     if (r.zombie) {
       this.stats.shotHits++;
       const z = r.zombie, along = (z.x - m.x) * dx + (z.z - m.z) * dz;
@@ -453,6 +461,8 @@ export class Sim {
       if (block) { pellets.push({ ex: p.x + (m.x - p.x) * block.t, ez: p.z + (m.z - p.z) * block.t, hit: 'wall', nx: block.nx, nz: block.nz }); continue; }
       const r = this.traceBullet(m.x, m.z, yaw, S.range);
       const ex = m.x + dx * r.t, ez = m.z + dz * r.t;
+      if (r.tank) { punctureTank(this, r.tank); pellets.push({ ex, ez, hit: 'tank' }); continue; }
+      if (r.zombie?.o2 && r.zombie.loose?.o2 && this.rand() < O2.through * 0.6) punctureTank(this, r.zombie.loose);
       if (r.zombie) {
         const fall = r.t <= S.falloffFrom ? 1 : Math.max(0.33, 1 - ((r.t - S.falloffFrom) / (S.range - S.falloffFrom)) * 0.67);
         let h = hits.get(r.zombie);
@@ -494,13 +504,18 @@ export class Sim {
   traceBullet(ox, oz, yaw, range = BULLET_RANGE) {
     const dx = Math.sin(yaw), dz = Math.cos(yaw);
     const w = this.world.raycast(ox, oz, ox + dx * range, oz + dz * range, BULLET_MIN_H);
-    let t = w ? w.t * range : range, zombie = null;
+    let t = w ? w.t * range : range, zombie = null, tank = null;
     for (const z of this.zombies) {
       if (!z.alive || z.buried) continue;
       const h = rayCircle(ox, oz, dx, dz, t, z.x, z.z, ZR_HIT);
       if (h >= 0 && h < t) { t = h; zombie = z; }
     }
-    return { t, zombie, wall: !zombie && !!w, nx: w?.nx, nz: w?.nz };
+    for (const L of this.loose || []) { // (an oxygen cylinder in the way: core/loose.js O2)
+      if (!L.o2 || L.gone) continue; const q = tankPos(L, _a);
+      const h = rayCircle(ox, oz, dx, dz, t, q.x, q.z, O2.hitR);
+      if (h >= 0 && h < t) { t = h; tank = L; zombie = null; }
+    }
+    return { t, zombie, tank, wall: !zombie && !tank && !!w, nx: w?.nx, nz: w?.nz };
   }
 
   // Gentle melee assist: at swing start, turn up to ~20 degrees toward a zombie that is within reach,

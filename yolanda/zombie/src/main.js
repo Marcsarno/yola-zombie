@@ -861,6 +861,19 @@ function handleEvents() {
       case 'floorShudder': { const d = Math.hypot(e.x - p.x, e.z - p.z); fx.growCrack(e.x, e.z, 0.75 + e.k * 0.55); fx.burst(e.x, 0.05, e.z, 4 + Math.round(e.k * 8), 0x9a948a, 0.9 + e.k, 0.5 + e.k * 0.6, 0.6); fx.smoke(e.x, e.z, 1 + Math.round(e.k * 2), 0.35, 0.3, 2.0, 0.9, 0x9d9483, 0.2); if (d < 9) shake(0.05 + e.k * 0.1); break; } // (the breach building: the crack grows, dust)
       case 'floorBreach': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'breach', Math.max(0.35, 1 - d / 14)); audio.play('floorBreach', 1, e); fx.clearCrackAt(e.x, e.z); placeBreach(e.x, e.z); fx.burst(e.x, 0.15, e.z, 24, 0xd9cdb2, 3.2, 2.4, 0.8); fx.burst(e.x, 0.1, e.z, 18, 0x6f6a62, 2.4, 2.0, 1.0); fx.ring(e.x, e.z, 0xd8cfbf, 1.0); fx.smoke(e.x, e.z, 8, 0.6, 0.7, 2.6, 1.8); audio.play('knockdown', 0.9, e); if (d < 9) shake(0.35); break; } // (it bursts up through the tiles: debris high, a dust cloud, a thump)
       case 'ladyPin': { const zz = zat(e.id); audio.play('knockdown', 0.9, zz || e); fx.burst(e.x, 0.6, e.z, 8, 0x5a1414, 2.4, 1.2, 0.5); shake(0.12); break; } // (a walker bowled over by her charge)
+      case 'tankHiss': { const d = Math.hypot(e.x - p.x, e.z - p.z); cue(audio, 'hiss', d < 12 ? 1.3 - d / 12 : 0.2); break; } // (a cylinder punctured: core/loose.js O2)
+      case 'tankBoom': { // an oxygen cylinder bursts: a fireball, a shock ring, debris, smoke, a flash that lights the room, the boom
+        const d = Math.hypot(e.x - p.x, e.z - p.z);
+        cue(audio, 'boom', Math.max(0.4, 1.2 - d / 16)); audio.play('shotgunClose', 0.8, e);
+        fx.burst(e.x, 0.7, e.z, 40, 0xffc24a, 6.5, 2.6, 0.5); fx.burst(e.x, 0.6, e.z, 26, 0xff6a1a, 5.0, 2.0, 0.65); fx.burst(e.x, 0.5, e.z, 18, 0xfff2c0, 7.5, 1.4, 0.3);
+        fx.burst(e.x, 0.3, e.z, 16, 0x3a3631, 5.5, 2.8, 1.0); // (cylinder shrapnel)
+        fx.ring(e.x, e.z, 0xfff1d0, 3.4); fx.ring(e.x, e.z, 0xff8a3a, 2.4); fx.smoke(e.x, e.z, 12, 1.4, 1.1, 3.6, 2.8, 0x2e2b28, 0.9); fx.smoke(e.x, e.z, 6, 0.8, 0.9, 3.0, 1.6, 0x6d655c, 0.5);
+        fx.floorCrack(e.x, e.z, 1.2); atmos?.onBigHit?.(e.x, e.z);
+        fx.flash.position.set(e.x, 1.0, e.z); fx.flash.visible = true; fx.flash.scale.setScalar(3.2); fx.flashT = 0.12;
+        fx.flashLight.position.set(e.x, 1.4, e.z); fx.flashLight.distance = 14; fx.flashLight.color.setHex(0xff9a3a); fx.flashLight.intensity = 60;
+        hitPauseT = Math.max(hitPauseT, 0.08); if (d < 14) shake(Math.max(0.2, 1.0 - d * 0.06));
+        break;
+      }
       case 'guardArmOff': audio.play('sever'); audio.play('guardPain', 1, zat(e.id) || e); shake(0.6); hud.popup('ARM OFF'); break; // (his first finisher: the arm flies, render/clipchars.js cutByWeights)
       case 'guardWrench': cue(audio, 'free'); shake(0.3); break; // (the finisher missed: he tears the shield back out of the floor)
       case 'guardRegrip': cue(audio, 'free'); cue(audio, 'heave', 1.2); break; // (the shield in his other hand)
