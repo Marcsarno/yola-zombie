@@ -417,7 +417,11 @@ export class Sim {
     }
     // Gentle aim assist: only when nothing is already on the ray, bend at most ~5 degrees toward a visible zombie.
     const first = this.traceBullet(m.x, m.z, yaw);
-    if (!first.zombie && this.T.aimAssist > 0) {
+    // (the flood's panel: a shot aimed within ~7 degrees of it, with nothing nearer on the ray, goes to it: the aim assist
+    // would otherwise bend it onto a zombie wading in front, 2026-10-19)
+    let toPanel = false;
+    for (const F of this.floods || []) { const px = F.panel.x - m.x, pz = F.panel.z - m.z, d = Math.hypot(px, pz); if (d < 14 && Math.abs(angleDiff(yaw, Math.atan2(px, pz))) < 0.12 && (!first.zombie || first.t > d) && this.world.lineOfSight(m.x, m.z, F.panel.x, F.panel.z, BULLET_MIN_H)) { yaw = Math.atan2(px, pz); toPanel = true; } }
+    if (!toPanel && !first.zombie && this.T.aimAssist > 0) {
       const maxBend = 0.087 * this.T.aimAssist;
       let best = null, bestA = 1e9;
       for (const z of this.zombies) {

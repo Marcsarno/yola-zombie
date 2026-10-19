@@ -857,8 +857,8 @@ export class Arena {
     let moved = false;
     this.caseStep(level);
     if (this.partitionObj && level.doors.partition && this.partitionObj.visible === !!level.doors.partition.broken) { this.partitionObj.visible = !level.doors.partition.broken; moved = true; }
-    for (const key of ['orbar', 'x7door']) {
-      const k = this.doorKits[key], d = level.doors[key]; if (!k || !d) continue;
+    for (const key of Object.keys(level.doors)) { // (the OR bar, the store, and every other barred door: Floor 6's fire door)
+      const k = this.doorKits[key], d = level.doors[key]; if (!k || !d || d.open === undefined) continue;
       if (d.brace !== k.lastB || d.open !== k.last) {
         k.lastB = d.brace; k.last = d.open; moved = true;
         k.brace.time = d.brace * BRACE_TIME * 0.999; k.open.time = d.open * DOOR_OPEN_TIME * 0.999;

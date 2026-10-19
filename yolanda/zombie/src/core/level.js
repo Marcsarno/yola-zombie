@@ -6,12 +6,16 @@
 // Floor 7: the lift is dead -> the phone check -> the radio at the nurse station (TECH on 3) -> restore the lift circuit in
 //          lift service (also powers the contractor store) -> back north through the prep room, unbar the OR's south door
 //          from that side -> the lift.
-// Floor 6: the sealed pre-procedure case in cold dispatch; the ward route always open, the charger can break the weak
-//          partition (optional). Carrying: the case in the off hand, one-handed weapons only; one action sets it down.
+// Floor 6: the sealed pre-procedure case in cold dispatch: through Ward 6B's cracked wall (the sledgehammer on its trolley)
+//          or the big lady's charge through Ward 6C's; back by the nurse station and the fire door, barred from the middle
+//          (2026-10-19 rebuild). Carrying: the case in the off hand, one-handed weapons only; one action sets it down.
+// Every floor: its cracked walls, the flood, the MRI magnet and loose cylinders come from core/chapter.js (core/rooms.js
+//          runs them); a wall broken, a fire door opened or a magnet shut down stays so (flags).
 // Floor 5: secure the case at intake, read the dispatch record (either order), match them at intake, take the case and
 //          board the lift toward Floor 4 (the chapter's end).
 import { FLOORS, LIFTS, CASE_HOME, INTAKE_SPOT, roomAt as chapterRoomAt } from './chapter.js';
 import { ZS } from './zombies.js';
+import { crackedNear } from './rooms.js';
 
 export const LIFT_DOOR_TIME = 1.0; // s: the kit's Doors_Open / Doors_Close clips are exactly one second
 export const BRACE_TIME = 2.5, DOOR_OPEN_TIME = 1.5; // the braced double door's Brace_Remove and Doors_Open clips
@@ -33,6 +37,7 @@ export class Level {
       lift_power_restored: false, or_south_unbarred: false, partition_broken: false,
       phone_checked: false, radio_heard: false, power_call: false, case_seen: false, case_picked: false,
       case_secured: false, record_seen: false, sample_matched: false, chapter_complete: false,
+      unbarred: [], broken_walls: [], mri_off: [], // (2026-10-19: the floors' fire doors opened, cracked walls broken, magnets shut down)
       ...(s.flags || {}),
     };
     this.case = s.case ? { ...s.case } : { state: 'home', floor: CASE_HOME.floor, x: CASE_HOME.x, z: CASE_HOME.z, y: CASE_HOME.y };
@@ -49,6 +54,8 @@ export class Level {
       x7door: { brace: 1, open: open(this.flags.lift_power_restored), busy: false },
       partition: { broken: this.flags.partition_broken },
     };
+    // the other barred doors (a fire door barred from one side: Floor 6's): the same bar and leaves as the OR's
+    for (const d of this.F.doors) if (d.kind === 'barred' && d.id !== 'orbar') { const o = open(this.flags.unbarred.includes(d.id)); this.doors[d.id] = { brace: o, open: o, busy: false, barred: true }; }
     const powered = this.floor !== 7 || this.flags.lift_power_restored;
     this.lift = { state: !powered ? 'fault' : s.arrive ? 'arriving' : 'ready', open: 0, t: 0, floor: this.floor, choosing: false };
     this.prompt = null; this.room = null; this.lines = []; this.ending = null;
@@ -57,7 +64,14 @@ export class Level {
       if (this.flags.or_south_unbarred && W.dyn.orbar) W.setOff(W.dyn.orbar, true);
       if (this.flags.lift_power_restored && W.dyn.x7door) W.setOff(W.dyn.x7door, true);
       if (this.flags.partition_broken && W.dyn.partition) W.setOff(W.dyn.partition, true);
+      for (const id of this.flags.unbarred) if (W.dyn[id]) W.setOff(W.dyn[id], true);
     }
+    // the floor's room mechanics (core/rooms.js): its cracked walls still standing, the flood, the magnet, loose cylinders
+    this.walls = new Map(); // sim cracked-wall id -> the floor's id
+    for (const c of this.F.cracked || []) if (!this.flags.broken_walls.includes(this.floor + ':' + c.id)) { const C = sim.addCrackedWall(c); this.walls.set(C.id, this.floor + ':' + c.id); }
+    if (this.F.flood) sim.addFlood({ ...this.F.flood });
+    if (this.F.mri) { const M = sim.addMRI({ ...this.F.mri }); M.key = this.floor + ':mri'; if (this.flags.mri_off.includes(M.key)) M.state = 'off'; }
+    for (const [x, z] of this.F.tanks || []) sim.addTank(x, z);
     // the zombies of this floor: placed, standing, waiting to sense Yola (the OR's wake on their timers the first time through)
     const fresh = !save || (save.floor === 7 && !save.flags?.radio_heard && !this.killed.size && this.floor === 7 && !s.x);
     this.floorPending = []; // (out of the floor, 2026-10-18: waiting for their group to wake; floorStep)
@@ -98,9 +112,10 @@ export class Level {
   // a checkpoint: everything needed to restore a coherent chapter (doors and pickups keep their state; the dead stay dead)
   snapshot(extra = {}) {
     const p = this.sim.player;
-    const owned = this.ownedFull || p.owned;
+    let owned = this.ownedFull || p.owned;
+    for (const M of this.sim.mris || []) if (M.state === 'on' || M.dropped) owned = [...new Set([...owned, ...M.pinned])]; // (guns the magnet holds come back on a retry)
     return {
-      v: 2, level: 'chapter', floor: this.floor, flags: { ...this.flags }, case: { ...this.case }, taken: [...this.taken], killed: [...this.killed],
+      v: 2, level: 'chapter', floor: this.floor, flags: { ...this.flags, unbarred: [...this.flags.unbarred], broken_walls: [...this.flags.broken_walls], mri_off: [...this.flags.mri_off] }, case: { ...this.case }, taken: [...this.taken], killed: [...this.killed],
       visited: [...this.visited], objective: this.objective, owned: [...owned], equipped: p.equipped, mags: { ...p.mags }, reserve: { ...p.reserve },
       hp: Math.max(35, p.hp), x: +p.x.toFixed(2), z: +p.z.toFixed(2), yaw: +p.aimYaw.toFixed(3), ...extra,
     };
@@ -185,6 +200,7 @@ export class Level {
     this.floorStep(p);
     this.doorStep(dt);
     this.partitionStep();
+    this.roomsWatch();
     this.liftStep(dt, p);
     // what Yola can do (or learn) here; a Use press acts on it
     this.prompt = p.dead ? null : this.findPrompt(p);
@@ -213,7 +229,7 @@ export class Level {
 
   onFirstVisit(room) {
     if (room === 'k6' && !this.flags.case_seen) this.flags.case_seen = true;
-    if (room === 'j6' && !this.flags.case_picked) this.setObjective('f6_case');
+    if (room === 'e6' && !this.flags.case_picked) this.setObjective('f6_case');
     if (room === 'i5' && this.floor === 5 && this.case.state !== 'carried' && !this.flags.case_secured) this.say('f5_first');
   }
 
@@ -245,6 +261,7 @@ export class Level {
       if (it.id === 'radio' && !this.flags.radio_heard) return { id: it.id, label: it.label, usable: true };
       if (it.id === 'liftReset' && !this.flags.lift_power_restored) return { id: it.id, label: it.label, usable: true };
       if (it.id === 'orBar' && !this.flags.or_south_unbarred && !this.doors.orbar.busy && okSide) return { id: it.id, label: it.label, usable: true };
+      if (it.id.startsWith('bar:')) { const d = this.doors[it.id.slice(4)]; if (d && !d.busy && d.open < 1 && okSide) return { id: it.id, label: it.label, usable: true }; }
       if (it.id === 'intake') {
         if (carrying) return { id: 'intake', label: 'Secure the case', usable: true };
         if (c.state === 'stored' && this.flags.record_seen && !this.flags.sample_matched) return { id: 'match', label: 'Compare the record with the case', usable: true };
@@ -262,7 +279,8 @@ export class Level {
       if (this.lift.state === 'fault' && near(this.L.call, 2.6)) return { id: 'liftFault', label: 'Lift: no power', usable: false };
       if (!this.flags.lift_power_restored && near({ x: -15.05, z: 16.4 }, 1.8)) return { id: 'x7Locked', label: 'Powered door: no power', usable: false };
     }
-    if (f === 6 && !this.flags.partition_broken && near({ x: -16.6, z: -56.05 }, 1.6)) return { id: 'partitionWeak', label: 'A weak partition — too solid to push', usable: false };
+    if (crackedNear(this.sim, p.x, p.z, 1.3).length) return p.equipped === 'sledgehammer' ? { id: 'crackedHit', label: 'Cracked wall: swing the sledgehammer', usable: false } : { id: 'crackedWall', label: 'Cracked wall: something heavy would break it', usable: false };
+    for (const [id, d] of Object.entries(this.doors)) if (d.barred && d.open < 1 && !d.busy && this.F.interact.some((it) => it.id === 'bar:' + id && near(it, it.r + 1.5)) && !this.findBarSide(id, p)) return { id: 'barredOther', label: 'Barred from the other side', usable: false };
     if (f === 5 && this.case.state === 'stored' && near(INTAKE_SPOT, 2.2) && !this.flags.sample_matched && !this.flags.record_seen) return { id: 'caseHeld', label: 'The case is secured here', usable: false };
     for (const q of this.pickups) if (q.kind === 'health' && near(q, q.r + 0.6) && p.hp >= p.maxHp) return { id: 'healthFull', label: 'Health full — leave the first-aid case', usable: false };
     // set the case down (one action) when nothing else is here
@@ -286,6 +304,10 @@ export class Level {
       const d = this.doors.orbar; if (d.busy) return;
       d.busy = true; d.t = 0;
       this.emit({ type: 'unbrace', door: 'orbar' });
+    } else if (id.startsWith('bar:')) {
+      const d = this.doors[id.slice(4)]; if (!d || d.busy) return;
+      d.busy = true; d.t = 0;
+      this.emit({ type: 'unbrace', door: id.slice(4) });
     } else if (id === 'takeCase') this.takeCase();
     else if (id === 'dropCase') this.dropCase(p.x + Math.sin(p.aimYaw) * 0.55, p.z + Math.cos(p.aimYaw) * 0.55);
     else if (id === 'intake') this.secureCase();
@@ -317,6 +339,12 @@ export class Level {
         this.checkpoint();
       }
     }
+    for (const [key, g] of Object.entries(this.doors)) { // (the other barred doors: Floor 6's fire door)
+      if (!g.barred || !g.busy) continue;
+      g.t += dt; g.brace = Math.min(1, g.t / BRACE_TIME); g.open = Math.min(1, Math.max(0, (g.t - BRACE_TIME) / DOOR_OPEN_TIME));
+      if (g.open >= 0.6 && W.dyn?.[key] && !W.dyn[key].off) W.setOff(W.dyn[key], true);
+      if (g.open >= 1) { g.busy = false; this.flags.unbarred = [...this.flags.unbarred, key]; this.emit({ type: 'doorOpened', door: key }); this.checkpoint(); }
+    }
     const x = this.doors.x7door;
     if (x.busy) {
       x.t += dt; x.open = Math.min(1, x.t / DOOR_OPEN_TIME);
@@ -325,6 +353,20 @@ export class Level {
     }
   }
 
+  // the side a barred door's bar can be lifted from (its interaction's side rule)
+  findBarSide(id, p) {
+    const it = this.F.interact.find((q) => q.id === 'bar:' + id); if (!it?.side) return true;
+    const v = it.side.axis === 'x' ? p.x : p.z;
+    return it.side.min !== undefined ? v > it.side.min : v < it.side.max;
+  }
+  // the room mechanics' lasting changes: a cracked wall broken stays broken (a retry, a lift ride), a magnet shut down stays off
+  roomsWatch() {
+    for (const e of this.sim.events) {
+      if (e.type === 'wallBreak' && this.walls.has(e.id)) { const key = this.walls.get(e.id); if (!this.flags.broken_walls.includes(key)) { this.flags.broken_walls = [...this.flags.broken_walls, key]; this.checkpoint(); } }
+      if (e.type === 'mriQuench') { const M = (this.sim.mris || []).find((q) => q.id === e.id); if (M?.key && !this.flags.mri_off.includes(M.key)) { this.flags.mri_off = [...this.flags.mri_off, M.key]; } }
+      if (e.type === 'mriGuns') this.checkpoint();
+    }
+  }
   // Floor 6: the charger's committed run into the weak partition breaks it for good (the ward route never depends on it)
   partitionStep() {
     if (this.floor !== 6 || this.flags.partition_broken) return;

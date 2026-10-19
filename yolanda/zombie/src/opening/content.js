@@ -75,7 +75,7 @@ export const OBJECTIVES = {
   f7_return: 'Back to the lift: north through the prep room.',
   f7_board: 'Take the lift down.',
   f7_explore: 'Take the lift down.',
-  f6_case: 'Cold dispatch: find the sealed pre-op case.',
+  f6_case: 'Cold dispatch, the far south-west corner: find the sealed pre-op case.',
   f5_intake: 'Take the case to diagnostic intake on 5.',
   f5_go: 'Take the case to diagnostic intake on 5.',
   f5_explore: 'Diagnostic intake is beside the lift. The records are further in.',
@@ -114,7 +114,7 @@ export const RADIO = {
     { who: 'TECH', text: 'Keep it that way. Diagnostic intake on five can hold it safely. The dispatch record is there too.' },
   ],
   f5_first: [{ who: 'TECH', text: 'Intake’s right by the lift. Leave the case there while you look for the record.' }],
-  f5_intake: [{ who: 'TECH', text: 'Good. It’s held. The accession-to-patient record should be in transfer records.' }],
+  f5_intake: [{ who: 'TECH', text: 'Good. It’s held. The accession-to-patient record should be in medical records, past the isolation ward.' }],
   f5_record_first: [{ who: 'Yola', text: 'Here’s the docket. I need the case beside it.' }],
   f5_record: [{ who: 'Yola', text: 'Here’s the docket. Back to intake.' }],
   f5_match: [
