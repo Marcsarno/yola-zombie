@@ -134,6 +134,9 @@ export class Hud {
 
   flash(kind) { const b = $('swapBtn'); b.classList.remove('flash-' + kind); void b.offsetWidth; b.classList.add('flash-' + kind); }
   hurt() { const v = $('vignette'); v.classList.remove('hit'); void v.offsetWidth; v.classList.add('hit'); }
+  // Yola hit (FINISHERS_PLAN.md 5): the red arc on the side the blow came from (ang: its screen angle, rad, 0 = up, clockwise)
+  hurtFrom(ang) { const a = $('hurtArc'); if (!a) return this.hurt(); a.style.setProperty('--hx', (50 + Math.sin(ang) * 58).toFixed(1) + '%'); a.style.setProperty('--hy', (50 - Math.cos(ang) * 58).toFixed(1) + '%'); a.classList.remove('go'); void a.offsetWidth; a.classList.add('go'); }
+  drain() { const d = $('drain'); if (!d) return; d.classList.remove('go'); void d.offsetWidth; d.classList.add('go'); }
   screenFlash() { const f = $('flash'); if (!f) return; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); } // (a perfect dodge)
   death(sim) { this.deathT = 0; $('deathStats').textContent = this.stats(sim); }
   cleared(sim) { $('clearStats').textContent = this.stats(sim) + ` · ${sim.time.toFixed(0)} s`; setTimeout(() => $('clear').classList.add('show'), 900); }

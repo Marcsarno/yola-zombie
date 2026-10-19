@@ -635,6 +635,10 @@ function runFrame(dt, doRender = true) {
         if (Math.abs(ang - (b.__a ?? 999)) > 2) { b.style.setProperty('--a', ang.toFixed(1) + 'deg'); b.__a = ang; }
       }
     }
+    // low health (under 30%: FINISHERS_PLAN.md 5): the edges darken and a slow heartbeat, tension rather than punishment
+    { const low = p.dead ? 0 : Math.max(0, Math.min(1, (0.3 - p.hp / p.maxHp) / 0.2)), q = Math.round(low * 20) / 20;
+      if (q !== window.__lowQ) { window.__lowQ = q; document.documentElement.style.setProperty('--low', q); }
+      if (low > 0 && (window.__beatT = (window.__beatT ?? 0) - dt) <= 0) { window.__beatT = 1.05 - low * 0.35; cue(audio, 'heartbeat', 0.5 + low * 0.6); } }
     // the moment the window opens on a special attack: the spider-sense over Yola's head (render/threatcue.js)
     if (dt0?.special && !cueState.sense) { cueState.sense = true; threatCue.sense(yola.bones?.Head?.getWorldPosition(_v2) || _v2.set(p.x, 1.9, p.z)); }
     else if (!dt0) cueState.sense = false;
@@ -909,7 +913,7 @@ function handleEvents() {
         const cf = document.getElementById('critFlash'); if (cf) { cf.classList.remove('go'); void cf.offsetWidth; cf.classList.add('go'); }
         break;
       }
-      case 'playerDown': audio.play('knockdown'); shake(0.7); if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
+      case 'playerDown': audio.play('knockdown'); shake(0.7); hud.drain(); hitPauseT = Math.max(hitPauseT, 0.08); try { navigator.vibrate?.(120); } catch { /* no buzz */ } // (a heavy hit: the colour drains for a beat) if (shakeOn) { camState.vx += e.dirX * 2.2; camState.vz += e.dirZ * 2.2; } break;
       case 'sever': audio.play('sever'); shake(0.15); break;
       case 'ladyBurst': audio.play('sever'); audio.play('zombieDeath'); shake(0.85); break; // (the lady pops: core/sim.js ladyBurst)
       case 'guardEnraged': audio.play('guardEnraged', 1, e); hud.popup('ENRAGED'); shake(0.4); break; // (the guard, both arms gone)
@@ -925,7 +929,13 @@ function handleEvents() {
       case 'reloadDone': audio.play(e.weapon === 'shotgun' ? 'pump' : 'pistolReloadDone'); break;
       case 'swapStart': audio.play('swap'); break;
       case 'zombieWindup': { const z = zat(e.id); if (z?.kind === 'guard') { if (dist(e.id) < 16) audio.play('guardAttack', 1, z); } else if (dist(e.id) < 8) audio.play('windup', 1, z); break; }
-      case 'playerHurt': hurtFrame = frameNo; audio.play('playerHurt'); shake(0.4); hud.hurt(); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1; break;
+      case 'playerHurt': { // (FINISHERS_PLAN.md 5: she notices, it isn't unfun) the red arc from the side it came from, a kick away
+        // from it, her grunt; no world hit-stop (that stays the reward for her own hits); a buzz on phones that can
+        hurtFrame = frameNo; audio.play('playerHurt'); shake(0.3); p.hurtDirX = e.dirX; p.hurtDirZ = e.dirZ; sim.stats.damageTaken += 1;
+        _v.set(p.x, 1, p.z).project(camera); const sx = _v.x, sy = _v.y; _v.set(p.x - e.dirX, 1, p.z - e.dirZ).project(camera);
+        hud.hurtFrom(Math.atan2(_v.x - sx, _v.y - sy)); if (shakeOn) { camState.vx += e.dirX * 0.7 * tuning.shake; camState.vz += e.dirZ * 0.7 * tuning.shake; }
+        try { navigator.vibrate?.(35); } catch { /* no buzz */ }
+        break; }
       case 'playerDeath': audio.play('death'); input.clearAll(); input.enabled = false; hud.death(sim); break;
       case 'zombieDeath': { sim.stats.kills++; const zx = sim.zombies.find((q) => q.id === e.id); audio.play(zx?.kind === 'sprinter' ? 'sprinterDeath' : zx?.kind === 'guard' ? 'guardDeath' : 'zombieDeath', 1, zx || e);
         if (zx?.executed && EXEC_BURST[zx.execWeapon]) gib(e.id, zx.hitDirX, zx.hitDirZ, EXEC_BURST[zx.execWeapon]); // (the bat, the shotgun, the sledgehammer: the full burst)

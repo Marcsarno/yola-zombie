@@ -45,6 +45,9 @@ export function cue(audio, name, k = 1) {
       N(t, 2.4, { type: 'lowpass', f: 2600, f2: 500, gain: 0.5 * k, attack: 0.03 }); N(t, 1.8, { type: 'highpass', f: 4000, f2: 2000, gain: 0.12 * k, attack: 0.05 });
       T(t, 1.2, 120, { type: 'sine', gain: 0.2 * k, f2: 30 });
       break;
+    case 'heartbeat': // low health: a slow double beat
+      T(t, 0.14, 62, { type: 'sine', gain: 0.4 * k, f2: 40, attack: 0.005 }); T(t + 0.22, 0.16, 56, { type: 'sine', gain: 0.32 * k, f2: 36, attack: 0.005 });
+      break;
     case 'stomp': // the big lady's stride at a run: a deep thud through the floor
       T(t, 0.22, 58, { type: 'sine', gain: 0.55 * k, f2: 34, attack: 0.003 }); N(t, 0.12, { type: 'lowpass', f: 380, gain: 0.3 * k });
       break;

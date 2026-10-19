@@ -75,6 +75,15 @@
   #hint.gone { opacity: 0; }
   #vignette { position: absolute; inset: 0; box-shadow: inset 0 0 90px 30px rgba(226,80,60,.0); }
   #vignette.hit { animation: hit .45s ease-out; }
+  /* (2026-10-18 night, FINISHERS_PLAN.md 5) Yola hit: a red arc on the screen's edge on the side the blow came from (--hx --hy:
+     where on the edge); a heavy hit drains the colour for a beat (#drain); low health darkens the edges and beats (#lowhp) */
+  #hurtArc { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse 55% 45% at var(--hx, 50%) var(--hy, 0%), rgba(225,28,18,.8) 0, rgba(225,28,18,.35) 45%, rgba(225,28,18,0) 100%); }
+  #hurtArc.go { animation: hurtArc .5s ease-out; }
+  @keyframes hurtArc { from { opacity: 1; } to { opacity: 0; } }
+  #drain { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: #8a8a8a; mix-blend-mode: saturation; }
+  #drain.go { animation: drain .6s ease-out; }
+  @keyframes drain { from { opacity: .9; } to { opacity: 0; } }
+  #lowhp { position: absolute; inset: 0; pointer-events: none; opacity: var(--low, 0); box-shadow: inset 0 0 110px 45px rgba(70,0,0,.85); transition: opacity .3s; }
   @keyframes hit { 0% { box-shadow: inset 0 0 90px 40px rgba(226,80,60,.55); } 100% { box-shadow: inset 0 0 90px 30px rgba(226,80,60,0); } }
 
   .sheet { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(18,26,30,.55); pointer-events: auto; padding: 16px; }
@@ -161,6 +170,9 @@
 <div id="touch"></div>
 <div id="hud">
   <div id="vignette"></div>
+  <div id="lowhp"></div>
+  <div id="drain"></div>
+  <div id="hurtArc"></div>
   <div class="top">
     <div id="hp"><div id="hpFill"></div></div>
     <div id="wave"></div>

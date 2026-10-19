@@ -523,7 +523,7 @@ export class Player {
   hurt(dmg, fromX, fromZ, sim) {
     if (this.dead || this.invuln > 0) return false;
     if (!this.T.testInfiniteHealth) this.hp = Math.max(0, this.hp - dmg); // (test mode: every reaction, no health lost)
-    this.invuln = 0.55; this.hurtT = 0;
+    this.invuln = 0.8; this.hurtT = 0; // (0.8 s of grace: two at once count once, FINISHERS_PLAN.md 5)
     const dx = this.x - fromX, dz = this.z - fromZ, d = Math.hypot(dx, dz) || 1;
     this.vx += (dx / d) * 2.2; this.vz += (dz / d) * 2.2;
     this.hurtDirX = dx / d; this.hurtDirZ = dz / d;
