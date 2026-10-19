@@ -171,6 +171,15 @@ export class LightKit {
       m.userData.bakeMat = bm; m.userData.liveMat = m.material; this.bakeFloors.push(m);
     }
   }
+  // a surface laid over a floor (the flood's water: render/rooms.js) takes that floor's bake too, uv1 from world x / z: without
+  // it the ward under the water read near-black (47% of the screen, 2026-10-19)
+  bakeMesh(mesh) {
+    if (!this.plan.bakes[0].tex || mesh.userData.baked) return; mesh.userData.baked = true; mesh.updateMatrixWorld(true);
+    const g = mesh.geometry, p = g.attributes.position, v = new THREE.Vector3(), uv1 = new Float32Array(p.count * 2), c = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld), B = this.bakeOf(c.x, c.z);
+    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(mesh.matrixWorld); uv1[i * 2] = (v.x - B.x0) / (B.x1 - B.x0); uv1[i * 2 + 1] = 1 - (v.z - B.z0) / (B.z1 - B.z0); }
+    g.setAttribute('uv1', new THREE.BufferAttribute(uv1, 2));
+    mesh.material.lightMap = B.tex; mesh.material.lightMapIntensity = B.k; mesh.material.needsUpdate = true;
+  }
   // the bake cannot flicker: under each buzzing / failing fitting a soft dark patch takes the light back off the floor
   // as the tube dips (normal blending, black, opacity = the light lost)
   bakeDips() {

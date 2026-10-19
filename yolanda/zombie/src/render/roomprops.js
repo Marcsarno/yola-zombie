@@ -3,6 +3,7 @@
 // prop asked for before it has loaded falls back to the code-built stand-in (render/rooms.js, render/clipchars.js).
 // Each clone gets its own copy of the materials the game lights at run time (MRI_Glow, Panel_LampGreen / Red, Button_Red).
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { mergeModel } from './matpool.js';
 
 export const ROOMPROPS = {};
 const NAMES = ['o2_cylinder', 'o2_trolley', 'flood_panel', 'mri_scanner', 'magnet_stop'];
@@ -11,8 +12,7 @@ const LIVE = /^(MRI_Glow|Panel_LampGreen|Panel_LampRed|Button_Red)/;
 export function loadRoomProps(base = 'assets/props/room_mechanics/') {
   const L = new GLTFLoader();
   return Promise.all(NAMES.map((n) => L.loadAsync(base + n + '.glb').then((g) => {
-    g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    ROOMPROPS[n] = g.scene;
+    ROOMPROPS[n] = mergeModel(g.scene, LIVE); // (one mesh per pooled material: a cylinder was 11 draws; the lit-at-run-time materials stay their own)
   }).catch((e) => console.warn('room prop', n, e))));
 }
 export function propClone(n) {

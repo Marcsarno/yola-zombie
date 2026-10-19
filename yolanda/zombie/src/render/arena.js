@@ -4,6 +4,7 @@
 // the camera and Yola lower themselves, kit doors are cut at the same height, and the OR's barred door, the contractor
 // store's powered door, the weak partition and the three lifts animate from the level's state).
 import * as THREE from 'three';
+import { poolPiece } from './matpool.js';
 import { PISTOL_CORE_SCALE, makeKnife } from './weaponModels.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -16,9 +17,10 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 const isUnder = (o, name) => { for (let p = o.parent; p; p = p.parent) if (p.name === name) return true; return false; };
 // a static model as one mesh per material (geometry baked into the model's own space): far fewer draw calls
 // (roots: one or more objects; geometry is baked in world space, so a root at the origin bakes in model space)
-function mergeStatic(roots, keep = () => true) {
+function mergeStatic(roots, keep = () => true, pool = false) {
   const byKey = new Map();
   const put = (material, g) => {
+    if (pool) material = poolPiece(material, g); // (render/matpool.js: the colour into vertex colour, a pooled material)
     for (const n of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(n)) g.deleteAttribute(n);
     const key = material.uuid + '|' + Object.keys(g.attributes).sort().join(',');
     if (!byKey.has(key)) byKey.set(key, { material, geos: [] });
@@ -379,7 +381,7 @@ export class Arena {
     }
     for (const [id, hs] of rooms) {
       const g = new THREE.Group(); g.name = 'room:' + id;
-      for (const { geometry, material } of mergeStatic(hs)) { const m = new THREE.Mesh(geometry, material); m.castShadow = m.receiveShadow = true; g.add(m); }
+      for (const { geometry, material } of mergeStatic(hs, () => true, true)) { const m = new THREE.Mesh(geometry, material); m.castShadow = m.receiveShadow = true; g.add(m); }
       for (const h of hs) this.group.remove(h);
       this.group.add(g);
     }
@@ -765,18 +767,23 @@ export class Arena {
     }
     const grp = new THREE.Group(); grp.name = 'emergency'; grp.visible = false; s.add(grp); e.group = grp;
     const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
-    const put = (m, x, z, size) => { const p = new THREE.Mesh(geo, m); p.position.set(x, 0.02, z); p.scale.set(size, 1, size); p.renderOrder = 2; grp.add(p); };
+    const inst = new Map(), put = (m, x, z, size) => { if (!inst.has(m)) inst.set(m, []); inst.get(m).push([x, z, size]); }; // (one instanced draw per material, 2026-10-19: they were a mesh each)
     if (this.f3) { for (const l of CH().lights || []) put(e.redMat, l.x, l.z, 5.5); for (const d of CH().doors || []) if (d.kind !== 'lift') put(e.redMat, d.x, d.z, 2.6); }
     else for (const d of LAYOUT.doors) { // (the wing: one half glow inside each doorway; the chapter's doors are another map's)
       const ix = Math.sin(d.yaw), iz = Math.cos(d.yaw), W = 4.2, D = 3.0;
       const p = new THREE.Mesh(geo, e.redHalf); p.scale.set(W, 1, D); p.rotation.y = d.yaw; p.position.set(d.x + ix * (D / 2 + 0.05), 0.02, d.z + iz * (D / 2 + 0.05)); p.renderOrder = 2; grp.add(p);
     }
     for (const r of this.f3 ? CH().rooms || [] : OB_WING_ROOMS) for (const [x0, x1, z0, z1] of r.rects) { const w = x1 - x0, dd = z1 - z0; if (w * dd > 12) put(e.coldMat, (x0 + x1) / 2, (z0 + z1) / 2, Math.min(w, dd) * 0.8); }
+    for (const [m, list] of inst) {
+      const im = new THREE.InstancedMesh(geo, m, list.length), M4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+      list.forEach(([x, z, size], i) => im.setMatrixAt(i, M4.compose(new THREE.Vector3(x, 0.02, z), q, new THREE.Vector3(size, 1, size))));
+      im.renderOrder = 2; im.frustumCulled = false; grp.add(im);
+    }
   }
   tickEmergency(dt) {
-    const e = this.em; if (!e) return;
+    const e = this.em; if (!e) return; dt = Math.max(0, dt || 0); // (a negative step with an instant fade sent k to ~1e9: every light ran away, the screen went white)
     if (e.k === e.target && e.k === 0 && (this.lightScale ?? 1) === 1) return;
-    e.k += Math.max(-dt * e.rate, Math.min(dt * e.rate, e.target - e.k)); if (dt === 0) e.k = e.target; e.t += dt;
+    e.k += Math.max(-dt * e.rate, Math.min(dt * e.rate, e.target - e.k)); if (dt === 0) e.k = e.target; e.k = Math.min(1, Math.max(0, e.k)); e.t += dt;
     const k = e.k, beacon = 0.5 + 0.5 * Math.sin((e.t * Math.PI * 2) / 1.9); // one slow sweep of a rotating beacon
     this.hemi.color.copy(e.base.sky).lerp(EM_SKY, k); this.hemi.groundColor.copy(e.base.ground).lerp(EM_GROUND, k);
     this.hemi.intensity = e.base.hemiI + (0.52 - e.base.hemiI) * k;

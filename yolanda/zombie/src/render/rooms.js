@@ -46,7 +46,7 @@ export class RoomsView {
   }
   makeFlood(F) {
     const w = F.maxX - F.minX, d = F.maxZ - F.minZ, tex = waterTex(); tex.repeat.set(w / 2.5, d / 2.5);
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: tex, color: 0x9fc4c4, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.78, depthWrite: false }));
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: tex, color: 0x9fc4c4, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.6, depthWrite: false }) /* (0.6: the floor's baked light shows through, 2026-10-19: at 0.78 the ward read near-black) */);
     water.rotation.x = -Math.PI / 2; water.position.set((F.minX + F.maxX) / 2, 0.035, (F.minZ + F.maxZ) / 2); water.renderOrder = 1; water.receiveShadow = true; this.scene.add(water);
     const yaw = F.panel.yaw ?? Math.atan2((F.minX + F.maxX) / 2 - F.panel.x, (F.minZ + F.maxZ) / 2 - F.panel.z); // (facing the water)
     const model = propClone('flood_panel');

@@ -1107,9 +1107,9 @@ const F5 = buildFloor(5, {
   ],
   pickups: (Z) => [
     { id: 'i5ammo', kind: 'ammo', weapon: 'pistol', rounds: 24, x: 5.6, z: -152.6, r: 1.0, label: 'Pistol magazines', model: 'mag', y: 0.81 },
-    { id: 'h5aid', kind: 'health', amount: 40, x: -15.34, z: -149.0, r: 1.3, label: 'First-aid case', model: 'aid', y: 1.12 },
+    { id: 'h5aid', kind: 'health', amount: 40, x: -15.34, z: -148.72, r: 1.3, label: 'First-aid case', model: 'aid', y: 1.1 }, // (on the desk's front ledge)
     { id: 'jn5sledge', kind: 'weapon', weapon: 'sledgehammer', x: -28.9, z: -169.9, r: 1.2, label: 'Sledgehammer', file: 'zombie/assets/weapons/sledgehammer.glb', len: 0.95, rot: 0.4, y: 0.05 },
-    { id: 'pa5shells', kind: 'ammo', weapon: 'shotgun', rounds: 18, x: -9.6, z: -164.85, r: 1.2, label: 'Shotgun shells', model: 'shells', y: 1.06 },
+    { id: 'pa5shells', kind: 'ammo', weapon: 'shotgun', rounds: 18, x: -9.6, z: -164.85, r: 1.4, label: 'Shotgun shells', model: 'shells', y: 1.06 },
     { id: 'pa5aid', kind: 'health', amount: 60, x: -22.8, z: -170.5, r: 1.1, label: 'First-aid case', model: 'aid', y: 1.06 },
     { id: 'r5aid', kind: 'health', amount: 40, x: -28.6, z: -134.4, r: 1.0, label: 'First-aid case', model: 'aid', y: 0.81 },
     { id: 'x5mags', kind: 'ammo', weapon: 'pistol', rounds: 18, x: -24.0, z: -133.4, r: 1.0, label: 'Spare pistol rounds', model: 'mag', y: 1.0 },

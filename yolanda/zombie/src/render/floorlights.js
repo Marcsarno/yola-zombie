@@ -15,7 +15,7 @@ const KIND = { // [colour, brightness on the floor (lightkit's k), steady / buzz
   cold: [0xcfe6ff, 0.5, [0.8, 0.1, 0.06, 0.04]],
   lab: [0xe2f0ff, 0.52, [0.75, 0.12, 0.08, 0.05]],
   lounge: [0xffe2b8, 0.52, [0.7, 0.18, 0.08, 0.04]],
-  flood: [0xbfe2ff, 0.4, [0.25, 0.1, 0.3, 0.35]],
+  flood: [0xbfe2ff, 0.46, [0.45, 0.1, 0.25, 0.2]], // (a fight room: dim and failing, but readable)
   mri: [0xcfe2ff, 0.55, [0.85, 0.1, 0.05, 0]],
   dim: [0xc8d8f0, 0.36, [0.6, 0.15, 0.15, 0.1]],
   safe: [0xe8f4ff, 0.52, [1, 0, 0, 0]], // (the story's safe rooms: every tube works)
@@ -25,6 +25,9 @@ const ROOM_KIND = {
   o6: 'lounge', w6: 'clinical', wc6: 'toilets', jn6: 'works', e6: 'hub', cw6: 'corridor', cm6: 'corridor', ce6: 'corridor', b6: 'clinical', n6: 'hub', p6: 'lab', k6: 'safe', a6: 'works', s6: 'lab',
   wt5: 'toilets', jn5: 'works', pa5: 'lab', e5: 'hub', w5: 'flood', h5: 'hub', i5: 'safe', pt5: 'toilets', rr5: 'dim', r5: 'clinical', x5: 'clinical', m5: 'mri',
 };
+// each floor's bake strength: the play area (the middle of the screen) measured against the lighting lab's approved room
+// (0.32 mean brightness, captured as the shot hook does, 2026-10-19): Floor 6 matched at the lab's 2.2; 7 and 5 read 10-13% under
+const BAKE_K = { 7: 2.85, 6: 2.2, 5: 2.95 };
 const hash = (x, z) => { const v = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return v - Math.floor(v); };
 const stateOf = (w, u) => (u < w[0] ? 'steady' : u < w[0] + w[1] ? 'buzz' : u < w[0] + w[1] + w[2] ? 'failing' : 'dead');
 
@@ -45,7 +48,7 @@ function floorPlan(n) {
   // the lift's own light: the cab's lamp stays on (the way out)
   fixtures.push({ kind: 'tube', x: F.lift.x, z: F.lift.inside.z, col: 0xfff3e0, k: 0.5, state: 'steady', floor: n, room: 'lift' });
   const B = F.bounds;
-  return { fixtures, rooms, bake: { floor: n, url: `assets/hospital/floor${n}_light.jpg`, x0: B.minX, x1: B.maxX, z0: B.minZ, z1: B.maxZ, k: 2.2, fill: 0.3 } };
+  return { fixtures, rooms, bake: { floor: n, url: `assets/hospital/floor${n}_light.jpg`, x0: B.minX, x1: B.maxX, z0: B.minZ, z1: B.maxZ, k: BAKE_K[n], fill: 0.3 } };
 }
 // EXIT signs: on the wall over a door, on the face the camera sees, facing the room it leads out of (yaw 0: facing +z)
 const EXITS = [

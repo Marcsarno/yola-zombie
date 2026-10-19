@@ -36,6 +36,11 @@ for (const n of [7, 6, 5]) {
     const w = all.w, pts = d.axis === 'x' ? [[d.x, d.z - 0.6], [d.x, d.z], [d.x, d.z + 0.6]] : [[d.x - 0.6, d.z], [d.x, d.z], [d.x + 0.6, d.z]];
     for (const [x, z] of pts) { const c = w.cellOf(x, z); if (c >= 0 && w.nav.blocked[c]) { out.push(`doorway ${d.id} blocked at (${x.toFixed(2)}, ${z.toFixed(2)})`); break; } }
   }
+  // pickups and interactions: some free cell within reach (the player stands in free cells: radius ~0.3 is the nav's inflate)
+  { const w = all.w, n = w.nav;
+    const reachable = (x, z, r) => { for (let dx = -r; dx <= r; dx += 0.1) for (let dz = -r; dz <= r; dz += 0.1) { if (Math.hypot(dx, dz) > r - 0.05) continue; const c = w.cellOf(x + dx, z + dz); if (c >= 0 && !n.blocked[c] && n.dist[c] < 1e8) return true; } return false; };
+    for (const q of F.pickups) if (!reachable(q.x, q.z, q.r)) out.push(`pickup ${q.id} at (${q.x}, ${q.z}) out of reach (r ${q.r})`);
+    for (const it of F.interact) if (!reachable(it.x, it.z, it.r)) out.push(`interaction ${it.id} out of reach`); }
   // props overlapping walls (deeper than 5 cm)
   for (const p of F.props) {
     if (p.noCollide || !p.h || p.wall) continue;

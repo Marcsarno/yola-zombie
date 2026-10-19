@@ -599,7 +599,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   if (now - last > 500 && last > 0) { perf.stalls = (perf.stalls || 0) + 1; perf.longest = Math.max(perf.longest || 0, now - last); } // (a frame that never came: the meter's 'stalls')
   perf.frameCount = (perf.frameCount || 0) + 1;
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const dt = Math.max(0, Math.min(0.1, (now - last) / 1000)); last = now; // (never negative: applyLevel sets last after the frame's own timestamp; a negative step blew the emergency light up, 2026-10-19)
   if (manualTicks) return;
   const c0 = performance.now(); runFrame(dt); perf.cpu.push(performance.now() - c0); if (perf.cpu.length > 600) perf.cpu.shift();
 }
@@ -718,6 +718,7 @@ function runFrame(dt, doRender = true) {
   stepPhysics(animDt);
   acid.audio = audio; acid.update(sim.hazards, sim.zombies, animDt, p);
   roomsView.update(sim, animDt); // (render/rooms.js)
+  if (lightkit?.on.baked) for (const V of roomsView.floods.values()) if (!V.water.userData.baked) lightkit.bakeMesh(V.water); // (the water takes the floor's bake)
   ZombieView.updatePieces(animDt); ZombieView.updateShields(animDt); gibs.world = sim.world; gibs.update(animDt);
   ZombieView.syncLoose(sim.loose, alpha, animDt); // (the drip stands and wheelchairs: core/loose.js)
   { // open to a finisher: the gold mark over its head (render/finishmark.js), the one in reach a touch bigger

@@ -1731,7 +1731,7 @@ export class ZombieView extends ClipBody {
   guardShield(z) {
     if (z.planted?.magnet && this.shieldC && !this.plantedP) { // (the MRI magnet tore it off his arm: core/rooms.js) it flies to the scanner and sticks
       this.plantShield(z); const P = this.plantedP, o = P.shield.object3D, q = z.planted;
-      o.position.set(q.x, 1.15, q.z); o.rotation.set(0, q.yaw + Math.PI, 0); o.updateMatrixWorld(true);
+      o.position.set(q.x, 1.45, q.z); o.rotation.set(0, q.yaw + Math.PI, 0); o.updateMatrixWorld(true); // (over the bore, clear of the bed)
       P.grip = P.shield.grips.center.getWorldPosition(new THREE.Vector3()); P.gripR = P.grip.clone();
       ZombieView.fx?.burst(q.x, 1.15, q.z, 14, 0xe9e1cf, 2.4, 0.6, 0.45);
       return;

@@ -91,8 +91,10 @@ function mriOn(sim, M) {
 function ripShields(sim, M) {
   for (const z of sim.zombies) {
     if (z.kind !== 'guard' || !z.alive || !(z.shieldHp > 0) || z.planted || z.state === ZS.PICKUP || !inside(M, z.x, z.z, 2)) continue;
-    const a = Math.atan2(M.magnet.x - z.x, M.magnet.z - z.z);
-    z.planted = { x: M.magnet.x - Math.sin(a) * 0.55, z: M.magnet.z - Math.cos(a) * 0.55, yaw: a, gx: M.magnet.x - Math.sin(a) * 0.9, gz: M.magnet.z - Math.cos(a) * 0.9, magnet: true };
+    // flat on the scanner's front face, its outer side to the room (it hung edge-on, turned the way he came from), above the
+    // patient bed; where he would reach for it: beside the bed (2026-10-19)
+    const my = M.yaw ?? 0, fx = Math.sin(my), fz = Math.cos(my);
+    z.planted = { x: M.magnet.x + fx * 0.62, z: M.magnet.z + fz * 0.62, yaw: my + Math.PI, gx: M.magnet.x + fx * 1.0 + fz * 0.75, gz: M.magnet.z + fz * 1.0 - fx * 0.75, magnet: true };
     z.set(ZS.STAGGER, 1.1); z.attackCd = 1.4;
     sim.emit({ type: 'mriShield', id: z.id, x: z.planted.x, z: z.planted.z });
     sim.openFinisher?.(z, 'magnet', 5);
