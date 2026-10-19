@@ -56815,7 +56815,47 @@ void main() {
         done += 2;
       }
       await Promise.all(jobs);
-      if (this.f3) this.mergeRooms();
+      if (this.f3) {
+        this.mergeRooms();
+        this.adoptFloors();
+      }
+    }
+    // (2026-10-18, the user: "load the other floors in the elevator") the chapter's three floors stand 80 m apart in one world;
+    // each floor's pieces go into its own group (by where their bounds sit: z > -40 Floor 7, > -120 Floor 6, else 5) so only
+    // the floor being played is switched on: the others are neither checked nor drawn every frame, and their textures can
+    // leave the GPU (main.js prepFloor / settleFloor: the next floor goes up during the lift ride). Pieces spanning floors
+    // stay shared; the specimen case stays where the case code keeps it. New pieces are sorted as they appear (tickFrozen).
+    floorOf(z) {
+      return z > -40 ? 7 : z > -120 ? 6 : 5;
+    }
+    adoptFloors() {
+      if (!this.f3) return;
+      if (!this.floorGroups) {
+        this.floorGroups = {};
+        for (const n of [7, 6, 5]) {
+          const g = new Group();
+          g.name = "floor" + n;
+          g.visible = this.shownFloors ? this.shownFloors.has(n) : n === (LAYOUT.floor || 7);
+          this.group.add(g);
+          this.floorGroups[n] = g;
+        }
+      }
+      const groups2 = new Set(Object.values(this.floorGroups)), box = new Box3(), c = new Vector3();
+      for (const o of [...this.group.children]) {
+        if (groups2.has(o) || o === this.caseObj || o.userData.floorShared) continue;
+        box.setFromObject(o);
+        if (box.isEmpty() || box.max.z - box.min.z > 60) {
+          o.userData.floorShared = true;
+          continue;
+        }
+        box.getCenter(c);
+        this.floorGroups[this.floorOf(c.z)].add(o);
+        o.matrixWorldNeedsUpdate = true;
+      }
+    }
+    showFloors(list) {
+      this.shownFloors = new Set(list);
+      for (const [n, g] of Object.entries(this.floorGroups || {})) g.visible = this.shownFloors.has(+n);
     }
     // Floor 3: each room's static props become one mesh per material (draw calls: one per material per room, not one per
     // part per prop). The operating room's props stay separate: the opening stages them individually.
@@ -57600,6 +57640,7 @@ void main() {
     tickFrozen(dt) {
       if ((this.freezeT = (this.freezeT ?? 0) - dt) <= 0) {
         this.freezeT = 2;
+        this.adoptFloors();
         this.freezeStatic();
       }
       const F = this.frozen;
@@ -71002,6 +71043,7 @@ void main() {
       this.fadeEl.classList.add("on");
       this.input?.clearAll?.();
       this.onSave?.(e.save);
+      this.prepFloor?.(e.to);
       const steps = [];
       for (let f = e.from; f !== e.to; f += e.to > e.from ? 1 : -1) steps.push(f + (e.to > e.from ? 1 : -1));
       let i = 0;
@@ -72723,15 +72765,27 @@ void main() {
             t.source = src;
             shared++;
           }
-          try {
-            renderer2.initTexture(t);
-            uploaded++;
-          } catch {
-          }
         }
       }
     });
+    for (const t of texturesOf(root, true)) {
+      try {
+        renderer2.initTexture(t);
+        uploaded++;
+      } catch {
+      }
+    }
     return { shared, uploaded };
+  }
+  function texturesOf(root, visibleOnly = false) {
+    const out = /* @__PURE__ */ new Set();
+    root[visibleOnly ? "traverseVisible" : "traverse"]((o) => {
+      for (const m of [].concat(o.material || [])) if (m) for (const k in m) {
+        const t = m[k];
+        if (t?.isTexture && t.image && !t.isRenderTargetTexture) out.add(t);
+      }
+    });
+    return out;
   }
 
   // src/render/libweapons.js
@@ -73218,12 +73272,13 @@ void main() {
   var resolvedQuality = () => quality === "auto" ? isMobile ? "medium" : "high" : quality;
   var DPR_CAP = { low: 1, medium: 1.5, high: 2 };
   var canvas = document.getElementById("view");
-  var renderer = new WebGLRenderer({ canvas, antialias: resolvedQuality() !== "low", powerPreference: "high-performance" });
+  var hiDpiPhone = isMobile && devicePixelRatio >= 1.5;
+  var renderer = new WebGLRenderer({ canvas, antialias: resolvedQuality() !== "low" && !hiDpiPhone, powerPreference: "high-performance" });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = NeutralToneMapping;
   renderer.toneMappingExposure = 0.92;
   renderer.shadowMap.enabled = resolvedQuality() !== "low";
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = isMobile ? PCFShadowMap : PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
   var scene = new Scene();
   scene.updateMatrixWorld = function(force) {
@@ -73343,7 +73398,36 @@ void main() {
   var last = performance.now();
   var playerScreen = null;
   var camState = { x: 0, z: 0, vx: 0, vz: 0, trauma: 0, look: new Vector2() };
-  var perf = { frames: [], spikes: 0, t0: performance.now() };
+  var perf = { frames: [], cpu: [], spikes: 0, t0: performance.now() };
+  var gpuTimer = (() => {
+    const gl = renderer.getContext(), ext = gl.getExtension("EXT_disjoint_timer_query_webgl2");
+    if (!ext) return null;
+    let q = null, n = 0;
+    const out = [];
+    return {
+      begin() {
+        if (q || ++n % 10) return false;
+        q = gl.createQuery();
+        gl.beginQuery(ext.TIME_ELAPSED_EXT, q);
+        return true;
+      },
+      end(on) {
+        if (on) gl.endQuery(ext.TIME_ELAPSED_EXT);
+      },
+      poll() {
+        if (!q || !gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) return;
+        if (!gl.getParameter(ext.GPU_DISJOINT_EXT)) {
+          out.push(gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6);
+          if (out.length > 20) out.shift();
+        }
+        gl.deleteQuery(q);
+        q = null;
+      },
+      avg() {
+        return out.length ? out.reduce((a, b) => a + b, 0) / out.length : null;
+      }
+    };
+  })();
   var ZOMBIE_TYPES = [
     { file: "assets/zombie-nurse-mod.glb", extra: ["assets/zombie-nurse-scratch.glb", "assets/zombie_moves/nurse-mod.glb", "assets/zombie_moves/nurse-mod-b.glb", "assets/zombie_moves/nurse-mod-c.glb"], height: 1.78, walk: { speed: 0.168 } },
     // modular: severable head, forearms, lower legs
@@ -73639,7 +73723,7 @@ void main() {
     chapterUI = new ChapterUI({ scene, camera, arena, audio, hud, fx, input, yola: () => yola, sim: () => sim, applyLevel: (s) => {
       levelSave = s;
       applyLevel(s);
-    }, onSave: (s) => {
+    }, prepFloor, onSave: (s) => {
       levelSave = s;
       store2.set("chapter1save", s);
     }, onReplay: () => {
@@ -73685,9 +73769,26 @@ void main() {
     store2.set("chapter1save", null);
     return applyLevel(null);
   }
+  var floorQueue = [];
+  function prepFloor(n) {
+    if (!arena?.floorGroups?.[n]) return;
+    arena.showFloors([LAYOUT.floor, n]);
+    floorQueue = [...texturesOf(arena.floorGroups[n])];
+  }
+  function settleFloor(n) {
+    if (!arena?.floorGroups) return;
+    arena.showFloors([n]);
+    floorQueue = [];
+    const keep = /* @__PURE__ */ new Set();
+    for (const o of arena.group.children) if (o.visible) for (const t of texturesOf(o)) keep.add(t.source);
+    for (const [f, g] of Object.entries(arena.floorGroups)) if (+f !== n) {
+      for (const t of texturesOf(g)) if (!keep.has(t.source)) t.dispose();
+    }
+  }
   function applyLevel(save) {
     if (LAYOUT.story) useFloor(save?.floor || 7);
     restart("room1", benchN, save);
+    if (LAYOUT.story) settleFloor(LAYOUT.floor);
     shareTextures(scene, renderer);
     const p = sim.player, A = ROOM1.player;
     if (!save) {
@@ -73909,7 +74010,10 @@ void main() {
     const dt = Math.min(0.1, (now - last) / 1e3);
     last = now;
     if (manualTicks) return;
+    const c0 = performance.now();
     runFrame(dt);
+    perf.cpu.push(performance.now() - c0);
+    if (perf.cpu.length > 600) perf.cpu.shift();
   }
   var manualTicks = false;
   function tick(n = 1, dt = 1 / 60, render = true) {
@@ -73919,6 +74023,12 @@ void main() {
   }
   function runFrame(dt, doRender = true) {
     perfSample(dt);
+    if (floorQueue.length) for (let i = 0; i < 6 && floorQueue.length; i++) {
+      try {
+        renderer.initTexture(floorQueue.shift());
+      } catch {
+      }
+    }
     screens.update(dt);
     if (opening && !opening.active) opening.ambient?.(dt);
     if (opening?.active) {
@@ -74129,7 +74239,12 @@ void main() {
       looks.setDrain?.(1 - p.hp / Math.max(1, p.maxHp));
     }
     execLook(animDt, dt);
-    if (doRender) looks.render();
+    if (doRender) {
+      gpuTimer?.poll();
+      const on = gpuTimer?.begin();
+      looks.render();
+      gpuTimer?.end(on);
+    }
   }
   var impactFrame = -1;
   var frameNo = 0;
@@ -74820,14 +74935,38 @@ void main() {
     if (ms > 34) perf.spikes++;
     if (perf.frames.length >= 90 && perf.frames.length % 30 === 0 && !paused) {
       const recent = perf.frames.slice(-90), avg = recent.reduce((a, b) => a + b, 0) / recent.length;
-      if (avg > 21 && renderScale > 0.6) {
+      const cpu = perf.cpu.slice(-90), cpuAvg = cpu.reduce((a, b) => a + b, 0) / Math.max(1, cpu.length), gpu = gpuTimer?.avg();
+      const gpuBound = gpu != null ? gpu > Math.min(14, avg * 0.7) : cpuAvg < avg * 0.6;
+      perf.limit = gpuBound ? "gpu" : "cpu";
+      if (avg > 21 && renderScale > 0.6 && gpuBound) {
         renderScale = Math.max(0.6, renderScale - 0.1);
         resize();
-      } else if (avg < 14 && renderScale < 1) {
+      } else if ((avg < 14 || !gpuBound) && renderScale < 1) {
         renderScale = Math.min(1, renderScale + 0.05);
         resize();
       }
     }
+  }
+  if (params.get("perf") === "1") {
+    const el = document.createElement("div");
+    el.id = "perfMeter";
+    el.style.cssText = "position:fixed;left:6px;top:215px;z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#d8f5e8;background:rgba(0,0,0,0.62);padding:5px 7px;border-radius:6px;white-space:pre";
+    document.body.appendChild(el);
+    const avgOf = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+    setInterval(() => {
+      const f = perf.frames.slice(-60), srt = [...perf.frames.slice(-120)].sort((a, b) => a - b), avg = avgOf(f), p95 = srt.length ? srt[Math.floor(srt.length * 0.95)] : 0;
+      const gpu = gpuTimer?.avg(), I2 = renderer.info, aa = renderer.getContextAttributes()?.antialias;
+      const heap = performance.memory ? (performance.memory.usedJSHeapSize / 1e6).toFixed(0) + " MB" : "n/a";
+      const shadows = renderer.shadowMap.enabled ? renderer.shadowMap.type === PCFShadowMap ? "pcf" : "soft" : "off";
+      el.textContent = [
+        `${avg ? (1e3 / avg).toFixed(0) : "-"} fps  frame ${avg.toFixed(1)} ms  slow5% ${p95.toFixed(1)}`,
+        `cpu ${avgOf(perf.cpu.slice(-60)).toFixed(1)} ms  gpu ${gpu != null ? gpu.toFixed(1) + " ms" : "n/a"}  limit ${perf.limit || "?"}`,
+        `${renderer.domElement.width}x${renderer.domElement.height}  scale ${renderScale.toFixed(2)}  dpr ${renderer.getPixelRatio().toFixed(2)}  ${resolvedQuality()}`,
+        `AA ${aa ? "on" : "off"}  shadows ${shadows}`,
+        `calls ${I2.render.calls}  tris ${(I2.render.triangles / 1e3).toFixed(0)}k  tex ${I2.memory.textures}  heap ${heap}`,
+        `zombies ${sim?.aliveCount?.() ?? "-"}  floor ${LAYOUT.story ? LAYOUT.floor : "wing"}`
+      ].join("\n");
+    }, 500);
   }
   function perfReport() {
     const f = [...perf.frames].sort((a, b) => a - b);
