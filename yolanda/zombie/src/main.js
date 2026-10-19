@@ -66,6 +66,20 @@ renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 
 renderer.shadowMap.enabled = resolvedQuality() !== 'low';
 renderer.shadowMap.type = isMobile && resolvedQuality() !== 'high' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false; // the environment is static: render its shadows once
+// what goes wrong on a phone, on screen (2026-10-18: the game ran but drew nothing on the user's iPhone, Safari and Edge;
+// a phone has no console): a script error, or the phone resetting the graphics (WebGL context lost: usually out of
+// graphics memory). A red strip near the bottom; tap it to reload.
+const diag = (() => {
+  let el = null;
+  return (msg) => {
+    if (!el) { el = document.createElement('div'); el.style.cssText = 'position:fixed;left:6px;right:6px;bottom:96px;z-index:10000;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#fff;background:rgba(130,10,10,0.9);padding:6px 8px;border-radius:6px;white-space:pre-wrap'; el.onclick = () => location.reload(); document.body.appendChild(el); }
+    el.textContent = msg + '\n(tap here to reload)';
+  };
+})();
+canvas.addEventListener('webglcontextlost', () => diag('The phone reset the graphics (WebGL context lost): usually out of graphics memory. Quality: ' + resolvedQuality() + ', pixel ratio ' + renderer.getPixelRatio()));
+canvas.addEventListener('webglcontextrestored', () => { renderer.shadowMap.needsUpdate = true; diag('The graphics came back (context restored).'); });
+window.addEventListener('error', (e) => diag('Error: ' + (e.message || e.error) + '\n' + String(e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno));
+window.addEventListener('unhandledrejection', (e) => diag('Error (async): ' + (e.reason?.message || e.reason) + '\n' + String(e.reason?.stack || '').split('\n').slice(0, 2).join('\n')));
 const scene = new THREE.Scene();
 // (PERF_AUDIT.md 1) the renderer's per-frame transform pass walks only what can be drawn: three.js updates every object,
 // hidden or not, and over half the scene is hidden (pooled zombies, the opening's sets, other floors): 6.7 -> 2.2 ms on

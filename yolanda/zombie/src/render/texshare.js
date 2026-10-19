@@ -21,7 +21,7 @@ const keyOf = (t) => {
 };
 const shareable = (t) => {
   if (!t?.isTexture || t.isRenderTargetTexture || t.isDataTexture || t.isCompressedTexture || t.isVideoTexture || t.isCanvasTexture || t.isCubeTexture) return false;
-  const im = t.image; return !!im && (im instanceof ImageBitmap || im instanceof HTMLImageElement);
+  const im = t.image; return !!im && ((typeof ImageBitmap !== 'undefined' && im instanceof ImageBitmap) || im instanceof HTMLImageElement); // (older iPhone browsers have no ImageBitmap)
 };
 
 export function shareTextures(root, renderer) {
