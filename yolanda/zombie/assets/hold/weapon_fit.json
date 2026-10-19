@@ -1,5 +1,5 @@
 {
- "note": "Held-weapon fits per weapon and character, set by the user in the Rig Lab fit panel (beside the X Bot / Quaternius mannequin), applied by render/holdfit.js in both the Rig Lab and the game: size %, a move in mm along the weapon's own axes (fwd = its long axis, up = model +Y, side = model +X), a turn in degrees (tilt about +X, turn about +Y, roll about the long axis), pivoting on the grip point. The pistol's fits are in pistol_fit.json. Shotgun yola2: zero since 2026-10-17: the untwisted clip puts the gun between her hands by itself (the user's adjustment that day undid the old clip's hold, measured on the twisted clip).",
+ "note": "Held-weapon fits per weapon and character, set by the user in the Rig Lab fit panel (beside the X Bot / Quaternius mannequin), applied by render/holdfit.js in both the Rig Lab and the game: size %, a move in mm along the weapon's own axes (fwd = its long axis, up = model +Y, side = model +X), a turn in degrees (tilt about +X, turn about +Y, roll about the long axis), pivoting on the grip point. The pistol's fits are in pistol_fit.json. Shotgun yola2: zero since 2026-10-17: the untwisted clip puts the gun between her hands by itself (the user's adjustment that day undid the old clip's hold, measured on the twisted clip). Shotgun yola2 (2026-10-19): the user's fixed idle hold (lDown / lSide: the left hand nudged onto the pump, mm); short@hub_execution_shotgun_slide_*: the slide finisher's kneel setup (pumpHand: left fist round the pump; idleIn / idleOut: Rig Lab frames where it fades from / back to the everyday hold).",
  "bat": {
   "yola2": {
    "size": 100,
@@ -41,12 +41,14 @@
  "short": {
   "yola2": {
    "size": 100,
-   "fwd": -17,
-   "up": 28,
-   "side": 40,
-   "tilt": -2,
-   "turn": -8,
-   "roll": -5
+   "fwd": -21,
+   "up": 34,
+   "side": 50,
+   "tilt": 0,
+   "turn": -11,
+   "roll": -4,
+   "lDown": 4,
+   "lSide": 4
   },
   "xbot": {
    "size": 100,
@@ -188,6 +190,72 @@
    "tilt": -1,
    "turn": -1,
    "roll": -14
+  }
+ },
+ "short@hub_execution_shotgun_slide_short": {
+  "yola2": {
+   "size": 100,
+   "fwd": 0,
+   "up": 53,
+   "side": 65,
+   "tilt": 21,
+   "turn": -15,
+   "roll": -24,
+   "lDown": 0,
+   "lSide": 0,
+   "pumpHand": 1,
+   "idleIn": [
+    4,
+    12
+   ],
+   "idleOut": [
+    41,
+    61
+   ]
+  }
+ },
+ "short@hub_execution_shotgun_slide_mid": {
+  "yola2": {
+   "size": 100,
+   "fwd": 0,
+   "up": 53,
+   "side": 65,
+   "tilt": 21,
+   "turn": -15,
+   "roll": -24,
+   "lDown": 0,
+   "lSide": 0,
+   "pumpHand": 1,
+   "idleIn": [
+    4,
+    12
+   ],
+   "idleOut": [
+    48,
+    68
+   ]
+  }
+ },
+ "short@hub_execution_shotgun_slide_long": {
+  "yola2": {
+   "size": 100,
+   "fwd": 0,
+   "up": 53,
+   "side": 65,
+   "tilt": 21,
+   "turn": -15,
+   "roll": -24,
+   "lDown": 0,
+   "lSide": 0,
+   "pumpHand": 1,
+   "idleIn": [
+    4,
+    12
+   ],
+   "idleOut": [
+    55,
+    75
+   ]
   }
  }
 }

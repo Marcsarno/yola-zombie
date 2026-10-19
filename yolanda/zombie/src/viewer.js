@@ -66,7 +66,10 @@ const NEW_KINDS = [
 // can find it easy"): her launch-into-strike executions, always loaded for her when they exist (assets/test_clips is local),
 // listed under the edit bar's Finishers button and played with their forward launch (never pinned in place).
 // (each at three jump lengths: 1.4, 2.4 and 3.4 m; the game's finisher reaches up to 3.6 m)
-const FINISHER_TESTS = ["B_uppercut", "C_uppercut_mirrored"].flatMap((k) => ["", "_2_4m", "_3_4m"].map((d) => "assets/test_clips/hub_hub_execution_" + k + d + ".glb"));
+// The shotgun's slide finisher (t_shoot's run, knee slide and shot; short / mid / long: about 1.4 / 2.2 / 3.0 m), listed too
+// so its grip can be set there (Weapon position: This clip only).
+const FINISHER_TESTS = ["B_uppercut", "C_uppercut_mirrored"].flatMap((k) => ["", "_2_4m", "_3_4m"].map((d) => "assets/test_clips/hub_hub_execution_" + k + d + ".glb"))
+  .concat(["short", "mid", "long"].map((d) => "assets/test_clips/hub_hub_execution_shotgun_slide_" + d + ".glb"));
 const UAL_FILES = { ual_: 'assets/source/ual/UAL2_Full.glb', ual1_: 'assets/source/ual/UAL1_Full.glb' };
 const UAL_FEMALE = 'assets/source/ual/Mannequin_F.glb'; // (UAL2 Source: the female mannequin, same rig, no clips of its own)
 const UE_MAP = { pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', Head: 'Head' };
@@ -278,10 +281,11 @@ class Gun {
     if (!this.obj || !this.has) return;
     // as the game (render/clipchars.js placeWeapons): the right-hand socket at the right grip, then the user's shotgun fit
     // (the fit panel; render/holdfit.js applyFit, pivoting on the right grip)
-    const a = this.actor; a.bones.RightHand.getWorldQuaternion(_q);
+    const a = this.actor, F = fitAt(SHOTGUNS[weaponOf()] ? weaponOf() : 'short', a);
+    a.bones.RightHand.getWorldQuaternion(_q);
     const gq = _q.multiply(this.socket);
     a.grip('Right', _v);
-    applyFit(this.obj, _v, gq, fitW(SHOTGUNS[weaponOf()] ? weaponOf() : 'short', a), new THREE.Vector3(), k, k); // (each shotgun its own fit)
+    applyFit(this.obj, _v, gq, F, new THREE.Vector3(), k, k); // (each shotgun its own fit; fitAt: faded to the everyday hold where the clip says)
     this.obj.updateMatrixWorld(true);
   }
 }
@@ -351,7 +355,8 @@ async function setChar(key) {
         for (const a of c.animations) {
           const tag = FINISHER_TESTS.includes(f) ? { fin: true, test: f.split("/").pop() } : packs.includes(f) ? { pack: /^kk_/.test(a.name) ? 'KayKit' : /ual1_/.test(a.name) ? 'UAL1' : 'UAL2' } : extraQ.includes(f) ? { test: f.split('/').pop() } : {};
           // (a pack clip the character already has, e.g. a library pick, keeps the one it has, listed with the pack)
-          if (tag.pack && have[a.name]) { have[a.name].userData = { ...have[a.name].userData, ...tag }; continue; }
+          // (... and a finisher that is in her game files now, e.g. the jump finishers in yola2_ual.glb, still lists as one)
+          if ((tag.pack || tag.fin) && have[a.name]) { have[a.name].userData = { ...have[a.name].userData, ...tag }; continue; }
           if (have[a.name] && !extraQ.includes(f)) continue; // (a clip in two of her files, e.g. yola2_ual and the Move Library bake: the first one)
           a.userData = { ...a.userData, ...tag }; g.animations.push(a); have[a.name] = a;
         }
@@ -418,10 +423,36 @@ function pumpSlide(f) {
 }
 const _m1 = new THREE.Vector3(), _m2 = new THREE.Vector3();
 const smooth01 = (u) => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
+// "Left hand on the pump" (a clip's own weapon position, fit.pumpHand; the user, 2026-10-18, on the shotgun slide finisher:
+// "I just don't want to bend and contort the arm... just put the hand there"): the left hand turned as it holds the pump in
+// her everyday shotgun hold (its turn in the gun's frame, measured on sg_reload frame 1, where her grip sits 0.2 cm from the
+// pump's), its palm grip on the pump's grip point, the arm reaching there (ikArm: the elbow keeps its own bend direction)
+const PUMP_HAND_Q = { short: new THREE.Quaternion(0.6878, 0.2306, -0.2638, 0.6357) };
+// (2026-10-18, second version: the hand turned as in the everyday hold left her forearm twisted to 147% of its range on the
+// idle, "her wrist looks completely whack". Now as a two-handed weapon's second hand (otherHandOn: render/holdfit.js
+// handOnto): her fist closed round the pump's tube at its grip point, turned about the tube wherever her wrist and forearm
+// are most natural, the collarbone reaching for a far pump)
+function pumpHandOn(g, U, w) {
+  if (!PUMP_HAND_Q[weaponOf()]) return false;
+  const ax = new THREE.Vector3(1, 0, 0).transformDirection(g.matrixWorld), pt = U.gripL.getWorldPosition(new THREE.Vector3()).addScaledVector(ax, -(S.pumpBack ?? 0)).add(leftNudge()); // (S.pumpBack: metres toward her along the pump, to try)
+  otherHandOn(main, 'Left', pt, ax, w, { signFree: true, ...(S.pumpOpts || {}) }); // (S.pumpOpts: e.g. { elbow: { out, down, back } } to try)
+  return true;
+}
+// the shotgun's left hand nudged off the pump's grip point (fit.lDown / fit.lSide, mm: down, and toward her left; the user,
+// 2026-10-19: "nudge the hand down a little bit... to the right as I face her... millimeters"): her arms are locked on the
+// idle (AS_LIVE), so the hand's spot on the pump is set here instead
+function leftNudge() {
+  const F = fitAt(SHOTGUNS[weaponOf()] ? weaponOf() : 'short', main), d = (F.lDown || 0) / 1000, sd = (F.lSide || 0) / 1000;
+  if (!d && !sd) return new THREE.Vector3();
+  const B = main.bones, l = B.LeftArm.getWorldPosition(new THREE.Vector3()), r = B.RightArm.getWorldPosition(new THREE.Vector3());
+  const toLeft = l.sub(r).setY(0).normalize();
+  return toLeft.multiplyScalar(sd).add(new THREE.Vector3(0, -d, 0));
+}
 function leftHand(f) {
   const g = mainGun?.obj; if (!g || !main.action) return;
   const U = g.userData; if (!U.pump) return;
   U.pump.position.x = U.pumpX - pumpSlide(f); g.updateMatrixWorld(true);
+  if (fitW(weaponOf(), main)?.pumpHand && U.gripL && pumpHandOn(g, U, 1)) return;
   if (!$('ik').checked) return;
   // the palm grip point (not the wrist) is what lands on the target
   const B = main.bones, ik = (t, w) => {
@@ -449,7 +480,7 @@ function leftHand(f) {
   // reaches further to get there)
   const rest = g.localToWorld(new THREE.Vector3(U.pumpX, 0, 0).add(U.gripL.position.clone().setX(S.gun === 'short' ? 0 : U.gripL.position.x)));
   const wHold = smooth01(1 - (_m1.distanceTo(rest) - (S.gun === 'short' ? 0.03 : 0.2)) / 0.12) * (1 - wPort);
-  if (wHold > 0) ik(U.gripL.getWorldPosition(_m2), wHold);
+  if (wHold > 0) ik(U.gripL.getWorldPosition(_m2).add(leftNudge()), wHold);
 }
 function alignShell() { // the shell's axis points from the hand to the loading port, its tip at the port
   const g = mainGun?.obj; if (!g?.userData.port) return;
@@ -487,6 +518,7 @@ function refresh() {
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
   undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main); armPoseOn(main);
+  if (SHOTGUNS[weaponOf()]) untwistWrist(main, 'Left', S.wristKeep ?? 45);
   if (handsUI && handsSeen !== handKey()) { handsSeen = handKey(); handsUI(); }
   shotKick(main); if (ref.root.visible) shotKick(ref);
   mainGun?.update(1); leftHand(f);
@@ -751,7 +783,7 @@ function shotKick(a) {
 // pistol fit sliders (the user, 2026-10-16): one fit per character (Yola 3.0 / Yola 2.0 / X Bot / the UAL mannequin), the
 // saved ones in assets/hold/pistol_fit.json; edits are kept in this browser and "save" writes zombie/shots/pistol_fit.json
 // (copied into assets/hold by Claude when the user says so)
-const PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
+const PFIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0, lDown: 0, lSide: 0 };
 const FITS = {};
 const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
@@ -760,6 +792,22 @@ const WFITS = {};
 const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (wood)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', old: 'Shotgun (hospital pack)', draft: 'Shotgun (first draft)', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
 // (a weapon's fit for this rig: this clip's own when it has one, the sidebar's "This clip only", else the weapon's)
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : WFITS[w + '@' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '')]?.[fitKey(a)] || ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
+// A clip that starts and ends in the weapon's everyday hold (the shotgun slide finisher: idle -> run, slide, kneel, shot ->
+// stands back up into the idle hold; the user, 2026-10-18: "when she stands up that's the position she should get back
+// into"): its own weapon position and arm adjustments are for the middle of it only. fit.idleIn = [a, b]: the everyday hold
+// until frame a, the clip's own setup by b; fit.idleOut = [a, b]: back to the everyday hold from a to b. 0..1 = everyday.
+function idleShare(fit) {
+  if (!fit || !main?.clip || (!fit.idleIn && !fit.idleOut)) return 0;
+  const f = S.frame, ramp = (r) => clamp((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1), sm = (u) => u * u * (3 - 2 * u);
+  return Math.max(fit.idleIn ? 1 - sm(ramp(fit.idleIn)) : 0, fit.idleOut ? sm(ramp(fit.idleOut)) : 0);
+}
+// the fit that places the weapon this frame: the clip's own, faded to the weapon's everyday fit by idleShare
+function fitAt(w, a) {
+  const own = fitW(w, a), s = a === main ? idleShare(own) : 0; if (!(s > 0)) return own;
+  const base = (WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }, out = { ...own };
+  for (const k of Object.keys(PFIT0)) out[k] = (own[k] ?? PFIT0[k]) + ((base[k] ?? PFIT0[k]) - (own[k] ?? PFIT0[k])) * s;
+  return out;
+}
 fetch('assets/hold/weapon_fit.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
   for (const [w, v] of Object.entries(j)) if (typeof v === 'object') for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f };
   try { for (const [w, v] of Object.entries(JSON.parse(localStorage.getItem('weaponFits') || '{}'))) for (const [k, f] of Object.entries(v)) (WFITS[w] ||= {})[k] = { ...PFIT0, ...f }; } catch { /* none */ }
@@ -771,7 +819,8 @@ const fitsReady = fetch('assets/hold/pistol_fit.json', { cache: 'reload' }).then
   pfitSync?.(); refresh?.();
 });
 const PFIT_ROWS = [['size', 'size %', 60, 120, 1], ['fwd', 'forward / back (mm)', -60, 60, 1], ['up', 'up / down the grip (mm)', -60, 60, 1], ['side', 'left / right (mm)', -40, 40, 1],
-  ['tilt', 'tilt muzzle up/down (deg)', -45, 45, 1], ['turn', 'turn muzzle left/right (deg)', -45, 45, 1], ['roll', 'roll (deg)', -45, 45, 1]];
+  ['tilt', 'tilt muzzle up/down (deg)', -45, 45, 1], ['turn', 'turn muzzle left/right (deg)', -45, 45, 1], ['roll', 'roll (deg)', -45, 45, 1],
+  ['lDown', 'left hand down / up (mm)', -30, 30, 0.5], ['lSide', 'left hand toward her left / right (mm)', -30, 30, 0.5]]; // (shotguns: leftNudge)
 let pfitWho = 'main', pfitSync = null;
 // slider labels per weapon (the bat: its long axis runs through her fist from the little finger to the index knuckle;
 // model +X points to the knuckles, +Y toward the wrist or the fingertips)
@@ -788,6 +837,11 @@ function buildPistolFit() {
   document.body.appendChild(box);
   const rows = box.querySelector('#pfitRows'), out = box.querySelector('#pfitOut');
   const cur = () => fitW(weaponOf(), pfitWho === 'ref' ? ref : main);
+  const curEdit = () => { // (edits: this clip only unless "All clips" was clicked for it, as the sidebar: fitForEdit)
+    const w = weaponOf(), a = pfitWho === 'ref' ? ref : main, key = w + '@' + clipBase();
+    if (w !== 'pistol' && S.fitAllFor !== key && !WFITS[key]?.[fitKey(a)]) (WFITS[key] ||= {})[fitKey(a)] = { ...cur() };
+    return cur();
+  };
   const keep = () => { try { localStorage.setItem('pistolFits', JSON.stringify(FITS)); localStorage.setItem('weaponFits', JSON.stringify(WFITS)); } catch { /* private window */ } };
   const set = [];
   for (const [k, label, lo, hi, st] of PFIT_ROWS) {
@@ -795,7 +849,7 @@ function buildPistolFit() {
     r.innerHTML = `<label>${label}</label><span></span><input type="range" min="${lo}" max="${hi}" step="${st}" style="grid-column:1/3">`;
     const inp = r.querySelector('input'), sp = r.querySelector('span');
     set.push(() => { inp.value = cur()[k]; sp.textContent = cur()[k]; });
-    inp.oninput = () => { cur()[k] = +inp.value; sp.textContent = inp.value; keep(); pfitSync(); refresh(); };
+    inp.oninput = () => { curEdit()[k] = +inp.value; sp.textContent = inp.value; keep(); pfitSync(); refresh(); };
     rows.appendChild(r);
   }
   const bm = box.querySelector('#pfitMain'), br = box.querySelector('#pfitRef');
@@ -809,7 +863,7 @@ function buildPistolFit() {
     set.forEach((f) => f()); out.textContent = w + ' / ' + fitKey(pfitWho === 'ref' ? ref : main) + ' ' + JSON.stringify(cur());
   };
   bm.onclick = () => { pfitWho = 'main'; pfitSync(); }; br.onclick = () => { pfitWho = 'ref'; pfitSync(); };
-  box.querySelector('#pfitReset').onclick = () => { Object.assign(cur(), PFIT0); keep(); pfitSync(); refresh(); };
+  box.querySelector('#pfitReset').onclick = () => { Object.assign(curEdit(), PFIT0); keep(); pfitSync(); refresh(); };
   box.querySelector('#pfitSave').onclick = async () => {
     const r = await fetch('/__shot/pistol_fit.json', { method: 'POST', body: JSON.stringify(FITS, null, 1) });
     const r2 = await fetch('/__shot/weapon_fit.json', { method: 'POST', body: JSON.stringify(WFITS, null, 1) });
@@ -1107,13 +1161,14 @@ function gameAttacks() {
   return [...new Set([...(GAME_ATTACKS[S.gun] || []), ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
 }
 function editClips() {
-  if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin).map((c) => c.name).sort();
+  if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin && /shotgun/.test(c.name) === !!SHOTGUNS[S.gun]).map((c) => c.name).sort(); // (a shotgun: its own finishers; the rest: the melee ones)
   if (S.mode === 'attack' && ARENA_KEY[S.gun]) { const g = gameAttacks(); if (g.length) return g; }
   const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === 'idle' ? EDIT_IDLE : EDIT_ATTACK);
   return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n))
     .sort((a, b) => (a === 'ual_Sword_Block' ? -1 : b === 'ual_Sword_Block' ? 1 : a.localeCompare(b)));
 }
-const finLabel = (n) => { const m = n.match(/_(\d)_(\d)m$/); return n.replace(/^hub_execution_/, "").replace(/_\d_\dm$/, "").replace(/_/g, " ") + "  ·  jump " + (m ? m[1] + "." + m[2] : "1.4") + " m"; };
+const SLIDE_M = { short: '1.4', mid: '2.2', long: '3.0' };
+const finLabel = (n) => { const s = n.match(/^hub_execution_shotgun_slide_(\w+)$/); if (s) return "shotgun slide · " + s[1] + "  ·  " + (SLIDE_M[s[1]] || '?') + " m"; const m = n.match(/_(\d)_(\d)m$/); return n.replace(/^hub_execution_/, "").replace(/_\d_\dm$/, "").replace(/_/g, " ") + "  ·  jump " + (m ? m[1] + "." + m[2] : "1.4") + " m"; };
 const prettyClip = (n) => /^hub_execution_/.test(n) ? finLabel(n) + "  · Animation Hub test" : S.gun === 'pistol' && S.mode === 'attack' && n === 'pistol_idle' ? 'Firing (the idle with the shot kick)  · Mixamo' : n.replace(/^(ual1?|kev)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') + (/^ual/.test(n) ? '  · Quaternius' : /^kev_/.test(n) ? '  · Kevin Iglesias' : '  · Mixamo') + (S.mode === 'attack' && gameAttack(n) ? '  · ' + gameAttack(n) : '');
 function editSync() {
   if (!$('edit') || !main) return;
@@ -1143,9 +1198,32 @@ fetch('assets/hold/arm_pose.json', { cache: 'reload' }).then((r) => r.json()).ca
   try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem('armPose') || '{}'))) ARMP[k] = v; } catch { /* none */ }
   sidebarSync(); refresh?.();
 });
+// The wrist's twist moved into the forearm (2026-10-18, the user: "her wrist looks completely whack... figure out why it's
+// stuck"). sg_reload's hold frame (X Bot's rifle reload, retargeted) has her left HAND bone turned -118 deg about its own
+// length and her forearm 0 (it has been so since that clip went in, 2026-10-17): the palm's turn sits in the wrist joint,
+// which a wrist cannot do, and her skin wrings there. Her hand keeps its world turn exactly (the grip on the pump unchanged);
+// the twist past keepDeg (her pistol hold keeps ~49 deg there) goes to the forearm, about its own length. Shoulder and elbow
+// are not touched. The shotguns' left hand only.
+const _uq = new THREE.Quaternion(), _uq2 = new THREE.Quaternion(), _ua = new THREE.Vector3();
+function untwistWrist(a, side, keepDeg) {
+  const H = a.bones[side + 'Hand'], F = a.bones[side + 'ForeArm'], M = a.bones[side + 'HandMiddle1']; if (!H || !F || !M) return;
+  const ax = _ua.copy(M.position).normalize(), q = H.quaternion, d = q.x * ax.x + q.y * ax.y + q.z * ax.z;
+  const tw = _uq.set(ax.x * d, ax.y * d, ax.z * d, q.w).normalize();
+  let ang = 2 * Math.acos(Math.min(1, Math.abs(tw.w))); if ((d < 0) !== (tw.w < 0)) ang = -ang;
+  const keep = keepDeg * Math.PI / 180, excess = ang - Math.sign(ang) * Math.min(Math.abs(ang), keep);
+  if (Math.abs(excess) < 1e-3) return;
+  a.root.updateMatrixWorld(true); const hw = H.getWorldQuaternion(new THREE.Quaternion());
+  F.quaternion.multiply(_uq2.setFromAxisAngle(_ua.copy(H.position).normalize(), excess)); F.updateMatrixWorld(true);
+  H.quaternion.copy(F.getWorldQuaternion(_uq2).invert().multiply(hw)); H.updateMatrixWorld(true);
+}
 function armPoseOn(a) {
   if (a !== main || !HOLD_LAYERS.armPose || AS_LIVE[clipBase()]) return; // (AS_LIVE: held as the live game, no adjustments)
-  const p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()]; if (!p && !hip) return;
+  let p = ARMP[clipArmKey()], hip = ARMP[hipArmKey()]; if (!p && !hip) return;
+  // (a clip that ends in the everyday hold: its arm adjustments, and the hands-at-hips rule the everyday hold goes without
+  // (AS_LIVE), fade out with its weapon position, idleShare)
+  const keepK = 1 - idleShare(SHOTGUNS[weaponOf()] ? fitW(weaponOf(), a) : null);
+  const scale = (P) => P && Object.fromEntries(Object.entries(P).map(([side, v]) => [side, Object.fromEntries(Object.entries(v).map(([k, x]) => [k, typeof x === 'number' ? x * keepK : x]))]));
+  if (keepK < 1) { p = scale(p); hip = scale(hip); }
   a.root.updateMatrixWorld(true);
   const chain = ['Shoulder', 'Arm', 'ForeArm', 'Hand'].flatMap((n) => ['Right', 'Left'].map((s) => a.bones[s + n])).filter(Boolean), before = chain.map((b) => b.quaternion.clone());
   S.hipW = {}; adjustArms(a.bones, p || null, { limit: S.armLimit !== false, hip, weights: S.hipW });
@@ -1184,6 +1262,17 @@ function fitEditing() {
   const w = S.gun, a = fitTarget(), k = fitKey(a), c = WFITS[fitScopeKey(w)];
   return c?.[k] || ((WFITS[w] ||= {})[k] ||= { ...PFIT0 });
 }
+// Weapon position edits go to THIS CLIP ONLY by default (the user, 2026-10-18: a shotgun fit set up for t_shoot went to
+// every clip and moved her everyday hold). "All clips" has to be clicked, and holds only for the clip and weapon it was
+// clicked on (S.fitAllFor): change either and edits are this-clip-only again. The first edit copies the weapon's fit.
+const fitAllOn = () => S.fitAllFor === fitScopeKey(S.gun);
+function fitForEdit() {
+  if (S.gun !== 'pistol' && !fitAllOn()) {
+    const k = fitKey(fitTarget()), key = fitScopeKey(S.gun);
+    if (!WFITS[key]?.[k]) (WFITS[key] ||= {})[k] = { ...fitEditing() };
+  }
+  return fitEditing();
+}
 const keepFits = () => { try { localStorage.setItem('weaponFits', JSON.stringify(WFITS)); localStorage.setItem('pistolFits', JSON.stringify(FITS)); } catch { /* private window */ } };
 function buildSidebar() {
   const root = $('sidebar'); if (!root) return;
@@ -1212,13 +1301,17 @@ function buildSidebar() {
   const who = seg(W1.body, [['main', 'Yola'], ['ref', 'Dummy']], (v) => { S.fitWho = v; sidebarSync(); });
   const scope = seg(W1.body, [['all', 'All clips'], ['clip', 'This clip only']], (v) => {
     const w = S.gun, k = fitKey(fitTarget()), key = fitScopeKey(w);
-    if (v === 'clip') { const base = fitEditing(); ((WFITS[key] ||= {})[k] = { ...base }); } else if (WFITS[key]) delete WFITS[key][k];
+    if (v === 'clip') { S.fitAllFor = null; const base = fitEditing(); ((WFITS[key] ||= {})[k] = { ...base }); }
+    else { S.fitAllFor = key; if (WFITS[key]) delete WFITS[key][k]; }
     keepFits(); refresh(); sidebarSync();
   });
-  const hand = seg(W1.body, [['Right', 'Right hand'], ['Left', 'Left hand']], (v) => { fitEditing().hand = v; keepFits(); refresh(); sidebarSync(); jointReadout(); });
+  scope.title = 'This clip only (the default): changes affect this clip alone. All clips: changes the weapon everywhere, only while you stay on this clip and weapon';
+  const hand = seg(W1.body, [['Right', 'Right hand'], ['Left', 'Left hand']], (v) => { fitForEdit().hand = v; keepFits(); refresh(); sidebarSync(); jointReadout(); });
   hand.title = 'the hand that holds the weapon (saved with the weapon position: All clips, or This clip only)';
+  const pump = seg(W1.body, [['anim', 'Left hand: as animated'], ['pump', 'Left hand on the pump']], (v) => { fitForEdit().pumpHand = v === 'pump' ? 1 : 0; keepFits(); refresh(); sidebarSync(); jointReadout(); });
+  pump.title = 'shotguns: put her left hand on the pump (turned as in her everyday hold), the arm reaching there by itself';
   for (const [i, [k, lbl, lo, hi, st]] of PFIT_ROWS.entries()) {
-    const up = slider(W1.body, lbl, '', lo, hi, st, () => fitEditing()[k], (v) => { fitEditing()[k] = v; keepFits(); }, k === 'size' ? 100 : 0);
+    const up = slider(W1.body, lbl, '', lo, hi, st, () => fitEditing()[k], (v) => { fitForEdit()[k] = v; keepFits(); }, k === 'size' ? 100 : 0);
     ups.push(up); up.row = W1.body.lastChild; up.idx = i;
   }
   const fitRows = ups.slice();
@@ -1273,7 +1366,7 @@ function buildSidebar() {
     $('sbSaved').textContent = ok ? 'saved to shots/ (tell Claude to put it in the game)' : 'save failed';
   };
   V1.body.appendChild(sv);
-  SB = { wHead, who, scope, hand, fitRows, side, ascope, armRows, layerBoxes, A1 };
+  SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1 };
   sidebarSync();
 }
 function layerSyncAll() {
@@ -1287,10 +1380,11 @@ function sidebarSync() {
   SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? (CHARS[S.char]?.label || S.char) : ref === refX ? 'X Bot' : 'the mannequin'}`;
   for (const b of SB.who.children) b.classList.toggle('on', b.dataset.v === (S.fitWho || 'main'));
   const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
-  for (const b of SB.scope.children) { b.classList.toggle('on', b.dataset.v === (clipOwn ? 'clip' : 'all')); b.disabled = w === 'pistol'; }
+  for (const b of SB.scope.children) { b.classList.toggle('on', b.dataset.v === (clipOwn || !fitAllOn() ? 'clip' : 'all')); b.disabled = w === 'pistol'; }
+  SB.pump.hidden = !PUMP_HAND_Q[w] || a !== main; for (const b of SB.pump.children) b.classList.toggle('on', b.dataset.v === (fitEditing().pumpHand ? 'pump' : 'anim'));
   SB.hand.hidden = !LIB_WEAPONS[w]; if (LIB_WEAPONS[w]) { const h = holdHand(w, a); for (const b of SB.hand.children) b.classList.toggle('on', b.dataset.v === h); }
   const labels = FIT_LABELS[w] || PFIT_ROWS.map((r) => r[1]);
-  for (const up of SB.fitRows) { up(); up.row.querySelector('label').textContent = labels[up.idx] || PFIT_ROWS[up.idx][1]; }
+  for (const up of SB.fitRows) { up(); up.row.querySelector('label').textContent = labels[up.idx] || PFIT_ROWS[up.idx][1]; up.row.hidden = /^l(Down|Side)$/.test(PFIT_ROWS[up.idx][0]) && !SHOTGUNS[w]; }
   for (const b of SB.side.children) b.classList.toggle('on', b.dataset.v === (S.armSide || 'Right'));
   for (const b of SB.ascope.children) b.classList.toggle('on', b.dataset.v === (S.armScope || 'clip'));
   SB.A1.h.textContent = S.armScope === 'hips' ? 'Arms (Yola, hands at hips: every clip)' : 'Arms (Yola, this clip)';

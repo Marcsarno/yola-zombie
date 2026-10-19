@@ -40,5 +40,68 @@
    "shUp": -3,
    "shFwd": -7
   }
+ },
+ "yola2:hub_execution_shotgun_slide_short": {
+  "Left": {
+   "shUp": 4.5,
+   "shFwd": -0.5,
+   "out": 0,
+   "fwd": -2.5,
+   "twist": -3,
+   "elbow": 1,
+   "wristUp": 1,
+   "wristSide": 3
+  },
+  "Right": {
+   "shUp": -20,
+   "shFwd": 2.5,
+   "out": -1,
+   "fwd": 0,
+   "twist": 9,
+   "elbow": 0,
+   "fore": -3
+  }
+ },
+ "yola2:hub_execution_shotgun_slide_mid": {
+  "Left": {
+   "shUp": 4.5,
+   "shFwd": -0.5,
+   "out": 0,
+   "fwd": -2.5,
+   "twist": -3,
+   "elbow": 1,
+   "wristUp": 1,
+   "wristSide": 3
+  },
+  "Right": {
+   "shUp": -20,
+   "shFwd": 2.5,
+   "out": -1,
+   "fwd": 0,
+   "twist": 9,
+   "elbow": 0,
+   "fore": -3
+  }
+ },
+ "yola2:hub_execution_shotgun_slide_long": {
+  "Left": {
+   "shUp": 4.5,
+   "shFwd": -0.5,
+   "out": 0,
+   "fwd": -2.5,
+   "twist": -3,
+   "elbow": 1,
+   "wristUp": 1,
+   "wristSide": 3
+  },
+  "Right": {
+   "shUp": -20,
+   "shFwd": 2.5,
+   "out": -1,
+   "fwd": 0,
+   "twist": 9,
+   "elbow": 0,
+   "fore": -3
+  }
  }
 }

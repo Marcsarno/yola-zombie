@@ -26,6 +26,7 @@ const AXE_AT = new THREE.Vector3(); // (the axe's and the shotgun's model origin
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smooth = (u) => u * u * (3 - 2 * u);
+const FIT_DEFAULTS = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0, lDown: 0, lSide: 0 }; // (a weapon fit's fields: render/holdfit.js applyFit, + the shotgun's left-hand nudge)
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3(), _v5 = new THREE.Vector3(), _v6 = new THREE.Vector3(), _v7 = new THREE.Vector3();
 const _ik = new THREE.Vector3(), _ikg = new THREE.Vector3(), _ikh = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion(), _q4 = new THREE.Quaternion();
@@ -50,8 +51,9 @@ function stripRoot(clip, rest) {
   for (const t of clip.tracks) {
     if (!/Hips\.position$/.test(t.name)) continue;
     const v = t.values, x0 = rest ? rest.x : v[0], z0 = rest ? rest.z : v[2];
-    // (the jump finishers keep their forward travel aside, in the hips' own units: the game moves her by it, render/newmoves.js)
-    if (/^hub_execution_/.test(clip.name) && !clip.travel) clip.travel = { times: Array.from(t.times), z: Array.from({ length: v.length / 3 }, (_, i) => v[i * 3 + 2]) };
+    // (the finishers keep their travel aside, in the hips' own units: the game moves her by it, render/newmoves.js; x too: the
+    // shotgun slide bends 25 cm to her left as it passes the zombie. The model is X-mirrored from the hub: her left is +x here)
+    if (/^hub_execution_/.test(clip.name) && !clip.travel) clip.travel = { times: Array.from(t.times), z: Array.from({ length: v.length / 3 }, (_, i) => v[i * 3 + 2]), x: Array.from({ length: v.length / 3 }, (_, i) => v[i * 3]) };
     for (let i = 0; i < v.length; i += 3) { v[i] = x0; v[i + 2] = z0; }
   }
   return clip;
@@ -800,9 +802,10 @@ export class YolaView extends ClipBody {
       for (const [name, a] of Object.entries(this.actions)) { const base = this.baseClip(name); if (!base || !arms(a)) continue; if (AS_LIVE[base]) this.liveActs.push(a); else if (this.poseSet[base]) this.poseActs.push([a, base]); }
     }
     const list = []; let live = 0;
-    for (const [a, base] of this.poseActs) { const w = Math.min(1, a.getEffectiveWeight()); if (w > 1e-3) list.push([w, this.poseSet[base]]); }
+    const C = this.shotgunClip(), keepC = C ? 1 - C.share : 1; // (the shotgun slide finisher's arm adjustments fade out with its weapon position)
+    for (const [a, base] of this.poseActs) { const w = Math.min(1, a.getEffectiveWeight()) * (base === C?.name ? keepC : 1); if (w > 1e-3) list.push([w, this.poseSet[base]]); }
     for (const a of this.liveActs) live += Math.min(1, a.getEffectiveWeight()); // (held as the live game: no adjustments)
-    const p = list.length ? blendArms(list) : null, h0 = this.poseSet['*hips'], hk = Math.max(0, 1 - live); // (*hips: the hands-at-her-hips rule, every clip)
+    const p = list.length ? blendArms(list) : null, h0 = this.poseSet['*hips'], hk = Math.max(0, 1 - live) * keepC; // (*hips: the hands-at-her-hips rule, every clip)
     const hip = h0 && hk > 1e-3 ? Object.fromEntries(Object.entries(h0).map(([sd, P]) => [sd, Object.fromEntries(Object.entries(P).map(([q, v]) => [q, typeof v === 'number' ? v * hk : v]))])) : null;
     if (p || hip) { adjustArms(this.bones, p, { hip }); this.container.updateMatrixWorld(true); }
   }
@@ -964,7 +967,46 @@ export class YolaView extends ClipBody {
   // Left hand on the shotgun: reaches the shell's loading port while it carries a shell, otherwise stays on
   // the pump wherever it slides. The weights fall off with the hand's distance, so the reload clip's own
   // reach to the belt and back is left alone.
-  shotgunLeftHand(rf, G) {
+  // THE SHOTGUN'S GRIP EXTRAS (2026-10-19, the user's Rig Lab setup; src/viewer.js does the same):
+  // - the shotgun slide finisher (hub_execution_shotgun_slide_*): while one plays, its own weapon position (assets/hold/
+  //   weapon_fit.json "short@<clip>": the kneel setup), faded to the everyday one over idleIn / idleOut (Rig Lab frames: it
+  //   starts and ends in the everyday hold), and its left fist closed round the pump (pumpHand)
+  // - the left hand nudged off the pump's grip point (fit.lDown / lSide, mm: down, toward her left)
+  // - the left wrist untwisted (untwistWrist)
+  shotgunClip() {
+    if (!this.shotgunClipFits) return null;
+    let best = null, bw = 0.01;
+    for (const [n, fit] of Object.entries(this.shotgunClipFits)) { const a = this.actions[n], w = a ? a.getEffectiveWeight() : 0; if (w > bw) { bw = w; best = [a, fit]; } }
+    if (!best) return null;
+    const [a, fit] = best, f = a.time * 30 + 1, ramp = (r) => clamp((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1);
+    const own = Math.max(fit.idleIn ? 1 - smooth(ramp(fit.idleIn)) : 0, fit.idleOut ? smooth(ramp(fit.idleOut)) : 0);
+    return { name: a.getClip().name, fit, share: 1 - (1 - own) * Math.min(1, bw) }; // (share: how much of the everyday hold)
+  }
+  shotgunFitNow(C) {
+    const base = this.shotgunFit || {}, own = C.fit, out = { ...own };
+    for (const [k, d] of Object.entries(FIT_DEFAULTS)) out[k] = (own[k] ?? d) + ((base[k] ?? d) - (own[k] ?? d)) * C.share;
+    return out;
+  }
+  leftNudge(F, out) {
+    const d = (F?.lDown || 0) / 1000, sd = (F?.lSide || 0) / 1000; out.set(0, -d, 0); if (!sd) return out;
+    this.bones.LeftArm.getWorldPosition(_v7); this.bones.RightArm.getWorldPosition(_ikh);
+    return out.add(_v7.sub(_ikh).setY(0).normalize().multiplyScalar(sd));
+  }
+  // The wrist's twist moved into the forearm: sg_reload's hold frame (X Bot's rifle reload, retargeted 2026-10-17) has her
+  // left HAND bone turned -118 deg about its own length and her forearm 0, so her skin wrings at the wrist ("her wrist looks
+  // completely whack"). Her hand keeps its world turn (the grip unchanged); the twist past keepDeg goes to the forearm.
+  untwistWrist(side, keepDeg) {
+    const H = this.bones[side + 'Hand'], F = this.bones[side + 'ForeArm'], M = this.bones[side + 'HandMiddle1']; if (!H || !F || !M) return;
+    const ax = _v7.copy(M.position).normalize(), q = H.quaternion, d = q.x * ax.x + q.y * ax.y + q.z * ax.z;
+    const tw = _q3.set(ax.x * d, ax.y * d, ax.z * d, q.w).normalize();
+    let ang = 2 * Math.acos(Math.min(1, Math.abs(tw.w))); if ((d < 0) !== (tw.w < 0)) ang = -ang;
+    const keep = keepDeg * Math.PI / 180, excess = ang - Math.sign(ang) * Math.min(Math.abs(ang), keep);
+    if (Math.abs(excess) < 1e-3) return;
+    H.updateWorldMatrix(true, false); H.getWorldQuaternion(_q4);
+    F.quaternion.multiply(_q3.setFromAxisAngle(_v7.copy(H.position).normalize(), excess)); F.updateMatrixWorld(true);
+    H.quaternion.copy(F.getWorldQuaternion(_q3).invert().multiply(_q4)); H.updateMatrixWorld(true);
+  }
+  shotgunLeftHand(rf, G, F = this.shotgunFit, C = null) {
     const U = G.userData, SP = SHOTGUN_SPEC, SH = SP.shell, smooth01 = (u) => smooth(clamp(u, 0, 1));
     const shellOn = rf >= SH.from && rf <= SH.to;
     this.grip('Left', _v);
@@ -983,8 +1025,13 @@ export class YolaView extends ClipBody {
       if (wPort > 0) { this.ikArm('Left', _v3, wPort); this.grip('Left', _v); }
     }
     _v2.set(U.pumpX, U.pump.position.y, U.pump.position.z); G.localToWorld(_v2); // the pump's rest hold point
-    const wHold = smooth01(1 - (_v.distanceTo(_v2) - 0.03) / 0.12) * (1 - wPort);
-    if (wHold > 0) this.ikArm('Left', U.gripL.getWorldPosition(_v3), wHold);
+    if (C?.fit.pumpHand && !shellOn && !tail) { // (the finisher: her fist round the pump's tube, turned where her wrist is most natural)
+      U.gripL.getWorldPosition(_v3).add(this.leftNudge(F, _v4)); _v5.set(1, 0, 0).transformDirection(G.matrixWorld);
+      reachShoulder(this.bones, 'Left', _v3, 25); handOnto(this.bones, 'Left', _v3, _v5, 1, solveArm, { signFree: true }); this.closeFist('Left', 1);
+    } else {
+      const wHold = smooth01(1 - (_v.distanceTo(_v2) - 0.03) / 0.12) * (1 - wPort);
+      if (wHold > 0) this.ikArm('Left', U.gripL.getWorldPosition(_v3).add(this.leftNudge(F, _v4)), wHold);
+    }
     // the shell rides the left hand
     const S = this.shell; S.visible = shellOn;
     if (shellOn) placeShell(this.bones, S, U.port.getWorldPosition(_v3), 'Left', smooth(clamp((rf - (SH.to - SHELL_INSERT)) / SHELL_INSERT, 0, 1))); // (in her fingers, toward the port, then in: holdfit.js)
@@ -1230,10 +1277,12 @@ export class YolaView extends ClipBody {
       // shotgun: rides the right hand. The pump slides after each shot and at the end of a reload; the left
       // hand follows it (IK), and during the reload it carries a shell up into the loading port.
       const G = this.shotgun, U = G.userData, SP = SHOTGUN_SPEC;
+      const C = this.shotgunClip(), F = C ? this.shotgunFitNow(C) : this.shotgunFit; // (the slide finisher's own setup while it plays)
+      this.untwistWrist('Left', 45);
       this.bones.RightHand.getWorldQuaternion(_q).multiply(this.shotgunSocket);
       this.grip('Right', _v);
       G.position.copy(_v); G.quaternion.copy(_q);
-      if (this.shotgunFit) applyFit(G, _v, _q, this.shotgunFit, AXE_AT); // (the user's shotgun fit, pivoting on the right grip)
+      if (F) applyFit(G, _v, _q, F, AXE_AT); // (the user's shotgun fit, pivoting on the right grip)
       let slide = 0;
       if (s.action === 'shot') { const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart); if (u > 0 && u < 1) slide = Math.sin(Math.PI * u); }
       const rf = this.reloadFrame;
@@ -1241,7 +1290,7 @@ export class YolaView extends ClipBody {
       U.pump.position.x = U.pumpX - SP.pumpStroke * slide;
       G.updateMatrixWorld(true);
       U.muzzle.getWorldPosition(this.muzzleWorld);
-      this.shotgunLeftHand(rf, G);
+      this.shotgunLeftHand(rf, G, F, C);
     } else {
       // axe: handle direction from the right-hand socket (as on the reference skeleton), grip between
       // the hands; the blade turns to lead the motion (edge first), resting toward the front
