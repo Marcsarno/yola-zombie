@@ -369,6 +369,8 @@ function setupBat(anims, fits = {}, woodG = null, axeG = null) {
   // (the user's fits, set in the Rig Lab: the wood bat is the Rig Lab's Bat, alubat: its own for the stance, alubat@ual_Sword_Block)
   hold.fit = (woodG ? fits.alubat : fits.bat)?.[who] || null;
   if (woodG && block) hold.fitIdle = fits['alubat@ual_Sword_Block']?.[who] || null;
+  // (the opening's walk out of the lift: the bat's own grip on that walk, set in the Rig Lab: opening/opening.js tickStand)
+  hold.fitWalk = (woodG && fits['alubat@reveal_walk']?.[who]) || null;
   yola.setOneHandedBat(hold, idle);
   // the axe (2026-10-19, the user: "use the same grip and attack as the bat"): the hospital pack's fire axe in her right fist
   // as the Rig Lab holds it (its packaxe fits; packaxe@ual_Sword_Block for the stance if set), the bat's stance and moves

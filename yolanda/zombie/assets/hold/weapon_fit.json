@@ -257,5 +257,16 @@
     75
    ]
   }
+ },
+ "alubat@reveal_walk": {
+  "yola2": {
+   "size": 100,
+   "fwd": 15,
+   "up": 14,
+   "side": 10,
+   "tilt": -1,
+   "turn": 20,
+   "roll": 7
+  }
  }
 }

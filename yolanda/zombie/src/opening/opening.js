@@ -1332,6 +1332,9 @@ export class Opening {
     const bat = Y.batLib?.obj, hand = Y.bones.RightHand;
     if (bat && s.bat === 'none') bat.visible = false;
     else if (bat && (s.bat === 'held' || s.bat === 'heldL')) { Y.outer.updateMatrixWorld(true); Y.placeHeld(s.bat === 'heldL' ? (this.leftBat ||= { ...Y.batLib, hand: 'Left' }) : Y.batLib); bat.visible = s.shown; } // (the game's own grip: the bat follows her fist through the swing)
+    else if (bat && s.bat === 'hang' && Y.batLib.fitWalk) { // (the walk's own grip, the user's in the Rig Lab: alubat@reveal_walk)
+      Y.outer.updateMatrixWorld(true); Y.placeHeld(this.walkBat ||= { ...Y.batLib, fit: Y.batLib.fitWalk, fitIdle: null }); bat.visible = s.shown;
+    }
     else if (bat && hand) { // in her right fist, the barrel hanging down along her leg, a little forward (the bat's origin is the grip, its barrel +z)
       Y.outer.updateMatrixWorld(true); const hp = hand.getWorldPosition(new THREE.Vector3()), fwd = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw));
       const dir = new THREE.Vector3(0, -0.93, 0).addScaledVector(fwd, 0.36).normalize();
