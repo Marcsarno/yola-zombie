@@ -421,6 +421,20 @@ Run bakes in background Blender (`blender -b --factory-startup --python ...`). O
   hand match (his gun arm now bends like X Bot's). His weight tests (steps 22-25) are 2nd figures in tests.json, not in
   his files. Next: the user places his guns in the Rig Lab (fits save under `male1`). MARC_HANDOFF.md.
 - **Arianna 2.0, Lilah:** waiting for Blender to be free. They follow this playbook from the skeleton step.
-- **Mixamo candidates (2026-10-20):** the user's 23 picks, with Chad the surgeon first. Not downloaded yet. Each gets the
-  intake report first. They share X Bot's skeleton, so the Mixamo clips play on them as they are; the Quaternius clips
-  go through the usual retarget. The raw files stay local (the repo is public).
+- **Mixamo candidates (2026-10-20):** the user's 23 picks, with Chad the surgeon first.
+  - **All downloaded** (T-pose FBX) to `assets/source/refs/<name>/`, local only (the repo is public).
+  - Each has its intake report and a textured portrait (`shots/intake/<name>/`). One comparison page:
+    `shots/intake/compare.html`.
+  - They share X Bot's skeleton, so the Mixamo clips play on them as they are; the Quaternius clips go through the
+    usual retarget.
+  - **Budget:** most of the people are 42-58k triangles (1.3-1.85x Yola) and need a lighter game version. The zombies
+    are light (Zombie Girl 7.4k, Yaku 8.1k, Parasite 10.9k, Skeleton Zombie 12.5k), and so are Swat (19.5k) and Eve
+    (27.2k).
+  - **Scale to check:**
+    - Remy's file is 3.79 units tall;
+    - Eve's is 1.39;
+    - the four light zombies are about 2.06.
+  - **Mixamo download traps:**
+    - the viewer carries the last animation onto the next character (clear it, or the T-pose option is gone);
+    - the browser sometimes leaves a finished download as `<uuid>.tmp`, or renames it late: check the FBX footer and
+      the size before filing it.
