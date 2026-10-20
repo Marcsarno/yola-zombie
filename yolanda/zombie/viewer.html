@@ -65,10 +65,20 @@
      want to edit the idle and the attacks"): a weapon, its idle or attack, Yola beside the clip's own dummy, the angles, the fit.
      Everything else is under Advanced (the old top bar and the clip list, unchanged). -->
 <div id="edit" class="panel">
+  <div class="grp"><span class="lbl">Character</span><select id="eChar"></select></div>
   <div class="grp"><span class="lbl">Weapon</span><span id="eWeapons"></span></div>
-  <div class="grp"><button id="eIdle">Idle</button><button id="eAttack">Attack</button><button id="eFin">Finishers</button><select id="eClip"></select></div>
+  <div class="grp"><button id="eIdle">Idle</button><button id="eAttack">Attack</button><button id="eFin">Finishers</button><select id="eClip"></select>
+    <label class="chk" id="eRunL" hidden title="when a clip ends, play the next one in the list (the range of motion, start to end)"><input type="checkbox" id="eRun"> run the list</label></div>
   <div class="grp"><span class="lbl">Dummy</span><span id="eDummy" style="color:var(--dim)"></span></div>
-  <div class="grp"><span class="lbl">Show</span><span id="eShow"><button data-show="both">Both</button><button data-show="main">Yola</button><button data-show="ref">Dummy</button></span></div>
+  <!-- the body check's other figures (2026-10-20, CHARACTER_RIG_PLAYBOOK.md): a second version of the character or another
+       character, a clothed dummy beside the bare one, the skin weights, the skeleton, the names -->
+  <div class="grp" id="eCmp"><span class="lbl">Compare</span>
+    <select id="eSecond" title="a second figure beside the character: a test version of it (assets/test_clips/tests.json: new weights without rebuilding its clips), or another character (shape and clothes only, never the motion truth)"></select>
+    <select id="eExtra" title="a clothed dummy beside the bare one, on the clip's own skeleton: Brian (Mixamo clips) or Quaternius's Peasant / Ranger (library clips): how clothes should bend"></select>
+    <select id="eHeat" title="the skin weights on every figure, as Blender draws them: one bone (blue none, green half, red all) or patches (a colour per bone: borders and strays)"></select>
+    <select id="eSkel" title="the skeleton on every figure (one colour per figure; the fingers coloured per finger)"><option value="off">bones: off</option><option value="body">bones: body</option><option value="hands">bones: fingers</option><option value="both">bones: all</option></select>
+    <label class="chk" title="a name over every figure (in the pictures too)"><input type="checkbox" id="eTags" checked> names</label></div>
+  <div class="grp"><span class="lbl">Show</span><span id="eShow"><button data-show="both">Both</button><button data-show="main">Yola</button><button data-show="ref">Dummy</button></span><button id="eLay" title="every figure on the same spot, the others as see-through ghosts: before / after, or the character inside its dummy">Overlay</button></div>
   <div class="grp"><span class="lbl">Angle</span><span id="eAngles"><button data-a="front">Front</button><button data-a="back">Back</button><button data-a="right">Her right</button><button data-a="left">Her left</button><button data-a="three">3/4</button><button data-a="above">Above</button><button data-a="below">Below</button><button data-a="hands">Hands</button></span></div>
   <div class="grp"><button id="eFit" class="on" title="the sidebar: weapon position, arms, joint check, layers, save">Panel</button><button id="eAdv">Advanced</button><button id="eHide" title="hide everything (H)">Hide (H)</button></div>
 </div>

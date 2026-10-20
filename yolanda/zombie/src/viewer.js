@@ -13,6 +13,7 @@ import { placeBat, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell,
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 import { LAYERS, HOLD_LAYERS, AS_LIVE, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
 import { adjustArms, armReadout, ARM_PARAMS, ARM0 } from './render/armpose.js';
+import { LiveRetarget, setWeights, makeTag, setTag, placeTag, tintSkeleton, ROM } from './riglab/check.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
 const CLIP_FPS = { bat_combo_mc: 60 };
@@ -208,7 +209,7 @@ function applyMesh() {
 }
 function updateFingers() {
   const on = $('fingerBones')?.checked !== false;
-  for (const a of ACTORS) a.fing.update(on && (a === main || a === ref) && a.root.visible && a.root.parent === scene);
+  for (const a of ACTORS) a.fing.update(on && (a === main || a === ref || a === second || a === extra) && a.root.visible && a.root.parent === scene);
 }
 
 class Actor {
@@ -298,6 +299,7 @@ class Gun {
 const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun: 'auto', frames: 1, show: 'both', mode: 'idle', fitOn: true, fitWho: 'main', armSide: 'Right', armLimit: true };
 const weaponOf = () => (S.gun === 'auto' ? autoWeapon(main?.clip?.name || '') : S.gun);
 let main, ref, mainGun, refGun, refX, refGunX;
+let second = null, extra = null; // (BODY CHECK's other figures: a second version of the character, a clothed dummy)
 const ualCache = {};
 // clothed men on the mannequin's own rig (tools/anim/clothed_ref_build.py; Quaternius Modular Character Outfits, CC0)
 const UAL_CLOTHED = { clothed: 'assets/source/ual/Clothed_Male_Peasant.glb', clothed2: 'assets/source/ual/Clothed_Male_Ranger.glb' };
@@ -340,11 +342,11 @@ function useRef(a) { // switch the shown reference actor (the X Bot or a mannequ
   ref = a; refGun = a === refX ? refGunX : new Gun(a);
 }
 const gunTemplates = {}, marks = {}, mainCache = {};
-function ghostify(obj, on) {
+function ghostify(obj, on, color = 0x66d4ff) { // (color: BODY CHECK's other figures ghost in their own colour)
   obj.traverse((o) => {
     if (!o.isMesh) return;
     if (!o.__mat) o.__mat = o.material;
-    o.material = on ? new THREE.MeshBasicMaterial({ color: 0x66d4ff, transparent: true, opacity: 0.4, depthWrite: false }) : o.__mat;
+    o.material = on ? new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, depthWrite: false }) : o.__mat;
   });
 }
 function makeMarks() {
@@ -396,6 +398,7 @@ async function setChar(key) {
   }
   const { gltf, actor } = mainCache[key];
   main = actor; scene.add(main.root, main.helper);
+  bodyChar(key); // (its live library clips, the second-figure list)
   mainGun = new Gun(main);
   const sel = $('clip'); sel.innerHTML = ''; fillClips();
   const first = key === 'yola2' || key === 'male1' ? 'ual_Sword_Regular_Combo' : key === 'yola' ? (gltf.animations.some((c) => c.name === 'bat_combo_mc') ? 'bat_combo_mc' : 'reload_rifle_stand') : gltf.animations[0].name;
@@ -405,6 +408,7 @@ async function setChar(key) {
 }
 async function setClip(name) {
   const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
+  if (c.userData?.live && !(await liveFill(c))) return; // (a library clip played live: its length from the library)
   pinRoot(c, $('inplace').checked && !c.userData?.fin, main); main.play(c); main.hair?.reset?.(); FPS = fpsOf(c); vidRef(name);
   // the reference: the clip's own source rig. Mixamo clips: Mixamo's X Bot; library clips: Quaternius's mannequin
   // (a game clip made from a library move is shown against that move: CHARS[].libRef)
@@ -433,18 +437,21 @@ async function setClip(name) {
   S.refOff = rc && !lib ? REF_OFFSET[name.replace(/_REBAKE_.*$/, '')] || 0 : 0;
   S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
   $('scrub').max = S.frames; S.frame = 1;
+  await figuresFor(c, rc, lib);
   layout(); refresh(); mainGun.calibrate(); refGun?.calibrate(); refresh();
   markClipPanel(); // (setChar picks its first clip without a change event)
   editSync();
   if (!$('meshOn').checked) { applyMesh(); refresh(); } // (a reference or character loaded since keeps the mesh choice)
 }
 function layout() {
-  const sep = S.overlay ? 0 : 0.55;
-  main.root.position.set(-sep, 0, 0); ref.root.position.set(sep, 0, 0);
+  // left to right from the front: the character, its second version, the clip's dummy, the clothed dummy (1.1 m apart)
+  const figs = figures();
+  figs.forEach((a, i) => a.root.position.set(S.overlay ? 0 : (i - (figs.length - 1) / 2) * 1.1, 0, 0));
   ref.setHeight($('match').checked ? main.height : ref.nat);
-  ghostify(ref.obj, S.overlay);
+  if (extra) extra.setHeight($('match').checked ? main.height : extra.nat);
+  applyLooks();
   $('lay').textContent = S.overlay ? 'overlay (ghost)' : 'side by side';
-  main.root.updateMatrixWorld(true); ref.root.updateMatrixWorld(true);
+  for (const a of figs) a.root.updateMatrixWorld(true);
 }
 const PUMP = { auto: true, a: 80, b: 96, stroke: 0.07, portDown: 0.05 };
 function pumpSlide(f) {
@@ -548,6 +555,7 @@ function refresh() {
   const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
+  bodyFrame(f); // (a live library clip on the character, the second figure, the clothed dummy, the names)
   undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main); armPoseOn(main);
   if (SHOTGUNS[weaponOf()]) untwistWrist(main, 'Left', S.wristKeep ?? 45);
   if (handsUI && handsSeen !== handKey()) { handsSeen = handKey(); handsUI(); }
@@ -718,7 +726,7 @@ function postureC(a, src) { // per (character, source rig): the constant turn fo
 function postureFix(a, src) {
   // the game's posture fix (render/posture.js: the turns measured by postureC above, the hands left out, the head's
   // children turning with it), on Yola for the shown clip's source family
-  if (!$('posture')?.checked || a !== main || !a?.action || S.char !== 'yola2') return; // (measured on Yola 3.0's rig)
+  if (!$('posture')?.checked || a !== main || !a?.action || S.char !== 'yola2' || a.clip?.userData?.live) return; // (measured on Yola 3.0's rig; a live clip lines the bones up itself)
   const fam = postureFamily((CHARS[S.char].libRef || {})[a.clip.name.replace(/_REBAKE_.*$/, '')] || a.clip.name.replace(/_REBAKE_.*$/, ''));
   if (!fam) return;
   const one = { [fam]: 1 }; applyPosture(a.bones, Object.fromEntries(POSTURE_BONES.map((n) => [n, one])), (b, fn) => postRot(a, outerBone(b), fn));
@@ -1053,6 +1061,188 @@ function drawVidRef(f) {
   vr.label.textContent = 'reference: clip 13 frame ' + rf + '   (Yola frame ' + f + ')';
 }
 
+// ---------------- BODY CHECK ----------------
+// (2026-10-20, the user: "optimize the workflow, and the rig lab ... we can do much better"; CHARACTER_RIG_PLAYBOOK.md.)
+// The edit bar's "Body check": no weapon, and up to four figures left to right:
+//   - the character;
+//   - a second version of it (a test file: tools list them in assets/test_clips/tests.json) or another character;
+//   - the clip's own dummy;
+//   - a clothed dummy on the same skeleton, beside the bare one.
+// Any Quaternius library clip plays live on every character (riglab/check.js LiveRetarget: the bake's rule, without the
+// hand / foot contacts), the range-of-motion list first. Weights drawn as Blender draws them, a name over every figure,
+// one skeleton colour per figure.
+const TINT = { main: 0xff9f43, second: 0xff5ccf, ref: 0xffffff, extra: 0x7dffa0 }; // (skeletons and names: orange, magenta, white, green)
+const normBone = (n) => { const s = n.replace(/^mixamorig\d*:?/, ''); return UE_MAP[s] || s; };
+const isLive = (n) => !!mainCache[S.char]?.gltf.animations.find((c) => c.name === n)?.userData?.live;
+const ROM_NAMES = ROM.map(([p, n]) => p + n), ROM_LABEL = Object.fromEntries(ROM.map(([p, n, l]) => [p + n, l]));
+const OTHERS = new Set(); // every second figure / clothed dummy loaded (only the chosen ones show)
+let LIB_NAMES = []; // every library clip (prefix + name), once both library files are loaded
+function addLive(key) { // the library clips this character has no bake of, listed as live clips (a placeholder each)
+  const g = mainCache[key]?.gltf; if (!g) return;
+  const have = new Set(g.animations.map((c) => c.name));
+  for (const n of [...ROM_NAMES, ...LIB_NAMES]) {
+    if (have.has(n)) continue;
+    const c = new THREE.AnimationClip(n, 1, []); c.userData = { live: { lib: n.startsWith('ual1_') ? 'ual1_' : 'ual_', src: n.replace(/^ual1?_/, '') } };
+    g.animations.push(c); have.add(n);
+  }
+}
+let libLoading = null;
+function loadLibrary() { // both library files (the mannequin plays them); then every clip of theirs is listed
+  return (libLoading ||= Promise.all(Object.entries(UAL_FILES).map(([p, f]) => ualRef(f).then((u) => (u?.clips || []).map((c) => p + c.name)))).then((lists) => {
+    LIB_NAMES = lists.flat(); for (const k in mainCache) addLive(k); fillClips(); editSync();
+  }));
+}
+async function liveFill(c) { // a live clip takes its length and timing from the library clip (which the dummy plays)
+  const L = c.userData.live; if (L.ready) return true;
+  const u = await ualRef(UAL_FILES[L.lib]), rc = u?.clips.find((x) => x.name === L.src);
+  if (!rc) { $('eDummy').textContent = 'the library file did not load'; return false; }
+  c.duration = rc.duration; c.tracks = [new THREE.BooleanKeyframeTrack('.visible', [clipT0(rc), rc.duration], [true, true])]; // (no bone tracks)
+  L.ready = true; return true;
+}
+const holders = new WeakMap(); // a placeholder as long as a library clip, for a figure posed live from it
+function holder(rc) { if (!holders.has(rc)) holders.set(rc, new THREE.AnimationClip(rc.name + '_live', rc.duration, [new THREE.BooleanKeyframeTrack('.visible', [clipT0(rc), rc.duration], [true, true])])); return holders.get(rc); }
+const lives = new Map();
+function liveFor(src, tgt) { const k = src.obj.uuid + '|' + tgt.obj.uuid; if (!lives.has(k)) lives.set(k, new LiveRetarget(src, tgt)); return lives.get(k); }
+
+// the clothed dummy beside the bare one, on the clip's own skeleton: Mixamo clips get Brian (the user's Mixamo download,
+// as the Layout row's "dummy: clothed"); library clips get Quaternius's Peasant / Ranger, or the female mannequin
+const EXTRAS = {
+  clothed: { label: 'clothed dummy (Brian / Peasant)', mixamo: MIX_CLOTHED, ual: UAL_CLOTHED.clothed, tag: { mixamo: 'Brian · clothed', ual: 'Peasant · clothed' } },
+  clothed2: { label: 'clothed dummy (Brian / Ranger)', mixamo: MIX_CLOTHED, ual: UAL_CLOTHED.clothed2, tag: { mixamo: 'Brian · clothed', ual: 'Ranger · clothed' } },
+  female: { label: 'female mannequin', ual: UAL_FEMALE, tag: { ual: 'Mannequin (female)' } },
+};
+const extraCache = {};
+function extraBody(file) { // its own copy (the Layout row's dummy may be showing the same body)
+  return (extraCache[file] ||= (/\.fbx$/i.test(file)
+    ? loadF(file).then((o) => { o.traverse((x) => { if (x.isBone) x.name = x.name.replace(/^mixamorig\d+/, 'mixamorig'); }); o.animations = []; return o; }) // (as mixRef)
+    : loadG(file).then((g) => g.scene))
+    .then((o) => { o.traverse((x) => { if (x.isMesh) x.frustumCulled = false; }); const a = new Actor(o, 1.62); a.root.visible = false; a.file = file; scene.add(a.root, a.helper); OTHERS.add(a); return a; })
+    .catch((e) => (console.warn('clothed dummy failed to load', file, e), null)));
+}
+// the second figure: a test file of this character (tools add them to assets/test_clips/tests.json, { "<char>": [{ "file",
+// "label", "extra": [more clip files] }] }, or &second=<glb> with &char=), or another character (its shape and clothes
+// only: never the motion truth). A test file with the mesh and skeleton only (new weights) plays this character's clips.
+let TESTS = {};
+fetch('assets/test_clips/tests.json', { cache: 'reload' }).then((r) => r.json()).then((j) => { TESTS = j || {}; secondUI(); }).catch(() => {});
+const urlSecond = () => { const q = new URLSearchParams(location.search); return q.get('char') === S.char ? (q.get('second') || '').split(',').filter(Boolean).map((f) => ({ file: f })) : []; };
+const testsOf = (k) => [...(TESTS[k] || []), ...urlSecond()];
+const secondCache = {};
+function loadSecond(v) {
+  return (secondCache[v] ||= (async () => {
+    const i = v.indexOf(':'), kind = v.slice(0, i), id = v.slice(i + 1), t = testsOf(S.char).find((x) => x.file === id);
+    const files = kind === 'char' ? [CHARS[id].file, ...(CHARS[id].extra || [])] : [id, ...(t?.extra || [])]; // (a test's "extra": more of its clip files)
+    const g = await loadG(files[0]), anims = new Map(g.animations.map((c) => [c.name, c]));
+    for (const f of files.slice(1)) try { for (const c of (await loadG(f)).animations) if (!anims.has(c.name)) anims.set(c.name, c); } catch { /* not built */ }
+    g.scene.traverse((o) => { if (o.isMesh) o.frustumCulled = false; if (/^GORE_/.test(o.name)) o.visible = false; });
+    const a = new Actor(g.scene, kind === 'char' ? CHARS[id].height : CHARS[S.char].height); a.root.visible = false; scene.add(a.root, a.helper); OTHERS.add(a);
+    return Object.assign(a, { anims, kind, key: v, forChar: kind === 'file' ? S.char : id, label: kind === 'char' ? CHARS[id].label.split(' (')[0] : (t?.label || id.split('/').pop().replace(/\.glb$/, '')) });
+  })().catch((e) => (console.warn('second figure failed to load', v, e), null)));
+}
+async function setSecond(v) { second = v ? await loadSecond(v) : null; await setClip($('clip').value); }
+function bodyChar(key) { // on a character change: its live clips; a test of another character (or itself) leaves
+  addLive(key);
+  if (second && (second.kind === 'file' ? second.forChar !== key : second.forChar === key)) second = null;
+  secondUI(); if ($('eChar')) $('eChar').value = key;
+}
+// what each other figure plays for the clip the character plays (rc: the clip's dummy's clip; lib: a library clip)
+async function figuresFor(c, rc, lib) {
+  S.fam = !rc ? null : lib ? 'ual' : 'mixamo';
+  if (second) {
+    const own = second.anims.get(c.name); second.on = true; second.liveSrc = null;
+    if (own) { pinRoot(own, $('inplace').checked && !own.userData?.fin, second); second.play(own); } // (its own bake)
+    else if (c.userData?.live) { second.play(c); second.liveSrc = ref; } // (a live clip: posed live too)
+    else if (second.kind === 'file') second.play(c); // (a test of this character: the clip by its bone names)
+    else if (S.fam === 'ual') { second.play(holder(rc)); second.liveSrc = ref; } // (another character without this bake)
+    else second.on = false;
+  }
+  const E = EXTRAS[S.extra], file = S.fam && E?.[S.fam];
+  // (none when the Layout row's dummy is already the clothed one)
+  extra = file && !($('refBody')?.value && S.extra !== 'female') ? await extraBody(file) : null;
+  if (extra) { extra.on = true; extra.tagText = E.tag[S.fam]; extra.play(S.fam === 'mixamo' ? rigClip(rc, refX, extra) : rc); }
+}
+const figures = () => [main, second?.on ? second : null, ref, extra?.on ? extra : null].filter(Boolean);
+function figLabel(a, role) {
+  if (role === 'main') return (CHARS[S.char]?.label || S.char).split(' (')[0] + (second?.on && second.kind === 'file' ? ' · now' : '') + (main.clip?.userData?.live ? ' · live' : '');
+  if (role === 'second') return a.label + (a.kind === 'file' ? ' · test' : '') + (a.liveSrc ? ' · live' : '');
+  if (role === 'ref') { const rb = $('refBody')?.value; return (rb && EXTRAS[rb]?.tag[S.fam] ? EXTRAS[rb].tag[S.fam] : S.fam === 'mixamo' ? 'X Bot' : $('femref')?.checked ? 'Mannequin (female)' : 'Mannequin') + ' · clip source'; }
+  return a.tagText || 'clothed dummy';
+}
+// each redraw: the live poses, the other figures' frames, skeleton colours, the names
+function bodyFrame(f) {
+  if (!main) return;
+  const t = S.playing ? Math.max(1, S.frame) : f;
+  if ((main.clip?.userData?.live || second?.liveSrc) && ref?.action) ref.setFrame(Math.min(t + (S.refOff || 0), ref.frames)); // (shown or not: it drives them)
+  if (main.clip?.userData?.live && ref?.action) liveFor(ref, main).apply();
+  if (second) {
+    second.root.visible = !!second.on && S.show !== 'ref';
+    if (second.root.visible && second.action) { second.setFrame(Math.min(t, second.frames)); if (second.liveSrc?.action) liveFor(second.liveSrc, second).apply(); }
+  }
+  if (extra) {
+    extra.root.visible = !!extra.on && !!S.refHas && S.show !== 'main';
+    if (extra.root.visible && extra.action) extra.setFrame(Math.min(f + (S.refOff || 0), extra.frames));
+  }
+  for (const a of OTHERS) if (a !== second && a !== extra) { a.root.visible = false; a.helper.visible = false; }
+  const bones = $('bones')?.checked, names = $('eTags')?.checked !== false, shown = new Set(); let stack = 0; // (overlay: the names stacked)
+  for (const [a, role] of [[main, 'main'], [second, 'second'], [ref, 'ref'], [extra, 'extra']]) {
+    if (!a) continue; shown.add(a);
+    if (a.__tint !== TINT[role]) { tintSkeleton(a.helper, TINT[role]); a.__tint = TINT[role]; }
+    if (role === 'second' || role === 'extra') a.helper.visible = !!bones && a.root.visible;
+    if (!a.tag) { a.tag = makeTag(); scene.add(a.tag); }
+    a.tag.visible = names && a.root.visible && a.root.parent === scene && !!a.action;
+    if (a.tag.visible) { setTag(a.tag, figLabel(a, role), TINT[role]); placeTag(a.tag, a, S.overlay ? 0.13 * stack++ * (main.height / 1.62) : 0); }
+  }
+  for (const a of ACTORS) if (a.tag && !shown.has(a)) a.tag.visible = false;
+}
+// the materials: the weights view (all figures), else each mesh's own (the dummies ghosted in the overlay layout)
+function applyLooks() {
+  const v = $('eHeat')?.value || '', mode = v === 'patch' ? 'patch' : v ? 'bone' : '';
+  for (const a of new Set([main, second, ref, extra, ...OTHERS].filter(Boolean))) {
+    const ghost = S.overlay && a !== main, gc = a === second ? TINT.second : a === extra ? TINT.extra : undefined;
+    if (mode) { ghostify(a.obj, ghost, gc); setWeights(a.obj, mode, v, normBone); } else { setWeights(a.obj, '', '', normBone); ghostify(a.obj, ghost, gc); }
+  }
+}
+// the edit bar's lists for the body check
+const BODY_MOVES = ['tripo_idle', 'ual1_Idle_Loop', 'ual1_Idle_LookAround_Loop', 'ual1_Walk_Loop', 'ual1_Jog_Fwd_Loop', 'ual1_Sprint_Loop', 'p_run_plain', 'p_run_back_plain', 'p_run_strafe_left_plain', 'p_run_strafe_right_plain', 'p_walk_strafe_left_plain'];
+const BODY_GAME = ['pistol_idle', 'pistol_walk', 'pistol_reload', 'sg_reload', 'rifle_aim_idle', 'ual1_Sword_Idle', 'ual_Sword_Block', 'ual_Sword_Regular_Combo', 'ual_Sword_Heavy_Combo', 't_box_01', 't_box_02', 't_kick_02', 'hit_body', 'yola_knockdown', 'yola_getup', 'death_fall'];
+function bodyGroups() {
+  const A = mainCache[S.char]?.gltf.animations || [], have = new Map(A.map((c) => [c.name, c])), used = new Set();
+  const take = (l) => l.filter((n) => have.has(n) && !used.has(n) && used.add(n));
+  return [['Range of motion (every rig plays these)', take(ROM_NAMES)], ['Stand and move (baked)', take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
+    ["The game's moves (baked)", take(BODY_GAME.filter((n) => !have.get(n)?.userData?.live))], ['Whole Quaternius library (live, not baked)', take([...LIB_NAMES].sort())]].filter(([, l]) => l.length);
+}
+const bodyPretty = (n) => (ROM_LABEL[n] ? ROM_LABEL[n] + ':  ' : '') + n.replace(/^(ual1?|kev)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') +
+  (isLive(n) ? '  · Quaternius, live' : /^ual/.test(n) ? '  · Quaternius' : /^(t_|tripo_)/.test(n) ? '  · Tripo (no dummy)' : '  · Mixamo');
+function secondUI() {
+  const sel = $('eSecond'); if (!sel) return;
+  const keep = second?.key || '', og = (label, items) => { if (!items.length) return; const g = document.createElement('optgroup'); g.label = label; for (const [v, t] of items) g.appendChild(new Option(t, v)); sel.appendChild(g); };
+  sel.innerHTML = ''; sel.add(new Option('2nd figure: none', ''));
+  og(`Test versions of ${(CHARS[S.char]?.label || S.char).split(' (')[0]}`, testsOf(S.char).map((t) => ['file:' + t.file, t.label || t.file.split('/').pop()]));
+  og('Other characters (shape and clothes only)', Object.keys(CHARS).filter((k) => k !== S.char).map((k) => ['char:' + k, CHARS[k].label]));
+  sel.value = [...sel.options].some((o) => o.value === keep) ? keep : '';
+}
+function bodyUI() { // the edit bar's Compare row
+  const ex = $('eExtra'); ex.add(new Option('+ dummy: none', '')); for (const [k, E] of Object.entries(EXTRAS)) ex.add(new Option('+ ' + E.label, k));
+  ex.onchange = () => { S.extra = ex.value; setClip($('clip').value); };
+  const ht = $('eHeat'); ht.add(new Option('weights: off', '')); ht.add(new Option('weights: patches (every bone)', 'patch'));
+  const NICE = { Hips: 'hips', Spine: 'lower back (Spine)', Spine1: 'middle back (Spine1)', Spine2: 'chest (Spine2)', Neck: 'neck', Head: 'head', Shoulder: 'collarbone', Arm: 'upper arm', ForeArm: 'forearm', Hand: 'hand', UpLeg: 'thigh', Leg: 'shin', Foot: 'foot', ToeBase: 'toes' };
+  const nice = (n) => { const m = /^(Left|Right)?(.*)$/.exec(n); return (m[1] ? (m[1] === 'Left' ? 'left ' : 'right ') : '') + (NICE[m[2]] || m[2]); };
+  const og = (label, list) => { const g = document.createElement('optgroup'); g.label = label; for (const n of list) g.appendChild(new Option('weights: ' + nice(n), n)); ht.appendChild(g); };
+  og('Spine and head', ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head']);
+  for (const s of ['Left', 'Right']) { og(s + ' arm', ['Shoulder', 'Arm', 'ForeArm', 'Hand'].map((b) => s + b)); og(s + ' leg', ['UpLeg', 'Leg', 'Foot', 'ToeBase'].map((b) => s + b)); }
+  ht.onchange = () => { applyLooks(); refresh(); };
+  $('eSecond').onchange = (e) => setSecond(e.target.value); secondUI();
+  $('eSkel').onchange = (e) => document.querySelector(`#skelPick [data-skel="${e.target.value}"]`)?.click();
+  $('eTags').onchange = () => refresh();
+  $('eRun').onchange = (e) => { S.runList = e.target.checked; };
+  $('eLay').onclick = () => { S.overlay = !S.overlay; layout(); refresh(); editSync(); }; // (as Advanced's layout button)
+  for (const k in CHARS) $('eChar').add(new Option(CHARS[k].label, k));
+  $('eChar').onchange = async (e) => { await setChar(e.target.value); editPick(editFirst()); };
+}
+function runNext() { // "run the list": the next clip in the edit bar's list when this one ends
+  const o = [...$('eClip').options].filter((x) => x.value), i = o.findIndex((x) => x.value === main.clip?.name);
+  S.runBusy = true; editPick(o[(i + 1) % o.length]?.value); setTimeout(() => { S.runBusy = false; }, 800);
+}
+
 // ---------------- UI ----------------
 // each weapon's idle and attack clips in the game (render/clipchars.js, core/weapons.js): the axe holds the bat idle and
 // chops; the one-handed bat is the Quaternius sword set; the guns shoot with a kick in code, not a clip
@@ -1095,7 +1285,7 @@ function fillClips() {
   const sel = $('clip'), keep = sel.value, anims = mainCache[S.char].gltf.animations.filter((c) => NO_KK(c.name)), byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = new Set();
   sel.innerHTML = '';
   const group = (label, list) => {
-    const ok = list.filter((n) => byN[n]); if (!ok.length) return;
+    const ok = list.filter((n) => byN[n] && !byN[n].userData?.live); if (!ok.length) return; // (live library clips: their own group)
     const g = document.createElement('optgroup'); g.label = label;
     for (const n of ok) { g.appendChild(new Option(`${n}  (${clipFrames(byN[n])}f)${usedTag(n)}`, n)); used.add(n); }
     sel.appendChild(g);
@@ -1116,6 +1306,9 @@ function fillClips() {
   const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
   for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === 'None' ? 'Fists / none' : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
   for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
+  // (BODY CHECK) the library clips this character has no bake of, played live
+  const live = anims.filter((c) => c.userData?.live && !used.has(c.name)).map((c) => c.name).sort();
+  if (live.length) { const g = document.createElement('optgroup'); g.label = `QUATERNIUS LIBRARY: played live, not baked (${live.length})`; for (const n of live) { g.appendChild(new Option(`${n.replace(/^ual1?_/, '').replace(/_/g, ' ')}  [live]`, n)); used.add(n); } sel.appendChild(g); }
   group(!/^yola/.test(S.char) ? 'This character\'s clips' : ws.length === 1 ? 'Other clips (other weapons, library picks, unused)' : 'Other clips (library picks, unused)', anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
   if (byN[keep]) sel.value = keep;
   buildClipPanel();
@@ -1189,13 +1382,14 @@ const gameAttack = (n) => (GAME_ATTACKS[S.gun] || []).includes(n) ? 'story game'
 function gameAttacks() {
   const have = new Set([...mainCache[S.char].gltf.animations.map((c) => c.name), ...[...($('clip')?.options || [])].map((o) => o.value)]);
   const arena = Object.keys(PICKS).filter((k) => k.endsWith('|' + ARENA_KEY[S.gun])).map((k) => k.slice(0, k.lastIndexOf('|')));
-  return [...new Set([...(GAME_ATTACKS[S.gun] || []), ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
+  return [...new Set([...(GAME_ATTACKS[S.gun] || []), ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n) && !isLive(n));
 }
 function editClips() {
+  if (S.mode === 'body') return bodyGroups().flatMap(([, l]) => l); // (BODY CHECK)
   if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin && /shotgun/.test(c.name) === !!SHOTGUNS[S.gun]).map((c) => c.name).sort(); // (a shotgun: its own finishers; the rest: the melee ones)
   if (S.mode === 'attack' && ARENA_KEY[S.gun]) { const g = gameAttacks(); if (g.length) return g; }
   const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === 'idle' ? EDIT_IDLE : EDIT_ATTACK);
-  return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n))
+  return mainCache[S.char].gltf.animations.filter((c) => !c.userData?.live).map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n))
     .sort((a, b) => (a === 'ual_Sword_Block' ? -1 : b === 'ual_Sword_Block' ? 1 : a.localeCompare(b)));
 }
 const SLIDE_M = { short: '1.4', mid: '2.2', long: '3.0' };
@@ -1205,15 +1399,22 @@ function editSync() {
   if (!$('edit') || !main) return;
   for (const b of $('eWeapons').children) b.classList.toggle('on', b.dataset.k === S.gun);
   $('eIdle').classList.toggle('on', S.mode === 'idle'); $('eAttack').classList.toggle('on', S.mode === 'attack'); $('eFin').classList.toggle('on', S.mode === 'finisher');
-  const sel = $('eClip'), list = editClips(), cur = main.clip?.name || '';
-  sel.innerHTML = ''; for (const n of list) sel.add(new Option(prettyClip(n), n));
+  const sel = $('eClip'), list = editClips(), cur = main.clip?.name || '', body = S.mode === 'body';
+  sel.innerHTML = '';
+  if (body) for (const [label, l] of bodyGroups()) { const g = document.createElement('optgroup'); g.label = label; for (const n of l) g.appendChild(new Option(bodyPretty(n), n)); sel.appendChild(g); } // (BODY CHECK)
+  else for (const n of list) sel.add(new Option(prettyClip(n), n));
   if (!list.includes(cur)) sel.add(new Option('(' + (cur || 'none') + ')', cur), 0);
   sel.value = cur;
-  $('eDummy').textContent = !S.refHas ? 'none for this clip' : ref === refX ? 'Mixamo X Bot' : 'Quaternius mannequin';
+  $('eIdle').hidden = $('eAttack').hidden = $('eFin').hidden = body; $('eRunL').hidden = !body;
+  $('eChar').value = S.char; $('eSkel').value = $('bones').checked ? ($('fingerBones').checked ? 'both' : 'body') : $('fingerBones').checked ? 'hands' : 'off';
+  const dummy = S.fam === 'mixamo' ? 'Mixamo X Bot' : 'Quaternius mannequin';
+  $('eDummy').textContent = !S.refHas ? 'none for this clip' : dummy + ($('refBody')?.value ? ' (clothed)' : '') + (extra?.on ? ' + ' + extra.tagText : '') + (main.clip?.userData?.live ? '  ·  played live, not baked' : '');
   for (const b of $('eShow').children) {
     b.classList.toggle('on', b.dataset.show === S.show);
     if (b.dataset.show === 'main') b.textContent = (CHARS[S.char]?.label || 'Yola').split(' (')[0]; // (the character shown: Yola 2, Marc...)
+    if (b.dataset.show === 'both') b.textContent = figures().length > 2 ? 'All' : 'Both';
   }
+  $('eLay').classList.toggle('on', !!S.overlay);
   $('eFit').classList.toggle('on', S.fitOn); $('eAdv').classList.toggle('on', !$('top').hidden);
   sidebarSync();
 }
@@ -1457,14 +1658,20 @@ function editAngle(k) {
   if (k === 'hands') { camHands(S.show === 'ref' ? 'ref' : 'main'); return; }
   const x = S.show === 'main' ? main.root.position.x : S.show === 'ref' ? ref.root.position.x : 0, c = new THREE.Vector3(x, 0.95, 0);
   const D = { front: [0, 0.1, 1], back: [0, 0.1, -1], right: [-1, 0.1, 0], left: [1, 0.1, 0], three: [-0.7, 0.35, 0.75], above: [0, 1, 0.03], below: [0, -0.5, 0.85] }[k];
-  camera.position.copy(c).addScaledVector(new THREE.Vector3(...D).normalize(), S.show === 'both' ? 3.6 : 2.6); controls.target.copy(c); controls.update();
+  camera.position.copy(c).addScaledVector(new THREE.Vector3(...D).normalize(), S.show === 'both' ? 2.5 + 1.1 * (figures().length - 1) : 2.6); controls.target.copy(c); controls.update(); // (further back for 3-4 figures)
 }
 function buildEditUI(ui, fitClipPanel) {
   for (const [k, label] of Object.entries(EDIT_WEAPONS)) {
     const b = document.createElement('button'); b.textContent = label; b.dataset.k = k;
-    b.onclick = () => { S.gun = k; $('gun').value = k; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); refresh(); sidebarSync(); }; // (refresh: paused on the same clip nothing else redraws, and the new weapon sat at the floor's centre)
+    b.onclick = () => { if (S.mode === 'body') S.mode = 'idle'; S.gun = k; $('gun').value = k; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); refresh(); sidebarSync(); }; // (refresh: paused on the same clip nothing else redraws, and the new weapon sat at the floor's centre)
     $('eWeapons').appendChild(b);
   }
+  // BODY CHECK: no weapon, the character beside its dummies (the range of motion first, the whole library live)
+  const bb = document.createElement('button'); bb.textContent = 'Body check'; bb.dataset.k = 'none';
+  bb.title = 'no weapon: the character beside the clip\'s dummy (and a second version, a clothed dummy, the weights): the range of motion and the whole Quaternius library, played live on any character';
+  bb.onclick = () => { S.mode = 'body'; S.gun = 'none'; $('gun').value = 'none'; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); refresh(); sidebarSync(); loadLibrary(); };
+  $('eWeapons').prepend(bb);
+  bodyUI();
   $('eIdle').onclick = () => { S.mode = 'idle'; editPick(editFirst()); };
   $('eAttack').onclick = () => { S.mode = 'attack'; editPick(editFirst()); };
   $('eFin').onclick = () => { S.mode = 'finisher'; editPick(editFirst()); };
@@ -1707,7 +1914,7 @@ async function capSheet(name, cells, cols = 3, w = 520, h = 400) {
     SHOT.recoil = Math.max(0, SHOT.recoil - dt * 7); // (core/player.js)
     if (S.playing && main?.action) {
       S.frame += dt * FPS * S.speed; // (frames of the current clip's own rate)
-      if (S.frame >= S.frames + 1) S.frame = $('loop').checked ? 1 : S.frames;
+      if (S.frame >= S.frames + 1) { if (S.runList && S.mode === 'body' && !S.runBusy) runNext(); S.frame = $('loop').checked || S.runList ? 1 : S.frames; } // (BODY CHECK: "run the list")
       refresh();
     } else if (kicking) refresh();
     if (main?.hair?.ok) { main.hair.on = $('hairSway').checked; main.hair.update(dt * (S.playing ? S.speed : 1)); }
