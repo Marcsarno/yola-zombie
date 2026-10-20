@@ -1,5 +1,5 @@
 (() => {
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -21006,7 +21006,7 @@
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -31112,7 +31112,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function toTrianglesDrawMode(geometry, drawMode) {
     if (drawMode === TrianglesDrawMode) {
       console.warn("THREE.BufferGeometryUtils.toTrianglesDrawMode(): Geometry already defined as triangles.");
@@ -31168,7 +31168,7 @@ void main() {
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -33735,7 +33735,7 @@ void main() {
     });
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
   var u8 = Uint8Array;
   var u16 = Uint16Array;
   var i32 = Int32Array;
@@ -34107,7 +34107,7 @@ void main() {
   } catch (e) {
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
   function findSpan(p, u, U) {
     const n = U.length - p - 1;
     if (u >= U[n]) {
@@ -34299,7 +34299,7 @@ void main() {
     return calcRationalCurveDerivatives(Pders);
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
   var NURBSCurve = class extends Curve {
     /**
      * Constructs a new NURBS curve.
@@ -34374,7 +34374,7 @@ void main() {
     }
   };
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
   var fbxTree;
   var connections;
   var sceneGraph;
@@ -36825,7 +36825,7 @@ void main() {
     return a;
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -37665,7 +37665,7 @@ void main() {
     }
   }
 
-  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -41186,11 +41186,34 @@ void main() {
   }
   var BODY_MOVES = ["tripo_idle", "ual1_Idle_Loop", "ual1_Idle_LookAround_Loop", "ual1_Walk_Loop", "ual1_Jog_Fwd_Loop", "ual1_Sprint_Loop", "p_run_plain", "p_run_back_plain", "p_run_strafe_left_plain", "p_run_strafe_right_plain", "p_walk_strafe_left_plain"];
   var BODY_GAME = ["pistol_idle", "pistol_walk", "pistol_reload", "sg_reload", "rifle_aim_idle", "ual1_Sword_Idle", "ual_Sword_Block", "ual_Sword_Regular_Combo", "ual_Sword_Heavy_Combo", "t_box_01", "t_box_02", "t_kick_02", "hit_body", "yola_knockdown", "yola_getup", "death_fall"];
+  var MOVE_GROUPS = [
+    ["Moving: the game's set today (Mixamo)", [
+      "p_run_plain",
+      "p_run_back_plain",
+      "p_walk_strafe_left_plain",
+      "p_walk_strafe_right_plain",
+      "p_run_strafe_left_plain",
+      "p_run_strafe_right_plain",
+      "pistol_walk",
+      "pistol_run",
+      "pistol_walk_back",
+      "pistol_run_back",
+      "pistol_strafe_left",
+      "pistol_strafe_right",
+      "pistol_strafe_run_left",
+      "pistol_strafe_run_right"
+    ]],
+    ["Moving: Quaternius walks (8 directions)", ["ual1_Walk_Loop", "ual1_Walk_Formal_Loop", "ual_Walk_Fwd_Loop", "ual_Walk_Fwd_L_Loop", "ual_Walk_Fwd_R_Loop", "ual_Walk_L_Loop", "ual_Walk_R_Loop", "ual_Walk_Bwd_Loop", "ual_Walk_Bwd_L_Loop", "ual_Walk_Bwd_R_Loop"]],
+    ["Moving: Quaternius jogs (8 directions + leans)", ["ual1_Jog_Fwd_Loop", "ual1_Jog_Fwd_L_Loop", "ual1_Jog_Fwd_R_Loop", "ual1_Jog_Fwd_LeanL_Loop", "ual1_Jog_Fwd_LeanR_Loop", "ual1_Jog_Left_Loop", "ual1_Jog_Right_Loop", "ual1_Jog_Bwd_Loop", "ual1_Jog_Bwd_L_Loop", "ual1_Jog_Bwd_R_Loop"]],
+    ["Moving: Quaternius sprint, turns, starts and stops", ["ual1_Sprint_Enter", "ual1_Sprint_Loop", "ual1_Sprint_Exit", "ual1_Turn90_L", "ual1_Turn90_R", "ual_Turn180_L", "ual_Turn180_R"]],
+    ["Moving: Quaternius crouch, carry and step", ["ual1_Crouch_Fwd_Loop", "ual1_Crouch_Fwd_L_Loop", "ual1_Crouch_Fwd_R_Loop", "ual_Walk_Carry_Loop", "ual_StepUp", "ual1_Pistol_Idle_Loop"]]
+  ];
   function bodyGroups() {
     const A = mainCache[S.char]?.gltf.animations || [], have = new Map(A.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
     const take = (l) => l.filter((n) => have.has(n) && !used.has(n) && used.add(n));
     return [
       ["Range of motion (every rig plays these)", take(ROM_NAMES)],
+      ...MOVE_GROUPS.map(([g, l]) => [g, take(l)]),
       ["Stand and move (baked)", take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
       ["The game's moves (baked)", take(BODY_GAME.filter((n) => !have.get(n)?.userData?.live))],
       ["Whole Quaternius library (live, not baked)", take([...LIB_NAMES].sort())]
