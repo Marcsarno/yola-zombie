@@ -1,5 +1,5 @@
 (() => {
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -13175,6 +13175,166 @@
       }
     }
   };
+  var SpriteMaterial = class extends Material {
+    /**
+     * Constructs a new sprite material.
+     *
+     * @param {Object} [parameters] - An object with one or more properties
+     * defining the material's appearance. Any property of the material
+     * (including any property from inherited materials) can be passed
+     * in here. Color values can be passed any type of value accepted
+     * by {@link Color#set}.
+     */
+    constructor(parameters) {
+      super();
+      this.isSpriteMaterial = true;
+      this.type = "SpriteMaterial";
+      this.color = new Color(16777215);
+      this.map = null;
+      this.alphaMap = null;
+      this.rotation = 0;
+      this.sizeAttenuation = true;
+      this.transparent = true;
+      this.fog = true;
+      this.setValues(parameters);
+    }
+    copy(source) {
+      super.copy(source);
+      this.color.copy(source.color);
+      this.map = source.map;
+      this.alphaMap = source.alphaMap;
+      this.rotation = source.rotation;
+      this.sizeAttenuation = source.sizeAttenuation;
+      this.fog = source.fog;
+      return this;
+    }
+  };
+  var _geometry;
+  var _intersectPoint = /* @__PURE__ */ new Vector3();
+  var _worldScale = /* @__PURE__ */ new Vector3();
+  var _mvPosition = /* @__PURE__ */ new Vector3();
+  var _alignedPosition = /* @__PURE__ */ new Vector2();
+  var _rotatedPosition = /* @__PURE__ */ new Vector2();
+  var _viewWorldMatrix = /* @__PURE__ */ new Matrix4();
+  var _vA = /* @__PURE__ */ new Vector3();
+  var _vB = /* @__PURE__ */ new Vector3();
+  var _vC = /* @__PURE__ */ new Vector3();
+  var _uvA = /* @__PURE__ */ new Vector2();
+  var _uvB = /* @__PURE__ */ new Vector2();
+  var _uvC = /* @__PURE__ */ new Vector2();
+  var Sprite = class extends Object3D {
+    /**
+     * Constructs a new sprite.
+     *
+     * @param {(SpriteMaterial|SpriteNodeMaterial)} [material] - The sprite material.
+     */
+    constructor(material = new SpriteMaterial()) {
+      super();
+      this.isSprite = true;
+      this.type = "Sprite";
+      if (_geometry === void 0) {
+        _geometry = new BufferGeometry();
+        const float32Array = new Float32Array([
+          -0.5,
+          -0.5,
+          0,
+          0,
+          0,
+          0.5,
+          -0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0.5,
+          0,
+          1,
+          1,
+          -0.5,
+          0.5,
+          0,
+          0,
+          1
+        ]);
+        const interleavedBuffer = new InterleavedBuffer(float32Array, 5);
+        _geometry.setIndex([0, 1, 2, 0, 2, 3]);
+        _geometry.setAttribute("position", new InterleavedBufferAttribute(interleavedBuffer, 3, 0, false));
+        _geometry.setAttribute("uv", new InterleavedBufferAttribute(interleavedBuffer, 2, 3, false));
+      }
+      this.geometry = _geometry;
+      this.material = material;
+      this.center = new Vector2(0.5, 0.5);
+      this.count = 1;
+    }
+    /**
+     * Computes intersection points between a casted ray and this sprite.
+     *
+     * @param {Raycaster} raycaster - The raycaster.
+     * @param {Array<Object>} intersects - The target array that holds the intersection points.
+     */
+    raycast(raycaster, intersects2) {
+      if (raycaster.camera === null) {
+        console.error('THREE.Sprite: "Raycaster.camera" needs to be set in order to raycast against sprites.');
+      }
+      _worldScale.setFromMatrixScale(this.matrixWorld);
+      _viewWorldMatrix.copy(raycaster.camera.matrixWorld);
+      this.modelViewMatrix.multiplyMatrices(raycaster.camera.matrixWorldInverse, this.matrixWorld);
+      _mvPosition.setFromMatrixPosition(this.modelViewMatrix);
+      if (raycaster.camera.isPerspectiveCamera && this.material.sizeAttenuation === false) {
+        _worldScale.multiplyScalar(-_mvPosition.z);
+      }
+      const rotation = this.material.rotation;
+      let sin, cos;
+      if (rotation !== 0) {
+        cos = Math.cos(rotation);
+        sin = Math.sin(rotation);
+      }
+      const center = this.center;
+      transformVertex(_vA.set(-0.5, -0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+      transformVertex(_vB.set(0.5, -0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+      transformVertex(_vC.set(0.5, 0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+      _uvA.set(0, 0);
+      _uvB.set(1, 0);
+      _uvC.set(1, 1);
+      let intersect = raycaster.ray.intersectTriangle(_vA, _vB, _vC, false, _intersectPoint);
+      if (intersect === null) {
+        transformVertex(_vB.set(-0.5, 0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+        _uvB.set(0, 1);
+        intersect = raycaster.ray.intersectTriangle(_vA, _vC, _vB, false, _intersectPoint);
+        if (intersect === null) {
+          return;
+        }
+      }
+      const distance = raycaster.ray.origin.distanceTo(_intersectPoint);
+      if (distance < raycaster.near || distance > raycaster.far) return;
+      intersects2.push({
+        distance,
+        point: _intersectPoint.clone(),
+        uv: Triangle.getInterpolation(_intersectPoint, _vA, _vB, _vC, _uvA, _uvB, _uvC, new Vector2()),
+        face: null,
+        object: this
+      });
+    }
+    copy(source, recursive) {
+      super.copy(source, recursive);
+      if (source.center !== void 0) this.center.copy(source.center);
+      this.material = source.material;
+      return this;
+    }
+  };
+  function transformVertex(vertexPosition, mvPosition, center, scale, sin, cos) {
+    _alignedPosition.subVectors(vertexPosition, center).addScalar(0.5).multiply(scale);
+    if (sin !== void 0) {
+      _rotatedPosition.x = cos * _alignedPosition.x - sin * _alignedPosition.y;
+      _rotatedPosition.y = sin * _alignedPosition.x + cos * _alignedPosition.y;
+    } else {
+      _rotatedPosition.copy(_alignedPosition);
+    }
+    vertexPosition.copy(mvPosition);
+    vertexPosition.x += _rotatedPosition.x;
+    vertexPosition.y += _rotatedPosition.y;
+    vertexPosition.applyMatrix4(_viewWorldMatrix);
+  }
   var _basePosition = /* @__PURE__ */ new Vector3();
   var _skinIndex = /* @__PURE__ */ new Vector4();
   var _skinWeight = /* @__PURE__ */ new Vector4();
@@ -14595,6 +14755,26 @@
       });
     }
   }
+  var CanvasTexture = class extends Texture {
+    /**
+     * Constructs a new texture.
+     *
+     * @param {HTMLCanvasElement} [canvas] - The HTML canvas element.
+     * @param {number} [mapping=Texture.DEFAULT_MAPPING] - The texture mapping.
+     * @param {number} [wrapS=ClampToEdgeWrapping] - The wrapS value.
+     * @param {number} [wrapT=ClampToEdgeWrapping] - The wrapT value.
+     * @param {number} [magFilter=LinearFilter] - The mag filter value.
+     * @param {number} [minFilter=LinearMipmapLinearFilter] - The min filter value.
+     * @param {number} [format=RGBAFormat] - The texture format.
+     * @param {number} [type=UnsignedByteType] - The texture type.
+     * @param {number} [anisotropy=Texture.DEFAULT_ANISOTROPY] - The anisotropy value.
+     */
+    constructor(canvas2, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
+      super(canvas2, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
+      this.isCanvasTexture = true;
+      this.needsUpdate = true;
+    }
+  };
   var DepthTexture = class extends Texture {
     /**
      * Constructs a new depth texture.
@@ -20826,7 +21006,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -30932,7 +31112,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function toTrianglesDrawMode(geometry, drawMode) {
     if (drawMode === TrianglesDrawMode) {
       console.warn("THREE.BufferGeometryUtils.toTrianglesDrawMode(): Geometry already defined as triangles.");
@@ -30988,7 +31168,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -33555,7 +33735,7 @@ void main() {
     });
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
   var u8 = Uint8Array;
   var u16 = Uint16Array;
   var i32 = Int32Array;
@@ -33927,7 +34107,7 @@ void main() {
   } catch (e) {
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
   function findSpan(p, u, U) {
     const n = U.length - p - 1;
     if (u >= U[n]) {
@@ -34119,7 +34299,7 @@ void main() {
     return calcRationalCurveDerivatives(Pders);
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
   var NURBSCurve = class extends Curve {
     /**
      * Constructs a new NURBS curve.
@@ -34194,7 +34374,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
   var fbxTree;
   var connections;
   var sceneGraph;
@@ -36645,7 +36825,7 @@ void main() {
     return a;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -37485,7 +37665,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -38988,6 +39168,266 @@ void main() {
     return o;
   }
 
+  // src/riglab/check.js
+  var _q7 = new Quaternion();
+  var _q23 = new Quaternion();
+  var _q33 = new Quaternion();
+  var _v3 = new Vector3();
+  var _v22 = new Vector3();
+  var CHAIN = { Hips: "Spine", Spine: "Spine1", Spine1: "Spine2", Spine2: "Neck", Neck: "Head", Head: "HeadTop_End" };
+  for (const s of ["Left", "Right"]) {
+    Object.assign(CHAIN, {
+      [s + "Shoulder"]: s + "Arm",
+      [s + "Arm"]: s + "ForeArm",
+      [s + "ForeArm"]: s + "Hand",
+      [s + "Hand"]: s + "HandMiddle1",
+      [s + "UpLeg"]: s + "Leg",
+      [s + "Leg"]: s + "Foot",
+      [s + "Foot"]: s + "ToeBase",
+      [s + "ToeBase"]: s + "Toe_End"
+    });
+    for (const f of ["Thumb", "Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) CHAIN[`${s}Hand${f}${i}`] = `${s}Hand${f}${i + 1}`;
+  }
+  var REST_RELATIVE = /* @__PURE__ */ new Set(["LeftShoulder", "RightShoulder"]);
+  function restWorld(a) {
+    const keep = a.rest.map(([b]) => [b, b.quaternion.clone(), b.position.clone(), b.scale.clone()]);
+    for (const [b, q, p, s] of a.rest) {
+      b.quaternion.copy(q);
+      b.position.copy(p);
+      b.scale.copy(s);
+    }
+    a.root.updateMatrixWorld(true);
+    const out = /* @__PURE__ */ new Map();
+    for (const [b] of a.rest) out.set(b, { q: b.getWorldQuaternion(new Quaternion()), p: b.getWorldPosition(new Vector3()), local: a.root.worldToLocal(b.getWorldPosition(new Vector3())) });
+    for (const [b, q, p, s] of keep) {
+      b.quaternion.copy(q);
+      b.position.copy(p);
+      b.scale.copy(s);
+    }
+    a.root.updateMatrixWorld(true);
+    return out;
+  }
+  function facing(a, R) {
+    const d = new Vector3();
+    for (const s of ["Left", "Right"]) {
+      const f = a.bones[s + "Foot"], t = a.bones[s + "ToeBase"];
+      if (f && t) d.add(R.get(t).p).sub(R.get(f).p);
+    }
+    d.y = 0;
+    return d.lengthSq() > 1e-10 ? d.normalize() : null;
+  }
+  var outer = (b) => {
+    while (b && b.parent?.isBone && b.parent.name === b.name) b = b.parent;
+    return b;
+  };
+  var LiveRetarget = class {
+    // src, tgt: Rig Lab actors ({ obj, root, bones (by mixamo short name), rest })
+    constructor(src, tgt, { restRelative = REST_RELATIVE } = {}) {
+      this.src = src;
+      this.tgt = tgt;
+      const RS = restWorld(src), RT = restWorld(tgt);
+      const fs = facing(src, RS), ft = facing(tgt, RT);
+      this.Yf = fs && ft ? new Quaternion().setFromUnitVectors(fs, ft) : new Quaternion();
+      const YfInv = this.Yf.clone().invert();
+      const order = [];
+      const walk = (b) => {
+        if (b.isBone) order.push(b);
+        for (const c of b.children) walk(c);
+      };
+      walk(tgt.obj);
+      const keyOf = new Map(Object.entries(tgt.bones).map(([k, b]) => [b, k]));
+      const lineOf = (a, R, k) => {
+        const b = a.bones[k], c = a.bones[CHAIN[k]];
+        return b && c ? R.get(c).p.clone().sub(R.get(b).p).normalize() : null;
+      };
+      const Aof = {};
+      this.list = [];
+      for (const tb of order) {
+        const k = keyOf.get(tb), sb0 = k && src.bones[k], sb = sb0 && outer(sb0);
+        if (!sb || !RS.has(sb) || !RT.has(tb)) {
+          this.list.push({ tb, k });
+          continue;
+        }
+        const dt = lineOf(tgt, RT, k), ds = lineOf(src, RS, k);
+        let A = null;
+        if (dt && ds) A = new Quaternion().setFromUnitVectors(dt, ds.clone().applyQuaternion(this.Yf));
+        else {
+          const pk = tb.parent && keyOf.get(tb.parent);
+          A = pk && Aof[pk] || new Quaternion();
+        }
+        Aof[k] = A;
+        const Rs = RS.get(sb).q, Rt = RT.get(tb).q;
+        const e = { tb, k, sb, off: Rs.clone().invert().multiply(YfInv).multiply(A).multiply(Rt), Rt: Rt.clone(), Rs: Rs.clone() };
+        if (restRelative.has(k) && sb.parent && RS.has(sb.parent) && tb.parent && RT.has(tb.parent)) {
+          e.rel = { sp: sb.parent, RpsInv: RS.get(sb.parent).q.clone().invert(), RptInv: RT.get(tb.parent).q.clone().invert(), RsInv: Rs.clone().invert() };
+        }
+        if (k === "Hips") {
+          e.hips = { srcRest: RS.get(sb).local.clone(), tgtRest: RT.get(tb).local.clone() };
+        }
+        this.list.push(e);
+      }
+    }
+    // pose the target from the source's current pose (the source already set to the frame)
+    apply() {
+      const { src, tgt, Yf } = this;
+      const YfInv = _q33.copy(Yf).invert();
+      src.root.updateMatrixWorld(true);
+      for (const e of this.list) {
+        const tb = e.tb;
+        if (e.sb) {
+          const Ws = e.sb.getWorldQuaternion(_q7);
+          let Wt;
+          if (e.rel) {
+            const Wps = e.rel.sp.getWorldQuaternion(_q23), relS = Wps.multiply(e.rel.RpsInv).invert().multiply(_q7.clone().multiply(e.rel.RsInv));
+            const Wpt = tb.parent.getWorldQuaternion(new Quaternion()).multiply(e.rel.RptInv);
+            Wt = Wpt.multiply(Yf.clone().multiply(relS).multiply(YfInv)).multiply(e.Rt);
+          } else Wt = Yf.clone().multiply(Ws).multiply(e.off);
+          tb.parent.getWorldQuaternion(_q23);
+          tb.quaternion.copy(_q23.invert().multiply(Wt));
+          if (e.hips) {
+            const s = src.root.worldToLocal(e.sb.getWorldPosition(_v3)).sub(e.hips.srcRest).multiplyScalar(src.root.scale.y);
+            s.applyQuaternion(Yf).multiplyScalar(e.hips.tgtRest.y * tgt.root.scale.y / Math.max(1e-6, e.hips.srcRest.y * src.root.scale.y));
+            const w = tgt.root.localToWorld(_v22.copy(e.hips.tgtRest)).add(s);
+            tb.parent.updateWorldMatrix(true, false);
+            tb.position.copy(tb.parent.worldToLocal(w));
+          }
+        }
+        tb.updateWorldMatrix(false, false);
+      }
+      tgt.root.updateMatrixWorld(true);
+    }
+  };
+  function heatColor(w, out) {
+    if (w <= 5e-4) return out.setRGB(0.04, 0.05, 0.32);
+    const stops = [[0, 0, 0, 1], [0.25, 0, 1, 1], [0.5, 0, 1, 0], [0.75, 1, 1, 0], [1, 1, 0, 0]];
+    for (let i = 1; i < stops.length; i++) if (w <= stops[i][0]) {
+      const [a, r0, g0, b0] = stops[i - 1], [b, r1, g1, b1] = stops[i], u = (w - a) / (b - a);
+      return out.setRGB(r0 + (r1 - r0) * u, g0 + (g1 - g0) * u, b0 + (b1 - b0) * u);
+    }
+    return out.setRGB(1, 0, 0);
+  }
+  var PATCH = /* @__PURE__ */ new Map();
+  function patchColor(name) {
+    if (!PATCH.has(name)) {
+      let h = 0;
+      for (const ch of name) h = h * 31 + ch.charCodeAt(0) >>> 0;
+      PATCH.set(name, new Color().setHSL(h % 997 * 0.618034 % 1, 0.7, 0.55));
+    }
+    return PATCH.get(name);
+  }
+  function setWeights(obj, mode, key, norm) {
+    const c = new Color();
+    obj.traverse((o) => {
+      if (!o.isSkinnedMesh) return;
+      const g = o.geometry;
+      if (!("__mat" in o)) o.__mat = o.material;
+      if (!("__col" in g)) g.__col = g.attributes.color || null;
+      if (!mode) {
+        if (g.__col) g.setAttribute("color", g.__col);
+        else g.deleteAttribute("color");
+        if (o.material === o.__heatMat) o.material = o.__mat;
+        return;
+      }
+      const tag = mode + ":" + key;
+      o.material = o.__heatMat || (o.__heatMat = new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+      if (o.__heat === tag) {
+        if (g.attributes.color !== o.__heatCol) g.setAttribute("color", o.__heatCol);
+        return;
+      }
+      const n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, names = o.skeleton.bones.map((b) => norm(b.name));
+      const col = new Float32Array(n * 3);
+      for (let v = 0; v < n; v++) {
+        if (mode === "bone") {
+          let w = 0;
+          for (let k = 0; k < 4; k++) if (names[si.getComponent(v, k)] === key) w += sw.getComponent(v, k);
+          heatColor(w, c);
+        } else {
+          c.setRGB(0, 0, 0);
+          let t = 0;
+          for (let k = 0; k < 4; k++) {
+            const w = sw.getComponent(v, k);
+            if (w > 0) {
+              const p = patchColor(names[si.getComponent(v, k)] || "?");
+              c.r += p.r * w;
+              c.g += p.g * w;
+              c.b += p.b * w;
+              t += w;
+            }
+          }
+          if (t > 0) c.multiplyScalar(1 / t);
+        }
+        col[v * 3] = c.r;
+        col[v * 3 + 1] = c.g;
+        col[v * 3 + 2] = c.b;
+      }
+      o.__heatCol = new BufferAttribute(col, 3);
+      g.setAttribute("color", o.__heatCol);
+      o.__heat = tag;
+    });
+  }
+  function makeTag() {
+    const cv = document.createElement("canvas");
+    cv.width = 1024;
+    cv.height = 96;
+    const tex = new CanvasTexture(cv);
+    tex.colorSpace = SRGBColorSpace;
+    const s = new Sprite(new SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, toneMapped: false, transparent: true, sizeAttenuation: false }));
+    s.renderOrder = 20;
+    s.center.set(0.5, 0);
+    s.userData = { cv, tex, text: "" };
+    s.visible = false;
+    return s;
+  }
+  function setTag(s, text, color) {
+    const key = text + "|" + color;
+    if (s.userData.text === key) return;
+    s.userData.text = key;
+    const { cv, tex } = s.userData, cx = cv.getContext("2d");
+    cx.clearRect(0, 0, cv.width, cv.height);
+    cx.font = '600 40px system-ui, "Segoe UI", sans-serif';
+    const w = Math.min(cv.width - 8, cx.measureText(text).width + 36);
+    cx.fillStyle = "rgba(15,20,24,0.82)";
+    cx.beginPath();
+    cx.roundRect((cv.width - w) / 2, 14, w, 64, 14);
+    cx.fill();
+    cx.fillStyle = "#" + new Color(color).getHexString();
+    cx.fillRect((cv.width - w) / 2 + 12, 30, 10, 32);
+    cx.fillStyle = "#eef2f0";
+    cx.textAlign = "center";
+    cx.textBaseline = "middle";
+    cx.fillText(text, cv.width / 2 + 8, 47, cv.width - 50);
+    tex.needsUpdate = true;
+  }
+  function placeTag(s, a, lift = 0) {
+    const k = a.height / 1.62, h = a.bones.HeadTop_End || a.bones.Head;
+    if (!h) return;
+    h.getWorldPosition(s.position);
+    s.position.y += (a.bones.HeadTop_End ? 0.1 : 0.28) * k + lift;
+    s.scale.set(0.36, 0.034, 1);
+  }
+  function tintSkeleton(helper, color) {
+    const c = new Color(color), at = helper.geometry.attributes.color;
+    if (!at) return;
+    for (let i = 0; i < at.count; i++) at.setXYZ(i, c.r, c.g, c.b);
+    at.needsUpdate = true;
+  }
+  var ROM = [
+    ["ual1_", "A_TPose", "Rest: arms out"],
+    ["ual1_", "Idle_Loop", "Standing relaxed"],
+    ["ual1_", "Celebration", "Arms overhead (armpits, shoulder caps)"],
+    ["ual1_", "Climb_Up_Loop", "Reach up and knee up"],
+    ["ual1_", "Push_Loop", "Arms forward (back, shoulder blades)"],
+    ["ual_", "Idle_FoldArms_Loop", "Arms folded (chest, elbows)"],
+    ["ual_", "Bow_Aim_Neutral", "Elbow back, arm across"],
+    ["ual_", "Sword_Heavy_Combo", "Twists and big swings"],
+    ["ual1_", "Kick", "High kick (hips, thighs)"],
+    ["ual1_", "Crouch_Idle_Loop", "Deep crouch (knees, seat)"],
+    ["ual1_", "PickUp_Kneeling", "Kneel and reach down"],
+    ["ual1_", "Sitting_Idle_Loop", "Sitting (hips at 90 deg)"],
+    ["ual1_", "GroundSit_Idle_Loop", "Sitting on the ground"],
+    ["ual1_", "Jog_Fwd_Loop", "Jog"]
+  ];
+
   // src/viewer.js
   var FPS = 30;
   var CLIP_FPS = { bat_combo_mc: 60 };
@@ -38995,10 +39435,10 @@ void main() {
   var $ = (id) => document.getElementById(id);
   var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
   var UP2 = new Vector3(0, 1, 0);
-  var _v3 = new Vector3();
-  var _v22 = new Vector3();
+  var _v4 = new Vector3();
+  var _v23 = new Vector3();
   var _v32 = new Vector3();
-  var _q7 = new Quaternion();
+  var _q8 = new Quaternion();
   var YOLA2_REF = {
     bat_swing: "yola_baseball_single",
     bat_swing_m: null,
@@ -39142,9 +39582,9 @@ void main() {
   function camHands(who) {
     const a = who === "ref" ? ref : main;
     if (!a?.action || !a.root.visible) return;
-    a.grip("Right", _v3);
-    a.grip("Left", _v22);
-    const c = _v3.clone().lerp(_v22, 0.5);
+    a.grip("Right", _v4);
+    a.grip("Left", _v23);
+    const c = _v4.clone().lerp(_v23, 0.5);
     const dir = camera.position.clone().sub(controls.target).normalize();
     controls.target.copy(c);
     camera.position.copy(c).addScaledVector(dir, 0.5);
@@ -39242,7 +39682,7 @@ void main() {
   }
   function updateFingers() {
     const on = $("fingerBones")?.checked !== false;
-    for (const a of ACTORS) a.fing.update(on && (a === main || a === ref) && a.root.visible && a.root.parent === scene);
+    for (const a of ACTORS) a.fing.update(on && (a === main || a === ref || a === second || a === extra) && a.root.visible && a.root.parent === scene);
   }
   var Actor = class {
     constructor(obj, height) {
@@ -39356,21 +39796,21 @@ void main() {
     }
     calibrateHere() {
       const a = this.actor;
-      a.grip("Right", _v3);
-      a.grip("Left", _v22);
-      const x = _v22.clone().sub(_v3).normalize(), z = new Vector3().crossVectors(x, UP2).normalize(), y = new Vector3().crossVectors(z, x);
+      a.grip("Right", _v4);
+      a.grip("Left", _v23);
+      const x = _v23.clone().sub(_v4).normalize(), z = new Vector3().crossVectors(x, UP2).normalize(), y = new Vector3().crossVectors(z, x);
       const g = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
-      a.bones.RightHand.getWorldQuaternion(_q7);
-      this.socket.copy(_q7.invert().multiply(g));
+      a.bones.RightHand.getWorldQuaternion(_q8);
+      this.socket.copy(_q8.invert().multiply(g));
       this.has = true;
     }
     update(k) {
       if (!this.obj || !this.has) return;
       const a = this.actor, F = fitAt(SHOTGUNS[weaponOf()] ? weaponOf() : "short", a);
-      a.bones.RightHand.getWorldQuaternion(_q7);
-      const gq = _q7.multiply(this.socket);
-      a.grip("Right", _v3);
-      applyFit(this.obj, _v3, gq, F, new Vector3(), k, k);
+      a.bones.RightHand.getWorldQuaternion(_q8);
+      const gq = _q8.multiply(this.socket);
+      a.grip("Right", _v4);
+      applyFit(this.obj, _v4, gq, F, new Vector3(), k, k);
       this.obj.updateMatrixWorld(true);
     }
   };
@@ -39382,6 +39822,8 @@ void main() {
   var refGun;
   var refX;
   var refGunX;
+  var second = null;
+  var extra = null;
   var ualCache = {};
   var UAL_CLOTHED = { clothed: "assets/source/ual/Clothed_Male_Peasant.glb", clothed2: "assets/source/ual/Clothed_Male_Ranger.glb" };
   var MIX_CLOTHED = "assets/source/refs/brian/Brian_tpose.fbx";
@@ -39437,11 +39879,11 @@ void main() {
   var gunTemplates = {};
   var marks = {};
   var mainCache = {};
-  function ghostify(obj, on) {
+  function ghostify(obj, on, color = 6739199) {
     obj.traverse((o) => {
       if (!o.isMesh) return;
       if (!o.__mat) o.__mat = o.material;
-      o.material = on ? new MeshBasicMaterial({ color: 6739199, transparent: true, opacity: 0.4, depthWrite: false }) : o.__mat;
+      o.material = on ? new MeshBasicMaterial({ color, transparent: true, opacity: 0.4, depthWrite: false }) : o.__mat;
     });
   }
   function makeMarks() {
@@ -39464,11 +39906,11 @@ void main() {
       const vis = on && a.root.visible;
       for (const o of Object.values(m)) o.visible = vis;
       if (!vis || !a.action) continue;
-      a.grip("Right", _v3);
-      a.grip("Left", _v22);
-      m.r.position.copy(_v3);
-      m.l.position.copy(_v22);
-      m.line.geometry.setFromPoints([_v3.clone(), _v22.clone()]);
+      a.grip("Right", _v4);
+      a.grip("Left", _v23);
+      m.r.position.copy(_v4);
+      m.l.position.copy(_v23);
+      m.line.geometry.setFromPoints([_v4.clone(), _v23.clone()]);
     }
   }
   async function setChar(key) {
@@ -39508,6 +39950,7 @@ void main() {
     const { gltf, actor } = mainCache[key];
     main = actor;
     scene.add(main.root, main.helper);
+    bodyChar(key);
     mainGun = new Gun(main);
     const sel = $("clip");
     sel.innerHTML = "";
@@ -39519,6 +39962,7 @@ void main() {
   }
   async function setClip(name) {
     const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
+    if (c.userData?.live && !await liveFill(c)) return;
     pinRoot(c, $("inplace").checked && !c.userData?.fin, main);
     main.play(c);
     main.hair?.reset?.();
@@ -39562,6 +40006,7 @@ void main() {
     S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
     $("scrub").max = S.frames;
     S.frame = 1;
+    await figuresFor(c, rc, lib);
     layout();
     refresh();
     mainGun.calibrate();
@@ -39575,14 +40020,13 @@ void main() {
     }
   }
   function layout() {
-    const sep = S.overlay ? 0 : 0.55;
-    main.root.position.set(-sep, 0, 0);
-    ref.root.position.set(sep, 0, 0);
+    const figs = figures();
+    figs.forEach((a, i) => a.root.position.set(S.overlay ? 0 : (i - (figs.length - 1) / 2) * 1.1, 0, 0));
     ref.setHeight($("match").checked ? main.height : ref.nat);
-    ghostify(ref.obj, S.overlay);
+    if (extra) extra.setHeight($("match").checked ? main.height : extra.nat);
+    applyLooks();
     $("lay").textContent = S.overlay ? "overlay (ghost)" : "side by side";
-    main.root.updateMatrixWorld(true);
-    ref.root.updateMatrixWorld(true);
+    for (const a of figs) a.root.updateMatrixWorld(true);
   }
   var PUMP = { auto: true, a: 80, b: 96, stroke: 0.07, portDown: 0.05 };
   function pumpSlide(f) {
@@ -39651,11 +40095,11 @@ void main() {
   function alignShell() {
     const g = mainGun?.obj;
     if (!g?.userData.port) return;
-    main.bones.LeftHand.getWorldQuaternion(_q7);
-    main.grip("Left", _v3);
-    g.userData.port.getWorldPosition(_v22);
-    const d = _v22.clone().sub(_v3), L = d.length();
-    d.normalize().applyQuaternion(_q7.clone().invert());
+    main.bones.LeftHand.getWorldQuaternion(_q8);
+    main.grip("Left", _v4);
+    g.userData.port.getWorldPosition(_v23);
+    const d = _v23.clone().sub(_v4), L = d.length();
+    d.normalize().applyQuaternion(_q8.clone().invert());
     const q = new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), d), e = new Euler().setFromQuaternion(q, "XYZ");
     Object.assign(shellFit, { rx: e.x * 180 / Math.PI, ry: e.y * 180 / Math.PI, rz: e.z * 180 / Math.PI, x: Math.max(0, L - 0.037), y: 0, z: 0 });
     window.__lab.setShell({});
@@ -39668,7 +40112,7 @@ void main() {
     shellObj.visible = on;
     if (!on) return;
     const port = mainGun?.obj?.userData.port, u = smooth01((f - (shellFit.to - SHELL_INSERT)) / SHELL_INSERT);
-    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v3), "Left", u)) {
+    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v4), "Left", u)) {
       shellObj.visible = false;
       return;
     }
@@ -39696,6 +40140,7 @@ void main() {
     const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
     main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames));
     if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
+    bodyFrame2(f);
     undoPost(main);
     undoPost(ref);
     postureFix(main, ref);
@@ -39734,26 +40179,26 @@ void main() {
     }
     const lines = [];
     if (main.action) {
-      main.grip("Right", _v3);
-      main.grip("Left", _v22);
-      lines.push(`${CHARS[S.char].label}   hand span ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      main.grip("Right", _v4);
+      main.grip("Left", _v23);
+      lines.push(`${CHARS[S.char].label}   hand span ${_v4.distanceTo(_v23).toFixed(3)} m`);
     }
     if (ref.root.visible && ref.action) {
-      ref.grip("Right", _v3);
-      ref.grip("Left", _v22);
-      lines.push(`Reference   hand span ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      ref.grip("Right", _v4);
+      ref.grip("Left", _v23);
+      lines.push(`Reference   hand span ${_v4.distanceTo(_v23).toFixed(3)} m`);
     }
     const hold = mainGun?.obj?.userData.gripL;
     if (hold && main.action) {
-      hold.getWorldPosition(_v3);
-      main.grip("Left", _v22);
-      lines.push(`left hand to gun hold point ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      hold.getWorldPosition(_v4);
+      main.grip("Left", _v23);
+      lines.push(`left hand to gun hold point ${_v4.distanceTo(_v23).toFixed(3)} m`);
     }
     const port = mainGun?.obj?.userData.port;
     if (port && main.action) {
-      port.getWorldPosition(_v3);
-      main.grip("Left", _v22);
-      lines.push(`left hand to loading port ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      port.getWorldPosition(_v4);
+      main.grip("Left", _v23);
+      lines.push(`left hand to loading port ${_v4.distanceTo(_v23).toFixed(3)} m`);
     }
     $("readout").textContent = lines.join("\n");
     $("fitOut").value = JSON.stringify({ gun: S.gun, clip: $("clip").value, shell: shellFit, ...Object.fromEntries(Object.entries(fit).map(([k, v]) => [k, +(+v).toFixed(4)])) }, null, 1);
@@ -39993,7 +40438,7 @@ void main() {
     return C;
   }
   function postureFix(a, src) {
-    if (!$("posture")?.checked || a !== main || !a?.action || S.char !== "yola2") return;
+    if (!$("posture")?.checked || a !== main || !a?.action || S.char !== "yola2" || a.clip?.userData?.live) return;
     const fam = postureFamily((CHARS[S.char].libRef || {})[a.clip.name.replace(/_REBAKE_.*$/, "")] || a.clip.name.replace(/_REBAKE_.*$/, ""));
     if (!fam) return;
     const one = { [fam]: 1 };
@@ -40446,21 +40891,21 @@ void main() {
         return;
       }
     }
-    a.grip("Right", _v3);
-    a.grip("Left", _v22);
+    a.grip("Right", _v4);
+    a.grip("Left", _v23);
     let d, pos;
     if (w === "pistol") {
       a.bones.RightForeArm.getWorldPosition(_v32);
-      d = _v3.clone().sub(_v32).normalize();
-      pos = _v3.clone();
+      d = _v4.clone().sub(_v32).normalize();
+      pos = _v4.clone();
     } else {
-      d = _v3.clone().sub(_v22);
+      d = _v4.clone().sub(_v23);
       if (d.lengthSq() < 1e-8) {
         o.visible = false;
         return;
       }
       d.normalize();
-      pos = _v3.clone().add(_v22).multiplyScalar(0.5);
+      pos = _v4.clone().add(_v23).multiplyScalar(0.5);
     }
     const x = new Vector3().crossVectors(UP2, d);
     if (x.lengthSq() < 1e-6) x.set(1, 0, 0);
@@ -40526,6 +40971,306 @@ void main() {
     }
     vr.label.textContent = "reference: clip 13 frame " + rf + "   (Yola frame " + f + ")";
   }
+  var TINT = { main: 16752451, second: 16735439, ref: 16777215, extra: 8257440 };
+  var normBone = (n) => {
+    const s = n.replace(/^mixamorig\d*:?/, "");
+    return UE_MAP[s] || s;
+  };
+  var isLive = (n) => !!mainCache[S.char]?.gltf.animations.find((c) => c.name === n)?.userData?.live;
+  var ROM_NAMES = ROM.map(([p, n]) => p + n);
+  var ROM_LABEL = Object.fromEntries(ROM.map(([p, n, l]) => [p + n, l]));
+  var OTHERS = /* @__PURE__ */ new Set();
+  var LIB_NAMES = [];
+  function addLive(key) {
+    const g = mainCache[key]?.gltf;
+    if (!g) return;
+    const have = new Set(g.animations.map((c) => c.name));
+    for (const n of [...ROM_NAMES, ...LIB_NAMES]) {
+      if (have.has(n)) continue;
+      const c = new AnimationClip(n, 1, []);
+      c.userData = { live: { lib: n.startsWith("ual1_") ? "ual1_" : "ual_", src: n.replace(/^ual1?_/, "") } };
+      g.animations.push(c);
+      have.add(n);
+    }
+  }
+  var libLoading = null;
+  function loadLibrary() {
+    return libLoading || (libLoading = Promise.all(Object.entries(UAL_FILES).map(([p, f]) => ualRef(f).then((u) => (u?.clips || []).map((c) => p + c.name)))).then((lists) => {
+      LIB_NAMES = lists.flat();
+      for (const k in mainCache) addLive(k);
+      fillClips();
+      editSync();
+    }));
+  }
+  async function liveFill(c) {
+    const L = c.userData.live;
+    if (L.ready) return true;
+    const u = await ualRef(UAL_FILES[L.lib]), rc = u?.clips.find((x) => x.name === L.src);
+    if (!rc) {
+      $("eDummy").textContent = "the library file did not load";
+      return false;
+    }
+    c.duration = rc.duration;
+    c.tracks = [new BooleanKeyframeTrack(".visible", [clipT0(rc), rc.duration], [true, true])];
+    L.ready = true;
+    return true;
+  }
+  var holders = /* @__PURE__ */ new WeakMap();
+  function holder(rc) {
+    if (!holders.has(rc)) holders.set(rc, new AnimationClip(rc.name + "_live", rc.duration, [new BooleanKeyframeTrack(".visible", [clipT0(rc), rc.duration], [true, true])]));
+    return holders.get(rc);
+  }
+  var lives = /* @__PURE__ */ new Map();
+  function liveFor(src, tgt) {
+    const k = src.obj.uuid + "|" + tgt.obj.uuid;
+    if (!lives.has(k)) lives.set(k, new LiveRetarget(src, tgt));
+    return lives.get(k);
+  }
+  var EXTRAS = {
+    clothed: { label: "clothed dummy (Brian / Peasant)", mixamo: MIX_CLOTHED, ual: UAL_CLOTHED.clothed, tag: { mixamo: "Brian \xB7 clothed", ual: "Peasant \xB7 clothed" } },
+    clothed2: { label: "clothed dummy (Brian / Ranger)", mixamo: MIX_CLOTHED, ual: UAL_CLOTHED.clothed2, tag: { mixamo: "Brian \xB7 clothed", ual: "Ranger \xB7 clothed" } },
+    female: { label: "female mannequin", ual: UAL_FEMALE, tag: { ual: "Mannequin (female)" } }
+  };
+  var extraCache = {};
+  function extraBody(file) {
+    return extraCache[file] || (extraCache[file] = (/\.fbx$/i.test(file) ? loadF(file).then((o) => {
+      o.traverse((x) => {
+        if (x.isBone) x.name = x.name.replace(/^mixamorig\d+/, "mixamorig");
+      });
+      o.animations = [];
+      return o;
+    }) : loadG(file).then((g) => g.scene)).then((o) => {
+      o.traverse((x) => {
+        if (x.isMesh) x.frustumCulled = false;
+      });
+      const a = new Actor(o, 1.62);
+      a.root.visible = false;
+      a.file = file;
+      scene.add(a.root, a.helper);
+      OTHERS.add(a);
+      return a;
+    }).catch((e) => (console.warn("clothed dummy failed to load", file, e), null)));
+  }
+  var TESTS = {};
+  fetch("assets/test_clips/tests.json", { cache: "reload" }).then((r) => r.json()).then((j) => {
+    TESTS = j || {};
+    secondUI();
+  }).catch(() => {
+  });
+  var urlSecond = () => {
+    const q = new URLSearchParams(location.search);
+    return q.get("char") === S.char ? (q.get("second") || "").split(",").filter(Boolean).map((f) => ({ file: f })) : [];
+  };
+  var testsOf = (k) => [...TESTS[k] || [], ...urlSecond()];
+  var secondCache = {};
+  function loadSecond(v) {
+    return secondCache[v] || (secondCache[v] = (async () => {
+      const i = v.indexOf(":"), kind = v.slice(0, i), id = v.slice(i + 1), t = testsOf(S.char).find((x) => x.file === id);
+      const files = kind === "char" ? [CHARS[id].file, ...CHARS[id].extra || []] : [id, ...t?.extra || []];
+      const g = await loadG(files[0]), anims = new Map(g.animations.map((c) => [c.name, c]));
+      for (const f of files.slice(1)) try {
+        for (const c of (await loadG(f)).animations) if (!anims.has(c.name)) anims.set(c.name, c);
+      } catch {
+      }
+      g.scene.traverse((o) => {
+        if (o.isMesh) o.frustumCulled = false;
+        if (/^GORE_/.test(o.name)) o.visible = false;
+      });
+      const a = new Actor(g.scene, kind === "char" ? CHARS[id].height : CHARS[S.char].height);
+      a.root.visible = false;
+      scene.add(a.root, a.helper);
+      OTHERS.add(a);
+      return Object.assign(a, { anims, kind, key: v, forChar: kind === "file" ? S.char : id, label: kind === "char" ? CHARS[id].label.split(" (")[0] : t?.label || id.split("/").pop().replace(/\.glb$/, "") });
+    })().catch((e) => (console.warn("second figure failed to load", v, e), null)));
+  }
+  async function setSecond(v) {
+    second = v ? await loadSecond(v) : null;
+    await setClip($("clip").value);
+  }
+  function bodyChar(key) {
+    addLive(key);
+    if (second && (second.kind === "file" ? second.forChar !== key : second.forChar === key)) second = null;
+    secondUI();
+    if ($("eChar")) $("eChar").value = key;
+  }
+  async function figuresFor(c, rc, lib) {
+    S.fam = !rc ? null : lib ? "ual" : "mixamo";
+    if (second) {
+      const own = second.anims.get(c.name);
+      second.on = true;
+      second.liveSrc = null;
+      if (own) {
+        pinRoot(own, $("inplace").checked && !own.userData?.fin, second);
+        second.play(own);
+      } else if (c.userData?.live) {
+        second.play(c);
+        second.liveSrc = ref;
+      } else if (second.kind === "file") second.play(c);
+      else if (S.fam === "ual") {
+        second.play(holder(rc));
+        second.liveSrc = ref;
+      } else second.on = false;
+    }
+    const E = EXTRAS[S.extra], file = S.fam && E?.[S.fam];
+    extra = file && !($("refBody")?.value && S.extra !== "female") ? await extraBody(file) : null;
+    if (extra) {
+      extra.on = true;
+      extra.tagText = E.tag[S.fam];
+      extra.play(S.fam === "mixamo" ? rigClip(rc, refX, extra) : rc);
+    }
+  }
+  var figures = () => [main, second?.on ? second : null, ref, extra?.on ? extra : null].filter(Boolean);
+  function figLabel(a, role) {
+    if (role === "main") return (CHARS[S.char]?.label || S.char).split(" (")[0] + (second?.on && second.kind === "file" ? " \xB7 now" : "") + (main.clip?.userData?.live ? " \xB7 live" : "");
+    if (role === "second") return a.label + (a.kind === "file" ? " \xB7 test" : "") + (a.liveSrc ? " \xB7 live" : "");
+    if (role === "ref") {
+      const rb = $("refBody")?.value;
+      return (rb && EXTRAS[rb]?.tag[S.fam] ? EXTRAS[rb].tag[S.fam] : S.fam === "mixamo" ? "X Bot" : $("femref")?.checked ? "Mannequin (female)" : "Mannequin") + " \xB7 clip source";
+    }
+    return a.tagText || "clothed dummy";
+  }
+  function bodyFrame2(f) {
+    if (!main) return;
+    const t = S.playing ? Math.max(1, S.frame) : f;
+    if ((main.clip?.userData?.live || second?.liveSrc) && ref?.action) ref.setFrame(Math.min(t + (S.refOff || 0), ref.frames));
+    if (main.clip?.userData?.live && ref?.action) liveFor(ref, main).apply();
+    if (second) {
+      second.root.visible = !!second.on && S.show !== "ref";
+      if (second.root.visible && second.action) {
+        second.setFrame(Math.min(t, second.frames));
+        if (second.liveSrc?.action) liveFor(second.liveSrc, second).apply();
+      }
+    }
+    if (extra) {
+      extra.root.visible = !!extra.on && !!S.refHas && S.show !== "main";
+      if (extra.root.visible && extra.action) extra.setFrame(Math.min(f + (S.refOff || 0), extra.frames));
+    }
+    for (const a of OTHERS) if (a !== second && a !== extra) {
+      a.root.visible = false;
+      a.helper.visible = false;
+    }
+    const bones = $("bones")?.checked, names = $("eTags")?.checked !== false, shown = /* @__PURE__ */ new Set();
+    let stack = 0;
+    for (const [a, role] of [[main, "main"], [second, "second"], [ref, "ref"], [extra, "extra"]]) {
+      if (!a) continue;
+      shown.add(a);
+      if (a.__tint !== TINT[role]) {
+        tintSkeleton(a.helper, TINT[role]);
+        a.__tint = TINT[role];
+      }
+      if (role === "second" || role === "extra") a.helper.visible = !!bones && a.root.visible;
+      if (!a.tag) {
+        a.tag = makeTag();
+        scene.add(a.tag);
+      }
+      a.tag.visible = names && a.root.visible && a.root.parent === scene && !!a.action;
+      if (a.tag.visible) {
+        setTag(a.tag, figLabel(a, role), TINT[role]);
+        placeTag(a.tag, a, S.overlay ? 0.13 * stack++ * (main.height / 1.62) : 0);
+      }
+    }
+    for (const a of ACTORS) if (a.tag && !shown.has(a)) a.tag.visible = false;
+  }
+  function applyLooks() {
+    const v = $("eHeat")?.value || "", mode = v === "patch" ? "patch" : v ? "bone" : "";
+    for (const a of new Set([main, second, ref, extra, ...OTHERS].filter(Boolean))) {
+      const ghost = S.overlay && a !== main, gc = a === second ? TINT.second : a === extra ? TINT.extra : void 0;
+      if (mode) {
+        ghostify(a.obj, ghost, gc);
+        setWeights(a.obj, mode, v, normBone);
+      } else {
+        setWeights(a.obj, "", "", normBone);
+        ghostify(a.obj, ghost, gc);
+      }
+    }
+  }
+  var BODY_MOVES = ["tripo_idle", "ual1_Idle_Loop", "ual1_Idle_LookAround_Loop", "ual1_Walk_Loop", "ual1_Jog_Fwd_Loop", "ual1_Sprint_Loop", "p_run_plain", "p_run_back_plain", "p_run_strafe_left_plain", "p_run_strafe_right_plain", "p_walk_strafe_left_plain"];
+  var BODY_GAME = ["pistol_idle", "pistol_walk", "pistol_reload", "sg_reload", "rifle_aim_idle", "ual1_Sword_Idle", "ual_Sword_Block", "ual_Sword_Regular_Combo", "ual_Sword_Heavy_Combo", "t_box_01", "t_box_02", "t_kick_02", "hit_body", "yola_knockdown", "yola_getup", "death_fall"];
+  function bodyGroups() {
+    const A = mainCache[S.char]?.gltf.animations || [], have = new Map(A.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
+    const take = (l) => l.filter((n) => have.has(n) && !used.has(n) && used.add(n));
+    return [
+      ["Range of motion (every rig plays these)", take(ROM_NAMES)],
+      ["Stand and move (baked)", take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
+      ["The game's moves (baked)", take(BODY_GAME.filter((n) => !have.get(n)?.userData?.live))],
+      ["Whole Quaternius library (live, not baked)", take([...LIB_NAMES].sort())]
+    ].filter(([, l]) => l.length);
+  }
+  var bodyPretty = (n) => (ROM_LABEL[n] ? ROM_LABEL[n] + ":  " : "") + n.replace(/^(ual1?|kev)_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (isLive(n) ? "  \xB7 Quaternius, live" : /^ual/.test(n) ? "  \xB7 Quaternius" : /^(t_|tripo_)/.test(n) ? "  \xB7 Tripo (no dummy)" : "  \xB7 Mixamo");
+  function secondUI() {
+    const sel = $("eSecond");
+    if (!sel) return;
+    const keep = second?.key || "", og = (label, items) => {
+      if (!items.length) return;
+      const g = document.createElement("optgroup");
+      g.label = label;
+      for (const [v, t] of items) g.appendChild(new Option(t, v));
+      sel.appendChild(g);
+    };
+    sel.innerHTML = "";
+    sel.add(new Option("2nd figure: none", ""));
+    og(`Test versions of ${(CHARS[S.char]?.label || S.char).split(" (")[0]}`, testsOf(S.char).map((t) => ["file:" + t.file, t.label || t.file.split("/").pop()]));
+    og("Other characters (shape and clothes only)", Object.keys(CHARS).filter((k) => k !== S.char).map((k) => ["char:" + k, CHARS[k].label]));
+    sel.value = [...sel.options].some((o) => o.value === keep) ? keep : "";
+  }
+  function bodyUI() {
+    const ex = $("eExtra");
+    ex.add(new Option("+ dummy: none", ""));
+    for (const [k, E] of Object.entries(EXTRAS)) ex.add(new Option("+ " + E.label, k));
+    ex.onchange = () => {
+      S.extra = ex.value;
+      setClip($("clip").value);
+    };
+    const ht = $("eHeat");
+    ht.add(new Option("weights: off", ""));
+    ht.add(new Option("weights: patches (every bone)", "patch"));
+    const NICE = { Hips: "hips", Spine: "lower back (Spine)", Spine1: "middle back (Spine1)", Spine2: "chest (Spine2)", Neck: "neck", Head: "head", Shoulder: "collarbone", Arm: "upper arm", ForeArm: "forearm", Hand: "hand", UpLeg: "thigh", Leg: "shin", Foot: "foot", ToeBase: "toes" };
+    const nice = (n) => {
+      const m = /^(Left|Right)?(.*)$/.exec(n);
+      return (m[1] ? m[1] === "Left" ? "left " : "right " : "") + (NICE[m[2]] || m[2]);
+    };
+    const og = (label, list) => {
+      const g = document.createElement("optgroup");
+      g.label = label;
+      for (const n of list) g.appendChild(new Option("weights: " + nice(n), n));
+      ht.appendChild(g);
+    };
+    og("Spine and head", ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head"]);
+    for (const s of ["Left", "Right"]) {
+      og(s + " arm", ["Shoulder", "Arm", "ForeArm", "Hand"].map((b) => s + b));
+      og(s + " leg", ["UpLeg", "Leg", "Foot", "ToeBase"].map((b) => s + b));
+    }
+    ht.onchange = () => {
+      applyLooks();
+      refresh();
+    };
+    $("eSecond").onchange = (e) => setSecond(e.target.value);
+    secondUI();
+    $("eSkel").onchange = (e) => document.querySelector(`#skelPick [data-skel="${e.target.value}"]`)?.click();
+    $("eTags").onchange = () => refresh();
+    $("eRun").onchange = (e) => {
+      S.runList = e.target.checked;
+    };
+    $("eLay").onclick = () => {
+      S.overlay = !S.overlay;
+      layout();
+      refresh();
+      editSync();
+    };
+    for (const k in CHARS) $("eChar").add(new Option(CHARS[k].label, k));
+    $("eChar").onchange = async (e) => {
+      await setChar(e.target.value);
+      editPick(editFirst());
+    };
+  }
+  function runNext() {
+    const o = [...$("eClip").options].filter((x) => x.value), i = o.findIndex((x) => x.value === main.clip?.name);
+    S.runBusy = true;
+    editPick(o[(i + 1) % o.length]?.value);
+    setTimeout(() => {
+      S.runBusy = false;
+    }, 800);
+  }
   var WEAPON_CLIPS = {
     pistol: { label: "Pistol", idle: "pistol_idle", attack: "kick" },
     short: { label: "Shotgun", idle: "sg_reload", attack: null },
@@ -40571,7 +41316,7 @@ void main() {
     const sel = $("clip"), keep = sel.value, anims = mainCache[S.char].gltf.animations.filter((c) => NO_KK(c.name)), byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
     sel.innerHTML = "";
     const group = (label, list) => {
-      const ok = list.filter((n) => byN[n]);
+      const ok = list.filter((n) => byN[n] && !byN[n].userData?.live);
       if (!ok.length) return;
       const g = document.createElement("optgroup");
       g.label = label;
@@ -40604,6 +41349,16 @@ void main() {
     const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
     for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === "None" ? "Fists / none" : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
     for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
+    const live = anims.filter((c) => c.userData?.live && !used.has(c.name)).map((c) => c.name).sort();
+    if (live.length) {
+      const g = document.createElement("optgroup");
+      g.label = `QUATERNIUS LIBRARY: played live, not baked (${live.length})`;
+      for (const n of live) {
+        g.appendChild(new Option(`${n.replace(/^ual1?_/, "").replace(/_/g, " ")}  [live]`, n));
+        used.add(n);
+      }
+      sel.appendChild(g);
+    }
     group(!/^yola/.test(S.char) ? "This character's clips" : ws.length === 1 ? "Other clips (other weapons, library picks, unused)" : "Other clips (library picks, unused)", anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
     if (byN[keep]) sel.value = keep;
     buildClipPanel();
@@ -40718,16 +41473,17 @@ void main() {
   function gameAttacks() {
     const have = /* @__PURE__ */ new Set([...mainCache[S.char].gltf.animations.map((c) => c.name), ...[...$("clip")?.options || []].map((o) => o.value)]);
     const arena = Object.keys(PICKS).filter((k) => k.endsWith("|" + ARENA_KEY[S.gun])).map((k) => k.slice(0, k.lastIndexOf("|")));
-    return [.../* @__PURE__ */ new Set([...GAME_ATTACKS[S.gun] || [], ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
+    return [.../* @__PURE__ */ new Set([...GAME_ATTACKS[S.gun] || [], ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n) && !isLive(n));
   }
   function editClips() {
+    if (S.mode === "body") return bodyGroups().flatMap(([, l]) => l);
     if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin && /shotgun/.test(c.name) === !!SHOTGUNS[S.gun]).map((c) => c.name).sort();
     if (S.mode === "attack" && ARENA_KEY[S.gun]) {
       const g = gameAttacks();
       if (g.length) return g;
     }
     const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === "idle" ? EDIT_IDLE : EDIT_ATTACK);
-    return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
+    return mainCache[S.char].gltf.animations.filter((c) => !c.userData?.live).map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
   }
   var SLIDE_M = { short: "1.4", mid: "2.2", long: "3.0" };
   var finLabel = (n) => {
@@ -40743,16 +41499,29 @@ void main() {
     $("eIdle").classList.toggle("on", S.mode === "idle");
     $("eAttack").classList.toggle("on", S.mode === "attack");
     $("eFin").classList.toggle("on", S.mode === "finisher");
-    const sel = $("eClip"), list = editClips(), cur = main.clip?.name || "";
+    const sel = $("eClip"), list = editClips(), cur = main.clip?.name || "", body = S.mode === "body";
     sel.innerHTML = "";
-    for (const n of list) sel.add(new Option(prettyClip(n), n));
+    if (body) for (const [label, l] of bodyGroups()) {
+      const g = document.createElement("optgroup");
+      g.label = label;
+      for (const n of l) g.appendChild(new Option(bodyPretty(n), n));
+      sel.appendChild(g);
+    }
+    else for (const n of list) sel.add(new Option(prettyClip(n), n));
     if (!list.includes(cur)) sel.add(new Option("(" + (cur || "none") + ")", cur), 0);
     sel.value = cur;
-    $("eDummy").textContent = !S.refHas ? "none for this clip" : ref === refX ? "Mixamo X Bot" : "Quaternius mannequin";
+    $("eIdle").hidden = $("eAttack").hidden = $("eFin").hidden = body;
+    $("eRunL").hidden = !body;
+    $("eChar").value = S.char;
+    $("eSkel").value = $("bones").checked ? $("fingerBones").checked ? "both" : "body" : $("fingerBones").checked ? "hands" : "off";
+    const dummy = S.fam === "mixamo" ? "Mixamo X Bot" : "Quaternius mannequin";
+    $("eDummy").textContent = !S.refHas ? "none for this clip" : dummy + ($("refBody")?.value ? " (clothed)" : "") + (extra?.on ? " + " + extra.tagText : "") + (main.clip?.userData?.live ? "  \xB7  played live, not baked" : "");
     for (const b of $("eShow").children) {
       b.classList.toggle("on", b.dataset.show === S.show);
       if (b.dataset.show === "main") b.textContent = (CHARS[S.char]?.label || "Yola").split(" (")[0];
+      if (b.dataset.show === "both") b.textContent = figures().length > 2 ? "All" : "Both";
     }
+    $("eLay").classList.toggle("on", !!S.overlay);
     $("eFit").classList.toggle("on", S.fitOn);
     $("eAdv").classList.toggle("on", !$("top").hidden);
     sidebarSync();
@@ -41217,7 +41986,7 @@ void main() {
     }
     const x = S.show === "main" ? main.root.position.x : S.show === "ref" ? ref.root.position.x : 0, c = new Vector3(x, 0.95, 0);
     const D3 = { front: [0, 0.1, 1], back: [0, 0.1, -1], right: [-1, 0.1, 0], left: [1, 0.1, 0], three: [-0.7, 0.35, 0.75], above: [0, 1, 0.03], below: [0, -0.5, 0.85] }[k];
-    camera.position.copy(c).addScaledVector(new Vector3(...D3).normalize(), S.show === "both" ? 3.6 : 2.6);
+    camera.position.copy(c).addScaledVector(new Vector3(...D3).normalize(), S.show === "both" ? 2.5 + 1.1 * (figures().length - 1) : 2.6);
     controls.target.copy(c);
     controls.update();
   }
@@ -41227,6 +41996,7 @@ void main() {
       b.textContent = label;
       b.dataset.k = k;
       b.onclick = () => {
+        if (S.mode === "body") S.mode = "idle";
         S.gun = k;
         $("gun").value = k;
         fillClips();
@@ -41238,6 +42008,24 @@ void main() {
       };
       $("eWeapons").appendChild(b);
     }
+    const bb = document.createElement("button");
+    bb.textContent = "Body check";
+    bb.dataset.k = "none";
+    bb.title = "no weapon: the character beside the clip's dummy (and a second version, a clothed dummy, the weights): the range of motion and the whole Quaternius library, played live on any character";
+    bb.onclick = () => {
+      S.mode = "body";
+      S.gun = "none";
+      $("gun").value = "none";
+      fillClips();
+      applyGun();
+      weaponUI();
+      editPick(editFirst());
+      refresh();
+      sidebarSync();
+      loadLibrary();
+    };
+    $("eWeapons").prepend(bb);
+    bodyUI();
     $("eIdle").onclick = () => {
       S.mode = "idle";
       editPick(editFirst());
@@ -41631,14 +42419,14 @@ void main() {
   async function capView({ who = "main", dir = [1, 0.3, 1], dist = 0.5, target = "hands", w = 600, h = 450, solo = false }) {
     const a = who === "ref" ? ref : main, cam = camera, c = new Vector3();
     if (target === "hands") {
-      a.grip("Right", _v3);
-      a.grip("Left", _v22);
-      c.copy(_v3).lerp(_v22, 0.5);
+      a.grip("Right", _v4);
+      a.grip("Left", _v23);
+      c.copy(_v4).lerp(_v23, 0.5);
     } else if (target === "rhand" || target === "lhand") a.grip(target === "rhand" ? "Right" : "Left", c);
     else if (target === "pair") {
-      main.bones.Hips.getWorldPosition(_v3);
-      ref.bones.Hips.getWorldPosition(_v22);
-      c.copy(_v3).lerp(_v22, 0.5);
+      main.bones.Hips.getWorldPosition(_v4);
+      ref.bones.Hips.getWorldPosition(_v23);
+      c.copy(_v4).lerp(_v23, 0.5);
       c.y = 0.9;
     } else if (target === "head") a.bones.Neck.getWorldPosition(c);
     else if (Array.isArray(target)) c.set(...target);
@@ -41748,7 +42536,10 @@ void main() {
       SHOT.recoil = Math.max(0, SHOT.recoil - dt * 7);
       if (S.playing && main?.action) {
         S.frame += dt * FPS * S.speed;
-        if (S.frame >= S.frames + 1) S.frame = $("loop").checked ? 1 : S.frames;
+        if (S.frame >= S.frames + 1) {
+          if (S.runList && S.mode === "body" && !S.runBusy) runNext();
+          S.frame = $("loop").checked || S.runList ? 1 : S.frames;
+        }
         refresh();
       } else if (kicking) refresh();
       if (main?.hair?.ok) {
