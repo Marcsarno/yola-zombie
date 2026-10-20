@@ -268,5 +268,31 @@
    "turn": 20,
    "roll": 7
   }
+ },
+ "short@sg_reload": {
+  "male1": {
+   "size": 100,
+   "fwd": -25,
+   "up": 0,
+   "side": 0,
+   "tilt": -45,
+   "turn": 0,
+   "roll": 0,
+   "lDown": 0,
+   "lSide": 0
+  }
+ },
+ "short@reload_rifle_stand": {
+  "male1": {
+   "size": 100,
+   "fwd": -21,
+   "up": 43,
+   "side": 39,
+   "tilt": 0,
+   "turn": -11,
+   "roll": -3,
+   "lDown": 30,
+   "lSide": 20.5
+  }
  }
 }

@@ -3,5 +3,6 @@
   "yola2": { "size": 101, "fwd": -21, "up": 7, "side": 14, "tilt": 17, "turn": -18, "roll": -11 },
   "yola": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 },
   "xbot": { "size": 100, "fwd": -36, "up": 8, "side": 17, "tilt": 15, "turn": -18, "roll": -5 },
-  "mannequin": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 }
+  "mannequin": { "size": 100, "fwd": 0, "up": 0, "side": 0, "tilt": 0, "turn": 0, "roll": 0 },
+  "male1": { "size": 100, "fwd": -37, "up": 0, "side": 6, "tilt": 8, "turn": -14, "roll": -13, "lDown": 0, "lSide": 0 }
 }

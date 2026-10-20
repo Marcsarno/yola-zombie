@@ -78,7 +78,8 @@
   <div class="grp"><span class="lbl">Clip</span><select id="clip"></select></div>
   <div class="grp"><span class="lbl">Reference</span><select id="refclip"></select></div>
   <div class="grp"><span class="lbl">Layout</span><button id="lay">side by side</button>
-    <label class="chk" title="library clips: Quaternius's female mannequin (same rig, closer to Yola's build) plays the reference instead of the male one"><input type="checkbox" id="femref"> female mannequin</label></div>
+    <label class="chk" title="library clips: Quaternius's female mannequin (same rig, closer to Yola's build) plays the reference instead of the male one"><input type="checkbox" id="femref"> female mannequin</label>
+    <select id="refBody" title="which body plays the reference, on the source rig's own skeleton: bare (X Bot / the Quaternius mannequin) or clothed men to judge shoulders and back under clothes: Mixamo clips: Brian (Mixamo, T-shirt); library clips: Quaternius's Peasant (shirt) or Ranger (tunic) from Modular Character Outfits (CC0)"><option value="">dummy: bare</option><option value="clothed">dummy: clothed (Brian / Peasant)</option><option value="clothed2">dummy: clothed (Brian / Ranger)</option></select></div>
   <div class="grp"><label class="chk" title="the game's posture fix (render/posture.js, in the game since 2026-10-17): her head, neck, chest and pelvis turned onto the source rig's real bone lines (untick to see the clip as retargeted)"><input type="checkbox" id="posture" checked> posture fix (as the game)</label>
     <label class="chk" title="pistol reload: the empty magazine drops, the loaded one goes in"><input type="checkbox" id="mags" checked> magazines</label></div>
   <div class="grp" id="handsGrp" title="Yola's hands for this clip: open = the clip's own fingers, closed = her fist (the reference keeps its own)"></div>

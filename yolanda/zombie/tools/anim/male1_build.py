@@ -58,6 +58,8 @@ mesh = next(o for o in newM if o.type == 'MESH'); mesh.name = 'MALE1_mesh'
 LOOP = re.compile(r'run|walk|strafe|idle|_plain|Idle|_Loop')
 HOLD = re.compile(r'bat_|baseball|pistol_|rifle|sg_reload|gs_|melee_horizontal|Heavy_Combo|2H|Polearm')
 COMPOSITE = {'pistol_strafe_left', 'pistol_strafe_run_left', 'pistol_strafe_run_right'}
+# his collarbones move from HIS rest (the user, 2026-10-20: the chest "V"); MALE1_CLAV=0 = the old direction copy
+CLAV = () if os.environ.get('MALE1_CLAV') == '0' else ('mixamorig:LeftShoulder', 'mixamorig:RightShoulder')
 SHOES = contacts.shoe_vertices(mesh); CLOG = []; _GRIP = {}
 print('SHOES', {k: len(v) for k, v in SHOES.items()})
 def grip_ref():
@@ -71,7 +73,7 @@ def bake(src, name):
     if s0 != 1:
         for fc in fcurves(sact):
             for k in fc.keyframe_points: k.co.x -= s0 - 1; k.handle_left.x -= s0 - 1; k.handle_right.x -= s0 - 1
-    act = retarget(src, M, name); act.use_fake_user = True
+    act = retarget(src, M, name, rest_relative=CLAV); act.use_fake_user = True
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     if name in COMPOSITE: contacts.support_rel(M, act, f0, f1, grip_ref(), CLOG)
     elif HOLD.search(name):

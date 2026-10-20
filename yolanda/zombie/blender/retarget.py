@@ -18,10 +18,22 @@ def _order(arm):
         if b.parent is None: walk(b)
     return out
 
-def retarget(src, tgt, name, frame_range=None, hips='mixamorig:Hips'):
+def _facing(a):  # the feet's toe direction at rest (world, level)
+    try:
+        W = a.matrix_world; d = a.data.bones
+        v = sum(((W @ d['mixamorig:%sToeBase' % s].head_local) - (W @ d['mixamorig:%sFoot' % s].head_local) for s in ('Left', 'Right')), mathutils.Vector())
+        v.z = 0; return v.normalized() if v.length > 1e-6 else None
+    except KeyError: return None
+
+def retarget(src, tgt, name, frame_range=None, hips='mixamorig:Hips', rest_relative=()):
+    # rest_relative: bones that copy the source bone's TURN FROM ITS OWN REST relative to its parent, instead of its
+    # direction (Marc's collarbones, 2026-10-20: the mannequin's slope back 38 deg at rest, X Bot's 12, his 3; copying
+    # the direction pulled his shoulders back ~6.5 cm in the Quaternius idle and pinched his shoulder blades).
     sc = bpy.context.scene
     S = src.matrix_world.to_quaternion(); T = tgt.matrix_world.to_quaternion()
     Tinv = T.inverted()
+    fs, ft = _facing(src), _facing(tgt)
+    Yf = fs.rotation_difference(ft) if fs is not None and ft is not None else mathutils.Quaternion()
     # leg-length scale for the hips translation (world units)
     def hip_h(a):
         b = a.data.bones[hips]
@@ -67,6 +79,12 @@ def retarget(src, tgt, name, frame_range=None, hips='mixamorig:Hips'):
             spb = src.pose.bones[b.name]
             Ws = S @ spb.matrix.to_quaternion() # source posed world rotation
             Wt = Ws @ off[b.name]                  # target posed world rotation
+            if b.name in rest_relative and b.parent and b.parent.name in P and b.parent.name in src.pose.bones:
+                Rs = S @ rest_s[b.name].to_quaternion(); Rps = S @ src.data.bones[b.parent.name].matrix_local.to_quaternion()
+                Wps = S @ src.pose.bones[b.parent.name].matrix.to_quaternion()
+                rel = (Wps @ Rps.inverted()).inverted() @ (Ws @ Rs.inverted())   # its turn from rest, relative to its parent's
+                Wpt = T @ P[b.parent.name].to_quaternion(); Rpt = T @ rest_t[b.parent.name].to_quaternion()
+                Wt = (Wpt @ Rpt.inverted()) @ (Yf @ rel @ Yf.inverted()) @ (T @ rest_t[b.name].to_quaternion())
             Rarm = Tinv @ Wt                       # in target armature space
             if b.parent and b.parent.name in P:
                 Pp = P[b.parent.name]

@@ -299,14 +299,39 @@ const S = { char: 'yola', playing: true, frame: 1, speed: 1, overlay: false, gun
 const weaponOf = () => (S.gun === 'auto' ? autoWeapon(main?.clip?.name || '') : S.gun);
 let main, ref, mainGun, refGun, refX, refGunX;
 const ualCache = {};
-function ualRef(file, female = $('femref')?.checked) { // Quaternius's mannequin and its clips, loaded once per library file
-  const key = file + (female ? '|F' : '');
-  if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), female ? loadG(UAL_FEMALE) : null]).then(([g, f]) => {
+// clothed men on the mannequin's own rig (tools/anim/clothed_ref_build.py; Quaternius Modular Character Outfits, CC0)
+const UAL_CLOTHED = { clothed: 'assets/source/ual/Clothed_Male_Peasant.glb', clothed2: 'assets/source/ual/Clothed_Male_Ranger.glb' };
+// a clothed Mixamo man on Mixamo's own skeleton for X Bot's clips: his own T-pose FBX from Mixamo, read like X Bot's (a
+// Blender round trip turns the bones' local axes and breaks X Bot's rotations); local only: Mixamo licence
+const MIX_CLOTHED = 'assets/source/refs/brian/Brian_tpose.fbx';
+let mixClothed = null;
+function mixRef() {
+  return (mixClothed ||= loadF(MIX_CLOTHED).then((o) => {
+    o.traverse((x) => { if (x.isMesh) x.frustumCulled = false; if (x.isBone) x.name = x.name.replace(/^mixamorig\d+/, 'mixamorig'); }); // (mixamorig12Hips -> X Bot's mixamorigHips)
+    o.animations = [];
+    const a = new Actor(o, 1.62); a.root.visible = false; scene.add(a.root, a.helper); return a;
+  }).catch((e) => (console.warn('reference dummy failed to load', MIX_CLOTHED, e), null)));
+}
+// an X Bot clip for another Mixamo-rigged body: same bone names and rotations; the hips travel scaled to its own hips
+const rigClips = new WeakMap();
+function rigClip(clip, from, to) {
+  let m = rigClips.get(to); if (!m) rigClips.set(to, (m = new Map()));
+  if (!m.has(clip)) {
+    const c = clip.clone(), k = to.restPos.Hips.length() / from.restPos.Hips.length();
+    for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) for (let i = 0; i < t.values.length; i++) t.values[i] *= k;
+    m.set(clip, c);
+  }
+  return m.get(clip);
+}
+function ualRef(file, female = $('femref')?.checked, clothed = $('refBody')?.value) { // Quaternius's mannequin and its clips, loaded once per library file
+  const body = UAL_CLOTHED[clothed] || (female ? UAL_FEMALE : null);
+  const key = file + (body ? '|' + body : '');
+  if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), body ? loadG(body) : null]).then(([g, f]) => {
     const body = f ? f.scene : g.scene; // (the female mannequin plays the library file's clips: the same bone names)
     body.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
     const actor = new Actor(body, 1.62); actor.root.visible = false; scene.add(actor.root, actor.helper);
     return { actor, clips: g.animations };
-  }).catch(() => null);
+  }).catch((e) => (console.warn('reference dummy failed to load', body, e), null));
   return ualCache[key];
 }
 function useRef(a) { // switch the shown reference actor (the X Bot or a mannequin)
@@ -392,11 +417,13 @@ async function setClip(name) {
     useRef(u ? u.actor : refX);
     rc = u?.clips.find((c) => c.name === libName.replace(/_REBAKE_.*$/, '').slice(lib.length)) || null; file = UAL_FILES[lib];
   } else {
-    useRef(refX);
+    const dressed = $('refBody')?.value ? await mixRef() : null; // (the clothed Mixamo man, if picked)
+    useRef(dressed || refX);
     const nm = name.replace(/_REBAKE_.*$/, ''); // (a test re-bake: the clip it re-bakes has the reference)
     const map = CHARS[S.char].refMap || {}, base = nm in map ? map[nm] : REF_ALIAS[nm] || nm;
     file = base === null ? '' : `assets/mixamo/${map[nm] ? '' : CHARS[S.char].ref}${base}.fbx`;
     rc = file ? await refClip(file) : null;
+    if (rc && dressed) rc = rigClip(rc, refX, dressed);
   }
   const rsel = $('refclip'); rsel.innerHTML = '';
   if (rc) { rsel.add(new Option(lib ? `Quaternius mannequin: ${rc.name}` : file.split('/').pop(), file)); $('note').textContent = ''; }
@@ -1386,6 +1413,7 @@ function sidebarSync() {
   const w = S.gun, a = fitTarget();
   SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? (CHARS[S.char]?.label || S.char) : ref === refX ? 'X Bot' : 'the mannequin'}`;
   for (const b of SB.who.children) b.classList.toggle('on', b.dataset.v === (S.fitWho || 'main'));
+  SB.who.children[0].textContent = (CHARS[S.char]?.label || 'Yola').split(' (')[0]; // (the character being fitted: Yola 2, Marc...; edits save under its own key)
   const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
   for (const b of SB.scope.children) { b.classList.toggle('on', b.dataset.v === (clipOwn || !fitAllOn() ? 'clip' : 'all')); b.disabled = w === 'pistol'; }
   SB.pump.hidden = !PUMP_HAND_Q[w] || a !== main; for (const b of SB.pump.children) b.classList.toggle('on', b.dataset.v === (fitEditing().pumpHand ? 'pump' : 'anim'));
@@ -1509,6 +1537,7 @@ function buildUI() {
   $('lay').onclick = () => { S.overlay = !S.overlay; layout(); refresh(); };
   $('match').onchange = () => { layout(); refresh(); };
   $('femref').onchange = () => setClip($('clip').value);
+  $('refBody').onchange = () => setClip($('clip').value);
   $('marks').onchange = refresh; $('mags').onchange = refresh; buildHandsUI(); buildLayersUI();
   $('batShow').onchange = refresh; $('vidSkel').onchange = refresh;
   $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; skelUI(); };
