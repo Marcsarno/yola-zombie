@@ -36,6 +36,10 @@ const CHARS = {
   // the new Yola (2026-10-16, the user's Tripo nurse-scrubs model): every game clip plus the library picks
   yola2: { label: 'Yola 2 (new model)', file: 'assets/yola2.glb', extra: ['assets/yola2_ual.glb', 'assets/moves/yola2_moves.glb'], height: 1.62, ref: 'yola_', refMap: YOLA2_REF,
     libRef: { pistol_reload: 'ual1_Pistol_Reload' } }, // (2026-10-17: her reload is Quaternius Pistol_Reload, support hand on the gun)
+  // a possible new hero (2026-10-19, the "adult male figure" Tripo download): Yola 2's clips retargeted onto him from
+  // their sources (tools/anim/male1_build.py); 1.80 m with his cap and boots
+  male1: { label: 'Marc (male hero)', file: 'assets/male1.glb', extra: ['assets/male1_ual.glb'], height: 1.80, ref: 'yola_', refMap: YOLA2_REF,
+    libRef: { pistol_reload: 'ual1_Pistol_Reload' }, hero: true },
   nurse: { label: 'Zombie nurse', file: 'assets/zombie-nurse-mod.glb', height: 1.78, ref: 'zombie_' },
   patient: { label: 'Zombie patient', file: 'assets/zombie-patient-mod.glb', height: 1.78, ref: 'zombie_' },
   // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -369,7 +373,7 @@ async function setChar(key) {
   main = actor; scene.add(main.root, main.helper);
   mainGun = new Gun(main);
   const sel = $('clip'); sel.innerHTML = ''; fillClips();
-  const first = key === 'yola2' ? 'ual_Sword_Regular_Combo' : key === 'yola' ? (gltf.animations.some((c) => c.name === 'bat_combo_mc') ? 'bat_combo_mc' : 'reload_rifle_stand') : gltf.animations[0].name;
+  const first = key === 'yola2' || key === 'male1' ? 'ual_Sword_Regular_Combo' : key === 'yola' ? (gltf.animations.some((c) => c.name === 'bat_combo_mc') ? 'bat_combo_mc' : 'reload_rifle_stand') : gltf.animations[0].name;
   sel.value = gltf.animations.some((c) => c.name === first) ? first : gltf.animations[0].name;
   await setClip(sel.value);
   applyGun();
@@ -1179,7 +1183,10 @@ function editSync() {
   if (!list.includes(cur)) sel.add(new Option('(' + (cur || 'none') + ')', cur), 0);
   sel.value = cur;
   $('eDummy').textContent = !S.refHas ? 'none for this clip' : ref === refX ? 'Mixamo X Bot' : 'Quaternius mannequin';
-  for (const b of $('eShow').children) b.classList.toggle('on', b.dataset.show === S.show);
+  for (const b of $('eShow').children) {
+    b.classList.toggle('on', b.dataset.show === S.show);
+    if (b.dataset.show === 'main') b.textContent = (CHARS[S.char]?.label || 'Yola').split(' (')[0]; // (the character shown: Yola 2, Marc...)
+  }
   $('eFit').classList.toggle('on', S.fitOn); $('eAdv').classList.toggle('on', !$('top').hidden);
   sidebarSync();
 }
@@ -1443,7 +1450,7 @@ function buildEditUI(ui, fitClipPanel) {
 }
 // start where the edit bar works: Yola 2, the pack's bat, its idle
 async function editStart() {
-  if (S.char !== 'yola2') await setChar('yola2');
+  if (S.char !== 'yola2' && !CHARS[S.char].hero) await setChar('yola2'); // (a possible new hero, CHARS[].hero, stays)
   S.gun = 'alubat'; $('gun').value = 'alubat'; fillClips(); applyGun(); weaponUI(); editPick(editFirst()); editAngle('three');
 }
 function pausedUI(p) { S.playing = !p; $('play').textContent = S.playing ? 'Pause' : 'Play'; $('play').classList.toggle('on', S.playing); }
