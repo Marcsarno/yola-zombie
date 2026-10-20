@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // node_modules/three/build/three.core.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // node_modules/three/build/three.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -50886,7 +50886,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -50916,7 +50916,7 @@ void main() {
     }
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -52729,7 +52729,7 @@ void main() {
   var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
     constructor(scene2, gltf, clipdata, weapons) {
-      const H4 = 1.62;
+      const H4 = weapons.height || 1.62;
       const clips = [];
       const rest = hipsRest(gltf.scene);
       const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
@@ -56729,7 +56729,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -60578,7 +60578,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/CopyShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -60618,7 +60618,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/Pass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -60709,7 +60709,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -60774,7 +60774,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -60862,7 +60862,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -61046,7 +61046,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -61118,7 +61118,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -61471,7 +61471,7 @@ void main() {
     return magicSquare;
   }
 
-  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -61670,7 +61670,7 @@ void main() {
     return samples;
   }
 
-  // node_modules/three/examples/jsm/math/SimplexNoise.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -62104,7 +62104,7 @@ void main() {
     }
   };
 
-  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -62531,7 +62531,7 @@ void main() {
     "Denoise": 5
   };
 
-  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -62583,7 +62583,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -62867,7 +62867,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // node_modules/three/examples/jsm/shaders/OutputShader.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -62955,7 +62955,7 @@ void main() {
     )
   };
 
-  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -74148,7 +74148,7 @@ void main() {
     return S2;
   }
 
-  // node_modules/three/examples/jsm/controls/OrbitControls.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -78065,7 +78065,7 @@ void main() {
     const WDEF = wj?.weapons || {}, meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
     const byName = Object.fromEntries(clips.map((c) => [c.name, c]));
     const fits = {};
-    for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === "object" && v[who]) fits[k] = v[who];
+    for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === "object" && (v[who] || who === "male1" && v.yola2)) fits[k] = v[who] || v.yola2;
     const holds = {};
     for (const [w, clip] of Object.entries(LIB_PICKS)) {
       const def = WDEF[w], c = byName[clip], P2 = PROFILE[w];
@@ -78547,7 +78547,7 @@ void main() {
     return r;
   }
 
-  // node_modules/three/examples/jsm/libs/meshopt_decoder.module.js
+  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/meshopt_decoder.module.js
   var MeshoptDecoder = (function() {
     var wasm_base = "b9H79Tebbbe8Fv9Gbb9Gvuuuuueu9Giuuub9Geueu9Giuuueuikqbeeedddillviebeoweuec:q:Odkr;leDo9TW9T9VV95dbH9F9F939H79T9F9J9H229F9Jt9VV7bb8A9TW79O9V9Wt9F9KW9J9V9KW9wWVtW949c919M9MWVbeY9TW79O9V9Wt9F9KW9J9V9KW69U9KW949c919M9MWVbdE9TW79O9V9Wt9F9KW9J9V9KW69U9KW949tWG91W9U9JWbiL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9p9JtblK9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9r919HtbvL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVT949Wbol79IV9Rbrq;w8Wqdbk;esezu8Jjjjjbcj;eb9Rgv8Kjjjjbc9:hodnadcefal0mbcuhoaiRbbc:Ge9hmbavaialfgrad9Radz1jjjbhwcj;abad9Uc;WFbGgocjdaocjd6EhDaicefhocbhqdnindndndnaeaq9nmbaDaeaq9RaqaDfae6Egkcsfglcl4cifcd4hxalc9WGgmTmecbhPawcjdfhsaohzinaraz9Rax6mvarazaxfgo9RcK6mvczhlcbhHinalgic9WfgOawcj;cbffhldndndndndnazaOco4fRbbaHcoG4ciGPlbedibkal9cb83ibalcwf9cb83ibxikalaoRblaoRbbgOco4gAaAciSgAE86bbawcj;cbfaifglcGfaoclfaAfgARbbaOcl4ciGgCaCciSgCE86bbalcVfaAaCfgARbbaOcd4ciGgCaCciSgCE86bbalc7faAaCfgARbbaOciGgOaOciSgOE86bbalctfaAaOfgARbbaoRbegOco4gCaCciSgCE86bbalc91faAaCfgARbbaOcl4ciGgCaCciSgCE86bbalc4faAaCfgARbbaOcd4ciGgCaCciSgCE86bbalc93faAaCfgARbbaOciGgOaOciSgOE86bbalc94faAaOfgARbbaoRbdgOco4gCaCciSgCE86bbalc95faAaCfgARbbaOcl4ciGgCaCciSgCE86bbalc96faAaCfgARbbaOcd4ciGgCaCciSgCE86bbalc97faAaCfgARbbaOciGgOaOciSgOE86bbalc98faAaOfgORbbaoRbigoco4gAaAciSgAE86bbalc99faOaAfgORbbaocl4ciGgAaAciSgAE86bbalc9:faOaAfgORbbaocd4ciGgAaAciSgAE86bbalcufaOaAfglRbbaociGgoaociSgoE86bbalaofhoxdkalaoRbwaoRbbgOcl4gAaAcsSgAE86bbawcj;cbfaifglcGfaocwfaAfgARbbaOcsGgOaOcsSgOE86bbalcVfaAaOfgORbbaoRbegAcl4gCaCcsSgCE86bbalc7faOaCfgORbbaAcsGgAaAcsSgAE86bbalctfaOaAfgORbbaoRbdgAcl4gCaCcsSgCE86bbalc91faOaCfgORbbaAcsGgAaAcsSgAE86bbalc4faOaAfgORbbaoRbigAcl4gCaCcsSgCE86bbalc93faOaCfgORbbaAcsGgAaAcsSgAE86bbalc94faOaAfgORbbaoRblgAcl4gCaCcsSgCE86bbalc95faOaCfgORbbaAcsGgAaAcsSgAE86bbalc96faOaAfgORbbaoRbvgAcl4gCaCcsSgCE86bbalc97faOaCfgORbbaAcsGgAaAcsSgAE86bbalc98faOaAfgORbbaoRbogAcl4gCaCcsSgCE86bbalc99faOaCfgORbbaAcsGgAaAcsSgAE86bbalc9:faOaAfgORbbaoRbrgocl4gAaAcsSgAE86bbalcufaOaAfglRbbaocsGgoaocsSgoE86bbalaofhoxekalao8Pbb83bbalcwfaocwf8Pbb83bbaoczfhokdnaiam9pmbaHcdfhHaiczfhlarao9RcL0mekkaiam6mvaoTmvdnakTmbawaPfRbbhHawcj;cbfhlashiakhOinaialRbbgzce4cbazceG9R7aHfgH86bbaiadfhialcefhlaOcufgOmbkkascefhsaohzaPcefgPad9hmbxikkcbc99arao9Radcaadca0ESEhoxlkaoaxad2fhCdnakmbadhlinaoTmlarao9Rax6mlaoaxfhoalcufglmbkaChoxekcbhmawcjdfhAinarao9Rax6miawamfRbbhHawcj;cbfhlaAhiakhOinaialRbbgzce4cbazceG9R7aHfgH86bbaiadfhialcefhlaOcufgOmbkaAcefhAaoaxfhoamcefgmad9hmbkaChokabaqad2fawcjdfakad2z1jjjb8Aawawcjdfakcufad2fadz1jjjb8Aakaqfhqaombkc9:hoxekc9:hokavcj;ebf8Kjjjjbaok;cseHu8Jjjjjbc;ae9Rgv8Kjjjjbc9:hodnaeci9UgrcHfal0mbcuhoaiRbbgwc;WeGc;Ge9hmbawcsGgwce0mbavc;abfcFecjez:jjjjb8AavcUf9cu83ibavc8Wf9cu83ibavcyf9cu83ibavcaf9cu83ibavcKf9cu83ibavczf9cu83ibav9cu83iwav9cu83ibaialfc9WfhDaicefgqarfhidnaeTmbcmcsawceSEhkcbhxcbhmcbhPcbhwcbhlindnaiaD9nmbc9:hoxikdndnaqRbbgoc;Ve0mbavc;abfalaocu7gscl4fcsGcitfgzydlhrazydbhzdnaocsGgHak9pmbavawasfcsGcdtfydbaxaHEhoaHThsdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkaxasfhxcdhHavawcdtfaoBdbawasfhwcehsalhOxdkdndnaHcsSmbaHc987aHamffcefhoxekaicefhoai8SbbgHcFeGhsdndnaHcu9mmbaohixekaicvfhiascFbGhscrhHdninao8SbbgOcFbGaHtasVhsaOcu9kmeaocefhoaHcrfgHc8J9hmbxdkkaocefhikasce4cbasceG9R7amfhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhHavawcdtfaoBdbcehsawcefhwalhOaohmxekdnaocpe0mbaxcefgHavawaDaocsGfRbbgocl49RcsGcdtfydbaocz6gzEhravawao9RcsGcdtfydbaHazfgAaocsGgHEhoaHThCdndnadcd9hmbabaPcetfgHax87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHaxBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfaxBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgOaxBdlaOarBdbavawazfgwcsGcdtfaoBdbalcefcsGhOawaCfhwaxhzaAaCfhxxekaxcbaiRbbgOEgzaoc;:eSgHfhraOcsGhCaOcl4hAdndnaOcs0mbarcefhoxekarhoavawaA9RcsGcdtfydbhrkdndnaCmbaocefhxxekaohxavawaO9RcsGcdtfydbhokdndnaHTmbaicefhHxekaicdfhHai8SbegscFeGhzdnascu9kmbaicofhXazcFbGhzcrhidninaH8SbbgscFbGaitazVhzascu9kmeaHcefhHaicrfgic8J9hmbkaXhHxekaHcefhHkazce4cbazceG9R7amfgmhzkdndnaAcsSmbaHhsxekaHcefhsaH8SbbgicFeGhrdnaicu9kmbaHcvfhXarcFbGhrcrhidninas8SbbgHcFbGaitarVhraHcu9kmeascefhsaicrfgic8J9hmbkaXhsxekascefhskarce4cbarceG9R7amfgmhrkdndnaCcsSmbashixekascefhias8SbbgocFeGhHdnaocu9kmbascvfhXaHcFbGhHcrhodninai8SbbgscFbGaotaHVhHascu9kmeaicefhiaocrfgoc8J9hmbkaXhixekaicefhikaHce4cbaHceG9R7amfgmhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfazBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgXazBdlaXarBdbavawaOcz6aAcsSVfgwcsGcdtfaoBdbawaCTaCcsSVfhwalcefcsGhOkaqcefhqavc;abfaOcitfgOarBdlaOaoBdbavc;abfalasfcsGcitfgraoBdlarazBdbawcsGhwalaHfcsGhlaPcifgPae6mbkkcbc99aiaDSEhokavc;aef8Kjjjjbaok:flevu8Jjjjjbcz9Rhvc9:hodnaecvfal0mbcuhoaiRbbc;:eGc;qe9hmbav9cb83iwaicefhraialfc98fhwdnaeTmbdnadcdSmbcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcdtfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfglBdbaoalBdbaDcefgDae9hmbxdkkcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcetfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfgl87ebaoalBdbaDcefgDae9hmbkkcbc99arawSEhokaok:Lvoeue99dud99eud99dndnadcl9hmbaeTmeindndnabcdfgd8Sbb:Yab8Sbbgi:Ygl:l:tabcefgv8Sbbgo:Ygr:l:tgwJbb;:9cawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai86bbdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad86bbdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad86bbabclfhbaecufgembxdkkaeTmbindndnabclfgd8Ueb:Yab8Uebgi:Ygl:l:tabcdfgv8Uebgo:Ygr:l:tgwJb;:FSawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai87ebdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad87ebdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad87ebabcwfhbaecufgembkkk;oiliui99iue99dnaeTmbcbhiabhlindndnJ;Zl81Zalcof8UebgvciV:Y:vgoal8Ueb:YNgrJb;:FSNJbbbZJbbb:;arJbbbb9GEMgw:lJbbb9p9DTmbaw:OhDxekcjjjj94hDkalclf8Uebhqalcdf8UebhkabaiavcefciGfcetfaD87ebdndnaoak:YNgwJb;:FSNJbbbZJbbb:;awJbbbb9GEMgx:lJbbb9p9DTmbax:OhDxekcjjjj94hDkabaiavciGfgkcd7cetfaD87ebdndnaoaq:YNgoJb;:FSNJbbbZJbbb:;aoJbbbb9GEMgx:lJbbb9p9DTmbax:OhDxekcjjjj94hDkabaiavcufciGfcetfaD87ebdndnJbbjZararN:tawawN:taoaoN:tgrJbbbbarJbbbb9GE:rJb;:FSNJbbbZMgr:lJbbb9p9DTmbar:Ohvxekcjjjj94hvkabakcetfav87ebalcwfhlaiclfhiaecufgembkkk9mbdnadcd4ae2gdTmbinababydbgecwtcw91:Yaece91cjjj98Gcjjj;8if::NUdbabclfhbadcufgdmbkkk9teiucbcbydj1jjbgeabcifc98GfgbBdj1jjbdndnabZbcztgd9nmbcuhiabad9RcFFifcz4nbcuSmekaehikaik;LeeeudndnaeabVciGTmbabhixekdndnadcz9pmbabhixekabhiinaiaeydbBdbaiclfaeclfydbBdbaicwfaecwfydbBdbaicxfaecxfydbBdbaeczfheaiczfhiadc9Wfgdcs0mbkkadcl6mbinaiaeydbBdbaeclfheaiclfhiadc98fgdci0mbkkdnadTmbinaiaeRbb86bbaicefhiaecefheadcufgdmbkkabk;aeedudndnabciGTmbabhixekaecFeGc:b:c:ew2hldndnadcz9pmbabhixekabhiinaialBdbaicxfalBdbaicwfalBdbaiclfalBdbaiczfhiadc9Wfgdcs0mbkkadcl6mbinaialBdbaiclfhiadc98fgdci0mbkkdnadTmbinaiae86bbaicefhiadcufgdmbkkabkkkebcjwklzNbb";
     var wasm_simd = "b9H79TebbbeKl9Gbb9Gvuuuuueu9Giuuub9Geueuikqbbebeedddilve9Weeeviebeoweuec:q:6dkr;leDo9TW9T9VV95dbH9F9F939H79T9F9J9H229F9Jt9VV7bb8A9TW79O9V9Wt9F9KW9J9V9KW9wWVtW949c919M9MWVbdY9TW79O9V9Wt9F9KW9J9V9KW69U9KW949c919M9MWVblE9TW79O9V9Wt9F9KW9J9V9KW69U9KW949tWG91W9U9JWbvL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9p9JtboK9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9r919HtbrL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVT949Wbwl79IV9RbDq:p9sqlbzik9:evu8Jjjjjbcz9Rhbcbheincbhdcbhiinabcwfadfaicjuaead4ceGglE86bbaialfhiadcefgdcw9hmbkaec:q:yjjbfai86bbaecitc:q1jjbfab8Piw83ibaecefgecjd9hmbkk:N8JlHud97euo978Jjjjjbcj;kb9Rgv8Kjjjjbc9:hodnadcefal0mbcuhoaiRbbc:Ge9hmbavaialfgrad9Rad;8qbbcj;abad9UhlaicefhodnaeTmbadTmbalc;WFbGglcjdalcjd6EhwcbhDinawaeaD9RaDawfae6Egqcsfglc9WGgkci2hxakcethmalcl4cifcd4hPabaDad2fhsakc;ab6hzcbhHincbhOaohAdndninaraA9RaP6meavcj;cbfaOak2fhCaAaPfhocbhidnazmbarao9Rc;Gb6mbcbhlinaCalfhidndndndndnaAalco4fRbbgXciGPlbedibkaipxbbbbbbbbbbbbbbbbpklbxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklbaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklbaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaiaopbbbpklbaoczfhokdndndndndnaXcd4ciGPlbedibkaipxbbbbbbbbbbbbbbbbpklzxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklzaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklzaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaiaopbbbpklzaoczfhokdndndndndnaXcl4ciGPlbedibkaipxbbbbbbbbbbbbbbbbpklaxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklaaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklaaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaiaopbbbpklaaoczfhokdndndndndnaXco4Plbedibkaipxbbbbbbbbbbbbbbbbpkl8WxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibaXc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkl8WaoclfaYpQbfaXc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibaXc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkl8WaocwfaYpQbfaXc:q:yjjbfRbbfhoxekaiaopbbbpkl8Waoczfhokalc;abfhialcjefak0meaihlarao9Rc;Fb0mbkkdnaiak9pmbaici4hlinarao9RcK6miaCaifhXdndndndndnaAaico4fRbbalcoG4ciGPlbedibkaXpxbbbbbbbbbbbbbbbbpkbbxikaXaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkbbaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaXaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkbbaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaXaopbbbpkbbaoczfhokalcdfhlaiczfgiak6mbkkaoTmeaohAaOcefgOclSmdxbkkc9:hoxlkdnakTmbavcjdfaHfhiavaHfpbdbhYcbhXinaiavcj;cbfaXfglpblbgLcep9TaLpxeeeeeeeeeeeeeeeegQp9op9Hp9rgLalakfpblbg8Acep9Ta8AaQp9op9Hp9rg8ApmbzeHdOiAlCvXoQrLgEalamfpblbg3cep9Ta3aQp9op9Hp9rg3alaxfpblbg5cep9Ta5aQp9op9Hp9rg5pmbzeHdOiAlCvXoQrLg8EpmbezHdiOAlvCXorQLgQaQpmbedibedibedibediaYp9UgYp9AdbbaiadfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfglaYaEa8EpmwDKYqk8AExm35Ps8E8FgQaQpmbedibedibedibedip9UgYp9AdbbaladfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfglaYaLa8ApmwKDYq8AkEx3m5P8Es8FgLa3a5pmwKDYq8AkEx3m5P8Es8Fg8ApmbezHdiOAlvCXorQLgQaQpmbedibedibedibedip9UgYp9AdbbaladfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfglaYaLa8ApmwDKYqk8AExm35Ps8E8FgQaQpmbedibedibedibedip9UgYp9AdbbaladfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfhiaXczfgXak6mbkkaHclfgHad6mbkasavcjdfaqad2;8qbbavavcjdfaqcufad2fad;8qbbaqaDfgDae6mbkkcbc99arao9Radcaadca0ESEhokavcj;kbf8Kjjjjbaokwbz:bjjjbk::seHu8Jjjjjbc;ae9Rgv8Kjjjjbc9:hodnaeci9UgrcHfal0mbcuhoaiRbbgwc;WeGc;Ge9hmbawcsGgwce0mbavc;abfcFecje;8kbavcUf9cu83ibavc8Wf9cu83ibavcyf9cu83ibavcaf9cu83ibavcKf9cu83ibavczf9cu83ibav9cu83iwav9cu83ibaialfc9WfhDaicefgqarfhidnaeTmbcmcsawceSEhkcbhxcbhmcbhPcbhwcbhlindnaiaD9nmbc9:hoxikdndnaqRbbgoc;Ve0mbavc;abfalaocu7gscl4fcsGcitfgzydlhrazydbhzdnaocsGgHak9pmbavawasfcsGcdtfydbaxaHEhoaHThsdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkaxasfhxcdhHavawcdtfaoBdbawasfhwcehsalhOxdkdndnaHcsSmbaHc987aHamffcefhoxekaicefhoai8SbbgHcFeGhsdndnaHcu9mmbaohixekaicvfhiascFbGhscrhHdninao8SbbgOcFbGaHtasVhsaOcu9kmeaocefhoaHcrfgHc8J9hmbxdkkaocefhikasce4cbasceG9R7amfhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhHavawcdtfaoBdbcehsawcefhwalhOaohmxekdnaocpe0mbaxcefgHavawaDaocsGfRbbgocl49RcsGcdtfydbaocz6gzEhravawao9RcsGcdtfydbaHazfgAaocsGgHEhoaHThCdndnadcd9hmbabaPcetfgHax87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHaxBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfaxBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgOaxBdlaOarBdbavawazfgwcsGcdtfaoBdbalcefcsGhOawaCfhwaxhzaAaCfhxxekaxcbaiRbbgOEgzaoc;:eSgHfhraOcsGhCaOcl4hAdndnaOcs0mbarcefhoxekarhoavawaA9RcsGcdtfydbhrkdndnaCmbaocefhxxekaohxavawaO9RcsGcdtfydbhokdndnaHTmbaicefhHxekaicdfhHai8SbegscFeGhzdnascu9kmbaicofhXazcFbGhzcrhidninaH8SbbgscFbGaitazVhzascu9kmeaHcefhHaicrfgic8J9hmbkaXhHxekaHcefhHkazce4cbazceG9R7amfgmhzkdndnaAcsSmbaHhsxekaHcefhsaH8SbbgicFeGhrdnaicu9kmbaHcvfhXarcFbGhrcrhidninas8SbbgHcFbGaitarVhraHcu9kmeascefhsaicrfgic8J9hmbkaXhsxekascefhskarce4cbarceG9R7amfgmhrkdndnaCcsSmbashixekascefhias8SbbgocFeGhHdnaocu9kmbascvfhXaHcFbGhHcrhodninai8SbbgscFbGaotaHVhHascu9kmeaicefhiaocrfgoc8J9hmbkaXhixekaicefhikaHce4cbaHceG9R7amfgmhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfazBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgXazBdlaXarBdbavawaOcz6aAcsSVfgwcsGcdtfaoBdbawaCTaCcsSVfhwalcefcsGhOkaqcefhqavc;abfaOcitfgOarBdlaOaoBdbavc;abfalasfcsGcitfgraoBdlarazBdbawcsGhwalaHfcsGhlaPcifgPae6mbkkcbc99aiaDSEhokavc;aef8Kjjjjbaok:flevu8Jjjjjbcz9Rhvc9:hodnaecvfal0mbcuhoaiRbbc;:eGc;qe9hmbav9cb83iwaicefhraialfc98fhwdnaeTmbdnadcdSmbcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcdtfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfglBdbaoalBdbaDcefgDae9hmbxdkkcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcetfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfgl87ebaoalBdbaDcefgDae9hmbkkcbc99arawSEhokaok:wPliuo97eue978Jjjjjbca9Rhiaec98Ghldndnadcl9hmbdnalTmbcbhvabhdinadadpbbbgocKp:RecKp:Sep;6egraocwp:RecKp:Sep;6earp;Geaoczp:RecKp:Sep;6egwp;Gep;Kep;LegDpxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgkp9op9rp;Kegrpxbb;:9cbb;:9cbb;:9cbb;:9cararp;MeaDaDp;Meawaqawakp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFbbbFbbbFbbbFbbbp9oaopxbbbFbbbFbbbFbbbFp9op9qarawp;Meaqp;Kecwp:RepxbFbbbFbbbFbbbFbbp9op9qaDawp;Meaqp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qpkbbadczfhdavclfgval6mbkkalaeSmeaipxbbbbbbbbbbbbbbbbgqpklbaiabalcdtfgdaeciGglcdtgv;8qbbdnalTmbaiaipblbgocKp:RecKp:Sep;6egraocwp:RecKp:Sep;6earp;Geaoczp:RecKp:Sep;6egwp;Gep;Kep;LegDaqp:2egqarpxbbbjbbbjbbbjbbbjgkp9op9rp;Kegrpxbb;:9cbb;:9cbb;:9cbb;:9cararp;MeaDaDp;Meawaqawakp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFbbbFbbbFbbbFbbbp9oaopxbbbFbbbFbbbFbbbFp9op9qarawp;Meaqp;Kecwp:RepxbFbbbFbbbFbbbFbbp9op9qaDawp;Meaqp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qpklbkadaiav;8qbbskdnalTmbcbhvabhdinadczfgxaxpbbbgopxbbbbbbFFbbbbbbFFgkp9oadpbbbgDaopmbediwDqkzHOAKY8AEgwczp:Reczp:Sep;6egraDaopmlvorxmPsCXQL358E8FpxFubbFubbFubbFubbp9op;6eawczp:Sep;6egwp;Gearp;Gep;Kep;Legopxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgmp9op9rp;Kegrpxb;:FSb;:FSb;:FSb;:FSararp;Meaoaop;Meawaqawamp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFFbbFFbbFFbbFFbbp9oaoawp;Meaqp;Keczp:Rep9qgoarawp;Meaqp;KepxFFbbFFbbFFbbFFbbp9ogrpmwDKYqk8AExm35Ps8E8Fp9qpkbbadaDakp9oaoarpmbezHdiOAlvCXorQLp9qpkbbadcafhdavclfgval6mbkkalaeSmbaiaeciGgvcitgdfcbcaad9R;8kbaiabalcitfglad;8qbbdnavTmbaiaipblzgopxbbbbbbFFbbbbbbFFgkp9oaipblbgDaopmbediwDqkzHOAKY8AEgwczp:Reczp:Sep;6egraDaopmlvorxmPsCXQL358E8FpxFubbFubbFubbFubbp9op;6eawczp:Sep;6egwp;Gearp;Gep;Kep;Legopxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgmp9op9rp;Kegrpxb;:FSb;:FSb;:FSb;:FSararp;Meaoaop;Meawaqawamp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFFbbFFbbFFbbFFbbp9oaoawp;Meaqp;Keczp:Rep9qgoarawp;Meaqp;KepxFFbbFFbbFFbbFFbbp9ogrpmwDKYqk8AExm35Ps8E8Fp9qpklzaiaDakp9oaoarpmbezHdiOAlvCXorQLp9qpklbkalaiad;8qbbkk;4wllue97euv978Jjjjjbc8W9Rhidnaec98GglTmbcbhvabhoinaiaopbbbgraoczfgwpbbbgDpmlvorxmPsCXQL358E8Fgqczp:Segkclp:RepklbaopxbbjZbbjZbbjZbbjZpx;Zl81Z;Zl81Z;Zl81Z;Zl81Zakpxibbbibbbibbbibbbp9qp;6ep;NegkaraDpmbediwDqkzHOAKY8AEgrczp:Reczp:Sep;6ep;MegDaDp;Meakarczp:Sep;6ep;Megxaxp;Meakaqczp:Reczp:Sep;6ep;Megqaqp;Mep;Kep;Kep;Lepxbbbbbbbbbbbbbbbbp:4ep;Jepxb;:FSb;:FSb;:FSb;:FSgkp;Mepxbbn0bbn0bbn0bbn0grp;KepxFFbbFFbbFFbbFFbbgmp9oaxakp;Mearp;Keczp:Rep9qgxaDakp;Mearp;Keamp9oaqakp;Mearp;Keczp:Rep9qgkpmbezHdiOAlvCXorQLgrp5baipblbpEb:T:j83ibaocwfarp5eaipblbpEe:T:j83ibawaxakpmwDKYqk8AExm35Ps8E8Fgkp5baipblbpEd:T:j83ibaocKfakp5eaipblbpEi:T:j83ibaocafhoavclfgval6mbkkdnalaeSmbaiaeciGgvcitgofcbcaao9R;8kbaiabalcitfgwao;8qbbdnavTmbaiaipblbgraipblzgDpmlvorxmPsCXQL358E8Fgqczp:Segkclp:RepklaaipxbbjZbbjZbbjZbbjZpx;Zl81Z;Zl81Z;Zl81Z;Zl81Zakpxibbbibbbibbbibbbp9qp;6ep;NegkaraDpmbediwDqkzHOAKY8AEgrczp:Reczp:Sep;6ep;MegDaDp;Meakarczp:Sep;6ep;Megxaxp;Meakaqczp:Reczp:Sep;6ep;Megqaqp;Mep;Kep;Kep;Lepxbbbbbbbbbbbbbbbbp:4ep;Jepxb;:FSb;:FSb;:FSb;:FSgkp;Mepxbbn0bbn0bbn0bbn0grp;KepxFFbbFFbbFFbbFFbbgmp9oaxakp;Mearp;Keczp:Rep9qgxaDakp;Mearp;Keamp9oaqakp;Mearp;Keczp:Rep9qgkpmbezHdiOAlvCXorQLgrp5baipblapEb:T:j83ibaiarp5eaipblapEe:T:j83iwaiaxakpmwDKYqk8AExm35Ps8E8Fgkp5baipblapEd:T:j83izaiakp5eaipblapEi:T:j83iKkawaiao;8qbbkk:Pddiue978Jjjjjbc;ab9Rhidnadcd4ae2glc98GgvTmbcbheabhdinadadpbbbgocwp:Recwp:Sep;6eaocep:SepxbbjFbbjFbbjFbbjFp9opxbbjZbbjZbbjZbbjZp:Uep;Mepkbbadczfhdaeclfgeav6mbkkdnavalSmbaialciGgecdtgdVcbc;abad9R;8kbaiabavcdtfgvad;8qbbdnaeTmbaiaipblbgocwp:Recwp:Sep;6eaocep:SepxbbjFbbjFbbjFbbjFp9opxbbjZbbjZbbjZbbjZp:Uep;Mepklbkavaiad;8qbbkk9teiucbcbydj1jjbgeabcifc98GfgbBdj1jjbdndnabZbcztgd9nmbcuhiabad9RcFFifcz4nbcuSmekaehikaikkkebcjwklz:Dbb";
@@ -79748,8 +79748,77 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     launch: "Launch the boat"
   };
 
+  // src/hood/zones.js
+  var B06L = [[7.59, -3.44], [1.73, 1.08], [-6.07, -9.01], [-0.21, -13.53]];
+  var ZONES = {
+    // 1: Marc's yard and the loop's right arm, from the home row to the curve; B03 and B05 on either side
+    home: [[28.9, -6.8], [47.5, 2], [55, 4], [71.5, 21.6], [59.6, 21], [59.6, 50], [36.3, 49], [36.3, 32.8], [28.9, 32.8]],
+    // 1b: B05-L, the damaged end unit off Marc's yard (its garage stands open: a loot room, part of the home stop)
+    b05l: [[47.43, 1.92], [54.13, 5.06], [59.53, -6.49], [52.83, -9.63]],
+    // 2: the curve, the home row's back gardens, B06-L's garage and the gate yard up to the chained fence
+    curve: [[-0.65, -13.7], [33.12, -19.3], [32.72, -19.04], [27.32, -7.49], [28.9, -6.8], [28.9, 32.8], [6.6, 32.8], ...B06L.slice(1), B06L[3]],
+    // 3-5: beyond the gate: the roundabout, the club front, the drive and the parking lot (the courts fenced off)
+    club: [
+      [-0.65, -13.7],
+      [33.12, -19.3],
+      [33.6, -19.6],
+      [33.6, -40.5],
+      [41.5, -49.5],
+      [105.5, -49.5],
+      [105.1, -52],
+      [93.1, -91],
+      [28.6, -91],
+      [26.1, -69.4],
+      [20.7, -69.2],
+      [20.5, -61.3],
+      [20.4, -46.6],
+      [-1.3, -46.6],
+      [-1, -32.6],
+      [-0.6, -13.9]
+    ],
+    // 6: inside the clubhouse
+    clubhouse: [[-1.27, -46.6], [20.4, -46.6], [20.4, -61.3], [-1.27, -61.3]],
+    // 7-9: past the looters' roadblock: the pool, the lakeside, the pavilions, the playground and Grandma's front yard
+    west: [
+      [-0.6, -13.9],
+      [-1, -32.6],
+      [-1.3, -46.6],
+      [-1.27, -61.3],
+      [20.5, -61.3],
+      [20.7, -69.2],
+      [-12.6, -67.6],
+      [-23.8, -67.6],
+      [-75, -67.6],
+      [-75, 7.4],
+      [-58.2, 7.4],
+      [-58.2, 18.4],
+      [-45.3, 18.4],
+      [-23.2, 19.4],
+      [-22.9, 6.8],
+      [-23.2, 4.3],
+      [-0.21, -13.53]
+    ],
+    // 10: the dock trail past the launch gate
+    dock: [[-12.6, -67.6], [-23.8, -67.6], [-40, -67.6], [-40, -96], [-10, -96], [-12.4, -66.9]]
+  };
+
   // src/hood/level.js
   var STEP3 = 1 / 60;
+  var AMBIENT = {
+    curve: ["curve", 14, 10, 20, 5],
+    club: ["club", 18, -32, 14, 4],
+    lot: ["club", 64, -70, 24, 6],
+    west: ["west", -15, -35, 18, 4],
+    grandma: ["west", -38, 2, 14, 4],
+    playground: ["west", -48, -8, 14, 4],
+    dock: ["dock", -22, -82, 12, 3]
+  };
+  var WAVE_EXTRA = 0.5;
+  var inPoly = (P2, x, z) => {
+    let c = false;
+    for (let i = 0, j = P2.length - 1; i < P2.length; j = i++) if (P2[i][1] > z !== P2[j][1] > z && x < (P2[j][0] - P2[i][0]) * (z - P2[i][1]) / (P2[j][1] - P2[i][1]) + P2[i][0]) c = !c;
+    return c;
+  };
   var STOP_ORDER = ["home", "curve", "gate", "club", "lot", "clubhouse", "west", "grandma", "playground", "dock"];
   var SAVE_KEY = "zc.hoodsave";
   var loadSave = () => {
@@ -79973,7 +80042,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       const j = () => (this.sim.rand() - 0.5) * (opts.spread ?? 1.6);
       const x = m.x + j(), z = m.z + j();
-      const zb = this.sim.spawnZombie(null, { x, z, yaw: Math.atan2(p.x - x, p.z - z), kind: opts.kind });
+      const zb = this.sim.spawnZombie(null, { x, z, yaw: opts.yaw ?? Math.atan2(p.x - x, p.z - z), kind: opts.kind });
       if (opts.dormant) {
         zb.passive = true;
         zb.dormant = { wake: Infinity, sense: opts.dormant, speedMul: zb.speedMul };
@@ -79985,8 +80054,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     // a wave: [[mark, kind?] ...] spawned `every` s apart, the farthest-from-player marks first (never on top of her)
     *wave(list, every = 0.8, tag = "w") {
       const out = [];
+      let extra = 0;
       for (const [where, kind, dormant] of list) {
         out.push(this.spawnAt(where, { kind, dormant, wave: tag }));
+        if ((extra += WAVE_EXTRA) >= 1) {
+          extra -= 1;
+          out.push(this.spawnAt(where, { dormant, wave: tag, spread: 3 }));
+        }
         yield* this.wait(every);
       }
       return out;
@@ -80042,6 +80116,21 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         });
       }
     }
+    // the stop's street infected (AMBIENT): free spots inside the stop's area, out of sight (13 m+ from Marc), 3.5 m apart
+    addStreetZombies(stop) {
+      const A = AMBIENT[stop], P2 = A && ZONES[A[0]];
+      if (!P2) return [];
+      const [, cx, cz, r, n] = A, p = this.sim.player, w = this.sim.world, out = [], q = { x: 0, z: 0 };
+      for (let tries = 0; out.length < n && tries < 400; tries++) {
+        const a = this.sim.rand() * Math.PI * 2, d = Math.sqrt(this.sim.rand()) * r, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
+        if (!inPoly(P2, x, z) || Math.hypot(x - p.x, z - p.z) < 13 || out.some((o) => Math.hypot(o.x - x, o.z - z) < 3.5)) continue;
+        q.x = x;
+        q.z = z;
+        if (w.resolveCircle(q, 0.5)) continue;
+        out.push(this.spawnAt({ x, z }, { dormant: 9, spread: 0, yaw: this.sim.rand() * Math.PI * 2, wave: "street" }));
+      }
+      return out;
+    }
     // ---------------------------------------------------------------- the story
     *run() {
       this.started = false;
@@ -80065,6 +80154,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         this.checkpoint(id);
         this.api.onStop?.(id);
         this.addSupplies(id);
+        this.addStreetZombies(id);
         yield* stops[id].call(this);
       }
     }
@@ -81198,9 +81288,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     });
   }
   var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.kind === "runner" ? 4 : z.prop === "surgeon" || z.look === "nurse" ? 0 : z.prop === "bed" || z.look === "patient" ? 1 : z.id % 2;
-  var YOLA_HEIGHT = 1.62;
-  var YOLA_MODEL = params.get("yola") || store2.get("yolaModel", "2");
-  var YOLA_FILES = YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: ["assets/yola2_ual.glb"], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
+  var MARC = !!LAYOUT.hood && params.get("hero") !== "yola";
+  var YOLA_HEIGHT = MARC ? 1.8 : 1.62;
+  var YOLA_MODEL = MARC ? "marc" : params.get("yola") || store2.get("yolaModel", "2");
+  var HERO_KEY = MARC ? "male1" : YOLA_MODEL === "2" ? "yola2" : "yola";
+  var YOLA_FILES = MARC ? { model: "assets/male1.glb", extra: ["assets/male1_ual.glb"], data: "assets/clipdata_yola2.json" } : YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: ["assets/yola2_ual.glb"], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
+  function heroFits(j) {
+    if (!MARC || !j || typeof j !== "object") return j;
+    for (const [k, v] of Object.entries(j)) {
+      if (v && typeof v === "object" && v.yola2 && !v.male1) v.male1 = v.yola2;
+      if (k.startsWith("yola2:") && !j["male1:" + k.slice(6)]) j["male1:" + k.slice(6)] = v;
+    }
+    return j;
+  }
   var loader2 = new GLTFLoader();
   async function load() {
     gibs.load({ 0: "assets/zombie-nurse-burst.glb", 1: "assets/zombie-patient-burst.glb" });
@@ -81245,7 +81345,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       loader2.loadAsync("assets/weapons/pistol_mag_empty.glb").catch(() => null),
       loader2.loadAsync("assets/weapons/pistol_mag_loaded.glb").catch(() => null),
       // (the reload's magazines)
-      fetch("assets/hold/pistol_fit.json").then((r) => r.json()).catch(() => ({})),
+      fetch("assets/hold/pistol_fit.json").then((r) => r.json()).then(heroFits).catch(() => ({})),
       // (the user's pistol fit per character, set in the Rig Lab)
       loader2.loadAsync(WOOD_BAT_DEF.file).catch(() => null),
       loader2.loadAsync(PACK_AXE_DEF.file).catch(() => null)
@@ -81295,11 +81395,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG, packAxeG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
     hud.loading(0.95);
     setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === "2" ? "yola2" : "yola"] });
+    yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[HERO_KEY], height: YOLA_HEIGHT });
     yola.addAttackClips(yg.animations.filter((c) => c.name === "yola_knockdown" || c.name === "yola_getup" || c.name === "ual_KipUp"));
-    setupBat(yg.animations, await fetch("assets/hold/weapon_fit.json").then((r) => r.json()).catch(() => ({})), woodBatG, packAxeG);
+    setupBat(yg.animations, await fetch("assets/hold/weapon_fit.json").then((r) => r.json()).then(heroFits).catch(() => ({})), woodBatG, packAxeG);
     window.game.yolaClips = yg.animations;
-    await setupLibWeapons({ yola, loader: loader2, scene, clips: yg.animations, who: YOLA_MODEL === "2" ? "yola2" : "yola" }).catch((e) => console.warn("library weapons", e));
+    await setupLibWeapons({ yola, loader: loader2, scene, clips: yg.animations, who: HERO_KEY }).catch((e) => console.warn("library weapons", e));
     ZOMBIE_TYPES.forEach((t, i) => t.gltf = zgs[t.same ?? i]);
     renderer.shadowMap.needsUpdate = true;
     screens.scan(scene);
@@ -81341,14 +81441,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     return new AnimationClip(name, 1, tracks);
   }
   function setupBat(anims, fits = {}, woodG = null, axeG = null) {
-    const who = YOLA_MODEL === "2" ? "yola2" : "yola";
+    const who = HERO_KEY;
     yola.axeFit = fits.axe?.[who] || null;
     yola.shotgunFit = fits.short?.[who] || null;
     yola.shotgunClipFits = Object.fromEntries(Object.entries(fits).filter(([k, v]) => k.startsWith("short@") && v?.[who]).map(([k, v]) => [k.slice(6), v[who]]));
     if (YOLA_MODEL !== "2") yola.postureOff = true;
-    fetch("assets/hold/hand_poses.json").then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {
+    fetch("assets/hold/hand_poses.json").then((r) => r.json()).then((j) => yola.setHandPoses(heroFits(j), who)).catch(() => {
     });
-    fetch("assets/hold/arm_pose.json").then((r) => r.json()).then((j) => yola.setArmPose(j, who)).catch(() => {
+    fetch("assets/hold/arm_pose.json").then((r) => r.json()).then((j) => yola.setArmPose(heroFits(j), who)).catch(() => {
     });
     const block = anims.find((c) => c.name === "ual_Sword_Block");
     const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = block ? holdFrame(block, "ual_Sword_Block") : anims.find((c) => c.name === "ual1_Sword_Idle");
@@ -81611,7 +81711,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         zviews.set(z.id, v);
       }
     }
-    for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
+    for (const [type, n] of LAYOUT.hood ? [[0, 7], [1, 7], [4, 4], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
       const v = newZombieView(type);
       v.hide();
       zpool[type].push(v);
