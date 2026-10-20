@@ -65525,6 +65525,11 @@ void main() {
         this.act("restart");
       });
       $("restartClear").addEventListener("click", () => this.act("restart"));
+      $("chapBtn").addEventListener("click", () => this.showChapters(true));
+      $("chapClose").addEventListener("click", () => this.showChapters(false));
+      for (const b of document.querySelectorAll("[data-go]")) b.addEventListener("click", () => {
+        location.search = b.dataset.go;
+      });
       $("tuneBtn").addEventListener("click", () => this.showTuning(true));
       $("tuneClose").addEventListener("click", () => this.showTuning(false));
       $("tuneReset").addEventListener("click", () => {
@@ -65634,9 +65639,25 @@ void main() {
       $("tuning").classList.toggle("show", v);
       $("menu").classList.toggle("show", !v);
     }
+    showChapters(v) {
+      if (v) {
+        $("chapCont1").hidden = !this.store.get("chapter1save", null);
+        let h = null;
+        try {
+          h = localStorage.getItem("zc.hoodsave");
+        } catch {
+        }
+        $("chapCont2").hidden = !h;
+      }
+      $("chapters").classList.toggle("show", v);
+      $("menu").classList.toggle("show", !v);
+    }
     setPaused(v) {
       $("menu").classList.toggle("show", v);
-      if (!v) $("tuning").classList.remove("show");
+      if (!v) {
+        $("tuning").classList.remove("show");
+        $("chapters").classList.remove("show");
+      }
     }
     onRestart(sim2) {
       $("death").classList.remove("show");
@@ -73129,7 +73150,7 @@ void main() {
       this.setBlood(true);
       this.scene.background = new Color(329738);
       this.arena.outPlane?.material.color.set(1910316);
-      g.applyRoom1();
+      g.applyLevel(null);
       this.room1Preview = true;
       this.arena.setEmergency?.(true, 0);
       if (this.spot) this.spot.intensity = 0;
@@ -73198,9 +73219,10 @@ void main() {
     revealZombies() {
       const g = this.game();
       this.setBlood(true);
-      g.applyRoom1();
+      g.applyLevel(null);
       this.room1Preview = true;
     }
+    // (the checkpoint stays until play starts: finalize)
     // THE canonical Room 1 hand-off: normal completion, skip, replay and direct start all end here. Idempotent.
     finalize(via = "normal") {
       if (this.finalized) return;
@@ -73628,6 +73650,10 @@ void main() {
       if (this.studio) {
         this.ui.gate.classList.remove("show");
         this.studio.open();
+        return;
+      }
+      if (this.params.has("cont") && save) {
+        this.ui.contB.onclick();
         return;
       }
       if (this.params.has("room1")) {
@@ -80273,6 +80299,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     constructor() {
       const el = document.createElement("div");
       el.style.cssText = "position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 88px);transform:translateX(-50%);max-width:min(88vw,560px);z-index:60;pointer-events:none;font:600 15px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 3px #000,0 0 8px #000;background:rgba(0,0,0,0.38);padding:7px 12px;border-radius:9px;opacity:0;transition:opacity .18s";
+      el.className = "hoodOverlay";
       document.body.appendChild(el);
       this.el = el;
       this.queue = [];
@@ -80542,6 +80569,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const el = document.createElement("div");
       el.style.cssText = "position:fixed;left:0;top:0;z-index:55;pointer-events:none;transform:translate(-50%,-50%);display:none;font:700 11px system-ui,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 2px #000";
       el.innerHTML = '<div style="width:16px;height:16px;margin:0 auto;border:2px solid #ffd27a;background:rgba(255,190,90,0.35);transform:rotate(45deg)"></div><div class="d" style="margin-top:3px"></div>';
+      el.className = "hoodOverlay";
       document.body.appendChild(el);
       this.el = el;
       this.d = el.querySelector(".d");

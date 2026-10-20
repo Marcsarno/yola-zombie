@@ -100,6 +100,13 @@
   #death .card, #clear .card { text-align: center; }
   #restartDeath { font-size: 18px; padding: 16px; }
   #tuning .card { width: min(420px, 100%); }
+  /* the chapter select (pause menu): a jump reloads the page at that chapter / stop */
+  #chapters .card { width: min(440px, 100%); }
+  #chapters h3 { margin: 14px 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--amber); }
+  .chapGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; } .chapGrid .btn { margin: 4px 0; padding: 10px 6px; font-size: 14px; }
+  .btn[hidden] { display: none; }
+  body:has(#hud .sheet.show) .hoodOverlay { visibility: hidden; } /* (Chapter 2's subtitles and hint sit above the HUD: not over a menu) */
+  .chapGrid .btn small { display: block; font-weight: 500; color: var(--ink2); font-size: 11px; margin-top: 2px; }
   .tune-row { display: grid; grid-template-columns: 1fr 120px 70px; gap: 8px; align-items: center; font-size: 13px; padding: 3px 0; }
   .tune-row b { font-weight: 600; text-align: right; color: var(--ink2); font-size: 12px; }
   #tuneBody h3 { margin: 12px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--amber); }
@@ -216,6 +223,7 @@
   <div id="menu" class="sheet"><div class="card">
     <h2>Paused</h2>
     <button id="resumeBtn" class="btn primary">Resume</button>
+    <button id="chapBtn" class="btn">Chapter select…</button>
     <button class="btn" data-act="restart">Restart encounter</button>
     <div class="row"><button class="btn" data-act="mode" data-v="encounter">Encounter</button><button class="btn" data-act="mode" data-v="calm">Practice</button><button class="btn" data-act="mode" data-v="arena">Weapon test</button></div>
     <button id="tuneBtn" class="btn">Tuning…</button>
@@ -234,6 +242,18 @@
     <div class="row"><button class="btn" data-act="bench" data-v="5">5</button><button class="btn" data-act="bench" data-v="10">10</button><button class="btn" data-act="bench" data-v="20">20</button><button class="btn" data-act="bench" data-v="30">30</button></div>
     <button id="perfBtn" class="btn">Show performance</button>
     <div id="perfOut"></div>
+  </div></div>
+
+  <div id="chapters" class="sheet"><div class="card">
+    <h2>Chapter select</h2>
+    <div class="muted">Each jump starts there fresh (the page reloads).</div>
+    <h3>Chapter 1 · Yola’s Medical Center</h3>
+    <div class="chapGrid"><button class="btn" data-go="intro=1">Opening<small>From the title</small></button><button class="btn" data-go="intro=1&amp;crisis=1">Skip to reveal<small>Before the patient turns</small></button><button class="btn" data-go="room1=1">Floor 7<small>Straight to the fight</small></button><button class="btn" id="chapCont1" data-go="intro=1&amp;cont=1">Continue<small>Your last checkpoint</small></button></div>
+    <h3>Chapter 2 · Marc’s neighbourhood</h3>
+    <div class="chapGrid"><button class="btn" id="chapCont2" data-go="mode=hood">Continue<small>Your last checkpoint</small></button><button class="btn" data-go="mode=hood&amp;stop=home">1 · Home<small>Hold the yard</small></button><button class="btn" data-go="mode=hood&amp;stop=curve">2 · The curve<small>Bolt cutters</small></button><button class="btn" data-go="mode=hood&amp;stop=gate">3 · The gate<small>Cut the chain</small></button><button class="btn" data-go="mode=hood&amp;stop=club">4 · Club front<small>Warned off</small></button><button class="btn" data-go="mode=hood&amp;stop=lot">5 · Parking lot<small>The gas can</small></button><button class="btn" data-go="mode=hood&amp;stop=clubhouse">6 · Clubhouse<small>Looters, the keys</small></button><button class="btn" data-go="mode=hood&amp;stop=west">7 · Roadblock<small>To the pavilions</small></button><button class="btn" data-go="mode=hood&amp;stop=grandma">8 · Grandma’s<small>Get Lilah</small></button><button class="btn" data-go="mode=hood&amp;stop=playground">9 · Playground<small>Back to the boat</small></button><button class="btn" data-go="mode=hood&amp;stop=dock">10 · The dock<small>Fuel, hold, launch</small></button></div>
+    <h3>Practice</h3>
+    <div class="chapGrid"><button class="btn" data-go="mode=encounter">Encounter<small>Four waves</small></button><button class="btn" data-go="mode=arena">Weapon test<small>Dummies</small></button></div>
+    <button id="chapClose" class="btn primary">Back</button>
   </div></div>
 
   <div id="tuning" class="sheet"><div class="card">

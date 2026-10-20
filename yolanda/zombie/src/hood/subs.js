@@ -9,7 +9,7 @@ export class Subtitles {
     el.style.cssText = 'position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 88px);transform:translateX(-50%);max-width:min(88vw,560px);z-index:60;pointer-events:none;' +
       'font:600 15px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 3px #000,0 0 8px #000;' +
       'background:rgba(0,0,0,0.38);padding:7px 12px;border-radius:9px;opacity:0;transition:opacity .18s';
-    document.body.appendChild(el);
+    el.className = 'hoodOverlay'; document.body.appendChild(el);
     this.el = el; this.queue = []; this.cur = null; this.t = 0;
   }
   say(id) { if (LINES[id]) this.queue.push(id); }

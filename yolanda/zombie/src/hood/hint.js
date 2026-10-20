@@ -11,7 +11,7 @@ export class Hint {
     el.style.cssText = 'position:fixed;left:0;top:0;z-index:55;pointer-events:none;transform:translate(-50%,-50%);display:none;' +
       'font:700 11px system-ui,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 2px #000';
     el.innerHTML = '<div style="width:16px;height:16px;margin:0 auto;border:2px solid #ffd27a;background:rgba(255,190,90,0.35);transform:rotate(45deg)"></div><div class="d" style="margin-top:3px"></div>';
-    document.body.appendChild(el);
+    el.className = 'hoodOverlay'; document.body.appendChild(el);
     this.el = el; this.d = el.querySelector('.d'); this.t = 0; this.shown = false;
   }
   hide() { if (this.shown) { this.el.style.display = 'none'; this.shown = false; } }

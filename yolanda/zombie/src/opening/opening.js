@@ -1763,7 +1763,7 @@ export class Opening {
     for (const k of ['baseball', 'teamA', 'teamB', 'surgeon', 'security', 'staff']) A[k].setVisible(false);
     this.holdBat(null); this.cpr = null; this.ui.showMonitor(false); this.monitorOn = false;
     this.inOR = true; this.setBlood(true); this.scene.background = new THREE.Color(0x05080a); this.arena.outPlane?.material.color.set(0x1d262c);
-    g.applyRoom1(); this.room1Preview = true;
+    g.applyLevel(null); this.room1Preview = true; // (Floor 7 fresh, but the checkpoint stays: this also runs ahead while loading, and the title screen still offers it; finalize clears it when play starts)
     this.arena.setEmergency?.(true, 0);
     if (this.spot) this.spot.intensity = 0;
     this.setOrLamp(true);
@@ -1796,7 +1796,7 @@ export class Opening {
     c.position.lerpVectors(a.from.pos, a.to.pos, u); c.quaternion.slerpQuaternions(a.from.quat, a.to.quat, u); c.fov = lerp(a.from.fov, a.to.fov, u); c.updateProjectionMatrix();
   }
   // the three preplaced zombies become visible (still, unaware) as the camera widens
-  revealZombies() { const g = this.game(); this.setBlood(true); g.applyRoom1(); this.room1Preview = true; }
+  revealZombies() { const g = this.game(); this.setBlood(true); g.applyLevel(null); this.room1Preview = true; } // (the checkpoint stays until play starts: finalize)
 
   // THE canonical Room 1 hand-off: normal completion, skip, replay and direct start all end here. Idempotent.
   finalize(via = 'normal') {
@@ -1955,6 +1955,7 @@ export class Opening {
     this.ui.flashB.onclick = () => { this.reducedFlash = !this.reducedFlash; this.ui.flashB.classList.toggle('off', !this.reducedFlash); };
     this.ui.flashB.classList.toggle('off', !this.reducedFlash);
     if (this.studio) { this.ui.gate.classList.remove('show'); this.studio.open(); return; } // (the Reveal Studio opens on the reveal's timeline, not the title)
+    if (this.params.has('cont') && save) { this.ui.contB.onclick(); return; } // (the pause menu's chapter select: Chapter 1, continue)
     if (this.params.has('room1')) { this.started = true; this.beginSilent(); this.finalize('direct'); return; } // dev: straight to the canonical Room 1 snapshot
     if (this.params.has('crisis')) { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.toReveal(); return; } // dev: the reveal from just before the patient turns
     if (this.params.has('reveal')) { this.ui.gate.classList.remove('show'); this.sound.unlock(); this.started = true; this.runTo('get-yola-done', { stopAtLabel: false }); return; } // dev: the reveal replay

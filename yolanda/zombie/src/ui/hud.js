@@ -43,6 +43,10 @@ export class Hud {
     for (const b of document.querySelectorAll('[data-act]')) b.addEventListener('click', () => this.act(b.dataset.act, b.dataset.v ? (isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v) : undefined));
     $('restartDeath').addEventListener('pointerdown', (e) => { e.preventDefault(); this.act('restart'); });
     $('restartClear').addEventListener('click', () => this.act('restart'));
+    // the chapter select: each jump reloads the page at that chapter's start (?intro / ?room1 / ?mode=hood&stop=...)
+    $('chapBtn').addEventListener('click', () => this.showChapters(true));
+    $('chapClose').addEventListener('click', () => this.showChapters(false));
+    for (const b of document.querySelectorAll('[data-go]')) b.addEventListener('click', () => { location.search = b.dataset.go; });
     $('tuneBtn').addEventListener('click', () => this.showTuning(true));
     $('tuneClose').addEventListener('click', () => this.showTuning(false));
     $('tuneReset').addEventListener('click', () => { Object.assign(this.T, TUNING_DEFAULTS); this.store.set('tuning', null); this.buildTuning(); });
@@ -99,9 +103,18 @@ export class Hud {
 
   showTuning(v) { $('tuning').classList.toggle('show', v); $('menu').classList.toggle('show', !v); }
 
+  showChapters(v) {
+    if (v) { // (Continue only where there is a checkpoint to continue from)
+      $('chapCont1').hidden = !this.store.get('chapter1save', null);
+      let h = null; try { h = localStorage.getItem('zc.hoodsave'); } catch { /* storage unavailable */ }
+      $('chapCont2').hidden = !h;
+    }
+    $('chapters').classList.toggle('show', v); $('menu').classList.toggle('show', !v);
+  }
+
   setPaused(v) {
     $('menu').classList.toggle('show', v);
-    if (!v) $('tuning').classList.remove('show');
+    if (!v) { $('tuning').classList.remove('show'); $('chapters').classList.remove('show'); }
   }
 
   onRestart(sim) {
