@@ -1204,10 +1204,20 @@ function applyLooks() {
 // the edit bar's lists for the body check
 const BODY_MOVES = ['tripo_idle', 'ual1_Idle_Loop', 'ual1_Idle_LookAround_Loop', 'ual1_Walk_Loop', 'ual1_Jog_Fwd_Loop', 'ual1_Sprint_Loop', 'p_run_plain', 'p_run_back_plain', 'p_run_strafe_left_plain', 'p_run_strafe_right_plain', 'p_walk_strafe_left_plain'];
 const BODY_GAME = ['pistol_idle', 'pistol_walk', 'pistol_reload', 'sg_reload', 'rifle_aim_idle', 'ual1_Sword_Idle', 'ual_Sword_Block', 'ual_Sword_Regular_Combo', 'ual_Sword_Heavy_Combo', 't_box_01', 't_box_02', 't_kick_02', 'hit_body', 'yola_knockdown', 'yola_getup', 'death_fall'];
+// MOVEMENT OPTIONS (2026-10-20, the user: "basic running, turning, walking, smoothing between them ... I want to see all
+// the options"): the game's gait set today (Mixamo, baked) and every Quaternius walk / jog / sprint / turn (live), grouped
+const MOVE_GROUPS = [
+  ["Moving: the game's set today (Mixamo)", ['p_run_plain', 'p_run_back_plain', 'p_walk_strafe_left_plain', 'p_walk_strafe_right_plain', 'p_run_strafe_left_plain', 'p_run_strafe_right_plain',
+    'pistol_walk', 'pistol_run', 'pistol_walk_back', 'pistol_run_back', 'pistol_strafe_left', 'pistol_strafe_right', 'pistol_strafe_run_left', 'pistol_strafe_run_right']],
+  ['Moving: Quaternius walks (8 directions)', ['ual1_Walk_Loop', 'ual1_Walk_Formal_Loop', 'ual_Walk_Fwd_Loop', 'ual_Walk_Fwd_L_Loop', 'ual_Walk_Fwd_R_Loop', 'ual_Walk_L_Loop', 'ual_Walk_R_Loop', 'ual_Walk_Bwd_Loop', 'ual_Walk_Bwd_L_Loop', 'ual_Walk_Bwd_R_Loop']],
+  ['Moving: Quaternius jogs (8 directions + leans)', ['ual1_Jog_Fwd_Loop', 'ual1_Jog_Fwd_L_Loop', 'ual1_Jog_Fwd_R_Loop', 'ual1_Jog_Fwd_LeanL_Loop', 'ual1_Jog_Fwd_LeanR_Loop', 'ual1_Jog_Left_Loop', 'ual1_Jog_Right_Loop', 'ual1_Jog_Bwd_Loop', 'ual1_Jog_Bwd_L_Loop', 'ual1_Jog_Bwd_R_Loop']],
+  ['Moving: Quaternius sprint, turns, starts and stops', ['ual1_Sprint_Enter', 'ual1_Sprint_Loop', 'ual1_Sprint_Exit', 'ual1_Turn90_L', 'ual1_Turn90_R', 'ual_Turn180_L', 'ual_Turn180_R']],
+  ['Moving: Quaternius crouch, carry and step', ['ual1_Crouch_Fwd_Loop', 'ual1_Crouch_Fwd_L_Loop', 'ual1_Crouch_Fwd_R_Loop', 'ual_Walk_Carry_Loop', 'ual_StepUp', 'ual1_Pistol_Idle_Loop']],
+];
 function bodyGroups() {
   const A = mainCache[S.char]?.gltf.animations || [], have = new Map(A.map((c) => [c.name, c])), used = new Set();
   const take = (l) => l.filter((n) => have.has(n) && !used.has(n) && used.add(n));
-  return [['Range of motion (every rig plays these)', take(ROM_NAMES)], ['Stand and move (baked)', take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
+  return [['Range of motion (every rig plays these)', take(ROM_NAMES)], ...MOVE_GROUPS.map(([g, l]) => [g, take(l)]), ['Stand and move (baked)', take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
     ["The game's moves (baked)", take(BODY_GAME.filter((n) => !have.get(n)?.userData?.live))], ['Whole Quaternius library (live, not baked)', take([...LIB_NAMES].sort())]].filter(([, l]) => l.length);
 }
 const bodyPretty = (n) => (ROM_LABEL[n] ? ROM_LABEL[n] + ':  ' : '') + n.replace(/^(ual1?|kev)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') +

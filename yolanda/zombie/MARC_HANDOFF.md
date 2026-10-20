@@ -67,6 +67,22 @@ and adjusts his left arm in the Rig Lab. He is not in the game.
 - **The Rig Lab's pistol "Attack"** keeps firing its shot kick while paused. That's the shake, not his rig.
 - Our retarget is faithful. Unity's Humanoid retarget was worse.
 
+## Movement (2026-10-20, in progress)
+- The user asked to see every walk / run / turn option on Marc ("basic running, turning, walking, smoothing between them").
+  The Rig Lab's Body check list now opens with five "Moving: ..." groups, 56 clips in all:
+  - the game's Mixamo gait set today;
+  - Quaternius 8-way walks and 8-way jogs (with leans);
+  - sprint enter / loop / exit, Turn90 L/R and Turn180 L/R;
+  - crouch walks.
+  - The groups are `MOVE_GROUPS` in src/viewer.js. **Uncommitted** at the time of writing.
+- How the game moves the heroes today (render/clipchars.js locoWeights):
+  - Mixamo walk + run per direction (forward, back, left, right), blended by speed and direction, all on one shared stride phase.
+  - Weight changes are rate-limited (a full swap takes at least 0.12 s), and the back clips switch in with hysteresis.
+  - Facing turns in code (core/player.js, turnRate 16 rad/s), with **no turn animation**.
+  - Starts and stops are only the blend to and from the idle.
+  - The Quaternius walk / jog / sprint / turns are unused by the heroes.
+- Next: the user picks the clips that look best on Marc, then a plan to wire them in (ask before building).
+
 ## If we come back
 - Mixamo auto-rig of his own mesh (the user uploads), to compare against a native Mixamo skeleton.
 - A corrective shoulder shape for raised arms, if the sloped shoulder still bothers the user.
