@@ -81171,7 +81171,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var sim;
   var hood = null;
   var zviews = /* @__PURE__ */ new Map();
-  var zpool = [[], [], [], [], []];
+  var zpool = [[], [], [], [], [], [], []];
   var storyStart = params.has("intro") || params.has("reveal") || params.has("room1");
   var mode = storyStart ? "room1" : params.get("mode") || "encounter";
   var benchN = +(params.get("n") || 10);
@@ -81227,7 +81227,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     { file: "assets/zombie-guard.glb", extra: ["assets/zombie_moves/guard.glb", "assets/zombie_moves/guard-b.glb"], height: 2.05, walk: { speed: 0.168 }, shield: true, girth: 1.4 },
     // the runner (2026-10-18, the user: "an orange-clothed variant of the existing nurse zombie ... the faster enemy"): the
     // nurse's own model and clips, her blue scrubs turned orange at load (orangeScrubs), core/zombies.js KINDS.runner
-    { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true }
+    { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true },
+    // Chapter 2's street zombies (2026-10-20, the user picked them from the Mixamo downloads: "add those in place of the
+    // hospital-type zombies"): Romero and Zombiegirl, made light by tools/anim/mixamo_zombie_prep.py (12k / 7.4k triangles,
+    // base colour at 1024), then tools/anim/build_zombie.py and test_zombie_clips.py as the sprinter. Not modular (no limbs
+    // come off, no burst model yet). Loaded only in Chapter 2; there they stand in for the nurse, the patient and the runner.
+    { file: "assets/zombie-romero.glb", extra: ["assets/zombie_moves/romero.glb"], height: 1.78, walk: { speed: 0.168 }, hood: true },
+    { file: "assets/zombie-zombiegirl.glb", extra: ["assets/zombie_moves/zombiegirl.glb"], height: 1.68, walk: { speed: 0.174 }, hood: true }
   ];
   var SCRUBS = {
     orange: { H: 22, s: null, l: [0.92, 0.04, 0.62] },
@@ -81287,7 +81293,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
     });
   }
-  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : z.kind === "runner" ? 4 : z.prop === "surgeon" || z.look === "nurse" ? 0 : z.prop === "bed" || z.look === "patient" ? 1 : z.id % 2;
+  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : LAYOUT.hood ? 5 + z.id % 2 : z.kind === "runner" ? 4 : z.prop === "surgeon" || z.look === "nurse" ? 0 : z.prop === "bed" || z.look === "patient" ? 1 : z.id % 2;
   var MARC = !!LAYOUT.hood && params.get("hero") !== "yola";
   var YOLA_HEIGHT = MARC ? 1.8 : 1.62;
   var YOLA_MODEL = MARC ? "marc" : params.get("yola") || store2.get("yolaModel", "2");
@@ -81329,7 +81335,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       for (const x of xs) if (x) g.animations.push(...x.animations);
       return g;
     });
-    const zomP = Promise.all(ZOMBIE_TYPES.map((t) => t.same != null ? null : Promise.all([loader2.loadAsync(t.file), ...(t.extra || []).map((f) => loader2.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => {
+    const zomP = Promise.all(ZOMBIE_TYPES.map((t) => t.same != null || t.hood && !LAYOUT.hood ? null : Promise.all([loader2.loadAsync(t.file), ...(t.extra || []).map((f) => loader2.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => {
       for (const x of xs) if (x) g.animations.push(...x.animations);
       return g;
     })));
@@ -81711,7 +81717,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         zviews.set(z.id, v);
       }
     }
-    for (const [type, n] of LAYOUT.hood ? [[0, 7], [1, 7], [4, 4], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
+    for (const [type, n] of LAYOUT.hood ? [[5, 8], [6, 8], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
       const v = newZombieView(type);
       v.hide();
       zpool[type].push(v);
