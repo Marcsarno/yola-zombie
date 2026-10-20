@@ -39383,18 +39383,46 @@ void main() {
   var refX;
   var refGunX;
   var ualCache = {};
-  function ualRef(file, female = $("femref")?.checked) {
-    const key = file + (female ? "|F" : "");
-    if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), female ? loadG(UAL_FEMALE) : null]).then(([g, f]) => {
-      const body = f ? f.scene : g.scene;
-      body.traverse((o) => {
+  var UAL_CLOTHED = { clothed: "assets/source/ual/Clothed_Male_Peasant.glb", clothed2: "assets/source/ual/Clothed_Male_Ranger.glb" };
+  var MIX_CLOTHED = "assets/source/refs/brian/Brian_tpose.fbx";
+  var mixClothed = null;
+  function mixRef() {
+    return mixClothed || (mixClothed = loadF(MIX_CLOTHED).then((o) => {
+      o.traverse((x) => {
+        if (x.isMesh) x.frustumCulled = false;
+        if (x.isBone) x.name = x.name.replace(/^mixamorig\d+/, "mixamorig");
+      });
+      o.animations = [];
+      const a = new Actor(o, 1.62);
+      a.root.visible = false;
+      scene.add(a.root, a.helper);
+      return a;
+    }).catch((e) => (console.warn("reference dummy failed to load", MIX_CLOTHED, e), null)));
+  }
+  var rigClips = /* @__PURE__ */ new WeakMap();
+  function rigClip(clip, from, to) {
+    let m = rigClips.get(to);
+    if (!m) rigClips.set(to, m = /* @__PURE__ */ new Map());
+    if (!m.has(clip)) {
+      const c = clip.clone(), k = to.restPos.Hips.length() / from.restPos.Hips.length();
+      for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) for (let i = 0; i < t.values.length; i++) t.values[i] *= k;
+      m.set(clip, c);
+    }
+    return m.get(clip);
+  }
+  function ualRef(file, female = $("femref")?.checked, clothed = $("refBody")?.value) {
+    const body = UAL_CLOTHED[clothed] || (female ? UAL_FEMALE : null);
+    const key = file + (body ? "|" + body : "");
+    if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), body ? loadG(body) : null]).then(([g, f]) => {
+      const body2 = f ? f.scene : g.scene;
+      body2.traverse((o) => {
         if (o.isMesh) o.frustumCulled = false;
       });
-      const actor = new Actor(body, 1.62);
+      const actor = new Actor(body2, 1.62);
       actor.root.visible = false;
       scene.add(actor.root, actor.helper);
       return { actor, clips: g.animations };
-    }).catch(() => null);
+    }).catch((e) => (console.warn("reference dummy failed to load", body, e), null));
     return ualCache[key];
   }
   function useRef(a) {
@@ -39506,11 +39534,13 @@ void main() {
       rc = u?.clips.find((c2) => c2.name === libName.replace(/_REBAKE_.*$/, "").slice(lib.length)) || null;
       file = UAL_FILES[lib];
     } else {
-      useRef(refX);
+      const dressed = $("refBody")?.value ? await mixRef() : null;
+      useRef(dressed || refX);
       const nm = name.replace(/_REBAKE_.*$/, "");
       const map = CHARS[S.char].refMap || {}, base = nm in map ? map[nm] : REF_ALIAS[nm] || nm;
       file = base === null ? "" : `assets/mixamo/${map[nm] ? "" : CHARS[S.char].ref}${base}.fbx`;
       rc = file ? await refClip(file) : null;
+      if (rc && dressed) rc = rigClip(rc, refX, dressed);
     }
     const rsel = $("refclip");
     rsel.innerHTML = "";
@@ -41115,6 +41145,7 @@ void main() {
     const w = S.gun, a = fitTarget();
     SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? CHARS[S.char]?.label || S.char : ref === refX ? "X Bot" : "the mannequin"}`;
     for (const b of SB.who.children) b.classList.toggle("on", b.dataset.v === (S.fitWho || "main"));
+    SB.who.children[0].textContent = (CHARS[S.char]?.label || "Yola").split(" (")[0];
     const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
     for (const b of SB.scope.children) {
       b.classList.toggle("on", b.dataset.v === (clipOwn || !fitAllOn() ? "clip" : "all"));
@@ -41404,6 +41435,7 @@ void main() {
       refresh();
     };
     $("femref").onchange = () => setClip($("clip").value);
+    $("refBody").onchange = () => setClip($("clip").value);
     $("marks").onchange = refresh;
     $("mags").onchange = refresh;
     buildHandsUI();
