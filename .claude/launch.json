@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["yolanda/tools/serve.mjs", "5173"],
       "port": 5173
+    },
+    {
+      "name": "yolanda-hood",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["yolanda/tools/serve.mjs", "5189"],
+      "port": 5189
     }
   ]
 }

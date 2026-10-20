@@ -109,7 +109,7 @@ export class Hud {
     $('restartDeath').textContent = sim.level ? 'Retry from checkpoint' : 'Restart';
     this.deathT = -1;
     if (sim.director.mode === 'room1') { this.setObjective(''); this.hintT = 0; $('hint').classList.add('gone'); } else this.setObjective('');
-    if (sim.director.mode !== 'room1') this.banner(sim.director.mode === 'calm' ? 'Practice' : sim.director.mode === 'arena' ? 'Weapon test' : sim.director.mode === 'bench' ? `Benchmark: ${sim.director.benchCount}` : 'Survive the ward', sim.director.mode === 'encounter' ? 'Four waves' : sim.director.mode === 'arena' ? 'Pick an attack: ⚔ Attacks' : '');
+    if (sim.director.mode !== 'room1' && sim.director.mode !== 'hood') this.banner(sim.director.mode === 'calm' ? 'Practice' : sim.director.mode === 'arena' ? 'Weapon test' : sim.director.mode === 'bench' ? `Benchmark: ${sim.director.benchCount}` : 'Survive the ward', sim.director.mode === 'encounter' ? 'Four waves' : sim.director.mode === 'arena' ? 'Pick an attack: ⚔ Attacks' : '');
   }
 
   // the current objective (the opening hands over "Get out of the operating room.")

@@ -47,6 +47,7 @@ import { chapterLightPlan } from './render/floorlights.js';
 import { shareTextures, texturesOf } from './render/texshare.js';
 import { setupLibWeapons } from './render/libweapons.js';
 import { startDemos } from './demos.js';
+import { startHood } from './hood/hood.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -186,7 +187,7 @@ function stepPhysics(dt) {
   if (n === 4) physAcc = 0; // never spiral after a stall
 }
 
-let arena, yola, sim;
+let arena, yola, sim, hood = null;
 const zviews = new Map(); const zpool = [[], [], [], [], []]; // (one pool per ZOMBIE_TYPES entry)
 const storyStart = params.has('intro') || params.has('reveal') || params.has('room1');
 let mode = storyStart ? 'room1' : params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
@@ -324,6 +325,7 @@ async function load() {
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[t.same ?? i]));
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
+  if (LAYOUT.hood) { hood = await startHood({ scene, loader, arena, renderer, quality: resolvedQuality(), params, audio, hud, fx, onProgress: (k) => hud.loading(0.95 + 0.04 * k) }); window.game.onRestart = hood.onRestart; } // (Chapter 2, the neighbourhood: src/hood/)
   restart();
   startChapterUI();
   hud.loading(1);
@@ -573,7 +575,7 @@ function uiAction(a, v) {
   switch (a) {
     case 'pause': if (!sim.player.dead) setPaused(true); break;
     case 'resume': setPaused(false); break;
-    case 'restart': if (sim.level) applyLevel(levelSave); else restart(mode); break; // the story level retries from its checkpoint
+    case 'restart': if (LAYOUT.hood) restart(mode); else if (sim.level) applyLevel(levelSave); else restart(mode); break; // the story level retries from its checkpoint (the neighbourhood: src/hood/ restores its own)
     case 'restartLevel': applyRoom1(); break;
     case 'mode': restart(v); break;
     case 'bench': restart('bench', v); break;
@@ -745,6 +747,7 @@ function runFrame(dt, doRender = true) {
   // ---- zombies (pooled views) ----
   const seen = new Set();
   for (const z of sim.zombies) {
+    if (z.noView) continue; // (the neighbourhood's looters: people in the zombie list, drawn by src/hood/actors.js)
     let v = zviews.get(z.id);
     if (!v) {
       const type = viewType(z);
@@ -773,6 +776,7 @@ function runFrame(dt, doRender = true) {
   hud.setPrompt(sim.level && !paused ? sim.level.prompt : null);
   chapterUI?.update(paused ? 0 : dt);
   if (camOverride) applyCamOverride(); else if (!window.game.camFree) updateCamera(dt, ix, iz, iyaw, p); // (camFree: inspect mode moves the camera)
+  hood?.update(dt, ix, iz, camera, sim);
   // player screen position (mouse aiming)
   _v.set(ix, 1.0, iz).project(camera);
   playerScreen = { x: (_v.x * 0.5 + 0.5) * innerWidth, y: (-_v.y * 0.5 + 0.5) * innerHeight };

@@ -36,7 +36,7 @@ export class Director {
   update(dt) {
     const sim = this.sim;
     if (sim.player.dead) return;
-    if (this.mode === 'room1' || this.mode === 'arena') return; // authored, not wave-driven (the arena spawns from its panel)
+    if (this.mode === 'room1' || this.mode === 'arena' || this.mode === 'hood') return; // authored, not wave-driven (the arena spawns from its panel; the neighbourhood's stops run their own waves: src/hood/)
     if (this.mode === 'calm') {
       // respawn a dummy a moment after it dies
       this.timer -= dt;
@@ -82,6 +82,7 @@ export class Director {
     if (this.mode === 'room1') return 'Floor ' + (this.sim?.level?.floor || 7);
     if (this.mode === 'arena') return this.arenaLabel || 'Weapon test';
     if (this.mode === 'bench') return `Bench ${this.benchCount}`;
+    if (this.mode === 'hood') return 'Chapter 2'; // (the neighbourhood: src/hood/)
     if (this.cleared) return 'Cleared';
     return `Wave ${this.beat + 1}/${BEATS.length}`;
   }

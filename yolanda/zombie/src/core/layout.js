@@ -5,6 +5,7 @@
 // Props use 0/90/180/270 degree rotations only so their footprints stay axis-aligned.
 // fp = collision footprint [w (x), d (z)] AFTER rotation; h = height (shots pass over anything below ~1.25 m).
 import { FLOORS, CHAPTER, liftBoxes } from './chapter.js';
+import { HOOD_LAYOUT } from '../hood/layout.js';
 
 const M = 'assets/models/';
 const H = 'zombie/assets/hospital/'; // Outbreak hospital runtime set (metres, true scale)
@@ -78,13 +79,14 @@ export const LAYOUT = {};
 export function useLevel(name, floor = 7) {
   for (const k of Object.keys(LAYOUT)) delete LAYOUT[k];
   if (name === 'chapter') Object.assign(LAYOUT, FLOORS[floor] || FLOORS[7], { chapter: CHAPTER, story: true });
+  else if (name === 'hood') Object.assign(LAYOUT, HOOD_LAYOUT); // (Chapter 2, Marc's neighbourhood: src/hood/)
   else Object.assign(LAYOUT, WING);
   return LAYOUT;
 }
 // the chapter's floor for the simulation (the renderer keeps all three built)
 export function useFloor(floor) { if (LAYOUT.story && LAYOUT.floor !== floor) useLevel('chapter', floor); return LAYOUT; }
 useLevel('wing');
-export const levelForMode = (mode) => (mode === 'room1' ? 'chapter' : 'wing');
+export const levelForMode = (mode) => (mode === 'room1' ? 'chapter' : mode === 'hood' ? 'hood' : 'wing');
 
 // the box a kit door fills in its wall gap (axis 'x': the wall runs along x)
 export function doorBox(d) {
@@ -92,6 +94,7 @@ export function doorBox(d) {
 }
 
 export function buildWorld(World) {
+  if (LAYOUT.buildWorld) return LAYOUT.buildWorld(World); // (the neighbourhood builds its own: src/hood/world.js)
   const w = new World(LAYOUT.bounds);
   for (const [a, b, c, d, h, style] of LAYOUT.walls) w.addBox(a, b, c, d, h, style);
   for (const p of LAYOUT.props) {
