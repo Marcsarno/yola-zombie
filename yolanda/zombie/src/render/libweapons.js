@@ -25,7 +25,7 @@ export async function setupLibWeapons({ yola, loader, scene, clips, who }) {
   const [wj, catalog, sel, fitsJ] = await Promise.all([json('assets/arena/weapons.json'), json('assets/arena/catalog.json'), json('assets/arena/selection.json'), json('assets/hold/weapon_fit.json')]);
   const WDEF = wj?.weapons || {}, meta = Object.fromEntries((catalog?.clips || []).map((c) => [c.clip, c]));
   const byName = Object.fromEntries(clips.map((c) => [c.name, c]));
-  const fits = {}; for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === 'object' && v[who]) fits[k] = v[who];
+  const fits = {}; for (const [k, v] of Object.entries(fitsJ || {})) if (v && typeof v === 'object' && (v[who] || (who === 'male1' && v.yola2))) fits[k] = v[who] || v.yola2; // (Marc: Yola 3.0's fit until he has his own)
   const holds = {};
   for (const [w, clip] of Object.entries(LIB_PICKS)) {
     const def = WDEF[w], c = byName[clip], P = PROFILE[w];

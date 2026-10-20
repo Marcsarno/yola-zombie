@@ -268,12 +268,28 @@ function setScrubs(view, key) { view.model.traverse((o) => { if (o.isMesh && o.m
 // (extra: clips retargeted onto each type's own skeleton: the scratch, tools/anim/zombie_clip.py; the Quaternius UAL zombie
 // walks, run, bite and hit flinches, tools/anim/test_zombie_clips.py, UAL_PACKS.md)
 const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : z.kind === 'runner' ? 4 : z.prop === 'surgeon' || z.look === 'nurse' ? 0 : z.prop === 'bed' || z.look === 'patient' ? 1 : z.id % 2);
-const YOLA_HEIGHT = 1.62;
+// Chapter 2 is Marc's (2026-10-20, the user: "swap Marc in for the playable character in chapter 2"): outside the hospital
+// the hero is Marc (assets/male1.glb: Yola 3.0's clips retargeted onto him, tools/anim/male1_build.py), 1.80 m; ?hero=yola
+// keeps Yola there. He gets no posture fix (the Rig Lab shows him without it). The fits the user has not set for him yet
+// (Rig Lab key male1) borrow Yola 3.0's.
+const MARC = !!LAYOUT.hood && params.get('hero') !== 'yola';
+const YOLA_HEIGHT = MARC ? 1.80 : 1.62;
 // which Yola plays (2026-10-16): 1 = the original model, 2 = the user's new Tripo model (testing; tools/anim/yola2_build.py).
 // The pause menu's Yola choice (remembered), or ?yola=2. The opening keeps its own Yola either way.
-const YOLA_MODEL = params.get('yola') || store.get('yolaModel', '2'); // (2026-10-16 brief: Yola 3.0, the new model, is the hero by default)
-const YOLA_FILES = YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: ['assets/yola2_ual.glb'], data: 'assets/clipdata_yola2.json' } // (yola2_ual: the Quaternius UAL moves, UAL_PACKS.md)
+const YOLA_MODEL = MARC ? 'marc' : params.get('yola') || store.get('yolaModel', '2'); // (2026-10-16 brief: Yola 3.0, the new model, is the hero by default)
+const HERO_KEY = MARC ? 'male1' : YOLA_MODEL === '2' ? 'yola2' : 'yola'; // (the Rig Lab's character key: the fits are kept under it)
+const YOLA_FILES = MARC ? { model: 'assets/male1.glb', extra: ['assets/male1_ual.glb'], data: 'assets/clipdata_yola2.json' } // (Marc: the same clips as Yola 3.0, so her clip data)
+  : YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: ['assets/yola2_ual.glb'], data: 'assets/clipdata_yola2.json' } // (yola2_ual: the Quaternius UAL moves, UAL_PACKS.md)
   : { model: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_extra.glb', 'assets/yola_sword.glb'], data: 'assets/clipdata.json' };
+// Marc's missing fits: Yola 3.0's, in a fit file ({fit: {yola2, male1}}) or a prefixed one ({'yola2:<clip>': ...})
+function heroFits(j) {
+  if (!MARC || !j || typeof j !== 'object') return j;
+  for (const [k, v] of Object.entries(j)) {
+    if (v && typeof v === 'object' && v.yola2 && !v.male1) v.male1 = v.yola2;
+    if (k.startsWith('yola2:') && !j['male1:' + k.slice(6)]) j['male1:' + k.slice(6)] = v;
+  }
+  return j;
+}
 const loader = new GLTFLoader();
 async function load() {
   gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb' }); // (in the background: until it is in, kills die as before)
@@ -302,7 +318,7 @@ async function load() {
   const wpnP = Promise.all([loader.loadAsync('assets/weapons/pump_short.glb'), loader.loadAsync('assets/weapons/fire_axe.glb'), loader.loadAsync('assets/weapons/shotgun_shell.glb'),
     loader.loadAsync('assets/weapons/pistol_core.glb').catch(() => null),
     loader.loadAsync('assets/weapons/pistol_mag_empty.glb').catch(() => null), loader.loadAsync('assets/weapons/pistol_mag_loaded.glb').catch(() => null), // (the reload's magazines)
-    fetch('assets/hold/pistol_fit.json').then((r) => r.json()).catch(() => ({})), // (the user's pistol fit per character, set in the Rig Lab)
+    fetch('assets/hold/pistol_fit.json').then((r) => r.json()).then(heroFits).catch(() => ({})), // (the user's pistol fit per character, set in the Rig Lab)
     loader.loadAsync(WOOD_BAT_DEF.file).catch(() => null), loader.loadAsync(PACK_AXE_DEF.file).catch(() => null)]); // (the wood bat and the pack's axe: setupBat)
   // the hospital's own zombies' things (render/clipchars.js IV / CHAIR / wearSurgeonKit): the stand and the chair at the
   // level's sizes (prop footprints in core/chapter.js), the cap and mask as built
@@ -318,10 +334,10 @@ async function load() {
   const [yg, zgs, clipdata, [sgG, axeG, shellG, pistolG, magEmptyG, magLoadedG, pistolFits, woodBatG, packAxeG]] = await Promise.all([yolaP, zomP, dataP, wpnP, shieldP, propP]);
   hud.loading(0.95);
   setMeleePaths(clipdata, YOLA_HEIGHT / clipdata.heights.YOLA, clipdata.hips_rest);
-  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[YOLA_MODEL === '2' ? 'yola2' : 'yola'] });
+  yola = new YolaView(scene, yg, clipdata, { shotgun: sgG, axe: axeG, shell: shellG, pistol: pistolG, magEmpty: magEmptyG, magLoaded: magLoadedG, pistolFit: pistolFits[HERO_KEY], height: YOLA_HEIGHT });
   yola.addAttackClips(yg.animations.filter((c) => c.name === 'yola_knockdown' || c.name === 'yola_getup' || c.name === 'ual_KipUp')); // (tools/anim/yola_clips.py: knocked flat, getting up)
-  setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).catch(() => ({})), woodBatG, packAxeG); window.game.yolaClips = yg.animations;
-  await setupLibWeapons({ yola, loader, scene, clips: yg.animations, who: YOLA_MODEL === '2' ? 'yola2' : 'yola' }).catch((e) => console.warn('library weapons', e)); // (the sledgehammer, crowbar, knife)
+  setupBat(yg.animations, await fetch('assets/hold/weapon_fit.json').then((r) => r.json()).then(heroFits).catch(() => ({})), woodBatG, packAxeG); window.game.yolaClips = yg.animations;
+  await setupLibWeapons({ yola, loader, scene, clips: yg.animations, who: HERO_KEY }).catch((e) => console.warn('library weapons', e)); // (the sledgehammer, crowbar, knife)
   ZOMBIE_TYPES.forEach((t, i) => (t.gltf = zgs[t.same ?? i]));
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
@@ -352,13 +368,13 @@ function holdFrame(clip, name) {
   return new THREE.AnimationClip(name, 1, tracks);
 }
 function setupBat(anims, fits = {}, woodG = null, axeG = null) {
-  const who = YOLA_MODEL === '2' ? 'yola2' : 'yola';
+  const who = HERO_KEY;
   yola.axeFit = fits.axe?.[who] || null; yola.shotgunFit = fits.short?.[who] || null; // (the axe's and shotgun's fits, same Rig Lab file)
   // (a clip's own shotgun fit, "short@<clip>": the shotgun slide finisher's kneel setup, render/clipchars.js shotgunClip)
   yola.shotgunClipFits = Object.fromEntries(Object.entries(fits).filter(([k, v]) => k.startsWith('short@') && v?.[who]).map(([k, v]) => [k.slice(6), v[who]]));
   if (YOLA_MODEL !== '2') yola.postureOff = true; // (the posture fix was measured on Yola 3.0's rig: render/posture.js)
-  fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(j, who)).catch(() => {}); // (the Rig Lab Hands settings)
-  fetch('assets/hold/arm_pose.json').then((r) => r.json()).then((j) => yola.setArmPose(j, who)).catch(() => {}); // (the Rig Lab's arm adjustments)
+  fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(heroFits(j), who)).catch(() => {}); // (the Rig Lab Hands settings)
+  fetch('assets/hold/arm_pose.json').then((r) => r.json()).then((j) => yola.setArmPose(heroFits(j), who)).catch(() => {}); // (the Rig Lab's arm adjustments)
   // the stance (2026-10-18, the user's pick in the Rig Lab): Quaternius UAL2 Sword_Block held on its first frame, the rest
   // stance, bat level (assets/yola2_ual.glb; without it the Sword Idle as before)
   const block = anims.find((c) => c.name === 'ual_Sword_Block');
@@ -526,7 +542,8 @@ function warmRoom1() {
 function prepViews() {
   if (!sim) return;
   if (!opening?.active) for (const z of sim.zombies) if (!zviews.has(z.id)) { const type = viewType(z), v = zpool[type].pop() || newZombieView(type); bindView(v, z); zviews.set(z.id, v); }
-  for (const [type, n] of [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) { const v = newZombieView(type); v.hide(); zpool[type].push(v); }
+  // (Chapter 2 keeps more spare: its streets and bigger waves, hood/level.js AMBIENT / WAVE_EXTRA)
+  for (const [type, n] of LAYOUT.hood ? [[0, 7], [1, 7], [4, 4], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) { const v = newZombieView(type); v.hide(); zpool[type].push(v); }
 }
 function newZombieView(type) {
   const t = ZOMBIE_TYPES[type];

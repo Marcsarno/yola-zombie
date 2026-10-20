@@ -7,9 +7,21 @@
 // looters, the keys) -> the roadblock -> the pavilions -> Grandma's (Lilah) -> the playground -> the dock (fuel, hold, launch).
 import { HOOD } from './layout.js';
 import { GOALS } from './script.js';
+import { ZONES } from './zones.js';
 import { SHOTGUN, SHOTGUN_SPEC, PISTOL } from '../core/weapons.js';
 
 const STEP = 1 / 60;
+// more of them outside (2026-10-20, the user: "add more zombies to the outside area"):
+// - each stop's streets hold a few infected standing about, which wake when Marc comes near (in sight within 9 m, or 4.5 m
+//   anywhere) or when hit: [zone (zones.js), centre x, z, radius, how many]. Home, the gate and the clubhouse are fights
+//   already (the hold, the surge, the looters);
+// - every wave brings half as many again (WAVE_EXTRA: one more ordinary infected for every two it lists).
+const AMBIENT = {
+  curve: ['curve', 14, 10, 20, 5], club: ['club', 18, -32, 14, 4], lot: ['club', 64, -70, 24, 6], west: ['west', -15, -35, 18, 4],
+  grandma: ['west', -38, 2, 14, 4], playground: ['west', -48, -8, 14, 4], dock: ['dock', -22, -82, 12, 3],
+};
+const WAVE_EXTRA = 0.5;
+const inPoly = (P, x, z) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > z) !== (P[j][1] > z) && x < ((P[j][0] - P[i][0]) * (z - P[i][1])) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
 export const STOP_ORDER = ['home', 'curve', 'gate', 'club', 'lot', 'clubhouse', 'west', 'grandma', 'playground', 'dock'];
 const SAVE_KEY = 'zc.hoodsave';
 export const loadSave = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || null; } catch { return null; } };
@@ -151,7 +163,7 @@ export class HoodLevel {
     }
     const j = () => (this.sim.rand() - 0.5) * (opts.spread ?? 1.6);
     const x = m.x + j(), z = m.z + j();
-    const zb = this.sim.spawnZombie(null, { x, z, yaw: Math.atan2(p.x - x, p.z - z), kind: opts.kind });
+    const zb = this.sim.spawnZombie(null, { x, z, yaw: opts.yaw ?? Math.atan2(p.x - x, p.z - z), kind: opts.kind });
     if (opts.dormant) { zb.passive = true; zb.dormant = { wake: Infinity, sense: opts.dormant, speedMul: zb.speedMul }; zb.speedMul = 0; }
     zb.hoodWave = opts.wave || null;
     return zb;
@@ -159,8 +171,10 @@ export class HoodLevel {
   // a wave: [[mark, kind?] ...] spawned `every` s apart, the farthest-from-player marks first (never on top of her)
   *wave(list, every = 0.8, tag = 'w') {
     const out = [];
+    let extra = 0;
     for (const [where, kind, dormant] of list) {
       out.push(this.spawnAt(where, { kind, dormant, wave: tag }));
+      if ((extra += WAVE_EXTRA) >= 1) { extra -= 1; out.push(this.spawnAt(where, { dormant, wave: tag, spread: 3 })); } // (half as many again)
       yield* this.wait(every);
     }
     return out;
@@ -194,6 +208,19 @@ export class HoodLevel {
     }
   }
 
+  // the stop's street infected (AMBIENT): free spots inside the stop's area, out of sight (13 m+ from Marc), 3.5 m apart
+  addStreetZombies(stop) {
+    const A = AMBIENT[stop], P = A && ZONES[A[0]]; if (!P) return [];
+    const [, cx, cz, r, n] = A, p = this.sim.player, w = this.sim.world, out = [], q = { x: 0, z: 0 };
+    for (let tries = 0; out.length < n && tries < 400; tries++) {
+      const a = this.sim.rand() * Math.PI * 2, d = Math.sqrt(this.sim.rand()) * r, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d;
+      if (!inPoly(P, x, z) || Math.hypot(x - p.x, z - p.z) < 13 || out.some((o) => Math.hypot(o.x - x, o.z - z) < 3.5)) continue;
+      q.x = x; q.z = z; if (w.resolveCircle(q, 0.5)) continue; // (not in a wall, a car, a fence)
+      out.push(this.spawnAt({ x, z }, { dormant: 9, spread: 0, yaw: this.sim.rand() * Math.PI * 2, wave: 'street' }));
+    }
+    return out;
+  }
+
   // ---------------------------------------------------------------- the story
   *run() {
     this.started = false;
@@ -206,6 +233,7 @@ export class HoodLevel {
       this.checkpoint(id);
       this.api.onStop?.(id);
       this.addSupplies(id);
+      this.addStreetZombies(id);
       yield* stops[id].call(this);
     }
   }

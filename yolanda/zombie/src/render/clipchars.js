@@ -172,7 +172,7 @@ const GAIT = { f: ['pistol_walk', 'pistol_run'], b: ['pistol_walk_back', 'pistol
 
 export class YolaView extends ClipBody {
   constructor(scene, gltf, clipdata, weapons) {
-    const H = 1.62;
+    const H = weapons.height || 1.62; // (Yola 1.62 m; Marc 1.80, main.js)
     const clips = [];
     const rest = hipsRest(gltf.scene);
     const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
