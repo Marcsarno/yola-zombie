@@ -167,18 +167,19 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   const hook = (sim) => { prev?.(sim); attach(sim); };
 
   let shX = NaN, shZ = NaN;
-  // a radio call: Marc raises the walkie-talkie to his ear (the Quaternius phone-call idle, assets/neighborhood/moves/
-  // marc-hood.glb) while he stands; he lowers it when the call ends or he moves
+  // a radio call: Marc takes the walkie-talkie off his belt while he stands, up to his mouth for his lines and down to his
+  // chest for Yola's, over his own idle (render/clipchars.js radioArm; the phone-call idle held a phone at the ear, its
+  // hand open and his chin up); he puts it back when the call ends or he moves
   let onCall = false, callGun = null;
   const callUp = (on) => {
     const y = window.game?.yola; if (!y || on === onCall) return;
     onCall = on; view.radioHand = on;
     // (his hands free for it: whatever he holds goes away for the call, back after)
     const p = window.game?.sim?.player;
-    if (on) { if (p) { callGun = p.desired; p.desired = 'fists'; } y.playScript('hood_Idle_TalkingPhone_Loop', { loop: true, fadeIn: 0.35, fadeOut: 0.4 }); }
-    else { y.endScript(); if (p && callGun && p.owned.includes(callGun)) p.desired = callGun; callGun = null; }
+    if (on) { if (p) { callGun = p.desired; p.desired = 'fists'; } }
+    else { if (p && callGun && p.owned.includes(callGun)) p.desired = callGun; callGun = null; }
   };
-  subs.onLine = (id, isRadio) => { const who = LINES[id]?.[0]; if (isRadio && (who === 'MARC' || who === 'YOLA')) { const p = window.game?.sim?.player; if (p && Math.hypot(p.vx || 0, p.vz || 0) < 0.4) callUp(true); } };
+  subs.onLine = (id, isRadio) => { const who = LINES[id]?.[0]; if (isRadio && (who === 'MARC' || who === 'YOLA')) { view.radioTalk = who === 'MARC'; const p = window.game?.sim?.player; if (p && Math.hypot(p.vx || 0, p.vz || 0) < 0.4) callUp(true); } }; // (the radio to his mouth for his own lines, down while Yola talks)
   subs.onQuiet = () => callUp(false);
   const hint = new Hint();
   // the chapter's start: from black, its title over Marc's yard as the light comes up (the radio call plays under it)

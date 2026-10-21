@@ -8,6 +8,7 @@ import { buildLibraryAttack } from './render/libattack.js';
 import { setupNewMoves } from './render/newmoves.js';
 import { setupSlideFinisher } from './render/slidefin.js';
 import { AcidPools } from './render/acid.js';
+import { radioFit } from './render/radiohold.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
@@ -400,6 +401,12 @@ function setupBat(anims, fits = {}, woodG = null, axeG = null) {
   if (YOLA_MODEL !== '2') yola.postureOff = true; // (the posture fix was measured on Yola 3.0's rig: render/posture.js)
   fetch('assets/hold/hand_poses.json').then((r) => r.json()).then((j) => yola.setHandPoses(heroFits(j), who)).catch(() => {}); // (the Rig Lab Hands settings)
   fetch('assets/hold/arm_pose.json').then((r) => r.json()).then((j) => yola.setArmPose(heroFits(j), who)).catch(() => {}); // (the Rig Lab's arm adjustments)
+  // the walkie-talkie hold (render/radiohold.js; the Rig Lab's Radio section: its saved settings, or its unsaved ones in this
+  // browser while the user is setting it up)
+  fetch('assets/hold/radio_hold.json').then((r) => r.json()).catch(() => ({})).then((j) => {
+    let mine = {}; try { mine = JSON.parse(localStorage.getItem('radioHold') || '{}'); } catch { /* storage off */ }
+    yola.radioFit = radioFit(mine[who] || j[who]);
+  });
   // the stance (2026-10-18, the user's pick in the Rig Lab): Quaternius UAL2 Sword_Block held on its first frame, the rest
   // stance, bat level (assets/yola2_ual.glb; without it the Sword Idle as before)
   const block = anims.find((c) => c.name === 'ual_Sword_Block');

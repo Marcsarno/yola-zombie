@@ -17,6 +17,7 @@ import { placeOneHanded, placeBat, twoHandLine, applyFit, magInsert, placeShell,
 import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 import { HOLD_LAYERS, AS_LIVE } from './holdlayers.js';
 import { adjustArms, blendArms } from './armpose.js';
+import { radioRig, radioPose, radioPlace, radioFit } from './radiohold.js';
 const FIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
 function lerpFit(a, b, t) { // two weapon fits blended (the stance's own and the attacks')
   a ||= FIT0; b ||= FIT0; if (t <= 0) return a; if (t >= 1) return b;
@@ -707,8 +708,23 @@ export class YolaView extends ClipBody {
     this.posture(); // (before the weapons are placed: turning the pelvis shifts the arms ~4 mm, the weapons follow)
     this.headLook(s, dt);
     this.armPose(); // (the per-clip arm adjustments: before the weapons, which follow her hands)
+    this.radioArm(dt);
     this.placeWeapons(s, dt); this.placeMags(dt);
   }
+
+  // ---- the walkie-talkie in the right hand (Chapter 2's calls: src/hood/view.js sets radioMode 'talk' | 'listen' | null):
+  // the hold is render/radiohold.js (the Rig Lab's Radio section uses the same), with this character's settings
+  // (radioFit: assets/hold/radio_hold.json, the Lab's save), eased in and out over whatever the body plays
+  radioArm(dt) {
+    const R = this.rad ||= { w: 0, talk: 0 }, on = !!this.radioMode;
+    R.w = clamp(R.w + (on ? dt / 0.35 : -dt / 0.4), 0, 1);
+    R.talk = clamp(R.talk + (this.radioMode === 'talk' ? dt / 0.3 : -dt / 0.4), 0, 1);
+    if (R.w <= 1e-3 || !this.bones.RightHandMiddle1) return;
+    this.radRig ||= radioRig(this.model, this.bones, this.fist || []);
+    this.container.getWorldQuaternion(_q); const fwd = _v.set(0, 0, 1).applyQuaternion(_q).setY(0).normalize();
+    radioPose(this.radRig, this.radioFit ||= radioFit(), smooth(R.w), smooth(R.talk), fwd, this.H);
+  }
+  radioPlace(obj) { radioPlace(this.radRig ||= radioRig(this.model, this.bones, this.fist || []), obj, this.radioFit ||= radioFit()); }
 
   // HANDS (the user's Rig Lab Hands controls, assets/hold/hand_poses.json "<yola>:<clip>": { Right, Left } from 0 = the
   // clip's own fingers to 1 = her closed fist, her bat_idle frame 1 grip, as viewer.js handPose): each hand's curl is the

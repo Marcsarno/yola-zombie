@@ -272,12 +272,14 @@ export class HoodView {
     if (!this.radio && this.props.radio) { this.radio = this.props.radio.clone(true); this.radio.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); this.fxGroup.add(this.radio); }
     const hips = yola?.bones?.Hips; if (!this.radio || !hips || !sim) return;
     const p = sim.player;
-    if (this.radioHand && yola.bones.RightHand && yola.bones.LeftHand) {
-      const R = yola.bones.RightHand.getWorldPosition(this._rh || (this._rh = new THREE.Vector3())), L = yola.bones.LeftHand.getWorldPosition(this._lh || (this._lh = new THREE.Vector3()));
-      const h = R.y >= L.y ? R : L; this.radio.position.copy(h); this.radio.position.y -= 0.04;
-      this.radio.rotation.set(0, p.aimYaw + Math.PI, R.y >= L.y ? -0.35 : 0.35); this.radio.visible = yola.outer.visible && !p.dead;
+    // a call: in his right hand (render/clipchars.js radioArm: up at his mouth while he talks, down at his chest while
+    // Yola does), from the moment his hand has it until it is back down
+    yola.radioMode = this.radioHand ? (this.radioTalk ? 'talk' : 'listen') : null;
+    if (yola.radioPlace && (yola.rad?.w || 0) > 0.08) { // (his hand is still down by the belt then: it takes it from there)
+      yola.radioPlace(this.radio); this.radio.visible = yola.outer.visible && !p.dead;
       this.caseUpdate(yola, p); return;
     }
+    this.radio.scale.setScalar((yola.radioFit?.size ?? 72) / 100); // (the size it has in his hand)
     hips.getWorldPosition(this.radio.position);
     const y = p.aimYaw; this.radio.position.x -= Math.cos(y) * 0.2; this.radio.position.z += Math.sin(y) * 0.2; this.radio.position.y -= 0.2;
     this.radio.rotation.set(0, y - Math.PI / 2, 0); this.radio.visible = yola.outer.visible && !p.dead;
