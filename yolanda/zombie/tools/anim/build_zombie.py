@@ -41,6 +41,20 @@ meshes = [o for o in bpy.data.objects if o.type == 'MESH']  # (one mesh, or a pa
 me = max(meshes, key=lambda o: len(o.data.vertices))
 MATS = list({m for o in meshes for m in o.data.materials if m})
 for a in list(bpy.data.actions): bpy.data.actions.remove(a)
+# --upright: the chest, neck and head bones stood as Mixamo's reference has them (the chest a little back, the neck and
+# head straight up). The retarget copies bone directions, so a rest neck leaning forward tips every clip's head back by
+# as much (2026-10-21, zombie Remy: his Neck and Head leant 16 deg forward; the user saw his chin up). Only the rest
+# bones move; the skin stays where it is.
+if '--upright' in argv:
+    from mathutils import Vector
+    bpy.context.view_layer.objects.active = arm; bpy.ops.object.mode_set(mode='EDIT')
+    inv = arm.matrix_world.inverted().to_3x3()
+    for n, d in (('Spine2', (0, 0.1, 1)), ('Neck', (0, 0, 1)), ('Head', (0, 0, 1))):
+        eb = arm.data.edit_bones.get('mixamorig:' + n)
+        if not eb: continue
+        L = (eb.tail - eb.head).length; eb.tail = eb.head + (inv @ Vector(d)).normalized() * L
+        print('UPRIGHT', n)
+    bpy.ops.object.mode_set(mode='OBJECT')
 
 # ---- 2. hand weights ----
 if FIX:
@@ -156,5 +170,5 @@ for lib, wanted in by.items(): take(libs[lib], wanted)
 ad = arm.animation_data; ad.action = None
 for o in bpy.data.objects: o.select_set(o is arm or o in meshes)
 bpy.ops.export_scene.gltf(filepath=out_glb, export_format='GLB', use_selection=True, export_animation_mode='ACTIONS', export_force_sampling=True,
-                          export_frame_step=1, export_image_format='JPEG', export_jpeg_quality=88)
+                          export_frame_step=1, export_image_format='WEBP' if '--webp' in argv else 'JPEG', export_jpeg_quality=88)  # (--webp: a Mixamo person's hair keeps its cut-out alpha)
 print('WROTE', out_glb, 'height', round(me.dimensions.z, 3))
