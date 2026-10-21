@@ -39035,7 +39035,15 @@ void main() {
     // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
     // hands) and the big guard (his shield is still being modelled)
     sprinter: { label: "Zombie sprinter (big lady)", file: "assets/zombie-sprinter.glb", height: 2, ref: "zombie_" },
-    guard: { label: "Zombie big guard", file: "assets/zombie-guard.glb", height: 2.05, ref: "zombie_" }
+    guard: { label: "Zombie big guard", file: "assets/zombie-guard.glb", height: 2.05, ref: "zombie_" },
+    // Chapter 2's looters (2026-10-20, the user's roles): their survivor builds plus the looter moves (tools/anim/test_zombie_clips.py:
+    // UAL1 crouch cover, crouch enter/exit, pistol idle/aim/shoot/reload, three hits, two deaths) in assets/survivors/moves/
+    looter_james: { label: "Looter: James", file: "assets/survivors/james.glb", extra: ["assets/survivors/moves/james-looter.glb"], height: 1.8, ref: "zombie_" },
+    looter_remy: { label: "Looter: Remy", file: "assets/survivors/remy.glb", extra: ["assets/survivors/moves/remy-looter.glb"], height: 1.8, ref: "zombie_" },
+    looter_brian: { label: "Looter: Brian", file: "assets/survivors/brian.glb", extra: ["assets/survivors/moves/brian-looter.glb"], height: 1.8, ref: "zombie_" },
+    looter_bryce: { label: "Looter: Bryce", file: "assets/survivors/bryce.glb", extra: ["assets/survivors/moves/bryce-looter.glb"], height: 1.78, ref: "zombie_" },
+    looter_david: { label: "Looter: David", file: "assets/survivors/david.glb", extra: ["assets/survivors/moves/david-looter.glb"], height: 1.8, ref: "zombie_" },
+    looter_lewis: { label: "Looter: Lewis", file: "assets/survivors/lewis.glb", extra: ["assets/survivors/moves/lewis-looter.glb"], height: 1.8, ref: "zombie_" }
   };
   var TC = "assets/test_clips/";
   CHARS.yola2.newPacks = [TC + "idle_options.glb", TC + "ual1_full_yola2.glb", TC + "ual2_full_yola2.glb", TC + "ual2_full_yola2_b.glb"];

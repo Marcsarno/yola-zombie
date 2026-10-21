@@ -80487,6 +80487,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
 
   // src/hood/actors.js
   var SURVIVORS = { rifle: [["eve", 1.7]], pistol: [["remy", 1.8], ["james", 1.8], ["sophie", 1.66], ["bryce", 1.78]] };
+  var LOOTERS = [["bryce", 1.78], ["lewis", 1.8], ["james", 1.8], ["remy", 1.8], ["david", 1.8], ["brian", 1.8]];
   var GUNS = { rifle: ["assets/neighborhood/props/security_rifle.glb", 1], pistol: ["assets/weapons/pistol_core.glb", PISTOL_CORE_SCALE] };
   var _v11 = new Vector3();
   var _v24 = new Vector3();
@@ -80549,8 +80550,163 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }).catch((e) => console.warn("survivor", k, e))),
         ...Object.entries(GUNS).map(([k, [f, s]]) => loader3.loadAsync(f).then((g) => {
           this.guns[k] = { scene: g.scene, s };
-        }).catch((e) => console.warn("survivor gun", k, e)))
+        }).catch((e) => console.warn("survivor gun", k, e))),
+        ...LOOTERS.map(([k, h]) => Promise.all([loader3.loadAsync("assets/survivors/" + k + ".glb"), loader3.loadAsync("assets/survivors/moves/" + k + "-looter.glb")]).then(([g, mv]) => {
+          g.animations.push(...mv.animations);
+          (this.looterModels || (this.looterModels = {}))[k] = { g, h };
+        }).catch((e) => console.warn("looter", k, e)))
       ]);
+    }
+    // a looter's body (the survivor's, with the looter moves): in cover he crouches (Crouch_Idle_Loop), pops up (Crouch_Exit)
+    // to aim (Pistol_Aim_Neutral), fires (Pistol_Shoot), ducks back (Crouch_Enter); on the portico he stands (Pistol_Idle_Loop)
+    // and raises the gun to aim. A hit plays one of the three hits, then back to what he was doing; dying, Death01 or 02.
+    looterBody(i, standing) {
+      const pick = LOOTERS[i % LOOTERS.length], M4 = this.looterModels?.[pick[0]];
+      if (!M4) return null;
+      const m = clone(M4.g.scene);
+      m.scale.setScalar(pick[1]);
+      m.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = false;
+          o.frustumCulled = false;
+        }
+      });
+      characterLight(m);
+      const turn = new Group();
+      turn.add(m);
+      const obj = new Group();
+      obj.add(turn);
+      const mixer = new AnimationMixer(m), clips = Object.fromEntries(M4.g.animations.map((c) => [c.name, c]));
+      const act = (n, once) => {
+        const c = clips[n];
+        if (!c) return null;
+        const a = mixer.clipAction(c);
+        a.setLoop(once ? LoopOnce : LoopRepeat, once ? 1 : Infinity);
+        a.clampWhenFinished = !!once;
+        return a;
+      };
+      const len = (n) => clips[n]?.duration || 0.5;
+      const B = (n) => m.getObjectByName("mixamorig" + n);
+      const bones = { hand: B("RightHand"), mid: B("RightHandMiddle1"), sh: B("RightArm") };
+      const G6 = this.guns?.pistol;
+      const holder = G6 ? gunHolder(G6.scene, G6.s) : null;
+      if (holder) this.group.add(holder);
+      const palm = (h, mid, out) => out.copy(h.getWorldPosition(_v33)).lerp(mid.getWorldPosition(_v24), 0.55);
+      const aimDir = (out) => {
+        palm(bones.hand, bones.mid, out);
+        return out.sub(bones.sh.getWorldPosition(_v11));
+      };
+      const a0 = act("ual1_Pistol_Aim_Neutral");
+      if (a0) {
+        a0.play();
+        mixer.update(0);
+        obj.updateMatrixWorld(true);
+        const d0 = aimDir(new Vector3());
+        turn.rotation.y = -Math.atan2(d0.x, d0.z);
+        a0.stop();
+      }
+      const REST = standing ? "ual1_Pistol_Idle_Loop" : "ual1_Crouch_Idle_Loop", AIM = "ual1_Pistol_Aim_Neutral";
+      let cur = act(REST);
+      cur.play();
+      const go = (n, once, fade = 0.18) => {
+        const a = act(n, once);
+        if (!a) return;
+        if (a === cur) {
+          if (once) a.reset().play();
+          return;
+        }
+        a.reset().play();
+        cur.crossFadeTo(a, fade, false);
+        cur = a;
+      };
+      const body = {
+        obj,
+        mixer,
+        holder,
+        clips,
+        kick: 0,
+        dead: false,
+        deadT: 0,
+        up: false,
+        pose: REST,
+        next: null,
+        nextAt: 0,
+        t: 0,
+        then(at, n) {
+          body.next = n;
+          body.nextAt = body.t + at;
+        },
+        // (after a one-shot: the pose to settle into)
+        update(dt) {
+          mixer.update(dt);
+          body.t += dt;
+          if (body.next && !body.dead && body.t >= body.nextAt) {
+            const n = body.next;
+            body.next = null;
+            body.pose = n;
+            go(n, false, 0.15);
+          }
+          obj.updateMatrixWorld(true);
+          if (!holder) return;
+          if (body.dead) body.deadT += dt;
+          holder.visible = obj.visible && (!body.dead || body.deadT < 0.35);
+          palm(bones.hand, bones.mid, holder.position);
+          holder.position.y -= 0.045;
+          const d = aimDir(_v11);
+          d.y *= 0.3;
+          d.normalize();
+          holder.quaternion.setFromUnitVectors(Z, d);
+          if (body.kick > 0) {
+            body.kick = Math.max(0, body.kick - dt * 6);
+            holder.position.addScaledVector(d, -0.06 * body.kick);
+          }
+        },
+        coverUp() {
+          if (body.dead || body.up) return;
+          body.up = true;
+          if (standing) {
+            body.pose = AIM;
+            body.next = null;
+            go(AIM, false, 0.2);
+            return;
+          }
+          go("ual1_Crouch_Exit", true, 0.12);
+          body.then(len("ual1_Crouch_Exit") * 0.8, AIM);
+        },
+        fire() {
+          if (body.dead) return;
+          body.kick = 1;
+          go("ual1_Pistol_Shoot", true, 0.06);
+          body.then(len("ual1_Pistol_Shoot") * 0.9, AIM);
+        },
+        coverDown() {
+          if (body.dead || !body.up) return;
+          body.up = false;
+          if (standing) {
+            body.then(0, REST);
+            return;
+          }
+          go("ual1_Crouch_Enter", true, 0.12);
+          body.then(len("ual1_Crouch_Enter") * 0.8, REST);
+        },
+        hit() {
+          if (body.dead) return;
+          const n = ["ual1_Hit_Chest", "ual1_Hit_Head", "ual1_Hit_Stomach"][Math.floor(Math.random() * 3)];
+          go(n, true, 0.06);
+          body.then(len(n) * 0.85, body.up ? AIM : REST);
+        },
+        fall() {
+          if (body.dead) return;
+          body.dead = true;
+          body.deadT = 0;
+          body.next = null;
+          go(Math.random() < 0.5 ? "ual1_Death01" : "ual1_Death02", true, 0.12);
+        },
+        dispose() {
+          holder?.removeFromParent();
+        }
+      };
+      return body;
     }
     // a survivor's body: the model on the clip's own aim, the gun in the right palm along the aim (rifle: from hand to hand,
     // pistol: from the shoulder to the hand), the model turned so that aim points down the actor's facing
@@ -80705,14 +80861,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     // the looters: a leader in the office with the boat keys, the others in cover; two step out onto the portico
     looters(level, spots) {
       const sim2 = level.sim, out = [];
-      for (const s of spots) {
+      for (const [i, s] of spots.entries()) {
         const z = sim2.spawnZombie(null, { x: s.x, z: s.z, yaw: 0, hp: s.leader ? 150 : 70 });
         z.passive = true;
         z.speedMul = 0;
         z.noView = true;
         z.looter = true;
         z.dormant = null;
-        const obj = marker(s.leader ? COL.leader : COL.looter);
+        const body = this.looterBody(i, !!s.out), obj = body ? body.obj : marker(s.leader ? COL.leader : COL.looter);
         obj.position.set(s.x, 0, s.z);
         this.group.add(obj);
         const sight = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), this.lineMat);
@@ -80722,6 +80878,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           kind: "looter",
           z,
           obj,
+          body,
+          hp: z.hp,
           sight,
           home: { x: s.x, z: s.z },
           out: !!s.out,
@@ -80741,15 +80899,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     looterStep(a, dt, level) {
       const sim2 = level.sim, z = a.z, p = sim2.player;
+      const b = a.body;
       if (!z.alive) {
         a.sight.visible = false;
         if (a.wasAlive) {
           a.wasAlive = false;
+          b?.fall();
           a.onDeath?.();
         }
-        a.obj.rotation.x = Math.min(Math.PI / 2, a.obj.rotation.x + dt * 3);
+        if (!b) a.obj.rotation.x = Math.min(Math.PI / 2, a.obj.rotation.x + dt * 3);
         return;
       }
+      if (z.hp < a.hp) b?.hit();
+      a.hp = z.hp;
       z.x = a.home.x;
       z.z = a.home.z;
       z.vx = z.vz = 0;
@@ -80757,16 +80919,20 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       z.yaw = Math.atan2(dx, dz);
       a.obj.position.set(z.x, 0, z.z);
       a.obj.rotation.y = z.yaw;
+      if (a.downIn > 0 && (a.downIn -= dt) <= 0) b?.coverDown();
       if (!los) {
         a.aim = 0;
         a.sight.visible = false;
         a.cd = Math.max(a.cd, 0.4);
+        b?.coverDown();
         return;
       }
       if ((a.cd -= dt) > 0) {
         a.sight.visible = false;
+        if (a.cd < 0.55) b?.coverUp();
         return;
       }
+      b?.coverUp();
       a.aim += dt;
       a.sight.visible = true;
       a.sight.geometry.setFromPoints([new Vector3(z.x, 1.35, z.z), new Vector3(p.x, 1.1, p.z)]);
@@ -80777,6 +80943,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const moving = Math.hypot(p.vx, p.vz) > 1.5, hit = sim2.rand() < (moving ? 0.38 : 0.62) * (d < 6 ? 1.2 : 1);
       this.tracer(z.x, z.z, p.x + (hit ? 0 : (sim2.rand() - 0.5) * 2), p.z + (hit ? 0 : (sim2.rand() - 0.5) * 2));
       this.sound("shot", z.x, z.z, 0.9);
+      b?.fire();
+      a.downIn = 0.45;
       if (hit) p.hurt(a.leader ? 12 : 9, z.x, z.z, sim2);
     }
     // a warning shot at Marc's feet from a doorway
