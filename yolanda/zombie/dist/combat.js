@@ -46305,12 +46305,14 @@ void main() {
   var STAGES = {
     free: { bounds: { minX: -66, maxX: 106, minZ: -126, maxZ: 92 }, cell: 0.6 },
     // (?hood=free: walk the whole map, no story)
-    home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+    home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 }, cell: 0.3 },
+    // (0.3: the house's 0.97 m front door stays open to routes)
     // (the polish brief's replay: the other stops had no navigation of their own, so past the house the infected only came
     // at Marc when they could see him within 7 m; each stop now routes them over its own area: level.js navFor)
-    help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+    help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 }, cell: 0.3 },
     gate: { bounds: { minX: -12, maxX: 42, minZ: -45, maxZ: 30 }, cell: 0.5 },
-    club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.5 },
+    club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.3 },
+    // (0.3: the clubhouse's doors stay open to routes)
     pete: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
     dock: { bounds: { minX: -35, maxX: 95, minZ: -100, maxZ: -50 }, cell: 0.5 },
     shed: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: 12 }, cell: 0.65 },
@@ -80433,6 +80435,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (!R || this.objective === "dock" && this.open.has("dockroad")) return null;
       const end = R[R.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
       if (toEnd(p.x, p.z) < 4) return null;
+      const gt = this.goalTarget();
+      if (gt && Math.hypot(gt.x - p.x, gt.z - p.z) < Math.hypot(gt.x - end[0], gt.z - end[1])) return null;
       const q = R.find((pt) => toEnd(pt[0], pt[1]) < toEnd(p.x, p.z) - 1.5);
       return q ? { x: q[0], z: q[1] } : null;
     }
@@ -81801,7 +81805,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     for (const q of sim2.zombies) {
       if (!q.alive) continue;
       const d = Math.hypot(q.x - x, q.z - z);
-      if (q.looter ? d < 17 : !q.passive && d < r || d < 5) out.push(q);
+      if (q.looter ? d < 17 : !q.passive && d < r || !q.dormant && d < 5 || d < 2.5) out.push(q);
     }
     return out;
   }
@@ -81843,10 +81847,16 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       Tx /= th.length;
       Tz /= th.length;
       const near = (x, z) => th.reduce((m, q) => Math.min(m, Math.hypot(q.x - x, q.z - z)), 1e9);
-      const okHere = near(a.x, a.z) > 4 && dm < 7 && (a.x - p.x) * (Tx - p.x) + (a.z - p.z) * (Tz - p.z) < 0 && Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) > 0.7;
+      const okHere = near(a.x, a.z) > 4 && dm < 4.5 && !offScreen(a.x - p.x, a.z - p.z) && (a.x - p.x) * (Tx - p.x) + (a.z - p.z) * (Tz - p.z) < 0 && Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) > 0.7;
+      if (dm > 4.8 || offScreen(a.x - p.x, a.z - p.z)) {
+        c.state = "safe";
+        c.safe = null;
+        const t = w.lineOfSight(a.x, a.z, p.x, p.z, 0.6) ? { x: p.x - (p.x - a.x) / dm * 2.5, z: p.z - (p.z - a.z) / dm * 2.5 } : trailPoint(a, w);
+        return finish(a, c, dt, sim2, t ? t.x : p.x, t ? t.z : p.z, 4.6, { x: p.x, z: p.z }, false);
+      }
       const pathCost = (x, z) => {
         let k = 0;
-        for (const q of th) if (segD(q.x, q.z, a.x, a.z, x, z) < 2) k += 6;
+        for (const q of th) if (Math.hypot(q.x - a.x, q.z - a.z) > 2.2 && segD(q.x, q.z, a.x, a.z, x, z) < 2) k += 6;
         if (segD(p.x, p.z, a.x, a.z, x, z) < 1.6) k += 5;
         return k;
       };
@@ -81862,7 +81872,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           if (Math.abs(ang(t - fy)) < 0.6) s -= 3;
           if (crosses(a.x, a.z, x, z, p.x, p.z, Tx, Tz)) s -= 4;
           s -= pathCost(x, z);
-          s -= screenCost(x - p.x, z - p.z) * 0.6;
+          s -= screenCost(x - p.x, z - p.z) * 2;
           if (!best || s > best.s) best = { x, z, s };
         }
         c.safe = best && best.s > -4 ? best : { x: a.x, z: a.z, s: 0 };
@@ -81913,10 +81923,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       else if (dm < 11) {
         const P2 = L3.pts[L3.i], dP = Math.hypot(P2[0] - a.x, P2[1] - a.z);
         c.state = "lead";
-        if (dP > 0.45) {
+        const edge = dm > 5.5 || offScreen(a.x - p.x, a.z - p.z);
+        if (dP > 0.45 && !edge) {
           tx = P2[0];
           tz = P2[1];
-          want = dm > 7 ? 1 : 1.6;
+          want = 1.6;
           face = null;
         } else if (dm < 4.5 && L3.i < L3.pts.length - 1) L3.i++;
         return finish(a, c, dt, sim2, tx, tz, want, face, false);
