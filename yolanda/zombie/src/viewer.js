@@ -56,6 +56,16 @@ const CHARS = {
   // hands) and the big guard (his shield is still being modelled)
   sprinter: { label: 'Zombie sprinter (big lady)', file: 'assets/zombie-sprinter.glb', height: 2.0, ref: 'zombie_' },
   guard: { label: 'Zombie big guard', file: 'assets/zombie-guard.glb', height: 2.05, ref: 'zombie_' },
+  // the free Unity Asset Store zombies (2026-10-20, LOCAL ONLY: assets/source/refs is git- and vercel-ignored; built by
+  // scratchpad unity_to_glb.py, textures 1024 WebP). Not in the game; no clips of their own yet (Body check plays the live ones)
+  // his game version (tools/anim/build_zombie.py from zombie_male_aab_src.glb: one mesh, mixamorig names, the zombie clip set)
+  zmale_aab: { label: 'Zombie Male AAB (game version)', file: 'assets/zombie-male-aab.glb', height: 1.80, ref: 'zombie_' },
+  us_female: { label: 'Asset Store: Female Zombie', file: 'assets/source/refs/female_zombie/female_zombie.glb', height: 1.70, ref: 'zombie_' },
+  us_male_aab: { label: 'Asset Store: Zombie Male AAB', file: 'assets/source/refs/zombie_male_aab/zombie_male_aab.glb', height: 1.80, ref: 'zombie_' },
+  us_shirtless: { label: 'Asset Store: Shirtless Zombie', file: 'assets/source/refs/shirtless_zombie/shirtless_zombie.glb', height: 1.80, ref: 'zombie_' },
+  us_pxl1: { label: 'Asset Store: Zombie 1 (Pxltiger)', file: 'assets/source/refs/pxl_zombie/pxl_zombie1.glb', height: 1.80, ref: 'zombie_' },
+  us_pxl2: { label: 'Asset Store: Zombie 2 (Pxltiger)', file: 'assets/source/refs/pxl_zombie/pxl_zombie2.glb', height: 1.80, ref: 'zombie_' },
+  us_pxl3: { label: 'Asset Store: Zombie 3 (Pxltiger)', file: 'assets/source/refs/pxl_zombie/pxl_zombie3.glb', height: 1.80, ref: 'zombie_' },
 };
 // the new Quaternius packs' test bakes (UAL_PACKS.md; tools/anim/yola2_build.py YOLA2_EXTRA_UAL1/2, test_zombie_clips.py)
 const TC = 'assets/test_clips/';

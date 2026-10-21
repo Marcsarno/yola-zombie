@@ -88,6 +88,25 @@ for m in me.data.materials:
     if m and m.node_tree:
         for n in m.node_tree.nodes:
             if n.type == 'TEX_IMAGE' and n.image and max(n.image.size) > 1024: n.image.scale(1024, 1024)
+# slimming for store characters (Zombie Male AAB, 2026-10-20): --no-normals drops the normal maps (the Tripo zombies have
+# none, so the game lights them without); --opaque a,b turns those materials' cut-out off (a texture whose alpha is only
+# edge padding then exports as JPEG instead of PNG)
+OPAQUE = argv[argv.index('--opaque') + 1].split(',') if '--opaque' in argv else []
+for m in me.data.materials:
+    if not (m and m.node_tree): continue
+    if '--no-normals' in argv:
+        for n in [n for n in m.node_tree.nodes if n.type == 'NORMAL_MAP']:
+            for l in list(n.inputs['Color'].links): m.node_tree.nodes.remove(l.from_node)
+            m.node_tree.nodes.remove(n)
+    if m.name in OPAQUE:
+        bsdf = next((n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+        if bsdf:
+            for l in list(bsdf.inputs['Alpha'].links): m.node_tree.links.remove(l)
+            bsdf.inputs['Alpha'].default_value = 1.0
+        try: m.blend_method = 'OPAQUE'
+        except Exception: pass
+        for n in m.node_tree.nodes:  # the exporter keeps PNG for an image with alpha: drop the alpha from the copy it writes
+            if n.type == 'TEX_IMAGE' and n.image: n.image.alpha_mode = 'NONE'
 
 # ---- 4. moves ----
 def kaykit_names(src):
