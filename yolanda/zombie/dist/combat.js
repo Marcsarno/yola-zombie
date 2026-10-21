@@ -46338,8 +46338,8 @@ void main() {
     // Marc's house: its floor 0.2 m up, and the step outside the front door under the canopy (0.18 m, up from its east edge)
     { id: "home", cx: 32.69, cz: 39.1, hx: 3.6, hz: 6.2, yaw: Math.PI, y: 0.2, ramp: 0.05 },
     { id: "stoop", cx: 37.04, cz: 38.4, hx: 0.76, hz: 1.58, yaw: Math.PI, y: 0.18, ramp: 0.3 },
-    // the pier (Marc, 2026-10-21: doubled, 18 x 6 m: blender/hood/ch2_notes.py dock), up from its shore end (east)
-    { id: "dock", cx: -31, cz: -79.6, hx: 9, hz: 3, yaw: Math.PI, y: 0.39, ramp: 0.6 }
+    // the pier (Marc, 2026-10-21: 13.5 x 4.5 m, blender/hood/ch2_notes.py dock), up from its shore end (east)
+    { id: "dock", cx: -28.75, cz: -80.35, hx: 6.75, hz: 2.25, yaw: Math.PI, y: 0.39, ramp: 0.6 }
   ];
   function groundY(x, z) {
     for (const f of FLOORS2) {
@@ -80592,11 +80592,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       [-27.2, -94.3],
       // (the lake's rounded north shore: ch2_notes.py lakenorth)
       [-27, -82.9],
-      [-40.5, -82.9],
-      [-40.5, -76.3],
-      [-26.8, -76.3]
+      [-35.8, -82.9],
+      [-35.8, -77.8],
+      [-26.8, -77.8]
     ],
-    // (the pier out over the water, 18 x 6 m: ch2_notes.py dock)
+    // (the pier out over the water, 13.5 x 4.5 m: ch2_notes.py dock)
     // Marc's notes on the map (2026-10-21, design/CH2_MARC_NOTES_2026-10-21.md): the inner fences and road blocks went, so what
     // they shut off opens with the stop it joins (checked after the areas above: what they hold stays theirs)
     // south: everything this side of the chained gate the home and curve do not hold: the loop's west leg and B06, the cross
@@ -83389,7 +83389,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var SUN_FROM = new Vector3(-0.55, 0.62, 0.56).normalize();
   var SKY = 11123140;
-  var LIGHT_VERSION = "2026-10-21j";
+  var LIGHT_VERSION = "2026-10-21k";
   async function startHood({ scene: scene2, loader: loader3, arena: arena2, renderer: renderer2, quality: quality2, params: params2, audio: audio2, hud: hud2, fx: fx2, onProgress }) {
     const grammy = params2.get("hood") === "grammy";
     const free = params2.get("hood") === "free" || grammy;
