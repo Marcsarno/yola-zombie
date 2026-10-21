@@ -7,6 +7,7 @@
 #   road   L1 laid as a new road (asphalt, a dashed centre line, kerbs); the old loop's asphalt, kerbs and walks taken up
 #   extra  the new rows and streets
 #   highway  H1, the plan's optional highway on the east edge (one plain slab; run on its own: -- highway)
+#   lake   Marc's notes on the built map: the west rows 3 m south, bushes by the playground, the BBQ (-- lake)
 #   blender -b blender/hood/hood.blend --python blender/hood/ch2_map.py -- rows road extra
 import bpy, bmesh, os, sys, math, json, random
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
@@ -36,44 +37,51 @@ def in_quad(Q, x, z, grow=0.0):
     return in_poly(G, x, z)
 
 # ---------------------------------------------------------------- rows
+def move_row(M, seen):
+    """One row from M['old'] to M['new'] (x, z, yaw) with what belongs to it; `seen`: what has moved already (two rows
+    side by side share it, so nothing between them moves twice). False when the row is not where M says."""
+    old, new = M['old'], M['new']; f = mover(old, new)
+    model = M['model']
+    inst = next((e for e in placed().objects if model in e.get('src', '') and abs(e.location.x - old['x']) < 0.05 and abs(-e.location.y - old['z']) < 0.05), None)
+    if inst is None: print('row', M['row'], 'NOT FOUND'); return False
+    # the old footprint (the moved one's corners turned back into the old frame)
+    newQ = M['footprint_corners']; back = mover(new, old); oldQ = [back(x, z)[:2] for x, z in newQ]
+    moved = {'placed': 0, 'col': 0, 'ground': 0, 'marks': 0}
+    def mv(o, kind):
+        if o.name in seen: return
+        seen.add(o.name)
+        x, z, yaw = f(o.location.x, -o.location.y, o.rotation_euler.z)
+        o.location.x, o.location.y = x, -z; o.rotation_euler.z = yaw; moved[kind] += 1
+    # the row, the clutter at its walls (2 m round it), their prop colliders
+    bids = set()
+    for o in list(bpy.data.collections['COL'].objects):
+        t = o.get('tag') or ''
+        if t.startswith('bld:') and in_quad(oldQ, o.location.x, -o.location.y, 0.5): bids.add(t[4:]); mv(o, 'col')
+    for e in list(placed().objects):
+        if e is inst: mv(e, 'placed'); continue
+        t = e.get('tag') or ''
+        # (not the seal and block lines' pieces: their collision stays, they are looked at after; not the ch2 scripts' own:
+        # they rebuild in the rows' new frames)
+        if t.startswith('seal:') or not e.get('src') or e.get('ch2') or LINE_PIECE.match(e.name) or 'kit_row' in e['src']: continue   # (nor another row)
+        if in_quad(oldQ, e.location.x, -e.location.y, 2.0):
+            mv(e, 'placed'); c = bpy.data.objects.get('COL_prop_' + e.name)
+            if c: mv(c, 'col')
+    # its driveways (ground meshes named driveway_<B id>_<n>): turned about their own origins' world points
+    for o in bpy.data.collections['GROUND'].objects:
+        if any(o.name.startswith('driveway_' + b + '_') for b in bids) and o.name not in seen:
+            seen.add(o.name); me = o.data; Mw = o.matrix_world
+            for v in me.vertices:
+                w = Mw @ v.co; x, z, _ = f(w.x, -w.y); v.co = Mw.inverted() @ __import__('mathutils').Vector((x, -z, w.z))
+            me.update(); moved['ground'] += 1
+    for o in bpy.data.collections['MARKS'].objects:
+        if not o.get('ch2') and in_quad(oldQ, o.location.x, -o.location.y, 2.0): mv(o, 'marks')
+    print('row', M['row'], bids, moved); return True
+
 def move_rows():
     done = json.loads(bpy.context.scene.get('ch2_rows_moved', '[]'))
     for M in EXTRAS['moved_existing']:
         if M['row'] in done: print('row', M['row'], 'already moved'); continue
-        old, new = M['old'], M['new']; f = mover(old, new)
-        model = M['model']
-        inst = next((e for e in placed().objects if model in e.get('src', '') and abs(e.location.x - old['x']) < 0.05 and abs(-e.location.y - old['z']) < 0.05), None)
-        if inst is None: print('row', M['row'], 'NOT FOUND'); continue
-        # the old footprint (the moved one's corners turned back into the old frame)
-        newQ = M['footprint_corners']; back = mover(new, old); oldQ = [back(x, z)[:2] for x, z in newQ]
-        moved = {'placed': 0, 'col': 0, 'ground': 0, 'marks': 0}
-        def mv(o, kind):
-            x, z, yaw = f(o.location.x, -o.location.y, o.rotation_euler.z)
-            o.location.x, o.location.y = x, -z; o.rotation_euler.z = yaw; moved[kind] += 1
-        # the row, the clutter at its walls (2 m round it), their prop colliders
-        bids = set()
-        for o in list(bpy.data.collections['COL'].objects):
-            t = o.get('tag') or ''
-            if t.startswith('bld:') and in_quad(oldQ, o.location.x, -o.location.y, 0.5): bids.add(t[4:]); mv(o, 'col')
-        for e in list(placed().objects):
-            if e is inst: mv(e, 'placed'); continue
-            t = e.get('tag') or ''
-            # (not the seal and block lines' pieces: their collision stays, they are looked at after; not the ch2 scripts' own:
-            # they rebuild in the rows' new frames)
-            if t.startswith('seal:') or not e.get('src') or e.get('ch2') or LINE_PIECE.match(e.name) or 'kit_row' in e['src']: continue   # (nor another row)
-            if in_quad(oldQ, e.location.x, -e.location.y, 2.0):
-                mv(e, 'placed'); c = bpy.data.objects.get('COL_prop_' + e.name)
-                if c: mv(c, 'col')
-        # its driveways (ground meshes named driveway_<B id>_<n>): turned about their own origins' world points
-        for o in bpy.data.collections['GROUND'].objects:
-            if any(o.name.startswith('driveway_' + b + '_') for b in bids):
-                me = o.data; Mw = o.matrix_world
-                for v in me.vertices:
-                    w = Mw @ v.co; x, z, _ = f(w.x, -w.y); v.co = Mw.inverted() @ __import__('mathutils').Vector((x, -z, w.z))
-                me.update(); moved['ground'] += 1
-        for o in bpy.data.collections['MARKS'].objects:
-            if not o.get('ch2') and in_quad(oldQ, o.location.x, -o.location.y, 2.0): mv(o, 'marks')
-        done.append(M['row']); print('row', M['row'], bids, moved)
+        if move_row(M, set()): done.append(M['row'])
     bpy.context.scene['ch2_rows_moved'] = json.dumps(done)
 
 # ---------------------------------------------------------------- road
@@ -329,6 +337,41 @@ def highway():
     bpy.context.scene['ch2_highway_done'] = 1
     print('highway H1 laid; trees off it', n)
 
+# Marc's notes on the built map (2026-10-21: P the pool, D the dock, PG the playground, H the two west rows, BBQ): the two
+# west rows (B08, B07) 3 m further south for breathing room by the playground, with their yards, driveways and the lake
+# fence that closes B08's yard; a row of bushes between the playground and B08; and at the BBQ one pavilion (the gazebo)
+# with two grills beside it, the two small pavilions up the lake road taken out
+HEDGE = 'props/hedge_round.glb'   # (Chapter 4's grammy_hedge: 3 m of low round shrubs, the villas' shrubs in a row)
+def lake_strip():
+    if bpy.context.scene.get('ch2_lake_strip_done'): print('lake strip already done'); return
+    from mathutils import Vector
+    seen = set()
+    for row, iname, cname in (('B08', 'kit_row4_intact_v2.004', 'COL_bld_B08_208'), ('B07', 'kit_row4_intact_v2.003', 'COL_bld_B07_207')):
+        e, c = bpy.data.objects[iname], bpy.data.objects[cname]
+        old = {'x': e.location.x, 'z': -e.location.y, 'yaw': 0.0}; new = {'x': old['x'], 'z': old['z'] + 3.0, 'yaw': 0.0}
+        Q = [(c.matrix_world @ Vector((sx, sy, 0)))for sx, sy in ((0.5, 0.5), (0.5, -0.5), (-0.5, -0.5), (-0.5, 0.5))]
+        move_row({'row': row, 'model': 'kit_row4_intact_v2', 'old': old, 'new': new, 'footprint_corners': [(q.x, -q.y + 3.0) for q in Q]}, seen)
+    # (B08's yard fence to the lake, a line piece the row move leaves: with it)
+    n_fence = 0
+    for o in list(placed().objects) + [bpy.data.objects.get('COL_block_b08_lake_0')]:
+        if o is not None and (o.name.startswith('b08_lake') or o.name == 'COL_block_b08_lake_0') and o.name not in seen:
+            o.location.y -= 3.0; seen.add(o.name); n_fence += 1
+    # the bushes: z 5.5, from the lake's edge to the lake road's verge (x -64 to -43), each a little turned
+    for k in range(7):
+        place(HEDGE, -62.5 + 3.0 * k, 5.5 + rng.uniform(-0.15, 0.15), rng.uniform(-0.06, 0.06), name='ch2_hedge', owner=ID)
+    # the BBQ: the gazebo stays; the two small pavilions (and their posts' collision) go; two grills on the gazebo's lake side
+    n_pav = remove(lambda e: e.instance_collection is not None and e.instance_collection.name == 'pavilion_small')
+    for o in list(bpy.data.collections['COL'].objects):
+        if (o.get('tag') or '') == 'pavilion': bpy.data.objects.remove(o, do_unlink=True)
+    gz = bpy.data.objects['gazebo_large.007']; gx, gzz, a = gz.location.x, -gz.location.y, gz.rotation_euler.z
+    ex, ez = -math.cos(a), math.sin(a)      # (its west face, in game x / z)
+    sx, sz = math.sin(a), math.cos(a)       # (along that face)
+    for s in (1.3, -1.3):
+        place('models/by_grill.glb', gx + ex * 4.5 + sx * s, gzz + ez * 4.5 + sz * s, a + math.pi / 2, name='ch2_bbq_grill', owner=ID)
+    bpy.context.scene['ch2_lake_strip_done'] = 1
+    print('lake strip: rows moved, fence pieces', n_fence, 'hedges 7, small pavilions out', n_pav)
+
+if 'lake' in PARTS: lake_strip()
 if 'highway' in PARTS: highway()
 if 'rows' in PARTS: move_rows()
 if 'drives' in PARTS: stretch_drives()

@@ -128,8 +128,8 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
    streets R1 - R4, the loop as a capital A, the barrier lines, the highway H1): `ba_00_new_map.png` sets it beside hood.blend
    rendered from above on the same grid, and the plan laid over the build. H1, marked optional, is now built as drawn
    (`ch2_map.py highway`: one plain asphalt slab, x 110 - 142, z -100 - 150, 116 trees off it; past the free walk's edge, so
-   seen only from the air). Not built: the two lake houses by the playground, which the plan lists under "not placed" (no
-   room without moving the playground and the two west rows; a decision and a small house model are needed).
+   seen only from the air). The two lake houses the plan listed as "not placed" are the two west rows already there (Marc,
+   item 38).
 33. [x] **The phone editor's copy** (`levels/hood` in the design repo) re-exported with `tools/leveldesign/export_hood.mjs`
    from this build (layout, ground, light, models, the editor's vendored modules). Written to the local clone only: not
    pushed, and the editor artifact not republished (both are Marc's call).
@@ -143,6 +143,15 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
    from the landing by the roundabout, the south road, Grammy's door, the split, the gas detour and back, the north
    junction to the guard gate (the bars lift as Marc comes up) and through to the family car, where the chapter's end
    banner shows. Found in it, and fixed: item 37.
+38. [x] **Marc's notes on the built map** (2026-10-21, his marks on `ba_00_new_map.png`): P is the pool (kept, with its gate),
+   D the dock (the skinny pier at the top: the boat, the fuel and the dock stop are there), PG the playground, and the two
+   H's the two west rows (B08, B07), which are the "lake houses" the plan had listed as not placed. `ch2_map.py lake`:
+   both rows 3 m further south for breathing room by the playground (with their yards, driveways, colliders, marks and
+   B08's fence to the lake), a row of low round bushes between the playground and B08 (Chapter 4's hedge, 7 pieces from
+   the lake's edge to the lake road's verge), and at the BBQ one pavilion (the gazebo) with two grills on its lake side;
+   the two small pavilions up the lake road are gone. The leak test's outline of the lakeside follows B08's fence to its
+   new line (`zones.js`); every stop sealed. Ground masks remade, the light rebaked. `ba_00_lake_strip.png`. After it the
+   bot plays the story through and the stick-and-button replay from the house to the boat reaches COMPLETE again (6.7 min).
 37. [x] **Chapter 4: black holes through the villas** when a villa stood between the camera and Marc (`ba_ch4_seethrough.png`,
    the same walk at the same moments): the see-through hole faded the roof and walls, but the villas' dark insides (the
    black boxes behind their windows) never faded, so a black patch hid Marc. Now they fade too, right down to the villa's
@@ -186,8 +195,6 @@ rules and no safety moves, so items 22, 23, 25 are shown by their own clips (`so
 - Marc has no "open a door" move: at the fridge his reach (`hood_Interact`) opens it, timed so the door swings with his hand
   (item 5). Searched: no door-opening clip exists in the project, its survivors' and story moves, or the Animation Hub. A
   real one is a new clip (a Mixamo download on Marc's account, or the animation chat); reported rather than faked.
-- The two lake houses on the new map's "not placed" list (item 32): they need Marc's decision (moving the playground or
-  the west rows) and a small house model.
 - Not tested on a physical phone: every clip and number is from the desktop browser at phone size (375 x 812). The iPhone
   check (High quality as the stress test) is Marc's.
 - The phone editor: `levels/hood` is re-exported in the local design repo (item 33) but not pushed, and the editor artifact

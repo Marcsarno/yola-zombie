@@ -28,7 +28,7 @@ const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Mat
 // the fixed camera (looking north-west) sees lit faces and the shadows fall across the screen, not toward the lens
 const SUN_FROM = new THREE.Vector3(-0.55, 0.62, 0.56).normalize(); // (from the west-south-west, 38 deg up)
 const SKY = 0xa9b9c4;
-const LIGHT_VERSION = '2026-10-21a'; // (bump with every new bake of assets/neighborhood/hood_light.jpg)
+const LIGHT_VERSION = '2026-10-21b'; // (bump with every new bake of assets/neighborhood/hood_light.jpg)
 
 export async function startHood({ scene, loader, arena, renderer, quality, params, audio, hud, fx, onProgress }) {
   const grammy = params.get('hood') === 'grammy';
