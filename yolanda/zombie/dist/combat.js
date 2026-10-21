@@ -80255,8 +80255,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       [-12.6, -67.6],
       [-23.8, -67.6],
       [-75, -67.6],
-      [-75, 7.4],
-      [-58.2, 7.4],
+      [-75, 10.4],
+      [-58.2, 10.4],
       [-58.2, 18.4],
       [-45.3, 18.4],
       [-23.2, 19.4],
@@ -83052,7 +83052,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var SUN_FROM = new Vector3(-0.55, 0.62, 0.56).normalize();
   var SKY = 11123140;
-  var LIGHT_VERSION = "2026-10-21a";
+  var LIGHT_VERSION = "2026-10-21b";
   async function startHood({ scene: scene2, loader: loader3, arena: arena2, renderer: renderer2, quality: quality2, params: params2, audio: audio2, hud: hud2, fx: fx2, onProgress }) {
     const grammy = params2.get("hood") === "grammy";
     const free = params2.get("hood") === "free" || grammy;
