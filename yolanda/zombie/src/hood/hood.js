@@ -14,6 +14,8 @@ import { Subtitles } from './subs.js';
 import { Actors } from './actors.js';
 import { runBot } from './bot.js';
 import { Hint } from './hint.js';
+import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { characterLight, setCharacterFill } from './charlight.js';
 
 const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0); return Math.abs(dx * c - dz * s) < r.hx + m && Math.abs(dx * s + dz * c) < r.hz + m; };
 
@@ -145,6 +147,28 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   }
   return window.hood = {
     view, subs, actors, get level() { return level; }, onRestart: hook, attach, bot: runBot, CUT,
+    charLight: setCharacterFill, // (the characters' share of the sky light: hood/charlight.js)
+    // test hook (2026-10-20, the user's texture comparison): character files stood side by side, all on one clip at the same
+    // time, facing +z; fill(true) adds a soft studio-like light from +z (it lights the ground too: for comparing only)
+    lineup: { list: [], light: null,
+      async show(files, { x = 42, z = 38, step = 1.15, h = 1.66, clip = 'pistol_idle' } = {}) {
+        for (const q of this.list) q.obj.removeFromParent(); this.list = [];
+        const gs = await Promise.all(files.map((f) => loader.loadAsync(f)));
+        gs.forEach((g, i) => {
+          const m = skClone(g.scene); m.scale.setScalar(h); m.position.set(x + (i - (gs.length - 1) / 2) * step, 0, z);
+          m.traverse((o) => { if (o.isMesh) o.frustumCulled = false; }); scene.add(m); characterLight(m);
+          const mixer = new THREE.AnimationMixer(m), c = g.animations.find((a) => a.name === clip) || g.animations[0]; if (c) mixer.clipAction(c).play();
+          this.list.push({ obj: m, mixer, file: files[i] });
+        });
+        return this.list.map((q) => [q.file, q.obj.position.x]);
+      },
+      fill(on, from = [0, 1.6, 6]) {
+        if (!this.light) { this.light = new THREE.DirectionalLight(0xffffff, 1.6); this.amb = new THREE.HemisphereLight(0xffffff, 0x888888, 0.8); scene.add(this.light, this.light.target, this.amb); }
+        const c = this.list.length ? this.list[0].obj.position : new THREE.Vector3();
+        this.light.position.set(c.x + from[0], from[1], c.z + from[2]); this.light.target.position.set(c.x, 1, c.z); this.light.visible = this.amb.visible = on;
+      },
+      update(dt) { for (const q of this.list) q.mixer.update(dt); },
+    },
     // test hook: the player put at each spot, the camera settled, a capture each, then one contact sheet (zombie/shots/)
     async sheet(spots, out = 'hood_sheet', cols = 4, ticks = 40) {
       const g = window.game, names = [];
@@ -155,11 +179,14 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
       if (arena.em && (arena.em.target !== 0 || arena.em.k !== 0)) arena.setEmergency(false, 0);
       const room = INTERIORS.find((r) => inRect(r.rect, px, pz));
       setCutaway(camera, px, pz, true, room ? { ...(room.cut || room.rect), clipY: room.clipY } : null);
-      subs.update(dt); actors.update(dt); view.update(dt, sim);
+      subs.update(dt); actors.update(dt); view.update(dt, sim); window.hood?.lineup.update(dt);
       view.radioUpdate(window.game?.yola, sim);
       hint.update(camera, level, sim, dt);
       // standing on the dock: Yola (and her weapons, which live in the scene), the zombies' views, lifted onto the deck
       const g = window.game, y = g?.yola;
+      // the characters' own light (hood/charlight.js): Marc once, each zombie view the first time it shows
+      if (y?.model && !y.charLit) { y.charLit = true; characterLight(y.model); }
+      if (g?.zviews) for (const v of g.zviews.values()) if (!v.charLit && v.model) { v.charLit = true; characterLight(v.model); }
       if (y?.outer) { const dy = level?.boating ? 0.32 : groundY(y.outer.position.x, y.outer.position.z); if (dy) { for (const o of [y.outer, y.blob, y.pistol, y.shotgun, y.melee, y.shell, y.test?.obj, y.batLib?.obj, y.axeLib?.obj]) if (o) { o.position.y += dy; o.updateMatrixWorld(true); } } }
       // (only the living: their view sets its height every frame; a corpse's is left as it is, a lift would pile up)
       if (g?.zviews && sim) for (const [id, v] of g.zviews) { const o = v.outer; if (!o?.visible) continue; const dy = groundY(o.position.x, o.position.z); if (!dy) continue; const z = sim.zombies.find((q) => q.id === id); if (!z || z.state === 'dead' || z.state === 'dying') continue; o.position.y += dy; if (v.blob) v.blob.position.y = 0.012 + dy; o.updateMatrixWorld(true); }

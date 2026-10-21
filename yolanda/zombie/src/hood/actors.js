@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { PISTOL_CORE_SCALE } from '../render/weaponModels.js';
+import { characterLight } from './charlight.js';
 
 // who stands where: the rifle survivor first, then the pistol survivors in turn [file, height m]
 const SURVIVORS = { rifle: [['eve', 1.7]], pistol: [['remy', 1.8], ['james', 1.8], ['sophie', 1.66], ['bryce', 1.78]] };
@@ -54,7 +55,7 @@ export class Actors {
     const list = SURVIVORS[gun] || SURVIVORS.pistol, i = this.nPicked[gun] = (this.nPicked[gun] || 0) + 1, pick = list[(i - 1) % list.length];
     const M = this.models?.[pick[0]]; if (!M) return null;
     const m = skClone(M.g.scene); m.scale.setScalar(pick[1]);
-    m.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+    m.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); characterLight(m);
     const turn = new THREE.Group(); turn.add(m);
     const obj = new THREE.Group(); obj.add(turn);
     const mixer = new THREE.AnimationMixer(m), clips = Object.fromEntries(M.g.animations.map((c) => [c.name, c]));
