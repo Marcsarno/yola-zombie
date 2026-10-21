@@ -4,6 +4,8 @@
 #   default=<mat>  the .mat for meshes / materials with no match      alias=fbxMat:unityMat,...  pick a material by hand
 #   rename=biped|ue  3ds Max Biped / Unreal bone names -> Mixamo names   orient=1  FBX automatic bone orientation (UE skeletons)
 #   game=1  the input build_zombie.py takes: meshes joined, mixamorig: names, the head bone set upright, 1.0 unit tall
+#   parts=<map.json>  with game=1: a pack's own cut-apart body (*_BodyParts.fbx) kept in its pieces, not joined, each named
+#           Mod_<game part>__<chunk>__<piece> from the map (tools/anim/parts/male_aab.json, shirtless.json)
 # The package first: unpack_unitypkg.py <pkg> <dir> (models + textures only) and guidmap.py <pkg> <guids.json>.
 # (2026-10-20, the Unity Asset Store zombies; the Zombie Male AAB recipe: rename=ue game=1 orient=1, then
 #  build_zombie.py ... --extra scratch=ual2:Zombie_Scratch,knockback=ual2:Hit_Knockback --no-normals --opaque ZombieMale_Shirt_MAT_V1)
@@ -131,14 +133,25 @@ if any(a == "rename=ue" for a in argv[4:]) and arm:  # Unreal mannequin names ->
             for i in (1, 2, 3): ue["%s_0%d_%s" % (f, i, s)] = "%sHand%s%d" % (S, F, i)
     for b in arm.data.bones:
         if b.name in ue: print("RENAME", b.name, "->", ue[b.name]); b.name = ue[b.name]
+PARTS = next((a.split("=", 1)[1] for a in argv[4:] if a.startswith("parts=")), None)
 if any(a == "game=1" for a in argv[4:]) and arm:  # the input build_zombie.py wants: one mesh, mixamorig: names
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
     keyed = next((o for o in meshes if o.data.shape_keys), meshes[0])
-    bpy.ops.object.select_all(action="DESELECT")
-    for o in meshes: o.select_set(True)
-    bpy.context.view_layer.objects.active = keyed
-    bpy.ops.object.join()
-    keyed.name = "ZombieMale"
+    if PARTS:
+        # the pack's own cut-apart body (its *_BodyParts.fbx, the user: "leave them, don't change it"): every piece kept as
+        # it is, only renamed Mod_<game part>__<chunk>__<piece> so the game severs the right pieces together
+        # (render/clipchars.js MODULE_NAMES) and the burst throws each chunk (render/gibburst.js); the map: tools/anim/parts/
+        pm = json.load(open(PARTS))
+        for o in meshes:
+            part, chunk = pm.get(o.name, ["Body", o.name])
+            print("PIECE", o.name, "->", part, chunk); o.name = "Mod_%s__%s__%s" % (part, chunk, o.name)
+        keyed = max(meshes, key=lambda o: o.dimensions.z)
+    else:
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in meshes: o.select_set(True)
+        bpy.context.view_layer.objects.active = keyed
+        bpy.ops.object.join()
+        keyed.name = "ZombieMale"
     for b in arm.data.bones:
         if not b.name.startswith("mixamorig:"): b.name = "mixamorig:" + b.name
     print("JOINED", len(meshes), "meshes; bones prefixed")
@@ -157,12 +170,15 @@ if any(a == "game=1" for a in argv[4:]) and arm:  # the input build_zombie.py wa
     # 1.0 unit tall like the Tripo zombies: the game scales every zombie by its height (render/clipchars.js
     # model.scale.setScalar(height)); at his real 1.8 m he came out 3.25 m tall in the game (the user saw it, 2026-10-20)
     bpy.context.view_layer.update()
-    zs = [(keyed.matrix_world @ v.co).z for v in keyed.data.vertices]; tall = max(zs) - min(zs)
+    body = meshes if PARTS else [keyed]  # (the pieces' height together, not one piece's)
+    zs = [(o.matrix_world @ v.co).z for o in body for v in o.data.vertices]; tall = max(zs) - min(zs)
     arm.scale = arm.scale * (1.0 / tall)
-    bpy.ops.object.select_all(action="DESELECT"); arm.select_set(True); keyed.select_set(True); bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.select_all(action="DESELECT"); arm.select_set(True)
+    for o in body: o.select_set(True)
+    bpy.context.view_layer.objects.active = arm
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     bpy.context.view_layer.update()
-    zs = [(keyed.matrix_world @ v.co).z for v in keyed.data.vertices]
+    zs = [(o.matrix_world @ v.co).z for o in body for v in o.data.vertices]
     print("SCALED from %.3f to %.3f tall" % (tall, max(zs) - min(zs)))
 for a in list(bpy.data.actions): bpy.data.actions.remove(a)
 if arm and arm.animation_data: arm.animation_data_clear()
