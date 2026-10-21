@@ -170,7 +170,7 @@ export class HoodView {
         this.anim(animate ? 2.2 : 0, (k) => { bar.quaternion.copy(bar.userData.q0); bar.rotateZ(1.42 * k * k * (3 - 2 * k)); }, open);
         continue;
       }
-      const gate = /palisade_gate/.test(s.file);
+      const gate = /palisade_gate|hood_gate/.test(s.file);   // (the chained gate: hood_gate_chain since Marc's new fence, 2026-10-21)
       if (gate) {
         const L = s.o.getObjectByName('GateL_v2'), R = s.o.getObjectByName('GateR_v2');
         for (const n of ['Chain_v2', 'Padlock_v2']) { const c = s.o.getObjectByName(n); if (c) c.visible = !open; }

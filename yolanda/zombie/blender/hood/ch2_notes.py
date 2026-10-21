@@ -11,6 +11,7 @@ import importlib, hoodlib, ch2lib
 for m in (hoodlib, ch2lib): importlib.reload(m)
 from hoodlib import col_box
 from ch2lib import *
+from mathutils import Vector
 
 PARTS = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 def owner(part): return 'ch2_notes:' + part
@@ -542,6 +543,110 @@ def gaptrees():
     spots = [(o.location.x, gz(o)) for o in placed().objects if o.name in GAP_TREES]
     print('trees out', remove(lambda e: e.name in GAP_TREES), 'their collision', cols_out(lambda t, o: t.startswith('tree') and any(math.dist((o.location.x, gz(o)), q) < 0.8 for q in spots)))
 
+# ---------------------------------------------------------------- b05
+# (Marc, looking at the B05 row's broken end unit off his yard: "remove the stuff with the x on it.. and furnish that
+# building thats cracked open the exact same way as my house"): the fence across its broken corner, the fence pieces and
+# the trash bags out on the lawn east of it go. Inside, Marc's own ground floor: hood_home (make_ch2_props.py HOME), its
+# fridge (shut: only Marc's swings) and copies of ch2_home.py's inside walls and furniture colliders, carried from his
+# row's end unit into this one (the same row model, so the same rooms; the damaged row sits 0.18 m down). The unit's outer
+# walls are its row's own (COL_bld_B05_*): its way in is the broken corner, into the kitchen.
+B05_OUT = ('b05_gap_fence_privacy', 'fence_privacy.032', 'palisade_2m_b.041', 'fence_privacy.033', 'palisade_2m_b.042', 'debris.010')
+HOME_OUTER = ('party', 'rear', 'front', 'east_n', 'east_s', 'door')
+def b05():
+    own = owner('b05'); print('wiped', wipe(own))
+    print('out', remove(lambda e: e.name in B05_OUT), 'the gap seal', cols_out(lambda t, o: t == 'block:b05_gap'))
+    import make_ch2_props; importlib.reload(make_ch2_props)
+    HOME, HOME_C = make_ch2_props.HOME, make_ch2_props.HOME_C
+    M, D = bpy.data.objects['kit_row4_intact_v2'], bpy.data.objects['kit_row4_damaged_v2']
+    th = D.rotation_euler.z - M.rotation_euler.z; c, s = math.cos(th), math.sin(th); dy = D.location.z - M.location.z
+    def at(x, z):   # (a point in Marc's house, game coords -> the same point in B05's end unit)
+        lx, ly = x - M.location.x, -z - M.location.y
+        return D.location.x + lx * c - ly * s, -(D.location.y + lx * s + ly * c)
+    place('props/hood_home.glb', *at(*HOME_C), th, collide=False, name='b05_inside', owner=own, y=dy)
+    kx = HOME['kx']
+    place('props/hood_fridge.glb', *at(kx + 0.05 + 0.36, 44.45 + 0.38), th, collide=False, name='b05_fridge', owner=own, y=HOME['floor'] + dy)
+    n = 0
+    for o in list(bpy.data.collections['COL'].objects):
+        if o.get('ch2') != 'ch2_home' or not o.name.startswith('COL_ch2_home_') or o.name[13:] in HOME_OUTER: continue
+        x, z = at(o.location.x, -o.location.y)
+        k = o.copy(); k.name = 'COL_ch2_b05_' + o.name[13:]; k['ch2'] = own; k['tag'] = 'prop:b05'
+        k.location = (x, -z, o.location.z); k.rotation_euler = (0, 0, o.rotation_euler.z + th)
+        bpy.data.collections['COL'].objects.link(k); n += 1
+    print('b05 furnished: colliders', n)
+
+# ---------------------------------------------------------------- gatefence
+# (Marc, looking at the club gate's line from his side: "remove the stuff with an X .. and the fence circled in blue.. I want
+# better quality fence.. maybe a taller chainlink fence, slighly taller than my character with barb wire. ... and trash out
+# front... hap hazardly put together.. but better looking and harder to get over the top off"): the two runs of panels left
+# along the club's east side (ch2_polish's, standing on nothing now) and the gate line's slatted panels go; the line is
+# built again from make_ch2_props.py's chain-link (2.3 m, barbed wire and a razor coil on arms over Marc's side) from row
+# 6's end wall to row 5's, the chained gate swapped for the one to match (the same place, tag and swinging leaves), and junk
+# heaped against it on Marc's side, the gate's approach left clear. The line's collision stays (4 m: nobody climbs it); the
+# heaps get low boxes of their own so nobody walks through them.
+GATE_OUT = ('polish_panel.046', 'polish_panel.047', 'polish_panel.048', 'polish_panel.049', 'polish_panel.050', 'polish_panel.051')
+GF_A, GF_B = (-0.65, -13.7), (33.12, -19.3)     # (dress_hood.py's gate line)
+GF_X0, GF_X1 = 1.75, 34.7                       # (where it meets row 6's end wall and row 5's west wall)
+GF_GATE = (18.58, -16.88)
+# the junk: (model, along the line from its west end m, out toward Marc m, turn deg, lean deg toward the fence, stood on edge, up m)
+GF_JUNK = [
+    ('kit/car_tire_pile.glb', 1.6, 1.25, 6, 0, False, 0), ('kit/wall_corrugated.glb', 0.35, 0.95, 2, 21, False, 0),
+    ('kit/tire.glb', 3.1, 0.75, 0, 0, False, 0.7), ('kit/trash_bags_5.glb', 3.8, 0.95, 12, 0, False, 0), ('kit/trash_bags_3.glb', 4.8, 1.7, 40, 0, False, 0),
+    ('kit/sofa_dumped.glb', 6.1, 1.4, -3, 32, False, 0), ('kit/wall_corrugated_b.glb', 4.3, 0.85, -3, 20, False, 0), ('kit/pallet_stack.glb', 2.6, 1.95, 30, 0, False, 0),
+    ('kit/trash_bags_5.glb', 5.0, 2.0, 60, 0, False, 0), ('kit/tire.glb', 9.2, 1.95, 0, 0, False, 0), ('kit/tire.glb', 9.25, 1.9, 0, 0, False, 0.22), ('kit/pallet.glb', 12.9, 0.5, 5, 15, True, 0), ('kit/cardboard_box_big.glb', 7.3, 1.75, 25, 0, False, 0),
+    ('kit/pallet.glb', 7.9, 0.55, 4, 18, True, 0), ('kit/pallet.glb', 8.8, 0.7, -6, 24, True, 0), ('kit/barrel_rusty.glb', 9.7, 1.05, 0, 0, False, 0),
+    ('kit/barrel_rusty.glb', 10.4, 1.6, 70, 90, False, 0), ('kit/wooden_crate.glb', 11.2, 0.85, 14, 0, False, 0), ('kit/wooden_crate.glb', 11.05, 0.8, 38, 0, False, 0.8),
+    ('kit/wall_corrugated_b.glb', 11.7, 1.0, -2, 24, False, 0), ('kit/trash_bags_3.glb', 12.6, 1.85, -25, 0, False, 0), ('kit/shopping_cart_tipped.glb', 13.4, 1.35, 62, 0, False, 0),
+    ('kit/tire.glb', 20.5, 0.9, 0, 0, False, 0), ('kit/tire.glb', 20.6, 0.95, 0, 0, False, 0.22), ('kit/tire.glb', 20.45, 0.88, 0, 0, False, 0.44),
+    ('kit/wall_corrugated.glb', 21.4, 0.95, 3, 19, False, 0), ('kit/trash_bags_5.glb', 22.9, 1.75, -20, 0, False, 0),
+    ('kit/fence_picket_broken.glb', 24.5, 0.55, -4, 26, False, 0), ('kit/debris_pile.glb', 26.0, 1.35, 15, 0, False, 0),
+    ('kit/sofa_dumped.glb', 28.3, 1.45, 172, 28, False, 0), ('kit/wall_corrugated_b.glb', 25.4, 0.85, 1, 20, False, 0), ('kit/trash_bags_3.glb', 27.0, 2.3, 10, 0, False, 0),
+    ('kit/pallet.glb', 23.3, 0.5, 2, 16, True, 0), ('kit/pallet.glb', 24.1, 0.65, -5, 22, True, 0), ('kit/wooden_crate.glb', 33.4, 1.25, 20, 0, False, 0), ('kit/pallet_stack.glb', 29.9, 1.2, 15, 0, False, 0), ('kit/pallet.glb', 30.6, 0.6, 3, 20, True, 0),
+    ('kit/barrel_rusty.glb', 31.5, 1.0, 0, 0, False, 0), ('models/yardprop_trash_can_rust.glb', 32.2, 1.55, 100, 88, False, 0),
+    ('models/by_chair_collapsed.glb', 31.0, 2.0, 30, 0, False, 0), ('kit/military_crate.glb', 32.7, 0.8, 8, 0, False, 0), ('kit/trash_bags_3.glb', 33.0, 1.7, -40, 0, False, 0)]
+GF_HEAPS = [(0.0, 14.0), (20.1, 33.2)]          # (along the line: where the junk lies, its low collision)
+
+def settle(e):
+    """Down (or up) onto the ground: the lowest point of what the placement draws at y 0."""
+    lo = 1e9
+    for o in e.instance_collection.all_objects:
+        if o.type != 'MESH': continue
+        for v in o.bound_box: lo = min(lo, (e.matrix_world @ o.matrix_world @ Vector(v)).z)
+    e.location.z -= lo + 0.01
+
+def gatefence():
+    import make_ch2_props; importlib.reload(make_ch2_props)
+    own = owner('gatefence'); print('wiped', wipe(own))
+    print('panels out', remove(lambda e: e.name in GATE_OUT or e.name.startswith('gate_fence')))
+    dx, dz = GF_B[0] - GF_A[0], GF_B[1] - GF_A[1]; L = math.hypot(dx, dz); ux, uz = dx / L, dz / L; yaw = math.atan2(-uz, ux)
+    nx, nz = -uz, ux                                    # (Marc's side: +z, away from the club)
+    def pt(t): return GF_A[0] + ux * t, GF_A[1] + uz * t
+    t0, t1 = (GF_X0 - GF_A[0]) / ux, (GF_X1 - GF_A[0]) / ux
+    tg = (GF_GATE[0] - GF_A[0]) * ux + (GF_GATE[1] - GF_A[1]) * uz
+    S = make_ch2_props.FENCE['L']; n = 0
+    for a, b in ((t0, tg - 1.74), (tg + 1.74, t1)):
+        k = max(1, round((b - a) / S)); w = (b - a) / k
+        for i in range(k):
+            x, z = pt(a + (i + 0.5) * w)
+            e = place('props/hood_fence_chain_b.glb' if n in (2, 9) else 'props/hood_fence_chain.glb', x, z, yaw, collide=False, name='gate_chain', owner=own)
+            e.scale.x = w / S; n += 1
+        x, z = pt(b if a < tg else a); place('props/hood_fence_post.glb', x, z, yaw, collide=False, name='gate_chain_post', owner=own)
+        x, z = pt(a if a < tg else b); place('props/hood_fence_post.glb', x, z, yaw, collide=False, name='gate_chain_post', owner=own)
+    g = bpy.data.objects['palisade_gate.001']
+    g.instance_collection = ensure_model('props/hood_gate_chain.glb'); g['src'] = 'props/hood_gate_chain.glb'
+    tj = lambda t: t0 + t
+    for rel, t, d, turn, lean, edge, up in GF_JUNK:
+        x, z = pt(tj(t)); x, z = x + nx * d, z + nz * d
+        e = place(rel, x, z, yaw + math.radians(turn), collide=False, name='gate_junk', owner=own, y=up)
+        e.rotation_euler = (math.radians(90 - lean) if edge else -math.radians(lean) * (1 if abs(turn) < 90 else -1), 0, yaw + math.radians(turn))
+        bpy.context.view_layer.update()
+        if up == 0: settle(e)
+    for k, (a, b) in enumerate(GF_HEAPS):
+        (xa, za), (xb, zb) = pt(tj(a)), pt(tj(b)); cx, cz = (xa + xb) / 2 + nx * 1.2, (za + zb) / 2 + nz * 1.2
+        o = col_box('COL_gate_junk_%d' % k, cx, cz, (b - a) / 2, 0.85, yaw, 1.0, 'block:gate_junk'); o['ch2'] = own
+    for m in bpy.data.materials:
+        if m.name.startswith('M_chainlink'): make_ch2_props.chainlink_wire(m)
+    print('gate line: sections', n, 'junk', len(GF_JUNK))
+
 if 'open' in PARTS: open_up()
 if 'park' in PARTS: park()
 if 'shrubs' in PARTS: shrubs()
@@ -556,4 +661,6 @@ if 'clubback' in PARTS: clubback()
 if 'lakenorth' in PARTS: lake_north(); lake_north_dress()
 if 'dock' in PARTS: dock()
 if 'gaptrees' in PARTS: gaptrees()
+if 'b05' in PARTS: b05()
+if 'gatefence' in PARTS: gatefence()
 print('notes parts done:', PARTS)

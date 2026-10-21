@@ -617,9 +617,139 @@ def dock():
     for cx in (-3.0, 2.0): box(r, 'cleat', (0.32, 0.08, 0.06), (cx, -W / 2 + 0.25, top + 0.03), 'M_metal_painted__darkgrey')
     return r
 
+# ---------------------------------------------------------------- the club gate's fence (Marc, 2026-10-21: "I want better
+# quality fence.. maybe a taller chainlink fence, slighly taller than my character with barb wire"): one 2.5 m section of
+# chain-link (no slats: you see the club through it) on galvanised posts, a top rail, a loose bottom wire; arms leaning out
+# over the front (-Y, the game's +Z: Marc's side) with three strands of barbed wire, and a razor-wire coil along the top.
+# Along local x, centred, its line post at the left end (-x), so a line of them joins post to post; fence_post ends a run.
+# fence_chain_b: the same with a dent pushed in and a KEEP OUT sign wired on. gate_chain: the chained double gate to match
+# (the leaves' nodes as the old hood_gate's, so the game swings them: GateL_v2 / GateR_v2, Chain_v2, Padlock_v2).
+FENCE = dict(L=2.5, h=2.32, arm=(0.0, -0.36, 0.36))
+GALV, BARB = 'M_metal_painted__grey', 'M_metal_rusty'
+
+def chainlink_wire(m):
+    """A chain-link material given the game's diamond wire (materials.js chainlinkTex) as a clipped picture: the game draws
+    its own, this is so the fence reads as wire in Blender (and in the bake's shadows) too, not as grey sheets. The props'
+    GLBs go out without pictures: ch2_notes.py gatefence gives the imported materials theirs in hood.blend."""
+    if m.get('wire'): return m
+    import numpy as np
+    s, n = 256, 8
+    u, v = np.meshgrid(np.arange(s) / s * n, np.arange(s) / s * n)
+    a, b = np.abs((u + v) % 1 - 0.5), np.abs((u - v) % 1 - 0.5)
+    px = np.zeros((s, s, 4), np.float32); px[..., :3] = (0.62, 0.62, 0.58); px[..., 3] = ((a > 0.44) | (b > 0.44))
+    im = bpy.data.images.get('chainlink_wire')
+    if im is None: im = bpy.data.images.new('chainlink_wire', s, s, alpha=True); im.pixels[:] = px.ravel(); im.update(); im.pack()
+    nt = m.node_tree; bsdf = next(x for x in nt.nodes if x.type == 'BSDF_PRINCIPLED')
+    t = nt.nodes.new('ShaderNodeTexImage'); t.image = im; t.interpolation = 'Closest'
+    g = nt.nodes.new('ShaderNodeMath'); g.operation = 'GREATER_THAN'; g.inputs[1].default_value = 0.5
+    nt.links.new(t.outputs['Color'], bsdf.inputs['Base Color']); nt.links.new(t.outputs['Alpha'], g.inputs[0]); nt.links.new(g.outputs[0], bsdf.inputs['Alpha'])
+    bsdf.inputs['Metallic'].default_value = 0.6; bsdf.inputs['Roughness'].default_value = 0.5
+    try: m.blend_method = 'CLIP'
+    except Exception: pass
+    m['wire'] = 1
+    return m
+def chainlink_mat(): return chainlink_wire(propkit.M('M_chainlink'))
+
+def mesh_panel(parent, name, x0, x1, z0, z1, push=None, wave=0.012, rng=None, nx=12, nz=9):
+    """A chain-link sheet in the X-Z plane (y 0) from x0..x1, z0..z1, waved a little; push(x, z) -> y adds a dent."""
+    chainlink_mat()
+    bm = bmesh.new(); V = []
+    for j in range(nz + 1):
+        row = []
+        for i in range(nx + 1):
+            x, z = x0 + (x1 - x0) * i / nx, z0 + (z1 - z0) * j / nz
+            y = (rng.uniform(-wave, wave) if rng and 0 < i < nx and 0 < j < nz else 0.0) + (push(x, z) if push else 0.0)
+            row.append(bm.verts.new((x, y, z)))
+        V.append(row)
+    for j in range(nz):
+        for i in range(nx): bm.faces.new((V[j][i], V[j][i + 1], V[j + 1][i + 1], V[j + 1][i]))
+    return propkit.finish(name, bm, 'M_chainlink', parent)
+
+def barbed(parent, a, b, rng):
+    """A strand of barbed wire from a to b, its barbs every 12 cm."""
+    a, b = Vector(a), Vector(b); rod(parent, 'barb_strand', a, b, 0.006, BARB, seg=4)
+    d = b - a; L = d.length; k = int(L / 0.12)
+    for i in range(1, k):
+        p = a + d * (i / k); t = rng.uniform(0, math.pi)
+        o = Vector((0.0, math.cos(t), math.sin(t))) * 0.022
+        rod(parent, 'barb', p - o, p + o, 0.002, BARB, seg=3)
+
+def razor_coil(parent, x0, x1, cy, cz, R=0.3, step=0.2):
+    """Concertina razor wire along x: loops of radius R round (cy, cz), each leant a little (the coil's overlap)."""
+    k = max(2, int((x1 - x0) / step))
+    for i in range(k):
+        xc = x0 + (i + 0.5) * (x1 - x0) / k; lean = 0.32 * (1 if i % 2 else -1)
+        pts = [Vector((xc + math.sin(lean) * R * math.sin(a), cy + R * math.cos(a), cz + R * math.sin(a) * math.cos(lean))) for a in (j / 12 * math.tau for j in range(13))]
+        for p, q in zip(pts, pts[1:]): rod(parent, 'razor', p, q, 0.006, GALV, seg=3)
+
+def line_post(r, x, rng, end=False):
+    H, (ax, ay, az) = FENCE['h'], FENCE['arm']
+    rod(r, 'post', (x, 0, 0), (x, 0, H + 0.06), 0.045 if end else 0.034, GALV)
+    disc(r, 'post_cap', 0.05 if end else 0.04, 0.05, (x, 0, H + 0.08), GALV, seg=10)
+    rod(r, 'arm', (x, 0, H), (x, ay, H + az), 0.016, GALV)
+
+def fence_section(name, dent=False, sign=False, seed=21):
+    rng = random.Random(seed)
+    L, H, (ax, ay, az) = FENCE['L'], FENCE['h'], FENCE['arm']
+    r = root(name); x0, x1 = -L / 2, L / 2
+    line_post(r, x0, rng)
+    rod(r, 'top_rail', (x0, 0, H - 0.02), (x1, 0, H - 0.02), 0.021, GALV)
+    rod(r, 'bottom_wire', (x0, 0.01, 0.07), (x1, 0.01, 0.07), 0.004, GALV, seg=4)
+    push = (lambda x, z: 0.16 * math.exp(-((x - 0.35) ** 2) / 0.22 - ((z - 0.85) ** 2) / 0.3)) if dent else None
+    mesh_panel(r, 'mesh', x0 + 0.03, x1 - 0.03, 0.05, H - 0.04, push=push, rng=rng)
+    for x in (x0 + 0.04, x1 - 0.04):   # (the tension bars and their bands at the posts)
+        rod(r, 'tension_bar', (x, -0.01, 0.06), (x, -0.01, H - 0.06), 0.006, GALV, seg=4)
+    for k in range(3):
+        f = (k + 1) / 3; barbed(r, (x0, ay * f, H + az * f), (x1, ay * f, H + az * f), rng)
+    razor_coil(r, x0, x1, ay * 0.45, H + 0.24)
+    if sign:
+        box(r, 'sign', (0.6, 0.012, 0.4), (-0.3, -0.03, 1.5), 'M_flat__red', rot=(0, 0.04, 0))
+        box(r, 'sign_band', (0.52, 0.014, 0.07), (-0.3, -0.035, 1.5), 'M_flat__white', rot=(0, 0.04, 0))
+        for sx in (-0.55, -0.05): rod(r, 'sign_tie', (sx, -0.05, 1.66), (sx, 0.02, 1.66), 0.004, GALV, seg=4)
+    return r
+
+def fence_chain(): return fence_section('hood_fence_chain')
+def fence_chain_b(): return fence_section('hood_fence_chain_b', dent=True, sign=True, seed=22)
+def fence_post():
+    r = root('hood_fence_post'); line_post(r, 0.0, None, end=True); return r
+
+def gate_chain():
+    rng = random.Random(23)
+    H, (ax, ay, az) = FENCE['h'], FENCE['arm']
+    r = root('hood_gate_chain')
+    for sx in (-1.74, 1.74):
+        rod(r, 'gate_post', (sx, 0, 0), (sx, 0, H + 0.1), 0.06, GALV)
+        disc(r, 'post_cap', 0.07, 0.06, (sx, 0, H + 0.13), GALV, seg=12)
+    for side, nm in ((-1, 'GateL_v2'), (1, 'GateR_v2')):
+        leaf = bpy.data.objects.new(nm, None); propkit.SC.collection.objects.link(leaf); leaf.parent = r; leaf.location = (side * 1.65, 0, 0)
+        inner = -side * 1.6
+        for zz in (0.1, 1.15, H - 0.04): rod(leaf, 'tube', (0, 0, zz), (inner, 0, zz), 0.022, GALV)
+        for xx in (0.0, inner): rod(leaf, 'stile', (xx, 0, 0.08), (xx, 0, H), 0.025, GALV)
+        rod(leaf, 'brace', (0, 0, 0.14), (inner, 0, H - 0.08), 0.016, GALV)
+        mesh_panel(leaf, 'mesh', min(0, inner) + 0.03, max(0, inner) - 0.03, 0.1, H - 0.05, rng=rng, wave=0.006, nx=8, nz=8)
+        for xx in (0.0, inner): rod(leaf, 'arm', (xx, 0, H), (xx, ay, H + az), 0.014, GALV)
+        for k in range(3):
+            f = (k + 1) / 3; barbed(leaf, (0, ay * f, H + az * f), (inner, ay * f, H + az * f), rng)
+        razor_coil(leaf, min(0, inner), max(0, inner), ay * 0.45, H + 0.24)
+        if side < 0:
+            box(leaf, 'sign', (0.62, 0.02, 0.36), (inner / 2, -0.04, 1.5), 'M_flat__red')
+            box(leaf, 'sign_band', (0.56, 0.025, 0.06), (inner / 2, -0.045, 1.5), 'M_flat__white')
+    ch = bpy.data.objects.new('Chain_v2', None); propkit.SC.collection.objects.link(ch); ch.parent = r; ch.location = (0, 0, 1.15)
+    for k in range(9):
+        a = k / 9 * math.tau
+        bm = bmesh.new(); bmesh.ops.create_cone(bm, cap_ends=False, segments=8, radius1=0.035, radius2=0.035, depth=0.012)
+        bmesh.ops.transform(bm, matrix=Matrix.Translation((math.cos(a) * 0.09, math.sin(a) * 0.07, 0.03 * math.sin(a * 2))) @ Matrix.Rotation(a + (math.pi / 2 if k % 2 else 0), 4, 'Z') @ Matrix.Rotation(math.pi / 2, 4, 'X'), verts=bm.verts)
+        propkit.finish('link', bm, 'M_metal_rusty', ch)
+    pl = bpy.data.objects.new('Padlock_v2', None); propkit.SC.collection.objects.link(pl); pl.parent = r; pl.location = (0, -0.1, 1.03)
+    box(pl, 'body', (0.07, 0.035, 0.08), (0, 0, 0), 'M_metal_painted__yellow')
+    rod(pl, 'shackle', (-0.022, 0, 0.04), (-0.022, 0, 0.09), 0.006, GALV); rod(pl, 'shackle2', (0.022, 0, 0.04), (0.022, 0, 0.09), 0.006, GALV)
+    return r
+
 BUILD = {'shed': (shed, 'hood_shed.glb'), 'garage': (garage, 'hood_garage.glb'), 'home': (home, 'hood_home.glb'), 'fridge': (fridge, 'hood_fridge.glb'), 'case': (case, 'hood_case.glb'),
          'shrub_tall': (shrub_tall, 'hood_shrub_tall.glb'), 'palm_short': (palm_short, 'hood_palm_short.glb'), 'wall_concrete': (wall_concrete, 'hood_wall_concrete.glb'),
-         'court_basketball': (court_basketball, 'hood_court_basketball.glb'), 'reeds': (reeds, 'hood_reeds.glb'), 'dock': (dock, 'hood_dock.glb')}
+         'court_basketball': (court_basketball, 'hood_court_basketball.glb'), 'reeds': (reeds, 'hood_reeds.glb'), 'dock': (dock, 'hood_dock.glb'),
+         'fence_chain': (fence_chain, 'hood_fence_chain.glb'), 'fence_chain_b': (fence_chain_b, 'hood_fence_chain_b.glb'), 'fence_post': (fence_post, 'hood_fence_post.glb'),
+         'gate_chain': (gate_chain, 'hood_gate_chain.glb')}
 
 if __name__ == '__main__':
     names = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else list(BUILD)

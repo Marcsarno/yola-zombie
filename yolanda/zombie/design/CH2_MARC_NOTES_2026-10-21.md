@@ -164,3 +164,26 @@ hood_shrub_tall, hood_palm_short, hood_wall_concrete, hood_court_basketball, exp
 - Follow-up, "you can keep the palm .. but remove the trees between these buildings" (the gap between the B05 row and the
   east row, by the tennis courts; ch2_notes.py `gaptrees`): nine trees out (oaks, storm-bent, scraggly, a snag). The cabbage
   palm stays.
+- Follow-up, "remove the stuff with the x on it.. and furnish that building thats cracked open the exact same way as my
+  house" (B05's broken end unit off Marc's yard; ch2_notes.py `b05`):
+  - Out: the fence panel across its broken corner (and the corner's block collision), the two fence pieces out on the lawn
+    toward the east row, and the trash bags on the lawn.
+  - In: Marc's own ground floor (hood_home: the living and dining rooms, the stairs, the kitchen, the garage) with its
+    fridge (shut; only Marc's door swings), plus copies of his house's inside walls and furniture collision. They are
+    turned into this unit: it is the same row model, so the rooms fit its shell, sunk 0.18 m with the damaged row.
+  - The way in is the broken corner, into the kitchen. The 'help' wave still comes out of its garage, through the kitchen.
+    The leak test is sealed.
+- Follow-up, the club gate's line: "remove the stuff with an X .. and the fence circled in blue.. I want better quality
+  fence.. maybe a taller chainlink fence, slighly taller than my character with barb wire. ... and trash out front... hap
+  hazardly put together.. but better looking and harder to get over the top off" (ch2_notes.py `gatefence`):
+  - Out: the two runs of panels left standing along the club's east side, and the gate line's slatted chain-link panels.
+  - The new fence (make_ch2_props.py `fence_chain` / `fence_chain_b` / `fence_post`) runs from row 6's end wall to row 5's:
+    - 2.3 m of see-through chain-link on galvanised posts, with a top rail and a loose bottom wire.
+    - Arms leaning out over Marc's side carry three strands of rusty barbed wire, and a razor-wire coil runs along the top.
+    - Two sections have a dent pushed in, and a KEEP OUT sign is wired on.
+  - The new gate (`gate_chain`): the chained, padlocked double gate to match, in the same place with the same tag. The game
+    now swings its leaves open when the chain is cut (view.js: the old gate's file name no longer matched, so it fell flat).
+  - Junk is heaped against the fence on Marc's side: corrugated sheets and pallets leant on it, dumped sofas, tyres, trash
+    bags, barrels, crates, a tipped cart, a broken picket section. The gate's approach is left clear, and the heaps have
+    low collision so nobody walks through them. The fence's own 4 m collision is unchanged.
+  - Blender: the chain-link materials now show the wire as see-through (they were grey sheets in the viewport).
