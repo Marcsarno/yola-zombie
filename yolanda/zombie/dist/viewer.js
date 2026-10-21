@@ -39168,6 +39168,143 @@ void main() {
     return o;
   }
 
+  // src/core/heroes.js
+  var HERO_MOVE_SPEED = {
+    lilah: 2.05
+    // 2.05 / 1.45 = 1.41x her run clip: 4.0 steps a second
+  };
+  var heroMoveSpeed = (key, base = 3.3) => HERO_MOVE_SPEED[key] ?? base;
+
+  // src/core/tuning.js
+  var TUNING_DEFAULTS = {
+    moveSpeed: 3.3,
+    // m/s at full stick
+    accel: 28,
+    // m/s^2 when speeding up
+    decel: 34,
+    // m/s^2 when releasing / reversing
+    turnRate: 16,
+    // rad/s upper-body aim turn
+    backpedalSpeed: 0.78,
+    // speed multiplier when moving directly against the aim
+    strafeSpeed: 0.92,
+    // multiplier when moving perpendicular to the aim
+    attackThreshold: 0.45,
+    // right-stick deflection that starts attacking
+    pistolInterval: 0.24,
+    // s between shots while held
+    pistolDamage: 34,
+    pistolRecoil: 1,
+    // visual kick scale
+    pistolKnockback: 1.6,
+    // m/s impulse
+    aimAssist: 0.5,
+    // 0 = off, 1 = full (max 5 degrees bend)
+    magSize: 12,
+    testInfiniteHealth: true,
+    // testing feel, not difficulty (the user, 2026-10-15): hits still flinch, push and knock her down; her health does not drop
+    testInfiniteAmmo: true,
+    // testing: spare rounds never run out (magazines still empty and reload); false = Floor 3 counts them
+    headshotChance: 0.1,
+    // a clean centre-mass pistol hit sometimes takes the head off (one-shot kill)
+    reloadTime: 1.05,
+    swapTime: 0.3,
+    shotgunDamage: 16,
+    // per pellet (9 pellets), full power inside ~2 m, falling off to a third at 11 m
+    shotgunKnockback: 9,
+    // m/s push when every pellet lands at close range
+    shotgunInterval: 0.85,
+    // s between shots (the pump)
+    shotgunMag: 6,
+    shotgunReload: 1.9,
+    legStrikeChance: 0.13,
+    // a melee opener at a standing walker goes in low for its legs (core/player.js startSwing)
+    legShotChance: 0.5,
+    // a bullet in a walker's lower leg takes it off (core/zombies.js takeHit)
+    axeDamage: 62,
+    // first attack; the combo's later attacks hit harder (weapons.js AXE_ATTACKS)
+    axeKnockback: 5,
+    // m/s impulse
+    axeSpeed: 1,
+    // attack time scale (higher = faster)
+    axeKnockdown: 0.45,
+    // chance a non-lethal axe hit knocks the zombie flat (the chop: more)
+    fistDamage: 18,
+    // jab; the cross and kick hit harder (weapons.js FIST_ATTACKS)
+    fistKnockback: 4,
+    // m/s impulse (x the attack's knock factor)
+    hitPause: 0.07,
+    // s of slow motion on a gun hit (a headshot, a shotgun blast; 0 = off)
+    meleeHitPause: 0,
+    // s of slow motion on a melee hit: off (the user found it made melee feel choppy); 0.07 was the old value
+    shake: 1,
+    zombieSpeed: 1,
+    // m/s approach
+    zombieHp: 100,
+    zombieDamage: 12,
+    // the lunge
+    zombieEngage: 2,
+    // zombies allowed to close in and attack at once; the rest hold a step back and circle
+    zombieAttackGap: 0.75,
+    // s: after one zombie starts an attack, the next waits at least this long (attacks come in turns)
+    zombieWindup: 0.62,
+    // s: the lunge's wind-up (its telegraph: arms back, red wedge on the floor)
+    scratchWindup: 0.42,
+    // s: the scratch's quicker wind-up (used close in: under ~0.9 m)
+    scratchDamage: 8,
+    // (2026-10-18, the user: "she doesn't run fast enough... it doesn't look like she builds up speed and charges. you need a
+    // moment to set up where you want her to charge... like the butcher in diablo 3"): a longer wind-up in which she tracks
+    // Yola, her line fixed sprinterLock s before she goes (the moment to place her charge), then a run that starts slow and
+    // builds (sprinterAccel m/s2) to sprinterSpeed, far faster than Yola
+    sprinterWindup: 1.35,
+    // s: the big lady plants, roars and aims before a charge (the lane shows on the floor)
+    sprinterLock: 0.42,
+    // s: the end of her wind-up with her line fixed (no more tracking: she goes where she aimed)
+    sprinterSpeed: 7.5,
+    // m/s: her charge at full speed (Yola runs 3.3; 6.2 until 2026-10-18 night: "even faster")
+    sprinterAccel: 6.5,
+    // m/s2: how fast she builds up to it (a lumbering first step, then flying; 4.3 before)
+    sprinterTurn: 0.9,
+    // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
+    // executions (render/execution.js; 2026-10-18, the user: "use one of the already in game animations that is strong.. zoom the
+    // camera... slow motion.. make it feel epic"): time on the press, through the wind-up, the freeze on the hit, the hang
+    // after it; the camera's distance (x the game camera's), its angle down, how long it takes to get there (0: a hard cut)
+    execReach: 3.6,
+    // m: how far a press reaches for a zombie open to it
+    execSlowLock: 0.2,
+    // x time on the press (she lunges in at full speed regardless)
+    execSlowWind: 0.45,
+    // x time through her wind-up
+    execWindTime: 0.55,
+    // s (real): her wind-up, press to blow, the same for every weapon (her pace through it is set to fit)
+    execFreeze: 0.08,
+    // s (real) frozen on the hit
+    execHang: 0.55,
+    // s (real) after the hit, pieces flying (at 0.15x the burst barely opened: the shot was lost)
+    execSlowHang: 0.4,
+    // x time through the hang
+    execRelease: 0.3,
+    // s (real) back to full speed and the camera back
+    execCamDist: 0.42,
+    // x the game camera's distance
+    execCamPitch: 24,
+    // degrees down from horizontal
+    execCamPush: 0,
+    // s: 0 = a hard cut to the execution camera, more = a push-in over that time
+    execCamFov: 0.9,
+    // x the field of view (a little tighter: heavier)
+    execHeal: 5,
+    // health back for an execution
+    lookAhead: 1.3,
+    // camera look-ahead toward aim (m)
+    camPitch: 42,
+    // degrees down from horizontal (Zombieville USA 3D-like diorama view)
+    camYaw: 35,
+    // degrees the view is turned (positive: camera to the right, looking up-left)
+    camWidth: 7.2
+    // metres of floor across a portrait screen at the player
+  };
+
   // src/riglab/check.js
   var _q7 = new Quaternion();
   var _q23 = new Quaternion();
@@ -39481,6 +39618,20 @@ void main() {
       refMap: YOLA2_REF,
       libRef: { pistol_reload: "ual1_Pistol_Reload" },
       hero: true
+    },
+    // two possible new heroes, movement only for now (2026-10-20, tools/anim/hero_moves_build.py: the game's Mixamo gaits,
+    // Quaternius walks / jogs / sprint, Tripo's idle; no weapons). Arianna 3.0's download had every bone at the origin (its
+    // bind pose survived only in the skin, turned Z-up): put back by tools/anim/glb_fix_bind.mjs. Lilah keeps Tripo's own
+    // clips as t_*. Heights are first guesses for children (both files are 1 unit tall).
+    arianna: { label: "Arianna (test)", file: "assets/arianna.glb", height: 1.3, ref: "yola_", refMap: YOLA2_REF, hero: true },
+    lilah: {
+      label: "Lilah (test)",
+      file: "assets/lilah.glb",
+      height: 1.05,
+      ref: "yola_",
+      hero: true,
+      // (her t_* clips: no source rig)
+      refMap: { ...YOLA2_REF, ...Object.fromEntries(["afraid", "fall", "flee_01", "flee_02", "freaky", "frightened", "run", "scared_01", "scared_02", "sit", "walk", "wave_goodbye_01", "wave_goodbye_02"].map((n) => ["t_" + n, null])) }
     },
     nurse: { label: "Zombie nurse", file: "assets/zombie-nurse-mod.glb", height: 1.78, ref: "zombie_" },
     patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" },
@@ -40018,6 +40169,41 @@ void main() {
       applyMesh();
       refresh();
     }
+    if (S.gamePace) gamePace();
+  }
+  var paceCache = {};
+  function naturalSpeed() {
+    const key = S.char + "|" + main.clip.name;
+    if (key in paceCache) return paceCache[key];
+    const n = main.frames, rows = [], p = new Vector3(), q = new Vector3(), h = new Vector3();
+    for (let f = 1; f <= n; f++) {
+      main.setFrame(f);
+      main.root.updateMatrixWorld(true);
+      main.bones.Hips.getWorldPosition(h);
+      const r = {};
+      for (const s of ["Left", "Right"]) {
+        main.bones[s + "Foot"].getWorldPosition(p);
+        main.bones[s + "ToeBase"].getWorldPosition(q);
+        r[s] = [p.x - h.x, p.z - h.z, Math.min(p.y, q.y)];
+      }
+      rows.push(r);
+    }
+    const fps = fpsOf(main.clip), vel = [], tol = 0.02 * main.height / 1.62;
+    for (const s of ["Left", "Right"]) {
+      const minY = Math.min(...rows.map((r) => r[s][2]));
+      for (let i = 0; i < n - 1; i++) if (rows[i][s][2] < minY + tol && rows[i + 1][s][2] < minY + tol) vel.push(Math.hypot(rows[i + 1][s][0] - rows[i][s][0], rows[i + 1][s][1] - rows[i][s][1]) * fps);
+    }
+    vel.sort((a, b) => a - b);
+    refresh();
+    return paceCache[key] = { v: vel.length ? vel[vel.length >> 1] : 0, cycle: (n - 1) / fps };
+  }
+  function gamePace() {
+    const nm = main.clip.name, T = TUNING_DEFAULTS;
+    const dirK = /back|Bwd/i.test(nm) ? T.backpedalSpeed : /strafe|_L_Loop|_R_Loop|Jog_Left|Jog_Right/i.test(nm) ? T.strafeSpeed : 1;
+    const opt = $("speed").querySelector("option[value=game]"), hs = +(heroMoveSpeed(S.char, T.moveSpeed) * dirK).toFixed(2);
+    const { v, cycle } = naturalSpeed(), moving = v > 0.3;
+    S.speed = moving ? hs / v : 1;
+    opt.textContent = moving ? `game pace: ${hs} m/s = ${S.speed.toFixed(2)}x, ${(2 * S.speed / cycle).toFixed(1)} steps/s` : "game pace (not a moving clip: 1x)";
   }
   function layout() {
     const figs = figures();
@@ -41214,6 +41400,7 @@ void main() {
     return [
       ["Range of motion (every rig plays these)", take(ROM_NAMES)],
       ...MOVE_GROUPS.map(([g, l]) => [g, take(l)]),
+      ["Moving: the character's own clips (Tripo's walk, run, flee)", take(A.map((c) => c.name).filter((n) => /^t_(walk|run|flee)/.test(n)))],
       ["Stand and move (baked)", take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
       ["The game's moves (baked)", take(BODY_GAME.filter((n) => !have.get(n)?.userData?.live))],
       ["Whole Quaternius library (live, not baked)", take([...LIB_NAMES].sort())]
@@ -42262,7 +42449,9 @@ void main() {
     skelUI();
     $("inplace").onchange = () => setClip($("clip").value);
     $("speed").onchange = (e) => {
-      S.speed = +e.target.value;
+      S.gamePace = e.target.value === "game";
+      if (S.gamePace) gamePace();
+      else S.speed = +e.target.value;
     };
     $("toggleSide").onclick = () => $("side").classList.toggle("open");
     $("toggleClips").onclick = () => {
