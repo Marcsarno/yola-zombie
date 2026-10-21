@@ -173,7 +173,22 @@ def verges():
     sc['ch2_polish_verges'] = True
     print('verges: %d faces on driveways cut' % n)
 
-PARTS = dict(leftovers=leftovers, blockers=blockers, verges=verges)
+# Marc's front door: a dead planter stood half across the mouth of the doorway (0.4 m left for him, none for the infected's
+# routes): moved to the other side of the door, against the wall (its collider with it)
+def doorway():
+    if sc.get('ch2_polish_doorway'): print('doorway: done before'); return
+    import hoodlib
+    e = bpy.data.objects.get('by_planter_dead.005')
+    if e is None or abs(e.location.x - 36.6) > 0.3 or abs(-e.location.y - 39.24) > 0.3: print('doorway: the planter is not where it was'); return
+    e['polish_moved'] = list(e.location); e.location = (36.62, -37.2, e.location.z)
+    old = bpy.data.objects.get('COL_prop_' + e.name)
+    if old: bpy.data.objects.remove(old, do_unlink=True)
+    bpy.context.view_layer.update(); c = hoodlib.prop_collider(e)
+    if c is not None: c['ch2'] = 'ch2_polish'
+    sc['ch2_polish_doorway'] = True
+    print('doorway: the planter moved to (36.62, 37.2)')
+
+PARTS = dict(leftovers=leftovers, blockers=blockers, verges=verges, doorway=doorway)
 if __name__ == '__main__':
     args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     for p in (args or list(PARTS)): PARTS[p]()

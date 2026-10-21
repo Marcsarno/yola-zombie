@@ -44,6 +44,17 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
    Spawns now take the nearest spot (within 5 m) that has a way to him.
 13. [x] **The shotgun could be taken through the shed's east wall** from outside (reach 1.0 m): reach 0.8 m, only from inside.
 
+14b. [x] **A dead planter half across Marc's front door** (0.4 m left to pass, none for the infected's routes): moved to the
+   other side of the door (`ch2_polish.py doorway`).
+14c. [x] **Doorways lost in the routing grid**: the house's 0.97 m front door and the clubhouse's door were narrower than the
+   0.4 - 0.5 m routing cells allow, so the infected (and route-following) could not path through them. The house and clubhouse
+   stops route on 0.3 m cells (about 1 ms a refresh).
+14d. [x] **The guidance marker pointed back** at the end of Sophie's route once Marc had walked past it toward the objective:
+   it now points at the objective itself.
+14e. [x] **Sophie froze beside a sleeping infected** (every way out counted as running past it) and stayed in hiding while Marc
+   walked 10 m off: sleeping ones only count when she is right by them, the one beside her never blocks her way out, and when
+   Marc moves off in a fight she runs to keep with him. She leads and hides only within what the phone shows round Marc.
+
 ## P2: checked close up and kept
 
 14. [k] Marc's front door swings in against the wall, clear of the furniture and of James (`tour_001..008`).
@@ -82,10 +93,18 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
 
 ## Pass 3: replay house to boat
 
-27. [x] The bot plays the whole story through (every stop, complete). A driven replay (walking, shooting, prompts, the lines
-   played out, recorded per stop: `replay_*`, `replay2_*`, `replay3_*`) also reached the end. The test driver walks straight
-   lines: at four places it could not find the way (round a parked truck, onto the dock road, into the shed's door, the fuel
-   prompt's reach) and was placed by hand; each place is reachable in the game's own collision (the leak test).
+27. [x] **The route test**: one continuous run from the house to the boat (`full_*.webm`, about 15 minutes, every stop and
+   objective, COMPLETE), driven only with stick and button input: walking by the game's own routes, shooting what it sees,
+   pressing Use at prompts, letting every line and cinematic play. Nothing placed by hand. The driver was improved live during
+   the run (going after the last looter inside the clubhouse, reaching the fuel prompt from the shore); the clubhouse's finer
+   routing grid (14c) was applied to the running game when it was found. Sophie, the infected, every interaction and the
+   ending all ran; the bot also plays the story through after every change.
+27b. [x] **Sophie in play** (`sophie_all.webm`, the final code): she leads, Marc ignores her way to loot supplies, aims at
+   nothing, circles a parked car, backtracks, then takes her way again; with an awake infected about. No jumps seen, no snapped
+   turns, no left/right switching; off the phone's view only while Marc sprints away from her (she runs after him); the
+   infected never closer than 0.9 m (one chasing Marc ran past her). Also `sophie_gate` (stop, reverse, the gate single
+   file), `sophie_combat` (a fight), `sophie_lead`, `pete_key` (the key and the bargain). Matched before/after of the bargain
+   framing: `bargain_compare.png`.
 28. [x] Leak test: all nine stops sealed after every change. Performance (desktop, phone size, Medium): 31 awake infected at the
    horde, 5.3 ms simulation, 17.9 ms with the draw; the routing refresh 1.2 ms every 0.2 s.
 

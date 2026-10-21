@@ -107,6 +107,7 @@ export class HoodLevel {
     if (!R || (this.objective === 'dock' && this.open.has('dockroad'))) return null;   // (the way through opened: the spot itself)
     const end = R[R.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
     if (toEnd(p.x, p.z) < 4) return null;   // (there: the spot itself)
+    const gt = this.goalTarget(); if (gt && Math.hypot(gt.x - p.x, gt.z - p.z) < Math.hypot(gt.x - end[0], gt.z - end[1])) return null;   // (past the way's end, nearer the objective: the objective, never back)
     const q = R.find((pt) => toEnd(pt[0], pt[1]) < toEnd(p.x, p.z) - 1.5);
     return q ? { x: q[0], z: q[1] } : null;
   }

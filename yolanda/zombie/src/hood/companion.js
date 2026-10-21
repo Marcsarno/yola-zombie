@@ -25,7 +25,7 @@ export function threatsNear(sim, x, z, r) {
   for (const q of sim.zombies) {
     if (!q.alive) continue;
     const d = Math.hypot(q.x - x, q.z - z);
-    if (q.looter ? d < 17 : (!q.passive && d < r) || d < 5) out.push(q);
+    if (q.looter ? d < 17 : (!q.passive && d < r) || (!q.dormant && d < 5) || d < 2.5) out.push(q);   // (a sleeping one only when she is right by it)
   }
   return out;
 }
@@ -63,9 +63,14 @@ export function companionStep(a, dt, level, sim) {
   if (th.length) {
     let Tx = 0, Tz = 0; for (const q of th) { Tx += q.x; Tz += q.z; } Tx /= th.length; Tz /= th.length;
     const near = (x, z) => th.reduce((m, q) => Math.min(m, Math.hypot(q.x - x, q.z - z)), 1e9);
-    const okHere = near(a.x, a.z) > 4 && dm < 7 && (a.x - p.x) * (Tx - p.x) + (a.z - p.z) * (Tz - p.z) < 0 && Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) > 0.7;   // (already behind him, clear)
+    const okHere = near(a.x, a.z) > 4 && dm < 4.5 && !offScreen(a.x - p.x, a.z - p.z) && (a.x - p.x) * (Tx - p.x) + (a.z - p.z) * (Tz - p.z) < 0 && Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) > 0.7;   // (already behind him, clear)
+    // (he has moved on, away from her: she runs to keep with him, the way he went, rather than hide alone)
+    if (dm > 4.8 || offScreen(a.x - p.x, a.z - p.z)) {
+      c.state = 'safe'; c.safe = null; const t = w.lineOfSight(a.x, a.z, p.x, p.z, 0.6) ? { x: p.x - (p.x - a.x) / dm * 2.5, z: p.z - (p.z - a.z) / dm * 2.5 } : trailPoint(a, w);
+      return finish(a, c, dt, sim, t ? t.x : p.x, t ? t.z : p.z, 4.6, { x: p.x, z: p.z }, false);
+    }
     // (the walk there must not run through the fight: past an infected or through Marc)
-    const pathCost = (x, z) => { let k = 0; for (const q of th) if (segD(q.x, q.z, a.x, a.z, x, z) < 2) k += 6; if (segD(p.x, p.z, a.x, a.z, x, z) < 1.6) k += 5; return k; };
+    const pathCost = (x, z) => { let k = 0; for (const q of th) if (Math.hypot(q.x - a.x, q.z - a.z) > 2.2 && segD(q.x, q.z, a.x, a.z, x, z) < 2) k += 6; if (segD(p.x, p.z, a.x, a.z, x, z) < 1.6) k += 5; return k; };   // (not the one beside her: she can only get away from it)
     if (!c.safe || c.safeT <= 0 || near(c.safe.x, c.safe.z) < 2.4) {
       c.safeT = 0.9;
       const keep = c.safe && near(c.safe.x, c.safe.z) >= 2.4 ? { x: c.safe.x, z: c.safe.z, s: c.safe.s + 2 - pathCost(c.safe.x, c.safe.z) } : null;   // (no hopping between spots)
@@ -78,7 +83,7 @@ export function companionStep(a, dt, level, sim) {
         if (Math.abs(ang(t - fy)) < 0.6) s -= 3;                              // (his line of fire)
         if (crosses(a.x, a.z, x, z, p.x, p.z, Tx, Tz)) s -= 4;                 // (not across it)
         s -= pathCost(x, z);
-        s -= screenCost(x - p.x, z - p.z) * 0.6;                               // (on the screen)
+        s -= screenCost(x - p.x, z - p.z) * 2;                               // (on the screen)
         if (!best || s > best.s) best = { x, z, s };
       }
       // (cornered: nowhere to go without running through it: she stays down where she is)
@@ -115,7 +120,8 @@ export function companionStep(a, dt, level, sim) {
     else if (dm < 11) {
       const P = L.pts[L.i], dP = Math.hypot(P[0] - a.x, P[1] - a.z);
       c.state = 'lead';
-      if (dP > 0.45) { tx = P[0]; tz = P[1]; want = dm > 7 ? 1.0 : 1.6; face = null; }                      // (slower when he lags)
+      const edge = dm > 5.5 || offScreen(a.x - p.x, a.z - p.z);   // (no further than he can see her: she waits there, looking back)
+      if (dP > 0.45 && !edge) { tx = P[0]; tz = P[1]; want = 1.6; face = null; }                      // (slower when he lags)
       else if (dm < 4.5 && L.i < L.pts.length - 1) L.i++;                                                   // (he caught up: on)
       return finish(a, c, dt, sim, tx, tz, want, face, false);
     }

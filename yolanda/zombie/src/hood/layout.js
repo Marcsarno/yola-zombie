@@ -9,12 +9,12 @@ export const HOOD = { cols: null, marks: {} }; // filled by hood.js from assets/
 // inside it); the whole map stays drawn and collidable.
 export const STAGES = {
   free: { bounds: { minX: -66, maxX: 106, minZ: -126, maxZ: 92 }, cell: 0.6 }, // (?hood=free: walk the whole map, no story)
-  home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+  home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 }, cell: 0.3 },   // (0.3: the house's 0.97 m front door stays open to routes)
   // (the polish brief's replay: the other stops had no navigation of their own, so past the house the infected only came
   // at Marc when they could see him within 7 m; each stop now routes them over its own area: level.js navFor)
-  help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+  help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 }, cell: 0.3 },
   gate: { bounds: { minX: -12, maxX: 42, minZ: -45, maxZ: 30 }, cell: 0.5 },
-  club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.5 },
+  club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.3 },   // (0.3: the clubhouse's doors stay open to routes)
   pete: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
   dock: { bounds: { minX: -35, maxX: 95, minZ: -100, maxZ: -50 }, cell: 0.5 },
   shed: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: 12 }, cell: 0.65 },  // (with the playground: its horde runs at the engine, level.js stopShed)
