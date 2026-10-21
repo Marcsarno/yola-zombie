@@ -15,7 +15,7 @@ import { Actors } from './actors.js';
 import { runBot } from './bot.js';
 import { Hint } from './hint.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { characterLight, setCharacterFill } from './charlight.js';
+import { characterLight, setCharacterFill, setRim, updateRim } from './charlight.js';
 
 const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0); return Math.abs(dx * c - dz * s) < r.hx + m && Math.abs(dx * s + dz * c) < r.hz + m; };
 
@@ -147,7 +147,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   }
   return window.hood = {
     view, subs, actors, get level() { return level; }, onRestart: hook, attach, bot: runBot, CUT,
-    charLight: setCharacterFill, // (the characters' share of the sky light: hood/charlight.js)
+    charLight: setCharacterFill, rim: setRim, // (the characters' share of the sky light and their rim light: hood/charlight.js)
     // test hook (2026-10-20, the user's texture comparison): character files stood side by side, all on one clip at the same
     // time, facing +z; fill(true) adds a soft studio-like light from +z (it lights the ground too: for comparing only)
     lineup: { list: [], light: null,
@@ -184,6 +184,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
       hint.update(camera, level, sim, dt);
       // standing on the dock: Yola (and her weapons, which live in the scene), the zombies' views, lifted onto the deck
       const g = window.game, y = g?.yola;
+      updateRim(camera, SUN_FROM);
       // the characters' own light (hood/charlight.js): Marc once, each zombie view the first time it shows
       if (y?.model && !y.charLit) { y.charLit = true; characterLight(y.model); }
       if (g?.zviews) for (const v of g.zviews.values()) if (!v.charLit && v.model) { v.charLit = true; characterLight(v.model); }
