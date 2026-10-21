@@ -7,6 +7,7 @@
 // simulation's zombie list (so the player's swings and shots hit, cut and kill them as the game already does) that stand
 // in cover, aim with a red sight line (the old build's readable tell) and fire at Marc.
 import * as THREE from 'three';
+import { companionStep } from './companion.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { PISTOL_CORE_SCALE } from '../render/weaponModels.js';
 import { characterLight } from './charlight.js';
@@ -261,9 +262,9 @@ export class Actors {
   }
 
   // Sophie (the user's B03 - B12): unarmed and scared, she never fights and takes no harm (her death is the story's). The
-  // story sets her mode: 'scared' (crouched where she is, facing Marc), 'follow' (3.3 m behind him along the way he walked;
-  // she crouches when they come near unless he gets away from her), 'goto' (to a.target, then a.after), 'pose' (a.pose,
-  // facing a.face), 'dead'. She walks, jogs or sprints as the gap asks.
+  // story sets her mode: 'scared' (crouched where she is, facing Marc), 'follow' (the companion: companion.js, with a.lead
+  // when she shows the way), 'goto' (to a.target, then a.after), 'pose' (a.pose, facing a.face), 'dead'. She walks, jogs or
+  // sprints as the gap asks.
   sophie(at) {
     const body = this.storyBody('sophie'), obj = body ? body.obj : marker(0xe8c060);
     obj.position.set(at.x, 0, at.z); obj.rotation.y = at.yaw || 0; this.group.add(obj);
@@ -280,23 +281,17 @@ export class Actors {
     const tl = a.trail, last = tl[tl.length - 1];
     if (!last || Math.hypot(p.x - last.x, p.z - last.z) > 0.45) { tl.push({ x: p.x, z: p.z }); if (tl.length > 80) tl.shift(); }
     let tx = a.x, tz = a.z, want = 0, face = null;
-    // (out of his sight, far behind or far from where she is sent: she catches up unseen, beside the way he came, so a wall
-    // between never strands her; the camera shows ~10 m round him)
-    const dm0 = Math.hypot(p.x - a.x, p.z - a.z), dest = a.mode === 'goto' && a.target ? a.target : a.mode === 'follow' ? p : null;
-    if (dest && dm0 > 16 && Math.hypot(dest.x - a.x, dest.z - a.z) > 12) {
-      const back = tl.length > 8 ? tl[tl.length - 8] : null, q = a.mode === 'goto' ? { x: dest.x, z: dest.z } : back ? { x: back.x, z: back.z } : null;
-      if (q && Math.hypot(q.x - p.x, q.z - p.z) > (a.mode === 'goto' ? 0 : 3)) { sim.world.resolveCircle(q, 0.3); a.x = q.x; a.z = q.z; a.speed = 0; }
+    // (sent somewhere far while out of his sight: she is there, unseen; the camera shows ~10 m round him)
+    const dm0 = Math.hypot(p.x - a.x, p.z - a.z);
+    if (a.mode === 'goto' && a.target && dm0 > 16 && Math.hypot(a.target.x - a.x, a.target.z - a.z) > 12 && Math.hypot(a.target.x - p.x, a.target.z - p.z) > 14) {
+      const q = { x: a.target.x, z: a.target.z }; sim.world.resolveCircle(q, 0.3); a.x = q.x; a.z = q.z; a.speed = 0;
     }
-    const near = (x, z, r) => sim.zombies.some((q) => q.alive && !q.looter && Math.hypot(q.x - x, q.z - z) < r);
+    if (a.mode !== 'follow') a.cower = Math.max(0, a.cower - dt * 2);   // (a fight's cowering does not carry into the story's scenes)
     if (a.mode === 'follow') {
-      // the point a.gap back along the trail from Marc
-      let need = a.gap, px = p.x, pz = p.z, found = null;
-      for (let i = tl.length - 1; i >= 0; i--) { const d = Math.hypot(tl[i].x - px, tl[i].z - pz); if (d >= need) { const k = need / d; found = { x: px + (tl[i].x - px) * k, z: pz + (tl[i].z - pz) * k }; break; } need -= d; px = tl[i].x; pz = tl[i].z; }
-      const dm = Math.hypot(p.x - a.x, p.z - a.z);
-      a.cower = (near(a.x, a.z, 6) || near(p.x, p.z, 5)) && dm < 9 ? Math.min(1.5, a.cower + dt) : Math.max(0, a.cower - dt);
-      if (found && a.cower <= 0.4) { tx = found.x; tz = found.z; const d = Math.hypot(tx - a.x, tz - a.z); want = d > 6 ? 5.2 : d > 2.2 ? 3.1 : d > 0.35 ? 1.4 : 0; }
-      if (dm < 1.4) { want = 0; } // (never in his way)
-      face = { x: p.x, z: p.z };
+      companionStep(a, dt, level, sim);
+      a.obj.position.set(a.x, groundY(a.x, a.z), a.z); a.obj.rotation.y = a.yaw;
+      if (b) this.sophieMoves(a, b);
+      return;
     } else if (a.mode === 'goto' && a.target) {
       tx = a.target.x; tz = a.target.z; const d = Math.hypot(tx - a.x, tz - a.z);
       want = d > 0.3 ? (a.target.run ? 4.6 : 1.5) : 0;
@@ -304,19 +299,23 @@ export class Actors {
     } else face = a.face || { x: p.x, z: p.z };
     // move (the world's collision; slow down into the stop)
     a.speed += (want - a.speed) * Math.min(1, dt * 6);
-    if (a.speed > 0.05) {
+    const d0 = Math.hypot(tx - a.x, tz - a.z);
+    if (a.speed > 0.05 && d0 > 0.05) {   // (arrived: no turning toward an empty direction while she slows; the face below)
       const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz) || 1, st = Math.min(d, a.speed * dt);
       const q = { x: a.x + (dx / d) * st, z: a.z + (dz / d) * st }; sim.world.resolveCircle(q, 0.28);
       a.x = q.x; a.z = q.z;
       const y = Math.atan2(dx, dz); a.yaw += Math.atan2(Math.sin(y - a.yaw), Math.cos(y - a.yaw)) * Math.min(1, dt * 8);
     } else if (face) { const y = Math.atan2(face.x - a.x, face.z - a.z); a.yaw += Math.atan2(Math.sin(y - a.yaw), Math.cos(y - a.yaw)) * Math.min(1, dt * 4); }
     a.obj.position.set(a.x, groundY(a.x, a.z), a.z); a.obj.rotation.y = a.yaw;
-    if (!b) return;
+    if (b) this.sophieMoves(a, b);
+  }
+  // her moves, matched to her speed (the walk's rate to the ground she covers: no sliding feet)
+  sophieMoves(a, b) {
     const v = a.speed;
     if (a.mode === 'pose' && a.pose) b.play(a.pose);
     else if (v > 3.8) b.play('hood_Sprint_Loop', { rate: v / 5.2 });
     else if (v > 1.9) b.play('hood_Jog_Fwd_Loop', { rate: v / 3.1 });
-    else if (v > 0.25) b.play('hood_Walk_Loop', { rate: Math.max(0.6, v / 1.4) });
+    else if (v > 0.3) b.play('hood_Walk_Loop', { rate: Math.max(0.35, v / 1.4) });
     else if (a.mode === 'scared' || a.cower > 0.4) b.play('hood_Crouch_Idle_Loop', { fade: 0.35 });
     else b.play(a.idle || 'hood_Idle_Loop', { fade: 0.35 });
   }

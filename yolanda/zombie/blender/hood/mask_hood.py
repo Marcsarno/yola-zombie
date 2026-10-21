@@ -65,6 +65,9 @@ pave = render('pave', lambda o: (in_coll(o, 'GROUND') or in_coll(o, 'NEW')) and 
 water = render('water', lambda o: o.name.startswith('lake'), clip=(-2.0, 0.5)) if os.environ.get('MASK_WATER') != 'terrain' else         render('water', lambda o: o.name == 'terrain', clip=(-5.0, -0.36))
 walls = render('walls', lambda o: in_coll(o, 'PLACED') and not os.path.basename(o.get('src', '')).startswith(('nbt_', 'palm_', 'shrub', 'yard', 'curb_', 'hood_play_pad', 'tennis', 'volleyball', 'pool_deck', 'debris')), clip=(0.08, 0.7))
 trees = render('trees', lambda o: in_coll(o, 'PLACED') and os.path.basename(o.get('src', '')).startswith(('nbt_', 'palm_')), clip=(1.0, 40.0))
+# the models' own floors near the ground (a garage's concrete, a porch, the courts, the pool deck, the playground's pad): no
+# grass on them (the polish brief: tufts were growing on the neighbour's garage floor and the clubhouse porch)
+floors = render('floors', lambda o: in_coll(o, 'PLACED') and not os.path.basename(o.get('src', '')).startswith(('nbt_', 'palm_', 'shrub', 'yard', 'debris', 'nb_frond')), clip=(-0.05, 0.2))
 
 def blur(a, r):
     """a box blur of radius r pixels (twice: close to a soft bell), by cumulative sums"""
@@ -101,6 +104,6 @@ depth = ss(0.5, 0.97, wb + (N - 0.5) * 0.18) * water   # (ragged, so the straigh
 
 img = np.stack([dirt, litter, dry, np.ones_like(dirt)], axis=-1)[::-1]          # (back to image rows from the bottom)
 out = bpy.data.images.new('hood_splat', W, H, alpha=True); out.pixels[:] = np.clip(img, 0, 1).ravel(); out.filepath_raw = OUT; out.file_format = 'PNG'; out.save()
-keep = np.stack([pave, np.where(water > 0.5, depth, walls), shore, np.ones_like(pave)], axis=-1)[::-1]
+keep = np.stack([np.maximum(pave, floors), np.where(water > 0.5, depth, walls), shore, np.ones_like(pave)], axis=-1)[::-1]
 out2 = bpy.data.images.new('hood_paths', W, H, alpha=True); out2.pixels[:] = keep.ravel(); out2.filepath_raw = OUT_MASK; out2.file_format = 'PNG'; out2.save()
 print('saved', OUT, OUT_MASK, W, H)

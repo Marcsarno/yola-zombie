@@ -113,6 +113,21 @@ export class HoodWorld extends World {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (this.blockedAt(minX + (i + 0.5) * cell, minZ + (j + 0.5) * cell, inflate)) blocked[j * w + i] = 1;
     this.nav = { cell, w, h, blocked, dist: new Float32Array(w * h), queue: new Int32Array(w * h * 4), goal: -1, inflate };
   }
+  // a rally point: the infected with no way to Marc (a shut gate between) head for it instead of standing still (the polish
+  // brief's replay: the playground's horde "runs at the noise" of the engine, but the dock gate is shut until the next scene,
+  // so they stood). A second distance field over the same grid, toward the point; rallyAt(null) clears it.
+  rallyAt(x, z) {
+    const n = this.nav; this.rally = null; if (!n || x == null) return;
+    n.rdist ??= new Float32Array(n.w * n.h);
+    const keep = n.dist, goal = n.goal; n.dist = n.rdist; super.updateFlow(x, z); n.dist = keep; n.goal = goal;
+    this.rally = { x, z };
+  }
+  flowDir(x, z, out) {
+    const rem = super.flowDir(x, z, out);
+    if (rem < 1e7 || !this.rally || !this.nav?.rdist) return rem;   // (a new stop's grid has none: no rally)
+    const n = this.nav, keep = n.dist; n.dist = n.rdist; const r2 = super.flowDir(x, z, out); n.dist = keep;
+    return r2 < 1e7 ? 5e6 : r2;
+  }
   setOff(s, off) {
     if (!s || !!s.off === !!off) return;
     s.off = !!off;

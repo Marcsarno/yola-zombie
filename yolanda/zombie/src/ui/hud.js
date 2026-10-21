@@ -66,8 +66,8 @@ export class Hud {
       sfxMode.addEventListener('click', () => { audio.setModern(!audio.modern); store.set('sfxModern', audio.modern); syncMode(); });
       syncMode();
     }
-    for (const [id, key, def] of [['goreChk', 'gore', true], ['shakeChk', 'shake', true], ['debugChk', 'debug', false]]) {
-      const el = $(id); el.checked = id === 'debugChk' ? new URLSearchParams(location.search).get('debug') === '1' : store.get(key, def);
+    for (const [id, key, def] of [['goreChk', 'gore', true], ['shakeChk', 'shake', true], ['guideChk', 'guide', false], ['debugChk', 'debug', false]]) {
+      const el = $(id); if (!el) continue; el.checked = id === 'debugChk' ? new URLSearchParams(location.search).get('debug') === '1' : store.get(key, def);
       el.addEventListener('change', () => this.act(key, el.checked));
     }
     $('qualitySel').value = store.get('quality', 'auto');

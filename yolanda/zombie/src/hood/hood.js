@@ -238,7 +238,6 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
       if (cine.active && level) for (const n of level.npcs) if (n.subject && n.step) n.step(dt * cine.subjectRate, level);
       view.update(dt, sim); window.hood?.lineup.update(dt); grass?.update(dt, px, pz);
       if (onCall && sim && Math.hypot(sim.player.vx || 0, sim.player.vz || 0) > 0.6) callUp(false);
-      view.radioUpdate(window.game?.yola, sim);
       hint.update(camera, level, sim, dt);
       // standing on the dock: Yola (and her weapons, which live in the scene), the zombies' views, lifted onto the deck
       const g = window.game, y = g?.yola;
@@ -247,6 +246,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
       if (y?.model && !y.charLit) { y.charLit = true; characterLight(y.model); }
       if (g?.zviews) for (const v of g.zviews.values()) if (!v.charLit && v.model) { v.charLit = true; characterLight(v.model); }
       if (y?.outer) { const dy = level?.boating ? 0.32 : groundY(y.outer.position.x, y.outer.position.z); if (dy) { for (const o of [y.outer, y.blob, y.pistol, y.shotgun, y.melee, y.shell, y.test?.obj, y.batLib?.obj, y.axeLib?.obj]) if (o) { o.position.y += dy; o.updateMatrixWorld(true); } } }
+      view.radioUpdate(y, sim); // (after the lift onto a step or the deck: the radio and the case go with his hands; the polish brief: 18 cm low on the front step)
       // (only the living: their view sets its height every frame; a corpse's is left as it is, a lift would pile up)
       if (g?.zviews && sim) for (const [id, v] of g.zviews) { const o = v.outer; if (!o?.visible) continue; const dy = groundY(o.position.x, o.position.z); if (!dy) continue; const z = sim.zombies.find((q) => q.id === id); if (!z || z.state === 'dead' || z.state === 'dying') continue; o.position.y += dy; if (v.blob) v.blob.position.y = 0.012 + dy; o.updateMatrixWorld(true); }
       for (const a of actors.list) if (a.kind === 'looter' && a.z.alive) { a.obj.position.set(a.z.x, groundY(a.z.x, a.z.z), a.z.z); }

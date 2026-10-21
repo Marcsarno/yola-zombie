@@ -16,11 +16,12 @@ const types = {
 
 http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-  // test-evidence capture: POST /__shot/<name>.png (localhost only) -> zombie/shots/<name>.png
+  // test-evidence capture: POST /__shot/<name>.png (localhost only) -> zombie/shots/<name>.png (also .json, .txt; .webm: a
+  // clip recorded from the canvas, the polish brief's "show gameplay clips")
   if (req.method === 'POST' && p.startsWith('/__shot/')) {
     const ra = req.socket.remoteAddress || '';
     const name = p.slice(8).replace(/[^a-z0-9._-]/gi, '_');
-    if (!/^(::1|127\.|::ffff:127\.)/.test(ra) || !/\.(png|json|txt)$/.test(name)) { res.writeHead(403); return res.end(); }
+    if (!/^(::1|127\.|::ffff:127\.)/.test(ra) || !/\.(png|json|txt|webm)$/.test(name)) { res.writeHead(403); return res.end(); }
     const dir = path.join(root, 'zombie', 'shots');
     fs.mkdirSync(dir, { recursive: true });
     const chunks = [];

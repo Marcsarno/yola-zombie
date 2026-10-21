@@ -73,6 +73,7 @@ export class Cine {
   frame(s) {
     const look = typeof s.look === 'function' ? s.look() : s.look;
     _l.set(look[0], look[1], look[2]);
+    this.focus = { x: look[0], z: look[2] };   // (what the shot looks at: main.js draws the far infected there too)
     const f = typeof s.from === 'function' ? s.from() : s.from;
     if (Array.isArray(f)) _p.set(f[0], f[1], f[2]);
     else {

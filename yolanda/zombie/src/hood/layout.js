@@ -10,6 +10,16 @@ export const HOOD = { cols: null, marks: {} }; // filled by hood.js from assets/
 export const STAGES = {
   free: { bounds: { minX: -66, maxX: 106, minZ: -126, maxZ: 92 }, cell: 0.6 }, // (?hood=free: walk the whole map, no story)
   home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+  // (the polish brief's replay: the other stops had no navigation of their own, so past the house the infected only came
+  // at Marc when they could see him within 7 m; each stop now routes them over its own area: level.js navFor)
+  help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+  gate: { bounds: { minX: -12, maxX: 42, minZ: -45, maxZ: 30 }, cell: 0.5 },
+  club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.5 },
+  pete: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
+  dock: { bounds: { minX: -35, maxX: 95, minZ: -100, maxZ: -50 }, cell: 0.5 },
+  shed: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: 12 }, cell: 0.65 },  // (with the playground: its horde runs at the engine, level.js stopShed)
+  horde: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: -40 }, cell: 0.5 },  // (the horde is brought to the dock gate: no playground)
+  leave: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: -40 }, cell: 0.5 },
   // (?hood=grammy: Chapter 4's peninsula, blender/grammy/: walk it, no story yet)
   grammy: { bounds: { minX: -132, maxX: 168, minZ: -248, maxZ: 78 }, cell: 0.8, cam: { minX: -150, maxX: 185, minZ: -262, maxZ: 92 } },
 };

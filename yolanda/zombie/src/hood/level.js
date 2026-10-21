@@ -13,7 +13,7 @@
 //   horde   the horde reaches the boat first (Sophie); the shotgun
 //   leave   the fuel, the boat, Yola on the radio
 // Its cinematic moments (src/hood/cine.js, the user: "everything around you should kind of stop") hold the world.
-import { HOOD } from './layout.js';
+import { HOOD, STAGES } from './layout.js';
 import { GOALS, LINES } from './script.js';
 import { ZONES } from './zones.js';
 import { SHOTGUN, SHOTGUN_SPEC, PISTOL } from '../core/weapons.js';
@@ -39,6 +39,16 @@ export const SUPPLIES = {
   pete: [['ammo_r', 63.2, -72.2, 'rifle'], ['med', 48.0, -76.5], ['ammo_p', 72.5, -66.0, 'pistol']],
   dock: [['med', -19.5, -75.0]],
   horde: [['ammo_s', -12.5, -96.5, 'shotgun'], ['med', -4.5, -93.0], ['ammo_s', -21.0, -88.0, 'shotgun']],
+};
+// the ways Sophie knows (what the dialogue gives her: the barricade, the gate, the garage with the light on, the clubhouse,
+// the dock road), as route points; she leads along them a few metres at a time (companion.js), never past the last, which
+// stops short of what happens there. The guidance marker (hint.js) shows the next of them too.
+export const ROUTES = {
+  follow: [[44, 4.5], [38.5, 3.2], [32.4, 0.6]],                    // her garage -> the barricade on the curve
+  gate: [[26.8, -1.2], [23.8, -8], [20.8, -12.2]],                  // the barricade -> the chained gate
+  cutters: [[14.5, -10], [9.5, -7]],                                // -> toward the garage with the light on (short of it)
+  clubhouse: [[18.5, -20], [15.5, -26], [14.2, -30.5]],             // the gate -> the clubhouse's front (short of the warning)
+  dock: [[30.5, -61], [30.5, -69], [30.2, -77.5]],                  // Pete's drive -> the dock road's gate (short of its chain)
 };
 const SAVE_KEY = 'zc.hoodsave2';
 export const loadSave = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || null; } catch { return null; } };
@@ -90,7 +100,22 @@ export class HoodLevel {
     if (this.objective === 'fuel' && typeof this.flags.gas === 'object') return this.flags.gas;
     return T ? this.at(T) : null;
   }
+  // the next step toward the objective (the guidance marker): the next point of the way Sophie knows that Marc has not yet
+  // passed, else the objective's own spot
+  nextStep() {
+    const R = ROUTES[this.objective === 'follow' && this.stop === 'gate' ? 'gate' : this.objective], p = this.sim.player;
+    if (!R || (this.objective === 'dock' && this.open.has('dockroad'))) return null;   // (the way through opened: the spot itself)
+    const end = R[R.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
+    if (toEnd(p.x, p.z) < 4) return null;   // (there: the spot itself)
+    const q = R.find((pt) => toEnd(pt[0], pt[1]) < toEnd(p.x, p.z) - 1.5);
+    return q ? { x: q[0], z: q[1] } : null;
+  }
   say(...ids) { for (const id of ids) this.api.subs.say(id); }
+  // the infected's routes over this stop's area (layout.js STAGES): rebuilt as the stop starts (a few ms)
+  navFor(stop) {
+    const st = STAGES[stop], w = this.sim.world, p = this.sim.player; if (!st || w.bounds === st.bounds) return;
+    w.bounds = st.bounds; w.buildNav(st.cell || 0.4, 0.3); w.updateFlow(p.x, p.z);
+  }
   checkpoint(stop) {
     this.stop = stop; const p = this.sim.player;
     writeSave({ v: 2, stop, flags: this.flags, open: [...this.open], taken: [...this.taken], pistolMag: p.mags[PISTOL], pistolRes: p.reserve[PISTOL], gunMag: p.mags[SHOTGUN], gunRes: p.reserve[SHOTGUN] });
@@ -194,7 +219,14 @@ export class HoodLevel {
       if (alt && Math.hypot(alt.x - p.x, alt.z - p.z) > Math.hypot(m.x - p.x, m.z - p.z)) m = alt;
     }
     const j = () => (this.sim.rand() - 0.5) * (opts.spread ?? 1.6);
-    const x = m.x + j(), z = m.z + j();
+    let x = m.x + j(), z = m.z + j();
+    // (the polish brief's replay: a wave's mark by the yard fence put them on the far side of the boundary, where no route
+    // reaches Marc, and the stop waited on them for two minutes): a spot with a way to him, the nearest within 5 m
+    if (!opts.near) { const w = this.sim.world, o = {}; if (w.blockedAt(x, z, 0.4) || w.flowDir(x, z, o) > 1e7) {
+      let best = null;
+      for (let r = 0.75; r <= 5 && !best; r += 0.75) for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2, qx = m.x + Math.cos(a) * r, qz = m.z + Math.sin(a) * r; if (!w.blockedAt(qx, qz, 0.4) && w.flowDir(qx, qz, o) < 1e7) { best = [qx, qz]; break; } }
+      if (best) [x, z] = best;
+    } }
     const zb = this.sim.spawnZombie(null, { x, z, yaw: opts.yaw ?? Math.atan2(p.x - x, p.z - z), kind: opts.kind });
     if (opts.dormant) { zb.passive = true; zb.dormant = { wake: Infinity, sense: opts.dormant, speedMul: zb.speedMul }; zb.speedMul = 0; }
     zb.hoodWave = opts.wave || null;
@@ -235,6 +267,24 @@ export class HoodLevel {
   linesDone() { return () => !this.api.subs.busy; }
   // Marc's own spot and framing for the shots
   P(y = 1.3) { const p = this.sim.player; return [p.x, y, p.z]; }
+  // a two-shot for a portrait screen (the polish brief's replay: a side-on two-shot of two people 2 m apart leaves both at the
+  // edges of a phone's narrow frame): over one's shoulder at the other, both in the frame one behind the other; over Marc's
+  // shoulder unless a wall is behind him, then over hers. Fixed as the shot starts (a held framing).
+  twoShot(other) {
+    let f = null;
+    const make = () => {
+      const p = this.sim.player, q = typeof other === 'function' ? other() : other, w = this.sim.world;
+      for (const [a, b] of [[p, q], [q, p]]) {
+        const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
+        const cx = a.x + ux * 2.3 - uz * 0.55, cz = a.z + uz * 2.3 + ux * 0.55;
+        if (!w.blockedAt(cx, cz, 0.25) && w.lineOfSight(cx, cz, b.x, b.z, 1.6)) return { from: [cx, 1.75, cz], look: [b.x + ux * 0.4, 1.3, b.z + uz * 0.4] };
+      }
+      return { from: [(p.x + q.x) / 2 + 3.2, 3.2, (p.z + q.z) / 2 + 4.6], look: [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2] };
+    };
+    // (and the two turned to each other: Marc keeps whatever way he last aimed otherwise)
+    const face = () => { const p = this.sim.player, q = typeof other === 'function' ? other() : other; p.aimYaw = p.aimTarget = Math.atan2(q.x - p.x, q.z - p.z); };
+    return { from: () => (face(), (f ??= make()).from), look: () => (f ??= make()).look };
+  }
 
   // ---------------------------------------------------------------- supplies (polish pass 2: never stuck for rounds)
   addSupplies(stop) {
@@ -266,7 +316,9 @@ export class HoodLevel {
     if (this.sophie && mode) this.sophie.mode = mode;
     return this.sophie;
   }
-  sophieTo(x, z, run = false, after = 'idle') { const s = this.sophie; if (!s) return; s.target = { x, z, run }; s.after = after; s.mode = 'goto'; }
+  sophieTo(x, z, run = false, after = 'idle') { const s = this.sophie; if (!s) return; s.lead = null; s.target = { x, z, run }; s.after = after; s.mode = 'goto'; }
+  // she shows the way: ahead along a route she knows, waiting for him (companion.js); following again at its end
+  sophieLead(pts) { const s = this.sophie; if (!s || !pts) return; s.lead = { pts, i: 0, done: false }; s.mode = 'follow'; }
   // before a two-shot: she comes to stand by him (up to 6 s)
   *meet(r = 2.2) {
     const s = this.sophie, p = this.sim.player; if (!s) return;
@@ -283,10 +335,11 @@ export class HoodLevel {
     const stops = { home: this.stopHome, help: this.stopHelp, gate: this.stopGate, club: this.stopClub, pete: this.stopPete, dock: this.stopDock,
       shed: this.stopShed, horde: this.stopHorde, leave: this.stopLeave };
     // (a checkpoint after Sophie joins: she is with him again)
-    if (from >= STOP_ORDER.indexOf('gate') && from <= STOP_ORDER.indexOf('pete')) { const p = this.sim.player; this.ensureSophie({ x: p.x + 1.5, z: p.z + 2.5, yaw: p.aimYaw }, 'follow'); }
+    if (from >= STOP_ORDER.indexOf('gate') && from <= STOP_ORDER.indexOf('dock')) { const p = this.sim.player, q = { x: p.x + 1.5, z: p.z + 2.5 }; this.sim.world.resolveCircle(q, 0.35); this.ensureSophie({ ...q, yaw: p.aimYaw }, 'follow'); } // (and from the dock: beside him, not on top of him)
     if (from >= STOP_ORDER.indexOf('shed') && from <= STOP_ORDER.indexOf('shed')) { const b = this.at('boat'); this.ensureSophie({ x: b.x + 3.2, z: b.z + 0.6, yaw: -Math.PI / 2 }, 'idle'); }
     for (let i = Math.max(0, from); i < STOP_ORDER.length; i++) {
       const id = STOP_ORDER[i];
+      this.navFor(id);
       this.checkpoint(id);
       this.api.onStop?.(id);
       this.addSupplies(id);
@@ -302,9 +355,11 @@ export class HoodLevel {
     const call = ['Y01', 'M01', 'Y02', 'Y03', 'M02', 'Y04', 'M03', 'Y05', 'M04', 'Y06', 'M05'];
     this.prefetch(...call, 'J01', 'J02', 'M06', 'S01', 'S02');
     yield* this.wait(1.4);
-    // B01 (the call at the door): close on Marc at his door, the radio card up; nothing moves out here
+    // B01 (the call at the door): close on Marc at his door, the radio card up; nothing moves out here. (The polish brief: the
+    // old framing held on his back for the whole call; now three-quarters from his right, his face and the radio at his ear.)
     this.say(...call);
-    yield* this.shot([{ look: () => this.P(1.35), from: { yaw: 35, pitch: 18, dist: 4.2 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.8 });
+    const yw = p.aimYaw, fx = Math.sin(yw), fz = Math.cos(yw), rx = -Math.cos(yw), rz = Math.sin(yw);
+    yield* this.shot([{ look: () => [p.x + fx * 0.25, 1.5, p.z + fz * 0.25], from: () => [p.x + fx * 0.6 + rx * 2.5, 1.8, p.z + fz * 0.6 + rz * 2.5], fov: 44, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.8 });
     // B02: in through the front door; James at the dining table, headphones on, his back to the door
     this.setGoal('vaccines');
     const j = this.api.actors?.james(this, this.at('james')); if (j) this.npcs.push(j);
@@ -344,13 +399,18 @@ export class HoodLevel {
     yield* this.use('fridge', 'fridge_use', 'Open the fridge', 1.4);
     const fu = this.at('fridge_use');
     p.x = p.px = fu.x; p.z = p.pz = fu.z; p.aimYaw = p.aimTarget = fu.yaw;
+    // (the polish brief: the bat put away for it, his hand to the door as it swings open from its hinge; the shots from inside
+    // the kitchen, never through Marc or a wall: the old ones framed his back, then the empty floor)
+    const gunWas = p.desired; p.desired = 'fists';
+    yield* this.wait(0.4);   // (the bat onto his back first)
     this.api.hero?.script('hood_Interact');
     yield* this.shot([
-      { look: [fc.x - 0.1, fc.y, fc.z], from: [fc.x + 1.9, fc.y + 0.55, fc.z - 1.0], fov: 38, slow: 1, hold: 0.6, fn: () => cine.after(0.35, () => this.openSeal('fridge')) },
-      { look: [fc.x, fc.y + 0.05, fc.z], from: [fc.x + 0.95, fc.y + 0.4, fc.z - 0.35], fov: 34, slow: 1, hold: 1.4, move: 1.2 },
-      { look: [fc.x, fc.y, fc.z], from: [fc.x + 0.95, fc.y + 0.4, fc.z - 0.35], fov: 34, slow: 1, hold: 0.5, fn: () => { this.flags.case = 'carried'; this.api.view.showCase?.('carried'); this.say('M06'); } },
-      { look: () => this.P(1.2), from: { yaw: 35, pitch: 28, dist: 4.5 }, fov: 42, slow: 1, hold: 0.6, until: this.linesDone(), max: 4 },
+      { look: [fu.x - 0.45, 1.15, fu.z + 0.02], from: [fu.x + 1.75, 1.7, fu.z - 1.55], fov: 44, slow: 1, hold: 1.3, fn: () => cine.after(0.45, () => this.openSeal('fridge')) },
+      { look: [fc.x, fc.y, fc.z], from: [fu.x + 0.8, 1.55, fu.z - 0.98], fov: 38, slow: 1, hold: 1.3 },
+      { look: [fc.x, fc.y, fc.z], from: [fu.x + 0.8, 1.55, fu.z - 0.98], fov: 38, slow: 1, hold: 0.5, fn: () => { this.flags.case = 'carried'; this.api.view.showCase?.('carried'); this.say('M06'); } },
+      { look: () => this.P(1.25), from: [fu.x - 0.1, 1.7, fu.z - 2.4], fov: 42, slow: 1, hold: 0.6, until: this.linesDone(), max: 4 },
     ], { back: 0.6 });
+    p.desired = gunWas;
     this.setGoal('out');
     yield* this.until(() => p.x > 36.6);
   }
@@ -379,15 +439,14 @@ export class HoodLevel {
     // the bargain: the two of them, a held two-shot
     yield* this.meet();
     sp.mode = 'idle'; sp.idle = 'hood_Idle_Tired_Loop';
-    const mid = () => { const q = this.sophie || at; return [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2]; };
+    const two = this.twoShot(() => this.sophie || at);
     this.say('S03', 'S03a', 'M06a', 'S04', 'S05', 'S06', 'S07', 'M07', 'S08');
-    yield* this.shot([{ look: mid, from: { yaw: 35, pitch: 24, dist: 5.6 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 90 }], { back: 0.7 });
+    yield* this.shot([{ look: two.look, from: two.from, fov: 46, slow: 1, hold: 2, until: this.linesDone(), max: 90 }], { back: 0.7 });
     sp.idle = 'hood_Idle_Loop';
     this.sophieAt = null;
     // "Follow me. I know a way": she goes ahead to the barricade on the curve; he pushes it over
     this.setGoal('follow');
-    const u = this.at('seal_home_use');
-    this.sophieTo(u.x + 2.2, u.z + 1.6, false, 'idle');
+    this.sophieLead(ROUTES.follow);
     yield* this.use('push', 'seal_home_use', 'Push the barricade over', 2.0);
     this.openSeal('home'); this.api.audio?.play('knockdown');
   }
@@ -398,8 +457,7 @@ export class HoodLevel {
     if (!this.open.has('home')) this.openSeal('home');
     const sp = this.ensureSophie(null, null);
     this.prefetch('S09', 'S10', 'M08', 'M08a', 'S11', 'S12');
-    const g = this.at('gate_use');
-    this.sophieTo(g.x + 1.6, g.z + 3.0, false, 'idle');
+    this.sophieLead(ROUTES.gate);
     this.setGoal('follow');
     yield* this.until(() => this.near('gate_use', 6));
     // "The garage with the light on": a look across at it
@@ -408,7 +466,7 @@ export class HoodLevel {
     this.say('S09');
     yield* this.shot([{ look: [gl.x, 1.2, gl.z], from: { yaw: 35, pitch: 28, dist: 9 }, fov: 42, slow: 0.4, hold: 2.2, move: 0.9 }], { back: 0.7 });
     this.say('S10', 'M08');
-    if (sp) sp.mode = 'follow';
+    this.sophieLead(ROUTES.cutters);
     this.setGoal('cutters');
     const c = this.at('cutters');
     this.addPickup({ id: 'cutters', x: c.x, z: c.z, y: c.y || undefined, r: 1.3, model: 'cutters', label: 'Bolt cutters', onTake: () => { this.flags.cutters = true; } }); // (on the workbench under the light)
@@ -431,6 +489,7 @@ export class HoodLevel {
     this.prefetch('L01', 'L02', 'L03', 'L04', 'M09', 'LB01', 'LB02', 'LB03', 'LB04');
     yield* this.wait(1.0);
     yield* this.talk('M08a', 'S11', 'S12');
+    this.sophieLead(ROUTES.clubhouse);
     this.setGoal('clubhouse');
     yield* this.until(() => this.near('club_warn', 7));
     this.say('L01');
@@ -483,16 +542,22 @@ export class HoodLevel {
     this.wake(ring);
     // Sophie, brave only to take something: she runs for the key while he fights
     let gotKey = false;
-    if (sp) { sp.target = { x: pa.x - 0.7, z: pa.z + 0.5, run: true, done: () => { sp.mode = 'pose'; sp.pose = 'hood_PickUp_Kneeling'; this.later(1.3, () => { gotKey = true; this.flags.key = 'sophie'; this.say('S13'); sp.mode = 'scared'; }); } }; sp.after = 'pose'; sp.mode = 'goto'; }
+    // (the polish brief: she knelt on his back; now beside his chest, on the camera's side, facing him: from where his body lies)
+    const bones = {}, bodyAt = () => { const P = pete?.obj, at = (n) => { const o = bones[n] ??= P?.getObjectByName(n); if (!o) return null; o.updateWorldMatrix(true, false); const e = o.matrixWorld.elements; return { x: e[12], z: e[14] }; };
+      const h = at('mixamorigHips'), c = at('mixamorigSpine2') || h, hd = at('mixamorigHead') || c; if (!h) return { x: pa.x - 0.7, z: pa.z + 0.5, face: pa };
+      let ax = hd.x - h.x, az = hd.z - h.z; const l = Math.hypot(ax, az) || 1; ax /= l; az /= l; let nx = -az, nz = ax; if (nx * 0.57 + nz * 0.82 < 0) { nx = -nx; nz = -nz; }
+      const q = { x: c.x + nx * 0.75, z: c.z + nz * 0.75 }; this.sim.world.resolveCircle(q, 0.3); return { ...q, face: c }; };
+    // (read every frame while she runs in: his body is still falling as she sets off)
+    if (sp) { let k = bodyAt(); sp.target = { get x() { return (k = bodyAt()).x; }, get z() { return k.z; }, run: true, done: () => { sp.mode = 'idle'; sp.face = k.face; this.later(0.45, () => { sp.mode = 'pose'; sp.pose = 'hood_PickUp_Kneeling'; }); this.later(1.75, () => { gotKey = true; this.flags.key = 'sophie'; this.say('S13'); sp.face = null; sp.mode = 'scared'; }); } }; sp.after = 'pose'; sp.mode = 'goto'; }   // (a moment to turn to him, then down)
     else { gotKey = true; this.flags.key = 'sophie'; }
     yield* this.until(() => gotKey && this.alive([...ring, ...w]) <= 1, 120);
     yield* this.wait(1.0);
     // the key: she wants a dose first; Marc calls Yola (the radio card), then gives his word
     yield* this.meet();
     if (sp) { sp.mode = 'idle'; sp.idle = 'hood_Idle_Talking_Loop'; }
-    const mid = () => { const q = this.sophie || pa; return [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2]; };
+    const two = this.twoShot(() => this.sophie || pa);
     this.say('M10', 'S14', 'M11', 'Y07', 'M12', 'Y08', 'Y09', 'M13', 'Y10', 'M14', 'S15');
-    yield* this.shot([{ look: mid, from: { yaw: 35, pitch: 22, dist: 5.4 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.7 });
+    yield* this.shot([{ look: two.look, from: two.from, fov: 46, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.7 });
     this.flags.key = true; this.api.hud.toast('The shed key');
     if (sp) { sp.idle = 'hood_Idle_Loop'; sp.mode = 'follow'; }
   }
@@ -501,6 +566,7 @@ export class HoodLevel {
   *stopDock() {
     const p = this.sim.player, sp = this.ensureSophie(null, 'follow');
     this.prefetch('M15', 'M16', 'M17', 'S16', 'M18', 'S17', 'M19', 'S18', 'M20', 'S19');
+    if (!this.open.has('dockroad')) this.sophieLead(ROUTES.dock);
     this.setGoal('dock');
     const b = this.at('boat');
     // the service road's gate is chained too: the bolt cutters again
@@ -552,8 +618,9 @@ export class HoodLevel {
     this.openSeal('shed');
     const cs = this.at('shed_chainsaw'), sg = this.at('shed_shotgun'), gs = this.at('shed_gas'), dr = this.at('shed_door');
     let gun = false;
-    this.addPickup({ id: 'shotgun', x: sg.x - 0.45, z: sg.z, y: sg.y, r: 1.0, model: 'shotgun', label: 'Shotgun', onTake: () => { gun = true; this.shotgunOn(null, 16); p.desired = SHOTGUN; } });
+    this.addPickup({ id: 'shotgun', x: sg.x - 0.45, z: sg.z, y: sg.y, r: 0.8, model: 'shotgun', label: 'Shotgun', onTake: () => { gun = true; this.shotgunOn(null, 16); p.desired = SHOTGUN; } });
     if (this.flags.gas === 'shed') { this.api.view.placeGas?.(gs.x, gs.z); this.addUse({ id: 'gas', x: gs.x, z: gs.z, r: 1.3, label: 'Take the gas can', use: () => this.pickGas() }); }
+    // (the shotgun's reach 0.8 m: at 1.0 it could be taken through the shed's east wall from outside; the polish brief's replay)
     // what is in there: the chainsaw on the bench, the shotgun on the rack, the can on the floor; the world held
     yield* this.shot([
       { look: [cs.x, cs.y + 0.1, cs.z], from: [dr.x + 0.3, 1.75, dr.z - 0.6], fov: 40, slow: 0.1, hold: 1.4, move: 0.8 },
@@ -565,13 +632,15 @@ export class HoodLevel {
     yield* this.talk('M21');
     // the engine: Sophie at the outboard; the noise; the playground hears
     const b = this.at('boat'), pg = this.at('playground');
+    // (the crowd's middle, live: the shots follow it; the polish brief's replay: a low, narrow frame showed one of them)
+    const crowd = () => { const a = (this.horde || []).filter((z) => z.alive); let x = 0, z = 0; for (const q of a) { x += q.x; z += q.z; } return a.length ? [x / a.length, 1.0, z / a.length] : [pg.x, 1.0, pg.z]; };
     if (sp) { sp.mode = 'pose'; sp.pose = 'hood_PickUp_Kneeling'; sp.subject = true; }
     this.api.voice?.play('ENGINE');
     this.say('M22', 'M23', 'S20');
     yield* this.shot([
       { look: [b.x, 0.6, b.z], from: [p.x + 1.4, 4.2, p.z + 1.8], fov: 34, slow: 0.4, hold: 2.6 },
-      { look: [pg.x, 1.0, pg.z], from: { yaw: 35, pitch: 24, dist: 13 }, fov: 40, slow: 0.35, hold: 0.3, fn: () => { for (const z of this.horde || []) { this.wake([z]); z.kind === 'runner' || (z.speedMul *= 1.6); } } },
-      { look: [pg.x - 3, 1.0, pg.z - 6], from: { yaw: 25, pitch: 16, dist: 8 }, fov: 40, slow: 0.35, hold: 2.4, move: 2.4 },
+      { look: crowd, from: { yaw: 50, pitch: 32, dist: 16 }, fov: 46, slow: 0.35, hold: 0.6, fn: () => { this.sim.world.rallyAt(-16.5, -63.5); for (const z of this.horde || []) { this.wake([z]); z.kind === 'runner' || (z.speedMul *= 1.6); } } },
+      { look: crowd, from: { yaw: 40, pitch: 36, dist: 17 }, fov: 46, slow: 0.35, hold: 2.4, move: 2.4 },
     ], { back: 0.6 });
     if (sp) sp.subject = false;
     this.say('S21', 'S22', 'M24');
@@ -584,7 +653,7 @@ export class HoodLevel {
     // the playground's runners are far off: what reaches her first comes through the club's dock gate, by the pool
     // (out of sight from the shed, the playground's runners come in through the club's dock gate by the pool: the first four at
     // once, on her; the rest two at a time)
-    this.openSeal('dock');
+    this.openSeal('dock'); this.sim.world.rallyAt(null);
     const GATE = [[-16, -66.5], [-19, -66], [-13.5, -66.8], [-21, -66.2]], far = (this.horde || []).filter((z) => z.alive), first = [];
     const bring = (z, i) => { const [gx, gz] = GATE[i % GATE.length]; z.x = z.px = gx + (this.sim.rand() - 0.5) * 2; z.z = z.pz = gz - this.sim.rand() * 3; z.vx = z.vz = 0; return z; };
     for (let i = 0; i < 4; i++) first.push(far.length ? bring(far.shift(), i) : this.spawnAt({ x: GATE[i][0], z: GATE[i][1] - 2 }, { near: true, spread: 0.8, kind: 'runner', wave: 'horde1' }));

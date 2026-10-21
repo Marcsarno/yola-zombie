@@ -20,8 +20,9 @@ if os.environ.get('BAKE_RECT'): X0, X1, Z0, Z1 = [float(v) for v in os.environ['
 SUN_FROM = Vector((-0.55, -0.56, 0.62)).normalized()  # (the game's SUN_FROM (x, y, z) -> Blender (x, -z, y))
 sc = bpy.context.scene
 
-# what renders: the placed models only (ground, collision, marks, the old sun and camera out)
-for c in ('GROUND', 'COL', 'MARKS', 'LIB'):
+# what renders: the placed models only (ground, collision, marks, the old sun and camera out). NEW holds the remake's own
+# ground (the new roads, kerbs, the dock's pad): 3 cm over the catcher, it shaded it black (the polish brief's audit)
+for c in ('GROUND', 'NEW', 'COL', 'MARKS', 'LIB'):
     coll = bpy.data.collections.get(c)
     if coll: coll.hide_render = True
 for o in list(sc.objects):

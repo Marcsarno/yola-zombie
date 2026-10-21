@@ -611,6 +611,7 @@ function uiAction(a, v) {
     case 'gore': fx.gore = v; store.set('gore', v); break;
     case 'yola': store.set('yolaModel', v); location.reload(); break;
     case 'shake': shakeOn = v; break;
+    case 'guide': store.set('guide', v); break; // (Chapter 2's guidance marker: src/hood/hint.js)
     case 'debug': debugOn = v; debugGroup.visible = v; break;
   }
 }
@@ -787,7 +788,9 @@ function runFrame(dt, doRender = true) {
     seen.add(z.id);
     if (z.gibbed) { if (v.outer.visible) v.hide(); continue; } // (blown apart: its pieces are the burst's, the view stays hidden)
     // Floor 3: a dormant zombie far from Yola (another room) is neither drawn nor animated
-    if (sim.level && z.dormant && (z.x - ix) * (z.x - ix) + (z.z - iz) * (z.z - iz) > 15 * 15) { if (v.outer.visible) { v.outer.visible = false; v.blob.visible = false; v.farHidden = true; } continue; }
+    // (Chapter 2's cinematic moments: measured from what the shot looks at, so a pan to a crowd shows it: hood.cine.focus)
+    const fcx = hood?.cine?.active && hood.cine.focus ? hood.cine.focus.x : ix, fcz = hood?.cine?.active && hood.cine.focus ? hood.cine.focus.z : iz;
+    if (sim.level && z.dormant && (z.x - fcx) * (z.x - fcx) + (z.z - fcz) * (z.z - fcz) > 15 * 15 && (z.x - ix) * (z.x - ix) + (z.z - iz) * (z.z - iz) > 15 * 15) { if (v.outer.visible) { v.outer.visible = false; v.blob.visible = false; v.farHidden = true; } continue; }
     if (v.farHidden) { v.outer.visible = true; v.blob.visible = true; v.farHidden = false; }
     v.update(animDt, z, z.px + (z.x - z.px) * alpha, z.pz + (z.z - z.pz) * alpha, sim.time);
   }
