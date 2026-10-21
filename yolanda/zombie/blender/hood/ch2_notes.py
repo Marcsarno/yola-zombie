@@ -512,10 +512,10 @@ def lake_north_dress():
 
 # ---------------------------------------------------------------- dock
 # (Marc: "double the size of the dock. length and width.. so it can fit people and potential zombies"): the old 9 x 3 m pier
-# (the old ground's 'gen' meshes, its 'dock' collision) out; hood_dock (make_ch2_props.py, 18 x 6 m) from the dock road's end
+# (the old ground's 'gen' meshes, its 'dock' collision) out; hood_dock (make_ch2_props.py, 13.5 x 4.5 m) from the dock road's end
 # out over the lake, its north edge where the old one's was (the boat lies along it); edge collision round its three sides on
 # the water, the shore's water collision opened where it starts; layout.js FLOORS 'dock' lifts people onto its deck
-DOCK_C, DOCK_HX, DOCK_HZ = (-31.0, -79.6), 9.0, 3.0
+DOCK_C, DOCK_HX, DOCK_HZ = (-28.75, -80.35), 6.75, 2.25   # (13.5 x 4.5 m: "25% smaller"; the shore end and the north edge where they were)
 def dock():
     own = owner('dock'); wipe(own)
     n = 0
@@ -524,7 +524,7 @@ def dock():
         if o and o.type == 'MESH' and -33 < (o.matrix_world @ o.data.vertices[0].co).x < -20: bpy.data.objects.remove(o, do_unlink=True); n += 1
     print('old pier meshes out', n, 'its collision', cols_out(lambda t, o: t == 'dock'))
     print('shore water collision opened', cols_out(lambda t, o: t == 'water' and -26.0 < o.location.x < -23.0 and -83.3 < gz(o) < -74.0))
-    o = col_box('COL_water_dock_s', -24.1, -75.25, 0.6, 1.15, 0.0, 1.5, 'water'); o['ch2'] = own   # (the shore south of the pier, to the next box)
+    o = col_box('COL_water_dock_s', -24.2, -76.1, 0.6, 1.95, 0.0, 1.5, 'water'); o['ch2'] = own   # (the shore south of the pier, to the next box)
     cx, cz = DOCK_C
     place('props/hood_dock.glb', cx, cz, 0.0, collide=False, name='dock_pier', owner=own)
     # (the boat lay against the old pier's north rail, which is 1.1 m in from the new one's edge: out alongside it, once)
@@ -532,6 +532,15 @@ def dock():
     x0, x1, z0, z1 = cx - DOCK_HX, -23.4, cz - DOCK_HZ, cz + DOCK_HZ
     for nm, (ax, az), (bx, bz) in (('n', (x0, z0), (x1, z0)), ('s', (x0, z1), (x1, z1)), ('w', (x0, z0), (x0, z1))):
         L = math.hypot(bx - ax, bz - az); o = col_box('COL_dock_edge_' + nm, (ax + bx) / 2, (az + bz) / 2, L / 2 + 0.15, 0.12, math.atan2(-(bz - az), bx - ax), 1.0, 'dock'); o['ch2'] = own
+
+# ---------------------------------------------------------------- gaptrees
+# (Marc, showing the gap between the B05 row and the east row by the tennis courts: "you can keep the palm .. but remove the
+# trees between these buildings"): the oaks, the storm-bent and scraggly trees and the snag there go, the cabbage palm stays
+GAP_TREES = ('nbt_broad_oak.124', 'nbt_broad_oak.125', 'nbt_broad_oak.126', 'nbt_broad_oak.130', 'nbt_broad_oak.136', 'nbt_scraggly.038',
+             'nbt_scraggly.043', 'nbt_snag', 'nbt_storm.110')
+def gaptrees():
+    spots = [(o.location.x, gz(o)) for o in placed().objects if o.name in GAP_TREES]
+    print('trees out', remove(lambda e: e.name in GAP_TREES), 'their collision', cols_out(lambda t, o: t.startswith('tree') and any(math.dist((o.location.x, gz(o)), q) < 0.8 for q in spots)))
 
 if 'open' in PARTS: open_up()
 if 'park' in PARTS: park()
@@ -546,4 +555,5 @@ if 'courts' in PARTS: courts()
 if 'clubback' in PARTS: clubback()
 if 'lakenorth' in PARTS: lake_north(); lake_north_dress()
 if 'dock' in PARTS: dock()
+if 'gaptrees' in PARTS: gaptrees()
 print('notes parts done:', PARTS)

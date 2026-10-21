@@ -594,10 +594,10 @@ def reeds():
         rod(r, 'cattail', (x, y, h - 0.32), (x, y, h - 0.1), 0.03, 'M_flat__brown', seg=8)
     return r
 
-DOCK = dict(L=18.0, W=6.0, top=0.39)
+DOCK = dict(L=13.5, W=4.5, top=0.39)   # (doubled from the old 9 x 3 m, then a quarter smaller: Marc, "a little too big")
 def dock():
-    """(Marc, 2026-10-21: "double the size of the dock. length and width.. so it can fit people and potential zombies") the
-    pier, 18 x 6 m: weathered boards across it on three stringers, posts down into the lake every 2.5 m along both sides, a
+    """(Marc, 2026-10-21: "double the size of the dock. length and width.. so it can fit people and potential zombies", then "25%
+    smaller") the pier, 13.5 x 4.5 m: weathered boards across it on three stringers, posts down into the lake every 2.5 m along both sides, a
     low edge board, cleats for the boat; its deck's top at 0.39 (layout.js FLOORS 'dock'). Along local x, centred."""
     rng = random.Random(16)
     L, W, top = DOCK['L'], DOCK['W'], DOCK['top']
@@ -614,7 +614,7 @@ def dock():
         while px <= L / 2 - 0.1:
             disc(r, 'post', 0.12, 1.6, (px, sy * (W / 2 - 0.1), top - 0.75), 'M_wood_dark', seg=8)
             px += 2.5; k += 1
-    for cx in (-4.0, 2.5): box(r, 'cleat', (0.32, 0.08, 0.06), (cx, -W / 2 + 0.25, top + 0.03), 'M_metal_painted__darkgrey')
+    for cx in (-3.0, 2.0): box(r, 'cleat', (0.32, 0.08, 0.06), (cx, -W / 2 + 0.25, top + 0.03), 'M_metal_painted__darkgrey')
     return r
 
 BUILD = {'shed': (shed, 'hood_shed.glb'), 'garage': (garage, 'hood_garage.glb'), 'home': (home, 'hood_home.glb'), 'fridge': (fridge, 'hood_fridge.glb'), 'case': (case, 'hood_case.glb'),

@@ -157,3 +157,10 @@ hood_shrub_tall, hood_palm_short, hood_wall_concrete, hood_court_basketball, exp
     hood_dock (make_ch2_props.py), 18 x 6 m, its north edge where the old one's was, so the boat still lies along it.
     - Edge collision runs round its three sides on the water, and the shore's water collision is opened where it starts.
     - layout.js FLOORS 'dock' lifts people and zombies onto its deck, and the dock zone takes it in. The leak test is sealed.
+- Follow-up: "the dock is a little too big.. make it 25% smaller.. and make sure the boat is set next to it.. not clipping":
+  - The pier is now 13.5 x 4.5 m, its shore end and north edge where they were.
+  - The boat's hull lies alongside it, 0.2 m off its north edge (measured on the models), with no overlap.
+  - FLOORS 'dock', its edge collision and the dock zone follow. The leak test is sealed.
+- Follow-up, "you can keep the palm .. but remove the trees between these buildings" (the gap between the B05 row and the
+  east row, by the tennis courts; ch2_notes.py `gaptrees`): nine trees out (oaks, storm-bent, scraggly, a snag). The cabbage
+  palm stays.

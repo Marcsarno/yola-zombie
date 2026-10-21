@@ -27,7 +27,7 @@ export const ZONES = {
   // road to the lot's west fence, the shed
   dock: [[-26.5, -67.0], [-12.6, -67.6], [26.3, -68.2], [27.6, -69.1], [27.0, -91.3], [28.8, -91.6], [20.0, -110.0], [8.0, -123.5], [-5.0, -124.0], [-19.0, -122.0],
     [-40.0, -110.5], [-33.5, -104.6], [-30.8, -102.0], [-28.4, -97.5], [-27.2, -94.3],   // (the lake's rounded north shore: ch2_notes.py lakenorth)
-    [-27.0, -82.9], [-40.5, -82.9], [-40.5, -76.3], [-26.8, -76.3]],   // (the pier out over the water, 18 x 6 m: ch2_notes.py dock)
+    [-27.0, -82.9], [-35.8, -82.9], [-35.8, -77.8], [-26.8, -77.8]],   // (the pier out over the water, 13.5 x 4.5 m: ch2_notes.py dock)
   // Marc's notes on the map (2026-10-21, design/CH2_MARC_NOTES_2026-10-21.md): the inner fences and road blocks went, so what
   // they shut off opens with the stop it joins (checked after the areas above: what they hold stays theirs)
   // south: everything this side of the chained gate the home and curve do not hold: the loop's west leg and B06, the cross
