@@ -79320,41 +79320,30 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   vec3 ga = textureGrad(map, gUv + gOffA, gdx, gdy).rgb, gb = textureGrad(map, gUv + gOffB, gdx, gdy).rgb;
   gTile = smoothstep(0.2, 0.8, kf - 0.1 * dot(ga - gb, vec3(1.0)));
   vec3 grass = mix(ga, gb, gTile);
-  float dry = clamp(0.7 + (n1 - 0.5) * 1.1 + (n3 - 0.5) * 0.4 + (n4 - 0.5) * 0.6 + sp.b * 0.4, 0.0, 1.0) * 0.35;
-  float gl = dot(grass, vec3(0.3, 0.59, 0.11));
-  vec3 grassDry = mix(grass * vec3(1.0, 0.92, 0.7), gl * vec3(1.78, 1.22, 0.52), dry);
-  float dead = smoothstep(0.56, 0.68, n2 * 0.75 + n1 * 0.35 + (n5 - 0.5) * 0.22 - 0.05);
-  grassDry = mix(grassDry, gl * vec3(1.05, 0.7, 0.38), dead * 0.75);
-  grassDry *= 1.0 + smoothstep(0.6, 0.85, n3) * 0.12;
-  float dirt = clamp(sp.r + smoothstep(0.66, 0.86, n1 * 0.7 + n2 * 0.45) * 0.75, 0.0, 1.0);
-  dirt = smoothstep(0.25, 0.75, dirt + (n3 - 0.5) * 0.35 + (n5 - 0.5) * 0.25);
-  float bare = smoothstep(0.71, 0.79, n4 * 0.45 + n2 * 0.5 + (n5 - 0.5) * 0.3 + 0.08);
-  float litter = clamp(sp.g * (0.6 + n3 * 0.6) + smoothstep(0.62, 0.8, n2) * 0.35, 0.0, 1.0);
-  vec3 d = texture2D(dirtMap, ruv / 5.3 + 0.37).rgb * vec3(1.12, 0.96, 0.78);
-  vec3 sd = mix(texture2D(sandMap, ruv2 / 3.7).rgb * vec3(1.05, 0.92, 0.74), d, 0.35);
-  vec3 lit = texture2D(litterMap, ruv2 / 4.6 + 0.21).rgb;
-  vec3 col = mix(grassDry, sd, bare * (1.0 - dirt));
-  col = mix(col, d, dirt);
-  col = mix(col, lit, litter * (1.0 - dirt * 0.5));
-  {
-    float zA = n2 * 0.6 + n1 * 0.45 + (n5 - 0.5) * 0.18, zB = n4 * 0.55 + n3 * 0.35 + (n5 - 0.5) * 0.18;
-    float wLive = smoothstep(0.64, 0.7, zA) * (1.0 - dirt);
-    float wDead = smoothstep(0.34, 0.44, zB) * (1.0 - wLive);
-    float wLeaf = clamp(smoothstep(0.52, 0.6, zB * 0.7 + n2 * 0.4) + sp.g * 0.8, 0.0, 1.0) * (1.0 - dirt * 0.6);
-    vec3 live = mix(vec3(gl), grass, 0.8) * vec3(0.84, 1.0, 0.76), deadT = gl * vec3(1.0, 0.76, 0.5), leafC = lit * vec3(1.35, 0.76, 0.5);
-    col = mix(col, col * vec3(0.94, 0.94, 1.0), bare);
-    col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))) * vec3(1.08, 0.86, 0.62), 0.15 * (1.0 - wLive));
-    col = mix(col, deadT, wDead * 0.45);
-    col = mix(col, live, wLive * 0.9);
-    col = mix(col, leafC, wLeaf * 0.6);
-    col *= 1.18;
-  }
+  // a lived-in neighbourhood lawn (the user, 2026-10-21: "make it look like regular neighborhood grass ... a little bit of
+  // dirt here and there", not "old water with algae"): the tile's own blades in a clean mid green, broad soft patches a shade
+  // yellower or deeper, a few small sun-bleached spots; worn dirt only where feet and kerbs wear it (the splat's r, kept to a
+  // thin edge) and in rare small spots; leaf litter only under the trees (the splat's g), light. (Colours linear.)
+  float gl = dot(grass, vec3(0.3, 0.59, 0.11)), det = clamp(gl / 0.18, 0.45, 1.8);   // (the tile's blade light and dark)
+  // (the scene's light about doubles these on screen: a mid lawn of about sRGB 110, 135, 70)
+  vec3 lawn = mix(vec3(0.078, 0.121, 0.031), vec3(0.100, 0.130, 0.036), smoothstep(0.3, 0.85, n1 * 0.75 + n4 * 0.45 - 0.1));
+  lawn = mix(lawn, vec3(0.050, 0.085, 0.022), smoothstep(0.58, 0.85, n2 * 0.6 + n3 * 0.45) * 0.45);
+  lawn *= pow(det, 1.25);
+  float straw = smoothstep(0.72, 0.82, n2 * 0.55 + n5 * 0.35 + n1 * 0.2) * (0.4 + sp.b * 0.5);
+  lawn = mix(lawn, vec3(0.15, 0.13, 0.057) * det, straw * 0.5);
+  float dirt = clamp(sp.r * 0.75 + smoothstep(0.8, 0.9, n1 * 0.6 + n2 * 0.5) * 0.8, 0.0, 1.0);
+  dirt = smoothstep(0.45, 0.85, dirt + (n3 - 0.5) * 0.3 + (n5 - 0.5) * 0.2);
+  vec3 d = texture2D(dirtMap, ruv / 5.3 + 0.37).rgb * vec3(1.18, 1.08, 0.92);   // (plain earth, not red clay)
+  vec3 sd = mix(texture2D(sandMap, ruv2 / 3.7).rgb * vec3(1.05, 0.92, 0.74), d, 0.35);   // (the shore's sand, below)
+  float litter = clamp(sp.g * (0.5 + n3 * 0.5), 0.0, 1.0) * 0.5;
+  vec3 lit = texture2D(litterMap, ruv2 / 4.6 + 0.21).rgb * vec3(1.45, 1.25, 1.0);
+  vec3 col = mix(lawn, d, dirt);
+  col = mix(col, lit, litter * (1.0 - dirt));
   // the shore (the keep-off map's blue: highest at the water's edge): dry sand, then wet sand and mud at the waterline
   float shoreK = texture2D(pathsTex, (wuv - splatRect.xy) / splatRect.zw).b;
   col = mix(col, sd * mix(vec3(0.9, 0.85, 0.76), vec3(0.4, 0.38, 0.34), smoothstep(0.3, 0.95, shoreK)), smoothstep(0.1, 0.6, shoreK) * 0.92);
-  col *= mix(1.0, (n1 * 0.65 + n2 * 0.35) * 1.4 + 0.3, 0.35);
-  col *= 0.92 + n4 * 0.16;
-  gBlend = max(dirt, bare * 0.7);
+  col *= 0.95 + n4 * 0.1;   // (a whisper of broad light and dark, no blotches)
+  gBlend = dirt;
   diffuseColor.rgb *= col;`).replace("#include <normal_fragment_maps>", `
   {
     vec2 nUv = vTW.xz / 5.0, ndx = dFdx(nUv), ndy = dFdy(nUv);
@@ -79939,12 +79928,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       g.quadraticCurveTo(x0 + bend * 0.4, 128 - h * 0.6, x0 + bend, 128 - h);
       g.stroke();
     };
-    for (const [t2, cols] of [[0, ["#7a8243", "#868d4a", "#6c763b", "#939851", "#7b803f"]], [1, ["#a39561", "#ad9f69", "#938556", "#86824c"]], [3, ["#76803f", "#838b48", "#6b7539"]]]) {
+    for (const [t2, cols] of [[0, ["#5d8030", "#6a8c36", "#52752b", "#77953f", "#628534"]], [1, ["#a99d62", "#b4a86c", "#9c9058", "#8f9150"]], [3, ["#5a7c2f", "#678a35", "#50722a"]]]) {
       for (let i = 0; i < 46; i++) blade(t2 * 128 + 14 + rnd2() * 100, 2 + rnd2() * 3, 40 + rnd2() * 80, cols[i % cols.length]);
     }
     for (let i = 0; i < 9; i++) {
       const a = -1.2 + i * 0.3 + (rnd2() - 0.5) * 0.2, L3 = 50 + rnd2() * 40;
-      g.fillStyle = ["#6c7a3a", "#7a8743", "#606d33"][i % 3];
+      g.fillStyle = ["#567a30", "#638838", "#4c6d2b"][i % 3];
       g.save();
       g.translate(256 + 64, 124);
       g.rotate(a);
@@ -80038,14 +80027,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         for (let x = cx; x < cx + CELL3; x += STEP3) for (let z = cz; z < cz + CELL3; z += STEP3) {
           const jx = x + (hash2(x, z) - 0.5) * STEP3, jz = z + (hash2(z, x) - 0.5) * STEP3;
           const [pave, wall, shore] = P2(jx, jz);
-          if (pave > 0.5 || wall > 0.5 || shore > 0.45) continue;
+          if (pave > 0.15 || wall > 0.5 || shore > 0.45) continue;
           const [dirt, litter, dry] = S2(jx, jz);
-          if (dirt > 0.55) continue;
+          if (dirt > 0.45) continue;
           const clump = vnoise(jx * 0.35, jz * 0.35) * 0.7 + vnoise(jx * 1.3 + 7, jz * 1.3) * 0.3;
           const edge = Math.min(1, dry * 1.3 + litter * 0.8 + dirt * 0.9);
-          const p = Math.max(0, clump - 0.5) * 2.4 + edge * 0.45 * (0.5 + clump) + 0.02;
+          const p = Math.max(0, clump - 0.5) * 2.4 + edge * 0.2 * (0.5 + clump) + 0.02;
           if (hash2(jx * 3.1, jz * 1.7) > p) continue;
-          const u = hash2(jz, jx * 2.3), tile = u < 0.05 ? 3 : u < 0.11 ? 2 : dry + 0.25 * (hash2(jx, jz * 5) - 0.5) > 0.45 ? 1 : 0;
+          const u = hash2(jz, jx * 2.3), tile = u < 0.05 ? 3 : u < 0.11 ? 2 : dry + 0.25 * (hash2(jx, jz * 5) - 0.5) > 0.7 ? 1 : 0;
           pts.push([jx, jz, tile, 0.2 + hash2(jx * 7, jz) * 0.25 + edge * 0.08]);
         }
         if (!pts.length) continue;
