@@ -17,7 +17,7 @@ const ang = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // portrait phone shows about 3.5 m either side of him)
 const down = (dx, dz) => dx * 0.57 + dz * 0.82;
 const across = (dx, dz) => dx * 0.82 - dz * 0.57;
-const offScreen = (dx, dz) => Math.abs(across(dx, dz)) > 3.0 || down(dx, dz) > 4.5 || down(dx, dz) < -7;
+const offScreen = (dx, dz, m = 0) => Math.abs(across(dx, dz)) > 3.0 + m || down(dx, dz) > 4.5 + m || down(dx, dz) < -7 - m;
 const screenCost = (dx, dz) => Math.max(0, Math.abs(across(dx, dz)) - 2.0) * 2.5 + Math.max(0, down(dx, dz) - 2) * 1.5;
 
 export function threatsNear(sim, x, z, r) {
@@ -117,15 +117,22 @@ export function companionStep(a, dt, level, sim) {
     const end = L.pts[L.pts.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
     while (L.i < L.pts.length - 1 && toEnd(L.pts[L.i][0], L.pts[L.i][1]) > toEnd(p.x, p.z) - 1.5) L.i++;   // (points he has passed)
     if (toEnd(p.x, p.z) < toEnd(a.x, a.z) - 2 && L.i >= L.pts.length - 1) L.done = true;                   // (he went on past her)
-    else if (dm < 11) {
+    else {
       const P = L.pts[L.i], dP = Math.hypot(P[0] - a.x, P[1] - a.z);
-      c.state = 'lead';
-      const edge = dm > 5.5 || offScreen(a.x - p.x, a.z - p.z);   // (no further than he can see her: she waits there, looking back)
-      if (dP > 0.45 && !edge) { tx = P[0]; tz = P[1]; want = 1.6; face = null; }                      // (slower when he lags)
-      else if (dm < 4.5 && L.i < L.pts.length - 1) L.i++;                                                   // (he caught up: on)
-      return finish(a, c, dt, sim, tx, tz, want, face, false);
+      // (he went elsewhere: once she has been off his screen a moment she follows him, and the lead waits until he is back
+      // by her way)
+      const away = dm > 7 || offScreen(a.x - p.x, a.z - p.z, 0.5);
+      c.leadOff = away && !L.paused ? (c.leadOff || 0) + dt : 0;
+      if (c.leadOff > 1.2 || dm > 8) L.paused = true;
+      if (L.paused && Math.hypot(P[0] - p.x, P[1] - p.z) < 5) L.paused = false;
+      if (!L.paused) {
+        c.state = 'lead';
+        const edge = dm > 5.5 || offScreen(a.x - p.x, a.z - p.z, -0.4);   // (no further than he can see her: she waits there, looking back)
+        if (dP > 0.45 && !edge) { tx = P[0]; tz = P[1]; want = 1.6; face = null; }                      // (slower when he lags)
+        else if (dm < 4.5 && L.i < L.pts.length - 1) L.i++;                                                   // (he caught up: on)
+        return finish(a, c, dt, sim, tx, tz, want, face, false);
+      }
     }
-    // (he went elsewhere: she follows him, the lead waits)
   }
 
   // ---- follow, in a band
@@ -135,14 +142,17 @@ export function companionStep(a, dt, level, sim) {
   c.fireT = Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) < 0.5 && dm < 6 ? c.fireT + dt : 0;
   const byPrompt = (level.interact || []).some((it) => Math.hypot(it.x - a.x, it.z - a.z) < 1.5);
   c.offT = offScreen(a.x - p.x, a.z - p.z) ? (c.offT || 0) + dt : 0;
-  if (c.state === 'stand' && (dm > FAR || c.losT > 1.2 || c.fireT > 0.5 || c.offT > 1.0 || byPrompt || dm < NEAR || narrow(w, a.x, a.z))) { c.state = 'move'; c.pickT = 0; }
+  // (he is running: where she would be on his screen in a moment, so she sets off before she drops off its edge)
+  const soon = pv > 1.5 && offScreen(a.x - p.x - (p.vx || 0) * 0.6, a.z - p.z - (p.vz || 0) * 0.6, -0.3);
+  if (c.state === 'stand' && (dm > FAR || c.losT > 1.2 || c.fireT > 0.5 || c.offT > 0.4 || soon || byPrompt || dm < NEAR || narrow(w, a.x, a.z))) { c.state = 'move'; c.pickT = 0; }
   if (c.state === 'move') {
     if (c.pickT <= 0) { c.pickT = pv > 0.8 ? 0.3 : 0.6; c.spot = pickSpot(a, c, p, w, fy, level); }
     const S = c.spot || { x: p.x, z: p.z };
     let gx = S.x, gz = S.z;
     if (!w.lineOfSight(a.x, a.z, gx, gz, 0.6)) { const t = trailPoint(a, w); if (t) { gx = t.x; gz = t.z; } }   // (round the wall, his way)
     const dS = Math.hypot(S.x - a.x, S.z - a.z);
-    if (((dS < 0.4 && pv < 0.8) || (dm < GAP + 0.4 && !lost)) && !narrow(w, a.x, a.z)) { c.state = 'stand'; }   // (while he walks on, she walks on)
+    // (while he walks on, she walks on; close enough stops her only once what moved her is gone: his line of fire, off screen)
+    if (((dS < 0.4 && pv < 0.8) || (dm < GAP + 0.4 && !lost && c.fireT === 0 && c.offT === 0 && !soon && !byPrompt)) && !narrow(w, a.x, a.z)) { c.state = 'stand'; }
     else {
       tx = gx; tz = gz;
       want = Math.min(5.2, Math.max(1.3, pv + (dm - GAP) * 0.9));   // (his pace, and a little more to close the gap: no lagging off the screen)

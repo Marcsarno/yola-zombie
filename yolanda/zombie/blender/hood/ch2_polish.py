@@ -68,6 +68,7 @@ FILLERS = ('tire_stack', 'pallet_stack', 'pallet', 'sandbags', 'trash_bags', 'ca
 PANELS = {'palisade': ['models/palisade_2m.glb', 'models/palisade_2m_b.glb', 'models/palisade_2m_c.glb'], 'fence_privacy': ['kit/fence_privacy.glb'],
           'hood_fence_slat': ['props/hood_fence_slat.glb'], 'wall_corrugated': ['kit/wall_corrugated.glb', 'kit/wall_corrugated_b.glb']}
 SOFT = ('nbt_', 'palm_', 'shrub', 'yard', 'nb_frond', 'by_garden', 'nb_palm_debris')
+LOW_LINE = ('jersey_barrier',)   # (low, but the line's own pieces: no panel over them)
 def blockers():
     if sc.get('ch2_polish_blockers'): print('blockers: done before'); return
     import json, hoodlib, ch2lib
@@ -101,7 +102,7 @@ def blockers():
             a, b = max(-0.5, lo[ax]), min(0.5, hi[ax])
             if b <= a: continue
             if src.startswith(FILLERS) and top < 0.9: fill.append(e); continue
-            if src.startswith(SOFT) or top < 0.9: continue
+            if src.startswith(SOFT) or (top < 0.9 and not src.startswith(LOW_LINE)): continue
             on.append((a, b))
             for k in PANELS:
                 if src.startswith(k): styles[k] = styles.get(k, 0) + 1
@@ -188,7 +189,67 @@ def doorway():
     sc['ch2_polish_doorway'] = True
     print('doorway: the planter moved to (36.62, 37.2)')
 
-PARTS = dict(leftovers=leftovers, blockers=blockers, verges=verges, doorway=doorway)
+# the far south edge: blockers (before LOW_LINE) stood panels over the jersey barriers of two lines, a jumble of posts on the
+# concrete; those panels go (the panels in the lines' real gaps stay)
+def jersey():
+    if sc.get('ch2_polish_jersey'): print('jersey: done before'); return
+    jb = [e for e in bpy.data.collections['PLACED'].all_objects if e.instance_type == 'COLLECTION' and e.instance_collection
+          and e.instance_collection.name.startswith('jersey_barrier') and not e.hide_render]
+    gone = []
+    for p in [o for o in bpy.data.objects if o.name.startswith('polish_panel')]:
+        half = 1.05 * p.scale.x; d = p.matrix_world.to_3x3() @ Vector((1, 0, 0))
+        if any(abs(q.x) < 1.5 and abs(q.y) < 0.45 for e in jb for q in (e.matrix_world.inverted() @ (p.location + d * t) for t in (-half, -half / 2, 0, half / 2, half))):
+            gone.append(p.name); bpy.data.objects.remove(p, do_unlink=True)
+    sc['ch2_polish_jersey'] = True
+    print('jersey: %d panels over jersey barriers removed: %s' % (len(gone), ', '.join(gone)))
+
+# and a gap left beside a jersey barrier on such a line (its filler moved off by blockers): a jersey barrier cut to the gap
+def jersey_gaps():
+    if sc.get('ch2_polish_jersey_gaps'): print('jersey_gaps: done before'); return
+    import hoodlib, ch2lib
+    inst = []
+    for e in bpy.data.collections['PLACED'].all_objects:
+        if e.instance_type != 'COLLECTION' or not e.instance_collection or e.hide_render: continue
+        b = hoodlib.lib_bounds(e.instance_collection)
+        if b: inst.append((e, b))
+    done = []
+    for c in [o for o in bpy.data.collections['COL'].all_objects if o.get('col') == 'box' and not o.get('tag', '').startswith(('bld', 'water', 'tree', 'prop:', 'dock'))]:
+        M = c.matrix_world; Mi = M.inverted(); s = M.to_scale(); L = s.x
+        if L < 2.0 or s.y > 1.6: continue
+        on, jer = [], []
+        for e, (x0, x1, y0, y1, z0, z1) in inst:
+            src = e.instance_collection.name
+            lc = [Mi @ (e.matrix_world @ Vector((x, y, 0))) for x, y in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]
+            lo = [min(p[i] for p in lc) for i in range(2)]; hi = [max(p[i] for p in lc) for i in range(2)]
+            if hi[0] < -0.55 or lo[0] > 0.55 or hi[1] < -0.55 - 0.3 / s.y or lo[1] > 0.55 + 0.3 / s.y: continue
+            top = (e.matrix_world @ Vector(((x0 + x1) / 2, (y0 + y1) / 2, z1))).z
+            a, b = max(-0.5, lo[0]) * L, min(0.5, hi[0]) * L
+            if src.startswith(LOW_LINE): jer.append((a, b, e)); on.append((a, b))
+            elif not src.startswith(SOFT) and top >= 0.9: on.append((a, b))
+        if not jer: continue
+        on.sort(); cur = -0.5 * L
+        for a, b in on + [(0.5 * L, 0.5 * L)]:
+            if a - cur > 0.4 and any(abs(jb - cur) < 0.2 or abs(ja - a) < 0.2 for ja, jb, _ in jer):   # (a gap beside a jersey barrier)
+                ref = min(jer, key=lambda j: min(abs(j[0] - a), abs(j[1] - cur)))[2]
+                mid = (cur + a) / 2; p = M @ Vector((mid / L, 0, 0)); w = a - cur + 0.2
+                e = ch2lib.place(ref.get('src') or ref.instance_collection.get('src'), p.x, -p.y, ref.rotation_euler.z, collide=False, owner='ch2_polish', name='polish_jersey')
+                e.scale = (w / 3.0, 1.0, 1.0); done.append('%s %.1f m at (%.1f, %.1f)' % (c.name, w, p.x, -p.y))
+            cur = max(cur, b)
+    sc['ch2_polish_jersey_gaps'] = True
+    print('jersey_gaps: ' + ('; '.join(done) or 'none'))
+
+# the clubhouse's second looter (dress_hood.py MARKS looter_b, 14, -55) stood inside the wall of the back room: no way to him
+# and no line to him from anywhere Marc can stand (the house-to-boat replay stopped there). Behind the bar instead: crouched
+# under its 1.1 m counter, he pops up over it at Marc coming in from the door
+def looter_b():
+    if sc.get('ch2_polish_looter_b'): print('looter_b: done before'); return
+    e = bpy.data.objects.get('looter_b')
+    if e is None or abs(e.location.x - 14.0) > 0.2 or abs(-e.location.y + 55.0) > 0.2: print('looter_b: the mark is not where it was'); return
+    e['polish_moved'] = list(e.location); e.location = (13.2, 53.8, e.location.z)
+    sc['ch2_polish_looter_b'] = True
+    print('looter_b: moved to (13.2, -53.8), behind the bar')
+
+PARTS = dict(leftovers=leftovers, blockers=blockers, verges=verges, doorway=doorway, jersey=jersey, jersey_gaps=jersey_gaps, looter_b=looter_b)
 if __name__ == '__main__':
     args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     for p in (args or list(PARTS)): PARTS[p]()

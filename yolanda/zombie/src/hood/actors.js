@@ -26,6 +26,9 @@ const LOOTERS = [['bryce', 1.78], ['lewis', 1.8], ['james', 1.8], ['remy', 1.8],
 const STORY = { sophie: 1.66, pete: 1.8 };
 const GUNS = { rifle: ['assets/neighborhood/props/security_rifle.glb', 1], pistol: ['assets/weapons/pistol_core.glb', PISTOL_CORE_SCALE] };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), Z = new THREE.Vector3(0, 0, 1);
+const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _up = new THREE.Vector3();
+// a bone turned about the world's up axis, on top of the move playing (the mixer sets the bone again next frame)
+function turnBone(bone, ang) { bone.getWorldQuaternion(_q); _up.set(0, 1, 0).applyQuaternion(_q.invert()); bone.quaternion.multiply(_q2.setFromAxisAngle(_up, ang)); bone.updateMatrixWorld(true); }
 // a gun ready to hold: its grip (GameGrip_R) at the holder's origin, the muzzle down the holder's +z
 function gunHolder(scene, scale) {
   const g = scene.clone(true); g.scale.setScalar(scale); g.updateMatrixWorld(true);
@@ -245,7 +248,10 @@ export class Actors {
     const obj = new THREE.Group(); obj.add(m);
     const mixer = new THREE.AnimationMixer(m), clips = Object.fromEntries(M.g.animations.map((c) => [c.name, c]));
     let cur = null, curName = '';
-    const body = { obj, mixer, clips, dead: false,
+    const neck = m.getObjectByName('mixamorigNeck'), head = m.getObjectByName('mixamorigHead');
+    // body.look: a point to turn her head to (neck and head share the turn, up to 72 degrees either side of her body), eased
+    // in and out over a quarter second; null: back to the move's own head
+    const body = { obj, mixer, clips, dead: false, look: null, lookW: 0, lookRel: 0,
       get clip() { return curName; },
       // play a move (looping unless once; rate: its speed), cross-faded from the last; its length in s
       play(n, { once = false, fade = 0.25, rate = 1 } = {}) {
@@ -255,7 +261,13 @@ export class Actors {
         a.reset().play(); if (cur && cur !== a) cur.crossFadeTo(a, fade, false); cur = a; curName = n;
         return c.duration / rate;
       },
-      update(dt) { mixer.update(dt); obj.updateMatrixWorld(true); },
+      update(dt) {
+        mixer.update(dt); obj.updateMatrixWorld(true);
+        body.lookW += ((body.look && !body.dead ? 1 : 0) - body.lookW) * Math.min(1, dt * 4);
+        if (body.lookW < 0.01 || !neck || !head) return;
+        if (body.look) { head.getWorldPosition(_v); const y = Math.atan2(body.look.x - _v.x, body.look.z - _v.z) - obj.rotation.y; body.lookRel = Math.max(-1.25, Math.min(1.25, Math.atan2(Math.sin(y), Math.cos(y)))); }
+        turnBone(neck, body.lookRel * body.lookW * 0.4); turnBone(head, body.lookRel * body.lookW * 0.6);
+      },
       dispose() {},
     };
     return body;
@@ -269,7 +281,7 @@ export class Actors {
     const body = this.storyBody('sophie'), obj = body ? body.obj : marker(0xe8c060);
     obj.position.set(at.x, 0, at.z); obj.rotation.y = at.yaw || 0; this.group.add(obj);
     const a = { kind: 'sophie', obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, mode: 'scared', trail: [], speed: 0, gap: 3.3, cower: 0 };
-    a.die = () => { a.mode = 'dead'; body?.play('hood_Death01', { once: true, fade: 0.15 }); };
+    a.die = () => { a.mode = 'dead'; if (body) body.look = null; body?.play('hood_Death01', { once: true, fade: 0.15 }); };
     a.step = (dt, level) => this.sophieStep(a, dt, level);
     body?.play('hood_Crouch_Idle_Loop');
     this.list.push(a); return a;
@@ -286,11 +298,13 @@ export class Actors {
     if (a.mode === 'goto' && a.target && dm0 > 16 && Math.hypot(a.target.x - a.x, a.target.z - a.z) > 12 && Math.hypot(a.target.x - p.x, a.target.z - p.z) > 14) {
       const q = { x: a.target.x, z: a.target.z }; sim.world.resolveCircle(q, 0.3); a.x = q.x; a.z = q.z; a.speed = 0;
     }
-    if (a.mode !== 'follow') a.cower = Math.max(0, a.cower - dt * 2);   // (a fight's cowering does not carry into the story's scenes)
+    if (a.mode !== 'follow') { a.cower = Math.max(0, a.cower - dt * 2); if (b) b.look = null; }   // (a fight's cowering, a lead's glances: not into the story's scenes)
     if (a.mode === 'follow') {
       companionStep(a, dt, level, sim);
       a.obj.position.set(a.x, groundY(a.x, a.z), a.z); a.obj.rotation.y = a.yaw;
-      if (b) this.sophieMoves(a, b);
+      // (leading: a glance back over her shoulder at Marc every few seconds as she walks ahead, her eyes on him while she waits)
+      const leading = a.cs?.state === 'lead'; a.glance = leading ? (a.glance || 0) + dt : 0;
+      if (b) { b.look = leading && (a.speed < 0.3 || a.glance % 3 > 1.8) ? { x: p.x, z: p.z } : null; this.sophieMoves(a, b); }
       return;
     } else if (a.mode === 'goto' && a.target) {
       tx = a.target.x; tz = a.target.z; const d = Math.hypot(tx - a.x, tz - a.z);

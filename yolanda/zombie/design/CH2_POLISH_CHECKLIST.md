@@ -93,25 +93,90 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
 
 ## Pass 3: replay house to boat
 
-27. [x] **The route test**: one continuous run from the house to the boat (`full_*.webm`, about 15 minutes, every stop and
-   objective, COMPLETE), driven only with stick and button input: walking by the game's own routes, shooting what it sees,
-   pressing Use at prompts, letting every line and cinematic play. Nothing placed by hand. The driver was improved live during
-   the run (going after the last looter inside the clubhouse, reaching the fuel prompt from the shore); the clubhouse's finer
-   routing grid (14c) was applied to the running game when it was found. Sophie, the infected, every interaction and the
-   ending all ran; the bot also plays the story through after every change.
+27. [x] **The route test, on the final build** (`final_*.webm` + `final_*_sheet.png`, one clip per stop): one continuous run
+   from the house to the boat, every stop and objective, COMPLETE in 7 minutes, driven only with stick and button input
+   (walking by the game's own routes, shooting what it sees, pressing Use at prompts, letting every line and cinematic play).
+   Nothing placed by hand, no side-steps, no live patches. Two earlier runs today found item 34 (the looter in the wall) and
+   item 36 (Sophie off the side of the screen), and the driver learnt to walk to the nearest standable spot in a prompt's
+   reach (the boat's fuel, over the water); each fix was followed by a fresh run from the house. Sophie in that final run:
+   off a phone's view 6.4% of the time she followed (13.7% before item 36), never more than 8 m from Marc except as a stop
+   begins (0.9%). The bot also plays the story through (COMPLETE) after the last change. (The first replay, `full_*.webm`,
+   was before today's fixes.)
 27b. [x] **Sophie in play** (`sophie_all.webm`, the final code): she leads, Marc ignores her way to loot supplies, aims at
    nothing, circles a parked car, backtracks, then takes her way again; with an awake infected about. No jumps seen, no snapped
    turns, no left/right switching; off the phone's view only while Marc sprints away from her (she runs after him); the
    infected never closer than 0.9 m (one chasing Marc ran past her). Also `sophie_gate` (stop, reverse, the gate single
    file), `sophie_combat` (a fight), `sophie_lead`, `pete_key` (the key and the bargain). Matched before/after of the bargain
-   framing: `bargain_compare.png`.
+   framing: `ba_09_bargain.png`.
 28. [x] Leak test: all nine stops sealed after every change. Performance (desktop, phone size, Medium): 31 awake infected at the
    horde, 5.3 ms simulation, 17.9 ms with the draw; the routing refresh 1.2 ms every 0.2 s.
+29. [x] **Found in the matched Sophie run: she waited at her lead point off the screen** while Marc walked the other way (up to
+   11 m off, about 15 s off screen), and once she stood close she could flick between standing and walking within a frame or
+   two. Now she leaves the lead for following once she has been off his screen 1.2 s (or he is 8 m off) and takes it up again
+   when he is back within 5 m of her way; she only stops once what moved her (his line of fire, off screen) is gone. Rechecked:
+   the lead clip (`sophie_lead`, on screen the whole way, ends beside him at the gate), the matched follow run below, and the
+   bot plays the story through to COMPLETE.
+30. [x] **Two new panel runs at the far south edge (free walk only) read messy**: 8 palisade panels stood over the lines' own
+   jersey barriers (0.81 m, under the "tall" cut so the blockers part took them for gaps). `ch2_polish.py jersey` takes them
+   out (the panels in real gaps stay), `jersey_gaps` puts a jersey barrier cut to fit in the one real opening left beside them
+   (1.3 m, where a tire stack had been), and `blockers` now counts jersey barriers as the line's own pieces. Leak test sealed;
+   `ba_02_blockers.png`, bottom row.
+31. [x] **Sophie looks back while she leads** (the brief's "wait/look back"; there is no such move in her set): her neck and
+   head turn toward Marc on top of the move playing (actors.js `storyBody` `look`, up to 72 degrees, eased in and out): a
+   glance over her shoulder every 3 s as she walks ahead, her eyes on him while she waits. `ba_sophie_lookback.png`.
+32. [x] **The new map** (design repo, `design/chapter2_extras/extras_full.png`, proposal v5: rows 3 - 6 turned, rows S1 - S8,
+   streets R1 - R4, the loop as a capital A, the barrier lines): `ba_00_new_map.png` sets it beside hood.blend rendered from
+   above on the same grid, and the plan laid over the build. Everything on it is built except what the plan itself leaves
+   open: the optional highway H1 and the two lake houses its README says need a decision.
+33. [x] **The phone editor's copy** (`levels/hood` in the design repo) re-exported with `tools/leveldesign/export_hood.mjs`
+   from this build (layout, ground, light, models, the editor's vendored modules). Written to the local clone only: not
+   pushed, and the editor artifact not republished (both are Marc's call).
+34. [x] **The clubhouse's second looter stood inside a wall** (`looter_b`, 14, -55, there since the original map): the back
+   room's wall runs through his spot, no route reaches him and nowhere Marc can stand sees him, so the clubhouse objective
+   (every looter down) could not finish; the re-run replay stopped there. `ch2_polish.py looter_b` puts him behind the bar
+   (13.2, -53.8): crouched under its 1.1 m counter, 10.5 m of route from the door. Leak test sealed; the replay below.
+35. [x] **Chapter 4, Grammy's peninsula** (the other half of the goal): `ba_ch4_grammy_map.png` sets the design repo's
+   `grandma_map.png` beside grammy.blend rendered from above on the same grid, and the map over the build.
+36. [x] **Found in the re-run replay: Sophie dropped off the screen's side when Marc ran across it** (off a phone's view 14%
+   of the time she followed, 30% at the gate and Pete's stops): standing, she only set off once she had been off screen a
+   full second or 5.6 m back, too late at his 3.3 m/s. Now, when he is running, she sets off as soon as where she would be in
+   a moment is off his screen, and keeps going while that holds (off screen after 0.4 s at most otherwise). The matched walk:
+   off screen 3.1 s -> 0.07 s.
+
+## Evidence: matched before/after (zombie/shots, local only, not in git)
+
+Before = the same spot or moment in the checkpoint before the polish (commit affa80e, run as its own local copy) or the
+baseline tour; after = now. Same camera, phone size (375 x 812).
+
+| Defect | Sheet |
+| --- | --- |
+| The new map (32) | `ba_00_new_map.png` (the plan, the build from above, the plan over the build) |
+| 1 old ground on the loop road | `ba_01_old_ground.png` (barricade curve, by the pickup) |
+| 2 weak blockers | `ba_02_blockers.png` (9 lines on the story's route + the far south jersey lines of item 30) |
+| Sophie's look back (31) | `ba_sophie_lookback.png` (new: no before) |
+| 3 grass on hard floors | `ba_03_floors.png` (garage floor, clubhouse porch) |
+| 4 new ground baked black | `ba_04_black_bake.png` (dock pad, dock road, its gate) |
+| 5 the fridge | `ba_05_fridge.png` (four matching moments of the cinematic) |
+| 6, 7 radio and call framing | `ba_06_07_radio_call.png` |
+| 8 Sophie on Pete's back | `ba_08_key_kneel.png` |
+| 9 bargain two-shot | `ba_09_bargain.png` |
+| 10 engine horde shots | `ba_10_engine_horde.png` (two matching shots of the continuous replays) |
+| 14b planter at the door | `ba_14b_planter.png` |
+| Sophie following (19 - 22, 29, 36) | `ba_sophie_follow.png` + clips `sophie_ab_before.webm` / `sophie_ab_after.webm`: the same scripted walk (run off, back, stop, circle; 33 s) with Sophie following, old build vs now. Off a phone's view 3.7 s -> 0.07 s; closest to Marc 0.03 m -> 1.5 m; in his line of fire 2.3 s -> 0.3 s; moving while he stands 9.2 s -> 1.1 s; snapped turns 2 -> 0; visible jumps 0 -> 0. With the story's lead left in (`sophie_ab_after_lead.webm`) she leaves the lead when he goes elsewhere (item 29). |
+
+No picture pair (not a visual defect, or nothing to see in a still), measured instead: 11 infected routes (grids per stop,
+refresh time), 12 spawn behind the fence (the stop no longer waits on it; bot run), 13 shotgun reach (0.8 m, inside only),
+14c doorways (routes through the 0.97 m door), 14d marker direction, 14e Sophie freezing by a sleeping infected (a fault of the
+new companion code found while testing, so there is no "before" in the old build). The old build had no leading, no marker
+rules and no safety moves, so items 22, 23, 25 are shown by their own clips (`sophie_combat`, `sophie_lead`, `sophie_all`).
 
 ## Not done / reported
 
-- No "open the fridge door" move for Marc (the reach is used). No gesture for Sophie looking back while she leads beyond
-  turning to face him (her idle). Report rather than fake.
-- Not tested on a physical phone; the clips are from the desktop browser at phone size.
-- `levels/` exports for the phone editor not refreshed (the design repo says not to edit them by hand; the export tool is
-  `tools/leveldesign/export_hood.mjs`).
+- Marc has no "open a door" move: at the fridge his reach (`hood_Interact`) opens it, timed so the door swings with his hand
+  (item 5). A real door move is a new animation (the animation chat's work); reported rather than faked.
+- Not tested on a physical phone: every clip and number is from the desktop browser at phone size (375 x 812). The iPhone
+  check (High quality as the stress test) is Marc's.
+- The phone editor: `levels/hood` is re-exported in the local design repo (item 33) but not pushed, and the editor artifact
+  not republished; both wait for Marc's OK.
+- `sophie_all`, `sophie_combat` and `sophie_gate` were recorded before items 29, 31 and 36; the final replay, the matched
+  follow walk, the lead clip and the bot cover the changed code.
