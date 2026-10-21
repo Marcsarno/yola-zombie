@@ -1,11 +1,29 @@
 // Chapter 2: the people (survivors at the house, the looters at the clubhouse) and the girls.
-// THEIR MODELS ARE NOT MADE YET (the user makes characters in Tripo Studio; the memory rule: no stand-in characters dressed
-// up as finished). Until they exist each one is a plain debug marker: a coloured capsule with a facing nub, nothing more.
+// The survivors (2026-10-20, the user's Mixamo picks): Eve with the rifle, Remy and David with pistols
+// (assets/survivors/*.glb: tools/anim/mixamo_zombie_prep.py, ~10k triangles, then tools/anim/build_survivor.py: Mixamo
+// aim idles, a flinch, two falls). The looters' models are not made yet: each is a plain debug marker, a coloured capsule
+// with a facing nub (the memory rule: no stand-in characters dressed up as finished).
 // Their behaviour is real: the survivors shoot zombies through the game's own hit code; the looters are entries in the
 // simulation's zombie list (so the player's swings and shots hit, cut and kill them as the game already does) that stand
 // in cover, aim with a red sight line (the old build's readable tell) and fire at Marc.
 import * as THREE from 'three';
+import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { PISTOL_CORE_SCALE } from '../render/weaponModels.js';
 
+// who stands where: the rifle survivor first, then the pistol survivors in turn [file, height m]
+const SURVIVORS = { rifle: [['eve', 1.7]], pistol: [['remy', 1.8], ['david', 1.78]] };
+const GUNS = { rifle: ['assets/neighborhood/props/security_rifle.glb', 1], pistol: ['assets/weapons/pistol_core.glb', PISTOL_CORE_SCALE] };
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), Z = new THREE.Vector3(0, 0, 1);
+// a gun ready to hold: its grip (GameGrip_R) at the holder's origin, the muzzle down the holder's +z
+function gunHolder(scene, scale) {
+  const g = scene.clone(true); g.scale.setScalar(scale); g.updateMatrixWorld(true);
+  const grip = g.getObjectByName('GameGrip_R')?.getWorldPosition(new THREE.Vector3()) || new THREE.Vector3();
+  const muz = g.getObjectByName('Muzzle')?.getWorldPosition(new THREE.Vector3()) || new THREE.Vector3(1, 0, 0);
+  const d = muz.clone().sub(grip); d.y = 0; d.normalize();
+  const inner = new THREE.Group(); inner.quaternion.setFromUnitVectors(d, Z); inner.add(g); g.position.copy(grip).negate();
+  const h = new THREE.Group(); h.add(inner); g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+  return h;
+}
 const COL = { survivor: 0x6fae5a, looter: 0xb2402f, leader: 0x7a1c12 };
 function marker(color) {
   const g = new THREE.Group();
@@ -23,7 +41,53 @@ export class Actors {
     this.lineMat = new THREE.LineBasicMaterial({ color: 0xff3020, transparent: true, opacity: 0.85 });
     this.tracerMat = new THREE.LineBasicMaterial({ color: 0xfff1b0, transparent: true, opacity: 0.9 });
   }
-  clear() { for (const a of this.list) a.obj.removeFromParent(); this.list.length = 0; for (const t of this.tracers) t.line.removeFromParent(); this.tracers.length = 0; }
+  // the survivors' models and guns (hood.js, at load); without them the markers stand in
+  async loadModels(loader) {
+    this.models = {}; this.guns = {}; this.nPicked = {};
+    const all = [...SURVIVORS.rifle, ...SURVIVORS.pistol];
+    await Promise.all([...all.map(([k, h]) => loader.loadAsync('assets/survivors/' + k + '.glb').then((g) => { this.models[k] = { g, h }; }).catch((e) => console.warn('survivor', k, e))),
+      ...Object.entries(GUNS).map(([k, [f, s]]) => loader.loadAsync(f).then((g) => { this.guns[k] = { scene: g.scene, s }; }).catch((e) => console.warn('survivor gun', k, e)))]);
+  }
+  // a survivor's body: the model on the clip's own aim, the gun in the right palm along the aim (rifle: from hand to hand,
+  // pistol: from the shoulder to the hand), the model turned so that aim points down the actor's facing
+  survivorBody(gun) {
+    const list = SURVIVORS[gun] || SURVIVORS.pistol, i = this.nPicked[gun] = (this.nPicked[gun] || 0) + 1, pick = list[(i - 1) % list.length];
+    const M = this.models?.[pick[0]]; if (!M) return null;
+    const m = skClone(M.g.scene); m.scale.setScalar(pick[1]);
+    m.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } });
+    const turn = new THREE.Group(); turn.add(m);
+    const obj = new THREE.Group(); obj.add(turn);
+    const mixer = new THREE.AnimationMixer(m), clips = Object.fromEntries(M.g.animations.map((c) => [c.name, c]));
+    const idle = mixer.clipAction(clips[gun === 'rifle' ? 'rifle_idle' : 'pistol_idle'] || M.g.animations[0]); idle.play();
+    const B = (n) => m.getObjectByName('mixamorig' + n);
+    const bones = { hand: B('RightHand'), mid: B('RightHandMiddle1'), lhand: B('LeftHand'), lmid: B('LeftHandMiddle1'), sh: B('RightArm') };
+    const G = this.guns?.[gun]; const holder = G ? gunHolder(G.scene, G.s) : null; if (holder) this.group.add(holder);
+    const palm = (h, mid, out) => out.copy(h.getWorldPosition(_v3)).lerp(mid.getWorldPosition(_v2), 0.55);
+    const aimDir = (out) => { if (gun === 'rifle') { palm(bones.lhand, bones.lmid, out); palm(bones.hand, bones.mid, _v); return out.sub(_v); } palm(bones.hand, bones.mid, out); return out.sub(bones.sh.getWorldPosition(_v)); };
+    const body = { obj, mixer, holder, clips, idle, kick: 0, dead: false, deadT: 0,
+      update(dt) {
+        mixer.update(dt); obj.updateMatrixWorld(true);
+        if (!holder) return;
+        if (body.dead) body.deadT += dt;
+        holder.visible = obj.visible && (!body.dead || body.deadT < 0.35); // (dropped as he goes down)
+        palm(bones.hand, bones.mid, holder.position); if (gun !== 'rifle') holder.position.y -= 0.045; // (the pistol's grip down into the two-handed fist)
+        const d = aimDir(_v); d.y *= 0.3; d.normalize(); holder.quaternion.setFromUnitVectors(Z, d);
+        if (body.kick > 0) { body.kick = Math.max(0, body.kick - dt * 6); holder.position.addScaledVector(d, -0.06 * body.kick); }
+      },
+      fire() { body.kick = 1; },
+      fall(forward) {
+        if (body.dead) return; body.dead = true; body.deadT = 0;
+        const c = clips[forward ? 'death_forward' : 'death_back']; if (!c) return;
+        const a = mixer.clipAction(c); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.reset().play(); idle.crossFadeTo(a, 0.2, false);
+      },
+      dispose() { holder?.removeFromParent(); },
+    };
+    // the clip's own aim, measured once on its first frame: the model turns so that aim lies down +z
+    mixer.update(0); obj.updateMatrixWorld(true);
+    const d0 = aimDir(new THREE.Vector3()); turn.rotation.y = -Math.atan2(d0.x, d0.z);
+    return body;
+  }
+  clear() { this.nPicked = {}; for (const a of this.list) { a.obj.removeFromParent(); a.body?.dispose(); } this.list.length = 0; for (const t of this.tracers) t.line.removeFromParent(); this.tracers.length = 0; }
   sound(name, x, z, vol = 1) { this.ctx.audio?.play(name, vol, { x, z }); }
   tracer(x0, z0, x1, z1, y = 1.3) {
     const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x0, y, z0), new THREE.Vector3(x1, y * 0.85, z1)]);
@@ -32,12 +96,12 @@ export class Actors {
 
   // a friendly survivor at a spot, shooting the nearest zombie in sight every so often; overwhelm(): stops, falls
   survivor(at, { gun = 'pistol' } = {}) {
-    const obj = marker(COL.survivor); obj.position.set(at.x, 0, at.z); this.group.add(obj);
-    const a = { kind: 'survivor', obj, x: at.x, z: at.z, yaw: at.yaw || 0, cd: 0.5, down: false, gun };
-    a.overwhelm = () => { a.down = true; };
+    const body = this.survivorBody(gun), obj = body ? body.obj : marker(COL.survivor); obj.position.set(at.x, 0, at.z); obj.rotation.y = at.yaw || 0; this.group.add(obj);
+    const a = { kind: 'survivor', obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, cd: 0.5, down: false, gun };
+    a.overwhelm = () => { a.down = true; body?.fall(Math.random() < 0.5); };
     a.step = (dt, level) => {
       const sim = level.sim;
-      if (a.down) { obj.rotation.x = Math.min(Math.PI / 2, obj.rotation.x + dt * 3); return; }
+      if (a.down) { if (!body) obj.rotation.x = Math.min(Math.PI / 2, obj.rotation.x + dt * 3); return; }
       if ((a.cd -= dt) > 0) return;
       let best = null, bd = 15;
       for (const z of sim.zombies) { if (!z.alive || z.looter) continue; const d = Math.hypot(z.x - a.x, z.z - a.z); if (d < bd && sim.world.lineOfSight(a.x, a.z, z.x, z.z, 1.2)) { best = z; bd = d; } }
@@ -45,7 +109,7 @@ export class Actors {
       a.yaw = Math.atan2(best.x - a.x, best.z - a.z); obj.rotation.y = a.yaw;
       const dx = (best.x - a.x) / bd, dz = (best.z - a.z) / bd, rifle = a.gun === 'rifle';
       if (sim.rand() < (rifle ? 0.8 : 0.55)) best.takeHit(rifle ? 55 : 22, dx, dz, rifle ? 4 : 2.5, 'pistol', sim, 'torso');
-      this.tracer(a.x, a.z, best.x, best.z); this.sound(rifle ? 'shotgun' : 'shot', a.x, a.z, 0.7);
+      this.tracer(a.x, a.z, best.x, best.z); this.sound(rifle ? 'shotgun' : 'shot', a.x, a.z, 0.7); body?.fire();
       a.cd = (rifle ? 0.9 : 0.7) + sim.rand() * 0.6;
     };
     this.list.push(a); return a;
@@ -94,6 +158,7 @@ export class Actors {
   warnShot(from, p) { this.tracer(from.x, from.z, p.x + 1.2, p.z + 0.8, 1.5); this.sound('shot', from.x, from.z, 1); this.sound('ricochet', p.x, p.z, 0.8); }
 
   update(dt) {
+    for (const a of this.list) a.body?.update(dt);
     for (let i = this.tracers.length - 1; i >= 0; i--) { const t = this.tracers[i]; if ((t.t -= dt) <= 0) { t.line.removeFromParent(); t.line.geometry.dispose(); this.tracers.splice(i, 1); } }
   }
 }

@@ -3,7 +3,8 @@
 # base colour only at 1024 px, about `tris` triangles (2026-10-20: Chapter 2's street zombies, Romero and Zombiegirl; the
 # hospital zombies are ~10.5k triangles with one 1024 texture).
 # Steps: import; the bones' "mixamorigN:" prefix to "mixamorig:"; every transform applied, scaled to 1.0 tall; the meshes
-# joined; decimated (collapse, weights carried); normal / specular / roughness maps dropped, base colour down to 1024;
+# joined; decimated (collapse, weights carried); specular / gloss maps dropped (matte, roughness 0.8); base colour down to
+# `tex` and the normal map (the cloth's folds, seams and stitching: kept since 2026-10-20, the user on the flat clothes) to `ntex`;
 # export GLB (no animation). A JSON log beside the output.
 # usage: blender [--background] --factory-startup --python tools/anim/mixamo_zombie_prep.py -- <in.fbx> <out.glb> [tris=12000]
 import bpy, sys, os, re, json
@@ -12,6 +13,7 @@ argv = sys.argv[sys.argv.index('--') + 1:]
 src, out = argv[0], argv[1]
 opts = dict(a.split('=') for a in argv[2:] if '=' in a)
 TRIS = int(opts.get('tris', 12000))
+TEX = int(opts.get('tex', 1024)); NTEX = int(opts.get('ntex', 1024))  # (base colour / normal map size caps)
 log = {'src': os.path.basename(src)}
 
 for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
@@ -70,19 +72,21 @@ for mat in me.data.materials:
     nt = mat.node_tree
     bsdf = next((n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED'), None)
     if not bsdf: continue
-    for name in ('Normal', 'Specular IOR Level', 'Specular', 'Roughness', 'Metallic', 'Emission Color', 'Emission'):
+    for name in ('Specular IOR Level', 'Specular', 'Roughness', 'Metallic', 'Emission Color', 'Emission'):
         inp = bsdf.inputs.get(name)
         if inp: [nt.links.remove(l) for l in list(inp.links)]
     if bsdf.inputs.get('Metallic'): bsdf.inputs['Metallic'].default_value = 0
     if bsdf.inputs.get('Roughness'): bsdf.inputs['Roughness'].default_value = 0.8
-    for n in list(nt.nodes):
-        if n.type == 'NORMAL_MAP': nt.nodes.remove(n)
-    base = bsdf.inputs['Base Color']
-    for l in base.links:
-        n = l.from_node
-        if n.type == 'TEX_IMAGE' and n.image:
-            if max(n.image.size) > 1024: n.image.scale(1024, 1024)
-            imgs.add(n.image.name)
+    def cap(img, size):
+        if max(img.size) > size: img.scale(size, size)
+        imgs.add(img.name)
+    for l in bsdf.inputs['Base Color'].links:
+        if l.from_node.type == 'TEX_IMAGE' and l.from_node.image: cap(l.from_node.image, TEX)
+    for l in bsdf.inputs['Normal'].links:
+        nm = l.from_node
+        if nm.type == 'NORMAL_MAP':
+            for l2 in nm.inputs['Color'].links:
+                if l2.from_node.type == 'TEX_IMAGE' and l2.from_node.image: l2.from_node.image.colorspace_settings.name = 'Non-Color'; cap(l2.from_node.image, NTEX)
     for n in list(nt.nodes):
         if n.type == 'TEX_IMAGE' and n.image and n.image.name not in imgs and not n.outputs[0].links: nt.nodes.remove(n)
 log['materials'] = [m.name for m in me.data.materials if m]; log['images'] = sorted(imgs)

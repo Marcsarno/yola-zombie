@@ -63,6 +63,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   }
   const subs = new Subtitles();
   const actors = new Actors(scene, { audio });
+  await actors.loadModels(loader); // (the survivors: Eve, Remy, David)
   const mk = (n) => { const m = HOOD.marks[n]; return m ? { x: m[0], z: m[2], yaw: m[3] } : null; };
   let level = null, titled = false;
   // a stop asked for in the URL starts there (a test hook); otherwise the last checkpoint, or the start
