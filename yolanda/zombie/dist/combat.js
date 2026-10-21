@@ -7,7 +7,7 @@
   };
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   var three_module_exports = {};
   __export(three_module_exports, {
     ACESFilmicToneMapping: () => ACESFilmicToneMapping,
@@ -434,7 +434,7 @@
     createCanvasElement: () => createCanvasElement
   });
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -18000,7 +18000,7 @@
             const vecHash1 = hashes[jNext];
             const v0 = _triangle[vertKeys[j]];
             const v1 = _triangle[vertKeys[jNext]];
-            const hash2 = `${vecHash0}_${vecHash1}`;
+            const hash3 = `${vecHash0}_${vecHash1}`;
             const reverseHash = `${vecHash1}_${vecHash0}`;
             if (reverseHash in edgeData && edgeData[reverseHash]) {
               if (_normal.dot(edgeData[reverseHash].normal) <= thresholdDot) {
@@ -18008,8 +18008,8 @@
                 vertices.push(v1.x, v1.y, v1.z);
               }
               edgeData[reverseHash] = null;
-            } else if (!(hash2 in edgeData)) {
-              edgeData[hash2] = {
+            } else if (!(hash3 in edgeData)) {
+              edgeData[hash3] = {
                 index0: indexArr[j],
                 index1: indexArr[jNext],
                 normal: _normal.clone()
@@ -21486,12 +21486,12 @@
   };
   function isUniqueEdge(start, end, edges) {
     const hash1 = `${start.x},${start.y},${start.z}-${end.x},${end.y},${end.z}`;
-    const hash2 = `${end.x},${end.y},${end.z}-${start.x},${start.y},${start.z}`;
-    if (edges.has(hash1) === true || edges.has(hash2) === true) {
+    const hash22 = `${end.x},${end.y},${end.z}-${start.x},${start.y},${start.z}`;
+    if (edges.has(hash1) === true || edges.has(hash22) === true) {
       return false;
     } else {
       edges.add(hash1);
-      edges.add(hash2);
+      edges.add(hash22);
       return true;
     }
   }
@@ -31780,7 +31780,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -36799,8 +36799,8 @@
       state.ambient[0] = r;
       state.ambient[1] = g;
       state.ambient[2] = b;
-      const hash2 = state.hash;
-      if (hash2.directionalLength !== directionalLength || hash2.pointLength !== pointLength || hash2.spotLength !== spotLength || hash2.rectAreaLength !== rectAreaLength || hash2.hemiLength !== hemiLength || hash2.numDirectionalShadows !== numDirectionalShadows || hash2.numPointShadows !== numPointShadows || hash2.numSpotShadows !== numSpotShadows || hash2.numSpotMaps !== numSpotMaps || hash2.numLightProbes !== numLightProbes) {
+      const hash3 = state.hash;
+      if (hash3.directionalLength !== directionalLength || hash3.pointLength !== pointLength || hash3.spotLength !== spotLength || hash3.rectAreaLength !== rectAreaLength || hash3.hemiLength !== hemiLength || hash3.numDirectionalShadows !== numDirectionalShadows || hash3.numPointShadows !== numPointShadows || hash3.numSpotShadows !== numSpotShadows || hash3.numSpotMaps !== numSpotMaps || hash3.numLightProbes !== numLightProbes) {
         state.directional.length = directionalLength;
         state.spot.length = spotLength;
         state.rectArea.length = rectAreaLength;
@@ -36818,16 +36818,16 @@
         state.spotLightMap.length = numSpotMaps;
         state.numSpotLightShadowsWithMaps = numSpotShadowsWithMaps;
         state.numLightProbes = numLightProbes;
-        hash2.directionalLength = directionalLength;
-        hash2.pointLength = pointLength;
-        hash2.spotLength = spotLength;
-        hash2.rectAreaLength = rectAreaLength;
-        hash2.hemiLength = hemiLength;
-        hash2.numDirectionalShadows = numDirectionalShadows;
-        hash2.numPointShadows = numPointShadows;
-        hash2.numSpotShadows = numSpotShadows;
-        hash2.numSpotMaps = numSpotMaps;
-        hash2.numLightProbes = numLightProbes;
+        hash3.directionalLength = directionalLength;
+        hash3.pointLength = pointLength;
+        hash3.spotLength = spotLength;
+        hash3.rectAreaLength = rectAreaLength;
+        hash3.hemiLength = hemiLength;
+        hash3.numDirectionalShadows = numDirectionalShadows;
+        hash3.numPointShadows = numPointShadows;
+        hash3.numSpotShadows = numSpotShadows;
+        hash3.numSpotMaps = numSpotMaps;
+        hash3.numLightProbes = numLightProbes;
         state.version = nextVersion++;
       }
     }
@@ -41886,7 +41886,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
     const attributesUsed = new Set(Object.keys(geometries[0].attributes));
@@ -42090,7 +42090,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -43817,11 +43817,11 @@ void main() {
           texture.name = sourceDef.uri;
         }
         const samplers = json3.samplers || {};
-        const sampler = samplers[textureDef.sampler] || {};
-        texture.magFilter = WEBGL_FILTERS[sampler.magFilter] || LinearFilter;
-        texture.minFilter = WEBGL_FILTERS[sampler.minFilter] || LinearMipmapLinearFilter;
-        texture.wrapS = WEBGL_WRAPPINGS[sampler.wrapS] || RepeatWrapping;
-        texture.wrapT = WEBGL_WRAPPINGS[sampler.wrapT] || RepeatWrapping;
+        const sampler2 = samplers[textureDef.sampler] || {};
+        texture.magFilter = WEBGL_FILTERS[sampler2.magFilter] || LinearFilter;
+        texture.minFilter = WEBGL_FILTERS[sampler2.minFilter] || LinearMipmapLinearFilter;
+        texture.wrapS = WEBGL_WRAPPINGS[sampler2.wrapS] || RepeatWrapping;
+        texture.wrapT = WEBGL_WRAPPINGS[sampler2.wrapT] || RepeatWrapping;
         texture.generateMipmaps = !texture.isCompressedTexture && texture.minFilter !== NearestFilter && texture.minFilter !== LinearFilter;
         parser.associations.set(texture, { textures: textureIndex });
         return texture;
@@ -44276,16 +44276,16 @@ void main() {
       const pendingTargets = [];
       for (let i = 0, il = animationDef.channels.length; i < il; i++) {
         const channel = animationDef.channels[i];
-        const sampler = animationDef.samplers[channel.sampler];
+        const sampler2 = animationDef.samplers[channel.sampler];
         const target = channel.target;
         const name = target.node;
-        const input2 = animationDef.parameters !== void 0 ? animationDef.parameters[sampler.input] : sampler.input;
-        const output = animationDef.parameters !== void 0 ? animationDef.parameters[sampler.output] : sampler.output;
+        const input2 = animationDef.parameters !== void 0 ? animationDef.parameters[sampler2.input] : sampler2.input;
+        const output = animationDef.parameters !== void 0 ? animationDef.parameters[sampler2.output] : sampler2.output;
         if (target.node === void 0) continue;
         pendingNodes.push(this.getDependency("node", name));
         pendingInputAccessors.push(this.getDependency("accessor", input2));
         pendingOutputAccessors.push(this.getDependency("accessor", output));
-        pendingSamplers.push(sampler);
+        pendingSamplers.push(sampler2);
         pendingTargets.push(target);
       }
       return Promise.all([
@@ -44305,13 +44305,13 @@ void main() {
           const node = nodes[i];
           const inputAccessor = inputAccessors[i];
           const outputAccessor = outputAccessors[i];
-          const sampler = samplers[i];
+          const sampler2 = samplers[i];
           const target = targets[i];
           if (node === void 0) continue;
           if (node.updateMatrix) {
             node.updateMatrix();
           }
-          const createdTracks = parser._createAnimationTracks(node, inputAccessor, outputAccessor, sampler, target);
+          const createdTracks = parser._createAnimationTracks(node, inputAccessor, outputAccessor, sampler2, target);
           if (createdTracks) {
             for (let k = 0; k < createdTracks.length; k++) {
               tracks.push(createdTracks[k]);
@@ -44498,7 +44498,7 @@ void main() {
         return scene2;
       });
     }
-    _createAnimationTracks(node, inputAccessor, outputAccessor, sampler, target) {
+    _createAnimationTracks(node, inputAccessor, outputAccessor, sampler2, target) {
       const tracks = [];
       const targetName = node.name ? node.name : node.uuid;
       const targetNames = [];
@@ -44536,7 +44536,7 @@ void main() {
           }
           break;
       }
-      const interpolation = sampler.interpolation !== void 0 ? INTERPOLATION[sampler.interpolation] : InterpolateLinear;
+      const interpolation = sampler2.interpolation !== void 0 ? INTERPOLATION[sampler2.interpolation] : InterpolateLinear;
       const outputArray = this._getArrayFromAccessor(outputAccessor);
       for (let j = 0, jl = targetNames.length; j < jl; j++) {
         const track = new TypedKeyframeTrack(
@@ -44545,7 +44545,7 @@ void main() {
           outputArray,
           interpolation
         );
-        if (sampler.interpolation === "CUBICSPLINE") {
+        if (sampler2.interpolation === "CUBICSPLINE") {
           this._createCubicSplineTrackInterpolant(track);
         }
         tracks.push(track);
@@ -46279,16 +46279,27 @@ void main() {
   // src/hood/layout.js
   var HOOD = { cols: null, marks: {} };
   var STAGES = {
-    free: { bounds: { minX: -66, maxX: 106, minZ: -92, maxZ: 92 }, cell: 0.6 },
+    free: { bounds: { minX: -66, maxX: 106, minZ: -126, maxZ: 92 }, cell: 0.6 },
     // (?hood=free: walk the whole map, no story)
-    home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } }
+    home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+    // (?hood=grammy: Chapter 4's peninsula, blender/grammy/: walk it, no story yet)
+    grammy: { bounds: { minX: -132, maxX: 168, minZ: -248, maxZ: 78 }, cell: 0.8, cam: { minX: -150, maxX: 185, minZ: -262, maxZ: 92 } }
   };
   var INTERIORS = [
+    // Marc's house (blender/hood/ch2_home.py, the user's plan in its real shell): the roof and the upper floor go once he is inside
+    // (cineClip: the height cut in the cinematic shots inside: the rooms keep their ceiling)
+    { id: "home", rect: { cx: 32.575, cz: 39.1, hx: 3.5, hz: 6.18, yaw: 0 }, cut: { cx: 32.62, cz: 39.2, hx: 3.85, hz: 6.75, yaw: 0 }, clipY: 2.45, cineClip: 2.95 },
     { id: "club", rect: { cx: 9.575, cz: -53.96, hx: 11, hz: 7.5, yaw: 0 }, cut: { cx: 9.575, cz: -52.2, hx: 13.6, hz: 11.4, yaw: 0 }, clipY: 3.3 },
-    { id: "B05#4", rect: { cx: 53.479, cz: -2.287, hx: 3.7, hz: 6.375, yaw: -0.4377 }, clipY: 2.45 },
-    { id: "B06#4", rect: { cx: 0.76, cz: -6.227, hx: 3.7, hz: 6.375, yaw: 0.6575 }, clipY: 2.45 }
+    // (rows 5 and 6 turned and shifted by the map clean-up: blender/hood/ch2_map.py)
+    { id: "B05#4", rect: { cx: 54.339, cz: -3.153, hx: 3.7, hz: 6.375, yaw: -0.6203 }, clipY: 2.45 },
+    { id: "B06#4", rect: { cx: -1.114, cz: -11.881, hx: 3.7, hz: 6.375, yaw: 0.7358 }, clipY: 2.45 },
+    // the groundskeeper's shed up the bank from the dock (blender/hood/ch2_dock.py): its roof goes once Marc is in the doorway
+    { id: "shed", rect: { cx: -8.6, cz: -109.6, hx: 2.2, hz: 2.4, yaw: 0 }, cut: { cx: -8.6, cz: -110, hx: 2.9, hz: 2.3, yaw: 0 }, clipY: 2.15, cineClip: 9 }
   ];
   var FLOORS2 = [
+    // Marc's house: its floor 0.2 m up, and the step outside the front door under the canopy (0.18 m, up from its east edge)
+    { id: "home", cx: 32.69, cz: 39.1, hx: 3.6, hz: 6.2, yaw: Math.PI, y: 0.2, ramp: 0.05 },
+    { id: "stoop", cx: 37.04, cz: 38.4, hx: 0.76, hz: 1.58, yaw: Math.PI, y: 0.18, ramp: 0.3 },
     { id: "dock", cx: -26.65, cz: -80.62, hx: 4.6, hz: 1.35, yaw: -3.0216, y: 0.39, ramp: 0.6 }
   ];
   function groundY(x, z) {
@@ -46304,7 +46315,8 @@ void main() {
     name: "hood",
     hood: true,
     bounds: STAGES.home.bounds,
-    camBounds: { minX: -70, maxX: 110, minZ: -96, maxZ: 96 },
+    camBounds: { minX: -70, maxX: 110, minZ: -122, maxZ: 96 },
+    // (minZ: the shed and the fence by the trees, ch2_dock.py)
     playerStart: { x: 38.2, z: 40.6, yaw: Math.PI / 2 },
     // Marc's side door (B01-H's east wall), facing the yard
     walls: [],
@@ -50886,7 +50898,7 @@ void main() {
     return Object.assign({ _v: TUNING_VERSION }, TUNING_DEFAULTS, saved || {});
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/SkeletonUtils.js
+  // node_modules/three/examples/jsm/utils/SkeletonUtils.js
   function clone(source) {
     const sourceLookup = /* @__PURE__ */ new Map();
     const cloneLookup = /* @__PURE__ */ new Map();
@@ -50916,7 +50928,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -51954,9 +51966,9 @@ void main() {
     return new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(l, y, z));
   }
   function armAnatomy(bones, side) {
-    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P2 = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
-    if (!U2 || !L3 || !H4 || !I2 || !P2 || !M4) return null;
-    const a = U2.getWorldPosition(V()), e = L3.getWorldPosition(V()), w = H4.getWorldPosition(V());
+    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H5 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P2 = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
+    if (!U2 || !L3 || !H5 || !I2 || !P2 || !M4) return null;
+    const a = U2.getWorldPosition(V()), e = L3.getWorldPosition(V()), w = H5.getWorldPosition(V());
     const ud = e.clone().sub(a).normalize(), f = w.clone().sub(e).normalize(), hd = M4.getWorldPosition(V()).sub(w).normalize();
     const aw = I2.getWorldPosition(V()).sub(P2.getWorldPosition(V())).normalize(), palm = V().crossVectors(aw, hd).normalize().multiplyScalar(side === "Right" ? 1 : -1);
     const wb = wristBend(hd, f, palm, aw), fr = forearmRoll(ud, f, wb.a0, side === "Right" ? 1 : -1);
@@ -51965,12 +51977,12 @@ void main() {
   function armToGrip(bones, side, point, axis, o = {}) {
     const w = o.w ?? 1;
     if (!(w > 1e-3)) return null;
-    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P2 = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
-    if (!U2 || !L3 || !H4 || !I2 || !P2 || !M4) return null;
+    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H5 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P2 = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
+    if (!U2 || !L3 || !H5 || !I2 || !P2 || !M4) return null;
     const sgn = side === "Right" ? 1 : -1;
-    const a = U2.getWorldPosition(V()), e0 = L3.getWorldPosition(V()), w0 = H4.getWorldPosition(V());
+    const a = U2.getWorldPosition(V()), e0 = L3.getWorldPosition(V()), w0 = H5.getWorldPosition(V());
     const L1 = a.distanceTo(e0), L22 = e0.distanceTo(w0), Lmax = (L1 + L22) * 0.999, Lmin = Math.abs(L1 - L22) + 0.02;
-    const Hq = H4.getWorldQuaternion(new Quaternion()), Hqi = Hq.clone().invert();
+    const Hq = H5.getWorldQuaternion(new Quaternion()), Hqi = Hq.clone().invert();
     const mW = M4.getWorldPosition(V()).sub(w0), aW = I2.getWorldPosition(V()).sub(P2.getWorldPosition(V())).normalize();
     const hmL = mW.clone().normalize().applyQuaternion(Hqi), aL = aW.clone().applyQuaternion(Hqi), offL = mW.clone().multiplyScalar(0.5).applyQuaternion(Hqi);
     const palmL = V().crossVectors(aL, hmL).normalize().multiplyScalar(sgn);
@@ -52059,39 +52071,39 @@ void main() {
     const predC = cost(bp, bf), pred = { r: WB.r, flex: WB.flex, dev: WB.dev, roll: FR.roll, c: predC };
     pose(bp, bf);
     const Qbest = Qh.clone(), eB = e.clone(), wB = a.clone().addScaledVector(u, clamp4(a.distanceTo(wp), Lmin, Lmax));
-    const qU = U2.quaternion.clone(), qL = L3.quaternion.clone(), qH = H4.quaternion.clone();
+    const qU = U2.quaternion.clone(), qL = L3.quaternion.clone(), qH = H5.quaternion.clone();
     worldRot2(U2, _q4.setFromUnitVectors(tmp2.copy(e0).sub(a).normalize(), V().copy(eB).sub(a).normalize()));
-    const udB = V().copy(eB).sub(a).normalize(), hc = H4.getWorldPosition(V()), fcp = perp(V(), hc.sub(eB), udB), ftp = perp(V(), V().copy(wB).sub(eB), udB);
+    const udB = V().copy(eB).sub(a).normalize(), hc = H5.getWorldPosition(V()), fcp = perp(V(), hc.sub(eB), udB), ftp = perp(V(), V().copy(wB).sub(eB), udB);
     if (fcp.lengthSq() > 1e-8 && ftp.lengthSq() > 1e-8) {
       fcp.normalize();
       ftp.normalize();
       worldRot2(U2, _q4.setFromAxisAngle(udB, Math.atan2(V().crossVectors(fcp, ftp).dot(udB), fcp.dot(ftp))));
     }
-    const fc = H4.getWorldPosition(V()).sub(L3.getWorldPosition(V())).normalize(), fB = V().copy(wB).sub(L3.getWorldPosition(V())).normalize();
+    const fc = H5.getWorldPosition(V()).sub(L3.getWorldPosition(V())).normalize(), fB = V().copy(wB).sub(L3.getWorldPosition(V())).normalize();
     worldRot2(L3, _q4.setFromUnitVectors(fc, fB));
     {
-      const QL = L3.getWorldQuaternion(new Quaternion()), hl = QL.clone().invert().multiply(Qbest), bl = H4.position.clone().normalize();
+      const QL = L3.getWorldQuaternion(new Quaternion()), hl = QL.clone().invert().multiply(Qbest), bl = H5.position.clone().normalize();
       const tw = 2 * Math.atan2(hl.x * bl.x + hl.y * bl.y + hl.z * bl.z, hl.w);
       worldRot2(L3, _q4.setFromAxisAngle(fB, tw * ANATOMY.twistToForearm));
     }
-    H4.parent.getWorldQuaternion(_q33);
-    H4.quaternion.copy(_q33.invert().multiply(Qbest));
-    H4.updateMatrixWorld(true);
+    H5.parent.getWorldQuaternion(_q33);
+    H5.quaternion.copy(_q33.invert().multiply(Qbest));
+    H5.updateMatrixWorld(true);
     if (w < 1) {
       U2.quaternion.slerpQuaternions(qU, U2.quaternion.clone(), w);
       L3.quaternion.slerpQuaternions(qL, L3.quaternion.clone(), w);
-      H4.quaternion.slerpQuaternions(qH, H4.quaternion.clone(), w);
+      H5.quaternion.slerpQuaternions(qH, H5.quaternion.clone(), w);
       U2.updateMatrixWorld(true);
     }
     let an = armAnatomy(bones, side);
     if (an.wristR > 1) {
-      const w1 = H4.getWorldPosition(V()), hd1 = M4.getWorldPosition(V()).sub(w1).normalize(), f1 = w1.clone().sub(L3.getWorldPosition(V())).normalize(), ax1 = V().crossVectors(hd1, f1);
+      const w1 = H5.getWorldPosition(V()), hd1 = M4.getWorldPosition(V()).sub(w1).normalize(), f1 = w1.clone().sub(L3.getWorldPosition(V())).normalize(), ax1 = V().crossVectors(hd1, f1);
       if (ax1.lengthSq() > 1e-10) {
-        worldRot2(H4, _q4.setFromAxisAngle(ax1.normalize(), an.bend * D * (1 - 1 / an.wristR)));
+        worldRot2(H5, _q4.setFromAxisAngle(ax1.normalize(), an.bend * D * (1 - 1 / an.wristR)));
         an = armAnatomy(bones, side);
       }
     }
-    const gp = H4.getWorldPosition(V()).add(M4.getWorldPosition(V())).multiplyScalar(0.5);
+    const gp = H5.getWorldPosition(V()).add(M4.getWorldPosition(V())).multiplyScalar(0.5);
     return { pred, psi: bp, phi: bf, flex: an.flex, dev: an.dev, r: an.wristR, roll: an.roll, rollR: an.rollR, elbow: an.elbow, gap: gp.distanceTo(point) };
   }
 
@@ -52105,19 +52117,19 @@ void main() {
   var _m13 = new Matrix4();
   var _m22 = new Matrix4();
   function fistFrame(bones, side, out) {
-    const H4 = side + "Hand", c = out.c.set(0, 0, 0);
+    const H5 = side + "Hand", c = out.c.set(0, 0, 0);
     let n = 0;
     for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
-      const b = bones[H4 + f + i];
+      const b = bones[H5 + f + i];
       if (b) {
         c.add(b.getWorldPosition(_a4));
         n++;
       }
     }
-    if (!n || !bones[H4 + "Index1"] || !bones[H4 + "Pinky1"] || !bones[H4 + "Middle1"]) return null;
+    if (!n || !bones[H5 + "Index1"] || !bones[H5 + "Pinky1"] || !bones[H5 + "Middle1"]) return null;
     c.multiplyScalar(1 / n);
-    out.a.copy(bones[H4 + "Index1"].getWorldPosition(_a4)).sub(bones[H4 + "Pinky1"].getWorldPosition(_b4)).normalize();
-    out.k.copy(bones[H4 + "Middle1"].getWorldPosition(_a4)).sub(c);
+    out.a.copy(bones[H5 + "Index1"].getWorldPosition(_a4)).sub(bones[H5 + "Pinky1"].getWorldPosition(_b4)).normalize();
+    out.k.copy(bones[H5 + "Middle1"].getWorldPosition(_a4)).sub(c);
     out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
     c.addScaledVector(out.k, -0.01);
     return out;
@@ -52189,12 +52201,12 @@ void main() {
   }
   function handOnto(bones, side, point, dir, w, solveArm, o = {}) {
     if (!(w > 1e-3)) return false;
-    const H4 = bones[side + "Hand"];
-    if (!H4) return false;
-    const r = armToGrip(bones, side, point, dir, { ...o, w, seed: H4.userData.gripSeed });
+    const H5 = bones[side + "Hand"];
+    if (!H5) return false;
+    const r = armToGrip(bones, side, point, dir, { ...o, w, seed: H5.userData.gripSeed });
     if (!r) return false;
-    H4.userData.gripSeed = { psi: r.psi, phi: r.phi };
-    H4.userData.gripDiag = r;
+    H5.userData.gripSeed = { psi: r.psi, phi: r.phi };
+    H5.userData.gripDiag = r;
     return true;
   }
   var GRIP_HANDS = {
@@ -52265,9 +52277,9 @@ void main() {
   var _ha = new Vector3();
   var _hb = new Vector3();
   function handleSpot(bones, side, origin, dir, lo, hi, out) {
-    const H4 = bones[side + "Hand"], M4 = bones[side + "HandMiddle1"];
-    if (!H4 || !M4) return 9;
-    const g = H4.getWorldPosition(_ha).add(M4.getWorldPosition(_hb)).multiplyScalar(0.5);
+    const H5 = bones[side + "Hand"], M4 = bones[side + "HandMiddle1"];
+    if (!H5 || !M4) return 9;
+    const g = H5.getWorldPosition(_ha).add(M4.getWorldPosition(_hb)).multiplyScalar(0.5);
     const t = Math.min(hi, Math.max(lo, g.clone().sub(origin).dot(dir)));
     out.copy(origin).addScaledVector(dir, t);
     return out.distanceTo(g);
@@ -52419,10 +52431,10 @@ void main() {
   var COS30 = Math.cos(30 * D2);
   var COS60 = Math.cos(60 * D2);
   function hipWeight(bones, side) {
-    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], Hip = bones[side + "UpLeg"];
-    if (!U2 || !L3 || !H4 || !Hip) return 0;
+    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H5 = bones[side + "Hand"], Hip = bones[side + "UpLeg"];
+    if (!U2 || !L3 || !H5 || !Hip) return 0;
     const ud = L3.getWorldPosition(_a5).sub(U2.getWorldPosition(_b5)).normalize(), wa = sm2((-ud.y - COS60) / (COS30 - COS60));
-    const h = H4.getWorldPosition(_a5), hp = Hip.getWorldPosition(_b5), d = Math.hypot(h.x - hp.x, h.z - hp.z);
+    const h = H5.getWorldPosition(_a5), hp = Hip.getWorldPosition(_b5), d = Math.hypot(h.x - hp.x, h.z - hp.z);
     return wa * (1 - sm2((d - 0.16) / (0.3 - 0.16)));
   }
   function adjustArms(bones, p, opts = {}) {
@@ -52448,8 +52460,8 @@ void main() {
     for (const side of ["Right", "Left"]) {
       const P2 = p[side];
       if (!P2) continue;
-      const S2 = bones[side + "Shoulder"], U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"];
-      if (!U2 || !L3 || !H4) continue;
+      const S2 = bones[side + "Shoulder"], U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H5 = bones[side + "Hand"];
+      if (!U2 || !L3 || !H5) continue;
       const out = _o.copy(_l).multiplyScalar(side === "Right" ? -1 : 1).clone();
       if (S2) {
         if (P2.shUp) signedTurn(S2, _f.clone(), P2.shUp * D2, () => U2.getWorldPosition(_c6).y);
@@ -52459,42 +52471,42 @@ void main() {
       if (P2.fwd) moveHand(bones, side, U2, _l.clone(), _f.clone(), P2.fwd);
       if (P2.twist) {
         const ax = L3.getWorldPosition(_c6).sub(U2.getWorldPosition(_a5)).normalize().clone();
-        signedTurn(U2, ax, P2.twist * D2, () => H4.getWorldPosition(_d3).sub(U2.getWorldPosition(_a5)).dot(out));
+        signedTurn(U2, ax, P2.twist * D2, () => H5.getWorldPosition(_d3).sub(U2.getWorldPosition(_a5)).dot(out));
       }
       if (P2.elbow) {
-        const e = L3.getWorldPosition(_a5).clone(), ud = e.clone().sub(U2.getWorldPosition(_b5)).normalize(), fd = H4.getWorldPosition(_c6).sub(e).normalize();
+        const e = L3.getWorldPosition(_a5).clone(), ud = e.clone().sub(U2.getWorldPosition(_b5)).normalize(), fd = H5.getWorldPosition(_c6).sub(e).normalize();
         const hinge = new Vector3().crossVectors(ud, fd);
-        if (hinge.lengthSq() > 1e-6) signedTurn(L3, hinge.normalize(), P2.elbow * D2, () => -H4.getWorldPosition(_d3).sub(e).normalize().dot(ud));
+        if (hinge.lengthSq() > 1e-6) signedTurn(L3, hinge.normalize(), P2.elbow * D2, () => -H5.getWorldPosition(_d3).sub(e).normalize().dot(ud));
       }
       const before = limit && (P2.fore || P2.wristUp || P2.wristSide) ? armAnatomy(bones, side) : null;
       if (P2.fore) {
-        const fd = H4.getWorldPosition(_a5).sub(L3.getWorldPosition(_b5)).normalize().clone();
+        const fd = H5.getWorldPosition(_a5).sub(L3.getWorldPosition(_b5)).normalize().clone();
         signedTurn(L3, fd, P2.fore * D2, () => armAnatomy(bones, side).roll);
       }
-      const hq = H4.quaternion.clone();
+      const hq = H5.quaternion.clone();
       if (P2.wristUp || P2.wristSide) {
         const I2 = bones[side + "HandIndex1"], K2 = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
         if (I2 && K2 && M4) {
-          const w = H4.getWorldPosition(_a5).clone(), aw = I2.getWorldPosition(_b5).sub(K2.getWorldPosition(_c6)).normalize().clone(), hd = M4.getWorldPosition(_c6).sub(w).normalize().clone();
+          const w = H5.getWorldPosition(_a5).clone(), aw = I2.getWorldPosition(_b5).sub(K2.getWorldPosition(_c6)).normalize().clone(), hd = M4.getWorldPosition(_c6).sub(w).normalize().clone();
           const palm = new Vector3().crossVectors(aw, hd).normalize();
-          if (P2.wristUp) signedTurn(H4, aw, P2.wristUp * D2, () => armAnatomy(bones, side).flex);
-          if (P2.wristSide) signedTurn(H4, palm, P2.wristSide * D2, () => armAnatomy(bones, side).dev);
+          if (P2.wristUp) signedTurn(H5, aw, P2.wristUp * D2, () => armAnatomy(bones, side).flex);
+          if (P2.wristSide) signedTurn(H5, palm, P2.wristSide * D2, () => armAnatomy(bones, side).dev);
         }
       }
       if (before && before.wristR <= 1) {
         let after = armAnatomy(bones, side);
         if (after.wristR > 1) {
-          const hq1 = H4.quaternion.clone();
+          const hq1 = H5.quaternion.clone();
           let lo = 0, hi = 1;
           for (let i = 0; i < 12; i++) {
             const m = (lo + hi) / 2;
-            H4.quaternion.slerpQuaternions(hq, hq1, m);
-            H4.updateMatrixWorld(true);
+            H5.quaternion.slerpQuaternions(hq, hq1, m);
+            H5.updateMatrixWorld(true);
             if (armAnatomy(bones, side).wristR <= 1) lo = m;
             else hi = m;
           }
-          H4.quaternion.slerpQuaternions(hq, hq1, lo);
-          H4.updateMatrixWorld(true);
+          H5.quaternion.slerpQuaternions(hq, hq1, lo);
+          H5.updateMatrixWorld(true);
         }
       }
     }
@@ -52729,7 +52741,7 @@ void main() {
   var GAIT = { f: ["pistol_walk", "pistol_run"], b: ["pistol_walk_back", "pistol_run_back"], l: ["pistol_strafe_left", "pistol_strafe_run_left"], r: ["pistol_strafe_right", "pistol_strafe_run_right"] };
   var YolaView = class extends ClipBody {
     constructor(scene2, gltf, clipdata, weapons) {
-      const H4 = weapons.height || 1.62;
+      const H5 = weapons.height || 1.62;
       const clips = [];
       const rest = hipsRest(gltf.scene);
       const byName = Object.fromEntries(gltf.animations.map((c) => [c.name, stripRoot(c, rest)]));
@@ -52764,11 +52776,11 @@ void main() {
       clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), "fists_idle_upper"));
       const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS, LEG_ATTACKS.axe].map((A) => A.clip))].filter((n) => byName[n]);
       clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
-      const scriptNames = ["t_greet_01", "t_greet_04"].filter((n) => byName[n]);
+      const scriptNames = ["t_greet_01", "t_greet_04", ...Object.keys(byName).filter((n) => n.startsWith("hood_"))].filter((n) => byName[n]);
       for (const n of scriptNames) clips.push(byName[n]);
-      super(scene2, gltf.scene, H4, clips);
+      super(scene2, gltf.scene, H5, clips);
       this.byName = byName;
-      this.H = H4;
+      this.H = H5;
       this.scriptNames = scriptNames;
       this.unarmed = unarmed;
       this.restQ = Object.values(this.bones).map((b) => [b, b.quaternion.clone()]);
@@ -53010,13 +53022,18 @@ void main() {
       cal.setEffectiveWeight(0);
     }
     // a scripted full-body clip played once at its natural rate, blended in/out over the normal layers
-    playScript(name, { fadeIn = 0.3, fadeOut = 0.5, rate = 1 } = {}) {
+    // (loop: held, wrapping, until endScript() fades it out)
+    playScript(name, { fadeIn = 0.3, fadeOut = 0.5, rate = 1, loop = false } = {}) {
       const act = this.act(name);
       if (!act) return false;
       const clip = act.getClip(), t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
-      this.script = { act, t: 0, t0, len: clip.duration - t0, fadeIn, fadeOut, rate };
+      this.script = { act, t: 0, t0, len: clip.duration - t0, fadeIn, fadeOut, rate, loop };
       this.scriptDone = false;
       return true;
+    }
+    endScript() {
+      const S2 = this.script;
+      if (S2 && S2.endAt === void 0) S2.endAt = S2.t + S2.fadeOut;
     }
     scriptLength(name) {
       const c = this.act(name)?.getClip();
@@ -53376,10 +53393,10 @@ void main() {
       if (this.script && !sact) {
         const S2 = this.script;
         S2.t += dt;
-        const len = S2.len / S2.rate, inW = clamp5(S2.t / S2.fadeIn, 0, 1), outW = clamp5((len - S2.t) / S2.fadeOut, 0, 1);
+        const len = S2.endAt ?? (S2.loop ? Infinity : S2.len / S2.rate), inW = clamp5(S2.t / S2.fadeIn, 0, 1), outW = clamp5((len - S2.t) / S2.fadeOut, 0, 1);
         scW = smooth2(inW) * smooth2(outW);
         sact = S2.act;
-        S2.act.time = S2.t0 + Math.min(S2.t * S2.rate, S2.len - 1e-3);
+        S2.act.time = S2.t0 + (S2.loop ? S2.t * S2.rate % (S2.len - 1e-3) : Math.min(S2.t * S2.rate, S2.len - 1e-3));
         S2.act.setEffectiveWeight(scW);
         if (S2.t >= len) {
           S2.act.setEffectiveWeight(0);
@@ -53712,16 +53729,16 @@ void main() {
     // e.g. the rifle stance ~130 degrees; the turn onto the aim is done by the aim correction). Blended
     // by the layer's weight. (Hips' parent is static, so local hip rotations compare directly.)
     rebaseUpper() {
-      const H4 = this.bones.Hips, S2 = this.bones.Spine;
-      if (!H4 || !S2) return;
-      const inv = _q24.copy(H4.quaternion).invert();
+      const H5 = this.bones.Hips, S2 = this.bones.Spine;
+      if (!H5 || !S2) return;
+      const inv = _q24.copy(H5.quaternion).invert();
       for (const n in this.upperHips) {
         const a = this.act(n), w = a.getEffectiveWeight();
         if (w < 1e-3) continue;
         const v = this.upperHips[n].evaluate(a.time);
         _q34.set(v[0], v[1], v[2], v[3]);
         if (!(this.sgOwnHeading && /^shotgun_/.test(n))) {
-          const fc = _v4.set(0, 0, 1).applyQuaternion(_q34), fn = _v23.set(0, 0, 1).applyQuaternion(H4.quaternion);
+          const fc = _v4.set(0, 0, 1).applyQuaternion(_q34), fn = _v23.set(0, 0, 1).applyQuaternion(H5.quaternion);
           _q42.setFromAxisAngle(UP2, Math.atan2(fn.x, fn.z) - Math.atan2(fc.x, fc.z));
           _q34.premultiply(_q42);
         }
@@ -53842,20 +53859,20 @@ void main() {
     // left HAND bone turned -118 deg about its own length and her forearm 0, so her skin wrings at the wrist ("her wrist looks
     // completely whack"). Her hand keeps its world turn (the grip unchanged); the twist past keepDeg goes to the forearm.
     untwistWrist(side, keepDeg) {
-      const H4 = this.bones[side + "Hand"], F3 = this.bones[side + "ForeArm"], M4 = this.bones[side + "HandMiddle1"];
-      if (!H4 || !F3 || !M4) return;
-      const ax = _v7.copy(M4.position).normalize(), q = H4.quaternion, d = q.x * ax.x + q.y * ax.y + q.z * ax.z;
+      const H5 = this.bones[side + "Hand"], F3 = this.bones[side + "ForeArm"], M4 = this.bones[side + "HandMiddle1"];
+      if (!H5 || !F3 || !M4) return;
+      const ax = _v7.copy(M4.position).normalize(), q = H5.quaternion, d = q.x * ax.x + q.y * ax.y + q.z * ax.z;
       const tw = _q34.set(ax.x * d, ax.y * d, ax.z * d, q.w).normalize();
       let ang = 2 * Math.acos(Math.min(1, Math.abs(tw.w)));
       if (d < 0 !== tw.w < 0) ang = -ang;
       const keep = keepDeg * Math.PI / 180, excess = ang - Math.sign(ang) * Math.min(Math.abs(ang), keep);
       if (Math.abs(excess) < 1e-3) return;
-      H4.updateWorldMatrix(true, false);
-      H4.getWorldQuaternion(_q42);
-      F3.quaternion.multiply(_q34.setFromAxisAngle(_v7.copy(H4.position).normalize(), excess));
+      H5.updateWorldMatrix(true, false);
+      H5.getWorldQuaternion(_q42);
+      F3.quaternion.multiply(_q34.setFromAxisAngle(_v7.copy(H5.position).normalize(), excess));
       F3.updateMatrixWorld(true);
-      H4.quaternion.copy(F3.getWorldQuaternion(_q34).invert().multiply(_q42));
-      H4.updateMatrixWorld(true);
+      H5.quaternion.copy(F3.getWorldQuaternion(_q34).invert().multiply(_q42));
+      H5.updateMatrixWorld(true);
     }
     shotgunLeftHand(rf, G6, F3 = this.shotgunFit, C = null) {
       const U2 = G6.userData, SP = SHOTGUN_SPEC, SH2 = SP.shell, smooth01 = (u) => smooth2(clamp5(u, 0, 1));
@@ -53955,18 +53972,18 @@ void main() {
     }
     // fist centre, grip axis (pinky -> index) and knuckle direction from her finger joints (as in the move library)
     fistFrame(side, out) {
-      const H4 = side + "Hand", c = out.c.set(0, 0, 0);
+      const H5 = side + "Hand", c = out.c.set(0, 0, 0);
       let n = 0;
       for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
-        const b = this.bones[H4 + f + i];
+        const b = this.bones[H5 + f + i];
         if (b) {
           c.add(b.getWorldPosition(_v4));
           n++;
         }
       }
       c.multiplyScalar(1 / n);
-      out.a.copy(this.bones[H4 + "Index1"].getWorldPosition(_v4)).sub(this.bones[H4 + "Pinky1"].getWorldPosition(_v23)).normalize();
-      out.k.copy(this.bones[H4 + "Middle1"].getWorldPosition(_v4)).sub(c);
+      out.a.copy(this.bones[H5 + "Index1"].getWorldPosition(_v4)).sub(this.bones[H5 + "Pinky1"].getWorldPosition(_v23)).normalize();
+      out.k.copy(this.bones[H5 + "Middle1"].getWorldPosition(_v4)).sub(c);
       out.k.addScaledVector(out.a, -out.k.dot(out.a)).normalize();
       c.addScaledVector(out.k, -0.01);
       return out;
@@ -55181,7 +55198,7 @@ void main() {
       this.model.updateMatrixWorld(true);
       const RH = rest(hb), RT2 = rest(ht);
       if (!RH || !RT2) return;
-      const H4 = new Vector3().setFromMatrixPosition(RH), T2 = new Vector3().setFromMatrixPosition(RT2), U2 = T2.clone().sub(H4), L3 = U2.length();
+      const H5 = new Vector3().setFromMatrixPosition(RH), T2 = new Vector3().setFromMatrixPosition(RT2), U2 = T2.clone().sub(H5), L3 = U2.length();
       U2.normalize();
       const F3 = new Vector3(0, 0, 1).applyQuaternion(this.model.getWorldQuaternion(new Quaternion()));
       F3.addScaledVector(U2, -F3.dot(U2)).normalize();
@@ -55200,7 +55217,7 @@ void main() {
       }
       const mat2 = new SpriteMaterial({ map: _ZombieView.eyeTex, color: _ZombieView.eyeCfg.col, transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
       this.eyes = [-1, 1].map((s) => {
-        const E0 = H4.clone().addScaledVector(U2, up * L3).addScaledVector(R, s * sp * L3), f = onFace(E0);
+        const E0 = H5.clone().addScaledVector(U2, up * L3).addScaledVector(R, s * sp * L3), f = onFace(E0);
         const e = new Sprite(mat2);
         e.position.copy(E0.addScaledVector(F3, f != null ? f + 4e-3 : fw * L3).applyMatrix4(inv));
         e.scale.setScalar(_ZombieView.eyeCfg.size / ws);
@@ -56267,11 +56284,11 @@ void main() {
   function setupNewMoves(yola2, anims, hold) {
     const by = Object.fromEntries(anims.map((c) => [c.name, c])), made = [];
     yola2.addAttackClips([...OVERLAY_NAMES, ...REC].map((n) => by[n]).filter(Boolean));
-    const moveSet = (H4, P2, key) => {
+    const moveSet = (H5, P2, key) => {
       const A = by.ual_Sword_Regular_A, B = by.ual_Sword_Regular_B, C = by.ual_Sword_Regular_C;
       if (A && B && C) {
         const one2 = (clip, name, rec) => {
-          const parts = buildLibraryAttack(yola2, { clip, hold: H4, P: P2, name, sound: key, strikes: 1, recover: SETTLE2, split: false });
+          const parts = buildLibraryAttack(yola2, { clip, hold: H5, P: P2, name, sound: key, strikes: 1, recover: SETTLE2, split: false });
           for (const S2 of parts) {
             const end = attackEnd(S2);
             Object.assign(S2, { continuous: true, chainAlways: true, chainFrom: end, last: false, rec, duration: end + SETTLE2, swapPoint: end * 0.85 });
@@ -56279,13 +56296,13 @@ void main() {
           return parts;
         };
         const cFrames = Math.round(C.duration * 30) - 2;
-        const strikes = [...one2(A, key + " 1", REC[0]), ...one2(B, key + " 2", REC[1]), ...buildLibraryAttack(yola2, { clip: C, frames: cFrames, hold: H4, P: P2, name: key + " 3", sound: key, strikes: 2, speed: 1.7 })];
+        const strikes = [...one2(A, key + " 1", REC[0]), ...one2(B, key + " 2", REC[1]), ...buildLibraryAttack(yola2, { clip: C, frames: cFrames, hold: H5, P: P2, name: key + " 3", sound: key, strikes: 2, speed: 1.7 })];
         (key === "axe" ? useBuiltAxe : useBuiltBat)(strikes);
         made.push(`${key} combo: ${strikes.length} strikes`);
       }
       if (by.ual1_Sword_Attack) {
         const clip = cutClip(by.ual1_Sword_Attack, 1, 30, "ual1_Sword_Attack_legs");
-        const [S2] = buildLibraryAttack(yola2, { clip, hold: H4, P: { ...P2, style: "legs" }, name: key + " legs", sound: key, recover: 0.4, split: false });
+        const [S2] = buildLibraryAttack(yola2, { clip, hold: H5, P: { ...P2, style: "legs" }, name: key + " legs", sound: key, recover: 0.4, split: false });
         turnAttack(S2, -67 * deg2, 0.3);
         lowWindow(S2);
         Object.assign(S2, { legs: true, minY: 0, style: "legs", dmg: 0.8, knock: 0.5, chainFrom: 9, stand: 0.95, kind: P2.kind }, key === "axe" ? { sever: { leg: 1 } } : {});
@@ -56294,7 +56311,7 @@ void main() {
       }
       if (by.ual_Sword_Heavy_D) {
         const clip = cutClip(by.ual_Sword_Heavy_D, 10, 34, "ual_Sword_Heavy_D_ground");
-        const [S2] = buildLibraryAttack(yola2, { clip, hold: H4, P: { ...P2, style: "chop", dmg: 1.4, knock: 0.6 }, name: key + " ground", sound: key, recover: 0.3, split: false });
+        const [S2] = buildLibraryAttack(yola2, { clip, hold: H5, P: { ...P2, style: "chop", dmg: 1.4, knock: 0.6 }, name: key + " ground", sound: key, recover: 0.3, split: false });
         Object.assign(S2, { ground: true, style: "chop", minY: 0.05, chainFrom: 9, assist: 2, stand: 1, kind: P2.kind, dmg: 1.4, knock: 0.6 }, key === "axe" ? { sever: { head: 0.6, arm: 0.35 } } : {});
         GROUND_OWN[key] = S2;
         made.push(key + " ground");
@@ -56729,7 +56746,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/environments/RoomEnvironment.js
+  // node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
       super();
@@ -57239,13 +57256,13 @@ void main() {
       this.applySit();
       if (t < 0) return;
       this.root.updateMatrixWorld(true);
-      const ease2 = (u) => {
+      const ease3 = (u) => {
         u = Math.min(1, Math.max(0, u));
         return u * u * (3 - 2 * u);
       };
-      const lift = t < 0.5 ? ease2(t / 0.5) * 0.35 : 0.35 + ease2((t - 0.5) / 0.5) * 0.65;
-      const up = lift * (1 - ease2((t - 3.9) / 0.8));
-      const wig = Math.sin(t * 16) * ease2((t - 0.9) / 0.3) * (1 - ease2((t - 3.7) / 0.5));
+      const lift = t < 0.5 ? ease3(t / 0.5) * 0.35 : 0.35 + ease3((t - 0.5) / 0.5) * 0.65;
+      const up = lift * (1 - ease3((t - 3.9) / 0.8));
+      const wig = Math.sin(t * 16) * ease3((t - 0.9) / 0.3) * (1 - ease3((t - 3.7) / 0.5));
       const U2 = new Vector3(0, 1, 0);
       const right = _v8.copy(B.upperarm_r.getWorldPosition(new Vector3())).sub(B.upperarm_l.getWorldPosition(new Vector3()));
       right.y = 0;
@@ -57255,7 +57272,7 @@ void main() {
       this.aim("upperarm_r", du, up);
       const df = U2.clone().add(R3.clone().multiplyScalar(0.1 + wig * 0.85)).add(F3.clone().multiplyScalar(0.3)).normalize();
       this.aim("forearm_r", df, up);
-      const shy = ease2((t - 0.9) / 0.5) * (1 - ease2((t - 3.9) / 0.6));
+      const shy = ease3((t - 0.9) / 0.5) * (1 - ease3((t - 3.9) / 0.6));
       this.rotW("head", F3, -0.13 * shy);
     }
   };
@@ -59154,7 +59171,7 @@ void main() {
       return null;
     }
     buildOutbreak() {
-      const O = this.ob, S2 = OB_TILE * 4, H4 = 2.7;
+      const O = this.ob, S2 = OB_TILE * 4, H5 = 2.7;
       this.obRooms = this.f3 ? CH().rooms : OB_WING_ROOMS;
       for (const r of this.obRooms) {
         if (!r.floor) continue;
@@ -59178,7 +59195,7 @@ void main() {
         const { minX: x0, maxX: x1, minZ: z0, maxZ: z1 } = w.box, y0 = w.y0 || 0, h = w.h;
         const buf = [[], [], []];
         const quad = (mi, BL, BR, TR, TL, n, u0, u1) => {
-          const P2 = [BL, BR, TR, BL, TR, TL], U2 = [[u0, BL[1] / H4], [u1, BR[1] / H4], [u1, TR[1] / H4], [u0, BL[1] / H4], [u1, TR[1] / H4], [u0, TL[1] / H4]];
+          const P2 = [BL, BR, TR, BL, TR, TL], U2 = [[u0, BL[1] / H5], [u1, BR[1] / H5], [u1, TR[1] / H5], [u0, BL[1] / H5], [u1, TR[1] / H5], [u0, TL[1] / H5]];
           for (let k = 0; k < 6; k++) buf[mi].push(P2[k], n, U2[k]);
         };
         const faces = [
@@ -59197,7 +59214,7 @@ void main() {
             const pt = (t, y) => alongX ? [t, y, F3.at] : [F3.at, y, t];
             const rs = alongX ? F3.r[0] : F3.r[1];
             if (rs < 0) [a, b] = [b, a];
-            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F3.n, a * rs / H4, b * rs / H4);
+            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F3.n, a * rs / H5, b * rs / H5);
           }
         }
         buf[2].push([x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z1], [0, 1, 0], [1, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z0], [0, 1, 0], [0, 1]);
@@ -60578,7 +60595,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/CopyShader.js
+  // node_modules/three/examples/jsm/shaders/CopyShader.js
   var CopyShader = {
     name: "CopyShader",
     uniforms: {
@@ -60618,7 +60635,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/Pass.js
+  // node_modules/three/examples/jsm/postprocessing/Pass.js
   var Pass = class {
     /**
      * Constructs a new pass.
@@ -60709,7 +60726,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/ShaderPass.js
+  // node_modules/three/examples/jsm/postprocessing/ShaderPass.js
   var ShaderPass = class extends Pass {
     /**
      * Constructs a new shader pass.
@@ -60774,7 +60791,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/MaskPass.js
+  // node_modules/three/examples/jsm/postprocessing/MaskPass.js
   var MaskPass = class extends Pass {
     /**
      * Constructs a new mask pass.
@@ -60862,7 +60879,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/EffectComposer.js
+  // node_modules/three/examples/jsm/postprocessing/EffectComposer.js
   var EffectComposer = class {
     /**
      * Constructs a new effect composer.
@@ -61046,7 +61063,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/RenderPass.js
+  // node_modules/three/examples/jsm/postprocessing/RenderPass.js
   var RenderPass = class extends Pass {
     /**
      * Constructs a new render pass.
@@ -61118,7 +61135,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/GTAOShader.js
+  // node_modules/three/examples/jsm/shaders/GTAOShader.js
   var GTAOShader = {
     name: "GTAOShader",
     defines: {
@@ -61471,7 +61488,7 @@ void main() {
     return magicSquare;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
+  // node_modules/three/examples/jsm/shaders/PoissonDenoiseShader.js
   var PoissonDenoiseShader = {
     name: "PoissonDenoiseShader",
     defines: {
@@ -61670,7 +61687,7 @@ void main() {
     return samples;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/math/SimplexNoise.js
+  // node_modules/three/examples/jsm/math/SimplexNoise.js
   var SimplexNoise = class {
     /**
      * Constructs a new simplex noise object.
@@ -62104,7 +62121,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/GTAOPass.js
+  // node_modules/three/examples/jsm/postprocessing/GTAOPass.js
   var GTAOPass = class _GTAOPass extends Pass {
     /**
      * Constructs a new GTAO pass.
@@ -62531,7 +62548,7 @@ void main() {
     "Denoise": 5
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
+  // node_modules/three/examples/jsm/shaders/LuminosityHighPassShader.js
   var LuminosityHighPassShader = {
     name: "LuminosityHighPassShader",
     uniforms: {
@@ -62583,7 +62600,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
+  // node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js
   var UnrealBloomPass = class _UnrealBloomPass extends Pass {
     /**
      * Constructs a new Unreal Bloom pass.
@@ -62867,7 +62884,7 @@ void main() {
   UnrealBloomPass.BlurDirectionX = new Vector2(1, 0);
   UnrealBloomPass.BlurDirectionY = new Vector2(0, 1);
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/shaders/OutputShader.js
+  // node_modules/three/examples/jsm/shaders/OutputShader.js
   var OutputShader = {
     name: "OutputShader",
     uniforms: {
@@ -62955,7 +62972,7 @@ void main() {
     )
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/postprocessing/OutputPass.js
+  // node_modules/three/examples/jsm/postprocessing/OutputPass.js
   var OutputPass = class extends Pass {
     /**
      * Constructs a new output pass.
@@ -67057,8 +67074,8 @@ void main() {
       }
     }
     drawMonitor(t) {
-      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H4 = c.height, mode2 = this.monMode || "normal";
-      g.clearRect(0, 0, W3, H4);
+      const c = this.ecg, g = c.getContext("2d"), W3 = c.width, H5 = c.height, mode2 = this.monMode || "normal";
+      g.clearRect(0, 0, W3, H5);
       g.strokeStyle = mode2 === "normal" ? "#59f0a0" : "#ff7a6a";
       g.lineWidth = 3;
       g.lineJoin = "round";
@@ -67073,7 +67090,7 @@ void main() {
           else if (p > 0.235 && p < 0.27) y = 9;
           else if (p > 0.4 && p < 0.5) y = -6 * Math.sin((p - 0.4) / 0.1 * Math.PI);
         } else if (mode2 === "irregular") y = Math.sin(x * 0.09 + t * 9) * 9 + Math.sin(x * 0.23 - t * 5) * 6;
-        const yy = H4 / 2 + y + (mode2 === "flat" ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
+        const yy = H5 / 2 + y + (mode2 === "flat" ? Math.sin(x * 0.04 + t * 3) * 0.6 : 0);
         x === 0 ? g.moveTo(x, yy) : g.lineTo(x, yy);
       }
       g.stroke();
@@ -67912,22 +67929,22 @@ void main() {
     g.rotate(-0.09);
     g.fillStyle = "#e8902e";
     g.beginPath();
-    const L3 = u * 0.5, H4 = u * 0.17;
-    g.moveTo(-L3, -H4 * 0.5);
+    const L3 = u * 0.5, H5 = u * 0.17;
+    g.moveTo(-L3, -H5 * 0.5);
     for (let i = 0; i <= 12; i++) {
       const x = -L3 + 2 * L3 * i / 12;
-      g.lineTo(x, -H4 * 0.55 + Math.sin(i * 2.3) * H4 * 0.12);
+      g.lineTo(x, -H5 * 0.55 + Math.sin(i * 2.3) * H5 * 0.12);
     }
-    g.lineTo(L3 * 1.04, H4 * 0.15);
+    g.lineTo(L3 * 1.04, H5 * 0.15);
     for (let i = 12; i >= 0; i--) {
       const x = -L3 + 2 * L3 * i / 12;
-      g.lineTo(x, H4 * 0.6 + Math.cos(i * 1.7) * H4 * 0.14);
+      g.lineTo(x, H5 * 0.6 + Math.cos(i * 1.7) * H5 * 0.14);
     }
     g.closePath();
     g.fill();
     g.globalAlpha = 0.35;
     g.fillStyle = "#b8541c";
-    g.fillRect(-L3 * 0.9, H4 * 0.25, L3 * 1.7, H4 * 0.12);
+    g.fillRect(-L3 * 0.9, H5 * 0.25, L3 * 1.7, H5 * 0.12);
     g.globalAlpha = 1;
     const fs = Math.round(u * 0.29);
     g.font = `900 ${fs}px Impact, "Arial Black", "Helvetica Neue", sans-serif`;
@@ -67936,17 +67953,17 @@ void main() {
     g.lineJoin = "round";
     g.lineWidth = fs * 0.16;
     g.strokeStyle = "#141012";
-    g.strokeText(name, 0, -H4 * 0.05);
+    g.strokeText(name, 0, -H5 * 0.05);
     g.fillStyle = "#fff8ec";
-    g.fillText(name, 0, -H4 * 0.05);
+    g.fillText(name, 0, -H5 * 0.05);
     const ts = Math.round(u * 0.058);
     g.rotate(0.05);
     g.font = `italic 700 ${ts}px "Segoe Print", "Bradley Hand", "Marker Felt", "Comic Sans MS", cursive`;
     g.lineWidth = ts * 0.32;
     g.strokeStyle = "#141012";
-    g.strokeText(tagline, 0, H4 * 1.1);
+    g.strokeText(tagline, 0, H5 * 1.1);
     g.fillStyle = "#ffffff";
-    g.fillText(tagline, 0, H4 * 1.1);
+    g.fillText(tagline, 0, H5 * 1.1);
     g.restore();
     return c;
   }
@@ -70927,7 +70944,7 @@ void main() {
         this.fogU.uSoft.value = Q2.softFog ? 1 : 0;
       }
       const sp = this.spot, glowK = Q2.glow * (Math.min(1.5, r.flash || 0) + 0.6 * (r.key || 0)) * (sp && sp.intensity > 0 ? 1 : 0), cam = this.camera.position;
-      const _v14 = this._fv || (this._fv = new Vector3()), _l2 = this._fl || (this._fl = new Vector3());
+      const _v14 = this._fv || (this._fv = new Vector3()), _l3 = this._fl || (this._fl = new Vector3());
       const L3 = LIFT7, z0 = L3.cab.minZ + 0.4;
       for (const p of S2.parts) {
         p.life += d * p.speed / 3.2;
@@ -70961,10 +70978,10 @@ void main() {
         let sc = 0;
         if (glowK > 0) {
           _v14.subVectors(p.sp.position, cam).normalize();
-          _l2.subVectors(sp.position, p.sp.position);
-          const ld = _l2.length();
-          _l2.divideScalar(ld || 1);
-          const c = Math.max(0, _v14.dot(_l2));
+          _l3.subVectors(sp.position, p.sp.position);
+          const ld = _l3.length();
+          _l3.divideScalar(ld || 1);
+          const c = Math.max(0, _v14.dot(_l3));
           sc = 0.22 * glowK * c * c * c * c * c * c / (1 + ld * ld * 0.12);
         }
         p.sp.material.color.setRGB(Math.min(1.6, lit + red + sc), Math.min(1.6, lit * 0.95 + red * 0.08 + sc * 0.93), Math.min(1.6, lit * 0.98 + red * 0.08 + sc * 0.82));
@@ -72340,10 +72357,10 @@ void main() {
       if (!L3 || !C) return;
       const B = this.yshBase || (this.yshBase = { half: L3.shadow.camera.right, map: L3.shadow.mapSize.x, bias: L3.shadow.bias, nb: L3.shadow.normalBias });
       const on = !off && !this.launch && !!(this.gameLight && RT.quality.flashShadow && lk.on.yshadow && r?.on && r.spotAt === "flash" && sp && her);
-      const H4 = on ? 4.5 : B.half, M4 = on ? 1024 : B.map, cam = L3.shadow.camera;
-      if (cam.right !== H4) {
-        cam.left = cam.bottom = -H4;
-        cam.right = cam.top = H4;
+      const H5 = on ? 4.5 : B.half, M4 = on ? 1024 : B.map, cam = L3.shadow.camera;
+      if (cam.right !== H5) {
+        cam.left = cam.bottom = -H5;
+        cam.right = cam.top = H5;
         cam.updateProjectionMatrix();
       }
       if (L3.shadow.mapSize.x !== M4) {
@@ -72359,13 +72376,13 @@ void main() {
         return;
       }
       const to = new Vector3(sp.position.x - her.x, sp.position.y, sp.position.z - her.z).normalize(), fall = new Vector3(-to.x, 0, -to.z).normalize();
-      const cx = her.x + fall.x * H4 * 0.7, cz = her.z + fall.z * H4 * 0.7;
+      const cx = her.x + fall.x * H5 * 0.7, cz = her.z + fall.z * H5 * 0.7;
       L3.target.position.set(cx, 0, cz);
       L3.position.set(cx + to.x * 6, to.y * 6, cz + to.z * 6);
       L3.target.updateMatrixWorld();
       L3.updateMatrixWorld();
       C.position.set(cx, 0.014, cz);
-      C.scale.set(H4 / B.half, 1, H4 / B.half);
+      C.scale.set(H5 / B.half, 1, H5 / B.half);
       C.material.opacity = 0.62 * Math.min(1, (r.flash || 0) + (r.key || 0) * 2);
       this.renderer.shadowMap.needsUpdate = true;
     }
@@ -73333,14 +73350,14 @@ void main() {
       if (via === "normal") this.later33();
       g.applyRoom1();
       if (this.patientDown) this.dropPatient();
-      const H4 = via === "normal" ? this.handoff : null;
-      if (H4 && g.sim?.player) {
+      const H5 = via === "normal" ? this.handoff : null;
+      if (H5 && g.sim?.player) {
         const p = g.sim.player;
-        p.x = p.px = H4.x;
-        p.z = p.pz = H4.z;
-        p.aimYaw = p.aimTarget = p.pyaw = H4.yaw;
-        g.yola?.reset?.(H4.x, H4.z, H4.yaw);
-        g.cameraPose(H4.x, H4.z, H4.yaw);
+        p.x = p.px = H5.x;
+        p.z = p.pz = H5.z;
+        p.aimYaw = p.aimTarget = p.pyaw = H5.yaw;
+        g.yola?.reset?.(H5.x, H5.z, H5.yaw);
+        g.cameraPose(H5.x, H5.z, H5.yaw);
       }
       this.handoff = null;
       this.launch = null;
@@ -74148,7 +74165,7 @@ void main() {
     return S2;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -77636,13 +77653,13 @@ void main() {
       for (const f of faces) {
         this.monSeen.add(f);
         const p = f.getWorldPosition(new Vector3());
-        const H4 = { s: this.halo(9431295, 0.7, p.x, p.y, p.z), base: 0.32, mon: true };
-        H4.s.visible = !!this.on.halos;
-        this.halos.push(H4);
+        const H5 = { s: this.halo(9431295, 0.7, p.x, p.y, p.z), base: 0.32, mon: true };
+        H5.s.visible = !!this.on.halos;
+        this.halos.push(H5);
       }
     }
     toggle_halos(v) {
-      for (const H4 of this.halos || []) H4.s.visible = v;
+      for (const H5 of this.halos || []) H5.s.visible = v;
     }
     // ---- EXIT signs ----
     build_exit() {
@@ -77808,7 +77825,7 @@ void main() {
         this.monScanT = 2;
         this.scanMonitors();
       }
-      if (this.halos) for (const H4 of this.halos) H4.s.material.opacity = H4.mon ? H4.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H4.s.position.x)) : H4.F ? this.tubes ? H4.base * H4.F.b : 0 : H4.base;
+      if (this.halos) for (const H5 of this.halos) H5.s.material.opacity = H5.mon ? H5.base * (0.85 + 0.15 * Math.sin(this.t * 9 + H5.s.position.x)) : H5.F ? this.tubes ? H5.base * H5.F.b : 0 : H5.base;
       const D3 = this.dim;
       if (this.exits) for (const E of this.exits) {
         const k = flick(E.state, this.t, E.seed, E.S);
@@ -78547,7 +78564,7 @@ void main() {
     return r;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/meshopt_decoder.module.js
+  // node_modules/three/examples/jsm/libs/meshopt_decoder.module.js
   var MeshoptDecoder = (function() {
     var wasm_base = "b9H79Tebbbe8Fv9Gbb9Gvuuuuueu9Giuuub9Geueu9Giuuueuikqbeeedddillviebeoweuec:q:Odkr;leDo9TW9T9VV95dbH9F9F939H79T9F9J9H229F9Jt9VV7bb8A9TW79O9V9Wt9F9KW9J9V9KW9wWVtW949c919M9MWVbeY9TW79O9V9Wt9F9KW9J9V9KW69U9KW949c919M9MWVbdE9TW79O9V9Wt9F9KW9J9V9KW69U9KW949tWG91W9U9JWbiL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9p9JtblK9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9r919HtbvL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVT949Wbol79IV9Rbrq;w8Wqdbk;esezu8Jjjjjbcj;eb9Rgv8Kjjjjbc9:hodnadcefal0mbcuhoaiRbbc:Ge9hmbavaialfgrad9Radz1jjjbhwcj;abad9Uc;WFbGgocjdaocjd6EhDaicefhocbhqdnindndndnaeaq9nmbaDaeaq9RaqaDfae6Egkcsfglcl4cifcd4hxalc9WGgmTmecbhPawcjdfhsaohzinaraz9Rax6mvarazaxfgo9RcK6mvczhlcbhHinalgic9WfgOawcj;cbffhldndndndndnazaOco4fRbbaHcoG4ciGPlbedibkal9cb83ibalcwf9cb83ibxikalaoRblaoRbbgOco4gAaAciSgAE86bbawcj;cbfaifglcGfaoclfaAfgARbbaOcl4ciGgCaCciSgCE86bbalcVfaAaCfgARbbaOcd4ciGgCaCciSgCE86bbalc7faAaCfgARbbaOciGgOaOciSgOE86bbalctfaAaOfgARbbaoRbegOco4gCaCciSgCE86bbalc91faAaCfgARbbaOcl4ciGgCaCciSgCE86bbalc4faAaCfgARbbaOcd4ciGgCaCciSgCE86bbalc93faAaCfgARbbaOciGgOaOciSgOE86bbalc94faAaOfgARbbaoRbdgOco4gCaCciSgCE86bbalc95faAaCfgARbbaOcl4ciGgCaCciSgCE86bbalc96faAaCfgARbbaOcd4ciGgCaCciSgCE86bbalc97faAaCfgARbbaOciGgOaOciSgOE86bbalc98faAaOfgORbbaoRbigoco4gAaAciSgAE86bbalc99faOaAfgORbbaocl4ciGgAaAciSgAE86bbalc9:faOaAfgORbbaocd4ciGgAaAciSgAE86bbalcufaOaAfglRbbaociGgoaociSgoE86bbalaofhoxdkalaoRbwaoRbbgOcl4gAaAcsSgAE86bbawcj;cbfaifglcGfaocwfaAfgARbbaOcsGgOaOcsSgOE86bbalcVfaAaOfgORbbaoRbegAcl4gCaCcsSgCE86bbalc7faOaCfgORbbaAcsGgAaAcsSgAE86bbalctfaOaAfgORbbaoRbdgAcl4gCaCcsSgCE86bbalc91faOaCfgORbbaAcsGgAaAcsSgAE86bbalc4faOaAfgORbbaoRbigAcl4gCaCcsSgCE86bbalc93faOaCfgORbbaAcsGgAaAcsSgAE86bbalc94faOaAfgORbbaoRblgAcl4gCaCcsSgCE86bbalc95faOaCfgORbbaAcsGgAaAcsSgAE86bbalc96faOaAfgORbbaoRbvgAcl4gCaCcsSgCE86bbalc97faOaCfgORbbaAcsGgAaAcsSgAE86bbalc98faOaAfgORbbaoRbogAcl4gCaCcsSgCE86bbalc99faOaCfgORbbaAcsGgAaAcsSgAE86bbalc9:faOaAfgORbbaoRbrgocl4gAaAcsSgAE86bbalcufaOaAfglRbbaocsGgoaocsSgoE86bbalaofhoxekalao8Pbb83bbalcwfaocwf8Pbb83bbaoczfhokdnaiam9pmbaHcdfhHaiczfhlarao9RcL0mekkaiam6mvaoTmvdnakTmbawaPfRbbhHawcj;cbfhlashiakhOinaialRbbgzce4cbazceG9R7aHfgH86bbaiadfhialcefhlaOcufgOmbkkascefhsaohzaPcefgPad9hmbxikkcbc99arao9Radcaadca0ESEhoxlkaoaxad2fhCdnakmbadhlinaoTmlarao9Rax6mlaoaxfhoalcufglmbkaChoxekcbhmawcjdfhAinarao9Rax6miawamfRbbhHawcj;cbfhlaAhiakhOinaialRbbgzce4cbazceG9R7aHfgH86bbaiadfhialcefhlaOcufgOmbkaAcefhAaoaxfhoamcefgmad9hmbkaChokabaqad2fawcjdfakad2z1jjjb8Aawawcjdfakcufad2fadz1jjjb8Aakaqfhqaombkc9:hoxekc9:hokavcj;ebf8Kjjjjbaok;cseHu8Jjjjjbc;ae9Rgv8Kjjjjbc9:hodnaeci9UgrcHfal0mbcuhoaiRbbgwc;WeGc;Ge9hmbawcsGgwce0mbavc;abfcFecjez:jjjjb8AavcUf9cu83ibavc8Wf9cu83ibavcyf9cu83ibavcaf9cu83ibavcKf9cu83ibavczf9cu83ibav9cu83iwav9cu83ibaialfc9WfhDaicefgqarfhidnaeTmbcmcsawceSEhkcbhxcbhmcbhPcbhwcbhlindnaiaD9nmbc9:hoxikdndnaqRbbgoc;Ve0mbavc;abfalaocu7gscl4fcsGcitfgzydlhrazydbhzdnaocsGgHak9pmbavawasfcsGcdtfydbaxaHEhoaHThsdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkaxasfhxcdhHavawcdtfaoBdbawasfhwcehsalhOxdkdndnaHcsSmbaHc987aHamffcefhoxekaicefhoai8SbbgHcFeGhsdndnaHcu9mmbaohixekaicvfhiascFbGhscrhHdninao8SbbgOcFbGaHtasVhsaOcu9kmeaocefhoaHcrfgHc8J9hmbxdkkaocefhikasce4cbasceG9R7amfhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhHavawcdtfaoBdbcehsawcefhwalhOaohmxekdnaocpe0mbaxcefgHavawaDaocsGfRbbgocl49RcsGcdtfydbaocz6gzEhravawao9RcsGcdtfydbaHazfgAaocsGgHEhoaHThCdndnadcd9hmbabaPcetfgHax87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHaxBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfaxBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgOaxBdlaOarBdbavawazfgwcsGcdtfaoBdbalcefcsGhOawaCfhwaxhzaAaCfhxxekaxcbaiRbbgOEgzaoc;:eSgHfhraOcsGhCaOcl4hAdndnaOcs0mbarcefhoxekarhoavawaA9RcsGcdtfydbhrkdndnaCmbaocefhxxekaohxavawaO9RcsGcdtfydbhokdndnaHTmbaicefhHxekaicdfhHai8SbegscFeGhzdnascu9kmbaicofhXazcFbGhzcrhidninaH8SbbgscFbGaitazVhzascu9kmeaHcefhHaicrfgic8J9hmbkaXhHxekaHcefhHkazce4cbazceG9R7amfgmhzkdndnaAcsSmbaHhsxekaHcefhsaH8SbbgicFeGhrdnaicu9kmbaHcvfhXarcFbGhrcrhidninas8SbbgHcFbGaitarVhraHcu9kmeascefhsaicrfgic8J9hmbkaXhsxekascefhskarce4cbarceG9R7amfgmhrkdndnaCcsSmbashixekascefhias8SbbgocFeGhHdnaocu9kmbascvfhXaHcFbGhHcrhodninai8SbbgscFbGaotaHVhHascu9kmeaicefhiaocrfgoc8J9hmbkaXhixekaicefhikaHce4cbaHceG9R7amfgmhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfazBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgXazBdlaXarBdbavawaOcz6aAcsSVfgwcsGcdtfaoBdbawaCTaCcsSVfhwalcefcsGhOkaqcefhqavc;abfaOcitfgOarBdlaOaoBdbavc;abfalasfcsGcitfgraoBdlarazBdbawcsGhwalaHfcsGhlaPcifgPae6mbkkcbc99aiaDSEhokavc;aef8Kjjjjbaok:flevu8Jjjjjbcz9Rhvc9:hodnaecvfal0mbcuhoaiRbbc;:eGc;qe9hmbav9cb83iwaicefhraialfc98fhwdnaeTmbdnadcdSmbcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcdtfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfglBdbaoalBdbaDcefgDae9hmbxdkkcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcetfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfgl87ebaoalBdbaDcefgDae9hmbkkcbc99arawSEhokaok:Lvoeue99dud99eud99dndnadcl9hmbaeTmeindndnabcdfgd8Sbb:Yab8Sbbgi:Ygl:l:tabcefgv8Sbbgo:Ygr:l:tgwJbb;:9cawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai86bbdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad86bbdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad86bbabclfhbaecufgembxdkkaeTmbindndnabclfgd8Ueb:Yab8Uebgi:Ygl:l:tabcdfgv8Uebgo:Ygr:l:tgwJb;:FSawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai87ebdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad87ebdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad87ebabcwfhbaecufgembkkk;oiliui99iue99dnaeTmbcbhiabhlindndnJ;Zl81Zalcof8UebgvciV:Y:vgoal8Ueb:YNgrJb;:FSNJbbbZJbbb:;arJbbbb9GEMgw:lJbbb9p9DTmbaw:OhDxekcjjjj94hDkalclf8Uebhqalcdf8UebhkabaiavcefciGfcetfaD87ebdndnaoak:YNgwJb;:FSNJbbbZJbbb:;awJbbbb9GEMgx:lJbbb9p9DTmbax:OhDxekcjjjj94hDkabaiavciGfgkcd7cetfaD87ebdndnaoaq:YNgoJb;:FSNJbbbZJbbb:;aoJbbbb9GEMgx:lJbbb9p9DTmbax:OhDxekcjjjj94hDkabaiavcufciGfcetfaD87ebdndnJbbjZararN:tawawN:taoaoN:tgrJbbbbarJbbbb9GE:rJb;:FSNJbbbZMgr:lJbbb9p9DTmbar:Ohvxekcjjjj94hvkabakcetfav87ebalcwfhlaiclfhiaecufgembkkk9mbdnadcd4ae2gdTmbinababydbgecwtcw91:Yaece91cjjj98Gcjjj;8if::NUdbabclfhbadcufgdmbkkk9teiucbcbydj1jjbgeabcifc98GfgbBdj1jjbdndnabZbcztgd9nmbcuhiabad9RcFFifcz4nbcuSmekaehikaik;LeeeudndnaeabVciGTmbabhixekdndnadcz9pmbabhixekabhiinaiaeydbBdbaiclfaeclfydbBdbaicwfaecwfydbBdbaicxfaecxfydbBdbaeczfheaiczfhiadc9Wfgdcs0mbkkadcl6mbinaiaeydbBdbaeclfheaiclfhiadc98fgdci0mbkkdnadTmbinaiaeRbb86bbaicefhiaecefheadcufgdmbkkabk;aeedudndnabciGTmbabhixekaecFeGc:b:c:ew2hldndnadcz9pmbabhixekabhiinaialBdbaicxfalBdbaicwfalBdbaiclfalBdbaiczfhiadc9Wfgdcs0mbkkadcl6mbinaialBdbaiclfhiadc98fgdci0mbkkdnadTmbinaiae86bbaicefhiadcufgdmbkkabkkkebcjwklzNbb";
     var wasm_simd = "b9H79TebbbeKl9Gbb9Gvuuuuueu9Giuuub9Geueuikqbbebeedddilve9Weeeviebeoweuec:q:6dkr;leDo9TW9T9VV95dbH9F9F939H79T9F9J9H229F9Jt9VV7bb8A9TW79O9V9Wt9F9KW9J9V9KW9wWVtW949c919M9MWVbdY9TW79O9V9Wt9F9KW9J9V9KW69U9KW949c919M9MWVblE9TW79O9V9Wt9F9KW9J9V9KW69U9KW949tWG91W9U9JWbvL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9p9JtboK9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9r919HtbrL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVT949Wbwl79IV9RbDq:p9sqlbzik9:evu8Jjjjjbcz9Rhbcbheincbhdcbhiinabcwfadfaicjuaead4ceGglE86bbaialfhiadcefgdcw9hmbkaec:q:yjjbfai86bbaecitc:q1jjbfab8Piw83ibaecefgecjd9hmbkk:N8JlHud97euo978Jjjjjbcj;kb9Rgv8Kjjjjbc9:hodnadcefal0mbcuhoaiRbbc:Ge9hmbavaialfgrad9Rad;8qbbcj;abad9UhlaicefhodnaeTmbadTmbalc;WFbGglcjdalcjd6EhwcbhDinawaeaD9RaDawfae6Egqcsfglc9WGgkci2hxakcethmalcl4cifcd4hPabaDad2fhsakc;ab6hzcbhHincbhOaohAdndninaraA9RaP6meavcj;cbfaOak2fhCaAaPfhocbhidnazmbarao9Rc;Gb6mbcbhlinaCalfhidndndndndnaAalco4fRbbgXciGPlbedibkaipxbbbbbbbbbbbbbbbbpklbxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklbaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklbaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaiaopbbbpklbaoczfhokdndndndndnaXcd4ciGPlbedibkaipxbbbbbbbbbbbbbbbbpklzxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklzaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklzaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaiaopbbbpklzaoczfhokdndndndndnaXcl4ciGPlbedibkaipxbbbbbbbbbbbbbbbbpklaxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklaaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spklaaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaiaopbbbpklaaoczfhokdndndndndnaXco4Plbedibkaipxbbbbbbbbbbbbbbbbpkl8WxikaiaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibaXc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkl8WaoclfaYpQbfaXc:q:yjjbfRbbfhoxdkaiaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibaXc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgXcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkl8WaocwfaYpQbfaXc:q:yjjbfRbbfhoxekaiaopbbbpkl8Waoczfhokalc;abfhialcjefak0meaihlarao9Rc;Fb0mbkkdnaiak9pmbaici4hlinarao9RcK6miaCaifhXdndndndndnaAaico4fRbbalcoG4ciGPlbedibkaXpxbbbbbbbbbbbbbbbbpkbbxikaXaopbblaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLgQcdp:meaQpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9ogLpxiiiiiiiiiiiiiiiip8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkbbaoclfaYpQbfaKc:q:yjjbfRbbfhoxdkaXaopbbwaopbbbgQclp:meaQpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9ogLpxssssssssssssssssp8JgQp5b9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibaKc:q:yjjbfpbbbgYaYpmbbbbbbbbbbbbbbbbaQp5e9cjF;8;4;W;G;ab9:9cU1:NgKcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPaLaQp9spkbbaocwfaYpQbfaKc:q:yjjbfRbbfhoxekaXaopbbbpkbbaoczfhokalcdfhlaiczfgiak6mbkkaoTmeaohAaOcefgOclSmdxbkkc9:hoxlkdnakTmbavcjdfaHfhiavaHfpbdbhYcbhXinaiavcj;cbfaXfglpblbgLcep9TaLpxeeeeeeeeeeeeeeeegQp9op9Hp9rgLalakfpblbg8Acep9Ta8AaQp9op9Hp9rg8ApmbzeHdOiAlCvXoQrLgEalamfpblbg3cep9Ta3aQp9op9Hp9rg3alaxfpblbg5cep9Ta5aQp9op9Hp9rg5pmbzeHdOiAlCvXoQrLg8EpmbezHdiOAlvCXorQLgQaQpmbedibedibedibediaYp9UgYp9AdbbaiadfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfglaYaEa8EpmwDKYqk8AExm35Ps8E8FgQaQpmbedibedibedibedip9UgYp9AdbbaladfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfglaYaLa8ApmwKDYq8AkEx3m5P8Es8FgLa3a5pmwKDYq8AkEx3m5P8Es8Fg8ApmbezHdiOAlvCXorQLgQaQpmbedibedibedibedip9UgYp9AdbbaladfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfglaYaLa8ApmwDKYqk8AExm35Ps8E8FgQaQpmbedibedibedibedip9UgYp9AdbbaladfglaYaQaQpmlvorlvorlvorlvorp9UgYp9AdbbaladfglaYaQaQpmwDqkwDqkwDqkwDqkp9UgYp9AdbbaladfglaYaQaQpmxmPsxmPsxmPsxmPsp9UgYp9AdbbaladfhiaXczfgXak6mbkkaHclfgHad6mbkasavcjdfaqad2;8qbbavavcjdfaqcufad2fad;8qbbaqaDfgDae6mbkkcbc99arao9Radcaadca0ESEhokavcj;kbf8Kjjjjbaokwbz:bjjjbk::seHu8Jjjjjbc;ae9Rgv8Kjjjjbc9:hodnaeci9UgrcHfal0mbcuhoaiRbbgwc;WeGc;Ge9hmbawcsGgwce0mbavc;abfcFecje;8kbavcUf9cu83ibavc8Wf9cu83ibavcyf9cu83ibavcaf9cu83ibavcKf9cu83ibavczf9cu83ibav9cu83iwav9cu83ibaialfc9WfhDaicefgqarfhidnaeTmbcmcsawceSEhkcbhxcbhmcbhPcbhwcbhlindnaiaD9nmbc9:hoxikdndnaqRbbgoc;Ve0mbavc;abfalaocu7gscl4fcsGcitfgzydlhrazydbhzdnaocsGgHak9pmbavawasfcsGcdtfydbaxaHEhoaHThsdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkaxasfhxcdhHavawcdtfaoBdbawasfhwcehsalhOxdkdndnaHcsSmbaHc987aHamffcefhoxekaicefhoai8SbbgHcFeGhsdndnaHcu9mmbaohixekaicvfhiascFbGhscrhHdninao8SbbgOcFbGaHtasVhsaOcu9kmeaocefhoaHcrfgHc8J9hmbxdkkaocefhikasce4cbasceG9R7amfhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhHavawcdtfaoBdbcehsawcefhwalhOaohmxekdnaocpe0mbaxcefgHavawaDaocsGfRbbgocl49RcsGcdtfydbaocz6gzEhravawao9RcsGcdtfydbaHazfgAaocsGgHEhoaHThCdndnadcd9hmbabaPcetfgHax87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHaxBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfaxBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgOaxBdlaOarBdbavawazfgwcsGcdtfaoBdbalcefcsGhOawaCfhwaxhzaAaCfhxxekaxcbaiRbbgOEgzaoc;:eSgHfhraOcsGhCaOcl4hAdndnaOcs0mbarcefhoxekarhoavawaA9RcsGcdtfydbhrkdndnaCmbaocefhxxekaohxavawaO9RcsGcdtfydbhokdndnaHTmbaicefhHxekaicdfhHai8SbegscFeGhzdnascu9kmbaicofhXazcFbGhzcrhidninaH8SbbgscFbGaitazVhzascu9kmeaHcefhHaicrfgic8J9hmbkaXhHxekaHcefhHkazce4cbazceG9R7amfgmhzkdndnaAcsSmbaHhsxekaHcefhsaH8SbbgicFeGhrdnaicu9kmbaHcvfhXarcFbGhrcrhidninas8SbbgHcFbGaitarVhraHcu9kmeascefhsaicrfgic8J9hmbkaXhsxekascefhskarce4cbarceG9R7amfgmhrkdndnaCcsSmbashixekascefhias8SbbgocFeGhHdnaocu9kmbascvfhXaHcFbGhHcrhodninai8SbbgscFbGaotaHVhHascu9kmeaicefhiaocrfgoc8J9hmbkaXhixekaicefhikaHce4cbaHceG9R7amfgmhokdndnadcd9hmbabaPcetfgHaz87ebaHclfao87ebaHcdfar87ebxekabaPcdtfgHazBdbaHcwfaoBdbaHclfarBdbkcdhsavawcdtfazBdbavawcefgwcsGcdtfarBdbcihHavc;abfalcitfgXazBdlaXarBdbavawaOcz6aAcsSVfgwcsGcdtfaoBdbawaCTaCcsSVfhwalcefcsGhOkaqcefhqavc;abfaOcitfgOarBdlaOaoBdbavc;abfalasfcsGcitfgraoBdlarazBdbawcsGhwalaHfcsGhlaPcifgPae6mbkkcbc99aiaDSEhokavc;aef8Kjjjjbaok:flevu8Jjjjjbcz9Rhvc9:hodnaecvfal0mbcuhoaiRbbc;:eGc;qe9hmbav9cb83iwaicefhraialfc98fhwdnaeTmbdnadcdSmbcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcdtfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfglBdbaoalBdbaDcefgDae9hmbxdkkcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcetfaic8Etc8F91aicd47avcwfaiceGcdtVgoydbfgl87ebaoalBdbaDcefgDae9hmbkkcbc99arawSEhokaok:wPliuo97eue978Jjjjjbca9Rhiaec98Ghldndnadcl9hmbdnalTmbcbhvabhdinadadpbbbgocKp:RecKp:Sep;6egraocwp:RecKp:Sep;6earp;Geaoczp:RecKp:Sep;6egwp;Gep;Kep;LegDpxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgkp9op9rp;Kegrpxbb;:9cbb;:9cbb;:9cbb;:9cararp;MeaDaDp;Meawaqawakp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFbbbFbbbFbbbFbbbp9oaopxbbbFbbbFbbbFbbbFp9op9qarawp;Meaqp;Kecwp:RepxbFbbbFbbbFbbbFbbp9op9qaDawp;Meaqp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qpkbbadczfhdavclfgval6mbkkalaeSmeaipxbbbbbbbbbbbbbbbbgqpklbaiabalcdtfgdaeciGglcdtgv;8qbbdnalTmbaiaipblbgocKp:RecKp:Sep;6egraocwp:RecKp:Sep;6earp;Geaoczp:RecKp:Sep;6egwp;Gep;Kep;LegDaqp:2egqarpxbbbjbbbjbbbjbbbjgkp9op9rp;Kegrpxbb;:9cbb;:9cbb;:9cbb;:9cararp;MeaDaDp;Meawaqawakp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFbbbFbbbFbbbFbbbp9oaopxbbbFbbbFbbbFbbbFp9op9qarawp;Meaqp;Kecwp:RepxbFbbbFbbbFbbbFbbp9op9qaDawp;Meaqp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qpklbkadaiav;8qbbskdnalTmbcbhvabhdinadczfgxaxpbbbgopxbbbbbbFFbbbbbbFFgkp9oadpbbbgDaopmbediwDqkzHOAKY8AEgwczp:Reczp:Sep;6egraDaopmlvorxmPsCXQL358E8FpxFubbFubbFubbFubbp9op;6eawczp:Sep;6egwp;Gearp;Gep;Kep;Legopxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgmp9op9rp;Kegrpxb;:FSb;:FSb;:FSb;:FSararp;Meaoaop;Meawaqawamp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFFbbFFbbFFbbFFbbp9oaoawp;Meaqp;Keczp:Rep9qgoarawp;Meaqp;KepxFFbbFFbbFFbbFFbbp9ogrpmwDKYqk8AExm35Ps8E8Fp9qpkbbadaDakp9oaoarpmbezHdiOAlvCXorQLp9qpkbbadcafhdavclfgval6mbkkalaeSmbaiaeciGgvcitgdfcbcaad9R;8kbaiabalcitfglad;8qbbdnavTmbaiaipblzgopxbbbbbbFFbbbbbbFFgkp9oaipblbgDaopmbediwDqkzHOAKY8AEgwczp:Reczp:Sep;6egraDaopmlvorxmPsCXQL358E8FpxFubbFubbFubbFubbp9op;6eawczp:Sep;6egwp;Gearp;Gep;Kep;Legopxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgmp9op9rp;Kegrpxb;:FSb;:FSb;:FSb;:FSararp;Meaoaop;Meawaqawamp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFFbbFFbbFFbbFFbbp9oaoawp;Meaqp;Keczp:Rep9qgoarawp;Meaqp;KepxFFbbFFbbFFbbFFbbp9ogrpmwDKYqk8AExm35Ps8E8Fp9qpklzaiaDakp9oaoarpmbezHdiOAlvCXorQLp9qpklbkalaiad;8qbbkk;4wllue97euv978Jjjjjbc8W9Rhidnaec98GglTmbcbhvabhoinaiaopbbbgraoczfgwpbbbgDpmlvorxmPsCXQL358E8Fgqczp:Segkclp:RepklbaopxbbjZbbjZbbjZbbjZpx;Zl81Z;Zl81Z;Zl81Z;Zl81Zakpxibbbibbbibbbibbbp9qp;6ep;NegkaraDpmbediwDqkzHOAKY8AEgrczp:Reczp:Sep;6ep;MegDaDp;Meakarczp:Sep;6ep;Megxaxp;Meakaqczp:Reczp:Sep;6ep;Megqaqp;Mep;Kep;Kep;Lepxbbbbbbbbbbbbbbbbp:4ep;Jepxb;:FSb;:FSb;:FSb;:FSgkp;Mepxbbn0bbn0bbn0bbn0grp;KepxFFbbFFbbFFbbFFbbgmp9oaxakp;Mearp;Keczp:Rep9qgxaDakp;Mearp;Keamp9oaqakp;Mearp;Keczp:Rep9qgkpmbezHdiOAlvCXorQLgrp5baipblbpEb:T:j83ibaocwfarp5eaipblbpEe:T:j83ibawaxakpmwDKYqk8AExm35Ps8E8Fgkp5baipblbpEd:T:j83ibaocKfakp5eaipblbpEi:T:j83ibaocafhoavclfgval6mbkkdnalaeSmbaiaeciGgvcitgofcbcaao9R;8kbaiabalcitfgwao;8qbbdnavTmbaiaipblbgraipblzgDpmlvorxmPsCXQL358E8Fgqczp:Segkclp:RepklaaipxbbjZbbjZbbjZbbjZpx;Zl81Z;Zl81Z;Zl81Z;Zl81Zakpxibbbibbbibbbibbbp9qp;6ep;NegkaraDpmbediwDqkzHOAKY8AEgrczp:Reczp:Sep;6ep;MegDaDp;Meakarczp:Sep;6ep;Megxaxp;Meakaqczp:Reczp:Sep;6ep;Megqaqp;Mep;Kep;Kep;Lepxbbbbbbbbbbbbbbbbp:4ep;Jepxb;:FSb;:FSb;:FSb;:FSgkp;Mepxbbn0bbn0bbn0bbn0grp;KepxFFbbFFbbFFbbFFbbgmp9oaxakp;Mearp;Keczp:Rep9qgxaDakp;Mearp;Keamp9oaqakp;Mearp;Keczp:Rep9qgkpmbezHdiOAlvCXorQLgrp5baipblapEb:T:j83ibaiarp5eaipblapEe:T:j83iwaiaxakpmwDKYqk8AExm35Ps8E8Fgkp5baipblapEd:T:j83izaiakp5eaipblapEi:T:j83iKkawaiao;8qbbkk:Pddiue978Jjjjjbc;ab9Rhidnadcd4ae2glc98GgvTmbcbheabhdinadadpbbbgocwp:Recwp:Sep;6eaocep:SepxbbjFbbjFbbjFbbjFp9opxbbjZbbjZbbjZbbjZp:Uep;Mepkbbadczfhdaeclfgeav6mbkkdnavalSmbaialciGgecdtgdVcbc;abad9R;8kbaiabavcdtfgvad;8qbbdnaeTmbaiaipblbgocwp:Recwp:Sep;6eaocep:SepxbbjFbbjFbbjFbbjFp9opxbbjZbbjZbbjZbbjZp:Uep;Mepklbkavaiad;8qbbkk9teiucbcbydj1jjbgeabcifc98GfgbBdj1jjbdndnabZbcztgd9nmbcuhiabad9RcFFifcz4nbcuSmekaehikaikkkebcjwklz:Dbb";
@@ -78823,7 +78840,7 @@ void main() {
     // the baked ground light (blender/hood/bake_hood.py -> assets/neighborhood/hood_light.jpg, stored at half range), laid on
     // every near-ground upward surface by world x / z: lmRect = (x0, z0, width, depth); lmK = (strength, shadow floor)
     lm: { value: null },
-    lmRect: { value: new Vector4(-70, -96, 180, 192) },
+    lmRect: { value: new Vector4(-70, -130, 180, 226) },
     lmK: { value: new Vector2(0, 0.42) }
   };
   function setGroundLight(tex3, strength = 1, floor = 0.42) {
@@ -78952,7 +78969,12 @@ uniform vec4 cutRoom; uniform vec3 cutRoomRot; uniform sampler2D hoodLM; uniform
     terracotta: P(0.2, 0.085, 0.045),
     roofbrown: P(0.27, 0.235, 0.2),
     lime: P(0.45, 1, 0.25),
-    purple: P(0.32, 0.08, 0.42)
+    purple: P(0.32, 0.08, 0.42),
+    villa: P(0.6, 0.61, 0.61),
+    trim: P(0.76, 0.76, 0.74),
+    bluegrey: P(0.34, 0.39, 0.44),
+    tilesun: P(1, 1.2, 1.6)
+    // (Chapter 4's villas: blender/grammy/make_villa.py)
   };
   var loader = new TextureLoader();
   var texCache = /* @__PURE__ */ new Map();
@@ -79130,9 +79152,25 @@ uniform sampler2D macroTex;`).replace("#include <map_fragment>", `
   var _water = null;
   function waterMaterial() {
     if (_water) return _water;
-    _water = new MeshStandardMaterial({ color: new Color(0.03, 0.09, 0.09), roughness: 0.06, metalness: 0, normalMap: tex2("rock_normal.webp"), normalScale: new Vector2(0.15, 0.15), transparent: true, opacity: 0.88 });
+    _water = new MeshStandardMaterial({ color: new Color(0.035, 0.06, 0.045), roughness: 0.06, metalness: 0, normalMap: tex2("rock_normal.webp"), normalScale: new Vector2(0.15, 0.15), transparent: true, opacity: 0.88, envMapIntensity: 0.5 });
     _water.userData.water = true;
     return _water;
+  }
+  function shoreWater(splat, rect) {
+    const m = waterMaterial();
+    if (m.userData.shore) return;
+    m.userData.shore = true;
+    const u = { shoreTex: { value: splat }, shoreRect: { value: new Vector4(...rect) } };
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, u);
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWW;").replace("#include <fog_vertex>", "#include <fog_vertex>\nvWW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vWW; uniform sampler2D shoreTex; uniform vec4 shoreRect;").replace("#include <color_fragment>", `#include <color_fragment>
+  float depth = texture2D(shoreTex, (vWW.xz - shoreRect.xy) / shoreRect.zw).g;   // (0 at the edge, 1 a few metres out)
+  diffuseColor.rgb = mix(vec3(0.15, 0.16, 0.11), diffuseColor.rgb, smoothstep(0.0, 0.9, depth));
+  diffuseColor.a = mix(0.12, 0.96, smoothstep(0.0, 0.85, depth));`);
+    };
+    m.customProgramCacheKey = () => "hoodwater";
+    m.needsUpdate = true;
   }
   function kitMaterial(key) {
     if (cache.has(key)) return cache.get(key);
@@ -79200,7 +79238,7 @@ float ivyN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f
   // src/hood/terrain.js
   var black = new DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
   black.needsUpdate = true;
-  function terrainMaterial({ splat = null, rect = [-130, -130, 260, 260] } = {}) {
+  function terrainMaterial({ splat = null, paths = null, rect = [-130, -130, 260, 260] } = {}) {
     const orm = tex2("lawn_bl_orm.webp");
     const mat2 = new MeshStandardMaterial({ map: tex2("lawn_bl_albedo.webp", { srgb: true }), normalMap: tex2("lawn_bl_normal.webp"), roughnessMap: orm, roughness: 1, metalness: 0 });
     const u = {
@@ -79210,6 +79248,7 @@ float ivyN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f
       sandMap: { value: tex2("sandy_soil_albedo.webp", { srgb: true }) },
       macroTex: { value: tex2("macro_noise.webp") },
       splatTex: { value: splat || black },
+      pathsTex: { value: paths || black },
       splatRect: { value: new Vector4(...rect) }
     };
     mat2.userData.uniforms = u;
@@ -79218,7 +79257,7 @@ float ivyN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f
       sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vTW;").replace("#include <fog_vertex>", "#include <fog_vertex>\nvTW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
       sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
 varying vec3 vTW;
-uniform sampler2D dirtMap, dirtNrm, litterMap, sandMap, macroTex, splatTex;
+uniform sampler2D dirtMap, dirtNrm, litterMap, sandMap, macroTex, splatTex, pathsTex;
 uniform vec4 splatRect;
 float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   vec2 wuv = vTW.xz;
@@ -79261,6 +79300,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     col = mix(col, leafC, wLeaf * 0.6);
     col *= 1.18;
   }
+  // the shore (the keep-off map's blue: highest at the water's edge): dry sand, then wet sand and mud at the waterline
+  float shoreK = texture2D(pathsTex, (wuv - splatRect.xy) / splatRect.zw).b;
+  col = mix(col, sd * mix(vec3(0.9, 0.85, 0.76), vec3(0.4, 0.38, 0.34), smoothstep(0.3, 0.95, shoreK)), smoothstep(0.1, 0.6, shoreK) * 0.92);
   col *= mix(1.0, (n1 * 0.65 + n2 * 0.35) * 1.4 + 0.3, 0.35);
   col *= 0.92 + n4 * 0.16;
   gBlend = max(dirt, bare * 0.7);
@@ -79280,10 +79322,33 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   }
 
   // src/hood/view.js
-  var ROOT = "assets/neighborhood/";
+  var _Y = new Vector3(0, 1, 0);
+  var HOOD_ROOT = "assets/neighborhood/";
+  var MAPS = {
+    hood: { root: HOOD_ROOT, layout: "hood_layout.json", ground: "hood_ground.glb", splat: "hood_splat.png", paths: "hood_paths.png", light: "hood_light.jpg", rect: [-70, -130, 180, 226] },
+    grammy: { root: "assets/grammy/", layout: "grammy_layout.json", ground: "grammy_ground.glb", splat: "grammy_splat.png", paths: "grammy_paths.png", light: "grammy_light.jpg", rect: [-135, -250, 310, 330] }
+  };
+  var MAP = MAPS.hood;
+  var ROOT = MAP.root;
+  function useMap(id) {
+    MAP = MAPS[id] || MAPS.hood;
+    ROOT = MAP.root;
+    return MAP;
+  }
+  var SPLAT_RECT = MAPS.hood.rect;
   var CELL2 = 32;
   var NO_SHADOW = /^(nbt_|palm_|yard_|shrub_|nb_frond|trees|curb|by_ball|yardprop_dry)/;
-  var PICKUP_MODELS = { rifle: "props/security_rifle.glb", cutters: "models/boltcutters.glb", gas: "models/nb_fuel_can.glb", ammo: "kit/military_crate.glb", health: "models/loot_crate.glb", radio: "props/hospital_radio.glb" };
+  var PICKUP_MODELS = {
+    rifle: "props/security_rifle.glb",
+    cutters: "models/boltcutters.glb",
+    gas: "models/nb_fuel_can.glb",
+    ammo: "kit/military_crate.glb",
+    health: "models/loot_crate.glb",
+    radio: "props/hospital_radio.glb",
+    case: "props/hood_case.glb",
+    shotgun: "assets/weapons/pump_short.glb",
+    cooler: "models/by_cooler.glb"
+  };
   var PICKUP_SCALE = { ammo: 0.55, health: 0.45 };
   var HoodView = class {
     constructor(scene2) {
@@ -79304,7 +79369,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     async load(gameLoader, onProgress = () => {
     }) {
       initMaterials();
-      this.layout = await fetch(ROOT + "hood_layout.json").then((r) => r.json());
+      const tl = new TextureLoader(), mask = (f) => tl.loadAsync(ROOT + f).then((t) => {
+        t.flipY = false;
+        t.colorSpace = NoColorSpace;
+        return t;
+      }).catch(() => null);
+      [this.splat, this.paths] = await Promise.all([mask(MAP.splat), mask(MAP.paths)]);
+      this.rect = MAP.rect;
+      this.layout = await fetch(ROOT + MAP.layout).then((r) => r.json());
       const L3 = this.layout;
       const useOpt = L3.opt && new URLSearchParams(location.search).get("opt") !== "0";
       const gl = new GLTFLoader();
@@ -79313,11 +79385,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       void gameLoader;
       let done = 0;
       const total = L3.models.length + 4;
-      const ground = loader3.loadAsync(ROOT + "hood_ground.glb").then((g) => {
+      const ground = loader3.loadAsync(ROOT + MAP.ground).then((g) => {
         this.addGround(g.scene);
         onProgress(++done / total);
       });
-      const props = Promise.all(Object.entries(PICKUP_MODELS).map(([k, f]) => loader3.loadAsync(ROOT + f).then((g) => {
+      const props = Promise.all(Object.entries(PICKUP_MODELS).map(([k, f]) => loader3.loadAsync(f.startsWith("assets/") ? f : HOOD_ROOT + f).then((g) => {
         swapMaterials(g.scene);
         this.props[k] = g.scene;
         onProgress(++done / total);
@@ -79364,7 +79436,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         ((_a7 = this.seals)[tag] || (_a7[tag] = [])).push({ o, p0: o.position.clone(), q0: o.quaternion.clone(), file: L3.models[p[0]] });
         this.group.add(o);
       });
-      const _m5 = new Matrix4(), _p2 = new Vector3();
+      const _m5 = new Matrix4(), _p3 = new Vector3();
       L3.models.forEach((file, i) => {
         const root = tmpls[i];
         if (!root || !byModel[i].length) return;
@@ -79375,8 +79447,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         });
         const cells = /* @__PURE__ */ new Map();
         for (const M4 of byModel[i]) {
-          _p2.setFromMatrixPosition(M4);
-          const k = Math.floor(_p2.x / CELL2) + "," + Math.floor(_p2.z / CELL2);
+          _p3.setFromMatrixPosition(M4);
+          const k = Math.floor(_p3.x / CELL2) + "," + Math.floor(_p3.z / CELL2);
           if (!cells.has(k)) cells.set(k, []);
           cells.get(k).push(M4);
         }
@@ -79412,7 +79484,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     addGround(root) {
       swapMaterials(root);
-      const terr = terrainMaterial();
+      const terr = terrainMaterial({ splat: this.splat, paths: this.paths, rect: this.rect });
+      if (this.paths) shoreWater(this.paths, this.rect);
       root.traverse((o) => {
         if (!o.isMesh) return;
         const n = [].concat(o.material)[0]?.name || "";
@@ -79426,9 +79499,35 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     // ---- seals: open = the gate's leaves swing, everything else topples away from the line (or snaps there on a restore)
     openSeal(id, open = true, animate = true) {
+      var _a7, _b7;
       const list = this.seals[id];
       if (!list) return;
       for (const s of list) {
+        const hinges = /kit_row4_intact/.test(s.file) ? [[this.doorLeaf(s.o), 1.75]] : /hood_fridge/.test(s.file) ? [[s.o.getObjectByName("FridgeDoor"), -1.75]] : /hood_shed/.test(s.file) ? [[s.o.getObjectByName("DoorL"), -1.75], [s.o.getObjectByName("DoorR"), 0.85]] : null;
+        if (hinges) {
+          for (const [leaf, ang] of hinges) {
+            if (!leaf) continue;
+            (_a7 = leaf.userData).q0 ?? (_a7.q0 = leaf.quaternion.clone());
+            this.anim(animate ? 1.1 : 0, (k) => {
+              leaf.quaternion.copy(leaf.userData.q0);
+              leaf.rotateOnWorldAxis(_Y, ang * k);
+            }, open);
+          }
+          continue;
+        }
+        if (/grammy_gatebar/.test(s.file)) {
+          let bar = null;
+          s.o.traverse((o) => {
+            if (!bar && /^Bar/.test(o.name)) bar = o;
+          });
+          if (!bar) continue;
+          (_b7 = bar.userData).q0 ?? (_b7.q0 = bar.quaternion.clone());
+          this.anim(animate ? 2.2 : 0, (k) => {
+            bar.quaternion.copy(bar.userData.q0);
+            bar.rotateZ(1.42 * k * k * (3 - 2 * k));
+          }, open);
+          continue;
+        }
         const gate = /palisade_gate/.test(s.file);
         if (gate) {
           const L3 = s.o.getObjectByName("GateL_v2"), R = s.o.getObjectByName("GateR_v2");
@@ -79452,6 +79551,23 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }, open);
       }
     }
+    // the end unit's front door leaf (the row model has twelve: the one nearest Marc's doorway)
+    doorLeaf(root) {
+      if (root.userData.leaf !== void 0) return root.userData.leaf;
+      let best = null, bd = 1e9;
+      const p = new Vector3();
+      root.updateMatrixWorld(true);
+      root.traverse((o) => {
+        if (!/^Door_Leaf_Hinge/.test(o.name)) return;
+        o.getWorldPosition(p);
+        const d = Math.hypot(p.x - 36.25, p.z - 38.95);
+        if (d < bd) {
+          bd = d;
+          best = o;
+        }
+      });
+      return root.userData.leaf = bd < 1.5 ? best : null;
+    }
     anim(dur, fn, on = true) {
       if (!on) {
         fn(0);
@@ -79466,12 +79582,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     // ---- pickups lying in the world: the model (or a key ring), a slow bob and a pulsing green ring
     showPickup(q) {
       const g = new Group();
-      g.position.set(q.x, 0, q.z);
+      g.position.set(q.x, q.y ?? groundY(q.x, q.z), q.z);
       const src = this.props[q.model];
       let m;
       if (src) {
         m = src.clone(true);
-        if (q.model === "rifle") {
+        if (q.model === "shotgun") {
+          m.rotation.set(0, 0, 0);
+          m.position.y = 0.03;
+        } else if (q.model === "rifle") {
           m.rotation.set(-Math.PI / 2, 0, 0.6);
           m.position.y = 0.05;
         } else if (q.model === "cutters") {
@@ -79489,6 +79608,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const r = this.ring.clone();
       r.position.y = 0.03;
       g.add(r);
+      if (q.y) r.visible = false;
       this.fxGroup.add(g);
       this.pickups.set(q.id, { g, ring: r, item: m, t: Math.random() * 6 });
     }
@@ -79551,6 +79671,55 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         g.position.set(b[0] + 0.4, 0.55, b[2]);
       }
     }
+    // ---- the case of four vials: in the fridge, at Marc's left side once he has it, in the boat's cooler
+    showCase(state, at = null) {
+      if (!this.caseObj && this.props.case) {
+        this.caseObj = this.props.case.clone(true);
+        this.caseObj.scale.setScalar(0.78);
+        this.caseObj.traverse((o) => {
+          if (o.isMesh) {
+            o.castShadow = false;
+            o.frustumCulled = false;
+          }
+        });
+        this.fxGroup.add(this.caseObj);
+      }
+      const c = this.caseObj;
+      if (!c) return;
+      this.caseMode = state;
+      c.visible = state === "fridge" || state === "carried";
+      if (state === "fridge" && at) {
+        c.position.set(at.x, at.y, at.z);
+        c.rotation.set(0, Math.PI / 2, 0);
+      }
+    }
+    // the boat's cooler (by_cooler, on the boat's stern seat: it leaves with the boat)
+    showCooler(on) {
+      const b = this.seals.boat?.[0];
+      if (!b) return;
+      if (!this.cooler && this.props.cooler) {
+        this.cooler = this.props.cooler.clone(true);
+        this.cooler.scale.setScalar(0.8);
+        this.cooler.position.set(0.9, 0.42, 0.15);
+        this.cooler.rotation.y = 0.3;
+        b.o.add(this.cooler);
+      }
+      if (this.cooler) this.cooler.visible = on;
+    }
+    coolerAt() {
+      if (!this.cooler) return null;
+      const v = this.cooler.getWorldPosition(new Vector3());
+      return { x: v.x, y: v.y + 0.2, z: v.z };
+    }
+    // the shed's shotgun takes the rifle's place in his hands: the pump's own mesh back
+    rifleOff() {
+      const sg = window.game?.yola?.shotgun;
+      if (!sg || !this.rifleIn) return;
+      this.rifleIn.removeFromParent();
+      this.rifleIn = null;
+      for (const c of sg.children) c.visible = true;
+      if (this.rifleKeep) Object.assign(sg.userData, this.rifleKeep);
+    }
     // ---- the escape boat (tagged 'boat' in Blender, drawn on its own): its spot at the dock, then out over the water with a
     // gentle rock and a wake
     boatStart() {
@@ -79591,6 +79760,16 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const hips = yola2?.bones?.Hips;
       if (!this.radio || !hips || !sim2) return;
       const p = sim2.player;
+      if (this.radioHand && yola2.bones.RightHand && yola2.bones.LeftHand) {
+        const R = yola2.bones.RightHand.getWorldPosition(this._rh || (this._rh = new Vector3())), L3 = yola2.bones.LeftHand.getWorldPosition(this._lh || (this._lh = new Vector3()));
+        const h = R.y >= L3.y ? R : L3;
+        this.radio.position.copy(h);
+        this.radio.position.y -= 0.04;
+        this.radio.rotation.set(0, p.aimYaw + Math.PI, R.y >= L3.y ? -0.35 : 0.35);
+        this.radio.visible = yola2.outer.visible && !p.dead;
+        this.caseUpdate(yola2, p);
+        return;
+      }
       hips.getWorldPosition(this.radio.position);
       const y = p.aimYaw;
       this.radio.position.x -= Math.cos(y) * 0.2;
@@ -79598,6 +79777,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.radio.position.y -= 0.2;
       this.radio.rotation.set(0, y - Math.PI / 2, 0);
       this.radio.visible = yola2.outer.visible && !p.dead;
+      this.caseUpdate(yola2, p);
+    }
+    // the case at his left hip (slung), while he has it
+    caseUpdate(yola2, p) {
+      const c = this.caseObj;
+      if (!c || this.caseMode !== "carried") return;
+      yola2.bones.Hips.getWorldPosition(c.position);
+      const y = p.aimYaw;
+      c.position.x += Math.cos(y) * 0.24 - Math.sin(y) * 0.05;
+      c.position.z -= Math.sin(y) * 0.24 + Math.cos(y) * 0.05;
+      c.position.y -= 0.3;
+      c.rotation.set(Math.PI / 2, y + Math.PI / 2, 0);
+      c.visible = yola2.outer.visible && !p.dead;
     }
     // ---- the rifle in Marc's hands: the shotgun's hold (its grips are the same points), the rifle's mesh instead of the pump
     rifleOn(yola2) {
@@ -79611,6 +79803,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           o.frustumCulled = false;
         }
       });
+      this.rifleKeep = { pump: sg.userData.pump, gripL: sg.userData.gripL, muzzle: sg.userData.muzzle };
       sg.add(r);
       this.rifleIn = r;
       sg.userData.pump = new Object3D();
@@ -79674,113 +79867,337 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
   };
 
+  // src/hood/grass.js
+  var CELL3 = 16;
+  var NEAR = 30;
+  var STEP3 = 0.55;
+  function atlas() {
+    const c = document.createElement("canvas");
+    c.width = 512;
+    c.height = 128;
+    const g = c.getContext("2d");
+    const rnd2 = /* @__PURE__ */ (() => {
+      let s = 7;
+      return () => (s = s * 16807 % 2147483647) / 2147483647;
+    })();
+    const blade = (x0, w, h, col) => {
+      g.strokeStyle = col;
+      g.lineWidth = w;
+      g.lineCap = "round";
+      g.beginPath();
+      g.moveTo(x0, 128);
+      const bend = (rnd2() - 0.5) * 30;
+      g.quadraticCurveTo(x0 + bend * 0.4, 128 - h * 0.6, x0 + bend, 128 - h);
+      g.stroke();
+    };
+    for (const [t2, cols] of [[0, ["#7a8243", "#868d4a", "#6c763b", "#939851", "#7b803f"]], [1, ["#a39561", "#ad9f69", "#938556", "#86824c"]], [3, ["#76803f", "#838b48", "#6b7539"]]]) {
+      for (let i = 0; i < 46; i++) blade(t2 * 128 + 14 + rnd2() * 100, 2 + rnd2() * 3, 40 + rnd2() * 80, cols[i % cols.length]);
+    }
+    for (let i = 0; i < 9; i++) {
+      const a = -1.2 + i * 0.3 + (rnd2() - 0.5) * 0.2, L3 = 50 + rnd2() * 40;
+      g.fillStyle = ["#6c7a3a", "#7a8743", "#606d33"][i % 3];
+      g.save();
+      g.translate(256 + 64, 124);
+      g.rotate(a);
+      g.beginPath();
+      g.ellipse(0, -L3 / 2, 9 + rnd2() * 5, L3 / 2, 0, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+    for (let i = 0; i < 14; i++) {
+      const x = 384 + 16 + rnd2() * 96, y = 30 + rnd2() * 60;
+      g.fillStyle = ["#f2efe2", "#f4d34a", "#efe7f5"][i % 3];
+      for (let k = 0; k < 5; k++) {
+        g.beginPath();
+        g.arc(x + Math.cos(k * 1.26) * 3.2, y + Math.sin(k * 1.26) * 3.2, 2.6, 0, 7);
+        g.fill();
+      }
+      g.fillStyle = "#d8a520";
+      g.beginPath();
+      g.arc(x, y, 1.8, 0, 7);
+      g.fill();
+    }
+    const t = new CanvasTexture(c);
+    t.colorSpace = SRGBColorSpace;
+    t.anisotropy = 2;
+    return t;
+  }
+  function tuftGeometry() {
+    const pos = [], uv = [], nrm = [], idx = [];
+    for (let k = 0; k < 3; k++) {
+      const a = k * Math.PI / 3, cx = Math.cos(a) * 0.5, cz = Math.sin(a) * 0.5, b = pos.length / 3;
+      pos.push(-cx, 0, -cz, cx, 0, cz, cx, 1, cz, -cx, 1, -cz);
+      uv.push(0, 0, 0.25, 0, 0.25, 1, 0, 1);
+      for (let i = 0; i < 4; i++) nrm.push(0, 1, 0);
+      idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+    g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+    g.setAttribute("normal", new Float32BufferAttribute(nrm, 3));
+    g.setIndex(idx);
+    return g;
+  }
+  async function sampler(tex3, rect) {
+    if (!tex3?.image) return () => [0, 0, 0, 0];
+    const im = tex3.image, c = document.createElement("canvas");
+    c.width = im.width;
+    c.height = im.height;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, im.width, im.height).data;
+    return (x, z) => {
+      const u = Math.floor((x - rect[0]) / rect[2] * im.width), v = Math.floor((z - rect[1]) / rect[3] * im.height);
+      if (u < 0 || v < 0 || u >= im.width || v >= im.height) return [0, 0, 0, 0];
+      const i = (v * im.width + u) * 4;
+      return [d[i] / 255, d[i + 1] / 255, d[i + 2] / 255, d[i + 3] / 255];
+    };
+  }
+  var hash2 = (x, z) => {
+    const v = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  function vnoise(x, z) {
+    const xi = Math.floor(x), zi = Math.floor(z), fx2 = x - xi, fz = z - zi, u = fx2 * fx2 * (3 - 2 * fx2), w = fz * fz * (3 - 2 * fz);
+    const a = hash2(xi, zi), b = hash2(xi + 1, zi), c = hash2(xi, zi + 1), d = hash2(xi + 1, zi + 1);
+    return a + (b - a) * u + (c - a) * w + (a - b - c + d) * u * w;
+  }
+  var Grass = class {
+    constructor(scene2) {
+      this.group = new Group();
+      this.group.name = "hood-grass";
+      scene2.add(this.group);
+      this.cells = [];
+      this.time = { value: 0 };
+    }
+    async build(splat, paths, rect) {
+      const S2 = await sampler(splat, rect), P2 = await sampler(paths, rect);
+      const mat2 = new MeshStandardMaterial({ map: atlas(), alphaTest: 0.45, side: DoubleSide, roughness: 1, metalness: 0 });
+      const time = this.time;
+      mat2.onBeforeCompile = (sh) => {
+        sh.uniforms.gTime = time;
+        sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute float tile;\nuniform float gTime;").replace("#include <uv_vertex>", "#include <uv_vertex>\n#ifdef USE_MAP\n vMapUv.x += tile * 0.25;\n#endif").replace("#include <begin_vertex>", `#include <begin_vertex>
+  { vec4 wp = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0); float s = sin(gTime * 1.7 + wp.x * 0.7 + wp.z * 0.5) * 0.07 + sin(gTime * 3.1 + wp.x * 1.9) * 0.025; transformed.x += s * position.y; transformed.z += s * 0.6 * position.y; }`);
+        sh.fragmentShader = sh.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\n  diffuseColor.rgb *= mix(0.62, 1.05, vMapUv.y); // (darker in at the foot)");
+        cutawayPatch(sh);
+      };
+      mat2.customProgramCacheKey = () => "hoodgrass";
+      const geo = tuftGeometry(), _m5 = new Matrix4(), _q11 = new Quaternion(), _s = new Vector3(), _p3 = new Vector3(), Y2 = new Vector3(0, 1, 0);
+      let total = 0;
+      for (let cx = rect[0]; cx < rect[0] + rect[2]; cx += CELL3) for (let cz = rect[1]; cz < rect[1] + rect[3]; cz += CELL3) {
+        const pts = [];
+        for (let x = cx; x < cx + CELL3; x += STEP3) for (let z = cz; z < cz + CELL3; z += STEP3) {
+          const jx = x + (hash2(x, z) - 0.5) * STEP3, jz = z + (hash2(z, x) - 0.5) * STEP3;
+          const [pave, wall, shore] = P2(jx, jz);
+          if (pave > 0.5 || wall > 0.5 || shore > 0.45) continue;
+          const [dirt, litter, dry] = S2(jx, jz);
+          if (dirt > 0.55) continue;
+          const clump = vnoise(jx * 0.35, jz * 0.35) * 0.7 + vnoise(jx * 1.3 + 7, jz * 1.3) * 0.3;
+          const edge = Math.min(1, dry * 1.3 + litter * 0.8 + dirt * 0.9);
+          const p = Math.max(0, clump - 0.5) * 2.4 + edge * 0.45 * (0.5 + clump) + 0.02;
+          if (hash2(jx * 3.1, jz * 1.7) > p) continue;
+          const u = hash2(jz, jx * 2.3), tile = u < 0.05 ? 3 : u < 0.11 ? 2 : dry + 0.25 * (hash2(jx, jz * 5) - 0.5) > 0.45 ? 1 : 0;
+          pts.push([jx, jz, tile, 0.2 + hash2(jx * 7, jz) * 0.25 + edge * 0.08]);
+        }
+        if (!pts.length) continue;
+        const im = new InstancedMesh(geo, mat2, pts.length), tiles = new Float32Array(pts.length);
+        pts.forEach(([x, z, t, h], i) => {
+          _q11.setFromAxisAngle(Y2, hash2(x, z * 3) * 6.28);
+          _s.set(h * 1.3, h, h * 1.3);
+          _p3.set(x, 0.01, z);
+          im.setMatrixAt(i, _m5.compose(_p3, _q11, _s));
+          tiles[i] = t;
+        });
+        const g2 = geo.clone();
+        g2.setAttribute("tile", new InstancedBufferAttribute(tiles, 1));
+        im.geometry = g2;
+        im.instanceMatrix.needsUpdate = true;
+        im.computeBoundingSphere();
+        im.castShadow = false;
+        im.receiveShadow = false;
+        im.frustumCulled = true;
+        im.userData.c = [cx + CELL3 / 2, cz + CELL3 / 2];
+        im.visible = false;
+        this.group.add(im);
+        this.cells.push(im);
+        total += pts.length;
+      }
+      this.count = total;
+      return this;
+    }
+    update(dt, px2, pz2) {
+      this.time.value += dt;
+      for (const c of this.cells) {
+        const [x, z] = c.userData.c;
+        c.visible = Math.abs(x - px2) < NEAR && Math.abs(z - pz2) < NEAR;
+      }
+    }
+  };
+
   // src/hood/script.js
   var LINES2 = {
-    // Scene 1: still at the house
-    l01: ["YOLA", "Marc? I'm out of the hospital. Have you got Lilah yet?", true],
-    l02: ["MARC", "Not yet. Arianna's with me. I found gas for the boat. I've just got to pick it up.", true],
-    l03: ["YOLA", "You've got a way across?", true],
-    l04: ["MARC", "The boat at the club. I'll get Lilah and bring the girls with me.", true],
-    l05: ["YOLA", "They're moving through the streets here. Is it still quiet there?", true],
-    l06: ["MARC", "No. I think we've still got time.", true],
-    l07: ["SURVIVOR", "Get inside! They're coming through!"],
-    l08: ["MARC", "Arianna. Inside, sweetie."],
-    l09: ["ARIANNA", "Dad?"],
-    l10: ["MARC", "Go. I'm right here. Cover your ears."],
-    l11: ["YOLA", "Marc? What's happening?", true],
-    l12: ["MARC", "They're here. I'll call you back.", true],
-    // Scene 2: the rifle
-    l13: ["SURVIVOR", "Back up! Back up!"],
-    l14: ["MARC", "Arianna?"],
-    l15: ["ARIANNA", "I'm here."],
-    l16: ["MARC", "Okay. Come to me. Stay close."],
-    l17: ["ARIANNA", "Are we going to Mom?"],
-    l18: ["MARC", "We are. But we're getting your sister first."],
-    // Scene 3: through the gate
-    l19: ["MARC", "Stay this side while I cut it."],
-    l20: ["YOLA", "Marc. Talk to me.", true],
-    l21: ["MARC", "We're through. Arianna's okay.", true],
-    l22: ["YOLA", "And you?", true],
-    l23: ["MARC", "I'm okay. We're heading for the parking lot.", true],
-    // Scene 4: the gas
-    l24: ["MARC", "There. That's the can."],
-    l25: ["MARC", "I'll carry it. Stay beside me."],
-    l26: ["MARC", "I've got the gas. Just need the keys from the club office.", true],
-    l27: ["YOLA", "Be careful in there.", true],
-    // Scene 5: inside the clubhouse
-    l28: ["MARC", "Arianna. Wait here a second. Let me look."],
-    l29: ["MARC", "Got them. Come on. Let's get your sister."],
-    // Scene 6: Lilah
-    l30: ["MARC", "Lilah. Come here, sweetheart."],
-    l31: ["ARIANNA", "We're going to Mom."],
-    l32: ["MARC", "Yola. I've got her. Both girls are with me.", true],
-    l33: ["YOLA", "Thank God.", true],
-    l34: ["MARC", "We're going to the boat now.", true],
-    // Scene 7: the boat
-    l35: ["MARC", "Yola. We're leaving the dock.", true],
-    l36: ["YOLA", "Okay. I'll keep the radio on.", true],
-    l37: ["MARC", "We're coming.", true],
-    // the looters (remake, draft): the warning at the club and their fight
-    w01: ["LOOTER", "Keep walking! This place is taken!"],
-    w02: ["LOOTER", "That's our gas now. Put it down!"],
-    w03: ["LOOTER", "He's inside! Light him up!"],
-    // the dock before Lilah (remake, draft)
-    d01: ["MARC", "Not without Lilah."]
+    // 1. The call at the door
+    Y01: ["YOLA", "Marc. Are you at the house?", true, "Y01_yola"],
+    M01: ["MARC", "At the door.", true, "M01_marc"],
+    Y02: ["YOLA", "It's in our bedroom closet, top shelf. A silver case. Four vials of the vaccine.", true, "Y02_yola"],
+    Y03: ["YOLA", "Listen. Some are missing from the hospital, and people know. They're going through every neighborhood where staff live. They're looking for it.", true, "Y03_yola"],
+    M02: ["MARC", "Looters.", true, "M02_marc"],
+    Y04: ["YOLA", "Get the case and get out. Don't stay in there.", true, "Y04_yola"],
+    M03: ["MARC", "I'll bring the cure to Grammy's. The girls are waiting.", true, "M03_marc"],
+    Y05: ["YOLA", "Three of them are for Grammy, Lilah and Arianna. The fourth one is yours. Take it.", true, "Y05_yola"],
+    M04: ["MARC", "Let's see if you get out of there with some. If you do, I'll take it.", true, "M04_marc"],
+    Y06: ["YOLA", "That's not a plan.", true, "Y06_yola"],
+    M05: ["MARC", "It's mine.", true, "M05_marc"],
+    // 2. The house (James)
+    J01: ["JAMES", "What the fuck? Who are you? Who are you, motherfucker? Who are YOU?", false, "J01_james"],
+    M06: ["MARC", "Got it.", false, "M06_marc"],
+    // 3. "Help!"
+    S01: ["SOPHIE", "Help! Somebody help me! Please!", false, "S01_sophie"],
+    S02: ["SOPHIE", "Help! Over here! Please, please, please!", false, "S02_sophie"],
+    S03: ["SOPHIE", "Oh my God. Oh my God. Thank you.", false, "S03_sophie"],
+    S03a: ["SOPHIE", "I'm Sophie.", false, "S03a_sophie"],
+    M06a: ["MARC", "Marc. Can you walk?", false, "M06a_marc"],
+    // 4. The bargain
+    S04: ["SOPHIE", "Wait. What is that?", false, "S04_sophie"],
+    S05: ["SOPHIE", "Is that the cure? You're the doctor's husband.", false, "S05_sophie"],
+    S06: ["SOPHIE", "They're looking for those. Everyone's looking for those.", false, "S06_sophie"],
+    S07: ["SOPHIE", "You have to give me one. If I get you out of here safe, can I have one?", false, "S07_sophie"],
+    M07: ["MARC", "Get me out of here first.", false, "M07_marc"],
+    S08: ["SOPHIE", "Okay. Okay. Follow me. I know a way.", false, "S08_sophie"],
+    // 5. The gate
+    S09: ["SOPHIE", "The gate's chained. My neighbor has bolt cutters. The garage with the light on.", false, "S09_sophie"],
+    S10: ["SOPHIE", "Hurry. Please hurry.", false, "S10_sophie"],
+    M08: ["MARC", "Stay behind me.", false, "M08_marc"],
+    // 6. The clubhouse
+    M08a: ["MARC", "I've got a boat at the dock. But I need gas.", false, "M08a_marc"],
+    S11: ["SOPHIE", "Pete, the groundskeeper, has the key to the gas shed. If he's alive, he'd be at the clubhouse. Or close to it.", false, "S11_sophie"],
+    S12: ["SOPHIE", "And there are supplies in there, right? Ammo. First aid.", false, "S12_sophie"],
+    L01: ["LOOTER", "Keep walking! This place is taken!", false, "L01_looter_a"],
+    L02: ["LOOTER", "Who's out there? Show yourself!", false, "L02_looter_b"],
+    L03: ["LOOTER", "He's inside! Light him up!", false, "L03_looter_c"],
+    L04: ["LOOTER", "He's got a rifle! Get down!", false, "L04_looter_a"],
+    M09: ["MARC", "That'll do.", false, "M09_marc"],
+    // 7. Pete
+    P01: ["PETE", "Help! Over here! Somebody!", false, "P01_pete"],
+    P02: ["PETE", "Get back! Get BACK!", false, "P02_pete"],
+    P03: ["PETE", "Don't come! They're... They're... AAAH!", false, "P03_pete"],
+    S13: ["SOPHIE", "I've got it. I've got the key.", false, "S13_sophie"],
+    // 8. The check-in with Yola (the key and the dose)
+    M10: ["MARC", "Give me the key.", false, "M10_marc"],
+    S14: ["SOPHIE", "Not until I get one. A cure. For me.", false, "S14_sophie"],
+    M11: ["MARC", "Yola. It's me.", true, "M11_marc"],
+    Y07: ["YOLA", "Marc. Are you all right? Did you find it?", true, "Y07_yola"],
+    M12: ["MARC", "I've got the case. The woman with me has the fuel-shed key. She wants a dose before she'll hand it over.", true, "M12_marc"],
+    Y08: ["YOLA", "Do it. Just do it.", true, "Y08_yola"],
+    Y09: ["YOLA", "You've got enough for Grammy and the girls. I'll find more for us. It's going to be okay.", true, "Y09_yola"],
+    M13: ["MARC", "Are you sure?", true, "M13_marc"],
+    Y10: ["YOLA", "I'm sure. Go.", true, "Y10_yola"],
+    M14: ["MARC", "You get one. When we're on the water.", false, "M14_marc"],
+    S15: ["SOPHIE", "Okay. Okay. Thank you. Here.", false, "S15_sophie"],
+    // 9. The dock
+    M15: ["MARC", "The boat's nearly dry. The shed's up the bank.", false, "M15_marc"],
+    M16: ["MARC", "Listen. We can't start the motor. The noise will bring every one of those over here.", false, "M16_marc"],
+    M17: ["MARC", "We push off first. Get clear of the bank. Then we start it. Understand?", false, "M17_marc"],
+    S16: ["SOPHIE", "Okay. Okay. Quiet.", false, "S16_sophie"],
+    M18: ["MARC", "Cold, and still. Keep it that way.", false, "M18_marc"],
+    S17: ["SOPHIE", "How cold?", false, "S17_sophie"],
+    M19: ["MARC", "Just stay with the boat.", false, "M19_marc"],
+    S18: ["SOPHIE", "I'm still getting one, right?", false, "S18_sophie"],
+    M20: ["MARC", "On the water.", false, "M20_marc"],
+    S19: ["SOPHIE", "Sure.", false, "S19_sophie"],
+    // 10. The shed and the engine
+    M21: ["MARC", "That's what I needed.", false, "M21_marc"],
+    M22: ["MARC", "No. No, no, no. What are you doing?", false, "M22_marc"],
+    M23: ["MARC", "Sophie! Sophie, stop!", false, "M23_marc"],
+    S20: ["SOPHIE", "I'm sorry! I can't stay here!", false, "S20_sophie"],
+    S21: ["SOPHIE", "Oh God. Oh God, no.", false, "S21_sophie"],
+    S22: ["SOPHIE", "Marc! MARC!", false, "S22_sophie"],
+    M24: ["MARC", "Hold on! I'm coming!", false, "M24_marc"],
+    // 11. Leaving
+    M25: ["MARC", "Damn it.", false, "M25_marc"],
+    M26: ["MARC", "Yola. I've got it. I'm leaving the dock.", true, "M26_marc"],
+    Y11: ["YOLA", "And the survivor?", true, "Y11_yola"],
+    M27: ["MARC", "She didn't make it.", true, "M27_marc"],
+    Y12: ["YOLA", "I'm sorry.", true, "Y12_yola"],
+    M28: ["MARC", "She never took one. I've still got all four.", true, "M28_marc"],
+    Y13: ["YOLA", "Marc...", true, "Y13_yola"],
+    M29: ["MARC", "The fourth one's still yours. I'm going to Grammy's.", true, "M29_marc"],
+    // Combat barks
+    MB01: ["MARC", "Stay behind me.", false, "MB01_marc"],
+    MB02: ["MARC", "Stay close.", false, "MB02_marc"],
+    MB03: ["MARC", "Get down!", false, "MB03_marc"],
+    MB04: ["MARC", "Move!", false, "MB04_marc"],
+    MB05: ["MARC", "Reloading!", false, "MB05_marc"],
+    SB01: ["SOPHIE", "Behind you!", false, "SB01_sophie"],
+    SB02: ["SOPHIE", "Oh God!", false, "SB02_sophie"],
+    SB03: ["SOPHIE", "Go, go, go!", false, "SB03_sophie"],
+    SB04: ["SOPHIE", "Don't leave me!", false, "SB04_sophie"],
+    SB05: ["SOPHIE", "Is it clear?", false, "SB05_sophie"],
+    SB06: ["SOPHIE", "I'm okay. I'm okay.", false, "SB06_sophie"],
+    LB01: ["LOOTER", "There he is!", false, "LB01_looter_a"],
+    LB02: ["LOOTER", "Get him!", false, "LB02_looter_b"],
+    LB03: ["LOOTER", "Flank him!", false, "LB03_looter_c"],
+    LB04: ["LOOTER", "I'm hit!", false, "LB04_looter_a"]
   };
-  var SPEAKER_COLOR = { MARC: "#9fd3ff", YOLA: "#ffc6e0", ARIANNA: "#ffe39a", SURVIVOR: "#cfe8b8", LOOTER: "#ff8a7a" };
+  var CUES = { J02: "J02_james_scream", S23: "S23_sophie_scream", ENGINE: "FX_ENGINE_outboard_start_stall" };
+  var SPEAKER_COLOR = { MARC: "#9fd3ff", YOLA: "#ffc6e0", SOPHIE: "#ffe39a", JAMES: "#ff8a7a", PETE: "#cfe8b8", LOOTER: "#ff8a7a" };
+  var FACES = { MARC: "assets/ui/radio/marc.webp", YOLA: "assets/ui/radio/yola.webp" };
   var GOALS = {
-    home: "Hold the yard",
-    rifle: "Grab the rifle",
-    push: "Push through the barricade on the curve",
-    cutters: "Find something to cut the gate chain",
-    gate: "Cut the chain on the gate",
-    holdgate: "Hold the gate",
-    lot: "Get to the parking lot",
-    gas: "Find the gas can",
-    keys: "Get the boat keys from the club office",
-    looters: "Take the clubhouse",
-    roadblock: "Unlock the looters\u2019 roadblock",
-    stow: "Leave the gas at the boat (past the pool)",
-    lilah: "Get Lilah from Grandma\u2019s",
-    boat: "Get the girls to the boat",
+    vaccines: "Get the vaccines",
+    fridge: "The vaccines are in the fridge",
+    out: "Get out",
+    help: "Find who is screaming",
+    save: "Save her",
+    follow: "Follow Sophie",
+    cutters: "Get the bolt cutters",
+    gate: "Cut the chain",
+    clubhouse: "Clear the clubhouse",
+    pete: "Find Pete",
+    savePete: "Help Pete",
+    key: "Get the key from Sophie",
+    dock: "Get to the boat",
+    gas: "Get gas",
+    shed: "Get the gas from the shed",
+    sophie: "Get to Sophie",
+    horde: "Survive",
+    caseBack: "Get the case",
     fuel: "Fuel the boat",
-    hold: "Hold the dock",
-    launch: "Launch the boat"
+    leave: "Get in the boat"
   };
 
   // src/hood/zones.js
-  var B06L = [[7.59, -3.44], [1.73, 1.08], [-6.07, -9.01], [-0.21, -13.53]];
+  var B06L = [[5.913, -9.637], [0.425, -4.673], [-8.141, -14.122], [-2.652, -19.086]];
   var ZONES = {
     // 1: Marc's yard and the loop's right arm, from the home row to the curve; B03 and B05 on either side
-    home: [[28.9, -6.8], [47.5, 2], [55, 4], [71.5, 21.6], [59.6, 21], [59.6, 50], [36.3, 49], [36.3, 32.8], [28.9, 32.8]],
+    home: [[28.9, -13.6], [30, -13.2], [47.4, -0.4], [55, 4], [71.5, 21.6], [56.62, 22], [59.93, 50.81], [36.3, 49], [36.3, 32.8], [28.9, 32.8]],
     // 1b: B05-L, the damaged end unit off Marc's yard (its garage stands open: a loot room, part of the home stop)
-    b05l: [[47.43, 1.92], [54.13, 5.06], [59.53, -6.49], [52.83, -9.63]],
+    b05l: [[47.627, -0.115], [53.645, 4.19], [61.053, -6.188], [55.034, -10.492]],
     // 2: the curve, the home row's back gardens, B06-L's garage and the gate yard up to the chained fence
-    curve: [[-0.65, -13.7], [33.12, -19.3], [32.72, -19.04], [27.32, -7.49], [28.9, -6.8], [28.9, 32.8], [6.6, 32.8], ...B06L.slice(1), B06L[3]],
+    curve: [[1.86, -14.12], [34.6, -19.55], [30, -13.2], [28.9, -13.6], [28.9, 32.8], [6.6, 32.8], [1.75, 1.5], ...B06L.slice(1)],
     // 3-5: beyond the gate: the roundabout, the club front, the drive and the parking lot (the courts fenced off)
     club: [
-      [-0.65, -13.7],
-      [33.12, -19.3],
+      [1.86, -14.12],
+      [34.6, -19.55],
       [33.6, -19.6],
       [33.6, -40.5],
       [41.5, -49.5],
       [105.5, -49.5],
       [105.1, -52],
       [93.1, -91],
-      [28.6, -91],
-      [26.1, -69.4],
+      [27, -91.3],
+      [27.6, -69.1],
       [20.7, -69.2],
       [20.5, -61.3],
       [20.4, -46.6],
       [-1.3, -46.6],
       [-1, -32.6],
-      [-0.6, -13.9]
+      [-0.76, -16.7]
     ],
     // 6: inside the clubhouse
     clubhouse: [[-1.27, -46.6], [20.4, -46.6], [20.4, -61.3], [-1.27, -61.3]],
     // 7-9: past the looters' roadblock: the pool, the lakeside, the pavilions, the playground and Grandma's front yard
     west: [
-      [-0.6, -13.9],
+      [-0.76, -16.7],
       [-1, -32.6],
       [-1.3, -46.6],
       [-1.27, -61.3],
@@ -79794,24 +80211,51 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       [-58.2, 18.4],
       [-45.3, 18.4],
       [-23.2, 19.4],
-      [-22.9, 6.8],
-      [-23.2, 4.3],
-      [-0.21, -13.53]
+      [-23.47, 2],
+      [-24.89, 0.45],
+      [-2.65, -19.09]
     ],
-    // 10: the dock trail past the launch gate
-    dock: [[-12.6, -67.6], [-23.8, -67.6], [-40, -67.6], [-40, -96], [-10, -96], [-12.4, -66.9]]
+    // Marc's house, inside (blender/hood/ch2_home.py)
+    house: [[29, 32.85], [36.3, 32.85], [36.3, 45.6], [29, 45.6]],
+    // the dock (blender/hood/ch2_dock.py): from the club's back fence and the lake up to the fence by the trees, the service
+    // road to the lot's west fence, the shed
+    dock: [
+      [-26.5, -67],
+      [-12.6, -67.6],
+      [26.3, -68.2],
+      [27.6, -69.1],
+      [27, -91.3],
+      [28.8, -91.6],
+      [20, -110],
+      [8, -123.5],
+      [-5, -124],
+      [-19, -122],
+      [-40, -110.5],
+      [-58, -103.5],
+      [-58, -100],
+      [-27.6, -100]
+    ]
+  };
+  var H4 = ["home", "b05l"];
+  var STOPS = {
+    home: { start: [37.5, 38.5], zones: H4, open: [], reach: [["home_door_use", 1.4]] },
+    house: { start: [35.3, 38.5], zones: [...H4, "house"], open: ["home_door"], reach: [["fridge_use", 1.4], ["james", 1]] },
+    help: { start: [38.4, 34.5], zones: [...H4, "house"], open: ["home_door"], reach: [["seal_home_use", 2]] },
+    gate: { start: [27.5, 9.5], zones: [...H4, "house", "curve"], open: ["home_door", "home"], reach: [["cutters", 1.3], ["gate_use", 2.2]] },
+    club: { start: [18.6, -19.5], zones: [...H4, "house", "curve", "club"], open: ["home_door", "home", "gate"], reach: [["club_warn", 7], ["club_door", 2.6], ["dockroad_use", 2.2]] },
+    clubhouse: { start: [9.6, -50], zones: [...H4, "house", "curve", "club", "clubhouse"], open: ["home_door", "home", "gate", "clubdoor"], reach: [["keys", 1.1]] },
+    dock: { start: [36.5, -80.5], zones: [...H4, "house", "curve", "club", "clubhouse", "dock"], open: ["home_door", "home", "gate", "clubdoor", "dockroad"], reach: [["pour_fuel", 2.4], ["shed_door", 1.6]] },
+    shed: { start: [-8.6, -108.2], zones: [...H4, "house", "curve", "club", "clubhouse", "dock"], open: ["home_door", "home", "gate", "clubdoor", "dockroad", "shed"], reach: [["shed_gas", 1.3], ["shed_shotgun", 1.6]] },
+    horde: { start: [-10.5, -100], zones: [...H4, "house", "curve", "club", "clubhouse", "dock", "west"], open: ["home_door", "home", "gate", "clubdoor", "dockroad", "shed", "dock"], reach: [["pour_fuel", 2.4]] }
   };
 
   // src/hood/level.js
-  var STEP3 = 1 / 60;
+  var STEP4 = 1 / 60;
   var AMBIENT = {
-    curve: ["curve", 14, 10, 20, 5],
+    gate: ["curve", 14, 10, 20, 4],
     club: ["club", 18, -32, 14, 4],
-    lot: ["club", 64, -70, 24, 6],
-    west: ["west", -15, -35, 18, 4],
-    grandma: ["west", -38, 2, 14, 4],
-    playground: ["west", -48, -8, 14, 4],
-    dock: ["dock", -22, -82, 12, 3]
+    pete: ["club", 64, -70, 24, 6],
+    dock: ["dock", -2, -100, 16, 3]
   };
   var WAVE_EXTRA = 0.5;
   var inPoly = (P2, x, z) => {
@@ -79819,8 +80263,28 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     for (let i = 0, j = P2.length - 1; i < P2.length; j = i++) if (P2[i][1] > z !== P2[j][1] > z && x < (P2[j][0] - P2[i][0]) * (z - P2[i][1]) / (P2[j][1] - P2[i][1]) + P2[i][0]) c = !c;
     return c;
   };
-  var STOP_ORDER = ["home", "curve", "gate", "club", "lot", "clubhouse", "west", "grandma", "playground", "dock"];
-  var SAVE_KEY = "zc.hoodsave";
+  var STOP_ORDER = ["home", "help", "gate", "club", "pete", "dock", "shed", "horde", "leave"];
+  var STOP_STARTS = {
+    home: [37.5, 0, 38.5, -Math.PI / 2],
+    help: [38.4, 0, 34.5, Math.PI * 0.85],
+    gate: [27.5, 0, 9.5, -Math.PI / 2],
+    club: [18.6, 0, -19.5, Math.PI],
+    pete: [17.5, 0, -43.5, 2.2],
+    dock: [36.5, 0, -80.5, -Math.PI / 2],
+    shed: [-17, 0, -86, Math.PI],
+    horde: [-10.5, 0, -103.5, 0],
+    leave: [-21, 0, -80.5, -Math.PI / 2]
+  };
+  var SUPPLIES = {
+    home: [["ammo_p", 34.5, 42.2, "pistol"], ["med", 30.6, 41.8]],
+    help: [["ammo_p", 53.73, -2.47, "pistol"], ["med", 55.68, -4.24]],
+    gate: [["ammo_p", 13, 15, "pistol"], ["med", 24.5, -7.5]],
+    club: [["med", 14.5, -52], ["ammo_p", 12.2, -59.6, "pistol"], ["ammo_r", 6.2, -58.6, "rifle"]],
+    pete: [["ammo_r", 63.2, -72.2, "rifle"], ["med", 48, -76.5], ["ammo_p", 72.5, -66, "pistol"]],
+    dock: [["med", -19.5, -75]],
+    horde: [["ammo_s", -12.5, -96.5, "shotgun"], ["med", -4.5, -93], ["ammo_s", -21, -88, "shotgun"]]
+  };
+  var SAVE_KEY = "zc.hoodsave2";
   var loadSave = () => {
     try {
       return JSON.parse(localStorage.getItem(SAVE_KEY)) || null;
@@ -79841,13 +80305,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
   };
   var RIFLE = { pellets: 1, spread: 4e-3, range: 24, falloffFrom: 22, damage: 85, knockback: 5.5, mag: 10, interval: 0.42, reload: 1.7 };
+  var SG_SPEC = { ...SHOTGUN_SPEC };
+  var SG_T = null;
   var HoodLevel = class {
     constructor(sim2, api, save = null) {
       this.sim = sim2;
       this.api = api;
       const s = save || {};
       this.stop = s.stop || "home";
-      this.flags = { rifle: false, cutters: false, gas: "lot", keys: false, lilah: false, stowed: false, ...s.flags || {} };
+      this.flags = { case: "fridge", gun: null, cutters: false, gas: "shed", key: null, ...s.flags || {} };
       this.open = new Set(s.open || []);
       this.taken = new Set(s.taken || []);
       this.killed = /* @__PURE__ */ new Set();
@@ -79861,11 +80327,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.npcs = [];
       this.time = 0;
       this.t0 = sim2.time;
-      const p = sim2.player;
-      p.setLoadout(this.flags.rifle ? ["bat", PISTOL, SHOTGUN, "fists"] : ["bat", PISTOL, "fists"], "bat");
+      const p = sim2.player, T2 = sim2.T;
+      SG_T ?? (SG_T = { shotgunDamage: T2.shotgunDamage, shotgunKnockback: T2.shotgunKnockback, shotgunMag: T2.shotgunMag, shotgunInterval: T2.shotgunInterval, shotgunReload: T2.shotgunReload });
+      p.setLoadout(this.flags.gun ? ["bat", PISTOL, SHOTGUN, "fists"] : ["bat", PISTOL, "fists"], "bat");
       p.mags[PISTOL] = s.pistolMag ?? 12;
       p.reserve[PISTOL] = s.pistolRes ?? 24;
-      if (this.flags.rifle) this.rifleOn(s.rifleMag ?? RIFLE.mag, s.rifleRes ?? 20);
+      if (this.flags.gun === "rifle") this.rifleOn(s.gunMag ?? RIFLE.mag, s.gunRes ?? 20);
+      else if (this.flags.gun === "shotgun") this.shotgunOn(s.gunMag, s.gunRes ?? 16);
       for (const id of this.open) this.applySeal(id, true);
       const st = this.mark("start_" + this.stop) || this.startFor(this.stop);
       p.x = p.px = st[0];
@@ -79878,48 +80346,35 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     at(n) {
       const m = this.mark(n);
-      return m ? { x: m[0], z: m[2], yaw: m[3] } : { x: 0, z: 0, yaw: 0 };
+      return m ? { x: m[0], y: m[1], z: m[2], yaw: m[3] } : { x: 0, y: 0, z: 0, yaw: 0 };
     }
-    // where each stop restarts (a checkpoint): a safe spot at its start
     startFor(stop) {
-      const S2 = {
-        home: [38.2, 0, 40.6, Math.PI / 2],
-        curve: [26.5, 0, 10.5, -Math.PI / 2],
-        gate: [18.6, 0, -9.5, Math.PI],
-        club: [17.5, 0, -22, Math.PI],
-        lot: [30, 0, -46, 2.3],
-        clubhouse: [13, 0, -41.5, Math.PI],
-        west: [-4, 0, -31, -Math.PI / 2],
-        grandma: [-36, 0, -6, -2.6],
-        playground: [-43, 0, 4, Math.PI],
-        dock: [-14, 0, -60, Math.PI]
-      };
-      return S2[stop] || S2.home;
+      return STOP_STARTS[stop] || STOP_STARTS.home;
     }
     setGoal(k) {
       if (k !== this.objective) this.goalT0 = this.time;
       this.objective = k;
       this.api.hud.setObjective(GOALS[k] || k || "");
     }
-    // where the current objective is (the hint marker, hint.js); none while the job is to hold ground
+    // where the current objective is (the hint marker, hint.js); none while the job is to fight
     goalTarget() {
       const T2 = {
-        rifle: "rifle_drop",
-        push: "seal_home_use",
+        vaccines: "home_door_use",
+        fridge: "fridge_use",
+        out: "home_porch",
         cutters: "cutters",
         gate: "gate_use",
-        lot: "gas_can",
-        gas: "gas_can",
-        keys: "club_door",
-        roadblock: "roadblock_use",
-        stow: "pour_fuel",
-        lilah: "grandma_door",
-        boat: "pour_fuel",
+        clubhouse: "club_door",
+        dock: "boat",
+        gas: "shed_door",
+        shed: "shed_gas",
         fuel: "pour_fuel",
-        launch: "pour_fuel"
+        leave: "pour_fuel",
+        caseBack: "boat"
       }[this.objective];
-      if (this.objective === "gas" && typeof this.flags.gas === "object") return this.flags.gas;
-      if (this.objective === "stow" && this.flags.gas !== "carried") return typeof this.flags.gas === "object" ? this.flags.gas : null;
+      if (this.objective === "help" || this.objective === "save") return this.sophieAt || null;
+      if (this.objective === "savePete") return this.peteAt || null;
+      if (this.objective === "fuel" && typeof this.flags.gas === "object") return this.flags.gas;
       return T2 ? this.at(T2) : null;
     }
     say(...ids) {
@@ -79928,7 +80383,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     checkpoint(stop) {
       this.stop = stop;
       const p = this.sim.player;
-      writeSave({ v: 1, stop, flags: this.flags, open: [...this.open], taken: [...this.taken], pistolMag: p.mags[PISTOL], pistolRes: p.reserve[PISTOL], rifleMag: p.mags[SHOTGUN], rifleRes: p.reserve[SHOTGUN] });
+      writeSave({ v: 2, stop, flags: this.flags, open: [...this.open], taken: [...this.taken], pistolMag: p.mags[PISTOL], pistolRes: p.reserve[PISTOL], gunMag: p.mags[SHOTGUN], gunRes: p.reserve[SHOTGUN] });
     }
     // ---------------------------------------------------------------- the simulation's hooks
     onWake() {
@@ -79936,13 +80391,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     step(dt, input2) {
       this.time += dt;
       const p = this.sim.player;
-      for (const n of this.npcs) n.step?.(dt, this);
+      for (const n of [...this.npcs]) n.step?.(dt, this);
       this.pickupStep(p);
       this.carryStep(p, input2);
       const r = this.co.next();
       if (r.done) this.co = (function* () {
       })();
-      this.prompt = p.dead ? null : this.findPrompt(p);
+      this.prompt = p.dead || this.api.cine?.active ? null : this.findPrompt(p);
       if (input2.usePresses > 0 && this.prompt?.usable) {
         const it = this.interact.find((q) => q.id === this.prompt.id);
         it?.use?.();
@@ -80000,7 +80455,17 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const ok = best.can ? best.can() : true;
       return { id: best.id, label: ok ? best.label : best.no || best.label, usable: ok };
     }
-    // ---------------------------------------------------------------- the rifle and the gas can
+    // a prompt the story waits on: resolves (true) when used
+    *use(id, mark, label, r = 1.8, extra = {}) {
+      let used = false;
+      const m = typeof mark === "string" ? this.at(mark) : mark;
+      this.addUse({ id, x: m.x, z: m.z, r, label, ...extra, use: () => {
+        used = true;
+        this.dropUse(id);
+      } });
+      yield* this.until(() => used);
+    }
+    // ---------------------------------------------------------------- the long guns and the gas can
     rifleOn(mag = RIFLE.mag, res = 20) {
       const p = this.sim.player, T2 = this.sim.T;
       Object.assign(SHOTGUN_SPEC, { pellets: RIFLE.pellets, spread: RIFLE.spread, range: RIFLE.range, falloffFrom: RIFLE.falloffFrom });
@@ -80008,7 +80473,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (!p.owned.includes(SHOTGUN)) p.owned.splice(Math.max(0, p.owned.indexOf("fists")), 0, SHOTGUN);
       p.mags[SHOTGUN] = mag;
       p.reserve[SHOTGUN] = res;
+      this.flags.gun = "rifle";
       this.api.view.rifleOn?.();
+    }
+    // the shed's pump shotgun in the slot instead (the rifle stays on the shed's rack)
+    shotgunOn(mag = null, res = 16) {
+      const p = this.sim.player, T2 = this.sim.T;
+      Object.assign(SHOTGUN_SPEC, SG_SPEC);
+      Object.assign(T2, SG_T);
+      if (!p.owned.includes(SHOTGUN)) p.owned.splice(Math.max(0, p.owned.indexOf("fists")), 0, SHOTGUN);
+      p.mags[SHOTGUN] = mag ?? T2.shotgunMag;
+      p.reserve[SHOTGUN] = res;
+      this.flags.gun = "shotgun";
+      this.api.view.rifleOff?.();
     }
     // carrying the gas can: a little slower, no fighting with it in hand: attacking sets it down where Marc stands (the
     // brief: "Let Marc set it down to fight and pick it up again"); Use beside it picks it up again
@@ -80031,11 +80508,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.api.audio?.play("reloadDone");
     }
     // ---------------------------------------------------------------- spawning
-    // a zombie at a mark (or {x, z}), facing the player; opts: kind, dormant (sense m), hp
+    // a zombie at a mark (or {x, z}), facing the player; opts: kind, dormant (sense m), hp, near (allow close: a scripted ring)
     spawnAt(where, opts = {}) {
       const p = this.sim.player;
       let m = typeof where === "string" ? this.at(where) : where;
-      if (typeof where === "string" && Math.hypot(m.x - p.x, m.z - p.z) < 11) {
+      if (typeof where === "string" && !opts.near && Math.hypot(m.x - p.x, m.z - p.z) < 11) {
         const pre = where.split("_").slice(0, 2).join("_") + "_";
         const alt = Object.keys(HOOD.marks).filter((n) => n.startsWith(pre)).map((n) => this.at(n)).sort((a, b) => Math.hypot(b.x - p.x, b.z - p.z) - Math.hypot(a.x - p.x, a.z - p.z))[0];
         if (alt && Math.hypot(alt.x - p.x, alt.z - p.z) > Math.hypot(m.x - p.x, m.z - p.z)) m = alt;
@@ -80051,7 +80528,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       zb.hoodWave = opts.wave || null;
       return zb;
     }
-    // a wave: [[mark, kind?] ...] spawned `every` s apart, the farthest-from-player marks first (never on top of her)
+    // a wave: [[mark, kind?] ...] spawned `every` s apart (never on top of him)
     *wave(list, every = 0.8, tag = "w") {
       const out = [];
       let extra = 0;
@@ -80065,14 +80542,33 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       return out;
     }
+    // a ring of infected round a point (Sophie's, Pete's), facing it, still until Marc comes near
+    ring(c, n, r, opts = {}) {
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const a = i / n * Math.PI * 2 + this.sim.rand() * 0.6, d = r * (0.8 + this.sim.rand() * 0.4), x = c.x + Math.cos(a) * d, z = c.z + Math.sin(a) * d;
+        const q = { x, z };
+        if (this.sim.world.resolveCircle(q, 0.45)) continue;
+        out.push(this.spawnAt({ x, z }, { near: true, spread: 0, yaw: Math.atan2(c.x - x, c.z - z), dormant: opts.dormant ?? 11, kind: opts.kind, wave: opts.wave || "ring" }));
+      }
+      return out;
+    }
+    wake(list) {
+      for (const z of list) if (z.alive && z.dormant) {
+        z.dormant.wake = 0;
+        z.passive = false;
+        z.speedMul = z.dormant.speedMul || 1;
+        z.dormant = null;
+      }
+    }
     alive(group) {
       return group.filter((z) => z.alive).length;
     }
     *wait(s) {
-      for (let t = 0; t < s; t += STEP3) yield;
+      for (let t = 0; t < s; t += STEP4) yield;
     }
     *until(fn, max = Infinity) {
-      for (let t = 0; !fn() && t < max; t += STEP3) yield;
+      for (let t = 0; !fn() && t < max; t += STEP4) yield;
     }
     *talk(...ids) {
       this.say(...ids);
@@ -80083,20 +80579,30 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const m = this.at(name), p = this.sim.player;
       return Math.hypot(p.x - m.x, p.z - m.z) < r;
     }
+    nearXZ(q, r) {
+      const p = this.sim.player;
+      return Math.hypot(p.x - q.x, p.z - q.z) < r;
+    }
+    prefetch(...ids) {
+      this.api.voice?.prefetch(ids);
+    }
+    // a cinematic moment (cine.js): the story waits until the game camera is back
+    *shot(list, opts) {
+      if (!this.api.cine) return;
+      yield* this.api.cine.run(list, opts);
+    }
+    // lines during a held shot: the shot holds until they are said
+    linesDone() {
+      return () => !this.api.subs.busy;
+    }
+    // Marc's own spot and framing for the shots
+    P(y = 1.3) {
+      const p = this.sim.player;
+      return [p.x, y, p.z];
+    }
     // ---------------------------------------------------------------- supplies (polish pass 2: never stuck for rounds)
-    // each stop's ammo and first aid: in the places people would have left them (the brief: "Don't make ... running out of
-    // ammunition permanently block progress"); the bat never runs out either
     addSupplies(stop) {
-      const S2 = {
-        home: [["ammo_p", 53, -1.5, "pistol"], ["med", 54.6, -3.6], ["ammo_p2", 44.2, 26.5, "pistol"]],
-        curve: [["ammo_r", 3.6, -5.6, "rifle"], ["ammo_p", 13, 15, "pistol"]],
-        gate: [["med", 24.5, -7.5]],
-        lot: [["ammo_r", 63.2, -72.2, "rifle"], ["med", 48, -76.5], ["ammo_p", 72.5, -66, "pistol"]],
-        clubhouse: [["med", 14.5, -52], ["ammo_r", 12.2, -59.6, "rifle"]],
-        west: [["ammo_p", -23, -30, "pistol"]],
-        playground: [["ammo_r", -40, -11.5, "rifle"]],
-        dock: [["med", -19.5, -73.5], ["ammo_r", -16.5, -70, "rifle"]]
-      }[stop] || [];
+      const S2 = SUPPLIES[stop] || [];
       const p = this.sim.player;
       for (const [id, x, z, w] of S2) {
         const key = stop + ":" + id, med = id.startsWith("med");
@@ -80106,11 +80612,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           z,
           r: 1,
           model: med ? "health" : "ammo",
-          label: med ? "First aid" : w === "rifle" ? "Rifle rounds" : "Pistol rounds",
-          when: med ? () => p.hp < p.maxHp : null,
+          label: med ? "First aid" : w === "rifle" ? "Rifle rounds" : w === "shotgun" ? "Shotgun shells" : "Pistol rounds",
+          when: med ? () => p.hp < p.maxHp : w === "rifle" ? () => this.flags.gun === "rifle" : w === "shotgun" ? () => this.flags.gun === "shotgun" : null,
           onTake: () => {
             if (med) p.hp = Math.min(p.maxHp, p.hp + 50);
-            else if (w === "rifle") p.reserve[SHOTGUN] = (p.reserve[SHOTGUN] || 0) + 10;
+            else if (w === "rifle" || w === "shotgun") p.reserve[SHOTGUN] = (p.reserve[SHOTGUN] || 0) + (w === "rifle" ? 10 : 8);
             else p.reserve[PISTOL] = (p.reserve[PISTOL] || 0) + 12;
           }
         });
@@ -80131,6 +80637,31 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       return out;
     }
+    // ---------------------------------------------------------------- Sophie (from B03 on)
+    ensureSophie(at, mode2 = "follow") {
+      if (!this.sophie || !this.npcs.includes(this.sophie)) {
+        this.sophie = this.api.actors?.sophie(at || this.sim.player);
+        if (this.sophie) this.npcs.push(this.sophie);
+      }
+      if (this.sophie && mode2) this.sophie.mode = mode2;
+      return this.sophie;
+    }
+    sophieTo(x, z, run = false, after = "idle") {
+      const s = this.sophie;
+      if (!s) return;
+      s.target = { x, z, run };
+      s.after = after;
+      s.mode = "goto";
+    }
+    // before a two-shot: she comes to stand by him (up to 6 s)
+    *meet(r = 2.2) {
+      const s = this.sophie, p = this.sim.player;
+      if (!s) return;
+      if (Math.hypot(s.x - p.x, s.z - p.z) <= r + 0.4) return;
+      const a = Math.atan2(s.x - p.x, s.z - p.z);
+      this.sophieTo(p.x + Math.sin(a) * r, p.z + Math.cos(a) * r, true, "idle");
+      yield* this.until(() => s.mode !== "goto", 6);
+    }
     // ---------------------------------------------------------------- the story
     *run() {
       this.started = false;
@@ -80139,16 +80670,23 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.started = true;
       const stops = {
         home: this.stopHome,
-        curve: this.stopCurve,
+        help: this.stopHelp,
         gate: this.stopGate,
         club: this.stopClub,
-        lot: this.stopLot,
-        clubhouse: this.stopClubhouse,
-        west: this.stopWest,
-        grandma: this.stopGrandma,
-        playground: this.stopPlayground,
-        dock: this.stopDock
+        pete: this.stopPete,
+        dock: this.stopDock,
+        shed: this.stopShed,
+        horde: this.stopHorde,
+        leave: this.stopLeave
       };
+      if (from >= STOP_ORDER.indexOf("gate") && from <= STOP_ORDER.indexOf("pete")) {
+        const p = this.sim.player;
+        this.ensureSophie({ x: p.x + 1.5, z: p.z + 2.5, yaw: p.aimYaw }, "follow");
+      }
+      if (from >= STOP_ORDER.indexOf("shed") && from <= STOP_ORDER.indexOf("shed")) {
+        const b = this.at("boat");
+        this.ensureSophie({ x: b.x + 3.2, z: b.z + 0.6, yaw: -Math.PI / 2 }, "idle");
+      }
       for (let i = Math.max(0, from); i < STOP_ORDER.length; i++) {
         const id = STOP_ORDER[i];
         this.checkpoint(id);
@@ -80158,192 +80696,411 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         yield* stops[id].call(this);
       }
     }
-    // 1. HOME: the radio, the shots, the first infected, the rifle
+    // B01 - B02. HOME: the call at the door; James; the fridge
     *stopHome() {
-      const p = this.sim.player;
+      const p = this.sim.player, cine = this.api.cine;
       this.setGoal("");
-      yield* this.wait(1.2);
-      yield* this.talk("l01", "l02", "l03", "l04", "l05", "l06");
-      const surv = this.api.npc?.("survivor", this.at("survivor_rifle"), { friendly: true, gun: "rifle" });
-      const fa = this.at("survivor_far_a"), fb = this.at("survivor_far_b");
-      const far = [fa, { ...fa, x: fa.x - 2.2, z: fa.z + 1 }, fb, { ...fb, x: fb.x + 2, z: fb.z + 1.2 }].map((at) => this.api.npc?.("survivor", at, { friendly: true, gun: "pistol" })).filter(Boolean);
-      yield* this.wait(0.6);
-      this.say("l07");
-      this.setGoal("home");
-      let w1 = yield* this.wave([["z_home_curve"], ["z_home_yard"], ["z_home_curve", "normal"]], 0.9, "h1");
-      yield* this.talk("l08", "l09", "l10", "l11", "l12");
-      const w2 = yield* this.wave([["z_home_garage"], ["z_home_fence"], ["z_home_yard", "runner"], ["z_home_garage"]], 1.1, "h2");
-      yield* this.until(() => this.alive(w1) + this.alive(w2) <= 2, 40);
-      this.say("l13");
-      for (const n of far) n.overwhelm?.();
-      const w3 = yield* this.wave([["z_home_curve"], ["z_home_curve", "runner"], ["z_home_fence"]], 0.7, "h3");
-      yield* this.wait(2.5);
-      surv?.overwhelm?.();
-      const drop = this.at("rifle_drop");
-      this.setGoal("rifle");
-      this.addPickup({ id: "rifle", x: drop.x, z: drop.z, r: 1.1, model: "rifle", label: "Rifle", onTake: () => {
-        this.flags.rifle = true;
-        this.rifleOn();
-        p.desired = SHOTGUN;
-      } });
-      const w4 = yield* this.wave([["z_home_pile"], ["z_home_curve"], ["z_home_garage", "runner"]], 1.2, "h4");
-      yield* this.until(() => this.flags.rifle, 120);
-      this.setGoal("home");
-      const w5 = yield* this.wave([["z_home_curve"], ["z_home_fence"], ["z_home_yard"], ["z_home_garage", "runner"], ["z_home_curve"], ["z_home_pile"], ["z_home_fence", "runner"], ["z_home_curve"]], 0.6, "h5");
-      yield* this.until(() => this.alive([...w1, ...w2, ...w3, ...w4, ...w5]) <= 1, 90);
-      yield* this.wait(1);
-      yield* this.talk("l14", "l15", "l16", "l17", "l18");
-      this.api.companion?.("arianna", true);
-      this.setGoal("push");
-      let pushed = false;
-      const u = this.at("seal_home_use");
-      this.addUse({ id: "push", x: u.x, z: u.z, r: 2, label: "Push the barricade over", use: () => {
-        pushed = true;
-        this.dropUse("push");
-        this.openSeal("home");
-        this.api.audio?.play("knockdown");
-      } });
-      yield* this.until(() => pushed);
+      const call = ["Y01", "M01", "Y02", "Y03", "M02", "Y04", "M03", "Y05", "M04", "Y06", "M05"];
+      this.prefetch(...call, "J01", "J02", "M06", "S01", "S02");
+      yield* this.wait(1.4);
+      this.say(...call);
+      yield* this.shot([{ look: () => this.P(1.35), from: { yaw: 35, pitch: 18, dist: 4.2 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.8 });
+      this.setGoal("vaccines");
+      const j = this.api.actors?.james(this, this.at("james"));
+      if (j) this.npcs.push(j);
+      this.james = j;
+      yield* this.use("door", "home_door_use", "Go in", 1.4);
+      this.openSeal("home_door");
+      this.tinny = this.api.voice?.tinny?.(this.at("james"));
+      let alerted = false;
+      if (j) j.onDeath = () => {
+        this.api.voice?.play("J02");
+        this.tinny?.stop();
+      };
+      yield* this.until(() => !j || !j.alive || this.nearXZ(this.at("james"), 4.6) && p.x < 36 || p.action.type === "shot");
+      if (j && j.alive) {
+        alerted = true;
+        const jm = this.at("james"), head = () => j.headPos();
+        const held = () => {
+          let v = null;
+          return () => v ?? (v = head());
+        }, h2 = held(), h3 = held();
+        const behind = (back, side, h) => () => {
+          const a = Math.atan2(jm.x - p.x, jm.z - p.z);
+          return [p.x - Math.sin(a) * back + Math.cos(a) * side, h, p.z - Math.cos(a) * back - Math.sin(a) * side];
+        };
+        p.desired = PISTOL;
+        if (j) j.subject = true;
+        yield* this.shot([
+          { look: () => [jm.x, 1.3, jm.z], from: behind(1.9, 0.55, 1.8), fov: 42, slow: 0.25, hold: 0.9 },
+          { look: () => {
+            const h = h2();
+            return [h[0], h[1] - 0.2, h[2]];
+          }, from: () => {
+            const h = h2();
+            return [h[0] - 1.6, 1.64, h[2] + 1.5];
+          }, fov: 40, slow: 0.25, hold: 0.5, fn: () => {
+            const d = j.turn();
+            cine.after(d * 0.7, () => j.shout());
+            this.say("J01");
+          } },
+          { look: () => {
+            const h = head();
+            return [h[0], h[1] - 0.15, h[2]];
+          }, from: () => {
+            const h = h3();
+            return [h[0] - 1.6, 1.6, h[2] + 1.55];
+          }, fov: 40, slow: 0.25, hold: 1.5, until: this.linesDone(), max: 8 },
+          { look: head, from: behind(1.7, 0.75, 1), fov: 40, slow: 0.3, aim: j.z, prompt: "SHOOT", hold: 0.4, fn: () => j.threat(2.6), until: () => !j.alive, max: 3.2 },
+          { look: head, from: behind(1.7, 0.75, 1), fov: 40, slow: 0.2, hold: 1.1 }
+        ], { back: 0.7 });
+        if (j) j.subject = false;
+      }
+      yield* this.until(() => !j || !j.alive);
+      this.tinny?.stop();
+      void alerted;
+      this.setGoal("fridge");
+      const fc = this.at("fridge_case");
+      this.api.view.showCase?.("fridge", fc);
+      yield* this.use("fridge", "fridge_use", "Open the fridge", 1.4);
+      const fu = this.at("fridge_use");
+      p.x = p.px = fu.x;
+      p.z = p.pz = fu.z;
+      p.aimYaw = p.aimTarget = fu.yaw;
+      this.api.hero?.script("hood_Interact");
+      yield* this.shot([
+        { look: [fc.x - 0.1, fc.y, fc.z], from: [fc.x + 1.9, fc.y + 0.55, fc.z - 1], fov: 38, slow: 1, hold: 0.6, fn: () => cine.after(0.35, () => this.openSeal("fridge")) },
+        { look: [fc.x, fc.y + 0.05, fc.z], from: [fc.x + 0.95, fc.y + 0.4, fc.z - 0.35], fov: 34, slow: 1, hold: 1.4, move: 1.2 },
+        { look: [fc.x, fc.y, fc.z], from: [fc.x + 0.95, fc.y + 0.4, fc.z - 0.35], fov: 34, slow: 1, hold: 0.5, fn: () => {
+          this.flags.case = "carried";
+          this.api.view.showCase?.("carried");
+          this.say("M06");
+        } },
+        { look: () => this.P(1.2), from: { yaw: 35, pitch: 28, dist: 4.5 }, fov: 42, slow: 1, hold: 0.6, until: this.linesDone(), max: 4 }
+      ], { back: 0.6 });
+      this.setGoal("out");
+      yield* this.until(() => p.x > 36.6);
     }
-    // 2. THE CURVE: the lit garage at B06's end; its dark corners are not empty
-    *stopCurve() {
+    // B03 - B04. "HELP!": Sophie by the B05 garage, the infected round her; the bargain; she leads to the curve's barricade
+    *stopHelp() {
+      const p = this.sim.player;
+      const at = { x: 49.08, z: 2.88, yaw: Math.PI * 0.8 };
+      this.sophieAt = at;
+      const sp = this.ensureSophie(at, "scared");
+      const ring = this.ring(at, 6, 2.6, { dormant: 12 });
+      this.prefetch("S03", "S03a", "M06a", "S04", "S05", "S06", "S07", "M07", "S08");
+      yield* this.wait(0.6);
+      this.say("S01");
+      this.setGoal("help");
+      yield* this.until(() => this.nearXZ(at, 22), 6);
+      this.say("S02");
+      yield* this.until(() => this.nearXZ(at, 15));
+      yield* this.shot([{ look: [at.x, 0.9, at.z], from: { yaw: 35, pitch: 30, dist: 7.5 }, fov: 42, slow: 0.12, hold: 1.7 }], { back: 0.5 });
+      this.wake(ring);
+      this.setGoal("save");
+      const w = yield* this.wave([["z_home_garage"], ["z_home_fence"], ["z_home_garage", "runner"]], 1.4, "help");
+      yield* this.until(() => this.alive(ring) + this.alive(w) === 0, 120);
+      yield* this.wait(0.8);
+      yield* this.meet();
+      sp.mode = "idle";
+      sp.idle = "hood_Idle_Tired_Loop";
+      const mid = () => {
+        const q = this.sophie || at;
+        return [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2];
+      };
+      this.say("S03", "S03a", "M06a", "S04", "S05", "S06", "S07", "M07", "S08");
+      yield* this.shot([{ look: mid, from: { yaw: 35, pitch: 24, dist: 5.6 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 90 }], { back: 0.7 });
+      sp.idle = "hood_Idle_Loop";
+      this.sophieAt = null;
+      this.setGoal("follow");
+      const u = this.at("seal_home_use");
+      this.sophieTo(u.x + 2.2, u.z + 1.6, false, "idle");
+      yield* this.use("push", "seal_home_use", "Push the barricade over", 2);
+      this.openSeal("home");
+      this.api.audio?.play("knockdown");
+    }
+    // B05. THE GATE: chained; the bolt cutters in the neighbour's garage with the light on
+    *stopGate() {
+      const p = this.sim.player;
       if (!this.open.has("home")) this.openSeal("home");
-      this.setGoal("cutters");
+      const sp = this.ensureSophie(null, null);
+      this.prefetch("S09", "S10", "M08", "M08a", "S11", "S12");
+      const g = this.at("gate_use");
+      this.sophieTo(g.x + 1.6, g.z + 3, false, "idle");
+      this.setGoal("follow");
+      yield* this.until(() => this.near("gate_use", 6));
       this.api.view.garageLight?.(true);
+      const gl = this.at("garage_light");
+      this.say("S09");
+      yield* this.shot([{ look: [gl.x, 1.2, gl.z], from: { yaw: 35, pitch: 28, dist: 9 }, fov: 42, slow: 0.4, hold: 2.2, move: 0.9 }], { back: 0.7 });
+      this.say("S10", "M08");
+      if (sp) sp.mode = "follow";
+      this.setGoal("cutters");
       const c = this.at("cutters");
-      this.addPickup({ id: "cutters", x: c.x, z: c.z, r: 1.2, model: "cutters", label: "Bolt cutters", onTake: () => {
+      this.addPickup({ id: "cutters", x: c.x, z: c.z, y: c.y || void 0, r: 1.3, model: "cutters", label: "Bolt cutters", onTake: () => {
         this.flags.cutters = true;
       } });
       const w1 = [this.spawnAt("z_garage", { dormant: 5.5 }), this.spawnAt("z_garage", { dormant: 5.5 })];
-      yield* this.until(() => Math.hypot(this.sim.player.x - 14, this.sim.player.z - 10) < 9 || this.flags.cutters);
-      const w2 = yield* this.wave([["z_curve_bus"], ["z_curve_yard"], ["z_curve_bus", "runner"], ["z_curve_yard"]], 1.3, "c1");
+      yield* this.until(() => Math.hypot(p.x - 6, p.z + 2) < 10 || this.flags.cutters);
+      const w2 = yield* this.wave([["z_curve_bus"], ["z_curve_yard", "runner"]], 1.3, "c1");
       yield* this.until(() => this.flags.cutters);
       this.api.view.garageLight?.(false);
       this.setGoal("gate");
+      yield* this.use("gate", "gate_use", "Cut the chain", 2.2);
+      this.api.audio?.play("pumpRack");
+      yield* this.wait(0.7);
+      this.api.audio?.play("knockdown");
+      this.openSeal("gate");
       void w1;
       void w2;
     }
-    // 3. THE GATE: cut the chain, the surge from the club side, hold the gap
-    *stopGate() {
-      this.flags.cutters = true;
-      this.setGoal("gate");
-      let cut = false;
-      const g = this.at("gate_use");
-      this.addUse({ id: "gate", x: g.x, z: g.z, r: 2.2, label: "Cut the chain", use: () => {
-        cut = true;
-        this.dropUse("gate");
-      } });
-      yield* this.until(() => cut);
-      yield* this.talk("l19");
-      this.api.audio?.play("pumpRack");
-      yield* this.wait(0.9);
-      this.api.audio?.play("knockdown");
-      this.openSeal("gate");
-      this.setGoal("holdgate");
-      const w = yield* this.wave([["z_gate_a"], ["z_gate_b"], ["z_gate_c", "runner"], ["z_gate_d"], ["z_gate_a"], ["z_gate_b", "runner"], ["z_gate_c"], ["z_gate_d"], ["z_gate_a", "sprinter"]], 0.55, "g1");
-      yield* this.until(() => this.alive(w) <= 1, 120);
-      yield* this.wait(1.5);
-      yield* this.talk("l20", "l21", "l22", "l23");
-    }
-    // 4. THE CLUB FRONT: voices inside, a warning shot; a few on the drive
+    // B06 - B07. THE CLUBHOUSE: the boat needs gas, Pete has the key; the looters; the rifle
     *stopClub() {
-      this.setGoal("lot");
+      const p = this.sim.player, sp = this.ensureSophie(null, null);
+      this.flags.cutters = true;
+      this.prefetch("L01", "L02", "L03", "L04", "M09", "LB01", "LB02", "LB03", "LB04");
+      yield* this.wait(1);
+      yield* this.talk("M08a", "S11", "S12");
+      this.setGoal("clubhouse");
       yield* this.until(() => this.near("club_warn", 7));
-      this.say("w01");
-      this.api.warnShot?.(this.at("club_door"), this.sim.player);
-      const w = yield* this.wave([["z_drive_a"], ["z_drive_b"], ["z_drive_a", "runner"]], 1, "d1");
-      yield* this.until(() => this.sim.player.x > 30 || this.alive(w) === 0, 120);
-    }
-    // 5. THE PARKING LOT: the gas can in the maintenance pickup's bed; they come at the lot from every side
-    *stopLot() {
-      this.setGoal("gas");
-      const gc = this.at("gas_can");
-      if (this.flags.gas === "lot") this.api.view.placeGas?.(gc.x, gc.z, true);
-      yield* this.until(() => this.near("gas_can", 9));
-      yield* this.talk("l24");
-      const w1 = yield* this.wave([["z_lot_a"], ["z_lot_b"], ["z_lot_c"], ["z_lot_d", "runner"]], 0.9, "p1");
-      if (this.flags.gas === "lot") this.addUse({ id: "gas", x: gc.x, z: gc.z, r: 1.6, label: "Take the gas can", use: () => {
-        this.pickGas();
-        this.say("l25");
-      } });
-      yield* this.until(() => this.flags.gas === "carried");
-      const w2 = yield* this.wave([["z_lot_e"], ["z_lot_a", "runner"], ["z_lot_c"], ["z_lot_b"], ["z_lot_d"], ["z_lot_e", "runner"], ["z_lot_a"]], 0.75, "p2");
-      yield* this.until(() => this.alive([...w1, ...w2]) <= 1, 120);
-      yield* this.talk("l26", "l27");
-      this.setGoal("keys");
-    }
-    // 6. THE CLUBHOUSE: the looters come out shooting; the leader holds the keys in the office
-    *stopClubhouse() {
-      this.setGoal("keys");
-      yield* this.until(() => this.near("club_door", 10));
-      this.say("w02");
-      this.openSeal("clubdoor");
+      this.say("L01");
+      this.api.warnShot?.(this.at("club_door"), p);
+      if (sp) this.sophieTo(20.5, -35.5, true, "scared");
       const L3 = this.api.looters?.(this) || [];
-      this.setGoal("looters");
-      yield* this.until(() => this.near("club_door", 2.5) || L3.filter((q) => q.out && q.alive).length === 0, 240);
-      this.say("l28", "w03");
-      yield* this.until(() => this.flags.keys);
-      yield* this.talk("l29");
-    }
-    // 7. THE ROADBLOCK and the west side: their padlocked gate; the gas goes to the boat on the way
-    *stopWest() {
-      this.flags.keys = true;
-      this.setGoal("roadblock");
-      let unlocked = this.open.has("roadblock");
-      const r = this.at("roadblock_use");
-      if (!unlocked) this.addUse({ id: "roadblock", x: r.x, z: r.z, r: 2, label: "Unlock the roadblock gate", use: () => {
-        unlocked = true;
-        this.dropUse("roadblock");
-        this.openSeal("roadblock");
-        this.openSeal("dock");
-        this.api.audio?.play("reloadDone");
+      this.looters = L3;
+      yield* this.until(() => this.near("club_door", 10));
+      this.say("L02");
+      this.openSeal("clubdoor");
+      const r = this.at("keys");
+      this.addPickup({ id: "rifle", x: r.x, z: r.z, r: 1.1, model: "rifle", label: "Rifle", onTake: () => {
+        this.rifleOn();
+        p.desired = SHOTGUN;
+        if (L3.some((q) => q.alive)) this.say("L04");
       } });
-      yield* this.until(() => unlocked);
-      if (!this.open.has("dock")) this.openSeal("dock");
-      if (this.flags.gas !== "boat") {
-        this.setGoal("stow");
-        const b = this.at("pour_fuel");
-        this.addUse({ id: "stow", x: b.x, z: b.z, r: 2.4, label: "Stow the gas in the boat", no: "Bring the gas can", can: () => this.flags.gas === "carried", use: () => {
-          this.flags.gas = "boat";
-          this.dropUse("stow");
-          this.api.view.stowGas?.();
-          this.say("d01");
-        } });
-        const w = yield* this.wave([["z_pav_a"], ["z_pav_b"]], 1.5, "r1");
-        yield* this.until(() => this.flags.gas === "boat");
-        void w;
+      yield* this.until(() => this.near("club_door", 2.6) || L3.filter((q) => q.out && q.alive).length === 0, 240);
+      if (L3.some((q) => q.alive)) this.say("L03");
+      yield* this.until(() => L3.every((q) => !q.alive), 600);
+      yield* this.wait(0.8);
+      yield* this.talk("M09");
+      if (sp) sp.mode = "follow";
+    }
+    // B08. PETE on the drive; Sophie takes his key; the dose (Yola on the radio); the key
+    *stopPete() {
+      const p = this.sim.player, sp = this.ensureSophie(null, "follow");
+      const pa = { x: 27.6, z: -54.5, yaw: Math.PI * 0.75 };
+      this.peteAt = pa;
+      const pete = this.api.actors?.pete(pa);
+      if (pete) this.npcs.push(pete);
+      const ring = this.ring(pa, 5, 3.4, { dormant: 0 });
+      for (const z of ring) {
+        z.passive = true;
+        z.speedMul = 0.25;
+      }
+      this.prefetch("P01", "P02", "P03", "S13", "M10", "S14", "M11", "Y07", "M12", "Y08", "Y09", "M13", "Y10", "M14", "S15");
+      yield* this.wait(0.8);
+      this.say("P01");
+      this.setGoal("savePete");
+      yield* this.until(() => this.nearXZ(pa, 16), 25);
+      this.say("P02");
+      const w = yield* this.wave([["z_drive_a"], ["z_drive_b", "runner"]], 1, "d1");
+      yield* this.until(() => this.nearXZ(pa, 11), 14);
+      if (pete) pete.subject = true;
+      yield* this.shot([
+        { look: [pa.x, 1.2, pa.z], from: { yaw: 35, pitch: 20, dist: 4.4 }, fov: 40, slow: 0.12, rate: 0.55, hold: 0.5, fn: () => {
+          this.say("P03");
+        } },
+        { look: [pa.x, 0.9, pa.z], from: { yaw: 50, pitch: 26, dist: 3.8 }, fov: 40, slow: 0.12, rate: 0.45, hold: 2.2, fn: () => pete?.overwhelm() }
+      ], { back: 0.6 });
+      if (pete) pete.subject = false;
+      this.peteAt = null;
+      for (const z of ring) {
+        z.passive = false;
+        z.speedMul = 1;
+      }
+      this.wake(ring);
+      let gotKey = false;
+      if (sp) {
+        sp.target = { x: pa.x - 0.7, z: pa.z + 0.5, run: true, done: () => {
+          sp.mode = "pose";
+          sp.pose = "hood_PickUp_Kneeling";
+          this.later(1.3, () => {
+            gotKey = true;
+            this.flags.key = "sophie";
+            this.say("S13");
+            sp.mode = "scared";
+          });
+        } };
+        sp.after = "pose";
+        sp.mode = "goto";
+      } else {
+        gotKey = true;
+        this.flags.key = "sophie";
+      }
+      yield* this.until(() => gotKey && this.alive([...ring, ...w]) <= 1, 120);
+      yield* this.wait(1);
+      yield* this.meet();
+      if (sp) {
+        sp.mode = "idle";
+        sp.idle = "hood_Idle_Talking_Loop";
+      }
+      const mid = () => {
+        const q = this.sophie || pa;
+        return [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2];
+      };
+      this.say("M10", "S14", "M11", "Y07", "M12", "Y08", "Y09", "M13", "Y10", "M14", "S15");
+      yield* this.shot([{ look: mid, from: { yaw: 35, pitch: 22, dist: 5.4 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.7 });
+      this.flags.key = true;
+      this.api.hud.toast("The shed key");
+      if (sp) {
+        sp.idle = "hood_Idle_Loop";
+        sp.mode = "follow";
       }
     }
-    // 8. GRANDMA'S: Lilah, a short family beat (no tragedy invented; Grandma's part is the user's to decide)
-    *stopGrandma() {
-      this.setGoal("lilah");
-      const w = yield* this.wave([["z_pav_a"], ["z_pav_b"], ["z_pav_a", "runner"]], 1.4, "m1");
-      let knocked = false;
-      const d = this.at("grandma_door");
-      this.addUse({ id: "grandma", x: d.x, z: d.z, r: 2, label: "Knock: Lilah!", use: () => {
-        knocked = true;
-        this.dropUse("grandma");
-      } });
-      yield* this.until(() => knocked);
-      yield* this.until(() => this.alive(w) === 0, 20);
-      yield* this.talk("l30", "l31");
-      this.flags.lilah = true;
-      this.api.companion?.("lilah", true);
-      yield* this.talk("l32", "l33", "l34");
-    }
-    // 9. THE PLAYGROUND: quiet, then they cut the pause short
-    *stopPlayground() {
-      this.setGoal("boat");
-      yield* this.until(() => this.near("playground", 7));
-      yield* this.wait(3.5);
-      yield* this.wave([["z_play_a"], ["z_play_c"], ["z_play_b", "runner"], ["z_play_d"], ["z_play_a", "runner"], ["z_play_c"], ["z_play_d"], ["z_play_a", "sprinter"]], 0.7, "pl");
-    }
-    // 10. THE DOCK: fuel, everyone aboard, the last push, launch
+    // B09. THE DOCK: through the lot and down the service road; the playground; quiet; the case in the cooler
     *stopDock() {
+      const p = this.sim.player, sp = this.ensureSophie(null, "follow");
+      this.prefetch("M15", "M16", "M17", "S16", "M18", "S17", "M19", "S18", "M20", "S19");
+      this.setGoal("dock");
+      const b = this.at("boat");
+      if (!this.open.has("dockroad")) {
+        yield* this.use("dockroad", "dockroad_use", "Cut the chain", 2.2);
+        this.api.audio?.play("pumpRack");
+        this.openSeal("dockroad");
+      }
+      yield* this.until(() => this.nearXZ(b, 9));
+      yield* this.talk("M15");
+      const pg = this.at("playground");
+      this.ensureHorde();
+      yield* this.wait(0.4);
+      this.say("M16", "M17");
+      yield* this.shot([
+        { look: [pg.x, 0.9, pg.z], from: { yaw: 35, pitch: 26, dist: 15 }, fov: 42, slow: 1, hold: 0.3 },
+        { look: [pg.x + 2, 0.9, pg.z - 2], from: { yaw: 30, pitch: 22, dist: 12 }, fov: 42, slow: 1, move: 4.5, hold: 0.2, until: this.linesDone(), max: 14 }
+      ], { back: 1 });
+      yield* this.talk("S16");
+      this.setGoal("");
+      this.api.view.showCooler?.(true);
+      yield* this.use("cooler", "pour_fuel", "Put the case in the cooler", 2.4);
+      const cp = this.api.view.coolerAt?.() || { x: b.x, y: 0.5, z: b.z };
+      this.say("M18");
+      yield* this.shot([
+        { look: [cp.x, cp.y + 0.1, cp.z], from: [cp.x + 1.4, cp.y + 1.1, cp.z + 1.3], fov: 38, slow: 1, hold: 1, fn: () => {
+          this.flags.case = "cooler";
+          this.api.view.showCase?.("cooler");
+        } },
+        { look: () => this.P(1.2), from: { yaw: 35, pitch: 24, dist: 5.5 }, fov: 40, slow: 1, hold: 0.5, until: this.linesDone(), max: 6 }
+      ], { back: 0.6 });
+      if (sp) {
+        this.sophieTo(b.x + 3.2, b.z + 0.6, false, "idle");
+      }
+      yield* this.talk("S17", "M19", "S18", "M20", "S19");
+    }
+    // the playground's horde, about thirty standing about (made at the dock; again on a retry from the shed)
+    ensureHorde() {
+      if (this.horde?.some((z) => z.alive)) return this.horde;
+      const pg = this.at("playground");
+      this.horde = [];
+      for (let i = 0; i < 26; i++) {
+        const a = this.sim.rand() * Math.PI * 2, d = 1.5 + Math.sqrt(this.sim.rand()) * 7.5, x = pg.x + Math.cos(a) * d, z = pg.z + Math.sin(a) * d, q = { x, z };
+        if (this.sim.world.resolveCircle(q, 0.45)) continue;
+        this.horde.push(this.spawnAt({ x, z }, { near: true, spread: 0, yaw: this.sim.rand() * 6.28, dormant: 2.5, kind: i % 5 === 0 ? "runner" : void 0, wave: "horde" }));
+      }
+      return this.horde;
+    }
+    // B10 - B11. THE SHED: unlocked with Pete's key; the chainsaw, the shotgun, the gas; the engine; the horde runs
+    *stopShed() {
+      const p = this.sim.player, sp = this.ensureSophie(null, null);
+      this.ensureHorde();
+      this.prefetch("M21", "M22", "M23", "S20", "S21", "S22", "M24", "ENGINE", "S23");
+      this.setGoal("gas");
+      yield* this.use("shed", "shed_door", "Unlock the shed", 1.6, { can: () => this.flags.key === true, no: "Locked" });
+      this.openSeal("shed");
+      const cs = this.at("shed_chainsaw"), sg = this.at("shed_shotgun"), gs = this.at("shed_gas"), dr = this.at("shed_door");
+      let gun = false;
+      this.addPickup({ id: "shotgun", x: sg.x - 0.45, z: sg.z, y: sg.y, r: 1, model: "shotgun", label: "Shotgun", onTake: () => {
+        gun = true;
+        this.shotgunOn(null, 16);
+        p.desired = SHOTGUN;
+      } });
+      if (this.flags.gas === "shed") {
+        this.api.view.placeGas?.(gs.x, gs.z);
+        this.addUse({ id: "gas", x: gs.x, z: gs.z, r: 1.3, label: "Take the gas can", use: () => this.pickGas() });
+      }
+      yield* this.shot([
+        { look: [cs.x, cs.y + 0.1, cs.z], from: [dr.x + 0.3, 1.75, dr.z - 0.6], fov: 40, slow: 0.1, hold: 1.4, move: 0.8 },
+        { look: [sg.x - 0.1, sg.y - 0.05, sg.z], from: [sg.x - 2.3, sg.y + 0.45, sg.z + 1.25], fov: 40, slow: 0.1, hold: 1.4 },
+        { look: [gs.x, 0.3, gs.z], from: [gs.x - 1.5, 1.45, gs.z + 1.6], fov: 40, slow: 0.1, hold: 1.2 }
+      ], { back: 0.7 });
+      this.setGoal("shed");
+      yield* this.until(() => gun && this.flags.gas !== "shed");
+      yield* this.talk("M21");
+      const b = this.at("boat"), pg = this.at("playground");
+      if (sp) {
+        sp.mode = "pose";
+        sp.pose = "hood_PickUp_Kneeling";
+        sp.subject = true;
+      }
+      this.api.voice?.play("ENGINE");
+      this.say("M22", "M23", "S20");
+      yield* this.shot([
+        { look: [b.x, 0.6, b.z], from: [p.x + 1.4, 4.2, p.z + 1.8], fov: 34, slow: 0.4, hold: 2.6 },
+        { look: [pg.x, 1, pg.z], from: { yaw: 35, pitch: 24, dist: 13 }, fov: 40, slow: 0.35, hold: 0.3, fn: () => {
+          for (const z of this.horde || []) {
+            this.wake([z]);
+            z.kind === "runner" || (z.speedMul *= 1.6);
+          }
+        } },
+        { look: [pg.x - 3, 1, pg.z - 6], from: { yaw: 25, pitch: 16, dist: 8 }, fov: 40, slow: 0.35, hold: 2.4, move: 2.4 }
+      ], { back: 0.6 });
+      if (sp) sp.subject = false;
+      this.say("S21", "S22", "M24");
+    }
+    // B12. THE HORDE reaches the boat before Marc can; Sophie; the shotgun
+    *stopHorde() {
+      const p = this.sim.player, sp = this.sophie, b = this.at("boat");
+      this.setGoal("sophie");
+      this.openSeal("dock");
+      const GATE = [[-16, -66.5], [-19, -66], [-13.5, -66.8], [-21, -66.2]], far = (this.horde || []).filter((z) => z.alive), first = [];
+      const bring = (z, i) => {
+        const [gx, gz] = GATE[i % GATE.length];
+        z.x = z.px = gx + (this.sim.rand() - 0.5) * 2;
+        z.z = z.pz = gz - this.sim.rand() * 3;
+        z.vx = z.vz = 0;
+        return z;
+      };
+      for (let i = 0; i < 4; i++) first.push(far.length ? bring(far.shift(), i) : this.spawnAt({ x: GATE[i][0], z: GATE[i][1] - 2 }, { near: true, spread: 0.8, kind: "runner", wave: "horde1" }));
+      this.later(2, () => {
+        let i = 0;
+        const next = () => {
+          if (!far.length) return;
+          bring(far.shift(), i++);
+          if (far.length) bring(far.shift(), i++);
+          this.later(0.9, next);
+        };
+        next();
+      });
+      let dead = false;
+      const t0 = this.time;
+      yield* this.until(() => !sp || first.some((z) => z.alive && Math.hypot(z.x - sp.x, z.z - sp.z) < 2.2) || this.time - t0 > 3);
+      if (sp && !dead) {
+        dead = true;
+        this.api.voice?.play("S23");
+        sp.die();
+      }
+      this.setGoal("horde");
+      const w = yield* this.wave([["z_dock_a", "sprinter"], ["z_dock_b", "runner"]], 2.5, "h2");
+      yield* this.until(() => this.alive([...first, ...w, ...this.horde || []]) <= 1, 300);
+      yield* this.wait(1.2);
+      if (this.flags.case === "cooler") this.flags.case = "boat";
+      yield* this.talk("M25");
+    }
+    // B13. LEAVING: the fuel, the boat, Yola
+    *stopLeave() {
+      const p = this.sim.player, b = this.at("pour_fuel");
+      this.prefetch("M26", "Y11", "M27", "Y12", "M28", "Y13", "M29");
       this.setGoal("fuel");
       let fuelled = false, launched = false;
-      const b = this.at("pour_fuel");
-      this.addUse({ id: "fuel", x: b.x, z: b.z, r: 2.4, label: "Fuel the boat", no: "The girls first", can: () => this.flags.lilah && this.flags.gas === "boat", use: () => {
+      this.addUse({ id: "fuel", x: b.x, z: b.z, r: 2.4, label: "Fuel the boat", no: "Bring the gas can", can: () => this.flags.gas === "carried", use: () => {
         fuelled = true;
         this.dropUse("fuel");
       } });
@@ -80354,22 +81111,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         this.api.view.gas.visible = false;
         this.api.view.gasMode = "used";
       }
-      this.setGoal("hold");
-      const w = yield* this.wave([["z_dock_a"], ["z_dock_b"], ["z_dock_c", "runner"], ["z_dock_a"], ["z_dock_b", "runner"], ["z_dock_c"], ["z_dock_a", "sprinter"], ["z_dock_b"]], 0.8, "k1");
-      yield* this.until(() => this.alive(w) <= 1, 150);
-      this.setGoal("launch");
-      this.addUse({ id: "launch", x: b.x, z: b.z, r: 2.4, label: "Start the motor", use: () => {
+      this.setGoal("leave");
+      this.addUse({ id: "launch", x: b.x, z: b.z, r: 2.4, label: "Push off", use: () => {
         launched = true;
         this.dropUse("launch");
       } });
       yield* this.until(() => launched);
       const boat = this.api.view.boatStart?.();
+      this.say("M26", "Y11", "M27", "Y12", "M28", "Y13", "M29");
       if (boat) {
         this.boating = true;
-        this.say("l35", "l36", "l37");
-        const p = this.sim.player, dir = { x: -0.99, z: -0.14 };
-        for (let t = 0; t < 11; t += STEP3) {
-          const k = Math.min(1, t / 11), s = 26 * k * k, bx = boat.x + dir.x * s, bz = boat.z + dir.z * s;
+        const dir = { x: -0.99, z: -0.14 };
+        for (let t = 0; t < 30 && (t < 11 || this.api.subs.busy); t += STEP4) {
+          const k = Math.min(1, t / 11), s = 26 * k * k + Math.max(0, t - 11) * 2.4, bx = boat.x + dir.x * s, bz = boat.z + dir.z * s;
           this.api.view.boatAt(bx, bz, t);
           p.x = p.px = bx;
           p.z = p.pz = bz;
@@ -80377,53 +81131,503 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           for (const z of this.sim.zombies) if (z.alive && Math.hypot(z.x - bx, z.z - bz) < 2) z.x += 0.6;
           yield;
         }
-      } else yield* this.talk("l35", "l36", "l37");
+      } else yield* this.until(() => !this.api.subs.busy);
       this.complete = true;
       this.setGoal("");
       this.api.onComplete?.();
       clearSave();
     }
+    // a little later, in game time (a one-off beside the story)
+    later(s, fn) {
+      const self2 = this;
+      const co = (function* () {
+        yield* self2.wait(s);
+        fn();
+      })(), t = { step() {
+        if (!t.done && co.next().done) {
+          t.done = true;
+          self2.npcs = self2.npcs.filter((q) => q !== t);
+        }
+      } };
+      this.npcs.push(t);
+    }
   };
 
   // src/hood/subs.js
+  var WAIT = 1.5;
+  var GAP = 0.28;
   var Subtitles = class {
-    constructor() {
+    constructor(voice = null, radio = null) {
       const el = document.createElement("div");
       el.style.cssText = "position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 88px);transform:translateX(-50%);max-width:min(88vw,560px);z-index:60;pointer-events:none;font:600 15px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 3px #000,0 0 8px #000;background:rgba(0,0,0,0.38);padding:7px 12px;border-radius:9px;opacity:0;transition:opacity .18s";
       el.className = "hoodOverlay";
       document.body.appendChild(el);
       this.el = el;
+      this.voice = voice;
+      this.radio = radio;
       this.queue = [];
       this.cur = null;
       this.t = 0;
+      this.gap = 0;
+      this.waited = 0;
     }
     say(id) {
-      if (LINES2[id]) this.queue.push(id);
+      if (LINES2[id]) {
+        this.queue.push(id);
+        this.voice?.load(id);
+      }
     }
     get busy() {
       return !!this.cur || this.queue.length > 0;
     }
     clear() {
+      const was = this.busy;
       this.queue.length = 0;
       this.cur = null;
       this.el.style.opacity = 0;
+      this.radio?.hide();
+      this.voice?.stopAll();
+      if (was) this.onQuiet?.();
     }
     update(dt) {
+      this.radio?.update(dt);
       if (this.cur) {
         this.t -= dt;
         if (this.t > 0) return;
+        if (LINES2[this.cur][2] && this.radio) this.radio.done();
+        else this.el.style.opacity = 0;
         this.cur = null;
-        this.el.style.opacity = 0;
-        this.gap = 0.25;
+        this.gap = GAP;
+        if (!this.queue.length) this.onQuiet?.();
       }
-      if ((this.gap = (this.gap || 0) - dt) > 0) return;
-      const id = this.queue.shift();
+      if ((this.gap -= dt) > 0) return;
+      const id = this.queue[0];
       if (!id) return;
+      if (this.voice?.state(id) === void 0 && (this.waited += dt) < WAIT) return;
+      this.queue.shift();
+      this.waited = 0;
       const [who, text, radio] = LINES2[id];
+      const dur = this.voice?.play(id, { radio });
       this.cur = id;
-      this.t = Math.max(1.8, text.length / 15 + 0.6);
-      this.el.innerHTML = `<span style="color:${SPEAKER_COLOR[who] || "#ddd"};letter-spacing:.06em;font-size:12px">${radio ? "\u25C9 " : ""}${who}</span><br>${text}`;
-      this.el.style.opacity = 1;
+      this.t = dur ? dur + 0.05 : Math.max(1.8, text.length / 15 + 0.6);
+      if (radio && this.radio) this.radio.line(who, text);
+      else {
+        this.el.innerHTML = `<span style="color:${SPEAKER_COLOR[who] || "#ddd"};letter-spacing:.06em;font-size:12px">${who}</span><br>${text}`;
+        this.el.style.opacity = 1;
+      }
+      this.onLine?.(id, radio);
+    }
+  };
+
+  // src/hood/voice.js
+  var DIR = "assets/neighborhood/voice/";
+  var Voice = class _Voice {
+    constructor(audio2) {
+      this.audio = audio2;
+      this.buf = /* @__PURE__ */ new Map();
+      this.loading = /* @__PURE__ */ new Map();
+      this.playing = /* @__PURE__ */ new Set();
+    }
+    ctx() {
+      const a = this.audio;
+      if (!a) return null;
+      if (!a.ctx) a.init?.();
+      return a.ctx || null;
+    }
+    file(id) {
+      return LINES2[id]?.[3] || CUES[id] || null;
+    }
+    load(id) {
+      const f = this.file(id);
+      if (!f) return Promise.resolve(null);
+      if (this.buf.has(f)) return Promise.resolve(this.buf.get(f));
+      if (this.loading.has(f)) return this.loading.get(f);
+      const c = this.ctx();
+      if (!c) return Promise.resolve(null);
+      const p = fetch(DIR + f + ".mp3").then((r) => r.arrayBuffer()).then((a) => c.decodeAudioData(a)).then((b) => {
+        this.buf.set(f, b);
+        return b;
+      }).catch((e) => {
+        console.warn("voice", f, e);
+        this.buf.set(f, null);
+        return null;
+      });
+      this.loading.set(f, p);
+      return p;
+    }
+    prefetch(ids) {
+      for (const id of ids) this.load(id);
+    }
+    // decoded (an AudioBuffer), not yet (undefined) or failed / no file (null)
+    state(id) {
+      const f = this.file(id);
+      if (!f) return null;
+      return this.buf.has(f) ? this.buf.get(f) : void 0;
+    }
+    get analyser() {
+      const c = this.ctx();
+      if (!c) return null;
+      if (!this.an) {
+        this.an = c.createAnalyser();
+        this.an.fftSize = 256;
+        this.an.connect(this.audio.voiceBus || this.audio.master);
+      }
+      return this.an;
+    }
+    // play a line or a cue now: its length (s), or null when it has no sound
+    play(id, { radio = false, gain = 1 } = {}) {
+      const b = this.state(id), c = this.ctx();
+      if (!b || !c) return null;
+      const t = c.currentTime + 0.02, src = c.createBufferSource();
+      src.buffer = b;
+      const g = c.createGain();
+      g.gain.value = gain * (radio ? 1.25 : 1);
+      let head = src;
+      if (radio) {
+        const hp = c.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 300;
+        hp.Q.value = 0.7;
+        const lp = c.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 3200;
+        lp.Q.value = 0.9;
+        const ws = c.createWaveShaper();
+        ws.curve = _Voice.drive();
+        ws.oversample = "2x";
+        src.connect(hp);
+        hp.connect(lp);
+        lp.connect(ws);
+        head = ws;
+        this.squelch(t, 0.06);
+        this.squelch(t + b.duration + 0.02, 0.09);
+      }
+      head.connect(g);
+      g.connect(this.analyser);
+      src.start(t);
+      this.playing.add(src);
+      this.audio.duck?.(true);
+      src.onended = () => {
+        this.playing.delete(src);
+        if (!this.playing.size) this.audio.duck?.(false);
+      };
+      return b.duration + (radio ? 0.12 : 0);
+    }
+    // James's headphones: music leaking tinny from them (no recording: a little four-bar loop made here, thin and quiet)
+    tinny() {
+      const c = this.ctx();
+      if (!c) return null;
+      const sr = c.sampleRate, len = Math.floor(sr * 2.4), b = c.createBuffer(1, len, sr), d = b.getChannelData(0);
+      const notes = [64, 67, 71, 67, 62, 66, 69, 66, 60, 64, 67, 64, 62, 66, 69, 71], beat = len / notes.length;
+      for (let i = 0; i < len; i++) {
+        const k = Math.floor(i / beat), t = i % beat / sr, f = 440 * Math.pow(2, (notes[k] - 69) / 12);
+        const env = Math.exp(-t * 9), sq = Math.sign(Math.sin(2 * Math.PI * f * t)) * 0.6 + Math.sin(2 * Math.PI * f * 2 * t) * 0.3;
+        const kick = k % 4 === 0 ? Math.sin(2 * Math.PI * 70 * t) * Math.exp(-t * 30) * 0.5 : 0;
+        d[i] = (sq * env + kick) * 0.5;
+      }
+      const src = c.createBufferSource();
+      src.buffer = b;
+      src.loop = true;
+      const hp = c.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 1500;
+      const g = c.createGain();
+      g.gain.value = 0.035;
+      src.connect(hp);
+      hp.connect(g);
+      g.connect(this.audio.sfx || this.audio.master);
+      src.start();
+      return { stop: () => {
+        try {
+          g.gain.setTargetAtTime(0, c.currentTime, 0.05);
+          src.stop(c.currentTime + 0.3);
+        } catch {
+        }
+      } };
+    }
+    stopAll() {
+      for (const s of this.playing) {
+        try {
+          s.stop();
+        } catch {
+        }
+      }
+      this.playing.clear();
+      this.audio?.duck?.(false);
+    }
+    // the walkie-talkie's key-up / release: a short burst of band noise
+    squelch(t, dur) {
+      const a = this.audio;
+      if (!a?.noise || !a.ok) return;
+      try {
+        a.noise(t, dur, { type: "bandpass", f: 2400, q: 0.8, gain: 0.05 });
+      } catch {
+      }
+    }
+    static drive() {
+      if (_Voice._curve) return _Voice._curve;
+      const n = 1024, k = 2.2, c = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i / (n - 1) * 2 - 1;
+        c[i] = Math.tanh(k * x) / Math.tanh(k);
+      }
+      return _Voice._curve = c;
+    }
+  };
+
+  // src/hood/radio.js
+  var CSS4 = `
+#hoodRadio{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 58px);transform:translate(-50%,-12px);width:min(92vw,430px);z-index:61;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+#hoodRadio.show{opacity:1;transform:translate(-50%,0)}
+#hoodRadio .hd{display:flex;align-items:center;gap:8px;margin:0 2px 6px;color:#8fc6cf;font:800 15px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.22em;text-shadow:0 1px 3px #000}
+#hoodRadio .hd img{width:22px;height:30px;object-fit:cover;object-position:50% 40%;border-radius:4px;filter:drop-shadow(0 1px 2px #000)}
+#hoodRadio .hd .no{color:#e9eef0;font-size:20px;letter-spacing:.02em}
+#hoodRadio .hd .ln{flex:1;height:1px;background:linear-gradient(90deg,#2d5a61,transparent)}
+#hoodRadio .card{display:flex;gap:10px;align-items:stretch;margin-bottom:7px;padding:7px;border:1px solid #23444a;border-radius:10px;background:rgba(10,16,21,.9);box-shadow:0 2px 10px rgba(0,0,0,.45);opacity:.55;transition:opacity .25s,border-color .25s,box-shadow .25s}
+#hoodRadio .card.on{opacity:1;border-color:#3e8f99;box-shadow:0 0 0 1px rgba(62,143,153,.35),0 2px 14px rgba(0,0,0,.5)}
+#hoodRadio .face{width:76px;height:76px;flex:none;border-radius:7px;border:1px solid #2d5a61;background:#0c3a42 center/cover no-repeat}
+#hoodRadio .info{flex:1;min-width:0;display:flex;flex-direction:column}
+#hoodRadio .row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #23444a;padding-bottom:3px}
+#hoodRadio .nm{color:#dfe5e8;font:800 19px/1.1 system-ui,sans-serif;letter-spacing:.06em}
+#hoodRadio .st{color:#79cfa6;font:600 10px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.12em}
+#hoodRadio .st::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d27f;margin-right:6px;box-shadow:0 0 6px #34d27f;vertical-align:-1px}
+#hoodRadio .tx{color:#f1f4f5;font:500 14px/1.3 system-ui,sans-serif;margin-top:4px;min-height:2.6em;text-shadow:0 1px 2px #000}
+#hoodRadio canvas{width:100%;height:16px;margin-top:auto}
+`;
+  var RadioCard = class {
+    constructor(voice) {
+      this.voice = voice;
+      const st = document.createElement("style");
+      st.textContent = CSS4;
+      document.head.appendChild(st);
+      const el = document.createElement("div");
+      el.id = "hoodRadio";
+      el.className = "hoodOverlay";
+      el.innerHTML = '<div class="hd"><img src="assets/ui/radio/walkie.png" alt=""><span class="no">02</span><span>/</span><span>RADIO SIGNAL</span><span class="ln"></span></div>' + ["MARC", "YOLA"].map((w) => `<div class="card" data-who="${w}"><div class="face" style="background-image:url(${FACES[w]})"></div><div class="info"><div class="row"><span class="nm">${w}</span><span class="st">ONLINE</span></div><div class="tx"></div><canvas width="240" height="32"></canvas></div></div>`).join("");
+      document.body.appendChild(el);
+      this.el = el;
+      this.cards = {};
+      for (const c of el.querySelectorAll(".card")) this.cards[c.dataset.who] = { el: c, tx: c.querySelector(".tx"), cv: c.querySelector("canvas") };
+      this.who = null;
+      this.hideIn = 0;
+      this.wave = new Uint8Array(128);
+      for (const c of Object.values(this.cards)) this.flat(c.cv);
+    }
+    // a radio line starts: `who` (MARC | YOLA) lights up with `text`
+    line(who, text) {
+      const c = this.cards[who];
+      if (!c) return;
+      if (!this.el.classList.contains("show")) for (const k of Object.values(this.cards)) k.tx.textContent = "";
+      for (const [k, v] of Object.entries(this.cards)) v.el.classList.toggle("on", k === who);
+      c.tx.textContent = text;
+      this.who = who;
+      this.hideIn = 0;
+      this.el.classList.add("show");
+    }
+    // the line ended: dim it; the card goes after `linger` s unless another radio line comes
+    done(linger = 1.1) {
+      if (this.who) {
+        this.flat(this.cards[this.who].cv);
+        this.cards[this.who].el.classList.remove("on");
+      }
+      this.who = null;
+      this.hideIn = linger;
+    }
+    hide() {
+      this.el.classList.remove("show");
+      this.who = null;
+      this.hideIn = 0;
+      for (const c of Object.values(this.cards)) {
+        c.el.classList.remove("on");
+        this.flat(c.cv);
+      }
+    }
+    update(dt) {
+      if (this.hideIn > 0 && (this.hideIn -= dt) <= 0) this.hide();
+      const c = this.who && this.cards[this.who], an = c && this.voice.analyser;
+      if (!c || !an) return;
+      an.getByteTimeDomainData(this.wave);
+      const g = c.cv.getContext("2d"), W3 = c.cv.width, H5 = c.cv.height, n = 48;
+      g.clearRect(0, 0, W3, H5);
+      g.fillStyle = "#4fc7d2";
+      for (let i = 0; i < n; i++) {
+        let m = 0;
+        for (let j = 0; j < 2; j++) m = Math.max(m, Math.abs(this.wave[(i * 2 + j) % 128] - 128));
+        const h = Math.max(2, Math.min(H5, m / 128 * H5 * 2.6 * (1 - Math.abs(i - n / 2) / (n * 0.75))));
+        g.fillRect(i * (W3 / n), (H5 - h) / 2, W3 / n * 0.45, h);
+      }
+    }
+    flat(cv) {
+      const g = cv.getContext("2d");
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.fillStyle = "#2b6a72";
+      for (let i = 0; i < 48; i++) g.fillRect(i * (cv.width / 48), cv.height / 2 - 1, cv.width / 48 * 0.45, 2);
+    }
+  };
+
+  // src/hood/cine.js
+  var _p2 = new Vector3();
+  var _l2 = new Vector3();
+  var ease2 = (k) => k * k * (3 - 2 * k);
+  var Cine = class {
+    constructor(camera2) {
+      this.camera = camera2;
+      this.q = null;
+      this.k = 1;
+      this.rate = 1;
+      this.timers = [];
+      this.cur = { pos: new Vector3(), look: new Vector3(), fov: camera2.fov };
+      this.from = { pos: new Vector3(), look: new Vector3(), fov: camera2.fov };
+      const bars = document.createElement("div");
+      bars.className = "hoodOverlay";
+      bars.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:58";
+      bars.innerHTML = '<i style="position:absolute;left:0;right:0;top:0;height:9vh;background:#000;transform:translateY(-100%);transition:transform .35s"></i><i style="position:absolute;left:0;right:0;bottom:0;height:9vh;background:#000;transform:translateY(100%);transition:transform .35s"></i>';
+      document.body.appendChild(bars);
+      this.bars = [...bars.children];
+      const tip = document.createElement("div");
+      tip.className = "hoodOverlay";
+      tip.style.cssText = "position:fixed;left:0;right:0;bottom:calc(9vh + 14px);text-align:center;z-index:59;pointer-events:none;font:800 22px system-ui,sans-serif;letter-spacing:.3em;color:#fff;text-shadow:0 0 10px #c33,0 2px 4px #000;opacity:0;transition:opacity .2s";
+      document.body.appendChild(tip);
+      this.tip = tip;
+    }
+    get active() {
+      return !!this.q;
+    }
+    say(t) {
+      this.tip.textContent = t || "";
+      this.tip.style.opacity = t ? 1 : 0;
+    }
+    // the world's time scale while a shot plays (null: the game's own)
+    get timeScale() {
+      return this.q ? this.k : null;
+    }
+    get subjectRate() {
+      return this.q ? this.rate : 1;
+    }
+    play(shots, opts = {}) {
+      const g = window.game;
+      this.q = { shots, i: -1, t: 0, opts, back: opts.back ?? 0.6, backT: -1, waited: 0 };
+      this.cur.pos.copy(this.camera.position);
+      this.camera.getWorldDirection(_l2);
+      this.cur.look.copy(this.camera.position).addScaledVector(_l2, 10);
+      this.cur.fov = this.camera.fov;
+      this.fov0 = this.camera.fov;
+      g?.hudShow?.(false);
+      for (const b of this.bars) b.style.transform = "translateY(0)";
+      this.next();
+    }
+    // in the story: yield* cine.run(shots) (resumes when the camera is back)
+    *run(shots, opts) {
+      this.play(shots, opts);
+      while (this.active) yield;
+    }
+    stop() {
+      if (!this.q) return;
+      this.q = null;
+      this.end();
+    }
+    // a call in real time while the shots play (the world's own clock may be all but stopped)
+    after(s, fn) {
+      this.timers.push({ t: s, fn });
+    }
+    end() {
+      const g = window.game;
+      g && (g.inputFilter = null);
+      g?.hudShow?.(true);
+      this.say("");
+      for (const [i, b] of this.bars.entries()) b.style.transform = i ? "translateY(100%)" : "translateY(-100%)";
+      this.camera.fov = this.fov0;
+      this.camera.updateProjectionMatrix();
+    }
+    next() {
+      const Q2 = this.q;
+      Q2.i++;
+      Q2.t = 0;
+      Q2.waited = 0;
+      const s = Q2.shots[Q2.i];
+      if (!s) {
+        Q2.backT = 0;
+        this.from.pos.copy(this.cur.pos);
+        this.from.look.copy(this.cur.look);
+        this.from.fov = this.cur.fov;
+        return;
+      }
+      this.from.pos.copy(this.cur.pos);
+      this.from.look.copy(this.cur.look);
+      this.from.fov = this.cur.fov;
+      this.k = s.slow ?? Q2.opts.slow ?? 0.06;
+      this.rate = s.rate ?? Q2.opts.rate ?? 1;
+      const g = window.game;
+      g?.hudShow?.(!!s.aim);
+      this.say(s.prompt || (s.aim ? "" : ""));
+      if (g) g.inputFilter = (inp, sim2) => {
+        inp.moveX = inp.moveZ = 0;
+        inp.usePresses = inp.swapPresses = inp.dodgePresses = 0;
+        if (!s.aim) inp.aimX = inp.aimZ = 0;
+        else if (s.aim.x !== void 0 && Math.hypot(inp.aimX, inp.aimZ) > 0.3 && sim2) {
+          const p = sim2.player, dx = s.aim.x - p.x, dz = s.aim.z - p.z, d = Math.hypot(dx, dz) || 1;
+          inp.aimX = dx / d;
+          inp.aimZ = dz / d;
+        }
+        return inp;
+      };
+      s.fn?.();
+    }
+    frame(s) {
+      const look = typeof s.look === "function" ? s.look() : s.look;
+      _l2.set(look[0], look[1], look[2]);
+      const f = typeof s.from === "function" ? s.from() : s.from;
+      if (Array.isArray(f)) _p2.set(f[0], f[1], f[2]);
+      else {
+        const y = MathUtils.degToRad(f.yaw ?? 35), pi = MathUtils.degToRad(f.pitch ?? 30), d = f.dist ?? 6;
+        _p2.set(_l2.x + Math.sin(y) * Math.cos(pi) * d, _l2.y + Math.sin(pi) * d, _l2.z + Math.cos(y) * Math.cos(pi) * d);
+      }
+      return s.fov ?? this.fov0;
+    }
+    // per real frame, after the game camera has moved (hood.update): the shot's camera; sim: Marc kept from harm
+    update(dt, sim2) {
+      for (let i = this.timers.length - 1; i >= 0; i--) {
+        const T2 = this.timers[i];
+        if ((T2.t -= dt) <= 0) {
+          this.timers.splice(i, 1);
+          T2.fn();
+        }
+      }
+      const Q2 = this.q;
+      if (!Q2) return;
+      const p = sim2?.player;
+      if (p) p.invuln = Math.max(p.invuln, 0.6);
+      const s = Q2.shots[Q2.i];
+      if (Q2.backT >= 0) {
+        Q2.backT += dt;
+        const k2 = ease2(Math.min(1, Q2.backT / Math.max(0.01, Q2.back)));
+        this.camera.getWorldDirection(_l2);
+        const gl = _l2.clone().multiplyScalar(10).add(this.camera.position);
+        this.camera.position.lerpVectors(this.from.pos, this.camera.position.clone(), k2);
+        _l2.lerpVectors(this.from.look, gl, k2);
+        this.camera.lookAt(_l2);
+        this.camera.fov = this.from.fov + (this.fov0 - this.from.fov) * k2;
+        this.camera.updateProjectionMatrix();
+        this.k = 1 - (1 - this.k) * (1 - Math.min(1, Q2.backT / Math.max(0.01, Q2.back)));
+        if (Q2.backT >= Q2.back) {
+          this.q = null;
+          this.end();
+        }
+        return;
+      }
+      Q2.t += dt;
+      const fov2 = this.frame(s), mv = s.move || 0, k = mv > 0 ? ease2(Math.min(1, Q2.t / mv)) : 1;
+      this.cur.pos.lerpVectors(this.from.pos, _p2, k);
+      this.cur.look.lerpVectors(this.from.look, _l2, k);
+      this.cur.fov = this.from.fov + (fov2 - this.from.fov) * k;
+      this.camera.position.copy(this.cur.pos);
+      this.camera.lookAt(this.cur.look);
+      if (this.camera.fov !== this.cur.fov) {
+        this.camera.fov = this.cur.fov;
+        this.camera.updateProjectionMatrix();
+      }
+      const held = Q2.t >= (s.hold ?? 1.2) + mv;
+      if (held && (!s.until || s.until() || (Q2.waited += dt) > (s.max ?? 12))) this.next();
     }
   };
 
@@ -80488,6 +81692,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   // src/hood/actors.js
   var SURVIVORS = { rifle: [["eve", 1.7]], pistol: [["remy", 1.8], ["james", 1.8], ["sophie", 1.66], ["bryce", 1.78]] };
   var LOOTERS = [["bryce", 1.78], ["lewis", 1.8], ["james", 1.8], ["remy", 1.8], ["david", 1.8], ["brian", 1.8]];
+  var STORY = { sophie: 1.66, pete: 1.8 };
   var GUNS = { rifle: ["assets/neighborhood/props/security_rifle.glb", 1], pistol: ["assets/weapons/pistol_core.glb", PISTOL_CORE_SCALE] };
   var _v11 = new Vector3();
   var _v24 = new Vector3();
@@ -80551,10 +81756,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         ...Object.entries(GUNS).map(([k, [f, s]]) => loader3.loadAsync(f).then((g) => {
           this.guns[k] = { scene: g.scene, s };
         }).catch((e) => console.warn("survivor gun", k, e))),
-        ...LOOTERS.map(([k, h]) => Promise.all([loader3.loadAsync("assets/survivors/" + k + ".glb"), loader3.loadAsync("assets/survivors/moves/" + k + "-looter.glb")]).then(([g, mv]) => {
-          g.animations.push(...mv.animations);
+        ...LOOTERS.map(([k, h]) => Promise.all([loader3.loadAsync("assets/survivors/" + k + ".glb"), loader3.loadAsync("assets/survivors/moves/" + k + "-looter.glb"), k === "james" ? loader3.loadAsync("assets/survivors/moves/james-hood.glb") : null]).then(([g, mv, hm]) => {
+          g.animations.push(...mv.animations, ...hm?.animations || []);
           (this.looterModels || (this.looterModels = {}))[k] = { g, h };
-        }).catch((e) => console.warn("looter", k, e)))
+        }).catch((e) => console.warn("looter", k, e))),
+        ...Object.entries(STORY).map(([k, h]) => Promise.all([loader3.loadAsync("assets/survivors/" + k + ".glb"), loader3.loadAsync("assets/survivors/moves/" + k + "-hood.glb")]).then(([g, mv]) => {
+          g.animations.push(...mv.animations);
+          (this.storyModels || (this.storyModels = {}))[k] = { g, h };
+        }).catch((e) => console.warn("story", k, e)))
       ]);
     }
     // a looter's body (the survivor's, with the looter moves): in cover he crouches (Crouch_Idle_Loop), pops up (Crouch_Exit)
@@ -80605,12 +81814,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         turn.rotation.y = -Math.atan2(d0.x, d0.z);
         a0.stop();
       }
+      const aimTurn = turn.rotation.y, head = B("Head");
       const REST = standing ? "ual1_Pistol_Idle_Loop" : "ual1_Crouch_Idle_Loop", AIM = "ual1_Pistol_Aim_Neutral";
       let cur = act(REST);
       cur.play();
       const go = (n, once, fade = 0.18) => {
         const a = act(n, once);
         if (!a) return;
+        turn.rotation.y = n.startsWith("hood_") ? 0 : aimTurn;
         if (a === cur) {
           if (once) a.reset().play();
           return;
@@ -80632,14 +81843,26 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         next: null,
         nextAt: 0,
         t: 0,
+        gunOn: true,
+        headGone: false,
         then(at, n) {
           body.next = n;
           body.nextAt = body.t + at;
         },
         // (after a one-shot: the pose to settle into)
+        play(n, once = false, fade = 0.2) {
+          body.next = null;
+          body.pose = n;
+          go(n, once, fade);
+          return clips[n]?.duration || 0;
+        },
         update(dt) {
           mixer.update(dt);
           body.t += dt;
+          if (body.headGone && head) {
+            head.scale.setScalar(1e-3);
+            obj.updateMatrixWorld(true);
+          }
           if (body.next && !body.dead && body.t >= body.nextAt) {
             const n = body.next;
             body.next = null;
@@ -80649,7 +81872,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           obj.updateMatrixWorld(true);
           if (!holder) return;
           if (body.dead) body.deadT += dt;
-          holder.visible = obj.visible && (!body.dead || body.deadT < 0.35);
+          holder.visible = obj.visible && body.gunOn && (!body.dead || body.deadT < 0.35);
           palm(bones.hand, bones.mid, holder.position);
           holder.position.y -= 0.045;
           const d = aimDir(_v11);
@@ -80702,6 +81925,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           body.next = null;
           go(Math.random() < 0.5 ? "ual1_Death01" : "ual1_Death02", true, 0.12);
         },
+        neck(out) {
+          return head ? head.getWorldPosition(out) : out.set(obj.position.x, 1.55, obj.position.z);
+        },
         dispose() {
           holder?.removeFromParent();
         }
@@ -80710,12 +81936,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     // a survivor's body: the model on the clip's own aim, the gun in the right palm along the aim (rifle: from hand to hand,
     // pistol: from the shoulder to the hand), the model turned so that aim points down the actor's facing
-    survivorBody(gun) {
+    survivorBody(gun, model = null) {
       const list = SURVIVORS[gun] || SURVIVORS.pistol, i = this.nPicked[gun] = (this.nPicked[gun] || 0) + 1, pick = list[(i - 1) % list.length];
-      const M4 = this.models?.[pick[0]];
+      const M4 = model ? this.storyModels?.[model] : this.models?.[pick[0]];
       if (!M4) return null;
       const m = clone(M4.g.scene);
-      m.scale.setScalar(pick[1]);
+      m.scale.setScalar(model ? M4.h : pick[1]);
       m.traverse((o) => {
         if (o.isMesh) {
           o.castShadow = false;
@@ -80816,8 +82042,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.tracers.push({ line, t: 0.07 });
     }
     // a friendly survivor at a spot, shooting the nearest zombie in sight every so often; overwhelm(): stops, falls
-    survivor(at, { gun = "pistol" } = {}) {
-      const body = this.survivorBody(gun), obj = body ? body.obj : marker(COL.survivor);
+    survivor(at, { gun = "pistol", model = null } = {}) {
+      const body = this.survivorBody(gun, model), obj = body ? body.obj : marker(COL.survivor);
       obj.position.set(at.x, 0, at.z);
       obj.rotation.y = at.yaw || 0;
       this.group.add(obj);
@@ -80849,7 +82075,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         a.yaw = Math.atan2(best.x - a.x, best.z - a.z);
         obj.rotation.y = a.yaw;
         const dx = (best.x - a.x) / bd, dz = (best.z - a.z) / bd, rifle = a.gun === "rifle";
-        if (sim2.rand() < (rifle ? 0.8 : 0.55)) best.takeHit(rifle ? 55 : 22, dx, dz, rifle ? 4 : 2.5, "pistol", sim2, "torso");
+        if (sim2.rand() < (rifle ? 0.8 : 0.55)) best.takeHit((rifle ? 55 : 22) * (a.dmgK ?? 1), dx, dz, rifle ? 4 : 2.5, "pistol", sim2, "torso");
         this.tracer(a.x, a.z, best.x, best.z);
         this.sound(rifle ? "shotgun" : "shot", a.x, a.z, 0.7);
         body?.fire();
@@ -80953,8 +82179,269 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.sound("shot", from.x, from.z, 1);
       this.sound("ricochet", p.x, p.z, 0.8);
     }
-    update(dt) {
-      for (const a of this.list) a.body?.update(dt);
+    // ---------------------------------------------------------------- the story's people
+    // a story body: the model on its own moves (hood_*), a cross-fade between them; no gun
+    storyBody(k) {
+      const M4 = this.storyModels?.[k];
+      if (!M4) return null;
+      const m = clone(M4.g.scene);
+      m.scale.setScalar(M4.h);
+      m.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = false;
+          o.frustumCulled = false;
+        }
+      });
+      characterLight(m);
+      const obj = new Group();
+      obj.add(m);
+      const mixer = new AnimationMixer(m), clips = Object.fromEntries(M4.g.animations.map((c) => [c.name, c]));
+      let cur = null, curName = "";
+      const body = {
+        obj,
+        mixer,
+        clips,
+        dead: false,
+        get clip() {
+          return curName;
+        },
+        // play a move (looping unless once; rate: its speed), cross-faded from the last; its length in s
+        play(n, { once = false, fade = 0.25, rate = 1 } = {}) {
+          const c = clips[n];
+          if (!c) return 0;
+          if (n === curName && !once) {
+            cur.timeScale = rate;
+            return c.duration / rate;
+          }
+          const a = mixer.clipAction(c);
+          a.setLoop(once ? LoopOnce : LoopRepeat, once ? 1 : Infinity);
+          a.clampWhenFinished = once;
+          a.timeScale = rate;
+          a.reset().play();
+          if (cur && cur !== a) cur.crossFadeTo(a, fade, false);
+          cur = a;
+          curName = n;
+          return c.duration / rate;
+        },
+        update(dt) {
+          mixer.update(dt);
+          obj.updateMatrixWorld(true);
+        },
+        dispose() {
+        }
+      };
+      return body;
+    }
+    // Sophie (the user's B03 - B12): unarmed and scared, she never fights and takes no harm (her death is the story's). The
+    // story sets her mode: 'scared' (crouched where she is, facing Marc), 'follow' (3.3 m behind him along the way he walked;
+    // she crouches when they come near unless he gets away from her), 'goto' (to a.target, then a.after), 'pose' (a.pose,
+    // facing a.face), 'dead'. She walks, jogs or sprints as the gap asks.
+    sophie(at) {
+      const body = this.storyBody("sophie"), obj = body ? body.obj : marker(15253600);
+      obj.position.set(at.x, 0, at.z);
+      obj.rotation.y = at.yaw || 0;
+      this.group.add(obj);
+      const a = { kind: "sophie", obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, mode: "scared", trail: [], speed: 0, gap: 3.3, cower: 0 };
+      a.die = () => {
+        a.mode = "dead";
+        body?.play("hood_Death01", { once: true, fade: 0.15 });
+      };
+      a.step = (dt, level) => this.sophieStep(a, dt, level);
+      body?.play("hood_Crouch_Idle_Loop");
+      this.list.push(a);
+      return a;
+    }
+    sophieStep(a, dt, level) {
+      const sim2 = level.sim, p = sim2.player, b = a.body;
+      if (a.mode === "dead") return;
+      const tl = a.trail, last2 = tl[tl.length - 1];
+      if (!last2 || Math.hypot(p.x - last2.x, p.z - last2.z) > 0.45) {
+        tl.push({ x: p.x, z: p.z });
+        if (tl.length > 80) tl.shift();
+      }
+      let tx = a.x, tz = a.z, want = 0, face = null;
+      const dm0 = Math.hypot(p.x - a.x, p.z - a.z), dest = a.mode === "goto" && a.target ? a.target : a.mode === "follow" ? p : null;
+      if (dest && dm0 > 16 && Math.hypot(dest.x - a.x, dest.z - a.z) > 12) {
+        const back = tl.length > 8 ? tl[tl.length - 8] : null, q = a.mode === "goto" ? { x: dest.x, z: dest.z } : back ? { x: back.x, z: back.z } : null;
+        if (q && Math.hypot(q.x - p.x, q.z - p.z) > (a.mode === "goto" ? 0 : 3)) {
+          sim2.world.resolveCircle(q, 0.3);
+          a.x = q.x;
+          a.z = q.z;
+          a.speed = 0;
+        }
+      }
+      const near = (x, z, r) => sim2.zombies.some((q) => q.alive && !q.looter && Math.hypot(q.x - x, q.z - z) < r);
+      if (a.mode === "follow") {
+        let need = a.gap, px2 = p.x, pz2 = p.z, found = null;
+        for (let i = tl.length - 1; i >= 0; i--) {
+          const d = Math.hypot(tl[i].x - px2, tl[i].z - pz2);
+          if (d >= need) {
+            const k = need / d;
+            found = { x: px2 + (tl[i].x - px2) * k, z: pz2 + (tl[i].z - pz2) * k };
+            break;
+          }
+          need -= d;
+          px2 = tl[i].x;
+          pz2 = tl[i].z;
+        }
+        const dm = Math.hypot(p.x - a.x, p.z - a.z);
+        a.cower = (near(a.x, a.z, 6) || near(p.x, p.z, 5)) && dm < 9 ? Math.min(1.5, a.cower + dt) : Math.max(0, a.cower - dt);
+        if (found && a.cower <= 0.4) {
+          tx = found.x;
+          tz = found.z;
+          const d = Math.hypot(tx - a.x, tz - a.z);
+          want = d > 6 ? 5.2 : d > 2.2 ? 3.1 : d > 0.35 ? 1.4 : 0;
+        }
+        if (dm < 1.4) {
+          want = 0;
+        }
+        face = { x: p.x, z: p.z };
+      } else if (a.mode === "goto" && a.target) {
+        tx = a.target.x;
+        tz = a.target.z;
+        const d = Math.hypot(tx - a.x, tz - a.z);
+        want = d > 0.3 ? a.target.run ? 4.6 : 1.5 : 0;
+        if (d <= 0.3) {
+          a.mode = a.after || "scared";
+          a.target.done?.();
+          a.target = null;
+        }
+      } else face = a.face || { x: p.x, z: p.z };
+      a.speed += (want - a.speed) * Math.min(1, dt * 6);
+      if (a.speed > 0.05) {
+        const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz) || 1, st = Math.min(d, a.speed * dt);
+        const q = { x: a.x + dx / d * st, z: a.z + dz / d * st };
+        sim2.world.resolveCircle(q, 0.28);
+        a.x = q.x;
+        a.z = q.z;
+        const y = Math.atan2(dx, dz);
+        a.yaw += Math.atan2(Math.sin(y - a.yaw), Math.cos(y - a.yaw)) * Math.min(1, dt * 8);
+      } else if (face) {
+        const y = Math.atan2(face.x - a.x, face.z - a.z);
+        a.yaw += Math.atan2(Math.sin(y - a.yaw), Math.cos(y - a.yaw)) * Math.min(1, dt * 4);
+      }
+      a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
+      a.obj.rotation.y = a.yaw;
+      if (!b) return;
+      const v = a.speed;
+      if (a.mode === "pose" && a.pose) b.play(a.pose);
+      else if (v > 3.8) b.play("hood_Sprint_Loop", { rate: v / 5.2 });
+      else if (v > 1.9) b.play("hood_Jog_Fwd_Loop", { rate: v / 3.1 });
+      else if (v > 0.25) b.play("hood_Walk_Loop", { rate: Math.max(0.6, v / 1.4) });
+      else if (a.mode === "scared" || a.cower > 0.4) b.play("hood_Crouch_Idle_Loop", { fade: 0.35 });
+      else b.play(a.idle || "hood_Idle_Loop", { fade: 0.35 });
+    }
+    // Pete (B08): the groundskeeper with his pistol on the drive, shooting what comes at him until the story overwhelms him
+    pete(at) {
+      const a = this.survivor(at, { gun: "pistol", model: "pete" });
+      a.kind = "pete";
+      a.dmgK = 0.15;
+      return a;
+    }
+    // (panicked: he slows them, he cannot stop them)
+    // James (B02): a looter going through the family's things at the dining table, his back to the door, headphones on. He
+    // is an entry in the zombie list (Marc's shots hit him; one is enough); his body is the looters' with his own moves:
+    // rummaging (hood_Counter_Idle_Loop), the turn (hood_Surprise), the shout (hood_Counter_Angry), then the gun up at Marc
+    // (threat(): he fires after a.fireIn s). Dying: his head goes (the user: "you just shoot his head right off").
+    james(level, at) {
+      const sim2 = level.sim, i = LOOTERS.findIndex((q) => q[0] === "james");
+      const z = sim2.spawnZombie(null, { x: at.x, z: at.z, yaw: at.yaw || 0, hp: 1 });
+      z.passive = true;
+      z.speedMul = 0;
+      z.noView = true;
+      z.looter = true;
+      z.dormant = null;
+      const body = this.looterBody(i, true), obj = body ? body.obj : marker(COL.looter);
+      obj.position.set(at.x, groundY(at.x, at.z), at.z);
+      obj.rotation.y = at.yaw || 0;
+      this.group.add(obj);
+      if (body) {
+        body.gunOn = false;
+        body.play("hood_Counter_Idle_Loop");
+      }
+      const a = {
+        kind: "looter",
+        james: true,
+        z,
+        obj,
+        body,
+        home: { x: at.x, z: at.z },
+        yaw: at.yaw || 0,
+        phase: "rummage",
+        wasAlive: true,
+        fireIn: Infinity,
+        aim: 0,
+        get alive() {
+          return z.alive;
+        }
+      };
+      a.turn = () => {
+        if (a.phase !== "rummage") return 0;
+        a.phase = "turn";
+        return body ? body.play("hood_Surprise", true, 0.15) : 0.6;
+      };
+      a.shout = () => {
+        a.phase = "shout";
+        return body ? body.play("hood_Counter_Angry", false, 0.25) : 0;
+      };
+      a.headPos = () => {
+        const v = body ? body.neck(_v11) : _v11.set(z.x, 1.55, z.z);
+        return [v.x, v.y, v.z];
+      };
+      a.threat = (fireIn = 2.5) => {
+        a.phase = "threat";
+        a.fireIn = fireIn;
+        if (body) {
+          body.gunOn = true;
+          body.up = false;
+          body.coverUp();
+        }
+      };
+      a.step = (dt, lv) => this.jamesStep(a, dt, lv);
+      this.list.push(a);
+      return a;
+    }
+    jamesStep(a, dt, level) {
+      const sim2 = level.sim, z = a.z, p = sim2.player, b = a.body;
+      if (!z.alive) {
+        if (a.wasAlive) {
+          a.wasAlive = false;
+          if (b) {
+            b.headGone = true;
+            b.fall();
+          }
+          const n = b ? b.neck(_v11) : _v11.set(z.x, 1.55, z.z), dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1;
+          this.ctx.fx?.bloodSpray?.(n.x, n.y, n.z, dx / d, 0.8, dz / d, 46, 4.2);
+          this.ctx.fx?.bloodSpray?.(n.x, n.y, n.z, dx / d * 0.4, 1.6, dz / d * 0.4, 22, 2.4);
+          this.ctx.fx?.bloodPool?.(z.x + dx / d * 0.8, z.z + dz / d * 0.8, 1.1);
+          a.onDeath?.();
+        }
+        return;
+      }
+      z.x = a.home.x;
+      z.z = a.home.z;
+      z.vx = z.vz = 0;
+      if (a.phase === "rummage") {
+        z.yaw = a.yaw;
+      } else {
+        const y = Math.atan2(p.x - z.x, p.z - z.z);
+        a.yaw += Math.atan2(Math.sin(y - a.yaw), Math.cos(y - a.yaw)) * Math.min(1, dt * 7);
+        z.yaw = a.yaw;
+      }
+      a.obj.position.set(z.x, groundY(z.x, z.z), z.z);
+      a.obj.rotation.y = a.yaw;
+      if (a.phase === "threat" && (a.fireIn -= dt) <= 0) {
+        a.fireIn = 0.9 + sim2.rand() * 0.5;
+        b?.fire();
+        this.sound("shot", z.x, z.z, 1);
+        const hit = sim2.rand() < 0.7;
+        this.tracer(z.x, z.z, p.x + (hit ? 0 : 0.8), p.z + (hit ? 0 : 0.6));
+        if (hit) p.hurt(14, z.x, z.z, sim2);
+      }
+    }
+    // (kWorld: the world's time scale, kSubject: a cinematic's subjects', src/hood/cine.js; a.subject marks one)
+    update(dt, kWorld = 1, kSubject = 1) {
+      for (const a of this.list) a.body?.update(dt * (a.subject ? kSubject : kWorld));
       for (let i = this.tracers.length - 1; i >= 0; i--) {
         const t = this.tracers[i];
         if ((t.t -= dt) <= 0) {
@@ -80968,9 +82455,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
 
   // src/hood/bot.js
   async function runBot({ maxTicks = 60 * 60 * 12, chunk = 120, log = [] } = {}) {
-    const g = window.game, H4 = window.hood;
+    const g = window.game, H5 = window.hood;
     let lastStop = "", lastGoal = "", ticks = 0;
-    const lv = () => H4.level;
+    const lv = () => H5.level;
     while (ticks < maxTicks) {
       const L3 = lv();
       if (!L3) break;
@@ -80986,7 +82473,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         lastGoal = L3.objective;
         log.push("  goal " + L3.objective);
       }
-      H4.subs.clear();
+      H5.subs.clear();
       const sim2 = g.sim, p = sim2.player;
       p.hp = p.maxHp;
       for (const z of sim2.zombies) if (z.alive) z.takeHit(9999, 0, 1, 1, "pistol", sim2, "torso");
@@ -81001,7 +82488,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           else log.push("  blocked: " + target.id + " (" + target.no + ")");
         }
       } else {
-        const go = BOT_SPOTS[L3.stop];
+        const go = BOT_SPOTS[L3.objective] || BOT_SPOTS[L3.stop];
         if (go) {
           p.x = p.px = go[0];
           p.z = p.pz = go[1];
@@ -81014,7 +82501,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     if (ticks >= maxTicks) log.push("TIMED OUT in stop " + lastStop + " / " + lastGoal);
     return log;
   }
-  var BOT_SPOTS = { club: [10.5, -41], lot: [58, -70], clubhouse: [9.6, -45], playground: [-44, -5], west: [-4, -31], grandma: [-44, 10], dock: [-24, -79], curve: [14, 10], gate: [18.6, -15], home: [40, 35] };
+  var BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [-8.4, -107.6], horde: [-12, -96], leave: [-24, -80] };
 
   // src/hood/hint.js
   var _v12 = new Vector3();
@@ -81048,14 +82535,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         return;
       }
       _v12.set(tgt.x, 1.4, tgt.z).project(camera2);
-      const W3 = innerWidth, H4 = innerHeight, m = 34;
-      let x = (_v12.x * 0.5 + 0.5) * W3, y = (-_v12.y * 0.5 + 0.5) * H4;
+      const W3 = innerWidth, H5 = innerHeight, m = 34;
+      let x = (_v12.x * 0.5 + 0.5) * W3, y = (-_v12.y * 0.5 + 0.5) * H5;
       if (_v12.z > 1) {
         x = W3 - x;
-        y = H4 - y;
+        y = H5 - y;
       }
       x = Math.min(W3 - m, Math.max(m, x));
-      y = Math.min(H4 - m - 90, Math.max(m + 80, y));
+      y = Math.min(H5 - m - 90, Math.max(m + 80, y));
       this.el.style.left = x + "px";
       this.el.style.top = y + "px";
       this.d.textContent = Math.round(dist2) + " m";
@@ -81074,10 +82561,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var SUN_FROM = new Vector3(-0.55, 0.62, 0.56).normalize();
   var SKY = 11123140;
-  var LIGHT_VERSION = "2026-10-20c";
+  var LIGHT_VERSION = "2026-10-21a";
   async function startHood({ scene: scene2, loader: loader3, arena: arena2, renderer: renderer2, quality: quality2, params: params2, audio: audio2, hud: hud2, fx: fx2, onProgress }) {
-    const free = params2.get("hood") === "free";
-    HOOD.stage = free ? "free" : "home";
+    const grammy = params2.get("hood") === "grammy";
+    const free = params2.get("hood") === "free" || grammy;
+    HOOD.stage = grammy ? "grammy" : free ? "free" : "home";
+    HOOD.map = grammy ? "grammy" : "hood";
+    const MAP2 = useMap(HOOD.map);
     if (STAGES[HOOD.stage]) LAYOUT.bounds = STAGES[HOOD.stage].bounds;
     arena2.group.visible = false;
     {
@@ -81127,7 +82617,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     };
     outdoor();
     const lightV = /localhost|127\.0\.0\.1|^192\.168\./.test(location.hostname) ? Date.now() : LIGHT_VERSION;
-    if (baked) new TextureLoader().load("assets/neighborhood/hood_light.jpg?v=" + lightV, (t) => {
+    CUT.lmRect.value.set(...MAP2.rect);
+    if (baked) new TextureLoader().load(MAP2.root + MAP2.light + "?v=" + lightV, (t) => {
       t.colorSpace = SRGBColorSpace;
       t.flipY = true;
       t.anisotropy = 4;
@@ -81138,19 +82629,40 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     await view.load(loader3, onProgress);
     HOOD.cols = view.layout.cols;
     HOOD.marks = view.layout.marks || {};
+    if (grammy) {
+      const m = HOOD.marks.landing, b = HOOD.marks.boat;
+      if (m) LAYOUT.playerStart = { x: m[0], z: m[2], yaw: m[3] };
+      LAYOUT.camBounds = STAGES.grammy.cam;
+      INTERIORS.length = 0;
+      FLOORS2.length = 0;
+      if (m && b) {
+        const cx = (m[0] + b[0]) / 2, cz = (m[2] + b[2]) / 2, L3 = Math.hypot(b[0] - m[0], b[2] - m[2]);
+        FLOORS2.push({ id: "deck", cx, cz, hx: L3 / 2, hz: 1.3, yaw: -Math.atan2(b[2] - m[2], b[0] - m[0]), y: 0.2, ramp: 0.8 });
+      }
+    }
+    const grass = params2.get("grass") === "0" || quality2 === "low" ? null : await new Grass(scene2).build(view.splat, view.paths, view.rect).catch((e) => {
+      console.warn("grass", e);
+      return null;
+    });
+    if (params2.get("vignette") !== "0") {
+      const v = document.createElement("div");
+      v.className = "hoodOverlay";
+      v.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:40;background:radial-gradient(ellipse 85% 75% at 50% 46%, rgba(0,0,0,0) 58%, rgba(20,14,8,0.32) 100%)";
+      document.body.appendChild(v);
+    }
     if (audio2?.play && !audio2.hoodWrapped) {
       const play = audio2.play.bind(audio2);
       audio2.hoodWrapped = true;
       audio2.play = (name, ...rest) => {
-        if (level?.flags.rifle) {
+        if (level?.flags.gun === "rifle") {
           if (name === "pump") return;
           if (name === "shotgun" || name === "shotgunClose") return play("shot", ...rest);
         }
         return play(name, ...rest);
       };
     }
-    const subs = new Subtitles();
-    const actors = new Actors(scene2, { audio: audio2 });
+    const voice = new Voice(audio2), radio = new RadioCard(voice), subs = new Subtitles(voice, radio), cine = new Cine(window.game.camera);
+    const actors = new Actors(scene2, { audio: audio2, fx: fx2 });
     await actors.loadModels(loader3);
     const mk = (n) => {
       const m = HOOD.marks[n];
@@ -81163,21 +82675,34 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     const firstSave = () => {
       if (!askStop || !STOP_ORDER.includes(askStop)) return loadSave();
-      const i = STOP_ORDER.indexOf(askStop), open = [], flags = {};
-      if (i >= 1) open.push("home");
-      if (i >= 2) flags.cutters = true;
-      if (i >= 3) open.push("gate");
-      if (i >= 1) flags.rifle = true;
-      if (i >= 5) flags.gas = "carried";
-      if (i >= 6) {
-        flags.keys = true;
+      const i = STOP_ORDER.indexOf(askStop), at = (k) => STOP_ORDER.indexOf(k), open = [], flags = {};
+      if (i > at("home")) {
+        open.push("home_door");
+        flags.case = "carried";
+      }
+      if (i > at("help")) open.push("home");
+      if (i > at("gate")) {
+        open.push("gate");
+        flags.cutters = true;
+      }
+      if (i > at("club")) {
         open.push("clubdoor");
+        flags.gun = "rifle";
       }
-      if (i >= 7) {
-        open.push("roadblock", "dock");
-        flags.gas = "boat";
+      if (i > at("pete")) {
+        flags.key = true;
+        open.push("dockroad");
       }
-      if (i >= 9) flags.lilah = true;
+      if (i > at("dock")) flags.case = "cooler";
+      if (i > at("shed")) {
+        open.push("shed");
+        flags.gun = "shotgun";
+        flags.gas = "carried";
+      }
+      if (i > at("horde")) {
+        open.push("dock");
+        flags.case = "boat";
+      }
       return { stop: askStop, flags, open };
     };
     let save = firstSave();
@@ -81188,6 +82713,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       audio: audio2,
       fx: fx2,
       actors,
+      cine,
+      voice,
+      hero: { script: (n, o) => window.game?.yola?.playScript(n, o), end: () => window.game?.yola?.endScript() },
       npc: (kind, at, opts) => {
         const a = actors.survivor(at, opts);
         level?.npcs.push(a);
@@ -81197,21 +82725,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         const spots = [{ ...mk("looter_d"), out: true }, { ...mk("looter_c"), out: true }, mk("looter_a"), mk("looter_b"), { ...mk("leader"), leader: true }].filter((s) => s && s.x !== void 0);
         const L3 = actors.looters(lv, spots);
         lv.npcs.push(...L3);
-        const leader = L3.find((q) => q.leader);
-        if (leader) leader.onDeath = () => {
-          const k = mk("keys") || leader.home;
-          lv.addPickup({ id: "keys", x: leader.home.x, z: leader.home.z, r: 1.2, model: "keys", label: "The boat keys", onTake: () => {
-            lv.flags.keys = true;
-          } });
-          void k;
-        };
         return L3;
       },
       warnShot: (from, p) => actors.warnShot(from, p),
-      companion: () => {
-      },
-      // (Arianna and Lilah: their models are not made yet; they follow in the story's lines only)
       rifleOn: () => view.rifleOn(window.game?.yola),
+      rifleOff: () => view.rifleOff(),
       hideHero: (v) => {
         window.game?.yola?.setShown(!v);
         if (v) view.radio && (view.radio.visible = false);
@@ -81230,10 +82748,31 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     const garage = mk("garage_light");
     const prevGlow = view.garageLight.bind(view);
     view.garageLight = (on) => prevGlow(on, garage);
+    let gateUp = false, carSeen = false;
+    const grammyWalk = (px2, pz2, sim2) => {
+      const hold = HOOD.marks.gate_hold, car = HOOD.marks.family_car;
+      if (!gateUp && hold && Math.hypot(px2 - hold[0], pz2 - hold[2]) < 7) {
+        gateUp = true;
+        view.openSeal("gate", true, true);
+        for (const s of sim2.world.shapes) if (s.tag === "seal:gate") sim2.world.setOff(s, true);
+        sim2.world.updateFlow?.(px2, pz2);
+        hud2.banner?.("The gate lifts");
+      }
+      if (!carSeen && car && Math.hypot(px2 - car[0], pz2 - car[2]) < 4.5) {
+        carSeen = true;
+        hud2.banner?.("The family car: Chapter 4 ends here (its beats are still being written)");
+      }
+    };
     const attach = (sim2) => {
+      if (grammy) {
+        gateUp = carSeen = false;
+        view.openSeal("gate", false, false);
+      }
       if (free) return;
       actors.clear();
       subs.clear();
+      cine.stop();
+      view.radioHand = false;
       for (const list of Object.values(view.seals)) for (const s2 of list) {
         s2.o.position.copy(s2.p0);
         s2.o.quaternion.copy(s2.q0);
@@ -81250,7 +82789,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (level.flags.gas && typeof level.flags.gas === "object") level.setGasDown(level.flags.gas.x, level.flags.gas.z);
       else if (level.flags.gas === "carried") view.carryGas();
       else if (level.flags.gas === "boat") view.stowGas();
-      if (level.flags.rifle) api.rifleOn();
+      if (level.flags.gun === "rifle") api.rifleOn();
+      else api.rifleOff();
+      view.showCase(level.flags.case === "fridge" ? "none" : level.flags.case);
+      view.showCooler?.(["cooler", "boat"].includes(level.flags.case));
       sim2.level = level;
       window.hoodLevel = level;
     };
@@ -81260,6 +82802,33 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       attach(sim2);
     };
     let shX = NaN, shZ = NaN;
+    let onCall = false, callGun = null;
+    const callUp = (on) => {
+      const y = window.game?.yola;
+      if (!y || on === onCall) return;
+      onCall = on;
+      view.radioHand = on;
+      const p = window.game?.sim?.player;
+      if (on) {
+        if (p) {
+          callGun = p.desired;
+          p.desired = "fists";
+        }
+        y.playScript("hood_Idle_TalkingPhone_Loop", { loop: true, fadeIn: 0.35, fadeOut: 0.4 });
+      } else {
+        y.endScript();
+        if (p && callGun && p.owned.includes(callGun)) p.desired = callGun;
+        callGun = null;
+      }
+    };
+    subs.onLine = (id, isRadio) => {
+      const who = LINES2[id]?.[0];
+      if (isRadio && (who === "MARC" || who === "YOLA")) {
+        const p = window.game?.sim?.player;
+        if (p && Math.hypot(p.vx || 0, p.vz || 0) < 0.4) callUp(true);
+      }
+    };
+    subs.onQuiet = () => callUp(false);
     const hint = new Hint();
     function titleCard() {
       const el = document.createElement("div");
@@ -81277,7 +82846,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     function endCard() {
       const el = document.createElement("div");
       el.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:70;background:rgba(0,0,0,0.55);color:#fff;font:600 16px system-ui,sans-serif;text-align:center";
-      el.innerHTML = '<div style="max-width:320px;padding:22px;background:rgba(15,20,24,0.92);border-radius:14px"><div style="font-size:24px;margin-bottom:8px">Chapter 2 complete</div><div style="opacity:.8">Marc, Arianna and Lilah are on the water. Yola is waiting.</div><button style="margin-top:16px;font:600 15px system-ui;padding:9px 16px;border-radius:9px;border:0;background:#3a7;color:#fff">Play again</button></div>';
+      el.innerHTML = '<div style="max-width:320px;padding:22px;background:rgba(15,20,24,0.92);border-radius:14px"><div style="font-size:24px;margin-bottom:8px">Chapter 2 complete</div><div style="opacity:.8">Marc is on the water with all four vials. Grammy and the girls are waiting.</div><button style="margin-top:16px;font:600 15px system-ui;padding:9px 16px;border-radius:9px;border:0;background:#3a7;color:#fff">Play again</button></div>';
       el.querySelector("button").onclick = () => {
         clearSave();
         location.search = "?mode=hood";
@@ -81288,6 +82857,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       view,
       subs,
       actors,
+      voice,
+      radio,
+      cine,
+      get grass() {
+        return grass;
+      },
       get level() {
         return level;
       },
@@ -81354,12 +82929,18 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       },
       update(dt, px2, pz2, camera2, sim2) {
         if (arena2.em && (arena2.em.target !== 0 || arena2.em.k !== 0)) arena2.setEmergency(false, 0);
+        if (grammy && sim2) grammyWalk(px2, pz2, sim2);
         const room = INTERIORS.find((r) => inRect2(r.rect, px2, pz2));
         setCutaway(camera2, px2, pz2, true, room ? { ...room.cut || room.rect, clipY: room.clipY } : null);
         subs.update(dt);
-        actors.update(dt);
+        actors.update(dt, cine.active ? cine.k : 1, cine.active ? cine.subjectRate : 1);
+        if (cine.active && level) {
+          for (const n of level.npcs) if (n.subject && n.step) n.step(dt * cine.subjectRate, level);
+        }
         view.update(dt, sim2);
         window.hood?.lineup.update(dt);
+        grass?.update(dt, px2, pz2);
+        if (onCall && sim2 && Math.hypot(sim2.player.vx || 0, sim2.player.vz || 0) > 0.6) callUp(false);
         view.radioUpdate(window.game?.yola, sim2);
         hint.update(camera2, level, sim2, dt);
         const g = window.game, y = g?.yola;
@@ -81395,8 +82976,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           o.updateMatrixWorld(true);
         }
         for (const a of actors.list) if (a.kind === "looter" && a.z.alive) {
-          a.obj.position.set(a.z.x, 0, a.z.z);
+          a.obj.position.set(a.z.x, groundY(a.z.x, a.z.z), a.z.z);
         }
+        cine.update(dt, sim2);
+        if (cine.active) setCutaway(camera2, cine.cur.look.x, cine.cur.look.z, true, room ? { ...room.cut || room.rect, clipY: room.cineClip ?? room.clipY } : null);
         if (sun?.castShadow) {
           const sx = Math.round(px2 / 6) * 6, sz = Math.round(pz2 / 6) * 6;
           if (sx !== shX || sz !== shZ) {
@@ -81413,7 +82996,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
     };
   }
-  var STOP_TITLES = { home: "Home", curve: "The curve", gate: "The gate", club: "The club", lot: "The parking lot", clubhouse: "The clubhouse", west: "The roadblock", grandma: "Grandma's", playground: "The playground", dock: "The dock" };
+  var STOP_TITLES = { home: "Home", help: "Help", gate: "The gate", club: "The clubhouse", pete: "Pete", dock: "The dock", shed: "The shed", horde: "The horde", leave: "Leaving" };
 
   // src/main.js
   var params = new URLSearchParams(location.search);
@@ -81692,8 +83275,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       h = (h * 60 + 360) % 360;
       if (h < 165 || h > 250) continue;
       const l = (mx + mn) / 2, s = R.s ?? Math.min(1, dl / (1 - Math.abs(2 * l - 1) || 1) * 1.6 + 0.2);
-      const H4 = (R.H + (h - 205) * 0.12 + 360) % 360, L3 = Math.min(R.l[2], l * R.l[0] + R.l[1]);
-      const C = (1 - Math.abs(2 * L3 - 1)) * s, X2 = C * (1 - Math.abs(H4 / 60 % 2 - 1)), m = L3 - C / 2, k6 = Math.floor(H4 / 60) % 6;
+      const H5 = (R.H + (h - 205) * 0.12 + 360) % 360, L3 = Math.min(R.l[2], l * R.l[0] + R.l[1]);
+      const C = (1 - Math.abs(2 * L3 - 1)) * s, X2 = C * (1 - Math.abs(H5 / 60 % 2 - 1)), m = L3 - C / 2, k6 = Math.floor(H5 / 60) % 6;
       const [rr, g2, bb] = [[C, X2, 0], [X2, C, 0], [0, C, X2], [0, X2, C], [X2, 0, C], [C, 0, X2]][k6];
       d[i] = (rr + m) * 255;
       d[i + 1] = (g2 + m) * 255;
@@ -81722,7 +83305,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var YOLA_HEIGHT = MARC ? 1.8 : 1.62;
   var YOLA_MODEL = MARC ? "marc" : params.get("yola") || store2.get("yolaModel", "2");
   var HERO_KEY = MARC ? "male1" : YOLA_MODEL === "2" ? "yola2" : "yola";
-  var YOLA_FILES = MARC ? { model: "assets/male1.glb", extra: ["assets/male1_ual.glb"], data: "assets/clipdata_yola2.json" } : YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: ["assets/yola2_ual.glb"], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
+  var YOLA_FILES = MARC ? { model: "assets/male1.glb", extra: ["assets/male1_ual.glb", "assets/neighborhood/moves/marc-hood.glb"], data: "assets/clipdata_yola2.json" } : YOLA_MODEL === "2" ? { model: "assets/yola2.glb", extra: ["assets/yola2_ual.glb"], data: "assets/clipdata_yola2.json" } : { model: "assets/yola.glb", extra: ["assets/yola_combo.glb", "assets/yola_extra.glb", "assets/yola_sword.glb"], data: "assets/clipdata.json" };
   function heroFits(j) {
     if (!MARC || !j || typeof j !== "object") return j;
     for (const [k, v] of Object.entries(j)) {
@@ -82324,9 +83907,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     if (paused) simDt = 0;
     if (!paused) {
       execNow = execDir.update(dt, tuning, sim.player.execHitIn);
-      const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : null);
+      const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : hood?.cine?.timeScale ?? null);
       simDt *= k;
-      sim.yolaBoost = execNow ? execNow.boost : slowmo.full ? 1 / Math.max(0.05, k) : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
+      sim.yolaBoost = execNow ? execNow.boost : hood?.cine?.active ? 1 : slowmo.full ? 1 / Math.max(0.05, k) : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
     }
     if (hitPauseT > 0) {
       const h = Math.min(hitPauseT, simDt);
@@ -82336,6 +83919,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     acc += simDt;
     if (acc > STEP * 8) acc = STEP * 8;
     let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(MathUtils.degToRad(tuning.camYaw));
+    if (window.game.inputFilter) inp = window.game.inputFilter(inp, sim);
     let steps = 0;
     while (acc >= STEP) {
       p.px = p.x;
