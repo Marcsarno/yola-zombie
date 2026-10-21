@@ -79883,7 +79883,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           }, open);
           continue;
         }
-        const gate = /palisade_gate/.test(s.file);
+        const gate = /palisade_gate|hood_gate/.test(s.file);
         if (gate) {
           const L3 = s.o.getObjectByName("GateL_v2"), R = s.o.getObjectByName("GateR_v2");
           for (const n of ["Chain_v2", "Padlock_v2"]) {
@@ -83389,7 +83389,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var SUN_FROM = new Vector3(-0.55, 0.62, 0.56).normalize();
   var SKY = 11123140;
-  var LIGHT_VERSION = "2026-10-21k";
+  var LIGHT_VERSION = "2026-10-21m";
   async function startHood({ scene: scene2, loader: loader3, arena: arena2, renderer: renderer2, quality: quality2, params: params2, audio: audio2, hud: hud2, fx: fx2, onProgress }) {
     const grammy = params2.get("hood") === "grammy";
     const free = params2.get("hood") === "free" || grammy;
