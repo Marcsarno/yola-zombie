@@ -84001,7 +84001,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var sim;
   var hood = null;
   var zviews = /* @__PURE__ */ new Map();
-  var zpool = [[], [], [], [], [], [], [], []];
+  var zpool = [[], [], [], [], [], [], [], [], [], [], []];
   var storyStart = params.has("intro") || params.has("reveal") || params.has("room1");
   var mode = storyStart ? "room1" : params.get("mode") || "encounter";
   var benchN = +(params.get("n") || 10);
@@ -84068,7 +84068,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     // the regular zombies, mixed in with the others"): unpacked and built 1.0 tall with his head bone set upright, then
     // tools/anim/build_zombie.py (--no-normals --opaque ZombieMale_Shirt_MAT_V1) and test_zombie_clips.py (the nurse set).
     // 21k triangles, 5.5 MB. Not modular. The street zombies take turns: Romero, Zombiegirl, him.
-    { file: "assets/zombie-male-aab.glb", extra: ["assets/zombie_moves/male-aab.glb"], height: 1.8, walk: { speed: 0.168 }, hood: true }
+    { file: "assets/zombie-male-aab.glb", extra: ["assets/zombie_moves/male-aab.glb"], height: 1.8, walk: { speed: 0.168 }, hood: true },
+    // ordinary people turned (2026-10-21, the user: "regular people zombies ... mixed in with the others"): the survivors
+    // Remy, Bryce and David retextured by tools/anim/zombify_skin.py (David in a light shirt and jeans) with the zombie set
+    // from tools/anim/build_zombie.py (Remy --upright). Not modular: cut from their skin weights. 8: Remy, 9: Bryce, 10: David.
+    { file: "assets/survivors/zombified/remy-zombie.glb", height: 1.8, walk: { speed: 0.168 }, hood: true },
+    { file: "assets/survivors/zombified/bryce-zombie.glb", height: 1.78, walk: { speed: 0.172 }, hood: true },
+    { file: "assets/survivors/zombified/david-zombie.glb", height: 1.8, walk: { speed: 0.168 }, hood: true }
   ];
   var SCRUBS = {
     orange: { H: 22, s: null, l: [0.92, 0.04, 0.62] },
@@ -84128,7 +84134,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
     });
   }
-  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : LAYOUT.hood ? 5 + z.id % 3 : z.kind === "runner" ? 4 : z.prop === "surgeon" || z.look === "nurse" ? 0 : z.prop === "bed" || z.look === "patient" ? 1 : z.id % 2;
+  var viewType = (z) => z.kind === "sprinter" ? 2 : z.kind === "guard" ? 3 : LAYOUT.hood ? 5 + z.id % 6 : z.kind === "runner" ? 4 : z.prop === "surgeon" || z.look === "nurse" ? 0 : z.prop === "bed" || z.look === "patient" ? 1 : z.id % 2;
   var MARC = !!LAYOUT.hood && params.get("hero") !== "yola";
   var YOLA_HEIGHT = MARC ? 1.8 : 1.62;
   var YOLA_MODEL = MARC ? "marc" : params.get("yola") || store2.get("yolaModel", "2");
@@ -84566,7 +84572,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         zviews.set(z.id, v);
       }
     }
-    for (const [type, n] of LAYOUT.hood ? [[5, 6], [6, 6], [7, 6], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
+    for (const [type, n] of LAYOUT.hood ? [[5, 4], [6, 4], [7, 4], [8, 3], [9, 3], [10, 3], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) {
       const v = newZombieView(type);
       v.hide();
       zpool[type].push(v);
