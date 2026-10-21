@@ -21241,24 +21241,24 @@
       const P2 = new Vector3();
       const B = new Vector3();
       const T2 = new Vector3();
-      const N = new Vector3();
+      const N2 = new Vector3();
       for (let i = 0; i <= tubularSegments; ++i) {
         const u = i / tubularSegments * p * Math.PI * 2;
         calculatePositionOnCurve(u, p, q, radius, P1);
         calculatePositionOnCurve(u + 0.01, p, q, radius, P2);
         T2.subVectors(P2, P1);
-        N.addVectors(P2, P1);
-        B.crossVectors(T2, N);
-        N.crossVectors(B, T2);
+        N2.addVectors(P2, P1);
+        B.crossVectors(T2, N2);
+        N2.crossVectors(B, T2);
         B.normalize();
-        N.normalize();
+        N2.normalize();
         for (let j = 0; j <= radialSegments; ++j) {
           const v = j / radialSegments * Math.PI * 2;
           const cx = -tube * Math.cos(v);
           const cy = tube * Math.sin(v);
-          vertex2.x = P1.x + (cx * N.x + cy * B.x);
-          vertex2.y = P1.y + (cx * N.y + cy * B.y);
-          vertex2.z = P1.z + (cx * N.z + cy * B.z);
+          vertex2.x = P1.x + (cx * N2.x + cy * B.x);
+          vertex2.y = P1.y + (cx * N2.y + cy * B.y);
+          vertex2.z = P1.z + (cx * N2.z + cy * B.z);
           vertices.push(vertex2.x, vertex2.y, vertex2.z);
           normal.subVectors(vertex2, P1).normalize();
           normals.push(normal.x, normal.y, normal.z);
@@ -21353,15 +21353,15 @@
       }
       function generateSegment(i) {
         P2 = path.getPointAt(i / tubularSegments, P2);
-        const N = frames.normals[i];
+        const N2 = frames.normals[i];
         const B = frames.binormals[i];
         for (let j = 0; j <= radialSegments; j++) {
           const v = j / radialSegments * Math.PI * 2;
           const sin = Math.sin(v);
           const cos = -Math.cos(v);
-          normal.x = cos * N.x + sin * B.x;
-          normal.y = cos * N.y + sin * B.y;
-          normal.z = cos * N.z + sin * B.z;
+          normal.x = cos * N2.x + sin * B.x;
+          normal.y = cos * N2.y + sin * B.y;
+          normal.z = cos * N2.z + sin * B.z;
           normal.normalize();
           normals.push(normal.x, normal.y, normal.z);
           vertex2.x = P2.x + radius * normal.x;
@@ -46338,7 +46338,8 @@ void main() {
     // Marc's house: its floor 0.2 m up, and the step outside the front door under the canopy (0.18 m, up from its east edge)
     { id: "home", cx: 32.69, cz: 39.1, hx: 3.6, hz: 6.2, yaw: Math.PI, y: 0.2, ramp: 0.05 },
     { id: "stoop", cx: 37.04, cz: 38.4, hx: 0.76, hz: 1.58, yaw: Math.PI, y: 0.18, ramp: 0.3 },
-    { id: "dock", cx: -26.65, cz: -80.62, hx: 4.6, hz: 1.35, yaw: -3.0216, y: 0.39, ramp: 0.6 }
+    // the pier (Marc, 2026-10-21: doubled, 18 x 6 m: blender/hood/ch2_notes.py dock), up from its shore end (east)
+    { id: "dock", cx: -31, cz: -79.6, hx: 9, hz: 3, yaw: Math.PI, y: 0.39, ramp: 0.6 }
   ];
   function groundY(x, z) {
     for (const f of FLOORS2) {
@@ -53114,9 +53115,9 @@ void main() {
         const a = this.act(n + suf);
         a.setEffectiveWeight(1);
         a.timeScale = 0;
-        const D3 = a.getClip().duration, N = 90, [dx, dz] = LOCO[n].dir, rows = [];
-        for (let i = 0; i < N; i++) {
-          a.time = D3 * i / N;
+        const D3 = a.getClip().duration, N2 = 90, [dx, dz] = LOCO[n].dir, rows = [];
+        for (let i = 0; i < N2; i++) {
+          a.time = D3 * i / N2;
           this.mixer.update(0);
           this.outer.updateMatrixWorld(true);
           this.worldPos("LeftFoot", L3);
@@ -53128,9 +53129,9 @@ void main() {
         const vel = [];
         for (const [p, y] of [["L", "ly"], ["R", "ry"]]) {
           const minY = Math.min(...rows.map((r) => r[y]));
-          for (let i = 0; i < N; i++) {
-            const j = (i + 1) % N;
-            if (rows[i][y] < minY + 0.02 && rows[j][y] < minY + 0.02) vel.push(-(rows[j][p] - rows[i][p]) / (D3 / N));
+          for (let i = 0; i < N2; i++) {
+            const j = (i + 1) % N2;
+            if (rows[i][y] < minY + 0.02 && rows[j][y] < minY + 0.02) vel.push(-(rows[j][p] - rows[i][p]) / (D3 / N2));
           }
         }
         vel.sort((p, q) => p - q);
@@ -53139,7 +53140,7 @@ void main() {
         rows.forEach((r, i) => {
           if (r.L > best) {
             best = r.L;
-            lead = i / N;
+            lead = i / N2;
           }
         });
         out[n] = { speed, dur: D3, stride: speed * D3, lead };
@@ -55951,10 +55952,10 @@ void main() {
         A.Hp = A.H.clone();
         A.W0 = Wr.clone();
       }
-      const N = 3, st = Math.min(dt, 1 / 20) / N, damp2 = Math.exp(-st * LIMP.damp), dampH = Math.exp(-st * LIMP.handDamp), g = 9.8 * st * st;
+      const N2 = 3, st = Math.min(dt, 1 / 20) / N2, damp2 = Math.exp(-st * LIMP.damp), dampH = Math.exp(-st * LIMP.handDamp), g = 9.8 * st * st;
       let sp = 0;
-      for (let i = 1; i <= N; i++) {
-        _lEi.lerpVectors(A.E0, E, i / N);
+      for (let i = 1; i <= N2; i++) {
+        _lEi.lerpVectors(A.E0, E, i / N2);
         _lv.subVectors(A.P, A.Pp).multiplyScalar(damp2);
         A.Pp.copy(A.P);
         A.P.add(_lv);
@@ -55963,7 +55964,7 @@ void main() {
         [A.psi, A.th] = limpSolve(_lv, A);
         A.P.copy(_lEi).add(limpDir(A.psi, A.th, _lv).applyQuaternion(_lq).multiplyScalar(Lc));
         sp = A.P.distanceTo(A.Pp) / st;
-        _lg.lerpVectors(A.W0, Wr, i / N);
+        _lg.lerpVectors(A.W0, Wr, i / N2);
         _lv.subVectors(A.H, A.Hp).multiplyScalar(dampH);
         A.Hp.copy(A.H);
         A.H.add(_lv);
@@ -56689,7 +56690,7 @@ void main() {
     if (!audio2?.ok) return;
     const t = audio2.ctx.currentTime;
     audio2.out = null;
-    const T2 = (...a) => audio2.tone(...a), N = (...a) => audio2.noise(...a);
+    const T2 = (...a) => audio2.tone(...a), N2 = (...a) => audio2.noise(...a);
     switch (name) {
       case "warn":
         T2(t, 0.22, 196, { type: "sawtooth", gain: 0.07 * k, f2: 185, attack: 0.02 });
@@ -56701,14 +56702,14 @@ void main() {
         break;
       case "slowIn":
         T2(t, 0.7, 140, { type: "sine", gain: 0.32 * k, f2: 45, attack: 0.05 });
-        N(t, 0.6, { type: "bandpass", f: 1600, f2: 260, q: 0.9, gain: 0.16 * k, attack: 0.08 });
+        N2(t, 0.6, { type: "bandpass", f: 1600, f2: 260, q: 0.9, gain: 0.16 * k, attack: 0.08 });
         break;
       case "slowOut":
-        N(t, 0.25, { type: "bandpass", f: 300, f2: 2400, q: 1.2, gain: 0.12 * k, attack: 0.03 });
+        N2(t, 0.25, { type: "bandpass", f: 300, f2: 2400, q: 1.2, gain: 0.12 * k, attack: 0.03 });
         break;
       case "perfect":
         [1046, 1568, 2093].forEach((f, i) => T2(t + i * 0.05, 0.5, f, { type: "triangle", gain: 0.06 * k }));
-        N(t, 0.4, { type: "highpass", f: 5e3, gain: 0.05 * k, attack: 0.02 });
+        N2(t, 0.4, { type: "highpass", f: 5e3, gain: 0.05 * k, attack: 0.02 });
         T2(t, 0.9, 92, { type: "sine", gain: 0.45 * k, f2: 34, attack: 4e-3 });
         break;
       case "mark":
@@ -56717,26 +56718,26 @@ void main() {
         T2(t + 0.06, 0.6, 2637, { type: "sine", gain: 0.035 * k });
         break;
       case "hiss":
-        N(t, 0.5 * k, { type: "highpass", f: 3500, f2: 5200, gain: 0.22, attack: 0.01 });
+        N2(t, 0.5 * k, { type: "highpass", f: 3500, f2: 5200, gain: 0.22, attack: 0.01 });
         break;
       case "boom":
-        N(t, 0.05, { type: "highpass", f: 1500, gain: 0.7 * k });
+        N2(t, 0.05, { type: "highpass", f: 1500, gain: 0.7 * k });
         T2(t, 0.7, 64, { type: "sine", gain: 0.8 * k, f2: 26, attack: 2e-3 });
-        N(t + 0.01, 0.9, { type: "lowpass", f: 1200, f2: 120, gain: 0.55 * k, attack: 5e-3 });
-        [0.25, 0.4, 0.58].forEach((d) => N(t + d, 0.07, { type: "bandpass", f: 2200, q: 2, gain: 0.1 * k }));
+        N2(t + 0.01, 0.9, { type: "lowpass", f: 1200, f2: 120, gain: 0.55 * k, attack: 5e-3 });
+        [0.25, 0.4, 0.58].forEach((d) => N2(t + d, 0.07, { type: "bandpass", f: 2200, q: 2, gain: 0.1 * k }));
         break;
       case "zap":
         T2(t, 0.6, 60, { type: "sawtooth", gain: 0.18 * k, f2: 62 });
         T2(t, 0.6, 120, { type: "square", gain: 0.06 * k, f2: 118 });
-        for (let i = 0; i < 7; i++) N(t + i * 0.08 + Math.random() * 0.04, 0.04, { type: "highpass", f: 2500, gain: 0.3 * k });
+        for (let i = 0; i < 7; i++) N2(t + i * 0.08 + Math.random() * 0.04, 0.04, { type: "highpass", f: 2500, gain: 0.3 * k });
         break;
       case "hum":
         T2(t, 1.6, 48, { type: "sawtooth", gain: 0.1 * k, f2: 60, attack: 0.4 });
         T2(t, 1.6, 900, { type: "sine", gain: 0.025 * k, f2: 1900, attack: 0.6 });
         break;
       case "quench":
-        N(t, 2.4, { type: "lowpass", f: 2600, f2: 500, gain: 0.5 * k, attack: 0.03 });
-        N(t, 1.8, { type: "highpass", f: 4e3, f2: 2e3, gain: 0.12 * k, attack: 0.05 });
+        N2(t, 2.4, { type: "lowpass", f: 2600, f2: 500, gain: 0.5 * k, attack: 0.03 });
+        N2(t, 1.8, { type: "highpass", f: 4e3, f2: 2e3, gain: 0.12 * k, attack: 0.05 });
         T2(t, 1.2, 120, { type: "sine", gain: 0.2 * k, f2: 30 });
         break;
       case "heartbeat":
@@ -56745,42 +56746,42 @@ void main() {
         break;
       case "stomp":
         T2(t, 0.22, 58, { type: "sine", gain: 0.55 * k, f2: 34, attack: 3e-3 });
-        N(t, 0.12, { type: "lowpass", f: 380, gain: 0.3 * k });
+        N2(t, 0.12, { type: "lowpass", f: 380, gain: 0.3 * k });
         break;
       case "crumble":
-        N(t, 0.06, { type: "highpass", f: 1200, gain: 0.6 * k });
-        N(t + 0.02, 0.8, { type: "lowpass", f: 700, f2: 150, gain: 0.55 * k, attack: 0.01 });
+        N2(t, 0.06, { type: "highpass", f: 1200, gain: 0.6 * k });
+        N2(t + 0.02, 0.8, { type: "lowpass", f: 700, f2: 150, gain: 0.55 * k, attack: 0.01 });
         T2(t, 0.5, 70, { type: "sine", gain: 0.5 * k, f2: 35 });
-        [0.15, 0.3, 0.45, 0.62].forEach((d) => N(t + d, 0.06, { type: "bandpass", f: 1500 + Math.random() * 1500, q: 2, gain: 0.15 * k }));
+        [0.15, 0.3, 0.45, 0.62].forEach((d) => N2(t + d, 0.06, { type: "bandpass", f: 1500 + Math.random() * 1500, q: 2, gain: 0.15 * k }));
         break;
       case "crit":
         T2(t, 0.35, 70, { type: "sine", gain: 0.6 * k, f2: 32, attack: 2e-3 });
-        N(t, 0.2, { type: "lowpass", f: 1400, f2: 200, gain: 0.5 * k });
+        N2(t, 0.2, { type: "lowpass", f: 1400, f2: 200, gain: 0.5 * k });
         T2(t + 0.01, 0.6, 1760, { type: "triangle", gain: 0.05 * k });
         T2(t + 0.01, 0.5, 2637, { type: "sine", gain: 0.035 * k });
         break;
       case "lodge":
-        N(t, 0.05, { type: "highpass", f: 2e3, gain: 0.6 * k });
-        N(t + 0.02, 0.5, { type: "bandpass", f: 900, f2: 300, q: 1.1, gain: 0.35 * k, attack: 0.01 });
+        N2(t, 0.05, { type: "highpass", f: 2e3, gain: 0.6 * k });
+        N2(t + 0.02, 0.5, { type: "bandpass", f: 900, f2: 300, q: 1.1, gain: 0.35 * k, attack: 0.01 });
         T2(t, 0.4, 90, { type: "triangle", gain: 0.5 * k, f2: 40 });
         break;
       case "heave":
-        N(t, 0.32, { type: "bandpass", f: 520, f2: 760, q: 6, gain: 0.16 * k, attack: 0.06 });
+        N2(t, 0.32, { type: "bandpass", f: 520, f2: 760, q: 6, gain: 0.16 * k, attack: 0.06 });
         T2(t, 0.3, 120, { type: "sawtooth", gain: 0.04 * k, f2: 150, attack: 0.05 });
         break;
       case "free":
-        N(t, 0.18, { type: "bandpass", f: 700, f2: 1800, q: 1.4, gain: 0.3 * k, attack: 0.01 });
-        [0.12, 0.22].forEach((d) => N(t + d, 0.08, { type: "lowpass", f: 600, gain: 0.25 * k }));
+        N2(t, 0.18, { type: "bandpass", f: 700, f2: 1800, q: 1.4, gain: 0.3 * k, attack: 0.01 });
+        [0.12, 0.22].forEach((d) => N2(t + d, 0.08, { type: "lowpass", f: 600, gain: 0.25 * k }));
         break;
       case "rumble":
         T2(t, 1.1, 42, { type: "sawtooth", gain: 0.07 * k, f2: 55, attack: 0.3 });
-        N(t, 1.1, { type: "lowpass", f: 260, gain: 0.22 * k, attack: 0.3 });
-        N(t + 0.3, 0.8, { type: "bandpass", f: 3200, q: 3, gain: 0.03 * k, attack: 0.2 });
+        N2(t, 1.1, { type: "lowpass", f: 260, gain: 0.22 * k, attack: 0.3 });
+        N2(t + 0.3, 0.8, { type: "bandpass", f: 3200, q: 3, gain: 0.03 * k, attack: 0.2 });
         break;
       case "breach":
-        N(t, 0.06, { type: "highpass", f: 1800, gain: 0.45 * k });
-        N(t + 0.02, 0.35, { type: "lowpass", f: 900, f2: 200, gain: 0.45 * k });
-        [0.18, 0.3, 0.41].forEach((d) => N(t + d, 0.05, { type: "bandpass", f: 2600, q: 3, gain: 0.12 * k }));
+        N2(t, 0.06, { type: "highpass", f: 1800, gain: 0.45 * k });
+        N2(t + 0.02, 0.35, { type: "lowpass", f: 900, f2: 200, gain: 0.45 * k });
+        [0.18, 0.3, 0.41].forEach((d) => N2(t + d, 0.05, { type: "bandpass", f: 2600, q: 3, gain: 0.12 * k }));
         break;
     }
   }
@@ -68923,12 +68924,12 @@ void main() {
     }
     // ---- blood: droplets (points), mist puffs (sprites), pools (floor decals) ----
     initBlood() {
-      const N = this.dropN = 900;
-      this.drops = Array.from({ length: N }, () => ({ p: new Vector3(), v: new Vector3(), life: 0, s: 0 }));
+      const N2 = this.dropN = 900;
+      this.drops = Array.from({ length: N2 }, () => ({ p: new Vector3(), v: new Vector3(), life: 0, s: 0 }));
       this.dropNext = 0;
       const geo = this.dropGeo = new BufferGeometry();
-      geo.setAttribute("position", new BufferAttribute(new Float32Array(N * 3), 3));
-      geo.setAttribute("size", new BufferAttribute(new Float32Array(N), 1));
+      geo.setAttribute("position", new BufferAttribute(new Float32Array(N2 * 3), 3));
+      geo.setAttribute("size", new BufferAttribute(new Float32Array(N2), 1));
       const mat2 = new PointsMaterial({ color: 10095628, size: 0.05, map: blobTexture(true), transparent: true, depthWrite: false, alphaTest: 0.05 });
       this.dropPts = new Points(geo, mat2);
       this.dropPts.frustumCulled = false;
@@ -69390,17 +69391,17 @@ void main() {
     return new CanvasTexture(c);
   };
   function rubberFloor() {
-    const N = 512, c = document.createElement("canvas");
-    c.width = c.height = N;
+    const N2 = 512, c = document.createElement("canvas");
+    c.width = c.height = N2;
     const g = c.getContext("2d");
     g.fillStyle = "#20262d";
-    g.fillRect(0, 0, N, N);
+    g.fillRect(0, 0, N2, N2);
     for (let i = 0; i < 2200; i++) {
       const v = 22 + Math.random() * 22 | 0;
       g.fillStyle = `rgba(${v},${v + 4},${v + 10},0.5)`;
-      g.fillRect(Math.random() * N, Math.random() * N, 2, 2);
+      g.fillRect(Math.random() * N2, Math.random() * N2, 2, 2);
     }
-    const step = N / 8;
+    const step = N2 / 8;
     for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
       const cx = (x + 0.5) * step, cy = (y + 0.5) * step, r = step * 0.3;
       const gr = g.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 1, cx, cy, r);
@@ -69416,7 +69417,7 @@ void main() {
       g.strokeStyle = `rgba(120,130,140,${0.04 + Math.random() * 0.06})`;
       g.lineWidth = 1 + Math.random() * 3;
       g.beginPath();
-      const x = Math.random() * N, y = Math.random() * N;
+      const x = Math.random() * N2, y = Math.random() * N2;
       g.moveTo(x, y);
       g.quadraticCurveTo(x + (Math.random() - 0.5) * 120, y + (Math.random() - 0.5) * 60, x + (Math.random() - 0.5) * 200, y + (Math.random() - 0.5) * 80);
       g.stroke();
@@ -71201,19 +71202,19 @@ void main() {
     }
     // a tileable value noise for the puffs' insides
     fogNoise() {
-      const N = 128, c = document.createElement("canvas");
-      c.width = c.height = N;
-      const g = c.getContext("2d"), im = g.createImageData(N, N);
+      const N2 = 128, c = document.createElement("canvas");
+      c.width = c.height = N2;
+      const g = c.getContext("2d"), im = g.createImageData(N2, N2);
       const grid = (cell2) => {
-        const n = N / cell2, v = Array.from({ length: n * n }, () => Math.random());
+        const n = N2 / cell2, v = Array.from({ length: n * n }, () => Math.random());
         return (x, y) => {
           const fx2 = x / cell2, fy = y / cell2, x0 = Math.floor(fx2), y0 = Math.floor(fy), tx = fx2 - x0, ty = fy - y0, s = (t2) => t2 * t2 * (3 - 2 * t2), at = (a, b) => v[(b + n) % n * n + (a + n) % n];
           return at(x0, y0) * (1 - s(tx)) * (1 - s(ty)) + at(x0 + 1, y0) * s(tx) * (1 - s(ty)) + at(x0, y0 + 1) * (1 - s(tx)) * s(ty) + at(x0 + 1, y0 + 1) * s(tx) * s(ty);
         };
       };
       const A = grid(32), B = grid(16), C = grid(8);
-      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-        const v = A(x, y) * 0.55 + B(x, y) * 0.3 + C(x, y) * 0.15, i = (y * N + x) * 4;
+      for (let y = 0; y < N2; y++) for (let x = 0; x < N2; x++) {
+        const v = A(x, y) * 0.55 + B(x, y) * 0.3 + C(x, y) * 0.15, i = (y * N2 + x) * 4;
         im.data[i] = im.data[i + 1] = im.data[i + 2] = Math.round(v * 255);
         im.data[i + 3] = 255;
       }
@@ -73217,9 +73218,9 @@ void main() {
       if (!B?.LeftFoot) return [0, 0.5];
       const mixer = new AnimationMixer(Y2.model), act = mixer.clipAction(clip);
       act.play();
-      const N = 60, L3 = [], R = [], v = new Vector3();
-      for (let i = 0; i < N; i++) {
-        act.time = i / N * clip.duration;
+      const N2 = 60, L3 = [], R = [], v = new Vector3();
+      for (let i = 0; i < N2; i++) {
+        act.time = i / N2 * clip.duration;
         mixer.update(0);
         Y2.model.updateMatrixWorld(true);
         L3.push(B.LeftFoot.getWorldPosition(v).y);
@@ -73229,11 +73230,11 @@ void main() {
       mixer.uncacheRoot(Y2.model);
       const low = (a) => {
         const mn = Math.min(...a);
-        for (let i = 0; i < N; i++) {
-          const prev = a[(i + N - 1) % N];
-          if (a[i] <= mn + 0.012 && prev > mn + 0.012) return i / N;
+        for (let i = 0; i < N2; i++) {
+          const prev = a[(i + N2 - 1) % N2];
+          if (a[i] <= mn + 0.012 && prev > mn + 0.012) return i / N2;
         }
-        return a.indexOf(mn) / N;
+        return a.indexOf(mn) / N2;
       };
       const heels = [low(L3), low(R)].sort((a, b) => a - b);
       (clip.userData || (clip.userData = {})).heels = heels;
@@ -79556,15 +79557,18 @@ float ivyN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f
   // src/hood/terrain.js
   var black = new DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
   black.needsUpdate = true;
-  function terrainMaterial({ splat = null, paths = null, rect = [-130, -130, 260, 260] } = {}) {
-    const orm = tex2("lawn_bl_orm.webp");
-    const mat2 = new MeshStandardMaterial({ map: tex2("lawn_bl_albedo.webp", { srgb: true }), normalMap: tex2("lawn_bl_normal.webp"), roughnessMap: orm, roughness: 1, metalness: 0 });
+  function terrainMaterial({ splat = null, paths = null, lawn = null, rect = [-130, -130, 260, 260] } = {}) {
+    const mat2 = new MeshStandardMaterial({ normalMap: tex2("lawn_bl_normal.webp"), roughness: 0.95, metalness: 0 });
     const u = {
+      lawnHouse: { value: tex2("lawn_house_albedo.webp", { srgb: true }) },
+      lawnWorn: { value: tex2("lawn_worn_albedo.webp", { srgb: true }) },
+      lawnEdge: { value: tex2("lawn_edge_albedo.webp", { srgb: true }) },
       dirtMap: { value: tex2("dirt_albedo.webp", { srgb: true }) },
       dirtNrm: { value: tex2("dirt_normal.webp") },
       litterMap: { value: tex2("forest_floor_albedo.webp", { srgb: true }) },
       sandMap: { value: tex2("sandy_soil_albedo.webp", { srgb: true }) },
       macroTex: { value: tex2("macro_noise.webp") },
+      lawnTex: { value: lawn || black },
       splatTex: { value: splat || black },
       pathsTex: { value: paths || black },
       splatRect: { value: new Vector4(...rect) }
@@ -79575,36 +79579,42 @@ float ivyN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f
       sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vTW;").replace("#include <fog_vertex>", "#include <fog_vertex>\nvTW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
       sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
 varying vec3 vTW;
-uniform sampler2D dirtMap, dirtNrm, litterMap, sandMap, macroTex, splatTex, pathsTex;
+uniform sampler2D lawnHouse, lawnWorn, lawnEdge, dirtMap, dirtNrm, litterMap, sandMap, macroTex, lawnTex, splatTex, pathsTex;
 uniform vec4 splatRect;
 float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   vec2 wuv = vTW.xz;
   vec2 ruv = mat2(0.8, -0.6, 0.6, 0.8) * wuv, ruv2 = mat2(0.28, 0.96, -0.96, 0.28) * wuv;
   float n1 = texture2D(macroTex, wuv * 0.021).r, n2 = texture2D(macroTex, ruv * 0.083 + 0.3).g, n3 = texture2D(macroTex, ruv2 * 0.31 + 0.7).b;
-  float n4 = texture2D(macroTex, ruv2 * 0.0071 + 0.15).g, n5 = texture2D(macroTex, ruv * 0.9 + 0.45).r;
-  vec4 sp = texture2D(splatTex, (wuv - splatRect.xy) / splatRect.zw);
+  float n4 = texture2D(macroTex, ruv2 * 0.0071 + 0.15).g, n5 = texture2D(macroTex, ruv * 0.9 + 0.45).r, n8 = texture2D(macroTex, ruv * 0.19 + 0.27).g;
+  vec4 sp = texture2D(splatTex, (wuv - splatRect.xy) / splatRect.zw), lw = texture2D(lawnTex, (wuv - splatRect.xy) / splatRect.zw);
+  // (stochastic tiling: two offset copies of a tile, the noise choosing between them, so the 9 m tile never shows its repeat)
   float ki = texture2D(macroTex, ruv * 0.046 + 0.61).r * 8.0, kf = fract(ki), ka = floor(ki);
   gOffA = sin(vec2(3.0, 7.0) * ka); gOffB = sin(vec2(3.0, 7.0) * (ka + 1.0));
-  vec2 gUv = wuv / 5.0, gdx = dFdx(gUv), gdy = dFdy(gUv);
-  vec3 ga = textureGrad(map, gUv + gOffA, gdx, gdy).rgb, gb = textureGrad(map, gUv + gOffB, gdx, gdy).rgb;
-  gTile = smoothstep(0.2, 0.8, kf - 0.1 * dot(ga - gb, vec3(1.0)));
-  vec3 grass = mix(ga, gb, gTile);
-  // a lived-in neighbourhood lawn (the user, 2026-10-21: "make it look like regular neighborhood grass ... a little bit of
-  // dirt here and there", not "old water with algae"): the tile's own blades in a clean mid green, broad soft patches a shade
-  // yellower or deeper, a few small sun-bleached spots; worn dirt only where feet and kerbs wear it (the splat's r, kept to a
-  // thin edge) and in rare small spots; leaf litter only under the trees (the splat's g), light. (Colours linear.)
-  float gl = dot(grass, vec3(0.3, 0.59, 0.11)), det = clamp(gl / 0.18, 0.45, 1.8);   // (the tile's blade light and dark)
-  // (the scene's light about doubles these on screen: a mid lawn of about sRGB 110, 135, 70)
-  vec3 lawn = mix(vec3(0.078, 0.121, 0.031), vec3(0.100, 0.130, 0.036), smoothstep(0.3, 0.85, n1 * 0.75 + n4 * 0.45 - 0.1));
-  lawn = mix(lawn, vec3(0.050, 0.085, 0.022), smoothstep(0.58, 0.85, n2 * 0.6 + n3 * 0.45) * 0.45);
-  lawn *= pow(det, 1.25);
-  float straw = smoothstep(0.72, 0.82, n2 * 0.55 + n5 * 0.35 + n1 * 0.2) * (0.4 + sp.b * 0.5);
-  lawn = mix(lawn, vec3(0.15, 0.13, 0.057) * det, straw * 0.5);
+  vec2 pUv = wuv / 9.0, pdx = dFdx(pUv), pdy = dFdy(pUv);   // (9 m a tile: its yellow-green patches read as broad patches, not a fine mush)
+  vec3 ha = textureGrad(lawnHouse, pUv + gOffA, pdx, pdy).rgb, hb = textureGrad(lawnHouse, pUv + gOffB, pdx, pdy).rgb;
+  gTile = smoothstep(0.2, 0.8, kf - 0.1 * dot(ha - hb, vec3(1.0)));
+  #define TILE(t) mix(textureGrad(t, pUv + gOffA, pdx, pdy).rgb, textureGrad(t, pUv + gOffB, pdx, pdy).rgb, gTile)
+  // a lawn nobody has kept perfect (Marc's goal picture, 2026-10-21: "a little more variety", "not perfectly groomed"): the
+  // house lawn; the neglected one along the walls and fences and over the rough common ground (the lawn mask's r, and now
+  // and then a broad patch of it anywhere), darker where it grows thickest by the walls; the worn one outside the patios'
+  // doors, along the way people walk off them and round the playground (g); darker, thicker clumps a few metres across over
+  // it all. (The scene's warm sun turns the pack's yellow-green yellow: back toward the green it is in the pictures.)
+  vec3 lawn = mix(ha, hb, gTile);
+  float rough = clamp(lw.r * 1.15 + smoothstep(0.62, 0.85, n2 * 0.6 + n8 * 0.4) * 0.35, 0.0, 1.0);
+  lawn = mix(lawn, TILE(lawnEdge) * mix(1.0, 0.72, lw.r * lw.r), rough);
+  lawn = mix(lawn, TILE(lawnWorn), clamp(lw.g * 1.1, 0.0, 1.0));
+  lawn *= vec3(0.7, 0.86, 1.0);
+  lawn *= mix(vec3(1.0), vec3(0.62, 0.76, 0.55), smoothstep(0.4, 0.7, n3 * 0.65 + n5 * 0.35) * 0.8);
+  // worn dirt where the kerbs and walls wear it (the splat's r) and in rare small spots, bare soil round the AC units and the
+  // patios' corners (the lawn mask's b) and through the grass where it is worn most; leaf litter under the trees (the
+  // splat's g) and gathered along the walls
   float dirt = clamp(sp.r * 0.75 + smoothstep(0.8, 0.9, n1 * 0.6 + n2 * 0.5) * 0.8, 0.0, 1.0);
   dirt = smoothstep(0.45, 0.85, dirt + (n3 - 0.5) * 0.3 + (n5 - 0.5) * 0.2);
+  dirt = max(dirt, smoothstep(0.25, 0.75, lw.b + (n5 - 0.5) * 0.3));
+  dirt = max(dirt, smoothstep(0.55, 0.95, lw.g + (n5 - 0.5) * 0.35) * 0.6);
   vec3 d = texture2D(dirtMap, ruv / 5.3 + 0.37).rgb * vec3(1.18, 1.08, 0.92);   // (plain earth, not red clay)
   vec3 sd = mix(texture2D(sandMap, ruv2 / 3.7).rgb * vec3(1.05, 0.92, 0.74), d, 0.35);   // (the shore's sand, below)
-  float litter = clamp(sp.g * (0.5 + n3 * 0.5), 0.0, 1.0) * 0.5;
+  float litter = max(clamp(sp.g * (0.5 + n3 * 0.5), 0.0, 1.0) * 0.5, lw.r * smoothstep(0.5, 0.78, n5 * 0.6 + n3 * 0.4) * 0.55);
   vec3 lit = texture2D(litterMap, ruv2 / 4.6 + 0.21).rgb * vec3(1.45, 1.25, 1.0);
   vec3 col = mix(lawn, d, dirt);
   col = mix(col, lit, litter * (1.0 - dirt));
@@ -79621,7 +79631,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     vec3 mapN = normalize(mix(gn, dn, gBlend));
     mapN.xy *= normalScale;
     normal = normalize( tbn * mapN );
-  }`).replace("#include <roughnessmap_fragment>", "float roughnessFactor = 0.95;");
+  }`);
       cutawayPatch(sh);
     };
     mat2.customProgramCacheKey = () => "hoodterrain";
@@ -79632,7 +79642,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var _Y = new Vector3(0, 1, 0);
   var HOOD_ROOT = "assets/neighborhood/";
   var MAPS = {
-    hood: { root: HOOD_ROOT, layout: "hood_layout.json", ground: "hood_ground.glb", splat: "hood_splat.png", paths: "hood_paths.png", light: "hood_light.jpg", rect: [-70, -130, 180, 226] },
+    hood: { root: HOOD_ROOT, layout: "hood_layout.json", ground: "hood_ground.glb", splat: "hood_splat.png", paths: "hood_paths.png", lawn: "hood_lawn.png", light: "hood_light.jpg", rect: [-70, -130, 180, 226] },
     grammy: { root: "assets/grammy/", layout: "grammy_layout.json", ground: "grammy_ground.glb", splat: "grammy_splat.png", paths: "grammy_paths.png", light: "grammy_light.jpg", rect: [-135, -250, 310, 330] }
   };
   var MAP = MAPS.hood;
@@ -79657,6 +79667,43 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     cooler: "models/by_cooler.glb"
   };
   var PICKUP_SCALE = { ammo: 0.55, health: 0.45 };
+  var WATER_Y = 0.04;
+  function hullMask(o) {
+    o.updateMatrixWorld(true);
+    const inv = new Matrix4().copy(o.matrixWorld).invert(), v = new Vector3(), wl = (WATER_Y - o.position.y) / (o.scale.y || 1), pts = [];
+    o.traverse((m) => {
+      if (!m.isMesh) return;
+      const pos = m.geometry.attributes.position, M4 = new Matrix4().multiplyMatrices(inv, m.matrixWorld);
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(M4);
+        if (v.y > wl - 0.05 && v.y < wl + 0.25) pts.push([v.x, v.z]);
+      }
+    });
+    if (pts.length < 3) return;
+    pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cross = (o2, a, b) => (a[0] - o2[0]) * (b[1] - o2[1]) - (a[1] - o2[1]) * (b[0] - o2[0]);
+    const lo = [], hi = [];
+    for (const q of pts) {
+      while (lo.length > 1 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop();
+      lo.push(q);
+    }
+    for (const q of pts.slice().reverse()) {
+      while (hi.length > 1 && cross(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop();
+      hi.push(q);
+    }
+    const ring = lo.slice(0, -1).concat(hi.slice(0, -1)), cx = ring.reduce((a, q) => a + q[0], 0) / ring.length, cz = ring.reduce((a, q) => a + q[1], 0) / ring.length;
+    const shape = new Shape(ring.map(([x, z]) => {
+      const d = Math.hypot(x - cx, z - cz) || 1, k = Math.max(0, d - 0.03) / d;
+      return new Vector2(cx + (x - cx) * k, -(cz + (z - cz) * k));
+    }));
+    const mask = new Mesh(new ShapeGeometry(shape), new MeshBasicMaterial({ colorWrite: false, side: DoubleSide }));
+    mask.rotation.x = -Math.PI / 2;
+    mask.position.y = wl + 0.06;
+    mask.renderOrder = 10;
+    mask.name = "hullMask";
+    mask.castShadow = mask.receiveShadow = false;
+    o.add(mask);
+  }
   var HoodView = class {
     constructor(scene2) {
       this.scene = scene2;
@@ -79681,7 +79728,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         t.colorSpace = NoColorSpace;
         return t;
       }).catch(() => null);
-      [this.splat, this.paths] = await Promise.all([mask(MAP.splat), mask(MAP.paths)]);
+      [this.splat, this.paths, this.lawn] = await Promise.all([mask(MAP.splat), mask(MAP.paths), MAP.lawn ? mask(MAP.lawn) : null]);
       this.rect = MAP.rect;
       this.layout = await fetch(ROOT + MAP.layout).then((r) => r.json());
       const L3 = this.layout;
@@ -79785,13 +79832,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       for (const list of Object.values(this.seals)) for (const s of list) s.o.traverse((q) => {
         q.matrixAutoUpdate = true;
       });
+      for (const s of this.seals.boat || []) hullMask(s.o);
       this.ring = new Mesh(new RingGeometry(0.42, 0.52, 40), new MeshBasicMaterial({ color: 4063090, transparent: true, opacity: 0.7, depthWrite: false, side: DoubleSide, toneMapped: false }));
       this.ring.rotation.x = -Math.PI / 2;
       return this;
     }
     addGround(root) {
       swapMaterials(root);
-      const terr = terrainMaterial({ splat: this.splat, paths: this.paths, rect: this.rect });
+      const terr = this.terrain = terrainMaterial({ splat: this.splat, paths: this.paths, lawn: this.lawn, rect: this.rect });
       if (this.paths) shoreWater(this.paths, this.rect);
       root.traverse((o) => {
         if (!o.isMesh) return;
@@ -80538,22 +80586,40 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       [-5, -124],
       [-19, -122],
       [-40, -110.5],
-      [-58, -103.5],
-      [-58, -100],
-      [-27.6, -100]
-    ]
+      [-33.5, -104.6],
+      [-30.8, -102],
+      [-28.4, -97.5],
+      [-27.2, -94.3],
+      // (the lake's rounded north shore: ch2_notes.py lakenorth)
+      [-27, -82.9],
+      [-40.5, -82.9],
+      [-40.5, -76.3],
+      [-26.8, -76.3]
+    ],
+    // (the pier out over the water, 18 x 6 m: ch2_notes.py dock)
+    // Marc's notes on the map (2026-10-21, design/CH2_MARC_NOTES_2026-10-21.md): the inner fences and road blocks went, so what
+    // they shut off opens with the stop it joins (checked after the areas above: what they hold stays theirs)
+    // south: everything this side of the chained gate the home and curve do not hold: the loop's west leg and B06, the cross
+    // street and the south rows up to the south edge, the cleared lawn behind the east rows up to the east wall
+    south: [[-23.6, -16], [-2.65, -19.09], [1.6, -14.1], [34.7, -19.6], [59.5, -4.4], [106.5, -9], [106.5, 95], [-23.6, 95]],
+    // north: past the gate, what the club and the dock do not hold: north of the lot (its fence gone) to the dock field's
+    // concrete wall and the basketball court, the woods east of the lot to the east wall
+    // courts: the volleyball and tennis courts' ground (its club and lot lines gone, the tennis court fenced on its own)
+    courts: [[33.5, -19.4], [33.5, -49.7], [106, -49.7], [106, -9], [59.5, -4.4], [34.8, -19.4]],
+    north: [[20, -110], [107, -110], [107, -49.6], [105.5, -49.5], [105.1, -52], [93.1, -91], [27, -91.3], [28.8, -91.6]]
   };
-  var H4 = ["home", "b05l"];
+  var H4 = ["home", "b05l", "curve", "south"];
+  var N = ["club", "west", "dock", "north", "courts"];
   var STOPS = {
     home: { start: [37.5, 38.5], zones: H4, open: [], reach: [["home_door_use", 1.4]] },
     house: { start: [35.3, 38.5], zones: [...H4, "house"], open: ["home_door"], reach: [["fridge_use", 1.4], ["james", 1]] },
     help: { start: [38.4, 34.5], zones: [...H4, "house"], open: ["home_door"], reach: [["seal_home_use", 2]] },
-    gate: { start: [27.5, 9.5], zones: [...H4, "house", "curve"], open: ["home_door", "home"], reach: [["cutters", 1.3], ["gate_use", 2.2]] },
-    club: { start: [18.6, -19.5], zones: [...H4, "house", "curve", "club"], open: ["home_door", "home", "gate"], reach: [["club_warn", 7], ["club_door", 2.6], ["dockroad_use", 2.2]] },
-    clubhouse: { start: [9.6, -50], zones: [...H4, "house", "curve", "club", "clubhouse"], open: ["home_door", "home", "gate", "clubdoor"], reach: [["keys", 1.1]] },
-    dock: { start: [36.5, -80.5], zones: [...H4, "house", "curve", "club", "clubhouse", "dock"], open: ["home_door", "home", "gate", "clubdoor", "dockroad"], reach: [["pour_fuel", 2.4], ["shed_door", 1.6]] },
-    shed: { start: [-8.6, -108.2], zones: [...H4, "house", "curve", "club", "clubhouse", "dock"], open: ["home_door", "home", "gate", "clubdoor", "dockroad", "shed"], reach: [["shed_gas", 1.3], ["shed_shotgun", 1.6]] },
-    horde: { start: [-10.5, -100], zones: [...H4, "house", "curve", "club", "clubhouse", "dock", "west"], open: ["home_door", "home", "gate", "clubdoor", "dockroad", "shed", "dock"], reach: [["pour_fuel", 2.4]] }
+    gate: { start: [27.5, 9.5], zones: [...H4, "house"], open: ["home_door", "home"], reach: [["cutters", 1.3], ["gate_use", 2.2]] },
+    club: { start: [18.6, -19.5], zones: [...H4, "house", ...N], open: ["home_door", "home", "gate"], reach: [["club_warn", 7], ["club_door", 2.6], ["dock_road_lot", 2.2]] },
+    clubhouse: { start: [9.6, -50], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor"], reach: [["keys", 1.1]] },
+    dock: { start: [31, -81], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor"], reach: [["pour_fuel", 2.4], ["shed_door", 1.6]] },
+    shed: { start: [10.3, -99.5], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor", "shed"], reach: [["shed_gas", 1.3], ["shed_shotgun", 1.6]] },
+    horde: { start: [-10.5, -100], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor", "shed", "dock"], reach: [["pour_fuel", 2.4]] }
   };
 
   // src/hood/level.js
@@ -80600,8 +80666,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     // -> toward the garage with the light on (short of it)
     clubhouse: [[18.5, -20], [15.5, -26], [14.2, -30.5]],
     // the gate -> the clubhouse's front (short of the warning)
-    dock: [[30.5, -61], [30.5, -69], [30.2, -77.5]]
-    // Pete's drive -> the dock road's gate (short of its chain)
+    dock: [[30.5, -61], [30.5, -69], [30.2, -77.5], [22, -81], [6, -81]]
+    // Pete's drive -> down the dock road (its gate gone: Marc's notes 9)
   };
   var SAVE_KEY = "zc.hoodsave2";
   var loadSave = () => {
@@ -81374,14 +81440,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     *stopDock() {
       const p = this.sim.player, sp = this.ensureSophie(null, "follow");
       this.prefetch("M15", "M16", "M17", "S16", "M18", "S17", "M19", "S18", "M20", "S19");
-      if (!this.open.has("dockroad")) this.sophieLead(ROUTES.dock);
+      this.sophieLead(ROUTES.dock);
       this.setGoal("dock");
       const b = this.at("boat");
-      if (!this.open.has("dockroad")) {
-        yield* this.use("dockroad", "dockroad_use", "Cut the chain", 2.2);
-        this.api.audio?.play("pumpRack");
-        this.openSeal("dockroad");
-      }
       yield* this.until(() => this.nearXZ(b, 9));
       yield* this.talk("M15");
       const pg = this.at("playground");
@@ -83226,7 +83287,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     if (ticks >= maxTicks) log.push("TIMED OUT in stop " + lastStop + " / " + lastGoal);
     return log;
   }
-  var BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [-8.4, -107.6], horde: [-12, -96], leave: [-24, -80] };
+  var BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [10.3, -99.6], horde: [-12, -96], leave: [-24, -80] };
 
   // src/hood/hint.js
   var _v12 = new Vector3();
@@ -83328,7 +83389,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var SUN_FROM = new Vector3(-0.55, 0.62, 0.56).normalize();
   var SKY = 11123140;
-  var LIGHT_VERSION = "2026-10-21b";
+  var LIGHT_VERSION = "2026-10-21j";
   async function startHood({ scene: scene2, loader: loader3, arena: arena2, renderer: renderer2, quality: quality2, params: params2, audio: audio2, hud: hud2, fx: fx2, onProgress }) {
     const grammy = params2.get("hood") === "grammy";
     const free = params2.get("hood") === "free" || grammy;
@@ -83407,7 +83468,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         FLOORS2.push({ id: "deck", cx, cz, hx: L3 / 2, hz: 1.3, yaw: -Math.atan2(b[2] - m[2], b[0] - m[0]), y: 0.2, ramp: 0.8 });
       }
     }
-    const grass = params2.get("grass") === "0" || quality2 === "low" ? null : await new Grass(scene2).build(view.splat, view.paths, view.rect).catch((e) => {
+    const grass = params2.get("grass") !== "1" || quality2 === "low" ? null : await new Grass(scene2).build(view.splat, view.paths, view.rect).catch((e) => {
       console.warn("grass", e);
       return null;
     });
