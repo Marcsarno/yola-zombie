@@ -152,6 +152,13 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
    the two small pavilions up the lake road are gone. The leak test's outline of the lakeside follows B08's fence to its
    new line (`zones.js`); every stop sealed. Ground masks remade, the light rebaked. `ba_00_lake_strip.png`. After it the
    bot plays the story through and the stick-and-button replay from the house to the boat reaches COMPLETE again (6.7 min).
+39. [x] **The lawn looked like a swamp** (Marc, 2026-10-21: "old water with algae", the mud and moss bleeding to the streets,
+   the tufts a different colour): the ground was the lawn tile dragged to orange-brown, dead patches, sandy soil and dark
+   forest-floor litter under a strong blotchy mottle. `terrain.js`: a plain neighbourhood lawn (the tile's blades in a clean
+   mid green, soft yellower and deeper patches, a few sun-bleached spots), worn dirt only as a thin edge by kerbs and walls
+   plus rare small spots, litter only under trees. `grass.js`: the tufts in the lawn's greens, kept clear of the paving's
+   edge, fewer along the kerbs. Chapter 4 shares the ground (its villa lawns green too). `ba_grass_ch2.png`,
+   `ba_grass_ch4.png`, `ba_grass_help.png` (the moment Sophie first shouts).
 37. [x] **Chapter 4: black holes through the villas** when a villa stood between the camera and Marc (`ba_ch4_seethrough.png`,
    the same walk at the same moments): the see-through hole faded the roof and walls, but the villas' dark insides (the
    black boxes behind their windows) never faded, so a black patch hid Marc. Now they fade too, right down to the villa's

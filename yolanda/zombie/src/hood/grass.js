@@ -16,12 +16,13 @@ function atlas() {
   const rnd = (() => { let s = 7; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
   const blade = (x0, w, h, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(x0, 128); const bend = (rnd() - 0.5) * 30; g.quadraticCurveTo(x0 + bend * 0.4, 128 - h * 0.6, x0 + bend, 128 - h); g.stroke(); };
   // tile 0: green grass, tile 1: dry grass, tile 2: a broad-leaved weed, tile 3: grass with small flowers
-  for (const [t, cols] of [[0, ['#7a8243', '#868d4a', '#6c763b', '#939851', '#7b803f']], [1, ['#a39561', '#ad9f69', '#938556', '#86824c']], [3, ['#76803f', '#838b48', '#6b7539']]]) {
+  // (the lawn's own greens, terrain.js: the tufts read as the same grass standing up, not a second plant)
+  for (const [t, cols] of [[0, ['#5d8030', '#6a8c36', '#52752b', '#77953f', '#628534']], [1, ['#a99d62', '#b4a86c', '#9c9058', '#8f9150']], [3, ['#5a7c2f', '#678a35', '#50722a']]]) {
     for (let i = 0; i < 46; i++) blade(t * 128 + 14 + rnd() * 100, 2 + rnd() * 3, 40 + rnd() * 80, cols[i % cols.length]);
   }
   for (let i = 0; i < 9; i++) { // the weed: broad leaves from one root
     const a = -1.2 + i * 0.3 + (rnd() - 0.5) * 0.2, L = 50 + rnd() * 40;
-    g.fillStyle = ['#6c7a3a', '#7a8743', '#606d33'][i % 3]; g.save(); g.translate(256 + 64, 124); g.rotate(a); g.beginPath(); g.ellipse(0, -L / 2, 9 + rnd() * 5, L / 2, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    g.fillStyle = ['#567a30', '#638838', '#4c6d2b'][i % 3]; g.save(); g.translate(256 + 64, 124); g.rotate(a); g.beginPath(); g.ellipse(0, -L / 2, 9 + rnd() * 5, L / 2, 0, 0, Math.PI * 2); g.fill(); g.restore();
   }
   for (let i = 0; i < 14; i++) { const x = 384 + 16 + rnd() * 96, y = 30 + rnd() * 60; g.fillStyle = ['#f2efe2', '#f4d34a', '#efe7f5'][i % 3]; for (let k = 0; k < 5; k++) { g.beginPath(); g.arc(x + Math.cos(k * 1.26) * 3.2, y + Math.sin(k * 1.26) * 3.2, 2.6, 0, 7); g.fill(); } g.fillStyle = '#d8a520'; g.beginPath(); g.arc(x, y, 1.8, 0, 7); g.fill(); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 2; return t;
@@ -70,13 +71,14 @@ export class Grass {
       const pts = [];
       for (let x = cx; x < cx + CELL; x += STEP) for (let z = cz; z < cz + CELL; z += STEP) {
         const jx = x + (hash(x, z) - 0.5) * STEP, jz = z + (hash(z, x) - 0.5) * STEP;
-        const [pave, wall, shore] = P(jx, jz); if (pave > 0.5 || wall > 0.5 || shore > 0.45) continue;
-        const [dirt, litter, dry] = S(jx, jz); if (dirt > 0.55) continue;
+        // (clear of the paving's edge, so none leans over a kerb onto the street)
+        const [pave, wall, shore] = P(jx, jz); if (pave > 0.15 || wall > 0.5 || shore > 0.45) continue;
+        const [dirt, litter, dry] = S(jx, jz); if (dirt > 0.45) continue;
         const clump = vnoise(jx * 0.35, jz * 0.35) * 0.7 + vnoise(jx * 1.3 + 7, jz * 1.3) * 0.3;
         const edge = Math.min(1, dry * 1.3 + litter * 0.8 + dirt * 0.9);
-        const p = Math.max(0, clump - 0.5) * 2.4 + edge * 0.45 * (0.5 + clump) + 0.02;
+        const p = Math.max(0, clump - 0.5) * 2.4 + edge * 0.2 * (0.5 + clump) + 0.02;
         if (hash(jx * 3.1, jz * 1.7) > p) continue;
-        const u = hash(jz, jx * 2.3), tile = u < 0.05 ? 3 : u < 0.11 ? 2 : (dry + 0.25 * (hash(jx, jz * 5) - 0.5)) > 0.45 ? 1 : 0;
+        const u = hash(jz, jx * 2.3), tile = u < 0.05 ? 3 : u < 0.11 ? 2 : (dry + 0.25 * (hash(jx, jz * 5) - 0.5)) > 0.7 ? 1 : 0;
         pts.push([jx, jz, tile, 0.2 + hash(jx * 7, jz) * 0.25 + edge * 0.08]);
       }
       if (!pts.length) continue;
