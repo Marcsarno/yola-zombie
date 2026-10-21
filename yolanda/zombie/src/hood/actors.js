@@ -1,6 +1,6 @@
 // Chapter 2: the people (survivors at the house, the looters at the clubhouse) and the girls.
-// The survivors (2026-10-20, the user's Mixamo picks): Eve with the rifle, Remy and David with pistols
-// (assets/survivors/*.glb: tools/anim/mixamo_zombie_prep.py, ~10k triangles, then tools/anim/build_survivor.py: Mixamo
+// The survivors (2026-10-20, the user's Mixamo picks): Eve with the rifle; Remy, James, Sophie and Bryce with pistols
+// (assets/survivors/*.glb: tools/anim/mixamo_zombie_prep.py, ~20k triangles, colour and normals at 2048, WebP, then tools/anim/build_survivor.py: Mixamo
 // aim idles, a flinch, two falls). The looters' models are not made yet: each is a plain debug marker, a coloured capsule
 // with a facing nub (the memory rule: no stand-in characters dressed up as finished).
 // Their behaviour is real: the survivors shoot zombies through the game's own hit code; the looters are entries in the
@@ -11,7 +11,7 @@ import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { PISTOL_CORE_SCALE } from '../render/weaponModels.js';
 
 // who stands where: the rifle survivor first, then the pistol survivors in turn [file, height m]
-const SURVIVORS = { rifle: [['eve', 1.7]], pistol: [['remy', 1.8], ['david', 1.78]] };
+const SURVIVORS = { rifle: [['eve', 1.7]], pistol: [['remy', 1.8], ['james', 1.8], ['sophie', 1.66], ['bryce', 1.78]] };
 const GUNS = { rifle: ['assets/neighborhood/props/security_rifle.glb', 1], pistol: ['assets/weapons/pistol_core.glb', PISTOL_CORE_SCALE] };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), Z = new THREE.Vector3(0, 0, 1);
 // a gun ready to hold: its grip (GameGrip_R) at the holder's origin, the muzzle down the holder's +z

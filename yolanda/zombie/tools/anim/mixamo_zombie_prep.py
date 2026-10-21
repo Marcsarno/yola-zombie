@@ -13,6 +13,7 @@ argv = sys.argv[sys.argv.index('--') + 1:]
 src, out = argv[0], argv[1]
 opts = dict(a.split('=') for a in argv[2:] if '=' in a)
 TRIS = int(opts.get('tris', 12000))
+FMT = opts.get('fmt', 'JPEG')  # (WEBP keeps the hair's cut-out alpha; JPEG has none)
 TEX = int(opts.get('tex', 1024)); NTEX = int(opts.get('ntex', 1024))  # (base colour / normal map size caps)
 log = {'src': os.path.basename(src)}
 
@@ -91,7 +92,16 @@ for mat in me.data.materials:
         if max(img.size) > size: img.scale(size, size)
         imgs.add(img.name)
     for l in bsdf.inputs['Base Color'].links:
-        if l.from_node.type == 'TEX_IMAGE' and l.from_node.image: cap(l.from_node.image, TEX)
+        if l.from_node.type == 'TEX_IMAGE' and l.from_node.image:
+            cap(l.from_node.image, TEX)
+            # hair cards: the colour image's alpha cuts the strands out (Mixamo leaves it unlinked: solid blocks of hair).
+            # Alpha > 0.5 -> the glTF exporter writes alphaMode MASK
+            # (the importer wires Alpha from a duplicate image node, which the cleanup below removes: rewired from this one)
+            if any(k in mat.name.lower() for k in ('hair', 'lash')) and FMT != 'JPEG':
+                for la in list(bsdf.inputs['Alpha'].links): nt.links.remove(la)
+                gt = nt.nodes.new('ShaderNodeMath'); gt.operation = 'GREATER_THAN'; gt.inputs[1].default_value = 0.5
+                nt.links.new(l.from_node.outputs['Alpha'], gt.inputs[0]); nt.links.new(gt.outputs[0], bsdf.inputs['Alpha'])
+                log.setdefault('alpha_cut', []).append(mat.name)
     for l in bsdf.inputs['Normal'].links:
         nm = l.from_node
         if nm.type == 'NORMAL_MAP':
@@ -102,7 +112,7 @@ for mat in me.data.materials:
 log['materials'] = [m.name for m in me.data.materials if m]; log['images'] = sorted(imgs)
 bpy.ops.object.select_all(action='DESELECT'); arm.select_set(True); me.select_set(True)
 os.makedirs(os.path.dirname(out), exist_ok=True)
-bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', use_selection=True, export_animations=False, export_image_format='JPEG', export_jpeg_quality=88)
+bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', use_selection=True, export_animations=False, export_image_format=FMT, export_jpeg_quality=88)
 log['out'] = out; log['size_mb'] = round(os.path.getsize(out) / 1e6, 2)
 with open(out + '.log.json', 'w') as f: json.dump(log, f, indent=1)
 print('PREP', json.dumps(log))

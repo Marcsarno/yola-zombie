@@ -246,7 +246,9 @@ export class HoodLevel {
     yield* this.talk('l01', 'l02', 'l03', 'l04', 'l05', 'l06');
     // shots: the survivor on the loop arm, firing at what comes down from the curve
     const surv = this.api.npc?.('survivor', this.at('survivor_rifle'), { friendly: true, gun: 'rifle' });
-    const far = [this.api.npc?.('survivor', this.at('survivor_far_a'), { friendly: true, gun: 'pistol' }), this.api.npc?.('survivor', this.at('survivor_far_b'), { friendly: true, gun: 'pistol' })].filter(Boolean);
+    // (four with pistols since 2026-10-20, the user's picks: a second one beside each of the two far spots)
+    const fa = this.at('survivor_far_a'), fb = this.at('survivor_far_b');
+    const far = [fa, { ...fa, x: fa.x - 2.2, z: fa.z + 1.0 }, fb, { ...fb, x: fb.x + 2.0, z: fb.z + 1.2 }].map((at) => this.api.npc?.('survivor', at, { friendly: true, gun: 'pistol' })).filter(Boolean);
     yield* this.wait(0.6);
     this.say('l07');
     this.setGoal('home');

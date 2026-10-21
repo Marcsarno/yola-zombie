@@ -34,5 +34,5 @@ for name, f in CLIPS.items():
 arm.animation_data.action = None
 for o in bpy.data.objects: o.select_set(o in (arm, me))
 bpy.ops.export_scene.gltf(filepath=out_glb, export_format='GLB', use_selection=True, export_animation_mode='ACTIONS', export_force_sampling=True,
-                          export_frame_step=1, export_image_format='JPEG', export_jpeg_quality=88)
+                          export_frame_step=1, export_image_format='WEBP', export_jpeg_quality=88)  # (WEBP: the hair's alpha survives)
 print('WROTE', out_glb, 'height', round(me.dimensions.z, 3))
