@@ -42,6 +42,14 @@ const CHARS = {
   // hands) and the big guard (his shield is still being modelled)
   sprinter: { label: 'Zombie sprinter (big lady)', file: 'assets/zombie-sprinter.glb', height: 2.0, ref: 'zombie_' },
   guard: { label: 'Zombie big guard', file: 'assets/zombie-guard.glb', height: 2.05, ref: 'zombie_' },
+  // Chapter 2's looters (2026-10-20, the user's roles): their survivor builds plus the looter moves (tools/anim/test_zombie_clips.py:
+  // UAL1 crouch cover, crouch enter/exit, pistol idle/aim/shoot/reload, three hits, two deaths) in assets/survivors/moves/
+  looter_james: { label: 'Looter: James', file: 'assets/survivors/james.glb', extra: ['assets/survivors/moves/james-looter.glb'], height: 1.8, ref: 'zombie_' },
+  looter_remy: { label: 'Looter: Remy', file: 'assets/survivors/remy.glb', extra: ['assets/survivors/moves/remy-looter.glb'], height: 1.8, ref: 'zombie_' },
+  looter_brian: { label: 'Looter: Brian', file: 'assets/survivors/brian.glb', extra: ['assets/survivors/moves/brian-looter.glb'], height: 1.8, ref: 'zombie_' },
+  looter_bryce: { label: 'Looter: Bryce', file: 'assets/survivors/bryce.glb', extra: ['assets/survivors/moves/bryce-looter.glb'], height: 1.78, ref: 'zombie_' },
+  looter_david: { label: 'Looter: David', file: 'assets/survivors/david.glb', extra: ['assets/survivors/moves/david-looter.glb'], height: 1.8, ref: 'zombie_' },
+  looter_lewis: { label: 'Looter: Lewis', file: 'assets/survivors/lewis.glb', extra: ['assets/survivors/moves/lewis-looter.glb'], height: 1.8, ref: 'zombie_' },
 };
 // the new Quaternius packs' test bakes (UAL_PACKS.md; tools/anim/yola2_build.py YOLA2_EXTRA_UAL1/2, test_zombie_clips.py)
 const TC = 'assets/test_clips/';
