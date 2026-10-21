@@ -54542,6 +54542,7 @@ void main() {
     LowerLeg_L: /^(Nurse_LowerLeg_L|Patient_LeftLowerLeg)$/,
     LowerLeg_R: /^(Nurse_LowerLeg_R|Patient_RightLowerLeg)$/
   };
+  var MOD_PIECE = /^Mod_(Head|Forearm_L|Forearm_R|LowerLeg_L|LowerLeg_R)__/;
   var GORE_NAME = /^GORE_(Head|Forearm_L|Forearm_R|LowerLeg_L|LowerLeg_R)_(Stump|Detached)/;
   var STUMP_BONE = { Head: "Neck", Forearm_L: "LeftForeArm", Forearm_R: "RightForeArm", LowerLeg_L: "LeftLeg", LowerLeg_R: "RightLeg" };
   var PIECE_ENDS = {
@@ -54816,12 +54817,26 @@ void main() {
       this.height = height;
       this.modules = {};
       this.gore = {};
+      const pieces = {};
       model.traverse((o) => {
-        var _a7, _b7;
+        var _a7, _b7, _c7;
         for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
         const m = GORE_NAME.exec(o.name);
         if (m) ((_a7 = this.gore)[_b7 = m[1]] || (_a7[_b7] = {}))[m[2].toLowerCase()] = o;
+        const p = MOD_PIECE.exec(o.name);
+        if (p) (pieces[_c7 = p[1]] || (pieces[_c7] = [])).push(o);
       });
+      for (const [k, list] of Object.entries(pieces)) {
+        if (list.length === 1) {
+          this.modules[k] = list[0];
+          continue;
+        }
+        const g = new Group();
+        g.name = "Mod_" + k;
+        list[0].parent.add(g);
+        for (const o of list) g.add(o);
+        this.modules[k] = g;
+      }
       this.modular = Object.keys(this.modules).length === 5;
       this.severed = /* @__PURE__ */ new Set();
       this.rag = null;
@@ -54847,7 +54862,7 @@ void main() {
       const mod = this.modules[part], g = this.gore[part] || {};
       const [fromB, toB, ext, rad] = PIECE_ENDS[part];
       const a = this.bones[fromB].getWorldPosition(new Vector3());
-      const b = this.bones[toB].getWorldPosition(new Vector3());
+      const b = this.bones[toB] ? this.bones[toB].getWorldPosition(new Vector3()) : a.clone().add(new Vector3(0, 0.2 * (this.height / 1.7), 0).applyQuaternion(this.bones[fromB].getWorldQuaternion(_bq)));
       b.add(b.clone().sub(a).multiplyScalar(ext));
       const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(this.bones[fromB].getWorldQuaternion(_bq)), new Quaternion());
       const c = a.clone().add(b).multiplyScalar(0.5), qi = q0.clone().invert();
@@ -56079,6 +56094,209 @@ void main() {
   // (rad about clubAxis: which way the torn elbow can fold as he swings)
   __publicField(_ZombieView, "clubAxis", new Vector3(0, 0, 1));
   var ZombieView = _ZombieView;
+  var WOUND = new MeshStandardMaterial({ color: 3277828, roughness: 0.42 });
+  var WOUND_BONE = new MeshStandardMaterial({ color: 14273712, roughness: 0.6 });
+  var WOUND_GEO = new SphereGeometry(1, 12, 8);
+  var MEAT = new MeshStandardMaterial({ color: 3802630, roughness: 0.45, side: BackSide });
+  function meaty(obj) {
+    const add = [];
+    obj.traverse((o) => {
+      if (o.isMesh) add.push(o);
+    });
+    for (const o of add) {
+      o.material.side = FrontSide;
+      const m = new Mesh(o.geometry, MEAT.clone());
+      m.position.copy(o.position);
+      m.quaternion.copy(o.quaternion);
+      m.scale.copy(o.scale);
+      o.parent.add(m);
+    }
+  }
+  var BodyGore = class {
+    constructor(model, height) {
+      this.model = model;
+      this.height = height;
+      this.bones = {};
+      this.collapsed = [];
+      this.bleed = [];
+      this.cut = /* @__PURE__ */ new Set();
+      model.traverse((o) => {
+        if (o.isBone) this.bones[o.name.replace(/^mixamorig:?/, "")] = o;
+      });
+    }
+    // the end of a cut piece: its end bone, or (none, as a head without HeadTop_End) 0.2 m on along the bone at 1.7 m
+    end(from, to) {
+      const B = this.bones;
+      return B[to] ? B[to].getWorldPosition(new Vector3()) : B[from].getWorldPosition(new Vector3()).add(new Vector3(0, 0.2 * (this.height / 1.7), 0).applyQuaternion(B[from].getWorldQuaternion(_bq)));
+    }
+    // a limb or the head off (Forearm_L / Forearm_R / LowerLeg_L / LowerLeg_R / Head), thrown along (dx, dz)
+    sever(part, dx, dz, speed = 3) {
+      const R = CUT_ROOTS[part], B = this.bones;
+      if (!R || !B[R[0]] || this.cut.has(part)) return false;
+      this.cut.add(part);
+      this.model.updateMatrixWorld(true);
+      const a = B[R[0]].getWorldPosition(new Vector3()), b = this.end(R[0], R[1]);
+      const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(B[R[0]].getWorldQuaternion(_bq)), new Quaternion());
+      const F3 = { c: a.clone().add(b).multiplyScalar(0.5), q0, qi: q0.clone().invert() };
+      const obj = bakeChunks(this.model, { [R[0]]: part }, { [part]: F3 })[part];
+      if (obj) {
+        meaty(obj);
+        obj.position.copy(F3.c);
+        obj.quaternion.copy(q0);
+        ZombieView.scene.add(obj);
+        const vel = new Vector3(dx, 0, dz).normalize().multiplyScalar(speed).add(new Vector3(0, 2.2 + Math.random() * 1.2, 0));
+        this.addPiece(obj, a, b, R[2] * (this.height / 1.7), vel, q0);
+      }
+      this.wound(R[0], CUT_STUMP[part], R[2]);
+      const s = B[CUT_STUMP[part]].getWorldPosition(new Vector3()), fx2 = ZombieView.fx;
+      if (fx2) {
+        fx2.bloodSpray(s.x, s.y, s.z, dx * 0.8, 0.5, dz * 0.8, part === "Head" ? 34 : 26, 3.4);
+        fx2.bloodPool(s.x + dx * 0.4, s.z + dz * 0.4, part === "Head" ? 1.1 : 0.9);
+      }
+      this.bleed.push({ bone: B[CUT_STUMP[part]], t: 3, up: part === "Head" ? 0.6 : -0.1 });
+      return true;
+    }
+    // the head bursts: its skin in eight pieces (four round the top, four round the jaw), thrown along the shot and out from
+    // the middle, a red mist with chips of skull, the neck's wound pumping
+    headBurst(dx, dz, power = 1) {
+      var _a7;
+      const B = this.bones;
+      if (!B.Head || this.cut.has("Head")) return false;
+      this.cut.add("Head");
+      this.model.updateMatrixWorld(true);
+      const d = new Vector3(dx, 0, dz).normalize(), c = B.Head.getWorldPosition(new Vector3()).lerp(this.end("Head", "HeadTop_End"), 0.45);
+      const isHead = (bone) => {
+        for (let n = bone; n && n.isBone; n = n.parent) if (n === B.Head) return true;
+        return false;
+      };
+      const frag = (p) => {
+        const v = p.clone().sub(c);
+        let ang2 = Math.atan2(v.x, v.z) - Math.atan2(d.x, d.z);
+        ang2 = (ang2 % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        return (v.y > 0 ? 0 : 4) + Math.floor(ang2 / (Math.PI / 2)) % 4;
+      };
+      const parts = [];
+      this.model.traverse((o) => {
+        if (!o.isSkinnedMesh || !o.visible) return;
+        o.skeleton.update();
+        const g = o.geometry, n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, hb = o.skeleton.bones.map(isHead);
+        const vf = new Int8Array(n).fill(-1), wp = {};
+        for (let i = 0; i < n; i++) {
+          let bi = 0, bw = -1;
+          for (let k = 0; k < 4; k++) {
+            const w = sw.getComponent(i, k);
+            if (w > bw) {
+              bw = w;
+              bi = si.getComponent(i, k);
+            }
+          }
+          if (hb[bi]) {
+            o.getVertexPosition(i, _bv);
+            wp[i] = _bv.applyMatrix4(o.matrixWorld).clone();
+            vf[i] = frag(wp[i]);
+          }
+        }
+        const idx = g.index ? g.index.array : Array.from({ length: n }, (_, i) => i), uvs = g.attributes.uv;
+        const tris = {};
+        for (let t = 0; t < idx.length; t += 3) {
+          const k = vf[idx[t]];
+          if (k >= 0 && vf[idx[t + 1]] >= 0 && vf[idx[t + 2]] >= 0) (tris[k] || (tris[k] = [])).push(idx[t], idx[t + 1], idx[t + 2]);
+        }
+        for (const [k, list] of Object.entries(tris)) {
+          const ctr = new Vector3();
+          for (const vi of list) ctr.add(wp[vi]);
+          ctr.divideScalar(list.length);
+          const map = /* @__PURE__ */ new Map(), pos = [], uv = [], index = [];
+          for (const vi of list) {
+            let j = map.get(vi);
+            if (j === void 0) {
+              j = map.size;
+              map.set(vi, j);
+              const p = wp[vi];
+              pos.push(p.x - ctr.x, p.y - ctr.y, p.z - ctr.z);
+              if (uvs) uv.push(uvs.getX(vi), uvs.getY(vi));
+            }
+            index.push(j);
+          }
+          const geo = new BufferGeometry();
+          geo.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          if (uvs) geo.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+          geo.setIndex(index);
+          geo.computeVertexNormals();
+          const mat2 = o.material.clone();
+          if (mat2.emissive) mat2.emissive.setRGB(0, 0, 0);
+          parts.push({ k: +k, mesh: new Mesh(geo, mat2), ctr });
+        }
+      });
+      const byFrag = {};
+      for (const p of parts) (byFrag[_a7 = p.k] || (byFrag[_a7] = [])).push(p);
+      const r = 0.035 * (this.height / 1.7), side = new Vector3(-d.z, 0, d.x);
+      for (const list of Object.values(byFrag)) {
+        const ctr = list[0].ctr.clone(), obj = new Group();
+        obj.position.copy(ctr);
+        for (const p of list) {
+          p.mesh.position.copy(p.ctr).sub(ctr);
+          obj.add(p.mesh);
+        }
+        meaty(obj);
+        ZombieView.scene.add(obj);
+        const out = ctr.clone().sub(c).setY(0);
+        if (out.lengthSq() < 1e-6) out.copy(d);
+        out.normalize();
+        const vel = d.clone().multiplyScalar((2.5 + Math.random() * 2.5) * power).addScaledVector(out, 1.5 + Math.random() * 1.5).addScaledVector(side, (Math.random() - 0.5) * 2).setY((1.5 + Math.random() * 2) * Math.sqrt(power));
+        this.addPiece(obj, ctr.clone().addScaledVector(_ly, -r), ctr.clone().addScaledVector(_ly, r), r, vel, new Quaternion());
+      }
+      this.wound("Head", "Neck", 0.06);
+      const fx2 = ZombieView.fx;
+      if (fx2) {
+        fx2.bloodSpray(c.x, c.y, c.z, d.x, 0.5, d.z, 50, 4.6 * power);
+        fx2.bloodSpray(c.x, c.y, c.z, d.x * 0.3, 1.4, d.z * 0.3, 24, 2.6);
+        fx2.burst(c.x, c.y, c.z, 28, 5903380, 3.6, 1.2, 0.6, d.x * 0.8, d.z * 0.8);
+        fx2.burst(c.x, c.y, c.z, 10, 15327954, 3.2, 1.6, 0.4, d.x * 0.8, d.z * 0.8);
+        fx2.bloodPool(c.x + d.x * 0.9, c.z + d.z * 0.9, 1);
+      }
+      this.bleed.push({ bone: B.Neck || B.Head, t: 4, up: 0.8 });
+      return true;
+    }
+    addPiece(obj, a, b, r, vel, q0) {
+      const P2 = ZombieView.physics, live = P2 && P2.ready;
+      ZombieView.pieces.push({ obj, t: 0, id: live ? P2.addPiece(a, b, r, vel, q0) : 0, P: live ? P2 : null, vel, r, states: [] });
+      if (ZombieView.pieces.length > MAX_PIECES) ZombieView.dropPiece(ZombieView.pieces[0]);
+    }
+    // the cut bone collapsed into its joint; on the joint a wet wound with the bone's end in it, flattened along the limb
+    wound(cutBone, onBone, rad) {
+      const B = this.bones, cb = B[cutBone], ob = B[onBone] || cb?.parent;
+      if (!cb || !ob) return;
+      this.collapsed.push(cb);
+      const k = rad * 0.85 * (this.height / 1.7) / (ob.getWorldScale(_bv).x || 1), g = new Group();
+      const w = new Mesh(WOUND_GEO, WOUND);
+      w.scale.set(k, k * 0.32, k);
+      g.add(w);
+      const bn = new Mesh(WOUND_GEO, WOUND_BONE);
+      bn.scale.setScalar(k * 0.28);
+      bn.position.y = k * 0.18;
+      g.add(bn);
+      const dir = cb.position.clone().normalize();
+      g.position.copy(cb.position).addScaledVector(dir, -k * 0.25);
+      g.quaternion.setFromUnitVectors(_ly, dir);
+      ob.add(g);
+    }
+    update(dt) {
+      for (const b of this.collapsed) b.scale.setScalar(1e-4);
+      const fx2 = ZombieView.fx;
+      for (let i = this.bleed.length - 1; i >= 0; i--) {
+        const s = this.bleed[i];
+        if ((s.t -= dt) <= 0) {
+          this.bleed.splice(i, 1);
+          continue;
+        }
+        if (fx2 && Math.random() < dt * 18) {
+          const p = s.bone.getWorldPosition(_bv);
+          fx2.bloodSpray(p.x, p.y, p.z, 0, s.up, 0, 1, 0.8);
+        }
+      }
+    }
+  };
 
   // src/render/libattack.js
   var FPS = 30;
@@ -60049,7 +60267,7 @@ void main() {
       q.t = 0;
       q.size = size * (0.8 + Math.random() * 0.4);
       q.x = x;
-      q.y = 0.015 + this.poolNext * 15e-5;
+      q.y = (this.groundAt ? this.groundAt(x, z) : 0) + 0.015 + this.poolNext * 15e-5;
       q.z = z;
       q.rot = Math.random() * Math.PI * 2;
       q.on = true;
@@ -60302,7 +60520,7 @@ void main() {
     async load(files) {
       await Promise.all(Object.entries(files).map(async ([type, url]) => {
         try {
-          const g = await this.loader.loadAsync(url), root = g.scene, byChunk = /* @__PURE__ */ new Map(), bones = {};
+          const g = await this.loader.loadAsync(url), root = g.scene, byChunk = /* @__PURE__ */ new Map(), bones = {}, partOf = {};
           root.traverse((o) => {
             if (o.isBone) bones[o.name.replace(/^mixamorig:?/, "")] = o;
             if (!o.isMesh) return;
@@ -60317,12 +60535,13 @@ void main() {
             }
             if (!o.isSkinnedMesh) return;
             let n = o;
-            while (n && !/^B__/.test(n.name)) n = n.parent;
+            while (n && !/^(B|Mod_\w+?)__/.test(n.name)) n = n.parent;
             const chunk = n ? n.name.split("__")[1] : "Chest";
+            if (n && n.name.startsWith("Mod_")) partOf[chunk] = n.name.slice(4, n.name.indexOf("__"));
             if (!byChunk.has(chunk)) byChunk.set(chunk, []);
             byChunk.get(chunk).push(o);
           });
-          this.tpl[type] = { root, byChunk, bones };
+          this.tpl[type] = { root, byChunk, bones, partOf };
         } catch (e) {
           console.warn("gib burst model", url, e);
         }
@@ -60352,7 +60571,7 @@ void main() {
       const b = { chunks: [], t: 0 }, v = new Vector3();
       const R = (a, c) => a + Math.random() * (c - a);
       for (const [name, meshes] of T2.byChunk) {
-        if (gone.has(name)) continue;
+        if (gone.has(name) || view.severed?.has(T2.partOf[name])) continue;
         const baked = [];
         const c = new Vector3();
         let n = 0;
@@ -65900,7 +66119,15 @@ void main() {
     async init(world) {
       this.bodies.clear();
       this.particles = [];
-      this.boxes = world.boxes.filter((b) => b.kind !== "doorSeal" && b.kind !== "door").map((b) => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: b.h }));
+      this.boxes = world.boxes.filter((b) => b.kind !== "doorSeal" && b.kind !== "door").map((b) => ({
+        minX: b.minX,
+        maxX: b.maxX,
+        minZ: b.minZ,
+        maxZ: b.maxZ,
+        h: b.h,
+        src: b,
+        ...b.type === "c" ? { cx: b.cx, cz: b.cz, r: b.r } : b.cos !== void 0 ? { cx: b.cx, cz: b.cz, hx: b.hx, hz: b.hz, cos: b.cos, sin: b.sin } : {}
+      }));
     }
     _particle(body, pos, r, mass) {
       const pt = new Particle(pos, r, 1 / mass);
@@ -66113,28 +66340,70 @@ void main() {
         if (p.p.y < p.x.y) p.p.y = p.x.y + (p.x.y - p.p.y) * BOUNCE;
       }
       for (const b of p.cand) {
-        if (p.x.y - p.r > b.h) continue;
-        const cx = Math.max(b.minX, Math.min(p.x.x, b.maxX)), cz = Math.max(b.minZ, Math.min(p.x.z, b.maxZ)), cy = Math.min(p.x.y, b.h);
-        const dx = p.x.x - cx, dy = p.x.y - cy, dz = p.x.z - cz, d2 = dx * dx + dy * dy + dz * dz;
+        if (p.x.y - p.r > b.h || b.src.off) continue;
+        const y = p.x.y, cy = Math.min(y, b.h);
+        if (b.r !== void 0) {
+          const dx2 = p.x.x - b.cx, dz2 = p.x.z - b.cz, dh = Math.hypot(dx2, dz2), k = dh > b.r ? 1 - b.r / dh : 0;
+          const ex = dx2 * k, ey = y - cy, ez = dz2 * k, d22 = ex * ex + ey * ey + ez * ez;
+          if (d22 >= p.r * p.r) continue;
+          if (d22 > 1e-10) {
+            const d = Math.sqrt(d22), s = (p.r - d) / d;
+            p.x.x += ex * s;
+            p.x.y += ey * s;
+            p.x.z += ez * s;
+            if (ey > 0 && ey * ey > ex * ex + ez * ez) p.ground = true;
+          } else if (b.h - y < b.r - dh) {
+            p.x.y = b.h + p.r;
+            p.ground = true;
+          } else if (dh > 1e-6) {
+            const s = (b.r + p.r) / dh;
+            p.x.x = b.cx + dx2 * s;
+            p.x.z = b.cz + dz2 * s;
+          } else p.x.x = b.cx + b.r + p.r;
+          continue;
+        }
+        const T2 = b.cos !== void 0;
+        let lx = p.x.x, lz = p.x.z, x0 = b.minX, x1 = b.maxX, z0 = b.minZ, z1 = b.maxZ;
+        if (T2) {
+          const dx2 = lx - b.cx, dz2 = lz - b.cz;
+          lx = dx2 * b.cos - dz2 * b.sin;
+          lz = dx2 * b.sin + dz2 * b.cos;
+          x0 = -b.hx;
+          x1 = b.hx;
+          z0 = -b.hz;
+          z1 = b.hz;
+        }
+        const cx = Math.max(x0, Math.min(lx, x1)), cz = Math.max(z0, Math.min(lz, z1));
+        const dx = lx - cx, dy = y - cy, dz = lz - cz, d2 = dx * dx + dy * dy + dz * dz;
         if (d2 >= p.r * p.r) continue;
+        let nx = lx, ny = y, nz = lz;
         if (d2 > 1e-10) {
           const d = Math.sqrt(d2), k = (p.r - d) / d;
-          p.x.x += dx * k;
-          p.x.y += dy * k;
-          p.x.z += dz * k;
+          nx += dx * k;
+          ny += dy * k;
+          nz += dz * k;
           if (dy > 0 && dy * dy > dx * dx + dz * dz) p.ground = true;
         } else {
-          const m = [p.x.x - b.minX, b.maxX - p.x.x, p.x.z - b.minZ, b.maxZ - p.x.z, b.h - p.x.y];
+          const m = [lx - x0, x1 - lx, lz - z0, z1 - lz, b.h - y];
           const i = m.indexOf(Math.min(...m));
-          if (i === 0) p.x.x = b.minX - p.r;
-          else if (i === 1) p.x.x = b.maxX + p.r;
-          else if (i === 2) p.x.z = b.minZ - p.r;
-          else if (i === 3) p.x.z = b.maxZ + p.r;
+          if (i === 0) nx = x0 - p.r;
+          else if (i === 1) nx = x1 + p.r;
+          else if (i === 2) nz = z0 - p.r;
+          else if (i === 3) nz = z1 + p.r;
           else {
-            p.x.y = b.h + p.r;
+            ny = b.h + p.r;
             p.ground = true;
           }
         }
+        if (T2) {
+          const ex = nx - lx, ez = nz - lz;
+          p.x.x += ex * b.cos + ez * b.sin;
+          p.x.z += -ex * b.sin + ez * b.cos;
+        } else {
+          p.x.x = nx;
+          p.x.z = nz;
+        }
+        p.x.y = ny;
       }
     }
     // [{pos, quat}] per part
@@ -82277,7 +82546,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         nextAt: 0,
         t: 0,
         gunOn: true,
-        headGone: false,
+        gore: new BodyGore(m, pick[1]),
+        // (a head shot bursts his head: looterStep, jamesStep)
         then(at, n) {
           body.next = n;
           body.nextAt = body.t + at;
@@ -82292,10 +82562,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         update(dt) {
           mixer.update(dt);
           body.t += dt;
-          if (body.headGone && head) {
-            head.scale.setScalar(1e-3);
-            obj.updateMatrixWorld(true);
-          }
+          body.gore.update(dt);
           if (body.next && !body.dead && body.t >= body.nextAt) {
             const n = body.next;
             body.next = null;
@@ -82413,8 +82680,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         kick: 0,
         dead: false,
         deadT: 0,
+        gore: new BodyGore(m, model ? M4.h : pick[1]),
+        // (Pete's arm in the zombie attack: survivor overwhelm)
         update(dt) {
           mixer.update(dt);
+          body.gore.update(dt);
           obj.updateMatrixWorld(true);
           if (!holder) return;
           if (body.dead) body.deadT += dt;
@@ -82484,6 +82754,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       a.overwhelm = () => {
         a.down = true;
         body?.fall(Math.random() < 0.5);
+        if (body) a.tear?.forEach((part, i) => {
+          const t = a.yaw + Math.PI * (0.5 + Math.random());
+          body.gore.sever(part, Math.sin(t), Math.cos(t), 2.2 + i);
+        });
       };
       a.step = (dt, level) => {
         const sim2 = level.sim;
@@ -82563,6 +82837,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         a.sight.visible = false;
         if (a.wasAlive) {
           a.wasAlive = false;
+          if (b && z.lastHitPart === "Head") {
+            const dx2 = z.x - p.x, dz2 = z.z - p.z, d2 = Math.hypot(dx2, dz2) || 1;
+            b.gore.headBurst(dx2 / d2, dz2 / d2);
+          }
           b?.fall();
           a.onDeath?.();
         }
@@ -82639,6 +82917,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         look: null,
         lookW: 0,
         lookRel: 0,
+        gore: new BodyGore(m, M4.h),
+        // (Sophie's arm when the zombies take her: sophie die)
         get clip() {
           return curName;
         },
@@ -82662,6 +82942,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         },
         update(dt) {
           mixer.update(dt);
+          body.gore.update(dt);
           obj.updateMatrixWorld(true);
           body.lookW += ((body.look && !body.dead ? 1 : 0) - body.lookW) * Math.min(1, dt * 4);
           if (body.lookW < 0.01 || !neck || !head) return;
@@ -82688,10 +82969,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       obj.rotation.y = at.yaw || 0;
       this.group.add(obj);
       const a = { kind: "sophie", obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, mode: "scared", trail: [], speed: 0, gap: 3.3, cower: 0 };
+      a.tear = ["Forearm_R"];
       a.die = () => {
         a.mode = "dead";
         if (body) body.look = null;
         body?.play("hood_Death01", { once: true, fade: 0.15 });
+        if (body) a.tear.forEach((part, i) => {
+          const t = a.yaw + Math.PI * (0.5 + Math.random());
+          body.gore.sever(part, Math.sin(t), Math.cos(t), 2.2 + i);
+        });
       };
       a.step = (dt, level) => this.sophieStep(a, dt, level);
       body?.play("hood_Crouch_Idle_Loop");
@@ -82774,9 +83060,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const a = this.survivor(at, { gun: "pistol", model: "pete" });
       a.kind = "pete";
       a.dmgK = 0.15;
+      a.tear = ["Forearm_L"];
       return a;
     }
-    // (panicked: he slows them, he cannot stop them)
+    // (panicked: he slows them, he cannot stop them; they take his arm)
     // James (B02): a looter going through the family's things at the dining table, his back to the door, headphones on. He
     // is an entry in the zombie list (Marc's shots hit him; one is enough); his body is the looters' with his own moves:
     // rummaging (hood_Counter_Idle_Loop), the turn (hood_Surprise), the shout (hood_Counter_Angry), then the gun up at Marc
@@ -82844,14 +83131,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (!z.alive) {
         if (a.wasAlive) {
           a.wasAlive = false;
+          const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1;
           if (b) {
-            b.headGone = true;
+            b.gore.headBurst(dx / d, dz / d, 1.2);
             b.fall();
+          } else {
+            this.ctx.fx?.bloodSpray?.(z.x, 1.55, z.z, dx / d, 0.8, dz / d, 46, 4.2);
+            this.ctx.fx?.bloodPool?.(z.x + dx / d * 0.8, z.z + dz / d * 0.8, 1.1);
           }
-          const n = b ? b.neck(_v11) : _v11.set(z.x, 1.55, z.z), dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1;
-          this.ctx.fx?.bloodSpray?.(n.x, n.y, n.z, dx / d, 0.8, dz / d, 46, 4.2);
-          this.ctx.fx?.bloodSpray?.(n.x, n.y, n.z, dx / d * 0.4, 1.6, dz / d * 0.4, 22, 2.4);
-          this.ctx.fx?.bloodPool?.(z.x + dx / d * 0.8, z.z + dz / d * 0.8, 1.1);
           a.onDeath?.();
         }
         return;
@@ -83796,7 +84083,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   }
   var loader2 = new GLTFLoader();
   async function load() {
-    gibs.load({ 0: "assets/zombie-nurse-burst.glb", 1: "assets/zombie-patient-burst.glb" });
+    gibs.load({ 0: "assets/zombie-nurse-burst.glb", 1: "assets/zombie-patient-burst.glb", ...LAYOUT.hood ? { 7: ZOMBIE_TYPES[7].file } : {} });
     audio.preload();
     music.preload();
     hud.loading(0);
@@ -83900,6 +84187,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       hood = await startHood({ scene, loader: loader2, arena, renderer, quality: resolvedQuality(), params, audio, hud, fx, onProgress: (k) => hud.loading(0.95 + 0.04 * k) });
       window.game.onRestart = hood.onRestart;
     }
+    if (LAYOUT.hood) {
+      const flat = [];
+      scene.traverse((o) => {
+        if (o.isMesh && !o.isSkinnedMesh && /^(ch2_\w*(road|kerb|drive|rab)|roads|sidewalks|driveway|home_walk|paver|pool_deck|curb|tennis_court|terrain)/.test(o.name)) flat.push(o);
+      });
+      const rc = new Raycaster(), from = new Vector3(), down2 = new Vector3(0, -1, 0);
+      fx.groundAt = (x, z) => {
+        rc.set(from.set(x, 0.6, z), down2);
+        rc.far = 0.8;
+        const h = rc.intersectObjects(flat, false)[0];
+        return Math.max(h ? h.point.y : 0, groundY(x, z));
+      };
+    }
     restart();
     startChapterUI();
     hud.loading(1);
@@ -83997,6 +84297,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   function warmPrograms() {
     const tmp2 = new Group(), box = new BoxGeometry(0.01, 0.01, 0.01);
     ZOMBIE_TYPES.forEach((t, type) => {
+      if (!t.gltf) return;
       if (!zpool[type].length) {
         const nv = newZombieView(type);
         nv.hide();
