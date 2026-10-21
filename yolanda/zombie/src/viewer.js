@@ -13,6 +13,8 @@ import { placeBat, placeOneHanded, twoHandLine, applyFit, magInsert, placeShell,
 import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js';
 import { LAYERS, HOLD_LAYERS, AS_LIVE, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
 import { adjustArms, armReadout, ARM_PARAMS, ARM0 } from './render/armpose.js';
+import { heroMoveSpeed } from './core/heroes.js';
+import { TUNING_DEFAULTS } from './core/tuning.js';
 import { LiveRetarget, setWeights, makeTag, setTag, placeTag, tintSkeleton, ROM } from './riglab/check.js';
 
 let FPS = 30; // the current clip's frame rate (the bat combo: 60)
@@ -41,6 +43,13 @@ const CHARS = {
   // their sources (tools/anim/male1_build.py); 1.80 m with his cap and boots
   male1: { label: 'Marc (male hero)', file: 'assets/male1.glb', extra: ['assets/male1_ual.glb'], height: 1.80, ref: 'yola_', refMap: YOLA2_REF,
     libRef: { pistol_reload: 'ual1_Pistol_Reload' }, hero: true },
+  // two possible new heroes, movement only for now (2026-10-20, tools/anim/hero_moves_build.py: the game's Mixamo gaits,
+  // Quaternius walks / jogs / sprint, Tripo's idle; no weapons). Arianna 3.0's download had every bone at the origin (its
+  // bind pose survived only in the skin, turned Z-up): put back by tools/anim/glb_fix_bind.mjs. Lilah keeps Tripo's own
+  // clips as t_*. Heights are first guesses for children (both files are 1 unit tall).
+  arianna: { label: 'Arianna (test)', file: 'assets/arianna.glb', height: 1.30, ref: 'yola_', refMap: YOLA2_REF, hero: true },
+  lilah: { label: 'Lilah (test)', file: 'assets/lilah.glb', height: 1.05, ref: 'yola_', hero: true, // (her t_* clips: no source rig)
+    refMap: { ...YOLA2_REF, ...Object.fromEntries(['afraid', 'fall', 'flee_01', 'flee_02', 'freaky', 'frightened', 'run', 'scared_01', 'scared_02', 'sit', 'walk', 'wave_goodbye_01', 'wave_goodbye_02'].map((n) => ['t_' + n, null])) } },
   nurse: { label: 'Zombie nurse', file: 'assets/zombie-nurse-mod.glb', height: 1.78, ref: 'zombie_' },
   patient: { label: 'Zombie patient', file: 'assets/zombie-patient-mod.glb', height: 1.78, ref: 'zombie_' },
   // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -442,6 +451,39 @@ async function setClip(name) {
   markClipPanel(); // (setChar picks its first clip without a change event)
   editSync();
   if (!$('meshOn').checked) { applyMesh(); refresh(); } // (a reference or character loaded since keeps the mesh choice)
+  if (S.gamePace) gamePace();
+}
+// GAME PACE (2026-10-20, per-hero move speed, core/heroes.js): a moving clip plays at the rate the game would step it at
+// this hero's full-stick speed. The game drives the gait by distance over the clip's stride on this body (clipchars.js
+// measureGaits), so rate = hero speed / the clip's natural speed: the planted foot's speed against the hips, median.
+const paceCache = {};
+function naturalSpeed() {
+  const key = S.char + '|' + main.clip.name;
+  if (key in paceCache) return paceCache[key];
+  const n = main.frames, rows = [], p = new THREE.Vector3(), q = new THREE.Vector3(), h = new THREE.Vector3();
+  for (let f = 1; f <= n; f++) {
+    main.setFrame(f); main.root.updateMatrixWorld(true); main.bones.Hips.getWorldPosition(h);
+    const r = {};
+    for (const s of ['Left', 'Right']) { main.bones[s + 'Foot'].getWorldPosition(p); main.bones[s + 'ToeBase'].getWorldPosition(q); r[s] = [p.x - h.x, p.z - h.z, Math.min(p.y, q.y)]; }
+    rows.push(r);
+  }
+  const fps = fpsOf(main.clip), vel = [], tol = 0.02 * main.height / 1.62;
+  for (const s of ['Left', 'Right']) {
+    const minY = Math.min(...rows.map((r) => r[s][2]));
+    for (let i = 0; i < n - 1; i++) if (rows[i][s][2] < minY + tol && rows[i + 1][s][2] < minY + tol) vel.push(Math.hypot(rows[i + 1][s][0] - rows[i][s][0], rows[i + 1][s][1] - rows[i][s][1]) * fps);
+  }
+  vel.sort((a, b) => a - b);
+  refresh();
+  return (paceCache[key] = { v: vel.length ? vel[vel.length >> 1] : 0, cycle: (n - 1) / fps });
+}
+function gamePace() {
+  // (backing up and strafing only happen while aiming, at the tuning's backpedal / strafe share of the speed: core/player.js)
+  const nm = main.clip.name, T = TUNING_DEFAULTS;
+  const dirK = /back|Bwd/i.test(nm) ? T.backpedalSpeed : /strafe|_L_Loop|_R_Loop|Jog_Left|Jog_Right/i.test(nm) ? T.strafeSpeed : 1;
+  const opt = $('speed').querySelector('option[value=game]'), hs = +(heroMoveSpeed(S.char, T.moveSpeed) * dirK).toFixed(2);
+  const { v, cycle } = naturalSpeed(), moving = v > 0.3; // (an idle's feet barely move: it plays at 1x)
+  S.speed = moving ? hs / v : 1;
+  opt.textContent = moving ? `game pace: ${hs} m/s = ${S.speed.toFixed(2)}x, ${(2 * S.speed / cycle).toFixed(1)} steps/s` : 'game pace (not a moving clip: 1x)';
 }
 function layout() {
   // left to right from the front: the character, its second version, the clip's dummy, the clothed dummy (1.1 m apart)
@@ -1217,7 +1259,8 @@ const MOVE_GROUPS = [
 function bodyGroups() {
   const A = mainCache[S.char]?.gltf.animations || [], have = new Map(A.map((c) => [c.name, c])), used = new Set();
   const take = (l) => l.filter((n) => have.has(n) && !used.has(n) && used.add(n));
-  return [['Range of motion (every rig plays these)', take(ROM_NAMES)], ...MOVE_GROUPS.map(([g, l]) => [g, take(l)]), ['Stand and move (baked)', take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
+  return [['Range of motion (every rig plays these)', take(ROM_NAMES)], ...MOVE_GROUPS.map(([g, l]) => [g, take(l)]),
+    ["Moving: the character's own clips (Tripo's walk, run, flee)", take(A.map((c) => c.name).filter((n) => /^t_(walk|run|flee)/.test(n)))], ['Stand and move (baked)', take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
     ["The game's moves (baked)", take(BODY_GAME.filter((n) => !have.get(n)?.userData?.live))], ['Whole Quaternius library (live, not baked)', take([...LIB_NAMES].sort())]].filter(([, l]) => l.length);
 }
 const bodyPretty = (n) => (ROM_LABEL[n] ? ROM_LABEL[n] + ':  ' : '') + n.replace(/^(ual1?|kev)_/, '').replace(/_Loop$/, ' (loop)').replace(/_/g, ' ') +
@@ -1760,7 +1803,7 @@ function buildUI() {
   $('bones').onchange = () => { main.helper.visible = $('bones').checked; ref.helper.visible = $('bones').checked && ref.root.visible; skelUI(); };
   $('fingerBones').addEventListener('change', skelUI); skelUI();
   $('inplace').onchange = () => setClip($('clip').value);
-  $('speed').onchange = (e) => { S.speed = +e.target.value; };
+  $('speed').onchange = (e) => { S.gamePace = e.target.value === 'game'; if (S.gamePace) gamePace(); else S.speed = +e.target.value; };
   $('toggleSide').onclick = () => $('side').classList.toggle('open');
   $('toggleClips').onclick = () => { const p = $('clipPanel'); p.hidden = !p.hidden; $('toggleClips').classList.toggle('on', !p.hidden); };
   $('clipFind').oninput = buildClipPanel; $('clipUsedOnly').onchange = buildClipPanel;
