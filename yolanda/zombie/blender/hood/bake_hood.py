@@ -29,7 +29,7 @@ for o in list(sc.objects):
     if o.type in ('LIGHT', 'CAMERA'): bpy.data.objects.remove(o, do_unlink=True)
 # floors that take the bake themselves (the game lays it on every near-ground surface): left out, so they don't black out
 # the light under them; what stands on them (nets, fences, trees) still casts onto them
-FLOORLIKE = ('tennis_court', 'volleyball_court', 'pool_deck', 'curb_', 'playground') + tuple(v for v in os.environ.get('BAKE_FLOORLIKE', '').split(',') if v)
+FLOORLIKE = ('tennis_court', 'volleyball_court', 'pool_deck', 'curb_', 'playground', 'hood_court_basketball', 'hood_dock') + tuple(v for v in os.environ.get('BAKE_FLOORLIKE', '').split(',') if v)
 for e in bpy.data.collections['PLACED'].objects:
     if os.path.basename(e.get('src', '')).startswith(FLOORLIKE): e.hide_render = True
 

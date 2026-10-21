@@ -28,7 +28,7 @@ const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Mat
 // the fixed camera (looking north-west) sees lit faces and the shadows fall across the screen, not toward the lens
 const SUN_FROM = new THREE.Vector3(-0.55, 0.62, 0.56).normalize(); // (from the west-south-west, 38 deg up)
 const SKY = 0xa9b9c4;
-const LIGHT_VERSION = '2026-10-21b'; // (bump with every new bake of assets/neighborhood/hood_light.jpg)
+const LIGHT_VERSION = '2026-10-21j'; // (bump with every new bake of assets/neighborhood/hood_light.jpg)
 
 export async function startHood({ scene, loader, arena, renderer, quality, params, audio, hud, fx, onProgress }) {
   const grammy = params.get('hood') === 'grammy';
@@ -72,9 +72,10 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
     INTERIORS.length = 0; FLOORS.length = 0;
     if (m && b) { const cx = (m[0] + b[0]) / 2, cz = (m[2] + b[2]) / 2, L = Math.hypot(b[0] - m[0], b[2] - m[2]); FLOORS.push({ id: 'deck', cx, cz, hx: L / 2, hz: 1.3, yaw: -Math.atan2(b[2] - m[2], b[0] - m[0]), y: 0.2, ramp: 0.8 }); }
   }
-  // the look pass: tufts in the lawn (grass.js; ?grass=0 or Low quality leaves them out), a soft vignette at the screen's edges (a page
+  // the look pass: tufts in the lawn (grass.js) only with ?grass=1 (Marc, 2026-10-21: "the random grass things sticking up look
+  // cheap and take me out of the game"; never on Low quality), a soft vignette at the screen's edges (a page
   // overlay: nothing for the GPU)
-  const grass = params.get('grass') === '0' || quality === 'low' ? null : await new Grass(scene).build(view.splat, view.paths, view.rect).catch((e) => { console.warn('grass', e); return null; });
+  const grass = params.get('grass') !== '1' || quality === 'low' ? null : await new Grass(scene).build(view.splat, view.paths, view.rect).catch((e) => { console.warn('grass', e); return null; });
   if (params.get('vignette') !== '0') { const v = document.createElement('div'); v.className = 'hoodOverlay'; v.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:40;background:radial-gradient(ellipse 85% 75% at 50% 46%, rgba(0,0,0,0) 58%, rgba(20,14,8,0.32) 100%)'; document.body.appendChild(v); }
   // the rifle rides on the shotgun's slot (level.js RIFLE): its shot is a rifle's crack, and there is no pump to rack
   if (audio?.play && !audio.hoodWrapped) {

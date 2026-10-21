@@ -48,7 +48,7 @@ export const ROUTES = {
   gate: [[26.8, -1.2], [23.8, -8], [20.8, -12.2]],                  // the barricade -> the chained gate
   cutters: [[14.5, -10], [9.5, -7]],                                // -> toward the garage with the light on (short of it)
   clubhouse: [[18.5, -20], [15.5, -26], [14.2, -30.5]],             // the gate -> the clubhouse's front (short of the warning)
-  dock: [[30.5, -61], [30.5, -69], [30.2, -77.5]],                  // Pete's drive -> the dock road's gate (short of its chain)
+  dock: [[30.5, -61], [30.5, -69], [30.2, -77.5], [22, -81], [6, -81]],   // Pete's drive -> down the dock road (its gate gone: Marc's notes 9)
 };
 const SAVE_KEY = 'zc.hoodsave2';
 export const loadSave = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || null; } catch { return null; } };
@@ -567,11 +567,9 @@ export class HoodLevel {
   *stopDock() {
     const p = this.sim.player, sp = this.ensureSophie(null, 'follow');
     this.prefetch('M15', 'M16', 'M17', 'S16', 'M18', 'S17', 'M19', 'S18', 'M20', 'S19');
-    if (!this.open.has('dockroad')) this.sophieLead(ROUTES.dock);
+    this.sophieLead(ROUTES.dock);
     this.setGoal('dock');
     const b = this.at('boat');
-    // the service road's gate is chained too: the bolt cutters again
-    if (!this.open.has('dockroad')) { yield* this.use('dockroad', 'dockroad_use', 'Cut the chain', 2.2); this.api.audio?.play('pumpRack'); this.openSeal('dockroad'); }
     yield* this.until(() => this.nearXZ(b, 9));
     yield* this.talk('M15');
     // the playground: the horde, about thirty, standing about (the user: "pan to the playground and show there are about

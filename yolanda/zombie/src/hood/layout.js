@@ -45,7 +45,8 @@ export const FLOORS = [
   // Marc's house: its floor 0.2 m up, and the step outside the front door under the canopy (0.18 m, up from its east edge)
   { id: 'home', cx: 32.69, cz: 39.1, hx: 3.6, hz: 6.2, yaw: Math.PI, y: 0.2, ramp: 0.05 },
   { id: 'stoop', cx: 37.04, cz: 38.4, hx: 0.76, hz: 1.58, yaw: Math.PI, y: 0.18, ramp: 0.3 },
-  { id: 'dock', cx: -26.65, cz: -80.62, hx: 4.6, hz: 1.35, yaw: -3.0216, y: 0.39, ramp: 0.6 },
+  // the pier (Marc, 2026-10-21: doubled, 18 x 6 m: blender/hood/ch2_notes.py dock), up from its shore end (east)
+  { id: 'dock', cx: -31.0, cz: -79.6, hx: 9.0, hz: 3.0, yaw: Math.PI, y: 0.39, ramp: 0.6 },
 ];
 export function groundY(x, z) {
   for (const f of FLOORS) {

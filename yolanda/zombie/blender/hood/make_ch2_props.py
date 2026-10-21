@@ -443,7 +443,183 @@ def garage():
     box(r, 'cooler_lid', (0.62, 0.42, 0.05), U(rx - 0.05, 1.45, 0.445), 'M_plastic__white')
     return r
 
-BUILD = {'shed': (shed, 'hood_shed.glb'), 'garage': (garage, 'hood_garage.glb'), 'home': (home, 'hood_home.glb'), 'fridge': (fridge, 'hood_fridge.glb'), 'case': (case, 'hood_case.glb')}
+# ---------------------------------------------------------------- Marc's map notes (2026-10-21, design/CH2_MARC_NOTES_2026-10-21.md)
+import bmesh
+from mathutils import Vector, Matrix
+def cards(parent, name, quads, mat):
+    """Leaf cards: quads [(p0, p1, p2, p3) ...] (corners from the texture's bottom left, anticlockwise), each the whole
+    texture (UV 0..1); one mesh."""
+    bm = bmesh.new(); uvl = bm.loops.layers.uv.new('UVMap')
+    for q in quads:
+        f = bm.faces.new([bm.verts.new(p) for p in q])
+        for lp, uv in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))): lp[uvl].uv = uv
+    me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free(); me.materials.append(propkit.M(mat))
+    ob = bpy.data.objects.new(name, me); propkit.SC.collection.objects.link(ob); ob.parent = parent; return ob
+def blob(parent, name, r, at, scale, mat, sub=2):
+    bm = bmesh.new(); bmesh.ops.create_icosphere(bm, subdivisions=sub, radius=r)
+    bmesh.ops.transform(bm, matrix=Matrix.Translation(at) @ Matrix.Diagonal((*scale, 1)), verts=bm.verts)
+    return propkit.finish(name, bm, mat, parent, smooth=True)
+
+def shrub_tall():
+    """4: a tall yard shrub (viburnum / ligustrum kind) taller than Marc: 2.6 m, about 1.7 m across; a dark core and leaf
+    cards over its shell (Chapter 4's hedge, `hedge_round`, made the same way, low and wide)."""
+    rng = random.Random(4)
+    r = root('hood_shrub_tall')
+    for z, rr, s in ((0.7, 0.7, (1.0, 1.0, 1.0)), (1.4, 0.74, (1.0, 0.95, 1.0)), (2.1, 0.58, (1.0, 1.0, 0.9))): blob(r, 'core', rr, (rng.uniform(-0.05, 0.05), 0, z), s, 'M_flat__leafcore')
+    blob(r, 'stems', 0.12, (0, 0, 0.2), (1.6, 1.6, 2.0), 'M_bark', sub=1)
+    Q = []
+    for i in range(170):
+        # a point on the shell (an egg 0.82 m round, 1.2 m up from its middle at 1.36 m), the card facing out from it
+        u, v = rng.uniform(0, 2 * math.pi), rng.uniform(-0.82, 1.0)
+        n = Vector((math.cos(u) * math.sqrt(1 - v * v), math.sin(u) * math.sqrt(1 - v * v), v))
+        c = Vector((n.x * 0.82, n.y * 0.82, 1.36 + n.z * 1.2)) + Vector((rng.uniform(-0.08, 0.08), rng.uniform(-0.08, 0.08), rng.uniform(-0.08, 0.08)))
+        t = n.cross(Vector((0, 0, 1))); t = (t if t.length > 0.1 else Vector((1, 0, 0))).normalized(); b = n.cross(t).normalized()
+        a = rng.uniform(0, 2 * math.pi); t, b = t * math.cos(a) + b * math.sin(a), -t * math.sin(a) + b * math.cos(a)
+        s = rng.uniform(0.45, 0.62)
+        Q.append(tuple(tuple(c + (t * sx + b * sy) * s) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))))
+    cards(r, 'leaves', Q, 'M_leaves__shrub')
+    return r
+
+def palm_short():
+    """5: a short wide palm for the roundabout (a pygmy date / sago kind): a stub of trunk and sixteen arching fronds, about
+    1.7 m high and 3.4 m across, so it never hides the clubhouse from the game's camera."""
+    rng = random.Random(5)
+    r = root('hood_palm_short')
+    disc(r, 'trunk', 0.2, 0.55, (0, 0, 0.275), 'M_palm_bark', seg=10, r2=0.15)
+    for k in range(6): disc(r, 'boot', 0.07, 0.16, (math.cos(k) * 0.17, math.sin(k) * 0.17, 0.15 + 0.07 * k), 'M_palm_bark', seg=6)
+    Q = []
+    for k in range(16):
+        az = k * 2 * math.pi / 16 + rng.uniform(-0.15, 0.15)
+        up = math.radians(rng.uniform(35, 62) if k % 2 else rng.uniform(55, 75))   # (two rings: the inner fronds stand up more)
+        L, W = rng.uniform(1.45, 1.8), rng.uniform(0.75, 0.95)
+        d = Vector((math.cos(az), math.sin(az), 0)); side = Vector((-math.sin(az), math.cos(az), 0))
+        p = Vector((0, 0, 0.55)); pts = [p.copy()]
+        for i in range(4):   # (the frond's rib in four pieces, each bent down a little more)
+            a = up - i * math.radians(rng.uniform(16, 24)); p = p + (d * math.cos(a) + Vector((0, 0, math.sin(a)))) * L / 4; pts.append(p.copy())
+        for i in range(4):
+            v0, v1 = i / 4, (i + 1) / 4; tw = side.copy()
+            a0, b0, a1, b1 = pts[i] - tw * W / 2, pts[i] + tw * W / 2, pts[i + 1] - tw * W / 2, pts[i + 1] + tw * W / 2
+            Q.append(((tuple(a0), tuple(b0), tuple(b1), tuple(a1)), v0, v1))
+    bm = bmesh.new(); uvl = bm.loops.layers.uv.new('UVMap')
+    for q, v0, v1 in Q:
+        f = bm.faces.new([bm.verts.new(p) for p in q])
+        for lp, uv in zip(f.loops, ((0, v0), (1, v0), (1, v1), (0, v1))): lp[uvl].uv = uv
+    me = bpy.data.meshes.new('fronds'); bm.to_mesh(me); bm.free(); me.materials.append(propkit.M('M_leaves__palm2'))
+    ob = bpy.data.objects.new('fronds', me); propkit.SC.collection.objects.link(ob); ob.parent = r
+    return r
+
+WALL = dict(L=4.0, h=2.9, t=0.2)
+def wall_concrete():
+    """9, 11: one 4 m section of a tall precast concrete wall (the dock field's and the east side's): a panel between two
+    posts, a cap; along local x, centred, so a line of them joins post to post."""
+    rng = random.Random(9)
+    L, H, T = WALL['L'], WALL['h'], WALL['t']
+    r = root('hood_wall_concrete')
+    box(r, 'panel', (L - 0.3, T, H - 0.12), (0, 0, (H - 0.12) / 2), 'M_concrete_rough')
+    box(r, 'plinth', (L - 0.3, T + 0.06, 0.25), (0, 0, 0.125), 'M_concrete_slab')
+    for sx in (-1, 1): box(r, 'post', (0.32, 0.34, H + 0.12), (sx * (L / 2 - 0.08), 0, (H + 0.12) / 2), 'M_concrete_slab')
+    box(r, 'cap', (L - 0.3, T + 0.1, 0.1), (0, 0, H - 0.05), 'M_concrete_slab')
+    for k in range(2):   # (a panel joint line each side, faintly sunk)
+        x = -L / 6 + k * L / 3
+        for sy in (-1, 1): box(r, 'joint', (0.03, 0.01, H - 0.4), (x, sy * (T / 2 + 0.002), H / 2), 'M_concrete_slab')
+    return r
+
+COURT = dict(L=26.0, W=14.0)
+def court_basketball():
+    """10: an outdoor basketball court for the space north of the lot: 26 x 14 m of lines on a 27.2 x 15.2 m slab, a hoop at each end
+    (pole, arm, board, rim and a little net); the long side along local x, front -Y."""
+    L, W = COURT['L'], COURT['W']
+    r = root('hood_court_basketball')
+    box(r, 'slab', (L + 1.2, W + 1.2, 0.06), (0, 0, 0.03), 'M_concrete_slab')
+    box(r, 'paint', (L, W, 0.004), (0, 0, 0.062), 'M_flat__green')   # (a green court; the light grey of the tennis courts' paint read as white here)
+    LW, Y = 0.07, 0.066
+    def line(a, b):
+        a, b = Vector((*a, Y)), Vector((*b, Y)); d = b - a
+        box(r, 'line', (d.length + LW, LW, 0.004), ((a + b) / 2), 'M_flat__white', rot=(0, 0, math.atan2(d.y, d.x)))
+    def arc(cx, cy, rad, a0, a1, n=18):
+        P = [(cx + rad * math.cos(a0 + (a1 - a0) * i / n), cy + rad * math.sin(a0 + (a1 - a0) * i / n)) for i in range(n + 1)]
+        for a, b in zip(P, P[1:]): line(a, b)
+    hx, hy = L / 2, W / 2
+    for a, b in (((-hx, -hy), (hx, -hy)), ((hx, -hy), (hx, hy)), ((hx, hy), (-hx, hy)), ((-hx, hy), (-hx, -hy)), ((0, -hy), (0, hy))): line(a, b)
+    arc(0, 0, 1.8, 0, 2 * math.pi, 24)
+    for s in (-1, 1):
+        bx = s * hx; fx = bx - s * 5.8
+        for a, b in (((bx, -2.45), (fx, -2.45)), ((fx, -2.45), (fx, 2.45)), ((fx, 2.45), (bx, 2.45))): line(a, b)
+        arc(fx, 0, 1.8, -math.pi / 2, math.pi / 2, 12) if s > 0 else arc(fx, 0, 1.8, math.pi / 2, 1.5 * math.pi, 12)
+        rim = bx - s * 1.58
+        for y in (-6.6, 6.6): line((bx, y), (bx - s * 2.9, y))
+        arc(rim, 0, 6.6, math.pi / 2 + 0.47, 1.5 * math.pi - 0.47, 22) if s > 0 else arc(rim, 0, 6.6, -math.pi / 2 + 0.47, math.pi / 2 - 0.47, 22)
+        # the hoop: a pole 1 m out past the baseline, the arm in to the board over the line
+        px = bx + s * 1.0
+        rod(r, 'pole', (px, 0, 0), (px, 0, 3.4), 0.075, 'M_metal_painted__grey')
+        rod(r, 'arm', (px, 0, 3.25), (bx - s * 1.15, 0, 3.25), 0.05, 'M_metal_painted__grey')
+        box(r, 'board', (0.04, 1.8, 1.05), (bx - s * 1.2, 0, 3.4), 'M_flat__white')
+        box(r, 'board_mark', (0.05, 0.59, 0.45), (bx - s * 1.2 - s * 0.003, 0, 3.27), 'M_flat__orange')
+        for k in range(12):
+            a0, a1 = k * math.pi / 6, (k + 1) * math.pi / 6
+            rod(r, 'rim', (rim + 0.23 * math.cos(a0), 0.23 * math.sin(a0), 3.05), (rim + 0.23 * math.cos(a1), 0.23 * math.sin(a1), 3.05), 0.012, 'M_metal_painted__orange')
+            rod(r, 'net', (rim + 0.23 * math.cos(a0), 0.23 * math.sin(a0), 3.04), (rim + 0.13 * math.cos(a0 + 0.3), 0.13 * math.sin(a0 + 0.3), 2.62), 0.006, 'M_flat__white')
+        rod(r, 'rim_arm', (bx - s * 1.22, 0, 3.05), (rim + s * 0.23, 0, 3.05), 0.02, 'M_metal_painted__orange')
+    return r
+
+def reeds():
+    """(Marc, 2026-10-21: "the yellow is vegitation sticking out of the lake") a clump of reeds and cattails standing in the
+    shallows: thin tapered blades 0.8 - 1.7 m, bent a little, olive and green with a few dry ones, five cattail heads on
+    their stalks; both faces of every blade (the kit's flat paint is one-sided). Its foot at 0 (the water at 0.04 hides it)."""
+    rng = random.Random(14)
+    r = root('hood_reeds')
+    groups = {'M_flat__olive': [], 'M_flat__green': [], 'M_flat__tan': []}
+    for i in range(34):
+        a, d = rng.uniform(0, 2 * math.pi), rng.uniform(0, 0.32)
+        bx, by = math.cos(a) * d, math.sin(a) * d
+        h, w = rng.uniform(0.8, 1.7), rng.uniform(0.035, 0.06)
+        lean = rng.uniform(0.05, 0.3); la = a + rng.uniform(-0.5, 0.5); fa = rng.uniform(0, math.pi)
+        tx, ty = math.cos(fa) * w / 2, math.sin(fa) * w / 2
+        pts = []
+        for k in range(4):   # (three pieces up the blade, bending out more toward its tip, narrowing to a point)
+            t = k / 3; s = 1 - t * 0.9
+            cx, cy, cz = bx + math.cos(la) * lean * t * t * h, by + math.sin(la) * lean * t * t * h, h * t
+            pts.append(((cx - tx * s, cy - ty * s, cz), (cx + tx * s, cy + ty * s, cz)))
+        m = 'M_flat__tan' if i % 9 == 0 else ('M_flat__olive' if i % 2 else 'M_flat__green')
+        for (a0, b0), (a1, b1) in zip(pts, pts[1:]):
+            groups[m].append((a0, b0, b1, a1)); groups[m].append((a1, b1, b0, a0))
+    for m, Q in groups.items():
+        bm = bmesh.new()
+        for q in Q: bm.faces.new([bm.verts.new(p) for p in q])
+        me = bpy.data.meshes.new('blades'); bm.to_mesh(me); bm.free(); me.materials.append(propkit.M(m))
+        ob = bpy.data.objects.new('blades', me); propkit.SC.collection.objects.link(ob); ob.parent = r
+    for k in range(5):   # (the cattails: a stalk, its brown head near the top)
+        a, d = rng.uniform(0, 2 * math.pi), rng.uniform(0.05, 0.25); x, y = math.cos(a) * d, math.sin(a) * d; h = rng.uniform(1.2, 1.75)
+        rod(r, 'stalk', (x, y, 0), (x, y, h), 0.008, 'M_flat__olive', seg=5)
+        rod(r, 'cattail', (x, y, h - 0.32), (x, y, h - 0.1), 0.03, 'M_flat__brown', seg=8)
+    return r
+
+DOCK = dict(L=18.0, W=6.0, top=0.39)
+def dock():
+    """(Marc, 2026-10-21: "double the size of the dock. length and width.. so it can fit people and potential zombies") the
+    pier, 18 x 6 m: weathered boards across it on three stringers, posts down into the lake every 2.5 m along both sides, a
+    low edge board, cleats for the boat; its deck's top at 0.39 (layout.js FLOORS 'dock'). Along local x, centred."""
+    rng = random.Random(16)
+    L, W, top = DOCK['L'], DOCK['W'], DOCK['top']
+    r = root('hood_dock')
+    x = -L / 2
+    while x < L / 2 - 0.05:
+        w = min(0.22, L / 2 - x); dz = rng.uniform(-0.012, 0.012)
+        box(r, 'board', (w - 0.025, W, 0.05), (x + w / 2, 0, top - 0.025 + dz), 'M_wood_raw' if rng.random() > 0.18 else 'M_wood_dark')
+        x += w
+    for y in (-W / 2 + 0.3, 0.0, W / 2 - 0.3): box(r, 'stringer', (L, 0.18, 0.22), (0, y, top - 0.16), 'M_wood_dark')
+    for sy in (-1, 1):
+        box(r, 'edge', (L, 0.08, 0.14), (0, sy * (W / 2 - 0.04), top + 0.05), 'M_wood_dark')
+        k = 0; px = -L / 2 + 0.2
+        while px <= L / 2 - 0.1:
+            disc(r, 'post', 0.12, 1.6, (px, sy * (W / 2 - 0.1), top - 0.75), 'M_wood_dark', seg=8)
+            px += 2.5; k += 1
+    for cx in (-4.0, 2.5): box(r, 'cleat', (0.32, 0.08, 0.06), (cx, -W / 2 + 0.25, top + 0.03), 'M_metal_painted__darkgrey')
+    return r
+
+BUILD = {'shed': (shed, 'hood_shed.glb'), 'garage': (garage, 'hood_garage.glb'), 'home': (home, 'hood_home.glb'), 'fridge': (fridge, 'hood_fridge.glb'), 'case': (case, 'hood_case.glb'),
+         'shrub_tall': (shrub_tall, 'hood_shrub_tall.glb'), 'palm_short': (palm_short, 'hood_palm_short.glb'), 'wall_concrete': (wall_concrete, 'hood_wall_concrete.glb'),
+         'court_basketball': (court_basketball, 'hood_court_basketball.glb'), 'reeds': (reeds, 'hood_reeds.glb'), 'dock': (dock, 'hood_dock.glb')}
 
 if __name__ == '__main__':
     names = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else list(BUILD)

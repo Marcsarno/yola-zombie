@@ -31,4 +31,4 @@ export async function runBot({ maxTicks = 60 * 60 * 12, chunk = 120, log = [] } 
   return log;
 }
 // where the bot walks to when a stop waits on the player being somewhere (by objective first, then by stop)
-const BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [-8.4, -107.6], horde: [-12, -96], leave: [-24, -80] };
+const BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [10.3, -99.6], horde: [-12, -96], leave: [-24, -80] };

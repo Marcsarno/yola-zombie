@@ -18,7 +18,7 @@ const HOOD_ROOT = 'assets/neighborhood/';
 // the maps this view draws: Chapter 2's neighbourhood, and Chapter 4's peninsula (blender/grammy/export_grammy.py). Each has
 // its ground masks (mask_hood.py) and baked light (bake_hood.py) over rect = [x0, z0, width, depth]
 export const MAPS = {
-  hood: { root: HOOD_ROOT, layout: 'hood_layout.json', ground: 'hood_ground.glb', splat: 'hood_splat.png', paths: 'hood_paths.png', light: 'hood_light.jpg', rect: [-70, -130, 180, 226] },
+  hood: { root: HOOD_ROOT, layout: 'hood_layout.json', ground: 'hood_ground.glb', splat: 'hood_splat.png', paths: 'hood_paths.png', lawn: 'hood_lawn.png', light: 'hood_light.jpg', rect: [-70, -130, 180, 226] },
   grammy: { root: 'assets/grammy/', layout: 'grammy_layout.json', ground: 'grammy_ground.glb', splat: 'grammy_splat.png', paths: 'grammy_paths.png', light: 'grammy_light.jpg', rect: [-135, -250, 310, 330] },
 };
 let MAP = MAPS.hood, ROOT = MAP.root;
@@ -30,6 +30,31 @@ const NO_SHADOW = /^(nbt_|palm_|yard_|shrub_|nb_frond|trees|curb|by_ball|yardpro
 const PICKUP_MODELS = { rifle: 'props/security_rifle.glb', cutters: 'models/boltcutters.glb', gas: 'models/nb_fuel_can.glb', ammo: 'kit/military_crate.glb', health: 'models/loot_crate.glb', radio: 'props/hospital_radio.glb',
   case: 'props/hood_case.glb', shotgun: 'assets/weapons/pump_short.glb', cooler: 'models/by_cooler.glb' };
 const PICKUP_SCALE = { ammo: 0.55, health: 0.45 };
+
+// the lake must not show inside the boat's open hull (Marc, 2026-10-21: "make sure the water doesn't clip through the boat"):
+// an unseen cover over the hull at its waterline (the outline of the hull there, a little in), drawn after everything solid
+// and writing only depth, so the water (drawn after it, see-through) is hidden under it. It rides with the boat.
+const WATER_Y = 0.04;   // (the lake's surface: the lake mesh in blender/hood/hood.blend)
+function hullMask(o) {
+  o.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(o.matrixWorld).invert(), v = new THREE.Vector3(), wl = (WATER_Y - o.position.y) / (o.scale.y || 1), pts = [];
+  o.traverse((m) => {
+    if (!m.isMesh) return; const pos = m.geometry.attributes.position, M = new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld);
+    for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(M); if (v.y > wl - 0.05 && v.y < wl + 0.25) pts.push([v.x, v.z]); }
+  });
+  if (pts.length < 3) return;
+  // (the outline: the convex hull of the hull's points round its waterline, 3 cm in)
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o2, a, b) => (a[0] - o2[0]) * (b[1] - o2[1]) - (a[1] - o2[1]) * (b[0] - o2[0]);
+  const lo = [], hi = [];
+  for (const q of pts) { while (lo.length > 1 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of pts.slice().reverse()) { while (hi.length > 1 && cross(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
+  const ring = lo.slice(0, -1).concat(hi.slice(0, -1)), cx = ring.reduce((a, q) => a + q[0], 0) / ring.length, cz = ring.reduce((a, q) => a + q[1], 0) / ring.length;
+  const shape = new THREE.Shape(ring.map(([x, z]) => { const d = Math.hypot(x - cx, z - cz) || 1, k = Math.max(0, d - 0.03) / d; return new THREE.Vector2(cx + (x - cx) * k, -(cz + (z - cz) * k)); }));
+  const mask = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+  mask.rotation.x = -Math.PI / 2; mask.position.y = wl + 0.06; mask.renderOrder = 10; mask.name = 'hullMask'; mask.castShadow = mask.receiveShadow = false;
+  o.add(mask);
+}
 
 export class HoodView {
   constructor(scene) {
@@ -45,7 +70,7 @@ export class HoodView {
     // the ground's splat mask (blender/hood/mask_hood.py: dirt along the kerbs and walls, litter under trees, dry edges, the
     // shore), laid by world x / z over the bake's extents; the grass's keep-off map beside it (grass.js)
     const tl = new THREE.TextureLoader(), mask = (f) => tl.loadAsync(ROOT + f).then((t) => { t.flipY = false; t.colorSpace = THREE.NoColorSpace; return t; }).catch(() => null);
-    [this.splat, this.paths] = await Promise.all([mask(MAP.splat), mask(MAP.paths)]); this.rect = MAP.rect;
+    [this.splat, this.paths, this.lawn] = await Promise.all([mask(MAP.splat), mask(MAP.paths), MAP.lawn ? mask(MAP.lawn) : null]); this.rect = MAP.rect;
     this.layout = await fetch(ROOT + MAP.layout).then((r) => r.json());
     const L = this.layout;
     // (polish 4) the download diet: tools/hood/optimize.mjs wrote meshopt-compressed copies with WebP textures to opt/
@@ -100,6 +125,7 @@ export class HoodView {
     await texturesReady();
     this.group.traverse((o) => { if (o.isMesh) { o.matrixAutoUpdate = false; o.updateMatrix(); } });
     for (const list of Object.values(this.seals)) for (const s of list) s.o.traverse((q) => { q.matrixAutoUpdate = true; }); // (they move: the gate's leaves too)
+    for (const s of this.seals.boat || []) hullMask(s.o);
     this.ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.52, 40), new THREE.MeshBasicMaterial({ color: 0x3dff72, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
     this.ring.rotation.x = -Math.PI / 2;
     return this;
@@ -107,7 +133,7 @@ export class HoodView {
 
   addGround(root) {
     swapMaterials(root);
-    const terr = terrainMaterial({ splat: this.splat, paths: this.paths, rect: this.rect });
+    const terr = this.terrain = terrainMaterial({ splat: this.splat, paths: this.paths, lawn: this.lawn, rect: this.rect });
     if (this.paths) shoreWater(this.paths, this.rect);
     root.traverse((o) => {
       if (!o.isMesh) return;

@@ -41,24 +41,19 @@ for o in list(bpy.data.collections['COL'].objects):
 n2 = remove(lambda e: os.path.basename(e['src']).startswith(BOUNDARY_KIT) and any(near_line(e.location.x, gz(e), L, 1.4) for L in POCKET))
 print('dock pocket lines out', n, 'colliders,', n2, 'pieces')
 
-# ---------------------------------------------------------------- 3. the road's gap in the lot's west fence (x 27.3)
-GAP = (-84.6, -77.4)   # (game z: the road's width and a little)
+# ---------------------------------------------------------------- 3. the lot's west fence (x 27.3) goes
+# (it had a gap for the road; Marc's notes, 2026-10-21, "all this junk too": the whole fence, its palisades, tyres and pallets)
 LOT_W = [(27.6, -69.1), (27.0, -91.3)]
 for o in list(bpy.data.collections['COL'].objects):
-    if o.get('tag') == 'boundary' and near_line(o.location.x, gz(o), LOT_W, 1.2) and abs(o.scale.x) > 15: bpy.data.objects.remove(o, do_unlink=True)
-def lot_x(z): return LOT_W[0][0] + (LOT_W[1][0] - LOT_W[0][0]) * (z - LOT_W[0][1]) / (LOT_W[1][1] - LOT_W[0][1])
-for z0, z1 in ((LOT_W[0][1], GAP[1]), (GAP[0], LOT_W[1][1])):
-    za, zb = max(z0, z1), min(z0, z1); xa, xb = lot_x(za), lot_x(zb)
-    o = col_box('COL_boundary_lotw', (xa + xb) / 2, (za + zb) / 2, 0.45, abs(za - zb) / 2, math.atan2(-(xb - xa), za - zb), 2.5, 'boundary'); o['ch2'] = ID
-print('lot fence gap: pieces out', remove(lambda e: os.path.basename(e['src']).startswith(BOUNDARY_KIT) and near_line(e.location.x, gz(e), LOT_W, 1.4) and GAP[0] - 0.6 < gz(e) < GAP[1] + 0.6))
+    if o.get('tag') == 'boundary' and near_line(o.location.x, gz(o), LOT_W, 1.2): bpy.data.objects.remove(o, do_unlink=True)
+print('lot west fence: pieces out', remove(lambda e: os.path.basename(e['src']).startswith(BOUNDARY_KIT) and near_line(e.location.x, gz(e), LOT_W, 1.6)))
 
-# the groundskeeper's chained gate across the road in that gap: shut until the story reaches the dock (Marc cuts it)
-seal_line('dock_road_gate', [(lot_x(GAP[1]) + 0.05, GAP[1] - 0.15), (lot_x(GAP[0]) + 0.05, GAP[0] + 0.15)], CHAIN, rng, tag='seal:dockroad', owner=ID)
+# (the groundskeeper's chained gate that stood across the road in that gap went with Marc's notes, 2026-10-21: "should be
+# able to freely walk", design/CH2_MARC_NOTES_2026-10-21.md 9)
 
-# ---------------------------------------------------------------- 4. the new fence along the tree line, the lake's north shore
-seal_line('ch2_fence', FENCE_LINE, FENCE, rng, tag='boundary', h=2.5, owner=ID)
-o = col_box('COL_boundary_ch2_corner', 27.95, -91.15, 0.85, 0.6, 0.0, 2.5, 'boundary'); o['ch2'] = ID   # (the lot's north-west corner: its two fences met short)
-o = col_box('COL_water_ch2_north', -43.0, -100.6, 16.2, 0.7, 0.0, 1.0, 'water'); o['ch2'] = ID   # (the lake's north edge had none)
+# ---------------------------------------------------------------- 4. (the tree-line fence and the lake's north edge)
+# (the fence is ch2_notes.py's concrete wall now, from the lake's rounded north shore; that shore and its water collision
+# are ch2_notes.py's too: Marc's notes, 2026-10-21, "round out the lake")
 
 # ---------------------------------------------------------------- 5. the service road: the lot's west edge to the dock
 asphalt = bpy.data.objects['roads'].data.materials[0]
@@ -66,7 +61,9 @@ ROAD = [(-23.5, -75.6), (-14.5, -75.6), (-11.8, -78.2), (34.6, -78.2), (34.6, -8
 ground_mesh('ch2_dock_road', ROAD[::-1], 0.027, asphalt, ID)
 
 # ---------------------------------------------------------------- 6. the shed, its door to the south (toward the camera and the dock)
-SX, SZ = -8.6, -110.0
+# (Marc's notes 9: "add 2 dumpsters and then the shed. I think thats more realistic": a service yard against the new wall,
+# east of the field's middle by the road; the two dumpsters on its west, below)
+SX, SZ = 10.5, -102.4
 place('props/hood_shed.glb', SX, SZ, 0.0, tag='seal:shed', collide=False, name='ch2_shed', owner=ID)   # (drawn on its own: its doors swing)
 W, D, T = SHED['w'], SHED['d'], SHED['t']
 def L(lx, ly): return SX + lx, SZ - ly   # shed local (x, y) -> game (x, z); local -y is the game's +z
@@ -92,5 +89,8 @@ mark('shed', SX, SZ, owner=ID)
 mark('shed_door', *L(dcx, y0 - 0.9), yaw=0.0, owner=ID)          # just outside the doorway
 mark('shed_inside', *L(dcx, 0.0), owner=ID)                       # where Marc stands to look round
 mark('dock_road_lot', 31.0, -81.0, owner=ID); mark('dock_road_dock', -17.0, -81.0, owner=ID)
-mark('dockroad_use', 29.2, -81.0, owner=ID)                      # (the lot side of its chained gate)
+# the two dumpsters west of the shed, backs to the wall, lids to the road
+for k, dx in enumerate((-6.9, -4.6)):
+    x = SX + dx; zw = -103.5 + (x + 58.0) * (-3.5 / 164.0)
+    place('kit/dumpster.glb', x, zw + 0.25 + size_of('kit/dumpster.glb')[1] / 2 + 0.1, 0.0, name='ch2_yard_dumpster', owner=ID)
 print('dock rebuilt: placed', len(placed().objects), 'colliders', len(bpy.data.collections['COL'].objects))
