@@ -1,5 +1,5 @@
 (() => {
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.core.js
+  // node_modules/three/build/three.core.js
   var REVISION = "180";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
   var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
@@ -21006,7 +21006,7 @@
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/build/three.module.js
+  // node_modules/three/build/three.module.js
   function WebGLAnimation() {
     let context = null;
     let isAnimating = false;
@@ -31112,7 +31112,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
+  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function toTrianglesDrawMode(geometry, drawMode) {
     if (drawMode === TrianglesDrawMode) {
       console.warn("THREE.BufferGeometryUtils.toTrianglesDrawMode(): Geometry already defined as triangles.");
@@ -31168,7 +31168,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/GLTFLoader.js
+  // node_modules/three/examples/jsm/loaders/GLTFLoader.js
   var GLTFLoader = class extends Loader {
     /**
      * Constructs a new glTF loader.
@@ -33735,7 +33735,7 @@ void main() {
     });
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/libs/fflate.module.js
+  // node_modules/three/examples/jsm/libs/fflate.module.js
   var u8 = Uint8Array;
   var u16 = Uint16Array;
   var i32 = Int32Array;
@@ -34107,7 +34107,7 @@ void main() {
   } catch (e) {
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSUtils.js
+  // node_modules/three/examples/jsm/curves/NURBSUtils.js
   function findSpan(p, u, U) {
     const n = U.length - p - 1;
     if (u >= U[n]) {
@@ -34299,7 +34299,7 @@ void main() {
     return calcRationalCurveDerivatives(Pders);
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/curves/NURBSCurve.js
+  // node_modules/three/examples/jsm/curves/NURBSCurve.js
   var NURBSCurve = class extends Curve {
     /**
      * Constructs a new NURBS curve.
@@ -34374,7 +34374,7 @@ void main() {
     }
   };
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/loaders/FBXLoader.js
+  // node_modules/three/examples/jsm/loaders/FBXLoader.js
   var fbxTree;
   var connections;
   var sceneGraph;
@@ -36825,7 +36825,7 @@ void main() {
     return a;
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/controls/OrbitControls.js
+  // node_modules/three/examples/jsm/controls/OrbitControls.js
   var _changeEvent = { type: "change" };
   var _startEvent = { type: "start" };
   var _endEvent = { type: "end" };
@@ -37665,7 +37665,7 @@ void main() {
     }
   }
 
-  // ../../../../../../.claude/projects/Zombie Apoc/yolanda/zombie/node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
+  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
   var _tempNormal = new Vector3();
   function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
     const totArcLength = 2 * Math.PI * radius / 4;
@@ -39168,6 +39168,150 @@ void main() {
     return o;
   }
 
+  // src/render/radiohold.js
+  var RADIO_FILE = "assets/neighborhood/props/hospital_radio.glb";
+  var BACK = new Vector3(-2e-3, 0, -0.024);
+  var MIC = new Vector3(-2e-3, 0.1, 0.032);
+  var RADIO0 = {
+    size: 72,
+    slide: 4,
+    grip: 55,
+    elbow: 25,
+    curl: 62,
+    thumb: 30,
+    chin: 6,
+    talk: { fwd: 6, side: 6, up: -1, roll: 0 },
+    listen: { fwd: 8, side: 14, up: -14, roll: 0 }
+  };
+  var radioFit = (f) => ({ ...RADIO0, ...f, talk: { ...RADIO0.talk, ...f?.talk }, listen: { ...RADIO0.listen, ...f?.listen } });
+  var UP2 = new Vector3(0, 1, 0);
+  var D2R = Math.PI / 180;
+  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var _q7 = new Quaternion();
+  var _q23 = new Quaternion();
+  var _qh = new Quaternion();
+  var _m5 = new Matrix4();
+  var _v3 = new Vector3();
+  var _v22 = new Vector3();
+  var _r = new Vector3();
+  var _mo = new Vector3();
+  var _mt = new Vector3();
+  var _wt = new Vector3();
+  var _a7 = new Vector3();
+  var _e3 = new Vector3();
+  var _h = new Vector3();
+  var _s = new Vector3();
+  var _mic = new Vector3();
+  var _sp2 = new Vector3();
+  var _sq = new Quaternion();
+  var _x2 = new Vector3();
+  var _y2 = new Vector3();
+  var _z2 = new Vector3();
+  var _d3 = new Vector3();
+  function rotW(b, axis, ang) {
+    if (!b || Math.abs(ang) < 1e-6) return;
+    _q7.setFromAxisAngle(axis, ang);
+    b.getWorldQuaternion(_q23);
+    _q7.multiply(_q23);
+    b.parent.getWorldQuaternion(_q23);
+    b.quaternion.copy(_q23.invert().multiply(_q7));
+    b.updateMatrixWorld(true);
+  }
+  var RIGS = /* @__PURE__ */ new WeakMap();
+  function radioRig(model, bones, fist = []) {
+    let r = RIGS.get(model);
+    if (r) return r;
+    let sk = null;
+    model.traverse((o) => {
+      if (!sk && o.isSkinnedMesh && o.skeleton.bones.includes(bones.RightHand)) sk = o.skeleton;
+    });
+    const bindQ = (b) => {
+      const q = new Quaternion();
+      new Matrix4().copy(sk.boneInverses[sk.bones.indexOf(b)]).invert().decompose(_v3, q, _v22);
+      return q;
+    };
+    const wrist = sk ? bindQ(bones.RightForeArm).invert().multiply(bindQ(bones.RightHand)) : bones.RightHand.quaternion.clone();
+    const face = sk && bones.Head ? new Vector3(0, 0, 1).applyQuaternion(bindQ(bones.Head).invert()) : null;
+    const F = bones.RightHandMiddle1.position.clone(), len = F.length();
+    F.normalize();
+    const R = bones.RightHandIndex1.position.clone().sub(bones.RightHandPinky1.position);
+    R.addScaledVector(F, -R.dot(F)).normalize();
+    const P = new Vector3().crossVectors(R, F).normalize();
+    r = { bones, wrist, face, F, R, P, len, fist: fist.filter(([b]) => /Right/.test(b.name)) };
+    RIGS.set(model, r);
+    return r;
+  }
+  function socket(rig, fit2, outQ, outP) {
+    const hand = rig.bones.RightHand, sw = hand.getWorldScale(_s).x, Lw = rig.len * sw, s = fit2.size / 100, g = fit2.grip * D2R;
+    _y2.copy(rig.R).multiplyScalar(Math.cos(g)).addScaledVector(rig.F, Math.sin(g)).normalize();
+    _z2.copy(rig.P);
+    _x2.crossVectors(_y2, _z2).normalize();
+    outQ.setFromRotationMatrix(_m5.makeBasis(_x2, _y2, _z2));
+    outP.copy(rig.F).multiplyScalar(Lw * 0.5).addScaledVector(rig.P, Lw * 0.11).sub(_v3.copy(BACK).multiplyScalar(s).applyQuaternion(outQ)).addScaledVector(_y2, -fit2.slide * 0.01);
+  }
+  function radioPlace(rig, obj, fit2) {
+    const hand = rig.bones.RightHand;
+    socket(rig, fit2, _sq, _sp2);
+    hand.getWorldQuaternion(_qh);
+    hand.getWorldPosition(obj.position).add(_sp2.applyQuaternion(_qh));
+    obj.quaternion.copy(_qh).multiply(_sq);
+    obj.scale.setScalar(fit2.size / 100);
+  }
+  function micAt(rig, fit2, out) {
+    const hand = rig.bones.RightHand;
+    socket(rig, fit2, _sq, _sp2);
+    hand.getWorldQuaternion(_qh);
+    return hand.getWorldPosition(out).add(_sp2.applyQuaternion(_qh)).add(_v3.copy(MIC).multiplyScalar(fit2.size / 100).applyQuaternion(_sq.premultiply(_qh)));
+  }
+  function radioPose(rig, fit2, w, talk, fwd, H) {
+    if (w <= 1e-3) return;
+    const B = rig.bones, hs = H / 1.8, arm = [B.RightShoulder, B.RightArm, B.RightForeArm, B.RightHand].filter(Boolean);
+    const touched = [...arm, B.Neck, B.Head, ...rig.fist.map(([b]) => b)].filter(Boolean), before = touched.map((b) => b.quaternion.clone());
+    const right = _r.crossVectors(fwd, UP2).normalize();
+    if (rig.face && B.Neck) {
+      const f = _v3.copy(rig.face).applyQuaternion(B.Head.getWorldQuaternion(_q23));
+      const turn = -(fit2.chin * D2R + Math.asin(clamp4(f.y, -1, 1)));
+      rotW(B.Neck, right, turn * 0.4);
+      rotW(B.Head, right, turn * 0.6);
+    }
+    const mouth = B.Head.getWorldPosition(_mo).addScaledVector(UP2, -0.075 * hs).addScaledVector(fwd, 0.1 * hs);
+    const mix = (k) => fit2.listen[k] + (fit2.talk[k] - fit2.listen[k]) * talk;
+    const micT = _mt.copy(mouth).addScaledVector(fwd, mix("fwd") * 0.01 * hs).addScaledVector(right, mix("side") * 0.01 * hs).addScaledVector(UP2, mix("up") * 0.01 * hs);
+    const roll = mix("roll") * D2R, el = fit2.elbow * D2R;
+    const arm0 = arm.map((b) => b.quaternion.clone()), wristT = _wt.copy(micT).addScaledVector(UP2, -0.08 * hs);
+    for (let k = 0; k < 4; k++) {
+      arm.forEach((b, i) => b.quaternion.copy(arm0[i]));
+      arm[0].updateMatrixWorld(true);
+      reachShoulder(B, "Right", wristT);
+      ikArm(B.RightArm, B.RightForeArm, B.RightHand, wristT, 1);
+      const a = B.RightArm.getWorldPosition(_a7), h = B.RightHand.getWorldPosition(_h), ax = _v22.copy(h).sub(a).normalize();
+      const ep = B.RightForeArm.getWorldPosition(_e3).sub(a);
+      ep.addScaledVector(ax, -ep.dot(ax));
+      const pp = _v3.copy(UP2).multiplyScalar(-Math.cos(el)).addScaledVector(right, Math.sin(el));
+      pp.addScaledVector(ax, -pp.dot(ax));
+      if (ep.lengthSq() > 1e-8 && pp.lengthSq() > 1e-8) rotW(B.RightArm, ax, ep.angleTo(pp) * Math.sign(_x2.crossVectors(ep, pp).dot(ax) || 1));
+      B.RightHand.quaternion.copy(rig.wrist);
+      B.RightHand.updateMatrixWorld(true);
+      const A = B.RightHand.getWorldPosition(_h).sub(B.RightForeArm.getWorldPosition(_e3)).normalize();
+      const mic = micAt(rig, fit2, _mic);
+      socket(rig, fit2, _sq, _sp2);
+      const Z = _z2.set(0, 0, 1).applyQuaternion(_sq.premultiply(B.RightHand.getWorldQuaternion(_qh)));
+      const D3 = _y2.copy(mouth).addScaledVector(fwd, -0.08 * hs).sub(mic);
+      Z.addScaledVector(A, -Z.dot(A));
+      D3.addScaledVector(A, -D3.dot(A));
+      const face = Z.lengthSq() > 1e-8 && D3.lengthSq() > 1e-8 ? Z.angleTo(D3) * Math.sign(_x2.crossVectors(Z, D3).dot(A) || 1) : 0;
+      rotW(B.RightHand, A, face + roll);
+      const got = micAt(rig, fit2, _mic);
+      wristT.add(_d3.copy(micT).sub(got));
+    }
+    for (const [b, q] of rig.fist) b.quaternion.slerp(q, (/Thumb/.test(b.name) ? fit2.thumb : fit2.curl) / 100);
+    if (w < 1) touched.forEach((b, i) => {
+      _q7.copy(b.quaternion);
+      b.quaternion.copy(before[i]).slerp(_q7, w);
+    });
+    touched[0].parent.updateMatrixWorld(true);
+  }
+
   // src/core/heroes.js
   var HERO_MOVE_SPEED = {
     lilah: 2.05
@@ -39306,11 +39450,11 @@ void main() {
   };
 
   // src/riglab/check.js
-  var _q7 = new Quaternion();
-  var _q23 = new Quaternion();
+  var _q8 = new Quaternion();
+  var _q24 = new Quaternion();
   var _q33 = new Quaternion();
-  var _v3 = new Vector3();
-  var _v22 = new Vector3();
+  var _v4 = new Vector3();
+  var _v23 = new Vector3();
   var CHAIN = { Hips: "Spine", Spine: "Spine1", Spine1: "Spine2", Spine2: "Neck", Neck: "Head", Head: "HeadTop_End" };
   for (const s of ["Left", "Right"]) {
     Object.assign(CHAIN, {
@@ -39412,19 +39556,19 @@ void main() {
       for (const e of this.list) {
         const tb = e.tb;
         if (e.sb) {
-          const Ws = e.sb.getWorldQuaternion(_q7);
+          const Ws = e.sb.getWorldQuaternion(_q8);
           let Wt;
           if (e.rel) {
-            const Wps = e.rel.sp.getWorldQuaternion(_q23), relS = Wps.multiply(e.rel.RpsInv).invert().multiply(_q7.clone().multiply(e.rel.RsInv));
+            const Wps = e.rel.sp.getWorldQuaternion(_q24), relS = Wps.multiply(e.rel.RpsInv).invert().multiply(_q8.clone().multiply(e.rel.RsInv));
             const Wpt = tb.parent.getWorldQuaternion(new Quaternion()).multiply(e.rel.RptInv);
             Wt = Wpt.multiply(Yf.clone().multiply(relS).multiply(YfInv)).multiply(e.Rt);
           } else Wt = Yf.clone().multiply(Ws).multiply(e.off);
-          tb.parent.getWorldQuaternion(_q23);
-          tb.quaternion.copy(_q23.invert().multiply(Wt));
+          tb.parent.getWorldQuaternion(_q24);
+          tb.quaternion.copy(_q24.invert().multiply(Wt));
           if (e.hips) {
-            const s = src.root.worldToLocal(e.sb.getWorldPosition(_v3)).sub(e.hips.srcRest).multiplyScalar(src.root.scale.y);
+            const s = src.root.worldToLocal(e.sb.getWorldPosition(_v4)).sub(e.hips.srcRest).multiplyScalar(src.root.scale.y);
             s.applyQuaternion(Yf).multiplyScalar(e.hips.tgtRest.y * tgt.root.scale.y / Math.max(1e-6, e.hips.srcRest.y * src.root.scale.y));
-            const w = tgt.root.localToWorld(_v22.copy(e.hips.tgtRest)).add(s);
+            const w = tgt.root.localToWorld(_v23.copy(e.hips.tgtRest)).add(s);
             tb.parent.updateWorldMatrix(true, false);
             tb.position.copy(tb.parent.worldToLocal(w));
           }
@@ -39570,12 +39714,12 @@ void main() {
   var CLIP_FPS = { bat_combo_mc: 60 };
   var VIDREF = { bat_combo_mc: { dir: "assets/ref/bat13/", offset: 19, first: 20, last: 184 } };
   var $ = (id) => document.getElementById(id);
-  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
-  var UP2 = new Vector3(0, 1, 0);
-  var _v4 = new Vector3();
-  var _v23 = new Vector3();
+  var clamp5 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var UP3 = new Vector3(0, 1, 0);
+  var _v5 = new Vector3();
+  var _v24 = new Vector3();
   var _v32 = new Vector3();
-  var _q8 = new Quaternion();
+  var _q9 = new Quaternion();
   var YOLA2_REF = {
     bat_swing: "yola_baseball_single",
     bat_swing_m: null,
@@ -39743,9 +39887,9 @@ void main() {
   function camHands(who) {
     const a = who === "ref" ? ref : main;
     if (!a?.action || !a.root.visible) return;
-    a.grip("Right", _v4);
-    a.grip("Left", _v23);
-    const c = _v4.clone().lerp(_v23, 0.5);
+    a.grip("Right", _v5);
+    a.grip("Left", _v24);
+    const c = _v5.clone().lerp(_v24, 0.5);
     const dir = camera.position.clone().sub(controls.target).normalize();
     controls.target.copy(c);
     camera.position.copy(c).addScaledVector(dir, 0.5);
@@ -39863,8 +40007,8 @@ void main() {
       });
       this.restPos = {};
       obj.traverse((o) => {
-        var _a7, _b7;
-        if (o.isBone) (_a7 = this.restPos)[_b7 = o.name.replace(/^mixamorig:?/, "")] || (_a7[_b7] = o.position.clone());
+        var _a8, _b7;
+        if (o.isBone) (_a8 = this.restPos)[_b7 = o.name.replace(/^mixamorig:?/, "")] || (_a8[_b7] = o.position.clone());
       });
       this.rest = [];
       obj.traverse((o) => {
@@ -39913,7 +40057,7 @@ void main() {
         const n = b.valueSize, buf = b.buffer;
         for (let i = n; i < 3 * n; i++) buf[i] = NaN;
       }
-      this.action.time = clamp4(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
+      this.action.time = clamp5(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
       this.mixer.update(0);
       this.root.updateMatrixWorld(true);
     }
@@ -39957,21 +40101,21 @@ void main() {
     }
     calibrateHere() {
       const a = this.actor;
-      a.grip("Right", _v4);
-      a.grip("Left", _v23);
-      const x = _v23.clone().sub(_v4).normalize(), z = new Vector3().crossVectors(x, UP2).normalize(), y = new Vector3().crossVectors(z, x);
+      a.grip("Right", _v5);
+      a.grip("Left", _v24);
+      const x = _v24.clone().sub(_v5).normalize(), z = new Vector3().crossVectors(x, UP3).normalize(), y = new Vector3().crossVectors(z, x);
       const g = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
-      a.bones.RightHand.getWorldQuaternion(_q8);
-      this.socket.copy(_q8.invert().multiply(g));
+      a.bones.RightHand.getWorldQuaternion(_q9);
+      this.socket.copy(_q9.invert().multiply(g));
       this.has = true;
     }
     update(k) {
       if (!this.obj || !this.has) return;
       const a = this.actor, F = fitAt(SHOTGUNS[weaponOf()] ? weaponOf() : "short", a);
-      a.bones.RightHand.getWorldQuaternion(_q8);
-      const gq = _q8.multiply(this.socket);
-      a.grip("Right", _v4);
-      applyFit(this.obj, _v4, gq, F, new Vector3(), k, k);
+      a.bones.RightHand.getWorldQuaternion(_q9);
+      const gq = _q9.multiply(this.socket);
+      a.grip("Right", _v5);
+      applyFit(this.obj, _v5, gq, F, new Vector3(), k, k);
       this.obj.updateMatrixWorld(true);
     }
   };
@@ -40067,11 +40211,11 @@ void main() {
       const vis = on && a.root.visible;
       for (const o of Object.values(m)) o.visible = vis;
       if (!vis || !a.action) continue;
-      a.grip("Right", _v4);
-      a.grip("Left", _v23);
-      m.r.position.copy(_v4);
-      m.l.position.copy(_v23);
-      m.line.geometry.setFromPoints([_v4.clone(), _v23.clone()]);
+      a.grip("Right", _v5);
+      a.grip("Left", _v24);
+      m.r.position.copy(_v5);
+      m.l.position.copy(_v24);
+      m.line.geometry.setFromPoints([_v5.clone(), _v24.clone()]);
     }
   }
   async function setChar(key) {
@@ -40233,7 +40377,7 @@ void main() {
   var _m14 = new Vector3();
   var _m22 = new Vector3();
   var smooth01 = (u) => {
-    u = clamp4(u, 0, 1);
+    u = clamp5(u, 0, 1);
     return u * u * (3 - 2 * u);
   };
   var PUMP_HAND_Q = { short: new Quaternion(0.6878, 0.2306, -0.2638, 0.6357) };
@@ -40291,11 +40435,11 @@ void main() {
   function alignShell() {
     const g = mainGun?.obj;
     if (!g?.userData.port) return;
-    main.bones.LeftHand.getWorldQuaternion(_q8);
-    main.grip("Left", _v4);
-    g.userData.port.getWorldPosition(_v23);
-    const d = _v23.clone().sub(_v4), L = d.length();
-    d.normalize().applyQuaternion(_q8.clone().invert());
+    main.bones.LeftHand.getWorldQuaternion(_q9);
+    main.grip("Left", _v5);
+    g.userData.port.getWorldPosition(_v24);
+    const d = _v24.clone().sub(_v5), L = d.length();
+    d.normalize().applyQuaternion(_q9.clone().invert());
     const q = new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), d), e = new Euler().setFromQuaternion(q, "XYZ");
     Object.assign(shellFit, { rx: e.x * 180 / Math.PI, ry: e.y * 180 / Math.PI, rz: e.z * 180 / Math.PI, x: Math.max(0, L - 0.037), y: 0, z: 0 });
     window.__lab.setShell({});
@@ -40308,7 +40452,7 @@ void main() {
     shellObj.visible = on;
     if (!on) return;
     const port = mainGun?.obj?.userData.port, u = smooth01((f - (shellFit.to - SHELL_INSERT)) / SHELL_INSERT);
-    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v4), "Left", u)) {
+    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v5), "Left", u)) {
       shellObj.visible = false;
       return;
     }
@@ -40342,6 +40486,7 @@ void main() {
     postureFix(main, ref);
     handPose(main);
     armPoseOn(main);
+    radioOn(main);
     if (SHOTGUNS[weaponOf()]) untwistWrist(main, "Left", S.wristKeep ?? 45);
     if (handsUI && handsSeen !== handKey()) {
       handsSeen = handKey();
@@ -40375,26 +40520,26 @@ void main() {
     }
     const lines = [];
     if (main.action) {
-      main.grip("Right", _v4);
-      main.grip("Left", _v23);
-      lines.push(`${CHARS[S.char].label}   hand span ${_v4.distanceTo(_v23).toFixed(3)} m`);
+      main.grip("Right", _v5);
+      main.grip("Left", _v24);
+      lines.push(`${CHARS[S.char].label}   hand span ${_v5.distanceTo(_v24).toFixed(3)} m`);
     }
     if (ref.root.visible && ref.action) {
-      ref.grip("Right", _v4);
-      ref.grip("Left", _v23);
-      lines.push(`Reference   hand span ${_v4.distanceTo(_v23).toFixed(3)} m`);
+      ref.grip("Right", _v5);
+      ref.grip("Left", _v24);
+      lines.push(`Reference   hand span ${_v5.distanceTo(_v24).toFixed(3)} m`);
     }
     const hold = mainGun?.obj?.userData.gripL;
     if (hold && main.action) {
-      hold.getWorldPosition(_v4);
-      main.grip("Left", _v23);
-      lines.push(`left hand to gun hold point ${_v4.distanceTo(_v23).toFixed(3)} m`);
+      hold.getWorldPosition(_v5);
+      main.grip("Left", _v24);
+      lines.push(`left hand to gun hold point ${_v5.distanceTo(_v24).toFixed(3)} m`);
     }
     const port = mainGun?.obj?.userData.port;
     if (port && main.action) {
-      port.getWorldPosition(_v4);
-      main.grip("Left", _v23);
-      lines.push(`left hand to loading port ${_v4.distanceTo(_v23).toFixed(3)} m`);
+      port.getWorldPosition(_v5);
+      main.grip("Left", _v24);
+      lines.push(`left hand to loading port ${_v5.distanceTo(_v24).toFixed(3)} m`);
     }
     $("readout").textContent = lines.join("\n");
     $("fitOut").value = JSON.stringify({ gun: S.gun, clip: $("clip").value, shell: shellFit, ...Object.fromEntries(Object.entries(fit).map(([k, v]) => [k, +(+v).toFixed(4)])) }, null, 1);
@@ -40695,8 +40840,8 @@ void main() {
   var HANDS = {};
   var handKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
   var handsOf = () => {
-    var _a7;
-    return HANDS[_a7 = handKey()] || (HANDS[_a7] = { ...HAND0 });
+    var _a8;
+    return HANDS[_a8 = handKey()] || (HANDS[_a8] = { ...HAND0 });
   };
   fetch("assets/hold/hand_poses.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
     for (const [k, v] of Object.entries(j)) if (typeof v === "object") HANDS[k] = { ...HAND0, ...v };
@@ -40765,6 +40910,45 @@ void main() {
     };
     handsUI();
   }
+  var RADIO = {};
+  var RAD = { on: false, mode: "talk", obj: null };
+  var radioOf = () => RADIO[S.char] = radioFit(RADIO[S.char]);
+  var keepRadio = () => {
+    try {
+      localStorage.setItem("radioHold", JSON.stringify(RADIO));
+    } catch {
+    }
+  };
+  fetch("assets/hold/radio_hold.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
+    Object.assign(RADIO, j);
+    try {
+      Object.assign(RADIO, JSON.parse(localStorage.getItem("radioHold") || "{}"));
+    } catch {
+    }
+    if (main) {
+      refresh();
+      sidebarSync();
+    }
+  });
+  loadG(RADIO_FILE).then((g) => {
+    RAD.obj = g.scene;
+    RAD.obj.traverse((o) => {
+      if (o.isMesh) o.frustumCulled = false;
+    });
+    RAD.obj.visible = false;
+    scene.add(RAD.obj);
+    if (main) refresh();
+  }).catch(() => {
+  });
+  function radioOn(a) {
+    if (RAD.obj) RAD.obj.visible = false;
+    if (!RAD.on || !RAD.obj || !a?.bones?.RightHandMiddle1) return;
+    const rig = radioRig(a.obj, a.bones, Object.entries(fistPose(a) || {}).map(([n, q]) => [a.bones[n], q]).filter(([b]) => b));
+    const fwd = new Vector3(0, 0, 1).applyQuaternion(a.root.getWorldQuaternion(new Quaternion())).setY(0).normalize();
+    radioPose(rig, radioOf(), 1, RAD.mode === "talk" ? 1 : 0, fwd, a.height);
+    radioPlace(rig, RAD.obj, radioOf());
+    RAD.obj.visible = a.root.visible;
+  }
   function buildLayersUI() {
     const pc = $("posture"), grp = pc?.closest(".grp");
     if (!grp) return;
@@ -40818,25 +41002,25 @@ void main() {
   var FITS = {};
   var fitKey = (a) => a === main ? S.char : a === refX ? "xbot" : "mannequin";
   var fitOf = (a) => {
-    var _a7;
-    return FITS[_a7 = fitKey(a)] || (FITS[_a7] = { ...PFIT0 });
+    var _a8;
+    return FITS[_a8 = fitKey(a)] || (FITS[_a8] = { ...PFIT0 });
   };
   var WFITS = {};
   var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (wood)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", old: "Shotgun (hospital pack)", draft: "Shotgun (first draft)", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
   var fitW = (w, a) => {
-    var _a7, _b7;
-    return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }));
+    var _a8, _b7;
+    return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a8 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a8[_b7] = { ...PFIT0 }));
   };
   function idleShare(fit2) {
     if (!fit2 || !main?.clip || !fit2.idleIn && !fit2.idleOut) return 0;
-    const f = S.frame, ramp = (r) => clamp4((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1), sm3 = (u) => u * u * (3 - 2 * u);
+    const f = S.frame, ramp = (r) => clamp5((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1), sm3 = (u) => u * u * (3 - 2 * u);
     return Math.max(fit2.idleIn ? 1 - sm3(ramp(fit2.idleIn)) : 0, fit2.idleOut ? sm3(ramp(fit2.idleOut)) : 0);
   }
   function fitAt(w, a) {
-    var _a7, _b7;
+    var _a8, _b7;
     const own = fitW(w, a), s = a === main ? idleShare(own) : 0;
     if (!(s > 0)) return own;
-    const base = (_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }), out = { ...own };
+    const base = (_a8 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a8[_b7] = { ...PFIT0 }), out = { ...own };
     for (const k of Object.keys(PFIT0)) out[k] = (own[k] ?? PFIT0[k]) + ((base[k] ?? PFIT0[k]) - (own[k] ?? PFIT0[k])) * s;
     return out;
   }
@@ -41087,23 +41271,23 @@ void main() {
         return;
       }
     }
-    a.grip("Right", _v4);
-    a.grip("Left", _v23);
+    a.grip("Right", _v5);
+    a.grip("Left", _v24);
     let d, pos;
     if (w === "pistol") {
       a.bones.RightForeArm.getWorldPosition(_v32);
-      d = _v4.clone().sub(_v32).normalize();
-      pos = _v4.clone();
+      d = _v5.clone().sub(_v32).normalize();
+      pos = _v5.clone();
     } else {
-      d = _v4.clone().sub(_v23);
+      d = _v5.clone().sub(_v24);
       if (d.lengthSq() < 1e-8) {
         o.visible = false;
         return;
       }
       d.normalize();
-      pos = _v4.clone().add(_v23).multiplyScalar(0.5);
+      pos = _v5.clone().add(_v24).multiplyScalar(0.5);
     }
-    const x = new Vector3().crossVectors(UP2, d);
+    const x = new Vector3().crossVectors(UP3, d);
     if (x.lengthSq() < 1e-6) x.set(1, 0, 0);
     x.normalize();
     const y = new Vector3().crossVectors(d, x);
@@ -41149,7 +41333,7 @@ void main() {
   var EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32], [0, 11], [0, 12]];
   function drawVidRef(f) {
     if (!vr.cfg) return;
-    const rf = clamp4(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext("2d");
+    const rf = clamp5(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext("2d");
     if (im && im.complete && im.naturalWidth) {
       cv.height = Math.round(520 * im.naturalHeight / im.naturalWidth);
       cx.drawImage(im, 0, 0, 520, cv.height);
@@ -41532,7 +41716,7 @@ void main() {
   var inGame = (n) => !!GAME_JS && GAME_JS.includes(`"${n}"`);
   var usedTag = (n) => inGame(n) ? "  (currently used)" : "";
   function fillClips() {
-    var _a7;
+    var _a8;
     const sel = $("clip"), keep = sel.value, anims = mainCache[S.char].gltf.animations.filter((c) => NO_KK(c.name)), byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
     sel.innerHTML = "";
     const group = (label, list) => {
@@ -41564,7 +41748,7 @@ void main() {
     }
     group("TEST RE-BAKES (not in the game)", anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
     const tests = {};
-    for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a7 = c.userData.test] || (tests[_a7] = [])).push(c.name);
+    for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a8 = c.userData.test] || (tests[_a8] = [])).push(c.name);
     for (const [f, list] of Object.entries(tests)) group(`TEST: ${f} (not in the game)`, list.sort());
     const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
     for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === "None" ? "Fists / none" : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
@@ -41759,8 +41943,8 @@ void main() {
     }
   };
   function setArm(side, k, v) {
-    var _a7;
-    const e = ARMP[_a7 = armKey()] || (ARMP[_a7] = {});
+    var _a8;
+    const e = ARMP[_a8 = armKey()] || (ARMP[_a8] = {});
     (e[side] || (e[side] = {}))[k] = v;
     keepArms();
   }
@@ -41865,10 +42049,10 @@ void main() {
     return w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
   }
   function fitEditing() {
-    var _a7;
+    var _a8;
     if (S.gun === "pistol") return fitOf(fitTarget());
     const w = S.gun, a = fitTarget(), k = fitKey(a), c = WFITS[fitScopeKey(w)];
-    return c?.[k] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[k] || (_a7[k] = { ...PFIT0 }));
+    return c?.[k] || ((_a8 = WFITS[w] || (WFITS[w] = {}))[k] || (_a8[k] = { ...PFIT0 }));
   }
   var fitAllOn = () => S.fitAllFor === fitScopeKey(S.gun);
   function fitForEdit() {
@@ -42056,7 +42240,7 @@ void main() {
     btns.className = "sbbtns";
     btns.innerHTML = '<button data-a="auto" title="both arms: the least out that clears her body on every frame of this clip, plus 1 cm">Auto: clear her hips</button><button data-a="copy">Copy to other arm</button><button data-a="reset">Reset this arm</button>';
     btns.onclick = async (e) => {
-      var _a7;
+      var _a8;
       const a = e.target.dataset.a, s0 = S.armSide || "Right", s1 = s0 === "Right" ? "Left" : "Right";
       if (a === "auto") {
         e.target.textContent = "working...";
@@ -42064,7 +42248,7 @@ void main() {
         e.target.textContent = "Auto: clear her hips";
       }
       if (a === "copy") {
-        const e2 = ARMP[_a7 = armKey()] || (ARMP[_a7] = {});
+        const e2 = ARMP[_a8 = armKey()] || (ARMP[_a8] = {});
         e2[s1] = { ...armOf(s0) };
         handsOf()[s1] = handsOf()[s0];
         keepArms();
@@ -42080,6 +42264,70 @@ void main() {
       jointReadout();
     };
     A1.body.appendChild(btns);
+    const R1 = section("radio", "Radio (walkie-talkie)");
+    {
+      const t = document.createElement("div");
+      t.className = "sbnote";
+      t.textContent = "The game's radio hold (Chapter 2 calls) on this character, over the clip playing. The wrist stays locked: the radio leans with the forearm, which turns so the grille faces the mouth (roll adds to that).";
+      R1.body.appendChild(t);
+    }
+    const ron = seg(R1.body, [["off", "Off"], ["talk", "Talking"], ["listen", "Listening"]], (v) => {
+      RAD.on = v !== "off";
+      if (RAD.on) RAD.mode = v;
+      refresh();
+      sidebarSync();
+    });
+    const radRows = [];
+    const rgrp = (t) => {
+      const d = document.createElement("div");
+      d.className = "sbg";
+      d.textContent = t;
+      R1.body.appendChild(d);
+    };
+    const rs = (lbl, unit, lo, hi, st, k, pose) => radRows.push(slider(
+      R1.body,
+      lbl,
+      unit,
+      lo,
+      hi,
+      st,
+      () => pose ? radioOf()[pose][k] : radioOf()[k],
+      (v) => {
+        const f = radioOf();
+        if (pose) f[pose][k] = v;
+        else f[k] = v;
+        keepRadio();
+      },
+      pose ? RADIO0[pose][k] : RADIO0[k]
+    ));
+    for (const [pose, title] of [["talk", "Talking: the grille from his mouth"], ["listen", "Listening: the grille from his mouth"]]) {
+      rgrp(title);
+      rs("forward", "cm", -10, 40, 0.5, "fwd", pose);
+      rs("to his right", "cm", -15, 35, 0.5, "side", pose);
+      rs("up", "cm", -45, 15, 0.5, "up", pose);
+      rs("roll (forearm)", "deg", -120, 120, 1, "roll", pose);
+    }
+    rgrp("In his hand");
+    rs("size", "%", 40, 120, 1, "size");
+    rs("hand up its body", "cm", -5, 14, 0.5, "slide");
+    rs("angle in the palm", "deg", -45, 135, 1, "grip");
+    rs("fingers closed", "%", 0, 130, 1, "curl");
+    rs("thumb closed", "%", 0, 130, 1, "thumb");
+    rgrp("Body");
+    rs("elbow out", "deg", -40, 100, 1, "elbow");
+    rs("chin down", "deg", -25, 30, 1, "chin");
+    {
+      const b = document.createElement("div");
+      b.className = "sbbtns";
+      b.innerHTML = "<button>Reset this character's radio</button>";
+      R1.body.appendChild(b);
+      b.querySelector("button").onclick = () => {
+        delete RADIO[S.char];
+        keepRadio();
+        refresh();
+        sidebarSync();
+      };
+    }
     const C1 = section("check", "Joint check (this frame)");
     const chk = document.createElement("div");
     chk.id = "sbCheck";
@@ -42111,7 +42359,7 @@ void main() {
     sv.className = "sbbtns";
     sv.innerHTML = '<button data-a="save" class="primary">Save all</button><span class="sbnote" id="sbSaved"></span>';
     sv.querySelector("button").onclick = async () => {
-      const files = { "weapon_fit.json": WFITS, "arm_pose.json": ARMP, "hand_poses.json": HANDS, "hold_layers.json": HOLD_LAYERS, "pistol_fit.json": FITS };
+      const files = { "weapon_fit.json": WFITS, "arm_pose.json": ARMP, "hand_poses.json": HANDS, "hold_layers.json": HOLD_LAYERS, "pistol_fit.json": FITS, "radio_hold.json": RADIO };
       let ok = true;
       for (const [f, j] of Object.entries(files)) {
         const r = await fetch("/__shot/" + f, { method: "POST", body: JSON.stringify(j, null, 1) });
@@ -42120,7 +42368,7 @@ void main() {
       $("sbSaved").textContent = ok ? "saved to shots/ (tell Claude to put it in the game)" : "save failed";
     };
     V1.body.appendChild(sv);
-    SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1 };
+    SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1, ron, radRows };
     sidebarSync();
   }
   function layerSyncAll() {
@@ -42131,6 +42379,8 @@ void main() {
   }
   function sidebarSync() {
     if (!SB || !main) return;
+    for (const b of SB.ron.children) b.classList.toggle("on", b.dataset.v === (RAD.on ? RAD.mode : "off"));
+    for (const up of SB.radRows) up();
     const w = S.gun, a = fitTarget();
     SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? CHARS[S.char]?.label || S.char : ref === refX ? "X Bot" : "the mannequin"}`;
     for (const b of SB.who.children) b.classList.toggle("on", b.dataset.v === (S.fitWho || "main"));
@@ -42641,14 +42891,14 @@ void main() {
   async function capView({ who = "main", dir = [1, 0.3, 1], dist = 0.5, target = "hands", w = 600, h = 450, solo = false }) {
     const a = who === "ref" ? ref : main, cam = camera, c = new Vector3();
     if (target === "hands") {
-      a.grip("Right", _v4);
-      a.grip("Left", _v23);
-      c.copy(_v4).lerp(_v23, 0.5);
+      a.grip("Right", _v5);
+      a.grip("Left", _v24);
+      c.copy(_v5).lerp(_v24, 0.5);
     } else if (target === "rhand" || target === "lhand") a.grip(target === "rhand" ? "Right" : "Left", c);
     else if (target === "pair") {
-      main.bones.Hips.getWorldPosition(_v4);
-      ref.bones.Hips.getWorldPosition(_v23);
-      c.copy(_v4).lerp(_v23, 0.5);
+      main.bones.Hips.getWorldPosition(_v5);
+      ref.bones.Hips.getWorldPosition(_v24);
+      c.copy(_v5).lerp(_v24, 0.5);
       c.y = 0.9;
     } else if (target === "head") a.bones.Neck.getWorldPosition(c);
     else if (Array.isArray(target)) c.set(...target);
