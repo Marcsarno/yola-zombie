@@ -12,6 +12,7 @@ import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { PISTOL_CORE_SCALE } from '../render/weaponModels.js';
 import { characterLight } from './charlight.js';
 import { groundY } from './layout.js';
+import { BodyGore } from '../render/clipchars.js';
 
 // who stands where: the rifle survivor first, then the pistol survivors in turn [file, height m]
 const SURVIVORS = { rifle: [['eve', 1.7]], pistol: [['remy', 1.8], ['james', 1.8], ['sophie', 1.66], ['bryce', 1.78]] };
@@ -90,12 +91,12 @@ export class Actors {
     const REST = standing ? 'ual1_Pistol_Idle_Loop' : 'ual1_Crouch_Idle_Loop', AIM = 'ual1_Pistol_Aim_Neutral';
     let cur = act(REST); cur.play();
     const go = (n, once, fade = 0.18) => { const a = act(n, once); if (!a) return; turn.rotation.y = n.startsWith('hood_') ? 0 : aimTurn; if (a === cur) { if (once) a.reset().play(); return; } a.reset().play(); cur.crossFadeTo(a, fade, false); cur = a; }; // (the chapter's own moves face +z as made)
-    const body = { obj, mixer, holder, clips, kick: 0, dead: false, deadT: 0, up: false, pose: REST, next: null, nextAt: 0, t: 0, gunOn: true, headGone: false,
+    const body = { obj, mixer, holder, clips, kick: 0, dead: false, deadT: 0, up: false, pose: REST, next: null, nextAt: 0, t: 0, gunOn: true,
+      gore: new BodyGore(m, pick[1]), // (a head shot bursts his head: looterStep, jamesStep)
       then(at, n) { body.next = n; body.nextAt = body.t + at; }, // (after a one-shot: the pose to settle into)
       play(n, once = false, fade = 0.2) { body.next = null; body.pose = n; go(n, once, fade); return clips[n]?.duration || 0; },
       update(dt) {
-        mixer.update(dt); body.t += dt;
-        if (body.headGone && head) { head.scale.setScalar(0.001); obj.updateMatrixWorld(true); }
+        mixer.update(dt); body.t += dt; body.gore.update(dt);
         if (body.next && !body.dead && body.t >= body.nextAt) { const n = body.next; body.next = null; body.pose = n; go(n, false, 0.15); }
         obj.updateMatrixWorld(true);
         if (!holder) return;
@@ -143,8 +144,9 @@ export class Actors {
     const palm = (h, mid, out) => out.copy(h.getWorldPosition(_v3)).lerp(mid.getWorldPosition(_v2), 0.55);
     const aimDir = (out) => { if (gun === 'rifle') { palm(bones.lhand, bones.lmid, out); palm(bones.hand, bones.mid, _v); return out.sub(_v); } palm(bones.hand, bones.mid, out); return out.sub(bones.sh.getWorldPosition(_v)); };
     const body = { obj, mixer, holder, clips, idle, kick: 0, dead: false, deadT: 0,
+      gore: new BodyGore(m, model ? M.h : pick[1]), // (Pete's arm in the zombie attack: survivor overwhelm)
       update(dt) {
-        mixer.update(dt); obj.updateMatrixWorld(true);
+        mixer.update(dt); body.gore.update(dt); obj.updateMatrixWorld(true);
         if (!holder) return;
         if (body.dead) body.deadT += dt;
         holder.visible = obj.visible && (!body.dead || body.deadT < 0.35); // (dropped as he goes down)
@@ -176,7 +178,9 @@ export class Actors {
   survivor(at, { gun = 'pistol', model = null } = {}) {
     const body = this.survivorBody(gun, model), obj = body ? body.obj : marker(COL.survivor); obj.position.set(at.x, 0, at.z); obj.rotation.y = at.yaw || 0; this.group.add(obj);
     const a = { kind: 'survivor', obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, cd: 0.5, down: false, gun };
-    a.overwhelm = () => { a.down = true; body?.fall(Math.random() < 0.5); };
+    // (a.tear: what the zombies take as they bring him down, e.g. ['Forearm_L']; Pete's: one arm. A part: Forearm_L / _R,
+    // LowerLeg_L / _R, Head)
+    a.overwhelm = () => { a.down = true; body?.fall(Math.random() < 0.5); if (body) a.tear?.forEach((part, i) => { const t = a.yaw + Math.PI * (0.5 + Math.random()); body.gore.sever(part, Math.sin(t), Math.cos(t), 2.2 + i); }); };
     a.step = (dt, level) => {
       const sim = level.sim;
       if (a.down) { if (!body) obj.rotation.x = Math.min(Math.PI / 2, obj.rotation.x + dt * 3); return; }
@@ -213,7 +217,11 @@ export class Actors {
     const b = a.body;
     if (!z.alive) {
       a.sight.visible = false;
-      if (a.wasAlive) { a.wasAlive = false; b?.fall(); a.onDeath?.(); }
+      if (a.wasAlive) { // (a head shot: his head bursts, in the pose he was shot in, before he drops)
+        a.wasAlive = false;
+        if (b && z.lastHitPart === 'Head') { const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1; b.gore.headBurst(dx / d, dz / d); }
+        b?.fall(); a.onDeath?.();
+      }
       if (!b) a.obj.rotation.x = Math.min(Math.PI / 2, a.obj.rotation.x + dt * 3);
       return;
     }
@@ -252,6 +260,7 @@ export class Actors {
     // body.look: a point to turn her head to (neck and head share the turn, up to 72 degrees either side of her body), eased
     // in and out over a quarter second; null: back to the move's own head
     const body = { obj, mixer, clips, dead: false, look: null, lookW: 0, lookRel: 0,
+      gore: new BodyGore(m, M.h), // (Sophie's arm when the zombies take her: sophie die)
       get clip() { return curName; },
       // play a move (looping unless once; rate: its speed), cross-faded from the last; its length in s
       play(n, { once = false, fade = 0.25, rate = 1 } = {}) {
@@ -262,7 +271,7 @@ export class Actors {
         return c.duration / rate;
       },
       update(dt) {
-        mixer.update(dt); obj.updateMatrixWorld(true);
+        mixer.update(dt); body.gore.update(dt); obj.updateMatrixWorld(true);
         body.lookW += ((body.look && !body.dead ? 1 : 0) - body.lookW) * Math.min(1, dt * 4);
         if (body.lookW < 0.01 || !neck || !head) return;
         if (body.look) { head.getWorldPosition(_v); const y = Math.atan2(body.look.x - _v.x, body.look.z - _v.z) - obj.rotation.y; body.lookRel = Math.max(-1.25, Math.min(1.25, Math.atan2(Math.sin(y), Math.cos(y)))); }
@@ -281,7 +290,9 @@ export class Actors {
     const body = this.storyBody('sophie'), obj = body ? body.obj : marker(0xe8c060);
     obj.position.set(at.x, 0, at.z); obj.rotation.y = at.yaw || 0; this.group.add(obj);
     const a = { kind: 'sophie', obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, mode: 'scared', trail: [], speed: 0, gap: 3.3, cower: 0 };
-    a.die = () => { a.mode = 'dead'; if (body) body.look = null; body?.play('hood_Death01', { once: true, fade: 0.15 }); };
+    // (a.tear: what the zombies take as they kill her, as Pete's; hers: one arm)
+    a.tear = ['Forearm_R'];
+    a.die = () => { a.mode = 'dead'; if (body) body.look = null; body?.play('hood_Death01', { once: true, fade: 0.15 }); if (body) a.tear.forEach((part, i) => { const t = a.yaw + Math.PI * (0.5 + Math.random()); body.gore.sever(part, Math.sin(t), Math.cos(t), 2.2 + i); }); };
     a.step = (dt, level) => this.sophieStep(a, dt, level);
     body?.play('hood_Crouch_Idle_Loop');
     this.list.push(a); return a;
@@ -335,7 +346,7 @@ export class Actors {
   }
 
   // Pete (B08): the groundskeeper with his pistol on the drive, shooting what comes at him until the story overwhelms him
-  pete(at) { const a = this.survivor(at, { gun: 'pistol', model: 'pete' }); a.kind = 'pete'; a.dmgK = 0.15; return a; } // (panicked: he slows them, he cannot stop them)
+  pete(at) { const a = this.survivor(at, { gun: 'pistol', model: 'pete' }); a.kind = 'pete'; a.dmgK = 0.15; a.tear = ['Forearm_L']; return a; } // (panicked: he slows them, he cannot stop them; they take his arm)
 
   // James (B02): a looter going through the family's things at the dining table, his back to the door, headphones on. He
   // is an entry in the zombie list (Marc's shots hit him; one is enough); his body is the looters' with his own moves:
@@ -362,10 +373,9 @@ export class Actors {
     if (!z.alive) {
       if (a.wasAlive) {
         a.wasAlive = false;
-        if (b) { b.headGone = true; b.fall(); }
-        const n = b ? b.neck(_v) : _v.set(z.x, 1.55, z.z), dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1;
-        this.ctx.fx?.bloodSpray?.(n.x, n.y, n.z, dx / d, 0.8, dz / d, 46, 4.2); this.ctx.fx?.bloodSpray?.(n.x, n.y, n.z, dx / d * 0.4, 1.6, dz / d * 0.4, 22, 2.4);
-        this.ctx.fx?.bloodPool?.(z.x + dx / d * 0.8, z.z + dz / d * 0.8, 1.1);
+        const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz) || 1;
+        if (b) { b.gore.headBurst(dx / d, dz / d, 1.2); b.fall(); } // (his head bursts: the looters' head shot, a little harder)
+        else { this.ctx.fx?.bloodSpray?.(z.x, 1.55, z.z, dx / d, 0.8, dz / d, 46, 4.2); this.ctx.fx?.bloodPool?.(z.x + dx / d * 0.8, z.z + dz / d * 0.8, 1.1); }
         a.onDeath?.();
       }
       return;

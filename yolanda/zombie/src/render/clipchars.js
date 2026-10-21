@@ -1483,6 +1483,9 @@ const MODULE_NAMES = {
   Head: /^(Nurse_Head|Patient_Head)$/, Forearm_L: /^(Nurse_Forearm_L|Patient_LeftForearm)$/, Forearm_R: /^(Nurse_Forearm_R|Patient_RightForearm)$/,
   LowerLeg_L: /^(Nurse_LowerLeg_L|Patient_LeftLowerLeg)$/, LowerLeg_R: /^(Nurse_LowerLeg_R|Patient_RightLowerLeg)$/,
 };
+// a store zombie's own cut-apart body (2026-10-21, the Zombie Male AAB's BodyParts: tools/anim/unity_to_glb.py parts=), its
+// cuts as the pack made them: pieces named Mod_<part>__<chunk>__<piece>, several to a part (forearm, hand and sleeve)
+const MOD_PIECE = /^Mod_(Head|Forearm_L|Forearm_R|LowerLeg_L|LowerLeg_R)__/;
 const GORE_NAME = /^GORE_(Head|Forearm_L|Forearm_R|LowerLeg_L|LowerLeg_R)_(Stump|Detached)/;
 // bone the stump sits on (bleeds from), and the severed piece's two ends [from, to, extend] and radius (m at 1.7 m)
 const STUMP_BONE = { Head: 'Neck', Forearm_L: 'LeftForeArm', Forearm_R: 'RightForeArm', LowerLeg_L: 'LeftLeg', LowerLeg_R: 'RightLeg' };
@@ -1658,11 +1661,18 @@ export class ZombieView extends ClipBody {
     this.height = height;
     // modular pieces (empty for the older single-mesh zombies)
     this.modules = {}; this.gore = {};
+    const pieces = {};
     model.traverse((o) => {
       for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
       const m = GORE_NAME.exec(o.name);
       if (m) (this.gore[m[1]] ||= {})[m[2].toLowerCase()] = o;
+      const p = MOD_PIECE.exec(o.name); if (p) (pieces[p[1]] ||= []).push(o);
     });
+    // a part in several pieces goes into one group where they hang (a skinned piece draws the same under any parent)
+    for (const [k, list] of Object.entries(pieces)) {
+      if (list.length === 1) { this.modules[k] = list[0]; continue; }
+      const g = new THREE.Group(); g.name = 'Mod_' + k; list[0].parent.add(g); for (const o of list) g.add(o); this.modules[k] = g;
+    }
     this.modular = Object.keys(this.modules).length === 5;
     this.severed = new Set(); this.rag = null; this.bleed = {};
     this.hasCrawl = !!this.act('crawl');
@@ -1682,7 +1692,9 @@ export class ZombieView extends ClipBody {
     // the loose piece: the module and its wound cap baked in their current pose
     const [fromB, toB, ext, rad] = PIECE_ENDS[part];
     const a = this.bones[fromB].getWorldPosition(new THREE.Vector3());
-    const b = this.bones[toB].getWorldPosition(new THREE.Vector3());
+    // (no end bone, as on a store skeleton without HeadTop_End: 0.2 m along the bone at 1.7 m)
+    const b = this.bones[toB] ? this.bones[toB].getWorldPosition(new THREE.Vector3())
+      : a.clone().add(new THREE.Vector3(0, 0.2 * (this.height / 1.7), 0).applyQuaternion(this.bones[fromB].getWorldQuaternion(_bq)));
     b.add(b.clone().sub(a).multiplyScalar(ext));
     const q0 = frameQuat(b.clone().sub(a), new THREE.Vector3(1, 0, 0).applyQuaternion(this.bones[fromB].getWorldQuaternion(_bq)), new THREE.Quaternion());
     const c = a.clone().add(b).multiplyScalar(0.5), qi = q0.clone().invert();
@@ -2484,5 +2496,119 @@ export class ZombieView extends ClipBody {
     for (const m of this.mats) if (m.emissive) m.emissive.setRGB(fl * 0.4, fl * 0.33, fl * 0.27);
     if (z.state === 'dead' && z.corpseT > 4.5) this.outer.position.y = -Math.min(1, (z.corpseT - 4.5) / 2) * 0.6;
     this.blob.visible = z.state !== 'dead' || z.corpseT < 4.5;
+  }
+}
+
+// ---- gore for the story's people (2026-10-21, the user: the looters' heads burst on a head shot; Pete and Sophie lose an
+// arm, a leg or the head in the zombie attack) ----
+// Cut from their own skin weights as the guard is (CUT_ROOTS: an arm at the shoulder, a leg at the knee, the head at the
+// neck): the piece baked in the pose on screen and thrown with the zombies' pieces (ZombieView.pieces, the same physics), the
+// limb's bone collapsed into its joint from then on, a wet wound with a bone end where it was, blood. headBurst: the head
+// in pieces instead of whole. update(dt) after the body's mixer each frame.
+const WOUND = new THREE.MeshStandardMaterial({ color: 0x320404, roughness: 0.42 }), WOUND_BONE = new THREE.MeshStandardMaterial({ color: 0xd9ccb0, roughness: 0.6 });
+const WOUND_GEO = new THREE.SphereGeometry(1, 12, 8);
+// a torn piece's inside, dark meat instead of the skin's own texture seen from behind (a burst head's shell read as paper)
+const MEAT = new THREE.MeshStandardMaterial({ color: 0x3a0606, roughness: 0.45, side: THREE.BackSide });
+function meaty(obj) { const add = []; obj.traverse((o) => { if (o.isMesh) add.push(o); }); for (const o of add) { o.material.side = THREE.FrontSide; const m = new THREE.Mesh(o.geometry, MEAT.clone()); m.position.copy(o.position); m.quaternion.copy(o.quaternion); m.scale.copy(o.scale); o.parent.add(m); } }
+export class BodyGore {
+  constructor(model, height) {
+    this.model = model; this.height = height; this.bones = {}; this.collapsed = []; this.bleed = []; this.cut = new Set();
+    model.traverse((o) => { if (o.isBone) this.bones[o.name.replace(/^mixamorig:?/, '')] = o; });
+  }
+  // the end of a cut piece: its end bone, or (none, as a head without HeadTop_End) 0.2 m on along the bone at 1.7 m
+  end(from, to) {
+    const B = this.bones;
+    return B[to] ? B[to].getWorldPosition(new THREE.Vector3()) : B[from].getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.2 * (this.height / 1.7), 0).applyQuaternion(B[from].getWorldQuaternion(_bq)));
+  }
+  // a limb or the head off (Forearm_L / Forearm_R / LowerLeg_L / LowerLeg_R / Head), thrown along (dx, dz)
+  sever(part, dx, dz, speed = 3) {
+    const R = CUT_ROOTS[part], B = this.bones; if (!R || !B[R[0]] || this.cut.has(part)) return false;
+    this.cut.add(part); this.model.updateMatrixWorld(true);
+    const a = B[R[0]].getWorldPosition(new THREE.Vector3()), b = this.end(R[0], R[1]);
+    const q0 = frameQuat(b.clone().sub(a), new THREE.Vector3(1, 0, 0).applyQuaternion(B[R[0]].getWorldQuaternion(_bq)), new THREE.Quaternion());
+    const F = { c: a.clone().add(b).multiplyScalar(0.5), q0, qi: q0.clone().invert() };
+    const obj = bakeChunks(this.model, { [R[0]]: part }, { [part]: F })[part];
+    if (obj) {
+      meaty(obj); obj.position.copy(F.c); obj.quaternion.copy(q0); ZombieView.scene.add(obj);
+      const vel = new THREE.Vector3(dx, 0, dz).normalize().multiplyScalar(speed).add(new THREE.Vector3(0, 2.2 + Math.random() * 1.2, 0));
+      this.addPiece(obj, a, b, R[2] * (this.height / 1.7), vel, q0);
+    }
+    this.wound(R[0], CUT_STUMP[part], R[2]);
+    const s = B[CUT_STUMP[part]].getWorldPosition(new THREE.Vector3()), fx = ZombieView.fx;
+    if (fx) { fx.bloodSpray(s.x, s.y, s.z, dx * 0.8, 0.5, dz * 0.8, part === 'Head' ? 34 : 26, 3.4); fx.bloodPool(s.x + dx * 0.4, s.z + dz * 0.4, part === 'Head' ? 1.1 : 0.9); }
+    this.bleed.push({ bone: B[CUT_STUMP[part]], t: 3, up: part === 'Head' ? 0.6 : -0.1 });
+    return true;
+  }
+  // the head bursts: its skin in eight pieces (four round the top, four round the jaw), thrown along the shot and out from
+  // the middle, a red mist with chips of skull, the neck's wound pumping
+  headBurst(dx, dz, power = 1) {
+    const B = this.bones; if (!B.Head || this.cut.has('Head')) return false;
+    this.cut.add('Head'); this.model.updateMatrixWorld(true);
+    const d = new THREE.Vector3(dx, 0, dz).normalize(), c = B.Head.getWorldPosition(new THREE.Vector3()).lerp(this.end('Head', 'HeadTop_End'), 0.45);
+    const isHead = (bone) => { for (let n = bone; n && n.isBone; n = n.parent) if (n === B.Head) return true; return false; };
+    const frag = (p) => { const v = p.clone().sub(c); let ang = Math.atan2(v.x, v.z) - Math.atan2(d.x, d.z); ang = ((ang % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); return (v.y > 0 ? 0 : 4) + Math.floor(ang / (Math.PI / 2)) % 4; };
+    const parts = []; // { k: fragment, mesh, ctr: its middle (world) }, one per skinned mesh and fragment
+    this.model.traverse((o) => {
+      if (!o.isSkinnedMesh || !o.visible) return;
+      o.skeleton.update();
+      const g = o.geometry, n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, hb = o.skeleton.bones.map(isHead);
+      const vf = new Int8Array(n).fill(-1), wp = {};
+      for (let i = 0; i < n; i++) { let bi = 0, bw = -1; for (let k = 0; k < 4; k++) { const w = sw.getComponent(i, k); if (w > bw) { bw = w; bi = si.getComponent(i, k); } } if (hb[bi]) { o.getVertexPosition(i, _bv); wp[i] = _bv.applyMatrix4(o.matrixWorld).clone(); vf[i] = frag(wp[i]); } }
+      const idx = g.index ? g.index.array : Array.from({ length: n }, (_, i) => i), uvs = g.attributes.uv;
+      const tris = {}; for (let t = 0; t < idx.length; t += 3) { const k = vf[idx[t]]; if (k >= 0 && vf[idx[t + 1]] >= 0 && vf[idx[t + 2]] >= 0) (tris[k] ||= []).push(idx[t], idx[t + 1], idx[t + 2]); }
+      for (const [k, list] of Object.entries(tris)) {
+        const ctr = new THREE.Vector3(); for (const vi of list) ctr.add(wp[vi]); ctr.divideScalar(list.length);
+        const map = new Map(), pos = [], uv = [], index = [];
+        for (const vi of list) { let j = map.get(vi); if (j === undefined) { j = map.size; map.set(vi, j); const p = wp[vi]; pos.push(p.x - ctr.x, p.y - ctr.y, p.z - ctr.z); if (uvs) uv.push(uvs.getX(vi), uvs.getY(vi)); } index.push(j); }
+        const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); if (uvs) geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+        geo.setIndex(index); geo.computeVertexNormals();
+        const mat = o.material.clone(); if (mat.emissive) mat.emissive.setRGB(0, 0, 0);
+        parts.push({ k: +k, mesh: new THREE.Mesh(geo, mat), ctr });
+      }
+    });
+    const byFrag = {}; for (const p of parts) (byFrag[p.k] ||= []).push(p);
+    const r = 0.035 * (this.height / 1.7), side = new THREE.Vector3(-d.z, 0, d.x);
+    for (const list of Object.values(byFrag)) {
+      const ctr = list[0].ctr.clone(), obj = new THREE.Group(); obj.position.copy(ctr);
+      for (const p of list) { p.mesh.position.copy(p.ctr).sub(ctr); obj.add(p.mesh); }
+      meaty(obj); ZombieView.scene.add(obj);
+      const out = ctr.clone().sub(c).setY(0); if (out.lengthSq() < 1e-6) out.copy(d); out.normalize();
+      const vel = d.clone().multiplyScalar((2.5 + Math.random() * 2.5) * power).addScaledVector(out, 1.5 + Math.random() * 1.5).addScaledVector(side, (Math.random() - 0.5) * 2).setY((1.5 + Math.random() * 2) * Math.sqrt(power));
+      this.addPiece(obj, ctr.clone().addScaledVector(_ly, -r), ctr.clone().addScaledVector(_ly, r), r, vel, new THREE.Quaternion());
+    }
+    this.wound('Head', 'Neck', 0.06);
+    const fx = ZombieView.fx;
+    if (fx) {
+      fx.bloodSpray(c.x, c.y, c.z, d.x, 0.5, d.z, 50, 4.6 * power); fx.bloodSpray(c.x, c.y, c.z, d.x * 0.3, 1.4, d.z * 0.3, 24, 2.6);
+      fx.burst(c.x, c.y, c.z, 28, 0x5a1414, 3.6, 1.2, 0.6, d.x * 0.8, d.z * 0.8); fx.burst(c.x, c.y, c.z, 10, 0xe9e2d2, 3.2, 1.6, 0.4, d.x * 0.8, d.z * 0.8); // (a red mist, chips of skull)
+      fx.bloodPool(c.x + d.x * 0.9, c.z + d.z * 0.9, 1.0);
+    }
+    this.bleed.push({ bone: B.Neck || B.Head, t: 4, up: 0.8 });
+    return true;
+  }
+  addPiece(obj, a, b, r, vel, q0) {
+    const P = ZombieView.physics, live = P && P.ready;
+    ZombieView.pieces.push({ obj, t: 0, id: live ? P.addPiece(a, b, r, vel, q0) : 0, P: live ? P : null, vel, r, states: [] });
+    if (ZombieView.pieces.length > MAX_PIECES) ZombieView.dropPiece(ZombieView.pieces[0]);
+  }
+  // the cut bone collapsed into its joint; on the joint a wet wound with the bone's end in it, flattened along the limb
+  wound(cutBone, onBone, rad) {
+    const B = this.bones, cb = B[cutBone], ob = B[onBone] || cb?.parent; if (!cb || !ob) return;
+    this.collapsed.push(cb);
+    // (2026-10-21: first made 1.15 x the limb's radius, half as deep, it stood out of the shoulder like a red jelly bean: now
+    // the limb's own width, a third as deep, sunk a little into the joint)
+    const k = rad * 0.85 * (this.height / 1.7) / (ob.getWorldScale(_bv).x || 1), g = new THREE.Group();
+    const w = new THREE.Mesh(WOUND_GEO, WOUND); w.scale.set(k, k * 0.32, k); g.add(w);
+    const bn = new THREE.Mesh(WOUND_GEO, WOUND_BONE); bn.scale.setScalar(k * 0.28); bn.position.y = k * 0.18; g.add(bn);
+    const dir = cb.position.clone().normalize();
+    g.position.copy(cb.position).addScaledVector(dir, -k * 0.25); g.quaternion.setFromUnitVectors(_ly, dir); ob.add(g);
+  }
+  update(dt) {
+    for (const b of this.collapsed) b.scale.setScalar(1e-4);
+    const fx = ZombieView.fx;
+    for (let i = this.bleed.length - 1; i >= 0; i--) {
+      const s = this.bleed[i]; if ((s.t -= dt) <= 0) { this.bleed.splice(i, 1); continue; }
+      if (fx && Math.random() < dt * 18) { const p = s.bone.getWorldPosition(_bv); fx.bloodSpray(p.x, p.y, p.z, 0, s.up, 0, 1, 0.8); }
+    }
   }
 }

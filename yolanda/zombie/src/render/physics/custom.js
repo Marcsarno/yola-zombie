@@ -18,7 +18,11 @@ export class CustomPhysics {
   constructor() { this.name = 'custom'; this.syncInit = true; this.bodies = new Map(); this.nextId = 1; this.boxes = []; this.particles = []; this.stats = { steps: 0, ms: 0 }; }
   async init(world) {
     this.bodies.clear(); this.particles = [];
-    this.boxes = world.boxes.filter((b) => b.kind !== 'doorSeal' && b.kind !== 'door').map((b) => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: b.h }));
+    // (2026-10-21) the neighbourhood's shapes are turned boxes and round trunks (hood/world.js), and their minX..maxZ only a
+    // square round each to find them by: a house wall's was a 13 m solid block, so a body falling near a house was thrown
+    // metres sideways or onto its "top" (the user: the ragdolls outside the hospital did not work). Each keeps its real shape.
+    this.boxes = world.boxes.filter((b) => b.kind !== 'doorSeal' && b.kind !== 'door').map((b) => ({ minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ, h: b.h, src: b,
+      ...(b.type === 'c' ? { cx: b.cx, cz: b.cz, r: b.r } : b.cos !== undefined ? { cx: b.cx, cz: b.cz, hx: b.hx, hz: b.hz, cos: b.cos, sin: b.sin } : {}) }));
   }
 
   _particle(body, pos, r, mass) {
@@ -196,19 +200,36 @@ export class CustomPhysics {
       if (p.p.y < p.x.y) p.p.y = p.x.y + (p.x.y - p.p.y) * BOUNCE;
     }
     for (const b of p.cand) {
-      if (p.x.y - p.r > b.h) continue;
-      const cx = Math.max(b.minX, Math.min(p.x.x, b.maxX)), cz = Math.max(b.minZ, Math.min(p.x.z, b.maxZ)), cy = Math.min(p.x.y, b.h);
-      const dx = p.x.x - cx, dy = p.x.y - cy, dz = p.x.z - cz, d2 = dx * dx + dy * dy + dz * dz;
+      if (p.x.y - p.r > b.h || b.src.off) continue; // (off: a door the neighbourhood has opened)
+      const y = p.x.y, cy = Math.min(y, b.h);
+      if (b.r !== undefined) { // a round trunk: out sideways, or onto its top
+        const dx = p.x.x - b.cx, dz = p.x.z - b.cz, dh = Math.hypot(dx, dz), k = dh > b.r ? 1 - b.r / dh : 0;
+        const ex = dx * k, ey = y - cy, ez = dz * k, d2 = ex * ex + ey * ey + ez * ez;
+        if (d2 >= p.r * p.r) continue;
+        if (d2 > 1e-10) { const d = Math.sqrt(d2), s = (p.r - d) / d; p.x.x += ex * s; p.x.y += ey * s; p.x.z += ez * s; if (ey > 0 && ey * ey > ex * ex + ez * ez) p.ground = true; }
+        else if (b.h - y < b.r - dh) { p.x.y = b.h + p.r; p.ground = true; }
+        else if (dh > 1e-6) { const s = (b.r + p.r) / dh; p.x.x = b.cx + dx * s; p.x.z = b.cz + dz * s; } else p.x.x = b.cx + b.r + p.r;
+        continue;
+      }
+      // a box, in its own frame when it is turned (hood/world.js HoodWorld.local / world)
+      const T = b.cos !== undefined;
+      let lx = p.x.x, lz = p.x.z, x0 = b.minX, x1 = b.maxX, z0 = b.minZ, z1 = b.maxZ;
+      if (T) { const dx = lx - b.cx, dz = lz - b.cz; lx = dx * b.cos - dz * b.sin; lz = dx * b.sin + dz * b.cos; x0 = -b.hx; x1 = b.hx; z0 = -b.hz; z1 = b.hz; }
+      const cx = Math.max(x0, Math.min(lx, x1)), cz = Math.max(z0, Math.min(lz, z1));
+      const dx = lx - cx, dy = y - cy, dz = lz - cz, d2 = dx * dx + dy * dy + dz * dz;
       if (d2 >= p.r * p.r) continue;
+      let nx = lx, ny = y, nz = lz;
       if (d2 > 1e-10) {
         const d = Math.sqrt(d2), k = (p.r - d) / d;
-        p.x.x += dx * k; p.x.y += dy * k; p.x.z += dz * k;
+        nx += dx * k; ny += dy * k; nz += dz * k;
         if (dy > 0 && dy * dy > dx * dx + dz * dz) p.ground = true; // resting on top
       } else { // centre inside: leave by the nearest face (top included)
-        const m = [p.x.x - b.minX, b.maxX - p.x.x, p.x.z - b.minZ, b.maxZ - p.x.z, b.h - p.x.y];
+        const m = [lx - x0, x1 - lx, lz - z0, z1 - lz, b.h - y];
         const i = m.indexOf(Math.min(...m));
-        if (i === 0) p.x.x = b.minX - p.r; else if (i === 1) p.x.x = b.maxX + p.r; else if (i === 2) p.x.z = b.minZ - p.r; else if (i === 3) p.x.z = b.maxZ + p.r; else { p.x.y = b.h + p.r; p.ground = true; }
+        if (i === 0) nx = x0 - p.r; else if (i === 1) nx = x1 + p.r; else if (i === 2) nz = z0 - p.r; else if (i === 3) nz = z1 + p.r; else { ny = b.h + p.r; p.ground = true; }
       }
+      if (T) { const ex = nx - lx, ez = nz - lz; p.x.x += ex * b.cos + ez * b.sin; p.x.z += -ex * b.sin + ez * b.cos; } else { p.x.x = nx; p.x.z = nz; }
+      p.x.y = ny;
     }
   }
 

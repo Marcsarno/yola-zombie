@@ -223,7 +223,7 @@ export class FX {
     for (const o of this.pools) if (o.on && o.t < 2 && Math.abs(o.x - x) < 0.22 && Math.abs(o.z - z) < 0.22) { o.size = Math.max(o.size, size); return; }
     const q = this.pools[this.poolNext]; this.poolNext = (this.poolNext + 1) % MAX_POOLS;
     q.t = 0; q.size = size * (0.8 + Math.random() * 0.4);
-    q.x = x; q.y = 0.015 + this.poolNext * 0.00015; q.z = z; q.rot = Math.random() * Math.PI * 2; q.on = true;
+    q.x = x; q.y = (this.groundAt ? this.groundAt(x, z) : 0) + 0.015 + this.poolNext * 0.00015; q.z = z; q.rot = Math.random() * Math.PI * 2; q.on = true; // (groundAt: the neighbourhood's roads and walks stand over the lawn: main.js)
   }
 
   floorCrack(x, z, size = 1.2) {

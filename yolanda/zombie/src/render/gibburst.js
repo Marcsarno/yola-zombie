@@ -20,7 +20,7 @@ export class GibBurst {
   async load(files) {
     await Promise.all(Object.entries(files).map(async ([type, url]) => {
       try {
-        const g = await this.loader.loadAsync(url), root = g.scene, byChunk = new Map(), bones = {};
+        const g = await this.loader.loadAsync(url), root = g.scene, byChunk = new Map(), bones = {}, partOf = {};
         root.traverse((o) => {
           if (o.isBone) bones[o.name.replace(/^mixamorig:?/, '')] = o;
           if (!o.isMesh) return;
@@ -28,11 +28,13 @@ export class GibBurst {
           if (geo.attributes.color_1) { geo.setAttribute('color', geo.attributes.color_1); geo.deleteAttribute('color_1'); }
           if (geo.attributes.color) { o.material = o.material.clone(); o.material.vertexColors = true; }
           if (!o.isSkinnedMesh) return;
-          let n = o; while (n && !/^B__/.test(n.name)) n = n.parent;
+          // (a store zombie's own cut-apart body is its own burst model: Mod_<part>__<chunk>__<piece>, 2026-10-21)
+          let n = o; while (n && !/^(B|Mod_\w+?)__/.test(n.name)) n = n.parent;
           const chunk = n ? n.name.split('__')[1] : 'Chest';
+          if (n && n.name.startsWith('Mod_')) partOf[chunk] = n.name.slice(4, n.name.indexOf('__'));
           if (!byChunk.has(chunk)) byChunk.set(chunk, []); byChunk.get(chunk).push(o);
         });
-        this.tpl[type] = { root, byChunk, bones };
+        this.tpl[type] = { root, byChunk, bones, partOf };
       } catch (e) { console.warn('gib burst model', url, e); }
     }));
   }
@@ -52,7 +54,7 @@ export class GibBurst {
     const b = { chunks: [], t: 0 }, v = new THREE.Vector3();
     const R = (a, c) => a + Math.random() * (c - a);
     for (const [name, meshes] of T.byChunk) {
-      if (gone.has(name)) continue;
+      if (gone.has(name) || view.severed?.has(T.partOf[name])) continue;
       const baked = []; const c = new THREE.Vector3(); let n = 0;
       for (const m of meshes) {
         m.skeleton.update();

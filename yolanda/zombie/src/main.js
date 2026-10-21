@@ -48,6 +48,7 @@ import { shareTextures, texturesOf } from './render/texshare.js';
 import { setupLibWeapons } from './render/libweapons.js';
 import { startDemos } from './demos.js';
 import { startHood } from './hood/hood.js';
+import { groundY as hoodGroundY } from './hood/layout.js';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -303,7 +304,7 @@ function heroFits(j) {
 }
 const loader = new GLTFLoader();
 async function load() {
-  gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb' }); // (in the background: until it is in, kills die as before)
+  gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb', ...(LAYOUT.hood ? { 7: ZOMBIE_TYPES[7].file } : {}) }); // (in the background: until it is in, kills die as before) (the Zombie Male AAB's cut-apart body is its own burst model)
   audio.preload(); // (the recorded effect banks: small, fetched now, decoded on the first tap)
   music.preload(); // (the gameplay track buffers while the game loads: it starts the moment the reveal hands over)
   hud.loading(0);
@@ -353,6 +354,13 @@ async function load() {
   renderer.shadowMap.needsUpdate = true;
   screens.scan(scene); // the monitors' live faces (the opening's clinic is scanned once it has loaded)
   if (LAYOUT.hood) { hood = await startHood({ scene, loader, arena, renderer, quality: resolvedQuality(), params, audio, hud, fx, onProgress: (k) => hud.loading(0.95 + 0.04 * k) }); window.game.onRestart = hood.onRestart; } // (Chapter 2, the neighbourhood: src/hood/)
+  // (2026-10-21) a blood pool lies on the ground under it: the neighbourhood's roads, drives, walks and pavers stand 2-5 cm
+  // over the lawn, and at the hospital floor's height every pool on a road lay hidden under it
+  if (LAYOUT.hood) {
+    const flat = []; scene.traverse((o) => { if (o.isMesh && !o.isSkinnedMesh && /^(ch2_\w*(road|kerb|drive|rab)|roads|sidewalks|driveway|home_walk|paver|pool_deck|curb|tennis_court|terrain)/.test(o.name)) flat.push(o); });
+    const rc = new THREE.Raycaster(), from = new THREE.Vector3(), down = new THREE.Vector3(0, -1, 0);
+    fx.groundAt = (x, z) => { rc.set(from.set(x, 0.6, z), down); rc.far = 0.8; const h = rc.intersectObjects(flat, false)[0]; return Math.max(h ? h.point.y : 0, hoodGroundY(x, z)); }; // (and the houses' floors, the stoop, the dock)
+  }
   restart();
   startChapterUI();
   hud.loading(1);
@@ -423,6 +431,7 @@ const warmMats = [];
 function warmPrograms() {
   const tmp = new THREE.Group(), box = new THREE.BoxGeometry(0.01, 0.01, 0.01);
   ZOMBIE_TYPES.forEach((t, type) => {
+    if (!t.gltf) return; // (a neighbourhood-only type in the hospital is not loaded: building its view threw and stopped the load)
     // a view of each type (from the pool: its materials are the game's, tuned at construction), and an unskinned copy of
     // every one of its materials, as ZombieView.sever bakes them (wound caps and gore included)
     if (!zpool[type].length) { const nv = newZombieView(type); nv.hide(); zpool[type].push(nv); } // (pooled: hidden until bound)
