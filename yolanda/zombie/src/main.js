@@ -189,7 +189,7 @@ function stepPhysics(dt) {
 }
 
 let arena, yola, sim, hood = null;
-const zviews = new Map(); const zpool = [[], [], [], [], [], [], [], []]; // (one pool per ZOMBIE_TYPES entry)
+const zviews = new Map(); const zpool = [[], [], [], [], [], [], [], [], [], [], []]; // (one pool per ZOMBIE_TYPES entry)
 const storyStart = params.has('intro') || params.has('reveal') || params.has('room1');
 let mode = storyStart ? 'room1' : params.get('mode') || 'encounter', benchN = +(params.get('n') || 10);
 useLevel(levelForMode(mode)); // the story's chapter (Floors 7, 6, 5), or the combat wing for practice, waves and benchmarks
@@ -237,6 +237,12 @@ const ZOMBIE_TYPES = [
   // tools/anim/build_zombie.py (--no-normals --opaque ZombieMale_Shirt_MAT_V1) and test_zombie_clips.py (the nurse set).
   // 21k triangles, 5.5 MB. Not modular. The street zombies take turns: Romero, Zombiegirl, him.
   { file: 'assets/zombie-male-aab.glb', extra: ['assets/zombie_moves/male-aab.glb'], height: 1.80, walk: { speed: 0.168 }, hood: true },
+  // ordinary people turned (2026-10-21, the user: "regular people zombies ... mixed in with the others"): the survivors
+  // Remy, Bryce and David retextured by tools/anim/zombify_skin.py (David in a light shirt and jeans) with the zombie set
+  // from tools/anim/build_zombie.py (Remy --upright). Not modular: cut from their skin weights. 8: Remy, 9: Bryce, 10: David.
+  { file: 'assets/survivors/zombified/remy-zombie.glb', height: 1.80, walk: { speed: 0.168 }, hood: true },
+  { file: 'assets/survivors/zombified/bryce-zombie.glb', height: 1.78, walk: { speed: 0.172 }, hood: true },
+  { file: 'assets/survivors/zombified/david-zombie.glb', height: 1.80, walk: { speed: 0.168 }, hood: true },
 ];
 // her scrubs' blue (hue ~165-250) recoloured, the rest of the texture (skin, hair, blood) untouched; once per map and recipe.
 // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look"; of the
@@ -279,7 +285,7 @@ const orangeScrubs = (tex) => scrubsTexture(tex, 'orange');
 function setScrubs(view, key) { view.model.traverse((o) => { if (o.isMesh && o.material?.map) { o.userData.baseMap ??= o.material.map; o.material.map = key ? scrubsTexture(o.userData.baseMap, key) : o.userData.baseMap; o.material.needsUpdate = true; } }); }
 // (extra: clips retargeted onto each type's own skeleton: the scratch, tools/anim/zombie_clip.py; the Quaternius UAL zombie
 // walks, run, bite and hit flinches, tools/anim/test_zombie_clips.py, UAL_PACKS.md)
-const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : LAYOUT.hood ? 5 + (z.id % 3) : z.kind === 'runner' ? 4 : z.prop === 'surgeon' || z.look === 'nurse' ? 0 : z.prop === 'bed' || z.look === 'patient' ? 1 : z.id % 2);
+const viewType = (z) => (z.kind === 'sprinter' ? 2 : z.kind === 'guard' ? 3 : LAYOUT.hood ? 5 + (z.id % 6) : z.kind === 'runner' ? 4 : z.prop === 'surgeon' || z.look === 'nurse' ? 0 : z.prop === 'bed' || z.look === 'patient' ? 1 : z.id % 2);
 // Chapter 2 is Marc's (2026-10-20, the user: "swap Marc in for the playable character in chapter 2"): outside the hospital
 // the hero is Marc (assets/male1.glb: Yola 3.0's clips retargeted onto him, tools/anim/male1_build.py), 1.80 m; ?hero=yola
 // keeps Yola there. He gets no posture fix (the Rig Lab shows him without it). The fits the user has not set for him yet
@@ -563,7 +569,7 @@ function prepViews() {
   if (!sim) return;
   if (!opening?.active) for (const z of sim.zombies) if (!zviews.has(z.id)) { const type = viewType(z), v = zpool[type].pop() || newZombieView(type); bindView(v, z); zviews.set(z.id, v); }
   // (Chapter 2 keeps more spare: its streets and bigger waves, hood/level.js AMBIENT / WAVE_EXTRA)
-  for (const [type, n] of LAYOUT.hood ? [[5, 6], [6, 6], [7, 6], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) { const v = newZombieView(type); v.hide(); zpool[type].push(v); }
+  for (const [type, n] of LAYOUT.hood ? [[5, 4], [6, 4], [7, 4], [8, 3], [9, 3], [10, 3], [2, 1], [3, 1]] : [[0, 4], [1, 4], [4, 3], [2, 1], [3, 1]]) while (zpool[type].length < n) { const v = newZombieView(type); v.hide(); zpool[type].push(v); }
 }
 function newZombieView(type) {
   const t = ZOMBIE_TYPES[type];
