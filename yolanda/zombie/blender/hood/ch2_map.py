@@ -6,6 +6,7 @@
 #   rows   move each row with what belongs to it (its walls' collision, its driveways, the clutter at its walls, the marks)
 #   road   L1 laid as a new road (asphalt, a dashed centre line, kerbs); the old loop's asphalt, kerbs and walks taken up
 #   extra  the new rows and streets
+#   highway  H1, the plan's optional highway on the east edge (one plain slab; run on its own: -- highway)
 #   blender -b blender/hood/hood.blend --python blender/hood/ch2_map.py -- rows road extra
 import bpy, bmesh, os, sys, math, json, random
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
@@ -315,6 +316,20 @@ def reach_rows():
     bpy.data.objects.remove(bpy.data.objects['COL_block_w6_end_0'], do_unlink=True)   # (the boundary box covers it)
     bpy.context.scene['ch2_reach_rows'] = 1
 
+# H1: the plan's optional highway along the east edge, built as drawn: one plain asphalt slab (no kerbs, no markings, as the
+# plan asks), the trees standing on it taken out. Past the free walk's edge (x 106) and the bake (x 110): seen from the air
+def highway():
+    if bpy.context.scene.get('ch2_highway_done'): print('highway already laid'); return
+    x0, z0, x1, z1 = next(g for g in EXTRAS['ground'] if g['id'] == 'H1')['rect']
+    on = lambda x, z: x0 - 1 <= x <= x1 + 1 and z0 - 1 <= z <= z1 + 1
+    n = remove(lambda e: os.path.basename(e['src']).startswith(TREES) and on(e.location.x, -e.location.y))
+    for o in list(bpy.data.collections['COL'].objects):
+        if (o.get('tag') or '').startswith('tree') and on(o.location.x, -o.location.y): bpy.data.objects.remove(o, do_unlink=True)
+    ground_mesh('ch2_H1_road', [(x0, z1), (x1, z1), (x1, z0), (x0, z0)], 0.031, bpy.data.objects['roads'].data.materials[0], ID)
+    bpy.context.scene['ch2_highway_done'] = 1
+    print('highway H1 laid; trees off it', n)
+
+if 'highway' in PARTS: highway()
 if 'rows' in PARTS: move_rows()
 if 'drives' in PARTS: stretch_drives()
 if 'lines' in PARTS: fix_lines(); trim_at_row6(); reach_rows()

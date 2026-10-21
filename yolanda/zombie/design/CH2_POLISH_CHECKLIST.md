@@ -125,9 +125,11 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
    head turn toward Marc on top of the move playing (actors.js `storyBody` `look`, up to 72 degrees, eased in and out): a
    glance over her shoulder every 3 s as she walks ahead, her eyes on him while she waits. `ba_sophie_lookback.png`.
 32. [x] **The new map** (design repo, `design/chapter2_extras/extras_full.png`, proposal v5: rows 3 - 6 turned, rows S1 - S8,
-   streets R1 - R4, the loop as a capital A, the barrier lines): `ba_00_new_map.png` sets it beside hood.blend rendered from
-   above on the same grid, and the plan laid over the build. Everything on it is built except what the plan itself leaves
-   open: the optional highway H1 and the two lake houses its README says need a decision.
+   streets R1 - R4, the loop as a capital A, the barrier lines, the highway H1): `ba_00_new_map.png` sets it beside hood.blend
+   rendered from above on the same grid, and the plan laid over the build. H1, marked optional, is now built as drawn
+   (`ch2_map.py highway`: one plain asphalt slab, x 110 - 142, z -100 - 150, 116 trees off it; past the free walk's edge, so
+   seen only from the air). Not built: the two lake houses by the playground, which the plan lists under "not placed" (no
+   room without moving the playground and the two west rows; a decision and a small house model are needed).
 33. [x] **The phone editor's copy** (`levels/hood` in the design repo) re-exported with `tools/leveldesign/export_hood.mjs`
    from this build (layout, ground, light, models, the editor's vendored modules). Written to the local clone only: not
    pushed, and the editor artifact not republished (both are Marc's call).
@@ -136,7 +138,15 @@ Status: [x] fixed and rechecked in the game, [k] checked and kept as it is, [~] 
    (every looter down) could not finish; the re-run replay stopped there. `ch2_polish.py looter_b` puts him behind the bar
    (13.2, -53.8): crouched under its 1.1 m counter, 10.5 m of route from the door. Leak test sealed; the replay below.
 35. [x] **Chapter 4, Grammy's peninsula** (the other half of the goal): `ba_ch4_grammy_map.png` sets the design repo's
-   `grandma_map.png` beside grammy.blend rendered from above on the same grid, and the map over the build.
+   `grandma_map.png` beside grammy.blend rendered from above on the same grid, and the map over the build. Retested in this
+   pass: `tools/grammy/leaktest.mjs` sealed with the gate shut and open; a stick-driven walk in the game (`grammy_walk.webm`)
+   from the landing by the roundabout, the south road, Grammy's door, the split, the gas detour and back, the north
+   junction to the guard gate (the bars lift as Marc comes up) and through to the family car, where the chapter's end
+   banner shows. Found in it, and fixed: item 37.
+37. [x] **Chapter 4: black holes through the villas** when a villa stood between the camera and Marc (`ba_ch4_seethrough.png`,
+   the same walk at the same moments): the see-through hole faded the roof and walls, but the villas' dark insides (the
+   black boxes behind their windows) never faded, so a black patch hid Marc. Now they fade too, right down to the villa's
+   floor, wider than the walls and a little past Marc (`materials.js` `void`); the hole shows the villa's floor.
 36. [x] **Found in the re-run replay: Sophie dropped off the screen's side when Marc ran across it** (off a phone's view 14%
    of the time she followed, 30% at the gate and Pete's stops): standing, she only set off once she had been off screen a
    full second or 5.6 m back, too late at his 3.3 m/s. Now, when he is running, she sets off as soon as where she would be in
@@ -150,7 +160,8 @@ baseline tour; after = now. Same camera, phone size (375 x 812).
 
 | Defect | Sheet |
 | --- | --- |
-| The new map (32) | `ba_00_new_map.png` (the plan, the build from above, the plan over the build) |
+| The new map (32) | `ba_00_new_map.png` (the plan, the build from above, the plan over the build; H1 built) |
+| Chapter 4 see-through (37) | `ba_ch4_seethrough.png` (the same walk, the same six moments) |
 | 1 old ground on the loop road | `ba_01_old_ground.png` (barricade curve, by the pickup) |
 | 2 weak blockers | `ba_02_blockers.png` (9 lines on the story's route + the far south jersey lines of item 30) |
 | Sophie's look back (31) | `ba_sophie_lookback.png` (new: no before) |
@@ -173,7 +184,10 @@ rules and no safety moves, so items 22, 23, 25 are shown by their own clips (`so
 ## Not done / reported
 
 - Marc has no "open a door" move: at the fridge his reach (`hood_Interact`) opens it, timed so the door swings with his hand
-  (item 5). A real door move is a new animation (the animation chat's work); reported rather than faked.
+  (item 5). Searched: no door-opening clip exists in the project, its survivors' and story moves, or the Animation Hub. A
+  real one is a new clip (a Mixamo download on Marc's account, or the animation chat); reported rather than faked.
+- The two lake houses on the new map's "not placed" list (item 32): they need Marc's decision (moving the playground or
+  the west rows) and a small house model.
 - Not tested on a physical phone: every clip and number is from the desktop browser at phone size (375 x 812). The iPhone
   check (High quality as the stress test) is Marc's.
 - The phone editor: `levels/hood` is re-exported in the local design repo (item 33) but not pushed, and the editor artifact
