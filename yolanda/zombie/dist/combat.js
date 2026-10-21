@@ -80429,16 +80429,40 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
 
   // src/hood/charlight.js
   var CHAR_LIGHT = { fill: 0.5 };
+  var RIM = { strength: { value: 0.55 }, power: { value: 4.5 }, color: { value: new Color(16773600) }, sunView: { value: new Vector3(0, 1, 0) } };
   var BLACK = new DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
   BLACK.needsUpdate = true;
   var roots = /* @__PURE__ */ new Set();
+  var rimmed = /* @__PURE__ */ new WeakSet();
+  var RIM_GLSL = `
+  { vec3 rimV = normalize( vViewPosition ); float rimF = pow( 1.0 - saturate( dot( normal, rimV ) ), rimPower );
+    float rimAway = 0.35 + 0.65 * saturate( -dot( normal, rimSunView ) ); // (brightest on the side away from the sun)
+    outgoingLight += rimColor * ( rimF * rimAway * rimStrength ); }
+  #include <opaque_fragment>`;
+  function addRim(m) {
+    if (rimmed.has(m)) return;
+    rimmed.add(m);
+    const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey;
+    m.onBeforeCompile = (sh, r) => {
+      prev?.call(m, sh, r);
+      sh.uniforms.rimStrength = RIM.strength;
+      sh.uniforms.rimPower = RIM.power;
+      sh.uniforms.rimColor = RIM.color;
+      sh.uniforms.rimSunView = RIM.sunView;
+      sh.fragmentShader = "uniform float rimStrength;\nuniform float rimPower;\nuniform vec3 rimColor;\nuniform vec3 rimSunView;\n" + sh.fragmentShader.replace("#include <opaque_fragment>", RIM_GLSL);
+    };
+    m.customProgramCacheKey = () => (prevKey ? prevKey.call(m) : "") + "|rim";
+    m.needsUpdate = true;
+  }
   function characterLight(root) {
     if (!root) return;
     roots.add(root);
     root.traverse((o) => {
       if (!o.isMesh) return;
       for (const m of [].concat(o.material)) {
-        if (!m || !("aoMap" in m) || m.aoMap && m.aoMap !== BLACK) continue;
+        if (!m?.isMeshStandardMaterial) continue;
+        addRim(m);
+        if (m.aoMap && m.aoMap !== BLACK) continue;
         if (m.aoMap !== BLACK) {
           m.aoMap = BLACK;
           m.needsUpdate = true;
@@ -80450,6 +80474,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   function setCharacterFill(share) {
     CHAR_LIGHT.fill = share;
     for (const r of roots) characterLight(r);
+  }
+  function setRim({ strength, power, color } = {}) {
+    if (strength != null) RIM.strength.value = strength;
+    if (power != null) RIM.power.value = power;
+    if (color != null) RIM.color.value.set(color);
+    return { strength: RIM.strength.value, power: RIM.power.value };
+  }
+  function updateRim(camera2, sunFrom) {
+    RIM.sunView.value.copy(sunFrom).transformDirection(camera2.matrixWorldInverse);
   }
 
   // src/hood/actors.js
@@ -81095,7 +81128,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       bot: runBot,
       CUT,
       charLight: setCharacterFill,
-      // (the characters' share of the sky light: hood/charlight.js)
+      rim: setRim,
+      // (the characters' share of the sky light and their rim light: hood/charlight.js)
       // test hook (2026-10-20, the user's texture comparison): character files stood side by side, all on one clip at the same
       // time, facing +z; fill(true) adds a soft studio-like light from +z (it lights the ground too: for comparing only)
       lineup: {
@@ -81161,6 +81195,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         view.radioUpdate(window.game?.yola, sim2);
         hint.update(camera2, level, sim2, dt);
         const g = window.game, y = g?.yola;
+        updateRim(camera2, SUN_FROM);
         if (y?.model && !y.charLit) {
           y.charLit = true;
           characterLight(y.model);
