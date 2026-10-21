@@ -79136,8 +79136,18 @@ uniform sampler2D macroTex;`).replace("#include <map_fragment>", `
         return variant === "car" ? plain({ color: new Color(0.035, 0.045, 0.05), roughness: 0.3, metalness: 0.1 }) : plain({ color: new Color(0.06, 0.075, 0.08), roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.62, depthWrite: false });
       case "screen":
         return plain({ color: 526344, transparent: true, opacity: 0.32, side: DoubleSide, roughness: 0.8, depthWrite: false });
-      case "void":
-        return new MeshBasicMaterial({ color: 0 });
+      // (the villas' dark insides, behind their windows: they cut with the see-through hole too, else its black top shows
+      // through a faded roof; right down to the villa's own plinth (0.12 m), wider and solid where the walls and roof only
+      // dither at the hole's rim, and a little past Marc (a wall beside him cuts; the dark box behind it at his own depth too))
+      case "void": {
+        const m = new MeshBasicMaterial({ color: 0 });
+        m.onBeforeCompile = (sh) => {
+          cutawayPatch(sh);
+          sh.fragmentShader = sh.fragmentShader.replace("vCutW.y > cutFloor", "vCutW.y > 0.13").replace("float r = cutR * mix(0.75, 1.0, t);", "float r = cutR * 1.5;").replace("if (k > h * 0.999) discard;", "if (d < r) discard;").replace("t < 0.985", "t < 1.12");
+        };
+        m.customProgramCacheKey = () => "hoodvoid";
+        return m;
+      }
       case "plastic":
         return plain({ color: (PAINTS[variant] || P(0.03, 0.03, 0.03)).clone(), roughness: 0.38 });
       case "paper":
