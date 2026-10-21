@@ -44959,7 +44959,7 @@ void main() {
     };
   }
   function buildFloor(n, def) {
-    const oz = FLOOR_Z[n], Z = Zf(oz);
+    const oz = FLOOR_Z[n], Z2 = Zf(oz);
     const rooms = [], walls = [], doors = [], props = [], signs = [], roomSigns = [];
     const edges = { h: /* @__PURE__ */ new Map(), v: /* @__PURE__ */ new Map() };
     const addEdge = (o, c, a, b) => {
@@ -44968,7 +44968,7 @@ void main() {
       edges[o].get(k).push([Math.min(a, b), Math.max(a, b)]);
     };
     for (const r of def.rooms) {
-      const pts = r.poly.map(([px2, py2]) => [X(px2), Z(py2)]);
+      const pts = r.poly.map(([px2, py2]) => [X(px2), Z2(py2)]);
       for (let i = 0; i < pts.length; i++) {
         const [ax, az] = pts[i], [bx, bz] = pts[(i + 1) % pts.length];
         if (az === bz) addEdge("h", az, ax, bx);
@@ -44994,7 +44994,7 @@ void main() {
     };
     const cracked = [];
     for (const d of def.doors) {
-      const o = d.o, c = o === "h" ? Z(d.c) : X(d.c), a = o === "h" ? X(d.a) : Z(d.a), b = o === "h" ? X(d.b) : Z(d.b);
+      const o = d.o, c = o === "h" ? Z2(d.c) : X(d.c), a = o === "h" ? X(d.a) : Z2(d.a), b = o === "h" ? X(d.b) : Z2(d.b);
       if (d.kind === "cracked" || d.kind === "blocked" || d.kind === "glass") {
         addGap(o, c, a, b);
         if (d.kind === "cracked") cracked.push(o === "h" ? { id: d.id, x0: a, z0: c, x1: b, z1: c } : { id: d.id, x0: c, z0: a, x1: c, z1: b });
@@ -45050,7 +45050,7 @@ void main() {
         roomSigns.push({ id, x, y, z, face, w });
       },
       X,
-      Z
+      Z: Z2
     };
     def.dress(P2);
     const blocked = (x, z, r, self2) => walls.some((w) => x > w[0] - r && x < w[1] + r && z > w[2] - r && z < w[3] + r) || props.some((o) => o !== self2 && !o.noCollide && !o.wall && o.fp && Math.abs(x - o.x) < o.fp[0] / 2 + r && Math.abs(z - o.z) < o.fp[1] / 2 + r);
@@ -45083,17 +45083,17 @@ void main() {
       lift: L3,
       bounds: { minX: minX - 0.6, maxX: maxX + 0.6, minZ: minZ - 0.6, maxZ: maxZ + 0.6 },
       camBounds: { minX: minX + 1.2, maxX: maxX - 1, minZ: minZ + 1.6, maxZ: maxZ - 0.6 },
-      groups: [...def.groups(Z), ...bedPatients],
-      pickups: def.pickups(Z),
-      interact: def.interact(Z),
-      lights: def.lights(Z),
-      blood: def.blood?.(Z) || [],
-      playerStart: def.start(Z),
+      groups: [...def.groups(Z2), ...bedPatients],
+      pickups: def.pickups(Z2),
+      interact: def.interact(Z2),
+      lights: def.lights(Z2),
+      blood: def.blood?.(Z2) || [],
+      playerStart: def.start(Z2),
       cutaway: true,
       cracked,
-      flood: def.flood?.(Z) || null,
-      mri: def.mri?.(Z) || null,
-      tanks: def.tanks?.(Z) || []
+      flood: def.flood?.(Z2) || null,
+      mri: def.mri?.(Z2) || null,
+      tanks: def.tanks?.(Z2) || []
     };
   }
   var F7 = buildFloor(7, {
@@ -45132,7 +45132,7 @@ void main() {
       { id: "orbar", o: "h", c: 565, a: 1065, b: 1150, kind: "barred", face: "s", side: "s" }
       // OR south / R7 north: barred, released from R7 only
     ],
-    dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
+    dress({ p, wp, raw, sign: sign2, room, X: X2, Z: Z2 }) {
       p(U + "04_surgery/operating_table_standard.glb", OR_TABLE.x, OR_TABLE.z, 0, [0.78, 1.65], 0.94, { name: "orTable" });
       wp(U + "05_recovery_bay/RecoveryHeadwall_standard.glb", OR_TABLE.x, -11, "s", 0, { name: "orHeadwall" });
       p(U + "04_surgery/surgical_light_standard.glb", OR_TABLE.x + 0.15, OR_TABLE.z + 0.55, 0, [0.91, 0.85], 1.16, { y: 1.72, noCollide: true, name: "orLight" });
@@ -45407,7 +45407,7 @@ void main() {
       room("elevator", X2(1214) - 3.3, 2.75, -11, "s", 1.1);
     },
     // (2026-10-18, the user: the IV pole walker, the one in a wheelchair, a surgeon: prop on a group's zombie; core/zombies.js)
-    groups: (Z) => [
+    groups: (Z2) => [
       // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
       { id: "or", zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1, yaw: 0.75, wake: 1.8, look: "patient" }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: "nurse" }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8 }] },
       // (2026-10-18, the user's part 3: "more enemies ... treat each room as a small combat arena with its own flavor ... avoid
@@ -45542,7 +45542,7 @@ void main() {
       { id: "a6_crack", o: "v", c: 470, a: 1010, b: 1135, kind: "cracked" }
       // Ward 6C -> Cold Dispatch: the lady's wall
     ],
-    dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
+    dress({ p, wp, raw, sign: sign2, room, X: X2, Z: Z2 }) {
       const NP = SI, R13 = U + "13_restroom_fixtures/standard/13_standard_", C = {
         visitor: U + "09_assessment_furniture/runtime/visitor_chair_standard.glb",
         shelf: M + "utility/Utility_Supply_Shelf.glb",
@@ -45758,7 +45758,7 @@ void main() {
       p(H + "wheelchair.glb", 2.6, -77.7, 250, [0.76, 0.91], 0.97);
       room("elevator", X2(1214) - 3.3, 2.75, -91, "s", 1.1);
     },
-    groups: (Z) => [
+    groups: (Z2) => [
       // the corridor's east end: the first wheelchair with a cylinder on its back, and a walker by the store
       { id: "ce6", sense: 7, zombies: [{ x: -9.6, z: -78.6, yaw: Math.PI / 2, kind: "o2chair", look: "patient" }, { x: 4.6, z: -78.3, yaw: -1.4 }] },
       // Ward 6B: the first fight (and its bed patients): walkers between the beds, an old one dragging a cylinder
@@ -45786,7 +45786,7 @@ void main() {
       { id: "wc6", sense: 3.5, zombies: [{ x: -10.8, z: -88, yaw: Math.PI, look: "patient" }] },
       { id: "jn6", sense: 3.5, zombies: [{ x: -6.6, z: -86.2, yaw: 2.6, look: "nurse" }] }
     ],
-    pickups: (Z) => [
+    pickups: (Z2) => [
       // the guard's pistol and his open bag in the lobby, where he and Yola parted before the call (no body: he went on down)
       { id: "pistol", kind: "weapon", weapon: "pistol", x: -3.2, z: -83.4, r: 1.1, mag: 12, label: "The guard\u2019s pistol", model: "pistol" },
       { id: "ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: -2.4, z: -82.8, r: 1, label: "Guard\u2019s bag: spare rounds", model: "bag" },
@@ -45795,11 +45795,11 @@ void main() {
       { id: "n6shells", kind: "ammo", weapon: "shotgun", rounds: 12, x: -16.84, z: -69.7, r: 1.2, label: "Shotgun shells", model: "shells", y: 1.3 },
       { id: "k6aid", kind: "health", amount: 30, x: -36, z: -53.2, r: 1, label: "First-aid case", model: "aid", y: 1.21 }
     ],
-    interact: (Z) => [
+    interact: (Z2) => [
       { id: "bar:firedoor6", x: -15.8, z: -78.65, r: 1.6, side: { axis: "x", max: -14.84 }, label: "Lift the bar" }
     ],
-    lights: (Z) => [{ x: X(1214), y: 2.3, z: -88.6 }, { x: -16.8, y: 2.4, z: -70.6 }, { x: -33.6, y: 2.4, z: -58 }],
-    blood: (Z) => [
+    lights: (Z2) => [{ x: X(1214), y: 2.3, z: -88.6 }, { x: -16.8, y: 2.4, z: -70.6 }, { x: -33.6, y: 2.4, z: -58 }],
+    blood: (Z2) => [
       { kind: "drag", x: -0.4, z: -81.4, w: 0.7, l: 1.6, rot: 30 },
       { kind: "splat", x: -20.4, z: -86.8, w: 1, l: 1, rot: -15 },
       { kind: "hand", x: -26.69, z: -87.6, wall: "e", y: 1.15, size: 0.32, tilt: 4 },
@@ -45807,8 +45807,8 @@ void main() {
       { kind: "splat", x: -12, z: -67, w: 0.9, l: 0.9, rot: 25 },
       { kind: "splat", x: 1.8, z: -56, w: 1.1, l: 1.1, rot: 60 }
     ],
-    tanks: (Z) => [[-11, -77.6], [-10.6, -77.7], [-23.4, -65.2], [6.6, -60.6], [6.6, -60.1], [6.62, -59.6], [6.6, -59.1]],
-    start: (Z) => ({ x: LIFTS[6].x, z: LIFTS[6].z + 1.2, yaw: 0 })
+    tanks: (Z2) => [[-11, -77.6], [-10.6, -77.7], [-23.4, -65.2], [6.6, -60.6], [6.6, -60.1], [6.62, -59.6], [6.6, -59.1]],
+    start: (Z2) => ({ x: LIFTS[6].x, z: LIFTS[6].z + 1.2, yaw: 0 })
   });
   var F5 = buildFloor(5, {
     rooms: [
@@ -45840,7 +45840,7 @@ void main() {
       { id: "pa5_crack", o: "v", c: 495, a: 435, b: 510, kind: "cracked" }
       // the flooded ward -> the pathology lab (optional)
     ],
-    dress({ p, wp, raw, sign: sign2, room, X: X2, Z }) {
+    dress({ p, wp, raw, sign: sign2, room, X: X2, Z: Z2 }) {
       const NP = SI, R13 = U + "13_restroom_fixtures/standard/13_standard_", C = {
         shelf: M + "utility/Utility_Supply_Shelf.glb",
         counter: U + "09_assessment_furniture/runtime/prep_storage_standard.glb",
@@ -46011,7 +46011,7 @@ void main() {
       p(H + "biohazard_bin.glb", -26.4, -146.6, 0, [0.39, 0.39], 0.69);
       room("elevator", X2(1214) - 3.3, 2.75, -171, "s", 1.1);
     },
-    groups: (Z) => [
+    groups: (Z2) => [
       // the main reception: the floor's crowd round the desk: walkers, a runner, a cylinder chair from upstairs, one through
       // the floor
       { id: "h5", sense: 7, zombies: [
@@ -46035,7 +46035,7 @@ void main() {
       { id: "rr5", sense: 5, zombies: [{ x: 3.6, z: -146, yaw: 0.4, look: "nurse" }, { x: 5.6, z: -143, yaw: -2.4 }] },
       { id: "pt5", sense: 3.5, zombies: [{ x: -2.4, z: -145.4, yaw: 1.6, look: "patient" }] }
     ],
-    pickups: (Z) => [
+    pickups: (Z2) => [
       { id: "i5ammo", kind: "ammo", weapon: "pistol", rounds: 24, x: 5.6, z: -152.6, r: 1, label: "Pistol magazines", model: "mag", y: 0.81 },
       { id: "h5aid", kind: "health", amount: 40, x: -15.34, z: -148.72, r: 1.3, label: "First-aid case", model: "aid", y: 1.1 },
       // (on the desk's front ledge)
@@ -46045,12 +46045,12 @@ void main() {
       { id: "r5aid", kind: "health", amount: 40, x: -28.6, z: -134.4, r: 1, label: "First-aid case", model: "aid", y: 0.81 },
       { id: "x5mags", kind: "ammo", weapon: "pistol", rounds: 18, x: -24, z: -133.4, r: 1, label: "Spare pistol rounds", model: "mag", y: 1 }
     ],
-    interact: (Z) => [
+    interact: (Z2) => [
       { id: "intake", x: -3.2, z: -158.3, r: 1.6, label: "Secure the case" },
       { id: "record", x: -29.5, z: -141.3, r: 1.6, label: "Read the dispatch record" }
     ],
-    lights: (Z) => [{ x: X(1214), y: 2.3, z: -168.6 }, { x: -3.2, y: 2.4, z: -157.6 }, { x: -29.5, y: 2.4, z: -140.6 }],
-    blood: (Z) => [
+    lights: (Z2) => [{ x: X(1214), y: 2.3, z: -168.6 }, { x: -3.2, y: 2.4, z: -157.6 }, { x: -29.5, y: 2.4, z: -140.6 }],
+    blood: (Z2) => [
       { kind: "drag", x: -8.4, z: -155.6, w: 0.7, l: 1.5, rot: -30 },
       { kind: "splat", x: -18, z: -146.4, w: 0.9, l: 0.9, rot: 10 },
       { kind: "hand", x: -4.99, z: -137, wall: "w", y: 1.2, size: 0.32, tilt: 6 },
@@ -46059,11 +46059,11 @@ void main() {
     ],
     // the flood (the whole ward under water; the panel just inside the reception door, so a blow from the dry doorway reaches
     // it), the magnet (its room is the arena; the button in the near corner)
-    flood: (Z) => ({ minX: -40.7, maxX: -26, minZ: -165, maxZ: -143.3, panel: { x: -26.9, z: -152.3 } }),
+    flood: (Z2) => ({ minX: -40.7, maxX: -26, minZ: -165, maxZ: -143.3, panel: { x: -26.9, z: -152.3 } }),
     // (in sight of the dry doorway)
-    mri: (Z) => ({ minX: -4.84, maxX: 7.12, minZ: -141.15, maxZ: -131.95, magnet: { x: 1.2, z: -140.4 }, button: { x: 6.2, z: -133 } }),
-    tanks: (Z) => [[-6, -134], [5.9, -139.6], [-25, -158.8]],
-    start: (Z) => ({ x: LIFTS[5].x, z: LIFTS[5].z + 1.2, yaw: 0 })
+    mri: (Z2) => ({ minX: -4.84, maxX: 7.12, minZ: -141.15, maxZ: -131.95, magnet: { x: 1.2, z: -140.4 }, button: { x: 6.2, z: -133 } }),
+    tanks: (Z2) => [[-6, -134], [5.9, -139.6], [-25, -158.8]],
+    start: (Z2) => ({ x: LIFTS[5].x, z: LIFTS[5].z + 1.2, yaw: 0 })
   });
   var FLOORS = { 7: F7, 6: F6, 5: F5 };
   var CASE_HOME = { floor: 6, x: -30, z: -63.64, y: 1.09 };
@@ -48774,11 +48774,11 @@ void main() {
           break;
         case ZS.STRIKE: {
           turnRate = 0;
-          const Z = ZATTACKS[this.attack];
+          const Z2 = ZATTACKS[this.attack];
           if (this.attack === "dash") {
             if (!this.struck && !p.dead) {
               const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx2 + dz * fz, lat = Math.abs(dx * fz - dz * fx2);
-              if (along > -0.25 && along < Z.reach + p.r && lat < this.r + p.r + 0.15) {
+              if (along > -0.25 && along < Z2.reach + p.r && lat < this.r + p.r + 0.15) {
                 this.struck = true;
                 const sg = dx * fz - dz * fx2 >= 0 ? 1 : -1;
                 const hit = p.hurt((T2.scratchDamage ?? 8) * 1.4 * this.K.dmg * (1 - 0.3 * this.armsLost), this.x - fz * sg * 0.8, this.z + fx2 * sg * 0.8, sim2);
@@ -48787,14 +48787,14 @@ void main() {
             }
             if (this.t >= this.stateDur) {
               if (!this.struck) sim2.emit({ type: "zombieStrikeMiss", id: this.id, attack: "dash" });
-              this.set(ZS.RECOVER, Z.recover * (this.struck ? 0.85 : 1.1));
+              this.set(ZS.RECOVER, Z2.recover * (this.struck ? 0.85 : 1.1));
             }
             break;
           }
           if (this.attack === "pounce") {
             if (!this.struck && !p.dead) {
               const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = dx * fx2 + dz * fz, lat = Math.abs(dx * fz - dz * fx2);
-              if (along > -0.1 && along < Z.bite + p.r && lat < this.r + p.r && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+              if (along > -0.1 && along < Z2.bite + p.r && lat < this.r + p.r && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
                 this.struck = true;
                 this.vx *= 0.25;
                 this.vz *= 0.25;
@@ -48807,7 +48807,7 @@ void main() {
                 sim2.emit({ type: "zombieStrikeMiss", id: this.id, attack: "pounce" });
                 sim2.specialMiss?.(this, "pounce");
               }
-              this.set(ZS.RECOVER, Z.recover * (this.struck ? 0.8 : 1.15));
+              this.set(ZS.RECOVER, Z2.recover * (this.struck ? 0.8 : 1.15));
             }
             break;
           }
@@ -48816,10 +48816,10 @@ void main() {
             const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw);
             const along = dx * fx2 + dz * fz;
             const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
-            const hit = !p.dead && dist2 < Z.range && along > 0 && ang < Z.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
-            const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage * (Z.dmg ?? 1)) * this.K.dmg;
+            const hit = !p.dead && dist2 < Z2.range && along > 0 && ang < Z2.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
+            const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage * (Z2.dmg ?? 1)) * this.K.dmg;
             const hurt = hit && p.hurt(dmg * (this.kind === "guard" ? 1 : 1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2);
-            if (hurt && (this.attack === "club" || this.attack === "smash") && !p.dead && sim2.rand() < Z.kd) p.knockDown(this.x, this.z, sim2);
+            if (hurt && (this.attack === "club" || this.attack === "smash") && !p.dead && sim2.rand() < Z2.kd) p.knockDown(this.x, this.z, sim2);
             if (hurt && this.attack === "smash" && !p.dead && !p.down) {
               const l = dist2 || 1;
               p.vx += dx / l * 3.5;
@@ -48862,10 +48862,10 @@ void main() {
               break;
             }
           }
-          this.vx = Math.sin(this.yaw) * Z.step;
-          this.vz = Math.cos(this.yaw) * Z.step;
+          this.vx = Math.sin(this.yaw) * Z2.step;
+          this.vz = Math.cos(this.yaw) * Z2.step;
           if (this.t >= this.stateDur) {
-            this.set(ZS.RECOVER, Z.recover);
+            this.set(ZS.RECOVER, Z2.recover);
             if (this.attack === "flail" && this.swingN % 3) {
               this.attackCd = 0;
               sim2.nextAttackT = Math.min(sim2.nextAttackT || 0, sim2.time);
@@ -70927,7 +70927,7 @@ void main() {
         this.fogU.uSoft.value = Q2.softFog ? 1 : 0;
       }
       const sp = this.spot, glowK = Q2.glow * (Math.min(1.5, r.flash || 0) + 0.6 * (r.key || 0)) * (sp && sp.intensity > 0 ? 1 : 0), cam = this.camera.position;
-      const _v13 = this._fv || (this._fv = new Vector3()), _l2 = this._fl || (this._fl = new Vector3());
+      const _v14 = this._fv || (this._fv = new Vector3()), _l2 = this._fl || (this._fl = new Vector3());
       const L3 = LIFT7, z0 = L3.cab.minZ + 0.4;
       for (const p of S2.parts) {
         p.life += d * p.speed / 3.2;
@@ -70960,11 +70960,11 @@ void main() {
         p.sp.material.opacity = S2.k * (p.wisp ? 0.18 : 0.3) * fade;
         let sc = 0;
         if (glowK > 0) {
-          _v13.subVectors(p.sp.position, cam).normalize();
+          _v14.subVectors(p.sp.position, cam).normalize();
           _l2.subVectors(sp.position, p.sp.position);
           const ld = _l2.length();
           _l2.divideScalar(ld || 1);
-          const c = Math.max(0, _v13.dot(_l2));
+          const c = Math.max(0, _v14.dot(_l2));
           sc = 0.22 * glowK * c * c * c * c * c * c / (1 + ld * ld * 0.12);
         }
         p.sp.material.color.setRGB(Math.min(1.6, lit + red + sc), Math.min(1.6, lit * 0.95 + red * 0.08 + sc * 0.93), Math.min(1.6, lit * 0.98 + red * 0.08 + sc * 0.82));
@@ -72044,7 +72044,7 @@ void main() {
       this.substate = "B11_LAUNCH";
       this.mark("beat11");
       this.slowmo = 0;
-      const plan = this.planLaunch(), Z = this.burst?.ready ? this.burst : null;
+      const plan = this.planLaunch(), Z2 = this.burst?.ready ? this.burst : null;
       if (!plan) {
         yield 0.5;
         this.finalize("normal");
@@ -72064,12 +72064,12 @@ void main() {
       const tIn = Math.max(P2.liftoff, tk - 0.5 * (1 + cs) * Math.max(0.01, LA.slowIn)), tf = tIn;
       this.launch.card = { from: tIn, len: Math.max(5e-3, tk - tIn), slow: cs };
       this.launch.sfx = { off: P2.liftoff - 0.04, spin: P2.liftoff + LA.rampAt, spinSecs: this.launchSecs(P2.liftoff + LA.rampAt, tf) };
-      if (Z) {
+      if (Z2) {
         const sx = P2.zx + P2.fwd.x * LA.lunge, sz = P2.zz + P2.fwd.z * LA.lunge;
-        Z.place(sx, sz, P2.zyaw);
-        Z.walkV = null;
-        Z.play("walk", { timeScale: 1.7, at: 1.2 });
-        this.launch.zombie = { Z, sx, sz, ex: P2.zx, ez: P2.zz, T: LA.hold + P2.tc, attackAt: P2.tc - 0.7, attacked: false };
+        Z2.place(sx, sz, P2.zyaw);
+        Z2.walkV = null;
+        Z2.play("walk", { timeScale: 1.7, at: 1.2 });
+        this.launch.zombie = { Z: Z2, sx, sz, ex: P2.zx, ez: P2.zz, T: LA.hold + P2.tc, attackAt: P2.tc - 0.7, attacked: false };
         this.launch.t0c = P2.tc;
         this.dropPatient();
       }
@@ -72136,7 +72136,7 @@ void main() {
       this.substate = "B13_HIT";
       this.mark("hit");
       if (R.brighten === "burst") this.brightenNow();
-      if (Z) {
+      if (Z2) {
         const tip = this.batTip(), next = this.batTip(P2.tc + 1 / 30);
         const swing = next.clone().sub(tip).setY(0);
         if (swing.lengthSq() < 1e-6) swing.copy(P2.fwd);
@@ -72155,7 +72155,7 @@ void main() {
         }
         this.lensHit = false;
         this.setCamera();
-        Z.burst(tip, dir, this.camera, { headSecs: LA.headSecs, lensDist: LA.lensDist });
+        Z2.burst(tip, dir, this.camera, { headSecs: LA.headSecs, lensDist: LA.lensDist });
         this.patientDown = true;
         this.launch.rate = 0;
         this.burstScale = 0;
@@ -72457,8 +72457,8 @@ void main() {
     // off-screen image: each material needs a second shader for that, and compiling it on first sight stalled the reveal ~40
     // times): run while the game's lighting is on (main.js warmStoryLight), with everyone the reveal shows made visible
     warmReveal() {
-      const R = this.renderer, A = this.stage.actors, Z = this.burst?.root, Y2 = this.yola;
-      const shown = [[A.yola?.root, true], [Z, true], [this.rfx?.vol, true], [this.smoke?.g, true]].filter(([o]) => o).map(([o]) => [o, o.visible]);
+      const R = this.renderer, A = this.stage.actors, Z2 = this.burst?.root, Y2 = this.yola;
+      const shown = [[A.yola?.root, true], [Z2, true], [this.rfx?.vol, true], [this.smoke?.g, true]].filter(([o]) => o).map(([o]) => [o, o.visible]);
       for (const [o] of shown) o.visible = true;
       const yWas = Y2?.outer?.visible;
       Y2?.setShown?.(true);
@@ -80427,6 +80427,32 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
 
   // src/hood/actors.js
+  var SURVIVORS = { rifle: [["eve", 1.7]], pistol: [["remy", 1.8], ["david", 1.78]] };
+  var GUNS = { rifle: ["assets/neighborhood/props/security_rifle.glb", 1], pistol: ["assets/weapons/pistol_core.glb", PISTOL_CORE_SCALE] };
+  var _v11 = new Vector3();
+  var _v24 = new Vector3();
+  var _v33 = new Vector3();
+  var Z = new Vector3(0, 0, 1);
+  function gunHolder(scene2, scale) {
+    const g = scene2.clone(true);
+    g.scale.setScalar(scale);
+    g.updateMatrixWorld(true);
+    const grip = g.getObjectByName("GameGrip_R")?.getWorldPosition(new Vector3()) || new Vector3();
+    const muz = g.getObjectByName("Muzzle")?.getWorldPosition(new Vector3()) || new Vector3(1, 0, 0);
+    const d = muz.clone().sub(grip);
+    d.y = 0;
+    d.normalize();
+    const inner = new Group();
+    inner.quaternion.setFromUnitVectors(d, Z);
+    inner.add(g);
+    g.position.copy(grip).negate();
+    const h = new Group();
+    h.add(inner);
+    g.traverse((o) => {
+      if (o.isMesh) o.castShadow = false;
+    });
+    return h;
+  }
   var COL = { survivor: 7319130, looter: 11681839, leader: 8002578 };
   function marker(color) {
     const g = new Group();
@@ -80452,8 +80478,114 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.lineMat = new LineBasicMaterial({ color: 16724e3, transparent: true, opacity: 0.85 });
       this.tracerMat = new LineBasicMaterial({ color: 16773552, transparent: true, opacity: 0.9 });
     }
+    // the survivors' models and guns (hood.js, at load); without them the markers stand in
+    async loadModels(loader3) {
+      this.models = {};
+      this.guns = {};
+      this.nPicked = {};
+      const all = [...SURVIVORS.rifle, ...SURVIVORS.pistol];
+      await Promise.all([
+        ...all.map(([k, h]) => loader3.loadAsync("assets/survivors/" + k + ".glb").then((g) => {
+          this.models[k] = { g, h };
+        }).catch((e) => console.warn("survivor", k, e))),
+        ...Object.entries(GUNS).map(([k, [f, s]]) => loader3.loadAsync(f).then((g) => {
+          this.guns[k] = { scene: g.scene, s };
+        }).catch((e) => console.warn("survivor gun", k, e)))
+      ]);
+    }
+    // a survivor's body: the model on the clip's own aim, the gun in the right palm along the aim (rifle: from hand to hand,
+    // pistol: from the shoulder to the hand), the model turned so that aim points down the actor's facing
+    survivorBody(gun) {
+      const list = SURVIVORS[gun] || SURVIVORS.pistol, i = this.nPicked[gun] = (this.nPicked[gun] || 0) + 1, pick = list[(i - 1) % list.length];
+      const M4 = this.models?.[pick[0]];
+      if (!M4) return null;
+      const m = clone(M4.g.scene);
+      m.scale.setScalar(pick[1]);
+      m.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = false;
+          o.frustumCulled = false;
+        }
+      });
+      const turn = new Group();
+      turn.add(m);
+      const obj = new Group();
+      obj.add(turn);
+      const mixer = new AnimationMixer(m), clips = Object.fromEntries(M4.g.animations.map((c) => [c.name, c]));
+      const idle = mixer.clipAction(clips[gun === "rifle" ? "rifle_idle" : "pistol_idle"] || M4.g.animations[0]);
+      idle.play();
+      const B = (n) => m.getObjectByName("mixamorig" + n);
+      const bones = { hand: B("RightHand"), mid: B("RightHandMiddle1"), lhand: B("LeftHand"), lmid: B("LeftHandMiddle1"), sh: B("RightArm") };
+      const G6 = this.guns?.[gun];
+      const holder = G6 ? gunHolder(G6.scene, G6.s) : null;
+      if (holder) this.group.add(holder);
+      const palm = (h, mid, out) => out.copy(h.getWorldPosition(_v33)).lerp(mid.getWorldPosition(_v24), 0.55);
+      const aimDir = (out) => {
+        if (gun === "rifle") {
+          palm(bones.lhand, bones.lmid, out);
+          palm(bones.hand, bones.mid, _v11);
+          return out.sub(_v11);
+        }
+        palm(bones.hand, bones.mid, out);
+        return out.sub(bones.sh.getWorldPosition(_v11));
+      };
+      const body = {
+        obj,
+        mixer,
+        holder,
+        clips,
+        idle,
+        kick: 0,
+        dead: false,
+        deadT: 0,
+        update(dt) {
+          mixer.update(dt);
+          obj.updateMatrixWorld(true);
+          if (!holder) return;
+          if (body.dead) body.deadT += dt;
+          holder.visible = obj.visible && (!body.dead || body.deadT < 0.35);
+          palm(bones.hand, bones.mid, holder.position);
+          if (gun !== "rifle") holder.position.y -= 0.045;
+          const d = aimDir(_v11);
+          d.y *= 0.3;
+          d.normalize();
+          holder.quaternion.setFromUnitVectors(Z, d);
+          if (body.kick > 0) {
+            body.kick = Math.max(0, body.kick - dt * 6);
+            holder.position.addScaledVector(d, -0.06 * body.kick);
+          }
+        },
+        fire() {
+          body.kick = 1;
+        },
+        fall(forward) {
+          if (body.dead) return;
+          body.dead = true;
+          body.deadT = 0;
+          const c = clips[forward ? "death_forward" : "death_back"];
+          if (!c) return;
+          const a = mixer.clipAction(c);
+          a.setLoop(LoopOnce, 1);
+          a.clampWhenFinished = true;
+          a.reset().play();
+          idle.crossFadeTo(a, 0.2, false);
+        },
+        dispose() {
+          holder?.removeFromParent();
+        }
+      };
+      mixer.update(0);
+      obj.updateMatrixWorld(true);
+      const d0 = aimDir(new Vector3());
+      turn.rotation.y = -Math.atan2(d0.x, d0.z);
+      return body;
+    }
     clear() {
-      for (const a of this.list) a.obj.removeFromParent();
+      this.nPicked = {};
+      for (const a of this.list) {
+        a.obj.removeFromParent();
+        a.body?.dispose();
+      }
       this.list.length = 0;
       for (const t of this.tracers) t.line.removeFromParent();
       this.tracers.length = 0;
@@ -80469,17 +80601,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     // a friendly survivor at a spot, shooting the nearest zombie in sight every so often; overwhelm(): stops, falls
     survivor(at, { gun = "pistol" } = {}) {
-      const obj = marker(COL.survivor);
+      const body = this.survivorBody(gun), obj = body ? body.obj : marker(COL.survivor);
       obj.position.set(at.x, 0, at.z);
+      obj.rotation.y = at.yaw || 0;
       this.group.add(obj);
-      const a = { kind: "survivor", obj, x: at.x, z: at.z, yaw: at.yaw || 0, cd: 0.5, down: false, gun };
+      const a = { kind: "survivor", obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, cd: 0.5, down: false, gun };
       a.overwhelm = () => {
         a.down = true;
+        body?.fall(Math.random() < 0.5);
       };
       a.step = (dt, level) => {
         const sim2 = level.sim;
         if (a.down) {
-          obj.rotation.x = Math.min(Math.PI / 2, obj.rotation.x + dt * 3);
+          if (!body) obj.rotation.x = Math.min(Math.PI / 2, obj.rotation.x + dt * 3);
           return;
         }
         if ((a.cd -= dt) > 0) return;
@@ -80502,6 +80636,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (sim2.rand() < (rifle ? 0.8 : 0.55)) best.takeHit(rifle ? 55 : 22, dx, dz, rifle ? 4 : 2.5, "pistol", sim2, "torso");
         this.tracer(a.x, a.z, best.x, best.z);
         this.sound(rifle ? "shotgun" : "shot", a.x, a.z, 0.7);
+        body?.fire();
         a.cd = (rifle ? 0.9 : 0.7) + sim2.rand() * 0.6;
       };
       this.list.push(a);
@@ -80591,6 +80726,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.sound("ricochet", p.x, p.z, 0.8);
     }
     update(dt) {
+      for (const a of this.list) a.body?.update(dt);
       for (let i = this.tracers.length - 1; i >= 0; i--) {
         const t = this.tracers[i];
         if ((t.t -= dt) <= 0) {
@@ -80653,7 +80789,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var BOT_SPOTS = { club: [10.5, -41], lot: [58, -70], clubhouse: [9.6, -45], playground: [-44, -5], west: [-4, -31], grandma: [-44, 10], dock: [-24, -79], curve: [14, 10], gate: [18.6, -15], home: [40, 35] };
 
   // src/hood/hint.js
-  var _v11 = new Vector3();
+  var _v12 = new Vector3();
   var Hint = class {
     constructor() {
       const el = document.createElement("div");
@@ -80683,10 +80819,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         this.hide();
         return;
       }
-      _v11.set(tgt.x, 1.4, tgt.z).project(camera2);
+      _v12.set(tgt.x, 1.4, tgt.z).project(camera2);
       const W3 = innerWidth, H4 = innerHeight, m = 34;
-      let x = (_v11.x * 0.5 + 0.5) * W3, y = (-_v11.y * 0.5 + 0.5) * H4;
-      if (_v11.z > 1) {
+      let x = (_v12.x * 0.5 + 0.5) * W3, y = (-_v12.y * 0.5 + 0.5) * H4;
+      if (_v12.z > 1) {
         x = W3 - x;
         y = H4 - y;
       }
@@ -80787,6 +80923,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     const subs = new Subtitles();
     const actors = new Actors(scene2, { audio: audio2 });
+    await actors.loadModels(loader3);
     const mk = (n) => {
       const m = HOOD.marks[n];
       return m ? { x: m[0], z: m[2], yaw: m[3] } : null;
@@ -81850,8 +81987,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var dbgCircle = new Mesh(new RingGeometry(0.3, 0.33, 24), new MeshBasicMaterial({ color: 65450, side: DoubleSide }));
   dbgCircle.rotation.x = -Math.PI / 2;
   var dbgBat = new Line(new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]), new LineBasicMaterial({ color: 16776960 }));
-  var _v12 = new Vector3();
-  var _v24 = new Vector3();
+  var _v13 = new Vector3();
+  var _v25 = new Vector3();
   var _seg2 = {};
   var groanT = 2;
   function frame(now) {
@@ -81954,10 +82091,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           b.__p = pr;
         }
         if (dt0 && p.dodgeDir) {
-          _v12.set(p.x, 1, p.z).project(camera);
-          const sx = _v12.x, sy = _v12.y;
-          _v12.set(p.x + p.dodgeDir.x, 1, p.z + p.dodgeDir.z).project(camera);
-          const ang = Math.atan2(_v12.x - sx, _v12.y - sy) * 180 / Math.PI;
+          _v13.set(p.x, 1, p.z).project(camera);
+          const sx = _v13.x, sy = _v13.y;
+          _v13.set(p.x + p.dodgeDir.x, 1, p.z + p.dodgeDir.z).project(camera);
+          const ang = Math.atan2(_v13.x - sx, _v13.y - sy) * 180 / Math.PI;
           if (Math.abs(ang - (b.__a ?? 999)) > 2) {
             b.style.setProperty("--a", ang.toFixed(1) + "deg");
             b.__a = ang;
@@ -81977,10 +82114,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       if (dt0?.special && !cueState.sense) {
         cueState.sense = true;
-        threatCue.sense(yola.bones?.Head?.getWorldPosition(_v24) || _v24.set(p.x, 1.9, p.z));
+        threatCue.sense(yola.bones?.Head?.getWorldPosition(_v25) || _v25.set(p.x, 1.9, p.z));
       } else if (!dt0) cueState.sense = false;
       const tz = th?.z, tv = tz && zviews.get(tz.id);
-      const hb = tv?.bones?.Head?.getWorldPosition(_v12);
+      const hb = tv?.bones?.Head?.getWorldPosition(_v13);
       threatCue.update(dt, th, tz ? { x: hb ? hb.x : tz.px + (tz.x - tz.px) * alpha, y: hb ? hb.y : null, z: hb ? hb.z : tz.pz + (tz.z - tz.pz) * alpha } : null, tv ? tv.height : 2);
       const key = th ? th.z.id + th.kind : "";
       if (key && key !== cueState.key) cue(audio, "warn");
@@ -82044,7 +82181,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const A = p.atk(), wins = A.windows || [[A.activeStart, a.activeEnd]];
       if (wins.some(([w0, w1]) => a.st > w0 - 0.07 && a.st < w1 + 0.05)) {
         if ((p.equipped === "test" || yola.libHolds?.[p.equipped]) && yola.testTip) fx.trailPush(yola.testGrip, yola.testTip, true);
-        else if (yola.melee.visible) fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v12), true);
+        else if (yola.melee.visible) fx.trailPush(yola.melee.position, yola.melee.userData.tip.getWorldPosition(_v13), true);
       }
     }
     fx.setAim(ix, iz, iyaw, !p.dead, p.aiming ? p.attackHeld ? 1 : 0.5 : 0.2);
@@ -82125,8 +82262,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     if (camOverride) applyCamOverride();
     else if (!window.game.camFree) updateCamera(dt, ix, iz, iyaw, p);
     hood?.update(dt, ix, iz, camera, sim);
-    _v12.set(ix, 1, iz).project(camera);
-    playerScreen = { x: (_v12.x * 0.5 + 0.5) * innerWidth, y: (-_v12.y * 0.5 + 0.5) * innerHeight };
+    _v13.set(ix, 1, iz).project(camera);
+    playerScreen = { x: (_v13.x * 0.5 + 0.5) * innerWidth, y: (-_v13.y * 0.5 + 0.5) * innerHeight };
     if (debugOn) updateDebug(p);
     hud.update(sim, dt);
     atmos?.update(dt, sim, ix, iz, iyaw);
@@ -82748,10 +82885,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           p.hurtDirX = e.dirX;
           p.hurtDirZ = e.dirZ;
           sim.stats.damageTaken += 1;
-          _v12.set(p.x, 1, p.z).project(camera);
-          const sx = _v12.x, sy = _v12.y;
-          _v12.set(p.x - e.dirX, 1, p.z - e.dirZ).project(camera);
-          hud.hurtFrom(Math.atan2(_v12.x - sx, _v12.y - sy));
+          _v13.set(p.x, 1, p.z).project(camera);
+          const sx = _v13.x, sy = _v13.y;
+          _v13.set(p.x - e.dirX, 1, p.z - e.dirZ).project(camera);
+          hud.hurtFrom(Math.atan2(_v13.x - sx, _v13.y - sy));
           if (shakeOn) {
             camState.vx += e.dirX * 0.7 * tuning.shake;
             camState.vz += e.dirZ * 0.7 * tuning.shake;
