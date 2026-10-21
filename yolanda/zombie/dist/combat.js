@@ -54513,22 +54513,22 @@ void main() {
     ShinL: ["LeftLeg", "LeftFoot", 0.07],
     ShinR: ["RightLeg", "RightFoot", 0.07]
   };
-  function chunkOfBones(skeleton, roots) {
+  function chunkOfBones(skeleton, roots2) {
     return skeleton.bones.map((b) => {
       for (let n = b; n && n.isBone; n = n.parent) {
-        const k = roots[n.name.replace(/^mixamorig:?/, "")];
+        const k = roots2[n.name.replace(/^mixamorig:?/, "")];
         if (k) return k;
       }
       return null;
     });
   }
-  function bakeChunks(model, roots, frames) {
+  function bakeChunks(model, roots2, frames) {
     const out = {};
     model.traverse((o) => {
       if (!o.isSkinnedMesh || !o.visible) return;
       o.skeleton.update();
       const g = o.geometry, n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
-      const boneChunk = chunkOfBones(o.skeleton, roots), vChunk = new Array(n);
+      const boneChunk = chunkOfBones(o.skeleton, roots2), vChunk = new Array(n);
       for (let i = 0; i < n; i++) {
         let bi = 0, bw = -1;
         for (let k = 0; k < 4; k++) {
@@ -54925,13 +54925,13 @@ void main() {
       this.outer.updateMatrixWorld(true);
     }
     // bake and throw chunks: C = { chunk: { a, b (its two ends, world), r (radius at 1.7 m) } }, roots = { bone: chunk }
-    throwChunks(C, roots, z, speed, extra = null) {
+    throwChunks(C, roots2, z, speed, extra = null) {
       const P2 = _ZombieView.physics, frames = {};
       for (const [k, e] of Object.entries(C)) {
         const q0 = frameQuat(e.b.clone().sub(e.a), new Vector3(1, 0, 0).applyQuaternion(this.bones[e.bone].getWorldQuaternion(_bq)), new Quaternion());
         frames[k] = { c: e.a.clone().add(e.b).multiplyScalar(0.5), q0, qi: q0.clone().invert() };
       }
-      const baked = bakeChunks(this.model, roots, frames), dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
+      const baked = bakeChunks(this.model, roots2, frames), dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
       for (const [k, obj] of Object.entries(baked)) {
         const F3 = frames[k], e = C[k];
         obj.position.copy(F3.c);
@@ -54948,16 +54948,16 @@ void main() {
     // spray of blood and a pool; she is gone
     burstLady(z, e) {
       this.container.updateMatrixWorld(true);
-      const C = {}, roots = {}, wp = (n) => this.bones[n]?.getWorldPosition(new Vector3());
+      const C = {}, roots2 = {}, wp = (n) => this.bones[n]?.getWorldPosition(new Vector3());
       for (const [k, [r0, r1, rad]] of Object.entries(BURST_CHUNKS)) {
         const a = wp(r0);
         if (!a) continue;
         const b = wp(r1) || a.clone().add(new Vector3(0, 0.1, 0));
         C[k] = { a, b, r: rad, bone: r0 };
-        roots[r0] = k;
+        roots2[r0] = k;
       }
       const mid = wp("Spine1") || wp("Hips"), mv = new Vector3(e.vx || 0, 0, e.vz || 0).multiplyScalar(0.6);
-      this.throwChunks(C, roots, z, 0, (k, c) => c.clone().sub(mid).setY(0).normalize().multiplyScalar(3 + Math.random() * 2.5).add(mv));
+      this.throwChunks(C, roots2, z, 0, (k, c) => c.clone().sub(mid).setY(0).normalize().multiplyScalar(3 + Math.random() * 2.5).add(mv));
       const fx2 = _ZombieView.fx;
       if (fx2) {
         for (let i = 0; i < 6; i++) {
@@ -58129,7 +58129,7 @@ void main() {
     for (let p = o.parent; p; p = p.parent) if (p.name === name) return true;
     return false;
   };
-  function mergeStatic(roots, keep = () => true, pool = false) {
+  function mergeStatic(roots2, keep = () => true, pool = false) {
     const byKey = /* @__PURE__ */ new Map();
     const put2 = (material, g) => {
       if (pool) material = poolPiece(material, g);
@@ -58138,7 +58138,7 @@ void main() {
       if (!byKey.has(key)) byKey.set(key, { material, geos: [] });
       byKey.get(key).geos.push(g);
     };
-    for (const root of [].concat(roots)) {
+    for (const root of [].concat(roots2)) {
       root.updateMatrixWorld(true);
       root.traverse((o) => {
         if (!o.isMesh || o.isSkinnedMesh || !keep(o)) return;
@@ -80427,6 +80427,31 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
   };
 
+  // src/hood/charlight.js
+  var CHAR_LIGHT = { fill: 0.5 };
+  var BLACK = new DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+  BLACK.needsUpdate = true;
+  var roots = /* @__PURE__ */ new Set();
+  function characterLight(root) {
+    if (!root) return;
+    roots.add(root);
+    root.traverse((o) => {
+      if (!o.isMesh) return;
+      for (const m of [].concat(o.material)) {
+        if (!m || !("aoMap" in m) || m.aoMap && m.aoMap !== BLACK) continue;
+        if (m.aoMap !== BLACK) {
+          m.aoMap = BLACK;
+          m.needsUpdate = true;
+        }
+        m.aoMapIntensity = 1 - CHAR_LIGHT.fill;
+      }
+    });
+  }
+  function setCharacterFill(share) {
+    CHAR_LIGHT.fill = share;
+    for (const r of roots) characterLight(r);
+  }
+
   // src/hood/actors.js
   var SURVIVORS = { rifle: [["eve", 1.7]], pistol: [["remy", 1.8], ["james", 1.8], ["sophie", 1.66], ["bryce", 1.78]] };
   var GUNS = { rifle: ["assets/neighborhood/props/security_rifle.glb", 1], pistol: ["assets/weapons/pistol_core.glb", PISTOL_CORE_SCALE] };
@@ -80508,6 +80533,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           o.frustumCulled = false;
         }
       });
+      characterLight(m);
       const turn = new Group();
       turn.add(m);
       const obj = new Group();
@@ -81068,6 +81094,47 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       attach,
       bot: runBot,
       CUT,
+      charLight: setCharacterFill,
+      // (the characters' share of the sky light: hood/charlight.js)
+      // test hook (2026-10-20, the user's texture comparison): character files stood side by side, all on one clip at the same
+      // time, facing +z; fill(true) adds a soft studio-like light from +z (it lights the ground too: for comparing only)
+      lineup: {
+        list: [],
+        light: null,
+        async show(files, { x = 42, z = 38, step = 1.15, h = 1.66, clip = "pistol_idle" } = {}) {
+          for (const q of this.list) q.obj.removeFromParent();
+          this.list = [];
+          const gs = await Promise.all(files.map((f) => loader3.loadAsync(f)));
+          gs.forEach((g, i) => {
+            const m = clone(g.scene);
+            m.scale.setScalar(h);
+            m.position.set(x + (i - (gs.length - 1) / 2) * step, 0, z);
+            m.traverse((o) => {
+              if (o.isMesh) o.frustumCulled = false;
+            });
+            scene2.add(m);
+            characterLight(m);
+            const mixer = new AnimationMixer(m), c = g.animations.find((a) => a.name === clip) || g.animations[0];
+            if (c) mixer.clipAction(c).play();
+            this.list.push({ obj: m, mixer, file: files[i] });
+          });
+          return this.list.map((q) => [q.file, q.obj.position.x]);
+        },
+        fill(on, from = [0, 1.6, 6]) {
+          if (!this.light) {
+            this.light = new DirectionalLight(16777215, 1.6);
+            this.amb = new HemisphereLight(16777215, 8947848, 0.8);
+            scene2.add(this.light, this.light.target, this.amb);
+          }
+          const c = this.list.length ? this.list[0].obj.position : new Vector3();
+          this.light.position.set(c.x + from[0], from[1], c.z + from[2]);
+          this.light.target.position.set(c.x, 1, c.z);
+          this.light.visible = this.amb.visible = on;
+        },
+        update(dt) {
+          for (const q of this.list) q.mixer.update(dt);
+        }
+      },
       // test hook: the player put at each spot, the camera settled, a capture each, then one contact sheet (zombie/shots/)
       async sheet(spots, out = "hood_sheet", cols = 4, ticks = 40) {
         const g = window.game, names = [];
@@ -81090,9 +81157,20 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         subs.update(dt);
         actors.update(dt);
         view.update(dt, sim2);
+        window.hood?.lineup.update(dt);
         view.radioUpdate(window.game?.yola, sim2);
         hint.update(camera2, level, sim2, dt);
         const g = window.game, y = g?.yola;
+        if (y?.model && !y.charLit) {
+          y.charLit = true;
+          characterLight(y.model);
+        }
+        if (g?.zviews) {
+          for (const v of g.zviews.values()) if (!v.charLit && v.model) {
+            v.charLit = true;
+            characterLight(v.model);
+          }
+        }
         if (y?.outer) {
           const dy = level?.boating ? 0.32 : groundY(y.outer.position.x, y.outer.position.z);
           if (dy) {
