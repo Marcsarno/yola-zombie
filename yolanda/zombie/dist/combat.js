@@ -80021,7 +80021,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         cutawayPatch(sh);
       };
       mat2.customProgramCacheKey = () => "hoodgrass";
-      const geo = tuftGeometry(), _m5 = new Matrix4(), _q11 = new Quaternion(), _s = new Vector3(), _p3 = new Vector3(), Y2 = new Vector3(0, 1, 0);
+      const geo = tuftGeometry(), _m5 = new Matrix4(), _q12 = new Quaternion(), _s = new Vector3(), _p3 = new Vector3(), Y2 = new Vector3(0, 1, 0);
       let total = 0;
       for (let cx = rect[0]; cx < rect[0] + rect[2]; cx += CELL3) for (let cz = rect[1]; cz < rect[1] + rect[3]; cz += CELL3) {
         const pts = [];
@@ -80041,10 +80041,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (!pts.length) continue;
         const im = new InstancedMesh(geo, mat2, pts.length), tiles = new Float32Array(pts.length);
         pts.forEach(([x, z, t, h], i) => {
-          _q11.setFromAxisAngle(Y2, hash2(x, z * 3) * 6.28);
+          _q12.setFromAxisAngle(Y2, hash2(x, z * 3) * 6.28);
           _s.set(h * 1.3, h, h * 1.3);
           _p3.set(x, 0.01, z);
-          im.setMatrixAt(i, _m5.compose(_p3, _q11, _s));
+          im.setMatrixAt(i, _m5.compose(_p3, _q12, _s));
           tiles[i] = t;
         });
         const g2 = geo.clone();
@@ -81798,7 +81798,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var ang = (a) => Math.atan2(Math.sin(a), Math.cos(a));
   var down = (dx, dz) => dx * 0.57 + dz * 0.82;
   var across = (dx, dz) => dx * 0.82 - dz * 0.57;
-  var offScreen = (dx, dz) => Math.abs(across(dx, dz)) > 3 || down(dx, dz) > 4.5 || down(dx, dz) < -7;
+  var offScreen = (dx, dz, m = 0) => Math.abs(across(dx, dz)) > 3 + m || down(dx, dz) > 4.5 + m || down(dx, dz) < -7 - m;
   var screenCost = (dx, dz) => Math.max(0, Math.abs(across(dx, dz)) - 2) * 2.5 + Math.max(0, down(dx, dz) - 2) * 1.5;
   function threatsNear(sim2, x, z, r) {
     const out = [];
@@ -81920,17 +81920,23 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const end = L3.pts[L3.pts.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
       while (L3.i < L3.pts.length - 1 && toEnd(L3.pts[L3.i][0], L3.pts[L3.i][1]) > toEnd(p.x, p.z) - 1.5) L3.i++;
       if (toEnd(p.x, p.z) < toEnd(a.x, a.z) - 2 && L3.i >= L3.pts.length - 1) L3.done = true;
-      else if (dm < 11) {
+      else {
         const P2 = L3.pts[L3.i], dP = Math.hypot(P2[0] - a.x, P2[1] - a.z);
-        c.state = "lead";
-        const edge = dm > 5.5 || offScreen(a.x - p.x, a.z - p.z);
-        if (dP > 0.45 && !edge) {
-          tx = P2[0];
-          tz = P2[1];
-          want = 1.6;
-          face = null;
-        } else if (dm < 4.5 && L3.i < L3.pts.length - 1) L3.i++;
-        return finish(a, c, dt, sim2, tx, tz, want, face, false);
+        const away = dm > 7 || offScreen(a.x - p.x, a.z - p.z, 0.5);
+        c.leadOff = away && !L3.paused ? (c.leadOff || 0) + dt : 0;
+        if (c.leadOff > 1.2 || dm > 8) L3.paused = true;
+        if (L3.paused && Math.hypot(P2[0] - p.x, P2[1] - p.z) < 5) L3.paused = false;
+        if (!L3.paused) {
+          c.state = "lead";
+          const edge = dm > 5.5 || offScreen(a.x - p.x, a.z - p.z, -0.4);
+          if (dP > 0.45 && !edge) {
+            tx = P2[0];
+            tz = P2[1];
+            want = 1.6;
+            face = null;
+          } else if (dm < 4.5 && L3.i < L3.pts.length - 1) L3.i++;
+          return finish(a, c, dt, sim2, tx, tz, want, face, false);
+        }
       }
     }
     if (c.state === "lead") c.state = "move";
@@ -81939,7 +81945,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     c.fireT = Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) < 0.5 && dm < 6 ? c.fireT + dt : 0;
     const byPrompt = (level.interact || []).some((it) => Math.hypot(it.x - a.x, it.z - a.z) < 1.5);
     c.offT = offScreen(a.x - p.x, a.z - p.z) ? (c.offT || 0) + dt : 0;
-    if (c.state === "stand" && (dm > FAR || c.losT > 1.2 || c.fireT > 0.5 || c.offT > 1 || byPrompt || dm < NEAR2 || narrow(w, a.x, a.z))) {
+    const soon = pv > 1.5 && offScreen(a.x - p.x - (p.vx || 0) * 0.6, a.z - p.z - (p.vz || 0) * 0.6, -0.3);
+    if (c.state === "stand" && (dm > FAR || c.losT > 1.2 || c.fireT > 0.5 || c.offT > 0.4 || soon || byPrompt || dm < NEAR2 || narrow(w, a.x, a.z))) {
       c.state = "move";
       c.pickT = 0;
     }
@@ -81958,7 +81965,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }
       }
       const dS = Math.hypot(S2.x - a.x, S2.z - a.z);
-      if ((dS < 0.4 && pv < 0.8 || dm < GAP2 + 0.4 && !lost) && !narrow(w, a.x, a.z)) {
+      if ((dS < 0.4 && pv < 0.8 || dm < GAP2 + 0.4 && !lost && c.fireT === 0 && c.offT === 0 && !soon && !byPrompt) && !narrow(w, a.x, a.z)) {
         c.state = "stand";
       } else {
         tx = gx;
@@ -82116,6 +82123,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var _v24 = new Vector3();
   var _v33 = new Vector3();
   var Z = new Vector3(0, 0, 1);
+  var _q11 = new Quaternion();
+  var _q26 = new Quaternion();
+  var _up3 = new Vector3();
+  function turnBone(bone, ang2) {
+    bone.getWorldQuaternion(_q11);
+    _up3.set(0, 1, 0).applyQuaternion(_q11.invert());
+    bone.quaternion.multiply(_q26.setFromAxisAngle(_up3, ang2));
+    bone.updateMatrixWorld(true);
+  }
   function gunHolder(scene2, scale) {
     const g = scene2.clone(true);
     g.scale.setScalar(scale);
@@ -82615,11 +82631,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       obj.add(m);
       const mixer = new AnimationMixer(m), clips = Object.fromEntries(M4.g.animations.map((c) => [c.name, c]));
       let cur = null, curName = "";
+      const neck = m.getObjectByName("mixamorigNeck"), head = m.getObjectByName("mixamorigHead");
       const body = {
         obj,
         mixer,
         clips,
         dead: false,
+        look: null,
+        lookW: 0,
+        lookRel: 0,
         get clip() {
           return curName;
         },
@@ -82644,6 +82664,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         update(dt) {
           mixer.update(dt);
           obj.updateMatrixWorld(true);
+          body.lookW += ((body.look && !body.dead ? 1 : 0) - body.lookW) * Math.min(1, dt * 4);
+          if (body.lookW < 0.01 || !neck || !head) return;
+          if (body.look) {
+            head.getWorldPosition(_v11);
+            const y = Math.atan2(body.look.x - _v11.x, body.look.z - _v11.z) - obj.rotation.y;
+            body.lookRel = Math.max(-1.25, Math.min(1.25, Math.atan2(Math.sin(y), Math.cos(y))));
+          }
+          turnBone(neck, body.lookRel * body.lookW * 0.4);
+          turnBone(head, body.lookRel * body.lookW * 0.6);
         },
         dispose() {
         }
@@ -82662,6 +82691,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const a = { kind: "sophie", obj, body, x: at.x, z: at.z, yaw: at.yaw || 0, mode: "scared", trail: [], speed: 0, gap: 3.3, cower: 0 };
       a.die = () => {
         a.mode = "dead";
+        if (body) body.look = null;
         body?.play("hood_Death01", { once: true, fade: 0.15 });
       };
       a.step = (dt, level) => this.sophieStep(a, dt, level);
@@ -82686,12 +82716,20 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         a.z = q.z;
         a.speed = 0;
       }
-      if (a.mode !== "follow") a.cower = Math.max(0, a.cower - dt * 2);
+      if (a.mode !== "follow") {
+        a.cower = Math.max(0, a.cower - dt * 2);
+        if (b) b.look = null;
+      }
       if (a.mode === "follow") {
         companionStep(a, dt, level, sim2);
         a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
         a.obj.rotation.y = a.yaw;
-        if (b) this.sophieMoves(a, b);
+        const leading = a.cs?.state === "lead";
+        a.glance = leading ? (a.glance || 0) + dt : 0;
+        if (b) {
+          b.look = leading && (a.speed < 0.3 || a.glance % 3 > 1.8) ? { x: p.x, z: p.z } : null;
+          this.sophieMoves(a, b);
+        }
         return;
       } else if (a.mode === "goto" && a.target) {
         tx = a.target.x;
