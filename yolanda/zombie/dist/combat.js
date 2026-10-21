@@ -36479,7 +36479,7 @@
       if (transmissive.length > 1) transmissive.sort(customTransparentSort || reversePainterSortStable);
       if (transparent.length > 1) transparent.sort(customTransparentSort || reversePainterSortStable);
     }
-    function finish() {
+    function finish2() {
       for (let i = renderItemsIndex, il = renderItems.length; i < il; i++) {
         const renderItem = renderItems[i];
         if (renderItem.id === null) break;
@@ -36497,7 +36497,7 @@
       init,
       push,
       unshift,
-      finish,
+      finish: finish2,
       sort
     };
   }
@@ -46256,6 +46256,30 @@ void main() {
       for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (this.blockedAt(minX + (i + 0.5) * cell2, minZ + (j + 0.5) * cell2, inflate)) blocked[j * w + i] = 1;
       this.nav = { cell: cell2, w, h, blocked, dist: new Float32Array(w * h), queue: new Int32Array(w * h * 4), goal: -1, inflate };
     }
+    // a rally point: the infected with no way to Marc (a shut gate between) head for it instead of standing still (the polish
+    // brief's replay: the playground's horde "runs at the noise" of the engine, but the dock gate is shut until the next scene,
+    // so they stood). A second distance field over the same grid, toward the point; rallyAt(null) clears it.
+    rallyAt(x, z) {
+      const n = this.nav;
+      this.rally = null;
+      if (!n || x == null) return;
+      n.rdist ?? (n.rdist = new Float32Array(n.w * n.h));
+      const keep = n.dist, goal = n.goal;
+      n.dist = n.rdist;
+      super.updateFlow(x, z);
+      n.dist = keep;
+      n.goal = goal;
+      this.rally = { x, z };
+    }
+    flowDir(x, z, out) {
+      const rem = super.flowDir(x, z, out);
+      if (rem < 1e7 || !this.rally || !this.nav?.rdist) return rem;
+      const n = this.nav, keep = n.dist;
+      n.dist = n.rdist;
+      const r22 = super.flowDir(x, z, out);
+      n.dist = keep;
+      return r22 < 1e7 ? 5e6 : r22;
+    }
     setOff(s, off) {
       if (!s || !!s.off === !!off) return;
       s.off = !!off;
@@ -46282,6 +46306,18 @@ void main() {
     free: { bounds: { minX: -66, maxX: 106, minZ: -126, maxZ: 92 }, cell: 0.6 },
     // (?hood=free: walk the whole map, no story)
     home: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+    // (the polish brief's replay: the other stops had no navigation of their own, so past the house the infected only came
+    // at Marc when they could see him within 7 m; each stop now routes them over its own area: level.js navFor)
+    help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 } },
+    gate: { bounds: { minX: -12, maxX: 42, minZ: -45, maxZ: 30 }, cell: 0.5 },
+    club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.5 },
+    pete: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
+    dock: { bounds: { minX: -35, maxX: 95, minZ: -100, maxZ: -50 }, cell: 0.5 },
+    shed: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: 12 }, cell: 0.65 },
+    // (with the playground: its horde runs at the engine, level.js stopShed)
+    horde: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: -40 }, cell: 0.5 },
+    // (the horde is brought to the dock gate: no playground)
+    leave: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: -40 }, cell: 0.5 },
     // (?hood=grammy: Chapter 4's peninsula, blender/grammy/: walk it, no story yet)
     grammy: { bounds: { minX: -132, maxX: 168, minZ: -248, maxZ: 78 }, cell: 0.8, cam: { minX: -150, maxX: 185, minZ: -262, maxZ: 92 } }
   };
@@ -47058,12 +47094,12 @@ void main() {
         if (!this.dead && mag > 0.6 && (t === "ready" || t === "shot" || t === "reload") && this.tryVault(mx / mag, mz / mag, world, sim2)) {
         }
       }
-      const down = this.action.type === "down", dodging = this.action.type === "dodge", vaulting = this.action.type === "vault";
+      const down2 = this.action.type === "down", dodging = this.action.type === "dodge", vaulting = this.action.type === "vault";
       const exec = this.action.type === "execDash" || this.action.type === "execAim" || !!this.action.execA;
-      if (this.dead || down || dodging || vaulting || exec) {
+      if (this.dead || down2 || dodging || vaulting || exec) {
         mx = mz = mag = 0;
       }
-      const am = down ? 0 : Math.hypot(input2.aimX, input2.aimZ);
+      const am = down2 ? 0 : Math.hypot(input2.aimX, input2.aimZ);
       this.aiming = !this.dead && am > AIM_DEADZONE;
       const held = !this.dead && am >= T2.attackThreshold;
       if (held && !this.attackHeld) this.attackPressT = 0;
@@ -47071,7 +47107,7 @@ void main() {
       this.attackHeld = held;
       if (this.aiming) this.aimTarget = Math.atan2(input2.aimX, input2.aimZ);
       else if (mag > 0.15) this.aimTarget = Math.atan2(mx, mz);
-      let turn = down || vaulting || dodging && this.action.kind === "roll" ? 0 : T2.turnRate;
+      let turn = down2 || vaulting || dodging && this.action.kind === "roll" ? 0 : T2.turnRate;
       if (this.action.type === "swing") {
         const a = this.action;
         turn = a.st < a.activeEnd ? 0 : turn * 0.6;
@@ -47147,7 +47183,7 @@ void main() {
       world.resolveCircle(this, this.r, vaulting ? A0.box : null);
       this.vx = (this.x - px2 - rm.x - (this.slide ? this.slide.x * dt : 0)) / dt;
       this.vz = (this.z - pz2 - rm.z - (this.slide ? this.slide.z * dt : 0)) / dt;
-      if (down || dodging || vaulting || exec) this.vx = this.vz = 0;
+      if (down2 || dodging || vaulting || exec) this.vx = this.vz = 0;
       const vl = Math.hypot(this.vx, this.vz), vmax = T2.moveSpeed * 1.05;
       if (vl > vmax) {
         this.vx *= vmax / vl;
@@ -48338,8 +48374,8 @@ void main() {
       const out = _steer;
       let k = 1;
       const far = Math.min(1, Math.max(0, (dist2 - 1.6) / 3.5));
-      const ang = (los ? this.side * 0.45 * far : 0) + Math.sin(sim2.time * this.swayRate + this.phase * 6.283) * 0.2 * (0.3 + 0.7 * far);
-      const c = Math.cos(ang), s = Math.sin(ang);
+      const ang2 = (los ? this.side * 0.45 * far : 0) + Math.sin(sim2.time * this.swayRate + this.phase * 6.283) * 0.2 * (0.3 + 0.7 * far);
+      const c = Math.cos(ang2), s = Math.sin(ang2);
       let hx = wx * c + wz * s, hz = -wx * s + wz * c;
       const lx = hz, lz = -hx;
       const p = sim2.player, myA = Math.atan2(this.x - p.x, this.z - p.z), avoid = los ? 1.5 : 0.9;
@@ -48827,8 +48863,8 @@ void main() {
             this.struck = true;
             const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw);
             const along = dx * fx2 + dz * fz;
-            const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
-            const hit = !p.dead && dist2 < Z2.range && along > 0 && ang < Z2.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
+            const ang2 = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz)));
+            const hit = !p.dead && dist2 < Z2.range && along > 0 && ang2 < Z2.arc && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5);
             const dmg = (this.attack === "scratch" ? T2.scratchDamage ?? 8 : this.attack === "slam" ? T2.zombieDamage * 1.3 : T2.zombieDamage * (Z2.dmg ?? 1)) * this.K.dmg;
             const hurt = hit && p.hurt(dmg * (this.kind === "guard" ? 1 : 1 - 0.3 * this.armsLost) * (this.crawling ? 0.7 : 1), this.x, this.z, sim2);
             if (hurt && (this.attack === "club" || this.attack === "smash") && !p.dead && sim2.rand() < Z2.kd) p.knockDown(this.x, this.z, sim2);
@@ -50249,8 +50285,8 @@ void main() {
       const outside = (x, y) => {
         const rx = x - cx, rz = y - cz, d = Math.hypot(rx, rz);
         if (slam) {
-          const along = rx * fx2 + rz * fz, ang = Math.acos(Math.max(-1, Math.min(1, along / (d || 1))));
-          const radial = d - (ZATTACKS.slam.range + r + 0.25), angular = along <= 0 ? 1.5 : (ang - ZATTACKS.slam.arc) * Math.max(0.6, d);
+          const along = rx * fx2 + rz * fz, ang2 = Math.acos(Math.max(-1, Math.min(1, along / (d || 1))));
+          const radial = d - (ZATTACKS.slam.range + r + 0.25), angular = along <= 0 ? 1.5 : (ang2 - ZATTACKS.slam.arc) * Math.max(0.6, d);
           return Math.max(radial, angular);
         }
         const ax = x - z.x, az = y - z.z, lat = Math.abs(ax * fz - az * fx2), al = ax * fx2 + az * fz;
@@ -52397,21 +52433,21 @@ void main() {
   var _q6 = new Quaternion();
   var _qw = new Quaternion();
   var _qp = new Quaternion();
-  function worldRot3(bone, axis, ang) {
-    _q6.setFromAxisAngle(axis, ang);
+  function worldRot3(bone, axis, ang2) {
+    _q6.setFromAxisAngle(axis, ang2);
     bone.getWorldQuaternion(_qw);
     bone.parent.getWorldQuaternion(_qp);
     bone.quaternion.copy(_qp.invert().multiply(_q6).multiply(_qw));
     bone.updateMatrixWorld(true);
   }
-  function signedTurn(bone, axis, ang, pick) {
-    if (!(Math.abs(ang) > 1e-6)) return;
+  function signedTurn(bone, axis, ang2, pick) {
+    if (!(Math.abs(ang2) > 1e-6)) return;
     const q0 = bone.quaternion.clone(), m0 = pick();
     worldRot3(bone, axis, 0.02);
     const m1 = pick();
     bone.quaternion.copy(q0);
     bone.updateMatrixWorld(true);
-    worldRot3(bone, axis, (m1 >= m0 ? 1 : -1) * ang);
+    worldRot3(bone, axis, (m1 >= m0 ? 1 : -1) * ang2);
   }
   function moveHand(bones, side, bone, axis, toward, cm) {
     if (!(Math.abs(cm) > 1e-3)) return;
@@ -53863,9 +53899,9 @@ void main() {
       if (!H5 || !F3 || !M4) return;
       const ax = _v7.copy(M4.position).normalize(), q = H5.quaternion, d = q.x * ax.x + q.y * ax.y + q.z * ax.z;
       const tw = _q34.set(ax.x * d, ax.y * d, ax.z * d, q.w).normalize();
-      let ang = 2 * Math.acos(Math.min(1, Math.abs(tw.w)));
-      if (d < 0 !== tw.w < 0) ang = -ang;
-      const keep = keepDeg * Math.PI / 180, excess = ang - Math.sign(ang) * Math.min(Math.abs(ang), keep);
+      let ang2 = 2 * Math.acos(Math.min(1, Math.abs(tw.w)));
+      if (d < 0 !== tw.w < 0) ang2 = -ang2;
+      const keep = keepDeg * Math.PI / 180, excess = ang2 - Math.sign(ang2) * Math.min(Math.abs(ang2), keep);
       if (Math.abs(excess) < 1e-3) return;
       H5.updateWorldMatrix(true, false);
       H5.getWorldQuaternion(_q42);
@@ -55335,9 +55371,9 @@ void main() {
           this.rimW = (this.rimW ?? w) + (w - (this.rimW ?? w)) * Math.min(1, dt * 8);
           if (this.rimW > 0.01) for (const [s, side] of [[1, "Left"], [-1, "Right"]]) {
             const ph = (this.wheel / CHAIR.rimArc + (s < 0 ? 0.08 : 0)) % 1, push = ph < 0.62, k = push ? ph / 0.62 : (ph - 0.62) / 0.38;
-            const ang = push ? -0.75 + 1.5 * k : 0.75 - 1.5 * k, lift = push ? 0 : Math.sin(k * Math.PI) * 0.07;
+            const ang2 = push ? -0.75 + 1.5 * k : 0.75 - 1.5 * k, lift = push ? 0 : Math.sin(k * Math.PI) * 0.07;
             const R = CHAIR.rimR + (push ? 0 : 0.03), cx = o.position.x + f.x * CHAIR.rim[0] + l.x * s * CHAIR.rim[2], cz = o.position.z + f.z * CHAIR.rim[0] + l.z * s * CHAIR.rim[2];
-            _v43.set(cx + f.x * Math.sin(ang) * R + l.x * s * lift * 0.5, CHAIR.rim[1] + Math.cos(ang) * R + lift, cz + f.z * Math.sin(ang) * R + l.z * s * lift * 0.5);
+            _v43.set(cx + f.x * Math.sin(ang2) * R + l.x * s * lift * 0.5, CHAIR.rim[1] + Math.cos(ang2) * R + lift, cz + f.z * Math.sin(ang2) * R + l.z * s * lift * 0.5);
             if (B[side + "Arm"]) ikArm(B[side + "Arm"], B[side + "ForeArm"], B[side + "Hand"], _v43, this.rimW);
           }
         }
@@ -55678,10 +55714,10 @@ void main() {
       if (G6) {
         const base = (1 - one2) * (1 - crawl), sn = Math.sin(z.yaw), cs = Math.cos(z.yaw);
         const vF = z.vx * sn + z.vz * cs, vL = z.vx * cs - z.vz * sn, th = sp > 0.05 ? Math.atan2(vL, vF) : 0;
-        const ang = (d) => Math.atan2(d.x, d.z), k = Math.min(1, dt * 8);
+        const ang2 = (d) => Math.atan2(d.x, d.z), k = Math.min(1, dt * 8);
         let native = 0, wsum = 0;
         for (const d of G6.dirs) {
-          const gap = Math.PI * 2 / G6.dirs.length, w = Math.max(0, 1 - Math.abs(angleDiff2(ang(d), th)) / gap);
+          const gap = Math.PI * 2 / G6.dirs.length, w = Math.max(0, 1 - Math.abs(angleDiff2(ang2(d), th)) / gap);
           this.gw[d.n] = (this.gw[d.n] ?? w) + (w - (this.gw[d.n] ?? w)) * k;
           wsum += this.gw[d.n];
         }
@@ -65602,8 +65638,9 @@ void main() {
         });
         syncMode();
       }
-      for (const [id, key, def] of [["goreChk", "gore", true], ["shakeChk", "shake", true], ["debugChk", "debug", false]]) {
+      for (const [id, key, def] of [["goreChk", "gore", true], ["shakeChk", "shake", true], ["guideChk", "guide", false], ["debugChk", "debug", false]]) {
         const el = $(id);
+        if (!el) continue;
         el.checked = id === "debugChk" ? new URLSearchParams(location.search).get("debug") === "1" : store3.get(key, def);
         el.addEventListener("change", () => this.act(key, el.checked));
       }
@@ -65754,11 +65791,11 @@ void main() {
       v.classList.add("hit");
     }
     // Yola hit (FINISHERS_PLAN.md 5): the red arc on the side the blow came from (ang: its screen angle, rad, 0 = up, clockwise)
-    hurtFrom(ang) {
+    hurtFrom(ang2) {
       const a = $("hurtArc");
       if (!a) return this.hurt();
-      a.style.setProperty("--hx", (50 + Math.sin(ang) * 58).toFixed(1) + "%");
-      a.style.setProperty("--hy", (50 - Math.cos(ang) * 58).toFixed(1) + "%");
+      a.style.setProperty("--hx", (50 + Math.sin(ang2) * 58).toFixed(1) + "%");
+      a.style.setProperty("--hy", (50 - Math.cos(ang2) * 58).toFixed(1) + "%");
       a.classList.remove("go");
       void a.offsetWidth;
       a.classList.add("go");
@@ -66982,7 +67019,7 @@ void main() {
       return new Promise((resolve) => {
         let done = false;
         this.cardResolve = resolve;
-        const finish = (b) => {
+        const finish2 = (b) => {
           done = true;
           b.classList.add("right");
           hint.hidden = true;
@@ -67025,7 +67062,7 @@ void main() {
             if (done || b.classList.contains("tried")) return;
             this.cardTries++;
             if (o.correct) {
-              finish(b);
+              finish2(b);
               return;
             }
             b.classList.add("tried");
@@ -69284,10 +69321,10 @@ void main() {
       this.vol.visible = vol;
       if (vol) {
         const sp2 = this.spot, U2 = this.vol.material.uniforms, A = sp2.position, ax = new Vector3().subVectors(sp2.target.position, A).normalize();
-        const len = Math.min(8, (A.y - 0.02) / Math.max(0.15, -ax.y)) * 1.05, ang = sp2.angle * 0.95, tan = Math.tan(ang);
+        const len = Math.min(8, (A.y - 0.02) / Math.max(0.15, -ax.y)) * 1.05, ang2 = sp2.angle * 0.95, tan = Math.tan(ang2);
         U2.uApex.value.copy(A);
         U2.uAxis.value.copy(ax);
-        U2.uCos2.value = Math.cos(ang) ** 2;
+        U2.uCos2.value = Math.cos(ang2) ** 2;
         U2.uLen.value = len;
         U2.uTan.value = tan;
         U2.uTime.value = this.t;
@@ -77128,9 +77165,9 @@ void main() {
       c.height = 128;
       const g = c.getContext("2d"), im = g.createImageData(32, 128);
       for (let y = 0; y < 128; y++) for (let x = 0; x < 32; x++) {
-        const a = y / 127, u = (x - 15.5) / 15.5, along = Math.min(1, a / 0.08) * Math.pow(1 - a, 1.05), across = Math.exp(-u * u * 4 * (1 + 0.6 * a)), i = (y * 32 + x) * 4;
+        const a = y / 127, u = (x - 15.5) / 15.5, along = Math.min(1, a / 0.08) * Math.pow(1 - a, 1.05), across2 = Math.exp(-u * u * 4 * (1 + 0.6 * a)), i = (y * 32 + x) * 4;
         im.data[i] = im.data[i + 1] = im.data[i + 2] = 255;
-        im.data[i + 3] = Math.round(255 * along * across);
+        im.data[i + 3] = Math.round(255 * along * across2);
       }
       g.putImageData(im, 0, 0);
       return t = new CanvasTexture(c);
@@ -79505,12 +79542,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       for (const s of list) {
         const hinges = /kit_row4_intact/.test(s.file) ? [[this.doorLeaf(s.o), 1.75]] : /hood_fridge/.test(s.file) ? [[s.o.getObjectByName("FridgeDoor"), -1.75]] : /hood_shed/.test(s.file) ? [[s.o.getObjectByName("DoorL"), -1.75], [s.o.getObjectByName("DoorR"), 0.85]] : null;
         if (hinges) {
-          for (const [leaf, ang] of hinges) {
+          for (const [leaf, ang2] of hinges) {
             if (!leaf) continue;
             (_a7 = leaf.userData).q0 ?? (_a7.q0 = leaf.quaternion.clone());
             this.anim(animate ? 1.1 : 0, (k) => {
               leaf.quaternion.copy(leaf.userData.q0);
-              leaf.rotateOnWorldAxis(_Y, ang * k);
+              leaf.rotateOnWorldAxis(_Y, ang2 * k);
             }, open);
           }
           continue;
@@ -80284,6 +80321,18 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     dock: [["med", -19.5, -75]],
     horde: [["ammo_s", -12.5, -96.5, "shotgun"], ["med", -4.5, -93], ["ammo_s", -21, -88, "shotgun"]]
   };
+  var ROUTES = {
+    follow: [[44, 4.5], [38.5, 3.2], [32.4, 0.6]],
+    // her garage -> the barricade on the curve
+    gate: [[26.8, -1.2], [23.8, -8], [20.8, -12.2]],
+    // the barricade -> the chained gate
+    cutters: [[14.5, -10], [9.5, -7]],
+    // -> toward the garage with the light on (short of it)
+    clubhouse: [[18.5, -20], [15.5, -26], [14.2, -30.5]],
+    // the gate -> the clubhouse's front (short of the warning)
+    dock: [[30.5, -61], [30.5, -69], [30.2, -77.5]]
+    // Pete's drive -> the dock road's gate (short of its chain)
+  };
   var SAVE_KEY = "zc.hoodsave2";
   var loadSave = () => {
     try {
@@ -80377,8 +80426,26 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (this.objective === "fuel" && typeof this.flags.gas === "object") return this.flags.gas;
       return T2 ? this.at(T2) : null;
     }
+    // the next step toward the objective (the guidance marker): the next point of the way Sophie knows that Marc has not yet
+    // passed, else the objective's own spot
+    nextStep() {
+      const R = ROUTES[this.objective === "follow" && this.stop === "gate" ? "gate" : this.objective], p = this.sim.player;
+      if (!R || this.objective === "dock" && this.open.has("dockroad")) return null;
+      const end = R[R.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
+      if (toEnd(p.x, p.z) < 4) return null;
+      const q = R.find((pt) => toEnd(pt[0], pt[1]) < toEnd(p.x, p.z) - 1.5);
+      return q ? { x: q[0], z: q[1] } : null;
+    }
     say(...ids) {
       for (const id of ids) this.api.subs.say(id);
+    }
+    // the infected's routes over this stop's area (layout.js STAGES): rebuilt as the stop starts (a few ms)
+    navFor(stop) {
+      const st = STAGES[stop], w = this.sim.world, p = this.sim.player;
+      if (!st || w.bounds === st.bounds) return;
+      w.bounds = st.bounds;
+      w.buildNav(st.cell || 0.4, 0.3);
+      w.updateFlow(p.x, p.z);
     }
     checkpoint(stop) {
       this.stop = stop;
@@ -80518,7 +80585,21 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (alt && Math.hypot(alt.x - p.x, alt.z - p.z) > Math.hypot(m.x - p.x, m.z - p.z)) m = alt;
       }
       const j = () => (this.sim.rand() - 0.5) * (opts.spread ?? 1.6);
-      const x = m.x + j(), z = m.z + j();
+      let x = m.x + j(), z = m.z + j();
+      if (!opts.near) {
+        const w = this.sim.world, o = {};
+        if (w.blockedAt(x, z, 0.4) || w.flowDir(x, z, o) > 1e7) {
+          let best = null;
+          for (let r = 0.75; r <= 5 && !best; r += 0.75) for (let k = 0; k < 12; k++) {
+            const a = k / 12 * Math.PI * 2, qx = m.x + Math.cos(a) * r, qz = m.z + Math.sin(a) * r;
+            if (!w.blockedAt(qx, qz, 0.4) && w.flowDir(qx, qz, o) < 1e7) {
+              best = [qx, qz];
+              break;
+            }
+          }
+          if (best) [x, z] = best;
+        }
+      }
       const zb = this.sim.spawnZombie(null, { x, z, yaw: opts.yaw ?? Math.atan2(p.x - x, p.z - z), kind: opts.kind });
       if (opts.dormant) {
         zb.passive = true;
@@ -80600,6 +80681,26 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const p = this.sim.player;
       return [p.x, y, p.z];
     }
+    // a two-shot for a portrait screen (the polish brief's replay: a side-on two-shot of two people 2 m apart leaves both at the
+    // edges of a phone's narrow frame): over one's shoulder at the other, both in the frame one behind the other; over Marc's
+    // shoulder unless a wall is behind him, then over hers. Fixed as the shot starts (a held framing).
+    twoShot(other) {
+      let f = null;
+      const make = () => {
+        const p = this.sim.player, q = typeof other === "function" ? other() : other, w = this.sim.world;
+        for (const [a, b] of [[p, q], [q, p]]) {
+          const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
+          const cx = a.x + ux * 2.3 - uz * 0.55, cz = a.z + uz * 2.3 + ux * 0.55;
+          if (!w.blockedAt(cx, cz, 0.25) && w.lineOfSight(cx, cz, b.x, b.z, 1.6)) return { from: [cx, 1.75, cz], look: [b.x + ux * 0.4, 1.3, b.z + uz * 0.4] };
+        }
+        return { from: [(p.x + q.x) / 2 + 3.2, 3.2, (p.z + q.z) / 2 + 4.6], look: [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2] };
+      };
+      const face = () => {
+        const p = this.sim.player, q = typeof other === "function" ? other() : other;
+        p.aimYaw = p.aimTarget = Math.atan2(q.x - p.x, q.z - p.z);
+      };
+      return { from: () => (face(), (f ?? (f = make())).from), look: () => (f ?? (f = make())).look };
+    }
     // ---------------------------------------------------------------- supplies (polish pass 2: never stuck for rounds)
     addSupplies(stop) {
       const S2 = SUPPLIES[stop] || [];
@@ -80649,9 +80750,17 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     sophieTo(x, z, run = false, after = "idle") {
       const s = this.sophie;
       if (!s) return;
+      s.lead = null;
       s.target = { x, z, run };
       s.after = after;
       s.mode = "goto";
+    }
+    // she shows the way: ahead along a route she knows, waiting for him (companion.js); following again at its end
+    sophieLead(pts) {
+      const s = this.sophie;
+      if (!s || !pts) return;
+      s.lead = { pts, i: 0, done: false };
+      s.mode = "follow";
     }
     // before a two-shot: she comes to stand by him (up to 6 s)
     *meet(r = 2.2) {
@@ -80679,9 +80788,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         horde: this.stopHorde,
         leave: this.stopLeave
       };
-      if (from >= STOP_ORDER.indexOf("gate") && from <= STOP_ORDER.indexOf("pete")) {
-        const p = this.sim.player;
-        this.ensureSophie({ x: p.x + 1.5, z: p.z + 2.5, yaw: p.aimYaw }, "follow");
+      if (from >= STOP_ORDER.indexOf("gate") && from <= STOP_ORDER.indexOf("dock")) {
+        const p = this.sim.player, q = { x: p.x + 1.5, z: p.z + 2.5 };
+        this.sim.world.resolveCircle(q, 0.35);
+        this.ensureSophie({ ...q, yaw: p.aimYaw }, "follow");
       }
       if (from >= STOP_ORDER.indexOf("shed") && from <= STOP_ORDER.indexOf("shed")) {
         const b = this.at("boat");
@@ -80689,6 +80799,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       for (let i = Math.max(0, from); i < STOP_ORDER.length; i++) {
         const id = STOP_ORDER[i];
+        this.navFor(id);
         this.checkpoint(id);
         this.api.onStop?.(id);
         this.addSupplies(id);
@@ -80704,7 +80815,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.prefetch(...call, "J01", "J02", "M06", "S01", "S02");
       yield* this.wait(1.4);
       this.say(...call);
-      yield* this.shot([{ look: () => this.P(1.35), from: { yaw: 35, pitch: 18, dist: 4.2 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.8 });
+      const yw = p.aimYaw, fx2 = Math.sin(yw), fz = Math.cos(yw), rx = -Math.cos(yw), rz = Math.sin(yw);
+      yield* this.shot([{ look: () => [p.x + fx2 * 0.25, 1.5, p.z + fz * 0.25], from: () => [p.x + fx2 * 0.6 + rx * 2.5, 1.8, p.z + fz * 0.6 + rz * 2.5], fov: 44, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.8 });
       this.setGoal("vaccines");
       const j = this.api.actors?.james(this, this.at("james"));
       if (j) this.npcs.push(j);
@@ -80767,17 +80879,21 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       p.x = p.px = fu.x;
       p.z = p.pz = fu.z;
       p.aimYaw = p.aimTarget = fu.yaw;
+      const gunWas = p.desired;
+      p.desired = "fists";
+      yield* this.wait(0.4);
       this.api.hero?.script("hood_Interact");
       yield* this.shot([
-        { look: [fc.x - 0.1, fc.y, fc.z], from: [fc.x + 1.9, fc.y + 0.55, fc.z - 1], fov: 38, slow: 1, hold: 0.6, fn: () => cine.after(0.35, () => this.openSeal("fridge")) },
-        { look: [fc.x, fc.y + 0.05, fc.z], from: [fc.x + 0.95, fc.y + 0.4, fc.z - 0.35], fov: 34, slow: 1, hold: 1.4, move: 1.2 },
-        { look: [fc.x, fc.y, fc.z], from: [fc.x + 0.95, fc.y + 0.4, fc.z - 0.35], fov: 34, slow: 1, hold: 0.5, fn: () => {
+        { look: [fu.x - 0.45, 1.15, fu.z + 0.02], from: [fu.x + 1.75, 1.7, fu.z - 1.55], fov: 44, slow: 1, hold: 1.3, fn: () => cine.after(0.45, () => this.openSeal("fridge")) },
+        { look: [fc.x, fc.y, fc.z], from: [fu.x + 0.8, 1.55, fu.z - 0.98], fov: 38, slow: 1, hold: 1.3 },
+        { look: [fc.x, fc.y, fc.z], from: [fu.x + 0.8, 1.55, fu.z - 0.98], fov: 38, slow: 1, hold: 0.5, fn: () => {
           this.flags.case = "carried";
           this.api.view.showCase?.("carried");
           this.say("M06");
         } },
-        { look: () => this.P(1.2), from: { yaw: 35, pitch: 28, dist: 4.5 }, fov: 42, slow: 1, hold: 0.6, until: this.linesDone(), max: 4 }
+        { look: () => this.P(1.25), from: [fu.x - 0.1, 1.7, fu.z - 2.4], fov: 42, slow: 1, hold: 0.6, until: this.linesDone(), max: 4 }
       ], { back: 0.6 });
+      p.desired = gunWas;
       this.setGoal("out");
       yield* this.until(() => p.x > 36.6);
     }
@@ -80804,17 +80920,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       yield* this.meet();
       sp.mode = "idle";
       sp.idle = "hood_Idle_Tired_Loop";
-      const mid = () => {
-        const q = this.sophie || at;
-        return [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2];
-      };
+      const two = this.twoShot(() => this.sophie || at);
       this.say("S03", "S03a", "M06a", "S04", "S05", "S06", "S07", "M07", "S08");
-      yield* this.shot([{ look: mid, from: { yaw: 35, pitch: 24, dist: 5.6 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 90 }], { back: 0.7 });
+      yield* this.shot([{ look: two.look, from: two.from, fov: 46, slow: 1, hold: 2, until: this.linesDone(), max: 90 }], { back: 0.7 });
       sp.idle = "hood_Idle_Loop";
       this.sophieAt = null;
       this.setGoal("follow");
-      const u = this.at("seal_home_use");
-      this.sophieTo(u.x + 2.2, u.z + 1.6, false, "idle");
+      this.sophieLead(ROUTES.follow);
       yield* this.use("push", "seal_home_use", "Push the barricade over", 2);
       this.openSeal("home");
       this.api.audio?.play("knockdown");
@@ -80825,8 +80937,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (!this.open.has("home")) this.openSeal("home");
       const sp = this.ensureSophie(null, null);
       this.prefetch("S09", "S10", "M08", "M08a", "S11", "S12");
-      const g = this.at("gate_use");
-      this.sophieTo(g.x + 1.6, g.z + 3, false, "idle");
+      this.sophieLead(ROUTES.gate);
       this.setGoal("follow");
       yield* this.until(() => this.near("gate_use", 6));
       this.api.view.garageLight?.(true);
@@ -80834,7 +80945,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.say("S09");
       yield* this.shot([{ look: [gl.x, 1.2, gl.z], from: { yaw: 35, pitch: 28, dist: 9 }, fov: 42, slow: 0.4, hold: 2.2, move: 0.9 }], { back: 0.7 });
       this.say("S10", "M08");
-      if (sp) sp.mode = "follow";
+      this.sophieLead(ROUTES.cutters);
       this.setGoal("cutters");
       const c = this.at("cutters");
       this.addPickup({ id: "cutters", x: c.x, z: c.z, y: c.y || void 0, r: 1.3, model: "cutters", label: "Bolt cutters", onTake: () => {
@@ -80861,6 +80972,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.prefetch("L01", "L02", "L03", "L04", "M09", "LB01", "LB02", "LB03", "LB04");
       yield* this.wait(1);
       yield* this.talk("M08a", "S11", "S12");
+      this.sophieLead(ROUTES.clubhouse);
       this.setGoal("clubhouse");
       yield* this.until(() => this.near("club_warn", 7));
       this.say("L01");
@@ -80919,14 +81031,47 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       this.wake(ring);
       let gotKey = false;
+      const bones = {}, bodyAt = () => {
+        const P2 = pete?.obj, at = (n) => {
+          const o = bones[n] ?? (bones[n] = P2?.getObjectByName(n));
+          if (!o) return null;
+          o.updateWorldMatrix(true, false);
+          const e = o.matrixWorld.elements;
+          return { x: e[12], z: e[14] };
+        };
+        const h = at("mixamorigHips"), c = at("mixamorigSpine2") || h, hd = at("mixamorigHead") || c;
+        if (!h) return { x: pa.x - 0.7, z: pa.z + 0.5, face: pa };
+        let ax = hd.x - h.x, az = hd.z - h.z;
+        const l = Math.hypot(ax, az) || 1;
+        ax /= l;
+        az /= l;
+        let nx = -az, nz = ax;
+        if (nx * 0.57 + nz * 0.82 < 0) {
+          nx = -nx;
+          nz = -nz;
+        }
+        const q = { x: c.x + nx * 0.75, z: c.z + nz * 0.75 };
+        this.sim.world.resolveCircle(q, 0.3);
+        return { ...q, face: c };
+      };
       if (sp) {
-        sp.target = { x: pa.x - 0.7, z: pa.z + 0.5, run: true, done: () => {
-          sp.mode = "pose";
-          sp.pose = "hood_PickUp_Kneeling";
-          this.later(1.3, () => {
+        let k = bodyAt();
+        sp.target = { get x() {
+          return (k = bodyAt()).x;
+        }, get z() {
+          return k.z;
+        }, run: true, done: () => {
+          sp.mode = "idle";
+          sp.face = k.face;
+          this.later(0.45, () => {
+            sp.mode = "pose";
+            sp.pose = "hood_PickUp_Kneeling";
+          });
+          this.later(1.75, () => {
             gotKey = true;
             this.flags.key = "sophie";
             this.say("S13");
+            sp.face = null;
             sp.mode = "scared";
           });
         } };
@@ -80943,12 +81088,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         sp.mode = "idle";
         sp.idle = "hood_Idle_Talking_Loop";
       }
-      const mid = () => {
-        const q = this.sophie || pa;
-        return [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2];
-      };
+      const two = this.twoShot(() => this.sophie || pa);
       this.say("M10", "S14", "M11", "Y07", "M12", "Y08", "Y09", "M13", "Y10", "M14", "S15");
-      yield* this.shot([{ look: mid, from: { yaw: 35, pitch: 22, dist: 5.4 }, fov: 40, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.7 });
+      yield* this.shot([{ look: two.look, from: two.from, fov: 46, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.7 });
       this.flags.key = true;
       this.api.hud.toast("The shed key");
       if (sp) {
@@ -80960,6 +81102,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     *stopDock() {
       const p = this.sim.player, sp = this.ensureSophie(null, "follow");
       this.prefetch("M15", "M16", "M17", "S16", "M18", "S17", "M19", "S18", "M20", "S19");
+      if (!this.open.has("dockroad")) this.sophieLead(ROUTES.dock);
       this.setGoal("dock");
       const b = this.at("boat");
       if (!this.open.has("dockroad")) {
@@ -81017,7 +81160,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.openSeal("shed");
       const cs = this.at("shed_chainsaw"), sg = this.at("shed_shotgun"), gs = this.at("shed_gas"), dr = this.at("shed_door");
       let gun = false;
-      this.addPickup({ id: "shotgun", x: sg.x - 0.45, z: sg.z, y: sg.y, r: 1, model: "shotgun", label: "Shotgun", onTake: () => {
+      this.addPickup({ id: "shotgun", x: sg.x - 0.45, z: sg.z, y: sg.y, r: 0.8, model: "shotgun", label: "Shotgun", onTake: () => {
         gun = true;
         this.shotgunOn(null, 16);
         p.desired = SHOTGUN;
@@ -81035,6 +81178,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       yield* this.until(() => gun && this.flags.gas !== "shed");
       yield* this.talk("M21");
       const b = this.at("boat"), pg = this.at("playground");
+      const crowd = () => {
+        const a = (this.horde || []).filter((z2) => z2.alive);
+        let x = 0, z = 0;
+        for (const q of a) {
+          x += q.x;
+          z += q.z;
+        }
+        return a.length ? [x / a.length, 1, z / a.length] : [pg.x, 1, pg.z];
+      };
       if (sp) {
         sp.mode = "pose";
         sp.pose = "hood_PickUp_Kneeling";
@@ -81044,13 +81196,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.say("M22", "M23", "S20");
       yield* this.shot([
         { look: [b.x, 0.6, b.z], from: [p.x + 1.4, 4.2, p.z + 1.8], fov: 34, slow: 0.4, hold: 2.6 },
-        { look: [pg.x, 1, pg.z], from: { yaw: 35, pitch: 24, dist: 13 }, fov: 40, slow: 0.35, hold: 0.3, fn: () => {
+        { look: crowd, from: { yaw: 50, pitch: 32, dist: 16 }, fov: 46, slow: 0.35, hold: 0.6, fn: () => {
+          this.sim.world.rallyAt(-16.5, -63.5);
           for (const z of this.horde || []) {
             this.wake([z]);
             z.kind === "runner" || (z.speedMul *= 1.6);
           }
         } },
-        { look: [pg.x - 3, 1, pg.z - 6], from: { yaw: 25, pitch: 16, dist: 8 }, fov: 40, slow: 0.35, hold: 2.4, move: 2.4 }
+        { look: crowd, from: { yaw: 40, pitch: 36, dist: 17 }, fov: 46, slow: 0.35, hold: 2.4, move: 2.4 }
       ], { back: 0.6 });
       if (sp) sp.subject = false;
       this.say("S21", "S22", "M24");
@@ -81060,6 +81213,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const p = this.sim.player, sp = this.sophie, b = this.at("boat");
       this.setGoal("sophie");
       this.openSeal("dock");
+      this.sim.world.rallyAt(null);
       const GATE = [[-16, -66.5], [-19, -66], [-13.5, -66.8], [-21, -66.2]], far = (this.horde || []).filter((z) => z.alive), first = [];
       const bring = (z, i) => {
         const [gx, gz] = GATE[i % GATE.length];
@@ -81576,6 +81730,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     frame(s) {
       const look = typeof s.look === "function" ? s.look() : s.look;
       _l2.set(look[0], look[1], look[2]);
+      this.focus = { x: look[0], z: look[2] };
       const f = typeof s.from === "function" ? s.from() : s.from;
       if (Array.isArray(f)) _p2.set(f[0], f[1], f[2]);
       else {
@@ -81630,6 +81785,258 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (held && (!s.until || s.until() || (Q2.waited += dt) > (s.max ?? 12))) this.next();
     }
   };
+
+  // src/hood/companion.js
+  var GAP2 = 3;
+  var FAR = 5.6;
+  var NEAR2 = 1.7;
+  var SAFE_R = 3.6;
+  var ang = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  var down = (dx, dz) => dx * 0.57 + dz * 0.82;
+  var across = (dx, dz) => dx * 0.82 - dz * 0.57;
+  var offScreen = (dx, dz) => Math.abs(across(dx, dz)) > 3 || down(dx, dz) > 4.5 || down(dx, dz) < -7;
+  var screenCost = (dx, dz) => Math.max(0, Math.abs(across(dx, dz)) - 2) * 2.5 + Math.max(0, down(dx, dz) - 2) * 1.5;
+  function threatsNear(sim2, x, z, r) {
+    const out = [];
+    for (const q of sim2.zombies) {
+      if (!q.alive) continue;
+      const d = Math.hypot(q.x - x, q.z - z);
+      if (q.looter ? d < 17 : !q.passive && d < r || d < 5) out.push(q);
+    }
+    return out;
+  }
+  function standable(w, p, x, z) {
+    if (w.blockedAt(x, z, 0.36)) return false;
+    if (!w.lineOfSight(p.x, p.z, x, z, 0.9)) return false;
+    return true;
+  }
+  function narrow(w, x, z) {
+    let pairs = 0;
+    for (const [dx, dz] of [[1, 0], [0, 1], [0.7, 0.7], [0.7, -0.7]]) if (w.blockedAt(x + dx * 0.75, z + dz * 0.75, 0.05) && w.blockedAt(x - dx * 0.75, z - dz * 0.75, 0.05)) pairs++;
+    return pairs > 0;
+  }
+  function segD(px2, pz2, ax, az, bx, bz) {
+    const dx = bx - ax, dz = bz - az, L22 = dx * dx + dz * dz || 1e-9, t = Math.max(0, Math.min(1, ((px2 - ax) * dx + (pz2 - az) * dz) / L22));
+    return Math.hypot(px2 - ax - t * dx, pz2 - az - t * dz);
+  }
+  function crosses(ax, az, bx, bz, cx, cz, dx, dz) {
+    const s = (px2, pz2, qx, qz, rx, rz) => (qx - px2) * (rz - pz2) - (qz - pz2) * (rx - px2);
+    const d1 = s(cx, cz, dx, dz, ax, az), d2 = s(cx, cz, dx, dz, bx, bz), d3 = s(ax, az, bx, bz, cx, cz), d4 = s(ax, az, bx, bz, dx, dz);
+    return d1 * d2 < 0 && d3 * d4 < 0;
+  }
+  function companionStep(a, dt, level, sim2) {
+    const p = sim2.player, w = sim2.world;
+    const c = a.cs || (a.cs = { state: "stand", spot: null, side: 1, pickT: 0, prog: { x: a.x, z: a.z, t: 0 }, yieldT: 0, safeT: 0, losT: 0, fireT: 0 });
+    const dm = Math.hypot(p.x - a.x, p.z - a.z), fy = p.aimYaw, fx2 = Math.sin(fy), fz = Math.cos(fy);
+    const pv = Math.hypot(p.vx || 0, p.vz || 0);
+    let tx = a.x, tz = a.z, want = 0, face = { x: p.x, z: p.z }, cower = false;
+    c.pickT -= dt;
+    c.safeT -= dt;
+    c.yieldT -= dt;
+    const th = threatsNear(sim2, p.x, p.z, 12).concat(threatsNear(sim2, a.x, a.z, 8)).filter((q, i, l) => l.indexOf(q) === i);
+    if (th.length) {
+      let Tx = 0, Tz = 0;
+      for (const q of th) {
+        Tx += q.x;
+        Tz += q.z;
+      }
+      Tx /= th.length;
+      Tz /= th.length;
+      const near = (x, z) => th.reduce((m, q) => Math.min(m, Math.hypot(q.x - x, q.z - z)), 1e9);
+      const okHere = near(a.x, a.z) > 4 && dm < 7 && (a.x - p.x) * (Tx - p.x) + (a.z - p.z) * (Tz - p.z) < 0 && Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) > 0.7;
+      const pathCost = (x, z) => {
+        let k = 0;
+        for (const q of th) if (segD(q.x, q.z, a.x, a.z, x, z) < 2) k += 6;
+        if (segD(p.x, p.z, a.x, a.z, x, z) < 1.6) k += 5;
+        return k;
+      };
+      if (!c.safe || c.safeT <= 0 || near(c.safe.x, c.safe.z) < 2.4) {
+        c.safeT = 0.9;
+        const keep = c.safe && near(c.safe.x, c.safe.z) >= 2.4 ? { x: c.safe.x, z: c.safe.z, s: c.safe.s + 2 - pathCost(c.safe.x, c.safe.z) } : null;
+        let best = okHere ? { x: a.x, z: a.z, s: 2.5 } : keep;
+        const away = Math.atan2(p.x - Tx, p.z - Tz);
+        for (let k = 0; k < 12; k++) {
+          const t = away + (k - 5.5) * 0.35, x = p.x + Math.sin(t) * SAFE_R, z = p.z + Math.cos(t) * SAFE_R;
+          if (!standable(w, p, x, z)) continue;
+          let s = Math.min(near(x, z), 8) * 0.5 - Math.abs(ang(t - away)) * 0.9 - Math.hypot(x - a.x, z - a.z) * 0.15;
+          if (Math.abs(ang(t - fy)) < 0.6) s -= 3;
+          if (crosses(a.x, a.z, x, z, p.x, p.z, Tx, Tz)) s -= 4;
+          s -= pathCost(x, z);
+          s -= screenCost(x - p.x, z - p.z) * 0.6;
+          if (!best || s > best.s) best = { x, z, s };
+        }
+        c.safe = best && best.s > -4 ? best : { x: a.x, z: a.z, s: 0 };
+      }
+      c.state = "safe";
+      if (c.safe && Math.hypot(c.safe.x - a.x, c.safe.z - a.z) > 0.4) {
+        tx = c.safe.x;
+        tz = c.safe.z;
+        want = 4.6;
+      } else cower = true;
+      face = { x: Tx, z: Tz };
+      return finish(a, c, dt, sim2, tx, tz, want, face, cower);
+    }
+    c.safe = null;
+    if (c.state === "safe") {
+      c.state = "move";
+      c.pickT = 0;
+    }
+    if (pv > 1.2 && dm < 3.2 && c.state !== "lead") {
+      const hx = p.vx / pv, hz = p.vz / pv, rx = a.x - p.x, rz = a.z - p.z, along = rx * hx + rz * hz, lat = -rx * hz + rz * hx;
+      if (along > 0 && Math.abs(lat) < 1) {
+        const sd = lat >= 0 ? 1 : -1;
+        for (const s of [sd, -sd]) {
+          const x = a.x - hz * s * 1.4, z = a.z + hx * s * 1.4;
+          if (!w.blockedAt(x, z, 0.32)) {
+            c.spot = { x, z };
+            c.state = "yield";
+            c.yieldT = 0.9;
+            break;
+          }
+        }
+      }
+    }
+    if (c.state === "yield") {
+      if (c.yieldT <= 0 || !c.spot) c.state = "stand";
+      else {
+        tx = c.spot.x;
+        tz = c.spot.z;
+        want = 2.2;
+        return finish(a, c, dt, sim2, tx, tz, want, face, false);
+      }
+    }
+    const L3 = a.lead;
+    if (L3 && !L3.done) {
+      const end = L3.pts[L3.pts.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
+      while (L3.i < L3.pts.length - 1 && toEnd(L3.pts[L3.i][0], L3.pts[L3.i][1]) > toEnd(p.x, p.z) - 1.5) L3.i++;
+      if (toEnd(p.x, p.z) < toEnd(a.x, a.z) - 2 && L3.i >= L3.pts.length - 1) L3.done = true;
+      else if (dm < 11) {
+        const P2 = L3.pts[L3.i], dP = Math.hypot(P2[0] - a.x, P2[1] - a.z);
+        c.state = "lead";
+        if (dP > 0.45) {
+          tx = P2[0];
+          tz = P2[1];
+          want = dm > 7 ? 1 : 1.6;
+          face = null;
+        } else if (dm < 4.5 && L3.i < L3.pts.length - 1) L3.i++;
+        return finish(a, c, dt, sim2, tx, tz, want, face, false);
+      }
+    }
+    if (c.state === "lead") c.state = "move";
+    const lost = !w.lineOfSight(p.x, p.z, a.x, a.z, 0.9);
+    c.losT = lost ? c.losT + dt : 0;
+    c.fireT = Math.abs(ang(Math.atan2(a.x - p.x, a.z - p.z) - fy)) < 0.5 && dm < 6 ? c.fireT + dt : 0;
+    const byPrompt = (level.interact || []).some((it) => Math.hypot(it.x - a.x, it.z - a.z) < 1.5);
+    c.offT = offScreen(a.x - p.x, a.z - p.z) ? (c.offT || 0) + dt : 0;
+    if (c.state === "stand" && (dm > FAR || c.losT > 1.2 || c.fireT > 0.5 || c.offT > 1 || byPrompt || dm < NEAR2 || narrow(w, a.x, a.z))) {
+      c.state = "move";
+      c.pickT = 0;
+    }
+    if (c.state === "move") {
+      if (c.pickT <= 0) {
+        c.pickT = pv > 0.8 ? 0.3 : 0.6;
+        c.spot = pickSpot(a, c, p, w, fy, level);
+      }
+      const S2 = c.spot || { x: p.x, z: p.z };
+      let gx = S2.x, gz = S2.z;
+      if (!w.lineOfSight(a.x, a.z, gx, gz, 0.6)) {
+        const t = trailPoint(a, w);
+        if (t) {
+          gx = t.x;
+          gz = t.z;
+        }
+      }
+      const dS = Math.hypot(S2.x - a.x, S2.z - a.z);
+      if ((dS < 0.4 && pv < 0.8 || dm < GAP2 + 0.4 && !lost) && !narrow(w, a.x, a.z)) {
+        c.state = "stand";
+      } else {
+        tx = gx;
+        tz = gz;
+        want = Math.min(5.2, Math.max(1.3, pv + (dm - GAP2) * 0.9));
+        if (dm < 2.2) want = 0.9;
+        face = null;
+      }
+    }
+    return finish(a, c, dt, sim2, tx, tz, want, face, false);
+  }
+  function pickSpot(a, c, p, w, fy, level) {
+    const pv = Math.hypot(p.vx || 0, p.vz || 0), head = pv > 0.8 ? Math.atan2(p.vx, p.vz) : fy;
+    let best = null;
+    for (const [off, side] of [[Math.PI, 0], [Math.PI - 0.6, 1], [Math.PI + 0.6, -1], [Math.PI / 2 + 0.25, 1], [-Math.PI / 2 - 0.25, -1], [Math.PI - 1.1, 1], [Math.PI + 1.1, -1]]) {
+      const t = head + off, x = p.x + Math.sin(t) * GAP2, z = p.z + Math.cos(t) * GAP2;
+      if (!standable(w, p, x, z)) continue;
+      let s = -Math.hypot(x - a.x, z - a.z) * 0.35;
+      if (side && side === c.side) s += 1.2;
+      if (Math.abs(ang(t - fy)) < 0.6) s -= 4;
+      s -= screenCost(x - p.x, z - p.z);
+      if (narrow(w, x, z)) s -= 3;
+      if ((level.interact || []).some((it) => Math.hypot(it.x - x, it.z - z) < 1.5)) s -= 3;
+      if (!best || s > best.s) best = { x, z, s, side };
+    }
+    if (best?.side) c.side = best.side;
+    return best || trailPoint(a, w) || { x: p.x, z: p.z };
+  }
+  function trailPoint(a, w) {
+    const tl = a.trail;
+    for (let i = tl.length - 1; i >= Math.max(0, tl.length - 60); i--) if (w.lineOfSight(a.x, a.z, tl[i].x, tl[i].z, 0.6)) return tl[i];
+    return tl[0] || null;
+  }
+  function finish(a, c, dt, sim2, tx, tz, want, face, cower) {
+    const w = sim2.world, p = sim2.player;
+    a.speed += (want - a.speed) * Math.min(1, dt * (want > a.speed ? 4 : 6));
+    if (a.speed > 0.05) {
+      const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz);
+      if (d > 0.05) {
+        let ux = dx / d, uz = dz / d;
+        const ex = a.x - p.x, ez = a.z - p.z, ed = Math.hypot(ex, ez);
+        if (ed < 1.5 && ed > 1e-3) {
+          const k = (1.5 - ed) * 2.2;
+          ux += ex / ed * k;
+          uz += ez / ed * k;
+          const l = Math.hypot(ux, uz) || 1;
+          ux /= l;
+          uz /= l;
+        }
+        const st = Math.min(d, a.speed * dt), q = { x: a.x + ux * st, z: a.z + uz * st };
+        w.resolveCircle(q, 0.28);
+        a.x = q.x;
+        a.z = q.z;
+        const y = Math.atan2(dx, dz), e = ang(y - a.yaw);
+        a.yaw += Math.sign(e) * Math.min(Math.abs(e), dt * 6.5);
+      } else a.speed *= 0.5;
+    } else if (face) {
+      const y = Math.atan2(face.x - a.x, face.z - a.z), e = ang(y - a.yaw);
+      if (Math.abs(e) > 0.18) a.yaw += Math.sign(e) * Math.min(Math.abs(e), dt * 2.6);
+    }
+    c.prog.t += dt;
+    if (c.prog.t > 1.4) {
+      const moved = Math.hypot(a.x - c.prog.x, a.z - c.prog.z);
+      if (want > 0.8 && moved < 0.3) {
+        const t = trailPoint(a, w);
+        if (t) {
+          c.spot = { x: t.x, z: t.z };
+          c.pickT = 1.2;
+          c.stuck = (c.stuck || 0) + 1;
+        }
+      } else c.stuck = 0;
+      c.prog = { x: a.x, z: a.z, t: 0 };
+    }
+    const dm = Math.hypot(p.x - a.x, p.z - a.z);
+    if (dm > 16 && a.trail.length > 10) {
+      const q = a.trail.slice().reverse().find((t) => Math.hypot(t.x - p.x, t.z - p.z) > 13 && Math.hypot(t.x - p.x, t.z - p.z) < dm - 2);
+      if (q) {
+        const r = { x: q.x, z: q.z };
+        w.resolveCircle(r, 0.3);
+        a.x = r.x;
+        a.z = r.z;
+        a.speed = 0;
+        c.state = "move";
+        c.pickT = 0;
+        a.recovered = (a.recovered || 0) + 1;
+      }
+    }
+    a.cower = cower ? Math.min(1.5, a.cower + dt) : Math.max(0, a.cower - dt * 2);
+  }
 
   // src/hood/charlight.js
   var CHAR_LIGHT = { fill: 0.5 };
@@ -82233,9 +82640,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       return body;
     }
     // Sophie (the user's B03 - B12): unarmed and scared, she never fights and takes no harm (her death is the story's). The
-    // story sets her mode: 'scared' (crouched where she is, facing Marc), 'follow' (3.3 m behind him along the way he walked;
-    // she crouches when they come near unless he gets away from her), 'goto' (to a.target, then a.after), 'pose' (a.pose,
-    // facing a.face), 'dead'. She walks, jogs or sprints as the gap asks.
+    // story sets her mode: 'scared' (crouched where she is, facing Marc), 'follow' (the companion: companion.js, with a.lead
+    // when she shows the way), 'goto' (to a.target, then a.after), 'pose' (a.pose, facing a.face), 'dead'. She walks, jogs or
+    // sprints as the gap asks.
     sophie(at) {
       const body = this.storyBody("sophie"), obj = body ? body.obj : marker(15253600);
       obj.position.set(at.x, 0, at.z);
@@ -82260,42 +82667,21 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (tl.length > 80) tl.shift();
       }
       let tx = a.x, tz = a.z, want = 0, face = null;
-      const dm0 = Math.hypot(p.x - a.x, p.z - a.z), dest = a.mode === "goto" && a.target ? a.target : a.mode === "follow" ? p : null;
-      if (dest && dm0 > 16 && Math.hypot(dest.x - a.x, dest.z - a.z) > 12) {
-        const back = tl.length > 8 ? tl[tl.length - 8] : null, q = a.mode === "goto" ? { x: dest.x, z: dest.z } : back ? { x: back.x, z: back.z } : null;
-        if (q && Math.hypot(q.x - p.x, q.z - p.z) > (a.mode === "goto" ? 0 : 3)) {
-          sim2.world.resolveCircle(q, 0.3);
-          a.x = q.x;
-          a.z = q.z;
-          a.speed = 0;
-        }
+      const dm0 = Math.hypot(p.x - a.x, p.z - a.z);
+      if (a.mode === "goto" && a.target && dm0 > 16 && Math.hypot(a.target.x - a.x, a.target.z - a.z) > 12 && Math.hypot(a.target.x - p.x, a.target.z - p.z) > 14) {
+        const q = { x: a.target.x, z: a.target.z };
+        sim2.world.resolveCircle(q, 0.3);
+        a.x = q.x;
+        a.z = q.z;
+        a.speed = 0;
       }
-      const near = (x, z, r) => sim2.zombies.some((q) => q.alive && !q.looter && Math.hypot(q.x - x, q.z - z) < r);
+      if (a.mode !== "follow") a.cower = Math.max(0, a.cower - dt * 2);
       if (a.mode === "follow") {
-        let need = a.gap, px2 = p.x, pz2 = p.z, found = null;
-        for (let i = tl.length - 1; i >= 0; i--) {
-          const d = Math.hypot(tl[i].x - px2, tl[i].z - pz2);
-          if (d >= need) {
-            const k = need / d;
-            found = { x: px2 + (tl[i].x - px2) * k, z: pz2 + (tl[i].z - pz2) * k };
-            break;
-          }
-          need -= d;
-          px2 = tl[i].x;
-          pz2 = tl[i].z;
-        }
-        const dm = Math.hypot(p.x - a.x, p.z - a.z);
-        a.cower = (near(a.x, a.z, 6) || near(p.x, p.z, 5)) && dm < 9 ? Math.min(1.5, a.cower + dt) : Math.max(0, a.cower - dt);
-        if (found && a.cower <= 0.4) {
-          tx = found.x;
-          tz = found.z;
-          const d = Math.hypot(tx - a.x, tz - a.z);
-          want = d > 6 ? 5.2 : d > 2.2 ? 3.1 : d > 0.35 ? 1.4 : 0;
-        }
-        if (dm < 1.4) {
-          want = 0;
-        }
-        face = { x: p.x, z: p.z };
+        companionStep(a, dt, level, sim2);
+        a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
+        a.obj.rotation.y = a.yaw;
+        if (b) this.sophieMoves(a, b);
+        return;
       } else if (a.mode === "goto" && a.target) {
         tx = a.target.x;
         tz = a.target.z;
@@ -82308,7 +82694,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }
       } else face = a.face || { x: p.x, z: p.z };
       a.speed += (want - a.speed) * Math.min(1, dt * 6);
-      if (a.speed > 0.05) {
+      const d0 = Math.hypot(tx - a.x, tz - a.z);
+      if (a.speed > 0.05 && d0 > 0.05) {
         const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz) || 1, st = Math.min(d, a.speed * dt);
         const q = { x: a.x + dx / d * st, z: a.z + dz / d * st };
         sim2.world.resolveCircle(q, 0.28);
@@ -82322,12 +82709,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
       a.obj.rotation.y = a.yaw;
-      if (!b) return;
+      if (b) this.sophieMoves(a, b);
+    }
+    // her moves, matched to her speed (the walk's rate to the ground she covers: no sliding feet)
+    sophieMoves(a, b) {
       const v = a.speed;
       if (a.mode === "pose" && a.pose) b.play(a.pose);
       else if (v > 3.8) b.play("hood_Sprint_Loop", { rate: v / 5.2 });
       else if (v > 1.9) b.play("hood_Jog_Fwd_Loop", { rate: v / 3.1 });
-      else if (v > 0.25) b.play("hood_Walk_Loop", { rate: Math.max(0.6, v / 1.4) });
+      else if (v > 0.3) b.play("hood_Walk_Loop", { rate: Math.max(0.35, v / 1.4) });
       else if (a.mode === "scared" || a.cower > 0.4) b.play("hood_Crouch_Idle_Loop", { fade: 0.35 });
       else b.play(a.idle || "hood_Idle_Loop", { fade: 0.35 });
     }
@@ -82505,32 +82895,72 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
 
   // src/hood/hint.js
   var _v12 = new Vector3();
+  var FLASH = 4;
+  var ASKED = 7;
   var Hint = class {
     constructor() {
       const el = document.createElement("div");
-      el.style.cssText = "position:fixed;left:0;top:0;z-index:55;pointer-events:none;transform:translate(-50%,-50%);display:none;font:700 11px system-ui,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 2px #000";
-      el.innerHTML = '<div style="width:16px;height:16px;margin:0 auto;border:2px solid #ffd27a;background:rgba(255,190,90,0.35);transform:rotate(45deg)"></div><div class="d" style="margin-top:3px"></div>';
+      el.style.cssText = "position:fixed;left:0;top:0;z-index:55;pointer-events:none;transform:translate(-50%,-50%);display:none;transition:opacity 0.4s;font:700 11px system-ui,sans-serif;color:#fff;text-align:center;text-shadow:0 1px 2px #000";
+      el.innerHTML = '<div style="width:14px;height:14px;margin:0 auto;border:2px solid #fff;background:rgba(10,10,10,0.55);box-shadow:0 0 0 1px rgba(0,0,0,0.6);transform:rotate(45deg)"></div><div class="d" style="margin-top:4px"></div>';
       el.className = "hoodOverlay";
       document.body.appendChild(el);
       this.el = el;
       this.d = el.querySelector(".d");
-      this.t = 0;
       this.shown = false;
+      this.goal = null;
+      this.flashT = 0;
+      this.askT = 0;
+      this.best = 1e9;
+      this.bestT = 0;
+      const obj = document.getElementById("objective");
+      if (obj) {
+        obj.style.pointerEvents = "auto";
+        obj.addEventListener("click", () => {
+          this.askT = ASKED;
+        });
+      }
+    }
+    get strong() {
+      try {
+        return JSON.parse(localStorage.getItem("zc.guide") || "false") === true;
+      } catch {
+        return false;
+      }
     }
     hide() {
       if (this.shown) {
-        this.el.style.display = "none";
+        this.el.style.opacity = "0";
         this.shown = false;
       }
     }
     update(camera2, level, sim2, dt) {
-      const tgt = level?.goalTarget?.(), p = sim2?.player;
-      if (!tgt || !p || p.dead || level.complete) {
+      const p = sim2?.player;
+      if (!level || !p || p.dead || level.complete || level.api?.cine?.active) {
         this.hide();
         return;
       }
-      const dist2 = Math.hypot(tgt.x - p.x, tgt.z - p.z), since = level.time - (level.goalT0 ?? 0);
-      if (since < 35 || dist2 < 10) {
+      const tgt = level.nextStep?.() || level.goalTarget?.();
+      if (level.objective !== this.goal) {
+        this.goal = level.objective;
+        this.flashT = tgt ? FLASH : 0;
+        this.best = 1e9;
+        this.bestT = level.time;
+      }
+      this.flashT -= dt;
+      this.askT -= dt;
+      if (!tgt) {
+        this.hide();
+        return;
+      }
+      const dist2 = Math.hypot(tgt.x - p.x, tgt.z - p.z);
+      if (dist2 < this.best - 1.5) {
+        this.best = dist2;
+        this.bestT = level.time;
+      }
+      const fighting = sim2.zombies.some((z) => z.alive && !z.passive && !z.dormant && Math.hypot(z.x - p.x, z.z - p.z) < 14);
+      const stuck = level.time - (level.goalT0 ?? 0) > 45 && level.time - this.bestT > 25;
+      const want = !fighting && dist2 > 3.5 && (this.flashT > 0 || this.askT > 0 || stuck || this.strong && dist2 > 8);
+      if (!want) {
         this.hide();
         return;
       }
@@ -82546,11 +82976,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.el.style.left = x + "px";
       this.el.style.top = y + "px";
       this.d.textContent = Math.round(dist2) + " m";
-      this.el.style.opacity = String(0.65 + 0.35 * Math.sin(level.time * 4));
       if (!this.shown) {
         this.el.style.display = "block";
+        this.el.style.opacity = "0.9";
         this.shown = true;
       }
+      const fade = this.askT > 0 || stuck || this.strong ? 0.9 : Math.min(0.9, Math.max(0, this.flashT));
+      this.el.style.opacity = String(fade);
     }
   };
 
@@ -82941,7 +83373,6 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         window.hood?.lineup.update(dt);
         grass?.update(dt, px2, pz2);
         if (onCall && sim2 && Math.hypot(sim2.player.vx || 0, sim2.player.vz || 0) > 0.6) callUp(false);
-        view.radioUpdate(window.game?.yola, sim2);
         hint.update(camera2, level, sim2, dt);
         const g = window.game, y = g?.yola;
         updateRim(camera2, SUN_FROM);
@@ -82964,6 +83395,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
             }
           }
         }
+        view.radioUpdate(y, sim2);
         if (g?.zviews && sim2) for (const [id, v] of g.zviews) {
           const o = v.outer;
           if (!o?.visible) continue;
@@ -83827,6 +84259,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       case "shake":
         shakeOn = v;
         break;
+      case "guide":
+        store2.set("guide", v);
+        break;
+      // (Chapter 2's guidance marker: src/hood/hint.js)
       case "debug":
         debugOn = v;
         debugGroup.visible = v;
@@ -83965,10 +84401,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           _v13.set(p.x, 1, p.z).project(camera);
           const sx = _v13.x, sy = _v13.y;
           _v13.set(p.x + p.dodgeDir.x, 1, p.z + p.dodgeDir.z).project(camera);
-          const ang = Math.atan2(_v13.x - sx, _v13.y - sy) * 180 / Math.PI;
-          if (Math.abs(ang - (b.__a ?? 999)) > 2) {
-            b.style.setProperty("--a", ang.toFixed(1) + "deg");
-            b.__a = ang;
+          const ang2 = Math.atan2(_v13.x - sx, _v13.y - sy) * 180 / Math.PI;
+          if (Math.abs(ang2 - (b.__a ?? 999)) > 2) {
+            b.style.setProperty("--a", ang2.toFixed(1) + "deg");
+            b.__a = ang2;
           }
         }
       }
@@ -84094,7 +84530,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (v.outer.visible) v.hide();
         continue;
       }
-      if (sim.level && z.dormant && (z.x - ix) * (z.x - ix) + (z.z - iz) * (z.z - iz) > 15 * 15) {
+      const fcx = hood?.cine?.active && hood.cine.focus ? hood.cine.focus.x : ix, fcz = hood?.cine?.active && hood.cine.focus ? hood.cine.focus.z : iz;
+      if (sim.level && z.dormant && (z.x - fcx) * (z.x - fcx) + (z.z - fcz) * (z.z - fcz) > 15 * 15 && (z.x - ix) * (z.x - ix) + (z.z - iz) * (z.z - iz) > 15 * 15) {
         if (v.outer.visible) {
           v.outer.visible = false;
           v.blob.visible = false;
