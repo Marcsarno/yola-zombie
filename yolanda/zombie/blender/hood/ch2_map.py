@@ -136,6 +136,9 @@ def strip(name, pts, half, y, mat, uv_tile=4.0, kerb=None):
             A, B, C, D = ring(o0, y), ring(o0, y + h), ring(o1, y + h), ring(o1, y)
             for i in range(len(pts) - 1):
                 for P, Q in ((A, B), (B, C), (C, D)): bm.faces.new((P[i], P[i + 1], Q[i + 1], Q[i]))
+    # (face up, the kerbs' sides out from their own section: a new face's normal is only known after normal_update; without
+    # it nothing was turned and the game, drawing one side, showed the lawn through every new road)
+    bm.normal_update()
     for f in bm.faces:
         if f.normal.z < -0.5: f.normal_flip()
     me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
