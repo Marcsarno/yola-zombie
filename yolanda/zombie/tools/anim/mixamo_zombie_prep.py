@@ -33,7 +33,17 @@ def apply_all():
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 apply_all()
-# one mesh
+# one mesh. Each part's UV map under one name first: a join keeps only the active mesh's UV layer by name, so parts with
+# another name (Remy's shirt, shorts, shoes) came out with no UVs and drew their textures' black corner (2026-10-20)
+uvlog = {}
+for m in meshes:
+    uvs = m.data.uv_layers
+    if not uvs: continue
+    keep = next((u for u in uvs if u.active_render), uvs.active)
+    uvlog[m.name] = [u.name for u in uvs]
+    for u in [u for u in uvs if u != keep]: uvs.remove(u)
+    uvs[0].name = 'UVMap'
+log['uv_layers_in'] = uvlog
 bpy.ops.object.select_all(action='DESELECT')
 for m in meshes: m.select_set(True)
 bpy.context.view_layer.objects.active = meshes[0]
