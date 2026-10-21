@@ -1,76 +1,137 @@
-// Chapter 2: the lines (the user's CHAPTER 2 — SCRIPT AND VOICE DRAFT, 2026-10-19; subtitles only for now, no recordings).
-// id: [speaker, text, radio?]. Voices when recorded: Marc = Frank, Yola = Niki, Arianna = Pip; the survivor: not chosen.
-// LOOTER lines are the remake's own (the brief: "make it obvious these people are hostile"), not in the draft: to approve.
+// Chapter 2: the lines (the user's Chapter 2 audio pack, 2026-10-20: production_v3_maggie_m21; voices Marc = Frank,
+// Yola = Lara, Sophie = Maggie, James = Chad, Pete = Clint, the looters Martin / Malachi / Billy). The recordings are
+// assets/neighborhood/voice/<file>.mp3; the subtitles are the spoken words only (the pack: never its voice directions).
+// id: [speaker, text, radio?, file]. Radio lines play through the walkie-talkie (src/hood/radio.js: the two faces).
+// Trigger by id from the story (level.js); L04 only once Marc has the rifle (the pack's note).
 export const LINES = {
-  // Scene 1: still at the house
-  l01: ['YOLA', "Marc? I'm out of the hospital. Have you got Lilah yet?", true],
-  l02: ['MARC', "Not yet. Arianna's with me. I found gas for the boat. I've just got to pick it up.", true],
-  l03: ['YOLA', "You've got a way across?", true],
-  l04: ['MARC', "The boat at the club. I'll get Lilah and bring the girls with me.", true],
-  l05: ['YOLA', "They're moving through the streets here. Is it still quiet there?", true],
-  l06: ['MARC', "No. I think we've still got time.", true],
-  l07: ['SURVIVOR', "Get inside! They're coming through!"],
-  l08: ['MARC', 'Arianna. Inside, sweetie.'],
-  l09: ['ARIANNA', 'Dad?'],
-  l10: ['MARC', "Go. I'm right here. Cover your ears."],
-  l11: ['YOLA', "Marc? What's happening?", true],
-  l12: ['MARC', "They're here. I'll call you back.", true],
-  // Scene 2: the rifle
-  l13: ['SURVIVOR', 'Back up! Back up!'],
-  l14: ['MARC', 'Arianna?'],
-  l15: ['ARIANNA', "I'm here."],
-  l16: ['MARC', 'Okay. Come to me. Stay close.'],
-  l17: ['ARIANNA', 'Are we going to Mom?'],
-  l18: ['MARC', "We are. But we're getting your sister first."],
-  // Scene 3: through the gate
-  l19: ['MARC', 'Stay this side while I cut it.'],
-  l20: ['YOLA', 'Marc. Talk to me.', true],
-  l21: ['MARC', "We're through. Arianna's okay.", true],
-  l22: ['YOLA', 'And you?', true],
-  l23: ['MARC', "I'm okay. We're heading for the parking lot.", true],
-  // Scene 4: the gas
-  l24: ['MARC', "There. That's the can."],
-  l25: ['MARC', "I'll carry it. Stay beside me."],
-  l26: ['MARC', "I've got the gas. Just need the keys from the club office.", true],
-  l27: ['YOLA', 'Be careful in there.', true],
-  // Scene 5: inside the clubhouse
-  l28: ['MARC', 'Arianna. Wait here a second. Let me look.'],
-  l29: ['MARC', "Got them. Come on. Let's get your sister."],
-  // Scene 6: Lilah
-  l30: ['MARC', 'Lilah. Come here, sweetheart.'],
-  l31: ['ARIANNA', "We're going to Mom."],
-  l32: ['MARC', "Yola. I've got her. Both girls are with me.", true],
-  l33: ['YOLA', 'Thank God.', true],
-  l34: ['MARC', "We're going to the boat now.", true],
-  // Scene 7: the boat
-  l35: ['MARC', "Yola. We're leaving the dock.", true],
-  l36: ['YOLA', "Okay. I'll keep the radio on.", true],
-  l37: ['MARC', "We're coming.", true],
-  // the looters (remake, draft): the warning at the club and their fight
-  w01: ['LOOTER', 'Keep walking! This place is taken!'],
-  w02: ['LOOTER', "That's our gas now. Put it down!"],
-  w03: ['LOOTER', "He's inside! Light him up!"],
-  // the dock before Lilah (remake, draft)
-  d01: ['MARC', 'Not without Lilah.'],
+  // 1. The call at the door
+  Y01: ["YOLA", "Marc. Are you at the house?", true, "Y01_yola"],
+  M01: ["MARC", "At the door.", true, "M01_marc"],
+  Y02: ["YOLA", "It's in our bedroom closet, top shelf. A silver case. Four vials of the vaccine.", true, "Y02_yola"],
+  Y03: ["YOLA", "Listen. Some are missing from the hospital, and people know. They're going through every neighborhood where staff live. They're looking for it.", true, "Y03_yola"],
+  M02: ["MARC", "Looters.", true, "M02_marc"],
+  Y04: ["YOLA", "Get the case and get out. Don't stay in there.", true, "Y04_yola"],
+  M03: ["MARC", "I'll bring the cure to Grammy's. The girls are waiting.", true, "M03_marc"],
+  Y05: ["YOLA", "Three of them are for Grammy, Lilah and Arianna. The fourth one is yours. Take it.", true, "Y05_yola"],
+  M04: ["MARC", "Let's see if you get out of there with some. If you do, I'll take it.", true, "M04_marc"],
+  Y06: ["YOLA", "That's not a plan.", true, "Y06_yola"],
+  M05: ["MARC", "It's mine.", true, "M05_marc"],
+  // 2. The house (James)
+  J01: ["JAMES", "What the fuck? Who are you? Who are you, motherfucker? Who are YOU?", false, "J01_james"],
+  M06: ["MARC", "Got it.", false, "M06_marc"],
+  // 3. "Help!"
+  S01: ["SOPHIE", "Help! Somebody help me! Please!", false, "S01_sophie"],
+  S02: ["SOPHIE", "Help! Over here! Please, please, please!", false, "S02_sophie"],
+  S03: ["SOPHIE", "Oh my God. Oh my God. Thank you.", false, "S03_sophie"],
+  S03a: ["SOPHIE", "I'm Sophie.", false, "S03a_sophie"],
+  M06a: ["MARC", "Marc. Can you walk?", false, "M06a_marc"],
+  // 4. The bargain
+  S04: ["SOPHIE", "Wait. What is that?", false, "S04_sophie"],
+  S05: ["SOPHIE", "Is that the cure? You're the doctor's husband.", false, "S05_sophie"],
+  S06: ["SOPHIE", "They're looking for those. Everyone's looking for those.", false, "S06_sophie"],
+  S07: ["SOPHIE", "You have to give me one. If I get you out of here safe, can I have one?", false, "S07_sophie"],
+  M07: ["MARC", "Get me out of here first.", false, "M07_marc"],
+  S08: ["SOPHIE", "Okay. Okay. Follow me. I know a way.", false, "S08_sophie"],
+  // 5. The gate
+  S09: ["SOPHIE", "The gate's chained. My neighbor has bolt cutters. The garage with the light on.", false, "S09_sophie"],
+  S10: ["SOPHIE", "Hurry. Please hurry.", false, "S10_sophie"],
+  M08: ["MARC", "Stay behind me.", false, "M08_marc"],
+  // 6. The clubhouse
+  M08a: ["MARC", "I've got a boat at the dock. But I need gas.", false, "M08a_marc"],
+  S11: ["SOPHIE", "Pete, the groundskeeper, has the key to the gas shed. If he's alive, he'd be at the clubhouse. Or close to it.", false, "S11_sophie"],
+  S12: ["SOPHIE", "And there are supplies in there, right? Ammo. First aid.", false, "S12_sophie"],
+  L01: ["LOOTER", "Keep walking! This place is taken!", false, "L01_looter_a"],
+  L02: ["LOOTER", "Who's out there? Show yourself!", false, "L02_looter_b"],
+  L03: ["LOOTER", "He's inside! Light him up!", false, "L03_looter_c"],
+  L04: ["LOOTER", "He's got a rifle! Get down!", false, "L04_looter_a"],
+  M09: ["MARC", "That'll do.", false, "M09_marc"],
+  // 7. Pete
+  P01: ["PETE", "Help! Over here! Somebody!", false, "P01_pete"],
+  P02: ["PETE", "Get back! Get BACK!", false, "P02_pete"],
+  P03: ["PETE", "Don't come! They're... They're... AAAH!", false, "P03_pete"],
+  S13: ["SOPHIE", "I've got it. I've got the key.", false, "S13_sophie"],
+  // 8. The check-in with Yola (the key and the dose)
+  M10: ["MARC", "Give me the key.", false, "M10_marc"],
+  S14: ["SOPHIE", "Not until I get one. A cure. For me.", false, "S14_sophie"],
+  M11: ["MARC", "Yola. It's me.", true, "M11_marc"],
+  Y07: ["YOLA", "Marc. Are you all right? Did you find it?", true, "Y07_yola"],
+  M12: ["MARC", "I've got the case. The woman with me has the fuel-shed key. She wants a dose before she'll hand it over.", true, "M12_marc"],
+  Y08: ["YOLA", "Do it. Just do it.", true, "Y08_yola"],
+  Y09: ["YOLA", "You've got enough for Grammy and the girls. I'll find more for us. It's going to be okay.", true, "Y09_yola"],
+  M13: ["MARC", "Are you sure?", true, "M13_marc"],
+  Y10: ["YOLA", "I'm sure. Go.", true, "Y10_yola"],
+  M14: ["MARC", "You get one. When we're on the water.", false, "M14_marc"],
+  S15: ["SOPHIE", "Okay. Okay. Thank you. Here.", false, "S15_sophie"],
+  // 9. The dock
+  M15: ["MARC", "The boat's nearly dry. The shed's up the bank.", false, "M15_marc"],
+  M16: ["MARC", "Listen. We can't start the motor. The noise will bring every one of those over here.", false, "M16_marc"],
+  M17: ["MARC", "We push off first. Get clear of the bank. Then we start it. Understand?", false, "M17_marc"],
+  S16: ["SOPHIE", "Okay. Okay. Quiet.", false, "S16_sophie"],
+  M18: ["MARC", "Cold, and still. Keep it that way.", false, "M18_marc"],
+  S17: ["SOPHIE", "How cold?", false, "S17_sophie"],
+  M19: ["MARC", "Just stay with the boat.", false, "M19_marc"],
+  S18: ["SOPHIE", "I'm still getting one, right?", false, "S18_sophie"],
+  M20: ["MARC", "On the water.", false, "M20_marc"],
+  S19: ["SOPHIE", "Sure.", false, "S19_sophie"],
+  // 10. The shed and the engine
+  M21: ["MARC", "That's what I needed.", false, "M21_marc"],
+  M22: ["MARC", "No. No, no, no. What are you doing?", false, "M22_marc"],
+  M23: ["MARC", "Sophie! Sophie, stop!", false, "M23_marc"],
+  S20: ["SOPHIE", "I'm sorry! I can't stay here!", false, "S20_sophie"],
+  S21: ["SOPHIE", "Oh God. Oh God, no.", false, "S21_sophie"],
+  S22: ["SOPHIE", "Marc! MARC!", false, "S22_sophie"],
+  M24: ["MARC", "Hold on! I'm coming!", false, "M24_marc"],
+  // 11. Leaving
+  M25: ["MARC", "Damn it.", false, "M25_marc"],
+  M26: ["MARC", "Yola. I've got it. I'm leaving the dock.", true, "M26_marc"],
+  Y11: ["YOLA", "And the survivor?", true, "Y11_yola"],
+  M27: ["MARC", "She didn't make it.", true, "M27_marc"],
+  Y12: ["YOLA", "I'm sorry.", true, "Y12_yola"],
+  M28: ["MARC", "She never took one. I've still got all four.", true, "M28_marc"],
+  Y13: ["YOLA", "Marc...", true, "Y13_yola"],
+  M29: ["MARC", "The fourth one's still yours. I'm going to Grammy's.", true, "M29_marc"],
+  // Combat barks
+  MB01: ["MARC", "Stay behind me.", false, "MB01_marc"],
+  MB02: ["MARC", "Stay close.", false, "MB02_marc"],
+  MB03: ["MARC", "Get down!", false, "MB03_marc"],
+  MB04: ["MARC", "Move!", false, "MB04_marc"],
+  MB05: ["MARC", "Reloading!", false, "MB05_marc"],
+  SB01: ["SOPHIE", "Behind you!", false, "SB01_sophie"],
+  SB02: ["SOPHIE", "Oh God!", false, "SB02_sophie"],
+  SB03: ["SOPHIE", "Go, go, go!", false, "SB03_sophie"],
+  SB04: ["SOPHIE", "Don't leave me!", false, "SB04_sophie"],
+  SB05: ["SOPHIE", "Is it clear?", false, "SB05_sophie"],
+  SB06: ["SOPHIE", "I'm okay. I'm okay.", false, "SB06_sophie"],
+  LB01: ["LOOTER", "There he is!", false, "LB01_looter_a"],
+  LB02: ["LOOTER", "Get him!", false, "LB02_looter_b"],
+  LB03: ["LOOTER", "Flank him!", false, "LB03_looter_c"],
+  LB04: ["LOOTER", "I'm hit!", false, "LB04_looter_a"],
 };
-export const SPEAKER_COLOR = { MARC: '#9fd3ff', YOLA: '#ffc6e0', ARIANNA: '#ffe39a', SURVIVOR: '#cfe8b8', LOOTER: '#ff8a7a' };
-// the objectives (HUD, top left)
+// sounds without words (no subtitle): James's cut-off scream, Sophie's, the outboard's pull, cough, roar and stall
+export const CUES = { J02: 'J02_james_scream', S23: 'S23_sophie_scream', ENGINE: 'FX_ENGINE_outboard_start_stall' };
+// the speakers' subtitle colours; the faces on the radio card (assets/ui/radio/, from the user's RADIO SIGNAL picture)
+export const SPEAKER_COLOR = { MARC: '#9fd3ff', YOLA: '#ffc6e0', SOPHIE: '#ffe39a', JAMES: '#ff8a7a', PETE: '#cfe8b8', LOOTER: '#ff8a7a' };
+export const FACES = { MARC: 'assets/ui/radio/marc.webp', YOLA: 'assets/ui/radio/yola.webp' };
+// the objectives (HUD, top left): the handoff's list (HANDOFF_NEXT.md section 5) and the steps between
 export const GOALS = {
-  home: 'Hold the yard',
-  rifle: 'Grab the rifle',
-  push: 'Push through the barricade on the curve',
-  cutters: 'Find something to cut the gate chain',
-  gate: 'Cut the chain on the gate',
-  holdgate: 'Hold the gate',
-  lot: 'Get to the parking lot',
-  gas: 'Find the gas can',
-  keys: 'Get the boat keys from the club office',
-  looters: 'Take the clubhouse',
-  roadblock: 'Unlock the looters’ roadblock',
-  stow: 'Leave the gas at the boat (past the pool)',
-  lilah: 'Get Lilah from Grandma’s',
-  boat: 'Get the girls to the boat',
+  vaccines: 'Get the vaccines',
+  fridge: 'The vaccines are in the fridge',
+  out: 'Get out',
+  help: 'Find who is screaming',
+  save: 'Save her',
+  follow: 'Follow Sophie',
+  cutters: 'Get the bolt cutters',
+  gate: 'Cut the chain',
+  clubhouse: 'Clear the clubhouse',
+  pete: 'Find Pete',
+  savePete: 'Help Pete',
+  key: 'Get the key from Sophie',
+  dock: 'Get to the boat',
+  gas: 'Get gas',
+  shed: 'Get the gas from the shed',
+  sophie: 'Get to Sophie',
+  horde: 'Survive',
+  caseBack: 'Get the case',
   fuel: 'Fuel the boat',
-  hold: 'Hold the dock',
-  launch: 'Launch the boat',
+  leave: 'Get in the boat',
 };

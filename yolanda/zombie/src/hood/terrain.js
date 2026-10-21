@@ -7,13 +7,13 @@ import { tex } from './materials.js';
 import { cutawayPatch } from './cutaway.js';
 
 const black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); black.needsUpdate = true;
-export function terrainMaterial({ splat = null, rect = [-130, -130, 260, 260] } = {}) {
+export function terrainMaterial({ splat = null, paths = null, rect = [-130, -130, 260, 260] } = {}) {
   const orm = tex('lawn_bl_orm.webp');
   const mat = new THREE.MeshStandardMaterial({ map: tex('lawn_bl_albedo.webp', { srgb: true }), normalMap: tex('lawn_bl_normal.webp'), roughnessMap: orm, roughness: 1, metalness: 0 });
   const u = {
     dirtMap: { value: tex('dirt_albedo.webp', { srgb: true }) }, dirtNrm: { value: tex('dirt_normal.webp') },
     litterMap: { value: tex('forest_floor_albedo.webp', { srgb: true }) }, sandMap: { value: tex('sandy_soil_albedo.webp', { srgb: true }) },
-    macroTex: { value: tex('macro_noise.webp') }, splatTex: { value: splat || black }, splatRect: { value: new THREE.Vector4(...rect) },
+    macroTex: { value: tex('macro_noise.webp') }, splatTex: { value: splat || black }, pathsTex: { value: paths || black }, splatRect: { value: new THREE.Vector4(...rect) },
   };
   mat.userData.uniforms = u;
   mat.onBeforeCompile = (sh) => {
@@ -22,7 +22,7 @@ export function terrainMaterial({ splat = null, rect = [-130, -130, 260, 260] } 
       .replace('#include <fog_vertex>', '#include <fog_vertex>\nvTW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
 varying vec3 vTW;
-uniform sampler2D dirtMap, dirtNrm, litterMap, sandMap, macroTex, splatTex;
+uniform sampler2D dirtMap, dirtNrm, litterMap, sandMap, macroTex, splatTex, pathsTex;
 uniform vec4 splatRect;
 float gBlend, gTile; vec2 gOffA, gOffB;`)
       .replace('#include <map_fragment>', `
@@ -66,6 +66,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`)
     col = mix(col, leafC, wLeaf * 0.6);
     col *= 1.18;
   }
+  // the shore (the keep-off map's blue: highest at the water's edge): dry sand, then wet sand and mud at the waterline
+  float shoreK = texture2D(pathsTex, (wuv - splatRect.xy) / splatRect.zw).b;
+  col = mix(col, sd * mix(vec3(0.9, 0.85, 0.76), vec3(0.4, 0.38, 0.34), smoothstep(0.3, 0.95, shoreK)), smoothstep(0.1, 0.6, shoreK) * 0.92);
   col *= mix(1.0, (n1 * 0.65 + n2 * 0.35) * 1.4 + 0.3, 0.35);
   col *= 0.92 + n4 * 0.16;
   gBlend = max(dirt, bare * 0.7);

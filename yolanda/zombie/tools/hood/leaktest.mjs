@@ -12,7 +12,7 @@ import { ZONES, STOPS } from '../../src/hood/zones.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const L = JSON.parse(fs.readFileSync(path.resolve(here, '../../assets/neighborhood/hood_layout.json'), 'utf8'));
 const [, , only, outFile] = process.argv;
-const B = { minX: -75, maxX: 112, minZ: -100, maxZ: 100 }, CELL = 0.25, R = 0.3;
+const B = { minX: -75, maxX: 112, minZ: -130, maxZ: 100 }, CELL = 0.25, R = 0.3;
 const inPoly = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) c = !c; } return c; };
 const zoneOf = (x, z) => { for (const [id, P] of Object.entries(ZONES)) if (inPoly(x, z, P)) return id; return null; };
 

@@ -14,7 +14,7 @@ export const CUT = {
   room: { value: new THREE.Vector4(0, 0, 0, 0) }, roomRot: { value: new THREE.Vector3(1, 0, 999) },
   // the baked ground light (blender/hood/bake_hood.py -> assets/neighborhood/hood_light.jpg, stored at half range), laid on
   // every near-ground upward surface by world x / z: lmRect = (x0, z0, width, depth); lmK = (strength, shadow floor)
-  lm: { value: null }, lmRect: { value: new THREE.Vector4(-70, -96, 180, 192) }, lmK: { value: new THREE.Vector2(0, 0.42) },
+  lm: { value: null }, lmRect: { value: new THREE.Vector4(-70, -130, 180, 226) }, lmK: { value: new THREE.Vector2(0, 0.42) },
 };
 export function setGroundLight(tex, strength = 1, floor = 0.42) { CUT.lm.value = tex; CUT.lmK.value.set(tex ? strength : 0, floor); }
 export function setCutaway(cam, px, pz, on = true, room = null) {

@@ -1,17 +1,41 @@
-﻿{
+{
   "version": "0.0.1",
   "configurations": [
     {
       "name": "yolanda",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["yolanda/tools/serve.mjs", "5173"],
+      "runtimeArgs": [
+        "yolanda/tools/serve.mjs",
+        "5173"
+      ],
       "port": 5173
     },
     {
       "name": "yolanda-hood",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["yolanda/tools/serve.mjs", "5189"],
+      "runtimeArgs": [
+        "yolanda/tools/serve.mjs",
+        "5189"
+      ],
       "port": 5189
+    },
+    {
+      "name": "level-editor",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/marc7/.claude/projects/yola-level-design/tools/serve.mjs",
+        "5199"
+      ],
+      "port": 5199
+    },
+    {
+      "name": "hood-ch2",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "yolanda/tools/serve.mjs",
+        "5191"
+      ],
+      "port": 5191
     }
   ]
 }

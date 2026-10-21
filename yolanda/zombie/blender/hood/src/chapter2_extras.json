@@ -1,0 +1,716 @@
+{
+ "level": "hood",
+ "chapter": "Chapter 2",
+ "status": "proposal v3, from Marc's circled photo (not yet approved)",
+ "game": "b7c91ef",
+ "coords": "game metres: x east, z south, y up. yaw is about +Y. The front (door and driveway side) of a row points along (sin yaw, cos yaw). x and z are the model's own origin, the same convention as layout.json placed[i][13] and placed[i][15].",
+ "buildings": [
+  {
+   "id": "S1",
+   "model": "kit_row4_intact_v2",
+   "x": 8.0,
+   "z": 99.97,
+   "yaw": 0.0,
+   "centre": [
+    22.95,
+    93.7
+   ],
+   "front": [
+    0.0,
+    1.0
+   ],
+   "footprint_corners": [
+    [
+     6.82,
+     86.02
+    ],
+    [
+     39.08,
+     86.02
+    ],
+    [
+     39.08,
+     101.38
+    ],
+    [
+     6.82,
+     101.38
+    ]
+   ],
+   "why": "Back to back with row 2, front to the south. In your photo the rows under the middle of the loop."
+  },
+  {
+   "id": "S2",
+   "model": "kit_row4_intact_v2",
+   "x": 59.9,
+   "z": 56.24,
+   "yaw": -1.4802,
+   "centre": [
+    67.5,
+    70.56
+   ],
+   "front": [
+    -0.996,
+    0.09
+   ],
+   "footprint_corners": [
+    [
+     73.69,
+     53.8
+    ],
+    [
+     76.61,
+     85.93
+    ],
+    [
+     61.31,
+     87.32
+    ],
+    [
+     58.39,
+     55.19
+    ]
+   ],
+   "why": "East of the x=48 street, continuing the existing east row south (the tall row on your east side)."
+  },
+  {
+   "id": "S3",
+   "model": "kit_row4_intact_v2",
+   "x": -17.49,
+   "z": 91.25,
+   "yaw": 1.5017,
+   "centre": [
+    -22.71,
+    75.9
+   ],
+   "front": [
+    0.998,
+    0.069
+   ],
+   "footprint_corners": [
+    [
+     -31.48,
+     91.46
+    ],
+    [
+     -29.26,
+     59.28
+    ],
+    [
+     -13.94,
+     60.34
+    ],
+    [
+     -16.16,
+     92.52
+    ]
+   ],
+   "why": "West of the middle street, continuing row 4 south (the row on your west side)."
+  },
+  {
+   "id": "S4",
+   "model": "kit_row4_intact_v2",
+   "x": -51.13,
+   "z": 109.5,
+   "yaw": 1.3654,
+   "centre": [
+    -54.22,
+    93.59
+   ],
+   "front": [
+    0.979,
+    0.204
+   ],
+   "footprint_corners": [
+    [
+     -65.03,
+     107.82
+    ],
+    [
+     -58.45,
+     76.23
+    ],
+    [
+     -43.41,
+     79.36
+    ],
+    [
+     -49.99,
+     110.95
+    ]
+   ],
+   "why": "West of the lake road, continuing the two west rows south."
+  },
+  {
+   "id": "S5",
+   "model": "kit_row4_intact_v2",
+   "x": 37.9,
+   "z": 129.93,
+   "yaw": 3.1416,
+   "centre": [
+    22.95,
+    136.2
+   ],
+   "front": [
+    0.0,
+    -1.0
+   ],
+   "footprint_corners": [
+    [
+     39.08,
+     143.88
+    ],
+    [
+     6.82,
+     143.88
+    ],
+    [
+     6.82,
+     128.52
+    ],
+    [
+     39.08,
+     128.52
+    ]
+   ],
+   "why": "South of the new street R1, front to the north (the bottom rows in your photo)."
+  },
+  {
+   "id": "S6",
+   "model": "kit_row4_intact_v2",
+   "x": 63.54,
+   "z": 96.24,
+   "yaw": -1.4802,
+   "centre": [
+    71.14,
+    110.56
+   ],
+   "front": [
+    -0.996,
+    0.09
+   ],
+   "footprint_corners": [
+    [
+     77.33,
+     93.8
+    ],
+    [
+     80.25,
+     125.93
+    ],
+    [
+     64.95,
+     127.32
+    ],
+    [
+     62.03,
+     95.19
+    ]
+   ],
+   "why": "East column, further south (the bottom-right row in your photo)."
+  },
+  {
+   "id": "S8",
+   "model": "kit_row4_intact_v2",
+   "x": -61.26,
+   "z": 146.76,
+   "yaw": 1.3102,
+   "centre": [
+    -63.47,
+    130.7
+   ],
+   "front": [
+    0.966,
+    0.258
+   ],
+   "footprint_corners": [
+    [
+     -75.05,
+     144.31
+    ],
+    [
+     -66.73,
+     113.13
+    ],
+    [
+     -51.89,
+     117.09
+    ],
+    [
+     -60.21,
+     148.27
+    ]
+   ],
+   "why": "West of the lake road, furthest south."
+  }
+ ],
+ "ground": [
+  {
+   "id": "L1",
+   "kind": "path",
+   "points": [
+    [
+     -8.0,
+     95.0
+    ],
+    [
+     -2.94,
+     22.33
+    ],
+    [
+     -2.75,
+     20.56
+    ],
+    [
+     -2.43,
+     18.8
+    ],
+    [
+     -1.98,
+     17.07
+    ],
+    [
+     -1.4,
+     15.37
+    ],
+    [
+     -0.69,
+     13.73
+    ],
+    [
+     0.13,
+     12.14
+    ],
+    [
+     1.07,
+     10.62
+    ],
+    [
+     2.13,
+     9.18
+    ],
+    [
+     3.28,
+     7.81
+    ],
+    [
+     4.54,
+     6.54
+    ],
+    [
+     5.88,
+     5.36
+    ],
+    [
+     7.31,
+     4.29
+    ],
+    [
+     8.82,
+     3.32
+    ],
+    [
+     10.39,
+     2.47
+    ],
+    [
+     12.03,
+     1.74
+    ],
+    [
+     13.71,
+     1.13
+    ],
+    [
+     15.43,
+     0.65
+    ],
+    [
+     17.19,
+     0.31
+    ],
+    [
+     18.96,
+     0.09
+    ],
+    [
+     20.75,
+     0.0
+    ],
+    [
+     22.54,
+     0.05
+    ],
+    [
+     24.31,
+     0.23
+    ],
+    [
+     26.08,
+     0.54
+    ],
+    [
+     27.81,
+     0.99
+    ],
+    [
+     29.5,
+     1.56
+    ],
+    [
+     31.15,
+     2.25
+    ],
+    [
+     32.74,
+     3.07
+    ],
+    [
+     34.27,
+     4.0
+    ],
+    [
+     35.72,
+     5.04
+    ],
+    [
+     37.09,
+     6.19
+    ],
+    [
+     38.37,
+     7.44
+    ],
+    [
+     39.56,
+     8.78
+    ],
+    [
+     40.64,
+     10.21
+    ],
+    [
+     41.61,
+     11.71
+    ],
+    [
+     42.47,
+     13.28
+    ],
+    [
+     43.21,
+     14.9
+    ],
+    [
+     43.83,
+     16.58
+    ],
+    [
+     44.31,
+     18.3
+    ],
+    [
+     44.67,
+     20.06
+    ],
+    [
+     44.9,
+     21.83
+    ],
+    [
+     52.0,
+     100.0
+    ]
+   ],
+   "width": 8,
+   "why": "CHANGES AN EXISTING ROAD, as Marc asked on 2026-10-20: the loop road becomes a capital A with a rounded top. One circular arch (centre x 21, z 24, radius 24, apex at about z 0, over the walkway between the two angled rows) and two STRAIGHT legs tangent to it, leaning outward going south (west leg x about -3 at z 22 to -8 at z 95, east leg x about 45 at z 22 to 52 at z 100). Marc's hand-drawn red lines were only sketches of this shape. Keep the east-west road at z 56 (it ends on the legs)."
+  },
+  {
+   "id": "R1",
+   "kind": "path",
+   "points": [
+    [
+     -9.4,
+     114.5
+    ],
+    [
+     53.3,
+     114.5
+    ]
+   ],
+   "width": 9,
+   "why": "New street joining the two legs, so they no longer dead-end in forest."
+  },
+  {
+   "id": "R2",
+   "kind": "path",
+   "points": [
+    [
+     -8.0,
+     95.0
+    ],
+    [
+     -11.48,
+     145
+    ]
+   ],
+   "width": 8,
+   "why": "West leg of the A, straight on south to z 145."
+  },
+  {
+   "id": "R3",
+   "kind": "path",
+   "points": [
+    [
+     52.0,
+     100.0
+    ],
+    [
+     56.09,
+     145
+    ]
+   ],
+   "width": 10,
+   "why": "East leg of the A, straight on south to z 145."
+  },
+  {
+   "id": "R4",
+   "kind": "path",
+   "points": [
+    [
+     -36,
+     88
+    ],
+    [
+     -38.5,
+     100
+    ],
+    [
+     -42,
+     115
+    ],
+    [
+     -46,
+     130
+    ],
+    [
+     -50,
+     145
+    ]
+   ],
+   "width": 8,
+   "why": "Lake road continued south, bending south-west like the photo."
+  },
+  {
+   "id": "H1",
+   "kind": "highway",
+   "rect": [
+    110,
+    -100,
+    142,
+    150
+   ],
+   "why": "OPTIONAL. The highway east of the neighbourhood in Marc's photo. Not needed. If it is added, use one very plain flat texture, no markings or detail."
+  }
+ ],
+ "moved_existing": [
+  {
+   "row": 3,
+   "model": "kit_row4_intact_v2",
+   "old": {
+    "x": 59.83,
+    "z": 20.24,
+    "yaw": -1.5708
+   },
+   "new": {
+    "x": 56.76,
+    "z": 21.22,
+    "yaw": -1.4563
+   },
+   "old_centre": [
+    66.1,
+    35.19
+   ],
+   "new_centre": [
+    64.7,
+    35.35
+   ],
+   "front": [
+    -0.993,
+    0.114
+   ],
+   "shift_m": 1.4,
+   "footprint_corners": [
+    [
+     70.48,
+     18.45
+    ],
+    [
+     74.17,
+     50.5
+    ],
+    [
+     58.91,
+     52.25
+    ],
+    [
+     55.22,
+     20.2
+    ]
+   ],
+   "road_edge_to_front_m": 6.8
+  },
+  {
+   "row": 4,
+   "model": "kit_row5_intact_v2",
+   "old": {
+    "x": -12.12,
+    "z": 56.54,
+    "yaw": 1.5708
+   },
+   "new": {
+    "x": -13.99,
+    "z": 56.32,
+    "yaw": 1.6269
+   },
+   "old_centre": [
+    -18.4,
+    37.67
+   ],
+   "new_centre": [
+    -21.3,
+    37.84
+   ],
+   "front": [
+    0.998,
+    -0.056
+   ],
+   "shift_m": 2.9,
+   "footprint_corners": [
+    [
+     -27.87,
+     57.85
+    ],
+    [
+     -30.07,
+     18.68
+    ],
+    [
+     -14.74,
+     17.82
+    ],
+    [
+     -12.54,
+     56.99
+    ]
+   ],
+   "road_edge_to_front_m": 5.7
+  },
+  {
+   "row": 5,
+   "model": "kit_row4_damaged_v2",
+   "old": {
+    "x": 27.32,
+    "z": -7.49,
+    "yaw": -0.4378
+   },
+   "new": {
+    "x": 29.56,
+    "z": -13.02,
+    "yaw": -0.6204
+   },
+   "old_centre": [
+    43.62,
+    -6.78
+   ],
+   "new_centre": [
+    45.46,
+    -9.36
+   ],
+   "front": [
+    -0.581,
+    0.814
+   ],
+   "shift_m": 3.2,
+   "footprint_corners": [
+    [
+     36.9,
+     -24.92
+    ],
+    [
+     62.96,
+     -6.3
+    ],
+    [
+     54.03,
+     6.2
+    ],
+    [
+     27.97,
+     -12.42
+    ]
+   ],
+   "road_edge_to_front_m": 5.7
+  },
+  {
+   "row": 6,
+   "model": "kit_row4_damaged_v2",
+   "old": {
+    "x": -15.84,
+    "z": 14.65,
+    "yaw": 0.6576
+   },
+   "new": {
+    "x": -16.03,
+    "z": 10.23,
+    "yaw": 0.7359
+   },
+   "old_centre": [
+    -7.75,
+    0.48
+   ],
+   "new_centre": [
+    -9.07,
+    -4.53
+   ],
+   "front": [
+    0.671,
+    0.741
+   ],
+   "shift_m": 5.2,
+   "footprint_corners": [
+    [
+     -26.09,
+     0.53
+    ],
+    [
+     -2.35,
+     -20.97
+    ],
+    [
+     7.96,
+     -9.58
+    ],
+    [
+     -15.78,
+     11.91
+    ]
+   ],
+   "road_edge_to_front_m": 5.7
+  }
+ ],
+ "not_placed": [
+  "S9 (the grey row at the bottom-left of Marc's photo, east of the lake road) was dropped: with the west leg of the A moved out there is no room between the lake road and the leg for a row with driveways.",
+  "Two single-family lake houses Marc circled near the playground (left edge of his photo). The game's playground pad and the two west rows already occupy that strip, so there is no room without moving them. Needs a decision and a small house model."
+ ],
+ "notes": [
+  "Models are the game's own (kit_row4_intact_v2). No new models for the rows.",
+  "Rule change: Marc's 2026-10-19 rule says roads stay. On 2026-10-20 he asked for the loop road to curve more (L1) and the south streets to bend like the photo, so this proposal changes that road.",
+  "Marc's photo is north-up. North of the clubhouse, pool and courts there are only trees, so nothing is added there. The highway east of the neighbourhood is optional (H1): if it is added, give it one very plain flat texture.",
+  "The fixed camera looks north-west, so these rows are mostly out of view in play. They matter when walking or flying round the level.",
+  "Remove trees (nbt_*, palm_*) and shrubs inside each footprint plus about 2 m. Add driveways (4 per row, like the existing rows) and yard plants.",
+  "Terrain exists out to z = 153 and x = 173, so no new ground is needed for the rows. R1 to R4 are new or extended road pieces.",
+  "Do not move or delete any seal or block wall. Run npm run check in the design repo after any change.",
+  "hood_light.jpg is a baked ground light with no shadows from these rows; a re-bake would cover them."
+ ]
+}

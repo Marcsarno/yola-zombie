@@ -200,7 +200,7 @@ export class YolaView extends ClipBody {
     clips.push(subClip(byName.tripo_idle, (b) => !LOWER.test(b), 'fists_idle_upper')); // unarmed: Yola's own idle on the upper body
     const melee = [...new Set([...AXE_ATTACKS, ...BAT_ATTACKS, ...FIST_ATTACKS, LEG_ATTACKS.axe].map((A) => A.clip))].filter((n) => byName[n]); // (the new Yola has no reference-video bat combo)
     clips.push(...melee.map((n) => byName[n]), byName.death_fall, byName.death_defeat, byName.pistol_hit);
-    const scriptNames = ['t_greet_01', 't_greet_04'].filter((n) => byName[n]); // scripted full-body clips (the reveal's smooth wave)
+    const scriptNames = ['t_greet_01', 't_greet_04', ...Object.keys(byName).filter((n) => n.startsWith('hood_'))].filter((n) => byName[n]); // scripted full-body clips (the reveal's smooth wave; Chapter 2's hood_* moves: the radio, the fridge)
     for (const n of scriptNames) clips.push(byName[n]);
     super(scene, gltf.scene, H, clips);
     this.byName = byName; // (every clip of her file, root stripped: the carries' idles, setTestWeapon)
@@ -377,12 +377,14 @@ export class YolaView extends ClipBody {
   }
 
   // a scripted full-body clip played once at its natural rate, blended in/out over the normal layers
-  playScript(name, { fadeIn = 0.3, fadeOut = 0.5, rate = 1 } = {}) {
+  // (loop: held, wrapping, until endScript() fades it out)
+  playScript(name, { fadeIn = 0.3, fadeOut = 0.5, rate = 1, loop = false } = {}) {
     const act = this.act(name); if (!act) return false;
     const clip = act.getClip(), t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
-    this.script = { act, t: 0, t0, len: clip.duration - t0, fadeIn, fadeOut, rate }; this.scriptDone = false;
+    this.script = { act, t: 0, t0, len: clip.duration - t0, fadeIn, fadeOut, rate, loop }; this.scriptDone = false;
     return true;
   }
+  endScript() { const S = this.script; if (S && S.endAt === undefined) S.endAt = S.t + S.fadeOut; }
   scriptLength(name) { const c = this.act(name)?.getClip(); return c ? c.duration - Math.min(...c.tracks.map((t) => t.times[0])) : 0; }
   setShown(v) { this.outer.visible = v; this.blob.visible = v; if (!v) for (const g of [this.pistol, this.shotgun, this.melee, this.shell, this.test?.obj, this.batLib?.obj, this.axeLib?.obj]) if (g) g.visible = false; } // (the weapons live in the scene, not under the body: a hidden Yola must not leave a gun hanging)
   reset(x, z, yaw) {
@@ -653,9 +655,9 @@ export class YolaView extends ClipBody {
     }
     if (this.script && !sact) {
       const S = this.script; S.t += dt;
-      const len = S.len / S.rate, inW = clamp(S.t / S.fadeIn, 0, 1), outW = clamp((len - S.t) / S.fadeOut, 0, 1);
+      const len = S.endAt ?? (S.loop ? Infinity : S.len / S.rate), inW = clamp(S.t / S.fadeIn, 0, 1), outW = clamp((len - S.t) / S.fadeOut, 0, 1);
       scW = smooth(inW) * smooth(outW); sact = S.act;
-      S.act.time = S.t0 + Math.min(S.t * S.rate, S.len - 1e-3); S.act.setEffectiveWeight(scW);
+      S.act.time = S.t0 + (S.loop ? (S.t * S.rate) % (S.len - 1e-3) : Math.min(S.t * S.rate, S.len - 1e-3)); S.act.setEffectiveWeight(scW);
       if (S.t >= len) { S.act.setEffectiveWeight(0); this.script = null; this.scriptDone = true; scW = 0; sact = null; }
     }
     // the bat drawn from her back (setupBatBack): Sword_Enter on the upper body as she takes it out; an attack, a fall or

@@ -25,7 +25,8 @@ PAINTS = dict(white=P(0.578, 0.552, 0.479), offwhite=P(0.485, 0.440, 0.347), cre
   seafoam=P(0.332, 0.558, 0.509), coral=P(0.694, 0.262, 0.171), skyblue=P(0.386, 0.552, 0.672), lavender=P(0.479, 0.413, 0.571),
   beige=P(0.672, 0.571, 0.392), courtblue=P(0.95, 1.5, 1.72), courtgrey=P(0.72, 0.84, 0.84), silver=P(0.80, 0.87, 1.02),
   weathered=P(0.60, 1.03, 2.1), terracotta=P(0.2, 0.085, 0.045), roofbrown=P(0.27, 0.235, 0.2), lime=P(0.45, 1.0, 0.25),
-  purple=P(0.32, 0.08, 0.42))
+  purple=P(0.32, 0.08, 0.42),
+  villa=P(0.6, 0.61, 0.61), trim=P(0.76, 0.76, 0.74), bluegrey=P(0.34, 0.39, 0.44), tilesun=P(1.0, 1.2, 1.6))   # (Chapter 4's villas)
 
 _img = {}
 def img(name, color):

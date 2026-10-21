@@ -8,13 +8,27 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { initMaterials, swapMaterials, kitMaterial, texturesReady } from './materials.js';
+import { initMaterials, swapMaterials, kitMaterial, texturesReady, shoreWater } from './materials.js';
 import { terrainMaterial } from './terrain.js';
+import { groundY } from './layout.js';
 
-const ROOT = 'assets/neighborhood/';
+const _Y = new THREE.Vector3(0, 1, 0);
+
+const HOOD_ROOT = 'assets/neighborhood/';
+// the maps this view draws: Chapter 2's neighbourhood, and Chapter 4's peninsula (blender/grammy/export_grammy.py). Each has
+// its ground masks (mask_hood.py) and baked light (bake_hood.py) over rect = [x0, z0, width, depth]
+export const MAPS = {
+  hood: { root: HOOD_ROOT, layout: 'hood_layout.json', ground: 'hood_ground.glb', splat: 'hood_splat.png', paths: 'hood_paths.png', light: 'hood_light.jpg', rect: [-70, -130, 180, 226] },
+  grammy: { root: 'assets/grammy/', layout: 'grammy_layout.json', ground: 'grammy_ground.glb', splat: 'grammy_splat.png', paths: 'grammy_paths.png', light: 'grammy_light.jpg', rect: [-135, -250, 310, 330] },
+};
+let MAP = MAPS.hood, ROOT = MAP.root;
+export function useMap(id) { MAP = MAPS[id] || MAPS.hood; ROOT = MAP.root; return MAP; }
+export const SPLAT_RECT = MAPS.hood.rect; // (Chapter 2's splat mask extents: bake_hood.py / mask_hood.py X0, Z0, width, depth)
 const CELL = 32;
 const NO_SHADOW = /^(nbt_|palm_|yard_|shrub_|nb_frond|trees|curb|by_ball|yardprop_dry)/; // (foliage and clutter cast no shadows: PERF lessons)
-const PICKUP_MODELS = { rifle: 'props/security_rifle.glb', cutters: 'models/boltcutters.glb', gas: 'models/nb_fuel_can.glb', ammo: 'kit/military_crate.glb', health: 'models/loot_crate.glb', radio: 'props/hospital_radio.glb' };
+// (a path from assets/ is the game's own file: the shotgun the hero already loads)
+const PICKUP_MODELS = { rifle: 'props/security_rifle.glb', cutters: 'models/boltcutters.glb', gas: 'models/nb_fuel_can.glb', ammo: 'kit/military_crate.glb', health: 'models/loot_crate.glb', radio: 'props/hospital_radio.glb',
+  case: 'props/hood_case.glb', shotgun: 'assets/weapons/pump_short.glb', cooler: 'models/by_cooler.glb' };
 const PICKUP_SCALE = { ammo: 0.55, health: 0.45 };
 
 export class HoodView {
@@ -28,7 +42,11 @@ export class HoodView {
 
   async load(gameLoader, onProgress = () => {}) {
     initMaterials();
-    this.layout = await fetch(ROOT + 'hood_layout.json').then((r) => r.json());
+    // the ground's splat mask (blender/hood/mask_hood.py: dirt along the kerbs and walls, litter under trees, dry edges, the
+    // shore), laid by world x / z over the bake's extents; the grass's keep-off map beside it (grass.js)
+    const tl = new THREE.TextureLoader(), mask = (f) => tl.loadAsync(ROOT + f).then((t) => { t.flipY = false; t.colorSpace = THREE.NoColorSpace; return t; }).catch(() => null);
+    [this.splat, this.paths] = await Promise.all([mask(MAP.splat), mask(MAP.paths)]); this.rect = MAP.rect;
+    this.layout = await fetch(ROOT + MAP.layout).then((r) => r.json());
     const L = this.layout;
     // (polish 4) the download diet: tools/hood/optimize.mjs wrote meshopt-compressed copies with WebP textures to opt/
     // (58.6 -> 20.9 MB); ?opt=0 loads the originals
@@ -37,8 +55,8 @@ export class HoodView {
     const loader = { loadAsync: (url) => gl.loadAsync(useOpt && url.startsWith(ROOT) && !url.endsWith('.json') ? url.replace(ROOT, ROOT + 'opt/') : url) };
     void gameLoader;
     let done = 0; const total = L.models.length + 4;
-    const ground = loader.loadAsync(ROOT + 'hood_ground.glb').then((g) => { this.addGround(g.scene); onProgress(++done / total); });
-    const props = Promise.all(Object.entries(PICKUP_MODELS).map(([k, f]) => loader.loadAsync(ROOT + f).then((g) => { swapMaterials(g.scene); this.props[k] = g.scene; onProgress(++done / total); }).catch((e) => console.warn('hood prop', f, e))));
+    const ground = loader.loadAsync(ROOT + MAP.ground).then((g) => { this.addGround(g.scene); onProgress(++done / total); });
+    const props = Promise.all(Object.entries(PICKUP_MODELS).map(([k, f]) => loader.loadAsync(f.startsWith('assets/') ? f : HOOD_ROOT + f).then((g) => { swapMaterials(g.scene); this.props[k] = g.scene; onProgress(++done / total); }).catch((e) => console.warn('hood prop', f, e))));
     const tmpls = await Promise.all(L.models.map((f) => loader.loadAsync(ROOT + f).then((g) => { onProgress(++done / total); return g.scene; }).catch((e) => { console.warn('hood model', f, e); return null; })));
     await Promise.all([ground, props]);
     for (const root of tmpls) {
@@ -89,7 +107,8 @@ export class HoodView {
 
   addGround(root) {
     swapMaterials(root);
-    const terr = terrainMaterial();
+    const terr = terrainMaterial({ splat: this.splat, paths: this.paths, rect: this.rect });
+    if (this.paths) shoreWater(this.paths, this.rect);
     root.traverse((o) => {
       if (!o.isMesh) return;
       const n = [].concat(o.material)[0]?.name || '';
@@ -105,6 +124,26 @@ export class HoodView {
   openSeal(id, open = true, animate = true) {
     const list = this.seals[id]; if (!list) return;
     for (const s of list) {
+      // Marc's front door (his row, drawn on its own: blender/hood/ch2_home.py) swings in; the fridge door swings out
+      // (the shed's double doors: their swings as make_ch2_props.py SHED_OPEN)
+      const hinges = /kit_row4_intact/.test(s.file) ? [[this.doorLeaf(s.o), 1.75]] : /hood_fridge/.test(s.file) ? [[s.o.getObjectByName('FridgeDoor'), -1.75]]
+        : /hood_shed/.test(s.file) ? [[s.o.getObjectByName('DoorL'), -1.75], [s.o.getObjectByName('DoorR'), 0.85]] : null;
+      if (hinges) {
+        for (const [leaf, ang] of hinges) {
+          if (!leaf) continue;
+          leaf.userData.q0 ??= leaf.quaternion.clone();
+          this.anim(animate ? 1.1 : 0, (k) => { leaf.quaternion.copy(leaf.userData.q0); leaf.rotateOnWorldAxis(_Y, ang * k); }, open);
+        }
+        continue;
+      }
+      // Chapter 4's guard gate: each lift bar turns up about its pivot (blender/grammy/make_gprops.py: the pole along the
+      // node 'Bar''s x, lifted by turning it about its z)
+      if (/grammy_gatebar/.test(s.file)) {
+        let bar = null; s.o.traverse((o) => { if (!bar && /^Bar/.test(o.name)) bar = o; }); if (!bar) continue;   // (Blender may number it: Bar001)
+        bar.userData.q0 ??= bar.quaternion.clone();
+        this.anim(animate ? 2.2 : 0, (k) => { bar.quaternion.copy(bar.userData.q0); bar.rotateZ(1.42 * k * k * (3 - 2 * k)); }, open);
+        continue;
+      }
       const gate = /palisade_gate/.test(s.file);
       if (gate) {
         const L = s.o.getObjectByName('GateL_v2'), R = s.o.getObjectByName('GateR_v2');
@@ -122,6 +161,13 @@ export class HoodView {
       }, open);
     }
   }
+  // the end unit's front door leaf (the row model has twelve: the one nearest Marc's doorway)
+  doorLeaf(root) {
+    if (root.userData.leaf !== undefined) return root.userData.leaf;
+    let best = null, bd = 1e9; const p = new THREE.Vector3(); root.updateMatrixWorld(true);
+    root.traverse((o) => { if (!/^Door_Leaf_Hinge/.test(o.name)) return; o.getWorldPosition(p); const d = Math.hypot(p.x - 36.25, p.z - 38.95); if (d < bd) { bd = d; best = o; } });
+    return (root.userData.leaf = bd < 1.5 ? best : null);
+  }
   anim(dur, fn, on = true) {
     if (!on) { fn(0); return; }
     if (dur <= 0) { fn(1); return; }
@@ -130,14 +176,14 @@ export class HoodView {
 
   // ---- pickups lying in the world: the model (or a key ring), a slow bob and a pulsing green ring
   showPickup(q) {
-    const g = new THREE.Group(); g.position.set(q.x, 0, q.z);
+    const g = new THREE.Group(); g.position.set(q.x, q.y ?? groundY(q.x, q.z), q.z);
     const src = this.props[q.model];
     let m;
-    if (src) { m = src.clone(true); if (q.model === 'rifle') { m.rotation.set(-Math.PI / 2, 0, 0.6); m.position.y = 0.05; } else if (q.model === 'cutters') { m.rotation.set(Math.PI / 2, 0, 0.4); m.position.y = 0.04; } }
+    if (src) { m = src.clone(true); if (q.model === 'shotgun') { m.rotation.set(0, 0, 0); m.position.y = 0.03; /* (across the rack's pegs, along the wall) */ } else if (q.model === 'rifle') { m.rotation.set(-Math.PI / 2, 0, 0.6); m.position.y = 0.05; } else if (q.model === 'cutters') { m.rotation.set(Math.PI / 2, 0, 0.4); m.position.y = 0.04; } }
     else { m = this.keyRing(); }
     if (PICKUP_SCALE[q.model]) { m.scale.setScalar(PICKUP_SCALE[q.model]); m.rotation.y = Math.random() * 3; }
     g.add(m);
-    const r = this.ring.clone(); r.position.y = 0.03; g.add(r);
+    const r = this.ring.clone(); r.position.y = 0.03; g.add(r); if (q.y) r.visible = false; // (up on a rack: no ring in the air)
     this.fxGroup.add(g); this.pickups.set(q.id, { g, ring: r, item: m, t: Math.random() * 6 });
   }
   takePickup(id) { const p = this.pickups.get(id); if (p) { p.g.removeFromParent(); this.pickups.delete(id); } }
@@ -159,6 +205,28 @@ export class HoodView {
   carryGas() { this.gasObj(); this.gasMode = 'carried'; this.gasRing.visible = false; }
   stowGas() { const g = this.gasObj(); this.gasMode = 'boat'; this.gasRing.visible = false; const b = this.layout.marks.boat; if (b) { g.position.set(b[0] + 0.4, 0.55, b[2]); } }
 
+  // ---- the case of four vials: in the fridge, at Marc's left side once he has it, in the boat's cooler
+  showCase(state, at = null) {
+    if (!this.caseObj && this.props.case) { this.caseObj = this.props.case.clone(true); this.caseObj.scale.setScalar(0.78); this.caseObj.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); this.fxGroup.add(this.caseObj); }
+    const c = this.caseObj; if (!c) return;
+    this.caseMode = state; c.visible = state === 'fridge' || state === 'carried';
+    if (state === 'fridge' && at) { c.position.set(at.x, at.y, at.z); c.rotation.set(0, Math.PI / 2, 0); }
+  }
+  // the boat's cooler (by_cooler, on the boat's stern seat: it leaves with the boat)
+  showCooler(on) {
+    const b = this.seals.boat?.[0]; if (!b) return;
+    if (!this.cooler && this.props.cooler) { this.cooler = this.props.cooler.clone(true); this.cooler.scale.setScalar(0.8); this.cooler.position.set(0.9, 0.42, 0.15); this.cooler.rotation.y = 0.3; b.o.add(this.cooler); }
+    if (this.cooler) this.cooler.visible = on;
+  }
+  coolerAt() { if (!this.cooler) return null; const v = this.cooler.getWorldPosition(new THREE.Vector3()); return { x: v.x, y: v.y + 0.2, z: v.z }; }
+  // the shed's shotgun takes the rifle's place in his hands: the pump's own mesh back
+  rifleOff() {
+    const sg = window.game?.yola?.shotgun; if (!sg || !this.rifleIn) return;
+    this.rifleIn.removeFromParent(); this.rifleIn = null;
+    for (const c of sg.children) c.visible = true;
+    if (this.rifleKeep) Object.assign(sg.userData, this.rifleKeep);
+  }
+
   // ---- the escape boat (tagged 'boat' in Blender, drawn on its own): its spot at the dock, then out over the water with a
   // gentle rock and a wake
   boatStart() {
@@ -177,9 +245,24 @@ export class HoodView {
   radioUpdate(yola, sim) {
     if (!this.radio && this.props.radio) { this.radio = this.props.radio.clone(true); this.radio.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); this.fxGroup.add(this.radio); }
     const hips = yola?.bones?.Hips; if (!this.radio || !hips || !sim) return;
-    const p = sim.player; hips.getWorldPosition(this.radio.position);
+    const p = sim.player;
+    if (this.radioHand && yola.bones.RightHand && yola.bones.LeftHand) {
+      const R = yola.bones.RightHand.getWorldPosition(this._rh || (this._rh = new THREE.Vector3())), L = yola.bones.LeftHand.getWorldPosition(this._lh || (this._lh = new THREE.Vector3()));
+      const h = R.y >= L.y ? R : L; this.radio.position.copy(h); this.radio.position.y -= 0.04;
+      this.radio.rotation.set(0, p.aimYaw + Math.PI, R.y >= L.y ? -0.35 : 0.35); this.radio.visible = yola.outer.visible && !p.dead;
+      this.caseUpdate(yola, p); return;
+    }
+    hips.getWorldPosition(this.radio.position);
     const y = p.aimYaw; this.radio.position.x -= Math.cos(y) * 0.2; this.radio.position.z += Math.sin(y) * 0.2; this.radio.position.y -= 0.2;
     this.radio.rotation.set(0, y - Math.PI / 2, 0); this.radio.visible = yola.outer.visible && !p.dead;
+    this.caseUpdate(yola, p);
+  }
+  // the case at his left hip (slung), while he has it
+  caseUpdate(yola, p) {
+    const c = this.caseObj; if (!c || this.caseMode !== 'carried') return;
+    yola.bones.Hips.getWorldPosition(c.position); const y = p.aimYaw;
+    c.position.x += Math.cos(y) * 0.24 - Math.sin(y) * 0.05; c.position.z -= Math.sin(y) * 0.24 + Math.cos(y) * 0.05; c.position.y -= 0.3;
+    c.rotation.set(Math.PI / 2, y + Math.PI / 2, 0); c.visible = yola.outer.visible && !p.dead;
   }
 
   // ---- the rifle in Marc's hands: the shotgun's hold (its grips are the same points), the rifle's mesh instead of the pump
@@ -187,6 +270,7 @@ export class HoodView {
     const sg = yola?.shotgun, src = this.props.rifle; if (!sg || !src || this.rifleIn) return;
     for (const c of sg.children) c.visible = false;
     const r = src.clone(true); r.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+    this.rifleKeep = { pump: sg.userData.pump, gripL: sg.userData.gripL, muzzle: sg.userData.muzzle };
     sg.add(r); this.rifleIn = r;
     sg.userData.pump = new THREE.Object3D(); // (no pump to rack)
     sg.userData.gripL = r.getObjectByName('GameGrip_L') || sg.userData.gripL; sg.userData.muzzle = r.getObjectByName('Muzzle') || sg.userData.muzzle;

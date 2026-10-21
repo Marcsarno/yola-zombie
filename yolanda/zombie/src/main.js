@@ -289,7 +289,7 @@ const YOLA_HEIGHT = MARC ? 1.80 : 1.62;
 // The pause menu's Yola choice (remembered), or ?yola=2. The opening keeps its own Yola either way.
 const YOLA_MODEL = MARC ? 'marc' : params.get('yola') || store.get('yolaModel', '2'); // (2026-10-16 brief: Yola 3.0, the new model, is the hero by default)
 const HERO_KEY = MARC ? 'male1' : YOLA_MODEL === '2' ? 'yola2' : 'yola'; // (the Rig Lab's character key: the fits are kept under it)
-const YOLA_FILES = MARC ? { model: 'assets/male1.glb', extra: ['assets/male1_ual.glb'], data: 'assets/clipdata_yola2.json' } // (Marc: the same clips as Yola 3.0, so her clip data)
+const YOLA_FILES = MARC ? { model: 'assets/male1.glb', extra: ['assets/male1_ual.glb', 'assets/neighborhood/moves/marc-hood.glb'], data: 'assets/clipdata_yola2.json' } // (Marc: the same clips as Yola 3.0, so her clip data)
   : YOLA_MODEL === '2' ? { model: 'assets/yola2.glb', extra: ['assets/yola2_ual.glb'], data: 'assets/clipdata_yola2.json' } // (yola2_ual: the Quaternius UAL moves, UAL_PACKS.md)
   : { model: 'assets/yola.glb', extra: ['assets/yola_combo.glb', 'assets/yola_extra.glb', 'assets/yola_sword.glb'], data: 'assets/clipdata.json' };
 // Marc's missing fits: Yola 3.0's, in a fit file ({fit: {yola2, male1}}) or a prefixed one ({'yola2:<clip>': ...})
@@ -668,8 +668,8 @@ function runFrame(dt, doRender = true) {
   // steps, swings, shots and her animation: sim.yolaBoost in core/sim.js step, the same factor on her view below)
   if (!paused) {
     execNow = execDir.update(dt, tuning, sim.player.execHitIn);
-    const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : null); simDt *= k;
-    sim.yolaBoost = execNow ? execNow.boost : slowmo.full ? 1 / Math.max(0.05, k) : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1; // (Witch Time: Yola at full speed)
+    const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : (hood?.cine?.timeScale ?? null)); simDt *= k; // (hood.cine: Chapter 2's cinematic moments hold the world)
+    sim.yolaBoost = execNow ? execNow.boost : hood?.cine?.active ? 1 : slowmo.full ? 1 / Math.max(0.05, k) : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1; // (Witch Time: Yola at full speed)
   }
   // hit-stop: a short dip into slow motion (never a full freeze: a freeze reads as a stutter, and combo hits stacked them)
   if (hitPauseT > 0) { const h = Math.min(hitPauseT, simDt); hitPauseT -= h; simDt -= h * (1 - HIT_SLOW); }
@@ -678,6 +678,7 @@ function runFrame(dt, doRender = true) {
   if (acc > STEP * 8) acc = STEP * 8; // never spiral after a stall
   // stick directions are screen directions: rotate them by the camera's turn
   let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(THREE.MathUtils.degToRad(tuning.camYaw));
+  if (window.game.inputFilter) inp = window.game.inputFilter(inp, sim); // (Chapter 2's cinematic moments: the controls held, src/hood/cine.js)
   let steps = 0;
   while (acc >= STEP) {
     p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;

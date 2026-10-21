@@ -25,6 +25,7 @@ export const PAINTS = { // linear (the old game's values)
   coral: P(0.694, 0.262, 0.171), skyblue: P(0.386, 0.552, 0.672), lavender: P(0.479, 0.413, 0.571), beige: P(0.672, 0.571, 0.392),
   courtblue: P(0.95, 1.5, 1.72), courtgrey: P(0.72, 0.84, 0.84), silver: P(0.80, 0.87, 1.02), weathered: P(0.60, 1.03, 2.1),
   terracotta: P(0.2, 0.085, 0.045), roofbrown: P(0.27, 0.235, 0.2), lime: P(0.45, 1.0, 0.25), purple: P(0.32, 0.08, 0.42),
+  villa: P(0.6, 0.61, 0.61), trim: P(0.76, 0.76, 0.74), bluegrey: P(0.34, 0.39, 0.44), tilesun: P(1.0, 1.2, 1.6), // (Chapter 4's villas: blender/grammy/make_villa.py)
 };
 
 const loader = new THREE.TextureLoader();
@@ -141,9 +142,26 @@ function chainlinkTex() {
 let _water = null;
 export function waterMaterial() {
   if (_water) return _water;
-  _water = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.03, 0.09, 0.09), roughness: 0.06, metalness: 0, normalMap: tex('rock_normal.webp'), normalScale: new THREE.Vector2(0.15, 0.15), transparent: true, opacity: 0.88 });
+  _water = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.035, 0.06, 0.045), roughness: 0.06, metalness: 0, normalMap: tex('rock_normal.webp'), normalScale: new THREE.Vector2(0.15, 0.15), transparent: true, opacity: 0.88, envMapIntensity: 0.5 });
   _water.userData.water = true;
   return _water;
+}
+// the lake shallowing toward its shore (the keep-off map's green in the water: its depth, blender/hood/mask_hood.py): browner, clearer
+// over the last few metres, so the water meets the wet sand instead of a hard line
+export function shoreWater(splat, rect) {
+  const m = waterMaterial(); if (m.userData.shore) return; m.userData.shore = true;
+  const u = { shoreTex: { value: splat }, shoreRect: { value: new THREE.Vector4(...rect) } };
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWW;').replace('#include <fog_vertex>', '#include <fog_vertex>\nvWW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWW; uniform sampler2D shoreTex; uniform vec4 shoreRect;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+  float depth = texture2D(shoreTex, (vWW.xz - shoreRect.xy) / shoreRect.zw).g;   // (0 at the edge, 1 a few metres out)
+  diffuseColor.rgb = mix(vec3(0.15, 0.16, 0.11), diffuseColor.rgb, smoothstep(0.0, 0.9, depth));
+  diffuseColor.a = mix(0.12, 0.96, smoothstep(0.0, 0.85, depth));`);
+  };
+  m.customProgramCacheKey = () => 'hoodwater';
+  m.needsUpdate = true;
 }
 export function kitMaterial(key) {
   if (cache.has(key)) return cache.get(key);

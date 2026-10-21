@@ -22,7 +22,7 @@ export async function runBot({ maxTicks = 60 * 60 * 12, chunk = 120, log = [] } 
       g.tick(2, 1 / 60, false);
       if (L.interact.includes(target)) { const ok = target.can ? target.can() : true; if (ok) target.use(); else log.push('  blocked: ' + target.id + ' (' + target.no + ')'); }
     } else {
-      const go = BOT_SPOTS[L.stop]; if (go) { p.x = p.px = go[0]; p.z = p.pz = go[1]; }
+      const go = BOT_SPOTS[L.objective] || BOT_SPOTS[L.stop]; if (go) { p.x = p.px = go[0]; p.z = p.pz = go[1]; }
     }
     g.tick(chunk, 1 / 60, false); ticks += chunk;
     await new Promise((r) => setTimeout(r, 0));
@@ -30,5 +30,5 @@ export async function runBot({ maxTicks = 60 * 60 * 12, chunk = 120, log = [] } 
   if (ticks >= maxTicks) log.push('TIMED OUT in stop ' + lastStop + ' / ' + lastGoal);
   return log;
 }
-// where the bot walks to when a stop waits on the player being somewhere
-const BOT_SPOTS = { club: [10.5, -41], lot: [58, -70], clubhouse: [9.6, -45], playground: [-44, -5], west: [-4, -31], grandma: [-44, 10], dock: [-24, -79], curve: [14, 10], gate: [18.6, -15], home: [40, 35] };
+// where the bot walks to when a stop waits on the player being somewhere (by objective first, then by stop)
+const BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [-8.4, -107.6], horde: [-12, -96], leave: [-24, -80] };
