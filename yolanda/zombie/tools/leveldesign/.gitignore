@@ -1,0 +1,2 @@
+# rebuilt by: npx esbuild tools/leveldesign/capture.js --bundle --format=iife --outfile=tools/leveldesign/capture.bundle.js
+capture.bundle.js
