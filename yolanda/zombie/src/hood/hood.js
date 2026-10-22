@@ -21,7 +21,7 @@ import { runBot } from './bot.js';
 import { Hint } from './hint.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { characterLight, setCharacterFill, setRim, updateRim } from './charlight.js';
-import { fitTextures } from './texfit.js';
+import { fitTextures, useRenderer, TEX_CAP } from './texfit.js';
 
 const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0); return Math.abs(dx * c - dz * s) < r.hx + m && Math.abs(dx * s + dz * c) < r.hz + m; };
 
@@ -61,6 +61,12 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   const lightV = /localhost|127\.0\.0\.1|^192\.168\./.test(location.hostname) ? Date.now() : LIGHT_VERSION;
   CUT.lmRect.value.set(...MAP.rect);   // (where the map's bake lies: blender/hood/bake_hood.py)
   if (baked) new THREE.TextureLoader().load(MAP.root + MAP.light + '?v=' + lightV, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.flipY = true; t.anisotropy = 4; setGroundLight(t, 1, +(params.get('shade') || 0.42)); renderer.initTexture(t); });
+  // the texture budget (texfit.js): what the hospital game has loaded already (Marc, the zombies, the weapons) drawn down
+  // now; the map and the survivors as they load, sent up to the GPU and their copies in memory let go; a phone that drops
+  // the 3D view gets the page again (the let-go copies cannot be sent up a second time)
+  useRenderer(renderer);
+  let texSaved = fitTextures(scene, TEX_CAP * 2), texClock = 0;
+  renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
   const view = new HoodView(scene);
   await view.load(loader, onProgress);
   HOOD.cols = view.layout.cols; HOOD.marks = view.layout.marks || {};
@@ -89,7 +95,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   // the recorded lines, the radio card with the two faces, the cinematic moments (src/hood/voice.js, radio.js, cine.js)
   const voice = new Voice(audio), radio = new RadioCard(voice), subs = new Subtitles(voice, radio), cine = new Cine(window.game.camera);
   const actors = new Actors(scene, { audio, fx });
-  await actors.loadModels(loader); // (the survivors: Eve, Remy, James, Sophie, Bryce)
+  await actors.loadModels({ loadAsync: (u) => loader.loadAsync(u).then((g) => { if (g.scene) texSaved += fitTextures(g.scene, TEX_CAP * 2, true); return g; }) }); // (the survivors: Eve, Remy, James, Sophie, Bryce)
   const mk = (n) => { const m = HOOD.marks[n]; return m ? { x: m[0], z: m[2], yaw: m[3] } : null; };
   let level = null, titled = false;
   // a stop asked for in the URL starts there (a test hook); otherwise the last checkpoint, or the start
@@ -200,9 +206,8 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
     el.querySelector('button').onclick = () => { clearSave(); location.search = '?mode=hood'; };
     setTimeout(() => document.body.appendChild(el), 1800);
   }
-  // the texture budget (texfit.js): the map's textures at 512 px, everything else in the scene (people, weapons) at 1024,
-  // before the first frame uploads them; then every few seconds for what the game adds later
-  let texSaved = fitTextures(view.group, 512) + fitTextures(scene, 1024), texClock = 0;
+  // (and once more before the first frame, then every few seconds, for what has joined the scene since)
+  texSaved += fitTextures(view.group, TEX_CAP) + fitTextures(scene, TEX_CAP * 2);
   return window.hood = {
     get texSavedMB() { return Math.round(texSaved / 1048576); },
     view, subs, actors, voice, radio, cine, get grass() { return grass; }, get level() { return level; }, onRestart: hook, attach, bot: runBot, CUT,
@@ -235,7 +240,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
       await g.sheet(names, out, cols, 240); this.sheetDone = out; return out;
     },
     update(dt, px, pz, camera, sim) {
-      if ((texClock += dt) > 3) { texClock = 0; texSaved += fitTextures(view.group, 512) + fitTextures(scene, 1024); }
+      if ((texClock += dt) > 3) { texClock = 0; texSaved += fitTextures(view.group, TEX_CAP) + fitTextures(scene, TEX_CAP * 2); }
       if (arena.em && (arena.em.target !== 0 || arena.em.k !== 0)) arena.setEmergency(false, 0);
       if (grammy && sim) grammyWalk(px, pz, sim);
       const room = INTERIORS.find((r) => inRect(r.rect, px, pz));

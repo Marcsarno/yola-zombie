@@ -11,6 +11,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { initMaterials, swapMaterials, kitMaterial, texturesReady, shoreWater } from './materials.js';
 import { terrainMaterial } from './terrain.js';
 import { groundY } from './layout.js';
+import { fitTextures, TEX_CAP } from './texfit.js';
 
 const _Y = new THREE.Vector3(0, 1, 0);
 
@@ -83,13 +84,15 @@ export class HoodView {
     let done = 0; const total = L.models.length + 4;
     const ground = loader.loadAsync(ROOT + MAP.ground).then((g) => { this.addGround(g.scene); onProgress(++done / total); });
     const props = Promise.all(Object.entries(PICKUP_MODELS).map(([k, f]) => loader.loadAsync(f.startsWith('assets/') ? f : HOOD_ROOT + f).then((g) => { swapMaterials(g.scene); this.props[k] = g.scene; onProgress(++done / total); }).catch((e) => console.warn('hood prop', f, e))));
-    const tmpls = await Promise.all(L.models.map((f) => loader.loadAsync(ROOT + f).then((g) => { onProgress(++done / total); return g.scene; }).catch((e) => { console.warn('hood model', f, e); return null; })));
-    await Promise.all([ground, props]);
-    for (const root of tmpls) {
-      if (!root) continue;
+    // each model readied as it arrives: its collision meshes out, the kit's materials in, its textures to the budget and up to
+    // the GPU, their copies in memory let go (texfit.js: so they never all pile up at once on a phone)
+    const ready = (root) => {
       const drop = []; root.traverse((o) => { if (/-(conv)?col(only)?$|colonly/i.test(o.name)) drop.push(o); }); for (const o of drop) o.removeFromParent(); // (Godot-style collision meshes are never drawn)
-      swapMaterials(root); root.updateMatrixWorld(true);
-    }
+      swapMaterials(root); root.updateMatrixWorld(true); fitTextures(root, TEX_CAP, true);
+      return root;
+    };
+    const tmpls = await Promise.all(L.models.map((f) => loader.loadAsync(ROOT + f).then((g) => { onProgress(++done / total); return ready(g.scene); }).catch((e) => { console.warn('hood model', f, e); return null; })));
+    await Promise.all([ground, props]);
     const tagOf = new Map(); for (const [tag, list] of Object.entries(L.tags || {})) for (const i of list) tagOf.set(i, tag);
     const byModel = L.models.map(() => []);
     L.placed.forEach((p, i) => {
