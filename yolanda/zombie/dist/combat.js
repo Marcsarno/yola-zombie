@@ -79895,7 +79895,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const useOpt = L3.opt && new URLSearchParams(location.search).get("opt") !== "0";
       const gl = new GLTFLoader();
       gl.setMeshoptDecoder(MeshoptDecoder);
-      const loader3 = { loadAsync: (url) => gl.loadAsync(useOpt && url.startsWith(ROOT) && !url.endsWith(".json") ? url.replace(ROOT, ROOT + "opt/") : url) };
+      const loader3 = { loadAsync: (url) => useOpt && url.startsWith(ROOT) && !url.endsWith(".json") ? gl.loadAsync(url.replace(ROOT, ROOT + "opt/")).catch(() => gl.loadAsync(url)) : gl.loadAsync(url) };
       void gameLoader;
       let done = 0;
       const total = L3.models.length + 4;
@@ -83547,7 +83547,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var SUN_FROM = new Vector3(-0.55, 0.62, 0.56).normalize();
   var SKY = 11123140;
-  var LIGHT_VERSION = "2026-10-21m";
+  var LIGHT_VERSION = "2026-10-22b";
   async function startHood({ scene: scene2, loader: loader3, arena: arena2, renderer: renderer2, quality: quality2, params: params2, audio: audio2, hud: hud2, fx: fx2, onProgress }) {
     const grammy = params2.get("hood") === "grammy";
     const free = params2.get("hood") === "free" || grammy;
