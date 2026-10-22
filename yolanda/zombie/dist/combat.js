@@ -23915,8 +23915,8 @@
             start(controller) {
               readData();
               function readData() {
-                reader.read().then(({ done, value }) => {
-                  if (done) {
+                reader.read().then(({ done: done2, value }) => {
+                  if (done2) {
                     controller.close();
                   } else {
                     loaded += value.byteLength;
@@ -52173,14 +52173,14 @@ void main() {
     c.addScaledVector(out.k, -0.01);
     return out;
   }
-  function applyFit(o, c, q0, fit, gripPoint, baseScale = 1, k = 1) {
-    const F3 = fit || FIT0, d2r = Math.PI / 180, s = baseScale * (F3.size ?? 100) / 100;
+  function applyFit(o, c, q0, fit2, gripPoint, baseScale = 1, k = 1) {
+    const F3 = fit2 || FIT0, d2r = Math.PI / 180, s = baseScale * (F3.size ?? 100) / 100;
     o.scale.setScalar(s);
     o.quaternion.copy(q0).multiply(_q5.setFromEuler(_e2.set((F3.tilt || 0) * d2r, (F3.turn || 0) * d2r, (F3.roll || 0) * d2r, "YXZ")));
     o.position.copy(c).add(_b4.set(F3.side || 0, F3.up || 0, F3.fwd || 0).multiplyScalar(1e-3 * k).applyQuaternion(q0)).sub(_c4.copy(gripPoint).multiplyScalar(s).applyQuaternion(o.quaternion));
   }
   var FF = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
-  function placeOneHanded(bones, side, o, def, fit, T2 = {}, k = 1) {
+  function placeOneHanded(bones, side, o, def, fit2, T2 = {}, k = 1) {
     if (!fistFrame(bones, side, FF)) return false;
     const A = _a4.copy(FF.a).multiplyScalar(T2.flip ? -1 : 1), K2 = FF.k.clone().applyAxisAngle(A, MathUtils.degToRad(T2.roll || 0));
     const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
@@ -52189,16 +52189,16 @@ void main() {
     _m22.makeBasis(A, K2, new Vector3().crossVectors(A, K2));
     const q0 = new Quaternion().setFromRotationMatrix(_m22.multiply(_m13.transpose()));
     const c = FF.c.clone().addScaledVector(A, T2.slide || 0);
-    applyFit(o, c, q0, fit, new Vector3(...def.grip_primary), 1, k);
+    applyFit(o, c, q0, fit2, new Vector3(...def.grip_primary), 1, k);
     return true;
   }
   var FB1 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var FB2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
-  function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
+  function placeBat(bones, o, def, fit2, k = 1, apart = 0.2) {
     const R = fistFrame(bones, "Right", FB1);
     if (!R) return false;
     const L3 = fistFrame(bones, "Left", FB2);
-    if (!L3 || def.hands === "one" || R.c.distanceTo(L3.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
+    if (!L3 || def.hands === "one" || R.c.distanceTo(L3.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit2, {}, k);
     const d = new Vector3().subVectors(L3.c, R.c).normalize();
     if (d.dot(_a4.copy(R.a).add(L3.a)) < 0) d.negate();
     const low = R.c.dot(d) < L3.c.dot(d) ? R : L3, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
@@ -52206,7 +52206,7 @@ void main() {
     r.addScaledVector(s, -r.dot(s)).normalize();
     _m13.makeBasis(s, r, new Vector3().crossVectors(s, r));
     _m22.makeBasis(d, kn, new Vector3().crossVectors(d, kn));
-    applyFit(o, low.c, new Quaternion().setFromRotationMatrix(_m22.multiply(_m13.transpose())), fit, new Vector3(...def.grip_primary), 1, k);
+    applyFit(o, low.c, new Quaternion().setFromRotationMatrix(_m22.multiply(_m13.transpose())), fit2, new Vector3(...def.grip_primary), 1, k);
     return true;
   }
   var HOLD_TUNE = { axeAxis: 1 };
@@ -52285,10 +52285,10 @@ void main() {
   }
   var _cp = new Vector3();
   var _cs2 = new Vector3();
-  function carryPlace(bones, o, def, cal, fit, k, out) {
+  function carryPlace(bones, o, def, cal, fit2, k, out) {
     bones.Spine2.updateWorldMatrix(true, false);
     _cm1.copy(bones.Spine2.matrixWorld).multiply(cal).decompose(_cp, _cq, _cs2);
-    applyFit(o, _cp, _cq, fit, new Vector3(...def.grip_primary), 1, k);
+    applyFit(o, _cp, _cq, fit2, new Vector3(...def.grip_primary), 1, k);
     o.updateMatrixWorld(true);
     out.grip.copy(o.localToWorld(new Vector3(...def.grip_primary)));
     out.dir.set(...def.shaft_axis).transformDirection(o.matrixWorld);
@@ -52636,43 +52636,43 @@ void main() {
     RIGS.set(model, r);
     return r;
   }
-  function socket(rig, fit, outQ, outP) {
-    const hand = rig.bones.RightHand, sw = hand.getWorldScale(_s).x, Lw = rig.len * sw, s = fit.size / 100, g = fit.grip * D2R;
+  function socket(rig, fit2, outQ, outP) {
+    const hand = rig.bones.RightHand, sw = hand.getWorldScale(_s).x, Lw = rig.len * sw, s = fit2.size / 100, g = fit2.grip * D2R;
     _y2.copy(rig.R).multiplyScalar(Math.cos(g)).addScaledVector(rig.F, Math.sin(g)).normalize();
     _z2.copy(rig.P);
     _x2.crossVectors(_y2, _z2).normalize();
     outQ.setFromRotationMatrix(_m5.makeBasis(_x2, _y2, _z2));
-    outP.copy(rig.F).multiplyScalar(Lw * 0.5).addScaledVector(rig.P, Lw * 0.11).sub(_v4.copy(BACK).multiplyScalar(s).applyQuaternion(outQ)).addScaledVector(_y2, -fit.slide * 0.01);
+    outP.copy(rig.F).multiplyScalar(Lw * 0.5).addScaledVector(rig.P, Lw * 0.11).sub(_v4.copy(BACK).multiplyScalar(s).applyQuaternion(outQ)).addScaledVector(_y2, -fit2.slide * 0.01);
   }
-  function radioPlace(rig, obj, fit) {
+  function radioPlace(rig, obj, fit2) {
     const hand = rig.bones.RightHand;
-    socket(rig, fit, _sq, _sp2);
+    socket(rig, fit2, _sq, _sp2);
     hand.getWorldQuaternion(_qh);
     hand.getWorldPosition(obj.position).add(_sp2.applyQuaternion(_qh));
     obj.quaternion.copy(_qh).multiply(_sq);
-    obj.scale.setScalar(fit.size / 100);
+    obj.scale.setScalar(fit2.size / 100);
   }
-  function micAt(rig, fit, out) {
+  function micAt(rig, fit2, out) {
     const hand = rig.bones.RightHand;
-    socket(rig, fit, _sq, _sp2);
+    socket(rig, fit2, _sq, _sp2);
     hand.getWorldQuaternion(_qh);
-    return hand.getWorldPosition(out).add(_sp2.applyQuaternion(_qh)).add(_v4.copy(MIC).multiplyScalar(fit.size / 100).applyQuaternion(_sq.premultiply(_qh)));
+    return hand.getWorldPosition(out).add(_sp2.applyQuaternion(_qh)).add(_v4.copy(MIC).multiplyScalar(fit2.size / 100).applyQuaternion(_sq.premultiply(_qh)));
   }
-  function radioPose(rig, fit, w, talk, fwd, H5) {
+  function radioPose(rig, fit2, w, talk, fwd, H5) {
     if (w <= 1e-3) return;
     const B = rig.bones, hs = H5 / 1.8, arm = [B.RightShoulder, B.RightArm, B.RightForeArm, B.RightHand].filter(Boolean);
     const touched = [...arm, B.Neck, B.Head, ...rig.fist.map(([b]) => b)].filter(Boolean), before = touched.map((b) => b.quaternion.clone());
     const right = _r2.crossVectors(fwd, UP2).normalize();
     if (rig.face && B.Neck) {
       const f = _v4.copy(rig.face).applyQuaternion(B.Head.getWorldQuaternion(_q24));
-      const turn = -(fit.chin * D2R + Math.asin(clamp5(f.y, -1, 1)));
+      const turn = -(fit2.chin * D2R + Math.asin(clamp5(f.y, -1, 1)));
       rotW(B.Neck, right, turn * 0.4);
       rotW(B.Head, right, turn * 0.6);
     }
     const mouth = B.Head.getWorldPosition(_mo).addScaledVector(UP2, -0.075 * hs).addScaledVector(fwd, 0.1 * hs);
-    const mix = (k) => fit.listen[k] + (fit.talk[k] - fit.listen[k]) * talk;
+    const mix = (k) => fit2.listen[k] + (fit2.talk[k] - fit2.listen[k]) * talk;
     const micT = _mt.copy(mouth).addScaledVector(fwd, mix("fwd") * 0.01 * hs).addScaledVector(right, mix("side") * 0.01 * hs).addScaledVector(UP2, mix("up") * 0.01 * hs);
-    const roll = mix("roll") * D2R, el = fit.elbow * D2R;
+    const roll = mix("roll") * D2R, el = fit2.elbow * D2R;
     const arm0 = arm.map((b) => b.quaternion.clone()), wristT = _wt.copy(micT).addScaledVector(UP2, -0.08 * hs);
     for (let k = 0; k < 4; k++) {
       arm.forEach((b, i) => b.quaternion.copy(arm0[i]));
@@ -52688,18 +52688,18 @@ void main() {
       B.RightHand.quaternion.copy(rig.wrist);
       B.RightHand.updateMatrixWorld(true);
       const A = B.RightHand.getWorldPosition(_h).sub(B.RightForeArm.getWorldPosition(_e3)).normalize();
-      const mic = micAt(rig, fit, _mic);
-      socket(rig, fit, _sq, _sp2);
+      const mic = micAt(rig, fit2, _mic);
+      socket(rig, fit2, _sq, _sp2);
       const Z2 = _z2.set(0, 0, 1).applyQuaternion(_sq.premultiply(B.RightHand.getWorldQuaternion(_qh)));
       const D3 = _y2.copy(mouth).addScaledVector(fwd, -0.08 * hs).sub(mic);
       Z2.addScaledVector(A, -Z2.dot(A));
       D3.addScaledVector(A, -D3.dot(A));
       const face = Z2.lengthSq() > 1e-8 && D3.lengthSq() > 1e-8 ? Z2.angleTo(D3) * Math.sign(_x2.crossVectors(Z2, D3).dot(A) || 1) : 0;
       rotW(B.RightHand, A, face + roll);
-      const got = micAt(rig, fit, _mic);
+      const got = micAt(rig, fit2, _mic);
       wristT.add(_d4.copy(micT).sub(got));
     }
-    for (const [b, q] of rig.fist) b.quaternion.slerp(q, (/Thumb/.test(b.name) ? fit.thumb : fit.curl) / 100);
+    for (const [b, q] of rig.fist) b.quaternion.slerp(q, (/Thumb/.test(b.name) ? fit2.thumb : fit2.curl) / 100);
     if (w < 1) touched.forEach((b, i) => {
       _q7.copy(b.quaternion);
       b.quaternion.copy(before[i]).slerp(_q7, w);
@@ -52771,10 +52771,10 @@ void main() {
   }
   function loopClip(clip) {
     const t0 = Math.min(...clip.tracks.map((t) => t.times[0]));
-    const done = /* @__PURE__ */ new Set();
+    const done2 = /* @__PURE__ */ new Set();
     if (t0 > 0) for (const t of clip.tracks) {
-      if (done.has(t.times)) continue;
-      done.add(t.times);
+      if (done2.has(t.times)) continue;
+      done2.add(t.times);
       for (let i = 0; i < t.times.length; i++) t.times[i] -= t0;
     }
     clip.resetDuration();
@@ -54029,17 +54029,17 @@ void main() {
     shotgunClip() {
       if (!this.shotgunClipFits) return null;
       let best = null, bw = 0.01;
-      for (const [n, fit2] of Object.entries(this.shotgunClipFits)) {
+      for (const [n, fit3] of Object.entries(this.shotgunClipFits)) {
         const a2 = this.actions[n], w = a2 ? a2.getEffectiveWeight() : 0;
         if (w > bw) {
           bw = w;
-          best = [a2, fit2];
+          best = [a2, fit3];
         }
       }
       if (!best) return null;
-      const [a, fit] = best, f = a.time * 30 + 1, ramp = (r) => clamp6((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1);
-      const own = Math.max(fit.idleIn ? 1 - smooth2(ramp(fit.idleIn)) : 0, fit.idleOut ? smooth2(ramp(fit.idleOut)) : 0);
-      return { name: a.getClip().name, fit, share: 1 - (1 - own) * Math.min(1, bw) };
+      const [a, fit2] = best, f = a.time * 30 + 1, ramp = (r) => clamp6((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1);
+      const own = Math.max(fit2.idleIn ? 1 - smooth2(ramp(fit2.idleIn)) : 0, fit2.idleOut ? smooth2(ramp(fit2.idleOut)) : 0);
+      return { name: a.getClip().name, fit: fit2, share: 1 - (1 - own) * Math.min(1, bw) };
     }
     shotgunFitNow(C) {
       const base = this.shotgunFit || {}, own = C.fit, out = { ...own };
@@ -57473,16 +57473,16 @@ void main() {
       this.sitState = "sitting";
       const a = this.play("SitDown", { once: true, fade: 0.1 });
       if (a) {
-        const done = (e) => {
+        const done2 = (e) => {
           if (e.action === a) {
-            this.mixer.removeEventListener("finished", done);
+            this.mixer.removeEventListener("finished", done2);
             if (this.seated) {
               this.sitState = "seated";
               this.play("SeatedIdle", { fade: 0.15 });
             }
           }
         };
-        this.mixer.addEventListener("finished", done);
+        this.mixer.addEventListener("finished", done2);
       }
     }
     standUp() {
@@ -57491,16 +57491,16 @@ void main() {
       this.sitState = "rising";
       const a = this.play("StandUp", { once: true, fade: 0.1 });
       if (a) {
-        const done = (e) => {
+        const done2 = (e) => {
           if (e.action === a) {
-            this.mixer.removeEventListener("finished", done);
+            this.mixer.removeEventListener("finished", done2);
             this.sitState = "stand";
             this.seat = null;
             this.root.position.y = 0;
             this.play(this.idleClip, { fade: 0.15 });
           }
         };
-        this.mixer.addEventListener("finished", done);
+        this.mixer.addEventListener("finished", done2);
       }
     }
     get settled() {
@@ -58992,13 +58992,13 @@ void main() {
         if (!cache2.has(m)) cache2.set(m, loader3.loadAsync("../" + m));
         return cache2.get(m);
       };
-      let done = 0;
+      let done2 = 0;
       const props = CH().props;
       const total = props.length + (this.f3 ? 4 : 0);
       const jobs = props.map(async (p) => {
         if (p.kind) {
           this.procProp(p);
-          onProgress?.(++done / total);
+          onProgress?.(++done2 / total);
           return;
         }
         const gltf = await get(p.m);
@@ -59041,13 +59041,13 @@ void main() {
         if (p.name) holder.name = p.name;
         this.group.add(holder);
         p._actual = box.getSize(new Vector3());
-        onProgress?.(++done / total);
+        onProgress?.(++done2 / total);
       });
       if (this.f3) {
-        jobs.push(this.loadKits(get).then(() => onProgress?.(++done / total)));
-        jobs.push(this.loadPickups(get).then(() => onProgress?.(++done / total)));
+        jobs.push(this.loadKits(get).then(() => onProgress?.(++done2 / total)));
+        jobs.push(this.loadPickups(get).then(() => onProgress?.(++done2 / total)));
         this.buildSigns();
-        done += 2;
+        done2 += 2;
       }
       await Promise.all(jobs);
       if (this.f3) {
@@ -64984,13 +64984,13 @@ void main() {
       const ab = this.raw.get(f);
       if (!ab || this.buf.has(f)) return;
       this.raw.delete(f);
-      const done = (b) => {
+      const done2 = (b) => {
         if (!b) return;
         this.buf.set(f, b);
         this.lead.set(f, onset(b));
       };
       try {
-        const p = this.ctx.decodeAudioData(ab, done, () => {
+        const p = this.ctx.decodeAudioData(ab, done2, () => {
         });
         p?.catch?.(() => {
         });
@@ -67449,10 +67449,10 @@ void main() {
       const box = el.querySelector(".opts"), hint = el.querySelector(".hint");
       this.cardTries = 0;
       return new Promise((resolve) => {
-        let done = false;
+        let done2 = false;
         this.cardResolve = resolve;
         const finish2 = (b) => {
-          done = true;
+          done2 = true;
           b.classList.add("right");
           hint.hidden = true;
           for (const x of box.querySelectorAll("button")) if (x !== b) x.remove();
@@ -67491,7 +67491,7 @@ void main() {
           b.textContent = o.text;
           b.dataset.id = o.id;
           b.addEventListener("click", () => {
-            if (done || b.classList.contains("tried")) return;
+            if (done2 || b.classList.contains("tried")) return;
             this.cardTries++;
             if (o.correct) {
               finish2(b);
@@ -67565,7 +67565,7 @@ void main() {
       g.stroke();
     }
     // the readiness checklist: items tick one by one (k: how many are ticked); done shows the result line
-    readiness(items, k = 0, done = false) {
+    readiness(items, k = 0, done2 = false) {
       const el = this.readyEl;
       if (!items) {
         el.classList.remove("show");
@@ -67581,7 +67581,7 @@ void main() {
         }
       }
       [...ul.children].forEach((li, i) => li.classList.toggle("ok", i < k));
-      el.querySelector(".rdone").classList.toggle("show", done);
+      el.querySelector(".rdone").classList.toggle("show", done2);
       el.classList.add("show");
     }
     timeCard(text) {
@@ -78574,8 +78574,8 @@ void main() {
       obj.visible = false;
       scene2.add(obj);
       const use = (sel?.moves?.[clip]?.uses || []).find((u) => u.weapon === w) || {};
-      const fit = fits[w + "@" + clip] || fits[w] || null;
-      const hold = { key: w, obj, w: def, hand: fit?.hand || use.hand || "Right", roll: +use.roll || 0, slide: +use.slide || 0, flip: !!use.flip, two: def.hands === "two", fingers: null, carry: CARRY[w] ? w : null, pack: false, fit };
+      const fit2 = fits[w + "@" + clip] || fits[w] || null;
+      const hold = { key: w, obj, w: def, hand: fit2?.hand || use.hand || "Right", roll: +use.roll || 0, slide: +use.slide || 0, flip: !!use.flip, two: def.hands === "two", fingers: null, carry: CARRY[w] ? w : null, pack: false, fit: fit2 };
       yola2.setTestWeapon(hold);
       const As = buildLibraryAttack(yola2, { clip: c, frames: meta[clip]?.frames, hold, P: P2, speed: +use.speed || 1, name: LIB_LABEL[w], sound: w });
       if (!As?.length) continue;
@@ -79455,13 +79455,13 @@ uniform vec4 cutRoom; uniform vec3 cutRoomRot; uniform sampler2D hoodLM; uniform
   function tex2(file, { srgb = false, repeat = true } = {}) {
     const key = file + (srgb ? "|s" : "");
     if (texCache.has(key)) return texCache.get(key);
-    let done;
+    let done2;
     const p = new Promise((res) => {
-      done = res;
+      done2 = res;
     });
-    const t = loader.load(TEX + file, () => done(), void 0, () => {
+    const t = loader.load(TEX + file, () => done2(), void 0, () => {
       console.warn("hood texture missing", file);
-      done();
+      done2();
     });
     pending.add(p);
     p.then(() => pending.delete(p));
@@ -79897,19 +79897,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       gl.setMeshoptDecoder(MeshoptDecoder);
       const loader3 = { loadAsync: (url) => useOpt && url.startsWith(ROOT) && !url.endsWith(".json") ? gl.loadAsync(url.replace(ROOT, ROOT + "opt/")).catch(() => gl.loadAsync(url)) : gl.loadAsync(url) };
       void gameLoader;
-      let done = 0;
+      let done2 = 0;
       const total = L3.models.length + 4;
       const ground = loader3.loadAsync(ROOT + MAP.ground).then((g) => {
         this.addGround(g.scene);
-        onProgress(++done / total);
+        onProgress(++done2 / total);
       });
       const props = Promise.all(Object.entries(PICKUP_MODELS).map(([k, f]) => loader3.loadAsync(f.startsWith("assets/") ? f : HOOD_ROOT + f).then((g) => {
         swapMaterials(g.scene);
         this.props[k] = g.scene;
-        onProgress(++done / total);
+        onProgress(++done2 / total);
       }).catch((e) => console.warn("hood prop", f, e))));
       const tmpls = await Promise.all(L3.models.map((f) => loader3.loadAsync(ROOT + f).then((g) => {
-        onProgress(++done / total);
+        onProgress(++done2 / total);
         return g.scene;
       }).catch((e) => {
         console.warn("hood model", f, e);
@@ -83540,6 +83540,40 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
   };
 
+  // src/hood/texfit.js
+  var done = /* @__PURE__ */ new WeakSet();
+  var drawable = (im) => im && (typeof ImageBitmap !== "undefined" && im instanceof ImageBitmap || typeof HTMLImageElement !== "undefined" && im instanceof HTMLImageElement || typeof HTMLCanvasElement !== "undefined" && im instanceof HTMLCanvasElement);
+  function fit(t, cap) {
+    if (done.has(t) || t.isDataTexture || t.isCompressedTexture || t.isVideoTexture || t.isRenderTargetTexture) return 0;
+    const im = t.image;
+    if (!drawable(im)) return 0;
+    const w = im.width, h = im.height;
+    if (!w || !h) return 0;
+    done.add(t);
+    if (Math.max(w, h) <= cap) return 0;
+    const s = cap / Math.max(w, h), c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w * s));
+    c.height = Math.max(1, Math.round(h * s));
+    const g = c.getContext("2d");
+    g.imageSmoothingQuality = "high";
+    g.drawImage(im, 0, 0, c.width, c.height);
+    if (im.close) im.close();
+    t.image = c;
+    t.needsUpdate = true;
+    return (w * h - c.width * c.height) * 4 * 1.33;
+  }
+  var COLOUR = /* @__PURE__ */ new Set(["map", "emissiveMap"]);
+  function fitTextures(root, cap) {
+    let saved = 0;
+    root.traverse((o) => {
+      for (const m of [].concat(o.material || [])) {
+        if (!m || m.alphaTest > 0 || m.transparent) continue;
+        for (const [k, v] of Object.entries(m)) if (v && v.isTexture) saved += fit(v, COLOUR.has(k) ? cap : cap / 2);
+      }
+    });
+    return saved;
+  }
+
   // src/hood/hood.js
   var inRect2 = (r, x, z, m = 0) => {
     const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0);
@@ -83838,7 +83872,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       };
       setTimeout(() => document.body.appendChild(el), 1800);
     }
+    let texSaved = fitTextures(view.group, 512) + fitTextures(scene2, 1024), texClock = 0;
     return window.hood = {
+      get texSavedMB() {
+        return Math.round(texSaved / 1048576);
+      },
       view,
       subs,
       actors,
@@ -83913,6 +83951,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         return out;
       },
       update(dt, px2, pz2, camera2, sim2) {
+        if ((texClock += dt) > 3) {
+          texClock = 0;
+          texSaved += fitTextures(view.group, 512) + fitTextures(scene2, 1024);
+        }
         if (arena2.em && (arena2.em.target !== 0 || arena2.em.k !== 0)) arena2.setEmergency(false, 0);
         if (grammy && sim2) grammyWalk(px2, pz2, sim2);
         const room = INTERIORS.find((r) => inRect2(r.rect, px2, pz2));
