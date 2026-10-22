@@ -47468,11 +47468,13 @@ void main() {
     startExecution(z, sim2) {
       const dx = z.x - this.x, dz = z.z - this.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
       const gun = this.equipped === PISTOL || this.equipped === SHOTGUN, fin = this.attacks[this.attacks.length - 1];
-      const stand = gun ? 1 : Math.max(0.75, fin?.stand ?? 0.95);
+      const burst = this.equipped === PISTOL && !!sim2.rules?.pistolHeadBurst;
+      const stand = burst ? d : gun ? 1 : Math.max(0.75, fin?.stand ?? 0.95);
       z.executed = true;
       z.execWeapon = this.equipped;
       z.executable = 0;
       z.execLock = true;
+      z.headBurst = burst;
       if (z.down) z.stateDur = 9;
       else z.set(ZS_STAGGER, 9);
       z.vx = z.vz = 0;
@@ -50081,6 +50083,11 @@ void main() {
         p.dodgeDir = p.dodgeAuto ? { x: p.dodgeAuto.x, z: p.dodgeAuto.z } : sl > 0.2 ? { x: input2.moveX / sl, z: input2.moveZ / sl } : { x: -Math.sin(p.aimYaw), z: -Math.cos(p.aimYaw) };
       }
       if (p.critT > 0) p.critT -= dt;
+      if (this.rules?.noDodge) {
+        input2.dodgePresses = 0;
+        p.dodgeTh = null;
+        p.dodgeOpen = 0;
+      }
       if (input2.dodgePresses && p.dodgeOpen > 0) {
         const tt = p.dodgeTh || this.lastTh, auto = tt?.special ? p.dodgeAuto || this.autoDodge(p, tt, input2.moveX, input2.moveZ) : null;
         if (auto ? p.tryDodge(auto.x, auto.z, this, auto) : p.tryDodge(input2.moveX, input2.moveZ, this)) {
@@ -50404,7 +50411,8 @@ void main() {
           best = z;
         }
       }
-      if (!best || this.rand() >= (this.T.critFinChance ?? 0.05)) return null;
+      const chance = p.equipped === PISTOL && this.rules?.pistolExecChance || (this.T.critFinChance ?? 0.05);
+      if (!best || this.rand() >= chance) return null;
       this.critFinNext = this.time + (this.T.critFinCooldown ?? 12);
       this.emit({ type: "critFinisher", id: best.id, x: best.x, z: best.z });
       return best;
@@ -50415,6 +50423,7 @@ void main() {
     critSweep(z) {
       const p = this.player, w = p.equipped, ax = z.x - p.x, az = z.z - p.z, al = Math.hypot(ax, az) || 1;
       if (w === PISTOL) {
+        if (this.rules?.pistolHeadBurst) return;
         const c = this.zombies.filter((o) => o !== z && o.alive && !o.buried && !o.dormant && (o.kind === "normal" || o.kind === "runner") && Math.hypot(o.x - p.x, o.z - p.z) < 7).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)).slice(0, 2);
         this.chain = c.map((o, i) => ({ id: o.id, at: this.time + 0.12 + i * 0.14 }));
         return;
@@ -55119,6 +55128,7 @@ void main() {
         for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
         const m = GORE_NAME.exec(o.name);
         if (m) ((_a8 = this.gore)[_b7 = m[1]] || (_a8[_b7] = {}))[m[2].toLowerCase()] = o;
+        if (/^GORE_Burst_/.test(o.name)) o.visible = false;
         const p = MOD_PIECE.exec(o.name);
         if (p) (pieces[_c8 = p[1]] || (pieces[_c8] = [])).push(o);
       });
@@ -55203,6 +55213,25 @@ void main() {
         fx2.bloodPool(s.x + dir.x * 0.4, s.z + dir.z * 0.4, part === "Head" ? 1 : 0.7);
       }
       this.bleed[part] = 2.5;
+    }
+    // the head burst apart (Chapter 2's pistol finisher, core/player.js startExecution headBurst): no head flies, it is gone
+    // in a spray of blood, flesh, bone and brain along the shot; the neck's stump (its wound cap) left
+    burstHead(z) {
+      this.severed.add("Head");
+      this.container.updateMatrixWorld(true);
+      const h = this.bones.Head.getWorldPosition(new Vector3()), fx2 = _ZombieView.fx, dx = z.hitDirX || 0, dz = z.hitDirZ || 0, r = () => (Math.random() - 0.5) * 0.7;
+      if (this.modules.Head) this.modules.Head.visible = false;
+      else (this.collapsed || (this.collapsed = [])).push(this.bones.Head);
+      if (this.gore.Head?.stump) this.gore.Head.stump.visible = true;
+      if (fx2) {
+        fx2.bloodHit("shotgun", h.x, h.y, h.z, dx, dz, 2.4);
+        for (let i = 0; i < 3; i++) fx2.bloodSpray(h.x, h.y, h.z, dx * 0.9 + r(), 0.5 + 0.35 * i, dz * 0.9 + r(), 30, 4.4);
+        fx2.burst(h.x, h.y, h.z, 28, 6163211, 4.8, 1.6, 0.9, dx * 0.8, dz * 0.8);
+        fx2.burst(h.x, h.y, h.z, 12, 15129803, 4.2, 1.4, 0.8, dx, dz);
+        fx2.burst(h.x, h.y, h.z, 10, 13208202, 3.6, 1.2, 0.8, dx, dz);
+        fx2.bloodPool(h.x + dx * 0.9, h.z + dz * 0.9, 1.3);
+      }
+      this.bleed.Head = 3;
     }
     // a cut on a zombie without a cut model (the guard's arms at the shoulder, his head; bakeChunks): the piece baked from
     // its own vertices and thrown, the limb's bone collapsed into its joint from now on (it vanishes), blood at the stump
@@ -55856,7 +55885,8 @@ void main() {
       }
       if (z.severed.size !== this.severed.size) {
         for (const part of z.severed) if (!this.severed.has(part) && !(this.mirG && part === "Forearm_L")) {
-          if (this.modular) this.sever(part, z);
+          if (part === "Head" && z.headBurst) this.burstHead(z);
+          else if (this.modular) this.sever(part, z);
           else {
             this.severed.add(part);
             this.cutByWeights(part, z);
@@ -60812,11 +60842,12 @@ void main() {
       this.bursts = [];
       this.world = null;
     }
-    // files: { viewType: url } (the game's zombie types that have a burst model)
+    // files: { viewType: url, or a zombie's own loaded model (its scene cloned: the textures shared with the game's) } (the
+    // game's zombie types that have a burst model)
     async load(files) {
       await Promise.all(Object.entries(files).map(async ([type, url]) => {
         try {
-          const g = await this.loader.loadAsync(url), root = g.scene, byChunk = /* @__PURE__ */ new Map(), bones = {}, partOf = {};
+          const g = typeof url === "string" ? await this.loader.loadAsync(url) : url, root = typeof url === "string" ? g.scene : clone(g.scene), byChunk = /* @__PURE__ */ new Map(), bones = {}, partOf = {};
           root.traverse((o) => {
             if (o.isBone) bones[o.name.replace(/^mixamorig:?/, "")] = o;
             if (!o.isMesh) return;
@@ -60830,9 +60861,10 @@ void main() {
               o.material.vertexColors = true;
             }
             if (!o.isSkinnedMesh) return;
+            const cap = /^GORE_\w+?__(\w+?)(_\d+)?$/.exec(o.name);
             let n = o;
-            while (n && !/^(B|Mod_\w+?)__/.test(n.name)) n = n.parent;
-            const chunk = n ? n.name.split("__")[1] : "Chest";
+            while (!cap && n && !/^(B|Mod_\w+?)__/.test(n.name)) n = n.parent;
+            const chunk = cap ? cap[1] : n ? n.name.split("__")[1] : "Chest";
             if (n && n.name.startsWith("Mod_")) partOf[chunk] = n.name.slice(4, n.name.indexOf("__"));
             if (!byChunk.has(chunk)) byChunk.set(chunk, []);
             byChunk.get(chunk).push(o);
@@ -80498,6 +80530,25 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         c.rotation.set(0, at.yaw || 0, 0);
       }
     }
+    // the looters' cases at the start (Marc: "not the medical briefcase.. different skin version of it.. that are wrong"): the
+    // same case in another paint (k: 0 olive drab, 1 gunmetal), no cold-chain label, no red cross
+    wrongCase(k = 0) {
+      if (!this.props.case) return null;
+      const o = this.props.case.clone(true), paint2 = [3883560, 2829875][k % 2];
+      o.traverse((m) => {
+        if (!m.isMesh) return;
+        m.castShadow = false;
+        m.frustumCulled = false;
+        if (/silver/.test(m.material?.name || "")) {
+          m.material = m.material.clone();
+          m.material.color.setHex(paint2);
+          m.material.roughness = 0.75;
+        }
+      });
+      o.visible = false;
+      this.fxGroup.add(o);
+      return o;
+    }
     caseLabel() {
       const cv = document.createElement("canvas");
       cv.width = 256;
@@ -81175,7 +81226,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var H4 = ["home", "b05l", "curve", "south"];
   var N = ["club", "west", "dock", "north", "courts"];
   var STOPS = {
-    sneak: { start: [45.6, 80.4], zones: H4, open: [], reach: [["home_door_use", 1.4]] },
+    sneak: { start: [48.99, 87.36], zones: H4, open: [], reach: [["home_door_use", 1.4]] },
     house: { start: [35.3, 38.5], zones: [...H4, "house"], open: ["home_door"], reach: [["james_fridge", 1], ["gfridge_use", 1.4]] },
     rescue: { start: [38.4, 38.5], zones: [...H4, "house"], open: ["home_door"], reach: [["home_porch", 1.4]] },
     gate: { start: [15.5, 57.5], zones: [...H4, "house"], open: ["home_door"], reach: [["cutters", 1.3], ["gate_use", 2.2]] },
@@ -81205,7 +81256,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var STOP_ORDER = ["sneak", "house", "rescue", "gate", "club", "lot", "dock", "shed", "horde", "after", "leave"];
   var STOP_STARTS = {
-    sneak: [45.6, 0, 80.4, Math.PI],
+    sneak: [49.49, 0, 89.09, -2.8625],
     house: [38.6, 0, 40.2, -Math.PI / 2],
     rescue: [38.4, 0, 38.5, Math.PI / 2],
     gate: [15.5, 0, 57.5, -Math.PI / 2],
@@ -81234,7 +81285,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     dock: [[66, -72], [50, -79], [31, -81], [12, -81], [-6, -81], [-18, -81.5]]
     // the lot -> down the service road to the dock
   };
-  var LOOTERS_AT = [{ x: 51.6, z: 31, face: [58.5, 27.5] }, { x: 52.6, z: 32.6, face: [58.5, 30.5] }];
+  var BN = { x: 0.2751, z: 0.9614 };
+  var BT = { x: -0.9614, z: 0.2751 };
+  var OPEN_YAW = Math.atan2(-BN.x, -BN.z);
+  var HIDE = { x: 49.49, z: 89.09, yaw: OPEN_YAW };
+  var OVER = { x: 48.99, z: 87.36, yaw: OPEN_YAW };
+  var CREW = [{ x: 48.9, z: 64.9 }, { x: 48.4, z: 63.4 }];
+  var CREW_Z = [[47.6, 52], [49.7, 50.4], [48.3, 48.4]];
+  var CREW_RUN = [[[47.2, 60.6], [41.5, 57.6], [26, 57.2]], [[46.6, 59.4], [41, 56.4], [25, 56]]];
   var ADAM_AT = { x: 11.6, z: 60.9, yaw: -2.3 };
   var SOPHIE_YARD = { x: 12.9, z: 62.4, yaw: -2.6 };
   var PETE_AT = { x: 74.6, z: -67.2, yaw: 2.4 };
@@ -81263,6 +81321,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     constructor(sim2, api, save = null) {
       this.sim = sim2;
       this.api = api;
+      sim2.rules = { noDodge: true, pistolExecChance: 0.1, pistolHeadBurst: true };
       const s = save || {};
       this.stop = s.stop || "sneak";
       this.flags = { case: "fridge", gun: null, gas: "shed", key: null, crowbar: false, batteries: false, silencer: false, called: false, ...s.flags || {} };
@@ -81820,34 +81879,150 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         yield* stops[id].call(this);
       }
     }
-    // 1 - 3. THE SNEAK: behind the barricade at the south end; the looters far off; the call; the talk overheard; the end house
+    // a camera that glides from a to b over the shot's first `dur` s (eased), then holds
+    glide(a, b, dur) {
+      const c = this.api.cine;
+      return () => {
+        const k = Math.min(1, (c?.q?.t || 0) / dur), e = k * k * (3 - 2 * k);
+        return a.map((v, i) => v + (b[i] - v) * e);
+      };
+    }
+    // a point `north` m in front of the barriers' face from `o` (negative: behind it, south), `west` m along them, h up
+    bar(o, north, west, h) {
+      return [o.x - BN.x * north + BT.x * west, h, o.z - BN.z * north + BT.z * west];
+    }
+    // 1 - 3. THE SNEAK (Marc, 2026-10-22: "I want a cleaner opening.. fade in .. crouching behind them [the barricades] ...
+    // after he sees the looters.. [they] shoot a couple zombies.. and run ... I don't want to battle them yet"). From black:
+    // the title alone, then the picture fades up on Marc crouched behind the jersey barriers; the call, whispered, while he
+    // waits; shots up the road: the two looters, a case each in one hand, a pistol in the other, put down the infected coming
+    // at them and run off west down the court; he rises and is over the barriers. Then the game: the end house, its door ajar
     *stopSneak() {
-      const p = this.sim.player, cine = this.api.cine;
+      const p = this.sim.player, cine = this.api.cine, sim2 = this.sim;
       this.setGoal("");
       this.music("none", 0);
       const call = ["c106", "c107", "c103", "c108"];
       this.prefetch(...call, "J01", "J02", "c303", "c304");
-      const L3 = this.api.looters?.(this, LOOTERS_AT.map((s) => ({ x: s.x, z: s.z, out: true, calm: true, face: s.face }))) || [];
-      this.sentries = L3;
+      p.x = p.px = HIDE.x;
+      p.z = p.pz = HIDE.z;
+      p.aimYaw = p.aimTarget = HIDE.yaw;
       this.sneak(true);
-      yield* this.wait(2.6);
-      this.api.audio?.play("shot", 0.35, { x: p.x - 70, z: p.z - 60 });
-      yield* this.wait(1.6);
-      const lk = { x: (LOOTERS_AT[0].x + LOOTERS_AT[1].x) / 2, z: (LOOTERS_AT[0].z + LOOTERS_AT[1].z) / 2 };
-      const ln = this.inLine(LOOTERS_AT[1], LOOTERS_AT[0], 6.4, -1.05, 1.85), ln2 = this.inLine(LOOTERS_AT[1], LOOTERS_AT[0], 5, -0.95, 1.75);
+      const L3 = this.api.looters?.(this, CREW.map((s) => ({ x: s.x, z: s.z, out: true }))) || [];
+      L3.forEach((a, i) => {
+        a.crew = { mode: "stand", x: a.home.x, z: a.home.z, yaw: Math.PI, face: [48.6, 40], range: 17, speed: 3.3, run: "ual1_Jog_Fwd_Loop", path: CREW_RUN[i].map(([x, z]) => ({ x, z })) };
+        if (a.body) a.body.carry = this.api.view.wrongCase?.(i) || null;
+      });
+      const mid = { x: (CREW[0].x + CREW[1].x) / 2, z: (CREW[0].z + CREW[1].z) / 2 };
+      const head = this.bar(HIDE, 0.47, 0, 0.92 + groundAt(p));
+      const comeOn = () => CREW_Z.map(([x, z], i) => {
+        const q = this.spawnAt({ x, z }, { near: true, spread: 0 });
+        if (!q) return null;
+        const to = { x: CREW[1].x - 1.2 + i * 1.2, z: CREW[1].z - 1.6 }, d = Math.hypot(to.x - x, to.z - z);
+        q.emergeTo = to;
+        q.set("emerge", d / 1.1);
+        q.yaw = Math.atan2(to.x - x, to.z - z);
+        return q;
+      }).filter(Boolean);
+      let Z2 = [];
       yield* this.shot([
-        { look: [lk.x, 1.4, lk.z], from: ln, fov: 34, slow: 1, hold: 2, move: 0 },
-        { look: [lk.x, 1.35, lk.z], from: ln2, fov: 34, slow: 1, hold: 0.4, move: 1.8 },
-        { look: () => this.P(0.9), from: () => [p.x - 1.1, 0.75, p.z - 3], fov: 40, slow: 1, hold: 1.2 }
-      ], { back: 1 });
+        // under the title, then fading up: close on him behind the barriers from the street's side, pushing in slowly; a far
+        // shot in the quiet; the call (his whisper, her answer)
+        {
+          look: head,
+          from: this.glide(this.bar(HIDE, 3.4, 0.55, 1.22), this.bar(HIDE, 2.3, 0.4, 1.12), 9),
+          fov: 36,
+          slow: 1,
+          hold: 6.6,
+          until: this.linesDone(),
+          max: 14,
+          fn: () => {
+            cine.after(1.8, () => this.api.audio?.play("shot", 0.35, { x: p.x - 70, z: p.z - 60 }));
+            cine.after(5, () => this.say("c106", "c107"));
+          }
+        },
+        // his profile along the barriers: the rest of the call
+        {
+          look: head,
+          from: this.glide(this.bar(HIDE, 0.1, 3.6, 1.2), this.bar(HIDE, 0.1, 3, 1.15), 8),
+          fov: 30,
+          slow: 1,
+          hold: 1.5,
+          until: this.linesDone(),
+          max: 12,
+          fn: () => this.say("c103", "c108")
+        },
+        // gunfire up the road: from behind him, his head low in the frame at the barriers' top, the two of them far up the road
+        // (one round pair: the first of the infected down)
+        {
+          look: [mid.x, -1.4, mid.z],
+          from: this.inLine(mid, HIDE, 3.2, 0, 1.7),
+          fov: 26,
+          slow: 1,
+          hold: 2.4,
+          fn: () => {
+            Z2 = comeOn();
+            L3.forEach((a, i) => {
+              a.crew.mode = "shoot";
+              a.crew.ammo = i ? 0 : 2;
+            });
+          }
+        },
+        // close behind them as they put the rest down, one-handed, the cases hanging at their sides
+        {
+          look: [mid.x, 1.25, mid.z - 2],
+          from: this.inLine(CREW[1], CREW[0], 4.4, 0.9, 1.6),
+          fov: 34,
+          slow: 1,
+          hold: 1.5,
+          until: () => Z2.every((q) => !q.alive),
+          max: 7,
+          fn: () => {
+            for (const a of L3) a.crew.ammo = void 0;
+          }
+        },
+        // they run: west down the court, past the lens
+        {
+          look: () => {
+            const c = L3[0]?.crew;
+            return c ? [c.x, 1.15, c.z] : [44, 1.1, 58];
+          },
+          from: [37.6, 1.5, 60.4],
+          fov: 38,
+          slow: 1,
+          hold: 3,
+          fn: () => {
+            for (const q of Z2) if (q.alive) q.takeHit(400, 0, 1, 2, "pistol", sim2, "Head");
+            for (const a of L3) a.crew.mode = "run";
+          }
+        },
+        // and he is over the barriers (a cut), up and on the street, the road ahead of him
+        {
+          look: this.bar(OVER, 7.5, 0, -0.2),
+          from: this.bar(OVER, -4.5, 0, 1.9),
+          fov: 38,
+          slow: 1,
+          hold: 1.8,
+          fn: () => {
+            this.sneak(false);
+            p.x = p.px = OVER.x;
+            p.z = p.pz = OVER.z;
+            p.aimYaw = p.aimTarget = OVER.yaw;
+          }
+        }
+      ], { back: 1.2 });
+      for (const a of L3) {
+        const i = sim2.zombies.indexOf(a.z);
+        if (i >= 0) sim2.zombies.splice(i, 1);
+        a.crew.mode = "gone";
+        a.obj.visible = false;
+        if (a.body?.holder) a.body.holder.visible = false;
+        if (a.body?.carry) a.body.carry.visible = false;
+      }
+      this.npcs = this.npcs.filter((q) => !L3.includes(q));
       this.sneak(false);
       this.music("A_low", 3);
       this.setGoal("sneak");
-      this.say(...call);
-      yield* this.until(() => p.z < 58 || L3.some((q) => !q.calm || !q.alive));
       this.api.view.doorAjar?.(0.22);
       yield* this.until(() => this.near("home_door_use", 6));
-      this.sneak(false);
     }
     // 4. THE HOUSE: James at the kitchen's fridge, headphones on; the dip and his head; the garage's fridge, behind the beer
     *stopHouse() {
@@ -83657,6 +83832,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     g.add(nub);
     return g;
   }
+  var caseBones = (B) => Object.fromEntries(["LeftArm", "LeftForeArm", "LeftHand", ...["Thumb", "Index", "Middle", "Ring", "Pinky"].flatMap((f) => [1, 2, 3].map((i) => "LeftHand" + f + i))].map((n) => [n, B(n)]).filter(([, b]) => b));
+  function clipFist(clip, B) {
+    const out = [];
+    if (!clip) return out;
+    for (const t of clip.tracks) {
+      const [bn, prop] = t.name.split(".");
+      if (prop !== "quaternion" || !/LeftHand(Thumb|Index|Middle|Ring|Pinky)\d$/.test(bn)) continue;
+      const b = B(bn.replace(/^mixamorig:?/, ""));
+      const v = t.values;
+      if (b) out.push([b, new Quaternion(v[0], v[1], v[2], v[3])]);
+    }
+    return out;
+  }
   var Actors = class {
     constructor(scene2, ctx) {
       this.scene = scene2;
@@ -83747,7 +83935,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const go = (n, once, fade = 0.18) => {
         const a = act(n, once);
         if (!a) return;
-        turn.rotation.y = n.startsWith("hood_") ? 0 : aimTurn;
+        turn.rotation.y = /^hood_|_Jog_|_Sprint_/.test(n) ? 0 : aimTurn;
         if (a === cur) {
           if (once) a.reset().play();
           return;
@@ -83794,6 +83982,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
             go(n, false, 0.15);
           }
           obj.updateMatrixWorld(true);
+          if (body.carry) {
+            const C = body.carryRig || (body.carryRig = { rig: caseRig(m, caseBones(B), clipFist(clips.ual1_Jog_Fwd_Loop, B)), fit: caseFit() });
+            body.carry.visible = obj.visible && !body.dead;
+            if (!body.dead) {
+              casePose(C.rig, C.fit, 1, m.getWorldDirection(_v11).setY(0).normalize(), pick[1]);
+              casePlace(C.rig, body.carry, C.fit);
+            }
+          }
           if (!holder) return;
           if (body.dead) body.deadT += dt;
           holder.visible = obj.visible && body.gunOn && (!body.dead || body.deadT < 0.35);
@@ -84114,6 +84310,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (!b) a.obj.rotation.x = Math.min(Math.PI / 2, a.obj.rotation.x + dt * 3);
         return;
       }
+      if (a.crew) return this.crewStep(a, dt, level);
       const struck = z.hp < a.hp;
       if (struck) b?.hit();
       a.hp = z.hp;
@@ -84169,6 +84366,76 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       b?.fire();
       a.downIn = 0.45;
       if (hit) p.hurt(a.leader ? 12 : 9, z.x, z.z, sim2);
+    }
+    // the opening's two (Marc, 2026-10-22: "shoot a couple zombies .. and run both holding something in their hands ... the
+    // same holding something in their hand and shooting with the other ... I want them to run off. I don't want to battle them
+    // yet"): the story sets a.crew.mode: 'stand' (facing crew.face), 'shoot' (the nearest infected within crew.range, one-handed,
+    // two rounds each: the body, then the head; crew.ammo: how many for now), 'run' (down crew.path at crew.speed, then gone).
+    // They never turn on Marc.
+    crewStep(a, dt, level) {
+      const sim2 = level.sim, z = a.z, b = a.body, C = a.crew;
+      z.vx = z.vz = 0;
+      z.hp = Math.max(z.hp, 1);
+      if (C.mode === "gone") return;
+      let yaw = C.yaw;
+      if (C.mode === "run") {
+        const w = C.path[0];
+        if (!w) {
+          C.mode = "gone";
+          a.obj.visible = false;
+          if (b?.holder) b.holder.visible = false;
+          if (b?.carry) b.carry.visible = false;
+          return;
+        }
+        const dx = w.x - C.x, dz = w.z - C.z, d = Math.hypot(dx, dz), s = C.speed * dt;
+        if (d <= s) {
+          C.x = w.x;
+          C.z = w.z;
+          C.path.shift();
+        } else {
+          C.x += dx / d * s;
+          C.z += dz / d * s;
+        }
+        if (d > 0.05) yaw = Math.atan2(dx, dz);
+        if (b && b.pose !== C.run) b.play(C.run, false, 0.3);
+      } else {
+        let tgt = null, bd = C.range || 14;
+        if (C.mode === "shoot") for (const q of sim2.zombies) {
+          if (!q.alive || q.looter) continue;
+          const d = Math.hypot(q.x - C.x, q.z - C.z);
+          if (d < bd) {
+            bd = d;
+            tgt = q;
+          }
+        }
+        const f = tgt ? [tgt.x, tgt.z] : C.face;
+        if (f) yaw = Math.atan2(f[0] - C.x, f[1] - C.z);
+        if (!tgt) {
+          b?.coverDown();
+          C.cd = Math.max(C.cd || 0, 0.25);
+        } else {
+          b?.coverUp();
+          if ((C.cd = (C.cd ?? 0.3) - dt) <= 0 && !(C.ammo <= 0)) {
+            C.cd = 0.55 + sim2.rand() * 0.35;
+            if (C.ammo !== void 0) C.ammo--;
+            const dx = tgt.x - C.x, dz = tgt.z - C.z, d = Math.hypot(dx, dz) || 1, head = (tgt.crewHits = (tgt.crewHits || 0) + 1) >= 2;
+            this.tracer(C.x + dx / d * 0.6, C.z + dz / d * 0.6, tgt.x, tgt.z, 1.35);
+            this.sound("shot", C.x, C.z, 0.9);
+            b?.fire();
+            tgt.takeHit(head ? 400 : 30, dx / d, dz / d, 2.5, "pistol", sim2, head ? "Head" : "torso");
+            this.ctx.fx?.bloodHit?.("pistol", tgt.x, head ? 1.6 : 1.2, tgt.z, dx / d, dz / d, head ? 1.5 : 1);
+            this.sound(head ? "bulletHit" : "zombieHurt", tgt.x, tgt.z, 1);
+          }
+        }
+      }
+      const dy = Math.atan2(Math.sin(yaw - C.yaw), Math.cos(yaw - C.yaw));
+      C.yaw += Math.sign(dy) * Math.min(Math.abs(dy), dt * 9);
+      z.x = C.x;
+      z.z = C.z;
+      z.yaw = C.yaw;
+      a.obj.position.set(C.x, groundY(C.x, C.z), C.z);
+      a.obj.rotation.y = C.yaw;
+      a.sight.visible = false;
     }
     // a warning shot at Marc's feet from a doorway
     warnShot(from, p) {
@@ -85296,16 +85563,20 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     } : null;
     function titleCard() {
       const el = document.createElement("div");
-      el.style.cssText = "position:fixed;inset:0;z-index:65;pointer-events:none;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f2ead8;font:700 30px system-ui,sans-serif;letter-spacing:.18em;transition:background 2.2s ease, opacity 1.4s ease";
-      el.innerHTML = '<div>CHAPTER 2</div><div style="font:600 14px system-ui,sans-serif;letter-spacing:.3em;margin-top:8px;color:#d9b77a">THE NEIGHBOURHOOD</div>';
+      el.style.cssText = "position:fixed;inset:0;z-index:65;pointer-events:none;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f2ead8;font:700 30px system-ui,sans-serif;letter-spacing:.18em;transition:opacity 2.8s ease-in-out";
+      el.innerHTML = '<div style="opacity:0;transition:opacity .9s ease"><div>CHAPTER 2</div><div style="font:600 14px system-ui,sans-serif;letter-spacing:.3em;margin-top:8px;color:#d9b77a">THE NEIGHBOURHOOD</div></div>';
       document.body.appendChild(el);
+      const words = el.firstChild;
       setTimeout(() => {
-        el.style.background = "rgba(0,0,0,0)";
-      }, 900);
+        words.style.opacity = "1";
+      }, 300);
+      setTimeout(() => {
+        words.style.opacity = "0";
+      }, 2600);
       setTimeout(() => {
         el.style.opacity = "0";
-      }, 3200);
-      setTimeout(() => el.remove(), 4800);
+      }, 3600);
+      setTimeout(() => el.remove(), 6600);
     }
     function endCard() {
       const el = document.createElement("div");
@@ -85318,6 +85589,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       setTimeout(() => document.body.appendChild(el), 1800);
     }
     texSaved += fitTextures(view.group, TEX_CAP, false, "map late") + fitTextures(scene2, TEX_CAP * 2, false, "scene late");
+    {
+      const db = document.getElementById("dodgeBtn");
+      if (db) db.style.display = "none";
+    }
     return window.hood = {
       get texSavedMB() {
         return Math.round(texSaved / 1048576);
@@ -85709,10 +85984,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true },
     // Chapter 2's street zombies (2026-10-20, the user picked them from the Mixamo downloads: "add those in place of the
     // hospital-type zombies"): Romero and Zombiegirl, made light by tools/anim/mixamo_zombie_prep.py (12k / 7.4k triangles,
-    // base colour at 1024), then tools/anim/build_zombie.py and test_zombie_clips.py as the sprinter. Not modular (no limbs
-    // come off, no burst model yet). Loaded only in Chapter 2; there they stand in for the nurse, the patient and the runner.
-    { file: "assets/zombie-romero.glb", extra: ["assets/zombie_moves/romero.glb"], height: 1.78, walk: { speed: 0.168 }, hood: true },
-    { file: "assets/zombie-zombiegirl.glb", extra: ["assets/zombie_moves/zombiegirl.glb"], height: 1.68, walk: { speed: 0.174 }, hood: true },
+    // base colour at 1024), then tools/anim/build_zombie.py and test_zombie_clips.py as the sprinter. Loaded only in Chapter 2;
+    // there they stand in for the nurse, the patient and the runner. Cut apart as the hospital's (2026-10-22, the user: "get
+    // them more like chapter 1"): tools/anim/cut_zombie.py makes the -mod files, modular (head, forearms, lower legs come off
+    // with wound caps) and their own burst models; the move packs carry the nurse's set (test_zombie_clips.py).
+    { file: "assets/zombie-romero-mod.glb", extra: ["assets/zombie_moves/romero.glb"], height: 1.78, walk: { speed: 0.168 }, hood: true },
+    { file: "assets/zombie-zombiegirl-mod.glb", extra: ["assets/zombie_moves/zombiegirl.glb"], height: 1.68, walk: { speed: 0.174 }, hood: true },
     // the Zombie Male AAB (Unity Asset Store, free; 2026-10-20, the user: "put him in the neighbourhood chapter ... as one of
     // the regular zombies, mixed in with the others"): unpacked and built 1.0 tall with his head bone set upright, then
     // tools/anim/build_zombie.py (--no-normals --opaque ZombieMale_Shirt_MAT_V1) and test_zombie_clips.py (the nurse set).
@@ -85720,10 +85997,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     { file: "assets/zombie-male-aab.glb", extra: ["assets/zombie_moves/male-aab.glb"], height: 1.8, walk: { speed: 0.168 }, hood: true },
     // ordinary people turned (2026-10-21, the user: "regular people zombies ... mixed in with the others"): the survivors
     // Remy, Bryce and David retextured by tools/anim/zombify_skin.py (David in a light shirt and jeans) with the zombie set
-    // from tools/anim/build_zombie.py (Remy --upright). Not modular: cut from their skin weights. 8: Remy, 9: Bryce, 10: David.
-    { file: "assets/survivors/zombified/remy-zombie.glb", height: 1.8, walk: { speed: 0.168 }, hood: true },
-    { file: "assets/survivors/zombified/bryce-zombie.glb", height: 1.78, walk: { speed: 0.172 }, hood: true },
-    { file: "assets/survivors/zombified/david-zombie.glb", height: 1.8, walk: { speed: 0.168 }, hood: true }
+    // from tools/anim/build_zombie.py (Remy --upright), cut apart by tools/anim/cut_zombie.py as Romero and Zombiegirl, with
+    // the nurse's move pack. 8: Remy, 9: Bryce, 10: David.
+    { file: "assets/survivors/zombified/remy-zombie-mod.glb", extra: ["assets/zombie_moves/remy-zombie.glb"], height: 1.8, walk: { speed: 0.168 }, hood: true },
+    { file: "assets/survivors/zombified/bryce-zombie-mod.glb", extra: ["assets/zombie_moves/bryce-zombie.glb"], height: 1.78, walk: { speed: 0.172 }, hood: true },
+    { file: "assets/survivors/zombified/david-zombie-mod.glb", extra: ["assets/zombie_moves/david-zombie.glb"], height: 1.8, walk: { speed: 0.168 }, hood: true }
   ];
   var SCRUBS = {
     orange: { H: 22, s: null, l: [0.92, 0.04, 0.62] },
@@ -85829,6 +86107,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       for (const x of xs) if (x) g.animations.push(...x.animations);
       return g;
     })));
+    if (LAYOUT.hood) zomP.then((gs) => gibs.load(Object.fromEntries([5, 6, 8, 9, 10].filter((i) => gs[i]).map((i) => [i, gs[i]])))).catch(() => {
+    });
     const dataP = fetch(YOLA_FILES.data).then((r) => r.json());
     const shieldP = Promise.all([loader2.loadAsync("assets/shield/modular_bed_shield.glb"), loadDamageTextures(new URL("assets/shield/", location.href))]).then(([gltf, damageTextures]) => {
       ZombieView.shieldAsset = { gltf, damageTextures };
@@ -87326,6 +87606,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           shake(0.8);
           execFlash = 1;
           atmos?.onBigHit(e.x, e.z);
+          if (sim.zombies.find((q) => q.id === e.id)?.headBurst) {
+            audio.play("shotgunClose", 0.9);
+            audio.play("sever", 1.3);
+            shake(0.35);
+            break;
+          }
           {
             const dx = e.dirX || 0, dz = e.dirZ || 0;
             fx.bloodHit(EXEC_BLOOD[e.weapon] || "blunt", e.x, 1.2, e.z, dx, dz, 2.6);
@@ -87480,8 +87766,16 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const mx = (px2 + zx) / 2, mz = (pz2 + zz) / 2, rx = -fz, rz = fx2, ep = MathUtils.degToRad(tuning.execCamPitch);
       const ed = D3 * tuning.execCamDist * (1 - 0.1 * (X2.creep || 0)), side = 0.25;
       _ex.set(mx - fx2 * Math.cos(ep) * ed + rx * side, 1 + Math.sin(ep) * ed, mz - fz * Math.cos(ep) * ed + rz * side);
+      let lx = mx, ly = 1, lz = mz;
+      if (tz2?.headBurst) {
+        const dl = Math.hypot(zx - px2, zz - pz2) || 1, ux = (zx - px2) / dl, uz = (zz - pz2) / dl;
+        _ex.set(px2 - ux * 1.7 - uz * 0.5, 1.7 + groundY(px2, pz2), pz2 - uz * 1.7 + ux * 0.5);
+        lx = zx;
+        ly = 1.45 + groundY(zx, zz);
+        lz = zz;
+      }
       camera.position.lerp(_ex, b);
-      camera.lookAt(camState.x + (mx - camState.x) * b, 0.6 + 0.4 * b, camState.z + (mz - camState.z) * b);
+      camera.lookAt(camState.x + (lx - camState.x) * b, 0.6 + (ly - 0.6) * b, camState.z + (lz - camState.z) * b);
     }
     if (bedCam) {
       bedCam.t += dt;
