@@ -81541,9 +81541,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.sophieAt = null;
       this.setGoal("follow");
       this.sophieLead(ROUTES.follow);
-      yield* this.use("push", "seal_home_use", "Push the barricade over", 2);
-      this.openSeal("home");
-      this.api.audio?.play("knockdown");
+      const by = this.at("seal_home_use");
+      yield* this.until(() => Math.hypot(this.sim.player.x - by.x, this.sim.player.z - by.z) < 3);
     }
     // B05. THE GATE: chained; the bolt cutters in the neighbour's garage with the light on
     *stopGate() {
@@ -83550,7 +83549,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           else log.push("  blocked: " + target.id + " (" + target.no + ")");
         }
       } else {
-        const go = BOT_SPOTS[L3.objective] || BOT_SPOTS[L3.stop];
+        const go = BOT_SPOTS[L3.stop + ":" + L3.objective] || BOT_SPOTS[L3.objective] || BOT_SPOTS[L3.stop];
         if (go) {
           p.x = p.px = go[0];
           p.z = p.pz = go[1];
@@ -83563,7 +83562,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     if (ticks >= maxTicks) log.push("TIMED OUT in stop " + lastStop + " / " + lastGoal);
     return log;
   }
-  var BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [10.3, -99.6], horde: [-12, -96], leave: [-24, -80] };
+  var BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], "help:follow": [30.2, 1.6], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [10.3, -99.6], horde: [-12, -96], leave: [-24, -80] };
 
   // src/hood/hint.js
   var _v12 = new Vector3();
