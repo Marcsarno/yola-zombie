@@ -55,7 +55,7 @@ touching anything.
 The user's pass: "the home run should be replaced with the new execute animation", "dials and controls for when it's
 dark, and when it's casting some light to show the silhouette... how many times it flickers and the timing", the
 elevator lighting and floor, the leaning bat, the zombie a touch further back. Built and played through (PC + portrait);
-Committed 09acf99 + ef788a5 (clean dist), not pushed.
+NOT committed when written.
 - **New ending** (opening.js `reveal()` from BEAT 9): she walks out of the lift in the dark **holding the bat** (the game's
   own Yola view, bat equipped: its grip and walk, slowed; `RT.walk.bat` off = the old empty-handed clip walk), then
   **launches at the camera with the jump finisher** (core/weapons.js EXEC_LAUNCH, default B at 2.4 m, driven through the
