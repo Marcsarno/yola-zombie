@@ -21,6 +21,7 @@ import { runBot } from './bot.js';
 import { Hint } from './hint.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { characterLight, setCharacterFill, setRim, updateRim } from './charlight.js';
+import { fitTextures } from './texfit.js';
 
 const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0); return Math.abs(dx * c - dz * s) < r.hx + m && Math.abs(dx * s + dz * c) < r.hz + m; };
 
@@ -199,7 +200,11 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
     el.querySelector('button').onclick = () => { clearSave(); location.search = '?mode=hood'; };
     setTimeout(() => document.body.appendChild(el), 1800);
   }
+  // the texture budget (texfit.js): the map's textures at 512 px, everything else in the scene (people, weapons) at 1024,
+  // before the first frame uploads them; then every few seconds for what the game adds later
+  let texSaved = fitTextures(view.group, 512) + fitTextures(scene, 1024), texClock = 0;
   return window.hood = {
+    get texSavedMB() { return Math.round(texSaved / 1048576); },
     view, subs, actors, voice, radio, cine, get grass() { return grass; }, get level() { return level; }, onRestart: hook, attach, bot: runBot, CUT,
     charLight: setCharacterFill, rim: setRim, // (the characters' share of the sky light and their rim light: hood/charlight.js)
     // test hook (2026-10-20, the user's texture comparison): character files stood side by side, all on one clip at the same
@@ -230,6 +235,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
       await g.sheet(names, out, cols, 240); this.sheetDone = out; return out;
     },
     update(dt, px, pz, camera, sim) {
+      if ((texClock += dt) > 3) { texClock = 0; texSaved += fitTextures(view.group, 512) + fitTextures(scene, 1024); }
       if (arena.em && (arena.em.target !== 0 || arena.em.k !== 0)) arena.setEmergency(false, 0);
       if (grammy && sim) grammyWalk(px, pz, sim);
       const room = INTERIORS.find((r) => inRect(r.rect, px, pz));
