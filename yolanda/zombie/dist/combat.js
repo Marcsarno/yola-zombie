@@ -83780,7 +83780,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       });
       return l;
     };
-    await actors.loadModels({ loadAsync: (u) => loader3.loadAsync(u).then((g) => {
+    const svOpt = view.layout?.opt && params2.get("opt") !== "0";
+    const svLoad = (u) => svOpt && /^assets\/survivors\/[^/]+\.glb$/.test(u) ? loader3.loadAsync(u.replace("assets/survivors/", "assets/neighborhood/opt/survivors/")).catch(() => loader3.loadAsync(u)) : loader3.loadAsync(u);
+    await actors.loadModels({ loadAsync: (u) => svLoad(u).then((g) => {
       if (!g.scene) return g;
       const l = texList(g.scene), f0 = firstTex.get(u);
       if (!f0) firstTex.set(u, l.map((x) => x[2]));
