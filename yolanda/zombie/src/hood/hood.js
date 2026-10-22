@@ -105,6 +105,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
     if (!f0) firstTex.set(u, l.map((x) => x[2]));
     else if (f0.length === l.length) l.forEach(([m, k, v], i) => { if (v !== f0[i]) { m[k] = f0[i]; v.source?.data?.close?.(); } });
     texSaved += fitTextures(g.scene, TEX_CAP * 2, true, 'survivors');
+    g.parser = null;   // (actors.js keeps the file's scene and animations only: its whole binary would stay alive with the parser)
     return g;
   }) });
   const mk = (n) => { const m = HOOD.marks[n]; return m ? { x: m[0], z: m[2], yaw: m[3] } : null; };

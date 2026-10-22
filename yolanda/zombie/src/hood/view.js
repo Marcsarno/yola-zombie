@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { initMaterials, swapMaterials, kitMaterial, texturesReady, shoreWater } from './materials.js';
+import { initMaterials, swapMaterials, kitMaterial, texturesReady, shoreWater, useOptTex } from './materials.js';
 import { terrainMaterial } from './terrain.js';
 import { groundY } from './layout.js';
 import { fitTextures, TEX_CAP } from './texfit.js';
@@ -76,7 +76,7 @@ export class HoodView {
     const L = this.layout;
     // (polish 4) the download diet: tools/hood/optimize.mjs wrote meshopt-compressed copies with WebP textures to opt/
     // (58.6 -> 20.9 MB); ?opt=0 loads the originals
-    const useOpt = L.opt && new URLSearchParams(location.search).get('opt') !== '0';
+    const useOpt = L.opt && new URLSearchParams(location.search).get('opt') !== '0'; useOptTex(useOpt);
     const gl = new GLTFLoader(); gl.setMeshoptDecoder(MeshoptDecoder);
     // (a model newer than the last optimize run has no copy yet: its original instead)
     const loader = { loadAsync: (url) => (useOpt && url.startsWith(ROOT) && !url.endsWith('.json') ? gl.loadAsync(url.replace(ROOT, ROOT + 'opt/')).catch(() => gl.loadAsync(url)) : gl.loadAsync(url)) };
@@ -86,12 +86,26 @@ export class HoodView {
     const props = Promise.all(Object.entries(PICKUP_MODELS).map(([k, f]) => loader.loadAsync(f.startsWith('assets/') ? f : HOOD_ROOT + f).then((g) => { swapMaterials(g.scene); this.props[k] = g.scene; onProgress(++done / total); }).catch((e) => console.warn('hood prop', f, e))));
     // each model readied as it arrives: its collision meshes out, the kit's materials in, its textures to the budget and up to
     // the GPU, their copies in memory let go (texfit.js: so they never all pile up at once on a phone)
-    const ready = (root) => {
+    // the same picture in several files (the three row models carry the same twelve wall, roof and trim pictures): the first
+    // file's texture serves them all, the others' are let go before they reach the GPU (same glTF image name and byte size)
+    const sharedTex = new Map();
+    const share = (g) => {
+      const P = g.parser, J = P?.json; if (!J) return;
+      g.scene.traverse((o) => { for (const m of [].concat(o.material || [])) if (m) for (const [k, v] of Object.entries(m)) {
+        if (!v || !v.isTexture) continue;
+        const ti = P.associations.get(v)?.textures, im = ti === undefined ? null : J.images?.[J.textures[ti]?.source];
+        if (!im || !im.name || im.bufferView === undefined) continue;
+        const key = im.name + '|' + J.bufferViews[im.bufferView].byteLength + '|' + v.colorSpace, first = sharedTex.get(key);
+        if (!first) sharedTex.set(key, v); else if (first !== v) { m[k] = first; v.source?.data?.close?.(); }
+      } });
+    };
+    const ready = (g) => {
+      const root = g.scene;
       const drop = []; root.traverse((o) => { if (/-(conv)?col(only)?$|colonly/i.test(o.name)) drop.push(o); }); for (const o of drop) o.removeFromParent(); // (Godot-style collision meshes are never drawn)
-      swapMaterials(root); root.updateMatrixWorld(true); fitTextures(root, TEX_CAP, true, 'map');
+      share(g); swapMaterials(root); root.updateMatrixWorld(true); fitTextures(root, TEX_CAP, true, 'map');
       return root;
     };
-    const tmpls = await Promise.all(L.models.map((f) => loader.loadAsync(ROOT + f).then((g) => { onProgress(++done / total); return ready(g.scene); }).catch((e) => { console.warn('hood model', f, e); return null; })));
+    const tmpls = await Promise.all(L.models.map((f) => loader.loadAsync(ROOT + f).then((g) => { onProgress(++done / total); return ready(g); }).catch((e) => { console.warn('hood model', f, e); return null; })));
     await Promise.all([ground, props]);
     const tagOf = new Map(); for (const [tag, list] of Object.entries(L.tags || {})) for (const i of list) tagOf.set(i, tag);
     const byModel = L.models.map(() => []);
@@ -130,6 +144,16 @@ export class HoodView {
     this.group.traverse((o) => { if (o.isMesh) { o.matrixAutoUpdate = false; o.updateMatrix(); } });
     for (const list of Object.values(this.seals)) for (const s of list) s.o.traverse((q) => { q.matrixAutoUpdate = true; }); // (they move: the gate's leaves too)
     for (const s of this.seals.boat || []) hullMask(s.o);
+    // the placed models' vertices live on the GPU from here: their copies in memory go once sent up (texfit.js's idea for
+    // geometry; bounds are measured now, collision is the layout's boxes, the boat's hull mask is made above). Kept: the ground
+    // and the flat pieces blood pools are laid on (main.js fx.groundAt raycasts them: the same names as its list)
+    const freeArray = function () { this.array = null; }, geoms = new Set(), FLAT = /^(ch2_\w*(road|kerb|drive|rab)|roads|sidewalks|driveway|home_walk|paver|pool_deck|curb|tennis_court|terrain)/;
+    this.group.traverse((o) => { if (o.isInstancedMesh && !FLAT.test(o.name) && o.geometry) geoms.add(o.geometry); });
+    for (const gm of geoms) {
+      if (!gm.boundingSphere) gm.computeBoundingSphere(); if (!gm.boundingBox) gm.computeBoundingBox();
+      for (const a of Object.values(gm.attributes)) if (!a.isInterleavedBufferAttribute) a.onUpload(freeArray);
+      gm.index?.onUpload(freeArray);
+    }
     this.ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.52, 40), new THREE.MeshBasicMaterial({ color: 0x3dff72, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
     this.ring.rotation.x = -Math.PI / 2;
     return this;

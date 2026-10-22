@@ -33,11 +33,19 @@ const texCache = new Map(), pending = new Set();
 let maxAniso = 4;
 export function setAnisotropy(a) { maxAniso = Math.min(8, a); }
 export function texturesReady() { return Promise.all([...pending]); }
+// the see-through pictures (leaves, the grime decal sheets) at half size from opt/tex/ when the layout's compressed copies are
+// on (tools/hood/optimize.mjs; view.js switches it on): barely seen from the fixed camera. A missing copy loads the original.
+const HALF = /^(leaves_.*|decal2?_atlas)\.webp$/;
+let optTex = false;
+export function useOptTex(on) { optTex = on; }
 export function tex(file, { srgb = false, repeat = true } = {}) {
   const key = file + (srgb ? '|s' : '');
   if (texCache.has(key)) return texCache.get(key);
   let done; const p = new Promise((res) => { done = res; });
-  const t = loader.load(TEX + file, () => done(), undefined, () => { console.warn('hood texture missing', file); done(); });
+  const missing = () => { console.warn('hood texture missing', file); done(); };
+  const half = optTex && HALF.test(file);
+  const t = loader.load((half ? TEX.replace('/tex/', '/opt/tex/') : TEX) + file, () => done(), undefined,
+    half ? () => loader.load(TEX + file, (o) => { t.image = o.image; t.needsUpdate = true; done(); }, undefined, missing) : missing);
   pending.add(p); p.then(() => pending.delete(p));
   t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
