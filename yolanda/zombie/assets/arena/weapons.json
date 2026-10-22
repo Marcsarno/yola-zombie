@@ -40,6 +40,19 @@
    "impact_point": [0.0, 0.655, 0.0],
    "notes": "The Hospital Survivor Weapons pack's aluminum bat as delivered (assets/source/weapons_in, the user's pack from ChatGPT; copied unchanged to assets/weapons/hospital). Its own markers: GameGrip_R at the origin (the knob end of the grip), GameGrip_L 9.3 cm up the grip, ImpactPoint 65.5 cm up. GLB +Y runs along the bat; it is round, so ref_axis is free. Body -7.5..76.8 cm along Y, 6.2 cm across."
   },
+  "golf": {
+   "label": "Golf club (bone)",
+   "file": "assets/weapons/bone_golf_club.glb",
+   "hands": "one",
+   "primary_hand": "Left",
+   "grip_primary": [0.0, 0.0, 0.0],
+   "grip_secondary": [-0.015, -0.094, 0.0],
+   "shaft_axis": [0.157, -0.988, 0.0],
+   "ref_axis": [0.0, 0.0, 1.0],
+   "length_m": 0.982,
+   "impact_point": [0.251, -0.88, 0.034],
+   "notes": "The user's Bone Golf Club (2026-10-22, Downloads/Bone_Golf_Club_Asset_Pack.zip, unpacked to assets/source/golf; the GLB copied unchanged). Its own markers: Grip / CarryGrip at the origin, just under the double cap (the left, top hand of a right-handed golfer); StrikePoint (0.251, -0.88, 0.034). The shaft runs down -Y leaning +X toward the head (grip to the ankle joint at 0.135, -0.845); the head points +X and its striking face looks along +Z (ref_axis). The right hand sits 9.5 cm below the left (grip_secondary). Rig Lab only so far (the Meshy Rebel)."
+  },
   "bat": {
    "label": "Bat",
    "builder": "makeBat",
