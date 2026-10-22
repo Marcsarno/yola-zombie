@@ -232,15 +232,18 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
     cineLog.push({ stop: level?.stop, goal: level?.objective, i: Q.i, n: Q.shots.length, cam: cam.position.toArray().map((x) => +x.toFixed(2)), hits });
     if (hits.length) console.warn('cinecheck', level?.stop, Q.i, hits.join('; '));
   } : null;
-  // the chapter's start: from black, its title over Marc's yard as the light comes up (the radio call plays under it)
+  // the chapter's start (Marc, 2026-10-22: "I want a cleaner opening.. fade in"): the title on black alone, gone again, then
+  // the picture fades up slowly on the first shot (level.js stopSneak: Marc crouched behind the barricade). ~6.6 s in all
   function titleCard() {
     const el = document.createElement('div');
-    el.style.cssText = 'position:fixed;inset:0;z-index:65;pointer-events:none;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f2ead8;font:700 30px system-ui,sans-serif;letter-spacing:.18em;transition:background 2.2s ease, opacity 1.4s ease';
-    el.innerHTML = '<div>CHAPTER 2</div><div style="font:600 14px system-ui,sans-serif;letter-spacing:.3em;margin-top:8px;color:#d9b77a">THE NEIGHBOURHOOD</div>';
+    el.style.cssText = 'position:fixed;inset:0;z-index:65;pointer-events:none;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f2ead8;font:700 30px system-ui,sans-serif;letter-spacing:.18em;transition:opacity 2.8s ease-in-out';
+    el.innerHTML = '<div style="opacity:0;transition:opacity .9s ease"><div>CHAPTER 2</div><div style="font:600 14px system-ui,sans-serif;letter-spacing:.3em;margin-top:8px;color:#d9b77a">THE NEIGHBOURHOOD</div></div>';
     document.body.appendChild(el);
-    setTimeout(() => { el.style.background = 'rgba(0,0,0,0)'; }, 900);
-    setTimeout(() => { el.style.opacity = '0'; }, 3200);
-    setTimeout(() => el.remove(), 4800);
+    const words = el.firstChild;
+    setTimeout(() => { words.style.opacity = '1'; }, 300);
+    setTimeout(() => { words.style.opacity = '0'; }, 2600);
+    setTimeout(() => { el.style.opacity = '0'; }, 3600);
+    setTimeout(() => el.remove(), 6600);
   }
   function endCard() {
     const el = document.createElement('div');
@@ -251,6 +254,8 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   }
   // (and once more before the first frame, then every few seconds, for what has joined the scene since)
   texSaved += fitTextures(view.group, TEX_CAP, false, 'map late') + fitTextures(scene, TEX_CAP * 2, false, 'scene late');
+  // no dodge in this chapter (Marc, 2026-10-22; level.js sim.rules): its button off the screen
+  { const db = document.getElementById('dodgeBtn'); if (db) db.style.display = 'none'; }
   return window.hood = {
     get texSavedMB() { return Math.round(texSaved / 1048576); }, texStats,
     view, subs, actors, voice, radio, cine, music, cineLog, get grass() { return grass; }, get level() { return level; }, onRestart: hook, attach, bot: runBot, CUT,

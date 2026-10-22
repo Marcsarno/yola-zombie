@@ -10,7 +10,7 @@ between a shot's lens and what it frames (hood.cineLog).
 
 | Stop | Beats | Where |
 |---|---|---|
-| sneak | 1 - 3 | start behind the striped barricade on the loop road's south end (45.6, 80.4), crouched; the two looters in a drive's mouth by the east row (51.6, 31) and (52.6, 32.6) |
+| sneak | 1 - 3 | (reworked 2026-10-22, Marc's picture) the title on black, then a fade up on Marc crouched behind the jersey barriers across the loop road's south end (49.49, 89.09: their far side); the call while he waits; up the road where the court turns off, two looters, an off-colour case each in one hand (view.js wrongCase), shoot three infected one-handed (actors.js crewStep) and run off west down the court; a cut and he is over the barriers (48.99, 87.36), then play |
 | house | 4 | James at the kitchen's fridge (`james_fridge`); the second fridge in the garage on the party wall (`gfridge_use`, `seal:fridge2`) with the beer in front of the case |
 | rescue | 5 - 7 | Sophie and Adam's drive at the court's west end (Marc's picture): their wagon nose-in, two suitcases and a bag behind it (ch2_notes.py `story3`) |
 | gate | 8 - 9 | the club gate; the busted house is B06-L's open garage just left of it: the crowbar and the batteries on its bench under the lamp |

@@ -37,7 +37,7 @@ const WAVE_EXTRA = 0.5; // (every wave brings half as many again: one more ordin
 const inPoly = (P, x, z) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > z) !== (P[j][1] > z) && x < ((P[j][0] - P[i][0]) * (z - P[i][1])) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
 export const STOP_ORDER = ['sneak', 'house', 'rescue', 'gate', 'club', 'lot', 'dock', 'shed', 'horde', 'after', 'leave'];
 // where each stop restarts (a checkpoint): a safe spot at its start [x, y, z, yaw] (a 'start_<stop>' mark wins over these)
-export const STOP_STARTS = { sneak: [45.6, 0, 80.4, Math.PI], house: [38.6, 0, 40.2, -Math.PI / 2], rescue: [38.4, 0, 38.5, Math.PI / 2], gate: [15.5, 0, 57.5, -Math.PI / 2],
+export const STOP_STARTS = { sneak: [49.49, 0, 89.09, -2.8625], house: [38.6, 0, 40.2, -Math.PI / 2], rescue: [38.4, 0, 38.5, Math.PI / 2], gate: [15.5, 0, 57.5, -Math.PI / 2],
   club: [18.6, 0, -19.5, Math.PI], lot: [17.5, 0, -43.5, 2.2], dock: [62, 0, -70, -Math.PI / 2], shed: [-19.5, 0, -82.5, Math.PI], horde: [-17.2, 0, -95.2, 0],
   after: [-21, 0, -86, -Math.PI / 2], leave: [-21, 0, -82.5, -Math.PI / 2] };
 // each stop's ammo and first aid [id, x, z, weapon]: in the places people would have left them
@@ -59,7 +59,15 @@ export const ROUTES = {
 };
 // the people (beats 1, 5, 12): the two looters at the start, Adam and Sophie in their yard at the court's west end (Marc's
 // picture: their wagon nose-in on the drive, ch2_notes.py story3), Pete in the lot between the dark SUV and the van (his)
-const LOOTERS_AT = [{ x: 51.6, z: 31.0, face: [58.5, 27.5] }, { x: 52.6, z: 32.6, face: [58.5, 30.5] }];   // (in a drive's mouth off the road, the hornet and the coupe either side)
+// the opening (Marc's picture, 2026-10-22: "start behind those barricades.. crouching behind them"): the jersey barriers
+// across the loop road's south end. HIDE: crouched on their far side (outside the walls, the striped one's middle 0.85 m
+// off: its face's normal BN points south); OVER: the same spot on the street's side, where he is once he has climbed over.
+// The two looters up the road where the court turns off west (CREW, the one in front first), the infected they shoot come
+// down the road from the north (CREW_Z), and they run off west down the court (CREW_RUN)
+const BN = { x: 0.2751, z: 0.9614 }, BT = { x: -0.9614, z: 0.2751 }, OPEN_YAW = Math.atan2(-BN.x, -BN.z);   // (BT: along the barriers, west)
+const HIDE = { x: 49.49, z: 89.09, yaw: OPEN_YAW }, OVER = { x: 48.99, z: 87.36, yaw: OPEN_YAW };
+const CREW = [{ x: 48.9, z: 64.9 }, { x: 48.4, z: 63.4 }], CREW_Z = [[47.6, 52.0], [49.7, 50.4], [48.3, 48.4]];
+const CREW_RUN = [[[47.2, 60.6], [41.5, 57.6], [26, 57.2]], [[46.6, 59.4], [41.0, 56.4], [25, 56.0]]];
 const ADAM_AT = { x: 11.6, z: 60.9, yaw: -2.3 }, SOPHIE_YARD = { x: 12.9, z: 62.4, yaw: -2.6 };
 const PETE_AT = { x: 74.6, z: -67.2, yaw: 2.4 };   // (between the crashed pickup and the box truck: Marc's X)
 const OFFICE = { x: 9.6, z: -59.6 };   // (where Sophie checks the clubhouse's office: by the desk, the 'keys' mark)
@@ -71,6 +79,9 @@ export const clearSave = () => { try { localStorage.removeItem(SAVE_KEY); } catc
 export class HoodLevel {
   constructor(sim, api, save = null) {
     this.sim = sim; this.api = api; // api: { view, subs, hud, audio, fx, actors, cine, voice, music } (hood.js)
+    // the chapter's own combat rules (Marc, 2026-10-22: "remove the dodge from chapter 2 .. when an execute happens with a
+    // handgun.. i just want a slow motion.. cut in closer.. and their head explodes .. 10% of the time"): core/sim.js reads them
+    sim.rules = { noDodge: true, pistolExecChance: 0.1, pistolHeadBurst: true };
     const s = save || {};
     this.stop = s.stop || 'sneak';
     // case: 'fridge' | 'carried' | 'ground' (set down: caseAt) | 'held' (Sophie's hands) | 'cooler' | 'dead' (at her feet)
@@ -413,41 +424,70 @@ export class HoodLevel {
     }
   }
 
-  // 1 - 3. THE SNEAK: behind the barricade at the south end; the looters far off; the call; the talk overheard; the end house
+  // a camera that glides from a to b over the shot's first `dur` s (eased), then holds
+  glide(a, b, dur) { const c = this.api.cine; return () => { const k = Math.min(1, (c?.q?.t || 0) / dur), e = k * k * (3 - 2 * k); return a.map((v, i) => v + (b[i] - v) * e); }; }
+  // a point `north` m in front of the barriers' face from `o` (negative: behind it, south), `west` m along them, h up
+  bar(o, north, west, h) { return [o.x - BN.x * north + BT.x * west, h, o.z - BN.z * north + BT.z * west]; }
+
+  // 1 - 3. THE SNEAK (Marc, 2026-10-22: "I want a cleaner opening.. fade in .. crouching behind them [the barricades] ...
+  // after he sees the looters.. [they] shoot a couple zombies.. and run ... I don't want to battle them yet"). From black:
+  // the title alone, then the picture fades up on Marc crouched behind the jersey barriers; the call, whispered, while he
+  // waits; shots up the road: the two looters, a case each in one hand, a pistol in the other, put down the infected coming
+  // at them and run off west down the court; he rises and is over the barriers. Then the game: the end house, its door ajar
   *stopSneak() {
-    const p = this.sim.player, cine = this.api.cine;
+    const p = this.sim.player, cine = this.api.cine, sim = this.sim;
     this.setGoal('');
     this.music('none', 0);
     const call = ['c106', 'c107', 'c103', 'c108'];
     this.prefetch(...call, 'J01', 'J02', 'c303', 'c304');
-    // the two of them up the road by the east row, armed, talking (calm until he gives himself away: actors.js looters)
-    const L = this.api.looters?.(this, LOOTERS_AT.map((s) => ({ x: s.x, z: s.z, out: true, calm: true, face: s.face }))) || [];
-    this.sentries = L;
+    p.x = p.px = HIDE.x; p.z = p.pz = HIDE.z; p.aimYaw = p.aimTarget = HIDE.yaw;
     this.sneak(true);
-    yield* this.wait(2.6);   // (black, the title, the light coming up over him: hood.js titleCard; the wind and a far shot only)
-    this.api.audio?.play('shot', 0.35, { x: p.x - 70, z: p.z - 60 });
-    yield* this.wait(1.6);
-    // the look: up the road to them (close, the two in one portrait frame, one behind the other), then back to Marc at the
-    // barricade, low, from in front of it
-    const lk = { x: (LOOTERS_AT[0].x + LOOTERS_AT[1].x) / 2, z: (LOOTERS_AT[0].z + LOOTERS_AT[1].z) / 2 };
-    // (a phone held upright sees only ~14 deg across at this lens: the camera down the line through the two of them)
-    const ln = this.inLine(LOOTERS_AT[1], LOOTERS_AT[0], 6.4, -1.05, 1.85), ln2 = this.inLine(LOOTERS_AT[1], LOOTERS_AT[0], 5.0, -0.95, 1.75);
+    // the two up the road (actors.js crewStep), a wrong case each (view.js wrongCase)
+    const L = this.api.looters?.(this, CREW.map((s) => ({ x: s.x, z: s.z, out: true }))) || [];
+    L.forEach((a, i) => {
+      a.crew = { mode: 'stand', x: a.home.x, z: a.home.z, yaw: Math.PI, face: [48.6, 40], range: 17, speed: 3.3, run: 'ual1_Jog_Fwd_Loop', path: CREW_RUN[i].map(([x, z]) => ({ x, z })) };
+      if (a.body) a.body.carry = this.api.view.wrongCase?.(i) || null;
+    });
+    const mid = { x: (CREW[0].x + CREW[1].x) / 2, z: (CREW[0].z + CREW[1].z) / 2 };
+    const head = this.bar(HIDE, 0.47, 0, 0.92 + groundAt(p));   // (his head as the crouch holds it: forward of his feet)
+    // the infected come down the road at the two of them, a slow walk (their 'emerge' walk to a point: core/zombies.js)
+    const comeOn = () => CREW_Z.map(([x, z], i) => {
+      const q = this.spawnAt({ x, z }, { near: true, spread: 0 }); if (!q) return null;
+      const to = { x: CREW[1].x - 1.2 + i * 1.2, z: CREW[1].z - 1.6 }, d = Math.hypot(to.x - x, to.z - z);
+      q.emergeTo = to; q.set('emerge', d / 1.1); q.yaw = Math.atan2(to.x - x, to.z - z);
+      return q;
+    }).filter(Boolean);
+    let Z = [];
     yield* this.shot([
-      { look: [lk.x, 1.4, lk.z], from: ln, fov: 34, slow: 1, hold: 2.0, move: 0 },
-      { look: [lk.x, 1.35, lk.z], from: ln2, fov: 34, slow: 1, hold: 0.4, move: 1.8 },
-      { look: () => this.P(0.9), from: () => [p.x - 1.1, 0.75, p.z - 3.0], fov: 40, slow: 1, hold: 1.2 },
-    ], { back: 1.0 });
-    this.sneak(false);   // (he stands as the game's camera comes back: from here it is play, never crouched)
+      // under the title, then fading up: close on him behind the barriers from the street's side, pushing in slowly; a far
+      // shot in the quiet; the call (his whisper, her answer)
+      { look: head, from: this.glide(this.bar(HIDE, 3.4, 0.55, 1.22), this.bar(HIDE, 2.3, 0.4, 1.12), 9), fov: 36, slow: 1, hold: 6.6, until: this.linesDone(), max: 14,
+        fn: () => { cine.after(1.8, () => this.api.audio?.play('shot', 0.35, { x: p.x - 70, z: p.z - 60 })); cine.after(5.0, () => this.say('c106', 'c107')); } },
+      // his profile along the barriers: the rest of the call
+      { look: head, from: this.glide(this.bar(HIDE, 0.1, 3.6, 1.2), this.bar(HIDE, 0.1, 3.0, 1.15), 8), fov: 30, slow: 1, hold: 1.5, until: this.linesDone(), max: 12,
+        fn: () => this.say('c103', 'c108') },
+      // gunfire up the road: from behind him, his head low in the frame at the barriers' top, the two of them far up the road
+      // (one round pair: the first of the infected down)
+      { look: [mid.x, -1.4, mid.z], from: this.inLine(mid, HIDE, 3.2, 0, 1.7), fov: 26, slow: 1, hold: 2.4,
+        fn: () => { Z = comeOn(); L.forEach((a, i) => { a.crew.mode = 'shoot'; a.crew.ammo = i ? 0 : 2; }); } },
+      // close behind them as they put the rest down, one-handed, the cases hanging at their sides
+      { look: [mid.x, 1.25, mid.z - 2], from: this.inLine(CREW[1], CREW[0], 4.4, 0.9, 1.6), fov: 34, slow: 1, hold: 1.5, until: () => Z.every((q) => !q.alive), max: 7,
+        fn: () => { for (const a of L) a.crew.ammo = undefined; } },
+      // they run: west down the court, past the lens
+      { look: () => { const c = L[0]?.crew; return c ? [c.x, 1.15, c.z] : [44, 1.1, 58]; }, from: [37.6, 1.5, 60.4], fov: 38, slow: 1, hold: 3.0,
+        fn: () => { for (const q of Z) if (q.alive) q.takeHit(400, 0, 1, 2, 'pistol', sim, 'Head'); for (const a of L) a.crew.mode = 'run'; } },
+      // and he is over the barriers (a cut), up and on the street, the road ahead of him
+      { look: this.bar(OVER, 7.5, 0, -0.2), from: this.bar(OVER, -4.5, 0, 1.9), fov: 38, slow: 1, hold: 1.8,
+        fn: () => { this.sneak(false); p.x = p.px = OVER.x; p.z = p.pz = OVER.z; p.aimYaw = p.aimTarget = OVER.yaw; } },
+    ], { back: 1.2 });
+    for (const a of L) { const i = sim.zombies.indexOf(a.z); if (i >= 0) sim.zombies.splice(i, 1); a.crew.mode = 'gone'; a.obj.visible = false; if (a.body?.holder) a.body.holder.visible = false; if (a.body?.carry) a.body.carry.visible = false; }
+    this.npcs = this.npcs.filter((q) => !L.includes(q));
+    this.sneak(false);   // (from here it is play, never crouched)
     this.music('A_low', 3);
     this.setGoal('sneak');
-    // the call, whispered, on the radio card (he keeps moving: the lines go on under the walk)
-    this.say(...call);
-    // past them up the road (the cars between them and him; no stealth: they never look round)
-    yield* this.until(() => p.z < 58 || L.some((q) => !q.calm || !q.alive));
     // the end house: its door left ajar (the leaf part-way in)
     this.api.view.doorAjar?.(0.22);
     yield* this.until(() => this.near('home_door_use', 6));
-    this.sneak(false);
   }
 
   // 4. THE HOUSE: James at the kitchen's fridge, headphones on; the dip and his head; the garage's fridge, behind the beer

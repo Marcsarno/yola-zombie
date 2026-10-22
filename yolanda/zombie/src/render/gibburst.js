@@ -8,6 +8,7 @@
 // not cut yet (no burst model: they die as before).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const G = 9.0;
 const MAX_KEEP = 4; // bursts whose pieces stay on the floor (the oldest is cleared when a fifth goes)
@@ -16,11 +17,12 @@ const SEVERED_CHUNK = { Head: 'Head', Forearm_L: 'Forearm_L', Forearm_R: 'Forear
 
 export class GibBurst {
   constructor(scene, loader, fx) { this.scene = scene; this.loader = loader; this.fx = fx; this.tpl = {}; this.bursts = []; this.world = null; }
-  // files: { viewType: url } (the game's zombie types that have a burst model)
+  // files: { viewType: url, or a zombie's own loaded model (its scene cloned: the textures shared with the game's) } (the
+  // game's zombie types that have a burst model)
   async load(files) {
     await Promise.all(Object.entries(files).map(async ([type, url]) => {
       try {
-        const g = await this.loader.loadAsync(url), root = g.scene, byChunk = new Map(), bones = {}, partOf = {};
+        const g = typeof url === 'string' ? await this.loader.loadAsync(url) : url, root = typeof url === 'string' ? g.scene : skClone(g.scene), byChunk = new Map(), bones = {}, partOf = {};
         root.traverse((o) => {
           if (o.isBone) bones[o.name.replace(/^mixamorig:?/, '')] = o;
           if (!o.isMesh) return;
@@ -29,8 +31,10 @@ export class GibBurst {
           if (geo.attributes.color) { o.material = o.material.clone(); o.material.vertexColors = true; }
           if (!o.isSkinnedMesh) return;
           // (a store zombie's own cut-apart body is its own burst model: Mod_<part>__<chunk>__<piece>, 2026-10-21)
-          let n = o; while (n && !/^(B|Mod_\w+?)__/.test(n.name)) n = n.parent;
-          const chunk = n ? n.name.split('__')[1] : 'Chest';
+          // (the wound caps of a cut-apart street zombie, tools/anim/cut_zombie.py: GORE_<cut>_<side>__<chunk>)
+          const cap = /^GORE_\w+?__(\w+?)(_\d+)?$/.exec(o.name);
+          let n = o; while (!cap && n && !/^(B|Mod_\w+?)__/.test(n.name)) n = n.parent;
+          const chunk = cap ? cap[1] : n ? n.name.split('__')[1] : 'Chest';
           if (n && n.name.startsWith('Mod_')) partOf[chunk] = n.name.slice(4, n.name.indexOf('__'));
           if (!byChunk.has(chunk)) byChunk.set(chunk, []); byChunk.get(chunk).push(o);
         });

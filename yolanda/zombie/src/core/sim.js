@@ -95,6 +95,7 @@ export class Sim {
       p.dodgeDir = p.dodgeAuto ? { x: p.dodgeAuto.x, z: p.dodgeAuto.z } : sl > 0.2 ? { x: input.moveX / sl, z: input.moveZ / sl } : { x: -Math.sin(p.aimYaw), z: -Math.cos(p.aimYaw) };
     }
     if (p.critT > 0) p.critT -= dt;
+    if (this.rules?.noDodge) { input.dodgePresses = 0; p.dodgeTh = null; p.dodgeOpen = 0; } // (a chapter without the dodge: src/hood/level.js)
     if (input.dodgePresses && p.dodgeOpen > 0) {
       const tt = p.dodgeTh || this.lastTh, auto = tt?.special ? (p.dodgeAuto || this.autoDodge(p, tt, input.moveX, input.moveZ)) : null;
       if (auto ? p.tryDodge(auto.x, auto.z, this, auto) : p.tryDodge(input.moveX, input.moveZ, this)) { // (Dodge / Shift: core/player.js DODGE)
@@ -346,7 +347,8 @@ export class Sim {
       const off = Math.abs(angleDiff(p.aimTarget, Math.atan2(dx, dz))); if (off > 1.0) continue;
       const s = d + off * 1.5; if (s < bs) { bs = s; best = z; }
     }
-    if (!best || this.rand() >= (this.T.critFinChance ?? 0.05)) return null;
+    const chance = (p.equipped === PISTOL && this.rules?.pistolExecChance) || (this.T.critFinChance ?? 0.05); // (the chapter's own for the pistol)
+    if (!best || this.rand() >= chance) return null;
     this.critFinNext = this.time + (this.T.critFinCooldown ?? 12);
     this.emit({ type: 'critFinisher', id: best.id, x: best.x, z: best.z });
     return best;
@@ -357,6 +359,7 @@ export class Sim {
   critSweep(z) {
     const p = this.player, w = p.equipped, ax = z.x - p.x, az = z.z - p.z, al = Math.hypot(ax, az) || 1;
     if (w === PISTOL) {
+      if (this.rules?.pistolHeadBurst) return; // (the one head, nothing more: the chapter's own pistol finisher)
       const c = this.zombies.filter((o) => o !== z && o.alive && !o.buried && !o.dormant && (o.kind === 'normal' || o.kind === 'runner') && Math.hypot(o.x - p.x, o.z - p.z) < 7)
         .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)).slice(0, 2);
       this.chain = c.map((o, i) => ({ id: o.id, at: this.time + 0.12 + i * 0.14 }));

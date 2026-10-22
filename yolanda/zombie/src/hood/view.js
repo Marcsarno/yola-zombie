@@ -284,6 +284,18 @@ export class HoodView {
     if (state === 'fridge' && at) { c.position.set(at.x, at.y, at.z); c.rotation.set(0, Math.PI / 2, 0); this.beer(at); }
     if (state === 'ground' && at) { c.position.set(at.x, groundY(at.x, at.z) + 0.01, at.z); c.rotation.set(0, at.yaw || 0, 0); }
   }
+  // the looters' cases at the start (Marc: "not the medical briefcase.. different skin version of it.. that are wrong"): the
+  // same case in another paint (k: 0 olive drab, 1 gunmetal), no cold-chain label, no red cross
+  wrongCase(k = 0) {
+    if (!this.props.case) return null;
+    const o = this.props.case.clone(true), paint = [0x3b4228, 0x2b2e33][k % 2];
+    o.traverse((m) => {
+      if (!m.isMesh) return; m.castShadow = false; m.frustumCulled = false;
+      if (/silver/.test(m.material?.name || '')) { m.material = m.material.clone(); m.material.color.setHex(paint); m.material.roughness = 0.75; }
+    });
+    o.visible = false; this.fxGroup.add(o);
+    return o;
+  }
   caseLabel() {
     const cv = document.createElement('canvas'); cv.width = 256; cv.height = 176; const g = cv.getContext('2d');
     g.fillStyle = '#f3f1ea'; g.beginPath(); g.roundRect(6, 6, 244, 164, 18); g.fill(); g.lineWidth = 6; g.strokeStyle = '#c4161c'; g.stroke();

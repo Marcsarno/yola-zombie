@@ -230,10 +230,12 @@ const ZOMBIE_TYPES = [
   { same: 0, height: 1.78, walk: { speed: 0.168 }, orange: true },
   // Chapter 2's street zombies (2026-10-20, the user picked them from the Mixamo downloads: "add those in place of the
   // hospital-type zombies"): Romero and Zombiegirl, made light by tools/anim/mixamo_zombie_prep.py (12k / 7.4k triangles,
-  // base colour at 1024), then tools/anim/build_zombie.py and test_zombie_clips.py as the sprinter. Not modular (no limbs
-  // come off, no burst model yet). Loaded only in Chapter 2; there they stand in for the nurse, the patient and the runner.
-  { file: 'assets/zombie-romero.glb', extra: ['assets/zombie_moves/romero.glb'], height: 1.78, walk: { speed: 0.168 }, hood: true },
-  { file: 'assets/zombie-zombiegirl.glb', extra: ['assets/zombie_moves/zombiegirl.glb'], height: 1.68, walk: { speed: 0.174 }, hood: true },
+  // base colour at 1024), then tools/anim/build_zombie.py and test_zombie_clips.py as the sprinter. Loaded only in Chapter 2;
+  // there they stand in for the nurse, the patient and the runner. Cut apart as the hospital's (2026-10-22, the user: "get
+  // them more like chapter 1"): tools/anim/cut_zombie.py makes the -mod files, modular (head, forearms, lower legs come off
+  // with wound caps) and their own burst models; the move packs carry the nurse's set (test_zombie_clips.py).
+  { file: 'assets/zombie-romero-mod.glb', extra: ['assets/zombie_moves/romero.glb'], height: 1.78, walk: { speed: 0.168 }, hood: true },
+  { file: 'assets/zombie-zombiegirl-mod.glb', extra: ['assets/zombie_moves/zombiegirl.glb'], height: 1.68, walk: { speed: 0.174 }, hood: true },
   // the Zombie Male AAB (Unity Asset Store, free; 2026-10-20, the user: "put him in the neighbourhood chapter ... as one of
   // the regular zombies, mixed in with the others"): unpacked and built 1.0 tall with his head bone set upright, then
   // tools/anim/build_zombie.py (--no-normals --opaque ZombieMale_Shirt_MAT_V1) and test_zombie_clips.py (the nurse set).
@@ -241,10 +243,11 @@ const ZOMBIE_TYPES = [
   { file: 'assets/zombie-male-aab.glb', extra: ['assets/zombie_moves/male-aab.glb'], height: 1.80, walk: { speed: 0.168 }, hood: true },
   // ordinary people turned (2026-10-21, the user: "regular people zombies ... mixed in with the others"): the survivors
   // Remy, Bryce and David retextured by tools/anim/zombify_skin.py (David in a light shirt and jeans) with the zombie set
-  // from tools/anim/build_zombie.py (Remy --upright). Not modular: cut from their skin weights. 8: Remy, 9: Bryce, 10: David.
-  { file: 'assets/survivors/zombified/remy-zombie.glb', height: 1.80, walk: { speed: 0.168 }, hood: true },
-  { file: 'assets/survivors/zombified/bryce-zombie.glb', height: 1.78, walk: { speed: 0.172 }, hood: true },
-  { file: 'assets/survivors/zombified/david-zombie.glb', height: 1.80, walk: { speed: 0.168 }, hood: true },
+  // from tools/anim/build_zombie.py (Remy --upright), cut apart by tools/anim/cut_zombie.py as Romero and Zombiegirl, with
+  // the nurse's move pack. 8: Remy, 9: Bryce, 10: David.
+  { file: 'assets/survivors/zombified/remy-zombie-mod.glb', extra: ['assets/zombie_moves/remy-zombie.glb'], height: 1.80, walk: { speed: 0.168 }, hood: true },
+  { file: 'assets/survivors/zombified/bryce-zombie-mod.glb', extra: ['assets/zombie_moves/bryce-zombie.glb'], height: 1.78, walk: { speed: 0.172 }, hood: true },
+  { file: 'assets/survivors/zombified/david-zombie-mod.glb', extra: ['assets/zombie_moves/david-zombie.glb'], height: 1.80, walk: { speed: 0.168 }, hood: true },
 ];
 // her scrubs' blue (hue ~165-250) recoloured, the rest of the texture (skin, hair, blood) untouched; once per map and recipe.
 // (2026-10-18, the user: "show me 4 different clothing variations ... nurse scrub color ... keep the orange look"; of the
@@ -331,6 +334,8 @@ async function load() {
   const yolaP = Promise.all([loader.loadAsync(YOLA_FILES.model), ...YOLA_FILES.extra.map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; });
   // (each type's extra clips, the scratch, are retargeted onto its own skeleton: tools/anim/zombie_clip.py)
   const zomP = Promise.all(ZOMBIE_TYPES.map((t) => t.same != null || (t.hood && !LAYOUT.hood) ? null : Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; })));
+  // (Chapter 2's street zombies are their own burst models: the loaded model itself, so its textures are not loaded twice)
+  if (LAYOUT.hood) zomP.then((gs) => gibs.load(Object.fromEntries([5, 6, 8, 9, 10].filter((i) => gs[i]).map((i) => [i, gs[i]])))).catch(() => {});
   const dataP = fetch(YOLA_FILES.data).then((r) => r.json());
   // the guard's shield (the user's v2 package): the GLB and the two damage maps, loaded once and shared by every guard
   const shieldP = Promise.all([loader.loadAsync('assets/shield/modular_bed_shield.glb'), loadDamageTextures(new URL('assets/shield/', location.href))])
@@ -1079,6 +1084,7 @@ function handleEvents() {
       case 'execStart': execDir.start(e); fx.ring(e.x, e.z, 0xffffff, 1.4); fx.ring(e.x, e.z, 0xffb347, 2.2); audio.play('swing', 0.7); break; // (render/execution.js: time and the camera)
       case 'execHit': { // the finisher lands: freeze, flash, kick, the boom
         execDir.hit(e); shake(0.8); execFlash = 1; atmos?.onBigHit(e.x, e.z); // (no banner, no word: the user)
+        if (sim.zombies.find((q) => q.id === e.id)?.headBurst) { audio.play('shotgunClose', 0.9); audio.play('sever', 1.3); shake(0.35); break; } // (Chapter 2's pistol finisher: the head bursts, render/clipchars.js burstHead; no sparks, no rings)
         { const dx = e.dirX || 0, dz = e.dirZ || 0; // the epic hit: a blood blast, a fan of sparks, two shockwaves, dust, the frame flash
           fx.bloodHit(EXEC_BLOOD[e.weapon] || 'blunt', e.x, 1.2, e.z, dx, dz, 2.6);
           fx.burst(e.x, 1.2, e.z, 34, 0xffd27a, 5.5, 1.6, 0.45, dx * 0.7, dz * 0.7); fx.burst(e.x, 1.1, e.z, 16, 0xfff6e8, 3.2, 1.0, 0.25, dx, dz);
@@ -1173,8 +1179,12 @@ function updateCamera(dt, px, pz, yaw, p) {
     const mx = (px + zx) / 2, mz = (pz + zz) / 2, rx = -fz, rz = fx, ep = THREE.MathUtils.degToRad(tuning.execCamPitch);
     const ed = D * tuning.execCamDist * (1 - 0.1 * (X.creep || 0)), side = 0.25;
     _ex.set(mx - fx * Math.cos(ep) * ed + rx * side, 1.0 + Math.sin(ep) * ed, mz - fz * Math.cos(ep) * ed + rz * side);
+    let lx = mx, ly = 1.0, lz = mz;
+    // (Chapter 2's pistol finisher, tz.headBurst: closer, over his right shoulder at the zombie's head, the two in line for
+    // a phone held upright)
+    if (tz?.headBurst) { const dl = Math.hypot(zx - px, zz - pz) || 1, ux = (zx - px) / dl, uz = (zz - pz) / dl; _ex.set(px - ux * 1.7 - uz * 0.5, 1.7 + hoodGroundY(px, pz), pz - uz * 1.7 + ux * 0.5); lx = zx; ly = 1.45 + hoodGroundY(zx, zz); lz = zz; }
     camera.position.lerp(_ex, b);
-    camera.lookAt(camState.x + (mx - camState.x) * b, 0.6 + 0.4 * b, camState.z + (mz - camState.z) * b);
+    camera.lookAt(camState.x + (lx - camState.x) * b, 0.6 + (ly - 0.6) * b, camState.z + (lz - camState.z) * b);
   }
   // the first bed patient sitting up (bedCam): the camera cuts in on it for a beat and eases back
   if (bedCam) {

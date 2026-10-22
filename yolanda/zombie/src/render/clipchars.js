@@ -1696,6 +1696,7 @@ export class ZombieView extends ClipBody {
       for (const [k, re] of Object.entries(MODULE_NAMES)) if (re.test(o.name)) this.modules[k] = o;
       const m = GORE_NAME.exec(o.name);
       if (m) (this.gore[m[1]] ||= {})[m[2].toLowerCase()] = o;
+      if (/^GORE_Burst_/.test(o.name)) o.visible = false; // (a street zombie's torso cuts: capped for its burst only, tools/anim/cut_zombie.py)
       const p = MOD_PIECE.exec(o.name); if (p) (pieces[p[1]] ||= []).push(o);
     });
     // a part in several pieces goes into one group where they hang (a skinned piece draws the same under any parent)
@@ -1764,6 +1765,23 @@ export class ZombieView extends ClipBody {
     const s = this.bones[STUMP_BONE[part]].getWorldPosition(new THREE.Vector3());
     if (fx) { fx.bloodSpray(s.x, s.y, s.z, dir.x * 0.8, 0.5, dir.z * 0.8, part === 'Head' ? 30 : 20, 3.2); fx.bloodPool(s.x + dir.x * 0.4, s.z + dir.z * 0.4, part === 'Head' ? 1.0 : 0.7); }
     this.bleed[part] = 2.5;
+  }
+  // the head burst apart (Chapter 2's pistol finisher, core/player.js startExecution headBurst): no head flies, it is gone
+  // in a spray of blood, flesh, bone and brain along the shot; the neck's stump (its wound cap) left
+  burstHead(z) {
+    this.severed.add('Head'); this.container.updateMatrixWorld(true);
+    const h = this.bones.Head.getWorldPosition(new THREE.Vector3()), fx = ZombieView.fx, dx = z.hitDirX || 0, dz = z.hitDirZ || 0, r = () => (Math.random() - 0.5) * 0.7;
+    if (this.modules.Head) this.modules.Head.visible = false; else (this.collapsed ||= []).push(this.bones.Head);
+    if (this.gore.Head?.stump) this.gore.Head.stump.visible = true;
+    if (fx) {
+      fx.bloodHit('shotgun', h.x, h.y, h.z, dx, dz, 2.4); // (the mist of it)
+      for (let i = 0; i < 3; i++) fx.bloodSpray(h.x, h.y, h.z, dx * 0.9 + r(), 0.5 + 0.35 * i, dz * 0.9 + r(), 30, 4.4);
+      fx.burst(h.x, h.y, h.z, 28, 0x5e0b0b, 4.8, 1.6, 0.9, dx * 0.8, dz * 0.8); // (flesh)
+      fx.burst(h.x, h.y, h.z, 12, 0xe6dccb, 4.2, 1.4, 0.8, dx, dz); // (skull)
+      fx.burst(h.x, h.y, h.z, 10, 0xc98a8a, 3.6, 1.2, 0.8, dx, dz); // (brain)
+      fx.bloodPool(h.x + dx * 0.9, h.z + dz * 0.9, 1.3);
+    }
+    this.bleed.Head = 3;
   }
   // a cut on a zombie without a cut model (the guard's arms at the shoulder, his head; bakeChunks): the piece baked from
   // its own vertices and thrown, the limb's bone collapsed into its joint from now on (it vanishes), blood at the stump
@@ -2163,7 +2181,7 @@ export class ZombieView extends ClipBody {
   update(dt, z, x, zz, now = 0) {
     if (this.rag) { if (this.shield) this.shield.visible = false; this.updateRagdoll(z); return; }
     // limbs the simulation took off this step: cut them from the pose that is on screen now
-    if (z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part) && !(this.mirG && part === 'Forearm_L')) { if (this.modular) this.sever(part, z); else { this.severed.add(part); this.cutByWeights(part, z); } } // (no cut model: from its skin weights; the mirrored guard's 'Forearm_L' is his other arm now: guardSwap)
+    if (z.severed.size !== this.severed.size) for (const part of z.severed) if (!this.severed.has(part) && !(this.mirG && part === 'Forearm_L')) { if (part === 'Head' && z.headBurst) this.burstHead(z); else if (this.modular) this.sever(part, z); else { this.severed.add(part); this.cutByWeights(part, z); } } // (a head shot apart: burstHead; no cut model: from its skin weights; the mirrored guard's 'Forearm_L' is his other arm now: guardSwap)
     if (z.kind === 'guard') this.guardShield(z);
     // the lady has popped (core/sim.js ladyBurst): her chunks are flying, she is gone
     if (this.popped) { this.outer.visible = this.blob.visible = false; return; }

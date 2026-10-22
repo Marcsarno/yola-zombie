@@ -13,6 +13,7 @@ import { PISTOL_CORE_SCALE } from '../render/weaponModels.js';
 import { characterLight } from './charlight.js';
 import { groundY } from './layout.js';
 import { BodyGore } from '../render/clipchars.js';
+import { caseRig, casePose, casePlace, caseFit } from '../render/casecarry.js';
 
 // who stands where: the rifle survivor first, then the pistol survivors in turn [file, height m]
 const SURVIVORS = { rifle: [['eve', 1.7]], pistol: [['remy', 1.8], ['james', 1.8], ['sophie', 1.66], ['bryce', 1.78]] };
@@ -49,6 +50,19 @@ function marker(color) {
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 1.1, 4, 10), m); body.position.y = 0.8; body.castShadow = true; g.add(body);
   const nub = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.3), m); nub.position.set(0, 1.25, 0.25); g.add(nub);
   return g;
+}
+
+// the left arm's bones for a case (render/casecarry.js) on a Mixamo build, and the left hand's grip: its fingers as a clip
+// holds them on its first frame (the jog's loose fist)
+const caseBones = (B) => Object.fromEntries(['LeftArm', 'LeftForeArm', 'LeftHand', ...['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'].flatMap((f) => [1, 2, 3].map((i) => 'LeftHand' + f + i))].map((n) => [n, B(n)]).filter(([, b]) => b));
+function clipFist(clip, B) {
+  const out = []; if (!clip) return out;
+  for (const t of clip.tracks) {
+    const [bn, prop] = t.name.split('.'); if (prop !== 'quaternion' || !/LeftHand(Thumb|Index|Middle|Ring|Pinky)\d$/.test(bn)) continue;
+    const b = B(bn.replace(/^mixamorig:?/, '')); const v = t.values;
+    if (b) out.push([b, new THREE.Quaternion(v[0], v[1], v[2], v[3])]);
+  }
+  return out;
 }
 
 export class Actors {
@@ -92,7 +106,7 @@ export class Actors {
     const aimTurn = turn.rotation.y, head = B('Head');
     const REST = standing ? 'ual1_Pistol_Idle_Loop' : 'ual1_Crouch_Idle_Loop', AIM = 'ual1_Pistol_Aim_Neutral';
     let cur = act(REST); cur.play();
-    const go = (n, once, fade = 0.18) => { const a = act(n, once); if (!a) return; turn.rotation.y = n.startsWith('hood_') ? 0 : aimTurn; if (a === cur) { if (once) a.reset().play(); return; } a.reset().play(); cur.crossFadeTo(a, fade, false); cur = a; }; // (the chapter's own moves face +z as made)
+    const go = (n, once, fade = 0.18) => { const a = act(n, once); if (!a) return; turn.rotation.y = /^hood_|_Jog_|_Sprint_/.test(n) ? 0 : aimTurn; if (a === cur) { if (once) a.reset().play(); return; } a.reset().play(); cur.crossFadeTo(a, fade, false); cur = a; }; // (the chapter's own moves and the runs face +z as made)
     const body = { obj, mixer, holder, clips, kick: 0, dead: false, deadT: 0, up: false, pose: REST, next: null, nextAt: 0, t: 0, gunOn: true,
       gore: new BodyGore(m, pick[1]), // (a head shot bursts his head: looterStep, jamesStep)
       then(at, n) { body.next = n; body.nextAt = body.t + at; }, // (after a one-shot: the pose to settle into)
@@ -101,6 +115,11 @@ export class Actors {
         mixer.update(dt); body.t += dt; body.gore.update(dt);
         if (body.next && !body.dead && body.t >= body.nextAt) { const n = body.next; body.next = null; body.pose = n; go(n, false, 0.15); }
         obj.updateMatrixWorld(true);
+        if (body.carry) { // (a case in his left hand, the gun in his right: the opening's looters; render/casecarry.js, as Marc carries his)
+          const C = body.carryRig ||= { rig: caseRig(m, caseBones(B), clipFist(clips.ual1_Jog_Fwd_Loop, B)), fit: caseFit() };
+          body.carry.visible = obj.visible && !body.dead;
+          if (!body.dead) { casePose(C.rig, C.fit, 1, m.getWorldDirection(_v).setY(0).normalize(), pick[1]); casePlace(C.rig, body.carry, C.fit); }
+        }
         if (!holder) return;
         if (body.dead) body.deadT += dt;
         holder.visible = obj.visible && body.gunOn && (!body.dead || body.deadT < 0.35); // (dropped as he goes down)
@@ -257,6 +276,7 @@ export class Actors {
       if (!b) a.obj.rotation.x = Math.min(Math.PI / 2, a.obj.rotation.x + dt * 3);
       return;
     }
+    if (a.crew) return this.crewStep(a, dt, level);
     const struck = z.hp < a.hp; if (struck) b?.hit(); a.hp = z.hp; // (a hit that does not kill: a flinch, then back to what he was doing)
     z.x = a.home.x; z.z = a.home.z; z.vx = z.vz = 0; // (they hold their cover: the zombie AI never walks them)
     const dx = p.x - z.x, dz = p.z - z.z, d = Math.hypot(dx, dz), los = !p.dead && d < 17 && sim.world.lineOfSight(z.x, z.z, p.x, p.z, 1.3);
@@ -281,6 +301,46 @@ export class Actors {
     this.tracer(z.x, z.z, p.x + (hit ? 0 : (sim.rand() - 0.5) * 2), p.z + (hit ? 0 : (sim.rand() - 0.5) * 2));
     this.sound('shot', z.x, z.z, 0.9); b?.fire(); a.downIn = 0.45;
     if (hit) p.hurt(a.leader ? 12 : 9, z.x, z.z, sim);
+  }
+  // the opening's two (Marc, 2026-10-22: "shoot a couple zombies .. and run both holding something in their hands ... the
+  // same holding something in their hand and shooting with the other ... I want them to run off. I don't want to battle them
+  // yet"): the story sets a.crew.mode: 'stand' (facing crew.face), 'shoot' (the nearest infected within crew.range, one-handed,
+  // two rounds each: the body, then the head; crew.ammo: how many for now), 'run' (down crew.path at crew.speed, then gone).
+  // They never turn on Marc.
+  crewStep(a, dt, level) {
+    const sim = level.sim, z = a.z, b = a.body, C = a.crew;
+    z.vx = z.vz = 0; z.hp = Math.max(z.hp, 1);
+    if (C.mode === 'gone') return;
+    let yaw = C.yaw;
+    if (C.mode === 'run') {
+      const w = C.path[0];
+      if (!w) { C.mode = 'gone'; a.obj.visible = false; if (b?.holder) b.holder.visible = false; if (b?.carry) b.carry.visible = false; return; }
+      const dx = w.x - C.x, dz = w.z - C.z, d = Math.hypot(dx, dz), s = C.speed * dt;
+      if (d <= s) { C.x = w.x; C.z = w.z; C.path.shift(); } else { C.x += (dx / d) * s; C.z += (dz / d) * s; }
+      if (d > 0.05) yaw = Math.atan2(dx, dz);
+      if (b && b.pose !== C.run) b.play(C.run, false, 0.3);
+    } else {
+      let tgt = null, bd = C.range || 14;
+      if (C.mode === 'shoot') for (const q of sim.zombies) { if (!q.alive || q.looter) continue; const d = Math.hypot(q.x - C.x, q.z - C.z); if (d < bd) { bd = d; tgt = q; } }
+      const f = tgt ? [tgt.x, tgt.z] : C.face;
+      if (f) yaw = Math.atan2(f[0] - C.x, f[1] - C.z);
+      if (!tgt) { b?.coverDown(); C.cd = Math.max(C.cd || 0, 0.25); }
+      else {
+        b?.coverUp();
+        if ((C.cd = (C.cd ?? 0.3) - dt) <= 0 && !(C.ammo <= 0)) { // (ammo: rounds he may fire for now, the story's pacing; unset: any)
+          C.cd = 0.55 + sim.rand() * 0.35; if (C.ammo !== undefined) C.ammo--;
+          const dx = tgt.x - C.x, dz = tgt.z - C.z, d = Math.hypot(dx, dz) || 1, head = (tgt.crewHits = (tgt.crewHits || 0) + 1) >= 2;
+          this.tracer(C.x + (dx / d) * 0.6, C.z + (dz / d) * 0.6, tgt.x, tgt.z, 1.35); this.sound('shot', C.x, C.z, 0.9); b?.fire();
+          tgt.takeHit(head ? 400 : 30, dx / d, dz / d, 2.5, 'pistol', sim, head ? 'Head' : 'torso');
+          this.ctx.fx?.bloodHit?.('pistol', tgt.x, head ? 1.6 : 1.2, tgt.z, dx / d, dz / d, head ? 1.5 : 1);
+          this.sound(head ? 'bulletHit' : 'zombieHurt', tgt.x, tgt.z, 1);
+        }
+      }
+    }
+    // (turned toward where he goes or shoots, quickly but not snapped)
+    const dy = Math.atan2(Math.sin(yaw - C.yaw), Math.cos(yaw - C.yaw)); C.yaw += Math.sign(dy) * Math.min(Math.abs(dy), dt * 9);
+    z.x = C.x; z.z = C.z; z.yaw = C.yaw;
+    a.obj.position.set(C.x, groundY(C.x, C.z), C.z); a.obj.rotation.y = C.yaw; a.sight.visible = false;
   }
 
   // a warning shot at Marc's feet from a doorway

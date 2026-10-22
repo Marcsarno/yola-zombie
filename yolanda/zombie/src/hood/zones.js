@@ -46,7 +46,7 @@ export const ZONES = {
 const H = ['home', 'b05l', 'curve', 'south'];   // (the island's fences gone: the curve and the south open with the home)
 const N = ['club', 'west', 'dock', 'north', 'courts'];  // (past the gate: the roadblock and the dock road's gate gone)
 export const STOPS = {
-  sneak: { start: [45.6, 80.4], zones: H, open: [], reach: [['home_door_use', 1.4]] },
+  sneak: { start: [48.99, 87.36], zones: H, open: [], reach: [['home_door_use', 1.4]] },
   house: { start: [35.3, 38.5], zones: [...H, 'house'], open: ['home_door'], reach: [['james_fridge', 1.0], ['gfridge_use', 1.4]] },
   rescue: { start: [38.4, 38.5], zones: [...H, 'house'], open: ['home_door'], reach: [['home_porch', 1.4]] },
   gate: { start: [15.5, 57.5], zones: [...H, 'house'], open: ['home_door'], reach: [['cutters', 1.3], ['gate_use', 2.2]] },

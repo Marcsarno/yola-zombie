@@ -441,8 +441,10 @@ export class Player {
   startExecution(z, sim) {
     const dx = z.x - this.x, dz = z.z - this.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
     const gun = this.equipped === PISTOL || this.equipped === SHOTGUN, fin = this.attacks[this.attacks.length - 1];
-    const stand = gun ? 1.0 : Math.max(0.75, fin?.stand ?? 0.95);
-    z.executed = true; z.execWeapon = this.equipped; z.executable = 0; z.execLock = true;
+    // (a chapter's pistol finisher that bursts the head, src/hood/level.js rules: shot from where he stands, no step in)
+    const burst = this.equipped === PISTOL && !!sim.rules?.pistolHeadBurst;
+    const stand = burst ? d : gun ? 1.0 : Math.max(0.75, fin?.stand ?? 0.95);
+    z.executed = true; z.execWeapon = this.equipped; z.executable = 0; z.execLock = true; z.headBurst = burst;
     if (z.down) z.stateDur = 9; else z.set(ZS_STAGGER, 9); z.vx = z.vz = 0; z.kx = z.kz = 0; z.hitFlash = 1; // (one on the floor stays there: the lady after her crash)
     this.aimYaw = this.aimTarget = Math.atan2(dx, dz); this.vx = this.vz = 0;
     this.invuln = Math.max(this.invuln, 3); this.execId = z.id;
