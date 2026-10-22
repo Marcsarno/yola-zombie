@@ -39888,6 +39888,17 @@ void main() {
       // (her t_* clips: no source rig)
       refMap: { ...YOLA2_REF, ...Object.fromEntries(["afraid", "fall", "flee_01", "flee_02", "freaky", "frightened", "run", "scared_01", "scared_02", "sit", "walk", "wave_goodbye_01", "wave_goodbye_02"].map((n) => ["t_" + n, null])) }
     },
+    // Meshy's "Pumpkin Spice Rebel" (2026-10-22, the user: in the Rig Lab only, not the game; her bat grip first, a golf
+    // club to come): tools/anim/build_meshy.py gives her fused fingers one curl along the middle-finger chain, knuckle
+    // markers for the grip line, and X Bot's bat / baseball clips (her own Meshy clips have no source rig)
+    rebel: {
+      label: "Rebel (Meshy, test)",
+      file: "assets/rebel.glb",
+      height: 1.7,
+      ref: "yola_",
+      refMap: Object.fromEntries(["Running", "Walking", "All_Night_Dance", "Casual_Walk", "golf_swing"].map((n) => [n, null]))
+    },
+    // (golf_swing: built from her baseball_homerun)
     nurse: { label: "Zombie nurse", file: "assets/zombie-nurse-mod.glb", height: 1.78, ref: "zombie_" },
     patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" },
     // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -39942,10 +39953,10 @@ void main() {
   var NO_KK = (n) => !/^kk_/.test(n);
   var REF_ALIAS = { pistol_reload: "reload_walk", sg_reload: "reload_rifle_stand" };
   var REF_OFFSET = { pistol_reload: 37 };
-  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (hospital pack, full stock)", draft: "shotgun (first draft)", axe: "fire axe", bat: "baseball bat", alubat: "bat (wood)", packaxe: "axe (hospital pack)", packcrowbar: "crowbar (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife" };
-  var HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
-  var LIB_WEAPONS2 = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
-  var PACK = { alubat: 1, packaxe: 1, packcrowbar: 1 };
+  var GUNS = { auto: "auto (match the clip)", none: "no weapon", pistol: "pistol", short: "shotgun (short pump)", old: "shotgun (hospital pack, full stock)", draft: "shotgun (first draft)", axe: "fire axe", bat: "baseball bat", alubat: "bat (wood)", packaxe: "axe (hospital pack)", packcrowbar: "crowbar (hospital pack)", sledgehammer: "sledgehammer", chainsaw: "chainsaw", knife: "knife", golf: "golf club (bone)" };
+  var HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1, golf: 1 };
+  var LIB_WEAPONS2 = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1, golf: 1 };
+  var PACK = { alubat: 1, packaxe: 1, packcrowbar: 1, golf: 1 };
   var WDEFS = {};
   var PICKS = {};
   var autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? "bat" : /chop|gs_|slash|axe/.test(name) ? "axe" : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? "short" : /pistol|t_shoot/.test(name) ? "pistol" : "none";
@@ -41157,7 +41168,7 @@ void main() {
     return FITS[_a8 = fitKey(a)] || (FITS[_a8] = { ...PFIT0 });
   };
   var WFITS = {};
-  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (wood)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", old: "Shotgun (hospital pack)", draft: "Shotgun (first draft)", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
+  var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (wood)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", old: "Shotgun (hospital pack)", draft: "Shotgun (first draft)", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife", golf: "Golf club (bone)" };
   var fitW = (w, a) => {
     var _a8, _b7;
     return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a8 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a8[_b7] = { ...PFIT0 }));
@@ -42012,7 +42023,7 @@ void main() {
     }
     return b;
   }
-  var EDIT_WEAPONS = { alubat: "Bat", packaxe: "Axe", packcrowbar: "Crowbar", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife", pistol: "Pistol", short: "Shotgun", old: "Shotgun \xB7 pack", draft: "Shotgun \xB7 draft" };
+  var EDIT_WEAPONS = { alubat: "Bat", packaxe: "Axe", packcrowbar: "Crowbar", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife", golf: "Golf club", pistol: "Pistol", short: "Shotgun", old: "Shotgun \xB7 pack", draft: "Shotgun \xB7 draft" };
   var EDIT_LISTS = { pistol: { idle: /^(pistol_idle|ual1_Pistol_Idle_Loop)$/, attack: /^(pistol_idle|pistol_reload)$/ }, short: { idle: /^(sg_reload)$/, attack: /^(sg_reload|reload_rifle_stand|rifle_aim_idle)$/ } };
   EDIT_LISTS.old = EDIT_LISTS.draft = EDIT_LISTS.short;
   var EDIT_IDLE = /^(ual_Sword_Block|ual1?_Sword_Idle|bat_idle|ual1?_Idle_(Torch|Lantern|Tired)_Loop|ual1_Idle_Loop)$/;
