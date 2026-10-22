@@ -14,6 +14,7 @@ import { applyPosture, postureFamily, POSTURE_BONES } from './render/posture.js'
 import { LAYERS, HOLD_LAYERS, AS_LIVE, loadHoldLayers, keepHoldLayers } from './render/holdlayers.js';
 import { adjustArms, armReadout, ARM_PARAMS, ARM0 } from './render/armpose.js';
 import { RADIO_FILE, RADIO0, radioFit, radioRig, radioPose, radioPlace } from './render/radiohold.js';
+import { CASE_FILE, CASE0, caseFit, caseRig, casePose, casePlace } from './render/casecarry.js';
 import { heroMoveSpeed } from './core/heroes.js';
 import { TUNING_DEFAULTS } from './core/tuning.js';
 import { LiveRetarget, setWeights, makeTag, setTag, placeTag, tintSkeleton, ROM } from './riglab/check.js';
@@ -609,7 +610,7 @@ function refresh() {
   main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames)); // (playing: between frames too, smooth for the hair sway)
   if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
   bodyFrame(f); // (a live library clip on the character, the second figure, the clothed dummy, the names)
-  undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main); armPoseOn(main); radioOn(main);
+  undoPost(main); undoPost(ref); postureFix(main, ref); handPose(main); armPoseOn(main); radioOn(main); caseOn(main);
   if (SHOTGUNS[weaponOf()]) untwistWrist(main, 'Left', S.wristKeep ?? 45);
   if (handsUI && handsSeen !== handKey()) { handsSeen = handKey(); handsUI(); }
   shotKick(main); if (ref.root.visible) shotKick(ref);
@@ -866,6 +867,26 @@ function radioOn(a) {
   const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(a.root.getWorldQuaternion(new THREE.Quaternion())).setY(0).normalize();
   radioPose(rig, radioOf(), 1, RAD.mode === 'talk' ? 1 : 0, fwd, a.height);
   radioPlace(rig, RAD.obj, radioOf()); RAD.obj.visible = a.root.visible;
+}
+// ---- CASE (Marc's vaccine case in his left hand, Chapter 2: render/casecarry.js, the same code as the game): one setting
+// per character, the saved ones in assets/hold/case_carry.json, edits kept in this browser, Save all writes
+// shots/case_carry.json (copied into assets/hold by Claude when the user says so). Shown over any clip: the runs, the
+// pistol, the crowbar.
+const CASES = {}, CAS = { on: false, obj: null };
+const caseOf = () => (CASES[S.char] = caseFit(CASES[S.char]));
+const keepCase = () => { try { localStorage.setItem('caseCarry', JSON.stringify(CASES)); } catch { /* private window */ } };
+fetch('assets/hold/case_carry.json', { cache: 'reload' }).then((r) => r.json()).catch(() => ({})).then((j) => {
+  Object.assign(CASES, j); try { Object.assign(CASES, JSON.parse(localStorage.getItem('caseCarry') || '{}')); } catch { /* none */ }
+  if (main) { refresh(); sidebarSync(); }
+});
+loadG(CASE_FILE).then((g) => { CAS.obj = g.scene; CAS.obj.traverse((o) => { if (o.isMesh) o.frustumCulled = false; }); CAS.obj.visible = false; scene.add(CAS.obj); if (main) refresh(); }).catch(() => {});
+function caseOn(a) {
+  if (CAS.obj) CAS.obj.visible = false;
+  if (!CAS.on || !CAS.obj || !a?.bones?.LeftHandMiddle1) return;
+  const rig = caseRig(a.obj, a.bones, Object.entries(fistPose(a) || {}).map(([n, q]) => [a.bones[n], q]).filter(([b]) => b));
+  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(a.root.getWorldQuaternion(new THREE.Quaternion())).setY(0).normalize();
+  casePose(rig, caseOf(), 1, fwd, a.height);
+  casePlace(rig, CAS.obj, caseOf()); CAS.obj.visible = a.root.visible;
 }
 // ---- LAYERS (render/holdlayers.js): every correction laid over the clips, each with its own switch (the posture fix's
 // checkbox is one of them), kept in this browser and shared with the game on this address; "save layers" writes
@@ -1677,6 +1698,18 @@ function buildSidebar() {
   rgrp('Body'); rs('elbow out', 'deg', -40, 100, 1, 'elbow'); rs('chin down', 'deg', -25, 30, 1, 'chin');
   { const b = document.createElement('div'); b.className = 'sbbtns'; b.innerHTML = '<button>Reset this character\'s radio</button>'; R1.body.appendChild(b);
     b.querySelector('button').onclick = () => { delete RADIO[S.char]; keepRadio(); refresh(); sidebarSync(); }; }
+  // ---- Case ----
+  const K1 = section('case', 'Case (left hand)');
+  { const t = document.createElement('div'); t.className = 'sbnote'; t.textContent = 'Marc\'s case in his left hand (Chapter 2), over the clip playing: try the runs, the pistol, the crowbar. The arm hangs with it and keeps part of the clip\'s swing.'; K1.body.appendChild(t); }
+  const kon = seg(K1.body, [['off', 'Off'], ['on', 'Carry the case']], (v) => { CAS.on = v === 'on'; refresh(); sidebarSync(); });
+  const caseRows = [];
+  const ks = (lbl, unit, lo, hi, st, k) => caseRows.push(slider(K1.body, lbl, unit, lo, hi, st, () => caseOf()[k], (v) => { caseOf()[k] = v; keepCase(); }, CASE0[k]));
+  { const d = document.createElement('div'); d.className = 'sbg'; d.textContent = 'Arm'; K1.body.appendChild(d); }
+  ks('swing kept', '%', 0, 100, 1, 'swing'); ks('hand off his side', 'cm', -5, 25, 0.5, 'out'); ks('hand forward', 'cm', -20, 20, 0.5, 'fwd'); ks('hand raised', 'cm', -5, 30, 0.5, 'lift'); ks('roll (forearm)', 'deg', -90, 90, 1, 'roll');
+  { const d = document.createElement('div'); d.className = 'sbg'; d.textContent = 'Case'; K1.body.appendChild(d); }
+  ks('turn', 'deg', -180, 180, 1, 'turn'); ks('swung out', 'deg', -45, 45, 1, 'tilt'); ks('size', '%', 50, 110, 1, 'size'); ks('fingers closed', '%', 0, 130, 1, 'curl'); ks('thumb closed', '%', 0, 130, 1, 'thumb');
+  { const b = document.createElement('div'); b.className = 'sbbtns'; b.innerHTML = '<button>Reset this character\'s case</button>'; K1.body.appendChild(b);
+    b.querySelector('button').onclick = () => { delete CASES[S.char]; keepCase(); refresh(); sidebarSync(); }; }
   // ---- Joint check ----
   const C1 = section('check', 'Joint check (this frame)');
   const chk = document.createElement('div'); chk.id = 'sbCheck'; C1.body.appendChild(chk);
@@ -1694,12 +1727,12 @@ function buildSidebar() {
   const sv = document.createElement('div'); sv.className = 'sbbtns';
   sv.innerHTML = '<button data-a="save" class="primary">Save all</button><span class="sbnote" id="sbSaved"></span>';
   sv.querySelector('button').onclick = async () => {
-    const files = { 'weapon_fit.json': WFITS, 'arm_pose.json': ARMP, 'hand_poses.json': HANDS, 'hold_layers.json': HOLD_LAYERS, 'pistol_fit.json': FITS, 'radio_hold.json': RADIO };
+    const files = { 'weapon_fit.json': WFITS, 'arm_pose.json': ARMP, 'hand_poses.json': HANDS, 'hold_layers.json': HOLD_LAYERS, 'pistol_fit.json': FITS, 'radio_hold.json': RADIO, 'case_carry.json': CASES };
     let ok = true; for (const [f, j] of Object.entries(files)) { const r = await fetch('/__shot/' + f, { method: 'POST', body: JSON.stringify(j, null, 1) }); ok &&= r.ok; }
     $('sbSaved').textContent = ok ? 'saved to shots/ (tell Claude to put it in the game)' : 'save failed';
   };
   V1.body.appendChild(sv);
-  SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1, ron, radRows };
+  SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1, ron, radRows, kon, caseRows };
   sidebarSync();
 }
 function layerSyncAll() {
@@ -1710,6 +1743,7 @@ function layerSyncAll() {
 function sidebarSync() {
   if (!SB || !main) return;
   for (const b of SB.ron.children) b.classList.toggle('on', b.dataset.v === (RAD.on ? RAD.mode : 'off')); for (const up of SB.radRows) up();
+  for (const b of SB.kon.children) b.classList.toggle('on', b.dataset.v === (CAS.on ? 'on' : 'off')); for (const up of SB.caseRows) up();
   const w = S.gun, a = fitTarget();
   SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? (CHARS[S.char]?.label || S.char) : ref === refX ? 'X Bot' : 'the mannequin'}`;
   for (const b of SB.who.children) b.classList.toggle('on', b.dataset.v === (S.fitWho || 'main'));
