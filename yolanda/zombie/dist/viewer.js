@@ -39314,8 +39314,8 @@ void main() {
 
   // src/render/casecarry.js
   var CASE_FILE = "assets/neighborhood/props/hood_case.glb";
-  var HANDLE = new Vector3(0, 0.07, 0.175);
-  var CASE0 = { size: 78, swing: 22, out: 5, fwd: 0, lift: 2, roll: 0, turn: 180, tilt: 0, curl: 100, thumb: 85 };
+  var HANDLE = new Vector3(0, 0.022, 0.137);
+  var CASE0 = { size: 100, swing: 22, out: 5, fwd: 0, lift: 2, roll: 0, turn: 0, tilt: 0, curl: 100, thumb: 85 };
   var caseFit = (f) => ({ ...CASE0, ...f });
   var UP3 = new Vector3(0, 1, 0);
   var D2R2 = Math.PI / 180;
