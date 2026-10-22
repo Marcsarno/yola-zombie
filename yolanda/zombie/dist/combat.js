@@ -46310,7 +46310,17 @@ void main() {
     // (the polish brief's replay: the other stops had no navigation of their own, so past the house the infected only came
     // at Marc when they could see him within 7 m; each stop now routes them over its own area: level.js navFor)
     help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 }, cell: 0.3 },
-    gate: { bounds: { minX: -12, maxX: 42, minZ: -45, maxZ: 30 }, cell: 0.5 },
+    // (the story reset v3, 2026-10-22: its stops by their new names. A stop with no area here kept the last one's, and the
+    // infected outside it had no way to Marc: they stood, and the rescue waited on them forever)
+    sneak: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 92 }, cell: 0.4 },
+    house: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 92 }, cell: 0.3 },
+    // (0.3: the house's 0.97 m front door stays open to routes)
+    rescue: { bounds: { minX: -14, maxX: 72, minZ: 18, maxZ: 92 }, cell: 0.4 },
+    // (the court, Sophie's yard, the loop's west leg, the house)
+    lot: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
+    after: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: -40 }, cell: 0.5 },
+    gate: { bounds: { minX: -14, maxX: 42, minZ: -45, maxZ: 70 }, cell: 0.5 },
+    // (from Sophie's yard up the west leg to the gate)
     club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.3 },
     // (0.3: the clubhouse's doors stay open to routes)
     pete: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
@@ -66020,7 +66030,7 @@ void main() {
         });
         syncMode();
       }
-      for (const [id, key, def] of [["goreChk", "gore", true], ["shakeChk", "shake", true], ["guideChk", "guide", false], ["debugChk", "debug", false]]) {
+      for (const [id, key, def] of [["goreChk", "gore", true], ["shakeChk", "shake", true], ["guideChk", "guide", true], ["debugChk", "debug", false]]) {
         const el = $(id);
         if (!el) continue;
         el.checked = id === "debugChk" ? new URLSearchParams(location.search).get("debug") === "1" : store3.get(key, def);
@@ -79908,7 +79918,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     radio: "props/hospital_radio.glb",
     case: "props/hood_case.glb",
     shotgun: "assets/weapons/pump_short.glb",
-    cooler: "models/by_cooler.glb"
+    cooler: "models/by_cooler.glb",
+    crowbar: "assets/weapons/crowbar.glb"
   };
   var PICKUP_SCALE = { ammo: 0.55, health: 0.45 };
   var WATER_Y = 0.04;
@@ -80105,6 +80116,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.group.traverse((o) => {
         if (o.isInstancedMesh && !FLAT3.test(o.name) && o.geometry) geoms.add(o.geometry);
       });
+      if (/[?&](geokeep|cinecheck)=1/.test(location.search)) geoms.clear();
       for (const gm of geoms) {
         if (!gm.boundingSphere) gm.computeBoundingSphere();
         if (!gm.boundingBox) gm.computeBoundingBox();
@@ -80229,9 +80241,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         } else if (q.model === "cutters") {
           m.rotation.set(Math.PI / 2, 0, 0.4);
           m.position.y = 0.04;
+        } else if (q.model === "crowbar") {
+          m.rotation.set(0, 0.5, Math.PI / 2);
+          m.position.y = 0.03;
         }
       } else {
-        m = this.keyRing();
+        m = q.model === "batteries" ? this.batteries() : q.model === "silencer" ? this.suppressor() : this.keyRing();
       }
       if (PICKUP_SCALE[q.model]) {
         m.scale.setScalar(PICKUP_SCALE[q.model]);
@@ -80251,6 +80266,29 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         p.g.removeFromParent();
         this.pickups.delete(id);
       }
+    }
+    // (made here: a pack of batteries and a suppressor, bigger than life so they read at this camera)
+    batteries() {
+      const g = new Group(), body = new MeshStandardMaterial({ color: 1776411, roughness: 0.5 }), band = new MeshStandardMaterial({ color: 14197276, roughness: 0.4, metalness: 0.3 });
+      for (let i = 0; i < 4; i++) {
+        const c = new Mesh(new CylinderGeometry(0.014, 0.014, 0.05, 10), i % 2 ? band : body);
+        c.rotation.z = Math.PI / 2;
+        c.position.set(0, 0.015, -0.045 + i * 0.03);
+        g.add(c);
+      }
+      const card = new Mesh(new BoxGeometry(0.07, 4e-3, 0.13), new MeshStandardMaterial({ color: 13120542 }));
+      card.position.y = 2e-3;
+      g.add(card);
+      g.scale.setScalar(2.2);
+      return g;
+    }
+    suppressor() {
+      const g = new Group(), m = new Mesh(new CylinderGeometry(0.017, 0.017, 0.15, 14), new MeshStandardMaterial({ color: 1579291, metalness: 0.6, roughness: 0.45 }));
+      m.rotation.z = Math.PI / 2;
+      m.position.y = 0.018;
+      g.add(m);
+      g.scale.setScalar(2);
+      return g;
     }
     keyRing() {
       const g = new Group(), metal = new MeshStandardMaterial({ color: 13219194, metalness: 0.8, roughness: 0.35 });
@@ -80304,7 +80342,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         g.position.set(b[0] + 0.4, 0.55, b[2]);
       }
     }
-    // ---- the case of four vials: in the fridge, at Marc's left side once he has it, in the boat's cooler
+    // ---- the case of four vials: in the garage's fridge behind the beer, in Marc's left hand once he has it, set down on the
+    // ground (at: {x, z, yaw}), in someone's hands (at: {get() -> {x, y, z, yaw}}: Sophie's), in the boat's cooler. On its lid
+    // the cold-chain label: the hospital's red cross and "x4" (the reveal's close-up reads it)
     showCase(state, at = null) {
       if (!this.caseObj && this.props.case) {
         this.caseObj = this.props.case.clone(true);
@@ -80316,15 +80356,129 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           }
         });
         this.fxGroup.add(this.caseObj);
+        (this.caseObj.getObjectByName("CaseLid") || this.caseObj).add(this.caseLabel());
       }
       const c = this.caseObj;
       if (!c) return;
       this.caseMode = state;
-      c.visible = state === "fridge" || state === "carried";
+      this.caseAt = at;
+      c.visible = ["fridge", "carried", "ground", "held"].includes(state);
       if (state === "fridge" && at) {
         c.position.set(at.x, at.y, at.z);
         c.rotation.set(0, Math.PI / 2, 0);
+        this.beer(at);
       }
+      if (state === "ground" && at) {
+        c.position.set(at.x, groundY(at.x, at.z) + 0.01, at.z);
+        c.rotation.set(0, at.yaw || 0, 0);
+      }
+    }
+    caseLabel() {
+      const cv = document.createElement("canvas");
+      cv.width = 256;
+      cv.height = 176;
+      const g = cv.getContext("2d");
+      g.fillStyle = "#f3f1ea";
+      g.beginPath();
+      g.roundRect(6, 6, 244, 164, 18);
+      g.fill();
+      g.lineWidth = 6;
+      g.strokeStyle = "#c4161c";
+      g.stroke();
+      g.fillStyle = "#c4161c";
+      g.beginPath();
+      g.arc(78, 88, 52, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#f3f1ea";
+      g.fillRect(70, 52, 16, 72);
+      g.fillRect(42, 80, 72, 16);
+      g.fillStyle = "#1d1d1d";
+      g.font = "800 64px system-ui,sans-serif";
+      g.textAlign = "center";
+      g.fillText("x4", 186, 108);
+      g.font = "700 15px system-ui,sans-serif";
+      g.fillText("KEEP COLD", 186, 140);
+      g.fillText("VACCINE", 186, 52);
+      const t = new CanvasTexture(cv);
+      t.colorSpace = SRGBColorSpace;
+      t.anisotropy = 4;
+      const m = new Mesh(new PlaneGeometry(0.3, 0.206), new MeshStandardMaterial({ map: t, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }));
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(0, 0.0615, 0.16);
+      m.name = "caseLabel";
+      return m;
+    }
+    // the six-pack and the bottles in the garage fridge, in front of the case ("Behind the beer. Smart.")
+    beer(at) {
+      if (this.beerObj) {
+        this.beerObj.visible = true;
+        return;
+      }
+      const g = new Group(), can = new MeshStandardMaterial({ color: 12106948, metalness: 0.8, roughness: 0.35 }), red = new MeshStandardMaterial({ color: 11542556, roughness: 0.5 }), glass = new MeshStandardMaterial({ color: 3103266, roughness: 0.2, metalness: 0.1 });
+      const cg = new CylinderGeometry(0.033, 0.033, 0.122, 12), bg = new CylinderGeometry(0.03, 0.032, 0.2, 10), ng = new CylinderGeometry(0.012, 0.022, 0.07, 8);
+      for (let i = 0; i < 6; i++) {
+        const m = new Mesh(cg, i % 3 === 1 ? red : can);
+        m.position.set(0.17 + i % 2 * 0.068, 0.061, -0.17 + Math.floor(i / 2) * 0.07);
+        g.add(m);
+      }
+      for (let i = 0; i < 4; i++) {
+        const b = new Mesh(bg, glass);
+        b.position.set(0.17, 0.1, 0.07 + i * 0.065);
+        g.add(b);
+        const n = new Mesh(ng, glass);
+        n.position.set(0.17, 0.235, 0.07 + i * 0.065);
+        g.add(n);
+      }
+      g.position.set(at.x, at.y - 0.06, at.z);
+      this.fxGroup.add(g);
+      this.beerObj = g;
+    }
+    // the front door left ajar (the leaf part-way in: the music leaks out, beat 3)
+    doorAjar(k = 0.22) {
+      var _a8;
+      const s = this.seals.home_door?.find((q) => /kit_row4_intact/.test(q.file)), leaf = s && this.doorLeaf(s.o);
+      if (!leaf) return;
+      (_a8 = leaf.userData).q0 ?? (_a8.q0 = leaf.quaternion.clone());
+      leaf.quaternion.copy(leaf.userData.q0);
+      leaf.rotateOnWorldAxis(_Y, 1.75 * k);
+    }
+    // the radio's battery going (beat 7): a red light blinking on its face, until the batteries
+    radioLow(on) {
+      if (!this.radioLed) {
+        const tex3 = (() => {
+          const c = document.createElement("canvas");
+          c.width = c.height = 64;
+          const g = c.getContext("2d");
+          const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+          gr.addColorStop(0, "rgba(255,60,40,1)");
+          gr.addColorStop(0.35, "rgba(255,30,20,0.6)");
+          gr.addColorStop(1, "rgba(255,0,0,0)");
+          g.fillStyle = gr;
+          g.fillRect(0, 0, 64, 64);
+          return new CanvasTexture(c);
+        })();
+        this.radioLed = new Sprite(new SpriteMaterial({ map: tex3, blending: AdditiveBlending, depthWrite: false, toneMapped: false }));
+        this.radioLed.scale.setScalar(0.16);
+        this.fxGroup.add(this.radioLed);
+      }
+      this.radioLedOn = on;
+      this.radioLed.visible = false;
+    }
+    // the suppressor (beat 11) on Marc's pistol: a black tube on from the muzzle, along the barrel
+    silencerOn(yola2) {
+      const pg = yola2?.pistol, mz = pg?.userData?.muzzle;
+      if (!pg || !mz || this.silencer) return;
+      pg.updateMatrixWorld(true);
+      const mzL = pg.worldToLocal(mz.getWorldPosition(new Vector3())), c = new Box3().setFromObject(pg).getCenter(new Vector3()), cL = pg.worldToLocal(c);
+      const d = mzL.clone().sub(cL);
+      const ax = ["x", "y", "z"].reduce((b, k) => Math.abs(d[k]) > Math.abs(d[b]) ? k : b, "x"), dir = new Vector3();
+      dir[ax] = Math.sign(d[ax]) || 1;
+      const s = pg.getWorldScale(new Vector3()).x || 1, L3 = 0.15 / s, R = 0.017 / s;
+      const tube = new Mesh(new CylinderGeometry(R, R, L3, 14), new MeshStandardMaterial({ color: 1579291, metalness: 0.6, roughness: 0.45 }));
+      tube.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), dir);
+      tube.position.copy(mzL).addScaledVector(dir, L3 / 2 - 4e-3 / s);
+      pg.add(tube);
+      this.silencer = tube;
     }
     // the boat's cooler (by_cooler, on the boat's stern seat: it leaves with the boat)
     showCooler(on) {
@@ -80410,16 +80564,28 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.radio.visible = yola2.outer.visible && !p.dead;
       this.caseUpdate(yola2, p);
     }
-    // the case at his left hip (slung), while he has it
+    // the case in his left hand by its handle while he has it (the story: "Marc carries it in one hand and fights with a
+    // one-handed weapon"); where the stance keeps that hand up at his chest (the pistol's grip), it rides at his left side at
+    // carrying height, as the gas can does. In someone else's hands: wherever their getter puts it
     caseUpdate(yola2, p) {
       const c = this.caseObj;
-      if (!c || this.caseMode !== "carried") return;
-      yola2.bones.Hips.getWorldPosition(c.position);
-      const y = p.aimYaw;
-      c.position.x += Math.cos(y) * 0.24 - Math.sin(y) * 0.05;
-      c.position.z -= Math.sin(y) * 0.24 + Math.cos(y) * 0.05;
-      c.position.y -= 0.3;
-      c.rotation.set(Math.PI / 2, y + Math.PI / 2, 0);
+      if (!c) return;
+      if (this.caseMode === "held" && this.caseAt?.get) {
+        const h = this.caseAt.get();
+        if (h) {
+          c.position.set(h.x, h.y, h.z);
+          c.rotation.set(-Math.PI / 2, (h.yaw || 0) + Math.PI / 2, 0, "YXZ");
+        }
+        return;
+      }
+      if (this.caseMode !== "carried") return;
+      const y = p.aimYaw, hand = yola2.bones?.LeftHand, hw = hand ? hand.getWorldPosition(this._cv || (this._cv = new Vector3())) : null;
+      if (hw && hw.y < 1) c.position.set(hw.x, Math.max(0.14, hw.y - 0.16), hw.z);
+      else {
+        const a = y + 1.45;
+        c.position.set(p.x + Math.sin(a) * 0.3, 0.42, p.z + Math.cos(a) * 0.3);
+      }
+      c.rotation.set(-Math.PI / 2, y + Math.PI / 2, 0, "YXZ");
       c.visible = yola2.outer.visible && !p.dead;
     }
     // ---- the rifle in Marc's hands: the shotgun's hold (its grips are the same points), the rifle's mesh instead of the pump
@@ -80485,6 +80651,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         p.t += dt;
         p.ring.material.opacity = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(p.t * 5.5));
         p.item.position.y = ((_a8 = p.item.userData).y0 ?? (_a8.y0 = p.item.position.y)) + 0.04 * (0.5 + 0.5 * Math.sin(p.t * 2.2));
+      }
+      if (this.radioLed) {
+        const on = this.radioLedOn && this.radio?.visible && (this.radioLedHold || performance.now() % 1e3 < 450);
+        this.radioLed.visible = !!on;
+        if (on) this.radio.getWorldPosition(this.radioLed.position).add(this._ledOff || (this._ledOff = new Vector3(0, 0.09, 0)));
       }
       if (this.gasRing?.visible) this.gasRing.material.opacity = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(performance.now() / 180));
       if (this.gasMode === "carried" && sim2) {
@@ -80667,133 +80838,118 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
 
   // src/hood/script.js
   var LINES2 = {
-    // 1. The call at the door
-    Y01: ["YOLA", "Marc. Are you at the house?", true, "Y01_yola"],
-    M01: ["MARC", "At the door.", true, "M01_marc"],
-    Y02: ["YOLA", "It's in our bedroom closet, top shelf. A silver case. Four vials of the vaccine.", true, "Y02_yola"],
-    Y03: ["YOLA", "Listen. Some are missing from the hospital, and people know. They're going through every neighborhood where staff live. They're looking for it.", true, "Y03_yola"],
-    M02: ["MARC", "Looters.", true, "M02_marc"],
-    Y04: ["YOLA", "Get the case and get out. Don't stay in there.", true, "Y04_yola"],
-    M03: ["MARC", "I'll bring the cure to Grammy's. The girls are waiting.", true, "M03_marc"],
-    Y05: ["YOLA", "Three of them are for Grammy, Lilah and Arianna. The fourth one is yours. Take it.", true, "Y05_yola"],
-    M04: ["MARC", "Let's see if you get out of there with some. If you do, I'll take it.", true, "M04_marc"],
-    Y06: ["YOLA", "That's not a plan.", true, "Y06_yola"],
-    M05: ["MARC", "It's mine.", true, "M05_marc"],
-    // 2. The house (James)
+    // 1. The sneak in: the call (whispered)
+    c106: ["MARC", "Yola, I have no idea how I'm going to get out of here with this.", true, "c2_106_marc", false],
+    c107: ["YOLA", "Figure it out. The family's counting on you.", true, "c2_107_yola"],
+    c103: ["YOLA", "The vials are in the garage. The second fridge. Four vials of the vaccine.", true, "c2_103_yola"],
+    c108: ["MARC", "I'll get the vaccine to the family.", true, "c2_108_marc", false],
+    // 4. The house (James)
     J01: ["JAMES", "What the fuck? Who are you? Who are you, motherfucker? Who are YOU?", false, "J01_james"],
-    M06: ["MARC", "Got it.", false, "M06_marc"],
-    // 3. "Help!"
-    S01: ["SOPHIE", "Help! Somebody help me! Please!", false, "S01_sophie"],
-    S02: ["SOPHIE", "Help! Over here! Please, please, please!", false, "S02_sophie"],
-    S03: ["SOPHIE", "Oh my God. Oh my God. Thank you.", false, "S03_sophie"],
-    S03a: ["SOPHIE", "I'm Sophie.", false, "S03a_sophie"],
-    M06a: ["MARC", "Marc. Can you walk?", false, "M06a_marc"],
-    // 4. The bargain
-    S04: ["SOPHIE", "Wait. What is that?", false, "S04_sophie"],
-    S05: ["SOPHIE", "Is that the cure? You're the doctor's husband.", false, "S05_sophie"],
-    S06: ["SOPHIE", "They're looking for those. Everyone's looking for those.", false, "S06_sophie"],
-    S07: ["SOPHIE", "You have to give me one. If I get you out of here safe, can I have one?", false, "S07_sophie"],
-    M07: ["MARC", "Get me out of here first.", false, "M07_marc"],
-    S08: ["SOPHIE", "Okay. Okay. Follow me. I know a way.", false, "S08_sophie"],
-    // 5. The gate
-    S09: ["SOPHIE", "The gate's chained. My neighbor has bolt cutters. The garage with the light on.", false, "S09_sophie"],
-    S10: ["SOPHIE", "Hurry. Please hurry.", false, "S10_sophie"],
-    M08: ["MARC", "Stay behind me.", false, "M08_marc"],
-    // 6. The clubhouse
-    M08a: ["MARC", "I've got a boat at the dock. But I need gas.", false, "M08a_marc"],
-    S11: ["SOPHIE", "Pete, the groundskeeper, has the key to the gas shed. If he's alive, he'd be at the clubhouse. Or close to it.", false, "S11_sophie"],
-    S12: ["SOPHIE", "And there are supplies in there, right? Ammo. First aid.", false, "S12_sophie"],
-    L01: ["LOOTER", "Keep walking! This place is taken!", false, "L01_looter_a"],
-    L02: ["LOOTER", "Who's out there? Show yourself!", false, "L02_looter_b"],
-    L03: ["LOOTER", "He's inside! Light him up!", false, "L03_looter_c"],
-    L04: ["LOOTER", "He's got a rifle! Get down!", false, "L04_looter_a"],
-    M09: ["MARC", "That'll do.", false, "M09_marc"],
-    // 7. Pete
+    c303: ["MARC", "Sorry, buddy. Wrong fridge.", false, "c2_303_marc"],
+    c304: ["MARC", "Behind the beer. Smart.", false, "c2_304_marc"],
+    // 5. The rescue (Adam and Sophie)
+    c401: ["SOPHIE", "No! Stop! Please, stop!", false, "c2_401_sophie"],
+    c402: ["ADAM", "Stay behind me! Sophie, stay behind me!", false, "c2_402_adam"],
+    c403: ["ADAM", "Run! Sophie, run!", false, "c2_403_adam"],
+    c404: ["SOPHIE", "Help! Somebody help us! Please!", false, "c2_404_sophie"],
+    c405: ["ADAM", "Hey. I've got you.", false, "c2_405_adam"],
+    c406: ["SOPHIE", "Adam. Adam, no. Stay with me.", false, "c2_406_sophie"],
+    c408: ["SOPHIE", "Adam? Adam, it's me. It's me.", false, "c2_408_sophie"],
+    c410: ["SOPHIE", "He just went out to get the car.", false, "c2_410_sophie"],
+    // 6. The reveal and the deal
+    c501: ["SOPHIE", "Is that what I think it is?", false, "c2_501_sophie"],
+    c502: ["SOPHIE", "That's the hospital's symbol. You're the one who's been hiding the supplies, aren't you?", false, "c2_502_sophie"],
+    c503: ["SOPHIE", "Would it have helped him?", false, "c2_503_sophie"],
+    c504: ["MARC", "No. It only works before.", false, "c2_504_marc"],
+    c505: ["MARC", "I have to go.", false, "c2_505_marc"],
+    c506: ["SOPHIE", "Wait. Where are you going?", false, "c2_506_sophie"],
+    c507: ["MARC", "To my family. We have to get across the water.", false, "c2_507_marc"],
+    c508: ["SOPHIE", "I have a boat.", false, "c2_508_sophie"],
+    c509: ["MARC", "You have a boat?", false, "c2_509_marc"],
+    c510: ["SOPHIE", "At the club. It's out of gas. Can you help me?", false, "c2_510_sophie"],
+    c511: ["MARC", "I'm not here to help anyone but my own family. I'm sorry.", false, "c2_511_marc"],
+    c512: ["SOPHIE", "Please. I'm alone. I don't have anyone left. Help me get past the horde and you can use my boat.", false, "c2_512_sophie"],
+    c513: ["MARC", "...Okay.", false, "c2_513_marc"],
+    c514: ["SOPHIE", "Thank you. Thank you. Come this way.", false, "c2_514_sophie"],
+    // 7 - 8. The radio's battery; the gate
+    c601: ["MARC", "Battery's almost gone.", false, "c2_601_marc", true],
+    c602: ["SOPHIE", "Gate's locked. Don't worry, I've got this.", false, "c2_602_sophie"],
+    c603: ["SOPHIE", "You'll want something quiet. That house there. The door's open.", false, "c2_603_sophie"],
+    c603b: ["SOPHIE", "Good. You found something quiet.", false, "c2_603b_sophie"],
+    c604: ["MARC", "When did you learn that?", false, "c2_604_marc"],
+    c605: ["SOPHIE", "Come on.", false, "c2_605_sophie"],
+    // 9. The busted house; Yola's call
+    c701: ["MARC", "Batteries. Good.", false, "c2_701_marc"],
+    c702: ["MARC", "That'll be quiet.", false, "c2_702_marc"],
+    c703: ["YOLA", "Marc? Marc, can you hear me? I lost you.", true, "c2_703_yola"],
+    c704: ["MARC", "I'm here. The radio was dying.", true, "c2_704_marc"],
+    c705: ["YOLA", "Thank God. Did you find it?", true, "c2_705_yola"],
+    c706: ["MARC", "I found the vaccine. Enough for the family, and one for you. I'm bringing it with me.", true, "c2_706_marc"],
+    c711: ["YOLA", "Then I'll find more. For us.", true, "c2_711_yola"],
+    c712: ["MARC", "There's a woman with a boat. She saw the case.", true, "c2_712_marc"],
+    c713: ["YOLA", "Then watch her.", true, "c2_713_yola"],
+    c714: ["MARC", "I am.", true, "c2_714_marc"],
+    // 11. The clubhouse
+    c801: ["SOPHIE", "The clubhouse has supplies. Ammo, first aid.", false, "c2_801_sophie"],
+    c802: ["SOPHIE", "Don't use your gun. You'll wake the horde. And then we're fucked.", false, "c2_802_sophie"],
+    c803: ["SOPHIE", "Look.", false, "c2_803_sophie"],
+    c804: ["MARC", "Jesus.", false, "c2_804_marc"],
+    c805: ["MARC", "Keep an eye on this.", false, "c2_805_marc"],
+    c806: ["MARC", "A suppressor. Now we're talking.", false, "c2_806_marc"],
+    c807: ["SOPHIE", "Shit. It's not in here. He must have it on him.", false, "c2_807_sophie"],
+    c808: ["MARC", "Who has what?", false, "c2_808_marc"],
+    c809: ["SOPHIE", "Just follow me.", false, "c2_809_sophie"],
+    // 12. Pete in the lot
     P01: ["PETE", "Help! Over here! Somebody!", false, "P01_pete"],
     P02: ["PETE", "Get back! Get BACK!", false, "P02_pete"],
     P03: ["PETE", "Don't come! They're... They're... AAAH!", false, "P03_pete"],
-    S13: ["SOPHIE", "I've got it. I've got the key.", false, "S13_sophie"],
-    // 8. The check-in with Yola (the key and the dose)
-    M10: ["MARC", "Give me the key.", false, "M10_marc"],
-    S14: ["SOPHIE", "Not until I get one. A cure. For me.", false, "S14_sophie"],
-    M11: ["MARC", "Yola. It's me.", true, "M11_marc"],
-    Y07: ["YOLA", "Marc. Are you all right? Did you find it?", true, "Y07_yola"],
-    M12: ["MARC", "I've got the case. The woman with me has the fuel-shed key. She wants a dose before she'll hand it over.", true, "M12_marc"],
-    Y08: ["YOLA", "Do it. Just do it.", true, "Y08_yola"],
-    Y09: ["YOLA", "You've got enough for Grammy and the girls. I'll find more for us. It's going to be okay.", true, "Y09_yola"],
-    M13: ["MARC", "Are you sure?", true, "M13_marc"],
-    Y10: ["YOLA", "I'm sure. Go.", true, "Y10_yola"],
-    M14: ["MARC", "You get one. When we're on the water.", false, "M14_marc"],
-    S15: ["SOPHIE", "Okay. Okay. Thank you. Here.", false, "S15_sophie"],
-    // 9. The dock
-    M15: ["MARC", "The boat's nearly dry. The shed's up the bank.", false, "M15_marc"],
-    M16: ["MARC", "Listen. We can't start the motor. The noise will bring every one of those over here.", false, "M16_marc"],
-    M17: ["MARC", "We push off first. Get clear of the bank. Then we start it. Understand?", false, "M17_marc"],
-    S16: ["SOPHIE", "Okay. Okay. Quiet.", false, "S16_sophie"],
-    M18: ["MARC", "Cold, and still. Keep it that way.", false, "M18_marc"],
-    S17: ["SOPHIE", "How cold?", false, "S17_sophie"],
-    M19: ["MARC", "Just stay with the boat.", false, "M19_marc"],
-    S18: ["SOPHIE", "I'm still getting one, right?", false, "S18_sophie"],
-    M20: ["MARC", "On the water.", false, "M20_marc"],
-    S19: ["SOPHIE", "Sure.", false, "S19_sophie"],
-    // 10. The shed and the engine
-    M21: ["MARC", "That's what I needed.", false, "M21_marc"],
-    M22: ["MARC", "No. No, no, no. What are you doing?", false, "M22_marc"],
-    M23: ["MARC", "Sophie! Sophie, stop!", false, "M23_marc"],
-    S20: ["SOPHIE", "I'm sorry! I can't stay here!", false, "S20_sophie"],
-    S21: ["SOPHIE", "Oh God. Oh God, no.", false, "S21_sophie"],
-    S22: ["SOPHIE", "Marc! MARC!", false, "S22_sophie"],
-    M24: ["MARC", "Hold on! I'm coming!", false, "M24_marc"],
-    // 11. Leaving
-    M25: ["MARC", "Damn it.", false, "M25_marc"],
-    M26: ["MARC", "Yola. I've got it. I'm leaving the dock.", true, "M26_marc"],
-    Y11: ["YOLA", "And the survivor?", true, "Y11_yola"],
-    M27: ["MARC", "She didn't make it.", true, "M27_marc"],
-    Y12: ["YOLA", "I'm sorry.", true, "Y12_yola"],
-    M28: ["MARC", "She never took one. I've still got all four.", true, "M28_marc"],
-    Y13: ["YOLA", "Marc...", true, "Y13_yola"],
-    M29: ["MARC", "The fourth one's still yours. I'm going to Grammy's.", true, "M29_marc"],
-    // Combat barks
-    MB01: ["MARC", "Stay behind me.", false, "MB01_marc"],
-    MB02: ["MARC", "Stay close.", false, "MB02_marc"],
-    MB03: ["MARC", "Get down!", false, "MB03_marc"],
-    MB04: ["MARC", "Move!", false, "MB04_marc"],
-    MB05: ["MARC", "Reloading!", false, "MB05_marc"],
-    SB01: ["SOPHIE", "Behind you!", false, "SB01_sophie"],
-    SB02: ["SOPHIE", "Oh God!", false, "SB02_sophie"],
-    SB03: ["SOPHIE", "Go, go, go!", false, "SB03_sophie"],
-    SB04: ["SOPHIE", "Don't leave me!", false, "SB04_sophie"],
-    SB05: ["SOPHIE", "Is it clear?", false, "SB05_sophie"],
-    SB06: ["SOPHIE", "I'm okay. I'm okay.", false, "SB06_sophie"],
-    LB01: ["LOOTER", "There he is!", false, "LB01_looter_a"],
-    LB02: ["LOOTER", "Get him!", false, "LB02_looter_b"],
-    LB03: ["LOOTER", "Flank him!", false, "LB03_looter_c"],
-    LB04: ["LOOTER", "I'm hit!", false, "LB04_looter_a"]
+    c905: ["MARC", "Sorry, pal.", false, "c2_905_marc"],
+    c906: ["SOPHIE", "Come on. The dock.", false, "c2_906_sophie"],
+    // 13. The dock
+    c1001: ["MARC", "That's your boat?", false, "c2_1001_marc"],
+    c1002: ["SOPHIE", "It's all I've got. It's nearly dry.", false, "c2_1002_sophie"],
+    c1003: ["SOPHIE", "Give me the case. There's a cooler on the boat.", false, "c2_1003_sophie"],
+    c1004: ["MARC", "What?", false, "c2_1004_marc"],
+    c1005: ["SOPHIE", "It has to stay cold. I have no gas, so I can't go anywhere. The case is locked, so I can't open it. And I need your help.", false, "c2_1005_sophie"],
+    c1006: ["SOPHIE", "It's fine. Grab the gas so we can go. Please.", false, "c2_1006_sophie"],
+    c1007: ["MARC", "You know I'd do anything for my family, right? Anything.", false, "c2_1007_marc"],
+    c1008: ["SOPHIE", "Here. The shed's right up the bank.", false, "c2_1008_sophie"],
+    c1009: ["MARC", "Whatever you do, don't start that motor. You know what it'll bring.", false, "c2_1009_marc"],
+    c1010: ["SOPHIE", "I know. I know. Go.", false, "c2_1010_sophie"],
+    // 14 - 16. The shed, the engine, Sophie, the fight
+    c1101: ["MARC", "Gas.", false, "c2_1101_marc"],
+    c1103: ["SOPHIE", "Come on. Come on, come on.", false, "c2_1103_sophie"],
+    // 17 - 18. After; leaving
+    c1201: ["MARC", "You could have come with us.", false, "c2_1201_marc"],
+    c1206: ["MARC", "I've still got all four.", true, "c2_1206_marc"],
+    c1208: ["MARC", "The fourth one's still yours. I'm going to them.", true, "c2_1208_marc"]
   };
-  var CUES = { J02: "J02_james_scream", S23: "S23_sophie_scream", ENGINE: "FX_ENGINE_outboard_start_stall" };
-  var SPEAKER_COLOR = { MARC: "#9fd3ff", YOLA: "#ffc6e0", SOPHIE: "#ffe39a", JAMES: "#ff8a7a", PETE: "#cfe8b8", LOOTER: "#ff8a7a" };
+  var CUES = { J02: "J02_james_scream", c409: "c2_409_sophie", c407: "c2_407_adam", ENGINE: "FX_ENGINE_outboard_start_stall" };
+  var SPEAKER_COLOR = { MARC: "#9fd3ff", YOLA: "#ffc6e0", SOPHIE: "#ffe39a", ADAM: "#c9d8a6", JAMES: "#ff8a7a", PETE: "#cfe8b8" };
   var FACES = { MARC: "assets/ui/radio/marc.webp", YOLA: "assets/ui/radio/yola.webp" };
   var GOALS = {
-    vaccines: "Get the vaccines",
-    fridge: "The vaccines are in the fridge",
-    out: "Get out",
+    sneak: "Get to the house",
+    house: "Go in",
+    vials: "The second fridge, in the garage",
     help: "Find who is screaming",
-    save: "Save her",
+    save: "Help them",
+    shoot: "Shoot him",
     follow: "Follow Sophie",
-    cutters: "Get the bolt cutters",
-    gate: "Cut the chain",
-    clubhouse: "Clear the clubhouse",
-    pete: "Find Pete",
-    savePete: "Help Pete",
-    key: "Get the key from Sophie",
-    dock: "Get to the boat",
-    gas: "Get gas",
+    quiet: "Find something quiet",
+    batteries: "Get the batteries",
+    gate: "Wait for Sophie",
+    clubhouse: "Get to the clubhouse",
+    clear: "Clear the clubhouse. No guns",
+    takeCase: "Take the case",
+    pete: "Follow Sophie",
+    savePete: "Help him. Quietly",
+    dock: "Get to the dock",
     shed: "Get the gas from the shed",
     sophie: "Get to Sophie",
     horde: "Survive",
-    caseBack: "Get the case",
+    caseBack: "Take the case",
     fuel: "Fuel the boat",
-    leave: "Get in the boat"
+    leave: "Start the motor"
   };
 
   // src/hood/zones.js
@@ -80887,24 +81043,27 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var H4 = ["home", "b05l", "curve", "south"];
   var N = ["club", "west", "dock", "north", "courts"];
   var STOPS = {
-    home: { start: [37.5, 38.5], zones: H4, open: [], reach: [["home_door_use", 1.4]] },
-    house: { start: [35.3, 38.5], zones: [...H4, "house"], open: ["home_door"], reach: [["fridge_use", 1.4], ["james", 1]] },
-    help: { start: [38.4, 34.5], zones: [...H4, "house"], open: ["home_door"], reach: [["seal_home_use", 2]] },
-    gate: { start: [27.5, 9.5], zones: [...H4, "house"], open: ["home_door", "home"], reach: [["cutters", 1.3], ["gate_use", 2.2]] },
-    club: { start: [18.6, -19.5], zones: [...H4, "house", ...N], open: ["home_door", "home", "gate"], reach: [["club_warn", 7], ["club_door", 2.6], ["dock_road_lot", 2.2]] },
-    clubhouse: { start: [9.6, -50], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor"], reach: [["keys", 1.1]] },
-    dock: { start: [31, -81], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor"], reach: [["pour_fuel", 2.4], ["shed_door", 1.6]] },
-    shed: { start: [10.3, -99.5], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor", "shed"], reach: [["shed_gas", 1.3], ["shed_shotgun", 1.6]] },
-    horde: { start: [-10.5, -100], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "home", "gate", "clubdoor", "shed", "dock"], reach: [["pour_fuel", 2.4]] }
+    sneak: { start: [45.6, 80.4], zones: H4, open: [], reach: [["home_door_use", 1.4]] },
+    house: { start: [35.3, 38.5], zones: [...H4, "house"], open: ["home_door"], reach: [["james_fridge", 1], ["gfridge_use", 1.4]] },
+    rescue: { start: [38.4, 38.5], zones: [...H4, "house"], open: ["home_door"], reach: [["home_porch", 1.4]] },
+    gate: { start: [15.5, 57.5], zones: [...H4, "house"], open: ["home_door"], reach: [["cutters", 1.3], ["gate_use", 2.2]] },
+    club: { start: [18.6, -19.5], zones: [...H4, "house", ...N], open: ["home_door", "gate"], reach: [["club_warn", 7], ["club_door", 2.6]] },
+    clubhouse: { start: [9.6, -50], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "gate", "clubdoor"], reach: [["keys", 1.1]] },
+    lot: { start: [17.5, -43.5], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "gate", "clubdoor"], reach: [["dock_road_lot", 2.2]] },
+    dock: { start: [62, -70], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "gate", "clubdoor"], reach: [["pour_fuel", 2.4], ["shed_door", 1.6]] },
+    shed: { start: [-17.2, -95.2], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "gate", "clubdoor", "shed"], reach: [["shed_gas", 1.3], ["shed_shotgun", 1.6]] },
+    horde: { start: [-17.2, -95.2], zones: [...H4, "house", ...N, "clubhouse"], open: ["home_door", "gate", "clubdoor", "shed", "dock"], reach: [["pour_fuel", 2.4]] }
   };
 
   // src/hood/level.js
   var STEP4 = 1 / 60;
+  var groundAt = (q) => groundY(q.x, q.z);
   var AMBIENT = {
+    rescue: ["south", 4, 40, 16, 3],
     gate: ["curve", 14, 10, 20, 4],
-    club: ["club", 18, -32, 14, 4],
-    pete: ["club", 64, -70, 24, 6],
-    dock: ["dock", -2, -100, 16, 3]
+    club: ["club", 18, -30, 10, 3],
+    lot: ["club", 60, -78, 22, 5],
+    dock: ["dock", -2, -92, 12, 2]
   };
   var WAVE_EXTRA = 0.5;
   var inPoly = (P2, x, z) => {
@@ -80912,40 +81071,43 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     for (let i = 0, j = P2.length - 1; i < P2.length; j = i++) if (P2[i][1] > z !== P2[j][1] > z && x < (P2[j][0] - P2[i][0]) * (z - P2[i][1]) / (P2[j][1] - P2[i][1]) + P2[i][0]) c = !c;
     return c;
   };
-  var STOP_ORDER = ["home", "help", "gate", "club", "pete", "dock", "shed", "horde", "leave"];
+  var STOP_ORDER = ["sneak", "house", "rescue", "gate", "club", "lot", "dock", "shed", "horde", "after", "leave"];
   var STOP_STARTS = {
-    home: [37.5, 0, 38.5, -Math.PI / 2],
-    help: [38.4, 0, 34.5, Math.PI * 0.85],
-    gate: [27.5, 0, 9.5, -Math.PI / 2],
+    sneak: [45.6, 0, 80.4, Math.PI],
+    house: [38.6, 0, 40.2, -Math.PI / 2],
+    rescue: [38.4, 0, 38.5, Math.PI / 2],
+    gate: [15.5, 0, 57.5, -Math.PI / 2],
     club: [18.6, 0, -19.5, Math.PI],
-    pete: [17.5, 0, -43.5, 2.2],
-    dock: [36.5, 0, -80.5, -Math.PI / 2],
-    shed: [-17, 0, -86, Math.PI],
-    horde: [-10.5, 0, -103.5, 0],
-    leave: [-21, 0, -80.5, -Math.PI / 2]
+    lot: [17.5, 0, -43.5, 2.2],
+    dock: [62, 0, -70, -Math.PI / 2],
+    shed: [-19.5, 0, -82.5, Math.PI],
+    horde: [-17.2, 0, -95.2, 0],
+    after: [-21, 0, -86, -Math.PI / 2],
+    leave: [-21, 0, -82.5, -Math.PI / 2]
   };
   var SUPPLIES = {
-    home: [["ammo_p", 34.5, 42.2, "pistol"], ["med", 30.6, 41.8]],
-    help: [["ammo_p", 53.73, -2.47, "pistol"], ["med", 55.68, -4.24]],
+    house: [["ammo_p", 34.5, 42.2, "pistol"], ["med", 30.6, 41.8]],
+    rescue: [["ammo_p", 15.6, 63.4, "pistol"], ["med", 9.4, 63.8]],
     gate: [["ammo_p", 13, 15, "pistol"], ["med", 24.5, -7.5]],
-    club: [["med", 14.5, -52], ["ammo_p", 12.2, -59.6, "pistol"], ["ammo_r", 6.2, -58.6, "rifle"]],
-    pete: [["ammo_r", 63.2, -72.2, "rifle"], ["med", 48, -76.5], ["ammo_p", 72.5, -66, "pistol"]],
+    club: [["med", 14.5, -52], ["ammo_p", 12.2, -59.6, "pistol"]],
+    lot: [["ammo_p", 72.5, -66, "pistol"], ["med", 48, -76.5]],
     dock: [["med", -19.5, -75]],
-    horde: [["ammo_s", -12.5, -96.5, "shotgun"], ["med", -4.5, -93], ["ammo_s", -21, -88, "shotgun"]]
+    horde: [["ammo_s", -12.5, -93.5, "shotgun"], ["med", -4.5, -93], ["ammo_s", -21, -88, "shotgun"], ["ammo_s", -6.5, -84.6, "shotgun"], ["ammo_s", -24.5, -76.5, "shotgun"]]
   };
   var ROUTES = {
-    follow: [[44, 4.5], [38.5, 3.2], [32.4, 0.6]],
-    // her garage -> the barricade on the curve
-    gate: [[26.8, -1.2], [23.8, -8], [20.8, -12.2]],
-    // the barricade -> the chained gate
-    cutters: [[14.5, -10], [9.5, -7]],
-    // -> toward the garage with the light on (short of it)
-    clubhouse: [[18.5, -20], [15.5, -26], [14.2, -30.5]],
-    // the gate -> the clubhouse's front (short of the warning)
-    dock: [[30.5, -61], [30.5, -69], [30.2, -77.5], [22, -81], [6, -81]]
-    // Pete's drive -> down the dock road (its gate gone: Marc's notes 9)
+    gate: [[6.5, 57.5], [1.2, 50], [0.8, 32], [2.5, 14], [8.5, 2], [14.5, -7.5], [17.6, -12.6]],
+    // her yard -> the court's west end, up the loop's west leg, to the gate
+    clubhouse: [[18.5, -20], [15.5, -26], [14.2, -31], [12.4, -37.5]],
+    // the gate -> the clubhouse's front
+    dock: [[66, -72], [50, -79], [31, -81], [12, -81], [-6, -81], [-18, -81.5]]
+    // the lot -> down the service road to the dock
   };
-  var SAVE_KEY = "zc.hoodsave2";
+  var LOOTERS_AT = [{ x: 51.6, z: 31, face: [58.5, 27.5] }, { x: 52.6, z: 32.6, face: [58.5, 30.5] }];
+  var ADAM_AT = { x: 11.6, z: 60.9, yaw: -2.3 };
+  var SOPHIE_YARD = { x: 12.9, z: 62.4, yaw: -2.6 };
+  var PETE_AT = { x: 74.6, z: -67.2, yaw: 2.4 };
+  var OFFICE = { x: 9.6, z: -59.6 };
+  var SAVE_KEY = "zc.hoodsave3";
   var loadSave = () => {
     try {
       return JSON.parse(localStorage.getItem(SAVE_KEY)) || null;
@@ -80965,16 +81127,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     } catch {
     }
   };
-  var RIFLE = { pellets: 1, spread: 4e-3, range: 24, falloffFrom: 22, damage: 85, knockback: 5.5, mag: 10, interval: 0.42, reload: 1.7 };
-  var SG_SPEC = { ...SHOTGUN_SPEC };
-  var SG_T = null;
   var HoodLevel = class {
     constructor(sim2, api, save = null) {
       this.sim = sim2;
       this.api = api;
       const s = save || {};
-      this.stop = s.stop || "home";
-      this.flags = { case: "fridge", gun: null, cutters: false, gas: "shed", key: null, ...s.flags || {} };
+      this.stop = s.stop || "sneak";
+      this.flags = { case: "fridge", gun: null, gas: "shed", key: null, crowbar: false, batteries: false, silencer: false, called: false, ...s.flags || {} };
+      this.caseAt = s.caseAt || null;
       this.open = new Set(s.open || []);
       this.taken = new Set(s.taken || []);
       this.killed = /* @__PURE__ */ new Set();
@@ -80988,19 +81148,28 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.npcs = [];
       this.time = 0;
       this.t0 = sim2.time;
-      const p = sim2.player, T2 = sim2.T;
-      SG_T ?? (SG_T = { shotgunDamage: T2.shotgunDamage, shotgunKnockback: T2.shotgunKnockback, shotgunMag: T2.shotgunMag, shotgunInterval: T2.shotgunInterval, shotgunReload: T2.shotgunReload });
-      p.setLoadout(this.flags.gun ? ["bat", PISTOL, SHOTGUN, "fists"] : ["bat", PISTOL, "fists"], "bat");
+      this.lastShotT = -1;
+      const p = sim2.player;
+      this.loadout(this.flags.crowbar ? "crowbar" : PISTOL);
       p.mags[PISTOL] = s.pistolMag ?? 12;
       p.reserve[PISTOL] = s.pistolRes ?? 24;
-      if (this.flags.gun === "rifle") this.rifleOn(s.gunMag ?? RIFLE.mag, s.gunRes ?? 20);
-      else if (this.flags.gun === "shotgun") this.shotgunOn(s.gunMag, s.gunRes ?? 16);
+      if (this.flags.gun === "shotgun") {
+        p.mags[SHOTGUN] = s.gunMag ?? sim2.T.shotgunMag;
+        p.reserve[SHOTGUN] = s.gunRes ?? 16;
+      }
       for (const id of this.open) this.applySeal(id, true);
       const st = this.mark("start_" + this.stop) || this.startFor(this.stop);
       p.x = p.px = st[0];
       p.z = p.pz = st[2];
       p.aimYaw = p.aimTarget = st[3] ?? Math.PI / 2;
       this.co = this.run();
+    }
+    // Marc's weapons: the pistol from the start, the crowbar once found (one-handed: the case in his other hand), the shed's
+    // shotgun at the end
+    loadout(equip = null) {
+      const p = this.sim.player, list = [...this.flags.crowbar ? ["crowbar"] : [], PISTOL, ...this.flags.gun === "shotgun" ? [SHOTGUN] : [], "fists"];
+      const was = p.desired;
+      p.setLoadout(list, equip || (list.includes(was) ? was : PISTOL));
     }
     mark(n) {
       return HOOD.marks[n] || null;
@@ -81010,43 +81179,39 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       return m ? { x: m[0], y: m[1], z: m[2], yaw: m[3] } : { x: 0, y: 0, z: 0, yaw: 0 };
     }
     startFor(stop) {
-      return STOP_STARTS[stop] || STOP_STARTS.home;
+      return STOP_STARTS[stop] || STOP_STARTS.sneak;
     }
     setGoal(k) {
       if (k !== this.objective) this.goalT0 = this.time;
       this.objective = k;
       this.api.hud.setObjective(GOALS[k] || k || "");
     }
-    // where the current objective is (the hint marker, hint.js); none while the job is to fight
+    music(cue2, fade) {
+      this.api.music?.set(cue2, fade);
+    }
+    // where the current objective is (the guidance marker, hint.js); none while the job is to fight
     goalTarget() {
-      const T2 = {
-        vaccines: "home_door_use",
-        fridge: "fridge_use",
-        out: "home_porch",
-        cutters: "cutters",
-        gate: "gate_use",
-        clubhouse: "club_door",
-        dock: "boat",
-        gas: "shed_door",
-        shed: "shed_gas",
-        fuel: "pour_fuel",
-        leave: "pour_fuel",
-        caseBack: "boat"
-      }[this.objective];
-      if (this.objective === "help" || this.objective === "save") return this.sophieAt || null;
-      if (this.objective === "savePete") return this.peteAt || null;
-      if (this.objective === "fuel" && typeof this.flags.gas === "object") return this.flags.gas;
+      const o = this.objective;
+      const T2 = { sneak: "home_door_use", house: "home_door_use", vials: "gfridge_use", clubhouse: "club_warn", dock: "boat", shed: "shed_door", fuel: "pour_fuel", leave: "pour_fuel" }[o];
+      if (o === "help" || o === "save") return this.sophieAt || null;
+      if (o === "savePete") return PETE_AT;
+      if (o === "follow" || o === "pete") return this.sophie ? { x: this.sophie.x, z: this.sophie.z } : null;
+      if (o === "quiet") return this.flags.crowbar ? this.at("garage_light") : this.at("cutters");
+      if (o === "batteries") return this.at("cutters");
+      if (o === "gate") return this.at("gate_use");
+      if (o === "clear") return this.flags.silencer ? null : this.at("keys");
+      if ((o === "takeCase" || o === "caseBack") && this.caseAt) return this.caseAt;
+      if (o === "sophie") return this.sophie ? { x: this.sophie.x, z: this.sophie.z } : this.at("boat");
+      if (o === "fuel" && typeof this.flags.gas === "object") return this.flags.gas;
       return T2 ? this.at(T2) : null;
     }
     // the next step toward the objective (the guidance marker): the next point of the way Sophie knows that Marc has not yet
     // passed, else the objective's own spot
     nextStep() {
-      const R = ROUTES[this.objective === "follow" && this.stop === "gate" ? "gate" : this.objective], p = this.sim.player;
-      if (!R || this.objective === "dock" && this.open.has("dockroad")) return null;
+      const R = this.objective === "follow" ? ROUTES[this.route] : null, p = this.sim.player;
+      if (!R) return null;
       const end = R[R.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
       if (toEnd(p.x, p.z) < 4) return null;
-      const gt = this.goalTarget();
-      if (gt && Math.hypot(gt.x - p.x, gt.z - p.z) < Math.hypot(gt.x - end[0], gt.z - end[1])) return null;
       const q = R.find((pt) => toEnd(pt[0], pt[1]) < toEnd(p.x, p.z) - 1.5);
       return q ? { x: q[0], z: q[1] } : null;
     }
@@ -81064,7 +81229,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     checkpoint(stop) {
       this.stop = stop;
       const p = this.sim.player;
-      writeSave({ v: 2, stop, flags: this.flags, open: [...this.open], taken: [...this.taken], pistolMag: p.mags[PISTOL], pistolRes: p.reserve[PISTOL], gunMag: p.mags[SHOTGUN], gunRes: p.reserve[SHOTGUN] });
+      writeSave({ v: 3, stop, flags: this.flags, caseAt: this.caseAt, open: [...this.open], taken: [...this.taken], pistolMag: p.mags[PISTOL], pistolRes: p.reserve[PISTOL], gunMag: p.mags[SHOTGUN], gunRes: p.reserve[SHOTGUN] });
     }
     // ---------------------------------------------------------------- the simulation's hooks
     onWake() {
@@ -81075,6 +81240,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       for (const n of [...this.npcs]) n.step?.(dt, this);
       this.pickupStep(p);
       this.carryStep(p, input2);
+      this.sneakStep(p, input2);
+      for (const e of this.sim.events) if ((e.type === "shot" || e.type === "shotgun") && e.t > this.lastShotT) {
+        this.lastShotT = e.t;
+        this.onShot?.(e.type);
+      }
       const r = this.co.next();
       if (r.done) this.co = (function* () {
       })();
@@ -81146,30 +81316,16 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       } });
       yield* this.until(() => used);
     }
-    // ---------------------------------------------------------------- the long guns and the gas can
-    rifleOn(mag = RIFLE.mag, res = 20) {
-      const p = this.sim.player, T2 = this.sim.T;
-      Object.assign(SHOTGUN_SPEC, { pellets: RIFLE.pellets, spread: RIFLE.spread, range: RIFLE.range, falloffFrom: RIFLE.falloffFrom });
-      Object.assign(T2, { shotgunDamage: RIFLE.damage, shotgunKnockback: RIFLE.knockback, shotgunMag: RIFLE.mag, shotgunInterval: RIFLE.interval, shotgunReload: RIFLE.reload });
-      if (!p.owned.includes(SHOTGUN)) p.owned.splice(Math.max(0, p.owned.indexOf("fists")), 0, SHOTGUN);
-      p.mags[SHOTGUN] = mag;
-      p.reserve[SHOTGUN] = res;
-      this.flags.gun = "rifle";
-      this.api.view.rifleOn?.();
-    }
-    // the shed's pump shotgun in the slot instead (the rifle stays on the shed's rack)
+    // ---------------------------------------------------------------- the shotgun, the gas can, the case
     shotgunOn(mag = null, res = 16) {
       const p = this.sim.player, T2 = this.sim.T;
-      Object.assign(SHOTGUN_SPEC, SG_SPEC);
-      Object.assign(T2, SG_T);
-      if (!p.owned.includes(SHOTGUN)) p.owned.splice(Math.max(0, p.owned.indexOf("fists")), 0, SHOTGUN);
+      this.flags.gun = "shotgun";
+      this.loadout(SHOTGUN);
       p.mags[SHOTGUN] = mag ?? T2.shotgunMag;
       p.reserve[SHOTGUN] = res;
-      this.flags.gun = "shotgun";
-      this.api.view.rifleOff?.();
     }
-    // carrying the gas can: a little slower, no fighting with it in hand: attacking sets it down where Marc stands (the
-    // brief: "Let Marc set it down to fight and pick it up again"); Use beside it picks it up again
+    // carrying the gas can: a little slower, no fighting with it in hand: attacking sets it down where Marc stands; Use beside
+    // it picks it up again
     carryStep(p, input2) {
       const carried = this.flags.gas === "carried", T2 = this.sim.T;
       T2.hoodBaseSpeed ?? (T2.hoodBaseSpeed = T2.moveSpeed);
@@ -81187,6 +81343,39 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.dropUse("gas");
       this.api.view.carryGas?.();
       this.api.audio?.play("reloadDone");
+    }
+    // the case set down (where: {x, z, yaw}); Use beside it takes it again
+    setCaseDown(where, label = "Take the case") {
+      this.flags.case = "ground";
+      this.caseAt = { x: where.x, z: where.z, yaw: where.yaw || 0 };
+      this.api.view.showCase?.("ground", this.caseAt);
+      this.addUse({ id: "case", x: where.x, z: where.z, r: 1.4, label, use: () => this.takeCase() });
+    }
+    takeCase() {
+      this.flags.case = "carried";
+      this.caseAt = null;
+      this.dropUse("case");
+      this.api.view.showCase?.("carried");
+      this.api.audio?.play("reloadDone");
+      this.api.hero?.script("hood_PickUp_Kneeling", { fadeIn: 0.15, fadeOut: 0.3 });
+    }
+    // the opening only (beat 1, Marc: "I only want to be crouched for the opening... game play should never be crouched"): low
+    // behind the barricade through the title and the first look; up the moment he is handed the controls, or sooner if he moves,
+    // aims or is hit before then
+    sneakStep(p, input2) {
+      if (!this.sneaking) return;
+      const moving = Math.hypot(input2.moveX || 0, input2.moveZ || 0) > 0.2 || Math.hypot(input2.aimX || 0, input2.aimZ || 0) > 0.35;
+      if (moving || p.dead || ["shot", "swing", "down", "dodge"].includes(p.action.type)) {
+        this.sneak(false);
+        return;
+      }
+      const s = this.api.hero?.scriptState?.();
+      if (!s || s.name !== "hood_Crouch_Idle_Loop") this.api.hero?.script("hood_Crouch_Idle_Loop", { loop: true, fadeIn: 0.3, fadeOut: 0.45 });
+    }
+    sneak(on) {
+      if (this.sneaking === on) return;
+      this.sneaking = on;
+      if (!on) this.api.hero?.end();
     }
     // ---------------------------------------------------------------- spawning
     // a zombie at a mark (or {x, z}), facing the player; opts: kind, dormant (sense m), hp, near (allow close: a scripted ring)
@@ -81237,11 +81426,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       return out;
     }
-    // a ring of infected round a point (Sophie's, Pete's), facing it, still until Marc comes near
+    // a ring of infected round a point, facing it, still until Marc comes near
     ring(c, n, r, opts = {}) {
       const out = [];
       for (let i = 0; i < n; i++) {
-        const a = i / n * Math.PI * 2 + this.sim.rand() * 0.6, d = r * (0.8 + this.sim.rand() * 0.4), x = c.x + Math.cos(a) * d, z = c.z + Math.sin(a) * d;
+        const a = (opts.a0 ?? 0) + i / n * (opts.arc ?? Math.PI * 2) + this.sim.rand() * 0.6, d = r * (0.8 + this.sim.rand() * 0.4), x = c.x + Math.cos(a) * d, z = c.z + Math.sin(a) * d;
         const q = { x, z };
         if (this.sim.world.resolveCircle(q, 0.45)) continue;
         out.push(this.spawnAt({ x, z }, { near: true, spread: 0, yaw: Math.atan2(c.x - x, c.z - z), dormant: opts.dormant ?? 11, kind: opts.kind, wave: opts.wave || "ring" }));
@@ -81256,8 +81445,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         z.dormant = null;
       }
     }
-    alive(group) {
-      return group.filter((z) => z.alive).length;
+    // (the ones still up near him: a straggler stuck 45 m off behind a wall never holds the story)
+    alive(group, r = 45) {
+      const p = this.sim.player;
+      return group.filter((z) => z.alive && Math.hypot(z.x - p.x, z.z - p.z) < r).length;
+    }
+    awakeNear(r) {
+      const p = this.sim.player;
+      return this.sim.zombies.some((z) => z.alive && !z.passive && !z.dormant && !z.looter && Math.hypot(z.x - p.x, z.z - p.z) < r);
     }
     *wait(s) {
       for (let t = 0; t < s; t += STEP4) yield;
@@ -81290,22 +81485,26 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     linesDone() {
       return () => !this.api.subs.busy;
     }
-    // Marc's own spot and framing for the shots
     P(y = 1.3) {
       const p = this.sim.player;
-      return [p.x, y, p.z];
+      return [p.x, y + groundAt(p), p.z];
     }
-    // a two-shot for a portrait screen (the polish brief's replay: a side-on two-shot of two people 2 m apart leaves both at the
-    // edges of a phone's narrow frame): over one's shoulder at the other, both in the frame one behind the other; over Marc's
+    // a framing fixed the moment the shot cuts in (a held frame, not one that follows)
+    held(fn) {
+      let v = null;
+      return () => v ?? (v = fn());
+    }
+    // a two-shot for a portrait screen: over one's shoulder at the other, both in the frame one behind the other; over Marc's
     // shoulder unless a wall is behind him, then over hers. Fixed as the shot starts (a held framing).
-    twoShot(other) {
+    twoShot(other, { back = 2.3, side = 0.55, h = 1.75, over = "marc" } = {}) {
       let f = null;
       const make = () => {
         const p = this.sim.player, q = typeof other === "function" ? other() : other, w = this.sim.world;
-        for (const [a, b] of [[p, q], [q, p]]) {
+        const pairs = over === "marc" ? [[p, q], [q, p]] : [[q, p], [p, q]];
+        for (const [a, b] of pairs) {
           const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
-          const cx = a.x + ux * 2.3 - uz * 0.55, cz = a.z + uz * 2.3 + ux * 0.55;
-          if (!w.blockedAt(cx, cz, 0.25) && w.lineOfSight(cx, cz, b.x, b.z, 1.6)) return { from: [cx, 1.75, cz], look: [b.x + ux * 0.4, 1.3, b.z + uz * 0.4] };
+          const cx = a.x + ux * back - uz * side, cz = a.z + uz * back + ux * side;
+          if (!w.blockedAt(cx, cz, 0.25) && w.lineOfSight(cx, cz, b.x, b.z, 1.6) && w.lineOfSight(cx, cz, a.x, a.z, 1.6)) return { from: [cx, h, cz], look: [b.x + ux * 0.4, 1.3, b.z + uz * 0.4] };
         }
         return { from: [(p.x + q.x) / 2 + 3.2, 3.2, (p.z + q.z) / 2 + 4.6], look: [(p.x + q.x) / 2, 1.2, (p.z + q.z) / 2] };
       };
@@ -81315,23 +81514,49 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       };
       return { from: () => (face(), (f ?? (f = make())).from), look: () => (f ?? (f = make())).look };
     }
-    // ---------------------------------------------------------------- supplies (polish pass 2: never stuck for rounds)
+    // a camera on the line from b through a, `d` m past a, `side` m off it, at height h (two people in a portrait frame: one
+    // behind the other)
+    inLine(b, a, d, side = 0.3, h = 1.7) {
+      const dx = a.x - b.x, dz = a.z - b.z, l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l;
+      return [a.x + ux * d - uz * side, h, a.z + uz * d + ux * side];
+    }
+    // over Marc's shoulder at `t` (live {x, z} or a getter): back, side and height as asked if that place is clear and sees
+    // them both, else the nearest of a few closer or swung round (a doorway, a wall behind him); held once found
+    behindMarc(t, back, side, h) {
+      let f = null;
+      return () => {
+        if (f) return f;
+        const p = this.sim.player, q = typeof t === "function" ? t() : t, w = this.sim.world, a = Math.atan2(q.x - p.x, q.z - p.z);
+        for (const [b, sd] of [[back, side], [back, -side], [back * 0.7, side], [back * 0.7, -side], [back * 0.5, side * 1.4], [back * 0.5, -side * 1.4]]) {
+          const x = p.x - Math.sin(a) * b + Math.cos(a) * sd, z = p.z - Math.cos(a) * b - Math.sin(a) * sd;
+          if (!w.blockedAt(x, z, 0.25) && w.lineOfSight(x, z, p.x, p.z, 1.2) && w.lineOfSight(x, z, q.x, q.z, 1.2)) return f = [x, h, z];
+        }
+        return f = [p.x - Math.sin(a) * back * 0.4, h, p.z - Math.cos(a) * back * 0.4];
+      };
+    }
+    // a spot `d` m from (x, z) toward the angle a, pushed out of anything solid (camera places)
+    free(x, z, a, d, r = 0.3) {
+      const q = { x: x + Math.sin(a) * d, z: z + Math.cos(a) * d };
+      this.sim.world.resolveCircle(q, r);
+      return q;
+    }
+    // ---------------------------------------------------------------- supplies (never stuck for rounds)
     addSupplies(stop) {
       const S2 = SUPPLIES[stop] || [];
       const p = this.sim.player;
       for (const [id, x, z, w] of S2) {
-        const key = stop + ":" + id, med = id.startsWith("med");
+        const key = stop + ":" + id + ":" + x, med = id.startsWith("med");
         this.addPickup({
           id: key,
           x,
           z,
           r: 1,
           model: med ? "health" : "ammo",
-          label: med ? "First aid" : w === "rifle" ? "Rifle rounds" : w === "shotgun" ? "Shotgun shells" : "Pistol rounds",
-          when: med ? () => p.hp < p.maxHp : w === "rifle" ? () => this.flags.gun === "rifle" : w === "shotgun" ? () => this.flags.gun === "shotgun" : null,
+          label: med ? "First aid" : w === "shotgun" ? "Shotgun shells" : "Pistol rounds",
+          when: med ? () => p.hp < p.maxHp : w === "shotgun" ? () => this.flags.gun === "shotgun" : null,
           onTake: () => {
             if (med) p.hp = Math.min(p.maxHp, p.hp + 50);
-            else if (w === "rifle" || w === "shotgun") p.reserve[SHOTGUN] = (p.reserve[SHOTGUN] || 0) + (w === "rifle" ? 10 : 8);
+            else if (w === "shotgun") p.reserve[SHOTGUN] = (p.reserve[SHOTGUN] || 0) + 10;
             else p.reserve[PISTOL] = (p.reserve[PISTOL] || 0) + 12;
           }
         });
@@ -81352,7 +81577,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       return out;
     }
-    // ---------------------------------------------------------------- Sophie (from B03 on)
+    // ---------------------------------------------------------------- Sophie (from beat 5 on)
     ensureSophie(at, mode2 = "follow") {
       if (!this.sophie || !this.npcs.includes(this.sophie)) {
         this.sophie = this.api.actors?.sophie(at || this.sim.player);
@@ -81370,21 +81595,61 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       s.mode = "goto";
     }
     // she shows the way: ahead along a route she knows, waiting for him (companion.js); following again at its end
-    sophieLead(pts) {
-      const s = this.sophie;
+    sophieLead(id) {
+      const s = this.sophie, pts = ROUTES[id];
+      this.route = id;
       if (!s || !pts) return;
       s.lead = { pts, i: 0, done: false };
       s.mode = "follow";
+    }
+    sophiePose(pose, face = null, once = false) {
+      const s = this.sophie;
+      if (!s) return;
+      s.mode = "pose";
+      s.pose = pose;
+      s.poseOnce = once;
+      s.face = face;
+    }
+    sophieLook(pt, t = 1.5) {
+      if (this.sophie) this.sophie.lookHold = { ...typeof pt === "function" ? {} : pt, live: typeof pt === "function" ? pt : null, t };
     }
     // before a two-shot: she comes to stand by him (up to 6 s)
     *meet(r = 2.2) {
       const s = this.sophie, p = this.sim.player;
       if (!s) return;
       if (Math.hypot(s.x - p.x, s.z - p.z) <= r + 0.4) return;
-      const a = Math.atan2(s.x - p.x, s.z - p.z);
-      this.sophieTo(p.x + Math.sin(a) * r, p.z + Math.cos(a) * r, true, "idle");
+      const a = Math.atan2(s.x - p.x, s.z - p.z), q = this.free(p.x, p.z, a, r);
+      this.sophieTo(q.x, q.z, true, "idle");
       yield* this.until(() => s.mode !== "goto", 6);
     }
+    // the boat where it is moored (its placement: off the pier's north side; the old 'boat' mark is on the pier)
+    boatAt() {
+      const s = this.api.view.seals?.boat?.[0];
+      return s ? { x: s.p0.x, z: s.p0.z } : this.at("boat");
+    }
+    // a scene with her in it starts with her by him: she comes (up to `wait` s); still far, she is at `at` as the scene cuts in
+    // (a player who ran on ahead of her never starts a talk with nobody there)
+    *together(at, r = 4, wait = 6) {
+      const s = this.sophie, p = this.sim.player;
+      if (!s || s.mode === "dead") return;
+      if (Math.hypot(s.x - p.x, s.z - p.z) <= r) return;
+      this.sophieTo(at.x, at.z, true, "idle");
+      yield* this.until(() => Math.hypot(s.x - p.x, s.z - p.z) <= r || s.mode !== "goto", wait);
+      if (Math.hypot(s.x - p.x, s.z - p.z) > r) {
+        const q = { x: at.x, z: at.z };
+        this.sim.world.resolveCircle(q, 0.3);
+        s.x = q.x;
+        s.z = q.z;
+        s.speed = 0;
+        s.mode = "idle";
+      }
+    }
+    // her head, live (the shots that look at her face)
+    sophieHead() {
+      const s = this.sophie;
+      return () => s ? [s.x, (s.mode === "pose" && /Kneel|Crouch/.test(s.pose || "") ? 0.95 : 1.5) + groundAt(s), s.z] : this.P(1.5);
+    }
+    // (+ the pier's deck under her)
     // ---------------------------------------------------------------- the story
     *run() {
       this.started = false;
@@ -81392,14 +81657,16 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       yield;
       this.started = true;
       const stops = {
-        home: this.stopHome,
-        help: this.stopHelp,
+        sneak: this.stopSneak,
+        house: this.stopHouse,
+        rescue: this.stopRescue,
         gate: this.stopGate,
         club: this.stopClub,
-        pete: this.stopPete,
+        lot: this.stopLot,
         dock: this.stopDock,
         shed: this.stopShed,
         horde: this.stopHorde,
+        after: this.stopAfter,
         leave: this.stopLeave
       };
       if (from >= STOP_ORDER.indexOf("gate") && from <= STOP_ORDER.indexOf("dock")) {
@@ -81407,9 +81674,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         this.sim.world.resolveCircle(q, 0.35);
         this.ensureSophie({ ...q, yaw: p.aimYaw }, "follow");
       }
-      if (from >= STOP_ORDER.indexOf("shed") && from <= STOP_ORDER.indexOf("shed")) {
-        const b = this.at("boat");
-        this.ensureSophie({ x: b.x + 3.2, z: b.z + 0.6, yaw: -Math.PI / 2 }, "idle");
+      if (from === STOP_ORDER.indexOf("shed")) {
+        const b = this.boatAt();
+        this.ensureSophie({ x: b.x + 1.6, z: b.z + 1.95, yaw: Math.PI }, "idle");
       }
       for (let i = Math.max(0, from); i < STOP_ORDER.length; i++) {
         const id = STOP_ORDER[i];
@@ -81421,50 +81688,68 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         yield* stops[id].call(this);
       }
     }
-    // B01 - B02. HOME: the call at the door; James; the fridge
-    *stopHome() {
+    // 1 - 3. THE SNEAK: behind the barricade at the south end; the looters far off; the call; the talk overheard; the end house
+    *stopSneak() {
       const p = this.sim.player, cine = this.api.cine;
       this.setGoal("");
-      const call = ["Y01", "M01", "Y02", "Y03", "M02", "Y04", "M03", "Y05", "M04", "Y06", "M05"];
-      this.prefetch(...call, "J01", "J02", "M06", "S01", "S02");
-      yield* this.wait(1.4);
+      this.music("none", 0);
+      const call = ["c106", "c107", "c103", "c108"];
+      this.prefetch(...call, "J01", "J02", "c303", "c304");
+      const L3 = this.api.looters?.(this, LOOTERS_AT.map((s) => ({ x: s.x, z: s.z, out: true, calm: true, face: s.face }))) || [];
+      this.sentries = L3;
+      this.sneak(true);
+      yield* this.wait(2.6);
+      this.api.audio?.play("shot", 0.35, { x: p.x - 70, z: p.z - 60 });
+      yield* this.wait(1.6);
+      const lk = { x: (LOOTERS_AT[0].x + LOOTERS_AT[1].x) / 2, z: (LOOTERS_AT[0].z + LOOTERS_AT[1].z) / 2 };
+      const ln = this.inLine(LOOTERS_AT[1], LOOTERS_AT[0], 6.4, -1.05, 1.85), ln2 = this.inLine(LOOTERS_AT[1], LOOTERS_AT[0], 5, -0.95, 1.75);
+      yield* this.shot([
+        { look: [lk.x, 1.4, lk.z], from: ln, fov: 34, slow: 1, hold: 2, move: 0 },
+        { look: [lk.x, 1.35, lk.z], from: ln2, fov: 34, slow: 1, hold: 0.4, move: 1.8 },
+        { look: () => this.P(0.9), from: () => [p.x - 1.1, 0.75, p.z - 3], fov: 40, slow: 1, hold: 1.2 }
+      ], { back: 1 });
+      this.sneak(false);
+      this.music("A_low", 3);
+      this.setGoal("sneak");
       this.say(...call);
-      const yw = p.aimYaw, fx2 = Math.sin(yw), fz = Math.cos(yw), rx = -Math.cos(yw), rz = Math.sin(yw);
-      yield* this.shot([{ look: () => [p.x + fx2 * 0.25, 1.5, p.z + fz * 0.25], from: () => [p.x + fx2 * 0.6 + rx * 2.5, 1.8, p.z + fz * 0.6 + rz * 2.5], fov: 44, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.8 });
-      this.setGoal("vaccines");
-      const j = this.api.actors?.james(this, this.at("james"));
+      yield* this.until(() => p.z < 58 || L3.some((q) => !q.calm || !q.alive));
+      this.api.view.doorAjar?.(0.22);
+      yield* this.until(() => this.near("home_door_use", 6));
+      this.sneak(false);
+    }
+    // 4. THE HOUSE: James at the kitchen's fridge, headphones on; the dip and his head; the garage's fridge, behind the beer
+    *stopHouse() {
+      const p = this.sim.player, cine = this.api.cine;
+      this.sneak(false);
+      this.music("A_low", 2);
+      this.setGoal("house");
+      this.api.view.doorAjar?.(0.22);
+      this.api.view.openSeal?.("fridge", true, false);
+      const jm = this.at("james_fridge");
+      const j = this.api.actors?.james(this, jm);
       if (j) this.npcs.push(j);
       this.james = j;
       yield* this.use("door", "home_door_use", "Go in", 1.4);
       this.openSeal("home_door");
-      this.tinny = this.api.voice?.tinny?.(this.at("james"));
-      let alerted = false;
+      this.dismissSentries();
       if (j) j.onDeath = () => {
         this.api.voice?.play("J02");
-        this.tinny?.stop();
       };
-      yield* this.until(() => !j || !j.alive || this.nearXZ(this.at("james"), 4.6) && p.x < 36 || p.action.type === "shot");
+      yield* this.until(() => !j || !j.alive || this.nearXZ(jm, 4.6) || p.x < 33.4 && p.z > 38.6 && p.z < 45.5 || p.action.type === "shot");
       if (j && j.alive) {
-        alerted = true;
-        const jm = this.at("james"), head = () => j.headPos();
-        const held = () => {
-          let v = null;
-          return () => v ?? (v = head());
-        }, h2 = held(), h3 = held();
-        const behind = (back, side, h) => () => {
-          const a = Math.atan2(jm.x - p.x, jm.z - p.z);
-          return [p.x - Math.sin(a) * back + Math.cos(a) * side, h, p.z - Math.cos(a) * back - Math.sin(a) * side];
-        };
+        const head = () => j.headPos(), h2 = this.held(head), h3 = this.held(head);
+        const behind = (back, side, h) => this.behindMarc(jm, back, side, h);
         p.desired = PISTOL;
         if (j) j.subject = true;
+        this.music("none", 0.6);
         yield* this.shot([
-          { look: () => [jm.x, 1.3, jm.z], from: behind(1.9, 0.55, 1.8), fov: 42, slow: 0.25, hold: 0.9 },
+          { look: () => [jm.x - 0.3, 1.25, jm.z], from: behind(1.9, 0.55, 1.75), fov: 40, slow: 0.25, hold: 0.9 },
           { look: () => {
             const h = h2();
             return [h[0], h[1] - 0.2, h[2]];
           }, from: () => {
             const h = h2();
-            return [h[0] - 1.6, 1.64, h[2] + 1.5];
+            return [h[0] + 1.25, 1.62, h[2] - 1.45];
           }, fov: 40, slow: 0.25, hold: 0.5, fn: () => {
             const d = j.turn();
             cine.after(d * 0.7, () => j.shout());
@@ -81475,7 +81760,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
             return [h[0], h[1] - 0.15, h[2]];
           }, from: () => {
             const h = h3();
-            return [h[0] - 1.6, 1.6, h[2] + 1.55];
+            return [h[0] + 1.25, 1.6, h[2] - 1.5];
           }, fov: 40, slow: 0.25, hold: 1.5, until: this.linesDone(), max: 8 },
           { look: head, from: behind(1.7, 0.75, 1), fov: 40, slow: 0.3, aim: j.z, prompt: "SHOOT", hold: 0.4, fn: () => j.threat(2.6), until: () => !j.alive, max: 3.2 },
           { look: head, from: behind(1.7, 0.75, 1), fov: 40, slow: 0.2, hold: 1.1 }
@@ -81483,13 +81768,29 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (j) j.subject = false;
       }
       yield* this.until(() => !j || !j.alive);
-      this.tinny?.stop();
-      void alerted;
-      this.setGoal("fridge");
-      const fc = this.at("fridge_case");
+      yield* this.wait(0.8);
+      this.music("A_low", 2.5);
+      if (j && j.obj) {
+        const body = { x: j.z.x, z: j.z.z };
+        yield* this.shot([{
+          look: [body.x - 0.2, 0.35, body.z],
+          from: () => {
+            const a = Math.atan2(body.x - p.x, body.z - p.z);
+            return [p.x - Math.sin(a) * 1.1 + Math.cos(a) * 0.5, 1.95, p.z - Math.cos(a) * 1.1 - Math.sin(a) * 0.5];
+          },
+          fov: 44,
+          slow: 1,
+          hold: 0.6,
+          fn: () => this.say("c303"),
+          until: this.linesDone(),
+          max: 5
+        }], { back: 0.6 });
+      } else yield* this.talk("c303");
+      this.setGoal("vials");
+      const fc = this.at("gfridge_case");
       this.api.view.showCase?.("fridge", fc);
-      yield* this.use("fridge", "fridge_use", "Open the fridge", 1.4);
-      const fu = this.at("fridge_use");
+      yield* this.use("fridge2", "gfridge_use", "Open the fridge", 1.4);
+      const fu = this.at("gfridge_use");
       p.x = p.px = fu.x;
       p.z = p.pz = fu.z;
       p.aimYaw = p.aimTarget = fu.yaw;
@@ -81498,146 +81799,475 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       yield* this.wait(0.4);
       this.api.hero?.script("hood_Interact");
       yield* this.shot([
-        { look: [fu.x - 0.45, 1.15, fu.z + 0.02], from: [fu.x + 1.75, 1.7, fu.z - 1.55], fov: 44, slow: 1, hold: 1.3, fn: () => cine.after(0.45, () => this.openSeal("fridge")) },
-        { look: [fc.x, fc.y, fc.z], from: [fu.x + 0.8, 1.55, fu.z - 0.98], fov: 38, slow: 1, hold: 1.3 },
-        { look: [fc.x, fc.y, fc.z], from: [fu.x + 0.8, 1.55, fu.z - 0.98], fov: 38, slow: 1, hold: 0.5, fn: () => {
+        { look: [fu.x - 0.45, 1.15, fu.z + 0.02], from: [fu.x + 1.65, 1.7, fu.z - 1.5], fov: 44, slow: 1, hold: 1.3, fn: () => cine.after(0.45, () => this.openSeal("fridge2")) },
+        { look: [fc.x, fc.y + 0.02, fc.z], from: [fu.x + 0.75, 1.62, fu.z - 0.95], fov: 34, slow: 1, hold: 0.9, fn: () => this.say("c304") },
+        { look: [fc.x, fc.y + 0.02, fc.z], from: [fu.x + 0.75, 1.62, fu.z - 0.95], fov: 34, slow: 1, hold: 0.6, until: this.linesDone(), max: 4, fn: () => {
           this.flags.case = "carried";
           this.api.view.showCase?.("carried");
-          this.say("M06");
-        } },
-        { look: () => this.P(1.25), from: [fu.x - 0.1, 1.7, fu.z - 2.4], fov: 42, slow: 1, hold: 0.6, until: this.linesDone(), max: 4 }
+        } }
       ], { back: 0.6 });
-      p.desired = gunWas;
-      this.setGoal("out");
+      p.desired = gunWas === "fists" ? PISTOL : gunWas;
+      this.setGoal("");
       yield* this.until(() => p.x > 36.6);
     }
-    // B03 - B04. "HELP!": Sophie by the B05 garage, the infected round her; the bargain; she leads to the curve's barricade
-    *stopHelp() {
-      const p = this.sim.player;
-      const at = { x: 49.08, z: 2.88, yaw: Math.PI * 0.8 };
-      this.sophieAt = at;
-      const sp = this.ensureSophie(at, "scared");
-      const ring = this.ring(at, 6, 2.6, { dormant: 12 });
-      this.prefetch("S03", "S03a", "M06a", "S04", "S05", "S06", "S07", "M07", "S08");
-      yield* this.wait(0.6);
-      this.say("S01");
+    dismissSentries() {
+      for (const a of this.sentries || []) {
+        if (!a.alive || !a.calm) continue;
+        const i = this.sim.zombies.indexOf(a.z);
+        if (i >= 0) this.sim.zombies.splice(i, 1);
+        a.obj.removeFromParent();
+        a.sight.visible = false;
+        this.npcs = this.npcs.filter((q) => q !== a);
+      }
+    }
+    // 5 - 7. THE RESCUE: shots and screams down the court; Adam bitten; the wave; he turns; the reveal; the deal; the radio
+    *stopRescue() {
+      const p = this.sim.player, cine = this.api.cine, v = this.api.view;
+      this.music("A_low", 2);
+      this.prefetch("c401", "c402", "c403", "c404", "c405", "c406", "c407", "c408", "c409", "c410", "c501", "c502", "c503", "c504", "c505");
+      const ad = this.api.actors?.adam(ADAM_AT);
+      if (ad) this.npcs.push(ad);
+      this.adam = ad;
+      const sp = this.ensureSophie(SOPHIE_YARD, "scared");
+      sp.face = ADAM_AT;
+      this.sophieAt = SOPHIE_YARD;
+      const ring = this.ring(ADAM_AT, 5, 4, { dormant: 0, a0: 1.85, arc: 1.3 });
+      for (const z of ring) {
+        z.passive = true;
+        z.speedMul = 0.2;
+      }
+      yield* this.wait(0.5);
+      this.say("c401");
+      yield* this.wait(1.6);
+      const lookAt = [ADAM_AT.x + 0.3, 1.15, ADAM_AT.z + 0.4];
+      if (ad) ad.subject = true;
+      yield* this.shot([
+        { look: lookAt, from: [ADAM_AT.x + 5.2, 1.45, ADAM_AT.z - 3.9], fov: 38, slow: 0.6, rate: 1, hold: 2, fn: () => this.say("c402") },
+        { look: [ADAM_AT.x, 0.9, ADAM_AT.z], from: [ADAM_AT.x + 3.1, 1.25, ADAM_AT.z - 2.2], fov: 38, slow: 0.4, rate: 0.7, hold: 1.1, fn: () => {
+          this.say("c403");
+          const z = ring[0];
+          if (z) {
+            z.x = z.px = ADAM_AT.x + 0.7;
+            z.z = z.pz = ADAM_AT.z + 0.15;
+            z.yaw = Math.atan2(ADAM_AT.x - z.x, ADAM_AT.z - z.z);
+          }
+        } },
+        { look: [ADAM_AT.x, 0.55, ADAM_AT.z], from: [ADAM_AT.x + 3.1, 1.25, ADAM_AT.z - 2.2], fov: 38, slow: 0.3, rate: 0.6, hold: 1.6, fn: () => ad?.bitten() }
+      ], { back: 0.8 });
+      if (ad) ad.subject = false;
+      ad?.bitten();
+      this.say("c404");
       this.setGoal("help");
-      yield* this.until(() => this.nearXZ(at, 22), 6);
-      this.say("S02");
-      yield* this.until(() => this.nearXZ(at, 15));
-      yield* this.shot([{ look: [at.x, 0.9, at.z], from: { yaw: 35, pitch: 30, dist: 7.5 }, fov: 42, slow: 0.12, hold: 1.7 }], { back: 0.5 });
-      this.wake(ring);
+      this.music("A", 2.5);
+      yield* this.until(() => this.nearXZ(ADAM_AT, 13));
       this.setGoal("save");
-      const w = yield* this.wave([["z_home_garage"], ["z_home_fence"], ["z_home_garage", "runner"]], 1.4, "help");
+      this.music("A_up", 2.5);
+      for (const z of ring) {
+        z.passive = false;
+        z.speedMul = 1;
+      }
+      this.wake(ring);
+      const w = yield* this.wave([[{ x: -2.2, z: 57.5 }], [{ x: -2, z: 66.5 }, "runner"], [{ x: 3.5, z: 54.5 }]], 1.6, "rescue");
       yield* this.until(() => this.alive(ring) + this.alive(w) === 0, 120);
+      this.setGoal("");
       yield* this.wait(0.8);
-      yield* this.meet();
-      sp.mode = "idle";
-      sp.idle = "hood_Idle_Tired_Loop";
-      const two = this.twoShot(() => this.sophie || at);
-      this.say("S03", "S03a", "M06a", "S04", "S05", "S06", "S07", "M07", "S08");
-      yield* this.shot([{ look: two.look, from: two.from, fov: 46, slow: 1, hold: 2, until: this.linesDone(), max: 90 }], { back: 0.7 });
-      sp.idle = "hood_Idle_Loop";
+      const hd = ad?.headAt?.() || { x: ADAM_AT.x, z: ADAM_AT.z }, side = ad?.sideAt?.() ?? -1;
+      const kneel = this.free(hd.x, hd.z, side, 0.7, 0.25);
+      this.sophieTo(kneel.x, kneel.z, true, "pose");
+      sp.pose = "hood_Fixing_Kneeling";
+      sp.poseOnce = false;
+      sp.face = ADAM_AT;
+      yield* this.until(() => sp.mode === "pose", 4);
+      sp.mode = "pose";
+      sp.pose = "hood_Fixing_Kneeling";
+      sp.face = ADAM_AT;
+      const ma = Math.atan2(p.x - ADAM_AT.x, p.z - ADAM_AT.z), stand = this.free(ADAM_AT.x, ADAM_AT.z, ma, 3.2);
+      p.x = p.px = stand.x;
+      p.z = p.pz = stand.z;
+      p.aimYaw = p.aimTarget = Math.atan2(ADAM_AT.x - p.x, ADAM_AT.z - p.z);
+      p.desired = PISTOL;
+      const across2 = Math.atan2(hd.x - kneel.x, hd.z - kneel.z), low = this.held(() => [hd.x + Math.sin(across2) * 1.55 + Math.cos(across2) * 0.25, 0.82, hd.z + Math.cos(across2) * 1.55 - Math.sin(across2) * 0.25]);
+      if (ad) ad.subject = true;
+      sp.subject = true;
+      this.say("c406");
+      yield* this.shot([
+        { look: [kneel.x * 0.6 + hd.x * 0.4, 0.62, kneel.z * 0.6 + hd.z * 0.4], from: low, fov: 42, slow: 1, hold: 1.2, until: this.linesDone(), max: 8 },
+        { look: [hd.x, 0.3, hd.z], from: () => [hd.x + Math.sin(across2) * 0.9, 0.62, hd.z + Math.cos(across2) * 0.9], fov: 36, slow: 1, hold: 0.6, fn: () => {
+          this.say("c405");
+          this.music("B", 2.5);
+        }, until: this.linesDone(), max: 6 }
+      ], { back: 0 });
+      let k = 0;
+      yield* this.shot([
+        { look: [hd.x, 0.28, hd.z], from: () => [hd.x + Math.sin(across2) * 0.75 + Math.cos(across2) * 0.12, 0.55, hd.z + Math.cos(across2) * 0.75 - Math.sin(across2) * 0.12], fov: 32, slow: 1, hold: 3.2, move: 3, fn: () => {
+          this.api.voice?.play("c407");
+          const tick2 = () => {
+            k = Math.min(1, k + 0.034);
+            ad?.turn(k);
+            if (k < 1) cine.after(0.1, tick2);
+          };
+          tick2();
+        } },
+        {
+          look: this.sophieHead(),
+          from: low,
+          fov: 36,
+          slow: 1,
+          hold: 1,
+          fn: () => {
+            ad?.turn(1);
+            this.say("c408");
+            const back = this.free(kneel.x, kneel.z, Math.atan2(kneel.x - ADAM_AT.x, kneel.z - ADAM_AT.z), 1.2, 0.25);
+            this.sophieTo(back.x, back.z, false, "pose");
+            sp.pose = "hood_Crouch_Idle_Loop";
+            sp.face = ADAM_AT;
+          },
+          until: this.linesDone(),
+          max: 6
+        },
+        { look: [(ADAM_AT.x + hd.x) / 2, 0.85, (ADAM_AT.z + hd.z) / 2], from: [(ADAM_AT.x + hd.x) / 2 + Math.sin(ma + 0.6) * 3.6, 1.3, (ADAM_AT.z + hd.z) / 2 + Math.cos(ma + 0.6) * 3.6], fov: 42, slow: 1, hold: 2.6, fn: () => {
+          const d = ad?.rise(this) || 2;
+          cine.after(Math.max(0.6, d - 0.9), () => {
+            ad?.lunge({ x: sp.x, z: sp.z });
+            this.api.voice?.play("c409");
+          });
+        } }
+      ], { back: 0 });
+      const behind = (back, side2, h) => this.behindMarc(() => ({ x: ad.x, z: ad.z }), back, side2, h);
+      if (ad?.zb) {
+        yield* this.shot([
+          { look: () => [ad.x, 1.3, ad.z], from: behind(2.5, 0.9, 1.3), fov: 40, slow: 0.3, aim: { get x() {
+            return ad.x;
+          }, get z() {
+            return ad.z;
+          } }, prompt: "SHOOT", hold: 0.4, until: () => !ad.zb.alive, max: 45 },
+          { look: () => [ad.x, 0.9, ad.z], from: behind(2.5, 0.9, 1.3), fov: 40, slow: 0.25, hold: 1.2 }
+        ], { back: 0 });
+      }
+      yield* this.until(() => !ad?.zb || !ad.zb.alive);
+      if (ad) ad.subject = false;
+      this.sophiePose("hood_Crying", ADAM_AT);
+      yield* this.shot([{ look: this.sophieHead(), from: () => {
+        const a = Math.atan2(p.x - sp.x, p.z - sp.z) + 0.5;
+        return [sp.x + Math.sin(a) * 1.9, 1.35, sp.z + Math.cos(a) * 1.9];
+      }, fov: 40, slow: 1, hold: 1, fn: () => this.say("c410"), until: this.linesDone(), max: 6 }], { back: 0 });
+      sp.subject = false;
+      yield* this.reveal();
       this.sophieAt = null;
-      this.setGoal("follow");
-      this.sophieLead(ROUTES.follow);
-      const by = this.at("seal_home_use");
-      yield* this.until(() => Math.hypot(this.sim.player.x - by.x, this.sim.player.z - by.z) < 3);
     }
-    // B05. THE GATE: chained; the bolt cutters in the neighbour's garage with the light on
+    // 6 - 7. The reveal and the deal; the radio's light
+    *reveal() {
+      const p = this.sim.player, sp = this.sophie, cine = this.api.cine, v = this.api.view;
+      this.prefetch("c506", "c507", "c508", "c509", "c510", "c511", "c512", "c513", "c514", "c601");
+      yield* this.meet(1.9);
+      this.sophiePose("hood_Idle_Loop", { x: p.x, z: p.z });
+      p.aimYaw = p.aimTarget = Math.atan2(sp.x - p.x, sp.z - p.z);
+      const yw = p.aimYaw, cz = { x: p.x + Math.sin(yw + 0.9) * 0.55, z: p.z + Math.cos(yw + 0.9) * 0.55, yaw: yw + Math.PI / 2 };
+      p.desired = "fists";
+      yield* this.wait(0.35);
+      this.api.hero?.script("hood_PickUp_Kneeling", { fadeIn: 0.2, fadeOut: 0.4 });
+      cine.after(0.7, () => {
+        this.flags.case = "ground";
+        this.caseAt = cz;
+        v.showCase?.("ground", cz);
+      });
+      const ms = this.twoShot(sp, { over: "marc", back: 1.6, side: 0.45, h: 1.7 });
+      yield* this.shot([
+        { look: this.sophieHead(), from: ms.from, fov: 34, slow: 1, hold: 1.4, fn: () => this.sophieLook(() => ({ x: p.x, z: p.z }), 1.4) },
+        { look: this.sophieHead(), from: ms.from, fov: 34, slow: 1, hold: 1.2, fn: () => this.sophieLook(cz, 4) },
+        { look: [cz.x, 0.12, cz.z], from: [cz.x + Math.sin(yw + Math.PI) * 0.5 + 0.15, 0.95, cz.z + Math.cos(yw + Math.PI) * 0.5], fov: 38, slow: 1, hold: 0.2 },
+        { look: [cz.x, 0.12, cz.z], from: [cz.x + Math.sin(yw + Math.PI) * 0.28 + 0.08, 0.5, cz.z + Math.cos(yw + Math.PI) * 0.28], fov: 30, slow: 1, move: 2.6, hold: 0.4, fn: () => cine.after(1.6, () => this.say("c501")), until: this.linesDone(), max: 6 }
+      ], { back: 0 });
+      p.desired = "fists";
+      const two = this.twoShot(sp, { over: "sophie" });
+      this.say("c502", "c503", "c504");
+      yield* this.shot([{ look: two.look, from: two.from, fov: 44, slow: 1, hold: 2, until: this.linesDone(), max: 30 }], { back: 0 });
+      this.api.hero?.script("hood_PickUp_Kneeling", { fadeIn: 0.2, fadeOut: 0.4 });
+      const g1 = this.twoShot(sp, { over: "marc", back: 1.5, side: 0.4, h: 1.65 });
+      yield* this.shot([
+        { look: this.sophieHead(), from: g1.from, fov: 34, slow: 1, hold: 0.75, fn: () => {
+          this.sophieLook(() => v.caseObj?.position || { x: p.x, z: p.z }, 3);
+          cine.after(0.6, () => {
+            this.flags.case = "carried";
+            this.caseAt = null;
+            v.showCase?.("carried");
+          });
+        } },
+        { look: this.sophieHead(), from: g1.from, fov: 32, slow: 1, hold: 2.1, move: 2 }
+      ], { back: 0 });
+      this.say("c505", "c506", "c507", "c508", "c509", "c510", "c511", "c512", "c513", "c514");
+      yield* this.shot([{ look: two.look, from: two.from, fov: 44, slow: 1, hold: 2, fn: () => this.sophiePose("hood_Idle_Talking_Loop", { x: p.x, z: p.z }), until: this.linesDone(), max: 90 }], { back: 0 });
+      v.radioLow?.(true);
+      const rp = () => {
+        const r = v.radio;
+        return r ? [r.position.x, r.position.y, r.position.z] : this.P(0.95);
+      };
+      const rh = this.held(rp);
+      p.desired = "fists";
+      yield* this.shot([{ look: rp, from: () => {
+        const r = rh(), a = p.aimYaw - Math.PI / 2 + 0.45;
+        return [r[0] + Math.sin(a) * 0.85, r[1] + 0.2, r[2] + Math.cos(a) * 0.85];
+      }, fov: 32, slow: 1, hold: 1.3, fn: () => {
+        v.radioLedHold = true;
+        cine.after(0.7, () => this.say("c601"));
+      }, until: this.linesDone(), max: 5 }], { back: 0.7 });
+      v.radioLedHold = false;
+      sp.mode = "follow";
+      p.desired = PISTOL;
+    }
+    // 8 - 9. THE GATE: locked, Sophie picks it; the busted house by it (the crowbar, the batteries); Yola's call
     *stopGate() {
-      const p = this.sim.player;
-      if (!this.open.has("home")) this.openSeal("home");
+      const p = this.sim.player, cine = this.api.cine, v = this.api.view;
       const sp = this.ensureSophie(null, null);
-      this.prefetch("S09", "S10", "M08", "M08a", "S11", "S12");
-      this.sophieLead(ROUTES.gate);
-      this.setGoal("follow");
-      yield* this.until(() => this.near("gate_use", 6));
-      this.api.view.garageLight?.(true);
-      const gl2 = this.at("garage_light");
-      this.say("S09");
-      yield* this.shot([{ look: [gl2.x, 1.2, gl2.z], from: { yaw: 35, pitch: 28, dist: 9 }, fov: 42, slow: 0.4, hold: 2.2, move: 0.9 }], { back: 0.7 });
-      this.say("S10", "M08");
-      this.sophieLead(ROUTES.cutters);
-      this.setGoal("cutters");
+      v.radioLow?.(!this.flags.batteries);
+      this.music("B", 2);
+      this.prefetch("c602", "c603", "c603b", "c604", "c605", "c701", "c702", "c703", "c704", "c705", "c706");
+      v.garageLight?.(true);
       const c = this.at("cutters");
-      this.addPickup({ id: "cutters", x: c.x, z: c.z, y: c.y || void 0, r: 1.3, model: "cutters", label: "Bolt cutters", onTake: () => {
-        this.flags.cutters = true;
+      this.addPickup({ id: "crowbar", x: c.x, z: c.z, y: c.y || void 0, r: 1.3, model: "crowbar", label: "Crowbar", onTake: () => {
+        this.flags.crowbar = true;
+        this.loadout("crowbar");
+        this.say("c702");
       } });
-      const w1 = [this.spawnAt("z_garage", { dormant: 5.5 }), this.spawnAt("z_garage", { dormant: 5.5 })];
-      yield* this.until(() => Math.hypot(p.x - 6, p.z + 2) < 10 || this.flags.cutters);
-      const w2 = yield* this.wave([["z_curve_bus"], ["z_curve_yard", "runner"]], 1.3, "c1");
-      yield* this.until(() => this.flags.cutters);
-      this.api.view.garageLight?.(false);
+      const bx = c.x - 0.45 * Math.cos(0.74), bz = c.z + 0.45 * Math.sin(0.74);
+      this.addPickup({ id: "batteries", x: bx, z: bz, y: c.y || void 0, r: 1.2, model: "batteries", label: "Batteries", onTake: () => {
+        this.flags.batteries = true;
+        v.radioLow?.(false);
+        this.say("c701");
+      } });
+      const inside2 = [this.spawnAt("z_garage", { dormant: 4, wave: "garage" })];
+      void inside2;
+      const call = ["c703", "c704", "c705", "c706", "c711", "c712", "c713", "c714"];
+      const callWatch = { step: () => {
+        if (this.flags.called || !this.flags.batteries || this.api.subs.busy || cine?.active || this.awakeNear(10)) return;
+        this.flags.called = true;
+        this.prefetch(...call);
+        this.later(1.2, () => this.say(...call));
+        this.npcs = this.npcs.filter((q) => q !== callWatch);
+      } };
+      this.npcs.push(callWatch);
+      this.sophieLead("gate");
+      this.setGoal("follow");
+      yield* this.until(() => Math.hypot(p.x - SOPHIE_YARD.x, p.z - SOPHIE_YARD.z) > 14 || this.near("gate_use", 12));
+      this.music("none", 3);
+      yield* this.until(() => this.near("gate_use", 7));
+      this.music("A_low", 2.5);
+      const g = this.at("gate_use"), lock = { x: g.x, z: g.z + 0.55 };
+      yield* this.together(lock, 7, 5);
+      this.sophieTo(lock.x, lock.z, false, "pose");
+      sp.pose = "hood_Fixing_Kneeling";
+      sp.face = { x: g.x, z: g.z - 2 };
+      yield* this.until(() => sp.mode === "pose", 6);
+      if (sp.mode !== "pose") {
+        sp.x = lock.x;
+        sp.z = lock.z;
+        sp.mode = "pose";
+      }
+      const t0 = this.time;
       this.setGoal("gate");
-      yield* this.use("gate", "gate_use", "Cut the chain", 2.2);
+      yield* this.talk("c602");
+      yield* this.talk("c604");
+      let said603 = false;
+      if (!this.flags.crowbar) {
+        said603 = true;
+        this.say("c603");
+        const gl2 = this.at("garage_light");
+        yield* this.shot([{ look: [gl2.x, 1, gl2.z], from: { yaw: 35, pitch: 22, dist: 7.5 }, fov: 40, slow: 0.4, hold: 2.4, move: 1, until: this.linesDone(), max: 6 }], { back: 0.7 });
+        this.setGoal("quiet");
+      }
+      let saidB = false;
+      yield* this.until(() => {
+        if (said603 && !saidB && this.flags.crowbar && this.nearXZ(sp, 5) && !this.api.subs.busy) {
+          saidB = true;
+          this.say("c603b");
+        }
+        if (this.flags.crowbar && this.objective === "quiet") this.setGoal(this.flags.batteries ? "gate" : "batteries");
+        if (this.objective === "batteries" && this.flags.batteries) this.setGoal("gate");
+        const ready = this.time - t0 > 14 && (this.flags.crowbar || this.time - t0 > 60) && this.near("gate_use", 6) && !this.awakeNear(9);
+        return ready && !this.api.subs.busy;
+      });
+      v.garageLight?.(false);
+      this.api.audio?.play("reloadDone");
+      yield* this.wait(0.4);
       this.api.audio?.play("pumpRack");
-      yield* this.wait(0.7);
-      this.api.audio?.play("knockdown");
       this.openSeal("gate");
-      void w1;
-      void w2;
+      sp.mode = "follow";
+      this.say("c605");
     }
-    // B06 - B07. THE CLUBHOUSE: the boat needs gas, Pete has the key; the looters; the rifle
+    // 10 - 11. THE CLUBHOUSE: the walk; "don't use your gun"; the horde; the case set down; inside, melee; the suppressor
     *stopClub() {
-      const p = this.sim.player, sp = this.ensureSophie(null, null);
-      this.flags.cutters = true;
-      this.prefetch("L01", "L02", "L03", "L04", "M09", "LB01", "LB02", "LB03", "LB04");
-      yield* this.wait(1);
-      yield* this.talk("M08a", "S11", "S12");
-      this.sophieLead(ROUTES.clubhouse);
-      this.setGoal("clubhouse");
-      yield* this.until(() => this.near("club_warn", 7));
-      this.say("L01");
-      this.api.warnShot?.(this.at("club_door"), p);
-      if (sp) this.sophieTo(20.5, -35.5, true, "scared");
-      const L3 = this.api.looters?.(this) || [];
-      this.looters = L3;
-      yield* this.until(() => this.near("club_door", 10));
-      this.say("L02");
-      this.openSeal("clubdoor");
-      const r = this.at("keys");
-      this.addPickup({ id: "rifle", x: r.x, z: r.z, r: 1.1, model: "rifle", label: "Rifle", onTake: () => {
-        this.rifleOn();
-        p.desired = SHOTGUN;
-        if (L3.some((q) => q.alive)) this.say("L04");
-      } });
-      yield* this.until(() => this.near("club_door", 2.6) || L3.filter((q) => q.out && q.alive).length === 0, 240);
-      if (L3.some((q) => q.alive)) this.say("L03");
-      yield* this.until(() => L3.every((q) => !q.alive), 600);
+      const p = this.sim.player, cine = this.api.cine, v = this.api.view, sp = this.ensureSophie(null, null);
+      this.music("A", 2.5);
+      this.prefetch("c801", "c802", "c803", "c804", "c805", "c806", "c807", "c808", "c809");
+      this.sophieLead("clubhouse");
+      this.setGoal("follow");
+      yield* this.until(() => p.z < -23);
+      const w = yield* this.wave([["z_gate_a"], ["z_gate_d"], ["z_gate_b", "runner"]], 1.4, "walk");
+      yield* this.until(() => this.near("club_warn", 9) && this.alive(w) === 0, 240);
+      yield* this.until(() => this.alive(w) === 0, 60);
+      const door = this.at("club_door"), crouch = { x: 13.6, z: -42.25 };
+      yield* this.together(crouch, 6, 6);
+      this.sophieTo(crouch.x, crouch.z, false, "pose");
+      sp.pose = "hood_Crouch_Idle_Loop";
+      sp.face = door;
+      sp.sneak = true;
+      yield* this.until(() => sp.mode === "pose", 6);
+      this.ensureHorde();
+      yield* this.talk("c801");
+      this.quiet = true;
+      this.music("drone", 2.5);
+      this.quietWarned = false;
+      this.say("c802", "c803");
+      yield* this.until(() => !this.api.subs.busy);
+      const pg = this.at("playground");
+      yield* this.shot([
+        { look: [pg.x, 1, pg.z], from: [pg.x + 15, 6.5, pg.z - 11], fov: 30, slow: 1, hold: 1.6 },
+        { look: [pg.x - 1, 0.9, pg.z + 1], from: [pg.x + 9.5, 2.4, pg.z - 7.5], fov: 34, slow: 1, move: 3.5, hold: 0.3, fn: () => cine.after(1.4, () => this.say("c804")), until: this.linesDone(), max: 6 }
+      ], { back: 1 });
+      this.say("c805");
+      const cd = { x: crouch.x - 0.1, z: crouch.z + 0.75, yaw: 0.4 };
+      p.desired = this.flags.crowbar ? "crowbar" : "fists";
+      {
+        const q = { x: cd.x - 0.8, z: cd.z + 0.1 };
+        this.sim.world.resolveCircle(q, 0.3);
+        p.x = p.px = q.x;
+        p.z = p.pz = q.z;
+        p.vx = p.vz = 0;
+        p.aimYaw = p.aimTarget = Math.atan2(cd.x - q.x, cd.z - q.z);
+      }
+      this.api.hero?.script("hood_PickUp_Kneeling", { fadeIn: 0.2, fadeOut: 0.4 });
+      yield* this.wait(0.7);
+      this.setCaseDown(cd);
       yield* this.wait(0.8);
-      yield* this.talk("M09");
-      if (sp) sp.mode = "follow";
+      const toDoor = Math.atan2(door.x - p.x, door.z - p.z);
+      p.aimYaw = p.aimTarget = toDoor;
+      if (sp) sp.subject = true;
+      yield* this.shot([
+        { look: [cd.x, 0.55, cd.z - 0.4], from: [cd.x + 0.55, 1.15, cd.z + 1.75], fov: 38, slow: 0.5, rate: 1, hold: 1.4, fn: () => {
+          const q = { x: cd.x - 0.8, z: cd.z + 0.1 };
+          this.sim.world.resolveCircle(q, 0.3);
+          p.x = p.px = q.x;
+          p.z = p.pz = q.z;
+          sp.x = crouch.x;
+          sp.z = crouch.z;
+          sp.speed = 0;
+          sp.yaw = Math.atan2(cd.x - crouch.x, cd.z - crouch.z);
+          this.sophiePose("hood_PickUp_Kneeling", cd, true);
+          this.sophieLook(cd, 2);
+        } },
+        { look: () => this.P(1.45), from: this.held(() => this.inLine({ x: p.x, z: p.z }, { x: sp.x, z: sp.z }, 1.3, 0.35, 1.25)), fov: 36, slow: 0.5, hold: 0.9, fn: () => {
+          p.aimYaw = p.aimTarget = Math.atan2(sp.x - p.x, sp.z - p.z);
+        } },
+        { look: this.sophieHead(), from: [cd.x + 0.4, 1.25, cd.z + 1.35], fov: 36, slow: 0.5, hold: 1.1, fn: () => {
+          this.sophiePose("hood_Surprise", { x: p.x, z: p.z }, true);
+          this.sophieLook(() => ({ x: p.x, z: p.z }), 1.2);
+        } }
+      ], { back: 0.6 });
+      if (sp) sp.subject = false;
+      this.sophiePose("hood_Crouch_Idle_Loop", door);
+      this.openSeal("clubdoor");
+      this.setGoal("clear");
+      this.music("A", 3);
+      const kk = this.at("keys");
+      const inside2 = [[1.5, -50.5], [12.5, -50], [6.5, -52.5], [9.6, -56.6], [11.8, -60]].map(([x, z]) => this.spawnAt({ x, z }, { near: true, dormant: 5.5, wave: "club" }));
+      this.addPickup({ id: "silencer", x: kk.x, z: kk.z, r: 1.1, model: "silencer", label: "Suppressor", onTake: () => {
+        this.flags.silencer = true;
+        this.quiet = false;
+        v.silencerOn?.(window.game?.yola);
+        this.say("c806");
+        this.music("A", 2.5);
+      } });
+      const tIn = this.time, reach = (z) => this.sim.world.flowDir(z.x, z.z, {}) < 1e7;
+      yield* this.until(() => this.flags.silencer && inside2.filter((z) => z.alive && (this.time - tIn < 60 || reach(z))).length === 0);
+      sp.sneak = false;
+      yield* this.together(OFFICE, 5, 4);
+      this.sophieTo(OFFICE.x, OFFICE.z, true, "idle");
+      yield* this.until(() => sp.mode !== "goto" || this.nearXZ(sp, 3), 10);
+      yield* this.meet(2);
+      const gunC = p.desired;
+      p.desired = "fists";
+      const two = this.twoShot(sp, { over: "marc" });
+      this.say("c807", "c808", "c809");
+      yield* this.shot([{ look: two.look, from: two.from, fov: 44, slow: 1, hold: 1.5, until: this.linesDone(), max: 20 }], { back: 0.6 });
+      sp.mode = "follow";
+      p.desired = gunC;
+      if (this.flags.case === "ground") {
+        this.setGoal("takeCase");
+        yield* this.until(() => this.flags.case === "carried");
+      }
+      this.setGoal("");
     }
-    // B08. PETE on the drive; Sophie takes his key; the dose (Yola on the radio); the key
-    *stopPete() {
-      const p = this.sim.player, sp = this.ensureSophie(null, "follow");
-      const pa = { x: 27.6, z: -54.5, yaw: Math.PI * 0.75 };
-      this.peteAt = pa;
-      const pete = this.api.actors?.pete(pa);
+    // an unsilenced shot near the clubhouse (from Sophie's warning until the suppressor): the first stirs the horde (a look),
+    // the second wakes it
+    onShot(kind) {
+      if (this.stop === "horde" && kind === "shotgun" && !this.firstBlast) {
+        this.firstBlast = true;
+        this.slowBlast?.();
+      }
+      if (!this.quiet || kind !== "shot" || this.flags.silencer || this.hordeUp) return;
+      if (!this.quietWarned) {
+        this.quietWarned = true;
+        if (this.api.cine?.active) return;
+        const pg = this.at("playground");
+        this.api.cine?.play([{ look: [pg.x, 1, pg.z], from: [pg.x + 9.5, 2.4, pg.z - 7.5], fov: 34, slow: 0.35, hold: 1.6, fn: () => {
+          for (const z of (this.horde || []).slice(0, 4)) if (z.alive) z.yaw = Math.atan2(-z.x + 10, -z.z - 50);
+        } }], { back: 0.6 });
+        return;
+      }
+      this.hordeUp = true;
+      this.music("C", 0.6);
+      this.bringHorde(this.horde || [], [[-9, -36], [-10, -41], [-8.5, -31], [-9.5, -45]]);
+    }
+    // the horde brought in from beyond the stop's routes (the playground lies outside them): two at a time at the edge
+    bringHorde(list, gate) {
+      const far = list.filter((z) => z.alive);
+      let i = 0;
+      const bring = (z) => {
+        const [gx, gz] = gate[i++ % gate.length], q = { x: gx + (this.sim.rand() - 0.5) * 2, z: gz - this.sim.rand() * 2.5 };
+        this.sim.world.resolveCircle(q, 0.45);
+        z.x = z.px = q.x;
+        z.z = z.pz = q.z;
+        z.vx = z.vz = 0;
+        this.wake([z]);
+        z.passive = false;
+        return z;
+      };
+      const next = () => {
+        if (!far.length) return;
+        bring(far.shift());
+        if (far.length) bring(far.shift());
+        this.later(0.9, next);
+      };
+      next();
+    }
+    // 12. THE LOT: Sophie runs ahead; Pete under the infected; the silenced pistol; she takes his key
+    *stopLot() {
+      const p = this.sim.player, cine = this.api.cine, sp = this.ensureSophie(null, "follow");
+      this.music("A_low", 2.5);
+      this.prefetch("P01", "P02", "P03", "c905", "c906");
+      if (this.flags.silencer) this.api.view.silencerOn?.(window.game?.yola);
+      this.sophieTo(PETE_AT.x - 13, PETE_AT.z + 3.5, true, "scared");
+      this.setGoal("pete");
+      const pete = this.api.actors?.pete(PETE_AT);
       if (pete) this.npcs.push(pete);
-      const ring = this.ring(pa, 5, 3.4, { dormant: 0 });
+      const ring = this.ring(PETE_AT, 5, 3.2, { dormant: 0 });
       for (const z of ring) {
         z.passive = true;
         z.speedMul = 0.25;
       }
-      this.prefetch("P01", "P02", "P03", "S13", "M10", "S14", "M11", "Y07", "M12", "Y08", "Y09", "M13", "Y10", "M14", "S15");
-      yield* this.wait(0.8);
+      yield* this.until(() => p.x > 26 || this.nearXZ(PETE_AT, 40));
       this.say("P01");
       this.setGoal("savePete");
-      yield* this.until(() => this.nearXZ(pa, 16), 25);
+      yield* this.until(() => this.nearXZ(PETE_AT, 24), 30);
       this.say("P02");
-      const w = yield* this.wave([["z_drive_a"], ["z_drive_b", "runner"]], 1, "d1");
-      yield* this.until(() => this.nearXZ(pa, 11), 14);
+      const w = yield* this.wave([["z_lot_a"], ["z_lot_d", "runner"]], 1, "lot");
+      yield* this.until(() => this.nearXZ(PETE_AT, 12), 20);
       if (pete) pete.subject = true;
       yield* this.shot([
-        { look: [pa.x, 1.2, pa.z], from: { yaw: 35, pitch: 20, dist: 4.4 }, fov: 40, slow: 0.12, rate: 0.55, hold: 0.5, fn: () => {
-          this.say("P03");
-        } },
-        { look: [pa.x, 0.9, pa.z], from: { yaw: 50, pitch: 26, dist: 3.8 }, fov: 40, slow: 0.12, rate: 0.45, hold: 2.2, fn: () => pete?.overwhelm() }
+        { look: [PETE_AT.x, 1.2, PETE_AT.z], from: { yaw: 35, pitch: 18, dist: 4.4 }, fov: 38, slow: 0.12, rate: 0.55, hold: 0.5, fn: () => this.say("P03") },
+        { look: [PETE_AT.x, 0.9, PETE_AT.z], from: { yaw: 52, pitch: 24, dist: 3.8 }, fov: 38, slow: 0.12, rate: 0.45, hold: 2.2, fn: () => pete?.overwhelm() }
       ], { back: 0.6 });
       if (pete) pete.subject = false;
-      this.peteAt = null;
       for (const z of ring) {
         z.passive = false;
         z.speedMul = 1;
@@ -81653,7 +82283,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           return { x: e[12], z: e[14] };
         };
         const h = at("mixamorigHips"), c = at("mixamorigSpine2") || h, hd = at("mixamorigHead") || c;
-        if (!h) return { x: pa.x - 0.7, z: pa.z + 0.5, face: pa };
+        if (!h) return { x: PETE_AT.x - 0.7, z: PETE_AT.z + 0.5, face: PETE_AT };
         let ax = hd.x - h.x, az = hd.z - h.z;
         const l = Math.hypot(ax, az) || 1;
         ax /= l;
@@ -81679,11 +82309,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           this.later(0.45, () => {
             sp.mode = "pose";
             sp.pose = "hood_PickUp_Kneeling";
+            sp.poseOnce = false;
           });
           this.later(1.75, () => {
             gotKey = true;
             this.flags.key = "sophie";
-            this.say("S13");
             sp.face = null;
             sp.mode = "scared";
           });
@@ -81694,98 +82324,160 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         gotKey = true;
         this.flags.key = "sophie";
       }
-      yield* this.until(() => gotKey && this.alive([...ring, ...w]) <= 1, 120);
+      yield* this.until(() => gotKey && this.alive([...ring, ...w]) === 0, 150);
       yield* this.wait(1);
-      yield* this.meet();
+      const pb = pete ? { x: pete.x, z: pete.z } : PETE_AT;
+      p.aimYaw = p.aimTarget = Math.atan2(pb.x - p.x, pb.z - p.z);
+      yield* this.shot([{ look: [pb.x, 0.35, pb.z], from: [pb.x + 2, 1.75, pb.z + 1.7], fov: 44, slow: 1, hold: 0.5, fn: () => this.say("c905"), until: this.linesDone(), max: 5 }], { back: 0.6 });
       if (sp) {
-        sp.mode = "idle";
-        sp.idle = "hood_Idle_Talking_Loop";
-      }
-      const two = this.twoShot(() => this.sophie || pa);
-      this.say("M10", "S14", "M11", "Y07", "M12", "Y08", "Y09", "M13", "Y10", "M14", "S15");
-      yield* this.shot([{ look: two.look, from: two.from, fov: 46, slow: 1, hold: 2, until: this.linesDone(), max: 120 }], { back: 0.7 });
-      this.flags.key = true;
-      this.api.hud.toast("The shed key");
-      if (sp) {
-        sp.idle = "hood_Idle_Loop";
         sp.mode = "follow";
       }
+      this.say("c906");
     }
-    // B09. THE DOCK: through the lot and down the service road; the playground; quiet; the case in the cooler
+    // 13. THE DOCK: her boat; the cooler; the case handed over (glance three); the shed's key
     *stopDock() {
-      const p = this.sim.player, sp = this.ensureSophie(null, "follow");
-      this.prefetch("M15", "M16", "M17", "S16", "M18", "S17", "M19", "S18", "M20", "S19");
-      this.sophieLead(ROUTES.dock);
-      this.setGoal("dock");
-      const b = this.at("boat");
+      const p = this.sim.player, cine = this.api.cine, v = this.api.view, sp = this.ensureSophie(null, "follow");
+      this.music("A_low", 2.5);
+      this.prefetch("c1001", "c1002", "c1003", "c1004", "c1005", "c1006", "c1007", "c1008", "c1009", "c1010");
+      if (this.flags.silencer) v.silencerOn?.(window.game?.yola);
+      this.sophieLead("dock");
+      this.setGoal("follow");
+      const b = this.boatAt();
+      v.showCooler?.(true);
       yield* this.until(() => this.nearXZ(b, 9));
-      yield* this.talk("M15");
-      const pg = this.at("playground");
-      this.ensureHorde();
-      yield* this.wait(0.4);
-      this.say("M16", "M17");
-      yield* this.shot([
-        { look: [pg.x, 0.9, pg.z], from: { yaw: 35, pitch: 26, dist: 15 }, fov: 42, slow: 1, hold: 0.3 },
-        { look: [pg.x + 2, 0.9, pg.z - 2], from: { yaw: 30, pitch: 22, dist: 12 }, fov: 42, slow: 1, move: 4.5, hold: 0.2, until: this.linesDone(), max: 14 }
-      ], { back: 1 });
-      yield* this.talk("S16");
-      this.setGoal("");
-      this.api.view.showCooler?.(true);
-      yield* this.use("cooler", "pour_fuel", "Put the case in the cooler", 2.4);
-      const cp = this.api.view.coolerAt?.() || { x: b.x, y: 0.5, z: b.z };
-      this.say("M18");
-      yield* this.shot([
-        { look: [cp.x, cp.y + 0.1, cp.z], from: [cp.x + 1.4, cp.y + 1.1, cp.z + 1.3], fov: 38, slow: 1, hold: 1, fn: () => {
-          this.flags.case = "cooler";
-          this.api.view.showCase?.("cooler");
-        } },
-        { look: () => this.P(1.2), from: { yaw: 35, pitch: 24, dist: 5.5 }, fov: 40, slow: 1, hold: 0.5, until: this.linesDone(), max: 6 }
-      ], { back: 0.6 });
-      if (sp) {
-        this.sophieTo(b.x + 3.2, b.z + 0.6, false, "idle");
+      const by = { x: b.x + 1, z: b.z + 2.05 };
+      yield* this.together(by, 6, 8);
+      this.sophieTo(by.x, by.z, false, "idle");
+      yield* this.until(() => sp.mode !== "goto", 8);
+      if (Math.hypot(sp.x - by.x, sp.z - by.z) > 1.5) {
+        sp.x = by.x;
+        sp.z = by.z;
+        sp.mode = "idle";
       }
-      yield* this.talk("S17", "M19", "S18", "M20", "S19");
+      yield* this.meet(2);
+      p.desired = "fists";
+      const cp = v.coolerAt?.() || { x: b.x, y: 0.5, z: b.z };
+      const two = this.twoShot(sp, { over: "marc" }), sw = this.twoShot(sp, { over: "sophie" });
+      this.say("c1001");
+      yield* this.shot([
+        { look: [b.x - 0.3, 0.45, b.z], from: [b.x + 3.6, 1.85, b.z + 3.9], fov: 38, slow: 1, hold: 1.2, fn: () => cine.after(0.6, () => this.say("c1002")), until: this.linesDone(), max: 6 },
+        { look: [cp.x, cp.y, cp.z], from: [cp.x + 1.9, cp.y + 1.25, cp.z + 1.7], fov: 34, slow: 1, hold: 1.6, move: 0, fn: () => this.say("c1003") },
+        { look: [cp.x, cp.y, cp.z], from: [cp.x + 1.45, cp.y + 1, cp.z + 1.3], fov: 32, slow: 1, hold: 0.4, move: 1.6, until: this.linesDone(), max: 5 },
+        { look: two.look, from: two.from, fov: 44, slow: 1, hold: 0.4, fn: () => this.say("c1004", "c1005", "c1006"), until: this.linesDone(), max: 25 }
+      ], { back: 0 });
+      this.say("c1007");
+      yield* this.shot([{ look: sw.look, from: sw.from, fov: 42, slow: 1, hold: 2.2, until: this.linesDone(), max: 8 }], { back: 0 });
+      this.api.hero?.script("hood_Interact", { fadeIn: 0.2, fadeOut: 0.4 });
+      yield* this.wait(0.5);
+      const hand = () => {
+        const h = sp.obj?.getObjectByName?.("mixamorigRightHand");
+        if (!h) return { x: sp.x, y: 0.7, z: sp.z, yaw: sp.yaw };
+        const q = h.getWorldPosition(this._hv || (this._hv = h.position.clone()));
+        return { x: q.x, y: q.y - 0.14, z: q.z, yaw: sp.yaw };
+      };
+      this.flags.case = "held";
+      v.showCase?.("held", { get: hand });
+      this.sophiePose("hood_Idle_Loop", { x: p.x, z: p.z });
+      yield* this.shot([
+        { look: () => {
+          const h = this.sophieHead()();
+          return [h[0], h[1] - 0.25, h[2]];
+        }, from: this.held(() => {
+          const a = Math.atan2(p.x - sp.x, p.z - sp.z) + 0.3;
+          return [sp.x + Math.sin(a) * 1.3, 1.5, sp.z + Math.cos(a) * 1.3];
+        }), fov: 36, slow: 1, hold: 2, fn: () => {
+          sp.yaw = Math.atan2(p.x - sp.x, p.z - sp.z);
+          this.sophieLook(() => {
+            const q = v.caseObj?.position;
+            return q ? { x: q.x, z: q.z } : sp;
+          }, 2);
+        } }
+      ], { back: 0 });
+      this.say("c1008");
+      yield* this.shot([{ look: two.look, from: two.from, fov: 44, slow: 1, hold: 1, fn: () => cine.after(1, () => {
+        this.flags.key = true;
+        this.api.hud.toast("The shed key");
+        this.api.audio?.play("reloadDone");
+      }), until: this.linesDone(), max: 6 }], { back: 0 });
+      this.say("c1009", "c1010");
+      yield* this.shot([{ look: sw.look, from: sw.from, fov: 44, slow: 1, hold: 1, until: this.linesDone(), max: 12 }], { back: 0.7 });
+      p.desired = PISTOL;
+      this.flags.key = true;
+      this.setGoal("shed");
+      this.later(0.1, () => {
+        const tick2 = () => {
+          if (Math.hypot(p.x - sp.x, p.z - sp.z) > 7 || this.stop !== "dock") {
+            this.flags.case = "cooler";
+            v.showCase?.("cooler");
+          } else this.later(0.4, tick2);
+        };
+        tick2();
+      });
     }
-    // the playground's horde, about thirty standing about (made at the dock; again on a retry from the shed)
+    // the playground's horde, about thirty standing about (made at the clubhouse; again on a retry from later)
     ensureHorde() {
       if (this.horde?.some((z) => z.alive)) return this.horde;
       const pg = this.at("playground");
       this.horde = [];
-      for (let i = 0; i < 26; i++) {
+      for (let i = 0; i < 28; i++) {
         const a = this.sim.rand() * Math.PI * 2, d = 1.5 + Math.sqrt(this.sim.rand()) * 7.5, x = pg.x + Math.cos(a) * d, z = pg.z + Math.sin(a) * d, q = { x, z };
         if (this.sim.world.resolveCircle(q, 0.45)) continue;
         this.horde.push(this.spawnAt({ x, z }, { near: true, spread: 0, yaw: this.sim.rand() * 6.28, dormant: 2.5, kind: i % 5 === 0 ? "runner" : void 0, wave: "horde" }));
       }
       return this.horde;
     }
-    // B10 - B11. THE SHED: unlocked with Pete's key; the chainsaw, the shotgun, the gas; the engine; the horde runs
+    // 14. THE SHED: unlocked with the key; the shotgun, the gas; the engine (the cord, a cough, a roar, dead): the horde runs
     *stopShed() {
-      const p = this.sim.player, sp = this.ensureSophie(null, null);
+      const p = this.sim.player, cine = this.api.cine, sp = this.ensureSophie(null, null);
       this.ensureHorde();
-      this.prefetch("M21", "M22", "M23", "S20", "S21", "S22", "M24", "ENGINE", "S23");
-      this.setGoal("gas");
+      this.music("A_low", 2.5);
+      this.prefetch("c1101", "c1103", "ENGINE");
+      if (this.flags.case !== "cooler") {
+        this.flags.case = "cooler";
+        this.api.view.showCase?.("cooler");
+      }
+      this.setGoal("shed");
       yield* this.use("shed", "shed_door", "Unlock the shed", 1.6, { can: () => this.flags.key === true, no: "Locked" });
+      this.api.audio?.play("reloadDone");
       this.openSeal("shed");
       const cs = this.at("shed_chainsaw"), sg = this.at("shed_shotgun"), gs = this.at("shed_gas"), dr = this.at("shed_door");
-      let gun = false;
-      this.addPickup({ id: "shotgun", x: sg.x - 0.45, z: sg.z, y: sg.y, r: 0.8, model: "shotgun", label: "Shotgun", onTake: () => {
+      let gun = this.flags.gun === "shotgun";
+      if (!gun) this.addPickup({ id: "shotgun", x: sg.x - 0.45, z: sg.z, y: sg.y, r: 0.8, model: "shotgun", label: "Shotgun", onTake: () => {
         gun = true;
         this.shotgunOn(null, 16);
-        p.desired = SHOTGUN;
       } });
       if (this.flags.gas === "shed") {
         this.api.view.placeGas?.(gs.x, gs.z);
-        this.addUse({ id: "gas", x: gs.x, z: gs.z, r: 1.3, label: "Take the gas can", use: () => this.pickGas() });
+        this.addUse({ id: "gas", x: gs.x, z: gs.z, r: 1.3, label: "Take the gas can", use: () => {
+          this.pickGas();
+          this.say("c1101");
+        } });
       }
       yield* this.shot([
-        { look: [cs.x, cs.y + 0.1, cs.z], from: [dr.x + 0.3, 1.75, dr.z - 0.6], fov: 40, slow: 0.1, hold: 1.4, move: 0.8 },
-        { look: [sg.x - 0.1, sg.y - 0.05, sg.z], from: [sg.x - 2.3, sg.y + 0.45, sg.z + 1.25], fov: 40, slow: 0.1, hold: 1.4 },
-        { look: [gs.x, 0.3, gs.z], from: [gs.x - 1.5, 1.45, gs.z + 1.6], fov: 40, slow: 0.1, hold: 1.2 }
+        { look: [cs.x, cs.y + 0.1, cs.z], from: [dr.x + 0.3, 1.75, dr.z - 1.4], fov: 40, slow: 0.1, hold: 1.2, move: 0.8 },
+        { look: [sg.x - 0.1, sg.y - 0.05, sg.z], from: [sg.x - 2.3, sg.y + 0.45, sg.z + 1.25], fov: 36, slow: 0.1, hold: 1 },
+        { look: [sg.x - 0.1, sg.y - 0.05, sg.z], from: [sg.x - 1.7, sg.y + 0.3, sg.z + 0.95], fov: 34, slow: 0.1, hold: 0.6, move: 1 },
+        { look: [gs.x, 0.3, gs.z], from: [gs.x - 1.5, 1.45, gs.z + 1.6], fov: 40, slow: 0.1, hold: 1 }
       ], { back: 0.7 });
-      this.setGoal("shed");
-      yield* this.until(() => gun && this.flags.gas !== "shed");
-      yield* this.talk("M21");
-      const b = this.at("boat"), pg = this.at("playground");
+      let tg = null;
+      yield* this.until(() => {
+        if (this.flags.gas !== "shed" && tg === null) tg = this.time;
+        return tg !== null && (gun || this.time - tg > 6);
+      });
+      yield* this.until(() => !this.api.subs.busy, 4);
+      const b = this.boatAt(), pg = this.at("playground");
+      if (sp) {
+        const at = { x: b.x + 1.6, z: b.z + 1.95 };
+        sp.x = at.x;
+        sp.z = at.z;
+        this.sophiePose("hood_Interact", b);
+        sp.subject = true;
+      }
+      this.say("c1103");
+      yield* this.wait(1.6);
+      this.music("none", 0);
+      this.api.voice?.play("ENGINE");
+      yield* this.wait(1.4);
       const crowd = () => {
         const a = (this.horde || []).filter((z2) => z2.alive);
         let x = 0, z = 0;
@@ -81795,78 +82487,129 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }
         return a.length ? [x / a.length, 1, z / a.length] : [pg.x, 1, pg.z];
       };
-      if (sp) {
-        sp.mode = "pose";
-        sp.pose = "hood_PickUp_Kneeling";
-        sp.subject = true;
-      }
-      this.api.voice?.play("ENGINE");
-      this.say("M22", "M23", "S20");
       yield* this.shot([
-        { look: [b.x, 0.6, b.z], from: [p.x + 1.4, 4.2, p.z + 1.8], fov: 34, slow: 0.4, hold: 2.6 },
-        { look: crowd, from: { yaw: 50, pitch: 32, dist: 16 }, fov: 46, slow: 0.35, hold: 0.6, fn: () => {
+        { look: () => this.P(1.4), from: () => [p.x + 1.3, 1.7, p.z + 1.9], fov: 38, slow: 0.5, hold: 1.2, fn: () => {
+          const a = Math.atan2(b.x - p.x, b.z - p.z);
+          p.aimYaw = p.aimTarget = a;
+        } },
+        // the horde hears it and runs (C from here)
+        { look: crowd, from: { yaw: 50, pitch: 28, dist: 15 }, fov: 42, slow: 0.4, hold: 0.6, fn: () => {
+          this.music("C", 0.4);
           this.sim.world.rallyAt(-16.5, -63.5);
           for (const z of this.horde || []) {
             this.wake([z]);
-            z.kind === "runner" || (z.speedMul *= 1.6);
+            if (z.kind !== "runner") z.speedMul *= 1.6;
           }
         } },
-        { look: crowd, from: { yaw: 40, pitch: 36, dist: 17 }, fov: 46, slow: 0.35, hold: 2.4, move: 2.4 }
-      ], { back: 0.6 });
+        { look: crowd, from: { yaw: 40, pitch: 34, dist: 16 }, fov: 42, slow: 0.4, hold: 1.8, move: 1.8 }
+      ], { back: 0 });
       if (sp) sp.subject = false;
-      this.say("S21", "S22", "M24");
     }
-    // B12. THE HORDE reaches the boat before Marc can; Sophie; the shotgun
+    // 15 - 16. THE HORDE: six on Sophie at the boat; the shotgun; the horde in waves
     *stopHorde() {
-      const p = this.sim.player, sp = this.sophie, b = this.at("boat");
+      const p = this.sim.player, sp = this.sophie, b = this.boatAt(), cine = this.api.cine;
+      this.music("C", 0.5);
       this.setGoal("sophie");
       this.openSeal("dock");
       this.sim.world.rallyAt(null);
-      const GATE = [[-16, -66.5], [-19, -66], [-13.5, -66.8], [-21, -66.2]], far = (this.horde || []).filter((z) => z.alive), first = [];
-      const bring = (z, i) => {
-        const [gx, gz] = GATE[i % GATE.length];
-        z.x = z.px = gx + (this.sim.rand() - 0.5) * 2;
-        z.z = z.pz = gz - this.sim.rand() * 3;
-        z.vx = z.vz = 0;
-        return z;
-      };
-      for (let i = 0; i < 4; i++) first.push(far.length ? bring(far.shift(), i) : this.spawnAt({ x: GATE[i][0], z: GATE[i][1] - 2 }, { near: true, spread: 0.8, kind: "runner", wave: "horde1" }));
-      this.later(2, () => {
-        let i = 0;
-        const next = () => {
-          if (!far.length) return;
-          bring(far.shift(), i++);
-          if (far.length) bring(far.shift(), i++);
-          this.later(0.9, next);
-        };
-        next();
-      });
-      let dead = false;
-      const t0 = this.time;
-      yield* this.until(() => !sp || first.some((z) => z.alive && Math.hypot(z.x - sp.x, z.z - sp.z) < 2.2) || this.time - t0 > 3);
-      if (sp && !dead) {
-        dead = true;
-        this.api.voice?.play("S23");
-        sp.die();
+      this.ensureHorde();
+      const s = sp || { x: b.x + 1.6, z: b.z + 1.95 };
+      const six = this.ring(s, 6, 1.35, { dormant: 0, wave: "six" });
+      for (const z of six) {
+        z.passive = true;
+        z.speedMul = 0.15;
       }
+      if (sp) {
+        this.sophiePose("hood_Hit_Chest", null, true);
+        sp.subject = true;
+      }
+      yield* this.shot([
+        { look: [s.x, 0.9, s.z], from: [s.x + 3.4, 1.4, s.z + 3], fov: 40, slow: 0.5, rate: 1, hold: 1 },
+        { look: [s.x, 0.8, s.z], from: [s.x + 2.2, 1, s.z + 2.3], fov: 38, slow: 0.5, rate: 1, hold: 1.4, fn: () => {
+          if (sp) this.sophiePose("hood_Crouch_Idle_Loop", null);
+        } },
+        { look: () => this.P(1.3), from: () => [p.x + 1.4, 1.65, p.z + 2], fov: 40, slow: 0.7, hold: 0.9 }
+      ], { back: 0.5 });
+      if (sp) sp.subject = false;
       this.setGoal("horde");
-      const w = yield* this.wave([["z_dock_a", "sprinter"], ["z_dock_b", "runner"]], 2.5, "h2");
-      yield* this.until(() => this.alive([...first, ...w, ...this.horde || []]) <= 1, 300);
-      yield* this.wait(1.2);
-      if (this.flags.case === "cooler") this.flags.case = "boat";
-      yield* this.talk("M25");
+      this.later(2.2, () => {
+        if (sp && sp.mode !== "dead") sp.die();
+        const at = { x: s.x + 0.45, z: s.z + 0.25, yaw: 0.6 };
+        this.flags.case = "dead";
+        this.caseAt = at;
+        this.api.view.showCase?.("ground", at);
+        for (const z of six) {
+          z.passive = false;
+          z.speedMul = 1;
+        }
+        this.wake(six);
+      });
+      this.firstBlast = false;
+      this.slowBlast = () => {
+        if (cine?.active) return;
+        const c = window.game?.camera;
+        if (!c) return;
+        const f = [c.position.x * 0.8 + p.x * 0.2, c.position.y * 0.85 + 1.4 * 0.15, c.position.z * 0.8 + p.z * 0.2];
+        cine.play([{ look: () => this.P(1.1), from: f, fov: c.fov * 0.92, slow: 0.22, aim: true, hold: 0.9 }], { back: 0.35 });
+      };
+      const GATE = [[-16, -66.5], [-19, -66], [-13.5, -66.8], [-21, -66.2]];
+      const far = (this.horde || []).filter((z) => z.alive), waves = [far.slice(0, 10), far.slice(10, 20), far.slice(20)];
+      yield* this.wait(3);
+      for (const wv of waves) {
+        if (!wv.length) continue;
+        this.bringHorde(wv, GATE);
+        yield* this.wait(2);
+        yield* this.until(() => this.alive([...six, ...wv]) <= 2, 180);
+      }
+      yield* this.until(() => this.alive([...six, ...far]) === 0 && !this.awakeNear(30), 300);
+      this.music("none", 0);
     }
-    // B13. LEAVING: the fuel, the boat, Yola
+    // 17. AFTER: the silence; Marc over her; the case at her feet
+    *stopAfter() {
+      const p = this.sim.player, sp = this.sophie, cine = this.api.cine;
+      this.music("none", 0);
+      const at = this.caseAt || (sp ? { x: sp.x + 0.45, z: sp.z + 0.25, yaw: 0.6 } : { x: -24, z: -80, yaw: 0 });
+      if (this.flags.case !== "dead") {
+        this.flags.case = "dead";
+        this.caseAt = at;
+        this.api.view.showCase?.("ground", at);
+      }
+      if (sp && sp.mode !== "dead") sp.die();
+      this.setGoal("caseBack");
+      yield* this.wait(1.5);
+      p.desired = "fists";
+      yield* this.until(() => this.nearXZ(at, 3.2), 120);
+      const s = sp || at;
+      const a = Math.atan2(p.x - s.x, p.z - s.z);
+      yield* this.shot([
+        { look: () => this.P(1.45), from: [s.x - Math.sin(a) * 0.9 + Math.cos(a) * 0.45, 0.68 + groundAt(s), s.z - Math.cos(a) * 0.9 - Math.sin(a) * 0.45], fov: 40, slow: 0.6, hold: 3.2 },
+        { look: [at.x, 0.12, at.z], from: [at.x + Math.sin(a) * 0.9, 1.25, at.z + Math.cos(a) * 0.9], fov: 36, slow: 0.6, hold: 1.8 }
+      ], { back: 0.8 });
+      this.addUse({ id: "case", x: at.x, z: at.z, r: 1.4, label: "Take the case", use: () => this.takeCase() });
+      yield* this.until(() => this.flags.case === "carried");
+      yield* this.wait(0.9);
+      yield* this.talk("c1201");
+      p.desired = this.flags.gun === "shotgun" ? SHOTGUN : PISTOL;
+      this.setGoal("");
+    }
+    // 18. LEAVING: the fuel (D comes in), the motor (it starts on the first pull), the water, Yola
     *stopLeave() {
       const p = this.sim.player, b = this.at("pour_fuel");
-      this.prefetch("M26", "Y11", "M27", "Y12", "M28", "Y13", "M29");
+      this.prefetch("c1206", "c1208");
+      if (this.flags.case !== "carried") {
+        this.flags.case = "carried";
+        this.api.view.showCase?.("carried");
+      }
       this.setGoal("fuel");
-      let fuelled = false, launched = false;
-      this.addUse({ id: "fuel", x: b.x, z: b.z, r: 2.4, label: "Fuel the boat", no: "Bring the gas can", can: () => this.flags.gas === "carried", use: () => {
-        fuelled = true;
-        this.dropUse("fuel");
-      } });
-      yield* this.until(() => fuelled);
+      let fuelled = this.flags.gas === "used", launched = false;
+      if (!fuelled) {
+        this.addUse({ id: "fuel", x: b.x, z: b.z, r: 2.4, label: "Fuel the boat", no: "Bring the gas can", can: () => this.flags.gas === "carried", use: () => {
+          fuelled = true;
+          this.dropUse("fuel");
+        } });
+        yield* this.until(() => fuelled);
+      }
+      this.music("D", 3);
       this.api.audio?.play("reloadDone");
       this.flags.gas = "used";
       if (this.api.view.gas) {
@@ -81874,26 +82617,29 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         this.api.view.gasMode = "used";
       }
       this.setGoal("leave");
-      this.addUse({ id: "launch", x: b.x, z: b.z, r: 2.4, label: "Push off", use: () => {
+      this.addUse({ id: "launch", x: b.x, z: b.z, r: 2.4, label: "Start the motor", use: () => {
         launched = true;
         this.dropUse("launch");
       } });
       yield* this.until(() => launched);
+      const eng = this.api.voice?.engine?.();
       const boat = this.api.view.boatStart?.();
-      this.say("M26", "Y11", "M27", "Y12", "M28", "Y13", "M29");
+      this.say("c1206", "c1208");
       if (boat) {
         this.boating = true;
         const dir = { x: -0.99, z: -0.14 };
-        for (let t = 0; t < 30 && (t < 11 || this.api.subs.busy); t += STEP4) {
+        for (let t = 0; t < 34 && (t < 12 || this.api.subs.busy); t += STEP4) {
           const k = Math.min(1, t / 11), s = 26 * k * k + Math.max(0, t - 11) * 2.4, bx = boat.x + dir.x * s, bz = boat.z + dir.z * s;
           this.api.view.boatAt(bx, bz, t);
           p.x = p.px = bx;
           p.z = p.pz = bz;
           p.vx = p.vz = 0;
           for (const z of this.sim.zombies) if (z.alive && Math.hypot(z.x - bx, z.z - bz) < 2) z.x += 0.6;
+          eng?.gain?.(Math.max(0.25, 1 - t / 30));
           yield;
         }
       } else yield* this.until(() => !this.api.subs.busy);
+      eng?.stop?.(2.5);
       this.complete = true;
       this.setGoal("");
       this.api.onComplete?.();
@@ -81968,8 +82714,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (this.voice?.state(id) === void 0 && (this.waited += dt) < WAIT) return;
       this.queue.shift();
       this.waited = 0;
-      const [who, text, radio] = LINES2[id];
-      const dur = this.voice?.play(id, { radio });
+      const [who, text, radio, , band] = LINES2[id];
+      const dur = this.voice?.play(id, { radio: band ?? radio });
       this.cur = id;
       this.t = dur ? dur + 0.05 : Math.max(1.8, text.length / 15 + 0.6);
       if (radio && this.radio) this.radio.line(who, text);
@@ -82107,6 +82853,43 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }
       } };
     }
+    // the outboard starting on the first pull and running (beat 18): the recording's pull and catch, then its roar held in a
+    // loop (where its level is steady: found from the recording's own loudness), until stop(fade); gain(k) as it goes
+    engine() {
+      const b = this.state("ENGINE"), c = this.ctx();
+      if (!b || !c) return null;
+      const d = b.getChannelData(0), W3 = Math.floor(b.sampleRate * 0.05), rms = [];
+      for (let i = 0; i + W3 < d.length; i += W3) {
+        let s = 0;
+        for (let j = i; j < i + W3; j++) s += d[j] * d[j];
+        rms.push(Math.sqrt(s / W3));
+      }
+      const top = rms.indexOf(Math.max(...rms));
+      let a = top, e = top;
+      const lim = rms[top] * 0.6;
+      while (a > 0 && rms[a - 1] > lim) a--;
+      while (e < rms.length - 1 && rms[e + 1] > lim) e++;
+      const span = (e - a) * 0.05, ls = a * 0.05 + span * 0.25, le = a * 0.05 + Math.max(0.3, span * 0.75);
+      const src = c.createBufferSource();
+      src.buffer = b;
+      src.loop = true;
+      src.loopStart = ls;
+      src.loopEnd = le;
+      const g = c.createGain();
+      g.gain.value = 0.9;
+      src.connect(g);
+      g.connect(this.audio.sfx || this.audio.master);
+      src.start();
+      return { gain: (k) => {
+        g.gain.setTargetAtTime(0.9 * k, c.currentTime, 0.2);
+      }, stop: (f = 1) => {
+        g.gain.setTargetAtTime(0, c.currentTime, f / 3);
+        try {
+          src.stop(c.currentTime + f + 0.2);
+        } catch {
+        }
+      } };
+    }
     stopAll() {
       for (const s of this.playing) {
         try {
@@ -82139,22 +82922,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
 
   // src/hood/radio.js
   var CSS4 = `
-#hoodRadio{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 58px);transform:translate(-50%,-12px);width:min(92vw,430px);z-index:61;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-#hoodRadio.show{opacity:1;transform:translate(-50%,0)}
-#hoodRadio .hd{display:flex;align-items:center;gap:8px;margin:0 2px 6px;color:#8fc6cf;font:800 15px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.22em;text-shadow:0 1px 3px #000}
-#hoodRadio .hd img{width:22px;height:30px;object-fit:cover;object-position:50% 40%;border-radius:4px;filter:drop-shadow(0 1px 2px #000)}
-#hoodRadio .hd .no{color:#e9eef0;font-size:20px;letter-spacing:.02em}
-#hoodRadio .hd .ln{flex:1;height:1px;background:linear-gradient(90deg,#2d5a61,transparent)}
-#hoodRadio .card{display:flex;gap:10px;align-items:stretch;margin-bottom:7px;padding:7px;border:1px solid #23444a;border-radius:10px;background:rgba(10,16,21,.9);box-shadow:0 2px 10px rgba(0,0,0,.45);opacity:.55;transition:opacity .25s,border-color .25s,box-shadow .25s}
-#hoodRadio .card.on{opacity:1;border-color:#3e8f99;box-shadow:0 0 0 1px rgba(62,143,153,.35),0 2px 14px rgba(0,0,0,.5)}
-#hoodRadio .face{width:76px;height:76px;flex:none;border-radius:7px;border:1px solid #2d5a61;background:#0c3a42 center/cover no-repeat}
-#hoodRadio .info{flex:1;min-width:0;display:flex;flex-direction:column}
-#hoodRadio .row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #23444a;padding-bottom:3px}
-#hoodRadio .nm{color:#dfe5e8;font:800 19px/1.1 system-ui,sans-serif;letter-spacing:.06em}
-#hoodRadio .st{color:#79cfa6;font:600 10px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.12em}
-#hoodRadio .st::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d27f;margin-right:6px;box-shadow:0 0 6px #34d27f;vertical-align:-1px}
-#hoodRadio .tx{color:#f1f4f5;font:500 14px/1.3 system-ui,sans-serif;margin-top:4px;min-height:2.6em;text-shadow:0 1px 2px #000}
-#hoodRadio canvas{width:100%;height:16px;margin-top:auto}
+#hoodRadio{position:fixed;right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 54px);width:62px;height:62px;z-index:61;pointer-events:none;opacity:0;transform:scale(.85);transition:opacity .3s,transform .3s}
+#hoodRadio.show{opacity:1;transform:scale(1)}
+#hoodRadio .face{position:absolute;inset:0;border-radius:50%;background:#0c3a42 center/cover no-repeat;border:2px solid #3e8f99;box-shadow:0 2px 8px rgba(0,0,0,.55),0 0 0 var(--ring,0px) rgba(79,199,210,.45);transition:background-image .15s}
+#hoodRadio .face.dim{border-color:#2b5a61;filter:saturate(.7) brightness(.8)}
+#hoodRadio img{position:absolute;left:-7px;bottom:-4px;width:20px;height:27px;object-fit:cover;object-position:50% 40%;border-radius:4px;filter:drop-shadow(0 1px 2px #000)}
 `;
   var RadioCard = class {
     constructor(voice) {
@@ -82165,33 +82937,27 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const el = document.createElement("div");
       el.id = "hoodRadio";
       el.className = "hoodOverlay";
-      el.innerHTML = '<div class="hd"><img src="assets/ui/radio/walkie.png" alt=""><span class="no">02</span><span>/</span><span>RADIO SIGNAL</span><span class="ln"></span></div>' + ["MARC", "YOLA"].map((w) => `<div class="card" data-who="${w}"><div class="face" style="background-image:url(${FACES[w]})"></div><div class="info"><div class="row"><span class="nm">${w}</span><span class="st">ONLINE</span></div><div class="tx"></div><canvas width="240" height="32"></canvas></div></div>`).join("");
+      el.innerHTML = '<div class="face dim"></div><img src="assets/ui/radio/walkie.png" alt="">';
       document.body.appendChild(el);
       this.el = el;
-      this.cards = {};
-      for (const c of el.querySelectorAll(".card")) this.cards[c.dataset.who] = { el: c, tx: c.querySelector(".tx"), cv: c.querySelector("canvas") };
+      this.face = el.querySelector(".face");
       this.who = null;
       this.hideIn = 0;
       this.wave = new Uint8Array(128);
-      for (const c of Object.values(this.cards)) this.flat(c.cv);
+      this.ring = 0;
     }
-    // a radio line starts: `who` (MARC | YOLA) lights up with `text`
-    line(who, text) {
-      const c = this.cards[who];
-      if (!c) return;
-      if (!this.el.classList.contains("show")) for (const k of Object.values(this.cards)) k.tx.textContent = "";
-      for (const [k, v] of Object.entries(this.cards)) v.el.classList.toggle("on", k === who);
-      c.tx.textContent = text;
+    // a radio line starts: `who` (MARC | YOLA) is the face (the words are heard, not shown)
+    line(who) {
+      if (!FACES[who]) return;
+      this.face.style.backgroundImage = `url(${FACES[who]})`;
+      this.face.classList.remove("dim");
       this.who = who;
       this.hideIn = 0;
       this.el.classList.add("show");
     }
-    // the line ended: dim it; the card goes after `linger` s unless another radio line comes
+    // the line ended: the face dims; the badge goes after `linger` s unless another radio line comes
     done(linger = 1.1) {
-      if (this.who) {
-        this.flat(this.cards[this.who].cv);
-        this.cards[this.who].el.classList.remove("on");
-      }
+      this.face.classList.add("dim");
       this.who = null;
       this.hideIn = linger;
     }
@@ -82199,31 +82965,19 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.el.classList.remove("show");
       this.who = null;
       this.hideIn = 0;
-      for (const c of Object.values(this.cards)) {
-        c.el.classList.remove("on");
-        this.flat(c.cv);
-      }
+      this.face.classList.add("dim");
+      this.face.style.setProperty("--ring", "0px");
     }
     update(dt) {
       if (this.hideIn > 0 && (this.hideIn -= dt) <= 0) this.hide();
-      const c = this.who && this.cards[this.who], an = c && this.voice.analyser;
-      if (!c || !an) return;
-      an.getByteTimeDomainData(this.wave);
-      const g = c.cv.getContext("2d"), W3 = c.cv.width, H5 = c.cv.height, n = 48;
-      g.clearRect(0, 0, W3, H5);
-      g.fillStyle = "#4fc7d2";
-      for (let i = 0; i < n; i++) {
-        let m = 0;
-        for (let j = 0; j < 2; j++) m = Math.max(m, Math.abs(this.wave[(i * 2 + j) % 128] - 128));
-        const h = Math.max(2, Math.min(H5, m / 128 * H5 * 2.6 * (1 - Math.abs(i - n / 2) / (n * 0.75))));
-        g.fillRect(i * (W3 / n), (H5 - h) / 2, W3 / n * 0.45, h);
+      const an = this.who && this.voice.analyser;
+      let k = 0;
+      if (an) {
+        an.getByteTimeDomainData(this.wave);
+        for (let i = 0; i < 128; i += 2) k = Math.max(k, Math.abs(this.wave[i] - 128) / 128);
       }
-    }
-    flat(cv) {
-      const g = cv.getContext("2d");
-      g.clearRect(0, 0, cv.width, cv.height);
-      g.fillStyle = "#2b6a72";
-      for (let i = 0; i < 48; i++) g.fillRect(i * (cv.width / 48), cv.height / 2 - 1, cv.width / 48 * 0.45, 2);
+      this.ring += (Math.min(1, k * 2.4) - this.ring) * Math.min(1, dt * 14);
+      this.face.style.setProperty("--ring", (this.ring * 6).toFixed(1) + "px");
     }
   };
 
@@ -82605,6 +83359,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   }
   function finish(a, c, dt, sim2, tx, tz, want, face, cower) {
     const w = sim2.world, p = sim2.player;
+    if (a.sneak) want = Math.min(want, 2);
     a.speed += (want - a.speed) * Math.min(1, dt * (want > a.speed ? 4 : 6));
     if (a.speed > 0.05) {
       const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz);
@@ -82721,7 +83476,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   // src/hood/actors.js
   var SURVIVORS = { rifle: [["eve", 1.7]], pistol: [["remy", 1.8], ["james", 1.8], ["sophie", 1.66], ["bryce", 1.78]] };
   var LOOTERS = [["bryce", 1.78], ["lewis", 1.8], ["james", 1.8], ["remy", 1.8], ["david", 1.8], ["brian", 1.8]];
-  var STORY = { sophie: 1.66, pete: 1.8 };
+  var STORY = { sophie: 1.66, pete: 1.8, adam: 1.78 };
+  var TURNED = { Ch08_body: "assets/survivors/zombified/adam_turned/Ch08_body.webp", Ch08_body1: "assets/survivors/zombified/adam_turned/Ch08_body1.webp" };
   var GUNS = { rifle: ["assets/neighborhood/props/security_rifle.glb", 1], pistol: ["assets/weapons/pistol_core.glb", PISTOL_CORE_SCALE] };
   var _v11 = new Vector3();
   var _v25 = new Vector3();
@@ -83039,6 +83795,20 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         fire() {
           body.kick = 1;
         },
+        // any of the file's moves (Adam's: hood_IdleToLay, hood_Zombie_Spawn ...), cross-faded from what is playing
+        play(n, { once = false, fade = 0.25, rate = 1 } = {}) {
+          const c = clips[n];
+          if (!c) return 0;
+          const a = mixer.clipAction(c);
+          a.setLoop(once ? LoopOnce : LoopRepeat, once ? 1 : Infinity);
+          a.clampWhenFinished = once;
+          a.timeScale = rate;
+          a.reset().play();
+          (body.cur || idle).crossFadeTo(a, fade, false);
+          body.cur = a;
+          turn.rotation.y = n.startsWith("hood_") ? 0 : body.aimTurn;
+          return c.duration / rate;
+        },
         fall(forward) {
           if (body.dead) return;
           body.dead = true;
@@ -83058,8 +83828,35 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       mixer.update(0);
       obj.updateMatrixWorld(true);
       const d0 = aimDir(new Vector3());
-      turn.rotation.y = -Math.atan2(d0.x, d0.z);
+      turn.rotation.y = body.aimTurn = -Math.atan2(d0.x, d0.z);
+      body.model = m;
       return body;
+    }
+    // a body's skin blended toward another set of pictures (Adam turning): turnK 0 .. 1 mixes each named material's base colour
+    // with its turned picture, in the shader (the character light's own hook kept, charlight.js)
+    turnSkin(body, files) {
+      const U2 = { value: 0 }, tl = new TextureLoader();
+      body.model.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = [].concat(o.material).map((m0) => {
+          const f = files[m0.name];
+          if (!f || !m0.map) return m0;
+          const m = m0.clone(), t = tl.load(f);
+          t.flipY = false;
+          t.colorSpace = SRGBColorSpace;
+          const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey;
+          m.onBeforeCompile = (sh, r) => {
+            prev?.call(m, sh, r);
+            sh.uniforms.turnMap = { value: t };
+            sh.uniforms.turnK = U2;
+            sh.fragmentShader = "uniform sampler2D turnMap;\nuniform float turnK;\n" + sh.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\n	diffuseColor.rgb = mix(diffuseColor.rgb, diffuse * texture2D(turnMap, vMapUv).rgb, turnK);");
+          };
+          m.customProgramCacheKey = () => (prevKey ? prevKey.call(m) : "") + "|turn";
+          return m;
+        });
+        if (o.material.length === 1) o.material = o.material[0];
+      });
+      return U2;
     }
     clear() {
       this.nPicked = {};
@@ -83156,6 +83953,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           aim: 0,
           cd: 1 + sim2.rand() * 1.5,
           wasAlive: true,
+          calm: !!s.calm,
+          face: s.face || null,
           get alive() {
             return z.alive;
           }
@@ -83183,12 +83982,31 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (!b) a.obj.rotation.x = Math.min(Math.PI / 2, a.obj.rotation.x + dt * 3);
         return;
       }
-      if (z.hp < a.hp) b?.hit();
+      const struck = z.hp < a.hp;
+      if (struck) b?.hit();
       a.hp = z.hp;
       z.x = a.home.x;
       z.z = a.home.z;
       z.vx = z.vz = 0;
       const dx = p.x - z.x, dz = p.z - z.z, d = Math.hypot(dx, dz), los = !p.dead && d < 17 && sim2.world.lineOfSight(z.x, z.z, p.x, p.z, 1.3);
+      if (a.calm) {
+        const shot2 = sim2.events.some((e) => (e.type === "shot" || e.type === "shotgun") && Math.hypot(p.x - z.x, p.z - z.z) < 28);
+        if (struck || shot2 || d < 5.5 && los) {
+          a.calm = false;
+          a.cd = 0.6;
+          for (const o of this.list) if (o.kind === "looter" && o.calm && Math.hypot(o.home.x - a.home.x, o.home.z - a.home.z) < 8) {
+            o.calm = false;
+            o.cd = 1.1;
+          }
+        } else {
+          const f = a.face || [p.x, p.z];
+          z.yaw = Math.atan2(f[0] - z.x, f[1] - z.z);
+          a.obj.position.set(z.x, 0, z.z);
+          a.obj.rotation.y = z.yaw;
+          a.sight.visible = false;
+          return;
+        }
+      }
       z.yaw = Math.atan2(dx, dz);
       a.obj.position.set(z.x, 0, z.z);
       a.obj.rotation.y = z.yaw;
@@ -83341,14 +84159,21 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         a.cower = Math.max(0, a.cower - dt * 2);
         if (b) b.look = null;
       }
+      if (a.lookHold && (a.lookHold.t -= dt) <= 0) a.lookHold = null;
       if (a.mode === "follow") {
         companionStep(a, dt, level, sim2);
         a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
         a.obj.rotation.y = a.yaw;
         const leading = a.cs?.state === "lead";
         a.glance = leading ? (a.glance || 0) + dt : 0;
+        a.covetT = (a.covetT ?? 9 + Math.random() * 8) - dt;
+        if (a.covetT <= 0) {
+          a.covetT = 15 + Math.random() * 10;
+          const cp = level.api.view?.caseObj;
+          if (level.flags.case === "carried" && cp?.visible && a.speed < 0.3 && !leading && a.cower < 0.2) a.lookHold = { x: cp.position.x, z: cp.position.z, t: 1.4, live: () => cp.position };
+        }
         if (b) {
-          b.look = leading && (a.speed < 0.3 || a.glance % 3 > 1.8) ? { x: p.x, z: p.z } : null;
+          b.look = a.lookHold ? a.lookHold.live ? a.lookHold.live() : a.lookHold : leading && (a.speed < 0.3 || a.glance % 3 > 1.8) ? { x: p.x, z: p.z } : null;
           this.sophieMoves(a, b);
         }
         return;
@@ -83356,11 +84181,32 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         tx = a.target.x;
         tz = a.target.z;
         const d = Math.hypot(tx - a.x, tz - a.z);
-        want = d > 0.3 ? a.target.run ? 4.6 : 1.5 : 0;
+        want = d > 0.3 ? a.target.run ? a.sneak ? 2 : 4.6 : 1.5 : 0;
+        if (d > 0.3 && !sim2.world.lineOfSight(a.x, a.z, tx, tz, 0.5)) {
+          const t = trailPoint(a, sim2.world);
+          if (t && Math.hypot(t.x - a.x, t.z - a.z) > 0.6) {
+            tx = t.x;
+            tz = t.z;
+          }
+        }
+        const G6 = a.gotoProg || (a.gotoProg = { x: a.x, z: a.z, t: 0 });
+        G6.t += dt;
+        if (G6.t > 1.5) {
+          const stuck = Math.hypot(a.x - G6.x, a.z - G6.z) < 0.3 && d > 0.6;
+          a.gotoProg = null;
+          if (stuck && (dm0 > 12 || !sim2.world.lineOfSight(p.x, p.z, a.x, a.z, 0.9))) {
+            const q = { x: a.target.x, z: a.target.z };
+            sim2.world.resolveCircle(q, 0.3);
+            a.x = q.x;
+            a.z = q.z;
+            a.speed = 0;
+          }
+        }
         if (d <= 0.3) {
           a.mode = a.after || "scared";
           a.target.done?.();
           a.target = null;
+          a.gotoProg = null;
         }
       } else face = a.face || { x: p.x, z: p.z };
       a.speed += (want - a.speed) * Math.min(1, dt * 6);
@@ -83379,12 +84225,20 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
       a.obj.rotation.y = a.yaw;
-      if (b) this.sophieMoves(a, b);
+      if (b) {
+        if (a.lookHold && a.mode !== "dead") b.look = a.lookHold.live ? a.lookHold.live() : a.lookHold;
+        this.sophieMoves(a, b);
+      }
     }
-    // her moves, matched to her speed (the walk's rate to the ground she covers: no sliding feet)
+    // her moves, matched to her speed (the walk's rate to the ground she covers: no sliding feet); sneaking (a.sneak: by the
+    // horde), a low crouched walk
     sophieMoves(a, b) {
       const v = a.speed;
-      if (a.mode === "pose" && a.pose) b.play(a.pose);
+      if (a.mode === "pose" && a.pose) {
+        if (!a.poseOnce) b.play(a.pose);
+        else if (b.clip !== a.pose) b.play(a.pose, { once: true, fade: 0.3 });
+      } else if (a.sneak && v > 0.3 && v < 2.6) b.play("hood_Crouch_Fwd_Loop", { rate: Math.max(0.5, v / 1.3) });
+      else if (a.sneak && v <= 0.3) b.play("hood_Crouch_Idle_Loop", { fade: 0.35 });
       else if (v > 3.8) b.play("hood_Sprint_Loop", { rate: v / 5.2 });
       else if (v > 1.9) b.play("hood_Jog_Fwd_Loop", { rate: v / 3.1 });
       else if (v > 0.3) b.play("hood_Walk_Loop", { rate: Math.max(0.35, v / 1.4) });
@@ -83400,6 +84254,95 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       return a;
     }
     // (panicked: he slows them, he cannot stop them; they take his arm)
+    // Adam (beat 5, the story reset v3): Sophie's husband in their front yard, his pistol on the infected that came for the
+    // shooting, until the story has him bitten: down on his back (hood_IdleToLay), his gun gone from his hand. Then, in Sophie's
+    // arms, he turns: his skin goes over to the turned one (turn(k)), he rises (hood_Zombie_Spawn) and goes for her
+    // (hood_Zombie_Bite). From the rise he is an entry in the zombie list (one shot of Marc's puts him down; his head goes,
+    // as James's); a.onDeath then.
+    adam(at) {
+      const a = this.survivor(at, { gun: "pistol", model: "adam" });
+      a.kind = "adam";
+      a.dmgK = 0.35;
+      const body = a.body, base = a.step;
+      const U2 = body ? this.turnSkin(body, TURNED) : { value: 0 };
+      a.phase = "fight";
+      a.bitten = () => {
+        if (a.phase !== "fight") return;
+        a.phase = "down";
+        a.down = true;
+        if (body) {
+          body.dead = true;
+          body.deadT = 0;
+          body.play("hood_IdleToLay", { once: true, fade: 0.2 });
+        }
+      };
+      a.turn = (k) => {
+        U2.value = Math.max(0, Math.min(1, k));
+      };
+      const bone = (n) => {
+        const o = body?.model?.getObjectByName("mixamorig" + n);
+        if (!o) return null;
+        o.updateWorldMatrix(true, false);
+        const e = o.matrixWorld.elements;
+        return { x: e[12], z: e[14] };
+      };
+      a.headAt = () => bone("Head") || { x: a.x, z: a.z };
+      a.sideAt = () => {
+        const h = bone("Head"), c = bone("Hips");
+        if (!h || !c) return null;
+        const ax = h.x - c.x, az = h.z - c.z, s = this.list.find((q) => q.kind === "sophie"), sx = s ? s.x - h.x : 1, sz = s ? s.z - h.z : 0;
+        const k = -az * sx + ax * sz >= 0 ? 1 : -1;
+        return Math.atan2(-az * k, ax * k);
+      };
+      a.rise = (level) => {
+        const sim2 = level.sim;
+        a.phase = "rise";
+        const zb = sim2.spawnZombie(null, { x: a.x, z: a.z, yaw: a.yaw, hp: 1 });
+        zb.passive = true;
+        zb.speedMul = 0;
+        zb.noView = true;
+        zb.looter = true;
+        zb.dormant = null;
+        a.zb = zb;
+        a.wasAlive = true;
+        return body ? body.play("hood_Zombie_Spawn", { once: true, fade: 0.3 }) : 1.5;
+      };
+      a.lunge = (to) => {
+        a.phase = "lunge";
+        a.lungeTo = to;
+        a.yaw = Math.atan2(to.x - a.x, to.z - a.z);
+        a.obj.rotation.y = a.yaw;
+        return body ? body.play("hood_Zombie_Bite", { once: true, fade: 0.15 }) : 0.8;
+      };
+      a.step = (dt, level) => {
+        if (a.phase === "fight") return base(dt, level);
+        const zb = a.zb;
+        if (!zb) return;
+        if (a.phase === "lunge" && zb.alive && a.lungeTo) {
+          const d = Math.min(dt * 1.6, Math.max(0, Math.hypot(a.lungeTo.x - a.x, a.lungeTo.z - a.z) - 0.75));
+          a.x += Math.sin(a.yaw) * d;
+          a.z += Math.cos(a.yaw) * d;
+          a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
+        }
+        if (zb.alive) {
+          zb.x = a.x;
+          zb.z = a.z;
+          zb.vx = zb.vz = 0;
+          return;
+        }
+        if (a.wasAlive) {
+          a.wasAlive = false;
+          a.phase = "dead";
+          const p = level.sim.player, dx = zb.x - p.x, dz = zb.z - p.z, d = Math.hypot(dx, dz) || 1;
+          if (body) {
+            body.gore.headBurst(dx / d, dz / d, 1.2);
+            body.play("hood_Death01", { once: true, fade: 0.1 });
+          }
+          a.onDeath?.();
+        }
+      };
+      return a;
+    }
     // James (B02): a looter going through the family's things at the dining table, his back to the door, headphones on. He
     // is an entry in the zombie list (Marc's shots hit him; one is enough); his body is the looters' with his own moves:
     // rummaging (hood_Counter_Idle_Loop), the turn (hood_Surprise), the shout (hood_Counter_Angry), then the gun up at Marc
@@ -83515,10 +84458,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
 
   // src/hood/bot.js
-  async function runBot({ maxTicks = 60 * 60 * 12, chunk = 120, log = [] } = {}) {
+  async function runBot({ maxTicks = 60 * 60 * 12, chunk = 120, log = [], shots = false, prefix = "v3" } = {}) {
+    var _a8;
     const g = window.game, H5 = window.hood;
-    let lastStop = "", lastGoal = "", ticks = 0;
+    let lastStop = "", lastGoal = "", ticks = 0, lastShot = null, n = 0, ids = 0;
     const lv = () => H5.level;
+    if (shots) chunk = 6;
     while (ticks < maxTicks) {
       const L3 = lv();
       if (!L3) break;
@@ -83534,35 +84479,84 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         lastGoal = L3.objective;
         log.push("  goal " + L3.objective);
       }
-      H5.subs.clear();
-      const sim2 = g.sim, p = sim2.player;
+      const sim2 = g.sim, p = sim2.player, C = H5.cine;
+      if (!shots) H5.subs.clear();
       p.hp = p.maxHp;
-      for (const z of sim2.zombies) if (z.alive) z.takeHit(9999, 0, 1, 1, "pistol", sim2, "torso");
-      const target = L3.pickups.find((q) => !q.when || q.when()) || L3.interact.find((it) => !it.when || it.when());
-      if (target) {
-        p.x = p.px = target.x + 0.3;
-        p.z = p.pz = target.z + 0.3;
-        g.tick(2, 1 / 60, false);
-        if (L3.interact.includes(target)) {
-          const ok = target.can ? target.can() : true;
-          if (ok) target.use();
-          else log.push("  blocked: " + target.id + " (" + target.no + ")");
-        }
-      } else {
-        const go = BOT_SPOTS[L3.stop + ":" + L3.objective] || BOT_SPOTS[L3.objective] || BOT_SPOTS[L3.stop];
-        if (go) {
-          p.x = p.px = go[0];
-          p.z = p.pz = go[1];
+      {
+        const sp = L3.sophie;
+        if (sp && sp.mode === "follow" && Math.hypot(sp.x - p.x, sp.z - p.z) > 12) {
+          const q = { x: p.x + 1.4, z: p.z + 1.4 };
+          sim2.world.resolveCircle(q, 0.3);
+          sp.x = q.x;
+          sp.z = q.z;
         }
       }
-      g.tick(chunk, 1 / 60, false);
+      if (C.active) {
+        const Q2 = C.q, s = Q2?.shots[Q2.i];
+        if (shots && s && Q2.backT < 0 && Q2.t >= (s.move || 0) + Math.min(0.6, (s.hold ?? 1.2) * 0.6)) {
+          const key = ((_a8 = Q2.shots).id ?? (_a8.id = ++ids)) + ":" + Q2.i;
+          if (key !== lastShot) {
+            lastShot = key;
+            const name = `${prefix}_${String(++n).padStart(2, "0")}_${L3.stop}`;
+            await g.shot(name);
+            log.push("    shot " + name);
+          }
+        }
+        if (s?.aim && s.prompt) {
+          for (const z of sim2.zombies) if (z.alive && z.looter && z.passive && Math.hypot(z.x - p.x, z.z - p.z) < 9) z.takeHit(9999, 0, 1, 1, "pistol", sim2, "head");
+        }
+      } else {
+        for (const z of sim2.zombies) if (z.alive && (!shots || (!z.passive || z.dormant) && !z.looter && (z.hoodWave !== "horde" || !z.dormant) && Math.hypot(z.x - p.x, z.z - p.z) < 30)) z.takeHit(9999, 0, 1, 1, "pistol", sim2, "torso");
+        const target = L3.pickups.find((q) => !q.when || q.when()) || L3.interact.find((it) => !it.when || it.when());
+        if (target) {
+          p.x = p.px = target.x + 0.3;
+          p.z = p.pz = target.z + 0.3;
+          g.tick(2, 1 / 60, false);
+          if (L3.interact.includes(target)) {
+            const ok = target.can ? target.can() : true;
+            if (ok) target.use();
+            else log.push("  blocked: " + target.id + " (" + target.no + ")");
+          }
+        } else {
+          const go = BOT_SPOTS[L3.stop + ":" + L3.objective] || BOT_SPOTS[L3.objective] || BOT_SPOTS[L3.stop];
+          if (go && (!shots || Math.hypot(go[0] - p.x, go[1] - p.z) > 1.5 && !H5.subs.busy && L3.time - (L3.goalT0 || 0) > 3)) {
+            p.x = p.px = go[0];
+            p.z = p.pz = go[1];
+          }
+        }
+      }
+      g.tick(chunk, 1 / 60, shots);
       ticks += chunk;
       await new Promise((r) => setTimeout(r, 0));
     }
     if (ticks >= maxTicks) log.push("TIMED OUT in stop " + lastStop + " / " + lastGoal);
     return log;
   }
-  var BOT_SPOTS = { out: [38.4, 38.5], vaccines: [35.6, 38.4], home: [35.6, 38.4], help: [46, 8], "help:follow": [30.2, 1.6], gate: [19, -12], club: [9.6, -45], pete: [24, -50], dock: [-20, -80], shed: [10.3, -99.6], horde: [-12, -96], leave: [-24, -80] };
+  var BOT_SPOTS = {
+    sneak: [37.8, 39.6],
+    "house:house": [35.2, 41.6],
+    house: [38.6, 38.5],
+    help: [14.5, 58.5],
+    save: [14.5, 58.5],
+    "gate:follow": [19, -12.5],
+    gate: [19, -12.5],
+    quiet: [19, -12.5],
+    batteries: [19, -12.5],
+    "club:follow": [12.5, -38],
+    club: [11, -40.5],
+    clear: [9.6, -50],
+    pete: [60, -66],
+    savePete: [70, -68],
+    lot: [70, -68],
+    "dock:follow": [-22, -80.5],
+    dock: [-22, -80.5],
+    shed: [-17.2, -95.5],
+    sophie: [-20, -84],
+    horde: [-20, -84],
+    caseBack: [-23.5, -80],
+    after: [-23.5, -80],
+    leave: [-24, -80]
+  };
 
   // src/hood/hint.js
   var _v12 = new Vector3();
@@ -83591,11 +84585,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         });
       }
     }
+    // (on unless turned off: Marc, 2026-10-22, "add a little indicator of where to go")
     get strong() {
       try {
-        return JSON.parse(localStorage.getItem("zc.guide") || "false") === true;
+        return JSON.parse(localStorage.getItem("zc.guide") ?? "true") === true;
       } catch {
-        return false;
+        return true;
       }
     }
     hide() {
@@ -83630,7 +84625,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       const fighting = sim2.zombies.some((z) => z.alive && !z.passive && !z.dormant && Math.hypot(z.x - p.x, z.z - p.z) < 14);
       const stuck = level.time - (level.goalT0 ?? 0) > 45 && level.time - this.bestT > 25;
-      const want = !fighting && dist2 > 3.5 && (this.flashT > 0 || this.askT > 0 || stuck || this.strong && dist2 > 8);
+      const want = !fighting && dist2 > 3.5 && (this.flashT > 0 || this.askT > 0 || stuck || this.strong && dist2 > 5);
       if (!want) {
         this.hide();
         return;
@@ -83643,7 +84638,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         y = H5 - y;
       }
       x = Math.min(W3 - m, Math.max(m, x));
-      y = Math.min(H5 - m - 90, Math.max(m + 80, y));
+      y = Math.min(H5 - m - 90, Math.max(m + 120, y));
       this.el.style.left = x + "px";
       this.el.style.top = y + "px";
       this.d.textContent = Math.round(dist2) + " m";
@@ -83657,6 +84652,154 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
   };
 
+  // src/hood/music.js
+  var DIR2 = "assets/neighborhood/music/";
+  var TRACKS = { A: "ch2_a_tension.mp3", B: "ch2_b_grief.mp3", C: "ch2_c_action.mp3", D: "ch2_d_leaving.mp3" };
+  var CUES2 = {
+    none: null,
+    A_low: ["A", 0.28],
+    A: ["A", 0.4],
+    A_up: ["A", 0.55],
+    drone: ["A", 0.16, 420],
+    B: ["B", 0.5],
+    C: ["C", 0.62],
+    D: ["D", 0.5]
+  };
+  var FADE2 = 2.5;
+  var HoodMusic = class {
+    constructor(audio2) {
+      this.audio = audio2;
+      this.t = {};
+      this.cue = "none";
+      this.wind = null;
+    }
+    // the element and its chain (gain, low-pass) into the music bus, made when first wanted
+    track(k) {
+      const a = this.audio;
+      if (this.t[k] || !a?.ctx) return this.t[k] || null;
+      const el = new Audio(DIR2 + TRACKS[k]);
+      el.loop = k !== "D";
+      el.preload = "auto";
+      el.crossOrigin = "anonymous";
+      el.setAttribute("playsinline", "");
+      try {
+        const src = a.ctx.createMediaElementSource(el), lp = a.ctx.createBiquadFilter(), g = a.ctx.createGain();
+        lp.type = "lowpass";
+        lp.frequency.value = 2e4;
+        g.gain.value = 0;
+        src.connect(lp);
+        lp.connect(g);
+        g.connect(a.musicBus || a.master);
+        return this.t[k] = { el, lp, g, on: false };
+      } catch (e) {
+        console.warn("hood music", k, e);
+        return null;
+      }
+    }
+    // iOS lets a media element start later only if it first played inside a tap: each one played silently and paused there
+    prime() {
+      if (this.primed || !this.audio?.ctx) return;
+      this.primed = true;
+      for (const k of Object.keys(TRACKS)) {
+        const T2 = this.track(k);
+        if (!T2) continue;
+        T2.el.play()?.then?.(() => {
+          if (!T2.on) T2.el.pause();
+        }).catch?.(() => {
+          this.primed = false;
+        });
+      }
+      this.windOn();
+    }
+    // the beat's cue: `fade` s (0: a cut). A track coming in from silence starts where it left off, D from its start
+    set(cue2, fade = FADE2) {
+      if (!(cue2 in CUES2)) return;
+      const was = this.cue;
+      this.cue = cue2;
+      if (!this.audio?.ctx) return;
+      const C = CUES2[cue2], ctx = this.audio.ctx, t = ctx.currentTime, f = Math.max(0.03, fade);
+      for (const k of Object.keys(TRACKS)) {
+        const want = C && C[0] === k ? C[1] : 0, T2 = want ? this.track(k) : this.t[k];
+        if (!T2) continue;
+        const g = T2.g.gain;
+        g.cancelScheduledValues(t);
+        g.setValueAtTime(g.value, t);
+        g.linearRampToValueAtTime(want, t + f);
+        const lpF = C && C[0] === k && C[2] ? C[2] : 2e4, q = T2.lp.frequency;
+        q.cancelScheduledValues(t);
+        q.setValueAtTime(q.value, t);
+        q.exponentialRampToValueAtTime(lpF, t + f);
+        if (want) {
+          if (!T2.on) {
+            T2.on = true;
+            if (k === "D" && was !== "D") T2.el.currentTime = 0;
+            T2.el.play()?.catch?.(() => {
+              T2.on = false;
+            });
+          }
+        } else if (T2.on) {
+          T2.on = false;
+          const el = T2.el;
+          setTimeout(() => {
+            if (!T2.on) el.pause();
+          }, f * 1e3 + 120);
+        }
+      }
+    }
+    // per frame: a cue set before the sound could start is played once it can; a track the browser refused is tried again
+    update() {
+      if (!this.audio?.ctx) return;
+      if (!this.started) {
+        this.started = true;
+        this.windOn();
+        this.set(this.cue, 1.2);
+        return;
+      }
+      const C = CUES2[this.cue], T2 = C && this.t[C[0]];
+      if (T2 && !T2.on) {
+        T2.on = true;
+        T2.el.play()?.catch?.(() => {
+          T2.on = false;
+        });
+      }
+    }
+    stopAll(fade = 0.6) {
+      this.set("none", fade);
+    }
+    // the wind: brown-ish noise through a low band, its level drifting slowly; quiet, on the effects
+    windOn() {
+      const a = this.audio, c = a?.ctx;
+      if (this.wind || !c) return;
+      const n = c.sampleRate * 4, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+      let v = 0;
+      for (let i = 0; i < n; i++) {
+        v = v * 0.985 + (Math.random() * 2 - 1) * 0.06;
+        d[i] = v;
+      }
+      const s = c.createBufferSource();
+      s.buffer = b;
+      s.loop = true;
+      const lp = c.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 520;
+      const g = c.createGain();
+      g.gain.value = 0;
+      const lfo = c.createOscillator(), lg = c.createGain();
+      lfo.frequency.value = 0.07;
+      lg.gain.value = 0.05;
+      lfo.connect(lg);
+      lg.connect(g.gain);
+      s.connect(lp);
+      lp.connect(g);
+      g.connect(a.sfx || a.master);
+      s.start();
+      lfo.start();
+      g.gain.setValueAtTime(0, c.currentTime);
+      g.gain.linearRampToValueAtTime(0.12, c.currentTime + 3);
+      this.wind = { s, g };
+    }
+  };
+
   // src/hood/hood.js
   var inRect2 = (r, x, z, m = 0) => {
     const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0);
@@ -83664,7 +84807,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
   var SUN_FROM = new Vector3(-0.55, 0.62, 0.56).normalize();
   var SKY = 11123140;
-  var LIGHT_VERSION = "2026-10-22b";
+  var LIGHT_VERSION = "2026-10-22c";
   async function startHood({ scene: scene2, loader: loader3, arena: arena2, renderer: renderer2, quality: quality2, params: params2, audio: audio2, hud: hud2, fx: fx2, onProgress }) {
     const grammy = params2.get("hood") === "grammy";
     const free = params2.get("hood") === "free" || grammy;
@@ -83760,14 +84903,20 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const play = audio2.play.bind(audio2);
       audio2.hoodWrapped = true;
       audio2.play = (name, ...rest) => {
-        if (level?.flags.gun === "rifle") {
-          if (name === "pump") return;
-          if (name === "shotgun" || name === "shotgunClose") return play("shot", ...rest);
-        }
+        if (name === "shot" && !rest.length && level?.flags.silencer) return play("shot", 0.22);
         return play(name, ...rest);
       };
     }
     const voice = new Voice(audio2), radio = new RadioCard(voice), subs = new Subtitles(voice, radio), cine = new Cine(window.game.camera);
+    const music2 = new HoodMusic(audio2);
+    if (!free) {
+      const prime = () => {
+        audio2.init?.();
+        music2.prime();
+        if (music2.primed) for (const e of ["pointerdown", "touchend", "keydown"]) removeEventListener(e, prime, true);
+      };
+      for (const e of ["pointerdown", "touchend", "keydown"]) addEventListener(e, prime, true);
+    }
     const actors = new Actors(scene2, { audio: audio2, fx: fx2 });
     const firstTex = /* @__PURE__ */ new Map();
     const texList = (root) => {
@@ -83807,24 +84956,25 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     const firstSave = () => {
       if (!askStop || !STOP_ORDER.includes(askStop)) return loadSave();
       const i = STOP_ORDER.indexOf(askStop), at = (k) => STOP_ORDER.indexOf(k), open = [], flags = {};
-      if (i > at("home")) {
+      if (i > at("house")) {
         open.push("home_door");
         flags.case = "carried";
       }
-      if (i > at("help")) open.push("home");
       if (i > at("gate")) {
         open.push("gate");
-        flags.cutters = true;
+        flags.crowbar = true;
+        flags.batteries = true;
+        flags.called = true;
       }
       if (i > at("club")) {
         open.push("clubdoor");
-        flags.gun = "rifle";
+        flags.silencer = true;
       }
-      if (i > at("pete")) {
+      if (i > at("lot")) flags.key = "sophie";
+      if (i > at("dock")) {
         flags.key = true;
-        open.push("dockroad");
+        flags.case = "cooler";
       }
-      if (i > at("dock")) flags.case = "cooler";
       if (i > at("shed")) {
         open.push("shed");
         flags.gun = "shotgun";
@@ -83832,9 +84982,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       if (i > at("horde")) {
         open.push("dock");
-        flags.case = "boat";
+        flags.case = "dead";
       }
-      return { stop: askStop, flags, open };
+      if (i > at("after")) flags.case = "carried";
+      return { stop: askStop, flags, open, caseAt: flags.case === "dead" ? { x: -24.4, z: -79.6, yaw: 0.6 } : null };
     };
     let save = firstSave();
     const api = {
@@ -83846,13 +84997,26 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       actors,
       cine,
       voice,
-      hero: { script: (n, o) => window.game?.yola?.playScript(n, o), end: () => window.game?.yola?.endScript() },
+      music: music2,
+      hero: {
+        script: (n, o) => window.game?.yola?.playScript(n, o),
+        end: () => window.game?.yola?.endScript(),
+        scriptState: () => {
+          const S2 = window.game?.yola?.script;
+          return S2 ? { name: S2.act.getClip().name } : null;
+        }
+      },
       npc: (kind, at, opts) => {
         const a = actors.survivor(at, opts);
         level?.npcs.push(a);
         return a;
       },
-      looters: (lv) => {
+      looters: (lv, given) => {
+        if (given) {
+          const L4 = actors.looters(lv, given);
+          lv.npcs.push(...L4);
+          return L4;
+        }
         const spots = [{ ...mk("looter_d"), out: true }, { ...mk("looter_c"), out: true }, mk("looter_a"), mk("looter_b"), { ...mk("leader"), leader: true }].filter((s) => s && s.x !== void 0);
         const L3 = actors.looters(lv, spots);
         lv.npcs.push(...L3);
@@ -83866,10 +85030,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         if (v) view.radio && (view.radio.visible = false);
       },
       onStop: (id) => {
-        if (id === "home" && !titled) {
+        if (id === "sneak" && !titled) {
           titled = true;
           titleCard();
-        } else hud2.banner(STOP_TITLES[id] || "");
+        } else if (STOP_TITLES[id]) hud2.banner(STOP_TITLES[id]);
       },
       onComplete: () => endCard()
     };
@@ -83904,6 +85068,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       subs.clear();
       cine.stop();
       view.radioHand = false;
+      view.radioLow?.(false);
+      if (view.beerObj) view.beerObj.visible = false;
       for (const list of Object.values(view.seals)) for (const s2 of list) {
         s2.o.position.copy(s2.p0);
         s2.o.quaternion.copy(s2.q0);
@@ -83922,7 +85088,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       else if (level.flags.gas === "boat") view.stowGas();
       if (level.flags.gun === "rifle") api.rifleOn();
       else api.rifleOff();
-      view.showCase(level.flags.case === "fridge" ? "none" : level.flags.case);
+      view.showCase(level.flags.case === "fridge" ? "none" : ["ground", "dead"].includes(level.flags.case) ? "ground" : level.flags.case, level.caseAt);
+      if (level.flags.case === "ground" && level.caseAt && level.stop === "club") level.setCaseDown(level.caseAt);
+      if (level.flags.silencer) view.silencerOn?.(window.game?.yola);
+      else if (view.silencer) {
+        view.silencer.removeFromParent();
+        view.silencer = null;
+      }
       view.showCooler?.(["cooler", "boat"].includes(level.flags.case));
       sim2.level = level;
       window.hoodLevel = level;
@@ -83960,6 +85132,36 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     };
     subs.onQuiet = () => callUp(false);
     const hint = new Hint();
+    const cineLog = [], ray = new Raycaster(), _a8 = new Vector3(), _b7 = new Vector3();
+    let lastShot = null;
+    const cineCheck = params2.get("cinecheck") === "1" ? () => {
+      const Q2 = cine.q;
+      if (!Q2 || Q2.backT >= 0) return;
+      const s = Q2.shots[Q2.i], key = Q2.i + ":" + Q2.shots.length + ":" + level?.stop + ":" + level?.objective;
+      if (!s || Q2.t < (s.move || 0) + 0.05 || lastShot === key) return;
+      lastShot = key;
+      const cam = window.game.camera, sp = level?.sophie, p = window.game.sim.player, tgt = [["look", cine.cur.look]];
+      if (p) tgt.push(["marc", new Vector3(p.x, 1.3, p.z)]);
+      if (sp) tgt.push(["sophie", new Vector3(sp.x, 1.2, sp.z)]);
+      const hits = [], lk = cine.cur.look, room = INTERIORS.find((r) => inRect2(r.cut || r.rect, lk.x, lk.z) || inRect2(r.cut || r.rect, cam.position.x, cam.position.z)), cutY = room ? room.cineClip ?? room.clipY : Infinity;
+      for (const [n, v] of tgt) {
+        _a8.copy(cam.position);
+        _b7.copy(v).sub(_a8);
+        const d = _b7.length();
+        _b7.normalize();
+        if (n !== "look") {
+          const ndc = v.clone().project(cam);
+          if (Math.abs(ndc.x) > 1 || Math.abs(ndc.y) > 1 || ndc.z > 1) continue;
+        }
+        ray.set(_a8, _b7);
+        ray.far = d - 0.6;
+        ray.near = 0.05;
+        const h0 = ray.intersectObject(view.group, true).find((x) => x.object.visible && x.point.y < cutY && !/terrain|lake|roads|curb|sidewalk|marking|driveway|paver|grass/i.test(x.object.name));
+        if (h0) hits.push(n + " blocked by " + h0.object.name + " at " + h0.distance.toFixed(1) + "/" + d.toFixed(1));
+      }
+      cineLog.push({ stop: level?.stop, goal: level?.objective, i: Q2.i, n: Q2.shots.length, cam: cam.position.toArray().map((x) => +x.toFixed(2)), hits });
+      if (hits.length) console.warn("cinecheck", level?.stop, Q2.i, hits.join("; "));
+    } : null;
     function titleCard() {
       const el = document.createElement("div");
       el.style.cssText = "position:fixed;inset:0;z-index:65;pointer-events:none;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f2ead8;font:700 30px system-ui,sans-serif;letter-spacing:.18em;transition:background 2.2s ease, opacity 1.4s ease";
@@ -83976,7 +85178,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     function endCard() {
       const el = document.createElement("div");
       el.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:70;background:rgba(0,0,0,0.55);color:#fff;font:600 16px system-ui,sans-serif;text-align:center";
-      el.innerHTML = '<div style="max-width:320px;padding:22px;background:rgba(15,20,24,0.92);border-radius:14px"><div style="font-size:24px;margin-bottom:8px">Chapter 2 complete</div><div style="opacity:.8">Marc is on the water with all four vials. Grammy and the girls are waiting.</div><button style="margin-top:16px;font:600 15px system-ui;padding:9px 16px;border-radius:9px;border:0;background:#3a7;color:#fff">Play again</button></div>';
+      el.innerHTML = '<div style="max-width:320px;padding:22px;background:rgba(15,20,24,0.92);border-radius:14px"><div style="font-size:24px;margin-bottom:8px">Chapter 2 complete</div><div style="opacity:.8">Marc is on the water with all four vials. The family is waiting.</div><button style="margin-top:16px;font:600 15px system-ui;padding:9px 16px;border-radius:9px;border:0;background:#3a7;color:#fff">Play again</button></div>';
       el.querySelector("button").onclick = () => {
         clearSave();
         location.search = "?mode=hood";
@@ -83995,6 +85197,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       voice,
       radio,
       cine,
+      music: music2,
+      cineLog,
       get grass() {
         return grass;
       },
@@ -84072,6 +85276,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         const room = INTERIORS.find((r) => inRect2(r.rect, px2, pz2));
         setCutaway(camera2, px2, pz2, true, room ? { ...room.cut || room.rect, clipY: room.clipY } : null);
         subs.update(dt);
+        music2.update();
         actors.update(dt, cine.active ? cine.k : 1, cine.active ? cine.subjectRate : 1);
         if (cine.active && level) {
           for (const n of level.npcs) if (n.subject && n.step) n.step(dt * cine.subjectRate, level);
@@ -84118,6 +85323,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
           a.obj.position.set(a.z.x, groundY(a.z.x, a.z.z), a.z.z);
         }
         cine.update(dt, sim2);
+        if (cineCheck && cine.active) cineCheck();
         if (cine.active) setCutaway(camera2, cine.cur.look.x, cine.cur.look.z, true, room ? { ...room.cut || room.rect, clipY: room.cineClip ?? room.clipY } : null);
         if (sun?.castShadow) {
           const sx = Math.round(px2 / 6) * 6, sz = Math.round(pz2 / 6) * 6;
@@ -84135,7 +85341,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
     };
   }
-  var STOP_TITLES = { home: "Home", help: "Help", gate: "The gate", club: "The clubhouse", pete: "Pete", dock: "The dock", shed: "The shed", horde: "The horde", leave: "Leaving" };
+  var STOP_TITLES = { rescue: "Help", gate: "The gate", club: "The clubhouse", lot: "The lot", dock: "The dock", shed: "The shed", horde: "The horde" };
 
   // src/main.js
   var params = new URLSearchParams(location.search);
