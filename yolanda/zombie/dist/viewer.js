@@ -39043,7 +39043,9 @@ void main() {
     looter_brian: { label: "Looter: Brian", file: "assets/survivors/brian.glb", extra: ["assets/survivors/moves/brian-looter.glb"], height: 1.8, ref: "zombie_" },
     looter_bryce: { label: "Looter: Bryce", file: "assets/survivors/bryce.glb", extra: ["assets/survivors/moves/bryce-looter.glb"], height: 1.78, ref: "zombie_" },
     looter_david: { label: "Looter: David", file: "assets/survivors/david.glb", extra: ["assets/survivors/moves/david-looter.glb"], height: 1.8, ref: "zombie_" },
-    looter_lewis: { label: "Looter: Lewis", file: "assets/survivors/lewis.glb", extra: ["assets/survivors/moves/lewis-looter.glb"], height: 1.8, ref: "zombie_" }
+    looter_lewis: { label: "Looter: Lewis", file: "assets/survivors/lewis.glb", extra: ["assets/survivors/moves/lewis-looter.glb"], height: 1.8, ref: "zombie_" },
+    sophie: { label: "Sophie", file: "assets/survivors/sophie.glb", extra: ["assets/survivors/moves/sophie-hood.glb"], height: 1.66, ref: "zombie_" }
+    // (Chapter 2; her feelings test: &extra=assets/test_clips/sophie_feelings.glb, tools/anim/survivor_feelings.py)
   };
   var TC = "assets/test_clips/";
   CHARS.yola2.newPacks = [TC + "idle_options.glb", TC + "ual1_full_yola2.glb", TC + "ual2_full_yola2.glb", TC + "ual2_full_yola2_b.glb"];

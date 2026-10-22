@@ -82253,7 +82253,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
       yield* this.until(() => !ad?.zb || !ad.zb.alive);
       if (ad) ad.subject = false;
-      this.sophiePose("hood_Crying", ADAM_AT);
+      this.sophiePose("hood_KneelCry", ADAM_AT);
       yield* this.shot([{ look: this.sophieHead(), from: () => {
         const a = Math.atan2(p.x - sp.x, p.z - sp.z) + 0.5;
         return [sp.x + Math.sin(a) * 1.9, 1.35, sp.z + Math.cos(a) * 1.9];
@@ -84513,7 +84513,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       return body;
     }
     // Sophie (the user's B03 - B12): unarmed and scared, she never fights and takes no harm (her death is the story's). The
-    // story sets her mode: 'scared' (crouched where she is, facing Marc), 'follow' (the companion: companion.js, with a.lead
+    // story sets her mode: 'scared' (hugging herself where she is, facing Marc), 'follow' (the companion: companion.js, with a.lead
     // when she shows the way), 'goto' (to a.target, then a.after), 'pose' (a.pose, facing a.face), 'dead'. She walks, jogs or
     // sprints as the gap asks.
     sophie(at) {
@@ -84641,7 +84641,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       else if (v > 3.8) b.play("hood_Sprint_Loop", { rate: v / 5.2 });
       else if (v > 1.9) b.play("hood_Jog_Fwd_Loop", { rate: v / 3.1 });
       else if (v > 0.3) b.play("hood_Walk_Loop", { rate: Math.max(0.35, v / 1.4) });
-      else if (a.mode === "scared" || a.cower > 0.4) b.play("hood_Crouch_Idle_Loop", { fade: 0.35 });
+      else if (a.mode === "scared" || a.cower > 0.4) b.play("hood_Scared", { fade: 0.35 });
       else b.play(a.idle || "hood_Idle_Loop", { fade: 0.35 });
     }
     // Pete (B08): the groundskeeper with his pistol on the drive, shooting what comes at him until the story overwhelms him
