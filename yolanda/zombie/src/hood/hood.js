@@ -21,7 +21,7 @@ import { runBot } from './bot.js';
 import { Hint } from './hint.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { characterLight, setCharacterFill, setRim, updateRim } from './charlight.js';
-import { fitTextures, useRenderer, TEX_CAP } from './texfit.js';
+import { fitTextures, useRenderer, TEX_CAP, texStats } from './texfit.js';
 
 const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0); return Math.abs(dx * c - dz * s) < r.hx + m && Math.abs(dx * s + dz * c) < r.hz + m; };
 
@@ -65,7 +65,7 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   // now; the map and the survivors as they load, sent up to the GPU and their copies in memory let go; a phone that drops
   // the 3D view gets the page again (the let-go copies cannot be sent up a second time)
   useRenderer(renderer);
-  let texSaved = fitTextures(scene, TEX_CAP * 2), texClock = 0;
+  let texSaved = fitTextures(scene, TEX_CAP * 2, false, 'hospital'), texClock = 0;
   renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
   const view = new HoodView(scene);
   await view.load(loader, onProgress);
@@ -95,7 +95,18 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   // the recorded lines, the radio card with the two faces, the cinematic moments (src/hood/voice.js, radio.js, cine.js)
   const voice = new Voice(audio), radio = new RadioCard(voice), subs = new Subtitles(voice, radio), cine = new Cine(window.game.camera);
   const actors = new Actors(scene, { audio, fx });
-  await actors.loadModels({ loadAsync: (u) => loader.loadAsync(u).then((g) => { if (g.scene) texSaved += fitTextures(g.scene, TEX_CAP * 2, true); return g; }) }); // (the survivors: Eve, Remy, James, Sophie, Bryce)
+  // (the survivors: Eve, Remy, James, Sophie, Bryce. actors.js loads a person's file once for each part they play: the second
+  // and third loads take the first one's textures, in the same order in the same file, and their own pictures are let go)
+  const firstTex = new Map();
+  const texList = (root) => { const l = []; root.traverse((o) => { for (const m of [].concat(o.material || [])) if (m) for (const [k, v] of Object.entries(m)) if (v && v.isTexture) l.push([m, k, v]); }); return l; };
+  await actors.loadModels({ loadAsync: (u) => loader.loadAsync(u).then((g) => {
+    if (!g.scene) return g;
+    const l = texList(g.scene), f0 = firstTex.get(u);
+    if (!f0) firstTex.set(u, l.map((x) => x[2]));
+    else if (f0.length === l.length) l.forEach(([m, k, v], i) => { if (v !== f0[i]) { m[k] = f0[i]; v.source?.data?.close?.(); } });
+    texSaved += fitTextures(g.scene, TEX_CAP * 2, true, 'survivors');
+    return g;
+  }) });
   const mk = (n) => { const m = HOOD.marks[n]; return m ? { x: m[0], z: m[2], yaw: m[3] } : null; };
   let level = null, titled = false;
   // a stop asked for in the URL starts there (a test hook); otherwise the last checkpoint, or the start
@@ -207,9 +218,9 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
     setTimeout(() => document.body.appendChild(el), 1800);
   }
   // (and once more before the first frame, then every few seconds, for what has joined the scene since)
-  texSaved += fitTextures(view.group, TEX_CAP) + fitTextures(scene, TEX_CAP * 2);
+  texSaved += fitTextures(view.group, TEX_CAP, false, 'map late') + fitTextures(scene, TEX_CAP * 2, false, 'scene late');
   return window.hood = {
-    get texSavedMB() { return Math.round(texSaved / 1048576); },
+    get texSavedMB() { return Math.round(texSaved / 1048576); }, texStats,
     view, subs, actors, voice, radio, cine, get grass() { return grass; }, get level() { return level; }, onRestart: hook, attach, bot: runBot, CUT,
     charLight: setCharacterFill, rim: setRim, // (the characters' share of the sky light and their rim light: hood/charlight.js)
     // test hook (2026-10-20, the user's texture comparison): character files stood side by side, all on one clip at the same

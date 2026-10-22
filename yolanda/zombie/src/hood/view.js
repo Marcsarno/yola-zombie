@@ -88,7 +88,7 @@ export class HoodView {
     // the GPU, their copies in memory let go (texfit.js: so they never all pile up at once on a phone)
     const ready = (root) => {
       const drop = []; root.traverse((o) => { if (/-(conv)?col(only)?$|colonly/i.test(o.name)) drop.push(o); }); for (const o of drop) o.removeFromParent(); // (Godot-style collision meshes are never drawn)
-      swapMaterials(root); root.updateMatrixWorld(true); fitTextures(root, TEX_CAP, true);
+      swapMaterials(root); root.updateMatrixWorld(true); fitTextures(root, TEX_CAP, true, 'map');
       return root;
     };
     const tmpls = await Promise.all(L.models.map((f) => loader.loadAsync(ROOT + f).then((g) => { onProgress(++done / total); return ready(g.scene); }).catch((e) => { console.warn('hood model', f, e); return null; })));

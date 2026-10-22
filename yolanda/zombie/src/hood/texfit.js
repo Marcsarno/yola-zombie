@@ -11,11 +11,12 @@
 const done = new WeakSet(), mine = new WeakSet();   // (done: the images (Sources) seen; mine: the canvases made here)
 let gl = null;
 export function useRenderer(r) { gl = r; }
+export const texStats = { images: 0, mb: 0, by: {} };   // (what the budget has sized: images and their GPU megabytes, mipmaps in)
 export const TEX_CAP = Math.max(64, +new URLSearchParams(location.search).get('tex') || 512);
 const drawable = (im) => im && ((typeof ImageBitmap !== 'undefined' && im instanceof ImageBitmap) || (typeof HTMLImageElement !== 'undefined' && im instanceof HTMLImageElement) || (typeof HTMLCanvasElement !== 'undefined' && im instanceof HTMLCanvasElement));
 
 // one image (a three.js Source) can sit under several textures: drawn down once, every texture on it sent up, then let go
-function fitSource(ts, cap, release) {
+function fitSource(ts, cap, release, tag) {
   const t0 = ts[0], im = t0.image; if (!drawable(im)) return 0;
   const w = im.width, h = im.height; if (!w || !h) return 0;   // (not loaded yet: the next pass)
   done.add(t0.source);
@@ -29,6 +30,7 @@ function fitSource(ts, cap, release) {
     saved = (w * h - c.width * c.height) * 4 * 1.33;
   }
   const d = t0.source.data;
+  const mb = d.width * d.height * 4 * 1.33 / 1048576; texStats.images++; texStats.mb += mb; texStats.by[tag] = (texStats.by[tag] || 0) + mb;
   if (release && gl && (d.close || mine.has(d))) {
     for (const t of ts) gl.initTexture(t);   // (up now, so its copy goes now)
     if (d.close) d.close(); else d.width = d.height = 1;
@@ -40,7 +42,7 @@ const COLOUR = new Set(['map', 'emissiveMap']);
 const skip = (t) => t.isDataTexture || t.isCompressedTexture || t.isVideoTexture || t.isRenderTargetTexture || t.isCanvasTexture || !t.source;
 // every texture on the materials under root, colour at cap px and the rest at half (cut-outs as they are); release: their
 // memory copies let go once they are on the GPU; returns the GPU bytes saved
-export function fitTextures(root, cap, release = false) {
+export function fitTextures(root, cap, release = false, tag = 'other') {
   const by = new Map();
   root.traverse((o) => {
     for (const m of [].concat(o.material || [])) {
@@ -54,6 +56,6 @@ export function fitTextures(root, cap, release = false) {
     }
   });
   let saved = 0;
-  for (const e of by.values()) saved += fitSource([...e.ts], e.cap, release);
+  for (const e of by.values()) saved += fitSource([...e.ts], e.cap, release, tag);
   return saved;
 }
