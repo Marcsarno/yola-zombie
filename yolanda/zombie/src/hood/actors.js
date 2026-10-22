@@ -382,7 +382,7 @@ export class Actors {
   }
 
   // Sophie (the user's B03 - B12): unarmed and scared, she never fights and takes no harm (her death is the story's). The
-  // story sets her mode: 'scared' (crouched where she is, facing Marc), 'follow' (the companion: companion.js, with a.lead
+  // story sets her mode: 'scared' (hugging herself where she is, facing Marc), 'follow' (the companion: companion.js, with a.lead
   // when she shows the way), 'goto' (to a.target, then a.after), 'pose' (a.pose, facing a.face), 'dead'. She walks, jogs or
   // sprints as the gap asks.
   sophie(at) {
@@ -455,7 +455,7 @@ export class Actors {
     else if (v > 3.8) b.play('hood_Sprint_Loop', { rate: v / 5.2 });
     else if (v > 1.9) b.play('hood_Jog_Fwd_Loop', { rate: v / 3.1 });
     else if (v > 0.3) b.play('hood_Walk_Loop', { rate: Math.max(0.35, v / 1.4) });
-    else if (a.mode === 'scared' || a.cower > 0.4) b.play('hood_Crouch_Idle_Loop', { fade: 0.35 });
+    else if (a.mode === 'scared' || a.cower > 0.4) b.play('hood_Scared', { fade: 0.35 }); // (Tripo's scared_02: hugging herself, knees in; tools/anim/survivor_feelings.py)
     else b.play(a.idle || 'hood_Idle_Loop', { fade: 0.35 });
   }
 

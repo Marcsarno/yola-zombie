@@ -50,6 +50,7 @@ const CHARS = {
   looter_bryce: { label: 'Looter: Bryce', file: 'assets/survivors/bryce.glb', extra: ['assets/survivors/moves/bryce-looter.glb'], height: 1.78, ref: 'zombie_' },
   looter_david: { label: 'Looter: David', file: 'assets/survivors/david.glb', extra: ['assets/survivors/moves/david-looter.glb'], height: 1.8, ref: 'zombie_' },
   looter_lewis: { label: 'Looter: Lewis', file: 'assets/survivors/lewis.glb', extra: ['assets/survivors/moves/lewis-looter.glb'], height: 1.8, ref: 'zombie_' },
+  sophie: { label: 'Sophie', file: 'assets/survivors/sophie.glb', extra: ['assets/survivors/moves/sophie-hood.glb'], height: 1.66, ref: 'zombie_' }, // (Chapter 2; her feelings test: &extra=assets/test_clips/sophie_feelings.glb, tools/anim/survivor_feelings.py)
 };
 // the new Quaternius packs' test bakes (UAL_PACKS.md; tools/anim/yola2_build.py YOLA2_EXTRA_UAL1/2, test_zombie_clips.py)
 const TC = 'assets/test_clips/';

@@ -636,7 +636,7 @@ export class HoodLevel {
     yield* this.until(() => !ad?.zb || !ad.zb.alive);
     if (ad) ad.subject = false;
     // "He just went out to get the car." (on her, crying, the car's open back behind her)
-    this.sophiePose('hood_Crying', ADAM_AT);
+    this.sophiePose('hood_KneelCry', ADAM_AT); // (down on her knee, her face in her hands: Quaternius Crying over the kneel, tools/anim/survivor_feelings.py)
     yield* this.shot([{ look: this.sophieHead(), from: () => { const a = Math.atan2(p.x - sp.x, p.z - sp.z) + 0.5; return [sp.x + Math.sin(a) * 1.9, 1.35, sp.z + Math.cos(a) * 1.9]; }, fov: 40, slow: 1, hold: 1.0, fn: () => this.say('c410'), until: this.linesDone(), max: 6 }], { back: 0.0 });
     sp.subject = false;
     yield* this.reveal();
