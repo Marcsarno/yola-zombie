@@ -79805,9 +79805,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   function useRenderer(r) {
     gl = r;
   }
+  var texStats = { images: 0, mb: 0, by: {} };
   var TEX_CAP = Math.max(64, +new URLSearchParams(location.search).get("tex") || 512);
   var drawable = (im) => im && (typeof ImageBitmap !== "undefined" && im instanceof ImageBitmap || typeof HTMLImageElement !== "undefined" && im instanceof HTMLImageElement || typeof HTMLCanvasElement !== "undefined" && im instanceof HTMLCanvasElement);
-  function fitSource(ts, cap, release) {
+  function fitSource(ts, cap, release, tag) {
     const t0 = ts[0], im = t0.image;
     if (!drawable(im)) return 0;
     const w = im.width, h = im.height;
@@ -79828,6 +79829,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       saved = (w * h - c.width * c.height) * 4 * 1.33;
     }
     const d = t0.source.data;
+    const mb = d.width * d.height * 4 * 1.33 / 1048576;
+    texStats.images++;
+    texStats.mb += mb;
+    texStats.by[tag] = (texStats.by[tag] || 0) + mb;
     if (release && gl && (d.close || mine.has(d))) {
       for (const t of ts) gl.initTexture(t);
       if (d.close) d.close();
@@ -79837,7 +79842,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   }
   var COLOUR = /* @__PURE__ */ new Set(["map", "emissiveMap"]);
   var skip = (t) => t.isDataTexture || t.isCompressedTexture || t.isVideoTexture || t.isRenderTargetTexture || t.isCanvasTexture || !t.source;
-  function fitTextures(root, cap, release = false) {
+  function fitTextures(root, cap, release = false, tag = "other") {
     const by = /* @__PURE__ */ new Map();
     root.traverse((o) => {
       for (const m of [].concat(o.material || [])) {
@@ -79853,7 +79858,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       }
     });
     let saved = 0;
-    for (const e of by.values()) saved += fitSource([...e.ts], e.cap, release);
+    for (const e of by.values()) saved += fitSource([...e.ts], e.cap, release, tag);
     return saved;
   }
 
@@ -79975,7 +79980,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         for (const o of drop) o.removeFromParent();
         swapMaterials(root);
         root.updateMatrixWorld(true);
-        fitTextures(root, TEX_CAP, true);
+        fitTextures(root, TEX_CAP, true, "map");
         return root;
       };
       const tmpls = await Promise.all(L3.models.map((f) => loader3.loadAsync(ROOT + f).then((g) => {
@@ -83672,7 +83677,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       renderer2.initTexture(t);
     });
     useRenderer(renderer2);
-    let texSaved = fitTextures(scene2, TEX_CAP * 2), texClock = 0;
+    let texSaved = fitTextures(scene2, TEX_CAP * 2, false, "hospital"), texClock = 0;
     renderer2.domElement.addEventListener("webglcontextrestored", () => location.reload());
     const view = new HoodView(scene2);
     await view.load(loader3, onProgress);
@@ -83712,8 +83717,27 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     const voice = new Voice(audio2), radio = new RadioCard(voice), subs = new Subtitles(voice, radio), cine = new Cine(window.game.camera);
     const actors = new Actors(scene2, { audio: audio2, fx: fx2 });
+    const firstTex = /* @__PURE__ */ new Map();
+    const texList = (root) => {
+      const l = [];
+      root.traverse((o) => {
+        for (const m of [].concat(o.material || [])) if (m) {
+          for (const [k, v] of Object.entries(m)) if (v && v.isTexture) l.push([m, k, v]);
+        }
+      });
+      return l;
+    };
     await actors.loadModels({ loadAsync: (u) => loader3.loadAsync(u).then((g) => {
-      if (g.scene) texSaved += fitTextures(g.scene, TEX_CAP * 2, true);
+      if (!g.scene) return g;
+      const l = texList(g.scene), f0 = firstTex.get(u);
+      if (!f0) firstTex.set(u, l.map((x) => x[2]));
+      else if (f0.length === l.length) l.forEach(([m, k, v], i) => {
+        if (v !== f0[i]) {
+          m[k] = f0[i];
+          v.source?.data?.close?.();
+        }
+      });
+      texSaved += fitTextures(g.scene, TEX_CAP * 2, true, "survivors");
       return g;
     }) });
     const mk = (n) => {
@@ -83904,11 +83928,12 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       };
       setTimeout(() => document.body.appendChild(el), 1800);
     }
-    texSaved += fitTextures(view.group, TEX_CAP) + fitTextures(scene2, TEX_CAP * 2);
+    texSaved += fitTextures(view.group, TEX_CAP, false, "map late") + fitTextures(scene2, TEX_CAP * 2, false, "scene late");
     return window.hood = {
       get texSavedMB() {
         return Math.round(texSaved / 1048576);
       },
+      texStats,
       view,
       subs,
       actors,
