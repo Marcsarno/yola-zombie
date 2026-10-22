@@ -2,7 +2,7 @@
 
 ## NEWEST (2026-10-22): the doctor runs off with the vaccine (Floor 7 OR, after the hand-off)
 The user: Chad hiding scared behind the surgery table; after Yola kills the first couple of the OR's zombies, a cut scene
-that starts on the open vaccine case, he shuts it, grabs it and runs off carrying it in one hand. NOT committed when written.
+that starts on the open vaccine case, he shuts it, grabs it and runs off carrying it in one hand. Committed 09acf99 + ef788a5 (clean dist), not pushed.
 - **src/opening/doctor.js** (`Doctor`, staging in `DOC`, clock in `T`): loaded in `preload`, ticked from `ambient(dt)`
   (main.js already calls it every frame after the hand-off), switched off whenever the opening plays again (`update`).
   Hides at (-4.35, -8.6) on the table's far side from the game camera (there the surgical lamp never covers his head
@@ -55,7 +55,7 @@ touching anything.
 The user's pass: "the home run should be replaced with the new execute animation", "dials and controls for when it's
 dark, and when it's casting some light to show the silhouette... how many times it flickers and the timing", the
 elevator lighting and floor, the leaning bat, the zombie a touch further back. Built and played through (PC + portrait);
-NOT committed when written.
+Committed 09acf99 + ef788a5 (clean dist), not pushed.
 - **New ending** (opening.js `reveal()` from BEAT 9): she walks out of the lift in the dark **holding the bat** (the game's
   own Yola view, bat equipped: its grip and walk, slowed; `RT.walk.bat` off = the old empty-handed clip walk), then
   **launches at the camera with the jump finisher** (core/weapons.js EXEC_LAUNCH, default B at 2.4 m, driven through the
