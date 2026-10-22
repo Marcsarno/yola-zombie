@@ -356,7 +356,8 @@ export class Player {
         // combo: once the opening attack connects, the rest of the combo follows while the attack is
         // held (or pressed again during the attack)
         if (a.hits > 0 || A.chainAlways) a.unlocked = true; // (the bat's combo flows on input, hit or miss)
-        if (!a.ground && !a.leg && a.combo < this.attacks.length - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
+        // (comboCap: the combo cut short, e.g. its first two hits for Marc with the case in his other hand, src/hood/view.js)
+        if (!a.ground && !a.leg && a.combo < Math.min(this.attacks.length, this.comboCap || Infinity) - 1 && a.unlocked && st >= A.chainFrom && (this.attackHeld || this.attackPressT < a.t)) {
           // (2026-10-18) the strike floored what it hit: the combo goes down after it instead of swinging on over it
           if (groundAttack(this.equipped) && sim.groundTarget?.(this)) this.startSwing(sim, 0); else this.startSwing(sim, a.combo + 1, true);
           break;

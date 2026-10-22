@@ -380,9 +380,14 @@ export class HoodView {
   // one-handed weapon"); where the stance keeps that hand up at his chest (the pistol's grip), it rides at his left side at
   // carrying height, as the gas can does. In someone else's hands: wherever their getter puts it
   caseUpdate(yola, p) {
+    yola.caseCarry = this.caseMode === 'carried' && p.equipped !== 'shotgun' && !p.dead; // (render/clipchars.js carryArm)
+    p.comboCap = yola.caseCarry ? 2 : 0; // (one hand on the crowbar: its combo's first two hits only; core/player.js)
     const c = this.caseObj; if (!c) return;
     if (this.caseMode === 'held' && this.caseAt?.get) { const h = this.caseAt.get(); if (h) { c.position.set(h.x, h.y, h.z); c.rotation.set(-Math.PI / 2, (h.yaw || 0) + Math.PI / 2, 0, 'YXZ'); } return; }
+    // carried with a one-handed weapon (the pistol, the crowbar, his fists): in his left hand, the arm hanging with it
+    // (render/clipchars.js carryArm); the shotgun takes both hands, so the case goes back to his side then
     if (this.caseMode !== 'carried') return;
+    if (yola.casePlace && yola.carryW > 0.5) { yola.casePlace(c); c.visible = yola.outer.visible && !p.dead; return; }
     const y = p.aimYaw, hand = yola.bones?.LeftHand, hw = hand ? hand.getWorldPosition(this._cv || (this._cv = new THREE.Vector3())) : null;
     if (hw && hw.y < 1.0) c.position.set(hw.x, Math.max(0.14, hw.y - 0.16), hw.z);   // (its handle up in his fist: the case stood on its long edge)
     else { const a = y + 1.45; c.position.set(p.x + Math.sin(a) * 0.3, 0.42, p.z + Math.cos(a) * 0.3); }

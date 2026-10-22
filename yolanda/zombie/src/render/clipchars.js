@@ -18,6 +18,7 @@ import { applyPosture, postureFamily, POSTURE_BONES } from './posture.js';
 import { HOLD_LAYERS, AS_LIVE } from './holdlayers.js';
 import { adjustArms, blendArms } from './armpose.js';
 import { radioRig, radioPose, radioPlace, radioFit } from './radiohold.js';
+import { caseRig, casePose, casePlace, caseFit } from './casecarry.js';
 const FIT0 = { size: 100, fwd: 0, up: 0, side: 0, tilt: 0, turn: 0, roll: 0 };
 function lerpFit(a, b, t) { // two weapon fits blended (the stance's own and the attacks')
   a ||= FIT0; b ||= FIT0; if (t <= 0) return a; if (t >= 1) return b;
@@ -709,6 +710,7 @@ export class YolaView extends ClipBody {
     this.headLook(s, dt);
     this.armPose(); // (the per-clip arm adjustments: before the weapons, which follow her hands)
     this.radioArm(dt);
+    this.carryArm(dt); // (the case in his left hand: before the weapons, which follow the right hand)
     this.placeWeapons(s, dt); this.placeMags(dt);
   }
 
@@ -725,6 +727,18 @@ export class YolaView extends ClipBody {
     radioPose(this.radRig, this.radioFit ||= radioFit(), smooth(R.w), smooth(R.talk), fwd, this.H);
   }
   radioPlace(obj) { radioPlace(this.radRig ||= radioRig(this.model, this.bones, this.fist || []), obj, this.radioFit ||= radioFit()); }
+
+  // ---- the case in the left hand (Chapter 2: src/hood/view.js sets caseCarry while Marc carries it and has a one-handed
+  // weapon): render/casecarry.js (the Rig Lab's Case section uses the same), with this character's settings (caseFit:
+  // assets/hold/case_carry.json), eased in and out over whatever the body plays
+  carryArm(dt) {
+    this.carryW = clamp((this.carryW || 0) + (this.caseCarry ? dt / 0.25 : -dt / 0.25), 0, 1);
+    if (this.carryW <= 1e-3 || !this.bones.LeftHandMiddle1) return;
+    this.caseRig ||= caseRig(this.model, this.bones, this.fist || []);
+    this.container.getWorldQuaternion(_q); const fwd = _v.set(0, 0, 1).applyQuaternion(_q).setY(0).normalize();
+    casePose(this.caseRig, this.caseFit ||= caseFit(), smooth(this.carryW), fwd, this.H);
+  }
+  casePlace(obj) { casePlace(this.caseRig ||= caseRig(this.model, this.bones, this.fist || []), obj, this.caseFit ||= caseFit()); }
 
   // HANDS (the user's Rig Lab Hands controls, assets/hold/hand_poses.json "<yola>:<clip>": { Right, Left } from 0 = the
   // clip's own fingers to 1 = her closed fist, her bat_idle frame 1 grip, as viewer.js handPose): each hand's curl is the
@@ -1109,7 +1123,7 @@ export class YolaView extends ClipBody {
     const q1 = o.quaternion.clone(); o.position.lerpVectors(p0, o.position, cw); o.quaternion.slerpQuaternions(q0, q1, cw); o.updateMatrixWorld(true); // (q1: slerpQuaternions overwrites the quaternion it writes into first)
     const g = o.localToWorld(new THREE.Vector3(...w.grip_primary)), d = new THREE.Vector3(...w.shaft_axis).transformDirection(o.matrixWorld);
     const o1 = gripOpts(T.key, w, 'primary', o); reachShoulder(this.bones, 'Right', g); handOnto(this.bones, 'Right', g, o1.axis, cw, solveArm, o1); this.closeFist('Right', cw);
-    if (w.grip_secondary) { const o2 = gripOpts(T.key, w, 'secondary', o), g2 = o2.point; reachShoulder(this.bones, 'Left', g2, 25); handOnto(this.bones, 'Left', g2, o2.axis, 1, solveArm, o2); this.closeFist('Left', 1); }
+    if (w.grip_secondary && !(this.carryW > 0)) { /* (not while the case is in that hand) */ const o2 = gripOpts(T.key, w, 'secondary', o), g2 = o2.point; reachShoulder(this.bones, 'Left', g2, 25); handOnto(this.bones, 'Left', g2, o2.axis, 1, solveArm, o2); this.closeFist('Left', 1); }
   }
   placeHeld(T) {
     if (T.fingers) {
@@ -1213,7 +1227,7 @@ export class YolaView extends ClipBody {
     const playing = f >= 0 && this.pistol.visible && inner;
     if (this.magArt) this.magArt.visible = !(playing && f >= E.drop && f < E.seat);
     if (this.magLoaded && inner) {
-      const on = playing && f >= E.grab && f < E.seat;
+      const on = playing && f >= E.grab && f < E.seat && !(this.carryW > 0); // (the case in his left hand: no fresh magazine in it)
       if (on) {
         if (this.magLoaded.parent !== inner) inner.add(this.magLoaded);
         inner.updateWorldMatrix(true, false);

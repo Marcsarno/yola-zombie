@@ -9,6 +9,7 @@ import { setupNewMoves } from './render/newmoves.js';
 import { setupSlideFinisher } from './render/slidefin.js';
 import { AcidPools } from './render/acid.js';
 import { radioFit } from './render/radiohold.js';
+import { caseFit } from './render/casecarry.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
@@ -406,6 +407,11 @@ function setupBat(anims, fits = {}, woodG = null, axeG = null) {
   fetch('assets/hold/radio_hold.json').then((r) => r.json()).catch(() => ({})).then((j) => {
     let mine = {}; try { mine = JSON.parse(localStorage.getItem('radioHold') || '{}'); } catch { /* storage off */ }
     yola.radioFit = radioFit(mine[who] || j[who]);
+  });
+  // the case in his left hand (render/casecarry.js; the Rig Lab's Case section, as the radio's)
+  fetch('assets/hold/case_carry.json').then((r) => r.json()).catch(() => ({})).then((j) => {
+    let mine = {}; try { mine = JSON.parse(localStorage.getItem('caseCarry') || '{}'); } catch { /* storage off */ }
+    yola.caseFit = caseFit(mine[who] || j[who]);
   });
   // the stance (2026-10-18, the user's pick in the Rig Lab): Quaternius UAL2 Sword_Block held on its first frame, the rest
   // stance, bat level (assets/yola2_ual.glb; without it the Sword Idle as before)
