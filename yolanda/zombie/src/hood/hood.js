@@ -99,7 +99,10 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   // and third loads take the first one's textures, in the same order in the same file, and their own pictures are let go)
   const firstTex = new Map();
   const texList = (root) => { const l = []; root.traverse((o) => { for (const m of [].concat(o.material || [])) if (m) for (const [k, v] of Object.entries(m)) if (v && v.isTexture) l.push([m, k, v]); }); return l; };
-  await actors.loadModels({ loadAsync: (u) => loader.loadAsync(u).then((g) => {
+  // (their files from the compressed copies, every picture at most 1024 px: tools/hood/optimize.mjs; the original if missing)
+  const svOpt = view.layout?.opt && params.get('opt') !== '0';
+  const svLoad = (u) => (svOpt && /^assets\/survivors\/[^/]+\.glb$/.test(u) ? loader.loadAsync(u.replace('assets/survivors/', 'assets/neighborhood/opt/survivors/')).catch(() => loader.loadAsync(u)) : loader.loadAsync(u));
+  await actors.loadModels({ loadAsync: (u) => svLoad(u).then((g) => {
     if (!g.scene) return g;
     const l = texList(g.scene), f0 = firstTex.get(u);
     if (!f0) firstTex.set(u, l.map((x) => x[2]));

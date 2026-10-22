@@ -65,5 +65,18 @@ for (const t of fs.readdirSync(path.join(R, 'tex')).filter((n) => /^(leaves_.*|d
   const md = await sharp(src).metadata(); fs.mkdirSync(path.dirname(dst), { recursive: true });
   await sharp(src).resize(Math.round(md.width / 2)).webp({ quality: 88, alphaQuality: 100 }).toFile(dst);
 }
+// the survivors (src/hood/actors.js): copies with every picture at most 1024 px (Marc, 2026-10-22: "compress them to
+// 1024": Sophie's, Pete's and Bryce's hair cards were 2048, about 116 MB on the GPU; their bodies were already 1024). Only
+// the pictures change, each in its own format (they are skinned: no weld, no meshopt); hood.js loads them from
+// opt/survivors/, the original if one is missing
+const SV = path.resolve(R, '../survivors');
+for (const f of fs.readdirSync(SV).filter((n) => n.endsWith('.glb'))) {
+  const src = path.join(SV, f), dst = path.join(OUT, 'survivors', f);
+  if (!process.env.FORCE && fs.existsSync(dst) && fs.statSync(dst).mtimeMs > fs.statSync(src).mtimeMs) continue;
+  const doc = await io.read(src);
+  await doc.transform(textureCompress({ encoder: sharp, resize: [1024, 1024], quality: 90 }));
+  fs.mkdirSync(path.dirname(dst), { recursive: true }); await io.write(dst, doc);
+  console.log(`survivors/${f}: ${(fs.statSync(src).size / 1048576).toFixed(1)} -> ${(fs.statSync(dst).size / 1048576).toFixed(2)} MB`);
+}
 L.opt = true; fs.writeFileSync(path.join(R, 'hood_layout.json'), JSON.stringify(L));
 console.log(`models ${(before / 1048576).toFixed(1)} MB -> ${(after / 1048576).toFixed(1)} MB (${files.length} files)`);
