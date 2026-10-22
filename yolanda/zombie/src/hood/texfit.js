@@ -13,6 +13,7 @@ let gl = null;
 export function useRenderer(r) { gl = r; }
 export const texStats = { images: 0, mb: 0, by: {} };   // (what the budget has sized: images and their GPU megabytes, mipmaps in)
 export const TEX_CAP = Math.max(64, +new URLSearchParams(location.search).get('tex') || 512);
+const KEEP = new URLSearchParams(location.search).get('texkeep') === '1';   // (a test switch: the copies kept, so a page script can swap textures)
 const drawable = (im) => im && ((typeof ImageBitmap !== 'undefined' && im instanceof ImageBitmap) || (typeof HTMLImageElement !== 'undefined' && im instanceof HTMLImageElement) || (typeof HTMLCanvasElement !== 'undefined' && im instanceof HTMLCanvasElement));
 
 // one image (a three.js Source) can sit under several textures: drawn down once, every texture on it sent up, then let go
@@ -26,12 +27,14 @@ function fitSource(ts, cap, release, tag) {
     c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
     const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, c.width, c.height);
     if (im.close) im.close();
-    mine.add(c); t0.source.data = c; for (const t of ts) t.needsUpdate = true;
+    // (a texture already on the GPU keeps its first size there: a smaller picture sent into it fills a corner of it with the
+    // rest garbage. So it is let go there first and made again at the new size)
+    mine.add(c); t0.source.data = c; for (const t of ts) { if (gl && gl.properties.get(t).__webglTexture) t.dispose(); t.needsUpdate = true; }
     saved = (w * h - c.width * c.height) * 4 * 1.33;
   }
   const d = t0.source.data;
   const mb = d.width * d.height * 4 * 1.33 / 1048576; texStats.images++; texStats.mb += mb; texStats.by[tag] = (texStats.by[tag] || 0) + mb;
-  if (release && gl && (d.close || mine.has(d))) {
+  if (release && !KEEP && gl && (d.close || mine.has(d))) {
     for (const t of ts) gl.initTexture(t);   // (up now, so its copy goes now)
     if (d.close) d.close(); else d.width = d.height = 1;
   }
