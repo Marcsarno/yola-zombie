@@ -77,7 +77,8 @@ export class HoodView {
     // (58.6 -> 20.9 MB); ?opt=0 loads the originals
     const useOpt = L.opt && new URLSearchParams(location.search).get('opt') !== '0';
     const gl = new GLTFLoader(); gl.setMeshoptDecoder(MeshoptDecoder);
-    const loader = { loadAsync: (url) => gl.loadAsync(useOpt && url.startsWith(ROOT) && !url.endsWith('.json') ? url.replace(ROOT, ROOT + 'opt/') : url) };
+    // (a model newer than the last optimize run has no copy yet: its original instead)
+    const loader = { loadAsync: (url) => (useOpt && url.startsWith(ROOT) && !url.endsWith('.json') ? gl.loadAsync(url.replace(ROOT, ROOT + 'opt/')).catch(() => gl.loadAsync(url)) : gl.loadAsync(url)) };
     void gameLoader;
     let done = 0; const total = L.models.length + 4;
     const ground = loader.loadAsync(ROOT + MAP.ground).then((g) => { this.addGround(g.scene); onProgress(++done / total); });

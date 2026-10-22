@@ -40,7 +40,13 @@ if 'MARKS' in bpy.data.collections:
         p = o.matrix_world.to_translation()
         marks[o.name] = [r(p.x, 3), r(p.z, 3), r(-p.y, 3), r(o.matrix_world.to_euler().z, 4)]
 
-json.dump({'models': models, 'placed': placed, 'tags': tags, 'cols': cols, 'marks': marks}, open(os.path.join(OUT, 'hood_layout.json'), 'w'), separators=(',', ':'))
+# (the compressed copies' switch, set by tools/hood/optimize.mjs, carried over: dropping it loaded the 62 MB originals for a
+# day; a model new since the last optimize run falls back to its original in view.js until the next run)
+lay = {'models': models, 'placed': placed, 'tags': tags, 'cols': cols, 'marks': marks}
+try: lay['opt'] = json.load(open(os.path.join(OUT, 'hood_layout.json'))).get('opt', False) or None
+except Exception: pass
+if not lay.get('opt'): lay.pop('opt', None)
+json.dump(lay, open(os.path.join(OUT, 'hood_layout.json'), 'w'), separators=(',', ':'))
 print('layout: %d models, %d placed, %d colliders, %d marks' % (len(models), len(placed), len(cols), len(marks)))
 
 # ground meshes: select GROUND (+ NEW) and export them alone

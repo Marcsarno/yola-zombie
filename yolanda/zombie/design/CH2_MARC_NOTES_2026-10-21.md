@@ -187,3 +187,20 @@ hood_shrub_tall, hood_palm_short, hood_wall_concrete, hood_court_basketball, exp
     bags, barrels, crates, a tipped cart, a broken picket section. The gate's approach is left clear, and the heaps have
     low collision so nobody walks through them. The fence's own 4 m collision is unchanged.
   - Blender: the chain-link materials now show the wire as see-through (they were grey sheets in the viewport).
+- 2026-10-22, the court between Marc's row and the row facing it: "its wide with skinny connectors.. you can keep it
+  skinny.. no dotted white line. remove the street lamps" (just this court; every lamp on the map; ch2_notes.py `court`):
+  - The court's drive (7.4 m of the old ground's road) is one 4 m lane on its centre line now, with the lawn where the rest
+    was. Its edge kerbs, the kerb returns and the asphalt corner fillets at the driveways moved in with its edges.
+  - The driveways run on to meet it. Its joins to the loop road at both ends flare from the loop's kerb gap down to the lane.
+  - The centre dashes are gone, and all ten street lamps are out (with their collision).
+- 2026-10-22, performance step 1: the game loads the compressed models again (tools/hood/optimize.mjs: 62.5 -> 24.4 MB).
+  The export keeps the switch on, a model without a compressed copy loads its original, and the leak test reports
+  compressed copies that are missing or stale.
+- Follow-ups on the court: "now it's too skinny.. make it wider on both sides", then "look at the road on the left.. just
+  make it that size" and "add the dotted line back.. i need it all to be consistent":
+  - The drive is the loop road's 8 m now, centred between the two rows, and the driveways stop at it.
+  - It has the loop road's centre line down the middle (0.14 m, a 3 m dash every 6 m), across its joins too.
+  - The kerbs, kerb returns and corner fillets sit at its edges. The island palms and a utility box stand as far in from
+    the islands' ends as they first did, with their collision.
+  - The pickup sits 1.2 m further up its driveway than it was.
+  - The joins to the loop road widen from the loop's kerb gap to the drive's width.

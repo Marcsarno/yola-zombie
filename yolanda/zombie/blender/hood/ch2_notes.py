@@ -647,6 +647,92 @@ def gatefence():
         if m.name.startswith('M_chainlink'): make_ch2_props.chainlink_wire(m)
     print('gate line: sections', n, 'junk', len(GF_JUNK))
 
+# ---------------------------------------------------------------- court
+# (Marc, looking down the court between his row and the row facing it: "its wide with skinny connectors.. you can keep it
+# skinny.. no dotted white line. remove the street lamps"; just this court, every lamp on the map. Then, at 4 m: "now it's
+# too skinny.. make it wider on both sides", and then: "look at the road on the left.. just make it that size", "add the
+# dotted line back.. i need it all to be consistent"): the court's drive (7.4 m of the old ground's road at first) is the
+# loop road's 8 m now, centred between the two rows, the lawn's terrain under whatever it gave up; its edge kerbs, kerb
+# returns and asphalt corner fillets go with its edges, the driveways stop at them, the island palms between the driveways
+# sit as far in from the islands' ends as they first did; its joins to the loop road run from the loop's kerb gap out to the
+# drive's width; the old off-centre dashes are taken up and the loop road's centre line laid down its middle (ch2_map.py
+# L1: 0.14 m, a 3 m dash every 6 m). All ten street lamps out. The edges as they stand are kept in the scene
+# ('ch2_court_edges'), so a new width moves them on.
+CT_X0, CT_X1 = 5.5, 41.0                     # (the drive's length: game x)
+CT_HOUSE_N, CT_HOUSE_S = 45.9, 69.0          # (the driveways' house ends, game z)
+CT_W = 8.0                                   # (the loop road's width)
+CT_C = (CT_HOUSE_N + CT_HOUSE_S) / 2; CT_N, CT_S = CT_C - CT_W / 2, CT_C + CT_W / 2
+CT_ISLAND = {'palm_fl_leaning': 52.1, 'palm_fl_snapped': 52.1, 'palm_fl_dead': 52.1, 'palm_fl_struggling': 52.1, 'utility_box.001': 52.4,
+             'palm_fl_leaning.001': 63.0, 'palm_fl_dead.001': 63.0, 'palm_fl_struggling.001': 63.0, 'palm_fl_dead.002': 63.0}
+CT_LINE = (0.5, 43.0)                        # (the centre line: from the loop road's edge to the other's, less a little)
+def court():
+    import bmesh
+    own = owner('court'); print('wiped', wipe(own))
+    print('lamps out', remove(lambda e: 'street_light' in e['src']))
+    sc = bpy.context.scene
+    cn, cs = sc.get('ch2_court_edges') or ((55.74, 59.74) if sc.get('ch2_court_narrow') else (54.04, 61.44))
+    dn, ds, cc = CT_N - cn, CT_S - cs, (cn + cs) / 2
+    def edit(name, fn):
+        o = bpy.data.objects[name]; M, Mi = o.matrix_world, o.matrix_world.inverted()
+        for v in o.data.vertices:
+            p = M @ v.co; q = fn(p.x, -p.y)
+            if q: p.x, p.y = q[0], -q[1]; v.co = Mi @ p
+        o.data.update()
+    on = lambda x: CT_X0 < x < CT_X1
+    if abs(dn) > 0.01 or abs(ds) > 0.01:
+        # the drive and its corner fillets go with the edges
+        edit('roads', lambda x, z: (x, CT_N) if on(x) and abs(z - cn) < 0.05 else (x, CT_S) if on(x) and abs(z - cs) < 0.05 else None)
+        edit('curb_fillets', lambda x, z: (x, z + dn) if on(x) and z < cc else (x, z + ds) if on(x) else None)
+        # the kerbs along the edges and their returns at the driveways
+        for e in placed().objects:
+            if os.path.basename(e.get('src', '')).startswith(('curb_1m', 'curb_ret')) and on(e.location.x):
+                if abs(gz(e) - cn) < 0.6: e.location.y -= dn
+                elif abs(gz(e) - cs) < 0.6: e.location.y -= ds
+        sc['ch2_court_edges'] = (CT_N, CT_S)
+    # the driveways stop at the edges
+    for n in ('driveway_B01_2.38', 'driveway_B01_11.100000000000001', 'driveway_B01_18.5', 'driveway_B01_24.58'): edit(n, lambda x, z: (x, CT_N + 0.1) if z > 49 else None)
+    for n in ('driveway_B02_11.100000000000001', 'driveway_B02_18.5', 'driveway_B02_2.38', 'driveway_B02_24.58'): edit(n, lambda x, z: (x, CT_S - 0.1) if z < 66 else None)
+    # the island palms (and the utility box) back onto the islands, their collision with them; the pickup back up its driveway
+    for n, z in CT_ISLAND.items():
+        e = bpy.data.objects.get(n)
+        if not e or abs(gz(e) - z) < 0.01: continue
+        x0, z0 = e.location.x, gz(e)
+        for c in list(bpy.data.collections['COL'].objects):
+            if math.hypot(c.location.x - x0, -c.location.y - z0) < 0.6 and (c.get('tag') or '').startswith(('tree', 'prop')): c.location.y -= z - z0
+        e.location.y -= z - z0
+    pk = bpy.data.objects.get('parked_car3_pickup_crashed')
+    if pk:
+        bpy.context.view_layer.update()
+        front = min(-(pk.matrix_world @ c.matrix_world @ Vector(v)).y for c in pk.instance_collection.all_objects if c.type == 'MESH' for v in c.bound_box)
+        if front < CT_S + 0.1: move_by(pk.name, 0.0, CT_S + 0.15 - front)
+    # the joins to the loop road: from its kerb gap (z 52 .. 60.2 at its edge) out to the drive's width over 4 m
+    for name, xe, xi in (('ch2_cross_w', -3.0, 6.0), ('ch2_cross_e', 50.5, 40.4)):
+        o = bpy.data.objects[name]; me = o.data; s = 1 if xi > xe else -1; xf = xe + s * (1.6 + 4.0)
+        pts = [(xe, 52.0), (xe + s * 1.6, 52.0), (xf, CT_N), (xi, CT_N), (xi, CT_S), (xf, CT_S), (xe + s * 1.6, 60.2), (xe, 60.2)]
+        if s < 0: pts = pts[::-1]
+        bm = bmesh.new(); vs = [bm.verts.new(o.matrix_world.inverted() @ Vector((x, -z, 0.031))) for x, z in pts]; f = bm.faces.new(vs)
+        f.normal_update()
+        if f.normal.z < 0: f.normal_flip()   # (up: the game draws one side)
+        uv = bm.loops.layers.uv.new('UVMap')
+        for l in f.loops: w = o.matrix_world @ l.vert.co; l[uv].uv = (w.x / 4.0, w.y / 4.0 + 1.0)   # (the road pieces' UVs: 4 m tiles)
+        bm.to_mesh(me); bm.free(); me.update()
+    # the centre dashes
+    o = bpy.data.objects['markings']; M = o.matrix_world
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    dash = [f for f in bm.faces if on((M @ f.calc_center_median()).x) and abs(-(M @ f.calc_center_median()).y - 57.74) < 0.3]
+    bmesh.ops.delete(bm, geom=dash, context='FACES'); bm.to_mesh(o.data); bm.free(); o.data.update()
+    # the loop road's centre line down the middle
+    bm = bmesh.new(); x = CT_LINE[0]; n = 0
+    while x + 3.0 <= CT_LINE[1]:
+        vs = [bm.verts.new((px, -pz, 0.036)) for px, pz in ((x, CT_C - 0.07), (x + 3.0, CT_C - 0.07), (x + 3.0, CT_C + 0.07), (x, CT_C + 0.07))]
+        f = bm.faces.new(vs)
+        f.normal_update()
+        if f.normal.z < 0: f.normal_flip()   # (up: the game draws one side)
+        x += 6.0; n += 1
+    me = bpy.data.meshes.new('ch2_court_line'); bm.to_mesh(me); bm.free(); me.materials.append(bpy.data.materials['HOOD_markings'])
+    ln = bpy.data.objects.new('ch2_court_line', me); ln['ch2'] = own; bpy.data.collections['NEW'].objects.link(ln)
+    print('court drive z %.2f .. %.2f (%.1f m); old dashes out %d, centre dashes %d' % (CT_N, CT_S, CT_S - CT_N, len(dash), n))
+
 if 'open' in PARTS: open_up()
 if 'park' in PARTS: park()
 if 'shrubs' in PARTS: shrubs()
@@ -663,4 +749,5 @@ if 'dock' in PARTS: dock()
 if 'gaptrees' in PARTS: gaptrees()
 if 'b05' in PARTS: b05()
 if 'gatefence' in PARTS: gatefence()
+if 'court' in PARTS: court()
 print('notes parts done:', PARTS)

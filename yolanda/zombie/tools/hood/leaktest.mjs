@@ -66,4 +66,13 @@ for (const [id, stop] of Object.entries(STOPS)) {
   report[id] = { start: stop.start, cells: [...metre.values()], size: 1 };
 }
 if (outFile) fs.writeFileSync(outFile, JSON.stringify(only ? report[only] : report));
+// the compressed copies the game loads (tools/hood/optimize.mjs): missing or older than their models means the game draws
+// the original (missing) or an old version (stale) until optimize.mjs runs again
+{
+  const R = path.resolve(here, '../../assets/neighborhood'), t = (f) => fs.existsSync(f) ? fs.statSync(f).mtimeMs : 0;
+  const off = L.models.concat('hood_ground.glb').filter((f) => t(path.join(R, 'opt', f)) < t(path.join(R, f)));
+  if (!L.opt) console.log('opt        OFF  the layout loads the originals: run node tools/hood/optimize.mjs <survive web/ dir>');
+  else if (off.length) console.log('opt        STALE ' + off.length + ' compressed copies missing or old (' + off.slice(0, 4).join(', ') + (off.length > 4 ? ', ...' : '') + '): run node tools/hood/optimize.mjs <survive web/ dir>');
+  else console.log('opt        ok   every compressed copy is current');
+}
 process.exit(bad ? 1 : 0);
