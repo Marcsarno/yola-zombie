@@ -79807,6 +79807,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   }
   var texStats = { images: 0, mb: 0, by: {} };
   var TEX_CAP = Math.max(64, +new URLSearchParams(location.search).get("tex") || 512);
+  var KEEP = new URLSearchParams(location.search).get("texkeep") === "1";
   var drawable = (im) => im && (typeof ImageBitmap !== "undefined" && im instanceof ImageBitmap || typeof HTMLImageElement !== "undefined" && im instanceof HTMLImageElement || typeof HTMLCanvasElement !== "undefined" && im instanceof HTMLCanvasElement);
   function fitSource(ts, cap, release, tag) {
     const t0 = ts[0], im = t0.image;
@@ -79825,7 +79826,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (im.close) im.close();
       mine.add(c);
       t0.source.data = c;
-      for (const t of ts) t.needsUpdate = true;
+      for (const t of ts) {
+        if (gl && gl.properties.get(t).__webglTexture) t.dispose();
+        t.needsUpdate = true;
+      }
       saved = (w * h - c.width * c.height) * 4 * 1.33;
     }
     const d = t0.source.data;
@@ -79833,7 +79837,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     texStats.images++;
     texStats.mb += mb;
     texStats.by[tag] = (texStats.by[tag] || 0) + mb;
-    if (release && gl && (d.close || mine.has(d))) {
+    if (release && !KEEP && gl && (d.close || mine.has(d))) {
       for (const t of ts) gl.initTexture(t);
       if (d.close) d.close();
       else d.width = d.height = 1;
