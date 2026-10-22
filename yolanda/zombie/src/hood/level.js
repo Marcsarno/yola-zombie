@@ -445,11 +445,13 @@ export class HoodLevel {
     yield* this.shot([{ look: two.look, from: two.from, fov: 46, slow: 1, hold: 2, until: this.linesDone(), max: 90 }], { back: 0.7 });
     sp.idle = 'hood_Idle_Loop';
     this.sophieAt = null;
-    // "Follow me. I know a way": she goes ahead to the barricade on the curve; he pushes it over
+    // "Follow me. I know a way": she goes ahead to the curve and he follows her past it. (The curve's barricade went with
+    // Marc's map notes, 2026-10-21; its "Push the barricade over" stayed behind, a prompt for nothing that held the story up:
+    // out 2026-10-22. He only has to reach where it stood)
     this.setGoal('follow');
     this.sophieLead(ROUTES.follow);
-    yield* this.use('push', 'seal_home_use', 'Push the barricade over', 2.0);
-    this.openSeal('home'); this.api.audio?.play('knockdown');
+    const by = this.at('seal_home_use');
+    yield* this.until(() => Math.hypot(this.sim.player.x - by.x, this.sim.player.z - by.z) < 3);
   }
 
   // B05. THE GATE: chained; the bolt cutters in the neighbour's garage with the light on
