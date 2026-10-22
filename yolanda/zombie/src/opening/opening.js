@@ -26,6 +26,7 @@ import { RevealFx } from './revealfx.js';
 import { RevealPost, BLOOM_LAYER } from './revealpost.js';
 import { RevealStudio } from './studio.js';
 import { EXEC_LAUNCH, attackEnd } from '../core/weapons.js';
+import { Doctor } from './doctor.js';
 const SLOW = 0.42;
 // the athlete's bat in the reveal, leaning on the lift's right door housing: its knob against the housing's face (wallZ),
 // its barrel on the floor out in front (lean: knob -> barrel)
@@ -142,6 +143,9 @@ export class Opening {
     this.warmLaunch();
     this.markGlow();
     this.warmByReplay();
+    // the doctor hiding in the OR after the hand-off, and his scene with the vaccine case (src/opening/doctor.js): loaded and
+    // compiled behind the title, under the game's lighting
+    try { this.doctor = new Doctor(this); await this.doctor.load(this.loader); this.doctor.root.visible = this.doctor.case.visible = true; this.renderer.compile(this.doctor.root, this.camera, this.scene); this.renderer.compile(this.doctor.case, this.camera, this.scene); this.doctor.root.visible = this.doctor.case.visible = false; } catch (e) { console.warn('doctor', e); this.doctor = null; }
     this.yola?.setShown?.(false); this.setupDone = true;
     if (this.params.has('studio')) this.studio = new RevealStudio(this); // (the Reveal Studio: combat.html?intro=1&studio=1)
     onProgress?.(1);
@@ -1844,7 +1848,7 @@ export class Opening {
     this.mark('room1-playable');
     this.ui.again(true); // (watch the reveal again)
   }
-  ambient() {} // (the level's people are still: the guard's body does not move)
+  ambient(dt) { this.doctor?.tick(dt); } // (the level's people: the guard's body does not move; the doctor hides in the OR, then runs: doctor.js)
   // the opening's guard, dead in the Waiting Area where the outbreak reached him: on his back by the reception seats, his
   // holster empty (the pistol lies beside him as the pickup), a dark pool under him. One body, never a living duplicate.
   placeGuardBody() {
@@ -2009,6 +2013,7 @@ export class Opening {
 
   update(dt) {
     if (!this.active) return;
+    if (this.doctor && this.doctor.state !== 'off') this.doctor.off(); // (the opening playing again: the OR is its set, the doctor only after the hand-off)
     if (this.started && !this.paused) this.step(dt * (this.studioRate ?? 1)); // (studioRate: the Reveal Studio's playback speed)
     else this.stage.update(0); // keep the picture alive on the gate / while paused
     if (!this.active) return; // the hand-off happened inside step(): the game camera owns the view now
