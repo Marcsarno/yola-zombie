@@ -548,8 +548,8 @@ export class HoodLevel {
     // (inside the garage: from its south-east corner across Marc's right shoulder at the fridge; then in at the shelf)
     yield* this.shot([
       { look: [fu.x - 0.45, 1.15, fu.z + 0.02], from: [fu.x + 1.65, 1.7, fu.z - 1.5], fov: 44, slow: 1, hold: 1.3, fn: () => cine.after(0.45, () => this.openSeal('fridge2')) },
-      { look: [fc.x, fc.y + 0.02, fc.z], from: [fu.x + 0.75, 1.62, fu.z - 0.95], fov: 34, slow: 1, hold: 0.9, fn: () => this.say('c304') },
-      { look: [fc.x, fc.y + 0.02, fc.z], from: [fu.x + 0.75, 1.62, fu.z - 0.95], fov: 34, slow: 1, hold: 0.6, until: this.linesDone(), max: 4, fn: () => { this.flags.case = 'carried'; this.api.view.showCase?.('carried'); } },
+      { look: [fc.x - 0.04, fc.y + 0.11, fc.z], from: [fu.x + 0.75, 1.62, fu.z - 0.95], fov: 34, slow: 1, hold: 0.9, fn: () => this.say('c304') },
+      { look: [fc.x - 0.04, fc.y + 0.11, fc.z], from: [fu.x + 0.75, 1.62, fu.z - 0.95], fov: 34, slow: 1, hold: 0.6, until: this.linesDone(), max: 4, fn: () => { this.flags.case = 'carried'; this.api.view.showCase?.('carried'); } },
     ], { back: 0.6 });
     p.desired = gunWas === 'fists' ? PISTOL : gunWas;
     this.setGoal('');
@@ -646,11 +646,12 @@ export class HoodLevel {
   *reveal() {
     const p = this.sim.player, sp = this.sophie, cine = this.api.cine, v = this.api.view;
     this.prefetch('c506', 'c507', 'c508', 'c509', 'c510', 'c511', 'c512', 'c513', 'c514', 'c601');
-    // Marc lowers the case to the grass at his feet (her eyes on him, then on it: the slow zoom on its symbol, the "x4")
+    // Marc lowers the case to the grass at his feet (her eyes on him, then on it: the slow zoom on its symbol; the handle
+    // laid away from the lens, so the emblem, its top to the handle, reads upright)
     yield* this.meet(1.9);
     this.sophiePose('hood_Idle_Loop', { x: p.x, z: p.z });
     p.aimYaw = p.aimTarget = Math.atan2(sp.x - p.x, sp.z - p.z);
-    const yw = p.aimYaw, cz = { x: p.x + Math.sin(yw + 0.9) * 0.55, z: p.z + Math.cos(yw + 0.9) * 0.55, yaw: yw + Math.PI / 2 };
+    const yw = p.aimYaw, cz = { x: p.x + Math.sin(yw + 0.9) * 0.55, z: p.z + Math.cos(yw + 0.9) * 0.55, yaw: yw };
     p.desired = 'fists';
     yield* this.wait(0.35);
     this.api.hero?.script('hood_PickUp_Kneeling', { fadeIn: 0.2, fadeOut: 0.4 });

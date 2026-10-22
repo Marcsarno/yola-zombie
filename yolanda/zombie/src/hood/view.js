@@ -272,40 +272,32 @@ export class HoodView {
   stowGas() { const g = this.gasObj(); this.gasMode = 'boat'; this.gasRing.visible = false; const b = this.layout.marks.boat; if (b) { g.position.set(b[0] + 0.4, 0.55, b[2]); } }
 
   // ---- the case of four vials: in the garage's fridge behind the beer, in Marc's left hand once he has it, set down on the
-  // ground (at: {x, z, yaw}), in someone's hands (at: {get() -> {x, y, z, yaw}}: Sophie's), in the boat's cooler. On its lid
-  // the cold-chain label: the hospital's red cross and "x4" (the reveal's close-up reads it)
+  // ground (at: {x, z, yaw}), in someone's hands (at: {get() -> {x, y, z, yaw}}: Sophie's), in the boat's cooler. The user's
+  // case (2026-10-22: tools/hood/case_for_game.py), at its true size; on its lid the hospital's emblem (the red vial in blue
+  // brackets: the reveal's close-up reads it)
   showCase(state, at = null) {
     if (!this.caseObj && this.props.case) {
-      this.caseObj = this.props.case.clone(true); this.caseObj.scale.setScalar(0.78); this.caseObj.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); this.fxGroup.add(this.caseObj);
-      (this.caseObj.getObjectByName('CaseLid') || this.caseObj).add(this.caseLabel());
+      this.caseObj = this.props.case.clone(true); this.caseObj.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); this.fxGroup.add(this.caseObj);
     }
     const c = this.caseObj; if (!c) return;
     this.caseMode = state; this.caseAt = at; c.visible = ['fridge', 'carried', 'ground', 'held'].includes(state);
-    if (state === 'fridge' && at) { c.position.set(at.x, at.y, at.z); c.rotation.set(0, Math.PI / 2, 0); this.beer(at); }
+    // (in the fridge: stood on its edge behind the beer, the handle up and the lid's emblem to the door (+x): it is slimmer
+    // than the cans are tall, so lying flat it hid behind them)
+    if (state === 'fridge' && at) { c.position.set(at.x - 0.075, at.y + 0.112, at.z); c.rotation.set(-Math.PI / 2, -Math.PI / 2, 0, 'YXZ'); this.beer(at); }
     if (state === 'ground' && at) { c.position.set(at.x, groundY(at.x, at.z) + 0.01, at.z); c.rotation.set(0, at.yaw || 0, 0); }
   }
   // the looters' cases at the start (Marc: "not the medical briefcase.. different skin version of it.. that are wrong"): the
-  // same case in another paint (k: 0 olive drab, 1 gunmetal), no cold-chain label, no red cross
+  // same case in another paint (k: 0 olive drab, 1 gunmetal): its silver and teal painted over, the emblem painted out
   wrongCase(k = 0) {
     if (!this.props.case) return null;
-    const o = this.props.case.clone(true), paint = [0x3b4228, 0x2b2e33][k % 2];
+    const o = this.props.case.clone(true), paint = [[0x3b4228, 0x262b19], [0x2b2e33, 0x1b1d20]][k % 2];
     o.traverse((m) => {
       if (!m.isMesh) return; m.castShadow = false; m.frustumCulled = false;
-      if (/silver/.test(m.material?.name || '')) { m.material = m.material.clone(); m.material.color.setHex(paint); m.material.roughness = 0.75; }
+      const n = m.material?.name || '', i = /Satin_aluminum|Vial_red|Bracket_blue|Ivory_label/.test(n) ? 0 : /Petrol_teal/.test(n) ? 1 : -1;
+      if (i >= 0) { m.material = m.material.clone(); m.material.color.setHex(paint[i]); m.material.metalness = 0.2; m.material.roughness = 0.75; }
     });
     o.visible = false; this.fxGroup.add(o);
     return o;
-  }
-  caseLabel() {
-    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 176; const g = cv.getContext('2d');
-    g.fillStyle = '#f3f1ea'; g.beginPath(); g.roundRect(6, 6, 244, 164, 18); g.fill(); g.lineWidth = 6; g.strokeStyle = '#c4161c'; g.stroke();
-    g.fillStyle = '#c4161c'; g.beginPath(); g.arc(78, 88, 52, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f3f1ea'; g.fillRect(70, 52, 16, 72); g.fillRect(42, 80, 72, 16);   // (the hospital's red cross)
-    g.fillStyle = '#1d1d1d'; g.font = '800 64px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText('x4', 186, 108);
-    g.font = '700 15px system-ui,sans-serif'; g.fillText('KEEP COLD', 186, 140); g.fillText('VACCINE', 186, 52);
-    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.206), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }));
-    m.rotation.x = -Math.PI / 2; m.position.set(0, 0.0615, 0.16); m.name = 'caseLabel';   // (on the lid's top, under its hinge node CaseLid; the text reads from the handle's side)
-    return m;
   }
   // the six-pack and the bottles in the garage fridge, in front of the case ("Behind the beer. Smart.")
   beer(at) {

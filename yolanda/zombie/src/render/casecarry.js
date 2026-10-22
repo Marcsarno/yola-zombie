@@ -6,15 +6,15 @@
 import * as THREE from 'three';
 import { ikArm } from './ik.js';
 
-// the case (props/hood_case.glb): lying flat, origin at its foot, 46 x 15 x 32 cm, the handle on its +Z edge running along
-// X; HANDLE its middle (case units, before `size`)
+// the case (props/hood_case.glb, the user's of 2026-10-22: its CarryGrip): lying flat, origin under its middle, 30 x 7 x 22
+// cm, the handle on its +Z edge running along X; HANDLE its middle (case units, before `size`)
 export const CASE_FILE = 'assets/neighborhood/props/hood_case.glb';
-const HANDLE = new THREE.Vector3(0, 0.07, 0.175);
+const HANDLE = new THREE.Vector3(0, 0.022, 0.137);
 // the settings (Rig Lab Case; saved per character in assets/hold/case_carry.json):
 //   swing  % of the clip's own arm swing kept;  out / fwd  cm: the hand off his side / ahead of the shoulder;  lift  cm:
 //   the hand raised (the elbow bends);  roll  deg: the forearm turned from palm-to-the-leg;  turn / tilt  deg: the case
 //   turned round the upright / swung out round its handle;  curl / thumb  % of the closed fist;  size  % of the model
-export const CASE0 = { size: 78, swing: 22, out: 5, fwd: 0, lift: 2, roll: 0, turn: 180, tilt: 0, curl: 100, thumb: 85 }; // (turn 180: the lid to his leg, its label reads from the handle's side)
+export const CASE0 = { size: 100, swing: 22, out: 5, fwd: 0, lift: 2, roll: 0, turn: 0, tilt: 0, curl: 100, thumb: 85 }; // (turn 0: the lid out, its emblem upright as it hangs; the old case turned 180)
 export const caseFit = (f) => ({ ...CASE0, ...f });
 
 const UP = new THREE.Vector3(0, 1, 0), D2R = Math.PI / 180;
