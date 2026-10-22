@@ -733,6 +733,52 @@ def court():
     ln = bpy.data.objects.new('ch2_court_line', me); ln['ch2'] = own; bpy.data.collections['NEW'].objects.link(ln)
     print('court drive z %.2f .. %.2f (%.1f m); old dashes out %d, centre dashes %d' % (CT_N, CT_S, CT_S - CT_N, len(dash), n))
 
+# ---------------------------------------------------------------- story3
+# Chapter 2's story, version 3 (design/HANDOFF_NEXT.md 2026-10-22, Marc's dialogue pack):
+#   - the shed next to the boat: "about 10 to 20 yards north of the ramp, in the grass at the map's edge" (the pier's shore
+#     end is at x -22, z -80: the shed's door ~18 m up the bank from it), its two dumpsters with it, on its east side now
+#     (the lake's shore is close on its west). Moved, not rebuilt: everything ch2_dock.py made for it, by the same offset
+#   - the second fridge, in Marc's garage on the party wall ("The vials are in the garage. The second fridge"; James goes
+#     through the kitchen's, the wrong one): drawn on its own (its door swings, view.js), its box, its marks
+#   - Sophie and Adam's drive at the court's west end (Marc's picture): their wagon nose-in, the suitcases behind it
+SHED_TO = (-17.0, -99.5)
+GFRIDGE = (29.51, 44.1)
+SOPHIE_CAR = (12.6, 65.4)
+def story3():
+    own = owner('story3'); print('wiped', wipe(own))
+    # the shed and what goes with it
+    sh = bpy.data.objects.get('ch2_shed')
+    if sh:
+        dx, dz = SHED_TO[0] - sh.location.x, SHED_TO[1] - gz(sh); n = 0
+        for o in list(bpy.data.objects):
+            nm = o.name
+            if not (nm in ('ch2_shed', 'ch2_chainsaw', 'shed', 'shed_door', 'shed_inside', 'COL_seal_shed') or nm.startswith(('COL_prop_ch2_shed_', 'shed_', 'ch2_yard_dumpster', 'COL_prop_ch2_yard_dumpster'))): continue
+            o.location.x += dx; o.location.y -= dz; n += 1
+        # (the dumpsters to its east side: the lake comes close on its west)
+        # (their backs to the wall as ch2_dock.py set them; their boxes made again where they stand)
+        for k, d in enumerate(sorted((o for o in bpy.data.objects if o.name.startswith('ch2_yard_dumpster')), key=lambda o: o.name)):
+            x = SHED_TO[0] + 5.6 + k * 2.3; zw = -103.5 + (x + 58.0) * (-3.5 / 164.0)
+            d.location.x = x; d.location.y = -(zw + 0.25 + size_of('kit/dumpster.glb')[1] / 2 + 0.1)
+            c = bpy.data.objects.get('COL_prop_' + d.name)
+            if c: bpy.data.objects.remove(c, do_unlink=True)
+            bpy.context.view_layer.update(); c = hoodlib.prop_collider(d)
+            if c is not None: c['ch2'] = d.get('ch2')
+        print('shed moved by %.2f, %.2f: %d objects' % (dx, dz, n))
+    # the garage's fridge (the kitchen's twin, facing into the garage)
+    import make_ch2_props; importlib.reload(make_ch2_props)
+    F = make_ch2_props.HOME['floor']
+    place('props/hood_fridge.glb', GFRIDGE[0], GFRIDGE[1], 0.0, tag='seal:fridge2', collide=False, name='ch2_gfridge', owner=own, y=F)
+    o = col_box('COL_ch2_home_gfridge', GFRIDGE[0] - 0.02, GFRIDGE[1], 0.4, 0.4, 0.0, 1.8, 'prop:home'); o['ch2'] = own
+    mark('gfridge_use', GFRIDGE[0] + 0.7, GFRIDGE[1], -math.pi / 2, owner=own)
+    mark('gfridge_case', GFRIDGE[0] - 0.03, GFRIDGE[1], -math.pi / 2, y=F + 0.88, owner=own)
+    mark('james_fridge', 34.1, 44.72, -math.pi / 2, owner=own)   # (James at the kitchen's fridge, its door open, his back to the room)
+    # Sophie and Adam's drive
+    place('cars_raw/car3_wagon_60s.glb', SOPHIE_CAR[0], SOPHIE_CAR[1], 0.0, name='story3_wagon', owner=own)
+    for k, (x, z, yaw, rel) in enumerate(((11.7, 62.0, 0.3, 'models/nb_suitcase.glb'), (13.4, 61.7, 1.9, 'models/nb_suitcase.glb'), (12.6, 62.5, 0.8, 'kit/supply_bag.glb'))):
+        place(rel, x, z, yaw, name='story3_bags', owner=own)
+    print('story3: shed, garage fridge, the drive')
+
+if 'story3' in PARTS: story3()
 if 'open' in PARTS: open_up()
 if 'park' in PARTS: park()
 if 'shrubs' in PARTS: shrubs()

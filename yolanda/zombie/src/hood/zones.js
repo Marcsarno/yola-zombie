@@ -42,17 +42,18 @@ export const ZONES = {
 
 // each point of the story: where the player starts testing from, the areas allowed, the seals open by then
 // reach: [mark, radius] the player must be able to get within (a pickup's or a prompt's radius), on foot from start
-// (the story reset, 2026-10-20: level.js STOP_ORDER)
+// (the story reset v3, 2026-10-22: level.js STOP_ORDER; after and leave are the horde's ground)
 const H = ['home', 'b05l', 'curve', 'south'];   // (the island's fences gone: the curve and the south open with the home)
 const N = ['club', 'west', 'dock', 'north', 'courts'];  // (past the gate: the roadblock and the dock road's gate gone)
 export const STOPS = {
-  home: { start: [37.5, 38.5], zones: H, open: [], reach: [['home_door_use', 1.4]] },
-  house: { start: [35.3, 38.5], zones: [...H, 'house'], open: ['home_door'], reach: [['fridge_use', 1.4], ['james', 1.0]] },
-  help: { start: [38.4, 34.5], zones: [...H, 'house'], open: ['home_door'], reach: [['seal_home_use', 2.0]] },
-  gate: { start: [27.5, 9.5], zones: [...H, 'house'], open: ['home_door', 'home'], reach: [['cutters', 1.3], ['gate_use', 2.2]] },
-  club: { start: [18.6, -19.5], zones: [...H, 'house', ...N], open: ['home_door', 'home', 'gate'], reach: [['club_warn', 7], ['club_door', 2.6], ['dock_road_lot', 2.2]] },
-  clubhouse: { start: [9.6, -50], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'home', 'gate', 'clubdoor'], reach: [['keys', 1.1]] },
-  dock: { start: [31.0, -81.0], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'home', 'gate', 'clubdoor'], reach: [['pour_fuel', 2.4], ['shed_door', 1.6]] },
-  shed: { start: [10.3, -99.5], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'home', 'gate', 'clubdoor', 'shed'], reach: [['shed_gas', 1.3], ['shed_shotgun', 1.6]] },
-  horde: { start: [-10.5, -100], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'home', 'gate', 'clubdoor', 'shed', 'dock'], reach: [['pour_fuel', 2.4]] },
+  sneak: { start: [45.6, 80.4], zones: H, open: [], reach: [['home_door_use', 1.4]] },
+  house: { start: [35.3, 38.5], zones: [...H, 'house'], open: ['home_door'], reach: [['james_fridge', 1.0], ['gfridge_use', 1.4]] },
+  rescue: { start: [38.4, 38.5], zones: [...H, 'house'], open: ['home_door'], reach: [['home_porch', 1.4]] },
+  gate: { start: [15.5, 57.5], zones: [...H, 'house'], open: ['home_door'], reach: [['cutters', 1.3], ['gate_use', 2.2]] },
+  club: { start: [18.6, -19.5], zones: [...H, 'house', ...N], open: ['home_door', 'gate'], reach: [['club_warn', 7], ['club_door', 2.6]] },
+  clubhouse: { start: [9.6, -50], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'gate', 'clubdoor'], reach: [['keys', 1.1]] },
+  lot: { start: [17.5, -43.5], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'gate', 'clubdoor'], reach: [['dock_road_lot', 2.2]] },
+  dock: { start: [62, -70], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'gate', 'clubdoor'], reach: [['pour_fuel', 2.4], ['shed_door', 1.6]] },
+  shed: { start: [-17.2, -95.2], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'gate', 'clubdoor', 'shed'], reach: [['shed_gas', 1.3], ['shed_shotgun', 1.6]] },
+  horde: { start: [-17.2, -95.2], zones: [...H, 'house', ...N, 'clubhouse'], open: ['home_door', 'gate', 'clubdoor', 'shed', 'dock'], reach: [['pour_fuel', 2.4]] },
 };

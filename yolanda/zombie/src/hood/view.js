@@ -29,7 +29,7 @@ const CELL = 32;
 const NO_SHADOW = /^(nbt_|palm_|yard_|shrub_|nb_frond|trees|curb|by_ball|yardprop_dry)/; // (foliage and clutter cast no shadows: PERF lessons)
 // (a path from assets/ is the game's own file: the shotgun the hero already loads)
 const PICKUP_MODELS = { rifle: 'props/security_rifle.glb', cutters: 'models/boltcutters.glb', gas: 'models/nb_fuel_can.glb', ammo: 'kit/military_crate.glb', health: 'models/loot_crate.glb', radio: 'props/hospital_radio.glb',
-  case: 'props/hood_case.glb', shotgun: 'assets/weapons/pump_short.glb', cooler: 'models/by_cooler.glb' };
+  case: 'props/hood_case.glb', shotgun: 'assets/weapons/pump_short.glb', cooler: 'models/by_cooler.glb', crowbar: 'assets/weapons/crowbar.glb' };
 const PICKUP_SCALE = { ammo: 0.55, health: 0.45 };
 
 // the lake must not show inside the boat's open hull (Marc, 2026-10-21: "make sure the water doesn't clip through the boat"):
@@ -149,6 +149,7 @@ export class HoodView {
     // and the flat pieces blood pools are laid on (main.js fx.groundAt raycasts them: the same names as its list)
     const freeArray = function () { this.array = null; }, geoms = new Set(), FLAT = /^(ch2_\w*(road|kerb|drive|rab)|roads|sidewalks|driveway|home_walk|paver|pool_deck|curb|tennis_court|terrain)/;
     this.group.traverse((o) => { if (o.isInstancedMesh && !FLAT.test(o.name) && o.geometry) geoms.add(o.geometry); });
+    if (/[?&](geokeep|cinecheck)=1/.test(location.search)) geoms.clear();   // (?cinecheck=1: the shots' sight lines are raycast against them: hood.js)
     for (const gm of geoms) {
       if (!gm.boundingSphere) gm.computeBoundingSphere(); if (!gm.boundingBox) gm.computeBoundingBox();
       for (const a of Object.values(gm.attributes)) if (!a.isInterleavedBufferAttribute) a.onUpload(freeArray);
@@ -233,14 +234,25 @@ export class HoodView {
     const g = new THREE.Group(); g.position.set(q.x, q.y ?? groundY(q.x, q.z), q.z);
     const src = this.props[q.model];
     let m;
-    if (src) { m = src.clone(true); if (q.model === 'shotgun') { m.rotation.set(0, 0, 0); m.position.y = 0.03; /* (across the rack's pegs, along the wall) */ } else if (q.model === 'rifle') { m.rotation.set(-Math.PI / 2, 0, 0.6); m.position.y = 0.05; } else if (q.model === 'cutters') { m.rotation.set(Math.PI / 2, 0, 0.4); m.position.y = 0.04; } }
-    else { m = this.keyRing(); }
+    if (src) { m = src.clone(true); if (q.model === 'shotgun') { m.rotation.set(0, 0, 0); m.position.y = 0.03; /* (across the rack's pegs, along the wall) */ } else if (q.model === 'rifle') { m.rotation.set(-Math.PI / 2, 0, 0.6); m.position.y = 0.05; } else if (q.model === 'cutters') { m.rotation.set(Math.PI / 2, 0, 0.4); m.position.y = 0.04; } else if (q.model === 'crowbar') { m.rotation.set(0, 0.5, Math.PI / 2); m.position.y = 0.03; } }   // (the crowbar's shaft is its y: laid flat on the bench)
+    else { m = q.model === 'batteries' ? this.batteries() : q.model === 'silencer' ? this.suppressor() : this.keyRing(); }
     if (PICKUP_SCALE[q.model]) { m.scale.setScalar(PICKUP_SCALE[q.model]); m.rotation.y = Math.random() * 3; }
     g.add(m);
     const r = this.ring.clone(); r.position.y = 0.03; g.add(r); if (q.y) r.visible = false; // (up on a rack: no ring in the air)
     this.fxGroup.add(g); this.pickups.set(q.id, { g, ring: r, item: m, t: Math.random() * 6 });
   }
   takePickup(id) { const p = this.pickups.get(id); if (p) { p.g.removeFromParent(); this.pickups.delete(id); } }
+  // (made here: a pack of batteries and a suppressor, bigger than life so they read at this camera)
+  batteries() {
+    const g = new THREE.Group(), body = new THREE.MeshStandardMaterial({ color: 0x1b1b1b, roughness: 0.5 }), band = new THREE.MeshStandardMaterial({ color: 0xd8a21c, roughness: 0.4, metalness: 0.3 });
+    for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.05, 10), i % 2 ? band : body); c.rotation.z = Math.PI / 2; c.position.set(0, 0.015, -0.045 + i * 0.03); g.add(c); }
+    const card = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.004, 0.13), new THREE.MeshStandardMaterial({ color: 0xc8341e })); card.position.y = 0.002; g.add(card);
+    g.scale.setScalar(2.2); return g;
+  }
+  suppressor() {
+    const g = new THREE.Group(), m = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.017, 0.15, 14), new THREE.MeshStandardMaterial({ color: 0x18191b, metalness: 0.6, roughness: 0.45 }));
+    m.rotation.z = Math.PI / 2; m.position.y = 0.018; g.add(m); g.scale.setScalar(2.0); return g;
+  }
   keyRing() {
     const g = new THREE.Group(), metal = new THREE.MeshStandardMaterial({ color: 0xc9b57a, metalness: 0.8, roughness: 0.35 });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.006, 6, 16), metal); ring.rotation.x = Math.PI / 2; g.add(ring);
@@ -259,12 +271,63 @@ export class HoodView {
   carryGas() { this.gasObj(); this.gasMode = 'carried'; this.gasRing.visible = false; }
   stowGas() { const g = this.gasObj(); this.gasMode = 'boat'; this.gasRing.visible = false; const b = this.layout.marks.boat; if (b) { g.position.set(b[0] + 0.4, 0.55, b[2]); } }
 
-  // ---- the case of four vials: in the fridge, at Marc's left side once he has it, in the boat's cooler
+  // ---- the case of four vials: in the garage's fridge behind the beer, in Marc's left hand once he has it, set down on the
+  // ground (at: {x, z, yaw}), in someone's hands (at: {get() -> {x, y, z, yaw}}: Sophie's), in the boat's cooler. On its lid
+  // the cold-chain label: the hospital's red cross and "x4" (the reveal's close-up reads it)
   showCase(state, at = null) {
-    if (!this.caseObj && this.props.case) { this.caseObj = this.props.case.clone(true); this.caseObj.scale.setScalar(0.78); this.caseObj.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); this.fxGroup.add(this.caseObj); }
+    if (!this.caseObj && this.props.case) {
+      this.caseObj = this.props.case.clone(true); this.caseObj.scale.setScalar(0.78); this.caseObj.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); this.fxGroup.add(this.caseObj);
+      (this.caseObj.getObjectByName('CaseLid') || this.caseObj).add(this.caseLabel());
+    }
     const c = this.caseObj; if (!c) return;
-    this.caseMode = state; c.visible = state === 'fridge' || state === 'carried';
-    if (state === 'fridge' && at) { c.position.set(at.x, at.y, at.z); c.rotation.set(0, Math.PI / 2, 0); }
+    this.caseMode = state; this.caseAt = at; c.visible = ['fridge', 'carried', 'ground', 'held'].includes(state);
+    if (state === 'fridge' && at) { c.position.set(at.x, at.y, at.z); c.rotation.set(0, Math.PI / 2, 0); this.beer(at); }
+    if (state === 'ground' && at) { c.position.set(at.x, groundY(at.x, at.z) + 0.01, at.z); c.rotation.set(0, at.yaw || 0, 0); }
+  }
+  caseLabel() {
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 176; const g = cv.getContext('2d');
+    g.fillStyle = '#f3f1ea'; g.beginPath(); g.roundRect(6, 6, 244, 164, 18); g.fill(); g.lineWidth = 6; g.strokeStyle = '#c4161c'; g.stroke();
+    g.fillStyle = '#c4161c'; g.beginPath(); g.arc(78, 88, 52, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f3f1ea'; g.fillRect(70, 52, 16, 72); g.fillRect(42, 80, 72, 16);   // (the hospital's red cross)
+    g.fillStyle = '#1d1d1d'; g.font = '800 64px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText('x4', 186, 108);
+    g.font = '700 15px system-ui,sans-serif'; g.fillText('KEEP COLD', 186, 140); g.fillText('VACCINE', 186, 52);
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.206), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }));
+    m.rotation.x = -Math.PI / 2; m.position.set(0, 0.0615, 0.16); m.name = 'caseLabel';   // (on the lid's top, under its hinge node CaseLid; the text reads from the handle's side)
+    return m;
+  }
+  // the six-pack and the bottles in the garage fridge, in front of the case ("Behind the beer. Smart.")
+  beer(at) {
+    if (this.beerObj) { this.beerObj.visible = true; return; }
+    const g = new THREE.Group(), can = new THREE.MeshStandardMaterial({ color: 0xb8bcc4, metalness: 0.8, roughness: 0.35 }), red = new THREE.MeshStandardMaterial({ color: 0xb0201c, roughness: 0.5 }), glass = new THREE.MeshStandardMaterial({ color: 0x2f5a22, roughness: 0.2, metalness: 0.1 });
+    const cg = new THREE.CylinderGeometry(0.033, 0.033, 0.122, 12), bg = new THREE.CylinderGeometry(0.03, 0.032, 0.2, 10), ng = new THREE.CylinderGeometry(0.012, 0.022, 0.07, 8);
+    for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(cg, i % 3 === 1 ? red : can); m.position.set(0.17 + (i % 2) * 0.068, 0.061, -0.17 + Math.floor(i / 2) * 0.07); g.add(m); }
+    for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(bg, glass); b.position.set(0.17, 0.1, 0.07 + i * 0.065); g.add(b); const n = new THREE.Mesh(ng, glass); n.position.set(0.17, 0.235, 0.07 + i * 0.065); g.add(n); }
+    g.position.set(at.x, at.y - 0.06, at.z); this.fxGroup.add(g); this.beerObj = g;   // (+x: toward the fridge's door)
+  }
+  // the front door left ajar (the leaf part-way in: the music leaks out, beat 3)
+  doorAjar(k = 0.22) {
+    const s = this.seals.home_door?.find((q) => /kit_row4_intact/.test(q.file)), leaf = s && this.doorLeaf(s.o); if (!leaf) return;
+    leaf.userData.q0 ??= leaf.quaternion.clone(); leaf.quaternion.copy(leaf.userData.q0); leaf.rotateOnWorldAxis(_Y, 1.75 * k);
+  }
+  // the radio's battery going (beat 7): a red light blinking on its face, until the batteries
+  radioLow(on) {
+    if (!this.radioLed) {
+      const tex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,60,40,1)'); gr.addColorStop(0.35, 'rgba(255,30,20,0.6)'); gr.addColorStop(1, 'rgba(255,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+      this.radioLed = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })); this.radioLed.scale.setScalar(0.16);
+      this.fxGroup.add(this.radioLed);
+    }
+    this.radioLedOn = on; this.radioLed.visible = false;
+  }
+  // the suppressor (beat 11) on Marc's pistol: a black tube on from the muzzle, along the barrel
+  silencerOn(yola) {
+    const pg = yola?.pistol, mz = pg?.userData?.muzzle; if (!pg || !mz || this.silencer) return;
+    pg.updateMatrixWorld(true);
+    const mzL = pg.worldToLocal(mz.getWorldPosition(new THREE.Vector3())), c = new THREE.Box3().setFromObject(pg).getCenter(new THREE.Vector3()), cL = pg.worldToLocal(c);
+    const d = mzL.clone().sub(cL); const ax = ['x', 'y', 'z'].reduce((b, k) => (Math.abs(d[k]) > Math.abs(d[b]) ? k : b), 'x'), dir = new THREE.Vector3(); dir[ax] = Math.sign(d[ax]) || 1;
+    const s = pg.getWorldScale(new THREE.Vector3()).x || 1, L = 0.15 / s, R = 0.017 / s;
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(R, R, L, 14), new THREE.MeshStandardMaterial({ color: 0x18191b, metalness: 0.6, roughness: 0.45 }));
+    tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); tube.position.copy(mzL).addScaledVector(dir, L / 2 - 0.004 / s);
+    pg.add(tube); this.silencer = tube;
   }
   // the boat's cooler (by_cooler, on the boat's stern seat: it leaves with the boat)
   showCooler(on) {
@@ -313,12 +376,17 @@ export class HoodView {
     this.radio.rotation.set(0, y - Math.PI / 2, 0); this.radio.visible = yola.outer.visible && !p.dead;
     this.caseUpdate(yola, p);
   }
-  // the case at his left hip (slung), while he has it
+  // the case in his left hand by its handle while he has it (the story: "Marc carries it in one hand and fights with a
+  // one-handed weapon"); where the stance keeps that hand up at his chest (the pistol's grip), it rides at his left side at
+  // carrying height, as the gas can does. In someone else's hands: wherever their getter puts it
   caseUpdate(yola, p) {
-    const c = this.caseObj; if (!c || this.caseMode !== 'carried') return;
-    yola.bones.Hips.getWorldPosition(c.position); const y = p.aimYaw;
-    c.position.x += Math.cos(y) * 0.24 - Math.sin(y) * 0.05; c.position.z -= Math.sin(y) * 0.24 + Math.cos(y) * 0.05; c.position.y -= 0.3;
-    c.rotation.set(Math.PI / 2, y + Math.PI / 2, 0); c.visible = yola.outer.visible && !p.dead;
+    const c = this.caseObj; if (!c) return;
+    if (this.caseMode === 'held' && this.caseAt?.get) { const h = this.caseAt.get(); if (h) { c.position.set(h.x, h.y, h.z); c.rotation.set(-Math.PI / 2, (h.yaw || 0) + Math.PI / 2, 0, 'YXZ'); } return; }
+    if (this.caseMode !== 'carried') return;
+    const y = p.aimYaw, hand = yola.bones?.LeftHand, hw = hand ? hand.getWorldPosition(this._cv || (this._cv = new THREE.Vector3())) : null;
+    if (hw && hw.y < 1.0) c.position.set(hw.x, Math.max(0.14, hw.y - 0.16), hw.z);   // (its handle up in his fist: the case stood on its long edge)
+    else { const a = y + 1.45; c.position.set(p.x + Math.sin(a) * 0.3, 0.42, p.z + Math.cos(a) * 0.3); }
+    c.rotation.set(-Math.PI / 2, y + Math.PI / 2, 0, 'YXZ'); c.visible = yola.outer.visible && !p.dead;
   }
 
   // ---- the rifle in Marc's hands: the shotgun's hold (its grips are the same points), the rifle's mesh instead of the pump
@@ -350,6 +418,7 @@ export class HoodView {
   update(dt, sim) {
     for (let i = this.anims.length - 1; i >= 0; i--) { const a = this.anims[i]; a.t += dt; const k = Math.min(1, a.t / a.dur); a.fn(k * k * (3 - 2 * k)); if (k >= 1) this.anims.splice(i, 1); }
     for (const p of this.pickups.values()) { p.t += dt; p.ring.material.opacity = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(p.t * 5.5)); p.item.position.y = (p.item.userData.y0 ??= p.item.position.y) + 0.04 * (0.5 + 0.5 * Math.sin(p.t * 2.2)); }
+    if (this.radioLed) { const on = this.radioLedOn && this.radio?.visible && (this.radioLedHold || (performance.now() % 1000) < 450); this.radioLed.visible = !!on; if (on) this.radio.getWorldPosition(this.radioLed.position).add(this._ledOff || (this._ledOff = new THREE.Vector3(0, 0.09, 0))); }
     if (this.gasRing?.visible) this.gasRing.material.opacity = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(performance.now() / 180));
     if (this.gasMode === 'carried' && sim) { // hanging from his left hand by its handle (the can's top a few cm under the fist)
       // (the guns' and the bat's stances keep his left hand up at the chest: then it rides at his left side at carrying

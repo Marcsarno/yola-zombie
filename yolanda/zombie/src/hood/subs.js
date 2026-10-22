@@ -1,6 +1,6 @@
 // Chapter 2: the lines, heard and read. Each is the user's recording (voice.js) with its words on screen: at the top, the
-// speaker's name in their colour; radio lines (Marc and Yola on the walkie-talkie) show on the radio card with the two faces
-// instead (radio.js). Lines queue; a line waits up to WAIT s for its sound to decode, then plays (one with no sound stays up
+// speaker's name in their colour; radio lines (Marc and Yola on the walkie-talkie) show only as the small face badge (radio.js), no
+// words. Lines queue; a line waits up to WAIT s for its sound to decode, then plays (one with no sound stays up
 // long enough to read, ~15 characters a second, at least 1.8 s). onLine(id, radio) and onQuiet() tell the hood when a
 // line starts and when the queue runs dry (Marc raises the walkie-talkie for a call and lowers it after).
 import { LINES, SPEAKER_COLOR } from './script.js';
@@ -31,8 +31,8 @@ export class Subtitles {
     const id = this.queue[0]; if (!id) return;
     if (this.voice?.state(id) === undefined && (this.waited += dt) < WAIT) return; // (still decoding: a moment's wait)
     this.queue.shift(); this.waited = 0;
-    const [who, text, radio] = LINES[id];
-    const dur = this.voice?.play(id, { radio });
+    const [who, text, radio, , band] = LINES[id];
+    const dur = this.voice?.play(id, { radio: band ?? radio }); // (the walkie-talkie's band where the pack says so: script.js)
     this.cur = id; this.t = dur ? dur + 0.05 : Math.max(1.8, text.length / 15 + 0.6);
     if (radio && this.radio) this.radio.line(who, text);
     else {

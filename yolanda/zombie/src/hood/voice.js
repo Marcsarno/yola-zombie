@@ -63,6 +63,19 @@ export class Voice {
     src.connect(hp); hp.connect(g); g.connect(this.audio.sfx || this.audio.master); src.start();
     return { stop: () => { try { g.gain.setTargetAtTime(0, c.currentTime, 0.05); src.stop(c.currentTime + 0.3); } catch { /* stopped */ } } };
   }
+  // the outboard starting on the first pull and running (beat 18): the recording's pull and catch, then its roar held in a
+  // loop (where its level is steady: found from the recording's own loudness), until stop(fade); gain(k) as it goes
+  engine() {
+    const b = this.state('ENGINE'), c = this.ctx(); if (!b || !c) return null;
+    const d = b.getChannelData(0), W = Math.floor(b.sampleRate * 0.05), rms = [];
+    for (let i = 0; i + W < d.length; i += W) { let s = 0; for (let j = i; j < i + W; j++) s += d[j] * d[j]; rms.push(Math.sqrt(s / W)); }
+    const top = rms.indexOf(Math.max(...rms)); let a = top, e = top; const lim = rms[top] * 0.6;
+    while (a > 0 && rms[a - 1] > lim) a--; while (e < rms.length - 1 && rms[e + 1] > lim) e++;
+    const span = (e - a) * 0.05, ls = (a * 0.05) + span * 0.25, le = (a * 0.05) + Math.max(0.3, span * 0.75);
+    const src = c.createBufferSource(); src.buffer = b; src.loop = true; src.loopStart = ls; src.loopEnd = le;
+    const g = c.createGain(); g.gain.value = 0.9; src.connect(g); g.connect(this.audio.sfx || this.audio.master); src.start();
+    return { gain: (k) => { g.gain.setTargetAtTime(0.9 * k, c.currentTime, 0.2); }, stop: (f = 1) => { g.gain.setTargetAtTime(0, c.currentTime, f / 3); try { src.stop(c.currentTime + f + 0.2); } catch { /* stopped */ } } };
+  }
   stopAll() { for (const s of this.playing) { try { s.stop(); } catch { /* ended */ } } this.playing.clear(); this.audio?.duck?.(false); }
   // the walkie-talkie's key-up / release: a short burst of band noise
   squelch(t, dur) {

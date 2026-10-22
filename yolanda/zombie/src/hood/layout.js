@@ -13,7 +13,14 @@ export const STAGES = {
   // (the polish brief's replay: the other stops had no navigation of their own, so past the house the infected only came
   // at Marc when they could see him within 7 m; each stop now routes them over its own area: level.js navFor)
   help: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 70 }, cell: 0.3 },
-  gate: { bounds: { minX: -12, maxX: 42, minZ: -45, maxZ: 30 }, cell: 0.5 },
+  // (the story reset v3, 2026-10-22: its stops by their new names. A stop with no area here kept the last one's, and the
+  // infected outside it had no way to Marc: they stood, and the rescue waited on them forever)
+  sneak: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 92 }, cell: 0.4 },
+  house: { bounds: { minX: 18, maxX: 72, minZ: -8, maxZ: 92 }, cell: 0.3 },   // (0.3: the house's 0.97 m front door stays open to routes)
+  rescue: { bounds: { minX: -14, maxX: 72, minZ: 18, maxZ: 92 }, cell: 0.4 },   // (the court, Sophie's yard, the loop's west leg, the house)
+  lot: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
+  after: { bounds: { minX: -62, maxX: 20, minZ: -126, maxZ: -40 }, cell: 0.5 },
+  gate: { bounds: { minX: -14, maxX: 42, minZ: -45, maxZ: 70 }, cell: 0.5 },   // (from Sophie's yard up the west leg to the gate)
   club: { bounds: { minX: -12, maxX: 45, minZ: -72, maxZ: -8 }, cell: 0.3 },   // (0.3: the clubhouse's doors stay open to routes)
   pete: { bounds: { minX: 5, maxX: 95, minZ: -100, maxZ: -30 }, cell: 0.5 },
   dock: { bounds: { minX: -35, maxX: 95, minZ: -100, maxZ: -50 }, cell: 0.5 },

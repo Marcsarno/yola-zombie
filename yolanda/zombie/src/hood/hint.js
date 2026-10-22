@@ -25,7 +25,8 @@ export class Hint {
     const obj = document.getElementById('objective');
     if (obj) { obj.style.pointerEvents = 'auto'; obj.addEventListener('click', () => { this.askT = ASKED; }); }
   }
-  get strong() { try { return JSON.parse(localStorage.getItem('zc.guide') || 'false') === true; } catch { return false; } }
+  // (on unless turned off: Marc, 2026-10-22, "add a little indicator of where to go")
+  get strong() { try { return JSON.parse(localStorage.getItem('zc.guide') ?? 'true') === true; } catch { return true; } }
   hide() { if (this.shown) { this.el.style.opacity = '0'; this.shown = false; } }
   update(camera, level, sim, dt) {
     const p = sim?.player;
@@ -39,13 +40,13 @@ export class Hint {
     if (dist < this.best - 1.5) { this.best = dist; this.bestT = level.time; }
     const fighting = sim.zombies.some((z) => z.alive && !z.passive && !z.dormant && Math.hypot(z.x - p.x, z.z - p.z) < 14);
     const stuck = level.time - (level.goalT0 ?? 0) > 45 && level.time - this.bestT > 25;
-    const want = !fighting && dist > 3.5 && (this.flashT > 0 || this.askT > 0 || stuck || (this.strong && dist > 8));
+    const want = !fighting && dist > 3.5 && (this.flashT > 0 || this.askT > 0 || stuck || (this.strong && dist > 5));
     if (!want) { this.hide(); return; }
     _v.set(tgt.x, 1.4, tgt.z).project(camera);
     const W = innerWidth, H = innerHeight, m = 34;
     let x = (_v.x * 0.5 + 0.5) * W, y = (-_v.y * 0.5 + 0.5) * H;
     if (_v.z > 1) { x = W - x; y = H - y; } // (behind the camera: mirror)
-    x = Math.min(W - m, Math.max(m, x)); y = Math.min(H - m - 90, Math.max(m + 80, y));
+    x = Math.min(W - m, Math.max(m, x)); y = Math.min(H - m - 90, Math.max(m + 120, y));   // (below the objective and the radio's face badge)
     this.el.style.left = x + 'px'; this.el.style.top = y + 'px';
     this.d.textContent = Math.round(dist) + ' m';
     if (!this.shown) { this.el.style.display = 'block'; this.el.style.opacity = '0.9'; this.shown = true; }

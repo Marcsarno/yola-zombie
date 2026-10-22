@@ -183,7 +183,7 @@ function pickSpot(a, c, p, w, fy, level) {
   return best || trailPoint(a, w) || { x: p.x, z: p.z };
 }
 // the newest point of Marc's trail she can see (her way round corners and through doors, single file)
-function trailPoint(a, w) {
+export function trailPoint(a, w) {
   const tl = a.trail;
   for (let i = tl.length - 1; i >= Math.max(0, tl.length - 60); i--) if (w.lineOfSight(a.x, a.z, tl[i].x, tl[i].z, 0.6)) return tl[i];
   return tl[0] || null;
@@ -192,6 +192,7 @@ function trailPoint(a, w) {
 // move toward (tx, tz) at `want` m/s (smooth start and stop, smooth turns); headway check; the moves her speed asks for
 function finish(a, c, dt, sim, tx, tz, want, face, cower) {
   const w = sim.world, p = sim.player;
+  if (a.sneak) want = Math.min(want, 2.0);   // (by the horde: low and slow, actors.js sophieMoves' crouched walk)
   a.speed += (want - a.speed) * Math.min(1, dt * (want > a.speed ? 4 : 6));
   if (a.speed > 0.05) {
     const dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz);

@@ -7,7 +7,7 @@
 // simulation's zombie list (so the player's swings and shots hit, cut and kill them as the game already does) that stand
 // in cover, aim with a red sight line (the old build's readable tell) and fire at Marc.
 import * as THREE from 'three';
-import { companionStep } from './companion.js';
+import { companionStep, trailPoint } from './companion.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { PISTOL_CORE_SCALE } from '../render/weaponModels.js';
 import { characterLight } from './charlight.js';
@@ -24,7 +24,9 @@ const LOOTERS = [['bryce', 1.78], ['lewis', 1.8], ['james', 1.8], ['remy', 1.8],
 // the story's people (the user's audio pack, HANDOFF_NEXT.md): Sophie (who follows Marc), Pete (the groundskeeper on the
 // drive), James (the looter in Marc's house, as the looters plus his own moves): the survivor builds with the moves made for
 // the chapter (assets/survivors/moves/<k>-hood.glb, Quaternius UAL through tools/anim/test_zombie_clips.py) [height m]
-const STORY = { sophie: 1.66, pete: 1.8 };
+const STORY = { sophie: 1.66, pete: 1.8, adam: 1.78 };   // (Adam: Sophie's husband, the story reset v3; his turned skin below)
+// Adam's skin as he turns (tools/anim/zombify_skin.py on his build, the base colour only, by material: the hair stays)
+const TURNED = { Ch08_body: 'assets/survivors/zombified/adam_turned/Ch08_body.webp', Ch08_body1: 'assets/survivors/zombified/adam_turned/Ch08_body1.webp' };
 const GUNS = { rifle: ['assets/neighborhood/props/security_rifle.glb', 1], pistol: ['assets/weapons/pistol_core.glb', PISTOL_CORE_SCALE] };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), Z = new THREE.Vector3(0, 0, 1);
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _up = new THREE.Vector3();
@@ -155,6 +157,13 @@ export class Actors {
         if (body.kick > 0) { body.kick = Math.max(0, body.kick - dt * 6); holder.position.addScaledVector(d, -0.06 * body.kick); }
       },
       fire() { body.kick = 1; },
+      // any of the file's moves (Adam's: hood_IdleToLay, hood_Zombie_Spawn ...), cross-faded from what is playing
+      play(n, { once = false, fade = 0.25, rate = 1 } = {}) {
+        const c = clips[n]; if (!c) return 0;
+        const a = mixer.clipAction(c); a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity); a.clampWhenFinished = once; a.timeScale = rate;
+        a.reset().play(); (body.cur || idle).crossFadeTo(a, fade, false); body.cur = a; turn.rotation.y = n.startsWith('hood_') ? 0 : body.aimTurn;   // (the chapter's moves face +z as made)
+        return c.duration / rate;
+      },
       fall(forward) {
         if (body.dead) return; body.dead = true; body.deadT = 0;
         const c = clips[forward ? 'death_forward' : 'death_back']; if (!c) return;
@@ -164,8 +173,31 @@ export class Actors {
     };
     // the clip's own aim, measured once on its first frame: the model turns so that aim lies down +z
     mixer.update(0); obj.updateMatrixWorld(true);
-    const d0 = aimDir(new THREE.Vector3()); turn.rotation.y = -Math.atan2(d0.x, d0.z);
+    const d0 = aimDir(new THREE.Vector3()); turn.rotation.y = body.aimTurn = -Math.atan2(d0.x, d0.z);
+    body.model = m;
     return body;
+  }
+  // a body's skin blended toward another set of pictures (Adam turning): turnK 0 .. 1 mixes each named material's base colour
+  // with its turned picture, in the shader (the character light's own hook kept, charlight.js)
+  turnSkin(body, files) {
+    const U = { value: 0 }, tl = new THREE.TextureLoader();
+    body.model.traverse((o) => {
+      if (!o.isMesh) return;
+      o.material = [].concat(o.material).map((m0) => {
+        const f = files[m0.name]; if (!f || !m0.map) return m0;
+        const m = m0.clone(), t = tl.load(f); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace;
+        const prev = m.onBeforeCompile, prevKey = m.customProgramCacheKey;
+        m.onBeforeCompile = (sh, r) => {
+          prev?.call(m, sh, r);
+          sh.uniforms.turnMap = { value: t }; sh.uniforms.turnK = U;
+          sh.fragmentShader = 'uniform sampler2D turnMap;\nuniform float turnK;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n\tdiffuseColor.rgb = mix(diffuseColor.rgb, diffuse * texture2D(turnMap, vMapUv).rgb, turnK);');
+        };
+        m.customProgramCacheKey = () => (prevKey ? prevKey.call(m) : '') + '|turn';
+        return m;
+      });
+      if (o.material.length === 1) o.material = o.material[0];
+    });
+    return U;
   }
   clear() { this.nPicked = {}; for (const a of this.list) { a.obj.removeFromParent(); a.body?.dispose(); } this.list.length = 0; for (const t of this.tracers) t.line.removeFromParent(); this.tracers.length = 0; }
   sound(name, x, z, vol = 1) { this.ctx.audio?.play(name, vol, { x, z }); }
@@ -205,7 +237,7 @@ export class Actors {
       z.passive = true; z.speedMul = 0; z.noView = true; z.looter = true; z.dormant = null;
       const body = this.looterBody(i, !!s.out), obj = body ? body.obj : marker(s.leader ? COL.leader : COL.looter); obj.position.set(s.x, 0, s.z); this.group.add(obj);
       const sight = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), this.lineMat); sight.visible = false; this.group.add(sight);
-      const a = { kind: 'looter', z, obj, body, hp: z.hp, sight, home: { x: s.x, z: s.z }, out: !!s.out, leader: !!s.leader, aim: 0, cd: 1 + sim.rand() * 1.5, wasAlive: true,
+      const a = { kind: 'looter', z, obj, body, hp: z.hp, sight, home: { x: s.x, z: s.z }, out: !!s.out, leader: !!s.leader, aim: 0, cd: 1 + sim.rand() * 1.5, wasAlive: true, calm: !!s.calm, face: s.face || null,
         get alive() { return z.alive; } };
       a.step = (dt, lv) => this.looterStep(a, dt, lv);
       this.list.push(a); out.push(a);
@@ -225,9 +257,16 @@ export class Actors {
       if (!b) a.obj.rotation.x = Math.min(Math.PI / 2, a.obj.rotation.x + dt * 3);
       return;
     }
-    if (z.hp < a.hp) b?.hit(); a.hp = z.hp; // (a hit that does not kill: a flinch, then back to what he was doing)
+    const struck = z.hp < a.hp; if (struck) b?.hit(); a.hp = z.hp; // (a hit that does not kill: a flinch, then back to what he was doing)
     z.x = a.home.x; z.z = a.home.z; z.vx = z.vz = 0; // (they hold their cover: the zombie AI never walks them)
     const dx = p.x - z.x, dz = p.z - z.z, d = Math.hypot(dx, dz), los = !p.dead && d < 17 && sim.world.lineOfSight(z.x, z.z, p.x, p.z, 1.3);
+    // (calm: two of them talking, the beat 1 sentries; no stealth system, they turn on him only if he gives himself away: a
+    // hit, a shot near them, walking right up to them)
+    if (a.calm) {
+      const shot = sim.events.some((e) => (e.type === 'shot' || e.type === 'shotgun') && Math.hypot(p.x - z.x, p.z - z.z) < 28);
+      if (struck || shot || (d < 5.5 && los)) { a.calm = false; a.cd = 0.6; for (const o of this.list) if (o.kind === 'looter' && o.calm && Math.hypot(o.home.x - a.home.x, o.home.z - a.home.z) < 8) { o.calm = false; o.cd = 1.1; } }
+      else { const f = a.face || [p.x, p.z]; z.yaw = Math.atan2(f[0] - z.x, f[1] - z.z); a.obj.position.set(z.x, 0, z.z); a.obj.rotation.y = z.yaw; a.sight.visible = false; return; }
+    }
     z.yaw = Math.atan2(dx, dz); a.obj.position.set(z.x, 0, z.z); a.obj.rotation.y = z.yaw;
     if (a.downIn > 0 && (a.downIn -= dt) <= 0) b?.coverDown(); // (after a shot: back into cover)
     if (!los) { a.aim = 0; a.sight.visible = false; a.cd = Math.max(a.cd, 0.4); b?.coverDown(); return; }
@@ -310,17 +349,29 @@ export class Actors {
       const q = { x: a.target.x, z: a.target.z }; sim.world.resolveCircle(q, 0.3); a.x = q.x; a.z = q.z; a.speed = 0;
     }
     if (a.mode !== 'follow') { a.cower = Math.max(0, a.cower - dt * 2); if (b) b.look = null; }   // (a fight's cowering, a lead's glances: not into the story's scenes)
+    // (the story's own look: her eyes on something for a while, the case in the glances, in any mode but dead)
+    if (a.lookHold && (a.lookHold.t -= dt) <= 0) a.lookHold = null;
     if (a.mode === 'follow') {
       companionStep(a, dt, level, sim);
       a.obj.position.set(a.x, groundY(a.x, a.z), a.z); a.obj.rotation.y = a.yaw;
       // (leading: a glance back over her shoulder at Marc every few seconds as she walks ahead, her eyes on him while she waits)
       const leading = a.cs?.state === 'lead'; a.glance = leading ? (a.glance || 0) + dt : 0;
-      if (b) { b.look = leading && (a.speed < 0.3 || a.glance % 3 > 1.8) ? { x: p.x, z: p.z } : null; this.sophieMoves(a, b); }
+      // (and, standing by him while he has the case, now and then her eyes go to it a moment too long: the story's three
+      // glances are the story's, these the player may or may not catch)
+      a.covetT = (a.covetT ?? 9 + Math.random() * 8) - dt;
+      if (a.covetT <= 0) { a.covetT = 15 + Math.random() * 10; const cp = level.api.view?.caseObj; if (level.flags.case === 'carried' && cp?.visible && a.speed < 0.3 && !leading && a.cower < 0.2) a.lookHold = { x: cp.position.x, z: cp.position.z, t: 1.4, live: () => cp.position }; }
+      if (b) { b.look = a.lookHold ? (a.lookHold.live ? a.lookHold.live() : a.lookHold) : leading && (a.speed < 0.3 || a.glance % 3 > 1.8) ? { x: p.x, z: p.z } : null; this.sophieMoves(a, b); }
       return;
     } else if (a.mode === 'goto' && a.target) {
       tx = a.target.x; tz = a.target.z; const d = Math.hypot(tx - a.x, tz - a.z);
-      want = d > 0.3 ? (a.target.run ? 4.6 : 1.5) : 0;
-      if (d <= 0.3) { a.mode = a.after || 'scared'; a.target.done?.(); a.target = null; }
+      want = d > 0.3 ? (a.target.run ? (a.sneak ? 2.0 : 4.6) : 1.5) : 0;
+      // (no straight line to it: the way Marc walked, round the walls; still stuck after a while and out of his sight, she is
+      // there: the camera shows ~10 m round him)
+      if (d > 0.3 && !sim.world.lineOfSight(a.x, a.z, tx, tz, 0.5)) { const t = trailPoint(a, sim.world); if (t && Math.hypot(t.x - a.x, t.z - a.z) > 0.6) { tx = t.x; tz = t.z; } }
+      const G = a.gotoProg ||= { x: a.x, z: a.z, t: 0 }; G.t += dt;
+      if (G.t > 1.5) { const stuck = Math.hypot(a.x - G.x, a.z - G.z) < 0.3 && d > 0.6; a.gotoProg = null;
+        if (stuck && (dm0 > 12 || !sim.world.lineOfSight(p.x, p.z, a.x, a.z, 0.9))) { const q = { x: a.target.x, z: a.target.z }; sim.world.resolveCircle(q, 0.3); a.x = q.x; a.z = q.z; a.speed = 0; } }
+      if (d <= 0.3) { a.mode = a.after || 'scared'; a.target.done?.(); a.target = null; a.gotoProg = null; }
     } else face = a.face || { x: p.x, z: p.z };
     // move (the world's collision; slow down into the stop)
     a.speed += (want - a.speed) * Math.min(1, dt * 6);
@@ -332,12 +383,15 @@ export class Actors {
       const y = Math.atan2(dx, dz); a.yaw += Math.atan2(Math.sin(y - a.yaw), Math.cos(y - a.yaw)) * Math.min(1, dt * 8);
     } else if (face) { const y = Math.atan2(face.x - a.x, face.z - a.z); a.yaw += Math.atan2(Math.sin(y - a.yaw), Math.cos(y - a.yaw)) * Math.min(1, dt * 4); }
     a.obj.position.set(a.x, groundY(a.x, a.z), a.z); a.obj.rotation.y = a.yaw;
-    if (b) this.sophieMoves(a, b);
+    if (b) { if (a.lookHold && a.mode !== 'dead') b.look = a.lookHold.live ? a.lookHold.live() : a.lookHold; this.sophieMoves(a, b); }
   }
-  // her moves, matched to her speed (the walk's rate to the ground she covers: no sliding feet)
+  // her moves, matched to her speed (the walk's rate to the ground she covers: no sliding feet); sneaking (a.sneak: by the
+  // horde), a low crouched walk
   sophieMoves(a, b) {
     const v = a.speed;
-    if (a.mode === 'pose' && a.pose) b.play(a.pose);
+    if (a.mode === 'pose' && a.pose) { if (!a.poseOnce) b.play(a.pose); else if (b.clip !== a.pose) b.play(a.pose, { once: true, fade: 0.3 }); }   // (once: played through and held at its end)
+    else if (a.sneak && v > 0.3 && v < 2.6) b.play('hood_Crouch_Fwd_Loop', { rate: Math.max(0.5, v / 1.3) });
+    else if (a.sneak && v <= 0.3) b.play('hood_Crouch_Idle_Loop', { fade: 0.35 });
     else if (v > 3.8) b.play('hood_Sprint_Loop', { rate: v / 5.2 });
     else if (v > 1.9) b.play('hood_Jog_Fwd_Loop', { rate: v / 3.1 });
     else if (v > 0.3) b.play('hood_Walk_Loop', { rate: Math.max(0.35, v / 1.4) });
@@ -347,6 +401,49 @@ export class Actors {
 
   // Pete (B08): the groundskeeper with his pistol on the drive, shooting what comes at him until the story overwhelms him
   pete(at) { const a = this.survivor(at, { gun: 'pistol', model: 'pete' }); a.kind = 'pete'; a.dmgK = 0.15; a.tear = ['Forearm_L']; return a; } // (panicked: he slows them, he cannot stop them; they take his arm)
+
+  // Adam (beat 5, the story reset v3): Sophie's husband in their front yard, his pistol on the infected that came for the
+  // shooting, until the story has him bitten: down on his back (hood_IdleToLay), his gun gone from his hand. Then, in Sophie's
+  // arms, he turns: his skin goes over to the turned one (turn(k)), he rises (hood_Zombie_Spawn) and goes for her
+  // (hood_Zombie_Bite). From the rise he is an entry in the zombie list (one shot of Marc's puts him down; his head goes,
+  // as James's); a.onDeath then.
+  adam(at) {
+    const a = this.survivor(at, { gun: 'pistol', model: 'adam' }); a.kind = 'adam'; a.dmgK = 0.35;
+    const body = a.body, base = a.step;
+    const U = body ? this.turnSkin(body, TURNED) : { value: 0 };
+    a.phase = 'fight';
+    a.bitten = () => { if (a.phase !== 'fight') return; a.phase = 'down'; a.down = true; if (body) { body.dead = true; body.deadT = 0; body.play('hood_IdleToLay', { once: true, fade: 0.2 }); } };
+    a.turn = (k) => { U.value = Math.max(0, Math.min(1, k)); };
+    // where his head lies once he is down (the kneeling shots frame her face over it), and the side of him to kneel on: across
+    // his chest from the head-to-hips line, the side nearer Sophie
+    const bone = (n) => { const o = body?.model?.getObjectByName('mixamorig' + n); if (!o) return null; o.updateWorldMatrix(true, false); const e = o.matrixWorld.elements; return { x: e[12], z: e[14] }; };
+    a.headAt = () => bone('Head') || { x: a.x, z: a.z };
+    a.sideAt = () => { const h = bone('Head'), c = bone('Hips'); if (!h || !c) return null; const ax = h.x - c.x, az = h.z - c.z, s = this.list.find((q) => q.kind === 'sophie'), sx = s ? s.x - h.x : 1, sz = s ? s.z - h.z : 0; const k = -az * sx + ax * sz >= 0 ? 1 : -1; return Math.atan2(-az * k, ax * k); };
+    a.rise = (level) => {
+      const sim = level.sim; a.phase = 'rise';
+      const zb = sim.spawnZombie(null, { x: a.x, z: a.z, yaw: a.yaw, hp: 1 });
+      zb.passive = true; zb.speedMul = 0; zb.noView = true; zb.looter = true; zb.dormant = null; a.zb = zb; a.wasAlive = true;
+      return body ? body.play('hood_Zombie_Spawn', { once: true, fade: 0.3 }) : 1.5;
+    };
+    // (at her: he closes the gap to 0.75 m while the bite plays)
+    a.lunge = (to) => { a.phase = 'lunge'; a.lungeTo = to; a.yaw = Math.atan2(to.x - a.x, to.z - a.z); a.obj.rotation.y = a.yaw; return body ? body.play('hood_Zombie_Bite', { once: true, fade: 0.15 }) : 0.8; };
+    a.step = (dt, level) => {
+      if (a.phase === 'fight') return base(dt, level);
+      const zb = a.zb; if (!zb) return;
+      if (a.phase === 'lunge' && zb.alive && a.lungeTo) {
+        const d = Math.min(dt * 1.6, Math.max(0, Math.hypot(a.lungeTo.x - a.x, a.lungeTo.z - a.z) - 0.75));
+        a.x += Math.sin(a.yaw) * d; a.z += Math.cos(a.yaw) * d; a.obj.position.set(a.x, groundY(a.x, a.z), a.z);
+      }
+      if (zb.alive) { zb.x = a.x; zb.z = a.z; zb.vx = zb.vz = 0; return; }
+      if (a.wasAlive) {
+        a.wasAlive = false; a.phase = 'dead';
+        const p = level.sim.player, dx = zb.x - p.x, dz = zb.z - p.z, d = Math.hypot(dx, dz) || 1;
+        if (body) { body.gore.headBurst(dx / d, dz / d, 1.2); body.play('hood_Death01', { once: true, fade: 0.1 }); }
+        a.onDeath?.();
+      }
+    };
+    return a;
+  }
 
   // James (B02): a looter going through the family's things at the dining table, his back to the door, headphones on. He
   // is an entry in the zombie list (Marc's shots hit him; one is enough); his body is the looters' with his own moves:
