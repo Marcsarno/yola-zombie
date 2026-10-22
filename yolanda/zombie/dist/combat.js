@@ -79452,6 +79452,11 @@ uniform vec4 cutRoom; uniform vec3 cutRoomRot; uniform sampler2D hoodLM; uniform
   function texturesReady() {
     return Promise.all([...pending]);
   }
+  var HALF = /^(leaves_.*|decal2?_atlas)\.webp$/;
+  var optTex = false;
+  function useOptTex(on) {
+    optTex = on;
+  }
   function tex2(file, { srgb = false, repeat = true } = {}) {
     const key = file + (srgb ? "|s" : "");
     if (texCache.has(key)) return texCache.get(key);
@@ -79459,10 +79464,21 @@ uniform vec4 cutRoom; uniform vec3 cutRoomRot; uniform sampler2D hoodLM; uniform
     const p = new Promise((res) => {
       done2 = res;
     });
-    const t = loader.load(TEX + file, () => done2(), void 0, () => {
+    const missing = () => {
       console.warn("hood texture missing", file);
       done2();
-    });
+    };
+    const half = optTex && HALF.test(file);
+    const t = loader.load(
+      (half ? TEX.replace("/tex/", "/opt/tex/") : TEX) + file,
+      () => done2(),
+      void 0,
+      half ? () => loader.load(TEX + file, (o) => {
+        t.image = o.image;
+        t.needsUpdate = true;
+        done2();
+      }, void 0, missing) : missing
+    );
     pending.add(p);
     p.then(() => pending.delete(p));
     t.colorSpace = srgb ? SRGBColorSpace : NoColorSpace;
@@ -79961,6 +79977,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       this.layout = await fetch(ROOT + MAP.layout).then((r) => r.json());
       const L3 = this.layout;
       const useOpt = L3.opt && new URLSearchParams(location.search).get("opt") !== "0";
+      useOptTex(useOpt);
       const gl2 = new GLTFLoader();
       gl2.setMeshoptDecoder(MeshoptDecoder);
       const loader3 = { loadAsync: (url) => useOpt && url.startsWith(ROOT) && !url.endsWith(".json") ? gl2.loadAsync(url.replace(ROOT, ROOT + "opt/")).catch(() => gl2.loadAsync(url)) : gl2.loadAsync(url) };
@@ -79976,12 +79993,32 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         this.props[k] = g.scene;
         onProgress(++done2 / total);
       }).catch((e) => console.warn("hood prop", f, e))));
-      const ready = (root) => {
+      const sharedTex = /* @__PURE__ */ new Map();
+      const share = (g) => {
+        const P2 = g.parser, J = P2?.json;
+        if (!J) return;
+        g.scene.traverse((o) => {
+          for (const m of [].concat(o.material || [])) if (m) for (const [k, v] of Object.entries(m)) {
+            if (!v || !v.isTexture) continue;
+            const ti = P2.associations.get(v)?.textures, im = ti === void 0 ? null : J.images?.[J.textures[ti]?.source];
+            if (!im || !im.name || im.bufferView === void 0) continue;
+            const key = im.name + "|" + J.bufferViews[im.bufferView].byteLength + "|" + v.colorSpace, first = sharedTex.get(key);
+            if (!first) sharedTex.set(key, v);
+            else if (first !== v) {
+              m[k] = first;
+              v.source?.data?.close?.();
+            }
+          }
+        });
+      };
+      const ready = (g) => {
+        const root = g.scene;
         const drop = [];
         root.traverse((o) => {
           if (/-(conv)?col(only)?$|colonly/i.test(o.name)) drop.push(o);
         });
         for (const o of drop) o.removeFromParent();
+        share(g);
         swapMaterials(root);
         root.updateMatrixWorld(true);
         fitTextures(root, TEX_CAP, true, "map");
@@ -79989,7 +80026,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       };
       const tmpls = await Promise.all(L3.models.map((f) => loader3.loadAsync(ROOT + f).then((g) => {
         onProgress(++done2 / total);
-        return ready(g.scene);
+        return ready(g);
       }).catch((e) => {
         console.warn("hood model", f, e);
         return null;
@@ -80062,6 +80099,18 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         q.matrixAutoUpdate = true;
       });
       for (const s of this.seals.boat || []) hullMask(s.o);
+      const freeArray = function() {
+        this.array = null;
+      }, geoms = /* @__PURE__ */ new Set(), FLAT3 = /^(ch2_\w*(road|kerb|drive|rab)|roads|sidewalks|driveway|home_walk|paver|pool_deck|curb|tennis_court|terrain)/;
+      this.group.traverse((o) => {
+        if (o.isInstancedMesh && !FLAT3.test(o.name) && o.geometry) geoms.add(o.geometry);
+      });
+      for (const gm of geoms) {
+        if (!gm.boundingSphere) gm.computeBoundingSphere();
+        if (!gm.boundingBox) gm.computeBoundingBox();
+        for (const a of Object.values(gm.attributes)) if (!a.isInterleavedBufferAttribute) a.onUpload(freeArray);
+        gm.index?.onUpload(freeArray);
+      }
       this.ring = new Mesh(new RingGeometry(0.42, 0.52, 40), new MeshBasicMaterial({ color: 4063090, transparent: true, opacity: 0.7, depthWrite: false, side: DoubleSide, toneMapped: false }));
       this.ring.rotation.x = -Math.PI / 2;
       return this;
@@ -83742,6 +83791,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }
       });
       texSaved += fitTextures(g.scene, TEX_CAP * 2, true, "survivors");
+      g.parser = null;
       return g;
     }) });
     const mk = (n) => {
