@@ -423,7 +423,10 @@ export class Player {
     // with a wide arc that takes its neighbours too (sim.critFinisher, critSweep)
     if (this.attackPressT < 0.25) {
       const ez = sim.execTarget?.(this); if (ez) { this.startExecution(ez, sim); return; }
-      const cz = sim.critFinisher?.(this); if (cz) { cz.critFin = true; this.startExecution(cz, sim); return; }
+      // (2026-10-23, the user: "when you get a critical with the pistol.. I just want you to remain where you are... not
+      // slide forward and get an auto one shot kill head shot"): with the pistol the critical is this shot, from where
+      // she stands (critical damage, sim.takeCrit), not the execution's dash, point-blank headshot and chain
+      const cz = sim.critFinisher?.(this); if (cz) { if (this.equipped === PISTOL) this.critT = Math.max(this.critT || 0, 0.5); else { cz.critFin = true; this.startExecution(cz, sim); return; } }
     }
     if (Math.abs(angleDiff(this.aimYaw, this.aimTarget)) > FIRE_ALIGN) return;
     if (this.equipped === PISTOL || this.equipped === SHOTGUN) {

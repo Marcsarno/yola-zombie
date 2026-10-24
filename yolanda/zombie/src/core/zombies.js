@@ -355,7 +355,7 @@ export class Zombie {
       if (this.critFin) { this.critFin = false; sim.critSweep?.(this); } // (the critical finisher's wide arc: core/sim.js)
       return;
     }
-    if (wasDown || this.state === ZS.STUCK || this.bed) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; } // (in its bed or getting out of it: it takes the blow and keeps coming) // (stuck: he takes it, heaving at the shield)
+    if (wasDown || this.state === ZS.STUCK || (this.kind === 'guard' && this.state === ZS.PICKUP) || this.bed) { sim.emit({ type: 'zombieHit', id: this.id, kind }); return; } // (the guard pulling his shield out: a stagger there left it planted for good, 2026-10-23) // (in its bed or getting out of it: it takes the blow and keeps coming) // (stuck: he takes it, heaving at the shield)
     // the sprinter caught mid-charge by a melee blow or a shotgun blast: her own speed takes her down (the trip)
     if (this.sprinting && this.spd > 2.0 && (melee || kind === 'fist' || kind === 'shotgun')) { this.tumble(sim, 'hit'); sim.emit({ type: 'zombieHit', id: this.id, kind }); return; }
     // (2026-10-18 night, the user: the bowling ball "doesn't stop"): a pistol round only hurts her mid-charge; she runs on
@@ -389,6 +389,7 @@ export class Zombie {
 
   // Shoved by another zombie that was knocked into it (speed: m/s handed over along ux, uz).
   bumped(speed, ux, uz, sim) {
+    if (this.kind === 'guard' && (this.state === ZS.STUCK || this.state === ZS.PICKUP)) return; // (at his planted shield, heaving or wrenching: one thrown into him does not move him off it)
     this.kx += ux * speed; this.kz += uz * speed; this.bumpT = 0.4;
     if (!this.alive || this.down) return;
     this.hitDirX = ux; this.hitDirZ = uz; this.hitStrength = speed; this.hitSeq++; this.hitKind = 'bump'; this.hitStyle = '';
@@ -575,9 +576,12 @@ export class Zombie {
         else { const rem = world.flowDir(this.x, this.z, _flow); wantX = _flow.x; wantZ = _flow.z; if (rem > 1e7) { wantX = wantZ = 0; } } // no way through (a shut door): it stands and waits
         if ((this.kind === 'sprinter' || this.enraged) && !this.crawling && !this.passive && this.sprinterChase(dt, sim, dx, dz, dist)) { turnRate = 0; break; } // (the enraged guard charges as she does)
         if (this.kind === 'guard' && !this.enraged) turnRate = this.gstage === 'swap' ? 3.2 : GUARD.turn; // (slow to turn behind his shield: strafing round it works)
-        if (this.kind === 'guard' && this.gstage === 'swap' && this.planted && !this.passive) { // straight back to his shield, to take it in his other hand
+        // straight back to his shield: to take it in his other hand (swap), or (2026-10-23, the user: he slammed "once.. and
+        // never again.. made him unkillable") to wrench it free if something knocked him off it while it was still planted:
+        // a planted shield left behind switched his slam off for good
+        if (this.kind === 'guard' && this.planted && !this.passive) {
           const P = this.planted, gx = P.gx - Math.sin(P.yaw) * 0.55 - this.x, gz = P.gz - Math.cos(P.yaw) * 0.55 - this.z, gd = Math.hypot(gx, gz);
-          if (gd < 0.3) { this.set(ZS.PICKUP, GUARD.pickup); this.vx = this.vz = 0; sim.emit({ type: 'guardPickup', id: this.id }); break; }
+          if (gd < 0.3) { this.vx = this.vz = 0; if (this.gstage === 'swap') { this.set(ZS.PICKUP, GUARD.pickup); sim.emit({ type: 'guardPickup', id: this.id }); } else this.wrenchFree(sim); break; }
           wantX = gx / gd; wantZ = gz / gd; speed = T.zombieSpeed * this.speedMul * 1.15;
           { const s = this.steer(wantX, wantZ, gd, true, sim); wantX = s.x; wantZ = s.z; speed *= s.k; }
           turnRate = 4; break;
@@ -640,9 +644,12 @@ export class Zombie {
         // Attack (pacing): only a zombie with a slot, in reach, facing her, and only once the floor's attack turn comes
         // round (each attack started holds the next one off by zombieAttackGap). Inside ~0.9 m it scratches.
         const slot = !sim.engaged || sim.engaged.has(this.id) || this.crawling || this.kind === 'sprinter';
-        if (this.kind === 'guard' && !this.enraged && this.shieldHp > 0 && !this.planted && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist > 0.6 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
+        // (2026-10-23, the user: "why doesn't the guard jump attack again? he needs to do it often.. or he is invulnerable
+        // forever"): his slam no longer waits for an attack slot. With walkers nearer her they held both slots, so he never
+        // slammed, and without a slam he is never open to his finisher. Held a step back, he slams from the ring.
+        if (this.kind === 'guard' && !this.enraged && this.shieldHp > 0 && !this.planted && !this.passive && (this.slamCd -= dt) <= 0 && dist > 0.6 && dist < ZATTACKS.slam.from && this.attackCd <= 0 &&
             sim.time >= (sim.nextAttackT || 0) && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) { // (any facing: his wind-up turns him to her until he leaps, so circling him never switches his slam off)
-          this.attack = 'slam'; this.set(ZS.WINDUP, ZATTACKS.slam.windup); this.slamCd = 4 + sim.rand() * 2.5;
+          this.attack = 'slam'; this.set(ZS.WINDUP, ZATTACKS.slam.windup); this.slamCd = 3 + sim.rand() * 1.5;
           sim.nextAttackT = sim.time + (T.zombieAttackGap ?? 0.75) * 1.5;
           sim.emit({ type: 'zombieWindup', id: this.id, attack: 'slam' });
           break;
@@ -790,7 +797,7 @@ export class Zombie {
       case ZS.PICKUP: { // the shield out of the floor: wrenched free (wrenching), or taken in his other hand (after finisher 1)
         turnRate = 6; wantX = Math.sin(this.planted?.yaw ?? this.yaw); wantZ = Math.cos(this.planted?.yaw ?? this.yaw); this.vx = this.vz = 0;
         if (!this.wrenching && this.gstage === 'swap' && this.t >= this.stateDur * GUARD.grab) { this.gstage = 'shield2'; this.mirrored = true; sim.emit({ type: 'guardRegrip', id: this.id, x: this.x, z: this.z }); }
-        if (this.t >= this.stateDur) { this.planted = null; this.wrenching = false; this.set(ZS.CHASE); this.attackCd = 0.5; this.slamCd = 2 + sim.rand() * 2; }
+        if (this.t >= this.stateDur) { this.planted = null; this.wrenching = false; this.set(ZS.CHASE); this.attackCd = 0.5; this.slamCd = 1 + sim.rand() * 1.5; } // (back in the fight, his next slam soon: the user wants it often)
         break;
       }
       case ZS.RECOVER:

@@ -445,7 +445,9 @@ export class Sim {
       // a perfect shot: through the middle of a standing zombie, not too far off, and every once in a while the
       // head comes clean off (one hit, one kill)
       const crit = z.shieldBlocks(dx, dz) ? 1 : this.takeCrit(); // (a perfect dodge's critical round; never spent on his shield)
-      const perfect = z.kind !== 'guard' && !z.down && !z.crawling && !z.severed.has('Head') && !z.shieldBlocks(dx, dz) && ((off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0)) || crit > 1);
+      // (2026-10-23, the user: no "auto one shot kill head shot" on a critical: a critical round hits where it lands, at
+      // critical damage; only the ordinary clean-hit headshot chance takes a head)
+      const perfect = z.kind !== 'guard' && !z.down && !z.crawling && !z.severed.has('Head') && !z.shieldBlocks(dx, dz) && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
       if (perfect) z.limbHp.Head = 0;
       if (crit > 1) this.emit({ type: 'crit', id: z.id, x: z.x, z: z.z, weapon: 'pistol' });
       const res = z.takeHit(this.T.pistolDamage * crit, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1) * (crit > 1 ? 1.8 : 1), 'pistol', this, perfect ? 'Head' : this.bulletPart(z, m.x, m.z, dx, dz));
