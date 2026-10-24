@@ -44951,8 +44951,8 @@ void main() {
     };
   }
   var LIFTS = { 7: liftAt(7), 6: liftAt(6), 5: liftAt(5) };
-  function liftBoxes(L3) {
-    const box = (f0, f1, s0, s1) => [L3.x + s0, L3.x + s1, L3.z + f0, L3.z + f1];
+  function liftBoxes(L2) {
+    const box = (f0, f1, s0, s1) => [L2.x + s0, L2.x + s1, L2.z + f0, L2.z + f1];
     return {
       walls: [box(-0.3, 0.21, -2.64, -1.2), box(-0.3, 0.21, 1.2, 2.64), box(-3.46, -0.3, -1.66, -1.5), box(-3.46, -0.3, 1.5, 1.66), box(-3.46, -3.3, -1.66, 1.66)],
       doors: box(-0.14, 0.1, -1.2, 1.2)
@@ -45005,9 +45005,9 @@ void main() {
       doors.push(door);
       addGap(o, c, mid - width / 2, mid + width / 2);
     }
-    const L3 = LIFTS[n];
-    doors.push({ id: "lift" + n, floor: n, kind: "lift", axis: "x", x: L3.x, z: L3.z, width: 5.28, face: "s" });
-    addGap("h", L3.wallZ, L3.x - 2.64, L3.x + 2.64);
+    const L2 = LIFTS[n];
+    doors.push({ id: "lift" + n, floor: n, kind: "lift", axis: "x", x: L2.x, z: L2.z, width: 5.28, face: "s" });
+    addGap("h", L2.wallZ, L2.x - 2.64, L2.x + 2.64);
     for (const o of ["h", "v"]) for (const [c, list] of edges[o]) {
       list.sort((p, q) => p[0] - q[0]);
       const merged = [];
@@ -45069,7 +45069,7 @@ void main() {
       return { id: "bed" + i, sense: 3, zombies: [{ x: q.x, z: q.z, yaw: 0, look: "patient", prop: "bed", bed: { x: q.x, z: q.z, yaw, side } }] };
     });
     const xs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[0], q[1]])), zs = rooms.flatMap((r) => r.rects.flatMap((q) => [q[2], q[3]]));
-    const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs, L3.cab.minZ), maxZ = Math.max(...zs);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs, L2.cab.minZ), maxZ = Math.max(...zs);
     return {
       name: "chapter",
       floor: n,
@@ -45080,7 +45080,7 @@ void main() {
       props,
       signs,
       roomSigns,
-      lift: L3,
+      lift: L2,
       bounds: { minX: minX - 0.6, maxX: maxX + 0.6, minZ: minZ - 0.6, maxZ: maxZ + 0.6 },
       camBounds: { minX: minX + 1.2, maxX: maxX - 1, minZ: minZ + 1.6, maxZ: maxZ - 0.6 },
       groups: [...def.groups(Z), ...bedPatients],
@@ -46601,10 +46601,10 @@ void main() {
   }
   function meleeSegment(A, t, out = {}) {
     meleePose(A, t, out);
-    const L3 = (A.geom || AXE_GEOM).length;
-    out.tx = out.hx + out.dx * L3;
-    out.ty = out.hy + out.dy * L3;
-    out.tz = out.hz + out.dz * L3;
+    const L2 = (A.geom || AXE_GEOM).length;
+    out.tx = out.hx + out.dx * L2;
+    out.ty = out.hy + out.dy * L2;
+    out.tz = out.hz + out.dz * L2;
     return out;
   }
 
@@ -46726,8 +46726,8 @@ void main() {
     }
     // the leg attack of the weapon in hand, on demand (tests; in play it comes now and then on its own: startSwing)
     tryLegs(sim2) {
-      const L3 = legAttack(this.equipped);
-      if (!L3 || this.dead) return false;
+      const L2 = legAttack(this.equipped);
+      if (!L2 || this.dead) return false;
       const a = this.action, t = a.type;
       if (!(t === "ready" || t === "swing" && a.st >= this.atk(a).swapPoint || t === "dodge" && a.t >= DODGE[a.kind === "roll" ? "roll" : "side"].cancel)) return false;
       this.startSwing(sim2, 0, false, "legs");
@@ -47156,9 +47156,12 @@ void main() {
         }
         const cz = sim2.critFinisher?.(this);
         if (cz) {
-          cz.critFin = true;
-          this.startExecution(cz, sim2);
-          return;
+          if (this.equipped === PISTOL) this.critT = Math.max(this.critT || 0, 0.5);
+          else {
+            cz.critFin = true;
+            this.startExecution(cz, sim2);
+            return;
+          }
         }
       }
       if (Math.abs(angleDiff(this.aimYaw, this.aimTarget)) > FIRE_ALIGN) return;
@@ -47210,8 +47213,8 @@ void main() {
       const v = sim2.rand() < 0.5 ? "B_uppercut" : "C_uppercut_mirrored";
       const list = EXEC_LAUNCH.filter((e) => e.variant === v).sort((a, b) => a.dist - b.dist);
       const gap = Math.max(0, d - list[0].A.stand), far = (e) => e.A.ROOT ? e.A.ROOT[e.A.ROOT.length - 1].z : 0;
-      const E = list.find((e) => far(e) >= gap) || list[list.length - 1], L3 = E.A, total = far(E);
-      const A = { ...L3, kind: fin?.kind ?? L3.kind, sound: fin?.sound ?? L3.sound, sever: fin?.sever ?? L3.sever, dmg: Math.max(L3.dmg, fin?.dmg ?? 0), knock: fin?.knock ?? L3.knock };
+      const E = list.find((e) => far(e) >= gap) || list[list.length - 1], L2 = E.A, total = far(E);
+      const A = { ...L2, kind: fin?.kind ?? L2.kind, sound: fin?.sound ?? L2.sound, sever: fin?.sever ?? L2.sever, dmg: Math.max(L2.dmg, fin?.dmg ?? 0), knock: fin?.knock ?? L2.knock };
       const rootScale = total > 0.01 ? Math.min(1, gap / total) : 0;
       this.swingId++;
       this.setAction("swing", {
@@ -47410,36 +47413,36 @@ void main() {
     // a standing oxygen cylinder (O2)
   };
   var O2 = { hitR: 0.2, fuse: 0.32, chainFuse: [0.1, 0.28], kill: 1.9, burst: 1.25, throw: 3.8, push: 7.5, yolaKnock: 2.4, yolaHurt: 3.8, dmgNear: 38, dmgFar: 14, chain: 3.3, through: 0.3, chairSpeed: 1.85 };
-  function tankPos(L3, out = {}) {
-    if (L3.kind === "chair" && !L3.tipped) {
-      out.x = L3.x - Math.sin(L3.yaw) * 0.34;
-      out.z = L3.z - Math.cos(L3.yaw) * 0.34;
+  function tankPos(L2, out = {}) {
+    if (L2.kind === "chair" && !L2.tipped) {
+      out.x = L2.x - Math.sin(L2.yaw) * 0.34;
+      out.z = L2.z - Math.cos(L2.yaw) * 0.34;
     } else {
-      out.x = L3.x;
-      out.z = L3.z;
+      out.x = L2.x;
+      out.z = L2.z;
     }
     return out;
   }
-  function punctureTank(sim2, L3, fuse = O2.fuse) {
-    if (!L3 || !L3.o2 || L3.gone || L3.fuse != null) return;
-    L3.fuse = fuse;
-    const p = tankPos(L3);
-    sim2.emit({ type: "tankHiss", id: L3.id, x: p.x, z: p.z });
+  function punctureTank(sim2, L2, fuse = O2.fuse) {
+    if (!L2 || !L2.o2 || L2.gone || L2.fuse != null) return;
+    L2.fuse = fuse;
+    const p = tankPos(L2);
+    sim2.emit({ type: "tankHiss", id: L2.id, x: p.x, z: p.z });
   }
   function o2Step(sim2, dt) {
     const list = sim2.loose;
     if (!list?.length) return;
-    for (const L3 of list) if (L3.o2 && !L3.gone && L3.fuse != null && (L3.fuse -= dt) <= 0) tankBurst(sim2, L3);
-    if (list.some((L3) => L3.gone)) sim2.loose = list.filter((L3) => !L3.gone);
+    for (const L2 of list) if (L2.o2 && !L2.gone && L2.fuse != null && (L2.fuse -= dt) <= 0) tankBurst(sim2, L2);
+    if (list.some((L2) => L2.gone)) sim2.loose = list.filter((L2) => !L2.gone);
   }
-  function tankBurst(sim2, L3) {
-    L3.gone = true;
-    const c = tankPos(L3), p = sim2.player;
-    sim2.emit({ type: "tankBoom", id: L3.id, x: c.x, z: c.z });
+  function tankBurst(sim2, L2) {
+    L2.gone = true;
+    const c = tankPos(L2), p = sim2.player;
+    sim2.emit({ type: "tankBoom", id: L2.id, x: c.x, z: c.z });
     for (const z of sim2.zombies) {
       if (!z.alive || z.buried) continue;
       const dx = z.x - c.x, dz = z.z - c.z, d2 = Math.hypot(dx, dz), ux = d2 > 1e-3 ? dx / d2 : 1, uz = d2 > 1e-3 ? dz / d2 : 0;
-      const rider = z.loose === L3;
+      const rider = z.loose === L2;
       if (rider) {
         z.chair = false;
         z.loose = null;
@@ -47463,7 +47466,7 @@ void main() {
       if (p.hurt(d < O2.yolaKnock ? O2.dmgNear : O2.dmgFar, c.x, c.z, sim2) && d < O2.yolaKnock && !p.dead) p.knockDown(c.x, c.z, sim2);
     }
     sim2.heavyImpact?.(c.x, c.z, 2.6, "blast");
-    for (const o of sim2.loose) if (o !== L3 && o.o2 && !o.gone) {
+    for (const o of sim2.loose) if (o !== L2 && o.o2 && !o.gone) {
       const q = tankPos(o);
       if (Math.hypot(q.x - c.x, q.z - c.z) < O2.chain) punctureTank(sim2, o, O2.chainFuse[0] + sim2.rand() * (O2.chainFuse[1] - O2.chainFuse[0]));
     }
@@ -47471,56 +47474,56 @@ void main() {
   var IV_CARRY = { fwd: 0.32, side: 0.36, k: 16, damp: 7, arm: 0.35, reach: 0.75 };
   var nextId = 1;
   function addLoose(sim2, kind, x, z, yaw, owner) {
-    const L3 = { id: nextId++, kind, x, z, px: x, pz: z, yaw, vx: 0, vz: 0, owner, held: true, tipped: false, tipSide: 1, r: LOOSE[kind].r };
-    (sim2.loose || (sim2.loose = [])).push(L3);
-    return L3;
+    const L2 = { id: nextId++, kind, x, z, px: x, pz: z, yaw, vx: 0, vz: 0, owner, held: true, tipped: false, tipSide: 1, r: LOOSE[kind].r };
+    (sim2.loose || (sim2.loose = [])).push(L2);
+    return L2;
   }
   function looseStep(sim2, dt) {
     const list = sim2.loose;
     if (!list?.length) return;
     const p = sim2.player;
-    for (const L3 of list) {
-      const P = L3.tipped ? LOOSE.tipped : LOOSE[L3.kind];
-      const owned = L3.owner && L3.held;
+    for (const L2 of list) {
+      const P = L2.tipped ? LOOSE.tipped : LOOSE[L2.kind];
+      const owned = L2.owner && L2.held;
       if (!owned) {
         const f = Math.exp(-dt * P.roll);
-        L3.vx *= f;
-        L3.vz *= f;
-        L3.x += L3.vx * dt;
-        L3.z += L3.vz * dt;
-        const bx = L3.x, bz = L3.z;
-        if (sim2.world.resolveCircle(L3, L3.r)) {
-          const nx = L3.x - bx, nz = L3.z - bz, n = Math.hypot(nx, nz);
+        L2.vx *= f;
+        L2.vz *= f;
+        L2.x += L2.vx * dt;
+        L2.z += L2.vz * dt;
+        const bx = L2.x, bz = L2.z;
+        if (sim2.world.resolveCircle(L2, L2.r)) {
+          const nx = L2.x - bx, nz = L2.z - bz, n = Math.hypot(nx, nz);
           if (n > 1e-6) {
-            const vn = (L3.vx * nx + L3.vz * nz) / n;
+            const vn = (L2.vx * nx + L2.vz * nz) / n;
             if (vn < 0) {
-              L3.vx -= vn * nx / n;
-              L3.vz -= vn * nz / n;
+              L2.vx -= vn * nx / n;
+              L2.vz -= vn * nz / n;
             }
           }
         }
       }
       const give = owned ? 0 : P.give;
       const push = (b, r, heavy) => {
-        const dx = b.x - L3.x, dz = b.z - L3.z, d = Math.hypot(dx, dz), rr = r + L3.r;
+        const dx = b.x - L2.x, dz = b.z - L2.z, d = Math.hypot(dx, dz), rr = r + L2.r;
         if (d >= rr || d < 1e-6) return;
         const o = rr - d, ux = dx / d, uz = dz / d, g = heavy ? give * 0.5 : give;
         b.x += ux * o * (1 - g);
         b.z += uz * o * (1 - g);
         sim2.world.resolveCircle(b, r);
         if (g > 0) {
-          L3.x -= ux * o * g;
-          L3.z -= uz * o * g;
-          const want = Math.min(2.5, o * g / dt * 0.6), away = -(L3.vx * ux + L3.vz * uz);
+          L2.x -= ux * o * g;
+          L2.z -= uz * o * g;
+          const want = Math.min(2.5, o * g / dt * 0.6), away = -(L2.vx * ux + L2.vz * uz);
           if (away < want) {
-            L3.vx -= ux * (want - away);
-            L3.vz -= uz * (want - away);
+            L2.vx -= ux * (want - away);
+            L2.vz -= uz * (want - away);
           }
         }
       };
       if (!p.dead) push(p, p.r, false);
       for (const z of sim2.zombies) {
-        if (z.id === L3.owner || !z.alive || !z.solid) continue;
+        if (z.id === L2.owner || !z.alive || !z.solid) continue;
         push(z, z.r, z.kind === "guard" || z.kind === "sprinter");
       }
     }
@@ -47773,49 +47776,49 @@ void main() {
     // its drip stand or wheelchair (core/loose.js), while it has it: the chair under it; the stand on its spring beside it,
     // let go through a fight, a flinch or a fall and taken again if still in reach, else left behind. Dead: it stays put.
     carryLoose(dt, sim2) {
-      const L3 = this.loose;
-      if (!L3 || L3.owner !== this.id) return;
+      const L2 = this.loose;
+      if (!L2 || L2.owner !== this.id) return;
       if (!this.alive || this.state === ZS.DYING || this.state === ZS.DEAD) {
-        L3.owner = 0;
-        L3.held = false;
+        L2.owner = 0;
+        L2.held = false;
         return;
       }
       const fx2 = Math.sin(this.yaw), fz = Math.cos(this.yaw), lx = Math.cos(this.yaw), lz = -Math.sin(this.yaw);
-      if (L3.kind === "chair") {
+      if (L2.kind === "chair") {
         if (!this.chair) {
-          L3.owner = 0;
-          L3.held = false;
+          L2.owner = 0;
+          L2.held = false;
           return;
         }
-        L3.x = this.x + fx2 * 0.06;
-        L3.z = this.z + fz * 0.06;
-        L3.yaw = this.yaw;
-        L3.vx = this.vx;
-        L3.vz = this.vz;
-        L3.held = true;
+        L2.x = this.x + fx2 * 0.06;
+        L2.z = this.z + fz * 0.06;
+        L2.yaw = this.yaw;
+        L2.vx = this.vx;
+        L2.vz = this.vz;
+        L2.held = true;
         return;
       }
       const C = IV_CARRY, s = this.state, busy = s === ZS.WINDUP || s === ZS.STRIKE || s === ZS.RECOVER || s === ZS.STAGGER || s === ZS.KNOCKDOWN || s === ZS.GETUP || this.crawling;
       const sx = this.x + fx2 * C.fwd + lx * C.side, sz = this.z + fz * C.fwd + lz * C.side;
       if (busy) {
-        L3.held = false;
+        L2.held = false;
         return;
       }
-      if (!L3.held && Math.hypot(L3.x - sx, L3.z - sz) > C.reach) {
-        L3.owner = 0;
+      if (!L2.held && Math.hypot(L2.x - sx, L2.z - sz) > C.reach) {
+        L2.owner = 0;
         return;
       }
-      L3.held = true;
-      L3.vx += ((sx - L3.x) * C.k - L3.vx * C.damp) * dt;
-      L3.vz += ((sz - L3.z) * C.k - L3.vz * C.damp) * dt;
-      L3.x += L3.vx * dt;
-      L3.z += L3.vz * dt;
-      const dx = L3.x - sx, dz = L3.z - sz, d = Math.hypot(dx, dz);
+      L2.held = true;
+      L2.vx += ((sx - L2.x) * C.k - L2.vx * C.damp) * dt;
+      L2.vz += ((sz - L2.z) * C.k - L2.vz * C.damp) * dt;
+      L2.x += L2.vx * dt;
+      L2.z += L2.vz * dt;
+      const dx = L2.x - sx, dz = L2.z - sz, d = Math.hypot(dx, dz);
       if (d > C.arm) {
-        L3.x = sx + dx / d * C.arm;
-        L3.z = sz + dz / d * C.arm;
+        L2.x = sx + dx / d * C.arm;
+        L2.z = sz + dz / d * C.arm;
       }
-      sim2.world.resolveCircle(L3, L3.r);
+      sim2.world.resolveCircle(L2, L2.r);
     }
     layInBed() {
       if (this.bed) {
@@ -47899,8 +47902,8 @@ void main() {
       return this.state !== ZS.DYING && this.state !== ZS.DEAD;
     }
     get buried() {
-      const F3 = this.floorSpawn;
-      return !!F3 && this.state === ZS.EMERGE && this.t < F3.rumble + F3.climb * F3.buriedFor;
+      const F = this.floorSpawn;
+      return !!F && this.state === ZS.EMERGE && this.t < F.rumble + F.climb * F.buriedFor;
     }
     // (under the floor still)
     get down() {
@@ -48013,7 +48016,7 @@ void main() {
         }
         return;
       }
-      if (wasDown || this.state === ZS.STUCK || this.bed) {
+      if (wasDown || this.state === ZS.STUCK || this.kind === "guard" && this.state === ZS.PICKUP || this.bed) {
         sim2.emit({ type: "zombieHit", id: this.id, kind });
         return;
       }
@@ -48048,17 +48051,17 @@ void main() {
         this.chair = false;
         this.crawling = this.toCrawl = true;
         this.r = this.K.r;
-        const L3 = this.loose;
-        if (L3) {
-          L3.owner = 0;
-          L3.held = false;
-          L3.tipped = true;
-          L3.r = LOOSE.tipped.r;
-          L3.x += dirX * 0.4;
-          L3.z += dirZ * 0.4;
-          L3.vx = dirX * 1.2;
-          L3.vz = dirZ * 1.2;
-          L3.tipSide = sim2.rand() < 0.5 ? -1 : 1;
+        const L2 = this.loose;
+        if (L2) {
+          L2.owner = 0;
+          L2.held = false;
+          L2.tipped = true;
+          L2.r = LOOSE.tipped.r;
+          L2.x += dirX * 0.4;
+          L2.z += dirZ * 0.4;
+          L2.vx = dirX * 1.2;
+          L2.vz = dirZ * 1.2;
+          L2.tipSide = sim2.rand() < 0.5 ? -1 : 1;
         }
         sim2.emit({ type: "chairTip", id: this.id, x: this.x, z: this.z, dirX, dirZ });
       }
@@ -48069,6 +48072,7 @@ void main() {
     }
     // Shoved by another zombie that was knocked into it (speed: m/s handed over along ux, uz).
     bumped(speed, ux, uz, sim2) {
+      if (this.kind === "guard" && (this.state === ZS.STUCK || this.state === ZS.PICKUP)) return;
       this.kx += ux * speed;
       this.kz += uz * speed;
       this.bumpT = 0.4;
@@ -48296,19 +48300,19 @@ void main() {
             break;
           }
           if (this.floorSpawn) {
-            const F3 = this.floorSpawn;
+            const F = this.floorSpawn;
             this.vx = this.vz = 0;
-            if (!F3.breached && Math.floor(this.t / FLOOR_EMERGE.shudder) !== Math.floor((this.t - dt) / FLOOR_EMERGE.shudder) && this.t < F3.rumble) sim2.emit({ type: "floorShudder", id: this.id, x: this.x, z: this.z, k: this.t / F3.rumble });
-            if (!F3.breached && this.t >= F3.rumble) {
-              F3.breached = true;
+            if (!F.breached && Math.floor(this.t / FLOOR_EMERGE.shudder) !== Math.floor((this.t - dt) / FLOOR_EMERGE.shudder) && this.t < F.rumble) sim2.emit({ type: "floorShudder", id: this.id, x: this.x, z: this.z, k: this.t / F.rumble });
+            if (!F.breached && this.t >= F.rumble) {
+              F.breached = true;
               sim2.emit({ type: "floorBreach", id: this.id, x: this.x, z: this.z });
             }
-            if (F3.breached) {
+            if (F.breached) {
               turnRate = 1.2;
               wantX = dx;
               wantZ = dz;
             }
-            this.solid = this.t >= F3.rumble + F3.climb * F3.solidAt;
+            this.solid = this.t >= F.rumble + F.climb * F.solidAt;
             if (this.t >= this.stateDur) {
               this.set(ZS.CHASE);
               this.solid = true;
@@ -48350,12 +48354,14 @@ void main() {
             break;
           }
           if (this.kind === "guard" && !this.enraged) turnRate = this.gstage === "swap" ? 3.2 : GUARD.turn;
-          if (this.kind === "guard" && this.gstage === "swap" && this.planted && !this.passive) {
+          if (this.kind === "guard" && this.planted && !this.passive) {
             const P = this.planted, gx = P.gx - Math.sin(P.yaw) * 0.55 - this.x, gz = P.gz - Math.cos(P.yaw) * 0.55 - this.z, gd = Math.hypot(gx, gz);
             if (gd < 0.3) {
-              this.set(ZS.PICKUP, GUARD.pickup);
               this.vx = this.vz = 0;
-              sim2.emit({ type: "guardPickup", id: this.id });
+              if (this.gstage === "swap") {
+                this.set(ZS.PICKUP, GUARD.pickup);
+                sim2.emit({ type: "guardPickup", id: this.id });
+              } else this.wrenchFree(sim2);
               break;
             }
             wantX = gx / gd;
@@ -48457,10 +48463,10 @@ void main() {
             if (dist2 < (this.kind === "normal" && !this.crawling ? 0.95 : 0.8) && !this.backing) speed = 0;
           }
           const slot = !sim2.engaged || sim2.engaged.has(this.id) || this.crawling || this.kind === "sprinter";
-          if (this.kind === "guard" && !this.enraged && this.shieldHp > 0 && !this.planted && !this.passive && slot && (this.slamCd -= dt) <= 0 && dist2 > 0.6 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
+          if (this.kind === "guard" && !this.enraged && this.shieldHp > 0 && !this.planted && !this.passive && (this.slamCd -= dt) <= 0 && dist2 > 0.6 && dist2 < ZATTACKS.slam.from && this.attackCd <= 0 && sim2.time >= (sim2.nextAttackT || 0) && world.lineOfSight(this.x, this.z, p.x, p.z, 0.5)) {
             this.attack = "slam";
             this.set(ZS.WINDUP, ZATTACKS.slam.windup);
-            this.slamCd = 4 + sim2.rand() * 2.5;
+            this.slamCd = 3 + sim2.rand() * 1.5;
             sim2.nextAttackT = sim2.time + (T3.zombieAttackGap ?? 0.75) * 1.5;
             sim2.emit({ type: "zombieWindup", id: this.id, attack: "slam" });
             break;
@@ -48521,23 +48527,23 @@ void main() {
           if (this.attack === "slam" && this.t > this.stateDur * ZATTACKS.slam.takeoff) {
             if (this.leapL == null) sim2.emit({ type: "guardLaunch", id: this.id, x: this.x, z: this.z });
             if (this.leapL == null) this.leapL = Math.max(0, Math.min(ZATTACKS.slam.leap, dist2 - 1.05));
-            const L3 = this.leapL / (this.stateDur * (1 - ZATTACKS.slam.takeoff));
-            this.vx = Math.sin(this.yaw) * L3;
-            this.vz = Math.cos(this.yaw) * L3;
+            const L2 = this.leapL / (this.stateDur * (1 - ZATTACKS.slam.takeoff));
+            this.vx = Math.sin(this.yaw) * L2;
+            this.vz = Math.cos(this.yaw) * L2;
           } else if (this.attack === "slam") this.leapL = null;
           if (this.t >= this.stateDur) {
             this.set(ZS.STRIKE, ZATTACKS[this.attack].strike);
             this.struck = false;
             if (this.attack === "dash") {
-              const L3 = ZATTACKS.dash.dist / ZATTACKS.dash.strike;
-              this.vx = Math.sin(this.yaw) * L3;
-              this.vz = Math.cos(this.yaw) * L3;
+              const L2 = ZATTACKS.dash.dist / ZATTACKS.dash.strike;
+              this.vx = Math.sin(this.yaw) * L2;
+              this.vz = Math.cos(this.yaw) * L2;
               sim2.emit({ type: "zombieDash", id: this.id });
             }
             if (this.attack === "pounce") {
-              const PO = ZATTACKS.pounce, L3 = Math.max(1, Math.min(PO.leapMax, dist2 - 0.45)) / PO.strike;
-              this.vx = Math.sin(this.yaw) * L3;
-              this.vz = Math.cos(this.yaw) * L3;
+              const PO = ZATTACKS.pounce, L2 = Math.max(1, Math.min(PO.leapMax, dist2 - 0.45)) / PO.strike;
+              this.vx = Math.sin(this.yaw) * L2;
+              this.vz = Math.cos(this.yaw) * L2;
               sim2.emit({ type: "zombiePounce", id: this.id });
             }
           }
@@ -48601,20 +48607,20 @@ void main() {
               sim2.emit({ type: "grabbed", id: this.id });
             }
             if (this.attack === "slam") {
-              const ix = this.x + Math.sin(this.yaw) * 1.1, iz = this.z + Math.cos(this.yaw) * 1.1, F3 = SLAM_FODDER;
+              const ix = this.x + Math.sin(this.yaw) * 1.1, iz = this.z + Math.cos(this.yaw) * 1.1, F = SLAM_FODDER;
               sim2.heavyImpact?.(ix, iz, 1.7, "slam");
               for (const o of sim2.zombies) {
                 if (o === this || !o.alive || o.kind === "guard" || o.kind === "sprinter" || o.state === ZS.EMERGE || o.buried) continue;
                 const ox = o.x - ix, oz = o.z - iz, d = Math.hypot(ox, oz), ux = ox / (d || 1), uz = oz / (d || 1);
-                if (d < F3.kill) {
-                  o.takeHit(9999, ux, uz, F3.killPush, "bat", sim2, "torso", "heavy");
+                if (d < F.kill) {
+                  o.takeHit(9999, ux, uz, F.killPush, "bat", sim2, "torso", "heavy");
                   continue;
                 }
-                if (d < F3.throw && !o.down) {
-                  const k = 1 - (d - F3.kill) / (F3.throw - F3.kill);
+                if (d < F.throw && !o.down) {
+                  const k = 1 - (d - F.kill) / (F.throw - F.kill);
                   o.knockDown(ux, uz, sim2);
-                  o.kx += ux * (2 + F3.push * k);
-                  o.kz += uz * (2 + F3.push * k);
+                  o.kx += ux * (2 + F.push * k);
+                  o.kz += uz * (2 + F.push * k);
                 }
               }
             }
@@ -48663,7 +48669,7 @@ void main() {
             this.wrenching = false;
             this.set(ZS.CHASE);
             this.attackCd = 0.5;
-            this.slamCd = 2 + sim2.rand() * 2;
+            this.slamCd = 1 + sim2.rand() * 1.5;
           }
           break;
         }
@@ -48962,35 +48968,35 @@ void main() {
     }
   }
   function addFlood(sim2, { minX, maxX, minZ, maxZ, panel }) {
-    const F3 = { id: nextId3++, minX, maxX, minZ, maxZ, panel, recharge: 0, live: 0 };
-    (sim2.floods || (sim2.floods = [])).push(F3);
-    return F3;
+    const F = { id: nextId3++, minX, maxX, minZ, maxZ, panel, recharge: 0, live: 0 };
+    (sim2.floods || (sim2.floods = [])).push(F);
+    return F;
   }
   function wadeAt(sim2, x, z) {
-    for (const F3 of sim2.floods || []) if (inside(F3, x, z)) return F3;
+    for (const F of sim2.floods || []) if (inside(F, x, z)) return F;
     return null;
   }
-  function joltFlood(sim2, F3) {
-    if (F3.recharge > 0) {
-      sim2.emit({ type: "panelSpark", id: F3.id, x: F3.panel.x, z: F3.panel.z });
+  function joltFlood(sim2, F) {
+    if (F.recharge > 0) {
+      sim2.emit({ type: "panelSpark", id: F.id, x: F.panel.x, z: F.panel.z });
       return;
     }
-    F3.recharge = FLOOD.recharge;
-    F3.live = 0.6;
-    sim2.emit({ type: "floodJolt", id: F3.id, minX: F3.minX, maxX: F3.maxX, minZ: F3.minZ, maxZ: F3.maxZ, x: F3.panel.x, z: F3.panel.z });
+    F.recharge = FLOOD.recharge;
+    F.live = 0.6;
+    sim2.emit({ type: "floodJolt", id: F.id, minX: F.minX, maxX: F.maxX, minZ: F.minZ, maxZ: F.maxZ, x: F.panel.x, z: F.panel.z });
     for (const z of sim2.zombies) {
-      if (!z.alive || z.buried || !inside(F3, z.x, z.z)) continue;
+      if (!z.alive || z.buried || !inside(F, z.x, z.z)) continue;
       z.zapped = true;
       z.takeHit(9999, 0, 0, 0.6, "zap", sim2, "torso", "zap");
     }
     const p = sim2.player;
-    if (!p.dead && inside(F3, p.x, p.z) && p.hurt(FLOOD.jolt, F3.panel.x, F3.panel.z, sim2) && !p.dead) p.knockDown(F3.panel.x, F3.panel.z, sim2);
+    if (!p.dead && inside(F, p.x, p.z) && p.hurt(FLOOD.jolt, F.panel.x, F.panel.z, sim2) && !p.dead) p.knockDown(F.panel.x, F.panel.z, sim2);
   }
   function panelHit(sim2, ox, oz, dx, dz, t) {
-    for (const F3 of sim2.floods || []) {
-      const px2 = F3.panel.x - ox, pz2 = F3.panel.z - oz, along = px2 * dx + pz2 * dz;
+    for (const F of sim2.floods || []) {
+      const px2 = F.panel.x - ox, pz2 = F.panel.z - oz, along = px2 * dx + pz2 * dz;
       if (along < 0 || along > t) continue;
-      if (Math.hypot(px2 - dx * along, pz2 - dz * along) < FLOOD.panelR) return { F: F3, t: along };
+      if (Math.hypot(px2 - dx * along, pz2 - dz * along) < FLOOD.panelR) return { F, t: along };
     }
     return null;
   }
@@ -49011,10 +49017,10 @@ void main() {
       }
     }
     sim2.emit({ type: "mriOn", id: M4.id, x: M4.magnet.x, z: M4.magnet.z, guns: M4.pinned.slice() });
-    for (const L3 of sim2.loose || []) if (inside(M4, L3.x, L3.z, 1)) {
-      L3.owner = 0;
-      L3.held = false;
-      L3.magnet = M4;
+    for (const L2 of sim2.loose || []) if (inside(M4, L2.x, L2.z, 1)) {
+      L2.owner = 0;
+      L2.held = false;
+      L2.magnet = M4;
     }
     ripShields(sim2, M4);
   }
@@ -49032,48 +49038,48 @@ void main() {
   function mriQuench(sim2, M4) {
     M4.state = "off";
     M4.dropped = M4.pinned.length > 0;
-    for (const L3 of sim2.loose || []) if (L3.magnet === M4) {
-      L3.magnet = null;
-      L3.vx *= 0.2;
-      L3.vz *= 0.2;
+    for (const L2 of sim2.loose || []) if (L2.magnet === M4) {
+      L2.magnet = null;
+      L2.vx *= 0.2;
+      L2.vz *= 0.2;
     }
     sim2.emit({ type: "mriQuench", id: M4.id, x: M4.magnet.x, z: M4.magnet.z });
   }
   function roomsStep(sim2, dt) {
     const p = sim2.player;
     p.wade = wadeAt(sim2, p.x, p.z) ? FLOOD.yola : 1;
-    for (const F3 of sim2.floods || []) {
-      if (F3.recharge > 0) F3.recharge -= dt;
-      if (F3.live > 0) F3.live -= dt;
+    for (const F of sim2.floods || []) {
+      if (F.recharge > 0) F.recharge -= dt;
+      if (F.live > 0) F.live -= dt;
     }
     for (const z of sim2.zombies) z.wade = sim2.floods?.length && wadeAt(sim2, z.x, z.z) ? FLOOD.zombie : 1;
     for (const M4 of sim2.mris || []) {
       if (M4.state === "idle" && !p.dead && inside(M4, p.x, p.z)) mriOn(sim2, M4);
       if (M4.state === "on") {
-        for (const L3 of sim2.loose || []) {
-          if (L3.magnet !== M4 && !(inside(M4, L3.x, L3.z, 1) && (L3.magnet = M4))) continue;
-          if (L3.owner) {
-            L3.owner = 0;
-            L3.held = false;
+        for (const L2 of sim2.loose || []) {
+          if (L2.magnet !== M4 && !(inside(M4, L2.x, L2.z, 1) && (L2.magnet = M4))) continue;
+          if (L2.owner) {
+            L2.owner = 0;
+            L2.held = false;
           }
-          const q = tankPos(L3, {}), dx = M4.magnet.x - q.x, dz = M4.magnet.z - q.z, d = Math.hypot(dx, dz);
+          const q = tankPos(L2, {}), dx = M4.magnet.x - q.x, dz = M4.magnet.z - q.z, d = Math.hypot(dx, dz);
           if (d < MRI.stick) {
-            L3.vx = L3.vz = 0;
+            L2.vx = L2.vz = 0;
             continue;
           }
-          L3.vx += dx / d * MRI.pull * dt;
-          L3.vz += dz / d * MRI.pull * dt;
-          const v = Math.hypot(L3.vx, L3.vz);
+          L2.vx += dx / d * MRI.pull * dt;
+          L2.vz += dz / d * MRI.pull * dt;
+          const v = Math.hypot(L2.vx, L2.vz);
           if (v > MRI.maxV) {
-            L3.vx *= MRI.maxV / v;
-            L3.vz *= MRI.maxV / v;
+            L2.vx *= MRI.maxV / v;
+            L2.vz *= MRI.maxV / v;
           }
           if (v > MRI.hurtV) for (const z of sim2.zombies) {
-            const key = L3.id + ":" + z.id;
-            if (!z.alive || M4.hitSet.has(key) || Math.hypot(z.x - L3.x, z.z - L3.z) > z.r + L3.r + 0.1) continue;
+            const key = L2.id + ":" + z.id;
+            if (!z.alive || M4.hitSet.has(key) || Math.hypot(z.x - L2.x, z.z - L2.z) > z.r + L2.r + 0.1) continue;
             M4.hitSet.add(key);
-            z.takeHit(MRI.hurtDmg, L3.vx / v, L3.vz / v, v * 0.8, "bat", sim2, "torso", "heavy");
-            if (z.alive && !z.down && z.kind === "normal") z.knockDown(L3.vx / v, L3.vz / v, sim2);
+            z.takeHit(MRI.hurtDmg, L2.vx / v, L2.vz / v, v * 0.8, "bat", sim2, "torso", "heavy");
+            if (z.alive && !z.down && z.kind === "normal") z.knockDown(L2.vx / v, L2.vz / v, sim2);
             sim2.emit({ type: "mriHit", id: z.id, x: z.x, z: z.z });
           }
         }
@@ -49597,19 +49603,19 @@ void main() {
       return list;
     }
     chooseFloor(f) {
-      const L3 = this.lift;
-      if (L3.state !== "open" || !L3.choosing) return;
+      const L2 = this.lift;
+      if (L2.state !== "open" || !L2.choosing) return;
       if (f === 4 && !(this.floor === 5 && this.flags.sample_matched && this.case.state === "carried")) return;
-      L3.target = f;
-      L3.state = "closing";
-      L3.choosing = false;
+      L2.target = f;
+      L2.state = "closing";
+      L2.choosing = false;
       this.emit({ type: "liftDoors", open: false });
     }
     liftStep(dt, p) {
-      const L3 = this.lift, W3 = this.sim.world, LF = this.L;
+      const L2 = this.lift, W3 = this.sim.world, LF = this.L;
       const inCab = inRect(LF.cab, p.x, p.z, p.r * 0.6), atDoor = Math.abs(p.x - LF.x) < 2.8 && p.z < LF.z + 2.8 && p.z > LF.z - 3.6;
       const inThreshold = inRect(LF.threshold, p.x, p.z, -p.r);
-      switch (L3.state) {
+      switch (L2.state) {
         case "fault":
           if (this.floor === 7 && !this.flags.phone_checked && !p.dead && Math.hypot(p.x - LF.call.x, p.z - LF.call.z) < 2.2 && !this.sim.zombies.some((z) => z.alive && !z.dormant && Math.hypot(z.x - p.x, z.z - p.z) < 7)) {
             this.flags.phone_checked = true;
@@ -49620,56 +49626,56 @@ void main() {
           break;
         case "ready":
           if (atDoor && !p.dead) {
-            L3.state = "opening";
+            L2.state = "opening";
             this.emit({ type: "liftDoors", open: true });
           }
           break;
         case "arriving":
-          L3.t += dt;
-          if (L3.t > 0.55) {
-            L3.state = "opening";
+          L2.t += dt;
+          if (L2.t > 0.55) {
+            L2.state = "opening";
             this.emit({ type: "liftDoors", open: true });
           }
           break;
         case "opening":
-          L3.open = Math.min(1, L3.open + dt / LIFT_DOOR_TIME);
-          if (L3.open >= 0.7) W3.setOff(W3.dyn.liftDoors, true);
-          if (L3.open >= 1) L3.state = "open";
+          L2.open = Math.min(1, L2.open + dt / LIFT_DOOR_TIME);
+          if (L2.open >= 0.7) W3.setOff(W3.dyn.liftDoors, true);
+          if (L2.open >= 1) L2.state = "open";
           break;
         case "open":
-          L3.choosing = inCab && !p.dead;
+          L2.choosing = inCab && !p.dead;
           if (!atDoor && !inCab && p.z > LF.z + 3.4) {
-            L3.state = "closingIdle";
-            L3.choosing = false;
+            L2.state = "closingIdle";
+            L2.choosing = false;
           }
           break;
         case "closingIdle":
           if (atDoor) {
-            L3.state = "opening";
+            L2.state = "opening";
             break;
           }
-          L3.open = Math.max(0, L3.open - dt / LIFT_DOOR_TIME);
-          if (L3.open < 0.3) W3.setOff(W3.dyn.liftDoors, false);
-          if (L3.open <= 0) L3.state = "ready";
+          L2.open = Math.max(0, L2.open - dt / LIFT_DOOR_TIME);
+          if (L2.open < 0.3) W3.setOff(W3.dyn.liftDoors, false);
+          if (L2.open <= 0) L2.state = "ready";
           break;
         case "closing":
           if (!inCab || inThreshold || p.dead) {
-            L3.state = "opening";
-            L3.target = null;
+            L2.state = "opening";
+            L2.target = null;
             this.emit({ type: "liftDoors", open: true });
             break;
           }
-          L3.open = Math.max(0, L3.open - dt / LIFT_DOOR_TIME);
-          if (L3.open <= 0) {
+          L2.open = Math.max(0, L2.open - dt / LIFT_DOOR_TIME);
+          if (L2.open <= 0) {
             W3.setOff(W3.dyn.liftDoors, false);
-            if (L3.target === 4) {
-              L3.state = "gone";
+            if (L2.target === 4) {
+              L2.state = "gone";
               this.complete = true;
               this.flags.chapter_complete = true;
               this.emit({ type: "chapterComplete" });
             } else {
-              L3.state = "travel";
-              this.emit({ type: "liftTravel", from: this.floor, to: L3.target, save: this.snapshot({ floor: L3.target, arrive: true, objective: this.arrivalObjective(L3.target) }) });
+              L2.state = "travel";
+              this.emit({ type: "liftTravel", from: this.floor, to: L2.target, save: this.snapshot({ floor: L2.target, arrive: true, objective: this.arrivalObjective(L2.target) }) });
             }
           }
           break;
@@ -49677,11 +49683,11 @@ void main() {
     }
     // the objective on arriving at a floor (the chapter's goals, wherever they stand)
     arrivalObjective(f) {
-      const F3 = this.flags, c = this.case;
-      if (F3.sample_matched) return c.state === "carried" ? f === 5 ? "f5_down" : "f5_back" : c.floor === f ? "f5_retrieve" : "f5_fetch";
+      const F = this.flags, c = this.case;
+      if (F.sample_matched) return c.state === "carried" ? f === 5 ? "f5_down" : "f5_back" : c.floor === f ? "f5_retrieve" : "f5_fetch";
       if (c.state === "carried") return f === 5 ? "f5_intake" : "f5_go";
-      if (f === 6 && !F3.case_picked) return "f6_case";
-      if (f === 5) return F3.record_seen ? F3.case_secured ? "f5_match" : "f5_record_case" : F3.case_secured ? "f5_record" : "f5_explore";
+      if (f === 6 && !F.case_picked) return "f6_case";
+      if (f === 5) return F.record_seen ? F.case_secured ? "f5_match" : "f5_record_case" : F.case_secured ? "f5_record" : "f5_explore";
       if (f === 7) return "f7_explore";
       return this.objective;
     }
@@ -49883,23 +49889,23 @@ void main() {
     }
     // a standing oxygen cylinder (core/loose.js O2): the floors place them (a cylinder store, a corridor); shoot it
     addTank(x, z) {
-      const L3 = addLoose(this, "o2tank", x, z, 0, 0);
-      L3.o2 = true;
-      L3.held = false;
-      return L3;
+      const L2 = addLoose(this, "o2tank", x, z, 0, 0);
+      L2.o2 = true;
+      L2.held = false;
+      return L2;
     }
     // A zombie out of the floor (core/zombies.js FLOOR_EMERGE): placed at the hole, under the floor until it breaks through.
     // The level never calls this right under Yola (core/level.js floorStep keeps her a few metres off).
     spawnFromFloor(x, z, opts = {}) {
       const p = this.player, yaw = opts.yaw ?? Math.atan2(p.x - x, p.z - z);
       const zb = this.spawnZombie(null, { x, z, yaw, kind: opts.kind, hp: opts.hp });
-      const F3 = { ...FLOOR_EMERGE, breached: false };
-      zb.floorSpawn = F3;
-      zb.set(ZS.EMERGE, F3.rumble + F3.climb);
+      const F = { ...FLOOR_EMERGE, breached: false };
+      zb.floorSpawn = F;
+      zb.set(ZS.EMERGE, F.rumble + F.climb);
       zb.solid = false;
       zb.emergeTo = null;
       if (opts.look) zb.look = opts.look;
-      this.emit({ type: "floorRumble", id: zb.id, x, z, dur: F3.rumble });
+      this.emit({ type: "floorRumble", id: zb.id, x, z, dur: F.rumble });
       return zb;
     }
     // The lady bursts (core/zombies.js LADY): her burst knocks Yola flat close by and staggers her further out; an acid pool
@@ -50192,9 +50198,9 @@ void main() {
       }
       const first = this.traceBullet(m.x, m.z, yaw);
       let toPanel = false;
-      for (const F3 of this.floods || []) {
-        const px2 = F3.panel.x - m.x, pz2 = F3.panel.z - m.z, d = Math.hypot(px2, pz2);
-        if (d < 14 && Math.abs(angleDiff(yaw, Math.atan2(px2, pz2))) < 0.12 && (!first.zombie || first.t > d) && this.world.lineOfSight(m.x, m.z, F3.panel.x, F3.panel.z, BULLET_MIN_H)) {
+      for (const F of this.floods || []) {
+        const px2 = F.panel.x - m.x, pz2 = F.panel.z - m.z, d = Math.hypot(px2, pz2);
+        if (d < 14 && Math.abs(angleDiff(yaw, Math.atan2(px2, pz2))) < 0.12 && (!first.zombie || first.t > d) && this.world.lineOfSight(m.x, m.z, F.panel.x, F.panel.z, BULLET_MIN_H)) {
           yaw = Math.atan2(px2, pz2);
           toPanel = true;
         }
@@ -50235,7 +50241,7 @@ void main() {
         const z = r.zombie, along = (z.x - m.x) * dx + (z.z - m.z) * dz;
         const off = Math.hypot(m.x + dx * along - z.x, m.z + dz * along - z.z);
         const crit = z.shieldBlocks(dx, dz) ? 1 : this.takeCrit();
-        const perfect = z.kind !== "guard" && !z.down && !z.crawling && !z.severed.has("Head") && !z.shieldBlocks(dx, dz) && (off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0) || crit > 1);
+        const perfect = z.kind !== "guard" && !z.down && !z.crawling && !z.severed.has("Head") && !z.shieldBlocks(dx, dz) && off < 0.16 && along < 11 && this.rand() < (this.T.headshotChance ?? 0);
         if (perfect) z.limbHp.Head = 0;
         if (crit > 1) this.emit({ type: "crit", id: z.id, x: z.x, z: z.z, weapon: "pistol" });
         const res = z.takeHit(this.T.pistolDamage * crit, dx, dz, this.T.pistolKnockback * (perfect ? 1.6 : 1) * (crit > 1 ? 1.8 : 1), "pistol", this, perfect ? "Head" : this.bulletPart(z, m.x, m.z, dx, dz));
@@ -50347,13 +50353,13 @@ void main() {
           zombie = z;
         }
       }
-      for (const L3 of this.loose || []) {
-        if (!L3.o2 || L3.gone) continue;
-        const q = tankPos(L3, _a);
+      for (const L2 of this.loose || []) {
+        if (!L2.o2 || L2.gone) continue;
+        const q = tankPos(L2, _a);
         const h = rayCircle(ox, oz, dx, dz, t, q.x, q.z, O2.hitR);
         if (h >= 0 && h < t) {
           t = h;
-          tank = L3;
+          tank = L2;
           zombie = null;
         }
       }
@@ -50404,7 +50410,7 @@ void main() {
           if (p.equipped === "sledgehammer") breakWall(this, C, Math.sin(p.aimYaw), Math.cos(p.aimYaw), "sledge");
           else this.emit({ type: "wallClank", id: C.id, x: sx, z: sz });
         }
-        for (const F3 of this.floods || []) if (Math.hypot(F3.panel.x - sx, F3.panel.z - sz) < FLOOD.panelReach) joltFlood(this, F3);
+        for (const F of this.floods || []) if (Math.hypot(F.panel.x - sx, F.panel.z - sz) < FLOOD.panelReach) joltFlood(this, F);
       }
       if (t1 <= t0) return;
       const SUB = 4, T3 = this.T, A = p.atk(act), G5 = A.geom || AXE_GEOM, fist = p.equipped === FISTS || A.kind === "fist";
@@ -50839,7 +50845,7 @@ void main() {
     return g;
   }
   function makeBat(length = 0.84) {
-    const L3 = length, s = L3 / 0.84;
+    const L2 = length, s = L2 / 0.84;
     const pts = [
       [0, 0],
       [0.026, 0],
@@ -51446,8 +51452,8 @@ void main() {
   var NAMES = ["o2_cylinder", "o2_trolley", "flood_panel", "mri_scanner", "magnet_stop"];
   var LIVE = /^(MRI_Glow|Panel_LampGreen|Panel_LampRed|Button_Red)/;
   function loadRoomProps(base = "assets/props/room_mechanics/") {
-    const L3 = new GLTFLoader();
-    return Promise.all(NAMES.map((n) => L3.loadAsync(base + n + ".glb").then((g) => {
+    const L2 = new GLTFLoader();
+    return Promise.all(NAMES.map((n) => L2.loadAsync(base + n + ".glb").then((g) => {
       ROOMPROPS[n] = mergeModel(g.scene, LIVE);
     }).catch((e) => console.warn("room prop", n, e))));
   }
@@ -51595,10 +51601,10 @@ void main() {
         rootPrev.copy(root);
         let head = root, headV = rootV;
         for (let i = 0; i < 3; i++) {
-          const p = this.p[i], v = this.v[i], L3 = this.len[i];
+          const p = this.p[i], v = this.v[i], L2 = this.len[i];
           const dir = _a3.copy(this.dir0[i]).lerp(this.dir1[i], u).normalize();
           const k = C.k[i], c = 2 * C.zeta * Math.sqrt(k);
-          const tx = head.x + dir.x * L3, ty = head.y + dir.y * L3, tz = head.z + dir.z * L3;
+          const tx = head.x + dir.x * L2, ty = head.y + dir.y * L2, tz = head.z + dir.z * L2;
           const ax = k * (tx - p.x) - c * (v.x - headV.x) - C.drag * v.x;
           const ay = k * (ty - p.y) - c * (v.y - headV.y) - C.drag * v.y - C.g;
           const az = k * (tz - p.z) - c * (v.z - headV.z) - C.drag * v.z;
@@ -51620,7 +51626,7 @@ void main() {
             if (pl < 1e-9) w.copy(dir);
             else w.divideScalar(pl).multiplyScalar(Math.sqrt(1 - cmax * cmax)).addScaledVector(dir, cmax);
           }
-          p.copy(head).addScaledVector(w, L3);
+          p.copy(head).addScaledVector(w, L2);
           for (const K2 of this.cols) {
             const dx = p.x - K2.cs.x, dy = p.y - K2.cs.y, dz = p.z - K2.cs.z, d2 = dx * dx + dy * dy + dz * dz;
             if (d2 < K2.rw * K2.rw && d2 > 1e-12) {
@@ -51630,7 +51636,7 @@ void main() {
           }
           w.copy(p).sub(head);
           wl = w.length();
-          if (wl > 1e-9) p.copy(head).addScaledVector(w, L3 / wl);
+          if (wl > 1e-9) p.copy(head).addScaledVector(w, L2 / wl);
           v.set((p.x - ox) / hdt, (p.y - oy) / hdt, (p.z - oz) / hdt);
           head = p;
           headV = v;
@@ -51723,9 +51729,9 @@ void main() {
     return new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(l, y, z));
   }
   function armAnatomy(bones, side) {
-    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
-    if (!U2 || !L3 || !H4 || !I2 || !P || !M4) return null;
-    const a = U2.getWorldPosition(V()), e = L3.getWorldPosition(V()), w = H4.getWorldPosition(V());
+    const U2 = bones[side + "Arm"], L2 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
+    if (!U2 || !L2 || !H4 || !I2 || !P || !M4) return null;
+    const a = U2.getWorldPosition(V()), e = L2.getWorldPosition(V()), w = H4.getWorldPosition(V());
     const ud = e.clone().sub(a).normalize(), f = w.clone().sub(e).normalize(), hd = M4.getWorldPosition(V()).sub(w).normalize();
     const aw = I2.getWorldPosition(V()).sub(P.getWorldPosition(V())).normalize(), palm = V().crossVectors(aw, hd).normalize().multiplyScalar(side === "Right" ? 1 : -1);
     const wb = wristBend(hd, f, palm, aw), fr = forearmRoll(ud, f, wb.a0, side === "Right" ? 1 : -1);
@@ -51734,10 +51740,10 @@ void main() {
   function armToGrip(bones, side, point, axis, o = {}) {
     const w = o.w ?? 1;
     if (!(w > 1e-3)) return null;
-    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
-    if (!U2 || !L3 || !H4 || !I2 || !P || !M4) return null;
+    const U2 = bones[side + "Arm"], L2 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], I2 = bones[side + "HandIndex1"], P = bones[side + "HandPinky1"], M4 = bones[side + "HandMiddle1"];
+    if (!U2 || !L2 || !H4 || !I2 || !P || !M4) return null;
     const sgn = side === "Right" ? 1 : -1;
-    const a = U2.getWorldPosition(V()), e0 = L3.getWorldPosition(V()), w0 = H4.getWorldPosition(V());
+    const a = U2.getWorldPosition(V()), e0 = L2.getWorldPosition(V()), w0 = H4.getWorldPosition(V());
     const L1 = a.distanceTo(e0), L22 = e0.distanceTo(w0), Lmax = (L1 + L22) * 0.999, Lmin = Math.abs(L1 - L22) + 0.02;
     const Hq = H4.getWorldQuaternion(new Quaternion()), Hqi = Hq.clone().invert();
     const mW = M4.getWorldPosition(V()).sub(w0), aW = I2.getWorldPosition(V()).sub(P.getWorldPosition(V())).normalize();
@@ -51828,7 +51834,7 @@ void main() {
     const predC = cost(bp, bf), pred = { r: WB.r, flex: WB.flex, dev: WB.dev, roll: FR.roll, c: predC };
     pose(bp, bf);
     const Qbest = Qh.clone(), eB = e.clone(), wB = a.clone().addScaledVector(u, clamp4(a.distanceTo(wp), Lmin, Lmax));
-    const qU = U2.quaternion.clone(), qL = L3.quaternion.clone(), qH = H4.quaternion.clone();
+    const qU = U2.quaternion.clone(), qL = L2.quaternion.clone(), qH = H4.quaternion.clone();
     worldRot2(U2, _q4.setFromUnitVectors(tmp2.copy(e0).sub(a).normalize(), V().copy(eB).sub(a).normalize()));
     const udB = V().copy(eB).sub(a).normalize(), hc = H4.getWorldPosition(V()), fcp = perp(V(), hc.sub(eB), udB), ftp = perp(V(), V().copy(wB).sub(eB), udB);
     if (fcp.lengthSq() > 1e-8 && ftp.lengthSq() > 1e-8) {
@@ -51836,25 +51842,25 @@ void main() {
       ftp.normalize();
       worldRot2(U2, _q4.setFromAxisAngle(udB, Math.atan2(V().crossVectors(fcp, ftp).dot(udB), fcp.dot(ftp))));
     }
-    const fc = H4.getWorldPosition(V()).sub(L3.getWorldPosition(V())).normalize(), fB = V().copy(wB).sub(L3.getWorldPosition(V())).normalize();
-    worldRot2(L3, _q4.setFromUnitVectors(fc, fB));
+    const fc = H4.getWorldPosition(V()).sub(L2.getWorldPosition(V())).normalize(), fB = V().copy(wB).sub(L2.getWorldPosition(V())).normalize();
+    worldRot2(L2, _q4.setFromUnitVectors(fc, fB));
     {
-      const QL = L3.getWorldQuaternion(new Quaternion()), hl = QL.clone().invert().multiply(Qbest), bl = H4.position.clone().normalize();
+      const QL = L2.getWorldQuaternion(new Quaternion()), hl = QL.clone().invert().multiply(Qbest), bl = H4.position.clone().normalize();
       const tw = 2 * Math.atan2(hl.x * bl.x + hl.y * bl.y + hl.z * bl.z, hl.w);
-      worldRot2(L3, _q4.setFromAxisAngle(fB, tw * ANATOMY.twistToForearm));
+      worldRot2(L2, _q4.setFromAxisAngle(fB, tw * ANATOMY.twistToForearm));
     }
     H4.parent.getWorldQuaternion(_q33);
     H4.quaternion.copy(_q33.invert().multiply(Qbest));
     H4.updateMatrixWorld(true);
     if (w < 1) {
       U2.quaternion.slerpQuaternions(qU, U2.quaternion.clone(), w);
-      L3.quaternion.slerpQuaternions(qL, L3.quaternion.clone(), w);
+      L2.quaternion.slerpQuaternions(qL, L2.quaternion.clone(), w);
       H4.quaternion.slerpQuaternions(qH, H4.quaternion.clone(), w);
       U2.updateMatrixWorld(true);
     }
     let an = armAnatomy(bones, side);
     if (an.wristR > 1) {
-      const w1 = H4.getWorldPosition(V()), hd1 = M4.getWorldPosition(V()).sub(w1).normalize(), f1 = w1.clone().sub(L3.getWorldPosition(V())).normalize(), ax1 = V().crossVectors(hd1, f1);
+      const w1 = H4.getWorldPosition(V()), hd1 = M4.getWorldPosition(V()).sub(w1).normalize(), f1 = w1.clone().sub(L2.getWorldPosition(V())).normalize(), ax1 = V().crossVectors(hd1, f1);
       if (ax1.lengthSq() > 1e-10) {
         worldRot2(H4, _q4.setFromAxisAngle(ax1.normalize(), an.bend * D * (1 - 1 / an.wristR)));
         an = armAnatomy(bones, side);
@@ -51892,10 +51898,10 @@ void main() {
     return out;
   }
   function applyFit(o, c, q0, fit, gripPoint, baseScale = 1, k = 1) {
-    const F3 = fit || FIT0, d2r = Math.PI / 180, s = baseScale * (F3.size ?? 100) / 100;
+    const F = fit || FIT0, d2r = Math.PI / 180, s = baseScale * (F.size ?? 100) / 100;
     o.scale.setScalar(s);
-    o.quaternion.copy(q0).multiply(_q5.setFromEuler(_e2.set((F3.tilt || 0) * d2r, (F3.turn || 0) * d2r, (F3.roll || 0) * d2r, "YXZ")));
-    o.position.copy(c).add(_b4.set(F3.side || 0, F3.up || 0, F3.fwd || 0).multiplyScalar(1e-3 * k).applyQuaternion(q0)).sub(_c4.copy(gripPoint).multiplyScalar(s).applyQuaternion(o.quaternion));
+    o.quaternion.copy(q0).multiply(_q5.setFromEuler(_e2.set((F.tilt || 0) * d2r, (F.turn || 0) * d2r, (F.roll || 0) * d2r, "YXZ")));
+    o.position.copy(c).add(_b4.set(F.side || 0, F.up || 0, F.fwd || 0).multiplyScalar(1e-3 * k).applyQuaternion(q0)).sub(_c4.copy(gripPoint).multiplyScalar(s).applyQuaternion(o.quaternion));
   }
   var FF = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   function placeOneHanded(bones, side, o, def, fit, T3 = {}, k = 1) {
@@ -51915,11 +51921,11 @@ void main() {
   function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
     const R = fistFrame(bones, "Right", FB1);
     if (!R) return false;
-    const L3 = fistFrame(bones, "Left", FB2);
-    if (!L3 || def.hands === "one" || R.c.distanceTo(L3.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
-    const d = new Vector3().subVectors(L3.c, R.c).normalize();
-    if (d.dot(_a4.copy(R.a).add(L3.a)) < 0) d.negate();
-    const low = R.c.dot(d) < L3.c.dot(d) ? R : L3, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
+    const L2 = fistFrame(bones, "Left", FB2);
+    if (!L2 || def.hands === "one" || R.c.distanceTo(L2.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
+    const d = new Vector3().subVectors(L2.c, R.c).normalize();
+    if (d.dot(_a4.copy(R.a).add(L2.a)) < 0) d.negate();
+    const low = R.c.dot(d) < L2.c.dot(d) ? R : L2, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
     const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
     r.addScaledVector(s, -r.dot(s)).normalize();
     _m13.makeBasis(s, r, new Vector3().crossVectors(s, r));
@@ -51997,9 +52003,9 @@ void main() {
     _cm1.makeBasis(s, r, new Vector3().crossVectors(s, r));
     _cm2.makeBasis(d, r22, new Vector3().crossVectors(d, r22));
     _cq.setFromRotationMatrix(_cm2.multiply(_cm1.transpose()));
-    const F3 = new Matrix4().compose(new Vector3(...C.grip).multiplyScalar(k), _cq, _cs).premultiply(charW);
+    const F = new Matrix4().compose(new Vector3(...C.grip).multiplyScalar(k), _cq, _cs).premultiply(charW);
     bones.Spine2.updateWorldMatrix(true, false);
-    return new Matrix4().copy(bones.Spine2.matrixWorld).invert().multiply(F3);
+    return new Matrix4().copy(bones.Spine2.matrixWorld).invert().multiply(F);
   }
   var _cp = new Vector3();
   var _cs2 = new Vector3();
@@ -52188,9 +52194,9 @@ void main() {
   var COS30 = Math.cos(30 * D2);
   var COS60 = Math.cos(60 * D2);
   function hipWeight(bones, side) {
-    const U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], Hip = bones[side + "UpLeg"];
-    if (!U2 || !L3 || !H4 || !Hip) return 0;
-    const ud = L3.getWorldPosition(_a5).sub(U2.getWorldPosition(_b5)).normalize(), wa = sm2((-ud.y - COS60) / (COS30 - COS60));
+    const U2 = bones[side + "Arm"], L2 = bones[side + "ForeArm"], H4 = bones[side + "Hand"], Hip = bones[side + "UpLeg"];
+    if (!U2 || !L2 || !H4 || !Hip) return 0;
+    const ud = L2.getWorldPosition(_a5).sub(U2.getWorldPosition(_b5)).normalize(), wa = sm2((-ud.y - COS60) / (COS30 - COS60));
     const h = H4.getWorldPosition(_a5), hp = Hip.getWorldPosition(_b5), d = Math.hypot(h.x - hp.x, h.z - hp.z);
     return wa * (1 - sm2((d - 0.16) / (0.3 - 0.16)));
   }
@@ -52217,8 +52223,8 @@ void main() {
     for (const side of ["Right", "Left"]) {
       const P = p[side];
       if (!P) continue;
-      const S2 = bones[side + "Shoulder"], U2 = bones[side + "Arm"], L3 = bones[side + "ForeArm"], H4 = bones[side + "Hand"];
-      if (!U2 || !L3 || !H4) continue;
+      const S2 = bones[side + "Shoulder"], U2 = bones[side + "Arm"], L2 = bones[side + "ForeArm"], H4 = bones[side + "Hand"];
+      if (!U2 || !L2 || !H4) continue;
       const out = _o.copy(_l).multiplyScalar(side === "Right" ? -1 : 1).clone();
       if (S2) {
         if (P.shUp) signedTurn(S2, _f.clone(), P.shUp * D2, () => U2.getWorldPosition(_c6).y);
@@ -52227,18 +52233,18 @@ void main() {
       if (P.out) moveHand(bones, side, U2, _f.clone(), out, P.out);
       if (P.fwd) moveHand(bones, side, U2, _l.clone(), _f.clone(), P.fwd);
       if (P.twist) {
-        const ax = L3.getWorldPosition(_c6).sub(U2.getWorldPosition(_a5)).normalize().clone();
+        const ax = L2.getWorldPosition(_c6).sub(U2.getWorldPosition(_a5)).normalize().clone();
         signedTurn(U2, ax, P.twist * D2, () => H4.getWorldPosition(_d3).sub(U2.getWorldPosition(_a5)).dot(out));
       }
       if (P.elbow) {
-        const e = L3.getWorldPosition(_a5).clone(), ud = e.clone().sub(U2.getWorldPosition(_b5)).normalize(), fd = H4.getWorldPosition(_c6).sub(e).normalize();
+        const e = L2.getWorldPosition(_a5).clone(), ud = e.clone().sub(U2.getWorldPosition(_b5)).normalize(), fd = H4.getWorldPosition(_c6).sub(e).normalize();
         const hinge = new Vector3().crossVectors(ud, fd);
-        if (hinge.lengthSq() > 1e-6) signedTurn(L3, hinge.normalize(), P.elbow * D2, () => -H4.getWorldPosition(_d3).sub(e).normalize().dot(ud));
+        if (hinge.lengthSq() > 1e-6) signedTurn(L2, hinge.normalize(), P.elbow * D2, () => -H4.getWorldPosition(_d3).sub(e).normalize().dot(ud));
       }
       const before = limit && (P.fore || P.wristUp || P.wristSide) ? armAnatomy(bones, side) : null;
       if (P.fore) {
-        const fd = H4.getWorldPosition(_a5).sub(L3.getWorldPosition(_b5)).normalize().clone();
-        signedTurn(L3, fd, P.fore * D2, () => armAnatomy(bones, side).roll);
+        const fd = H4.getWorldPosition(_a5).sub(L2.getWorldPosition(_b5)).normalize().clone();
+        signedTurn(L2, fd, P.fore * D2, () => armAnatomy(bones, side).roll);
       }
       const hq = H4.quaternion.clone();
       if (P.wristUp || P.wristSide) {
@@ -52819,7 +52825,7 @@ void main() {
     // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
     // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
     measureGaits(suf = "") {
-      const out = {}, L3 = new Vector3(), LT = new Vector3(), R = new Vector3(), RT2 = new Vector3();
+      const out = {}, L2 = new Vector3(), LT = new Vector3(), R = new Vector3(), RT2 = new Vector3();
       const all = Object.values(this.actions);
       this.container.rotation.y = 0;
       this.outer.position.set(0, 0, 0);
@@ -52833,11 +52839,11 @@ void main() {
           a.time = D3 * i / N;
           this.mixer.update(0);
           this.outer.updateMatrixWorld(true);
-          this.worldPos("LeftFoot", L3);
+          this.worldPos("LeftFoot", L2);
           this.worldPos("LeftToeBase", LT);
           this.worldPos("RightFoot", R);
           this.worldPos("RightToeBase", RT2);
-          rows.push({ L: L3.x * dx + L3.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L3.y, LT.y), ry: Math.min(R.y, RT2.y) });
+          rows.push({ L: L2.x * dx + L2.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L2.y, LT.y), ry: Math.min(R.y, RT2.y) });
         }
         const vel = [];
         for (const [p, y] of [["L", "ly"], ["R", "ry"]]) {
@@ -53098,22 +53104,22 @@ void main() {
       }
       let scW = 0, sact = null, sact2 = null;
       if (s.action === "down" && s.act?.kip && this.act("yola_knockdown") && this.act("ual_KipUp")) {
-        const F3 = s.downFall, U2 = s.downUp, t = s.actionT, fa = this.act("yola_knockdown"), ka = this.act("ual_KipUp");
+        const F = s.downFall, U2 = s.downUp, t = s.actionT, fa = this.act("yola_knockdown"), ka = this.act("ual_KipUp");
         this.act("yola_getup").setEffectiveWeight(0);
-        const kw = smooth2(clamp5((t - F3 + 0.06) / 0.12, 0, 1));
-        fa.time = (1 + Math.min(1, t / F3) * 43) / 30 + (this.dnJit ^= 1) * 1e-6;
-        ka.time = (1 + clamp5((t - F3 + 0.06) / U2, 0, 1) * 35) / 30 + this.dnJit * 1e-6;
-        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F3 + U2 - t) / 0.12, 0, 1));
+        const kw = smooth2(clamp5((t - F + 0.06) / 0.12, 0, 1));
+        fa.time = (1 + Math.min(1, t / F) * 43) / 30 + (this.dnJit ^= 1) * 1e-6;
+        ka.time = (1 + clamp5((t - F + 0.06) / U2, 0, 1) * 35) / 30 + this.dnJit * 1e-6;
+        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F + U2 - t) / 0.12, 0, 1));
         fa.setEffectiveWeight(scW * (1 - kw));
         ka.setEffectiveWeight(scW * kw);
         sact = kw > 0.5 ? ka : fa;
         sact2 = kw > 0.5 ? fa : ka;
       } else if (s.action === "down" && this.act("yola_knockdown")) {
-        const F3 = s.downFall || 1.15, U2 = s.downUp || 1.7, t = s.actionT, up = t >= F3;
+        const F = s.downFall || 1.15, U2 = s.downUp || 1.7, t = s.actionT, up = t >= F;
         const a = this.act(up ? "yola_getup" : "yola_knockdown");
         this.act(up ? "yola_knockdown" : "yola_getup").setEffectiveWeight(0);
-        a.time = (up ? 20 + Math.min(1, (t - F3) / U2) * 161 : 1 + Math.min(1, t / F3) * 58) / 30 + (this.dnJit ^= 1) * 1e-6;
-        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F3 + U2 - t) / 0.25, 0, 1));
+        a.time = (up ? 20 + Math.min(1, (t - F) / U2) * 161 : 1 + Math.min(1, t / F) * 58) / 30 + (this.dnJit ^= 1) * 1e-6;
+        scW = smooth2(clamp5(t / 0.08, 0, 1)) * smooth2(clamp5((F + U2 - t) / 0.25, 0, 1));
         sact = a;
         a.setEffectiveWeight(scW);
       } else if (this.act("yola_knockdown")) {
@@ -53177,11 +53183,11 @@ void main() {
           }
         }
         if (!this.draw) {
-          const F3 = this.drawFade;
-          if (F3 && F3.w > 0) {
-            F3.w = Math.max(0, F3.w - dt / 0.12);
-            DC.act.time = DC.t0 + (F3.f - 1) / 30;
-            DC.act.setEffectiveWeight(F3.w * 8);
+          const F = this.drawFade;
+          if (F && F.w > 0) {
+            F.w = Math.max(0, F.w - dt / 0.12);
+            DC.act.time = DC.t0 + (F.f - 1) / 30;
+            DC.act.setEffectiveWeight(F.w * 8);
           } else DC.act.setEffectiveWeight(0);
         }
       }
@@ -53545,8 +53551,8 @@ void main() {
     shotgunBarrel(out) {
       this.container.getWorldQuaternion(_q34).invert();
       this.bones.RightHand.getWorldQuaternion(_q7).multiply(this.shotgunSocket);
-      const F3 = this.shotgunFit;
-      if (F3) _q7.multiply(_q24.setFromEuler(_e3.set((F3.tilt || 0) * Math.PI / 180, (F3.turn || 0) * Math.PI / 180, (F3.roll || 0) * Math.PI / 180, "YXZ")));
+      const F = this.shotgunFit;
+      if (F) _q7.multiply(_q24.setFromEuler(_e3.set((F.tilt || 0) * Math.PI / 180, (F.turn || 0) * Math.PI / 180, (F.roll || 0) * Math.PI / 180, "YXZ")));
       return out.set(1, 0, 0).applyQuaternion(_q7).applyQuaternion(_q34);
     }
     // Shotgun: the upper body keeps its clip's own heading (rebaseUpper), so the barrel already points near the aim in every
@@ -53599,8 +53605,8 @@ void main() {
       for (const [k, d] of Object.entries(FIT_DEFAULTS)) out[k] = (own[k] ?? d) + ((base[k] ?? d) - (own[k] ?? d)) * C.share;
       return out;
     }
-    leftNudge(F3, out) {
-      const d = (F3?.lDown || 0) / 1e3, sd = (F3?.lSide || 0) / 1e3;
+    leftNudge(F, out) {
+      const d = (F?.lDown || 0) / 1e3, sd = (F?.lSide || 0) / 1e3;
       out.set(0, -d, 0);
       if (!sd) return out;
       this.bones.LeftArm.getWorldPosition(_v7);
@@ -53611,8 +53617,8 @@ void main() {
     // left HAND bone turned -118 deg about its own length and her forearm 0, so her skin wrings at the wrist ("her wrist looks
     // completely whack"). Her hand keeps its world turn (the grip unchanged); the twist past keepDeg goes to the forearm.
     untwistWrist(side, keepDeg) {
-      const H4 = this.bones[side + "Hand"], F3 = this.bones[side + "ForeArm"], M4 = this.bones[side + "HandMiddle1"];
-      if (!H4 || !F3 || !M4) return;
+      const H4 = this.bones[side + "Hand"], F = this.bones[side + "ForeArm"], M4 = this.bones[side + "HandMiddle1"];
+      if (!H4 || !F || !M4) return;
       const ax = _v7.copy(M4.position).normalize(), q = H4.quaternion, d = q.x * ax.x + q.y * ax.y + q.z * ax.z;
       const tw = _q34.set(ax.x * d, ax.y * d, ax.z * d, q.w).normalize();
       let ang = 2 * Math.acos(Math.min(1, Math.abs(tw.w)));
@@ -53621,12 +53627,12 @@ void main() {
       if (Math.abs(excess) < 1e-3) return;
       H4.updateWorldMatrix(true, false);
       H4.getWorldQuaternion(_q42);
-      F3.quaternion.multiply(_q34.setFromAxisAngle(_v7.copy(H4.position).normalize(), excess));
-      F3.updateMatrixWorld(true);
-      H4.quaternion.copy(F3.getWorldQuaternion(_q34).invert().multiply(_q42));
+      F.quaternion.multiply(_q34.setFromAxisAngle(_v7.copy(H4.position).normalize(), excess));
+      F.updateMatrixWorld(true);
+      H4.quaternion.copy(F.getWorldQuaternion(_q34).invert().multiply(_q42));
       H4.updateMatrixWorld(true);
     }
-    shotgunLeftHand(rf, G5, F3 = this.shotgunFit, C = null) {
+    shotgunLeftHand(rf, G5, F = this.shotgunFit, C = null) {
       const U2 = G5.userData, SP = SHOTGUN_SPEC, SH2 = SP.shell, smooth01 = (u) => smooth2(clamp5(u, 0, 1));
       const shellOn = rf >= SH2.from && rf <= SH2.to;
       this.grip("Left", _v4);
@@ -53653,14 +53659,14 @@ void main() {
       _v23.set(U2.pumpX, U2.pump.position.y, U2.pump.position.z);
       G5.localToWorld(_v23);
       if (C?.fit.pumpHand && !shellOn && !tail) {
-        U2.gripL.getWorldPosition(_v32).add(this.leftNudge(F3, _v43));
+        U2.gripL.getWorldPosition(_v32).add(this.leftNudge(F, _v43));
         _v5.set(1, 0, 0).transformDirection(G5.matrixWorld);
         reachShoulder(this.bones, "Left", _v32, 25);
         handOnto(this.bones, "Left", _v32, _v5, 1, ikArm, { signFree: true });
         this.closeFist("Left", 1);
       } else {
         const wHold = smooth01(1 - (_v4.distanceTo(_v23) - 0.03) / 0.12) * (1 - wPort);
-        if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32).add(this.leftNudge(F3, _v43)), wHold);
+        if (wHold > 0) this.ikArm("Left", U2.gripL.getWorldPosition(_v32).add(this.leftNudge(F, _v43)), wHold);
       }
       const S2 = this.shell;
       S2.visible = shellOn;
@@ -53935,16 +53941,16 @@ void main() {
           this.magFall = { p: new Vector3(), q: new Quaternion(), s: new Vector3(), t: 0 };
           M4.decompose(this.magFall.p, this.magFall.q, this.magFall.s);
         }
-        const F3 = this.magFall;
-        if (F3) {
-          F3.t += dt;
-          const tHit = Math.sqrt(Math.max(0, 2 * (F3.p.y - 0.02) / 9.8)), t = Math.min(F3.t, tHit);
-          this.magEmpty.position.copy(F3.p);
+        const F = this.magFall;
+        if (F) {
+          F.t += dt;
+          const tHit = Math.sqrt(Math.max(0, 2 * (F.p.y - 0.02) / 9.8)), t = Math.min(F.t, tHit);
+          this.magEmpty.position.copy(F.p);
           this.magEmpty.position.y -= 4.9 * t * t;
-          _q34.setFromAxisAngle(_v32.set(0, 0, 1).applyQuaternion(F3.q), 5 * t);
-          this.magEmpty.quaternion.copy(_q34).multiply(F3.q);
-          this.magEmpty.scale.copy(F3.s);
-          this.magEmpty.visible = this.outer.visible && F3.t < tHit + 4;
+          _q34.setFromAxisAngle(_v32.set(0, 0, 1).applyQuaternion(F.q), 5 * t);
+          this.magEmpty.quaternion.copy(_q34).multiply(F.q);
+          this.magEmpty.scale.copy(F.s);
+          this.magEmpty.visible = this.outer.visible && F.t < tHit + 4;
           if (!this.magEmpty.visible) this.magFall = null;
         } else this.magEmpty.visible = false;
       }
@@ -53968,10 +53974,10 @@ void main() {
       }
       c.multiplyScalar(1 / n);
       const A = B.RightHandIndex1.getWorldPosition(_pf2).sub(B.RightHandPinky1.getWorldPosition(_pf3)).normalize();
-      const F3 = B.RightHand.getWorldPosition(_pf3).sub(B.RightForeArm.getWorldPosition(_pf4));
-      F3.addScaledVector(A, -F3.dot(A)).normalize();
+      const F = B.RightHand.getWorldPosition(_pf3).sub(B.RightForeArm.getWorldPosition(_pf4));
+      F.addScaledVector(A, -F.dot(A)).normalize();
       _m42.makeBasis(PG_AXIS, PG_BARREL, _pf4.crossVectors(PG_AXIS, PG_BARREL));
-      _m4b.makeBasis(A, F3, _pf4.crossVectors(A, F3)).multiply(_m42.transpose());
+      _m4b.makeBasis(A, F, _pf4.crossVectors(A, F)).multiply(_m42.transpose());
       _q7.setFromRotationMatrix(_m4b);
       const d2r = Math.PI / 180, size = (P.size ?? 100) / 100;
       o.scale.setScalar(size);
@@ -54044,13 +54050,13 @@ void main() {
         this.pistol.userData.muzzle.getWorldPosition(this.muzzleWorld);
       } else if (shown === "shotgun") {
         const G5 = this.shotgun, U2 = G5.userData, SP = SHOTGUN_SPEC;
-        const C = this.shotgunClip(), F3 = C ? this.shotgunFitNow(C) : this.shotgunFit;
+        const C = this.shotgunClip(), F = C ? this.shotgunFitNow(C) : this.shotgunFit;
         this.untwistWrist("Left", 45);
         this.bones.RightHand.getWorldQuaternion(_q7).multiply(this.shotgunSocket);
         this.grip("Right", _v4);
         G5.position.copy(_v4);
         G5.quaternion.copy(_q7);
-        if (F3) applyFit(G5, _v4, _q7, F3, AXE_AT);
+        if (F) applyFit(G5, _v4, _q7, F, AXE_AT);
         let slide = 0;
         if (s.action === "shot") {
           const u = (s.actionT - SP.pumpStart) / (SP.pumpEnd - SP.pumpStart);
@@ -54061,7 +54067,7 @@ void main() {
         U2.pump.position.x = U2.pumpX - SP.pumpStroke * slide;
         G5.updateMatrixWorld(true);
         U2.muzzle.getWorldPosition(this.muzzleWorld);
-        this.shotgunLeftHand(rf, G5, F3, C);
+        this.shotgunLeftHand(rf, G5, F, C);
       } else {
         this.grip("Right", _v4);
         this.grip("Left", _v23);
@@ -54087,10 +54093,10 @@ void main() {
           this.grip("Left", _v23);
           M4.position.copy(_v4).addScaledVector(dir, -span / 2);
         } else {
-          const L22 = twoHandLine(this.bones, dir, this._l2 || (this._l2 = { c: new Vector3(), d: new Vector3(), span: 0 }), this.swingAct ? this.swingHand : "Right", this.axeDir);
-          if (L22) {
-            dir.copy(L22.d);
-            M4.position.copy(L22.c);
+          const L2 = twoHandLine(this.bones, dir, this._l2 || (this._l2 = { c: new Vector3(), d: new Vector3(), span: 0 }), this.swingAct ? this.swingHand : "Right", this.axeDir);
+          if (L2) {
+            dir.copy(L2.d);
+            M4.position.copy(L2.c);
             (this.axeDir || (this.axeDir = new Vector3())).copy(dir);
           } else M4.position.copy(_v4).add(_v23).multiplyScalar(0.5);
         }
@@ -54316,8 +54322,8 @@ void main() {
         if (k) (tris[k] || (tris[k] = [])).push(idx[t], idx[t + 1], idx[t + 2]);
       }
       for (const [k, list] of Object.entries(tris)) {
-        const F3 = frames[k];
-        if (!F3) continue;
+        const F = frames[k];
+        if (!F) continue;
         const map = /* @__PURE__ */ new Map(), pos = [], uv = [], index = [], uvs = g.attributes.uv;
         for (const vi of list) {
           let j = map.get(vi);
@@ -54325,7 +54331,7 @@ void main() {
             j = map.size;
             map.set(vi, j);
             o.getVertexPosition(vi, _bv);
-            _bv.applyMatrix4(o.matrixWorld).sub(F3.c).applyQuaternion(F3.qi);
+            _bv.applyMatrix4(o.matrixWorld).sub(F.c).applyQuaternion(F.qi);
             pos.push(_bv.x, _bv.y, _bv.z);
             if (uvs) uv.push(uvs.getX(vi), uvs.getY(vi));
           }
@@ -54702,13 +54708,13 @@ void main() {
       }
       const baked = bakeChunks(this.model, roots, frames), dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
       for (const [k, obj] of Object.entries(baked)) {
-        const F3 = frames[k], e = C[k];
-        obj.position.copy(F3.c);
-        obj.quaternion.copy(F3.q0);
+        const F = frames[k], e = C[k];
+        obj.position.copy(F.c);
+        obj.quaternion.copy(F.q0);
         _ZombieView.scene.add(obj);
-        const vel = (extra ? extra(k, F3.c) : dir.clone().multiplyScalar(speed)).add(new Vector3(z.vx * 0.5, 2.2 + Math.random() * 1.2, z.vz * 0.5));
+        const vel = (extra ? extra(k, F.c) : dir.clone().multiplyScalar(speed)).add(new Vector3(z.vx * 0.5, 2.2 + Math.random() * 1.2, z.vz * 0.5));
         const r = e.r * (this.height / 1.7);
-        const piece = { obj, t: 0, id: P && P.ready ? P.addPiece(e.a, e.b, r, vel, F3.q0) : 0, P: P && P.ready ? P : null, vel, r, states: [] };
+        const piece = { obj, t: 0, id: P && P.ready ? P.addPiece(e.a, e.b, r, vel, F.q0) : 0, P: P && P.ready ? P : null, vel, r, states: [] };
         _ZombieView.pieces.push(piece);
         if (_ZombieView.pieces.length > MAX_PIECES) _ZombieView.dropPiece(_ZombieView.pieces[0]);
       }
@@ -54878,52 +54884,52 @@ void main() {
     // a tipped chair lies on its side
     static syncLoose(list, alpha, dt) {
       const S2 = _ZombieView.propSrc, M4 = _ZombieView.looseMeshes, seen2 = /* @__PURE__ */ new Set();
-      for (const L3 of list) {
-        seen2.add(L3.id);
-        let o = M4.get(L3.id);
+      for (const L2 of list) {
+        seen2.add(L2.id);
+        let o = M4.get(L2.id);
         if (!o) {
-          const src = L3.kind === "o2tank" ? o2Cylinder() : L3.kind === "iv" ? L3.o2 ? o2Trolley() : S2.iv : S2.chair;
+          const src = L2.kind === "o2tank" ? o2Cylinder() : L2.kind === "iv" ? L2.o2 ? o2Trolley() : S2.iv : S2.chair;
           if (!src) continue;
           o = src === S2.iv || src === S2.chair ? src.clone() : src;
           o.userData.l = { vx: 0, vz: 0, rx: 0, rz: 0 };
           _ZombieView.scene.add(o);
-          M4.set(L3.id, o);
-          if (L3.o2 && L3.kind === "chair") {
+          M4.set(L2.id, o);
+          if (L2.o2 && L2.kind === "chair") {
             o.userData.tank = o2Cylinder();
             _ZombieView.scene.add(o.userData.tank);
           }
         }
-        const x = L3.px + (L3.x - L3.px) * alpha, z = L3.pz + (L3.z - L3.pz) * alpha, u = o.userData.l;
-        if (L3.kind === "o2tank") {
+        const x = L2.px + (L2.x - L2.px) * alpha, z = L2.pz + (L2.z - L2.pz) * alpha, u = o.userData.l;
+        if (L2.kind === "o2tank") {
           o.position.set(x, 0, z);
-          o.rotation.set(0, L3.yaw, 0);
-        } else if (L3.kind === "iv") {
-          const ax = dt > 0 ? (L3.vx - u.vx) / dt : 0, az = dt > 0 ? (L3.vz - u.vz) / dt : 0;
-          u.vx = L3.vx;
-          u.vz = L3.vz;
+          o.rotation.set(0, L2.yaw, 0);
+        } else if (L2.kind === "iv") {
+          const ax = dt > 0 ? (L2.vx - u.vx) / dt : 0, az = dt > 0 ? (L2.vz - u.vz) / dt : 0;
+          u.vx = L2.vx;
+          u.vz = L2.vz;
           const tx = clamp5(az * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt), tz = clamp5(-ax * IV.tilt * 0.1, -IV.maxTilt, IV.maxTilt);
           u.rx += (-tx - u.rx) * Math.min(1, dt * 6);
           u.rz += (-tz - u.rz) * Math.min(1, dt * 6);
           o.position.set(x, 0, z);
           o.rotation.set(u.rx, 0, u.rz);
-        } else if (L3.tipped) {
+        } else if (L2.tipped) {
           o.position.set(x, 0.3, z);
-          o.rotation.set(0, L3.yaw + CHAIR.yaw, L3.tipSide * 1.45);
+          o.rotation.set(0, L2.yaw + CHAIR.yaw, L2.tipSide * 1.45);
         } else {
           o.position.set(x, 0, z);
-          o.rotation.set(0, L3.yaw + CHAIR.yaw, 0);
+          o.rotation.set(0, L2.yaw + CHAIR.yaw, 0);
         }
-        const tk = o.userData.tank || (L3.o2 ? o : null);
+        const tk = o.userData.tank || (L2.o2 ? o : null);
         if (o.userData.tank) {
-          const tp = tankPos(L3, _tp);
-          tk.position.set(tp.x - (L3.x - x), L3.tipped ? 0.2 : 0.18, tp.z - (L3.z - z));
-          tk.rotation.set(L3.tipped ? 1.4 : 0, L3.yaw, 0);
+          const tp = tankPos(L2, _tp);
+          tk.position.set(tp.x - (L2.x - x), L2.tipped ? 0.2 : 0.18, tp.z - (L2.z - z));
+          tk.rotation.set(L2.tipped ? 1.4 : 0, L2.yaw, 0);
         }
-        if (tk && L3.fuse != null && dt > 0) {
+        if (tk && L2.fuse != null && dt > 0) {
           tk.position.x += (Math.random() - 0.5) * 0.035;
           tk.position.z += (Math.random() - 0.5) * 0.035;
           if (_ZombieView.fx && Math.random() < dt * 40) {
-            const a = Math.random() * Math.PI * 2, top = L3.kind === "iv" ? 1.05 : tk.position.y + 0.95;
+            const a = Math.random() * Math.PI * 2, top = L2.kind === "iv" ? 1.05 : tk.position.y + 0.95;
             _ZombieView.fx.burst(tk.position.x, top, tk.position.z, 2, 16054527, 2.4, 0.6, 0.25, Math.cos(a), Math.sin(a));
           }
         }
@@ -54950,11 +54956,11 @@ void main() {
       this.model.updateMatrixWorld(true);
       const RH = rest(hb), RT2 = rest(ht);
       if (!RH || !RT2) return;
-      const H4 = new Vector3().setFromMatrixPosition(RH), T3 = new Vector3().setFromMatrixPosition(RT2), U2 = T3.clone().sub(H4), L3 = U2.length();
+      const H4 = new Vector3().setFromMatrixPosition(RH), T3 = new Vector3().setFromMatrixPosition(RT2), U2 = T3.clone().sub(H4), L2 = U2.length();
       U2.normalize();
-      const F3 = new Vector3(0, 0, 1).applyQuaternion(this.model.getWorldQuaternion(new Quaternion()));
-      F3.addScaledVector(U2, -F3.dot(U2)).normalize();
-      const R = new Vector3().crossVectors(U2, F3), [up, fw, sp] = _ZombieView.EYE_AT[this.type] || _ZombieView.EYE_AT[0], inv = RH.clone().invert();
+      const F = new Vector3(0, 0, 1).applyQuaternion(this.model.getWorldQuaternion(new Quaternion()));
+      F.addScaledVector(U2, -F.dot(U2)).normalize();
+      const R = new Vector3().crossVectors(U2, F), [up, fw, sp] = _ZombieView.EYE_AT[this.type] || _ZombieView.EYE_AT[0], inv = RH.clone().invert();
       const ws = hb.getWorldScale(new Vector3()).x || 1;
       if (!_ZombieView.eyeTex) {
         const c = document.createElement("canvas");
@@ -54968,10 +54974,29 @@ void main() {
         _ZombieView.eyeTex = new CanvasTexture(c);
       }
       const mat2 = new SpriteMaterial({ map: _ZombieView.eyeTex, color: _ZombieView.eyeCfg.col, transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
+      const verts = [], M4 = new Matrix4(), w = new Vector3();
+      this.model.traverse((o) => {
+        if (!o.isSkinnedMesh) return;
+        M4.multiplyMatrices(o.matrixWorld, o.bindMatrix);
+        const pa = o.geometry.attributes.position;
+        for (let i = 0; i < pa.count; i++) verts.push(w.fromBufferAttribute(pa, i).applyMatrix4(M4).clone());
+      });
+      const onFace = (E0) => {
+        const r = 0.12 * L2, near = [];
+        for (const v of verts) {
+          const d = v.clone().sub(E0), f = d.dot(F);
+          d.addScaledVector(F, -f);
+          if (d.length() < r && f > -0.5 * L2) near.push(f);
+        }
+        if (near.length < 3) return null;
+        near.sort((a, b) => b - a);
+        const top = near.slice(0, Math.max(3, Math.ceil(near.length * 0.25)));
+        return top.reduce((a, b) => a + b, 0) / top.length;
+      };
       this.eyes = [-1, 1].map((s) => {
-        const E0 = H4.clone().addScaledVector(U2, up * L3).addScaledVector(R, s * sp * L3), f = onFace(E0);
+        const E0 = H4.clone().addScaledVector(U2, up * L2).addScaledVector(R, s * sp * L2), f = onFace(E0);
         const e = new Sprite(mat2);
-        e.position.copy(E0.addScaledVector(F3, f != null ? f + 4e-3 : fw * L3).applyMatrix4(inv));
+        e.position.copy(E0.addScaledVector(F, f != null ? f + 4e-3 : fw * L2).applyMatrix4(inv));
         e.scale.setScalar(_ZombieView.eyeCfg.size / ws);
         e.visible = false;
         e.renderOrder = 4;
@@ -54992,7 +55017,7 @@ void main() {
       const on = z.alive && !this.severed.has("Head") && z.state !== "emerge";
       for (const e of this.eyes) e.visible = on;
       if (!on) return;
-      const L3 = C.light ? C.light(x, zz) : 0, k = Math.min(1, C.base + L3 * C.gain);
+      const L2 = C.light ? C.light(x, zz) : 0, k = Math.min(1, C.base + L2 * C.gain);
       this.eyeMat.opacity = k;
       this.eyeMat.color.setHex(C.col);
       const s = C.size * (0.75 + 0.6 * k) / this.eyeWs;
@@ -55052,25 +55077,6 @@ void main() {
       const busy = z.state === "windup" || z.state === "strike" || z.state === "recover" || z.state === "stagger" || z.state === "knockdown" || z.state === "getup" || z.state === "dying" || z.state === "dead" || z.crawling;
       {
         const m = z.bed && (z.bed.side || 1) < 0 ? -1 : 1;
-        const verts = [], M4 = new Matrix4(), w = new Vector3();
-        this.model.traverse((o) => {
-          if (!o.isSkinnedMesh) return;
-          M4.multiplyMatrices(o.matrixWorld, o.bindMatrix);
-          const pa = o.geometry.attributes.position;
-          for (let i = 0; i < pa.count; i++) verts.push(w.fromBufferAttribute(pa, i).applyMatrix4(M4).clone());
-        });
-        const onFace2 = (E0) => {
-          const r = 0.12 * L, near = [];
-          for (const v of verts) {
-            const d = v.clone().sub(E0), f2 = d.dot(F);
-            d.addScaledVector(F, -f2);
-            if (d.length() < r && f2 > -0.5 * L) near.push(f2);
-          }
-          if (near.length < 3) return null;
-          near.sort((a, b) => b - a);
-          const top = near.slice(0, Math.max(3, Math.ceil(near.length * 0.25)));
-          return top.reduce((a, b) => a + b, 0) / top.length;
-        };
         if (this.outer.scale.x !== m) this.outer.scale.x = m;
         if (m < 0) this.container.rotation.y = -z.yaw;
       }
@@ -55095,7 +55101,7 @@ void main() {
         }
       }
       if (this.iv) {
-        const L3 = z.loose, o = L3 && _ZombieView.looseMeshes.get(L3.id), want = !!(o && L3.owner === z.id && L3.held && !busy) ? 1 : 0;
+        const L2 = z.loose, o = L2 && _ZombieView.looseMeshes.get(L2.id), want = !!(o && L2.owner === z.id && L2.held && !busy) ? 1 : 0;
         this.ivW += (want - this.ivW) * Math.min(1, dt * (want ? 5 : 10));
         if (o && this.ivW > 0.01 && B.LeftArm) {
           o.updateMatrixWorld(true);
@@ -55278,8 +55284,8 @@ void main() {
       this.outer.position.x = x;
       this.outer.position.z = zz;
       if (z.floorSpawn && z.state === "emerge") {
-        const F3 = z.floorSpawn, sp2 = this.act("ual_Zombie_Spawn");
-        if (z.t < F3.rumble || !sp2) {
+        const F = z.floorSpawn, sp2 = this.act("ual_Zombie_Spawn");
+        if (z.t < F.rumble || !sp2) {
           this.outer.visible = this.blob.visible = false;
           this.lastState = "emerge";
           return;
@@ -55294,7 +55300,7 @@ void main() {
           this.spLen = c.duration - t0;
         }
         {
-          const u = clamp5((z.t - F3.rumble) / F3.climb, 0, 1), c = u < 0.15 ? u / 0.15 * 0.38 : 0.38 + 0.62 * (1 - Math.pow(1 - (u - 0.15) / 0.85, 1.6));
+          const u = clamp5((z.t - F.rumble) / F.climb, 0, 1), c = u < 0.15 ? u / 0.15 * 0.38 : 0.38 + 0.62 * (1 - Math.pow(1 - (u - 0.15) / 0.85, 1.6));
           sp2.timeScale = 0;
           sp2.time = this.spT0 + this.spLen * Math.min(0.999, c);
         }
@@ -55733,10 +55739,10 @@ void main() {
     }
     // (the broken shields' lifetimes run on the game clock with the severed pieces)
     static updateShields(dt) {
-      const L3 = _ZombieView.brokenShields;
-      for (let i = L3.length - 1; i >= 0; i--) {
-        L3[i].update(dt);
-        if (L3[i].disposed) L3.splice(i, 1);
+      const L2 = _ZombieView.brokenShields;
+      for (let i = L2.length - 1; i >= 0; i--) {
+        L2[i].update(dt);
+        if (L2[i].disposed) L2.splice(i, 1);
       }
     }
     // Ragdolled: the skeleton follows the physics parts. The body leaves the physics world once the
@@ -55883,12 +55889,12 @@ void main() {
     };
     const hold2 = hold && w && P.reach === "tip" && w.tip ? { ...hold, w: { ...w, impact_point: w.tip } } : hold;
     const rows = sample(Y2, A, clip.clone(), hold2);
-    let pts, dirs, L3, geom;
+    let pts, dirs, L2, geom;
     if (hold?.obj) {
-      L3 = rows[0].tip.distanceTo(rows[0].grip);
+      L2 = rows[0].tip.distanceTo(rows[0].grip);
       pts = rows.map((r) => r.grip);
       dirs = rows.map((r) => r.tip.clone().sub(r.grip).normalize());
-      geom = { length: L3, hitFrom: P.hitFrom, radius: P.radius };
+      geom = { length: L2, hitFrom: P.hitFrom, radius: P.radius };
     } else {
       let best = "r", bp = 0;
       for (const k of ["l", "r", "lf", "rf"]) for (let i = 1; i < rows.length; i++) {
@@ -55904,8 +55910,8 @@ void main() {
         d.y = 0;
         return d.normalize();
       });
-      L3 = 0.12;
-      geom = { length: L3, hitFrom: 0, radius: best.endsWith("f") ? 0.15 : 0.12 };
+      L2 = 0.12;
+      geom = { length: L2, hitFrom: 0, radius: best.endsWith("f") ? 0.15 : 0.12 };
       if (best.endsWith("f")) {
         A.style = "kick";
         A.dmg = 2.2;
@@ -55915,7 +55921,7 @@ void main() {
     }
     A.geom = geom;
     A.PATH = rows.map((r, i) => ({ t: attackTime(A, r.f), mx: pts[i].x, my: pts[i].y, mz: pts[i].z, dx: dirs[i].x, dy: dirs[i].y, dz: dirs[i].z }));
-    const tip = (i) => pts[i].clone().addScaledVector(dirs[i], L3);
+    const tip = (i) => pts[i].clone().addScaledVector(dirs[i], L2);
     const sp = rows.map((r, i) => i ? tip(i).distanceTo(tip(i - 1)) * FPS : 0);
     const peak = Math.max(...sp);
     const find = (frac) => {
@@ -55991,10 +55997,10 @@ void main() {
     S2.turnIn = turnIn;
   }
   function lowWindow(S2, maxY = 0.6, minSpeed = 1.2) {
-    const L3 = S2.geom?.length || 0.74, P = S2.PATH, tip = (q) => q.my + q.dy * L3;
+    const L2 = S2.geom?.length || 0.74, P = S2.PATH, tip = (q) => q.my + q.dy * L2;
     let a0 = null, a1 = null;
     for (let i = 1; i < P.length; i++) {
-      const v = Math.hypot(P[i].mx + P[i].dx * L3 - P[i - 1].mx - P[i - 1].dx * L3, tip(P[i]) - tip(P[i - 1]), P[i].mz + P[i].dz * L3 - P[i - 1].mz - P[i - 1].dz * L3) / (P[i].t - P[i - 1].t);
+      const v = Math.hypot(P[i].mx + P[i].dx * L2 - P[i - 1].mx - P[i - 1].dx * L2, tip(P[i]) - tip(P[i - 1]), P[i].mz + P[i].dz * L2 - P[i - 1].mz - P[i - 1].dz * L2) / (P[i].t - P[i - 1].t);
       if (tip(P[i]) < maxY && v > minSpeed) {
         a0 ?? (a0 = P[i - 1].t);
         a1 = P[i].t;
@@ -56102,10 +56108,10 @@ void main() {
       LEG_ATTACKS.fists = S2;
       made.push("slide");
     }
-    const L3 = LEG_ATTACKS.axe;
-    if (L3 && !L3.built && yola2.act(L3.clip)) {
-      sampleAxePath(yola2, L3);
-      made.push(`axe legs ${L3.activeStart.toFixed(2)}-${L3.activeEnd.toFixed(2)} s`);
+    const L2 = LEG_ATTACKS.axe;
+    if (L2 && !L2.built && yola2.act(L2.clip)) {
+      sampleAxePath(yola2, L2);
+      made.push(`axe legs ${L2.activeStart.toFixed(2)}-${L2.activeEnd.toFixed(2)} s`);
     }
     console.info("[newmoves]", made.join(", "));
   }
@@ -56140,7 +56146,7 @@ void main() {
     Object.assign(Y2, keep);
     A.PATH = rows;
     A.built = true;
-    const L3 = 0.74, tip = (r) => [r.mx + r.dx * L3, r.my + r.dy * L3, r.mz + r.dz * L3];
+    const L2 = 0.74, tip = (r) => [r.mx + r.dx * L2, r.my + r.dy * L2, r.mz + r.dz * L2];
     let a0 = null, a1 = null;
     for (let i = 1; i < rows.length; i++) {
       const p = tip(rows[i]), o = tip(rows[i - 1]), v = Math.hypot(p[0] - o[0], p[1] - o[1], p[2] - o[2]) / (rows[i].t - rows[i - 1].t);
@@ -56296,8 +56302,8 @@ void main() {
       blobs.push({ x: 112 + Math.cos(a) * d * 1.45 + 10, y: 128 + Math.sin(a) * d * 0.85, r: 14 + R() * 26 });
     }
     for (let i = 0; i < 9; i++) {
-      const a = (R() - 0.5) * (i < 6 ? 1.3 : 3.6), L3 = 40 + R() * 70, x0 = 128 + Math.cos(a) * 30, y0 = 128 + Math.sin(a) * 22;
-      fingers.push({ x0, y0, x1: x0 + Math.cos(a) * L3, y1: y0 + Math.sin(a) * L3 * 0.8, w: 7 + R() * 9 });
+      const a = (R() - 0.5) * (i < 6 ? 1.3 : 3.6), L2 = 40 + R() * 70, x0 = 128 + Math.cos(a) * 30, y0 = 128 + Math.sin(a) * 22;
+      fingers.push({ x0, y0, x1: x0 + Math.cos(a) * L2, y1: y0 + Math.sin(a) * L2 * 0.8, w: 7 + R() * 9 });
     }
     const drops = [];
     for (let i = 0; i < 22; i++) {
@@ -56727,8 +56733,8 @@ void main() {
       for (const u of this._undo) u.bone.quaternion.copy(u.base);
       this._undo.length = 0;
       if (this.moving && this.path.length) {
-        const t = this.path[0], dx = t.x - this.x, dz = t.z - this.z, L3 = Math.hypot(dx, dz), step = this.speed * d;
-        if (L3 <= step + 1e-4) {
+        const t = this.path[0], dx = t.x - this.x, dz = t.z - this.z, L2 = Math.hypot(dx, dz), step = this.speed * d;
+        if (L2 <= step + 1e-4) {
           this.root.position.x = t.x;
           this.root.position.z = t.z;
           this.path.shift();
@@ -56741,8 +56747,8 @@ void main() {
             cb?.();
           }
         } else {
-          this.root.position.x += dx / L3 * step;
-          this.root.position.z += dz / L3 * step;
+          this.root.position.x += dx / L2 * step;
+          this.root.position.z += dz / L2 * step;
           this.targetYaw = Math.atan2(dx, dz);
         }
       }
@@ -57623,11 +57629,11 @@ void main() {
       this.lift = { root, mixer, open, k: 0, display: liftDisplay(root) };
     }
     setLiftOpen(k) {
-      const L3 = this.lift;
-      if (!L3?.open) return;
-      L3.k = k;
-      L3.open.time = Math.max(0, Math.min(0.999, k)) * L3.open.getClip().duration;
-      L3.mixer.update(0);
+      const L2 = this.lift;
+      if (!L2?.open) return;
+      L2.k = k;
+      L2.open.time = Math.max(0, Math.min(0.999, k)) * L2.open.getClip().duration;
+      L2.mixer.update(0);
     }
     // the wheelchair the colleague brings: the CLEAN hospital wheelchair (assets/models/wheelchair: no blood before the
     // outbreak), a prop that travels with whoever sits in it. Its own anchors: the origin is the seated character's origin
@@ -58956,17 +58962,17 @@ void main() {
           { n: [1, 0, 0], at: x1, r: [0, -1], a0: z0, a1: z1 },
           { n: [-1, 0, 0], at: x0, r: [0, 1], a0: z0, a1: z1 }
         ];
-        for (const F3 of faces) {
-          const len = F3.a1 - F3.a0, nSeg = Math.max(1, Math.ceil(len / 1)), alongX = F3.n[0] === 0;
+        for (const F of faces) {
+          const len = F.a1 - F.a0, nSeg = Math.max(1, Math.ceil(len / 1)), alongX = F.n[0] === 0;
           for (let s = 0; s < nSeg; s++) {
-            let a = F3.a0 + len * s / nSeg, b = F3.a0 + len * (s + 1) / nSeg, c = (a + b) / 2;
-            const sx = alongX ? c : F3.at + F3.n[0] * 0.25, sz = alongX ? F3.at + F3.n[2] * 0.25 : c;
+            let a = F.a0 + len * s / nSeg, b = F.a0 + len * (s + 1) / nSeg, c = (a + b) / 2;
+            const sx = alongX ? c : F.at + F.n[0] * 0.25, sz = alongX ? F.at + F.n[2] * 0.25 : c;
             const room = this.roomObjAt(sx, sz);
             const mi = key[obRecipe(room)?.[1] || "clinical"];
-            const pt = (t, y) => alongX ? [t, y, F3.at] : [F3.at, y, t];
-            const rs = alongX ? F3.r[0] : F3.r[1];
+            const pt = (t, y) => alongX ? [t, y, F.at] : [F.at, y, t];
+            const rs = alongX ? F.r[0] : F.r[1];
             if (rs < 0) [a, b] = [b, a];
-            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F3.n, a * rs / H4, b * rs / H4);
+            quad(mi, pt(a, y0), pt(b, y0), pt(b, h), pt(a, h), F.n, a * rs / H4, b * rs / H4);
           }
         }
         buf[2].push([x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z1], [0, 1, 0], [1, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z1], [0, 1, 0], [0, 0], [x1, h, z0], [0, 1, 0], [1, 1], [x0, h, z0], [0, 1, 0], [0, 1]);
@@ -59221,18 +59227,18 @@ void main() {
         this.adoptFloors();
         this.freezeStatic();
       }
-      const F3 = this.frozen;
-      if (!F3?.length) return;
-      const n = Math.ceil(F3.length / 8);
-      let i = (this.frozenAt ?? 0) % F3.length;
-      for (let k = 0; k < n && F3.length; k++) {
-        if (i >= F3.length) i = 0;
-        const f = F3[i], o = f.o;
+      const F = this.frozen;
+      if (!F?.length) return;
+      const n = Math.ceil(F.length / 8);
+      let i = (this.frozenAt ?? 0) % F.length;
+      for (let k = 0; k < n && F.length; k++) {
+        if (i >= F.length) i = 0;
+        const f = F[i], o = f.o;
         if (!o.position.equals(f.p) || !o.quaternion.equals(f.q) || !o.scale.equals(f.s)) {
           o.matrixAutoUpdate = true;
           o.updateMatrix();
-          F3[i] = F3[F3.length - 1];
-          F3.pop();
+          F[i] = F[F.length - 1];
+          F.pop();
           continue;
         }
         i++;
@@ -59312,11 +59318,11 @@ void main() {
           }
         }
       }
-      const L3 = this.doorKits["lift" + (level.floor || 7)];
-      if (L3 && level.lift.open !== L3.last) {
-        L3.last = level.lift.open;
-        L3.open.time = level.lift.open * 0.999;
-        L3.mixer.update(0);
+      const L2 = this.doorKits["lift" + (level.floor || 7)];
+      if (L2 && level.lift.open !== L2.last) {
+        L2.last = level.lift.open;
+        L2.open.time = level.lift.open * 0.999;
+        L2.mixer.update(0);
         moved = true;
       }
       if (this.reset && this.reset.t >= 0) {
@@ -59397,7 +59403,7 @@ void main() {
       if (m.isMesh && !m.userData.outline) meshes.push(m);
     });
     root.updateMatrixWorld(true);
-    const L3 = new Box3().setFromObject(root).getSize(new Vector3()), T3 = Math.min(OUTLINE_T, Math.max(5e-3, 0.025 * Math.max(L3.x, L3.y, L3.z)));
+    const L2 = new Box3().setFromObject(root).getSize(new Vector3()), T3 = Math.min(OUTLINE_T, Math.max(5e-3, 0.025 * Math.max(L2.x, L2.y, L2.z)));
     for (const m of meshes) {
       m.geometry.computeBoundingBox();
       const b = m.geometry.boundingBox, c = b.getCenter(new Vector3()), sz = b.getSize(new Vector3());
@@ -65640,9 +65646,9 @@ void main() {
         if (!U2) return;
         pt(mid, U2.b, U2.r, U2.mass);
         this._link(body, P[a], P[mid]);
-        const L3 = part(lo);
-        if (L3) {
-          pt(end, L3.b, L3.r, L3.mass);
+        const L2 = part(lo);
+        if (L2) {
+          pt(end, L2.b, L2.r, L2.mass);
           this._link(body, P[mid], P[end]);
           this._link(body, P[a], P[end], 0.45, Infinity);
         }
@@ -65767,8 +65773,8 @@ void main() {
           const axis = _a6.subVectors(B.x, A.x).normalize();
           const name = body.kind === "ragdoll" ? body.desc.parts[i].name : "";
           if (name === "pelvis" || name === "chest") {
-            const [L3, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
-            frameQuat(axis, _b6.subVectors(L3.x, R.x), body.q[i]);
+            const [L2, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
+            frameQuat(axis, _b6.subVectors(L2.x, R.x), body.q[i]);
           } else {
             _q9.setFromUnitVectors(body.prevAxis[i], axis);
             body.q[i].premultiply(_q9).normalize();
@@ -67660,22 +67666,22 @@ void main() {
     g.rotate(-0.09);
     g.fillStyle = "#e8902e";
     g.beginPath();
-    const L3 = u * 0.5, H4 = u * 0.17;
-    g.moveTo(-L3, -H4 * 0.5);
+    const L2 = u * 0.5, H4 = u * 0.17;
+    g.moveTo(-L2, -H4 * 0.5);
     for (let i = 0; i <= 12; i++) {
-      const x = -L3 + 2 * L3 * i / 12;
+      const x = -L2 + 2 * L2 * i / 12;
       g.lineTo(x, -H4 * 0.55 + Math.sin(i * 2.3) * H4 * 0.12);
     }
-    g.lineTo(L3 * 1.04, H4 * 0.15);
+    g.lineTo(L2 * 1.04, H4 * 0.15);
     for (let i = 12; i >= 0; i--) {
-      const x = -L3 + 2 * L3 * i / 12;
+      const x = -L2 + 2 * L2 * i / 12;
       g.lineTo(x, H4 * 0.6 + Math.cos(i * 1.7) * H4 * 0.14);
     }
     g.closePath();
     g.fill();
     g.globalAlpha = 0.35;
     g.fillStyle = "#b8541c";
-    g.fillRect(-L3 * 0.9, H4 * 0.25, L3 * 1.7, H4 * 0.12);
+    g.fillRect(-L2 * 0.9, H4 * 0.25, L2 * 1.7, H4 * 0.12);
     g.globalAlpha = 1;
     const fs = Math.round(u * 0.29);
     g.font = `900 ${fs}px Impact, "Arial Black", "Helvetica Neue", sans-serif`;
@@ -68241,13 +68247,13 @@ void main() {
       const head = this.chunks.find((q) => q.head);
       if (head) {
         cam.updateMatrixWorld(true);
-        const C = cam.getWorldPosition(new Vector3()), F3 = cam.getWorldDirection(new Vector3());
+        const C = cam.getWorldPosition(new Vector3()), F = cam.getWorldDirection(new Vector3());
         const camR = new Vector3().setFromMatrixColumn(cam.matrixWorld, 0), camU = new Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
-        const E = C.clone().addScaledVector(F3, lensDist).addScaledVector(camR, lensDist * 0.2).addScaledVector(camU, lensDist * 0.09), S2 = head.grp.position.clone();
+        const E = C.clone().addScaledVector(F, lensDist).addScaledVector(camR, lensDist * 0.2).addScaledVector(camU, lensDist * 0.09), S2 = head.grp.position.clone();
         const mid = S2.clone().lerp(E, 0.5);
         mid.y += 0.35 + 0.15 * S2.distanceTo(E);
         const face = new Vector3(Math.sin(r.rotation.y), 0, Math.cos(r.rotation.y));
-        const endQ = new Quaternion().setFromUnitVectors(face, F3.clone().negate());
+        const endQ = new Quaternion().setFromUnitVectors(face, F.clone().negate());
         const axis = new Vector3().crossVectors(new Vector3(0, 1, 0), E.clone().sub(S2)).normalize();
         head.path = { S: S2, mid, E, endQ, axis, secs: headSecs, t: 0, done: false };
       }
@@ -68880,9 +68886,9 @@ void main() {
   }`;
   var RevealFx = class {
     // L: the lift (core/chapter.js LIFTS[7]: x, z of the doors, cab: its car's bounds)
-    constructor(scene2, L3) {
+    constructor(scene2, L2) {
       this.scene = scene2;
-      this.L = L3;
+      this.L = L2;
       this.t = 0;
       this.root = new Group();
       this.root.name = "revealFx";
@@ -68891,7 +68897,7 @@ void main() {
       this.volOn = true;
       this.volK = 1;
       this.spot = null;
-      this.src = new Vector3(L3.x, 2.25, -14.35);
+      this.src = new Vector3(L2.x, 2.25, -14.35);
       this.build();
     }
     build() {
@@ -69004,9 +69010,9 @@ void main() {
       }
     }
     // per frame: f = the reveal light's current flash level (0..~1.5), F = the flash settings (RT.flash)
-    update(d, f, F3) {
+    update(d, f, F) {
       this.t += d;
-      const beam = this.k.beam + f * F3.beam * 0.45, dust = this.k.dust + f * F3.dust, halo = this.k.halo + f * F3.halo;
+      const beam = this.k.beam + f * F.beam * 0.45, dust = this.k.dust + f * F.dust, halo = this.k.halo + f * F.halo;
       const vol = !!(this.volOn && this.spot);
       for (const b of this.beams) {
         b.visible = !vol;
@@ -69029,7 +69035,7 @@ void main() {
       }
       this.halo.material.opacity = Math.min(1, halo * 0.8);
       this.halo.scale.setScalar(0.35 + 0.3 * Math.min(1, f));
-      this.halo.position.set(this.L.x + 0.15, F3.height, F3.back + 0.08);
+      this.halo.position.set(this.L.x + 0.15, F.height, F.back + 0.08);
       this.dust.obj.material.opacity = Math.min(1, dust * 0.7);
       const a = this.dust.geo.attributes.position;
       this.dust.pts.forEach((p, i) => {
@@ -69384,18 +69390,18 @@ void main() {
     }
     flashes() {
       const [d, s] = this.sec("Flashes in the lift");
-      const F3 = () => RT.flash;
-      this.slider(s, F3, "power", "Brightness", 0, 3, 0.01);
-      this.slider(s, F3, "decay", "Fade (s)", 0.03, 1.2, 0.01);
-      this.slider(s, F3, "beam", "Shaft per flash", 0, 2, 0.01);
-      this.slider(s, F3, "dust", "Dust per flash", 0, 2, 0.01);
-      this.slider(s, F3, "halo", "Fitting glow", 0, 2, 0.01);
-      this.slider(s, F3, "sparks", "Sparks", 0, 3, 0.05);
-      this.slider(s, F3, "height", "Light height", 2.2, 4.2, 0.05);
-      this.slider(s, F3, "back", "Light depth (z)", -14.6, -11.6, 0.05);
-      this.slider(s, F3, "angle", "Cone width", 0.2, 1.3, 0.01);
-      this.slider(s, F3, "penumbra", "Cone softness", 0, 1, 0.01);
-      this.check(s, F3, "swap", "Hall flips clean / outbreak with each flash");
+      const F = () => RT.flash;
+      this.slider(s, F, "power", "Brightness", 0, 3, 0.01);
+      this.slider(s, F, "decay", "Fade (s)", 0.03, 1.2, 0.01);
+      this.slider(s, F, "beam", "Shaft per flash", 0, 2, 0.01);
+      this.slider(s, F, "dust", "Dust per flash", 0, 2, 0.01);
+      this.slider(s, F, "halo", "Fitting glow", 0, 2, 0.01);
+      this.slider(s, F, "sparks", "Sparks", 0, 3, 0.05);
+      this.slider(s, F, "height", "Light height", 2.2, 4.2, 0.05);
+      this.slider(s, F, "back", "Light depth (z)", -14.6, -11.6, 0.05);
+      this.slider(s, F, "angle", "Cone width", 0.2, 1.3, 0.01);
+      this.slider(s, F, "penumbra", "Cone softness", 0, 1, 0.01);
+      this.check(s, F, "swap", "Hall flips clean / outbreak with each flash");
       this.slider(s, () => RT, "flashTail", "Hold after last (s)", 0, 4, 0.05, false);
       s.insertAdjacentHTML("beforeend", '<div class="note" style="margin-top:8px"><b>Rhythm</b>: a few slow flashes, a burst that speeds up, slowing clicks, a held breath, the boom.</div>');
       const Rh = () => RT.rhythm;
@@ -69424,8 +69430,8 @@ void main() {
       return d;
     }
     drawList() {
-      const L3 = RT.flashes;
-      this.listEl.innerHTML = `<table><tr class="note"><td>time</td><td>who</td><td>bright</td><td>fade</td><td>boom</td><td></td></tr>${L3.map((f, i) => `<tr data-i="${i}">
+      const L2 = RT.flashes;
+      this.listEl.innerHTML = `<table><tr class="note"><td>time</td><td>who</td><td>bright</td><td>fade</td><td>boom</td><td></td></tr>${L2.map((f, i) => `<tr data-i="${i}">
       <td><input type="number" step="0.01" min="0" value="${f[0]}" data-k="0"></td>
       <td><select data-k="1"><option value="old"${f[1] === "old" ? " selected" : ""}>old</option><option value="new"${f[1] === "new" ? " selected" : ""}>new</option></select></td>
       <td><input type="number" step="0.05" min="0" value="${f[2]}" data-k="2"></td>
@@ -69433,7 +69439,7 @@ void main() {
       <td><input type="checkbox" data-k="4"${f[4] ? " checked" : ""}></td>
       <td><button data-del>\xD7</button></td></tr>`).join("")}</table>`;
       this.listEl.querySelectorAll("tr[data-i]").forEach((tr) => {
-        const f = L3[+tr.dataset.i];
+        const f = L2[+tr.dataset.i];
         tr.querySelectorAll("[data-k]").forEach((c) => {
           c.onchange = () => {
             const k = +c.dataset.k;
@@ -69442,7 +69448,7 @@ void main() {
           };
         });
         tr.querySelector("[data-del]").onclick = () => {
-          L3.splice(+tr.dataset.i, 1);
+          L2.splice(+tr.dataset.i, 1);
           this.drawList();
         };
       });
@@ -69450,12 +69456,12 @@ void main() {
       add.className = "line";
       this.listEl.appendChild(add);
       this.button(add, "+ Add a flash", () => {
-        const t = L3.length ? L3[L3.length - 1][0] + 0.3 : 0;
-        L3.push([+t.toFixed(2), "old", 0.8, 0, false]);
+        const t = L2.length ? L2[L2.length - 1][0] + 0.3 : 0;
+        L2.push([+t.toFixed(2), "old", 0.8, 0, false]);
         this.drawList();
       });
       this.button(add, "Sort by time", () => {
-        L3.sort((a, b) => a[0] - b[0]);
+        L2.sort((a, b) => a[0] - b[0]);
         this.drawList();
       });
     }
@@ -69855,9 +69861,9 @@ void main() {
     const touched = [...arm, ...rig.fist.map(([b]) => b)], before = touched.map((b) => b.quaternion.clone());
     const right = _r2.crossVectors(fwd, UP3).normalize();
     const S2 = B.LeftArm.getWorldPosition(_s), E = B.LeftForeArm.getWorldPosition(_e4), W3 = B.LeftHand.getWorldPosition(_w2);
-    const L3 = E.distanceTo(S2) + W3.distanceTo(E), d = _v10.copy(E).sub(S2);
+    const L2 = E.distanceTo(S2) + W3.distanceTo(E), d = _v10.copy(E).sub(S2);
     const lean = Math.atan2(d.dot(fwd), Math.max(1e-4, -d.dot(UP3)));
-    const T3 = _t3.copy(S2).addScaledVector(UP3, -(L3 * 0.985 - fit.lift * 0.01 * hs)).addScaledVector(right, -fit.out * 0.01 * hs).addScaledVector(fwd, fit.fwd * 0.01 * hs);
+    const T3 = _t3.copy(S2).addScaledVector(UP3, -(L2 * 0.985 - fit.lift * 0.01 * hs)).addScaledVector(right, -fit.out * 0.01 * hs).addScaledVector(fwd, fit.fwd * 0.01 * hs);
     ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, T3, 1);
     {
       const a = B.LeftArm.getWorldPosition(_s), h = B.LeftHand.getWorldPosition(_w2), ax = _ax2.copy(h).sub(a).normalize();
@@ -69868,10 +69874,10 @@ void main() {
     B.LeftHand.updateMatrixWorld(true);
     {
       const A = B.LeftHand.getWorldPosition(_w2).sub(B.LeftForeArm.getWorldPosition(_e4)).normalize();
-      const F3 = B.LeftHandMiddle1.getWorldPosition(_v10).sub(B.LeftHand.getWorldPosition(_c7)).normalize();
+      const F = B.LeftHandMiddle1.getWorldPosition(_v10).sub(B.LeftHand.getWorldPosition(_c7)).normalize();
       const Rd = B.LeftHandIndex1.getWorldPosition(_v24).sub(B.LeftHandPinky1.getWorldPosition(_c7));
-      Rd.addScaledVector(F3, -Rd.dot(F3));
-      const P = _p2.crossVectors(F3, Rd).normalize();
+      Rd.addScaledVector(F, -Rd.dot(F));
+      const P = _p2.crossVectors(F, Rd).normalize();
       rotW(B.LeftHand, A, signed(P, _y2.copy(right), A) + fit.roll * D2R);
     }
     rotW(B.LeftArm, right, lean * fit.swing / 100);
@@ -70065,15 +70071,15 @@ void main() {
     // every frame after the hand-off (opening.ambient)
     tick(dt) {
       if (!this.model) return;
-      const g = this.op.game(), sim2 = g?.sim, L3 = sim2?.level;
-      if (!L3 || L3.floor !== 7) {
+      const g = this.op.game(), sim2 = g?.sim, L2 = sim2?.level;
+      if (!L2 || L2.floor !== 7) {
         if (this.state !== "off") this.off();
         return;
       }
       if (sim2 !== this.simRef) {
         this.simRef = sim2;
         if (this.state === "scene") this.endScene(true);
-        if (L3.flags.doctor_fled) this.gone();
+        if (L2.flags.doctor_fled) this.gone();
         else this.hideAgain();
       }
       if (this.state === "gone" || this.state === "off") return;
@@ -70267,7 +70273,7 @@ void main() {
     return u * u * (3 - 2 * u);
   };
   var lerp2 = (a, b, u) => a + (b - a) * u;
-  var L2 = (x, y, z) => new Vector3(x + CLINIC.x, y, z + CLINIC.z);
+  var L = (x, y, z) => new Vector3(x + CLINIC.x, y, z + CLINIC.z);
   var S = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x: x + CLINIC.x, y, z: z + CLINIC.z, pitch, yaw, width, fov: fov2 });
   var W2 = (x, y, z, pitch, yaw, width, fov2 = 34) => ({ x, y, z, pitch, yaw, width, fov: fov2 });
   var OFFICE_SHOT = S(6.3, 0.85, -3, 30, 72, 4.6);
@@ -71146,7 +71152,7 @@ void main() {
       }
       const sp = this.spot, glowK = Q2.glow * (Math.min(1.5, r.flash || 0) + 0.6 * (r.key || 0)) * (sp && sp.intensity > 0 ? 1 : 0), cam = this.camera.position;
       const _v13 = this._fv || (this._fv = new Vector3()), _l2 = this._fl || (this._fl = new Vector3());
-      const L3 = LIFT7, z0 = L3.cab.minZ + 0.4;
+      const L2 = LIFT7, z0 = L2.cab.minZ + 0.4;
       for (const p of S2.parts) {
         p.life += d * p.speed / 3.2;
         if (p.life > 1) {
@@ -71156,7 +71162,7 @@ void main() {
         const t = p.life, out = t * 3.6;
         const spread = t < 0.42 ? 0.45 : 0.45 + (t - 0.42) * 3.2;
         const st = this.herAt();
-        const px2 = L3.x + p.side * spread * 0.5, pz2 = z0 + out;
+        const px2 = L2.x + p.side * spread * 0.5, pz2 = z0 + out;
         if (st) {
           const dx = px2 + (p.ox || 0) - st.x, dz = pz2 + (p.oz || 0) - st.z, dd = Math.hypot(dx, dz);
           if (dd < 0.75 && dd > 1e-3) {
@@ -71212,7 +71218,7 @@ void main() {
     // spilling onto the floor in front of it (built at load with zero opacity; run once as the car arrives)
     ensureDoorSweep() {
       if (this.sweepFx) return;
-      const L3 = LIFT7, add = (mat2) => {
+      const L2 = LIFT7, add = (mat2) => {
         mat2.transparent = true;
         mat2.opacity = 0;
         mat2.depthWrite = false;
@@ -71230,10 +71236,10 @@ void main() {
       x.fillRect(0, 0, 64, 64);
       const glowTex4 = new CanvasTexture(c);
       const line = new Mesh(new PlaneGeometry(0.55, 0.022), add(new MeshBasicMaterial({ color: 16774108, map: glowTex4 })));
-      line.position.set(L3.x, 0.011, -11.085);
+      line.position.set(L2.x, 0.011, -11.085);
       const pool = new Mesh(new PlaneGeometry(0.9, 0.5), add(new MeshBasicMaterial({ color: 16769720, map: glowTex4 })));
       pool.rotation.x = -Math.PI / 2;
-      pool.position.set(L3.x, 6e-3, -10.9);
+      pool.position.set(L2.x, 6e-3, -10.9);
       this.scene.add(line, pool);
       this.sweepFx = { line, pool, t: -1, dur: 1.5 };
     }
@@ -71350,22 +71356,22 @@ void main() {
     // deliberate pause. Without a playing clip (muted start before the gesture, a failed load, a silent seek) the line
     // runs its measured length on the story clock instead: the scene never waits on audio that will not come.
     *say(id, { pause = 0.32, alarm = false } = {}) {
-      const L3 = LINE[id];
-      if (!L3 || L3.omit) return;
-      this.line = L3;
+      const L2 = LINE[id];
+      if (!L2 || L2.omit) return;
+      this.line = L2;
       this.cueLog.push([+this.t.toFixed(2), "line:" + id]);
-      this.sub = L3.text;
-      this.ui.subtitle(L3.text, { who: SPEAKER[L3.who] || L3.who, alarm });
-      const playing = !this.silent && !this.storyClockLines && this.sound.playLine(L3);
-      const talker = this.talkers?.[L3.who];
-      if (talker) this.gesture(talker, L3.end);
+      this.sub = L2.text;
+      this.ui.subtitle(L2.text, { who: SPEAKER[L2.who] || L2.who, alarm });
+      const playing = !this.silent && !this.storyClockLines && this.sound.playLine(L2);
+      const talker = this.talkers?.[L2.who];
+      if (talker) this.gesture(talker, L2.end);
       this.lineLog.push({ id, t: +this.t.toFixed(2), audio: playing });
       const t0 = this.t;
       yield () => {
         const pos = playing ? this.sound.linePos() : null;
-        return pos !== null ? pos >= L3.end : this.t - t0 >= L3.end;
+        return pos !== null ? pos >= L2.end : this.t - t0 >= L2.end;
       };
-      if (this.sub === L3.text) {
+      if (this.sub === L2.text) {
         this.sub = "";
         this.ui.subtitle("");
       }
@@ -71743,29 +71749,29 @@ void main() {
       this.enterOR();
       this.arena.liftPowered?.(true);
       this.setLiftSign(false);
-      const L3 = LIFT7;
+      const L2 = LIFT7;
       const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
-      toWorld(bb, L3.x, -12.35, 0);
-      toWorld(co, L3.x, -13.8, 0);
+      toWorld(bb, L2.x, -12.35, 0);
+      toWorld(co, L2.x, -13.8, 0);
       this.scene.add(st.wheelchair);
       this.tickRide();
-      toWorld(yo, L3.x - 1, -12, 0);
+      toWorld(yo, L2.x - 1, -12, 0);
       yo.play("idle", { fade: 0 });
-      toWorld(sg, L3.x + 1, -12, 0);
+      toWorld(sg, L2.x + 1, -12, 0);
       sg.play("Idle", { fade: 0 });
       for (const a of [su, ta]) a.setVisible(false);
       A.staff.setVisible(false);
       this.liftDisp3 || (this.liftDisp3 = this.arena.doorKits.lift.display || liftDisplay(this.arena.doorKits.lift.root));
       this.liftDisp3.set("7");
       this.setLift3(0);
-      this.camTo(W2(L3.x - 0.2, 1, -9.6, 26, 12, 6, 42), 0.01);
+      this.camTo(W2(L2.x - 0.2, 1, -9.6, 26, 12, 6, 42), 0.01);
       yield 0.45;
       if (!this.silent) this.audio.play("liftDing");
       this.tween(1, (k) => this.setLift3(ease2(k)));
       yield 1.05;
-      yo.walk([[L3.x - 0.45, -11.7], [L3.x - 0.45, -10.4], [1.4, -7.2]], { endYaw: Math.PI });
-      sg.walk([[L3.x + 0.45, -11.7], [L3.x + 0.45, -10.4], [4.6, -6]], { endYaw: -Math.PI / 2 });
-      this.later(0.9, () => this.roll([[L3.x, -10], [L3.x, -6.6]], { speed: 0.85, endYaw: 0 }));
+      yo.walk([[L2.x - 0.45, -11.7], [L2.x - 0.45, -10.4], [1.4, -7.2]], { endYaw: Math.PI });
+      sg.walk([[L2.x + 0.45, -11.7], [L2.x + 0.45, -10.4], [4.6, -6]], { endYaw: -Math.PI / 2 });
+      this.later(0.9, () => this.roll([[L2.x, -10], [L2.x, -6.6]], { speed: 0.85, endYaw: 0 }));
       this.camTo(W2(2.4, 0.9, -7.6, 40, 30, 6.8), 2.2);
       yield 1.2;
       yield* this.say("16", { pause: 0.5 });
@@ -71883,7 +71889,7 @@ void main() {
     // walks the guard (the athlete's bat in his care) down to six, out of the clinical area. A compact staging: the two of
     // them cross the OR to the lift, the doors close, the display counts down to 6. She will come back up with the bat.
     *errand() {
-      const st = this.stage, A = st.actors, sg = A.security, yo = A.yola, L3 = LIFT7;
+      const st = this.stage, A = st.actors, sg = A.security, yo = A.yola, L2 = LIFT7;
       this.substate = "ERRAND";
       const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
       this.dip(0.25, 0.3);
@@ -71896,8 +71902,8 @@ void main() {
       toWorld(sg, -6.9, -3.5, Math.PI / 2);
       sg.setVisible(true);
       sg.play("Idle", { fade: 0 });
-      yo.walk([[-3, -5], [1, -8.6], [L3.x - 0.55, -10.2], [L3.x - 0.55, -12.6]], { endYaw: 0, speed: 1.1 });
-      this.later(0.35, () => sg.walk([[-3, -4], [3.6, -8.4], [L3.x + 0.55, -10.2], [L3.x + 0.55, -12.6]], { endYaw: 0 }));
+      yo.walk([[-3, -5], [1, -8.6], [L2.x - 0.55, -10.2], [L2.x - 0.55, -12.6]], { endYaw: 0, speed: 1.1 });
+      this.later(0.35, () => sg.walk([[-3, -4], [3.6, -8.4], [L2.x + 0.55, -10.2], [L2.x + 0.55, -12.6]], { endYaw: 0 }));
       this.camTo(W2(0.6, 0.9, -8, 46, 35, 7.6), 0.01);
       if (!this.silent) this.later(2.6, () => {
         this.audio.play("liftDing");
@@ -71911,7 +71917,7 @@ void main() {
       yield 0.6;
       if (!this.silent) this.audio.play("liftClose");
       this.tween(1, (k) => this.setLift3(1 - ease2(k)));
-      this.camTo(W2(L3.x, 1.6, -10.4, 10, 0, 3.4, 40), 1.2);
+      this.camTo(W2(L2.x, 1.6, -10.4, 10, 0, 3.4, 40), 1.2);
       yield 1.1;
       yo.setVisible(false);
       sg.setVisible(false);
@@ -72136,10 +72142,10 @@ void main() {
       yield* this.reveal();
     }
     *reveal() {
-      const st = this.stage, A = st.actors, L3 = LIFT7, g = this.game(), old = A.yola, R = RT;
+      const st = this.stage, A = st.actors, L2 = LIFT7, g = this.game(), old = A.yola, R = RT;
       const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
-      const cabX = L3.x, cabZ = -12.7;
-      const doorShot = (dist2 = 4.6) => ({ x: L3.x, y: 1.15, z: -11.3, pitch: 2, yaw: 0, dist: dist2, fov: 40 });
+      const cabX = L2.x, cabZ = -12.7;
+      const doorShot = (dist2 = 4.6) => ({ x: L2.x, y: 1.15, z: -11.3, pitch: 2, yaw: 0, dist: dist2, fov: 40 });
       this.state = "REVEAL";
       this.brightened = false;
       this.handoff = null;
@@ -72152,7 +72158,7 @@ void main() {
       this.gameLight = !!RT.game.on;
       if (this.gameLight) this.arena.setEmergency?.(true, 0);
       this.phase("doors", { tube: 0, redAt: "doors" });
-      this.camTo({ x: L3.x, y: 0.4, z: -11, pitch: 6, yaw: 0, dist: 1.9, fov: 40 }, 0.01);
+      this.camTo({ x: L2.x, y: 0.4, z: -11, pitch: 6, yaw: 0, dist: 1.9, fov: 40 }, 0.01);
       this.later(0.25, () => this.doorSweep());
       if (!this.silent) {
         this.ui.setFade(0, 600);
@@ -72160,7 +72166,7 @@ void main() {
         this.rs.bedLevel(0.5);
         this.rs.cueStart(3.1, { k: RT.music.preLevel, attack: 1.2, open: 650, strings: 0.04 });
       }
-      this.camTo({ x: L3.x, y: 0.45, z: -11, pitch: 5, yaw: 0, dist: 1.75, fov: 40 }, 3.1);
+      this.camTo({ x: L2.x, y: 0.45, z: -11, pitch: 5, yaw: 0, dist: 1.75, fov: 40 }, 3.1);
       yield 3.1;
       this.substate = "B5_DING";
       this.mark("ding");
@@ -72194,12 +72200,12 @@ void main() {
         this.smoke.k = Math.max(this.smoke.k, 1.2);
         for (const q of this.smoke.parts) q.life = Math.random() * 0.8;
       }
-      this.smokeKick(L3.x, -11.6, 1.2);
+      this.smokeKick(L2.x, -11.6, 1.2);
       if (!this.silent) this.rs.doorsOpen();
       this.tween(1.4, (k) => this.setLift3(ease2(k)));
       this.heart = { next: this.t + RT.music.heartAt };
       {
-        const O = RT.open, C = new Vector3(L3.x + O.camX, O.camY, O.camZ), T0 = new Vector3(L3.x, O.startY, O.startZ), T1 = new Vector3(cabX, O.endY, cabZ), t02 = this.t;
+        const O = RT.open, C = new Vector3(L2.x + O.camX, O.camY, O.camZ), T0 = new Vector3(L2.x, O.startY, O.startZ), T1 = new Vector3(cabX, O.endY, cabZ), t02 = this.t;
         this.camTrack = () => {
           const u = ease2(Math.min(1, Math.max(0, (this.t - t02 - O.tiltDelay) / O.tiltSecs)));
           return this.lookRig(C, T0.clone().lerp(T1, u), O.fov);
@@ -72339,13 +72345,13 @@ void main() {
       this.cardUp = false;
       this.phase("burst");
       {
-        const L4 = this.launch, r0 = this.rampAt(L4.t);
-        L4.card = L4.ramp = null;
-        L4.cap = null;
+        const L3 = this.launch, r0 = this.rampAt(L3.t);
+        L3.card = L3.ramp = null;
+        L3.cap = null;
         this.tween(Math.max(0.01, LA.slowOut), (u) => {
           if (this.substate !== "B12_CARD") return;
           const k = r0 + (1 - r0) * ease2(u);
-          L4.rate = k;
+          L3.rate = k;
           this.burstScale = k;
           this.slowmo = k < 0.999 ? k : 0;
         });
@@ -72471,25 +72477,25 @@ void main() {
     // (2026-10-19, the user's Floor Lab: combat.html?intro=1&studio=1&lab=1) the layers the user switches off to find what the
     // iPhone draws wrong on the floor: applied every frame over whatever the reveal set (main.js calls it before each picture)
     labApply() {
-      const L3 = this.lab;
-      if (!L3) return;
+      const L2 = this.lab;
+      if (!L2) return;
       const g = this.game(), lk = g.lightkit, at = g.atmos, A = this.arena;
-      if (this.smoke) this.smoke.g.visible = !L3.fog;
-      if (this.rfx && L3.beam) this.rfx.visible = false;
-      if (lk?.yshCatch && L3.catcher) lk.yshCatch.visible = false;
-      if (lk && lk.built?.baked && !!lk.on.baked === !!L3.bake) lk.set("baked", !L3.bake);
-      if (lk && lk.built?.polish && !!lk.on.polish === !!L3.polish) lk.set("polish", !L3.polish);
-      if (at && !!at.on.haze === !!L3.haze) at.set("haze", !L3.haze);
-      if (A.em?.group && L3.pools) A.em.group.visible = false;
-      RT.noRed = !!L3.red;
-      RT.quality.post = !L3.post;
-      if (L3.blood !== this.labBlood) {
-        this.labBlood = L3.blood;
-        if (L3.blood) this.setBlood(false);
+      if (this.smoke) this.smoke.g.visible = !L2.fog;
+      if (this.rfx && L2.beam) this.rfx.visible = false;
+      if (lk?.yshCatch && L2.catcher) lk.yshCatch.visible = false;
+      if (lk && lk.built?.baked && !!lk.on.baked === !!L2.bake) lk.set("baked", !L2.bake);
+      if (lk && lk.built?.polish && !!lk.on.polish === !!L2.polish) lk.set("polish", !L2.polish);
+      if (at && !!at.on.haze === !!L2.haze) at.set("haze", !L2.haze);
+      if (A.em?.group && L2.pools) A.em.group.visible = false;
+      RT.noRed = !!L2.red;
+      RT.quality.post = !L2.post;
+      if (L2.blood !== this.labBlood) {
+        this.labBlood = L2.blood;
+        if (L2.blood) this.setBlood(false);
       }
-      if (L3.blood) for (const m of this.blood || []) m.visible = false;
+      if (L2.blood) for (const m of this.blood || []) m.visible = false;
       let near = this.camera.near;
-      if (L3.near) {
+      if (L2.near) {
         this.labNear0 ?? (this.labNear0 = near);
         near = 0.5;
       } else if (this.labNear0 != null) {
@@ -72554,34 +72560,34 @@ void main() {
     // one light that only casts, a catcher under her; no light added, nothing recompiles) swung round to come from the flash
     // behind her, its window widened along the floor toward the lens, the shadow as dark as the flash is bright
     aimFlashShadow(off = false) {
-      const lk = this.game?.().lightkit, L3 = lk?.ysh, C = lk?.yshCatch, sp = this.spot, r = this.rl, her = this.herAt();
-      if (!L3 || !C) return;
-      const B = this.yshBase || (this.yshBase = { half: L3.shadow.camera.right, map: L3.shadow.mapSize.x, bias: L3.shadow.bias, nb: L3.shadow.normalBias });
+      const lk = this.game?.().lightkit, L2 = lk?.ysh, C = lk?.yshCatch, sp = this.spot, r = this.rl, her = this.herAt();
+      if (!L2 || !C) return;
+      const B = this.yshBase || (this.yshBase = { half: L2.shadow.camera.right, map: L2.shadow.mapSize.x, bias: L2.shadow.bias, nb: L2.shadow.normalBias });
       const on = !off && !this.launch && !!(this.gameLight && RT.quality.flashShadow && lk.on.yshadow && r?.on && r.spotAt === "flash" && sp && her);
-      const H4 = on ? 4.5 : B.half, M4 = on ? 1024 : B.map, cam = L3.shadow.camera;
+      const H4 = on ? 4.5 : B.half, M4 = on ? 1024 : B.map, cam = L2.shadow.camera;
       if (cam.right !== H4) {
         cam.left = cam.bottom = -H4;
         cam.right = cam.top = H4;
         cam.updateProjectionMatrix();
       }
-      if (L3.shadow.mapSize.x !== M4) {
-        L3.shadow.mapSize.set(M4, M4);
-        L3.shadow.map?.dispose();
-        L3.shadow.map = null;
+      if (L2.shadow.mapSize.x !== M4) {
+        L2.shadow.mapSize.set(M4, M4);
+        L2.shadow.map?.dispose();
+        L2.shadow.map = null;
       }
       const rev = !off && this.active;
-      L3.shadow.bias = on ? -4e-3 : rev ? -3e-3 : B.bias;
-      L3.shadow.normalBias = on ? 0.09 : rev ? 0.06 : B.nb;
+      L2.shadow.bias = on ? -4e-3 : rev ? -3e-3 : B.bias;
+      L2.shadow.normalBias = on ? 0.09 : rev ? 0.06 : B.nb;
       if (!on) {
         C.scale.set(1, 1, 1);
         return;
       }
       const to = new Vector3(sp.position.x - her.x, sp.position.y, sp.position.z - her.z).normalize(), fall = new Vector3(-to.x, 0, -to.z).normalize();
       const cx = her.x + fall.x * H4 * 0.7, cz = her.z + fall.z * H4 * 0.7;
-      L3.target.position.set(cx, 0, cz);
-      L3.position.set(cx + to.x * 6, to.y * 6, cz + to.z * 6);
-      L3.target.updateMatrixWorld();
-      L3.updateMatrixWorld();
+      L2.target.position.set(cx, 0, cz);
+      L2.position.set(cx + to.x * 6, to.y * 6, cz + to.z * 6);
+      L2.target.updateMatrixWorld();
+      L2.updateMatrixWorld();
       C.position.set(cx, 0.014, cz);
       C.scale.set(H4 / B.half, 1, H4 / B.half);
       C.material.opacity = 0.62 * Math.min(1, (r.flash || 0) + (r.key || 0) * 2);
@@ -72693,14 +72699,14 @@ void main() {
     }
     // the launch's contact worked out now (planLaunch keeps it), so the launch's first frame does not pose her ~30 times
     warmLaunch() {
-      const P = this.revealPose, L3 = this.launch;
+      const P = this.revealPose, L2 = this.launch;
       try {
         this.planLaunch();
       } catch (e) {
         console.warn("warm launch", e);
       }
       this.revealPose = P;
-      this.launch = L3;
+      this.launch = L2;
       this.yola?.setShown?.(false);
     }
     // the launch, worked out where she stands: the finisher (RT.launch variant + jump), her heading (straight out of the lift,
@@ -72765,10 +72771,10 @@ void main() {
     jumpPeak(a, b) {
       const hips = this.yola?.bones?.Hips;
       if (!hips) return a + (b - a) * 0.5;
-      const L3 = this.launch, t0 = L3.t, p = new Vector3();
+      const L2 = this.launch, t0 = L2.t, p = new Vector3();
       let best = -1e9, tp = a;
       for (let t = a; t <= b; t += 1 / 120) {
-        L3.t = t;
+        L2.t = t;
         this.poseRevealYola(0);
         this.poseRevealYola(0);
         hips.updateWorldMatrix(true, false);
@@ -72778,14 +72784,14 @@ void main() {
           tp = t;
         }
       }
-      L3.t = t0;
+      L2.t = t0;
       this.poseRevealYola(0);
       this.poseRevealYola(0);
       return tp;
     }
     // where she stands at time t of the launch (its own travel, scaled by reach)
     launchAt(t) {
-      const L3 = this.launch, R = L3.A.ROOT;
+      const L2 = this.launch, R = L2.A.ROOT;
       let z = 0;
       if (R) {
         if (t <= R[0].t) z = R[0].z;
@@ -72796,16 +72802,16 @@ void main() {
           break;
         }
       }
-      z *= L3.scale;
-      return { x: L3.x0 + L3.fwd.x * z, z: L3.z0 + L3.fwd.z * z };
+      z *= L2.scale;
+      return { x: L2.x0 + L2.fwd.x * z, z: L2.z0 + L2.fwd.z * z };
     }
     // the bat's sweet spot (its ImpactPoint) at time t of the launch (default: now)
     batTip(t) {
-      const L3 = this.launch, bat = this.yola?.batLib?.obj;
+      const L2 = this.launch, bat = this.yola?.batLib?.obj;
       if (!bat) return new Vector3();
-      const t0 = L3.t;
+      const t0 = L2.t;
       if (t !== void 0) {
-        L3.t = t;
+        L2.t = t;
         this.poseRevealYola(0);
         this.poseRevealYola(0);
       }
@@ -72815,7 +72821,7 @@ void main() {
         return a.axis.clone().multiplyScalar(a.len * 0.8).applyMatrix4(bat.matrixWorld);
       })();
       if (t !== void 0) {
-        L3.t = t0;
+        L2.t = t0;
         this.poseRevealYola(0);
         this.poseRevealYola(0);
       }
@@ -72847,12 +72853,12 @@ void main() {
     }
     // the speed ramp at time t of her clip (1: full speed)
     rampAt(t) {
-      const L3 = this.launch, f = (R) => {
+      const L2 = this.launch, f = (R) => {
         if (!R || t <= R.from) return 1;
         const u = Math.min(1, (t - R.from) / R.len);
         return 1 - (1 - R.slow) * u * u * (3 - 2 * u);
       };
-      return L3 ? Math.min(f(L3.ramp), f(L3.card)) : 1;
+      return L2 ? Math.min(f(L2.ramp), f(L2.card)) : 1;
     }
     // (ramp: the old slow-mo in the air; card: the slow-down to the card at the top of her jump)
     // real seconds from clip time a to b at the ramp's speeds (the camera's push lands on the freeze)
@@ -72862,38 +72868,38 @@ void main() {
       return s;
     }
     tickLaunch(d) {
-      const L3 = this.launch;
-      if (!L3) return;
-      if (L3.rate > 0) {
-        const k = this.rampAt(L3.t);
-        L3.t = Math.min(L3.cap ?? attackEnd(L3.A) + 0.5, L3.t + d * L3.rate * k);
-        if (L3.ramp || L3.card) {
+      const L2 = this.launch;
+      if (!L2) return;
+      if (L2.rate > 0) {
+        const k = this.rampAt(L2.t);
+        L2.t = Math.min(L2.cap ?? attackEnd(L2.A) + 0.5, L2.t + d * L2.rate * k);
+        if (L2.ramp || L2.card) {
           this.slowmo = k < 0.999 ? k : 0;
-          if (L3.card) this.burstScale = k;
+          if (L2.card) this.burstScale = k;
         }
       }
-      if (L3.onCut && L3.t >= L3.onCut.at) {
-        const c = L3.onCut;
-        L3.onCut = null;
+      if (L2.onCut && L2.t >= L2.onCut.at) {
+        const c = L2.onCut;
+        L2.onCut = null;
         c.fn();
       }
-      const F3 = L3.sfx;
-      if (F3 && !this.silent) {
-        if (F3.off != null && L3.t >= F3.off) {
-          F3.off = null;
+      const F = L2.sfx;
+      if (F && !this.silent) {
+        if (F.off != null && L2.t >= F.off) {
+          F.off = null;
           this.rs.launchOff();
         }
-        if (F3.spin != null && L3.t >= F3.spin) {
-          F3.spin = null;
-          this.rs.spinSwish(Math.max(0.3, F3.spinSecs));
+        if (F.spin != null && L2.t >= F.spin) {
+          F.spin = null;
+          this.rs.spinSwish(Math.max(0.3, F.spinSecs));
         }
       }
-      const z = L3.zombie;
+      const z = L2.zombie;
       if (z && z.Z.state === "intact") {
-        const u = Math.min(1, Math.max(0, (L3.t + z.T - L3.t0c) / z.T));
+        const u = Math.min(1, Math.max(0, (L2.t + z.T - L2.t0c) / z.T));
         z.Z.root.position.x = z.sx + (z.ex - z.sx) * u;
         z.Z.root.position.z = z.sz + (z.ez - z.sz) * u;
-        if (!z.attacked && L3.t >= z.attackAt) {
+        if (!z.attacked && L2.t >= z.attackAt) {
           z.attacked = true;
           z.Z.play("attack", { fade: 0.25, timeScale: 1.2, loop: false, at: 0.3 });
         }
@@ -72923,7 +72929,7 @@ void main() {
       }
       if (p.spotAt) r.spotAt = p.spotAt;
       if (p.spotAt && this.spot) {
-        const sp = this.spot, F3 = RT.flash;
+        const sp = this.spot, F = RT.flash;
         if (p.spotAt === "key") {
           const a = this.stand || this.revealPose || ROOM1.player;
           sp.position.set(a.x + 1.1, 2.5, a.z + 2.4);
@@ -72935,10 +72941,10 @@ void main() {
           sp.target.position.set(TX, 0.8, TZ - 0.2);
           sp.angle = 0.9;
         } else {
-          sp.position.set(LIFT7.x + 0.15, F3.height, F3.back);
+          sp.position.set(LIFT7.x + 0.15, F.height, F.back);
           sp.target.position.set(LIFT7.x, 0.2, -11.1);
-          sp.angle = F3.angle;
-          sp.penumbra = F3.penumbra;
+          sp.angle = F.angle;
+          sp.penumbra = F.penumbra;
         }
         sp.distance = 12;
         sp.target.updateMatrixWorld(true);
@@ -73110,12 +73116,12 @@ void main() {
       if (!B?.LeftFoot) return [0, 0.5];
       const mixer = new AnimationMixer(Y2.model), act = mixer.clipAction(clip);
       act.play();
-      const N = 60, L3 = [], R = [], v = new Vector3();
+      const N = 60, L2 = [], R = [], v = new Vector3();
       for (let i = 0; i < N; i++) {
         act.time = i / N * clip.duration;
         mixer.update(0);
         Y2.model.updateMatrixWorld(true);
-        L3.push(B.LeftFoot.getWorldPosition(v).y);
+        L2.push(B.LeftFoot.getWorldPosition(v).y);
         R.push(B.RightFoot.getWorldPosition(v).y);
       }
       act.stop();
@@ -73128,7 +73134,7 @@ void main() {
         }
         return a.indexOf(mn) / N;
       };
-      const heels = [low(L3), low(R)].sort((a, b) => a - b);
+      const heels = [low(L2), low(R)].sort((a, b) => a - b);
       (clip.userData || (clip.userData = {})).heels = heels;
       return heels;
     }
@@ -73341,18 +73347,18 @@ void main() {
         const d = Math.atan2(Math.sin(r.turn - r.yaw), Math.cos(r.turn - r.yaw));
         r.yaw += d * Math.min(1, wd * 5);
       }
-      const L3 = r.launch;
-      if (L3) {
-        const p = this.launchAt(L3.t);
+      const L2 = r.launch;
+      if (L2) {
+        const p = this.launchAt(L2.t);
         r.x = p.x;
         r.z = p.z;
-        r.yaw = L3.h;
+        r.yaw = L2.h;
       }
       const s = g.stillState(r.x, r.z, r.yaw);
       s.equipped = "bat";
       s.vx = r.vx || 0;
       s.vz = r.vz || 0;
-      if (L3) Object.assign(s, { action: "swing", swingT: Math.max(0, L3.t), swingId: L3.id, atk: L3.A, combo: 0, ground: false, vx: 0, vz: 0 });
+      if (L2) Object.assign(s, { action: "swing", swingT: Math.max(0, L2.t), swingId: L2.id, atk: L2.A, combo: 0, ground: false, vx: 0, vz: 0 });
       g.yolaPose?.(wd, s);
     }
     // the hospital after the outbreak, committed behind the patient's cut: the same architecture, worn surfaces, blood, the dead
@@ -73395,11 +73401,11 @@ void main() {
       });
     }
     setLift3(k) {
-      const L3 = this.arena.doorKits?.lift;
-      if (!L3) return;
-      L3.open.time = Math.max(0, Math.min(0.999, k)) * L3.open.getClip().duration;
-      L3.mixer.update(0);
-      L3.last = -1;
+      const L2 = this.arena.doorKits?.lift;
+      if (!L2) return;
+      L2.open.time = Math.max(0, Math.min(0.999, k)) * L2.open.getClip().duration;
+      L2.mixer.update(0);
+      L2.last = -1;
     }
     // the printed "LIFT / Power fault" notice only makes sense after the outbreak
     setLiftSign(v) {
@@ -74041,7 +74047,7 @@ void main() {
       }
       const t = this.ui.tags.get("tier");
       if (t && t.classList.contains("show")) {
-        const p = L2(5, 2.35, 1.4).project(this.camera);
+        const p = L(5, 2.35, 1.4).project(this.camera);
         this.ui.placeTag("tier", (p.x * 0.5 + 0.5) * innerWidth, (-p.y * 0.5 + 0.5) * innerHeight);
       }
     }
@@ -75855,7 +75861,7 @@ void main() {
     }
     // ---- the lift: a floor picker while Yola stands in the open cab; the ride rebuilds the next floor behind a fade ----
     tickLift() {
-      const L3 = this.level?.lift, show = !!L3?.choosing && !this.busy;
+      const L2 = this.level?.lift, show = !!L2?.choosing && !this.busy;
       const list = show ? this.level.floorsFrom() : [];
       const key = show ? list.map((f) => f.floor).join(",") : "";
       if (key !== this.liftKey) {
@@ -76362,8 +76368,8 @@ void main() {
       this.scene.add(m);
       return { m, len, dustT: 0 };
     }
-    makeFlood(F3) {
-      const w = F3.maxX - F3.minX, d = F3.maxZ - F3.minZ, tex2 = waterTex();
+    makeFlood(F) {
+      const w = F.maxX - F.minX, d = F.maxZ - F.minZ, tex2 = waterTex();
       tex2.repeat.set(w / 2.5, d / 2.5);
       const water = new Mesh(
         new PlaneGeometry(w, d),
@@ -76371,20 +76377,20 @@ void main() {
         /* (0.6: the floor's baked light shows through, 2026-10-19: at 0.78 the ward read near-black) */
       );
       water.rotation.x = -Math.PI / 2;
-      water.position.set((F3.minX + F3.maxX) / 2, 0.035, (F3.minZ + F3.maxZ) / 2);
+      water.position.set((F.minX + F.maxX) / 2, 0.035, (F.minZ + F.maxZ) / 2);
       water.renderOrder = 1;
       water.receiveShadow = true;
       this.scene.add(water);
-      const yaw = F3.panel.yaw ?? Math.atan2((F3.minX + F3.maxX) / 2 - F3.panel.x, (F3.minZ + F3.maxZ) / 2 - F3.panel.z);
+      const yaw = F.panel.yaw ?? Math.atan2((F.minX + F.maxX) / 2 - F.panel.x, (F.minZ + F.maxZ) / 2 - F.panel.z);
       const model = propClone("flood_panel");
       if (model) {
-        model.position.set(F3.panel.x, 0, F3.panel.z);
+        model.position.set(F.panel.x, 0, F.panel.z);
         model.rotation.y = yaw;
         this.scene.add(model);
         return { water, tex: tex2, panel: model, lampG: findMat(model, "Panel_LampGreen"), lampR: findMat(model, "Panel_LampRed"), yaw };
       }
       const panel = new Group();
-      panel.position.set(F3.panel.x, 0, F3.panel.z);
+      panel.position.set(F.panel.x, 0, F.panel.z);
       panel.rotation.y = yaw;
       const post = new Mesh(new BoxGeometry(0.12, 1, 0.12), this.mats.steel);
       post.position.y = 0.5;
@@ -76522,14 +76528,14 @@ void main() {
           fx2.burst(C.x + (Math.random() - 0.5) * (C.horiz ? V4.len * 0.5 : 0.1), 0.6 + Math.random() * 1.4, C.z + (Math.random() - 0.5) * (C.horiz ? 0.1 : V4.len * 0.5), 2, 13222580, 0.25, -0.4, 1.2);
         }
       }
-      for (const F3 of sim2.floods || []) {
-        let V4 = this.floods.get(F3.id);
+      for (const F of sim2.floods || []) {
+        let V4 = this.floods.get(F.id);
         if (!V4) {
-          V4 = this.makeFlood(F3);
-          this.floods.set(F3.id, V4);
+          V4 = this.makeFlood(F);
+          this.floods.set(F.id, V4);
         }
         V4.tex.offset.set(Math.sin(this.t * 0.21) * 0.08, this.t * 0.02);
-        const ready = !(F3.recharge > 0);
+        const ready = !(F.recharge > 0);
         if (V4.lamp) V4.lamp.material.color.setHex(ready ? 4259680 : 16724e3);
         if (V4.lampG) {
           V4.lampG.emissive.setHex(3735392);
@@ -76541,12 +76547,12 @@ void main() {
         }
         if (fx2 && ready && Math.random() < dt * 3) {
           const fx0 = Math.sin(V4.yaw) * 0.2, fz0 = Math.cos(V4.yaw) * 0.2;
-          fx2.burst(F3.panel.x + fx0 + Math.sin(V4.yaw) * 0.45, 0.06, F3.panel.z + fz0 + Math.cos(V4.yaw) * 0.45, 3, 16773536, 1.6, 0.6, 0.2);
+          fx2.burst(F.panel.x + fx0 + Math.sin(V4.yaw) * 0.45, 0.06, F.panel.z + fz0 + Math.cos(V4.yaw) * 0.45, 3, 16773536, 1.6, 0.6, 0.2);
         }
         if (fx2) for (const b of [sim2.player, ...sim2.zombies]) {
           if (b.dead || b.alive === false) continue;
           const sp = Math.hypot(b.vx || 0, b.vz || 0);
-          if (sp > 0.4 && b.x > F3.minX && b.x < F3.maxX && b.z > F3.minZ && b.z < F3.maxZ && Math.random() < dt * sp * 4) fx2.burst(b.x, 0.05, b.z, 3, 13625066, 0.9, 1.2, 0.35);
+          if (sp > 0.4 && b.x > F.minX && b.x < F.maxX && b.z > F.minZ && b.z < F.maxZ && Math.random() < dt * sp * 4) fx2.burst(b.x, 0.05, b.z, 3, 13625066, 0.9, 1.2, 0.35);
         }
       }
       for (const M4 of sim2.mris || []) {
@@ -77477,7 +77483,7 @@ void main() {
     }
     setTubes(v) {
       this.tubes = !!v;
-      for (const F3 of this.fittings()) F3.bar.visible = this.tubes;
+      for (const F of this.fittings()) F.bar.visible = this.tubes;
     }
     build_fixtures() {
       this.fittings();
@@ -77554,16 +77560,16 @@ void main() {
     // as the tube dips (normal blending, black, opacity = the light lost)
     bakeDips() {
       if (this.dips) return this.dips;
-      this.dips = this.fittings().filter((F3) => F3.state === "buzz" || F3.state === "failing").map((F3) => {
+      this.dips = this.fittings().filter((F) => F.state === "buzz" || F.state === "failing").map((F) => {
         const m = new Mesh(FLAT2, new MeshBasicMaterial({ map: glowTex3(), color: 0, transparent: true, opacity: 0, depthWrite: false }));
-        m.position.set(F3.x, 0.022, F3.z);
+        m.position.set(F.x, 0.022, F.z);
         m.scale.set(6.2, 1, 6.2);
         m.renderOrder = 1;
         m.visible = false;
         m.matrixAutoUpdate = false;
         m.updateMatrix();
         this.root.add(m);
-        return { F: F3, m };
+        return { F, m };
       });
       return this.dips;
     }
@@ -77590,17 +77596,17 @@ void main() {
     }
     charMats(root) {
       this.charCache ?? (this.charCache = /* @__PURE__ */ new WeakMap());
-      let L3 = this.charCache.get(root);
-      if (!L3) {
-        L3 = [];
+      let L2 = this.charCache.get(root);
+      if (!L2) {
+        L2 = [];
         root.traverse((o) => {
           if (o.isMesh) {
-            for (const m of [].concat(o.material)) if (m.isMeshStandardMaterial && !L3.includes(m)) L3.push(m);
+            for (const m of [].concat(o.material)) if (m.isMeshStandardMaterial && !L2.includes(m)) L2.push(m);
           }
         });
-        this.charCache.set(root, L3);
+        this.charCache.set(root, L2);
       }
-      return L3;
+      return L2;
     }
     lightChars(views, yv, p) {
       const env = this.scene.environment, k = this.charK ?? 1;
@@ -77634,12 +77640,12 @@ void main() {
       if (!v) this.unlightChars();
       for (const d of this.bakeDips()) d.m.visible = v && (this.floor == null || d.F.floor == null || d.F.floor === this.floor);
       for (const m of this.bakeFloors || []) {
-        const L3 = m.userData.liveMat, B = m.userData.bakeMat;
+        const L2 = m.userData.liveMat, B = m.userData.bakeMat;
         if (v) {
-          B.roughness = L3.roughness;
-          B.envMapIntensity = L3.envMapIntensity;
+          B.roughness = L2.roughness;
+          B.envMapIntensity = L2.envMapIntensity;
         }
-        m.material = v ? B : L3;
+        m.material = v ? B : L2;
       }
       this.fill();
     }
@@ -77683,20 +77689,20 @@ void main() {
     }
     // ---- Yola's shadow: one light, one small map, only her (and what she holds) in it ----
     build_yshadow() {
-      const L3 = this.ysh = new DirectionalLight(16777215, 1e-4);
-      L3.castShadow = true;
-      L3.userData.notSun = true;
-      L3.shadow.mapSize.set(YSH.map, YSH.map);
-      const c = L3.shadow.camera;
+      const L2 = this.ysh = new DirectionalLight(16777215, 1e-4);
+      L2.castShadow = true;
+      L2.userData.notSun = true;
+      L2.shadow.mapSize.set(YSH.map, YSH.map);
+      const c = L2.shadow.camera;
       c.left = c.bottom = -YSH.half;
       c.right = c.top = YSH.half;
       c.near = 0.5;
       c.far = 12;
-      L3.shadow.bias = -15e-4;
-      L3.shadow.normalBias = 0.03;
-      L3.shadow.radius = 4;
-      L3.visible = false;
-      this.scene.add(L3, L3.target);
+      L2.shadow.bias = -15e-4;
+      L2.shadow.normalBias = 0.03;
+      L2.shadow.radius = 4;
+      L2.visible = false;
+      this.scene.add(L2, L2.target);
       const C = this.yshCatch = new Mesh(new PlaneGeometry(YSH.half * 2, YSH.half * 2).rotateX(-Math.PI / 2), new ShadowMaterial({ color: 395275, opacity: YSH.dark, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
       C.receiveShadow = true;
       C.renderOrder = 1;
@@ -77788,12 +77794,12 @@ void main() {
         });
       }
       let best = null, bd = 1e9;
-      for (const F3 of this.fittings()) {
-        if (F3.b < 0.2) continue;
-        const d = Math.hypot(F3.x - p.x, F3.z - p.z);
+      for (const F of this.fittings()) {
+        if (F.b < 0.2) continue;
+        const d = Math.hypot(F.x - p.x, F.z - p.z);
         if (d < bd) {
           bd = d;
-          best = F3;
+          best = F;
         }
       }
       let ox = YSH.off[0], oz = YSH.off[2], oy = YSH.off[1], k = YSH.min;
@@ -77810,12 +77816,12 @@ void main() {
       S2.z += (oz - S2.z) * e;
       S2.k += (k - S2.k) * Math.min(1, dt * 6);
       const len = Math.hypot(S2.x, S2.z) || 1, cx = p.x - S2.x / len * Math.min(0.7, len * 0.3), cz = p.z - S2.z / len * Math.min(0.7, len * 0.3);
-      const L3 = this.ysh, t = YSH.half * 2 / YSH.map, x = Math.round(cx / t) * t, z = Math.round(cz / t) * t;
+      const L2 = this.ysh, t = YSH.half * 2 / YSH.map, x = Math.round(cx / t) * t, z = Math.round(cz / t) * t;
       const sc = 5.5 / Math.hypot(S2.x, S2.y, S2.z);
-      L3.target.position.set(x, 0, z);
-      L3.position.set(x + S2.x * sc, S2.y * sc, z + S2.z * sc);
-      L3.target.updateMatrixWorld();
-      L3.updateMatrixWorld();
+      L2.target.position.set(x, 0, z);
+      L2.position.set(x + S2.x * sc, S2.y * sc, z + S2.z * sc);
+      L2.target.updateMatrixWorld();
+      L2.updateMatrixWorld();
       this.yshCatch.position.set(x, 0.014, z);
       this.yshCatch.material.opacity = YSH.dark * S2.k;
       if (yv.blob) {
@@ -77834,10 +77840,10 @@ void main() {
     }
     build_halos() {
       this.halos = [];
-      for (const F3 of this.fittings()) {
-        const s = this.halo(F3.col, 1.1, F3.x, 2.58, F3.z);
+      for (const F of this.fittings()) {
+        const s = this.halo(F.col, 1.1, F.x, 2.58, F.z);
         s.scale.set(1.9, 0.55, 1);
-        this.halos.push({ s, F: F3, base: 0.6 });
+        this.halos.push({ s, F, base: 0.6 });
       }
       this.monSeen = /* @__PURE__ */ new Set();
       this.scanMonitors();
@@ -77881,15 +77887,15 @@ void main() {
       const cy = this.camYaw * Math.PI / 180, tx = Math.sin(cy), tz = Math.cos(cy), fix = this.fittings();
       const mesh = this.streakMesh = new InstancedMesh(FLAT2, new MeshBasicMaterial({ map: streakTex(), transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), fix.length);
       const M4 = new Matrix4(), q = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), cy);
-      fix.forEach((F3, i) => {
-        M4.compose(new Vector3(F3.x + tx * 1.2, 0.027, F3.z + tz * 1.2), q, new Vector3(0.62, 1, 3.8));
+      fix.forEach((F, i) => {
+        M4.compose(new Vector3(F.x + tx * 1.2, 0.027, F.z + tz * 1.2), q, new Vector3(0.62, 1, 3.8));
         mesh.setMatrixAt(i, M4);
         mesh.setColorAt(i, new Color(0));
       });
       mesh.renderOrder = 2;
       mesh.frustumCulled = false;
       this.root.add(mesh);
-      this.streaks = fix.map((F3, i) => ({ F: F3, i }));
+      this.streaks = fix.map((F, i) => ({ F, i }));
     }
     toggle_polish(v) {
       const O = this.arena?.ob;
@@ -77901,9 +77907,9 @@ void main() {
         m.needsUpdate = true;
       }
       for (const fm of this.bakeFloors || []) {
-        const B = fm.userData.bakeMat, L3 = fm.userData.liveMat;
-        B.roughness = L3.roughness;
-        B.envMapIntensity = L3.envMapIntensity;
+        const B = fm.userData.bakeMat, L2 = fm.userData.liveMat;
+        B.roughness = L2.roughness;
+        B.envMapIntensity = L2.envMapIntensity;
       }
       if (this.streakMesh) this.streakMesh.visible = v;
     }
@@ -77938,12 +77944,12 @@ void main() {
     }
     awayFromLight(x, z) {
       let best = null, bd = 1e9;
-      for (const F3 of this.plan.fixtures) {
-        if (F3.state === "dead") continue;
-        const d = Math.hypot(x - F3.x, z - F3.z);
+      for (const F of this.plan.fixtures) {
+        if (F.state === "dead") continue;
+        const d = Math.hypot(x - F.x, z - F.z);
         if (d < bd) {
           bd = d;
-          best = F3;
+          best = F;
         }
       }
       if (!best || bd < 1e-3) return [0, 0];
@@ -77959,20 +77965,20 @@ void main() {
     }
     // the light at a point (for the zombies' eyes): the fittings' pools, the shot's flash, the torch if Yola's is on
     lightAt(x, z) {
-      let L3 = 0;
-      if ((this.on.fixtures || this.on.baked) && this.fix) for (const F3 of this.fix) {
-        const d = Math.hypot(x - F3.x, z - F3.z);
-        if (d < 2.6) L3 += F3.b * (1 - d / 2.6) * 0.9;
+      let L2 = 0;
+      if ((this.on.fixtures || this.on.baked) && this.fix) for (const F of this.fix) {
+        const d = Math.hypot(x - F.x, z - F.z);
+        if (d < 2.6) L2 += F.b * (1 - d / 2.6) * 0.9;
       }
       if (this.flashK > 0) {
         const d = Math.hypot(x - this.flashX, z - this.flashZ);
-        if (d < this.flashR) L3 += this.flashK * (1 - d / this.flashR) * 1.6;
+        if (d < this.flashR) L2 += this.flashK * (1 - d / this.flashR) * 1.6;
       }
       if (this.torch) {
         const t = this.torch, dx = x - t.x, dz = z - t.z, d = Math.hypot(dx, dz);
-        if (d > 0.3 && d < 6.5 && (dx * t.fx + dz * t.fz) / d > 0.9) L3 += 1.4 * (1 - d / 6.5) + 0.4;
+        if (d > 0.3 && d < 6.5 && (dx * t.fx + dz * t.fz) / d > 0.9) L2 += 1.4 * (1 - d / 6.5) + 0.4;
       }
-      return Math.min(1.6, L3);
+      return Math.min(1.6, L2);
     }
     // ---- muzzle: the shot lights the wall it hits and the floor at her feet; the shotgun, the room ----
     build_muzzle() {
@@ -78013,11 +78019,11 @@ void main() {
       this.lastYola = yolaView;
       if (this.on.baked) this.lightChars(views, yolaView, sim2?.player);
       this.t += dt;
-      if (this.fix) for (const F3 of this.fix) {
-        const k = flick(F3.state, this.t, F3.seed, F3.S);
-        F3.b = k;
-        F3.pool.k = this.on.fixtures && !this.on.baked ? F3.k * k : 0;
-        F3.bar.material.opacity = 0.15 + 0.85 * k;
+      if (this.fix) for (const F of this.fix) {
+        const k = flick(F.state, this.t, F.seed, F.S);
+        F.b = k;
+        F.pool.k = this.on.fixtures && !this.on.baked ? F.k * k : 0;
+        F.bar.material.opacity = 0.15 + 0.85 * k;
       }
       if (this.halos && this.on.halos && (this.monScanT = (this.monScanT ?? 0) - dt) <= 0) {
         this.monScanT = 2;
@@ -78160,8 +78166,8 @@ void main() {
   };
   var stateOf = (w, u) => u < w[0] ? "steady" : u < w[0] + w[1] ? "buzz" : u < w[0] + w[1] + w[2] ? "failing" : "dead";
   function floorPlan(n) {
-    const F3 = FLOORS[n], fixtures = [], rooms = [];
-    for (const r of F3.rooms) {
+    const F = FLOORS[n], fixtures = [], rooms = [];
+    for (const r of F.rooms) {
       const kind = ROOM_KIND[r.id] || "clinical", [col, k, wear] = KIND[kind];
       for (const [x0, x1, z0, z1] of r.rects) {
         const w = x1 - x0, d = z1 - z0;
@@ -78174,8 +78180,8 @@ void main() {
         rooms.push({ id: r.id, rect: [x0, x1, z0, z1], col, k: k * 0.3 });
       }
     }
-    fixtures.push({ kind: "tube", x: F3.lift.x, z: F3.lift.inside.z, col: 16774112, k: 0.5, state: "steady", floor: n, room: "lift" });
-    const B = F3.bounds;
+    fixtures.push({ kind: "tube", x: F.lift.x, z: F.lift.inside.z, col: 16774112, k: 0.5, state: "steady", floor: n, room: "lift" });
+    const B = F.bounds;
     return { fixtures, rooms, bake: { floor: n, url: `assets/hospital/floor${n}_light.jpg`, x0: B.minX, x1: B.maxX, z0: B.minZ, z1: B.maxZ, k: BAKE_K[n], fill: 0.3 } };
   }
   var EXITS = [
@@ -79027,8 +79033,8 @@ void main() {
       h = (h * 60 + 360) % 360;
       if (h < 165 || h > 250) continue;
       const l = (mx + mn) / 2, s = R.s ?? Math.min(1, dl / (1 - Math.abs(2 * l - 1) || 1) * 1.6 + 0.2);
-      const H4 = (R.H + (h - 205) * 0.12 + 360) % 360, L3 = Math.min(R.l[2], l * R.l[0] + R.l[1]);
-      const C = (1 - Math.abs(2 * L3 - 1)) * s, X2 = C * (1 - Math.abs(H4 / 60 % 2 - 1)), m = L3 - C / 2, k6 = Math.floor(H4 / 60) % 6;
+      const H4 = (R.H + (h - 205) * 0.12 + 360) % 360, L2 = Math.min(R.l[2], l * R.l[0] + R.l[1]);
+      const C = (1 - Math.abs(2 * L2 - 1)) * s, X2 = C * (1 - Math.abs(H4 / 60 % 2 - 1)), m = L2 - C / 2, k6 = Math.floor(H4 / 60) % 6;
       const [rr, g2, bb] = [[C, X2, 0], [X2, C, 0], [0, C, X2], [0, X2, C], [X2, 0, C], [C, 0, X2]][k6];
       d[i] = (rr + m) * 255;
       d[i + 1] = (g2 + m) * 255;
@@ -79407,9 +79413,9 @@ void main() {
       z.pz = z.z;
       z.pyaw = z.yaw;
     }
-    for (const L3 of sim.loose) {
-      L3.px = L3.x;
-      L3.pz = L3.z;
+    for (const L2 of sim.loose) {
+      L2.px = L2.x;
+      L2.pz = L2.z;
     }
     input.clearAll();
     input.enabled = true;
@@ -79666,9 +79672,9 @@ void main() {
         z.pz = z.z;
         z.pyaw = z.yaw;
       }
-      for (const L3 of sim.loose) {
-        L3.px = L3.x;
-        L3.pz = L3.z;
+      for (const L2 of sim.loose) {
+        L2.px = L2.x;
+        L2.pz = L2.z;
       }
       sim.step(inp);
       if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
@@ -80866,7 +80872,7 @@ void main() {
       z.z = 50;
       z.solid = false;
     }
-    const p = sim.player, V4 = Vector3, L3 = new V4(), R = new V4(), LT = new V4(), RT2 = new V4(), rows = [];
+    const p = sim.player, V4 = Vector3, L2 = new V4(), R = new V4(), LT = new V4(), RT2 = new V4(), rows = [];
     window.game.scriptInput = () => ({ moveX: mx, moveZ: mz, aimX: ax, aimZ: az, swapPresses: 0 });
     for (let i = 0; i < n + 40; i++) {
       p.x = p.px = 0.4;
@@ -80874,11 +80880,11 @@ void main() {
       tick(1, 1 / 60, false);
       if (i < 40) continue;
       const o = yola.outer.position;
-      yola.worldPos("LeftFoot", L3);
+      yola.worldPos("LeftFoot", L2);
       yola.worldPos("RightFoot", R);
       yola.worldPos("LeftToeBase", LT);
       yola.worldPos("RightToeBase", RT2);
-      rows.push({ L: [L3.x - o.x, Math.min(L3.y, LT.y), L3.z - o.z], R: [R.x - o.x, Math.min(R.y, RT2.y), R.z - o.z], vx: p.vx, vz: p.vz });
+      rows.push({ L: [L2.x - o.x, Math.min(L2.y, LT.y), L2.z - o.z], R: [R.x - o.x, Math.min(R.y, RT2.y), R.z - o.z], vx: p.vx, vz: p.vz });
     }
     window.game.scriptInput = null;
     const out = { speed: +Math.hypot(p.vx, p.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
@@ -80900,7 +80906,7 @@ void main() {
       z.z = 50;
       z.solid = false;
     }
-    const p = sim.player, V4 = Vector3, L3 = new V4(), R = new V4(), rows = [];
+    const p = sim.player, V4 = Vector3, L2 = new V4(), R = new V4(), rows = [];
     let i = 0;
     window.game.scriptInput = () => Object.assign({ moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0 }, fn(i));
     for (i = 0; i < frames; i++) {
@@ -80908,9 +80914,9 @@ void main() {
       p.z = p.pz = 0;
       tick(1, 1 / 60, false);
       const o = yola.outer.position;
-      yola.worldPos("LeftFoot", L3);
+      yola.worldPos("LeftFoot", L2);
       yola.worldPos("RightFoot", R);
-      rows.push([L3.x - o.x, L3.y, L3.z - o.z, R.x - o.x, R.y, R.z - o.z]);
+      rows.push([L2.x - o.x, L2.y, L2.z - o.z, R.x - o.x, R.y, R.z - o.z]);
     }
     window.game.scriptInput = null;
     const acc2 = [];
