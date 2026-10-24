@@ -56148,7 +56148,8 @@ void main() {
       const every = this.animEvery || 1;
       const steady = every > 1 && z.state === "chase" && !this.oneShot && !this.upperShot && !this.chairO && !this.iv && !z.bed && !this.lying && !this.plantedP && !this.clubArm && !this.shieldC && !(this.outer.scale.x < 0) && Math.abs(this.react.x) + Math.abs(this.react.z) < 1e-3;
       this.animAcc = (this.animAcc || 0) + dt;
-      if (!steady || (this.animN = (this.animN ?? this.id) + 1) % every === 0) {
+      const posed = !steady || (this.animN = (this.animN ?? this.id) + 1) % every === 0;
+      if (posed) {
         this.mixer.update(steady ? this.animAcc : dt);
         this.animAcc = 0;
       }
@@ -56167,7 +56168,7 @@ void main() {
         this.bones.Spine2.scale.setScalar(1 / k);
       }
       this.swell = sw;
-      this.container.updateMatrixWorld(true);
+      if (posed || every < 4) this.container.updateMatrixWorld(true);
       this.bleeding(dt);
       if (this.shieldC) {
         const st = shieldState(z);
