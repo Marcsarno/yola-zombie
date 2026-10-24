@@ -56096,7 +56096,13 @@ void main() {
         this.act("walk").setEffectiveWeight(0);
         this.act("idle").setEffectiveWeight(1 - one2);
       }
-      this.mixer.update(dt);
+      const every = this.animEvery || 1;
+      const steady = every > 1 && z.state === "chase" && !this.oneShot && !this.upperShot && !this.chairO && !this.iv && !z.bed && !this.lying && !this.plantedP && !this.clubArm && !this.shieldC && !(this.outer.scale.x < 0) && Math.abs(this.react.x) + Math.abs(this.react.z) < 1e-3;
+      this.animAcc = (this.animAcc || 0) + dt;
+      if (!steady || (this.animN = (this.animN ?? this.id) + 1) % every === 0) {
+        this.mixer.update(steady ? this.animAcc : dt);
+        this.animAcc = 0;
+      }
       if (this.iv || this.chairO || z.bed || this.outer.scale.x < 0 && !this.mirG) this.propPlace(z, dt);
       if (this.plantedP && (z.state === "stuck" || z.state === "pickup" && !this.clubArm)) this.gripPlanted(z);
       if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
@@ -85892,6 +85898,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var hood = null;
   var zviews = /* @__PURE__ */ new Map();
   var zpool = [[], [], [], [], [], [], [], [], [], [], []];
+  var zThrottle = params.get("zthrottle") !== "0";
+  var zFrustum = new Frustum();
+  var zPV = new Matrix4();
+  var zSphere = new Sphere();
   var storyStart = params.has("intro") || params.has("reveal") || params.has("room1");
   var mode = storyStart ? "room1" : params.get("mode") || "encounter";
   var benchN = +(params.get("n") || 10);
@@ -86841,6 +86851,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       finishMarks.update(dt, list);
     }
     const seen2 = /* @__PURE__ */ new Set();
+    const zThr = zThrottle && !!LAYOUT.hood;
+    if (zThr) zFrustum.setFromProjectionMatrix(zPV.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     for (const z of sim.zombies) {
       if (z.noView) continue;
       let v = zviews.get(z.id);
@@ -86871,6 +86883,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         v.blob.visible = true;
         v.farHidden = false;
       }
+      if (zThr) {
+        zSphere.center.set(v.outer.position.x, v.height * 0.5, v.outer.position.z);
+        zSphere.radius = v.height * 1.25;
+        v.animEvery = !zFrustum.intersectsSphere(zSphere) ? 4 : (z.x - fcx) * (z.x - fcx) + (z.z - fcz) * (z.z - fcz) > 14 * 14 ? 2 : 1;
+      } else v.animEvery = 1;
       v.update(animDt, z, z.px + (z.x - z.px) * alpha, z.pz + (z.z - z.pz) * alpha, sim.time);
     }
     for (const [id, v] of zviews) if (!seen2.has(id)) {
@@ -88005,7 +88022,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     return yola;
   }, get physics() {
     return physics;
-  }, zviews, get atmos() {
+  }, zviews, get zThrottle() {
+    return zThrottle;
+  }, set zThrottle(v) {
+    zThrottle = !!v;
+  }, get atmos() {
     return atmos;
   }, get lightkit() {
     return lightkit;
