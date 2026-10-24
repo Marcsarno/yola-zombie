@@ -2348,7 +2348,8 @@ export class ZombieView extends ClipBody {
     const steady = every > 1 && z.state === 'chase' && !this.oneShot && !this.upperShot && !this.chairO && !this.iv && !z.bed && !this.lying &&
       !this.plantedP && !this.clubArm && !this.shieldC && !(this.outer.scale.x < 0) && Math.abs(this.react.x) + Math.abs(this.react.z) < 1e-3;
     this.animAcc = (this.animAcc || 0) + dt;
-    if (!steady || (this.animN = (this.animN ?? this.id) + 1) % every === 0) { this.mixer.update(steady ? this.animAcc : dt); this.animAcc = 0; }
+    const posed = !steady || (this.animN = (this.animN ?? this.id) + 1) % every === 0;
+    if (posed) { this.mixer.update(steady ? this.animAcc : dt); this.animAcc = 0; }
     if (this.iv || this.chairO || z.bed || (this.outer.scale.x < 0 && !this.mirG)) this.propPlace(z, dt);
     if (this.plantedP && (z.state === 'stuck' || (z.state === 'pickup' && !this.clubArm))) this.gripPlanted(z);
     if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
@@ -2360,7 +2361,8 @@ export class ZombieView extends ClipBody {
       const k = sw > 0 ? 1 + 0.2 * sw * (1 + 0.07 * Math.sin(performance.now() * 0.014)) : 1; this.bones.Spine1.scale.setScalar(k); this.bones.Spine2.scale.setScalar(1 / k);
     }
     this.swell = sw;
-    this.container.updateMatrixWorld(true);
+    // (the bones' world pass, ~0.06 ms: skipped off screen between poses; the scene's own pass before the draw does it anyway)
+    if (posed || every < 4) this.container.updateMatrixWorld(true);
     this.bleeding(dt);
     if (this.shieldC) {
       const st = shieldState(z);
