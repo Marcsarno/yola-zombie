@@ -23,7 +23,7 @@ import { GameMusic } from './music.js';
 import { Input } from './ui/input.js';
 import { Hud } from './ui/hud.js';
 import { angleDiff } from './core/world.js';
-import { meleeWorldSegment } from './core/player.js';
+import { meleeWorldSegment, VAULT, VAULT_SHOTS } from './core/player.js';
 import { CustomPhysics } from './render/physics/custom.js';
 import { loadDamageTextures } from './render/ShieldController.mjs';
 import { RapierPhysics } from './render/physics/rapier.js';
@@ -426,6 +426,7 @@ function setupBat(anims, fits = {}, woodG = null, axeG = null) {
   // stance, bat level (assets/yola2_ual.glb; without it the Sword Idle as before)
   const block = anims.find((c) => c.name === 'ual_Sword_Block');
   const combo = anims.find((c) => c.name === 'ual_Sword_Regular_Combo'), idle = block ? holdFrame(block, 'ual_Sword_Block') : anims.find((c) => c.name === 'ual1_Sword_Idle');
+  VAULT.shots = anims.some((c) => c.name === 'hub_vault_pistol') ? VAULT_SHOTS : null; // (his gun vaults fire: core/player.js)
   if (!combo) { setupNewMoves(yola, anims, null); return; }
   const h = new THREE.Group(), m = woodG ? woodG.scene : makeBat(0.84); // (the wood bat; the built one if its file failed)
   m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });

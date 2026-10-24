@@ -157,7 +157,11 @@ class ClipBody {
 // The dodge and the vault (core/player.js DODGE / VAULT): their clips (assets/yola2_ual.glb, Quaternius UAL1 / UAL2) and the
 // frames played over the action (the side dodges start crouched and are standing by frame ~36 of 40; the roll is up by
 // ~40 of 45; the vault is a running vault, 23 frames, its hips lifted ~0.75 m over the prop)
-const OVERLAY_CLIPS = { left: { clip: 'ual1_Dodge_Left', f0: 1, f1: 36 }, right: { clip: 'ual1_Dodge_Right', f0: 1, f1: 36 }, roll: { clip: 'ual1_Roll', f0: 1, f1: 40 }, vault: { clip: 'ual_SafetyVault', f0: 1, f1: 23 } };
+// Marc's gun vaults (2026-10-24, the Animation Hub's vault_pistol / vault_shotgun in assets/male1_ual.glb): the same vault
+// mirrored, his left hand planted and the gun held on the line one-handed, firing (core/player.js VAULT_SHOTS); played
+// instead of the plain vault while that gun is in his hand (a character without them vaults as before). 22 frames, 0-21
+const OVERLAY_CLIPS = { left: { clip: 'ual1_Dodge_Left', f0: 1, f1: 36 }, right: { clip: 'ual1_Dodge_Right', f0: 1, f1: 36 }, roll: { clip: 'ual1_Roll', f0: 1, f1: 40 }, vault: { clip: 'ual_SafetyVault', f0: 1, f1: 23 },
+  vault_pistol: { clip: 'hub_vault_pistol', f0: 0, f1: 21 }, vault_shotgun: { clip: 'hub_vault_shotgun', f0: 0, f1: 21 } };
 export const OVERLAY_NAMES = Object.values(OVERLAY_CLIPS).map((m) => m.clip);
 // Locomotion clips: travel direction in character space (x = left, z = forward) and gait family.
 const LOCO = {
@@ -643,7 +647,8 @@ export class YolaView extends ClipBody {
     // knockdown; cut short (an attack out of a dodge), the pose fades out over 0.15 s instead of snapping to the next one
     const OV = this.ov ||= { act: null, w: 0 };
     if (!sact && (s.action === 'dodge' || s.action === 'vault') && s.act) {
-      const M = OVERLAY_CLIPS[s.action === 'vault' ? 'vault' : s.act.kind], oa = M && this.act(M.clip);
+      const gv = s.action === 'vault' && this.act(OVERLAY_CLIPS['vault_' + s.equipped]?.clip) ? 'vault_' + s.equipped : 'vault'; // (his gun vault, if he has one)
+      const M = OVERLAY_CLIPS[s.action === 'vault' ? gv : s.act.kind], oa = M && this.act(M.clip);
       if (oa) {
         if (OV.act && OV.act !== oa) OV.act.setEffectiveWeight(0);
         oa.time = (M.f0 + clamp(s.actionT / s.act.dur, 0, 1) * (M.f1 - M.f0)) / 30 + ((this.ovJit ^= 1) * 1e-6);

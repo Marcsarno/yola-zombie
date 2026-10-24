@@ -37,17 +37,33 @@ export const DODGE = {
 // land on the far side. She clears it in VAULT.dur, untouched by that prop; the zombies have to go round.
 // Only head-on (the user, 2026-10-17: "if you're gliding into it, don't vault"): her stick and her actual run both within
 // headOn of square to the face she meets, at more than minSpeed of her full run.
-export const VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, headOn: 25 * Math.PI / 180, minSpeed: 0.55 };
+export const VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, headOn: 25 * Math.PI / 180, minSpeed: 0.55, shots: null,
+  // Chapter 2's props (hood/world.js kinds 'prop:<name>'): only the yard furniture and loose junk; never a barricade piece
+  // (jersey barriers, sandbags, debris, fences: they seal the arenas)
+  hoodProps: /^prop:(by_table|hood_bench|sofa_dumped|by_cooler|by_planter_dead|tire_stack_3|nb_tarp_crates|pallet_stack|shopping_cart_tipped)$/ };
+// Marc's gun vaults (2026-10-24, the user: "blend that with firing a gun"; render/clipchars.js OVERLAY_CLIPS vault_pistol /
+// vault_shotgun): the shots go off where his clip kicks, as fractions of the vault (hub frames of 21): the pistol going up
+// onto the prop and coming off it (6, 15), the shotgun once, one-handed at the top (10). Real rounds from the magazine, along
+// the vault's line; an empty gun just vaults. main.js sets VAULT.shots when the hero has those clips (else none)
+export const VAULT_SHOTS = { pistol: [6 / 21, 15 / 21], shotgun: [10 / 21] };
 // ray (x,z)+(dx,dz)t against a box: [tEnter, tExit, the face it enters: 0 = an x face, 1 = a z face] or null
+// -> [enter, leave, the entered face's inward normal x, z]. A neighbourhood box stands at an angle (hood/world.js: cx, cz,
+// hx, hz, cos, sin; its minX.. are only a bounding square): the ray is taken into the box's own frame
 function rayBox(b, x, z, dx, dz) {
+  const o = b.hx != null, cs = o ? b.cos : 1, sn = o ? b.sin : 0;
+  const px = o ? (x - b.cx) * cs - (z - b.cz) * sn : x, pz = o ? (x - b.cx) * sn + (z - b.cz) * cs : z;
+  const ux = dx * cs - dz * sn, uz = dx * sn + dz * cs;
+  const slabs = o ? [[px, ux, -b.hx, b.hx], [pz, uz, -b.hz, b.hz]] : [[px, ux, b.minX, b.maxX], [pz, uz, b.minZ, b.maxZ]];
   let t0 = -1e9, t1 = 1e9, face = 0;
-  for (const [k, p, d, lo, hi] of [[0, x, dx, b.minX, b.maxX], [1, z, dz, b.minZ, b.maxZ]]) {
+  for (let k = 0; k < 2; k++) {
+    const [p, d, lo, hi] = slabs[k];
     if (Math.abs(d) < 1e-9) { if (p < lo || p > hi) return null; continue; }
     let a = (lo - p) / d, c = (hi - p) / d; if (a > c) [a, c] = [c, a];
     if (a > t0) { t0 = a; face = k; }
     t1 = Math.min(t1, c); if (t0 > t1) return null;
   }
-  return [t0, t1, face];
+  const lx = face === 0 ? Math.sign(ux) : 0, lz = face === 1 ? Math.sign(uz) : 0;
+  return [t0, t1, lx * cs + lz * sn, -lx * sn + lz * cs];
 }
 
 const ZS_STAGGER = 'stagger';
@@ -114,11 +130,11 @@ export class Player {
     if (sp < V.minSpeed * this.T.moveSpeed) return false; // (running at it, not walking or easing in)
     const cosOn = Math.cos(V.headOn), vx = this.vx / sp, vz = this.vz / sp;
     for (const b of world.boxes) {
-      if (b.off || b.kind !== 'prop' || b.h < V.minH || b.h > V.maxH) continue;
+      if (b.off || !(b.kind === 'prop' || V.hoodProps.test(b.kind)) || b.h < V.minH || b.h > V.maxH) continue;
       const tt = rayBox(b, this.x, this.z, mx, mz);
       if (!tt || tt[0] < 0 || tt[0] > ahead || tt[1] - tt[0] > V.maxDepth) continue;
       // head-on: the stick and her run square to the face she meets (not gliding along it, not clipping its corner)
-      const nx = tt[2] === 0 ? Math.sign(mx) : 0, nz = tt[2] === 1 ? Math.sign(mz) : 0;
+      const nx = tt[2], nz = tt[3];
       if (mx * nx + mz * nz < cosOn || vx * nx + vz * nz < cosOn) continue;
       const land = tt[1] + this.r + 0.12, lx = this.x + mx * land, lz = this.z + mz * land;
       // room to land: clear of every other box, inside the level
@@ -126,8 +142,11 @@ export class Player {
       let clear = true;
       for (const o of world.boxes) {
         if (o === b || o.off) continue;
-        const cx = Math.max(o.minX, Math.min(lx, o.maxX)), cz = Math.max(o.minZ, Math.min(lz, o.maxZ));
-        if ((lx - cx) ** 2 + (lz - cz) ** 2 < this.r * this.r) { clear = false; break; }
+        let ex, ez; // (from the landing spot to the nearest point of that box: a neighbourhood one in its own frame, or a trunk)
+        if (o.type === 'c') { const d = Math.hypot(lx - o.cx, lz - o.cz); ex = Math.max(0, d - o.r); ez = 0; }
+        else if (o.hx != null) { const qx = (lx - o.cx) * o.cos - (lz - o.cz) * o.sin, qz = (lx - o.cx) * o.sin + (lz - o.cz) * o.cos; ex = qx - Math.max(-o.hx, Math.min(qx, o.hx)); ez = qz - Math.max(-o.hz, Math.min(qz, o.hz)); }
+        else { ex = lx - Math.max(o.minX, Math.min(lx, o.maxX)); ez = lz - Math.max(o.minZ, Math.min(lz, o.maxZ)); }
+        if (ex * ex + ez * ez < this.r * this.r) { clear = false; break; }
       }
       const B = world.bounds; if (B && (lx < B.minX || lx > B.maxX || lz < B.minZ || lz > B.maxZ)) clear = false;
       if (!clear || !world.lineOfSight(this.x, this.z, lx, lz, 1.2)) continue; // (nothing tall in the way either)
@@ -398,9 +417,17 @@ export class Player {
         else if (a.t >= D.cancel && this.attackHeld) { this.setAction('ready'); this.dodgeCd = DODGE.cooldown; } // (an attack cuts its end short)
         break;
       }
-      case 'vault':
+      case 'vault': {
+        const S = VAULT.shots?.[this.equipped];
+        while (S && (a.fired || 0) < S.length && a.t >= S[a.fired || 0] * a.dur) {
+          a.fired = (a.fired || 0) + 1;
+          if (this.ammo <= 0) continue;
+          this.ammo--; this.shotCount++; // (no recoil: his clip has the kick in it)
+          if (this.equipped === SHOTGUN) sim.fireShotgun(this); else sim.firePistol(this);
+        }
         if (a.t >= a.dur) this.setAction('ready');
         break;
+      }
     }
 
     // Priority: a pending swap is taken as soon as the current recovery allows it, before any further attack.
