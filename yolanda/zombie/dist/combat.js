@@ -46925,10 +46925,28 @@ void main() {
     roll: { dur: 0.8, dist: 3, iframes: [0.03, 0.5], cancel: 0.62, out: (u) => smooth(u) * 0.35 + u * 0.65 },
     cooldown: 0.25
   };
-  var VAULT = { dur: 0.62, minH: 0.35, maxH: 1.1, maxDepth: 1.3, reach: 0.38, headOn: 25 * Math.PI / 180, minSpeed: 0.55 };
+  var VAULT = {
+    dur: 0.62,
+    minH: 0.35,
+    maxH: 1.1,
+    maxDepth: 1.3,
+    reach: 0.38,
+    headOn: 25 * Math.PI / 180,
+    minSpeed: 0.55,
+    shots: null,
+    // Chapter 2's props (hood/world.js kinds 'prop:<name>'): only the yard furniture and loose junk; never a barricade piece
+    // (jersey barriers, sandbags, debris, fences: they seal the arenas)
+    hoodProps: /^prop:(by_table|hood_bench|sofa_dumped|by_cooler|by_planter_dead|tire_stack_3|nb_tarp_crates|pallet_stack|shopping_cart_tipped)$/
+  };
+  var VAULT_SHOTS = { pistol: [6 / 21, 15 / 21], shotgun: [10 / 21] };
   function rayBox(b, x, z, dx, dz) {
+    const o = b.hx != null, cs = o ? b.cos : 1, sn = o ? b.sin : 0;
+    const px2 = o ? (x - b.cx) * cs - (z - b.cz) * sn : x, pz2 = o ? (x - b.cx) * sn + (z - b.cz) * cs : z;
+    const ux = dx * cs - dz * sn, uz = dx * sn + dz * cs;
+    const slabs = o ? [[px2, ux, -b.hx, b.hx], [pz2, uz, -b.hz, b.hz]] : [[px2, ux, b.minX, b.maxX], [pz2, uz, b.minZ, b.maxZ]];
     let t0 = -1e9, t1 = 1e9, face = 0;
-    for (const [k, p, d, lo, hi] of [[0, x, dx, b.minX, b.maxX], [1, z, dz, b.minZ, b.maxZ]]) {
+    for (let k = 0; k < 2; k++) {
+      const [p, d, lo, hi] = slabs[k];
       if (Math.abs(d) < 1e-9) {
         if (p < lo || p > hi) return null;
         continue;
@@ -46942,7 +46960,8 @@ void main() {
       t1 = Math.min(t1, c);
       if (t0 > t1) return null;
     }
-    return [t0, t1, face];
+    const lx = face === 0 ? Math.sign(ux) : 0, lz = face === 1 ? Math.sign(uz) : 0;
+    return [t0, t1, lx * cs + lz * sn, -lx * sn + lz * cs];
   }
   var ZS_STAGGER = "stagger";
   var Player = class {
@@ -47030,18 +47049,30 @@ void main() {
       if (sp < V3.minSpeed * this.T.moveSpeed) return false;
       const cosOn = Math.cos(V3.headOn), vx = this.vx / sp, vz = this.vz / sp;
       for (const b of world.boxes) {
-        if (b.off || b.kind !== "prop" || b.h < V3.minH || b.h > V3.maxH) continue;
+        if (b.off || !(b.kind === "prop" || V3.hoodProps.test(b.kind)) || b.h < V3.minH || b.h > V3.maxH) continue;
         const tt = rayBox(b, this.x, this.z, mx, mz);
         if (!tt || tt[0] < 0 || tt[0] > ahead || tt[1] - tt[0] > V3.maxDepth) continue;
-        const nx = tt[2] === 0 ? Math.sign(mx) : 0, nz = tt[2] === 1 ? Math.sign(mz) : 0;
+        const nx = tt[2], nz = tt[3];
         if (mx * nx + mz * nz < cosOn || vx * nx + vz * nz < cosOn) continue;
         const land = tt[1] + this.r + 0.12, lx = this.x + mx * land, lz = this.z + mz * land;
         const probe = { x: lx, z: lz };
         let clear = true;
         for (const o of world.boxes) {
           if (o === b || o.off) continue;
-          const cx = Math.max(o.minX, Math.min(lx, o.maxX)), cz = Math.max(o.minZ, Math.min(lz, o.maxZ));
-          if ((lx - cx) ** 2 + (lz - cz) ** 2 < this.r * this.r) {
+          let ex, ez;
+          if (o.type === "c") {
+            const d = Math.hypot(lx - o.cx, lz - o.cz);
+            ex = Math.max(0, d - o.r);
+            ez = 0;
+          } else if (o.hx != null) {
+            const qx = (lx - o.cx) * o.cos - (lz - o.cz) * o.sin, qz = (lx - o.cx) * o.sin + (lz - o.cz) * o.cos;
+            ex = qx - Math.max(-o.hx, Math.min(qx, o.hx));
+            ez = qz - Math.max(-o.hz, Math.min(qz, o.hz));
+          } else {
+            ex = lx - Math.max(o.minX, Math.min(lx, o.maxX));
+            ez = lz - Math.max(o.minZ, Math.min(lz, o.maxZ));
+          }
+          if (ex * ex + ez * ez < this.r * this.r) {
             clear = false;
             break;
           }
@@ -47411,9 +47442,19 @@ void main() {
           }
           break;
         }
-        case "vault":
+        case "vault": {
+          const S2 = VAULT.shots?.[this.equipped];
+          while (S2 && (a.fired || 0) < S2.length && a.t >= S2[a.fired || 0] * a.dur) {
+            a.fired = (a.fired || 0) + 1;
+            if (this.ammo <= 0) continue;
+            this.ammo--;
+            this.shotCount++;
+            if (this.equipped === SHOTGUN) sim2.fireShotgun(this);
+            else sim2.firePistol(this);
+          }
           if (a.t >= a.dur) this.setAction("ready");
           break;
+        }
       }
       if (this.desired !== this.equipped && this.action.type !== "swap" && this.canBeginSwap()) {
         this.setAction("swap", { dur: T2.swapTime, target: this.desired, mid: false });
@@ -53027,7 +53068,14 @@ void main() {
       return this.bones[n].getWorldPosition(out);
     }
   };
-  var OVERLAY_CLIPS = { left: { clip: "ual1_Dodge_Left", f0: 1, f1: 36 }, right: { clip: "ual1_Dodge_Right", f0: 1, f1: 36 }, roll: { clip: "ual1_Roll", f0: 1, f1: 40 }, vault: { clip: "ual_SafetyVault", f0: 1, f1: 23 } };
+  var OVERLAY_CLIPS = {
+    left: { clip: "ual1_Dodge_Left", f0: 1, f1: 36 },
+    right: { clip: "ual1_Dodge_Right", f0: 1, f1: 36 },
+    roll: { clip: "ual1_Roll", f0: 1, f1: 40 },
+    vault: { clip: "ual_SafetyVault", f0: 1, f1: 23 },
+    vault_pistol: { clip: "hub_vault_pistol", f0: 0, f1: 21 },
+    vault_shotgun: { clip: "hub_vault_shotgun", f0: 0, f1: 21 }
+  };
   var OVERLAY_NAMES = Object.values(OVERLAY_CLIPS).map((m) => m.clip);
   var LOCO = {
     pistol_walk: { dir: [0, 1] },
@@ -53682,7 +53730,8 @@ void main() {
       }
       const OV = this.ov || (this.ov = { act: null, w: 0 });
       if (!sact && (s.action === "dodge" || s.action === "vault") && s.act) {
-        const M4 = OVERLAY_CLIPS[s.action === "vault" ? "vault" : s.act.kind], oa = M4 && this.act(M4.clip);
+        const gv = s.action === "vault" && this.act(OVERLAY_CLIPS["vault_" + s.equipped]?.clip) ? "vault_" + s.equipped : "vault";
+        const M4 = OVERLAY_CLIPS[s.action === "vault" ? gv : s.act.kind], oa = M4 && this.act(M4.clip);
         if (oa) {
           if (OV.act && OV.act !== oa) OV.act.setEffectiveWeight(0);
           oa.time = (M4.f0 + clamp6(s.actionT / s.act.dur, 0, 1) * (M4.f1 - M4.f0)) / 30 + (this.ovJit ^= 1) * 1e-6;
@@ -86233,6 +86282,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     });
     const block = anims.find((c) => c.name === "ual_Sword_Block");
     const combo2 = anims.find((c) => c.name === "ual_Sword_Regular_Combo"), idle = block ? holdFrame(block, "ual_Sword_Block") : anims.find((c) => c.name === "ual1_Sword_Idle");
+    VAULT.shots = anims.some((c) => c.name === "hub_vault_pistol") ? VAULT_SHOTS : null;
     if (!combo2) {
       setupNewMoves(yola, anims, null);
       return;
