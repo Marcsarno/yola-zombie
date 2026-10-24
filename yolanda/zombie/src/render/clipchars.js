@@ -1918,6 +1918,17 @@ export class ZombieView extends ClipBody {
     const ws = hb.getWorldScale(new THREE.Vector3()).x || 1;
     if (!ZombieView.eyeTex) { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); ZombieView.eyeTex = new THREE.CanvasTexture(c); }
     const mat = new THREE.SpriteMaterial({ map: ZombieView.eyeTex, color: ZombieView.eyeCfg.col, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    // (2026-10-19, the user: the eyes "missed the actual eyes ... floating in front"): each glint sits ON the face, on the mesh
+    // itself: of the skin's rest-pose vertices within a small disc round the table's eye spot (across the face), the frontmost
+    // few give the surface there; the glint goes a few millimetres out from it. The table's own depth is the fallback.
+    const verts = [], M = new THREE.Matrix4(), w = new THREE.Vector3();
+    this.model.traverse((o) => { if (!o.isSkinnedMesh) return; M.multiplyMatrices(o.matrixWorld, o.bindMatrix); const pa = o.geometry.attributes.position; for (let i = 0; i < pa.count; i++) verts.push(w.fromBufferAttribute(pa, i).applyMatrix4(M).clone()); });
+    const onFace = (E0) => {
+      const r = 0.12 * L, near = [];
+      for (const v of verts) { const d = v.clone().sub(E0), f = d.dot(F); d.addScaledVector(F, -f); if (d.length() < r && f > -0.5 * L) near.push(f); }
+      if (near.length < 3) return null; near.sort((a, b) => b - a);
+      const top = near.slice(0, Math.max(3, Math.ceil(near.length * 0.25))); return top.reduce((a, b) => a + b, 0) / top.length; // (the front surface there, not a stray brow vertex)
+    };
     this.eyes = [-1, 1].map((s) => {
       const E0 = H.clone().addScaledVector(U, up * L).addScaledVector(R, s * sp * L), f = onFace(E0);
       const e = new THREE.Sprite(mat); e.position.copy(E0.addScaledVector(F, f != null ? f + 0.004 : fw * L).applyMatrix4(inv));
@@ -1968,17 +1979,6 @@ export class ZombieView extends ClipBody {
     const B = this.bones, y = z.yaw, f = _v5.set(Math.sin(y), 0, Math.cos(y)), l = _v6.set(Math.cos(y), 0, -Math.sin(y));
     const busy = z.state === 'windup' || z.state === 'strike' || z.state === 'recover' || z.state === 'stagger' || z.state === 'knockdown' || z.state === 'getup' || z.state === 'dying' || z.state === 'dead' || z.crawling;
     { const m = z.bed && (z.bed.side || 1) < 0 ? -1 : 1; // (the clip lifts it onto the mattress itself)
-    // (2026-10-19, the user: the eyes "missed the actual eyes ... floating in front"): each glint sits ON the face, on the mesh
-    // itself: of the skin's rest-pose vertices within a small disc round the table's eye spot (across the face), the frontmost
-    // few give the surface there; the glint goes a few millimetres out from it. The table's own depth is the fallback.
-    const verts = [], M = new THREE.Matrix4(), w = new THREE.Vector3();
-    this.model.traverse((o) => { if (!o.isSkinnedMesh) return; M.multiplyMatrices(o.matrixWorld, o.bindMatrix); const pa = o.geometry.attributes.position; for (let i = 0; i < pa.count; i++) verts.push(w.fromBufferAttribute(pa, i).applyMatrix4(M).clone()); });
-    const onFace = (E0) => {
-      const r = 0.12 * L, near = [];
-      for (const v of verts) { const d = v.clone().sub(E0), f = d.dot(F); d.addScaledVector(F, -f); if (d.length() < r && f > -0.5 * L) near.push(f); }
-      if (near.length < 3) return null; near.sort((a, b) => b - a);
-      const top = near.slice(0, Math.max(3, Math.ceil(near.length * 0.25))); return top.reduce((a, b) => a + b, 0) / top.length; // (the front surface there, not a stray brow vertex)
-    };
       if (this.outer.scale.x !== m) this.outer.scale.x = m;
       if (m < 0) this.container.rotation.y = -z.yaw; }
     if (this.chairO) {
