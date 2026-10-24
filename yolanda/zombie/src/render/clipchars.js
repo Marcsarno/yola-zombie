@@ -2336,7 +2336,14 @@ export class ZombieView extends ClipBody {
     }
     if (this.chairO || z.bed || this.lying) this.propPose(z, dt);
     if (this.chairO && z.chair && !z.crawling) { this.act('walk').setEffectiveWeight(0); this.act('idle').setEffectiveWeight(1 - one); } // (seated: the arms' own idle; the hands go to the rims below)
-    this.mixer.update(dt);
+    // (2026-10-24, Chapter 2: main.js sets animEvery) the mixer is most of a zombie's cost (~0.22 ms each on the PC, 189
+    // tracks): one far off or off screen that is only walking poses every 2nd or 4th frame, with the time saved up; anything
+    // a clip or a correction drives (an attack, a hit's jolt, props, the shield, a lost arm) poses every frame as before
+    const every = this.animEvery || 1;
+    const steady = every > 1 && z.state === 'chase' && !this.oneShot && !this.upperShot && !this.chairO && !this.iv && !z.bed && !this.lying &&
+      !this.plantedP && !this.clubArm && !this.shieldC && !(this.outer.scale.x < 0) && Math.abs(this.react.x) + Math.abs(this.react.z) < 1e-3;
+    this.animAcc = (this.animAcc || 0) + dt;
+    if (!steady || (this.animN = (this.animN ?? this.id) + 1) % every === 0) { this.mixer.update(steady ? this.animAcc : dt); this.animAcc = 0; }
     if (this.iv || this.chairO || z.bed || (this.outer.scale.x < 0 && !this.mirG)) this.propPlace(z, dt);
     if (this.plantedP && (z.state === 'stuck' || (z.state === 'pickup' && !this.clubArm))) this.gripPlanted(z);
     if (z.club && !this.clubArm && this.plantedP?.arm) this.takeClub();
