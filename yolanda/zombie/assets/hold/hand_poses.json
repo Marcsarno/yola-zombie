@@ -29,35 +29,5 @@
   "Right": 0,
   "Left": 0.5,
   "gunHand": "Right"
- },
- "rebel:bat_idle": {
-  "Right": 1,
-  "Left": 1,
-  "gunHand": "Right"
- },
- "rebel:bat_swing": {
-  "Right": 1,
-  "Left": 1,
-  "gunHand": "Right"
- },
- "rebel:baseball_double": {
-  "Right": 1,
-  "Left": 1,
-  "gunHand": "Right"
- },
- "rebel:baseball_homerun": {
-  "Right": 1,
-  "Left": 1,
-  "gunHand": "Right"
- },
- "rebel:baseball_single": {
-  "Right": 1,
-  "Left": 1,
-  "gunHand": "Right"
- },
- "rebel:golf_swing": {
-  "Right": 1,
-  "Left": 1,
-  "gunHand": "Right"
  }
 }

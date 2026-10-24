@@ -52,11 +52,6 @@ const CHARS = {
   arianna: { label: 'Arianna (test)', file: 'assets/arianna.glb', height: 1.30, ref: 'yola_', refMap: YOLA2_REF, hero: true },
   lilah: { label: 'Lilah (test)', file: 'assets/lilah.glb', height: 1.05, ref: 'yola_', hero: true, // (her t_* clips: no source rig)
     refMap: { ...YOLA2_REF, ...Object.fromEntries(['afraid', 'fall', 'flee_01', 'flee_02', 'freaky', 'frightened', 'run', 'scared_01', 'scared_02', 'sit', 'walk', 'wave_goodbye_01', 'wave_goodbye_02'].map((n) => ['t_' + n, null])) } },
-  // Meshy's "Pumpkin Spice Rebel" (2026-10-22, the user: in the Rig Lab only, not the game; her bat grip first, a golf
-  // club to come): tools/anim/build_meshy.py gives her fused fingers one curl along the middle-finger chain, knuckle
-  // markers for the grip line, and X Bot's bat / baseball clips (her own Meshy clips have no source rig)
-  rebel: { label: 'Rebel (Meshy, test)', file: 'assets/rebel.glb', height: 1.70, ref: 'yola_',
-    refMap: Object.fromEntries(['Running', 'Walking', 'All_Night_Dance', 'Casual_Walk', 'golf_swing'].map((n) => [n, null])) }, // (golf_swing: built from her baseball_homerun)
   nurse: { label: 'Zombie nurse', file: 'assets/zombie-nurse-mod.glb', height: 1.78, ref: 'zombie_' },
   patient: { label: 'Zombie patient', file: 'assets/zombie-patient-mod.glb', height: 1.78, ref: 'zombie_' },
   // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -121,14 +116,14 @@ const REF_ALIAS = { pistol_reload: 'reload_walk', sg_reload: 'reload_rifle_stand
 // clips cut from the middle of their source: the source frame that her frame 1 is (pistol_reload = X Bot's reload_walk
 // frames 38-99, measured by matching both hands over the clip, 2026-10-16; before this the two were shown out of step)
 const REF_OFFSET = { pistol_reload: 37 };
-const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (hospital pack, full stock)', draft: 'shotgun (first draft)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (wood)', packaxe: 'axe (hospital pack)', packcrowbar: 'crowbar (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife', golf: 'golf club (bone)' };
-const HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1, golf: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
+const GUNS = { auto: 'auto (match the clip)', none: 'no weapon', pistol: 'pistol', short: 'shotgun (short pump)', old: 'shotgun (hospital pack, full stock)', draft: 'shotgun (first draft)', axe: 'fire axe', bat: 'baseball bat', alubat: 'bat (wood)', packaxe: 'axe (hospital pack)', packcrowbar: 'crowbar (hospital pack)', sledgehammer: 'sledgehammer', chainsaw: 'chainsaw', knife: 'knife' };
+const HELD = { pistol: 1, axe: 1, bat: 1, alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 }; // held by the hands directly (the shotguns use the fitted socket below)
 // the weapon test arena's other weapons (2026-10-17, the user: "add the axe, chainsaw, sledge hammer back to ... the rig lab
 // .. and the knife"): their frames from the Move Library's data sheet (assets/arena/weapons.json: grip point, shaft and
 // reference axes, one or two hands), held as the bat (one hand) or the axe (two hands) is
-const LIB_WEAPONS = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1, golf: 1 };
+const LIB_WEAPONS = { alubat: 1, packaxe: 1, packcrowbar: 1, sledgehammer: 1, chainsaw: 1, knife: 1 };
 // the hospital pack's weapons (2026-10-17: the user's pack from ChatGPT, as delivered, with its own grip markers)
-const PACK = { alubat: 1, packaxe: 1, packcrowbar: 1, golf: 1 }; // (golf: the user's bone golf club, 2026-10-22, held as these are, in the data sheet's hand: the Left)
+const PACK = { alubat: 1, packaxe: 1, packcrowbar: 1 };
 let WDEFS = {}, PICKS = {}; // PICKS: "<clip>|<weapon>" -> the Move Library pick's hold (hand, roll, slide, flip), as the arena uses it
 const autoWeapon = (name) => /bat|baseball|homerun/.test(name) ? 'bat' : /chop|gs_|slash|axe/.test(name) ? 'axe' : /^sg_|shotgun|reload_rifle|rifle/.test(name) ? 'short' : /pistol|t_shoot/.test(name) ? 'pistol' : 'none';
 const GUN_FILES = { old: 'assets/weapons/pump_shotgun.glb', short: 'assets/weapons/pump_short.glb', draft: 'assets/shotgun.glb' };
@@ -926,7 +921,7 @@ const fitKey = (a) => (a === main ? S.char : a === refX ? 'xbot' : 'mannequin');
 const fitOf = (a) => (FITS[fitKey(a)] ||= { ...PFIT0 });
 // the other held weapons' fits (assets/hold/weapon_fit.json, render/holdfit.js: the game uses the same file and math)
 const WFITS = {};
-const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (wood)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', old: 'Shotgun (hospital pack)', draft: 'Shotgun (first draft)', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife', golf: 'Golf club (bone)' };
+const FIT_WEAPONS = { pistol: 'Pistol', bat: 'Bat', alubat: 'Bat (wood)', packaxe: 'Axe (hospital pack)', packcrowbar: 'Crowbar (hospital pack)', axe: 'Axe', short: 'Shotgun', old: 'Shotgun (hospital pack)', draft: 'Shotgun (first draft)', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife' };
 // (a weapon's fit for this rig: this clip's own when it has one, the sidebar's "This clip only", else the weapon's)
 const fitW = (w, a) => (w === 'pistol' ? fitOf(a) : WFITS[w + '@' + (main?.clip?.name || '').replace(/_REBAKE_.*$/, '')]?.[fitKey(a)] || ((WFITS[w] ||= {})[fitKey(a)] ||= { ...PFIT0 }));
 // A clip that starts and ends in the weapon's everyday hold (the shotgun slide finisher: idle -> run, slide, kneel, shot ->
@@ -1471,7 +1466,7 @@ function barsBottom() { let b = 0; for (const id of ['edit', 'top']) { const el 
 // Quaternius and Mixamo dummy ... right now I only want to edit the idle, and the attacks"). Pick a weapon, its idle or
 // attack (Mixamo and Quaternius clips only: each plays beside its own dummy), show both / Yola / the dummy, the angle,
 // the fit. ----
-const EDIT_WEAPONS = { alubat: 'Bat', packaxe: 'Axe', packcrowbar: 'Crowbar', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife', golf: 'Golf club', pistol: 'Pistol', short: 'Shotgun', old: 'Shotgun · pack', draft: 'Shotgun · draft' };
+const EDIT_WEAPONS = { alubat: 'Bat', packaxe: 'Axe', packcrowbar: 'Crowbar', sledgehammer: 'Sledgehammer', chainsaw: 'Chainsaw', knife: 'Knife', pistol: 'Pistol', short: 'Shotgun', old: 'Shotgun · pack', draft: 'Shotgun · draft' };
 // the guns' own idles and attacks (the pistol's attack: its idle with the game's shot kick, firing every 0.24 s)
 const EDIT_LISTS = { pistol: { idle: /^(pistol_idle|ual1_Pistol_Idle_Loop)$/, attack: /^(pistol_idle|pistol_reload)$/ }, short: { idle: /^(sg_reload)$/, attack: /^(sg_reload|reload_rifle_stand|rifle_aim_idle)$/ } };
 EDIT_LISTS.old = EDIT_LISTS.draft = EDIT_LISTS.short;

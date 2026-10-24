@@ -107,17 +107,6 @@
    "tilt": 17,
    "turn": 26,
    "roll": 30
-  },
-  "rebel": {
-   "size": 100,
-   "fwd": 31.5,
-   "up": -33,
-   "side": 8.5,
-   "tilt": -26.5,
-   "turn": -27,
-   "roll": 0,
-   "lDown": 0,
-   "lSide": 0
   }
  },
  "knife": {
@@ -304,20 +293,6 @@
    "roll": -3,
    "lDown": 30,
    "lSide": 20.5
-  }
- },
- "golf": {
-  "rebel": {
-   "size": 100,
-   "fwd": 3.2,
-   "up": 26,
-   "side": -27.9,
-   "tilt": -15.1,
-   "turn": 2.6,
-   "roll": 11.7,
-   "lDown": 0,
-   "lSide": 0,
-   "hand": "Left"
   }
  }
 }
