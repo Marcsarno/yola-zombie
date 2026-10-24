@@ -52,6 +52,12 @@ export function fitTextures(root, cap, release = false, tag = 'other') {
       if (!m) continue;
       const cut = m.alphaTest > 0 || m.transparent;
       for (const [k, v] of Object.entries(m)) {
+        // (a KTX2 picture (hood/ktx.js) is sized when it is made: only counted, at its packed size, mipmaps in)
+        // Its packed copy in memory goes once it is up (whatever release says: nothing reads a packed picture back)
+        if (v?.isCompressedTexture && v.source && !done.has(v.source)) {
+          done.add(v.source); const mb = (v.mipmaps || []).reduce((a, q) => a + (q.data?.byteLength || 0), 0) / 1048576; texStats.images++; texStats.mb += mb; texStats.by[tag] = (texStats.by[tag] || 0) + mb;
+          if (gl && !KEEP) { gl.initTexture(v); for (const q of v.mipmaps || []) q.data = new Uint8Array(0); }
+        }
         if (!v || !v.isTexture || skip(v) || done.has(v.source)) continue;
         const e = by.get(v.source) || { ts: new Set(), cap: Infinity }; by.set(v.source, e);
         e.ts.add(v); e.cap = Math.min(e.cap, cut ? Infinity : COLOUR.has(k) ? cap : cap / 2);

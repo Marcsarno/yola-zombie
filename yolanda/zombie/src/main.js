@@ -11,6 +11,7 @@ import { AcidPools } from './render/acid.js';
 import { radioFit } from './render/radiohold.js';
 import { caseFit } from './render/casecarry.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
+import { ktxLoader, loadKtxList, ktxPath } from './hood/ktx.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
@@ -149,7 +150,7 @@ audio.spatial = (x, z) => { _ap.set(x, 1, z).project(camera); return { pan: Math
 const music = new GameMusic(audio); // the supplied combat track: explore / combat with hysteresis (music.js)
 const fx = new FX(scene);
 // the full burst on big finishing blows (render/gibburst.js): one model per zombie type that has one (0 nurse, 1 patient)
-const gibs = new GibBurst(scene, new GLTFLoader(), fx);
+const gibs = new GibBurst(scene, new GLTFLoader().setKTX2Loader(ktxLoader(renderer)), fx);
 const telegraphs = new Telegraphs(scene); // zombie attack wedges on the floor
 const threatCue = new ThreatCue(scene); // the sign over a special enemy's big attack (render/threatcue.js)
 const finishMarks = new FinishMarks(scene); // the gold mark over a zombie open to a finisher (render/finishmark.js)
@@ -317,9 +318,12 @@ function heroFits(j) {
   }
   return j;
 }
-const loader = new GLTFLoader();
+const loader = new GLTFLoader(); loader.setKTX2Loader(ktxLoader(renderer)); // (Chapter 2's KTX2 pictures: hood/ktx.js)
+// a Chapter 2 zombie's file: its KTX2 copy when tools/hood/ktx2.mjs made one (opt/ktx/zombies/<name>)
+const zombieFile = (t) => (LAYOUT.hood && t.hood && ktxPath('zombies/' + t.file.split('/').pop())) || t.file;
 async function load() {
-  gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb', ...(LAYOUT.hood ? { 7: ZOMBIE_TYPES[7].file } : {}) }); // (in the background: until it is in, kills die as before) (the Zombie Male AAB's cut-apart body is its own burst model)
+  if (LAYOUT.hood) await loadKtxList();
+  gibs.load({ 0: 'assets/zombie-nurse-burst.glb', 1: 'assets/zombie-patient-burst.glb', ...(LAYOUT.hood ? { 7: zombieFile(ZOMBIE_TYPES[7]) } : {}) }); // (in the background: until it is in, kills die as before) (the Zombie Male AAB's cut-apart body is its own burst model)
   audio.preload(); // (the recorded effect banks: small, fetched now, decoded on the first tap)
   music.preload(); // (the gameplay track buffers while the game loads: it starts the moment the reveal hands over)
   hud.loading(0);
@@ -337,7 +341,7 @@ async function load() {
   // Yola, plus the clips authored outside her model file (the bat combo: skeleton-only, same bone names)
   const yolaP = Promise.all([loader.loadAsync(YOLA_FILES.model), ...YOLA_FILES.extra.map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; });
   // (each type's extra clips, the scratch, are retargeted onto its own skeleton: tools/anim/zombie_clip.py)
-  const zomP = Promise.all(ZOMBIE_TYPES.map((t) => t.same != null || (t.hood && !LAYOUT.hood) ? null : Promise.all([loader.loadAsync(t.file), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; })));
+  const zomP = Promise.all(ZOMBIE_TYPES.map((t) => t.same != null || (t.hood && !LAYOUT.hood) ? null : Promise.all([loader.loadAsync(zombieFile(t)).catch(() => loader.loadAsync(t.file)), ...(t.extra || []).map((f) => loader.loadAsync(f).catch(() => null))]).then(([g, ...xs]) => { for (const x of xs) if (x) g.animations.push(...x.animations); return g; })));
   // (Chapter 2's street zombies are their own burst models: the loaded model itself, so its textures are not loaded twice)
   if (LAYOUT.hood) zomP.then((gs) => gibs.load(Object.fromEntries([5, 6, 8, 9, 10].filter((i) => gs[i]).map((i) => [i, gs[i]])))).catch(() => {});
   const dataP = fetch(YOLA_FILES.data).then((r) => r.json());

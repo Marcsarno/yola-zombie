@@ -23,6 +23,7 @@ import { HoodMusic } from './music.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { characterLight, setCharacterFill, setRim, updateRim } from './charlight.js';
 import { fitTextures, useRenderer, TEX_CAP, texStats } from './texfit.js';
+import { ktxPath } from './ktx.js';
 
 const inRect = (r, x, z, m = 0) => { const dx = x - r.cx, dz = z - r.cz, c = Math.cos(r.yaw || 0), s = Math.sin(r.yaw || 0); return Math.abs(dx * c - dz * s) < r.hx + m && Math.abs(dx * s + dz * c) < r.hz + m; };
 
@@ -105,7 +106,12 @@ export async function startHood({ scene, loader, arena, renderer, quality, param
   const texList = (root) => { const l = []; root.traverse((o) => { for (const m of [].concat(o.material || [])) if (m) for (const [k, v] of Object.entries(m)) if (v && v.isTexture) l.push([m, k, v]); }); return l; };
   // (their files from the compressed copies, every picture at most 1024 px: tools/hood/optimize.mjs; the original if missing)
   const svOpt = view.layout?.opt && params.get('opt') !== '0';
-  const svLoad = (u) => (svOpt && /^assets\/survivors\/[^/]+\.glb$/.test(u) ? loader.loadAsync(u.replace('assets/survivors/', 'assets/neighborhood/opt/survivors/')).catch(() => loader.loadAsync(u)) : loader.loadAsync(u));
+  // (their KTX2 copies first when tools/hood/ktx2.mjs made them: opt/ktx/survivors/)
+  const svLoad = (u) => {
+    if (!svOpt || !/^assets\/survivors\/[^/]+\.glb$/.test(u)) return loader.loadAsync(u);
+    const webp = () => loader.loadAsync(u.replace('assets/survivors/', 'assets/neighborhood/opt/survivors/')).catch(() => loader.loadAsync(u)), k = ktxPath('survivors/' + u.split('/').pop());
+    return k ? loader.loadAsync(k).catch(webp) : webp();
+  };
   await actors.loadModels({ loadAsync: (u) => svLoad(u).then((g) => {
     if (!g.scene) return g;
     const l = texList(g.scene), f0 = firstTex.get(u);

@@ -12,6 +12,7 @@ import { initMaterials, swapMaterials, kitMaterial, texturesReady, shoreWater, u
 import { terrainMaterial } from './terrain.js';
 import { groundY } from './layout.js';
 import { fitTextures, TEX_CAP } from './texfit.js';
+import { ktxLoader, loadKtxList, ktxPath } from './ktx.js';
 
 const _Y = new THREE.Vector3(0, 1, 0);
 
@@ -77,9 +78,11 @@ export class HoodView {
     // (polish 4) the download diet: tools/hood/optimize.mjs wrote meshopt-compressed copies with WebP textures to opt/
     // (58.6 -> 20.9 MB); ?opt=0 loads the originals
     const useOpt = L.opt && new URLSearchParams(location.search).get('opt') !== '0'; useOptTex(useOpt);
-    const gl = new GLTFLoader(); gl.setMeshoptDecoder(MeshoptDecoder);
-    // (a model newer than the last optimize run has no copy yet: its original instead)
-    const loader = { loadAsync: (url) => (useOpt && url.startsWith(ROOT) && !url.endsWith('.json') ? gl.loadAsync(url.replace(ROOT, ROOT + 'opt/')).catch(() => gl.loadAsync(url)) : gl.loadAsync(url)) };
+    const gl = new GLTFLoader(); gl.setMeshoptDecoder(MeshoptDecoder); gl.setKTX2Loader(ktxLoader()); await loadKtxList();
+    // (a model newer than the last optimize run has no copy yet: its original instead; one with KTX2 pictures (tools/hood/
+    // ktx2.mjs, the neighbourhood's map only) from opt/ktx/, the WebP copy if that fails)
+    const optLoad = (url) => gl.loadAsync(url.replace(ROOT, ROOT + 'opt/')).catch(() => gl.loadAsync(url));
+    const loader = { loadAsync: (url) => { if (!useOpt || !url.startsWith(ROOT) || url.endsWith('.json')) return gl.loadAsync(url); const k = ROOT === HOOD_ROOT && ktxPath(url.slice(ROOT.length)); return k ? gl.loadAsync(k).catch(() => optLoad(url)) : optLoad(url); } };
     void gameLoader;
     let done = 0; const total = L.models.length + 4;
     const ground = loader.loadAsync(ROOT + MAP.ground).then((g) => { this.addGround(g.scene); onProgress(++done / total); });
