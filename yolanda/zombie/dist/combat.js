@@ -60154,7 +60154,7 @@ void main() {
         }
         sun.shadow.bias = -8e-4;
         sun.shadow.normalBias = 0.02;
-        sun.shadow.radius = 3;
+        sun.shadow.radius = this.renderer?.shadowMap.type === PCFShadowMap ? 1.5 : 3;
       }
       this.sun = sun;
       sun.userData.isSun = true;
@@ -79515,7 +79515,7 @@ void main() {
       c.far = 12;
       L2.shadow.bias = -15e-4;
       L2.shadow.normalBias = 0.03;
-      L2.shadow.radius = 4;
+      L2.shadow.radius = this.arena?.renderer?.shadowMap.type === PCFShadowMap ? 2 : 4;
       L2.visible = false;
       this.scene.add(L2, L2.target);
       const C2 = this.yshCatch = new Mesh(new PlaneGeometry(YSH.half * 2, YSH.half * 2).rotateX(-Math.PI / 2), new ShadowMaterial({ color: 395275, opacity: YSH.dark, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
@@ -87150,7 +87150,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   renderer.toneMapping = NeutralToneMapping;
   renderer.toneMappingExposure = 0.92;
   renderer.shadowMap.enabled = resolvedQuality() !== "low";
-  renderer.shadowMap.type = isMobile && resolvedQuality() !== "high" ? PCFShadowMap : PCFSoftShadowMap;
+  renderer.shadowMap.type = { soft: PCFSoftShadowMap, pcf: PCFShadowMap }[params.get("shadow")] || (isMobile ? PCFShadowMap : PCFSoftShadowMap);
   renderer.shadowMap.autoUpdate = false;
   var diag = /* @__PURE__ */ (() => {
     let el = null;
