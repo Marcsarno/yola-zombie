@@ -74,7 +74,9 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: resolvedQuality() 
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 0.92;
 renderer.shadowMap.enabled = resolvedQuality() !== 'low';
-renderer.shadowMap.type = isMobile && resolvedQuality() !== 'high' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+// (2026-10-24, Marc's three.js research: the soft filter is the heavier one, and newer three.js drops it) phones use the plain
+// PCF filter at every quality, High too; ?shadow=soft / ?shadow=pcf force one either way (A/B)
+renderer.shadowMap.type = { soft: THREE.PCFSoftShadowMap, pcf: THREE.PCFShadowMap }[params.get('shadow')] || (isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap);
 renderer.shadowMap.autoUpdate = false; // the environment is static: render its shadows once
 // what goes wrong on a phone, on screen (2026-10-18: the game ran but drew nothing on the user's iPhone, Safari and Edge;
 // a phone has no console): a script error, or the phone resetting the graphics (WebGL context lost: usually out of

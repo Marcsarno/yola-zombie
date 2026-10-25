@@ -283,7 +283,9 @@ export class Arena {
       sun.shadow.mapSize.set(this.quality === 'high' ? 2048 : 1024, this.quality === 'high' ? 2048 : 1024);
       const c = sun.shadow.camera; c.left = -9; c.right = 9; c.top = 13; c.bottom = -13; c.near = 1; c.far = 40;
       if (this.f3) { c.left = -13; c.right = 13; c.top = 13; c.bottom = -13; }
-      sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02; sun.shadow.radius = 3;
+      // (radius: the soft filter's blur; the plain filter phones use (main.js) blurs wider for the same number, so half: the
+      // user's pick of the three, 2026-10-25, shots/shadow_choice.png C)
+      sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02; sun.shadow.radius = this.renderer?.shadowMap.type === THREE.PCFShadowMap ? 1.5 : 3;
     }
     this.sun = sun; sun.userData.isSun = true;
     this.redHemi = new THREE.HemisphereLight(0xff3a24, 0x2a0000, 0); s.add(this.redHemi); return; // (the emergency look, see setEmergency; the wing's old amber door lights below are unused)

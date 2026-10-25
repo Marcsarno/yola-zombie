@@ -252,7 +252,7 @@ export class LightKit {
     // and a shadow catcher under her (ShadowMaterial: transparent but for the shadow) shows it at YSH.dark
     const L = (this.ysh = new THREE.DirectionalLight(0xffffff, 1e-4)); L.castShadow = true; L.userData.notSun = true; // (the lab's looks leave it alone: they resize the sun's map)
     L.shadow.mapSize.set(YSH.map, YSH.map); const c = L.shadow.camera; c.left = c.bottom = -YSH.half; c.right = c.top = YSH.half; c.near = 0.5; c.far = 12;
-    L.shadow.bias = -0.0015; L.shadow.normalBias = 0.03; L.shadow.radius = 4; L.visible = false;
+    L.shadow.bias = -0.0015; L.shadow.normalBias = 0.03; L.shadow.radius = this.arena?.renderer?.shadowMap.type === THREE.PCFShadowMap ? 2 : 4; L.visible = false; // (half on the plain filter: arena.js sun)
     this.scene.add(L, L.target);
     const C = (this.yshCatch = new THREE.Mesh(new THREE.PlaneGeometry(YSH.half * 2, YSH.half * 2).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ color: 0x06080b, opacity: YSH.dark, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })));
     C.receiveShadow = true; C.renderOrder = 1; C.visible = false; this.root.add(C);
