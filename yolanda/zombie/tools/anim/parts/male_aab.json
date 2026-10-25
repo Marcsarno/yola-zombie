@@ -1,0 +1,10 @@
+{
+  "Head_01": ["Head", "Head"],
+  "ForeArm_L": ["Forearm_L", "ForeArm_L"], "Shirt_Open_ForeArm_L": ["Forearm_L", "ForeArm_L"], "Hand_L": ["Forearm_L", "Hand_L"],
+  "ForeArm_R": ["Forearm_R", "ForeArm_R"], "Shirt_Open_ForeArm_R": ["Forearm_R", "ForeArm_R"], "Hand_R": ["Forearm_R", "Hand_R"],
+  "Knee_L": ["LowerLeg_L", "Shin_L"], "Trousers_Knee_L": ["LowerLeg_L", "Shin_L"], "Foot_L": ["LowerLeg_L", "Foot_L"],
+  "Knee_R": ["LowerLeg_R", "Shin_R"], "Trousers_Knee_R": ["LowerLeg_R", "Shin_R"], "Foot_R": ["LowerLeg_R", "Foot_R"],
+  "Arm_L": ["Body", "Arm_L"], "Shirt_Open_Arm_L": ["Body", "Arm_L"], "Arm_R": ["Body", "Arm_R"], "Shirt_Open_Arm_R": ["Body", "Arm_R"],
+  "Leg_L": ["Body", "Thigh_L"], "Trousers_Leg_L": ["Body", "Thigh_L"], "Leg_R": ["Body", "Thigh_R"], "Trousers_Leg_R": ["Body", "Thigh_R"],
+  "Torso": ["Body", "Torso"], "Shirt_Open_Torso": ["Body", "Torso"], "Chest_01": ["Body", "Torso"], "Trousers_Hips": ["Body", "Torso"]
+}

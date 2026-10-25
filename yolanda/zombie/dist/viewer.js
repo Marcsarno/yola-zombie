@@ -13175,6 +13175,166 @@
       }
     }
   };
+  var SpriteMaterial = class extends Material {
+    /**
+     * Constructs a new sprite material.
+     *
+     * @param {Object} [parameters] - An object with one or more properties
+     * defining the material's appearance. Any property of the material
+     * (including any property from inherited materials) can be passed
+     * in here. Color values can be passed any type of value accepted
+     * by {@link Color#set}.
+     */
+    constructor(parameters) {
+      super();
+      this.isSpriteMaterial = true;
+      this.type = "SpriteMaterial";
+      this.color = new Color(16777215);
+      this.map = null;
+      this.alphaMap = null;
+      this.rotation = 0;
+      this.sizeAttenuation = true;
+      this.transparent = true;
+      this.fog = true;
+      this.setValues(parameters);
+    }
+    copy(source) {
+      super.copy(source);
+      this.color.copy(source.color);
+      this.map = source.map;
+      this.alphaMap = source.alphaMap;
+      this.rotation = source.rotation;
+      this.sizeAttenuation = source.sizeAttenuation;
+      this.fog = source.fog;
+      return this;
+    }
+  };
+  var _geometry;
+  var _intersectPoint = /* @__PURE__ */ new Vector3();
+  var _worldScale = /* @__PURE__ */ new Vector3();
+  var _mvPosition = /* @__PURE__ */ new Vector3();
+  var _alignedPosition = /* @__PURE__ */ new Vector2();
+  var _rotatedPosition = /* @__PURE__ */ new Vector2();
+  var _viewWorldMatrix = /* @__PURE__ */ new Matrix4();
+  var _vA = /* @__PURE__ */ new Vector3();
+  var _vB = /* @__PURE__ */ new Vector3();
+  var _vC = /* @__PURE__ */ new Vector3();
+  var _uvA = /* @__PURE__ */ new Vector2();
+  var _uvB = /* @__PURE__ */ new Vector2();
+  var _uvC = /* @__PURE__ */ new Vector2();
+  var Sprite = class extends Object3D {
+    /**
+     * Constructs a new sprite.
+     *
+     * @param {(SpriteMaterial|SpriteNodeMaterial)} [material] - The sprite material.
+     */
+    constructor(material = new SpriteMaterial()) {
+      super();
+      this.isSprite = true;
+      this.type = "Sprite";
+      if (_geometry === void 0) {
+        _geometry = new BufferGeometry();
+        const float32Array = new Float32Array([
+          -0.5,
+          -0.5,
+          0,
+          0,
+          0,
+          0.5,
+          -0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0.5,
+          0,
+          1,
+          1,
+          -0.5,
+          0.5,
+          0,
+          0,
+          1
+        ]);
+        const interleavedBuffer = new InterleavedBuffer(float32Array, 5);
+        _geometry.setIndex([0, 1, 2, 0, 2, 3]);
+        _geometry.setAttribute("position", new InterleavedBufferAttribute(interleavedBuffer, 3, 0, false));
+        _geometry.setAttribute("uv", new InterleavedBufferAttribute(interleavedBuffer, 2, 3, false));
+      }
+      this.geometry = _geometry;
+      this.material = material;
+      this.center = new Vector2(0.5, 0.5);
+      this.count = 1;
+    }
+    /**
+     * Computes intersection points between a casted ray and this sprite.
+     *
+     * @param {Raycaster} raycaster - The raycaster.
+     * @param {Array<Object>} intersects - The target array that holds the intersection points.
+     */
+    raycast(raycaster, intersects2) {
+      if (raycaster.camera === null) {
+        console.error('THREE.Sprite: "Raycaster.camera" needs to be set in order to raycast against sprites.');
+      }
+      _worldScale.setFromMatrixScale(this.matrixWorld);
+      _viewWorldMatrix.copy(raycaster.camera.matrixWorld);
+      this.modelViewMatrix.multiplyMatrices(raycaster.camera.matrixWorldInverse, this.matrixWorld);
+      _mvPosition.setFromMatrixPosition(this.modelViewMatrix);
+      if (raycaster.camera.isPerspectiveCamera && this.material.sizeAttenuation === false) {
+        _worldScale.multiplyScalar(-_mvPosition.z);
+      }
+      const rotation = this.material.rotation;
+      let sin, cos;
+      if (rotation !== 0) {
+        cos = Math.cos(rotation);
+        sin = Math.sin(rotation);
+      }
+      const center = this.center;
+      transformVertex(_vA.set(-0.5, -0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+      transformVertex(_vB.set(0.5, -0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+      transformVertex(_vC.set(0.5, 0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+      _uvA.set(0, 0);
+      _uvB.set(1, 0);
+      _uvC.set(1, 1);
+      let intersect = raycaster.ray.intersectTriangle(_vA, _vB, _vC, false, _intersectPoint);
+      if (intersect === null) {
+        transformVertex(_vB.set(-0.5, 0.5, 0), _mvPosition, center, _worldScale, sin, cos);
+        _uvB.set(0, 1);
+        intersect = raycaster.ray.intersectTriangle(_vA, _vC, _vB, false, _intersectPoint);
+        if (intersect === null) {
+          return;
+        }
+      }
+      const distance = raycaster.ray.origin.distanceTo(_intersectPoint);
+      if (distance < raycaster.near || distance > raycaster.far) return;
+      intersects2.push({
+        distance,
+        point: _intersectPoint.clone(),
+        uv: Triangle.getInterpolation(_intersectPoint, _vA, _vB, _vC, _uvA, _uvB, _uvC, new Vector2()),
+        face: null,
+        object: this
+      });
+    }
+    copy(source, recursive) {
+      super.copy(source, recursive);
+      if (source.center !== void 0) this.center.copy(source.center);
+      this.material = source.material;
+      return this;
+    }
+  };
+  function transformVertex(vertexPosition, mvPosition, center, scale, sin, cos) {
+    _alignedPosition.subVectors(vertexPosition, center).addScalar(0.5).multiply(scale);
+    if (sin !== void 0) {
+      _rotatedPosition.x = cos * _alignedPosition.x - sin * _alignedPosition.y;
+      _rotatedPosition.y = sin * _alignedPosition.x + cos * _alignedPosition.y;
+    } else {
+      _rotatedPosition.copy(_alignedPosition);
+    }
+    vertexPosition.copy(mvPosition);
+    vertexPosition.x += _rotatedPosition.x;
+    vertexPosition.y += _rotatedPosition.y;
+    vertexPosition.applyMatrix4(_viewWorldMatrix);
+  }
   var _basePosition = /* @__PURE__ */ new Vector3();
   var _skinIndex = /* @__PURE__ */ new Vector4();
   var _skinWeight = /* @__PURE__ */ new Vector4();
@@ -14595,6 +14755,26 @@
       });
     }
   }
+  var CanvasTexture = class extends Texture {
+    /**
+     * Constructs a new texture.
+     *
+     * @param {HTMLCanvasElement} [canvas] - The HTML canvas element.
+     * @param {number} [mapping=Texture.DEFAULT_MAPPING] - The texture mapping.
+     * @param {number} [wrapS=ClampToEdgeWrapping] - The wrapS value.
+     * @param {number} [wrapT=ClampToEdgeWrapping] - The wrapT value.
+     * @param {number} [magFilter=LinearFilter] - The mag filter value.
+     * @param {number} [minFilter=LinearMipmapLinearFilter] - The min filter value.
+     * @param {number} [format=RGBAFormat] - The texture format.
+     * @param {number} [type=UnsignedByteType] - The texture type.
+     * @param {number} [anisotropy=Texture.DEFAULT_ANISOTROPY] - The anisotropy value.
+     */
+    constructor(canvas2, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
+      super(canvas2, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
+      this.isCanvasTexture = true;
+      this.needsUpdate = true;
+    }
+  };
   var DepthTexture = class extends Texture {
     /**
      * Constructs a new depth texture.
@@ -38988,17 +39168,669 @@ void main() {
     return o;
   }
 
+  // src/render/radiohold.js
+  var RADIO_FILE = "assets/neighborhood/props/hospital_radio.glb";
+  var BACK = new Vector3(-2e-3, 0, -0.024);
+  var MIC = new Vector3(-2e-3, 0.1, 0.032);
+  var RADIO0 = {
+    size: 72,
+    slide: 4,
+    grip: 55,
+    elbow: 25,
+    curl: 62,
+    thumb: 30,
+    chin: 6,
+    talk: { fwd: 6, side: 6, up: -1, roll: 0 },
+    listen: { fwd: 8, side: 14, up: -14, roll: 0 }
+  };
+  var radioFit = (f) => ({ ...RADIO0, ...f, talk: { ...RADIO0.talk, ...f?.talk }, listen: { ...RADIO0.listen, ...f?.listen } });
+  var UP2 = new Vector3(0, 1, 0);
+  var D2R = Math.PI / 180;
+  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var _q7 = new Quaternion();
+  var _q23 = new Quaternion();
+  var _qh = new Quaternion();
+  var _m5 = new Matrix4();
+  var _v3 = new Vector3();
+  var _v22 = new Vector3();
+  var _r = new Vector3();
+  var _mo = new Vector3();
+  var _mt = new Vector3();
+  var _wt = new Vector3();
+  var _a7 = new Vector3();
+  var _e3 = new Vector3();
+  var _h = new Vector3();
+  var _s = new Vector3();
+  var _mic = new Vector3();
+  var _sp2 = new Vector3();
+  var _sq = new Quaternion();
+  var _x2 = new Vector3();
+  var _y2 = new Vector3();
+  var _z2 = new Vector3();
+  var _d3 = new Vector3();
+  function rotW(b, axis, ang) {
+    if (!b || Math.abs(ang) < 1e-6) return;
+    _q7.setFromAxisAngle(axis, ang);
+    b.getWorldQuaternion(_q23);
+    _q7.multiply(_q23);
+    b.parent.getWorldQuaternion(_q23);
+    b.quaternion.copy(_q23.invert().multiply(_q7));
+    b.updateMatrixWorld(true);
+  }
+  var RIGS = /* @__PURE__ */ new WeakMap();
+  function radioRig(model, bones, fist = []) {
+    let r = RIGS.get(model);
+    if (r) return r;
+    let sk = null;
+    model.traverse((o) => {
+      if (!sk && o.isSkinnedMesh && o.skeleton.bones.includes(bones.RightHand)) sk = o.skeleton;
+    });
+    const bindQ = (b) => {
+      const q = new Quaternion();
+      new Matrix4().copy(sk.boneInverses[sk.bones.indexOf(b)]).invert().decompose(_v3, q, _v22);
+      return q;
+    };
+    const wrist = sk ? bindQ(bones.RightForeArm).invert().multiply(bindQ(bones.RightHand)) : bones.RightHand.quaternion.clone();
+    const face = sk && bones.Head ? new Vector3(0, 0, 1).applyQuaternion(bindQ(bones.Head).invert()) : null;
+    const F = bones.RightHandMiddle1.position.clone(), len = F.length();
+    F.normalize();
+    const R = bones.RightHandIndex1.position.clone().sub(bones.RightHandPinky1.position);
+    R.addScaledVector(F, -R.dot(F)).normalize();
+    const P = new Vector3().crossVectors(R, F).normalize();
+    r = { bones, wrist, face, F, R, P, len, fist: fist.filter(([b]) => /Right/.test(b.name)) };
+    RIGS.set(model, r);
+    return r;
+  }
+  function socket(rig, fit2, outQ, outP) {
+    const hand = rig.bones.RightHand, sw = hand.getWorldScale(_s).x, Lw = rig.len * sw, s = fit2.size / 100, g = fit2.grip * D2R;
+    _y2.copy(rig.R).multiplyScalar(Math.cos(g)).addScaledVector(rig.F, Math.sin(g)).normalize();
+    _z2.copy(rig.P);
+    _x2.crossVectors(_y2, _z2).normalize();
+    outQ.setFromRotationMatrix(_m5.makeBasis(_x2, _y2, _z2));
+    outP.copy(rig.F).multiplyScalar(Lw * 0.5).addScaledVector(rig.P, Lw * 0.11).sub(_v3.copy(BACK).multiplyScalar(s).applyQuaternion(outQ)).addScaledVector(_y2, -fit2.slide * 0.01);
+  }
+  function radioPlace(rig, obj, fit2) {
+    const hand = rig.bones.RightHand;
+    socket(rig, fit2, _sq, _sp2);
+    hand.getWorldQuaternion(_qh);
+    hand.getWorldPosition(obj.position).add(_sp2.applyQuaternion(_qh));
+    obj.quaternion.copy(_qh).multiply(_sq);
+    obj.scale.setScalar(fit2.size / 100);
+  }
+  function micAt(rig, fit2, out) {
+    const hand = rig.bones.RightHand;
+    socket(rig, fit2, _sq, _sp2);
+    hand.getWorldQuaternion(_qh);
+    return hand.getWorldPosition(out).add(_sp2.applyQuaternion(_qh)).add(_v3.copy(MIC).multiplyScalar(fit2.size / 100).applyQuaternion(_sq.premultiply(_qh)));
+  }
+  function radioPose(rig, fit2, w, talk, fwd, H) {
+    if (w <= 1e-3) return;
+    const B = rig.bones, hs = H / 1.8, arm = [B.RightShoulder, B.RightArm, B.RightForeArm, B.RightHand].filter(Boolean);
+    const touched = [...arm, B.Neck, B.Head, ...rig.fist.map(([b]) => b)].filter(Boolean), before = touched.map((b) => b.quaternion.clone());
+    const right = _r.crossVectors(fwd, UP2).normalize();
+    if (rig.face && B.Neck) {
+      const f = _v3.copy(rig.face).applyQuaternion(B.Head.getWorldQuaternion(_q23));
+      const turn = -(fit2.chin * D2R + Math.asin(clamp4(f.y, -1, 1)));
+      rotW(B.Neck, right, turn * 0.4);
+      rotW(B.Head, right, turn * 0.6);
+    }
+    const mouth = B.Head.getWorldPosition(_mo).addScaledVector(UP2, -0.075 * hs).addScaledVector(fwd, 0.1 * hs);
+    const mix = (k) => fit2.listen[k] + (fit2.talk[k] - fit2.listen[k]) * talk;
+    const micT = _mt.copy(mouth).addScaledVector(fwd, mix("fwd") * 0.01 * hs).addScaledVector(right, mix("side") * 0.01 * hs).addScaledVector(UP2, mix("up") * 0.01 * hs);
+    const roll = mix("roll") * D2R, el = fit2.elbow * D2R;
+    const arm0 = arm.map((b) => b.quaternion.clone()), wristT = _wt.copy(micT).addScaledVector(UP2, -0.08 * hs);
+    for (let k = 0; k < 4; k++) {
+      arm.forEach((b, i) => b.quaternion.copy(arm0[i]));
+      arm[0].updateMatrixWorld(true);
+      reachShoulder(B, "Right", wristT);
+      ikArm(B.RightArm, B.RightForeArm, B.RightHand, wristT, 1);
+      const a = B.RightArm.getWorldPosition(_a7), h = B.RightHand.getWorldPosition(_h), ax = _v22.copy(h).sub(a).normalize();
+      const ep = B.RightForeArm.getWorldPosition(_e3).sub(a);
+      ep.addScaledVector(ax, -ep.dot(ax));
+      const pp = _v3.copy(UP2).multiplyScalar(-Math.cos(el)).addScaledVector(right, Math.sin(el));
+      pp.addScaledVector(ax, -pp.dot(ax));
+      if (ep.lengthSq() > 1e-8 && pp.lengthSq() > 1e-8) rotW(B.RightArm, ax, ep.angleTo(pp) * Math.sign(_x2.crossVectors(ep, pp).dot(ax) || 1));
+      B.RightHand.quaternion.copy(rig.wrist);
+      B.RightHand.updateMatrixWorld(true);
+      const A = B.RightHand.getWorldPosition(_h).sub(B.RightForeArm.getWorldPosition(_e3)).normalize();
+      const mic = micAt(rig, fit2, _mic);
+      socket(rig, fit2, _sq, _sp2);
+      const Z = _z2.set(0, 0, 1).applyQuaternion(_sq.premultiply(B.RightHand.getWorldQuaternion(_qh)));
+      const D3 = _y2.copy(mouth).addScaledVector(fwd, -0.08 * hs).sub(mic);
+      Z.addScaledVector(A, -Z.dot(A));
+      D3.addScaledVector(A, -D3.dot(A));
+      const face = Z.lengthSq() > 1e-8 && D3.lengthSq() > 1e-8 ? Z.angleTo(D3) * Math.sign(_x2.crossVectors(Z, D3).dot(A) || 1) : 0;
+      rotW(B.RightHand, A, face + roll);
+      const got = micAt(rig, fit2, _mic);
+      wristT.add(_d3.copy(micT).sub(got));
+    }
+    for (const [b, q] of rig.fist) b.quaternion.slerp(q, (/Thumb/.test(b.name) ? fit2.thumb : fit2.curl) / 100);
+    if (w < 1) touched.forEach((b, i) => {
+      _q7.copy(b.quaternion);
+      b.quaternion.copy(before[i]).slerp(_q7, w);
+    });
+    touched[0].parent.updateMatrixWorld(true);
+  }
+
+  // src/render/casecarry.js
+  var CASE_FILE = "assets/neighborhood/props/hood_case.glb";
+  var HANDLE = new Vector3(0, 0.022, 0.137);
+  var CASE0 = { size: 100, swing: 22, out: 5, fwd: 0, lift: 2, roll: 0, turn: 0, tilt: 0, curl: 100, thumb: 85 };
+  var caseFit = (f) => ({ ...CASE0, ...f });
+  var UP3 = new Vector3(0, 1, 0);
+  var D2R2 = Math.PI / 180;
+  var _q8 = new Quaternion();
+  var _q24 = new Quaternion();
+  var _m6 = new Matrix4();
+  var _v4 = new Vector3();
+  var _v23 = new Vector3();
+  var _s2 = new Vector3();
+  var _e4 = new Vector3();
+  var _w2 = new Vector3();
+  var _t3 = new Vector3();
+  var _r2 = new Vector3();
+  var _ax2 = new Vector3();
+  var _p2 = new Vector3();
+  var _x3 = new Vector3();
+  var _y3 = new Vector3();
+  var _z3 = new Vector3();
+  var _c6 = new Vector3();
+  function rotW2(b, axis, ang) {
+    if (!b || Math.abs(ang) < 1e-6) return;
+    _q8.setFromAxisAngle(axis, ang);
+    b.getWorldQuaternion(_q24);
+    _q8.multiply(_q24);
+    b.parent.getWorldQuaternion(_q24);
+    b.quaternion.copy(_q24.invert().multiply(_q8));
+    b.updateMatrixWorld(true);
+  }
+  var signed = (a, b, axis) => {
+    a.addScaledVector(axis, -a.dot(axis));
+    b.addScaledVector(axis, -b.dot(axis));
+    return a.lengthSq() > 1e-8 && b.lengthSq() > 1e-8 ? a.angleTo(b) * Math.sign(_x3.crossVectors(a, b).dot(axis) || 1) : 0;
+  };
+  var RIGS2 = /* @__PURE__ */ new WeakMap();
+  function caseRig(model, bones, fist = []) {
+    let r = RIGS2.get(model);
+    if (r) return r;
+    let sk = null;
+    model.traverse((o) => {
+      if (!sk && o.isSkinnedMesh && o.skeleton.bones.includes(bones.LeftHand)) sk = o.skeleton;
+    });
+    const bindQ = (b) => {
+      const q = new Quaternion();
+      new Matrix4().copy(sk.boneInverses[sk.bones.indexOf(b)]).invert().decompose(_v4, q, _v23);
+      return q;
+    };
+    const wrist = sk ? bindQ(bones.LeftForeArm).invert().multiply(bindQ(bones.LeftHand)) : bones.LeftHand.quaternion.clone();
+    r = { bones, wrist, fist: fist.filter(([b]) => /Left/.test(b.name)) };
+    RIGS2.set(model, r);
+    return r;
+  }
+  function casePose(rig, fit2, w, fwd, H) {
+    if (w <= 1e-3) return;
+    const B = rig.bones, hs = H / 1.8, arm = [B.LeftArm, B.LeftForeArm, B.LeftHand];
+    const touched = [...arm, ...rig.fist.map(([b]) => b)], before = touched.map((b) => b.quaternion.clone());
+    const right = _r2.crossVectors(fwd, UP3).normalize();
+    const S2 = B.LeftArm.getWorldPosition(_s2), E = B.LeftForeArm.getWorldPosition(_e4), W = B.LeftHand.getWorldPosition(_w2);
+    const L = E.distanceTo(S2) + W.distanceTo(E), d = _v4.copy(E).sub(S2);
+    const lean = Math.atan2(d.dot(fwd), Math.max(1e-4, -d.dot(UP3)));
+    const T = _t3.copy(S2).addScaledVector(UP3, -(L * 0.985 - fit2.lift * 0.01 * hs)).addScaledVector(right, -fit2.out * 0.01 * hs).addScaledVector(fwd, fit2.fwd * 0.01 * hs);
+    ikArm(B.LeftArm, B.LeftForeArm, B.LeftHand, T, 1);
+    {
+      const a = B.LeftArm.getWorldPosition(_s2), h = B.LeftHand.getWorldPosition(_w2), ax = _ax2.copy(h).sub(a).normalize();
+      const ep = B.LeftForeArm.getWorldPosition(_e4).sub(a);
+      rotW2(B.LeftArm, ax, signed(ep, _p2.copy(fwd).negate(), ax));
+    }
+    B.LeftHand.quaternion.copy(rig.wrist);
+    B.LeftHand.updateMatrixWorld(true);
+    {
+      const A = B.LeftHand.getWorldPosition(_w2).sub(B.LeftForeArm.getWorldPosition(_e4)).normalize();
+      const F = B.LeftHandMiddle1.getWorldPosition(_v4).sub(B.LeftHand.getWorldPosition(_c6)).normalize();
+      const Rd = B.LeftHandIndex1.getWorldPosition(_v23).sub(B.LeftHandPinky1.getWorldPosition(_c6));
+      Rd.addScaledVector(F, -Rd.dot(F));
+      const P = _p2.crossVectors(F, Rd).normalize();
+      rotW2(B.LeftHand, A, signed(P, _y3.copy(right), A) + fit2.roll * D2R2);
+    }
+    rotW2(B.LeftArm, right, lean * fit2.swing / 100);
+    for (const [b, q] of rig.fist) b.quaternion.slerp(q, (/Thumb/.test(b.name) ? fit2.thumb : fit2.curl) / 100);
+    if (w < 1) touched.forEach((b, i) => {
+      _q8.copy(b.quaternion);
+      b.quaternion.copy(before[i]).slerp(_q8, w);
+    });
+    B.LeftArm.updateMatrixWorld(true);
+  }
+  function casePlace(rig, obj, fit2) {
+    const B = rig.bones, H = "LeftHand";
+    const c = _c6.set(0, 0, 0);
+    let n = 0;
+    for (const f of ["Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) {
+      const b = B[H + f + i];
+      if (b) {
+        c.add(b.getWorldPosition(_v4));
+        n++;
+      }
+    }
+    c.multiplyScalar(1 / Math.max(1, n));
+    const X = _x3.copy(B.LeftHandIndex1.getWorldPosition(_v4)).sub(B.LeftHandPinky1.getWorldPosition(_v23)).normalize();
+    const Z = _z3.copy(B.LeftHand.getWorldPosition(_v4)).sub(B.LeftHandMiddle1.getWorldPosition(_v23));
+    Z.addScaledVector(X, -Z.dot(X)).normalize();
+    const Y2 = _y3.crossVectors(Z, X).normalize();
+    obj.quaternion.setFromRotationMatrix(_m6.makeBasis(X, Y2, Z));
+    obj.quaternion.multiply(_q8.setFromAxisAngle(_v4.set(0, 0, 1), fit2.turn * D2R2)).multiply(_q8.setFromAxisAngle(_v4.set(1, 0, 0), fit2.tilt * D2R2));
+    const s = fit2.size / 100;
+    obj.scale.setScalar(s);
+    obj.position.copy(c).sub(_v4.copy(HANDLE).multiplyScalar(s).applyQuaternion(obj.quaternion));
+  }
+
+  // src/core/heroes.js
+  var HERO_MOVE_SPEED = {
+    lilah: 2.05
+    // 2.05 / 1.45 = 1.41x her run clip: 4.0 steps a second
+  };
+  var heroMoveSpeed = (key, base = 3.3) => HERO_MOVE_SPEED[key] ?? base;
+
+  // src/core/tuning.js
+  var TUNING_DEFAULTS = {
+    moveSpeed: 3.3,
+    // m/s at full stick
+    accel: 28,
+    // m/s^2 when speeding up
+    decel: 34,
+    // m/s^2 when releasing / reversing
+    turnRate: 16,
+    // rad/s upper-body aim turn
+    backpedalSpeed: 0.78,
+    // speed multiplier when moving directly against the aim
+    strafeSpeed: 0.92,
+    // multiplier when moving perpendicular to the aim
+    attackThreshold: 0.45,
+    // right-stick deflection that starts attacking
+    pistolInterval: 0.24,
+    // s between shots while held
+    pistolDamage: 34,
+    pistolRecoil: 1,
+    // visual kick scale
+    pistolKnockback: 1.6,
+    // m/s impulse
+    aimAssist: 0.5,
+    // 0 = off, 1 = full (max 5 degrees bend)
+    magSize: 12,
+    testInfiniteHealth: true,
+    // testing feel, not difficulty (the user, 2026-10-15): hits still flinch, push and knock her down; her health does not drop
+    testInfiniteAmmo: true,
+    // testing: spare rounds never run out (magazines still empty and reload); false = Floor 3 counts them
+    headshotChance: 0.1,
+    // a clean centre-mass pistol hit sometimes takes the head off (one-shot kill)
+    reloadTime: 1.05,
+    swapTime: 0.3,
+    shotgunDamage: 16,
+    // per pellet (9 pellets), full power inside ~2 m, falling off to a third at 11 m
+    shotgunKnockback: 9,
+    // m/s push when every pellet lands at close range
+    shotgunInterval: 0.85,
+    // s between shots (the pump)
+    shotgunMag: 6,
+    shotgunReload: 1.9,
+    legStrikeChance: 0.13,
+    // a melee opener at a standing walker goes in low for its legs (core/player.js startSwing)
+    legShotChance: 0.5,
+    // a bullet in a walker's lower leg takes it off (core/zombies.js takeHit)
+    axeDamage: 62,
+    // first attack; the combo's later attacks hit harder (weapons.js AXE_ATTACKS)
+    axeKnockback: 5,
+    // m/s impulse
+    axeSpeed: 1,
+    // attack time scale (higher = faster)
+    axeKnockdown: 0.45,
+    // chance a non-lethal axe hit knocks the zombie flat (the chop: more)
+    fistDamage: 18,
+    // jab; the cross and kick hit harder (weapons.js FIST_ATTACKS)
+    fistKnockback: 4,
+    // m/s impulse (x the attack's knock factor)
+    hitPause: 0.07,
+    // s of slow motion on a gun hit (a headshot, a shotgun blast; 0 = off)
+    meleeHitPause: 0,
+    // s of slow motion on a melee hit: off (the user found it made melee feel choppy); 0.07 was the old value
+    shake: 1,
+    zombieSpeed: 1,
+    // m/s approach
+    zombieHp: 100,
+    zombieDamage: 12,
+    // the lunge
+    zombieEngage: 2,
+    // zombies allowed to close in and attack at once; the rest hold a step back and circle
+    zombieAttackGap: 0.75,
+    // s: after one zombie starts an attack, the next waits at least this long (attacks come in turns)
+    zombieWindup: 0.62,
+    // s: the lunge's wind-up (its telegraph: arms back, red wedge on the floor)
+    scratchWindup: 0.42,
+    // s: the scratch's quicker wind-up (used close in: under ~0.9 m)
+    scratchDamage: 8,
+    // (2026-10-18, the user: "she doesn't run fast enough... it doesn't look like she builds up speed and charges. you need a
+    // moment to set up where you want her to charge... like the butcher in diablo 3"): a longer wind-up in which she tracks
+    // Yola, her line fixed sprinterLock s before she goes (the moment to place her charge), then a run that starts slow and
+    // builds (sprinterAccel m/s2) to sprinterSpeed, far faster than Yola
+    sprinterWindup: 1.35,
+    // s: the big lady plants, roars and aims before a charge (the lane shows on the floor)
+    sprinterLock: 0.42,
+    // s: the end of her wind-up with her line fixed (no more tracking: she goes where she aimed)
+    sprinterSpeed: 7.5,
+    // m/s: her charge at full speed (Yola runs 3.3; 6.2 until 2026-10-18 night: "even faster")
+    sprinterAccel: 6.5,
+    // m/s2: how fast she builds up to it (a lumbering first step, then flying; 4.3 before)
+    sprinterTurn: 0.9,
+    // rad/s she turns at full speed (slow: a side-step makes her overshoot); none inside 2 m
+    // executions (render/execution.js; 2026-10-18, the user: "use one of the already in game animations that is strong.. zoom the
+    // camera... slow motion.. make it feel epic"): time on the press, through the wind-up, the freeze on the hit, the hang
+    // after it; the camera's distance (x the game camera's), its angle down, how long it takes to get there (0: a hard cut)
+    execReach: 3.6,
+    // m: how far a press reaches for a zombie open to it
+    execSlowLock: 0.2,
+    // x time on the press (she lunges in at full speed regardless)
+    execSlowWind: 0.45,
+    // x time through her wind-up
+    execWindTime: 0.55,
+    // s (real): her wind-up, press to blow, the same for every weapon (her pace through it is set to fit)
+    execFreeze: 0.08,
+    // s (real) frozen on the hit
+    execHang: 0.55,
+    // s (real) after the hit, pieces flying (at 0.15x the burst barely opened: the shot was lost)
+    execSlowHang: 0.4,
+    // x time through the hang
+    execRelease: 0.3,
+    // s (real) back to full speed and the camera back
+    execCamDist: 0.42,
+    // x the game camera's distance
+    execCamPitch: 24,
+    // degrees down from horizontal
+    execCamPush: 0,
+    // s: 0 = a hard cut to the execution camera, more = a push-in over that time
+    execCamFov: 0.9,
+    // x the field of view (a little tighter: heavier)
+    execHeal: 5,
+    // health back for an execution
+    lookAhead: 1.3,
+    // camera look-ahead toward aim (m)
+    camPitch: 42,
+    // degrees down from horizontal (Zombieville USA 3D-like diorama view)
+    camYaw: 35,
+    // degrees the view is turned (positive: camera to the right, looking up-left)
+    camWidth: 7.2
+    // metres of floor across a portrait screen at the player
+  };
+
+  // src/riglab/check.js
+  var _q9 = new Quaternion();
+  var _q25 = new Quaternion();
+  var _q33 = new Quaternion();
+  var _v5 = new Vector3();
+  var _v24 = new Vector3();
+  var CHAIN = { Hips: "Spine", Spine: "Spine1", Spine1: "Spine2", Spine2: "Neck", Neck: "Head", Head: "HeadTop_End" };
+  for (const s of ["Left", "Right"]) {
+    Object.assign(CHAIN, {
+      [s + "Shoulder"]: s + "Arm",
+      [s + "Arm"]: s + "ForeArm",
+      [s + "ForeArm"]: s + "Hand",
+      [s + "Hand"]: s + "HandMiddle1",
+      [s + "UpLeg"]: s + "Leg",
+      [s + "Leg"]: s + "Foot",
+      [s + "Foot"]: s + "ToeBase",
+      [s + "ToeBase"]: s + "Toe_End"
+    });
+    for (const f of ["Thumb", "Index", "Middle", "Ring", "Pinky"]) for (const i of [1, 2, 3]) CHAIN[`${s}Hand${f}${i}`] = `${s}Hand${f}${i + 1}`;
+  }
+  var REST_RELATIVE = /* @__PURE__ */ new Set(["LeftShoulder", "RightShoulder"]);
+  function restWorld(a) {
+    const keep = a.rest.map(([b]) => [b, b.quaternion.clone(), b.position.clone(), b.scale.clone()]);
+    for (const [b, q, p, s] of a.rest) {
+      b.quaternion.copy(q);
+      b.position.copy(p);
+      b.scale.copy(s);
+    }
+    a.root.updateMatrixWorld(true);
+    const out = /* @__PURE__ */ new Map();
+    for (const [b] of a.rest) out.set(b, { q: b.getWorldQuaternion(new Quaternion()), p: b.getWorldPosition(new Vector3()), local: a.root.worldToLocal(b.getWorldPosition(new Vector3())) });
+    for (const [b, q, p, s] of keep) {
+      b.quaternion.copy(q);
+      b.position.copy(p);
+      b.scale.copy(s);
+    }
+    a.root.updateMatrixWorld(true);
+    return out;
+  }
+  function facing(a, R) {
+    const d = new Vector3();
+    for (const s of ["Left", "Right"]) {
+      const f = a.bones[s + "Foot"], t = a.bones[s + "ToeBase"];
+      if (f && t) d.add(R.get(t).p).sub(R.get(f).p);
+    }
+    d.y = 0;
+    return d.lengthSq() > 1e-10 ? d.normalize() : null;
+  }
+  var outer = (b) => {
+    while (b && b.parent?.isBone && b.parent.name === b.name) b = b.parent;
+    return b;
+  };
+  var LiveRetarget = class {
+    // src, tgt: Rig Lab actors ({ obj, root, bones (by mixamo short name), rest })
+    constructor(src, tgt, { restRelative = REST_RELATIVE } = {}) {
+      this.src = src;
+      this.tgt = tgt;
+      const RS = restWorld(src), RT = restWorld(tgt);
+      const fs = facing(src, RS), ft = facing(tgt, RT);
+      this.Yf = fs && ft ? new Quaternion().setFromUnitVectors(fs, ft) : new Quaternion();
+      const YfInv = this.Yf.clone().invert();
+      const order = [];
+      const walk = (b) => {
+        if (b.isBone) order.push(b);
+        for (const c of b.children) walk(c);
+      };
+      walk(tgt.obj);
+      const keyOf = new Map(Object.entries(tgt.bones).map(([k, b]) => [b, k]));
+      const lineOf = (a, R, k) => {
+        const b = a.bones[k], c = a.bones[CHAIN[k]];
+        return b && c ? R.get(c).p.clone().sub(R.get(b).p).normalize() : null;
+      };
+      const Aof = {};
+      this.list = [];
+      for (const tb of order) {
+        const k = keyOf.get(tb), sb0 = k && src.bones[k], sb = sb0 && outer(sb0);
+        if (!sb || !RS.has(sb) || !RT.has(tb)) {
+          this.list.push({ tb, k });
+          continue;
+        }
+        const dt = lineOf(tgt, RT, k), ds = lineOf(src, RS, k);
+        let A = null;
+        if (dt && ds) A = new Quaternion().setFromUnitVectors(dt, ds.clone().applyQuaternion(this.Yf));
+        else {
+          const pk = tb.parent && keyOf.get(tb.parent);
+          A = pk && Aof[pk] || new Quaternion();
+        }
+        Aof[k] = A;
+        const Rs = RS.get(sb).q, Rt = RT.get(tb).q;
+        const e = { tb, k, sb, off: Rs.clone().invert().multiply(YfInv).multiply(A).multiply(Rt), Rt: Rt.clone(), Rs: Rs.clone() };
+        if (restRelative.has(k) && sb.parent && RS.has(sb.parent) && tb.parent && RT.has(tb.parent)) {
+          e.rel = { sp: sb.parent, RpsInv: RS.get(sb.parent).q.clone().invert(), RptInv: RT.get(tb.parent).q.clone().invert(), RsInv: Rs.clone().invert() };
+        }
+        if (k === "Hips") {
+          e.hips = { srcRest: RS.get(sb).local.clone(), tgtRest: RT.get(tb).local.clone() };
+        }
+        this.list.push(e);
+      }
+    }
+    // pose the target from the source's current pose (the source already set to the frame)
+    apply() {
+      const { src, tgt, Yf } = this;
+      const YfInv = _q33.copy(Yf).invert();
+      src.root.updateMatrixWorld(true);
+      for (const e of this.list) {
+        const tb = e.tb;
+        if (e.sb) {
+          const Ws = e.sb.getWorldQuaternion(_q9);
+          let Wt;
+          if (e.rel) {
+            const Wps = e.rel.sp.getWorldQuaternion(_q25), relS = Wps.multiply(e.rel.RpsInv).invert().multiply(_q9.clone().multiply(e.rel.RsInv));
+            const Wpt = tb.parent.getWorldQuaternion(new Quaternion()).multiply(e.rel.RptInv);
+            Wt = Wpt.multiply(Yf.clone().multiply(relS).multiply(YfInv)).multiply(e.Rt);
+          } else Wt = Yf.clone().multiply(Ws).multiply(e.off);
+          tb.parent.getWorldQuaternion(_q25);
+          tb.quaternion.copy(_q25.invert().multiply(Wt));
+          if (e.hips) {
+            const s = src.root.worldToLocal(e.sb.getWorldPosition(_v5)).sub(e.hips.srcRest).multiplyScalar(src.root.scale.y);
+            s.applyQuaternion(Yf).multiplyScalar(e.hips.tgtRest.y * tgt.root.scale.y / Math.max(1e-6, e.hips.srcRest.y * src.root.scale.y));
+            const w = tgt.root.localToWorld(_v24.copy(e.hips.tgtRest)).add(s);
+            tb.parent.updateWorldMatrix(true, false);
+            tb.position.copy(tb.parent.worldToLocal(w));
+          }
+        }
+        tb.updateWorldMatrix(false, false);
+      }
+      tgt.root.updateMatrixWorld(true);
+    }
+  };
+  function heatColor(w, out) {
+    if (w <= 5e-4) return out.setRGB(0.04, 0.05, 0.32);
+    const stops = [[0, 0, 0, 1], [0.25, 0, 1, 1], [0.5, 0, 1, 0], [0.75, 1, 1, 0], [1, 1, 0, 0]];
+    for (let i = 1; i < stops.length; i++) if (w <= stops[i][0]) {
+      const [a, r0, g0, b0] = stops[i - 1], [b, r1, g1, b1] = stops[i], u = (w - a) / (b - a);
+      return out.setRGB(r0 + (r1 - r0) * u, g0 + (g1 - g0) * u, b0 + (b1 - b0) * u);
+    }
+    return out.setRGB(1, 0, 0);
+  }
+  var PATCH = /* @__PURE__ */ new Map();
+  function patchColor(name) {
+    if (!PATCH.has(name)) {
+      let h = 0;
+      for (const ch of name) h = h * 31 + ch.charCodeAt(0) >>> 0;
+      PATCH.set(name, new Color().setHSL(h % 997 * 0.618034 % 1, 0.7, 0.55));
+    }
+    return PATCH.get(name);
+  }
+  function setWeights(obj, mode, key, norm) {
+    const c = new Color();
+    obj.traverse((o) => {
+      if (!o.isSkinnedMesh) return;
+      const g = o.geometry;
+      if (!("__mat" in o)) o.__mat = o.material;
+      if (!("__col" in g)) g.__col = g.attributes.color || null;
+      if (!mode) {
+        if (g.__col) g.setAttribute("color", g.__col);
+        else g.deleteAttribute("color");
+        if (o.material === o.__heatMat) o.material = o.__mat;
+        return;
+      }
+      const tag = mode + ":" + key;
+      o.material = o.__heatMat || (o.__heatMat = new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+      if (o.__heat === tag) {
+        if (g.attributes.color !== o.__heatCol) g.setAttribute("color", o.__heatCol);
+        return;
+      }
+      const n = g.attributes.position.count, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, names = o.skeleton.bones.map((b) => norm(b.name));
+      const col = new Float32Array(n * 3);
+      for (let v = 0; v < n; v++) {
+        if (mode === "bone") {
+          let w = 0;
+          for (let k = 0; k < 4; k++) if (names[si.getComponent(v, k)] === key) w += sw.getComponent(v, k);
+          heatColor(w, c);
+        } else {
+          c.setRGB(0, 0, 0);
+          let t = 0;
+          for (let k = 0; k < 4; k++) {
+            const w = sw.getComponent(v, k);
+            if (w > 0) {
+              const p = patchColor(names[si.getComponent(v, k)] || "?");
+              c.r += p.r * w;
+              c.g += p.g * w;
+              c.b += p.b * w;
+              t += w;
+            }
+          }
+          if (t > 0) c.multiplyScalar(1 / t);
+        }
+        col[v * 3] = c.r;
+        col[v * 3 + 1] = c.g;
+        col[v * 3 + 2] = c.b;
+      }
+      o.__heatCol = new BufferAttribute(col, 3);
+      g.setAttribute("color", o.__heatCol);
+      o.__heat = tag;
+    });
+  }
+  function makeTag() {
+    const cv = document.createElement("canvas");
+    cv.width = 1024;
+    cv.height = 96;
+    const tex = new CanvasTexture(cv);
+    tex.colorSpace = SRGBColorSpace;
+    const s = new Sprite(new SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, toneMapped: false, transparent: true, sizeAttenuation: false }));
+    s.renderOrder = 20;
+    s.center.set(0.5, 0);
+    s.userData = { cv, tex, text: "" };
+    s.visible = false;
+    return s;
+  }
+  function setTag(s, text, color) {
+    const key = text + "|" + color;
+    if (s.userData.text === key) return;
+    s.userData.text = key;
+    const { cv, tex } = s.userData, cx = cv.getContext("2d");
+    cx.clearRect(0, 0, cv.width, cv.height);
+    cx.font = '600 40px system-ui, "Segoe UI", sans-serif';
+    const w = Math.min(cv.width - 8, cx.measureText(text).width + 36);
+    cx.fillStyle = "rgba(15,20,24,0.82)";
+    cx.beginPath();
+    cx.roundRect((cv.width - w) / 2, 14, w, 64, 14);
+    cx.fill();
+    cx.fillStyle = "#" + new Color(color).getHexString();
+    cx.fillRect((cv.width - w) / 2 + 12, 30, 10, 32);
+    cx.fillStyle = "#eef2f0";
+    cx.textAlign = "center";
+    cx.textBaseline = "middle";
+    cx.fillText(text, cv.width / 2 + 8, 47, cv.width - 50);
+    tex.needsUpdate = true;
+  }
+  function placeTag(s, a, lift = 0) {
+    const k = a.height / 1.62, h = a.bones.HeadTop_End || a.bones.Head;
+    if (!h) return;
+    h.getWorldPosition(s.position);
+    s.position.y += (a.bones.HeadTop_End ? 0.1 : 0.28) * k + lift;
+    s.scale.set(0.36, 0.034, 1);
+  }
+  function tintSkeleton(helper, color) {
+    const c = new Color(color), at = helper.geometry.attributes.color;
+    if (!at) return;
+    for (let i = 0; i < at.count; i++) at.setXYZ(i, c.r, c.g, c.b);
+    at.needsUpdate = true;
+  }
+  var ROM = [
+    ["ual1_", "A_TPose", "Rest: arms out"],
+    ["ual1_", "Idle_Loop", "Standing relaxed"],
+    ["ual1_", "Celebration", "Arms overhead (armpits, shoulder caps)"],
+    ["ual1_", "Climb_Up_Loop", "Reach up and knee up"],
+    ["ual1_", "Push_Loop", "Arms forward (back, shoulder blades)"],
+    ["ual_", "Idle_FoldArms_Loop", "Arms folded (chest, elbows)"],
+    ["ual_", "Bow_Aim_Neutral", "Elbow back, arm across"],
+    ["ual_", "Sword_Heavy_Combo", "Twists and big swings"],
+    ["ual1_", "Kick", "High kick (hips, thighs)"],
+    ["ual1_", "Crouch_Idle_Loop", "Deep crouch (knees, seat)"],
+    ["ual1_", "PickUp_Kneeling", "Kneel and reach down"],
+    ["ual1_", "Sitting_Idle_Loop", "Sitting (hips at 90 deg)"],
+    ["ual1_", "GroundSit_Idle_Loop", "Sitting on the ground"],
+    ["ual1_", "Jog_Fwd_Loop", "Jog"]
+  ];
+
   // src/viewer.js
   var FPS = 30;
   var CLIP_FPS = { bat_combo_mc: 60 };
   var VIDREF = { bat_combo_mc: { dir: "assets/ref/bat13/", offset: 19, first: 20, last: 184 } };
   var $ = (id) => document.getElementById(id);
-  var clamp4 = (v, a, b) => v < a ? a : v > b ? b : v;
-  var UP2 = new Vector3(0, 1, 0);
-  var _v3 = new Vector3();
-  var _v22 = new Vector3();
+  var clamp5 = (v, a, b) => v < a ? a : v > b ? b : v;
+  var UP4 = new Vector3(0, 1, 0);
+  var _v6 = new Vector3();
+  var _v25 = new Vector3();
   var _v32 = new Vector3();
-  var _q7 = new Quaternion();
+  var _q10 = new Quaternion();
   var YOLA2_REF = {
     bat_swing: "yola_baseball_single",
     bat_swing_m: null,
@@ -39030,6 +39862,32 @@ void main() {
       libRef: { pistol_reload: "ual1_Pistol_Reload" }
     },
     // (2026-10-17: her reload is Quaternius Pistol_Reload, support hand on the gun)
+    // a possible new hero (2026-10-19, the "adult male figure" Tripo download): Yola 2's clips retargeted onto him from
+    // their sources (tools/anim/male1_build.py); 1.80 m with his cap and boots
+    male1: {
+      label: "Marc (male hero)",
+      file: "assets/male1.glb",
+      extra: ["assets/male1_ual.glb"],
+      height: 1.8,
+      ref: "yola_",
+      refMap: YOLA2_REF,
+      libRef: { pistol_reload: "ual1_Pistol_Reload" },
+      hero: true
+    },
+    // two possible new heroes, movement only for now (2026-10-20, tools/anim/hero_moves_build.py: the game's Mixamo gaits,
+    // Quaternius walks / jogs / sprint, Tripo's idle; no weapons). Arianna 3.0's download had every bone at the origin (its
+    // bind pose survived only in the skin, turned Z-up): put back by tools/anim/glb_fix_bind.mjs. Lilah keeps Tripo's own
+    // clips as t_*. Heights are first guesses for children (both files are 1 unit tall).
+    arianna: { label: "Arianna (test)", file: "assets/arianna.glb", height: 1.3, ref: "yola_", refMap: YOLA2_REF, hero: true },
+    lilah: {
+      label: "Lilah (test)",
+      file: "assets/lilah.glb",
+      height: 1.05,
+      ref: "yola_",
+      hero: true,
+      // (her t_* clips: no source rig)
+      refMap: { ...YOLA2_REF, ...Object.fromEntries(["afraid", "fall", "flee_01", "flee_02", "freaky", "frightened", "run", "scared_01", "scared_02", "sit", "walk", "wave_goodbye_01", "wave_goodbye_02"].map((n) => ["t_" + n, null])) }
+    },
     nurse: { label: "Zombie nurse", file: "assets/zombie-nurse-mod.glb", height: 1.78, ref: "zombie_" },
     patient: { label: "Zombie patient", file: "assets/zombie-patient-mod.glb", height: 1.78, ref: "zombie_" },
     // tools/anim/build_zombie.py (2026-10-15): the sprinter (hand weights fixed: the cargo pockets no longer follow her
@@ -39044,8 +39902,18 @@ void main() {
     looter_bryce: { label: "Looter: Bryce", file: "assets/survivors/bryce.glb", extra: ["assets/survivors/moves/bryce-looter.glb"], height: 1.78, ref: "zombie_" },
     looter_david: { label: "Looter: David", file: "assets/survivors/david.glb", extra: ["assets/survivors/moves/david-looter.glb"], height: 1.8, ref: "zombie_" },
     looter_lewis: { label: "Looter: Lewis", file: "assets/survivors/lewis.glb", extra: ["assets/survivors/moves/lewis-looter.glb"], height: 1.8, ref: "zombie_" },
-    sophie: { label: "Sophie", file: "assets/survivors/sophie.glb", extra: ["assets/survivors/moves/sophie-hood.glb"], height: 1.66, ref: "zombie_" }
+    sophie: { label: "Sophie", file: "assets/survivors/sophie.glb", extra: ["assets/survivors/moves/sophie-hood.glb"], height: 1.66, ref: "zombie_" },
     // (Chapter 2; her feelings test: &extra=assets/test_clips/sophie_feelings.glb, tools/anim/survivor_feelings.py)
+    // the free Unity Asset Store zombies (2026-10-20, LOCAL ONLY: assets/source/refs is git- and vercel-ignored; built by
+    // scratchpad unity_to_glb.py, textures 1024 WebP). Not in the game; no clips of their own yet (Body check plays the live ones)
+    // his game version (tools/anim/build_zombie.py from zombie_male_aab_src.glb: one mesh, mixamorig names, the zombie clip set)
+    zmale_aab: { label: "Zombie Male AAB (game version)", file: "assets/zombie-male-aab.glb", height: 1.8, ref: "zombie_" },
+    us_female: { label: "Asset Store: Female Zombie", file: "assets/source/refs/female_zombie/female_zombie.glb", height: 1.7, ref: "zombie_" },
+    us_male_aab: { label: "Asset Store: Zombie Male AAB", file: "assets/source/refs/zombie_male_aab/zombie_male_aab.glb", height: 1.8, ref: "zombie_" },
+    us_shirtless: { label: "Asset Store: Shirtless Zombie", file: "assets/source/refs/shirtless_zombie/shirtless_zombie.glb", height: 1.8, ref: "zombie_" },
+    us_pxl1: { label: "Asset Store: Zombie 1 (Pxltiger)", file: "assets/source/refs/pxl_zombie/pxl_zombie1.glb", height: 1.8, ref: "zombie_" },
+    us_pxl2: { label: "Asset Store: Zombie 2 (Pxltiger)", file: "assets/source/refs/pxl_zombie/pxl_zombie2.glb", height: 1.8, ref: "zombie_" },
+    us_pxl3: { label: "Asset Store: Zombie 3 (Pxltiger)", file: "assets/source/refs/pxl_zombie/pxl_zombie3.glb", height: 1.8, ref: "zombie_" }
   };
   var TC = "assets/test_clips/";
   CHARS.yola2.newPacks = [TC + "idle_options.glb", TC + "ual1_full_yola2.glb", TC + "ual2_full_yola2.glb", TC + "ual2_full_yola2_b.glb"];
@@ -39140,9 +40008,9 @@ void main() {
   function camHands(who) {
     const a = who === "ref" ? ref : main;
     if (!a?.action || !a.root.visible) return;
-    a.grip("Right", _v3);
-    a.grip("Left", _v22);
-    const c = _v3.clone().lerp(_v22, 0.5);
+    a.grip("Right", _v6);
+    a.grip("Left", _v25);
+    const c = _v6.clone().lerp(_v25, 0.5);
     const dir = camera.position.clone().sub(controls.target).normalize();
     controls.target.copy(c);
     camera.position.copy(c).addScaledVector(dir, 0.5);
@@ -39240,7 +40108,7 @@ void main() {
   }
   function updateFingers() {
     const on = $("fingerBones")?.checked !== false;
-    for (const a of ACTORS) a.fing.update(on && (a === main || a === ref) && a.root.visible && a.root.parent === scene);
+    for (const a of ACTORS) a.fing.update(on && (a === main || a === ref || a === second || a === extra) && a.root.visible && a.root.parent === scene);
   }
   var Actor = class {
     constructor(obj, height) {
@@ -39260,8 +40128,8 @@ void main() {
       });
       this.restPos = {};
       obj.traverse((o) => {
-        var _a7, _b7;
-        if (o.isBone) (_a7 = this.restPos)[_b7 = o.name.replace(/^mixamorig:?/, "")] || (_a7[_b7] = o.position.clone());
+        var _a8, _b7;
+        if (o.isBone) (_a8 = this.restPos)[_b7 = o.name.replace(/^mixamorig:?/, "")] || (_a8[_b7] = o.position.clone());
       });
       this.rest = [];
       obj.traverse((o) => {
@@ -39310,7 +40178,7 @@ void main() {
         const n = b.valueSize, buf = b.buffer;
         for (let i = n; i < 3 * n; i++) buf[i] = NaN;
       }
-      this.action.time = clamp4(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
+      this.action.time = clamp5(this.t0 + (f - 1) / fpsOf(this.clip), 0, this.clip.duration);
       this.mixer.update(0);
       this.root.updateMatrixWorld(true);
     }
@@ -39354,21 +40222,21 @@ void main() {
     }
     calibrateHere() {
       const a = this.actor;
-      a.grip("Right", _v3);
-      a.grip("Left", _v22);
-      const x = _v22.clone().sub(_v3).normalize(), z = new Vector3().crossVectors(x, UP2).normalize(), y = new Vector3().crossVectors(z, x);
+      a.grip("Right", _v6);
+      a.grip("Left", _v25);
+      const x = _v25.clone().sub(_v6).normalize(), z = new Vector3().crossVectors(x, UP4).normalize(), y = new Vector3().crossVectors(z, x);
       const g = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z));
-      a.bones.RightHand.getWorldQuaternion(_q7);
-      this.socket.copy(_q7.invert().multiply(g));
+      a.bones.RightHand.getWorldQuaternion(_q10);
+      this.socket.copy(_q10.invert().multiply(g));
       this.has = true;
     }
     update(k) {
       if (!this.obj || !this.has) return;
       const a = this.actor, F = fitAt(SHOTGUNS[weaponOf()] ? weaponOf() : "short", a);
-      a.bones.RightHand.getWorldQuaternion(_q7);
-      const gq = _q7.multiply(this.socket);
-      a.grip("Right", _v3);
-      applyFit(this.obj, _v3, gq, F, new Vector3(), k, k);
+      a.bones.RightHand.getWorldQuaternion(_q10);
+      const gq = _q10.multiply(this.socket);
+      a.grip("Right", _v6);
+      applyFit(this.obj, _v6, gq, F, new Vector3(), k, k);
       this.obj.updateMatrixWorld(true);
     }
   };
@@ -39380,19 +40248,49 @@ void main() {
   var refGun;
   var refX;
   var refGunX;
+  var second = null;
+  var extra = null;
   var ualCache = {};
-  function ualRef(file, female = $("femref")?.checked) {
-    const key = file + (female ? "|F" : "");
-    if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), female ? loadG(UAL_FEMALE) : null]).then(([g, f]) => {
-      const body = f ? f.scene : g.scene;
-      body.traverse((o) => {
+  var UAL_CLOTHED = { clothed: "assets/source/ual/Clothed_Male_Peasant.glb", clothed2: "assets/source/ual/Clothed_Male_Ranger.glb" };
+  var MIX_CLOTHED = "assets/source/refs/brian/Brian_tpose.fbx";
+  var mixClothed = null;
+  function mixRef() {
+    return mixClothed || (mixClothed = loadF(MIX_CLOTHED).then((o) => {
+      o.traverse((x) => {
+        if (x.isMesh) x.frustumCulled = false;
+        if (x.isBone) x.name = x.name.replace(/^mixamorig\d+/, "mixamorig");
+      });
+      o.animations = [];
+      const a = new Actor(o, 1.62);
+      a.root.visible = false;
+      scene.add(a.root, a.helper);
+      return a;
+    }).catch((e) => (console.warn("reference dummy failed to load", MIX_CLOTHED, e), null)));
+  }
+  var rigClips = /* @__PURE__ */ new WeakMap();
+  function rigClip(clip, from, to) {
+    let m = rigClips.get(to);
+    if (!m) rigClips.set(to, m = /* @__PURE__ */ new Map());
+    if (!m.has(clip)) {
+      const c = clip.clone(), k = to.restPos.Hips.length() / from.restPos.Hips.length();
+      for (const t of c.tracks) if (/Hips\.position$/.test(t.name)) for (let i = 0; i < t.values.length; i++) t.values[i] *= k;
+      m.set(clip, c);
+    }
+    return m.get(clip);
+  }
+  function ualRef(file, female = $("femref")?.checked, clothed = $("refBody")?.value) {
+    const body = UAL_CLOTHED[clothed] || (female ? UAL_FEMALE : null);
+    const key = file + (body ? "|" + body : "");
+    if (!ualCache[key]) ualCache[key] = Promise.all([loadG(file), body ? loadG(body) : null]).then(([g, f]) => {
+      const body2 = f ? f.scene : g.scene;
+      body2.traverse((o) => {
         if (o.isMesh) o.frustumCulled = false;
       });
-      const actor = new Actor(body, 1.62);
+      const actor = new Actor(body2, 1.62);
       actor.root.visible = false;
       scene.add(actor.root, actor.helper);
       return { actor, clips: g.animations };
-    }).catch(() => null);
+    }).catch((e) => (console.warn("reference dummy failed to load", body, e), null));
     return ualCache[key];
   }
   function useRef(a) {
@@ -39407,11 +40305,11 @@ void main() {
   var gunTemplates = {};
   var marks = {};
   var mainCache = {};
-  function ghostify(obj, on) {
+  function ghostify(obj, on, color = 6739199) {
     obj.traverse((o) => {
       if (!o.isMesh) return;
       if (!o.__mat) o.__mat = o.material;
-      o.material = on ? new MeshBasicMaterial({ color: 6739199, transparent: true, opacity: 0.4, depthWrite: false }) : o.__mat;
+      o.material = on ? new MeshBasicMaterial({ color, transparent: true, opacity: 0.4, depthWrite: false }) : o.__mat;
     });
   }
   function makeMarks() {
@@ -39434,11 +40332,11 @@ void main() {
       const vis = on && a.root.visible;
       for (const o of Object.values(m)) o.visible = vis;
       if (!vis || !a.action) continue;
-      a.grip("Right", _v3);
-      a.grip("Left", _v22);
-      m.r.position.copy(_v3);
-      m.l.position.copy(_v22);
-      m.line.geometry.setFromPoints([_v3.clone(), _v22.clone()]);
+      a.grip("Right", _v6);
+      a.grip("Left", _v25);
+      m.r.position.copy(_v6);
+      m.l.position.copy(_v25);
+      m.line.geometry.setFromPoints([_v6.clone(), _v25.clone()]);
     }
   }
   async function setChar(key) {
@@ -39478,17 +40376,19 @@ void main() {
     const { gltf, actor } = mainCache[key];
     main = actor;
     scene.add(main.root, main.helper);
+    bodyChar(key);
     mainGun = new Gun(main);
     const sel = $("clip");
     sel.innerHTML = "";
     fillClips();
-    const first = key === "yola2" ? "ual_Sword_Regular_Combo" : key === "yola" ? gltf.animations.some((c) => c.name === "bat_combo_mc") ? "bat_combo_mc" : "reload_rifle_stand" : gltf.animations[0].name;
+    const first = key === "yola2" || key === "male1" ? "ual_Sword_Regular_Combo" : key === "yola" ? gltf.animations.some((c) => c.name === "bat_combo_mc") ? "bat_combo_mc" : "reload_rifle_stand" : gltf.animations[0].name;
     sel.value = gltf.animations.some((c) => c.name === first) ? first : gltf.animations[0].name;
     await setClip(sel.value);
     applyGun();
   }
   async function setClip(name) {
     const c = mainCache[S.char].gltf.animations.find((x) => x.name === name);
+    if (c.userData?.live && !await liveFill(c)) return;
     pinRoot(c, $("inplace").checked && !c.userData?.fin, main);
     main.play(c);
     main.hair?.reset?.();
@@ -39504,11 +40404,13 @@ void main() {
       rc = u?.clips.find((c2) => c2.name === libName.replace(/_REBAKE_.*$/, "").slice(lib.length)) || null;
       file = UAL_FILES[lib];
     } else {
-      useRef(refX);
+      const dressed = $("refBody")?.value ? await mixRef() : null;
+      useRef(dressed || refX);
       const nm = name.replace(/_REBAKE_.*$/, "");
       const map = CHARS[S.char].refMap || {}, base = nm in map ? map[nm] : REF_ALIAS[nm] || nm;
       file = base === null ? "" : `assets/mixamo/${map[nm] ? "" : CHARS[S.char].ref}${base}.fbx`;
       rc = file ? await refClip(file) : null;
+      if (rc && dressed) rc = rigClip(rc, refX, dressed);
     }
     const rsel = $("refclip");
     rsel.innerHTML = "";
@@ -39530,6 +40432,7 @@ void main() {
     S.frames = Math.max(main.frames, rc ? ref.frames - S.refOff : 1);
     $("scrub").max = S.frames;
     S.frame = 1;
+    await figuresFor(c, rc, lib);
     layout();
     refresh();
     mainGun.calibrate();
@@ -39541,16 +40444,50 @@ void main() {
       applyMesh();
       refresh();
     }
+    if (S.gamePace) gamePace();
+  }
+  var paceCache = {};
+  function naturalSpeed() {
+    const key = S.char + "|" + main.clip.name;
+    if (key in paceCache) return paceCache[key];
+    const n = main.frames, rows = [], p = new Vector3(), q = new Vector3(), h = new Vector3();
+    for (let f = 1; f <= n; f++) {
+      main.setFrame(f);
+      main.root.updateMatrixWorld(true);
+      main.bones.Hips.getWorldPosition(h);
+      const r = {};
+      for (const s of ["Left", "Right"]) {
+        main.bones[s + "Foot"].getWorldPosition(p);
+        main.bones[s + "ToeBase"].getWorldPosition(q);
+        r[s] = [p.x - h.x, p.z - h.z, Math.min(p.y, q.y)];
+      }
+      rows.push(r);
+    }
+    const fps = fpsOf(main.clip), vel = [], tol = 0.02 * main.height / 1.62;
+    for (const s of ["Left", "Right"]) {
+      const minY = Math.min(...rows.map((r) => r[s][2]));
+      for (let i = 0; i < n - 1; i++) if (rows[i][s][2] < minY + tol && rows[i + 1][s][2] < minY + tol) vel.push(Math.hypot(rows[i + 1][s][0] - rows[i][s][0], rows[i + 1][s][1] - rows[i][s][1]) * fps);
+    }
+    vel.sort((a, b) => a - b);
+    refresh();
+    return paceCache[key] = { v: vel.length ? vel[vel.length >> 1] : 0, cycle: (n - 1) / fps };
+  }
+  function gamePace() {
+    const nm = main.clip.name, T = TUNING_DEFAULTS;
+    const dirK = /back|Bwd/i.test(nm) ? T.backpedalSpeed : /strafe|_L_Loop|_R_Loop|Jog_Left|Jog_Right/i.test(nm) ? T.strafeSpeed : 1;
+    const opt = $("speed").querySelector("option[value=game]"), hs = +(heroMoveSpeed(S.char, T.moveSpeed) * dirK).toFixed(2);
+    const { v, cycle } = naturalSpeed(), moving = v > 0.3;
+    S.speed = moving ? hs / v : 1;
+    opt.textContent = moving ? `game pace: ${hs} m/s = ${S.speed.toFixed(2)}x, ${(2 * S.speed / cycle).toFixed(1)} steps/s` : "game pace (not a moving clip: 1x)";
   }
   function layout() {
-    const sep = S.overlay ? 0 : 0.55;
-    main.root.position.set(-sep, 0, 0);
-    ref.root.position.set(sep, 0, 0);
+    const figs = figures();
+    figs.forEach((a, i) => a.root.position.set(S.overlay ? 0 : (i - (figs.length - 1) / 2) * 1.1, 0, 0));
     ref.setHeight($("match").checked ? main.height : ref.nat);
-    ghostify(ref.obj, S.overlay);
+    if (extra) extra.setHeight($("match").checked ? main.height : extra.nat);
+    applyLooks();
     $("lay").textContent = S.overlay ? "overlay (ghost)" : "side by side";
-    main.root.updateMatrixWorld(true);
-    ref.root.updateMatrixWorld(true);
+    for (const a of figs) a.root.updateMatrixWorld(true);
   }
   var PUMP = { auto: true, a: 80, b: 96, stroke: 0.07, portDown: 0.05 };
   function pumpSlide(f) {
@@ -39561,7 +40498,7 @@ void main() {
   var _m14 = new Vector3();
   var _m22 = new Vector3();
   var smooth01 = (u) => {
-    u = clamp4(u, 0, 1);
+    u = clamp5(u, 0, 1);
     return u * u * (3 - 2 * u);
   };
   var PUMP_HAND_Q = { short: new Quaternion(0.6878, 0.2306, -0.2638, 0.6357) };
@@ -39619,11 +40556,11 @@ void main() {
   function alignShell() {
     const g = mainGun?.obj;
     if (!g?.userData.port) return;
-    main.bones.LeftHand.getWorldQuaternion(_q7);
-    main.grip("Left", _v3);
-    g.userData.port.getWorldPosition(_v22);
-    const d = _v22.clone().sub(_v3), L = d.length();
-    d.normalize().applyQuaternion(_q7.clone().invert());
+    main.bones.LeftHand.getWorldQuaternion(_q10);
+    main.grip("Left", _v6);
+    g.userData.port.getWorldPosition(_v25);
+    const d = _v25.clone().sub(_v6), L = d.length();
+    d.normalize().applyQuaternion(_q10.clone().invert());
     const q = new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), d), e = new Euler().setFromQuaternion(q, "XYZ");
     Object.assign(shellFit, { rx: e.x * 180 / Math.PI, ry: e.y * 180 / Math.PI, rz: e.z * 180 / Math.PI, x: Math.max(0, L - 0.037), y: 0, z: 0 });
     window.__lab.setShell({});
@@ -39636,7 +40573,7 @@ void main() {
     shellObj.visible = on;
     if (!on) return;
     const port = mainGun?.obj?.userData.port, u = smooth01((f - (shellFit.to - SHELL_INSERT)) / SHELL_INSERT);
-    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v3), "Left", u)) {
+    if (!port || !placeShell(main.bones, shellObj, port.getWorldPosition(_v6), "Left", u)) {
       shellObj.visible = false;
       return;
     }
@@ -39664,11 +40601,14 @@ void main() {
     const f = Math.max(1, Math.min(S.frames, Math.round(S.frame)));
     main.setFrame(Math.min(S.playing ? Math.max(1, S.frame) : f, main.frames));
     if (ref.root.visible) ref.setFrame(Math.min(f + (S.refOff || 0), ref.frames));
+    bodyFrame2(f);
     undoPost(main);
     undoPost(ref);
     postureFix(main, ref);
     handPose(main);
     armPoseOn(main);
+    radioOn(main);
+    caseOn(main);
     if (SHOTGUNS[weaponOf()]) untwistWrist(main, "Left", S.wristKeep ?? 45);
     if (handsUI && handsSeen !== handKey()) {
       handsSeen = handKey();
@@ -39702,26 +40642,26 @@ void main() {
     }
     const lines = [];
     if (main.action) {
-      main.grip("Right", _v3);
-      main.grip("Left", _v22);
-      lines.push(`${CHARS[S.char].label}   hand span ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      main.grip("Right", _v6);
+      main.grip("Left", _v25);
+      lines.push(`${CHARS[S.char].label}   hand span ${_v6.distanceTo(_v25).toFixed(3)} m`);
     }
     if (ref.root.visible && ref.action) {
-      ref.grip("Right", _v3);
-      ref.grip("Left", _v22);
-      lines.push(`Reference   hand span ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      ref.grip("Right", _v6);
+      ref.grip("Left", _v25);
+      lines.push(`Reference   hand span ${_v6.distanceTo(_v25).toFixed(3)} m`);
     }
     const hold = mainGun?.obj?.userData.gripL;
     if (hold && main.action) {
-      hold.getWorldPosition(_v3);
-      main.grip("Left", _v22);
-      lines.push(`left hand to gun hold point ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      hold.getWorldPosition(_v6);
+      main.grip("Left", _v25);
+      lines.push(`left hand to gun hold point ${_v6.distanceTo(_v25).toFixed(3)} m`);
     }
     const port = mainGun?.obj?.userData.port;
     if (port && main.action) {
-      port.getWorldPosition(_v3);
-      main.grip("Left", _v22);
-      lines.push(`left hand to loading port ${_v3.distanceTo(_v22).toFixed(3)} m`);
+      port.getWorldPosition(_v6);
+      main.grip("Left", _v25);
+      lines.push(`left hand to loading port ${_v6.distanceTo(_v25).toFixed(3)} m`);
     }
     $("readout").textContent = lines.join("\n");
     $("fitOut").value = JSON.stringify({ gun: S.gun, clip: $("clip").value, shell: shellFit, ...Object.fromEntries(Object.entries(fit).map(([k, v]) => [k, +(+v).toFixed(4)])) }, null, 1);
@@ -39961,7 +40901,7 @@ void main() {
     return C;
   }
   function postureFix(a, src) {
-    if (!$("posture")?.checked || a !== main || !a?.action || S.char !== "yola2") return;
+    if (!$("posture")?.checked || a !== main || !a?.action || S.char !== "yola2" || a.clip?.userData?.live) return;
     const fam = postureFamily((CHARS[S.char].libRef || {})[a.clip.name.replace(/_REBAKE_.*$/, "")] || a.clip.name.replace(/_REBAKE_.*$/, ""));
     if (!fam) return;
     const one = { [fam]: 1 };
@@ -40022,8 +40962,8 @@ void main() {
   var HANDS = {};
   var handKey = () => S.char + ":" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
   var handsOf = () => {
-    var _a7;
-    return HANDS[_a7 = handKey()] || (HANDS[_a7] = { ...HAND0 });
+    var _a8;
+    return HANDS[_a8 = handKey()] || (HANDS[_a8] = { ...HAND0 });
   };
   fetch("assets/hold/hand_poses.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
     for (const [k, v] of Object.entries(j)) if (typeof v === "object") HANDS[k] = { ...HAND0, ...v };
@@ -40092,6 +41032,84 @@ void main() {
     };
     handsUI();
   }
+  var RADIO = {};
+  var RAD = { on: false, mode: "talk", obj: null };
+  var radioOf = () => RADIO[S.char] = radioFit(RADIO[S.char]);
+  var keepRadio = () => {
+    try {
+      localStorage.setItem("radioHold", JSON.stringify(RADIO));
+    } catch {
+    }
+  };
+  fetch("assets/hold/radio_hold.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
+    Object.assign(RADIO, j);
+    try {
+      Object.assign(RADIO, JSON.parse(localStorage.getItem("radioHold") || "{}"));
+    } catch {
+    }
+    if (main) {
+      refresh();
+      sidebarSync();
+    }
+  });
+  loadG(RADIO_FILE).then((g) => {
+    RAD.obj = g.scene;
+    RAD.obj.traverse((o) => {
+      if (o.isMesh) o.frustumCulled = false;
+    });
+    RAD.obj.visible = false;
+    scene.add(RAD.obj);
+    if (main) refresh();
+  }).catch(() => {
+  });
+  function radioOn(a) {
+    if (RAD.obj) RAD.obj.visible = false;
+    if (!RAD.on || !RAD.obj || !a?.bones?.RightHandMiddle1) return;
+    const rig = radioRig(a.obj, a.bones, Object.entries(fistPose(a) || {}).map(([n, q]) => [a.bones[n], q]).filter(([b]) => b));
+    const fwd = new Vector3(0, 0, 1).applyQuaternion(a.root.getWorldQuaternion(new Quaternion())).setY(0).normalize();
+    radioPose(rig, radioOf(), 1, RAD.mode === "talk" ? 1 : 0, fwd, a.height);
+    radioPlace(rig, RAD.obj, radioOf());
+    RAD.obj.visible = a.root.visible;
+  }
+  var CASES = {};
+  var CAS = { on: false, obj: null };
+  var caseOf = () => CASES[S.char] = caseFit(CASES[S.char]);
+  var keepCase = () => {
+    try {
+      localStorage.setItem("caseCarry", JSON.stringify(CASES));
+    } catch {
+    }
+  };
+  fetch("assets/hold/case_carry.json", { cache: "reload" }).then((r) => r.json()).catch(() => ({})).then((j) => {
+    Object.assign(CASES, j);
+    try {
+      Object.assign(CASES, JSON.parse(localStorage.getItem("caseCarry") || "{}"));
+    } catch {
+    }
+    if (main) {
+      refresh();
+      sidebarSync();
+    }
+  });
+  loadG(CASE_FILE).then((g) => {
+    CAS.obj = g.scene;
+    CAS.obj.traverse((o) => {
+      if (o.isMesh) o.frustumCulled = false;
+    });
+    CAS.obj.visible = false;
+    scene.add(CAS.obj);
+    if (main) refresh();
+  }).catch(() => {
+  });
+  function caseOn(a) {
+    if (CAS.obj) CAS.obj.visible = false;
+    if (!CAS.on || !CAS.obj || !a?.bones?.LeftHandMiddle1) return;
+    const rig = caseRig(a.obj, a.bones, Object.entries(fistPose(a) || {}).map(([n, q]) => [a.bones[n], q]).filter(([b]) => b));
+    const fwd = new Vector3(0, 0, 1).applyQuaternion(a.root.getWorldQuaternion(new Quaternion())).setY(0).normalize();
+    casePose(rig, caseOf(), 1, fwd, a.height);
+    casePlace(rig, CAS.obj, caseOf());
+    CAS.obj.visible = a.root.visible;
+  }
   function buildLayersUI() {
     const pc = $("posture"), grp = pc?.closest(".grp");
     if (!grp) return;
@@ -40145,25 +41163,25 @@ void main() {
   var FITS = {};
   var fitKey = (a) => a === main ? S.char : a === refX ? "xbot" : "mannequin";
   var fitOf = (a) => {
-    var _a7;
-    return FITS[_a7 = fitKey(a)] || (FITS[_a7] = { ...PFIT0 });
+    var _a8;
+    return FITS[_a8 = fitKey(a)] || (FITS[_a8] = { ...PFIT0 });
   };
   var WFITS = {};
   var FIT_WEAPONS = { pistol: "Pistol", bat: "Bat", alubat: "Bat (wood)", packaxe: "Axe (hospital pack)", packcrowbar: "Crowbar (hospital pack)", axe: "Axe", short: "Shotgun", old: "Shotgun (hospital pack)", draft: "Shotgun (first draft)", sledgehammer: "Sledgehammer", chainsaw: "Chainsaw", knife: "Knife" };
   var fitW = (w, a) => {
-    var _a7, _b7;
-    return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }));
+    var _a8, _b7;
+    return w === "pistol" ? fitOf(a) : WFITS[w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "")]?.[fitKey(a)] || ((_a8 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a8[_b7] = { ...PFIT0 }));
   };
   function idleShare(fit2) {
     if (!fit2 || !main?.clip || !fit2.idleIn && !fit2.idleOut) return 0;
-    const f = S.frame, ramp = (r) => clamp4((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1), sm3 = (u) => u * u * (3 - 2 * u);
+    const f = S.frame, ramp = (r) => clamp5((f - r[0]) / Math.max(1e-3, r[1] - r[0]), 0, 1), sm3 = (u) => u * u * (3 - 2 * u);
     return Math.max(fit2.idleIn ? 1 - sm3(ramp(fit2.idleIn)) : 0, fit2.idleOut ? sm3(ramp(fit2.idleOut)) : 0);
   }
   function fitAt(w, a) {
-    var _a7, _b7;
+    var _a8, _b7;
     const own = fitW(w, a), s = a === main ? idleShare(own) : 0;
     if (!(s > 0)) return own;
-    const base = (_a7 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a7[_b7] = { ...PFIT0 }), out = { ...own };
+    const base = (_a8 = WFITS[w] || (WFITS[w] = {}))[_b7 = fitKey(a)] || (_a8[_b7] = { ...PFIT0 }), out = { ...own };
     for (const k of Object.keys(PFIT0)) out[k] = (own[k] ?? PFIT0[k]) + ((base[k] ?? PFIT0[k]) - (own[k] ?? PFIT0[k])) * s;
     return out;
   }
@@ -40414,23 +41432,23 @@ void main() {
         return;
       }
     }
-    a.grip("Right", _v3);
-    a.grip("Left", _v22);
+    a.grip("Right", _v6);
+    a.grip("Left", _v25);
     let d, pos;
     if (w === "pistol") {
       a.bones.RightForeArm.getWorldPosition(_v32);
-      d = _v3.clone().sub(_v32).normalize();
-      pos = _v3.clone();
+      d = _v6.clone().sub(_v32).normalize();
+      pos = _v6.clone();
     } else {
-      d = _v3.clone().sub(_v22);
+      d = _v6.clone().sub(_v25);
       if (d.lengthSq() < 1e-8) {
         o.visible = false;
         return;
       }
       d.normalize();
-      pos = _v3.clone().add(_v22).multiplyScalar(0.5);
+      pos = _v6.clone().add(_v25).multiplyScalar(0.5);
     }
-    const x = new Vector3().crossVectors(UP2, d);
+    const x = new Vector3().crossVectors(UP4, d);
     if (x.lengthSq() < 1e-6) x.set(1, 0, 0);
     x.normalize();
     const y = new Vector3().crossVectors(d, x);
@@ -40476,7 +41494,7 @@ void main() {
   var EDGES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28], [27, 31], [28, 32], [0, 11], [0, 12]];
   function drawVidRef(f) {
     if (!vr.cfg) return;
-    const rf = clamp4(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext("2d");
+    const rf = clamp5(f + vr.cfg.offset, vr.cfg.first, vr.cfg.last), im = vr.imgs[rf], cv = vr.cv, cx = cv.getContext("2d");
     if (im && im.complete && im.naturalWidth) {
       cv.height = Math.round(520 * im.naturalHeight / im.naturalWidth);
       cx.drawImage(im, 0, 0, 520, cv.height);
@@ -40493,6 +41511,330 @@ void main() {
       }
     }
     vr.label.textContent = "reference: clip 13 frame " + rf + "   (Yola frame " + f + ")";
+  }
+  var TINT = { main: 16752451, second: 16735439, ref: 16777215, extra: 8257440 };
+  var normBone = (n) => {
+    const s = n.replace(/^mixamorig\d*:?/, "");
+    return UE_MAP[s] || s;
+  };
+  var isLive = (n) => !!mainCache[S.char]?.gltf.animations.find((c) => c.name === n)?.userData?.live;
+  var ROM_NAMES = ROM.map(([p, n]) => p + n);
+  var ROM_LABEL = Object.fromEntries(ROM.map(([p, n, l]) => [p + n, l]));
+  var OTHERS = /* @__PURE__ */ new Set();
+  var LIB_NAMES = [];
+  function addLive(key) {
+    const g = mainCache[key]?.gltf;
+    if (!g) return;
+    const have = new Set(g.animations.map((c) => c.name));
+    for (const n of [...ROM_NAMES, ...LIB_NAMES]) {
+      if (have.has(n)) continue;
+      const c = new AnimationClip(n, 1, []);
+      c.userData = { live: { lib: n.startsWith("ual1_") ? "ual1_" : "ual_", src: n.replace(/^ual1?_/, "") } };
+      g.animations.push(c);
+      have.add(n);
+    }
+  }
+  var libLoading = null;
+  function loadLibrary() {
+    return libLoading || (libLoading = Promise.all(Object.entries(UAL_FILES).map(([p, f]) => ualRef(f).then((u) => (u?.clips || []).map((c) => p + c.name)))).then((lists) => {
+      LIB_NAMES = lists.flat();
+      for (const k in mainCache) addLive(k);
+      fillClips();
+      editSync();
+    }));
+  }
+  async function liveFill(c) {
+    const L = c.userData.live;
+    if (L.ready) return true;
+    const u = await ualRef(UAL_FILES[L.lib]), rc = u?.clips.find((x) => x.name === L.src);
+    if (!rc) {
+      $("eDummy").textContent = "the library file did not load";
+      return false;
+    }
+    c.duration = rc.duration;
+    c.tracks = [new BooleanKeyframeTrack(".visible", [clipT0(rc), rc.duration], [true, true])];
+    L.ready = true;
+    return true;
+  }
+  var holders = /* @__PURE__ */ new WeakMap();
+  function holder(rc) {
+    if (!holders.has(rc)) holders.set(rc, new AnimationClip(rc.name + "_live", rc.duration, [new BooleanKeyframeTrack(".visible", [clipT0(rc), rc.duration], [true, true])]));
+    return holders.get(rc);
+  }
+  var lives = /* @__PURE__ */ new Map();
+  function liveFor(src, tgt) {
+    const k = src.obj.uuid + "|" + tgt.obj.uuid;
+    if (!lives.has(k)) lives.set(k, new LiveRetarget(src, tgt));
+    return lives.get(k);
+  }
+  var EXTRAS = {
+    clothed: { label: "clothed dummy (Brian / Peasant)", mixamo: MIX_CLOTHED, ual: UAL_CLOTHED.clothed, tag: { mixamo: "Brian \xB7 clothed", ual: "Peasant \xB7 clothed" } },
+    clothed2: { label: "clothed dummy (Brian / Ranger)", mixamo: MIX_CLOTHED, ual: UAL_CLOTHED.clothed2, tag: { mixamo: "Brian \xB7 clothed", ual: "Ranger \xB7 clothed" } },
+    female: { label: "female mannequin", ual: UAL_FEMALE, tag: { ual: "Mannequin (female)" } }
+  };
+  var extraCache = {};
+  function extraBody(file) {
+    return extraCache[file] || (extraCache[file] = (/\.fbx$/i.test(file) ? loadF(file).then((o) => {
+      o.traverse((x) => {
+        if (x.isBone) x.name = x.name.replace(/^mixamorig\d+/, "mixamorig");
+      });
+      o.animations = [];
+      return o;
+    }) : loadG(file).then((g) => g.scene)).then((o) => {
+      o.traverse((x) => {
+        if (x.isMesh) x.frustumCulled = false;
+      });
+      const a = new Actor(o, 1.62);
+      a.root.visible = false;
+      a.file = file;
+      scene.add(a.root, a.helper);
+      OTHERS.add(a);
+      return a;
+    }).catch((e) => (console.warn("clothed dummy failed to load", file, e), null)));
+  }
+  var TESTS = {};
+  fetch("assets/test_clips/tests.json", { cache: "reload" }).then((r) => r.json()).then((j) => {
+    TESTS = j || {};
+    secondUI();
+  }).catch(() => {
+  });
+  var urlSecond = () => {
+    const q = new URLSearchParams(location.search);
+    return q.get("char") === S.char ? (q.get("second") || "").split(",").filter(Boolean).map((f) => ({ file: f })) : [];
+  };
+  var testsOf = (k) => [...TESTS[k] || [], ...urlSecond()];
+  var secondCache = {};
+  function loadSecond(v) {
+    return secondCache[v] || (secondCache[v] = (async () => {
+      const i = v.indexOf(":"), kind = v.slice(0, i), id = v.slice(i + 1), t = testsOf(S.char).find((x) => x.file === id);
+      const files = kind === "char" ? [CHARS[id].file, ...CHARS[id].extra || []] : [id, ...t?.extra || []];
+      const g = await loadG(files[0]), anims = new Map(g.animations.map((c) => [c.name, c]));
+      for (const f of files.slice(1)) try {
+        for (const c of (await loadG(f)).animations) if (!anims.has(c.name)) anims.set(c.name, c);
+      } catch {
+      }
+      g.scene.traverse((o) => {
+        if (o.isMesh) o.frustumCulled = false;
+        if (/^GORE_/.test(o.name)) o.visible = false;
+      });
+      const a = new Actor(g.scene, kind === "char" ? CHARS[id].height : CHARS[S.char].height);
+      a.root.visible = false;
+      scene.add(a.root, a.helper);
+      OTHERS.add(a);
+      return Object.assign(a, { anims, kind, key: v, forChar: kind === "file" ? S.char : id, label: kind === "char" ? CHARS[id].label.split(" (")[0] : t?.label || id.split("/").pop().replace(/\.glb$/, "") });
+    })().catch((e) => (console.warn("second figure failed to load", v, e), null)));
+  }
+  async function setSecond(v) {
+    second = v ? await loadSecond(v) : null;
+    await setClip($("clip").value);
+  }
+  function bodyChar(key) {
+    addLive(key);
+    if (second && (second.kind === "file" ? second.forChar !== key : second.forChar === key)) second = null;
+    secondUI();
+    if ($("eChar")) $("eChar").value = key;
+  }
+  async function figuresFor(c, rc, lib) {
+    S.fam = !rc ? null : lib ? "ual" : "mixamo";
+    if (second) {
+      const own = second.anims.get(c.name);
+      second.on = true;
+      second.liveSrc = null;
+      if (own) {
+        pinRoot(own, $("inplace").checked && !own.userData?.fin, second);
+        second.play(own);
+      } else if (c.userData?.live) {
+        second.play(c);
+        second.liveSrc = ref;
+      } else if (second.kind === "file") second.play(c);
+      else if (S.fam === "ual") {
+        second.play(holder(rc));
+        second.liveSrc = ref;
+      } else second.on = false;
+    }
+    const E = EXTRAS[S.extra], file = S.fam && E?.[S.fam];
+    extra = file && !($("refBody")?.value && S.extra !== "female") ? await extraBody(file) : null;
+    if (extra) {
+      extra.on = true;
+      extra.tagText = E.tag[S.fam];
+      extra.play(S.fam === "mixamo" ? rigClip(rc, refX, extra) : rc);
+    }
+  }
+  var figures = () => [main, second?.on ? second : null, ref, extra?.on ? extra : null].filter(Boolean);
+  function figLabel(a, role) {
+    if (role === "main") return (CHARS[S.char]?.label || S.char).split(" (")[0] + (second?.on && second.kind === "file" ? " \xB7 now" : "") + (main.clip?.userData?.live ? " \xB7 live" : "");
+    if (role === "second") return a.label + (a.kind === "file" ? " \xB7 test" : "") + (a.liveSrc ? " \xB7 live" : "");
+    if (role === "ref") {
+      const rb = $("refBody")?.value;
+      return (rb && EXTRAS[rb]?.tag[S.fam] ? EXTRAS[rb].tag[S.fam] : S.fam === "mixamo" ? "X Bot" : $("femref")?.checked ? "Mannequin (female)" : "Mannequin") + " \xB7 clip source";
+    }
+    return a.tagText || "clothed dummy";
+  }
+  function bodyFrame2(f) {
+    if (!main) return;
+    const t = S.playing ? Math.max(1, S.frame) : f;
+    if ((main.clip?.userData?.live || second?.liveSrc) && ref?.action) ref.setFrame(Math.min(t + (S.refOff || 0), ref.frames));
+    if (main.clip?.userData?.live && ref?.action) liveFor(ref, main).apply();
+    if (second) {
+      second.root.visible = !!second.on && S.show !== "ref";
+      if (second.root.visible && second.action) {
+        second.setFrame(Math.min(t, second.frames));
+        if (second.liveSrc?.action) liveFor(second.liveSrc, second).apply();
+      }
+    }
+    if (extra) {
+      extra.root.visible = !!extra.on && !!S.refHas && S.show !== "main";
+      if (extra.root.visible && extra.action) extra.setFrame(Math.min(f + (S.refOff || 0), extra.frames));
+    }
+    for (const a of OTHERS) if (a !== second && a !== extra) {
+      a.root.visible = false;
+      a.helper.visible = false;
+    }
+    const bones = $("bones")?.checked, names = $("eTags")?.checked !== false, shown = /* @__PURE__ */ new Set();
+    let stack = 0;
+    for (const [a, role] of [[main, "main"], [second, "second"], [ref, "ref"], [extra, "extra"]]) {
+      if (!a) continue;
+      shown.add(a);
+      if (a.__tint !== TINT[role]) {
+        tintSkeleton(a.helper, TINT[role]);
+        a.__tint = TINT[role];
+      }
+      if (role === "second" || role === "extra") a.helper.visible = !!bones && a.root.visible;
+      if (!a.tag) {
+        a.tag = makeTag();
+        scene.add(a.tag);
+      }
+      a.tag.visible = names && a.root.visible && a.root.parent === scene && !!a.action;
+      if (a.tag.visible) {
+        setTag(a.tag, figLabel(a, role), TINT[role]);
+        placeTag(a.tag, a, S.overlay ? 0.13 * stack++ * (main.height / 1.62) : 0);
+      }
+    }
+    for (const a of ACTORS) if (a.tag && !shown.has(a)) a.tag.visible = false;
+  }
+  function applyLooks() {
+    const v = $("eHeat")?.value || "", mode = v === "patch" ? "patch" : v ? "bone" : "";
+    for (const a of new Set([main, second, ref, extra, ...OTHERS].filter(Boolean))) {
+      const ghost = S.overlay && a !== main, gc = a === second ? TINT.second : a === extra ? TINT.extra : void 0;
+      if (mode) {
+        ghostify(a.obj, ghost, gc);
+        setWeights(a.obj, mode, v, normBone);
+      } else {
+        setWeights(a.obj, "", "", normBone);
+        ghostify(a.obj, ghost, gc);
+      }
+    }
+  }
+  var BODY_MOVES = ["tripo_idle", "ual1_Idle_Loop", "ual1_Idle_LookAround_Loop", "ual1_Walk_Loop", "ual1_Jog_Fwd_Loop", "ual1_Sprint_Loop", "p_run_plain", "p_run_back_plain", "p_run_strafe_left_plain", "p_run_strafe_right_plain", "p_walk_strafe_left_plain"];
+  var BODY_GAME = ["pistol_idle", "pistol_walk", "pistol_reload", "sg_reload", "rifle_aim_idle", "ual1_Sword_Idle", "ual_Sword_Block", "ual_Sword_Regular_Combo", "ual_Sword_Heavy_Combo", "t_box_01", "t_box_02", "t_kick_02", "hit_body", "yola_knockdown", "yola_getup", "death_fall"];
+  var MOVE_GROUPS = [
+    ["Moving: the game's set today (Mixamo)", [
+      "p_run_plain",
+      "p_run_back_plain",
+      "p_walk_strafe_left_plain",
+      "p_walk_strafe_right_plain",
+      "p_run_strafe_left_plain",
+      "p_run_strafe_right_plain",
+      "pistol_walk",
+      "pistol_run",
+      "pistol_walk_back",
+      "pistol_run_back",
+      "pistol_strafe_left",
+      "pistol_strafe_right",
+      "pistol_strafe_run_left",
+      "pistol_strafe_run_right"
+    ]],
+    ["Moving: Quaternius walks (8 directions)", ["ual1_Walk_Loop", "ual1_Walk_Formal_Loop", "ual_Walk_Fwd_Loop", "ual_Walk_Fwd_L_Loop", "ual_Walk_Fwd_R_Loop", "ual_Walk_L_Loop", "ual_Walk_R_Loop", "ual_Walk_Bwd_Loop", "ual_Walk_Bwd_L_Loop", "ual_Walk_Bwd_R_Loop"]],
+    ["Moving: Quaternius jogs (8 directions + leans)", ["ual1_Jog_Fwd_Loop", "ual1_Jog_Fwd_L_Loop", "ual1_Jog_Fwd_R_Loop", "ual1_Jog_Fwd_LeanL_Loop", "ual1_Jog_Fwd_LeanR_Loop", "ual1_Jog_Left_Loop", "ual1_Jog_Right_Loop", "ual1_Jog_Bwd_Loop", "ual1_Jog_Bwd_L_Loop", "ual1_Jog_Bwd_R_Loop"]],
+    ["Moving: Quaternius sprint, turns, starts and stops", ["ual1_Sprint_Enter", "ual1_Sprint_Loop", "ual1_Sprint_Exit", "ual1_Turn90_L", "ual1_Turn90_R", "ual_Turn180_L", "ual_Turn180_R"]],
+    ["Moving: Quaternius crouch, carry and step", ["ual1_Crouch_Fwd_Loop", "ual1_Crouch_Fwd_L_Loop", "ual1_Crouch_Fwd_R_Loop", "ual_Walk_Carry_Loop", "ual_StepUp", "ual1_Pistol_Idle_Loop"]]
+  ];
+  function bodyGroups() {
+    const A = mainCache[S.char]?.gltf.animations || [], have = new Map(A.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
+    const take = (l) => l.filter((n) => have.has(n) && !used.has(n) && used.add(n));
+    return [
+      ["Range of motion (every rig plays these)", take(ROM_NAMES)],
+      ...MOVE_GROUPS.map(([g, l]) => [g, take(l)]),
+      ["Moving: the character's own clips (Tripo's walk, run, flee)", take(A.map((c) => c.name).filter((n) => /^t_(walk|run|flee)/.test(n)))],
+      ["Stand and move (baked)", take(BODY_MOVES.filter((n) => !have.get(n)?.userData?.live))],
+      ["The game's moves (baked)", take(BODY_GAME.filter((n) => !have.get(n)?.userData?.live))],
+      ["Whole Quaternius library (live, not baked)", take([...LIB_NAMES].sort())]
+    ].filter(([, l]) => l.length);
+  }
+  var bodyPretty = (n) => (ROM_LABEL[n] ? ROM_LABEL[n] + ":  " : "") + n.replace(/^(ual1?|kev)_/, "").replace(/_Loop$/, " (loop)").replace(/_/g, " ") + (isLive(n) ? "  \xB7 Quaternius, live" : /^ual/.test(n) ? "  \xB7 Quaternius" : /^(t_|tripo_)/.test(n) ? "  \xB7 Tripo (no dummy)" : "  \xB7 Mixamo");
+  function secondUI() {
+    const sel = $("eSecond");
+    if (!sel) return;
+    const keep = second?.key || "", og = (label, items) => {
+      if (!items.length) return;
+      const g = document.createElement("optgroup");
+      g.label = label;
+      for (const [v, t] of items) g.appendChild(new Option(t, v));
+      sel.appendChild(g);
+    };
+    sel.innerHTML = "";
+    sel.add(new Option("2nd figure: none", ""));
+    og(`Test versions of ${(CHARS[S.char]?.label || S.char).split(" (")[0]}`, testsOf(S.char).map((t) => ["file:" + t.file, t.label || t.file.split("/").pop()]));
+    og("Other characters (shape and clothes only)", Object.keys(CHARS).filter((k) => k !== S.char).map((k) => ["char:" + k, CHARS[k].label]));
+    sel.value = [...sel.options].some((o) => o.value === keep) ? keep : "";
+  }
+  function bodyUI() {
+    const ex = $("eExtra");
+    ex.add(new Option("+ dummy: none", ""));
+    for (const [k, E] of Object.entries(EXTRAS)) ex.add(new Option("+ " + E.label, k));
+    ex.onchange = () => {
+      S.extra = ex.value;
+      setClip($("clip").value);
+    };
+    const ht = $("eHeat");
+    ht.add(new Option("weights: off", ""));
+    ht.add(new Option("weights: patches (every bone)", "patch"));
+    const NICE = { Hips: "hips", Spine: "lower back (Spine)", Spine1: "middle back (Spine1)", Spine2: "chest (Spine2)", Neck: "neck", Head: "head", Shoulder: "collarbone", Arm: "upper arm", ForeArm: "forearm", Hand: "hand", UpLeg: "thigh", Leg: "shin", Foot: "foot", ToeBase: "toes" };
+    const nice = (n) => {
+      const m = /^(Left|Right)?(.*)$/.exec(n);
+      return (m[1] ? m[1] === "Left" ? "left " : "right " : "") + (NICE[m[2]] || m[2]);
+    };
+    const og = (label, list) => {
+      const g = document.createElement("optgroup");
+      g.label = label;
+      for (const n of list) g.appendChild(new Option("weights: " + nice(n), n));
+      ht.appendChild(g);
+    };
+    og("Spine and head", ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head"]);
+    for (const s of ["Left", "Right"]) {
+      og(s + " arm", ["Shoulder", "Arm", "ForeArm", "Hand"].map((b) => s + b));
+      og(s + " leg", ["UpLeg", "Leg", "Foot", "ToeBase"].map((b) => s + b));
+    }
+    ht.onchange = () => {
+      applyLooks();
+      refresh();
+    };
+    $("eSecond").onchange = (e) => setSecond(e.target.value);
+    secondUI();
+    $("eSkel").onchange = (e) => document.querySelector(`#skelPick [data-skel="${e.target.value}"]`)?.click();
+    $("eTags").onchange = () => refresh();
+    $("eRun").onchange = (e) => {
+      S.runList = e.target.checked;
+    };
+    $("eLay").onclick = () => {
+      S.overlay = !S.overlay;
+      layout();
+      refresh();
+      editSync();
+    };
+    for (const k in CHARS) $("eChar").add(new Option(CHARS[k].label, k));
+    $("eChar").onchange = async (e) => {
+      await setChar(e.target.value);
+      editPick(editFirst());
+    };
+  }
+  function runNext() {
+    const o = [...$("eClip").options].filter((x) => x.value), i = o.findIndex((x) => x.value === main.clip?.name);
+    S.runBusy = true;
+    editPick(o[(i + 1) % o.length]?.value);
+    setTimeout(() => {
+      S.runBusy = false;
+    }, 800);
   }
   var WEAPON_CLIPS = {
     pistol: { label: "Pistol", idle: "pistol_idle", attack: "kick" },
@@ -40535,11 +41877,11 @@ void main() {
   var inGame = (n) => !!GAME_JS && GAME_JS.includes(`"${n}"`);
   var usedTag = (n) => inGame(n) ? "  (currently used)" : "";
   function fillClips() {
-    var _a7;
+    var _a8;
     const sel = $("clip"), keep = sel.value, anims = mainCache[S.char].gltf.animations.filter((c) => NO_KK(c.name)), byN = Object.fromEntries(anims.map((c) => [c.name, c])), used = /* @__PURE__ */ new Set();
     sel.innerHTML = "";
     const group = (label, list) => {
-      const ok = list.filter((n) => byN[n]);
+      const ok = list.filter((n) => byN[n] && !byN[n].userData?.live);
       if (!ok.length) return;
       const g = document.createElement("optgroup");
       g.label = label;
@@ -40567,11 +41909,21 @@ void main() {
     }
     group("TEST RE-BAKES (not in the game)", anims.map((c) => c.name).filter((n) => /_REBAKE_/.test(n)));
     const tests = {};
-    for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a7 = c.userData.test] || (tests[_a7] = [])).push(c.name);
+    for (const c of anims) if (c.userData?.test && !used.has(c.name)) (tests[_a8 = c.userData.test] || (tests[_a8] = [])).push(c.name);
     for (const [f, list] of Object.entries(tests)) group(`TEST: ${f} (not in the game)`, list.sort());
     const ws = GAME_CLIPS[S.gun] ? [S.gun] : Object.keys(GAME_CLIPS);
     for (const w of ws) for (const [kind, list] of Object.entries(GAME_CLIPS[w])) group(`${(WEAPON_CLIPS[w].label === "None" ? "Fists / none" : WEAPON_CLIPS[w].label).toUpperCase()}: ${kind}`, list);
     for (const [kind, list] of Object.entries(EVERYONE)) group(kind, list);
+    const live = anims.filter((c) => c.userData?.live && !used.has(c.name)).map((c) => c.name).sort();
+    if (live.length) {
+      const g = document.createElement("optgroup");
+      g.label = `QUATERNIUS LIBRARY: played live, not baked (${live.length})`;
+      for (const n of live) {
+        g.appendChild(new Option(`${n.replace(/^ual1?_/, "").replace(/_/g, " ")}  [live]`, n));
+        used.add(n);
+      }
+      sel.appendChild(g);
+    }
     group(!/^yola/.test(S.char) ? "This character's clips" : ws.length === 1 ? "Other clips (other weapons, library picks, unused)" : "Other clips (library picks, unused)", anims.map((c) => c.name).filter((n) => !used.has(n)).sort());
     if (byN[keep]) sel.value = keep;
     buildClipPanel();
@@ -40686,16 +42038,17 @@ void main() {
   function gameAttacks() {
     const have = /* @__PURE__ */ new Set([...mainCache[S.char].gltf.animations.map((c) => c.name), ...[...$("clip")?.options || []].map((o) => o.value)]);
     const arena = Object.keys(PICKS).filter((k) => k.endsWith("|" + ARENA_KEY[S.gun])).map((k) => k.slice(0, k.lastIndexOf("|")));
-    return [.../* @__PURE__ */ new Set([...GAME_ATTACKS[S.gun] || [], ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n));
+    return [.../* @__PURE__ */ new Set([...GAME_ATTACKS[S.gun] || [], ...arena])].filter((n) => have.has(n) && !EDIT_IDLE.test(n) && !isLive(n));
   }
   function editClips() {
+    if (S.mode === "body") return bodyGroups().flatMap(([, l]) => l);
     if (S.mode === "finisher") return mainCache[S.char].gltf.animations.filter((c) => c.userData?.fin && /shotgun/.test(c.name) === !!SHOTGUNS[S.gun]).map((c) => c.name).sort();
     if (S.mode === "attack" && ARENA_KEY[S.gun]) {
       const g = gameAttacks();
       if (g.length) return g;
     }
     const re = EDIT_LISTS[S.gun]?.[S.mode] || (S.mode === "idle" ? EDIT_IDLE : EDIT_ATTACK);
-    return mainCache[S.char].gltf.animations.map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
+    return mainCache[S.char].gltf.animations.filter((c) => !c.userData?.live).map((c) => c.name).filter((n) => NO_KK(n) && re.test(n) && !/_Rec$|_REBAKE_/.test(n)).sort((a, b) => a === "ual_Sword_Block" ? -1 : b === "ual_Sword_Block" ? 1 : a.localeCompare(b));
   }
   var SLIDE_M = { short: "1.4", mid: "2.2", long: "3.0" };
   var finLabel = (n) => {
@@ -40711,13 +42064,29 @@ void main() {
     $("eIdle").classList.toggle("on", S.mode === "idle");
     $("eAttack").classList.toggle("on", S.mode === "attack");
     $("eFin").classList.toggle("on", S.mode === "finisher");
-    const sel = $("eClip"), list = editClips(), cur = main.clip?.name || "";
+    const sel = $("eClip"), list = editClips(), cur = main.clip?.name || "", body = S.mode === "body";
     sel.innerHTML = "";
-    for (const n of list) sel.add(new Option(prettyClip(n), n));
+    if (body) for (const [label, l] of bodyGroups()) {
+      const g = document.createElement("optgroup");
+      g.label = label;
+      for (const n of l) g.appendChild(new Option(bodyPretty(n), n));
+      sel.appendChild(g);
+    }
+    else for (const n of list) sel.add(new Option(prettyClip(n), n));
     if (!list.includes(cur)) sel.add(new Option("(" + (cur || "none") + ")", cur), 0);
     sel.value = cur;
-    $("eDummy").textContent = !S.refHas ? "none for this clip" : ref === refX ? "Mixamo X Bot" : "Quaternius mannequin";
-    for (const b of $("eShow").children) b.classList.toggle("on", b.dataset.show === S.show);
+    $("eIdle").hidden = $("eAttack").hidden = $("eFin").hidden = body;
+    $("eRunL").hidden = !body;
+    $("eChar").value = S.char;
+    $("eSkel").value = $("bones").checked ? $("fingerBones").checked ? "both" : "body" : $("fingerBones").checked ? "hands" : "off";
+    const dummy = S.fam === "mixamo" ? "Mixamo X Bot" : "Quaternius mannequin";
+    $("eDummy").textContent = !S.refHas ? "none for this clip" : dummy + ($("refBody")?.value ? " (clothed)" : "") + (extra?.on ? " + " + extra.tagText : "") + (main.clip?.userData?.live ? "  \xB7  played live, not baked" : "");
+    for (const b of $("eShow").children) {
+      b.classList.toggle("on", b.dataset.show === S.show);
+      if (b.dataset.show === "main") b.textContent = (CHARS[S.char]?.label || "Yola").split(" (")[0];
+      if (b.dataset.show === "both") b.textContent = figures().length > 2 ? "All" : "Both";
+    }
+    $("eLay").classList.toggle("on", !!S.overlay);
     $("eFit").classList.toggle("on", S.fitOn);
     $("eAdv").classList.toggle("on", !$("top").hidden);
     sidebarSync();
@@ -40735,8 +42104,8 @@ void main() {
     }
   };
   function setArm(side, k, v) {
-    var _a7;
-    const e = ARMP[_a7 = armKey()] || (ARMP[_a7] = {});
+    var _a8;
+    const e = ARMP[_a8 = armKey()] || (ARMP[_a8] = {});
     (e[side] || (e[side] = {}))[k] = v;
     keepArms();
   }
@@ -40841,10 +42210,10 @@ void main() {
     return w + "@" + (main?.clip?.name || "").replace(/_REBAKE_.*$/, "");
   }
   function fitEditing() {
-    var _a7;
+    var _a8;
     if (S.gun === "pistol") return fitOf(fitTarget());
     const w = S.gun, a = fitTarget(), k = fitKey(a), c = WFITS[fitScopeKey(w)];
-    return c?.[k] || ((_a7 = WFITS[w] || (WFITS[w] = {}))[k] || (_a7[k] = { ...PFIT0 }));
+    return c?.[k] || ((_a8 = WFITS[w] || (WFITS[w] = {}))[k] || (_a8[k] = { ...PFIT0 }));
   }
   var fitAllOn = () => S.fitAllFor === fitScopeKey(S.gun);
   function fitForEdit() {
@@ -41032,7 +42401,7 @@ void main() {
     btns.className = "sbbtns";
     btns.innerHTML = '<button data-a="auto" title="both arms: the least out that clears her body on every frame of this clip, plus 1 cm">Auto: clear her hips</button><button data-a="copy">Copy to other arm</button><button data-a="reset">Reset this arm</button>';
     btns.onclick = async (e) => {
-      var _a7;
+      var _a8;
       const a = e.target.dataset.a, s0 = S.armSide || "Right", s1 = s0 === "Right" ? "Left" : "Right";
       if (a === "auto") {
         e.target.textContent = "working...";
@@ -41040,7 +42409,7 @@ void main() {
         e.target.textContent = "Auto: clear her hips";
       }
       if (a === "copy") {
-        const e2 = ARMP[_a7 = armKey()] || (ARMP[_a7] = {});
+        const e2 = ARMP[_a8 = armKey()] || (ARMP[_a8] = {});
         e2[s1] = { ...armOf(s0) };
         handsOf()[s1] = handsOf()[s0];
         keepArms();
@@ -41056,6 +42425,121 @@ void main() {
       jointReadout();
     };
     A1.body.appendChild(btns);
+    const R1 = section("radio", "Radio (walkie-talkie)");
+    {
+      const t = document.createElement("div");
+      t.className = "sbnote";
+      t.textContent = "The game's radio hold (Chapter 2 calls) on this character, over the clip playing. The wrist stays locked: the radio leans with the forearm, which turns so the grille faces the mouth (roll adds to that).";
+      R1.body.appendChild(t);
+    }
+    const ron = seg(R1.body, [["off", "Off"], ["talk", "Talking"], ["listen", "Listening"]], (v) => {
+      RAD.on = v !== "off";
+      if (RAD.on) RAD.mode = v;
+      refresh();
+      sidebarSync();
+    });
+    const radRows = [];
+    const rgrp = (t) => {
+      const d = document.createElement("div");
+      d.className = "sbg";
+      d.textContent = t;
+      R1.body.appendChild(d);
+    };
+    const rs = (lbl, unit, lo, hi, st, k, pose) => radRows.push(slider(
+      R1.body,
+      lbl,
+      unit,
+      lo,
+      hi,
+      st,
+      () => pose ? radioOf()[pose][k] : radioOf()[k],
+      (v) => {
+        const f = radioOf();
+        if (pose) f[pose][k] = v;
+        else f[k] = v;
+        keepRadio();
+      },
+      pose ? RADIO0[pose][k] : RADIO0[k]
+    ));
+    for (const [pose, title] of [["talk", "Talking: the grille from his mouth"], ["listen", "Listening: the grille from his mouth"]]) {
+      rgrp(title);
+      rs("forward", "cm", -10, 40, 0.5, "fwd", pose);
+      rs("to his right", "cm", -15, 35, 0.5, "side", pose);
+      rs("up", "cm", -45, 15, 0.5, "up", pose);
+      rs("roll (forearm)", "deg", -120, 120, 1, "roll", pose);
+    }
+    rgrp("In his hand");
+    rs("size", "%", 40, 120, 1, "size");
+    rs("hand up its body", "cm", -5, 14, 0.5, "slide");
+    rs("angle in the palm", "deg", -45, 135, 1, "grip");
+    rs("fingers closed", "%", 0, 130, 1, "curl");
+    rs("thumb closed", "%", 0, 130, 1, "thumb");
+    rgrp("Body");
+    rs("elbow out", "deg", -40, 100, 1, "elbow");
+    rs("chin down", "deg", -25, 30, 1, "chin");
+    {
+      const b = document.createElement("div");
+      b.className = "sbbtns";
+      b.innerHTML = "<button>Reset this character's radio</button>";
+      R1.body.appendChild(b);
+      b.querySelector("button").onclick = () => {
+        delete RADIO[S.char];
+        keepRadio();
+        refresh();
+        sidebarSync();
+      };
+    }
+    const K1 = section("case", "Case (left hand)");
+    {
+      const t = document.createElement("div");
+      t.className = "sbnote";
+      t.textContent = "Marc's case in his left hand (Chapter 2), over the clip playing: try the runs, the pistol, the crowbar. The arm hangs with it and keeps part of the clip's swing.";
+      K1.body.appendChild(t);
+    }
+    const kon = seg(K1.body, [["off", "Off"], ["on", "Carry the case"]], (v) => {
+      CAS.on = v === "on";
+      refresh();
+      sidebarSync();
+    });
+    const caseRows = [];
+    const ks = (lbl, unit, lo, hi, st, k) => caseRows.push(slider(K1.body, lbl, unit, lo, hi, st, () => caseOf()[k], (v) => {
+      caseOf()[k] = v;
+      keepCase();
+    }, CASE0[k]));
+    {
+      const d = document.createElement("div");
+      d.className = "sbg";
+      d.textContent = "Arm";
+      K1.body.appendChild(d);
+    }
+    ks("swing kept", "%", 0, 100, 1, "swing");
+    ks("hand off his side", "cm", -5, 25, 0.5, "out");
+    ks("hand forward", "cm", -20, 20, 0.5, "fwd");
+    ks("hand raised", "cm", -5, 30, 0.5, "lift");
+    ks("roll (forearm)", "deg", -90, 90, 1, "roll");
+    {
+      const d = document.createElement("div");
+      d.className = "sbg";
+      d.textContent = "Case";
+      K1.body.appendChild(d);
+    }
+    ks("turn", "deg", -180, 180, 1, "turn");
+    ks("swung out", "deg", -45, 45, 1, "tilt");
+    ks("size", "%", 50, 110, 1, "size");
+    ks("fingers closed", "%", 0, 130, 1, "curl");
+    ks("thumb closed", "%", 0, 130, 1, "thumb");
+    {
+      const b = document.createElement("div");
+      b.className = "sbbtns";
+      b.innerHTML = "<button>Reset this character's case</button>";
+      K1.body.appendChild(b);
+      b.querySelector("button").onclick = () => {
+        delete CASES[S.char];
+        keepCase();
+        refresh();
+        sidebarSync();
+      };
+    }
     const C1 = section("check", "Joint check (this frame)");
     const chk = document.createElement("div");
     chk.id = "sbCheck";
@@ -41087,7 +42571,7 @@ void main() {
     sv.className = "sbbtns";
     sv.innerHTML = '<button data-a="save" class="primary">Save all</button><span class="sbnote" id="sbSaved"></span>';
     sv.querySelector("button").onclick = async () => {
-      const files = { "weapon_fit.json": WFITS, "arm_pose.json": ARMP, "hand_poses.json": HANDS, "hold_layers.json": HOLD_LAYERS, "pistol_fit.json": FITS };
+      const files = { "weapon_fit.json": WFITS, "arm_pose.json": ARMP, "hand_poses.json": HANDS, "hold_layers.json": HOLD_LAYERS, "pistol_fit.json": FITS, "radio_hold.json": RADIO, "case_carry.json": CASES };
       let ok = true;
       for (const [f, j] of Object.entries(files)) {
         const r = await fetch("/__shot/" + f, { method: "POST", body: JSON.stringify(j, null, 1) });
@@ -41096,7 +42580,7 @@ void main() {
       $("sbSaved").textContent = ok ? "saved to shots/ (tell Claude to put it in the game)" : "save failed";
     };
     V1.body.appendChild(sv);
-    SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1 };
+    SB = { wHead, who, scope, hand, pump, fitRows, side, ascope, armRows, layerBoxes, A1, ron, radRows, kon, caseRows };
     sidebarSync();
   }
   function layerSyncAll() {
@@ -41107,9 +42591,14 @@ void main() {
   }
   function sidebarSync() {
     if (!SB || !main) return;
+    for (const b of SB.ron.children) b.classList.toggle("on", b.dataset.v === (RAD.on ? RAD.mode : "off"));
+    for (const up of SB.radRows) up();
+    for (const b of SB.kon.children) b.classList.toggle("on", b.dataset.v === (CAS.on ? "on" : "off"));
+    for (const up of SB.caseRows) up();
     const w = S.gun, a = fitTarget();
     SB.wHead.textContent = `${FIT_WEAPONS[w] || w} on ${a === main ? CHARS[S.char]?.label || S.char : ref === refX ? "X Bot" : "the mannequin"}`;
     for (const b of SB.who.children) b.classList.toggle("on", b.dataset.v === (S.fitWho || "main"));
+    SB.who.children[0].textContent = (CHARS[S.char]?.label || "Yola").split(" (")[0];
     const clipOwn = !!WFITS[fitScopeKey(w)]?.[fitKey(a)];
     for (const b of SB.scope.children) {
       b.classList.toggle("on", b.dataset.v === (clipOwn || !fitAllOn() ? "clip" : "all"));
@@ -41181,7 +42670,7 @@ void main() {
     }
     const x = S.show === "main" ? main.root.position.x : S.show === "ref" ? ref.root.position.x : 0, c = new Vector3(x, 0.95, 0);
     const D3 = { front: [0, 0.1, 1], back: [0, 0.1, -1], right: [-1, 0.1, 0], left: [1, 0.1, 0], three: [-0.7, 0.35, 0.75], above: [0, 1, 0.03], below: [0, -0.5, 0.85] }[k];
-    camera.position.copy(c).addScaledVector(new Vector3(...D3).normalize(), S.show === "both" ? 3.6 : 2.6);
+    camera.position.copy(c).addScaledVector(new Vector3(...D3).normalize(), S.show === "both" ? 2.5 + 1.1 * (figures().length - 1) : 2.6);
     controls.target.copy(c);
     controls.update();
   }
@@ -41191,6 +42680,7 @@ void main() {
       b.textContent = label;
       b.dataset.k = k;
       b.onclick = () => {
+        if (S.mode === "body") S.mode = "idle";
         S.gun = k;
         $("gun").value = k;
         fillClips();
@@ -41202,6 +42692,24 @@ void main() {
       };
       $("eWeapons").appendChild(b);
     }
+    const bb = document.createElement("button");
+    bb.textContent = "Body check";
+    bb.dataset.k = "none";
+    bb.title = "no weapon: the character beside the clip's dummy (and a second version, a clothed dummy, the weights): the range of motion and the whole Quaternius library, played live on any character";
+    bb.onclick = () => {
+      S.mode = "body";
+      S.gun = "none";
+      $("gun").value = "none";
+      fillClips();
+      applyGun();
+      weaponUI();
+      editPick(editFirst());
+      refresh();
+      sidebarSync();
+      loadLibrary();
+    };
+    $("eWeapons").prepend(bb);
+    bodyUI();
     $("eIdle").onclick = () => {
       S.mode = "idle";
       editPick(editFirst());
@@ -41241,7 +42749,7 @@ void main() {
     buildSidebar();
   }
   async function editStart() {
-    if (S.char !== "yola2") await setChar("yola2");
+    if (S.char !== "yola2" && !CHARS[S.char].hero) await setChar("yola2");
     S.gun = "alubat";
     $("gun").value = "alubat";
     fillClips();
@@ -41399,6 +42907,7 @@ void main() {
       refresh();
     };
     $("femref").onchange = () => setClip($("clip").value);
+    $("refBody").onchange = () => setClip($("clip").value);
     $("marks").onchange = refresh;
     $("mags").onchange = refresh;
     buildHandsUI();
@@ -41414,7 +42923,9 @@ void main() {
     skelUI();
     $("inplace").onchange = () => setClip($("clip").value);
     $("speed").onchange = (e) => {
-      S.speed = +e.target.value;
+      S.gamePace = e.target.value === "game";
+      if (S.gamePace) gamePace();
+      else S.speed = +e.target.value;
     };
     $("toggleSide").onclick = () => $("side").classList.toggle("open");
     $("toggleClips").onclick = () => {
@@ -41594,14 +43105,14 @@ void main() {
   async function capView({ who = "main", dir = [1, 0.3, 1], dist = 0.5, target = "hands", w = 600, h = 450, solo = false }) {
     const a = who === "ref" ? ref : main, cam = camera, c = new Vector3();
     if (target === "hands") {
-      a.grip("Right", _v3);
-      a.grip("Left", _v22);
-      c.copy(_v3).lerp(_v22, 0.5);
+      a.grip("Right", _v6);
+      a.grip("Left", _v25);
+      c.copy(_v6).lerp(_v25, 0.5);
     } else if (target === "rhand" || target === "lhand") a.grip(target === "rhand" ? "Right" : "Left", c);
     else if (target === "pair") {
-      main.bones.Hips.getWorldPosition(_v3);
-      ref.bones.Hips.getWorldPosition(_v22);
-      c.copy(_v3).lerp(_v22, 0.5);
+      main.bones.Hips.getWorldPosition(_v6);
+      ref.bones.Hips.getWorldPosition(_v25);
+      c.copy(_v6).lerp(_v25, 0.5);
       c.y = 0.9;
     } else if (target === "head") a.bones.Neck.getWorldPosition(c);
     else if (Array.isArray(target)) c.set(...target);
@@ -41711,7 +43222,10 @@ void main() {
       SHOT.recoil = Math.max(0, SHOT.recoil - dt * 7);
       if (S.playing && main?.action) {
         S.frame += dt * FPS * S.speed;
-        if (S.frame >= S.frames + 1) S.frame = $("loop").checked ? 1 : S.frames;
+        if (S.frame >= S.frames + 1) {
+          if (S.runList && S.mode === "body" && !S.runBusy) runNext();
+          S.frame = $("loop").checked || S.runList ? 1 : S.frames;
+        }
         refresh();
       } else if (kicking) refresh();
       if (main?.hair?.ok) {

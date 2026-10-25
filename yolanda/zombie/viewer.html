@@ -65,10 +65,20 @@
      want to edit the idle and the attacks"): a weapon, its idle or attack, Yola beside the clip's own dummy, the angles, the fit.
      Everything else is under Advanced (the old top bar and the clip list, unchanged). -->
 <div id="edit" class="panel">
+  <div class="grp"><span class="lbl">Character</span><select id="eChar"></select></div>
   <div class="grp"><span class="lbl">Weapon</span><span id="eWeapons"></span></div>
-  <div class="grp"><button id="eIdle">Idle</button><button id="eAttack">Attack</button><button id="eFin">Finishers</button><select id="eClip"></select></div>
+  <div class="grp"><button id="eIdle">Idle</button><button id="eAttack">Attack</button><button id="eFin">Finishers</button><select id="eClip"></select>
+    <label class="chk" id="eRunL" hidden title="when a clip ends, play the next one in the list (the range of motion, start to end)"><input type="checkbox" id="eRun"> run the list</label></div>
   <div class="grp"><span class="lbl">Dummy</span><span id="eDummy" style="color:var(--dim)"></span></div>
-  <div class="grp"><span class="lbl">Show</span><span id="eShow"><button data-show="both">Both</button><button data-show="main">Yola</button><button data-show="ref">Dummy</button></span></div>
+  <!-- the body check's other figures (2026-10-20, CHARACTER_RIG_PLAYBOOK.md): a second version of the character or another
+       character, a clothed dummy beside the bare one, the skin weights, the skeleton, the names -->
+  <div class="grp" id="eCmp"><span class="lbl">Compare</span>
+    <select id="eSecond" title="a second figure beside the character: a test version of it (assets/test_clips/tests.json: new weights without rebuilding its clips), or another character (shape and clothes only, never the motion truth)"></select>
+    <select id="eExtra" title="a clothed dummy beside the bare one, on the clip's own skeleton: Brian (Mixamo clips) or Quaternius's Peasant / Ranger (library clips): how clothes should bend"></select>
+    <select id="eHeat" title="the skin weights on every figure, as Blender draws them: one bone (blue none, green half, red all) or patches (a colour per bone: borders and strays)"></select>
+    <select id="eSkel" title="the skeleton on every figure (one colour per figure; the fingers coloured per finger)"><option value="off">bones: off</option><option value="body">bones: body</option><option value="hands">bones: fingers</option><option value="both">bones: all</option></select>
+    <label class="chk" title="a name over every figure (in the pictures too)"><input type="checkbox" id="eTags" checked> names</label></div>
+  <div class="grp"><span class="lbl">Show</span><span id="eShow"><button data-show="both">Both</button><button data-show="main">Yola</button><button data-show="ref">Dummy</button></span><button id="eLay" title="every figure on the same spot, the others as see-through ghosts: before / after, or the character inside its dummy">Overlay</button></div>
   <div class="grp"><span class="lbl">Angle</span><span id="eAngles"><button data-a="front">Front</button><button data-a="back">Back</button><button data-a="right">Her right</button><button data-a="left">Her left</button><button data-a="three">3/4</button><button data-a="above">Above</button><button data-a="below">Below</button><button data-a="hands">Hands</button></span></div>
   <div class="grp"><button id="eFit" class="on" title="the sidebar: weapon position, arms, joint check, layers, save">Panel</button><button id="eAdv">Advanced</button><button id="eHide" title="hide everything (H)">Hide (H)</button></div>
 </div>
@@ -78,7 +88,8 @@
   <div class="grp"><span class="lbl">Clip</span><select id="clip"></select></div>
   <div class="grp"><span class="lbl">Reference</span><select id="refclip"></select></div>
   <div class="grp"><span class="lbl">Layout</span><button id="lay">side by side</button>
-    <label class="chk" title="library clips: Quaternius's female mannequin (same rig, closer to Yola's build) plays the reference instead of the male one"><input type="checkbox" id="femref"> female mannequin</label></div>
+    <label class="chk" title="library clips: Quaternius's female mannequin (same rig, closer to Yola's build) plays the reference instead of the male one"><input type="checkbox" id="femref"> female mannequin</label>
+    <select id="refBody" title="which body plays the reference, on the source rig's own skeleton: bare (X Bot / the Quaternius mannequin) or clothed men to judge shoulders and back under clothes: Mixamo clips: Brian (Mixamo, T-shirt); library clips: Quaternius's Peasant (shirt) or Ranger (tunic) from Modular Character Outfits (CC0)"><option value="">dummy: bare</option><option value="clothed">dummy: clothed (Brian / Peasant)</option><option value="clothed2">dummy: clothed (Brian / Ranger)</option></select></div>
   <div class="grp"><label class="chk" title="the game's posture fix (render/posture.js, in the game since 2026-10-17): her head, neck, chest and pelvis turned onto the source rig's real bone lines (untick to see the clip as retargeted)"><input type="checkbox" id="posture" checked> posture fix (as the game)</label>
     <label class="chk" title="pistol reload: the empty magazine drops, the loaded one goes in"><input type="checkbox" id="mags" checked> magazines</label></div>
   <div class="grp" id="handsGrp" title="Yola's hands for this clip: open = the clip's own fingers, closed = her fist (the reference keeps its own)"></div>
@@ -123,7 +134,7 @@
   <div id="transport" style="margin-bottom:3px">
     <button id="prev10">-10</button><button id="prev">&#9664; 1</button><button id="play" class="on">Pause</button><button id="next">1 &#9654;</button><button id="next10">+10</button>
     <span id="frameInfo"></span>
-    <span class="lbl">Speed</span><select id="speed"><option value="0.1">0.1x</option><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option></select>
+    <span class="lbl">Speed</span><select id="speed"><option value="0.1">0.1x</option><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="game">game pace</option></select>
     <label class="chk"><input type="checkbox" id="loop" checked> loop</label>
     <label class="chk"><input type="checkbox" id="hairSway" checked> hair sway</label>
     <span style="color:var(--dim)">space = play/pause, &larr; &rarr; = step, shift = 10 frames</span>

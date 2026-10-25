@@ -1,5 +1,30 @@
 # Opening and maps redo: start here (handoff, 2026-10-16)
 
+## NEWEST (2026-10-22): the doctor runs off with the vaccine (Floor 7 OR, after the hand-off)
+The user: Chad hiding scared behind the surgery table; after Yola kills the first couple of the OR's zombies, a cut scene
+that starts on the open vaccine case, he shuts it, grabs it and runs off carrying it in one hand. Committed 09acf99 + ef788a5 (clean dist), not pushed.
+- **src/opening/doctor.js** (`Doctor`, staging in `DOC`, clock in `T`): loaded in `preload`, ticked from `ambient(dt)`
+  (main.js already calls it every frame after the hand-off), switched off whenever the opening plays again (`update`).
+  Hides at (-4.35, -8.6) on the table's far side from the game camera (there the surgical lamp never covers his head
+  from where Yola stands: measured), the case open on the pad. Trigger: 2 OR-group zombies down + 1.4 s for the bodies.
+  The scene runs over the live game (no main.js change): `game.camFree` + its own camera, `game.scriptInput` neutral,
+  the OR's other zombies held passive/still (re-held every frame; one that wakes meanwhile gets its woken values after),
+  HUD, dodge button and ↺ Reveal hidden. Shots (hard cuts, held): A the open case from his side (0-1.8 s: he leans in,
+  the lid falls shut under his left hand, IK on its front edge), B across the table (the pick-up by the handle, IK onto
+  CarryGrip, then the case held as it was lifted, blending into the carry), C behind him, down on the west door (he runs in
+  and out through it; ends when he is off the frame). Then `game.cameraPose` snaps the game camera back; level flag
+  `doctor_fled` keeps him gone for saves and retries.
+- **Chad:** assets/opening/doctor_chad.glb = mixamo_zombie_prep.py (neighborhood-level branch; tris=20000 tex=2048
+  ntex=2048 fmt=WEBP) + tools/opening/doctor_clips.py (Tripo scared_02 from lilah_original.glb; UAL1 Idle, Crouch,
+  Crouch_Exit, Interact, PickUp_Table, Sprint, Jog; UAL2 Chest_Open, Surprise). Used: doc_Scared, doc_Idle,
+  doc_ChestOpen (backwards = shutting), doc_PickUp, doc_Sprint, doc_Jog (its first frame = the carry fist).
+- **The case:** assets/opening/vaccine_case_open.glb = tools/opening/case_open_for_game.py from the user's
+  Vaccine_Carry_Case.glb (inside kept: foam, four vials; 15k tris, 15 sections). The carry is render/casecarry.js, now the
+  same file as neighborhood-level's (the true-size case: HANDLE 0.022/0.137, size 100, turn 0), and
+  assets/neighborhood/props/hood_case.glb is that branch's new game copy, so the Rig Lab's Case section shows the new case.
+- Not done: no sounds (latch click, footsteps: the sound chat's), no tap-to-skip, story text still has Floor 6's sealed
+  pre-op case as Chapter 1's objective (a different case).
+
 For a NEW chat that redoes the opening (story intro) and the maps (levels). Another chat works in this same folder at
 the same time on animations, weapon grips and the Rig Lab (GRIPS_HANDOFF.md). Read "Sharing the folder" before
 touching anything.

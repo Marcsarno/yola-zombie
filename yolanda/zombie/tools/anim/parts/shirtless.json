@@ -1,0 +1,7 @@
+{
+  "Head": ["Head", "Head"],
+  "ForeArmL": ["Forearm_L", "ForeArm_L"], "HandL": ["Forearm_L", "Hand_L"], "ForeArmR": ["Forearm_R", "ForeArm_R"], "HandR": ["Forearm_R", "Hand_R"],
+  "LowerLegL": ["LowerLeg_L", "Shin_L"], "FootL": ["LowerLeg_L", "Foot_L"], "LowerLegR": ["LowerLeg_R", "Shin_R"], "FootR": ["LowerLeg_R", "Foot_R"],
+  "ArmL": ["Body", "Arm_L"], "ArmR": ["Body", "Arm_R"], "LegL": ["Body", "Thigh_L"], "LegR": ["Body", "Thigh_R"],
+  "Ribcage": ["Body", "Chest"], "Pelvis": ["Body", "Pelvis"]
+}

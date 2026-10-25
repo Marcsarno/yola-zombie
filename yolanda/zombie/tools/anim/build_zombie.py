@@ -37,8 +37,24 @@ bpy.ops.import_scene.gltf(filepath=src_glb)
 for o in list(bpy.data.objects):
     if o.type == 'MESH' and not o.vertex_groups: bpy.data.objects.remove(o, do_unlink=True)  # the stray sphere
 arm = next(o for o in bpy.data.objects if o.type == 'ARMATURE'); arm.name = 'ZOMBIE'
-me = next(o for o in bpy.data.objects if o.type == 'MESH')
+meshes = [o for o in bpy.data.objects if o.type == 'MESH']  # (one mesh, or a pack's cut-apart pieces: unity_to_glb.py parts=)
+me = max(meshes, key=lambda o: len(o.data.vertices))
+MATS = list({m for o in meshes for m in o.data.materials if m})
 for a in list(bpy.data.actions): bpy.data.actions.remove(a)
+# --upright: the chest, neck and head bones stood as Mixamo's reference has them (the chest a little back, the neck and
+# head straight up). The retarget copies bone directions, so a rest neck leaning forward tips every clip's head back by
+# as much (2026-10-21, zombie Remy: his Neck and Head leant 16 deg forward; the user saw his chin up). Only the rest
+# bones move; the skin stays where it is.
+if '--upright' in argv:
+    from mathutils import Vector
+    bpy.context.view_layer.objects.active = arm; bpy.ops.object.mode_set(mode='EDIT')
+    inv = arm.matrix_world.inverted().to_3x3()
+    for n, d in (('Spine2', (0, 0.1, 1)), ('Neck', (0, 0, 1)), ('Head', (0, 0, 1))):
+        eb = arm.data.edit_bones.get('mixamorig:' + n)
+        if not eb: continue
+        L = (eb.tail - eb.head).length; eb.tail = eb.head + (inv @ Vector(d)).normalized() * L
+        print('UPRIGHT', n)
+    bpy.ops.object.mode_set(mode='OBJECT')
 
 # ---- 2. hand weights ----
 if FIX:
@@ -84,10 +100,29 @@ if FIX:
     print('HANDFIX radii', {k: round(v, 3) for k, v in R.items()}, 'reweighted', len(bad))
 
 # ---- 3. texture ----
-for m in me.data.materials:
+for m in MATS:
     if m and m.node_tree:
         for n in m.node_tree.nodes:
             if n.type == 'TEX_IMAGE' and n.image and max(n.image.size) > 1024: n.image.scale(1024, 1024)
+# slimming for store characters (Zombie Male AAB, 2026-10-20): --no-normals drops the normal maps (the Tripo zombies have
+# none, so the game lights them without); --opaque a,b turns those materials' cut-out off (a texture whose alpha is only
+# edge padding then exports as JPEG instead of PNG)
+OPAQUE = argv[argv.index('--opaque') + 1].split(',') if '--opaque' in argv else []
+for m in MATS:
+    if not (m and m.node_tree): continue
+    if '--no-normals' in argv:
+        for n in [n for n in m.node_tree.nodes if n.type == 'NORMAL_MAP']:
+            for l in list(n.inputs['Color'].links): m.node_tree.nodes.remove(l.from_node)
+            m.node_tree.nodes.remove(n)
+    if m.name in OPAQUE:
+        bsdf = next((n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+        if bsdf:
+            for l in list(bsdf.inputs['Alpha'].links): m.node_tree.links.remove(l)
+            bsdf.inputs['Alpha'].default_value = 1.0
+        try: m.blend_method = 'OPAQUE'
+        except Exception: pass
+        for n in m.node_tree.nodes:  # the exporter keeps PNG for an image with alpha: drop the alpha from the copy it writes
+            if n.type == 'TEX_IMAGE' and n.image: n.image.alpha_mode = 'NONE'
 
 # ---- 4. moves ----
 def kaykit_names(src):
@@ -133,7 +168,7 @@ for lib, wanted in by.items(): take(libs[lib], wanted)
 
 # ---- 5. export ----
 ad = arm.animation_data; ad.action = None
-for o in bpy.data.objects: o.select_set(o in (arm, me))
+for o in bpy.data.objects: o.select_set(o is arm or o in meshes)
 bpy.ops.export_scene.gltf(filepath=out_glb, export_format='GLB', use_selection=True, export_animation_mode='ACTIONS', export_force_sampling=True,
-                          export_frame_step=1, export_image_format='JPEG', export_jpeg_quality=88)
+                          export_frame_step=1, export_image_format='WEBP' if '--webp' in argv else 'JPEG', export_jpeg_quality=88)  # (--webp: a Mixamo person's hair keeps its cut-out alpha)
 print('WROTE', out_glb, 'height', round(me.dimensions.z, 3))
