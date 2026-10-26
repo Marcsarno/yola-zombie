@@ -13,6 +13,7 @@ import { caseFit } from './render/casecarry.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { ktxLoader, loadKtxList, ktxPath } from './hood/ktx.js';
 import { Tutorial } from './ui/tutorial.js';
+import { WeaponWheel, WHEEL_SLOW } from './ui/wheel.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
@@ -164,12 +165,17 @@ fx.gore = store.get('gore', true);
 let shakeOn = true;
 const hud = new Hud({ tuning, audio, store, onAction: (a, v) => uiAction(a, v) });
 const input = new Input(document.getElementById('touch'), {
-  swapButton: document.getElementById('swapBtn'),
+  swapButton: null, // (the weapon button is the wheel's: tap = next, hold = choose; ui/wheel.js)
   getPlayerScreen: () => playerScreen,
 });
 // the first-play tutorial: walk, aim and attack, hold (ui/tutorial.js), from the opening's hand-off
 const tutorial = new Tutorial({ store, touch: isMobile });
 let lastOpState = null;
+const wheel = new WeaponWheel(document.getElementById('swapBtn'), { getOwned: () => sim?.player.owned, getCurrent: () => sim?.player.desired });
+// presses made in a frame with no simulation step (slow motion: the wheel's, a finisher's, a perfect dodge's) wait for the
+// next step instead of being lost (2026-10-25: the user, "sometimes you tap it and nothing happens")
+let carry = { swap: 0, use: 0, dodge: 0, pick: null };
+let dodgeSeen = store.get('dodgeSeen', false);
 const unlockAudio = () => { audio.init(); music?.prime?.(); }; // (music.prime: the iPhone lets the gameplay track start later only if it first played inside a tap)
 addEventListener('pointerdown', unlockAudio, { capture: true });
 addEventListener('touchend', unlockAudio, { capture: true }); // (iPhone counts touchend/click, not touchstart, as the audio gesture)
@@ -719,6 +725,7 @@ function runFrame(dt, doRender = true) {
   if (!paused) {
     execNow = execDir.update(dt, tuning, sim.player.execHitIn);
     const k = slowmo.update(dt, sim, !!opening?.active, execNow ? execNow.k : (hood?.cine?.timeScale ?? null)); simDt *= k; // (hood.cine: Chapter 2's cinematic moments hold the world)
+    if (wheel.open) simDt *= WHEEL_SLOW; // (the weapon wheel open: the world crawls while she chooses)
     sim.yolaBoost = execNow ? execNow.boost : hood?.cine?.active ? 1 : slowmo.full ? 1 / Math.max(0.05, k) : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1; // (Witch Time: Yola at full speed)
   }
   // hit-stop: a short dip into slow motion (never a full freeze: a freeze reads as a stutter, and combo hits stacked them)
@@ -729,15 +736,18 @@ function runFrame(dt, doRender = true) {
   // stick directions are screen directions: rotate them by the camera's turn
   let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt) : input.sample(THREE.MathUtils.degToRad(tuning.camYaw));
   if (window.game.inputFilter) inp = window.game.inputFilter(inp, sim); // (Chapter 2's cinematic moments: the controls held, src/hood/cine.js)
+  inp = Object.assign({}, inp, { swapPresses: (inp.swapPresses || 0) + wheel.takeTaps() + carry.swap, usePresses: (inp.usePresses || 0) + carry.use, dodgePresses: (inp.dodgePresses || 0) + carry.dodge, pick: wheel.takePick() || carry.pick });
+  carry = { swap: 0, use: 0, dodge: 0, pick: null };
   let steps = 0;
   while (acc >= STEP) {
     p.px = p.x; p.pz = p.z; p.pyaw = p.aimYaw;
     for (const z of sim.zombies) { z.px = z.x; z.pz = z.z; z.pyaw = z.yaw; }
     for (const L of sim.loose) { L.px = L.x; L.pz = L.z; }
     sim.step(inp);
-    if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
+    if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0, pick: null });
     acc -= STEP; steps++;
   }
+  if (!steps && !paused) carry = { swap: inp.swapPresses, use: inp.usePresses, dodge: inp.dodgePresses, pick: inp.pick };
   const alpha = paused ? 1 : acc / STEP; // frozen frames show the latest step (alpha 0 rolled the pose back a step)
   handleEvents();
   if (steps) window.game.arenaTick?.(steps * STEP);
@@ -749,9 +759,12 @@ function runFrame(dt, doRender = true) {
     // white in the perfect moment; an arrow on it shows which way she'll go
     const b = (window.__dodgeBtn ??= document.getElementById('dodgeBtn')), th = p.threat, dt0 = p.dodgeTh;
     if (b) {
-      b.classList.toggle('show', !p.dead && !opening?.active);
-      b.classList.toggle('open', p.dodgeOpen > 0 && !p.dead); b.classList.toggle('perfect', !!dt0?.perfect && !p.dead);
+      // (2026-10-25, the user: not there "in the beginning until it's time to do the first dodge"): hidden until the first
+      // dodge window ever (store dodgeSeen), with a one-time "Tap to dodge!" on it; a finisher shows it too (FINISH)
       const fin = !!p.finishReady && !p.dead; // (FINISH: a zombie open to a finisher in reach, no dodge window)
+      if (!dodgeSeen && p.dodgeOpen > 0 && !p.dead && !opening?.active) { dodgeSeen = true; store.set('dodgeSeen', true); b.classList.add('show'); tutorial.cue('dodge', b, 'Tap to dodge!', '', 2.6, false); }
+      b.classList.toggle('show', (dodgeSeen || fin) && !p.dead && !opening?.active);
+      b.classList.toggle('open', p.dodgeOpen > 0 && !p.dead); b.classList.toggle('perfect', !!dt0?.perfect && !p.dead);
       if (fin !== b.__fin) { b.__fin = fin; b.classList.toggle('finish', fin); const l = b.querySelector('.lbl'); if (l) l.textContent = fin ? 'Finish' : 'Dodge'; }
       const pr = dt0 ? Math.min(1, Math.max(0, 1 - dt0.eta / DODGE_CUE.lead)) : 0;
       if (Math.abs(pr - (b.__p ?? -1)) > 0.02) { b.style.setProperty('--p', pr.toFixed(3)); b.__p = pr; }
@@ -867,6 +880,7 @@ function runFrame(dt, doRender = true) {
   _v.set(ix, 0, iz).project(camera); playerScreen.feetY = (-_v.y * 0.5 + 0.5) * innerHeight; // (her feet: the tutorial's glow starts below them)
   if (opening && opening.state !== lastOpState) { lastOpState = opening.state; if (lastOpState === 'ROOM1_PLAYABLE' && (!tutorial.done || params.has('tutorial'))) tutorial.start(sim); }
   if (!paused) tutorial.update(dt, sim, playerScreen);
+  if (!paused && !sim.player.dead && sim.player.owned.includes('pistol') && sim.player.owned.length > 1 && !opening?.active) tutorial.cue('wheel', document.getElementById('swapBtn'), 'Tap to swap.', 'Hold to choose a weapon.', 5); // (the first second weapon: the pistol)
 
   if (debugOn) updateDebug(p);
   hud.update(sim, dt);

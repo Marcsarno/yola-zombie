@@ -165,6 +165,8 @@ export class Player {
 
   // A swap press steps the weapon we want along pistol -> shotgun -> axe. Presses before the swap
   // starts keep stepping (two quick presses go two weapons along); the swap goes straight there.
+  // the weapon wheel's pick (ui/wheel.js): that one next, if she carries it
+  requestSwapTo(w) { if (!this.dead && this.owned.includes(w)) this.desired = w; }
   requestSwap() {
     if (this.dead || this.owned.length < 2) return;
     const i = this.owned.indexOf(this.desired);

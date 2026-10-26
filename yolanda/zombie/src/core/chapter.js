@@ -476,7 +476,11 @@ const F7 = buildFloor(7, {
   // (2026-10-18, the user: the IV pole walker, the one in a wheelchair, a surgeon: prop on a group's zombie; core/zombies.js)
   groups: (Z) => [
     // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
-    { id: 'or', zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1.0, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: 'nurse' }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8.0 }] },
+    // (2026-10-25, the user: the first one was "stuck behind the curtain, so I didn't even know it was there" and the others
+    // looked like they were "just waiting"): the patient is the reveal's (gone after it, src/opening/opening.js dropPatient);
+    // the nurse wakes first, out on the open floor in front of where Yola lands (2.9, -8.15), in view on a portrait phone,
+    // turned toward the bay; the other two further back, out of the first view, turned away
+    { id: 'or', zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1.0, yaw: 0.75, wake: 1.8, look: 'patient' }, { x: 0.8, z: -5.6, yaw: -1.9, wake: 1.5, look: 'nurse' }, { x: -2.0, z: -4.2, yaw: -1.2, wake: 5.5 }, { x: 4.6, z: -1.9, yaw: 1.6, wake: 8.0 }] },
     // (2026-10-18, the user's part 3: "more enemies ... treat each room as a small combat arena with its own flavor ... avoid
     // repeating the same crowd in every room". Floor spawns (from: 'floor') break up out of the floor a delay after their
     // group wakes (core/level.js floorStep: never right under Yola), the hole stays.)

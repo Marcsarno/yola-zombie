@@ -8,6 +8,7 @@
 // Only the first time (store 'tutorialDone'); Skip ends it; the pause menu's "Replay tutorial" and ?tutorial=1 run it again.
 // The sticks themselves are unchanged (input.js: a touch anywhere on a half): the glow only shows where a thumb belongs.
 // A computer gets the keys and the mouse in words, no glow. Soft pulses only (no flashing: under 1 a second).
+// cue(): one-time pointers at a button when it first matters (main.js: the first dodge window, the pistol's weapon wheel).
 const CSS = `
 #tut { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; }
 #tut.on { opacity: 1; }
@@ -31,6 +32,11 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
   line-height: 1.25; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, .8), 0 0 2px rgba(0, 0, 0, .9); opacity: 0; transition: opacity .3s; }
 #tut .say.show { opacity: 1; }
 #tut .say small { display: block; font-size: 15px; font-weight: 600; color: #d8f7e2; margin-top: 4px; }
+.tutCue { position: absolute; transform: translate(-50%, -100%); padding: 8px 13px; border-radius: 12px; background: rgba(20, 28, 32, .88); color: #fff;
+  font-weight: 750; font-size: 16px; text-align: center; white-space: nowrap; pointer-events: none; box-shadow: 0 3px 12px rgba(0, 0, 0, .45); z-index: 3; }
+.tutCue small { display: block; font-size: 13px; font-weight: 600; color: #d8f7e2; margin-top: 2px; }
+.cuePulse { animation: cuePulse 1.1s ease-in-out infinite; }
+@keyframes cuePulse { 50% { box-shadow: 0 0 0 9px rgba(84, 226, 132, .5), 0 3px 10px rgba(0, 0, 0, .35); } }
 #tut .skip { position: absolute; top: calc(58px + var(--sat)); right: calc(12px + var(--sar)); pointer-events: auto; padding: 6px 12px; border-radius: 10px;
   background: rgba(20, 28, 32, .6); color: var(--ink2); font-size: 13px; }
 `;
@@ -39,7 +45,7 @@ const WALK_M = 2.0, MIN_SHOW = 1.2, HOLD_MAX = 6;
 
 export class Tutorial {
   constructor({ store, touch }) {
-    this.store = store; this.touch = touch; this.step = null; this.held = [];
+    this.store = store; this.touch = touch; this.step = null; this.held = []; this.cued = new Set();
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     const el = (this.el = document.createElement('div')); el.id = 'tut';
     el.innerHTML = '<div class="zone l"></div><div class="zone r"></div><div class="ghost"><i></i></div><div class="say"></div><button class="skip">Skip</button>';
@@ -104,6 +110,16 @@ export class Tutorial {
     else if (this.step === 'attack' && (!tg || !tg.alive || tg.hitSeq > this.hits0)) this.go(tg && tg.alive ? 'hold' : 'good');
     else if (this.step === 'hold' && (!tg || !tg.alive || tg.hitSeq > this.hits0 || this.t > HOLD_MAX)) this.go('good');
     else if (this.step === 'good' && this.t > 1.6) this.finish();
+  }
+  // a bubble over a button (and a soft pulse round it, pulse = false: the button pulses on its own) for secs, once ever
+  cue(key, el, text, sub = '', secs = 4, pulse = true) {
+    if (!el || this.cued.has(key)) return; this.cued.add(key);
+    if (this.store.get('cue_' + key, false)) return; this.store.set('cue_' + key, true);
+    const r = el.getBoundingClientRect(), c = document.createElement('div'); c.className = 'tutCue';
+    c.innerHTML = text + (sub ? `<small>${sub}</small>` : '');
+    c.style.left = Math.min(Math.max(r.left + r.width / 2, 120), innerWidth - 120) + 'px'; c.style.top = (r.top - 14) + 'px';
+    document.getElementById('hud').appendChild(c); if (pulse) el.classList.add('cuePulse');
+    setTimeout(() => { c.remove(); el.classList.remove('cuePulse'); }, secs * 1000);
   }
   // the others wake as they would have from the start, a beat apart (never all at once)
   release(sim = this.sim) {

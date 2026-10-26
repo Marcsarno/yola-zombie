@@ -78,6 +78,7 @@ export class Sim {
     this.time += dt;
     const p = this.player;
     for (let i = 0; i < input.swapPresses; i++) p.requestSwap();
+    if (input.pick) p.requestSwapTo(input.pick); // (the weapon wheel: ui/wheel.js)
     // the dodge is there only while something dodgeable is coming at her (the user, 2026-10-17): its button shows then.
     // A special enemy's big attack (the guard's leap-slam, the lady's charge) is its own: p.threat drives the cue over the
     // attacker and the button's pulse, and the press dodges the way that gets her clear (autoDodge), not along the stick
@@ -108,6 +109,12 @@ export class Sim {
           }
         }
       }
+    } else if (input.dodgePresses && !p.finishReady) {
+      // (2026-10-25, the user: "tapping it while standing should still dodge"): outside a dodge window too, along the stick,
+      // else away from the nearest zombie close by, else back from the aim (player.js tryDodge); no perfect-dodge reward
+      let mx = input.moveX, mz = input.moveZ;
+      if (Math.hypot(mx, mz) < 0.2) { let near = null, nd = 4; for (const z of this.zombies) { if (!z.alive || z.dormant) continue; const d = Math.hypot(z.x - p.x, z.z - p.z); if (d < nd) { nd = d; near = z; } } if (near) { mx = p.x - near.x; mz = p.z - near.z; } }
+      p.tryDodge(mx, mz, this);
     }
     if (p.dodgeTh) this.lastTh = p.dodgeTh;
     // the same button outside a dodge window, with a zombie open to a finisher in reach: FINISH (core/player.js updateAction)

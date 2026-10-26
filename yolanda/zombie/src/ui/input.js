@@ -42,7 +42,7 @@ export class Input {
     r.addEventListener('pointercancel', (e) => this.up(e));
     r.addEventListener('lostpointercapture', (e) => this.up(e));
     r.addEventListener('contextmenu', (e) => e.preventDefault());
-    this.swapButton.addEventListener('pointerdown', (e) => {
+    if (this.swapButton) this.swapButton.addEventListener('pointerdown', (e) => { // (main.js gives the button to the weapon wheel instead: ui/wheel.js)
       e.preventDefault(); e.stopPropagation();
       if (this.enabled) this.swapPresses++;
       this.swapButton.classList.add('pressed');
