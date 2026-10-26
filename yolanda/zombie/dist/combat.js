@@ -45409,7 +45409,11 @@ void main() {
     // (2026-10-18, the user: the IV pole walker, the one in a wheelchair, a surgeon: prop on a group's zombie; core/zombies.js)
     groups: (Z2) => [
       // the OR after the reveal: the patient at the table and three of the team, waking one at a time (the opening fight)
-      { id: "or", zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1, yaw: 0.75, wake: 1.8, look: "patient" }, { x: OR_TABLE.x - 0.85, z: OR_TABLE.z + 0.6, yaw: 1.2, wake: 3.4, look: "nurse" }, { x: -1.4, z: -5.6, yaw: 0.9, wake: 5.5 }, { x: 5.9, z: -2.9, yaw: -2.4, wake: 8 }] },
+      // (2026-10-25, the user: the first one was "stuck behind the curtain, so I didn't even know it was there" and the others
+      // looked like they were "just waiting"): the patient is the reveal's (gone after it, src/opening/opening.js dropPatient);
+      // the nurse wakes first, out on the open floor in front of where Yola lands (2.9, -8.15), in view on a portrait phone,
+      // turned toward the bay; the other two further back, out of the first view, turned away
+      { id: "or", zombies: [{ x: OR_TABLE.x + 0.75, z: OR_TABLE.z - 1, yaw: 0.75, wake: 1.8, look: "patient" }, { x: 0.8, z: -5.6, yaw: -1.9, wake: 1.5, look: "nurse" }, { x: -2, z: -4.2, yaw: -1.2, wake: 5.5 }, { x: 4.6, z: -1.9, yaw: 1.6, wake: 8 }] },
       // (2026-10-18, the user's part 3: "more enemies ... treat each room as a small combat arena with its own flavor ... avoid
       // repeating the same crowd in every room". Floor spawns (from: 'floor') break up out of the floor a delay after their
       // group wakes (core/level.js floorStep: never right under Yola), the hole stays.)
@@ -46909,11 +46913,11 @@ void main() {
   var _seg = {};
   var _mz = {};
   var _rm = { x: 0, z: 0 };
-  function rootAt(R, t2) {
-    if (t2 <= R[0].t) return R[0].z;
+  function rootAt(R2, t2) {
+    if (t2 <= R2[0].t) return R2[0].z;
     let i = 0;
-    while (i < R.length - 2 && t2 > R[i + 1].t) i++;
-    const a = R[i], b = R[i + 1], u2 = Math.min(1, (t2 - a.t) / (b.t - a.t || 1));
+    while (i < R2.length - 2 && t2 > R2[i + 1].t) i++;
+    const a = R2[i], b = R2[i + 1], u2 = Math.min(1, (t2 - a.t) / (b.t - a.t || 1));
     return a.z + (b.z - a.z) * u2;
   }
   var smooth = (u2) => {
@@ -47100,6 +47104,10 @@ void main() {
     }
     // A swap press steps the weapon we want along pistol -> shotgun -> axe. Presses before the swap
     // starts keep stepping (two quick presses go two weapons along); the swap goes straight there.
+    // the weapon wheel's pick (ui/wheel.js): that one next, if she carries it
+    requestSwapTo(w) {
+      if (!this.dead && this.owned.includes(w)) this.desired = w;
+    }
     requestSwap() {
       if (this.dead || this.owned.length < 2) return;
       const i = this.owned.indexOf(this.desired);
@@ -49271,7 +49279,7 @@ void main() {
   var FLOOD = { yola: 0.68, zombie: 0.55, recharge: 9, panelR: 0.4, panelReach: 1.1, jolt: 30 };
   var MRI = { pull: 14, maxV: 7, stick: 0.75, hurtV: 3, hurtDmg: 30, buttonR: 0.8, pickR: 1.4, gunsOf: ["pistol", "shotgun"] };
   var nextId3 = 1;
-  var inside = (R, x, z, pad = 0) => x > R.minX - pad && x < R.maxX + pad && z > R.minZ - pad && z < R.maxZ + pad;
+  var inside = (R2, x, z, pad = 0) => x > R2.minX - pad && x < R2.maxX + pad && z > R2.minZ - pad && z < R2.maxZ + pad;
   function addCrackedWall(sim2, { x0, z0, x1, z1, t: t2 = CRACK.t, h = CRACK.h }) {
     const horiz = Math.abs(x1 - x0) >= Math.abs(z1 - z0), W3 = sim2.world;
     const b = horiz ? W3.addBox(Math.min(x0, x1), Math.max(x0, x1), z0 - t2 / 2, z0 + t2 / 2, h, "cracked") : W3.addBox(x0 - t2 / 2, x0 + t2 / 2, Math.min(z0, z1), Math.max(z0, z1), h, "cracked");
@@ -50076,14 +50084,14 @@ void main() {
     }
     // ---- Room 1: three static, preplaced standard zombies (staggered wake-ups), the exit to the Supply Hall, the bat ----
     setupRoom1() {
-      const R = ROOM1;
+      const R2 = ROOM1;
       this.flow = { objective: "room1", stage: "exit" };
-      R.zombies.forEach((s, i) => {
+      R2.zombies.forEach((s, i) => {
         const z = this.spawnZombie("NE", { x: s.x, z: s.z, yaw: s.yaw, passive: true, speedMul: 0 });
         z.set(ZS.CHASE);
         z.dormant = { wake: s.wake, speedMul: 0.85 + 0.1 * i };
       });
-      this.pickups.push({ id: "bat", weapon: BAT, x: R.bat.x, z: R.bat.z, r: 1.35 });
+      this.pickups.push({ id: "bat", weapon: BAT, x: R2.bat.x, z: R2.bat.z, r: 1.35 });
     }
     // objective chain: OR -> Supply Hall (bat) -> Waiting/Reception
     updateFlow() {
@@ -50120,6 +50128,7 @@ void main() {
       this.time += dt2;
       const p = this.player;
       for (let i = 0; i < input2.swapPresses; i++) p.requestSwap();
+      if (input2.pick) p.requestSwapTo(input2.pick);
       const th = this.dodgeThreat();
       p.threat = th && th.special ? th : null;
       p.dodgeTh = th && th.open ? th : null;
@@ -50147,6 +50156,24 @@ void main() {
             }
           }
         }
+      } else if (input2.dodgePresses && !p.finishReady) {
+        let mx = input2.moveX, mz = input2.moveZ;
+        if (Math.hypot(mx, mz) < 0.2) {
+          let near = null, nd = 4;
+          for (const z of this.zombies) {
+            if (!z.alive || z.dormant) continue;
+            const d = Math.hypot(z.x - p.x, z.z - p.z);
+            if (d < nd) {
+              nd = d;
+              near = z;
+            }
+          }
+          if (near) {
+            mx = p.x - near.x;
+            mz = p.z - near.z;
+          }
+        }
+        p.tryDodge(mx, mz, this);
       }
       if (p.dodgeTh) this.lastTh = p.dodgeTh;
       p.finishReady = !p.dodgeTh && p.dodgeOpen <= 0 && !!this.execTarget(p, true);
@@ -51301,10 +51328,10 @@ void main() {
   var _hq = new Quaternion();
   var _w = new Quaternion();
   var _p = new Quaternion();
-  function worldRot(bone, R) {
+  function worldRot(bone, R2) {
     bone.getWorldQuaternion(_w);
     bone.parent.getWorldQuaternion(_p);
-    bone.quaternion.copy(_p.invert().multiply(R).multiply(_w));
+    bone.quaternion.copy(_p.invert().multiply(R2).multiply(_w));
     bone.updateMatrixWorld(true);
   }
   function ikArm(up, lo, hand, target, w) {
@@ -52023,10 +52050,10 @@ void main() {
   var _q23 = new Quaternion();
   var _q33 = new Quaternion();
   var clamp4 = (x, a, b) => x < a ? a : x > b ? b : x;
-  function worldRot2(bone, R) {
+  function worldRot2(bone, R2) {
     bone.getWorldQuaternion(_q23);
     bone.parent.getWorldQuaternion(_q33);
-    bone.quaternion.copy(_q33.invert().multiply(R).multiply(_q23));
+    bone.quaternion.copy(_q33.invert().multiply(R2).multiply(_q23));
     bone.updateMatrixWorld(true);
   }
   var perp = (out, v, n2) => out.copy(v).addScaledVector(n2, -v.dot(n2));
@@ -52261,13 +52288,13 @@ void main() {
   var FB1 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   var FB2 = { c: new Vector3(), a: new Vector3(), k: new Vector3() };
   function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
-    const R = fistFrame(bones, "Right", FB1);
-    if (!R) return false;
+    const R2 = fistFrame(bones, "Right", FB1);
+    if (!R2) return false;
     const L2 = fistFrame(bones, "Left", FB2);
-    if (!L2 || def.hands === "one" || R.c.distanceTo(L2.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
-    const d = new Vector3().subVectors(L2.c, R.c).normalize();
-    if (d.dot(_a4.copy(R.a).add(L2.a)) < 0) d.negate();
-    const low = R.c.dot(d) < L2.c.dot(d) ? R : L2, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
+    if (!L2 || def.hands === "one" || R2.c.distanceTo(L2.c) > apart * k) return placeOneHanded(bones, "Right", o, def, fit, {}, k);
+    const d = new Vector3().subVectors(L2.c, R2.c).normalize();
+    if (d.dot(_a4.copy(R2.a).add(L2.a)) < 0) d.negate();
+    const low = R2.c.dot(d) < L2.c.dot(d) ? R2 : L2, kn = low.k.clone().addScaledVector(d, -low.k.dot(d)).normalize();
     const s = new Vector3(...def.shaft_axis).normalize(), r = new Vector3(...def.ref_axis);
     r.addScaledVector(s, -r.dot(s)).normalize();
     _m13.makeBasis(s, r, new Vector3().crossVectors(s, r));
@@ -52367,11 +52394,11 @@ void main() {
   function reachShoulder(bones, side, target, maxDeg = 15) {
     const cl = bones[side + "Shoulder"], up = bones[side + "Arm"], lo = bones[side + "ForeArm"], hand = bones[side + "Hand"], mid = bones[side + "HandMiddle1"];
     if (!cl || !up || !lo || !hand || !mid) return;
-    const R = _rc, c = cl.getWorldPosition(R[0]), a = up.getWorldPosition(R[1]), e = lo.getWorldPosition(R[2]), h = hand.getWorldPosition(R[3]);
-    const g2 = mid.getWorldPosition(R[4]).add(h).multiplyScalar(0.5);
+    const R2 = _rc, c = cl.getWorldPosition(R2[0]), a = up.getWorldPosition(R2[1]), e = lo.getWorldPosition(R2[2]), h = hand.getWorldPosition(R2[3]);
+    const g2 = mid.getWorldPosition(R2[4]).add(h).multiplyScalar(0.5);
     const need = a.distanceTo(target) - (a.distanceTo(e) + e.distanceTo(h) + h.distanceTo(g2)) * 0.97;
     if (need <= 0) return;
-    const ca = R[1].sub(c), ct = R[5].copy(target).sub(c), axis = new Vector3().crossVectors(ca, ct);
+    const ca = R2[1].sub(c), ct = R2[5].copy(target).sub(c), axis = new Vector3().crossVectors(ca, ct);
     if (axis.lengthSq() < 1e-10) return;
     _rq.setFromAxisAngle(axis.normalize(), Math.min(need / ca.length(), ca.angleTo(ct), maxDeg * Math.PI / 180));
     cl.getWorldQuaternion(_rq2);
@@ -52695,10 +52722,10 @@ void main() {
     const face = sk && bones.Head ? new Vector3(0, 0, 1).applyQuaternion(bindQ(bones.Head).invert()) : null;
     const F = bones.RightHandMiddle1.position.clone(), len = F.length();
     F.normalize();
-    const R = bones.RightHandIndex1.position.clone().sub(bones.RightHandPinky1.position);
-    R.addScaledVector(F, -R.dot(F)).normalize();
-    const P2 = new Vector3().crossVectors(R, F).normalize();
-    r = { bones, wrist, face, F, R, P: P2, len, fist: fist.filter(([b]) => /Right/.test(b.name)) };
+    const R2 = bones.RightHandIndex1.position.clone().sub(bones.RightHandPinky1.position);
+    R2.addScaledVector(F, -R2.dot(F)).normalize();
+    const P2 = new Vector3().crossVectors(R2, F).normalize();
+    r = { bones, wrist, face, F, R: R2, P: P2, len, fist: fist.filter(([b]) => /Right/.test(b.name)) };
     RIGS.set(model, r);
     return r;
   }
@@ -53432,7 +53459,7 @@ void main() {
     // Measure each locomotion clip on this skeleton: planted-foot speed (m/s, = travel speed with no
     // skating), stride per cycle, and the phase at which the left foot reaches furthest along travel.
     measureGaits(suf = "") {
-      const out = {}, L2 = new Vector3(), LT = new Vector3(), R = new Vector3(), RT2 = new Vector3();
+      const out = {}, L2 = new Vector3(), LT = new Vector3(), R2 = new Vector3(), RT2 = new Vector3();
       const all = Object.values(this.actions);
       this.container.rotation.y = 0;
       this.outer.position.set(0, 0, 0);
@@ -53448,9 +53475,9 @@ void main() {
           this.outer.updateMatrixWorld(true);
           this.worldPos("LeftFoot", L2);
           this.worldPos("LeftToeBase", LT);
-          this.worldPos("RightFoot", R);
+          this.worldPos("RightFoot", R2);
           this.worldPos("RightToeBase", RT2);
-          rows.push({ L: L2.x * dx + L2.z * dz, R: R.x * dx + R.z * dz, ly: Math.min(L2.y, LT.y), ry: Math.min(R.y, RT2.y) });
+          rows.push({ L: L2.x * dx + L2.z * dz, R: R2.x * dx + R2.z * dz, ly: Math.min(L2.y, LT.y), ry: Math.min(R2.y, RT2.y) });
         }
         const vel = [];
         for (const [p, y2] of [["L", "ly"], ["R", "ry"]]) {
@@ -53572,17 +53599,17 @@ void main() {
       const uP = uP0 / un, uS = uS0 / un, uA = uA0 / un, uF = uF0 / un, uW = uW0 / un, uC = uC0 / un;
       let sW = 0, turn = 0, prevW = 0;
       const A2 = s.action === "swing" ? s.atk || (s.ground ? groundAttack(s.equipped) : attacksOf(s.equipped)[s.combo]) : null;
-      let swingActW = -1, R = this.recCur;
+      let swingActW = -1, R2 = this.recCur;
       if (A2) {
         const t2 = s.swingT, tEnd = attackEnd(A2), act = this.act(A2.clip);
         if (this.swingId !== s.swingId) {
-          this.fromRec = !!(R && R.w > 0.02);
+          this.fromRec = !!(R2 && R2.w > 0.02);
           if (this.fromRec) {
-            this.prevSwing = R.act;
-            this.prevSwingW = R.w;
+            this.prevSwing = R2.act;
+            this.prevSwingW = R2.w;
             this.prevSwingName = this.swingName;
             this.prevSwingHand = this.swingHand;
-            this.recCur = R = null;
+            this.recCur = R2 = null;
           } else if (this.swingAct && this.swingAct !== act) {
             this.prevSwing = this.swingAct;
             this.prevSwingW = this.swingW || 1;
@@ -53613,12 +53640,12 @@ void main() {
         const out = inRec || t2 <= tEnd ? 1 : smooth2(clamp6(1 - (t2 - tEnd) / (A2.duration - tEnd), 0, 1));
         sW = ramp * out;
         if (inRec) {
-          if (!R || R.id !== s.swingId) {
+          if (!R2 || R2.id !== s.swingId) {
             const c = rec.getClip(), t0 = Math.min(...c.tracks.map((q) => q.times[0]));
-            this.recCur = R = { act: rec, t0, dur: c.duration - t0, id: s.swingId, t: 0, w: 0 };
+            this.recCur = R2 = { act: rec, t0, dur: c.duration - t0, id: s.swingId, t: 0, w: 0 };
           }
-          R.t = t2 - tEnd;
-          R.w = sW;
+          R2.t = t2 - tEnd;
+          R2.w = sW;
           swingActW = 0;
         }
         turn = A2.yawOffset * smooth2(clamp6(t2 / (A2.turnIn || 0.1), 0, 1)) * out;
@@ -53640,14 +53667,14 @@ void main() {
           this.prevSwing.setEffectiveWeight(0);
           this.prevSwing = null;
         }
-        if (R) {
-          R.t += dt2;
+        if (R2) {
+          R2.t += dt2;
           const busy = s.action !== "ready" || Math.hypot(s.vx, s.vz) > 0.35;
-          R.w = Math.min(busy ? R.w - dt2 / 0.15 : R.w, smooth2(clamp6((R.dur - R.t) / 0.25, 0, 1)));
-          if (R.w <= 1e-3 || R.t >= R.dur) {
-            R.act.setEffectiveWeight(0);
-            this.recCur = R = null;
-          } else sW = R.w;
+          R2.w = Math.min(busy ? R2.w - dt2 / 0.15 : R2.w, smooth2(clamp6((R2.dur - R2.t) / 0.25, 0, 1)));
+          if (R2.w <= 1e-3 || R2.t >= R2.dur) {
+            R2.act.setEffectiveWeight(0);
+            this.recCur = R2 = null;
+          } else sW = R2.w;
         }
       }
       this.swingW = sW;
@@ -53655,12 +53682,12 @@ void main() {
       if (A2 && this.prevTurn == null && s.swingT < 0.02 && s.combo > 0) this.prevTurn = this.lastTurn || 0;
       for (const n2 of this.meleeClips) {
         const a = this.act(n2);
-        if (a !== this.swingAct && a !== this.prevSwing && a !== R?.act) a.setEffectiveWeight(0);
+        if (a !== this.swingAct && a !== this.prevSwing && a !== R2?.act) a.setEffectiveWeight(0);
       }
       if (A2) this.swingAct.setEffectiveWeight(swingActW >= 0 ? swingActW : sW);
-      if (R) {
-        R.act.time = R.t0 + Math.min(R.t, R.dur - 1e-3) + (this.rcJit ^= 1) * 1e-6;
-        R.act.setEffectiveWeight(R.w);
+      if (R2) {
+        R2.act.time = R2.t0 + Math.min(R2.t, R2.dur - 1e-3) + (this.rcJit ^= 1) * 1e-6;
+        R2.act.setEffectiveWeight(R2.w);
       }
       this.container.rotation.y = this.yaw + turn;
       let rW = 0;
@@ -53848,14 +53875,14 @@ void main() {
     // the hold is render/radiohold.js (the Rig Lab's Radio section uses the same), with this character's settings
     // (radioFit: assets/hold/radio_hold.json, the Lab's save), eased in and out over whatever the body plays
     radioArm(dt2) {
-      const R = this.rad || (this.rad = { w: 0, talk: 0 }), on2 = !!this.radioMode;
-      R.w = clamp6(R.w + (on2 ? dt2 / 0.35 : -dt2 / 0.4), 0, 1);
-      R.talk = clamp6(R.talk + (this.radioMode === "talk" ? dt2 / 0.3 : -dt2 / 0.4), 0, 1);
-      if (R.w <= 1e-3 || !this.bones.RightHandMiddle1) return;
+      const R2 = this.rad || (this.rad = { w: 0, talk: 0 }), on2 = !!this.radioMode;
+      R2.w = clamp6(R2.w + (on2 ? dt2 / 0.35 : -dt2 / 0.4), 0, 1);
+      R2.talk = clamp6(R2.talk + (this.radioMode === "talk" ? dt2 / 0.3 : -dt2 / 0.4), 0, 1);
+      if (R2.w <= 1e-3 || !this.bones.RightHandMiddle1) return;
       this.radRig || (this.radRig = radioRig(this.model, this.bones, this.fist || []));
       this.container.getWorldQuaternion(_q9);
       const fwd = _v6.set(0, 0, 1).applyQuaternion(_q9).setY(0).normalize();
-      radioPose(this.radRig, this.radioFit || (this.radioFit = radioFit()), smooth2(R.w), smooth2(R.talk), fwd, this.H);
+      radioPose(this.radRig, this.radioFit || (this.radioFit = radioFit()), smooth2(R2.w), smooth2(R2.talk), fwd, this.H);
     }
     radioPlace(obj) {
       radioPlace(this.radRig || (this.radRig = radioRig(this.model, this.bones, this.fist || [])), obj, this.radioFit || (this.radioFit = radioFit()));
@@ -55291,20 +55318,20 @@ void main() {
     // a cut on a zombie without a cut model (the guard's arms at the shoulder, his head; bakeChunks): the piece baked from
     // its own vertices and thrown, the limb's bone collapsed into its joint from now on (it vanishes), blood at the stump
     cutByWeights(part, z) {
-      const R = CUT_ROOTS[part];
-      if (!R || !this.bones[R[0]]) return;
+      const R2 = CUT_ROOTS[part];
+      if (!R2 || !this.bones[R2[0]]) return;
       this.container.updateMatrixWorld(true);
-      const a = this.bones[R[0]].getWorldPosition(new Vector3()), b = (this.bones[R[1]] || this.bones[R[0]]).getWorldPosition(new Vector3());
+      const a = this.bones[R2[0]].getWorldPosition(new Vector3()), b = (this.bones[R2[1]] || this.bones[R2[0]]).getWorldPosition(new Vector3());
       if (b.distanceTo(a) < 0.02) b.y += 0.15;
       const big = z.kind === "guard" && z.hitStyle === "tear" && part.startsWith("Forearm");
       const bd = new Vector3(z.hitDirX, 0, z.hitDirZ);
-      this.throwChunks({ [part]: { a, b, r: R[2], bone: R[0] } }, { [R[0]]: part }, z, isMelee(z.hitKind) ? 4.5 : 3, big ? () => bd.clone().multiplyScalar(7.5 + Math.random() * 2).add(new Vector3((Math.random() - 0.5) * 3, 3.2 + Math.random() * 1.5, (Math.random() - 0.5) * 3)) : null);
+      this.throwChunks({ [part]: { a, b, r: R2[2], bone: R2[0] } }, { [R2[0]]: part }, z, isMelee(z.hitKind) ? 4.5 : 3, big ? () => bd.clone().multiplyScalar(7.5 + Math.random() * 2).add(new Vector3((Math.random() - 0.5) * 3, 3.2 + Math.random() * 1.5, (Math.random() - 0.5) * 3)) : null);
       if (big && _ZombieView.fx) {
         const fx3 = _ZombieView.fx, sh = this.bones[CUT_STUMP[part]]?.getWorldPosition(new Vector3()) || a;
         for (let i = 0; i < 4; i++) fx3.bloodSpray(sh.x, sh.y, sh.z, bd.x * 0.6 + (Math.random() - 0.5) * 0.6, 0.9, bd.z * 0.6 + (Math.random() - 0.5) * 0.6, 26, 4.2);
         fx3.bloodPool(sh.x + bd.x * 1.2, sh.z + bd.z * 1.2, 1.4);
       }
-      (this.collapsed || (this.collapsed = [])).push(this.bones[R[0]]);
+      (this.collapsed || (this.collapsed = [])).push(this.bones[R2[0]]);
       const s = this.bones[CUT_STUMP[part]]?.getWorldPosition(new Vector3()) || a, fx2 = _ZombieView.fx, dir = new Vector3(z.hitDirX, 0, z.hitDirZ);
       if (fx2) {
         fx2.bloodSpray(s.x, s.y, s.z, dir.x * 0.8, 0.5, dir.z * 0.8, part === "Head" ? 34 : 26, 3.4);
@@ -55635,7 +55662,7 @@ void main() {
       U2.normalize();
       const F = new Vector3(0, 0, 1).applyQuaternion(this.model.getWorldQuaternion(new Quaternion()));
       F.addScaledVector(U2, -F.dot(U2)).normalize();
-      const R = new Vector3().crossVectors(U2, F), [up, fw, sp] = _ZombieView.EYE_AT[this.type] || _ZombieView.EYE_AT[0], inv = RH.clone().invert();
+      const R2 = new Vector3().crossVectors(U2, F), [up, fw, sp] = _ZombieView.EYE_AT[this.type] || _ZombieView.EYE_AT[0], inv = RH.clone().invert();
       const ws = hb.getWorldScale(new Vector3()).x || 1;
       if (!_ZombieView.eyeTex) {
         const c = document.createElement("canvas");
@@ -55669,7 +55696,7 @@ void main() {
         return top.reduce((a, b) => a + b, 0) / top.length;
       };
       this.eyes = [-1, 1].map((s) => {
-        const E0 = H5.clone().addScaledVector(U2, up * L2).addScaledVector(R, s * sp * L2), f = onFace(E0);
+        const E0 = H5.clone().addScaledVector(U2, up * L2).addScaledVector(R2, s * sp * L2), f = onFace(E0);
         const e = new Sprite(mat2);
         e.position.copy(E0.addScaledVector(F, f != null ? f + 4e-3 : fw * L2).applyMatrix4(inv));
         e.scale.setScalar(_ZombieView.eyeCfg.size / ws);
@@ -55769,8 +55796,8 @@ void main() {
           if (this.rimW > 0.01) for (const [s, side] of [[1, "Left"], [-1, "Right"]]) {
             const ph = (this.wheel / CHAIR.rimArc + (s < 0 ? 0.08 : 0)) % 1, push = ph < 0.62, k = push ? ph / 0.62 : (ph - 0.62) / 0.38;
             const ang2 = push ? -0.75 + 1.5 * k : 0.75 - 1.5 * k, lift = push ? 0 : Math.sin(k * Math.PI) * 0.07;
-            const R = CHAIR.rimR + (push ? 0 : 0.03), cx = o.position.x + f.x * CHAIR.rim[0] + l.x * s * CHAIR.rim[2], cz = o.position.z + f.z * CHAIR.rim[0] + l.z * s * CHAIR.rim[2];
-            _v43.set(cx + f.x * Math.sin(ang2) * R + l.x * s * lift * 0.5, CHAIR.rim[1] + Math.cos(ang2) * R + lift, cz + f.z * Math.sin(ang2) * R + l.z * s * lift * 0.5);
+            const R2 = CHAIR.rimR + (push ? 0 : 0.03), cx = o.position.x + f.x * CHAIR.rim[0] + l.x * s * CHAIR.rim[2], cz = o.position.z + f.z * CHAIR.rim[0] + l.z * s * CHAIR.rim[2];
+            _v43.set(cx + f.x * Math.sin(ang2) * R2 + l.x * s * lift * 0.5, CHAIR.rim[1] + Math.cos(ang2) * R2 + lift, cz + f.z * Math.sin(ang2) * R2 + l.z * s * lift * 0.5);
             if (B2[side + "Arm"]) ikArm(B2[side + "Arm"], B2[side + "ForeArm"], B2[side + "Hand"], _v43, this.rimW);
           }
         }
@@ -56235,13 +56262,13 @@ void main() {
     // the last heave: his shield arm tears off at the shoulder and stays as it was, gripping the shield (baked from his pose
     // now: the hand is on the grip), blood from the shoulder as he reels back off it, and from the arm's torn end
     tearOff(z) {
-      const R = CUT_ROOTS.Forearm_L, B2 = this.bones;
-      if (!B2[R[0]]) return;
+      const R2 = CUT_ROOTS.Forearm_L, B2 = this.bones;
+      if (!B2[R2[0]]) return;
       this.container.updateMatrixWorld(true);
-      const a = B2[R[0]].getWorldPosition(new Vector3()), b = B2[R[1]].getWorldPosition(new Vector3());
+      const a = B2[R2[0]].getWorldPosition(new Vector3()), b = B2[R2[1]].getWorldPosition(new Vector3());
       this.plantedP.arm = this.buildLimpArm();
       this.plantedP.armL = a.distanceTo(b);
-      (this.collapsed || (this.collapsed = [])).push(B2[R[0]]);
+      (this.collapsed || (this.collapsed = [])).push(B2[R2[0]]);
       const s = B2.LeftShoulder?.getWorldPosition(new Vector3()) || a, fx2 = _ZombieView.fx, back = new Vector3(z.hitDirX, 0, z.hitDirZ);
       if (fx2) {
         fx2.bloodSpray(s.x, s.y, s.z, -back.x * 0.6, 0.8, -back.z * 0.6, 40, 3.8);
@@ -56325,12 +56352,12 @@ void main() {
     // gravity and by his fist's motion (a few substeps a frame, the elbow's travel shared out over them), each kept inside its
     // joint's limits. An elbow that slams straight at speed (the whip at the end of a swing) flicks blood off the torn end
     stepLimp(dt2) {
-      const R = this.clubArm, A2 = R.userData.limp;
+      const R2 = this.clubArm, A2 = R2.userData.limp;
       if (!A2 || dt2 <= 0) return;
-      R.updateMatrixWorld(true);
-      R.getWorldQuaternion(_lq);
+      R2.updateMatrixWorld(true);
+      R2.getWorldQuaternion(_lq);
       _lqi.copy(_lq).invert();
-      const E2 = A2.elbow.getWorldPosition(_lE), Wr = R.getWorldPosition(_lw.set(0, 0, 0)).clone(), Lc = A2.Lu * LIMP.L;
+      const E2 = A2.elbow.getWorldPosition(_lE), Wr = R2.getWorldPosition(_lw.set(0, 0, 0)).clone(), Lc = A2.Lu * LIMP.L;
       if (!A2.P) {
         A2.P = E2.clone().add(limpDir(A2.psi, A2.th, _lv).applyQuaternion(_lq).multiplyScalar(Lc));
         A2.Pp = A2.P.clone();
@@ -56378,15 +56405,15 @@ void main() {
     }
     // his torn arm comes apart on a blow (core/zombies.js guardClubBreak): its three pieces thrown on along the swing, blood
     breakClub(z) {
-      const R = this.clubArm, A2 = R?.userData.limp;
+      const R2 = this.clubArm, A2 = R2?.userData.limp;
       if (!A2) return;
       this.container.updateMatrixWorld(true);
       const P2 = _ZombieView.physics, fx2 = _ZombieView.fx, dir = new Vector3(Math.sin(z.yaw), 0, Math.cos(z.yaw)), wp = (o, v) => o.localToWorld(v);
-      const W3 = wp(R, new Vector3()), E2 = A2.elbow.getWorldPosition(new Vector3()), S3 = wp(A2.elbow, new Vector3(0, A2.Lu, 0)), T3 = wp(A2.wrist, A2.h0.clone().multiplyScalar(0.16));
+      const W3 = wp(R2, new Vector3()), E2 = A2.elbow.getWorldPosition(new Vector3()), S3 = wp(A2.elbow, new Vector3(0, A2.Lu, 0)), T3 = wp(A2.wrist, A2.h0.clone().multiplyScalar(0.16));
       for (const [k, a, b, r] of [["upper", E2, S3, 0.07], ["fore", W3, E2, 0.06], ["hand", W3, T3, 0.05]]) {
         const obj = A2.parts[k];
         if (!obj) continue;
-        const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(R.getWorldQuaternion(_bq)), new Quaternion());
+        const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(R2.getWorldQuaternion(_bq)), new Quaternion());
         const G6 = new Group();
         G6.position.copy(a).add(b).multiplyScalar(0.5);
         G6.quaternion.copy(q0);
@@ -56403,7 +56430,7 @@ void main() {
         fx2.burst(E2.x, E2.y, E2.z, 12, 5903380, 3.2, 1, 0.6, dir.x, dir.z);
         fx2.bloodPool(E2.x + dir.x * 0.5, E2.z + dir.z * 0.5, 0.9);
       }
-      R.parent?.remove(R);
+      R2.parent?.remove(R2);
       this.clubArm = null;
     }
     // the guard's stand-in shield: in front of him at his left hand, upright and square to his facing (dropped when he dies)
@@ -56431,14 +56458,14 @@ void main() {
     // Ragdolled: the skeleton follows the physics parts. The body leaves the physics world once the
     // corpse starts sinking (the last pose is kept and sinks with the model).
     updateRagdoll(z, dt2 = 1 / 60) {
-      const R = this.rag;
+      const R2 = this.rag;
       this.bleeding(dt2);
-      if (!R.frozen) {
-        const st = R.P.read(R.id, R.states);
-        if (st) R.driver.apply(st);
+      if (!R2.frozen) {
+        const st = R2.P.read(R2.id, R2.states);
+        if (st) R2.driver.apply(st);
         if (z.state === "dead" && z.corpseT > 4.5) {
-          R.P.remove(R.id);
-          R.frozen = true;
+          R2.P.remove(R2.id);
+          R2.frozen = true;
         }
         const pel = st && st[0];
         if (pel) this.blob.position.set(pel.pos.x, 0.012, pel.pos.z);
@@ -56519,23 +56546,23 @@ void main() {
     }
     // a limb or the head off (Forearm_L / Forearm_R / LowerLeg_L / LowerLeg_R / Head), thrown along (dx, dz)
     sever(part, dx, dz, speed = 3) {
-      const R = CUT_ROOTS[part], B2 = this.bones;
-      if (!R || !B2[R[0]] || this.cut.has(part)) return false;
+      const R2 = CUT_ROOTS[part], B2 = this.bones;
+      if (!R2 || !B2[R2[0]] || this.cut.has(part)) return false;
       this.cut.add(part);
       this.model.updateMatrixWorld(true);
-      const a = B2[R[0]].getWorldPosition(new Vector3()), b = this.end(R[0], R[1]);
-      const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(B2[R[0]].getWorldQuaternion(_bq)), new Quaternion());
+      const a = B2[R2[0]].getWorldPosition(new Vector3()), b = this.end(R2[0], R2[1]);
+      const q0 = frameQuat(b.clone().sub(a), new Vector3(1, 0, 0).applyQuaternion(B2[R2[0]].getWorldQuaternion(_bq)), new Quaternion());
       const F = { c: a.clone().add(b).multiplyScalar(0.5), q0, qi: q0.clone().invert() };
-      const obj = bakeChunks(this.model, { [R[0]]: part }, { [part]: F })[part];
+      const obj = bakeChunks(this.model, { [R2[0]]: part }, { [part]: F })[part];
       if (obj) {
         meaty(obj);
         obj.position.copy(F.c);
         obj.quaternion.copy(q0);
         ZombieView.scene.add(obj);
         const vel = new Vector3(dx, 0, dz).normalize().multiplyScalar(speed).add(new Vector3(0, 2.2 + Math.random() * 1.2, 0));
-        this.addPiece(obj, a, b, R[2] * (this.height / 1.7), vel, q0);
+        this.addPiece(obj, a, b, R2[2] * (this.height / 1.7), vel, q0);
       }
-      this.wound(R[0], CUT_STUMP[part], R[2]);
+      this.wound(R2[0], CUT_STUMP[part], R2[2]);
       const s = B2[CUT_STUMP[part]].getWorldPosition(new Vector3()), fx2 = ZombieView.fx;
       if (fx2) {
         fx2.bloodSpray(s.x, s.y, s.z, dx * 0.8, 0.5, dz * 0.8, part === "Head" ? 34 : 26, 3.4);
@@ -56836,9 +56863,9 @@ void main() {
     A2.duration = end + A2.recover;
     A2.swapPoint = end * 0.85;
     A2.peak = peak;
-    const z0 = rows[0].hips.z, R = rows.map((r) => ({ t: attackTime(A2, r.f), z: Math.max(0, r.hips.z - z0) }));
-    for (let i = 1; i < R.length; i++) R[i].z = Math.max(R[i].z, R[i - 1].z);
-    A2.ROOT = R[R.length - 1].z > 0.3 ? R : null;
+    const z0 = rows[0].hips.z, R2 = rows.map((r) => ({ t: attackTime(A2, r.f), z: Math.max(0, r.hips.z - z0) }));
+    for (let i = 1; i < R2.length; i++) R2[i].z = Math.max(R2[i].z, R2[i - 1].z);
+    A2.ROOT = R2[R2.length - 1].z > 0.3 ? R2 : null;
     return split ? splitCombo(A2, splitRecover) : [A2];
   }
   function splitCombo(A2, splitRecover = 0.4) {
@@ -56859,8 +56886,8 @@ void main() {
       S3.swapPoint = end * 0.85;
       S3.chainFrom = S3.last ? 9 : end;
       if (A2.ROOT) {
-        const R = A2.ROOT.filter((q) => q.t >= t0 - 1e-6 && q.t <= t1 + 1e-6), z0 = R[0]?.z || 0;
-        S3.ROOT = R.length > 1 && R[R.length - 1].z - z0 > 0.05 ? R.map((q) => ({ t: q.t - t0, z: q.z - z0 })) : null;
+        const R2 = A2.ROOT.filter((q) => q.t >= t0 - 1e-6 && q.t <= t1 + 1e-6), z0 = R2[0]?.z || 0;
+        S3.ROOT = R2.length > 1 && R2[R2.length - 1].z - z0 > 0.05 ? R2.map((q) => ({ t: q.t - t0, z: q.z - z0 })) : null;
       }
       return S3;
     });
@@ -57182,19 +57209,19 @@ void main() {
     return (s - 1) / 2147483646;
   };
   function shapeOf(seed) {
-    const R = rnd(Math.floor(seed * 1e9) + 7), blobs = [], fingers = [];
+    const R2 = rnd(Math.floor(seed * 1e9) + 7), blobs = [], fingers = [];
     for (let i = 0; i < 26; i++) {
-      const a = R() * Math.PI * 2, d = Math.sqrt(R()) * 46;
-      blobs.push({ x: 112 + Math.cos(a) * d * 1.45 + 10, y: 128 + Math.sin(a) * d * 0.85, r: 14 + R() * 26 });
+      const a = R2() * Math.PI * 2, d = Math.sqrt(R2()) * 46;
+      blobs.push({ x: 112 + Math.cos(a) * d * 1.45 + 10, y: 128 + Math.sin(a) * d * 0.85, r: 14 + R2() * 26 });
     }
     for (let i = 0; i < 9; i++) {
-      const a = (R() - 0.5) * (i < 6 ? 1.3 : 3.6), L2 = 40 + R() * 70, x0 = 128 + Math.cos(a) * 30, y0 = 128 + Math.sin(a) * 22;
-      fingers.push({ x0, y0, x1: x0 + Math.cos(a) * L2, y1: y0 + Math.sin(a) * L2 * 0.8, w: 7 + R() * 9 });
+      const a = (R2() - 0.5) * (i < 6 ? 1.3 : 3.6), L2 = 40 + R2() * 70, x0 = 128 + Math.cos(a) * 30, y0 = 128 + Math.sin(a) * 22;
+      fingers.push({ x0, y0, x1: x0 + Math.cos(a) * L2, y1: y0 + Math.sin(a) * L2 * 0.8, w: 7 + R2() * 9 });
     }
     const drops = [];
     for (let i = 0; i < 22; i++) {
-      const a = (R() - 0.5) * 2.4, d = 70 + R() * 55;
-      drops.push({ x: 128 + Math.cos(a) * d, y: 128 + Math.sin(a) * d * 0.8, r: 2 + R() * 6 });
+      const a = (R2() - 0.5) * 2.4, d = 70 + R2() * 55;
+      drops.push({ x: 128 + Math.cos(a) * d, y: 128 + Math.sin(a) * d * 0.8, r: 2 + R2() * 6 });
     }
     return { blobs, fingers, drops };
   }
@@ -57231,7 +57258,7 @@ void main() {
     return t2;
   }
   function acidTex(S3, seed) {
-    const R = rnd(Math.floor(seed * 1e9) + 99), c = document.createElement("canvas");
+    const R2 = rnd(Math.floor(seed * 1e9) + 99), c = document.createElement("canvas");
     c.width = c.height = 256;
     const g2 = c.getContext("2d");
     const gr = g2.createRadialGradient(120, 128, 4, 128, 128, 160);
@@ -57243,29 +57270,29 @@ void main() {
     g2.fillRect(0, 0, 256, 256);
     g2.filter = "blur(7px)";
     for (let i = 0; i < 40; i++) {
-      const dark = R() < 0.55;
-      g2.fillStyle = dark ? `rgba(26,36,4,${0.2 + R() * 0.25})` : `rgba(196,226,80,${0.12 + R() * 0.18})`;
+      const dark = R2() < 0.55;
+      g2.fillStyle = dark ? `rgba(26,36,4,${0.2 + R2() * 0.25})` : `rgba(196,226,80,${0.12 + R2() * 0.18})`;
       g2.beginPath();
-      g2.ellipse(R() * 256, R() * 256, 8 + R() * 26, 5 + R() * 16, R() * Math.PI, 0, Math.PI * 2);
+      g2.ellipse(R2() * 256, R2() * 256, 8 + R2() * 26, 5 + R2() * 16, R2() * Math.PI, 0, Math.PI * 2);
       g2.fill();
     }
     g2.filter = "none";
     for (let i = 0; i < 420; i++) {
-      const a = R() * Math.PI * 2, d = Math.pow(R(), 0.45) * 100, x = 122 + Math.cos(a) * d * 1.3, y2 = 128 + Math.sin(a) * d * 0.8, r = 0.5 + R() * R() * 3;
-      g2.fillStyle = `rgba(28,40,4,${0.12 + R() * 0.18})`;
+      const a = R2() * Math.PI * 2, d = Math.pow(R2(), 0.45) * 100, x = 122 + Math.cos(a) * d * 1.3, y2 = 128 + Math.sin(a) * d * 0.8, r = 0.5 + R2() * R2() * 3;
+      g2.fillStyle = `rgba(28,40,4,${0.12 + R2() * 0.18})`;
       g2.beginPath();
       g2.arc(x, y2, r, 0, Math.PI * 2);
       g2.fill();
-      g2.strokeStyle = `rgba(206,238,104,${0.18 + R() * 0.25})`;
+      g2.strokeStyle = `rgba(206,238,104,${0.18 + R2() * 0.25})`;
       g2.lineWidth = 0.5 + r * 0.2;
       g2.beginPath();
       g2.arc(x, y2, r, 0, Math.PI * 2);
       g2.stroke();
     }
     for (let i = 0; i < 26; i++) {
-      g2.fillStyle = `rgba(245,255,210,${0.4 + R() * 0.4})`;
+      g2.fillStyle = `rgba(245,255,210,${0.4 + R2() * 0.4})`;
       g2.beginPath();
-      g2.arc(60 + R() * 140, 70 + R() * 116, 0.5 + R() * 1.2, 0, Math.PI * 2);
+      g2.arc(60 + R2() * 140, 70 + R2() * 116, 0.5 + R2() * 1.2, 0, Math.PI * 2);
       g2.fill();
     }
     const mask = paint(S3, (m) => {
@@ -58373,6 +58400,11 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
   line-height: 1.25; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, .8), 0 0 2px rgba(0, 0, 0, .9); opacity: 0; transition: opacity .3s; }
 #tut .say.show { opacity: 1; }
 #tut .say small { display: block; font-size: 15px; font-weight: 600; color: #d8f7e2; margin-top: 4px; }
+.tutCue { position: absolute; transform: translate(-50%, -100%); padding: 8px 13px; border-radius: 12px; background: rgba(20, 28, 32, .88); color: #fff;
+  font-weight: 750; font-size: 16px; text-align: center; white-space: nowrap; pointer-events: none; box-shadow: 0 3px 12px rgba(0, 0, 0, .45); z-index: 3; }
+.tutCue small { display: block; font-size: 13px; font-weight: 600; color: #d8f7e2; margin-top: 2px; }
+.cuePulse { animation: cuePulse 1.1s ease-in-out infinite; }
+@keyframes cuePulse { 50% { box-shadow: 0 0 0 9px rgba(84, 226, 132, .5), 0 3px 10px rgba(0, 0, 0, .35); } }
 #tut .skip { position: absolute; top: calc(58px + var(--sat)); right: calc(12px + var(--sar)); pointer-events: auto; padding: 6px 12px; border-radius: 10px;
   background: rgba(20, 28, 32, .6); color: var(--ink2); font-size: 13px; }
 `;
@@ -58385,6 +58417,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       this.touch = touch;
       this.step = null;
       this.held = [];
+      this.cued = /* @__PURE__ */ new Set();
       const st = document.createElement("style");
       st.textContent = CSS;
       document.head.appendChild(st);
@@ -58484,6 +58517,24 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       else if (this.step === "hold" && (!tg || !tg.alive || tg.hitSeq > this.hits0 || this.t > HOLD_MAX)) this.go("good");
       else if (this.step === "good" && this.t > 1.6) this.finish();
     }
+    // a bubble over a button (and a soft pulse round it, pulse = false: the button pulses on its own) for secs, once ever
+    cue(key, el, text, sub = "", secs = 4, pulse = true) {
+      if (!el || this.cued.has(key)) return;
+      this.cued.add(key);
+      if (this.store.get("cue_" + key, false)) return;
+      this.store.set("cue_" + key, true);
+      const r = el.getBoundingClientRect(), c = document.createElement("div");
+      c.className = "tutCue";
+      c.innerHTML = text + (sub ? `<small>${sub}</small>` : "");
+      c.style.left = Math.min(Math.max(r.left + r.width / 2, 120), innerWidth - 120) + "px";
+      c.style.top = r.top - 14 + "px";
+      document.getElementById("hud").appendChild(c);
+      if (pulse) el.classList.add("cuePulse");
+      setTimeout(() => {
+        c.remove();
+        el.classList.remove("cuePulse");
+      }, secs * 1e3);
+    }
     // the others wake as they would have from the start, a beat apart (never all at once)
     release(sim2 = this.sim) {
       let k = 0;
@@ -58504,6 +58555,154 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       this.store.set("tutorialDone", true);
       this.el.classList.remove("on");
       for (const e of [this.zl, this.zr, this.ghost, this.say]) e.classList.remove("show");
+    }
+  };
+
+  // src/ui/wheel.js
+  var HOLD = 0.22;
+  var DRAG = 24;
+  var R = 112;
+  var PICK_R = 34;
+  var WHEEL_SLOW = 0.15;
+  var ICON = (w) => w === "sledgehammer" ? "i-sledge" : "i-" + w;
+  var NAME = { fists: "Fists", bat: "Bat", axe: "Axe", pistol: "Pistol", shotgun: "Shotgun", sledgehammer: "Sledgehammer", crowbar: "Crowbar", knife: "Knife" };
+  var CSS2 = `
+#wheel { position: absolute; inset: 0; pointer-events: none; display: none; }
+#wheel.on { display: block; }
+#wheel .dim { position: absolute; inset: 0; background: radial-gradient(circle at var(--cx) var(--cy), rgba(10, 16, 20, .15) 60px, rgba(10, 16, 20, .55) 260px); }
+#wheel .it { position: absolute; width: 66px; height: 66px; margin: -33px 0 0 -33px; border-radius: 50%; background: var(--panel);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .4), inset 0 0 0 2px rgba(255, 255, 255, .14); display: grid; place-items: center; transition: transform .08s, box-shadow .08s; }
+#wheel .it svg { width: 40px; height: 40px; display: block; position: static; }
+#wheel .it.cur { box-shadow: 0 3px 10px rgba(0, 0, 0, .4), inset 0 0 0 2px rgba(127, 224, 200, .7); }
+#wheel .it.sel { transform: scale(1.22); background: #f2c018; box-shadow: 0 0 0 3px #fff3, 0 4px 14px rgba(0, 0, 0, .5); }
+#wheel .name { position: absolute; transform: translate(-50%, -100%); font-weight: 800; font-size: 18px; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, .85); white-space: nowrap; }
+`;
+  var WeaponWheel = class {
+    constructor(btn, { getOwned, getCurrent }) {
+      this.btn = btn;
+      this.getOwned = getOwned;
+      this.getCurrent = getCurrent;
+      this.down = null;
+      this.open = false;
+      this.taps = 0;
+      this.pick = null;
+      this.sel = -1;
+      this.items = [];
+      const st = document.createElement("style");
+      st.textContent = CSS2;
+      document.head.appendChild(st);
+      const el = this.el = document.createElement("div");
+      el.id = "wheel";
+      el.innerHTML = '<div class="dim"></div><div class="name"></div>';
+      document.getElementById("hud").appendChild(el);
+      this.nameEl = el.lastChild;
+      btn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.down) return;
+        try {
+          btn.setPointerCapture(e.pointerId);
+        } catch {
+        }
+        this.down = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        btn.classList.add("pressed");
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+          if (this.down) this.show();
+        }, HOLD * 1e3);
+      });
+      btn.addEventListener("pointermove", (e) => {
+        const d = this.down;
+        if (!d || e.pointerId !== d.id) return;
+        e.preventDefault();
+        if (!this.open && Math.hypot(e.clientX - d.x, e.clientY - d.y) > DRAG) this.show();
+        if (this.open) this.point(e.clientX, e.clientY);
+      });
+      const up = (e) => {
+        const d = this.down;
+        if (!d || e.pointerId !== d.id) return;
+        this.down = null;
+        clearTimeout(this.timer);
+        btn.classList.remove("pressed");
+        if (!this.open) {
+          if (e.type === "pointerup") this.taps++;
+          return;
+        }
+        if (e.type === "pointerup" && this.sel >= 0) this.pick = this.items[this.sel].w;
+        this.hide();
+      };
+      for (const k of ["pointerup", "pointercancel", "lostpointercapture"]) btn.addEventListener(k, up);
+    }
+    show() {
+      const owned = this.getOwned() || [];
+      if (owned.length < 2) return;
+      const r = this.btn.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      this.cx = cx;
+      this.cy = cy;
+      this.open = true;
+      this.sel = -1;
+      for (const it2 of this.items) it2.el.remove();
+      const n2 = owned.length, span = Math.min(200, 46 * (n2 - 1)) * Math.PI / 180, cur = this.getCurrent();
+      this.items = owned.map((w, i) => {
+        const a = Math.PI + (n2 > 1 ? (i / (n2 - 1) - 0.5) * span : 0);
+        let x = cx + Math.cos(a) * R, y2 = cy - Math.sin(a) * R;
+        y2 = Math.min(Math.max(y2, 50), innerHeight - 50);
+        x = Math.min(Math.max(x, 40), innerWidth - 40);
+        const el = document.createElement("div");
+        el.className = "it" + (w === cur ? " cur" : "");
+        const ic = this.btn.querySelector("." + ICON(w));
+        if (ic) {
+          const c = ic.cloneNode(true);
+          c.removeAttribute("class");
+          el.appendChild(c);
+        } else el.textContent = NAME[w] || w;
+        el.style.left = x + "px";
+        el.style.top = y2 + "px";
+        this.el.appendChild(el);
+        return { w, el, x, y: y2 };
+      });
+      this.el.style.setProperty("--cx", cx + "px");
+      this.el.style.setProperty("--cy", cy + "px");
+      this.nameEl.textContent = "";
+      this.el.classList.add("on");
+    }
+    // the weapon the thumb points at: the item whose direction from the button is nearest the thumb's (none near the button)
+    point(x, y2) {
+      const dx = x - this.cx, dy = y2 - this.cy, t2 = Math.atan2(dy, dx);
+      let best = -1, bd = Infinity;
+      if (Math.hypot(dx, dy) > PICK_R) {
+        for (let i = 0; i < this.items.length; i++) {
+          const it3 = this.items[i], a = Math.atan2(it3.y - this.cy, it3.x - this.cx) - t2, d = Math.abs(Math.atan2(Math.sin(a), Math.cos(a)));
+          if (d < bd) {
+            bd = d;
+            best = i;
+          }
+        }
+      }
+      if (best === this.sel) return;
+      this.sel = best;
+      this.items.forEach((it3, i) => it3.el.classList.toggle("sel", i === best));
+      const it2 = this.items[best];
+      this.nameEl.textContent = it2 ? NAME[it2.w] || it2.w : "";
+      if (it2) {
+        this.nameEl.style.left = it2.x + "px";
+        this.nameEl.style.top = it2.y - 40 + "px";
+      }
+    }
+    hide() {
+      this.open = false;
+      this.el.classList.remove("on");
+    }
+    // per frame (main.js): the taps and the pick since the last call, each delivered once
+    takeTaps() {
+      const n2 = this.taps;
+      this.taps = 0;
+      return n2;
+    }
+    takePick() {
+      const w = this.pick;
+      this.pick = null;
+      return w;
     }
   };
 
@@ -58971,9 +59170,9 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       b.updateMatrixWorld(true);
     }
     applySit() {
-      const w = this.sitW, B2 = this.bones, R = this.rest;
+      const w = this.sitW, B2 = this.bones, R2 = this.rest;
       if (w > 1e-3 || this._wasSit) {
-        for (const n2 of ["thigh_l", "thigh_r", "shin_l", "shin_r"]) if (R[n2]) B2[n2].quaternion.copy(R[n2]);
+        for (const n2 of ["thigh_l", "thigh_r", "shin_l", "shin_r"]) if (R2[n2]) B2[n2].quaternion.copy(R2[n2]);
       }
       this._wasSit = w > 1e-3;
       if (w <= 1e-3) {
@@ -59005,13 +59204,13 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       this.model.updateMatrixWorld(true);
     }
     applyProcedural() {
-      const t2 = this.waveT, B2 = this.bones, R = this.rest;
-      for (const n2 of ["head", "upperarm_r", "forearm_r"]) if (R[n2]) B2[n2].quaternion.copy(R[n2]);
-      for (const n2 in R) if (!this.keyed.has(n2)) B2[n2].quaternion.copy(R[n2]);
+      const t2 = this.waveT, B2 = this.bones, R2 = this.rest;
+      for (const n2 of ["head", "upperarm_r", "forearm_r"]) if (R2[n2]) B2[n2].quaternion.copy(R2[n2]);
+      for (const n2 in R2) if (!this.keyed.has(n2)) B2[n2].quaternion.copy(R2[n2]);
       const rot = (n2, x, y2, z) => {
         const b = B2[n2];
         if (!b) return;
-        if (!this.keyed.has(n2)) b.quaternion.copy(R[n2]);
+        if (!this.keyed.has(n2)) b.quaternion.copy(R2[n2]);
         b.quaternion.multiply(_q10.setFromEuler(new Euler(x, y2, z, "XYZ")));
       };
       this.applySit();
@@ -62076,7 +62275,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       const centre = (view.bones.Spine2 || view.bones.Hips).getWorldPosition(new Vector3());
       const dir = new Vector3(dx, 0, dz).normalize(), side = new Vector3(-dz, 0, dx);
       const b = { chunks: [], t: 0 }, v = new Vector3();
-      const R = (a, c) => a + Math.random() * (c - a);
+      const R2 = (a, c) => a + Math.random() * (c - a);
       for (const [name, meshes] of T3.byChunk) {
         if (gone.has(name) || view.severed?.has(T3.partOf[name])) continue;
         const baked = [];
@@ -62122,9 +62321,9 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
         const out = c.clone().sub(centre).setY(0);
         if (out.lengthSq() < 1e-4) out.copy(dir);
         out.normalize();
-        const ch = { name, grp, rad: Math.min(rad, 0.35), vel: new Vector3(), spin: new Vector3(R(-9, 9), R(-9, 9), R(-9, 9)), rest: false, bleed: /Gib/.test(name) ? 0.3 : 1.2 };
-        const k = power * (/Gut|Gib/.test(name) ? R(1.2, 2) : name === "Head" ? R(1.1, 1.4) : /Thigh|Shin/.test(name) ? R(0.3, 0.6) : name === "Pelvis" ? 0.5 : R(0.7, 1.1));
-        ch.vel.copy(dir).multiplyScalar(3.2 * k).addScaledVector(side, R(-2.2, 2.2) * k).addScaledVector(out, 1.2 * k).setY((/Thigh|Shin|Pelvis/.test(name) ? R(0.5, 1.5) : R(1.8, 3.6)) * Math.sqrt(power));
+        const ch = { name, grp, rad: Math.min(rad, 0.35), vel: new Vector3(), spin: new Vector3(R2(-9, 9), R2(-9, 9), R2(-9, 9)), rest: false, bleed: /Gib/.test(name) ? 0.3 : 1.2 };
+        const k = power * (/Gut|Gib/.test(name) ? R2(1.2, 2) : name === "Head" ? R2(1.1, 1.4) : /Thigh|Shin/.test(name) ? R2(0.3, 0.6) : name === "Pelvis" ? 0.5 : R2(0.7, 1.1));
+        ch.vel.copy(dir).multiplyScalar(3.2 * k).addScaledVector(side, R2(-2.2, 2.2) * k).addScaledVector(out, 1.2 * k).setY((/Thigh|Shin|Pelvis/.test(name) ? R2(0.5, 1.5) : R2(1.8, 3.6)) * Math.sqrt(power));
         b.chunks.push(ch);
       }
       if (!b.chunks.length) return false;
@@ -67055,7 +67254,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       r.addEventListener("pointercancel", (e) => this.up(e));
       r.addEventListener("lostpointercapture", (e) => this.up(e));
       r.addEventListener("contextmenu", (e) => e.preventDefault());
-      this.swapButton.addEventListener("pointerdown", (e) => {
+      if (this.swapButton) this.swapButton.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (this.enabled) this.swapPresses++;
@@ -67809,8 +68008,8 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
           const axis = _a7.subVectors(B2.x, A2.x).normalize();
           const name = body.kind === "ragdoll" ? body.desc.parts[i].name : "";
           if (name === "pelvis" || name === "chest") {
-            const [L2, R] = name === "pelvis" ? body.side.pelvis : body.side.chest;
-            frameQuat(axis, _b6.subVectors(L2.x, R.x), body.q[i]);
+            const [L2, R2] = name === "pelvis" ? body.side.pelvis : body.side.chest;
+            frameQuat(axis, _b6.subVectors(L2.x, R2.x), body.q[i]);
           } else {
             _q11.setFromUnitVectors(body.prevAxis[i], axis);
             body.q[i].premultiply(_q11).normalize();
@@ -67963,29 +68162,29 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       this.stats = { steps: 0, ms: 0 };
     }
     async init(world) {
-      const R = await loadRapier();
+      const R2 = await loadRapier();
       if (this.world) this.world.free();
-      this.world = new R.World({ x: 0, y: -9.81, z: 0 });
+      this.world = new R2.World({ x: 0, y: -9.81, z: 0 });
       this.world.timestep = 1 / 60;
       this.world.numSolverIterations = 4;
       this.bodies.clear();
       const fix = (desc) => this.world.createCollider(desc.setFriction(0.8).setCollisionGroups(groups(GROUP_WORLD, GROUP_BODY)));
-      fix(R.ColliderDesc.cuboid(60, 0.5, 60).setTranslation(0, -0.5, 0));
+      fix(R2.ColliderDesc.cuboid(60, 0.5, 60).setTranslation(0, -0.5, 0));
       for (const b of world.boxes) {
         if (b.kind === "doorSeal" || b.kind === "door") continue;
         const hx = (b.maxX - b.minX) / 2, hz = (b.maxZ - b.minZ) / 2, hy = Math.max(0.02, b.h / 2);
-        fix(R.ColliderDesc.cuboid(hx, hy, hz).setTranslation((b.minX + b.maxX) / 2, hy, (b.minZ + b.maxZ) / 2));
+        fix(R2.ColliderDesc.cuboid(hx, hy, hz).setTranslation((b.minX + b.maxX) / 2, hy, (b.minZ + b.maxZ) / 2));
       }
     }
     _capsuleBody(a, b, r, mass, q0, vel) {
-      const R = RAPIER, mid = a.clone().add(b).multiplyScalar(0.5), half = Math.max(0.01, a.distanceTo(b) / 2 - r * 0.5);
-      const body = this.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(mid.x, mid.y, mid.z).setLinvel(vel.x, vel.y, vel.z).setLinearDamping(0.15).setAngularDamping(0.9).setCcdEnabled(false));
-      const col = R.ColliderDesc.capsule(half, r).setRotation({ x: q0.x, y: q0.y, z: q0.z, w: q0.w }).setMass(mass).setFriction(0.7).setRestitution(0.05).setCollisionGroups(groups(GROUP_BODY, GROUP_WORLD | GROUP_BODY));
+      const R2 = RAPIER, mid = a.clone().add(b).multiplyScalar(0.5), half = Math.max(0.01, a.distanceTo(b) / 2 - r * 0.5);
+      const body = this.world.createRigidBody(R2.RigidBodyDesc.dynamic().setTranslation(mid.x, mid.y, mid.z).setLinvel(vel.x, vel.y, vel.z).setLinearDamping(0.15).setAngularDamping(0.9).setCcdEnabled(false));
+      const col = R2.ColliderDesc.capsule(half, r).setRotation({ x: q0.x, y: q0.y, z: q0.z, w: q0.w }).setMass(mass).setFriction(0.7).setRestitution(0.05).setCollisionGroups(groups(GROUP_BODY, GROUP_WORLD | GROUP_BODY));
       this.world.createCollider(col, body);
       return body;
     }
     addRagdoll(desc, vels) {
-      const R = RAPIER, id = this.nextId++;
+      const R2 = RAPIER, id = this.nextId++;
       const rb = desc.parts.map((p, i) => this._capsuleBody(p.a, p.b, p.r, p.mass, p.q0, vels[i]));
       const joints = [];
       for (const j of desc.joints) {
@@ -67994,12 +68193,12 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
         const a1 = { x: j.at.x - pp.x, y: j.at.y - pp.y, z: j.at.z - pp.z }, a2 = { x: j.at.x - cp.x, y: j.at.y - cp.y, z: j.at.z - cp.z };
         let jd;
         if (j.type === "hinge") {
-          jd = R.JointData.revolute(a1, a2, { x: j.axis.x, y: j.axis.y, z: j.axis.z });
+          jd = R2.JointData.revolute(a1, a2, { x: j.axis.x, y: j.axis.y, z: j.axis.z });
           const par = desc.parts[j.parent], ch = desc.parts[j.child];
           const bent = Math.acos(MathUtils.clamp(par.b.clone().sub(par.a).normalize().dot(ch.b.clone().sub(ch.a).normalize()), -1, 1));
           jd.limitsEnabled = true;
           jd.limits = [-bent + 0.05, 2.4 - bent];
-        } else jd = R.JointData.spherical(a1, a2);
+        } else jd = R2.JointData.spherical(a1, a2);
         const joint = this.world.createImpulseJoint(jd, P2, C2, true);
         joint.setContactsEnabled(false);
         joints.push(joint);
@@ -68462,7 +68661,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
   var TIME_CARDS = { later: "Later in the procedure", reversal: "A few minutes later" };
 
   // src/opening/ui.js
-  var CSS2 = `
+  var CSS3 = `
 #op { position: fixed; inset: 0; z-index: 20; pointer-events: none; font: 500 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; display: none; }
 #op.on { display: block; }
 #op * { box-sizing: border-box; }
@@ -68596,7 +68795,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
   var OpeningUI = class {
     constructor() {
       const st = document.createElement("style");
-      st.textContent = CSS2;
+      st.textContent = CSS3;
       document.head.appendChild(st);
       const el = this.el = document.createElement("div");
       el.id = "op";
@@ -69636,9 +69835,9 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     // the strike: ndc impact point (x, y in -1..1) and the swing's screen direction (dx, dy); ten pieces fly
     shatter(ix = 0, iy = 0.1, dx = -1, dy = 0.25, n2 = 10, seed = 7) {
       if (!this.group) return;
-      const R = rng2(seed), seeds = [];
+      const R2 = rng2(seed), seeds = [];
       for (let i = 0; i < n2; i++) {
-        const near = i < 4, a = i / (near ? 4 : n2 - 4) * Math.PI * 2 + R() * 0.8, rad = near ? 0.22 + R() * 0.2 : 0.75 + R() * 0.55;
+        const near = i < 4, a = i / (near ? 4 : n2 - 4) * Math.PI * 2 + R2() * 0.8, rad = near ? 0.22 + R2() * 0.2 : 0.75 + R2() * 0.55;
         seeds.push([MathUtils.clamp(ix + Math.cos(a) * rad, -0.98, 0.98), MathUtils.clamp(iy + Math.sin(a) * rad * 1.15, -0.98, 0.98)]);
       }
       this.group.remove(this.whole);
@@ -69677,10 +69876,10 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
         piece.add(back, front);
         this.group.add(piece);
         const ox = cx - ix, oy = cy - iy, od = Math.hypot(ox, oy) || 1, near = Math.max(0, 1 - od / 1.6);
-        const sp = 0.9 + near * 2.2 + R() * 0.5;
-        const v = new Vector3(ox / od * sp * this.hw + dx * 0.5 * near * this.hw, oy / od * sp * this.hh * 0.7 + dy * 0.4 * near * this.hh + 0.25 * this.hh, 0.25 + near * 0.7 + R() * 0.2);
-        const w = new Vector3((R() - 0.5) * 5, (R() - 0.5) * 5, (R() - 0.5) * 4).multiplyScalar(0.5 + near);
-        this.shards.push({ piece, v, w, delay: (1 - near) * 0.07 + R() * 0.03, life: 0 });
+        const sp = 0.9 + near * 2.2 + R2() * 0.5;
+        const v = new Vector3(ox / od * sp * this.hw + dx * 0.5 * near * this.hw, oy / od * sp * this.hh * 0.7 + dy * 0.4 * near * this.hh + 0.25 * this.hh, 0.25 + near * 0.7 + R2() * 0.2);
+        const w = new Vector3((R2() - 0.5) * 5, (R2() - 0.5) * 5, (R2() - 0.5) * 4).multiplyScalar(0.5 + near);
+        this.shards.push({ piece, v, w, delay: (1 - near) * 0.07 + R2() * 0.03, life: 0 });
       }
       this.state = "flying";
       this.t = 0;
@@ -70305,16 +70504,16 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
         if (out.lengthSq() < 1e-4) out.copy(dir);
         out.normalize();
         const sideOf = (s) => right.clone().multiplyScalar(s);
-        const R = (a, b) => a + Math.random() * (b - a);
+        const R2 = (a, b) => a + Math.random() * (b - a);
         const kick = (sp, side, up) => ch.vel.copy(dir).multiplyScalar(sp).add(sideOf(side)).add(out.clone().multiplyScalar(0.8)).setY(up);
         if (name === "Head") ch.head = true;
         else if (name === "Chest") kick(3.2, -1.6, 2.6);
         else if (name === "Pelvis") kick(1.6, 0.6, 1.2);
-        else if (/UpperArm_L|Forearm_L/.test(name)) kick(R(2.5, 3.5), -4.2, R(2.6, 3.6));
-        else if (/UpperArm_R|Forearm_R/.test(name)) kick(R(2.5, 3.5), 4.2, R(2.6, 3.6));
-        else if (/Thigh|Shin/.test(name)) kick(R(1, 2), (/_L/.test(name) ? -1 : 1) * R(1.2, 2.2), R(0.8, 1.8));
-        else kick(R(2.5, 5), R(-3.5, 3.5), R(1.5, 4.5));
-        ch.spin.set(R(-9, 9), R(-9, 9), R(-9, 9));
+        else if (/UpperArm_L|Forearm_L/.test(name)) kick(R2(2.5, 3.5), -4.2, R2(2.6, 3.6));
+        else if (/UpperArm_R|Forearm_R/.test(name)) kick(R2(2.5, 3.5), 4.2, R2(2.6, 3.6));
+        else if (/Thigh|Shin/.test(name)) kick(R2(1, 2), (/_L/.test(name) ? -1 : 1) * R2(1.2, 2.2), R2(0.8, 1.8));
+        else kick(R2(2.5, 5), R2(-3.5, 3.5), R2(1.5, 4.5));
+        ch.spin.set(R2(-9, 9), R2(-9, 9), R2(-9, 9));
         if (/Gut|Gib/.test(name)) ch.spin.multiplyScalar(1.6);
         ch.bleed = /Gib/.test(name) ? 0.4 : 1.6;
         this.chunks.push(ch);
@@ -70570,19 +70769,19 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     x.scale(dpr, dpr);
     x.lineCap = "round";
     x.lineJoin = "round";
-    const R = (a, b) => a + Math.random() * (b - a), M4 = Math.max(w, h);
+    const R2 = (a, b) => a + Math.random() * (b - a), M4 = Math.max(w, h);
     x.fillStyle = "rgba(110,8,8,0.55)";
     x.beginPath();
     for (let i = 0; i <= 18; i++) {
-      const a = i / 18 * Math.PI * 2, r = R(16, 34);
+      const a = i / 18 * Math.PI * 2, r = R2(16, 34);
       x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.85);
     }
     x.fill();
     for (let i = 0; i < 4; i++) {
-      const dx = R(-24, 24), len = R(30, 110);
-      x.fillRect(cx + dx, cy, R(2, 5), len);
+      const dx = R2(-24, 24), len = R2(30, 110);
+      x.fillRect(cx + dx, cy, R2(2, 5), len);
       x.beginPath();
-      x.arc(cx + dx + 2, cy + len, R(2.5, 4.5), 0, Math.PI * 2);
+      x.arc(cx + dx + 2, cy + len, R2(2.5, 4.5), 0, Math.PI * 2);
       x.fill();
     }
     const stroke = (pts, wdt) => {
@@ -70597,20 +70796,20 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     };
     const arms = 13, ends = [];
     for (let i = 0; i < arms; i++) {
-      let a = i / arms * Math.PI * 2 + R(-0.2, 0.2), px2 = cx, py2 = cy;
-      const len = R(0.12, 0.42) * M4, pts = [[px2, py2]];
+      let a = i / arms * Math.PI * 2 + R2(-0.2, 0.2), px2 = cx, py2 = cy;
+      const len = R2(0.12, 0.42) * M4, pts = [[px2, py2]];
       const steps = 9;
       for (let s = 1; s <= steps; s++) {
-        a += R(-0.18, 0.18);
+        a += R2(-0.18, 0.18);
         const d = len / steps;
         px2 += Math.cos(a) * d;
         py2 += Math.sin(a) * d;
         pts.push([px2, py2]);
         if (s > 2 && Math.random() < 0.18) {
-          let b = a + R(0.5, 0.9) * (Math.random() < 0.5 ? -1 : 1), bx = px2, by = py2;
+          let b = a + R2(0.5, 0.9) * (Math.random() < 0.5 ? -1 : 1), bx = px2, by = py2;
           const bp = [[bx, by]];
           for (let k = 0; k < 4; k++) {
-            b += R(-0.2, 0.2);
+            b += R2(-0.2, 0.2);
             bx += Math.cos(b) * d * 0.7;
             by += Math.sin(b) * d * 0.7;
             bp.push([bx, by]);
@@ -70623,7 +70822,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     }
     for (const k of [2, 4]) for (let i = 0; i < arms; i++) {
       const A2 = ends[i][k], B2 = ends[(i + 1) % arms][k];
-      if (Math.random() < 0.8) stroke([A2, [(A2[0] + B2[0]) / 2 + R(-6, 6), (A2[1] + B2[1]) / 2 + R(-6, 6)], B2], 1.1);
+      if (Math.random() < 0.8) stroke([A2, [(A2[0] + B2[0]) / 2 + R2(-6, 6), (A2[1] + B2[1]) / 2 + R2(-6, 6)], B2], 1.1);
     }
     const g2 = x.createRadialGradient(cx, cy, 0, cx, cy, 22);
     g2.addColorStop(0, "rgba(255,255,255,0.85)");
@@ -70836,7 +71035,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
   function tuningJSON() {
     return JSON.stringify(RT, null, 1);
   }
-  function generateFlashes(R) {
+  function generateFlashes(R2) {
     const out = [];
     let t2 = 0, who = "old";
     const flip = () => {
@@ -70844,21 +71043,21 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       who = who === "old" ? "new" : "old";
       return w;
     };
-    for (let i = 0; i < R.first; i++) {
+    for (let i = 0; i < R2.first; i++) {
       out.push([+t2.toFixed(2), i % 3 === 2 ? "new" : "old", +(1 - i * 0.12).toFixed(2), 0, false]);
-      t2 += R.firstGap * (1 + i % 2 * 0.3);
+      t2 += R2.firstGap * (1 + i % 2 * 0.3);
     }
     t2 += 0.25;
     who = "old";
-    for (let i = 0; i < R.burst; i++) {
-      out.push([+t2.toFixed(2), flip(), +(0.8 + 0.15 * i / Math.max(1, R.burst - 1)).toFixed(2), 0, false]);
-      t2 += R.burstFrom + (R.burstTo - R.burstFrom) * (i / Math.max(1, R.burst - 1));
+    for (let i = 0; i < R2.burst; i++) {
+      out.push([+t2.toFixed(2), flip(), +(0.8 + 0.15 * i / Math.max(1, R2.burst - 1)).toFixed(2), 0, false]);
+      t2 += R2.burstFrom + (R2.burstTo - R2.burstFrom) * (i / Math.max(1, R2.burst - 1));
     }
-    for (let i = 0; i < R.slow; i++) {
-      t2 += R.slowFrom + (R.slowTo - R.slowFrom) * (i / Math.max(1, R.slow - 1));
+    for (let i = 0; i < R2.slow; i++) {
+      t2 += R2.slowFrom + (R2.slowTo - R2.slowFrom) * (i / Math.max(1, R2.slow - 1));
       out.push([+t2.toFixed(2), flip(), +(0.85 - 0.1 * i).toFixed(2), 0, false]);
     }
-    t2 += R.breath;
+    t2 += R2.breath;
     out.push([+t2.toFixed(2), "new", 1.5, 1.1, true]);
     return out;
   }
@@ -71240,7 +71439,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     ["beat9", "Walk-out (feet)"],
     ["beat11", "The launch"]
   ];
-  var CSS3 = `
+  var CSS4 = `
 #revStudio{position:fixed;top:8px;right:8px;width:330px;max-height:calc(100vh - 16px);overflow:auto;z-index:90;background:rgba(14,18,22,.93);color:#dfe6ea;
  font:12px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;border:1px solid #2c3640;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
 #revStudio.min{width:auto;max-height:none;overflow:visible}
@@ -71283,7 +71482,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       if (!document.getElementById("revStudioCss")) {
         const st = document.createElement("style");
         st.id = "revStudioCss";
-        st.textContent = CSS3;
+        st.textContent = CSS4;
         document.head.appendChild(st);
       }
       const el = this.el = document.createElement("div");
@@ -74110,7 +74309,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       yield* this.reveal();
     }
     *reveal() {
-      const st = this.stage, A2 = st.actors, L2 = LIFT7, g2 = this.game(), old = A2.yola, R = RT;
+      const st = this.stage, A2 = st.actors, L2 = LIFT7, g2 = this.game(), old = A2.yola, R2 = RT;
       const toWorld = (a, x, z, yaw) => st.actorToWorld(a, x, z, yaw);
       const cabX = L2.x, cabZ = -12.7;
       const doorShot = (dist2 = 4.6) => ({ x: L2.x, y: 1.15, z: -11.3, pitch: 2, yaw: 0, dist: dist2, fov: 40 });
@@ -74185,20 +74384,20 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       this.mark("flashes");
       this.camTo(doorShot(), 0.01);
       this.phase("cab");
-      const seq = R.flashes.slice().sort((a, b) => a[0] - b[0]), last2 = seq[seq.length - 1];
+      const seq = R2.flashes.slice().sort((a, b) => a[0] - b[0]), last2 = seq[seq.length - 1];
       for (const [t2, who, k, decay, boom] of seq) this.later(t2, () => this.flashOn(who, k, decay || 0, boom));
       for (const [t2, shot2] of this.flashCuts(seq, cabX, cabZ)) this.later(t2, () => {
         this.camTo(shot2, 0.01);
         if (!this.silent) this.rs.cutHit();
       });
-      yield (last2 ? last2[0] : 0) + R.flashTail;
+      yield (last2 ? last2[0] : 0) + R2.flashTail;
       if (RT.music.backAt === "flash") this.heart = null;
       this.revealWorld();
       old.setVisible(false);
       this.setOutbreakLook(true);
       this.substate = "B9_FEET";
       this.mark("beat9");
-      const W3 = R.walk, stopZ = W3.stopZ;
+      const W3 = R2.walk, stopZ = W3.stopZ;
       this.revealPose = { stand: true, x: cabX, z: cabZ };
       this.standVisible(true);
       this.stand.bat = W3.bat ? "hang" : "none";
@@ -74211,7 +74410,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
         if (RT.music.backAt === "flash") this.rs.cueStart(7);
       }
       this.phase("walk", { redAt: "doors", em: true });
-      if (R.brighten === "walk") this.brightenNow();
+      if (R2.brighten === "walk") this.brightenNow();
       {
         const WC = W3.cam;
         this.camTo(this.lookRig(new Vector3(cabX + WC.side, WC.height, WC.z), new Vector3(cabX, WC.lookY, cabZ + 0.2), WC.fov), 0.01);
@@ -74223,7 +74422,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       this.stepShake = 0;
       yield W3.empty;
       this.camTrack = null;
-      if (R.batShot) {
+      if (R2.batShot) {
         this.substate = "B10_BAT";
         this.mark("beat10");
         this.phase("batShot");
@@ -74242,7 +74441,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
         this.finalize("normal");
         return;
       }
-      const LA = R.launch, Lc = LA.cam, P2 = plan;
+      const LA = R2.launch, Lc = LA.cam, P2 = plan;
       this.camera.near = 0.05;
       this.camera.updateProjectionMatrix();
       this.phase("launch");
@@ -74298,7 +74497,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       }
       if (!this.silent) this.rs.freezeHit();
       this.phase("card");
-      if (R.brighten === "card") this.brightenNow();
+      if (R2.brighten === "card") this.brightenNow();
       yield LA.boomToCard;
       this.shake = 0;
       this.tickRevLight(0);
@@ -74327,7 +74526,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       yield () => this.launch.t >= P2.tc;
       this.substate = "B13_HIT";
       this.mark("hit");
-      if (R.brighten === "burst") this.brightenNow();
+      if (R2.brighten === "burst") this.brightenNow();
       if (Z2) {
         const tip = this.batTip(), next = this.batTip(P2.tc + 1 / 30);
         const swing = next.clone().sub(tip).setY(0);
@@ -74508,8 +74707,8 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     // the lights that glow in the reveal's picture (revealpost.js, selective): the failing fitting, its sparks, the floor number,
     // the EXIT signs (built by warmStoryLight just before)
     markGlow() {
-      const R = this.rfx;
-      if (R) for (const o of [R.halo, R.sparks.obj]) o.layers.enable(BLOOM_LAYER);
+      const R2 = this.rfx;
+      if (R2) for (const o of [R2.halo, R2.sparks.obj]) o.layers.enable(BLOOM_LAYER);
       this.arena.doorKits?.lift?.root.traverse((o) => {
         if (o.isMesh && o.geometry?.parameters?.width === 0.56 && Math.abs(o.position.y - 2.65) < 0.01) o.layers.enable(BLOOM_LAYER);
       });
@@ -74649,17 +74848,17 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     // off-screen image: each material needs a second shader for that, and compiling it on first sight stalled the reveal ~40
     // times): run while the game's lighting is on (main.js warmStoryLight), with everyone the reveal shows made visible
     warmReveal() {
-      const R = this.renderer, A2 = this.stage.actors, Z2 = this.burst?.root, Y2 = this.yola;
+      const R2 = this.renderer, A2 = this.stage.actors, Z2 = this.burst?.root, Y2 = this.yola;
       const shown = [[A2.yola?.root, true], [Z2, true], [this.rfx?.vol, true], [this.smoke?.g, true]].filter(([o]) => o).map(([o]) => [o, o.visible]);
       for (const [o] of shown) o.visible = true;
       const yWas = Y2?.outer?.visible;
       Y2?.setShown?.(true);
       const rt = new WebGLRenderTarget(8, 8, { type: HalfFloatType });
       try {
-        R.setRenderTarget(rt);
-        R.compile(this.scene, this.camera);
+        R2.setRenderTarget(rt);
+        R2.compile(this.scene, this.camera);
       } finally {
-        R.setRenderTarget(null);
+        R2.setRenderTarget(null);
         rt.dispose();
       }
       for (const [o, v] of shown) o.visible = v;
@@ -74759,13 +74958,13 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     }
     // where she stands at time t of the launch (its own travel, scaled by reach)
     launchAt(t2) {
-      const L2 = this.launch, R = L2.A.ROOT;
+      const L2 = this.launch, R2 = L2.A.ROOT;
       let z = 0;
-      if (R) {
-        if (t2 <= R[0].t) z = R[0].z;
-        else if (t2 >= R[R.length - 1].t) z = R[R.length - 1].z;
-        else for (let i = 1; i < R.length; i++) if (R[i].t >= t2) {
-          const a = R[i - 1], b = R[i], u2 = (t2 - a.t) / Math.max(1e-6, b.t - a.t);
+      if (R2) {
+        if (t2 <= R2[0].t) z = R2[0].z;
+        else if (t2 >= R2[R2.length - 1].t) z = R2[R2.length - 1].z;
+        else for (let i = 1; i < R2.length; i++) if (R2[i].t >= t2) {
+          const a = R2[i - 1], b = R2[i], u2 = (t2 - a.t) / Math.max(1e-6, b.t - a.t);
           z = a.z + (b.z - a.z) * u2;
           break;
         }
@@ -74821,10 +75020,10 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     }
     // the speed ramp at time t of her clip (1: full speed)
     rampAt(t2) {
-      const L2 = this.launch, f = (R) => {
-        if (!R || t2 <= R.from) return 1;
-        const u2 = Math.min(1, (t2 - R.from) / R.len);
-        return 1 - (1 - R.slow) * u2 * u2 * (3 - 2 * u2);
+      const L2 = this.launch, f = (R2) => {
+        if (!R2 || t2 <= R2.from) return 1;
+        const u2 = Math.min(1, (t2 - R2.from) / R2.len);
+        return 1 - (1 - R2.slow) * u2 * u2 * (3 - 2 * u2);
       };
       return L2 ? Math.min(f(L2.ramp), f(L2.card)) : 1;
     }
@@ -75084,13 +75283,13 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
       if (!B2?.LeftFoot) return [0, 0.5];
       const mixer = new AnimationMixer(Y2.model), act = mixer.clipAction(clip);
       act.play();
-      const N2 = 60, L2 = [], R = [], v = new Vector3();
+      const N2 = 60, L2 = [], R2 = [], v = new Vector3();
       for (let i = 0; i < N2; i++) {
         act.time = i / N2 * clip.duration;
         mixer.update(0);
         Y2.model.updateMatrixWorld(true);
         L2.push(B2.LeftFoot.getWorldPosition(v).y);
-        R.push(B2.RightFoot.getWorldPosition(v).y);
+        R2.push(B2.RightFoot.getWorldPosition(v).y);
       }
       act.stop();
       mixer.uncacheRoot(Y2.model);
@@ -75102,7 +75301,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
         }
         return a.indexOf(mn) / N2;
       };
-      const heels = [low(L2), low(R)].sort((a, b) => a - b);
+      const heels = [low(L2), low(R2)].sort((a, b) => a - b);
       (clip.userData || (clip.userData = {})).heels = heels;
       return heels;
     }
@@ -77710,7 +77909,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
   }
 
   // src/ui/chapter.js
-  var CSS4 = `
+  var CSS5 = `
 #chRadio{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(92vw,520px);z-index:30;pointer-events:none;display:flex;flex-direction:column;gap:4px;align-items:center}
 #chRadio .ln{background:rgba(12,20,24,.82);color:#eef6f4;font:600 15px/1.3 system-ui,sans-serif;padding:7px 12px;border-radius:10px;border-left:3px solid #7fd6c8;opacity:0;transition:opacity .25s;text-align:left}
 #chRadio .ln.show{opacity:1}#chRadio .ln b{color:#7fd6c8;font-weight:800;margin-right:6px}#chRadio .ln.yola{border-left-color:#ffc27a}#chRadio .ln.yola b{color:#ffc27a}
@@ -77735,7 +77934,7 @@ body:has(#hud .sheet.show) #tut { visibility: hidden; }
     constructor(o) {
       Object.assign(this, o);
       const st = document.createElement("style");
-      st.textContent = CSS4;
+      st.textContent = CSS5;
       document.head.appendChild(st);
       const el = (id, html = "") => {
         const d = document.createElement("div");
@@ -81891,14 +82090,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         }
         const gate = /palisade_gate|hood_gate/.test(s.file);
         if (gate) {
-          const L2 = s.o.getObjectByName("GateL_v2"), R = s.o.getObjectByName("GateR_v2");
+          const L2 = s.o.getObjectByName("GateL_v2"), R2 = s.o.getObjectByName("GateR_v2");
           for (const n2 of ["Chain_v2", "Padlock_v2"]) {
             const c = s.o.getObjectByName(n2);
             if (c) c.visible = !open;
           }
           this.anim(animate ? 1.4 : 0, (k) => {
             if (L2) L2.rotation.y = -1.75 * k;
-            if (R) R.rotation.y = 1.75 * k;
+            if (R2) R2.rotation.y = 1.75 * k;
           }, open);
           continue;
         }
@@ -82174,8 +82373,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       const d = mzL.clone().sub(cL);
       const ax = ["x", "y", "z"].reduce((b, k) => Math.abs(d[k]) > Math.abs(d[b]) ? k : b, "x"), dir = new Vector3();
       dir[ax] = Math.sign(d[ax]) || 1;
-      const s = pg.getWorldScale(new Vector3()).x || 1, L2 = 0.15 / s, R = 0.017 / s;
-      const tube = new Mesh(new CylinderGeometry(R, R, L2, 14), new MeshStandardMaterial({ color: 1579291, metalness: 0.6, roughness: 0.45 }));
+      const s = pg.getWorldScale(new Vector3()).x || 1, L2 = 0.15 / s, R2 = 0.017 / s;
+      const tube = new Mesh(new CylinderGeometry(R2, R2, L2, 14), new MeshStandardMaterial({ color: 1579291, metalness: 0.6, roughness: 0.45 }));
       tube.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), dir);
       tube.position.copy(mzL).addScaledVector(dir, L2 / 2 - 4e-3 / s);
       pg.add(tube);
@@ -82924,11 +83123,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     // the next step toward the objective (the guidance marker): the next point of the way Sophie knows that Marc has not yet
     // passed, else the objective's own spot
     nextStep() {
-      const R = this.objective === "follow" ? ROUTES[this.route] : null, p = this.sim.player;
-      if (!R) return null;
-      const end = R[R.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
+      const R2 = this.objective === "follow" ? ROUTES[this.route] : null, p = this.sim.player;
+      if (!R2) return null;
+      const end = R2[R2.length - 1], toEnd = (x, z) => Math.hypot(end[0] - x, end[1] - z);
       if (toEnd(p.x, p.z) < 4) return null;
-      const q = R.find((pt) => toEnd(pt[0], pt[1]) < toEnd(p.x, p.z) - 1.5);
+      const q = R2.find((pt) => toEnd(pt[0], pt[1]) < toEnd(p.x, p.z) - 1.5);
       return q ? { x: q[0], z: q[1] } : null;
     }
     say(...ids) {
@@ -84753,7 +84952,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
 
   // src/hood/radio.js
-  var CSS5 = `
+  var CSS6 = `
 #hoodRadio{position:fixed;right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 54px);width:62px;height:62px;z-index:61;pointer-events:none;opacity:0;transform:scale(.85);transition:opacity .3s,transform .3s}
 #hoodRadio.show{opacity:1;transform:scale(1)}
 #hoodRadio .face{position:absolute;inset:0;border-radius:50%;background:#0c3a42 center/cover no-repeat;border:2px solid #3e8f99;box-shadow:0 2px 8px rgba(0,0,0,.55),0 0 0 var(--ring,0px) rgba(79,199,210,.45);transition:background-image .15s}
@@ -84764,7 +84963,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     constructor(voice) {
       this.voice = voice;
       const st = document.createElement("style");
-      st.textContent = CSS5;
+      st.textContent = CSS6;
       document.head.appendChild(st);
       const el = document.createElement("div");
       el.id = "hoodRadio";
@@ -87409,11 +87608,15 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   var shakeOn = true;
   var hud = new Hud({ tuning, audio, store: store2, onAction: (a, v) => uiAction(a, v) });
   var input = new Input(document.getElementById("touch"), {
-    swapButton: document.getElementById("swapBtn"),
+    swapButton: null,
+    // (the weapon button is the wheel's: tap = next, hold = choose; ui/wheel.js)
     getPlayerScreen: () => playerScreen
   });
   var tutorial = new Tutorial({ store: store2, touch: isMobile });
   var lastOpState = null;
+  var wheel = new WeaponWheel(document.getElementById("swapBtn"), { getOwned: () => sim?.player.owned, getCurrent: () => sim?.player.desired });
+  var carry = { swap: 0, use: 0, dodge: 0, pick: null };
+  var dodgeSeen = store2.get("dodgeSeen", false);
   var unlockAudio = () => {
     audio.init();
     music?.prime?.();
@@ -87554,8 +87757,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   }
   var _scrubMaps = /* @__PURE__ */ new Map();
   function scrubsTexture(tex3, key) {
-    const R = SCRUBS[key];
-    if (!tex3?.image || !R) return tex3;
+    const R2 = SCRUBS[key];
+    if (!tex3?.image || !R2) return tex3;
     const ck = key + ":" + tex3.uuid;
     if (_scrubMaps.has(ck)) return _scrubMaps.get(ck);
     const img = tex3.image, c = document.createElement("canvas");
@@ -87570,8 +87773,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       let h = mx === r ? (gg - b) / dl % 6 : mx === gg ? (b - r) / dl + 2 : (r - gg) / dl + 4;
       h = (h * 60 + 360) % 360;
       if (h < 165 || h > 250) continue;
-      const l = (mx + mn) / 2, s = R.s ?? Math.min(1, dl / (1 - Math.abs(2 * l - 1) || 1) * 1.6 + 0.2);
-      const H5 = (R.H + (h - 205) * 0.12 + 360) % 360, L2 = Math.min(R.l[2], l * R.l[0] + R.l[1]);
+      const l = (mx + mn) / 2, s = R2.s ?? Math.min(1, dl / (1 - Math.abs(2 * l - 1) || 1) * 1.6 + 0.2);
+      const H5 = (R2.H + (h - 205) * 0.12 + 360) % 360, L2 = Math.min(R2.l[2], l * R2.l[0] + R2.l[1]);
       const C2 = (1 - Math.abs(2 * L2 - 1)) * s, X3 = C2 * (1 - Math.abs(H5 / 60 % 2 - 1)), m = L2 - C2 / 2, k6 = Math.floor(H5 / 60) % 6;
       const [rr, g22, bb] = [[C2, X3, 0], [X3, C2, 0], [0, C2, X3], [0, X3, C2], [X3, 0, C2], [C2, 0, X3]][k6];
       d[i] = (rr + m) * 255;
@@ -88253,6 +88456,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       execNow = execDir.update(dt2, tuning, sim.player.execHitIn);
       const k = slowmo.update(dt2, sim, !!opening?.active, execNow ? execNow.k : hood?.cine?.timeScale ?? null);
       simDt *= k;
+      if (wheel.open) simDt *= WHEEL_SLOW;
       sim.yolaBoost = execNow ? execNow.boost : hood?.cine?.active ? 1 : slowmo.full ? 1 / Math.max(0.05, k) : k < 0.995 ? (k + (1 - k) * YOLA_AHEAD) / Math.max(0.05, k) : 1;
     }
     if (hitPauseT > 0) {
@@ -88264,6 +88468,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     if (acc > STEP * 8) acc = STEP * 8;
     let inp = window.game.scriptInput ? window.game.scriptInput(sim, dt2) : input.sample(MathUtils.degToRad(tuning.camYaw));
     if (window.game.inputFilter) inp = window.game.inputFilter(inp, sim);
+    inp = Object.assign({}, inp, { swapPresses: (inp.swapPresses || 0) + wheel.takeTaps() + carry.swap, usePresses: (inp.usePresses || 0) + carry.use, dodgePresses: (inp.dodgePresses || 0) + carry.dodge, pick: wheel.takePick() || carry.pick });
+    carry = { swap: 0, use: 0, dodge: 0, pick: null };
     let steps = 0;
     while (acc >= STEP) {
       p.px = p.x;
@@ -88279,10 +88485,11 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
         L2.pz = L2.z;
       }
       sim.step(inp);
-      if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0 });
+      if (steps === 0) inp = Object.assign({}, inp, { swapPresses: 0, usePresses: 0, pick: null });
       acc -= STEP;
       steps++;
     }
+    if (!steps && !paused) carry = { swap: inp.swapPresses, use: inp.usePresses, dodge: inp.dodgePresses, pick: inp.pick };
     const alpha = paused ? 1 : acc / STEP;
     handleEvents();
     if (steps) window.game.arenaTick?.(steps * STEP);
@@ -88290,10 +88497,16 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     {
       const b = window.__dodgeBtn ?? (window.__dodgeBtn = document.getElementById("dodgeBtn")), th = p.threat, dt0 = p.dodgeTh;
       if (b) {
-        b.classList.toggle("show", !p.dead && !opening?.active);
+        const fin = !!p.finishReady && !p.dead;
+        if (!dodgeSeen && p.dodgeOpen > 0 && !p.dead && !opening?.active) {
+          dodgeSeen = true;
+          store2.set("dodgeSeen", true);
+          b.classList.add("show");
+          tutorial.cue("dodge", b, "Tap to dodge!", "", 2.6, false);
+        }
+        b.classList.toggle("show", (dodgeSeen || fin) && !p.dead && !opening?.active);
         b.classList.toggle("open", p.dodgeOpen > 0 && !p.dead);
         b.classList.toggle("perfect", !!dt0?.perfect && !p.dead);
-        const fin = !!p.finishReady && !p.dead;
         if (fin !== b.__fin) {
           b.__fin = fin;
           b.classList.toggle("finish", fin);
@@ -88475,8 +88688,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     }
     fx.update(animDt);
     if (music.state !== "off") {
-      const R = music.state === "combat" ? 11 : 7;
-      music.update(dt2, sim.zombies.some((z) => z.alive && !z.dormant && !z.passive && (Math.hypot(z.x - p.x, z.z - p.z) < R || z.state === "windup" || z.state === "strike")), paused || p.dead);
+      const R2 = music.state === "combat" ? 11 : 7;
+      music.update(dt2, sim.zombies.some((z) => z.alive && !z.dormant && !z.passive && (Math.hypot(z.x - p.x, z.z - p.z) < R2 || z.state === "windup" || z.state === "strike")), paused || p.dead);
     }
     arena.update(dt2, ix, iz, MathUtils.degToRad(tuning.camYaw), sim.level);
     hud.setEmergency(!!arena.em && arena.em.target > 0);
@@ -88494,6 +88707,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (lastOpState === "ROOM1_PLAYABLE" && (!tutorial.done || params.has("tutorial"))) tutorial.start(sim);
     }
     if (!paused) tutorial.update(dt2, sim, playerScreen);
+    if (!paused && !sim.player.dead && sim.player.owned.includes("pistol") && sim.player.owned.length > 1 && !opening?.active) tutorial.cue("wheel", document.getElementById("swapBtn"), "Tap to swap.", "Hold to choose a weapon.", 5);
     if (debugOn) updateDebug(p);
     hud.update(sim, dt2);
     atmos?.update(dt2, sim, ix, iz, iyaw);
@@ -89505,7 +89719,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       z.z = 50;
       z.solid = false;
     }
-    const p = sim.player, V4 = Vector3, L2 = new V4(), R = new V4(), LT = new V4(), RT2 = new V4(), rows = [];
+    const p = sim.player, V4 = Vector3, L2 = new V4(), R2 = new V4(), LT = new V4(), RT2 = new V4(), rows = [];
     window.game.scriptInput = () => ({ moveX: mx, moveZ: mz, aimX: ax, aimZ: az, swapPresses: 0 });
     for (let i = 0; i < n2 + 40; i++) {
       p.x = p.px = 0.4;
@@ -89514,10 +89728,10 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       if (i < 40) continue;
       const o = yola.outer.position;
       yola.worldPos("LeftFoot", L2);
-      yola.worldPos("RightFoot", R);
+      yola.worldPos("RightFoot", R2);
       yola.worldPos("LeftToeBase", LT);
       yola.worldPos("RightToeBase", RT2);
-      rows.push({ L: [L2.x - o.x, Math.min(L2.y, LT.y), L2.z - o.z], R: [R.x - o.x, Math.min(R.y, RT2.y), R.z - o.z], vx: p.vx, vz: p.vz });
+      rows.push({ L: [L2.x - o.x, Math.min(L2.y, LT.y), L2.z - o.z], R: [R2.x - o.x, Math.min(R2.y, RT2.y), R2.z - o.z], vx: p.vx, vz: p.vz });
     }
     window.game.scriptInput = null;
     const out = { speed: +Math.hypot(p.vx, p.vz).toFixed(2), hipYawDeg: Math.round((yola.hipYaw || 0) * 57.3) };
@@ -89539,7 +89753,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       z.z = 50;
       z.solid = false;
     }
-    const p = sim.player, V4 = Vector3, L2 = new V4(), R = new V4(), rows = [];
+    const p = sim.player, V4 = Vector3, L2 = new V4(), R2 = new V4(), rows = [];
     let i = 0;
     window.game.scriptInput = () => Object.assign({ moveX: 0, moveZ: 0, aimX: 0, aimZ: 0, swapPresses: 0 }, fn(i));
     for (i = 0; i < frames; i++) {
@@ -89548,8 +89762,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       tick(1, 1 / 60, false);
       const o = yola.outer.position;
       yola.worldPos("LeftFoot", L2);
-      yola.worldPos("RightFoot", R);
-      rows.push([L2.x - o.x, L2.y, L2.z - o.z, R.x - o.x, R.y, R.z - o.z]);
+      yola.worldPos("RightFoot", R2);
+      rows.push([L2.x - o.x, L2.y, L2.z - o.z, R2.x - o.x, R2.y, R2.z - o.z]);
     }
     window.game.scriptInput = null;
     const acc2 = [];
