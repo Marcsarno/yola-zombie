@@ -58349,6 +58349,164 @@ void main() {
   }
   var ktxPath = (rel) => have.has(rel) ? KTX_ROOT + rel : null;
 
+  // src/ui/tutorial.js
+  var CSS = `
+#tut { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; }
+#tut.on { opacity: 1; }
+body:has(#hud .sheet.show) #tut { visibility: hidden; }
+#tut .zone { position: absolute; bottom: 0; width: 50%; border-radius: 26px 26px 0 0; opacity: 0; transition: opacity .35s;
+  background: linear-gradient(to top, rgba(84, 226, 132, .42), rgba(84, 226, 132, .16)); box-shadow: inset 0 3px 0 rgba(140, 255, 175, .55), 0 -10px 40px rgba(84, 226, 132, .18);
+  animation: tutPulse 1.6s ease-in-out infinite; }
+#tut .zone.l { left: 0; } #tut .zone.r { right: 0; }
+#tut .zone.show { opacity: 1; }
+@keyframes tutPulse { 0%, 100% { filter: brightness(.8); } 50% { filter: brightness(1.35); } }
+#tut .ghost { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .55); opacity: 0; transition: opacity .35s; }
+#tut .ghost.show { opacity: 1; }
+#tut .ghost i { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(255, 255, 255, .7); box-shadow: 0 2px 10px rgba(0, 0, 0, .35); }
+#tut .ghost.walk i { animation: tutWalk 1.8s ease-in-out infinite; }
+#tut .ghost.hit i { animation: tutHit 1.8s ease-in-out infinite; }
+#tut .ghost.hold i { animation: tutHold 1.8s ease-in-out infinite; }
+@keyframes tutWalk { 0%, 15% { transform: translate(0, 0); } 45%, 60% { transform: translate(34px, -24px); } 85%, 100% { transform: translate(0, 0); } }
+@keyframes tutHit { 0%, 15% { transform: translate(0, 0); } 35%, 45% { transform: translate(12px, -14px); } 70%, 85% { transform: translate(30px, -34px); } 100% { transform: translate(0, 0); } }
+@keyframes tutHold { 0%, 20% { transform: translate(0, 0); } 40%, 90% { transform: translate(30px, -34px); } 100% { transform: translate(0, 0); } }
+#tut .say { position: absolute; left: 50%; transform: translateX(-50%); width: min(86vw, 420px); text-align: center; font-weight: 750; font-size: 21px;
+  line-height: 1.25; color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, .8), 0 0 2px rgba(0, 0, 0, .9); opacity: 0; transition: opacity .3s; }
+#tut .say.show { opacity: 1; }
+#tut .say small { display: block; font-size: 15px; font-weight: 600; color: #d8f7e2; margin-top: 4px; }
+#tut .skip { position: absolute; top: calc(58px + var(--sat)); right: calc(12px + var(--sar)); pointer-events: auto; padding: 6px 12px; border-radius: 10px;
+  background: rgba(20, 28, 32, .6); color: var(--ink2); font-size: 13px; }
+`;
+  var WALK_M = 2;
+  var MIN_SHOW = 1.2;
+  var HOLD_MAX = 6;
+  var Tutorial = class {
+    constructor({ store: store3, touch }) {
+      this.store = store3;
+      this.touch = touch;
+      this.step = null;
+      this.held = [];
+      const st = document.createElement("style");
+      st.textContent = CSS;
+      document.head.appendChild(st);
+      const el = this.el = document.createElement("div");
+      el.id = "tut";
+      el.innerHTML = '<div class="zone l"></div><div class="zone r"></div><div class="ghost"><i></i></div><div class="say"></div><button class="skip">Skip</button>';
+      const hud2 = document.getElementById("hud");
+      hud2.insertBefore(el, hud2.firstChild);
+      [this.zl, this.zr, this.ghost, this.say, this.skipB] = el.children;
+      this.skipB.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.finish();
+      });
+    }
+    get done() {
+      return !!this.store.get("tutorialDone", false);
+    }
+    get active() {
+      return !!this.step;
+    }
+    // at the hand-off: the OR's zombies held still (locked, woken by nothing but a hit) until the lesson lets them go
+    start(sim2) {
+      if (this.step) this.release(sim2);
+      this.sim = sim2;
+      this.held = [];
+      for (const z of sim2.zombies) {
+        if (!z.alive || z.group !== "or") continue;
+        if (z.dormant) {
+          this.held.push({ z, wake: z.dormant.wake, locked: z.dormant.locked });
+          z.dormant.wake = Infinity;
+          z.dormant.locked = true;
+        } else if (z.state === "chase" && !z.passive) {
+          this.held.push({ z, wake: sim2.time, locked: false });
+          z.dormant = { wake: Infinity, sense: 6, locked: true, group: z.group, speedMul: z.speedMul };
+          z.passive = true;
+          z.speedMul = 0;
+          z.vx = z.vz = 0;
+        }
+      }
+      this.target = this.held.slice().sort((a, b) => a.wake - b.wake)[0]?.z || null;
+      const p = sim2.player;
+      this.lastX = p.x;
+      this.lastZ = p.z;
+      this.walked = 0;
+      this.go("walk");
+      this.el.classList.add("on");
+    }
+    go(step) {
+      this.step = step;
+      this.t = 0;
+      this.hits0 = this.target?.hitSeq || 0;
+      const T3 = this.touch, ghost = this.ghost;
+      const words = {
+        walk: T3 ? ["Touch here. Slide to walk.", ""] : ["W A S D to walk", ""],
+        attack: T3 ? ["Push a little to aim.", "Push to the edge to attack."] : ["Point the mouse to aim.", "Hold the left button to attack."],
+        hold: ["Keep holding", "to keep swinging."],
+        good: ["Good. Stay alive.", ""]
+      }[step];
+      this.say.innerHTML = words[0] + (words[1] ? `<small>${words[1]}</small>` : "");
+      this.say.classList.add("show");
+      this.zl.classList.toggle("show", T3 && step === "walk");
+      this.zr.classList.toggle("show", T3 && (step === "attack" || step === "hold"));
+      ghost.className = "ghost" + (T3 && step !== "good" ? " show " + (step === "walk" ? "walk" : step === "attack" ? "hit" : "hold") : "");
+      if (step === "attack" && this.target?.dormant) {
+        const d = this.target.dormant;
+        d.locked = false;
+        d.wake = this.sim.time + 0.4;
+      }
+    }
+    update(dt2, sim2, playerScreen2) {
+      if (!this.step) return;
+      if (sim2 !== this.sim && this.step === "walk" && sim2.time < 2 && sim2.level?.floor === 7) {
+        this.start(sim2);
+        return;
+      }
+      if (sim2 !== this.sim || sim2.player.dead) {
+        this.finish();
+        return;
+      }
+      this.t += dt2;
+      const p = sim2.player, tg = this.target;
+      this.walked += Math.hypot(p.x - this.lastX, p.z - this.lastZ);
+      this.lastX = p.x;
+      this.lastZ = p.z;
+      const H5 = innerHeight, feet = playerScreen2?.feetY != null ? playerScreen2.feetY + 18 : H5 * 0.62, top = Math.min(Math.max(feet, H5 * 0.55), H5 * 0.67);
+      if (Math.abs(top - (this.top ?? -1)) > 3) {
+        this.top = top;
+        for (const z of [this.zl, this.zr]) z.style.height = H5 - top + "px";
+        this.say.style.top = Math.max(H5 * 0.14, top - 128) + "px";
+      }
+      const zone = this.step === "walk" ? 0.25 : 0.75;
+      this.ghost.style.left = zone * innerWidth + "px";
+      this.ghost.style.top = top + (H5 - top) * 0.5 + "px";
+      if (this.step === "walk" && this.t > MIN_SHOW && this.walked >= WALK_M) this.go(tg && tg.alive ? "attack" : "good");
+      else if (this.step === "attack" && (!tg || !tg.alive || tg.hitSeq > this.hits0)) this.go(tg && tg.alive ? "hold" : "good");
+      else if (this.step === "hold" && (!tg || !tg.alive || tg.hitSeq > this.hits0 || this.t > HOLD_MAX)) this.go("good");
+      else if (this.step === "good" && this.t > 1.6) this.finish();
+    }
+    // the others wake as they would have from the start, a beat apart (never all at once)
+    release(sim2 = this.sim) {
+      let k = 0;
+      for (const h of this.held) if (h.z.alive && h.z.dormant && h.z !== this.target) {
+        h.z.dormant.locked = h.locked;
+        h.z.dormant.wake = (sim2?.time || 0) + 1.2 + 1.6 * k++;
+      }
+      if (this.target?.dormant) {
+        this.target.dormant.locked = false;
+        this.target.dormant.wake = Math.min(this.target.dormant.wake, (sim2?.time || 0) + 0.4);
+      }
+      this.held = [];
+    }
+    finish() {
+      if (!this.step) return;
+      this.release();
+      this.step = null;
+      this.store.set("tutorialDone", true);
+      this.el.classList.remove("on");
+      for (const e of [this.zl, this.zr, this.ghost, this.say]) e.classList.remove("show");
+    }
+  };
+
   // node_modules/three/examples/jsm/environments/RoomEnvironment.js
   var RoomEnvironment = class extends Scene {
     constructor() {
@@ -68304,7 +68462,7 @@ void main() {
   var TIME_CARDS = { later: "Later in the procedure", reversal: "A few minutes later" };
 
   // src/opening/ui.js
-  var CSS = `
+  var CSS2 = `
 #op { position: fixed; inset: 0; z-index: 20; pointer-events: none; font: 500 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; display: none; }
 #op.on { display: block; }
 #op * { box-sizing: border-box; }
@@ -68438,7 +68596,7 @@ void main() {
   var OpeningUI = class {
     constructor() {
       const st = document.createElement("style");
-      st.textContent = CSS;
+      st.textContent = CSS2;
       document.head.appendChild(st);
       const el = this.el = document.createElement("div");
       el.id = "op";
@@ -71082,7 +71240,7 @@ void main() {
     ["beat9", "Walk-out (feet)"],
     ["beat11", "The launch"]
   ];
-  var CSS2 = `
+  var CSS3 = `
 #revStudio{position:fixed;top:8px;right:8px;width:330px;max-height:calc(100vh - 16px);overflow:auto;z-index:90;background:rgba(14,18,22,.93);color:#dfe6ea;
  font:12px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;border:1px solid #2c3640;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
 #revStudio.min{width:auto;max-height:none;overflow:visible}
@@ -71125,7 +71283,7 @@ void main() {
       if (!document.getElementById("revStudioCss")) {
         const st = document.createElement("style");
         st.id = "revStudioCss";
-        st.textContent = CSS2;
+        st.textContent = CSS3;
         document.head.appendChild(st);
       }
       const el = this.el = document.createElement("div");
@@ -77552,7 +77710,7 @@ void main() {
   }
 
   // src/ui/chapter.js
-  var CSS3 = `
+  var CSS4 = `
 #chRadio{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(92vw,520px);z-index:30;pointer-events:none;display:flex;flex-direction:column;gap:4px;align-items:center}
 #chRadio .ln{background:rgba(12,20,24,.82);color:#eef6f4;font:600 15px/1.3 system-ui,sans-serif;padding:7px 12px;border-radius:10px;border-left:3px solid #7fd6c8;opacity:0;transition:opacity .25s;text-align:left}
 #chRadio .ln.show{opacity:1}#chRadio .ln b{color:#7fd6c8;font-weight:800;margin-right:6px}#chRadio .ln.yola{border-left-color:#ffc27a}#chRadio .ln.yola b{color:#ffc27a}
@@ -77577,7 +77735,7 @@ void main() {
     constructor(o) {
       Object.assign(this, o);
       const st = document.createElement("style");
-      st.textContent = CSS3;
+      st.textContent = CSS4;
       document.head.appendChild(st);
       const el = (id, html = "") => {
         const d = document.createElement("div");
@@ -84595,7 +84753,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
   };
 
   // src/hood/radio.js
-  var CSS4 = `
+  var CSS5 = `
 #hoodRadio{position:fixed;right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 54px);width:62px;height:62px;z-index:61;pointer-events:none;opacity:0;transform:scale(.85);transition:opacity .3s,transform .3s}
 #hoodRadio.show{opacity:1;transform:scale(1)}
 #hoodRadio .face{position:absolute;inset:0;border-radius:50%;background:#0c3a42 center/cover no-repeat;border:2px solid #3e8f99;box-shadow:0 2px 8px rgba(0,0,0,.55),0 0 0 var(--ring,0px) rgba(79,199,210,.45);transition:background-image .15s}
@@ -84606,7 +84764,7 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     constructor(voice) {
       this.voice = voice;
       const st = document.createElement("style");
-      st.textContent = CSS4;
+      st.textContent = CSS5;
       document.head.appendChild(st);
       const el = document.createElement("div");
       el.id = "hoodRadio";
@@ -87254,6 +87412,8 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     swapButton: document.getElementById("swapBtn"),
     getPlayerScreen: () => playerScreen
   });
+  var tutorial = new Tutorial({ store: store2, touch: isMobile });
+  var lastOpState = null;
   var unlockAudio = () => {
     audio.init();
     music?.prime?.();
@@ -87977,6 +88137,14 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
       case "restartLevel":
         applyRoom1();
         break;
+      case "tutorial":
+        setPaused(false);
+        if (sim.level && LAYOUT.story) {
+          applyRoom1();
+          tutorial.start(sim);
+        }
+        break;
+      // (the pause menu: Floor 7 from the start, the lesson again)
       case "mode":
         restart(v);
         break;
@@ -88319,6 +88487,13 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     hood?.update(dt2, ix, iz, camera, sim);
     _v13.set(ix, 1, iz).project(camera);
     playerScreen = { x: (_v13.x * 0.5 + 0.5) * innerWidth, y: (-_v13.y * 0.5 + 0.5) * innerHeight };
+    _v13.set(ix, 0, iz).project(camera);
+    playerScreen.feetY = (-_v13.y * 0.5 + 0.5) * innerHeight;
+    if (opening && opening.state !== lastOpState) {
+      lastOpState = opening.state;
+      if (lastOpState === "ROOM1_PLAYABLE" && (!tutorial.done || params.has("tutorial"))) tutorial.start(sim);
+    }
+    if (!paused) tutorial.update(dt2, sim, playerScreen);
     if (debugOn) updateDebug(p);
     hud.update(sim, dt2);
     atmos?.update(dt2, sim, ix, iz, iyaw);
@@ -89425,7 +89600,9 @@ float gBlend, gTile; vec2 gOffA, gOffB;`).replace("#include <map_fragment>", `
     return yola;
   }, get physics() {
     return physics;
-  }, zviews, get zThrottle() {
+  }, zviews, get tutorial() {
+    return tutorial;
+  }, get zThrottle() {
     return zThrottle;
   }, set zThrottle(v) {
     zThrottle = !!v;
