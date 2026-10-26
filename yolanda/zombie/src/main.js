@@ -12,6 +12,7 @@ import { radioFit } from './render/radiohold.js';
 import { caseFit } from './render/casecarry.js';
 import { LAYOUT, ROOM1, useLevel, useFloor, levelForMode } from './core/layout.js';
 import { ktxLoader, loadKtxList, ktxPath } from './hood/ktx.js';
+import { Tutorial } from './ui/tutorial.js';
 import { Arena } from './render/arena.js';
 import { YolaView, ZombieView } from './render/clipchars.js';
 import { FX } from './render/fx.js';
@@ -166,6 +167,9 @@ const input = new Input(document.getElementById('touch'), {
   swapButton: document.getElementById('swapBtn'),
   getPlayerScreen: () => playerScreen,
 });
+// the first-play tutorial: walk, aim and attack, hold (ui/tutorial.js), from the opening's hand-off
+const tutorial = new Tutorial({ store, touch: isMobile });
+let lastOpState = null;
 const unlockAudio = () => { audio.init(); music?.prime?.(); }; // (music.prime: the iPhone lets the gameplay track start later only if it first played inside a tap)
 addEventListener('pointerdown', unlockAudio, { capture: true });
 addEventListener('touchend', unlockAudio, { capture: true }); // (iPhone counts touchend/click, not touchstart, as the audio gesture)
@@ -649,6 +653,7 @@ function uiAction(a, v) {
     case 'resume': setPaused(false); break;
     case 'restart': if (LAYOUT.hood) restart(mode); else if (sim.level) applyLevel(levelSave); else restart(mode); break; // the story level retries from its checkpoint (the neighbourhood: src/hood/ restores its own)
     case 'restartLevel': applyRoom1(); break;
+    case 'tutorial': setPaused(false); if (sim.level && LAYOUT.story) { applyRoom1(); tutorial.start(sim); } break; // (the pause menu: Floor 7 from the start, the lesson again)
     case 'mode': restart(v); break;
     case 'bench': restart('bench', v); break;
     case 'quality': quality = v; store.set('quality', v); location.reload(); break;
@@ -859,6 +864,9 @@ function runFrame(dt, doRender = true) {
   // player screen position (mouse aiming)
   _v.set(ix, 1.0, iz).project(camera);
   playerScreen = { x: (_v.x * 0.5 + 0.5) * innerWidth, y: (-_v.y * 0.5 + 0.5) * innerHeight };
+  _v.set(ix, 0, iz).project(camera); playerScreen.feetY = (-_v.y * 0.5 + 0.5) * innerHeight; // (her feet: the tutorial's glow starts below them)
+  if (opening && opening.state !== lastOpState) { lastOpState = opening.state; if (lastOpState === 'ROOM1_PLAYABLE' && (!tutorial.done || params.has('tutorial'))) tutorial.start(sim); }
+  if (!paused) tutorial.update(dt, sim, playerScreen);
 
   if (debugOn) updateDebug(p);
   hud.update(sim, dt);
@@ -1369,6 +1377,6 @@ function footPops(fn, frames) {
   const s = acc.map((a) => a[0]).sort((a, b) => a - b), worst = acc.sort((a, b) => b[0] - a[0])[0];
   return { p95: Math.round(s[Math.floor(s.length * 0.95)]), max: Math.round(worst[0]), atFrame: worst[1] };
 }
-window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get zThrottle() { return zThrottle; }, set zThrottle(v) { zThrottle = !!v; }, get atmos() { return atmos; }, get lightkit() { return lightkit; }, warmStoryLight, storyLight(on) { if (LAYOUT.story && lightkit && storyLit !== !!on) storyLighting(!!on); }, revealLight, ZombieView, get fx() { return fx; }, get execActive() { return execDir.active; }, clearPieces() { ZombieView.clearPieces(); gibs.clear(); }, get looseMeshes() { return ZombieView.looseMeshes; }, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
+window.game = { yolaModel: YOLA_MODEL, yolaClips: null, get hitPause() { return hitPauseT; }, yolaPose(dt, s) { yola.update(dt, s); }, fxAim(v) { fx.setAim(sim.player.x, sim.player.z, sim.player.aimYaw, v, 0); }, fxBurst(...a) { fx.burst(...a); }, musicStart(k) { music.start(k); }, music, stillYola(dt) { yola.update(dt, stillState(ROOM1.player.x, ROOM1.player.z, ROOM1.player.yaw)); }, hideZombieViews() { for (const v of zviews.values()) { v.hide(); zpool[v.type].push(v); } zviews.clear(); }, applyRoom1, applyLevel, get levelSave() { return levelSave; }, get arena() { return arena; }, cameraPose, previewRoom1, warmRoom1, stillState, hudShow(v) { document.getElementById('hud').style.display = v ? '' : 'none'; document.getElementById('touch').style.pointerEvents = v ? '' : 'none'; }, tick, shot, sheet, footSlide, footPops, simBat: (st, combo = 0) => meleeWorldSegment(sim.player, sim.player.attacks[combo], st, {}), cam(o) { camOverride = o; },  resume() { manualTicks = false; last = performance.now(); }, get sim() { return sim; }, set sim(v) {}, restart, perfReport, tuning, setPaused, uiAction, scriptInput: null, telegraphs, get looks() { return looks; }, get yola() { return yola; }, get physics() { return physics; }, zviews, get tutorial() { return tutorial; }, get zThrottle() { return zThrottle; }, set zThrottle(v) { zThrottle = !!v; }, get atmos() { return atmos; }, get lightkit() { return lightkit; }, warmStoryLight, storyLight(on) { if (LAYOUT.story && lightkit && storyLit !== !!on) storyLighting(!!on); }, revealLight, ZombieView, get fx() { return fx; }, get execActive() { return execDir.active; }, clearPieces() { ZombieView.clearPieces(); gibs.clear(); }, get looseMeshes() { return ZombieView.looseMeshes; }, get propSrc() { return ZombieView.propSrc; }, propsAdd(o) { ZombieView.props.push(o); }, lab: { kill: (...a) => physlab.kill(window.game, ...a), pile: (...a) => physlab.pile(window.game, ...a), sever: (...a) => physlab.sever(window.game, ...a), blast: (...a) => physlab.blast(window.game, ...a), combo: (...a) => physlab.combo(window.game, ...a) }, get pieces() { return ZombieView.pieces; }, scrubs: (v, k) => setScrubs(v, k), SCRUBS, THREE, camera, renderer, scene };
 hud.perfReport = perfReport;
 load().catch((e) => { console.error(e); hud.error(String(e)); });
